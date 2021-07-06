@@ -1,8 +1,6 @@
 package privacy
 
-import (
-	"github.com/mxmCherry/openrtb"
-)
+import "github.com/mxmCherry/openrtb/v15/openrtb2"
 
 // Enforcement represents the privacy policies to enforce for an OpenRTB bid request.
 type Enforcement struct {
@@ -19,14 +17,14 @@ func (e Enforcement) Any() bool {
 }
 
 // Apply cleans personally identifiable information from an OpenRTB bid request.
-func (e Enforcement) Apply(bidRequest *openrtb.BidRequest, ampGDPRException bool) {
-	e.apply(bidRequest, ampGDPRException, NewScrubber())
+func (e Enforcement) Apply(bidRequest *openrtb2.BidRequest) {
+	e.apply(bidRequest, NewScrubber())
 }
 
-func (e Enforcement) apply(bidRequest *openrtb.BidRequest, ampGDPRException bool, scrubber Scrubber) {
+func (e Enforcement) apply(bidRequest *openrtb2.BidRequest, scrubber Scrubber) {
 	if bidRequest != nil && e.Any() {
 		bidRequest.Device = scrubber.ScrubDevice(bidRequest.Device, e.getDeviceIDScrubStrategy(), e.getIPv4ScrubStrategy(), e.getIPv6ScrubStrategy(), e.getGeoScrubStrategy())
-		bidRequest.User = scrubber.ScrubUser(bidRequest.User, e.getUserScrubStrategy(ampGDPRException), e.getGeoScrubStrategy())
+		bidRequest.User = scrubber.ScrubUser(bidRequest.User, e.getUserScrubStrategy(), e.getGeoScrubStrategy())
 	}
 }
 
@@ -70,7 +68,7 @@ func (e Enforcement) getGeoScrubStrategy() ScrubStrategyGeo {
 	return ScrubStrategyGeoNone
 }
 
-func (e Enforcement) getUserScrubStrategy(ampGDPRException bool) ScrubStrategyUser {
+func (e Enforcement) getUserScrubStrategy() ScrubStrategyUser {
 	if e.COPPA {
 		return ScrubStrategyUserIDAndDemographic
 	}
@@ -79,7 +77,7 @@ func (e Enforcement) getUserScrubStrategy(ampGDPRException bool) ScrubStrategyUs
 		return ScrubStrategyUserID
 	}
 
-	if e.GDPRID && !ampGDPRException {
+	if e.GDPRID {
 		return ScrubStrategyUserID
 	}
 

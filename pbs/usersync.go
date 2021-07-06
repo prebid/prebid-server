@@ -13,8 +13,8 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/pbsmetrics"
-	"github.com/prebid/prebid-server/ssl"
+	"github.com/prebid/prebid-server/metrics"
+	"github.com/prebid/prebid-server/server/ssl"
 	"github.com/prebid/prebid-server/usersync"
 )
 
@@ -40,7 +40,7 @@ type UserSyncDeps struct {
 	ExternalUrl      string
 	RecaptchaSecret  string
 	HostCookieConfig *config.HostCookie
-	MetricsEngine    pbsmetrics.MetricsEngine
+	MetricsEngine    metrics.MetricsEngine
 	PBSAnalytics     analytics.PBSAnalyticsModule
 }
 

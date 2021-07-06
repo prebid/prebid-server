@@ -6,17 +6,18 @@ import (
 
 // ExtImpRubicon defines the contract for bidrequest.imp[i].ext.rubicon
 type ExtImpRubicon struct {
-	AccountId          int                `json:"accountId"`
-	SiteId             int                `json:"siteId"`
-	ZoneId             int                `json:"zoneId"`
-	Inventory          json.RawMessage    `json:"inventory,omitempty"`
-	Visitor            json.RawMessage    `json:"visitor,omitempty"`
-	Video              rubiconVideoParams `json:"video"`
-	Debug              impExtRubiconDebug `json:"debug,omitempty"`
-	Region             string             `json:"region"`
-	ViewabilityVendors []string           `json:"viewabilityvendors"`
-	SKADNSupported     bool               `json:"skadn_supported"` // enable skadn ext parameters
-	MRAIDSupported     bool               `json:"mraid_supported"`
+	AccountId int                `json:"accountId"`
+	SiteId    int                `json:"siteId"`
+	ZoneId    int                `json:"zoneId"`
+	Inventory json.RawMessage    `json:"inventory,omitempty"`
+	Visitor   json.RawMessage    `json:"visitor,omitempty"`
+	Video     rubiconVideoParams `json:"video"`
+	Debug     impExtRubiconDebug `json:"debug,omitempty"`
+
+	Region             string   `json:"region"`
+	ViewabilityVendors []string `json:"viewabilityvendors"`
+	SKADNSupported     bool     `json:"skadn_supported"`
+	MRAIDSupported     bool     `json:"mraid_supported"`
 }
 
 // rubiconVideoParams defines the contract for bidrequest.imp[i].ext.rubicon.video

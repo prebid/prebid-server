@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "AlgoriX Adapter Params",
+  "description": "A schema which validates params accepted by the AlgoriX adapter",
+  "type": "object",
+  "properties": {
+    "sid": {
+      "type": "string",
+      "description": "Your Sid",
+      "minLength": 1
+    },
+    "token": {
+      "type": "string",
+      "description": "Your Token",
+      "minLength": 1
+    }
+  },
+  "required": ["sid", "token"]
+}

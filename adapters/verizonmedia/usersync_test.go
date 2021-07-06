@@ -19,5 +19,4 @@ func TestVerizonMediaSyncer(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, "redirect", syncInfo.Type)
-	assert.EqualValues(t, 25, syncer.GDPRVendorID())
 }

@@ -1,9 +1,39 @@
 package vendorconsent
 
 import (
+	"encoding/base64"
+	"strings"
+
 	"github.com/prebid/go-gdpr/api"
 	"github.com/prebid/go-gdpr/bitutils"
+	"github.com/prebid/go-gdpr/consentconstants"
 )
+
+const (
+	consentStringTCF2Separator = '.'
+	consentStringTCF2Prefix    = 'C'
+)
+
+// ParseString parses the TCF 2.0 vendor string base64 encoded
+func ParseString(consent string) (api.VendorConsents, error) {
+	if consent == "" {
+		return nil, consentconstants.ErrEmptyDecodedConsent
+	}
+	// split TCF 2.0 segments
+	if index := strings.IndexByte(consent, consentStringTCF2Separator); index != -1 {
+		consent = consent[:index]
+	}
+
+	buff := []byte(consent)
+	decoded := buff
+	n, err := base64.RawURLEncoding.Decode(decoded, buff)
+	if err != nil {
+		return nil, err
+	}
+	decoded = decoded[:n:n]
+
+	return Parse(decoded)
+}
 
 // Parse parses the TCF 2.0 vendor consent data from the string. This string should *not* be encoded (by base64 or any other encoding).
 // If the data is malformed and cannot be interpreted as a vendor consent string, this will return an error.
@@ -56,4 +86,9 @@ func Parse(data []byte) (api.VendorConsents, error) {
 
 	return metadata, err
 
+}
+
+// IsConsentV2 return true if the consent strings looks like a tcf v2 consent string
+func IsConsentV2(consent string) bool {
+	return len(consent) > 0 && consent[0] == consentStringTCF2Prefix
 }

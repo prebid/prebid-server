@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 )
 
 // ScrubStrategyIPV4 defines the approach to scrub PII from an IPV4 address.
@@ -73,8 +73,8 @@ const (
 
 // Scrubber removes PII from parts of an OpenRTB request.
 type Scrubber interface {
-	ScrubDevice(device *openrtb.Device, id ScrubStrategyDeviceID, ipv4 ScrubStrategyIPV4, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb.Device
-	ScrubUser(user *openrtb.User, strategy ScrubStrategyUser, geo ScrubStrategyGeo) *openrtb.User
+	ScrubDevice(device *openrtb2.Device, id ScrubStrategyDeviceID, ipv4 ScrubStrategyIPV4, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb2.Device
+	ScrubUser(user *openrtb2.User, strategy ScrubStrategyUser, geo ScrubStrategyGeo) *openrtb2.User
 }
 
 type scrubber struct{}
@@ -84,7 +84,7 @@ func NewScrubber() Scrubber {
 	return scrubber{}
 }
 
-func (scrubber) ScrubDevice(device *openrtb.Device, id ScrubStrategyDeviceID, ipv4 ScrubStrategyIPV4, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb.Device {
+func (scrubber) ScrubDevice(device *openrtb2.Device, id ScrubStrategyDeviceID, ipv4 ScrubStrategyIPV4, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb2.Device {
 	if device == nil {
 		return nil
 	}
@@ -124,7 +124,7 @@ func (scrubber) ScrubDevice(device *openrtb.Device, id ScrubStrategyDeviceID, ip
 	return &deviceCopy
 }
 
-func (scrubber) ScrubUser(user *openrtb.User, strategy ScrubStrategyUser, geo ScrubStrategyGeo) *openrtb.User {
+func (scrubber) ScrubUser(user *openrtb2.User, strategy ScrubStrategyUser, geo ScrubStrategyGeo) *openrtb2.User {
 	if user == nil {
 		return nil
 	}
@@ -194,15 +194,15 @@ func removeLowestIPV6Segment(ip string) string {
 	return ip[0:i]
 }
 
-func scrubGeoFull(geo *openrtb.Geo) *openrtb.Geo {
+func scrubGeoFull(geo *openrtb2.Geo) *openrtb2.Geo {
 	if geo == nil {
 		return nil
 	}
 
-	return &openrtb.Geo{}
+	return &openrtb2.Geo{}
 }
 
-func scrubGeoPrecision(geo *openrtb.Geo) *openrtb.Geo {
+func scrubGeoPrecision(geo *openrtb2.Geo) *openrtb2.Geo {
 	if geo == nil {
 		return nil
 	}

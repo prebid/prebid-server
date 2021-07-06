@@ -14,31 +14,33 @@ import (
 	"strconv"
 	"time"
 
+	nr "github.com/prebid/prebid-server/monitoring/newrelic"
+
 	"github.com/buger/jsonparser"
 	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/gofrs/uuid"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
-	"github.com/mssola/user_agent"
-	"github.com/mxmCherry/openrtb"
-	"github.com/mxmCherry/openrtb/native"
-	nativeRequests "github.com/mxmCherry/openrtb/native/request"
+	"github.com/mxmCherry/openrtb/v15/native1"
+	nativeRequests "github.com/mxmCherry/openrtb/v15/native1/request"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
-	nr "github.com/prebid/prebid-server/monitoring/newrelic"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/privacy/ccpa"
+	"github.com/prebid/prebid-server/privacy/lmt"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/usersync"
 	"github.com/prebid/prebid-server/util/httputil"
 	"github.com/prebid/prebid-server/util/iputil"
 	"golang.org/x/net/publicsuffix"
+	"golang.org/x/text/currency"
 )
 
 const storedRequestTimeoutMillis = 50
@@ -49,8 +51,18 @@ var (
 	dntEnabled  int8   = 1
 )
 
-func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, accounts stored_requests.AccountFetcher, categories stored_requests.CategoryFetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule, disabledBidders map[string]string, defReqJSON []byte, bidderMap map[string]openrtb_ext.BidderName) (httprouter.Handle, error) {
-
+func NewEndpoint(
+	ex exchange.Exchange,
+	validator openrtb_ext.BidderParamValidator,
+	requestsById stored_requests.Fetcher,
+	accounts stored_requests.AccountFetcher,
+	cfg *config.Configuration,
+	met metrics.MetricsEngine,
+	pbsAnalytics analytics.PBSAnalyticsModule,
+	disabledBidders map[string]string,
+	defReqJSON []byte,
+	bidderMap map[string]openrtb_ext.BidderName,
+) (httprouter.Handle, error) {
 	if ex == nil || validator == nil || requestsById == nil || accounts == nil || cfg == nil || met == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
 	}
@@ -68,7 +80,6 @@ func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidato
 		requestsById,
 		empty_fetcher.EmptyFetcher{},
 		accounts,
-		categories,
 		cfg,
 		met,
 		pbsAnalytics,
@@ -87,9 +98,8 @@ type endpointDeps struct {
 	storedReqFetcher          stored_requests.Fetcher
 	videoFetcher              stored_requests.Fetcher
 	accounts                  stored_requests.AccountFetcher
-	categories                stored_requests.CategoryFetcher
 	cfg                       *config.Configuration
-	metricsEngine             pbsmetrics.MetricsEngine
+	metricsEngine             metrics.MetricsEngine
 	analytics                 analytics.PBSAnalyticsModule
 	disabledBidders           map[string]string
 	defaultRequest            bool
@@ -101,13 +111,6 @@ type endpointDeps struct {
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	ctx := r.Context()
-
-	ao := analytics.AuctionObject{
-		Status: http.StatusOK,
-		Errors: make([]error, 0),
-	}
-
 	// Prebid Server interprets request.tmax to be the maximum amount of time that a caller is willing
 	// to wait for bids. However, tmax may be defined in the Stored Request data.
 	//
@@ -115,13 +118,21 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// We can respect timeouts more accurately if we note the *real* start time, and use it
 	// to compute the auction timeout.
 	start := time.Now()
-	labels := pbsmetrics.Labels{
-		Source:        pbsmetrics.DemandUnknown,
-		RType:         pbsmetrics.ReqTypeORTB2Web,
-		PubID:         pbsmetrics.PublisherUnknown,
-		Browser:       getBrowserName(r),
-		CookieFlag:    pbsmetrics.CookieFlagUnknown,
-		RequestStatus: pbsmetrics.RequestStatusOK,
+
+	ctx := r.Context()
+
+	ao := analytics.AuctionObject{
+		Status:    http.StatusOK,
+		Errors:    make([]error, 0),
+		StartTime: start,
+	}
+
+	labels := metrics.Labels{
+		Source:        metrics.DemandUnknown,
+		RType:         metrics.ReqTypeORTB2Web,
+		PubID:         metrics.PublisherUnknown,
+		CookieFlag:    metrics.CookieFlagUnknown,
+		RequestStatus: metrics.RequestStatusOK,
 	}
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
@@ -145,6 +156,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	if errortypes.ContainsFatalError(errL) && writeError(errL, w, &labels) {
 		return
 	}
+	warnings := errortypes.WarningOnly(errL)
 
 	timeout := deps.cfg.AuctionTimeouts.LimitAuctionTimeout(time.Duration(req.TMax) * time.Millisecond)
 	if timeout > 0 {
@@ -155,15 +167,15 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	usersyncs := usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie))
 	if req.App != nil {
-		labels.Source = pbsmetrics.DemandApp
-		labels.RType = pbsmetrics.ReqTypeORTB2App
+		labels.Source = metrics.DemandApp
+		labels.RType = metrics.ReqTypeORTB2App
 		labels.PubID = getAccountID(req.App.Publisher)
 	} else { //req.Site != nil
-		labels.Source = pbsmetrics.DemandWeb
+		labels.Source = metrics.DemandWeb
 		if usersyncs.LiveSyncCount() == 0 {
-			labels.CookieFlag = pbsmetrics.CookieFlagNo
+			labels.CookieFlag = metrics.CookieFlagNo
 		} else {
-			labels.CookieFlag = pbsmetrics.CookieFlagYes
+			labels.CookieFlag = metrics.CookieFlagYes
 		}
 		labels.PubID = getAccountID(req.Site.Publisher)
 	}
@@ -176,12 +188,25 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		return
 	}
 
-	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels, account, &deps.categories, nil)
+	secGPC := r.Header.Get("Sec-GPC")
+
+	auctionRequest := exchange.AuctionRequest{
+		BidRequest:                 req,
+		Account:                    *account,
+		UserSyncs:                  usersyncs,
+		RequestType:                labels.RType,
+		StartTime:                  start,
+		LegacyLabels:               labels,
+		Warnings:                   warnings,
+		GlobalPrivacyControlHeader: secGPC,
+	}
+
+	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
 	ao.Request = req
 	ao.Response = response
 	ao.Account = account
 	if err != nil {
-		labels.RequestStatus = pbsmetrics.RequestStatusErr
+		labels.RequestStatus = metrics.RequestStatusErr
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
 		glog.Errorf("/openrtb2/auction Critical error: %v", err)
@@ -201,7 +226,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// If we've sent _any_ bytes, then Go would have sent the 200 status code first.
 	// That status code can't be un-sent... so the best we can do is log the error.
 	if err := enc.Encode(response); err != nil {
-		labels.RequestStatus = pbsmetrics.RequestStatusNetworkErr
+		labels.RequestStatus = metrics.RequestStatusNetworkErr
 		ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/auction Failed to send response: %v", err))
 	}
 }
@@ -216,8 +241,8 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 // possible, it will return errors with messages that suggest improvements.
 //
 // If the errors list has at least one element, then no guarantees are made about the returned request.
-func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.BidRequest, errs []error) {
-	req = &openrtb.BidRequest{}
+func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb2.BidRequest, errs []error) {
+	req = &openrtb2.BidRequest{}
 	errs = nil
 
 	// Pull the request body into a buffer, so we have it for later usage.
@@ -260,6 +285,8 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.
 		return
 	}
 
+	lmt.ModifyForIOS(req)
+
 	errL := deps.validateRequest(req)
 	if len(errL) > 0 {
 		errs = append(errs, errL...)
@@ -283,7 +310,7 @@ func parseTimeout(requestJson []byte, defaultTimeout time.Duration) time.Duratio
 	return defaultTimeout
 }
 
-func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
+func (deps *endpointDeps) validateRequest(req *openrtb2.BidRequest) []error {
 	errL := []error{}
 	if req.ID == "" {
 		return []error{errors.New("request missing required field: \"id\"")}
@@ -320,11 +347,19 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 			return []error{err}
 		}
 
-		if err := validateBidAdjustmentFactors(bidExt.Prebid.BidAdjustmentFactors, aliases); err != nil {
+		if err := deps.validateBidAdjustmentFactors(bidExt.Prebid.BidAdjustmentFactors, aliases); err != nil {
 			return []error{err}
 		}
 
 		if err := validateSChains(bidExt); err != nil {
+			return []error{err}
+		}
+
+		if err := deps.validateEidPermissions(bidExt, aliases); err != nil {
+			return []error{err}
+		}
+
+		if err := validateCustomRates(bidExt.Prebid.CurrencyConversions); err != nil {
 			return []error{err}
 		}
 	}
@@ -341,7 +376,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 		return append(errL, err)
 	}
 
-	if err := validateUser(req.User, aliases); err != nil {
+	if err := deps.validateUser(req.User, aliases); err != nil {
 		return append(errL, err)
 	}
 
@@ -349,12 +384,18 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 		return append(errL, err)
 	}
 
+	if err := validateDevice(req.Device); err != nil {
+		return append(errL, err)
+	}
+
 	if ccpaPolicy, err := ccpa.ReadFromRequest(req); err != nil {
 		return append(errL, err)
 	} else if _, err := ccpaPolicy.Parse(exchange.GetValidBidders(aliases)); err != nil {
-		if _, invalidConsent := err.(*errortypes.InvalidPrivacyConsent); invalidConsent {
-			errL = append(errL, &errortypes.InvalidPrivacyConsent{Message: fmt.Sprintf("CCPA consent is invalid and will be ignored. (%v)", err)})
-			consentWriter := ccpa.ConsentWriter{""}
+		if _, invalidConsent := err.(*errortypes.Warning); invalidConsent {
+			errL = append(errL, &errortypes.Warning{
+				Message:     fmt.Sprintf("CCPA consent is invalid and will be ignored. (%v)", err),
+				WarningCode: errortypes.InvalidPrivacyConsentWarningCode})
+			consentWriter := ccpa.ConsentWriter{Consent: ""}
 			if err := consentWriter.Write(req); err != nil {
 				return append(errL, fmt.Errorf("Unable to remove invalid CCPA consent from the request. (%v)", err))
 			}
@@ -382,9 +423,9 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 	return errL
 }
 
-func validateAndFillSourceTID(req *openrtb.BidRequest) error {
+func validateAndFillSourceTID(req *openrtb2.BidRequest) error {
 	if req.Source == nil {
-		req.Source = &openrtb.Source{}
+		req.Source = &openrtb2.Source{}
 	}
 	if req.Source.TID == "" {
 		if rawUUID, err := uuid.NewV4(); err == nil {
@@ -396,12 +437,12 @@ func validateAndFillSourceTID(req *openrtb.BidRequest) error {
 	return nil
 }
 
-func validateBidAdjustmentFactors(adjustmentFactors map[string]float64, aliases map[string]string) error {
+func (deps *endpointDeps) validateBidAdjustmentFactors(adjustmentFactors map[string]float64, aliases map[string]string) error {
 	for bidderToAdjust, adjustmentFactor := range adjustmentFactors {
 		if adjustmentFactor <= 0 {
 			return fmt.Errorf("request.ext.prebid.bidadjustmentfactors.%s must be a positive number. Got %f", bidderToAdjust, adjustmentFactor)
 		}
-		if _, isBidder := openrtb_ext.BidderMap[bidderToAdjust]; !isBidder {
+		if _, isBidder := deps.bidderMap[bidderToAdjust]; !isBidder {
 			if _, isAlias := aliases[bidderToAdjust]; !isAlias {
 				return fmt.Errorf("request.ext.prebid.bidadjustmentfactors.%s is not a known bidder or alias", bidderToAdjust)
 			}
@@ -415,7 +456,76 @@ func validateSChains(req *openrtb_ext.ExtRequest) error {
 	return err
 }
 
-func (deps *endpointDeps) validateImp(imp *openrtb.Imp, aliases map[string]string, index int) []error {
+// validateCustomRates throws a bad input error if any of the 3-digit currency codes found in
+// the bidRequest.ext.prebid.currency field is invalid, malfomed or does not represent any actual
+// currency. No error is thrown if bidRequest.ext.prebid.currency is invalid or empty.
+func validateCustomRates(bidReqCurrencyRates *openrtb_ext.ExtRequestCurrency) error {
+	if bidReqCurrencyRates == nil {
+		return nil
+	}
+
+	for fromCurrency, rates := range bidReqCurrencyRates.ConversionRates {
+		// Check if fromCurrency is a valid 3-letter currency code
+		if _, err := currency.ParseISO(fromCurrency); err != nil {
+			return &errortypes.BadInput{Message: fmt.Sprintf("currency code %s is not recognized or malformed", fromCurrency)}
+		}
+
+		// Check if currencies mapped to fromCurrency are valid 3-letter currency codes
+		for toCurrency := range rates {
+			if _, err := currency.ParseISO(toCurrency); err != nil {
+				return &errortypes.BadInput{Message: fmt.Sprintf("currency code %s is not recognized or malformed", toCurrency)}
+			}
+		}
+	}
+	return nil
+}
+
+func (deps *endpointDeps) validateEidPermissions(req *openrtb_ext.ExtRequest, aliases map[string]string) error {
+	if req == nil || req.Prebid.Data == nil {
+		return nil
+	}
+
+	uniqueSources := make(map[string]struct{}, len(req.Prebid.Data.EidPermissions))
+	for i, eid := range req.Prebid.Data.EidPermissions {
+		if len(eid.Source) == 0 {
+			return fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] missing required field: "source"`, i)
+		}
+
+		if _, exists := uniqueSources[eid.Source]; exists {
+			return fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] duplicate entry with field: "source"`, i)
+		}
+		uniqueSources[eid.Source] = struct{}{}
+
+		if len(eid.Bidders) == 0 {
+			return fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] missing or empty required field: "bidders"`, i)
+		}
+
+		if err := validateBidders(eid.Bidders, deps.bidderMap, aliases); err != nil {
+			return fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] contains %v`, i, err)
+		}
+	}
+
+	return nil
+}
+
+func validateBidders(bidders []string, knownBidders map[string]openrtb_ext.BidderName, knownAliases map[string]string) error {
+	for _, bidder := range bidders {
+		if bidder == "*" {
+			if len(bidders) > 1 {
+				return errors.New(`bidder wildcard "*" mixed with specific bidders`)
+			}
+		} else {
+			_, isCoreBidder := knownBidders[bidder]
+			_, isAlias := knownAliases[bidder]
+			if !isCoreBidder && !isAlias {
+				return fmt.Errorf(`unrecognized bidder "%v"`, bidder)
+			}
+		}
+	}
+	return nil
+}
+
+func (deps *endpointDeps) validateImp(imp *openrtb2.Imp, aliases map[string]string, index int) []error {
 	if imp.ID == "" {
 		return []error{fmt.Errorf("request.imp[%d] missing required field: \"id\"", index)}
 	}
@@ -432,12 +542,12 @@ func (deps *endpointDeps) validateImp(imp *openrtb.Imp, aliases map[string]strin
 		return []error{err}
 	}
 
-	if imp.Video != nil && len(imp.Video.MIMEs) < 1 {
-		return []error{fmt.Errorf("request.imp[%d].video.mimes must contain at least one supported MIME type", index)}
+	if err := validateVideo(imp.Video, index); err != nil {
+		return []error{err}
 	}
 
-	if imp.Audio != nil && len(imp.Audio.MIMEs) < 1 {
-		return []error{fmt.Errorf("request.imp[%d].audio.mimes must contain at least one supported MIME type", index)}
+	if err := validateAudio(imp.Audio, index); err != nil {
+		return []error{err}
 	}
 
 	if err := fillAndValidateNative(imp.Native, index); err != nil {
@@ -456,13 +566,22 @@ func (deps *endpointDeps) validateImp(imp *openrtb.Imp, aliases map[string]strin
 	return nil
 }
 
-func validateBanner(banner *openrtb.Banner, impIndex int) error {
+func validateBanner(banner *openrtb2.Banner, impIndex int) error {
 	if banner == nil {
 		return nil
 	}
 
-	// Although these are only deprecated in the spec... since this is a new endpoint, we know nobody uses them yet.
-	// Let's start things off by pointing callers in the right direction.
+	// The following fields were previously uints in the OpenRTB library we use, but have
+	// since been changed to ints. We decided to maintain the non-negative check.
+	if banner.W != nil && *banner.W < 0 {
+		return fmt.Errorf("request.imp[%d].banner.w must be a positive number", impIndex)
+	}
+	if banner.H != nil && *banner.H < 0 {
+		return fmt.Errorf("request.imp[%d].banner.h must be a positive number", impIndex)
+	}
+
+	// The following fields are deprecated in the OpenRTB 2.5 spec but are still present
+	// in the OpenRTB library we use. Enforce they are not specified.
 	if banner.WMin != 0 {
 		return fmt.Errorf("request.imp[%d].banner uses unsupported property: \"wmin\". Use the \"format\" array instead.", impIndex)
 	}
@@ -481,16 +600,71 @@ func validateBanner(banner *openrtb.Banner, impIndex int) error {
 		return fmt.Errorf("request.imp[%d].banner has no sizes. Define \"w\" and \"h\", or include \"format\" elements.", impIndex)
 	}
 
-	for fmtIndex, format := range banner.Format {
-		if err := validateFormat(&format, impIndex, fmtIndex); err != nil {
+	for i, format := range banner.Format {
+		if err := validateFormat(&format, impIndex, i); err != nil {
 			return err
 		}
 	}
+
+	return nil
+}
+
+func validateVideo(video *openrtb2.Video, impIndex int) error {
+	if video == nil {
+		return nil
+	}
+
+	if len(video.MIMEs) < 1 {
+		return fmt.Errorf("request.imp[%d].video.mimes must contain at least one supported MIME type", impIndex)
+	}
+
+	// The following fields were previously uints in the OpenRTB library we use, but have
+	// since been changed to ints. We decided to maintain the non-negative check.
+	if video.W < 0 {
+		return fmt.Errorf("request.imp[%d].video.w must be a positive number", impIndex)
+	}
+	if video.H < 0 {
+		return fmt.Errorf("request.imp[%d].video.h must be a positive number", impIndex)
+	}
+	if video.MinBitRate < 0 {
+		return fmt.Errorf("request.imp[%d].video.minbitrate must be a positive number", impIndex)
+	}
+	if video.MaxBitRate < 0 {
+		return fmt.Errorf("request.imp[%d].video.maxbitrate must be a positive number", impIndex)
+	}
+
+	return nil
+}
+
+func validateAudio(audio *openrtb2.Audio, impIndex int) error {
+	if audio == nil {
+		return nil
+	}
+
+	if len(audio.MIMEs) < 1 {
+		return fmt.Errorf("request.imp[%d].audio.mimes must contain at least one supported MIME type", impIndex)
+	}
+
+	// The following fields were previously uints in the OpenRTB library we use, but have
+	// since been changed to ints. We decided to maintain the non-negative check.
+	if audio.Sequence < 0 {
+		return fmt.Errorf("request.imp[%d].audio.sequence must be a positive number", impIndex)
+	}
+	if audio.MaxSeq < 0 {
+		return fmt.Errorf("request.imp[%d].audio.maxseq must be a positive number", impIndex)
+	}
+	if audio.MinBitrate < 0 {
+		return fmt.Errorf("request.imp[%d].audio.minbitrate must be a positive number", impIndex)
+	}
+	if audio.MaxBitrate < 0 {
+		return fmt.Errorf("request.imp[%d].audio.maxbitrate must be a positive number", impIndex)
+	}
+
 	return nil
 }
 
 // fillAndValidateNative validates the request, and assigns the Asset IDs as recommended by the Native v1.2 spec.
-func fillAndValidateNative(n *openrtb.Native, impIndex int) error {
+func fillAndValidateNative(n *openrtb2.Native, impIndex int) error {
 	if n == nil {
 		return nil
 	}
@@ -524,12 +698,12 @@ func fillAndValidateNative(n *openrtb.Native, impIndex int) error {
 	return nil
 }
 
-func validateNativeContextTypes(cType native.ContextType, cSubtype native.ContextSubType, impIndex int) error {
+func validateNativeContextTypes(cType native1.ContextType, cSubtype native1.ContextSubType, impIndex int) error {
 	if cType == 0 {
 		// Context is only recommended, so none is a valid type.
 		return nil
 	}
-	if cType < native.ContextTypeContent || cType > native.ContextTypeProduct {
+	if cType < native1.ContextTypeContent || (cType > native1.ContextTypeProduct && cType < openrtb_ext.NativeExchangeSpecificLowerBound) {
 		return fmt.Errorf("request.imp[%d].native.request.context is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex)
 	}
 	if cSubtype < 0 {
@@ -538,38 +712,37 @@ func validateNativeContextTypes(cType native.ContextType, cSubtype native.Contex
 	if cSubtype == 0 {
 		return nil
 	}
-
-	if cSubtype >= 500 {
-		return fmt.Errorf("request.imp[%d].native.request.contextsubtype can't be greater than or equal to 500. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex)
-	}
-	if cSubtype >= native.ContextSubTypeGeneral && cSubtype <= native.ContextSubTypeUserGenerated {
-		if cType != native.ContextTypeContent {
+	if cSubtype >= native1.ContextSubTypeGeneral && cSubtype <= native1.ContextSubTypeUserGenerated {
+		if cType != native1.ContextTypeContent && cType < openrtb_ext.NativeExchangeSpecificLowerBound {
 			return fmt.Errorf("request.imp[%d].native.request.context is %d, but contextsubtype is %d. This is an invalid combination. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex, cType, cSubtype)
 		}
 		return nil
 	}
-	if cSubtype >= native.ContextSubTypeSocial && cSubtype <= native.ContextSubTypeChat {
-		if cType != native.ContextTypeSocial {
+	if cSubtype >= native1.ContextSubTypeSocial && cSubtype <= native1.ContextSubTypeChat {
+		if cType != native1.ContextTypeSocial && cType < openrtb_ext.NativeExchangeSpecificLowerBound {
 			return fmt.Errorf("request.imp[%d].native.request.context is %d, but contextsubtype is %d. This is an invalid combination. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex, cType, cSubtype)
 		}
 		return nil
 	}
-	if cSubtype >= native.ContextSubTypeSelling && cSubtype <= native.ContextSubTypeProductReview {
-		if cType != native.ContextTypeProduct {
+	if cSubtype >= native1.ContextSubTypeSelling && cSubtype <= native1.ContextSubTypeProductReview {
+		if cType != native1.ContextTypeProduct && cType < openrtb_ext.NativeExchangeSpecificLowerBound {
 			return fmt.Errorf("request.imp[%d].native.request.context is %d, but contextsubtype is %d. This is an invalid combination. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex, cType, cSubtype)
 		}
+		return nil
+	}
+	if cSubtype >= openrtb_ext.NativeExchangeSpecificLowerBound {
 		return nil
 	}
 
 	return fmt.Errorf("request.imp[%d].native.request.contextsubtype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex)
 }
 
-func validateNativePlacementType(pt native.PlacementType, impIndex int) error {
+func validateNativePlacementType(pt native1.PlacementType, impIndex int) error {
 	if pt == 0 {
 		// Placement Type is only reccomended, not required.
 		return nil
 	}
-	if pt < native.PlacementTypeFeed || pt > native.PlacementTypeRecommendationWidget {
+	if pt < native1.PlacementTypeFeed || (pt > native1.PlacementTypeRecommendationWidget && pt < openrtb_ext.NativeExchangeSpecificLowerBound) {
 		return fmt.Errorf("request.imp[%d].native.request.plcmttype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=40", impIndex)
 	}
 	return nil
@@ -626,7 +799,9 @@ func validateNativeAsset(asset nativeRequests.Asset, impIndex int, assetIndex in
 			return fmt.Errorf(assetErr, impIndex, assetIndex)
 		}
 		foundType = true
-		// It is technically valid to have neither w/h nor wmin/hmin, so no check
+		if err := validateNativeAssetImage(asset.Img, impIndex, assetIndex); err != nil {
+			return err
+		}
 	}
 
 	if asset.Video != nil {
@@ -667,24 +842,40 @@ func validateNativeEventTrackers(trackers []nativeRequests.EventTracker, impInde
 
 func validateNativeAssetTitle(title *nativeRequests.Title, impIndex int, assetIndex int) error {
 	if title.Len < 1 {
-		return fmt.Errorf("request.imp[%d].native.request.assets[%d].title.len must be a positive integer", impIndex, assetIndex)
+		return fmt.Errorf("request.imp[%d].native.request.assets[%d].title.len must be a positive number", impIndex, assetIndex)
 	}
 	return nil
 }
 
 func validateNativeEventTracker(tracker nativeRequests.EventTracker, impIndex int, eventIndex int) error {
-	if tracker.Event < native.EventTypeImpression || tracker.Event > native.EventTypeViewableVideo50 {
+	if tracker.Event < native1.EventTypeImpression || (tracker.Event > native1.EventTypeViewableVideo50 && tracker.Event < openrtb_ext.NativeExchangeSpecificLowerBound) {
 		return fmt.Errorf("request.imp[%d].native.request.eventtrackers[%d].event is invalid. See section 7.6: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=43", impIndex, eventIndex)
 	}
 	if len(tracker.Methods) < 1 {
 		return fmt.Errorf("request.imp[%d].native.request.eventtrackers[%d].method is required. See section 7.7: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=43", impIndex, eventIndex)
 	}
 	for methodIndex, method := range tracker.Methods {
-		if method < native.EventTrackingMethodImage || method > native.EventTrackingMethodJS {
+		if method < native1.EventTrackingMethodImage || (method > native1.EventTrackingMethodJS && method < openrtb_ext.NativeExchangeSpecificLowerBound) {
 			return fmt.Errorf("request.imp[%d].native.request.eventtrackers[%d].methods[%d] is invalid. See section 7.7: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=43", impIndex, eventIndex, methodIndex)
 		}
 	}
 
+	return nil
+}
+
+func validateNativeAssetImage(img *nativeRequests.Image, impIndex int, assetIndex int) error {
+	if img.W < 0 {
+		return fmt.Errorf("request.imp[%d].native.request.assets[%d].img.w must be a positive integer", impIndex, assetIndex)
+	}
+	if img.H < 0 {
+		return fmt.Errorf("request.imp[%d].native.request.assets[%d].img.h must be a positive integer", impIndex, assetIndex)
+	}
+	if img.WMin < 0 {
+		return fmt.Errorf("request.imp[%d].native.request.assets[%d].img.wmin must be a positive integer", impIndex, assetIndex)
+	}
+	if img.HMin < 0 {
+		return fmt.Errorf("request.imp[%d].native.request.assets[%d].img.hmin must be a positive integer", impIndex, assetIndex)
+	}
 	return nil
 }
 
@@ -706,14 +897,14 @@ func validateNativeAssetVideo(video *nativeRequests.Video, impIndex int, assetIn
 }
 
 func validateNativeAssetData(data *nativeRequests.Data, impIndex int, assetIndex int) error {
-	if data.Type < native.DataAssetTypeSponsored || data.Type > native.DataAssetTypeCTAText {
+	if data.Type < native1.DataAssetTypeSponsored || (data.Type > native1.DataAssetTypeCTAText && data.Type < 500) {
 		return fmt.Errorf("request.imp[%d].native.request.assets[%d].data.type is invalid. See section 7.4: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=40", impIndex, assetIndex)
 	}
 
 	return nil
 }
 
-func validateNativeVideoProtocols(protocols []native.Protocol, impIndex int, assetIndex int) error {
+func validateNativeVideoProtocols(protocols []native1.Protocol, impIndex int, assetIndex int) error {
 	if len(protocols) < 1 {
 		return fmt.Errorf("request.imp[%d].native.request.assets[%d].video.protocols must be an array with at least one element", impIndex, assetIndex)
 	}
@@ -725,16 +916,35 @@ func validateNativeVideoProtocols(protocols []native.Protocol, impIndex int, ass
 	return nil
 }
 
-func validateNativeVideoProtocol(protocol native.Protocol, impIndex int, assetIndex int, protocolIndex int) error {
-	if protocol < native.ProtocolVAST10 || protocol > native.ProtocolDAAST10Wrapper {
+func validateNativeVideoProtocol(protocol native1.Protocol, impIndex int, assetIndex int, protocolIndex int) error {
+	if protocol < native1.ProtocolVAST10 || protocol > native1.ProtocolDAAST10Wrapper {
 		return fmt.Errorf("request.imp[%d].native.request.assets[%d].video.protocols[%d] is invalid. See Section 5.8: https://www.iab.com/wp-content/uploads/2016/03/OpenRTB-API-Specification-Version-2-5-FINAL.pdf#page=52", impIndex, assetIndex, protocolIndex)
 	}
 	return nil
 }
 
-func validateFormat(format *openrtb.Format, impIndex int, formatIndex int) error {
+func validateFormat(format *openrtb2.Format, impIndex, formatIndex int) error {
 	usesHW := format.W != 0 || format.H != 0
 	usesRatios := format.WMin != 0 || format.WRatio != 0 || format.HRatio != 0
+
+	// The following fields were previously uints in the OpenRTB library we use, but have
+	// since been changed to ints. We decided to maintain the non-negative check.
+	if format.W < 0 {
+		return fmt.Errorf("request.imp[%d].banner.format[%d].w must be a positive number", impIndex, formatIndex)
+	}
+	if format.H < 0 {
+		return fmt.Errorf("request.imp[%d].banner.format[%d].h must be a positive number", impIndex, formatIndex)
+	}
+	if format.WRatio < 0 {
+		return fmt.Errorf("request.imp[%d].banner.format[%d].wratio must be a positive number", impIndex, formatIndex)
+	}
+	if format.HRatio < 0 {
+		return fmt.Errorf("request.imp[%d].banner.format[%d].hratio must be a positive number", impIndex, formatIndex)
+	}
+	if format.WMin < 0 {
+		return fmt.Errorf("request.imp[%d].banner.format[%d].wmin must be a positive number", impIndex, formatIndex)
+	}
+
 	if usesHW && usesRatios {
 		return fmt.Errorf("Request imp[%d].banner.format[%d] should define *either* {w, h} *or* {wmin, wratio, hratio}, but not both. If both are valid, send two \"format\" objects in the request.", impIndex, formatIndex)
 	}
@@ -750,7 +960,7 @@ func validateFormat(format *openrtb.Format, impIndex int, formatIndex int) error
 	return nil
 }
 
-func validatePmp(pmp *openrtb.PMP, impIndex int) error {
+func validatePmp(pmp *openrtb2.PMP, impIndex int) error {
 	if pmp == nil {
 		return nil
 	}
@@ -763,7 +973,7 @@ func validatePmp(pmp *openrtb.PMP, impIndex int) error {
 	return nil
 }
 
-func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]string, impIndex int) []error {
+func (deps *endpointDeps) validateImpExt(imp *openrtb2.Imp, aliases map[string]string, impIndex int) []error {
 	errL := []error{}
 	if len(imp.Ext) == 0 {
 		return []error{fmt.Errorf("request.imp[%d].ext is required", impIndex)}
@@ -774,19 +984,15 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 		return []error{err}
 	}
 
-	// Also accept bidder exts within imp[...].ext.prebid.bidder
-	// NOTE: This is not part of the official API yet, so we are not expecting clients
-	// to migrate from imp[...].ext.${BIDDER} to imp[...].ext.prebid.bidder.${BIDDER}
-	// at this time
-	// https://github.com/prebid/prebid-server/pull/846#issuecomment-476352224
-	if rawPrebidExt, ok := bidderExts[openrtb_ext.PrebidExtKey]; ok {
-		var prebidExt openrtb_ext.ExtImpPrebid
-		if err := json.Unmarshal(rawPrebidExt, &prebidExt); err == nil && prebidExt.Bidder != nil {
-			for bidder, ext := range prebidExt.Bidder {
+	// Prefer bidder params from request.imp.ext.prebid.bidder.BIDDER over request.imp.ext.BIDDER
+	// to avoid confusion beteween prebid specific adapter config and other ext protocols.
+	if extPrebidJSON, ok := bidderExts[openrtb_ext.PrebidExtKey]; ok {
+		var extPrebid openrtb_ext.ExtImpPrebid
+		if err := json.Unmarshal(extPrebidJSON, &extPrebid); err == nil && extPrebid.Bidder != nil {
+			for bidder, ext := range extPrebid.Bidder {
 				if ext == nil {
 					continue
 				}
-
 				bidderExts[bidder] = ext
 			}
 		}
@@ -794,6 +1000,7 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 
 	/* Process all the bidder exts in the request */
 	disabledBidders := []string{}
+	otherExtElements := 0
 	for bidder, ext := range bidderExts {
 		if isBidderToValidate(bidder) {
 			coreBidder := bidder
@@ -812,6 +1019,8 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 					return []error{fmt.Errorf("request.imp[%d].ext contains unknown bidder: %s. Did you forget an alias in request.ext.prebid.aliases?", impIndex, bidder)}
 				}
 			}
+		} else {
+			otherExtElements++
 		}
 	}
 
@@ -827,21 +1036,27 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 		imp.Ext = extJSON
 	}
 
-	// TODO #713 Fix this here
-	if len(bidderExts) < 1 {
+	if len(bidderExts)-otherExtElements == 0 {
 		errL = append(errL, fmt.Errorf("request.imp[%d].ext must contain at least one bidder", impIndex))
 	}
 
 	return errL
 }
 
+// isBidderToValidate determines if the bidder name in request.imp[].prebid should be validated.
 func isBidderToValidate(bidder string) bool {
-	// PrebidExtKey is a special case for the prebid config section and is not considered a bidder.
-
-	// FirstPartyDataContextExtKey is a special case for the first party data context section
-	// and is not considered a bidder.
-
-	return bidder != openrtb_ext.PrebidExtKey && bidder != openrtb_ext.FirstPartyDataContextExtKey
+	switch openrtb_ext.BidderName(bidder) {
+	case openrtb_ext.BidderReservedContext:
+		return false
+	case openrtb_ext.BidderReservedData:
+		return false
+	case openrtb_ext.BidderReservedPrebid:
+		return false
+	case openrtb_ext.BidderReservedSKAdN:
+		return false
+	default:
+		return true
+	}
 }
 
 func (deps *endpointDeps) parseBidExt(ext json.RawMessage) (*openrtb_ext.ExtRequest, error) {
@@ -856,18 +1071,23 @@ func (deps *endpointDeps) parseBidExt(ext json.RawMessage) (*openrtb_ext.ExtRequ
 }
 
 func (deps *endpointDeps) validateAliases(aliases map[string]string) error {
-	for thisAlias, coreBidder := range aliases {
-		if _, isCoreBidder := deps.bidderMap[coreBidder]; !isCoreBidder {
-			return fmt.Errorf("request.ext.prebid.aliases.%s refers to unknown bidder: %s", thisAlias, coreBidder)
+	for alias, coreBidder := range aliases {
+		if _, isCoreBidderDisabled := deps.disabledBidders[coreBidder]; isCoreBidderDisabled {
+			return fmt.Errorf("request.ext.prebid.aliases.%s refers to disabled bidder: %s", alias, coreBidder)
 		}
-		if thisAlias == coreBidder {
-			return fmt.Errorf("request.ext.prebid.aliases.%s defines a no-op alias. Choose a different alias, or remove this entry.", thisAlias)
+
+		if _, isCoreBidder := deps.bidderMap[coreBidder]; !isCoreBidder {
+			return fmt.Errorf("request.ext.prebid.aliases.%s refers to unknown bidder: %s", alias, coreBidder)
+		}
+
+		if alias == coreBidder {
+			return fmt.Errorf("request.ext.prebid.aliases.%s defines a no-op alias. Choose a different alias, or remove this entry.", alias)
 		}
 	}
 	return nil
 }
 
-func (deps *endpointDeps) validateSite(site *openrtb.Site) error {
+func (deps *endpointDeps) validateSite(site *openrtb2.Site) error {
 	if site == nil {
 		return nil
 	}
@@ -885,7 +1105,7 @@ func (deps *endpointDeps) validateSite(site *openrtb.Site) error {
 	return nil
 }
 
-func (deps *endpointDeps) validateApp(app *openrtb.App) error {
+func (deps *endpointDeps) validateApp(app *openrtb2.App) error {
 	if app == nil {
 		return nil
 	}
@@ -906,9 +1126,18 @@ func (deps *endpointDeps) validateApp(app *openrtb.App) error {
 	return nil
 }
 
-func validateUser(user *openrtb.User, aliases map[string]string) error {
-	// DigiTrust support
-	if user != nil && user.Ext != nil {
+func (deps *endpointDeps) validateUser(user *openrtb2.User, aliases map[string]string) error {
+	if user == nil {
+		return nil
+	}
+
+	// The following fields were previously uints in the OpenRTB library we use, but have
+	// since been changed to ints. We decided to maintain the non-negative check.
+	if user.Geo != nil && user.Geo.Accuracy < 0 {
+		return errors.New("request.user.geo.accuracy must be a positive number")
+	}
+
+	if user.Ext != nil {
 		// Creating ExtUser object to check if DigiTrust is valid
 		var userExt openrtb_ext.ExtUser
 		if err := json.Unmarshal(user.Ext, &userExt); err == nil {
@@ -922,7 +1151,7 @@ func validateUser(user *openrtb.User, aliases map[string]string) error {
 					return errors.New(`request.user.ext.prebid requires a "buyeruids" property with at least one ID defined. If none exist, then request.user.ext.prebid should not be defined.`)
 				}
 				for bidderName := range userExt.Prebid.BuyerUIDs {
-					if _, ok := openrtb_ext.BidderMap[bidderName]; !ok {
+					if _, ok := deps.bidderMap[bidderName]; !ok {
 						if _, ok := aliases[bidderName]; !ok {
 							return fmt.Errorf("request.user.ext.%s is neither a known bidder name nor an alias in request.ext.prebid.aliases.", bidderName)
 						}
@@ -960,7 +1189,6 @@ func validateUser(user *openrtb.User, aliases map[string]string) error {
 				}
 			}
 		} else {
-			// Return error.
 			return fmt.Errorf("request.user.ext object is not valid: %v", err)
 		}
 	}
@@ -968,7 +1196,7 @@ func validateUser(user *openrtb.User, aliases map[string]string) error {
 	return nil
 }
 
-func validateRegs(regs *openrtb.Regs) error {
+func validateRegs(regs *openrtb2.Regs) error {
 	if regs != nil && len(regs.Ext) > 0 {
 		var regsExt openrtb_ext.ExtRegs
 		if err := json.Unmarshal(regs.Ext, &regsExt); err != nil {
@@ -981,7 +1209,30 @@ func validateRegs(regs *openrtb.Regs) error {
 	return nil
 }
 
-func sanitizeRequest(r *openrtb.BidRequest, ipValidator iputil.IPValidator) {
+func validateDevice(device *openrtb2.Device) error {
+	if device == nil {
+		return nil
+	}
+
+	// The following fields were previously uints in the OpenRTB library we use, but have
+	// since been changed to ints. We decided to maintain the non-negative check.
+	if device.W < 0 {
+		return errors.New("request.device.w must be a positive number")
+	}
+	if device.H < 0 {
+		return errors.New("request.device.h must be a positive number")
+	}
+	if device.PPI < 0 {
+		return errors.New("request.device.ppi must be a positive number")
+	}
+	if device.Geo != nil && device.Geo.Accuracy < 0 {
+		return errors.New("request.device.geo.accuracy must be a positive number")
+	}
+
+	return nil
+}
+
+func sanitizeRequest(r *openrtb2.BidRequest, ipValidator iputil.IPValidator) {
 	if r.Device != nil {
 		if ip, ver := iputil.ParseIP(r.Device.IP); ip == nil || ver != iputil.IPv4 || !ipValidator.IsValid(ip, ver) {
 			r.Device.IP = ""
@@ -998,7 +1249,7 @@ func sanitizeRequest(r *openrtb.BidRequest, ipValidator iputil.IPValidator) {
 // OpenRTB properties from the headers and other implicit info.
 //
 // This function _should not_ override any fields which were defined explicitly by the caller in the request.
-func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
+func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, bidReq *openrtb2.BidRequest) {
 	sanitizeRequest(bidReq, deps.privateNetworkIPValidator)
 
 	setDeviceImplicitly(httpReq, bidReq, deps.privateNetworkIPValidator)
@@ -1013,7 +1264,7 @@ func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, bidReq *ope
 }
 
 // setDeviceImplicitly uses implicit info from httpReq to populate bidReq.Device
-func setDeviceImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest, ipValidtor iputil.IPValidator) {
+func setDeviceImplicitly(httpReq *http.Request, bidReq *openrtb2.BidRequest, ipValidtor iputil.IPValidator) {
 	setIPImplicitly(httpReq, bidReq, ipValidtor)
 	setUAImplicitly(httpReq, bidReq)
 	setDoNotTrackImplicitly(httpReq, bidReq)
@@ -1022,7 +1273,7 @@ func setDeviceImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest, ipVa
 
 // setAuctionTypeImplicitly sets the auction type to 1 if it wasn't on the request,
 // since header bidding is generally a first-price auction.
-func setAuctionTypeImplicitly(bidReq *openrtb.BidRequest) {
+func setAuctionTypeImplicitly(bidReq *openrtb2.BidRequest) {
 	if bidReq.AT == 0 {
 		bidReq.AT = 1
 	}
@@ -1030,13 +1281,13 @@ func setAuctionTypeImplicitly(bidReq *openrtb.BidRequest) {
 }
 
 // setSiteImplicitly uses implicit info from httpReq to populate bidReq.Site
-func setSiteImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
+func setSiteImplicitly(httpReq *http.Request, bidReq *openrtb2.BidRequest) {
 	if bidReq.Site == nil || bidReq.Site.Page == "" || bidReq.Site.Domain == "" {
 		referrerCandidate := httpReq.Referer()
 		if parsedUrl, err := url.Parse(referrerCandidate); err == nil {
 			if domain, err := publicsuffix.EffectiveTLDPlusOne(parsedUrl.Host); err == nil {
 				if bidReq.Site == nil {
-					bidReq.Site = &openrtb.Site{}
+					bidReq.Site = &openrtb2.Site{}
 				}
 				if bidReq.Site.Domain == "" {
 					bidReq.Site.Domain = domain
@@ -1055,7 +1306,7 @@ func setSiteImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 	}
 }
 
-func setImpsImplicitly(httpReq *http.Request, imps []openrtb.Imp) {
+func setImpsImplicitly(httpReq *http.Request, imps []openrtb2.Imp) {
 	secure := int8(1)
 	for i := 0; i < len(imps); i++ {
 		if imps[i].Secure == nil && httputil.IsSecure(httpReq) {
@@ -1215,18 +1466,18 @@ func getStoredRequestId(data []byte) (string, bool, error) {
 }
 
 // setIPImplicitly sets the IP address on bidReq, if it's not explicitly defined and we can figure it out.
-func setIPImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest, ipValidator iputil.IPValidator) {
+func setIPImplicitly(httpReq *http.Request, bidReq *openrtb2.BidRequest, ipValidator iputil.IPValidator) {
 	if bidReq.Device == nil || (bidReq.Device.IP == "" && bidReq.Device.IPv6 == "") {
 		if ip, ver := httputil.FindIP(httpReq, ipValidator); ip != nil {
 			switch ver {
 			case iputil.IPv4:
 				if bidReq.Device == nil {
-					bidReq.Device = &openrtb.Device{}
+					bidReq.Device = &openrtb2.Device{}
 				}
 				bidReq.Device.IP = ip.String()
 			case iputil.IPv6:
 				if bidReq.Device == nil {
-					bidReq.Device = &openrtb.Device{}
+					bidReq.Device = &openrtb2.Device{}
 				}
 				bidReq.Device.IPv6 = ip.String()
 			}
@@ -1235,23 +1486,23 @@ func setIPImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest, ipValida
 }
 
 // setUAImplicitly sets the User Agent on bidReq, if it's not explicitly defined and it's defined on the request.
-func setUAImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
+func setUAImplicitly(httpReq *http.Request, bidReq *openrtb2.BidRequest) {
 	if bidReq.Device == nil || bidReq.Device.UA == "" {
 		if ua := httpReq.UserAgent(); ua != "" {
 			if bidReq.Device == nil {
-				bidReq.Device = &openrtb.Device{}
+				bidReq.Device = &openrtb2.Device{}
 			}
 			bidReq.Device.UA = ua
 		}
 	}
 }
 
-func setDoNotTrackImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
+func setDoNotTrackImplicitly(httpReq *http.Request, bidReq *openrtb2.BidRequest) {
 	if bidReq.Device == nil || bidReq.Device.DNT == nil {
 		dnt := httpReq.Header.Get(dntKey)
 		if dnt == "0" || dnt == "1" {
 			if bidReq.Device == nil {
-				bidReq.Device = &openrtb.Device{}
+				bidReq.Device = &openrtb2.Device{}
 			}
 
 			switch dnt {
@@ -1273,31 +1524,17 @@ func parseUserID(cfg *config.Configuration, httpReq *http.Request) (string, bool
 	}
 }
 
-// getBrowserName checks if a request comes from a Safari browser.
-// Returns pbsmetrics.BrowserSafari or pbsmetrics.BrowserOther
-// depending on the value of the "User-Agent" header of our http.Request
-func getBrowserName(r *http.Request) pbsmetrics.Browser {
-	var browser pbsmetrics.Browser = pbsmetrics.BrowserOther
-	if ua := user_agent.New(r.Header.Get("User-Agent")); ua != nil {
-		name, _ := ua.Browser()
-		if name == "Safari" {
-			browser = pbsmetrics.BrowserSafari
-		}
-	}
-	return browser
-}
-
 // Write(return) errors to the client, if any. Returns true if errors were found.
-func writeError(errs []error, w http.ResponseWriter, labels *pbsmetrics.Labels) bool {
+func writeError(errs []error, w http.ResponseWriter, labels *metrics.Labels) bool {
 	var rc bool = false
 	if len(errs) > 0 {
 		httpStatus := http.StatusBadRequest
-		metricsStatus := pbsmetrics.RequestStatusBadInput
+		metricsStatus := metrics.RequestStatusBadInput
 		for _, err := range errs {
 			erVal := errortypes.ReadCode(err)
 			if erVal == errortypes.BlacklistedAppErrorCode || erVal == errortypes.BlacklistedAcctErrorCode {
 				httpStatus = http.StatusServiceUnavailable
-				metricsStatus = pbsmetrics.RequestStatusBlacklisted
+				metricsStatus = metrics.RequestStatusBlacklisted
 				break
 			}
 		}
@@ -1312,7 +1549,7 @@ func writeError(errs []error, w http.ResponseWriter, labels *pbsmetrics.Labels) 
 }
 
 // Returns the account ID for the request
-func getAccountID(pub *openrtb.Publisher) string {
+func getAccountID(pub *openrtb2.Publisher) string {
 	if pub != nil {
 		if pub.Ext != nil {
 			var pubExt openrtb_ext.ExtPublisher
@@ -1325,5 +1562,5 @@ func getAccountID(pub *openrtb.Publisher) string {
 			return pub.ID
 		}
 	}
-	return pbsmetrics.PublisherUnknown
+	return metrics.PublisherUnknown
 }

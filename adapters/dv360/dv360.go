@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/prebid/prebid-server/config"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
+	openrtb "github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -34,45 +35,49 @@ type dv360DeviceExt struct {
 	IFAType     string `json:"ifa_type"`
 }
 
-// DV360Adapter ...
-type DV360Adapter struct {
+type adapter struct {
 	http             *adapters.HTTPAdapter
-	URI              string
+	endpoint         string
 	SupportedRegions map[Region]string
 }
 
-// Name is used for cookies and such
-func (adapter *DV360Adapter) Name() string {
+func (adapter *adapter) Name() string {
 	return "dv360"
 }
 
-// SkipNoCookies ...
-func (adapter *DV360Adapter) SkipNoCookies() bool {
+func (adapter *adapter) SkipNoCookies() bool {
 	return false
 }
 
-// Call is legacy, and added only to support DV360 interface
-func (adapter *DV360Adapter) Call(_ context.Context, _ *pbs.PBSRequest, _ *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
+func (adapter *adapter) Call(_ context.Context, _ *pbs.PBSRequest, _ *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	return pbs.PBSBidSlice{}, nil
 }
 
-// NewDV360Adapter ...
-func NewDV360Adapter(config *adapters.HTTPAdapterConfig, uri string) *DV360Adapter {
+func Builder(_ openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &adapter{
+		endpoint: config.Endpoint,
+		SupportedRegions: map[Region]string{
+			USEast: config.Endpoint,
+		},
+	}
+	return bidder, nil
+}
+
+func NewDV360LegacyAdapter(config *adapters.HTTPAdapterConfig, uri string) *adapter {
 	return NewDV360Bidder(adapters.NewHTTPAdapter(config).Client, uri)
 }
 
-// NewDV360Bidder ...
-func NewDV360Bidder(client *http.Client, uri string) *DV360Adapter {
-	return &DV360Adapter{
-		http: &adapters.HTTPAdapter{Client: client},
-		URI:  uri,
+func NewDV360Bidder(client *http.Client, uri string) *adapter {
+	return &adapter{
+		http:     &adapters.HTTPAdapter{Client: client},
+		endpoint: uri,
 		SupportedRegions: map[Region]string{
 			USEast: uri,
 		},
 	}
 }
 
-func (adapter *DV360Adapter) MakeRequests(request *openrtb.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (adapter *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	// number of requests
 	numRequests := len(request.Imp)
 
@@ -91,9 +96,12 @@ func (adapter *DV360Adapter) MakeRequests(request *openrtb.BidRequest, requestIn
 	requestImpCopy := request.Imp
 
 	// clone the request device
-	requestDeviceCopy := request.Device
-	if requestDeviceCopy == nil {
-		requestDeviceCopy = &openrtb.Device{}
+	var requestDeviceCopy openrtb.Device
+
+	if request.Device != nil {
+		requestDeviceCopy = *request.Device
+	} else {
+		requestDeviceCopy = openrtb.Device{}
 	}
 
 	var err error
@@ -157,7 +165,7 @@ func (adapter *DV360Adapter) MakeRequests(request *openrtb.BidRequest, requestIn
 			errs = append(errs, err)
 		}
 
-		request.Device = requestDeviceCopy
+		request.Device = &requestDeviceCopy
 
 		rewarded := 0
 		if dv360Ext.Reward == 1 {
@@ -243,7 +251,7 @@ func (adapter *DV360Adapter) MakeRequests(request *openrtb.BidRequest, requestIn
 		}
 
 		// assign the default uri
-		uri := adapter.URI
+		uri := adapter.endpoint
 
 		// assign adapter region based uri if it exists
 		if endpoint, ok := adapter.SupportedRegions[Region(dv360Ext.Region)]; ok {
@@ -277,7 +285,7 @@ func (adapter *DV360Adapter) MakeRequests(request *openrtb.BidRequest, requestIn
 	return requestData, errs
 }
 
-func (adapter *DV360Adapter) MakeBids(_ *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (adapter *adapter) MakeBids(_ *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}

@@ -10,18 +10,20 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/gdpr"
+	"github.com/prebid/prebid-server/metrics"
+	metricsConf "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
-	"github.com/prebid/prebid-server/pbsmetrics"
-	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	gdprPolicy "github.com/prebid/prebid-server/privacy/gdpr"
 	"github.com/prebid/prebid-server/usersync/usersyncers"
 	"github.com/spf13/viper"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
@@ -344,16 +346,17 @@ func TestCacheVideoOnly(t *testing.T) {
 	ctx := context.TODO()
 	v := viper.New()
 	config.SetupViper(v, "")
+	v.Set("gdpr.default_value", "0")
 	cfg, err := config.New(v)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 	syncers := usersyncers.NewSyncerMap(cfg)
-	gdprPerms := gdpr.NewPermissions(nil, config.GDPR{
+	gdprPerms := gdpr.NewPermissions(context.Background(), config.GDPR{
 		HostVendorID: 0,
 	}, nil, nil)
 	prebid_cache_client.InitPrebidCache(server.URL)
-	var labels = &pbsmetrics.Labels{}
+	var labels = &metrics.Labels{}
 	if err := cacheVideoOnly(bids, ctx, &auction{cfg: cfg, syncers: syncers, gdprPerms: gdprPerms, metricsEngine: &metricsConf.DummyMetricsEngine{}}, labels); err != nil {
 		t.Errorf("Prebid cache failed: %v \n", err)
 		return
@@ -376,56 +379,84 @@ func TestCacheVideoOnly(t *testing.T) {
 }
 
 func TestShouldUsersync(t *testing.T) {
-	doTest := func(gdprApplies string, consent string, allowBidderSync bool, allowHostCookies bool, expectAllow bool) {
-		t.Helper()
+	tests := []struct {
+		description      string
+		signal           string
+		allowHostCookies bool
+		allowBidderSync  bool
+		wantAllow        bool
+	}{
+		{
+			description:      "Don't sync - GDPR on, host cookies disallows and bidder sync disallows",
+			signal:           "1",
+			allowHostCookies: false,
+			allowBidderSync:  false,
+			wantAllow:        false,
+		},
+		{
+			description:      "Don't sync - GDPR on, host cookies disallows and bidder sync allows",
+			signal:           "1",
+			allowHostCookies: false,
+			allowBidderSync:  true,
+			wantAllow:        false,
+		},
+		{
+			description:      "Don't sync - GDPR on, host cookies allows and bidder sync disallows",
+			signal:           "1",
+			allowHostCookies: true,
+			allowBidderSync:  false,
+			wantAllow:        false,
+		},
+		{
+			description:      "Sync - GDPR on, host cookies allows and bidder sync allows",
+			signal:           "1",
+			allowHostCookies: true,
+			allowBidderSync:  true,
+			wantAllow:        true,
+		},
+		{
+			description:      "Don't sync - invalid GDPR signal, host cookies disallows and bidder sync disallows",
+			signal:           "2",
+			allowHostCookies: false,
+			allowBidderSync:  false,
+			wantAllow:        false,
+		},
+	}
+
+	for _, tt := range tests {
 		deps := auction{
-			cfg:     nil,
-			syncers: nil,
 			gdprPerms: &auctionMockPermissions{
-				allowBidderSync:  allowBidderSync,
-				allowHostCookies: allowHostCookies,
+				allowBidderSync:  tt.allowBidderSync,
+				allowHostCookies: tt.allowHostCookies,
 			},
-			metricsEngine: nil,
 		}
 		gdprPrivacyPolicy := gdprPolicy.Policy{
-			Signal:  gdprApplies,
-			Consent: consent,
+			Signal: tt.signal,
 		}
 
-		allowSyncs := deps.shouldUsersync(context.Background(), openrtb_ext.BidderAdform, gdprPrivacyPolicy)
-		if allowSyncs != expectAllow {
-			t.Errorf("Expected syncs: %t, allowed syncs: %t", expectAllow, allowSyncs)
-		}
+		allow := deps.shouldUsersync(context.Background(), openrtb_ext.BidderAdform, gdprPrivacyPolicy)
+		assert.Equal(t, tt.wantAllow, allow, tt.description)
 	}
-	doTest("0", "", false, false, true)
-	doTest("1", "", true, true, false)
-	doTest("1", "a", true, false, false)
-	doTest("1", "a", false, true, false)
-	doTest("1", "a", true, true, true)
 }
 
 type auctionMockPermissions struct {
 	allowBidderSync  bool
 	allowHostCookies bool
-	allowPI          bool
-	allowGeo         bool
-	allowID          bool
+	allowBidRequest  bool
+	passGeo          bool
+	passID           bool
 }
 
-func (m *auctionMockPermissions) HostCookiesAllowed(ctx context.Context, consent string) (bool, error) {
+func (m *auctionMockPermissions) HostCookiesAllowed(ctx context.Context, gdprSignal gdpr.Signal, consent string) (bool, error) {
 	return m.allowHostCookies, nil
 }
 
-func (m *auctionMockPermissions) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
+func (m *auctionMockPermissions) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, gdprSignal gdpr.Signal, consent string) (bool, error) {
 	return m.allowBidderSync, nil
 }
 
-func (m *auctionMockPermissions) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, bool, bool, error) {
-	return m.allowPI, m.allowGeo, m.allowID, nil
-}
-
-func (m *auctionMockPermissions) AMPException() bool {
-	return false
+func (m *auctionMockPermissions) AuctionActivitiesAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string, weakVendorEnforcement bool) (allowBidRequest bool, passGeo bool, passID bool, err error) {
+	return m.allowBidRequest, m.passGeo, m.passID, nil
 }
 
 func TestBidSizeValidate(t *testing.T) {
@@ -488,7 +519,7 @@ func TestBidSizeValidate(t *testing.T) {
 		AdUnits: []pbs.PBSAdUnit{
 			{
 				BidID: "test_bidid1",
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 350,
 						H: 250,
@@ -505,7 +536,7 @@ func TestBidSizeValidate(t *testing.T) {
 			},
 			{
 				BidID: "test_bidid2",
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 100,
 						H: 100,
@@ -518,7 +549,7 @@ func TestBidSizeValidate(t *testing.T) {
 			},
 			{
 				BidID: "test_bidid3",
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 200,
 						H: 200,
@@ -531,7 +562,7 @@ func TestBidSizeValidate(t *testing.T) {
 			},
 			{
 				BidID: "test_bidid_video",
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 400,
 						H: 400,
@@ -544,7 +575,7 @@ func TestBidSizeValidate(t *testing.T) {
 			},
 			{
 				BidID: "test_bidid3",
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 150,
 						H: 150,
@@ -557,7 +588,7 @@ func TestBidSizeValidate(t *testing.T) {
 			},
 			{
 				BidID: "test_bidid_y",
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 150,
 						H: 150,
@@ -615,9 +646,9 @@ func TestPanicRecovery(t *testing.T) {
 		},
 		metricsEngine: &metricsConf.DummyMetricsEngine{},
 	}
-	panicker := func(bidder *pbs.PBSBidder, blables pbsmetrics.AdapterLabels) {
+	panicker := func(bidder *pbs.PBSBidder, blables metrics.AdapterLabels) {
 		panic("panic!")
 	}
 	recovered := dummy.recoverSafely(panicker)
-	recovered(nil, pbsmetrics.AdapterLabels{})
+	recovered(nil, metrics.AdapterLabels{})
 }

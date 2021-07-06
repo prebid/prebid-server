@@ -3,50 +3,34 @@ package unruly
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/mxmCherry/openrtb"
+	"net/http"
+
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"net/http"
 )
 
 type UnrulyAdapter struct {
-	http *adapters.HTTPAdapter
-	URI  string
+	URI string
 }
 
-func (a *UnrulyAdapter) Name() string {
-	return "unruly"
-}
-
-func (a *UnrulyAdapter) SkipNoCookies() bool {
-	return false
-}
-
-func GetClient(config *adapters.HTTPAdapterConfig) *http.Client {
-	return adapters.NewHTTPAdapter(config).Client
-}
-
-func NewUnrulyAdapter(config *adapters.HTTPAdapterConfig, endpoint string) *UnrulyAdapter {
-	return NewUnrulyBidder(GetClient(config), endpoint)
-}
-
-func NewUnrulyBidder(client *http.Client, endpoint string) *UnrulyAdapter {
-	clientAdapter := &adapters.HTTPAdapter{Client: client}
-
-	return &UnrulyAdapter{
-		http: clientAdapter,
-		URI:  endpoint,
+// Builder builds a new instance of the Unruly adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &UnrulyAdapter{
+		URI: config.Endpoint,
 	}
+	return bidder, nil
 }
 
-func (a *UnrulyAdapter) ReplaceImp(imp openrtb.Imp, request *openrtb.BidRequest) *openrtb.BidRequest {
+func (a *UnrulyAdapter) ReplaceImp(imp openrtb2.Imp, request *openrtb2.BidRequest) *openrtb2.BidRequest {
 	reqCopy := *request
-	reqCopy.Imp = append(make([]openrtb.Imp, 0, 1), imp)
+	reqCopy.Imp = append(make([]openrtb2.Imp, 0, 1), imp)
 	return &reqCopy
 }
 
-func (a *UnrulyAdapter) BuildRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
+func (a *UnrulyAdapter) BuildRequest(request *openrtb2.BidRequest) (*adapters.RequestData, []error) {
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
 		return nil, []error{err}
@@ -68,7 +52,7 @@ func AddHeadersToRequest() http.Header {
 	return headers
 }
 
-func (a *UnrulyAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *UnrulyAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var adapterRequests []*adapters.RequestData
 	for _, imp := range request.Imp {
@@ -87,7 +71,7 @@ func (a *UnrulyAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 	return adapterRequests, errs
 }
 
-func getMediaTypeForImpWithId(impID string, imps []openrtb.Imp) (openrtb_ext.BidType, error) {
+func getMediaTypeForImpWithId(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
 	for _, imp := range imps {
 		if imp.ID == impID {
 			return openrtb_ext.BidTypeVideo, nil
@@ -107,9 +91,9 @@ func CheckResponse(response *adapters.ResponseData) error {
 	return nil
 }
 
-func convertToAdapterBidResponse(response *adapters.ResponseData, internalRequest *openrtb.BidRequest) (*adapters.BidderResponse, []error) {
+func convertToAdapterBidResponse(response *adapters.ResponseData, internalRequest *openrtb2.BidRequest) (*adapters.BidderResponse, []error) {
 	var errs []error
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
@@ -131,7 +115,7 @@ func convertToAdapterBidResponse(response *adapters.ResponseData, internalReques
 	return bidResponse, errs
 }
 
-func convertBidderNameInExt(imp *openrtb.Imp) (*openrtb.Imp, error) {
+func convertBidderNameInExt(imp *openrtb2.Imp) (*openrtb2.Imp, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, err
@@ -152,7 +136,7 @@ func convertBidderNameInExt(imp *openrtb.Imp) (*openrtb.Imp, error) {
 	return imp, nil
 }
 
-func (a *UnrulyAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *UnrulyAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if err := CheckResponse(response); err != nil {
 		return nil, []error{err}
 	}

@@ -51,7 +51,12 @@
                 "request": "{}"
               },
               "ext": {
-                "adtype": 5
+                "adtype": 5,
+                "bidder": {
+                  "token": "123"
+                },
+                "is_prebid": true,
+                "prebid": null
               }
             }
           ]

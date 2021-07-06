@@ -76,7 +76,12 @@
                 }
               },
               "ext": {
-                "adtype": 7
+                "adtype": 7,
+                "prebid": null,
+                "is_prebid": true,
+                "bidder": {
+                  "token": "123"
+                }
               }
             }
           ]

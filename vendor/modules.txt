@@ -40,7 +40,7 @@ github.com/erikstmartin/go-testdb
 github.com/evanphx/json-patch
 # github.com/felixge/httpsnoop v1.0.1
 github.com/felixge/httpsnoop
-# github.com/fsnotify/fsnotify v1.4.7
+# github.com/fsnotify/fsnotify v1.4.9
 github.com/fsnotify/fsnotify
 # github.com/gofrs/uuid v3.2.0+incompatible
 ## explicit
@@ -79,14 +79,13 @@ github.com/hashicorp/hcl/json/token
 github.com/influxdata/influxdb/client
 github.com/influxdata/influxdb/models
 github.com/influxdata/influxdb/pkg/escape
+github.com/influxdata/influxdb/pkg/testing/assert
 # github.com/jinzhu/copier v0.2.8
 ## explicit
 github.com/jinzhu/copier
 # github.com/julienschmidt/httprouter v1.3.0
 ## explicit
 github.com/julienschmidt/httprouter
-# github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88
-## explicit
 # github.com/konsorten/go-windows-terminal-sequences v1.0.3
 github.com/konsorten/go-windows-terminal-sequences
 # github.com/lib/pq v1.0.0
@@ -102,18 +101,20 @@ github.com/magiconair/properties/assert
 # github.com/matttproud/golang_protobuf_extensions v1.0.1
 ## explicit
 github.com/matttproud/golang_protobuf_extensions/pbutil
+# github.com/mitchellh/copystructure v1.1.2
+## explicit
+github.com/mitchellh/copystructure
 # github.com/mitchellh/mapstructure v1.0.0
 ## explicit
 github.com/mitchellh/mapstructure
-# github.com/mssola/user_agent v0.4.1
+# github.com/mitchellh/reflectwalk v1.0.1
+github.com/mitchellh/reflectwalk
+# github.com/mxmCherry/openrtb/v15 v15.0.0
 ## explicit
-github.com/mssola/user_agent
-# github.com/mxmCherry/openrtb v11.0.0+incompatible
-## explicit
-github.com/mxmCherry/openrtb
-github.com/mxmCherry/openrtb/native
-github.com/mxmCherry/openrtb/native/request
-github.com/mxmCherry/openrtb/native/response
+github.com/mxmCherry/openrtb/v15/native1
+github.com/mxmCherry/openrtb/v15/native1/request
+github.com/mxmCherry/openrtb/v15/native1/response
+github.com/mxmCherry/openrtb/v15/openrtb2
 # github.com/newrelic/go-agent/v3 v3.0.0
 ## explicit
 github.com/newrelic/go-agent/v3/internal
@@ -129,16 +130,12 @@ github.com/newrelic/go-agent/v3/integrations/nrhttprouter
 # github.com/newrelic/go-agent/v3/integrations/nrlogrus v1.0.0
 ## explicit
 github.com/newrelic/go-agent/v3/integrations/nrlogrus
-# github.com/onsi/ginkgo v1.10.1
-## explicit
-# github.com/onsi/gomega v1.7.0
-## explicit
 # github.com/pelletier/go-toml v1.2.0
 ## explicit
 github.com/pelletier/go-toml
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
-# github.com/prebid/go-gdpr v0.8.3
+# github.com/prebid/go-gdpr v0.9.0
 ## explicit
 github.com/prebid/go-gdpr/api
 github.com/prebid/go-gdpr/bitutils
@@ -287,7 +284,7 @@ go.opentelemetry.io/proto/otlp/common/v1
 go.opentelemetry.io/proto/otlp/metrics/v1
 go.opentelemetry.io/proto/otlp/resource/v1
 go.opentelemetry.io/proto/otlp/trace/v1
-# golang.org/x/net v0.0.0-20200822124328-c89045814202
+# golang.org/x/net v0.0.0-20201202161906-c7110b5ffcbb
 ## explicit
 golang.org/x/net/context/ctxhttp
 golang.org/x/net/http/httpguts
@@ -297,13 +294,15 @@ golang.org/x/net/idna
 golang.org/x/net/internal/timeseries
 golang.org/x/net/publicsuffix
 golang.org/x/net/trace
-# golang.org/x/sys v0.0.0-20200323222414-85ca7c5b95cd
+# golang.org/x/sys v0.0.0-20210112080510-489259a85091
+golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
-# golang.org/x/text v0.3.0
+# golang.org/x/text v0.3.6
 ## explicit
 golang.org/x/text/currency
-golang.org/x/text/internal
 golang.org/x/text/internal/format
+golang.org/x/text/internal/language
+golang.org/x/text/internal/language/compact
 golang.org/x/text/internal/tag
 golang.org/x/text/language
 golang.org/x/text/secure/bidirule
@@ -395,7 +394,7 @@ google.golang.org/protobuf/types/known/durationpb
 google.golang.org/protobuf/types/known/fieldmaskpb
 google.golang.org/protobuf/types/known/timestamppb
 google.golang.org/protobuf/types/known/wrapperspb
-# gopkg.in/yaml.v2 v2.2.3
+# gopkg.in/yaml.v2 v2.4.0
 ## explicit
 gopkg.in/yaml.v2
 # gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c

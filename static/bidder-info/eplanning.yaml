@@ -1,5 +1,6 @@
 maintainer:
   email: "producto@e-planning.net"
+gvlVendorID: 90
 capabilities:
   app:
     mediaTypes:

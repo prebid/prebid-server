@@ -52,7 +52,12 @@
           "imp": [
             {
               "ext": {
-                "adtype": 7
+                "adtype": 7,
+                "bidder": {
+                  "token": "123"
+                },
+                "is_prebid": true,
+                "prebid": null
               },
               "id": "test-imp-id",
               "video": {

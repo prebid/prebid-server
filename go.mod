@@ -1,6 +1,6 @@
 module github.com/prebid/prebid-server
 
-go 1.14
+go 1.16
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.3.0
@@ -19,24 +19,21 @@ require (
 	github.com/gofrs/uuid v3.2.0+incompatible
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/influxdata/influxdb v1.6.1 // indirect
+	github.com/influxdata/influxdb v1.6.1
 	github.com/jinzhu/copier v0.2.8
 	github.com/julienschmidt/httprouter v1.3.0
-	github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88 // indirect
 	github.com/lib/pq v1.0.0
 	github.com/magiconair/properties v1.8.0
 	github.com/mattn/go-colorable v0.1.2 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
+	github.com/mitchellh/copystructure v1.1.2
 	github.com/mitchellh/mapstructure v1.0.0 // indirect
-	github.com/mssola/user_agent v0.4.1
-	github.com/mxmCherry/openrtb v11.0.0+incompatible
+	github.com/mxmCherry/openrtb/v15 v15.0.0
 	github.com/newrelic/go-agent/v3 v3.0.0
 	github.com/newrelic/go-agent/v3/integrations/nrhttprouter v1.0.0
 	github.com/newrelic/go-agent/v3/integrations/nrlogrus v1.0.0
-	github.com/onsi/ginkgo v1.10.1 // indirect
-	github.com/onsi/gomega v1.7.0 // indirect
 	github.com/pelletier/go-toml v1.2.0 // indirect
-	github.com/prebid/go-gdpr v0.8.3
+	github.com/prebid/go-gdpr v0.9.0
 	github.com/prometheus/client_golang v0.0.0-20180623155954-77e8f2ddcfed
 	github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4
 	github.com/prometheus/common v0.0.0-20180801064454-c7de2306084e // indirect
@@ -67,7 +64,7 @@ require (
 	go.opentelemetry.io/otel/sdk v0.20.0
 	go.opentelemetry.io/otel/sdk/metric v0.20.0
 	go.opentelemetry.io/otel/trace v0.20.0
-	golang.org/x/net v0.0.0-20200822124328-c89045814202
-	golang.org/x/text v0.3.0
-	gopkg.in/yaml.v2 v2.2.3
+	golang.org/x/net v0.0.0-20201202161906-c7110b5ffcbb
+	golang.org/x/text v0.3.6
+	gopkg.in/yaml.v2 v2.4.0
 )

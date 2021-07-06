@@ -27,7 +27,7 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "http://mfx-us-east.mobilefuse.com/openrtb?pub_id=2000",
+                "uri": "http://mfx.mobilefuse.com/openrtb?pub_id=2000",
                 "body": {
                     "id": "test-request-id",
                     "imp": [

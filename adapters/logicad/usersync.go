@@ -8,5 +8,5 @@ import (
 )
 
 func NewLogicadSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("logicad", 0, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("logicad", temp, adapters.SyncTypeRedirect)
 }

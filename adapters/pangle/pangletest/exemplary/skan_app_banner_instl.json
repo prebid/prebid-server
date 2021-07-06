@@ -73,6 +73,11 @@
               "instl": 1,
               "ext": {
                 "adtype": 2,
+                "bidder": {
+                  "token": "123"
+                },
+                "is_prebid": true,
+                "prebid": null,
                 "skadn": {
                   "skadnetids": [
                     "22mmun2rn5.skadnetwork"

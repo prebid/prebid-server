@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/prebid/prebid-server/config"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/cache/skanidlist"
 	"github.com/prebid/prebid-server/errortypes"
@@ -41,40 +42,44 @@ type taurusxImpExt struct {
 	SKADN *openrtb_ext.SKADN `json:"skadn,omitempty"`
 }
 
-// TaurusXAdapter ...
-type TaurusXAdapter struct {
+type adapter struct {
 	http             *adapters.HTTPAdapter
-	URI              string
+	endpoint         string
 	SupportedRegions map[Region]string
 }
 
-// Name is used for cookies and such
-func (adapter *TaurusXAdapter) Name() string {
+func (adapter *adapter) Name() string {
 	return "taurusx"
 }
 
-// SkipNoCookies ...
-func (adapter *TaurusXAdapter) SkipNoCookies() bool {
+func (adapter *adapter) SkipNoCookies() bool {
 	return false
 }
 
-// Call is legacy, and added only to support TaurusXAdapter interface
-func (adapter *TaurusXAdapter) Call(_ context.Context, _ *pbs.PBSRequest, _ *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
+func (adapter *adapter) Call(_ context.Context, _ *pbs.PBSRequest, _ *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	return pbs.PBSBidSlice{}, nil
 }
 
-// NewTaurusXAdapter ...
-func NewTaurusXAdapter(config *adapters.HTTPAdapterConfig, uri, useast, jp, sg string) *TaurusXAdapter {
+func Builder(_ openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &adapter{
+		endpoint: config.Endpoint,
+		SupportedRegions: map[Region]string{
+			USEast: config.XAPI.EndpointUSEast,
+			JP:     config.XAPI.EndpointJP,
+			SG:     config.XAPI.EndpointSG,
+		},
+	}
+	return bidder, nil
+}
+
+func NewTaurusXLegacyAdapter(config *adapters.HTTPAdapterConfig, uri, useast, jp, sg string) *adapter {
 	return NewTaurusXBidder(adapters.NewHTTPAdapter(config).Client, uri, useast, jp, sg)
 }
 
-// NewTaurusXBidder ...
-func NewTaurusXBidder(client *http.Client, uri, useast, jp, sg string) *TaurusXAdapter {
-	adapter := &adapters.HTTPAdapter{Client: client}
-
-	return &TaurusXAdapter{
-		http: adapter,
-		URI:  uri,
+func NewTaurusXBidder(client *http.Client, uri, useast, jp, sg string) *adapter {
+	return &adapter{
+		http:     &adapters.HTTPAdapter{Client: client},
+		endpoint: uri,
 		SupportedRegions: map[Region]string{
 			USEast: useast,
 			JP:     jp,
@@ -84,7 +89,7 @@ func NewTaurusXBidder(client *http.Client, uri, useast, jp, sg string) *TaurusXA
 }
 
 // MakeRequests ...
-func (adapter *TaurusXAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	numRequests := len(request.Imp)
 
 	requestData := make([]*adapters.RequestData, 0, numRequests)
@@ -129,10 +134,16 @@ func (adapter *TaurusXAdapter) MakeRequests(request *openrtb.BidRequest, _ *adap
 			Rewarded: taurusxExt.Reward,
 		}
 
-		thisImp.Video.Ext, err = json.Marshal(&impVideoExt)
-		if err != nil {
-			errs = append(errs, err)
-			continue
+		if thisImp.Video != nil {
+			videoCopy := *thisImp.Video
+
+			videoCopy.Ext, err = json.Marshal(&impVideoExt)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+
+			thisImp.Video = &videoCopy
 		}
 
 		if thisImp.Banner != nil {
@@ -174,7 +185,7 @@ func (adapter *TaurusXAdapter) MakeRequests(request *openrtb.BidRequest, _ *adap
 		}
 
 		// reinit the values in the request object
-		request.Imp = []openrtb.Imp{thisImp}
+		request.Imp = []openrtb2.Imp{thisImp}
 
 		// json marshal the request
 		reqJSON, err := json.Marshal(request)
@@ -184,7 +195,7 @@ func (adapter *TaurusXAdapter) MakeRequests(request *openrtb.BidRequest, _ *adap
 		}
 
 		// assign the default uri
-		uri := adapter.URI
+		uri := adapter.endpoint
 
 		// assign a region based uri if it exists
 		if endpoint, ok := adapter.SupportedRegions[Region(taurusxExt.Region)]; ok {
@@ -226,7 +237,7 @@ func (adapter *TaurusXAdapter) MakeRequests(request *openrtb.BidRequest, _ *adap
 }
 
 // MakeBids ...
-func (adapter *TaurusXAdapter) MakeBids(_ *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (adapter *adapter) MakeBids(_ *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -243,7 +254,7 @@ func (adapter *TaurusXAdapter) MakeBids(_ *openrtb.BidRequest, externalRequest *
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: err.Error(),
@@ -256,7 +267,7 @@ func (adapter *TaurusXAdapter) MakeBids(_ *openrtb.BidRequest, externalRequest *
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
 
-	var bidReq openrtb.BidRequest
+	var bidReq openrtb2.BidRequest
 	if err := json.Unmarshal(externalRequest.Body, &bidReq); err != nil {
 		return nil, []error{err}
 	}

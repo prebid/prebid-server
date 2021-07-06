@@ -1,7 +1,12 @@
 maintainer:
   email: "tappx@tappx.com"
+gvlVendorID: 628
 capabilities:
   app:
+    mediaTypes:
+      - banner
+      - video
+  site:
     mediaTypes:
       - banner
       - video

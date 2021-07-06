@@ -7,13 +7,14 @@ import (
 	"strings"
 
 	"github.com/buger/jsonparser"
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const clientVersion = "prebid_server_0.1"
+const clientVersion = "prebid_server_0.2"
 
 type adMarkupType string
 
@@ -48,15 +49,16 @@ type siteExtData struct {
 	Keywords string `json:"keywords"`
 }
 
-// NewSmaatoBidder creates a Smaato bid adapter.
-func NewSmaatoBidder(uri string) *SmaatoAdapter {
-	return &SmaatoAdapter{
-		URI: uri,
+// Builder builds a new instance of the Smaato adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &SmaatoAdapter{
+		URI: config.Endpoint,
 	}
+	return bidder, nil
 }
 
 // MakeRequests makes the HTTP requests which should be made to fetch bids.
-func (a *SmaatoAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *SmaatoAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 	if len(request.Imp) == 0 {
 		errs = append(errs, &errortypes.BadInput{Message: "no impressions in bid request"})
@@ -79,9 +81,10 @@ func (a *SmaatoAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 			i--
 		}
 	}
+
 	if request.Site != nil {
 		siteCopy := *request.Site
-		siteCopy.Publisher = &openrtb.Publisher{ID: publisherID}
+		siteCopy.Publisher = &openrtb2.Publisher{ID: publisherID}
 
 		if request.Site.Ext != nil {
 			var siteExt siteExt
@@ -94,6 +97,13 @@ func (a *SmaatoAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 			siteCopy.Ext = nil
 		}
 		request.Site = &siteCopy
+	}
+
+	if request.App != nil {
+		appCopy := *request.App
+		appCopy.Publisher = &openrtb2.Publisher{ID: publisherID}
+
+		request.App = &appCopy
 	}
 
 	if request.User != nil && request.User.Ext != nil {
@@ -153,7 +163,7 @@ func (a *SmaatoAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 }
 
 // MakeBids unpacks the server's response into Bids.
-func (a *SmaatoAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *SmaatoAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -168,7 +178,7 @@ func (a *SmaatoAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 		return nil, []error{fmt.Errorf("unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
@@ -249,7 +259,7 @@ func getAdMarkupType(response *adapters.ResponseData, adMarkup string) (adMarkup
 	return "", fmt.Errorf("Invalid ad markup %s", adMarkup)
 }
 
-func assignBannerSize(banner *openrtb.Banner) (*openrtb.Banner, error) {
+func assignBannerSize(banner *openrtb2.Banner) (*openrtb2.Banner, error) {
 	if banner.W != nil && banner.H != nil {
 		return banner, nil
 	}
@@ -257,16 +267,14 @@ func assignBannerSize(banner *openrtb.Banner) (*openrtb.Banner, error) {
 		return banner, fmt.Errorf("No sizes provided for Banner %v", banner.Format)
 	}
 	bannerCopy := *banner
-	bannerCopy.W = new(uint64)
-	*bannerCopy.W = banner.Format[0].W
-	bannerCopy.H = new(uint64)
-	*bannerCopy.H = banner.Format[0].H
+	bannerCopy.W = openrtb2.Int64Ptr(banner.Format[0].W)
+	bannerCopy.H = openrtb2.Int64Ptr(banner.Format[0].H)
 
 	return &bannerCopy, nil
 }
 
 // parseImpressionObject parse the imp to get it ready to send to smaato
-func parseImpressionObject(imp *openrtb.Imp) error {
+func parseImpressionObject(imp *openrtb2.Imp) error {
 	adSpaceID, err := jsonparser.GetString(imp.Ext, "bidder", "adspaceId")
 	if err != nil {
 		return err
@@ -293,7 +301,7 @@ func parseImpressionObject(imp *openrtb.Imp) error {
 	return fmt.Errorf("invalid MediaType. SMAATO only supports Banner and Video. Ignoring ImpID=%s", imp.ID)
 }
 
-func extractUserExtAttributes(userExt userExt, userCopy *openrtb.User) {
+func extractUserExtAttributes(userExt userExt, userCopy *openrtb2.User) {
 	gender := userExt.Data.Gender
 	if gender != "" {
 		userCopy.Gender = gender

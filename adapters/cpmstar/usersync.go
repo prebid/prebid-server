@@ -9,5 +9,5 @@ import (
 
 //NewCpmstarSyncer :
 func NewCpmstarSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("cpmstar", 0, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("cpmstar", temp, adapters.SyncTypeRedirect)
 }

@@ -1,5 +1,6 @@
 maintainer:
   email: "CNVR_PublisherIntegration@conversantmedia.com"
+gvlVendorID: 24
 capabilities:
   app:
     mediaTypes:

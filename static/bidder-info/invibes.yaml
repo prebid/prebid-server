@@ -1,0 +1,7 @@
+maintainer:
+  email: "system_operations@invibes.com"
+gvlVendorID: 436
+capabilities:
+  site:
+    mediaTypes:
+      - banner

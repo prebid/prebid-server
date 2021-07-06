@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/prebid/prebid-server/config"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
+	openrtb "github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -40,40 +41,46 @@ type molocoImpExt struct {
 	SKADN *openrtb_ext.SKADN `json:"skadn,omitempty"`
 }
 
-// MolocoAdapter ...
-type MolocoAdapter struct {
+type adapter struct {
 	http             *adapters.HTTPAdapter
-	URI              string
+	endpoint         string
 	SupportedRegions map[Region]string
 }
 
-// Name is used for cookies and such
-func (adapter *MolocoAdapter) Name() string {
+func (adapter *adapter) Name() string {
 	return "moloco"
 }
 
-// SkipNoCookies ...
-func (adapter *MolocoAdapter) SkipNoCookies() bool {
+func (adapter *adapter) SkipNoCookies() bool {
 	return false
 }
 
-// Call is legacy, and added only to support MolocoAdapter interface
-func (adapter *MolocoAdapter) Call(_ context.Context, _ *pbs.PBSRequest, _ *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
+func (adapter *adapter) Call(_ context.Context, _ *pbs.PBSRequest, _ *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	return pbs.PBSBidSlice{}, nil
 }
 
-// NewMolocoAdapter ...
-func NewMolocoAdapter(config *adapters.HTTPAdapterConfig, uri, useast, eu, apac string) *MolocoAdapter {
+func Builder(_ openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &adapter{
+		endpoint: config.Endpoint,
+		SupportedRegions: map[Region]string{
+			USEast: config.XAPI.EndpointUSEast,
+			EU:     config.XAPI.EndpointEU,
+			APAC:   config.XAPI.EndpointAPAC,
+		},
+	}
+	return bidder, nil
+}
+
+// NewMolocoLegacyAdapter ...
+func NewMolocoLegacyAdapter(config *adapters.HTTPAdapterConfig, uri, useast, eu, apac string) *adapter {
 	return NewMolocoBidder(adapters.NewHTTPAdapter(config).Client, uri, useast, eu, apac)
 }
 
 // NewMolocoBidder ...
-func NewMolocoBidder(client *http.Client, uri, useast, eu, apac string) *MolocoAdapter {
-	adapter := &adapters.HTTPAdapter{Client: client}
-
-	return &MolocoAdapter{
-		http: adapter,
-		URI:  uri,
+func NewMolocoBidder(client *http.Client, uri, useast, eu, apac string) *adapter {
+	return &adapter{
+		http:     &adapters.HTTPAdapter{Client: client},
+		endpoint: uri,
 		SupportedRegions: map[Region]string{
 			USEast: useast,
 			EU:     eu,
@@ -83,7 +90,7 @@ func NewMolocoBidder(client *http.Client, uri, useast, eu, apac string) *MolocoA
 }
 
 // MakeRequests ...
-func (adapter *MolocoAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (adapter *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	numRequests := len(request.Imp)
 
 	requestData := make([]*adapters.RequestData, 0, numRequests)
@@ -201,7 +208,7 @@ func (adapter *MolocoAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapt
 		}
 
 		// assign the default uri
-		uri := adapter.URI
+		uri := adapter.endpoint
 
 		// assign a region based uri if it exists
 		if endpoint, ok := adapter.SupportedRegions[Region(molocoExt.Region)]; ok {
@@ -237,7 +244,7 @@ func (adapter *MolocoAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapt
 }
 
 // MakeBids ...
-func (adapter *MolocoAdapter) MakeBids(_ *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (adapter *adapter) MakeBids(_ *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}

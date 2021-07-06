@@ -25,9 +25,6 @@ func ParseEagerly(data []byte) (api.VendorList, error) {
 	if contract.Version == 0 {
 		return nil, errors.New("data.vendorListVersion was 0 or undefined. Versions should start at 1")
 	}
-	if len(contract.Vendors) == 0 {
-		return nil, errors.New("data.vendors was undefined or had no elements")
-	}
 
 	parsedList := parsedVendorList{
 		version: contract.Version,

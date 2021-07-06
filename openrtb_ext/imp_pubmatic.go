@@ -9,13 +9,16 @@ import "encoding/json"
 // WrapExt needs to be sent once per bid request
 
 type ExtImpPubmatic struct {
-	Reward         int                     `json:"reward"`
-	SKADNSupported bool                    `json:"skadn_supported"`
-	MRAIDSupported bool                    `json:"mraid_supported"`
-	PublisherId    string                  `json:"publisherId"`
-	AdSlot         string                  `json:"adSlot"`
-	WrapExt        json.RawMessage         `json:"wrapper,omitempty"`
-	Keywords       []*ExtImpPubmaticKeyVal `json:"keywords,omitempty"`
+	PublisherId string                  `json:"publisherId"`
+	AdSlot      string                  `json:"adSlot"`
+	Dctr        string                  `json:"dctr"`
+	PmZoneID    string                  `json:"pmzoneid"`
+	WrapExt     json.RawMessage         `json:"wrapper,omitempty"`
+	Keywords    []*ExtImpPubmaticKeyVal `json:"keywords,omitempty"`
+
+	Reward         int  `json:"reward"`
+	SKADNSupported bool `json:"skadn_supported"`
+	MRAIDSupported bool `json:"mraid_supported"`
 }
 
 // ExtImpPubmaticKeyVal defines the contract for bidrequest.imp[i].ext.pubmatic.keywords[i]

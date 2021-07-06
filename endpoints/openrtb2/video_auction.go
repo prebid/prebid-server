@@ -17,18 +17,18 @@ import (
 	"github.com/buger/jsonparser"
 	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/gofrs/uuid"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/util/iputil"
 
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
-	"github.com/mxmCherry/openrtb"
 	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/usersync"
@@ -36,7 +36,20 @@ import (
 
 var defaultRequestTimeout int64 = 5000
 
-func NewVideoEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, videoFetcher stored_requests.Fetcher, accounts stored_requests.AccountFetcher, categories stored_requests.CategoryFetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule, disabledBidders map[string]string, defReqJSON []byte, bidderMap map[string]openrtb_ext.BidderName, cache prebid_cache_client.Client) (httprouter.Handle, error) {
+func NewVideoEndpoint(
+	ex exchange.Exchange,
+	validator openrtb_ext.BidderParamValidator,
+	requestsById stored_requests.Fetcher,
+	videoFetcher stored_requests.Fetcher,
+	accounts stored_requests.AccountFetcher,
+	cfg *config.Configuration,
+	met metrics.MetricsEngine,
+	pbsAnalytics analytics.PBSAnalyticsModule,
+	disabledBidders map[string]string,
+	defReqJSON []byte,
+	bidderMap map[string]openrtb_ext.BidderName,
+	cache prebid_cache_client.Client,
+) (httprouter.Handle, error) {
 
 	if ex == nil || validator == nil || requestsById == nil || accounts == nil || cfg == nil || met == nil {
 		return nil, errors.New("NewVideoEndpoint requires non-nil arguments.")
@@ -57,7 +70,6 @@ func NewVideoEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamVal
 		requestsById,
 		videoFetcher,
 		accounts,
-		categories,
 		cfg,
 		met,
 		pbsAnalytics,
@@ -94,20 +106,20 @@ func NewVideoEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamVal
 11. Build proper response format.
 */
 func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	start := time.Now()
 
 	vo := analytics.VideoObject{
-		Status: http.StatusOK,
-		Errors: make([]error, 0),
+		Status:    http.StatusOK,
+		Errors:    make([]error, 0),
+		StartTime: start,
 	}
 
-	start := time.Now()
-	labels := pbsmetrics.Labels{
-		Source:        pbsmetrics.DemandUnknown,
-		RType:         pbsmetrics.ReqTypeVideo,
-		PubID:         pbsmetrics.PublisherUnknown,
-		Browser:       getBrowserName(r),
-		CookieFlag:    pbsmetrics.CookieFlagUnknown,
-		RequestStatus: pbsmetrics.RequestStatusOK,
+	labels := metrics.Labels{
+		Source:        metrics.DemandUnknown,
+		RType:         metrics.ReqTypeVideo,
+		PubID:         metrics.PublisherUnknown,
+		CookieFlag:    metrics.CookieFlagUnknown,
+		RequestStatus: metrics.RequestStatusOK,
 	}
 
 	debugQuery := r.URL.Query().Get("debug")
@@ -116,11 +128,13 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		cacheTTL = int64(deps.cfg.CacheURL.DefaultTTLs.Video)
 	}
 	debugLog := exchange.DebugLog{
-		Enabled:   strings.EqualFold(debugQuery, "true"),
-		CacheType: prebid_cache_client.TypeXML,
-		TTL:       cacheTTL,
-		Regexp:    deps.debugLogRegexp,
+		Enabled:       strings.EqualFold(debugQuery, "true"),
+		CacheType:     prebid_cache_client.TypeXML,
+		TTL:           cacheTTL,
+		Regexp:        deps.debugLogRegexp,
+		DebugOverride: exchange.IsDebugOverrideEnabled(r.Header.Get(exchange.DebugOverrideHeader), deps.cfg.Debug.OverrideToken),
 	}
+	debugLog.DebugEnabledOrOverridden = debugLog.Enabled || debugLog.DebugOverride
 
 	defer func() {
 		if len(debugLog.CacheKey) > 0 && vo.VideoResponse == nil {
@@ -145,7 +159,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	}
 
 	resolvedRequest := requestJson
-	if debugLog.Enabled {
+	if debugLog.DebugEnabledOrOverridden {
 		debugLog.Data.Request = string(requestJson)
 		if headerBytes, err := json.Marshal(r.Header); err == nil {
 			debugLog.Data.Headers = string(headerBytes)
@@ -185,7 +199,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 
 	vo.VideoRequest = videoBidReq
 
-	var bidReq = &openrtb.BidRequest{}
+	var bidReq = &openrtb2.BidRequest{}
 	if deps.defaultRequest {
 		if err := json.Unmarshal(deps.defReqJSON, bidReq); err != nil {
 			err = fmt.Errorf("Invalid JSON in Default Request Settings: %s", err)
@@ -197,7 +211,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	//create full open rtb req from full video request
 	mergeData(videoBidReq, bidReq)
 	// If debug query param is set, force the response to enable test flag
-	if debugLog.Enabled {
+	if debugLog.DebugEnabledOrOverridden {
 		bidReq.Test = 1
 	}
 
@@ -243,14 +257,14 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 
 	usersyncs := usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie))
 	if bidReq.App != nil {
-		labels.Source = pbsmetrics.DemandApp
+		labels.Source = metrics.DemandApp
 		labels.PubID = getAccountID(bidReq.App.Publisher)
 	} else { // both bidReq.App == nil and bidReq.Site != nil are true
-		labels.Source = pbsmetrics.DemandWeb
+		labels.Source = metrics.DemandWeb
 		if usersyncs.LiveSyncCount() == 0 {
-			labels.CookieFlag = pbsmetrics.CookieFlagNo
+			labels.CookieFlag = metrics.CookieFlagNo
 		} else {
-			labels.CookieFlag = pbsmetrics.CookieFlagYes
+			labels.CookieFlag = metrics.CookieFlagYes
 		}
 		labels.PubID = getAccountID(bidReq.Site.Publisher)
 	}
@@ -261,8 +275,20 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		handleError(&labels, w, acctIDErrs, &vo, &debugLog)
 		return
 	}
-	//execute auction logic
-	response, err := deps.ex.HoldAuction(ctx, bidReq, usersyncs, labels, account, &deps.categories, &debugLog)
+
+	secGPC := r.Header.Get("Sec-GPC")
+
+	auctionRequest := exchange.AuctionRequest{
+		BidRequest:                 bidReq,
+		Account:                    *account,
+		UserSyncs:                  usersyncs,
+		RequestType:                labels.RType,
+		StartTime:                  start,
+		LegacyLabels:               labels,
+		GlobalPrivacyControlHeader: secGPC,
+	}
+
+	response, err := deps.ex.HoldAuction(ctx, auctionRequest, &debugLog)
 	vo.Request = bidReq
 	vo.Response = response
 	if err != nil {
@@ -282,7 +308,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		bidResp.Ext = response.Ext
 	}
 
-	if len(bidResp.AdPods) == 0 && debugLog.Enabled {
+	if len(bidResp.AdPods) == 0 && debugLog.DebugEnabledOrOverridden {
 		err := debugLog.PutDebugLogError(deps.cache, deps.cfg.CacheURL.ExpectedTimeMillis, vo.Errors)
 		if err != nil {
 			vo.Errors = append(vo.Errors, err)
@@ -319,25 +345,25 @@ func cleanupVideoBidRequest(videoReq *openrtb_ext.BidRequestVideo, podErrors []P
 	return videoReq
 }
 
-func handleError(labels *pbsmetrics.Labels, w http.ResponseWriter, errL []error, vo *analytics.VideoObject, debugLog *exchange.DebugLog) {
-	if debugLog != nil && debugLog.Enabled {
+func handleError(labels *metrics.Labels, w http.ResponseWriter, errL []error, vo *analytics.VideoObject, debugLog *exchange.DebugLog) {
+	if debugLog != nil && debugLog.DebugEnabledOrOverridden {
 		if rawUUID, err := uuid.NewV4(); err == nil {
 			debugLog.CacheKey = rawUUID.String()
 		}
 		errL = append(errL, fmt.Errorf("[Debug cache ID: %s]", debugLog.CacheKey))
 	}
-	labels.RequestStatus = pbsmetrics.RequestStatusErr
+	labels.RequestStatus = metrics.RequestStatusErr
 	var errors string
 	var status int = http.StatusInternalServerError
 	for _, er := range errL {
 		erVal := errortypes.ReadCode(er)
 		if erVal == errortypes.BlacklistedAppErrorCode || erVal == errortypes.BlacklistedAcctErrorCode {
 			status = http.StatusServiceUnavailable
-			labels.RequestStatus = pbsmetrics.RequestStatusBlacklisted
+			labels.RequestStatus = metrics.RequestStatusBlacklisted
 			break
 		} else if erVal == errortypes.AcctRequiredErrorCode {
 			status = http.StatusBadRequest
-			labels.RequestStatus = pbsmetrics.RequestStatusBadInput
+			labels.RequestStatus = metrics.RequestStatusBadInput
 			break
 		}
 		errors = fmt.Sprintf("%s %s", errors, er.Error())
@@ -349,13 +375,13 @@ func handleError(labels *pbsmetrics.Labels, w http.ResponseWriter, errL []error,
 	vo.Errors = append(vo.Errors, errL...)
 }
 
-func (deps *endpointDeps) createImpressions(videoReq *openrtb_ext.BidRequestVideo, podErrors []PodError) ([]openrtb.Imp, []PodError) {
+func (deps *endpointDeps) createImpressions(videoReq *openrtb_ext.BidRequestVideo, podErrors []PodError) ([]openrtb2.Imp, []PodError) {
 	videoDur := videoReq.PodConfig.DurationRangeSec
 	minDuration, maxDuration := minMax(videoDur)
 	reqExactDur := videoReq.PodConfig.RequireExactDuration
 	videoData := videoReq.Video
 
-	finalImpsArray := make([]openrtb.Imp, 0)
+	finalImpsArray := make([]openrtb2.Imp, 0)
 	for ind, pod := range videoReq.PodConfig.Pods {
 
 		//load stored impression
@@ -379,7 +405,7 @@ func (deps *endpointDeps) createImpressions(videoReq *openrtb_ext.BidRequestVide
 		}
 		impDivNumber := numImps / len(videoDur)
 
-		impsArray := make([]openrtb.Imp, numImps)
+		impsArray := make([]openrtb2.Imp, numImps)
 		for impInd := range impsArray {
 			newImp := createImpressionTemplate(storedImp, videoData)
 			impsArray[impInd] = newImp
@@ -411,18 +437,18 @@ func max(a, b int) int {
 	return b
 }
 
-func createImpressionTemplate(imp openrtb.Imp, video *openrtb.Video) openrtb.Imp {
+func createImpressionTemplate(imp openrtb2.Imp, video *openrtb2.Video) openrtb2.Imp {
 	//for every new impression we need to have it's own copy of video object, because we customize it in further processing
 	newVideo := *video
 	imp.Video = &newVideo
 	return imp
 }
 
-func (deps *endpointDeps) loadStoredImp(storedImpId string) (openrtb.Imp, []error) {
+func (deps *endpointDeps) loadStoredImp(storedImpId string) (openrtb2.Imp, []error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(storedRequestTimeoutMillis)*time.Millisecond)
 	defer cancel()
 
-	impr := openrtb.Imp{}
+	impr := openrtb2.Imp{}
 	_, imp, err := deps.storedReqFetcher.FetchRequests(ctx, []string{}, []string{storedImpId})
 	if err != nil {
 		return impr, err
@@ -448,7 +474,7 @@ func minMax(array []int) (int, int) {
 	return min, max
 }
 
-func buildVideoResponse(bidresponse *openrtb.BidResponse, podErrors []PodError) (*openrtb_ext.BidResponseVideo, error) {
+func buildVideoResponse(bidresponse *openrtb2.BidResponse, podErrors []PodError) (*openrtb_ext.BidResponseVideo, error) {
 
 	adPods := make([]*openrtb_ext.AdPod, 0)
 	anyBidsReturned := false
@@ -540,7 +566,7 @@ func getVideoStoredRequestId(request []byte) (string, error) {
 	return string(value), nil
 }
 
-func mergeData(videoRequest *openrtb_ext.BidRequestVideo, bidRequest *openrtb.BidRequest) error {
+func mergeData(videoRequest *openrtb_ext.BidRequestVideo, bidRequest *openrtb2.BidRequest) error {
 
 	if videoRequest.Site != nil {
 		bidRequest.Site = videoRequest.Site
@@ -624,6 +650,7 @@ func createBidExtension(videoRequest *openrtb_ext.BidRequestVideo) ([]byte, erro
 		IncludeBrandCategory: inclBrandCat,
 		DurationRangeSec:     durationRangeSec,
 		IncludeBidderKeys:    true,
+		AppendBidderNames:    videoRequest.AppendBidderNames,
 	}
 
 	vastXml := openrtb_ext.ExtRequestPrebidCacheVAST{}

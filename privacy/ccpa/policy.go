@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -16,7 +16,7 @@ type Policy struct {
 }
 
 // ReadFromRequest extracts the CCPA regulatory information from an OpenRTB bid request.
-func ReadFromRequest(req *openrtb.BidRequest) (Policy, error) {
+func ReadFromRequest(req *openrtb2.BidRequest) (Policy, error) {
 	var consent string
 	var noSaleBidders []string
 
@@ -46,7 +46,7 @@ func ReadFromRequest(req *openrtb.BidRequest) (Policy, error) {
 }
 
 // Write mutates an OpenRTB bid request with the CCPA regulatory information.
-func (p Policy) Write(req *openrtb.BidRequest) error {
+func (p Policy) Write(req *openrtb2.BidRequest) error {
 	if req == nil {
 		return nil
 	}
@@ -65,14 +65,14 @@ func (p Policy) Write(req *openrtb.BidRequest) error {
 	return nil
 }
 
-func buildRegs(consent string, regs *openrtb.Regs) (*openrtb.Regs, error) {
+func buildRegs(consent string, regs *openrtb2.Regs) (*openrtb2.Regs, error) {
 	if consent == "" {
 		return buildRegsClear(regs)
 	}
 	return buildRegsWrite(consent, regs)
 }
 
-func buildRegsClear(regs *openrtb.Regs) (*openrtb.Regs, error) {
+func buildRegsClear(regs *openrtb2.Regs) (*openrtb2.Regs, error) {
 	if regs == nil || len(regs.Ext) == 0 {
 		return regs, nil
 	}
@@ -92,7 +92,7 @@ func buildRegsClear(regs *openrtb.Regs) (*openrtb.Regs, error) {
 	}
 
 	// Marshal ext if there are still other fields
-	var regsResult openrtb.Regs
+	var regsResult openrtb2.Regs
 	ext, err := json.Marshal(extMap)
 	if err == nil {
 		regsResult = *regs
@@ -101,9 +101,9 @@ func buildRegsClear(regs *openrtb.Regs) (*openrtb.Regs, error) {
 	return &regsResult, err
 }
 
-func buildRegsWrite(consent string, regs *openrtb.Regs) (*openrtb.Regs, error) {
+func buildRegsWrite(consent string, regs *openrtb2.Regs) (*openrtb2.Regs, error) {
 	if regs == nil {
-		return marshalRegsExt(openrtb.Regs{}, openrtb_ext.ExtRegs{USPrivacy: consent})
+		return marshalRegsExt(openrtb2.Regs{}, openrtb_ext.ExtRegs{USPrivacy: consent})
 	}
 
 	if regs.Ext == nil {
@@ -119,7 +119,7 @@ func buildRegsWrite(consent string, regs *openrtb.Regs) (*openrtb.Regs, error) {
 	return marshalRegsExt(*regs, extMap)
 }
 
-func marshalRegsExt(regs openrtb.Regs, ext interface{}) (*openrtb.Regs, error) {
+func marshalRegsExt(regs openrtb2.Regs, ext interface{}) (*openrtb2.Regs, error) {
 	extJSON, err := json.Marshal(ext)
 	if err == nil {
 		regs.Ext = extJSON

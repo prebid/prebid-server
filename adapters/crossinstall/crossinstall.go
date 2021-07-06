@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/prebid/prebid-server/config"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
+	openrtb "github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -37,39 +38,43 @@ type crossinstallBannerExt struct {
 }
 
 // CrossInstallAdapter ...
-type CrossInstallAdapter struct {
+type adapter struct {
 	http             *adapters.HTTPAdapter
-	URI              string
+	endpoint         string
 	SupportedRegions map[Region]string
 }
 
-// Name is used for cookies and such
-func (adapter *CrossInstallAdapter) Name() string {
+func (adapter *adapter) Name() string {
 	return "crossinstall"
 }
 
-// SkipNoCookies ...
-func (adapter *CrossInstallAdapter) SkipNoCookies() bool {
+func (adapter *adapter) SkipNoCookies() bool {
 	return false
 }
 
-// Call is legacy, and added only to support CrossInstallAdapter interface
-func (adapter *CrossInstallAdapter) Call(_ context.Context, _ *pbs.PBSRequest, _ *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
+func (adapter *adapter) Call(_ context.Context, _ *pbs.PBSRequest, _ *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	return pbs.PBSBidSlice{}, nil
 }
 
-// NewCrossInstallAdapter ...
-func NewCrossInstallAdapter(config *adapters.HTTPAdapterConfig, uri, useast, uswest string) *CrossInstallAdapter {
+func Builder(_ openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &adapter{
+		endpoint: config.Endpoint,
+		SupportedRegions: map[Region]string{
+			USEast: config.XAPI.EndpointUSEast,
+			USWest: config.XAPI.EndpointUSWest,
+		},
+	}
+	return bidder, nil
+}
+
+func NewCrossInstallLegacyAdapter(config *adapters.HTTPAdapterConfig, uri, useast, uswest string) *adapter {
 	return NewCrossInstallBidder(adapters.NewHTTPAdapter(config).Client, uri, useast, uswest)
 }
 
-// NewCrossInstallBidder ...
-func NewCrossInstallBidder(client *http.Client, uri, useast, uswest string) *CrossInstallAdapter {
-	adapter := &adapters.HTTPAdapter{Client: client}
-
-	return &CrossInstallAdapter{
-		http: adapter,
-		URI:  uri,
+func NewCrossInstallBidder(client *http.Client, uri, useast, uswest string) *adapter {
+	return &adapter{
+		http:     &adapters.HTTPAdapter{Client: client},
+		endpoint: uri,
 		SupportedRegions: map[Region]string{
 			USEast: useast,
 			USWest: uswest,
@@ -78,7 +83,7 @@ func NewCrossInstallBidder(client *http.Client, uri, useast, uswest string) *Cro
 }
 
 // MakeRequests ...
-func (adapter *CrossInstallAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (adapter *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	numRequests := len(request.Imp)
 
 	requestData := make([]*adapters.RequestData, 0, numRequests)
@@ -174,7 +179,7 @@ func (adapter *CrossInstallAdapter) MakeRequests(request *openrtb.BidRequest, _ 
 		}
 
 		// assign the default uri
-		uri := adapter.URI
+		uri := adapter.endpoint
 
 		// assign a region based uri if it exists
 		if endpoint, ok := adapter.SupportedRegions[Region(crossinstallExt.Region)]; ok {
@@ -210,7 +215,7 @@ func (adapter *CrossInstallAdapter) MakeRequests(request *openrtb.BidRequest, _ 
 }
 
 // MakeBids ...
-func (adapter *CrossInstallAdapter) MakeBids(_ *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (adapter *adapter) MakeBids(_ *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}

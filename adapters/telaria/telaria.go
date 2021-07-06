@@ -3,12 +3,14 @@ package telaria
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 	"strconv"
+
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 const Endpoint = "https://ads.tremorhub.com/ad/rtb/prebid"
@@ -27,22 +29,13 @@ type telariaBidExt struct {
 	Extra json.RawMessage `json:"extra,omitempty"`
 }
 
-// used for cookies and such
-func (a *TelariaAdapter) Name() string {
-	return "telaria"
-}
-
-func (a *TelariaAdapter) SkipNoCookies() bool {
-	return false
-}
-
 // Endpoint for Telaria Ad server
 func (a *TelariaAdapter) FetchEndpoint() string {
 	return a.URI
 }
 
 // Checker method to ensure len(request.Imp) > 0
-func (a *TelariaAdapter) CheckHasImps(request *openrtb.BidRequest) error {
+func (a *TelariaAdapter) CheckHasImps(request *openrtb2.BidRequest) error {
 	if len(request.Imp) == 0 {
 		err := &errortypes.BadInput{
 			Message: "Telaria: Missing Imp Object",
@@ -53,7 +46,7 @@ func (a *TelariaAdapter) CheckHasImps(request *openrtb.BidRequest) error {
 }
 
 // Checking if Imp[i].Video exists and Imp[i].Banner doesn't exist
-func (a *TelariaAdapter) CheckHasVideoObject(request *openrtb.BidRequest) error {
+func (a *TelariaAdapter) CheckHasVideoObject(request *openrtb2.BidRequest) error {
 	hasVideoObject := false
 
 	for _, imp := range request.Imp {
@@ -76,7 +69,7 @@ func (a *TelariaAdapter) CheckHasVideoObject(request *openrtb.BidRequest) error 
 }
 
 // Fetches the populated header object
-func GetHeaders(request *openrtb.BidRequest) *http.Header {
+func GetHeaders(request *openrtb2.BidRequest) *http.Header {
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
@@ -104,7 +97,7 @@ func GetHeaders(request *openrtb.BidRequest) *http.Header {
 }
 
 // Checks the imp[i].ext object and returns a imp.ext object as per ExtImpTelaria format
-func (a *TelariaAdapter) FetchTelariaExtImpParams(imp *openrtb.Imp) (*openrtb_ext.ExtImpTelaria, error) {
+func (a *TelariaAdapter) FetchTelariaExtImpParams(imp *openrtb2.Imp) (*openrtb_ext.ExtImpTelaria, error) {
 	var bidderExt adapters.ExtImpBidder
 	err := json.Unmarshal(imp.Ext, &bidderExt)
 
@@ -132,7 +125,7 @@ func (a *TelariaAdapter) FetchTelariaExtImpParams(imp *openrtb.Imp) (*openrtb_ex
 
 // Method to fetch the original publisher ID. Note that this method must be called
 // before we replace publisher.ID with seatCode
-func (a *TelariaAdapter) FetchOriginalPublisherID(request *openrtb.BidRequest) string {
+func (a *TelariaAdapter) FetchOriginalPublisherID(request *openrtb2.BidRequest) string {
 
 	if request.Site != nil && request.Site.Publisher != nil {
 		return request.Site.Publisher.ID
@@ -144,8 +137,8 @@ func (a *TelariaAdapter) FetchOriginalPublisherID(request *openrtb.BidRequest) s
 }
 
 // Method to do a deep copy of the publisher object. It also adds the seatCode as publisher.ID
-func (a *TelariaAdapter) MakePublisherObject(seatCode string, publisher *openrtb.Publisher) *openrtb.Publisher {
-	var pub = &openrtb.Publisher{ID: seatCode}
+func (a *TelariaAdapter) MakePublisherObject(seatCode string, publisher *openrtb2.Publisher) *openrtb2.Publisher {
+	var pub = &openrtb2.Publisher{ID: seatCode}
 
 	if publisher != nil {
 		pub.Domain = publisher.Domain
@@ -158,7 +151,7 @@ func (a *TelariaAdapter) MakePublisherObject(seatCode string, publisher *openrtb
 }
 
 // This method changes <site/app>.publisher.id to the seatCode
-func (a *TelariaAdapter) PopulatePublisherId(request *openrtb.BidRequest, seatCode string) (*openrtb.Site, *openrtb.App) {
+func (a *TelariaAdapter) PopulatePublisherId(request *openrtb2.BidRequest, seatCode string) (*openrtb2.Site, *openrtb2.App) {
 	if request.Site != nil {
 		siteCopy := *request.Site
 		siteCopy.Publisher = a.MakePublisherObject(seatCode, request.Site.Publisher)
@@ -171,7 +164,7 @@ func (a *TelariaAdapter) PopulatePublisherId(request *openrtb.BidRequest, seatCo
 	return nil, nil
 }
 
-func (a *TelariaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *TelariaAdapter) MakeRequests(requestIn *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
 	// make a copy of the incoming request
 	request := *requestIn
@@ -270,7 +263,7 @@ func (a *TelariaAdapter) CheckResponseStatusCodes(response *adapters.ResponseDat
 	return nil
 }
 
-func (a *TelariaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *TelariaAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	httpStatusError := a.CheckResponseStatusCodes(response)
 	if httpStatusError != nil {
@@ -279,7 +272,7 @@ func (a *TelariaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 
 	responseBody := response.Body
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(responseBody, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: "Telaria: Bad Server Response",
@@ -298,12 +291,15 @@ func (a *TelariaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 	return bidResponse, nil
 }
 
-func NewTelariaBidder(endpoint string) *TelariaAdapter {
+// Builder builds a new instance of the Telaria adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	endpoint := config.Endpoint
 	if endpoint == "" {
-		endpoint = Endpoint
+		endpoint = Endpoint // Hardcoded default
 	}
 
-	return &TelariaAdapter{
+	bidder := &TelariaAdapter{
 		URI: endpoint,
 	}
+	return bidder, nil
 }

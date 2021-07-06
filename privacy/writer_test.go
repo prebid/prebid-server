@@ -4,16 +4,16 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNilWriter(t *testing.T) {
-	request := &openrtb.BidRequest{
+	request := &openrtb2.BidRequest{
 		ID:  "anyID",
 		Ext: json.RawMessage(`{"anyJson":"anyValue"}`),
 	}
-	expectedRequest := &openrtb.BidRequest{
+	expectedRequest := &openrtb2.BidRequest{
 		ID:  "anyID",
 		Ext: json.RawMessage(`{"anyJson":"anyValue"}`),
 	}

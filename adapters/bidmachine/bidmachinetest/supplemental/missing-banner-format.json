@@ -1,0 +1,26 @@
+{
+  "mockBidRequest":
+  {
+    "id": "test-request-id",
+    "imp": [
+    {
+      "id": "test-impression-id-1",
+      "banner":
+      {},
+      "ext":
+      {
+        "bidder":
+        {
+          "seller_id": "1",
+          "host": "api-eu",
+          "path": "auction/rtb/v2"
+        }
+      }
+    }]
+  },
+  "expectedMakeRequestsErrors": [
+  {
+    "value": "Impression with id: test-impression-id-1 has following error: Banner width and height is not provided and banner format is missing. At least one is required",
+    "comparison": "literal"
+  }]
+}

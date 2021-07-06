@@ -1,7 +1,9 @@
 package analytics
 
 import (
-	"github.com/mxmCherry/openrtb"
+	"time"
+
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/usersync"
@@ -21,35 +23,39 @@ type PBSAnalyticsModule interface {
 	LogCookieSyncObject(*CookieSyncObject)
 	LogSetUIDObject(*SetUIDObject)
 	LogAmpObject(*AmpObject)
+	LogNotificationEventObject(*NotificationEvent)
 }
 
 //Loggable object of a transaction at /openrtb2/auction endpoint
 type AuctionObject struct {
-	Status   int
-	Errors   []error
-	Request  *openrtb.BidRequest
-	Response *openrtb.BidResponse
-	Account  *config.Account
+	Status    int
+	Errors    []error
+	Request   *openrtb2.BidRequest
+	Response  *openrtb2.BidResponse
+	Account   *config.Account
+	StartTime time.Time
 }
 
 //Loggable object of a transaction at /openrtb2/amp endpoint
 type AmpObject struct {
 	Status             int
 	Errors             []error
-	Request            *openrtb.BidRequest
-	AuctionResponse    *openrtb.BidResponse
+	Request            *openrtb2.BidRequest
+	AuctionResponse    *openrtb2.BidResponse
 	AmpTargetingValues map[string]string
 	Origin             string
+	StartTime          time.Time
 }
 
 //Loggable object of a transaction at /openrtb2/video endpoint
 type VideoObject struct {
 	Status        int
 	Errors        []error
-	Request       *openrtb.BidRequest
-	Response      *openrtb.BidResponse
+	Request       *openrtb2.BidRequest
+	Response      *openrtb2.BidResponse
 	VideoRequest  *openrtb_ext.BidRequestVideo
 	VideoResponse *openrtb_ext.BidResponseVideo
+	StartTime     time.Time
 }
 
 //Loggable object of a transaction at /setuid
@@ -66,4 +72,10 @@ type CookieSyncObject struct {
 	Status       int
 	Errors       []error
 	BidderStatus []*usersync.CookieSyncBidders
+}
+
+// NotificationEvent is a loggable object
+type NotificationEvent struct {
+	Request *EventRequest   `json:"request"`
+	Account *config.Account `json:"account"`
 }

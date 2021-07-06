@@ -3,6 +3,7 @@ package exchange
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,19 +16,18 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/mxmCherry/openrtb"
+	nativeRequests "github.com/mxmCherry/openrtb/v15/native1/request"
+	nativeResponse "github.com/mxmCherry/openrtb/v15/native1/response"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/currencies"
+	"github.com/prebid/prebid-server/currency"
+	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/metrics"
+	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbsmetrics"
-	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
-	metricsConfig "github.com/prebid/prebid-server/pbsmetrics/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-
-	nativeRequests "github.com/mxmCherry/openrtb/native/request"
-	nativeResponse "github.com/mxmCherry/openrtb/native/response"
 )
 
 // TestSingleBidder makes sure that the following things work if the Bidder needs only one request.
@@ -35,6 +35,16 @@ import (
 // 1. The Bidder implementation is called with the arguments we expect.
 // 2. The returned values are correct for a non-test bid.
 func TestSingleBidder(t *testing.T) {
+	type aTest struct {
+		debugInfo    *config.DebugInfo
+		httpCallsLen int
+	}
+
+	testCases := []*aTest{
+		{&config.DebugInfo{Allow: false}, 0},
+		{&config.DebugInfo{Allow: true}, 1},
+	}
+
 	respStatus := 200
 	respBody := "{\"bid\":false}"
 	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
@@ -46,24 +56,6 @@ func TestSingleBidder(t *testing.T) {
 	bidAdjustment := 2.0
 	firstInitialPrice := 3.0
 	secondInitialPrice := 4.0
-	mockBidderResponse := &adapters.BidderResponse{
-		Bids: []*adapters.TypedBid{
-			{
-				Bid: &openrtb.Bid{
-					Price: firstInitialPrice,
-				},
-				BidType:      openrtb_ext.BidTypeBanner,
-				DealPriority: 4,
-			},
-			{
-				Bid: &openrtb.Bid{
-					Price: secondInitialPrice,
-				},
-				BidType:      openrtb_ext.BidTypeVideo,
-				DealPriority: 5,
-			},
-		},
-	}
 
 	bidderImpl := &goodSingleBidder{
 		httpRequest: &adapters.RequestData{
@@ -72,54 +64,202 @@ func TestSingleBidder(t *testing.T) {
 			Body:    []byte("{\"key\":\"val\"}"),
 			Headers: http.Header{},
 		},
-		bidResponse: mockBidderResponse,
-	}
-	bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus)
-	currencyConverter := currencies.NewRateConverter(&http.Client{}, "", time.Duration(0))
-	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test", bidAdjustment, currencyConverter.Rates(), &adapters.ExtraRequestInfo{})
-
-	// Make sure the goodSingleBidder was called with the expected arguments.
-	if bidderImpl.httpResponse == nil {
-		t.Errorf("The Bidder should be called with the server's response.")
-	}
-	if bidderImpl.httpResponse.StatusCode != respStatus {
-		t.Errorf("Bad response status. Expected %d, got %d", respStatus, bidderImpl.httpResponse.StatusCode)
-	}
-	if string(bidderImpl.httpResponse.Body) != respBody {
-		t.Errorf("Bad response body. Expected %s, got %s", respBody, string(bidderImpl.httpResponse.Body))
+		bidResponse: nil,
 	}
 
-	// Make sure the returned values are what we expect
-	if len(errs) != 0 {
-		t.Errorf("bidder.Bid returned %d errors. Expected 0", len(errs))
-	}
-	if len(seatBid.bids) != len(mockBidderResponse.Bids) {
-		t.Fatalf("Expected %d bids. Got %d", len(mockBidderResponse.Bids), len(seatBid.bids))
-	}
-	for index, typedBid := range mockBidderResponse.Bids {
-		if typedBid.Bid != seatBid.bids[index].bid {
-			t.Errorf("Bid %d did not point to the same bid returned by the Bidder.", index)
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, DebugContextKey, true)
+
+	for _, test := range testCases {
+		mockBidderResponse := &adapters.BidderResponse{
+			Bids: []*adapters.TypedBid{
+				{
+					Bid: &openrtb2.Bid{
+						Price: firstInitialPrice,
+					},
+					BidType:      openrtb_ext.BidTypeBanner,
+					DealPriority: 4,
+				},
+				{
+					Bid: &openrtb2.Bid{
+						Price: secondInitialPrice,
+					},
+					BidType:      openrtb_ext.BidTypeVideo,
+					DealPriority: 5,
+				},
+			},
 		}
-		if typedBid.BidType != seatBid.bids[index].bidType {
-			t.Errorf("Bid %d did not have the right type. Expected %s, got %s", index, typedBid.BidType, seatBid.bids[index].bidType)
+		bidderImpl.bidResponse = mockBidderResponse
+
+		bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, test.debugInfo)
+		currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+
+		seatBid, errs := bidder.requestBid(ctx, &openrtb2.BidRequest{}, "test", bidAdjustment, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, true, false)
+
+		// Make sure the goodSingleBidder was called with the expected arguments.
+		if bidderImpl.httpResponse == nil {
+			t.Errorf("The Bidder should be called with the server's response.")
 		}
-		if typedBid.DealPriority != seatBid.bids[index].dealPriority {
-			t.Errorf("Bid %d did not have the right deal priority. Expected %s, got %s", index, typedBid.BidType, seatBid.bids[index].bidType)
+		if bidderImpl.httpResponse.StatusCode != respStatus {
+			t.Errorf("Bad response status. Expected %d, got %d", respStatus, bidderImpl.httpResponse.StatusCode)
+		}
+		if string(bidderImpl.httpResponse.Body) != respBody {
+			t.Errorf("Bad response body. Expected %s, got %s", respBody, string(bidderImpl.httpResponse.Body))
+		}
+
+		// Make sure the returned values are what we expect
+		if len(errortypes.FatalOnly(errs)) != 0 {
+			t.Errorf("bidder.Bid returned %d errors. Expected 0", len(errs))
+		}
+
+		if !test.debugInfo.Allow && len(errortypes.WarningOnly(errs)) != 1 {
+			t.Errorf("bidder.Bid returned %d warnings. Expected 1", len(errs))
+		}
+		if len(seatBid.bids) != len(mockBidderResponse.Bids) {
+			t.Fatalf("Expected %d bids. Got %d", len(mockBidderResponse.Bids), len(seatBid.bids))
+		}
+		for index, typedBid := range mockBidderResponse.Bids {
+			if typedBid.Bid != seatBid.bids[index].bid {
+				t.Errorf("Bid %d did not point to the same bid returned by the Bidder.", index)
+			}
+			if typedBid.BidType != seatBid.bids[index].bidType {
+				t.Errorf("Bid %d did not have the right type. Expected %s, got %s", index, typedBid.BidType, seatBid.bids[index].bidType)
+			}
+			if typedBid.DealPriority != seatBid.bids[index].dealPriority {
+				t.Errorf("Bid %d did not have the right deal priority. Expected %s, got %s", index, typedBid.BidType, seatBid.bids[index].bidType)
+			}
+		}
+		if mockBidderResponse.Bids[0].Bid.Price != bidAdjustment*firstInitialPrice {
+			t.Errorf("Bid[0].Price was not adjusted properly. Expected %f, got %f", bidAdjustment*firstInitialPrice, mockBidderResponse.Bids[0].Bid.Price)
+		}
+		if mockBidderResponse.Bids[1].Bid.Price != bidAdjustment*secondInitialPrice {
+			t.Errorf("Bid[1].Price was not adjusted properly. Expected %f, got %f", bidAdjustment*secondInitialPrice, mockBidderResponse.Bids[1].Bid.Price)
+		}
+		if len(seatBid.httpCalls) != test.httpCallsLen {
+			t.Errorf("The bidder shouldn't log HttpCalls when request.test == 0. Found %d", len(seatBid.httpCalls))
 		}
 	}
-	if mockBidderResponse.Bids[0].Bid.Price != bidAdjustment*firstInitialPrice {
-		t.Errorf("Bid[0].Price was not adjusted properly. Expected %f, got %f", bidAdjustment*firstInitialPrice, mockBidderResponse.Bids[0].Bid.Price)
-	}
-	if mockBidderResponse.Bids[1].Bid.Price != bidAdjustment*secondInitialPrice {
-		t.Errorf("Bid[1].Price was not adjusted properly. Expected %f, got %f", bidAdjustment*secondInitialPrice, mockBidderResponse.Bids[1].Bid.Price)
-	}
-	if len(seatBid.httpCalls) != 0 {
-		t.Errorf("The bidder shouldn't log HttpCalls when request.test == 0. Found %d", len(seatBid.httpCalls))
+}
+
+func TestRequestBidRemovesSensitiveHeaders(t *testing.T) {
+	server := httptest.NewServer(mockHandler(200, "getBody", "responseJson"))
+	defer server.Close()
+
+	requestHeaders := http.Header{}
+	requestHeaders.Add("Content-Type", "application/json")
+	requestHeaders.Add("Authorization", "anySecret")
+
+	bidderImpl := &goodSingleBidder{
+		httpRequest: &adapters.RequestData{
+			Method:  "POST",
+			Uri:     server.URL,
+			Body:    []byte("requestJson"),
+			Headers: requestHeaders,
+		},
+		bidResponse: &adapters.BidderResponse{
+			Bids: []*adapters.TypedBid{},
+		},
 	}
 
-	if len(seatBid.ext) != 0 {
-		t.Errorf("The bidder shouldn't define any seatBid.ext. Got %s", string(seatBid.ext))
+	debugInfo := &config.DebugInfo{Allow: true}
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, DebugContextKey, true)
+
+	bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, debugInfo)
+	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	seatBid, errs := bidder.requestBid(ctx, &openrtb2.BidRequest{}, "test", 1, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, true, false)
+
+	expectedHttpCalls := []*openrtb_ext.ExtHttpCall{
+		{
+			Uri:            server.URL,
+			RequestBody:    "requestJson",
+			RequestHeaders: map[string][]string{"Content-Type": {"application/json"}},
+			ResponseBody:   "responseJson",
+			Status:         200,
+		},
 	}
+
+	assert.Empty(t, errs)
+	assert.ElementsMatch(t, seatBid.httpCalls, expectedHttpCalls)
+}
+
+func TestSetGPCHeader(t *testing.T) {
+	server := httptest.NewServer(mockHandler(200, "getBody", "responseJson"))
+	defer server.Close()
+
+	requestHeaders := http.Header{}
+	requestHeaders.Add("Content-Type", "application/json")
+
+	bidderImpl := &goodSingleBidder{
+		httpRequest: &adapters.RequestData{
+			Method:  "POST",
+			Uri:     server.URL,
+			Body:    []byte("requestJson"),
+			Headers: requestHeaders,
+		},
+		bidResponse: &adapters.BidderResponse{
+			Bids: []*adapters.TypedBid{},
+		},
+	}
+
+	debugInfo := &config.DebugInfo{Allow: true}
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, DebugContextKey, true)
+
+	bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, debugInfo)
+	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	seatBid, errs := bidder.requestBid(ctx, &openrtb2.BidRequest{}, "test", 1, currencyConverter.Rates(), &adapters.ExtraRequestInfo{GlobalPrivacyControlHeader: "1"}, true, false)
+
+	expectedHttpCall := []*openrtb_ext.ExtHttpCall{
+		{
+			Uri:            server.URL,
+			RequestBody:    "requestJson",
+			RequestHeaders: map[string][]string{"Content-Type": {"application/json"}, "Sec-Gpc": {"1"}},
+			ResponseBody:   "responseJson",
+			Status:         200,
+		},
+	}
+
+	assert.Empty(t, errs)
+	assert.ElementsMatch(t, seatBid.httpCalls, expectedHttpCall)
+}
+
+func TestSetGPCHeaderNil(t *testing.T) {
+	server := httptest.NewServer(mockHandler(200, "getBody", "responseJson"))
+	defer server.Close()
+
+	bidderImpl := &goodSingleBidder{
+		httpRequest: &adapters.RequestData{
+			Method:  "POST",
+			Uri:     server.URL,
+			Body:    []byte("requestJson"),
+			Headers: nil,
+		},
+		bidResponse: &adapters.BidderResponse{
+			Bids: []*adapters.TypedBid{},
+		},
+	}
+
+	debugInfo := &config.DebugInfo{Allow: true}
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, DebugContextKey, true)
+
+	bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, debugInfo)
+	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	seatBid, errs := bidder.requestBid(ctx, &openrtb2.BidRequest{}, "test", 1, currencyConverter.Rates(), &adapters.ExtraRequestInfo{GlobalPrivacyControlHeader: "1"}, true, false)
+
+	expectedHttpCall := []*openrtb_ext.ExtHttpCall{
+		{
+			Uri:            server.URL,
+			RequestBody:    "requestJson",
+			RequestHeaders: map[string][]string{"Sec-Gpc": {"1"}},
+			ResponseBody:   "responseJson",
+			Status:         200,
+		},
+	}
+
+	assert.Empty(t, errs)
+	assert.ElementsMatch(t, seatBid.httpCalls, expectedHttpCall)
 }
 
 // TestMultiBidder makes sure all the requests get sent, and the responses processed.
@@ -137,11 +277,11 @@ func TestMultiBidder(t *testing.T) {
 	mockBidderResponse := &adapters.BidderResponse{
 		Bids: []*adapters.TypedBid{
 			{
-				Bid:     &openrtb.Bid{},
+				Bid:     &openrtb2.Bid{},
 				BidType: openrtb_ext.BidTypeBanner,
 			},
 			{
-				Bid:     &openrtb.Bid{},
+				Bid:     &openrtb2.Bid{},
 				BidType: openrtb_ext.BidTypeVideo,
 			},
 		},
@@ -162,9 +302,9 @@ func TestMultiBidder(t *testing.T) {
 			}},
 		bidResponse: mockBidderResponse,
 	}
-	bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus)
-	currencyConverter := currencies.NewRateConverter(&http.Client{}, "", time.Duration(0))
-	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test", 1.0, currencyConverter.Rates(), &adapters.ExtraRequestInfo{})
+	bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, nil)
+	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	seatBid, errs := bidder.requestBid(context.Background(), &openrtb2.BidRequest{}, "test", 1.0, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, true, true)
 
 	if seatBid == nil {
 		t.Fatalf("SeatBid should exist, because bids exist.")
@@ -203,7 +343,7 @@ func TestBidderTimeout(t *testing.T) {
 		Bidder:     &mixedMultiBidder{},
 		BidderName: openrtb_ext.BidderAppnexus,
 		Client:     server.Client(),
-		me:         &metricsConf.DummyMetricsEngine{},
+		me:         &metricsConfig.DummyMetricsEngine{},
 	}
 
 	callInfo := bidder.doRequest(ctx, &adapters.RequestData{
@@ -246,7 +386,7 @@ func TestConnectionClose(t *testing.T) {
 		Bidder:     &mixedMultiBidder{},
 		Client:     server.Client(),
 		BidderName: openrtb_ext.BidderAppnexus,
-		me:         &metricsConf.DummyMetricsEngine{},
+		me:         &metricsConfig.DummyMetricsEngine{},
 	}
 
 	callInfo := bidder.doRequest(context.Background(), &adapters.RequestData{
@@ -272,7 +412,7 @@ func TestMultiCurrencies(t *testing.T) {
 
 	testCases := []struct {
 		bids                      []bid
-		rates                     currencies.Rates
+		rates                     currency.Rates
 		expectedBids              []bid
 		expectedBadCurrencyErrors []error
 		description               string
@@ -283,7 +423,7 @@ func TestMultiCurrencies(t *testing.T) {
 				{currency: "USD", price: 1.2},
 				{currency: "USD", price: 1.3},
 			},
-			rates: currencies.Rates{
+			rates: currency.Rates{
 				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"GBP": {
@@ -308,7 +448,7 @@ func TestMultiCurrencies(t *testing.T) {
 				{currency: "", price: 1.2},
 				{currency: "", price: 1.3},
 			},
-			rates: currencies.Rates{
+			rates: currency.Rates{
 				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"GBP": {
@@ -333,7 +473,7 @@ func TestMultiCurrencies(t *testing.T) {
 				{currency: "EUR", price: 1.2},
 				{currency: "EUR", price: 1.3},
 			},
-			rates: currencies.Rates{
+			rates: currency.Rates{
 				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"GBP": {
@@ -358,7 +498,7 @@ func TestMultiCurrencies(t *testing.T) {
 				{currency: "EUR", price: 1.2},
 				{currency: "GBP", price: 1.3},
 			},
-			rates: currencies.Rates{
+			rates: currency.Rates{
 				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"GBP": {
@@ -383,7 +523,7 @@ func TestMultiCurrencies(t *testing.T) {
 				{currency: "EUR", price: 1.2},
 				{currency: "GBP", price: 1.3},
 			},
-			rates: currencies.Rates{
+			rates: currency.Rates{
 				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"GBP": {
@@ -408,7 +548,7 @@ func TestMultiCurrencies(t *testing.T) {
 				{currency: "EUR", price: 1.2},
 				{currency: "GBP", price: 1.3},
 			},
-			rates: currencies.Rates{
+			rates: currency.Rates{
 				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"GBP": {
@@ -424,7 +564,7 @@ func TestMultiCurrencies(t *testing.T) {
 				{currency: "USD", price: 1.3 * 1.3050530256},
 			},
 			expectedBadCurrencyErrors: []error{
-				errors.New("Currency conversion rate not found: 'JPY' => 'USD'"),
+				currency.ConversionRateNotFound{"JPY", "USD"},
 			},
 			description: "Case 6 - Bidder respond with a mix of currencies and one unknown on all HTTP responses",
 		},
@@ -434,7 +574,7 @@ func TestMultiCurrencies(t *testing.T) {
 				{currency: "BZD", price: 1.2},
 				{currency: "DKK", price: 1.3},
 			},
-			rates: currencies.Rates{
+			rates: currency.Rates{
 				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"GBP": {
@@ -447,9 +587,9 @@ func TestMultiCurrencies(t *testing.T) {
 			},
 			expectedBids: []bid{},
 			expectedBadCurrencyErrors: []error{
-				errors.New("Currency conversion rate not found: 'JPY' => 'USD'"),
-				errors.New("Currency conversion rate not found: 'BZD' => 'USD'"),
-				errors.New("Currency conversion rate not found: 'DKK' => 'USD'"),
+				currency.ConversionRateNotFound{"JPY", "USD"},
+				currency.ConversionRateNotFound{"BZD", "USD"},
+				currency.ConversionRateNotFound{"DKK", "USD"},
 			},
 			description: "Case 7 - Bidder respond with currencies not having any rate on all HTTP responses",
 		},
@@ -459,7 +599,7 @@ func TestMultiCurrencies(t *testing.T) {
 				{currency: "BBB", price: 1.2},
 				{currency: "CCC", price: 1.3},
 			},
-			rates: currencies.Rates{
+			rates: currency.Rates{
 				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"GBP": {
@@ -494,7 +634,7 @@ func TestMultiCurrencies(t *testing.T) {
 			mockBidderResponses[i] = &adapters.BidderResponse{
 				Bids: []*adapters.TypedBid{
 					{
-						Bid: &openrtb.Bid{
+						Bid: &openrtb2.Bid{
 							Price: bid.price,
 						},
 						BidType: openrtb_ext.BidTypeBanner,
@@ -524,8 +664,8 @@ func TestMultiCurrencies(t *testing.T) {
 		)
 
 		// Execute:
-		bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus)
-		currencyConverter := currencies.NewRateConverter(
+		bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, nil)
+		currencyConverter := currency.NewRateConverter(
 			&http.Client{},
 			mockedHTTPServer.URL,
 			time.Duration(24)*time.Hour,
@@ -535,11 +675,13 @@ func TestMultiCurrencies(t *testing.T) {
 
 		seatBid, errs := bidder.requestBid(
 			context.Background(),
-			&openrtb.BidRequest{},
+			&openrtb2.BidRequest{},
 			"test",
 			1,
 			currencyConverter.Rates(),
 			&adapters.ExtraRequestInfo{},
+			true,
+			true,
 		)
 
 		// Verify:
@@ -578,9 +720,9 @@ func TestMultiCurrencies_RateConverterNotSet(t *testing.T) {
 			bidCurrency:       []string{"EUR", "EUR", "EUR"},
 			expectedBidsCount: 0,
 			expectedBadCurrencyErrors: []error{
-				fmt.Errorf("Constant rates doesn't proceed to any conversions, cannot convert 'EUR' => 'USD'"),
-				fmt.Errorf("Constant rates doesn't proceed to any conversions, cannot convert 'EUR' => 'USD'"),
-				fmt.Errorf("Constant rates doesn't proceed to any conversions, cannot convert 'EUR' => 'USD'"),
+				currency.ConversionRateNotFound{"EUR", "USD"},
+				currency.ConversionRateNotFound{"EUR", "USD"},
+				currency.ConversionRateNotFound{"EUR", "USD"},
 			},
 			description: "Case 2 - Bidder respond with the same currency (not default one) on all HTTP responses",
 		},
@@ -612,7 +754,7 @@ func TestMultiCurrencies_RateConverterNotSet(t *testing.T) {
 			bidCurrency:       []string{"EUR", "", "USD"},
 			expectedBidsCount: 2,
 			expectedBadCurrencyErrors: []error{
-				fmt.Errorf("Constant rates doesn't proceed to any conversions, cannot convert 'EUR' => 'USD'"),
+				currency.ConversionRateNotFound{"EUR", "USD"},
 			},
 			description: "Case 7 - Bidder responds with a mix of not set, non default currency and default currency in HTTP responses",
 		},
@@ -620,7 +762,7 @@ func TestMultiCurrencies_RateConverterNotSet(t *testing.T) {
 			bidCurrency:       []string{"GBP", "", "USD"},
 			expectedBidsCount: 2,
 			expectedBadCurrencyErrors: []error{
-				fmt.Errorf("Constant rates doesn't proceed to any conversions, cannot convert 'GBP' => 'USD'"),
+				currency.ConversionRateNotFound{"GBP", "USD"},
 			},
 			description: "Case 8 - Bidder responds with a mix of not set, non default currency and default currency in HTTP responses",
 		},
@@ -628,7 +770,7 @@ func TestMultiCurrencies_RateConverterNotSet(t *testing.T) {
 			bidCurrency:       []string{"GBP", "", ""},
 			expectedBidsCount: 2,
 			expectedBadCurrencyErrors: []error{
-				fmt.Errorf("Constant rates doesn't proceed to any conversions, cannot convert 'GBP' => 'USD'"),
+				currency.ConversionRateNotFound{"GBP", "USD"},
 			},
 			description: "Case 9 - Bidder responds with a mix of not set and empty currencies (default currency) in HTTP responses",
 		},
@@ -659,7 +801,7 @@ func TestMultiCurrencies_RateConverterNotSet(t *testing.T) {
 			mockBidderResponses[i] = &adapters.BidderResponse{
 				Bids: []*adapters.TypedBid{
 					{
-						Bid:     &openrtb.Bid{},
+						Bid:     &openrtb2.Bid{},
 						BidType: openrtb_ext.BidTypeBanner,
 					},
 				},
@@ -675,15 +817,17 @@ func TestMultiCurrencies_RateConverterNotSet(t *testing.T) {
 		}
 
 		// Execute:
-		bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus)
-		currencyConverter := currencies.NewRateConverter(&http.Client{}, "", time.Duration(0))
+		bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, nil)
+		currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 		seatBid, errs := bidder.requestBid(
 			context.Background(),
-			&openrtb.BidRequest{},
+			&openrtb2.BidRequest{},
 			"test",
 			1,
 			currencyConverter.Rates(),
 			&adapters.ExtraRequestInfo{},
+			true,
+			true,
 		)
 
 		// Verify:
@@ -705,7 +849,7 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 		bidResponsesCurrency   string
 		expectedPickedCurrency string
 		expectedError          bool
-		rates                  currencies.Rates
+		rates                  currency.Rates
 		description            string
 	}{
 		{
@@ -713,7 +857,7 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			bidResponsesCurrency:   "EUR",
 			expectedPickedCurrency: "EUR",
 			expectedError:          false,
-			rates: currencies.Rates{
+			rates: currency.Rates{
 				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"JPY": {
@@ -734,7 +878,7 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			bidResponsesCurrency:   "JPY",
 			expectedPickedCurrency: "JPY",
 			expectedError:          false,
-			rates: currencies.Rates{
+			rates: currency.Rates{
 				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"JPY": {
@@ -749,7 +893,7 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			bidResponsesCurrency:   "USD",
 			expectedPickedCurrency: "USD",
 			expectedError:          false,
-			rates: currencies.Rates{
+			rates: currency.Rates{
 				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"JPY": {
@@ -770,7 +914,7 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			bidResponsesCurrency:   "",
 			expectedPickedCurrency: "",
 			expectedError:          true,
-			rates: currencies.Rates{
+			rates: currency.Rates{
 				DataAsOf:    time.Now(),
 				Conversions: map[string]map[string]float64{},
 			},
@@ -781,7 +925,7 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			bidResponsesCurrency:   "USD",
 			expectedPickedCurrency: "USD",
 			expectedError:          false,
-			rates: currencies.Rates{
+			rates: currency.Rates{
 				DataAsOf:    time.Now(),
 				Conversions: map[string]map[string]float64{},
 			},
@@ -792,7 +936,7 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			bidResponsesCurrency:   "USD",
 			expectedPickedCurrency: "USD",
 			expectedError:          false,
-			rates: currencies.Rates{
+			rates: currency.Rates{
 				DataAsOf:    time.Now(),
 				Conversions: map[string]map[string]float64{},
 			},
@@ -821,7 +965,7 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			{
 				Bids: []*adapters.TypedBid{
 					{
-						Bid:     &openrtb.Bid{},
+						Bid:     &openrtb2.Bid{},
 						BidType: openrtb_ext.BidTypeBanner,
 					},
 				},
@@ -841,21 +985,23 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 		}
 
 		// Execute:
-		bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus)
-		currencyConverter := currencies.NewRateConverter(
+		bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, nil)
+		currencyConverter := currency.NewRateConverter(
 			&http.Client{},
 			mockedHTTPServer.URL,
 			time.Duration(24)*time.Hour,
 		)
 		seatBid, errs := bidder.requestBid(
 			context.Background(),
-			&openrtb.BidRequest{
+			&openrtb2.BidRequest{
 				Cur: tc.bidRequestCurrencies,
 			},
 			"test",
 			1,
 			currencyConverter.Rates(),
 			&adapters.ExtraRequestInfo{},
+			true,
+			false,
 		)
 
 		// Verify:
@@ -868,75 +1014,204 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 	}
 }
 
-// TestBadResponseLogging makes sure that openrtb_ext works properly on malformed HTTP requests.
-func TestBadRequestLogging(t *testing.T) {
-	info := &httpCallInfo{
-		err: errors.New("Bad request"),
+func TestMakeExt(t *testing.T) {
+	testCases := []struct {
+		description string
+		given       *httpCallInfo
+		expected    *openrtb_ext.ExtHttpCall
+	}{
+		{
+			description: "Nil",
+			given:       nil,
+			expected:    &openrtb_ext.ExtHttpCall{},
+		},
+		{
+			description: "Empty",
+			given: &httpCallInfo{
+				err:      nil,
+				response: nil,
+				request:  nil,
+			},
+			expected: &openrtb_ext.ExtHttpCall{},
+		},
+		{
+			description: "Request & Response - No Error",
+			given: &httpCallInfo{
+				err: nil,
+				request: &adapters.RequestData{
+					Uri:     "requestUri",
+					Body:    []byte("requestBody"),
+					Headers: makeHeader(map[string][]string{"Key1": {"value1", "value2"}}),
+				},
+				response: &adapters.ResponseData{
+					Body:       []byte("responseBody"),
+					StatusCode: 999,
+				},
+			},
+			expected: &openrtb_ext.ExtHttpCall{
+				Uri:            "requestUri",
+				RequestBody:    "requestBody",
+				RequestHeaders: map[string][]string{"Key1": {"value1", "value2"}},
+				ResponseBody:   "responseBody",
+				Status:         999,
+			},
+		},
+		{
+			description: "Request & Response - No Error with Authorization removal",
+			given: &httpCallInfo{
+				err: nil,
+				request: &adapters.RequestData{
+					Uri:     "requestUri",
+					Body:    []byte("requestBody"),
+					Headers: makeHeader(map[string][]string{"Key1": {"value1", "value2"}, "Authorization": {"secret"}}),
+				},
+				response: &adapters.ResponseData{
+					Body:       []byte("responseBody"),
+					StatusCode: 999,
+				},
+			},
+			expected: &openrtb_ext.ExtHttpCall{
+				Uri:            "requestUri",
+				RequestBody:    "requestBody",
+				RequestHeaders: map[string][]string{"Key1": {"value1", "value2"}},
+				ResponseBody:   "responseBody",
+				Status:         999,
+			},
+		},
+		{
+			description: "Request & Response - No Error with nil header",
+			given: &httpCallInfo{
+				err: nil,
+				request: &adapters.RequestData{
+					Uri:     "requestUri",
+					Body:    []byte("requestBody"),
+					Headers: nil,
+				},
+				response: &adapters.ResponseData{
+					Body:       []byte("responseBody"),
+					StatusCode: 999,
+				},
+			},
+			expected: &openrtb_ext.ExtHttpCall{
+				Uri:            "requestUri",
+				RequestBody:    "requestBody",
+				RequestHeaders: nil,
+				ResponseBody:   "responseBody",
+				Status:         999,
+			},
+		},
+		{
+			description: "Request & Response - Error",
+			given: &httpCallInfo{
+				err: errors.New("error"),
+				request: &adapters.RequestData{
+					Uri:     "requestUri",
+					Body:    []byte("requestBody"),
+					Headers: makeHeader(map[string][]string{"Key1": {"value1", "value2"}}),
+				},
+				response: &adapters.ResponseData{
+					Body:       []byte("responseBody"),
+					StatusCode: 999,
+				},
+			},
+			expected: &openrtb_ext.ExtHttpCall{
+				Uri:            "requestUri",
+				RequestBody:    "requestBody",
+				RequestHeaders: map[string][]string{"Key1": {"value1", "value2"}},
+			},
+		},
+		{
+			description: "Request Only",
+			given: &httpCallInfo{
+				err: nil,
+				request: &adapters.RequestData{
+					Uri:     "requestUri",
+					Body:    []byte("requestBody"),
+					Headers: makeHeader(map[string][]string{"Key1": {"value1", "value2"}}),
+				},
+				response: nil,
+			},
+			expected: &openrtb_ext.ExtHttpCall{
+				Uri:            "requestUri",
+				RequestBody:    "requestBody",
+				RequestHeaders: map[string][]string{"Key1": {"value1", "value2"}},
+			},
+		}, {
+			description: "Response Only",
+			given: &httpCallInfo{
+				err: nil,
+				response: &adapters.ResponseData{
+					Body:       []byte("responseBody"),
+					StatusCode: 999,
+				},
+			},
+			expected: &openrtb_ext.ExtHttpCall{},
+		},
 	}
-	ext := makeExt(info)
-	if ext.Uri != "" {
-		t.Errorf("The URI should be empty. Got %s", ext.Uri)
-	}
-	if ext.RequestBody != "" {
-		t.Errorf("The request body should be empty. Got %s", ext.RequestBody)
-	}
-	if ext.ResponseBody != "" {
-		t.Errorf("The response body should be empty. Got %s", ext.ResponseBody)
-	}
-	if ext.Status != 0 {
-		t.Errorf("The Status code should be 0. Got %d", ext.Status)
+
+	for _, test := range testCases {
+		result := makeExt(test.given)
+		assert.Equal(t, test.expected, result, test.description)
 	}
 }
 
-// TestBadResponseLogging makes sure that openrtb_ext works properly if we don't get a sensible HTTP response.
-func TestBadResponseLogging(t *testing.T) {
-	info := &httpCallInfo{
-		request: &adapters.RequestData{
-			Uri:  "test.com",
-			Body: []byte("request body"),
+func TestFilterHeader(t *testing.T) {
+	testCases := []struct {
+		description string
+		given       http.Header
+		expected    http.Header
+	}{
+		{
+			description: "Nil",
+			given:       nil,
+			expected:    nil,
 		},
-		err: errors.New("Bad response"),
+		{
+			description: "Empty",
+			given:       http.Header{},
+			expected:    http.Header{},
+		},
+		{
+			description: "One",
+			given:       makeHeader(map[string][]string{"Key1": {"value1"}}),
+			expected:    makeHeader(map[string][]string{"Key1": {"value1"}}),
+		},
+		{
+			description: "Many",
+			given:       makeHeader(map[string][]string{"Key1": {"value1"}, "Key2": {"value2a", "value2b"}}),
+			expected:    makeHeader(map[string][]string{"Key1": {"value1"}, "Key2": {"value2a", "value2b"}}),
+		},
+		{
+			description: "Authorization Header Omitted",
+			given:       makeHeader(map[string][]string{"authorization": {"secret"}}),
+			expected:    http.Header{},
+		},
+		{
+			description: "Authorization Header Omitted - Case Insensitive",
+			given:       makeHeader(map[string][]string{"AuThOrIzAtIoN": {"secret"}}),
+			expected:    http.Header{},
+		},
+		{
+			description: "Authorization Header Omitted + Other Keys",
+			given:       makeHeader(map[string][]string{"authorization": {"secret"}, "Key1": {"value1"}}),
+			expected:    makeHeader(map[string][]string{"Key1": {"value1"}}),
+		},
 	}
-	ext := makeExt(info)
-	if ext.Uri != info.request.Uri {
-		t.Errorf("The URI should be test.com. Got %s", ext.Uri)
-	}
-	if ext.RequestBody != string(info.request.Body) {
-		t.Errorf("The request body should be empty. Got %s", ext.RequestBody)
-	}
-	if ext.ResponseBody != "" {
-		t.Errorf("The response body should be empty. Got %s", ext.ResponseBody)
-	}
-	if ext.Status != 0 {
-		t.Errorf("The Status code should be 0. Got %d", ext.Status)
+
+	for _, test := range testCases {
+		result := filterHeader(test.given)
+		assert.Equal(t, test.expected, result, test.description)
 	}
 }
 
-// TestSuccessfulResponseLogging makes sure that openrtb_ext works properly if the HTTP request is successful.
-func TestSuccessfulResponseLogging(t *testing.T) {
-	info := &httpCallInfo{
-		request: &adapters.RequestData{
-			Uri:  "test.com",
-			Body: []byte("request body"),
-		},
-		response: &adapters.ResponseData{
-			StatusCode: 200,
-			Body:       []byte("response body"),
-		},
+func makeHeader(v map[string][]string) http.Header {
+	h := http.Header{}
+	for key, values := range v {
+		for _, value := range values {
+			h.Add(key, value)
+		}
 	}
-	ext := makeExt(info)
-	if ext.Uri != info.request.Uri {
-		t.Errorf("The URI should be test.com. Got %s", ext.Uri)
-	}
-	if ext.RequestBody != string(info.request.Body) {
-		t.Errorf("The request body should be \"request body\". Got %s", ext.RequestBody)
-	}
-	if ext.ResponseBody != string(info.response.Body) {
-		t.Errorf("The response body should be \"response body\". Got %s", ext.ResponseBody)
-	}
-	if ext.Status != info.response.StatusCode {
-		t.Errorf("The Status code should be 0. Got %d", ext.Status)
-	}
+	return h
 }
 
 func TestMobileNativeTypes(t *testing.T) {
@@ -949,27 +1224,27 @@ func TestMobileNativeTypes(t *testing.T) {
 	reqURL := server.URL
 
 	testCases := []struct {
-		mockBidderRequest  *openrtb.BidRequest
+		mockBidderRequest  *openrtb2.BidRequest
 		mockBidderResponse *adapters.BidderResponse
 		expectedValue      string
 		description        string
 	}{
 		{
-			mockBidderRequest: &openrtb.BidRequest{
-				Imp: []openrtb.Imp{
+			mockBidderRequest: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
 					{
 						ID: "some-imp-id",
-						Native: &openrtb.Native{
+						Native: &openrtb2.Native{
 							Request: "{\"ver\":\"1.1\",\"context\":1,\"contextsubtype\":11,\"plcmttype\":4,\"plcmtcnt\":1,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":500}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1,\"hmin\":1}},{\"id\":3,\"required\":0,\"data\":{\"type\":1,\"len\":200}},{\"id\":4,\"required\":0,\"data\":{\"type\":2,\"len\":15000}},{\"id\":5,\"required\":0,\"data\":{\"type\":6,\"len\":40}}]}",
 						},
 					},
 				},
-				App: &openrtb.App{},
+				App: &openrtb2.App{},
 			},
 			mockBidderResponse: &adapters.BidderResponse{
 				Bids: []*adapters.TypedBid{
 					{
-						Bid: &openrtb.Bid{
+						Bid: &openrtb2.Bid{
 							ImpID: "some-imp-id",
 							AdM:   "{\"assets\":[{\"id\":2,\"img\":{\"url\":\"http://vcdn.adnxs.com/p/creative-image/f8/7f/0f/13/f87f0f13-230c-4f05-8087-db9216e393de.jpg\",\"w\":989,\"h\":742,\"ext\":{\"appnexus\":{\"prevent_crop\":0}}}},{\"id\":1,\"title\":{\"text\":\"This is a Prebid Native Creative\"}},{\"id\":3,\"data\":{\"value\":\"Prebid.org\"}},{\"id\":4,\"data\":{\"value\":\"This is a Prebid Native Creative.  There are many like it, but this one is mine.\"}}],\"link\":{\"url\":\"http://some-url.com\"},\"imptrackers\":[\"http://someimptracker.com\"],\"jstracker\":\"some-js-tracker\"}",
 							Price: 10,
@@ -982,21 +1257,21 @@ func TestMobileNativeTypes(t *testing.T) {
 			description:   "Checks types in response",
 		},
 		{
-			mockBidderRequest: &openrtb.BidRequest{
-				Imp: []openrtb.Imp{
+			mockBidderRequest: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
 					{
 						ID: "some-imp-id",
-						Native: &openrtb.Native{
+						Native: &openrtb2.Native{
 							Request: "{\"ver\":\"1.1\",\"context\":1,\"contextsubtype\":11,\"plcmttype\":4,\"plcmtcnt\":1,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":500}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1,\"hmin\":1}},{\"id\":3,\"required\":0,\"data\":{\"type\":1,\"len\":200}},{\"id\":4,\"required\":0,\"data\":{\"type\":2,\"len\":15000}},{\"id\":5,\"required\":0,\"data\":{\"type\":6,\"len\":40}}]}",
 						},
 					},
 				},
-				App: &openrtb.App{},
+				App: &openrtb2.App{},
 			},
 			mockBidderResponse: &adapters.BidderResponse{
 				Bids: []*adapters.TypedBid{
 					{
-						Bid: &openrtb.Bid{
+						Bid: &openrtb2.Bid{
 							ImpID: "some-imp-id",
 							AdM:   "{\"some-diff-markup\":\"creative\"}",
 							Price: 10,
@@ -1020,8 +1295,8 @@ func TestMobileNativeTypes(t *testing.T) {
 			},
 			bidResponse: tc.mockBidderResponse,
 		}
-		bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus)
-		currencyConverter := currencies.NewRateConverter(&http.Client{}, "", time.Duration(0))
+		bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, nil)
+		currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 
 		seatBids, _ := bidder.requestBid(
 			context.Background(),
@@ -1030,6 +1305,8 @@ func TestMobileNativeTypes(t *testing.T) {
 			1.0,
 			currencyConverter.Rates(),
 			&adapters.ExtraRequestInfo{},
+			true,
+			true,
 		)
 
 		var actualValue string
@@ -1041,9 +1318,9 @@ func TestMobileNativeTypes(t *testing.T) {
 }
 
 func TestErrorReporting(t *testing.T) {
-	bidder := adaptBidder(&bidRejector{}, nil, &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus)
-	currencyConverter := currencies.NewRateConverter(&http.Client{}, "", time.Duration(0))
-	bids, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test", 1.0, currencyConverter.Rates(), &adapters.ExtraRequestInfo{})
+	bidder := adaptBidder(&bidRejector{}, nil, &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, nil)
+	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	bids, errs := bidder.requestBid(context.Background(), &openrtb2.BidRequest{}, "test", 1.0, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, true, false)
 	if bids != nil {
 		t.Errorf("There should be no seatbid if no http requests are returned.")
 	}
@@ -1064,7 +1341,7 @@ func TestSetAssetTypes(t *testing.T) {
 	}{
 		{
 			respAsset: nativeResponse.Asset{
-				ID: 1,
+				ID: openrtb2.Int64Ptr(1),
 				Img: &nativeResponse.Image{
 					URL: "http://some-url",
 				},
@@ -1090,7 +1367,7 @@ func TestSetAssetTypes(t *testing.T) {
 		},
 		{
 			respAsset: nativeResponse.Asset{
-				ID: 2,
+				ID: openrtb2.Int64Ptr(2),
 				Data: &nativeResponse.Data{
 					Label: "some label",
 				},
@@ -1116,7 +1393,7 @@ func TestSetAssetTypes(t *testing.T) {
 		},
 		{
 			respAsset: nativeResponse.Asset{
-				ID: 1,
+				ID: openrtb2.Int64Ptr(1),
 				Img: &nativeResponse.Image{
 					URL: "http://some-url",
 				},
@@ -1136,7 +1413,7 @@ func TestSetAssetTypes(t *testing.T) {
 		},
 		{
 			respAsset: nativeResponse.Asset{
-				ID: 2,
+				ID: openrtb2.Int64Ptr(2),
 				Data: &nativeResponse.Data{
 					Label: "some label",
 				},
@@ -1156,7 +1433,7 @@ func TestSetAssetTypes(t *testing.T) {
 		},
 		{
 			respAsset: nativeResponse.Asset{
-				ID: 1,
+				ID: openrtb2.Int64Ptr(1),
 				Img: &nativeResponse.Image{
 					URL: "http://some-url",
 				},
@@ -1173,6 +1450,44 @@ func TestSetAssetTypes(t *testing.T) {
 			},
 			expectedErr: "Response has an Image asset with ID:1 present that doesn't exist in the request",
 			desc:        "Assets with same ID in the req and resp are of different types",
+		},
+		{
+			respAsset: nativeResponse.Asset{
+				Img: &nativeResponse.Image{
+					URL: "http://some-url",
+				},
+			},
+			nativeReq: nativeRequests.Request{
+				Assets: []nativeRequests.Asset{
+					{
+						ID: 1,
+						Img: &nativeRequests.Image{
+							Type: 2,
+						},
+					},
+				},
+			},
+			expectedErr: "Response Image asset doesn't have an ID",
+			desc:        "Response Image without an ID",
+		},
+		{
+			respAsset: nativeResponse.Asset{
+				Data: &nativeResponse.Data{
+					Label: "some label",
+				},
+			},
+			nativeReq: nativeRequests.Request{
+				Assets: []nativeRequests.Asset{
+					{
+						ID: 1,
+						Data: &nativeRequests.Data{
+							Type: 2,
+						},
+					},
+				},
+			},
+			expectedErr: "Response Data asset doesn't have an ID",
+			desc:        "Response Data asset without an ID",
 		},
 	}
 
@@ -1217,16 +1532,16 @@ func TestCallRecordAdapterConnections(t *testing.T) {
 	}
 
 	// setup a mock metrics engine and its expectation
-	metrics := &pbsmetrics.MetricsEngineMock{}
+	metrics := &metrics.MetricsEngineMock{}
 	expectedAdapterName := openrtb_ext.BidderAppnexus
 	compareConnWaitTime := func(dur time.Duration) bool { return dur.Nanoseconds() > 0 }
 
 	metrics.On("RecordAdapterConnections", expectedAdapterName, false, mock.MatchedBy(compareConnWaitTime)).Once()
 
 	// Run requestBid using an http.Client with a mock handler
-	bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, metrics, openrtb_ext.BidderAppnexus)
-	currencyConverter := currencies.NewRateConverter(&http.Client{}, "", time.Duration(0))
-	_, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test", bidAdjustment, currencyConverter.Rates(), &adapters.ExtraRequestInfo{})
+	bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, metrics, openrtb_ext.BidderAppnexus, nil)
+	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	_, errs := bidder.requestBid(context.Background(), &openrtb2.BidRequest{}, "test", bidAdjustment, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, true, true)
 
 	// Assert no errors
 	assert.Equal(t, 0, len(errs), "bidder.requestBid returned errors %v \n", errs)
@@ -1238,23 +1553,38 @@ func TestCallRecordAdapterConnections(t *testing.T) {
 type DNSDoneTripper struct{}
 
 func (DNSDoneTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	//Access the httptrace.ClientTrace
+	// Access the httptrace.ClientTrace
 	trace := httptrace.ContextClientTrace(req.Context())
-
-	//Force DNSDone call defined in exchange/bidder.go
+	// Call the DNSDone method on the client trace
 	trace.DNSDone(httptrace.DNSDoneInfo{})
 
 	resp := &http.Response{
 		StatusCode: 200,
-		Header:     map[string][]string{"Location": {"http://www.example.com/"}},
 		Body:       ioutil.NopCloser(strings.NewReader("postBody")),
 	}
+
 	return resp, nil
 }
 
-func TestCallRecordRecordDNSTime(t *testing.T) {
+type TLSHandshakeTripper struct{}
+
+func (TLSHandshakeTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	// Access the httptrace.ClientTrace
+	trace := httptrace.ContextClientTrace(req.Context())
+	// Call the TLSHandshakeDone method on the client trace
+	trace.TLSHandshakeDone(tls.ConnectionState{}, nil)
+
+	resp := &http.Response{
+		StatusCode: 200,
+		Body:       ioutil.NopCloser(strings.NewReader("postBody")),
+	}
+
+	return resp, nil
+}
+
+func TestCallRecordDNSTime(t *testing.T) {
 	// setup a mock metrics engine and its expectation
-	metricsMock := &pbsmetrics.MetricsEngineMock{}
+	metricsMock := &metrics.MetricsEngineMock{}
 	metricsMock.Mock.On("RecordDNSTime", mock.Anything).Return()
 
 	// Instantiate the bidder that will send the request. We'll make sure to use an
@@ -1263,6 +1593,27 @@ func TestCallRecordRecordDNSTime(t *testing.T) {
 	bidder := &bidderAdapter{
 		Bidder: &mixedMultiBidder{},
 		Client: &http.Client{Transport: DNSDoneTripper{}},
+		me:     metricsMock,
+	}
+
+	// Run test
+	bidder.doRequest(context.Background(), &adapters.RequestData{Method: "POST", Uri: "http://www.example.com/"})
+
+	// Tried one or another, none seem to work without panicking
+	metricsMock.AssertExpectations(t)
+}
+
+func TestCallRecordTLSHandshakeTime(t *testing.T) {
+	// setup a mock metrics engine and its expectation
+	metricsMock := &metrics.MetricsEngineMock{}
+	metricsMock.Mock.On("RecordTLSHandshakeTime", mock.Anything).Return()
+
+	// Instantiate the bidder that will send the request. We'll make sure to use an
+	// http.Client that runs our mock RoundTripper so DNSDone(httptrace.DNSDoneInfo{})
+	// gets called
+	bidder := &bidderAdapter{
+		Bidder: &mixedMultiBidder{},
+		Client: &http.Client{Transport: TLSHandshakeTripper{}},
 		me:     metricsMock,
 	}
 
@@ -1291,7 +1642,7 @@ func TestTimeoutNotificationOff(t *testing.T) {
 		Bidder: bidderImpl,
 		Client: server.Client(),
 		config: bidderAdapterConfig{Debug: config.Debug{}},
-		me:     &metricsConf.DummyMetricsEngine{},
+		me:     &metricsConfig.DummyMetricsEngine{},
 	}
 	if tb, ok := bidder.Bidder.(adapters.TimeoutBidder); !ok {
 		t.Error("Failed to cast bidder to a TimeoutBidder")
@@ -1332,7 +1683,7 @@ func TestTimeoutNotificationOn(t *testing.T) {
 				},
 			},
 		},
-		me: &metricsConf.DummyMetricsEngine{},
+		me: &metricsConfig.DummyMetricsEngine{},
 	}
 
 	// Unwrap To Mimic exchange.go Casting Code
@@ -1365,44 +1716,61 @@ func TestTimeoutNotificationOn(t *testing.T) {
 	assert.EqualValues(t, logExpected, logActual)
 }
 
+func TestParseDebugInfoTrue(t *testing.T) {
+	debugInfo := &config.DebugInfo{Allow: true}
+	resDebugInfo := parseDebugInfo(debugInfo)
+	assert.True(t, resDebugInfo, "Debug Allow value should be true")
+}
+
+func TestParseDebugInfoFalse(t *testing.T) {
+	debugInfo := &config.DebugInfo{Allow: false}
+	resDebugInfo := parseDebugInfo(debugInfo)
+	assert.False(t, resDebugInfo, "Debug Allow value should be false")
+}
+
+func TestParseDebugInfoIsNil(t *testing.T) {
+	resDebugInfo := parseDebugInfo(nil)
+	assert.True(t, resDebugInfo, "Debug Allow value should be true")
+}
+
 func wrapWithBidderInfo(bidder adapters.Bidder) adapters.Bidder {
-	bidderInfo := adapters.BidderInfo{
-		Status: adapters.StatusActive,
-		Capabilities: &adapters.CapabilitiesInfo{
-			App: &adapters.PlatformInfo{
+	bidderInfo := config.BidderInfo{
+		Enabled: true,
+		Capabilities: &config.CapabilitiesInfo{
+			App: &config.PlatformInfo{
 				MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner},
 			},
 		},
 	}
-	return adapters.EnforceBidderInfo(bidder, bidderInfo)
+	return adapters.BuildInfoAwareBidder(bidder, bidderInfo)
 }
 
 type goodSingleBidder struct {
-	bidRequest   *openrtb.BidRequest
+	bidRequest   *openrtb2.BidRequest
 	httpRequest  *adapters.RequestData
 	httpResponse *adapters.ResponseData
 	bidResponse  *adapters.BidderResponse
 }
 
-func (bidder *goodSingleBidder) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (bidder *goodSingleBidder) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	bidder.bidRequest = request
 	return []*adapters.RequestData{bidder.httpRequest}, nil
 }
 
-func (bidder *goodSingleBidder) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (bidder *goodSingleBidder) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	bidder.httpResponse = response
 	return bidder.bidResponse, nil
 }
 
 type goodMultiHTTPCallsBidder struct {
-	bidRequest        *openrtb.BidRequest
+	bidRequest        *openrtb2.BidRequest
 	httpRequest       []*adapters.RequestData
 	httpResponses     []*adapters.ResponseData
 	bidResponses      []*adapters.BidderResponse
 	bidResponseNumber int
 }
 
-func (bidder *goodMultiHTTPCallsBidder) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (bidder *goodMultiHTTPCallsBidder) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	bidder.bidRequest = request
 	response := make([]*adapters.RequestData, len(bidder.httpRequest))
 
@@ -1412,7 +1780,7 @@ func (bidder *goodMultiHTTPCallsBidder) MakeRequests(request *openrtb.BidRequest
 	return response, nil
 }
 
-func (bidder *goodMultiHTTPCallsBidder) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (bidder *goodMultiHTTPCallsBidder) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	br := bidder.bidResponses[bidder.bidResponseNumber]
 	bidder.bidResponseNumber++
 	bidder.httpResponses = append(bidder.httpResponses, response)
@@ -1421,18 +1789,18 @@ func (bidder *goodMultiHTTPCallsBidder) MakeBids(internalRequest *openrtb.BidReq
 }
 
 type mixedMultiBidder struct {
-	bidRequest    *openrtb.BidRequest
+	bidRequest    *openrtb2.BidRequest
 	httpRequests  []*adapters.RequestData
 	httpResponses []*adapters.ResponseData
 	bidResponse   *adapters.BidderResponse
 }
 
-func (bidder *mixedMultiBidder) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (bidder *mixedMultiBidder) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	bidder.bidRequest = request
 	return bidder.httpRequests, []error{errors.New("The requests weren't ideal.")}
 }
 
-func (bidder *mixedMultiBidder) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (bidder *mixedMultiBidder) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	bidder.httpResponses = append(bidder.httpResponses, response)
 	return bidder.bidResponse, []error{errors.New("The bidResponse weren't ideal.")}
 }
@@ -1442,11 +1810,11 @@ type bidRejector struct {
 	httpResponse *adapters.ResponseData
 }
 
-func (bidder *bidRejector) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (bidder *bidRejector) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	return nil, []error{errors.New("Invalid params on BidRequest.")}
 }
 
-func (bidder *bidRejector) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (bidder *bidRejector) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	bidder.httpResponse = response
 	return nil, []error{errors.New("Can't make a response.")}
 }
@@ -1456,11 +1824,11 @@ type notifyingBidder struct {
 	notifyRequest adapters.RequestData
 }
 
-func (bidder *notifyingBidder) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (bidder *notifyingBidder) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	return bidder.requests, nil
 }
 
-func (bidder *notifyingBidder) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (bidder *notifyingBidder) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	return nil, nil
 }
 

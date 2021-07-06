@@ -3,24 +3,28 @@ package inmobi
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/mxmCherry/openrtb"
+	"net/http"
+
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"net/http"
 )
 
 type InMobiAdapter struct {
 	endPoint string
 }
 
-func NewInMobiAdapter(endpoint string) *InMobiAdapter {
-	return &InMobiAdapter{
-		endPoint: endpoint,
+// Builder builds a new instance of the InMobi adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &InMobiAdapter{
+		endPoint: config.Endpoint,
 	}
+	return bidder, nil
 }
 
-func (a *InMobiAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *InMobiAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 
 	if len(request.Imp) == 0 {
@@ -52,7 +56,7 @@ func (a *InMobiAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 	}}, errs
 }
 
-func (a *InMobiAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *InMobiAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -63,7 +67,7 @@ func (a *InMobiAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 		}}
 	}
 
-	var serverBidResponse openrtb.BidResponse
+	var serverBidResponse openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &serverBidResponse); err != nil {
 		return nil, []error{err}
 	}
@@ -83,7 +87,7 @@ func (a *InMobiAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 	return bidResponse, nil
 }
 
-func preprocess(imp *openrtb.Imp) error {
+func preprocess(imp *openrtb2.Imp) error {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return &errortypes.BadInput{
@@ -113,7 +117,7 @@ func preprocess(imp *openrtb.Imp) error {
 	return nil
 }
 
-func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
+func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impId {

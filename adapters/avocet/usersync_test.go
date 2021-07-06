@@ -30,6 +30,5 @@ func TestAvocetSyncer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "https://ads.avct.cloud/getuid?&gdpr=1&gdpr_consent=ConsentString&us_privacy=PrivacyString&url=%2Fsetuid%3Fbidder%3Davocet%26gdpr%3D1%26gdpr_consent%3DConsentString%26uid%3D%7B%7BUUID%7D%7D", syncInfo.URL)
 	assert.Equal(t, "redirect", syncInfo.Type)
-	assert.EqualValues(t, 63, syncer.GDPRVendorID())
 	assert.Equal(t, false, syncInfo.SupportCORS)
 }

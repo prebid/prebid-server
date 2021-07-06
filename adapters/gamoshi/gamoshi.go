@@ -7,8 +7,9 @@ import (
 	"strconv"
 
 	"github.com/golang/glog"
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -17,7 +18,7 @@ type GamoshiAdapter struct {
 	URI string
 }
 
-func (a *GamoshiAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *GamoshiAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
 	errs := make([]error, 0, len(request.Imp))
 	if len(request.Imp) == 0 {
@@ -124,7 +125,7 @@ func (a *GamoshiAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 	}}, errors
 }
 
-func (a *GamoshiAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *GamoshiAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -142,7 +143,7 @@ func (a *GamoshiAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("bad server response: %v. ", err),
@@ -168,7 +169,7 @@ func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue str
 	}
 }
 
-func getMediaType(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
+func getMediaType(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 	for _, imp := range imps {
 		if imp.ID == impId {
 			if imp.Video != nil {
@@ -180,8 +181,10 @@ func getMediaType(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
 	return openrtb_ext.BidTypeBanner
 }
 
-func NewGamoshiBidder(endpoint string) *GamoshiAdapter {
-	return &GamoshiAdapter{
-		URI: endpoint,
+// Builder builds a new instance of the Gamoshi adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &GamoshiAdapter{
+		URI: config.Endpoint,
 	}
+	return bidder, nil
 }
