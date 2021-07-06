@@ -719,6 +719,12 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 		URI:          uri,
 		XAPIUsername: config.XAPI.Username,
 		XAPIPassword: config.XAPI.Password,
+		SupportedRegions: map[Region]string{
+			USEast: appendTrackerToUrl(config.XAPI.EndpointUSEast, config.XAPI.Tracker),
+			USWest: appendTrackerToUrl(config.XAPI.EndpointUSWest, config.XAPI.Tracker),
+			EU:     appendTrackerToUrl(config.XAPI.EndpointEU, config.XAPI.Tracker),
+			APAC:   appendTrackerToUrl(config.XAPI.EndpointAPAC, config.XAPI.Tracker),
+		},
 	}
 	return bidder, nil
 }
