@@ -1002,7 +1002,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("gdpr.timeouts_ms.init_vendorlist_fetches", 0)
 	v.SetDefault("gdpr.timeouts_ms.active_vendorlist_fetch", 0)
 	v.SetDefault("gdpr.non_standard_publishers", []string{""})
-	v.SetDefault("gdpr.tcf2.enabled", true)
+	v.SetDefault("gdpr.tcf2.enabled", false)
 	v.SetDefault("gdpr.tcf2.purpose1.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose2.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose4.enabled", true)
