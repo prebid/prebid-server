@@ -15,9 +15,10 @@ import (
 )
 
 type permissionsImpl struct {
-	cfg             config.GDPR
-	vendorIDs       map[openrtb_ext.BidderName]uint16
-	fetchVendorList map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error)
+	cfg              config.GDPR
+	gdprDefaultValue Signal
+	vendorIDs        map[openrtb_ext.BidderName]uint16
+	fetchVendorList  map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error)
 }
 
 func (p *permissionsImpl) HostCookiesAllowed(ctx context.Context, gdprSignal Signal, consent string) (bool, error) {
@@ -67,6 +68,8 @@ func (p *permissionsImpl) AuctionActivitiesAllowed(ctx context.Context,
 
 	if id, ok := p.vendorIDs[bidder]; ok {
 		return p.allowActivities(ctx, id, consent, weakVendorEnforcement)
+	} else if weakVendorEnforcement {
+		return p.allowActivities(ctx, 0, consent, weakVendorEnforcement)
 	}
 
 	return p.defaultVendorPermissions()
@@ -109,7 +112,11 @@ func (p *permissionsImpl) allowActivities(ctx context.Context, vendorID uint16, 
 
 	// vendor will be nil if not a valid TCF2 consent string
 	if vendor == nil {
-		return false, false, false, nil
+		if weakVendorEnforcement && parsedConsent.Version() == 2 {
+			vendor = vendorTrue{}
+		} else {
+			return false, false, false, nil
+		}
 	}
 
 	if !p.cfg.TCF2.Enabled {
@@ -182,6 +189,7 @@ func (p *permissionsImpl) parseVendor(ctx context.Context, vendorID uint16, cons
 	if version != 2 {
 		return
 	}
+
 	vendorList, err := p.fetchVendorList[version](ctx, parsedConsent.VendorListVersion())
 	if err != nil {
 		return
@@ -214,4 +222,23 @@ func (a AlwaysAllow) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.B
 
 func (a AlwaysAllow) AuctionActivitiesAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string, weakVendorEnforcement bool) (allowBidRequest bool, passGeo bool, passID bool, err error) {
 	return true, true, true, nil
+}
+
+// vendorTrue claims everything.
+type vendorTrue struct{}
+
+func (v vendorTrue) Purpose(purposeID consentconstants.Purpose) bool {
+	return true
+}
+func (v vendorTrue) PurposeStrict(purposeID consentconstants.Purpose) bool {
+	return true
+}
+func (v vendorTrue) LegitimateInterest(purposeID consentconstants.Purpose) bool {
+	return true
+}
+func (v vendorTrue) LegitimateInterestStrict(purposeID consentconstants.Purpose) bool {
+	return true
+}
+func (v vendorTrue) SpecialPurpose(purposeID consentconstants.Purpose) (hasSpecialPurpose bool) {
+	return true
 }

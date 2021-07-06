@@ -94,7 +94,7 @@ type HTTPClient struct {
 	IdleConnTimeout     int `mapstructure:"idle_connection_timeout_seconds"`
 }
 
-func (cfg *Configuration) validate() []error {
+func (cfg *Configuration) validate(v *viper.Viper) []error {
 	var errs []error
 	errs = cfg.AuctionTimeouts.validate(errs)
 	errs = cfg.StoredRequests.validate(errs)
@@ -106,7 +106,7 @@ func (cfg *Configuration) validate() []error {
 	if cfg.MaxRequestSize < 0 {
 		errs = append(errs, fmt.Errorf("cfg.max_request_size must be >= 0. Got %d", cfg.MaxRequestSize))
 	}
-	errs = cfg.GDPR.validate(errs)
+	errs = cfg.GDPR.validate(v, errs)
 	errs = cfg.CurrencyConverter.validate(errs)
 	errs = validateAdapters(cfg.Adapters, errs)
 	errs = cfg.Debug.validate(errs)
@@ -208,8 +208,10 @@ type GDPR struct {
 	EEACountriesMap map[string]struct{}
 }
 
-func (cfg *GDPR) validate(errs []error) []error {
-	if cfg.DefaultValue != "0" && cfg.DefaultValue != "1" {
+func (cfg *GDPR) validate(v *viper.Viper, errs []error) []error {
+	if !v.IsSet("gdpr.default_value") {
+		errs = append(errs, fmt.Errorf("gdpr.default_value is required and must be specified"))
+	} else if cfg.DefaultValue != "0" && cfg.DefaultValue != "1" {
 		errs = append(errs, fmt.Errorf("gdpr.default_value must be 0 or 1"))
 	}
 	if cfg.HostVendorID < 0 || cfg.HostVendorID > 0xffff {
@@ -520,7 +522,7 @@ func New(v *viper.Viper) (*Configuration, error) {
 
 	glog.Info("Logging the resolved configuration:")
 	logGeneral(reflect.ValueOf(c), "  \t")
-	if errs := c.validate(); len(errs) > 0 {
+	if errs := c.validate(v); len(errs) > 0 {
 		return &c, errortypes.NewAggregateError("validation errors", errs)
 	}
 
@@ -734,6 +736,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.beintoo.endpoint", "https://ib.beintoo.com/um")
 	v.SetDefault("adapters.between.endpoint", "http://{{.Host}}.betweendigital.com/openrtb_bid?sspId={{.PublisherID}}")
 	v.SetDefault("adapters.bidmachine.endpoint", "https://{{.Host}}.bidmachine.io")
+	v.SetDefault("adapters.bidmyadz.endpoint", "http://endpoint.bidmyadz.com/c0f68227d14ed938c6c49f3967cbe9bc")
 	v.SetDefault("adapters.bidscube.endpoint", "http://supply.bidscube.com/?c=o&m=rtb")
 	v.SetDefault("adapters.bmtm.endpoint", "https://one.elitebidder.com/api/pbs")
 	v.SetDefault("adapters.brightroll.endpoint", "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
@@ -770,6 +773,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.lockerdome.endpoint", "https://lockerdome.com/ladbid/prebidserver/openrtb2")
 	v.SetDefault("adapters.logicad.endpoint", "https://pbs.ladsp.com/adrequest/prebidserver")
 	v.SetDefault("adapters.lunamedia.endpoint", "http://api.lunamedia.io/xp/get?pubid={{.PublisherID}}")
+	v.SetDefault("adapters.sa_lunamedia.endpoint", "http://balancer.lmgssp.com/pserver")
 	v.SetDefault("adapters.madvertise.endpoint", "https://mobile.mng-ads.com/bidrequest{{.ZoneID}}")
 	v.SetDefault("adapters.marsmedia.endpoint", "https://bid306.rtbsrv.com/bidder/?bid=f3xtet")
 	v.SetDefault("adapters.mediafuse.endpoint", "http://ghb.hbmp.mediafuse.com/pbs/ortb")
@@ -799,6 +803,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.smartadserver.endpoint", "https://ssb-global.smartadserver.com")
 	v.SetDefault("adapters.smartrtb.endpoint", "http://market-east.smrtb.com/json/publisher/rtb?pubid={{.PublisherID}}")
 	v.SetDefault("adapters.smartyads.endpoint", "http://{{.Host}}.smartyads.com/bid?rtb_seat_id={{.SourceId}}&secret_key={{.AccountID}}")
+	v.SetDefault("adapters.smilewanted.endpoint", "http://prebid-server.smilewanted.com")
 	v.SetDefault("adapters.somoaudience.endpoint", "http://publisher-east.mobileadtrading.com/rtb/bid")
 	v.SetDefault("adapters.sonobi.endpoint", "https://apex.go.sonobi.com/prebid?partnerid=71d9d3d8af")
 	v.SetDefault("adapters.sovrn.endpoint", "http://ap.lijit.com/rtb/bid?src=prebid_server")
@@ -833,9 +838,9 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("analytics.pubstack.buffers.count", 100)
 	v.SetDefault("analytics.pubstack.buffers.timeout", "900s")
 	v.SetDefault("amp_timeout_adjustment_ms", 0)
+	v.BindEnv("gdpr.default_value")
 	v.SetDefault("gdpr.enabled", true)
 	v.SetDefault("gdpr.host_vendor_id", 0)
-	v.SetDefault("gdpr.default_value", "1")
 	v.SetDefault("gdpr.timeouts_ms.init_vendorlist_fetches", 0)
 	v.SetDefault("gdpr.timeouts_ms.active_vendorlist_fetch", 0)
 	v.SetDefault("gdpr.non_standard_publishers", []string{""})

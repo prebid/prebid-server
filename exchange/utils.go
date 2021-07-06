@@ -58,7 +58,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 	bidderToSyncerKey map[string]string,
 	gDPR gdpr.Permissions,
 	metricsEngine metrics.MetricsEngine,
-	gdprDefaultValue string,
+	gdprDefaultValue gdpr.Signal,
 	privacyConfig config.Privacy,
 	account *config.Account) (allowedBidderRequests []BidderRequest, privacyLabels metrics.PrivacyLabels, errs []error) {
 
@@ -88,7 +88,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 	if err != nil {
 		errs = append(errs, err)
 	}
-	gdprEnforced := gdprSignal == gdpr.SignalYes || (gdprSignal == gdpr.SignalAmbiguous && gdprDefaultValue == "1")
+	gdprEnforced := gdprSignal == gdpr.SignalYes || (gdprSignal == gdpr.SignalAmbiguous && gdprDefaultValue == gdpr.SignalYes)
 
 	ccpaEnforcer, err := extractCCPA(req.BidRequest, privacyConfig, &req.Account, aliases, integrationTypeMap[req.LegacyLabels.RType])
 	if err != nil {
@@ -335,7 +335,7 @@ func extractBuyerUIDs(user *openrtb2.User) (map[string]string, error) {
 	userExt.Prebid = nil
 
 	// Remarshal (instead of removing) if the ext has other known fields
-	if userExt.Consent != "" || userExt.DigiTrust != nil || len(userExt.Eids) > 0 {
+	if userExt.Consent != "" || len(userExt.Eids) > 0 {
 		if newUserExtBytes, err := json.Marshal(userExt); err != nil {
 			return nil, err
 		} else {

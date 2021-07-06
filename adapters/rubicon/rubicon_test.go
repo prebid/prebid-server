@@ -568,6 +568,52 @@ func TestResolveVideoSizeId(t *testing.T) {
 	}
 }
 
+func TestResolveBidFloorAttributes(t *testing.T) {
+	testScenarios := []struct {
+		bidFloor            float64
+		bidFloorCur         string
+		expectedBidFloor    float64
+		expectedBidFloorCur string
+	}{
+		{
+			bidFloor:            1,
+			bidFloorCur:         "EUR",
+			expectedBidFloor:    1.2,
+			expectedBidFloorCur: "USD",
+		},
+		{
+			bidFloor:            1,
+			bidFloorCur:         "Eur",
+			expectedBidFloor:    1.2,
+			expectedBidFloorCur: "USD",
+		},
+		{
+			bidFloor:            0,
+			bidFloorCur:         "EUR",
+			expectedBidFloor:    0,
+			expectedBidFloorCur: "EUR",
+		},
+		{
+			bidFloor:            -1,
+			bidFloorCur:         "EUR",
+			expectedBidFloor:    -1,
+			expectedBidFloorCur: "EUR",
+		},
+		{
+			bidFloor:            1,
+			bidFloorCur:         "USD",
+			expectedBidFloor:    1,
+			expectedBidFloorCur: "USD",
+		},
+	}
+
+	for _, scenario := range testScenarios {
+		bidFloor, bidFloorCur := resolveBidFloorAttributes(scenario.bidFloor, scenario.bidFloorCur)
+		assert.Equal(t, scenario.expectedBidFloor, bidFloor)
+		assert.Equal(t, scenario.expectedBidFloorCur, bidFloorCur)
+	}
+}
+
 func TestNoContentResponse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
@@ -989,11 +1035,7 @@ func TestOpenRTBRequest(t *testing.T) {
 			PxRatio: rubidata.devicePxRatio,
 		},
 		User: &openrtb2.User{
-			Ext: json.RawMessage(`{"digitrust": {
-                    "id": "some-digitrust-id",
-                    "keyv": 1,
-                    "pref": 0
-                },
+			Ext: json.RawMessage(`{
 				"eids": [{
                     "source": "pubcid",
                     "id": "2402fc76-7b39-4f0e-bfc2-060ef7693648"
@@ -1066,10 +1108,6 @@ func TestOpenRTBRequest(t *testing.T) {
 		if err := json.Unmarshal(rpRequest.User.Ext, &userExt); err != nil {
 			t.Fatal("Error unmarshalling request.user.ext object.")
 		}
-
-		assert.Equal(t, "some-digitrust-id", userExt.DigiTrust.ID, "DigiTrust ID id not as expected!")
-		assert.Equal(t, 1, userExt.DigiTrust.KeyV, "DigiTrust KeyV id not as expected!")
-		assert.Equal(t, 0, userExt.DigiTrust.Pref, "DigiTrust Pref id not as expected!")
 
 		assert.NotNil(t, userExt.Eids)
 		assert.Equal(t, 1, len(userExt.Eids), "Eids values are not as expected!")

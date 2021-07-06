@@ -20,7 +20,8 @@ func TestDisallowOnEmptyConsent(t *testing.T) {
 			HostVendorID: 3,
 			DefaultValue: "0",
 		},
-		vendorIDs: nil,
+		gdprDefaultValue: SignalNo,
+		vendorIDs:        nil,
 		fetchVendorList: map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
 			tcf2SpecVersion: failedListFetcher,
 		},
@@ -302,6 +303,11 @@ func TestAllowActivities(t *testing.T) {
 
 	for _, tt := range tests {
 		perms.cfg.DefaultValue = tt.gdprDefaultValue
+		if tt.gdprDefaultValue == "0" {
+			perms.gdprDefaultValue = SignalNo
+		} else {
+			perms.gdprDefaultValue = SignalYes
+		}
 
 		_, _, passID, err := perms.AuctionActivitiesAllowed(context.Background(), tt.bidderName, tt.publisherID, tt.gdpr, tt.consent, tt.weakVendorEnforcement)
 
@@ -401,6 +407,15 @@ func TestAllowActivitiesGeoAndID(t *testing.T) {
 		{
 			description:           "Appnexus vendor test, insufficient purposes claimed, basic enforcement",
 			bidder:                openrtb_ext.BidderAppnexus,
+			consent:               "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA",
+			allowBid:              true,
+			passGeo:               true,
+			passID:                true,
+			weakVendorEnforcement: true,
+		},
+		{
+			description:           "Unknown vendor test, insufficient purposes claimed, basic enforcement",
+			bidder:                openrtb_ext.BidderAudienceNetwork,
 			consent:               "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA",
 			allowBid:              true,
 			passGeo:               true,
@@ -666,7 +681,7 @@ func assertStringsEqual(t *testing.T, expected string, actual string) {
 	}
 }
 
-func TestAllowActivitiesTCF2BidRequests(t *testing.T) {
+func TestAllowActivitiesBidRequests(t *testing.T) {
 	purpose2AndVendorConsent := "CPF_61ePF_61eFxAAAENAiCAAEAAAAAAAAAAADAQAAAAAA"
 	purpose2ConsentWithoutVendorConsent := "CPF_61ePF_61eFxAAAENAiCAAEAAAAAAAAAAABIAAAAA"
 

@@ -1124,13 +1124,9 @@ func (deps *endpointDeps) validateUser(user *openrtb2.User, aliases map[string]s
 	}
 
 	if user.Ext != nil {
-		// Creating ExtUser object to check if DigiTrust is valid
+		// Creating ExtUser object
 		var userExt openrtb_ext.ExtUser
 		if err := json.Unmarshal(user.Ext, &userExt); err == nil {
-			if userExt.DigiTrust != nil && userExt.DigiTrust.Pref != 0 {
-				// DigiTrust is not valid. Return error.
-				return errors.New("request.user contains a digitrust object that is not valid.")
-			}
 			// Check if the buyeruids are valid
 			if userExt.Prebid != nil {
 				if len(userExt.Prebid.BuyerUIDs) < 1 {

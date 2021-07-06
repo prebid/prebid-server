@@ -31,12 +31,7 @@
     },
     "user": {
       "ext": {
-        "consent": "abc2",
-        "digitrust": {
-          "ID": "digitrustId",
-          "KeyV": 1,
-          "Pref": 0
-        }
+        "consent": "abc2"
       }
     }
   },
