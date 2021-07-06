@@ -10,3 +10,7 @@ capabilities:
     mediaTypes:
       - banner
       - native
+userSync:
+  redirect:
+    url: "https://cm.mgid.com/m?cdsp=363893&adu={{.RedirectURL}}"
+    userMacro: "{muidn}"
