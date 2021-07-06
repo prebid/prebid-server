@@ -6,4 +6,5 @@ type ExtImpDV360 struct {
 	SKADNSupported bool   `json:"skadn_supported"`
 	MRAIDSupported bool   `json:"mraid_supported"`
 	RawIP          string `json:"raw_ip"`
+	PubID          string `json:"pub_id"`
 }

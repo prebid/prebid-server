@@ -30,7 +30,8 @@
           "bidder": {
             "reward": 0,
             "mraid_supported": false,
-            "skadn_supported": false
+            "skadn_supported": false,
+            "pub_id": "test_pub_id"
           }
         }
       }
@@ -56,6 +57,7 @@
           "app": {
             "bundle": "com.prebid",
             "publisher": {
+              "id": "test_pub_id"
             }
           },
           "device": {
