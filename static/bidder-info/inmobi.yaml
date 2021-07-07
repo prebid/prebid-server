@@ -1,5 +1,5 @@
 maintainer:
-  email: "prebid-support@inmobi.com"
+  email: "technology-irv@inmobi.com"
 gvlVendorID: 333
 capabilities:
   app:
@@ -10,3 +10,7 @@ capabilities:
     mediaTypes:
       - banner
       - video
+userSync:
+  redirect:
+    url: "https://id5-sync.com/i/495/0.gif?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&callback={{.RedirectURL}}"
+    userMacro: "{ID5UID}"
