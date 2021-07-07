@@ -75,17 +75,25 @@ func (p *permissionsImpl) AuctionActivitiesAllowed(ctx context.Context,
 		return true, true, true, nil
 	}
 
-	if consent == "" && gdprSignal == SignalYes {
-		return false, false, false, nil
+	// GDPR hack until supporting TCF 2.0
+	// This update will allow request to go through with geo and id fields if GDPR flag is on, and there is a consent
+	if consent == "1" && gdprSignal == SignalYes {
+		return true, true, true, nil
 	}
 
-	if id, ok := p.vendorIDs[bidder]; ok {
-		return p.allowActivities(ctx, id, consent, weakVendorEnforcement)
-	} else if weakVendorEnforcement {
-		return p.allowActivities(ctx, 0, consent, weakVendorEnforcement)
-	}
+	// This update will allow request to go through but will remove geo and id fields if GDPR flag is on, and there is NO consent
+	return true, false, false, nil
 
-	return p.defaultVendorPermissions()
+	// commenting this part out to use when we start supporting TCF 2.0
+	/*
+		if id, ok := p.vendorIDs[bidder]; ok {
+			return p.allowActivities(ctx, id, consent, weakVendorEnforcement)
+		} else if weakVendorEnforcement {
+			return p.allowActivities(ctx, 0, consent, weakVendorEnforcement)
+		}
+
+		return p.defaultVendorPermissions()
+	*/
 }
 
 func (p *permissionsImpl) defaultVendorPermissions() (allowBidRequest bool, passGeo bool, passID bool, err error) {
