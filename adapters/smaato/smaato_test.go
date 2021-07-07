@@ -93,6 +93,9 @@ func TestVideoWithCategoryAndDuration(t *testing.T) {
 	if bidResponse.Bids[0].BidVideo.Duration != expectedBidDuration {
 		t.Errorf("video duration should be set")
 	}
+	if bidResponse.Bids[0].BidVideo.PrimaryCategory != expectedBidCategory {
+		t.Errorf("bid category should be set")
+	}
 	if bidResponse.Bids[0].Bid.Cat[0] != expectedBidCategory {
 		t.Errorf("bid category should be set")
 	}

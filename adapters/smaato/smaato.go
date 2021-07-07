@@ -3,6 +3,10 @@ package smaato
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"strconv"
+	"strings"
+
 	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
@@ -11,9 +15,6 @@ import (
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/util/timeutil"
-	"net/http"
-	"strconv"
-	"strings"
 )
 
 const clientVersion = "prebid_server_0.3"
@@ -312,8 +313,7 @@ func preparePodRequest(request *openrtb2.BidRequest) error {
 		return err
 	}
 
-	err := setImpForAdBreak(request.Imp)
-	return err
+	return setImpForAdBreak(request.Imp)
 }
 
 func setUser(request *openrtb2.BidRequest) error {
@@ -332,19 +332,16 @@ func setUser(request *openrtb2.BidRequest) error {
 
 		userCopy := *request.User
 
-		gender := userExt.Data.Gender
-		if gender != "" {
-			userCopy.Gender = gender
+		if userExt.Data.Gender != "" {
+			userCopy.Gender = userExt.Data.Gender
 		}
 
-		yob := userExt.Data.Yob
-		if yob != 0 {
-			userCopy.Yob = yob
+		if userExt.Data.Yob != 0 {
+			userCopy.Yob = userExt.Data.Yob
 		}
 
-		keywords := userExt.Data.Keywords
-		if keywords != "" {
-			userCopy.Keywords = keywords
+		if userExt.Data.Keywords != "" {
+			userCopy.Keywords = userExt.Data.Keywords
 		}
 
 		delete(userExtRaw, "data")
