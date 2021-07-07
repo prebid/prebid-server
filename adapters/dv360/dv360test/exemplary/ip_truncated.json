@@ -51,10 +51,6 @@
         "uri": "https://bid.g.doubleclick.net/xbbe/bid/tapjoy",
         "body": {
           "id": "test-request-id",
-          "app": {
-            "publisher": {
-            }
-          },
           "imp": [
             {
               "ext": {
@@ -99,10 +95,6 @@
               "ifa_type": "dpid",
               "ip_less": 0,
               "truncated_ip": 0
-            }
-          },
-          "app": {
-            "publisher": {
             }
           }
         }

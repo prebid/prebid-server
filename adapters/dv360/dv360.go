@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/config"
 	"net/http"
+
+	"github.com/prebid/prebid-server/config"
 
 	openrtb "github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
@@ -220,28 +221,6 @@ func (adapter *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.Ex
 		// apply the copied impression object as an array
 		// to the request object
 		request.Imp = []openrtb.Imp{impCopy}
-
-		// overwrite publisher id with Tapjoy's apps-ads.txt id
-		var requestAppCopy openrtb.App
-		var requestAppPublisherCopy openrtb.Publisher
-
-		if request.App != nil {
-			requestAppCopy = *request.App
-		} else {
-			requestAppCopy = openrtb.App{}
-		}
-
-		if requestAppCopy.Publisher != nil {
-			requestAppPublisherCopy = *requestAppCopy.Publisher
-		} else {
-			requestAppPublisherCopy = openrtb.Publisher{}
-		}
-
-		requestAppPublisherCopy.ID = dv360Ext.PubID
-
-		requestAppCopy.Publisher = &requestAppPublisherCopy
-
-		request.App = &requestAppCopy
 
 		// json marshal the request
 		body, err := json.Marshal(request)
