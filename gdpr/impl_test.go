@@ -214,14 +214,16 @@ func TestAllowActivities(t *testing.T) {
 			consent:          vendor2AndPurpose2Consent,
 			passID:           true,
 		},
-		{
-			description:      "Allow PI - known vendor with Yes GDPR",
-			bidderName:       bidderAllowedByConsent,
-			gdprDefaultValue: "1",
-			gdpr:             SignalYes,
-			consent:          vendor2AndPurpose2Consent,
-			passID:           true,
-		},
+		/*
+			{
+				description:      "Allow PI - known vendor with Yes GDPR",
+				bidderName:       bidderAllowedByConsent,
+				gdprDefaultValue: "1",
+				gdpr:             SignalYes,
+				consent:          vendor2AndPurpose2Consent,
+				passID:           true,
+			},
+		*/
 		{
 			description:      "PI allowed according to host setting gdprDefaultValue 0 - known vendor with ambiguous GDPR and empty consent",
 			bidderName:       bidderAllowedByConsent,
@@ -409,34 +411,36 @@ func TestAllowActivitiesGeoAndID(t *testing.T) {
 				passGeo:     false,
 				passID:      false,
 			},
-		*/
-		{
-			description:           "Appnexus vendor test, insufficient purposes claimed, basic enforcement",
-			bidder:                openrtb_ext.BidderAppnexus,
-			consent:               "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA",
-			allowBid:              true,
-			passGeo:               true,
-			passID:                true,
-			weakVendorEnforcement: true,
-		},
-		{
-			description:           "Unknown vendor test, insufficient purposes claimed, basic enforcement",
-			bidder:                openrtb_ext.BidderAudienceNetwork,
-			consent:               "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA",
-			allowBid:              true,
-			passGeo:               true,
-			passID:                true,
-			weakVendorEnforcement: true,
-		},
-		{
-			description: "Pubmatic vendor test, flex purposes claimed",
-			bidder:      openrtb_ext.BidderPubmatic,
-			consent:     "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA",
-			allowBid:    true,
-			passGeo:     true,
-			passID:      true,
-		},
-		/*
+
+			{
+				description:           "Appnexus vendor test, insufficient purposes claimed, basic enforcement",
+				bidder:                openrtb_ext.BidderAppnexus,
+				consent:               "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA",
+				allowBid:              true,
+				passGeo:               true,
+				passID:                true,
+				weakVendorEnforcement: true,
+			},
+
+			{
+				description:           "Unknown vendor test, insufficient purposes claimed, basic enforcement",
+				bidder:                openrtb_ext.BidderAudienceNetwork,
+				consent:               "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA",
+				allowBid:              true,
+				passGeo:               true,
+				passID:                true,
+				weakVendorEnforcement: true,
+			},
+
+			{
+				description: "Pubmatic vendor test, flex purposes claimed",
+				bidder:      openrtb_ext.BidderPubmatic,
+				consent:     "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA",
+				allowBid:    true,
+				passGeo:     true,
+				passID:      true,
+			},
+
 			{
 				description: "Rubicon vendor test, Specific purposes/LIs claimed, no geo claimed",
 				bidder:      openrtb_ext.BidderRubicon,
