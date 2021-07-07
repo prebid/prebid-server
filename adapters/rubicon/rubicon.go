@@ -92,7 +92,7 @@ type rubiconExtUserTpID struct {
 }
 
 type rubiconDataExt struct {
-	Segtax int `json:"segtax"`
+	SegTax int `json:"segtax"`
 }
 
 type rubiconUserExt struct {
@@ -919,8 +919,8 @@ func resolveBidFloorAttributes(bidFloor float64, bidFloorCur string) (float64, s
 }
 
 func updateUserExtWithIabAttribute(userExtRP *rubiconUserExt, data []openrtb2.Data) error {
-	userSegtaxes := []int{4}
-	var segmentIdsToCopy = getSegmentIdsToCopy(data, userSegtaxes)
+	userSegTaxes := []int{4}
+	var segmentIdsToCopy = getSegmentIdsToCopy(data, userSegTaxes)
 
 	userExtRPTarget := make(map[string]interface{})
 
@@ -942,16 +942,10 @@ func updateUserExtWithIabAttribute(userExtRP *rubiconUserExt, data []openrtb2.Da
 }
 
 func updateSiteExtWithIabAttribute(siteExtRP *rubiconSiteExt, data []openrtb2.Data) error {
-	siteSegtaxes := []int{1, 2}
-	var segmentIdsToCopy = getSegmentIdsToCopy(data, siteSegtaxes)
+	siteSegTaxes := []int{1, 2}
+	var segmentIdsToCopy = getSegmentIdsToCopy(data, siteSegTaxes)
 
 	siteExtRPTarget := make(map[string]interface{})
-
-	if siteExtRP.RP.Target != nil {
-		if err := json.Unmarshal(siteExtRP.RP.Target, &siteExtRPTarget); err != nil {
-			return &errortypes.BadInput{Message: err.Error()}
-		}
-	}
 
 	siteExtRPTarget["iab"] = segmentIdsToCopy
 
@@ -964,7 +958,7 @@ func updateSiteExtWithIabAttribute(siteExtRP *rubiconSiteExt, data []openrtb2.Da
 	return nil
 }
 
-func getSegmentIdsToCopy(data []openrtb2.Data, segtaxValues []int) []string {
+func getSegmentIdsToCopy(data []openrtb2.Data, segTaxValues []int) []string {
 	var segmentIdsToCopy = make([]string, 0)
 
 	for _, dataRecord := range data {
@@ -974,7 +968,7 @@ func getSegmentIdsToCopy(data []openrtb2.Data, segtaxValues []int) []string {
 			if err != nil {
 				continue
 			}
-			if contains(segtaxValues, dataExtObject.Segtax) {
+			if contains(segTaxValues, dataExtObject.SegTax) {
 				for _, segment := range dataRecord.Segment {
 					segmentIdsToCopy = append(segmentIdsToCopy, segment.ID)
 				}
