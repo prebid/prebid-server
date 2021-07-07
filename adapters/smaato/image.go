@@ -42,7 +42,8 @@ func extractAdmImage(adMarkup string) (string, error) {
 		impressionTracker.WriteString(fmt.Sprintf(`<img src="%s" alt="" width="0" height="0"/>`, impression))
 	}
 
-	return fmt.Sprintf(`<div style="cursor:pointer" onclick="%s;window.open(decodeURIComponent('%s'.replace(/\+/g, ' ')));">`+
-		`<img src="%s" width="%d" height="%d"/>%s`+
-		`</div>`, &clickEvent, url.QueryEscape(imageAd.Image.Img.Ctaurl), imageAd.Image.Img.URL, imageAd.Image.Img.W, imageAd.Image.Img.H, &impressionTracker), nil
+	imageAdMarkup := fmt.Sprintf(`<div style="cursor:pointer" onclick="%s;window.open(decodeURIComponent('%s'.replace(/\+/g, ' ')));"><img src="%s" width="%d" height="%d"/>%s</div>`,
+		&clickEvent, url.QueryEscape(imageAd.Image.Img.Ctaurl), imageAd.Image.Img.URL, imageAd.Image.Img.W, imageAd.Image.Img.H, &impressionTracker)
+
+	return imageAdMarkup, nil
 }

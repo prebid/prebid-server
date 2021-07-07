@@ -42,5 +42,8 @@ func extractAdmRichMedia(adMarkup string) (string, error) {
 		impressionTracker.WriteString(fmt.Sprintf(`<img src="%s" alt="" width="0" height="0"/>`, impression))
 	}
 
-	return fmt.Sprintf(`<div onclick="%s">%s%s</div>`, &clickEvent, richMediaAd.RichMedia.MediaData.Content, &impressionTracker), nil
+	richmediaAdMarkup := fmt.Sprintf(`<div onclick="%s">%s%s</div>`,
+		&clickEvent, richMediaAd.RichMedia.MediaData.Content, &impressionTracker)
+
+	return richmediaAdMarkup, nil
 }

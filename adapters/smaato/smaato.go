@@ -182,31 +182,24 @@ func (adapter *SmaatoAdapter) makeIndividualRequests(request *openrtb2.BidReques
 }
 
 func (adapter *SmaatoAdapter) makePodRequests(request *openrtb2.BidRequest) ([]*adapters.RequestData, []error) {
-	pods, orderedKeys := groupImpressionsByPod(request.Imp)
+	pods, orderedKeys, errors := groupImpressionsByPod(request.Imp)
 	requests := make([]*adapters.RequestData, 0, len(pods))
-	errors := make([]error, 0, len(request.Imp))
 
 	for _, key := range orderedKeys {
-		var adPodImpErrors []error
-		request.Imp, adPodImpErrors = filterPodImpressions(pods[key])
-		if adPodImpErrors != nil {
-			errors = append(errors, adPodImpErrors...)
+		request.Imp = pods[key]
+
+		if err := preparePodRequest(request); err != nil {
+			errors = append(errors, err)
+			continue
 		}
 
-		if len(request.Imp) > 0 {
-			if err := preparePodRequest(request); err != nil {
-				errors = append(errors, err)
-				continue
-			}
-
-			requestData, err := adapter.makeRequest(request)
-			if err != nil {
-				errors = append(errors, err)
-				continue
-			}
-
-			requests = append(requests, requestData)
+		requestData, err := adapter.makeRequest(request)
+		if err != nil {
+			errors = append(errors, err)
+			continue
 		}
+
+		requests = append(requests, requestData)
 	}
 
 	return requests, errors
@@ -480,33 +473,24 @@ func setBannerDimension(banner *openrtb2.Banner) (*openrtb2.Banner, error) {
 	return &bannerCopy, nil
 }
 
-func groupImpressionsByPod(imps []openrtb2.Imp) (map[string]([]openrtb2.Imp), []string) {
+func groupImpressionsByPod(imps []openrtb2.Imp) (map[string]([]openrtb2.Imp), []string, []error) {
 	pods := make(map[string][]openrtb2.Imp)
 	orderKeys := make([]string, 0)
-
-	for _, imp := range imps {
-		pod := strings.Split(imp.ID, "_")[0]
-		_, present := pods[pod]
-		pods[pod] = append(pods[pod], imp)
-		if !present {
-			orderKeys = append(orderKeys, pod)
-		}
-	}
-	return pods, orderKeys
-}
-
-func filterPodImpressions(imps []openrtb2.Imp) ([]openrtb2.Imp, []error) {
-	var n int
 	errors := make([]error, 0, len(imps))
+
 	for _, imp := range imps {
 		if imp.Video == nil {
 			errors = append(errors, &errortypes.BadInput{Message: "Invalid MediaType. Smaato only supports Video for AdPod."})
 			continue
 		}
-		imps[n] = imp
-		n++
+
+		pod := strings.Split(imp.ID, "_")[0]
+		if _, present := pods[pod]; !present {
+			orderKeys = append(orderKeys, pod)
+		}
+		pods[pod] = append(pods[pod], imp)
 	}
-	return imps[:n], errors
+	return pods, orderKeys, errors
 }
 
 func buildBidVideo(bid *openrtb2.Bid, bidType openrtb_ext.BidType) (*openrtb_ext.ExtBidPrebidVideo, error) {
