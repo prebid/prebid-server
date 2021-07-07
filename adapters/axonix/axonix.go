@@ -12,18 +12,18 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type AxonixAdapter struct {
+type adapter struct {
 	URI string
 }
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &AxonixAdapter{
+	bidder := &adapter{
 		URI: config.Endpoint,
 	}
 	return bidder, nil
 }
 
-func (a *AxonixAdapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 	if len(request.Imp) == 0 {
 		err := &errortypes.BadInput{
@@ -87,7 +87,7 @@ func (a *AxonixAdapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *
 	return []*adapters.RequestData{requestData}, nil
 }
 
-func (a *AxonixAdapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if responseData.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
