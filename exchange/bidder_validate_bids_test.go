@@ -97,13 +97,21 @@ func TestAllBadBids(t *testing.T) {
 						DealID: "",
 					},
 				},
+				{
+					bid: &openrtb2.Bid{
+						ID:    "negativePrice",
+						ImpID: "999",
+						Price: -0.10,
+						CrID:  "888",
+					},
+				},
 				{},
 			},
 		},
 	})
 	seatBid, errs := bidder.requestBid(context.Background(), &openrtb2.BidRequest{}, openrtb_ext.BidderAppnexus, 1.0, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, true, false)
 	assert.Len(t, seatBid.bids, 0)
-	assert.Len(t, errs, 6)
+	assert.Len(t, errs, 7)
 }
 
 func TestMixedBids(t *testing.T) {
@@ -158,13 +166,21 @@ func TestMixedBids(t *testing.T) {
 						DealID: "",
 					},
 				},
+				{
+					bid: &openrtb2.Bid{
+						ID:    "negativePrice",
+						ImpID: "999",
+						Price: -0.10,
+						CrID:  "888",
+					},
+				},
 				{},
 			},
 		},
 	})
 	seatBid, errs := bidder.requestBid(context.Background(), &openrtb2.BidRequest{}, openrtb_ext.BidderAppnexus, 1.0, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, true, false)
 	assert.Len(t, seatBid.bids, 3)
-	assert.Len(t, errs, 4)
+	assert.Len(t, errs, 5)
 }
 
 func TestCurrencyBids(t *testing.T) {
