@@ -23,7 +23,7 @@ func (re *AggregateConversions) GetRate(from string, to string) (float64, error)
 	rate, err := re.customRates.GetRate(from, to)
 	if err == nil {
 		return rate, nil
-	} else if _, isMissingRateErr := err.(ConversionRateNotFound); !isMissingRateErr {
+	} else if _, isMissingRateErr := err.(ConversionNotFoundError); !isMissingRateErr {
 		// other error, return the error
 		return 0, err
 	}

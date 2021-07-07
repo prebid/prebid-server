@@ -1039,11 +1039,7 @@ func TestOpenRTBRequest(t *testing.T) {
 			PxRatio: rubidata.devicePxRatio,
 		},
 		User: &openrtb2.User{
-			Ext: json.RawMessage(`{"digitrust": {
-                    "id": "some-digitrust-id",
-                    "keyv": 1,
-                    "pref": 0
-                },
+			Ext: json.RawMessage(`{
 				"eids": [{
                     "source": "pubcid",
                     "id": "2402fc76-7b39-4f0e-bfc2-060ef7693648"
@@ -1116,10 +1112,6 @@ func TestOpenRTBRequest(t *testing.T) {
 		if err := json.Unmarshal(rpRequest.User.Ext, &userExt); err != nil {
 			t.Fatal("Error unmarshalling request.user.ext object.")
 		}
-
-		assert.Equal(t, "some-digitrust-id", userExt.DigiTrust.ID, "DigiTrust ID id not as expected!")
-		assert.Equal(t, 1, userExt.DigiTrust.KeyV, "DigiTrust KeyV id not as expected!")
-		assert.Equal(t, 0, userExt.DigiTrust.Pref, "DigiTrust Pref id not as expected!")
 
 		assert.NotNil(t, userExt.Eids)
 		assert.Equal(t, 1, len(userExt.Eids), "Eids values are not as expected!")

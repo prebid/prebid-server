@@ -8,11 +8,6 @@
       "user": {
         "id": "foo",
         "ext": {
-          "digitrust": {
-            "id": "digi-id",
-            "keyv": 1,
-            "pref": 2
-          }
         }
       },
       "imp": [
@@ -45,11 +40,6 @@
             "id": "foo",
             "buyeruid": "implicit-appnexus",
             "ext": {
-              "digitrust": {
-                "id": "digi-id",
-                "keyv": 1,
-                "pref": 2
-              }
             }
           },
           "imp": [

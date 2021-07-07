@@ -7,6 +7,7 @@ import (
 
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -138,6 +139,25 @@ func (r *RequestData) SetBasicAuth(username string, password string) {
 type ExtraRequestInfo struct {
 	PbsEntryPoint              metrics.RequestType
 	GlobalPrivacyControlHeader string
+	currencyConversions        currency.Conversions
+}
+
+func NewExtraRequestInfo(c currency.Conversions) ExtraRequestInfo {
+	return ExtraRequestInfo{
+		currencyConversions: c,
+	}
+}
+
+// ConvertCurrency converts a given amount from one currency to another, or returns:
+//  - Error if the `from` or `to` arguments are malformed or unknown ISO-4217 codes.
+//  - ConversionNotFoundError if the conversion mapping is unknown to Prebid Server
+//    and not provided in the bid request.
+func (r ExtraRequestInfo) ConvertCurrency(value float64, from, to string) (float64, error) {
+	if rate, err := r.currencyConversions.GetRate(from, to); err == nil {
+		return value * rate, nil
+	} else {
+		return 0, err
+	}
 }
 
 type Builder func(openrtb_ext.BidderName, config.Adapter) (Bidder, error)
