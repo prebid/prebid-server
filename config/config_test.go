@@ -149,27 +149,28 @@ gdpr:
   non_standard_publishers: ["siteID","fake-site-id","appID","agltb3B1Yi1pbmNyDAsSA0FwcBiJkfIUDA"]
   tcf2:
     purpose1:
-      vendor_exceptions: ["appnexus"]
+      vendor_exceptions: ["foo1a", "foo1b"]
     purpose2:
-      vendor_exceptions: ["openx"]
+      enabled: false
+      vendor_exceptions: ["foo2"]
     purpose3:
-      vendor_exceptions: ["pubmatic"]
+      vendor_exceptions: ["foo3"]
     purpose4:
-      vendor_exceptions: ["rubicon"]
+      vendor_exceptions: ["foo4"]
     purpose5:
-      vendor_exceptions: ["appnexus", "openx", "pubmatic", "rubicon"]
+      vendor_exceptions: ["foo5"]
     purpose6:
-      vendor_exceptions: ["appnexus"]
+      vendor_exceptions: ["foo6"]
     purpose7:
-      vendor_exceptions: ["openx"]
+      vendor_exceptions: ["foo7"]
     purpose8:
-      vendor_exceptions: ["pubmatic"]
+      vendor_exceptions: ["foo8"]
     purpose9:
-      vendor_exceptions: ["rubicon"]
+      vendor_exceptions: ["foo9"]
     purpose10:
-      vendor_exceptions: ["appnexus", "openx", "pubmatic", "rubicon"]
+      vendor_exceptions: ["foo10"]
     special_purpose1:
-      vendor_exceptions: ["appnexus"]
+      vendor_exceptions: ["fooSP1"]
 ccpa:
   enforce: true
 lmt:
@@ -402,35 +403,69 @@ func TestFullConfig(t *testing.T) {
 	}
 
 	//Assert purpose VendorExceptionMap hash tables were built correctly
-	assert.Equal(t, 1, len(cfg.GDPR.TCF2.Purpose1.VendorExceptionMap), "cfg.GDPR.TCF2.Purpose1.VendorExceptionMap length")
-	assert.Equal(t, 1, len(cfg.GDPR.TCF2.Purpose2.VendorExceptionMap), "cfg.GDPR.TCF2.Purpose2.VendorExceptionMap length")
-	assert.Equal(t, 1, len(cfg.GDPR.TCF2.Purpose3.VendorExceptionMap), "cfg.GDPR.TCF2.Purpose3.VendorExceptionMap length")
-	assert.Equal(t, 1, len(cfg.GDPR.TCF2.Purpose4.VendorExceptionMap), "cfg.GDPR.TCF2.Purpose4.VendorExceptionMap length")
-	assert.Equal(t, 4, len(cfg.GDPR.TCF2.Purpose5.VendorExceptionMap), "cfg.GDPR.TCF2.Purpose5.VendorExceptionMap length")
-	assert.Equal(t, 1, len(cfg.GDPR.TCF2.Purpose6.VendorExceptionMap), "cfg.GDPR.TCF2.Purpose6.VendorExceptionMap length")
-	assert.Equal(t, 1, len(cfg.GDPR.TCF2.Purpose7.VendorExceptionMap), "cfg.GDPR.TCF2.Purpose7.VendorExceptionMap length")
-	assert.Equal(t, 1, len(cfg.GDPR.TCF2.Purpose8.VendorExceptionMap), "cfg.GDPR.TCF2.Purpose8.VendorExceptionMap length")
-	assert.Equal(t, 1, len(cfg.GDPR.TCF2.Purpose9.VendorExceptionMap), "cfg.GDPR.TCF2.Purpose9.VendorExceptionMap length")
-	assert.Equal(t, 4, len(cfg.GDPR.TCF2.Purpose10.VendorExceptionMap), "cfg.GDPR.TCF2.Purpose10.VendorExceptionMap length")
-	assert.Equal(t, struct{}{}, cfg.GDPR.TCF2.Purpose1.VendorExceptionMap["appnexus"], "cfg.GDPR.TCF2.Purpose1.VendorExceptionMap")
-	assert.Equal(t, struct{}{}, cfg.GDPR.TCF2.Purpose1.VendorExceptionMap["appnexus"], "cfg.GDPR.TCF2.Purpose1.VendorExceptionMap")
-	assert.Equal(t, struct{}{}, cfg.GDPR.TCF2.Purpose2.VendorExceptionMap["openx"], "cfg.GDPR.TCF2.Purpose2.VendorExceptionMap")
-	assert.Equal(t, struct{}{}, cfg.GDPR.TCF2.Purpose3.VendorExceptionMap["pubmatic"], "cfg.GDPR.TCF2.Purpose3.VendorExceptionMap")
-	assert.Equal(t, struct{}{}, cfg.GDPR.TCF2.Purpose4.VendorExceptionMap["rubicon"], "cfg.GDPR.TCF2.Purpose4.VendorExceptionMap")
-	assert.Equal(t, struct{}{}, cfg.GDPR.TCF2.Purpose5.VendorExceptionMap["appnexus"], "cfg.GDPR.TCF2.Purpose5.VendorExceptionMap")
-	assert.Equal(t, struct{}{}, cfg.GDPR.TCF2.Purpose5.VendorExceptionMap["openx"], "cfg.GDPR.TCF2.Purpose5.VendorExceptionMap")
-	assert.Equal(t, struct{}{}, cfg.GDPR.TCF2.Purpose5.VendorExceptionMap["pubmatic"], "cfg.GDPR.TCF2.Purpose5.VendorExceptionMap")
-	assert.Equal(t, struct{}{}, cfg.GDPR.TCF2.Purpose5.VendorExceptionMap["rubicon"], "cfg.GDPR.TCF2.Purpose5.VendorExceptionMap")
-	assert.Equal(t, struct{}{}, cfg.GDPR.TCF2.Purpose6.VendorExceptionMap["appnexus"], "cfg.GDPR.TCF2.Purpose6.VendorExceptionMap")
-	assert.Equal(t, struct{}{}, cfg.GDPR.TCF2.Purpose7.VendorExceptionMap["openx"], "cfg.GDPR.TCF2.Purpose7.VendorExceptionMap")
-	assert.Equal(t, struct{}{}, cfg.GDPR.TCF2.Purpose8.VendorExceptionMap["pubmatic"], "cfg.GDPR.TCF2.Purpose8.VendorExceptionMap")
-	assert.Equal(t, struct{}{}, cfg.GDPR.TCF2.Purpose9.VendorExceptionMap["rubicon"], "cfg.GDPR.TCF2.Purpose9.VendorExceptionMap")
-	assert.Equal(t, struct{}{}, cfg.GDPR.TCF2.Purpose10.VendorExceptionMap["appnexus"], "cfg.GDPR.TCF2.Purpose10.VendorExceptionMap")
-	assert.Equal(t, struct{}{}, cfg.GDPR.TCF2.Purpose10.VendorExceptionMap["openx"], "cfg.GDPR.TCF2.Purpose10.VendorExceptionMap")
-	assert.Equal(t, struct{}{}, cfg.GDPR.TCF2.Purpose10.VendorExceptionMap["pubmatic"], "cfg.GDPR.TCF2.Purpose10.VendorExceptionMap")
-	assert.Equal(t, struct{}{}, cfg.GDPR.TCF2.Purpose10.VendorExceptionMap["rubicon"], "cfg.GDPR.TCF2.Purpose10.VendorExceptionMap")
-	assert.Equal(t, 1, len(cfg.GDPR.TCF2.SpecialPurpose1.VendorExceptionMap), "cfg.GDPR.TCF2.SpecialPurpose1.VendorExceptionMap length")
-	assert.Equal(t, struct{}{}, cfg.GDPR.TCF2.Purpose10.VendorExceptionMap["appnexus"], "cfg.GDPR.TCF2.SpecialPurpose1.VendorExceptionMap")
+	expectedTCF2 := TCF2{
+		Enabled: true,
+		Purpose1: Purpose{
+			Enabled:            true, // true by default
+			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo1a"), openrtb_ext.BidderName("foo1b")},
+			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo1a"): {}, openrtb_ext.BidderName("foo1b"): {}},
+		},
+		Purpose2: Purpose{
+			Enabled:            false,
+			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo2")},
+			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo2"): {}},
+		},
+		Purpose3: Purpose{
+			Enabled:            true, // true by default
+			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo3")},
+			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo3"): {}},
+		},
+		Purpose4: Purpose{
+			Enabled:            true, // true by default
+			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo4")},
+			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo4"): {}},
+		},
+		Purpose5: Purpose{
+			Enabled:            true, // true by default
+			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo5")},
+			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo5"): {}},
+		},
+		Purpose6: Purpose{
+			Enabled:            true, // true by default
+			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo6")},
+			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo6"): {}},
+		},
+		Purpose7: Purpose{
+			Enabled:            true, // true by default
+			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo7")},
+			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo7"): {}},
+		},
+		Purpose8: Purpose{
+			Enabled:            true, // true by default
+			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo8")},
+			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo8"): {}},
+		},
+		Purpose9: Purpose{
+			Enabled:            true, // true by default
+			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo9")},
+			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo9"): {}},
+		},
+		Purpose10: Purpose{
+			Enabled:            true, // true by default
+			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo10")},
+			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo10"): {}},
+		},
+		SpecialPurpose1: Purpose{
+			Enabled:            true, // true by default
+			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("fooSP1")},
+			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("fooSP1"): {}},
+		},
+		PurposeOneTreatment: PurposeOneTreatment{
+			Enabled:       true, // true by default
+			AccessAllowed: true, // true by default
+		},
+	}
+	assert.Equal(t, expectedTCF2, cfg.GDPR.TCF2, "gdpr.tcf2")
 
 	cmpStrings(t, "currency_converter.fetch_url", cfg.CurrencyConverter.FetchURL, "https://currency.prebid.org")
 	cmpInts(t, "currency_converter.fetch_interval_seconds", cfg.CurrencyConverter.FetchIntervalSeconds, 1800)
