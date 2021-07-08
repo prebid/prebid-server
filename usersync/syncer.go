@@ -139,11 +139,11 @@ func resolveDefaultSyncType(syncerConfig config.Syncer) (SyncType, error) {
 
 // macro substitution regex
 var (
-	macroRegexExternalHost = regexp.MustCompile(`{{\s*.ExternalURL\s*}}`)
-	macroRegexSyncerKey    = regexp.MustCompile(`{{\s*.SyncerKey\s*}}`)
-	macroRegexSyncType     = regexp.MustCompile(`{{\s*.SyncType\s*}}`)
-	macroRegexUserMacro    = regexp.MustCompile(`{{\s*.UserMacro\s*}}`)
-	macroRegexRedirect     = regexp.MustCompile(`{{\s*.RedirectURL\s*}}`)
+	macroRegexExternalHost = regexp.MustCompile(`{{\s*\.ExternalURL\s*}}`)
+	macroRegexSyncerKey    = regexp.MustCompile(`{{\s*\.SyncerKey\s*}}`)
+	macroRegexSyncType     = regexp.MustCompile(`{{\s*\.SyncType\s*}}`)
+	macroRegexUserMacro    = regexp.MustCompile(`{{\s*\.UserMacro\s*}}`)
+	macroRegexRedirect     = regexp.MustCompile(`{{\s*\.RedirectURL\s*}}`)
 	macroRegex             = regexp.MustCompile(`{{.*?}}`)
 )
 

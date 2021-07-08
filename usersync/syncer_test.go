@@ -285,6 +285,47 @@ func TestBuildTemplate(t *testing.T) {
 			},
 			expectedError: "template: anykey_usersync_url:1: function \"malformed\" not defined",
 		},
+
+		// The following tests protect against the . literal character vs . character class in regex.
+		{
+			description: "Invalid Macro - Redirect URL",
+			givenSyncerEndpoint: config.SyncerEndpoint{
+				URL: "https://bidder.com/sync?redirect={{xRedirectURL}}",
+			},
+			expectedError: "template: anykey_usersync_url:1: function \"xRedirectURL\" not defined",
+		},
+		{
+			description: "Invalid Macro - External URL",
+			givenSyncerEndpoint: config.SyncerEndpoint{
+				URL:         "https://bidder.com/sync?redirect={{.RedirectURL}}",
+				RedirectURL: "{{xExternalURL}}",
+			},
+			expectedError: "template: anykey_usersync_url:1: function \"xExternalURL\" not defined",
+		},
+		{
+			description: "Invalid Macro - Syncer Key",
+			givenSyncerEndpoint: config.SyncerEndpoint{
+				URL:         "https://bidder.com/sync?redirect={{.RedirectURL}}",
+				RedirectURL: "{{xSyncerKey}}",
+			},
+			expectedError: "template: anykey_usersync_url:1: function \"xSyncerKey\" not defined",
+		},
+		{
+			description: "Invalid Macro - Sync Type",
+			givenSyncerEndpoint: config.SyncerEndpoint{
+				URL:         "https://bidder.com/sync?redirect={{.RedirectURL}}",
+				RedirectURL: "{{xSyncType}}",
+			},
+			expectedError: "template: anykey_usersync_url:1: function \"xSyncType\" not defined",
+		},
+		{
+			description: "Invalid Macro - User Macro",
+			givenSyncerEndpoint: config.SyncerEndpoint{
+				URL:         "https://bidder.com/sync?redirect={{.RedirectURL}}",
+				RedirectURL: "{{xUserMacro}}",
+			},
+			expectedError: "template: anykey_usersync_url:1: function \"xUserMacro\" not defined",
+		},
 	}
 
 	for _, test := range testCases {
