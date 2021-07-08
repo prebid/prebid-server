@@ -757,12 +757,13 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 
 		if request.User != nil {
 			userCopy := *request.User
-			userExtRP := rubiconUserExt{RP: rubiconUserExtRP{Target: rubiconExt.Visitor}}
 
-			if err := updateUserExtWithIabAttribute(&userExtRP, userCopy.Data); err != nil {
+			target, err := updateExtWithIabAttribute(rubiconExt.Visitor, userCopy.Data, []int{4})
+			if err != nil {
 				errs = append(errs, err)
 				continue
 			}
+			userExtRP := rubiconUserExt{RP: rubiconUserExtRP{Target: target}}
 
 			if request.User.Ext != nil {
 				var userExt *openrtb_ext.ExtUser
@@ -855,10 +856,12 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 		if request.Site != nil {
 			siteCopy := *request.Site
 			siteExtRP := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: rubiconExt.SiteId}}
-			if err := updateSiteExtWithIabAttribute(&siteExtRP, siteCopy.Content.Data); err != nil {
+			target, err := updateExtWithIabAttribute(nil, siteCopy.Content.Data, []int{1, 2})
+			if err != nil {
 				errs = append(errs, err)
 				continue
 			}
+			siteExtRP.RP.Target = target
 
 			siteCopy.Ext, err = json.Marshal(&siteExtRP)
 			if err != nil {
@@ -918,44 +921,24 @@ func resolveBidFloorAttributes(bidFloor float64, bidFloorCur string) (float64, s
 	return bidFloor, bidFloorCur
 }
 
-func updateUserExtWithIabAttribute(userExtRP *rubiconUserExt, data []openrtb2.Data) error {
-	userSegTaxes := []int{4}
-	var segmentIdsToCopy = getSegmentIdsToCopy(data, userSegTaxes)
+func updateExtWithIabAttribute(target json.RawMessage, data []openrtb2.Data, segTaxes []int) (json.RawMessage, error) {
+	var segmentIdsToCopy = getSegmentIdsToCopy(data, segTaxes)
 
-	userExtRPTarget := make(map[string]interface{})
+	extRPTarget := make(map[string]interface{})
 
-	if userExtRP.RP.Target != nil {
-		if err := json.Unmarshal(userExtRP.RP.Target, &userExtRPTarget); err != nil {
-			return &errortypes.BadInput{Message: err.Error()}
+	if target != nil {
+		if err := json.Unmarshal(target, &extRPTarget); err != nil {
+			return nil, &errortypes.BadInput{Message: err.Error()}
 		}
 	}
 
-	userExtRPTarget["iab"] = segmentIdsToCopy
+	extRPTarget["iab"] = segmentIdsToCopy
 
-	if target, err := json.Marshal(&userExtRPTarget); err != nil {
-		return &errortypes.BadInput{Message: err.Error()}
-	} else {
-		userExtRP.RP.Target = target
+	jsonTarget, err := json.Marshal(&extRPTarget)
+	if err != nil {
+		return nil, &errortypes.BadInput{Message: err.Error()}
 	}
-
-	return nil
-}
-
-func updateSiteExtWithIabAttribute(siteExtRP *rubiconSiteExt, data []openrtb2.Data) error {
-	siteSegTaxes := []int{1, 2}
-	var segmentIdsToCopy = getSegmentIdsToCopy(data, siteSegTaxes)
-
-	siteExtRPTarget := make(map[string]interface{})
-
-	siteExtRPTarget["iab"] = segmentIdsToCopy
-
-	if target, err := json.Marshal(&siteExtRPTarget); err != nil {
-		return &errortypes.BadInput{Message: err.Error()}
-	} else {
-		siteExtRP.RP.Target = target
-	}
-
-	return nil
+	return jsonTarget, nil
 }
 
 func getSegmentIdsToCopy(data []openrtb2.Data, segTaxValues []int) []string {
