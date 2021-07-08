@@ -100,6 +100,7 @@ const (
 	BidderAppnexus          BidderName = "appnexus"
 	BidderAudienceNetwork   BidderName = "audienceNetwork"
 	BidderAvocet            BidderName = "avocet"
+	BidderAxonix            BidderName = "axonix"
 	BidderBeachfront        BidderName = "beachfront"
 	BidderBeintoo           BidderName = "beintoo"
 	BidderBetween           BidderName = "between"
@@ -223,6 +224,7 @@ func CoreBidderNames() []BidderName {
 		BidderAppnexus,
 		BidderAudienceNetwork,
 		BidderAvocet,
+		BidderAxonix,
 		BidderBeachfront,
 		BidderBeintoo,
 		BidderBetween,
