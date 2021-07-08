@@ -12,7 +12,7 @@ type Usersyncer interface {
 	// FamilyName should be the same as the `BidderName` for this Usersyncer.
 	// This function only exists for legacy reasons.
 	// TODO #362: when the appnexus usersyncer is consistent, delete this and use the key
-	// of FNewSyncerMap() here instead.
+	// of NewSyncerMap() here instead.
 	FamilyName() string
 }
 

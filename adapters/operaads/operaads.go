@@ -2,7 +2,6 @@ package operaads
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/prebid/prebid-server/macros"
 	"net/http"
@@ -15,13 +14,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-var (
-	ErrEmptyPlacementId = errors.New("empty placement id")
-	ErrEmptyEndpointId  = errors.New("empty endpoint id")
-	ErrEmptyPublisherId = errors.New("empty publisher id")
-)
-
-type OperaadsAdapter struct {
+type adapter struct {
 	epTemplate *template.Template
 }
 
@@ -31,13 +24,13 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	if err != nil {
 		return nil, err
 	}
-	bidder := &OperaadsAdapter{
+	bidder := &adapter{
 		epTemplate: epTemplate,
 	}
 	return bidder, nil
 }
 
-func (a *OperaadsAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	impCount := len(request.Imp)
 	requestData := make([]*adapters.RequestData, 0, impCount)
 	errs := []error{}
@@ -63,18 +56,6 @@ func (a *OperaadsAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ad
 		var operaadsExt openrtb_ext.ImpExtOperaads
 		if err := json.Unmarshal(bidderExt.Bidder, &operaadsExt); err != nil {
 			errs = append(errs, err)
-			continue
-		}
-		if operaadsExt.PublisherID == "" {
-			errs = append(errs, ErrEmptyPublisherId)
-			continue
-		}
-		if operaadsExt.EndpointID == "" {
-			errs = append(errs, ErrEmptyEndpointId)
-			continue
-		}
-		if operaadsExt.PlacementID == "" {
-			errs = append(errs, ErrEmptyPlacementId)
 			continue
 		}
 
@@ -121,11 +102,6 @@ func checkRequest(request *openrtb2.BidRequest) error {
 }
 
 func convertImpression(imp *openrtb2.Imp) error {
-	if imp.Banner == nil && imp.Video == nil && imp.Native == nil {
-		return &errortypes.BadInput{
-			Message: "Opera ads only supports banner, video or native ads.",
-		}
-	}
 	if imp.Banner != nil {
 		bannerCopy, err := convertBanner(imp.Banner)
 		if err != nil {
@@ -176,7 +152,7 @@ func convertBanner(banner *openrtb2.Banner) (*openrtb2.Banner, error) {
 	return banner, nil
 }
 
-func (a *OperaadsAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}

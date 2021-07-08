@@ -1,6 +1,5 @@
 maintainer:
-  email: adx@opera.com
-#gvlVendorID: 
+  email: adtech-prebid-group@opera.com
 modifyingVastXmlAllowed: true
 capabilities:
   app:

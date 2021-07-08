@@ -4,15 +4,18 @@
   "properties": {
     "placementId": {
       "description": "Placement ID",
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "endpointId": {
       "description": "Endpoint ID",
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "publisherId": {
       "description": "Publisher ID",
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     }
   },
   "required": [
