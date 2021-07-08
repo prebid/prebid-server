@@ -30,7 +30,7 @@ const (
 type permissionsImpl struct {
 	cfg              config.GDPR
 	gdprDefaultValue Signal
-	purposeConfigs   map[consentconstants.Purpose]config.Purpose
+	purposeConfigs   map[consentconstants.Purpose]config.TCF2Purpose
 	vendorIDs        map[openrtb_ext.BidderName]uint16
 	fetchVendorList  map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error)
 }

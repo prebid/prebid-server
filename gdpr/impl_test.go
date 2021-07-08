@@ -65,7 +65,7 @@ func TestAllowedSyncs(t *testing.T) {
 		cfg: config.GDPR{
 			HostVendorID: 2,
 			TCF2: config.TCF2{
-				Purpose1: config.Purpose{
+				Purpose1: config.TCF2Purpose{
 					Enabled: true,
 				},
 			},
@@ -105,7 +105,7 @@ func TestProhibitedPurposes(t *testing.T) {
 		cfg: config.GDPR{
 			HostVendorID: 2,
 			TCF2: config.TCF2{
-				Purpose1: config.Purpose{
+				Purpose1: config.TCF2Purpose{
 					Enabled: true,
 				},
 			},
@@ -144,7 +144,7 @@ func TestProhibitedVendors(t *testing.T) {
 		cfg: config.GDPR{
 			HostVendorID: 2,
 			TCF2: config.TCF2{
-				Purpose1: config.Purpose{
+				Purpose1: config.TCF2Purpose{
 					Enabled: true,
 				},
 			},
@@ -288,7 +288,7 @@ func TestAllowActivities(t *testing.T) {
 			NonStandardPublisherMap: map[string]struct{}{"appNexusAppID": {}},
 			TCF2: config.TCF2{
 				Enabled: true,
-				Purpose2: config.Purpose{
+				Purpose2: config.TCF2Purpose{
 					Enabled: true,
 				},
 			},
@@ -361,10 +361,10 @@ var gdprConfig = config.GDPR{
 	HostVendorID: 2,
 	TCF2: config.TCF2{
 		Enabled:         true,
-		Purpose1:        config.Purpose{Enabled: true},
-		Purpose2:        config.Purpose{Enabled: true},
-		Purpose7:        config.Purpose{Enabled: true},
-		SpecialPurpose1: config.Purpose{Enabled: true},
+		Purpose1:        config.TCF2Purpose{Enabled: true},
+		Purpose2:        config.TCF2Purpose{Enabled: true},
+		Purpose7:        config.TCF2Purpose{Enabled: true},
+		SpecialPurpose1: config.TCF2Purpose{Enabled: true},
 	},
 }
 
@@ -797,10 +797,10 @@ func TestAllowActivitiesBidRequests(t *testing.T) {
 				HostVendorID: 2,
 				TCF2: config.TCF2{
 					Enabled:         true,
-					Purpose1:        config.Purpose{Enabled: true},
-					Purpose2:        config.Purpose{Enabled: td.purpose2Enabled},
-					Purpose7:        config.Purpose{Enabled: true},
-					SpecialPurpose1: config.Purpose{Enabled: true},
+					Purpose1:        config.TCF2Purpose{Enabled: true},
+					Purpose2:        config.TCF2Purpose{Enabled: td.purpose2Enabled},
+					Purpose7:        config.TCF2Purpose{Enabled: true},
+					SpecialPurpose1: config.TCF2Purpose{Enabled: true},
 				},
 			},
 			vendorIDs: map[openrtb_ext.BidderName]uint16{
@@ -901,8 +901,8 @@ func TestAllowActivitiesVendorException(t *testing.T) {
 				HostVendorID: 2,
 				TCF2: config.TCF2{
 					Enabled:         true,
-					Purpose2:        config.Purpose{Enabled: true, VendorExceptionMap: td.p2VendorExceptionMap},
-					SpecialPurpose1: config.Purpose{Enabled: true, VendorExceptionMap: td.sp1VendorExceptionMap},
+					Purpose2:        config.TCF2Purpose{Enabled: true, VendorExceptionMap: td.p2VendorExceptionMap},
+					SpecialPurpose1: config.TCF2Purpose{Enabled: true, VendorExceptionMap: td.sp1VendorExceptionMap},
 				},
 			},
 			vendorIDs: map[openrtb_ext.BidderName]uint16{
@@ -914,7 +914,7 @@ func TestAllowActivitiesVendorException(t *testing.T) {
 				}),
 			},
 		}
-		perms.purposeConfigs = map[consentconstants.Purpose]config.Purpose{
+		perms.purposeConfigs = map[consentconstants.Purpose]config.TCF2Purpose{
 			consentconstants.Purpose(2): perms.cfg.TCF2.Purpose2,
 			consentconstants.Purpose(3): perms.cfg.TCF2.Purpose3,
 		}
@@ -968,7 +968,7 @@ func TestBidderSyncAllowedVendorException(t *testing.T) {
 				HostVendorID: 2,
 				TCF2: config.TCF2{
 					Enabled:  true,
-					Purpose1: config.Purpose{Enabled: true, VendorExceptionMap: td.p1VendorExceptionMap},
+					Purpose1: config.TCF2Purpose{Enabled: true, VendorExceptionMap: td.p1VendorExceptionMap},
 				},
 			},
 			vendorIDs: map[openrtb_ext.BidderName]uint16{
@@ -980,7 +980,7 @@ func TestBidderSyncAllowedVendorException(t *testing.T) {
 				}),
 			},
 		}
-		perms.purposeConfigs = map[consentconstants.Purpose]config.Purpose{
+		perms.purposeConfigs = map[consentconstants.Purpose]config.TCF2Purpose{
 			consentconstants.Purpose(1): perms.cfg.TCF2.Purpose1,
 		}
 

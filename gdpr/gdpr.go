@@ -45,7 +45,7 @@ func NewPermissions(ctx context.Context, cfg config.GDPR, vendorIDs map[openrtb_
 		gdprDefaultValue = SignalNo
 	}
 
-	purposeConfigs := map[consentconstants.Purpose]config.Purpose{
+	purposeConfigs := map[consentconstants.Purpose]config.TCF2Purpose{
 		1:  cfg.TCF2.Purpose1,
 		2:  cfg.TCF2.Purpose2,
 		3:  cfg.TCF2.Purpose3,

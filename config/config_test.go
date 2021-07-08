@@ -405,62 +405,62 @@ func TestFullConfig(t *testing.T) {
 	//Assert purpose VendorExceptionMap hash tables were built correctly
 	expectedTCF2 := TCF2{
 		Enabled: true,
-		Purpose1: Purpose{
+		Purpose1: TCF2Purpose{
 			Enabled:            true, // true by default
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo1a"), openrtb_ext.BidderName("foo1b")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo1a"): {}, openrtb_ext.BidderName("foo1b"): {}},
 		},
-		Purpose2: Purpose{
+		Purpose2: TCF2Purpose{
 			Enabled:            false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo2")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo2"): {}},
 		},
-		Purpose3: Purpose{
+		Purpose3: TCF2Purpose{
 			Enabled:            true, // true by default
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo3")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo3"): {}},
 		},
-		Purpose4: Purpose{
+		Purpose4: TCF2Purpose{
 			Enabled:            true, // true by default
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo4")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo4"): {}},
 		},
-		Purpose5: Purpose{
+		Purpose5: TCF2Purpose{
 			Enabled:            true, // true by default
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo5")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo5"): {}},
 		},
-		Purpose6: Purpose{
+		Purpose6: TCF2Purpose{
 			Enabled:            true, // true by default
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo6")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo6"): {}},
 		},
-		Purpose7: Purpose{
+		Purpose7: TCF2Purpose{
 			Enabled:            true, // true by default
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo7")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo7"): {}},
 		},
-		Purpose8: Purpose{
+		Purpose8: TCF2Purpose{
 			Enabled:            true, // true by default
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo8")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo8"): {}},
 		},
-		Purpose9: Purpose{
+		Purpose9: TCF2Purpose{
 			Enabled:            true, // true by default
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo9")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo9"): {}},
 		},
-		Purpose10: Purpose{
+		Purpose10: TCF2Purpose{
 			Enabled:            true, // true by default
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo10")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo10"): {}},
 		},
-		SpecialPurpose1: Purpose{
+		SpecialPurpose1: TCF2Purpose{
 			Enabled:            true, // true by default
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("fooSP1")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("fooSP1"): {}},
 		},
-		PurposeOneTreatment: PurposeOneTreatment{
+		PurposeOneTreatment: TCF2PurposeOneTreatment{
 			Enabled:       true, // true by default
 			AccessAllowed: true, // true by default
 		},

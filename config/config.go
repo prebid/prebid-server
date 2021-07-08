@@ -240,30 +240,30 @@ func (t *GDPRTimeouts) ActiveTimeout() time.Duration {
 
 // TCF2 defines the TCF2 specific configurations for GDPR
 type TCF2 struct {
-	Enabled             bool                `mapstructure:"enabled"`
-	Purpose1            Purpose             `mapstructure:"purpose1"`
-	Purpose2            Purpose             `mapstructure:"purpose2"`
-	Purpose3            Purpose             `mapstructure:"purpose3"`
-	Purpose4            Purpose             `mapstructure:"purpose4"`
-	Purpose5            Purpose             `mapstructure:"purpose5"`
-	Purpose6            Purpose             `mapstructure:"purpose6"`
-	Purpose7            Purpose             `mapstructure:"purpose7"`
-	Purpose8            Purpose             `mapstructure:"purpose8"`
-	Purpose9            Purpose             `mapstructure:"purpose9"`
-	Purpose10           Purpose             `mapstructure:"purpose10"`
-	SpecialPurpose1     Purpose             `mapstructure:"special_purpose1"`
-	PurposeOneTreatment PurposeOneTreatment `mapstructure:"purpose_one_treatment"`
+	Enabled             bool                    `mapstructure:"enabled"`
+	Purpose1            TCF2Purpose             `mapstructure:"purpose1"`
+	Purpose2            TCF2Purpose             `mapstructure:"purpose2"`
+	Purpose3            TCF2Purpose             `mapstructure:"purpose3"`
+	Purpose4            TCF2Purpose             `mapstructure:"purpose4"`
+	Purpose5            TCF2Purpose             `mapstructure:"purpose5"`
+	Purpose6            TCF2Purpose             `mapstructure:"purpose6"`
+	Purpose7            TCF2Purpose             `mapstructure:"purpose7"`
+	Purpose8            TCF2Purpose             `mapstructure:"purpose8"`
+	Purpose9            TCF2Purpose             `mapstructure:"purpose9"`
+	Purpose10           TCF2Purpose             `mapstructure:"purpose10"`
+	SpecialPurpose1     TCF2Purpose             `mapstructure:"special_purpose1"`
+	PurposeOneTreatment TCF2PurposeOneTreatment `mapstructure:"purpose_one_treatment"`
 }
 
 // Making a purpose struct so purpose specific details can be added later.
-type Purpose struct {
+type TCF2Purpose struct {
 	Enabled bool `mapstructure:"enabled"`
 	// Array of vendor exceptions that is used to create the hash table VendorExceptionMap so vendor names can be instantly accessed
 	VendorExceptions   []openrtb_ext.BidderName `mapstructure:"vendor_exceptions"`
 	VendorExceptionMap map[openrtb_ext.BidderName]struct{}
 }
 
-type PurposeOneTreatment struct {
+type TCF2PurposeOneTreatment struct {
 	Enabled       bool `mapstructure:"enabled"`
 	AccessAllowed bool `mapstructure:"access_allowed"`
 }
@@ -515,7 +515,7 @@ func New(v *viper.Viper) (*Configuration, error) {
 
 	// To look for a purpose's vendor exceptions in O(1) time, for each purpose we fill this hash table located in the
 	// VendorExceptions field of the GDPR.TCF2.PurposeX struct defined in this file
-	purposeConfigs := []*Purpose{
+	purposeConfigs := []*TCF2Purpose{
 		&c.GDPR.TCF2.Purpose1,
 		&c.GDPR.TCF2.Purpose2,
 		&c.GDPR.TCF2.Purpose3,
