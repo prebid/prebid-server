@@ -1,6 +1,7 @@
 package exchange
 
 import (
+	"github.com/prebid-server/adapters/playwire_ortb"
 	"github.com/prebid/prebid-server/adapters"
 	ttx "github.com/prebid/prebid-server/adapters/33across"
 	"github.com/prebid/prebid-server/adapters/acuityads"
@@ -46,7 +47,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/decenterads"
 	"github.com/prebid/prebid-server/adapters/deepintent"
 	"github.com/prebid/prebid-server/adapters/dmx"
-	"github.com/prebid/prebid-server/adapters/e_volution"
+	evolution "github.com/prebid/prebid-server/adapters/e_volution"
 	"github.com/prebid/prebid-server/adapters/emx_digital"
 	"github.com/prebid/prebid-server/adapters/engagebdr"
 	"github.com/prebid/prebid-server/adapters/eplanning"
@@ -170,6 +171,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderDmx:               dmx.Builder,
 		openrtb_ext.BidderEmxDigital:        emx_digital.Builder,
 		openrtb_ext.BidderEngageBDR:         engagebdr.Builder,
+		openrtb_ext.BidderEngageBDROrtb:     playwire_ortb.Builder,
 		openrtb_ext.BidderEPlanning:         eplanning.Builder,
 		openrtb_ext.BidderEpom:              epom.Builder,
 		openrtb_ext.BidderEVolution:         evolution.Builder,
@@ -177,6 +179,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderGamoshi:           gamoshi.Builder,
 		openrtb_ext.BidderGrid:              grid.Builder,
 		openrtb_ext.BidderGumGum:            gumgum.Builder,
+		openrtb_ext.BidderGumGumOrtb:        playwire_ortb.Builder,
 		openrtb_ext.BidderImprovedigital:    improvedigital.Builder,
 		openrtb_ext.BidderInMobi:            inmobi.Builder,
 		openrtb_ext.BidderInteractiveoffers: interactiveoffers.Builder,
@@ -208,6 +211,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderPubmatic:          pubmatic.Builder,
 		openrtb_ext.BidderPubnative:         pubnative.Builder,
 		openrtb_ext.BidderPulsepoint:        pulsepoint.Builder,
+		openrtb_ext.BidderPulsepointOrtb:    playwire_ortb.Builder,
 		openrtb_ext.BidderRevcontent:        revcontent.Builder,
 		openrtb_ext.BidderRhythmone:         rhythmone.Builder,
 		openrtb_ext.BidderRTBHouse:          rtbhouse.Builder,
