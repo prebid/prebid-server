@@ -8,5 +8,5 @@ import (
 )
 
 func NewGumGumSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("gumgum", 61, temp, adapters.SyncTypeIframe)
+	return adapters.NewSyncer("gumgum", temp, adapters.SyncTypeIframe)
 }

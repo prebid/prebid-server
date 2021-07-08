@@ -1,0 +1,14 @@
+maintainer:
+  email: "support@lunamedia.io"
+gvlVendorID: 998
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native

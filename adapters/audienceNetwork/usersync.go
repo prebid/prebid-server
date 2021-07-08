@@ -8,5 +8,5 @@ import (
 )
 
 func NewFacebookSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("audienceNetwork", 0, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("audienceNetwork", temp, adapters.SyncTypeRedirect)
 }

@@ -1,0 +1,58 @@
+{
+    "debugLog": {
+        "Enabled": false,
+        "CacheType": "xml",
+        "TTL": 3600,
+        "Data": {
+            "Request": "test request string",
+            "Headers": "test headers string",
+            "Response": "test response string"
+        }
+    },
+    "bidRequest": {
+        "imp": [{
+            "id":  "oneImp",
+            "exp":   600
+        }, {
+            "id":  "twoImp"
+        }]
+    },
+    "pbsBids": [{
+        "bid":{
+            "id": "bidOne",
+            "impid": "oneImp",
+            "price": 7.64
+        },
+        "bidType": "video",
+        "bidder": "appnexus"
+    }, {
+        "bid": {
+            "id": "bidTwo",
+            "impid": "twoImp",
+            "price": 5.64
+        },
+        "bidType": "video",
+        "bidder": "pubmatic"
+    }],
+    "expectedCacheables": [
+        {
+            "type": "json",
+            "ttlseconds": 660,
+            "value": "{\"id\": \"bidOne\", \"impid\": \"oneImp\", \"price\": 7.64}"
+        }, {
+            "type": "json",
+            "ttlseconds": 3660,
+            "value": "{\"id\": \"bidTwo\", \"impid\": \"twoImp\", \"price\": 5.64}"
+        }
+    ],
+    "defaultTTLs": {
+        "banner": 300,
+        "video": 3600,
+        "audio": 1800,
+        "native": 300
+    },
+    "targetDataIncludeWinners":true,
+    "targetDataIncludeBidderKeys":true,
+    "targetDataIncludeCacheBids":true,
+    "targetDataIncludeCacheVast":false
+}

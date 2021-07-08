@@ -1,0 +1,118 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "imp": [
+            {
+                "id": "test-imp-id",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        }
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "siteId": "569749"
+                    }
+                }
+            }
+        ]
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "http://host/endpoint",
+                "body": {
+                    "id": "test-request-id",
+                    "imp": [
+                        {
+                            "id": "test-imp-id",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 300,
+                                        "h": 250
+                                    }
+                                ],
+                                "w": 300,
+                                "h": 250
+                            },
+                            "ext": {
+                                "bidder": {
+                                    "siteId": "569749"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "test-request-id",
+                    "seatbid": [
+                        {
+                            "seat": "958",
+                            "bid": [
+                                {
+                                    "id": "7706636740145184841",
+                                    "impid": "bad-imp-id",
+                                    "price": 0.5,
+                                    "adid": "29681110",
+                                    "adm": "some-test-ad",
+                                    "adomain": [
+                                        "https://advertiser.example.com"
+                                    ],
+                                    "cid": "958",
+                                    "crid": "29681110",
+                                    "h": 250,
+                                    "w": 300,
+                                    "ext": {
+                                        "ix": {}
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "bidid": "5778926625248726496",
+                    "cur": "USD"
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "currency": "USD",
+            "bids": [
+                {
+                    "bid": {
+                        "id": "7706636740145184841",
+                        "impid": "bad-imp-id",
+                        "price": 0.5,
+                        "adm": "some-test-ad",
+                        "adid": "29681110",
+                        "adomain": [
+                            "https://advertiser.example.com"
+                        ],
+                        "cid": "958",
+                        "crid": "29681110",
+                        "w": 300,
+                        "h": 250,
+                        "ext": {
+                            "ix": {}
+                        }
+                    },
+                    "type": ""
+                }
+            ]
+        }
+    ],
+    "expectedMakeBidsErrors": [
+        {
+            "value": "unmatched impression id: bad-imp-id",
+            "comparison": "literal"
+        }
+    ]
+}

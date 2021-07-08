@@ -1,6 +1,6 @@
 {
-  "message": "Invalid request: request.imp[0].ext.appnexus failed validation.\n(root): Invalid type. Expected: object, given: string\n",
-  "requestPayload": {
+  "description": "Bid request's sole imp element has invalid ext value",
+  "mockBidRequest": {
     "id": "req-id",
     "imp": [
       {
@@ -8,7 +8,7 @@
         "audio": {
           "mimes": [
             "video/mp4"
-          ]
+            ]
         },
         "ext": {
           "appnexus": "invalidParams"
@@ -18,5 +18,7 @@
     "app": {
       "id": "app_001"
     }
-  }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: request.imp[0].ext.appnexus failed validation.\n(root): Invalid type. Expected: object, given: string\n"
 }

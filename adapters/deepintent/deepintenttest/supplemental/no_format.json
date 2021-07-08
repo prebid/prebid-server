@@ -1,0 +1,30 @@
+{
+    "mockBidRequest": {
+      "id": "test-request-id",
+      "imp": [
+        {
+          "id": "test-banner-imp-id",
+          "banner": {
+            "format": [
+            ]
+          },
+          "ext": {
+            "bidder": {
+             "tagId":"16"
+            }
+          }
+        }
+      ],
+      "site": {
+        "domain": "deepintent.com",
+        "page": "http://deepintent.com/"
+      }
+    },
+    "expectedMakeRequestsErrors": [
+      {
+        "value": "At least one size is required",
+        "comparison": "literal"
+      }
+    ]
+  }
+  

@@ -11,16 +11,16 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 
-	"github.com/mxmCherry/openrtb"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbsmetrics"
-	metrics "github.com/rcrowley/go-metrics"
+	gometrics "github.com/rcrowley/go-metrics"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -32,7 +32,6 @@ func TestGoodAmpRequests(t *testing.T) {
 	goodRequests := map[string]json.RawMessage{
 		"1": json.RawMessage(validRequest(t, "aliased-buyeruids.json")),
 		"2": json.RawMessage(validRequest(t, "aliases.json")),
-		"4": json.RawMessage(validRequest(t, "digitrust.json")),
 		"5": json.RawMessage(validRequest(t, "gdpr-no-consentstring.json")),
 		"6": json.RawMessage(validRequest(t, "gdpr.json")),
 		"7": json.RawMessage(validRequest(t, "site.json")),
@@ -41,18 +40,17 @@ func TestGoodAmpRequests(t *testing.T) {
 
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	endpoint, _ := NewAmpEndpoint(
 		&mockAmpExchange{},
 		newParamsValidator(t),
 		&mockAmpStoredReqFetcher{goodRequests},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		theMetrics,
+		newTestMetrics(),
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
-		openrtb_ext.BidderMap,
+		openrtb_ext.BuildBidderMap(),
 	)
 
 	for requestID := range goodRequests {
@@ -81,9 +79,8 @@ func TestGoodAmpRequests(t *testing.T) {
 		if response.Debug != nil {
 			t.Errorf("Debug present but not requested")
 		}
-		if _, ok := response.Errors[openrtb_ext.BidderOpenx]; !ok {
-			t.Errorf("OpenX error message is not present. (%v)", response.Errors)
-		}
+
+		assert.Equal(t, expectedErrorsFromHoldAuction, response.Errors, "errors")
 	}
 }
 
@@ -93,7 +90,6 @@ func TestAMPPageInfo(t *testing.T) {
 	stored := map[string]json.RawMessage{
 		"1": json.RawMessage(validRequest(t, "site.json")),
 	}
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	exchange := &mockAmpExchange{}
 
 	endpoint, _ := NewAmpEndpoint(
@@ -102,11 +98,11 @@ func TestAMPPageInfo(t *testing.T) {
 		&mockAmpStoredReqFetcher{stored},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		theMetrics,
+		newTestMetrics(),
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
-		openrtb_ext.BidderMap,
+		openrtb_ext.BuildBidderMap(),
 	)
 	request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&curl=%s", url.QueryEscape(page)), nil)
 	recorder := httptest.NewRecorder()
@@ -122,364 +118,481 @@ func TestAMPPageInfo(t *testing.T) {
 	assert.Equal(t, "test.somepage.co.uk", exchange.lastRequest.Site.Domain)
 }
 
-func TestConsentThroughEndpoint(t *testing.T) {
-	// gdpr consent string that will come inside our http.Request query
-	const consentString = "BOa71ZYOa71ZYAbABBENA8-AAAAbN7_______9______9uz_Gv_r_f__33e8_39v_h_7_-___m_-3zV4-_lvR11yPA1OrfIrwFhiAw"
-	const DigiTurstID = "digitrustId"
+func TestGDPRConsent(t *testing.T) {
+	consent := "BOu5On0Ou5On0ADACHENAO7pqzAAppY"
+	existingConsent := "BONV8oqONXwgmADACHENAO7pqzAAppY"
 
-	// Generate a marshaled openrtb.BidRequest that DOESN'T come with a gdpr consent string
-	fullMarshaledBidRequest, err := getTestBidRequest(false, false, "", DigiTurstID)
-	if err != nil {
-		t.Fatalf("Failed to marshal the complete openrtb.BidRequest object %v", err)
+	testCases := []struct {
+		description     string
+		consent         string
+		userExt         *openrtb_ext.ExtUser
+		nilUser         bool
+		expectedUserExt openrtb_ext.ExtUser
+	}{
+		{
+			description: "Nil User",
+			consent:     consent,
+			nilUser:     true,
+			expectedUserExt: openrtb_ext.ExtUser{
+				Consent: consent,
+			},
+		},
+		{
+			description: "Nil User Ext",
+			consent:     consent,
+			userExt:     nil,
+			expectedUserExt: openrtb_ext.ExtUser{
+				Consent: consent,
+			},
+		},
+		{
+			description: "Overrides Existing Consent",
+			consent:     consent,
+			userExt: &openrtb_ext.ExtUser{
+				Consent: existingConsent,
+			},
+			expectedUserExt: openrtb_ext.ExtUser{
+				Consent: consent,
+			},
+		},
+		{
+			description: "Overrides Existing Consent - With Sibling Data",
+			consent:     consent,
+			userExt: &openrtb_ext.ExtUser{
+				Consent: existingConsent,
+			},
+			expectedUserExt: openrtb_ext.ExtUser{
+				Consent: consent,
+			},
+		},
+		{
+			description: "Does Not Override Existing Consent If Empty",
+			consent:     "",
+			userExt: &openrtb_ext.ExtUser{
+				Consent: existingConsent,
+			},
+			expectedUserExt: openrtb_ext.ExtUser{
+				Consent: existingConsent,
+			},
+		},
 	}
 
-	stored := map[string]json.RawMessage{
-		"1": json.RawMessage(fullMarshaledBidRequest),
+	for _, test := range testCases {
+		// Build Request
+		bid, err := getTestBidRequest(test.nilUser, test.userExt, true, nil)
+		if err != nil {
+			t.Fatalf("Failed to marshal the complete openrtb2.BidRequest object %v", err)
+		}
+
+		// Simulated Stored Request Backend
+		stored := map[string]json.RawMessage{"1": json.RawMessage(bid)}
+
+		// Build Exchange Endpoint
+		mockExchange := &mockAmpExchange{}
+		endpoint, _ := NewAmpEndpoint(
+			mockExchange,
+			newParamsValidator(t),
+			&mockAmpStoredReqFetcher{stored},
+			empty_fetcher.EmptyFetcher{},
+			&config.Configuration{MaxRequestSize: maxSize},
+			newTestMetrics(),
+			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+			map[string]string{},
+			[]byte{},
+			openrtb_ext.BuildBidderMap(),
+		)
+
+		// Invoke Endpoint
+		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&consent_string=%s", test.consent), nil)
+		responseRecorder := httptest.NewRecorder()
+		endpoint(responseRecorder, request, nil)
+
+		// Parse Response
+		var response AmpResponse
+		if err := json.Unmarshal(responseRecorder.Body.Bytes(), &response); err != nil {
+			t.Fatalf("Error unmarshalling response: %s", err.Error())
+		}
+
+		// Assert Result
+		result := mockExchange.lastRequest
+		if !assert.NotNil(t, result, test.description+":lastRequest") {
+			return
+		}
+		if !assert.NotNil(t, result.User, test.description+":lastRequest.User") {
+			return
+		}
+		if !assert.NotNil(t, result.User.Ext, test.description+":lastRequest.User.Ext") {
+			return
+		}
+		var ue openrtb_ext.ExtUser
+		err = json.Unmarshal(result.User.Ext, &ue)
+		if !assert.NoError(t, err, test.description+":deserialize") {
+			return
+		}
+		assert.Equal(t, test.expectedUserExt, ue, test.description)
+		assert.Equal(t, expectedErrorsFromHoldAuction, response.Errors, test.description+":errors")
+		assert.Empty(t, response.Warnings, test.description+":warnings")
+
+		// Invoke Endpoint With Legacy Param
+		requestLegacy := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&gdpr_consent=%s", test.consent), nil)
+		responseRecorderLegacy := httptest.NewRecorder()
+		endpoint(responseRecorderLegacy, requestLegacy, nil)
+
+		// Parse Resonse
+		var responseLegacy AmpResponse
+		if err := json.Unmarshal(responseRecorderLegacy.Body.Bytes(), &responseLegacy); err != nil {
+			t.Fatalf("Error unmarshalling response: %s", err.Error())
+		}
+
+		// Assert Result With Legacy Param
+		resultLegacy := mockExchange.lastRequest
+		if !assert.NotNil(t, resultLegacy, test.description+":legacy:lastRequest") {
+			return
+		}
+		if !assert.NotNil(t, resultLegacy.User, test.description+":legacy:lastRequest.User") {
+			return
+		}
+		if !assert.NotNil(t, resultLegacy.User.Ext, test.description+":legacy:lastRequest.User.Ext") {
+			return
+		}
+		var ueLegacy openrtb_ext.ExtUser
+		err = json.Unmarshal(resultLegacy.User.Ext, &ueLegacy)
+		if !assert.NoError(t, err, test.description+":legacy:deserialize") {
+			return
+		}
+		assert.Equal(t, test.expectedUserExt, ueLegacy, test.description+":legacy")
+		assert.Equal(t, expectedErrorsFromHoldAuction, responseLegacy.Errors, test.description+":legacy:errors")
+		assert.Empty(t, responseLegacy.Warnings, test.description+":legacy:warnings")
 	}
-
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
-	exchange := &mockAmpExchange{}
-
-	endpoint, _ := NewAmpEndpoint(
-		exchange,
-		newParamsValidator(t),
-		&mockAmpStoredReqFetcher{stored},
-		empty_fetcher.EmptyFetcher{},
-		&config.Configuration{MaxRequestSize: maxSize},
-		theMetrics,
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
-		map[string]string{},
-		[]byte{},
-		openrtb_ext.BidderMap,
-	)
-	request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&gdpr_consent=%s", consentString), nil)
-	recorder := httptest.NewRecorder()
-	endpoint(recorder, request, nil)
-
-	// Assert our bidRequest was valid
-	if !assert.NotNil(t, exchange.lastRequest, "Endpoint responded with %d: %s", recorder.Code, recorder.Body.String()) {
-		return
-	}
-	// Assert our bidRequest had a valid "User" field
-	if !assert.NotNil(t, exchange.lastRequest.User, "Resulting bid request should have a valid User field after passing consent string through endpoint") {
-		return
-	}
-	// Assert our bidRequest had a valid "User.Ext" field
-	if !assert.NotNil(t, exchange.lastRequest.User.Ext, "Resulting bid request should have a valid Ext field after passing consent string through endpoint") {
-		return
-	}
-
-	// Assert string `consent` is found in the User.Ext at all
-	assert.NotContainsf(t, fullMarshaledBidRequest, "consent:"+consentString, "Expected bid request to contain consent string %s \n", consentString)
-
-	// Assert the last request has a valid User object with a consent string equal to that on the URL query
-	var ue openrtb_ext.ExtUser
-	err = json.Unmarshal(exchange.lastRequest.User.Ext, &ue)
-	assert.NoError(t, err, "Error unmarshalling last processed request")
-
-	// Assert consent string found in `http.Request` was passed correctly to the `User.Ext` object
-	assert.Contains(t, string(request.URL.RawQuery), consentString, "http.Request should come with a consent string in its query")
-	assert.Equal(t, consentString, ue.Consent, "Consent string unsuccessfully passed to bid request through AMP endpoint")
-
-	// Assert other user properties found originally in our bid request such as `DigiTrust` were not overwritten
-	assert.Equal(t, DigiTurstID, ue.DigiTrust.ID, "Passing GDPR consent through endpoint should not override http.Request ExtUser fields other than consent")
 }
 
-func TestConsentThroughEndpointNilUser(t *testing.T) {
-	// gdpr consent string that will come inside our http.Request query
-	const consentString = "BOa71ZYOa71ZYAbABBENA8-AAAAbN7_______9______9uz_Gv_r_f__33e8_39v_h_7_-___m_-3zV4-_lvR11yPA1OrfIrwFhiAw"
-	const DigiTurstID = "digitrustId"
+func TestCCPAConsent(t *testing.T) {
+	consent := "1NYN"
+	existingConsent := "1NNN"
 
-	// Generate a marshaled openrtb.BidRequest that DOESN'T come with a gdpr consent string
-	fullMarshaledBidRequest, err := getTestBidRequest(true, false, "", DigiTurstID)
-	if err != nil {
-		t.Fatalf("Failed to marshal the complete openrtb.BidRequest object %v", err)
+	var gdpr int8 = 1
+
+	testCases := []struct {
+		description    string
+		consent        string
+		regsExt        *openrtb_ext.ExtRegs
+		nilRegs        bool
+		expectedRegExt openrtb_ext.ExtRegs
+	}{
+		{
+			description: "Nil Regs",
+			consent:     consent,
+			nilRegs:     true,
+			expectedRegExt: openrtb_ext.ExtRegs{
+				USPrivacy: consent,
+			},
+		},
+		{
+			description: "Nil Regs Ext",
+			consent:     consent,
+			regsExt:     nil,
+			expectedRegExt: openrtb_ext.ExtRegs{
+				USPrivacy: consent,
+			},
+		},
+		{
+			description: "Overrides Existing Consent",
+			consent:     consent,
+			regsExt: &openrtb_ext.ExtRegs{
+				USPrivacy: existingConsent,
+			},
+			expectedRegExt: openrtb_ext.ExtRegs{
+				USPrivacy: consent,
+			},
+		},
+		{
+			description: "Overrides Existing Consent - With Sibling Data",
+			consent:     consent,
+			regsExt: &openrtb_ext.ExtRegs{
+				USPrivacy: existingConsent,
+				GDPR:      &gdpr,
+			},
+			expectedRegExt: openrtb_ext.ExtRegs{
+				USPrivacy: consent,
+				GDPR:      &gdpr,
+			},
+		},
+		{
+			description: "Does Not Override Existing Consent If Empty",
+			consent:     "",
+			regsExt: &openrtb_ext.ExtRegs{
+				USPrivacy: existingConsent,
+			},
+			expectedRegExt: openrtb_ext.ExtRegs{
+				USPrivacy: existingConsent,
+			},
+		},
 	}
 
-	stored := map[string]json.RawMessage{
-		"1": json.RawMessage(fullMarshaledBidRequest),
+	for _, test := range testCases {
+		// Build Request
+		bid, err := getTestBidRequest(true, nil, test.nilRegs, test.regsExt)
+		if err != nil {
+			t.Fatalf("Failed to marshal the complete openrtb2.BidRequest object %v", err)
+		}
+
+		// Simulated Stored Request Backend
+		stored := map[string]json.RawMessage{"1": json.RawMessage(bid)}
+
+		// Build Exchange Endpoint
+		mockExchange := &mockAmpExchange{}
+		endpoint, _ := NewAmpEndpoint(
+			mockExchange,
+			newParamsValidator(t),
+			&mockAmpStoredReqFetcher{stored},
+			empty_fetcher.EmptyFetcher{},
+			&config.Configuration{MaxRequestSize: maxSize},
+			newTestMetrics(),
+			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+			map[string]string{},
+			[]byte{},
+			openrtb_ext.BuildBidderMap(),
+		)
+
+		// Invoke Endpoint
+		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&consent_string=%s", test.consent), nil)
+		responseRecorder := httptest.NewRecorder()
+		endpoint(responseRecorder, request, nil)
+
+		// Parse Response
+		var response AmpResponse
+		if err := json.Unmarshal(responseRecorder.Body.Bytes(), &response); err != nil {
+			t.Fatalf("Error unmarshalling response: %s", err.Error())
+		}
+
+		// Assert Result
+		result := mockExchange.lastRequest
+		if !assert.NotNil(t, result, test.description+":lastRequest") {
+			return
+		}
+		if !assert.NotNil(t, result.Regs, test.description+":lastRequest.Regs") {
+			return
+		}
+		if !assert.NotNil(t, result.Regs.Ext, test.description+":lastRequest.Regs.Ext") {
+			return
+		}
+		var re openrtb_ext.ExtRegs
+		err = json.Unmarshal(result.Regs.Ext, &re)
+		if !assert.NoError(t, err, test.description+":deserialize") {
+			return
+		}
+		assert.Equal(t, test.expectedRegExt, re, test.description)
+		assert.Equal(t, expectedErrorsFromHoldAuction, response.Errors)
+		assert.Empty(t, response.Warnings)
 	}
-
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
-	exchange := &mockAmpExchange{}
-
-	endpoint, _ := NewAmpEndpoint(
-		exchange,
-		newParamsValidator(t),
-		&mockAmpStoredReqFetcher{stored},
-		empty_fetcher.EmptyFetcher{},
-		&config.Configuration{MaxRequestSize: maxSize},
-		theMetrics,
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
-		map[string]string{},
-		[]byte{},
-		openrtb_ext.BidderMap,
-	)
-	request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&gdpr_consent=%s", consentString), nil)
-	recorder := httptest.NewRecorder()
-	endpoint(recorder, request, nil)
-
-	// Assert our bidRequest was valid
-	if !assert.NotNil(t, exchange.lastRequest, "Endpoint responded with %d: %s", recorder.Code, recorder.Body.String()) {
-		return
-	}
-	// Assert our bidRequest had a valid "User" field
-	if !assert.NotNil(t, exchange.lastRequest.User, "Resulting bid request should have a valid User field after passing consent string through endpoint") {
-		return
-	}
-	// Assert our bidRequest had a valid "User.Ext" field
-	if !assert.NotNil(t, exchange.lastRequest.User.Ext, "Resulting bid request should have a valid User.Ext field after passing consent string through endpoint") {
-		return
-	}
-
-	// Assert string `consent` is found in the User.Ext at all
-	assert.NotContains(t, fullMarshaledBidRequest, "consent:"+consentString, "This bid request should not contain a consent string. It will be passed the one in the http.Request endpoint")
-
-	// Assert the last request has a valid User object with a consent string equal to that on the URL query
-	var ue openrtb_ext.ExtUser
-	err = json.Unmarshal(exchange.lastRequest.User.Ext, &ue)
-	assert.NoError(t, err, "Error unmarshalling last processed request")
-
-	// Assert consent string found in `http.Request` was passed correctly to the `User.Ext` object
-	assert.Contains(t, string(request.URL.RawQuery), consentString, "http.Request should come with a consent string in its query")
-	assert.Equal(t, consentString, ue.Consent, "Consent string unsuccessfully passed to bid request through AMP endpoint")
 }
 
-func TestConsentThroughEndpointNilUserExt(t *testing.T) {
-	// gdpr consent string that will come inside our http.Request query
-	const consentString = "BOa71ZYOa71ZYAbABBENA8-AAAAbN7_______9______9uz_Gv_r_f__33e8_39v_h_7_-___m_-3zV4-_lvR11yPA1OrfIrwFhiAw"
-	const DigiTurstID = "digitrustId"
+func TestConsentWarnings(t *testing.T) {
+	type inputTest struct {
+		regs              *openrtb_ext.ExtRegs
+		invalidConsentURL bool
+		expectedWarnings  map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage
+	}
+	invalidConsent := "invalid"
 
-	// Generate a marshaled openrtb.BidRequest that DOESN'T come with a gdpr consent string
-	fullMarshaledBidRequest, err := getTestBidRequest(false, true, "some-consent-string", DigiTurstID)
-	if err != nil {
-		t.Fatalf("Failed to marshal the complete openrtb.BidRequest object %v", err)
+	bidderWarning := openrtb_ext.ExtBidderMessage{
+		Code:    10003,
+		Message: "debug turned off for bidder",
+	}
+	invalidCCPAWarning := openrtb_ext.ExtBidderMessage{
+		Code:    10001,
+		Message: "Consent '" + invalidConsent + "' is not recognized as either CCPA or GDPR TCF.",
+	}
+	invalidConsentWarning := openrtb_ext.ExtBidderMessage{
+		Code:    10001,
+		Message: "CCPA consent is invalid and will be ignored. (request.regs.ext.us_privacy must contain 4 characters)",
 	}
 
-	stored := map[string]json.RawMessage{
-		"1": json.RawMessage(fullMarshaledBidRequest),
+	testData := []inputTest{
+		{
+			regs:              nil,
+			invalidConsentURL: false,
+			expectedWarnings:  nil,
+		},
+		{
+			regs:              nil,
+			invalidConsentURL: true,
+			expectedWarnings:  map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage{openrtb_ext.BidderReservedGeneral: {invalidCCPAWarning}},
+		},
+		{
+			regs:              &openrtb_ext.ExtRegs{USPrivacy: "invalid"},
+			invalidConsentURL: true,
+			expectedWarnings: map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage{
+				openrtb_ext.BidderReservedGeneral:  {invalidCCPAWarning, invalidConsentWarning},
+				openrtb_ext.BidderName("appnexus"): {bidderWarning},
+			},
+		},
+		{
+			regs:              &openrtb_ext.ExtRegs{USPrivacy: "1NYN"},
+			invalidConsentURL: false,
+			expectedWarnings:  map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage{openrtb_ext.BidderName("appnexus"): {bidderWarning}},
+		},
 	}
 
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
-	exchange := &mockAmpExchange{}
+	for _, testCase := range testData {
 
-	endpoint, _ := NewAmpEndpoint(
-		exchange,
-		newParamsValidator(t),
-		&mockAmpStoredReqFetcher{stored},
-		empty_fetcher.EmptyFetcher{},
-		&config.Configuration{MaxRequestSize: maxSize},
-		theMetrics,
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
-		map[string]string{},
-		[]byte{},
-		openrtb_ext.BidderMap,
-	)
-	request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&gdpr_consent=%s", consentString), nil)
-	recorder := httptest.NewRecorder()
-	endpoint(recorder, request, nil)
+		bid, err := getTestBidRequest(true, nil, testCase.regs == nil, testCase.regs)
+		if err != nil {
+			t.Fatalf("Failed to marshal the complete openrtb2.BidRequest object %v", err)
+		}
 
-	// Assert our bidRequest was valid
-	if !assert.NotNil(t, exchange.lastRequest, "Endpoint responded with %d: %s", recorder.Code, recorder.Body.String()) {
-		return
+		// Simulated Stored Request Backend
+		stored := map[string]json.RawMessage{"1": json.RawMessage(bid)}
+
+		// Build Exchange Endpoint
+		var mockExchange exchange.Exchange
+		if testCase.regs != nil {
+			mockExchange = &mockAmpExchangeWarnings{}
+		} else {
+			mockExchange = &mockAmpExchange{}
+		}
+		endpoint, _ := NewAmpEndpoint(
+			mockExchange,
+			newParamsValidator(t),
+			&mockAmpStoredReqFetcher{stored},
+			empty_fetcher.EmptyFetcher{},
+			&config.Configuration{MaxRequestSize: maxSize},
+			newTestMetrics(),
+			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+			map[string]string{},
+			[]byte{},
+			openrtb_ext.BuildBidderMap(),
+		)
+
+		// Invoke Endpoint
+		var request *http.Request
+
+		if testCase.invalidConsentURL {
+			request = httptest.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1&consent_string="+invalidConsent, nil)
+
+		} else {
+			request = httptest.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1", nil)
+		}
+
+		responseRecorder := httptest.NewRecorder()
+		endpoint(responseRecorder, request, nil)
+
+		// Parse Response
+		var response AmpResponse
+		if err := json.Unmarshal(responseRecorder.Body.Bytes(), &response); err != nil {
+			t.Fatalf("Error unmarshalling response: %s", err.Error())
+		}
+
+		// Assert Result
+		if testCase.regs == nil {
+			result := mockExchange.(*mockAmpExchange).lastRequest
+			assert.NotNil(t, result, "lastRequest")
+			assert.Nil(t, result.User, "lastRequest.User")
+			assert.Nil(t, result.Regs, "lastRequest.Regs")
+			assert.Equal(t, expectedErrorsFromHoldAuction, response.Errors)
+			if testCase.invalidConsentURL {
+				assert.Equal(t, testCase.expectedWarnings, response.Warnings)
+			} else {
+				assert.Empty(t, response.Warnings)
+			}
+
+		} else {
+			assert.Equal(t, testCase.expectedWarnings, response.Warnings)
+		}
 	}
-	// Assert our bidRequest had a valid "User" field
-	if !assert.NotNil(t, exchange.lastRequest.User, "Resulting bid request should have a valid User field after passing consent string through endpoint") {
-		return
-	}
-	// Assert our bidRequest had a valid "User.Ext" field
-	if !assert.NotNil(t, exchange.lastRequest.User.Ext, "Resulting bid request should have a valid Ext field after passing consent string through endpoint") {
-		return
-	}
-
-	// Assert string `consent` is found in the User.Ext at all
-	assert.NotContains(t, fullMarshaledBidRequest, "consent:"+consentString, "This bid request should not contain a consent string. It will be passed the one in the http.Request endpoint")
-
-	// Assert the last request has a valid User object with a consent string equal to that on the URL query
-	var ue openrtb_ext.ExtUser
-	err = json.Unmarshal(exchange.lastRequest.User.Ext, &ue)
-	assert.NoError(t, err, "Error unmarshalling last processed request")
-
-	// Assert consent string found in `http.Request` was passed correctly to the `User.Ext` object
-	assert.Contains(t, string(request.URL.RawQuery), consentString, "http.Request should come with a consent string in its query")
-	assert.Equal(t, consentString, ue.Consent, "Consent string unsuccessfully passed to bid request through AMP endpoint")
 }
 
-func TestSubstituteRequestConsentWithEndpointConsent(t *testing.T) {
-	// gdpr consent string that will come inside our http.Request query
-	const consentString = "BOa71ZYOa71ZYAbABBENA8-AAAAbN7_______9______9uz_Gv_r_f__33e8_39v_h_7_-___m_-3zV4-_lvR11yPA1OrfIrwFhiAw"
-	const DigiTurstID = "digitrustId"
+func TestNewAndLegacyConsentBothProvided(t *testing.T) {
+	validConsentGDPR1 := "BOu5On0Ou5On0ADACHENAO7pqzAAppY"
+	validConsentGDPR2 := "BONV8oqONXwgmADACHENAO7pqzAAppY"
 
-	// Generate a marshaled openrtb.BidRequest that comes with a gdpr consent string
-	fullMarshaledBidRequest, err := getTestBidRequest(false, false, "some-consent-string", "digitrustId")
-	if err != nil {
-		t.Fatalf("Failed to marshal the complete openrtb.BidRequest object %v", err)
+	testCases := []struct {
+		description     string
+		consent         string
+		consentLegacy   string
+		userExt         *openrtb_ext.ExtUser
+		expectedUserExt openrtb_ext.ExtUser
+	}{
+		{
+			description:   "New Consent Wins",
+			consent:       validConsentGDPR1,
+			consentLegacy: validConsentGDPR2,
+			expectedUserExt: openrtb_ext.ExtUser{
+				Consent: validConsentGDPR1,
+			},
+		},
+		{
+			description:   "New Consent Wins - Reverse",
+			consent:       validConsentGDPR2,
+			consentLegacy: validConsentGDPR1,
+			expectedUserExt: openrtb_ext.ExtUser{
+				Consent: validConsentGDPR2,
+			},
+		},
 	}
 
-	stored := map[string]json.RawMessage{
-		"1": json.RawMessage(fullMarshaledBidRequest),
+	for _, test := range testCases {
+		// Build Request
+		bid, err := getTestBidRequest(false, nil, true, nil)
+		if err != nil {
+			t.Fatalf("Failed to marshal the complete openrtb2.BidRequest object %v", err)
+		}
+
+		// Simulated Stored Request Backend
+		stored := map[string]json.RawMessage{"1": json.RawMessage(bid)}
+
+		// Build Exchange Endpoint
+		mockExchange := &mockAmpExchange{}
+		endpoint, _ := NewAmpEndpoint(
+			mockExchange,
+			newParamsValidator(t),
+			&mockAmpStoredReqFetcher{stored},
+			empty_fetcher.EmptyFetcher{},
+			&config.Configuration{MaxRequestSize: maxSize},
+			newTestMetrics(),
+			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+			map[string]string{},
+			[]byte{},
+			openrtb_ext.BuildBidderMap(),
+		)
+
+		// Invoke Endpoint
+		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&consent_string=%s&gdpr_consent=%s", test.consent, test.consentLegacy), nil)
+		responseRecorder := httptest.NewRecorder()
+		endpoint(responseRecorder, request, nil)
+
+		// Parse Response
+		var response AmpResponse
+		if err := json.Unmarshal(responseRecorder.Body.Bytes(), &response); err != nil {
+			t.Fatalf("Error unmarshalling response: %s", err.Error())
+		}
+
+		// Assert Result
+		result := mockExchange.lastRequest
+		if !assert.NotNil(t, result, test.description+":lastRequest") {
+			return
+		}
+		if !assert.NotNil(t, result.User, test.description+":lastRequest.User") {
+			return
+		}
+		if !assert.NotNil(t, result.User.Ext, test.description+":lastRequest.User.Ext") {
+			return
+		}
+		var ue openrtb_ext.ExtUser
+		err = json.Unmarshal(result.User.Ext, &ue)
+		if !assert.NoError(t, err, test.description+":deserialize") {
+			return
+		}
+		assert.Equal(t, test.expectedUserExt, ue, test.description)
+		assert.Equal(t, expectedErrorsFromHoldAuction, response.Errors)
+		assert.Empty(t, response.Warnings)
 	}
-
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
-	exchange := &mockAmpExchange{}
-
-	endpoint, _ := NewAmpEndpoint(
-		exchange,
-		newParamsValidator(t),
-		&mockAmpStoredReqFetcher{stored},
-		empty_fetcher.EmptyFetcher{},
-		&config.Configuration{MaxRequestSize: maxSize},
-		theMetrics,
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
-		map[string]string{},
-		[]byte{},
-		openrtb_ext.BidderMap,
-	)
-	request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&gdpr_consent=%s", consentString), nil)
-	recorder := httptest.NewRecorder()
-	endpoint(recorder, request, nil)
-
-	// Assert our bidRequest was valid
-	if !assert.NotNil(t, exchange.lastRequest, "Endpoint responded with %d: %s", recorder.Code, recorder.Body.String()) {
-		return
-	}
-	// Assert our bidRequest had a valid "User" field
-	if !assert.NotNil(t, exchange.lastRequest.User) {
-		return
-	}
-	// Assert our bidRequest had a valid "User.Ext" field
-	if !assert.NotNil(t, exchange.lastRequest.User.Ext) {
-		return
-	}
-	// Assert the last request has a valid User object with a consent string equal to that on the URL query
-	var ue openrtb_ext.ExtUser
-	err = json.Unmarshal(exchange.lastRequest.User.Ext, &ue)
-	assert.NoError(t, err)
-
-	// Assert consent string found in `http.Request` was passed correctly to the `User.Ext` object
-	assert.Contains(t, string(request.URL.RawQuery), consentString)
-	assert.Equal(t, consentString, ue.Consent)
-
-	// Assert other user properties found originally in our bid request such as `DigiTrust` were not overwritten
-	assert.Equal(t, DigiTurstID, ue.DigiTrust.ID)
-}
-
-func TestDontSubstituteRequestConsentWithBlankEndpointConsent(t *testing.T) {
-	// Blank gdpr consent string that will come inside our http.Request query
-	const httpURLConsentString = ""
-	const PrebidConsentString = "some-consent-string"
-	const DigiTurstID = "digitrustId"
-
-	// Generate a marshaled openrtb.BidRequest that comes with a gdpr consent string
-	fullMarshaledBidRequest, err := getTestBidRequest(false, false, PrebidConsentString, "digitrustId")
-	if err != nil {
-		t.Fatalf("Failed to marshal the complete openrtb.BidRequest object %v", err)
-	}
-
-	stored := map[string]json.RawMessage{
-		"1": json.RawMessage(fullMarshaledBidRequest),
-	}
-
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
-	exchange := &mockAmpExchange{}
-
-	endpoint, _ := NewAmpEndpoint(
-		exchange,
-		newParamsValidator(t),
-		&mockAmpStoredReqFetcher{stored},
-		empty_fetcher.EmptyFetcher{},
-		&config.Configuration{MaxRequestSize: maxSize},
-		theMetrics,
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
-		map[string]string{},
-		[]byte{},
-		openrtb_ext.BidderMap,
-	)
-	request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&gdpr_consent=%s", httpURLConsentString), nil)
-	recorder := httptest.NewRecorder()
-	endpoint(recorder, request, nil)
-
-	// Assert our bidRequest was valid
-	if !assert.NotNil(t, exchange.lastRequest, "Endpoint responded with %d: %s", recorder.Code, recorder.Body.String()) {
-		return
-	}
-	// Assert our bidRequest had a valid "User" field
-	if !assert.NotNil(t, exchange.lastRequest.User) {
-		return
-	}
-	// Assert our bidRequest had a valid "User.Ext" field
-	if !assert.NotNil(t, exchange.lastRequest.User.Ext) {
-		return
-	}
-	// Assert the last request has a valid User object with a consent string equal to that on the PBS request
-	var ue openrtb_ext.ExtUser
-	err = json.Unmarshal(exchange.lastRequest.User.Ext, &ue)
-	assert.NoError(t, err)
-
-	// Assert consent string found in the PBS request was passed correctly to the `User.Ext` object
-	assert.Equal(t, PrebidConsentString, ue.Consent)
-}
-
-func TestDontSubstituteRequestConsentNoEndpointConsent(t *testing.T) {
-	// Blank gdpr consent string that will come inside our http.Request query
-	const PrebidConsentString = "some-consent-string"
-	const DigiTurstID = "digitrustId"
-
-	// Generate a marshaled openrtb.BidRequest that comes with a gdpr consent string
-	fullMarshaledBidRequest, err := getTestBidRequest(false, false, PrebidConsentString, "digitrustId")
-	if err != nil {
-		t.Fatalf("Failed to marshal the complete openrtb.BidRequest object %v", err)
-	}
-
-	stored := map[string]json.RawMessage{
-		"1": json.RawMessage(fullMarshaledBidRequest),
-	}
-
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
-	exchange := &mockAmpExchange{}
-
-	endpoint, _ := NewAmpEndpoint(
-		exchange,
-		newParamsValidator(t),
-		&mockAmpStoredReqFetcher{stored},
-		empty_fetcher.EmptyFetcher{},
-		&config.Configuration{MaxRequestSize: maxSize},
-		theMetrics,
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
-		map[string]string{},
-		[]byte{},
-		openrtb_ext.BidderMap,
-	)
-	consentStringLessHttpRequest := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1"), nil)
-	recorder := httptest.NewRecorder()
-	endpoint(recorder, consentStringLessHttpRequest, nil)
-
-	// Assert our bidRequest was valid
-	if !assert.NotNil(t, exchange.lastRequest, "Endpoint responded with %d: %s", recorder.Code, recorder.Body.String()) {
-		return
-	}
-	// Assert our bidRequest had a valid "User" field
-	if !assert.NotNil(t, exchange.lastRequest.User) {
-		return
-	}
-	// Assert our bidRequest had a valid "User.Ext" field
-	if !assert.NotNil(t, exchange.lastRequest.User.Ext) {
-		return
-	}
-	// Assert the last request has a valid User object with a consent string equal to that on the PBS request
-	var ue openrtb_ext.ExtUser
-	err = json.Unmarshal(exchange.lastRequest.User.Ext, &ue)
-	assert.NoError(t, err)
-
-	// Assert consent string found in the PBS request was passed correctly to the `User.Ext` object
-	assert.Equal(t, PrebidConsentString, ue.Consent)
 }
 
 func TestAMPSiteExt(t *testing.T) {
 	stored := map[string]json.RawMessage{
 		"1": json.RawMessage(validRequest(t, "site.json")),
 	}
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	exchange := &mockAmpExchange{}
 	endpoint, _ := NewAmpEndpoint(
 		exchange,
@@ -487,11 +600,11 @@ func TestAMPSiteExt(t *testing.T) {
 		&mockAmpStoredReqFetcher{stored},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		theMetrics,
+		newTestMetrics(),
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		nil,
 		nil,
-		openrtb_ext.BidderMap,
+		openrtb_ext.BuildBidderMap(),
 	)
 	request, err := http.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1", nil)
 	if !assert.NoError(t, err) {
@@ -517,21 +630,17 @@ func TestAmpBadRequests(t *testing.T) {
 		badRequests[strconv.Itoa(100+index)] = readFile(t, "sample-requests/invalid-whole/"+file.Name())
 	}
 
-	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
-	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
-
 	endpoint, _ := NewAmpEndpoint(
 		&mockAmpExchange{},
 		newParamsValidator(t),
 		&mockAmpStoredReqFetcher{badRequests},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		theMetrics,
+		newTestMetrics(),
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
-		openrtb_ext.BidderMap,
+		openrtb_ext.BuildBidderMap(),
 	)
 	for requestID := range badRequests {
 		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s", requestID), nil)
@@ -551,18 +660,17 @@ func TestAmpDebug(t *testing.T) {
 		"2": json.RawMessage(validRequest(t, "site.json")),
 	}
 
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	endpoint, _ := NewAmpEndpoint(
 		&mockAmpExchange{},
 		newParamsValidator(t),
 		&mockAmpStoredReqFetcher{requests},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		theMetrics,
+		newTestMetrics(),
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
-		openrtb_ext.BidderMap,
+		openrtb_ext.BuildBidderMap(),
 	)
 
 	for requestID := range requests {
@@ -596,7 +704,7 @@ func TestAmpDebug(t *testing.T) {
 
 // Prevents #452
 func TestAmpTargetingDefaults(t *testing.T) {
-	req := &openrtb.BidRequest{}
+	req := &openrtb2.BidRequest{}
 	if errs := defaultRequestExt(req); len(errs) != 0 {
 		t.Fatalf("Unexpected error defaulting request.ext for AMP: %v", errs)
 	}
@@ -623,7 +731,6 @@ func TestQueryParamOverrides(t *testing.T) {
 	requests := map[string]json.RawMessage{
 		"1": json.RawMessage(validRequest(t, "site.json")),
 	}
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 
 	endpoint, _ := NewAmpEndpoint(
 		&mockAmpExchange{},
@@ -631,19 +738,20 @@ func TestQueryParamOverrides(t *testing.T) {
 		&mockAmpStoredReqFetcher{requests},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		theMetrics,
+		newTestMetrics(),
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
-		openrtb_ext.BidderMap,
+		openrtb_ext.BuildBidderMap(),
 	)
 
 	requestID := "1"
 	curl := "http://example.com"
 	slot := "1234"
 	timeout := int64(500)
+	account := "12345"
 
-	request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s&debug=1&curl=%s&slot=%s&timeout=%d", requestID, curl, slot, timeout), nil)
+	request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s&debug=1&curl=%s&slot=%s&timeout=%d&account=%s", requestID, curl, slot, timeout, account), nil)
 	recorder := httptest.NewRecorder()
 	endpoint(recorder, request, nil)
 
@@ -671,13 +779,17 @@ func TestQueryParamOverrides(t *testing.T) {
 	if resolvedRequest.Site == nil || resolvedRequest.Site.Page != curl {
 		t.Errorf("Expected Site.Page to equal curl (%s), got: %s", curl, resolvedRequest.Site.Page)
 	}
+
+	if resolvedRequest.Site == nil || resolvedRequest.Site.Publisher == nil || resolvedRequest.Site.Publisher.ID != account {
+		t.Errorf("Expected Site.Publisher.ID to equal (%s), got: %s", account, resolvedRequest.Site.Publisher.ID)
+	}
 }
 
 func TestOverrideDimensions(t *testing.T) {
 	formatOverrideSpec{
 		overrideWidth:  20,
 		overrideHeight: 40,
-		expect: []openrtb.Format{{
+		expect: []openrtb2.Format{{
 			W: 20,
 			H: 40,
 		}},
@@ -688,7 +800,7 @@ func TestOverrideHeightNormalWidth(t *testing.T) {
 	formatOverrideSpec{
 		width:          20,
 		overrideHeight: 40,
-		expect: []openrtb.Format{{
+		expect: []openrtb2.Format{{
 			W: 20,
 			H: 40,
 		}},
@@ -699,7 +811,7 @@ func TestOverrideWidthNormalHeight(t *testing.T) {
 	formatOverrideSpec{
 		overrideWidth: 20,
 		height:        40,
-		expect: []openrtb.Format{{
+		expect: []openrtb2.Format{{
 			W: 20,
 			H: 40,
 		}},
@@ -709,7 +821,25 @@ func TestOverrideWidthNormalHeight(t *testing.T) {
 func TestMultisize(t *testing.T) {
 	formatOverrideSpec{
 		multisize: "200x50,100x60",
-		expect: []openrtb.Format{{
+		expect: []openrtb2.Format{{
+			W: 200,
+			H: 50,
+		}, {
+			W: 100,
+			H: 60,
+		}},
+	}.execute(t)
+}
+
+func TestSizeWithMultisize(t *testing.T) {
+	formatOverrideSpec{
+		width:     20,
+		height:    40,
+		multisize: "200x50,100x60",
+		expect: []openrtb2.Format{{
+			W: 20,
+			H: 40,
+		}, {
 			W: 200,
 			H: 50,
 		}, {
@@ -722,7 +852,7 @@ func TestMultisize(t *testing.T) {
 func TestHeightOnly(t *testing.T) {
 	formatOverrideSpec{
 		height: 200,
-		expect: []openrtb.Format{{
+		expect: []openrtb2.Format{{
 			W: 300,
 			H: 200,
 		}},
@@ -732,107 +862,11 @@ func TestHeightOnly(t *testing.T) {
 func TestWidthOnly(t *testing.T) {
 	formatOverrideSpec{
 		width: 150,
-		expect: []openrtb.Format{{
+		expect: []openrtb2.Format{{
 			W: 150,
 			H: 600,
 		}},
 	}.execute(t)
-}
-
-func TestCCPAPresent(t *testing.T) {
-	req, err := getTestBidRequest(false, false, "", "digitrustId")
-	if err != nil {
-		t.Fatalf("Failed to marshal the complete openrtb.BidRequest object %v", err)
-	}
-
-	reqStored := map[string]json.RawMessage{
-		"1": json.RawMessage(req),
-	}
-
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
-
-	exchange := &mockAmpExchange{}
-
-	endpoint, _ := NewAmpEndpoint(
-		exchange,
-		newParamsValidator(t),
-		&mockAmpStoredReqFetcher{reqStored},
-		empty_fetcher.EmptyFetcher{},
-		&config.Configuration{MaxRequestSize: maxSize},
-		theMetrics,
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
-		map[string]string{},
-		[]byte{},
-		openrtb_ext.BidderMap,
-	)
-
-	usPrivacy := "1YYN"
-	httpReq := httptest.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1&us_privacy="+usPrivacy, nil)
-	httpRecorder := httptest.NewRecorder()
-	endpoint(httpRecorder, httpReq, nil)
-
-	// Assert our bidRequest was valid
-	if !assert.NotNil(t, exchange.lastRequest, "Endpoint responded with %d: %s", httpRecorder.Code, httpRecorder.Body.String()) {
-		return
-	}
-	// Assert our bidRequest had a valid "Regs" field
-	if !assert.NotNil(t, exchange.lastRequest.Regs) {
-		return
-	}
-	// Assert our bidRequest had a valid "Regs.Ext" field
-	if !assert.NotNil(t, exchange.lastRequest.Regs.Ext) {
-		return
-	}
-
-	var regs openrtb_ext.ExtRegs
-	err = json.Unmarshal(exchange.lastRequest.Regs.Ext, &regs)
-	assert.NoError(t, err)
-	assert.Equal(t, usPrivacy, regs.USPrivacy)
-}
-
-func TestCCPANotPresent(t *testing.T) {
-	req, err := getTestBidRequest(false, false, "", "digitrustId")
-	if err != nil {
-		t.Fatalf("Failed to marshal the complete openrtb.BidRequest object %v", err)
-	}
-
-	reqStored := map[string]json.RawMessage{
-		"1": json.RawMessage(req),
-	}
-
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
-
-	exchange := &mockAmpExchange{}
-
-	endpoint, _ := NewAmpEndpoint(
-		exchange,
-		newParamsValidator(t),
-		&mockAmpStoredReqFetcher{reqStored},
-		empty_fetcher.EmptyFetcher{},
-		&config.Configuration{MaxRequestSize: maxSize},
-		theMetrics,
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
-		map[string]string{},
-		[]byte{},
-		openrtb_ext.BidderMap,
-	)
-
-	httpReq := httptest.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1", nil)
-	httpRecorder := httptest.NewRecorder()
-	endpoint(httpRecorder, httpReq, nil)
-
-	// Assert our bidRequest was valid
-	if !assert.NotNil(t, exchange.lastRequest, "Endpoint responded with %d: %s", httpRecorder.Code, httpRecorder.Body.String()) {
-		return
-	}
-
-	// Assert CCPA Signal Not Found
-	if exchange.lastRequest.Regs != nil && exchange.lastRequest.Regs.Ext != nil {
-		var regs openrtb_ext.ExtRegs
-		err = json.Unmarshal(exchange.lastRequest.Regs.Ext, &regs)
-		assert.NoError(t, err)
-		assert.Empty(t, regs.USPrivacy)
-	}
 }
 
 type formatOverrideSpec struct {
@@ -841,28 +875,29 @@ type formatOverrideSpec struct {
 	overrideWidth  uint64
 	overrideHeight uint64
 	multisize      string
-	expect         []openrtb.Format
+	account        string
+	expect         []openrtb2.Format
 }
 
 func (s formatOverrideSpec) execute(t *testing.T) {
 	requests := map[string]json.RawMessage{
 		"1": json.RawMessage(validRequest(t, "site.json")),
 	}
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
+
 	endpoint, _ := NewAmpEndpoint(
 		&mockAmpExchange{},
 		newParamsValidator(t),
 		&mockAmpStoredReqFetcher{requests},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		theMetrics,
+		newTestMetrics(),
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
-		openrtb_ext.BidderMap,
+		openrtb_ext.BuildBidderMap(),
 	)
 
-	url := fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&debug=1&w=%d&h=%d&ow=%d&oh=%d&ms=%s", s.width, s.height, s.overrideWidth, s.overrideHeight, s.multisize)
+	url := fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&debug=1&w=%d&h=%d&ow=%d&oh=%d&ms=%s&account=%s", s.width, s.height, s.overrideWidth, s.overrideHeight, s.multisize, s.account)
 	request := httptest.NewRequest("GET", url, nil)
 	recorder := httptest.NewRecorder()
 	endpoint(recorder, request, nil)
@@ -899,15 +934,24 @@ func (cf *mockAmpStoredReqFetcher) FetchRequests(ctx context.Context, requestIDs
 }
 
 type mockAmpExchange struct {
-	lastRequest *openrtb.BidRequest
+	lastRequest *openrtb2.BidRequest
 }
 
-func (m *mockAmpExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher) (*openrtb.BidResponse, error) {
-	m.lastRequest = bidRequest
+var expectedErrorsFromHoldAuction map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage = map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage{
+	openrtb_ext.BidderName("openx"): {
+		{
+			Code:    1,
+			Message: "The request exceeded the timeout allocated",
+		},
+	},
+}
 
-	response := &openrtb.BidResponse{
-		SeatBid: []openrtb.SeatBid{{
-			Bid: []openrtb.Bid{{
+func (m *mockAmpExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+	m.lastRequest = r.BidRequest
+
+	response := &openrtb2.BidResponse{
+		SeatBid: []openrtb2.SeatBid{{
+			Bid: []openrtb2.Bid{{
 				AdM: "<script></script>",
 				Ext: json.RawMessage(`{ "prebid": {"targeting": { "hb_pb": "1.20", "hb_appnexus_pb": "1.20", "hb_cache_id": "some_id"}}}`),
 			}},
@@ -915,8 +959,8 @@ func (m *mockAmpExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.B
 		Ext: json.RawMessage(`{ "errors": {"openx":[ { "code": 1, "message": "The request exceeded the timeout allocated" } ] } }`),
 	}
 
-	if bidRequest.Test == 1 {
-		resolvedRequest, err := json.Marshal(bidRequest)
+	if r.BidRequest.Test == 1 {
+		resolvedRequest, err := json.Marshal(r.BidRequest)
 		if err != nil {
 			resolvedRequest = json.RawMessage("{}")
 		}
@@ -926,49 +970,32 @@ func (m *mockAmpExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.B
 	return response, nil
 }
 
-func getTestBidRequest(nilUser bool, nilExt bool, consentString string, digitrustID string) ([]byte, error) {
-	var userExt openrtb_ext.ExtUser
-	var userExtData []byte
-	var err error
+type mockAmpExchangeWarnings struct{}
 
-	if consentString != "" {
-		userExt = openrtb_ext.ExtUser{
-			Consent: consentString,
-			DigiTrust: &openrtb_ext.ExtUserDigiTrust{
-				ID:   digitrustID,
-				KeyV: 1,
-				Pref: 0,
-			},
-		}
-	} else {
-		userExt = openrtb_ext.ExtUser{
-			DigiTrust: &openrtb_ext.ExtUserDigiTrust{
-				ID:   digitrustID,
-				KeyV: 1,
-				Pref: 0,
-			},
-		}
+func (m *mockAmpExchangeWarnings) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+	response := &openrtb2.BidResponse{
+		SeatBid: []openrtb2.SeatBid{{
+			Bid: []openrtb2.Bid{{
+				AdM: "<script></script>",
+				Ext: json.RawMessage(`{ "prebid": {"targeting": { "hb_pb": "1.20", "hb_appnexus_pb": "1.20", "hb_cache_id": "some_id"}}}`),
+			}},
+		}},
+		Ext: json.RawMessage(`{ "warnings": {"appnexus": [{"code": 10003, "message": "debug turned off for bidder"}] }}`),
 	}
+	return response, nil
+}
 
-	if !nilExt {
-		userExtData, err = json.Marshal(userExt)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		userExtData = []byte("")
-	}
-
-	var width uint64 = 300
-	var height uint64 = 300
-	bidRequest := &openrtb.BidRequest{
+func getTestBidRequest(nilUser bool, userExt *openrtb_ext.ExtUser, nilRegs bool, regsExt *openrtb_ext.ExtRegs) ([]byte, error) {
+	var width int64 = 300
+	var height int64 = 300
+	bidRequest := &openrtb2.BidRequest{
 		ID: "test-request-id",
-		Imp: []openrtb.Imp{
+		Imp: []openrtb2.Imp{
 			{
 				ID:  "/19968336/header-bid-tag-0",
 				Ext: json.RawMessage(`{"appnexus": { "placementId":12883451 }}`),
-				Banner: &openrtb.Banner{
-					Format: []openrtb.Format{
+				Banner: &openrtb2.Banner{
+					Format: []openrtb2.Format{
 						{
 							W: width,
 							H: 250,
@@ -983,17 +1010,285 @@ func getTestBidRequest(nilUser bool, nilExt bool, consentString string, digitrus
 				},
 			},
 		},
-		Site: &openrtb.Site{
+		Site: &openrtb2.Site{
 			ID:   "site-id",
 			Page: "some-page",
 		},
 	}
+
+	var userExtData []byte
+	if userExt != nil {
+		var err error
+		userExtData, err = json.Marshal(userExt)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	if !nilUser {
-		bidRequest.User = &openrtb.User{
+		bidRequest.User = &openrtb2.User{
 			ID:       "aUserId",
 			BuyerUID: "aBuyerID",
 			Ext:      userExtData,
 		}
 	}
+
+	var regsExtData []byte
+	if regsExt != nil {
+		var err error
+		regsExtData, err = json.Marshal(regsExt)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if !nilRegs {
+		bidRequest.Regs = &openrtb2.Regs{
+			COPPA: 1,
+			Ext:   regsExtData,
+		}
+	}
 	return json.Marshal(bidRequest)
+}
+
+func TestSetEffectiveAmpPubID(t *testing.T) {
+	testPubID := "test-pub"
+
+	testCases := []struct {
+		description   string
+		req           *openrtb2.BidRequest
+		account       string
+		expectedPubID string
+	}{
+		{
+			description: "No publisher ID provided",
+			req: &openrtb2.BidRequest{
+				App: &openrtb2.App{
+					Publisher: nil,
+				},
+			},
+			expectedPubID: "",
+		},
+		{
+			description: "Publisher ID present in req.App.Publisher.ID",
+			req: &openrtb2.BidRequest{
+				App: &openrtb2.App{
+					Publisher: &openrtb2.Publisher{
+						ID: testPubID,
+					},
+				},
+			},
+			expectedPubID: testPubID,
+		},
+		{
+			description: "Publisher ID present in req.Site.Publisher.ID",
+			req: &openrtb2.BidRequest{
+				Site: &openrtb2.Site{
+					Publisher: &openrtb2.Publisher{
+						ID: testPubID,
+					},
+				},
+			},
+			expectedPubID: testPubID,
+		},
+		{
+			description: "Publisher ID present in account parameter",
+			req: &openrtb2.BidRequest{
+				App: &openrtb2.App{
+					Publisher: &openrtb2.Publisher{
+						ID: "",
+					},
+				},
+			},
+			account:       testPubID,
+			expectedPubID: testPubID,
+		},
+		{
+			description: "req.Site.Publisher present but ID set to empty string",
+			req: &openrtb2.BidRequest{
+				Site: &openrtb2.Site{
+					Publisher: &openrtb2.Publisher{
+						ID: "",
+					},
+				},
+			},
+			expectedPubID: "",
+		},
+	}
+
+	for _, test := range testCases {
+		setEffectiveAmpPubID(test.req, test.account)
+		if test.req.Site != nil {
+			assert.Equal(t, test.expectedPubID, test.req.Site.Publisher.ID,
+				"should return the expected Publisher ID for test case: %s", test.description)
+		} else {
+			assert.Equal(t, test.expectedPubID, test.req.App.Publisher.ID,
+				"should return the expected Publisher ID for test case: %s", test.description)
+		}
+	}
+}
+
+type mockLogger struct {
+	ampObject *analytics.AmpObject
+}
+
+func newMockLogger(ao *analytics.AmpObject) analytics.PBSAnalyticsModule {
+	return &mockLogger{
+		ampObject: ao,
+	}
+}
+
+func (logger mockLogger) LogAuctionObject(ao *analytics.AuctionObject) {
+	return
+}
+func (logger mockLogger) LogVideoObject(vo *analytics.VideoObject) {
+	return
+}
+func (logger mockLogger) LogCookieSyncObject(cookieObject *analytics.CookieSyncObject) {
+	return
+}
+func (logger mockLogger) LogSetUIDObject(uuidObj *analytics.SetUIDObject) {
+	return
+}
+func (logger mockLogger) LogNotificationEventObject(uuidObj *analytics.NotificationEvent) {
+	return
+}
+func (logger mockLogger) LogAmpObject(ao *analytics.AmpObject) {
+	*logger.ampObject = *ao
+}
+
+func TestBuildAmpObject(t *testing.T) {
+	testCases := []struct {
+		description       string
+		inTagId           string
+		inStoredRequest   json.RawMessage
+		expectedAmpObject *analytics.AmpObject
+	}{
+		{
+			description:     "Stored Amp request with nil body. Only the error gets logged",
+			inTagId:         "test",
+			inStoredRequest: nil,
+			expectedAmpObject: &analytics.AmpObject{
+				Status: http.StatusOK,
+				Errors: []error{fmt.Errorf("unexpected end of JSON input")},
+			},
+		},
+		{
+			description:     "Stored Amp request with no imps that should return error. Only the error gets logged",
+			inTagId:         "test",
+			inStoredRequest: json.RawMessage(`{"id":"some-request-id","site":{"page":"prebid.org"},"imp":[],"tmax":500}`),
+			expectedAmpObject: &analytics.AmpObject{
+				Status: http.StatusOK,
+				Errors: []error{fmt.Errorf("data for tag_id='test' does not define the required imp array")},
+			},
+		},
+		{
+			description:     "Wrong tag_id, error gets logged",
+			inTagId:         "unknown",
+			inStoredRequest: json.RawMessage(`{"id":"some-request-id","site":{"page":"prebid.org"},"imp":[{"id":"some-impression-id","banner":{"format":[{"w":300,"h":250}]},"ext":{"appnexus":{"placementId":12883451}}}],"tmax":500}`),
+			expectedAmpObject: &analytics.AmpObject{
+				Status: http.StatusOK,
+				Errors: []error{fmt.Errorf("unexpected end of JSON input")},
+			},
+		},
+		{
+			description:     "Valid stored Amp request, correct tag_id, a valid response should be logged",
+			inTagId:         "test",
+			inStoredRequest: json.RawMessage(`{"id":"some-request-id","site":{"page":"prebid.org"},"imp":[{"id":"some-impression-id","banner":{"format":[{"w":300,"h":250}]},"ext":{"appnexus":{"placementId":12883451}}}],"tmax":500}`),
+			expectedAmpObject: &analytics.AmpObject{
+				Status: http.StatusOK,
+				Errors: nil,
+				Request: &openrtb2.BidRequest{
+					ID: "some-request-id",
+					Device: &openrtb2.Device{
+						IP: "192.0.2.1",
+					},
+					Site: &openrtb2.Site{
+						Page:      "prebid.org",
+						Publisher: &openrtb2.Publisher{},
+						Ext:       json.RawMessage(`{"amp":1}`),
+					},
+					Imp: []openrtb2.Imp{
+						{
+							ID: "some-impression-id",
+							Banner: &openrtb2.Banner{
+								Format: []openrtb2.Format{
+									{
+										W: 300,
+										H: 250,
+									},
+								},
+							},
+							Secure: func(val int8) *int8 { return &val }(1), //(*int8)(1),
+							Ext:    json.RawMessage(`{"appnexus":{"placementId":12883451}}`),
+						},
+					},
+					AT:   1,
+					TMax: 500,
+					Ext:  json.RawMessage(`{"prebid":{"cache":{"bids":{"returnCreative":null},"vastxml":null},"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"includewinners":true,"includebidderkeys":true,"includebrandcategory":null,"includeformat":false,"durationrangesec":null,"preferdeals":false}}}`),
+				},
+				AuctionResponse: &openrtb2.BidResponse{
+					SeatBid: []openrtb2.SeatBid{{
+						Bid: []openrtb2.Bid{{
+							AdM: "<script></script>",
+							Ext: json.RawMessage(`{ "prebid": {"targeting": { "hb_pb": "1.20", "hb_appnexus_pb": "1.20", "hb_cache_id": "some_id"}}}`),
+						}},
+						Seat: "",
+					}},
+					Ext: json.RawMessage(`{ "errors": {"openx":[ { "code": 1, "message": "The request exceeded the timeout allocated" } ] } }`),
+				},
+				AmpTargetingValues: map[string]string{
+					"hb_appnexus_pb": "1.20",
+					"hb_cache_id":    "some_id",
+					"hb_pb":          "1.20",
+				},
+				Origin: "",
+			},
+		},
+	}
+
+	request := httptest.NewRequest("GET", "/openrtb2/auction/amp?tag_id=test", nil)
+	recorder := httptest.NewRecorder()
+
+	for _, test := range testCases {
+
+		// Set up test, declare a new mock logger every time
+		actualAmpObject := new(analytics.AmpObject)
+
+		logger := newMockLogger(actualAmpObject)
+
+		mockAmpFetcher := &mockAmpStoredReqFetcher{
+			data: map[string]json.RawMessage{
+				test.inTagId: json.RawMessage(test.inStoredRequest),
+			},
+		}
+
+		endpoint, _ := NewAmpEndpoint(
+			&mockAmpExchange{},
+			newParamsValidator(t),
+			mockAmpFetcher,
+			empty_fetcher.EmptyFetcher{},
+			&config.Configuration{MaxRequestSize: maxSize},
+			newTestMetrics(),
+			logger,
+			map[string]string{},
+			[]byte{},
+			openrtb_ext.BuildBidderMap(),
+		)
+
+		// Run test
+		endpoint(recorder, request, nil)
+
+		// assert AmpObject
+		assert.Equalf(t, test.expectedAmpObject.Status, actualAmpObject.Status, "Amp Object Status field doesn't match expected: %s\n", test.description)
+		assert.Lenf(t, actualAmpObject.Errors, len(test.expectedAmpObject.Errors), "Amp Object Errors array doesn't match expected: %s\n", test.description)
+		assert.Equalf(t, test.expectedAmpObject.Request, actualAmpObject.Request, "Amp Object BidRequest doesn't match expected: %s\n", test.description)
+		assert.Equalf(t, test.expectedAmpObject.AuctionResponse, actualAmpObject.AuctionResponse, "Amp Object BidResponse doesn't match expected: %s\n", test.description)
+		assert.Equalf(t, test.expectedAmpObject.AmpTargetingValues, actualAmpObject.AmpTargetingValues, "Amp Object AmpTargetingValues doesn't match expected: %s\n", test.description)
+		assert.Equalf(t, test.expectedAmpObject.Origin, actualAmpObject.Origin, "Amp Object Origin field doesn't match expected: %s\n", test.description)
+	}
+}
+
+func newTestMetrics() *metrics.Metrics {
+	return metrics.NewMetrics(gometrics.NewRegistry(), openrtb_ext.CoreBidderNames(), config.DisabledMetrics{})
 }

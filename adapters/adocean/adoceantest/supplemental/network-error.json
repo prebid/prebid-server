@@ -1,0 +1,66 @@
+{
+  "mockBidRequest": {
+    "id": "9ed903f4-383d-406b-8011-4f06526cb02c",
+    "source": {
+      "tid": "9ed903f4-383d-406b-8011-4f06526cb02c"
+    },
+    "tmax": 1000,
+    "imp": [
+      {
+        "id": "ao-test",
+        "ext": {
+          "bidder": {
+            "emiter": "myao.adocean.pl",
+            "masterId": "tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7",
+            "slaveId": "adoceanmyaozpniqismex"
+          }
+        },
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        }
+      }
+    ],
+    "test": 1,
+    "ext": {
+      "prebid": {
+        "targeting": {
+          "includewinners": true,
+          "includebidderkeys": false
+        }
+      }
+    },
+    "site": {
+      "publisher": {
+        "id": "1"
+      },
+      "page": "http://example.com/test.html"
+    },
+    "device": {
+      "w": 1280,
+      "h": 720,
+      "ip": "192.168.1.1"
+    }
+  },
+  "httpCalls": [
+    {
+        "expectedRequest": {
+          "uri": "https://myao.adocean.pl/_10000000/ad.json?aid=adoceanmyaozpniqismex%3Aao-test&aosspsizes=myaozpniqismex~300x250&devmake=&devmodel=&devos=&devosv=&dpidmd5=&id=tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7&nc=1&nosecure=1&pbsrv_v=1.2.0"
+        },
+      "mockResponse": {
+        "status": 500,
+        "body": {}
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 500. Network error?",
+      "comparison": "literal"
+    }
+  ]
+}

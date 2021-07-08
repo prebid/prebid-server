@@ -2,13 +2,16 @@ package sharethrough
 
 import (
 	"fmt"
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"regexp"
 	"testing"
+
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/stretchr/testify/assert"
 )
 
 type MockStrAdServer struct {
@@ -18,7 +21,7 @@ type MockStrAdServer struct {
 	StrOpenRTBInterface
 }
 
-func (m MockStrAdServer) requestFromOpenRTB(imp openrtb.Imp, request *openrtb.BidRequest, domain string) (*adapters.RequestData, error) {
+func (m MockStrAdServer) requestFromOpenRTB(imp openrtb2.Imp, request *openrtb2.BidRequest, domain string) (*adapters.RequestData, error) {
 	return m.mockRequestFromOpenRTB()
 }
 
@@ -43,11 +46,11 @@ func (m MockStrUriHelper) parseUri(uri string) (*StrAdSeverParams, error) {
 
 func TestNewSharethroughBidder(t *testing.T) {
 	tests := map[string]struct {
-		input  string
+		input  config.Adapter
 		output SharethroughAdapter
 	}{
 		"Creates Sharethrough adapter": {
-			input: "test endpoint",
+			input: config.Adapter{Endpoint: "test endpoint"},
 			output: SharethroughAdapter{
 				AdServer: StrOpenRTBTranslator{
 					UriHelper: StrUriHelper{BaseURI: "test endpoint", Clock: Clock{}},
@@ -66,8 +69,10 @@ func TestNewSharethroughBidder(t *testing.T) {
 	for testName, test := range tests {
 		t.Logf("Test case: %s\n", testName)
 
-		actual := NewSharethroughBidder(test.input)
-		assert.Equal(actual, &test.output)
+		bidder, buildErr := Builder(openrtb_ext.BidderSharethrough, test.input)
+
+		assert.NoError(buildErr)
+		assert.Equal(bidder, &test.output)
 	}
 }
 
@@ -83,22 +88,22 @@ func TestSuccessMakeRequests(t *testing.T) {
 	}
 
 	tests := map[string]struct {
-		input    *openrtb.BidRequest
+		input    *openrtb2.BidRequest
 		expected []*adapters.RequestData
 	}{
 		"Generates expected Request": {
-			input: &openrtb.BidRequest{
-				Site: &openrtb.Site{
+			input: &openrtb2.BidRequest{
+				Site: &openrtb2.Site{
 					Page: "test.com",
 				},
-				Device: &openrtb.Device{
+				Device: &openrtb2.Device{
 					UA: "Android Chome/60",
 				},
-				Imp: []openrtb.Imp{{
+				Imp: []openrtb2.Imp{{
 					ID:  "abc",
 					Ext: []byte(`{"pkey": "pkey", "iframe": true, "iframeSize": [10, 20]}`),
-					Banner: &openrtb.Banner{
-						Format: []openrtb.Format{{H: 30, W: 40}},
+					Banner: &openrtb2.Banner{
+						Format: []openrtb2.Format{{H: 30, W: 40}},
 					},
 				}},
 			},
@@ -132,22 +137,22 @@ func TestSuccessMakeRequests(t *testing.T) {
 
 func TestFailureMakeRequests(t *testing.T) {
 	tests := map[string]struct {
-		input    *openrtb.BidRequest
+		input    *openrtb2.BidRequest
 		expected string
 	}{
 		"Returns nil if failed to generate request": {
-			input: &openrtb.BidRequest{
-				Site: &openrtb.Site{
+			input: &openrtb2.BidRequest{
+				Site: &openrtb2.Site{
 					Page: "test.com",
 				},
-				Device: &openrtb.Device{
+				Device: &openrtb2.Device{
 					UA: "Android Chome/60",
 				},
-				Imp: []openrtb.Imp{{
+				Imp: []openrtb2.Imp{{
 					ID:  "abc",
 					Ext: []byte(`{"pkey": "pkey", "iframe": true, "iframeSize": [10, 20]}`),
-					Banner: &openrtb.Banner{
-						Format: []openrtb.Format{{H: 30, W: 40}},
+					Banner: &openrtb2.Banner{
+						Format: []openrtb2.Format{{H: 30, W: 40}},
 					},
 				}},
 			},
@@ -211,7 +216,7 @@ func TestSuccessMakeBids(t *testing.T) {
 	for testName, test := range tests {
 		t.Logf("Test case: %s\n", testName)
 
-		response, errors := adapter.MakeBids(&openrtb.BidRequest{}, &adapters.RequestData{}, test.inputResponse)
+		response, errors := adapter.MakeBids(&openrtb2.BidRequest{}, &adapters.RequestData{}, test.inputResponse)
 		if len(errors) > 0 {
 			t.Errorf("Expected no errors, got %d\n", len(errors))
 		}
@@ -259,7 +264,7 @@ func TestFailureMakeBids(t *testing.T) {
 	for testName, test := range tests {
 		t.Logf("Test case: %s\n", testName)
 
-		response, errors := adapter.MakeBids(&openrtb.BidRequest{}, &adapters.RequestData{}, test.inputResponse)
+		response, errors := adapter.MakeBids(&openrtb2.BidRequest{}, &adapters.RequestData{}, test.inputResponse)
 		if response != nil {
 			t.Errorf("Expected response to be nil, got %+v\n", response)
 		}

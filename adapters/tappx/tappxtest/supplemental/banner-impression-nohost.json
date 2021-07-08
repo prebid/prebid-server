@@ -10,7 +10,7 @@
         },
         "ext": {
           "bidder": {
-            "endpoint": "PREBIDTEMPLATE",
+            "endpoint": "ZZ123456PS",
             "tappxkey": "pub-12345-android-9876"
           }
         }

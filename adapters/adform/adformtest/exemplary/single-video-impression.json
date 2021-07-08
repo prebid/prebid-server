@@ -1,0 +1,60 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "video": {
+          "w": 640,
+          "h": 480
+        },
+        "ext": {
+          "bidder": {
+            "mid": 54321
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://adx.adform.net/adx?CC=1&fd=1&gdpr=&gdpr_consent=&ip=&rp=4&stid=&bWlkPTU0MzIxJnJjdXI9VVNE"
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": [
+          {
+            "response": "vast_content",
+            "vast_content": "<vast>",
+            "win_bid": 0.5,
+            "win_cur": "USD",
+            "width": 640,
+            "height": 480,
+            "deal_id": null,
+            "win_crid": "20078830"
+          }
+        ]
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-imp-id",
+            "impid": "test-imp-id",
+            "price": 0.5,
+            "adm": "<vast>",
+            "crid": "20078830",
+            "w": 640,
+            "h": 480
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

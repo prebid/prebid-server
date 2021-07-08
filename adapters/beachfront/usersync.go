@@ -8,5 +8,8 @@ import (
 )
 
 func NewBeachfrontSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("beachfront", 0, temp, adapters.SyncTypeIframe)
+	return adapters.NewSyncer(
+		"beachfront",
+		temp,
+		adapters.SyncTypeIframe)
 }

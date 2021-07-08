@@ -1,5 +1,6 @@
 maintainer:
-  email: "inventory.devel@rtbhouse.com"
+  email: "prebid@rtbhouse.com"
+gvlVendorID: 16
 capabilities:
   site:
     mediaTypes:

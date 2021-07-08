@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -22,14 +23,15 @@ type openxImpExt struct {
 }
 
 type openxReqExt struct {
-	DelDomain    string `json:"delDomain"`
+	DelDomain    string `json:"delDomain,omitempty"`
+	Platform     string `json:"platform,omitempty"`
 	BidderConfig string `json:"bc"`
 }
 
-func (a *OpenxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *OpenxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
-	var bannerImps []openrtb.Imp
-	var videoImps []openrtb.Imp
+	var bannerImps []openrtb2.Imp
+	var videoImps []openrtb2.Imp
 
 	for _, imp := range request.Imp {
 		// OpenX doesn't allow multi-type imp. Banner takes priority over video.
@@ -53,7 +55,7 @@ func (a *OpenxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapte
 
 	// OpenX only supports single imp video request
 	for _, videoImp := range videoImps {
-		reqCopy.Imp = []openrtb.Imp{videoImp}
+		reqCopy.Imp = []openrtb2.Imp{videoImp}
 		adapterReq, errors := a.makeRequest(&reqCopy)
 		if adapterReq != nil {
 			adapterRequests = append(adapterRequests, adapterReq)
@@ -64,9 +66,9 @@ func (a *OpenxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapte
 	return adapterRequests, errs
 }
 
-func (a *OpenxAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
+func (a *OpenxAdapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, []error) {
 	var errs []error
-	var validImps []openrtb.Imp
+	var validImps []openrtb2.Imp
 	reqExt := openxReqExt{BidderConfig: hbconfig}
 
 	for _, imp := range request.Imp {
@@ -109,7 +111,7 @@ func (a *OpenxAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.Reque
 }
 
 // Mutate the imp to get it ready to send to openx.
-func preprocess(imp *openrtb.Imp, reqExt *openxReqExt) error {
+func preprocess(imp *openrtb2.Imp, reqExt *openxReqExt) error {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return &errortypes.BadInput{
@@ -125,9 +127,12 @@ func preprocess(imp *openrtb.Imp, reqExt *openxReqExt) error {
 	}
 
 	reqExt.DelDomain = openxExt.DelDomain
+	reqExt.Platform = openxExt.Platform
 
 	imp.TagID = openxExt.Unit
-	imp.BidFloor = openxExt.CustomFloor
+	if imp.BidFloor == 0 && openxExt.CustomFloor > 0 {
+		imp.BidFloor = openxExt.CustomFloor
+	}
 	imp.Ext = nil
 
 	if openxExt.CustomParams != nil {
@@ -142,10 +147,20 @@ func preprocess(imp *openrtb.Imp, reqExt *openxReqExt) error {
 		}
 	}
 
+	if imp.Video != nil {
+		videoCopy := *imp.Video
+		if bidderExt.Prebid != nil && bidderExt.Prebid.IsRewardedInventory == 1 {
+			videoCopy.Ext = json.RawMessage(`{"rewarded":1}`)
+		} else {
+			videoCopy.Ext = nil
+		}
+		imp.Video = &videoCopy
+	}
+
 	return nil
 }
 
-func (a *OpenxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *OpenxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -162,12 +177,17 @@ func (a *OpenxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReq
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
+
+	// overrride default currency
+	if bidResp.Cur != "" {
+		bidResponse.Currency = bidResp.Cur
+	}
 
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
@@ -184,7 +204,7 @@ func (a *OpenxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReq
 //
 // OpenX doesn't support multi-type impressions.
 // If both banner and video exist, take banner as we do not want in-banner video.
-func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
+func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impId {
@@ -197,8 +217,10 @@ func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
 	return mediaType
 }
 
-func NewOpenxBidder(endpoint string) *OpenxAdapter {
-	return &OpenxAdapter{
-		endpoint: endpoint,
+// Builder builds a new instance of the Openx adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &OpenxAdapter{
+		endpoint: config.Endpoint,
 	}
+	return bidder, nil
 }

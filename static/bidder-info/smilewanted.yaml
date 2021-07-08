@@ -1,0 +1,12 @@
+maintainer:
+  email: "tech@smilewanted.com"
+gvlVendorID: 639
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video

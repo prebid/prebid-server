@@ -1,0 +1,10 @@
+maintainer:
+  email: "aoteam@gemius.com"
+gvlVendorID: 328
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner

@@ -1,6 +1,8 @@
 {
 	"publisherId": "156209",
 	"adSlot": "pubmatic_test2@300x250",
+	"pmzoneid": "drama,sport",
+	"dctr": "abBucket=4|adType=page|entity=|paidByCategory=|sku=|userLevel=free|platform=android|majorVersion=3.54|version=3.54.0|mobileApplication=true|showId=20166|show=Kisah Untuk Geri|genre=Drama|contentUrl=https://www.iflix.com/title/show/20166|rating=TV-MA|contentLanguage=id",
 	"keywords": {
 		"pmZoneID": "Zone1,Zone2",
 		"preference": "sports,movies"

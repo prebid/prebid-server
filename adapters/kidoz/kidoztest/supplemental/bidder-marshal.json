@@ -1,0 +1,30 @@
+{
+	"mockBidRequest": {
+		"id": "test-request-id",
+		"imp": [
+			{
+				"id": "test-impression-id-7",
+				"banner": {
+					"format": [
+						{
+							"w": 320,
+							"h": 50
+						}
+					]
+				},
+				"ext": {
+					"bidder": "invalid bidder"
+				}
+			}
+		]
+	},
+	"httpCalls": [],
+	"expectedBidResponses": [],
+	"expectedMakeRequestsErrors": [
+		{
+			"value": "json: cannot unmarshal string into Go value of type openrtb_ext.ExtImpKidoz",
+			"comparison": "literal"
+		}
+	],
+	"expectedMakeBidsErrors": []
+}
