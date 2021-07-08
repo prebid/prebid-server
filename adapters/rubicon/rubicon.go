@@ -96,12 +96,11 @@ type rubiconUserDataExt struct {
 }
 
 type rubiconUserExt struct {
-	Consent     string                        `json:"consent,omitempty"`
-	DigiTrust   *openrtb_ext.ExtUserDigiTrust `json:"digitrust"`
-	Eids        []openrtb_ext.ExtUserEid      `json:"eids,omitempty"`
-	TpID        []rubiconExtUserTpID          `json:"tpid,omitempty"`
-	RP          rubiconUserExtRP              `json:"rp"`
-	LiverampIdl string                        `json:"liveramp_idl,omitempty"`
+	Consent     string                   `json:"consent,omitempty"`
+	Eids        []openrtb_ext.ExtUserEid `json:"eids,omitempty"`
+	TpID        []rubiconExtUserTpID     `json:"tpid,omitempty"`
+	RP          rubiconUserExtRP         `json:"rp"`
+	LiverampIdl string                   `json:"liveramp_idl,omitempty"`
 }
 
 type rubiconSiteExtRP struct {
@@ -750,6 +749,10 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			continue
 		}
 
+		resolvedBidFloor, resolvedBidFloorCur := resolveBidFloorAttributes(thisImp.BidFloor, thisImp.BidFloorCur)
+		thisImp.BidFloorCur = resolvedBidFloorCur
+		thisImp.BidFloor = resolvedBidFloor
+
 		if request.User != nil {
 			userCopy := *request.User
 			userExtRP := rubiconUserExt{RP: rubiconUserExtRP{Target: rubiconExt.Visitor}}
@@ -768,9 +771,6 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 					continue
 				}
 				userExtRP.Consent = userExt.Consent
-				if userExt.DigiTrust != nil {
-					userExtRP.DigiTrust = userExt.DigiTrust
-				}
 				userExtRP.Eids = userExt.Eids
 
 				// set user.ext.tpid
@@ -891,6 +891,17 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 	}
 
 	return requestData, errs
+}
+
+// Will be replaced after https://github.com/prebid/prebid-server/issues/1482 resolution
+func resolveBidFloorAttributes(bidFloor float64, bidFloorCur string) (float64, string) {
+	if bidFloor > 0 {
+		if strings.ToUpper(bidFloorCur) == "EUR" {
+			return bidFloor * 1.2, "USD"
+		}
+	}
+
+	return bidFloor, bidFloorCur
 }
 
 func updateUserExtWithIabAttribute(userExtRP *rubiconUserExt, data []openrtb2.Data) error {

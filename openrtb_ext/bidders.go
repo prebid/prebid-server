@@ -104,6 +104,7 @@ const (
 	BidderBeintoo           BidderName = "beintoo"
 	BidderBetween           BidderName = "between"
 	BidderBidmachine        BidderName = "bidmachine"
+	BidderBidmyadz          BidderName = "bidmyadz"
 	BidderBidsCube          BidderName = "bidscube"
 	BidderBmtm              BidderName = "bmtm"
 	BidderBrightroll        BidderName = "brightroll"
@@ -141,6 +142,7 @@ const (
 	BidderLockerDome        BidderName = "lockerdome"
 	BidderLogicad           BidderName = "logicad"
 	BidderLunaMedia         BidderName = "lunamedia"
+	BidderSaLunaMedia       BidderName = "sa_lunamedia"
 	BidderMadvertise        BidderName = "madvertise"
 	BidderMarsmedia         BidderName = "marsmedia"
 	BidderMediafuse         BidderName = "mediafuse"
@@ -229,6 +231,7 @@ func CoreBidderNames() []BidderName {
 		BidderBeintoo,
 		BidderBetween,
 		BidderBidmachine,
+		BidderBidmyadz,
 		BidderBidsCube,
 		BidderBmtm,
 		BidderBrightroll,
@@ -266,6 +269,7 @@ func CoreBidderNames() []BidderName {
 		BidderLockerDome,
 		BidderLogicad,
 		BidderLunaMedia,
+		BidderSaLunaMedia,
 		BidderMadvertise,
 		BidderMarsmedia,
 		BidderMediafuse,
