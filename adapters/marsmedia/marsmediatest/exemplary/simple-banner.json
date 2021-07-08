@@ -81,25 +81,25 @@
     }
   ],
 
-  "expectedBids": [
+  "expectedBidResponses": [
     {
-      "bid": {
-        "id": "7706636740145184841",
-        "impid": "test-imp-id",
-        "price": 0.5,
-        "adm": "some-test-ad",
-        "adid": "29681110",
-        "adomain": ["yahoo.com"],
-        "cid": "958",
-        "crid": "29681110",
-        "h": 250,
-        "w": 300
-      },
-      "ext": {
-          "prebid": {
-              "type": "banner"
-          }
-      }
+      "bids": [{
+        "bid": {
+          "id": "1",
+          "impid": "test-imp-id",
+          "price": 1.1,
+          "adm": "some-test-ad",
+          "adid": "17586",
+          "adomain": ["wooga.com"],
+          "cid": "17586",
+          "crid": "17586",
+          "nurl" : "some-test-nurl",
+          "iurl" : "some-test-iurl",
+          "h": 250,
+          "w": 300
+        },
+        "type": "banner"
+      }]
     }
   ]
 }

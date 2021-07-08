@@ -1,0 +1,10 @@
+maintainer:
+  email: "buying@betweenx.com"
+gvlVendorID: 724
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+  app:
+    mediaTypes:
+      - banner

@@ -3,11 +3,11 @@ package exchange
 import (
 	"strconv"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const maxKeyLength = 20
+const MaxKeyLength = 20
 
 // targetData tracks information about the winning Bid in each Imp.
 //
@@ -22,6 +22,8 @@ type targetData struct {
 	includeBidderKeys bool
 	includeCacheBids  bool
 	includeCacheVast  bool
+	includeFormat     bool
+	preferDeals       bool
 	// cacheHost and cachePath exist to supply cache host and path as targeting parameters
 	cacheHost string
 	cachePath string
@@ -53,6 +55,9 @@ func (targData *targetData) setTargeting(auc *auction, isApp bool, categoryMappi
 			if vastID, ok := auc.vastCacheIds[topBidPerBidder.bid]; ok {
 				targData.addKeys(targets, openrtb_ext.HbVastCacheKey, vastID, bidderName, isOverallWinner)
 			}
+			if targData.includeFormat {
+				targData.addKeys(targets, openrtb_ext.HbFormatKey, string(topBidPerBidder.bidType), bidderName, isOverallWinner)
+			}
 
 			if targData.cacheHost != "" {
 				targData.addKeys(targets, openrtb_ext.HbConstantCacheHostKey, targData.cacheHost, bidderName, isOverallWinner)
@@ -79,16 +84,16 @@ func (targData *targetData) setTargeting(auc *auction, isApp bool, categoryMappi
 
 func (targData *targetData) addKeys(keys map[string]string, key openrtb_ext.TargetingKey, value string, bidderName openrtb_ext.BidderName, overallWinner bool) {
 	if targData.includeBidderKeys {
-		keys[key.BidderKey(bidderName, maxKeyLength)] = value
+		keys[key.BidderKey(bidderName, MaxKeyLength)] = value
 	}
 	if targData.includeWinners && overallWinner {
 		keys[string(key)] = value
 	}
 }
 
-func makeHbSize(bid *openrtb.Bid) string {
+func makeHbSize(bid *openrtb2.Bid) string {
 	if bid.W != 0 && bid.H != 0 {
-		return strconv.FormatUint(bid.W, 10) + "x" + strconv.FormatUint(bid.H, 10)
+		return strconv.FormatInt(bid.W, 10) + "x" + strconv.FormatInt(bid.H, 10)
 	}
 	return ""
 }

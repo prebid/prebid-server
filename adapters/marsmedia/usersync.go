@@ -8,5 +8,5 @@ import (
 )
 
 func NewMarsmediaSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("marsmedia", 0, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("marsmedia", temp, adapters.SyncTypeRedirect)
 }

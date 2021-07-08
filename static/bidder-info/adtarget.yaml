@@ -1,0 +1,12 @@
+maintainer:
+  email: "kamil@adtarget.com.tr"
+gvlVendorID: 779
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video

@@ -20,9 +20,9 @@
         }
       }
     ],
-    "site": {
-      "domain": "prebid.org",
-      "page": "prebid.org"
+    "app": {
+      "id": "app-abc",
+      "bundle": "com.prebid"
     },
     "device": {
       "ip": "152.193.6.74"

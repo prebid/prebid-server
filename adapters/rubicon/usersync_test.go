@@ -25,7 +25,6 @@ func TestRubiconSyncer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid&gdpr=0&gdpr_consent=", syncInfo.URL)
 	assert.Equal(t, "redirect", syncInfo.Type)
-	assert.EqualValues(t, 52, syncer.GDPRVendorID())
 	assert.Equal(t, false, syncInfo.SupportCORS)
 	assert.Equal(t, "rubicon", syncer.FamilyName())
 }

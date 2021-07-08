@@ -1,6 +1,10 @@
 maintainer:
-  email: "service@yoc.com"
+  email: "supply.partners@yoc.com"
+gvlVendorID: 154
 capabilities:
   site:
+    mediaTypes:
+      - banner
+  app:
     mediaTypes:
       - banner

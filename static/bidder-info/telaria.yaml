@@ -1,0 +1,10 @@
+maintainer:
+  email: "github@telaria.com"
+gvlVendorID: 202
+capabilities:
+  app:
+    mediaTypes:
+      - video
+  site:
+    mediaTypes:
+      - video

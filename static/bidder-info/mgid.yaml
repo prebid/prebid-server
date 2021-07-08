@@ -1,5 +1,6 @@
 maintainer:
   email: "prebid@mgid.com"
+gvlVendorID: 358
 capabilities:
   app:
     mediaTypes:

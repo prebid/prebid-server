@@ -1,0 +1,167 @@
+{
+  "events_enabled": false,
+  "start_time_ms": 1234567890,
+  "bidIDGenerator": {
+    "generateBidID": true,
+    "returnError": false
+  },
+  "incomingRequest": {
+    "ortbRequest": {
+      "id": "some-request-id",
+      "app": {
+        "id": "some-app"
+      },
+      "imp": [
+        {
+          "id": "my-imp-id",
+          "video": {},
+          "ext": {
+            "appnexus": {
+              "placementId": 1
+            },
+            "audienceNetwork": {
+              "placementId": 1
+            }
+          }
+        }
+      ],
+      "ext": {
+        "prebid": {
+          "targeting": {
+            "includewinners": true,
+            "includebidderkeys": false
+          },
+          "events": {}
+        }
+      }
+    }
+  },
+  "outgoingRequests": {
+    "appnexus": {
+      "modifyingVastXmlAllowed": true,
+      "mockResponse": {
+        "pbsSeatBid": {
+          "pbsBids": [
+            {
+              "ortbBid": {
+                "id": "winning-bid",
+                "nurl": "http://domain.com/winning-bid",
+                "impid": "my-imp-id",
+                "price": 0.71,
+                "w": 200,
+                "h": 250,
+                "crid": "creative-1"
+              },
+              "bidType": "video"
+            },
+            {
+              "ortbBid": {
+                "id": "losing-bid",
+                "nurl": "http://domain.com/losing-bid",
+                "impid": "my-imp-id",
+                "price": 0.21,
+                "w": 200,
+                "h": 250,
+                "crid": "creative-2"
+              },
+              "bidType": "video"
+            }
+          ]
+        }
+      }
+    },
+    "audienceNetwork": {
+      "modifyingVastXmlAllowed": false,
+      "mockResponse": {
+        "pbsSeatBid": {
+          "pbsBids": [
+            {
+              "ortbBid": {
+                "id": "contending-bid",
+                "nurl": "http://domain.com/contending-bid",
+                "impid": "my-imp-id",
+                "price": 0.51,
+                "w": 200,
+                "h": 250,
+                "crid": "creative-4"
+              },
+              "bidType": "video"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "response": {
+    "bids": {
+      "id": "some-request-id",
+      "seatbid": [
+        {
+          "seat": "audienceNetwork",
+          "bid": [
+            {
+              "id": "contending-bid",
+              "nurl": "http://domain.com/contending-bid",
+              "impid": "my-imp-id",
+              "price": 0.51,
+              "w": 200,
+              "h": 250,
+              "crid": "creative-4",
+              "ext": {
+                "prebid": {
+                  "bidid": "mock_uuid",
+                  "type": "video"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "seat": "appnexus",
+          "bid": [
+            {
+              "id": "winning-bid",
+              "adm": "<VAST version=\"3.0\"><Ad><Wrapper><AdSystem>prebid.org wrapper</AdSystem><VASTAdTagURI><![CDATA[http://domain.com/winning-bid]]></VASTAdTagURI><Impression><![CDATA[http://localhost/event?t=imp&b=mock_uuid&a=testaccount&bidder=appnexus&f=b&ts=1234567890]]></Impression><Creatives></Creatives></Wrapper></Ad></VAST>",
+              "nurl": "http://domain.com/winning-bid",
+              "impid": "my-imp-id",
+              "price": 0.71,
+              "w": 200,
+              "h": 250,
+              "crid": "creative-1",
+              "ext": {
+                "prebid": {
+                  "bidid": "mock_uuid",
+                  "type": "video",
+                  "targeting": {
+                      "hb_bidder": "appnexus",
+                      "hb_cache_host": "www.pbcserver.com",
+                      "hb_cache_path": "/pbcache/endpoint",
+                      "hb_env": "mobile-app",
+                      "hb_pb": "0.70",
+                      "hb_size": "200x250"
+                  }
+                }
+              }
+            },
+            {
+              "id": "losing-bid",
+              "adm": "<VAST version=\"3.0\"><Ad><Wrapper><AdSystem>prebid.org wrapper</AdSystem><VASTAdTagURI><![CDATA[http://domain.com/losing-bid]]></VASTAdTagURI><Impression><![CDATA[http://localhost/event?t=imp&b=mock_uuid&a=testaccount&bidder=appnexus&f=b&ts=1234567890]]></Impression><Creatives></Creatives></Wrapper></Ad></VAST>",
+              "nurl": "http://domain.com/losing-bid",
+              "impid": "my-imp-id",
+              "price": 0.21,
+              "w": 200,
+              "h": 250,
+              "crid": "creative-2",
+              "ext": {
+                "prebid": {
+                  "bidid": "mock_uuid",
+                  "type": "video"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

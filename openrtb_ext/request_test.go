@@ -8,12 +8,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Test the unmashalling of the prebid extensions and setting default Price Granularity
+// Test the unmarshalling of the prebid extensions and setting default Price Granularity
 func TestExtRequestTargeting(t *testing.T) {
 	extRequest := &ExtRequest{}
 	err := json.Unmarshal([]byte(ext1), extRequest)
 	if err != nil {
-		t.Errorf("ext1 Unmashall falure: %s", err.Error())
+		t.Errorf("ext1 Unmarshall failure: %s", err.Error())
 	}
 	if extRequest.Prebid.Targeting != nil {
 		t.Error("ext1 Targeting is not nil")
@@ -22,7 +22,7 @@ func TestExtRequestTargeting(t *testing.T) {
 	extRequest = &ExtRequest{}
 	err = json.Unmarshal([]byte(ext2), extRequest)
 	if err != nil {
-		t.Errorf("ext2 Unmashall falure: %s", err.Error())
+		t.Errorf("ext2 Unmarshall failure: %s", err.Error())
 	}
 	if extRequest.Prebid.Targeting == nil {
 		t.Error("ext2 Targeting is nil")
@@ -36,7 +36,7 @@ func TestExtRequestTargeting(t *testing.T) {
 	extRequest = &ExtRequest{}
 	err = json.Unmarshal([]byte(ext3), extRequest)
 	if err != nil {
-		t.Errorf("ext3 Unmashall falure: %s", err.Error())
+		t.Errorf("ext3 Unmarshall failure: %s", err.Error())
 	}
 	if extRequest.Prebid.Targeting == nil {
 		t.Error("ext3 Targeting is nil")
@@ -175,25 +175,58 @@ var validGranularityTests []granularityTestData = []granularityTestData{
 			},
 		},
 	},
+	{
+		json:   []byte(`{}`),
+		target: priceGranularityMed,
+	},
+	{
+		json:   []byte(`{"precision": 2}`),
+		target: priceGranularityMed,
+	},
+	{
+		json:   []byte(`{"precision": 2, "ranges":[]}`),
+		target: priceGranularityMed,
+	},
 }
 
 func TestGranularityUnmarshalBad(t *testing.T) {
-	tests := [][]byte{
-		[]byte(`{}`),
-		[]byte(`[]`),
-		[]byte(`{"precision": -1, "ranges": [{"max":20, "increment":0.5}]}`),
-		[]byte(`{"ranges":[{"max":20, "increment": -1}]}`),
-		[]byte(`{"ranges":[{"max":"20", "increment": "0.1"}]}`),
-		[]byte(`{"ranges":[{"max":20, "increment":0.1}. {"max":10, "increment":0.02}]}`),
-		[]byte(`{"ranges":[{"max":20, "min":10, "increment": 0.1}, {"max":10, "min":0, "increment":0.05}]}`),
-		[]byte(`{"ranges":[{"max":1.0, "increment": 0.07}, {"max" 1.0, "increment": 0.03}]}`),
+	testCases := []struct {
+		description          string
+		jsonPriceGranularity []byte
+	}{
+		{
+			"Malformed",
+			[]byte(`[]`),
+		},
+		{
+			"Negative precision",
+			[]byte(`{"precision": -1, "ranges": [{"max":20, "increment":0.5}]}`),
+		},
+		{
+			"Precision greater than MaxDecimalFigures supported",
+			[]byte(`{"precision": 16, "ranges": [{"max":20, "increment":0.5}]}`),
+		},
+		{
+			"Negative increment",
+			[]byte(`{"ranges":[{"max":20, "increment": -1}]}`),
+		},
+		{
+			"Range with non float64 max value",
+			[]byte(`{"ranges":[{"max":"20", "increment": "0.1"}]}`),
+		},
+		{
+			"Ranges in decreasing order",
+			[]byte(`{"ranges":[{"max":20, "increment":0.1}. {"max":10, "increment":0.02}]}`),
+		},
+		{
+			"Max equal to previous max",
+			[]byte(`{"ranges":[{"max":1.0, "increment": 0.07}, {"max" 1.0, "increment": 0.03}]}`),
+		},
 	}
-	var resolved PriceGranularity
-	for _, b := range tests {
-		resolved = PriceGranularity{}
-		err := json.Unmarshal(b, &resolved)
-		if err == nil {
-			t.Errorf("Invalid granularity unmarshalled without error.\nJSON was: %s\n Resolved to: %v", string(b), resolved)
-		}
+
+	for _, test := range testCases {
+		resolved := PriceGranularity{}
+		err := json.Unmarshal(test.jsonPriceGranularity, &resolved)
+		assert.Errorf(t, err, "Invalid granularity unmarshalled without error.\nJSON was: %s\n Resolved to: %v. Test: %s", string(test.jsonPriceGranularity), resolved, test.description)
 	}
 }

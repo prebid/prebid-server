@@ -1,0 +1,8 @@
+maintainer:
+  email: "support@silvermob.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native

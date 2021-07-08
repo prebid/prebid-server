@@ -3,15 +3,17 @@ package sharethrough
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strconv"
 	"time"
+
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/privacy/ccpa"
 )
 
 const defaultTmax = 10000 // 10 sec
@@ -21,6 +23,7 @@ type StrAdSeverParams struct {
 	BidID              string
 	ConsentRequired    bool
 	ConsentString      string
+	USPrivacySignal    string
 	InstantPlayCapable bool
 	Iframe             bool
 	Height             uint64
@@ -30,7 +33,7 @@ type StrAdSeverParams struct {
 }
 
 type StrOpenRTBInterface interface {
-	requestFromOpenRTB(openrtb.Imp, *openrtb.BidRequest, string) (*adapters.RequestData, error)
+	requestFromOpenRTB(openrtb2.Imp, *openrtb2.BidRequest, string) (*adapters.RequestData, error)
 	responseToOpenRTB([]byte, *adapters.RequestData) (*adapters.BidderResponse, []error)
 }
 
@@ -67,7 +70,7 @@ type StrOpenRTBTranslator struct {
 	UserAgentParsers UserAgentParsers
 }
 
-func (s StrOpenRTBTranslator) requestFromOpenRTB(imp openrtb.Imp, request *openrtb.BidRequest, domain string) (*adapters.RequestData, error) {
+func (s StrOpenRTBTranslator) requestFromOpenRTB(imp openrtb2.Imp, request *openrtb2.BidRequest, domain string) (*adapters.RequestData, error) {
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
@@ -94,6 +97,11 @@ func (s StrOpenRTBTranslator) requestFromOpenRTB(imp openrtb.Imp, request *openr
 		return nil, err
 	}
 
+	usPolicySignal := ""
+	if usPolicy, err := ccpa.ReadFromRequest(request); err == nil {
+		usPolicySignal = usPolicy.Consent
+	}
+
 	return &adapters.RequestData{
 		Method: "POST",
 		Uri: s.UriHelper.buildUri(StrAdSeverParams{
@@ -101,9 +109,10 @@ func (s StrOpenRTBTranslator) requestFromOpenRTB(imp openrtb.Imp, request *openr
 			BidID:              imp.ID,
 			ConsentRequired:    s.Util.gdprApplies(request),
 			ConsentString:      userInfo.Consent,
+			USPrivacySignal:    usPolicySignal,
 			Iframe:             strImpParams.Iframe,
-			Height:             height,
-			Width:              width,
+			Height:             uint64(height),
+			Width:              uint64(width),
 			InstantPlayCapable: s.Util.canAutoPlayVideo(request.Device.UA, s.UserAgentParsers),
 			TheTradeDeskUserId: userInfo.TtdUid,
 			SharethroughUserId: userInfo.StxUid,
@@ -143,7 +152,7 @@ func (s StrOpenRTBTranslator) responseToOpenRTB(strRawResp []byte, btlrReq *adap
 		return nil, errs
 	}
 
-	bid := &openrtb.Bid{
+	bid := &openrtb2.Bid{
 		AdID:   strResp.AdServerRequestID,
 		ID:     strResp.BidID,
 		ImpID:  btlrParams.BidID,
@@ -152,8 +161,8 @@ func (s StrOpenRTBTranslator) responseToOpenRTB(strRawResp []byte, btlrReq *adap
 		CrID:   creative.Metadata.CreativeKey,
 		DealID: creative.Metadata.DealID,
 		AdM:    adm,
-		H:      btlrParams.Height,
-		W:      btlrParams.Width,
+		H:      int64(btlrParams.Height),
+		W:      int64(btlrParams.Width),
 	}
 
 	typedBid.Bid = bid
@@ -162,7 +171,7 @@ func (s StrOpenRTBTranslator) responseToOpenRTB(strRawResp []byte, btlrReq *adap
 	return bidResponse, errs
 }
 
-func (h StrBodyHelper) buildBody(request *openrtb.BidRequest, strImpParams openrtb_ext.ExtImpSharethrough) (body []byte, err error) {
+func (h StrBodyHelper) buildBody(request *openrtb2.BidRequest, strImpParams openrtb_ext.ExtImpSharethrough) (body []byte, err error) {
 	timeout := request.TMax
 	if timeout == 0 {
 		timeout = defaultTmax
@@ -184,6 +193,9 @@ func (h StrUriHelper) buildUri(params StrAdSeverParams) string {
 	v.Set("bidId", params.BidID)
 	v.Set("consent_required", fmt.Sprintf("%t", params.ConsentRequired))
 	v.Set("consent_string", params.ConsentString)
+	if params.USPrivacySignal != "" {
+		v.Set("us_privacy", params.USPrivacySignal)
+	}
 	if params.TheTradeDeskUserId != "" {
 		v.Set("ttduid", params.TheTradeDeskUserId)
 	}

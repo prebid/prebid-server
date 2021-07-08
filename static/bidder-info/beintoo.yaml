@@ -1,0 +1,7 @@
+maintainer:
+  email: "adops@beintoo.com"
+gvlVendorID: 618
+capabilities:
+  site:
+    mediaTypes:
+      - banner

@@ -3,16 +3,22 @@ package kubient
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
+
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
 )
 
-func NewKubientBidder(endpoint string) *KubientAdapter {
-	return &KubientAdapter{endpoint: endpoint}
+// Builder builds a new instance of the Kubient adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &KubientAdapter{
+		endpoint: config.Endpoint,
+	}
+	return bidder, nil
 }
 
 // Implements Bidder interface.
@@ -22,12 +28,26 @@ type KubientAdapter struct {
 
 // MakeRequests prepares the HTTP requests which should be made to fetch bids.
 func (adapter *KubientAdapter) MakeRequests(
-	openRTBRequest *openrtb.BidRequest,
+	openRTBRequest *openrtb2.BidRequest,
 	reqInfo *adapters.ExtraRequestInfo,
-) (
-	requestsToBidder []*adapters.RequestData,
-	errs []error,
-) {
+) ([]*adapters.RequestData, []error) {
+	if len(openRTBRequest.Imp) == 0 {
+		return nil, []error{&errortypes.BadInput{
+			Message: "No impression in the bid request",
+		}}
+	}
+	errs := make([]error, 0, len(openRTBRequest.Imp))
+	hasErrors := false
+	for _, impObj := range openRTBRequest.Imp {
+		err := checkImpExt(impObj)
+		if err != nil {
+			errs = append(errs, err)
+			hasErrors = true
+		}
+	}
+	if hasErrors {
+		return nil, errs
+	}
 	openRTBRequestJSON, err := json.Marshal(openRTBRequest)
 	if err != nil {
 		errs = append(errs, err)
@@ -36,19 +56,38 @@ func (adapter *KubientAdapter) MakeRequests(
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
-	requestToBidder := &adapters.RequestData{
+	requestsToBidder := []*adapters.RequestData{{
 		Method:  "POST",
 		Uri:     adapter.endpoint,
 		Body:    openRTBRequestJSON,
 		Headers: headers,
-	}
-	requestsToBidder = append(requestsToBidder, requestToBidder)
-
+	}}
 	return requestsToBidder, errs
 }
 
+func checkImpExt(impObj openrtb2.Imp) error {
+	var bidderExt adapters.ExtImpBidder
+	if err := json.Unmarshal(impObj.Ext, &bidderExt); err != nil {
+		return &errortypes.BadInput{
+			Message: "ext.bidder not provided",
+		}
+	}
+	var kubientExt openrtb_ext.ExtImpKubient
+	if err := json.Unmarshal(bidderExt.Bidder, &kubientExt); err != nil {
+		return &errortypes.BadInput{
+			Message: "ext.bidder.zoneid is not provided",
+		}
+	}
+	if kubientExt.ZoneID == "" {
+		return &errortypes.BadInput{
+			Message: "zoneid is empty",
+		}
+	}
+	return nil
+}
+
 // MakeBids makes the bids
-func (adapter *KubientAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (adapter *KubientAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var errs []error
 
 	if response.StatusCode == http.StatusNoContent {
@@ -67,7 +106,7 @@ func (adapter *KubientAdapter) MakeBids(internalRequest *openrtb.BidRequest, ext
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
@@ -92,7 +131,7 @@ func (adapter *KubientAdapter) MakeBids(internalRequest *openrtb.BidRequest, ext
 	return bidResponse, errs
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb.Imp) (openrtb_ext.BidType, error) {
+func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
 	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impID {

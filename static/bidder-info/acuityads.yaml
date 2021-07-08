@@ -1,0 +1,15 @@
+maintainer:
+  email: "integrations@acuityads.com"
+gvlVendorID: 231
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+

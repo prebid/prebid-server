@@ -1,0 +1,22 @@
+{
+    "mockBidRequest": {
+        "id": "test-req-id",
+        "imp": [],
+        "app": {
+            "id": "app-abc",
+            "bundle": "com.prebid"
+        },
+        "device": {
+            "ip": "152.193.6.74"
+        },
+        "user": {
+            "id": "db089de9-a62e-4861-a881-0ff15e052516",
+            "buyeruid": "v4_bidder_token"
+        },
+        "tmax": 500
+    },
+    "expectedMakeRequestsErrors": [{
+        "value": "No impressions provided",
+        "comparison": "literal"
+    }]
+}
