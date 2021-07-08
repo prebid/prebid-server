@@ -9,11 +9,50 @@
       "id": "1",
       "bundle": "com.wls.testwlsapplication"
     },
+    "site": {
+      "content": {
+        "data": [
+          {
+            "ext": {
+              "segtax": 1
+            },
+            "segment": [
+              {
+                "id": "segmentId1"
+              },
+              {
+                "id": "segmentId2"
+              }
+            ]
+          },
+          {
+            "ext": {
+              "segtax": "1"
+            },
+            "segment": [
+              {
+                "id": "shouldNotBeCopied"
+              }
+            ]
+          },
+          {
+            "ext": {
+              "segtax": 2
+            },
+            "segment": [
+              {
+                "id": "segmentId3"
+              }
+            ]
+          }
+        ]
+      }
+    },
     "user": {
       "data": [
         {
           "ext": {
-            "taxonomyname": "iab"
+            "segtax": 4
           },
           "segment": [
             {
@@ -23,7 +62,7 @@
         },
         {
           "ext": {
-            "taxonomyname": "someValue"
+            "segtax": "someValue"
           },
           "segment": [
             {
@@ -33,7 +72,17 @@
         },
         {
           "ext": {
-            "taxonomyname": "IaB"
+            "segtax": "4"
+          },
+          "segment": [
+            {
+              "id": "shouldNotBeCopied2"
+            }
+          ]
+        },
+        {
+          "ext": {
+            "segtax": 4
           },
           "segment": [
             {
@@ -43,13 +92,13 @@
         },
         {
           "ext": {
-            "taxonomyname": [
-              "wrong iab type"
+            "segtax": [
+              4
             ]
           },
           "segment": [
             {
-              "id": "shouldNotBeCopied2"
+              "id": "shouldNotBeCopied3"
             }
           ]
         }
@@ -100,11 +149,69 @@
             "ip": "123.123.123.123",
             "ifa": "zxcjbzxmc-zxcbmz-zxbcz-zxczx"
           },
+          "site": {
+            "content": {
+              "data": [
+                {
+                  "ext": {
+                    "segtax": 1
+                  },
+                  "segment": [
+                    {
+                      "id": "segmentId1"
+                    },
+                    {
+                      "id": "segmentId2"
+                    }
+                  ]
+                },
+                {
+                  "ext": {
+                    "segtax": "1"
+                  },
+                  "segment": [
+                    {
+                      "id": "shouldNotBeCopied"
+                    }
+                  ]
+                },
+                {
+                  "ext": {
+                    "segtax": 2
+                  },
+                  "segment": [
+                    {
+                      "id": "segmentId3"
+                    }
+                  ]
+                }
+              ]
+            },
+            "ext": {
+              "rp": {
+                "site_id": 113932,
+                "target": {
+                  "iab": [
+                    "segmentId1",
+                    "segmentId2",
+                    "segmentId3"
+                  ]
+                }
+              }
+            },
+            "publisher": {
+              "ext": {
+                "rp": {
+                  "account_id": 1001
+                }
+              }
+            }
+          },
           "user": {
             "data": [
               {
                 "ext": {
-                  "taxonomyname": "iab"
+                  "segtax": 4
                 },
                 "segment": [
                   {
@@ -114,7 +221,7 @@
               },
               {
                 "ext": {
-                  "taxonomyname": "someValue"
+                  "segtax": "someValue"
                 },
                 "segment": [
                   {
@@ -124,7 +231,17 @@
               },
               {
                 "ext": {
-                  "taxonomyname": "IaB"
+                  "segtax": "4"
+                },
+                "segment": [
+                  {
+                    "id": "shouldNotBeCopied2"
+                  }
+                ]
+              },
+              {
+                "ext": {
+                  "segtax": 4
                 },
                 "segment": [
                   {
@@ -134,13 +251,13 @@
               },
               {
                 "ext": {
-                  "taxonomyname": [
-                    "wrong iab type"
+                  "segtax": [
+                    4
                   ]
                 },
                 "segment": [
                   {
-                    "id": "shouldNotBeCopied2"
+                    "id": "shouldNotBeCopied3"
                   }
                 ]
               }
@@ -158,18 +275,6 @@
           },
           "app": {
             "id": "1",
-            "ext": {
-              "rp": {
-                "site_id": 113932
-              }
-            },
-            "publisher": {
-              "ext": {
-                "rp": {
-                  "account_id": 1001
-                }
-              }
-            },
             "bundle": "com.wls.testwlsapplication"
           },
           "imp": [
