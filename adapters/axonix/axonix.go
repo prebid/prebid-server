@@ -24,54 +24,35 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	errs := make([]error, 0, len(request.Imp))
-	if len(request.Imp) == 0 {
-		err := &errortypes.BadInput{
-			Message: "No impressions in the bid request",
-		}
-		errs = append(errs, err)
-		return nil, errs
-	}
-
-	requestJSON, err := json.Marshal(request)
-	if err != nil {
-		return nil, []error{err}
-	}
-
-	errors := make([]error, 0, 1)
+	var errors []error
 
 	var bidderExt adapters.ExtImpBidder
-	err = json.Unmarshal(request.Imp[0].Ext, &bidderExt)
+	if err := json.Unmarshal(request.Imp[0].Ext, &bidderExt); err != nil {
+		errors = append(errors, &errortypes.BadInput{
+			Message: err.Error(),
+		})
 
-	if err != nil {
-		err = &errortypes.BadInput{
-			Message: "ext.bidder not provided",
-		}
-		errors = append(errors, err)
 		return nil, errors
 	}
 
 	var axonixExt openrtb_ext.ExtImpAxonix
-	err = json.Unmarshal(bidderExt.Bidder, &axonixExt)
-	if err != nil {
-		err = &errortypes.BadInput{
-			Message: "ext.bidder.supplyId not provided",
-		}
-		errors = append(errors, err)
-		return nil, errors
-	}
+	if err := json.Unmarshal(bidderExt.Bidder, &axonixExt); err != nil {
+		errors = append(errors, &errortypes.BadInput{
+			Message: err.Error(),
+		})
 
-	if axonixExt.SupplyId == "" {
-		err = &errortypes.BadInput{
-			Message: "supplyId is empty",
-		}
-		errors = append(errors, err)
 		return nil, errors
 	}
 
 	thisURI := a.URI
 	if len(thisURI) == 0 {
 		thisURI = "https://openrtb-us-east-1.axonix.com/supply/prebid-server/" + axonixExt.SupplyId
+	}
+
+	requestJSON, err := json.Marshal(request)
+	if err != nil {
+		errors = append(errors, err)
+		return nil, errors
 	}
 
 	headers := http.Header{}
