@@ -1,12 +1,15 @@
 maintainer:
-  email: "technology-irv@inmobi.com"
-gvlVendorID: 333
+  email: support.axonix@emodoinc.com
+gvlVendorID: 678
+modifyingVastXmlAllowed: true
 capabilities:
   app:
     mediaTypes:
       - banner
       - video
+      - native
   site:
     mediaTypes:
       - banner
       - video
+      - native

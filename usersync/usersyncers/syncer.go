@@ -49,6 +49,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/grid"
 	"github.com/prebid/prebid-server/adapters/gumgum"
 	"github.com/prebid/prebid-server/adapters/improvedigital"
+	"github.com/prebid/prebid-server/adapters/inmobi"
 	"github.com/prebid/prebid-server/adapters/invibes"
 	"github.com/prebid/prebid-server/adapters/ix"
 	"github.com/prebid/prebid-server/adapters/jixie"
@@ -150,6 +151,7 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderGrid, grid.NewGridSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderGumGum, gumgum.NewGumGumSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderImprovedigital, improvedigital.NewImprovedigitalSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderInMobi, inmobi.NewInmobiSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderInvibes, invibes.NewInvibesSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderIx, ix.NewIxSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderJixie, jixie.NewJixieSyncer)

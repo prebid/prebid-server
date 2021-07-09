@@ -1035,6 +1035,10 @@ func TestOpenRTBRequest(t *testing.T) {
 				}
 			}}`),
 		}},
+		App: &openrtb2.App{
+			ID:   "com.test",
+			Name: "testApp",
+		},
 		Device: &openrtb2.Device{
 			PxRatio: rubidata.devicePxRatio,
 		},
@@ -1146,6 +1150,10 @@ func TestOpenRTBRequestWithBannerImpEvenIfImpHasVideo(t *testing.T) {
 				"visitor": {"key2" : "val2"}
 			}}`),
 		}},
+		App: &openrtb2.App{
+			ID:   "com.test",
+			Name: "testApp",
+		},
 	}
 
 	reqs, errs := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
@@ -1195,6 +1203,10 @@ func TestOpenRTBRequestWithImpAndAdSlotIncluded(t *testing.T) {
 				}
 			}`),
 		}},
+		App: &openrtb2.App{
+			ID:   "com.test",
+			Name: "testApp",
+		},
 	}
 
 	reqs, _ := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
@@ -1250,6 +1262,10 @@ func TestOpenRTBRequestWithBadvOverflowed(t *testing.T) {
 				}
 			}`),
 		}},
+		App: &openrtb2.App{
+			ID:   "com.test",
+			Name: "testApp",
+		},
 	}
 
 	reqs, _ := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
@@ -1283,6 +1299,10 @@ func TestOpenRTBRequestWithSpecificExtUserEids(t *testing.T) {
 				"accountId": 7891
 			}}`),
 		}},
+		App: &openrtb2.App{
+			ID:   "com.test",
+			Name: "testApp",
+		},
 		User: &openrtb2.User{
 			Ext: json.RawMessage(`{"eids": [
 			{
@@ -1391,6 +1411,10 @@ func TestOpenRTBRequestWithVideoImpEvenIfImpHasBannerButAllRequiredVideoFields(t
 				"video": {"size_id": 1}
 			}}`),
 		}},
+		App: &openrtb2.App{
+			ID:   "com.test",
+			Name: "testApp",
+		},
 	}
 
 	reqs, errs := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
@@ -1436,6 +1460,10 @@ func TestOpenRTBRequestWithVideoImpAndEnabledRewardedInventoryFlag(t *testing.T)
 				"video": {"size_id": 1}
 			}}`),
 		}},
+		App: &openrtb2.App{
+			ID:   "com.test",
+			Name: "testApp",
+		},
 	}
 
 	reqs, _ := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
