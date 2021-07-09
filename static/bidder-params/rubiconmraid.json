@@ -1,0 +1,80 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "RubiconMRAID Adapter Params",
+  "description": "A schema which validates params accepted by the Rubicon adapter",
+  "type": "object",
+  "properties": {
+    "accountId": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "An ID which identifies the publisher's account"
+    },
+    "siteId": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "An ID which identifies the site selling the impression"
+    },
+    "zoneId": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "An ID which identifies the sub-section of the site where the impression is located"
+    },
+    "inventory": {
+      "type": "object",
+      "description": "An object defining arbitrary targeting key/value pairs related to the page",
+      "additionalProperties": {
+        "type": "array"
+      }
+    },
+    "visitor": {
+      "type": "object",
+      "description": "An object defining arbitrary targeting key/value pairs related to the visitor",
+      "additionalProperties": {
+        "type": "array"
+      }
+    },
+    "video": {
+      "type": "object",
+      "description": "An object defining additional Rubicon video parameters",
+      "properties": {
+        "language": {
+          "type": "string",
+          "description": "Language of the ad - should match content video"
+        },
+        "playerHeight": {
+          "type": "integer",
+          "description": "Height in pixels of the video player"
+        },
+        "playerWidth": {
+          "type": "integer",
+          "description": "Width in pixels of the video player"
+        },
+        "size_id": {
+          "type": "integer",
+          "description": "Rubicon size_id, used to describe type of video ad (preroll, postroll, etc)"
+        },
+        "skip": {
+          "type": "integer",
+          "description": "Can this ad be skipped ( 0 = no, 1 = yes)"
+        },
+        "skipdelay": {
+          "type": "integer",
+          "description": "number of seconds until the ad can be skipped"
+        }
+      }
+    },
+    "region": {
+      "type": "string",
+      "description": "A string defining region for choosing the closest Rubicon endpoint"
+    },
+    "viewabilityvendors": {
+      "type": "array",
+      "description": "A string array defining viewability vendors, like moat"
+    },
+    "mraid_supported": {
+      "type": "boolean",
+      "description": "A bool config to determine if MRAID is supported by Rubicon"
+    }
+  },
+  "required": ["accountId", "siteId", "zoneId"]
+}

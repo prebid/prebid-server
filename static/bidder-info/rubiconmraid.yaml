@@ -1,0 +1,7 @@
+maintainer:
+  email: "header-bidding@rubiconproject.com"
+gvlVendorID: 52
+capabilities:
+  app:
+    mediaTypes:
+      - banner

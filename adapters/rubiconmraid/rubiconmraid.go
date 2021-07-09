@@ -1,4 +1,4 @@
-package rubicon
+package rubiconmraid
 
 import (
 	"bytes"
@@ -35,7 +35,7 @@ const (
 
 const badvLimitSize = 50
 
-type RubiconAdapter struct {
+type RubiconMRAIDAdapter struct {
 	http             *adapters.HTTPAdapter
 	URI              string
 	XAPIUsername     string
@@ -44,11 +44,11 @@ type RubiconAdapter struct {
 }
 
 // used for cookies and such
-func (a *RubiconAdapter) Name() string {
-	return "rubicon"
+func (a *RubiconMRAIDAdapter) Name() string {
+	return "rubiconmraid"
 }
 
-func (a *RubiconAdapter) SkipNoCookies() bool {
+func (a *RubiconMRAIDAdapter) SkipNoCookies() bool {
 	return false
 }
 
@@ -70,7 +70,7 @@ type bidRequestExtPrebid struct {
 }
 
 type bidRequestExtPrebidBidders struct {
-	Rubicon prebidBiddersRubicon `json:"rubicon,omitempty"`
+	Rubicon prebidBiddersRubicon `json:"rubiconmraid,omitempty"`
 }
 
 type prebidBiddersRubicon struct {
@@ -411,7 +411,7 @@ func parseRubiconSizes(sizes []openrtb2.Format) (primary int, alt []int, err err
 	return
 }
 
-func (a *RubiconAdapter) callOne(ctx context.Context, reqJSON bytes.Buffer) (result adapters.CallOneResult, err error) {
+func (a *RubiconMRAIDAdapter) callOne(ctx context.Context, reqJSON bytes.Buffer) (result adapters.CallOneResult, err error) {
 	httpReq, err := http.NewRequest("POST", a.URI, &reqJSON)
 	httpReq.Header.Add("Content-Type", "application/json;charset=utf-8")
 	httpReq.Header.Add("Accept", "application/json")
@@ -497,7 +497,7 @@ type callOneObject struct {
 	mediaType   pbs.MediaType
 }
 
-func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
+func (a *RubiconMRAIDAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	callOneObjects := make([]callOneObject, 0, len(bidder.AdUnits))
 	supportedMediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER, pbs.MEDIA_TYPE_VIDEO}
 
@@ -715,7 +715,7 @@ func appendTrackerToUrl(uri string, tracker string) (res string) {
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	uri := appendTrackerToUrl(config.Endpoint, config.XAPI.Tracker)
 
-	bidder := &RubiconAdapter{
+	bidder := &RubiconMRAIDAdapter{
 		URI:          uri,
 		XAPIUsername: config.XAPI.Username,
 		XAPIPassword: config.XAPI.Password,
@@ -729,12 +729,12 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	return bidder, nil
 }
 
-func NewRubiconLegacyAdapter(httpConfig *adapters.HTTPAdapterConfig, uri, xuser, xpass, tracker, useast, uswest, eu, apac string) *RubiconAdapter {
+func NewRubiconLegacyAdapter(httpConfig *adapters.HTTPAdapterConfig, uri, xuser, xpass, tracker, useast, uswest, eu, apac string) *RubiconMRAIDAdapter {
 	a := adapters.NewHTTPAdapter(httpConfig)
 
 	uri = appendTrackerToUrl(uri, tracker)
 
-	return &RubiconAdapter{
+	return &RubiconMRAIDAdapter{
 		http:         a,
 		URI:          uri,
 		XAPIUsername: xuser,
@@ -748,7 +748,7 @@ func NewRubiconLegacyAdapter(httpConfig *adapters.HTTPAdapterConfig, uri, xuser,
 	}
 }
 
-func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *RubiconMRAIDAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	numRequests := len(request.Imp)
 	errs := make([]error, 0, len(request.Imp))
 	var err error
@@ -903,53 +903,30 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			rubiconRequest.Device = &deviceCopy
 		}
 
+		// RubiconMRAID Bidder is responsible only for Banner MRAID requests
 		if thisImp.Video != nil {
+			thisImp.Video = nil
+		}
 
-			videoSizeId := rubiconExt.Video.VideoSizeID
-
-			if videoSizeId == 0 {
-				resolvedSizeId, err := resolveVideoSizeId(thisImp.Video.Placement, thisImp.Instl, thisImp.ID)
+		if thisImp.Banner != nil {
+			if rubiconExt.MRAIDSupported {
+				primarySizeID, altSizeIDs, err := parseRubiconSizes(thisImp.Banner.Format)
 				if err != nil {
 					errs = append(errs, err)
 					continue
 				}
-				videoSizeId = resolvedSizeId
-			}
-
-			// if imp.ext.is_rewarded_inventory = 1, set imp.video.ext.videotype = "rewarded"
-			var videoType = ""
-			if bidderExt.Prebid != nil && bidderExt.Prebid.IsRewardedInventory == 1 {
-				videoType = "rewarded"
-				placementType = adapters.Rewarded
-			}
-
-			videoCopy := *thisImp.Video
-			videoExt := rubiconVideoExt{Skip: rubiconExt.Video.Skip, SkipDelay: rubiconExt.Video.SkipDelay, VideoType: videoType, RP: rubiconVideoExtRP{SizeID: videoSizeId}}
-			videoCopy.Ext, err = json.Marshal(&videoExt)
-
-			for i, companionAd := range videoCopy.CompanionAd {
-				companionAdExt := rubiconVideoCompanionAdExt{
-					RP: rubiconVideoCompanionAdExtRP{
-						SizeID:     rubiconExt.Video.CompanionAd.SizeID,
-						AltSizeIDs: rubiconExt.Video.CompanionAd.AltSizeIDs,
-					},
-				}
-
-				companionAd.Ext, err = json.Marshal(&companionAdExt)
+				bannerExt := rubiconBannerExt{RP: rubiconBannerExtRP{SizeID: primarySizeID, AltSizeIDs: altSizeIDs, MIME: "text/html"}}
+				bannerCopy := *thisImp.Banner
+				bannerCopy.Ext, err = json.Marshal(&bannerExt)
 				if err != nil {
+					errs = append(errs, err)
 					continue
 				}
-
-				videoCopy.CompanionAd[i] = companionAd
+				thisImp.Banner = &bannerCopy
+				thisImp.Video = nil
+			} else {
+				thisImp.Banner = nil
 			}
-
-			thisImp.Video = &videoCopy
-			thisImp.Banner = nil
-		}
-
-		// Rubicon Bidder is responsible only for Video MRAID requests
-		if thisImp.Banner != nil {
-			thisImp.Banner = nil
 		}
 
 		// This is a safe guard to prevent making request for nil impressions
@@ -1171,7 +1148,7 @@ func isFullyPopulatedVideo(video *openrtb2.Video) bool {
 	return video.MIMEs != nil && video.Protocols != nil && video.MaxDuration != 0 && video.Linearity != 0 && video.API != nil
 }
 
-func (a *RubiconAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *RubiconMRAIDAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}

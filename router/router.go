@@ -36,6 +36,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/pubmatic"
 	"github.com/prebid/prebid-server/adapters/pulsepoint"
 	"github.com/prebid/prebid-server/adapters/rubicon"
+	"github.com/prebid/prebid-server/adapters/rubiconmraid"
 	"github.com/prebid/prebid-server/adapters/sovrn"
 	"github.com/prebid/prebid-server/adapters/taurusx"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
@@ -202,6 +203,16 @@ func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
 			cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.EndpointUSWest,
 			cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.EndpointEU,
 			cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.EndpointAPAC),
+		"rubiconmraid": rubiconmraid.NewRubiconLegacyAdapter(
+			adapters.DefaultHTTPAdapterConfig,
+			cfg.Adapters[string(openrtb_ext.BidderRubiconMRAID)].Endpoint,
+			cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Username,
+			cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Password,
+			cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Tracker,
+			cfg.Adapters[string(openrtb_ext.BidderRubiconMRAID)].XAPI.EndpointUSEast,
+			cfg.Adapters[string(openrtb_ext.BidderRubiconMRAID)].XAPI.EndpointUSWest,
+			cfg.Adapters[string(openrtb_ext.BidderRubiconMRAID)].XAPI.EndpointEU,
+			cfg.Adapters[string(openrtb_ext.BidderRubiconMRAID)].XAPI.EndpointAPAC),
 		"conversant": conversant.NewConversantLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderConversant)].Endpoint),
 		"adform":     adform.NewAdformLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderAdform)].Endpoint),
 		"sovrn":      sovrn.NewSovrnLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderSovrn)].Endpoint),
