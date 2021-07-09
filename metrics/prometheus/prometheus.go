@@ -15,33 +15,33 @@ type Metrics struct {
 	Registry *prometheus.Registry
 
 	// General Metrics
-	connectionsClosed             prometheus.Counter
-	connectionsError              *prometheus.CounterVec
-	connectionsOpened             prometheus.Counter
-	cookieSync                    prometheus.Counter
-	impressions                   *prometheus.CounterVec
-	impressionsLegacy             prometheus.Counter
-	prebidCacheWriteTimer         *prometheus.HistogramVec
-	requests                      *prometheus.CounterVec
-	requestsTimer                 *prometheus.HistogramVec
-	requestsQueueTimer            *prometheus.HistogramVec
-	requestsWithoutCookie         *prometheus.CounterVec
-	storedImpressionsCacheResult  *prometheus.CounterVec
-	storedRequestCacheResult      *prometheus.CounterVec
-	accountCacheResult            *prometheus.CounterVec
-	storedAccountFetchTimer       *prometheus.HistogramVec
-	storedAccountErrors           *prometheus.CounterVec
-	storedAMPFetchTimer           *prometheus.HistogramVec
-	storedAMPErrors               *prometheus.CounterVec
-	storedCategoryFetchTimer      *prometheus.HistogramVec
-	storedCategoryErrors          *prometheus.CounterVec
-	storedRequestFetchTimer       *prometheus.HistogramVec
-	storedRequestErrors           *prometheus.CounterVec
-	storedVideoFetchTimer         *prometheus.HistogramVec
-	storedVideoErrors             *prometheus.CounterVec
-	timeoutNotifications          *prometheus.CounterVec
-	dnsLookupTimer                prometheus.Histogram
-	tlsHandhakeTimer              prometheus.Histogram
+	connectionsClosed            prometheus.Counter
+	connectionsError             *prometheus.CounterVec
+	connectionsOpened            prometheus.Counter
+	cookieSync                   prometheus.Counter
+	impressions                  *prometheus.CounterVec
+	impressionsLegacy            prometheus.Counter
+	prebidCacheWriteTimer        *prometheus.HistogramVec
+	requests                     *prometheus.CounterVec
+	requestsTimer                *prometheus.HistogramVec
+	requestsQueueTimer           *prometheus.HistogramVec
+	requestsWithoutCookie        *prometheus.CounterVec
+	storedImpressionsCacheResult *prometheus.CounterVec
+	storedRequestCacheResult     *prometheus.CounterVec
+	accountCacheResult           *prometheus.CounterVec
+	storedAccountFetchTimer      *prometheus.HistogramVec
+	storedAccountErrors          *prometheus.CounterVec
+	storedAMPFetchTimer          *prometheus.HistogramVec
+	storedAMPErrors              *prometheus.CounterVec
+	storedCategoryFetchTimer     *prometheus.HistogramVec
+	storedCategoryErrors         *prometheus.CounterVec
+	storedRequestFetchTimer      *prometheus.HistogramVec
+	storedRequestErrors          *prometheus.CounterVec
+	storedVideoFetchTimer        *prometheus.HistogramVec
+	storedVideoErrors            *prometheus.CounterVec
+	timeoutNotifications         *prometheus.CounterVec
+	dnsLookupTimer               prometheus.Histogram
+	//tlsHandhakeTimer              prometheus.Histogram
 	privacyCCPA                   *prometheus.CounterVec
 	privacyCOPPA                  *prometheus.CounterVec
 	privacyLMT                    *prometheus.CounterVec
@@ -62,6 +62,7 @@ type Metrics struct {
 	adapterConnectionWaitTime    *prometheus.HistogramVec
 	adapterDuplicateBidIDCounter *prometheus.CounterVec
 	adapterVideoBidDuration      *prometheus.HistogramVec
+	tlsHandhakeTimer             *prometheus.HistogramVec
 
 	// Account Metrics
 	accountRequests *prometheus.CounterVec
@@ -283,10 +284,10 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"Seconds to resolve DNS",
 		standardTimeBuckets)
 
-	metrics.tlsHandhakeTimer = newHistogram(cfg, metrics.Registry,
-		"tls_handshake_time",
-		"Seconds to perform TLS Handshake",
-		standardTimeBuckets)
+	//metrics.tlsHandhakeTimer = newHistogram(cfg, metrics.Registry,
+	//	"tls_handshake_time",
+	//	"Seconds to perform TLS Handshake",
+	//	standardTimeBuckets)
 
 	metrics.privacyCCPA = newCounter(cfg, metrics.Registry,
 		"privacy_ccpa",
@@ -353,6 +354,12 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		metrics.adapterConnectionWaitTime = newHistogramVec(cfg, metrics.Registry,
 			"adapter_connection_wait",
 			"Seconds from when the connection was requested until it is either created or reused",
+			[]string{adapterLabel},
+			standardTimeBuckets)
+
+		metrics.tlsHandhakeTimer = newHistogramVec(cfg, metrics.Registry,
+			"tls_handshake_time",
+			"Seconds to perform TLS Handshake",
 			[]string{adapterLabel},
 			standardTimeBuckets)
 	}
@@ -622,8 +629,11 @@ func (m *Metrics) RecordDNSTime(dnsLookupTime time.Duration) {
 	m.dnsLookupTimer.Observe(dnsLookupTime.Seconds())
 }
 
-func (m *Metrics) RecordTLSHandshakeTime(tlsHandshakeTime time.Duration) {
-	m.tlsHandhakeTimer.Observe(tlsHandshakeTime.Seconds())
+func (m *Metrics) RecordTLSHandshakeTime(adapterName openrtb_ext.BidderName, tlsHandshakeTime time.Duration) {
+	//m.tlsHandhakeTimer.Observe(tlsHandshakeTime.Seconds())
+	m.tlsHandhakeTimer.With(prometheus.Labels{
+		adapterLabel: string(adapterName),
+	}).Observe(tlsHandshakeTime.Seconds())
 }
 
 func (m *Metrics) RecordAdapterPanic(labels metrics.AdapterLabels) {

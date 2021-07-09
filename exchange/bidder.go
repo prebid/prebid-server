@@ -516,7 +516,7 @@ func (bidder *bidderAdapter) addClientTrace(ctx context.Context) context.Context
 		TLSHandshakeDone: func(tls.ConnectionState, error) {
 			tlsHandshakeTime := time.Now().Sub(tlsStart)
 
-			bidder.me.RecordTLSHandshakeTime(tlsHandshakeTime)
+			bidder.me.RecordTLSHandshakeTime(bidder.BidderName, tlsHandshakeTime)
 		},
 	}
 	return httptrace.WithClientTrace(ctx, trace)
