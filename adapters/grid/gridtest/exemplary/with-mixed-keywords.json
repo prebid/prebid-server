@@ -47,6 +47,30 @@
                             "name": "someName2",
                             "topic": ["anyKey"]
                         }
+                    ],
+                    "formatedSitePublisher": [
+                        {
+                            "name": "formatedPub2",
+                            "segments": [
+                                { "name": "segName1", "value": "segVal1" },
+                                { "name": "segName2", "value": "segVal2" }
+                            ]
+                        },
+                        {
+                            "name": "notFormatedPub",
+                            "topic2": ["notFormatedKw"]
+                        }
+                    ]
+                },
+                "user": {
+                    "formatedUserPublisher": [
+                        {
+                            "name": "formatedPub2",
+                            "segments": [
+                                { "name": "segName1", "value": "segVal1" },
+                                { "name": "segName2", "value": "segVal2" }
+                            ]
+                        }
                     ]
                 }
             }
@@ -71,6 +95,20 @@
                                 {
                                     "name": "someName",
                                     "topic": ["stress", "fear"]
+                                }
+                            ]
+                        },
+                        "user": {
+                            "formatedPublisher": [
+                                {
+                                    "name": "formatedPub1",
+                                    "segments": [
+                                        { "name": "segName1", "value": "segVal1" },
+                                        { "name": "segName2", "value": "segVal2" },
+                                        ["someKeyword"],
+                                        "stringKey"
+                                    ],
+                                    "bottom": ["bottomKey1", "bottomKey2"]
                                 }
                             ]
                         }
@@ -110,6 +148,21 @@
                                     ]
                                 }
                             ],
+                            "formatedSitePublisher": [
+                                {
+                                    "name": "formatedPub2",
+                                    "segments": [
+                                        { "name": "segName1", "value": "segVal1" },
+                                        { "name": "segName2", "value": "segVal2" }
+                                    ]
+                                },
+                                {
+                                    "name": "notFormatedPub",
+                                    "segments": [
+                                        { "name": "topic2", "value": "notFormatedKw" }
+                                    ]
+                                }
+                            ],
                             "ortb2": [
                                 {
                                     "name": "keywords",
@@ -126,6 +179,27 @@
                                     "name": "keywords",
                                     "segments": [
                                         { "name": "keywords", "value": "userKey1" }
+                                    ]
+                                }
+                            ],
+                            "formatedUserPublisher": [
+                                {
+                                    "name": "formatedPub2",
+                                    "segments": [
+                                        { "name": "segName1", "value": "segVal1" },
+                                        { "name": "segName2", "value": "segVal2" }
+                                    ]
+                                }
+                            ],
+                            "formatedPublisher": [
+                                {
+                                    "name": "formatedPub1",
+                                    "segments": [
+                                        { "name": "segName1", "value": "segVal1" },
+                                        { "name": "segName2", "value": "segVal2" },
+                                        { "name": "segments", "value": "stringKey" },
+                                        { "name": "bottom", "value": "bottomKey1" },
+                                        { "name": "bottom", "value": "bottomKey2" }
                                     ]
                                 }
                             ]
@@ -168,6 +242,20 @@
                                         {
                                             "name": "someName",
                                             "topic": ["stress", "fear"]
+                                        }
+                                    ]
+                                },
+                                "user": {
+                                    "formatedPublisher": [
+                                        {
+                                            "name": "formatedPub1",
+                                            "segments": [
+                                                { "name": "segName1", "value": "segVal1" },
+                                                { "name": "segName2", "value": "segVal2" },
+                                                ["someKeyword"],
+                                                "stringKey"
+                                            ],
+                                            "bottom": ["bottomKey1", "bottomKey2"]
                                         }
                                     ]
                                 }
