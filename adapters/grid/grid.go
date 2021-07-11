@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
@@ -31,6 +32,16 @@ type ExtImp struct {
 	Bidder json.RawMessage           `json:"bidder"`
 	Data   *ExtImpData               `json:"data,omitempty"`
 	Gpid   string                    `json:"gpid,omitempty"`
+}
+
+type Ortb2Keywords struct {
+	Name     string   `json:"name"`
+	Keywords []string `json:"keywords"`
+}
+
+type ExtKeywords struct {
+	Site json.RawMessage `json:"site,omitempty"`
+	User json.RawMessage `json:"user,omitempty"`
 }
 
 type ReqExt struct {
@@ -74,6 +85,175 @@ func setImpExtData(imp openrtb2.Imp) openrtb2.Imp {
 	return imp
 }
 
+func mixKeywords(keywordsString string, keywords map[string]interface{}) {
+	var ortb2Array []interface{}
+
+	keywordsArr := strings.Split(keywordsString, ",")
+
+	if len(keywordsArr) > 0 {
+		keywordsInt := make([]interface{}, len(keywordsArr))
+		for i, v := range keywordsArr {
+			keywordsInt[i] = v
+		}
+		ortb2Keywords := map[string]interface{}{
+			"name":     "keywords",
+			"keywords": keywordsInt,
+		}
+		if keywords["ortb2"] == nil {
+			ortb2Array = make([]interface{}, 0)
+		} else {
+			ortb2Array = keywords["ortb2"].([]interface{})
+		}
+		ortb2Array = append(ortb2Array, ortb2Keywords)
+		keywords["ortb2"] = ortb2Array
+	}
+}
+
+func mergeWithReqExtKeywords(extKeywords map[string]interface{}, request *openrtb2.BidRequest) {
+	var reqExt ReqExt
+	var reqExtKeywords map[string]interface{}
+
+	if err := json.Unmarshal(request.Ext, &reqExt); err == nil {
+		if reqExt.Keywords != nil {
+			json.Unmarshal(reqExt.Keywords, &reqExtKeywords)
+
+			for key, keyword := range reqExtKeywords {
+				if extKeywords[key] == nil {
+					extKeywords[key] = keyword
+				} else {
+					if key == "site" || key == "user" {
+						target := extKeywords[key].(map[string]interface{})
+						from := keyword.(map[string]interface{})
+
+						for name, value := range from {
+							if target[name] == nil {
+								target[name] = value
+							} else {
+								valueArr := value.([]interface{})
+								targetArr := target[name].([]interface{})
+								target[name] = append(targetArr, valueArr...)
+							}
+						}
+					} else {
+						extKeywords[key] = keyword
+					}
+				}
+			}
+		}
+	}
+}
+
+func reformatExtKeywords(extKeywords map[string]interface{}) {
+	for name, pubData := range extKeywords {
+		switch pubData.(type) {
+		default:
+			delete(extKeywords, name)
+		case []interface{}:
+			formatedPubArr := make([]map[string]interface{}, 0) // make([]interface{}, 0)
+			pubArr := pubData.([]interface{})
+			for _, item := range pubArr {
+				switch item.(type) {
+				// default:
+				//	  formatedPubArr = append(formatedPubArr, item)
+				case map[string]interface{}:
+					segments := make([]map[string]interface{}, 0)
+					publisherItem := item.(map[string]interface{})
+					for key, value := range publisherItem {
+						if key != "name" {
+							switch value.(type) {
+							case []interface{}:
+								keywords := value.([]interface{})
+								for _, keyword := range keywords {
+									switch keyword.(type) {
+									case string:
+										segment := map[string]interface{}{
+											"name":  key,
+											"value": keyword.(string),
+										}
+										segments = append(segments, segment)
+									}
+								}
+							}
+						}
+					}
+					if len(segments) > 0 {
+						formatedPublisher := map[string]interface{}{
+							"name":     publisherItem["name"],
+							"segments": segments,
+						}
+						formatedPubArr = append(formatedPubArr, formatedPublisher)
+					}
+				}
+			}
+			if len(formatedPubArr) > 0 {
+				extKeywords[name] = formatedPubArr
+			} else {
+				delete(extKeywords, name)
+			}
+		}
+	}
+}
+
+func updateExtKeywords(keywords json.RawMessage, request *openrtb2.BidRequest) json.RawMessage {
+	var extKeywords map[string]interface{}
+	var extKWSite map[string]interface{}
+	var extKWUser map[string]interface{}
+
+	json.Unmarshal(keywords, &extKeywords)
+
+	if request.Ext != nil {
+		if extKeywords == nil {
+			extKeywords = make(map[string]interface{})
+		}
+		mergeWithReqExtKeywords(extKeywords, request)
+	}
+
+	if request.Site != nil && request.Site.Keywords != "" {
+		if extKeywords == nil {
+			extKeywords = make(map[string]interface{})
+		}
+
+		if extKeywords["site"] != nil {
+			extKWSite = extKeywords["site"].(map[string]interface{})
+		} else {
+			extKWSite = make(map[string]interface{})
+		}
+
+		mixKeywords(request.Site.Keywords, extKWSite)
+		extKeywords["site"] = extKWSite
+	}
+
+	if request.User != nil && request.User.Keywords != "" {
+		if extKeywords == nil {
+			extKeywords = make(map[string]interface{})
+		}
+
+		if extKeywords["user"] != nil {
+			extKWUser = extKeywords["user"].(map[string]interface{})
+		} else {
+			extKWUser = make(map[string]interface{})
+		}
+
+		mixKeywords(request.User.Keywords, extKWUser)
+		extKeywords["user"] = extKWUser
+	}
+
+	if extKeywords != nil {
+		if extKeywords["site"] != nil {
+			reformatExtKeywords(extKeywords["site"].(map[string]interface{}))
+		}
+		if extKeywords["user"] != nil {
+			reformatExtKeywords(extKeywords["user"].(map[string]interface{}))
+		}
+
+		if extKeywordsJSON, err := json.Marshal(extKeywords); err == nil {
+			return extKeywordsJSON
+		}
+	}
+
+	return nil
+}
+
 func setImpExtKeywords(imp openrtb2.Imp, request *openrtb2.BidRequest) error {
 	var ext adapters.ExtImpBidder
 	var gridExt openrtb_ext.ExtImpGrid
@@ -84,14 +264,11 @@ func setImpExtKeywords(imp openrtb2.Imp, request *openrtb2.BidRequest) error {
 	if err := json.Unmarshal(ext.Bidder, &gridExt); err != nil {
 		return err
 	}
-	if gridExt.Keywords != nil {
-		if request.Ext != nil {
-			if err := json.Unmarshal(request.Ext, &reqExt); err != nil {
-				return err
-			}
-		}
 
-		reqExt.Keywords = gridExt.Keywords
+	keywords := updateExtKeywords(gridExt.Keywords, request)
+
+	if keywords != nil {
+		reqExt.Keywords = keywords
 		extJSON, err := json.Marshal(reqExt)
 		if err != nil {
 			return err
