@@ -21,15 +21,15 @@
     "imp": [
       {
         "id": "some-impression-id",
-        "tagid": "ogTAGID",
         "banner": {
           "w":320,
           "h":50
         },
         "ext": {
           "bidder": {
-            "host": "ep1",
-            "accountid": "hash"
+            "organizationId": "1000",
+            "site": "site-name",
+            "placement": "ban_atf"
           }
         }
       }
@@ -62,15 +62,15 @@
           "imp": [
             {
               "id": "some-impression-id",
-              "tagid": "ogTAGID",
               "banner": {
                 "w":320,
                 "h":50
               },
               "ext": {
                 "bidder": {
-                  "host": "ep1",
-                  "accountid": "hash"
+                  "organizationId": "1000",
+                  "site": "site-name",
+                  "placement": "ban_atf"
                 }
               }
             }
@@ -104,10 +104,14 @@
                   ],
                   "crid": "20",
                   "w": 320,
-                  "h": 50
+                  "h": 50,
+                  "ext": {
+                    "prebid": {
+                      "type": "banner"
+                    }
+                  }
                 }
               ],
-              "type": "banner",
               "seat": "adagio"
             }
           ],
@@ -136,7 +140,12 @@
               "awesome.com"
             ],
             "w": 320,
-            "h": 50
+            "h": 50,
+            "ext": {
+              "prebid": {
+                "type": "banner"
+              }
+            }
           },
           "type": "banner"
         }
