@@ -25,6 +25,10 @@ type adapter struct {
 	endpoint string
 }
 
+type extBid struct {
+	Prebid *openrtb_ext.ExtBidPrebid
+}
+
 // MakeRequests prepares the HTTP requests which should be made to fetch bids.
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	json, err := json.Marshal(request)
@@ -111,8 +115,19 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, _ *adapters.Req
 	for _, seatBid := range openRTBBidderResponse.SeatBid {
 		for _, bid := range seatBid.Bid {
 			activeBid := bid
-			bidType, err := getMediaTypeForImp(activeBid.ImpID, internalRequest.Imp)
-			if err != nil {
+
+			activeExt := &extBid{}
+			if err := json.Unmarshal(activeBid.Ext, activeExt); err != nil {
+				errs = append(errs, err)
+			}
+
+			var bidType openrtb_ext.BidType
+			if activeExt.Prebid != nil && activeExt.Prebid.Type != "" {
+				bidType = activeExt.Prebid.Type
+			} else {
+				err := &errortypes.BadInput{
+					Message: fmt.Sprintf("Failed to find native/banner/video mediaType \"%s\" ", activeBid.ImpID),
+				}
 				errs = append(errs, err)
 				continue
 			}
@@ -123,23 +138,4 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, _ *adapters.Req
 	}
 
 	return bidderResponse, nil
-}
-
-func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
-	for _, imp := range imps {
-		if imp.ID == impID {
-			if imp.Native != nil {
-				return openrtb_ext.BidTypeNative, nil
-			} else if imp.Banner != nil {
-				return openrtb_ext.BidTypeBanner, nil
-			} else if imp.Video != nil {
-				return openrtb_ext.BidTypeVideo, nil
-			}
-
-		}
-	}
-
-	return "", &errortypes.BadInput{
-		Message: fmt.Sprintf("Failed to find native/banner/video impression \"%s\" ", impID),
-	}
 }
