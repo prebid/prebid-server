@@ -321,6 +321,7 @@ type HostCookie struct {
 	OptInURL           string `mapstructure:"opt_in_url"`
 	MaxCookieSizeBytes int    `mapstructure:"max_cookie_size_bytes"`
 	OptOutCookie       Cookie `mapstructure:"optout_cookie"`
+	Refresh            Bool   `mapstructure:"refresh"`
 	// Cookie timeout in days
 	TTL int64 `mapstructure:"ttl_days"`
 }
@@ -708,6 +709,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("host_cookie.opt_out_url", "")
 	v.SetDefault("host_cookie.opt_in_url", "")
 	v.SetDefault("host_cookie.optout_cookie.name", "")
+	v.SetDefault("host_cookie.refresh", true)
 	v.SetDefault("host_cookie.value", "")
 	v.SetDefault("host_cookie.ttl_days", 90)
 	v.SetDefault("host_cookie.max_cookie_size_bytes", 0)
