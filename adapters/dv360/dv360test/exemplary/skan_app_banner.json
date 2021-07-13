@@ -56,9 +56,7 @@
         "body": {
           "id": "test-request-id",
           "app": {
-            "bundle": "com.prebid",
-            "publisher": {
-            }
+            "bundle": "com.prebid"
           },
           "device": {
             "ifa": "87857b31-8942-4646-ae80-ab9c95bf3fab",

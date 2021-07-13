@@ -82,7 +82,7 @@ func (p *permissionsImpl) AuctionActivitiesAllowed(ctx context.Context,
 	}
 
 	// This update will allow request to go through but will remove geo and id fields if GDPR flag is on, and there is NO consent
-	return true, true, true, nil
+	return true, false, false, nil
 
 	// commenting this part out to use when we start supporting TCF 2.0
 	/*
