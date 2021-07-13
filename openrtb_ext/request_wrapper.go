@@ -3,7 +3,6 @@ package openrtb_ext
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 )
@@ -28,11 +27,11 @@ import (
 // The GetExt() and SetExt() should only be used to access fields that have not already been resolved in the object.
 // Using SetExt() at all is a strong hint that the ext object should be extended to support the new fields being set
 // in the map.
+//
+// NOTE: The RequestWrapper methods (particularly the ones calling (un)Marshal are not thread safe)
 
 type RequestWrapper struct {
-	// json json.RawMessage
 	*openrtb2.BidRequest
-	// Dirty bool // Probably don't care
 	userExt    *UserExt
 	deviceExt  *DeviceExt
 	requestExt *RequestExt
@@ -110,17 +109,15 @@ func (rw *RequestWrapper) GetSiteExt() (*SiteExt, error) {
 
 func (rw *RequestWrapper) RebuildRequest() error {
 	if rw.BidRequest == nil {
-		return fmt.Errorf("Requestwrapper Sync called on a nil Request")
+		return errors.New("Requestwrapper Sync called on a nil BidRequest")
 	}
 
 	if err := rw.rebuildUserExt(); err != nil {
 		return err
 	}
-
 	if err := rw.rebuildDeviceExt(); err != nil {
 		return err
 	}
-
 	if err := rw.rebuildRequestExt(); err != nil {
 		return err
 	}
@@ -334,8 +331,11 @@ func (ue *UserExt) marshal() (json.RawMessage, error) {
 		}
 		ue.eidsDirty = false
 	}
-	ue.extDirty = false
 
+	ue.extDirty = false
+	if len(ue.ext) == 0 {
+		return nil, nil
+	}
 	return json.Marshal(ue.ext)
 
 }
@@ -345,7 +345,10 @@ func (ue *UserExt) Dirty() bool {
 }
 
 func (ue *UserExt) GetExt() map[string]json.RawMessage {
-	ext := ue.ext
+	ext := make(map[string]json.RawMessage)
+	for k, v := range ue.ext {
+		ext[k] = v
+	}
 	return ext
 }
 
@@ -449,10 +452,13 @@ func (re *RequestExt) marshal() (json.RawMessage, error) {
 		} else {
 			delete(re.ext, "prebid")
 		}
-		re.extDirty = false
 		re.prebidDirty = false
 	}
 
+	re.extDirty = false
+	if len(re.ext) == 0 {
+		return nil, nil
+	}
 	return json.Marshal(re.ext)
 }
 
@@ -461,7 +467,10 @@ func (re *RequestExt) Dirty() bool {
 }
 
 func (re *RequestExt) GetExt() map[string]json.RawMessage {
-	ext := re.ext
+	ext := make(map[string]json.RawMessage)
+	for k, v := range re.ext {
+		ext[k] = v
+	}
 	return ext
 }
 
@@ -530,16 +539,14 @@ func (de *DeviceExt) marshal() (json.RawMessage, error) {
 		} else {
 			delete(de.ext, "prebid")
 		}
-		de.extDirty = false
 		de.prebidDirty = false
 	}
 
-	rawJson, err := json.Marshal(de.ext)
-	if err == nil {
-		de.prebidDirty = false
+	de.extDirty = false
+	if len(de.ext) == 0 {
+		return nil, nil
 	}
-
-	return rawJson, err
+	return json.Marshal(de.ext)
 }
 
 func (de *DeviceExt) Dirty() bool {
@@ -547,7 +554,10 @@ func (de *DeviceExt) Dirty() bool {
 }
 
 func (de *DeviceExt) GetExt() map[string]json.RawMessage {
-	ext := de.ext
+	ext := make(map[string]json.RawMessage)
+	for k, v := range de.ext {
+		ext[k] = v
+	}
 	return ext
 }
 
@@ -612,14 +622,14 @@ func (ae *AppExt) marshal() (json.RawMessage, error) {
 		} else {
 			delete(ae.ext, "prebid")
 		}
-	}
-
-	rawJson, err := json.Marshal(ae.ext)
-	if err == nil {
 		ae.prebidDirty = false
 	}
+
 	ae.extDirty = false
-	return rawJson, err
+	if len(ae.ext) == 0 {
+		return nil, nil
+	}
+	return json.Marshal(ae.ext)
 }
 
 func (ae *AppExt) Dirty() bool {
@@ -627,7 +637,10 @@ func (ae *AppExt) Dirty() bool {
 }
 
 func (ae *AppExt) GetExt() map[string]json.RawMessage {
-	ext := ae.ext
+	ext := make(map[string]json.RawMessage)
+	for k, v := range ae.ext {
+		ext[k] = v
+	}
 	return ext
 }
 
@@ -656,8 +669,8 @@ func (ae *AppExt) SetPrebid(prebid *ExtAppPrebid) {
 type RegExt struct {
 	ext            map[string]json.RawMessage
 	extDirty       bool
-	uSPrivacy      string
-	uSPrivacyDirty bool
+	usPrivacy      string
+	usPrivacyDirty bool
 }
 
 func (re *RegExt) unmarshal(extJson json.RawMessage) error {
@@ -674,16 +687,16 @@ func (re *RegExt) unmarshal(extJson json.RawMessage) error {
 	}
 	uspJson, hasUsp := re.ext["us_privacy"]
 	if hasUsp {
-		err = json.Unmarshal(uspJson, &re.uSPrivacy)
+		err = json.Unmarshal(uspJson, &re.usPrivacy)
 	}
 
 	return err
 }
 
 func (re *RegExt) marshal() (json.RawMessage, error) {
-	if re.uSPrivacyDirty {
-		if len(re.uSPrivacy) > 0 {
-			rawjson, err := json.Marshal(re.uSPrivacy)
+	if re.usPrivacyDirty {
+		if len(re.usPrivacy) > 0 {
+			rawjson, err := json.Marshal(re.usPrivacy)
 			if err != nil {
 				return nil, err
 			}
@@ -691,25 +704,25 @@ func (re *RegExt) marshal() (json.RawMessage, error) {
 		} else {
 			delete(re.ext, "us_privacy")
 		}
-	}
-	if len(re.ext) == 0 {
-		re.uSPrivacyDirty = false
-		return nil, nil
+		re.usPrivacyDirty = false
 	}
 
-	rawJson, err := json.Marshal(re.ext)
-	if err == nil {
-		re.uSPrivacyDirty = false
+	re.extDirty = false
+	if len(re.ext) == 0 {
+		return nil, nil
 	}
-	return rawJson, err
+	return json.Marshal(re.ext)
 }
 
 func (re *RegExt) Dirty() bool {
-	return re.extDirty || re.uSPrivacyDirty
+	return re.extDirty || re.usPrivacyDirty
 }
 
 func (re *RegExt) GetExt() map[string]json.RawMessage {
-	ext := re.ext
+	ext := make(map[string]json.RawMessage)
+	for k, v := range re.ext {
+		ext[k] = v
+	}
 	return ext
 }
 
@@ -719,13 +732,13 @@ func (re *RegExt) SetExt(ext map[string]json.RawMessage) {
 }
 
 func (re *RegExt) GetUSPrivacy() string {
-	uSPrivacy := re.uSPrivacy
+	uSPrivacy := re.usPrivacy
 	return uSPrivacy
 }
 
 func (re *RegExt) SetUSPrivacy(uSPrivacy string) {
-	re.uSPrivacy = uSPrivacy
-	re.uSPrivacyDirty = true
+	re.usPrivacy = uSPrivacy
+	re.usPrivacyDirty = true
 }
 
 // ---------------------------------------------------------------
@@ -754,7 +767,6 @@ func (se *SiteExt) unmarshal(extJson json.RawMessage) error {
 	AmpJson, hasAmp := se.ext["amp"]
 	if hasAmp {
 		err = json.Unmarshal(AmpJson, &se.amp)
-		// Replace with a more specific error message
 		if err != nil {
 			err = errors.New(`request.site.ext.amp must be either 1, 0, or undefined`)
 		}
@@ -777,11 +789,11 @@ func (se *SiteExt) marshal() (json.RawMessage, error) {
 		se.ampDirty = false
 	}
 
-	rawJson, err := json.Marshal(se.ext)
-	if err == nil {
-		se.ampDirty = false
+	se.extDirty = false
+	if len(se.ext) == 0 {
+		return nil, nil
 	}
-	return rawJson, err
+	return json.Marshal(se.ext)
 }
 
 func (se *SiteExt) Dirty() bool {
@@ -789,7 +801,10 @@ func (se *SiteExt) Dirty() bool {
 }
 
 func (se *SiteExt) GetExt() map[string]json.RawMessage {
-	ext := se.ext
+	ext := make(map[string]json.RawMessage)
+	for k, v := range se.ext {
+		ext[k] = v
+	}
 	return ext
 }
 

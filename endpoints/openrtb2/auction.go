@@ -1168,7 +1168,7 @@ func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases 
 				return fmt.Errorf("request.user.ext.eids[%d] missing required field: \"source\"", eidIndex)
 			}
 			if _, ok := uniqueSources[eid.Source]; ok {
-				return fmt.Errorf("request.user.ext.eids must contain unique sources")
+				return errors.New("request.user.ext.eids must contain unique sources")
 			}
 			uniqueSources[eid.Source] = struct{}{}
 

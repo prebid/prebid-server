@@ -424,13 +424,13 @@ func TestBuildExt(t *testing.T) {
 			description:   "Clear - Nil",
 			noSaleBidders: nil,
 			ext:           json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
-			expected:      json.RawMessage(`{}`),
+			expected:      nil,
 		},
 		{
 			description:   "Clear - Empty",
 			noSaleBidders: []string{},
 			ext:           json.RawMessage(`{"prebid":{"nosale":["a", "b"]}}`),
-			expected:      json.RawMessage(`{}`),
+			expected:      nil,
 		},
 		{
 			description:   "Clear - Error",
@@ -491,12 +491,12 @@ func TestBuildExtClear(t *testing.T) {
 		{
 			description: "Empty Ext.Prebid",
 			ext:         json.RawMessage(`{"prebid":{}}`),
-			expected:    json.RawMessage(`{}`),
+			expected:    nil,
 		},
 		{
 			description: "Removes Ext Entirely",
 			ext:         json.RawMessage(`{"prebid":{"nosale":["a","b"]}}`),
-			expected:    json.RawMessage(`{}`),
+			expected:    nil,
 		},
 		{
 			description: "Leaves Other Ext Values",
