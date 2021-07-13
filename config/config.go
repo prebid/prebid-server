@@ -240,20 +240,30 @@ func (t *GDPRTimeouts) ActiveTimeout() time.Duration {
 
 // TCF2 defines the TCF2 specific configurations for GDPR
 type TCF2 struct {
-	Enabled             bool                `mapstructure:"enabled"`
-	Purpose1            PurposeDetail       `mapstructure:"purpose1"`
-	Purpose2            PurposeDetail       `mapstructure:"purpose2"`
-	Purpose7            PurposeDetail       `mapstructure:"purpose7"`
-	SpecialPurpose1     PurposeDetail       `mapstructure:"special_purpose1"`
-	PurposeOneTreatment PurposeOneTreatment `mapstructure:"purpose_one_treatment"`
+	Enabled             bool                    `mapstructure:"enabled"`
+	Purpose1            TCF2Purpose             `mapstructure:"purpose1"`
+	Purpose2            TCF2Purpose             `mapstructure:"purpose2"`
+	Purpose3            TCF2Purpose             `mapstructure:"purpose3"`
+	Purpose4            TCF2Purpose             `mapstructure:"purpose4"`
+	Purpose5            TCF2Purpose             `mapstructure:"purpose5"`
+	Purpose6            TCF2Purpose             `mapstructure:"purpose6"`
+	Purpose7            TCF2Purpose             `mapstructure:"purpose7"`
+	Purpose8            TCF2Purpose             `mapstructure:"purpose8"`
+	Purpose9            TCF2Purpose             `mapstructure:"purpose9"`
+	Purpose10           TCF2Purpose             `mapstructure:"purpose10"`
+	SpecialPurpose1     TCF2Purpose             `mapstructure:"special_purpose1"`
+	PurposeOneTreatment TCF2PurposeOneTreatment `mapstructure:"purpose_one_treatment"`
 }
 
 // Making a purpose struct so purpose specific details can be added later.
-type PurposeDetail struct {
+type TCF2Purpose struct {
 	Enabled bool `mapstructure:"enabled"`
+	// Array of vendor exceptions that is used to create the hash table VendorExceptionMap so vendor names can be instantly accessed
+	VendorExceptions   []openrtb_ext.BidderName `mapstructure:"vendor_exceptions"`
+	VendorExceptionMap map[openrtb_ext.BidderName]struct{}
 }
 
-type PurposeOneTreatment struct {
+type TCF2PurposeOneTreatment struct {
 	Enabled       bool `mapstructure:"enabled"`
 	AccessAllowed bool `mapstructure:"access_allowed"`
 }
@@ -501,6 +511,30 @@ func New(v *viper.Viper) (*Configuration, error) {
 	c.GDPR.EEACountriesMap = make(map[string]struct{})
 	for i := 0; i < len(c.GDPR.EEACountriesMap); i++ {
 		c.GDPR.NonStandardPublisherMap[c.GDPR.EEACountries[i]] = s
+	}
+
+	// To look for a purpose's vendor exceptions in O(1) time, for each purpose we fill this hash table located in the
+	// VendorExceptions field of the GDPR.TCF2.PurposeX struct defined in this file
+	purposeConfigs := []*TCF2Purpose{
+		&c.GDPR.TCF2.Purpose1,
+		&c.GDPR.TCF2.Purpose2,
+		&c.GDPR.TCF2.Purpose3,
+		&c.GDPR.TCF2.Purpose4,
+		&c.GDPR.TCF2.Purpose5,
+		&c.GDPR.TCF2.Purpose6,
+		&c.GDPR.TCF2.Purpose7,
+		&c.GDPR.TCF2.Purpose8,
+		&c.GDPR.TCF2.Purpose9,
+		&c.GDPR.TCF2.Purpose10,
+		&c.GDPR.TCF2.SpecialPurpose1,
+	}
+	for c := 0; c < len(purposeConfigs); c++ {
+		purposeConfigs[c].VendorExceptionMap = make(map[openrtb_ext.BidderName]struct{})
+
+		for v := 0; v < len(purposeConfigs[c].VendorExceptions); v++ {
+			bidderName := purposeConfigs[c].VendorExceptions[v]
+			purposeConfigs[c].VendorExceptionMap[bidderName] = struct{}{}
+		}
 	}
 
 	// To look for a request's app_id in O(1) time, we fill this hash table located in the
@@ -957,9 +991,26 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("gdpr.tcf2.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose1.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose2.enabled", true)
+	v.SetDefault("gdpr.tcf2.purpose3.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose4.enabled", true)
+	v.SetDefault("gdpr.tcf2.purpose5.enabled", true)
+	v.SetDefault("gdpr.tcf2.purpose6.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose7.enabled", true)
+	v.SetDefault("gdpr.tcf2.purpose8.enabled", true)
+	v.SetDefault("gdpr.tcf2.purpose9.enabled", true)
+	v.SetDefault("gdpr.tcf2.purpose10.enabled", true)
+	v.SetDefault("gdpr.tcf2.purpose1.vendor_exceptions", []openrtb_ext.BidderName{})
+	v.SetDefault("gdpr.tcf2.purpose2.vendor_exceptions", []openrtb_ext.BidderName{})
+	v.SetDefault("gdpr.tcf2.purpose3.vendor_exceptions", []openrtb_ext.BidderName{})
+	v.SetDefault("gdpr.tcf2.purpose4.vendor_exceptions", []openrtb_ext.BidderName{})
+	v.SetDefault("gdpr.tcf2.purpose5.vendor_exceptions", []openrtb_ext.BidderName{})
+	v.SetDefault("gdpr.tcf2.purpose6.vendor_exceptions", []openrtb_ext.BidderName{})
+	v.SetDefault("gdpr.tcf2.purpose7.vendor_exceptions", []openrtb_ext.BidderName{})
+	v.SetDefault("gdpr.tcf2.purpose8.vendor_exceptions", []openrtb_ext.BidderName{})
+	v.SetDefault("gdpr.tcf2.purpose9.vendor_exceptions", []openrtb_ext.BidderName{})
+	v.SetDefault("gdpr.tcf2.purpose10.vendor_exceptions", []openrtb_ext.BidderName{})
 	v.SetDefault("gdpr.tcf2.special_purpose1.enabled", true)
+	v.SetDefault("gdpr.tcf2.special_purpose1.vendor_exceptions", []openrtb_ext.BidderName{})
 	v.SetDefault("gdpr.amp_exception", false)
 	v.SetDefault("gdpr.eea_countries", []string{"ALA", "AUT", "BEL", "BGR", "HRV", "CYP", "CZE", "DNK", "EST",
 		"FIN", "FRA", "GUF", "DEU", "GIB", "GRC", "GLP", "GGY", "HUN", "ISL", "IRL", "IMN", "ITA", "JEY", "LVA",
