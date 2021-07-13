@@ -33,11 +33,7 @@ type SmaatoAdapter struct {
 	endpoint string
 }
 
-// userExt defines User.Ext object for Smaato
-type userExt struct {
-	Data userExtData `json:"data"`
-}
-
+// userExtData defines User.Ext.Data object for Smaato
 type userExtData struct {
 	Keywords string `json:"keywords"`
 	Gender   string `json:"gender"`
@@ -163,8 +159,8 @@ func (adapter *SmaatoAdapter) makeIndividualRequests(request *openrtb2.BidReques
 	requests := make([]*adapters.RequestData, 0, len(imps))
 	errors := make([]error, 0, len(imps))
 
-	for impIndex := range imps {
-		request.Imp = imps[impIndex : impIndex+1]
+	for _, imp := range imps {
+		request.Imp = []openrtb2.Imp{imp}
 		if err := prepareIndividualRequest(request); err != nil {
 			errors = append(errors, err)
 			continue
@@ -317,42 +313,46 @@ func preparePodRequest(request *openrtb2.BidRequest) error {
 }
 
 func setUser(request *openrtb2.BidRequest) error {
-	var err error
-
 	if request.User != nil && request.User.Ext != nil {
-		var userExt userExt
 		var userExtRaw map[string]json.RawMessage
 
-		if err = json.Unmarshal(request.User.Ext, &userExtRaw); err != nil {
+		if err := json.Unmarshal(request.User.Ext, &userExtRaw); err != nil {
 			return &errortypes.BadInput{Message: "Invalid user.ext."}
 		}
-		if err = json.Unmarshal(request.User.Ext, &userExt); err != nil {
-			return &errortypes.BadInput{Message: "Invalid user.ext.data."}
+
+		if userExtDataRaw, present := userExtRaw["data"]; present {
+			var err error
+			var userExtData userExtData
+
+			if err = json.Unmarshal(userExtDataRaw, &userExtData); err != nil {
+				return &errortypes.BadInput{Message: "Invalid user.ext.data."}
+			}
+
+			userCopy := *request.User
+
+			if userExtData.Gender != "" {
+				userCopy.Gender = userExtData.Gender
+			}
+
+			if userExtData.Yob != 0 {
+				userCopy.Yob = userExtData.Yob
+			}
+
+			if userExtData.Keywords != "" {
+				userCopy.Keywords = userExtData.Keywords
+			}
+
+			delete(userExtRaw, "data")
+
+			if userCopy.Ext, err = json.Marshal(userExtRaw); err != nil {
+				return err
+			}
+
+			request.User = &userCopy
 		}
-
-		userCopy := *request.User
-
-		if userExt.Data.Gender != "" {
-			userCopy.Gender = userExt.Data.Gender
-		}
-
-		if userExt.Data.Yob != 0 {
-			userCopy.Yob = userExt.Data.Yob
-		}
-
-		if userExt.Data.Keywords != "" {
-			userCopy.Keywords = userExt.Data.Keywords
-		}
-
-		delete(userExtRaw, "data")
-		if userCopy.Ext, err = json.Marshal(userExtRaw); err != nil {
-			return err
-		}
-
-		request.User = &userCopy
 	}
 
-	return err
+	return nil
 }
 
 func setExt(request *openrtb2.BidRequest) error {
