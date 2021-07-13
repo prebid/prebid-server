@@ -240,7 +240,6 @@ func (ue *UserExt) unmarshal(extJson json.RawMessage) error {
 		return nil
 	}
 	ue.ext = make(map[string]json.RawMessage)
-	ue.eids = &[]ExtUserEid{}
 	if len(extJson) == 0 {
 		return nil
 	}
@@ -274,6 +273,7 @@ func (ue *UserExt) unmarshal(extJson json.RawMessage) error {
 
 	eidsJson, hasEids := ue.ext["eids"]
 	if hasEids {
+		ue.eids = &[]ExtUserEid{}
 		if err := json.Unmarshal(eidsJson, ue.eids); err != nil {
 			return err
 		}
