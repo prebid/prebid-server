@@ -852,12 +852,14 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 		if request.Site != nil {
 			siteCopy := *request.Site
 			siteExtRP := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: rubiconExt.SiteId}}
-			target, err := updateExtWithIabAttribute(nil, siteCopy.Content.Data, []int{1, 2})
-			if err != nil {
-				errs = append(errs, err)
-				continue
+			if siteCopy.Content != nil {
+				target, err := updateExtWithIabAttribute(nil, siteCopy.Content.Data, []int{1, 2})
+				if err != nil {
+					errs = append(errs, err)
+					continue
+				}
+				siteExtRP.RP.Target = target
 			}
-			siteExtRP.RP.Target = target
 
 			siteCopy.Ext, err = json.Marshal(&siteExtRP)
 			if err != nil {
@@ -919,6 +921,9 @@ func resolveBidFloorAttributes(bidFloor float64, bidFloorCur string) (float64, s
 
 func updateExtWithIabAttribute(target json.RawMessage, data []openrtb2.Data, segTaxes []int) (json.RawMessage, error) {
 	var segmentIdsToCopy = getSegmentIdsToCopy(data, segTaxes)
+	if len(segmentIdsToCopy) == 0 {
+		return target, nil
+	}
 
 	extRPTarget := make(map[string]interface{})
 
@@ -938,7 +943,7 @@ func updateExtWithIabAttribute(target json.RawMessage, data []openrtb2.Data, seg
 }
 
 func getSegmentIdsToCopy(data []openrtb2.Data, segTaxValues []int) []string {
-	var segmentIdsToCopy = make([]string, 0)
+	var segmentIdsToCopy = make([]string, 0, len(data))
 
 	for _, dataRecord := range data {
 		if dataRecord.Ext != nil {
