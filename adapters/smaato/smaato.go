@@ -305,6 +305,10 @@ func prepareIndividualRequest(request *openrtb2.BidRequest) error {
 }
 
 func preparePodRequest(request *openrtb2.BidRequest) error {
+	if len(request.Imp) < 1 {
+		return &errortypes.BadInput{Message: "No impressions in bid request."}
+	}
+
 	if err := setPublisherId(request, &request.Imp[0]); err != nil {
 		return err
 	}
@@ -436,6 +440,10 @@ func setImpForAdspace(imp *openrtb2.Imp) error {
 }
 
 func setImpForAdBreak(imps []openrtb2.Imp) error {
+	if len(imps) < 1 {
+		return &errortypes.BadInput{Message: "No impressions in bid request."}
+	}
+
 	adBreakID, err := jsonparser.GetString(imps[0].Ext, "bidder", "adbreakId")
 	if err != nil {
 		return &errortypes.BadInput{Message: "Missing adbreakId parameter."}
