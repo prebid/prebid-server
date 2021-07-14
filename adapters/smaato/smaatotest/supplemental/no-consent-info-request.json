@@ -1,32 +1,11 @@
 {
   "mockBidRequest": {
     "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
-    "app": {
-      "id": "app-id",
-      "name": "app-name",
-      "bundle": "app-bundle",
-      "storeurl": "app-storeurl",
-      "cat": [
-        "IAB3-1"
-      ],
-      "ver": "app-version",
-      "paid": 1,
-      "content": {
-        "id": "content-id",
-        "title": "content-title",
-        "series": "content-series",
-        "genre": "content-genre",
-        "producer": {
-          "id": "producer-id",
-          "name": "producer-name"
-        },
-        "cat": [
-              "IAB8-6"
-              ],
-        "livestream": 1,
-        "language": "en"
-      },
-      "keywords": "keywords"
+    "site": {
+      "page": "prebid.org",
+      "publisher": {
+        "id": "1"
+      }
     },
     "imp": [
       {
@@ -50,40 +29,18 @@
           }
         }
       }
-    ],
-    "device": {
-      "ua": "test-user-agent",
-      "ip": "123.123.123.123",
-      "language": "en",
-      "dnt": 0
-    },
-    "user": {
-      "ext": {
-        "consent": "gdprConsentString",
-        "data": {
-          "keywords": "a,b",
-          "gender": "M",
-          "yob": 1984,
-          "geo": {
-            "country": "ca"
-          }
-        }
-      }
-    },
-    "regs": {
-      "coppa": 1,
-      "ext": {
-        "gdpr": 1,
-        "us_privacy": "uspConsentString"
-      }
-    }
+    ]
   },
   "httpCalls": [
     {
       "expectedRequest": {
         "headers": {
-          "Content-Type": ["application/json;charset=utf-8"],
-          "Accept": ["application/json"]
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
         },
         "uri": "https://prebid/bidder",
         "body": {
@@ -108,56 +65,11 @@
               }
             }
           ],
-          "user": {
-            "ext": {
-              "consent": "gdprConsentString"
-            },
-            "gender": "M",
-            "keywords": "a,b",
-            "yob": 1984
-          },
-          "device": {
-            "ua": "test-user-agent",
-            "ip": "123.123.123.123",
-            "language": "en",
-            "dnt": 0
-          },
-          "regs": {
-            "coppa": 1,
-            "ext": {
-              "gdpr": 1,
-              "us_privacy": "uspConsentString"
-            }
-          },
-          "app": {
+          "site": {
+            "page": "prebid.org",
             "publisher": {
               "id": "1100042525"
-            },
-            "id": "app-id",
-            "name": "app-name",
-            "bundle": "app-bundle",
-            "storeurl": "app-storeurl",
-            "cat": [
-              "IAB3-1"
-            ],
-            "ver": "app-version",
-            "paid": 1,
-            "content": {
-              "id": "content-id",
-              "title": "content-title",
-              "series": "content-series",
-              "genre": "content-genre",
-              "producer": {
-                "id": "producer-id",
-                "name": "producer-name"
-              },
-              "cat": [
-                "IAB8-6"
-              ],
-              "livestream": 1,
-              "language": "en"
-            },
-            "keywords": "keywords"
+            }
           },
           "ext": {
             "client": "prebid_server_0.3"

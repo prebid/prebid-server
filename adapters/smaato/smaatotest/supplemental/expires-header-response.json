@@ -1,32 +1,20 @@
 {
   "mockBidRequest": {
     "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
-    "app": {
-      "id": "app-id",
-      "name": "app-name",
-      "bundle": "app-bundle",
-      "storeurl": "app-storeurl",
-      "cat": [
-        "IAB3-1"
-      ],
-      "ver": "app-version",
-      "paid": 1,
-      "content": {
-        "id": "content-id",
-        "title": "content-title",
-        "series": "content-series",
-        "genre": "content-genre",
-        "producer": {
-          "id": "producer-id",
-          "name": "producer-name"
-        },
-        "cat": [
-              "IAB8-6"
-              ],
-        "livestream": 1,
-        "language": "en"
+    "site": {
+      "publisher": {
+        "id": "1100042525"
       },
-      "keywords": "keywords"
+      "page": "http://localhost:3000/server.html?pbjs_debug=true&endpoint=http://localhost:3000/bidder",
+      "ext": {
+        "data": {
+          "keywords": "power tools",
+          "search": "drill",
+          "content": {
+            "userrating": 4
+          }
+        }
+      }
     },
     "imp": [
       {
@@ -129,35 +117,12 @@
               "us_privacy": "uspConsentString"
             }
           },
-          "app": {
+          "site": {
             "publisher": {
               "id": "1100042525"
             },
-            "id": "app-id",
-            "name": "app-name",
-            "bundle": "app-bundle",
-            "storeurl": "app-storeurl",
-            "cat": [
-              "IAB3-1"
-            ],
-            "ver": "app-version",
-            "paid": 1,
-            "content": {
-              "id": "content-id",
-              "title": "content-title",
-              "series": "content-series",
-              "genre": "content-genre",
-              "producer": {
-                "id": "producer-id",
-                "name": "producer-name"
-              },
-              "cat": [
-                "IAB8-6"
-              ],
-              "livestream": 1,
-              "language": "en"
-            },
-            "keywords": "keywords"
+            "page": "http://localhost:3000/server.html?pbjs_debug=true&endpoint=http://localhost:3000/bidder",
+            "keywords": "power tools"
           },
           "ext": {
             "client": "prebid_server_0.3"
@@ -166,6 +131,9 @@
       },
       "mockResponse": {
         "status": 200,
+        "headers": {
+          "X-Smt-Expires": ["1624618800000"]
+        },
         "body": {
           "id": "5ebea288-f13a-4754-be6d-4ade66c68877",
           "seatbid": [
@@ -216,7 +184,7 @@
             "price": 0.01,
             "w": 350,
             "h": 50,
-            "exp": 300
+            "exp": 3600
           },
           "type": "banner"
         }
