@@ -676,7 +676,6 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 	numRequests := len(request.Imp)
 	errs := make([]error, 0, len(request.Imp))
 	var err error
-
 	requestData := make([]*adapters.RequestData, 0, numRequests)
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
@@ -750,8 +749,15 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			continue
 		}
 
-		resolvedBidFloor, resolvedBidFloorCur := resolveBidFloorAttributes(thisImp.BidFloor, thisImp.BidFloorCur)
-		thisImp.BidFloorCur = resolvedBidFloorCur
+		resolvedBidFloor, err := resolveBidFloor(thisImp.BidFloor, thisImp.BidFloorCur, reqInfo)
+		if err != nil {
+			errs = append(errs, &errortypes.BadInput{
+				Message: fmt.Sprintf("Unable to convert provided bid floor currency from %s to USD",
+					thisImp.BidFloorCur),
+			})
+			continue
+		}
+		thisImp.BidFloorCur = "USD"
 		thisImp.BidFloor = resolvedBidFloor
 
 		if request.User != nil {
@@ -908,15 +914,14 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 	return requestData, errs
 }
 
-// Will be replaced after https://github.com/prebid/prebid-server/issues/1482 resolution
-func resolveBidFloorAttributes(bidFloor float64, bidFloorCur string) (float64, string) {
+func resolveBidFloor(bidFloor float64, bidFloorCur string, reqInfo *adapters.ExtraRequestInfo) (float64, error) {
 	if bidFloor > 0 {
-		if strings.ToUpper(bidFloorCur) == "EUR" {
-			return bidFloor * 1.2, "USD"
+		if strings.ToUpper(bidFloorCur) != "USD" {
+			return reqInfo.ConvertCurrency(bidFloor, bidFloorCur, "USD")
 		}
 	}
 
-	return bidFloor, bidFloorCur
+	return bidFloor, nil
 }
 
 func updateExtWithIabAttribute(target json.RawMessage, data []openrtb2.Data, segTaxes []int) (json.RawMessage, error) {
