@@ -220,16 +220,14 @@ func (rw *RequestWrapper) rebuildSiteExt() error {
 // ---------------------------------------------------------------
 
 type UserExt struct {
-	ext            map[string]json.RawMessage
-	extDirty       bool
-	consent        *string
-	consentDirty   bool
-	prebid         *ExtUserPrebid
-	prebidDirty    bool
-	digiTrust      *ExtUserDigiTrust
-	digiTrustDirty bool
-	eids           *[]ExtUserEid
-	eidsDirty      bool
+	ext          map[string]json.RawMessage
+	extDirty     bool
+	consent      *string
+	consentDirty bool
+	prebid       *ExtUserPrebid
+	prebidDirty  bool
+	eids         *[]ExtUserEid
+	eidsDirty    bool
 }
 
 func (ue *UserExt) unmarshal(extJson json.RawMessage) error {
@@ -256,14 +254,6 @@ func (ue *UserExt) unmarshal(extJson json.RawMessage) error {
 	if hasPrebid {
 		ue.prebid = &ExtUserPrebid{}
 		if err := json.Unmarshal(prebidJson, ue.prebid); err != nil {
-			return err
-		}
-	}
-
-	digiTrustJson, hasDigiTrust := ue.ext["digitrust"]
-	if hasDigiTrust {
-		ue.digiTrust = &ExtUserDigiTrust{}
-		if err := json.Unmarshal(digiTrustJson, ue.digiTrust); err != nil {
 			return err
 		}
 	}
@@ -306,19 +296,6 @@ func (ue *UserExt) marshal() (json.RawMessage, error) {
 		ue.prebidDirty = false
 	}
 
-	if ue.digiTrustDirty {
-		digiTrustJson, err := json.Marshal(ue.digiTrust)
-		if err != nil {
-			return nil, err
-		}
-		if len(digiTrustJson) > 0 {
-			ue.ext["digitrust"] = json.RawMessage(digiTrustJson)
-		} else {
-			delete(ue.ext, "digitrust")
-		}
-		ue.digiTrustDirty = false
-	}
-
 	if ue.eidsDirty {
 		if len(*ue.eids) > 0 {
 			eidsJson, err := json.Marshal(ue.eids)
@@ -341,7 +318,7 @@ func (ue *UserExt) marshal() (json.RawMessage, error) {
 }
 
 func (ue *UserExt) Dirty() bool {
-	return ue.extDirty || ue.digiTrustDirty || ue.eidsDirty || ue.prebidDirty || ue.consentDirty
+	return ue.extDirty || ue.eidsDirty || ue.prebidDirty || ue.consentDirty
 }
 
 func (ue *UserExt) GetExt() map[string]json.RawMessage {
@@ -381,19 +358,6 @@ func (ue *UserExt) GetPrebid() *ExtUserPrebid {
 func (ue *UserExt) SetPrebid(prebid *ExtUserPrebid) {
 	ue.prebid = prebid
 	ue.prebidDirty = true
-}
-
-func (ue *UserExt) GetDigiTrust() *ExtUserDigiTrust {
-	if ue.digiTrust == nil {
-		return nil
-	}
-	digiTrust := *ue.digiTrust
-	return &digiTrust
-}
-
-func (ue *UserExt) SetDigiTrust(digiTrust *ExtUserDigiTrust) {
-	ue.digiTrust = digiTrust
-	ue.digiTrustDirty = true
 }
 
 func (ue *UserExt) GetEid() *[]ExtUserEid {

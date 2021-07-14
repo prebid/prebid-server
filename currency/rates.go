@@ -47,9 +47,9 @@ func (r *Rates) UnmarshalJSON(b []byte) error {
 // GetRate returns the conversion rate between two currencies or:
 //  - An error if one of the currency strings is not well-formed
 //  - An error if any of the currency strings is not a recognized currency code.
-//  - A MissingConversionRate error in case the conversion rate between the two
+//  - A ConversionNotFoundError in case the conversion rate between the two
 //    given currencies is not in the currencies rates map
-func (r *Rates) GetRate(from string, to string) (float64, error) {
+func (r *Rates) GetRate(from, to string) (float64, error) {
 	var err error
 	fromUnit, err := currency.ParseISO(from)
 	if err != nil {
@@ -70,7 +70,7 @@ func (r *Rates) GetRate(from string, to string) (float64, error) {
 			// In case we have an entry TO -> FROM
 			return 1 / conversion, nil
 		}
-		return 0, ConversionRateNotFound{fromUnit.String(), toUnit.String()}
+		return 0, ConversionNotFoundError{FromCur: fromUnit.String(), ToCur: toUnit.String()}
 	}
 	return 0, errors.New("rates are nil")
 }

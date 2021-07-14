@@ -1136,12 +1136,6 @@ func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases 
 	if err != nil {
 		return fmt.Errorf("request.user.ext object is not valid: %v", err)
 	}
-	// DigiTrust support
-	digiTrust := userExt.GetDigiTrust()
-	if digiTrust != nil && digiTrust.Pref != 0 {
-		// DigiTrust is not valid. Return error.
-		return errors.New("request.user contains a digitrust object that is not valid.")
-	}
 	// Check if the buyeruids are valid
 	prebid := userExt.GetPrebid()
 	if prebid != nil {
