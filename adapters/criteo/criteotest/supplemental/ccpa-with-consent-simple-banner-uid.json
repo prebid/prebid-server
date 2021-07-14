@@ -100,7 +100,7 @@
           "body": {
             "slots": [
               {
-                "id": "test-slot-id",
+                "arbitrageid": "test-slot-id",
                 "impid": "test-imp-id",
                 "zoneid": 123456,
                 "networkid": 78910,
@@ -108,7 +108,7 @@
                 "currency": "USD",
                 "width": 300,
                 "height": 250,
-                "creativeid": "creative-123",
+                "creativecode": "creative-123",
                 "creative": "<iframe id='789abc' name='789abc' src='http://creative-url.criteo.com'></iframe>"
               }
             ]
@@ -136,4 +136,3 @@
       }
     ]
   }
-  
