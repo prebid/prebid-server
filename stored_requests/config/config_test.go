@@ -2,6 +2,7 @@ package config
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -43,13 +44,15 @@ func isMemoryCacheType(cache stored_requests.CacheJSON) bool {
 func TestNewEmptyFetcher(t *testing.T) {
 
 	type testCase struct {
-		config  *config.StoredRequests
-		message string
+		config       *config.StoredRequests
+		emptyFetcher bool
+		message      string
 	}
 	testCases := []testCase{
 		{
-			config:  &config.StoredRequests{},
-			message: "If the config is empty, and EmptyFetcher should be returned",
+			config:       &config.StoredRequests{},
+			emptyFetcher: true,
+			message:      "If the config is empty, and EmptyFetcher should be returned",
 		},
 		{
 			config: &config.StoredRequests{
@@ -65,18 +68,61 @@ func TestNewEmptyFetcher(t *testing.T) {
 					},
 				},
 			},
-			message: "If Postgres fetcher query is not defined, but Postgres Cache init query and Postgres update polling query are defined EmptyFetcher should be returned",
+			emptyFetcher: true,
+			message:      "If Postgres fetcher query is not defined, but Postgres Cache init query and Postgres update polling query are defined EmptyFetcher should be returned",
+		},
+		{
+			config: &config.StoredRequests{
+				Postgres: config.PostgresConfig{
+					CacheInitialization: config.PostgresCacheInitializer{
+						Query: "",
+					},
+					PollUpdates: config.PostgresUpdatePolling{
+						Query: "",
+					},
+					FetcherQueries: config.PostgresFetcherQueries{
+						QueryTemplate: "test fetcher query",
+					},
+				},
+			},
+			emptyFetcher: false,
+			message:      "If Postgres fetcher query is  defined, but Postgres Cache init query and Postgres update polling query are not defined not EmptyFetcher (DBFetcher) should be returned",
+		},
+		{
+			config: &config.StoredRequests{
+				Postgres: config.PostgresConfig{
+					CacheInitialization: config.PostgresCacheInitializer{
+						Query: "test cache query",
+					},
+					PollUpdates: config.PostgresUpdatePolling{
+						Query: "test poll query",
+					},
+					FetcherQueries: config.PostgresFetcherQueries{
+						QueryTemplate: "test fetcher query",
+					},
+				},
+			},
+			emptyFetcher: false,
+			message:      "If Postgres fetcher query is  defined and Postgres Cache init query and Postgres update polling query are  defined not EmptyFetcher (DBFetcher) should be returned",
 		},
 	}
 
 	for _, test := range testCases {
-		fetcher := newFetcher(test.config, nil, nil)
+
+		fetcher := newFetcher(test.config, nil, &sql.DB{})
 		if fetcher == nil {
 			t.Errorf("The fetcher should be non-nil.")
 		}
-		if _, ok := fetcher.(empty_fetcher.EmptyFetcher); !ok {
-			t.Errorf(test.message)
+		if test.emptyFetcher {
+			if _, ok := fetcher.(empty_fetcher.EmptyFetcher); !ok {
+				t.Errorf(test.message)
+			}
+		} else {
+			if _, ok := fetcher.(empty_fetcher.EmptyFetcher); ok {
+				t.Errorf(test.message)
+			}
 		}
+
 	}
 }
 
