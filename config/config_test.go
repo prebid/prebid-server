@@ -138,18 +138,81 @@ func TestDefaults(t *testing.T) {
 	cmpStrings(t, "stored_requests.filesystem.directorypath", "./stored_requests/data/by_id", cfg.StoredRequests.Files.Path)
 	cmpBools(t, "auto_gen_source_tid", cfg.AutoGenSourceTID, true)
 	cmpBools(t, "generate_bid_id", cfg.GenerateBidID, false)
-	cmpBools(t, "gdpr.tcf2.purpose_one_treatment.enabled", true, cfg.GDPR.TCF2.PurposeOneTreatment.Enabled)
-	cmpBools(t, "gdpr.tcf2.purpose_one_treatment.access_allowed", true, cfg.GDPR.TCF2.PurposeOneTreatment.AccessAllowed)
-	cmpBools(t, "gdpr.tcf2.purpose1.enforce_vendors", cfg.GDPR.TCF2.Purpose1.EnforceVendors, true)
-	cmpBools(t, "gdpr.tcf2.purpose2.enforce_vendors", cfg.GDPR.TCF2.Purpose2.EnforceVendors, true)
-	cmpBools(t, "gdpr.tcf2.purpose3.enforce_vendors", cfg.GDPR.TCF2.Purpose3.EnforceVendors, true)
-	cmpBools(t, "gdpr.tcf2.purpose4.enforce_vendors", cfg.GDPR.TCF2.Purpose4.EnforceVendors, true)
-	cmpBools(t, "gdpr.tcf2.purpose5.enforce_vendors", cfg.GDPR.TCF2.Purpose5.EnforceVendors, true)
-	cmpBools(t, "gdpr.tcf2.purpose6.enforce_vendors", cfg.GDPR.TCF2.Purpose6.EnforceVendors, true)
-	cmpBools(t, "gdpr.tcf2.purpose7.enforce_vendors", cfg.GDPR.TCF2.Purpose7.EnforceVendors, true)
-	cmpBools(t, "gdpr.tcf2.purpose8.enforce_vendors", cfg.GDPR.TCF2.Purpose8.EnforceVendors, true)
-	cmpBools(t, "gdpr.tcf2.purpose9.enforce_vendors", cfg.GDPR.TCF2.Purpose9.EnforceVendors, true)
-	cmpBools(t, "gdpr.tcf2.purpose10.enforce_vendors", cfg.GDPR.TCF2.Purpose10.EnforceVendors, true)
+
+	//Assert purpose VendorExceptionMap hash tables were built correctly
+	expectedTCF2 := TCF2{
+		Enabled: true,
+		Purpose1: TCF2Purpose{
+			Enabled:            true,
+			EnforceVendors:     true,
+			VendorExceptions:   []openrtb_ext.BidderName{},
+			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+		},
+		Purpose2: TCF2Purpose{
+			Enabled:            true,
+			EnforceVendors:     true,
+			VendorExceptions:   []openrtb_ext.BidderName{},
+			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+		},
+		Purpose3: TCF2Purpose{
+			Enabled:            true,
+			EnforceVendors:     true,
+			VendorExceptions:   []openrtb_ext.BidderName{},
+			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+		},
+		Purpose4: TCF2Purpose{
+			Enabled:            true,
+			EnforceVendors:     true,
+			VendorExceptions:   []openrtb_ext.BidderName{},
+			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+		},
+		Purpose5: TCF2Purpose{
+			Enabled:            true,
+			EnforceVendors:     true,
+			VendorExceptions:   []openrtb_ext.BidderName{},
+			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+		},
+		Purpose6: TCF2Purpose{
+			Enabled:            true,
+			EnforceVendors:     true,
+			VendorExceptions:   []openrtb_ext.BidderName{},
+			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+		},
+		Purpose7: TCF2Purpose{
+			Enabled:            true,
+			EnforceVendors:     true,
+			VendorExceptions:   []openrtb_ext.BidderName{},
+			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+		},
+		Purpose8: TCF2Purpose{
+			Enabled:            true,
+			EnforceVendors:     true,
+			VendorExceptions:   []openrtb_ext.BidderName{},
+			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+		},
+		Purpose9: TCF2Purpose{
+			Enabled:            true,
+			EnforceVendors:     true,
+			VendorExceptions:   []openrtb_ext.BidderName{},
+			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+		},
+		Purpose10: TCF2Purpose{
+			Enabled:            true,
+			EnforceVendors:     true,
+			VendorExceptions:   []openrtb_ext.BidderName{},
+			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+		},
+		SpecialPurpose1: TCF2Purpose{
+			Enabled:            true,
+			VendorExceptions:   []openrtb_ext.BidderName{},
+			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+		},
+		PurposeOneTreatment: TCF2PurposeOneTreatment{
+			Enabled:       true,
+			AccessAllowed: true,
+		},
+	}
+	assert.Equal(t, expectedTCF2, cfg.GDPR.TCF2, "gdpr.tcf2")
 }
 
 var fullConfig = []byte(`
