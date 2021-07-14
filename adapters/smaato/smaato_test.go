@@ -21,15 +21,15 @@ func TestJsonSamples(t *testing.T) {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	smaatoAdapter, _ := bidder.(*SmaatoAdapter)
-	assert.NotNil(t, smaatoAdapter.clock)
-	smaatoAdapter.clock = &mockTime{time: time.Date(2021, 6, 25, 10, 00, 0, 0, time.UTC)}
+	adapter, _ := bidder.(*adapter)
+	assert.NotNil(t, adapter.clock)
+	adapter.clock = &mockTime{time: time.Date(2021, 6, 25, 10, 00, 0, 0, time.UTC)}
 
 	adapterstest.RunJSONBidderTest(t, "smaatotest", bidder)
 }
 
 func TestVideoWithCategoryAndDuration(t *testing.T) {
-	bidder := &SmaatoAdapter{}
+	bidder := &adapter{}
 
 	mockedReq := &openrtb2.BidRequest{
 		Imp: []openrtb2.Imp{{
