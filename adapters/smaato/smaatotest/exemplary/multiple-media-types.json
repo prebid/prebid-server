@@ -31,16 +31,6 @@
             }
           ]
         },
-        "bidfloor": 0.00123,
-        "ext": {
-          "bidder": {
-            "publisherId": "1100042525",
-            "adspaceId": "130563103"
-          }
-        }
-      },
-      {
-        "id": "postbid_iframe",
         "video": {
           "mimes": [
             "video/mp4",
@@ -66,11 +56,11 @@
             "rewarded": 0
           }
         },
-        "bidfloor": 0.00456,
+        "bidfloor": 0.00123,
         "ext": {
           "bidder": {
-            "publisherId": "1100042526",
-            "adspaceId": "130563104"
+            "publisherId": "1100042525",
+            "adspaceId": "130563103"
           }
         }
       }
@@ -209,9 +199,9 @@
           "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
           "imp": [
             {
-              "id": "postbid_iframe",
-              "tagid": "130563104",
-              "bidfloor": 0.00456,
+              "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
+              "tagid": "130563103",
+              "bidfloor": 0.00123,
               "video": {
                 "w": 1024,
                 "h": 768,
@@ -262,7 +252,7 @@
           },
           "site": {
             "publisher": {
-              "id": "1100042526"
+              "id": "1100042525"
             },
             "page": "http://localhost:3000/server.html?pbjs_debug=true&endpoint=http://localhost:3000/bidder",
             "keywords": "power tools"
@@ -286,10 +276,10 @@
                     "smaato.com"
                   ],
                   "bidderName": "smaato",
-                  "cid": "CM6524",
-                  "crid": "CR69382",
+                  "cid": "CM6523",
+                  "crid": "CR69381",
                   "id": "6906aae8-7f74-4edd-9a4f-f49379a3cadd",
-                  "impid": "postbid_iframe",
+                  "impid": "1C86242D-9535-47D6-9576-7B1FE87F282C",
                   "iurl": "https://iurl",
                   "nurl": "https://nurl",
                   "price": 0.01,
@@ -339,10 +329,10 @@
             "adomain": [
               "smaato.com"
             ],
-            "cid": "CM6524",
-            "crid": "CR69382",
+            "cid": "CM6523",
+            "crid": "CR69381",
             "id": "6906aae8-7f74-4edd-9a4f-f49379a3cadd",
-            "impid": "postbid_iframe",
+            "impid": "1C86242D-9535-47D6-9576-7B1FE87F282C",
             "iurl": "https://iurl",
             "nurl": "https://nurl",
             "price": 0.01,
