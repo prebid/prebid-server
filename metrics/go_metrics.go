@@ -31,7 +31,6 @@ type Metrics struct {
 	StoredImpCacheMeter            map[CacheResult]metrics.Meter
 	AccountCacheMeter              map[CacheResult]metrics.Meter
 	DNSLookupTimer                 metrics.Timer
-	TLSHandshakeTimer              metrics.Timer
 
 	// Metrics for OpenRTB requests specifically. So we can track what % of RequestsMeter are OpenRTB
 	// and know when legacy requests have been abandoned.
@@ -101,6 +100,7 @@ type AdapterMetrics struct {
 	ConnCreated       metrics.Counter
 	ConnReused        metrics.Counter
 	ConnWaitTime      metrics.Timer
+	TLSHandshakeTimer metrics.Timer
 }
 
 type MarkupDeliveryMetrics struct {
@@ -131,18 +131,18 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 	blankTimer := &metrics.NilTimer{}
 
 	newMetrics := &Metrics{
-		MetricsRegistry:                registry,
-		RequestStatuses:                make(map[RequestType]map[RequestStatus]metrics.Meter),
-		ConnectionCounter:              metrics.NilCounter{},
-		ConnectionAcceptErrorMeter:     blankMeter,
-		ConnectionCloseErrorMeter:      blankMeter,
-		ImpMeter:                       blankMeter,
-		LegacyImpMeter:                 blankMeter,
-		AppRequestMeter:                blankMeter,
-		NoCookieMeter:                  blankMeter,
-		RequestTimer:                   blankTimer,
-		DNSLookupTimer:                 blankTimer,
-		TLSHandshakeTimer:              blankTimer,
+		MetricsRegistry:            registry,
+		RequestStatuses:            make(map[RequestType]map[RequestStatus]metrics.Meter),
+		ConnectionCounter:          metrics.NilCounter{},
+		ConnectionAcceptErrorMeter: blankMeter,
+		ConnectionCloseErrorMeter:  blankMeter,
+		ImpMeter:                   blankMeter,
+		LegacyImpMeter:             blankMeter,
+		AppRequestMeter:            blankMeter,
+		NoCookieMeter:              blankMeter,
+		RequestTimer:               blankTimer,
+		DNSLookupTimer:             blankTimer,
+		//TLSHandshakeTimer:              blankTimer,
 		RequestsQueueTimer:             make(map[RequestType]map[bool]metrics.Timer),
 		PrebidCacheRequestTimerSuccess: blankTimer,
 		PrebidCacheRequestTimerError:   blankTimer,
@@ -243,7 +243,7 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 	newMetrics.AppRequestMeter = metrics.GetOrRegisterMeter("app_requests", registry)
 	newMetrics.RequestTimer = metrics.GetOrRegisterTimer("request_time", registry)
 	newMetrics.DNSLookupTimer = metrics.GetOrRegisterTimer("dns_lookup_time", registry)
-	newMetrics.TLSHandshakeTimer = metrics.GetOrRegisterTimer("tls_handshake_time", registry)
+	//newMetrics.TLSHandshakeTimer = metrics.GetOrRegisterTimer("tls_handshake_time", registry)
 	newMetrics.PrebidCacheRequestTimerSuccess = metrics.GetOrRegisterTimer("prebid_cache_request_time.ok", registry)
 	newMetrics.PrebidCacheRequestTimerError = metrics.GetOrRegisterTimer("prebid_cache_request_time.err", registry)
 
@@ -319,6 +319,7 @@ func makeBlankAdapterMetrics(disabledMetrics config.DisabledMetrics) *AdapterMet
 		newAdapter.ConnCreated = metrics.NilCounter{}
 		newAdapter.ConnReused = metrics.NilCounter{}
 		newAdapter.ConnWaitTime = &metrics.NilTimer{}
+		newAdapter.TLSHandshakeTimer = &metrics.NilTimer{}
 	}
 	for _, err := range AdapterErrors() {
 		newAdapter.ErrorMeters[err] = blankMeter
@@ -357,6 +358,7 @@ func registerAdapterMetrics(registry metrics.Registry, adapterOrAccount string, 
 	am.ConnCreated = metrics.GetOrRegisterCounter(fmt.Sprintf("%[1]s.%[2]s.connections_created", adapterOrAccount, exchange), registry)
 	am.ConnReused = metrics.GetOrRegisterCounter(fmt.Sprintf("%[1]s.%[2]s.connections_reused", adapterOrAccount, exchange), registry)
 	am.ConnWaitTime = metrics.GetOrRegisterTimer(fmt.Sprintf("%[1]s.%[2]s.connection_wait_time", adapterOrAccount, exchange), registry)
+	am.TLSHandshakeTimer = metrics.GetOrRegisterTimer(fmt.Sprintf("%[1]s.%[2]s.tls_handshake_time", adapterOrAccount, exchange), registry)
 	for err := range am.ErrorMeters {
 		am.ErrorMeters[err] = metrics.GetOrRegisterMeter(fmt.Sprintf("%s.%s.requests.%s", adapterOrAccount, exchange, err), registry)
 	}
@@ -559,8 +561,18 @@ func (me *Metrics) RecordDNSTime(dnsLookupTime time.Duration) {
 	me.DNSLookupTimer.Update(dnsLookupTime)
 }
 
-func (me *Metrics) RecordTLSHandshakeTime(tlsHandshakeTime time.Duration) {
-	me.TLSHandshakeTimer.Update(tlsHandshakeTime)
+func (me *Metrics) RecordTLSHandshakeTime(adapterName openrtb_ext.BidderName, tlsHandshakeTime time.Duration) {
+	if me.MetricsDisabled.AdapterConnectionMetrics {
+		return
+	}
+
+	am, ok := me.AdapterMetrics[adapterName]
+	if !ok {
+		glog.Errorf("Trying to log adapter TLS Handshake metrics for %s: adapter not found", string(adapterName))
+		return
+	}
+
+	am.TLSHandshakeTimer.Update(tlsHandshakeTime)
 }
 
 // RecordAdapterBidReceived implements a part of the MetricsEngine interface.

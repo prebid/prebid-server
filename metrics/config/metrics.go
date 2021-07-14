@@ -147,9 +147,9 @@ func (me *MultiMetricsEngine) RecordDNSTime(dnsLookupTime time.Duration) {
 	}
 }
 
-func (me *MultiMetricsEngine) RecordTLSHandshakeTime(tlsHandshakeTime time.Duration) {
+func (me *MultiMetricsEngine) RecordTLSHandshakeTime(bidderName openrtb_ext.BidderName, tlsHandshakeTime time.Duration) {
 	for _, thisME := range *me {
-		thisME.RecordTLSHandshakeTime(tlsHandshakeTime)
+		thisME.RecordTLSHandshakeTime(bidderName, tlsHandshakeTime)
 	}
 }
 
@@ -338,7 +338,7 @@ func (me *DummyMetricsEngine) RecordDNSTime(dnsLookupTime time.Duration) {
 }
 
 // RecordTLSHandshakeTime as a noop
-func (me *DummyMetricsEngine) RecordTLSHandshakeTime(tlsHandshakeTime time.Duration) {
+func (me *DummyMetricsEngine) RecordTLSHandshakeTime(bidderName openrtb_ext.BidderName, tlsHandshakeTime time.Duration) {
 }
 
 // RecordAdapterBidReceived as a noop
