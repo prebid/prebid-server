@@ -3445,26 +3445,37 @@ func TestUpdateHbPbCatDur(t *testing.T) {
 
 func TestInsertStoredImpData(t *testing.T) {
 	impsToStoredRequest := make(map[string][]byte)
-	impsToStoredRequest["imp_idApn1_1"] = []byte(`{"h":480,"mimes":["video/mp4"]}`)
+	impsToStoredRequest["imp_idApn1_1"] = []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`)
+	impsToStoredRequest["imp_idApn1_3"] = []byte(`{"video":{"h":100}}`)
 
 	cats1 := []string{"IAB1-3"}
 	bidApn1_1 := openrtb2.Bid{ID: "bid_idApn1_1", ImpID: "imp_idApn1_1", Price: 10.0000, Cat: cats1, W: 1, H: 1, Ext: json.RawMessage(`{"prebid": {"video":{"mimes":["video/mp4"]}}}`)}
 	bidApn1_2 := openrtb2.Bid{ID: "bid_idApn1_2", ImpID: "imp_idApn1_2", Price: 10.0000, Cat: cats1, W: 1, H: 1, Ext: nil}
+	bidApn1_3 := openrtb2.Bid{ID: "bid_idApn1_3", ImpID: "imp_idApn1_3", Price: 10.0000, Cat: cats1, W: 1, H: 1, Ext: nil}
 	bid1_Apn1_1 := pbsOrtbBid{&bidApn1_1, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, nil, 0, false, ""}
 	bid1_Apn1_2 := pbsOrtbBid{&bidApn1_2, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, nil, 0, false, ""}
+	bid1_Apn1_3 := pbsOrtbBid{&bidApn1_3, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, nil, 0, false, ""}
 	innerBidsApn1 := []*pbsOrtbBid{
 		&bid1_Apn1_1,
 		&bid1_Apn1_2,
+		&bid1_Apn1_3,
 	}
 	bids := &pbsOrtbSeatBid{bids: innerBidsApn1}
 
-	insertStoredImpData(impsToStoredRequest, bids)
+	impVideo := openrtb2.Video{W: 1}
+	imp1_1 := openrtb2.Imp{ID: "imp_idApn1_1", Video: &impVideo}
+	imp1_3 := openrtb2.Imp{ID: "imp_idApn1_3", Video: &impVideo}
+	imps := []openrtb2.Imp{imp1_1, imp1_3}
 
-	expectedData := json.RawMessage(`{"prebid":{"video":{"mimes":["video/mp4"]}},"storedrequestattributes":{"h":480,"mimes":["video/mp4"]}}`)
+	insertStoredImpData(imps, impsToStoredRequest, bids)
 
-	assert.Len(t, bids.bids, 2, "Incorrect amount of returned bids")
-	assert.Equal(t, bids.bids[0].bid.Ext, expectedData, "Incorrect bid bid_idApn1_1 extension")
+	expectedBidExt1_1 := json.RawMessage(`{"prebid":{"video":{"mimes":["video/mp4"]}},"storedrequestattributes":{"h":480,"mimes":["video/mp4"]}}`)
+	expectedBidExt1_3 := json.RawMessage(`{"storedrequestattributes":{"h":100}}`)
+
+	assert.Len(t, bids.bids, 3, "Incorrect amount of returned bids")
+	assert.Equal(t, bids.bids[0].bid.Ext, expectedBidExt1_1, "Incorrect bid bid_idApn1_1 extension")
 	assert.Nil(t, bids.bids[1].bid.Ext, "Incorrect bid bid_idApn1_2 extension")
+	assert.Equal(t, bids.bids[2].bid.Ext, expectedBidExt1_3, "Incorrect bid bid_idApn1_3 extension")
 }
 
 type exchangeSpec struct {

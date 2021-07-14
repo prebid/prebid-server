@@ -1378,7 +1378,7 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 	// Apply any Stored Imps, if they exist. Since the JSON Merge Patch overrides arrays,
 	// and Prebid Server defers to the HTTP Request to resolve conflicts, it's safe to
 	// assume that the request.imp data did not change when applying the Stored BidRequest.
-	impToStoredVideoReq := make(map[string][]byte)
+	impToStoredReq := make(map[string][]byte)
 	for i := 0; i < len(impIds); i++ {
 		resolvedImp, err := jsonpatch.MergePatch(storedImps[impIds[i]], imps[idIndices[i]])
 
@@ -1392,10 +1392,14 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 					err = fmt.Errorf("imp.ext.prebid.storedrequest.id %s: Stored Imp has Invalid JSON: %s", impIds[i], Err)
 				}
 			}
-			return nil, impToStoredVideoReq, []error{err}
+			return nil, nil, []error{err}
 		}
 		imps[idIndices[i]] = resolvedImp
 
+		impId, err := jsonparser.GetString(resolvedImp, "id")
+		if err != nil {
+			return nil, nil, []error{err}
+		}
 		// This is substantially faster for reading values from a json blob than the Go json package,
 		// but keep in mind that each jsonparser.GetXXX call re-parses the entire json.
 		// Based on performance measurements, the tipping point of efficiency is around 4 calls.
@@ -1404,27 +1408,9 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 		if err != nil && err != jsonparser.KeyPathNotFoundError {
 			return nil, nil, []error{err}
 		}
-
 		if includeVideoAttributes {
-			//determine if this is video impression
-			_, _, videoOffset, err := jsonparser.Get(resolvedImp, "video")
-			if err != nil && err != jsonparser.KeyPathNotFoundError {
-				return nil, nil, []error{err}
-			}
-
-			if videoOffset != -1 {
-				impId, err := jsonparser.GetString(resolvedImp, "id")
-				if err != nil {
-					return nil, nil, []error{err}
-				}
-				//extract video attributes only
-				videoData, _, _, err := jsonparser.Get(storedImps[impIds[i]], "video")
-				if err == nil {
-					impToStoredVideoReq[impId] = videoData
-				}
-			}
+			impToStoredReq[impId] = storedImps[impIds[i]]
 		}
-
 	}
 	if len(impIds) > 0 {
 		newImpJson, err := json.Marshal(imps)
@@ -1437,7 +1423,7 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 		}
 	}
 
-	return resolvedRequest, impToStoredVideoReq, nil
+	return resolvedRequest, impToStoredReq, nil
 }
 
 // parseImpInfo parses the request JSON and returns several things about the Imps

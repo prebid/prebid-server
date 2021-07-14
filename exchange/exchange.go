@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/buger/jsonparser"
 	"github.com/gofrs/uuid"
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
@@ -469,7 +470,7 @@ func (e *exchange) getAllBids(
 
 			//put stored req data back to bid.ext, map by bid.imp_id
 			if len(impToStoredReq) != 0 {
-				storedImpErr := insertStoredImpData(impToStoredReq, bids)
+				storedImpErr := insertStoredImpData(bidderRequest.BidRequest.Imp, impToStoredReq, bids)
 				if storedImpErr != nil {
 					err = append(err, storedImpErr)
 				}
@@ -513,20 +514,45 @@ func (e *exchange) getAllBids(
 	return adapterBids, adapterExtra, bidsFound
 }
 
-func insertStoredImpData(impsToStoredRequest map[string][]byte, bids *pbsOrtbSeatBid) error {
+func insertStoredImpData(imps []openrtb2.Imp, impsToStoredRequest map[string][]byte, bids *pbsOrtbSeatBid) error {
 	for _, bid := range bids.bids {
+		//find impression
+		var impression *openrtb2.Imp
+		for _, imp := range imps {
+			if imp.ID == bid.bid.ImpID {
+				impression = &imp
+				break
+			}
+		}
+		if impression == nil {
+			continue
+		}
+
 		if val, ok := impsToStoredRequest[bid.bid.ImpID]; ok {
+
 			bidExtData := make(map[string]json.RawMessage)
-			err := json.Unmarshal(bid.bid.Ext, &bidExtData)
-			if err != nil {
-				return err
+
+			if len(bid.bid.Ext) != 0 {
+				err := json.Unmarshal(bid.bid.Ext, &bidExtData)
+				if err != nil {
+					return err
+				}
 			}
-			bidExtData[StoredRequestAttributes] = val
-			result, err := json.Marshal(bidExtData)
-			if err != nil {
-				return err
+
+			//determine if stored impression has video data
+			if impression.Video != nil {
+				videoData, _, _, err := jsonparser.Get(val, "video")
+				if err != nil {
+					return err
+				}
+				bidExtData[StoredRequestAttributes] = videoData
+				result, err := json.Marshal(bidExtData)
+				if err != nil {
+					return err
+				}
+				bid.bid.Ext = result
 			}
-			bid.bid.Ext = result
+
 		}
 	}
 	return nil
