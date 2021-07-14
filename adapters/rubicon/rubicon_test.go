@@ -645,13 +645,12 @@ func TestOpenRTBRequestWithDifferentBidFloorAttributes(t *testing.T) {
 		reqs, errs := bidder.MakeRequests(request, &extraRequestInfo)
 
 		mockConversions.AssertExpectations(t)
-		rubiconReq := &openrtb2.BidRequest{}
+
 		if scenario.expectedErrors == nil {
+			rubiconReq := &openrtb2.BidRequest{}
 			if err := json.Unmarshal(reqs[0].Body, rubiconReq); err != nil {
 				t.Fatalf("Unexpected error while decoding request: %s", err)
 			}
-			assert.NotNil(t, rubiconReq.Imp[0].BidFloorCur, "User.Ext object should not be nil.")
-			assert.NotNil(t, rubiconReq.Imp[0].BidFloor, "User.Ext object should not be nil.")
 			assert.Equal(t, scenario.expectedBidFloor, rubiconReq.Imp[0].BidFloor)
 			assert.Equal(t, "USD", rubiconReq.Imp[0].BidFloorCur)
 		} else {
