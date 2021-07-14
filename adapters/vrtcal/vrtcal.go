@@ -5,16 +5,18 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 type VrtcalAdapter struct {
 	endpoint string
 }
 
-func (a *VrtcalAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *VrtcalAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var adapterRequests []*adapters.RequestData
 
@@ -40,7 +42,7 @@ func (a *VrtcalAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 }
 
 // MakeBids make the bids for the bid response.
-func (a *VrtcalAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *VrtcalAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -58,7 +60,7 @@ func (a *VrtcalAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
@@ -78,8 +80,10 @@ func (a *VrtcalAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 
 }
 
-func NewVrtcalBidder(endpoint string) *VrtcalAdapter {
-	return &VrtcalAdapter{
-		endpoint: endpoint,
+// Builder builds a new instance of the Vrtcal adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &VrtcalAdapter{
+		endpoint: config.Endpoint,
 	}
+	return bidder, nil
 }

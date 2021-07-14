@@ -1,0 +1,12 @@
+maintainer:
+  email: "prebid@admanmedia.com"
+gvlVendorID: 149
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video

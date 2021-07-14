@@ -1,9 +1,11 @@
 maintainer:
   email: "hb@adtelligent.com"
+gvlVendorID: 410
 capabilities:
   app:
     mediaTypes:
       - banner
+      - video
   site:
     mediaTypes:
       - banner

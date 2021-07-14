@@ -25,7 +25,7 @@
     "httpCalls": [
       {
         "expectedRequest": {
-          "uri": "https://ads.us.e-planning.net/hb/1/12345/1/www.publisher.com/ROS?r=pbs&ncb=1&ur=http%3A%2F%2Fwww.publisher.com%2Fawesome%2Fsite%3Fwith%3Dsome%26parameters%3Dhere&e=testadunitcode:600x300",
+          "uri": "http://rtb.e-planning.net/pbs/1/12345/1/www.publisher.com/ROS?e=testadunitcode%3A600x300&ncb=1&ur=http%3A%2F%2Fwww.publisher.com%2Fawesome%2Fsite%3Fwith%3Dsome%26parameters%3Dhere",
           "body": {}
         },
         "mockResponse": {

@@ -7,27 +7,46 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"testing"
 	"time"
 
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/prebid/prebid-server/cache/dummycache"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/usersync"
 
 	"fmt"
 
-	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/config"
 )
 
 func TestJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "appnexustest", NewAppNexusBidder(nil, "http://ib.adnxs.com/openrtb2", ""))
+	bidder, buildErr := Builder(openrtb_ext.BidderAppnexus, config.Adapter{
+		Endpoint: "http://ib.adnxs.com/openrtb2"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	adapterstest.RunJSONBidderTest(t, "appnexustest", bidder)
 }
 
 func TestVideoSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "appnexusplatformtest", NewAppNexusBidder(nil, "http://ib.adnxs.com/openrtb2", "8"))
+	bidder, buildErr := Builder(openrtb_ext.BidderAppnexus, config.Adapter{
+		Endpoint:   "http://ib.adnxs.com/openrtb2",
+		PlatformID: "8"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	adapterstest.RunJSONBidderTest(t, "appnexusplatformtest", bidder)
 }
 
 func TestMemberQueryParam(t *testing.T) {
@@ -38,9 +57,234 @@ func TestMemberQueryParam(t *testing.T) {
 	}
 }
 
+func TestVideoSinglePod(t *testing.T) {
+	var a AppNexusAdapter
+	a.URI = "http://test.com/openrtb2"
+	a.hbSource = 5
+
+	var reqInfo adapters.ExtraRequestInfo
+	reqInfo.PbsEntryPoint = "video"
+
+	var req openrtb2.BidRequest
+	req.ID = "test_id"
+
+	reqExt := `{"prebid":{}}`
+	impExt := `{"bidder":{"placementId":123, "generate_ad_pod_id":true}}`
+	req.Ext = []byte(reqExt)
+
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "1_0", Ext: []byte(impExt)})
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "1_1", Ext: []byte(impExt)})
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "1_2", Ext: []byte(impExt)})
+
+	result, err := a.MakeRequests(&req, &reqInfo)
+
+	assert.Empty(t, err, "Errors array should be empty")
+	assert.Len(t, result, 1, "Only one request should be returned")
+
+	var error error
+	var reqData *openrtb2.BidRequest
+	error = json.Unmarshal(result[0].Body, &reqData)
+	assert.NoError(t, error, "Response body unmarshalling error should be nil")
+
+	var reqDataExt *appnexusReqExt
+	error = json.Unmarshal(reqData.Ext, &reqDataExt)
+	assert.NoError(t, error, "Response ext unmarshalling error should be nil")
+
+	regMatch, matchErr := regexp.Match(`^[0-9]+$`, []byte(reqDataExt.Appnexus.AdPodId))
+	assert.NoError(t, matchErr, "Regex match error should be nil")
+	assert.True(t, regMatch, "AdPod id doesn't present in Appnexus extension or has incorrect format")
+}
+
+func TestVideoSinglePodManyImps(t *testing.T) {
+	var a AppNexusAdapter
+	a.URI = "http://test.com/openrtb2"
+	a.hbSource = 5
+
+	var reqInfo adapters.ExtraRequestInfo
+	reqInfo.PbsEntryPoint = "video"
+
+	var req openrtb2.BidRequest
+	req.ID = "test_id"
+
+	reqExt := `{"prebid":{}}`
+	impExt := `{"bidder":{"placementId":123}}`
+	req.Ext = []byte(reqExt)
+
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "1_0", Ext: []byte(impExt)})
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "1_1", Ext: []byte(impExt)})
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "1_2", Ext: []byte(impExt)})
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "1_3", Ext: []byte(impExt)})
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "1_4", Ext: []byte(impExt)})
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "1_5", Ext: []byte(impExt)})
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "1_6", Ext: []byte(impExt)})
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "1_7", Ext: []byte(impExt)})
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "1_8", Ext: []byte(impExt)})
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "1_9", Ext: []byte(impExt)})
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "1_10", Ext: []byte(impExt)})
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "1_11", Ext: []byte(impExt)})
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "1_12", Ext: []byte(impExt)})
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "1_13", Ext: []byte(impExt)})
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "1_14", Ext: []byte(impExt)})
+
+	res, err := a.MakeRequests(&req, &reqInfo)
+
+	assert.Empty(t, err, "Errors array should be empty")
+	assert.Len(t, res, 2, "Two requests should be returned")
+
+	var error error
+	var reqData1 *openrtb2.BidRequest
+	error = json.Unmarshal(res[0].Body, &reqData1)
+	assert.NoError(t, error, "Response body unmarshalling error should be nil")
+
+	var reqDataExt1 *appnexusReqExt
+	error = json.Unmarshal(reqData1.Ext, &reqDataExt1)
+	assert.NoError(t, error, "Response ext unmarshalling error should be nil")
+
+	assert.Equal(t, "", reqDataExt1.Appnexus.AdPodId, "AdPod id should not be present in first request")
+
+	var reqData2 *openrtb2.BidRequest
+	error = json.Unmarshal(res[1].Body, &reqData2)
+	assert.NoError(t, error, "Response body unmarshalling error should be nil")
+
+	var reqDataExt2 *appnexusReqExt
+	error = json.Unmarshal(reqData2.Ext, &reqDataExt2)
+	assert.NoError(t, error, "Response ext unmarshalling error should be nil")
+
+	assert.Equal(t, "", reqDataExt2.Appnexus.AdPodId, "AdPod id should not be present in second request")
+}
+
+func TestVideoTwoPods(t *testing.T) {
+	var a AppNexusAdapter
+	a.URI = "http://test.com/openrtb2"
+	a.hbSource = 5
+
+	var reqInfo adapters.ExtraRequestInfo
+	reqInfo.PbsEntryPoint = "video"
+
+	var req openrtb2.BidRequest
+	req.ID = "test_id"
+
+	reqExt := `{"prebid":{}}`
+	impExt := `{"bidder":{"placementId":123, "generate_ad_pod_id": true}}`
+	req.Ext = []byte(reqExt)
+
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "1_0", Ext: []byte(impExt)})
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "1_1", Ext: []byte(impExt)})
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "1_2", Ext: []byte(impExt)})
+
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "2_0", Ext: []byte(impExt)})
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "2_1", Ext: []byte(impExt)})
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "2_2", Ext: []byte(impExt)})
+
+	res, err := a.MakeRequests(&req, &reqInfo)
+
+	assert.Empty(t, err, "Errors array should be empty")
+	assert.Len(t, res, 2, "Two request should be returned")
+
+	var error error
+	var reqData1 *openrtb2.BidRequest
+	error = json.Unmarshal(res[0].Body, &reqData1)
+	assert.NoError(t, error, "Response body unmarshalling error should be nil")
+
+	var reqDataExt1 *appnexusReqExt
+	error = json.Unmarshal(reqData1.Ext, &reqDataExt1)
+	assert.NoError(t, error, "Response ext unmarshalling error should be nil")
+
+	adPodId1 := reqDataExt1.Appnexus.AdPodId
+
+	var reqData2 *openrtb2.BidRequest
+	error = json.Unmarshal(res[1].Body, &reqData2)
+	assert.NoError(t, error, "Response body unmarshalling error should be nil")
+
+	var reqDataExt2 *appnexusReqExt
+	error = json.Unmarshal(reqData2.Ext, &reqDataExt2)
+	assert.NoError(t, error, "Response ext unmarshalling error should be nil")
+
+	adPodId2 := reqDataExt2.Appnexus.AdPodId
+
+	assert.NotEqual(t, adPodId1, adPodId2, "AdPod id should be different for different pods")
+}
+
+func TestVideoTwoPodsManyImps(t *testing.T) {
+	var a AppNexusAdapter
+	a.URI = "http://test.com/openrtb2"
+	a.hbSource = 5
+
+	var reqInfo adapters.ExtraRequestInfo
+	reqInfo.PbsEntryPoint = "video"
+
+	var req openrtb2.BidRequest
+	req.ID = "test_id"
+
+	reqExt := `{"prebid":{}}`
+	impExt := `{"bidder":{"placementId":123, "generate_ad_pod_id":true}}`
+	req.Ext = []byte(reqExt)
+
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "1_0", Ext: []byte(impExt)})
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "1_1", Ext: []byte(impExt)})
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "1_2", Ext: []byte(impExt)})
+
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "2_0", Ext: []byte(impExt)})
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "2_1", Ext: []byte(impExt)})
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "2_2", Ext: []byte(impExt)})
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "2_3", Ext: []byte(impExt)})
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "2_4", Ext: []byte(impExt)})
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "2_5", Ext: []byte(impExt)})
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "2_6", Ext: []byte(impExt)})
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "2_7", Ext: []byte(impExt)})
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "2_8", Ext: []byte(impExt)})
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "2_9", Ext: []byte(impExt)})
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "2_10", Ext: []byte(impExt)})
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "2_11", Ext: []byte(impExt)})
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "2_12", Ext: []byte(impExt)})
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "2_13", Ext: []byte(impExt)})
+	req.Imp = append(req.Imp, openrtb2.Imp{ID: "2_14", Ext: []byte(impExt)})
+
+	res, err := a.MakeRequests(&req, &reqInfo)
+
+	assert.Empty(t, err, "Errors array should be empty")
+	assert.Len(t, res, 3, "Three requests should be returned")
+
+	var error error
+	var reqData1 *openrtb2.BidRequest
+	error = json.Unmarshal(res[0].Body, &reqData1)
+	assert.NoError(t, error, "Response body unmarshalling error should be nil")
+
+	var reqDataExt1 *appnexusReqExt
+	error = json.Unmarshal(reqData1.Ext, &reqDataExt1)
+	assert.NoError(t, error, "Response ext unmarshalling error should be nil")
+
+	var reqData2 *openrtb2.BidRequest
+	error = json.Unmarshal(res[1].Body, &reqData2)
+	assert.NoError(t, error, "Response body unmarshalling error should be nil")
+
+	var reqDataExt2 *appnexusReqExt
+	error = json.Unmarshal(reqData2.Ext, &reqDataExt2)
+	assert.NoError(t, error, "Response ext unmarshalling error should be nil")
+
+	var reqData3 *openrtb2.BidRequest
+	error = json.Unmarshal(res[2].Body, &reqData3)
+	assert.NoError(t, error, "Response body unmarshalling error should be nil")
+
+	var reqDataExt3 *appnexusReqExt
+	error = json.Unmarshal(reqData3.Ext, &reqDataExt3)
+	assert.NoError(t, error, "Response ext unmarshalling error should be nil")
+
+	adPodId1 := reqDataExt1.Appnexus.AdPodId
+	adPodId2 := reqDataExt2.Appnexus.AdPodId
+	adPodId3 := reqDataExt3.Appnexus.AdPodId
+
+	podIds := make(map[string]int)
+	podIds[adPodId1] = podIds[adPodId1] + 1
+	podIds[adPodId2] = podIds[adPodId2] + 1
+	podIds[adPodId3] = podIds[adPodId3] + 1
+
+	assert.Len(t, podIds, 2, "Incorrect number of unique pod ids")
+}
+
 // ----------------------------------------------------------------------------
 // Code below this line tests the legacy, non-openrtb code flow. It can be deleted after we
-// clean up the existing code and make everything openrtb.
+// clean up the existing code and make everything openrtb2.
 
 type anTagInfo struct {
 	code              string
@@ -79,7 +323,7 @@ func DummyAppNexusServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var breq openrtb.BidRequest
+	var breq openrtb2.BidRequest
 	err = json.Unmarshal(body, &breq)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -92,14 +336,14 @@ func DummyAppNexusServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := openrtb.BidResponse{
+	resp := openrtb2.BidResponse{
 		ID:    breq.ID,
 		BidID: "a-random-id",
 		Cur:   "USD",
-		SeatBid: []openrtb.SeatBid{
+		SeatBid: []openrtb2.SeatBid{
 			{
 				Seat: "Buyer Member ID",
-				Bid:  make([]openrtb.Bid, 0, 2),
+				Bid:  make([]openrtb2.Bid, 0, 2),
 			},
 		},
 	}
@@ -169,11 +413,11 @@ func DummyAppNexusServer(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, fmt.Sprintf("Empty imp.banner.format array"), http.StatusInternalServerError)
 				return
 			}
-			if andata.tags[i].position == "above" && *imp.Banner.Pos != openrtb.AdPosition(1) {
+			if andata.tags[i].position == "above" && *imp.Banner.Pos != openrtb2.AdPosition(1) {
 				http.Error(w, fmt.Sprintf("Mismatch in position - expected 1 for atf"), http.StatusInternalServerError)
 				return
 			}
-			if andata.tags[i].position == "below" && *imp.Banner.Pos != openrtb.AdPosition(3) {
+			if andata.tags[i].position == "below" && *imp.Banner.Pos != openrtb2.AdPosition(3) {
 				http.Error(w, fmt.Sprintf("Mismatch in position - expected 3 for btf"), http.StatusInternalServerError)
 				return
 			}
@@ -196,7 +440,7 @@ func DummyAppNexusServer(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		resBid := openrtb.Bid{
+		resBid := openrtb2.Bid{
 			ID:    "random-id",
 			ImpID: imp.ID,
 			Price: andata.tags[i].bid,
@@ -205,7 +449,7 @@ func DummyAppNexusServer(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if imp.Video != nil {
-			resBid.Attr = []openrtb.CreativeAttribute{openrtb.CreativeAttribute(6)}
+			resBid.Attr = []openrtb2.CreativeAttribute{openrtb2.CreativeAttribute(6)}
 		}
 		resp.SeatBid[0].Bid = append(resp.SeatBid[0].Bid, resBid)
 	}
@@ -263,7 +507,7 @@ func bidTypeToInt(bidType string) int {
 		return -1
 	}
 }
-func TestAppNexusBasicResponse(t *testing.T) {
+func TestAppNexusLegacyBasicResponse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(DummyAppNexusServer))
 	defer server.Close()
 
@@ -302,7 +546,7 @@ func TestAppNexusBasicResponse(t *testing.T) {
 	}
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewAppNexusAdapter(&conf, server.URL, "")
+	an := NewAppNexusLegacyAdapter(&conf, server.URL, "")
 
 	pbin := pbs.PBSRequest{
 		AdUnits: make([]pbs.AdUnit, 2),
@@ -322,7 +566,7 @@ func TestAppNexusBasicResponse(t *testing.T) {
 		pbin.AdUnits[i] = pbs.AdUnit{
 			Code:       tag.code,
 			MediaTypes: []string{tag.mediaType},
-			Sizes: []openrtb.Format{
+			Sizes: []openrtb2.Format{
 				{
 					W: 300,
 					H: 600,

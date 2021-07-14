@@ -1,0 +1,10 @@
+maintainer:
+  email: "core@adyoulike.com"
+gvlVendorID: 259
+modifyingVastXmlAllowed: true
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native

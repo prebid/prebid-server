@@ -11,15 +11,16 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/pbs"
-
-	"golang.org/x/net/context/ctxhttp"
-
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/pbs"
+	"golang.org/x/net/context/ctxhttp"
 )
+
+const badvLimitSize = 50
 
 type RubiconAdapter struct {
 	http         *adapters.HTTPAdapter
@@ -46,6 +47,26 @@ type rubiconParams struct {
 	Video     rubiconVideoParams `json:"video"`
 }
 
+type bidRequestExt struct {
+	Prebid bidRequestExtPrebid `json:"prebid"`
+}
+
+type bidRequestExtPrebid struct {
+	Bidders bidRequestExtPrebidBidders `json:"bidders"`
+}
+
+type bidRequestExtPrebidBidders struct {
+	Rubicon prebidBiddersRubicon `json:"rubicon,omitempty"`
+}
+
+type prebidBiddersRubicon struct {
+	Debug prebidBiddersRubiconDebug `json:"debug,omitempty"`
+}
+
+type prebidBiddersRubiconDebug struct {
+	CpmOverride float64 `json:"cpmoverride,omitempty"`
+}
+
 type rubiconImpExtRPTrack struct {
 	Mint        string `json:"mint"`
 	MintVersion string `json:"mint_version"`
@@ -70,12 +91,16 @@ type rubiconExtUserTpID struct {
 	UID    string `json:"uid"`
 }
 
+type rubiconUserDataExt struct {
+	TaxonomyName string `json:"taxonomyname"`
+}
+
 type rubiconUserExt struct {
-	Consent   string                        `json:"consent,omitempty"`
-	DigiTrust *openrtb_ext.ExtUserDigiTrust `json:"digitrust"`
-	Eids      []openrtb_ext.ExtUserEid      `json:"eids,omitempty"`
-	TpID      []rubiconExtUserTpID          `json:"tpid,omitempty"`
-	RP        rubiconUserExtRP              `json:"rp"`
+	Consent     string                   `json:"consent,omitempty"`
+	Eids        []openrtb_ext.ExtUserEid `json:"eids,omitempty"`
+	TpID        []rubiconExtUserTpID     `json:"tpid,omitempty"`
+	RP          rubiconUserExtRP         `json:"rp"`
+	LiverampIdl string                   `json:"liveramp_idl,omitempty"`
 }
 
 type rubiconSiteExtRP struct {
@@ -171,12 +196,17 @@ var rubiSizeMap = map[rubiSize]int{
 	{w: 468, h: 60}:    1,
 	{w: 728, h: 90}:    2,
 	{w: 728, h: 91}:    2,
+	{w: 120, h: 90}:    5,
+	{w: 125, h: 125}:   7,
 	{w: 120, h: 600}:   8,
 	{w: 160, h: 600}:   9,
 	{w: 300, h: 600}:   10,
+	{w: 200, h: 200}:   13,
+	{w: 250, h: 250}:   14,
 	{w: 300, h: 250}:   15,
 	{w: 300, h: 251}:   15,
 	{w: 336, h: 280}:   16,
+	{w: 240, h: 400}:   17,
 	{w: 300, h: 100}:   19,
 	{w: 980, h: 120}:   31,
 	{w: 250, h: 360}:   32,
@@ -184,16 +214,23 @@ var rubiSizeMap = map[rubiSize]int{
 	{w: 980, h: 150}:   35,
 	{w: 468, h: 400}:   37,
 	{w: 930, h: 180}:   38,
+	{w: 750, h: 100}:   39,
+	{w: 750, h: 200}:   40,
+	{w: 750, h: 300}:   41,
 	{w: 320, h: 50}:    43,
 	{w: 300, h: 50}:    44,
 	{w: 300, h: 300}:   48,
+	{w: 1024, h: 768}:  53,
 	{w: 300, h: 1050}:  54,
 	{w: 970, h: 90}:    55,
 	{w: 970, h: 250}:   57,
 	{w: 1000, h: 90}:   58,
 	{w: 320, h: 80}:    59,
+	{w: 320, h: 150}:   60,
 	{w: 1000, h: 1000}: 61,
+	{w: 580, h: 500}:   64,
 	{w: 640, h: 480}:   65,
+	{w: 930, h: 600}:   66,
 	{w: 320, h: 480}:   67,
 	{w: 1800, h: 1000}: 68,
 	{w: 320, h: 320}:   72,
@@ -202,17 +239,45 @@ var rubiSizeMap = map[rubiSize]int{
 	{w: 980, h: 300}:   79,
 	{w: 980, h: 400}:   80,
 	{w: 480, h: 300}:   83,
+	{w: 300, h: 120}:   85,
+	{w: 548, h: 150}:   90,
 	{w: 970, h: 310}:   94,
+	{w: 970, h: 100}:   95,
 	{w: 970, h: 210}:   96,
 	{w: 480, h: 320}:   101,
 	{w: 768, h: 1024}:  102,
 	{w: 480, h: 280}:   103,
+	{w: 250, h: 800}:   105,
 	{w: 320, h: 240}:   108,
 	{w: 1000, h: 300}:  113,
 	{w: 320, h: 100}:   117,
 	{w: 800, h: 250}:   125,
 	{w: 200, h: 600}:   126,
+	{w: 980, h: 600}:   144,
+	{w: 980, h: 150}:   145,
+	{w: 1000, h: 250}:  152,
 	{w: 640, h: 320}:   156,
+	{w: 320, h: 250}:   159,
+	{w: 250, h: 600}:   179,
+	{w: 600, h: 300}:   195,
+	{w: 640, h: 360}:   198,
+	{w: 640, h: 200}:   199,
+	{w: 1030, h: 590}:  213,
+	{w: 980, h: 360}:   214,
+	{w: 320, h: 180}:   229,
+	{w: 2000, h: 1400}: 230,
+	{w: 580, h: 400}:   232,
+	{w: 480, h: 820}:   256,
+	{w: 400, h: 600}:   257,
+	{w: 500, h: 200}:   258,
+	{w: 998, h: 200}:   259,
+	{w: 970, h: 1000}:  264,
+	{w: 1920, h: 1080}: 265,
+	{w: 1800, h: 200}:  274,
+	{w: 320, h: 500}:   278,
+	{w: 320, h: 400}:   282,
+	{w: 640, h: 380}:   288,
+	{w: 500, h: 1000}:  548,
 }
 
 // defines the contract for bidrequest.user.ext.eids[i].ext
@@ -223,6 +288,12 @@ type rubiconUserExtEidExt struct {
 // defines the contract for bidrequest.user.ext.eids[i].uids[j].ext
 type rubiconUserExtEidUidExt struct {
 	RtiPartner string `json:"rtiPartner,omitempty"`
+}
+
+type mappedRubiconUidsParam struct {
+	tpIds       []rubiconExtUserTpID
+	segments    []string
+	liverampIdl string
 }
 
 //MAS algorithm
@@ -252,7 +323,7 @@ func findPrimary(alt []int) (int, []int) {
 	return primary, alt
 }
 
-func parseRubiconSizes(sizes []openrtb.Format) (primary int, alt []int, err error) {
+func parseRubiconSizes(sizes []openrtb2.Format) (primary int, alt []int, err error) {
 	// Fixes #317
 	if len(sizes) < 1 {
 		err = &errortypes.BadInput{
@@ -311,7 +382,7 @@ func (a *RubiconAdapter) callOne(ctx context.Context, reqJSON bytes.Buffer) (res
 		return
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	err = json.Unmarshal(body, &bidResp)
 	if err != nil {
 		err = &errortypes.BadServerResponse{
@@ -419,7 +490,18 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		rubiReq.Device = &deviceCopy
 
 		if thisImp.Video != nil {
-			videoExt := rubiconVideoExt{Skip: params.Video.Skip, SkipDelay: params.Video.SkipDelay, RP: rubiconVideoExtRP{SizeID: params.Video.VideoSizeID}}
+
+			videoSizeId := params.Video.VideoSizeID
+			if videoSizeId == 0 {
+				resolvedSizeId, err := resolveVideoSizeId(thisImp.Video.Placement, thisImp.Instl, thisImp.ID)
+				if err == nil {
+					videoSizeId = resolvedSizeId
+				} else {
+					continue
+				}
+			}
+
+			videoExt := rubiconVideoExt{Skip: params.Video.Skip, SkipDelay: params.Video.SkipDelay, RP: rubiconVideoExtRP{SizeID: videoSizeId}}
 			thisImp.Video.Ext, err = json.Marshal(&videoExt)
 		} else {
 			primarySizeID, altSizeIDs, err := parseRubiconSizes(unit.Sizes)
@@ -438,14 +520,14 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		if rubiReq.Site != nil {
 			siteCopy := *rubiReq.Site
 			siteCopy.Ext, err = json.Marshal(&siteExt)
-			siteCopy.Publisher = &openrtb.Publisher{}
+			siteCopy.Publisher = &openrtb2.Publisher{}
 			siteCopy.Publisher.Ext, err = json.Marshal(&pubExt)
-			siteCopy.Content = &openrtb.Content{}
+			siteCopy.Content = &openrtb2.Content{}
 			siteCopy.Content.Language = rubiconUser.Language
 			rubiReq.Site = &siteCopy
 		} else {
-			site := &openrtb.Site{}
-			site.Content = &openrtb.Content{}
+			site := &openrtb2.Site{}
+			site.Content = &openrtb2.Content{}
 			site.Content.Language = rubiconUser.Language
 			rubiReq.Site = site
 		}
@@ -453,12 +535,12 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		if rubiReq.App != nil {
 			appCopy := *rubiReq.App
 			appCopy.Ext, err = json.Marshal(&siteExt)
-			appCopy.Publisher = &openrtb.Publisher{}
+			appCopy.Publisher = &openrtb2.Publisher{}
 			appCopy.Publisher.Ext, err = json.Marshal(&pubExt)
 			rubiReq.App = &appCopy
 		}
 
-		rubiReq.Imp = []openrtb.Imp{thisImp}
+		rubiReq.Imp = []openrtb2.Imp{thisImp}
 
 		var reqBuffer bytes.Buffer
 		err = json.NewEncoder(&reqBuffer).Encode(rubiReq)
@@ -531,6 +613,24 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 	return bids, nil
 }
 
+func resolveVideoSizeId(placement openrtb2.VideoPlacementType, instl int8, impId string) (sizeID int, err error) {
+	if placement != 0 {
+		if placement == 1 {
+			return 201, nil
+		}
+		if placement == 3 {
+			return 203, nil
+		}
+	}
+
+	if instl == 1 {
+		return 202, nil
+	}
+	return 0, &errortypes.BadInput{
+		Message: fmt.Sprintf("video.size_id can not be resolved in impression with id : %s", impId),
+	}
+}
+
 func appendTrackerToUrl(uri string, tracker string) (res string) {
 	// Append integration method. Adapter init happens once
 	urlObject, err := url.Parse(uri)
@@ -546,12 +646,20 @@ func appendTrackerToUrl(uri string, tracker string) (res string) {
 	return
 }
 
-func NewRubiconAdapter(config *adapters.HTTPAdapterConfig, uri string, xuser string, xpass string, tracker string) *RubiconAdapter {
-	return NewRubiconBidder(adapters.NewHTTPAdapter(config).Client, uri, xuser, xpass, tracker)
+// Builder builds a new instance of the Rubicon adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	uri := appendTrackerToUrl(config.Endpoint, config.XAPI.Tracker)
+
+	bidder := &RubiconAdapter{
+		URI:          uri,
+		XAPIUsername: config.XAPI.Username,
+		XAPIPassword: config.XAPI.Password,
+	}
+	return bidder, nil
 }
 
-func NewRubiconBidder(client *http.Client, uri string, xuser string, xpass string, tracker string) *RubiconAdapter {
-	a := &adapters.HTTPAdapter{Client: client}
+func NewRubiconLegacyAdapter(httpConfig *adapters.HTTPAdapterConfig, uri string, xuser string, xpass string, tracker string) *RubiconAdapter {
+	a := adapters.NewHTTPAdapter(httpConfig)
 
 	uri = appendTrackerToUrl(uri, tracker)
 
@@ -563,7 +671,7 @@ func NewRubiconBidder(client *http.Client, uri string, xuser string, xpass strin
 	}
 }
 
-func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	numRequests := len(request.Imp)
 	errs := make([]error, 0, len(request.Imp))
 	var err error
@@ -576,6 +684,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 
 	requestImpCopy := request.Imp
 
+	rubiconRequest := *request
 	for i := 0; i < numRequests; i++ {
 		thisImp := requestImpCopy[i]
 
@@ -640,9 +749,18 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 			continue
 		}
 
+		resolvedBidFloor, resolvedBidFloorCur := resolveBidFloorAttributes(thisImp.BidFloor, thisImp.BidFloorCur)
+		thisImp.BidFloorCur = resolvedBidFloorCur
+		thisImp.BidFloor = resolvedBidFloor
+
 		if request.User != nil {
 			userCopy := *request.User
 			userExtRP := rubiconUserExt{RP: rubiconUserExtRP{Target: rubiconExt.Visitor}}
+
+			if err := updateUserExtWithIabAttribute(&userExtRP, userCopy.Data); err != nil {
+				errs = append(errs, err)
+				continue
+			}
 
 			if request.User.Ext != nil {
 				var userExt *openrtb_ext.ExtUser
@@ -653,20 +771,22 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 					continue
 				}
 				userExtRP.Consent = userExt.Consent
-				if userExt.DigiTrust != nil {
-					userExtRP.DigiTrust = userExt.DigiTrust
-				}
 				userExtRP.Eids = userExt.Eids
 
 				// set user.ext.tpid
 				if len(userExt.Eids) > 0 {
-					if tpIds, segments, errors := getTpIdsAndSegments(userExt.Eids); len(errors) > 0 {
+					mappedRubiconUidsParam, errors := getTpIdsAndSegments(userExt.Eids)
+					if len(errors) > 0 {
 						errs = append(errs, errors...)
 						continue
-					} else if err := updateUserExtWithTpIdsAndSegments(&userExtRP, tpIds, segments); err != nil {
+					}
+
+					if err := updateUserExtWithTpIdsAndSegments(&userExtRP, mappedRubiconUidsParam); err != nil {
 						errs = append(errs, err)
 						continue
 					}
+
+					userExtRP.LiverampIdl = mappedRubiconUidsParam.liverampIdl
 				}
 			}
 
@@ -675,23 +795,28 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 				errs = append(errs, err)
 				continue
 			}
-			request.User = &userCopy
+			rubiconRequest.User = &userCopy
 		}
 
 		if request.Device != nil {
 			deviceCopy := *request.Device
 			deviceExt := rubiconDeviceExt{RP: rubiconDeviceExtRP{PixelRatio: request.Device.PxRatio}}
 			deviceCopy.Ext, err = json.Marshal(&deviceExt)
-			request.Device = &deviceCopy
+			rubiconRequest.Device = &deviceCopy
 		}
 
 		isVideo := isVideo(thisImp)
 		if isVideo {
-			if rubiconExt.Video.VideoSizeID == 0 {
-				errs = append(errs, &errortypes.BadInput{
-					Message: fmt.Sprintf("imp[%d].ext.bidder.rubicon.video.size_id must be defined for video impression", i),
-				})
-				continue
+			videoCopy := *thisImp.Video
+
+			videoSizeId := rubiconExt.Video.VideoSizeID
+			if videoSizeId == 0 {
+				resolvedSizeId, err := resolveVideoSizeId(thisImp.Video.Placement, thisImp.Instl, thisImp.ID)
+				if err != nil {
+					errs = append(errs, err)
+					continue
+				}
+				videoSizeId = resolvedSizeId
 			}
 
 			// if imp.ext.is_rewarded_inventory = 1, set imp.video.ext.videotype = "rewarded"
@@ -699,9 +824,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 			if bidderExt.Prebid != nil && bidderExt.Prebid.IsRewardedInventory == 1 {
 				videoType = "rewarded"
 			}
-
-			videoCopy := *thisImp.Video
-			videoExt := rubiconVideoExt{Skip: rubiconExt.Video.Skip, SkipDelay: rubiconExt.Video.SkipDelay, VideoType: videoType, RP: rubiconVideoExtRP{SizeID: rubiconExt.Video.VideoSizeID}}
+			videoExt := rubiconVideoExt{Skip: rubiconExt.Video.Skip, SkipDelay: rubiconExt.Video.SkipDelay, VideoType: videoType, RP: rubiconVideoExtRP{SizeID: videoSizeId}}
 			videoCopy.Ext, err = json.Marshal(&videoExt)
 			thisImp.Video = &videoCopy
 			thisImp.Banner = nil
@@ -728,23 +851,30 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 		if request.Site != nil {
 			siteCopy := *request.Site
 			siteCopy.Ext, err = json.Marshal(&siteExt)
-			siteCopy.Publisher = &openrtb.Publisher{}
+			siteCopy.Publisher = &openrtb2.Publisher{}
 			siteCopy.Publisher.Ext, err = json.Marshal(&pubExt)
-			request.Site = &siteCopy
+			rubiconRequest.Site = &siteCopy
 		}
 		if request.App != nil {
 			appCopy := *request.App
 			appCopy.Ext, err = json.Marshal(&siteExt)
-			appCopy.Publisher = &openrtb.Publisher{}
+			appCopy.Publisher = &openrtb2.Publisher{}
 			appCopy.Publisher.Ext, err = json.Marshal(&pubExt)
-			request.App = &appCopy
+			rubiconRequest.App = &appCopy
 		}
 
-		request.Imp = []openrtb.Imp{thisImp}
-		request.Cur = nil
-		request.Ext = nil
+		reqBadv := request.BAdv
+		if reqBadv != nil {
+			if len(reqBadv) > badvLimitSize {
+				rubiconRequest.BAdv = reqBadv[:badvLimitSize]
+			}
+		}
 
-		reqJSON, err := json.Marshal(request)
+		rubiconRequest.Imp = []openrtb2.Imp{thisImp}
+		rubiconRequest.Cur = nil
+		rubiconRequest.Ext = nil
+
+		reqJSON, err := json.Marshal(rubiconRequest)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -763,9 +893,59 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 	return requestData, errs
 }
 
-func getTpIdsAndSegments(eids []openrtb_ext.ExtUserEid) ([]rubiconExtUserTpID, []string, []error) {
-	tpIds := make([]rubiconExtUserTpID, 0)
-	segments := make([]string, 0)
+// Will be replaced after https://github.com/prebid/prebid-server/issues/1482 resolution
+func resolveBidFloorAttributes(bidFloor float64, bidFloorCur string) (float64, string) {
+	if bidFloor > 0 {
+		if strings.ToUpper(bidFloorCur) == "EUR" {
+			return bidFloor * 1.2, "USD"
+		}
+	}
+
+	return bidFloor, bidFloorCur
+}
+
+func updateUserExtWithIabAttribute(userExtRP *rubiconUserExt, data []openrtb2.Data) error {
+	var segmentIdsToCopy = make([]string, 0)
+
+	for _, dataRecord := range data {
+		if dataRecord.Ext != nil {
+			var dataExtObject rubiconUserDataExt
+			err := json.Unmarshal(dataRecord.Ext, &dataExtObject)
+			if err != nil {
+				continue
+			}
+			if strings.EqualFold(dataExtObject.TaxonomyName, "iab") {
+				for _, segment := range dataRecord.Segment {
+					segmentIdsToCopy = append(segmentIdsToCopy, segment.ID)
+				}
+			}
+		}
+	}
+
+	userExtRPTarget := make(map[string]interface{})
+
+	if userExtRP.RP.Target != nil {
+		if err := json.Unmarshal(userExtRP.RP.Target, &userExtRPTarget); err != nil {
+			return &errortypes.BadInput{Message: err.Error()}
+		}
+	}
+
+	userExtRPTarget["iab"] = segmentIdsToCopy
+
+	if target, err := json.Marshal(&userExtRPTarget); err != nil {
+		return &errortypes.BadInput{Message: err.Error()}
+	} else {
+		userExtRP.RP.Target = target
+	}
+
+	return nil
+}
+
+func getTpIdsAndSegments(eids []openrtb_ext.ExtUserEid) (mappedRubiconUidsParam, []error) {
+	rubiconUidsParam := mappedRubiconUidsParam{
+		tpIds:    make([]rubiconExtUserTpID, 0),
+		segments: make([]string, 0),
+	}
 	errs := make([]error, 0)
 
 	for _, eid := range eids {
@@ -785,7 +965,7 @@ func getTpIdsAndSegments(eids []openrtb_ext.ExtUserEid) ([]rubiconExtUserTpID, [
 					}
 
 					if eidUidExt.RtiPartner == "TDID" {
-						tpIds = append(tpIds, rubiconExtUserTpID{Source: "tdid", UID: uid.ID})
+						rubiconUidsParam.tpIds = append(rubiconUidsParam.tpIds, rubiconExtUserTpID{Source: "tdid", UID: uid.ID})
 					}
 				}
 			}
@@ -794,7 +974,7 @@ func getTpIdsAndSegments(eids []openrtb_ext.ExtUserEid) ([]rubiconExtUserTpID, [
 			if len(uids) > 0 {
 				uidId := uids[0].ID
 				if uidId != "" {
-					tpIds = append(tpIds, rubiconExtUserTpID{Source: "liveintent.com", UID: uidId})
+					rubiconUidsParam.tpIds = append(rubiconUidsParam.tpIds, rubiconExtUserTpID{Source: "liveintent.com", UID: uidId})
 				}
 
 				if eid.Ext != nil {
@@ -805,20 +985,28 @@ func getTpIdsAndSegments(eids []openrtb_ext.ExtUserEid) ([]rubiconExtUserTpID, [
 						})
 						continue
 					}
-					segments = eidExt.Segments
+					rubiconUidsParam.segments = eidExt.Segments
+				}
+			}
+		case "liveramp.com":
+			uids := eid.Uids
+			if len(uids) > 0 {
+				uidId := uids[0].ID
+				if uidId != "" && rubiconUidsParam.liverampIdl == "" {
+					rubiconUidsParam.liverampIdl = uidId
 				}
 			}
 		}
 	}
 
-	return tpIds, segments, errs
+	return rubiconUidsParam, errs
 }
 
-func updateUserExtWithTpIdsAndSegments(userExtRP *rubiconUserExt, tpIds []rubiconExtUserTpID, segments []string) error {
-	if len(tpIds) > 0 {
-		userExtRP.TpID = tpIds
+func updateUserExtWithTpIdsAndSegments(userExtRP *rubiconUserExt, rubiconUidsParam mappedRubiconUidsParam) error {
+	if len(rubiconUidsParam.tpIds) > 0 {
+		userExtRP.TpID = rubiconUidsParam.tpIds
 
-		if segments != nil {
+		if rubiconUidsParam.segments != nil {
 			userExtRPTarget := make(map[string]interface{})
 
 			if userExtRP.RP.Target != nil {
@@ -827,7 +1015,7 @@ func updateUserExtWithTpIdsAndSegments(userExtRP *rubiconUserExt, tpIds []rubico
 				}
 			}
 
-			userExtRPTarget["LIseg"] = segments
+			userExtRPTarget["LIseg"] = rubiconUidsParam.segments
 
 			if target, err := json.Marshal(&userExtRPTarget); err != nil {
 				return &errortypes.BadInput{Message: err.Error()}
@@ -839,7 +1027,7 @@ func updateUserExtWithTpIdsAndSegments(userExtRP *rubiconUserExt, tpIds []rubico
 	return nil
 }
 
-func isVideo(imp openrtb.Imp) bool {
+func isVideo(imp openrtb2.Imp) bool {
 	video := imp.Video
 	if video != nil {
 		// Do any other media types exist? Or check required video fields.
@@ -848,12 +1036,12 @@ func isVideo(imp openrtb.Imp) bool {
 	return false
 }
 
-func isFullyPopulatedVideo(video *openrtb.Video) bool {
+func isFullyPopulatedVideo(video *openrtb2.Video) bool {
 	// These are just recommended video fields for XAPI
 	return video.MIMEs != nil && video.Protocols != nil && video.MaxDuration != 0 && video.Linearity != 0 && video.API != nil
 }
 
-func (a *RubiconAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *RubiconAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -870,14 +1058,14 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: err.Error(),
 		}}
 	}
 
-	var bidReq openrtb.BidRequest
+	var bidReq openrtb2.BidRequest
 	if err := json.Unmarshal(externalRequest.Body, &bidReq); err != nil {
 		return nil, []error{err}
 	}
@@ -891,9 +1079,22 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 		bidType = openrtb_ext.BidTypeVideo
 	}
 
+	impToCpmOverride := mapImpIdToCpmOverride(internalRequest.Imp)
+	cmpOverride := cmpOverrideFromBidRequest(internalRequest)
+
 	for _, sb := range bidResp.SeatBid {
 		for i := 0; i < len(sb.Bid); i++ {
 			bid := sb.Bid[i]
+
+			bidCmpOverride, ok := impToCpmOverride[bid.ImpID]
+			if !ok || bidCmpOverride == 0 {
+				bidCmpOverride = cmpOverride
+			}
+
+			if bidCmpOverride > 0 {
+				bid.Price = bidCmpOverride
+			}
+
 			if bid.Price != 0 {
 				// Since Rubicon XAPI returns only one bid per response
 				// copy response.bidid to openrtb_response.seatbid.bid.bidid
@@ -909,4 +1110,31 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 	}
 
 	return bidResponse, nil
+}
+
+func cmpOverrideFromBidRequest(bidRequest *openrtb2.BidRequest) float64 {
+	var bidRequestExt bidRequestExt
+	if err := json.Unmarshal(bidRequest.Ext, &bidRequestExt); err != nil {
+		return 0
+	}
+
+	return bidRequestExt.Prebid.Bidders.Rubicon.Debug.CpmOverride
+}
+
+func mapImpIdToCpmOverride(imps []openrtb2.Imp) map[string]float64 {
+	impIdToCmpOverride := make(map[string]float64)
+	for _, imp := range imps {
+		var bidderExt adapters.ExtImpBidder
+		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+			continue
+		}
+
+		var rubiconExt openrtb_ext.ExtImpRubicon
+		if err := json.Unmarshal(bidderExt.Bidder, &rubiconExt); err != nil {
+			continue
+		}
+
+		impIdToCmpOverride[imp.ID] = rubiconExt.Debug.CpmOverride
+	}
+	return impIdToCmpOverride
 }

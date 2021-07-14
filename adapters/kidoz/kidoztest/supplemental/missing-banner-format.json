@@ -1,0 +1,18 @@
+{
+	"mockBidRequest": {
+		"id": "test-request-id",
+		"imp": [
+			{
+				"id": "test-impression-id-1",
+				"banner": {
+				}
+			}
+		]
+	},
+	"expectedMakeRequestsErrors": [
+		{
+			"value": "banner format required",
+			"comparison": "literal"
+		}
+	]
+}

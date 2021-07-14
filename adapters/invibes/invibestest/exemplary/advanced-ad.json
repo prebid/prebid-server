@@ -1,0 +1,129 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "page": "https://publisher.com/url",
+      "keywords": "w1,w2"
+    },
+    "device": {
+      "w": 1000,
+      "h": 500,
+      "IP": "::1"
+    },
+    "user": {
+      "buyerUid": "lidtest",
+      "ext": {
+        "consent": "consent_userext"
+      }
+    },
+    "regs": {
+      "ext": {
+        "gdpr": 0
+      }
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 150
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "2eb6bd58-865c-47ce-af7f-a918108c3fd2",
+            "domainId": 2
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://adweb.invibesstage.com/bid/ServerBidAdContent",
+        "body": {
+          "BidParamsJson": "{\"PlacementIds\":[\"2eb6bd58-865c-47ce-af7f-a918108c3fd2\"],\"BidVersion\":\"4\",\"Properties\":{\"2eb6bd58-865c-47ce-af7f-a918108c3fd2\":{\"Formats\":[{\"w\":300,\"h\":150}],\"ImpId\":\"test-imp-id\"}}}",
+          "Bvid": "",
+          "Gdpr": false,
+          "GdprConsent": "consent_userext",
+          "Height": "500",
+          "IsAmp": false,
+          "Kw": "w1,w2",
+          "Lid": "lidtest",
+          "Location": "https://publisher.com/url",
+          "IsTestBid": false,
+          "InvibBVLog": false,
+          "VideoAdDebug": false,
+          "Width": "1000"
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "currency": "EUR",
+          "typedBids": [
+            {
+              "bid": {
+                "id": "1234",
+                "impid": "test-imp-id1",
+                "price": 0.5,
+                "adm": "<div>abc</div>",
+                "crid": "29681110",
+                "w": 300,
+                "h": 250
+              },
+              "dealPriority": 0
+            },
+            {
+              "bid": {
+                "id": "7890",
+                "impid": "test-imp-id2",
+                "price": 0.6,
+                "adm": "<div>abc2</div>",
+                "crid": "a555",
+                "w": 200,
+                "h": 200
+              },
+              "dealPriority": 0
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "1234",
+            "impid": "test-imp-id1",
+            "price": 0.5,
+            "adm": "<div>abc</div>",
+            "crid": "29681110",
+            "w": 300,
+            "h": 250
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "7890",
+            "impid": "test-imp-id2",
+            "price": 0.6,
+            "adm": "<div>abc2</div>",
+            "crid": "a555",
+            "w": 200,
+            "h": 200
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

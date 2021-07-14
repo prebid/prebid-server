@@ -1,0 +1,26 @@
+{
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Telaria: Only Supports Video",
+      "comparison": "literal"
+    }
+  ],
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-impression-1",
+        "ext": {
+          "bidder": {
+            "adCode": "my-adcode",
+            "seatCode": "my-seatcode"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "test.com"
+    }
+  },
+  "httpCalls": []
+}

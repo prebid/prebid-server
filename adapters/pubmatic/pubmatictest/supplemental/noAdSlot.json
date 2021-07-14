@@ -1,0 +1,129 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "imp": [{
+            "id": "test-imp-id",
+            "banner": {
+                "format": [{
+                    "w": 300,
+                    "h": 250
+                }]
+            },
+            "ext": {
+                "bidder": {
+                    "publisherId": "999",
+                    "keywords": [{
+                            "key": "pmZoneID",
+                            "value": ["Zone1", "Zone2"]
+                        },
+                        {
+                            "key": "preference",
+                            "value": ["sports", "movies"]
+                        }
+                    ],
+                    "wrapper": {
+                        "version": 1,
+                        "profile": 5123
+                    }
+                }
+            }
+        }],
+        "device": {
+            "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36"
+        },
+        "site": {
+            "id": "siteID",
+            "publisher": {
+                "id": "1234"
+            }
+        }
+    },
+
+    "httpCalls": [{
+        "expectedRequest": {
+            "uri": "https://hbopenbid.pubmatic.com/translator?source=prebid-server",
+            "body": {
+                "id": "test-request-id",
+                "imp": [{
+                    "id": "test-imp-id",
+                    "banner": {
+                        "format": [{
+                            "w": 300,
+                            "h": 250
+                        }],
+                        "w": 300,
+                        "h": 250
+                    },
+                    "ext": {
+                        "pmZoneId": "Zone1,Zone2",
+                        "preference": "sports,movies"
+                    }
+                }],
+                "device": {
+                    "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36"
+                },
+                "site": {
+                    "id": "siteID",
+                    "publisher": {
+                        "id": "999"
+                    }
+                },
+                "ext": {
+                    "wrapper": {
+                        "profile": 5123,
+                        "version": 1
+                    }
+                }
+            }
+        },
+        "mockResponse": {
+            "status": 200,
+            "body": {
+                "id": "test-request-id",
+                "seatbid": [{
+                    "seat": "958",
+                    "bid": [{
+                        "id": "7706636740145184841",
+                        "impid": "test-imp-id",
+                        "price": 0.500000,
+                        "adid": "29681110",
+                        "adm": "some-test-ad",
+                        "adomain": ["pubmatic.com"],
+                        "crid": "29681110",
+                        "w": 300,
+                        "h": 250,
+                        "dealid": "test deal",
+                        "ext": {
+                            "dspid": 6,
+                            "deal_channel": 1
+                        }
+                    }]
+                }],
+                "bidid": "5778926625248726496",
+                "cur": "USD"
+            }
+        }
+    }],
+    "expectedBidResponses": [{
+        "currency": "USD",
+        "bids": [{
+            "bid": {
+                "id": "7706636740145184841",
+                "impid": "test-imp-id",
+                "price": 0.5,
+                "adid": "29681110",
+                "adm": "some-test-ad",
+                "adomain": ["pubmatic.com"],
+                "crid": "29681110",
+                "w": 300,
+                "h": 250,
+                "dealid": "test deal",
+                "ext": {
+                    "dspid": 6,
+                    "deal_channel": 1
+                }
+            },
+            "type": "banner"
+        }]
+    }]
+}

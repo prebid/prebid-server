@@ -8,5 +8,5 @@ import (
 )
 
 func NewSmartRTBSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("smartrtb", 0, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("smartrtb", temp, adapters.SyncTypeRedirect)
 }

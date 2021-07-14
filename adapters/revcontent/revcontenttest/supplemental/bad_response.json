@@ -1,0 +1,49 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [{"w": 300, "h": 50}]
+        }
+      }
+    ],
+    "site": {
+      "domain": "test.com"
+    }
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://trends.revcontent.com/rtb?userId=1234&apiKey=abcd",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id":"test-imp-id",
+              "banner": {
+                "format": [{"w": 300, "h": 50}]
+              }
+            }
+          ],
+          "site": {
+            "domain": "test.com"
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": "{\"id\":test-request-id"
+      }
+    }
+  ],
+
+  "expectedMakeBidsErrors": [
+    {
+      "comparison": "literal",
+      "value": "json: cannot unmarshal string into Go value of type openrtb2.BidResponse"
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "video": {
+          "w": 900,
+          "h": 250,
+          "mimes": [
+            "video/x-flv",
+            "video/mp4"
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "siteId": "123"
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "//host",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id":"test-imp-id",
+              "video": {
+                "w": 900,
+                "h": 250,
+                "mimes": [
+                  "video/x-flv",
+                  "video/mp4"
+                ]
+              },
+              "ext": {
+                "siteId": "123"
+              }
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "test-bid-id",
+                  "impid": "BOGUS-IMPID",
+                  "price": 3.5,
+                  "w": 900,
+                  "h": 250
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "bid id='test-bid-id' could not find valid impid='BOGUS-IMPID'",
+      "comparison": "regex"
+    }
+]
+}

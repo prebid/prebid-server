@@ -1,0 +1,10 @@
+maintainer:
+  email: "support@connectad.io"
+gvlVendorID: 138
+capabilities:
+  app:
+    mediaTypes:
+    - banner
+  site:
+    mediaTypes:
+    - banner
