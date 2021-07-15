@@ -444,3 +444,16 @@ func TestSetCookieOnResponseForOlderChromeVersion(t *testing.T) {
 		t.Error("Set-Cookie should not contain SameSite=none")
 	}
 }
+
+func TestSetCookieOnResponseNorefresh(t *testing.T) {
+	cookie := newSampleCookie()
+	cookie.birthday.AddDate(0, -1, 0)
+	birthday := *cookie.birthday
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "http://www.prebid.com", nil)
+	ua := "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36"
+	req.Header.Set("User-Agent", ua)
+	hostCookie := &config.HostCookie{Domain: "mock-domain", Refresh: false}
+	cookie.SetCookieOnResponse(w, true, hostCookie, 90*24*time.Hour)
+	assert.Equal(t, *cookie.birthday, birthday, "cookie.birthday is no longer the same")
+}
