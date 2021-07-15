@@ -56,11 +56,6 @@ type KeywordsPublisherItem struct {
 	Segments []KeywordSegment `json:"segments"`
 }
 
-type ExtKeywords struct {
-	Site json.RawMessage `json:"site,omitempty"`
-	User json.RawMessage `json:"user,omitempty"`
-}
-
 type ReqExt struct {
 	Prebid   json.RawMessage `json:"prebid,omitempty"`
 	Keywords json.RawMessage `json:"keywords,omitempty"`
