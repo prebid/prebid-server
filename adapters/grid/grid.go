@@ -17,6 +17,18 @@ type GridAdapter struct {
 	endpoint string
 }
 
+type GridBidExt struct {
+	Bidder ExtBidder `json:"bidder"`
+}
+
+type ExtBidder struct {
+	Grid ExtBidderGrid `json:"grid"`
+}
+
+type ExtBidderGrid struct {
+	DemandSource string `json:"demandSource"`
+}
+
 type ExtImpDataAdServer struct {
 	Name   string `json:"name"`
 	AdSlot string `json:"adslot"`
@@ -373,6 +385,7 @@ func (a *GridAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReq
 
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
+			bidMeta, err := getBidMeta(sb.Bid[i].Ext)
 			bidType, err := getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp)
 			if err != nil {
 				return nil, []error{err}
@@ -381,6 +394,7 @@ func (a *GridAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReq
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &sb.Bid[i],
 				BidType: bidType,
+				BidMeta: bidMeta,
 			})
 		}
 	}
@@ -394,6 +408,21 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 		endpoint: config.Endpoint,
 	}
 	return bidder, nil
+}
+
+func getBidMeta(ext json.RawMessage) (*openrtb_ext.ExtBidPrebidMeta, error) {
+	var bidExt GridBidExt
+
+	if err := json.Unmarshal(ext, &bidExt); err != nil {
+		return nil, err
+	}
+	var bidMeta *openrtb_ext.ExtBidPrebidMeta
+	if bidExt.Bidder.Grid.DemandSource != "" {
+		bidMeta = &openrtb_ext.ExtBidPrebidMeta{
+			NetworkName: bidExt.Bidder.Grid.DemandSource,
+		}
+	}
+	return bidMeta, nil
 }
 
 func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
