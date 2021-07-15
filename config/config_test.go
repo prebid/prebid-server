@@ -147,6 +147,30 @@ gdpr:
   host_vendor_id: 15
   default_value: "1"
   non_standard_publishers: ["siteID","fake-site-id","appID","agltb3B1Yi1pbmNyDAsSA0FwcBiJkfIUDA"]
+  tcf2:
+    purpose1:
+      vendor_exceptions: ["foo1a", "foo1b"]
+    purpose2:
+      enabled: false
+      vendor_exceptions: ["foo2"]
+    purpose3:
+      vendor_exceptions: ["foo3"]
+    purpose4:
+      vendor_exceptions: ["foo4"]
+    purpose5:
+      vendor_exceptions: ["foo5"]
+    purpose6:
+      vendor_exceptions: ["foo6"]
+    purpose7:
+      vendor_exceptions: ["foo7"]
+    purpose8:
+      vendor_exceptions: ["foo8"]
+    purpose9:
+      vendor_exceptions: ["foo9"]
+    purpose10:
+      vendor_exceptions: ["foo10"]
+    special_purpose1:
+      vendor_exceptions: ["fooSP1"]
 ccpa:
   enforce: true
 lmt:
@@ -377,6 +401,71 @@ func TestFullConfig(t *testing.T) {
 	for i := 0; i < len(cfg.BlacklistedApps); i++ {
 		cmpBools(t, "cfg.BlacklistedAppMap", cfg.BlacklistedAppMap[cfg.BlacklistedApps[i]], true)
 	}
+
+	//Assert purpose VendorExceptionMap hash tables were built correctly
+	expectedTCF2 := TCF2{
+		Enabled: true,
+		Purpose1: TCF2Purpose{
+			Enabled:            true, // true by default
+			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo1a"), openrtb_ext.BidderName("foo1b")},
+			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo1a"): {}, openrtb_ext.BidderName("foo1b"): {}},
+		},
+		Purpose2: TCF2Purpose{
+			Enabled:            false,
+			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo2")},
+			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo2"): {}},
+		},
+		Purpose3: TCF2Purpose{
+			Enabled:            true, // true by default
+			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo3")},
+			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo3"): {}},
+		},
+		Purpose4: TCF2Purpose{
+			Enabled:            true, // true by default
+			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo4")},
+			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo4"): {}},
+		},
+		Purpose5: TCF2Purpose{
+			Enabled:            true, // true by default
+			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo5")},
+			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo5"): {}},
+		},
+		Purpose6: TCF2Purpose{
+			Enabled:            true, // true by default
+			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo6")},
+			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo6"): {}},
+		},
+		Purpose7: TCF2Purpose{
+			Enabled:            true, // true by default
+			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo7")},
+			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo7"): {}},
+		},
+		Purpose8: TCF2Purpose{
+			Enabled:            true, // true by default
+			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo8")},
+			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo8"): {}},
+		},
+		Purpose9: TCF2Purpose{
+			Enabled:            true, // true by default
+			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo9")},
+			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo9"): {}},
+		},
+		Purpose10: TCF2Purpose{
+			Enabled:            true, // true by default
+			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo10")},
+			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo10"): {}},
+		},
+		SpecialPurpose1: TCF2Purpose{
+			Enabled:            true, // true by default
+			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("fooSP1")},
+			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("fooSP1"): {}},
+		},
+		PurposeOneTreatment: TCF2PurposeOneTreatment{
+			Enabled:       true, // true by default
+			AccessAllowed: true, // true by default
+		},
+	}
+	assert.Equal(t, expectedTCF2, cfg.GDPR.TCF2, "gdpr.tcf2")
 
 	cmpStrings(t, "currency_converter.fetch_url", cfg.CurrencyConverter.FetchURL, "https://currency.prebid.org")
 	cmpInts(t, "currency_converter.fetch_interval_seconds", cfg.CurrencyConverter.FetchIntervalSeconds, 1800)

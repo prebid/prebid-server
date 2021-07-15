@@ -39,11 +39,20 @@ func TestAllValidBids(t *testing.T) {
 						CrID:  "789",
 					},
 				},
+				{
+					bid: &openrtb2.Bid{
+						ID:     "zeroPriceBid",
+						ImpID:  "444",
+						Price:  0.00,
+						CrID:   "555",
+						DealID: "777",
+					},
+				},
 			},
 		},
 	})
 	seatBid, errs := bidder.requestBid(context.Background(), &openrtb2.BidRequest{}, openrtb_ext.BidderAppnexus, 1.0, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, true, false)
-	assert.Len(t, seatBid.bids, 3)
+	assert.Len(t, seatBid.bids, 4)
 	assert.Len(t, errs, 0)
 }
 
@@ -79,13 +88,30 @@ func TestAllBadBids(t *testing.T) {
 						CrID:  "blah",
 					},
 				},
+				{
+					bid: &openrtb2.Bid{
+						ID:     "zeroPriceBidNoDeal",
+						ImpID:  "444",
+						Price:  0.00,
+						CrID:   "555",
+						DealID: "",
+					},
+				},
+				{
+					bid: &openrtb2.Bid{
+						ID:    "negativePrice",
+						ImpID: "999",
+						Price: -0.10,
+						CrID:  "888",
+					},
+				},
 				{},
 			},
 		},
 	})
 	seatBid, errs := bidder.requestBid(context.Background(), &openrtb2.BidRequest{}, openrtb_ext.BidderAppnexus, 1.0, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, true, false)
 	assert.Len(t, seatBid.bids, 0)
-	assert.Len(t, errs, 5)
+	assert.Len(t, errs, 7)
 }
 
 func TestMixedBids(t *testing.T) {
@@ -122,13 +148,39 @@ func TestMixedBids(t *testing.T) {
 						CrID:  "blah",
 					},
 				},
+				{
+					bid: &openrtb2.Bid{
+						ID:     "zeroPriceBid",
+						ImpID:  "444",
+						Price:  0.00,
+						CrID:   "555",
+						DealID: "777",
+					},
+				},
+				{
+					bid: &openrtb2.Bid{
+						ID:     "zeroPriceBidNoDeal",
+						ImpID:  "444",
+						Price:  0.00,
+						CrID:   "555",
+						DealID: "",
+					},
+				},
+				{
+					bid: &openrtb2.Bid{
+						ID:    "negativePrice",
+						ImpID: "999",
+						Price: -0.10,
+						CrID:  "888",
+					},
+				},
 				{},
 			},
 		},
 	})
 	seatBid, errs := bidder.requestBid(context.Background(), &openrtb2.BidRequest{}, openrtb_ext.BidderAppnexus, 1.0, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, true, false)
-	assert.Len(t, seatBid.bids, 2)
-	assert.Len(t, errs, 3)
+	assert.Len(t, seatBid.bids, 3)
+	assert.Len(t, errs, 5)
 }
 
 func TestCurrencyBids(t *testing.T) {

@@ -125,20 +125,13 @@
             "keywords": "power tools"
           },
           "ext": {
-            "client": "prebid_server_0.2"
+            "client": "prebid_server_0.3"
           }
         }
       },
       "mockResponse": {
-        "status": 400
+        "status": 204
       }
-    }
-  ],
-  "expectedBidResponses": [],
-  "expectedMakeBidsErrors": [
-    {
-      "value": "Unexpected status code: 400. Run with request.debug = 1 for more info",
-      "comparison": "literal"
     }
   ]
 }
