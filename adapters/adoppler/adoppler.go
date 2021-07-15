@@ -200,7 +200,7 @@ func (ads *AdopplerAdapter) bidUri(ext *openrtb_ext.ExtImpAdoppler) (string, err
 		params.AccountID = url.PathEscape(ext.Client)
 	}
 
-	return macros.ResolveMacros(*ads.endpoint, params)
+	return macros.ResolveMacros(ads.endpoint, params)
 }
 
 func unmarshalExt(ext json.RawMessage) (*openrtb_ext.ExtImpAdoppler, error) {

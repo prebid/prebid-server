@@ -18,7 +18,7 @@ import (
 const defaultDomain string = "tag.adkernel.com"
 
 type adkernelAdnAdapter struct {
-	EndpointTemplate template.Template
+	EndpointTemplate *template.Template
 }
 
 //MakeRequests prepares request information for prebid-server core
@@ -286,7 +286,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	}
 
 	bidder := &adkernelAdnAdapter{
-		EndpointTemplate: *template,
+		EndpointTemplate: template,
 	}
 	return bidder, nil
 }

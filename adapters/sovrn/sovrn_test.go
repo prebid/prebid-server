@@ -192,7 +192,7 @@ func SampleSovrnRequest(numberOfImpressions int, t *testing.T) *pbs.PBSRequest {
 	httpReq.Header.Add("Referer", testUrl)
 	httpReq.Header.Add("User-Agent", testUserAgent)
 	httpReq.Header.Add("X-Forwarded-For", testIp)
-	pc := usersync.ParsePBSCookieFromRequest(httpReq, &config.HostCookie{})
+	pc := usersync.ParseCookieFromRequest(httpReq, &config.HostCookie{})
 	pc.TrySync("sovrn", testSovrnUserId)
 	fakewriter := httptest.NewRecorder()
 

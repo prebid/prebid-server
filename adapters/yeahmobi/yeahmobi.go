@@ -17,7 +17,7 @@ import (
 )
 
 type YeahmobiAdapter struct {
-	EndpointTemplate template.Template
+	EndpointTemplate *template.Template
 }
 
 // Builder builds a new instance of the Yeahmobi adapter for the given bidder with the given config.
@@ -28,7 +28,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	}
 
 	bidder := &YeahmobiAdapter{
-		EndpointTemplate: *template,
+		EndpointTemplate: template,
 	}
 	return bidder, nil
 }

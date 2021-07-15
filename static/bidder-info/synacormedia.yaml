@@ -9,3 +9,7 @@ capabilities:
     mediaTypes:
       - banner
       - video
+userSync:
+  iframe:
+    url: "https://sync.technoratimedia.com/services?srv=cs&pid=70&cb={{.RedirectURL}}"
+    userMacro: "[USER_ID]"

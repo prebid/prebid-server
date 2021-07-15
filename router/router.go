@@ -12,12 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/prebid/prebid-server/currency"
-	"github.com/prebid/prebid-server/endpoints/events"
-	"github.com/prebid/prebid-server/errortypes"
-
-	"github.com/prebid/prebid-server/metrics"
-
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/adform"
 	"github.com/prebid/prebid-server/adapters/appnexus"
@@ -33,11 +27,15 @@ import (
 	"github.com/prebid/prebid-server/cache/filecache"
 	"github.com/prebid/prebid-server/cache/postgrescache"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/endpoints"
+	"github.com/prebid/prebid-server/endpoints/events"
 	infoEndpoints "github.com/prebid/prebid-server/endpoints/info"
 	"github.com/prebid/prebid-server/endpoints/openrtb2"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/gdpr"
+	"github.com/prebid/prebid-server/metrics"
 	metricsConf "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
@@ -45,7 +43,7 @@ import (
 	"github.com/prebid/prebid-server/router/aspects"
 	"github.com/prebid/prebid-server/server/ssl"
 	storedRequestsConf "github.com/prebid/prebid-server/stored_requests/config"
-	"github.com/prebid/prebid-server/usersync/usersyncers"
+	"github.com/prebid/prebid-server/usersync"
 
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
@@ -212,8 +210,32 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	legacyBidderList := openrtb_ext.CoreBidderNames()
 	legacyBidderList = append(legacyBidderList, openrtb_ext.BidderName("districtm"))
 
+	p, _ := filepath.Abs(infoDirectory)
+	bidderInfos, err := config.LoadBidderInfoFromDisk(p, cfg.Adapters, openrtb_ext.BuildBidderStringSlice())
+	if err != nil {
+		return nil, err
+	}
+
+	if err := applyBidderInfoConfigOverrides(bidderInfos, cfg.Adapters); err != nil {
+		return nil, err
+	}
+
+	syncers, err := usersync.BuildSyncers(cfg.UserSync, bidderInfos)
+	if err != nil {
+		return nil, err
+	}
+
+	syncerKeys := make([]string, 0, len(syncers))
+	syncerKeysHashSet := map[string]struct{}{}
+	for _, syncer := range syncers {
+		syncerKeysHashSet[syncer.Key()] = struct{}{}
+	}
+	for syncerKey := range syncerKeysHashSet {
+		syncerKeys = append(syncerKeys, syncerKey)
+	}
+
 	// Metrics engine
-	r.MetricsEngine = metricsConf.NewMetricsEngine(cfg, legacyBidderList)
+	r.MetricsEngine = metricsConf.NewMetricsEngine(cfg, legacyBidderList, syncerKeys)
 	db, shutdown, fetcher, ampFetcher, accounts, categoriesFetcher, videoFetcher := storedRequestsConf.NewStoredRequests(cfg, r.MetricsEngine, generalHttpClient, r.Router)
 	// todo(zachbadgett): better shutdown
 	r.Shutdown = shutdown
@@ -228,21 +250,14 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		glog.Fatalf("Failed to create the bidder params validator. %v", err)
 	}
 
-	p, _ := filepath.Abs(infoDirectory)
-	bidderInfos, err := config.LoadBidderInfoFromDisk(p, cfg.Adapters, openrtb_ext.BuildBidderStringSlice())
-	if err != nil {
-		glog.Fatal(err)
-	}
-
 	activeBidders := exchange.GetActiveBidders(bidderInfos)
 	disabledBidders := exchange.GetDisabledBiddersErrorMessages(bidderInfos)
 
 	defaultAliases, defReqJSON := readDefaultRequest(cfg.DefReqConfig)
 	if err := validateDefaultAliases(defaultAliases); err != nil {
-		glog.Fatal(err)
+		return nil, err
 	}
 
-	syncers := usersyncers.NewSyncerMap(cfg)
 	gvlVendorIDs := bidderInfos.ToGVLVendorIDMap()
 	gdprPerms := gdpr.NewPermissions(context.Background(), cfg.GDPR, gvlVendorIDs, generalHttpClient)
 
@@ -252,10 +267,10 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	adapters, adaptersErrs := exchange.BuildAdapters(generalHttpClient, cfg, bidderInfos, r.MetricsEngine)
 	if len(adaptersErrs) > 0 {
 		errs := errortypes.NewAggregateError("Failed to initialize adapters", adaptersErrs)
-		glog.Fatalf("%v", errs)
+		return nil, errs
 	}
 
-	theExchange := exchange.NewExchange(adapters, cacheClient, cfg, r.MetricsEngine, bidderInfos, gdprPerms, rateConvertor, categoriesFetcher)
+	theExchange := exchange.NewExchange(adapters, cacheClient, cfg, syncers, r.MetricsEngine, bidderInfos, gdprPerms, rateConvertor, categoriesFetcher)
 
 	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, fetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBidders)
 	if err != nil {
@@ -284,7 +299,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	r.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint(bidderInfos, defaultAliases))
 	r.GET("/info/bidders/:bidderName", infoEndpoints.NewBiddersDetailEndpoint(bidderInfos, cfg.Adapters, defaultAliases))
 	r.GET("/bidders/params", NewJsonDirectoryServer(schemaDirectory, paramsValidator, defaultAliases))
-	r.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncers, cfg, gdprPerms, r.MetricsEngine, pbsAnalytics, activeBidders))
+	r.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncers, cfg, gdprPerms, r.MetricsEngine, pbsAnalytics, activeBidders).Handle)
 	r.GET("/status", endpoints.NewStatusEndpoint(cfg.StatusResponse))
 	r.GET("/", serveIndex)
 	r.ServeFiles("/static/*filepath", http.Dir("static"))
@@ -313,6 +328,42 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	r.GET("/optout", userSyncDeps.OptOut)
 
 	return r, nil
+}
+
+func applyBidderInfoConfigOverrides(bidderInfos config.BidderInfos, adaptersCfg map[string]config.Adapter) error {
+	for bidderName, bidderInfo := range bidderInfos {
+		if adapterCfg, exists := adaptersCfg[bidderName]; exists {
+			bidderInfo.Syncer = adapterCfg.Syncer.Override(bidderInfo.Syncer)
+
+			// comptability with legacy settings (if possible unambiguously)
+			if adapterCfg.UserSyncURL != "" {
+				if bidderInfo.Syncer == nil {
+					return fmt.Errorf("failed to apply legacy usersync_url setting for bidder %s, bidder does not define a user sync", bidderName)
+				}
+
+				endpointsCount := 0
+				if bidderInfo.Syncer.IFrame != nil {
+					bidderInfo.Syncer.IFrame.URL = adapterCfg.UserSyncURL
+					endpointsCount++
+				}
+				if bidderInfo.Syncer.Redirect != nil {
+					bidderInfo.Syncer.Redirect.URL = adapterCfg.UserSyncURL
+					endpointsCount++
+				}
+
+				if endpointsCount == 0 {
+					return fmt.Errorf("failed to apply legacy usersync_url setting for bidder %s, bidder does not define user sync endpoints", bidderName)
+				}
+
+				if endpointsCount > 1 {
+					return fmt.Errorf("failed to apply legacy usersync_url setting for bidder %s, bidder defines multiple user sync endpoints", bidderName)
+				}
+			}
+
+			bidderInfos[bidderName] = bidderInfo
+		}
+	}
+	return nil
 }
 
 // Fixes #648

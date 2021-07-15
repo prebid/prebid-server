@@ -4,16 +4,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/url"
+	"strconv"
+	"time"
+
 	"github.com/julienschmidt/httprouter"
 	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/stored_requests"
-	"net/http"
-	"net/url"
-	"strconv"
-	"time"
+	"github.com/prebid/prebid-server/util/httputil"
 )
 
 const (
@@ -30,26 +32,11 @@ const (
 	AnalyticsParameter = "x"
 )
 
-var trackingPixelPng = &trackingPixel{
-	Content: []byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44,
-		0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4,
-		0x89, 0x00, 0x00, 0x00, 0x04, 0x73, 0x42, 0x49, 0x54, 0x08, 0x08, 0x08, 0x08, 0x7C, 0x08, 0x64, 0x88,
-		0x00, 0x00, 0x00, 0x0D, 0x49, 0x44, 0x41, 0x54, 0x08, 0x99, 0x63, 0x60, 0x60, 0x60, 0x60, 0x00, 0x00,
-		0x00, 0x05, 0x00, 0x01, 0x87, 0xA1, 0x4E, 0xD4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE,
-		0x42, 0x60, 0x82},
-	ContentType: "image/png",
-}
-
-type trackingPixel struct {
-	Content     []byte `json:"content,omitempty"`
-	ContentType string `json:"content_type,omitempty"`
-}
-
 type eventEndpoint struct {
 	Accounts      stored_requests.AccountFetcher
 	Analytics     analytics.PBSAnalyticsModule
 	Cfg           *config.Configuration
-	TrackingPixel *trackingPixel
+	TrackingPixel *httputil.Pixel
 }
 
 func NewEventEndpoint(cfg *config.Configuration, accounts stored_requests.AccountFetcher, analytics analytics.PBSAnalyticsModule) httprouter.Handle {
@@ -57,7 +44,7 @@ func NewEventEndpoint(cfg *config.Configuration, accounts stored_requests.Accoun
 		Accounts:      accounts,
 		Analytics:     analytics,
 		Cfg:           cfg,
-		TrackingPixel: trackingPixelPng,
+		TrackingPixel: &httputil.Pixel1x1PNG,
 	}
 
 	return ee.Handle

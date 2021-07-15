@@ -8,3 +8,7 @@ capabilities:
   app:
     mediaTypes:
       - banner
+userSync:
+  redirect:
+    url: "https://t.visx.net/s2s_sync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir={{.RedirectURL}}"
+    userMacro: "${UUID}"

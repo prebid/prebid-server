@@ -11,3 +11,7 @@ capabilities:
       - banner
       - native
       - video
+userSync:
+  iframe:
+    url: "https://s.0cf.io/sync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&r={{.RedirectURL}}"
+    userMacro: "${uid}"

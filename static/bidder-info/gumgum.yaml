@@ -6,3 +6,8 @@ capabilities:
     mediaTypes:
     - banner
     - video
+userSync:
+  iframe:
+    url: "https://rtb.gumgum.com/usync/prbds2s?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&r={{.RedirectURL}}"
+    userMacro: ""
+    # gumgum appends the user id to end of the redirect url and does not utilize a macro

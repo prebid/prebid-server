@@ -22,7 +22,7 @@ const TAPPX_BIDDER_VERSION = "1.2"
 const TYPE_CNN = "prebid"
 
 type TappxAdapter struct {
-	endpointTemplate template.Template
+	endpointTemplate *template.Template
 }
 
 // Builder builds a new instance of the Tappx adapter for the given bidder with the given config.
@@ -33,7 +33,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	}
 
 	bidder := &TappxAdapter{
-		endpointTemplate: *template,
+		endpointTemplate: template,
 	}
 	return bidder, nil
 }

@@ -8,3 +8,7 @@ capabilities:
   site:
     mediaTypes:
       - banner
+userSync:
+  iframe:
+    url: "https://ads.us.e-planning.net/uspd/1/?du={{.RedirectURL}}"
+    userMacro: "$UID"

@@ -15,7 +15,7 @@ import (
 )
 
 type adapter struct {
-	endpointTemplate template.Template
+	endpointTemplate *template.Template
 }
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
@@ -25,7 +25,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	}
 
 	bidder := &adapter{
-		endpointTemplate: *template,
+		endpointTemplate: template,
 	}
 
 	return bidder, nil

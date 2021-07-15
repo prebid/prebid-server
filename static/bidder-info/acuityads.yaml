@@ -12,4 +12,7 @@ capabilities:
       - banner
       - video
       - native
-
+userSync:
+  redirect:
+    url: "https://cs.admanmedia.com/sync/prebid?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir={{.RedirectURL}}"
+    userMacro: "[UID]"

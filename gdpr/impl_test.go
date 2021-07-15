@@ -6,12 +6,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
-
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/go-gdpr/vendorlist"
 	"github.com/prebid/go-gdpr/vendorlist2"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -651,15 +650,6 @@ func TestProhibitedVendorSync(t *testing.T) {
 	assert.EqualValuesf(t, false, allowSync, "BidderSyncAllowed failure")
 }
 
-func parseVendorListData(t *testing.T, data string) vendorlist.VendorList {
-	t.Helper()
-	parsed, err := vendorlist.ParseEagerly([]byte(data))
-	if err != nil {
-		t.Fatalf("Failed to parse vendor list data. %v", err)
-	}
-	return parsed
-}
-
 func parseVendorListDataV2(t *testing.T, data string) vendorlist.VendorList {
 	t.Helper()
 	parsed, err := vendorlist2.ParseEagerly([]byte(data))
@@ -705,77 +695,6 @@ func assertBoolsEqual(t *testing.T, expected bool, actual bool) {
 	t.Helper()
 	if expected != actual {
 		t.Errorf("Expected %t, got %t", expected, actual)
-	}
-}
-
-func assertStringsEqual(t *testing.T, expected string, actual string) {
-	t.Helper()
-	if expected != actual {
-		t.Errorf("Expected %s, got %s", expected, actual)
-	}
-}
-
-func TestNormalizeGDPR(t *testing.T) {
-	tests := []struct {
-		description      string
-		gdprDefaultValue string
-		giveSignal       Signal
-		wantSignal       Signal
-	}{
-		{
-			description:      "Don't normalize - Signal No and gdprDefaultValue 1",
-			gdprDefaultValue: "1",
-			giveSignal:       SignalNo,
-			wantSignal:       SignalNo,
-		},
-		{
-			description:      "Don't normalize - Signal No and gdprDefaultValue 0",
-			gdprDefaultValue: "0",
-			giveSignal:       SignalNo,
-			wantSignal:       SignalNo,
-		},
-		{
-			description:      "Don't normalize - Signal Yes and gdprDefaultValue 1",
-			gdprDefaultValue: "1",
-			giveSignal:       SignalYes,
-			wantSignal:       SignalYes,
-		},
-		{
-			description:      "Don't normalize - Signal Yes and gdprDefaultValue 0",
-			gdprDefaultValue: "0",
-			giveSignal:       SignalYes,
-			wantSignal:       SignalYes,
-		},
-		{
-			description:      "Normalize - Signal Ambiguous and gdprDefaultValue 1",
-			gdprDefaultValue: "1",
-			giveSignal:       SignalAmbiguous,
-			wantSignal:       SignalYes,
-		},
-		{
-			description:      "Normalize - Signal Ambiguous and gdprDefaultValue 0",
-			gdprDefaultValue: "0",
-			giveSignal:       SignalAmbiguous,
-			wantSignal:       SignalNo,
-		},
-	}
-
-	for _, tt := range tests {
-		perms := permissionsImpl{
-			cfg: config.GDPR{
-				DefaultValue: tt.gdprDefaultValue,
-			},
-		}
-
-		if tt.gdprDefaultValue == "0" {
-			perms.gdprDefaultValue = SignalNo
-		} else {
-			perms.gdprDefaultValue = SignalYes
-		}
-
-		normalizedSignal := perms.normalizeGDPR(tt.giveSignal)
-
-		assert.Equal(t, tt.wantSignal, normalizedSignal, tt.description)
 	}
 }
 

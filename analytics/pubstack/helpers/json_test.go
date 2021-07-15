@@ -6,7 +6,6 @@ import (
 
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/analytics"
-	"github.com/prebid/prebid-server/usersync"
 )
 
 func TestJsonifyAuctionObject(t *testing.T) {
@@ -31,7 +30,7 @@ func TestJsonifyVideoObject(t *testing.T) {
 func TestJsonifyCookieSync(t *testing.T) {
 	cso := &analytics.CookieSyncObject{
 		Status:       http.StatusOK,
-		BidderStatus: []*usersync.CookieSyncBidders{},
+		BidderStatus: []*analytics.CookieSyncBidder{},
 	}
 	if _, err := JsonifyCookieSync(cso, "scopeId"); err != nil {
 		t.Fail()

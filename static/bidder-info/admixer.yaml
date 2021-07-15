@@ -14,3 +14,7 @@ capabilities:
       - video
       - native
       - audio
+userSync:
+  redirect:
+    url: "https://inv-nets.admixer.net/adxcm.aspx?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir=1&rurl={{.RedirectURL}}"
+    userMacro: "$$visitor_cookie$$"

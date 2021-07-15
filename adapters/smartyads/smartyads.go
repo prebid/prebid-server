@@ -16,7 +16,7 @@ import (
 )
 
 type SmartyAdsAdapter struct {
-	endpoint template.Template
+	endpoint *template.Template
 }
 
 // Builder builds a new instance of the SmartyAds adapter for the given bidder with the given config.
@@ -27,7 +27,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	}
 
 	bidder := &SmartyAdsAdapter{
-		endpoint: *template,
+		endpoint: template,
 	}
 	return bidder, nil
 }

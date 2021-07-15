@@ -74,6 +74,63 @@ func TestExchangeMap(t *testing.T) {
 	}
 }
 
+func TestApplyBidderInfoConfigOverrides(t *testing.T) {
+	var testCases = []struct {
+		description         string
+		givenBidderInfos    config.BidderInfos
+		givenAdaptersCfg    map[string]config.Adapter
+		expectedError       string
+		expectedBidderInfos config.BidderInfos
+	}{
+		{
+			description:         "Syncer Override",
+			givenBidderInfos:    config.BidderInfos{"a": {Syncer: &config.Syncer{Key: "original"}}},
+			givenAdaptersCfg:    map[string]config.Adapter{"a": {Syncer: &config.Syncer{Key: "override"}}},
+			expectedBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{Key: "override"}}},
+		},
+		{
+			description:         "UserSyncURL Override IFrame",
+			givenBidderInfos:    config.BidderInfos{"a": {Syncer: &config.Syncer{IFrame: &config.SyncerEndpoint{URL: "original"}}}},
+			givenAdaptersCfg:    map[string]config.Adapter{"a": {UserSyncURL: "override"}},
+			expectedBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{IFrame: &config.SyncerEndpoint{URL: "override"}}}},
+		},
+		{
+			description:         "UserSyncURL Override Redirect",
+			givenBidderInfos:    config.BidderInfos{"a": {Syncer: &config.Syncer{Redirect: &config.SyncerEndpoint{URL: "original"}}}},
+			givenAdaptersCfg:    map[string]config.Adapter{"a": {UserSyncURL: "override"}},
+			expectedBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{Redirect: &config.SyncerEndpoint{URL: "override"}}}},
+		},
+		{
+			description:      "UserSyncURL Override Syncer Not Defined",
+			givenBidderInfos: config.BidderInfos{"a": {}},
+			givenAdaptersCfg: map[string]config.Adapter{"a": {UserSyncURL: "override"}},
+			expectedError:    "failed to apply legacy usersync_url setting for bidder a, bidder does not define a user sync",
+		},
+		{
+			description:      "UserSyncURL Override Syncer Endpoints Not Defined",
+			givenBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{}}},
+			givenAdaptersCfg: map[string]config.Adapter{"a": {UserSyncURL: "override"}},
+			expectedError:    "failed to apply legacy usersync_url setting for bidder a, bidder does not define user sync endpoints",
+		},
+		{
+			description:      "UserSyncURL Override Ambiguous",
+			givenBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{IFrame: &config.SyncerEndpoint{URL: "originalIFrame"}, Redirect: &config.SyncerEndpoint{URL: "originalRedirect"}}}},
+			givenAdaptersCfg: map[string]config.Adapter{"a": {UserSyncURL: "override"}},
+			expectedError:    "failed to apply legacy usersync_url setting for bidder a, bidder defines multiple user sync endpoints",
+		},
+	}
+
+	for _, test := range testCases {
+		resultErr := applyBidderInfoConfigOverrides(test.givenBidderInfos, test.givenAdaptersCfg)
+		if test.expectedError == "" {
+			assert.NoError(t, resultErr, test.description+":err")
+			assert.Equal(t, test.expectedBidderInfos, test.givenBidderInfos, test.description+":result")
+		} else {
+			assert.EqualError(t, resultErr, test.expectedError, test.description+":err")
+		}
+	}
+}
+
 // Prevents #648
 func TestCORSSupport(t *testing.T) {
 	const origin = "https://publisher-domain.com"

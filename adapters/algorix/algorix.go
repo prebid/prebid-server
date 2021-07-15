@@ -16,7 +16,7 @@ import (
 )
 
 type adapter struct {
-	EndpointTemplate template.Template
+	EndpointTemplate *template.Template
 }
 
 // Builder builds a new instance of the AlgoriX adapter for the given bidder with the given config.
@@ -26,7 +26,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 	bidder := &adapter{
-		EndpointTemplate: *endpoint,
+		EndpointTemplate: endpoint,
 	}
 	return bidder, nil
 }

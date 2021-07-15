@@ -18,7 +18,7 @@ import (
 )
 
 type adapter struct {
-	endpoint template.Template
+	endpoint *template.Template
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -171,7 +171,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	}
 
 	bidder := &adapter{
-		endpoint: *template,
+		endpoint: template,
 	}
 
 	return bidder, nil

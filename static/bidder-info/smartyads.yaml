@@ -11,4 +11,8 @@ capabilities:
       - banner
       - video
       - native
+userSync:
+  redirect:
+    url: "https://as.ck-ie.com/prebid.gif?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir={{.RedirectURL}}"
+    userMacro: "[UID]"
 

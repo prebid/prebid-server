@@ -8,3 +8,7 @@ capabilities:
   app:
     mediaTypes:
       - video
+userSync:
+  iframe:
+    url: "https://usermatch.targeting.unrulymedia.com/pbsync?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&rurl={{.RedirectURL}}"
+    userMacro: "$UID"

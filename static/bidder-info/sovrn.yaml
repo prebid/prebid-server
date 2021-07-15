@@ -8,3 +8,7 @@ capabilities:
   site:
     mediaTypes:
       - banner
+userSync:
+  redirect:
+    url: "https://ap.lijit.com/pixel?redir={{.RedirectURL}}"
+    userMacro: "$UID"

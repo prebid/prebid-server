@@ -608,7 +608,7 @@ func TestAppNexusLegacyBasicResponse(t *testing.T) {
 	req.Header.Add("User-Agent", andata.deviceUA)
 	req.Header.Add("X-Real-IP", andata.deviceIP)
 
-	pc := usersync.ParsePBSCookieFromRequest(req, &config.HostCookie{})
+	pc := usersync.ParseCookieFromRequest(req, &config.HostCookie{})
 	pc.TrySync("adnxs", andata.buyerUID)
 	fakewriter := httptest.NewRecorder()
 

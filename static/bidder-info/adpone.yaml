@@ -8,3 +8,7 @@ capabilities:
   site:
     mediaTypes:
       - banner
+userSync:
+  redirect:
+    url: "https://usersync.adpone.com/csync?redir={{.RedirectURL}}"
+    userMacro: "{uid}"

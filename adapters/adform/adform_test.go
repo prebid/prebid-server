@@ -222,7 +222,7 @@ func preparePrebidRequest(serverUrl string, t *testing.T) *pbs.PBSRequest {
 	prebidHttpRequest.Header.Add("Referer", adformTestData.referrer)
 	prebidHttpRequest.Header.Add("X-Real-IP", adformTestData.deviceIP)
 
-	pbsCookie := usersync.ParsePBSCookieFromRequest(prebidHttpRequest, &config.HostCookie{})
+	pbsCookie := usersync.ParseCookieFromRequest(prebidHttpRequest, &config.HostCookie{})
 	pbsCookie.TrySync("adform", adformTestData.buyerUID)
 	fakeWriter := httptest.NewRecorder()
 

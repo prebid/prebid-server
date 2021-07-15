@@ -38,12 +38,11 @@ type Metrics struct {
 	RequestStatuses       map[RequestType]map[RequestStatus]metrics.Meter
 	AmpNoCookieMeter      metrics.Meter
 	CookieSyncMeter       metrics.Meter
-	CookieSyncGen         map[openrtb_ext.BidderName]metrics.Meter
-	CookieSyncGDPRPrevent map[openrtb_ext.BidderName]metrics.Meter
-	userSyncOptout        metrics.Meter
-	userSyncBadRequest    metrics.Meter
-	userSyncSet           map[openrtb_ext.BidderName]metrics.Meter
-	userSyncGDPRPrevent   map[openrtb_ext.BidderName]metrics.Meter
+	CookieSyncStatusMeter map[CookieSyncStatus]metrics.Meter
+	SyncerRequestsMeter   map[string]map[SyncerCookieSyncStatus]metrics.Meter
+	SetUidMeter           metrics.Meter
+	SetUidStatusMeter     map[SetUidStatus]metrics.Meter
+	SyncerSetsMeter       map[string]map[SyncerSetUidStatus]metrics.Meter
 
 	// Media types found in the "imp" JSON object
 	ImpsTypeBanner metrics.Meter
@@ -66,7 +65,6 @@ type Metrics struct {
 	// Don't export accountMetrics because we need helper functions here to insure its properly populated dynamically
 	accountMetrics        map[string]*accountMetrics
 	accountMetricsRWMutex sync.RWMutex
-	userSyncRwMutex       sync.RWMutex
 
 	exchanges []openrtb_ext.BidderName
 	// Will hold boolean values to help us disable metric collection if needed
@@ -140,12 +138,11 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		AccountCacheMeter:              make(map[CacheResult]metrics.Meter),
 		AmpNoCookieMeter:               blankMeter,
 		CookieSyncMeter:                blankMeter,
-		CookieSyncGen:                  make(map[openrtb_ext.BidderName]metrics.Meter),
-		CookieSyncGDPRPrevent:          make(map[openrtb_ext.BidderName]metrics.Meter),
-		userSyncOptout:                 blankMeter,
-		userSyncBadRequest:             blankMeter,
-		userSyncSet:                    make(map[openrtb_ext.BidderName]metrics.Meter),
-		userSyncGDPRPrevent:            make(map[openrtb_ext.BidderName]metrics.Meter),
+		CookieSyncStatusMeter:          make(map[CookieSyncStatus]metrics.Meter),
+		SyncerRequestsMeter:            make(map[string]map[SyncerCookieSyncStatus]metrics.Meter),
+		SetUidMeter:                    blankMeter,
+		SetUidStatusMeter:              make(map[SetUidStatus]metrics.Meter),
+		SyncerSetsMeter:                make(map[string]map[SyncerSetUidStatus]metrics.Meter),
 
 		ImpsTypeBanner: blankMeter,
 		ImpsTypeVideo:  blankMeter,
@@ -213,7 +210,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 // metrics object to contain only the metrics we are interested in. This would allow for debug
 // mode metrics. The code would allways try to record the metrics, but effectively noop if we are
 // using a blank meter/timer.
-func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, disableAccountMetrics config.DisabledMetrics) *Metrics {
+func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, disableAccountMetrics config.DisabledMetrics, syncerKeys []string) *Metrics {
 	newMetrics := NewBlankMetrics(registry, exchanges, disableAccountMetrics)
 	newMetrics.ConnectionCounter = metrics.GetOrRegisterCounter("active_connections", registry)
 	newMetrics.ConnectionAcceptErrorMeter = metrics.GetOrRegisterMeter("connection_accept_errors", registry)
@@ -246,16 +243,33 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 	}
 
 	newMetrics.AmpNoCookieMeter = metrics.GetOrRegisterMeter("amp_no_cookie_requests", registry)
+
 	newMetrics.CookieSyncMeter = metrics.GetOrRegisterMeter("cookie_sync_requests", registry)
-	newMetrics.userSyncBadRequest = metrics.GetOrRegisterMeter("usersync.bad_requests", registry)
-	newMetrics.userSyncOptout = metrics.GetOrRegisterMeter("usersync.opt_outs", registry)
+	for _, s := range CookieSyncStatuses() {
+		newMetrics.CookieSyncStatusMeter[s] = metrics.GetOrRegisterMeter(fmt.Sprintf("cookie_sync_requests.%s", s), registry)
+	}
+
+	newMetrics.SetUidMeter = metrics.GetOrRegisterMeter("setuid_requests", registry)
+	for _, s := range SetUidStatuses() {
+		newMetrics.SetUidStatusMeter[s] = metrics.GetOrRegisterMeter(fmt.Sprintf("setuid_requests.%s", s), registry)
+	}
+
+	for _, syncerKey := range syncerKeys {
+		newMetrics.SyncerRequestsMeter[syncerKey] = make(map[SyncerCookieSyncStatus]metrics.Meter)
+		for _, status := range SyncerRequestStatuses() {
+			newMetrics.SyncerRequestsMeter[syncerKey][status] = metrics.GetOrRegisterMeter(fmt.Sprintf("syncer.%s.request.%s", syncerKey, status), registry)
+		}
+
+		newMetrics.SyncerSetsMeter[syncerKey] = make(map[SyncerSetUidStatus]metrics.Meter)
+		for _, status := range SyncerSetUidStatuses() {
+			newMetrics.SyncerSetsMeter[syncerKey][status] = metrics.GetOrRegisterMeter(fmt.Sprintf("syncer.%s.set.%s", syncerKey, status), registry)
+		}
+	}
+
 	for _, a := range exchanges {
-		newMetrics.CookieSyncGen[a] = metrics.GetOrRegisterMeter(fmt.Sprintf("cookie_sync.%s.gen", string(a)), registry)
-		newMetrics.CookieSyncGDPRPrevent[a] = metrics.GetOrRegisterMeter(fmt.Sprintf("cookie_sync.%s.gdpr_prevent", string(a)), registry)
-		newMetrics.userSyncSet[a] = metrics.GetOrRegisterMeter(fmt.Sprintf("usersync.%s.sets", string(a)), registry)
-		newMetrics.userSyncGDPRPrevent[a] = metrics.GetOrRegisterMeter(fmt.Sprintf("usersync.%s.gdpr_prevent", string(a)), registry)
 		registerAdapterMetrics(registry, "adapter", string(a), newMetrics.AdapterMetrics[a])
 	}
+
 	for typ, statusMap := range newMetrics.RequestStatuses {
 		for stat := range statusMap {
 			statusMap[stat] = metrics.GetOrRegisterMeter("requests."+string(stat)+"."+string(typ), registry)
@@ -270,9 +284,6 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 
 	newMetrics.RequestsQueueTimer["video"][true] = metrics.GetOrRegisterTimer("queued_requests.video.accepted", registry)
 	newMetrics.RequestsQueueTimer["video"][false] = metrics.GetOrRegisterTimer("queued_requests.video.rejected", registry)
-
-	newMetrics.userSyncSet[unknownBidder] = metrics.GetOrRegisterMeter("usersync.unknown.sets", registry)
-	newMetrics.userSyncGDPRPrevent[unknownBidder] = metrics.GetOrRegisterMeter("usersync.unknown.gdpr_prevent", registry)
 
 	newMetrics.TimeoutNotificationSuccess = metrics.GetOrRegisterMeter("timeout_notification.ok", registry)
 	newMetrics.TimeoutNotificationFailure = metrics.GetOrRegisterMeter("timeout_notification.failed", registry)
@@ -579,7 +590,6 @@ func (me *Metrics) RecordAdapterBidReceived(labels AdapterLabels, bidType openrt
 	} else {
 		glog.Errorf("bid/adm metrics map entry does not exist for type %s. This is a bug, and should be reported.", bidType)
 	}
-	return
 }
 
 // RecordAdapterPrice implements a part of the MetricsEngine interface. Generates a histogram of winning bid prices
@@ -613,29 +623,36 @@ func (me *Metrics) RecordAdapterTime(labels AdapterLabels, length time.Duration)
 }
 
 // RecordCookieSync implements a part of the MetricsEngine interface. Records a cookie sync request
-func (me *Metrics) RecordCookieSync() {
+func (me *Metrics) RecordCookieSync(status CookieSyncStatus) {
 	me.CookieSyncMeter.Mark(1)
-}
-
-// RecordAdapterCookieSync implements a part of the MetricsEngine interface. Records a cookie sync adpter sync request and gdpr status
-func (me *Metrics) RecordAdapterCookieSync(adapter openrtb_ext.BidderName, gdprBlocked bool) {
-	me.CookieSyncGen[adapter].Mark(1)
-	if gdprBlocked {
-		me.CookieSyncGDPRPrevent[adapter].Mark(1)
+	if meter, exists := me.CookieSyncStatusMeter[status]; exists {
+		meter.Mark(1)
 	}
 }
 
-// RecordUserIDSet implements a part of the MetricsEngine interface. Records a cookie setuid request
-func (me *Metrics) RecordUserIDSet(userLabels UserLabels) {
-	switch userLabels.Action {
-	case RequestActionOptOut:
-		me.userSyncOptout.Mark(1)
-	case RequestActionErr:
-		me.userSyncBadRequest.Mark(1)
-	case RequestActionSet:
-		doMark(userLabels.Bidder, me.userSyncSet)
-	case RequestActionGDPR:
-		doMark(userLabels.Bidder, me.userSyncGDPRPrevent)
+// RecordSyncerRequest implements a part of the MetricsEngine interface. Records a cookie sync syncer request and status
+func (me *Metrics) RecordSyncerRequest(key string, status SyncerCookieSyncStatus) {
+	if keyMeter, exists := me.SyncerRequestsMeter[key]; exists {
+		if statusMeter, exists := keyMeter[status]; exists {
+			statusMeter.Mark(1)
+		}
+	}
+}
+
+// RecordSetUid implements a part of the MetricsEngine interface. Records a set uid sync request
+func (me *Metrics) RecordSetUid(status SetUidStatus) {
+	me.SetUidMeter.Mark(1)
+	if meter, exists := me.SetUidStatusMeter[status]; exists {
+		meter.Mark(1)
+	}
+}
+
+// RecordSyncerSet implements a part of the MetricsEngine interface. Records a set uid sync request and status
+func (me *Metrics) RecordSyncerSet(key string, status SyncerSetUidStatus) {
+	if keyMeter, exists := me.SyncerSetsMeter[key]; exists {
+		if statusMeter, exists := keyMeter[status]; exists {
+			statusMeter.Mark(1)
+		}
 	}
 }
 
@@ -680,7 +697,6 @@ func (me *Metrics) RecordTimeoutNotice(success bool) {
 	} else {
 		me.TimeoutNotificationFailure.Mark(1)
 	}
-	return
 }
 
 func (me *Metrics) RecordRequestPrivacy(privacy PrivacyLabels) {
@@ -706,7 +722,6 @@ func (me *Metrics) RecordRequestPrivacy(privacy PrivacyLabels) {
 	if privacy.LMTEnforced {
 		me.PrivacyLMTRequest.Mark(1)
 	}
-	return
 }
 
 func (me *Metrics) RecordAdapterGDPRRequestBlocked(adapterName openrtb_ext.BidderName) {
@@ -721,13 +736,4 @@ func (me *Metrics) RecordAdapterGDPRRequestBlocked(adapterName openrtb_ext.Bidde
 	}
 
 	am.GDPRRequestBlocked.Mark(1)
-}
-
-func doMark(bidder openrtb_ext.BidderName, meters map[openrtb_ext.BidderName]metrics.Meter) {
-	met, ok := meters[bidder]
-	if ok {
-		met.Mark(1)
-	} else {
-		meters[unknownBidder].Mark(1)
-	}
 }
