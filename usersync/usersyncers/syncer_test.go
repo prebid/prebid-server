@@ -74,6 +74,7 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderNinthDecimal):     syncConfig,
 			string(openrtb_ext.BidderNoBid):            syncConfig,
 			string(openrtb_ext.BidderOneTag):           syncConfig,
+			string(openrtb_ext.BidderOpenWeb):          syncConfig,
 			string(openrtb_ext.BidderOpenx):            syncConfig,
 			string(openrtb_ext.BidderOutbrain):         syncConfig,
 			string(openrtb_ext.BidderPubmatic):         syncConfig,
