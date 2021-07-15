@@ -46,13 +46,13 @@ func TestNewEmptyFetcher(t *testing.T) {
 	type testCase struct {
 		config       *config.StoredRequests
 		emptyFetcher bool
-		message      string
+		description  string
 	}
 	testCases := []testCase{
 		{
 			config:       &config.StoredRequests{},
 			emptyFetcher: true,
-			message:      "If the config is empty, and EmptyFetcher should be returned",
+			description:  "If the config is empty, an EmptyFetcher should be returned",
 		},
 		{
 			config: &config.StoredRequests{
@@ -69,7 +69,7 @@ func TestNewEmptyFetcher(t *testing.T) {
 				},
 			},
 			emptyFetcher: true,
-			message:      "If Postgres fetcher query is not defined, but Postgres Cache init query and Postgres update polling query are defined EmptyFetcher should be returned",
+			description:  "If Postgres fetcher query is not defined, but Postgres Cache init query and Postgres update polling query are defined EmptyFetcher should be returned",
 		},
 		{
 			config: &config.StoredRequests{
@@ -86,7 +86,7 @@ func TestNewEmptyFetcher(t *testing.T) {
 				},
 			},
 			emptyFetcher: false,
-			message:      "If Postgres fetcher query is  defined, but Postgres Cache init query and Postgres update polling query are not defined not EmptyFetcher (DBFetcher) should be returned",
+			description:  "If Postgres fetcher query is  defined, but Postgres Cache init query and Postgres update polling query are not defined not EmptyFetcher (DBFetcher) should be returned",
 		},
 		{
 			config: &config.StoredRequests{
@@ -103,26 +103,18 @@ func TestNewEmptyFetcher(t *testing.T) {
 				},
 			},
 			emptyFetcher: false,
-			message:      "If Postgres fetcher query is  defined and Postgres Cache init query and Postgres update polling query are  defined not EmptyFetcher (DBFetcher) should be returned",
+			description:  "If Postgres fetcher query is  defined and Postgres Cache init query and Postgres update polling query are  defined not EmptyFetcher (DBFetcher) should be returned",
 		},
 	}
 
 	for _, test := range testCases {
-
 		fetcher := newFetcher(test.config, nil, &sql.DB{})
-		if fetcher == nil {
-			t.Errorf("The fetcher should be non-nil.")
-		}
+		assert.NotNil(t, fetcher, "The fetcher should be non-nil.")
 		if test.emptyFetcher {
-			if _, ok := fetcher.(empty_fetcher.EmptyFetcher); !ok {
-				t.Errorf(test.message)
-			}
+			assert.Equal(t, empty_fetcher.EmptyFetcher{}, fetcher, "Empty fetcher should be returned")
 		} else {
-			if _, ok := fetcher.(empty_fetcher.EmptyFetcher); ok {
-				t.Errorf(test.message)
-			}
+			assert.NotEqual(t, empty_fetcher.EmptyFetcher{}, fetcher)
 		}
-
 	}
 }
 
