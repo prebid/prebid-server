@@ -54,10 +54,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 		// Note: Gzipping could be handled natively later: https://github.com/prebid/prebid-server/issues/1812
 		var bodyBuf bytes.Buffer
 		gz := gzip.NewWriter(&bodyBuf)
-		_, err = gz.Write(json)
-		if err == nil {
-			err = gz.Close()
-			if err == nil {
+		if _, err = gz.Write(json); err == nil {
+			if err = gz.Close(); err == nil {
 				json = bodyBuf.Bytes()
 				headers.Add("Content-Encoding", "gzip")
 				// /!\ Go already sets the `Accept-Encoding: gzip` header. Never add it manually, or Go won't decompress the response.
