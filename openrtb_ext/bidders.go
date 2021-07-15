@@ -152,6 +152,7 @@ const (
 	BidderNinthDecimal      BidderName = "ninthdecimal"
 	BidderNoBid             BidderName = "nobid"
 	BidderOneTag            BidderName = "onetag"
+	BidderOpenWeb           BidderName = "openweb"
 	BidderOpenx             BidderName = "openx"
 	BidderOrbidder          BidderName = "orbidder"
 	BidderOutbrain          BidderName = "outbrain"
@@ -276,6 +277,7 @@ func CoreBidderNames() []BidderName {
 		BidderNinthDecimal,
 		BidderNoBid,
 		BidderOneTag,
+		BidderOpenWeb,
 		BidderOpenx,
 		BidderOrbidder,
 		BidderOutbrain,
