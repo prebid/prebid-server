@@ -49,19 +49,25 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		requestCopy := *request
 		var bidderExt adapters.ExtImpBidder
 		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-			errs = append(errs, err)
+			errs = append(errs, &errortypes.BadInput{
+				Message: err.Error(),
+			})
 			continue
 		}
 
 		var operaadsExt openrtb_ext.ImpExtOperaads
 		if err := json.Unmarshal(bidderExt.Bidder, &operaadsExt); err != nil {
-			errs = append(errs, err)
+			errs = append(errs, &errortypes.BadInput{
+				Message: err.Error(),
+			})
 			continue
 		}
 
 		err := convertImpression(&imp)
 		if err != nil {
-			errs = append(errs, err)
+			errs = append(errs, &errortypes.BadInput{
+				Message: err.Error(),
+			})
 			continue
 		}
 
@@ -110,7 +116,7 @@ func convertImpression(imp *openrtb2.Imp) error {
 		imp.Banner = bannerCopy
 	}
 	if imp.Native != nil && imp.Native.Request != "" {
-		v := map[string]interface{}{}
+		v := make(map[string]interface{})
 		err := json.Unmarshal([]byte(imp.Native.Request), &v)
 		if err != nil {
 			return err

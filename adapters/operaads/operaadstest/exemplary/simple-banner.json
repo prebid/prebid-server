@@ -124,13 +124,16 @@
               ],
               "seat": "51"
             }
-          ]
+          ],
+          "bidid":"8141327771600527856",
+          "cur":"USD"
         }
       }
     }
   ],
   "expectedBidResponses": [
     {
+      "currency":"USD",
       "bids": [
         {
           "bid": {
