@@ -4,11 +4,6 @@
         "site": {
             "page": "https://good.site/url"
         },
-        "ext": {
-            "keywords": {
-                "anyName": "anyVal"
-            }
-        },
         "imp": [{
             "id": "test-imp-id",
             "banner": {
@@ -19,7 +14,17 @@
             },
             "ext": {
                 "bidder": {
-                    "uid": 1
+                    "uid": 1,
+                    "keywords": {
+                        "site": {
+                            "somePublisher": [
+                                {
+                                    "name": "someName",
+                                    "topic": ["stress", "fear"]
+                                }
+                            ]
+                        }
+                    }
                 }
             }
         }]
@@ -29,14 +34,24 @@
         "expectedRequest": {
             "uri": "http://localhost/prebid",
             "body": {
+                "ext": {
+                    "keywords": {
+                        "site": {
+                            "somePublisher": [
+                                {
+                                    "name": "someName",
+                                    "segments": [
+                                        { "name":  "topic", "value": "stress" },
+                                        { "name":  "topic", "value": "fear" }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                },
                 "id": "test-request-id",
                 "site": {
                     "page": "https://good.site/url"
-                },
-                "ext": {
-                    "keywords": {
-                        "anyName": "anyVal"
-                    }
                 },
                 "imp": [{
                     "id": "test-imp-id",
@@ -48,7 +63,17 @@
                     },
                     "ext": {
                         "bidder": {
-                            "uid": 1
+                            "uid": 1,
+                            "keywords": {
+                                "site": {
+                                    "somePublisher": [
+                                        {
+                                            "name": "someName",
+                                            "topic": ["stress", "fear"]
+                                        }
+                                    ]
+                                }
+                            }
                         }
                     }
                 }]
@@ -69,12 +94,7 @@
                         "cid": "987",
                         "crid": "12345678",
                         "h": 250,
-                        "w": 300,
-                        "ext": {
-                            "bidder": {
-                                "grid": {"demandSource":"trustx"}
-                            }
-                        }
+                        "w": 300
                     }]
                 }],
                 "cur": "USD"
@@ -94,12 +114,7 @@
                 "cid": "987",
                 "crid": "12345678",
                 "w": 300,
-                "h": 250,
-                "ext": {
-                    "bidder": {
-                        "grid": {"demandSource":"trustx"}
-                    }
-                }
+                "h": 250
             },
             "type": "banner"
         }]
