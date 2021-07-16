@@ -53,7 +53,6 @@ func (a *TappxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 	}
 	var tappxExt openrtb_ext.ExtImpTappx
 	if err := json.Unmarshal(bidderExt.Bidder, &tappxExt); err != nil {
-		fmt.Println(err)
 		return nil, []error{&errortypes.BadInput{
 			Message: "Error parsing tappxExt parameters",
 		}}
@@ -85,12 +84,6 @@ func (a *TappxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 			Tappxkey: tappxExt.TappxKey,
 		},
 	}
-	//ext.Bidder.TappxKey=params.TappxKey
-	fmt.Println("****************************************************")
-	fmt.Println(string(tappxExt.TappxKey))
-	fmt.Println("----")
-	fmt.Println(string(tappxExt.Mktag))
-	fmt.Println("****************************************************")
 	if tappxExt.Mktag != "" {
 		ext.Bidder.Mktag = tappxExt.Mktag
 	}
