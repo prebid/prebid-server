@@ -55,9 +55,10 @@
               },
               "ext": {
                 "bidder": {
-                "endpoint": "VZ123456PS",
-                "host": "testing.ssp.tappx.com/rtb/v2/",
-                "tappxkey": "pub-12345-android-9876"
+                  "endpoint": "VZ123456PS",
+                  "host": "testing.ssp.tappx.com/rtb/v2/",
+                  "tappxkey": "pub-12345-android-9876",
+                  "rewarded": 1
                 }
               }
             }
