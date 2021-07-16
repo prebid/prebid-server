@@ -2694,6 +2694,540 @@ func TestValidateNativeAssetData(t *testing.T) {
 	}
 }
 
+func TestGetFPDData(t *testing.T) {
+
+	testCases := []struct {
+		description     string
+		input           []byte
+		output          []byte
+		expectedFpdData map[string][]byte
+		errorExpected   bool
+		errorContains   string
+	}{
+		{
+			description: "Site, app and user data present",
+			input: []byte(`{
+  				"id": "bid_id",
+  				"site": {
+  				  "id":"reqSiteId",
+  				  "page": "http://www.foobar.com/1234.html",
+  				  "publisher": {
+  				    "id": "1"
+  				  },
+  				  "data": {"somesitefpd": "sitefpdDataTest"}
+  				},
+  				"user": {
+  				  "id": "reqUserID",
+  				  "yob": 1982,
+  				  "gender": "M",
+  				  "data": {"someuserfpd": "userfpdDataTest"}
+  				},
+  				"app": {
+  				  "id": "appId",
+  				  "data": {"someappfpd": "appfpdDataTest"},
+  				  "ext": {"data": 123}
+  				},
+  				"tmax": 5000,
+  				"source": {
+  				  "tid": "ad839de0-5ae6-40bb-92b2-af8bad6439b3"
+  				}
+			}`),
+			output: []byte(`{
+  				"id": "bid_id",
+  				"site": {
+  				  "id":"reqSiteId",
+  				  "page": "http://www.foobar.com/1234.html",
+  				  "publisher": {
+  				    "id": "1"
+  				  }
+  				},
+  				"user": {
+  				  "id": "reqUserID",
+  				  "yob": 1982,
+  				  "gender": "M"
+  				},
+  				"app": {
+  				  "id": "appId",
+  				  "ext": {"data": 123}
+  				},
+  				"tmax": 5000,
+  				"source": {
+  				  "tid": "ad839de0-5ae6-40bb-92b2-af8bad6439b3"
+  				}
+			}`),
+			expectedFpdData: map[string][]byte{
+				"site": []byte(`{"somesitefpd": "sitefpdDataTest"}`),
+				"user": []byte(`{"someuserfpd": "userfpdDataTest"}`),
+				"app":  []byte(`{"someappfpd": "appfpdDataTest"}`),
+			},
+			errorExpected: false,
+			errorContains: "",
+		},
+		{
+			description: "App FPD only present",
+			input: []byte(`{
+  				"id": "bid_id",
+  				"site": {
+  				  "id":"reqSiteId",
+  				  "page": "http://www.foobar.com/1234.html",
+  				  "publisher": {
+  				    "id": "1"
+  				  }
+  				},
+  				"app": {
+  				  "id": "appId",
+  				  "data": {"someappfpd": "appfpdDataTest"},
+  				  "ext": {"data": 123}
+  				},
+  				"tmax": 5000,
+  				"source": {
+  				  "tid": "ad839de0-5ae6-40bb-92b2-af8bad6439b3"
+  				}
+			}`),
+			output: []byte(`{
+  				"id": "bid_id",
+  				"site": {
+  				  "id":"reqSiteId",
+  				  "page": "http://www.foobar.com/1234.html",
+  				  "publisher": {
+  				    "id": "1"
+  				  }
+  				},
+  				"app": {
+  				  "id": "appId",
+  				  "ext": {"data": 123}
+  				},
+  				"tmax": 5000,
+  				"source": {
+  				  "tid": "ad839de0-5ae6-40bb-92b2-af8bad6439b3"
+  				}
+			}`),
+			expectedFpdData: map[string][]byte{
+				"app":  []byte(`{"someappfpd": "appfpdDataTest"}`),
+				"user": {},
+				"site": {},
+			},
+			errorExpected: false,
+			errorContains: "",
+		}, {
+			description: "Malformed input",
+			input: []byte(`{
+  				"id": "bid_id",
+  				"site": {
+  				  "id":"reqSiteId",
+  				  "page": "http://www.foobar.com/1234.html",
+  				  
+  				  "data": meappfpd": "appfpdDataTest"},
+  				  "ext": {"data": 123}
+  				},
+  				: 5000,
+  				"source": {
+  				  "tid": "ad839de0-5ae6-40bb-92b2-af8bad6439
+  				}
+			}`),
+			output: []byte(`{
+  				"id": "bid_id",
+  				"site": {
+  				  "id":"reqSiteId",
+  				  "page": "http://www.foobar.com/1234.html",
+  				  
+  				  "data": meappfpd": "appfpdDataTest"},
+  				  "ext": {"data": 123}
+  				},
+  				: 5000,
+  				"source": {
+  				  "tid": "ad839de0-5ae6-40bb-92b2-af8bad6439
+  				}
+			}`),
+			expectedFpdData: map[string][]byte{},
+			errorExpected:   true,
+			errorContains:   "Unknown value type",
+		},
+	}
+	for _, test := range testCases {
+		res, fpd, err := getFPDData(test.input)
+
+		if test.errorExpected {
+			assert.Error(t, err, "Error should not be nil")
+			//result should be still returned
+			assert.Equal(t, test.output, res, "Result is incorrect")
+			assert.True(t, strings.Contains(err.Error(), test.errorContains))
+		} else {
+			assert.NoError(t, err, "Error should be nil")
+			assert.Equal(t, test.output, res, "Result is incorrect")
+			assert.Equal(t, test.expectedFpdData, fpd, "FPD is incorrect")
+		}
+
+	}
+}
+
+func TestFindAndDropElement(t *testing.T) {
+	testCases := []struct {
+		description   string
+		input         []byte
+		dataPath      []string
+		output        []byte
+		foundData     []byte
+		errorExpected bool
+		errorContains string
+	}{
+		{
+			description: "Element exists",
+			input: []byte(`{
+  				"id": "bid_id",
+  				"site": {
+  				  "id":"reqSiteId",
+  				  "page": "http://www.foobar.com/1234.html",
+  				  "publisher": {
+  				    "id": "1"
+  				  },
+  				  "data": {"somesitefpd": "sitefpdDataTest"}
+  				},
+  				"tmax": 5000,
+  				"source": {
+  				  "tid": "ad839de0-5ae6-40bb-92b2-af8bad6439b3"
+  				}
+			}`),
+			dataPath: []string{"site", "data"},
+			output: []byte(`{
+  				"id": "bid_id",
+  				"site": {
+  				  "id":"reqSiteId",
+  				  "page": "http://www.foobar.com/1234.html",
+  				  "publisher": {
+  				    "id": "1"
+  				  }
+  				},
+  				"tmax": 5000,
+  				"source": {
+  				  "tid": "ad839de0-5ae6-40bb-92b2-af8bad6439b3"
+  				}
+			}`),
+			foundData:     []byte(`{"somesitefpd": "sitefpdDataTest"}`),
+			errorExpected: false,
+			errorContains: "",
+		},
+		{
+			description: "Element doesn't exists",
+			input: []byte(`{
+  				"id": "bid_id",
+  				"site": {
+  				  "id":"reqSiteId",
+  				  "page": "http://www.foobar.com/1234.html",
+  				  "publisher": {
+  				    "id": "1"
+  				  },
+  				  "data": {"somesitefpd": "sitefpdDataTest"}
+  				},
+  				"tmax": 5000,
+  				"source": {
+  				  "tid": "ad839de0-5ae6-40bb-92b2-af8bad6439b3"
+  				}
+			}`),
+			dataPath: []string{"site", "test"},
+			output: []byte(`{
+  				"id": "bid_id",
+  				"site": {
+  				  "id":"reqSiteId",
+  				  "page": "http://www.foobar.com/1234.html",
+  				  "publisher": {
+  				    "id": "1"
+  				  },
+  				  "data": {"somesitefpd": "sitefpdDataTest"}
+  				},
+  				"tmax": 5000,
+  				"source": {
+  				  "tid": "ad839de0-5ae6-40bb-92b2-af8bad6439b3"
+  				}
+			}`),
+			foundData:     []byte{},
+			errorExpected: false,
+			errorContains: "",
+		},
+		{
+			description: "Non object element exists",
+			input: []byte(`{
+  				"id": "bid_id",
+  				"site": {
+  				  "id":"reqSiteId",
+  				  "page": "http://www.foobar.com/1234.html",
+  				  "publisher": {
+  				    "id": "1"
+  				  },
+  				  "data": {"somesitefpd": "sitefpdDataTest"}
+  				},
+  				"tmax": 5000,
+  				"source": {
+  				  "tid": "ad839de0-5ae6-40bb-92b2-af8bad6439b3"
+  				}
+			}`),
+			dataPath: []string{"site", "id"},
+			output: []byte(`{
+  				"id": "bid_id",
+  				"site": {
+  				  "page": "http://www.foobar.com/1234.html",
+  				  "publisher": {
+  				    "id": "1"
+  				  },
+  				  "data": {"somesitefpd": "sitefpdDataTest"}
+  				},
+  				"tmax": 5000,
+  				"source": {
+  				  "tid": "ad839de0-5ae6-40bb-92b2-af8bad6439b3"
+  				}
+			}`),
+			foundData:     []byte(`reqSiteId`),
+			errorExpected: false,
+			errorContains: "",
+		},
+		{
+			description: "Malformed input",
+			input: []byte(`{
+  				"id": "bid_id",
+  				"site": {
+  				  "id":"reqSiteId",
+  				  "page": "http://www.foobar.com/1234.html",
+  				  "publisher": {
+  				    "id": "1"
+  				  },
+  				  "data":  sitefpdDataTest"}
+  				},
+  				"tmax": 5000,
+  				"source": {
+  				  "tid": "ad839de0-5ae6-40bb-92b2-af8bad6439b3"
+  				}
+			}`),
+			dataPath: []string{"site", "data"},
+			output: []byte(`{
+  				"id": "bid_id",
+  				"site": {
+  				  "id":"reqSiteId",
+  				  "page": "http://www.foobar.com/1234.html",
+  				  "publisher": {
+  				    "id": "1"
+  				  },
+  				  "data":  sitefpdDataTest"}
+  				},
+  				"tmax": 5000,
+  				"source": {
+  				  "tid": "ad839de0-5ae6-40bb-92b2-af8bad6439b3"
+  				}
+			}`),
+			foundData:     []byte(nil),
+			errorExpected: true,
+			errorContains: "Unknown value type",
+		},
+	}
+	for _, test := range testCases {
+		res, data, err := findAndDropElement(test.input, test.dataPath...)
+
+		if test.errorExpected {
+			assert.Error(t, err, "Error should not be nil")
+			assert.Equal(t, test.output, res, "Result should be still returned")
+			assert.True(t, strings.Contains(err.Error(), test.errorContains))
+		} else {
+			assert.NoError(t, err, "Error should be nil")
+			assert.Equal(t, test.output, res, "Result is incorrect")
+			assert.Equal(t, test.foundData, data, "FPD is incorrect")
+		}
+	}
+
+}
+
+func TestValidateFPDConfig(t *testing.T) {
+
+	bidderConfigs := &[]openrtb_ext.FPDBidderConfig{
+		{
+			Bidders: []string{"testBidder1"},
+			FPDConfig: &openrtb_ext.FPDConfig{
+				FPDData: &openrtb_ext.FPDData{
+					Site: &openrtb2.Site{ID: "testBidder1SiteId"},
+				},
+			},
+		},
+	}
+
+	bidderConfigsNoConfigs := &[]openrtb_ext.FPDBidderConfig{
+		{
+			Bidders:   []string{"testBidder1"},
+			FPDConfig: nil,
+		},
+	}
+
+	testCases := []struct {
+		description   string
+		reqExtPrebid  openrtb_ext.ExtRequestPrebid
+		errorExpected bool
+		errorContains string
+	}{
+		{
+			description: "Valid config both present",
+			reqExtPrebid: openrtb_ext.ExtRequestPrebid{
+				Data: &openrtb_ext.ExtRequestPrebidData{
+					Bidders: []string{"testBidder1"},
+				},
+				BidderConfigs: bidderConfigs,
+			},
+			errorExpected: false,
+			errorContains: "",
+		},
+		{
+			description: "Valid config both not present",
+			reqExtPrebid: openrtb_ext.ExtRequestPrebid{
+				Data:          nil,
+				BidderConfigs: nil,
+			},
+			errorExpected: false,
+			errorContains: "",
+		},
+		{
+			description: "Invalid config data nil",
+			reqExtPrebid: openrtb_ext.ExtRequestPrebid{
+				Data:          nil,
+				BidderConfigs: bidderConfigs,
+			},
+			errorExpected: true,
+			errorContains: "request.ext.prebid.data is not specified but reqExtPrebid.BidderConfigs are",
+		},
+		{
+			description: "Invalid config no bidders",
+			reqExtPrebid: openrtb_ext.ExtRequestPrebid{
+				Data: &openrtb_ext.ExtRequestPrebidData{
+					Bidders: []string{"testBidder1"},
+				},
+				BidderConfigs: nil,
+			},
+			errorExpected: true,
+			errorContains: "request.ext.prebid.data.bidders are specified but reqExtPrebid.BidderConfigs are",
+		},
+		{
+			description: "Invalid config no configs",
+			reqExtPrebid: openrtb_ext.ExtRequestPrebid{
+				Data: &openrtb_ext.ExtRequestPrebidData{
+					Bidders: []string{},
+				},
+				BidderConfigs: bidderConfigsNoConfigs,
+			},
+			errorExpected: true,
+			errorContains: "request.ext.prebid.data.bidders are not specified but reqExtPrebid.BidderConfigs are",
+		},
+	}
+	for _, test := range testCases {
+		err := validateFPDConfig(test.reqExtPrebid)
+
+		if test.errorExpected {
+			assert.NotNil(t, err, "error expected")
+			assert.True(t, strings.Contains(err.Error(), test.errorContains))
+		} else {
+			assert.Nil(t, err, "error is not expected")
+		}
+	}
+}
+
+func TestParseRequestFPD(t *testing.T) {
+	deps := &endpointDeps{
+		&warningsCheckExchange{},
+		newParamsValidator(t),
+		&mockStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		nil,
+		newTestMetrics(),
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		false,
+		[]byte{},
+		openrtb_ext.BuildBidderMap(),
+		nil,
+		nil,
+		hardcodedResponseIPValidator{response: true},
+	}
+
+	expectedFpd := map[string]map[string][]byte{
+		"fpd-site-user.json": {
+			"site": []byte(`{"someSiteFpd": "siteFpdDataTest"}`),
+			"user": []byte(`{"someUserFpd": "userFpdDataTest"}`),
+			"app":  []byte(``),
+		},
+		"fpd-site.json": {
+			"site": []byte(`{"someSiteFpd": "siteFpdDataTest"}`),
+			"user": []byte(``),
+			"app":  []byte(``),
+		},
+		"fpd-app-user.json": {
+			"site": []byte(``),
+			"user": []byte(`{"someUserFpd": "userFpdDataTest"}`),
+			"app":  []byte(`{"someAppFpd": "appFpdDataTest"}`),
+		},
+		"fpd-user.json": {
+			"site": []byte(``),
+			"user": []byte(`{"someUserFpd": "userFpdDataTest"}`),
+			"app":  []byte(``),
+		},
+		"no-fpd.json": {
+			"site": []byte(``),
+			"user": []byte(``),
+			"app":  []byte(``),
+		},
+	}
+
+	if specFiles, err := ioutil.ReadDir("sample-requests/valid-whole/supplementary/firstPartyData"); err == nil {
+		for _, specFile := range specFiles {
+			reqBody := validRequest(t, fmt.Sprintf("firstPartyData/%s", specFile.Name()))
+			deps.cfg = &config.Configuration{MaxRequestSize: int64(len(reqBody))}
+			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
+			_, fpData, errL := deps.parseRequest(req)
+
+			assert.Len(t, errL, 0, "No errors expected")
+			assert.Equal(t, expectedFpd[specFile.Name()], fpData, "Request is incorrect")
+		}
+	}
+}
+
+func TestValidateFPDBidders(t *testing.T) {
+	deps := &endpointDeps{
+		&warningsCheckExchange{},
+		newParamsValidator(t),
+		&mockStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		nil,
+		newTestMetrics(),
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		false,
+		[]byte{},
+		openrtb_ext.BuildBidderMap(),
+		nil,
+		nil,
+		hardcodedResponseIPValidator{response: true},
+	}
+
+	expectedFpdBiddersValidationErrors := map[string]string{
+		"fpd-bidders-valid.json":                  "",
+		"fpd-bidders-valid-no-fpd.json":           "",
+		"fpd-bidders-invalid-no-global.json":      "[request.ext.prebid.data.bidders are not specified but reqExtPrebid.BidderConfigs are]",
+		"fpd-bidders-invalid-no-bidder-conf.json": "[request.ext.prebid.data.bidders are specified but reqExtPrebid.BidderConfigs are not]",
+	}
+
+	if specFiles, err := ioutil.ReadDir("sample-requests/valid-whole/supplementary/firstPartyDataBidders"); err == nil {
+		for _, specFile := range specFiles {
+			reqBody := validRequest(t, fmt.Sprintf("firstPartyDataBidders/%s", specFile.Name()))
+			deps.cfg = &config.Configuration{MaxRequestSize: int64(len(reqBody))}
+			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
+			_, _, errL := deps.parseRequest(req)
+
+			err := expectedFpdBiddersValidationErrors[specFile.Name()]
+			if err == "" {
+				assert.Len(t, errL, 0, "No errors expected after parse request")
+			} else {
+				assert.True(t, strings.Contains(err, errL[0].Error()), "Incorrect error message")
+			}
+
+		}
+	}
+}
+
 // warningsCheckExchange is a well-behaved exchange which stores all incoming warnings.
 type warningsCheckExchange struct {
 	auctionRequest exchange.AuctionRequest

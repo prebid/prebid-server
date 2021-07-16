@@ -36,11 +36,19 @@ import (
 	"github.com/prebid/prebid-server/usersync"
 	"github.com/prebid/prebid-server/util/httputil"
 	"github.com/prebid/prebid-server/util/iputil"
+	"github.com/prebid/prebid-server/util/jsonutil"
 	"golang.org/x/net/publicsuffix"
 	"golang.org/x/text/currency"
 )
 
-const storedRequestTimeoutMillis = 50
+const (
+	storedRequestTimeoutMillis = 50
+
+	site = "site"
+	app  = "app"
+	user = "user"
+	data = "data"
+)
 
 var (
 	dntKey      string = http.CanonicalHeaderKey("DNT")
@@ -135,7 +143,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		deps.analytics.LogAuctionObject(&ao)
 	}()
 
-	req, errL := deps.parseRequest(r)
+	req, fpData, errL := deps.parseRequest(r)
 
 	if errortypes.ContainsFatalError(errL) && writeError(errL, w, &labels) {
 		return
@@ -185,6 +193,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		LegacyLabels:               labels,
 		Warnings:                   warnings,
 		GlobalPrivacyControlHeader: secGPC,
+		FirstPartyData:             fpData,
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
@@ -227,7 +236,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 // possible, it will return errors with messages that suggest improvements.
 //
 // If the errors list has at least one element, then no guarantees are made about the returned request.
-func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb2.BidRequest, errs []error) {
+func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb2.BidRequest, fpData map[string][]byte, errs []error) {
 	req = &openrtb2.BidRequest{}
 	errs = nil
 
@@ -258,6 +267,13 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb2
 		return
 	}
 
+	//If {site,app,user}.data exists, merge it into {site,app,user}.ext.data and remove {site,app,user}.data
+	requestJson, fpData, err = getFPDData(requestJson)
+	if err != nil {
+		errs = []error{err}
+		return
+	}
+
 	if err := json.Unmarshal(requestJson, req); err != nil {
 		errs = []error{err}
 		return
@@ -279,6 +295,45 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb2
 	}
 
 	return
+}
+
+func getFPDData(request []byte) ([]byte, map[string][]byte, error) {
+	//If {site,app,user}.data exists, merge it into {site,app,user}.ext.data and remove {site,app,user}.data
+	request, siteFPD, err := findAndDropElement(request, site, data)
+	if err != nil {
+		return request, nil, err
+	}
+	request, appFPD, err := findAndDropElement(request, app, data)
+	if err != nil {
+		return request, nil, err
+	}
+	request, userFPD, err := findAndDropElement(request, user, data)
+	if err != nil {
+		return request, nil, err
+	}
+	fpdReqData := make(map[string][]byte, 0)
+	fpdReqData[site] = siteFPD
+	fpdReqData[app] = appFPD
+	fpdReqData[user] = userFPD
+
+	return request, fpdReqData, nil
+}
+
+func findAndDropElement(input []byte, elementNames ...string) ([]byte, []byte, error) {
+	element, _, _, err := jsonparser.Get(input, elementNames...)
+	if err != nil && err != jsonparser.KeyPathNotFoundError {
+		return input, nil, err
+	}
+	elementCopy := make([]byte, len(element))
+	if element != nil {
+		copy(elementCopy, element)
+
+		input, err = jsonutil.DropElement(input, elementNames...)
+		if err != nil {
+			return input, nil, err
+		}
+	}
+	return input, elementCopy, nil
 }
 
 // parseTimeout returns parses tmax from the requestJson, or returns the default if it doesn't exist.
@@ -346,6 +401,10 @@ func (deps *endpointDeps) validateRequest(req *openrtb2.BidRequest) []error {
 		}
 
 		if err := validateCustomRates(bidExt.Prebid.CurrencyConversions); err != nil {
+			return []error{err}
+		}
+
+		if err := validateFPDConfig(bidExt.Prebid); err != nil {
 			return []error{err}
 		}
 	}
@@ -489,6 +548,27 @@ func (deps *endpointDeps) validateEidPermissions(req *openrtb_ext.ExtRequest, al
 		if err := validateBidders(eid.Bidders, deps.bidderMap, aliases); err != nil {
 			return fmt.Errorf(`request.ext.prebid.data.eidpermissions[%d] contains %v`, i, err)
 		}
+	}
+
+	return nil
+}
+
+func validateFPDConfig(reqExtPrebid openrtb_ext.ExtRequestPrebid) error {
+
+	//Both FPD global and bidder specific permissions are specified
+	if reqExtPrebid.Data == nil && reqExtPrebid.BidderConfigs == nil {
+		return nil
+	}
+
+	if reqExtPrebid.Data != nil && len(reqExtPrebid.Data.Bidders) != 0 && reqExtPrebid.BidderConfigs == nil {
+		return errors.New(`request.ext.prebid.data.bidders are specified but reqExtPrebid.BidderConfigs are not`)
+	}
+	if reqExtPrebid.Data != nil && len(reqExtPrebid.Data.Bidders) == 0 && reqExtPrebid.BidderConfigs != nil {
+		return errors.New(`request.ext.prebid.data.bidders are not specified but reqExtPrebid.BidderConfigs are`)
+	}
+
+	if reqExtPrebid.Data == nil && reqExtPrebid.BidderConfigs != nil {
+		return errors.New(`request.ext.prebid.data is not specified but reqExtPrebid.BidderConfigs are`)
 	}
 
 	return nil

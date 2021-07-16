@@ -3,6 +3,7 @@ package openrtb_ext
 import (
 	"encoding/json"
 	"errors"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 )
 
 // FirstPartyDataExtKey defines a field name within request.ext and request.imp.ext reserved for first party data.
@@ -43,6 +44,22 @@ type ExtRequestPrebid struct {
 	NoSale []string `json:"nosale,omitempty"`
 
 	CurrencyConversions *ExtRequestCurrency `json:"currency,omitempty"`
+	BidderConfigs       *[]FPDBidderConfig  `json:"bidderconfig,omitempty"`
+}
+
+type FPDBidderConfig struct {
+	Bidders   []string   `json:"bidders,omitempty"`
+	FPDConfig *FPDConfig `json:"config,omitempty"`
+}
+
+type FPDConfig struct {
+	FPDData *FPDData `json:"fpd,omitempty"`
+}
+
+type FPDData struct {
+	Site *openrtb2.Site `json:"site,omitempty"`
+	App  *openrtb2.App  `json:"app,omitempty"`
+	User *openrtb2.User `json:"user,omitempty"`
 }
 
 type ExtRequestCurrency struct {
@@ -311,6 +328,7 @@ var priceGranularityAuto = PriceGranularity{
 // ExtRequestPrebidData defines Prebid's First Party Data (FPD) and related bid request options.
 type ExtRequestPrebidData struct {
 	EidPermissions []ExtRequestPrebidDataEidPermission `json:"eidpermissions"`
+	Bidders        []string                            `json:"bidders"`
 }
 
 // ExtRequestPrebidDataEidPermission defines a filter rule for filter user.ext.eids

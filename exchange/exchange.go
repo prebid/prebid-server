@@ -27,6 +27,7 @@ import (
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
+	"github.com/prebid/prebid-server/util/jsonutil"
 )
 
 type ContextKey string
@@ -148,7 +149,8 @@ type AuctionRequest struct {
 
 	// LegacyLabels is included here for temporary compatability with cleanOpenRTBRequests
 	// in HoldAuction until we get to factoring it away. Do not use for anything new.
-	LegacyLabels metrics.Labels
+	LegacyLabels   metrics.Labels
+	FirstPartyData map[string][]byte
 }
 
 // BidderRequest holds the bidder specific request and all other
@@ -193,6 +195,10 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	// Make our best guess if GDPR applies
 	gdprDefaultValue := e.parseGDPRDefaultValue(r.BidRequest)
 
+	fpdData, reqExt, reqExtPrebid := preprocessFPD(requestExt.Prebid, r.BidRequest.Ext)
+	r.BidRequest.Ext = reqExt
+	requestExt.Prebid = reqExtPrebid
+
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
 	bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(ctx, r, requestExt, e.gDPR, e.me, gdprDefaultValue, e.privacyConfig, &r.Account)
 
@@ -209,7 +215,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	// Get currency rates conversions for the auction
 	conversions := e.getAuctionCurrencyRates(requestExt.Prebid.CurrencyConversions)
 
-	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, r.Account.DebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride)
+	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, r.Account.DebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride, fpdData, r.FirstPartyData)
 
 	var auc *auction
 	var cacheErrs []error
@@ -304,6 +310,38 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 
 	// Build the response
 	return e.buildBidResponse(ctx, liveAdapters, adapterBids, r.BidRequest, adapterExtra, auc, bidResponseExt, cacheInstructions.returnCreative, errs)
+}
+
+func preprocessFPD(reqExtPrebid openrtb_ext.ExtRequestPrebid, rawRequestExt json.RawMessage) (map[openrtb_ext.BidderName]*openrtb_ext.FPDData, json.RawMessage, openrtb_ext.ExtRequestPrebid) {
+
+	if reqExtPrebid.Data == nil || reqExtPrebid.BidderConfigs == nil {
+		return nil, rawRequestExt, reqExtPrebid
+	}
+	//map to store bidder configs to process
+	fpdData := make(map[openrtb_ext.BidderName]*openrtb_ext.FPDData)
+
+	//every entry in ext.prebid.bidderconfig[].bidders would also need to be in ext.prebid.data.bidders or it will be ignored
+	bidderTable := make(map[string]bool) //boolean just  to check existence of the element in map
+	for _, bidder := range reqExtPrebid.Data.Bidders {
+		bidderTable[bidder] = true
+	}
+
+	for _, bidderConfig := range *reqExtPrebid.BidderConfigs {
+		for _, bidder := range bidderConfig.Bidders {
+			if bidderTable[bidder] {
+				fpdData[openrtb_ext.BidderName(bidder)] = bidderConfig.FPDConfig.FPDData
+			}
+		}
+	}
+
+	//remove FPD data from request and from request extension
+	rawRequestExt, _ = jsonutil.DropElement(rawRequestExt, "bidderconfig")
+	rawRequestExt, _ = jsonutil.DropElement(rawRequestExt, "data")
+
+	reqExtPrebid.BidderConfigs = nil
+	reqExtPrebid.Data.Bidders = nil
+
+	return fpdData, rawRequestExt, reqExtPrebid
 }
 
 func (e *exchange) parseGDPRDefaultValue(bidRequest *openrtb2.BidRequest) gdpr.Signal {
@@ -420,7 +458,9 @@ func (e *exchange) getAllBids(
 	conversions currency.Conversions,
 	accountDebugAllowed bool,
 	globalPrivacyControlHeader string,
-	headerDebugAllowed bool) (
+	headerDebugAllowed bool,
+	fpdData map[openrtb_ext.BidderName]*openrtb_ext.FPDData,
+	firstPartyData map[string][]byte) (
 	map[openrtb_ext.BidderName]*pbsOrtbSeatBid,
 	map[openrtb_ext.BidderName]*seatResponseExtra, bool) {
 	// Set up pointers to the bid results
@@ -443,6 +483,17 @@ func (e *exchange) getAllBids(
 			defer func() {
 				e.me.RecordAdapterRequest(bidderRequest.BidderLabels)
 			}()
+
+			if fpdData != nil && fpdData[bidderRequest.BidderName] != nil {
+				//FPD needs to be applied. Bid request may be modified.
+				//To save original bid request new copy will be returned
+				errs := make([]error, 0)
+				bidderRequest.BidRequest = applyFPD(bidderRequest.BidRequest, fpdData[bidderRequest.BidderName], firstPartyData, errs)
+				if len(errs) != 0 {
+					//skip?
+				}
+			}
+
 			start := time.Now()
 
 			adjustmentFactor := 1.0
@@ -452,6 +503,7 @@ func (e *exchange) getAllBids(
 			reqInfo := adapters.NewExtraRequestInfo(conversions)
 			reqInfo.PbsEntryPoint = bidderRequest.BidderLabels.RType
 			reqInfo.GlobalPrivacyControlHeader = globalPrivacyControlHeader
+			fmt.Println("Ext: ", string(bidderRequest.BidRequest.Ext))
 			bids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest.BidRequest, bidderRequest.BidderName, adjustmentFactor, conversions, &reqInfo, accountDebugAllowed, headerDebugAllowed)
 
 			// Add in time reporting
@@ -500,6 +552,222 @@ func (e *exchange) getAllBids(
 	}
 
 	return adapterBids, adapterExtra, bidsFound
+}
+
+func applyFPD(bidRequest *openrtb2.BidRequest, fpdData *openrtb_ext.FPDData, firstPartyData map[string][]byte, errL []error) *openrtb2.BidRequest {
+	newBidRequest := &bidRequest
+
+	// TODO: If an attribute doesn't pass defined validation checks,
+	// it should be removed from the request with a warning placed
+	// in the messages section of debug output and a log message emitted 1% of the time.
+	// The auction should continue
+
+	if fpdData.User != nil {
+		if bidRequest.User == nil {
+			(*newBidRequest).User = fpdData.User
+		} else {
+			(*newBidRequest).User = mergeUser(*bidRequest.User, fpdData.User, firstPartyData["user"])
+		}
+	}
+
+	if fpdData.App != nil {
+		if bidRequest.App == nil {
+			(*newBidRequest).App = fpdData.App
+		} else {
+			(*newBidRequest).App = mergeApp(*bidRequest.App, fpdData.App, firstPartyData["app"])
+		}
+	}
+
+	if fpdData.Site != nil {
+		if bidRequest.Site == nil {
+			(*newBidRequest).Site = fpdData.Site
+		} else {
+			(*newBidRequest).Site = mergeSite(*bidRequest.Site, fpdData.Site, firstPartyData["site"])
+		}
+	}
+
+	if ((*newBidRequest).Site == nil && (*newBidRequest).App == nil) || ((*newBidRequest).Site != nil && (*newBidRequest).App != nil) {
+		errL = append(errL, errors.New("request.site or request.app must be defined, but not both."))
+	}
+
+	/*if err := deps.validateSite(req.Site); err != nil {
+		errL = append(errL, err)
+	}
+
+	if err := deps.validateApp(req.App); err != nil {
+		errL = append(errL, err)
+	}
+
+	if err := deps.validateUser(req.User, aliases); err != nil {
+		errL = append(errL, err)
+	}*/
+
+	return *newBidRequest
+}
+
+func mergeUser(user openrtb2.User, fpdUser *openrtb2.User, userData []byte) *openrtb2.User {
+	temp := user
+	newUser := temp
+
+	if fpdUser.ID != "" {
+		newUser.ID = fpdUser.ID
+	}
+	if fpdUser.BuyerUID != "" {
+		newUser.BuyerUID = fpdUser.BuyerUID
+	}
+	if fpdUser.Yob != 0 {
+		newUser.Yob = fpdUser.Yob
+	}
+	if fpdUser.Gender != "" {
+		newUser.Gender = fpdUser.Gender
+	}
+	if fpdUser.Keywords != "" {
+		newUser.Keywords = fpdUser.Keywords
+	}
+	if fpdUser.CustomData != "" {
+		newUser.CustomData = fpdUser.CustomData
+	}
+	if fpdUser.Geo != nil {
+		newUser.Geo = fpdUser.Geo
+	}
+	if fpdUser.Data != nil {
+		newUser.Data = fpdUser.Data
+	}
+	if fpdUser.Ext != nil {
+		newUser.Ext = fpdUser.Ext
+	}
+
+	//If {site,app,user}.data exists, merge it into {site,app,user}.ext.data
+	//Question: if fpdSite.Ext.data exists should it be overwritten with Site.data?
+	if userData != nil {
+		newUserExt, err := jsonutil.SetElement(newUser.Ext, userData, "data")
+		if err != nil {
+			newUser.Ext = newUserExt
+		}
+	}
+
+	return &newUser
+}
+
+func mergeApp(app openrtb2.App, fpdApp *openrtb2.App, appData []byte) *openrtb2.App {
+	temp := app
+	newApp := temp
+
+	if fpdApp.ID != "" {
+		newApp.ID = fpdApp.ID
+	}
+	if fpdApp.Name != "" {
+		newApp.Name = fpdApp.Name
+	}
+	if fpdApp.Bundle != "" {
+		newApp.Bundle = fpdApp.Bundle
+	}
+	if fpdApp.Domain != "" {
+		newApp.Domain = fpdApp.Domain
+	}
+	if fpdApp.StoreURL != "" {
+		newApp.StoreURL = fpdApp.StoreURL
+	}
+	if len(fpdApp.Cat) > 0 {
+		newApp.Cat = fpdApp.Cat
+	}
+	if len(fpdApp.SectionCat) > 0 {
+		newApp.SectionCat = fpdApp.SectionCat
+	}
+	if len(fpdApp.PageCat) > 0 {
+		newApp.PageCat = fpdApp.PageCat
+	}
+	if fpdApp.Ver != "" {
+		newApp.Ver = fpdApp.Ver
+	}
+	//cannot distinguish 0 and default values for primitive types
+	newApp.PrivacyPolicy = fpdApp.PrivacyPolicy
+	newApp.Paid = fpdApp.Paid
+
+	if fpdApp.Publisher != nil {
+		newApp.Publisher = fpdApp.Publisher
+	}
+	if fpdApp.Content != nil {
+		newApp.Content = fpdApp.Content
+	}
+	if fpdApp.Keywords != "" {
+		newApp.Keywords = fpdApp.Keywords
+	}
+	if fpdApp.Ext != nil {
+		newApp.Ext = fpdApp.Ext
+	}
+	//If {site,app,user}.data exists, merge it into {site,app,user}.ext.data
+	//Question: if fpdApp.Ext.data exists should it be overwritten with App.data?
+	if appData != nil {
+		newAppExt, err := jsonutil.SetElement(newApp.Ext, appData, "data")
+		if err != nil {
+			newApp.Ext = newAppExt
+		}
+	}
+
+	return &newApp
+}
+
+func mergeSite(site openrtb2.Site, fpdSite *openrtb2.Site, siteData []byte) *openrtb2.Site {
+	temp := site
+	newSite := temp
+
+	if fpdSite.ID != "" {
+		newSite.ID = fpdSite.ID
+	}
+	if fpdSite.Name != "" {
+		newSite.Name = fpdSite.Name
+	}
+	if fpdSite.Domain != "" {
+		newSite.Domain = fpdSite.Domain
+	}
+	if len(fpdSite.Cat) > 0 {
+		newSite.Cat = fpdSite.Cat
+	}
+	if len(fpdSite.SectionCat) > 0 {
+		newSite.SectionCat = fpdSite.SectionCat
+	}
+	if len(fpdSite.PageCat) > 0 {
+		newSite.PageCat = fpdSite.PageCat
+	}
+	if fpdSite.Page != "" {
+		newSite.Page = fpdSite.Page
+	}
+	if fpdSite.Ref != "" {
+		newSite.Ref = fpdSite.Ref
+	}
+	if fpdSite.Search != "" {
+		newSite.Search = fpdSite.Search
+	}
+	newSite.Mobile = fpdSite.Mobile
+	newSite.PrivacyPolicy = fpdSite.PrivacyPolicy
+
+	if fpdSite.Publisher != nil {
+		newSite.Publisher = fpdSite.Publisher
+	}
+	if fpdSite.Content != nil {
+		newSite.Content = fpdSite.Content
+	}
+	if fpdSite.Keywords != "" {
+		newSite.Keywords = fpdSite.Keywords
+	}
+	if fpdSite.Ext != nil {
+		newSite.Ext = fpdSite.Ext
+	}
+
+	//If {site,app,user}.data exists, merge it into {site,app,user}.ext.data
+	//Question: if fpdSite.Ext.data exists should it be overwritten with Site.data?
+	if siteData != nil {
+		//what function to call: SetElement or SetElement2
+		//newSiteExt, err := jsonutil.SetElement(newSite.Ext, siteData, "data")
+		newSiteExt, err := jsonutil.SetElement(newSite.Ext, siteData, "data")
+
+		if err == nil {
+			newSite.Ext = newSiteExt
+		}
+	}
+
+	return &newSite
 }
 
 func (e *exchange) recoverSafely(bidderRequests []BidderRequest,
