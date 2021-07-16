@@ -60,4 +60,7 @@ var invalidParams = []string{
 	`{"tappxkey": 1, "endpoint":"ZZ1INTERNALTEST149147915", "host":""}`,
 	`{"tappxkey":"pub-12345-android-9876", "endpoint": 1, "host":""}`,
 	`{"tappxkey": 1, "endpoint": 1, "host": 123}`,
+	`{"tappxkey": 1, "endpoint": 1, "rewarded": []}`,
+	`{"tappxkey": 1, "endpoint": 1, "rewarded": 1, "bcid":""}`,
+	`{"tappxkey": 1, "endpoint": 1, "bcid":["123"], bcrid: 123}`,
 }
