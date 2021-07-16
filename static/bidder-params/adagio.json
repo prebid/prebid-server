@@ -1,0 +1,94 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Adagio Adapter Params",
+  "description": "A schema which validates params accepted by the Adagio adapter",
+  "type": "object",
+  "required": [
+    "organizationId",
+    "site",
+    "placement"
+  ],
+  "properties": {
+    "organizationId": {
+      "type": "string",
+      "description": "Name to identify the organization",
+      "minLength": 1
+    },
+    "site": {
+      "type": "string",
+      "description": "Name to identify the site",
+      "minLength": 1
+    },
+    "placement": {
+      "type": "string",
+      "description": "Name to identify the placement",
+      "minLength": 1
+    },
+    "pageviewId": {
+      "type": "string",
+      "description": "Name to identify the pageview"
+    },
+    "pagetype": {
+      "type": "string",
+      "description": "Name to identify the page type"
+    },
+    "category": {
+      "type": "string",
+      "description": "Name to identify the category"
+    },
+    "subcategory": {
+      "type": "string",
+      "description": "Name to identify the subcategory"
+    },
+    "environment": {
+      "type": "string",
+      "description": "Name to identify the environment"
+    },
+    "features": {
+      "type": "object",
+      "patternProperties": {
+        "^[a-zA-Z_]": { "type": "string" }
+      }
+    },
+    "prebidVersion:": {
+      "type": "string",
+      "description": "Name to identify the version of Prebid.js"
+    },
+    "debug": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "cpm": {
+          "type": "number"
+        },
+        "lazyLoad": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "threshold": {
+              "type": "number"
+            },
+            "rootMargin":  {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "native": {
+      "type": "object",
+      "properties": {
+        "context": {
+          "type": "number"
+        },
+        "plcmttype": {
+          "type": "number"
+        }
+      }
+    }
+  }
+}
