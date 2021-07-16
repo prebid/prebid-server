@@ -63,7 +63,7 @@ func (a *TappxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 		Rewarded int `json:"rewarded,omitempty"`
 	}
 	if tappxExt.Rewarded == 1 {
-		videoext := VideoExt{Rewarded: tappxExt.Rewarded}
+		videoext := VideoExt{Rewarded: 1}
 		jsonvideoext, err := json.Marshal(videoext)
 		if err == nil {
 			request.Imp[0].Video.Ext = jsonvideoext
