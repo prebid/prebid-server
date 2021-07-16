@@ -16,7 +16,8 @@
           "bidder": {
             "tappxkey": "pub-12345-android-9876",
             "endpoint": "VZ123456PS",
-            "host": "testing.ssp.tappx.com/rtb/v2/"
+            "host": "testing.ssp.tappx.com/rtb/v2/",
+            "rewarded": 1
           }
         }
       }
@@ -47,7 +48,10 @@
                   "video/mp4"
                 ],
                 "w": 640,
-                "h": 480
+                "h": 480,
+                "ext": {
+                  "rewarded": 1
+                }
               },
               "ext": {
                 "bidder": {
