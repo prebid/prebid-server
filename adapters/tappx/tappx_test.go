@@ -44,7 +44,6 @@ func TestTsValue(t *testing.T) {
 	tappxExt.Host = "example.host.tappx.com"
 	tappxExt.Endpoint = "DUMMYENDPOINT"
 	tappxExt.TappxKey = "dummy-tappx-key"
-	tappxExt.Rewarded = 1
 
 	url, err := bidderTappx.buildEndpointURL(&tappxExt, test)
 
