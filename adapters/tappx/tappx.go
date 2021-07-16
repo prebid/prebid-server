@@ -18,7 +18,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const TAPPX_BIDDER_VERSION = "1.2"
+const TAPPX_BIDDER_VERSION = "1.3"
 const TYPE_CNN = "prebid"
 
 type TappxAdapter struct {
@@ -51,8 +51,64 @@ func (a *TappxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 			Message: "Error parsing bidderExt object",
 		}}
 	}
-
 	var tappxExt openrtb_ext.ExtImpTappx
+	if err := json.Unmarshal(bidderExt.Bidder, &tappxExt); err != nil {
+		fmt.Println(err)
+		return nil, []error{&errortypes.BadInput{
+			Message: "Error parsing tappxExt parameters",
+		}}
+	}
+
+	//In this section we create all EXT parameters
+	type VideoExt struct {
+		Rewarded int `json:"rewarded,omitempty"`
+	}
+	if tappxExt.Rewarded == 1 {
+		videoext :=VideoExt{Rewarded: tappxExt.Rewarded}
+		jsonvideoext, err := json.Marshal(videoext)
+		if err == nil {
+			request.Imp[0].Video.Ext = jsonvideoext
+		}
+		
+	}
+
+	type Bidder struct {
+		Tappxkey string `json:"tappxkey"`
+		Mktag string `json:"mktag,omitempty"`
+		Bcid []string `json:"bcid,omitempty"`
+		Bcrid []string `json:"bcrid,omitempty"`
+	}
+	type Ext struct {
+		Bidder `json:"bidder"`
+	}
+	ext := Ext{
+		Bidder: Bidder{
+			Tappxkey: tappxExt.TappxKey,
+		},
+	}
+	//ext.Bidder.TappxKey=params.TappxKey
+	fmt.Println("****************************************************")
+	fmt.Println(string(tappxExt.TappxKey))
+	fmt.Println("----")
+	fmt.Println(string(tappxExt.Mktag))
+	fmt.Println("****************************************************")
+	if(tappxExt.Mktag != ""){
+		ext.Bidder.Mktag=tappxExt.Mktag
+	}
+	if(tappxExt.Bcid != nil){
+		ext.Bidder.Bcid=tappxExt.Bcid
+	}
+	if(tappxExt.Bcrid != nil){
+		ext.Bidder.Bcrid=tappxExt.Bcrid
+	}
+
+	request.Ext = nil
+
+	jsonext, err := json.Marshal(ext)
+	if err == nil {
+		request.Ext = jsonext
+	}
+
 	if err := json.Unmarshal(bidderExt.Bidder, &tappxExt); err != nil {
 		return nil, []error{&errortypes.BadInput{
 			Message: "Error parsing tappxExt parameters",
