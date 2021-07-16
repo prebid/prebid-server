@@ -12,6 +12,10 @@
 			"type": "string",
 			"description": "An ID which identifies the adunit"
 		},
+		"mktag": {
+			"type": "string",
+			"description": "Minimum bid for this impression expressed in CPM (USD)"
+		},
 		"endpoint": {
 			"type": "string",
 			"description": "Endpoint provided to publisher"
@@ -19,6 +23,18 @@
 		"bidfloor": {
 			"type": "number",
 			"description": "Minimum bid for this impression expressed in CPM (USD)"
+		},
+		"rewarded": {
+			"type": "number",
+			"description": "Indicates with a 0 or 1 if is rewarded or no. (Only with video)"
+		},
+		"bcid": {
+			"type": "array",
+			"description": "Block list of CID"
+		},
+		"bcrid": {
+			"type": "array",
+			"description": "Block list of CRID"
 		}
 	},
 	"required": ["host","tappxkey","endpoint"]
