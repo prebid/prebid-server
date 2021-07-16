@@ -757,8 +757,11 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			})
 			continue
 		}
-		thisImp.BidFloorCur = "USD"
-		thisImp.BidFloor = resolvedBidFloor
+
+		if resolvedBidFloor > 0 {
+			thisImp.BidFloorCur = "USD"
+			thisImp.BidFloor = resolvedBidFloor
+		}
 
 		if request.User != nil {
 			userCopy := *request.User
@@ -915,10 +918,8 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 }
 
 func resolveBidFloor(bidFloor float64, bidFloorCur string, reqInfo *adapters.ExtraRequestInfo) (float64, error) {
-	if bidFloor > 0 {
-		if strings.ToUpper(bidFloorCur) != "USD" {
-			return reqInfo.ConvertCurrency(bidFloor, bidFloorCur, "USD")
-		}
+	if bidFloor > 0 && bidFloorCur != "" && strings.ToUpper(bidFloorCur) != "USD" {
+		return reqInfo.ConvertCurrency(bidFloor, bidFloorCur, "USD")
 	}
 
 	return bidFloor, nil

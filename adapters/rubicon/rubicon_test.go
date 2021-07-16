@@ -580,6 +580,7 @@ func TestOpenRTBRequestWithDifferentBidFloorAttributes(t *testing.T) {
 		bidFloorCur      string
 		setMock          func(m *mock.Mock)
 		expectedBidFloor float64
+		expectedBidCur   string
 		expectedErrors   []error
 	}{
 		{
@@ -587,6 +588,7 @@ func TestOpenRTBRequestWithDifferentBidFloorAttributes(t *testing.T) {
 			bidFloorCur:      "WRONG",
 			setMock:          func(m *mock.Mock) { m.On("GetRate", "WRONG", "USD").Return(2.5, errors.New("some error")) },
 			expectedBidFloor: 0,
+			expectedBidCur:   "",
 			expectedErrors: []error{
 				&errortypes.BadInput{Message: "Unable to convert provided bid floor currency from WRONG to USD"},
 			},
@@ -596,6 +598,7 @@ func TestOpenRTBRequestWithDifferentBidFloorAttributes(t *testing.T) {
 			bidFloorCur:      "USD",
 			setMock:          func(m *mock.Mock) {},
 			expectedBidFloor: 1,
+			expectedBidCur:   "USD",
 			expectedErrors:   nil,
 		},
 		{
@@ -603,6 +606,23 @@ func TestOpenRTBRequestWithDifferentBidFloorAttributes(t *testing.T) {
 			bidFloorCur:      "EUR",
 			setMock:          func(m *mock.Mock) { m.On("GetRate", "EUR", "USD").Return(1.2, nil) },
 			expectedBidFloor: 1.2,
+			expectedBidCur:   "USD",
+			expectedErrors:   nil,
+		},
+		{
+			bidFloor:         0,
+			bidFloorCur:      "",
+			setMock:          func(m *mock.Mock) {},
+			expectedBidFloor: 0,
+			expectedBidCur:   "",
+			expectedErrors:   nil,
+		},
+		{
+			bidFloor:         -1,
+			bidFloorCur:      "CZK",
+			setMock:          func(m *mock.Mock) {},
+			expectedBidFloor: -1,
+			expectedBidCur:   "CZK",
 			expectedErrors:   nil,
 		},
 	}
@@ -652,7 +672,7 @@ func TestOpenRTBRequestWithDifferentBidFloorAttributes(t *testing.T) {
 				t.Fatalf("Unexpected error while decoding request: %s", err)
 			}
 			assert.Equal(t, scenario.expectedBidFloor, rubiconReq.Imp[0].BidFloor)
-			assert.Equal(t, "USD", rubiconReq.Imp[0].BidFloorCur)
+			assert.Equal(t, scenario.expectedBidCur, rubiconReq.Imp[0].BidFloorCur)
 		} else {
 			assert.Equal(t, scenario.expectedErrors, errs)
 		}
