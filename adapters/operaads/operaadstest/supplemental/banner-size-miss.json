@@ -1,0 +1,50 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "domain": "good.site",
+      "page": "https://good.site/url",
+      "publisher": {
+        "id": "test-publisher-id"
+      },
+      "ext": {
+        "amp": 0
+      }
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": []
+        },
+        "secure": 1,
+        "ext": {
+          "bidder": {
+            "placementId": "s17890",
+            "endpointId": "ep19979",
+            "publisherId": "pub456"
+          }
+        }
+      }
+    ],
+    "device": {
+      "os": "android",
+      "ua": "test-user-agent",
+      "ip": "123.123.123.123",
+      "h": 700,
+      "w": 375
+    },
+    "at": 1,
+    "tmax": 200,
+    "test": 1,
+    "source": {
+      "tid": "283746293874293"
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Size information missing for banner",
+      "comparison": "literal"
+    }
+  ]
+}
