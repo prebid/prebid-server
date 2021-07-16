@@ -1,12 +1,12 @@
 package openrtb_ext
 
 type ExtImpTappx struct {
-	Host     string  `json:"host"`
-	TappxKey string  `json:"tappxkey"`
-	Endpoint string  `json:"endpoint"`
-	BidFloor float64 `json:"bidfloor,omitempty"`
-	Rewarded int `json:"rewarded,omitempty"`
-	Mktag string `json:"mktag,omitempty"`
-	Bcid []string `json:"bcid,omitempty"`
-	Bcrid []string `json:"bcrid,omitempty"`
+	Host     string   `json:"host"`
+	TappxKey string   `json:"tappxkey"`
+	Endpoint string   `json:"endpoint"`
+	BidFloor float64  `json:"bidfloor,omitempty"`
+	Rewarded int      `json:"rewarded,omitempty"`
+	Mktag    string   `json:"mktag,omitempty"`
+	Bcid     []string `json:"bcid,omitempty"`
+	Bcrid    []string `json:"bcrid,omitempty"`
 }

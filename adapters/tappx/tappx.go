@@ -64,19 +64,18 @@ func (a *TappxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 		Rewarded int `json:"rewarded,omitempty"`
 	}
 	if tappxExt.Rewarded == 1 {
-		videoext :=VideoExt{Rewarded: tappxExt.Rewarded}
+		videoext := VideoExt{Rewarded: tappxExt.Rewarded}
 		jsonvideoext, err := json.Marshal(videoext)
 		if err == nil {
 			request.Imp[0].Video.Ext = jsonvideoext
 		}
-		
 	}
 
 	type Bidder struct {
-		Tappxkey string `json:"tappxkey"`
-		Mktag string `json:"mktag,omitempty"`
-		Bcid []string `json:"bcid,omitempty"`
-		Bcrid []string `json:"bcrid,omitempty"`
+		Tappxkey string   `json:"tappxkey"`
+		Mktag    string   `json:"mktag,omitempty"`
+		Bcid     []string `json:"bcid,omitempty"`
+		Bcrid    []string `json:"bcrid,omitempty"`
 	}
 	type Ext struct {
 		Bidder `json:"bidder"`
@@ -92,14 +91,14 @@ func (a *TappxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 	fmt.Println("----")
 	fmt.Println(string(tappxExt.Mktag))
 	fmt.Println("****************************************************")
-	if(tappxExt.Mktag != ""){
-		ext.Bidder.Mktag=tappxExt.Mktag
+	if tappxExt.Mktag != "" {
+		ext.Bidder.Mktag = tappxExt.Mktag
 	}
-	if(tappxExt.Bcid != nil){
-		ext.Bidder.Bcid=tappxExt.Bcid
+	if tappxExt.Bcid != nil {
+		ext.Bidder.Bcid = tappxExt.Bcid
 	}
-	if(tappxExt.Bcrid != nil){
-		ext.Bidder.Bcrid=tappxExt.Bcrid
+	if tappxExt.Bcrid != nil {
+		ext.Bidder.Bcrid = tappxExt.Bcrid
 	}
 
 	request.Ext = nil
