@@ -56,6 +56,11 @@
             "publisher": {
               "id": "2"
             }
+          },
+          "ext": {
+            "bidder": {
+              "tappxkey": "pub-12345-android-9876"
+            }
           }
         }
       },
