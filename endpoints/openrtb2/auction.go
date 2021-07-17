@@ -135,7 +135,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		deps.analytics.LogAuctionObject(&ao)
 	}()
 
-	req, errL := deps.parseRequest(r)
+	req, impToStoredReq, errL := deps.parseRequest(r)
 
 	if errortypes.ContainsFatalError(errL) && writeError(errL, w, &labels) {
 		return
@@ -185,6 +185,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		LegacyLabels:               labels,
 		Warnings:                   warnings,
 		GlobalPrivacyControlHeader: secGPC,
+		ImpToStoredReq:             impToStoredReq,
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
@@ -227,7 +228,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 // possible, it will return errors with messages that suggest improvements.
 //
 // If the errors list has at least one element, then no guarantees are made about the returned request.
-func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb2.BidRequest, errs []error) {
+func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb2.BidRequest, impToStoredReq map[string][]byte, errs []error) {
 	req = &openrtb2.BidRequest{}
 	errs = nil
 
@@ -254,7 +255,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb2
 	defer cancel()
 
 	// Fetch the Stored Request data and merge it into the HTTP request.
-	if requestJson, errs = deps.processStoredRequests(ctx, requestJson); len(errs) > 0 {
+	if requestJson, impToStoredReq, errs = deps.processStoredRequests(ctx, requestJson); len(errs) > 0 {
 		return
 	}
 
@@ -1314,15 +1315,15 @@ func getJsonSyntaxError(testJSON []byte) (bool, string) {
 	return false, ""
 }
 
-func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson []byte) ([]byte, []error) {
+func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson []byte) ([]byte, map[string][]byte, []error) {
 	// Parse the Stored Request IDs from the BidRequest and Imps.
 	storedBidRequestId, hasStoredBidRequest, err := getStoredRequestId(requestJson)
 	if err != nil {
-		return nil, []error{err}
+		return nil, nil, []error{err}
 	}
 	imps, impIds, idIndices, errs := parseImpInfo(requestJson)
 	if len(errs) > 0 {
-		return nil, errs
+		return nil, nil, errs
 	}
 
 	// Fetch the Stored Request data
@@ -1332,7 +1333,7 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 	}
 	storedRequests, storedImps, errs := deps.storedReqFetcher.FetchRequests(ctx, storedReqIds, impIds)
 	if len(errs) != 0 {
-		return nil, errs
+		return nil, nil, errs
 	}
 
 	// Apply the Stored BidRequest, if it exists
@@ -1350,7 +1351,7 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 					err = fmt.Errorf("ext.prebid.storedrequest.id refers to Stored Request %s which contains Invalid JSON: %s", storedBidRequestId, Err)
 				}
 			}
-			return nil, []error{err}
+			return nil, nil, []error{err}
 		}
 	}
 
@@ -1367,7 +1368,7 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 					err = fmt.Errorf("Invalid JSON in Default Request Settings: %s", Err)
 				}
 			}
-			return nil, []error{err}
+			return nil, nil, []error{err}
 		}
 		resolvedRequest = aliasedRequest
 	}
@@ -1375,8 +1376,10 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 	// Apply any Stored Imps, if they exist. Since the JSON Merge Patch overrides arrays,
 	// and Prebid Server defers to the HTTP Request to resolve conflicts, it's safe to
 	// assume that the request.imp data did not change when applying the Stored BidRequest.
+	impToStoredReq := make(map[string][]byte)
 	for i := 0; i < len(impIds); i++ {
 		resolvedImp, err := jsonpatch.MergePatch(storedImps[impIds[i]], imps[idIndices[i]])
+
 		if err != nil {
 			hasErr, Err := getJsonSyntaxError(imps[idIndices[i]])
 			if hasErr {
@@ -1387,22 +1390,38 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 					err = fmt.Errorf("imp.ext.prebid.storedrequest.id %s: Stored Imp has Invalid JSON: %s", impIds[i], Err)
 				}
 			}
-			return nil, []error{err}
+			return nil, nil, []error{err}
 		}
 		imps[idIndices[i]] = resolvedImp
+
+		impId, err := jsonparser.GetString(resolvedImp, "id")
+		if err != nil {
+			return nil, nil, []error{err}
+		}
+		// This is substantially faster for reading values from a json blob than the Go json package,
+		// but keep in mind that each jsonparser.GetXXX call re-parses the entire json.
+		// Based on performance measurements, the tipping point of efficiency is around 4 calls.
+		// At that point, please consider switching to EachKey to use a single pass.
+		includeVideoAttributes, err := jsonparser.GetBoolean(resolvedImp, "ext", "prebid", "options", "echovideoattrs")
+		if err != nil && err != jsonparser.KeyPathNotFoundError {
+			return nil, nil, []error{err}
+		}
+		if includeVideoAttributes {
+			impToStoredReq[impId] = storedImps[impIds[i]]
+		}
 	}
 	if len(impIds) > 0 {
 		newImpJson, err := json.Marshal(imps)
 		if err != nil {
-			return nil, []error{err}
+			return nil, nil, []error{err}
 		}
 		resolvedRequest, err = jsonparser.Set(resolvedRequest, newImpJson, "imp")
 		if err != nil {
-			return nil, []error{err}
+			return nil, nil, []error{err}
 		}
 	}
 
-	return resolvedRequest, nil
+	return resolvedRequest, impToStoredReq, nil
 }
 
 // parseImpInfo parses the request JSON and returns several things about the Imps

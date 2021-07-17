@@ -1021,7 +1021,7 @@ func TestStoredRequests(t *testing.T) {
 	}
 
 	for i, requestData := range testStoredRequests {
-		newRequest, errList := deps.processStoredRequests(context.Background(), json.RawMessage(requestData))
+		newRequest, impToStoredReq, errList := deps.processStoredRequests(context.Background(), json.RawMessage(requestData))
 		if len(errList) != 0 {
 			for _, err := range errList {
 				if err != nil {
@@ -1035,6 +1035,41 @@ func TestStoredRequests(t *testing.T) {
 		if !jsonpatch.Equal(newRequest, expectJson) {
 			t.Errorf("Error in processStoredRequests, test %d failed on compare\nFound:\n%s\nExpected:\n%s", i, string(newRequest), string(expectJson))
 		}
+		expectedImp := testStoredImpIds[i]
+		expectedStoredReq := json.RawMessage(testStoredImps[i])
+		if !jsonpatch.Equal(impToStoredReq[expectedImp], expectedStoredReq) {
+			t.Errorf("Error in processStoredRequests, test %d failed on compare stored request\nFound:\n%s\nExpected:\n%s", i, string(impToStoredReq[expectedImp]), string(expectedStoredReq))
+		}
+
+	}
+}
+
+func TestStoredRequestsVideoErrors(t *testing.T) {
+	deps := &endpointDeps{
+		&nobidExchange{},
+		newParamsValidator(t),
+		&mockStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: maxSize},
+		newTestMetrics(),
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		false,
+		[]byte{},
+		openrtb_ext.BuildBidderMap(),
+		nil,
+		nil,
+		hardcodedResponseIPValidator{response: true},
+	}
+
+	for i, requestData := range testStoredRequestsErrors {
+		_, _, errList := deps.processStoredRequests(context.Background(), json.RawMessage(requestData))
+		if len(errList) == 0 {
+			t.Error("processStoredRequests should return error")
+		}
+		err := errList[0]
+		assert.Equal(t, testStoredRequestsErrorsResults[i], err.Error(), "Incorrect error")
 	}
 }
 
@@ -2909,7 +2944,24 @@ var testStoredRequestData = map[string]json.RawMessage{
 // third below has valid JSON and matches schema
 var testStoredImpData = map[string]json.RawMessage{
 	"1": json.RawMessage(`{
-"id": "adUnit1",
+			"id": "adUnit1",
+			"ext": {
+				"appnexus": {
+					"placementId": "abc",
+					"position": "above",
+					"reserve": 0.35
+				},
+				"rubicon": {
+					"accountId": "abc"
+				}
+			},
+			"video":{
+				"w":200,
+				"h":300
+			}
+		}`),
+	"2": json.RawMessage(`{
+			"id": "adUnit1",
 			"ext": {
 				"appnexus": {
 					"placementId": "abc",
@@ -2922,7 +2974,7 @@ var testStoredImpData = map[string]json.RawMessage{
 			}
 		}`),
 	"7": json.RawMessage(`{
-"id": "adUnit1",
+			"id": "adUnit1",
 			"ext": {
 				"appnexus": {
 					"placementId": 12345678,
@@ -2951,6 +3003,15 @@ var testStoredImpData = map[string]json.RawMessage{
 				}
 			}
 		}`),
+	"10": json.RawMessage(`{
+			"ext": {
+				"appnexus": {
+					"placementId": 12345678,
+					"position": "above",
+					"reserve": 0.35
+				}
+			}
+		}`),
 }
 
 // Incoming requests with stored request IDs
@@ -2959,10 +3020,17 @@ var testStoredRequests = []string{
 		"id": "ThisID",
 		"imp": [
 			{
+				"video":{
+					"h":300,
+					"w":200
+				},
 				"ext": {
 					"prebid": {
 						"storedrequest": {
 							"id": "1"
+						},
+						"options": {
+							"echovideoattrs": true
 						}
 					}
 				}
@@ -2987,6 +3055,9 @@ var testStoredRequests = []string{
 					"prebid": {
 						"storedrequest": {
 							"id": "1"
+						},
+						"options": {
+							"echovideoattrs": true
 						}
 					},
 					"appnexus": {
@@ -3015,7 +3086,10 @@ var testStoredRequests = []string{
 				"ext": {
 					"prebid": {
 						"storedrequest": {
-							"id": "1"
+							"id": "2"
+						},
+						"options": {
+							"echovideoattrs": false
 						}
 					}
 				}
@@ -3066,28 +3140,138 @@ var testStoredRequests = []string{
 	}`,
 }
 
+var testStoredRequestsErrors = []string{
+	`{
+		"id": "ThisID",
+		"imp": [
+			{
+				"video":{
+					"h":300,
+					"w":200
+				},
+				"ext": {
+					"prebid": {
+						"storedrequest": {
+							"id": "1"
+						},
+						"options": {
+							"echovideoattrs": 1
+						}
+					}
+				}
+			}
+		],
+		"ext": {
+			"prebid": {
+				"cache": {
+					"markup": 1
+				},
+				"targeting": {
+				}
+			}
+		}
+	}`, `{
+		"id": "ThisID",
+		"imp": [
+			{
+				"video":{
+					"h":300,
+					"w":200
+				},
+				"ext": {
+					"prebid": {
+						"storedrequest": {
+							"id": "10"
+						},
+						"options": {
+							"echovideoattrs": true
+						}
+					}
+				}
+			}
+		],
+		"ext": {
+			"prebid": {
+				"cache": {
+					"markup": 1
+				},
+				"targeting": {
+				}
+			}
+		}
+	}`,
+}
+
+var testStoredRequestsErrorsResults = []string{
+	"Value is not a boolean: 1",
+	"Key path not found",
+}
+
 // The expected requests after stored request processing
 var testFinalRequests = []string{
 	`{
 		"id": "ThisID",
 		"imp": [
 			{
-				"id": "adUnit1",
-				"ext": {
-					"appnexus": {
-						"placementId": "abc",
-						"position": "above",
-						"reserve": 0.35
+				"video":{
+					"h":300,
+					"w":200
+				},
+				"ext":{
+					"appnexus":{
+						"placementId":"abc",
+						"position":"above",
+						"reserve":0.35
 					},
-					"rubicon": {
-						"accountId": "abc"
+					"prebid":{
+						"storedrequest":{
+							"id":"1"
+						},
+					"options":{
+						"echovideoattrs":true
+					}
+				},
+				"rubicon":{
+					"accountId":"abc"
+				}
+			},
+			"id":"adUnit1"
+			}
+		],
+		"ext": {
+			"prebid": {
+				"cache": {
+					"markup": 1
+				},
+				"targeting": {
+			}
+		}
+}
+	}`,
+	`{
+		"id": "ThisID",
+		"imp": [
+			{
+				"video":{
+					"w":200,
+					"h":300
+				},
+				"ext":{
+					"appnexus":{
+						"placementId":"def",
+						"position":"above",
+						"trafficSourceCode":"mysite.com"
 					},
-					"prebid": {
-						"storedrequest": {
-							"id": "1"
+					"prebid":{
+						"storedrequest":{
+							"id":"1"
+						},
+						"options":{
+							"echovideoattrs":true
 						}
 					}
-				}
+				},
+				"id":"adUnit2"
 			}
 		],
 		"ext": {
@@ -3101,101 +3285,86 @@ var testFinalRequests = []string{
 		}
 	}`,
 	`{
-		"id": "ThisID",
-		"imp": [
-			{
-				"id": "adUnit2",
-				"ext": {
-					"prebid": {
-						"storedrequest": {
-							"id": "1"
-						}
-					},
-					"appnexus": {
-						"placementId": "def",
-						"position": "above",
-						"trafficSourceCode": "mysite.com"
-					}
+  		"ext": {
+  		  "prebid": {
+  		    "storedrequest": {
+  		      "id": "2"
+  		    },
+  		    "targeting": {
+  		      "pricegranularity": "low"
+  		    }
+  		  }
+  		},
+  		"id": "ThisID",
+  		"imp": [
+  		  {
+  		    "ext": {
+  		      "appnexus": {
+  		        "placementId": "abc",
+  		        "position": "above",
+  		        "reserve": 0.35
+  		      },
+  		      "prebid": {
+  		        "storedrequest": {
+  		          "id": "2"
+  		        },
+  		        "options":{
+					"echovideoattrs":false
 				}
+  		      },
+  		      "rubicon": {
+  		        "accountId": "abc"
+  		      }
+  		    },
+  		    "id": "adUnit1",
+			"video":{
+				"w":200,
+				"h":300
 			}
-		],
-		"ext": {
-			"prebid": {
-				"cache": {
-					"markup": 1
-				},
-				"targeting": {
-				}
-			}
-		}
-	}`,
-	`{
-		"id": "ThisID",
-		"imp": [
-			{
-				"id": "adUnit1",
-				"ext": {
-					"appnexus": {
-						"placementId": "abc",
-						"position": "above",
-						"reserve": 0.35
-					},
-					"rubicon": {
-						"accountId": "abc"
-					},
-					"prebid": {
-						"storedrequest": {
-							"id": "1"
-						}
-					}
-				}
-			}
-		],
-		"tmax": 500,
-		"ext": {
-			"prebid": {
-				"targeting": {
-					"pricegranularity": "low"
-				},
-				"storedrequest": {
-					"id": "2"
-				}
-			}
-		}
-	}`,
+  		  }
+  		],
+  		"tmax": 500
+	}
+`,
 	`{
 	"id": "ThisID",
 	"imp": [
 		{
-			"id": "some-static-imp",
-			"video":{
-				"mimes":["video/mp4"]
-			},
-			"ext": {
-				"appnexus": {
-					"placementId": "abc",
-					"position": "below"
-				}
-			}
-		},
-		{
-			"id": "adUnit1",
-			"ext": {
-				"appnexus": {
-					"placementId": "abc",
-					"position": "above",
-					"reserve": 0.35
-				},
-				"rubicon": {
-					"accountId": "abc"
-				},
-				"prebid": {
-					"storedrequest": {
-						"id": "1"
-					}
-				}
-			}
-		}
+    		"id": "some-static-imp",
+    		"video": {
+    		  "mimes": [
+    		    "video/mp4"
+    		  ]
+    		},
+    		"ext": {
+    		  "appnexus": {
+    		    "placementId": "abc",
+    		    "position": "below"
+    		  }
+    		}
+  		},
+  		{
+  		  "ext": {
+  		    "appnexus": {
+  		      "placementId": "abc",
+  		      "position": "above",
+  		      "reserve": 0.35
+  		    },
+  		    "prebid": {
+  		      "storedrequest": {
+  		        "id": "1"
+  		      }
+  		    },
+  		    "rubicon": {
+  		      "accountId": "abc"
+  		    }
+  		  },
+  		  "id": "adUnit1",
+		  "video":{
+				"w":200,
+				"h":300
+          }
+  		}
 	],
 	"ext": {
 		"prebid": {
@@ -3207,6 +3376,49 @@ var testFinalRequests = []string{
 		}
 	}
 }`,
+}
+
+var testStoredImpIds = []string{
+	"adUnit1", "adUnit2", "adUnit1", "some-static-imp",
+}
+
+var testStoredImps = []string{
+	`{
+		"id": "adUnit1",
+        "ext": {
+        	"appnexus": {
+        		"placementId": "abc",
+        		"position": "above",
+        		"reserve": 0.35
+        	},
+        	"rubicon": {
+        		"accountId": "abc"
+        	}
+        },
+		"video":{
+        	"w":200,
+        	"h":300
+		}
+	}`,
+	`{
+		"id": "adUnit1",
+        "ext": {
+        	"appnexus": {
+        		"placementId": "abc",
+        		"position": "above",
+        		"reserve": 0.35
+        	},
+        	"rubicon": {
+        		"accountId": "abc"
+        	}
+        },
+		"video":{
+        	"w":200,
+        	"h":300
+		}
+	}`,
+	``,
+	``,
 }
 
 type mockStoredReqFetcher struct {

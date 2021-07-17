@@ -14,11 +14,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/stored_requests"
-
+	"github.com/buger/jsonparser"
 	"github.com/gofrs/uuid"
 	"github.com/golang/glog"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
@@ -27,11 +26,13 @@ import (
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
+	"github.com/prebid/prebid-server/stored_requests"
 )
 
 type ContextKey string
 
 const DebugContextKey = ContextKey("debugInfo")
+const StoredRequestAttributes = "storedrequestattributes"
 
 type extCacheInstructions struct {
 	cacheBids, cacheVAST, returnCreative bool
@@ -145,6 +146,7 @@ type AuctionRequest struct {
 	StartTime                  time.Time
 	Warnings                   []error
 	GlobalPrivacyControlHeader string
+	ImpToStoredReq             map[string][]byte
 
 	// LegacyLabels is included here for temporary compatability with cleanOpenRTBRequests
 	// in HoldAuction until we get to factoring it away. Do not use for anything new.
@@ -209,7 +211,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	// Get currency rates conversions for the auction
 	conversions := e.getAuctionCurrencyRates(requestExt.Prebid.CurrencyConversions)
 
-	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, r.Account.DebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride)
+	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, r.Account.DebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride, r.ImpToStoredReq)
 
 	var auc *auction
 	var cacheErrs []error
@@ -420,7 +422,8 @@ func (e *exchange) getAllBids(
 	conversions currency.Conversions,
 	accountDebugAllowed bool,
 	globalPrivacyControlHeader string,
-	headerDebugAllowed bool) (
+	headerDebugAllowed bool,
+	impToStoredReq map[string][]byte) (
 	map[openrtb_ext.BidderName]*pbsOrtbSeatBid,
 	map[openrtb_ext.BidderName]*seatResponseExtra, bool) {
 	// Set up pointers to the bid results
@@ -452,6 +455,7 @@ func (e *exchange) getAllBids(
 			reqInfo := adapters.NewExtraRequestInfo(conversions)
 			reqInfo.PbsEntryPoint = bidderRequest.BidderLabels.RType
 			reqInfo.GlobalPrivacyControlHeader = globalPrivacyControlHeader
+
 			bids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest.BidRequest, bidderRequest.BidderName, adjustmentFactor, conversions, &reqInfo, accountDebugAllowed, headerDebugAllowed)
 
 			// Add in time reporting
@@ -462,6 +466,14 @@ func (e *exchange) getAllBids(
 			ae.ResponseTimeMillis = int(elapsed / time.Millisecond)
 			if bids != nil {
 				ae.HttpCalls = bids.httpCalls
+			}
+
+			//put stored req data back to bid.ext, map by bid.imp_id
+			if len(impToStoredReq) != 0 {
+				storedImpErr := insertStoredImpData(bidderRequest.BidRequest.Imp, impToStoredReq, bids)
+				if storedImpErr != nil {
+					err = append(err, storedImpErr)
+				}
 			}
 
 			// Timing statistics
@@ -500,6 +512,50 @@ func (e *exchange) getAllBids(
 	}
 
 	return adapterBids, adapterExtra, bidsFound
+}
+
+func insertStoredImpData(imps []openrtb2.Imp, impsToStoredRequest map[string][]byte, bids *pbsOrtbSeatBid) error {
+	for _, bid := range bids.bids {
+		//find impression
+		var impression *openrtb2.Imp
+		for _, imp := range imps {
+			if imp.ID == bid.bid.ImpID {
+				impression = &imp
+				break
+			}
+		}
+		if impression == nil {
+			continue
+		}
+
+		if val, ok := impsToStoredRequest[bid.bid.ImpID]; ok {
+
+			bidExtData := make(map[string]json.RawMessage)
+
+			if len(bid.bid.Ext) != 0 {
+				err := json.Unmarshal(bid.bid.Ext, &bidExtData)
+				if err != nil {
+					return err
+				}
+			}
+
+			//determine if stored impression has video data
+			if impression.Video != nil {
+				videoData, _, _, err := jsonparser.Get(val, "video")
+				if err != nil {
+					return err
+				}
+				bidExtData[StoredRequestAttributes] = videoData
+				result, err := json.Marshal(bidExtData)
+				if err != nil {
+					return err
+				}
+				bid.bid.Ext = result
+			}
+
+		}
+	}
+	return nil
 }
 
 func (e *exchange) recoverSafely(bidderRequests []BidderRequest,
