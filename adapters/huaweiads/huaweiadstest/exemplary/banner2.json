@@ -1,0 +1,317 @@
+{
+  "mockBidRequest": {
+    "id": "a3b18c5b-6708-4bb7-b41b-40ed37d89561",
+    "source": {
+      "tid": "a3b18c5b-6708-4bb7-b41b-40ed37d89561"
+    },
+    "imp": [
+      {
+        "id": "PrebidMobile",
+        "secure": 1,
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ],
+          "api": [
+            5
+          ]
+        },
+        "ext": {
+          "prebid": {
+            "storedrequest": {
+              "id": "1001-1"
+            },
+            "storedauctionresponse": {
+              "id": "1001-rubicon-300x250"
+            }
+          },
+          "bidder": {
+            "slotid": "m8x9x3rzff",
+            "adtype": "banner",
+            "publisherid": "123",
+            "signkey": "signkey",
+            "keyid": "41",
+            "clienttime": "2018-11-02 16:34:07.981+1300",
+            "isAddAuthorization": "false"
+          }
+        }
+      }
+    ],
+    "device": {
+      "make": "HUAWEI",
+      "model": "LYA-AL00",
+      "ua": "Mozilla\/5.0 (Linux; Android 10; LYA-AL00 Build\/HUAWEILYA-AL00; wv) AppleWebKit\/537.36 (KHTML, like Gecko) Version\/4.0 Chrome\/90.0.4430.210 Mobile Safari\/537.36",
+      "lmt": 0,
+      "os": "android",
+      "osv": "29",
+      "language": "zh",
+      "w": 360,
+      "h": 755,
+      "pxratio": 3,
+      "mccmnc": "424-3",
+      "carrier": "Virgin Mobile",
+      "connectiontype": 1
+    },
+    "app": {
+      "bundle": "org.prebid.mobile.prebidjavademo",
+      "ver": "1.11",
+      "name": "API1.0Demo",
+      "publisher": {
+        "id": "1001"
+      },
+      "ext": {
+        "prebid": {
+          "source": "prebid-mobile",
+          "version": "1.11"
+        }
+      }
+    },
+    "user": {
+      "gender": "O",
+      "ext": {
+        "data": {
+          "gaid": [
+            "db089de9-a62e-4861-a881-0ff15e052516"
+          ],
+          "oaid": [
+            "a4b4faee-e3f1-188b-a5d5-f7f6ff54a444"
+          ]
+        },
+        "eids": [
+          {
+            "source": "adserver.org",
+            "uids": [
+              {
+                "id": "111111111111",
+                "ext": {
+                  "rtiPartner": "TDID"
+                }
+              }
+            ]
+          },
+          {
+            "source": "netid.de",
+            "uids": [
+              {
+                "id": "999888777"
+              }
+            ]
+          },
+          {
+            "source": "criteo.com",
+            "uids": [
+              {
+                "id": "_fl7bV96WjZsbiUyQnJlQ3g4ckh5a1N"
+              }
+            ]
+          },
+          {
+            "source": "liveramp.com",
+            "uids": [
+              {
+                "id": "AjfowMv4ZHZQJFM8TpiUnYEyA81Vdgg"
+              }
+            ]
+          },
+          {
+            "source": "sharedid.org",
+            "uids": [
+              {
+                "id": "111111111111",
+                "atype": 1,
+                "ext": {
+                  "third": "01ERJWE5FS4RAZKG6SKQ3ZYSKV"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "ext": {
+      "prebid": {
+        "storedrequest": {
+          "id": "1001"
+        },
+        "cache": {
+          "bids": {}
+        },
+        "targeting": {}
+      }
+    }
+  },
+  "httpcalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://acd.op.hicloud.com/ppsadx/getResult",
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "User-Agent": [
+            "Mozilla/5.0 (Linux; Android 10; LYA-AL00 Build/HUAWEILYA-AL00; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/90.0.4430.210 Mobile Safari/537.36"
+          ]
+        },
+        "body": {
+          "app": {
+            "lang": "en",
+            "country": "ZA",
+            "name": "API1.0Demo",
+            "pkgname": "org.prebid.mobile.prebidjavademo",
+            "version": "1.11"
+          },
+          "multislot": [
+            {
+              "adtype": 8,
+              "slotid": "m8x9x3rzff",
+              "test": 0
+            }
+          ],
+          "device": {
+            "height": 755,
+            "language": "zh",
+            "oaid": "a4b4faee-e3f1-188b-a5d5-f7f6ff54a444",
+            "os": "android",
+            "localeCountry": "ZA",
+            "pxratio": 3,
+            "width": 360,
+            "model": "LYA-AL00",
+            "clientTime": "2018-11-02 16:34:07.981+1300",
+            "gaid": "db089de9-a62e-4861-a881-0ff15e052516",
+            "useragent": "Mozilla/5.0 (Linux; Android 10; LYA-AL00 Build/HUAWEILYA-AL00; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/90.0.4430.210 Mobile Safari/537.36",
+            "version": "29",
+            "maker": "HUAWEI",
+            "belongCountry": "ZA"
+          },
+          "geo": {
+          },
+          "network": {
+            "type": 1
+          },
+          "regs": {
+          },
+          "version": "3.4"
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "ctrlSwitchs": "0",
+          "dsp1cost": 61,
+          "dspcost": 108,
+          "multiad": [
+            {
+              "adtype": 8,
+              "brsetting": "Y",
+              "content": [
+                {
+                  "clickActionList": [
+                    1
+                  ],
+                  "contentid": "58025103",
+                  "creativetype": 2,
+                  "ctrlSwitchs": "001011001001010112",
+                  "endtime": 1621428898335,
+                  "filterList": [
+                    3
+                  ],
+                  "interactiontype": 1,
+                  "landingTitle": 1,
+                  "metaData": {
+                    "adSign": "2",
+                    "appPromotionChannel": "401721412",
+                    "clickUrl": "https://api-ppsfun.hwcloudtest.cn:8447/ppsdspportal/index.html?content_id=58025103&adgroup_id=48017658&campaign_id=38013100&callback=75000348%26202105191939580103736%262005100429%26https%253A%252F%252Fapi-ppsfun.hwcloudtest.cn%253A8447%252Fppsdspportal%252Findex.html%2523%252Fcreate%252Ftask#/create/task",
+                    "cta": "%e6%9f%a5%e7%9c%8b%e8%af%a6%e6%83%85",
+                    "imageInfo": [
+                      {
+                        "checkSha256Flag": 1,
+                        "height": 250,
+                        "imageType": "img",
+                        "sha256": "f5d8487cddaecec45b73fc078649478c80ec646bfec8ed7da4ff931f90eab232",
+                        "url": "https://pps-connector-performance-arm-test-cn.obs.cn-north-4.myhwclouds.com/dl/pps/2021042514374282E9FF0628C2F50A7F67FA2B4C0CA168.png",
+                        "width": 300
+                      }
+                    ],
+                    "label": "Banner_API",
+                    "landingPageType": "3"
+                  },
+                  "monitor": [
+                    {
+                      "eventType": "click",
+                      "url": [
+                        "http://10.31.43.168:18115/contserver/tracker/action?ch=200002&etype=click&kn=1&pfsa=jQpXUSsialdjaGrZdnI4qBqiaFth3GxKgqGPGc8icbdNKacyqP4B8Ud224Bg8Qtm27CAHQon9Esfszg10xOuUybL8jqlVVxUv5ibrNK2QVZRo6q760nTVM5m6o49Z2icvT5AhEvWUO585VibGPHToJKmh7YRiaIFHpdjLaY2aJdNqGwMH5Np4lRELyxYXIuMMEedtgv88fS5GJBFjIUp9QiaR5iav9CBibfJYms4ialPRMEHkct37TUX66X71FkSep478Oneecq4F0ft5v8icNpYOVEknptC0dJCDiaenZzbTD0x3P5Cjk9XUwlaN8eEpaDJfwmWOrYEG5KBFibndGicQYnP0SgsTGFdRQzJcnxPELYEO923DbD2nRQcuFohNWHqomgARZibE4ibKb5t34KZgyA5P9ibKEm4xDcFvuaXWsUlrwwtcmaaxMK6EBWuWfJ806ONHkLkG1XZASouS2fic9NvSPzqTrAjsaWg9hrmaCiaDPmEjJaWSUlC43YCia2wIKCBR3K82EJgmNWPJXc1t1l985WfKpvR6dE8VPbfVoicghDEiafPeDSC2FH2wJe4R7138gaOuIwDibe4nUVEibY60lxm1rQyglKAZA0vM4WehqBmJfbweiacgD0cUJYuZ3GLaicF51E9uoJqaKlN602xH88EicI3pE9PiawygYEmuiaWpPQDy4LwrblAqlxmIf2WU&uuid=1234576&w=__HW_W__&h=__HW_H__&downx=__HW_DOWN_X__&downy=__HW_DOWN_Y__&upx=__HW_UP_X__&upy=__HW_UP_Y__"
+                      ]
+                    },
+                    {
+                      "eventType": "imp",
+                      "url": [
+                        "http://10.31.43.168:18115/contserver/tracker/action?ch=200002&etype=imp&kn=1&pfsa=jQpXUSsialdjaGrZdnI4qBqiaFth3GxKgqGPGc8icbdNKacyqP4B8Ud224Bg8Qtm27CAHQon9Esfszg10xOuUybL8jqlVVxUv5ibrNK2QVZRo6q760nTVM5m6o49Z2icvT5AhEvWUO585VibGPHToJKmh7YRiaIFHpdjLaY2aJdNqGwMH5Np4lRELyxYXIuMMEedtgv88fS5GJBFjIUp9QiaR5iav9CBibfJYms4ialPRMEHkct37TUX66X71FkSep478Oneecq4F0ft5v8icNpYOVEknptC0dJCDiaenZzbTD0x3P5Cjk9XUwlaN8eEpaDJfwmWOrYEG5KBFibndGicQYnP0SgsTGFdRQzJcnxPELYEO923DbD2nRQcuFohNWHqomgARZibE4ibKb5t34KZgyA5P9ibKEm4xDcFvuaXWsUlrwwtcmaaxMK6EBWuWfJ806ONHkLkG1XZASouS2fic9NvSPzqTrAjsaWg9hrmaCiaDPmEjJaWSUlC43YCia2wIKCBR3K82EJgmNWPJXc1t1l985WfKpvR6dE8VPbfVoicghDEiafPeDSC2FH2wJe4R7138gaOuIwDibe4nUVEibY60lxm1rQyglKAZA0vM4WehqBmJfbweiacgD0cUJYuZ3GLaicF51E9uoJqaKlN602xH88EicI3pE9PiawygYEmuiaWpPQDy4LwrblAqlxmIf2WU&uuid=1234576"
+                      ]
+                    },
+                    {
+                      "eventType": "userclose",
+                      "url": [
+                        "http://10.31.43.168:18115/contserver/tracker/action?ch=200002&etype=userclose&kn=1&pfsa=jQpXUSsialdjaGrZdnI4qBqiaFth3GxKgqGPGc8icbdNKacyqP4B8Ud224Bg8Qtm27CAHQon9Esfszg10xOuUybL8jqlVVxUv5ibrNK2QVZRo6q760nTVM5m6o49Z2icvT5AhEvWUO585VibGPHToJKmh7YRiaIFHpdjLaY2aJdNqGwMH5Np4lRELyxYXIuMMEedtgv88fS5GJBFjIUp9QiaR5iav9CBibfJYms4ialPRMEHkct37TUX66X71FkSep478Oneecq4F0ft5v8icNpYOVEknptC0dJCDiaenZzbTD0x3P5Cjk9XUwlaN8eEpaDJfwmWOrYEG5KBFibndGicQYnP0SgsTGFdRQzJcnxPELYEO923DbD2nRQcuFohNWHqomgARZibE4ibKb5t34KZgyA5P9ibKEm4xDcFvuaXWsUlrwwtcmaaxMK6EBWuWfJ806ONHkLkG1XZASouS2fic9NvSPzqTrAjsaWg9hrmaCiaDPmEjJaWSUlC43YCia2wIKCBR3K82EJgmNWPJXc1t1l985WfKpvR6dE8VPbfVoicghDEiafPeDSC2FH2wJe4R7138gaOuIwDibe4nUVEibY60lxm1rQyglKAZA0vM4WehqBmJfbweiacgD0cUJYuZ3GLaicF51E9uoJqaKlN602xH88EicI3pE9PiawygYEmuiaWpPQDy4LwrblAqlxmIf2WU&uuid=1234576"
+                      ]
+                    }
+                  ],
+                  "paramfromserver": {
+                    "a": "1||jQpXUSsildjaGrZdnI4qBqiFth3GxKgqGPGc8/bdNKacyqP4B8Ud224Bg8Qtm27CAHQon9Esfszg10xOuUybL8jqlVVxUv5+rNK2QVZRo6q760nTVM5m6o49Z2/vT5AhEvWUO585V+GPHToJKmh7YRiIFHpdjLaY2aJdNqGwMH5Np4lRELyxYXIuMMEedtgv88fS5GJBFjIUp9QiR5iv9CB+fJYms4ilPRMEHkct37TUX66X71FkSep478Oneecq4F0ft5v8/NpYOVEknptC0dJCDienZzbTD0x3P5Cjk9XUwlaN8eEpaDJfwmWOrYEG5KBF+ndG/QYnP0SgsTGFdRQzJcnxPELYEO923DbD2nRQcuFohNWHqomgARZ+E4+Kb5t34KZgyA5P9+KEm4xDcFvuaXWsUlrwwtcmaaxMK6EBWuWfJ806ONHkLkG1XZASouS2f/9NvSPzqTrAjsaWg9hrmaCiDPmEjJaWSUlC43YCi2wIKCBR3K82EJgmNWPJXc1t1l985WfKpvR6dE8VPbfVo/ghDEifPeDSC2FH2wJe4R7138gaOuIwD+e4nUVE+Y60lxm1rQyglKAZA0vM4WehqBmJfbweicgD0cUJYuZ3GLa/F51E9uoJqaKlN602xH88E/I3pE9PiwygYEmuiWpPQDy4LwrblAqlxmIf2WU=",
+                    "sig": "",
+                    "t": "99990101235959"
+                  },
+                  "price": 2.8,
+                  "starttime": 1621267200000,
+                  "taskid": "48017658",
+                  "webConfig": "setMixedContentMode|int|0",
+                  "whyThisAd": "https%3A%2F%2Fconsumer.huawei.com%2Fminisite%2Fcloudservice%2Fadinfo%2Fterms.htm%3Fcountry%3DCN%26language%3Den-US%26version%3D20191227",
+                  "xrFlag": {}
+                }
+              ],
+              "retcode30": 200,
+              "slotid": "m8x9x3rzff"
+            }
+          ],
+          "noReportAdTypeEventList": [
+            {
+              "adType": 8,
+              "eventTypeList": [
+                "exception_6"
+              ]
+            }
+          ],
+          "retcode": 200,
+          "totalCacheSize": 300
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "adm": "<head><meta charset=\"UTF-8\"><meta http-equiv=\"Content-Type\" content=\"text/html\"><meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge,chrome=1\"><script type=\"text/javascript\">(function () {var impMonitorUrls = [\"http://10.31.43.168:18115/contserver/tracker/action?ch=200002&etype=imp&kn=1&pfsa=jQpXUSsialdjaGrZdnI4qBqiaFth3GxKgqGPGc8icbdNKacyqP4B8Ud224Bg8Qtm27CAHQon9Esfszg10xOuUybL8jqlVVxUv5ibrNK2QVZRo6q760nTVM5m6o49Z2icvT5AhEvWUO585VibGPHToJKmh7YRiaIFHpdjLaY2aJdNqGwMH5Np4lRELyxYXIuMMEedtgv88fS5GJBFjIUp9QiaR5iav9CBibfJYms4ialPRMEHkct37TUX66X71FkSep478Oneecq4F0ft5v8icNpYOVEknptC0dJCDiaenZzbTD0x3P5Cjk9XUwlaN8eEpaDJfwmWOrYEG5KBFibndGicQYnP0SgsTGFdRQzJcnxPELYEO923DbD2nRQcuFohNWHqomgARZibE4ibKb5t34KZgyA5P9ibKEm4xDcFvuaXWsUlrwwtcmaaxMK6EBWuWfJ806ONHkLkG1XZASouS2fic9NvSPzqTrAjsaWg9hrmaCiaDPmEjJaWSUlC43YCia2wIKCBR3K82EJgmNWPJXc1t1l985WfKpvR6dE8VPbfVoicghDEiafPeDSC2FH2wJe4R7138gaOuIwDibe4nUVEibY60lxm1rQyglKAZA0vM4WehqBmJfbweiacgD0cUJYuZ3GLaicF51E9uoJqaKlN602xH88EicI3pE9PiawygYEmuiaWpPQDy4LwrblAqlxmIf2WU&uuid=1234576\"];var clickMonitorUrls = [\"http://10.31.43.168:18115/contserver/tracker/action?ch=200002&etype=click&kn=1&pfsa=jQpXUSsialdjaGrZdnI4qBqiaFth3GxKgqGPGc8icbdNKacyqP4B8Ud224Bg8Qtm27CAHQon9Esfszg10xOuUybL8jqlVVxUv5ibrNK2QVZRo6q760nTVM5m6o49Z2icvT5AhEvWUO585VibGPHToJKmh7YRiaIFHpdjLaY2aJdNqGwMH5Np4lRELyxYXIuMMEedtgv88fS5GJBFjIUp9QiaR5iav9CBibfJYms4ialPRMEHkct37TUX66X71FkSep478Oneecq4F0ft5v8icNpYOVEknptC0dJCDiaenZzbTD0x3P5Cjk9XUwlaN8eEpaDJfwmWOrYEG5KBFibndGicQYnP0SgsTGFdRQzJcnxPELYEO923DbD2nRQcuFohNWHqomgARZibE4ibKb5t34KZgyA5P9ibKEm4xDcFvuaXWsUlrwwtcmaaxMK6EBWuWfJ806ONHkLkG1XZASouS2fic9NvSPzqTrAjsaWg9hrmaCiaDPmEjJaWSUlC43YCia2wIKCBR3K82EJgmNWPJXc1t1l985WfKpvR6dE8VPbfVoicghDEiafPeDSC2FH2wJe4R7138gaOuIwDibe4nUVEibY60lxm1rQyglKAZA0vM4WehqBmJfbweiacgD0cUJYuZ3GLaicF51E9uoJqaKlN602xH88EicI3pE9PiawygYEmuiaWpPQDy4LwrblAqlxmIf2WU&uuid=1234576&w=__HW_W__&h=__HW_H__&downx=__HW_DOWN_X__&downy=__HW_DOWN_Y__&upx=__HW_UP_X__&upy=__HW_UP_Y__\"];var userCloseMonitorUrls = [\"http://10.31.43.168:18115/contserver/tracker/action?ch=200002&etype=userclose&kn=1&pfsa=jQpXUSsialdjaGrZdnI4qBqiaFth3GxKgqGPGc8icbdNKacyqP4B8Ud224Bg8Qtm27CAHQon9Esfszg10xOuUybL8jqlVVxUv5ibrNK2QVZRo6q760nTVM5m6o49Z2icvT5AhEvWUO585VibGPHToJKmh7YRiaIFHpdjLaY2aJdNqGwMH5Np4lRELyxYXIuMMEedtgv88fS5GJBFjIUp9QiaR5iav9CBibfJYms4ialPRMEHkct37TUX66X71FkSep478Oneecq4F0ft5v8icNpYOVEknptC0dJCDiaenZzbTD0x3P5Cjk9XUwlaN8eEpaDJfwmWOrYEG5KBFibndGicQYnP0SgsTGFdRQzJcnxPELYEO923DbD2nRQcuFohNWHqomgARZibE4ibKb5t34KZgyA5P9ibKEm4xDcFvuaXWsUlrwwtcmaaxMK6EBWuWfJ806ONHkLkG1XZASouS2fic9NvSPzqTrAjsaWg9hrmaCiaDPmEjJaWSUlC43YCia2wIKCBR3K82EJgmNWPJXc1t1l985WfKpvR6dE8VPbfVoicghDEiafPeDSC2FH2wJe4R7138gaOuIwDibe4nUVEibY60lxm1rQyglKAZA0vM4WehqBmJfbweiacgD0cUJYuZ3GLaicF51E9uoJqaKlN602xH88EicI3pE9PiawygYEmuiaWpPQDy4LwrblAqlxmIf2WU&uuid=1234576\"];function visitUrl(url) {var img = new Image();img.src = url;return img;}function visitAllUrls(urls) {for (var i = 0; i < urls.length; i++) {visitUrl(urls[i]);}}function addEventListener(node, event, func, useCapture) {node = node || document;useCapture = useCapture || false;if (node.addEventListener) {node.addEventListener(event, func, useCapture);} else {node.attachEvent('on' + event, func);}}function init() {var imgLink = document.getElementById('img_link');if (imgLink) {addEventListener(imgLink, 'click', function () {visitAllUrls(clickMonitorUrls);}, false);}var close = document.getElementById('close');if (close) {addEventListener(close, 'click', function () {visitAllUrls(userCloseMonitorUrls)}, false);}}window.onload = function () {visitAllUrls(impMonitorUrls);init();}})();</script></head><body><div class=\"product\"><a class=\"img_area\" id=\"img_link\" href=\"https://api-ppsfun.hwcloudtest.cn:8447/ppsdspportal/index.html?content_id=58025103&adgroup_id=48017658&campaign_id=38013100&callback=75000348%26202105191939580103736%262005100429%26https%253A%252F%252Fapi-ppsfun.hwcloudtest.cn%253A8447%252Fppsdspportal%252Findex.html%2523%252Fcreate%252Ftask#/create/task\" target=\"_blank\"><img src=\"https://pps-connector-performance-arm-test-cn.obs.cn-north-4.myhwclouds.com/dl/pps/2021042514374282E9FF0628C2F50A7F67FA2B4C0CA168.png\" width=\"300\" height=\"250\" alt=\"\"/></a></div></body>",
+            "adomain": [
+              "huaweiads"
+            ],
+            "h": 250,
+            "w": 300,
+            "crid": "58025103",
+            "id": "PrebidMobile",
+            "impid": "PrebidMobile",
+            "price": 2.8
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
