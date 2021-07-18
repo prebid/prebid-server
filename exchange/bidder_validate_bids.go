@@ -110,8 +110,11 @@ func validateBid(bid *pbsOrtbBid) (bool, error) {
 	if bid.bid.ImpID == "" {
 		return false, fmt.Errorf("Bid \"%s\" missing required field 'impid'", bid.bid.ID)
 	}
-	if bid.bid.Price <= 0.0 {
-		return false, fmt.Errorf("Bid \"%s\" does not contain a positive 'price'", bid.bid.ID)
+	if bid.bid.Price < 0.0 {
+		return false, fmt.Errorf("Bid \"%s\" does not contain a positive (or zero if there is a deal) 'price'", bid.bid.ID)
+	}
+	if bid.bid.Price == 0.0 && bid.bid.DealID == "" {
+		return false, fmt.Errorf("Bid \"%s\" does not contain positive 'price' which is required since there is no deal set for this bid", bid.bid.ID)
 	}
 	if bid.bid.CrID == "" {
 		return false, fmt.Errorf("Bid \"%s\" missing creative ID", bid.bid.ID)

@@ -1,0 +1,17 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Sa_Lunamedia Adapter Params",
+    "description": "A schema which validates params accepted by the Sa_Lunamedia adapter",
+    "type": "object",
+    "properties": {
+      "key": {
+        "type": "string",
+        "description": "network or placement key"
+      },
+      "type": {
+        "type": "string",
+        "enum": ["network", "publisher"]
+      }
+    },
+    "required": ["key"]
+  }

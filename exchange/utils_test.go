@@ -1788,7 +1788,7 @@ func newAdapterAliasBidRequest(t *testing.T) *openrtb2.BidRequest {
 		User: &openrtb2.User{
 			ID:       "our-id",
 			BuyerUID: "their-id",
-			Ext:      json.RawMessage(`{"consent":"BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw","digitrust":{"id":"digi-id","keyv":1,"pref":1}}`),
+			Ext:      json.RawMessage(`{"consent":"BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw"}`),
 		},
 		Regs: &openrtb2.Regs{
 			Ext: json.RawMessage(`{"gdpr":1}`),
@@ -1833,7 +1833,7 @@ func newBidRequest(t *testing.T) *openrtb2.BidRequest {
 			ID:       "our-id",
 			BuyerUID: "their-id",
 			Yob:      1982,
-			Ext:      json.RawMessage(`{"digitrust":{"id":"digi-id","keyv":1,"pref":1}}`),
+			Ext:      json.RawMessage(`{}`),
 		},
 		Imp: []openrtb2.Imp{{
 			ID: "some-imp-id",

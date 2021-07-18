@@ -564,7 +564,7 @@ func TestMultiCurrencies(t *testing.T) {
 				{currency: "USD", price: 1.3 * 1.3050530256},
 			},
 			expectedBadCurrencyErrors: []error{
-				currency.ConversionRateNotFound{"JPY", "USD"},
+				currency.ConversionNotFoundError{FromCur: "JPY", ToCur: "USD"},
 			},
 			description: "Case 6 - Bidder respond with a mix of currencies and one unknown on all HTTP responses",
 		},
@@ -587,9 +587,9 @@ func TestMultiCurrencies(t *testing.T) {
 			},
 			expectedBids: []bid{},
 			expectedBadCurrencyErrors: []error{
-				currency.ConversionRateNotFound{"JPY", "USD"},
-				currency.ConversionRateNotFound{"BZD", "USD"},
-				currency.ConversionRateNotFound{"DKK", "USD"},
+				currency.ConversionNotFoundError{FromCur: "JPY", ToCur: "USD"},
+				currency.ConversionNotFoundError{FromCur: "BZD", ToCur: "USD"},
+				currency.ConversionNotFoundError{FromCur: "DKK", ToCur: "USD"},
 			},
 			description: "Case 7 - Bidder respond with currencies not having any rate on all HTTP responses",
 		},
@@ -720,9 +720,9 @@ func TestMultiCurrencies_RateConverterNotSet(t *testing.T) {
 			bidCurrency:       []string{"EUR", "EUR", "EUR"},
 			expectedBidsCount: 0,
 			expectedBadCurrencyErrors: []error{
-				currency.ConversionRateNotFound{"EUR", "USD"},
-				currency.ConversionRateNotFound{"EUR", "USD"},
-				currency.ConversionRateNotFound{"EUR", "USD"},
+				currency.ConversionNotFoundError{FromCur: "EUR", ToCur: "USD"},
+				currency.ConversionNotFoundError{FromCur: "EUR", ToCur: "USD"},
+				currency.ConversionNotFoundError{FromCur: "EUR", ToCur: "USD"},
 			},
 			description: "Case 2 - Bidder respond with the same currency (not default one) on all HTTP responses",
 		},
@@ -754,7 +754,7 @@ func TestMultiCurrencies_RateConverterNotSet(t *testing.T) {
 			bidCurrency:       []string{"EUR", "", "USD"},
 			expectedBidsCount: 2,
 			expectedBadCurrencyErrors: []error{
-				currency.ConversionRateNotFound{"EUR", "USD"},
+				currency.ConversionNotFoundError{FromCur: "EUR", ToCur: "USD"},
 			},
 			description: "Case 7 - Bidder responds with a mix of not set, non default currency and default currency in HTTP responses",
 		},
@@ -762,7 +762,7 @@ func TestMultiCurrencies_RateConverterNotSet(t *testing.T) {
 			bidCurrency:       []string{"GBP", "", "USD"},
 			expectedBidsCount: 2,
 			expectedBadCurrencyErrors: []error{
-				currency.ConversionRateNotFound{"GBP", "USD"},
+				currency.ConversionNotFoundError{FromCur: "GBP", ToCur: "USD"},
 			},
 			description: "Case 8 - Bidder responds with a mix of not set, non default currency and default currency in HTTP responses",
 		},
@@ -770,7 +770,7 @@ func TestMultiCurrencies_RateConverterNotSet(t *testing.T) {
 			bidCurrency:       []string{"GBP", "", ""},
 			expectedBidsCount: 2,
 			expectedBadCurrencyErrors: []error{
-				currency.ConversionRateNotFound{"GBP", "USD"},
+				currency.ConversionNotFoundError{FromCur: "GBP", ToCur: "USD"},
 			},
 			description: "Case 9 - Bidder responds with a mix of not set and empty currencies (default currency) in HTTP responses",
 		},
