@@ -79,6 +79,10 @@ func (a *TappxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 	jsonext, err := json.Marshal(ext)
 	if err == nil {
 		request.Ext = jsonext
+	} else {
+		return nil, []error{&errortypes.BadInput{
+			Message: "Error with tappxExt parameters",
+		}}
 	}
 
 	var test int
