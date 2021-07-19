@@ -83,6 +83,7 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderRubicon):          syncConfig,
 			string(openrtb_ext.BidderSharethrough):     syncConfig,
 			string(openrtb_ext.BidderSmartAdserver):    syncConfig,
+			string(openrtb_ext.BidderSmartHub):         syncConfig,
 			string(openrtb_ext.BidderSmartRTB):         syncConfig,
 			string(openrtb_ext.BidderSmartyAds):        syncConfig,
 			string(openrtb_ext.BidderSmileWanted):      syncConfig,
