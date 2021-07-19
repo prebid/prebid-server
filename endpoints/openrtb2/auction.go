@@ -1104,7 +1104,6 @@ func (deps *endpointDeps) validateSite(req *openrtb_ext.RequestWrapper) error {
 }
 
 func (deps *endpointDeps) validateApp(req *openrtb_ext.RequestWrapper) error {
-
 	if req.App == nil {
 		return nil
 	}
@@ -1116,11 +1115,7 @@ func (deps *endpointDeps) validateApp(req *openrtb_ext.RequestWrapper) error {
 	}
 
 	_, err := req.GetAppExt()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases map[string]string) error {
@@ -1154,7 +1149,7 @@ func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases 
 	eids := userExt.GetEid()
 	if eids != nil {
 		if len(*eids) == 0 {
-			return fmt.Errorf("request.user.ext.eids must contain at least one element or be undefined")
+			return errors.New("request.user.ext.eids must contain at least one element or be undefined")
 		}
 		uniqueSources := make(map[string]struct{}, len(*eids))
 		for eidIndex, eid := range *eids {

@@ -275,7 +275,7 @@ func (ue *UserExt) marshal() (json.RawMessage, error) {
 		if err != nil {
 			return nil, err
 		}
-		if len(consentJson) > 0 {
+		if len(consentJson) > 2 {
 			ue.ext["consent"] = json.RawMessage(consentJson)
 		} else {
 			delete(ue.ext, "consent")
@@ -288,7 +288,7 @@ func (ue *UserExt) marshal() (json.RawMessage, error) {
 		if err != nil {
 			return nil, err
 		}
-		if len(prebidJson) > 0 {
+		if len(prebidJson) > 2 {
 			ue.ext["prebid"] = json.RawMessage(prebidJson)
 		} else {
 			delete(ue.ext, "prebid")
@@ -498,7 +498,7 @@ func (de *DeviceExt) marshal() (json.RawMessage, error) {
 		if err != nil {
 			return nil, err
 		}
-		if len(prebidJson) > 0 {
+		if len(prebidJson) > 2 {
 			de.ext["prebid"] = json.RawMessage(prebidJson)
 		} else {
 			delete(de.ext, "prebid")
@@ -581,7 +581,7 @@ func (ae *AppExt) marshal() (json.RawMessage, error) {
 		if err != nil {
 			return nil, err
 		}
-		if len(prebidJson) > 0 {
+		if len(prebidJson) > 2 {
 			ae.ext["prebid"] = json.RawMessage(prebidJson)
 		} else {
 			delete(ae.ext, "prebid")
@@ -745,7 +745,7 @@ func (se *SiteExt) marshal() (json.RawMessage, error) {
 		if err != nil {
 			return nil, err
 		}
-		if len(ampJson) > 0 {
+		if len(ampJson) > 2 {
 			se.ext["amp"] = json.RawMessage(ampJson)
 		} else {
 			delete(se.ext, "amp")

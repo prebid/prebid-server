@@ -38,7 +38,7 @@ func processInterstitials(req *openrtb_ext.RequestWrapper) error {
 	return nil
 }
 
-func processInterstitialsForImp(imp *openrtb2.Imp, devExt *openrtb_ext.ExtDevicePrebid, device *openrtb2.Device) error {
+func processInterstitialsForImp(imp *openrtb2.Imp, devExtPrebid *openrtb_ext.ExtDevicePrebid, device *openrtb2.Device) error {
 	var maxWidth, maxHeight, minWidth, minHeight int64
 	if imp.Banner == nil {
 		// custom interstitial support is only available for banner requests.
@@ -56,8 +56,8 @@ func processInterstitialsForImp(imp *openrtb2.Imp, devExt *openrtb_ext.ExtDevice
 		maxWidth = device.W
 		maxHeight = device.H
 	}
-	minWidth = (maxWidth * devExt.Interstitial.MinWidthPerc) / 100
-	minHeight = (maxHeight * devExt.Interstitial.MinHeightPerc) / 100
+	minWidth = (maxWidth * devExtPrebid.Interstitial.MinWidthPerc) / 100
+	minHeight = (maxHeight * devExtPrebid.Interstitial.MinHeightPerc) / 100
 	imp.Banner.Format = genInterstitialFormat(minWidth, maxWidth, minHeight, maxHeight)
 	if len(imp.Banner.Format) == 0 {
 		return &errortypes.BadInput{Message: fmt.Sprintf("Unable to set interstitial size list for Imp id=%s (No valid sizes between %dx%d and %dx%d)", imp.ID, minWidth, minHeight, maxWidth, maxHeight)}
