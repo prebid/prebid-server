@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "SmartHub Adapter Params",
+  "description": "A schema which validates params accepted by the SmartHub adapter",
+  "type": "object",
+  "properties": {
+    "host": {
+      "type": "string",
+      "description": "Network host to send request"
+    },
+    "seat": {
+      "type": "string",
+      "description": "Seat"
+    },
+    "token": {
+      "type": "string",
+      "description": "Token"
+    }
+  },
+  "required": [
+    "host",
+    "seat",
+    "token"
+  ]
+}
