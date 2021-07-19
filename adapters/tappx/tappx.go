@@ -58,13 +58,6 @@ func (a *TappxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 		}}
 	}
 
-	//In this section we create all EXT parameters
-	type VideoExt struct {
-		Rewarded int `json:"rewarded,omitempty"`
-	}
-	if tappxExt.Rewarded == 1 {
-		request.Imp[0].Video.Ext = json.RawMessage(`{"rewarded": 1}`)
-	}
 
 	type Bidder struct {
 		Tappxkey string   `json:"tappxkey"`
