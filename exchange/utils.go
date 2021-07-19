@@ -28,18 +28,16 @@ var integrationTypeMap = map[metrics.RequestType]config.IntegrationType{
 
 const unknownBidder string = ""
 
-func BidderToPrebidSChains(req *openrtb_ext.ExtRequest) (map[string]*openrtb_ext.ExtRequestPrebidSChainSChain, error) {
+func BidderToPrebidSChains(sChains []*openrtb_ext.ExtRequestPrebidSChain) (map[string]*openrtb_ext.ExtRequestPrebidSChainSChain, error) {
 	bidderToSChains := make(map[string]*openrtb_ext.ExtRequestPrebidSChainSChain)
 
-	if req != nil {
-		for _, schainWrapper := range req.Prebid.SChains {
-			for _, bidder := range schainWrapper.Bidders {
-				if _, present := bidderToSChains[bidder]; present {
-					return nil, fmt.Errorf("request.ext.prebid.schains contains multiple schains for bidder %s; "+
-						"it must contain no more than one per bidder.", bidder)
-				} else {
-					bidderToSChains[bidder] = &schainWrapper.SChain
-				}
+	for _, schainWrapper := range sChains {
+		for _, bidder := range schainWrapper.Bidders {
+			if _, present := bidderToSChains[bidder]; present {
+				return nil, fmt.Errorf("request.ext.prebid.schains contains multiple schains for bidder %s; "+
+					"it must contain no more than one per bidder.", bidder)
+			} else {
+				bidderToSChains[bidder] = &schainWrapper.SChain
 			}
 		}
 	}
@@ -178,7 +176,8 @@ func ccpaEnabled(account *config.Account, privacyConfig config.Privacy, requestT
 }
 
 func extractCCPA(orig *openrtb2.BidRequest, privacyConfig config.Privacy, account *config.Account, aliases map[string]string, requestType config.IntegrationType) (privacy.PolicyEnforcer, error) {
-	ccpaPolicy, err := ccpa.ReadFromRequest(orig)
+	// Quick extra wrapper until RequestWrapper makes its way into CleanRequests
+	ccpaPolicy, err := ccpa.ReadFromRequestWrapper(&openrtb_ext.RequestWrapper{BidRequest: orig})
 	if err != nil {
 		return privacy.NilPolicyEnforcer{}, err
 	}
@@ -217,9 +216,12 @@ func getAuctionBidderRequests(req AuctionRequest,
 
 	var sChainsByBidder map[string]*openrtb_ext.ExtRequestPrebidSChainSChain
 
-	sChainsByBidder, err = BidderToPrebidSChains(requestExt)
-	if err != nil {
-		return nil, []error{err}
+	// Quick extra wrapper until RequestWrapper makes its way into CleanRequests
+	if requestExt != nil {
+		sChainsByBidder, err = BidderToPrebidSChains(requestExt.Prebid.SChains)
+		if err != nil {
+			return nil, []error{err}
+		}
 	}
 
 	reqExt, err := getExtJson(req.BidRequest, requestExt)

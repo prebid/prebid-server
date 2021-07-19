@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -34,7 +35,7 @@ var request = &openrtb2.BidRequest{
 
 func TestInterstitial(t *testing.T) {
 	myRequest := request
-	if err := processInterstitials(myRequest); err != nil {
+	if err := processInterstitials(&openrtb_ext.RequestWrapper{BidRequest: myRequest}); err != nil {
 		t.Fatalf("Error processing interstitials: %v", err)
 	}
 	targetFormat := []openrtb2.Format{

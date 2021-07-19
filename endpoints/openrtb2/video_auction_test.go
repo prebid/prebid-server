@@ -1087,11 +1087,13 @@ func TestCCPA(t *testing.T) {
 		description         string
 		testFilePath        string
 		expectConsentString bool
+		expectEmptyConsent  bool
 	}{
 		{
 			description:         "Missing Consent",
 			testFilePath:        "sample-requests/video/video_valid_sample.json",
 			expectConsentString: false,
+			expectEmptyConsent:  true,
 		},
 		{
 			description:         "Valid Consent",
@@ -1132,7 +1134,7 @@ func TestCCPA(t *testing.T) {
 		}
 		if test.expectConsentString {
 			assert.Len(t, extRegs.USPrivacy, 4, test.description+":consent")
-		} else {
+		} else if test.expectEmptyConsent {
 			assert.Empty(t, extRegs.USPrivacy, test.description+":consent")
 		}
 
