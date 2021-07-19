@@ -14,5 +14,5 @@ func TestJsonSamples(t *testing.T) {
 		Endpoint: "http://{{.Host}}/?seat={{.AccountID}}&token={{.SourceId}}"})
 
 	assert.NoError(t, buildErr)
-	adapterstest.RunJSONBidderTest(t, "smarthub", bidder)
+	adapterstest.RunJSONBidderTest(t, "smarthubtest", bidder)
 }
