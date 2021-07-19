@@ -38,8 +38,8 @@ var validParams = []string{
 	`{"tappxkey":"pub-12345-android-9876", "endpoint":"ZZ1INTERNALTEST149147915", "host":"test.tappx.com", "bidfloor":0.5, "mktag":"txmk-xxxxx-xxx-xxxx"}`,
 	`{"tappxkey":"pub-12345-android-9876", "endpoint":"ZZ1INTERNALTEST149147915", "host":"test.tappx.com", "bidfloor":0.5, "bcid":["123"]}`,
 	`{"tappxkey":"pub-12345-android-9876", "endpoint":"ZZ1INTERNALTEST149147915", "host":"test.tappx.com", "bidfloor":0.5}, "bcrid":["245"]}`,
-	`{"tappxkey":"pub-12345-android-9876", "endpoint":"ZZ1INTERNALTEST149147915", "host":"test.tappx.com", "bidfloor":0.5, "bcid":["123". "654"], "bcrid":["245", "321"]}`,
-	`{"tappxkey":"pub-12345-android-9876", "endpoint":"ZZ1INTERNALTEST149147915", "host":"test.tappx.com", "bidfloor":0.5, "bcid":["123". "654"], "bcrid":["245", "321"]}`,
+	`{"tappxkey":"pub-12345-android-9876", "endpoint":"ZZ1INTERNALTEST149147915", "host":"test.tappx.com", "bidfloor":0.5, "bcid":["123", "654"], "bcrid":["245", "321"]}`,
+	`{"tappxkey":"pub-12345-android-9876", "endpoint":"ZZ1INTERNALTEST149147915", "host":"test.tappx.com", "bidfloor":0.5, "bcid":["123", "654"], "bcrid":["245", "321"]}`,
 }
 
 var invalidParams = []string{
