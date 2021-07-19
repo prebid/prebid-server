@@ -89,12 +89,6 @@ func (a *TappxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 		request.Ext = jsonext
 	}
 
-	if err := json.Unmarshal(bidderExt.Bidder, &tappxExt); err != nil {
-		return nil, []error{&errortypes.BadInput{
-			Message: "Error parsing tappxExt parameters",
-		}}
-	}
-
 	var test int
 	test = int(request.Test)
 
