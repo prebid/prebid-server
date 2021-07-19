@@ -58,7 +58,6 @@ func (a *TappxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 		}}
 	}
 
-
 	type Bidder struct {
 		Tappxkey string   `json:"tappxkey"`
 		Mktag    string   `json:"mktag,omitempty"`
