@@ -70,19 +70,11 @@ func (a *TappxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 	ext := Ext{
 		Bidder: Bidder{
 			Tappxkey: tappxExt.TappxKey,
+			Mktag:    tappxExt.Mktag,
+			Bcid:     tappxExt.Bcid,
+			Bcrid:    tappxExt.Bcrid,
 		},
 	}
-	if tappxExt.Mktag != "" {
-		ext.Bidder.Mktag = tappxExt.Mktag
-	}
-	if tappxExt.Bcid != nil {
-		ext.Bidder.Bcid = tappxExt.Bcid
-	}
-	if tappxExt.Bcrid != nil {
-		ext.Bidder.Bcrid = tappxExt.Bcrid
-	}
-
-	request.Ext = nil
 
 	jsonext, err := json.Marshal(ext)
 	if err == nil {
