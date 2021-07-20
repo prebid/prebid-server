@@ -15,6 +15,7 @@ func TestNewSyncerMap(t *testing.T) {
 	cfg := &config.Configuration{
 		Adapters: map[string]config.Adapter{
 			string(openrtb_ext.Bidder33Across):         syncConfig,
+			string(openrtb_ext.BidderAarki):            syncConfig,
 			string(openrtb_ext.BidderAcuityAds):        syncConfig,
 			string(openrtb_ext.BidderAdf):              syncConfig,
 			string(openrtb_ext.BidderAdform):           syncConfig,
@@ -110,6 +111,7 @@ func TestNewSyncerMap(t *testing.T) {
 	}
 
 	adaptersWithoutSyncers := map[openrtb_ext.BidderName]bool{
+		openrtb_ext.BidderAarki:             true,
 		openrtb_ext.BidderAdgeneration:      true,
 		openrtb_ext.BidderAdhese:            true,
 		openrtb_ext.BidderAdoppler:          true,

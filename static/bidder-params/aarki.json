@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Aarki Adapter Params",
+  "description": "A schema which validates params accepted by the Aarki adapter",
+  "type": "object",
+  "properties": {
+    "reward": {
+      "type": "integer",
+      "description": "An integer defining the reward (skip) from Aarki"
+    },
+    "region": {
+      "type": "string",
+      "description": "A string defining region for choosing the closest Aarki endpoint"
+    },
+    "skadn_supported": {
+      "type": "boolean",
+      "description": "A bool config to determine if SKADN is supported by Aarki"
+    },
+    "mraid_supported": {
+      "type": "boolean",
+      "description": "A bool config to determine if MRAID is supported by Aarki"
+    }
+  }
+}

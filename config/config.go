@@ -847,6 +847,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	// for them and specify all the parameters they need for them to work correctly.
 	v.SetDefault("adapters.33across.endpoint", "https://ssc.33across.com/api/v1/s2s")
 	v.SetDefault("adapters.33across.partner_id", "")
+	v.SetDefault("adapters.aarki.disabled", true)
+	v.SetDefault("adapters.aarki.endpoint", "https://tapjoy.aarki.net/rtb/bid")
 	v.SetDefault("adapters.acuityads.endpoint", "http://{{.Host}}.admanmedia.com/bid?token={{.AccountID}}")
 	v.SetDefault("adapters.adf.endpoint", "https://adx.adform.net/adx/openrtb")
 	v.SetDefault("adapters.adform.endpoint", "https://adx.adform.net/adx")
