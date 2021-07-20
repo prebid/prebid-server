@@ -34,18 +34,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	impCount := len(request.Imp)
 	requestData := make([]*adapters.RequestData, 0, impCount)
 	errs := []error{}
-	request, err := deepCopyRequest(request)
-	if err != nil {
-		errs = append(errs, &errortypes.BadInput{
-			Message: err.Error(),
-		})
-		return nil, errs
-	}
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 
-	err = checkRequest(request)
+	err := checkRequest(request)
 	if err != nil {
 		errs = append(errs, err)
 		return nil, errs
@@ -137,7 +130,9 @@ func convertImpression(imp *openrtb2.Imp) error {
 			if err != nil {
 				return err
 			}
-			imp.Native.Request = string(body)
+			native := *imp.Native
+			native.Request = string(body)
+			imp.Native = &native
 		}
 	}
 	return nil
@@ -217,17 +212,4 @@ func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 		}
 	}
 	return mediaType
-}
-
-func deepCopyRequest(request *openrtb2.BidRequest) (*openrtb2.BidRequest, error) {
-	reqJson, err := json.Marshal(request)
-	if err != nil {
-		return nil, err
-	}
-	var reqCopy openrtb2.BidRequest
-	err = json.Unmarshal(reqJson, &reqCopy)
-	if err != nil {
-		return nil, err
-	}
-	return &reqCopy, err
 }
