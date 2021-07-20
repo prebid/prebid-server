@@ -21,7 +21,7 @@
       }
     ],
     "app": {
-      "bundle": "us.domain.some"
+      "bundle": "com.domain.some"
     },
     "device":{
       "ip":"192.168.168.168"
@@ -49,7 +49,7 @@
             }
           ],
           "app": {
-            "bundle": "us.domain.some",
+            "bundle": "com.domain.some",
             "domain": "domain.us"
           },
           "cur": [
