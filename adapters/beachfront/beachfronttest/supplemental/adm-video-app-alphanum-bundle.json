@@ -21,7 +21,7 @@
       }
     ],
     "app": {
-      "bundle": "us.domain.some"
+      "bundle": "qwerty"
     },
     "device":{
       "ip":"192.168.168.168"
@@ -49,8 +49,7 @@
             }
           ],
           "app": {
-            "bundle": "us.domain.some",
-            "domain": "domain.us"
+            "bundle": "qwerty"
           },
           "cur": [
             "USD"
