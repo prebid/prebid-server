@@ -1056,7 +1056,11 @@ func extractAdmPicture(content *Content) (adm string, adWidth int64, adHeight in
 	var imageTitle = ""
 	imageTitle, _ = getDecodeValue(content.MetaData.Title)
 	impTracking, clickTracking := getImpClickTracking(content, "AP")
-	dspImpTracking, dspClickTracking := getDspImpClickTracking(content)
+	dspImpTrackings, dspClickTrackings := getDspImpClickTrackings(content)
+	var dspImpTrackings2StrImg strings.Builder
+	for i := 0; i < len(dspImpTrackings); i++ {
+		dspImpTrackings2StrImg.WriteString("<img height=\"1\" width=\"1\" src='" + dspImpTrackings[i] + "' >  ")
+	}
 
 	adm = "<style> html, body  " +
 		"{ margin: 0; padding: 0; width: 100%; height: 100%; vertical-align: middle; }  " +
@@ -1066,26 +1070,33 @@ func extractAdmPicture(content *Content) (adm string, adWidth int64, adHeight in
 		"</style> " +
 		"<span class=\"title-link advertiser_label\">" + imageTitle + "</span> " +
 		"<a href='" + clickUrl + "' style=\"text-decoration:none\" " +
-		"onclick=sendGetReq('" + clickTracking + "','" + dspClickTracking + "')> " +
+		"onclick=sendGetReq('" + clickTracking + "')> " +
 		"<img src='" + imageInfoUrl + "' width='" + strconv.Itoa(int(adWidth)) + "' height='" + strconv.Itoa(int(adHeight)) + "'/> " +
 		"</a> " +
 		"<img height=\"1\" width=\"1\" src='" + impTracking + "' > " +
-		"<img height=\"1\" width=\"1\" src='" + dspImpTracking + "' >  " +
-		"<script type=\"text/javascript\"> " +
-		"function sendGetReq(param1, param2){ " +
-		"var req1 = new XMLHttpRequest(); " +
-		"req1.open('GET', param1, true);  " +
-		"req1.send(null);  " +
-		"var req2 = new XMLHttpRequest(); " +
-		"req2.open('GET', param2, true);  " +
-		"req2.send(null);  } " +
+		dspImpTrackings2StrImg.String() +
+		"<script type=\"text/javascript\">" +
+		"var dspClickTrackings = [" + dspClickTrackings + "];" +
+		"function sendGetReq(clickTracking) {" +
+		"sendOneGetReq(clickTracking);" +
+		"sendSomeGetReq(dspClickTrackings)" +
+		"}" +
+		"function sendOneGetReq(url) {" +
+		"var req = new XMLHttpRequest();" +
+		"req.open('GET', url, true);" +
+		"req.send(null);" +
+		"}" +
+		"function sendSomeGetReq(urls) {" +
+		"for (var i = 0; i < urls.length; i++) {" +
+		"sendOneGetReq(urls[i]);" +
+		"}" +
+		"}" +
 		"</script>"
-
 	return adm, adWidth, adHeight, nil
 }
 
 // get impTracking, clickTracking
-// area: AP EU RUS, default AP.
+// area: AP EU RUS, default AP. When other area，we can decide by the huaweiads endpoint
 func getImpClickTracking(content *Content, area string) (impTracking string, clickTracking string) {
 	var prefix = "https://events-dra.op.hicloud.com/contserver/tracker/action?ch=200002"
 	if area == "EU" {
@@ -1111,18 +1122,33 @@ func getImpClickTracking(content *Content, area string) (impTracking string, cli
 	return impTracking, clickTracking
 }
 
-func getDspImpClickTracking(content *Content) (dspImpTracking string, dspClickTracking string) {
+func getDspImpClickTrackings(content *Content) (dspImpTrackings []string, dspClickTrackings string) {
 	if content.Monitor != nil {
 		for _, monitor := range content.Monitor {
 			if monitor.EventType == "imp" && len(monitor.Url) != 0 {
-				dspImpTracking = monitor.Url[0]
+				dspImpTrackings = monitor.Url
 			}
 			if monitor.EventType == "click" && len(monitor.Url) != 0 {
-				dspClickTracking = monitor.Url[0]
+				dspClickTrackings = getStrings(monitor.Url)
 			}
 		}
 	}
-	return dspImpTracking, dspClickTracking
+	return dspImpTrackings, dspClickTrackings
+}
+
+// Add url for monitor
+func getStrings(eles []string) string {
+	if len(eles) == 0 {
+		return ""
+	}
+	var strs strings.Builder
+	for i := 0; i < len(eles); i++ {
+		strs.WriteString("\"" + eles[i] + "\"")
+		if i < len(eles)-1 {
+			strs.WriteString(",")
+		}
+	}
+	return strs.String()
 }
 
 // get duration, format: 00:00:00.000
@@ -1272,22 +1298,7 @@ func extractAdmVideo(adType int32, content *Content, bidType openrtb_ext.BidType
 		"<Creative adId=\"" + adId + "\" id=\"${CREATIVE_ID}$\">" +
 		"<Linear>" +
 		"<Duration>" + duration + "</Duration>" +
-		"<TrackingEvents>" +
-		trackingEvents.String() +
-		//"<Tracking event=\"skip\"><![CDATA[${SKIP_TRACKING}]]></Tracking>" +
-
-		//"<Tracking event=\"start\"><![CDATA[${START_TRACKING}]]></Tracking>" +
-		//"<Tracking event=\"complete\"><![CDATA[${COMPLETE_TRACKING}]]></Tracking>" +
-		//"<Tracking event=\"mute\"><![CDATA[${MUTE_TRACKING}]]></Tracking>" +
-		//"<Tracking event=\"unmute\"><![CDATA[${UNMUTE_TRACKING}]]></Tracking>" +
-		//"<Tracking event=\"pause\"><![CDATA[${PAUSE_TRACKING}]]></Tracking>" +
-		//"<Tracking event=\"resume\"><![CDATA[${RESUME_TRACKING}]]></Tracking>" +
-
-		//"<Tracking event=\"apk_install\"><![CDATA[${INSTSLL}]]></Tracking>" +
-		//"<Tracking event=\"apk_download_start\"><![CDATA[${DOWNLOAD_START}]]></Tracking>" +
-		//"<Tracking event=\"apk_download_end\"><![CDATA[${DOWNLOAD}]]></Tracking>" +
-		//"<Tracking event=\"closeLinear\"><![CDATA[${CLOSE_TRACKING}]]></Tracking>" +
-		"</TrackingEvents>" +
+		"<TrackingEvents>" + trackingEvents.String() + "</TrackingEvents>" +
 		"<VideoClicks>" +
 		"<ClickThrough><![CDATA[" + clickUrl + "]]></ClickThrough>" +
 		"<ClickTracking><![CDATA[" + clickTracking + "]]></ClickTracking>" +
