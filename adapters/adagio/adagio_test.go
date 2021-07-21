@@ -54,8 +54,8 @@ func TestMakeRequests_NoGzip(t *testing.T) {
 	assert.Equal(t, 1, len(requestData))
 
 	body := &openrtb2.BidRequest{}
-	_ = json.Unmarshal(requestData[0].Body, body)
-
+	error := json.Unmarshal(requestData[0].Body, body)
+	assert.NoError(t, error, "Request body unmarshalling error should be nil")
 	assert.Equal(t, 1, len(body.Imp))
 }
 
@@ -69,6 +69,7 @@ func TestMakeRequests_Gzip(t *testing.T) {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	requestData, _ := bidder.MakeRequests(&fakeBidRequest, nil)
+	requestData, errors := bidder.MakeRequests(&fakeBidRequest, nil)
+	assert.Empty(t, errors, "Got errors while making requests")
 	assert.Equal(t, []string([]string{"gzip"}), requestData[0].Headers["Content-Encoding"])
 }

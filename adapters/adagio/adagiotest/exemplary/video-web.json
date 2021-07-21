@@ -116,6 +116,11 @@
                   "w": 1280,
                   "h": 720,
                   "ext": {
+                    "adagio": {
+                      "outstream": {
+                        "bvwUrl": "https://cool.io"
+                      }
+                    },
                     "prebid": {
                       "type": "video"
                     }
@@ -152,6 +157,11 @@
             "w": 1280,
             "h": 720,
             "ext": {
+              "adagio": {
+                "outstream": {
+                  "bvwUrl": "https://cool.io"
+                }
+              },
               "prebid": {
                 "type": "video"
               }

@@ -22,8 +22,8 @@
       {
         "id": "some-impression-id",
         "banner": {
-          "w":320,
-          "h":50
+          "w": 320,
+          "h": 50
         },
         "ext": {
           "bidder": {
@@ -63,8 +63,8 @@
             {
               "id": "some-impression-id",
               "banner": {
-                "w":320,
-                "h":50
+                "w": 320,
+                "h": 50
               },
               "ext": {
                 "bidder": {
@@ -124,7 +124,7 @@
   ],
   "expectedBidResponses": [
     {
-      "bids":[]
+      "bids": []
     }
   ]
 }

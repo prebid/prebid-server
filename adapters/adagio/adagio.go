@@ -123,7 +123,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, _ *adapters.Req
 			if activeExt.Prebid != nil && activeExt.Prebid.Type != "" {
 				bidType = activeExt.Prebid.Type
 			} else {
-				err := &errortypes.BadInput{
+				err := &errortypes.BadServerResponse{
 					Message: fmt.Sprintf("Failed to find native/banner/video mediaType \"%s\" ", activeBid.ImpID),
 				}
 				errs = append(errs, err)
