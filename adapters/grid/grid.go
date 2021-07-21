@@ -121,83 +121,81 @@ func mixKeywords(keywordsString string, keywords map[string]interface{}) {
 	}
 }
 
-func mergeWithReqExtKeywords(extKeywords map[string]interface{}, request *openrtb2.BidRequest) {
+func mergeWithReqExtKeywords(extKeywords map[string]interface{}, request *openrtb2.BidRequest) error {
 	var reqExt ReqExt
 	var reqExtKeywords map[string]interface{}
 
-	if err := json.Unmarshal(request.Ext, &reqExt); err == nil {
-		if reqExt.Keywords != nil {
-			json.Unmarshal(reqExt.Keywords, &reqExtKeywords)
+	if err := json.Unmarshal(request.Ext, &reqExt); err != nil {
+		return err
+	}
+	if reqExt.Keywords != nil {
+		json.Unmarshal(reqExt.Keywords, &reqExtKeywords)
 
-			for key, keyword := range reqExtKeywords {
-				if extKeywords[key] == nil {
-					extKeywords[key] = keyword
-				} else {
-					if key == "site" || key == "user" {
-						target := extKeywords[key].(map[string]interface{})
-						from := keyword.(map[string]interface{})
+		for key, keyword := range reqExtKeywords {
+			if extKeywords[key] == nil {
+				extKeywords[key] = keyword
+			} else {
+				if key == "site" || key == "user" {
+					target := extKeywords[key].(map[string]interface{})
+					from := keyword.(map[string]interface{})
 
-						for name, value := range from {
-							if target[name] == nil {
-								target[name] = value
-							} else {
-								valueArr := value.([]interface{})
-								targetArr := target[name].([]interface{})
-								target[name] = append(targetArr, valueArr...)
-							}
+					for name, value := range from {
+						if target[name] == nil {
+							target[name] = value
+						} else {
+							valueArr := value.([]interface{})
+							targetArr := target[name].([]interface{})
+							target[name] = append(targetArr, valueArr...)
 						}
-					} else {
-						extKeywords[key] = keyword
+					}
+				} else {
+					extKeywords[key] = keyword
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func fillSegments(publisherItem map[string]interface{}) []KeywordSegment {
+	segments := make([]KeywordSegment, 0)
+
+	for key, value := range publisherItem {
+		if key != "name" {
+			if keywords, ok := value.([]interface{}); ok {
+				for _, keyword := range keywords {
+					switch keyword.(type) {
+					case map[string]interface{}:
+						keywordSegment := keyword.(map[string]interface{})
+						if key == "segments" && keywordSegment["name"] != nil && keywordSegment["value"] != nil {
+							segment := KeywordSegment{
+								Name:  keywordSegment["name"].(string),
+								Value: keywordSegment["value"].(string),
+							}
+							segments = append(segments, segment)
+						}
+					case string:
+						segment := KeywordSegment{
+							Name:  key,
+							Value: keyword.(string),
+						}
+						segments = append(segments, segment)
 					}
 				}
 			}
 		}
 	}
+
+	return segments
 }
 
 func reformatExtKeywords(extKeywords map[string]interface{}) {
 	for name, pubData := range extKeywords {
-		switch pubData.(type) {
-		default:
-			delete(extKeywords, name)
-		case []interface{}:
-			formatedPubArr := make([]KeywordsPublisherItem, 0) // make([]interface{}, 0)
-			pubArr := pubData.([]interface{})
+		if pubArr, ok := pubData.([]interface{}); ok {
+			formatedPubArr := make([]KeywordsPublisherItem, 0)
 			for _, item := range pubArr {
-				switch item.(type) {
-				// default:
-				//	  formatedPubArr = append(formatedPubArr, item)
-				case map[string]interface{}:
-					segments := make([]KeywordSegment, 0)
-					publisherItem := item.(map[string]interface{})
-
-					for key, value := range publisherItem {
-						if key != "name" {
-							switch value.(type) {
-							case []interface{}:
-								keywords := value.([]interface{})
-								for _, keyword := range keywords {
-									switch keyword.(type) {
-									case map[string]interface{}:
-										keywordSegment := keyword.(map[string]interface{})
-										if key == "segments" && keywordSegment["name"] != nil && keywordSegment["value"] != nil {
-											segment := KeywordSegment{
-												Name:  keywordSegment["name"].(string),
-												Value: keywordSegment["value"].(string),
-											}
-											segments = append(segments, segment)
-										}
-									case string:
-										segment := KeywordSegment{
-											Name:  key,
-											Value: keyword.(string),
-										}
-										segments = append(segments, segment)
-									}
-								}
-							}
-						}
-					}
+				if publisherItem, itemOk := item.(map[string]interface{}); itemOk {
+					segments := fillSegments(publisherItem)
 
 					if len(segments) > 0 {
 						formatedPublisher := KeywordsPublisherItem{
@@ -213,6 +211,8 @@ func reformatExtKeywords(extKeywords map[string]interface{}) {
 			} else {
 				delete(extKeywords, name)
 			}
+		} else {
+			delete(extKeywords, name)
 		}
 	}
 }
@@ -263,15 +263,13 @@ func updateExtKeywords(keywords json.RawMessage, request *openrtb2.BidRequest) j
 
 	if extKeywords != nil {
 		if extKeywords["site"] != nil {
-			switch extKeywords["site"].(type) {
-			case map[string]interface{}:
-				reformatExtKeywords(extKeywords["site"].(map[string]interface{}))
+			if extKeywordsSite, ok := extKeywords["site"].(map[string]interface{}); ok {
+				reformatExtKeywords(extKeywordsSite)
 			}
 		}
 		if extKeywords["user"] != nil {
-			switch extKeywords["user"].(type) {
-			case map[string]interface{}:
-				reformatExtKeywords(extKeywords["user"].(map[string]interface{}))
+			if extKeywordsUser, ok := extKeywords["user"].(map[string]interface{}); ok {
+				reformatExtKeywords(extKeywordsUser)
 			}
 		}
 

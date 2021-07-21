@@ -7,7 +7,19 @@
     "uid": {
       "type": "integer",
       "description": "An ID which identifies this placement of the impression"
+    },
+    "keywords": {
+      "type": "object",
+      "description": "Keywords",
+      "properties": {
+        "site": {
+          "type": "object"
+        },
+        "user": {
+          "type": "object"
+        }
+      }
     }
   },
-  "required": []
+  "required": ["uid"]
 }
