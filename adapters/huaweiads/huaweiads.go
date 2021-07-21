@@ -267,37 +267,23 @@ type RewardItem struct {
 	Amount int32  `json:"amount"`
 }
 
-type HuaweiAdsAdapter struct {
+type adapter struct {
 	endpoint string
 }
 
-func (a *HuaweiAdsAdapter) MakeRequests(openRTBRequest *openrtb2.BidRequest,
+func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest,
 	reqInfo *adapters.ExtraRequestInfo) (requestsToBidder []*adapters.RequestData, errs []error) {
-	if openRTBRequest == nil {
-		errs = append(errs, &errortypes.BadInput{
-			Message: "MakeRequests: openRTBRequest is nil",
-		})
-		return nil, errs
-	}
-
+	// the upstream code already confirms that there is a non-zero number of impressions
 	numRequests := len(openRTBRequest.Imp)
-	if numRequests == 0 || openRTBRequest.Imp == nil {
-		errs = append(errs, &errortypes.BadInput{
-			Message: "MakeRequests: No impression in the bid request",
-		})
-		return nil, errs
-	}
-
 	var request HuaweiAdsRequest
 	var header http.Header
 	var multislot = make([]Adslot30, 0, numRequests)
 
 	var huaweiAdsImpExt *openrtb_ext.ExtImpHuaweiAds
 	var err1 error
-	for index := 0; index < numRequests; index++ {
+	for index := 0; index < numRequests && numRequests > 0; index++ {
 		huaweiAdsImpExt, err1 = unmarshalExtImpHuaweiAds(&openRTBRequest.Imp[index])
-
-		if err1 != nil {
+		if err1 != nil || huaweiAdsImpExt == nil {
 			errs = append(errs, err1)
 			return nil, errs
 		}
@@ -326,7 +312,7 @@ func (a *HuaweiAdsAdapter) MakeRequests(openRTBRequest *openrtb2.BidRequest,
 	//	our request header's Authorization is changing by time, cannot verify by a certain string,
 	//	use isAddAuthorization = false only when run testcase
 	var isAddAuthorization = true
-	if huaweiAdsImpExt.IsAddAuthorization == "false" {
+	if huaweiAdsImpExt != nil && huaweiAdsImpExt.IsAddAuthorization == "false" {
 		isAddAuthorization = false
 	}
 	header = getHeaders(huaweiAdsImpExt, openRTBRequest, isAddAuthorization)
@@ -343,7 +329,7 @@ func (a *HuaweiAdsAdapter) MakeRequests(openRTBRequest *openrtb2.BidRequest,
 	return bidRequestArray, errs
 }
 
-func (a *HuaweiAdsAdapter) MakeBids(openRTBRequest *openrtb2.BidRequest, requestToBidder *adapters.RequestData,
+func (a *adapter) MakeBids(openRTBRequest *openrtb2.BidRequest, requestToBidder *adapters.RequestData,
 	bidderRawResponse *adapters.ResponseData) (bidderResponse *adapters.BidderResponse, errs []error) {
 	if bidderRawResponse.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -377,7 +363,7 @@ func (a *HuaweiAdsAdapter) MakeBids(openRTBRequest *openrtb2.BidRequest, request
 
 // Builder builds a new instance of the HuaweiAds adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &HuaweiAdsAdapter{
+	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}
 	return bidder, nil
@@ -388,6 +374,10 @@ func getHeaders(huaweiAdsImpExt *openrtb_ext.ExtImpHuaweiAds, request *openrtb2.
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
+	if huaweiAdsImpExt == nil {
+		return headers
+	}
+
 	if isAddAuthorization {
 		headers.Add("Authorization", getDigestAuthorization(huaweiAdsImpExt))
 	}
@@ -395,7 +385,6 @@ func getHeaders(huaweiAdsImpExt *openrtb_ext.ExtImpHuaweiAds, request *openrtb2.
 	if request.Device != nil && len(request.Device.UA) > 0 {
 		headers.Add("User-Agent", request.Device.UA)
 	}
-
 	return headers
 }
 
@@ -559,18 +548,20 @@ func getHuaweiAdsReqAppInfo(request *HuaweiAdsRequest, openRTBRequest *openrtb2.
 }
 
 // get field clientTime, format: 2006-01-02 15:04:05.000+2000
-func getClientTime(clientTime string) (newClientTime string) {
+func getClientTime(huaweiAdsImpExt *openrtb_ext.ExtImpHuaweiAds) (newClientTime string) {
 	zone, _ := time.Now().Local().Zone()
 	if isMatched, _ := regexp.MatchString("[+-]{1}\\d{2}", zone); isMatched {
 		zone = zone + "00"
 	} else {
 		zone = "+0200"
 	}
-
+	if huaweiAdsImpExt == nil {
+		return time.Now().Format(TimeFormat) + zone
+	}
+	var clientTime = huaweiAdsImpExt.ClientTime
 	if clientTime == "" {
 		return time.Now().Format(TimeFormat) + zone
 	}
-
 	if isMatched1, _ := regexp.MatchString("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}.\\d{3}[+-]{1}\\d{4}$", clientTime); isMatched1 {
 		return clientTime
 	}
@@ -597,7 +588,7 @@ func getHuaweiAdsReqDeviceInfo(request *HuaweiAdsRequest, openRTBRequest *openrt
 		device.Width = int32(openRTBRequest.Device.W)
 		device.Language = openRTBRequest.Device.Language
 		device.Pxratio = float32(openRTBRequest.Device.PxRatio)
-		device.ClientTime = getClientTime(huaweiAdsImpExt.ClientTime)
+		device.ClientTime = getClientTime(huaweiAdsImpExt)
 
 		if openRTBRequest.User != nil && openRTBRequest.User.Geo != nil && openRTBRequest.User.Geo.Country != "" {
 			device.BelongCountry = openRTBRequest.User.Geo.Country
