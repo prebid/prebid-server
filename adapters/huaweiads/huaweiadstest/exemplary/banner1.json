@@ -55,10 +55,10 @@
       "ext": {
         "data": {
           "gaid": [
-            "db089de9-a62e-4861-a881-0ff15e052516"
+            "gaid"
           ],
           "oaid": [
-            "a4b4faee-e3f1-188b-a5d5-f7f6ff54a444"
+            "oaid"
           ]
         }
       }
@@ -93,13 +93,21 @@
             {
               "adtype": 8,
               "slotid": "m8x9x3rzff",
-              "test": 0
+              "test": 0,
+              "format": [
+                {
+                  "w": 300,
+                  "h": 250
+                }
+              ],
+              "w": 300,
+              "h": 250
             }
           ],
           "device": {
             "height": 1920,
             "language": "zh",
-            "oaid": "a4b4faee-e3f1-188b-a5d5-f7f6ff54a444",
+            "oaid": "oaid",
             "os": "android",
             "type": 4,
             "ip": "152.193.6.74",
@@ -107,7 +115,7 @@
             "pxratio": 23.01,
             "width": 1080,
             "clientTime": "2018-11-02 16:34:07.981+1300",
-            "gaid": "db089de9-a62e-4861-a881-0ff15e052516",
+            "gaid": "gaid",
             "useragent": "useragent",
             "version": "10.0.0",
             "maker": "huawei",
@@ -151,8 +159,7 @@
                   "metaData": {
                     "adSign": "2",
                     "appPromotionChannel": "401721412",
-                    "clickUrl": "https://api-ppsfun.hwcloudtest.cn:8447/ppsdspportal/index.html?content_id=58025103&adgroup_id=48017658&campaign_id=38013100&callback=75000348%26202105191939580103736%262005100429%26https%253A%252F%252Fapi-ppsfun.hwcloudtest.cn%253A8447%252Fppsdspportal%252Findex.html%2523%252Fcreate%252Ftask#/create/task",
-                    "cta": "%e6%9f%a5%e7%9c%8b%e8%af%a6%e6%83%85",
+                    "clickUrl": "https://test/clickurl",
                     "imageInfo": [
                       {
                         "checkSha256Flag": 1,
@@ -170,24 +177,18 @@
                     {
                       "eventType": "click",
                       "url": [
-                        "http://10.31.43.168:18115/contserver/tracker/action?ch=200002&etype=click&kn=1&pfsa=jQpXUSsialdjaGrZdnI4qBqiaFth3GxKgqGPGc8icbdNKacyqP4B8Ud224Bg8Qtm27CAHQon9Esfszg10xOuUybL8jqlVVxUv5ibrNK2QVZRo6q760nTVM5m6o49Z2icvT5AhEvWUO585VibGPHToJKmh7YRiaIFHpdjLaY2aJdNqGwMH5Np4lRELyxYXIuMMEedtgv88fS5GJBFjIUp9QiaR5iav9CBibfJYms4ialPRMEHkct37TUX66X71FkSep478Oneecq4F0ft5v8icNpYOVEknptC0dJCDiaenZzbTD0x3P5Cjk9XUwlaN8eEpaDJfwmWOrYEG5KBFibndGicQYnP0SgsTGFdRQzJcnxPELYEO923DbD2nRQcuFohNWHqomgARZibE4ibKb5t34KZgyA5P9ibKEm4xDcFvuaXWsUlrwwtcmaaxMK6EBWuWfJ806ONHkLkG1XZASouS2fic9NvSPzqTrAjsaWg9hrmaCiaDPmEjJaWSUlC43YCia2wIKCBR3K82EJgmNWPJXc1t1l985WfKpvR6dE8VPbfVoicghDEiafPeDSC2FH2wJe4R7138gaOuIwDibe4nUVEibY60lxm1rQyglKAZA0vM4WehqBmJfbweiacgD0cUJYuZ3GLaicF51E9uoJqaKlN602xH88EicI3pE9PiawygYEmuiaWpPQDy4LwrblAqlxmIf2WU&uuid=1234576&w=__HW_W__&h=__HW_H__&downx=__HW_DOWN_X__&downy=__HW_DOWN_Y__&upx=__HW_UP_X__&upy=__HW_UP_Y__"
+                        "http://test/click"
                       ]
                     },
                     {
                       "eventType": "imp",
                       "url": [
-                        "http://10.31.43.168:18115/contserver/tracker/action?ch=200002&etype=imp&kn=1&pfsa=jQpXUSsialdjaGrZdnI4qBqiaFth3GxKgqGPGc8icbdNKacyqP4B8Ud224Bg8Qtm27CAHQon9Esfszg10xOuUybL8jqlVVxUv5ibrNK2QVZRo6q760nTVM5m6o49Z2icvT5AhEvWUO585VibGPHToJKmh7YRiaIFHpdjLaY2aJdNqGwMH5Np4lRELyxYXIuMMEedtgv88fS5GJBFjIUp9QiaR5iav9CBibfJYms4ialPRMEHkct37TUX66X71FkSep478Oneecq4F0ft5v8icNpYOVEknptC0dJCDiaenZzbTD0x3P5Cjk9XUwlaN8eEpaDJfwmWOrYEG5KBFibndGicQYnP0SgsTGFdRQzJcnxPELYEO923DbD2nRQcuFohNWHqomgARZibE4ibKb5t34KZgyA5P9ibKEm4xDcFvuaXWsUlrwwtcmaaxMK6EBWuWfJ806ONHkLkG1XZASouS2fic9NvSPzqTrAjsaWg9hrmaCiaDPmEjJaWSUlC43YCia2wIKCBR3K82EJgmNWPJXc1t1l985WfKpvR6dE8VPbfVoicghDEiafPeDSC2FH2wJe4R7138gaOuIwDibe4nUVEibY60lxm1rQyglKAZA0vM4WehqBmJfbweiacgD0cUJYuZ3GLaicF51E9uoJqaKlN602xH88EicI3pE9PiawygYEmuiaWpPQDy4LwrblAqlxmIf2WU&uuid=1234576"
-                      ]
-                    },
-                    {
-                      "eventType": "userclose",
-                      "url": [
-                        "http://10.31.43.168:18115/contserver/tracker/action?ch=200002&etype=userclose&kn=1&pfsa=jQpXUSsialdjaGrZdnI4qBqiaFth3GxKgqGPGc8icbdNKacyqP4B8Ud224Bg8Qtm27CAHQon9Esfszg10xOuUybL8jqlVVxUv5ibrNK2QVZRo6q760nTVM5m6o49Z2icvT5AhEvWUO585VibGPHToJKmh7YRiaIFHpdjLaY2aJdNqGwMH5Np4lRELyxYXIuMMEedtgv88fS5GJBFjIUp9QiaR5iav9CBibfJYms4ialPRMEHkct37TUX66X71FkSep478Oneecq4F0ft5v8icNpYOVEknptC0dJCDiaenZzbTD0x3P5Cjk9XUwlaN8eEpaDJfwmWOrYEG5KBFibndGicQYnP0SgsTGFdRQzJcnxPELYEO923DbD2nRQcuFohNWHqomgARZibE4ibKb5t34KZgyA5P9ibKEm4xDcFvuaXWsUlrwwtcmaaxMK6EBWuWfJ806ONHkLkG1XZASouS2fic9NvSPzqTrAjsaWg9hrmaCiaDPmEjJaWSUlC43YCia2wIKCBR3K82EJgmNWPJXc1t1l985WfKpvR6dE8VPbfVoicghDEiafPeDSC2FH2wJe4R7138gaOuIwDibe4nUVEibY60lxm1rQyglKAZA0vM4WehqBmJfbweiacgD0cUJYuZ3GLaicF51E9uoJqaKlN602xH88EicI3pE9PiawygYEmuiaWpPQDy4LwrblAqlxmIf2WU&uuid=1234576"
+                        "http://test/imp"
                       ]
                     }
                   ],
                   "paramfromserver": {
-                    "a": "1||jQpXUSsildjaGrZdnI4qBqiFth3GxKgqGPGc8/bdNKacyqP4B8Ud224Bg8Qtm27CAHQon9Esfszg10xOuUybL8jqlVVxUv5+rNK2QVZRo6q760nTVM5m6o49Z2/vT5AhEvWUO585V+GPHToJKmh7YRiIFHpdjLaY2aJdNqGwMH5Np4lRELyxYXIuMMEedtgv88fS5GJBFjIUp9QiR5iv9CB+fJYms4ilPRMEHkct37TUX66X71FkSep478Oneecq4F0ft5v8/NpYOVEknptC0dJCDienZzbTD0x3P5Cjk9XUwlaN8eEpaDJfwmWOrYEG5KBF+ndG/QYnP0SgsTGFdRQzJcnxPELYEO923DbD2nRQcuFohNWHqomgARZ+E4+Kb5t34KZgyA5P9+KEm4xDcFvuaXWsUlrwwtcmaaxMK6EBWuWfJ806ONHkLkG1XZASouS2f/9NvSPzqTrAjsaWg9hrmaCiDPmEjJaWSUlC43YCi2wIKCBR3K82EJgmNWPJXc1t1l985WfKpvR6dE8VPbfVo/ghDEifPeDSC2FH2wJe4R7138gaOuIwD+e4nUVE+Y60lxm1rQyglKAZA0vM4WehqBmJfbweicgD0cUJYuZ3GLa/F51E9uoJqaKlN602xH88E/I3pE9PiwygYEmuiWpPQDy4LwrblAqlxmIf2WU=",
+                    "a": "1||test",
                     "sig": "",
                     "t": "99990101235959"
                   },
@@ -195,7 +196,6 @@
                   "starttime": 1621267200000,
                   "taskid": "48017658",
                   "webConfig": "setMixedContentMode|int|0",
-                  "whyThisAd": "https%3A%2F%2Fconsumer.huawei.com%2Fminisite%2Fcloudservice%2Fadinfo%2Fterms.htm%3Fcountry%3DCN%26language%3Den-US%26version%3D20191227",
                   "xrFlag": {}
                 }
               ],
@@ -223,7 +223,7 @@
       "bids": [
         {
           "bid": {
-            "adm": "<head><meta charset=\"UTF-8\"><meta http-equiv=\"Content-Type\" content=\"text/html\"><meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge,chrome=1\"><script type=\"text/javascript\">(function () {var impMonitorUrls = [\"http://10.31.43.168:18115/contserver/tracker/action?ch=200002&etype=imp&kn=1&pfsa=jQpXUSsialdjaGrZdnI4qBqiaFth3GxKgqGPGc8icbdNKacyqP4B8Ud224Bg8Qtm27CAHQon9Esfszg10xOuUybL8jqlVVxUv5ibrNK2QVZRo6q760nTVM5m6o49Z2icvT5AhEvWUO585VibGPHToJKmh7YRiaIFHpdjLaY2aJdNqGwMH5Np4lRELyxYXIuMMEedtgv88fS5GJBFjIUp9QiaR5iav9CBibfJYms4ialPRMEHkct37TUX66X71FkSep478Oneecq4F0ft5v8icNpYOVEknptC0dJCDiaenZzbTD0x3P5Cjk9XUwlaN8eEpaDJfwmWOrYEG5KBFibndGicQYnP0SgsTGFdRQzJcnxPELYEO923DbD2nRQcuFohNWHqomgARZibE4ibKb5t34KZgyA5P9ibKEm4xDcFvuaXWsUlrwwtcmaaxMK6EBWuWfJ806ONHkLkG1XZASouS2fic9NvSPzqTrAjsaWg9hrmaCiaDPmEjJaWSUlC43YCia2wIKCBR3K82EJgmNWPJXc1t1l985WfKpvR6dE8VPbfVoicghDEiafPeDSC2FH2wJe4R7138gaOuIwDibe4nUVEibY60lxm1rQyglKAZA0vM4WehqBmJfbweiacgD0cUJYuZ3GLaicF51E9uoJqaKlN602xH88EicI3pE9PiawygYEmuiaWpPQDy4LwrblAqlxmIf2WU&uuid=1234576\"];var clickMonitorUrls = [\"http://10.31.43.168:18115/contserver/tracker/action?ch=200002&etype=click&kn=1&pfsa=jQpXUSsialdjaGrZdnI4qBqiaFth3GxKgqGPGc8icbdNKacyqP4B8Ud224Bg8Qtm27CAHQon9Esfszg10xOuUybL8jqlVVxUv5ibrNK2QVZRo6q760nTVM5m6o49Z2icvT5AhEvWUO585VibGPHToJKmh7YRiaIFHpdjLaY2aJdNqGwMH5Np4lRELyxYXIuMMEedtgv88fS5GJBFjIUp9QiaR5iav9CBibfJYms4ialPRMEHkct37TUX66X71FkSep478Oneecq4F0ft5v8icNpYOVEknptC0dJCDiaenZzbTD0x3P5Cjk9XUwlaN8eEpaDJfwmWOrYEG5KBFibndGicQYnP0SgsTGFdRQzJcnxPELYEO923DbD2nRQcuFohNWHqomgARZibE4ibKb5t34KZgyA5P9ibKEm4xDcFvuaXWsUlrwwtcmaaxMK6EBWuWfJ806ONHkLkG1XZASouS2fic9NvSPzqTrAjsaWg9hrmaCiaDPmEjJaWSUlC43YCia2wIKCBR3K82EJgmNWPJXc1t1l985WfKpvR6dE8VPbfVoicghDEiafPeDSC2FH2wJe4R7138gaOuIwDibe4nUVEibY60lxm1rQyglKAZA0vM4WehqBmJfbweiacgD0cUJYuZ3GLaicF51E9uoJqaKlN602xH88EicI3pE9PiawygYEmuiaWpPQDy4LwrblAqlxmIf2WU&uuid=1234576&w=__HW_W__&h=__HW_H__&downx=__HW_DOWN_X__&downy=__HW_DOWN_Y__&upx=__HW_UP_X__&upy=__HW_UP_Y__\"];var userCloseMonitorUrls = [\"http://10.31.43.168:18115/contserver/tracker/action?ch=200002&etype=userclose&kn=1&pfsa=jQpXUSsialdjaGrZdnI4qBqiaFth3GxKgqGPGc8icbdNKacyqP4B8Ud224Bg8Qtm27CAHQon9Esfszg10xOuUybL8jqlVVxUv5ibrNK2QVZRo6q760nTVM5m6o49Z2icvT5AhEvWUO585VibGPHToJKmh7YRiaIFHpdjLaY2aJdNqGwMH5Np4lRELyxYXIuMMEedtgv88fS5GJBFjIUp9QiaR5iav9CBibfJYms4ialPRMEHkct37TUX66X71FkSep478Oneecq4F0ft5v8icNpYOVEknptC0dJCDiaenZzbTD0x3P5Cjk9XUwlaN8eEpaDJfwmWOrYEG5KBFibndGicQYnP0SgsTGFdRQzJcnxPELYEO923DbD2nRQcuFohNWHqomgARZibE4ibKb5t34KZgyA5P9ibKEm4xDcFvuaXWsUlrwwtcmaaxMK6EBWuWfJ806ONHkLkG1XZASouS2fic9NvSPzqTrAjsaWg9hrmaCiaDPmEjJaWSUlC43YCia2wIKCBR3K82EJgmNWPJXc1t1l985WfKpvR6dE8VPbfVoicghDEiafPeDSC2FH2wJe4R7138gaOuIwDibe4nUVEibY60lxm1rQyglKAZA0vM4WehqBmJfbweiacgD0cUJYuZ3GLaicF51E9uoJqaKlN602xH88EicI3pE9PiawygYEmuiaWpPQDy4LwrblAqlxmIf2WU&uuid=1234576\"];function visitUrl(url) {var img = new Image();img.src = url;return img;}function visitAllUrls(urls) {for (var i = 0; i < urls.length; i++) {visitUrl(urls[i]);}}function addEventListener(node, event, func, useCapture) {node = node || document;useCapture = useCapture || false;if (node.addEventListener) {node.addEventListener(event, func, useCapture);} else {node.attachEvent('on' + event, func);}}function init() {var imgLink = document.getElementById('img_link');if (imgLink) {addEventListener(imgLink, 'click', function () {visitAllUrls(clickMonitorUrls);}, false);}var close = document.getElementById('close');if (close) {addEventListener(close, 'click', function () {visitAllUrls(userCloseMonitorUrls)}, false);}}window.onload = function () {visitAllUrls(impMonitorUrls);init();}})();</script></head><body><div class=\"product\"><a class=\"img_area\" id=\"img_link\" href=\"https://api-ppsfun.hwcloudtest.cn:8447/ppsdspportal/index.html?content_id=58025103&adgroup_id=48017658&campaign_id=38013100&callback=75000348%26202105191939580103736%262005100429%26https%253A%252F%252Fapi-ppsfun.hwcloudtest.cn%253A8447%252Fppsdspportal%252Findex.html%2523%252Fcreate%252Ftask#/create/task\" target=\"_blank\"><img src=\"https://pps-connector-performance-arm-test-cn.obs.cn-north-4.myhwclouds.com/dl/pps/2021042514374282E9FF0628C2F50A7F67FA2B4C0CA168.png\" width=\"250\" height=\"300\" alt=\"\"/></a></div></body>",
+            "adm": "<style> html, body  { margin: 0; padding: 0; width: 100%; height: 100%; vertical-align: middle; }  html  { display: table; }  body { display: table-cell; vertical-align: middle; text-align: center; -webkit-text-size-adjust: none; }  </style> <span class=\"title-link advertiser_label\"></span> <a href='https://test/clickurl' style=\"text-decoration:none\" onclick=sendGetReq('https://events-dra.op.hicloud.com/contserver/tracker/action?ch=200002&etype=click&kn=1&pfsa=test','http://test/click')> <img src='https://pps-connector-performance-arm-test-cn.obs.cn-north-4.myhwclouds.com/dl/pps/2021042514374282E9FF0628C2F50A7F67FA2B4C0CA168.png' width='250' height='300'/> </a> <img height=\"1\" width=\"1\" src='https://events-dra.op.hicloud.com/contserver/tracker/action?ch=200002&etype=imp&kn=1&pfsa=test' > <img height=\"1\" width=\"1\" src='http://test/imp' >  <script type=\"text/javascript\"> function sendGetReq(param1, param2){ var req1 = new XMLHttpRequest(); req1.open('GET', param1, true);  req1.send(null);  var req2 = new XMLHttpRequest(); req2.open('GET', param2, true);  req2.send(null);  } </script>",
             "adomain": [
               "huaweiads"
             ],

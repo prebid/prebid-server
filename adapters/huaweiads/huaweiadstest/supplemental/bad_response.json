@@ -93,7 +93,15 @@
             {
               "adtype": 8,
               "slotid": "m8x9x3rzff",
-              "test": 0
+              "test": 0,
+              "format": [
+                {
+                  "h": 250,
+                  "w": 300
+                }
+              ],
+              "h": 250,
+              "w": 300
             }
           ],
           "device": {
@@ -220,8 +228,10 @@
   "expectedBidResponses": [
   ],
   "expectedMakeRequestsErrors": [],
-  "expectedMakeBidsErrors": [{
-    "value": "convertHuaweiAdsResp2BidderResp: multiad length is 0, get no ads from huawei side.",
-    "comparison": "literal"
-  }]
+  "expectedMakeBidsErrors": [
+    {
+      "value": "convertHuaweiAdsResp2BidderResp: multiad length is 0, get no ads from huawei side.",
+      "comparison": "literal"
+    }
+  ]
 }

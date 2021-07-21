@@ -6,5 +6,4 @@ capabilities:
   app:
     mediaTypes:
       - banner
-      - video
       - native
