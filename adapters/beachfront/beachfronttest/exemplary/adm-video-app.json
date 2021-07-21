@@ -50,7 +50,7 @@
           ],
           "app": {
             "bundle": "com.domain.some",
-            "domain": "domain.us"
+            "domain": "domain.com"
           },
           "cur": [
             "USD"

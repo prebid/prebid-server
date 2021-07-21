@@ -49,7 +49,8 @@
             }
           ],
           "app": {
-            "bundle": "qwerty"
+            "bundle": "some.domain.us/some/page.html",
+            "domain": "domain.some"
           },
           "cur": [
             "USD"
