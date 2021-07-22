@@ -14,7 +14,9 @@
             "tappxkey": "pub-12345-android-9876",
             "endpoint": "ZZ123456PS",
             "host": "testing.ssp.tappx.com/rtb/v2/",
-            "mktag": "mktag-12345-android-9876"
+            "mktag": "mktag-12345-android-9876",
+            "bcid": ["1","2","3"],
+            "bcrid": ["4","5","6"]
           }
         }
       }
@@ -50,7 +52,9 @@
                   "tappxkey": "pub-12345-android-9876",
                   "endpoint": "ZZ123456PS",
                   "host": "testing.ssp.tappx.com/rtb/v2/",
-                  "mktag": "mktag-12345-android-9876"
+                  "mktag": "mktag-12345-android-9876",
+                  "bcid": ["1","2","3"],
+                  "bcrid": ["4","5","6"]
                 }
               }
             }
@@ -68,7 +72,9 @@
           "ext": {
             "bidder": {
               "tappxkey": "pub-12345-android-9876",
-              "mktag": "mktag-12345-android-9876"
+              "mktag": "mktag-12345-android-9876",
+              "bcid": ["1","2","3"],
+              "bcrid": ["4","5","6"]
             }
           }
         }
