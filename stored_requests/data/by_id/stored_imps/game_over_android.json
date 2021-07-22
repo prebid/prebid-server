@@ -1,14 +1,14 @@
 {
-    "id": "content_top_ios",
+    "id": "game_over_android",
     "banner": {
         "format": [
           {
-            "w": 320,
-            "h": 50
-          },
-          {
             "w": 300,
             "h": 250
+          },
+          {
+            "w": 320,
+            "h": 50
           }
         ]
       },
@@ -25,7 +25,7 @@
           },
           "pubmatic": {
             "publisherId": "158326",
-            "adSlot": "3029490"
+            "adSlot": "1957467"
           },
           "rhythmone": {
             "placementId": "213696",
