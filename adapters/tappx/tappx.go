@@ -25,6 +25,17 @@ type TappxAdapter struct {
 	endpointTemplate template.Template
 }
 
+type Bidder struct {
+	Tappxkey string   `json:"tappxkey"`
+	Mktag    string   `json:"mktag,omitempty"`
+	Bcid     []string `json:"bcid,omitempty"`
+	Bcrid    []string `json:"bcrid,omitempty"`
+}
+
+type Ext struct {
+	Bidder `json:"bidder"`
+}
+
 // Builder builds a new instance of the Tappx adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
@@ -58,15 +69,6 @@ func (a *TappxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 		}}
 	}
 
-	type Bidder struct {
-		Tappxkey string   `json:"tappxkey"`
-		Mktag    string   `json:"mktag,omitempty"`
-		Bcid     []string `json:"bcid,omitempty"`
-		Bcrid    []string `json:"bcrid,omitempty"`
-	}
-	type Ext struct {
-		Bidder `json:"bidder"`
-	}
 	ext := Ext{
 		Bidder: Bidder{
 			Tappxkey: tappxExt.TappxKey,
