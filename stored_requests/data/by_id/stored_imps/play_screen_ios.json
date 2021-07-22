@@ -38,6 +38,9 @@
           },
           "oftmedia": {
               "placementId": 19606578
+          },
+          "triplelift": {
+            "inventoryCode": "pwm_android_hdx_pb"
           }
       }
 }
