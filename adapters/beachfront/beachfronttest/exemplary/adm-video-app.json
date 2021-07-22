@@ -1,0 +1,124 @@
+{
+  "mockBidRequest": {
+    "id": "adm-video",
+    "imp": [
+      {
+        "id": "video1",
+        "ext": {
+          "bidder": {
+            "bidfloor": 3.01,
+            "appId": "videoAppId1"
+          }
+        },
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "context": "instream",
+          "w": 300,
+          "h": 250
+        }
+      }
+    ],
+    "app": {
+      "bundle": "com.domain.some"
+    },
+    "device":{
+      "ip":"192.168.168.168"
+    }
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://qa.beachrtb.com/bid.json?exchange_id=videoAppId1",
+        "body": {
+          "id": "adm-video",
+          "imp": [
+            {
+              "video": {
+                "w": 300,
+                "h": 250,
+                "mimes": [
+                  "video/mp4"
+                ]
+              },
+              "bidfloor": 3.01,
+              "id": "video1",
+              "secure": 0
+            }
+          ],
+          "app": {
+            "bundle": "com.domain.some",
+            "domain": "domain.com"
+          },
+          "cur": [
+            "USD"
+          ],
+          "device":{
+            "devicetype": 1,
+            "ip":"192.168.168.168"
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "adm-video",
+          "seatBid": [
+            {
+              "bid": [
+                {
+                  "id": "5fd7c8a6ff2f1f0d42ee6427",
+                  "impid": "video1",
+                  "price": 20,
+                  "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
+                  "adid": "1088",
+                  "adomain": [
+                    "beachfront.io"
+                  ],
+                  "cid": "277",
+                  "crid": "532",
+                  "w": 300,
+                  "h": 250,
+                  "ext": {
+                    "duration": 30
+                  }
+                }
+              ],
+              "seat": "bfio-s-1"
+            }
+          ]
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "video1AdmVideo",
+            "impid": "video1",
+            "price": 20,
+            "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
+            "adid": "1088",
+            "adomain": [
+              "beachfront.io"
+            ],
+            "cid": "277",
+            "crid": "532",
+            "w": 300,
+            "h": 250,
+            "ext": {
+              "duration": 30
+            }
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}
