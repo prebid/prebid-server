@@ -24,17 +24,19 @@
 			"type": "number",
 			"description": "Minimum bid for this impression expressed in CPM (USD)"
 		},
-		"rewarded": {
-			"type": "number",
-			"description": "Indicates with a 0 or 1 if is rewarded or no. (Only with video)"
-		},
 		"bcid": {
 			"type": "array",
-			"description": "Block list of CID"
+			"description": "Block list of CID",
+			"items": {
+				"type": "string"
+			}
 		},
 		"bcrid": {
 			"type": "array",
-			"description": "Block list of CRID"
+			"description": "Block list of CRID",
+			"items": {
+				"type": "string"
+			}
 		}
 	},
 	"required": ["host","tappxkey","endpoint"]
