@@ -121,40 +121,29 @@ func mixKeywords(keywordsString string, keywords map[string]interface{}) {
 	}
 }
 
-func mergeWithReqExtKeywords(extKeywords map[string]interface{}, request *openrtb2.BidRequest) error {
-	var reqExt ReqExt
-	var reqExtKeywords map[string]interface{}
+func mergeWithReqExtKeywords(extKeywords map[string]interface{}, reqExtKeywords map[string]interface{}) {
+	for key, keyword := range reqExtKeywords {
+		if extKeywords[key] == nil {
+			extKeywords[key] = keyword
+		} else {
+			if key == "site" || key == "user" {
+				target := extKeywords[key].(map[string]interface{})
+				from := keyword.(map[string]interface{})
 
-	if err := json.Unmarshal(request.Ext, &reqExt); err != nil {
-		return err
-	}
-	if reqExt.Keywords != nil {
-		json.Unmarshal(reqExt.Keywords, &reqExtKeywords)
-
-		for key, keyword := range reqExtKeywords {
-			if extKeywords[key] == nil {
-				extKeywords[key] = keyword
-			} else {
-				if key == "site" || key == "user" {
-					target := extKeywords[key].(map[string]interface{})
-					from := keyword.(map[string]interface{})
-
-					for name, value := range from {
-						if target[name] == nil {
-							target[name] = value
-						} else {
-							valueArr := value.([]interface{})
-							targetArr := target[name].([]interface{})
-							target[name] = append(targetArr, valueArr...)
-						}
+				for name, value := range from {
+					if target[name] == nil {
+						target[name] = value
+					} else {
+						valueArr := value.([]interface{})
+						targetArr := target[name].([]interface{})
+						target[name] = append(targetArr, valueArr...)
 					}
-				} else {
-					extKeywords[key] = keyword
 				}
+			} else {
+				extKeywords[key] = keyword
 			}
 		}
 	}
-	return nil
 }
 
 func fillSegments(publisherItem map[string]interface{}) []KeywordSegment {
@@ -221,14 +210,23 @@ func updateExtKeywords(keywords json.RawMessage, request *openrtb2.BidRequest) j
 	var extKeywords map[string]interface{}
 	var extKWSite map[string]interface{}
 	var extKWUser map[string]interface{}
+	var reqExt ReqExt
+	var reqExtKeywords map[string]interface{}
 
-	json.Unmarshal(keywords, &extKeywords)
+	if err := json.Unmarshal(keywords, &extKeywords); err != nil {
+		extKeywords = nil
+	}
 
 	if request.Ext != nil {
-		if extKeywords == nil {
-			extKeywords = make(map[string]interface{})
+		reqExtErr := json.Unmarshal(request.Ext, &reqExt)
+		reqExtKeywordsErr := json.Unmarshal(reqExt.Keywords, &reqExtKeywords)
+
+		if reqExtErr == nil && reqExtKeywordsErr == nil && reqExtKeywords != nil {
+			if extKeywords == nil {
+				extKeywords = make(map[string]interface{})
+			}
+			mergeWithReqExtKeywords(extKeywords, reqExtKeywords)
 		}
-		mergeWithReqExtKeywords(extKeywords, request)
 	}
 
 	if request.Site != nil && request.Site.Keywords != "" {
@@ -330,6 +328,7 @@ func (a *GridAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapte
 	err := setImpExtKeywords(validImps[0], request)
 	if err != nil {
 		errors = append(errors, err)
+		return nil, errors
 	}
 
 	request.Imp = validImps
