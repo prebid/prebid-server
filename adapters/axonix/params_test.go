@@ -40,15 +40,18 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	`{"supplyId": "24cc9034-f861-47b8-a6a8-b7e0968c00b8"}`,
-	`{"supplyId": "test"}`,
+	`{"region": "us", "supplyId": "test-supply"}`,
+	`{"region": "test", "supplyId": "test"}`,
 }
 
 var invalidParams = []string{
-	`{"supplyId": 100}`,
-	`{"supplyId": false}`,
-	`{"supplyId": true}`,
-	`{"supplyId": 123}`,
+	`{"region": "10", "supplyId": 100}`,
+	`{"region": true, "supplyId": false}`,
+	`{"region": "test", "supplyId": true}`,
+	`{"region": "test", "supplyId": 123}`,
+	`{"region": true, "supplyId": "test"}`,
+	`{"region": 123, "supplyId": "test}`,
+	`{"region": ""}`,
 	``,
 	`null`,
 	`true`,
