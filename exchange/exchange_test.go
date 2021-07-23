@@ -3444,9 +3444,9 @@ func TestUpdateHbPbCatDur(t *testing.T) {
 }
 
 func TestInsertStoredImpData(t *testing.T) {
-	impsToStoredRequest := make(map[string][]byte)
-	impsToStoredRequest["imp_idApn1_1"] = []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`)
-	impsToStoredRequest["imp_idApn1_3"] = []byte(`{"video":{"h":100}}`)
+	impsToStoredRequest := make(map[string]StoredImpData)
+	impsToStoredRequest["imp_idApn1_1"] = StoredImpData{true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`)}
+	impsToStoredRequest["imp_idApn1_3"] = StoredImpData{false, []byte(`{"video":{"h":100}}`)}
 
 	cats1 := []string{"IAB1-3"}
 	bidApn1_1 := openrtb2.Bid{ID: "bid_idApn1_1", ImpID: "imp_idApn1_1", Price: 10.0000, Cat: cats1, W: 1, H: 1, Ext: json.RawMessage(`{"prebid": {"video":{"mimes":["video/mp4"]}}}`)}
@@ -3470,7 +3470,7 @@ func TestInsertStoredImpData(t *testing.T) {
 	insertStoredImpData(imps, impsToStoredRequest, bids)
 
 	expectedBidExt1_1 := json.RawMessage(`{"prebid":{"video":{"mimes":["video/mp4"]}},"storedrequestattributes":{"h":480,"mimes":["video/mp4"]}}`)
-	expectedBidExt1_3 := json.RawMessage(`{"storedrequestattributes":{"h":100}}`)
+	expectedBidExt1_3 := json.RawMessage(nil)
 
 	assert.Len(t, bids.bids, 3, "Incorrect amount of returned bids")
 	assert.Equal(t, bids.bids[0].bid.Ext, expectedBidExt1_1, "Incorrect bid bid_idApn1_1 extension")

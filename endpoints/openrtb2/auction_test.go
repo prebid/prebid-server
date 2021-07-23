@@ -1037,10 +1037,10 @@ func TestStoredRequests(t *testing.T) {
 		}
 		expectedImp := testStoredImpIds[i]
 		expectedStoredReq := json.RawMessage(testStoredImps[i])
-		if !jsonpatch.Equal(impToStoredReq[expectedImp], expectedStoredReq) {
-			t.Errorf("Error in processStoredRequests, test %d failed on compare stored request\nFound:\n%s\nExpected:\n%s", i, string(impToStoredReq[expectedImp]), string(expectedStoredReq))
+		if !jsonpatch.Equal(impToStoredReq[expectedImp].Data, expectedStoredReq) {
+			t.Errorf("Error in processStoredRequests, test %d failed on compare stored request\nFound:\n%s\nExpected:\n%s", i, string(impToStoredReq[expectedImp].Data), string(expectedStoredReq))
 		}
-
+		assert.Equalf(t, testStoreVideoAttr[i], impToStoredReq[expectedImp].IncludeVideoAttributes, "IncludeVideoAttributes value is incorrect")
 	}
 }
 
@@ -3375,6 +3375,10 @@ var testStoredImpIds = []string{
 	"adUnit1", "adUnit2", "adUnit1", "some-static-imp",
 }
 
+var testStoreVideoAttr = []bool{
+	true, true, false, false,
+}
+
 var testStoredImps = []string{
 	`{
 		"id": "adUnit1",
@@ -3410,7 +3414,19 @@ var testStoredImps = []string{
         	"h":300
 		}
 	}`,
-	``,
+	`{
+			"id": "adUnit1",
+			"ext": {
+				"appnexus": {
+					"placementId": "abc",
+					"position": "above",
+					"reserve": 0.35
+				},
+				"rubicon": {
+					"accountId": "abc"
+				}
+			}
+		}`,
 	``,
 }
 

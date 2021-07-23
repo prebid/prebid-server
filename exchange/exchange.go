@@ -136,6 +136,11 @@ func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid
 	}
 }
 
+type StoredImpData struct {
+	IncludeVideoAttributes bool
+	Data                   []byte
+}
+
 // AuctionRequest holds the bid request for the auction
 // and all other information needed to process that request
 type AuctionRequest struct {
@@ -146,7 +151,7 @@ type AuctionRequest struct {
 	StartTime                  time.Time
 	Warnings                   []error
 	GlobalPrivacyControlHeader string
-	ImpToStoredReq             map[string][]byte
+	ImpToStoredReq             map[string]StoredImpData
 
 	// LegacyLabels is included here for temporary compatability with cleanOpenRTBRequests
 	// in HoldAuction until we get to factoring it away. Do not use for anything new.
@@ -423,7 +428,7 @@ func (e *exchange) getAllBids(
 	accountDebugAllowed bool,
 	globalPrivacyControlHeader string,
 	headerDebugAllowed bool,
-	impToStoredReq map[string][]byte) (
+	impToStoredReq map[string]StoredImpData) (
 	map[openrtb_ext.BidderName]*pbsOrtbSeatBid,
 	map[openrtb_ext.BidderName]*seatResponseExtra, bool) {
 	// Set up pointers to the bid results
@@ -514,7 +519,7 @@ func (e *exchange) getAllBids(
 	return adapterBids, adapterExtra, bidsFound
 }
 
-func insertStoredImpData(imps []openrtb2.Imp, impsToStoredRequest map[string][]byte, bids *pbsOrtbSeatBid) error {
+func insertStoredImpData(imps []openrtb2.Imp, impsToStoredRequest map[string]StoredImpData, bids *pbsOrtbSeatBid) error {
 	for _, bid := range bids.bids {
 		//find impression
 		var impression *openrtb2.Imp
@@ -540,8 +545,8 @@ func insertStoredImpData(imps []openrtb2.Imp, impsToStoredRequest map[string][]b
 			}
 
 			//determine if stored impression has video data
-			if impression.Video != nil {
-				videoData, _, _, err := jsonparser.Get(val, "video")
+			if impression.Video != nil && val.IncludeVideoAttributes {
+				videoData, _, _, err := jsonparser.Get(val.Data, "video")
 				if err != nil {
 					return err
 				}
