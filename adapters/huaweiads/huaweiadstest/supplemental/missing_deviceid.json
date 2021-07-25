@@ -21,7 +21,6 @@
             "publisherid": "123",
             "signkey": "signkey",
             "keyid": "41",
-            "clienttime": "2018-11-02 16:34:07.981+1300",
             "isAddAuthorization": "false"
           }
         }
@@ -43,20 +42,21 @@
       "devicetype": 4,
       "make": "huawei",
       "w": 1080,
-      "ip": "152.193.6.74",
+      "ip": "ip",
       "pxratio": 23.01,
       "geo": {
         "country": ""
       }
     },
     "user": {
-      "id": "db089de9-a62e-4861-a881-0ff15e052516",
-      "buyeruid": "v4_bidder_token",
       "ext": {
         "data": {
           "gaid": [
           ],
           "oaid": [
+          ],
+          "clientTime": [
+            "2018-11-02 16:34:07.981+1300"
           ]
         }
       }
@@ -68,8 +68,10 @@
   ],
   "expectedBidResponses": [
   ],
-  "expectedMakeRequestsErrors": [{
-    "value": "getDeviceID: Imei ,Oaid, Gaid are all empty.",
-    "comparison": "literal"
-  }]
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "getDeviceID: Imei ,Oaid, Gaid are all empty.",
+      "comparison": "literal"
+    }
+  ]
 }

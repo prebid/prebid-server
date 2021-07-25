@@ -50,14 +50,12 @@
       }
     },
     "user": {
-      "id": "db089de9-a62e-4861-a881-0ff15e052516",
-      "buyeruid": "v4_bidder_token",
       "ext": {
         "data": {
           "gaid": [
           ],
           "oaid": [
-            "a4b4faee-e3f1-188b-a5d5-f7f6ff54a444"
+            "oaid"
           ]
         }
       }

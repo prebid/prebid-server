@@ -21,7 +21,6 @@
             "publisherid": "123",
             "signkey": "signkey",
             "keyid": "41",
-            "clienttime": "2018-11-02 16:34:07.981+1300",
             "isAddAuthorization": "false"
           }
         }
@@ -59,6 +58,9 @@
           ],
           "oaid": [
             "oaid"
+          ],
+          "clientTime": [
+            "2018-11-02 16:34:07.981+1300"
           ]
         }
       }
@@ -198,9 +200,7 @@
                   },
                   "price": 2.8,
                   "starttime": 1621267200000,
-                  "taskid": "48017658",
-                  "webConfig": "setMixedContentMode|int|0",
-                  "xrFlag": {}
+                  "taskid": "48017658"
                 }
               ],
               "retcode30": 200,

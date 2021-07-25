@@ -30,6 +30,7 @@ const DefaultCountryName = "ZA"
 const DefaultUnknownNetworkType = 0
 const TimeFormat = "2006-01-02 15:04:05.000"
 const DefaultModelName = "HUAWEI"
+const DefaultTrackingEndpoint = "https://events-dra.op.hicloud.com/contserver/tracker/action"
 
 // creative type
 const (
@@ -268,7 +269,12 @@ type RewardItem struct {
 }
 
 type adapter struct {
-	endpoint string
+	endpoint  string
+	extraInfo ExtraInfo
+}
+
+type ExtraInfo struct {
+	TrackingUrl string `json:"trackingUrl,omitempty"`
 }
 
 func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest,
@@ -353,7 +359,7 @@ func (a *adapter) MakeBids(openRTBRequest *openrtb2.BidRequest, requestToBidder 
 	}
 
 	var err error
-	bidderResponse, err = convertHuaweiAdsResp2BidderResp(&huaweiAdsResponse, openRTBRequest)
+	bidderResponse, err = a.convertHuaweiAdsResp2BidderResp(&huaweiAdsResponse, openRTBRequest)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -363,10 +369,34 @@ func (a *adapter) MakeBids(openRTBRequest *openrtb2.BidRequest, requestToBidder 
 
 // Builder builds a new instance of the HuaweiAds adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	extraInfo, err := getExtraInfo(config.ExtraAdapterInfo)
+	if err != nil {
+		return nil, err
+	}
+
 	bidder := &adapter{
-		endpoint: config.Endpoint,
+		endpoint:  config.Endpoint,
+		extraInfo: extraInfo,
 	}
 	return bidder, nil
+}
+
+func getExtraInfo(huaweiAdsExtraInfo string) (ExtraInfo, error) {
+	if huaweiAdsExtraInfo == "" {
+		return ExtraInfo{
+			TrackingUrl: DefaultTrackingEndpoint,
+		}, nil
+	}
+
+	var extraInfo ExtraInfo
+	if err := json.Unmarshal([]byte(huaweiAdsExtraInfo), &extraInfo); err != nil {
+		return extraInfo, fmt.Errorf("HuaweiAds ExtraInfo: invalid extra info: %v", err)
+	}
+
+	if extraInfo.TrackingUrl == "" {
+		extraInfo.TrackingUrl = DefaultTrackingEndpoint
+	}
+	return extraInfo, nil
 }
 
 // get request header
@@ -548,25 +578,21 @@ func getHuaweiAdsReqAppInfo(request *HuaweiAdsRequest, openRTBRequest *openrtb2.
 }
 
 // get field clientTime, format: 2006-01-02 15:04:05.000+2000
-func getClientTime(huaweiAdsImpExt *openrtb_ext.ExtImpHuaweiAds) (newClientTime string) {
+func getClientTime(clientTime string) (newClientTime string) {
 	zone, _ := time.Now().Local().Zone()
 	if isMatched, _ := regexp.MatchString("[+-]{1}\\d{2}", zone); isMatched {
 		zone = zone + "00"
 	} else {
 		zone = "+0200"
 	}
-	if huaweiAdsImpExt == nil {
-		return time.Now().Format(TimeFormat) + zone
-	}
-	var clientTime = huaweiAdsImpExt.ClientTime
 	if clientTime == "" {
 		return time.Now().Format(TimeFormat) + zone
 	}
-	if isMatched1, _ := regexp.MatchString("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}.\\d{3}[+-]{1}\\d{4}$", clientTime); isMatched1 {
+	if isMatched, _ := regexp.MatchString("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}.\\d{3}[+-]{1}\\d{4}$", clientTime); isMatched {
 		return clientTime
 	}
-	if isMatched2, _ := regexp.MatchString("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}.\\d{3}$", clientTime); isMatched2 {
-		return clientTime + "+0200"
+	if isMatched, _ := regexp.MatchString("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}.\\d{3}$", clientTime); isMatched {
+		return clientTime + zone
 	}
 	return time.Now().Format(TimeFormat) + zone
 }
@@ -588,7 +614,6 @@ func getHuaweiAdsReqDeviceInfo(request *HuaweiAdsRequest, openRTBRequest *openrt
 		device.Width = int32(openRTBRequest.Device.W)
 		device.Language = openRTBRequest.Device.Language
 		device.Pxratio = float32(openRTBRequest.Device.PxRatio)
-		device.ClientTime = getClientTime(huaweiAdsImpExt)
 
 		if openRTBRequest.User != nil && openRTBRequest.User.Geo != nil && openRTBRequest.User.Geo.Country != "" {
 			device.BelongCountry = openRTBRequest.User.Geo.Country
@@ -637,7 +662,10 @@ func getDeviceID(device *Device, openRTBRequest *openrtb2.BidRequest) (err error
 	if len(deviceId.Imei) > 0 {
 		device.Imei = deviceId.Imei[0]
 	}
-	// oaid  IsTrackingEnabled = 1 - DNT
+	if len(deviceId.ClientTime) > 0 {
+		device.ClientTime = getClientTime(deviceId.ClientTime[0])
+	}
+	// IsTrackingEnabled = 1 - DNT
 	if openRTBRequest.Device != nil && openRTBRequest.Device.DNT != nil {
 		if device.Oaid != "" {
 			device.IsTrackingEnabled = strconv.Itoa(1 - int(*openRTBRequest.Device.DNT))
@@ -652,10 +680,38 @@ func getDeviceID(device *Device, openRTBRequest *openrtb2.BidRequest) (err error
 // get network information for HuaweiAds request
 func getHuaweiAdsReqNetWorkInfo(request *HuaweiAdsRequest, openRTBRequest *openrtb2.BidRequest) {
 	var network Network
-	if openRTBRequest.Device != nil && openRTBRequest.Device.ConnectionType != nil {
-		network.Type = int32(*openRTBRequest.Device.ConnectionType)
-	} else {
-		network.Type = DefaultUnknownNetworkType
+	if openRTBRequest.Device != nil {
+		if openRTBRequest.Device.ConnectionType != nil {
+			network.Type = int32(*openRTBRequest.Device.ConnectionType)
+		} else {
+			network.Type = DefaultUnknownNetworkType
+		}
+
+		var cellInfos []CellInfo
+		if openRTBRequest.Device.MCCMNC != "" {
+			var arr = strings.Split(openRTBRequest.Device.MCCMNC, "-")
+			if len(arr) >= 2 {
+				cellInfos = append(cellInfos, CellInfo{
+					Mcc: arr[0],
+					Mnc: arr[1],
+				})
+				var str = arr[0] + arr[1]
+				if str == "46000" || str == "46002" || str == "46007" {
+					network.Carrier = 2
+				} else if str == "46001" || str == "46006" {
+					network.Carrier = 1
+				} else if str == "46003" || str == "46005" || str == "46011" {
+					network.Carrier = 3
+				} else {
+					network.Carrier = 99
+				}
+			} else {
+				network.Carrier = 0
+			}
+		} else {
+			network.Carrier = 0
+		}
+		network.CellInfo = cellInfos
 	}
 	request.Network = network
 }
@@ -755,7 +811,7 @@ func checkHuaweiAdsResponseRetcode(response HuaweiAdsResponse) error {
 }
 
 // convert HuaweiAds' response into bidder's response
-func convertHuaweiAdsResp2BidderResp(huaweiAdsResponse *HuaweiAdsResponse, openRTBRequest *openrtb2.BidRequest) (bidderResponse *adapters.BidderResponse, err error) {
+func (a *adapter) convertHuaweiAdsResp2BidderResp(huaweiAdsResponse *HuaweiAdsResponse, openRTBRequest *openrtb2.BidRequest) (bidderResponse *adapters.BidderResponse, err error) {
 	if len(huaweiAdsResponse.Multiad) == 0 {
 		return nil, errors.New("convertHuaweiAdsResp2BidderResp: multiad length is 0, get no ads from huawei side.")
 	}
@@ -816,7 +872,7 @@ func convertHuaweiAdsResp2BidderResp(huaweiAdsResponse *HuaweiAdsResponse, openR
 				bidderResponse.Currency = content.Cur
 			}
 
-			bid.AdM, bid.W, bid.H, err = handleHuaweiAdsContent(ad30.AdType, &content, mapSlotid2MediaType[ad30.Slotid], mapSlotid2Imp[ad30.Slotid])
+			bid.AdM, bid.W, bid.H, err = a.handleHuaweiAdsContent(ad30.AdType, &content, mapSlotid2MediaType[ad30.Slotid], mapSlotid2Imp[ad30.Slotid])
 			if err != nil {
 				return nil, err
 			}
@@ -845,16 +901,16 @@ func getNurl(content *Content) string {
 }
 
 // get field Adm, Width, Height
-func handleHuaweiAdsContent(adType int32, content *Content, bidType openrtb_ext.BidType, imp openrtb2.Imp) (
+func (a *adapter) handleHuaweiAdsContent(adType int32, content *Content, bidType openrtb_ext.BidType, imp openrtb2.Imp) (
 	adm string, adWidth int64, adHeight int64, err error) {
 	// v1: only support banner, native
 	switch bidType {
 	case openrtb_ext.BidTypeBanner:
-		adm, adWidth, adHeight, err = extractAdmBanner(adType, content, bidType, imp)
+		adm, adWidth, adHeight, err = a.extractAdmBanner(adType, content, bidType, imp)
 	case openrtb_ext.BidTypeNative:
-		adm, adWidth, adHeight, err = extractAdmNative(adType, content, bidType, imp)
+		adm, adWidth, adHeight, err = a.extractAdmNative(adType, content, bidType, imp)
 	case openrtb_ext.BidTypeVideo:
-		adm, adWidth, adHeight, err = extractAdmVideo(adType, content, bidType, imp)
+		adm, adWidth, adHeight, err = a.extractAdmVideo(adType, content, bidType, imp)
 	default:
 		return "", 0, 0, fmt.Errorf("no support bidtype: audio")
 	}
@@ -866,7 +922,7 @@ func handleHuaweiAdsContent(adType int32, content *Content, bidType openrtb_ext.
 }
 
 // banner ad
-func extractAdmBanner(adType int32, content *Content, bidType openrtb_ext.BidType, imp openrtb2.Imp) (adm string,
+func (a *adapter) extractAdmBanner(adType int32, content *Content, bidType openrtb_ext.BidType, imp openrtb2.Imp) (adm string,
 	adWidth int64, adHeight int64, err error) {
 	if adType != banner {
 		return "", 0, 0, fmt.Errorf("extractAdmBanner: huaweiads response is not a banner ad")
@@ -878,16 +934,16 @@ func extractAdmBanner(adType int32, content *Content, bidType openrtb_ext.BidTyp
 	if creativeType == text || creativeType == bigPicture || creativeType == bigPicture2 ||
 		creativeType == smallPicture || creativeType == threeSmallPicturesText ||
 		creativeType == iconText || creativeType == gif {
-		return extractAdmPicture(content)
+		return a.extractAdmPicture(content)
 	} else if creativeType == videoText || creativeType == video || creativeType == videoWithPicturesText {
-		return extractAdmVideo(adType, content, bidType, imp)
+		return a.extractAdmVideo(adType, content, bidType, imp)
 	} else {
 		return "", 0, 0, fmt.Errorf("no banner support creativetype")
 	}
 }
 
 // native ad
-func extractAdmNative(adType int32, content *Content, bidType openrtb_ext.BidType, openrtb2Imp openrtb2.Imp) (adm string,
+func (a *adapter) extractAdmNative(adType int32, content *Content, bidType openrtb_ext.BidType, openrtb2Imp openrtb2.Imp) (adm string,
 	adWidth int64, adHeight int64, err error) {
 	if adType != native {
 		return "", 0, 0, fmt.Errorf("extractAdmNative: response is not a native ad")
@@ -906,9 +962,10 @@ func extractAdmNative(adType int32, content *Content, bidType openrtb_ext.BidTyp
 
 	var nativeResult nativeResponse.Response
 	var linkObject nativeResponse.Link
-	linkObject.URL = content.MetaData.ClickUrl
-	if content.MetaData.ClickUrl == "" {
-		return "", 0, 0, fmt.Errorf("extractAdmNative: content.MetaData.ClickUrl is empty")
+	if content.MetaData.ClickUrl != "" {
+		linkObject.URL = content.MetaData.ClickUrl
+	} else if content.MetaData.Intent != "" {
+		linkObject.URL = content.MetaData.Intent
 	}
 
 	nativeResult.Assets = make([]nativeResponse.Asset, 0, len(nativePayload.Assets))
@@ -923,7 +980,7 @@ func extractAdmNative(adType int32, content *Content, bidType openrtb_ext.BidTyp
 		} else if asset.Video != nil {
 			var vastXml string
 			var err error
-			if vastXml, adWidth, adHeight, err = extractAdmVideo(adType, content, bidType, openrtb2Imp); err != nil {
+			if vastXml, adWidth, adHeight, err = a.extractAdmVideo(adType, content, bidType, openrtb2Imp); err != nil {
 				return "", 0, 0, err
 			}
 			var videoObject nativeResponse.Video
@@ -1023,7 +1080,7 @@ func JSON(nativeResult nativeResponse.Response) ([]byte, error) {
 }
 
 // For banner single picture
-func extractAdmPicture(content *Content) (adm string, adWidth int64, adHeight int64, err error) {
+func (a *adapter) extractAdmPicture(content *Content) (adm string, adWidth int64, adHeight int64, err error) {
 	if content == nil {
 		return "", 0, 0, fmt.Errorf("extractAdmPicture: content is empty")
 	}
@@ -1031,7 +1088,7 @@ func extractAdmPicture(content *Content) (adm string, adWidth int64, adHeight in
 	var clickUrl = ""
 	if content.MetaData.ClickUrl != "" {
 		clickUrl = content.MetaData.ClickUrl
-	} else {
+	} else if content.MetaData.Intent != "" {
 		clickUrl = content.MetaData.Intent
 	}
 
@@ -1046,7 +1103,7 @@ func extractAdmPicture(content *Content) (adm string, adWidth int64, adHeight in
 
 	var imageTitle = ""
 	imageTitle, _ = getDecodeValue(content.MetaData.Title)
-	impTracking, clickTracking := getImpClickTracking(content, "AP")
+	impTracking, clickTracking := a.getImpClickTracking(content)
 	dspImpTrackings, dspClickTrackings := getDspImpClickTrackings(content)
 	var dspImpTrackings2StrImg strings.Builder
 	for i := 0; i < len(dspImpTrackings); i++ {
@@ -1088,14 +1145,8 @@ func extractAdmPicture(content *Content) (adm string, adWidth int64, adHeight in
 
 // get impTracking, clickTracking
 // area: AP EU RUS, default AP. When other area，we can decide by the huaweiads endpoint
-func getImpClickTracking(content *Content, area string) (impTracking string, clickTracking string) {
-	var prefix = "https://events-dra.op.hicloud.com/contserver/tracker/action?ch=200002"
-	if area == "EU" {
-		prefix = "https://events-dre.op.hicloud.com/contserver/tracker/action?ch=200002"
-	} else if area == "RUS" {
-		prefix = "https://events-drru.op.hicloud.com/contserver/tracker/action?ch=200002"
-	}
-
+func (a *adapter) getImpClickTracking(content *Content) (impTracking string, clickTracking string) {
+	var prefix = a.extraInfo.TrackingUrl + "?ch=200002"
 	var kn = "&kn="
 	var pfsa = "&pfsa="
 	if content.Paramfromserver.A != "" {
@@ -1182,7 +1233,7 @@ func addZero(str string, dot string, isMmm bool) (result string) {
 }
 
 // get field adm for video
-func extractAdmVideo(adType int32, content *Content, bidType openrtb_ext.BidType, opentrb2Imp openrtb2.Imp) (adm string,
+func (a *adapter) extractAdmVideo(adType int32, content *Content, bidType openrtb_ext.BidType, opentrb2Imp openrtb2.Imp) (adm string,
 	adWidth int64, adHeight int64, err error) {
 	if content == nil {
 		return "", 0, 0, fmt.Errorf("extractAdmVideo: content is empty")
@@ -1191,8 +1242,8 @@ func extractAdmVideo(adType int32, content *Content, bidType openrtb_ext.BidType
 	var clickUrl = ""
 	if content.MetaData.ClickUrl != "" {
 		clickUrl = content.MetaData.ClickUrl
-	} else {
-		return "", 0, 0, fmt.Errorf("extractAdmVideo: Content.MetaData.Clickurl is empty")
+	} else if content.MetaData.Intent != "" {
+		clickUrl = content.MetaData.Intent
 	}
 
 	var mime = "video/mp4"
@@ -1236,8 +1287,9 @@ func extractAdmVideo(adType int32, content *Content, bidType openrtb_ext.BidType
 	}
 
 	var adId = ""
+	var creativeId = ""
 	var duration = getDuration(content.MetaData.Duration)
-	impTracking, clickTracking := getImpClickTracking(content, "AP")
+	impTracking, clickTracking := a.getImpClickTracking(content)
 	var trackingEvents strings.Builder
 	var dspImpTracking = ""
 	var dspClickTracking = ""
@@ -1286,7 +1338,7 @@ func extractAdmVideo(adType int32, content *Content, bidType openrtb_ext.BidType
 		"<Impression><![CDATA[" + impTracking + "]]></Impression>" +
 		"<Impression><![CDATA[" + dspImpTracking + "]]></Impression>" +
 		"<Creatives>" +
-		"<Creative adId=\"" + adId + "\" id=\"${CREATIVE_ID}$\">" +
+		"<Creative adId=\"" + adId + "\" id=\"" + creativeId + "\">" +
 		"<Linear>" +
 		"<Duration>" + duration + "</Duration>" +
 		"<TrackingEvents>" + trackingEvents.String() + "</TrackingEvents>" +
