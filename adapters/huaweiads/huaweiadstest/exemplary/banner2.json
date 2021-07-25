@@ -189,15 +189,14 @@
                   "metaData": {
                     "adSign": "2",
                     "appPromotionChannel": "401721412",
-                    "clickUrl": "https://test/clickurl",
-                    "cta": "%e6%9f%a5%e7%9c%8b%e8%af%a6%e6%83%85",
+                    "clickUrl": "https://ads.huawei.com/usermgtportal/home/index.html#/",
                     "imageInfo": [
                       {
                         "checkSha256Flag": 1,
                         "height": 250,
                         "imageType": "img",
-                        "sha256": "f5d8487cddaecec45b73fc078649478c80ec646bfec8ed7da4ff931f90eab232",
-                        "url": "https://pps-connector-performance-arm-test-cn.obs.cn-north-4.myhwclouds.com/dl/pps/2021042514374282E9FF0628C2F50A7F67FA2B4C0CA168.png",
+                        "sha256": "",
+                        "url": "https://ads.huawei.com/usermgtportal/home/img/huawei_logo_black.aaec817d.svg",
                         "width": 300
                       }
                     ],
@@ -221,8 +220,7 @@
                   },
                   "price": 2.8,
                   "starttime": 1621267200000,
-                  "taskid": "48017658",
-                  "webConfig": "setMixedContentMode|int|0"
+                  "taskid": "48017658"
                 }
               ],
               "retcode30": 200,
@@ -249,7 +247,7 @@
       "bids": [
         {
           "bid": {
-            "adm": "<style> html, body  { margin: 0; padding: 0; width: 100%; height: 100%; vertical-align: middle; }  html  { display: table; }  body { display: table-cell; vertical-align: middle; text-align: center; -webkit-text-size-adjust: none; }  </style> <span class=\"title-link advertiser_label\"></span> <a href='https://test/clickurl' style=\"text-decoration:none\" onclick=sendGetReq('https://events-dra.op.hicloud.com/contserver/tracker/action?ch=200002&etype=click&kn=1&pfsa=test')> <img src='https://pps-connector-performance-arm-test-cn.obs.cn-north-4.myhwclouds.com/dl/pps/2021042514374282E9FF0628C2F50A7F67FA2B4C0CA168.png' width='300' height='250'/> </a> <img height=\"1\" width=\"1\" src='https://events-dra.op.hicloud.com/contserver/tracker/action?ch=200002&etype=imp&kn=1&pfsa=test' > <script type=\"text/javascript\">var dspClickTrackings = [];function sendGetReq(clickTracking) {sendOneGetReq(clickTracking);sendSomeGetReq(dspClickTrackings)}function sendOneGetReq(url) {var req = new XMLHttpRequest();req.open('GET', url, true);req.send(null);}function sendSomeGetReq(urls) {for (var i = 0; i < urls.length; i++) {sendOneGetReq(urls[i]);}}</script>",
+            "adm": "<style> html, body  { margin: 0; padding: 0; width: 100%; height: 100%; vertical-align: middle; }  html  { display: table; }  body { display: table-cell; vertical-align: middle; text-align: center; -webkit-text-size-adjust: none; }  </style> <span class=\"title-link advertiser_label\"></span> <a href='https://ads.huawei.com/usermgtportal/home/index.html#/' style=\"text-decoration:none\" onclick=sendGetReq('https://events-dra.op.hicloud.com/contserver/tracker/action?ch=200002&etype=click&kn=1&pfsa=test')> <img src='https://ads.huawei.com/usermgtportal/home/img/huawei_logo_black.aaec817d.svg' width='300' height='250'/> </a> <img height=\"1\" width=\"1\" src='https://events-dra.op.hicloud.com/contserver/tracker/action?ch=200002&etype=imp&kn=1&pfsa=test' > <script type=\"text/javascript\">var dspClickTrackings = [];function sendGetReq(clickTracking) {sendOneGetReq(clickTracking);sendSomeGetReq(dspClickTrackings)}function sendOneGetReq(url) {var req = new XMLHttpRequest();req.open('GET', url, true);req.send(null);}function sendSomeGetReq(urls) {for (var i = 0; i < urls.length; i++) {sendOneGetReq(urls[i]);}}</script>",
             "adomain": [
               "huaweiads"
             ],

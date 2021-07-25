@@ -44,8 +44,6 @@
       }
     },
     "user": {
-      "id": "db089de9-a62e-4861-a881-0ff15e052516",
-      "buyeruid": "v4_bidder_token",
       "ext": {
         "data": {
           "gaid": [
@@ -165,7 +163,7 @@
                     },
                     "appId": "101219405",
                     "appPromotionChannel": "401721412",
-                    "clickUrl": "https://test/clickurl",
+                    "clickUrl": "https://ads.huawei.com/usermgtportal/home/index.html#/",
                     "duration": 6038,
                     "description": "",
                     "icon": [
@@ -300,7 +298,7 @@
               "huaweiads"
             ],
             "crid": "58022259",
-            "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":100,\"title\":{\"text\":\"/test/\"}},{\"id\":103,\"img\":{\"type\":3,\"url\":\"http://image.jpg\",\"w\":720,\"h\":1280}},{\"id\":105,\"data\":{\"label\":\"desc\",\"value\":\"\"}}],\"link\":{\"url\":\"https://test/clickurl\",\"clicktrackers\":[\"http://test/click\"]},\"imptrackers\":[\"http://test/imp\"]}",
+            "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":100,\"title\":{\"text\":\"/test/\"}},{\"id\":103,\"img\":{\"type\":3,\"url\":\"http://image.jpg\",\"w\":720,\"h\":1280}},{\"id\":105,\"data\":{\"label\":\"desc\",\"value\":\"\"}}],\"link\":{\"url\":\"https://ads.huawei.com/usermgtportal/home/index.html#/\",\"clicktrackers\":[\"http://test/click\"]},\"imptrackers\":[\"http://test/imp\"]}",
             "id": "test-imp-id",
             "impid": "test-imp-id",
             "price": 2.8,
