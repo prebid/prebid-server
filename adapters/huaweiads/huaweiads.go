@@ -976,24 +976,24 @@ func (a *adapter) extractAdmNative(adType int32, content *Content, bidType openr
 		if asset.Title != nil {
 			var titleObject nativeResponse.Title
 			titleObject.Text, _ = getDecodeValue(content.MetaData.Title)
+			titleObject.Len = int64(len(titleObject.Text))
 			responseAsset.Title = &titleObject
 		} else if asset.Video != nil {
-			var vastXml string
+			var videoObject nativeResponse.Video
 			var err error
-			if vastXml, adWidth, adHeight, err = a.extractAdmVideo(adType, content, bidType, openrtb2Imp); err != nil {
+			if videoObject.VASTTag, adWidth, adHeight, err = a.extractAdmVideo(adType, content, bidType, openrtb2Imp); err != nil {
 				return "", 0, 0, err
 			}
-			var videoObject nativeResponse.Video
-			videoObject.VASTTag = vastXml
 			responseAsset.Video = &videoObject
 		} else if asset.Img != nil {
 			var imgObject nativeResponse.Image
+			imgObject.URL = ""
+			imgObject.Type = asset.Img.Type
 			if asset.Img.Type == native1.ImageAssetTypeIcon {
 				if len(content.MetaData.Icon) > iconIndex {
 					imgObject.URL = content.MetaData.Icon[iconIndex].Url
 					imgObject.W = content.MetaData.Icon[iconIndex].Width
 					imgObject.H = content.MetaData.Icon[iconIndex].Height
-					imgObject.Type = asset.Img.Type
 					iconIndex++
 				}
 			} else if asset.Img.Type == native1.ImageAssetTypeMain {
@@ -1001,12 +1001,8 @@ func (a *adapter) extractAdmNative(adType int32, content *Content, bidType openr
 					imgObject.URL = content.MetaData.ImageInfo[imgIndex].Url
 					imgObject.W = content.MetaData.ImageInfo[imgIndex].Width
 					imgObject.H = content.MetaData.ImageInfo[imgIndex].Height
-					imgObject.Type = asset.Img.Type
 					imgIndex++
 				}
-			} else {
-				imgObject.URL = ""
-				imgObject.Type = asset.Img.Type
 			}
 			if adHeight == 0 && adWidth == 0 {
 				adHeight = imgObject.H
@@ -1028,6 +1024,7 @@ func (a *adapter) extractAdmNative(adType int32, content *Content, bidType openr
 		nativeResult.Assets = append(nativeResult.Assets, responseAsset)
 	}
 
+	// dsp imp click tracking
 	if content.Monitor != nil {
 		for _, monitor := range content.Monitor {
 			if len(monitor.Url) == 0 {
@@ -1037,7 +1034,6 @@ func (a *adapter) extractAdmNative(adType int32, content *Content, bidType openr
 				for _, trackerUrl := range monitor.Url {
 					linkObject.ClickTrackers = append(linkObject.ClickTrackers, trackerUrl)
 				}
-				nativeResult.Link = linkObject
 			}
 			if monitor.EventType == "imp" {
 				for _, trackerUrl := range monitor.Url {
@@ -1046,7 +1042,12 @@ func (a *adapter) extractAdmNative(adType int32, content *Content, bidType openr
 			}
 		}
 	}
+	// imp click tracking
+	impTracking, clickTracking := a.getImpClickTracking(content)
+	linkObject.ClickTrackers = append(linkObject.ClickTrackers, clickTracking)
+	nativeResult.ImpTrackers = append(nativeResult.ImpTrackers, impTracking)
 
+	nativeResult.Link = linkObject
 	nativeResult.Ver = "1.1"
 	if nativePayload.Ver != "" {
 		nativeResult.Ver = nativePayload.Ver
