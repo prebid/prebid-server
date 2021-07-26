@@ -690,6 +690,7 @@ func getHuaweiAdsReqNetWorkInfo(request *HuaweiAdsRequest, openRTBRequest *openr
 		var cellInfos []CellInfo
 		if openRTBRequest.Device.MCCMNC != "" {
 			var arr = strings.Split(openRTBRequest.Device.MCCMNC, "-")
+			network.Carrier = 0
 			if len(arr) >= 2 {
 				cellInfos = append(cellInfos, CellInfo{
 					Mcc: arr[0],
@@ -705,11 +706,7 @@ func getHuaweiAdsReqNetWorkInfo(request *HuaweiAdsRequest, openRTBRequest *openr
 				} else {
 					network.Carrier = 99
 				}
-			} else {
-				network.Carrier = 0
 			}
-		} else {
-			network.Carrier = 0
 		}
 		network.CellInfo = cellInfos
 	}
@@ -1287,8 +1284,8 @@ func (a *adapter) extractAdmVideo(adType int32, content *Content, bidType openrt
 		}
 	}
 
-	var adId = ""
-	var creativeId = ""
+	var adId = content.Contentid
+	var creativeId = content.Contentid
 	var duration = getDuration(content.MetaData.Duration)
 	impTracking, clickTracking := a.getImpClickTracking(content)
 	var trackingEvents strings.Builder
