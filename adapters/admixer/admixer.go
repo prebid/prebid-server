@@ -100,7 +100,7 @@ func preprocess(imp *openrtb2.Imp) error {
 	}
 
 	//don't use regexp due to possible performance reduce
-	if len(admixerExt.ZoneId) != 36 {
+	if len(admixerExt.ZoneId) < 32 || len(admixerExt.ZoneId) > 36 {
 		return &errortypes.BadInput{
 			Message: "ZoneId must be UUID/GUID",
 		}
