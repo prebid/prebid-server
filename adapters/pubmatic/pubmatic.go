@@ -73,6 +73,21 @@ type pubmaticBidExt struct {
 	VideoCreativeInfo *pubmaticBidExtVideo `json:"video,omitempty"`
 }
 
+type ExtImpBidderPubmatic struct {
+	adapters.ExtImpBidder
+	Data *ExtData `json:"data,omitempty"`
+}
+
+type ExtData struct {
+	AdServer *ExtAdServer `json:"adserver"`
+	PBAdSlot string       `json:"pbadslot"`
+}
+
+type ExtAdServer struct {
+	Name   string `json:"name"`
+	AdSlot string `json:"adslot"`
+}
+
 const (
 	INVALID_PARAMS    = "Invalid BidParam"
 	MISSING_PUBID     = "Missing PubID"
@@ -592,7 +607,7 @@ func parseImpressionObject(imp *openrtb2.Imp, wrapExt *pubmaticWrapperExt, pubID
 		imp.Audio = nil
 	}
 
-	var bidderExt adapters.ExtImpBidder
+	var bidderExt ExtImpBidderPubmatic
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return err
 	}
@@ -648,9 +663,12 @@ func parseImpressionObject(imp *openrtb2.Imp, wrapExt *pubmaticWrapperExt, pubID
 		}
 	}
 
-	if bidderExt.Data != nil && bidderExt.Data.AdServer != nil &&
-		bidderExt.Data.AdServer.Name == AdServerGAM && bidderExt.Data.AdServer.AdSlot != "" {
-		impExtMap[ImpExtAdUnitKey] = bidderExt.Data.AdServer.AdSlot
+	if bidderExt.Data != nil {
+		if bidderExt.Data.AdServer != nil && bidderExt.Data.AdServer.Name == AdServerGAM && bidderExt.Data.AdServer.AdSlot != "" {
+			impExtMap[ImpExtAdUnitKey] = bidderExt.Data.AdServer.AdSlot
+		} else if bidderExt.Data.PBAdSlot != "" {
+			impExtMap[ImpExtAdUnitKey] = bidderExt.Data.PBAdSlot
+		}
 	}
 
 	imp.Ext = nil
