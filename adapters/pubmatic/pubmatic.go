@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -82,6 +83,13 @@ const (
 	INVALID_HEIGHT    = "Invalid Height"
 	INVALID_MEDIATYPE = "Invalid MediaType"
 	INVALID_ADSLOT    = "Invalid AdSlot"
+
+	dctrKeyName              = "key_val"
+	dctrKeywordName          = "dctr"
+	pmZoneIDKeyName          = "pmZoneId"
+	pmZoneIDRequestParamName = "pmzoneid"
+
+	urlEncodedEqualChar = "%3D"
 )
 
 func PrepareLogMessage(tID, pubId, adUnitId, bidID, details string, args ...interface{}) string {
@@ -621,7 +629,14 @@ func parseImpressionObject(imp *openrtb2.Imp, wrapExt *pubmaticWrapperExt, pubID
 
 	impExtMap := make(map[string]interface{})
 	if pubmaticExt.Keywords != nil && len(pubmaticExt.Keywords) != 0 {
-		populateKeywordsInExt(pubmaticExt.Keywords, impExtMap)
+		addKeywordsToExt(pubmaticExt.Keywords, impExtMap)
+	}
+	//Give preference to direct values of 'dctr' & 'pmZoneId' params in extension
+	if pubmaticExt.Dctr != "" {
+		impExtMap[dctrKeyName] = pubmaticExt.Dctr
+	}
+	if pubmaticExt.PmZoneID != "" {
+		impExtMap[pmZoneIDKeyName] = pubmaticExt.PmZoneID
 	}
 
 	if bidderExt.Prebid != nil {
@@ -638,23 +653,41 @@ func parseImpressionObject(imp *openrtb2.Imp, wrapExt *pubmaticWrapperExt, pubID
 		impExtMap[ImpExtAdUnitKey] = bidderExt.Data.AdServer.AdSlot
 	}
 
-	if len(impExtMap) != 0 {
+	imp.Ext = nil
+	if len(impExtMap) > 0 {
 		impExtBytes, err := json.Marshal(impExtMap)
 		if err == nil {
-			imp.Ext = json.RawMessage(impExtBytes)
+			imp.Ext = impExtBytes
 		}
 	}
+
 	return nil
 
 }
 
-func populateKeywordsInExt(keywords []*openrtb_ext.ExtImpPubmaticKeyVal, impExtMap map[string]interface{}) {
+func addKeywordsToExt(keywords []*openrtb_ext.ExtImpPubmaticKeyVal, extMap map[string]interface{}) {
 	for _, keyVal := range keywords {
 		if len(keyVal.Values) == 0 {
 			logf("No values present for key = %s", keyVal.Key)
 			continue
 		} else {
-			impExtMap[keyVal.Key] = strings.Join(keyVal.Values[:], ",")
+			val := strings.Join(keyVal.Values[:], ",")
+
+			key := keyVal.Key
+			if strings.EqualFold(key, pmZoneIDRequestParamName) {
+				key = pmZoneIDKeyName
+			} else if key == dctrKeywordName {
+				key = dctrKeyName
+				// URL-decode dctr value if it is url-encoded
+				if strings.Contains(val, urlEncodedEqualChar) {
+					urlDecodedVal, err := url.QueryUnescape(val)
+					if err == nil {
+						val = urlDecodedVal
+					}
+				}
+			}
+
+			extMap[key] = val
 		}
 	}
 }

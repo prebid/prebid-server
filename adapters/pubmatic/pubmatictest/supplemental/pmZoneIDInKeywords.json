@@ -15,10 +15,11 @@
         "ext": {
           "bidder": {
             "adSlot": "AdTag_Div1@300x250",
-            "publisherId": "999",
+            "publisherId": "  999  ",
+            "dctr": "key1=V1,V2,V3|key2=v1|key3=v3,v5",
             "keywords": [
               {
-                "key": "pmZoneID",
+                "key": "pmzoneid",
                 "value": [
                   "Zone1",
                   "Zone2"
@@ -36,12 +37,6 @@
               "version": 1,
               "profile": 5123
             }
-          },
-          "data": {
-            "adserver": {
-              "name": "gam",
-              "adslot": "/1111/home"
-            }
           }
         }
       }
@@ -53,13 +48,6 @@
       "id": "siteID",
       "publisher": {
         "id": "1234"
-      }
-    },
-    "ext": {
-      "prebid": {
-        "bidderparams": {
-          "wiid": "dwzafakjflan-tygannnvlla-mlljvj"
-        }
       }
     }
   },
@@ -84,9 +72,9 @@
                 "w": 300
               },
               "ext": {
+                "key_val": "key1=V1,V2,V3|key2=v1|key3=v3,v5",
                 "pmZoneId": "Zone1,Zone2",
-                "preference": "sports,movies",
-                "dfp_ad_unit_code": "/1111/home"
+                "preference": "sports,movies"
               }
             }
           ],
@@ -102,8 +90,7 @@
           "ext": {
             "wrapper": {
               "profile": 5123,
-              "version": 1,
-              "wiid": "dwzafakjflan-tygannnvlla-mlljvj"
+              "version": 1
             }
           }
         }
