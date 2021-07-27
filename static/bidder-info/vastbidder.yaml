@@ -1,0 +1,9 @@
+maintainer:
+  email: "UOEDev@pubmatic.com"
+capabilities:
+  app:
+    mediaTypes:
+      - video
+  site:
+    mediaTypes:
+      - video

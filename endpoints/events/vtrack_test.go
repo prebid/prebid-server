@@ -11,9 +11,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/PubMatic-OpenWrap/etree"
+	"github.com/beevik/etree"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
-
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/stored_requests"

@@ -110,8 +110,14 @@ type ResponseData struct {
 	Headers    http.Header
 }
 
+type BidRequestParams struct {
+	ImpIndex     int
+	VASTTagIndex int
+}
+
 // RequestData packages together the fields needed to make an http.Request.
 type RequestData struct {
+	Params  *BidRequestParams
 	Method  string
 	Uri     string
 	Body    []byte
@@ -129,7 +135,7 @@ type ExtImpBidder struct {
 	//
 	// Bidder implementations may safely assume that this JSON has been validated by their
 	// static/bidder-params/{bidder}.json file.
-	Bidder json.RawMessage      `json:"bidder"`
+	Bidder json.RawMessage `json:"bidder"`
 }
 
 func (r *RequestData) SetBasicAuth(username string, password string) {

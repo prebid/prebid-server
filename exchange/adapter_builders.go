@@ -99,6 +99,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/unicorn"
 	"github.com/prebid/prebid-server/adapters/unruly"
 	"github.com/prebid/prebid-server/adapters/valueimpression"
+	"github.com/prebid/prebid-server/adapters/vastbidder"
 	"github.com/prebid/prebid-server/adapters/verizonmedia"
 	"github.com/prebid/prebid-server/adapters/visx"
 	"github.com/prebid/prebid-server/adapters/vrtcal"
@@ -214,6 +215,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderUnicorn:          unicorn.Builder,
 		openrtb_ext.BidderUnruly:           unruly.Builder,
 		openrtb_ext.BidderValueImpression:  valueimpression.Builder,
+		openrtb_ext.BidderVASTBidder:       vastbidder.Builder,
 		openrtb_ext.BidderVerizonMedia:     verizonmedia.Builder,
 		openrtb_ext.BidderVisx:             visx.Builder,
 		openrtb_ext.BidderVrtcal:           vrtcal.Builder,

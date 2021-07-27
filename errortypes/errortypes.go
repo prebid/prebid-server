@@ -182,3 +182,19 @@ func (err *Warning) Code() int {
 func (err *Warning) Severity() Severity {
 	return SeverityWarning
 }
+
+type NoBidPrice struct {
+	Message string
+}
+
+func (err *NoBidPrice) Error() string {
+	return err.Message
+}
+
+func (err *NoBidPrice) Code() int {
+	return NoBidPriceErrorCode
+}
+
+func (err *NoBidPrice) Severity() Severity {
+	return SeverityWarning
+}

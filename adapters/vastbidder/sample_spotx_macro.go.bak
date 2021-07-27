@@ -1,0 +1,28 @@
+package vastbidder
+
+import (
+	"github.com/prebid/prebid-server/openrtb_ext"
+)
+
+//SpotxMacro default implementation
+type SpotxMacro struct {
+	*BidderMacro
+}
+
+//NewSpotxMacro contains definition for all openrtb macro's
+func NewSpotxMacro() IBidderMacro {
+	obj := &SpotxMacro{
+		BidderMacro: &BidderMacro{},
+	}
+	obj.IBidderMacro = obj
+	return obj
+}
+
+//GetBidderKeys will set bidder level keys
+func (tag *SpotxMacro) GetBidderKeys() map[string]string {
+	return NormalizeJSON(tag.ImpBidderExt)
+}
+
+func init() {
+	RegisterNewBidderMacro(openrtb_ext.BidderSpotX, NewSpotxMacro)
+}

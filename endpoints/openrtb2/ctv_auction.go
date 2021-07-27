@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/endpoints/events"
 	"math"
 	"net/http"
 	"net/url"
@@ -14,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/PubMatic-OpenWrap/etree"
+	"github.com/beevik/etree"
 	"github.com/buger/jsonparser"
 	uuid "github.com/gofrs/uuid"
 	"github.com/golang/glog"
@@ -23,6 +22,7 @@ import (
 	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/endpoints/events"
 	"github.com/prebid/prebid-server/endpoints/openrtb2/ctv/combination"
 	"github.com/prebid/prebid-server/endpoints/openrtb2/ctv/constant"
 	"github.com/prebid/prebid-server/endpoints/openrtb2/ctv/impressions"
@@ -41,12 +41,14 @@ import (
 //CTV Specific Endpoint
 type ctvEndpointDeps struct {
 	endpointDeps
-	request        *openrtb2.BidRequest
-	reqExt         *openrtb_ext.ExtRequestAdPod
-	impData        []*types.ImpData
-	videoSeats     []*openrtb2.SeatBid //stores pure video impression bids
-	impIndices     map[string]int
-	isAdPodRequest bool
+	request                   *openrtb2.BidRequest
+	reqExt                    *openrtb_ext.ExtRequestAdPod
+	impData                   []*types.ImpData
+	videoSeats                []*openrtb2.SeatBid //stores pure video impression bids
+	impIndices                map[string]int
+	isAdPodRequest            bool
+	impsExt                   map[string]map[string]map[string]interface{}
+	impPartnerBlockedTagIDMap map[string]map[string][]string
 
 	//Prebid Specific
 	ctx    context.Context
@@ -382,6 +384,13 @@ func (deps *ctvEndpointDeps) setDefaultValues() {
 
 	//set request is adpod request or normal request
 	deps.setIsAdPodRequest()
+
+	//TODO: OTT-217, OTT-161 commenting code of filtering vast tags
+	/*
+		if deps.isAdPodRequest {
+			deps.readImpExtensionsAndTags()
+		}
+	*/
 }
 
 //validateBidRequest will validate AdPod specific mandatory Parameters and returns error
@@ -409,6 +418,42 @@ func (deps *ctvEndpointDeps) validateBidRequest() (err []error) {
 	return
 }
 
+//readImpExtensionsAndTags will read the impression extensions
+func (deps *ctvEndpointDeps) readImpExtensionsAndTags() (errs []error) {
+	deps.impsExt = make(map[string]map[string]map[string]interface{})
+	deps.impPartnerBlockedTagIDMap = make(map[string]map[string][]string) //Initially this will have all tags, eligible tags will be filtered in filterImpsVastTagsByDuration
+
+	for _, imp := range deps.request.Imp {
+		var impExt map[string]map[string]interface{}
+		if err := json.Unmarshal(imp.Ext, &impExt); err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		deps.impPartnerBlockedTagIDMap[imp.ID] = make(map[string][]string)
+
+		for partnerName, partnerExt := range impExt {
+			impVastTags, ok := partnerExt["tags"].([]interface{})
+			if !ok {
+				continue
+			}
+
+			for _, tag := range impVastTags {
+				vastTag, ok := tag.(map[string]interface{})
+				if !ok {
+					continue
+				}
+
+				deps.impPartnerBlockedTagIDMap[imp.ID][partnerName] = append(deps.impPartnerBlockedTagIDMap[imp.ID][partnerName], vastTag["tagid"].(string))
+			}
+		}
+
+		deps.impsExt[imp.ID] = impExt
+	}
+
+	return errs
+}
+
 /********************* Creating CTV BidRequest *********************/
 
 //createBidRequest will return new bid request with all things copy from bid request except impression objects
@@ -421,8 +466,97 @@ func (deps *ctvEndpointDeps) createBidRequest(req *openrtb2.BidRequest) *openrtb
 	//createImpressions
 	ctvRequest.Imp = deps.createImpressions()
 
+	//TODO: OTT-217, OTT-161 commenting code of filtering vast tags
+	//deps.filterImpsVastTagsByDuration(&ctvRequest)
+
 	//TODO: remove adpod extension if not required to send further
 	return &ctvRequest
+}
+
+//filterImpsVastTagsByDuration checks if a Vast tag should be called for a generated impression based on the duration of tag and impression
+func (deps *ctvEndpointDeps) filterImpsVastTagsByDuration(bidReq *openrtb2.BidRequest) {
+
+	for impCount, imp := range bidReq.Imp {
+		index := strings.LastIndex(imp.ID, "_")
+		if index == -1 {
+			continue
+		}
+
+		originalImpID := imp.ID[:index]
+
+		impExtMap := deps.impsExt[originalImpID]
+		newImpExtMap := make(map[string]map[string]interface{})
+		for k, v := range impExtMap {
+			newImpExtMap[k] = v
+		}
+
+		for partnerName, partnerExt := range newImpExtMap {
+			if partnerExt["tags"] != nil {
+				impVastTags, ok := partnerExt["tags"].([]interface{})
+				if !ok {
+					continue
+				}
+
+				var compatibleVasts []interface{}
+				for _, tag := range impVastTags {
+					vastTag, ok := tag.(map[string]interface{})
+					if !ok {
+						continue
+					}
+
+					tagDuration := int(vastTag["dur"].(float64))
+					if int(imp.Video.MinDuration) <= tagDuration && tagDuration <= int(imp.Video.MaxDuration) {
+						compatibleVasts = append(compatibleVasts, tag)
+
+						deps.impPartnerBlockedTagIDMap[originalImpID][partnerName] = remove(deps.impPartnerBlockedTagIDMap[originalImpID][partnerName], vastTag["tagid"].(string))
+						if len(deps.impPartnerBlockedTagIDMap[originalImpID][partnerName]) == 0 {
+							delete(deps.impPartnerBlockedTagIDMap[originalImpID], partnerName)
+						}
+					}
+				}
+
+				if len(compatibleVasts) < 1 {
+					delete(newImpExtMap, partnerName)
+				} else {
+					newImpExtMap[partnerName] = map[string]interface{}{
+						"tags": compatibleVasts,
+					}
+				}
+
+				bExt, err := json.Marshal(newImpExtMap)
+				if err != nil {
+					continue
+				}
+				imp.Ext = bExt
+			}
+		}
+		bidReq.Imp[impCount] = imp
+	}
+
+	for impID, blockedTags := range deps.impPartnerBlockedTagIDMap {
+		for _, datum := range deps.impData {
+			if datum.ImpID == impID {
+				datum.BlockedVASTTags = blockedTags
+				break
+			}
+		}
+	}
+}
+
+func remove(slice []string, item string) []string {
+	index := -1
+	for i := range slice {
+		if slice[i] == item {
+			index = i
+			break
+		}
+	}
+
+	if index == -1 {
+		return slice
+	}
+
+	return append(slice[:index], slice[index+1:]...)
 }
 
 //getAllAdPodImpsConfigs will return all impression adpod configurations
@@ -431,6 +565,7 @@ func (deps *ctvEndpointDeps) getAllAdPodImpsConfigs() {
 		if nil == imp.Video || nil == deps.impData[index].VideoExt || nil == deps.impData[index].VideoExt.AdPod {
 			continue
 		}
+		deps.impData[index].ImpID = imp.ID
 		deps.impData[index].Config = deps.getAdPodImpsConfigs(&imp, deps.impData[index].VideoExt.AdPod)
 		if 0 == len(deps.impData[index].Config) {
 			errorCode := new(int)
