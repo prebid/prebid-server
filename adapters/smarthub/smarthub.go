@@ -18,7 +18,7 @@ const (
 	ADAPTER_VER = "1.0.0"
 )
 
-type SmartHubAdapter struct {
+type adapter struct {
 	endpoint template.Template
 }
 
@@ -32,14 +32,14 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 
-	bidder := &SmartHubAdapter{
+	bidder := &adapter{
 		endpoint: *template,
 	}
 
 	return bidder, nil
 }
 
-func (a *SmartHubAdapter) getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtSmartHub, error) {
+func (a *adapter) getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtSmartHub, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
@@ -57,7 +57,7 @@ func (a *SmartHubAdapter) getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtS
 	return &smarthubExt, nil
 }
 
-func (a *SmartHubAdapter) buildEndpointURL(params *openrtb_ext.ExtSmartHub) (string, error) {
+func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtSmartHub) (string, error) {
 	endpointParams := macros.EndpointTemplateParams{
 		Host:      params.Host,
 		AccountID: params.Seat,
@@ -66,7 +66,7 @@ func (a *SmartHubAdapter) buildEndpointURL(params *openrtb_ext.ExtSmartHub) (str
 	return macros.ResolveMacros(a.endpoint, endpointParams)
 }
 
-func (a *SmartHubAdapter) MakeRequests(
+func (a *adapter) MakeRequests(
 	openRTBRequest *openrtb2.BidRequest,
 	reqInfo *adapters.ExtraRequestInfo,
 ) (
@@ -106,7 +106,7 @@ func (a *SmartHubAdapter) MakeRequests(
 	}}, nil
 }
 
-func (a *SmartHubAdapter) MakeBids(
+func (a *adapter) MakeBids(
 	openRTBRequest *openrtb2.BidRequest,
 	requestToBidder *adapters.RequestData,
 	bidderRawResponse *adapters.ResponseData,
