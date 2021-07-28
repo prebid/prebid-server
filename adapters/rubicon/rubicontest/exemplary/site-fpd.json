@@ -5,51 +5,40 @@
       "ip": "123.123.123.123",
       "ifa": "zxcjbzxmc-zxcbmz-zxbcz-zxczx"
     },
-    "app": {
-      "id": "1",
-      "bundle": "com.wls.testwlsapplication"
-    },
     "site": {
       "pagecat": [
         "val1",
         "val2"
       ],
-      "content": {
-        "data": [
-          {
-            "ext": {
-              "segtax": 1
-            },
-            "segment": [
-              {
-                "id": "segmentId1"
-              },
-              {
-                "id": "segmentId2"
-              }
-            ]
-          },
-          {
-            "ext": {
-              "segtax": "1"
-            },
-            "segment": [
-              {
-                "id": "shouldNotBeCopied"
-              }
-            ]
-          },
-          {
-            "ext": {
-              "segtax": 2
-            },
-            "segment": [
-              {
-                "id": "segmentId3"
-              }
-            ]
-          }
-        ]
+      "sectioncat": [
+        "sectionCat1",
+        "sectionCat2"
+      ],
+      "page": "somePage",
+      "ref": "someRef",
+      "search": "someSearch",
+      "ext": {
+        "data": {
+          "attr1": "val1",
+          "attr2": [
+            "val21",
+            "val22"
+          ],
+          "attr3": true,
+          "attr4": [
+            true,
+            false,
+            true,
+            true
+          ],
+          "attr5": 3,
+          "attr6": [
+            1,
+            2,
+            3
+          ],
+          "attr7": 1.23
+        }
       }
     },
     "user": {
@@ -132,6 +121,10 @@
           "h": 576
         },
         "ext": {
+          "data": {
+            "dataAttr1": "dataVal1",
+            "dataAttr2": "dataVal2"
+          },
           "bidder": {
             "video": {
             },
@@ -163,53 +156,16 @@
               "val1",
               "val2"
             ],
-            "content": {
-              "data": [
-                {
-                  "ext": {
-                    "segtax": 1
-                  },
-                  "segment": [
-                    {
-                      "id": "segmentId1"
-                    },
-                    {
-                      "id": "segmentId2"
-                    }
-                  ]
-                },
-                {
-                  "ext": {
-                    "segtax": "1"
-                  },
-                  "segment": [
-                    {
-                      "id": "shouldNotBeCopied"
-                    }
-                  ]
-                },
-                {
-                  "ext": {
-                    "segtax": 2
-                  },
-                  "segment": [
-                    {
-                      "id": "segmentId3"
-                    }
-                  ]
-                }
-              ]
-            },
+            "sectioncat": [
+              "sectionCat1",
+              "sectionCat2"
+            ],
+            "page": "somePage",
+            "ref": "someRef",
+            "search": "someSearch",
             "ext": {
               "rp": {
-                "site_id": 113932,
-                "target": {
-                  "iab": [
-                    "segmentId1",
-                    "segmentId2",
-                    "segmentId3"
-                  ]
-                }
+                "site_id": 113932
               }
             },
             "publisher": {
@@ -286,10 +242,6 @@
               }
             }
           },
-          "app": {
-            "id": "1",
-            "bundle": "com.wls.testwlsapplication"
-          },
           "imp": [
             {
               "id": "test-imp-id",
@@ -314,9 +266,47 @@
               "ext": {
                 "rp": {
                   "target": {
+                    "dataAttr1": [
+                      "dataVal1"
+                    ],
+                    "dataAttr2": [
+                      "dataVal2"
+                    ],
+                    "attr1": [
+                      "val1"
+                    ],
+                    "attr2": [
+                      "val21",
+                      "val22"
+                    ],
+                    "attr3": [
+                      "true"
+                    ],
+                    "attr4": [
+                      "true",
+                      "false",
+                      "true",
+                      "true"
+                    ],
+                    "attr5": [
+                      "3"
+                    ],
+                    "page": [
+                      "somePage"
+                    ],
+                    "ref": [
+                      "someRef"
+                    ],
+                    "search": [
+                      "someSearch"
+                    ],
                     "pagecat": [
                       "val1",
                       "val2"
+                    ],
+                    "sectioncat": [
+                      "sectionCat1",
+                      "sectionCat2"
                     ]
                   },
                   "track": {

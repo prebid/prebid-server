@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/buger/jsonparser"
 	"github.com/stretchr/testify/mock"
 	"io/ioutil"
 	"net/http"
@@ -36,6 +37,12 @@ type rubiAppendTrackerUrlTestScenario struct {
 	source   string
 	tracker  string
 	expected string
+}
+
+type rubiPopulateFpdAttributesScenario struct {
+	source json.RawMessage
+	target json.RawMessage
+	result json.RawMessage
 }
 
 type rubiTagInfo struct {
@@ -1273,7 +1280,10 @@ func TestOpenRTBRequestWithImpAndAdSlotIncluded(t *testing.T) {
 				},
 				"context": {
 					"data": {
-						"adslot": "///test-adslot"
+                        "adserver": {
+                             "adslot": "///test-adslot",
+                             "name": "gam"
+                        }
 					}
 				}
 			}`),
@@ -1304,8 +1314,321 @@ func TestOpenRTBRequestWithImpAndAdSlotIncluded(t *testing.T) {
 		t.Fatal("Error unmarshalling imp.ext.rp.target")
 	}
 
-	assert.Equal(t, "test-adslot", rubiconExtInventory["dfp_ad_unit_code"],
+	assert.Equal(t, []interface{}{"test-adslot"}, rubiconExtInventory["dfp_ad_unit_code"],
 		"Unexpected dfp_ad_unit_code: %s", rubiconExtInventory["dfp_ad_unit_code"])
+}
+
+func TestOpenRTBRequestUserParametersShouldBeBlocked(t *testing.T) {
+	SIZE_ID := getTestSizes()
+	bidder := new(RubiconAdapter)
+
+	request := &openrtb2.BidRequest{
+		ID: "test-request-id",
+		Imp: []openrtb2.Imp{{
+			ID: "test-imp-id",
+			Banner: &openrtb2.Banner{
+				Format: []openrtb2.Format{
+					SIZE_ID[15],
+					SIZE_ID[10],
+				},
+			},
+			Ext: json.RawMessage(`{
+				"bidder": {
+					"zoneId": 8394,
+					"siteId": 283282,
+					"accountId": 7891
+				}
+			}`),
+		}},
+		User: &openrtb2.User{
+			Yob: 200,
+			Geo: &openrtb2.Geo{
+				Lat:   123.46,
+				Lon:   678.89,
+				Metro: "some metro",
+				City:  "some city",
+				ZIP:   "some zip",
+			},
+			Gender:   "female",
+			Keywords: "someWords",
+		},
+		App: &openrtb2.App{
+			ID:   "com.test",
+			Name: "testApp",
+		},
+	}
+
+	reqs, _ := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
+
+	rubiconReq := &openrtb2.BidRequest{}
+	if err := json.Unmarshal(reqs[0].Body, rubiconReq); err != nil {
+		t.Fatalf("Unexpected error while decoding request: %s", err)
+	}
+
+	assert.Equal(t, 1, len(rubiconReq.Imp),
+		"Unexpected number of request impressions. Got %d. Expected %d", len(rubiconReq.Imp), 1)
+
+	user := rubiconReq.User
+	assert.NotNil(t, user)
+	assert.NotNil(t, user.Keywords, "user.keywords should not be blocked for outgoing request")
+	assert.Equal(t, "someWords", user.Keywords, "user.keywords should not be changed for outgoing request")
+	assert.Nil(t, user.Geo, "user.geo should be blocked for outgoing request")
+	assert.Empty(t, user.Gender, "user.gender should be blocked for outgoing request")
+	assert.Empty(t, user.Yob, "user.yob should be blocked for outgoing request")
+}
+
+func TestOpenRTBFirstPartyDataPopulating(t *testing.T) {
+	testScenarios := []rubiPopulateFpdAttributesScenario{
+		{
+			source: json.RawMessage(`{"sourceKey": ["sourceValue", "sourceValue2"]}`),
+			target: json.RawMessage(`{"targetKey": ["targetValue"]}`),
+			result: json.RawMessage(`{"sourceKey":["sourceValue","sourceValue2"],"targetKey":["targetValue"]}`),
+		},
+		{
+			source: json.RawMessage(`{"sourceKey": ["sourceValue", "sourceValue2"]}`),
+			target: nil,
+			result: json.RawMessage(`{"sourceKey":["sourceValue","sourceValue2"]}`),
+		},
+		{
+			source: json.RawMessage(`{"sourceKey": "sourceValue"}`),
+			target: nil,
+			result: json.RawMessage(`{"sourceKey":["sourceValue"]}`),
+		},
+		{
+			source: json.RawMessage(`{"sourceKey": true, "sourceKey2": [true, false, true]}`),
+			target: nil,
+			result: json.RawMessage(`{"sourceKey":["true"],"sourceKey2":["true","false","true"]}`),
+		},
+		{
+			source: json.RawMessage(`{"sourceKey": 1, "sourceKey2": [1, 2, 3]}`),
+			target: nil,
+			result: json.RawMessage(`{"sourceKey":["1"]}`),
+		},
+		{
+			source: json.RawMessage(`{"sourceKey": 1, "sourceKey2": 3.23}`),
+			target: nil,
+			result: json.RawMessage(`{"sourceKey":["1"]}`),
+		},
+		{
+			source: json.RawMessage(`{"sourceKey": {}`),
+			target: nil,
+			result: json.RawMessage(`{}`),
+		},
+	}
+
+	for _, scenario := range testScenarios {
+		res := populateFirstPartyDataAttributes(scenario.source, scenario.target)
+		assert.Equal(t, scenario.result, res)
+	}
+}
+
+func TestOpenRTBRequestImpFpdFromAppResolving(t *testing.T) {
+	SIZE_ID := getTestSizes()
+	bidder := new(RubiconAdapter)
+
+	request := &openrtb2.BidRequest{
+		ID: "test-request-id",
+		Imp: []openrtb2.Imp{{
+			ID: "test-imp-id",
+			Banner: &openrtb2.Banner{
+				Format: []openrtb2.Format{
+					SIZE_ID[15],
+					SIZE_ID[10],
+				},
+			},
+			Ext: json.RawMessage(`{
+				"bidder": {
+					"zoneId": 8394,
+					"siteId": 283282,
+					"accountId": 7891
+				}
+			}`),
+		}},
+		App: &openrtb2.App{
+			ID:         "com.test",
+			Name:       "testApp",
+			PageCat:    []string{"pageCat1", "pageCat2"},
+			SectionCat: []string{"sectionCat1", "sectionCat2"},
+		},
+	}
+
+	reqs, _ := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
+
+	rubiconReq := &openrtb2.BidRequest{}
+	if err := json.Unmarshal(reqs[0].Body, rubiconReq); err != nil {
+		t.Fatalf("Unexpected error while decoding request: %s", err)
+	}
+
+	assert.Equal(t, 1, len(rubiconReq.Imp),
+		"Unexpected number of request impressions. Got %d. Expected %d", len(rubiconReq.Imp), 1)
+
+	imp := rubiconReq.Imp[0]
+	assert.NotNil(t, imp)
+	assert.NotNil(t, imp.Ext, "imp.ext should be present")
+
+	extRpTarget := make(map[string]interface{})
+	extRpTargetMessage, _, _, err := jsonparser.Get(imp.Ext, "rp", "target")
+	if err != nil {
+		t.Fatalf("Unexpected error while getting imp.ext.rp.target: %s", err)
+	}
+	if err := json.Unmarshal(extRpTargetMessage, &extRpTarget); err != nil {
+		t.Fatalf("Unexpected error while decoding imp.ext.rp.target: %s", err)
+	}
+	assert.NotEmpty(t, extRpTarget, "imp.ext.rp.target should be present")
+	expectedRpTarget := make(map[string]interface{})
+	expectedRpTarget["pagecat"] = []interface{}{"pageCat1", "pageCat2"}
+	expectedRpTarget["sectioncat"] = []interface{}{"sectionCat1", "sectionCat2"}
+	assert.Equal(t, expectedRpTarget, extRpTarget)
+}
+
+func TestOpenRTBRequestImpFpdFromSiteResolving(t *testing.T) {
+	SIZE_ID := getTestSizes()
+	bidder := new(RubiconAdapter)
+
+	request := &openrtb2.BidRequest{
+		ID: "test-request-id",
+		Imp: []openrtb2.Imp{{
+			ID: "test-imp-id",
+			Banner: &openrtb2.Banner{
+				Format: []openrtb2.Format{
+					SIZE_ID[15],
+					SIZE_ID[10],
+				},
+			},
+			Ext: json.RawMessage(`{
+				"bidder": {
+					"zoneId": 8394,
+					"siteId": 283282,
+					"accountId": 7891,
+					"inventory": {"key1" : "val1", "key2": ["val2", "val3"] }
+				}
+			}`),
+		}},
+		Site: &openrtb2.Site{
+			ID:     "com.test",
+			Name:   "testApp",
+			Page:   "somePage",
+			Ref:    "someRef",
+			Search: "someSearch",
+		},
+	}
+
+	reqs, _ := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
+
+	rubiconReq := &openrtb2.BidRequest{}
+	if err := json.Unmarshal(reqs[0].Body, rubiconReq); err != nil {
+		t.Fatalf("Unexpected error while decoding request: %s", err)
+	}
+
+	assert.Equal(t, 1, len(rubiconReq.Imp),
+		"Unexpected number of request impressions. Got %d. Expected %d", len(rubiconReq.Imp), 1)
+
+	imp := rubiconReq.Imp[0]
+	assert.NotNil(t, imp)
+	assert.NotNil(t, imp.Ext, "imp.ext should be present")
+
+	extRpTarget := make(map[string]interface{})
+	extRpTargetMessage, _, _, err := jsonparser.Get(imp.Ext, "rp", "target")
+	if err != nil {
+		t.Fatalf("Unexpected error while getting imp.ext.rp.target: %s", err)
+	}
+	if err := json.Unmarshal(extRpTargetMessage, &extRpTarget); err != nil {
+		t.Fatalf("Unexpected error while decoding imp.ext.rp.target: %s", err)
+	}
+	assert.NotEmpty(t, extRpTarget, "imp.ext.rp.target should be present")
+	expectedRpTarget := make(map[string]interface{})
+	expectedRpTarget["search"] = []interface{}{"someSearch"}
+	expectedRpTarget["page"] = []interface{}{"somePage"}
+	expectedRpTarget["ref"] = []interface{}{"someRef"}
+	expectedRpTarget["ref"] = []interface{}{"someRef"}
+	expectedRpTarget["key1"] = []interface{}{"val1"}
+	expectedRpTarget["key2"] = []interface{}{"val2", "val3"}
+	assert.Equal(t, expectedRpTarget, extRpTarget)
+}
+
+func TestOpenRTBRequestUserFpdResolving(t *testing.T) {
+	SIZE_ID := getTestSizes()
+	bidder := new(RubiconAdapter)
+
+	givenUserExt, _ := json.Marshal(rubiconUserExt{
+		RP: rubiconUserExtRP{
+			Target: json.RawMessage(`{"someKey":"someValue"}`),
+		},
+		Data: json.RawMessage(`{
+            "dataKey1": "dataValue1",
+            "dataKey2": [
+                "dataValue2",
+                "dataValue3"
+            ],
+            "dataKey3": true
+    }`),
+	})
+
+	request := &openrtb2.BidRequest{
+		ID: "test-request-id",
+		Imp: []openrtb2.Imp{{
+			ID: "test-imp-id",
+			Banner: &openrtb2.Banner{
+				Format: []openrtb2.Format{
+					SIZE_ID[15],
+					SIZE_ID[10],
+				},
+			},
+			Ext: json.RawMessage(`{
+				"bidder": {
+					"zoneId": 8394,
+					"siteId": 283282,
+					"accountId": 7891,
+					"visitor": {"key1" : "val1", "key2": ["val2", "val3"] }
+				}
+			}`),
+		}},
+		User: &openrtb2.User{
+			Yob: 200,
+			Ext: givenUserExt,
+			Data: []openrtb2.Data{{
+				Segment: []openrtb2.Segment{{ID: "idToCopy"}},
+				Ext:     json.RawMessage(`{"segtax": 4}`),
+			}},
+		},
+		App: &openrtb2.App{
+			ID:   "com.test",
+			Name: "testApp",
+		},
+	}
+
+	reqs, _ := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
+
+	rubiconReq := &openrtb2.BidRequest{}
+	if err := json.Unmarshal(reqs[0].Body, rubiconReq); err != nil {
+		t.Fatalf("Unexpected error while decoding request: %s", err)
+	}
+
+	assert.Equal(t, 1, len(rubiconReq.Imp),
+		"Unexpected number of request impressions. Got %d. Expected %d", len(rubiconReq.Imp), 1)
+
+	user := rubiconReq.User
+	assert.NotNil(t, user)
+	assert.NotNil(t, user.Ext, "user.ext should be present")
+
+	extRpTarget := make(map[string]interface{})
+	extRpTargetMessage, _, _, err := jsonparser.Get(user.Ext, "rp", "target")
+	if err != nil {
+		t.Fatalf("Unexpected error while getting user.ext.rp.target: %s", err)
+	}
+	if err := json.Unmarshal(extRpTargetMessage, &extRpTarget); err != nil {
+		t.Fatalf("Unexpected error while decoding user.ext.rp.target: %s", err)
+	}
+	assert.NotEmpty(t, extRpTarget, "user.ext.rp.target should be present")
+	expectedRpTarget := make(map[string]interface{})
+	expectedRpTarget["someKey"] = "someValue"
+	expectedRpTarget["key1"] = []interface{}{"val1"}
+	expectedRpTarget["iab"] = []interface{}{"idToCopy"}
+	expectedRpTarget["key2"] = []interface{}{"val2", "val3"}
+	expectedRpTarget["dataKey1"] = []interface{}{"dataValue1"}
+	expectedRpTarget["dataKey2"] = []interface{}{"dataValue2", "dataValue3"}
+	expectedRpTarget["dataKey3"] = []interface{}{"true"}
+	assert.Equal(t, expectedRpTarget, extRpTarget)
 }
 
 func TestOpenRTBRequestWithBadvOverflowed(t *testing.T) {

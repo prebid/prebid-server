@@ -6,50 +6,36 @@
       "ifa": "zxcjbzxmc-zxcbmz-zxbcz-zxczx"
     },
     "app": {
-      "id": "1",
-      "bundle": "com.wls.testwlsapplication"
-    },
-    "site": {
       "pagecat": [
         "val1",
         "val2"
       ],
-      "content": {
-        "data": [
-          {
-            "ext": {
-              "segtax": 1
-            },
-            "segment": [
-              {
-                "id": "segmentId1"
-              },
-              {
-                "id": "segmentId2"
-              }
-            ]
-          },
-          {
-            "ext": {
-              "segtax": "1"
-            },
-            "segment": [
-              {
-                "id": "shouldNotBeCopied"
-              }
-            ]
-          },
-          {
-            "ext": {
-              "segtax": 2
-            },
-            "segment": [
-              {
-                "id": "segmentId3"
-              }
-            ]
-          }
-        ]
+      "sectioncat": [
+        "sectionCat1",
+        "sectionCat2"
+      ],
+      "ext": {
+        "data": {
+          "attr1": "val1",
+          "attr2": [
+            "val21",
+            "val22"
+          ],
+          "attr3": true,
+          "attr4": [
+            true,
+            false,
+            true,
+            true
+          ],
+          "attr5": 3,
+          "attr6": [
+            1,
+            2,
+            3
+          ],
+          "attr7": 1.23
+        }
       }
     },
     "user": {
@@ -113,7 +99,30 @@
             }
           ]
         }
-      ]
+      ],
+      "ext": {
+        "data": {
+          "attr1": "val1",
+          "attr2": [
+            "val21",
+            "val22"
+          ],
+          "attr3": true,
+          "attr4": [
+            true,
+            false,
+            true,
+            true
+          ],
+          "attr5": 3,
+          "attr6": [
+            1,
+            2,
+            3
+          ],
+          "attr7": 1.23
+        }
+      }
     },
     "imp": [
       {
@@ -132,6 +141,12 @@
           "h": 576
         },
         "ext": {
+          "context": {
+            "data": {
+              "dataAttr1": "dataVal1",
+              "dataAttr2": "dataVal2"
+            }
+          },
           "bidder": {
             "video": {
             },
@@ -158,58 +173,18 @@
             "ip": "123.123.123.123",
             "ifa": "zxcjbzxmc-zxcbmz-zxbcz-zxczx"
           },
-          "site": {
+          "app": {
             "pagecat": [
               "val1",
               "val2"
             ],
-            "content": {
-              "data": [
-                {
-                  "ext": {
-                    "segtax": 1
-                  },
-                  "segment": [
-                    {
-                      "id": "segmentId1"
-                    },
-                    {
-                      "id": "segmentId2"
-                    }
-                  ]
-                },
-                {
-                  "ext": {
-                    "segtax": "1"
-                  },
-                  "segment": [
-                    {
-                      "id": "shouldNotBeCopied"
-                    }
-                  ]
-                },
-                {
-                  "ext": {
-                    "segtax": 2
-                  },
-                  "segment": [
-                    {
-                      "id": "segmentId3"
-                    }
-                  ]
-                }
-              ]
-            },
+            "sectioncat": [
+              "sectionCat1",
+              "sectionCat2"
+            ],
             "ext": {
               "rp": {
-                "site_id": 113932,
-                "target": {
-                  "iab": [
-                    "segmentId1",
-                    "segmentId2",
-                    "segmentId3"
-                  ]
-                }
+                "site_id": 113932
               }
             },
             "publisher": {
@@ -278,6 +253,25 @@
             "ext": {
               "rp": {
                 "target": {
+                  "attr1": [
+                    "val1"
+                  ],
+                  "attr2": [
+                    "val21",
+                    "val22"
+                  ],
+                  "attr3": [
+                    "true"
+                  ],
+                  "attr4": [
+                    "true",
+                    "false",
+                    "true",
+                    "true"
+                  ],
+                  "attr5": [
+                    "3"
+                  ],
                   "iab": [
                     "idToCopy",
                     "idToCopy2"
@@ -285,10 +279,6 @@
                 }
               }
             }
-          },
-          "app": {
-            "id": "1",
-            "bundle": "com.wls.testwlsapplication"
           },
           "imp": [
             {
@@ -314,9 +304,38 @@
               "ext": {
                 "rp": {
                   "target": {
+                    "dataAttr1": [
+                      "dataVal1"
+                    ],
+                    "dataAttr2": [
+                      "dataVal2"
+                    ],
+                    "attr1": [
+                      "val1"
+                    ],
+                    "attr2": [
+                      "val21",
+                      "val22"
+                    ],
+                    "attr3": [
+                      "true"
+                    ],
+                    "attr4": [
+                      "true",
+                      "false",
+                      "true",
+                      "true"
+                    ],
+                    "attr5": [
+                      "3"
+                    ],
                     "pagecat": [
                       "val1",
                       "val2"
+                    ],
+                    "sectioncat": [
+                      "sectionCat1",
+                      "sectionCat2"
                     ]
                   },
                   "track": {
