@@ -11,6 +11,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/maputil"
 )
 
 type GridAdapter struct {
@@ -56,9 +57,168 @@ type KeywordsPublisherItem struct {
 	Segments []KeywordSegment `json:"segments"`
 }
 
-type ReqExt struct {
-	Prebid   json.RawMessage `json:"prebid,omitempty"`
-	Keywords json.RawMessage `json:"keywords,omitempty"`
+type KeywordsPublisher map[string][]KeywordsPublisherItem
+
+type Keywords map[string]KeywordsPublisher
+
+// buildConsolidatedKeywordsReqExt builds a new request.ext json incorporating request.site.keywords, request.user.keywords,
+// and request.imp[0].ext.keywords, and request.ext.keywords. Invalid keywords in request.imp[0].ext.keywords are not incorporated.
+// Invalid keywords in request.ext.keywords.site and request.ext.keywords.user are dropped.
+func buildConsolidatedKeywordsReqExt(openRTBUser, openRTBSite string, firstImpExt, requestExt json.RawMessage) (json.RawMessage, error) {
+	// unmarshal ext to object map
+	requestExtMap := parseExtToMap(requestExt)
+	firstImpExtMap := parseExtToMap(firstImpExt)
+	// extract `keywords` field
+	requestExtKeywordsMap := extractKeywordsMap(requestExtMap)
+	firstImpExtKeywordsMap := extractBidderKeywordsMap(firstImpExtMap)
+	// parse + merge keywords
+	keywords := parseKeywordsFromMap(requestExtKeywordsMap)                // request.ext.keywords
+	mergeKeywords(keywords, parseKeywordsFromMap(firstImpExtKeywordsMap))  // request.imp[0].ext.bidder.keywords
+	mergeKeywords(keywords, parseKeywordsFromOpenRTB(openRTBUser, "user")) // request.user.keywords
+	mergeKeywords(keywords, parseKeywordsFromOpenRTB(openRTBSite, "site")) // request.site.keywords
+
+	// overlay site + user keywords
+	if site, exists := keywords["site"]; exists && len(site) > 0 {
+		requestExtKeywordsMap["site"] = site
+	} else {
+		delete(requestExtKeywordsMap, "site")
+	}
+	if user, exists := keywords["user"]; exists && len(user) > 0 {
+		requestExtKeywordsMap["user"] = user
+	} else {
+		delete(requestExtKeywordsMap, "user")
+	}
+	// reconcile keywords with request.ext
+	if len(requestExtKeywordsMap) > 0 {
+		requestExtMap["keywords"] = requestExtKeywordsMap
+	} else {
+		delete(requestExtMap, "keywords")
+	}
+	// marshal final result
+	if len(requestExtMap) > 0 {
+		return json.Marshal(requestExtMap)
+	}
+	return nil, nil
+}
+func parseExtToMap(ext json.RawMessage) map[string]interface{} {
+	var root map[string]interface{}
+	if err := json.Unmarshal(ext, &root); err != nil {
+		return make(map[string]interface{})
+	}
+	return root
+}
+func extractKeywordsMap(ext map[string]interface{}) map[string]interface{} {
+	if keywords, exists := maputil.ReadEmbeddedMap(ext, "keywords"); exists {
+		return keywords
+	}
+	return make(map[string]interface{})
+}
+func extractBidderKeywordsMap(ext map[string]interface{}) map[string]interface{} {
+	if bidder, exists := maputil.ReadEmbeddedMap(ext, "bidder"); exists {
+		return extractKeywordsMap(bidder)
+	}
+	return make(map[string]interface{})
+}
+func parseKeywordsFromMap(extKeywords map[string]interface{}) Keywords {
+	keywords := make(Keywords)
+	for k, v := range extKeywords {
+		// keywords may only be provided in the site and user sections
+		if k != "site" && k != "user" {
+			continue
+		}
+		// the site or user sections must be an object
+		if section, ok := v.(map[string]interface{}); ok {
+			keywords[k] = parseKeywordsFromSection(section)
+		}
+	}
+	return keywords
+}
+func parseKeywordsFromSection(section map[string]interface{}) KeywordsPublisher {
+	keywordsPublishers := make(KeywordsPublisher)
+	for publisherKey, publisherValue := range section {
+		// publisher value must be a slice
+		publisherValueSlice, ok := publisherValue.([]interface{})
+		if !ok {
+			continue
+		}
+		for _, publisherValueItem := range publisherValueSlice {
+			// item must be an object
+			publisherItem, ok := publisherValueItem.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			// publisher item must have a name
+			publisherName, ok := maputil.ReadEmbeddedString(publisherItem, "name")
+			if !ok {
+				continue
+			}
+			var segments []KeywordSegment
+			// extract valid segments
+			if segmentsSlice, exists := maputil.ReadEmbeddedSlice(publisherItem, "segments"); exists {
+				for _, segment := range segmentsSlice {
+					if segmentMap, ok := segment.(map[string]interface{}); ok {
+						name, hasName := maputil.ReadEmbeddedString(segmentMap, "name")
+						value, hasValue := maputil.ReadEmbeddedString(segmentMap, "value")
+						if hasName && hasValue {
+							segments = append(segments, KeywordSegment{Name: name, Value: value})
+						}
+					}
+				}
+			}
+			// compose compatible alternate segment format
+			for potentialSegmentName, potentialSegmentValues := range publisherItem {
+				// values must be an array
+				if valuesSlice, ok := potentialSegmentValues.([]interface{}); ok {
+					for _, value := range valuesSlice {
+						if valueAsString, ok := value.(string); ok {
+							segments = append(segments, KeywordSegment{Name: potentialSegmentName, Value: valueAsString})
+						}
+					}
+				}
+			}
+			if len(segments) > 0 {
+				keywordsPublishers[publisherKey] = append(keywordsPublishers[publisherKey], KeywordsPublisherItem{Name: publisherName, Segments: segments})
+			}
+		}
+	}
+	return keywordsPublishers
+}
+func parseKeywordsFromOpenRTB(keywords, section string) Keywords {
+	keywordsSplit := strings.Split(keywords, ",")
+	segments := make([]KeywordSegment, 0, len(keywordsSplit))
+	for _, v := range keywordsSplit {
+		if v != "" {
+			segments = append(segments, KeywordSegment{Name: "keywords", Value: v})
+		}
+	}
+	if len(segments) > 0 {
+		return map[string]KeywordsPublisher{section: map[string][]KeywordsPublisherItem{"ortb2": {{Name: "keywords", Segments: segments}}}}
+	}
+	return make(Keywords)
+}
+func mergeKeywords(a, b Keywords) {
+	for key, values := range b {
+		if _, sectionExists := a[key]; !sectionExists {
+			a[key] = KeywordsPublisher{}
+		}
+		for publisherKey, publisherValues := range values {
+			a[key][publisherKey] = append(publisherValues, a[key][publisherKey]...)
+		}
+	}
+}
+
+func setImpExtKeywords(request *openrtb2.BidRequest) error {
+	userKeywords := ""
+	if request.User != nil {
+		userKeywords = request.User.Keywords
+	}
+	siteKeywords := ""
+	if request.Site != nil {
+		siteKeywords = request.Site.Keywords
+	}
+	var err error
+	request.Ext, err = buildConsolidatedKeywordsReqExt(userKeywords, siteKeywords, request.Imp[0].Ext, request.Ext)
+	return err
 }
 
 func processImp(imp *openrtb2.Imp) error {
@@ -97,212 +257,6 @@ func setImpExtData(imp openrtb2.Imp) openrtb2.Imp {
 	return imp
 }
 
-func mixKeywords(keywordsString string, keywords map[string]interface{}) {
-	var ortb2Array []interface{}
-
-	keywordsArr := strings.Split(keywordsString, ",")
-
-	if len(keywordsArr) > 0 {
-		keywordsInt := make([]interface{}, len(keywordsArr))
-		for i, v := range keywordsArr {
-			keywordsInt[i] = v
-		}
-		ortb2Keywords := map[string]interface{}{
-			"name":     "keywords",
-			"keywords": keywordsInt,
-		}
-		if keywords["ortb2"] == nil {
-			ortb2Array = make([]interface{}, 0)
-		} else {
-			ortb2Array = keywords["ortb2"].([]interface{})
-		}
-		ortb2Array = append(ortb2Array, ortb2Keywords)
-		keywords["ortb2"] = ortb2Array
-	}
-}
-
-func mergeWithReqExtKeywords(extKeywords map[string]interface{}, reqExtKeywords map[string]interface{}) {
-	for key, keyword := range reqExtKeywords {
-		if extKeywords[key] == nil {
-			extKeywords[key] = keyword
-		} else {
-			if key == "site" || key == "user" {
-				target := extKeywords[key].(map[string]interface{})
-				from := keyword.(map[string]interface{})
-
-				for name, value := range from {
-					if target[name] == nil {
-						target[name] = value
-					} else {
-						valueArr := value.([]interface{})
-						targetArr := target[name].([]interface{})
-						target[name] = append(targetArr, valueArr...)
-					}
-				}
-			} else {
-				extKeywords[key] = keyword
-			}
-		}
-	}
-}
-
-func fillSegments(publisherItem map[string]interface{}) []KeywordSegment {
-	segments := make([]KeywordSegment, 0)
-
-	for key, value := range publisherItem {
-		if key != "name" {
-			if keywords, ok := value.([]interface{}); ok {
-				for _, keyword := range keywords {
-					switch keyword.(type) {
-					case map[string]interface{}:
-						keywordSegment := keyword.(map[string]interface{})
-						if key == "segments" && keywordSegment["name"] != nil && keywordSegment["value"] != nil {
-							segment := KeywordSegment{
-								Name:  keywordSegment["name"].(string),
-								Value: keywordSegment["value"].(string),
-							}
-							segments = append(segments, segment)
-						}
-					case string:
-						segment := KeywordSegment{
-							Name:  key,
-							Value: keyword.(string),
-						}
-						segments = append(segments, segment)
-					}
-				}
-			}
-		}
-	}
-
-	return segments
-}
-
-func reformatExtKeywords(extKeywords map[string]interface{}) {
-	for name, pubData := range extKeywords {
-		if pubArr, ok := pubData.([]interface{}); ok {
-			formatedPubArr := make([]KeywordsPublisherItem, 0)
-			for _, item := range pubArr {
-				if publisherItem, itemOk := item.(map[string]interface{}); itemOk {
-					segments := fillSegments(publisherItem)
-
-					if len(segments) > 0 {
-						formatedPublisher := KeywordsPublisherItem{
-							Name:     publisherItem["name"].(string),
-							Segments: segments,
-						}
-						formatedPubArr = append(formatedPubArr, formatedPublisher)
-					}
-				}
-			}
-			if len(formatedPubArr) > 0 {
-				extKeywords[name] = formatedPubArr
-			} else {
-				delete(extKeywords, name)
-			}
-		} else {
-			delete(extKeywords, name)
-		}
-	}
-}
-
-func updateExtKeywords(keywords json.RawMessage, request *openrtb2.BidRequest) json.RawMessage {
-	var extKeywords map[string]interface{}
-	var extKWSite map[string]interface{}
-	var extKWUser map[string]interface{}
-	var reqExt ReqExt
-	var reqExtKeywords map[string]interface{}
-
-	if err := json.Unmarshal(keywords, &extKeywords); err != nil {
-		extKeywords = nil
-	}
-
-	if request.Ext != nil {
-		reqExtErr := json.Unmarshal(request.Ext, &reqExt)
-		reqExtKeywordsErr := json.Unmarshal(reqExt.Keywords, &reqExtKeywords)
-
-		if reqExtErr == nil && reqExtKeywordsErr == nil && reqExtKeywords != nil {
-			if extKeywords == nil {
-				extKeywords = make(map[string]interface{})
-			}
-			mergeWithReqExtKeywords(extKeywords, reqExtKeywords)
-		}
-	}
-
-	if request.Site != nil && request.Site.Keywords != "" {
-		if extKeywords == nil {
-			extKeywords = make(map[string]interface{})
-		}
-
-		if extKeywords["site"] != nil {
-			extKWSite = extKeywords["site"].(map[string]interface{})
-		} else {
-			extKWSite = make(map[string]interface{})
-		}
-
-		mixKeywords(request.Site.Keywords, extKWSite)
-		extKeywords["site"] = extKWSite
-	}
-
-	if request.User != nil && request.User.Keywords != "" {
-		if extKeywords == nil {
-			extKeywords = make(map[string]interface{})
-		}
-
-		if extKeywords["user"] != nil {
-			extKWUser = extKeywords["user"].(map[string]interface{})
-		} else {
-			extKWUser = make(map[string]interface{})
-		}
-
-		mixKeywords(request.User.Keywords, extKWUser)
-		extKeywords["user"] = extKWUser
-	}
-
-	if extKeywords != nil {
-		if extKeywords["site"] != nil {
-			if extKeywordsSite, ok := extKeywords["site"].(map[string]interface{}); ok {
-				reformatExtKeywords(extKeywordsSite)
-			}
-		}
-		if extKeywords["user"] != nil {
-			if extKeywordsUser, ok := extKeywords["user"].(map[string]interface{}); ok {
-				reformatExtKeywords(extKeywordsUser)
-			}
-		}
-
-		if extKeywordsJSON, err := json.Marshal(extKeywords); err == nil {
-			return extKeywordsJSON
-		}
-	}
-
-	return nil
-}
-
-func setImpExtKeywords(imp openrtb2.Imp, request *openrtb2.BidRequest) error {
-	var ext adapters.ExtImpBidder
-	var gridExt openrtb_ext.ExtImpGrid
-	var reqExt ReqExt
-	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
-		return err
-	}
-	if err := json.Unmarshal(ext.Bidder, &gridExt); err != nil {
-		return err
-	}
-
-	keywords := updateExtKeywords(gridExt.Keywords, request)
-
-	if keywords != nil {
-		reqExt.Keywords = keywords
-		extJSON, err := json.Marshal(reqExt)
-		if err != nil {
-			return err
-		}
-		request.Ext = extJSON
-	}
-	return nil
-}
-
 // MakeRequests makes the HTTP requests which should be made to fetch bids.
 func (a *GridAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errors = make([]error, 0)
@@ -325,8 +279,7 @@ func (a *GridAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapte
 		return nil, errors
 	}
 
-	err := setImpExtKeywords(validImps[0], request)
-	if err != nil {
+	if err := setImpExtKeywords(request); err != nil {
 		errors = append(errors, err)
 		return nil, errors
 	}
