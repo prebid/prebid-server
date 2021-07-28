@@ -1,6 +1,6 @@
 package openrtb_ext
 
 type ExtImpAxonix struct {
-	Region   string `json:"region"`
+	Host     string `json:"host"`
 	SupplyId string `json:"supplyId"`
 }

@@ -18,7 +18,7 @@
         },
         "ext": {
           "bidder": {
-            "region": "us",
+            "host": "axonix.com",
             "supplyId": "supply-test"
           }
         }
@@ -29,7 +29,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://openrtb-us.axonix.com/supply/prebid-server/supply-test",
+        "uri": "https://axonix.com/supply/prebid-server/supply-test",
         "body": {
           "id": "test-request-id",
           "imp": [
@@ -49,7 +49,7 @@
               },
               "ext": {
                 "bidder": {
-                  "region": "us",
+                  "host": "axonix.com",
                   "supplyId": "supply-test"
                 }
               }
