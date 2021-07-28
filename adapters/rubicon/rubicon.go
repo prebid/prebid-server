@@ -1172,6 +1172,33 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb2.BidRequest, external
 	return bidResponse, nil
 }
 
+func mapImpIdToCpmOverride(imps []openrtb2.Imp) map[string]float64 {
+	impIdToCmpOverride := make(map[string]float64)
+	for _, imp := range imps {
+		var bidderExt adapters.ExtImpBidder
+		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+			continue
+		}
+
+		var rubiconExt openrtb_ext.ExtImpRubicon
+		if err := json.Unmarshal(bidderExt.Bidder, &rubiconExt); err != nil {
+			continue
+		}
+
+		impIdToCmpOverride[imp.ID] = rubiconExt.Debug.CpmOverride
+	}
+	return impIdToCmpOverride
+}
+
+func cmpOverrideFromBidRequest(bidRequest *openrtb2.BidRequest) float64 {
+	var bidRequestExt bidRequestExt
+	if err := json.Unmarshal(bidRequest.Ext, &bidRequestExt); err != nil {
+		return 0
+	}
+
+	return bidRequestExt.Prebid.Bidders.Rubicon.Debug.CpmOverride
+}
+
 func updateBidExtWithMetaNetworkId(bid openrtb2.Bid, buyer int) json.RawMessage {
 	if buyer <= 0 {
 		return nil
@@ -1202,31 +1229,4 @@ func updateBidExtWithMetaNetworkId(bid openrtb2.Bid, buyer int) json.RawMessage 
 		return marshalledExt
 	}
 	return nil
-}
-
-func cmpOverrideFromBidRequest(bidRequest *openrtb2.BidRequest) float64 {
-	var bidRequestExt bidRequestExt
-	if err := json.Unmarshal(bidRequest.Ext, &bidRequestExt); err != nil {
-		return 0
-	}
-
-	return bidRequestExt.Prebid.Bidders.Rubicon.Debug.CpmOverride
-}
-
-func mapImpIdToCpmOverride(imps []openrtb2.Imp) map[string]float64 {
-	impIdToCmpOverride := make(map[string]float64)
-	for _, imp := range imps {
-		var bidderExt adapters.ExtImpBidder
-		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-			continue
-		}
-
-		var rubiconExt openrtb_ext.ExtImpRubicon
-		if err := json.Unmarshal(bidderExt.Bidder, &rubiconExt); err != nil {
-			continue
-		}
-
-		impIdToCmpOverride[imp.ID] = rubiconExt.Debug.CpmOverride
-	}
-	return impIdToCmpOverride
 }

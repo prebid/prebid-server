@@ -1726,6 +1726,12 @@ func TestOpenRTBResponseSettingOfNetworkId(t *testing.T) {
 			expectedNetworkId: 4,
 			isNetworkIdSet:    true,
 		},
+		{
+			bidExt:            &openrtb_ext.ExtBidPrebid{Meta: &openrtb_ext.ExtBidPrebidMeta{NetworkID: 5}},
+			buyer:             "-1",
+			expectedNetworkId: 5,
+			isNetworkIdSet:    false,
+		},
 	}
 
 	for _, scenario := range testScenarios {
