@@ -1037,10 +1037,10 @@ func TestStoredRequests(t *testing.T) {
 		}
 		expectedImp := testStoredImpIds[i]
 		expectedStoredReq := json.RawMessage(testStoredImps[i])
-		if !jsonpatch.Equal(impToStoredReq[expectedImp].Data, expectedStoredReq) {
-			t.Errorf("Error in processStoredRequests, test %d failed on compare stored request\nFound:\n%s\nExpected:\n%s", i, string(impToStoredReq[expectedImp].Data), string(expectedStoredReq))
+		if !jsonpatch.Equal(impToStoredReq[expectedImp].StoredImp, expectedStoredReq) {
+			t.Errorf("Error in processStoredRequests, test %d failed on compare stored request\nFound:\n%s\nExpected:\n%s", i, string(impToStoredReq[expectedImp].StoredImp), string(expectedStoredReq))
 		}
-		assert.Equalf(t, testStoreVideoAttr[i], impToStoredReq[expectedImp].IncludeVideoAttributes, "IncludeVideoAttributes value is incorrect")
+		assert.Equalf(t, testStoreVideoAttr[i], impToStoredReq[expectedImp].EchoVideoAttrs, "EchoVideoAttrs value is incorrect")
 	}
 }
 

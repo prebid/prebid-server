@@ -3444,9 +3444,9 @@ func TestUpdateHbPbCatDur(t *testing.T) {
 }
 
 func TestInsertStoredImpData(t *testing.T) {
-	impsToStoredRequest := make(map[string]StoredImpData)
-	impsToStoredRequest["imp_idApn1_1"] = StoredImpData{true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`)}
-	impsToStoredRequest["imp_idApn1_3"] = StoredImpData{false, []byte(`{"video":{"h":100}}`)}
+	impsToStoredRequest := make(map[string]ImpExtInfo)
+	impsToStoredRequest["imp_idApn1_1"] = ImpExtInfo{true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`)}
+	impsToStoredRequest["imp_idApn1_3"] = ImpExtInfo{false, []byte(`{"video":{"h":100}}`)}
 
 	cats1 := []string{"IAB1-3"}
 	bidApn1_1 := openrtb2.Bid{ID: "bid_idApn1_1", ImpID: "imp_idApn1_1", Price: 10.0000, Cat: cats1, W: 1, H: 1, Ext: json.RawMessage(`{"prebid": {"video":{"mimes":["video/mp4"]}}}`)}

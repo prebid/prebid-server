@@ -135,7 +135,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		deps.analytics.LogAuctionObject(&ao)
 	}()
 
-	req, impToStoredReq, errL := deps.parseRequest(r)
+	req, impExtInfoMap, errL := deps.parseRequest(r)
 
 	if errortypes.ContainsFatalError(errL) && writeError(errL, w, &labels) {
 		return
@@ -192,7 +192,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		LegacyLabels:               labels,
 		Warnings:                   warnings,
 		GlobalPrivacyControlHeader: secGPC,
-		ImpToStoredReq:             impToStoredReq,
+		ImpToStoredReq:             impExtInfoMap,
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
@@ -235,7 +235,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 // possible, it will return errors with messages that suggest improvements.
 //
 // If the errors list has at least one element, then no guarantees are made about the returned request.
-func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_ext.RequestWrapper, impToStoredReq map[string]exchange.StoredImpData, errs []error) {
+func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_ext.RequestWrapper, impExtInfoMap map[string]exchange.ImpExtInfo, errs []error) {
 	req = &openrtb_ext.RequestWrapper{}
 	req.BidRequest = &openrtb2.BidRequest{}
 	errs = nil
@@ -263,7 +263,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_
 	defer cancel()
 
 	// Fetch the Stored Request data and merge it into the HTTP request.
-	if requestJson, impToStoredReq, errs = deps.processStoredRequests(ctx, requestJson); len(errs) > 0 {
+	if requestJson, impExtInfoMap, errs = deps.processStoredRequests(ctx, requestJson); len(errs) > 0 {
 		return
 	}
 
@@ -1317,7 +1317,7 @@ func getJsonSyntaxError(testJSON []byte) (bool, string) {
 	return false, ""
 }
 
-func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson []byte) ([]byte, map[string]exchange.StoredImpData, []error) {
+func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson []byte) ([]byte, map[string]exchange.ImpExtInfo, []error) {
 	// Parse the Stored Request IDs from the BidRequest and Imps.
 	storedBidRequestId, hasStoredBidRequest, err := getStoredRequestId(requestJson)
 	if err != nil {
@@ -1378,7 +1378,7 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 	// Apply any Stored Imps, if they exist. Since the JSON Merge Patch overrides arrays,
 	// and Prebid Server defers to the HTTP Request to resolve conflicts, it's safe to
 	// assume that the request.imp data did not change when applying the Stored BidRequest.
-	impToStoredReq := make(map[string]exchange.StoredImpData)
+	impExtInfoMap := make(map[string]exchange.ImpExtInfo)
 	for i := 0; i < len(impIds); i++ {
 		resolvedImp, err := jsonpatch.MergePatch(storedImps[impIds[i]], imps[idIndices[i]])
 
@@ -1409,7 +1409,7 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 			return nil, nil, []error{err}
 		}
 		if storedImps[impIds[i]] != nil {
-			impToStoredReq[impId] = exchange.StoredImpData{includeVideoAttributes, storedImps[impIds[i]]}
+			impExtInfoMap[impId] = exchange.ImpExtInfo{includeVideoAttributes, storedImps[impIds[i]]}
 		}
 	}
 	if len(impIds) > 0 {
@@ -1423,7 +1423,7 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 		}
 	}
 
-	return resolvedRequest, impToStoredReq, nil
+	return resolvedRequest, impExtInfoMap, nil
 }
 
 // parseImpInfo parses the request JSON and returns several things about the Imps

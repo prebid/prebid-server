@@ -136,9 +136,9 @@ func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid
 	}
 }
 
-type StoredImpData struct {
-	IncludeVideoAttributes bool
-	Data                   []byte
+type ImpExtInfo struct {
+	EchoVideoAttrs bool
+	StoredImp      []byte
 }
 
 // AuctionRequest holds the bid request for the auction
@@ -151,7 +151,7 @@ type AuctionRequest struct {
 	StartTime                  time.Time
 	Warnings                   []error
 	GlobalPrivacyControlHeader string
-	ImpToStoredReq             map[string]StoredImpData
+	ImpToStoredReq             map[string]ImpExtInfo
 
 	// LegacyLabels is included here for temporary compatability with cleanOpenRTBRequests
 	// in HoldAuction until we get to factoring it away. Do not use for anything new.
@@ -428,7 +428,7 @@ func (e *exchange) getAllBids(
 	accountDebugAllowed bool,
 	globalPrivacyControlHeader string,
 	headerDebugAllowed bool,
-	impToStoredReq map[string]StoredImpData) (
+	impExtInfoMap map[string]ImpExtInfo) (
 	map[openrtb_ext.BidderName]*pbsOrtbSeatBid,
 	map[openrtb_ext.BidderName]*seatResponseExtra, bool) {
 	// Set up pointers to the bid results
@@ -474,8 +474,8 @@ func (e *exchange) getAllBids(
 			}
 
 			//put stored req data back to bid.ext, map by bid.imp_id
-			if len(impToStoredReq) != 0 {
-				storedImpErr := insertStoredImpData(bidderRequest.BidRequest.Imp, impToStoredReq, bids)
+			if len(impExtInfoMap) != 0 {
+				storedImpErr := insertStoredImpData(bidderRequest.BidRequest.Imp, impExtInfoMap, bids)
 				if storedImpErr != nil {
 					err = append(err, storedImpErr)
 				}
@@ -519,7 +519,7 @@ func (e *exchange) getAllBids(
 	return adapterBids, adapterExtra, bidsFound
 }
 
-func insertStoredImpData(imps []openrtb2.Imp, impsToStoredRequest map[string]StoredImpData, bids *pbsOrtbSeatBid) error {
+func insertStoredImpData(imps []openrtb2.Imp, impExtInfoMap map[string]ImpExtInfo, bids *pbsOrtbSeatBid) error {
 	for _, bid := range bids.bids {
 		//find impression
 		var impression *openrtb2.Imp
@@ -533,7 +533,7 @@ func insertStoredImpData(imps []openrtb2.Imp, impsToStoredRequest map[string]Sto
 			continue
 		}
 
-		if val, ok := impsToStoredRequest[bid.bid.ImpID]; ok {
+		if val, ok := impExtInfoMap[bid.bid.ImpID]; ok {
 
 			bidExtData := make(map[string]json.RawMessage)
 
@@ -545,8 +545,8 @@ func insertStoredImpData(imps []openrtb2.Imp, impsToStoredRequest map[string]Sto
 			}
 
 			//determine if stored impression has video data
-			if impression.Video != nil && val.IncludeVideoAttributes {
-				videoData, _, _, err := jsonparser.Get(val.Data, "video")
+			if impression.Video != nil && val.EchoVideoAttrs {
+				videoData, _, _, err := jsonparser.Get(val.StoredImp, "video")
 				if err != nil {
 					return err
 				}
