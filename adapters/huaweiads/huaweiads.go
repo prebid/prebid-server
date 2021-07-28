@@ -962,7 +962,7 @@ func (a *adapter) extractAdmNative(adType int32, content *Content, bidType openr
 	if content.MetaData.ClickUrl != "" {
 		linkObject.URL = content.MetaData.ClickUrl
 	} else if content.MetaData.Intent != "" {
-		linkObject.URL = content.MetaData.Intent
+		linkObject.URL, _ = getDecodeValue(content.MetaData.Intent)
 	}
 
 	nativeResult.Assets = make([]nativeResponse.Asset, 0, len(nativePayload.Assets))
@@ -1087,7 +1087,7 @@ func (a *adapter) extractAdmPicture(content *Content) (adm string, adWidth int64
 	if content.MetaData.ClickUrl != "" {
 		clickUrl = content.MetaData.ClickUrl
 	} else if content.MetaData.Intent != "" {
-		clickUrl = content.MetaData.Intent
+		clickUrl, _ = getDecodeValue(content.MetaData.Intent)
 	}
 
 	var imageInfoUrl string
@@ -1241,7 +1241,7 @@ func (a *adapter) extractAdmVideo(adType int32, content *Content, bidType openrt
 	if content.MetaData.ClickUrl != "" {
 		clickUrl = content.MetaData.ClickUrl
 	} else if content.MetaData.Intent != "" {
-		clickUrl = content.MetaData.Intent
+		clickUrl, _ = getDecodeValue(content.MetaData.Intent)
 	}
 
 	var mime = "video/mp4"
@@ -1300,13 +1300,13 @@ func (a *adapter) extractAdmVideo(adType int32, content *Content, bidType openrt
 			var event = ""
 			switch monitor.EventType {
 			case "vastError":
-				errorTracking = strings.Join(monitor.Url, ";")
+				errorTracking = getErrorTrackings(monitor.Url)
 			case "imp":
 				dspImpTracking = strings.Join(monitor.Url, ";")
 			case "click":
 				dspClickTracking = strings.Join(monitor.Url, ";")
-			case "userClose":
-				event = "skip"
+			case "userclose":
+				event = "skip&closeLinear"
 			case "playStart":
 				event = "start"
 			case "playEnd":
@@ -1322,7 +1322,12 @@ func (a *adapter) extractAdmVideo(adType int32, content *Content, bidType openrt
 			default:
 			}
 			if event != "" {
-				trackingEvents.WriteString("<Tracking event=\"" + event + "\"><![CDATA[" + strings.Join(monitor.Url, ";") + "]]></Tracking>")
+				if event != "skip&closeLinear" {
+					trackingEvents.WriteString("<Tracking event=\"" + event + "\"><![CDATA[" + strings.Join(monitor.Url, ";") + "]]></Tracking>")
+				} else {
+					trackingEvents.WriteString("<Tracking event=\"skip\"><![CDATA[" + strings.Join(monitor.Url, ";") + "]]></Tracking>")
+					trackingEvents.WriteString("<Tracking event=\"closeLinear\"><![CDATA[" + strings.Join(monitor.Url, ";") + "]]></Tracking>")
+				}
 			}
 		}
 	}
@@ -1358,6 +1363,17 @@ func (a *adapter) extractAdmVideo(adType int32, content *Content, bidType openrt
 		"</Ad>" +
 		"</VAST>"
 	return adm, adWidth, adHeight, nil
+}
+
+func getErrorTrackings(urls []string) (result string) {
+	result = ""
+	for i, url := range urls {
+		result = result + url + "&et=[ERRORCODE]"
+		if i != len(urls)-1 {
+			result += ";"
+		}
+	}
+	return
 }
 
 // compute HmacSha256
