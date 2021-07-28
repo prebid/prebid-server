@@ -120,8 +120,6 @@
           "w": 1024,
           "h": 576
         },
-        "bidfloor": 1,
-        "bidfloorcur": "EuR",
         "ext": {
           "bidder": {
             "video": {
@@ -298,8 +296,6 @@
                 "w": 1024,
                 "h": 576
               },
-              "bidfloor": 1.2,
-              "bidfloorcur": "USD",
               "ext": {
                 "rp": {
                   "track": {

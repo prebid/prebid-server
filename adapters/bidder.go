@@ -141,12 +141,12 @@ func (r *RequestData) SetBasicAuth(username string, password string) {
 type ExtraRequestInfo struct {
 	PbsEntryPoint              metrics.RequestType
 	GlobalPrivacyControlHeader string
-	currencyConversions        currency.Conversions
+	CurrencyConversions        currency.Conversions
 }
 
 func NewExtraRequestInfo(c currency.Conversions) ExtraRequestInfo {
 	return ExtraRequestInfo{
-		currencyConversions: c,
+		CurrencyConversions: c,
 	}
 }
 
@@ -155,7 +155,7 @@ func NewExtraRequestInfo(c currency.Conversions) ExtraRequestInfo {
 //  - ConversionNotFoundError if the conversion mapping is unknown to Prebid Server
 //    and not provided in the bid request.
 func (r ExtraRequestInfo) ConvertCurrency(value float64, from, to string) (float64, error) {
-	if rate, err := r.currencyConversions.GetRate(from, to); err == nil {
+	if rate, err := r.CurrencyConversions.GetRate(from, to); err == nil {
 		return value * rate, nil
 	} else {
 		return 0, err

@@ -1,6 +1,6 @@
 maintainer:
-  email: "technology-irv@inmobi.com"
-gvlVendorID: 333
+  email: adtech-prebid-group@opera.com
+modifyingVastXmlAllowed: true
 capabilities:
   app:
     mediaTypes:
@@ -11,3 +11,4 @@ capabilities:
     mediaTypes:
       - banner
       - video
+      - native
