@@ -73,10 +73,6 @@ func (a *adapter) MakeRequests(
 	[]*adapters.RequestData,
 	[]error,
 ) {
-	if len(openRTBRequest.Imp) == 0 {
-		return nil, []error{&errortypes.BadInput{Message: "Missing Imp object"}}
-	}
-
 	var smarthubExt *openrtb_ext.ExtSmartHub
 	smarthubExt, err := a.getImpressionExt(&(openRTBRequest.Imp[0]))
 	if err != nil {
