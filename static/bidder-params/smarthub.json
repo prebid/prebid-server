@@ -6,15 +6,18 @@
   "properties": {
     "host": {
       "type": "string",
-      "description": "Network host to send request"
+      "description": "Network host to send request",
+      "minLength": 4
     },
     "seat": {
       "type": "string",
-      "description": "Seat"
+      "description": "Seat",
+      "minLength": 1
     },
     "token": {
       "type": "string",
-      "description": "Token"
+      "description": "Token",
+      "minLength": 1
     }
   },
   "required": [

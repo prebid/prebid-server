@@ -38,6 +38,11 @@ var invalidParams = []string{
 	`{"seat":"9Q20EdGxzgWdfPYShScl", "token":"alNYtemWggraDVbhJrsOs9pXc3Eld32E"}`,
 	`{"host":"smarthub.test", "token":"LNywdP2ebX5iETF8gvBeEoB6Cam64eeq"}`,
 	`{"host":"smarthub.test", "seat":"9Q20EdGxzgWdfPYShScl"}`,
+	`{"host":"", "seat":"", "token":""}`,
+	`{"host":"", "seat":"9Q20EdGxzgWdfPYShScl", "token":"alNYtemWggraDVbhJrsOs9pXc3Eld32E"}`,
+	`{"host":"123", "seat":"9Q20EdGxzgWdfPYShScl", "token":"alNYtemWggraDVbhJrsOs9pXc3Eld32E"}`,
+	`{"host":"smarthub.test", "seat":"9Q20EdGxzgWdfPYShScl", "token":""}`,
+	`{"host":"smarthub.test", "seat":"", "token":"alNYtemWggraDVbhJrsOs9pXc3Eld32E"}`,
 }
 
 func TestInvalidParams(t *testing.T) {
