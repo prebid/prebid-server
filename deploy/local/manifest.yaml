@@ -83,6 +83,10 @@ data:
   PBS_MONITORING_OPENTELEMETRY_SAMPLE_RATE: "1.0"
   PBS_MONITORING_OPENTELEMETRY_ENDPOINT: "otelcol-gateway.observability-system:4139"
 
+  # aarki values
+  PBS_ADAPTERS_AARKI_DISABLED:              "false"
+  PBS_ADAPTERS_AARKI_XAPI_ENDPOINT_US_EAST: "http://localhost:4646/aarki_givemeads"
+
   # crossinstall values
   PBS_ADAPTERS_CROSSINSTALL_DISABLED:              "false"
   PBS_ADAPTERS_CROSSINSTALL_XAPI_ENDPOINT_US_EAST: "http://localhost:4646/crossinstall_givemeads"
