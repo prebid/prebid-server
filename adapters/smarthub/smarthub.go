@@ -70,8 +70,8 @@ func (a *adapter) MakeRequests(
 	openRTBRequest *openrtb2.BidRequest,
 	reqInfo *adapters.ExtraRequestInfo,
 ) (
-	requestsToBidder []*adapters.RequestData,
-	errs []error,
+	[]*adapters.RequestData,
+	[]error,
 ) {
 	if len(openRTBRequest.Imp) == 0 {
 		return nil, []error{&errortypes.BadInput{Message: "Missing Imp object"}}
@@ -111,8 +111,8 @@ func (a *adapter) MakeBids(
 	requestToBidder *adapters.RequestData,
 	bidderRawResponse *adapters.ResponseData,
 ) (
-	bidderResponse *adapters.BidderResponse,
-	errs []error,
+	*adapters.BidderResponse,
+	[]error,
 ) {
 	if bidderRawResponse.StatusCode == http.StatusNoContent {
 		return nil, nil
