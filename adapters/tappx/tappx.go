@@ -81,7 +81,9 @@ func (a *TappxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 	if jsonext, err := json.Marshal(ext); err == nil {
 		request.Ext = jsonext
 	} else {
-		return nil, []error{errors.New("Error writing TappX request.ext.")}
+		return nil, []error{&errortypes.FailedToRequestBids{
+			Message: "Error marshaling tappxExt parameters",
+		}}
 	}
 
 	var test int
