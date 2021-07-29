@@ -17,7 +17,7 @@ import (
 	"github.com/prebid/prebid-server/util/timeutil"
 )
 
-const clientVersion = "prebid_server_0.3"
+const clientVersion = "prebid_server_0.4"
 
 type adMarkupType string
 
@@ -160,22 +160,51 @@ func (adapter *adapter) makeIndividualRequests(request *openrtb2.BidRequest) ([]
 	errors := make([]error, 0, len(imps))
 
 	for _, imp := range imps {
-		request.Imp = []openrtb2.Imp{imp}
-		if err := prepareIndividualRequest(request); err != nil {
-			errors = append(errors, err)
-			continue
-		}
-
-		requestData, err := adapter.makeRequest(request)
+		impsByMediaType, err := splitImpressionsByMediaType(&imp)
 		if err != nil {
 			errors = append(errors, err)
 			continue
 		}
 
-		requests = append(requests, requestData)
+		for _, impByMediaType := range impsByMediaType {
+			request.Imp = []openrtb2.Imp{impByMediaType}
+			if err := prepareIndividualRequest(request); err != nil {
+				errors = append(errors, err)
+				continue
+			}
+
+			requestData, err := adapter.makeRequest(request)
+			if err != nil {
+				errors = append(errors, err)
+				continue
+			}
+
+			requests = append(requests, requestData)
+		}
 	}
 
 	return requests, errors
+}
+
+func splitImpressionsByMediaType(imp *openrtb2.Imp) ([]openrtb2.Imp, error) {
+	if imp.Banner == nil && imp.Video == nil {
+		return nil, &errortypes.BadInput{Message: "Invalid MediaType. Smaato only supports Banner and Video."}
+	}
+
+	imps := make([]openrtb2.Imp, 0, 2)
+
+	if imp.Banner != nil {
+		impCopy := *imp
+		impCopy.Video = nil
+		imps = append(imps, impCopy)
+	}
+
+	if imp.Video != nil {
+		imp.Banner = nil
+		imps = append(imps, *imp)
+	}
+
+	return imps, nil
 }
 
 func (adapter *adapter) makePodRequests(request *openrtb2.BidRequest) ([]*adapters.RequestData, []error) {
@@ -436,7 +465,7 @@ func setImpForAdspace(imp *openrtb2.Imp) error {
 		return nil
 	}
 
-	return &errortypes.BadInput{Message: "Invalid MediaType. Smaato only supports Banner and Video."}
+	return nil
 }
 
 func setImpForAdBreak(imps []openrtb2.Imp) error {
