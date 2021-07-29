@@ -60,6 +60,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	endpoint, err := a.getEndpoint(&axonixExt)
 	if err != nil {
+		errors = append(errors, err)
 		return nil, errors
 	}
 
