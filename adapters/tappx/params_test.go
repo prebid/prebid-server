@@ -72,4 +72,6 @@ var invalidParams = []string{
 	`{"tappxkey": "1", "endpoint": "1", "host":"host", "bcid":""}`,
 	`{"tappxkey": "1", "endpoint": "1", "host":"host", "bcid":"123", bcrid: ["123"]}`,
 	`{"tappxkey": "1", "endpoint": "1", "host":"host", "bcid":["123"], bcrid: 123}`,
+	`{"tappxkey": "1", "endpoint": "1", "host":"host", "bcid":"123", bcrid: [123]}`,
+	`{"tappxkey": "1", "endpoint": "1", "host":"host", "bcid":[123], bcrid: 123}`,
 }
