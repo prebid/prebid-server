@@ -80,9 +80,9 @@ func (a *TappxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 
 	if jsonext, err := json.Marshal(ext); err == nil {
 		request.Ext = jsonext
-	  } else {
+	} else {
 		return nil, []error{errors.New("Error writing TappX request.ext.")}
-	  }
+	}
 
 	var test int
 	test = int(request.Test)
