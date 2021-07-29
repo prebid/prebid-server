@@ -30,7 +30,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	return bidder, nil
 }
 
-func (a *adapter) getEndPoint(ext *openrtb_ext.ExtImpAxonix) (string, error) {
+func (a *adapter) getEndpoint(ext *openrtb_ext.ExtImpAxonix) (string, error) {
 	endpointParams := macros.EndpointTemplateParams{
 		AccountID: url.PathEscape(ext.SupplyId),
 	}
@@ -58,7 +58,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		return nil, errors
 	}
 
-	endpoint, err := a.getEndPoint(&axonixExt)
+	endpoint, err := a.getEndpoint(&axonixExt)
 	if err != nil {
 		return nil, errors
 	}
