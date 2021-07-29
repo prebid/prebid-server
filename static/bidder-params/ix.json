@@ -7,17 +7,17 @@
     "siteid": {
       "type": "string",
       "minLength": 1,
-      "description": "An ID which identifies the site selling the impression"
+      "description": "An ID which identifies the site selling the impression, preferred."
     },
     "siteId": {
       "type": "string",
       "minLength": 1,
-      "description": "An ID which identifies the site selling the impression"
+      "description": "An ID which identifies the site selling the impression."
     },
     "siteID": {
       "type": "string",
       "minLength": 1,
-      "description": "An ID which identifies the site selling the impression"
+      "description": "An ID which identifies the site selling the impression."
     },
     "size": {
       "type": "array",

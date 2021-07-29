@@ -41,6 +41,11 @@ var validParams = []string{
 }
 
 var invalidParams = []string{
+	`{"siteid":""}`,
+	`{"siteID":""}`,
+	`{"siteId":""}`,
+	`{"siteid":"1234", "siteID":"12345"}`,
+	`{"siteid":"1234", "siteId":"123456"}`,
 	`{"siteid":123}`,
 	`{"siteids":"123"}`,
 	`{"notaparam":"123"}`,
