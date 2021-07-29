@@ -69,7 +69,7 @@ func TestMakeRequests_Gzip(t *testing.T) {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	requestData, errors := bidder.MakeRequests(&fakeBidRequest, nil)
-	assert.Empty(t, errors, "Got errors while making requests")
-	assert.Equal(t, []string([]string{"gzip"}), requestData[0].Headers["Content-Encoding"])
+	requestData, errs := bidder.MakeRequests(&fakeBidRequest, nil)
+	assert.Empty(t, errs, "Got errors while making requests")
+	assert.Equal(t, []string{"gzip"}, requestData[0].Headers["Content-Encoding"])
 }
