@@ -10,7 +10,7 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20180720115003-f9ffefc3facf
 	github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973 // indirect
 	github.com/blang/semver v3.5.1+incompatible
-	github.com/buger/jsonparser v0.0.0-20180808090653-f4dd9f5a6b44
+	github.com/buger/jsonparser v1.1.1
 	github.com/cespare/xxhash v1.0.0 // indirect
 	github.com/chasex/glog v0.0.0-20160217080310-c62392af379c
 	github.com/coocood/freecache v1.0.1
