@@ -32,7 +32,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 
 func (a *adapter) getEndPoint(ext *openrtb_ext.ExtImpAxonix) (string, error) {
 	endpointParams := macros.EndpointTemplateParams{
-		Host:      url.PathEscape(ext.Host),
 		AccountID: url.PathEscape(ext.SupplyId),
 	}
 	return macros.ResolveMacros(a.EndpointTemplate, endpointParams)

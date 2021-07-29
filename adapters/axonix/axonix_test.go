@@ -11,7 +11,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAxonix, config.Adapter{
-		Endpoint: "https://{{.Host}}/supply/prebid-server/{{.AccountID}}",
+		Endpoint: "https://axonix.com/supply/prebid-server/{{.AccountID}}",
 	})
 
 	if buildErr != nil {

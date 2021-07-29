@@ -12,7 +12,6 @@
         },
         "ext":{
           "bidder":{
-            "host": "axonix.com",
             "supplyId": "supply-test"
            }
         }
@@ -37,7 +36,6 @@
               },
               "ext": {
                 "bidder": {
-                  "host": "axonix.com",
                   "supplyId": "supply-test"
                 }
               }
