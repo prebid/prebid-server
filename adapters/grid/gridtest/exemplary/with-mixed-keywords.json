@@ -29,7 +29,7 @@
                     "anotherSiteKeys": [
                         {"someKey1":  "someVal1"},
                         {"someKey2":  "someVal2"},
-                        "someStKey",
+                        "someStrKey",
                         ["someVal31", "someVal32"],
                         {
                             "name":  "someName3",
@@ -197,9 +197,9 @@
                                     "segments": [
                                         { "name": "segName1", "value": "segVal1" },
                                         { "name": "segName2", "value": "segVal2" },
-                                        { "name": "segments", "value": "stringKey" },
                                         { "name": "bottom", "value": "bottomKey1" },
-                                        { "name": "bottom", "value": "bottomKey2" }
+                                        { "name": "bottom", "value": "bottomKey2" },
+                                        { "name": "segments", "value": "stringKey" }
                                     ]
                                 }
                             ]

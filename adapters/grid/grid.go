@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
@@ -165,8 +166,15 @@ func parseKeywordsFromSection(section map[string]interface{}) KeywordsPublisher 
 					}
 				}
 			}
+			// ensure consistent ordering for publisher item map
+			publisherItemKeys := make([]string, 0, len(publisherItem))
+			for v := range publisherItem {
+				publisherItemKeys = append(publisherItemKeys, v)
+			}
+			sort.Strings(publisherItemKeys)
 			// compose compatible alternate segment format
-			for potentialSegmentName, potentialSegmentValues := range publisherItem {
+			for _, potentialSegmentName := range publisherItemKeys {
+				potentialSegmentValues := publisherItem[potentialSegmentName]
 				// values must be an array
 				if valuesSlice, ok := potentialSegmentValues.([]interface{}); ok {
 					for _, value := range valuesSlice {
