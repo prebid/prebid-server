@@ -40,7 +40,7 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	`{"supplyId": "24cc9034-f861-47b8-a6a8-b7e0968c00b8"}`,
+	`{"supplyId": "test-supply"}`,
 	`{"supplyId": "test"}`,
 }
 
