@@ -1,0 +1,12 @@
+maintainer:
+  email: "dev@adagio.io"
+gvlVendorID: 617
+modifyingVastXmlAllowed: false
+debug:
+  allow: true
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
