@@ -192,7 +192,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		LegacyLabels:               labels,
 		Warnings:                   warnings,
 		GlobalPrivacyControlHeader: secGPC,
-		ImpToStoredReq:             impExtInfoMap,
+		ImpExtInfoMap:              impExtInfoMap,
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)

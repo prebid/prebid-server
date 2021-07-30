@@ -151,7 +151,7 @@ type AuctionRequest struct {
 	StartTime                  time.Time
 	Warnings                   []error
 	GlobalPrivacyControlHeader string
-	ImpToStoredReq             map[string]ImpExtInfo
+	ImpExtInfoMap              map[string]ImpExtInfo
 
 	// LegacyLabels is included here for temporary compatability with cleanOpenRTBRequests
 	// in HoldAuction until we get to factoring it away. Do not use for anything new.
@@ -216,7 +216,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	// Get currency rates conversions for the auction
 	conversions := e.getAuctionCurrencyRates(requestExt.Prebid.CurrencyConversions)
 
-	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, r.Account.DebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride, r.ImpToStoredReq)
+	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, r.Account.DebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride, r.ImpExtInfoMap)
 
 	var auc *auction
 	var cacheErrs []error

@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
-	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/mxmCherry/openrtb/v15/native1"
 	nativeRequests "github.com/mxmCherry/openrtb/v15/native1/request"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
@@ -1020,8 +1019,10 @@ func TestStoredRequests(t *testing.T) {
 		hardcodedResponseIPValidator{response: true},
 	}
 
+	testStoreVideoAttr := []bool{true, true, false, false}
+
 	for i, requestData := range testStoredRequests {
-		newRequest, impToStoredReq, errList := deps.processStoredRequests(context.Background(), json.RawMessage(requestData))
+		newRequest, impExtInfoMap, errList := deps.processStoredRequests(context.Background(), json.RawMessage(requestData))
 		if len(errList) != 0 {
 			for _, err := range errList {
 				if err != nil {
@@ -1032,15 +1033,16 @@ func TestStoredRequests(t *testing.T) {
 			}
 		}
 		expectJson := json.RawMessage(testFinalRequests[i])
-		if !jsonpatch.Equal(newRequest, expectJson) {
-			t.Errorf("Error in processStoredRequests, test %d failed on compare\nFound:\n%s\nExpected:\n%s", i, string(newRequest), string(expectJson))
-		}
+
+		assert.JSONEq(t, string(expectJson), string(newRequest), "Incorrect result request %d", i)
+
 		expectedImp := testStoredImpIds[i]
-		expectedStoredReq := json.RawMessage(testStoredImps[i])
-		if !jsonpatch.Equal(impToStoredReq[expectedImp].StoredImp, expectedStoredReq) {
-			t.Errorf("Error in processStoredRequests, test %d failed on compare stored request\nFound:\n%s\nExpected:\n%s", i, string(impToStoredReq[expectedImp].StoredImp), string(expectedStoredReq))
+		expectedStoredImp := json.RawMessage(testStoredImps[i])
+		if len(impExtInfoMap[expectedImp].StoredImp) > 0 {
+			assert.JSONEq(t, string(expectedStoredImp), string(impExtInfoMap[expectedImp].StoredImp), "Incorrect expected stored imp %d", i)
+
 		}
-		assert.Equalf(t, testStoreVideoAttr[i], impToStoredReq[expectedImp].EchoVideoAttrs, "EchoVideoAttrs value is incorrect")
+		assert.Equalf(t, testStoreVideoAttr[i], impExtInfoMap[expectedImp].EchoVideoAttrs, "EchoVideoAttrs value is incorrect")
 	}
 }
 
@@ -3309,11 +3311,7 @@ var testFinalRequests = []string{
   		        "accountId": "abc"
   		      }
   		    },
-  		    "id": "adUnit1",
-			"video":{
-				"w":200,
-				"h":300
-			}
+  		    "id": "adUnit1"
   		  }
   		],
   		"tmax": 500
@@ -3373,10 +3371,6 @@ var testFinalRequests = []string{
 
 var testStoredImpIds = []string{
 	"adUnit1", "adUnit2", "adUnit1", "some-static-imp",
-}
-
-var testStoreVideoAttr = []bool{
-	true, true, false, false,
 }
 
 var testStoredImps = []string{
