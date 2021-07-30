@@ -572,10 +572,11 @@ func getHuaweiAdsReqAppInfo(request *HuaweiAdsRequest, openRTBRequest *openrtb2.
 
 // get field clientTime, format: 2006-01-02 15:04:05.000+2000
 func getClientTime(clientTime string) (newClientTime string) {
+	var zone = DefaultTimeZone
 	t := time.Now().Local().Format(time.RFC822Z)
-	zone := t[strings.IndexAny(t, "-+"):]
-	if len(zone) != 5 {
-		zone = DefaultTimeZone
+	index := strings.IndexAny(t, "-+")
+	if index > 0 && len(t)-index == 5 {
+		zone = t[index:]
 	}
 	if clientTime == "" {
 		return time.Now().Format(TimeFormat) + zone
