@@ -42,15 +42,13 @@
       "devicetype": 4,
       "make": "huawei",
       "w": 1080,
-      "ip": "152.193.6.74",
+      "ip": "ip",
       "pxratio": 23.01,
       "geo": {
-        "country": ""
+        "country": "CHN"
       }
     },
     "user": {
-      "id": "db089de9-a62e-4861-a881-0ff15e052516",
-      "buyeruid": "v4_bidder_token",
       "ext": {
         "data": {
           "gaid": [
@@ -86,7 +84,7 @@
         "body": {
           "app": {
             "lang": "en",
-            "country": "ZA",
+            "country": "CN",
             "name": "Huawei Browser",
             "pkgname": "com.wavehk.android",
             "version": "9.1.0.301"
@@ -112,8 +110,8 @@
             "oaid": "oaid",
             "os": "android",
             "type": 4,
-            "ip": "152.193.6.74",
-            "localeCountry": "ZA",
+            "ip": "ip",
+            "localeCountry": "CN",
             "pxratio": 23.01,
             "width": 1080,
             "clientTime": "2018-11-02 16:34:07.981+1300",
@@ -122,7 +120,7 @@
             "version": "10.0.0",
             "maker": "huawei",
             "model": "COL-TEST",
-            "belongCountry": "ZA"
+            "belongCountry": "CN"
           },
           "geo": {
           },

@@ -49,7 +49,10 @@
       "pxratio": 3,
       "mccmnc": "424-3",
       "carrier": "carrier",
-      "connectiontype": 1
+      "connectiontype": 1,
+      "geo": {
+        "country": "ZAF"
+      }
     },
     "app": {
       "bundle": "org.prebid.mobile.prebidjavademo",
@@ -179,7 +182,6 @@
                   ],
                   "contentid": "58025103",
                   "creativetype": 2,
-                  "ctrlSwitchs": "001011001001010112",
                   "endtime": 1621428898335,
                   "filterList": [
                     3

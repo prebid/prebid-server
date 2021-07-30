@@ -29,6 +29,7 @@ const DefaultBidRequestArrayLength int = 1
 const DefaultCountryName = "ZA"
 const DefaultUnknownNetworkType = 0
 const TimeFormat = "2006-01-02 15:04:05.000"
+const DefaultTimeZone = "+0200"
 const DefaultModelName = "HUAWEI"
 const DefaultTrackingEndpoint = "https://events-dra.op.hicloud.com/contserver/tracker/action"
 
@@ -564,26 +565,17 @@ func getHuaweiAdsReqAppInfo(request *HuaweiAdsRequest, openRTBRequest *openrtb2.
 			app.Lang = "en"
 		}
 	}
-
-	if openRTBRequest.User != nil && openRTBRequest.User.Geo != nil && openRTBRequest.User.Geo.Country != "" {
-		app.Country = openRTBRequest.User.Geo.Country
-	} else if openRTBRequest.Device != nil && openRTBRequest.Device.Geo != nil && openRTBRequest.Device.Geo.Country != "" {
-		app.Country = openRTBRequest.Device.Geo.Country
-	} else {
-		app.Country = DefaultCountryName
-	}
-
+	app.Country = getCountryCode(openRTBRequest)
 	request.App = app
 	return nil
 }
 
 // get field clientTime, format: 2006-01-02 15:04:05.000+2000
 func getClientTime(clientTime string) (newClientTime string) {
-	zone, _ := time.Now().Local().Zone()
-	if isMatched, _ := regexp.MatchString("[+-]{1}\\d{2}", zone); isMatched {
-		zone = zone + "00"
-	} else {
-		zone = "+0200"
+	t := time.Now().Local().Format(time.RFC822Z)
+	zone := t[strings.IndexAny(t, "-+"):]
+	if len(zone) != 5 {
+		zone = DefaultTimeZone
 	}
 	if clientTime == "" {
 		return time.Now().Format(TimeFormat) + zone
@@ -614,20 +606,11 @@ func getHuaweiAdsReqDeviceInfo(request *HuaweiAdsRequest, openRTBRequest *openrt
 		device.Width = int32(openRTBRequest.Device.W)
 		device.Language = openRTBRequest.Device.Language
 		device.Pxratio = float32(openRTBRequest.Device.PxRatio)
-
-		if openRTBRequest.User != nil && openRTBRequest.User.Geo != nil && openRTBRequest.User.Geo.Country != "" {
-			device.BelongCountry = openRTBRequest.User.Geo.Country
-			device.LocaleCountry = openRTBRequest.User.Geo.Country
-		} else if openRTBRequest.Device != nil && openRTBRequest.Device.Geo != nil && openRTBRequest.Device.Geo.Country != "" {
-			device.BelongCountry = openRTBRequest.Device.Geo.Country
-			device.LocaleCountry = openRTBRequest.Device.Geo.Country
-		} else {
-			device.BelongCountry = DefaultCountryName
-			device.LocaleCountry = DefaultCountryName
-		}
+		var country = getCountryCode(openRTBRequest)
+		device.BelongCountry = country
+		device.LocaleCountry = country
 		device.Ip = openRTBRequest.Device.IP
 	}
-
 	// get oaid gaid imei in openRTBRequest.User.Ext.Data
 	if err = getDeviceID(&device, openRTBRequest); err != nil {
 		return err
@@ -635,6 +618,33 @@ func getHuaweiAdsReqDeviceInfo(request *HuaweiAdsRequest, openRTBRequest *openrt
 
 	request.Device = device
 	return nil
+}
+
+// get CountryCode ISO 3166-1 Alpha2
+func getCountryCode(openRTBRequest *openrtb2.BidRequest) string {
+	if openRTBRequest.Device != nil && openRTBRequest.Device.Geo != nil && openRTBRequest.Device.Geo.Country != "" {
+		return convertCountryCode(openRTBRequest.Device.Geo.Country)
+	} else if openRTBRequest.User != nil && openRTBRequest.User.Geo != nil && openRTBRequest.User.Geo.Country != "" {
+		return convertCountryCode(openRTBRequest.User.Geo.Country)
+	} else {
+		return DefaultCountryName
+	}
+}
+
+//ISO 3166-1 Alpha3 -> Alpha2, Some countries may use
+func convertCountryCode(country string) (out string) {
+	if country == "" {
+		return DefaultCountryName
+	}
+	var MapCountryCodeAlpha3ToAlpha2 = map[string]string{
+		"CHL": "CL", "CHN": "CN", "ARE": "AE"}
+	if MapCountryCodeAlpha3ToAlpha2[country] != "" {
+		return MapCountryCodeAlpha3ToAlpha2[country]
+	} else if len(country) >= 3 {
+		return country[0:2]
+	} else {
+		return DefaultCountryName
+	}
 }
 
 // get device id  include oaid gaid imei.
