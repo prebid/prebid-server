@@ -31,6 +31,7 @@
             }
           ]
         },
+        "bidfloor": 0.00123,
         "ext": {
           "bidder": {
             "publisherId": "1100042525",
@@ -65,6 +66,7 @@
             "rewarded": 0
           }
         },
+        "bidfloor": 0.00456,
         "ext": {
           "bidder": {
             "publisherId": "1100042526",
@@ -114,6 +116,7 @@
             {
               "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
               "tagid": "130563103",
+              "bidfloor": 0.00123,
               "banner": {
                 "h": 50,
                 "w": 320,
@@ -159,7 +162,7 @@
             "keywords": "power tools"
           },
           "ext": {
-            "client": "prebid_server_0.3"
+            "client": "prebid_server_0.4"
           }
         }
       },
@@ -208,6 +211,7 @@
             {
               "id": "postbid_iframe",
               "tagid": "130563104",
+              "bidfloor": 0.00456,
               "video": {
                 "w": 1024,
                 "h": 768,
@@ -264,7 +268,7 @@
             "keywords": "power tools"
           },
           "ext": {
-            "client": "prebid_server_0.3"
+            "client": "prebid_server_0.4"
           }
         }
       },

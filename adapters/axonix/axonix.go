@@ -4,23 +4,37 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
+	"text/template"
 
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 type adapter struct {
-	URI string
+	EndpointTemplate template.Template
 }
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	endpoint, err := template.New("endpointTemplate").Parse(config.Endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
+	}
 	bidder := &adapter{
-		URI: config.Endpoint,
+		EndpointTemplate: *endpoint,
 	}
 	return bidder, nil
+}
+
+func (a *adapter) getEndpoint(ext *openrtb_ext.ExtImpAxonix) (string, error) {
+	endpointParams := macros.EndpointTemplateParams{
+		AccountID: url.PathEscape(ext.SupplyId),
+	}
+	return macros.ResolveMacros(a.EndpointTemplate, endpointParams)
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -44,9 +58,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		return nil, errors
 	}
 
-	thisURI := a.URI
-	if len(thisURI) == 0 {
-		thisURI = "https://openrtb-us-east-1.axonix.com/supply/prebid-server/" + axonixExt.SupplyId
+	endpoint, err := a.getEndpoint(&axonixExt)
+	if err != nil {
+		errors = append(errors, err)
+		return nil, errors
 	}
 
 	requestJSON, err := json.Marshal(request)
@@ -60,7 +75,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	requestData := &adapters.RequestData{
 		Method:  "POST",
-		Uri:     thisURI,
+		Uri:     endpoint,
 		Body:    requestJSON,
 		Headers: headers,
 	}
