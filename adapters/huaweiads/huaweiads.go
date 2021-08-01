@@ -570,7 +570,7 @@ func getHuaweiAdsReqAppInfo(request *HuaweiAdsRequest, openRTBRequest *openrtb2.
 	return nil
 }
 
-// get field clientTime, format: 2006-01-02 15:04:05.000+2000
+// get field clientTime, format: 2006-01-02 15:04:05.000+0200
 func getClientTime(clientTime string) (newClientTime string) {
 	var zone = DefaultTimeZone
 	t := time.Now().Local().Format(time.RFC822Z)
@@ -1004,7 +1004,7 @@ func (a *adapter) extractAdmNative(adType int32, content *Content, bidType openr
 					imgObject.H = content.MetaData.Icon[iconIndex].Height
 					iconIndex++
 				}
-			} else if asset.Img.Type == native1.ImageAssetTypeMain {
+			} else {
 				if len(content.MetaData.ImageInfo) > imgIndex {
 					imgObject.URL = content.MetaData.ImageInfo[imgIndex].Url
 					imgObject.W = content.MetaData.ImageInfo[imgIndex].Width
@@ -1032,7 +1032,7 @@ func (a *adapter) extractAdmNative(adType int32, content *Content, bidType openr
 		nativeResult.Assets = append(nativeResult.Assets, responseAsset)
 	}
 
-	// dsp imp click tracking
+	// dsp imp click tracking + imp click tracking
 	if content.Monitor != nil {
 		for _, monitor := range content.Monitor {
 			if len(monitor.Url) == 0 {
@@ -1050,11 +1050,6 @@ func (a *adapter) extractAdmNative(adType int32, content *Content, bidType openr
 			}
 		}
 	}
-	// imp click tracking
-	impTracking, clickTracking := a.getImpClickTracking(content)
-	linkObject.ClickTrackers = append(linkObject.ClickTrackers, clickTracking)
-	nativeResult.ImpTrackers = append(nativeResult.ImpTrackers, impTracking)
-
 	nativeResult.Link = linkObject
 	nativeResult.Ver = "1.1"
 	if nativePayload.Ver != "" {
@@ -1112,7 +1107,7 @@ func (a *adapter) extractAdmPicture(content *Content) (adm string, adWidth int64
 
 	var imageTitle = ""
 	imageTitle, _ = getDecodeValue(content.MetaData.Title)
-	impTracking, clickTracking := a.getImpClickTracking(content)
+	// dspImp, Imp, dspClick, Click tracking all can be found in MonitorUrl(imp ,click)
 	dspImpTrackings, dspClickTrackings := getDspImpClickTrackings(content)
 	var dspImpTrackings2StrImg strings.Builder
 	for i := 0; i < len(dspImpTrackings); i++ {
@@ -1127,15 +1122,13 @@ func (a *adapter) extractAdmPicture(content *Content) (adm string, adWidth int64
 		"</style> " +
 		"<span class=\"title-link advertiser_label\">" + imageTitle + "</span> " +
 		"<a href='" + clickUrl + "' style=\"text-decoration:none\" " +
-		"onclick=sendGetReq('" + clickTracking + "')> " +
+		"onclick=sendGetReq()> " +
 		"<img src='" + imageInfoUrl + "' width='" + strconv.Itoa(int(adWidth)) + "' height='" + strconv.Itoa(int(adHeight)) + "'/> " +
 		"</a> " +
-		"<img height=\"1\" width=\"1\" src='" + impTracking + "' > " +
 		dspImpTrackings2StrImg.String() +
 		"<script type=\"text/javascript\">" +
 		"var dspClickTrackings = [" + dspClickTrackings + "];" +
-		"function sendGetReq(clickTracking) {" +
-		"sendOneGetReq(clickTracking);" +
+		"function sendGetReq() {" +
 		"sendSomeGetReq(dspClickTrackings)" +
 		"}" +
 		"function sendOneGetReq(url) {" +
@@ -1150,27 +1143,6 @@ func (a *adapter) extractAdmPicture(content *Content) (adm string, adWidth int64
 		"}" +
 		"</script>"
 	return adm, adWidth, adHeight, nil
-}
-
-// get impTracking, clickTracking
-// area: AP EU RUS, default AP. When other area，we can decide by the huaweiads endpoint
-func (a *adapter) getImpClickTracking(content *Content) (impTracking string, clickTracking string) {
-	var prefix = a.extraInfo.TrackingUrl + "?ch=200002"
-	var kn = "&kn="
-	var pfsa = "&pfsa="
-	if content.Paramfromserver.A != "" {
-		astr := content.Paramfromserver.A
-		index := strings.Index(astr, "||")
-		if index >= 0 {
-			kn += astr[0:index]
-			if len(astr) > index+2 {
-				pfsa += astr[index+2:]
-			}
-		}
-	}
-	impTracking = prefix + "&etype=imp" + kn + pfsa
-	clickTracking = prefix + "&etype=click" + kn + pfsa
-	return impTracking, clickTracking
 }
 
 func getDspImpClickTrackings(content *Content) (dspImpTrackings []string, dspClickTrackings string) {
@@ -1287,22 +1259,14 @@ func (a *adapter) extractAdmVideo(adType int32, content *Content, bidType openrt
 		}
 	}
 
-	var adTitle = ""
-	if content.MetaData.Title != "" {
-		decodeTitle, err := url.QueryUnescape(content.MetaData.Title)
-		if err != nil {
-			adTitle = decodeTitle
-		}
-	}
-
+	var adTitle, _ = getDecodeValue(content.MetaData.Title)
 	var adId = content.Contentid
 	var creativeId = content.Contentid
 	var duration = getDuration(content.MetaData.Duration)
-	impTracking, clickTracking := a.getImpClickTracking(content)
 	var trackingEvents strings.Builder
-	var dspImpTracking = ""
-	var dspClickTracking = ""
-	var errorTracking = ""
+	var dspImpTracking2Str = ""
+	var dspClickTracking2Str = ""
+	var errorTracking2Str = ""
 	if content.Monitor != nil {
 		for _, monitor := range content.Monitor {
 			if len(monitor.Url) == 0 {
@@ -1311,11 +1275,11 @@ func (a *adapter) extractAdmVideo(adType int32, content *Content, bidType openrt
 			var event = ""
 			switch monitor.EventType {
 			case "vastError":
-				errorTracking = getErrorTrackings(monitor.Url)
+				errorTracking2Str = getVastImpClickErrorTrackingUrls(monitor.Url, "vastError")
 			case "imp":
-				dspImpTracking = strings.Join(monitor.Url, ";")
+				dspImpTracking2Str = getVastImpClickErrorTrackingUrls(monitor.Url, "imp")
 			case "click":
-				dspClickTracking = strings.Join(monitor.Url, ";")
+				dspClickTracking2Str = getVastImpClickErrorTrackingUrls(monitor.Url, "click")
 			case "userclose":
 				event = "skip&closeLinear"
 			case "playStart":
@@ -1334,10 +1298,9 @@ func (a *adapter) extractAdmVideo(adType int32, content *Content, bidType openrt
 			}
 			if event != "" {
 				if event != "skip&closeLinear" {
-					trackingEvents.WriteString("<Tracking event=\"" + event + "\"><![CDATA[" + strings.Join(monitor.Url, ";") + "]]></Tracking>")
+					trackingEvents.WriteString(getVastEventTrackingUrls(monitor.Url, event))
 				} else {
-					trackingEvents.WriteString("<Tracking event=\"skip\"><![CDATA[" + strings.Join(monitor.Url, ";") + "]]></Tracking>")
-					trackingEvents.WriteString("<Tracking event=\"closeLinear\"><![CDATA[" + strings.Join(monitor.Url, ";") + "]]></Tracking>")
+					trackingEvents.WriteString(getVastEventTrackingUrls(monitor.Url, "skip&closeLinear"))
 				}
 			}
 		}
@@ -1348,9 +1311,7 @@ func (a *adapter) extractAdmVideo(adType int32, content *Content, bidType openrt
 		"<Ad id=\"" + adId + "\"><InLine>" +
 		"<AdSystem>HuaweiAds</AdSystem>" +
 		"<AdTitle>" + adTitle + "</AdTitle>" +
-		"<Error><![CDATA[" + errorTracking + "]]></Error>" +
-		"<Impression><![CDATA[" + impTracking + "]]></Impression>" +
-		"<Impression><![CDATA[" + dspImpTracking + "]]></Impression>" +
+		errorTracking2Str + dspImpTracking2Str +
 		"<Creatives>" +
 		"<Creative adId=\"" + adId + "\" id=\"" + creativeId + "\">" +
 		"<Linear>" +
@@ -1358,8 +1319,7 @@ func (a *adapter) extractAdmVideo(adType int32, content *Content, bidType openrt
 		"<TrackingEvents>" + trackingEvents.String() + "</TrackingEvents>" +
 		"<VideoClicks>" +
 		"<ClickThrough><![CDATA[" + clickUrl + "]]></ClickThrough>" +
-		"<ClickTracking><![CDATA[" + clickTracking + "]]></ClickTracking>" +
-		"<ClickTracking><![CDATA[" + dspClickTracking + "]]></ClickTracking>" +
+		dspClickTracking2Str +
 		"</VideoClicks>" +
 		"<MediaFiles>" +
 		"<MediaFile delivery=\"progressive\" type=\"" + mime + "\" width=\"" + strconv.Itoa(int(adWidth)) + "\" " +
@@ -1376,15 +1336,31 @@ func (a *adapter) extractAdmVideo(adType int32, content *Content, bidType openrt
 	return adm, adWidth, adHeight, nil
 }
 
-func getErrorTrackings(urls []string) (result string) {
-	result = ""
-	for i, url := range urls {
-		result = result + url + "&et=[ERRORCODE]"
-		if i != len(urls)-1 {
-			result += ";"
+func getVastImpClickErrorTrackingUrls(urls []string, eventType string) (result string) {
+	var trackingUrls strings.Builder
+	for _, url := range urls {
+		if eventType == "click" {
+			trackingUrls.WriteString("<ClickTracking><![CDATA[" + url + "]]></ClickTracking>")
+		} else if eventType == "imp" {
+			trackingUrls.WriteString("<Impression><![CDATA[" + url + "]]></Impression>")
+		} else if eventType == "vastError" {
+			trackingUrls.WriteString("<Error><![CDATA[" + url + "&et=[ERRORCODE]]]></Error>")
 		}
 	}
-	return
+	return trackingUrls.String()
+}
+
+func getVastEventTrackingUrls(urls []string, eventType string) (result string) {
+	var trackingUrls strings.Builder
+	for _, eventUrl := range urls {
+		if eventType == "skip&closeLinear" {
+			trackingUrls.WriteString("<Tracking event=\"skip\"><![CDATA[" + eventUrl + "]]>" +
+				"</Tracking><Tracking event=\"closeLinear\"><![CDATA[" + eventUrl + "]]></Tracking>")
+		} else {
+			trackingUrls.WriteString("<Tracking event=\"" + eventType + "\"><![CDATA[" + eventUrl + "]]></Tracking>")
+		}
+	}
+	return trackingUrls.String()
 }
 
 // compute HmacSha256
