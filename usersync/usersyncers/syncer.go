@@ -65,7 +65,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/ninthdecimal"
 	"github.com/prebid/prebid-server/adapters/nobid"
 	"github.com/prebid/prebid-server/adapters/onetag"
-    "github.com/prebid/prebid-server/adapters/openweb"
+	"github.com/prebid/prebid-server/adapters/openweb"
 	"github.com/prebid/prebid-server/adapters/openx"
 	"github.com/prebid/prebid-server/adapters/operaads"
 	"github.com/prebid/prebid-server/adapters/outbrain"
