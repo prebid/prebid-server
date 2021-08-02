@@ -12,7 +12,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type OpenWebAdapter struct {
+type adapter struct {
 	endpoint string
 }
 
@@ -20,11 +20,11 @@ type openwebImpExt struct {
 	OpenWeb openrtb_ext.ExtImpOpenWeb `json:"openweb"`
 }
 
-func (a *OpenWebAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
 	totalImps := len(request.Imp)
 	errors := make([]error, 0, totalImps)
-	imp2source := make(map[int][]int)
+	sourceIdToImpIds := make(map[int][]int)
 
 	for i := 0; i < totalImps; i++ {
 
@@ -35,15 +35,15 @@ func (a *OpenWebAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			continue
 		}
 
-		if _, ok := imp2source[sourceId]; !ok {
-			imp2source[sourceId] = make([]int, 0, totalImps-i)
+		if _, ok := sourceIdToImpIds[sourceId]; !ok {
+			sourceIdToImpIds[sourceId] = make([]int, 0, totalImps-i)
 		}
 
-		imp2source[sourceId] = append(imp2source[sourceId], i)
+		sourceIdToImpIds[sourceId] = append(sourceIdToImpIds[sourceId], i)
 
 	}
 
-	totalReqs := len(imp2source)
+	totalReqs := len(sourceIdToImpIds)
 	if 0 == totalReqs {
 		return nil, errors
 	}
@@ -56,7 +56,7 @@ func (a *OpenWebAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 
 	imps := request.Imp
 	request.Imp = make([]openrtb2.Imp, 0, len(imps))
-	for sourceId, impIds := range imp2source {
+	for sourceId, impIds := range sourceIdToImpIds {
 		request.Imp = request.Imp[:0]
 
 		for i := 0; i < len(impIds); i++ {
@@ -77,20 +77,21 @@ func (a *OpenWebAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 		})
 	}
 
-	if 0 == len(reqs) {
-		return nil, errors
-	}
-
 	return reqs, errors
 
 }
 
-func (a *OpenWebAdapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.RequestData, httpRes *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.RequestData, httpRes *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	if httpRes.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
 
+	if httpRes.StatusCode != http.StatusOK {
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Remote server error: %s", httpRes.Body),
+		}}
+	}
 	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(httpRes.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
@@ -101,13 +102,12 @@ func (a *OpenWebAdapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.
 	bidResponse := adapters.NewBidderResponse()
 	var errors []error
 
-	var impOK bool
 	for _, sb := range bidResp.SeatBid {
 		for i := 0; i < len(sb.Bid); i++ {
 
 			bid := sb.Bid[i]
 
-			impOK = false
+			impOK := false
 			mediaType := openrtb_ext.BidTypeBanner
 			for _, imp := range bidReq.Imp {
 				if imp.ID == bid.ImpID {
@@ -139,19 +139,6 @@ func (a *OpenWebAdapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.
 }
 
 func validateImpression(imp *openrtb2.Imp) (int, error) {
-
-	if imp.Banner == nil && imp.Video == nil {
-		return 0, &errortypes.BadInput{
-			Message: fmt.Sprintf("ignoring imp id=%s, OpenWeb supports only Video and Banner", imp.ID),
-		}
-	}
-
-	if 0 == len(imp.Ext) {
-		return 0, &errortypes.BadInput{
-			Message: fmt.Sprintf("ignoring imp id=%s, extImpBidder is empty", imp.ID),
-		}
-	}
-
 	var bidderExt adapters.ExtImpBidder
 
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
@@ -168,10 +155,9 @@ func validateImpression(imp *openrtb2.Imp) (int, error) {
 		}
 	}
 
-	// common extension for all impressions
 	var impExtBuffer []byte
 
-	impExtBuffer, err = json.Marshal(&openwebImpExt{
+	impExtBuffer, _ = json.Marshal(&openwebImpExt{
 		OpenWeb: impExt,
 	})
 
@@ -181,12 +167,12 @@ func validateImpression(imp *openrtb2.Imp) (int, error) {
 
 	imp.Ext = impExtBuffer
 
-	return impExt.SourceId, nil
+	return impExt.SourceID, nil
 }
 
 // Builder builds a new instance of the OpenWeb adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &OpenWebAdapter{
+	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}
 	return bidder, nil
