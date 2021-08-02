@@ -15,13 +15,16 @@
           "emx_digital": {
               "tagid": "107133"
           },
+          "oftmedia": {
+              "placementId": 19606578
+          },
           "openx": {
-            "unit": "541169197",
+            "unit": "544086382",
             "delDomain": "playwire-d.openx.net"
           },
           "pubmatic": {
             "publisherId": "158326",
-            "adSlot": "1957467"
+            "adSlot": "3029233"
           },
           "rhythmone": {
             "placementId": "213696",
@@ -29,15 +32,12 @@
             "path": "mvo"
           },
           "rubicon": {
-            "accountId": 15526,
-            "siteId": 335554,
-            "zoneId": 1764488
+            "accountId": 12556,
+            "siteId": 376280,
+            "zoneId": 2061954
           },
           "sonobi": {
-              "TagID": "12eb86143abb80d6a9c6"
-          },
-          "oftmedia": {
-              "placementId": 19606578
+              "TagID": "5200294cfc91869f267d"
           },
           "triplelift": {
             "inventoryCode": "pwm_android_hdx_pb"

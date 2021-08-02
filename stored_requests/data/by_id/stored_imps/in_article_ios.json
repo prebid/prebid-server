@@ -19,8 +19,11 @@
           "emx_digital": {
               "tagid": "105251"
           },
+          "oftmedia": {
+              "placementId": 19606578
+          },
           "openx": {
-            "unit": "541169197",
+            "unit": "544086381",
             "delDomain": "playwire-d.openx.net"
           },
           "pubmatic": {
@@ -33,15 +36,15 @@
             "path": "mvo"
           },
           "rubicon": {
-            "accountId": 15526,
-            "siteId": 335554,
-            "zoneId": 1764488
+            "accountId": 12556,
+            "siteId": 376280,
+            "zoneId": 2061954
           },
           "sonobi": {
               "TagID": "12eb86143abb80d6a9c6"
           },
-          "oftmedia": {
-              "placementId": 19606578
+          "triplelift": {
+            "inventoryCode": "pwm_ios_320x50_300x250_pb"
           }
       }
 }
