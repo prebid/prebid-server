@@ -475,7 +475,7 @@ func (e *exchange) getAllBids(
 
 			//put stored req data back to bid.ext, map by bid.imp_id
 			if len(impExtInfoMap) != 0 {
-				storedImpErr := insertStoredImpData(bidderRequest.BidRequest.Imp, impExtInfoMap, bids)
+				storedImpErr := insertStoredImpData(impExtInfoMap, bids)
 				if storedImpErr != nil {
 					err = append(err, storedImpErr)
 				}
@@ -519,19 +519,8 @@ func (e *exchange) getAllBids(
 	return adapterBids, adapterExtra, bidsFound
 }
 
-func insertStoredImpData(imps []openrtb2.Imp, impExtInfoMap map[string]ImpExtInfo, bids *pbsOrtbSeatBid) error {
+func insertStoredImpData(impExtInfoMap map[string]ImpExtInfo, bids *pbsOrtbSeatBid) error {
 	for _, bid := range bids.bids {
-		//find impression
-		var impression *openrtb2.Imp
-		for _, imp := range imps {
-			if imp.ID == bid.bid.ImpID {
-				impression = &imp
-				break
-			}
-		}
-		if impression == nil {
-			continue
-		}
 
 		if val, ok := impExtInfoMap[bid.bid.ImpID]; ok {
 
@@ -544,8 +533,7 @@ func insertStoredImpData(imps []openrtb2.Imp, impExtInfoMap map[string]ImpExtInf
 				}
 			}
 
-			//determine if stored impression has video data
-			if impression.Video != nil && val.EchoVideoAttrs {
+			if val.EchoVideoAttrs {
 				videoData, _, _, err := jsonparser.Get(val.StoredImp, "video")
 				if err != nil {
 					return err

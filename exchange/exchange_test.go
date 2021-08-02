@@ -3462,12 +3462,7 @@ func TestInsertStoredImpData(t *testing.T) {
 	}
 	bids := &pbsOrtbSeatBid{bids: innerBidsApn1}
 
-	impVideo := openrtb2.Video{W: 1}
-	imp1_1 := openrtb2.Imp{ID: "imp_idApn1_1", Video: &impVideo}
-	imp1_3 := openrtb2.Imp{ID: "imp_idApn1_3", Video: &impVideo}
-	imps := []openrtb2.Imp{imp1_1, imp1_3}
-
-	insertStoredImpData(imps, impExtInfoMap, bids)
+	insertStoredImpData(impExtInfoMap, bids)
 
 	expectedBidExt1_1 := json.RawMessage(`{"prebid":{"video":{"mimes":["video/mp4"]}},"storedrequestattributes":{"h":480,"mimes":["video/mp4"]}}`)
 	expectedBidExt1_3 := json.RawMessage(nil)
