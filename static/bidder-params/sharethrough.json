@@ -26,6 +26,16 @@
     "bidfloor": {
       "type": "number",
       "description": "The floor price, or minimum amount, a publisher will accept for an impression, given in CPM in USD"
+    },
+    "data": {
+      "type": "object",
+      "description": "Ad-specific first party data",
+      "properties": {
+        "pbadslot": {
+          "type": "string",
+          "description": "Prebid Ad Slot, see: https://docs.prebid.org/features/pbAdSlot.html"
+        }
+      }
     }
   },
   "required": ["pkey"]

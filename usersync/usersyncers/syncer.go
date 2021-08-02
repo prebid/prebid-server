@@ -1,13 +1,13 @@
 package usersyncers
 
 import (
-	"github.com/prebid/prebid-server/adapters/openweb"
 	"strings"
 	"text/template"
 
 	"github.com/golang/glog"
 	ttx "github.com/prebid/prebid-server/adapters/33across"
 	"github.com/prebid/prebid-server/adapters/acuityads"
+	"github.com/prebid/prebid-server/adapters/adagio"
 	"github.com/prebid/prebid-server/adapters/adf"
 	"github.com/prebid/prebid-server/adapters/adform"
 	"github.com/prebid/prebid-server/adapters/adkernel"
@@ -65,7 +65,9 @@ import (
 	"github.com/prebid/prebid-server/adapters/ninthdecimal"
 	"github.com/prebid/prebid-server/adapters/nobid"
 	"github.com/prebid/prebid-server/adapters/onetag"
+  "github.com/prebid/prebid-server/adapters/openweb"
 	"github.com/prebid/prebid-server/adapters/openx"
+	"github.com/prebid/prebid-server/adapters/operaads"
 	"github.com/prebid/prebid-server/adapters/outbrain"
 	"github.com/prebid/prebid-server/adapters/pubmatic"
 	"github.com/prebid/prebid-server/adapters/pulsepoint"
@@ -111,6 +113,7 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 
 	insertIntoMap(cfg, syncers, openrtb_ext.Bidder33Across, ttx.New33AcrossSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderAcuityAds, acuityads.NewAcuityAdsSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderAdagio, adagio.NewAdagioSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderAdf, adf.NewAdfSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderAdform, adform.NewAdformSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderAdkernel, adkernel.NewAdkernelSyncer)
@@ -171,6 +174,7 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderOutbrain, outbrain.NewOutbrainSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderOpenWeb, openweb.NewOpenWebSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderOpenx, openx.NewOpenxSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderOperaads, operaads.NewOperaadsSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderPubmatic, pubmatic.NewPubmaticSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderPulsepoint, pulsepoint.NewPulsepointSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderRhythmone, rhythmone.NewRhythmoneSyncer)

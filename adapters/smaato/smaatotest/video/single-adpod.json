@@ -24,6 +24,7 @@
                         7
                     ]
                 },
+                "bidfloor": 0.00123,
                 "ext": {
                     "bidder": {
                         "publisherId": "1100042525",
@@ -53,6 +54,7 @@
                         7
                     ]
                 },
+                "bidfloor": 0.00123,
                 "ext": {
                     "bidder": {
                         "publisherId": "1100042525",
@@ -101,6 +103,7 @@
                         {
                             "id": "1_1",
                             "tagid": "400000001",
+                            "bidfloor": 0.00123,
                             "video": {
                                 "w": 1024,
                                 "h": 768,
@@ -129,6 +132,7 @@
                         {
                             "id": "1_2",
                             "tagid": "400000001",
+                            "bidfloor": 0.00123,
                             "video": {
                                 "w": 1024,
                                 "h": 768,
@@ -176,7 +180,7 @@
                         }
                     },
                     "ext": {
-                        "client": "prebid_server_0.3"
+                        "client": "prebid_server_0.4"
                     }
                 }
             },

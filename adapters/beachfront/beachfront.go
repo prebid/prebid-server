@@ -449,8 +449,9 @@ func getVideoRequests(request *openrtb2.BidRequest) ([]beachfrontVideoRequest, [
 				var chunks = strings.Split(strings.Trim(bfReqs[i].Request.App.Bundle, "_"), ".")
 
 				if len(chunks) > 1 {
-					bfReqs[i].Request.App.Domain =
-						fmt.Sprintf("%s.%s", chunks[len(chunks)-(len(chunks)-1)], chunks[0])
+					appCopy := *bfReqs[i].Request.App
+					appCopy.Domain = fmt.Sprintf("%s.%s", chunks[len(chunks)-(len(chunks)-1)], chunks[0])
+					bfReqs[i].Request.App = &appCopy
 				}
 			}
 		}
