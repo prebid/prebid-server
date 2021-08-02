@@ -9,8 +9,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderHuaweiAds, config.Adapter{
-		Endpoint:         "https://acd.op.hicloud.com/ppsadx/getResult",
-		ExtraAdapterInfo: "{\"trackingUrl\":\"https://events-dra.op.hicloud.com/contserver/tracker/action\"}"})
+		Endpoint: "https://acd.op.hicloud.com/ppsadx/getResult"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)

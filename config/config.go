@@ -910,7 +910,6 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.grid.endpoint", "https://grid.bidswitch.net/sp_bid?sp=prebid")
 	v.SetDefault("adapters.gumgum.endpoint", "https://g2.gumgum.com/providers/prbds2s/bid")
 	v.SetDefault("adapters.huaweiads.endpoint", "https://acd.op.hicloud.com/ppsadx/getResult")
-	v.SetDefault("adapters.huaweiads.extra_info", "{\"trackingUrl\":\"https://events-dra.op.hicloud.com/contserver/tracker/action\"}")
 	v.SetDefault("adapters.huaweiads.disabled", true)
 	v.SetDefault("adapters.improvedigital.endpoint", "http://ad.360yield.com/pbs")
 	v.SetDefault("adapters.inmobi.endpoint", "https://api.w.inmobi.com/showad/openrtb/bidder/prebid")
