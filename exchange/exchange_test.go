@@ -149,7 +149,7 @@ func TestCharacterEscape(t *testing.T) {
 	var errList []error
 
 	// 	4) Build bid response
-	bidResp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, adapterExtra, nil, nil, true, errList)
+	bidResp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, adapterExtra, nil, nil, true, nil, errList)
 
 	// 	5) Assert we have no errors and one '&' character as we are supposed to
 	if err != nil {
@@ -1307,7 +1307,7 @@ func TestGetBidCacheInfoEndToEnd(t *testing.T) {
 	var errList []error
 
 	// 	4) Build bid response
-	bid_resp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, adapterExtra, auc, nil, true, errList)
+	bid_resp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, adapterExtra, auc, nil, true, nil, errList)
 
 	// 	5) Assert we have no errors and the bid response we expected
 	assert.NoError(t, err, "[TestGetBidCacheInfo] buildBidResponse() threw an error")
@@ -1400,7 +1400,7 @@ func TestBidReturnsCreative(t *testing.T) {
 
 	//Run tests
 	for _, test := range testCases {
-		resultingBids, resultingErrs := e.makeBid(sampleBids, sampleAuction, test.inReturnCreative)
+		resultingBids, resultingErrs := e.makeBid(sampleBids, sampleAuction, test.inReturnCreative, nil)
 
 		assert.Equal(t, 0, len(resultingErrs), "%s. Test should not return errors \n", test.description)
 		assert.Equal(t, test.expectedCreativeMarkup, resultingBids[0].AdM, "%s. Ad markup string doesn't match expected \n", test.description)
@@ -1685,7 +1685,7 @@ func TestBidResponseCurrency(t *testing.T) {
 	}
 	// Run tests
 	for i := range testCases {
-		actualBidResp, err := e.buildBidResponse(context.Background(), liveAdapters, testCases[i].adapterBids, bidRequest, adapterExtra, nil, bidResponseExt, true, errList)
+		actualBidResp, err := e.buildBidResponse(context.Background(), liveAdapters, testCases[i].adapterBids, bidRequest, adapterExtra, nil, bidResponseExt, true, nil, errList)
 		assert.NoError(t, err, fmt.Sprintf("[TEST_FAILED] e.buildBidResponse resturns error in test: %s Error message: %s \n", testCases[i].description, err))
 		assert.Equalf(t, testCases[i].expectedBidResponse, actualBidResp, fmt.Sprintf("[TEST_FAILED] Objects must be equal for test: %s \n Expected: >>%s<< \n Actual: >>%s<< ", testCases[i].description, testCases[i].expectedBidResponse.Ext, actualBidResp.Ext))
 	}
@@ -3443,34 +3443,70 @@ func TestUpdateHbPbCatDur(t *testing.T) {
 	}
 }
 
-func TestInsertStoredImpData(t *testing.T) {
-	impExtInfoMap := make(map[string]ImpExtInfo)
-	impExtInfoMap["imp_idApn1_1"] = ImpExtInfo{true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`)}
-	impExtInfoMap["imp_idApn1_3"] = ImpExtInfo{false, []byte(`{"video":{"h":100}}`)}
+func TestMakeBidExtJSON(t *testing.T) {
 
-	cats1 := []string{"IAB1-3"}
-	bidApn1_1 := openrtb2.Bid{ID: "bid_idApn1_1", ImpID: "imp_idApn1_1", Price: 10.0000, Cat: cats1, W: 1, H: 1, Ext: json.RawMessage(`{"prebid": {"video":{"mimes":["video/mp4"]}}}`)}
-	bidApn1_2 := openrtb2.Bid{ID: "bid_idApn1_2", ImpID: "imp_idApn1_2", Price: 10.0000, Cat: cats1, W: 1, H: 1, Ext: nil}
-	bidApn1_3 := openrtb2.Bid{ID: "bid_idApn1_3", ImpID: "imp_idApn1_3", Price: 10.0000, Cat: cats1, W: 1, H: 1, Ext: nil}
-	bid1_Apn1_1 := pbsOrtbBid{&bidApn1_1, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, nil, 0, false, ""}
-	bid1_Apn1_2 := pbsOrtbBid{&bidApn1_2, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, nil, 0, false, ""}
-	bid1_Apn1_3 := pbsOrtbBid{&bidApn1_3, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, nil, 0, false, ""}
-	innerBidsApn1 := []*pbsOrtbBid{
-		&bid1_Apn1_1,
-		&bid1_Apn1_2,
-		&bid1_Apn1_3,
+	type aTest struct {
+		description        string
+		ext                json.RawMessage
+		extBidPrebid       openrtb_ext.ExtBidPrebid
+		impExtInfo         ImpExtInfo
+		expectedBidExt     string
+		expectedErrMessage string
 	}
-	bids := &pbsOrtbSeatBid{bids: innerBidsApn1}
 
-	insertStoredImpData(impExtInfoMap, bids)
+	testCases := []aTest{
+		{
+			description:        "Valid extension, non empty extBidPrebid and valid imp ext info",
+			ext:                json.RawMessage(`{"video":{"h":100}}`),
+			extBidPrebid:       openrtb_ext.ExtBidPrebid{Type: openrtb_ext.BidType("video")},
+			impExtInfo:         ImpExtInfo{true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`)},
+			expectedBidExt:     `{"prebid":{"type":"video"},"storedrequestattributes":{"h":480,"mimes":["video/mp4"]},"video":{"h":100}}`,
+			expectedErrMessage: "",
+		},
+		{
+			description:        "Valid extension, empty extBidPrebid and valid imp ext info",
+			ext:                json.RawMessage(`{"video":{"h":100}}`),
+			extBidPrebid:       openrtb_ext.ExtBidPrebid{},
+			impExtInfo:         ImpExtInfo{true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`)},
+			expectedBidExt:     `{"prebid":{"type":""},"storedrequestattributes":{"h":480,"mimes":["video/mp4"]},"video":{"h":100}}`,
+			expectedErrMessage: "",
+		},
+		{
+			description:        "Valid extension, non empty extBidPrebid and empty imp ext info",
+			ext:                json.RawMessage(`{"video":{"h":100}}`),
+			extBidPrebid:       openrtb_ext.ExtBidPrebid{Type: openrtb_ext.BidType("video")},
+			impExtInfo:         ImpExtInfo{},
+			expectedBidExt:     `{"prebid":{"type":"video"},"video":{"h":100}}`,
+			expectedErrMessage: "",
+		},
+		{
+			description:        "Invalid extension, valid extBidPrebid and valid imp ext info",
+			ext:                json.RawMessage(`{invalid json}`),
+			extBidPrebid:       openrtb_ext.ExtBidPrebid{Type: openrtb_ext.BidType("video")},
+			impExtInfo:         ImpExtInfo{true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`)},
+			expectedBidExt:     ``,
+			expectedErrMessage: "invalid character",
+		},
+		{
+			description:        "Valid extension, empty extBidPrebid and invalid imp ext info",
+			ext:                json.RawMessage(`{"video":{"h":100}}`),
+			extBidPrebid:       openrtb_ext.ExtBidPrebid{},
+			impExtInfo:         ImpExtInfo{true, []byte(`{"video":{!}}`)},
+			expectedBidExt:     ``,
+			expectedErrMessage: "invalid character",
+		},
+	}
 
-	expectedBidExt1_1 := json.RawMessage(`{"prebid":{"video":{"mimes":["video/mp4"]}},"storedrequestattributes":{"h":480,"mimes":["video/mp4"]}}`)
-	expectedBidExt1_3 := json.RawMessage(nil)
+	for _, test := range testCases {
+		result, err := makeBidExtJSON(test.ext, &test.extBidPrebid, test.impExtInfo)
 
-	assert.Len(t, bids.bids, 3, "Incorrect amount of returned bids")
-	assert.Equal(t, bids.bids[0].bid.Ext, expectedBidExt1_1, "Incorrect bid bid_idApn1_1 extension")
-	assert.Nil(t, bids.bids[1].bid.Ext, "Incorrect bid bid_idApn1_2 extension")
-	assert.Equal(t, bids.bids[2].bid.Ext, expectedBidExt1_3, "Incorrect bid bid_idApn1_3 extension")
+		if test.expectedErrMessage == "" {
+			assert.JSONEq(t, test.expectedBidExt, string(result), "Incorrect result")
+			assert.NoError(t, err, "Error should not be returned")
+		} else {
+			assert.Contains(t, err.Error(), test.expectedErrMessage, "incorrect error message")
+		}
+	}
 }
 
 type exchangeSpec struct {
