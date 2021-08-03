@@ -335,7 +335,10 @@ func applyBidderInfoConfigOverrides(bidderInfos config.BidderInfos, adaptersCfg 
 		if adapterCfg, exists := adaptersCfg[bidderName]; exists {
 			bidderInfo.Syncer = adapterCfg.Syncer.Override(bidderInfo.Syncer)
 
-			// comptability with legacy settings (if possible unambiguously)
+			// validate and try to apply the legacy usersync_url configuration in attempt to provide
+			// an easier upgrade path. be warned, this will break if the bidder adds a second syncer
+			// type and will eventually be removed after we've given hosts enough time to upgrade to
+			// the new config.
 			if adapterCfg.UserSyncURL != "" {
 				if bidderInfo.Syncer == nil {
 					return fmt.Errorf("failed to apply legacy usersync_url setting for bidder %s, bidder does not define a user sync", bidderName)
@@ -355,9 +358,14 @@ func applyBidderInfoConfigOverrides(bidderInfos config.BidderInfos, adaptersCfg 
 					return fmt.Errorf("failed to apply legacy usersync_url setting for bidder %s, bidder does not define user sync endpoints", bidderName)
 				}
 
+				// if the bidder defines both an iframe and redirect endpoint, we can't be sure which config value to
+				// override, and  it wouldn't be both. this is a fatal configuration error.
 				if endpointsCount > 1 {
 					return fmt.Errorf("failed to apply legacy usersync_url setting for bidder %s, bidder defines multiple user sync endpoints", bidderName)
 				}
+
+				// provide a warning that this compatibility layer is temporary
+				glog.Warningf("legacy usersync_url setting for bidder %s will be removed in a future version of Prebid Server. please update to the latest user sync config values", bidderName)
 			}
 
 			bidderInfos[bidderName] = bidderInfo

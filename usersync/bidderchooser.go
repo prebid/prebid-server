@@ -24,6 +24,10 @@ func (c standardBidderChooser) choose(requested, available []string, cooperative
 }
 
 func (c standardBidderChooser) chooseCooperative(requested, available []string, priorityGroups [][]string) []string {
+	// allocate enough memory for the slice to try to avoid re-allocation. the 50% overhead is a guess
+	// at a satisfactory value. since all available bidders are included in the slice, along with
+	// requested and prioritized bidders, expect there to be be many duplicates. the duplicate are
+	// resolved in the upstream chooser algorithm.
 	biddersCapacity := int(float64(len(available)) * 1.5)
 	bidders := make([]string, 0, biddersCapacity)
 
