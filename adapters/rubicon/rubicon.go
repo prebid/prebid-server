@@ -688,10 +688,10 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 	requestImpCopy := request.Imp
 
 	rubiconRequest := *request
-	for _, thisImp := range requestImpCopy {
+	for _, imp := range requestImpCopy {
 
 		var bidderExt adapters.ExtImpBidder
-		if err = json.Unmarshal(thisImp.Ext, &bidderExt); err != nil {
+		if err = json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			errs = append(errs, &errortypes.BadInput{
 				Message: err.Error(),
 			})
@@ -706,7 +706,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			continue
 		}
 
-		target, err := updateImpRpTargetWithFpdAttributes(rubiconExt, thisImp, request.Site, request.App)
+		target, err := updateImpRpTargetWithFpdAttributes(rubiconExt, imp, request.Site, request.App)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -719,29 +719,28 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 				Track:  rubiconImpExtRPTrack{Mint: "", MintVersion: ""},
 			},
 		}
-		thisImp.Ext, err = json.Marshal(&impExt)
+		imp.Ext, err = json.Marshal(&impExt)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		resolvedBidFloor, err := resolveBidFloor(thisImp.BidFloor, thisImp.BidFloorCur, reqInfo)
+		resolvedBidFloor, err := resolveBidFloor(imp.BidFloor, imp.BidFloorCur, reqInfo)
 		if err != nil {
 			errs = append(errs, &errortypes.BadInput{
 				Message: fmt.Sprintf("Unable to convert provided bid floor currency from %s to USD",
-					thisImp.BidFloorCur),
+					imp.BidFloorCur),
 			})
 			continue
 		}
 
 		if resolvedBidFloor > 0 {
-			thisImp.BidFloorCur = "USD"
-			thisImp.BidFloor = resolvedBidFloor
+			imp.BidFloorCur = "USD"
+			imp.BidFloor = resolvedBidFloor
 		}
 
 		if request.User != nil {
 			userCopy := *request.User
-			//target, err := updateExtWithIabAttribute(rubiconExt.Visitor, userCopy.Data, []int{4})
 			target, err := updateUserRpTargetWithFpdAttributes(rubiconExt.Visitor, userCopy)
 			if err != nil {
 				errs = append(errs, err)
@@ -797,13 +796,13 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			rubiconRequest.Device = &deviceCopy
 		}
 
-		isVideo := isVideo(thisImp)
+		isVideo := isVideo(imp)
 		if isVideo {
-			videoCopy := *thisImp.Video
+			videoCopy := *imp.Video
 
 			videoSizeId := rubiconExt.Video.VideoSizeID
 			if videoSizeId == 0 {
-				resolvedSizeId, err := resolveVideoSizeId(thisImp.Video.Placement, thisImp.Instl, thisImp.ID)
+				resolvedSizeId, err := resolveVideoSizeId(imp.Video.Placement, imp.Instl, imp.ID)
 				if err != nil {
 					errs = append(errs, err)
 					continue
@@ -818,23 +817,23 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			}
 			videoExt := rubiconVideoExt{Skip: rubiconExt.Video.Skip, SkipDelay: rubiconExt.Video.SkipDelay, VideoType: videoType, RP: rubiconVideoExtRP{SizeID: videoSizeId}}
 			videoCopy.Ext, err = json.Marshal(&videoExt)
-			thisImp.Video = &videoCopy
-			thisImp.Banner = nil
+			imp.Video = &videoCopy
+			imp.Banner = nil
 		} else {
-			primarySizeID, altSizeIDs, err := parseRubiconSizes(thisImp.Banner.Format)
+			primarySizeID, altSizeIDs, err := parseRubiconSizes(imp.Banner.Format)
 			if err != nil {
 				errs = append(errs, err)
 				continue
 			}
 			bannerExt := rubiconBannerExt{RP: rubiconBannerExtRP{SizeID: primarySizeID, AltSizeIDs: altSizeIDs, MIME: "text/html"}}
-			bannerCopy := *thisImp.Banner
+			bannerCopy := *imp.Banner
 			bannerCopy.Ext, err = json.Marshal(&bannerExt)
 			if err != nil {
 				errs = append(errs, err)
 				continue
 			}
-			thisImp.Banner = &bannerCopy
-			thisImp.Video = nil
+			imp.Banner = &bannerCopy
+			imp.Video = nil
 		}
 
 		pubExt := rubiconPubExt{RP: rubiconPubExtRP{AccountID: rubiconExt.AccountId}}
@@ -875,7 +874,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			}
 		}
 
-		rubiconRequest.Imp = []openrtb2.Imp{thisImp}
+		rubiconRequest.Imp = []openrtb2.Imp{imp}
 		rubiconRequest.Cur = nil
 		rubiconRequest.Ext = nil
 
@@ -971,21 +970,6 @@ func updateImpRpTargetWithFpdAttributes(extImp openrtb_ext.ExtImpRubicon, imp op
 	return target, nil
 }
 
-func updateUserRpTargetWithFpdAttributes(visitor json.RawMessage, user openrtb2.User) (json.RawMessage, error) {
-	existingTarget, _, _, _ := jsonparser.Get(user.Ext, "rp", "target")
-
-	target := populateFirstPartyDataAttributes(visitor, existingTarget)
-
-	userExtData, _, _, _ := jsonparser.Get(user.Ext, "data")
-	target = populateFirstPartyDataAttributes(userExtData, target)
-
-	target, err := updateExtWithIabAttribute(target, user.Data, []int{4})
-	if err != nil {
-		return nil, &errortypes.BadInput{Message: err.Error()}
-	}
-	return target, nil
-}
-
 func addStringAttribute(attribute string, target json.RawMessage, attributeName string) json.RawMessage {
 	targetAsMap := messageToMap(target)
 	targetAsMap[attributeName] = [1]string{attribute}
@@ -1000,6 +984,21 @@ func addStringArrayAttribute(attribute []string, target json.RawMessage, attribu
 
 	updatedTarget, _ := json.Marshal(targetAsMap)
 	return updatedTarget
+}
+
+func updateUserRpTargetWithFpdAttributes(visitor json.RawMessage, user openrtb2.User) (json.RawMessage, error) {
+	existingTarget, _, _, _ := jsonparser.Get(user.Ext, "rp", "target")
+
+	target := populateFirstPartyDataAttributes(visitor, existingTarget)
+
+	userExtData, _, _, _ := jsonparser.Get(user.Ext, "data")
+	target = populateFirstPartyDataAttributes(userExtData, target)
+
+	target, err := updateExtWithIabAttribute(target, user.Data, []int{4})
+	if err != nil {
+		return nil, &errortypes.BadInput{Message: err.Error()}
+	}
+	return target, nil
 }
 
 func updateExtWithIabAttribute(target json.RawMessage, data []openrtb2.Data, segTaxes []int) (json.RawMessage, error) {
@@ -1030,21 +1029,21 @@ func populateFirstPartyDataAttributes(source json.RawMessage, target json.RawMes
 	sourceAsMap := messageToMap(source)
 
 	for key, val := range sourceAsMap {
-		switch v := val.(type) {
+		switch typedValue := val.(type) {
 		case string:
-			targetAsMap[key] = [1]string{v}
+			targetAsMap[key] = [1]string{typedValue}
 		case float64:
-			if v == float64(int(v)) {
-				targetAsMap[key] = [1]string{strconv.Itoa(int(v))}
+			if typedValue == float64(int(typedValue)) {
+				targetAsMap[key] = [1]string{strconv.Itoa(int(typedValue))}
 			}
 		case bool:
-			targetAsMap[key] = [1]string{strconv.FormatBool(v)}
+			targetAsMap[key] = [1]string{strconv.FormatBool(typedValue)}
 		case []interface{}:
-			if isStringArray(v) {
-				targetAsMap[key] = v
+			if isStringArray(typedValue) {
+				targetAsMap[key] = typedValue
 			}
-			if isBoolArray(v) {
-				targetAsMap[key] = convertToStringArray(v)
+			if isBoolArray(typedValue) {
+				targetAsMap[key] = convertToStringArray(typedValue)
 			}
 		}
 	}
