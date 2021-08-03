@@ -146,7 +146,7 @@
           "body": {
             "slots": [
               {
-                "id": "test-slot-id-1",
+                "arbitrageid": "test-slot-id-1",
                 "impid": "test-imp-id-1",
                 "zoneid": 123456,
                 "networkid": 78910,
@@ -154,11 +154,11 @@
                 "currency": "USD",
                 "width": 300,
                 "height": 250,
-                "creativeid": "creative-123",
+                "creativecode": "creative-123",
                 "creative": "<iframe id='789abc' name='789abc' src='http://creative-url.criteo.com'></iframe>"
               },
               {
-                "id": "test-slot-id-2",
+                "arbitrageid": "test-slot-id-2",
                 "impid": "test-imp-id-2",
                 "zoneid": 7891011,
                 "networkid": 78910,
@@ -166,11 +166,11 @@
                 "currency": "USD",
                 "width": 320,
                 "height": 50,
-                "creativeid": "creative-123",
+                "creativecode": "creative-123",
                 "creative": "<iframe id='789abc' name='789abc' src='http://creative-url.criteo.com'></iframe>"
               },
               {
-                "id": "test-slot-id-3",
+                "arbitrageid": "test-slot-id-3",
                 "impid": "test-imp-id-3",
                 "zoneid": 121314,
                 "networkid": 78910,
@@ -178,7 +178,7 @@
                 "currency": "USD",
                 "width": 300,
                 "height": 600,
-                "creativeid": "creative-123",
+                "creativecode": "creative-123",
                 "creative": "<iframe id='789abc' name='789abc' src='http://creative-url.criteo.com'></iframe>"
               }
             ]
@@ -230,4 +230,3 @@
       }
     ]
   }
-  

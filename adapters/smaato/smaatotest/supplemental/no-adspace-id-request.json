@@ -2,9 +2,18 @@
   "mockBidRequest": {
     "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
     "site": {
-      "page": "prebid.org",
       "publisher": {
-        "id": "1"
+        "id": "1100042525"
+      },
+      "page": "http://localhost:3000/server.html?pbjs_debug=true&endpoint=http://localhost:3000/bidder",
+      "ext": {
+        "data": {
+          "keywords": "power tools",
+          "search": "drill",
+          "content": {
+            "userrating": 4
+          }
+        }
       }
     },
     "imp": [
@@ -24,8 +33,7 @@
         },
         "ext": {
           "bidder": {
-            "publisherId": "1100042525",
-            "adspaceId": "130563103"
+            "publisherId": "1100042525"
           }
         }
       }
@@ -37,17 +45,16 @@
       "dnt": 0
     },
     "user": {
-      "gender": "M",
       "ext": {
+        "consent": "gdprConsentString",
         "data": {
-          "keywords":"a,b",
+          "keywords": "a,b",
           "gender": "M",
-          "yob": "",
+          "yob": 1984,
           "geo": {
             "country": "ca"
           }
-        },
-        "consent":"yes"
+        }
       }
     },
     "regs": {
@@ -60,7 +67,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "json: cannot unmarshal string into Go struct field userExtData.data.yob of type int64",
+      "value": "Missing adspaceId parameter.",
       "comparison": "literal"
     }
   ]

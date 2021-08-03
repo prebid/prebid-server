@@ -3,9 +3,7 @@
     "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
     "site": {
       "page": "prebid.org",
-      "publisher": {
-        "id": "1"
-      }
+      "ext": ""
     },
     "imp": [
       {
@@ -15,10 +13,6 @@
             {
               "w": 320,
               "h": 50
-            },
-            {
-              "w": 320,
-              "h": 250
             }
           ]
         },
@@ -29,28 +23,11 @@
           }
         }
       }
-    ],
-    "device": {
-      "ua": "test-user-agent",
-      "ip": "123.123.123.123",
-      "language": "en",
-      "dnt": 0
-    },
-    "user": {
-      "gender": "M",
-      "ext": 99
-    },
-    "regs": {
-      "coppa": 1,
-      "ext": {
-        "gdpr": 1,
-        "us_privacy": "uspConsentString"
-      }
-    }
+    ]
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "json: cannot unmarshal number into Go value of type map[string]json.RawMessage",
+      "value": "Invalid site.ext.",
       "comparison": "literal"
     }
   ]
