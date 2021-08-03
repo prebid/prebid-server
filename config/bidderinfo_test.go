@@ -232,6 +232,12 @@ func TestSyncerOverride(t *testing.T) {
 			givenOverride: &Syncer{SupportCORS: &falseValue},
 			expected:      &Syncer{SupportCORS: &falseValue},
 		},
+		{
+			description:   "Override Partial - Other Fields Untouched",
+			givenOriginal: &Syncer{Key: "originalKey", Default: "originalDefault"},
+			givenOverride: &Syncer{Default: "overrideDefault"},
+			expected:      &Syncer{Key: "originalKey", Default: "overrideDefault"},
+		},
 	}
 
 	for _, test := range testCases {
