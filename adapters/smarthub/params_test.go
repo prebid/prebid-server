@@ -8,7 +8,7 @@ import (
 )
 
 var validParams = []string{
-	`{"host":"smarthub.test", "seat":"9Q20EdGxzgWdfPYShScl", "token":"eKmw6alpP3zWQhRCe3flOpz0wpuwRFjW"}`,
+	`{"partnerName":"partnertest", "seat":"9Q20EdGxzgWdfPYShScl", "token":"eKmw6alpP3zWQhRCe3flOpz0wpuwRFjW"}`,
 }
 
 func TestValidParams(t *testing.T) {
@@ -32,17 +32,16 @@ var invalidParams = []string{
 	`[]`,
 	`{}`,
 	`{"anyparam": "anyvalue"}`,
-	`{"host":"smarthub.test"}`,
+	`{"partnerName":"partnertest"}`,
 	`{"seat":"9Q20EdGxzgWdfPYShScl"}`,
 	`{"token":"Y9Evrh40ejsrCR4EtidUt1cSxhJsz8X1"}`,
 	`{"seat":"9Q20EdGxzgWdfPYShScl", "token":"alNYtemWggraDVbhJrsOs9pXc3Eld32E"}`,
-	`{"host":"smarthub.test", "token":"LNywdP2ebX5iETF8gvBeEoB6Cam64eeq"}`,
-	`{"host":"smarthub.test", "seat":"9Q20EdGxzgWdfPYShScl"}`,
-	`{"host":"", "seat":"", "token":""}`,
-	`{"host":"", "seat":"9Q20EdGxzgWdfPYShScl", "token":"alNYtemWggraDVbhJrsOs9pXc3Eld32E"}`,
-	`{"host":"123", "seat":"9Q20EdGxzgWdfPYShScl", "token":"alNYtemWggraDVbhJrsOs9pXc3Eld32E"}`,
-	`{"host":"smarthub.test", "seat":"9Q20EdGxzgWdfPYShScl", "token":""}`,
-	`{"host":"smarthub.test", "seat":"", "token":"alNYtemWggraDVbhJrsOs9pXc3Eld32E"}`,
+	`{"partnerName":"partnertest", "token":"LNywdP2ebX5iETF8gvBeEoB6Cam64eeq"}`,
+	`{"partnerName":"partnertest", "seat":"9Q20EdGxzgWdfPYShScl"}`,
+	`{"partnerName":"", "seat":"", "token":""}`,
+	`{"partnerName":"", "seat":"9Q20EdGxzgWdfPYShScl", "token":"alNYtemWggraDVbhJrsOs9pXc3Eld32E"}`,
+	`{"partnerName":"partnertest", "seat":"9Q20EdGxzgWdfPYShScl", "token":""}`,
+	`{"partnerName":"partnertest", "seat":"", "token":"alNYtemWggraDVbhJrsOs9pXc3Eld32E"}`,
 }
 
 func TestInvalidParams(t *testing.T) {

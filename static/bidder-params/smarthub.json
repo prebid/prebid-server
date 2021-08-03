@@ -4,10 +4,10 @@
   "description": "A schema which validates params accepted by the SmartHub adapter",
   "type": "object",
   "properties": {
-    "host": {
+    "partnerName": {
       "type": "string",
-      "description": "Network host to send request",
-      "minLength": 4
+      "description": "SmartHub unique partner name",
+      "minLength": 1
     },
     "seat": {
       "type": "string",
@@ -21,7 +21,7 @@
     }
   },
   "required": [
-    "host",
+    "partnerName",
     "seat",
     "token"
   ]

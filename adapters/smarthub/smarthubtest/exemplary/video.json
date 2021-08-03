@@ -33,7 +33,7 @@
         },
         "ext": {
           "bidder": {
-            "host": "smarthub.test",
+            "partnerName": "partnertest",
             "seat": "9Q20EdGxzgWdfPYShScl",
             "token": "zpl5iB5Ugpe9ofVTzi44WzfjZZYq1yer"
           }
@@ -66,7 +66,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://smarthub.test/?seat=9Q20EdGxzgWdfPYShScl&token=zpl5iB5Ugpe9ofVTzi44WzfjZZYq1yer",
+        "uri": "http://partnertest-prebid.smart-hub.io/?seat=9Q20EdGxzgWdfPYShScl&token=zpl5iB5Ugpe9ofVTzi44WzfjZZYq1yer",
         "body": {
           "id": "id",
           "imp": [
@@ -101,7 +101,7 @@
               },
               "ext": {
                 "bidder": {
-                  "host": "smarthub.test",
+                  "partnerName": "partnertest",
                   "seat": "9Q20EdGxzgWdfPYShScl",
                   "token": "zpl5iB5Ugpe9ofVTzi44WzfjZZYq1yer"
                 }
