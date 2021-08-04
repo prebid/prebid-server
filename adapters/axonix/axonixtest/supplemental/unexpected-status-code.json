@@ -12,7 +12,7 @@
         },
         "ext":{
           "bidder":{
-            "supplyId": "24cc9034-f861-47b8-a6a8-b7e0968c00b8"
+            "supplyId": "supply-test"
            }
         }
       }
@@ -22,7 +22,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://openrtb-us-east-1.axonix.com/supply/prebid-server/24cc9034-f861-47b8-a6a8-b7e0968c00b8",
+        "uri": "https://axonix.com/supply/prebid-server/supply-test",
         "body": {
           "id": "test-request-id",
           "imp": [
@@ -36,7 +36,7 @@
               },
               "ext": {
                 "bidder": {
-                  "supplyId": "24cc9034-f861-47b8-a6a8-b7e0968c00b8"
+                  "supplyId": "supply-test"
                 }
               }
             }
