@@ -31,7 +31,6 @@ type RubiconAdapter struct {
 	XAPIPassword string
 }
 
-// used for cookies and such
 func (a *RubiconAdapter) Name() string {
 	return "rubicon"
 }
@@ -132,18 +131,6 @@ type rubiconBannerExtRP struct {
 
 type rubiconBannerExt struct {
 	RP rubiconBannerExtRP `json:"rp"`
-}
-
-type ExtImpContextData struct {
-	AdSlot string `json:"adslot,omitempty"`
-}
-
-type ExtImpContext struct {
-	Data ExtImpContextData `json:"data,omitempty"`
-}
-
-type ExtImpWithContext struct {
-	Context ExtImpContext `json:"context,omitempty"` // First Party Data context
 }
 
 // ***** Video Extension *****
