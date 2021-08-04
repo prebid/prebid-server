@@ -32,7 +32,6 @@ import (
 type ContextKey string
 
 const DebugContextKey = ContextKey("debugInfo")
-const StoredRequestAttributes = "storedrequestattributes"
 
 type extCacheInstructions struct {
 	cacheBids, cacheVAST, returnCreative bool
@@ -958,11 +957,12 @@ func (e *exchange) makeBid(bids []*pbsOrtbBid, auc *auction, returnCreative bool
 }
 
 func makeBidExtJSON(ext json.RawMessage, prebid *openrtb_ext.ExtBidPrebid, impExtInfoMap map[string]ImpExtInfo, impId string) (json.RawMessage, error) {
-
+	// update existing bid.ext with prebid section
+	// if bid.ext.prebid already exists, it will be overwritten.
+	// if echoVideoAttrs set to true stored video attributes will be added to bid.ext.storedrequestattributes
 	var extMap map[string]interface{}
 
 	if len(ext) != 0 {
-		// update existing bid.ext with our prebid section. if bid.ext.prebid already exists, it will be overwritten.
 		if err := json.Unmarshal(ext, &extMap); err != nil {
 			return nil, err
 		}
@@ -972,16 +972,15 @@ func makeBidExtJSON(ext json.RawMessage, prebid *openrtb_ext.ExtBidPrebid, impEx
 
 	extMap[openrtb_ext.PrebidExtKey] = prebid
 
-	if impExtInfo, ok := impExtInfoMap[impId]; ok {
-		if impExtInfo.EchoVideoAttrs {
-			videoData, _, _, err := jsonparser.Get(impExtInfo.StoredImp, "video")
-			if err != nil && err != jsonparser.KeyPathNotFoundError {
-				return nil, err
-			}
-			//handler for case where EchoVideoAttrs is true, but video data is not found
-			if len(videoData) > 0 {
-				extMap[StoredRequestAttributes] = json.RawMessage(videoData)
-			}
+	if impExtInfo, ok := impExtInfoMap[impId]; ok && impExtInfo.EchoVideoAttrs {
+
+		videoData, _, _, err := jsonparser.Get(impExtInfo.StoredImp, "video")
+		if err != nil && err != jsonparser.KeyPathNotFoundError {
+			return nil, err
+		}
+		//handler for case where EchoVideoAttrs is true, but video data is not found
+		if len(videoData) > 0 {
+			extMap[openrtb_ext.StoredRequestAttributes] = json.RawMessage(videoData)
 		}
 	}
 

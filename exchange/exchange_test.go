@@ -1691,6 +1691,65 @@ func TestBidResponseCurrency(t *testing.T) {
 	}
 }
 
+func TestBidResponseImpExtInfo(t *testing.T) {
+	// Init objects
+	cfg := &config.Configuration{Adapters: make(map[string]config.Adapter, 1)}
+	cfg.Adapters["appnexus"] = config.Adapter{Endpoint: "http://ib.adnxs.com"}
+
+	e := NewExchange(nil, nil, cfg, &metricsConf.DummyMetricsEngine{}, nil, gdpr.AlwaysAllow{}, nil, nilCategoryFetcher{}).(*exchange)
+
+	liveAdapters := make([]openrtb_ext.BidderName, 1)
+	liveAdapters[0] = "appnexus"
+
+	bidRequest := &openrtb2.BidRequest{
+		ID: "some-request-id",
+		Imp: []openrtb2.Imp{{
+			ID:    "some-impression-id",
+			Video: &openrtb2.Video{},
+			Ext:   json.RawMessage(`{"appnexus": {"placementId": 10433394}}`),
+		}},
+		Ext: json.RawMessage(``),
+	}
+
+	var errList []error
+
+	sampleBid := &openrtb2.Bid{
+		ID:    "some-imp-id",
+		ImpID: "some-impression-id",
+		W:     300,
+		H:     250,
+		Ext:   nil,
+	}
+	aPbsOrtbBidArr := []*pbsOrtbBid{{bid: sampleBid, bidType: openrtb_ext.BidTypeVideo}}
+
+	adapterBids := map[openrtb_ext.BidderName]*pbsOrtbSeatBid{
+		openrtb_ext.BidderName("appnexus"): {
+			bids: aPbsOrtbBidArr,
+		},
+	}
+
+	// Test cases
+	type aTest struct {
+		description            string
+		impExtInfo             map[string]ImpExtInfo
+		expectedBidResponseExt string
+	}
+	testCases := []aTest{
+		{
+			description:            "Check imp ext info pass through correctly",
+			impExtInfo:             map[string]ImpExtInfo{"some-impression-id": {true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`)}},
+			expectedBidResponseExt: `{"prebid":{"type":"video"},"storedrequestattributes":{"h":480,"mimes":["video/mp4"]}}`,
+		},
+	}
+	// Run tests
+	for i := range testCases {
+		actualBidResp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, nil, nil, nil, true, testCases[i].impExtInfo, errList)
+		resBidExt := string(actualBidResp.SeatBid[0].Bid[0].Ext)
+		assert.NoError(t, err, fmt.Sprintf("[TEST_FAILED] e.buildBidResponse resturns error in test: %s Error message: %s \n", testCases[i].description, err))
+		assert.Equalf(t, testCases[i].expectedBidResponseExt, resBidExt, fmt.Sprintf("[TEST_FAILED] Objects must be equal for test: %s \n Expected: >>%s<< \n Actual: >>%s<< ", testCases[i].description, resBidExt, actualBidResp.Ext))
+	}
+}
+
 // TestRaceIntegration runs an integration test using all the sample params from
 // adapters/{bidder}/{bidder}test/params/race/*.json files.
 //
@@ -3538,72 +3597,6 @@ func TestMakeBidExtJSON(t *testing.T) {
 		} else {
 			assert.Contains(t, err.Error(), test.expectedErrMessage, "incorrect error message")
 		}
-	}
-}
-
-func TestMakeBidsVideoAttributes(t *testing.T) {
-
-	sampleOpenrtbBid := &openrtb2.Bid{ID: "some-bid-id", ImpID: "test_imp_id"}
-
-	testCases := []struct {
-		description   string
-		inputBidExt   json.RawMessage
-		impExtInfoMap map[string]ImpExtInfo
-		outputBidExt  json.RawMessage
-	}{
-		{
-			description:   "Bid ext with video attributes",
-			inputBidExt:   json.RawMessage(`{"video":{"h":100}}`),
-			impExtInfoMap: map[string]ImpExtInfo{"test_imp_id": {true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`)}},
-			outputBidExt:  json.RawMessage(`{"prebid":{"type":"video","bidid":"randomId"},"storedrequestattributes":{"h":480,"mimes":["video/mp4"]}}`),
-		},
-		{
-			description:   "Bid ext without video attributes",
-			inputBidExt:   json.RawMessage(`{"video":{"h":100}}`),
-			impExtInfoMap: map[string]ImpExtInfo{"test_imp_id": {false, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`)}},
-			outputBidExt:  json.RawMessage(`{"prebid":{"type":"video","bidid":"randomId"}}`),
-		},
-		{
-			description:   "Bid ext with echo video attributes and no video data",
-			inputBidExt:   json.RawMessage(`{"video":{"h":100}}`),
-			impExtInfoMap: map[string]ImpExtInfo{"test_imp_id": {true, []byte(`{"banner":{"h":480}}`)}},
-			outputBidExt:  json.RawMessage(`{"prebid":{"type":"video","bidid":"randomId"}}`),
-		},
-		{
-			description:   "Bid ext with incorrect imp id",
-			inputBidExt:   json.RawMessage(`{"video":{"h":100}}`),
-			impExtInfoMap: map[string]ImpExtInfo{"another_imp_id": {true, []byte(`{"video":{"h":480}}`)}},
-			outputBidExt:  json.RawMessage(`{"prebid":{"type":"video","bidid":"randomId"}}`),
-		},
-		{
-			description:   "Valid bid ext and no stored imp data",
-			inputBidExt:   json.RawMessage(`{"video":{"h":100}}`),
-			impExtInfoMap: nil,
-			outputBidExt:  json.RawMessage(`{"prebid":{"type":"video","bidid":"randomId"}}`),
-		},
-	}
-	// Test set up
-	sampleBids := []*pbsOrtbBid{
-		{
-			bid:            sampleOpenrtbBid,
-			bidType:        openrtb_ext.BidTypeVideo,
-			bidTargets:     map[string]string{},
-			generatedBidID: "randomId",
-		},
-	}
-	sampleAuction := &auction{}
-
-	e := new(exchange)
-	e.cache = &wellBehavedCache{}
-	e.me = &metricsConf.DummyMetricsEngine{}
-	e.gDPR = gdpr.AlwaysAllow{}
-	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
-
-	//Run tests
-	for _, test := range testCases {
-		resultingBids, resultingErrs := e.makeBid(sampleBids, sampleAuction, false, test.impExtInfoMap)
-		assert.Equal(t, 0, len(resultingErrs), "%s. Test should not return errors \n", test.description)
-		assert.Equal(t, test.outputBidExt, resultingBids[0].Ext, "%s. Test should have DealPriority set to 0", test.description)
 	}
 }
 

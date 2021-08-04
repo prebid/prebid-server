@@ -1023,7 +1023,7 @@ func TestStoredRequests(t *testing.T) {
 
 	for i, requestData := range testStoredRequests {
 		newRequest, impExtInfoMap, errList := deps.processStoredRequests(context.Background(), json.RawMessage(requestData))
-		if assert.Empty(t, errList) {
+		if len(errList) != 0 {
 			for _, err := range errList {
 				if err != nil {
 					t.Errorf("processStoredRequests Error: %s", err.Error())
@@ -1067,11 +1067,9 @@ func TestStoredRequestsVideoErrors(t *testing.T) {
 
 	for i, requestData := range testStoredRequestsErrors {
 		_, _, errList := deps.processStoredRequests(context.Background(), json.RawMessage(requestData))
-		if len(errList) == 0 {
-			t.Error("processStoredRequests should return error")
-		}
-		err := errList[0]
-		assert.Contains(t, err.Error(), testStoredRequestsErrorsResults[i], "Incorrect error")
+
+		assert.NotEmpty(t, errList, "processStoredRequests should return error")
+		assert.Contains(t, errList[0].Error(), testStoredRequestsErrorsResults[i], "Incorrect error")
 	}
 }
 
