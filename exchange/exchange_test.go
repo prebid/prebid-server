@@ -3449,7 +3449,7 @@ func TestMakeBidExtJSON(t *testing.T) {
 		description        string
 		ext                json.RawMessage
 		extBidPrebid       openrtb_ext.ExtBidPrebid
-		impExtInfo         ImpExtInfo
+		impExtInfo         map[string]ImpExtInfo
 		expectedBidExt     string
 		expectedErrMessage string
 	}
@@ -3459,15 +3459,23 @@ func TestMakeBidExtJSON(t *testing.T) {
 			description:        "Valid extension, non empty extBidPrebid and valid imp ext info",
 			ext:                json.RawMessage(`{"video":{"h":100}}`),
 			extBidPrebid:       openrtb_ext.ExtBidPrebid{Type: openrtb_ext.BidType("video")},
-			impExtInfo:         ImpExtInfo{true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`)},
+			impExtInfo:         map[string]ImpExtInfo{"test_imp_id": {true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`)}},
 			expectedBidExt:     `{"prebid":{"type":"video"},"storedrequestattributes":{"h":480,"mimes":["video/mp4"]},"video":{"h":100}}`,
+			expectedErrMessage: "",
+		},
+		{
+			description:        "Valid extension, non empty extBidPrebid and imp ext info not found",
+			ext:                json.RawMessage(`{"video":{"h":100}}`),
+			extBidPrebid:       openrtb_ext.ExtBidPrebid{Type: openrtb_ext.BidType("video")},
+			impExtInfo:         map[string]ImpExtInfo{"another_imp_id": {true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`)}},
+			expectedBidExt:     `{"prebid":{"type":"video"},"video":{"h":100}}`,
 			expectedErrMessage: "",
 		},
 		{
 			description:        "Valid extension, empty extBidPrebid and valid imp ext info",
 			ext:                json.RawMessage(`{"video":{"h":100}}`),
 			extBidPrebid:       openrtb_ext.ExtBidPrebid{},
-			impExtInfo:         ImpExtInfo{true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`)},
+			impExtInfo:         map[string]ImpExtInfo{"test_imp_id": {true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`)}},
 			expectedBidExt:     `{"prebid":{"type":""},"storedrequestattributes":{"h":480,"mimes":["video/mp4"]},"video":{"h":100}}`,
 			expectedErrMessage: "",
 		},
@@ -3475,7 +3483,7 @@ func TestMakeBidExtJSON(t *testing.T) {
 			description:        "Valid extension, non empty extBidPrebid and empty imp ext info",
 			ext:                json.RawMessage(`{"video":{"h":100}}`),
 			extBidPrebid:       openrtb_ext.ExtBidPrebid{Type: openrtb_ext.BidType("video")},
-			impExtInfo:         ImpExtInfo{},
+			impExtInfo:         nil,
 			expectedBidExt:     `{"prebid":{"type":"video"},"video":{"h":100}}`,
 			expectedErrMessage: "",
 		},
@@ -3483,7 +3491,7 @@ func TestMakeBidExtJSON(t *testing.T) {
 			description:        "Valid extension, non empty extBidPrebid and valid imp ext info without video attr",
 			ext:                json.RawMessage(`{"video":{"h":100}}`),
 			extBidPrebid:       openrtb_ext.ExtBidPrebid{Type: openrtb_ext.BidType("video")},
-			impExtInfo:         ImpExtInfo{true, []byte(`{"banner":{"h":480}}`)},
+			impExtInfo:         map[string]ImpExtInfo{"test_imp_id": {true, []byte(`{"banner":{"h":480}}`)}},
 			expectedBidExt:     `{"prebid":{"type":"video"},"video":{"h":100}}`,
 			expectedErrMessage: "",
 		},
@@ -3491,7 +3499,7 @@ func TestMakeBidExtJSON(t *testing.T) {
 			description:        "Valid extension with prebid, non empty extBidPrebid and valid imp ext info without video attr",
 			ext:                json.RawMessage(`{"prebid":{"targeting":100}}`),
 			extBidPrebid:       openrtb_ext.ExtBidPrebid{Type: openrtb_ext.BidType("video")},
-			impExtInfo:         ImpExtInfo{true, []byte(`{"banner":{"h":480}}`)},
+			impExtInfo:         map[string]ImpExtInfo{"test_imp_id": {true, []byte(`{"banner":{"h":480}}`)}},
 			expectedBidExt:     `{"prebid":{"type":"video"}}`,
 			expectedErrMessage: "",
 		},
@@ -3499,7 +3507,7 @@ func TestMakeBidExtJSON(t *testing.T) {
 			description:        "Valid extension with prebid, non empty extBidPrebid and valid imp ext info with video attr",
 			ext:                json.RawMessage(`{"prebid":{"targeting":100}}`),
 			extBidPrebid:       openrtb_ext.ExtBidPrebid{Type: openrtb_ext.BidType("video")},
-			impExtInfo:         ImpExtInfo{true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`)},
+			impExtInfo:         map[string]ImpExtInfo{"test_imp_id": {true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`)}},
 			expectedBidExt:     `{"prebid":{"type":"video"}, "storedrequestattributes":{"h":480,"mimes":["video/mp4"]}}`,
 			expectedErrMessage: "",
 		},
@@ -3507,7 +3515,7 @@ func TestMakeBidExtJSON(t *testing.T) {
 			description:        "Invalid extension, valid extBidPrebid and valid imp ext info",
 			ext:                json.RawMessage(`{invalid json}`),
 			extBidPrebid:       openrtb_ext.ExtBidPrebid{Type: openrtb_ext.BidType("video")},
-			impExtInfo:         ImpExtInfo{true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`)},
+			impExtInfo:         map[string]ImpExtInfo{"test_imp_id": {true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`)}},
 			expectedBidExt:     ``,
 			expectedErrMessage: "invalid character",
 		},
@@ -3515,14 +3523,14 @@ func TestMakeBidExtJSON(t *testing.T) {
 			description:        "Valid extension, empty extBidPrebid and invalid imp ext info",
 			ext:                json.RawMessage(`{"video":{"h":100}}`),
 			extBidPrebid:       openrtb_ext.ExtBidPrebid{},
-			impExtInfo:         ImpExtInfo{true, []byte(`{"video":{!}}`)},
+			impExtInfo:         map[string]ImpExtInfo{"test_imp_id": {true, []byte(`{"video":{!}}`)}},
 			expectedBidExt:     ``,
 			expectedErrMessage: "invalid character",
 		},
 	}
 
 	for _, test := range testCases {
-		result, err := makeBidExtJSON(test.ext, &test.extBidPrebid, test.impExtInfo)
+		result, err := makeBidExtJSON(test.ext, &test.extBidPrebid, test.impExtInfo, "test_imp_id")
 
 		if test.expectedErrMessage == "" {
 			assert.JSONEq(t, test.expectedBidExt, string(result), "Incorrect result")
@@ -3565,6 +3573,12 @@ func TestMakeBidsVideoAttributes(t *testing.T) {
 			description:   "Bid ext with incorrect imp id",
 			inputBidExt:   json.RawMessage(`{"video":{"h":100}}`),
 			impExtInfoMap: map[string]ImpExtInfo{"another_imp_id": {true, []byte(`{"video":{"h":480}}`)}},
+			outputBidExt:  json.RawMessage(`{"prebid":{"type":"video","bidid":"randomId"}}`),
+		},
+		{
+			description:   "Bid ext with video attributes",
+			inputBidExt:   json.RawMessage(`{"video":{"h":100}}`),
+			impExtInfoMap: nil,
 			outputBidExt:  json.RawMessage(`{"prebid":{"type":"video","bidid":"randomId"}}`),
 		},
 	}

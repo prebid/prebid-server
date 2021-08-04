@@ -943,7 +943,7 @@ func (e *exchange) makeBid(bids []*pbsOrtbBid, auc *auction, returnCreative bool
 			}
 		}
 
-		if bidExtJSON, err := makeBidExtJSON(bid.bid.Ext, bidExtPrebid, impExtInfoMap[bid.bid.ImpID]); err != nil {
+		if bidExtJSON, err := makeBidExtJSON(bid.bid.Ext, bidExtPrebid, impExtInfoMap, bid.bid.ImpID); err != nil {
 			errs = append(errs, err)
 		} else {
 			result = append(result, *bid.bid)
@@ -957,7 +957,7 @@ func (e *exchange) makeBid(bids []*pbsOrtbBid, auc *auction, returnCreative bool
 	return result, errs
 }
 
-func makeBidExtJSON(ext json.RawMessage, prebid *openrtb_ext.ExtBidPrebid, impExtInfo ImpExtInfo) (json.RawMessage, error) {
+func makeBidExtJSON(ext json.RawMessage, prebid *openrtb_ext.ExtBidPrebid, impExtInfoMap map[string]ImpExtInfo, impId string) (json.RawMessage, error) {
 
 	var extMap map[string]interface{}
 
@@ -970,18 +970,20 @@ func makeBidExtJSON(ext json.RawMessage, prebid *openrtb_ext.ExtBidPrebid, impEx
 		extMap = make(map[string]interface{})
 	}
 
-	if impExtInfo.EchoVideoAttrs {
-		videoData, _, _, err := jsonparser.Get(impExtInfo.StoredImp, "video")
-		if err != nil && err != jsonparser.KeyPathNotFoundError {
-			return nil, err
-		}
-		//handler for case where EchoVideoAttrs is true, but video data is not found
-		if len(videoData) > 0 {
-			extMap[StoredRequestAttributes] = json.RawMessage(videoData)
+	extMap[openrtb_ext.PrebidExtKey] = prebid
+
+	if impExtInfo, ok := impExtInfoMap[impId]; ok {
+		if impExtInfo.EchoVideoAttrs {
+			videoData, _, _, err := jsonparser.Get(impExtInfo.StoredImp, "video")
+			if err != nil && err != jsonparser.KeyPathNotFoundError {
+				return nil, err
+			}
+			//handler for case where EchoVideoAttrs is true, but video data is not found
+			if len(videoData) > 0 {
+				extMap[StoredRequestAttributes] = json.RawMessage(videoData)
+			}
 		}
 	}
-
-	extMap[openrtb_ext.PrebidExtKey] = prebid
 
 	return json.Marshal(extMap)
 }
