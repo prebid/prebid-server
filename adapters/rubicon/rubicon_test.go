@@ -52,6 +52,11 @@ type rubiSetNetworkIdTestScenario struct {
 	isNetworkIdSet    bool
 }
 
+type rubiSiteSegTaxScenario struct {
+	segTax      int
+	iabExpected bool
+}
+
 type rubiTagInfo struct {
 	code              string
 	zoneID            int
@@ -1629,6 +1634,96 @@ func TestOpenRTBRequestUserFpdResolving(t *testing.T) {
 	expectedRpTarget["dataKey2"] = []interface{}{"dataValue2", "dataValue3"}
 	expectedRpTarget["dataKey3"] = []interface{}{"true"}
 	assert.Equal(t, expectedRpTarget, extRpTarget)
+}
+
+func TestOpenRTBSiteSegTaxes(t *testing.T) {
+	testScenarios := []rubiSiteSegTaxScenario{
+		{
+			segTax:      1,
+			iabExpected: true,
+		},
+		{
+			segTax:      2,
+			iabExpected: true,
+		},
+		{
+			segTax:      5,
+			iabExpected: true,
+		},
+		{
+			segTax:      6,
+			iabExpected: true,
+		},
+		{
+			segTax:      3,
+			iabExpected: false,
+		}, {
+			segTax:      4,
+			iabExpected: false,
+		},
+	}
+
+	for _, scenario := range testScenarios {
+		SIZE_ID := getTestSizes()
+		bidder := new(RubiconAdapter)
+
+		request := &openrtb2.BidRequest{
+			ID: "test-request-id",
+			Imp: []openrtb2.Imp{{
+				ID: "test-site-id",
+				Banner: &openrtb2.Banner{
+					Format: []openrtb2.Format{
+						SIZE_ID[15],
+						SIZE_ID[10],
+					},
+				},
+				Ext: json.RawMessage(`{
+				"bidder": {
+					"zoneId": 8394,
+					"siteId": 283282,
+					"accountId": 7891
+				}
+			}`),
+			}},
+			Site: &openrtb2.Site{
+				Content: &openrtb2.Content{
+					Data: []openrtb2.Data{{
+						Segment: []openrtb2.Segment{{ID: "idToCopy"}},
+						Ext:     json.RawMessage(fmt.Sprintf(`{"segtax": %d}`, scenario.segTax)),
+					}},
+				},
+			},
+		}
+
+		reqs, _ := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
+
+		rubiconReq := &openrtb2.BidRequest{}
+		if err := json.Unmarshal(reqs[0].Body, rubiconReq); err != nil {
+			t.Fatalf("Unexpected error while decoding request: %s", err)
+		}
+
+		assert.Equal(t, 1, len(rubiconReq.Imp),
+			"Unexpected number of request impressions. Got %d. Expected %d", len(rubiconReq.Imp), 1)
+
+		site := rubiconReq.Site
+		assert.NotNil(t, site)
+		assert.NotNil(t, site.Ext, "site.ext should be present")
+
+		extRpTargetMessage, _, _, err := jsonparser.Get(site.Ext, "rp", "target")
+
+		if scenario.iabExpected {
+			extRpTarget := make(map[string]interface{})
+			if err != nil {
+				t.Fatalf("Unexpected error while getting site.ext.rp.target: %s", err)
+			}
+			if err := json.Unmarshal(extRpTargetMessage, &extRpTarget); err != nil {
+				t.Fatalf("Unexpected error while decoding site.ext.rp.target: %s", err)
+			}
+			assert.Equal(t, extRpTarget["iab"], []interface{}{"idToCopy"})
+		} else {
+			assert.Empty(t, extRpTargetMessage)
+		}
+	}
 }
 
 func TestOpenRTBRequestWithBadvOverflowed(t *testing.T) {

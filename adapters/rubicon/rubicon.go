@@ -846,7 +846,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			siteCopy := *request.Site
 			siteExtRP := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: rubiconExt.SiteId}}
 			if siteCopy.Content != nil {
-				target, err := updateExtWithIabAttribute(nil, siteCopy.Content.Data, []int{1, 2})
+				target, err := updateExtWithIabAttribute(nil, siteCopy.Content.Data, []int{1, 2, 5, 6})
 				if err != nil {
 					errs = append(errs, err)
 					continue
