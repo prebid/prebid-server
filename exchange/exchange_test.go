@@ -3576,7 +3576,7 @@ func TestMakeBidsVideoAttributes(t *testing.T) {
 			outputBidExt:  json.RawMessage(`{"prebid":{"type":"video","bidid":"randomId"}}`),
 		},
 		{
-			description:   "Bid ext with video attributes",
+			description:   "Valid bid ext and no stored imp data",
 			inputBidExt:   json.RawMessage(`{"video":{"h":100}}`),
 			impExtInfoMap: nil,
 			outputBidExt:  json.RawMessage(`{"prebid":{"type":"video","bidid":"randomId"}}`),
