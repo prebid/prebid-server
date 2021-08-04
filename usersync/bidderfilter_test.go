@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewBidderFilter(t *testing.T) {
+func TestSpecificBidderFilter(t *testing.T) {
 	bidder := "a"
 
 	testCases := []struct {
@@ -72,12 +72,12 @@ func TestNewBidderFilter(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		filter := NewBidderFilter(test.bidders, test.mode)
+		filter := NewSpecificBidderFilter(test.bidders, test.mode)
 		assert.Equal(t, test.expected, filter.Allowed(bidder), test.description)
 	}
 }
 
-func TestBidderFilterForAll(t *testing.T) {
+func TestUniformBidderFilter(t *testing.T) {
 	bidder := "a"
 
 	testCases := []struct {
@@ -98,7 +98,7 @@ func TestBidderFilterForAll(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		filter := NewBidderFilterForAll(test.mode)
+		filter := NewUniformBidderFilter(test.mode)
 		assert.Equal(t, test.expected, filter.Allowed(bidder), test.description)
 	}
 }

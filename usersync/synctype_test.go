@@ -9,8 +9,8 @@ import (
 func TestSyncTypeFilter(t *testing.T) {
 	bidder := "foo"
 
-	bidderFilterAllowed := NewBidderFilterForAll(BidderFilterModeInclude)
-	bidderFilterNotAllowed := NewBidderFilterForAll(BidderFilterModeExclude)
+	bidderFilterAllowed := NewUniformBidderFilter(BidderFilterModeInclude)
+	bidderFilterNotAllowed := NewUniformBidderFilter(BidderFilterModeExclude)
 
 	testCases := []struct {
 		description         string

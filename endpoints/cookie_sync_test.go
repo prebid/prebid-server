@@ -313,8 +313,8 @@ func TestCookieSyncParseRequest(t *testing.T) {
 					ccpaParsedPolicy: expectedCCPAParsedPolicy,
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
-					IFrame:   usersync.NewBidderFilterForAll(usersync.BidderFilterModeInclude),
-					Redirect: usersync.NewBidderFilter([]string{"b"}, usersync.BidderFilterModeExclude),
+					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+					Redirect: usersync.NewSpecificBidderFilter([]string{"b"}, usersync.BidderFilterModeExclude),
 				},
 			},
 		},
@@ -357,8 +357,8 @@ func TestCookieSyncParseRequest(t *testing.T) {
 					ccpaParsedPolicy: expectedCCPAParsedPolicy,
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
-					IFrame:   usersync.NewBidderFilterForAll(usersync.BidderFilterModeInclude),
-					Redirect: usersync.NewBidderFilterForAll(usersync.BidderFilterModeInclude),
+					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+					Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
 				},
 			},
 		},
@@ -373,8 +373,8 @@ func TestCookieSyncParseRequest(t *testing.T) {
 					gdprSignal: gdpr.SignalAmbiguous,
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
-					IFrame:   usersync.NewBidderFilterForAll(usersync.BidderFilterModeInclude),
-					Redirect: usersync.NewBidderFilterForAll(usersync.BidderFilterModeInclude),
+					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+					Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
 				},
 			},
 		},
@@ -399,8 +399,8 @@ func TestCookieSyncParseRequest(t *testing.T) {
 					gdprSignal: gdpr.SignalAmbiguous,
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
-					IFrame:   usersync.NewBidderFilterForAll(usersync.BidderFilterModeInclude),
-					Redirect: usersync.NewBidderFilterForAll(usersync.BidderFilterModeInclude),
+					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+					Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
 				},
 			},
 		},
@@ -425,8 +425,8 @@ func TestCookieSyncParseRequest(t *testing.T) {
 					gdprSignal: gdpr.SignalAmbiguous,
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
-					IFrame:   usersync.NewBidderFilterForAll(usersync.BidderFilterModeInclude),
-					Redirect: usersync.NewBidderFilterForAll(usersync.BidderFilterModeInclude),
+					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+					Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
 				},
 			},
 		},
@@ -451,8 +451,8 @@ func TestCookieSyncParseRequest(t *testing.T) {
 					gdprSignal: gdpr.SignalAmbiguous,
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
-					IFrame:   usersync.NewBidderFilterForAll(usersync.BidderFilterModeInclude),
-					Redirect: usersync.NewBidderFilterForAll(usersync.BidderFilterModeInclude),
+					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+					Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
 				},
 			},
 		},
@@ -477,8 +477,8 @@ func TestCookieSyncParseRequest(t *testing.T) {
 					gdprSignal: gdpr.SignalAmbiguous,
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
-					IFrame:   usersync.NewBidderFilterForAll(usersync.BidderFilterModeInclude),
-					Redirect: usersync.NewBidderFilterForAll(usersync.BidderFilterModeInclude),
+					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+					Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
 				},
 			},
 		},
@@ -503,8 +503,8 @@ func TestCookieSyncParseRequest(t *testing.T) {
 					gdprSignal: gdpr.SignalAmbiguous,
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
-					IFrame:   usersync.NewBidderFilterForAll(usersync.BidderFilterModeInclude),
-					Redirect: usersync.NewBidderFilterForAll(usersync.BidderFilterModeInclude),
+					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+					Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
 				},
 			},
 		},
@@ -529,8 +529,8 @@ func TestCookieSyncParseRequest(t *testing.T) {
 					gdprSignal: gdpr.SignalAmbiguous,
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
-					IFrame:   usersync.NewBidderFilterForAll(usersync.BidderFilterModeInclude),
-					Redirect: usersync.NewBidderFilterForAll(usersync.BidderFilterModeInclude),
+					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+					Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
 				},
 			},
 		},
@@ -545,8 +545,8 @@ func TestCookieSyncParseRequest(t *testing.T) {
 					gdprSignal: gdpr.SignalAmbiguous,
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
-					IFrame:   usersync.NewBidderFilterForAll(usersync.BidderFilterModeInclude),
-					Redirect: usersync.NewBidderFilterForAll(usersync.BidderFilterModeInclude),
+					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+					Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
 				},
 			},
 		},
@@ -564,8 +564,8 @@ func TestCookieSyncParseRequest(t *testing.T) {
 					gdprSignal: gdpr.SignalAmbiguous,
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
-					IFrame:   usersync.NewBidderFilterForAll(usersync.BidderFilterModeInclude),
-					Redirect: usersync.NewBidderFilterForAll(usersync.BidderFilterModeInclude),
+					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+					Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
 				},
 			},
 		},
@@ -603,8 +603,8 @@ func TestCookieSyncParseRequest(t *testing.T) {
 					gdprSignal: gdpr.SignalNo,
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
-					IFrame:   usersync.NewBidderFilterForAll(usersync.BidderFilterModeInclude),
-					Redirect: usersync.NewBidderFilterForAll(usersync.BidderFilterModeInclude),
+					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+					Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
 				},
 			},
 		},
@@ -628,8 +628,8 @@ func TestCookieSyncParseRequest(t *testing.T) {
 					gdprSignal: gdpr.SignalAmbiguous,
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
-					IFrame:   usersync.NewBidderFilterForAll(usersync.BidderFilterModeInclude),
-					Redirect: usersync.NewBidderFilterForAll(usersync.BidderFilterModeInclude),
+					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+					Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
 				},
 			},
 		},
@@ -684,16 +684,16 @@ func TestParseTypeFilter(t *testing.T) {
 			description: "Nil",
 			given:       nil,
 			expectedFilter: usersync.SyncTypeFilter{
-				IFrame:   usersync.NewBidderFilterForAll(usersync.BidderFilterModeInclude),
-				Redirect: usersync.NewBidderFilterForAll(usersync.BidderFilterModeInclude),
+				IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+				Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
 			},
 		},
 		{
 			description: "Nil Object",
 			given:       &cookieSyncRequestFilterSettings{},
 			expectedFilter: usersync.SyncTypeFilter{
-				IFrame:   usersync.NewBidderFilterForAll(usersync.BidderFilterModeInclude),
-				Redirect: usersync.NewBidderFilterForAll(usersync.BidderFilterModeInclude),
+				IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+				Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
 			},
 		},
 		{
@@ -702,8 +702,8 @@ func TestParseTypeFilter(t *testing.T) {
 				IFrame: &cookieSyncRequestFilter{Bidders: []interface{}{"a"}, Mode: "exclude"},
 			},
 			expectedFilter: usersync.SyncTypeFilter{
-				IFrame:   usersync.NewBidderFilter([]string{"a"}, usersync.BidderFilterModeExclude),
-				Redirect: usersync.NewBidderFilterForAll(usersync.BidderFilterModeInclude),
+				IFrame:   usersync.NewSpecificBidderFilter([]string{"a"}, usersync.BidderFilterModeExclude),
+				Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
 			},
 		},
 		{
@@ -712,8 +712,8 @@ func TestParseTypeFilter(t *testing.T) {
 				Redirect: &cookieSyncRequestFilter{Bidders: []interface{}{"b"}, Mode: "exclude"},
 			},
 			expectedFilter: usersync.SyncTypeFilter{
-				IFrame:   usersync.NewBidderFilterForAll(usersync.BidderFilterModeInclude),
-				Redirect: usersync.NewBidderFilter([]string{"b"}, usersync.BidderFilterModeExclude),
+				IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+				Redirect: usersync.NewSpecificBidderFilter([]string{"b"}, usersync.BidderFilterModeExclude),
 			},
 		},
 		{
@@ -723,8 +723,8 @@ func TestParseTypeFilter(t *testing.T) {
 				Redirect: &cookieSyncRequestFilter{Bidders: []interface{}{"b"}, Mode: "exclude"},
 			},
 			expectedFilter: usersync.SyncTypeFilter{
-				IFrame:   usersync.NewBidderFilter([]string{"a"}, usersync.BidderFilterModeExclude),
-				Redirect: usersync.NewBidderFilter([]string{"b"}, usersync.BidderFilterModeExclude),
+				IFrame:   usersync.NewSpecificBidderFilter([]string{"a"}, usersync.BidderFilterModeExclude),
+				Redirect: usersync.NewSpecificBidderFilter([]string{"b"}, usersync.BidderFilterModeExclude),
 			},
 		},
 		{
@@ -768,17 +768,17 @@ func TestParseBidderFilter(t *testing.T) {
 		{
 			description:    "Nil",
 			given:          nil,
-			expectedFilter: usersync.NewBidderFilterForAll(usersync.BidderFilterModeInclude),
+			expectedFilter: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
 		},
 		{
 			description:    "All Bidders - Include",
 			given:          &cookieSyncRequestFilter{Bidders: "*", Mode: "include"},
-			expectedFilter: usersync.NewBidderFilterForAll(usersync.BidderFilterModeInclude),
+			expectedFilter: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
 		},
 		{
 			description:    "All Bidders - Exclude",
 			given:          &cookieSyncRequestFilter{Bidders: "*", Mode: "exclude"},
-			expectedFilter: usersync.NewBidderFilterForAll(usersync.BidderFilterModeExclude),
+			expectedFilter: usersync.NewUniformBidderFilter(usersync.BidderFilterModeExclude),
 		},
 		{
 			description:   "All Bidders - Invalid Mode",
@@ -793,12 +793,12 @@ func TestParseBidderFilter(t *testing.T) {
 		{
 			description:    "Specific Bidders - Include",
 			given:          &cookieSyncRequestFilter{Bidders: []interface{}{"a", "b"}, Mode: "include"},
-			expectedFilter: usersync.NewBidderFilter([]string{"a", "b"}, usersync.BidderFilterModeInclude),
+			expectedFilter: usersync.NewSpecificBidderFilter([]string{"a", "b"}, usersync.BidderFilterModeInclude),
 		},
 		{
 			description:    "Specific Bidders - Exclude",
 			given:          &cookieSyncRequestFilter{Bidders: []interface{}{"a", "b"}, Mode: "exclude"},
-			expectedFilter: usersync.NewBidderFilter([]string{"a", "b"}, usersync.BidderFilterModeExclude),
+			expectedFilter: usersync.NewSpecificBidderFilter([]string{"a", "b"}, usersync.BidderFilterModeExclude),
 		},
 		{
 			description:   "Specific Bidders - Invalid Mode",
@@ -825,7 +825,7 @@ func TestParseBidderFilter(t *testing.T) {
 			assert.Equal(t, test.expectedFilter, result, test.description+":result")
 		} else {
 			assert.EqualError(t, err, test.expectedError, test.description+":err")
-			assert.Empty(t, result, test.description+":result")
+			assert.Nil(t, result, test.description+":result")
 		}
 	}
 }
@@ -922,8 +922,8 @@ func TestCookieSyncWriteBidderMetrics(t *testing.T) {
 
 func TestCookieSyncHandleResponse(t *testing.T) {
 	syncTypeFilter := usersync.SyncTypeFilter{
-		IFrame:   usersync.NewBidderFilterForAll(usersync.BidderFilterModeExclude),
-		Redirect: usersync.NewBidderFilterForAll(usersync.BidderFilterModeInclude),
+		IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeExclude),
+		Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
 	}
 	syncTypeExpected := []usersync.SyncType{usersync.SyncTypeRedirect}
 	privacyPolicies := privacy.Policies{CCPA: ccpa.Policy{Consent: "anyConsent"}}

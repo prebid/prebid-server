@@ -29,7 +29,7 @@ var (
 	errCookieSyncInvalidBiddersType                = errors.New("invalid bidders type. must either be a string '*' or a string array of bidders")
 )
 
-var cookieSyncBidderFilterAllowAll = usersync.NewBidderFilterForAll(usersync.BidderFilterModeInclude)
+var cookieSyncBidderFilterAllowAll = usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude)
 
 func NewCookieSyncEndpoint(
 	syncers map[string]usersync.Syncer,
@@ -199,27 +199,27 @@ func parseBidderFilter(filter *cookieSyncRequestFilter) (usersync.BidderFilter, 
 	case "exclude":
 		mode = usersync.BidderFilterModeExclude
 	default:
-		return usersync.BidderFilter{}, fmt.Errorf("invalid filter value '%s'. must be either 'include' or 'exclude'", filter.Mode)
+		return nil, fmt.Errorf("invalid filter value '%s'. must be either 'include' or 'exclude'", filter.Mode)
 	}
 
 	switch v := filter.Bidders.(type) {
 	case string:
 		if v == "*" {
-			return usersync.NewBidderFilterForAll(mode), nil
+			return usersync.NewUniformBidderFilter(mode), nil
 		}
-		return usersync.BidderFilter{}, fmt.Errorf("invalid bidders value `%s`. must either be '*' or a string array", v)
+		return nil, fmt.Errorf("invalid bidders value `%s`. must either be '*' or a string array", v)
 	case []interface{}:
 		bidders := make([]string, len(v))
 		for i, x := range v {
 			if bidder, ok := x.(string); ok {
 				bidders[i] = bidder
 			} else {
-				return usersync.BidderFilter{}, errCookieSyncInvalidBiddersType
+				return nil, errCookieSyncInvalidBiddersType
 			}
 		}
-		return usersync.NewBidderFilter(bidders, mode), nil
+		return usersync.NewSpecificBidderFilter(bidders, mode), nil
 	default:
-		return usersync.BidderFilter{}, errCookieSyncInvalidBiddersType
+		return nil, errCookieSyncInvalidBiddersType
 	}
 }
 

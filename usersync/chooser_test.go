@@ -51,8 +51,8 @@ func TestChooserChoose(t *testing.T) {
 	syncerChoiceA := SyncerChoice{Bidder: "a", Syncer: fakeSyncerA}
 	syncerChoiceB := SyncerChoice{Bidder: "b", Syncer: fakeSyncerB}
 	syncTypeFilter := SyncTypeFilter{
-		IFrame:   NewBidderFilterForAll(BidderFilterModeInclude),
-		Redirect: NewBidderFilterForAll(BidderFilterModeExclude)}
+		IFrame:   NewUniformBidderFilter(BidderFilterModeInclude),
+		Redirect: NewUniformBidderFilter(BidderFilterModeExclude)}
 
 	cooperativeConfig := Cooperative{Enabled: true}
 
@@ -234,8 +234,8 @@ func TestChooserEvaluate(t *testing.T) {
 	fakeSyncerB := fakeSyncer{key: "keyB", supportsIFrame: false}
 	bidderSyncerLookup := map[string]Syncer{"a": fakeSyncerA, "b": fakeSyncerB}
 	syncTypeFilter := SyncTypeFilter{
-		IFrame:   NewBidderFilterForAll(BidderFilterModeInclude),
-		Redirect: NewBidderFilterForAll(BidderFilterModeExclude)}
+		IFrame:   NewUniformBidderFilter(BidderFilterModeInclude),
+		Redirect: NewUniformBidderFilter(BidderFilterModeExclude)}
 
 	cookieNeedsSync := Cookie{}
 	cookieAlreadyHasSyncForA := Cookie{uids: map[string]uidWithExpiry{"keyA": {Expires: time.Now().Add(time.Duration(24) * time.Hour)}}}
