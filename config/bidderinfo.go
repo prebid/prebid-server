@@ -48,8 +48,7 @@ type DebugInfo struct {
 // so it needs to have both yaml and mapstructure mappings.
 type Syncer struct {
 	// Key is used as the record key for the user sync cookie. We recommend using the bidder name
-	// as the key for consistency, but that is not enforced as a requirement. Each bidder must
-	// have a unique key.
+	// as the key for consistency, but that is not enforced as a requirement.
 	Key string `yaml:"key" mapstructure:"key"`
 
 	// Default identifies which endpoint is preferred if both are allowed by the publisher. This is

@@ -12,12 +12,12 @@ type standardBidderChooser struct {
 }
 
 func (c standardBidderChooser) choose(requested, available []string, cooperative Cooperative) []string {
-	if len(requested) == 0 {
-		return c.shuffledCopy(available)
-	}
-
 	if cooperative.Enabled {
 		return c.chooseCooperative(requested, available, cooperative.PriorityGroups)
+	}
+
+	if len(requested) == 0 {
+		return c.shuffledCopy(available)
 	}
 
 	return c.shuffledCopy(requested)

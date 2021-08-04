@@ -45,6 +45,18 @@ func TestBidderChooserChoose(t *testing.T) {
 			expected:         []string{"r2", "r1"},
 		},
 		{
+			description:      "Coop - Nil",
+			givenRequested:   nil,
+			givenCooperative: Cooperative{Enabled: true, PriorityGroups: [][]string{{"pr1A", "pr1B"}, {"pr2A", "pr2B"}}},
+			expected:         []string{"pr1B", "pr1A", "pr2B", "pr2A", "a2", "a1"},
+		},
+		{
+			description:      "Coop - Empty",
+			givenRequested:   nil,
+			givenCooperative: Cooperative{Enabled: true, PriorityGroups: [][]string{{"pr1A", "pr1B"}, {"pr2A", "pr2B"}}},
+			expected:         []string{"pr1B", "pr1A", "pr2B", "pr2A", "a2", "a1"},
+		},
+		{
 			description:      "Coop - Integration Test",
 			givenRequested:   []string{"r1", "r2"},
 			givenCooperative: Cooperative{Enabled: true, PriorityGroups: [][]string{{"pr1A", "pr1B"}, {"pr2A", "pr2B"}}},

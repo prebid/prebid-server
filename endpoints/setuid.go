@@ -87,12 +87,10 @@ func NewSetUIDEndpoint(cfg config.HostCookie, syncers map[string]usersync.Syncer
 			metricsEngine.RecordSetUid(metrics.SetUidOK)
 			metricsEngine.RecordSyncerSet(syncerKey, metrics.SyncerSetUidCleared)
 			so.Success = true
-		} else {
-			if err = pc.TrySync(syncerKey, uid); err == nil {
-				metricsEngine.RecordSetUid(metrics.SetUidOK)
-				metricsEngine.RecordSyncerSet(syncerKey, metrics.SyncerSetUidOK)
-				so.Success = true
-			}
+		} else if err = pc.TrySync(syncerKey, uid); err == nil {
+			metricsEngine.RecordSetUid(metrics.SetUidOK)
+			metricsEngine.RecordSyncerSet(syncerKey, metrics.SyncerSetUidOK)
+			so.Success = true
 		}
 
 		setSiteCookie := siteCookieCheck(r.UserAgent())
