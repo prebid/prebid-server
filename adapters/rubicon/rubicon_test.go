@@ -1281,7 +1281,7 @@ func TestOpenRTBRequestWithImpAndAdSlotIncluded(t *testing.T) {
 				"context": {
 					"data": {
                         "adserver": {
-                             "adslot": "///test-adslot",
+                             "adslot": "/test-adslot",
                              "name": "gam"
                         }
 					}
@@ -1308,14 +1308,7 @@ func TestOpenRTBRequestWithImpAndAdSlotIncluded(t *testing.T) {
 	if err := json.Unmarshal(rubiconReq.Imp[0].Ext, &rpImpExt); err != nil {
 		t.Fatal("Error unmarshalling imp.ext")
 	}
-
-	rubiconExtInventory := make(map[string]interface{})
-	if err := json.Unmarshal(rpImpExt.RP.Target, &rubiconExtInventory); err != nil {
-		t.Fatal("Error unmarshalling imp.ext.rp.target")
-	}
-
-	assert.Equal(t, []interface{}{"test-adslot"}, rubiconExtInventory["dfp_ad_unit_code"],
-		"Unexpected dfp_ad_unit_code: %s", rubiconExtInventory["dfp_ad_unit_code"])
+	assert.Equal(t, rpImpExt.GPID, "/test-adslot")
 }
 
 func TestOpenRTBRequestUserParametersShouldBeBlocked(t *testing.T) {

@@ -122,6 +122,10 @@
         },
         "ext": {
           "data": {
+            "adserver": {
+              "name": "gam",
+              "adslot": "someAdSlot"
+            },
             "dataAttr1": "dataVal1",
             "dataAttr2": "dataVal2"
           },
@@ -264,6 +268,7 @@
                 "h": 576
               },
               "ext": {
+                "gpid": "someAdSlot",
                 "rp": {
                   "target": {
                     "dataAttr1": [

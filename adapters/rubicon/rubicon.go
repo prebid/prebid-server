@@ -75,7 +75,8 @@ type rubiconImpExtRPTrack struct {
 }
 
 type rubiconImpExt struct {
-	RP rubiconImpExtRP `json:"rp,omitempty"`
+	RP   rubiconImpExtRP `json:"rp,omitempty"`
+	GPID string          `json:"gpid,omitempty"`
 }
 
 type rubiconImpExtRP struct {
@@ -718,6 +719,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 				Target: target,
 				Track:  rubiconImpExtRPTrack{Mint: "", MintVersion: ""},
 			},
+			GPID: getAdSlot(imp),
 		}
 		imp.Ext, err = json.Marshal(&impExt)
 		if err != nil {
@@ -949,20 +951,6 @@ func updateImpRpTargetWithFpdAttributes(extImp openrtb_ext.ExtImpRubicon, imp op
 		target = populateFirstPartyDataAttributes(impExtDataAttributes, target)
 	}
 
-	adServerContextName, _ := jsonparser.GetString(imp.Ext, "context", "data", "adserver", "name")
-	adServerDataName, _ := jsonparser.GetString(imp.Ext, "data", "adserver", "name")
-
-	if adServerContextName == "gam" || adServerDataName == "gam" {
-		contextAdSlot, _ := jsonparser.GetString(imp.Ext, "context", "data", "adserver", "adslot")
-		dataAdSlot, _ := jsonparser.GetString(imp.Ext, "data", "adserver", "adslot")
-
-		if contextAdSlot != "" {
-			target = addStringAttribute(strings.TrimLeft(contextAdSlot, "/"), target, "dfp_ad_unit_code")
-		} else if dataAdSlot != "" {
-			target = addStringAttribute(strings.TrimLeft(dataAdSlot, "/"), target, "dfp_ad_unit_code")
-		}
-	}
-
 	if len(extImp.Keywords) > 0 {
 		target = addStringArrayAttribute(extImp.Keywords, target, "keywords")
 	}
@@ -984,6 +972,22 @@ func addStringArrayAttribute(attribute []string, target json.RawMessage, attribu
 
 	updatedTarget, _ := json.Marshal(targetAsMap)
 	return updatedTarget
+}
+
+func getAdSlot(imp openrtb2.Imp) string {
+	adServerContextName, _ := jsonparser.GetString(imp.Ext, "context", "data", "adserver", "name")
+
+	if adServerContextName == "gam" {
+		contextAdSlot, _ := jsonparser.GetString(imp.Ext, "context", "data", "adserver", "adslot")
+		return contextAdSlot
+	}
+	adServerDataName, _ := jsonparser.GetString(imp.Ext, "data", "adserver", "name")
+	if adServerDataName == "gam" {
+		dataAdSlot, _ := jsonparser.GetString(imp.Ext, "data", "adserver", "adslot")
+		return dataAdSlot
+	}
+
+	return ""
 }
 
 func updateUserRpTargetWithFpdAttributes(visitor json.RawMessage, user openrtb2.User) (json.RawMessage, error) {
