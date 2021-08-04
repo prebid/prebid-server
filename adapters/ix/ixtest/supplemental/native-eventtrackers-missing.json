@@ -51,7 +51,7 @@
                                     "impid": "test-imp-id",
                                     "price": 0.5,
                                     "adid": "29681110",
-                                    "adm": "{\"native\":{\"assets\":[{\"id\":123,\"required\":1,\"title\":{\"text\":\"Learn about this awesome thing\"}},{\"id\":124,\"required\":1,\"img\":{\"url\":\"http://www.myads.com/thumbnail1.png\"}},{\"id\":128,\"required\":1,\"img\":{\"url\":\"http://www.myads.com/largethumb1.png\"}},{\"id\":126,\"required\":1,\"data\":{\"value\":\"My Brand\"}},{\"id\":127,\"required\":1,\"data\":{\"value\":\"Learn all about this awesome story of someone using my product.\"}}],\"link\":{\"url\":\"http: //i.am.a/URL\"},\"imptrackers\":[\"https://example.com/imp-1.gif\",\"https://example.com/imp-2.gif\"]}}",
+                                    "adm": "{\"native\":{\"assets\":[{\"id\":123,\"required\":1,\"title\":{\"text\":\"Learn about this awesome thing\"}},{\"id\":124,\"required\":1,\"img\":{\"url\":\"http://www.myads.com/thumbnail1.png\"}},{\"id\":128,\"required\":1,\"img\":{\"url\":\"http://www.myads.com/largethumb1.png\"}},{\"id\":126,\"required\":1,\"data\":{\"value\":\"My Brand\"}},{\"id\":127,\"required\":1,\"data\":{\"value\":\"Learn all about this awesome story of someone using my product.\"}}],\"link\":{\"url\":\"http://i.am.a/URL\"},\"imptrackers\":[\"https://example.com/imp-1.gif\",\"https://example.com/imp-2.gif\"]}}",
                                     "adomain": [
                                         "https://advertiser.example.com"
                                     ],
@@ -83,7 +83,7 @@
                         "impid": "test-imp-id",
                         "price": 0.5,
                         "adid": "29681110",
-                        "adm": "{\"native\":{\"assets\":[{\"id\":123,\"required\":1,\"title\":{\"text\":\"Learn about this awesome thing\"}},{\"id\":124,\"required\":1,\"img\":{\"url\":\"http://www.myads.com/thumbnail1.png\"}},{\"id\":128,\"required\":1,\"img\":{\"url\":\"http://www.myads.com/largethumb1.png\"}},{\"id\":126,\"required\":1,\"data\":{\"value\":\"My Brand\"}},{\"id\":127,\"required\":1,\"data\":{\"value\":\"Learn all about this awesome story of someone using my product.\"}}],\"link\":{\"url\":\"http: //i.am.a/URL\"},\"imptrackers\":[\"https://example.com/imp-1.gif\",\"https://example.com/imp-2.gif\"]}}",
+                        "adm": "{\"native\":{\"assets\":[{\"id\":123,\"required\":1,\"title\":{\"text\":\"Learn about this awesome thing\"}},{\"id\":124,\"required\":1,\"img\":{\"url\":\"http://www.myads.com/thumbnail1.png\"}},{\"id\":128,\"required\":1,\"img\":{\"url\":\"http://www.myads.com/largethumb1.png\"}},{\"id\":126,\"required\":1,\"data\":{\"value\":\"My Brand\"}},{\"id\":127,\"required\":1,\"data\":{\"value\":\"Learn all about this awesome story of someone using my product.\"}}],\"link\":{\"url\":\"http://i.am.a/URL\"},\"imptrackers\":[\"https://example.com/imp-1.gif\",\"https://example.com/imp-2.gif\"]}}",
                         "adomain": [
                             "https://advertiser.example.com"
                         ],
