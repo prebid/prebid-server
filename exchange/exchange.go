@@ -972,10 +972,13 @@ func makeBidExtJSON(ext json.RawMessage, prebid *openrtb_ext.ExtBidPrebid, impEx
 
 	if impExtInfo.EchoVideoAttrs {
 		videoData, _, _, err := jsonparser.Get(impExtInfo.StoredImp, "video")
-		if err != nil {
+		if err != nil && err != jsonparser.KeyPathNotFoundError {
 			return nil, err
 		}
-		extMap[StoredRequestAttributes] = json.RawMessage(videoData)
+		//handler for case where EchoVideoAttrs is true, but video data is not found
+		if len(videoData) > 0 {
+			extMap[StoredRequestAttributes] = json.RawMessage(videoData)
+		}
 	}
 
 	extMap[openrtb_ext.PrebidExtKey] = prebid

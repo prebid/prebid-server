@@ -3480,6 +3480,30 @@ func TestMakeBidExtJSON(t *testing.T) {
 			expectedErrMessage: "",
 		},
 		{
+			description:        "Valid extension, non empty extBidPrebid and valid imp ext info without video attr",
+			ext:                json.RawMessage(`{"video":{"h":100}}`),
+			extBidPrebid:       openrtb_ext.ExtBidPrebid{Type: openrtb_ext.BidType("video")},
+			impExtInfo:         ImpExtInfo{true, []byte(`{"banner":{"h":480}}`)},
+			expectedBidExt:     `{"prebid":{"type":"video"},"video":{"h":100}}`,
+			expectedErrMessage: "",
+		},
+		{
+			description:        "Valid extension with prebid, non empty extBidPrebid and valid imp ext info without video attr",
+			ext:                json.RawMessage(`{"prebid":{"targeting":100}}`),
+			extBidPrebid:       openrtb_ext.ExtBidPrebid{Type: openrtb_ext.BidType("video")},
+			impExtInfo:         ImpExtInfo{true, []byte(`{"banner":{"h":480}}`)},
+			expectedBidExt:     `{"prebid":{"type":"video"}}`,
+			expectedErrMessage: "",
+		},
+		{
+			description:        "Valid extension with prebid, non empty extBidPrebid and valid imp ext info with video attr",
+			ext:                json.RawMessage(`{"prebid":{"targeting":100}}`),
+			extBidPrebid:       openrtb_ext.ExtBidPrebid{Type: openrtb_ext.BidType("video")},
+			impExtInfo:         ImpExtInfo{true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`)},
+			expectedBidExt:     `{"prebid":{"type":"video"}, "storedrequestattributes":{"h":480,"mimes":["video/mp4"]}}`,
+			expectedErrMessage: "",
+		},
+		{
 			description:        "Invalid extension, valid extBidPrebid and valid imp ext info",
 			ext:                json.RawMessage(`{invalid json}`),
 			extBidPrebid:       openrtb_ext.ExtBidPrebid{Type: openrtb_ext.BidType("video")},
@@ -3506,6 +3530,66 @@ func TestMakeBidExtJSON(t *testing.T) {
 		} else {
 			assert.Contains(t, err.Error(), test.expectedErrMessage, "incorrect error message")
 		}
+	}
+}
+
+func TestMakeBidsVideoAttributes(t *testing.T) {
+
+	sampleOpenrtbBid := &openrtb2.Bid{ID: "some-bid-id", ImpID: "test_imp_id"}
+
+	testCases := []struct {
+		description   string
+		inputBidExt   json.RawMessage
+		impExtInfoMap map[string]ImpExtInfo
+		outputBidExt  json.RawMessage
+	}{
+		{
+			description:   "Bid ext with video attributes",
+			inputBidExt:   json.RawMessage(`{"video":{"h":100}}`),
+			impExtInfoMap: map[string]ImpExtInfo{"test_imp_id": {true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`)}},
+			outputBidExt:  json.RawMessage(`{"prebid":{"type":"video","bidid":"randomId"},"storedrequestattributes":{"h":480,"mimes":["video/mp4"]}}`),
+		},
+		{
+			description:   "Bid ext without video attributes",
+			inputBidExt:   json.RawMessage(`{"video":{"h":100}}`),
+			impExtInfoMap: map[string]ImpExtInfo{"test_imp_id": {false, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`)}},
+			outputBidExt:  json.RawMessage(`{"prebid":{"type":"video","bidid":"randomId"}}`),
+		},
+		{
+			description:   "Bid ext with echo video attributes and no video data",
+			inputBidExt:   json.RawMessage(`{"video":{"h":100}}`),
+			impExtInfoMap: map[string]ImpExtInfo{"test_imp_id": {true, []byte(`{"banner":{"h":480}}`)}},
+			outputBidExt:  json.RawMessage(`{"prebid":{"type":"video","bidid":"randomId"}}`),
+		},
+		{
+			description:   "Bid ext with incorrect imp id",
+			inputBidExt:   json.RawMessage(`{"video":{"h":100}}`),
+			impExtInfoMap: map[string]ImpExtInfo{"another_imp_id": {true, []byte(`{"video":{"h":480}}`)}},
+			outputBidExt:  json.RawMessage(`{"prebid":{"type":"video","bidid":"randomId"}}`),
+		},
+	}
+	// Test set up
+	sampleBids := []*pbsOrtbBid{
+		{
+			bid:            sampleOpenrtbBid,
+			bidType:        openrtb_ext.BidTypeVideo,
+			bidTargets:     map[string]string{},
+			generatedBidID: "randomId",
+		},
+	}
+	sampleAuction := &auction{}
+
+	e := new(exchange)
+	e.cache = &wellBehavedCache{}
+	e.me = &metricsConf.DummyMetricsEngine{}
+	e.gDPR = gdpr.AlwaysAllow{}
+	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+
+	//Run tests
+	for _, test := range testCases {
+		resultingBids, resultingErrs := e.makeBid(sampleBids, sampleAuction, false, test.impExtInfoMap)
+		assert.Equal(t, 0, len(resultingErrs), "%s. Test should not return errors \n", test.description)
+		assert.Equal(t, test.outputBidExt, resultingBids[0].Ext, "%s. Test should have DealPriority set to 0", test.description)
 	}
 }
 
