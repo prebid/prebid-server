@@ -124,24 +124,28 @@ func getSyncerKey(query url.Values, syncers map[string]usersync.Syncer) (string,
 	return key, nil
 }
 
+// getResponseFormat reads the format query parameter or falls back to the syncer's default.
+// Returns either "b" (iframe), "i" (redirect), or an empty string "" (legacy behavior of an
+// empty response body with no content type).
 func getResponseFormat(query url.Values, syncer usersync.Syncer) (string, error) {
-	format := query.Get("f")
+	format, formatProvided := query["f"]
+	formatEmpty := len(format) == 0 || format[0] == ""
 
-	if format == "" {
+	if !formatProvided || formatEmpty {
 		switch syncer.DefaultSyncType() {
 		case usersync.SyncTypeIFrame:
 			return "b", nil
 		case usersync.SyncTypeRedirect:
 			return "i", nil
 		default:
-			return "", errors.New("invalid default sync type")
+			return "", nil
 		}
 	}
 
-	if !strings.EqualFold(format, "b") && !strings.EqualFold(format, "i") {
+	if !strings.EqualFold(format[0], "b") && !strings.EqualFold(format[0], "i") {
 		return "", errors.New(`"f" query param is invalid. must be "b" or "i"`)
 	}
-	return strings.ToLower(format), nil
+	return strings.ToLower(format[0]), nil
 }
 
 // siteCookieCheck scans the input User Agent string to check if browser is Chrome and browser version is greater than the minimum version for adding the SameSite cookie attribute

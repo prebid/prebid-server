@@ -419,10 +419,10 @@ func TestGetResponseFormat(t *testing.T) {
 			description:    "parameter not provided, use default sync type redirect",
 		},
 		{
-			urlValues:     url.Values{},
-			syncer:        fakeSyncer{key: "a", defaultSyncType: usersync.SyncType("invalid")},
-			expectedError: "invalid default sync type",
-			description:   "parameter not provided, use default sync type invalid",
+			urlValues:      url.Values{},
+			syncer:         fakeSyncer{key: "a", defaultSyncType: usersync.SyncType("invalid")},
+			expectedFormat: "",
+			description:    "parameter not provided,  default sync type is invalid",
 		},
 		{
 			urlValues:      url.Values{"f": []string{"b"}},
@@ -453,6 +453,18 @@ func TestGetResponseFormat(t *testing.T) {
 			syncer:        fakeSyncer{key: "a", defaultSyncType: usersync.SyncTypeIFrame},
 			expectedError: `"f" query param is invalid. must be "b" or "i"`,
 			description:   "parameter given invalid",
+		},
+		{
+			urlValues:      url.Values{"f": []string{}},
+			syncer:         fakeSyncer{key: "a", defaultSyncType: usersync.SyncTypeRedirect},
+			expectedFormat: "i",
+			description:    "parameter given is empty (by slice), use default sync type redirect",
+		},
+		{
+			urlValues:      url.Values{"f": []string{""}},
+			syncer:         fakeSyncer{key: "a", defaultSyncType: usersync.SyncTypeRedirect},
+			expectedFormat: "i",
+			description:    "parameter given is empty (by empty item), use default sync type redirect",
 		},
 	}
 
