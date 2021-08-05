@@ -146,6 +146,34 @@ func preprocess(imp *openrtb2.Imp) (*openrtb_ext.ExtImpGumGum, error) {
 		format := bannerCopy.Format[0]
 		bannerCopy.W = &(format.W)
 		bannerCopy.H = &(format.H)
+
+		if gumgumExt.Slot != 0 {
+			maxw := int64(0)
+			maxh := int64(0)
+			greatestVal := int64(0)
+			for _, size := range bannerCopy.Format {
+				var biggerSide int64
+				if size.W > size.H {
+					biggerSide = size.W
+				} else {
+					biggerSide = size.H
+				}
+
+				if biggerSide > greatestVal || (biggerSide == greatestVal && size.W >= maxw && size.H >= maxh) {
+					greatestVal = biggerSide
+					maxh = size.H
+					maxw = size.W
+				}
+			}
+
+			var err error
+			bannerExt := openrtb_ext.ExtImpGumGumBanner{Si: gumgumExt.Slot, MaxW: float64(maxw), MaxH: float64(maxh)}
+			bannerCopy.Ext, err = json.Marshal(&bannerExt)
+			if err != nil {
+				return nil, err
+			}
+		}
+
 		imp.Banner = &bannerCopy
 	}
 
