@@ -932,6 +932,7 @@ func (e *exchange) makeBid(bids []*pbsOrtbBid, auc *auction, returnCreative bool
 			Events:            bid.bidEvents,
 			Targeting:         bid.bidTargets,
 			Type:              bid.bidType,
+			Meta:              bid.bidMeta,
 			Video:             bid.bidVideo,
 			BidId:             bid.generatedBidID,
 		}
