@@ -29,6 +29,13 @@ const (
 func NewSetUIDEndpoint(cfg config.HostCookie, syncers map[string]usersync.Syncer, perms gdpr.Permissions, pbsanalytics analytics.PBSAnalyticsModule, metricsEngine metrics.MetricsEngine) httprouter.Handle {
 	cookieTTL := time.Duration(cfg.TTL) * 24 * time.Hour
 
+	// convert map of syncers by bidder to map of syncers by key
+	// - its safe to assume that if multiple bidders map to the same key, the syncers are interchangeable.
+	syncersByKey := make(map[string]usersync.Syncer, len(syncers))
+	for _, v := range syncers {
+		syncersByKey[v.Key()] = v
+	}
+
 	return httprouter.Handle(func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		so := analytics.SetUIDObject{
 			Status: http.StatusOK,
@@ -47,7 +54,7 @@ func NewSetUIDEndpoint(cfg config.HostCookie, syncers map[string]usersync.Syncer
 
 		query := r.URL.Query()
 
-		syncerKey, err := getSyncerKey(query, syncers)
+		syncer, err := getSyncer(query, syncersByKey)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(err.Error()))
@@ -55,9 +62,9 @@ func NewSetUIDEndpoint(cfg config.HostCookie, syncers map[string]usersync.Syncer
 			so.Status = http.StatusBadRequest
 			return
 		}
-		so.Bidder = syncerKey
+		so.Bidder = syncer.Key()
 
-		responseFormat, err := getResponseFormat(query, syncers[syncerKey])
+		responseFormat, err := getResponseFormat(query, syncer)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(err.Error()))
@@ -83,13 +90,13 @@ func NewSetUIDEndpoint(cfg config.HostCookie, syncers map[string]usersync.Syncer
 		so.UID = uid
 
 		if uid == "" {
-			pc.Unsync(syncerKey)
+			pc.Unsync(syncer.Key())
 			metricsEngine.RecordSetUid(metrics.SetUidOK)
-			metricsEngine.RecordSyncerSet(syncerKey, metrics.SyncerSetUidCleared)
+			metricsEngine.RecordSyncerSet(syncer.Key(), metrics.SyncerSetUidCleared)
 			so.Success = true
-		} else if err = pc.TrySync(syncerKey, uid); err == nil {
+		} else if err = pc.TrySync(syncer.Key(), uid); err == nil {
 			metricsEngine.RecordSetUid(metrics.SetUidOK)
-			metricsEngine.RecordSyncerSet(syncerKey, metrics.SyncerSetUidOK)
+			metricsEngine.RecordSyncerSet(syncer.Key(), metrics.SyncerSetUidOK)
 			so.Success = true
 		}
 
@@ -110,18 +117,19 @@ func NewSetUIDEndpoint(cfg config.HostCookie, syncers map[string]usersync.Syncer
 	})
 }
 
-func getSyncerKey(query url.Values, syncers map[string]usersync.Syncer) (string, error) {
+func getSyncer(query url.Values, syncersByKey map[string]usersync.Syncer) (usersync.Syncer, error) {
 	key := query.Get("bidder")
 
 	if key == "" {
-		return "", errors.New(`"bidder" query param is required`)
+		return nil, errors.New(`"bidder" query param is required`)
 	}
 
-	if _, ok := syncers[key]; !ok {
-		return "", errors.New("The bidder name provided is not supported by Prebid Server")
+	syncer, syncerExists := syncersByKey[key]
+	if !syncerExists {
+		return nil, errors.New("The bidder name provided is not supported by Prebid Server")
 	}
 
-	return key, nil
+	return syncer, nil
 }
 
 // getResponseFormat reads the format query parameter or falls back to the syncer's default.
@@ -159,6 +167,7 @@ func siteCookieCheck(ua string) bool {
 	} else if criOSIndex != -1 {
 		result = checkChromeBrowserVersion(ua, criOSIndex, chromeiOSStrLen)
 	}
+
 	return result
 }
 
@@ -177,7 +186,6 @@ func checkChromeBrowserVersion(ua string, index int, chromeStrLength int) bool {
 }
 
 func preventSyncsGDPR(gdprEnabled string, gdprConsent string, perms gdpr.Permissions) (shouldReturn bool, status int, body string) {
-
 	if gdprEnabled != "" && gdprEnabled != "0" && gdprEnabled != "1" {
 		return true, http.StatusBadRequest, "the gdpr query param must be either 0 or 1. You gave " + gdprEnabled
 	}
@@ -198,10 +206,10 @@ func preventSyncsGDPR(gdprEnabled string, gdprConsent string, perms gdpr.Permiss
 			return true, http.StatusBadRequest, "gdpr_consent was invalid. " + err.Error()
 		}
 
-		// We can't really distinguish between requests that are for a new version of the global vendor list, and
-		// ones which are simply malformed (version number is much too large).
-		// Since we try to fetch new versions as requests come in for them, PBS *should* self-correct
-		// rather quickly, meaning that most of these will be malformed strings.
+		// We can't distinguish between requests for a new version of the global vendor list, and requests
+		// which are malformed (version number is much too large). Since we try to fetch new versions as we
+		// receive requests, PBS *should* self-correct quickly, allowing us to assume most of the errors
+		// caught here will be malformed strings.
 		return true, http.StatusBadRequest, "No global vendor list was available to interpret this consent string. If this is a new, valid version, it should become available soon."
 	}
 

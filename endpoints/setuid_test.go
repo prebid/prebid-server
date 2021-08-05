@@ -24,138 +24,148 @@ import (
 
 func TestSetUIDEndpoint(t *testing.T) {
 	testCases := []struct {
-		uri                   string
-		syncers               []string
-		existingSyncs         map[string]string
-		gdprAllowsHostCookies bool
-		gdprReturnsError      bool
-		gdprMalformed         bool
-		expectedSyncs         map[string]string
-		expectedBody          string
-		expectedStatusCode    int
-		expectedHeaders       map[string]string
-		description           string
+		uri                    string
+		syncersBidderNameToKey map[string]string
+		existingSyncs          map[string]string
+		gdprAllowsHostCookies  bool
+		gdprReturnsError       bool
+		gdprMalformed          bool
+		expectedSyncs          map[string]string
+		expectedBody           string
+		expectedStatusCode     int
+		expectedHeaders        map[string]string
+		description            string
 	}{
 		{
-			uri:                   "/setuid?bidder=pubmatic&uid=123",
-			syncers:               []string{"pubmatic"},
-			existingSyncs:         nil,
-			gdprAllowsHostCookies: true,
-			expectedSyncs:         map[string]string{"pubmatic": "123"},
-			expectedStatusCode:    http.StatusOK,
-			expectedHeaders:       map[string]string{"Content-Type": "text/html", "Content-Length": "0"},
-			description:           "Set uid for valid bidder",
+			uri:                    "/setuid?bidder=pubmatic&uid=123",
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			existingSyncs:          nil,
+			gdprAllowsHostCookies:  true,
+			expectedSyncs:          map[string]string{"pubmatic": "123"},
+			expectedStatusCode:     http.StatusOK,
+			expectedHeaders:        map[string]string{"Content-Type": "text/html", "Content-Length": "0"},
+			description:            "Set uid for valid bidder",
 		},
 		{
-			uri:                   "/setuid?bidder=unsupported-bidder&uid=123",
-			syncers:               []string{},
-			existingSyncs:         nil,
-			gdprAllowsHostCookies: true,
-			expectedSyncs:         nil,
-			expectedStatusCode:    http.StatusBadRequest,
-			expectedBody:          "The bidder name provided is not supported by Prebid Server",
-			description:           "Don't set uid for an unsupported bidder",
+			uri:                    "/setuid?bidder=adnxs&uid=123",
+			syncersBidderNameToKey: map[string]string{"appnexus": "adnxs"},
+			existingSyncs:          nil,
+			gdprAllowsHostCookies:  true,
+			expectedSyncs:          map[string]string{"adnxs": "123"},
+			expectedStatusCode:     http.StatusOK,
+			expectedHeaders:        map[string]string{"Content-Type": "text/html", "Content-Length": "0"},
+			description:            "Set uid for valid bidder with different key",
 		},
 		{
-			uri:                   "/setuid?bidder=&uid=123",
-			syncers:               []string{"pubmatic"},
-			existingSyncs:         nil,
-			gdprAllowsHostCookies: true,
-			expectedSyncs:         nil,
-			expectedStatusCode:    http.StatusBadRequest,
-			expectedBody:          `"bidder" query param is required`,
-			description:           "Don't set uid for an empty bidder",
+			uri:                    "/setuid?bidder=unsupported-bidder&uid=123",
+			syncersBidderNameToKey: map[string]string{},
+			existingSyncs:          nil,
+			gdprAllowsHostCookies:  true,
+			expectedSyncs:          nil,
+			expectedStatusCode:     http.StatusBadRequest,
+			expectedBody:           "The bidder name provided is not supported by Prebid Server",
+			description:            "Don't set uid for an unsupported bidder",
 		},
 		{
-			uri:                   "/setuid?bidder=unsupported-bidder&uid=123",
-			syncers:               []string{},
-			existingSyncs:         map[string]string{"pubmatic": "1234"},
-			gdprAllowsHostCookies: true,
-			expectedSyncs:         nil,
-			expectedStatusCode:    http.StatusBadRequest,
-			expectedBody:          "The bidder name provided is not supported by Prebid Server",
+			uri:                    "/setuid?bidder=&uid=123",
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			existingSyncs:          nil,
+			gdprAllowsHostCookies:  true,
+			expectedSyncs:          nil,
+			expectedStatusCode:     http.StatusBadRequest,
+			expectedBody:           `"bidder" query param is required`,
+			description:            "Don't set uid for an empty bidder",
+		},
+		{
+			uri:                    "/setuid?bidder=unsupported-bidder&uid=123",
+			syncersBidderNameToKey: map[string]string{},
+			existingSyncs:          map[string]string{"pubmatic": "1234"},
+			gdprAllowsHostCookies:  true,
+			expectedSyncs:          nil,
+			expectedStatusCode:     http.StatusBadRequest,
+			expectedBody:           "The bidder name provided is not supported by Prebid Server",
 			description: "No need to set existing syncs back in response for a request " +
 				"to set uid for an unsupported bidder",
 		},
 		{
-			uri:                   "/setuid?bidder=&uid=123",
-			syncers:               []string{"pubmatic"},
-			existingSyncs:         map[string]string{"pubmatic": "1234"},
-			gdprAllowsHostCookies: true,
-			expectedSyncs:         nil,
-			expectedStatusCode:    http.StatusBadRequest,
-			expectedBody:          `"bidder" query param is required`,
+			uri:                    "/setuid?bidder=&uid=123",
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			existingSyncs:          map[string]string{"pubmatic": "1234"},
+			gdprAllowsHostCookies:  true,
+			expectedSyncs:          nil,
+			expectedStatusCode:     http.StatusBadRequest,
+			expectedBody:           `"bidder" query param is required`,
 			description: "No need to set existing syncs back in response for a request " +
 				"to set uid for an empty bidder",
 		},
 		{
-			uri:                   "/setuid?bidder=pubmatic",
-			syncers:               []string{"pubmatic"},
-			existingSyncs:         map[string]string{"pubmatic": "1234"},
-			gdprAllowsHostCookies: true,
-			expectedSyncs:         map[string]string{},
-			expectedStatusCode:    http.StatusOK,
-			expectedHeaders:       map[string]string{"Content-Type": "text/html", "Content-Length": "0"},
-			description:           "Unset uid for a bidder if the request contains an empty uid for that bidder",
+			uri:                    "/setuid?bidder=pubmatic",
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			existingSyncs:          map[string]string{"pubmatic": "1234"},
+			gdprAllowsHostCookies:  true,
+			expectedSyncs:          map[string]string{},
+			expectedStatusCode:     http.StatusOK,
+			expectedHeaders:        map[string]string{"Content-Type": "text/html", "Content-Length": "0"},
+			description:            "Unset uid for a bidder if the request contains an empty uid for that bidder",
 		},
 		{
-			uri:                   "/setuid?bidder=pubmatic&uid=123",
-			syncers:               []string{"pubmatic"},
-			existingSyncs:         map[string]string{"rubicon": "def"},
-			gdprAllowsHostCookies: true,
-			expectedSyncs:         map[string]string{"pubmatic": "123", "rubicon": "def"},
-			expectedStatusCode:    http.StatusOK,
-			expectedHeaders:       map[string]string{"Content-Type": "text/html", "Content-Length": "0"},
-			description:           "Add the uid for the requested bidder to the list of existing syncs",
+			uri:                    "/setuid?bidder=pubmatic&uid=123",
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			existingSyncs:          map[string]string{"rubicon": "def"},
+			gdprAllowsHostCookies:  true,
+			expectedSyncs:          map[string]string{"pubmatic": "123", "rubicon": "def"},
+			expectedStatusCode:     http.StatusOK,
+			expectedHeaders:        map[string]string{"Content-Type": "text/html", "Content-Length": "0"},
+			description:            "Add the uid for the requested bidder to the list of existing syncs",
 		},
 		{
-			uri:                   "/setuid?bidder=pubmatic&uid=123&gdpr=0",
-			syncers:               []string{"pubmatic"},
-			existingSyncs:         nil,
-			gdprAllowsHostCookies: true,
-			expectedSyncs:         map[string]string{"pubmatic": "123"},
-			expectedStatusCode:    http.StatusOK,
-			expectedHeaders:       map[string]string{"Content-Type": "text/html", "Content-Length": "0"},
-			description:           "Don't care about GDPR consent if GDPR is set to 0",
+			uri:                    "/setuid?bidder=pubmatic&uid=123&gdpr=0",
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			existingSyncs:          nil,
+			gdprAllowsHostCookies:  true,
+			expectedSyncs:          map[string]string{"pubmatic": "123"},
+			expectedStatusCode:     http.StatusOK,
+			expectedHeaders:        map[string]string{"Content-Type": "text/html", "Content-Length": "0"},
+			description:            "Don't care about GDPR consent if GDPR is set to 0",
 		},
 		{
-			uri:                   "/setuid?uid=123",
-			syncers:               []string{"appnexus"},
-			existingSyncs:         nil,
-			expectedSyncs:         nil,
-			gdprAllowsHostCookies: true,
-			expectedStatusCode:    http.StatusBadRequest,
-			expectedBody:          `"bidder" query param is required`,
-			description:           "Return an error if the bidder param is missing from the request",
+			uri:                    "/setuid?uid=123",
+			syncersBidderNameToKey: map[string]string{"appnexus": "appnexus"},
+			existingSyncs:          nil,
+			expectedSyncs:          nil,
+			gdprAllowsHostCookies:  true,
+			expectedStatusCode:     http.StatusBadRequest,
+			expectedBody:           `"bidder" query param is required`,
+			description:            "Return an error if the bidder param is missing from the request",
 		},
 		{
-			uri:                   "/setuid?bidder=appnexus&uid=123&gdpr=2",
-			syncers:               []string{"appnexus"},
-			existingSyncs:         nil,
-			expectedSyncs:         nil,
-			gdprAllowsHostCookies: true,
-			expectedStatusCode:    http.StatusBadRequest,
-			expectedBody:          "the gdpr query param must be either 0 or 1. You gave 2",
-			description:           "Return an error if GDPR is set to anything else other that 0 or 1",
+			uri:                    "/setuid?bidder=appnexus&uid=123&gdpr=2",
+			syncersBidderNameToKey: map[string]string{"appnexus": "appnexus"},
+			existingSyncs:          nil,
+			expectedSyncs:          nil,
+			gdprAllowsHostCookies:  true,
+			expectedStatusCode:     http.StatusBadRequest,
+			expectedBody:           "the gdpr query param must be either 0 or 1. You gave 2",
+			description:            "Return an error if GDPR is set to anything else other that 0 or 1",
 		},
 		{
-			uri:                   "/setuid?bidder=appnexus&uid=123&gdpr=1",
-			syncers:               []string{"appnexus"},
-			existingSyncs:         nil,
-			expectedSyncs:         nil,
-			gdprAllowsHostCookies: true,
-			expectedStatusCode:    http.StatusBadRequest,
-			expectedBody:          "gdpr_consent is required when gdpr=1",
-			description:           "Return an error if GDPR is set to 1 but GDPR consent string is missing",
+			uri:                    "/setuid?bidder=appnexus&uid=123&gdpr=1",
+			syncersBidderNameToKey: map[string]string{"appnexus": "appnexus"},
+			existingSyncs:          nil,
+			expectedSyncs:          nil,
+			gdprAllowsHostCookies:  true,
+			expectedStatusCode:     http.StatusBadRequest,
+			expectedBody:           "gdpr_consent is required when gdpr=1",
+			description:            "Return an error if GDPR is set to 1 but GDPR consent string is missing",
 		},
 		{
 			uri: "/setuid?bidder=pubmatic&uid=123&gdpr_consent=" +
 				"BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw",
-			syncers:            []string{"pubmatic"},
-			existingSyncs:      nil,
-			expectedSyncs:      nil,
-			gdprReturnsError:   true,
-			expectedStatusCode: http.StatusBadRequest,
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			existingSyncs:          nil,
+			expectedSyncs:          nil,
+			gdprReturnsError:       true,
+			expectedStatusCode:     http.StatusBadRequest,
 			expectedBody: "No global vendor list was available to interpret this consent string. " +
 				"If this is a new, valid version, it should become available soon.",
 			description: "Return an error if the GDPR string is either malformed or using a newer version that isn't yet supported",
@@ -163,71 +173,71 @@ func TestSetUIDEndpoint(t *testing.T) {
 		{
 			uri: "/setuid?bidder=pubmatic&uid=123&gdpr=1&gdpr_consent=" +
 				"BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw",
-			syncers:            []string{"pubmatic"},
-			existingSyncs:      nil,
-			expectedSyncs:      nil,
-			expectedStatusCode: http.StatusUnavailableForLegalReasons,
-			expectedBody:       "The gdpr_consent string prevents cookies from being saved",
-			description:        "Shouldn't set uid for a bidder if it is not allowed by the GDPR consent string",
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			existingSyncs:          nil,
+			expectedSyncs:          nil,
+			expectedStatusCode:     http.StatusUnavailableForLegalReasons,
+			expectedBody:           "The gdpr_consent string prevents cookies from being saved",
+			description:            "Shouldn't set uid for a bidder if it is not allowed by the GDPR consent string",
 		},
 		{
 			uri: "/setuid?bidder=pubmatic&uid=123&gdpr=1&gdpr_consent=" +
 				"BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw",
-			syncers:               []string{"pubmatic"},
-			gdprAllowsHostCookies: true,
-			existingSyncs:         nil,
-			expectedSyncs:         map[string]string{"pubmatic": "123"},
-			expectedStatusCode:    http.StatusOK,
-			expectedHeaders:       map[string]string{"Content-Type": "text/html", "Content-Length": "0"},
-			description:           "Should set uid for a bidder that is allowed by the GDPR consent string",
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			gdprAllowsHostCookies:  true,
+			existingSyncs:          nil,
+			expectedSyncs:          map[string]string{"pubmatic": "123"},
+			expectedStatusCode:     http.StatusOK,
+			expectedHeaders:        map[string]string{"Content-Type": "text/html", "Content-Length": "0"},
+			description:            "Should set uid for a bidder that is allowed by the GDPR consent string",
 		},
 		{
 			uri: "/setuid?bidder=pubmatic&uid=123&gdpr=1&gdpr_consent=" +
 				"malformed",
-			syncers:               []string{"pubmatic"},
-			gdprAllowsHostCookies: true,
-			gdprMalformed:         true,
-			existingSyncs:         nil,
-			expectedStatusCode:    http.StatusBadRequest,
-			expectedBody:          "gdpr_consent was invalid. malformed consent string malformed: some error",
-			description:           "Should return an error if GDPR consent string is malformed",
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			gdprAllowsHostCookies:  true,
+			gdprMalformed:          true,
+			existingSyncs:          nil,
+			expectedStatusCode:     http.StatusBadRequest,
+			expectedBody:           "gdpr_consent was invalid. malformed consent string malformed: some error",
+			description:            "Should return an error if GDPR consent string is malformed",
 		},
 		{
-			uri:                   "/setuid?bidder=pubmatic&uid=123&f=b",
-			syncers:               []string{"pubmatic"},
-			existingSyncs:         nil,
-			gdprAllowsHostCookies: true,
-			expectedSyncs:         map[string]string{"pubmatic": "123"},
-			expectedStatusCode:    http.StatusOK,
-			expectedHeaders:       map[string]string{"Content-Type": "text/html", "Content-Length": "0"},
-			description:           "Set uid for valid bidder with iframe format",
+			uri:                    "/setuid?bidder=pubmatic&uid=123&f=b",
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			existingSyncs:          nil,
+			gdprAllowsHostCookies:  true,
+			expectedSyncs:          map[string]string{"pubmatic": "123"},
+			expectedStatusCode:     http.StatusOK,
+			expectedHeaders:        map[string]string{"Content-Type": "text/html", "Content-Length": "0"},
+			description:            "Set uid for valid bidder with iframe format",
 		},
 		{
-			uri:                   "/setuid?bidder=pubmatic&uid=123&f=i",
-			syncers:               []string{"pubmatic"},
-			existingSyncs:         nil,
-			gdprAllowsHostCookies: true,
-			expectedSyncs:         map[string]string{"pubmatic": "123"},
-			expectedStatusCode:    http.StatusOK,
-			expectedHeaders:       map[string]string{"Content-Type": "image/png", "Content-Length": "86"},
-			description:           "Set uid for valid bidder with redirect format",
+			uri:                    "/setuid?bidder=pubmatic&uid=123&f=i",
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			existingSyncs:          nil,
+			gdprAllowsHostCookies:  true,
+			expectedSyncs:          map[string]string{"pubmatic": "123"},
+			expectedStatusCode:     http.StatusOK,
+			expectedHeaders:        map[string]string{"Content-Type": "image/png", "Content-Length": "86"},
+			description:            "Set uid for valid bidder with redirect format",
 		},
 		{
-			uri:                   "/setuid?bidder=pubmatic&uid=123&f=x",
-			syncers:               []string{"pubmatic"},
-			existingSyncs:         nil,
-			gdprAllowsHostCookies: true,
-			expectedSyncs:         nil,
-			expectedStatusCode:    http.StatusBadRequest,
-			expectedBody:          `"f" query param is invalid. must be "b" or "i"`,
-			description:           "Set uid for valid bidder with invalid format",
+			uri:                    "/setuid?bidder=pubmatic&uid=123&f=x",
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			existingSyncs:          nil,
+			gdprAllowsHostCookies:  true,
+			expectedSyncs:          nil,
+			expectedStatusCode:     http.StatusBadRequest,
+			expectedBody:           `"f" query param is invalid. must be "b" or "i"`,
+			description:            "Set uid for valid bidder with invalid format",
 		},
 	}
 
 	metrics := &metricsConf.DummyMetricsEngine{}
 	for _, test := range testCases {
 		response := doRequest(makeRequest(test.uri, test.existingSyncs), metrics,
-			test.syncers, test.gdprAllowsHostCookies, test.gdprReturnsError, test.gdprMalformed)
+			test.syncersBidderNameToKey, test.gdprAllowsHostCookies, test.gdprReturnsError, test.gdprMalformed)
 		assert.Equal(t, test.expectedStatusCode, response.Code, "Test Case: %s. /setuid returned unexpected error code", test.description)
 
 		if test.expectedSyncs != nil {
@@ -259,89 +269,89 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 	cookieWithOptOut.SetOptOut(true)
 
 	testCases := []struct {
-		description           string
-		uri                   string
-		cookies               []*usersync.Cookie
-		syncers               []string
-		gdprAllowsHostCookies bool
-		expectedResponseCode  int
-		expectedMetrics       func(*metrics.MetricsEngineMock)
+		description            string
+		uri                    string
+		cookies                []*usersync.Cookie
+		syncersBidderNameToKey map[string]string
+		gdprAllowsHostCookies  bool
+		expectedResponseCode   int
+		expectedMetrics        func(*metrics.MetricsEngineMock)
 	}{
 		{
-			description:           "Success - Sync",
-			uri:                   "/setuid?bidder=pubmatic&uid=123",
-			cookies:               []*usersync.Cookie{},
-			syncers:               []string{"pubmatic"},
-			gdprAllowsHostCookies: true,
-			expectedResponseCode:  200,
+			description:            "Success - Sync",
+			uri:                    "/setuid?bidder=pubmatic&uid=123",
+			cookies:                []*usersync.Cookie{},
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			gdprAllowsHostCookies:  true,
+			expectedResponseCode:   200,
 			expectedMetrics: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordSetUid", metrics.SetUidOK).Once()
 				m.On("RecordSyncerSet", "pubmatic", metrics.SyncerSetUidOK).Once()
 			},
 		},
 		{
-			description:           "Success - Unsync",
-			uri:                   "/setuid?bidder=pubmatic&uid=",
-			cookies:               []*usersync.Cookie{},
-			syncers:               []string{"pubmatic"},
-			gdprAllowsHostCookies: true,
-			expectedResponseCode:  200,
+			description:            "Success - Unsync",
+			uri:                    "/setuid?bidder=pubmatic&uid=",
+			cookies:                []*usersync.Cookie{},
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			gdprAllowsHostCookies:  true,
+			expectedResponseCode:   200,
 			expectedMetrics: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordSetUid", metrics.SetUidOK).Once()
 				m.On("RecordSyncerSet", "pubmatic", metrics.SyncerSetUidCleared).Once()
 			},
 		},
 		{
-			description:           "Cookie Opted Out",
-			uri:                   "/setuid?bidder=pubmatic&uid=123",
-			cookies:               []*usersync.Cookie{cookieWithOptOut},
-			syncers:               []string{"pubmatic"},
-			gdprAllowsHostCookies: true,
-			expectedResponseCode:  401,
+			description:            "Cookie Opted Out",
+			uri:                    "/setuid?bidder=pubmatic&uid=123",
+			cookies:                []*usersync.Cookie{cookieWithOptOut},
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			gdprAllowsHostCookies:  true,
+			expectedResponseCode:   401,
 			expectedMetrics: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordSetUid", metrics.SetUidOptOut).Once()
 			},
 		},
 		{
-			description:           "Unknown Syncer Key",
-			uri:                   "/setuid?bidder=pubmatic&uid=123",
-			cookies:               []*usersync.Cookie{},
-			syncers:               []string{},
-			gdprAllowsHostCookies: true,
-			expectedResponseCode:  400,
+			description:            "Unknown Syncer Key",
+			uri:                    "/setuid?bidder=pubmatic&uid=123",
+			cookies:                []*usersync.Cookie{},
+			syncersBidderNameToKey: map[string]string{},
+			gdprAllowsHostCookies:  true,
+			expectedResponseCode:   400,
 			expectedMetrics: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordSetUid", metrics.SetUidSyncerUnknown).Once()
 			},
 		},
 		{
-			description:           "Unknown Format",
-			uri:                   "/setuid?bidder=pubmatic&uid=123&f=z",
-			cookies:               []*usersync.Cookie{},
-			syncers:               []string{"pubmatic"},
-			gdprAllowsHostCookies: true,
-			expectedResponseCode:  400,
+			description:            "Unknown Format",
+			uri:                    "/setuid?bidder=pubmatic&uid=123&f=z",
+			cookies:                []*usersync.Cookie{},
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			gdprAllowsHostCookies:  true,
+			expectedResponseCode:   400,
 			expectedMetrics: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordSetUid", metrics.SetUidBadRequest).Once()
 			},
 		},
 		{
-			description:           "Prevented By GDPR - Invalid Consent String",
-			uri:                   "/setuid?bidder=pubmatic&uid=123&gdpr=1",
-			cookies:               []*usersync.Cookie{},
-			syncers:               []string{"pubmatic"},
-			gdprAllowsHostCookies: true,
-			expectedResponseCode:  400,
+			description:            "Prevented By GDPR - Invalid Consent String",
+			uri:                    "/setuid?bidder=pubmatic&uid=123&gdpr=1",
+			cookies:                []*usersync.Cookie{},
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			gdprAllowsHostCookies:  true,
+			expectedResponseCode:   400,
 			expectedMetrics: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordSetUid", metrics.SetUidBadRequest).Once()
 			},
 		},
 		{
-			description:           "Prevented By GDPR - Permission Denied By Consent String",
-			uri:                   "/setuid?bidder=pubmatic&uid=123&gdpr=1&gdpr_consent=any",
-			cookies:               []*usersync.Cookie{},
-			syncers:               []string{"pubmatic"},
-			gdprAllowsHostCookies: false,
-			expectedResponseCode:  451,
+			description:            "Prevented By GDPR - Permission Denied By Consent String",
+			uri:                    "/setuid?bidder=pubmatic&uid=123&gdpr=1&gdpr_consent=any",
+			cookies:                []*usersync.Cookie{},
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			gdprAllowsHostCookies:  false,
+			expectedResponseCode:   451,
 			expectedMetrics: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordSetUid", metrics.SetUidGDPRHostCookieBlocked).Once()
 			},
@@ -356,7 +366,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 		for _, v := range test.cookies {
 			addCookie(req, v)
 		}
-		response := doRequest(req, metricsEngine, test.syncers, test.gdprAllowsHostCookies, false, false)
+		response := doRequest(req, metricsEngine, test.syncersBidderNameToKey, test.gdprAllowsHostCookies, false, false)
 
 		assert.Equal(t, test.expectedResponseCode, response.Code, test.description)
 		metricsEngine.AssertExpectations(t)
@@ -368,9 +378,9 @@ func TestOptedOut(t *testing.T) {
 	cookie := usersync.NewCookie()
 	cookie.SetOptOut(true)
 	addCookie(request, cookie)
-	syncers := []string{"pubmatic"}
+	syncersBidderNameToKey := map[string]string{"pubmatic": "pubmatic"}
 	metrics := &metricsConf.DummyMetricsEngine{}
-	response := doRequest(request, metrics, syncers, true, false, false)
+	response := doRequest(request, metrics, syncersBidderNameToKey, true, false, false)
 
 	assert.Equal(t, http.StatusUnauthorized, response.Code)
 }
@@ -506,7 +516,7 @@ func makeRequest(uri string, existingSyncs map[string]string) *http.Request {
 	return request
 }
 
-func doRequest(req *http.Request, metrics metrics.MetricsEngine, syncers []string, gdprAllowsHostCookies, gdprReturnsError, gdprReturnsMalformedError bool) *httptest.ResponseRecorder {
+func doRequest(req *http.Request, metrics metrics.MetricsEngine, syncersBidderNameToKey map[string]string, gdprAllowsHostCookies, gdprReturnsError, gdprReturnsMalformedError bool) *httptest.ResponseRecorder {
 	cfg := config.Configuration{}
 	perms := &mockPermsSetUID{
 		allowHost:           gdprAllowsHostCookies,
@@ -515,12 +525,12 @@ func doRequest(req *http.Request, metrics metrics.MetricsEngine, syncers []strin
 		personalInfoAllowed: true,
 	}
 	analytics := analyticsConf.NewPBSAnalytics(&cfg.Analytics)
-	syncersMap := make(map[string]usersync.Syncer)
-	for _, key := range syncers {
-		syncersMap[key] = fakeSyncer{key: key, defaultSyncType: usersync.SyncTypeIFrame}
+	syncersByBidder := make(map[string]usersync.Syncer)
+	for bidderName, syncerKey := range syncersBidderNameToKey {
+		syncersByBidder[bidderName] = fakeSyncer{key: syncerKey, defaultSyncType: usersync.SyncTypeIFrame}
 	}
 
-	endpoint := NewSetUIDEndpoint(cfg.HostCookie, syncersMap, perms, analytics, metrics)
+	endpoint := NewSetUIDEndpoint(cfg.HostCookie, syncersByBidder, perms, analytics, metrics)
 	response := httptest.NewRecorder()
 	endpoint(response, req, nil)
 	return response
