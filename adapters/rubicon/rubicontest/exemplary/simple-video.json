@@ -315,6 +315,7 @@
           "id": "test-request-id",
           "seatbid": [
             {
+              "buyer": "123",
               "bid": [
                 {
                   "id": "test_bid_id",
@@ -326,6 +327,9 @@
                   "dealid": "test_dealid",
                   "ext": {
                     "prebid": {
+                      "meta": {
+                        "networkId": 123
+                      },
                       "type": "video"
                     }
                   }
@@ -354,6 +358,9 @@
             "dealid": "test_dealid",
             "ext": {
               "prebid": {
+                "meta": {
+                  "networkId": 123
+                },
                 "type": "video"
               }
             }
