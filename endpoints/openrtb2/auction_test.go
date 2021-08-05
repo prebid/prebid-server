@@ -1065,6 +1065,13 @@ func TestStoredRequestsVideoErrors(t *testing.T) {
 		hardcodedResponseIPValidator{response: true},
 	}
 
+	// tests processStoredRequests function behavior in parsing incorrect input related to echovideoattrs feature
+	// this test now has 2 scenarios:
+	// 1) expected value we get using jsonparser.GetBoolean is integer
+	// 2) imp id is not found using jsonparser.GetString
+	// this loop iterates over testStoredRequestsErrors where input json has incorrect set up
+	// testStoredRequestsErrorsResults variable contains error message for every iteration
+
 	for i, requestData := range testStoredRequestsErrors {
 		_, _, errList := deps.processStoredRequests(context.Background(), json.RawMessage(requestData))
 
