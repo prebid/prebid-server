@@ -368,5 +368,6 @@ func (p usersyncPrivacy) GDPRAllowsBidderSync(bidder string) bool {
 }
 
 func (p usersyncPrivacy) CCPAAllowsBidderSync(bidder string) bool {
-	return p.ccpaParsedPolicy.ShouldEnforce(bidder)
+	enforce := p.ccpaParsedPolicy.CanEnforce() && p.ccpaParsedPolicy.ShouldEnforce(bidder)
+	return !enforce
 }

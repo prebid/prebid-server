@@ -1214,14 +1214,19 @@ func TestUsersyncPrivacyCCPAAllowsBidderSync(t *testing.T) {
 		expected     bool
 	}{
 		{
-			description:  "Allowed",
-			givenConsent: "1YYY",
+			description:  "Allowed - No Opt-Out",
+			givenConsent: "1NNN",
 			expected:     true,
 		},
 		{
-			description:  "Not Allowed",
-			givenConsent: "1NNN",
+			description:  "Not Allowed - Opt-Out",
+			givenConsent: "1NYN",
 			expected:     false,
+		},
+		{
+			description:  "Not Specified",
+			givenConsent: "",
+			expected:     true,
 		},
 	}
 
