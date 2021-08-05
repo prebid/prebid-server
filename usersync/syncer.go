@@ -144,7 +144,7 @@ var (
 	macroRegexSyncType     = regexp.MustCompile(`{{\s*\.SyncType\s*}}`)
 	macroRegexUserMacro    = regexp.MustCompile(`{{\s*\.UserMacro\s*}}`)
 	macroRegexRedirect     = regexp.MustCompile(`{{\s*\.RedirectURL\s*}}`)
-	macroRegex             = regexp.MustCompile(`{{.*?}}`)
+	macroRegex             = regexp.MustCompile(`{{\s*\..*?\s*}}`)
 )
 
 func buildTemplate(key, syncTypeValue string, hostConfig config.UserSync, syncerEndpoint config.SyncerEndpoint) (*template.Template, error) {

@@ -285,8 +285,17 @@ func TestBuildTemplate(t *testing.T) {
 			},
 			expectedError: "template: anykey_usersync_url:1: function \"malformed\" not defined",
 		},
+		{
+			description: "User Macro Is Go Template Macro-Like",
+			givenSyncerEndpoint: config.SyncerEndpoint{
+				URL:         "https://bidder.com/sync?redirect={{.RedirectURL}}",
+				RedirectURL: "{{.ExternalURL}}/setuid?bidder={{.SyncerKey}}&f={{.SyncType}}&gdpr={{.GDPR}}&uid={{.UserMacro}}",
+				UserMacro:   "{{UID}}",
+			},
+			expectedRendered: "https://bidder.com/sync?redirect=http%3A%2F%2Fhost.com%2Fsetuid%3Fbidder%3DanyKey%26f%3Dx%26gdpr%3DA%26uid%3D%7B%7BUID%7D%7D",
+		},
 
-		// The following tests protect against the . literal character vs . character class in regex.
+		// The following tests protect against the "." literal character vs the "."" character class in regex.
 		{
 			description: "Invalid Macro - Redirect URL",
 			givenSyncerEndpoint: config.SyncerEndpoint{
@@ -300,7 +309,7 @@ func TestBuildTemplate(t *testing.T) {
 				URL:         "https://bidder.com/sync?redirect={{.RedirectURL}}",
 				RedirectURL: "{{xExternalURL}}",
 			},
-			expectedError: "template: anykey_usersync_url:1: function \"xExternalURL\" not defined",
+			expectedRendered: "https://bidder.com/sync?redirect=%7B%7BxExternalURL%7D%7D",
 		},
 		{
 			description: "Invalid Macro - Syncer Key",
@@ -308,7 +317,7 @@ func TestBuildTemplate(t *testing.T) {
 				URL:         "https://bidder.com/sync?redirect={{.RedirectURL}}",
 				RedirectURL: "{{xSyncerKey}}",
 			},
-			expectedError: "template: anykey_usersync_url:1: function \"xSyncerKey\" not defined",
+			expectedRendered: "https://bidder.com/sync?redirect=%7B%7BxSyncerKey%7D%7D",
 		},
 		{
 			description: "Invalid Macro - Sync Type",
@@ -316,7 +325,7 @@ func TestBuildTemplate(t *testing.T) {
 				URL:         "https://bidder.com/sync?redirect={{.RedirectURL}}",
 				RedirectURL: "{{xSyncType}}",
 			},
-			expectedError: "template: anykey_usersync_url:1: function \"xSyncType\" not defined",
+			expectedRendered: "https://bidder.com/sync?redirect=%7B%7BxSyncType%7D%7D",
 		},
 		{
 			description: "Invalid Macro - User Macro",
@@ -324,7 +333,7 @@ func TestBuildTemplate(t *testing.T) {
 				URL:         "https://bidder.com/sync?redirect={{.RedirectURL}}",
 				RedirectURL: "{{xUserMacro}}",
 			},
-			expectedError: "template: anykey_usersync_url:1: function \"xUserMacro\" not defined",
+			expectedRendered: "https://bidder.com/sync?redirect=%7B%7BxUserMacro%7D%7D",
 		},
 	}
 
@@ -388,6 +397,11 @@ func TestEscapeTemplate(t *testing.T) {
 			description: "Macro Whitespace Insensitive",
 			given:       " &a {{ .Macro1  }} /b ",
 			expected:    "+%26a+{{ .Macro1  }}+%2Fb+",
+		},
+		{
+			description: "Double Curly Braces, But Not Macro",
+			given:       "{{Macro}}",
+			expected:    "%7B%7BMacro%7D%7D",
 		},
 	}
 
