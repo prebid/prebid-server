@@ -50,7 +50,7 @@
         "^[a-zA-Z_]": { "type": "string" }
       }
     },
-    "prebidVersion:": {
+    "prebidVersion": {
       "type": "string",
       "description": "Name to identify the version of Prebid.js"
     },
