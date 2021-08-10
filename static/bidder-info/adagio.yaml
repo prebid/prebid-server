@@ -10,3 +10,7 @@ capabilities:
       - banner
       - video
       - native
+userSync:
+  redirect:
+    url: "https://mp.4dex.io/sync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
+    userMacro: "{{UID}}"
