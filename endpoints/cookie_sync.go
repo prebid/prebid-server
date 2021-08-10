@@ -32,7 +32,7 @@ var (
 var cookieSyncBidderFilterAllowAll = usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude)
 
 func NewCookieSyncEndpoint(
-	syncers map[string]usersync.Syncer,
+	syncersByBidder map[string]usersync.Syncer,
 	config *config.Configuration,
 	gdprPermissions gdpr.Permissions,
 	metrics metrics.MetricsEngine,
@@ -45,7 +45,7 @@ func NewCookieSyncEndpoint(
 	}
 
 	return &cookieSyncEndpoint{
-		chooser:          usersync.NewChooser(syncers),
+		chooser:          usersync.NewChooser(syncersByBidder),
 		config:           config.UserSync,
 		hostCookieConfig: &config.HostCookie,
 		privacyConfig: usersyncPrivacyConfig{

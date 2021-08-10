@@ -26,13 +26,13 @@ const (
 	chromeiOSStrLen = len(chromeiOSStr)
 )
 
-func NewSetUIDEndpoint(cfg config.HostCookie, syncers map[string]usersync.Syncer, perms gdpr.Permissions, pbsanalytics analytics.PBSAnalyticsModule, metricsEngine metrics.MetricsEngine) httprouter.Handle {
+func NewSetUIDEndpoint(cfg config.HostCookie, syncersByBidder map[string]usersync.Syncer, perms gdpr.Permissions, pbsanalytics analytics.PBSAnalyticsModule, metricsEngine metrics.MetricsEngine) httprouter.Handle {
 	cookieTTL := time.Duration(cfg.TTL) * 24 * time.Hour
 
 	// convert map of syncers by bidder to map of syncers by key
 	// - its safe to assume that if multiple bidders map to the same key, the syncers are interchangeable.
-	syncersByKey := make(map[string]usersync.Syncer, len(syncers))
-	for _, v := range syncers {
+	syncersByKey := make(map[string]usersync.Syncer, len(syncersByBidder))
+	for _, v := range syncersByBidder {
 		syncersByKey[v.Key()] = v
 	}
 

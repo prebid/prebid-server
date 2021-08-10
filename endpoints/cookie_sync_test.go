@@ -26,7 +26,7 @@ import (
 
 func TestNewCookieSyncEndpoint(t *testing.T) {
 	var (
-		syncers           = map[string]usersync.Syncer{"a": &MockSyncer{}}
+		syncersByBidder   = map[string]usersync.Syncer{"a": &MockSyncer{}}
 		gdprPerms         = MockGDPRPerms{}
 		configUserSync    = config.UserSync{Cooperative: config.UserSyncCooperative{EnabledByDefault: true}}
 		configHostCookie  = config.HostCookie{Family: "foo"}
@@ -38,7 +38,7 @@ func TestNewCookieSyncEndpoint(t *testing.T) {
 	)
 
 	endpoint := NewCookieSyncEndpoint(
-		syncers,
+		syncersByBidder,
 		&config.Configuration{
 			UserSync:   configUserSync,
 			HostCookie: configHostCookie,
@@ -52,7 +52,7 @@ func TestNewCookieSyncEndpoint(t *testing.T) {
 	)
 
 	expected := &cookieSyncEndpoint{
-		chooser:          usersync.NewChooser(syncers),
+		chooser:          usersync.NewChooser(syncersByBidder),
 		config:           configUserSync,
 		hostCookieConfig: &configHostCookie,
 		privacyConfig: usersyncPrivacyConfig{

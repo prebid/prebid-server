@@ -220,18 +220,18 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		return nil, err
 	}
 
-	syncers, err := usersync.BuildSyncers(cfg, bidderInfos)
+	syncersByBidder, err := usersync.BuildSyncers(cfg, bidderInfos)
 	if err != nil {
 		return nil, err
 	}
 
-	syncerKeys := make([]string, 0, len(syncers))
+	syncerKeys := make([]string, 0, len(syncersByBidder))
 	syncerKeysHashSet := map[string]struct{}{}
-	for _, syncer := range syncers {
+	for _, syncer := range syncersByBidder {
 		syncerKeysHashSet[syncer.Key()] = struct{}{}
 	}
-	for syncerKey := range syncerKeysHashSet {
-		syncerKeys = append(syncerKeys, syncerKey)
+	for k := range syncerKeysHashSet {
+		syncerKeys = append(syncerKeys, k)
 	}
 
 	// Metrics engine
@@ -270,7 +270,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		return nil, errs
 	}
 
-	theExchange := exchange.NewExchange(adapters, cacheClient, cfg, syncers, r.MetricsEngine, bidderInfos, gdprPerms, rateConvertor, categoriesFetcher)
+	theExchange := exchange.NewExchange(adapters, cacheClient, cfg, syncersByBidder, r.MetricsEngine, bidderInfos, gdprPerms, rateConvertor, categoriesFetcher)
 
 	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, fetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBidders)
 	if err != nil {
@@ -292,14 +292,14 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		videoEndpoint = aspects.QueuedRequestTimeout(videoEndpoint, cfg.RequestTimeoutHeaders, r.MetricsEngine, metrics.ReqTypeVideo)
 	}
 
-	r.POST("/auction", endpoints.Auction(cfg, syncers, gdprPerms, r.MetricsEngine, dataCache, exchanges))
+	r.POST("/auction", endpoints.Auction(cfg, syncersByBidder, gdprPerms, r.MetricsEngine, dataCache, exchanges))
 	r.POST("/openrtb2/auction", openrtbEndpoint)
 	r.POST("/openrtb2/video", videoEndpoint)
 	r.GET("/openrtb2/amp", ampEndpoint)
 	r.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint(bidderInfos, defaultAliases))
 	r.GET("/info/bidders/:bidderName", infoEndpoints.NewBiddersDetailEndpoint(bidderInfos, cfg.Adapters, defaultAliases))
 	r.GET("/bidders/params", NewJsonDirectoryServer(schemaDirectory, paramsValidator, defaultAliases))
-	r.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncers, cfg, gdprPerms, r.MetricsEngine, pbsAnalytics, activeBidders).Handle)
+	r.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncersByBidder, cfg, gdprPerms, r.MetricsEngine, pbsAnalytics, activeBidders).Handle)
 	r.GET("/status", endpoints.NewStatusEndpoint(cfg.StatusResponse))
 	r.GET("/", serveIndex)
 	r.ServeFiles("/static/*filepath", http.Dir("static"))
@@ -322,7 +322,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		PBSAnalytics:     pbsAnalytics,
 	}
 
-	r.GET("/setuid", endpoints.NewSetUIDEndpoint(cfg.HostCookie, syncers, gdprPerms, pbsAnalytics, r.MetricsEngine))
+	r.GET("/setuid", endpoints.NewSetUIDEndpoint(cfg.HostCookie, syncersByBidder, gdprPerms, pbsAnalytics, r.MetricsEngine))
 	r.GET("/getuids", endpoints.NewGetUIDsEndpoint(cfg.HostCookie))
 	r.POST("/optout", userSyncDeps.OptOut)
 	r.GET("/optout", userSyncDeps.OptOut)

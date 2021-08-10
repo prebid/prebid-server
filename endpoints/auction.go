@@ -59,22 +59,22 @@ func writeAuctionError(w http.ResponseWriter, s string, err error) {
 }
 
 type auction struct {
-	cfg           *config.Configuration
-	syncers       map[string]usersync.Syncer
-	gdprPerms     gdpr.Permissions
-	metricsEngine metrics.MetricsEngine
-	dataCache     cache.Cache
-	exchanges     map[string]adapters.Adapter
+	cfg             *config.Configuration
+	syncersByBidder map[string]usersync.Syncer
+	gdprPerms       gdpr.Permissions
+	metricsEngine   metrics.MetricsEngine
+	dataCache       cache.Cache
+	exchanges       map[string]adapters.Adapter
 }
 
-func Auction(cfg *config.Configuration, syncers map[string]usersync.Syncer, gdprPerms gdpr.Permissions, metricsEngine metrics.MetricsEngine, dataCache cache.Cache, exchanges map[string]adapters.Adapter) httprouter.Handle {
+func Auction(cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, gdprPerms gdpr.Permissions, metricsEngine metrics.MetricsEngine, dataCache cache.Cache, exchanges map[string]adapters.Adapter) httprouter.Handle {
 	a := &auction{
-		cfg:           cfg,
-		syncers:       syncers,
-		gdprPerms:     gdprPerms,
-		metricsEngine: metricsEngine,
-		dataCache:     dataCache,
-		exchanges:     exchanges,
+		cfg:             cfg,
+		syncersByBidder: syncersByBidder,
+		gdprPerms:       gdprPerms,
+		metricsEngine:   metricsEngine,
+		dataCache:       dataCache,
+		exchanges:       exchanges,
 	}
 	return a.auction
 }
@@ -482,7 +482,7 @@ func (a *auction) processUserSync(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bl
 	if syncerCode == "districtm" {
 		syncerCode = "appnexus"
 	}
-	syncer := a.syncers[syncerCode]
+	syncer := a.syncersByBidder[syncerCode]
 	uid, _, _ := req.Cookie.GetUID(syncer.Key())
 	if uid == "" {
 		bidder.NoCookie = true
