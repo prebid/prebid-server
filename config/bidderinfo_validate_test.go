@@ -1,4 +1,4 @@
-package config
+package config_test
 
 import (
 	"errors"
@@ -8,7 +8,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/privacy"
+	"github.com/prebid/prebid-server/usersync"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v2"
 )
@@ -45,7 +48,7 @@ func TestBidderInfoFiles(t *testing.T) {
 		content, err := ioutil.ReadAll(infoFileData)
 		assert.NoError(t, err, "Failed to read static/bidder-info/%s: %v", fileInfo.Name(), err)
 
-		var fileInfoContent BidderInfo
+		var fileInfoContent config.BidderInfo
 		err = yaml.Unmarshal(content, &fileInfoContent)
 		assert.NoError(t, err, "Error interpreting content from static/bidder-info/%s: %v", fileInfo.Name(), err)
 
@@ -54,7 +57,7 @@ func TestBidderInfoFiles(t *testing.T) {
 	}
 }
 
-func validateInfo(info *BidderInfo) error {
+func validateInfo(info *config.BidderInfo) error {
 	if err := validateMaintainer(info.Maintainer); err != nil {
 		return err
 	}
@@ -63,17 +66,21 @@ func validateInfo(info *BidderInfo) error {
 		return err
 	}
 
+	if err := validateSyncer(info.Syncer); err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func validateMaintainer(info *MaintainerInfo) error {
+func validateMaintainer(info *config.MaintainerInfo) error {
 	if info == nil || info.Email == "" {
 		return errors.New("missing required field: maintainer.email")
 	}
 	return nil
 }
 
-func validateCapabilities(info *CapabilitiesInfo) error {
+func validateCapabilities(info *config.CapabilitiesInfo) error {
 	if info == nil {
 		return errors.New("missing required field: capabilities")
 	}
@@ -96,7 +103,7 @@ func validateCapabilities(info *CapabilitiesInfo) error {
 	return nil
 }
 
-func validatePlatformInfo(info *PlatformInfo) error {
+func validatePlatformInfo(info *config.PlatformInfo) error {
 	if info == nil {
 		return errors.New("object cannot be empty")
 	}
@@ -109,6 +116,33 @@ func validatePlatformInfo(info *PlatformInfo) error {
 		if mediaType != "banner" && mediaType != "video" && mediaType != "native" && mediaType != "audio" {
 			return fmt.Errorf("unrecognized media type at index %d: %s", index, mediaType)
 		}
+	}
+
+	return nil
+}
+
+func validateSyncer(syncerCfg *config.Syncer) error {
+	if syncerCfg == nil {
+		return nil
+	}
+
+	hostConfig := config.UserSync{ExternalURL: "http://host.com", RedirectURL: "{{.ExternalURL}}/host"}
+
+	// emulate run time substitution of bidder name for empty keys
+	if syncerCfg.Key == "" {
+		syncerCfg.Key = "bidder"
+	}
+
+	syncer, err := usersync.NewSyncer(hostConfig, *syncerCfg)
+	if err != nil {
+		return fmt.Errorf("syncer could not be created: %s", err)
+	}
+
+	// ensure final macro substitution
+	privacyPolicies := privacy.Policies{}
+	_, err = syncer.GetSync([]usersync.SyncType{usersync.SyncTypeIFrame, usersync.SyncTypeRedirect}, privacyPolicies)
+	if err != nil {
+		return fmt.Errorf("syncer has invalid macro: %s", err)
 	}
 
 	return nil
