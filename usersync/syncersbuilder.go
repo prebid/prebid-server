@@ -14,7 +14,7 @@ type namedSyncerConfig struct {
 	cfg  config.Syncer
 }
 
-func BuildSyncers(hostConfig config.UserSync, bidderInfos config.BidderInfos) (map[string]Syncer, error) {
+func BuildSyncers(hostConfig *config.Configuration, bidderInfos config.BidderInfos) (map[string]Syncer, error) {
 	// map syncer config by bidder
 	cfgByBidder := make(map[string]config.Syncer, len(bidderInfos))
 	for bidder, cfg := range bidderInfos {
@@ -32,6 +32,12 @@ func BuildSyncers(hostConfig config.UserSync, bidderInfos config.BidderInfos) (m
 		cfgBySyncerKey[cfg.Key] = append(cfgBySyncerKey[cfg.Key], namedSyncerConfig{bidder, cfg})
 	}
 
+	// resolve host endpoint
+	hostUserSyncConfig := hostConfig.UserSync
+	if hostUserSyncConfig.ExternalURL == "" {
+		hostUserSyncConfig.ExternalURL = hostConfig.ExternalURL
+	}
+
 	// create syncers
 	errs := []error{}
 	syncers := make(map[string]Syncer, len(bidderInfos))
@@ -42,7 +48,7 @@ func BuildSyncers(hostConfig config.UserSync, bidderInfos config.BidderInfos) (m
 			continue
 		}
 
-		syncer, err := NewSyncer(hostConfig, primaryCfg.cfg)
+		syncer, err := NewSyncer(hostUserSyncConfig, primaryCfg.cfg)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("cannot create syncer for bidder %s with key %s. %v", primaryCfg.name, key, err))
 			continue

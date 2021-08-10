@@ -220,7 +220,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		return nil, err
 	}
 
-	syncers, err := usersync.BuildSyncers(cfg.UserSync, bidderInfos)
+	syncers, err := usersync.BuildSyncers(cfg, bidderInfos)
 	if err != nil {
 		return nil, err
 	}

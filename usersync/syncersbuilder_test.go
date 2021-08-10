@@ -11,7 +11,7 @@ import (
 
 func TestBuildSyncers(t *testing.T) {
 	var (
-		hostConfig              = config.UserSync{ExternalURL: "http://host.com", RedirectURL: "{{.ExternalURL}}/{{.SyncerKey}}/host"}
+		hostConfig              = config.Configuration{ExternalURL: "http://host.com", UserSync: config.UserSync{RedirectURL: "{{.ExternalURL}}/{{.SyncerKey}}/host"}}
 		iframeConfig            = &config.SyncerEndpoint{URL: "https://bidder.com/iframe?redirect={{.RedirectURL}}"}
 		infoKeyAPopulated       = config.BidderInfo{Enabled: true, Syncer: &config.Syncer{Key: "a", IFrame: iframeConfig}}
 		infoKeyADisabled        = config.BidderInfo{Enabled: false, Syncer: &config.Syncer{Key: "a", IFrame: iframeConfig}}
@@ -27,6 +27,7 @@ func TestBuildSyncers(t *testing.T) {
 
 	testCases := []struct {
 		description           string
+		givenConfig           config.Configuration
 		givenBidderInfos      config.BidderInfos
 		expectedIFramesURLs   map[string]string
 		expectedErrorHeader   string
@@ -34,6 +35,7 @@ func TestBuildSyncers(t *testing.T) {
 	}{
 		{
 			description:      "One",
+			givenConfig:      hostConfig,
 			givenBidderInfos: map[string]config.BidderInfo{"bidder1": infoKeyAPopulated},
 			expectedIFramesURLs: map[string]string{
 				"bidder1": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhost.com%2Fa%2Fhost",
@@ -41,6 +43,7 @@ func TestBuildSyncers(t *testing.T) {
 		},
 		{
 			description:      "One - Missing Key - Defaults To Bidder Name",
+			givenConfig:      hostConfig,
 			givenBidderInfos: map[string]config.BidderInfo{"bidder1": infoKeyMissingPopulated},
 			expectedIFramesURLs: map[string]string{
 				"bidder1": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhost.com%2Fbidder1%2Fhost",
@@ -48,6 +51,7 @@ func TestBuildSyncers(t *testing.T) {
 		},
 		{
 			description:         "One - Syncer Error",
+			givenConfig:         hostConfig,
 			givenBidderInfos:    map[string]config.BidderInfo{"bidder1": infoKeyAError},
 			expectedErrorHeader: "user sync (1 error)",
 			expectedErrorSegments: []string{
@@ -56,6 +60,7 @@ func TestBuildSyncers(t *testing.T) {
 		},
 		{
 			description:      "Many - Different Syncers",
+			givenConfig:      hostConfig,
 			givenBidderInfos: map[string]config.BidderInfo{"bidder1": infoKeyAPopulated, "bidder2": infoKeyBPopulated},
 			expectedIFramesURLs: map[string]string{
 				"bidder1": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhost.com%2Fa%2Fhost",
@@ -64,6 +69,7 @@ func TestBuildSyncers(t *testing.T) {
 		},
 		{
 			description:      "Many - Same Syncers - One Primary",
+			givenConfig:      hostConfig,
 			givenBidderInfos: map[string]config.BidderInfo{"bidder1": infoKeyAPopulated, "bidder2": infoKeyAEmpty},
 			expectedIFramesURLs: map[string]string{
 				"bidder1": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhost.com%2Fa%2Fhost",
@@ -72,6 +78,7 @@ func TestBuildSyncers(t *testing.T) {
 		},
 		{
 			description:         "Many - Same Syncers - Many Primaries",
+			givenConfig:         hostConfig,
 			givenBidderInfos:    map[string]config.BidderInfo{"bidder1": infoKeyAPopulated, "bidder2": infoKeyAPopulated},
 			expectedErrorHeader: "user sync (1 error)",
 			expectedErrorSegments: []string{
@@ -80,6 +87,7 @@ func TestBuildSyncers(t *testing.T) {
 		},
 		{
 			description:         "Many - Sync Error - Bidder Correct",
+			givenConfig:         hostConfig,
 			givenBidderInfos:    map[string]config.BidderInfo{"bidder1": infoKeyAEmpty, "bidder2": infoKeyAError},
 			expectedErrorHeader: "user sync (1 error)",
 			expectedErrorSegments: []string{
@@ -88,6 +96,7 @@ func TestBuildSyncers(t *testing.T) {
 		},
 		{
 			description:      "Many - Empty Syncers Ignored",
+			givenConfig:      hostConfig,
 			givenBidderInfos: map[string]config.BidderInfo{"bidder1": {}, "bidder2": infoKeyBPopulated},
 			expectedIFramesURLs: map[string]string{
 				"bidder2": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhost.com%2Fb%2Fhost",
@@ -95,6 +104,7 @@ func TestBuildSyncers(t *testing.T) {
 		},
 		{
 			description:      "Many - Disabled Syncers Ignored",
+			givenConfig:      hostConfig,
 			givenBidderInfos: map[string]config.BidderInfo{"bidder1": infoKeyADisabled, "bidder2": infoKeyBPopulated},
 			expectedIFramesURLs: map[string]string{
 				"bidder2": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhost.com%2Fb%2Fhost",
@@ -102,6 +112,7 @@ func TestBuildSyncers(t *testing.T) {
 		},
 		{
 			description:         "Many - Multiple Errors",
+			givenConfig:         hostConfig,
 			givenBidderInfos:    map[string]config.BidderInfo{"bidder1": infoKeyAError, "bidder2": infoKeyBEmpty},
 			expectedErrorHeader: "user sync (2 errors)",
 			expectedErrorSegments: []string{
@@ -109,10 +120,18 @@ func TestBuildSyncers(t *testing.T) {
 				"cannot create syncer for bidder bidder2 with key b. at least one endpoint (iframe and/or redirect) is required\n",
 			},
 		},
+		{
+			description:      "ExternalURL Host User Sync Override",
+			givenConfig:      config.Configuration{ExternalURL: "http://host.com", UserSync: config.UserSync{ExternalURL: "http://hostoverride.com", RedirectURL: "{{.ExternalURL}}/{{.SyncerKey}}/host"}},
+			givenBidderInfos: map[string]config.BidderInfo{"bidder1": infoKeyAPopulated},
+			expectedIFramesURLs: map[string]string{
+				"bidder1": "https://bidder.com/iframe?redirect=http%3A%2F%2Fhostoverride.com%2Fa%2Fhost",
+			},
+		},
 	}
 
 	for _, test := range testCases {
-		result, err := BuildSyncers(hostConfig, test.givenBidderInfos)
+		result, err := BuildSyncers(&test.givenConfig, test.givenBidderInfos)
 
 		if test.expectedErrorHeader == "" {
 			assert.NoError(t, err, test.description+":err")
