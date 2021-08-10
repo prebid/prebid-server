@@ -2774,7 +2774,7 @@ func (e *mockBidExchange) getAuctionCurrencyRates(customRates *openrtb_ext.ExtRe
 	if customRates == nil {
 		// The timestamp is required for the function signature, but is not used and its
 		// value has no significance in the tests
-		return currency.NewRates(time.Now(), e.pbsRates)
+		return currency.NewRates(e.pbsRates)
 	}
 
 	usePbsRates := true
@@ -2785,18 +2785,18 @@ func (e *mockBidExchange) getAuctionCurrencyRates(customRates *openrtb_ext.ExtRe
 	if !usePbsRates {
 		// The timestamp is required for the function signature, but is not used and its
 		// value has no significance in the tests
-		return currency.NewRates(time.Now(), customRates.ConversionRates)
+		return currency.NewRates(customRates.ConversionRates)
 	}
 
 	// Both PBS and custom rates can be used, check if ConversionRates is not empty
 	if len(customRates.ConversionRates) == 0 {
 		// Custom rates map is empty, use PBS rates only
-		return currency.NewRates(time.Now(), e.pbsRates)
+		return currency.NewRates(e.pbsRates)
 	}
 
 	// Return an AggregateConversions object that includes both custom and PBS currency rates but will
 	// prioritize custom rates over PBS rates whenever a currency rate is found in both
-	return currency.NewAggregateConversions(currency.NewRates(time.Time{}, customRates.ConversionRates), currency.NewRates(time.Now(), e.pbsRates))
+	return currency.NewAggregateConversions(currency.NewRates(customRates.ConversionRates), currency.NewRates(e.pbsRates))
 }
 
 // mockBidExchange is a well-behaved exchange that lists the bidders found in every bidRequest.Imp[i].Ext

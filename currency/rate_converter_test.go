@@ -143,7 +143,6 @@ func TestReadWriteRates(t *testing.T) {
 		} else {
 			rates := currencyConverter.Rates().(*Rates)
 			assert.Equal(t, tt.wantConversions, (*rates).Conversions, tt.description)
-			assert.Equal(t, tt.wantDataAsOf, (*rates).DataAsOf, tt.description)
 		}
 
 		lastUpdated := currencyConverter.LastUpdated()
@@ -169,7 +168,6 @@ func TestRateStaleness(t *testing.T) {
 	defer mockedHttpServer.Close()
 
 	expectedRates := &Rates{
-		DataAsOf: time.Date(2018, time.September, 12, 0, 0, 0, 0, time.UTC),
 		Conversions: map[string]map[string]float64{
 			"USD": {
 				"GBP": 0.77208,
@@ -257,7 +255,6 @@ func TestRatesAreNeverConsideredStale(t *testing.T) {
 	defer mockedHttpServer.Close()
 
 	expectedRates := &Rates{
-		DataAsOf: time.Date(2018, time.September, 12, 0, 0, 0, 0, time.UTC),
 		Conversions: map[string]map[string]float64{
 			"USD": {
 				"GBP": 0.77208,
