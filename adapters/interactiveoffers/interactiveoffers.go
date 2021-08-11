@@ -17,15 +17,38 @@ type adapter struct {
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+
+    var errors []error
+
+	var bidderExt adapters.ExtImpBidder
+	if err := json.Unmarshal(request.Imp[0].Ext, &bidderExt); err != nil {
+		errors = append(errors, &errortypes.BadInput{
+			Message: err.Error(),
+		})
+
+		return nil, errors
+	}
+
+	var ioExt openrtb_ext.ExtImpInteractiveoffers
+	if err := json.Unmarshal(bidderExt.Bidder, &ioExt); err != nil {
+		errors = append(errors, &errortypes.BadInput{
+			Message: err.Error(),
+		})
+
+		return nil, errors
+	}
 	requestJSON, err := json.Marshal(request)
 	if err != nil {
 		return nil, []error{err}
 	}
-
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
 	requestData := &adapters.RequestData{
 		Method: "POST",
-		Uri:    a.endpoint,
+		Uri:    a.endpoint + ioExt.PartnerId,
 		Body:   requestJSON,
+		Headers: headers,
 	}
 
 	return []*adapters.RequestData{requestData}, nil
