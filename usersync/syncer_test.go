@@ -295,7 +295,8 @@ func TestBuildTemplate(t *testing.T) {
 			expectedRendered: "https://bidder.com/sync?redirect=http%3A%2F%2Fhost.com%2Fsetuid%3Fbidder%3DanyKey%26f%3Dx%26gdpr%3DA%26uid%3D%7B%7BUID%7D%7D",
 		},
 
-		// The following tests protect against the "." literal character vs the "."" character class in regex.
+		// The following tests protect against the "\"." literal character vs the "." character class in regex. Literal
+		// value which use {{ }} but do not match Go's naming pattern of {{ .Name }} are escaped.
 		{
 			description: "Invalid Macro - Redirect URL",
 			givenSyncerEndpoint: config.SyncerEndpoint{
@@ -304,7 +305,7 @@ func TestBuildTemplate(t *testing.T) {
 			expectedError: "template: anykey_usersync_url:1: function \"xRedirectURL\" not defined",
 		},
 		{
-			description: "Invalid Macro - External URL",
+			description: "Macro-Like Literal Value - External URL",
 			givenSyncerEndpoint: config.SyncerEndpoint{
 				URL:         "https://bidder.com/sync?redirect={{.RedirectURL}}",
 				RedirectURL: "{{xExternalURL}}",
@@ -312,7 +313,7 @@ func TestBuildTemplate(t *testing.T) {
 			expectedRendered: "https://bidder.com/sync?redirect=%7B%7BxExternalURL%7D%7D",
 		},
 		{
-			description: "Invalid Macro - Syncer Key",
+			description: "Macro-Like Literal Value - Syncer Key",
 			givenSyncerEndpoint: config.SyncerEndpoint{
 				URL:         "https://bidder.com/sync?redirect={{.RedirectURL}}",
 				RedirectURL: "{{xSyncerKey}}",
@@ -320,7 +321,7 @@ func TestBuildTemplate(t *testing.T) {
 			expectedRendered: "https://bidder.com/sync?redirect=%7B%7BxSyncerKey%7D%7D",
 		},
 		{
-			description: "Invalid Macro - Sync Type",
+			description: "Macro-Like Literal Value - Sync Type",
 			givenSyncerEndpoint: config.SyncerEndpoint{
 				URL:         "https://bidder.com/sync?redirect={{.RedirectURL}}",
 				RedirectURL: "{{xSyncType}}",
@@ -328,7 +329,7 @@ func TestBuildTemplate(t *testing.T) {
 			expectedRendered: "https://bidder.com/sync?redirect=%7B%7BxSyncType%7D%7D",
 		},
 		{
-			description: "Invalid Macro - User Macro",
+			description: "Macro-Like Literal Value - User Macro",
 			givenSyncerEndpoint: config.SyncerEndpoint{
 				URL:         "https://bidder.com/sync?redirect={{.RedirectURL}}",
 				RedirectURL: "{{xUserMacro}}",
