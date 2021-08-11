@@ -341,7 +341,7 @@ func applyBidderInfoConfigOverrides(bidderInfos config.BidderInfos, adaptersCfg 
 			// the new config.
 			if adapterCfg.UserSyncURL != "" {
 				if bidderInfo.Syncer == nil {
-					return fmt.Errorf("failed to apply legacy usersync_url setting for bidder %s, bidder does not define a user sync", bidderName)
+					return fmt.Errorf("failed to apply legacy usersync_url setting for bidder %s, bidder does not define a user sync or is disabled", bidderName)
 				}
 
 				endpointsCount := 0

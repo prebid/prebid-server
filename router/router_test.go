@@ -104,7 +104,7 @@ func TestApplyBidderInfoConfigOverrides(t *testing.T) {
 			description:      "UserSyncURL Override Syncer Not Defined",
 			givenBidderInfos: config.BidderInfos{"a": {}},
 			givenAdaptersCfg: map[string]config.Adapter{"a": {UserSyncURL: "override"}},
-			expectedError:    "failed to apply legacy usersync_url setting for bidder a, bidder does not define a user sync",
+			expectedError:    "failed to apply legacy usersync_url setting for bidder a, bidder does not define a user sync or is disabled",
 		},
 		{
 			description:      "UserSyncURL Override Syncer Endpoints Not Defined",
