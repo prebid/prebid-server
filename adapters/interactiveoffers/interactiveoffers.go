@@ -18,7 +18,7 @@ type adapter struct {
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
-    var errors []error
+	var errors []error
 
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(request.Imp[0].Ext, &bidderExt); err != nil {
@@ -45,9 +45,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 	requestData := &adapters.RequestData{
-		Method: "POST",
-		Uri:    a.endpoint + ioExt.PartnerId,
-		Body:   requestJSON,
+		Method:  "POST",
+		Uri:     a.endpoint + ioExt.PartnerId,
+		Body:    requestJSON,
 		Headers: headers,
 	}
 
