@@ -597,7 +597,7 @@ func validateBanner(banner *openrtb2.Banner, imp *openrtb2.Imp, impIndex int) er
 	}
 
 	hasRootSize := banner.H != nil && banner.W != nil && *banner.H > 0 && *banner.W > 0
-	if !hasRootSize && len(banner.Format) == 0 && imp.Instl == 1 {
+	if !hasRootSize && len(banner.Format) == 0 && imp.Instl != 1 {
 		return fmt.Errorf("request.imp[%d].banner has no sizes. Define \"w\" and \"h\", or include \"format\" elements.", impIndex)
 	}
 
