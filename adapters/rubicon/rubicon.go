@@ -961,7 +961,7 @@ func updateImpRpTargetWithFpdAttributes(extImp openrtb_ext.ExtImpRubicon, imp op
 }
 
 func addStringAttribute(attribute string, target json.RawMessage, attributeName string) json.RawMessage {
-	targetAsMap := messageToMap(target)
+	targetAsMap := rawJSONToMap(target)
 	targetAsMap[attributeName] = [1]string{attribute}
 
 	updatedTarget, _ := json.Marshal(targetAsMap)
@@ -969,7 +969,7 @@ func addStringAttribute(attribute string, target json.RawMessage, attributeName 
 }
 
 func addStringArrayAttribute(attribute []string, target json.RawMessage, attributeName string) json.RawMessage {
-	targetAsMap := messageToMap(target)
+	targetAsMap := rawJSONToMap(target)
 	targetAsMap[attributeName] = attribute
 
 	updatedTarget, _ := json.Marshal(targetAsMap)
@@ -977,30 +977,45 @@ func addStringArrayAttribute(attribute []string, target json.RawMessage, attribu
 }
 
 func getAdSlot(imp openrtb2.Imp) string {
-	adServerContextName, _ := jsonparser.GetString(imp.Ext, "context", "data", "adserver", "name")
+	var adSlot string
+	jsonparser.EachKey(imp.Ext, func(idx int, value []byte, vt jsonparser.ValueType, err error) {
+		switch idx {
+		case 0:
+			adServerContextName, _ := jsonparser.GetString(value, "name")
+			if adServerContextName == "gam" {
+				contextAdSlot, _ := jsonparser.GetString(value, "adslot")
+				adSlot = contextAdSlot
+			}
+		}
+	}, []string{"context", "data", "adserver"})
 
-	if adServerContextName == "gam" {
-		contextAdSlot, _ := jsonparser.GetString(imp.Ext, "context", "data", "adserver", "adslot")
-		return contextAdSlot
-	}
-	adServerDataName, _ := jsonparser.GetString(imp.Ext, "data", "adserver", "name")
-	if adServerDataName == "gam" {
-		dataAdSlot, _ := jsonparser.GetString(imp.Ext, "data", "adserver", "adslot")
-		return dataAdSlot
+	if adSlot != "" {
+		return adSlot
 	}
 
-	return ""
+	jsonparser.EachKey(imp.Ext, func(idx int, value []byte, vt jsonparser.ValueType, err error) {
+		switch idx {
+		case 0:
+			adServerDataName, _ := jsonparser.GetString(value, "name")
+			if adServerDataName == "gam" {
+				dataAdSlot, _ := jsonparser.GetString(value, "adslot")
+				adSlot = dataAdSlot
+			}
+		}
+	}, []string{"data", "adserver"})
+
+	return adSlot
 }
 
 func updateUserRpTargetWithFpdAttributes(visitor json.RawMessage, user openrtb2.User) (json.RawMessage, error) {
-	existingTarget, _, _, _ := jsonparser.Get(user.Ext, "rp", "target")
+	existingTarget, _, _, err := jsonparser.Get(user.Ext, "rp", "target")
 
 	target := populateFirstPartyDataAttributes(visitor, existingTarget)
 
 	userExtData, _, _, _ := jsonparser.Get(user.Ext, "data")
 	target = populateFirstPartyDataAttributes(userExtData, target)
 
-	target, err := updateExtWithIabAttribute(target, user.Data, []int{4})
+	target, err = updateExtWithIabAttribute(target, user.Data, []int{4})
 	if err != nil {
 		return nil, &errortypes.BadInput{Message: err.Error()}
 	}
@@ -1031,8 +1046,8 @@ func updateExtWithIabAttribute(target json.RawMessage, data []openrtb2.Data, seg
 }
 
 func populateFirstPartyDataAttributes(source json.RawMessage, target json.RawMessage) json.RawMessage {
-	targetAsMap := messageToMap(target)
-	sourceAsMap := messageToMap(source)
+	targetAsMap := rawJSONToMap(target)
+	sourceAsMap := rawJSONToMap(source)
 
 	for key, val := range sourceAsMap {
 		switch typedValue := val.(type) {
@@ -1060,40 +1075,38 @@ func populateFirstPartyDataAttributes(source json.RawMessage, target json.RawMes
 
 func isStringArray(array []interface{}) bool {
 	for _, val := range array {
-		switch val.(type) {
-		case string:
-			continue
-		default:
+		if _, ok := val.(string); !ok {
 			return false
 		}
 	}
+
 	return true
 }
 
 func isBoolArray(array []interface{}) bool {
 	for _, val := range array {
-		switch val.(type) {
-		case bool:
-			continue
-		default:
+		if _, ok := val.(bool); !ok {
 			return false
 		}
 	}
+
 	return true
 }
 
 func convertToStringArray(arr []interface{}) []string {
 	var stringArray []string
 	for _, val := range arr {
-		stringArray = append(stringArray, strconv.FormatBool(val.(bool)))
+		if boolVal, ok := val.(bool); ok {
+			stringArray = append(stringArray, strconv.FormatBool(boolVal))
+		}
 	}
+
 	return stringArray
 }
 
-func messageToMap(message json.RawMessage) map[string]interface{} {
+func rawJSONToMap(message json.RawMessage) map[string]interface{} {
 	targetAsMap := make(map[string]interface{})
 	_ = json.Unmarshal(message, &targetAsMap)
-
 	return targetAsMap
 }
 
