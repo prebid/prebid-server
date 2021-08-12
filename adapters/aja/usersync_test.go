@@ -1,9 +1,10 @@
 package aja
 
 import (
-	"github.com/prebid/prebid-server/privacy/ccpa"
 	"testing"
 	"text/template"
+
+	"github.com/prebid/prebid-server/privacy/ccpa"
 
 	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/privacy/gdpr"
@@ -23,13 +24,12 @@ func TestAJASyncer(t *testing.T) {
 			Consent: "BOPVK28OVJoTBABABAENBs-AAAAhuAKAANAAoACwAGgAPAAxAB0AHgAQAAiABOADkA",
 		},
 		CCPA: ccpa.Policy{
-			Value: "C",
+			Consent: "C",
 		},
 	})
 
 	assert.NoError(t, err)
 	assert.Equal(t, "https://ad.as.amanad.adtdp.com/v1/sync/ssp?ssp=4&gdpr=1&us_privacy=C&redir=localhost/setuid?bidder=aja&gdpr=1&gdpr_consent=BOPVK28OVJoTBABABAENBs-AAAAhuAKAANAAoACwAGgAPAAxAB0AHgAQAAiABOADkA&uid=%s", syncInfo.URL)
 	assert.Equal(t, "redirect", syncInfo.Type)
-	assert.EqualValues(t, 0, syncer.GDPRVendorID())
 	assert.Equal(t, false, syncInfo.SupportCORS)
 }

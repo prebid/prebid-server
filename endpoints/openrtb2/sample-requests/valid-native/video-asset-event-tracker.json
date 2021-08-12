@@ -1,0 +1,42 @@
+{
+  "description": "Well formed native request with video asset",
+  "mockBidRequest": {
+    "id": "req-id",
+    "site": {
+      "page": "some.page.com"
+    },
+    "tmax": 500,
+    "imp": [
+      {
+        "id": "some-imp",
+        "native": {
+          "request": "{\"context\":1,\"plcmttype\":1,\"assets\":[{\"title\":{\"len\":90}},{\"img\":{\"hmin\":30,\"wmin\":20}},{\"video\":{\"mimes\":[\"video/mp4\"],\"minduration\":5,\"maxduration\":10,\"protocols\":[1]}},{\"data\":{\"type\":2}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1]}]}"
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          }
+        }
+      }
+    ]
+  },
+  "expectedBidResponse": {
+    "id": "req-id",
+    "bidid": "test bid id",
+    "cur": "USD",
+    "nbr": 0,
+    "seatbid": [
+      {
+        "bid": [
+          {
+            "id": "appnexus-bid",
+            "impid": "",
+            "price": 0
+          }
+        ],
+        "seat": "appnexus-bids"
+      }
+    ]
+  },
+  "expectedReturnCode": 200
+}

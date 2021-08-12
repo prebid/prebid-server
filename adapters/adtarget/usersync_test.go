@@ -2,9 +2,10 @@ package adtarget
 
 import (
 	"fmt"
-	"github.com/prebid/prebid-server/privacy/ccpa"
 	"testing"
 	"text/template"
+
+	"github.com/prebid/prebid-server/privacy/ccpa"
 
 	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/privacy/gdpr"
@@ -25,13 +26,12 @@ func TestAdtargetSyncer(t *testing.T) {
 			Consent: "123",
 		},
 		CCPA: ccpa.Policy{
-			Value: "1-YY",
+			Consent: "1-YY",
 		},
 	})
 
 	assert.NoError(t, err)
 	assert.Equal(t, "//sync.console.adtarget.com.tr/csync?t=p&ep=0&gdpr=0&gdpr_consent=123&us_privacy=1-YY&redir=localhost%2Fsetuid%3Fbidder%3Dadtarget%26gdpr%3D0%26gdpr_consent%3D123%26uid%3D%7Buid%7D", syncInfo.URL)
-	assert.Equal(t, "redirect", syncInfo.Type)
-	assert.EqualValues(t, 0, syncer.GDPRVendorID())
+	assert.Equal(t, "iframe", syncInfo.Type)
 	assert.Equal(t, false, syncInfo.SupportCORS)
 }

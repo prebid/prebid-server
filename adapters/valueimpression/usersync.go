@@ -8,5 +8,5 @@ import (
 )
 
 func NewValueImpressionSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("valueimpression", 0, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("valueimpression", temp, adapters.SyncTypeRedirect)
 }

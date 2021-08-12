@@ -2,20 +2,24 @@ package sharethrough
 
 import (
 	"fmt"
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/errortypes"
 	"net/http"
 	"regexp"
+
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 const supplyId = "FGMrCMMc"
 const strVersion = 8
 
-func NewSharethroughBidder(endpoint string) *SharethroughAdapter {
-	return &SharethroughAdapter{
+// Builder builds a new instance of the Sharethrough adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &SharethroughAdapter{
 		AdServer: StrOpenRTBTranslator{
-			UriHelper: StrUriHelper{BaseURI: endpoint, Clock: Clock{}},
+			UriHelper: StrUriHelper{BaseURI: config.Endpoint, Clock: Clock{}},
 			Util:      Util{Clock: Clock{}},
 			UserAgentParsers: UserAgentParsers{
 				ChromeVersion:    regexp.MustCompile(`Chrome\/(?P<ChromeVersion>\d+)`),
@@ -24,13 +28,14 @@ func NewSharethroughBidder(endpoint string) *SharethroughAdapter {
 			},
 		},
 	}
+	return bidder, nil
 }
 
 type SharethroughAdapter struct {
 	AdServer StrOpenRTBInterface
 }
 
-func (a SharethroughAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a SharethroughAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var reqs []*adapters.RequestData
 
 	if request.Site == nil {
@@ -51,7 +56,7 @@ func (a SharethroughAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *
 	return reqs, []error{}
 }
 
-func (a SharethroughAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a SharethroughAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}

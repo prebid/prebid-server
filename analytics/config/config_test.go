@@ -1,12 +1,13 @@
 package config
 
 import (
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"os"
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 )
@@ -19,8 +20,8 @@ func TestSampleModule(t *testing.T) {
 	am.LogAuctionObject(&analytics.AuctionObject{
 		Status:   http.StatusOK,
 		Errors:   nil,
-		Request:  &openrtb.BidRequest{},
-		Response: &openrtb.BidResponse{},
+		Request:  &openrtb2.BidRequest{},
+		Response: &openrtb2.BidResponse{},
 	})
 	if count != 1 {
 		t.Errorf("PBSAnalyticsModule failed at LogAuctionObject")
@@ -51,6 +52,11 @@ func TestSampleModule(t *testing.T) {
 	if count != 5 {
 		t.Errorf("PBSAnalyticsModule failed at LogVideoObject")
 	}
+
+	am.LogNotificationEventObject(&analytics.NotificationEvent{})
+	if count != 6 {
+		t.Errorf("PBSAnalyticsModule failed at LogNotificationEventObject")
+	}
 }
 
 type sampleModule struct {
@@ -66,6 +72,8 @@ func (m *sampleModule) LogCookieSyncObject(cso *analytics.CookieSyncObject) { *m
 func (m *sampleModule) LogSetUIDObject(so *analytics.SetUIDObject) { *m.count++ }
 
 func (m *sampleModule) LogAmpObject(ao *analytics.AmpObject) { *m.count++ }
+
+func (m *sampleModule) LogNotificationEventObject(ne *analytics.NotificationEvent) { *m.count++ }
 
 func initAnalytics(count *int) analytics.PBSAnalyticsModule {
 	modules := make(enabledAnalytics, 0)

@@ -1,0 +1,141 @@
+{
+  "mockBidRequest": {
+    "id": "0000000000001",
+    "test": 1,
+    "imp": [
+      {
+        "id": "video-adunit-2",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 640,
+          "h": 480
+        },
+        "ext": {
+          "bidder": {
+            "tappxkey": "pub-12345-site-9876",
+            "endpoint": "VZ123456PS",
+            "host": "testing.ssp.tappx.com/rtb/v2/"
+          }
+        }
+      }
+    ],
+    "site": {
+      "id": "102855",
+      "cat": [ "IAB3-1" ],
+      "domain": "www.tappx.com",
+      "page": "https://www.tappx.com/example.html ",
+      "publisher": {
+        "id": "8953", "name": "publisher.com",
+        "cat": [ "IAB3-1" ],
+        "domain": "publisher.com"
+      }
+    },
+    "user": {
+      "buyeruid": "A-38327932832"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://testing.ssp.tappx.com/rtb/v2/VZ123456PS?tappxkey=pub-12345-site-9876&type_cnn=prebid&v=1.3",
+        "body": {
+          "id": "0000000000001",
+          "test": 1,
+          "imp": [
+            {
+              "id": "video-adunit-2",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 640,
+                "h": 480
+              },
+              "ext": {
+                "bidder": {
+                "endpoint": "VZ123456PS",
+                "host": "testing.ssp.tappx.com/rtb/v2/",
+                "tappxkey": "pub-12345-site-9876"
+                }
+              }
+            }
+          ],
+          "site": {
+            "id": "102855",
+            "cat": [ "IAB3-1" ],
+            "domain": "www.tappx.com",
+            "page": "https://www.tappx.com/example.html ",
+            "publisher": {
+              "id": "8953", "name": "publisher.com",
+              "cat": [ "IAB3-1" ],
+              "domain": "publisher.com"
+            }
+          },
+          "user": {
+            "buyeruid": "A-38327932832"
+          },
+          "ext":{
+            "bidder": {
+              "tappxkey": "pub-12345-site-9876"
+            }
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "75472df2-1cb3-4f8e-9a28-10cb95fe05a4",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid02",
+                  "impid": "video-adunit-2",
+                  "price": 2.25,
+                  "cid": "1001",
+                  "crid": "2002",
+                  "adid": "2002",
+                  "adm": "<!-- vast wrapper -->",
+                  "cat": [
+                    "IAB2"
+                  ],
+                  "adomain": [
+                    "video-example.com"
+                  ]
+                }
+              ]
+            }
+          ],
+          "bidid": "wehM-93KGr0"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+          "currency": "USD",
+          "bids": [
+            {
+              "bid": {
+                "id": "bid02",
+                "impid": "video-adunit-2",
+                "price": 2.25,
+                "adm": "<!-- vast wrapper -->",
+                "adomain": [
+                  "video-example.com"
+                ],
+                "cid": "1001",
+                "adid": "2002",
+                "crid": "2002",
+                "cat": [
+                  "IAB2"
+                ]
+              },
+              "type": "video"
+            }
+          ]
+        }
+  ]
+}

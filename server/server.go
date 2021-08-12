@@ -14,8 +14,8 @@ import (
 	"github.com/NYTimes/gziphandler"
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/pbsmetrics"
-	metricsconfig "github.com/prebid/prebid-server/pbsmetrics/config"
+	"github.com/prebid/prebid-server/metrics"
+	metricsconfig "github.com/prebid/prebid-server/metrics/config"
 )
 
 // Listen blocks forever, serving PBS requests on the given port. This will block forever, until the process is shut down.
@@ -93,7 +93,7 @@ func runServer(server *http.Server, name string, listener net.Listener) {
 	glog.Errorf("%s server quit with error: %v", name, err)
 }
 
-func newListener(address string, metrics pbsmetrics.MetricsEngine) (net.Listener, error) {
+func newListener(address string, metrics metrics.MetricsEngine) (net.Listener, error) {
 	ln, err := net.Listen("tcp", address)
 	if err != nil {
 		return nil, fmt.Errorf("Error listening for TCP connections on %s: %v", address, err)

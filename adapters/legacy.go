@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/pbs"
-	"github.com/prebid/prebid-server/ssl"
+	"github.com/prebid/prebid-server/server/ssl"
 )
 
 // This file contains some deprecated, legacy types.

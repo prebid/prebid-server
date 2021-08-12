@@ -1,0 +1,12 @@
+maintainer:
+  email: "developers@nobid.io"
+gvlVendorID: 816
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+  app:
+    mediaTypes:
+      - banner
+      - video

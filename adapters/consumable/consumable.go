@@ -3,15 +3,17 @@ package consumable
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/privacy/ccpa"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/privacy/ccpa"
 )
 
 type ConsumableAdapter struct {
@@ -69,6 +71,8 @@ type decision struct {
 	CreativeID    string     `json:"creativeId,omitempty"`
 	Contents      []contents `json:"contents"`
 	ImpressionUrl *string    `json:"impressionUrl,omitempty"`
+	Width         uint64     `json:"width,omitempty"`  // Consumable extension, not defined by Adzerk
+	Height        uint64     `json:"height,omitempty"` // Consumable extension, not defined by Adzerk
 }
 
 type contents struct {
@@ -79,7 +83,7 @@ type pricing struct {
 	ClearPrice *float64 `json:"clearPrice"`
 }
 
-func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *ConsumableAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	headers := http.Header{
 		"Content-Type": {"application/json"},
 		"Accept":       {"application/json"},
@@ -134,9 +138,9 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 
 	gdpr := bidGdpr{}
 
-	ccpaPolicy, err := ccpa.ReadPolicy(request)
+	ccpaPolicy, err := ccpa.ReadFromRequest(request)
 	if err == nil {
-		body.CCPA = ccpaPolicy.Value
+		body.CCPA = ccpaPolicy.Consent
 	}
 
 	// TODO: Replace with gdpr.ReadPolicy when it is available
@@ -207,7 +211,7 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 internal original request in OpenRTB, external = result of us having converted it (what comes out of MakeRequests)
 */
 func (a *ConsumableAdapter) MakeBids(
-	internalRequest *openrtb.BidRequest,
+	internalRequest *openrtb2.BidRequest,
 	externalRequest *adapters.RequestData,
 	response *adapters.ResponseData,
 ) (*adapters.BidderResponse, []error) {
@@ -241,23 +245,13 @@ func (a *ConsumableAdapter) MakeBids(
 	for impID, decision := range serverResponse.Decisions {
 
 		if decision.Pricing != nil && decision.Pricing.ClearPrice != nil {
-
-			imp := getImp(impID, internalRequest.Imp)
-			if imp == nil {
-				errors = append(errors, &errortypes.BadServerResponse{
-					Message: fmt.Sprintf(
-						"ignoring bid id=%s, request doesn't contain any impression with id=%s", internalRequest.ID, impID),
-				})
-				continue
-			}
-
-			bid := openrtb.Bid{}
+			bid := openrtb2.Bid{}
 			bid.ID = internalRequest.ID
 			bid.ImpID = impID
 			bid.Price = *decision.Pricing.ClearPrice
 			bid.AdM = retrieveAd(decision)
-			bid.W = imp.Banner.Format[0].W // TODO: Review to check if this is correct behaviour
-			bid.H = imp.Banner.Format[0].H
+			bid.W = int64(decision.Width)
+			bid.H = int64(decision.Height)
 			bid.CrID = strconv.FormatInt(decision.AdID, 10)
 			bid.Exp = 30 // TODO: Check this is intention of TTL
 
@@ -279,16 +273,7 @@ func (a *ConsumableAdapter) MakeBids(
 	return bidderResponse, errors
 }
 
-func getImp(impId string, imps []openrtb.Imp) *openrtb.Imp {
-	for _, imp := range imps {
-		if imp.ID == impId {
-			return &imp
-		}
-	}
-	return nil
-}
-
-func extractExtensions(impression openrtb.Imp) (*adapters.ExtImpBidder, *openrtb_ext.ExtImpConsumable, []error) {
+func extractExtensions(impression openrtb2.Imp) (*adapters.ExtImpBidder, *openrtb_ext.ExtImpConsumable, []error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(impression.Ext, &bidderExt); err != nil {
 		return nil, nil, []error{&errortypes.BadInput{
@@ -306,10 +291,11 @@ func extractExtensions(impression openrtb.Imp) (*adapters.ExtImpBidder, *openrtb
 	return &bidderExt, &consumableExt, nil
 }
 
-func testConsumableBidder(testClock instant, endpoint string) *ConsumableAdapter {
-	return &ConsumableAdapter{testClock, endpoint}
-}
-
-func NewConsumableBidder(endpoint string) *ConsumableAdapter {
-	return &ConsumableAdapter{realInstant{}, endpoint}
+// Builder builds a new instance of the Consumable adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &ConsumableAdapter{
+		clock:    realInstant{},
+		endpoint: config.Endpoint,
+	}
+	return bidder, nil
 }

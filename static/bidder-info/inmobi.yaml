@@ -1,0 +1,13 @@
+maintainer:
+  email: "technology-irv@inmobi.com"
+gvlVendorID: 333
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video

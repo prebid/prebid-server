@@ -3,42 +3,26 @@ package sonobi
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/mxmCherry/openrtb"
+	"net/http"
+
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"net/http"
 )
 
 // SonobiAdapter - Sonobi SonobiAdapter definition
 type SonobiAdapter struct {
-	http *adapters.HTTPAdapter
-	URI  string
+	URI string
 }
 
-// Name returns the name fo cookie stuff
-func (a *SonobiAdapter) Name() string {
-	return "sonobi"
-}
-
-//SkipNoCookies flag for skipping no cookies...
-func (a *SonobiAdapter) SkipNoCookies() bool {
-	return false
-}
-
-// NewSonobiAdapter create a new SovrnSonobiAdapter instance
-func NewSonobiAdapter(config *adapters.HTTPAdapterConfig, endpoint string) *SonobiAdapter {
-	return NewSonobiBidder(adapters.NewHTTPAdapter(config).Client, endpoint)
-}
-
-// NewSonobiBidder Initializes the Bidder
-func NewSonobiBidder(client *http.Client, endpoint string) *SonobiAdapter {
-	a := &adapters.HTTPAdapter{Client: client}
-
-	return &SonobiAdapter{
-		http: a,
-		URI:  endpoint,
+// Builder builds a new instance of the Sonobi adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &SonobiAdapter{
+		URI: config.Endpoint,
 	}
+	return bidder, nil
 }
 
 type sonobiParams struct {
@@ -46,7 +30,7 @@ type sonobiParams struct {
 }
 
 // MakeRequests Makes the OpenRTB request payload
-func (a *SonobiAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *SonobiAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var sonobiExt openrtb_ext.ExtImpSonobi
 	var err error
@@ -58,7 +42,7 @@ func (a *SonobiAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 	for _, imp := range request.Imp {
 		// Make a copy as we don't want to change the original request
 		reqCopy := *request
-		reqCopy.Imp = append(make([]openrtb.Imp, 0, 1), imp)
+		reqCopy.Imp = append(make([]openrtb2.Imp, 0, 1), imp)
 
 		var bidderExt adapters.ExtImpBidder
 		if err = json.Unmarshal(reqCopy.Imp[0].Ext, &bidderExt); err != nil {
@@ -85,7 +69,7 @@ func (a *SonobiAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapt
 }
 
 // makeRequest helper method to crete the http request data
-func (a *SonobiAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
+func (a *SonobiAdapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, []error) {
 
 	var errs []error
 
@@ -108,7 +92,7 @@ func (a *SonobiAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.Requ
 }
 
 // MakeBids makes the bids
-func (a *SonobiAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *SonobiAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var errs []error
 
 	if response.StatusCode == http.StatusNoContent {
@@ -127,7 +111,7 @@ func (a *SonobiAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
@@ -152,7 +136,7 @@ func (a *SonobiAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 	return bidResponse, errs
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb.Imp) (openrtb_ext.BidType, error) {
+func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
 	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impID {

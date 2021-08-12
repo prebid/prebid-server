@@ -6,8 +6,9 @@ import (
 	"net/http"
 
 	"github.com/buger/jsonparser"
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -17,15 +18,16 @@ type AdprimeAdapter struct {
 	URI string
 }
 
-// NewAdprimeBidder Initializes the Bidder
-func NewAdprimeBidder(endpoint string) *AdprimeAdapter {
-	return &AdprimeAdapter{
-		URI: endpoint,
+// Builder builds a new instance of the Adprime adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &AdprimeAdapter{
+		URI: config.Endpoint,
 	}
+	return bidder, nil
 }
 
 // MakeRequests create bid request for adprime demand
-func (a *AdprimeAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *AdprimeAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var err error
 	var tagID string
@@ -34,7 +36,7 @@ func (a *AdprimeAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 
 	reqCopy := *request
 	for _, imp := range request.Imp {
-		reqCopy.Imp = []openrtb.Imp{imp}
+		reqCopy.Imp = []openrtb2.Imp{imp}
 
 		tagID, err = jsonparser.GetString(reqCopy.Imp[0].Ext, "bidder", "TagID")
 		if err != nil {
@@ -53,7 +55,7 @@ func (a *AdprimeAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 	return adapterRequests, errs
 }
 
-func (a *AdprimeAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
+func (a *AdprimeAdapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, []error) {
 
 	var errs []error
 
@@ -76,7 +78,7 @@ func (a *AdprimeAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.Req
 }
 
 // MakeBids makes the bids
-func (a *AdprimeAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *AdprimeAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var errs []error
 
 	if response.StatusCode == http.StatusNoContent {
@@ -95,7 +97,7 @@ func (a *AdprimeAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
@@ -120,7 +122,7 @@ func (a *AdprimeAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 	return bidResponse, errs
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb.Imp) (openrtb_ext.BidType, error) {
+func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
 	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impID {

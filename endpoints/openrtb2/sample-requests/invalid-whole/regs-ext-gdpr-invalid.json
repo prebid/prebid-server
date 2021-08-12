@@ -1,11 +1,11 @@
 {
-  "message": "Invalid request: request.regs.ext.gdpr must be either 0 or 1.\n",
-  "requestPayload": {
+  "description": "Bid request defines an invalid GDPR value",
+  "mockBidRequest": {
     "id": "b9c97a4b-cbc4-483d-b2c4-58a19ed5cfc5",
     "site": {
       "page": "prebid.org",
       "publisher": {
-      "id": "a3de7af2-a86a-4043-a77b-c7e86744155e"
+        "id": "a3de7af2-a86a-4043-a77b-c7e86744155e"
       }
     },
     "source": {
@@ -23,7 +23,7 @@
         "banner": {
           "format": [
             {
-             "w": 300,
+              "w": 300,
               "h": 250
             },
             {
@@ -36,11 +36,13 @@
     ],
     "regs": {
       "ext": {
-      "gdpr": 2
+        "gdpr": 2
       }
     },
     "user": {
       "ext": {}
     }
-  }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: request.regs.ext.gdpr must be either 0 or 1.\n"
 }

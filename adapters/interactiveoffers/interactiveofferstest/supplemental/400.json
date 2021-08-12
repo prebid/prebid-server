@@ -1,0 +1,60 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "page": "https://good.site/url"
+    },
+    "imp": [{
+      "id": "test-imp-id",
+      "banner": {
+        "format": [{
+          "w": 300,
+          "h": 250
+        }]
+      },
+      "ext": {
+        "bidder": {
+          "pubid": 35
+        }
+      }
+    }]
+  },
+
+  "httpCalls": [{
+    "expectedRequest": {
+      "uri": "https://prebid-server.ioadx.com/bidRequest/?partnerId=d9e56d418c4825d466ee96c7a31bf1da6b62fa04",
+      "body": {
+        "id": "test-request-id",
+        "site": {
+          "page": "https://good.site/url"
+        },
+        "imp": [{
+          "id": "test-imp-id",
+          "banner": {
+            "format": [{
+              "w": 300,
+              "h": 250
+            }]
+          },
+          "ext": {
+            "bidder": {
+              "pubid": 35
+            }
+          }
+        }]
+      }
+    },
+    "mockResponse": {
+      "status": 400,
+      "body": ""
+    }
+  }],
+
+  "expectedBidResponses": [],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 400. Bad request from publisher. Run with request.debug = 1 for more info.",
+      "comparison": "literal"
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 maintainer:
   email: "tech@engagebdr.com"
+gvlVendorID: 62
 capabilities:
   app:
     mediaTypes:

@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/cache/dummycache"
@@ -23,12 +23,19 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "pubmatictest", NewPubmaticBidder(nil, "https://hbopenbid.pubmatic.com/translator?source=prebid-server"))
+	bidder, buildErr := Builder(openrtb_ext.BidderPubmatic, config.Adapter{
+		Endpoint: "https://hbopenbid.pubmatic.com/translator?source=prebid-server"})
+
+	if buildErr != nil {
+		t.Fatalf("Builder returned unexpected error %v", buildErr)
+	}
+
+	adapterstest.RunJSONBidderTest(t, "pubmatictest", bidder)
 }
 
 // ----------------------------------------------------------------------------
 // Code below this line tests the legacy, non-openrtb code flow. It can be deleted after we
-// clean up the existing code and make everything openrtb.
+// clean up the existing code and make everything openrtb2.
 
 func CompareStringValue(val1 string, val2 string, t *testing.T) {
 	if val1 != val2 {
@@ -44,29 +51,29 @@ func DummyPubMaticServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var breq openrtb.BidRequest
+	var breq openrtb2.BidRequest
 	err = json.Unmarshal(body, &breq)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	resp := openrtb.BidResponse{
+	resp := openrtb2.BidResponse{
 		ID:    breq.ID,
 		BidID: "bidResponse_ID",
 		Cur:   "USD",
-		SeatBid: []openrtb.SeatBid{
+		SeatBid: []openrtb2.SeatBid{
 			{
 				Seat: "pubmatic",
-				Bid:  make([]openrtb.Bid, 0),
+				Bid:  make([]openrtb2.Bid, 0),
 			},
 		},
 	}
 	rand.Seed(int64(time.Now().UnixNano()))
-	var bids []openrtb.Bid
+	var bids []openrtb2.Bid
 
 	for i, imp := range breq.Imp {
-		bids = append(bids, openrtb.Bid{
+		bids = append(bids, openrtb2.Bid{
 			ID:     fmt.Sprintf("SeatID_%d", i),
 			ImpID:  imp.ID,
 			Price:  float64(int(rand.Float64()*1000)) / 100,
@@ -91,7 +98,7 @@ func DummyPubMaticServer(w http.ResponseWriter, r *http.Request) {
 
 func TestPubmaticInvalidCall(t *testing.T) {
 
-	an := NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, "blah")
+	an := NewPubmaticLegacyAdapter(adapters.DefaultHTTPAdapterConfig, "blah")
 
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
@@ -112,7 +119,7 @@ func TestPubmaticTimeout(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL)
 	ctx, cancel := context.WithTimeout(context.Background(), 0)
 	defer cancel()
 
@@ -123,7 +130,7 @@ func TestPubmaticTimeout(t *testing.T) {
 			{
 				Code:       "unitCode",
 				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 120,
 						H: 240,
@@ -149,7 +156,7 @@ func TestPubmaticInvalidJson(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL)
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -158,7 +165,7 @@ func TestPubmaticInvalidJson(t *testing.T) {
 			{
 				Code:       "unitCode",
 				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 120,
 						H: 240,
@@ -185,7 +192,7 @@ func TestPubmaticInvalidStatusCode(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL)
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -194,7 +201,7 @@ func TestPubmaticInvalidStatusCode(t *testing.T) {
 			{
 				Code:       "unitCode",
 				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 120,
 						H: 240,
@@ -216,7 +223,7 @@ func TestPubmaticInvalidInputParameters(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL)
 	ctx := context.Background()
 
 	pbReq := pbs.PBSRequest{}
@@ -227,7 +234,7 @@ func TestPubmaticInvalidInputParameters(t *testing.T) {
 				Code:       "unitCode",
 				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
 				BidID:      "bidid",
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 120,
 						H: 240,
@@ -289,7 +296,7 @@ func TestPubmaticBasicResponse_MandatoryParams(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL)
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -299,7 +306,7 @@ func TestPubmaticBasicResponse_MandatoryParams(t *testing.T) {
 				Code:       "unitCode",
 				BidID:      "bidid",
 				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 336,
 						H: 280,
@@ -325,7 +332,7 @@ func TestPubmaticBasicResponse_AllParams(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL)
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -335,7 +342,7 @@ func TestPubmaticBasicResponse_AllParams(t *testing.T) {
 				Code:       "unitCode",
 				BidID:      "bidid",
 				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 336,
 						H: 280,
@@ -369,7 +376,7 @@ func TestPubmaticMultiImpressionResponse(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL)
 
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
@@ -380,7 +387,7 @@ func TestPubmaticMultiImpressionResponse(t *testing.T) {
 				Code:       "unitCode1",
 				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
 				BidID:      "bidid",
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 336,
 						H: 280,
@@ -392,7 +399,7 @@ func TestPubmaticMultiImpressionResponse(t *testing.T) {
 				Code:       "unitCode1",
 				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
 				BidID:      "bidid",
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 800,
 						H: 200,
@@ -417,7 +424,7 @@ func TestPubmaticMultiAdUnitResponse(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL)
 
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
@@ -428,7 +435,7 @@ func TestPubmaticMultiAdUnitResponse(t *testing.T) {
 				Code:       "unitCode1",
 				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
 				BidID:      "bidid",
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 336,
 						H: 280,
@@ -440,7 +447,7 @@ func TestPubmaticMultiAdUnitResponse(t *testing.T) {
 				Code:       "unitCode2",
 				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
 				BidID:      "bidid",
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 800,
 						H: 200,
@@ -466,7 +473,7 @@ func TestPubmaticMobileResponse(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL)
 
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
@@ -477,7 +484,7 @@ func TestPubmaticMobileResponse(t *testing.T) {
 				Code:       "unitCode",
 				BidID:      "bidid",
 				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 336,
 						H: 280,
@@ -488,7 +495,7 @@ func TestPubmaticMobileResponse(t *testing.T) {
 		},
 	}
 
-	pbReq.App = &openrtb.App{
+	pbReq.App = &openrtb2.App{
 		ID:   "com.test",
 		Name: "testApp",
 	}
@@ -507,7 +514,7 @@ func TestPubmaticInvalidLookupBidIDParameter(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL)
 
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
@@ -517,7 +524,7 @@ func TestPubmaticInvalidLookupBidIDParameter(t *testing.T) {
 			{
 				Code:       "unitCode",
 				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 120,
 						H: 240,
@@ -538,7 +545,7 @@ func TestPubmaticAdSlotParams(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL)
 
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
@@ -549,7 +556,7 @@ func TestPubmaticAdSlotParams(t *testing.T) {
 				Code:       "unitCode",
 				BidID:      "bidid",
 				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
-				Sizes: []openrtb.Format{
+				Sizes: []openrtb2.Format{
 					{
 						W: 120,
 						H: 240,
@@ -629,7 +636,7 @@ func TestPubmaticSampleRequest(t *testing.T) {
 	}
 	pbReq.AdUnits[0] = pbs.AdUnit{
 		Code: "adUnit_1",
-		Sizes: []openrtb.Format{
+		Sizes: []openrtb2.Format{
 			{
 				W: 100,
 				H: 120,

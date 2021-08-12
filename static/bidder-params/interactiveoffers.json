@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Interactive Offers Adapter Params",
+  "description": "A schema which validates params accepted by Interactive Offers adapter",
+  "type": "object",
+  "properties": {
+    "pubid": {
+      "type": "integer",
+      "description": "The publisher id"
+    }
+  },
+  "required": ["pubid"]
+}

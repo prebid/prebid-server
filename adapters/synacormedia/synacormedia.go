@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"text/template"
 
-	"github.com/golang/glog"
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -27,16 +27,20 @@ type ReqExt struct {
 	SeatId string `json:"seatId"`
 }
 
-func NewSynacorMediaBidder(endpointTemplate string) adapters.Bidder {
-	syncTemplate, err := template.New("endpointTemplate").Parse(endpointTemplate)
+// Builder builds a new instance of the SynacorMedia adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
-		glog.Fatal("Unable to parse endpoint url template")
-		return nil
+		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
-	return &SynacorMediaAdapter{EndpointTemplate: *syncTemplate}
+
+	bidder := &SynacorMediaAdapter{
+		EndpointTemplate: *template,
+	}
+	return bidder, nil
 }
 
-func (a *SynacorMediaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *SynacorMediaAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var bidRequests []*adapters.RequestData
 
@@ -49,9 +53,9 @@ func (a *SynacorMediaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo 
 	return bidRequests, errs
 }
 
-func (a *SynacorMediaAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
+func (a *SynacorMediaAdapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, []error) {
 	var errs []error
-	var validImps []openrtb.Imp
+	var validImps []openrtb2.Imp
 	var re *ReqExt
 	var firstExtImp *openrtb_ext.ExtImpSynacormedia = nil
 
@@ -126,7 +130,7 @@ func (adapter *SynacorMediaAdapter) buildEndpointURL(params *openrtb_ext.ExtImpS
 	return macros.ResolveMacros(adapter.EndpointTemplate, macros.EndpointTemplateParams{Host: params.SeatId})
 }
 
-func getExtImpObj(imp *openrtb.Imp) (*openrtb_ext.ExtImpSynacormedia, error) {
+func getExtImpObj(imp *openrtb2.Imp) (*openrtb_ext.ExtImpSynacormedia, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
@@ -145,7 +149,7 @@ func getExtImpObj(imp *openrtb.Imp) (*openrtb_ext.ExtImpSynacormedia, error) {
 }
 
 // MakeBids make the bids for the bid response.
-func (a *SynacorMediaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *SynacorMediaAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	const errorMessage string = "Unexpected status code: %d. Run with request.debug = 1 for more info"
 	switch {
 	case response.StatusCode == http.StatusNoContent:
@@ -160,7 +164,7 @@ func (a *SynacorMediaAdapter) MakeBids(internalRequest *openrtb.BidRequest, exte
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
@@ -183,7 +187,7 @@ func (a *SynacorMediaAdapter) MakeBids(internalRequest *openrtb.BidRequest, exte
 	return bidResponse, nil
 }
 
-func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
+func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impId {
