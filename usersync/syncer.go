@@ -58,19 +58,26 @@ const (
 	setuidSyncTypeRedirect = "i" // i = image response
 )
 
-var errEndpointRequired = errors.New("at least one endpoint (iframe and/or redirect) is required")
-var errKeyRequired = errors.New("key is required")
-var errDefaultSyncTypeRequired = errors.New("default sync type is required when more then one sync endpoint is configured")
+var ErrSyncerEndpointRequired = errors.New("at least one endpoint (iframe and/or redirect) is required")
+var ErrSyncerURLRequired = errors.New("each endpoint defined (iframe and/or redirect) must specify a url")
+var ErrSyncerKeyRequired = errors.New("key is required")
+var ErrSyncerDefaultSyncTypeRequired = errors.New("default sync type is required when more then one sync endpoint is configured")
 
 // NewSyncer creates a new Syncer from the provided configuration, or an error if macro substition
 // fails or an endpoint url is invalid.
 func NewSyncer(hostConfig config.UserSync, syncerConfig config.Syncer) (Syncer, error) {
 	if syncerConfig.Key == "" {
-		return nil, errKeyRequired
+		return nil, ErrSyncerKeyRequired
 	}
 
 	if syncerConfig.IFrame == nil && syncerConfig.Redirect == nil {
-		return nil, errEndpointRequired
+		return nil, ErrSyncerEndpointRequired
+	}
+
+	// bidders may define an endpoint but leave the url empty as a way to communicate with the host
+	// that they support this endpoint, but don't provide a default value.
+	if (syncerConfig.IFrame != nil && syncerConfig.IFrame.URL == "") || (syncerConfig.Redirect != nil && syncerConfig.Redirect.URL == "") {
+		return nil, ErrSyncerURLRequired
 	}
 
 	syncer := standardSyncer{
@@ -112,7 +119,7 @@ func NewSyncer(hostConfig config.UserSync, syncerConfig config.Syncer) (Syncer, 
 func resolveDefaultSyncType(syncerConfig config.Syncer) (SyncType, error) {
 	if syncerConfig.Default == "" {
 		if syncerConfig.IFrame != nil && syncerConfig.Redirect != nil {
-			return SyncTypeUnknown, errDefaultSyncTypeRequired
+			return SyncTypeUnknown, ErrSyncerDefaultSyncTypeRequired
 		} else if syncerConfig.IFrame != nil {
 			return SyncTypeIFrame, nil
 		} else {

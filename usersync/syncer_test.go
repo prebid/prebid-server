@@ -17,6 +17,7 @@ func TestNewSyncer(t *testing.T) {
 		supportCORS      = true
 		hostConfig       = config.UserSync{ExternalURL: "http://host.com", RedirectURL: "{{.ExternalURL}}/host"}
 		macroValues      = macros.UserSyncTemplateParams{GDPR: "A", GDPRConsent: "B", USPrivacy: "C"}
+		emptyConfig      = &config.SyncerEndpoint{}
 		iframeConfig     = &config.SyncerEndpoint{URL: "https://bidder.com/iframe?redirect={{.RedirectURL}}"}
 		redirectConfig   = &config.SyncerEndpoint{URL: "https://bidder.com/redirect?redirect={{.RedirectURL}}"}
 		errParseConfig   = &config.SyncerEndpoint{URL: "{{malformed}}"}
@@ -51,6 +52,14 @@ func TestNewSyncer(t *testing.T) {
 			expectedError:       "at least one endpoint (iframe and/or redirect) is required",
 		},
 		{
+			description:         "Missing URLs - IFrame & Redirect",
+			givenKey:            "a",
+			givenDefault:        "redirect",
+			givenIFrameConfig:   emptyConfig,
+			givenRedirectConfig: emptyConfig,
+			expectedError:       "each endpoint defined (iframe and/or redirect) must specify a url",
+		},
+		{
 			description:         "Resolve Default Sync Type Error ",
 			givenKey:            "a",
 			givenDefault:        "",
@@ -69,6 +78,14 @@ func TestNewSyncer(t *testing.T) {
 			expectedRedirect:    "https://bidder.com/redirect?redirect=http%3A%2F%2Fhost.com%2Fhost",
 		},
 		{
+			description:         "IFrame - Missing URL Error",
+			givenKey:            "a",
+			givenDefault:        "iframe",
+			givenIFrameConfig:   emptyConfig,
+			givenRedirectConfig: nil,
+			expectedError:       "each endpoint defined (iframe and/or redirect) must specify a url",
+		},
+		{
 			description:         "IFrame - Parse Error",
 			givenKey:            "a",
 			givenDefault:        "iframe",
@@ -83,6 +100,14 @@ func TestNewSyncer(t *testing.T) {
 			givenIFrameConfig:   errInvalidConfig,
 			givenRedirectConfig: nil,
 			expectedError:       "iframe composed url: \"notAURL:http%3A%2F%2Fhost.com%2Fhost\" is invalid",
+		},
+		{
+			description:         "Redirect - Missing URL Error",
+			givenKey:            "a",
+			givenDefault:        "redirect",
+			givenIFrameConfig:   nil,
+			givenRedirectConfig: emptyConfig,
+			expectedError:       "each endpoint defined (iframe and/or redirect) must specify a url",
 		},
 		{
 			description:         "Redirect - Parse Error",

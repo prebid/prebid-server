@@ -13,3 +13,8 @@ userSync:
   iframe:
     url: "https://sync.technoratimedia.com/services?srv=cs&pid=70&cb={{.RedirectURL}}"
     userMacro: "[USER_ID]"
+userSync:
+  iframe:
+    # synacormedia supports user syncing, but requires configuration by the host. paste the
+    # url provided by the bidder below to enable.
+    url: ""
