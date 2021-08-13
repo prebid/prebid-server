@@ -212,7 +212,7 @@ func (a *YieldlabAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 		Bids:     []*adapters.TypedBid{},
 	}
 
-	for i, bid := range bids {
+	for _, bid := range bids {
 		width, height, err := splitSize(bid.Adsize)
 		if err != nil {
 			return nil, []error{err}
@@ -225,22 +225,24 @@ func (a *YieldlabAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 			}
 		}
 
+		imp := a.findImp(bid.ID, internalRequest.Imp)
+
 		var bidType openrtb_ext.BidType
 		responseBid := &openrtb2.Bid{
 			ID:     strconv.FormatUint(bid.ID, 10),
 			Price:  float64(bid.Price) / 100,
-			ImpID:  internalRequest.Imp[i].ID,
+			ImpID:  imp.ID,
 			CrID:   a.makeCreativeID(req, bid),
 			DealID: strconv.FormatUint(bid.Pid, 10),
 			W:      int64(width),
 			H:      int64(height),
 		}
 
-		if internalRequest.Imp[i].Video != nil {
+		if imp.Video != nil {
 			bidType = openrtb_ext.BidTypeVideo
-			responseBid.NURL = a.makeAdSourceURL(internalRequest, req, bid)
+			responseBid.AdM = a.makeAdSourceURL(internalRequest, req, bid)
 
-		} else if internalRequest.Imp[i].Banner != nil {
+		} else if imp.Banner != nil {
 			bidType = openrtb_ext.BidTypeBanner
 			responseBid.AdM = a.makeBannerAdSource(internalRequest, req, bid)
 		} else {
@@ -259,12 +261,34 @@ func (a *YieldlabAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 
 func (a *YieldlabAdapter) findBidReq(adslotID uint64, params []*openrtb_ext.ExtImpYieldlab) *openrtb_ext.ExtImpYieldlab {
 	slotIdStr := strconv.FormatUint(adslotID, 10)
+
 	for _, p := range params {
 		if p.AdslotID == slotIdStr {
 			return p
 		}
 	}
 
+	return nil
+}
+
+func (a *YieldlabAdapter) findImp(adslotID uint64, imps []openrtb2.Imp) *openrtb2.Imp {
+	slotIdStr := strconv.FormatUint(adslotID, 10)
+
+	for _, imp := range imps {
+		bidderExt := new(adapters.ExtImpBidder)
+		if err := json.Unmarshal(imp.Ext, bidderExt); err != nil {
+			continue
+		}
+
+		yieldlabExt := new(openrtb_ext.ExtImpYieldlab)
+		if err := json.Unmarshal(bidderExt.Bidder, yieldlabExt); err != nil {
+			continue
+		}
+
+		if yieldlabExt.AdslotID == slotIdStr {
+			return &imp
+		}
+	}
 	return nil
 }
 
