@@ -240,7 +240,7 @@ func (a *YieldlabAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 
 		if imp.Video != nil {
 			bidType = openrtb_ext.BidTypeVideo
-			responseBid.AdM = a.makeAdSourceURL(internalRequest, req, bid)
+			responseBid.NURL = a.makeAdSourceURL(internalRequest, req, bid)
 
 		} else if imp.Banner != nil {
 			bidType = openrtb_ext.BidTypeBanner
