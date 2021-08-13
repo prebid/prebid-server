@@ -29,7 +29,10 @@
     "app": {
       "bundle": "com.wavehk.android",
       "name": "Huawei Browser",
-      "ver": "9.1.0.301"
+      "ver": "9.1.0.301",
+      "content": {
+        "language": "zh"
+      }
     },
     "device": {
       "ua": "useragent",
@@ -63,13 +66,16 @@
         }
       }
     },
+    "regs": {
+      "coppa": 1
+    },
     "ext": {
     }
   },
   "httpcalls": [
     {
       "expectedRequest": {
-        "uri": "https://acd.op.hicloud.com/ppsadx/getResult",
+        "uri": "https://huaweiads.com/adxtest/",
         "headers": {
           "Accept": [
             "application/json"
@@ -83,7 +89,7 @@
         },
         "body": {
           "app": {
-            "lang": "en",
+            "lang": "zh",
             "country": "CN",
             "name": "Huawei Browser",
             "pkgname": "com.wavehk.android",
@@ -128,6 +134,7 @@
             "type": 0
           },
           "regs": {
+            "coppa": 1
           },
           "version": "3.4"
         }

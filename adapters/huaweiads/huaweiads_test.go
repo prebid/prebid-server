@@ -9,7 +9,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderHuaweiAds, config.Adapter{
-		Endpoint: "https://acd.op.hicloud.com/ppsadx/getResult"})
+		Endpoint: "https://huaweiads.com/adxtest/"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)

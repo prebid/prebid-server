@@ -64,7 +64,7 @@
   "httpcalls": [
     {
       "expectedRequest": {
-        "uri": "https://acd.op.hicloud.com/ppsadx/getResult",
+        "uri": "https://huaweiads.com/adxtest/",
         "headers": {
           "Accept": [
             "application/json"
@@ -92,7 +92,6 @@
                 "909"
               ],
               "h": 200,
-              "slotid": "u42ohmaufh",
               "test": 0,
               "w": 200
             }
