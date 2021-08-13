@@ -89,11 +89,13 @@ func NewBidderResponse() *BidderResponse {
 // openrtb_ext.ExtBidPrebid.
 //
 // TypedBid.Bid.Ext will become "response.seatbid[i].bid.ext.bidder" in the final OpenRTB response.
+// TypedBid.BidMeta will become "response.seatbid[i].bid.ext.prebid.meta" in the final OpenRTB response.
 // TypedBid.BidType will become "response.seatbid[i].bid.ext.prebid.type" in the final OpenRTB response.
 // TypedBid.BidVideo will become "response.seatbid[i].bid.ext.prebid.video" in the final OpenRTB response.
 // TypedBid.DealPriority is optionally provided by adapters and used internally by the exchange to support deal targeted campaigns.
 type TypedBid struct {
 	Bid          *openrtb2.Bid
+	BidMeta      *openrtb_ext.ExtBidPrebidMeta
 	BidType      openrtb_ext.BidType
 	BidVideo     *openrtb_ext.ExtBidPrebidVideo
 	DealPriority int

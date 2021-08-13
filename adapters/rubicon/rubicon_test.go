@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/buger/jsonparser"
 	"github.com/stretchr/testify/mock"
 	"io/ioutil"
 	"net/http"
@@ -36,6 +37,13 @@ type rubiAppendTrackerUrlTestScenario struct {
 	source   string
 	tracker  string
 	expected string
+}
+
+type rubiSetNetworkIdTestScenario struct {
+	bidExt            *openrtb_ext.ExtBidPrebid
+	buyer             string
+	expectedNetworkId int64
+	isNetworkIdSet    bool
 }
 
 type rubiTagInfo struct {
@@ -1672,6 +1680,105 @@ func TestOpenRTBResponseOverridePriceFromBidRequest(t *testing.T) {
 
 	assert.Equal(t, float64(10), bidResponse.Bids[0].Bid.Price,
 		"Expected Price 10. Got: %s", bidResponse.Bids[0].Bid.Price)
+}
+
+func TestOpenRTBResponseSettingOfNetworkId(t *testing.T) {
+	testScenarios := []rubiSetNetworkIdTestScenario{
+		{
+			bidExt:            nil,
+			buyer:             "1",
+			expectedNetworkId: 1,
+			isNetworkIdSet:    true,
+		},
+		{
+			bidExt:            nil,
+			buyer:             "0",
+			expectedNetworkId: 0,
+			isNetworkIdSet:    false,
+		},
+		{
+			bidExt:            nil,
+			buyer:             "-1",
+			expectedNetworkId: 0,
+			isNetworkIdSet:    false,
+		},
+		{
+			bidExt:            nil,
+			buyer:             "1.1",
+			expectedNetworkId: 0,
+			isNetworkIdSet:    false,
+		},
+		{
+			bidExt:            &openrtb_ext.ExtBidPrebid{},
+			buyer:             "2",
+			expectedNetworkId: 2,
+			isNetworkIdSet:    true,
+		},
+		{
+			bidExt:            &openrtb_ext.ExtBidPrebid{Meta: &openrtb_ext.ExtBidPrebidMeta{}},
+			buyer:             "3",
+			expectedNetworkId: 3,
+			isNetworkIdSet:    true,
+		},
+		{
+			bidExt:            &openrtb_ext.ExtBidPrebid{Meta: &openrtb_ext.ExtBidPrebidMeta{NetworkID: 5}},
+			buyer:             "4",
+			expectedNetworkId: 4,
+			isNetworkIdSet:    true,
+		},
+		{
+			bidExt:            &openrtb_ext.ExtBidPrebid{Meta: &openrtb_ext.ExtBidPrebidMeta{NetworkID: 5}},
+			buyer:             "-1",
+			expectedNetworkId: 5,
+			isNetworkIdSet:    false,
+		},
+	}
+
+	for _, scenario := range testScenarios {
+		request := &openrtb2.BidRequest{
+			Imp: []openrtb2.Imp{{
+				ID:     "test-imp-id",
+				Banner: &openrtb2.Banner{},
+			}},
+		}
+
+		requestJson, _ := json.Marshal(request)
+		reqData := &adapters.RequestData{
+			Method:  "POST",
+			Uri:     "test-uri",
+			Body:    requestJson,
+			Headers: nil,
+		}
+
+		var givenBidExt json.RawMessage
+		if scenario.bidExt != nil {
+			marshalledExt, _ := json.Marshal(scenario.bidExt)
+			givenBidExt = marshalledExt
+		} else {
+			givenBidExt = nil
+		}
+		givenBidResponse := rubiconBidResponse{
+			SeatBid: []rubiconSeatBid{{Buyer: scenario.buyer,
+				SeatBid: openrtb2.SeatBid{
+					Bid: []openrtb2.Bid{{Price: 123.2, ImpID: "test-imp-id", Ext: givenBidExt}}}}},
+		}
+		body, _ := json.Marshal(&givenBidResponse)
+		httpResp := &adapters.ResponseData{
+			StatusCode: http.StatusOK,
+			Body:       body,
+		}
+
+		bidder := new(RubiconAdapter)
+		bidResponse, errs := bidder.MakeBids(request, reqData, httpResp)
+		assert.Empty(t, errs)
+		if scenario.isNetworkIdSet {
+			networkdId, err := jsonparser.GetInt(bidResponse.Bids[0].Bid.Ext, "prebid", "meta", "networkId")
+			assert.NoError(t, err)
+			assert.Equal(t, scenario.expectedNetworkId, networkdId)
+		} else {
+			assert.Equal(t, bidResponse.Bids[0].Bid.Ext, givenBidExt)
+		}
+	}
 }
 
 func TestOpenRTBResponseOverridePriceFromCorrespondingImp(t *testing.T) {

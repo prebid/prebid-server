@@ -19,3 +19,12 @@ func ReadEmbeddedSlice(m map[string]interface{}, k string) ([]interface{}, bool)
 
 	return nil, false
 }
+
+// ReadEmbeddedString reads element k from the map m as a string
+func ReadEmbeddedString(m map[string]interface{}, k string) (string, bool) {
+	if v, ok := m[k]; ok {
+		vCasted, ok := v.(string)
+		return vCasted, ok
+	}
+	return "", false
+}
