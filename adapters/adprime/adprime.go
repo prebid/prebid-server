@@ -46,6 +46,20 @@ func (a *AdprimeAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 
 		reqCopy.Imp[0].TagID = tagID
 
+		ext := map[string]interface{}{
+			"bidder": map[string]interface{}{
+				"TagID":       tagID,
+				"placementId": tagID,
+			},
+		}
+
+		newExt, err := json.Marshal(ext)
+		if err != nil {
+			errs = append(errs, err)
+			return nil, errs
+		}
+		reqCopy.Imp[0].Ext = newExt
+
 		adapterReq, errors := a.makeRequest(&reqCopy)
 		if adapterReq != nil {
 			adapterRequests = append(adapterRequests, adapterReq)
