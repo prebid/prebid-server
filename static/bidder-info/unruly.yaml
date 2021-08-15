@@ -2,9 +2,11 @@ maintainer:
   email: "adspaces@unrulygroup.com"
 gvlVendorID: 162
 capabilities:
-  site:
-    mediaTypes:
-      - video
   app:
     mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
       - video
