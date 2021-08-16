@@ -16,6 +16,7 @@ import (
 	"github.com/prebid/prebid-server/config/util"
 	"github.com/prebid/prebid-server/currency"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/semconv"
 	"go.opentelemetry.io/otel/trace"
 
 	nativeRequests "github.com/mxmCherry/openrtb/v15/native1/request"
@@ -430,6 +431,7 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 		placementTypeKey.String(string(tjData.PlacementType)),
 	}
 	span.SetAttributes(attrs...)
+	span.SetAttributes(semconv.HTTPClientAttributesFromHTTPRequest(httpReq)...)
 
 	// Only print verbose debug logs if calling service added value in span context
 	if span.SpanContext().TraceState().Get(debugStateKey).AsString() == debugVerboseState {
@@ -470,6 +472,9 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 			err:     err,
 		}
 	}
+
+	span.SetAttributes(semconv.HTTPAttributesFromHTTPStatusCode(httpResp.StatusCode)...)
+	span.SetStatus(semconv.SpanStatusFromHTTPStatusCode(httpResp.StatusCode))
 
 	respBody, err := ioutil.ReadAll(httpResp.Body)
 	if err != nil {
