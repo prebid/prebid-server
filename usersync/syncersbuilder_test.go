@@ -1,13 +1,22 @@
 package usersync
 
 import (
-	"strings"
+	"errors"
 	"testing"
 
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/privacy"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestSyncerBuildError(t *testing.T) {
+	err := SyncerBuildError{
+		Bidder:    "anyBidder",
+		SyncerKey: "anyKey",
+		Err:       errors.New("anyError"),
+	}
+	assert.Equal(t, err.Error(), "cannot create syncer for bidder anyBidder with key anyKey: anyError")
+}
 
 func TestBuildSyncers(t *testing.T) {
 	var (
@@ -26,12 +35,11 @@ func TestBuildSyncers(t *testing.T) {
 	// in these tests. Look carefully at the end of the expected iframe urls to see the syncer key.
 
 	testCases := []struct {
-		description           string
-		givenConfig           config.Configuration
-		givenBidderInfos      config.BidderInfos
-		expectedIFramesURLs   map[string]string
-		expectedErrorHeader   string
-		expectedErrorSegments []string
+		description         string
+		givenConfig         config.Configuration
+		givenBidderInfos    config.BidderInfos
+		expectedIFramesURLs map[string]string
+		expectedErrors      []string
 	}{
 		{
 			description:      "One",
@@ -50,12 +58,11 @@ func TestBuildSyncers(t *testing.T) {
 			},
 		},
 		{
-			description:         "One - Syncer Error",
-			givenConfig:         hostConfig,
-			givenBidderInfos:    map[string]config.BidderInfo{"bidder1": infoKeyAError},
-			expectedErrorHeader: "user sync (1 error)",
-			expectedErrorSegments: []string{
-				"cannot create syncer for bidder bidder1 with key a. default is set to redirect but no redirect endpoint is configured\n",
+			description:      "One - Syncer Error",
+			givenConfig:      hostConfig,
+			givenBidderInfos: map[string]config.BidderInfo{"bidder1": infoKeyAError},
+			expectedErrors: []string{
+				"cannot create syncer for bidder bidder1 with key a: default is set to redirect but no redirect endpoint is configured",
 			},
 		},
 		{
@@ -77,21 +84,27 @@ func TestBuildSyncers(t *testing.T) {
 			},
 		},
 		{
-			description:         "Many - Same Syncers - Many Primaries",
-			givenConfig:         hostConfig,
-			givenBidderInfos:    map[string]config.BidderInfo{"bidder1": infoKeyAPopulated, "bidder2": infoKeyAPopulated},
-			expectedErrorHeader: "user sync (1 error)",
-			expectedErrorSegments: []string{
-				"bidders bidder1, bidder2 define endpoints (iframe and/or redirect) for the same syncer key, but only one bidder is permitted to define endpoints\n",
+			description:      "Many - Same Syncers - Many Primaries",
+			givenConfig:      hostConfig,
+			givenBidderInfos: map[string]config.BidderInfo{"bidder1": infoKeyAPopulated, "bidder2": infoKeyAPopulated},
+			expectedErrors: []string{
+				"bidders bidder1, bidder2 define endpoints (iframe and/or redirect) for the same syncer key, but only one bidder is permitted to define endpoints",
 			},
 		},
 		{
-			description:         "Many - Sync Error - Bidder Correct",
-			givenConfig:         hostConfig,
-			givenBidderInfos:    map[string]config.BidderInfo{"bidder1": infoKeyAEmpty, "bidder2": infoKeyAError},
-			expectedErrorHeader: "user sync (1 error)",
-			expectedErrorSegments: []string{
-				"cannot create syncer for bidder bidder2 with key a. default is set to redirect but no redirect endpoint is configured\n",
+			description:      "Many - Same Syncers - Many Primaries - None Populated",
+			givenConfig:      hostConfig,
+			givenBidderInfos: map[string]config.BidderInfo{"bidder1": infoKeyAEmpty, "bidder2": infoKeyAEmpty},
+			expectedErrors: []string{
+				"bidders bidder1, bidder2 share the same syncer key, but none define endpoints (iframe and/or redirect)",
+			},
+		},
+		{
+			description:      "Many - Sync Error - Bidder Correct",
+			givenConfig:      hostConfig,
+			givenBidderInfos: map[string]config.BidderInfo{"bidder1": infoKeyAEmpty, "bidder2": infoKeyAError},
+			expectedErrors: []string{
+				"cannot create syncer for bidder bidder2 with key a: default is set to redirect but no redirect endpoint is configured",
 			},
 		},
 		{
@@ -111,13 +124,12 @@ func TestBuildSyncers(t *testing.T) {
 			},
 		},
 		{
-			description:         "Many - Multiple Errors",
-			givenConfig:         hostConfig,
-			givenBidderInfos:    map[string]config.BidderInfo{"bidder1": infoKeyAError, "bidder2": infoKeyBEmpty},
-			expectedErrorHeader: "user sync (2 errors)",
-			expectedErrorSegments: []string{
-				"cannot create syncer for bidder bidder1 with key a. default is set to redirect but no redirect endpoint is configured\n",
-				"cannot create syncer for bidder bidder2 with key b. at least one endpoint (iframe and/or redirect) is required\n",
+			description:      "Many - Multiple Errors",
+			givenConfig:      hostConfig,
+			givenBidderInfos: map[string]config.BidderInfo{"bidder1": infoKeyAError, "bidder2": infoKeyBEmpty},
+			expectedErrors: []string{
+				"cannot create syncer for bidder bidder1 with key a: default is set to redirect but no redirect endpoint is configured",
+				"cannot create syncer for bidder bidder2 with key b: at least one endpoint (iframe and/or redirect) is required",
 			},
 		},
 		{
@@ -131,10 +143,10 @@ func TestBuildSyncers(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		result, err := BuildSyncers(&test.givenConfig, test.givenBidderInfos)
+		result, errs := BuildSyncers(&test.givenConfig, test.givenBidderInfos)
 
-		if test.expectedErrorHeader == "" {
-			assert.NoError(t, err, test.description+":err")
+		if len(test.expectedErrors) == 0 {
+			assert.Empty(t, errs, test.description+":err")
 			resultRenderedIFrameURLS := map[string]string{}
 			for k, v := range result {
 				iframeRendered, err := v.GetSync([]SyncType{SyncTypeIFrame}, privacy.Policies{})
@@ -144,11 +156,11 @@ func TestBuildSyncers(t *testing.T) {
 			}
 			assert.Equal(t, test.expectedIFramesURLs, resultRenderedIFrameURLS, test.description+":result")
 		} else {
-			errMessage := err.Error()
-			assert.True(t, strings.HasPrefix(errMessage, test.expectedErrorHeader), test.description+":err")
-			for _, s := range test.expectedErrorSegments {
-				assert.Contains(t, errMessage, s, test.description+":err")
+			errMessages := make([]string, 0, len(errs))
+			for _, e := range errs {
+				errMessages = append(errMessages, e.Error())
 			}
+			assert.ElementsMatch(t, test.expectedErrors, errMessages, test.description+":err")
 			assert.Empty(t, result, test.description+":result")
 		}
 	}

@@ -104,19 +104,19 @@ func TestApplyBidderInfoConfigOverrides(t *testing.T) {
 			description:      "UserSyncURL Override Syncer Not Defined",
 			givenBidderInfos: config.BidderInfos{"a": {}},
 			givenAdaptersCfg: map[string]config.Adapter{"a": {UserSyncURL: "override"}},
-			expectedError:    "failed to apply legacy usersync_url setting for bidder a, bidder does not define a user sync or is disabled",
+			expectedError:    "adapters.a.usersync_url cannot be applied, bidder does not define a user sync",
 		},
 		{
 			description:      "UserSyncURL Override Syncer Endpoints Not Defined",
 			givenBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{}}},
 			givenAdaptersCfg: map[string]config.Adapter{"a": {UserSyncURL: "override"}},
-			expectedError:    "failed to apply legacy usersync_url setting for bidder a, bidder does not define user sync endpoints",
+			expectedError:    "adapters.a.usersync_url cannot be applied, bidder does not define user sync endpoints",
 		},
 		{
 			description:      "UserSyncURL Override Ambiguous",
 			givenBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{IFrame: &config.SyncerEndpoint{URL: "originalIFrame"}, Redirect: &config.SyncerEndpoint{URL: "originalRedirect"}}}},
 			givenAdaptersCfg: map[string]config.Adapter{"a": {UserSyncURL: "override"}},
-			expectedError:    "failed to apply legacy usersync_url setting for bidder a, bidder defines multiple user sync endpoints",
+			expectedError:    "adapters.a.usersync_url cannot be applied, bidder defines multiple user sync endpoints",
 		},
 	}
 

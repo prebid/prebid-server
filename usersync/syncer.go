@@ -58,19 +58,19 @@ const (
 	setuidSyncTypeRedirect = "i" // i = image response
 )
 
-var errEndpointRequired = errors.New("at least one endpoint (iframe and/or redirect) is required")
-var errKeyRequired = errors.New("key is required")
-var errDefaultSyncTypeRequired = errors.New("default sync type is required when more then one sync endpoint is configured")
+var ErrSyncerEndpointRequired = errors.New("at least one endpoint (iframe and/or redirect) is required")
+var ErrSyncerKeyRequired = errors.New("key is required")
+var ErrSyncerDefaultSyncTypeRequired = errors.New("default sync type is required when more then one sync endpoint is configured")
 
 // NewSyncer creates a new Syncer from the provided configuration, or an error if macro substition
 // fails or an endpoint url is invalid.
 func NewSyncer(hostConfig config.UserSync, syncerConfig config.Syncer) (Syncer, error) {
 	if syncerConfig.Key == "" {
-		return nil, errKeyRequired
+		return nil, ErrSyncerKeyRequired
 	}
 
 	if syncerConfig.IFrame == nil && syncerConfig.Redirect == nil {
-		return nil, errEndpointRequired
+		return nil, ErrSyncerEndpointRequired
 	}
 
 	syncer := standardSyncer{
@@ -112,7 +112,7 @@ func NewSyncer(hostConfig config.UserSync, syncerConfig config.Syncer) (Syncer, 
 func resolveDefaultSyncType(syncerConfig config.Syncer) (SyncType, error) {
 	if syncerConfig.Default == "" {
 		if syncerConfig.IFrame != nil && syncerConfig.Redirect != nil {
-			return SyncTypeUnknown, errDefaultSyncTypeRequired
+			return SyncTypeUnknown, ErrSyncerDefaultSyncTypeRequired
 		} else if syncerConfig.IFrame != nil {
 			return SyncTypeIFrame, nil
 		} else {
