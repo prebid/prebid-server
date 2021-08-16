@@ -220,9 +220,9 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		return nil, err
 	}
 
-	syncersByBidder, errs := usersync.BuildSyncers(cfg, bidderInfos)
-	if errsFiltered := filterSyncerErrors(errs); len(errsFiltered) > 0 {
-		return nil, errortypes.NewAggregateError("user sync", errsFiltered)
+	syncersByBidder, err := usersync.BuildSyncers(cfg, bidderInfos)
+	if err != nil {
+		return nil, err
 	}
 
 	syncerKeys := make([]string, 0, len(syncersByBidder))
@@ -341,7 +341,7 @@ func applyBidderInfoConfigOverrides(bidderInfos config.BidderInfos, adaptersCfg 
 			// the new config.
 			if adapterCfg.UserSyncURL != "" {
 				if bidderInfo.Syncer == nil {
-					return fmt.Errorf("adapters.%s.usersync_url cannot be applied, bidder does not define a user sync", strings.ToLower(bidderName))
+					return fmt.Errorf("failed to apply legacy usersync_url setting for bidder %s, bidder does not define a user sync or is disabled", bidderName)
 				}
 
 				endpointsCount := 0
@@ -355,39 +355,23 @@ func applyBidderInfoConfigOverrides(bidderInfos config.BidderInfos, adaptersCfg 
 				}
 
 				if endpointsCount == 0 {
-					return fmt.Errorf("adapters.%s.usersync_url cannot be applied, bidder does not define user sync endpoints", strings.ToLower(bidderName))
+					return fmt.Errorf("failed to apply legacy usersync_url setting for bidder %s, bidder does not define user sync endpoints", bidderName)
 				}
 
 				// if the bidder defines both an iframe and redirect endpoint, we can't be sure which config value to
 				// override, and  it wouldn't be both. this is a fatal configuration error.
 				if endpointsCount > 1 {
-					return fmt.Errorf("adapters.%s.usersync_url cannot be applied, bidder defines multiple user sync endpoints", strings.ToLower(bidderName))
+					return fmt.Errorf("failed to apply legacy usersync_url setting for bidder %s, bidder defines multiple user sync endpoints", bidderName)
 				}
 
 				// provide a warning that this compatibility layer is temporary
-				glog.Warningf("adapters.%s.usersync_url is deprecated and will be removed in a future version, please update to the latest user sync config values", strings.ToLower(bidderName))
+				glog.Warningf("legacy usersync_url setting for bidder %s will be removed in a future version of Prebid Server. please update to the latest user sync config values", bidderName)
 			}
 
 			bidderInfos[bidderName] = bidderInfo
 		}
 	}
 	return nil
-}
-
-func filterSyncerErrors(errs []error) []error {
-	var fatalErrors []error
-
-	for _, err := range errs {
-		syncerBuildErr, ok := err.(usersync.SyncerBuildError)
-		if ok && syncerBuildErr.Err == usersync.ErrSyncerURLRequired {
-			bidderName := strings.ToLower(syncerBuildErr.Bidder)
-			glog.Warningf("bidder %s supports user syncing but has endpoints with no default url, no syncs will be performed with %s.", bidderName, bidderName)
-		} else {
-			fatalErrors = append(fatalErrors, err)
-		}
-	}
-
-	return fatalErrors
 }
 
 // Fixes #648

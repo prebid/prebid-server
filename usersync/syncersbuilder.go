@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
 )
 
 type namedSyncerConfig struct {
@@ -13,19 +14,7 @@ type namedSyncerConfig struct {
 	cfg  config.Syncer
 }
 
-// SyncerBuildError represents an error with building a syncer.
-type SyncerBuildError struct {
-	Bidder    string
-	SyncerKey string
-	Err       error
-}
-
-// Error implements the standard error interface.
-func (e SyncerBuildError) Error() string {
-	return fmt.Sprintf("cannot create syncer for bidder %s with key %s: %v", e.Bidder, e.SyncerKey, e.Err)
-}
-
-func BuildSyncers(hostConfig *config.Configuration, bidderInfos config.BidderInfos) (map[string]Syncer, []error) {
+func BuildSyncers(hostConfig *config.Configuration, bidderInfos config.BidderInfos) (map[string]Syncer, error) {
 	// map syncer config by bidder
 	cfgByBidder := make(map[string]config.Syncer, len(bidderInfos))
 	for bidder, cfg := range bidderInfos {
@@ -61,11 +50,7 @@ func BuildSyncers(hostConfig *config.Configuration, bidderInfos config.BidderInf
 
 		syncer, err := NewSyncer(hostUserSyncConfig, primaryCfg.cfg)
 		if err != nil {
-			errs = append(errs, SyncerBuildError{
-				Bidder:    primaryCfg.name,
-				SyncerKey: key,
-				Err:       err,
-			})
+			errs = append(errs, fmt.Errorf("cannot create syncer for bidder %s with key %s. %v", primaryCfg.name, key, err))
 			continue
 		}
 
@@ -75,7 +60,7 @@ func BuildSyncers(hostConfig *config.Configuration, bidderInfos config.BidderInf
 	}
 
 	if len(errs) > 0 {
-		return nil, errs
+		return nil, errortypes.NewAggregateError("user sync", errs)
 	}
 	return syncers, nil
 }

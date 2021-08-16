@@ -2,7 +2,6 @@ package router
 
 import (
 	"encoding/json"
-	"errors"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -10,9 +9,7 @@ import (
 	"testing"
 
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/usersync"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -107,19 +104,19 @@ func TestApplyBidderInfoConfigOverrides(t *testing.T) {
 			description:      "UserSyncURL Override Syncer Not Defined",
 			givenBidderInfos: config.BidderInfos{"a": {}},
 			givenAdaptersCfg: map[string]config.Adapter{"a": {UserSyncURL: "override"}},
-			expectedError:    "adapters.a.usersync_url cannot be applied, bidder does not define a user sync",
+			expectedError:    "failed to apply legacy usersync_url setting for bidder a, bidder does not define a user sync or is disabled",
 		},
 		{
 			description:      "UserSyncURL Override Syncer Endpoints Not Defined",
 			givenBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{}}},
 			givenAdaptersCfg: map[string]config.Adapter{"a": {UserSyncURL: "override"}},
-			expectedError:    "adapters.a.usersync_url cannot be applied, bidder does not define user sync endpoints",
+			expectedError:    "failed to apply legacy usersync_url setting for bidder a, bidder does not define user sync endpoints",
 		},
 		{
 			description:      "UserSyncURL Override Ambiguous",
 			givenBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{IFrame: &config.SyncerEndpoint{URL: "originalIFrame"}, Redirect: &config.SyncerEndpoint{URL: "originalRedirect"}}}},
 			givenAdaptersCfg: map[string]config.Adapter{"a": {UserSyncURL: "override"}},
-			expectedError:    "adapters.a.usersync_url cannot be applied, bidder defines multiple user sync endpoints",
+			expectedError:    "failed to apply legacy usersync_url setting for bidder a, bidder defines multiple user sync endpoints",
 		},
 	}
 
@@ -131,50 +128,6 @@ func TestApplyBidderInfoConfigOverrides(t *testing.T) {
 		} else {
 			assert.EqualError(t, resultErr, test.expectedError, test.description+":err")
 		}
-	}
-}
-
-func TestFilterSyncerErrors(t *testing.T) {
-	fatalErrorA := errors.New("errorA")
-	fatalErrorB := &errortypes.BadInput{Message: "errorB"}
-	buildErrorURLRequired := usersync.SyncerBuildError{Bidder: "anyBidder", SyncerKey: "anyKey", Err: usersync.ErrSyncerURLRequired}
-	buildErrorOther := usersync.SyncerBuildError{Bidder: "anyBidder", SyncerKey: "anyKey", Err: usersync.ErrSyncerKeyRequired}
-
-	var testCases = []struct {
-		description    string
-		givenErrors    []error
-		expectedErrors []error
-	}{
-		{
-			description:    "Nil",
-			givenErrors:    nil,
-			expectedErrors: nil,
-		},
-		{
-			description:    "Empty",
-			givenErrors:    []error{},
-			expectedErrors: nil,
-		},
-		{
-			description:    "One - Not Filtered",
-			givenErrors:    []error{fatalErrorA},
-			expectedErrors: []error{fatalErrorA},
-		},
-		{
-			description:    "One - Filtered",
-			givenErrors:    []error{buildErrorURLRequired},
-			expectedErrors: nil,
-		},
-		{
-			description:    "Many - Mixed",
-			givenErrors:    []error{fatalErrorA, fatalErrorB, buildErrorURLRequired, buildErrorOther},
-			expectedErrors: []error{fatalErrorA, fatalErrorB, buildErrorOther},
-		},
-	}
-
-	for _, test := range testCases {
-		filteredErrs := filterSyncerErrors(test.givenErrors)
-		assert.Equal(t, test.expectedErrors, filteredErrs, test.description)
 	}
 }
 

@@ -10,8 +10,3 @@ capabilities:
     mediaTypes:
       - banner
       - video
-userSync:
-  iframe:
-    # adtelligent supports user syncing, but requires configuration by the host. paste the
-    # url provided by the bidder below to enable.
-    url: ""

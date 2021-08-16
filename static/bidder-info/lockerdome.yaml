@@ -7,12 +7,10 @@ capabilities:
   site:
     mediaTypes:
       - banner
-userSync:
-  redirect:
-    # lockerdome supports user syncing, but requires a platform id to be configured by
-    # the host. remove the empty url, replace <<PlatformID>> with the value provided, and
-    # uncomment to enable.
-    #
-    # url: "https://lockerdome.com/usync/prebidserver?pid=<<PlatformID>>&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
-    url: ""
-    userMacro: "{{uid}}"
+# lockerdome requires a platform id for their user sync process. replace <<PlatformID>>
+# in the url below and uncomment the userSync section to enable.
+#
+#userSync:
+#  redirect:
+#    url: "https://lockerdome.com/usync/prebidserver?pid=<<PlatformID>>&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
+#    userMacro: "{{uid}}"
