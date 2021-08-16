@@ -126,6 +126,7 @@ func TestNewSyncerMap(t *testing.T) {
 		openrtb_ext.BidderEpom:              true,
 		openrtb_ext.BidderDecenterAds:       true,
 		openrtb_ext.BidderInteractiveoffers: true,
+		openrtb_ext.BidderIQZone:            true,
 		openrtb_ext.BidderKayzen:            true,
 		openrtb_ext.BidderKidoz:             true,
 		openrtb_ext.BidderKubient:           true,
