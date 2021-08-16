@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
-	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
@@ -30,35 +30,61 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 func (a *AdprimeAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var err error
-	var tagID string
 
 	var adapterRequests []*adapters.RequestData
+
+	var bidderExt adapters.ExtImpBidder
+	var adprimeExt openrtb_ext.ExtImpAdprime
 
 	reqCopy := *request
 	for _, imp := range request.Imp {
 		reqCopy.Imp = []openrtb2.Imp{imp}
 
-		tagID, err = jsonparser.GetString(reqCopy.Imp[0].Ext, "bidder", "TagID")
+		err = json.Unmarshal(reqCopy.Imp[0].Ext, &bidderExt)
 		if err != nil {
 			errs = append(errs, err)
-			continue
+			return nil, errs
 		}
 
+		err = json.Unmarshal(bidderExt.Bidder, &adprimeExt)
+		if err != nil {
+			errs = append(errs, err)
+			return nil, errs
+		}
+
+		// tagId
+		tagID := adprimeExt.TagID
 		reqCopy.Imp[0].TagID = tagID
 
-		ext := map[string]interface{}{
-			"bidder": map[string]interface{}{
-				"TagID":       tagID,
-				"placementId": tagID,
-			},
-		}
-
-		newExt, err := json.Marshal(ext)
+		// placementId
+		newExt, err := json.Marshal(
+			map[string]interface{}{
+				"bidder": map[string]interface{}{
+					"TagID":       tagID,
+					"placementId": tagID,
+				},
+			})
 		if err != nil {
 			errs = append(errs, err)
 			return nil, errs
 		}
 		reqCopy.Imp[0].Ext = newExt
+
+		// keywords
+		if len(adprimeExt.Keywords) > 0 {
+			if reqCopy.Site == nil {
+				reqCopy.Site = &openrtb2.Site{}
+			}
+			reqCopy.Site.Keywords = strings.Join(adprimeExt.Keywords, ",")
+		}
+
+		// audiences
+		if len(adprimeExt.Audiences) > 0 {
+			if reqCopy.User == nil {
+				reqCopy.User = &openrtb2.User{}
+			}
+			reqCopy.User.CustomData = strings.Join(adprimeExt.Audiences, ",")
+		}
 
 		adapterReq, errors := a.makeRequest(&reqCopy)
 		if adapterReq != nil {
