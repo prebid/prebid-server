@@ -94,7 +94,7 @@ func TestSingleBidder(t *testing.T) {
 		bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, test.debugInfo)
 		currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 
-		seatBid, errs := bidder.requestBid(ctx, &openrtb2.BidRequest{}, "test", bidAdjustment, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, true)
+		seatBid, errs := bidder.requestBid(ctx, &openrtb2.BidRequest{}, "test", bidAdjustment, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, true, false)
 
 		// Make sure the goodSingleBidder was called with the expected arguments.
 		if bidderImpl.httpResponse == nil {
@@ -167,7 +167,7 @@ func TestRequestBidRemovesSensitiveHeaders(t *testing.T) {
 
 	bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, debugInfo)
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
-	seatBid, errs := bidder.requestBid(ctx, &openrtb2.BidRequest{}, "test", 1, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, true)
+	seatBid, errs := bidder.requestBid(ctx, &openrtb2.BidRequest{}, "test", 1, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, true, false)
 
 	expectedHttpCalls := []*openrtb_ext.ExtHttpCall{
 		{
@@ -181,6 +181,85 @@ func TestRequestBidRemovesSensitiveHeaders(t *testing.T) {
 
 	assert.Empty(t, errs)
 	assert.ElementsMatch(t, seatBid.httpCalls, expectedHttpCalls)
+}
+
+func TestSetGPCHeader(t *testing.T) {
+	server := httptest.NewServer(mockHandler(200, "getBody", "responseJson"))
+	defer server.Close()
+
+	requestHeaders := http.Header{}
+	requestHeaders.Add("Content-Type", "application/json")
+
+	bidderImpl := &goodSingleBidder{
+		httpRequest: &adapters.RequestData{
+			Method:  "POST",
+			Uri:     server.URL,
+			Body:    []byte("requestJson"),
+			Headers: requestHeaders,
+		},
+		bidResponse: &adapters.BidderResponse{
+			Bids: []*adapters.TypedBid{},
+		},
+	}
+
+	debugInfo := &config.DebugInfo{Allow: true}
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, DebugContextKey, true)
+
+	bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, debugInfo)
+	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	seatBid, errs := bidder.requestBid(ctx, &openrtb2.BidRequest{}, "test", 1, currencyConverter.Rates(), &adapters.ExtraRequestInfo{GlobalPrivacyControlHeader: "1"}, true, false)
+
+	expectedHttpCall := []*openrtb_ext.ExtHttpCall{
+		{
+			Uri:            server.URL,
+			RequestBody:    "requestJson",
+			RequestHeaders: map[string][]string{"Content-Type": {"application/json"}, "Sec-Gpc": {"1"}},
+			ResponseBody:   "responseJson",
+			Status:         200,
+		},
+	}
+
+	assert.Empty(t, errs)
+	assert.ElementsMatch(t, seatBid.httpCalls, expectedHttpCall)
+}
+
+func TestSetGPCHeaderNil(t *testing.T) {
+	server := httptest.NewServer(mockHandler(200, "getBody", "responseJson"))
+	defer server.Close()
+
+	bidderImpl := &goodSingleBidder{
+		httpRequest: &adapters.RequestData{
+			Method:  "POST",
+			Uri:     server.URL,
+			Body:    []byte("requestJson"),
+			Headers: nil,
+		},
+		bidResponse: &adapters.BidderResponse{
+			Bids: []*adapters.TypedBid{},
+		},
+	}
+
+	debugInfo := &config.DebugInfo{Allow: true}
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, DebugContextKey, true)
+
+	bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, debugInfo)
+	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	seatBid, errs := bidder.requestBid(ctx, &openrtb2.BidRequest{}, "test", 1, currencyConverter.Rates(), &adapters.ExtraRequestInfo{GlobalPrivacyControlHeader: "1"}, true, false)
+
+	expectedHttpCall := []*openrtb_ext.ExtHttpCall{
+		{
+			Uri:            server.URL,
+			RequestBody:    "requestJson",
+			RequestHeaders: map[string][]string{"Sec-Gpc": {"1"}},
+			ResponseBody:   "responseJson",
+			Status:         200,
+		},
+	}
+
+	assert.Empty(t, errs)
+	assert.ElementsMatch(t, seatBid.httpCalls, expectedHttpCall)
 }
 
 // TestMultiBidder makes sure all the requests get sent, and the responses processed.
@@ -225,7 +304,7 @@ func TestMultiBidder(t *testing.T) {
 	}
 	bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, nil)
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
-	seatBid, errs := bidder.requestBid(context.Background(), &openrtb2.BidRequest{}, "test", 1.0, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, true)
+	seatBid, errs := bidder.requestBid(context.Background(), &openrtb2.BidRequest{}, "test", 1.0, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, true, true)
 
 	if seatBid == nil {
 		t.Fatalf("SeatBid should exist, because bids exist.")
@@ -485,7 +564,7 @@ func TestMultiCurrencies(t *testing.T) {
 				{currency: "USD", price: 1.3 * 1.3050530256},
 			},
 			expectedBadCurrencyErrors: []error{
-				errors.New("Currency conversion rate not found: 'JPY' => 'USD'"),
+				currency.ConversionNotFoundError{FromCur: "JPY", ToCur: "USD"},
 			},
 			description: "Case 6 - Bidder respond with a mix of currencies and one unknown on all HTTP responses",
 		},
@@ -508,9 +587,9 @@ func TestMultiCurrencies(t *testing.T) {
 			},
 			expectedBids: []bid{},
 			expectedBadCurrencyErrors: []error{
-				errors.New("Currency conversion rate not found: 'JPY' => 'USD'"),
-				errors.New("Currency conversion rate not found: 'BZD' => 'USD'"),
-				errors.New("Currency conversion rate not found: 'DKK' => 'USD'"),
+				currency.ConversionNotFoundError{FromCur: "JPY", ToCur: "USD"},
+				currency.ConversionNotFoundError{FromCur: "BZD", ToCur: "USD"},
+				currency.ConversionNotFoundError{FromCur: "DKK", ToCur: "USD"},
 			},
 			description: "Case 7 - Bidder respond with currencies not having any rate on all HTTP responses",
 		},
@@ -602,6 +681,7 @@ func TestMultiCurrencies(t *testing.T) {
 			currencyConverter.Rates(),
 			&adapters.ExtraRequestInfo{},
 			true,
+			true,
 		)
 
 		// Verify:
@@ -640,9 +720,9 @@ func TestMultiCurrencies_RateConverterNotSet(t *testing.T) {
 			bidCurrency:       []string{"EUR", "EUR", "EUR"},
 			expectedBidsCount: 0,
 			expectedBadCurrencyErrors: []error{
-				fmt.Errorf("Constant rates doesn't proceed to any conversions, cannot convert 'EUR' => 'USD'"),
-				fmt.Errorf("Constant rates doesn't proceed to any conversions, cannot convert 'EUR' => 'USD'"),
-				fmt.Errorf("Constant rates doesn't proceed to any conversions, cannot convert 'EUR' => 'USD'"),
+				currency.ConversionNotFoundError{FromCur: "EUR", ToCur: "USD"},
+				currency.ConversionNotFoundError{FromCur: "EUR", ToCur: "USD"},
+				currency.ConversionNotFoundError{FromCur: "EUR", ToCur: "USD"},
 			},
 			description: "Case 2 - Bidder respond with the same currency (not default one) on all HTTP responses",
 		},
@@ -674,7 +754,7 @@ func TestMultiCurrencies_RateConverterNotSet(t *testing.T) {
 			bidCurrency:       []string{"EUR", "", "USD"},
 			expectedBidsCount: 2,
 			expectedBadCurrencyErrors: []error{
-				fmt.Errorf("Constant rates doesn't proceed to any conversions, cannot convert 'EUR' => 'USD'"),
+				currency.ConversionNotFoundError{FromCur: "EUR", ToCur: "USD"},
 			},
 			description: "Case 7 - Bidder responds with a mix of not set, non default currency and default currency in HTTP responses",
 		},
@@ -682,7 +762,7 @@ func TestMultiCurrencies_RateConverterNotSet(t *testing.T) {
 			bidCurrency:       []string{"GBP", "", "USD"},
 			expectedBidsCount: 2,
 			expectedBadCurrencyErrors: []error{
-				fmt.Errorf("Constant rates doesn't proceed to any conversions, cannot convert 'GBP' => 'USD'"),
+				currency.ConversionNotFoundError{FromCur: "GBP", ToCur: "USD"},
 			},
 			description: "Case 8 - Bidder responds with a mix of not set, non default currency and default currency in HTTP responses",
 		},
@@ -690,7 +770,7 @@ func TestMultiCurrencies_RateConverterNotSet(t *testing.T) {
 			bidCurrency:       []string{"GBP", "", ""},
 			expectedBidsCount: 2,
 			expectedBadCurrencyErrors: []error{
-				fmt.Errorf("Constant rates doesn't proceed to any conversions, cannot convert 'GBP' => 'USD'"),
+				currency.ConversionNotFoundError{FromCur: "GBP", ToCur: "USD"},
 			},
 			description: "Case 9 - Bidder responds with a mix of not set and empty currencies (default currency) in HTTP responses",
 		},
@@ -746,6 +826,7 @@ func TestMultiCurrencies_RateConverterNotSet(t *testing.T) {
 			1,
 			currencyConverter.Rates(),
 			&adapters.ExtraRequestInfo{},
+			true,
 			true,
 		)
 
@@ -920,6 +1001,7 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			currencyConverter.Rates(),
 			&adapters.ExtraRequestInfo{},
 			true,
+			false,
 		)
 
 		// Verify:
@@ -1224,6 +1306,7 @@ func TestMobileNativeTypes(t *testing.T) {
 			currencyConverter.Rates(),
 			&adapters.ExtraRequestInfo{},
 			true,
+			true,
 		)
 
 		var actualValue string
@@ -1237,7 +1320,7 @@ func TestMobileNativeTypes(t *testing.T) {
 func TestErrorReporting(t *testing.T) {
 	bidder := adaptBidder(&bidRejector{}, nil, &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, nil)
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
-	bids, errs := bidder.requestBid(context.Background(), &openrtb2.BidRequest{}, "test", 1.0, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, true)
+	bids, errs := bidder.requestBid(context.Background(), &openrtb2.BidRequest{}, "test", 1.0, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, true, false)
 	if bids != nil {
 		t.Errorf("There should be no seatbid if no http requests are returned.")
 	}
@@ -1458,7 +1541,7 @@ func TestCallRecordAdapterConnections(t *testing.T) {
 	// Run requestBid using an http.Client with a mock handler
 	bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, metrics, openrtb_ext.BidderAppnexus, nil)
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
-	_, errs := bidder.requestBid(context.Background(), &openrtb2.BidRequest{}, "test", bidAdjustment, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, true)
+	_, errs := bidder.requestBid(context.Background(), &openrtb2.BidRequest{}, "test", bidAdjustment, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, true, true)
 
 	// Assert no errors
 	assert.Equal(t, 0, len(errs), "bidder.requestBid returned errors %v \n", errs)

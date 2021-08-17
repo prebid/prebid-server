@@ -13,7 +13,6 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/adapters/appnexus"
 	"github.com/prebid/prebid-server/adapters/audienceNetwork"
-	"github.com/prebid/prebid-server/adapters/lifestreet"
 	"github.com/prebid/prebid-server/adapters/pubmatic"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
@@ -41,12 +40,12 @@ func TestGDPRPreventsCookie(t *testing.T) {
 }
 
 func TestGDPRPreventsBidders(t *testing.T) {
-	rr := doPost(`{"gdpr":1,"bidders":["appnexus", "pubmatic", "lifestreet"],"gdpr_consent":"BOONs2HOONs2HABABBENAGgAAAAPrABACGA"}`, nil, true, map[openrtb_ext.BidderName]usersync.Usersyncer{
-		openrtb_ext.BidderLifestreet: lifestreet.NewLifestreetSyncer(template.Must(template.New("sync").Parse("someurl.com"))),
+	rr := doPost(`{"gdpr":1,"bidders":["appnexus", "pubmatic"],"gdpr_consent":"BOONs2HOONs2HABABBENAGgAAAAPrABACGA"}`, nil, true, map[openrtb_ext.BidderName]usersync.Usersyncer{
+		openrtb_ext.BidderPubmatic: pubmatic.NewPubmaticSyncer(template.Must(template.New("sync").Parse("someurl.com"))),
 	})
 	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
 	assert.Equal(t, http.StatusOK, rr.Code)
-	assert.ElementsMatch(t, []string{"lifestreet"}, parseSyncs(t, rr.Body.Bytes()))
+	assert.ElementsMatch(t, []string{"pubmatic"}, parseSyncs(t, rr.Body.Bytes()))
 	assert.Equal(t, "no_cookie", parseStatus(t, rr.Body.Bytes()))
 }
 
@@ -111,7 +110,7 @@ func TestCCPA(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		gdpr := config.GDPR{UsersyncIfAmbiguous: true}
+		gdpr := config.GDPR{DefaultValue: "0"}
 		ccpa := config.CCPA{Enforce: test.enforceCCPA}
 		rr := doConfigurablePost(test.requestBody, nil, true, syncersForTest(), gdpr, ccpa)
 		assert.Equal(t, http.StatusOK, rr.Code, test.description+":httpResponseCode")
@@ -145,12 +144,12 @@ func TestCookieSyncNoBidders(t *testing.T) {
 	rr := doPost("{}", nil, true, syncersForTest())
 	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
 	assert.Equal(t, http.StatusOK, rr.Code)
-	assert.ElementsMatch(t, []string{"appnexus", "audienceNetwork", "lifestreet", "pubmatic"}, parseSyncs(t, rr.Body.Bytes()))
+	assert.ElementsMatch(t, []string{"appnexus", "audienceNetwork", "pubmatic"}, parseSyncs(t, rr.Body.Bytes()))
 	assert.Equal(t, "no_cookie", parseStatus(t, rr.Body.Bytes()))
 }
 
 func TestCookieSyncNoCookiesBrokenGDPR(t *testing.T) {
-	rr := doConfigurablePost(`{"bidders":["appnexus", "audienceNetwork", "random"],"gdpr_consent":"GLKHGKGKKGK"}`, nil, true, map[openrtb_ext.BidderName]usersync.Usersyncer{}, config.GDPR{UsersyncIfAmbiguous: true}, config.CCPA{})
+	rr := doConfigurablePost(`{"bidders":["appnexus", "audienceNetwork", "random"],"gdpr_consent":"GLKHGKGKKGK"}`, nil, true, map[openrtb_ext.BidderName]usersync.Usersyncer{}, config.GDPR{DefaultValue: "0"}, config.CCPA{})
 	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
 	assert.Equal(t, http.StatusOK, rr.Code)
 	assert.ElementsMatch(t, []string{"appnexus", "audienceNetwork"}, parseSyncs(t, rr.Body.Bytes()))
@@ -203,7 +202,6 @@ func syncersForTest() map[openrtb_ext.BidderName]usersync.Usersyncer {
 	return map[openrtb_ext.BidderName]usersync.Usersyncer{
 		openrtb_ext.BidderAppnexus:        appnexus.NewAppnexusSyncer(template.Must(template.New("sync").Parse("someurl.com"))),
 		openrtb_ext.BidderAudienceNetwork: audienceNetwork.NewFacebookSyncer(template.Must(template.New("sync").Parse("https://www.facebook.com/audiencenetwork/idsync/?partner=partnerId&callback=localhost%2Fsetuid%3Fbidder%3DaudienceNetwork%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID"))),
-		openrtb_ext.BidderLifestreet:      lifestreet.NewLifestreetSyncer(template.Must(template.New("sync").Parse("anotherurl.com"))),
 		openrtb_ext.BidderPubmatic:        pubmatic.NewPubmaticSyncer(template.Must(template.New("sync").Parse("thaturl.com"))),
 	}
 }
@@ -254,6 +252,6 @@ func (g *gdprPerms) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.Bi
 	return ok, nil
 }
 
-func (g *gdprPerms) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string, weakVendorEnforcement bool) (bool, bool, bool, error) {
+func (g *gdprPerms) AuctionActivitiesAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string, weakVendorEnforcement bool) (allowBidRequest, passGeo bool, passID bool, err error) {
 	return true, true, true, nil
 }

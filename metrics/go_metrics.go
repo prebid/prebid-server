@@ -88,19 +88,20 @@ type Metrics struct {
 
 // AdapterMetrics houses the metrics for a particular adapter
 type AdapterMetrics struct {
-	NoCookieMeter     metrics.Meter
-	ErrorMeters       map[AdapterError]metrics.Meter
-	NoBidMeter        metrics.Meter
-	GotBidsMeter      metrics.Meter
-	RequestTimer      metrics.Timer
-	PriceHistogram    metrics.Histogram
-	BidsReceivedMeter metrics.Meter
-	PanicMeter        metrics.Meter
-	MarkupMetrics     map[openrtb_ext.BidType]*MarkupDeliveryMetrics
-	ConnCreated       metrics.Counter
-	ConnReused        metrics.Counter
-	ConnWaitTime      metrics.Timer
-	TLSHandshakeTimer metrics.Timer
+	NoCookieMeter      metrics.Meter
+	ErrorMeters        map[AdapterError]metrics.Meter
+	NoBidMeter         metrics.Meter
+	GotBidsMeter       metrics.Meter
+	RequestTimer       metrics.Timer
+	PriceHistogram     metrics.Histogram
+	BidsReceivedMeter  metrics.Meter
+	PanicMeter         metrics.Meter
+	MarkupMetrics      map[openrtb_ext.BidType]*MarkupDeliveryMetrics
+	ConnCreated        metrics.Counter
+	ConnReused         metrics.Counter
+	ConnWaitTime       metrics.Timer
+	GDPRRequestBlocked metrics.Meter
+	TLSHandshakeTimer  metrics.Timer
 }
 
 type MarkupDeliveryMetrics struct {
@@ -321,6 +322,9 @@ func makeBlankAdapterMetrics(disabledMetrics config.DisabledMetrics) *AdapterMet
 		newAdapter.ConnWaitTime = &metrics.NilTimer{}
 		newAdapter.TLSHandshakeTimer = &metrics.NilTimer{}
 	}
+	if !disabledMetrics.AdapterGDPRRequestBlocked {
+		newAdapter.GDPRRequestBlocked = blankMeter
+	}
 	for _, err := range AdapterErrors() {
 		newAdapter.ErrorMeters[err] = blankMeter
 	}
@@ -366,6 +370,7 @@ func registerAdapterMetrics(registry metrics.Registry, adapterOrAccount string, 
 		am.BidsReceivedMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.bids_received", adapterOrAccount, exchange), registry)
 	}
 	am.PanicMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.requests.panic", adapterOrAccount, exchange), registry)
+	am.GDPRRequestBlocked = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.gdpr_request_blocked", adapterOrAccount, exchange), registry)
 }
 
 func makeDeliveryMetrics(registry metrics.Registry, prefix string, bidType openrtb_ext.BidType) *MarkupDeliveryMetrics {
@@ -728,6 +733,20 @@ func (me *Metrics) RecordRequestPrivacy(privacy PrivacyLabels) {
 		me.PrivacyLMTRequest.Mark(1)
 	}
 	return
+}
+
+func (me *Metrics) RecordAdapterGDPRRequestBlocked(adapterName openrtb_ext.BidderName) {
+	if me.MetricsDisabled.AdapterGDPRRequestBlocked {
+		return
+	}
+
+	am, ok := me.AdapterMetrics[adapterName]
+	if !ok {
+		glog.Errorf("Trying to log adapter GDPR request blocked metric for %s: adapter not found", string(adapterName))
+		return
+	}
+
+	am.GDPRRequestBlocked.Mark(1)
 }
 
 // RecordAdapterDuplicateBidID as noop

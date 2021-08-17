@@ -16,9 +16,16 @@ type adapter struct {
 	Endpoint string
 }
 
+type NetworkIDs struct {
+	AppID       string `json:"appid,omitempty"`
+	PlacementID string `json:"placementid,omitempty"`
+}
+
 type wrappedExtImpBidder struct {
 	*adapters.ExtImpBidder
-	AdType int `json:"adtype,omitempty"`
+	AdType     int         `json:"adtype,omitempty"`
+	IsPrebid   bool        `json:"is_prebid,omitempty"`
+	NetworkIDs *NetworkIDs `json:"networkids,omitempty"`
 }
 
 type pangleBidExt struct {
@@ -78,23 +85,34 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			errs = append(errs, fmt.Errorf("failed unmarshalling imp ext (err)%s", err.Error()))
 			continue
 		}
-		// detect and fill adtype
-		if adType := getAdType(imp, &impExt); adType == -1 {
-			errs = append(errs, &errortypes.BadInput{Message: "not a supported adtype"})
-			continue
-		} else {
-			impExt.AdType = adType
-			if newImpExt, err := json.Marshal(impExt); err == nil {
-				imp.Ext = newImpExt
-			} else {
-				errs = append(errs, fmt.Errorf("failed re-marshalling imp ext with adtype"))
-				continue
-			}
-		}
-		// for setting token
+		// get token & networkIDs
 		var bidderImpExt openrtb_ext.ImpExtPangle
 		if err := json.Unmarshal(impExt.Bidder, &bidderImpExt); err != nil {
 			errs = append(errs, fmt.Errorf("failed unmarshalling bidder imp ext (err)%s", err.Error()))
+			continue
+		}
+		// detect and fill adtype
+		adType := getAdType(imp, &impExt)
+		if adType == -1 {
+			errs = append(errs, &errortypes.BadInput{Message: "not a supported adtype"})
+			continue
+		}
+		// remarshal imp.ext
+		impExt.AdType = adType
+		impExt.IsPrebid = true
+		if len(bidderImpExt.AppID) > 0 && len(bidderImpExt.PlacementID) > 0 {
+			impExt.NetworkIDs = &NetworkIDs{
+				AppID:       bidderImpExt.AppID,
+				PlacementID: bidderImpExt.PlacementID,
+			}
+		} else if len(bidderImpExt.AppID) > 0 || len(bidderImpExt.PlacementID) > 0 {
+			errs = append(errs, &errortypes.BadInput{Message: "only one of appid or placementid is provided"})
+			continue
+		}
+		if newImpExt, err := json.Marshal(impExt); err == nil {
+			imp.Ext = newImpExt
+		} else {
+			errs = append(errs, fmt.Errorf("failed re-marshalling imp ext"))
 			continue
 		}
 

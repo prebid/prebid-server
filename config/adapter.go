@@ -64,6 +64,7 @@ const (
 	dummyGDPR        string = "0"
 	dummyGDPRConsent string = "someGDPRConsentString"
 	dummyCCPA        string = "1NYN"
+	dummyZoneID      string = "zone"
 )
 
 // validateAdapterEndpoint makes sure that an adapter has a valid endpoint
@@ -84,6 +85,7 @@ func validateAdapterEndpoint(endpoint string, adapterName string, errs []error) 
 		Host:        dummyHost,
 		PublisherID: dummyPublisherID,
 		AccountID:   dummyAccountID,
+		ZoneID:      dummyZoneID,
 	})
 	if err != nil {
 		return append(errs, fmt.Errorf("Unable to resolve endpoint: %s for adapter: %s. %v", endpoint, adapterName, err))

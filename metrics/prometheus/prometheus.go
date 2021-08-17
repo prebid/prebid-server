@@ -41,7 +41,7 @@ type Metrics struct {
 	storedVideoErrors            *prometheus.CounterVec
 	timeoutNotifications         *prometheus.CounterVec
 	dnsLookupTimer               prometheus.Histogram
-	//tlsHandhakeTimer              prometheus.Histogram
+	//tlsHandhakeTimer             prometheus.Histogram
 	privacyCCPA                   *prometheus.CounterVec
 	privacyCOPPA                  *prometheus.CounterVec
 	privacyLMT                    *prometheus.CounterVec
@@ -63,6 +63,7 @@ type Metrics struct {
 	adapterDuplicateBidIDCounter *prometheus.CounterVec
 	adapterVideoBidDuration      *prometheus.HistogramVec
 	tlsHandhakeTimer             *prometheus.HistogramVec
+	adapterGDPRBlockedRequests   *prometheus.CounterVec
 
 	// Account Metrics
 	accountRequests *prometheus.CounterVec
@@ -308,6 +309,13 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"privacy_lmt",
 		"Count of total requests to Prebid Server where the LMT flag was set by source",
 		[]string{sourceLabel})
+
+	if !metrics.metricsDisabled.AdapterGDPRRequestBlocked {
+		metrics.adapterGDPRBlockedRequests = newCounter(cfg, metrics.Registry,
+			"adapter_gdpr_requests_blocked",
+			"Count of total bidder requests blocked due to unsatisfied GDPR purpose 2 legal basis",
+			[]string{adapterLabel})
+	}
 
 	metrics.adapterBids = newCounter(cfg, metrics.Registry,
 		"adapter_bids",
@@ -762,6 +770,16 @@ func (m *Metrics) RecordRequestPrivacy(privacy metrics.PrivacyLabels) {
 			sourceLabel: sourceRequest,
 		}).Inc()
 	}
+}
+
+func (m *Metrics) RecordAdapterGDPRRequestBlocked(adapterName openrtb_ext.BidderName) {
+	if m.metricsDisabled.AdapterGDPRRequestBlocked {
+		return
+	}
+
+	m.adapterGDPRBlockedRequests.With(prometheus.Labels{
+		adapterLabel: string(adapterName),
+	}).Inc()
 }
 
 // RecordAdapterDuplicateBidID captures the  bid.ID collisions when adaptor

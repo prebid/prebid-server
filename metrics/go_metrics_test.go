@@ -60,7 +60,6 @@ func TestNewMetrics(t *testing.T) {
 	ensureContains(t, registry, "privacy.request.ccpa.opt-out", m.PrivacyCCPARequestOptOut)
 	ensureContains(t, registry, "privacy.request.coppa", m.PrivacyCOPPARequest)
 	ensureContains(t, registry, "privacy.request.lmt", m.PrivacyLMTRequest)
-	ensureContains(t, registry, "privacy.request.tcf.v1", m.PrivacyTCFRequestVersion[TCFVersionV1])
 	ensureContains(t, registry, "privacy.request.tcf.v2", m.PrivacyTCFRequestVersion[TCFVersionV2])
 	ensureContains(t, registry, "privacy.request.tcf.err", m.PrivacyTCFRequestVersion[TCFVersionErr])
 }
@@ -572,15 +571,7 @@ func TestRecordRequestPrivacy(t *testing.T) {
 	})
 	m.RecordRequestPrivacy(PrivacyLabels{
 		GDPREnforced:   true,
-		GDPRTCFVersion: TCFVersionV1,
-	})
-	m.RecordRequestPrivacy(PrivacyLabels{
-		GDPREnforced:   true,
 		GDPRTCFVersion: TCFVersionV2,
-	})
-	m.RecordRequestPrivacy(PrivacyLabels{
-		GDPREnforced:   true,
-		GDPRTCFVersion: TCFVersionV1,
 	})
 
 	assert.Equal(t, m.PrivacyCCPARequest.Count(), int64(2), "CCPA")
@@ -588,8 +579,46 @@ func TestRecordRequestPrivacy(t *testing.T) {
 	assert.Equal(t, m.PrivacyCOPPARequest.Count(), int64(1), "COPPA")
 	assert.Equal(t, m.PrivacyLMTRequest.Count(), int64(1), "LMT")
 	assert.Equal(t, m.PrivacyTCFRequestVersion[TCFVersionErr].Count(), int64(1), "TCF Err")
-	assert.Equal(t, m.PrivacyTCFRequestVersion[TCFVersionV1].Count(), int64(2), "TCF V1")
 	assert.Equal(t, m.PrivacyTCFRequestVersion[TCFVersionV2].Count(), int64(1), "TCF V2")
+}
+
+func TestRecordAdapterGDPRRequestBlocked(t *testing.T) {
+	var fakeBidder openrtb_ext.BidderName = "fooAdvertising"
+
+	tests := []struct {
+		description     string
+		metricsDisabled bool
+		adapterName     openrtb_ext.BidderName
+		expectedCount   int64
+	}{
+		{
+			description:     "",
+			metricsDisabled: false,
+			adapterName:     openrtb_ext.BidderAppnexus,
+			expectedCount:   1,
+		},
+		{
+			description:     "",
+			metricsDisabled: false,
+			adapterName:     fakeBidder,
+			expectedCount:   0,
+		},
+		{
+			description:     "",
+			metricsDisabled: true,
+			adapterName:     openrtb_ext.BidderAppnexus,
+			expectedCount:   0,
+		},
+	}
+
+	for _, tt := range tests {
+		registry := metrics.NewRegistry()
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AdapterGDPRRequestBlocked: tt.metricsDisabled})
+
+		m.RecordAdapterGDPRRequestBlocked(tt.adapterName)
+
+		assert.Equal(t, tt.expectedCount, m.AdapterMetrics[openrtb_ext.BidderAppnexus].GDPRRequestBlocked.Count(), tt.description)
+	}
 }
 
 func ensureContainsBidTypeMetrics(t *testing.T, registry metrics.Registry, prefix string, mdm map[openrtb_ext.BidType]*MarkupDeliveryMetrics) {

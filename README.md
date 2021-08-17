@@ -21,7 +21,7 @@ Please consider [registering your Prebid Server](https://docs.prebid.org/prebid-
 
 ## Installation
 
-First install [Go](https://golang.org/doc/install) version 1.14 or newer.
+First install [Go](https://golang.org/doc/install) version 1.15 or newer.
 
 Note that prebid-server is using [Go modules](https://blog.golang.org/using-go-modules).
 We officially support the most recent two major versions of the Go runtime. However, if you'd like to use a version <1.13 and are inside GOPATH `GO111MODULE` needs to be set to `GO111MODULE=on`.
@@ -50,16 +50,19 @@ go build .
 Load the landing page in your browser at `http://localhost:8000/`.
 For the full API reference, see [the endpoint documentation](https://docs.prebid.org/prebid-server/endpoints/pbs-endpoint-overview.html)
 
+## Go Modules
+
+The packages within this repository are intended to be used as part of the Prebid Server compiled binary. If you
+choose to import Prebid Server packages in other projects, please understand we make no promises on the stability
+of exported types.
 
 ## Contributing
 
 Want to [add an adapter](https://docs.prebid.org/prebid-server/developers/add-new-bidder-go.html)? Found a bug? Great!
 
-Report bugs, request features, and suggest improvements [on Github](https://github.com/PubMatic-OpenWrap/prebid-server/issues).
-
 Or better yet, [open a pull request](https://github.com/PubMatic-OpenWrap/prebid-server/compare) with the changes you'd like to see.
 
-## IDE Setup for PBS-Go development
+## IDE Recommendations
 
-The quickest way to start developing PBS-Go in a reproducible environment isolated from your host OS
-is by using this [VScode Remote Container Setup](devcontainer.md)
+The quickest way to start developing Prebid Server in a reproducible environment isolated from your host OS
+is by using Visual Studio Code with [Remote Container Setup](devcontainer.md).

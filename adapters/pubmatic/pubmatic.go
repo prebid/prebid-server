@@ -196,8 +196,8 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 					}
 
 					pbReq.Imp[i].TagID = strings.TrimSpace(adSlot[0])
-					pbReq.Imp[i].Banner.H = openrtb2.Int64Ptr(int64(height))
 					pbReq.Imp[i].Banner.W = openrtb2.Int64Ptr(int64(width))
+					pbReq.Imp[i].Banner.H = openrtb2.Int64Ptr(int64(height))
 
 					if len(params.Keywords) != 0 {
 						kvstr := prepareImpressionExt(params.Keywords)
@@ -564,9 +564,8 @@ func validateAdSlot(adslot string, imp *openrtb2.Imp) error {
 		}
 
 		//In case of video, size could be derived from the player size
-		if imp.Banner != nil && height != 0 && width != 0 {
-			imp.Banner.H = openrtb2.Int64Ptr(int64(height))
-			imp.Banner.W = openrtb2.Int64Ptr(int64(width))
+		if imp.Banner != nil {
+			imp.Banner = assignBannerWidthAndHeight(imp.Banner, int64(width), int64(height))
 		}
 	} else {
 		return errors.New(fmt.Sprintf("Invalid adSlot %v", adSlotStr))
@@ -575,25 +574,23 @@ func validateAdSlot(adslot string, imp *openrtb2.Imp) error {
 	return nil
 }
 
-func assignBannerSize(banner *openrtb2.Banner) error {
-	if banner == nil {
-		return nil
-	}
-
+func assignBannerSize(banner *openrtb2.Banner) (*openrtb2.Banner, error) {
 	if banner.W != nil && banner.H != nil {
-		return nil
+		return banner, nil
 	}
 
 	if len(banner.Format) == 0 {
-		return errors.New(fmt.Sprintf("No sizes provided for Banner %v", banner.Format))
+		return nil, errors.New(fmt.Sprintf("No sizes provided for Banner %v", banner.Format))
 	}
 
-	banner.W = new(int64)
-	*banner.W = banner.Format[0].W
-	banner.H = new(int64)
-	*banner.H = banner.Format[0].H
+	return assignBannerWidthAndHeight(banner, banner.Format[0].W, banner.Format[0].H), nil
+}
 
-	return nil
+func assignBannerWidthAndHeight(banner *openrtb2.Banner, w, h int64) *openrtb2.Banner {
+	bannerCopy := *banner
+	bannerCopy.W = openrtb2.Int64Ptr(w)
+	bannerCopy.H = openrtb2.Int64Ptr(h)
+	return &bannerCopy
 }
 
 // parseImpressionObject parse the imp to get it ready to send to pubmatic
@@ -635,14 +632,14 @@ func parseImpressionObject(imp *openrtb2.Imp, wrapExt *pubmaticWrapperExt, pubID
 	}
 
 	if imp.Banner != nil {
-		if err := assignBannerSize(imp.Banner); err != nil {
+		bannerCopy, err := assignBannerSize(imp.Banner)
+		if err != nil {
 			return err
 		}
+		imp.Banner = bannerCopy
 	}
 
-	imp.Ext = nil
-
-	impExtMap := make(map[string]interface{})
+	impExtMap := make(map[string]interface{}, 0)
 	if pubmaticExt.Keywords != nil && len(pubmaticExt.Keywords) != 0 {
 		addKeywordsToExt(pubmaticExt.Keywords, impExtMap)
 	}

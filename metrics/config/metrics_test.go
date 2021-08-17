@@ -118,6 +118,8 @@ func TestMultiMetricsEngine(t *testing.T) {
 	metricsEngine.RecordStoredImpCacheResult(metrics.CacheHit, 5)
 	metricsEngine.RecordAccountCacheResult(metrics.CacheHit, 6)
 
+	metricsEngine.RecordAdapterGDPRRequestBlocked(openrtb_ext.BidderAppnexus)
+
 	metricsEngine.RecordRequestQueueTime(false, metrics.ReqTypeVideo, time.Duration(1))
 
 	//Make the metrics engine, instantiated here with goEngine, fill its RequestStatuses[RequestType][metrics.RequestStatusXX] with the new boolean values added to metrics.Labels
@@ -161,6 +163,8 @@ func TestMultiMetricsEngine(t *testing.T) {
 	VerifyMetrics(t, "StoredReqCache.Hit", goEngine.StoredReqCacheMeter[metrics.CacheHit].Count(), 4)
 	VerifyMetrics(t, "StoredImpCache.Hit", goEngine.StoredImpCacheMeter[metrics.CacheHit].Count(), 5)
 	VerifyMetrics(t, "AccountCache.Hit", goEngine.AccountCacheMeter[metrics.CacheHit].Count(), 6)
+
+	VerifyMetrics(t, "AdapterMetrics.AppNexus.GDPRRequestBlocked", goEngine.AdapterMetrics[openrtb_ext.BidderAppnexus].GDPRRequestBlocked.Count(), 1)
 }
 
 func VerifyMetrics(t *testing.T, name string, actual int64, expected int64) {

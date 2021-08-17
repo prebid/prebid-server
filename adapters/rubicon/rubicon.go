@@ -91,21 +91,21 @@ type rubiconExtUserTpID struct {
 	UID    string `json:"uid"`
 }
 
-type rubiconUserDataExt struct {
-	TaxonomyName string `json:"taxonomyname"`
+type rubiconDataExt struct {
+	SegTax int `json:"segtax"`
 }
 
 type rubiconUserExt struct {
-	Consent     string                        `json:"consent,omitempty"`
-	DigiTrust   *openrtb_ext.ExtUserDigiTrust `json:"digitrust"`
-	Eids        []openrtb_ext.ExtUserEid      `json:"eids,omitempty"`
-	TpID        []rubiconExtUserTpID          `json:"tpid,omitempty"`
-	RP          rubiconUserExtRP              `json:"rp"`
-	LiverampIdl string                        `json:"liveramp_idl,omitempty"`
+	Consent     string                   `json:"consent,omitempty"`
+	Eids        []openrtb_ext.ExtUserEid `json:"eids,omitempty"`
+	TpID        []rubiconExtUserTpID     `json:"tpid,omitempty"`
+	RP          rubiconUserExtRP         `json:"rp"`
+	LiverampIdl string                   `json:"liveramp_idl,omitempty"`
 }
 
 type rubiconSiteExtRP struct {
-	SiteID int `json:"site_id"`
+	SiteID int             `json:"site_id"`
+	Target json.RawMessage `json:"target,omitempty"`
 }
 
 type rubiconSiteExt struct {
@@ -676,7 +676,6 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 	numRequests := len(request.Imp)
 	errs := make([]error, 0, len(request.Imp))
 	var err error
-
 	requestData := make([]*adapters.RequestData, 0, numRequests)
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
@@ -750,14 +749,29 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			continue
 		}
 
+		resolvedBidFloor, err := resolveBidFloor(thisImp.BidFloor, thisImp.BidFloorCur, reqInfo)
+		if err != nil {
+			errs = append(errs, &errortypes.BadInput{
+				Message: fmt.Sprintf("Unable to convert provided bid floor currency from %s to USD",
+					thisImp.BidFloorCur),
+			})
+			continue
+		}
+
+		if resolvedBidFloor > 0 {
+			thisImp.BidFloorCur = "USD"
+			thisImp.BidFloor = resolvedBidFloor
+		}
+
 		if request.User != nil {
 			userCopy := *request.User
-			userExtRP := rubiconUserExt{RP: rubiconUserExtRP{Target: rubiconExt.Visitor}}
 
-			if err := updateUserExtWithIabAttribute(&userExtRP, userCopy.Data); err != nil {
+			target, err := updateExtWithIabAttribute(rubiconExt.Visitor, userCopy.Data, []int{4})
+			if err != nil {
 				errs = append(errs, err)
 				continue
 			}
+			userExtRP := rubiconUserExt{RP: rubiconUserExtRP{Target: target}}
 
 			if request.User.Ext != nil {
 				var userExt *openrtb_ext.ExtUser
@@ -768,9 +782,6 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 					continue
 				}
 				userExtRP.Consent = userExt.Consent
-				if userExt.DigiTrust != nil {
-					userExtRP.DigiTrust = userExt.DigiTrust
-				}
 				userExtRP.Eids = userExt.Eids
 
 				// set user.ext.tpid
@@ -845,19 +856,32 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			thisImp.Video = nil
 		}
 
-		siteExt := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: rubiconExt.SiteId}}
 		pubExt := rubiconPubExt{RP: rubiconPubExtRP{AccountID: rubiconExt.AccountId}}
 
 		if request.Site != nil {
 			siteCopy := *request.Site
-			siteCopy.Ext, err = json.Marshal(&siteExt)
+			siteExtRP := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: rubiconExt.SiteId}}
+			if siteCopy.Content != nil {
+				target, err := updateExtWithIabAttribute(nil, siteCopy.Content.Data, []int{1, 2})
+				if err != nil {
+					errs = append(errs, err)
+					continue
+				}
+				siteExtRP.RP.Target = target
+			}
+
+			siteCopy.Ext, err = json.Marshal(&siteExtRP)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+
 			siteCopy.Publisher = &openrtb2.Publisher{}
 			siteCopy.Publisher.Ext, err = json.Marshal(&pubExt)
 			rubiconRequest.Site = &siteCopy
-		}
-		if request.App != nil {
+		} else {
 			appCopy := *request.App
-			appCopy.Ext, err = json.Marshal(&siteExt)
+			appCopy.Ext, err = json.Marshal(rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: rubiconExt.SiteId}})
 			appCopy.Publisher = &openrtb2.Publisher{}
 			appCopy.Publisher.Ext, err = json.Marshal(&pubExt)
 			rubiconRequest.App = &appCopy
@@ -893,41 +917,64 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 	return requestData, errs
 }
 
-func updateUserExtWithIabAttribute(userExtRP *rubiconUserExt, data []openrtb2.Data) error {
-	var segmentIdsToCopy = make([]string, 0)
+func resolveBidFloor(bidFloor float64, bidFloorCur string, reqInfo *adapters.ExtraRequestInfo) (float64, error) {
+	if bidFloor > 0 && bidFloorCur != "" && strings.ToUpper(bidFloorCur) != "USD" {
+		return reqInfo.ConvertCurrency(bidFloor, bidFloorCur, "USD")
+	}
+
+	return bidFloor, nil
+}
+
+func updateExtWithIabAttribute(target json.RawMessage, data []openrtb2.Data, segTaxes []int) (json.RawMessage, error) {
+	var segmentIdsToCopy = getSegmentIdsToCopy(data, segTaxes)
+	if len(segmentIdsToCopy) == 0 {
+		return target, nil
+	}
+
+	extRPTarget := make(map[string]interface{})
+
+	if target != nil {
+		if err := json.Unmarshal(target, &extRPTarget); err != nil {
+			return nil, &errortypes.BadInput{Message: err.Error()}
+		}
+	}
+
+	extRPTarget["iab"] = segmentIdsToCopy
+
+	jsonTarget, err := json.Marshal(&extRPTarget)
+	if err != nil {
+		return nil, &errortypes.BadInput{Message: err.Error()}
+	}
+	return jsonTarget, nil
+}
+
+func getSegmentIdsToCopy(data []openrtb2.Data, segTaxValues []int) []string {
+	var segmentIdsToCopy = make([]string, 0, len(data))
 
 	for _, dataRecord := range data {
 		if dataRecord.Ext != nil {
-			var dataExtObject rubiconUserDataExt
+			var dataExtObject rubiconDataExt
 			err := json.Unmarshal(dataRecord.Ext, &dataExtObject)
 			if err != nil {
 				continue
 			}
-			if strings.EqualFold(dataExtObject.TaxonomyName, "iab") {
+			if contains(segTaxValues, dataExtObject.SegTax) {
 				for _, segment := range dataRecord.Segment {
 					segmentIdsToCopy = append(segmentIdsToCopy, segment.ID)
 				}
 			}
 		}
 	}
+	return segmentIdsToCopy
+}
 
-	userExtRPTarget := make(map[string]interface{})
-
-	if userExtRP.RP.Target != nil {
-		if err := json.Unmarshal(userExtRP.RP.Target, &userExtRPTarget); err != nil {
-			return &errortypes.BadInput{Message: err.Error()}
+func contains(s []int, e int) bool {
+	for _, a := range s {
+		if a == e {
+			return true
 		}
 	}
-
-	userExtRPTarget["iab"] = segmentIdsToCopy
-
-	if target, err := json.Marshal(&userExtRPTarget); err != nil {
-		return &errortypes.BadInput{Message: err.Error()}
-	} else {
-		userExtRP.RP.Target = target
-	}
-
-	return nil
+	return false
 }
 
 func getTpIdsAndSegments(eids []openrtb_ext.ExtUserEid) (mappedRubiconUidsParam, []error) {

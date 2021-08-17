@@ -2,10 +2,10 @@ package exchange
 
 import (
 	"encoding/json"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"time"
 
-	jsonpatch "github.com/evanphx/json-patch"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/evanphx/json-patch"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/endpoints/events"

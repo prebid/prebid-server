@@ -104,6 +104,7 @@ func NewCTVEndpoint(
 func (deps *ctvEndpointDeps) CTVAuctionEndpoint(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	defer util.TimeTrack(time.Now(), "CTVAuctionEndpoint")
 
+	var reqWrapper *openrtb_ext.RequestWrapper
 	var request *openrtb2.BidRequest
 	var response *openrtb2.BidResponse
 	var err error
@@ -136,10 +137,11 @@ func (deps *ctvEndpointDeps) CTVAuctionEndpoint(w http.ResponseWriter, r *http.R
 	}()
 
 	//Parse ORTB Request and do Standard Validation
-	request, errL = deps.parseRequest(r)
+	reqWrapper, errL = deps.parseRequest(r)
 	if errortypes.ContainsFatalError(errL) && writeError(errL, w, &deps.labels) {
 		return
 	}
+	request = reqWrapper.BidRequest
 
 	util.JLogf("Original BidRequest", request) //TODO: REMOVE LOG
 

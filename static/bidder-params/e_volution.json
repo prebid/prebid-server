@@ -1,0 +1,13 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "E-volution Adapter Params",
+    "description": "A schema which validates params accepted by the E-volution adapter",
+    "type": "object",
+    "properties": {
+      "key": {
+        "type": "string",
+        "description": "network or placement key"
+      }
+    },
+    "required": ["key"]
+  }

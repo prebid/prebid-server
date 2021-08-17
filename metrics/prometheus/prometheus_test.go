@@ -1364,18 +1364,22 @@ func TestRecordAdapterConnections(t *testing.T) {
 	}
 }
 
-func TestDisableAdapterConnections(t *testing.T) {
+func TestDisabledMetrics(t *testing.T) {
 	prometheusMetrics := NewMetrics(config.PrometheusMetrics{
 		Port:      8080,
 		Namespace: "prebid",
 		Subsystem: "server",
-	}, config.DisabledMetrics{AdapterConnectionMetrics: true})
+	}, config.DisabledMetrics{
+		AdapterConnectionMetrics:  true,
+		AdapterGDPRRequestBlocked: true,
+	})
 
 	// Assert counter vector was not initialized
 	assert.Nil(t, prometheusMetrics.adapterReusedConnections, "Counter Vector adapterReusedConnections should be nil")
 	assert.Nil(t, prometheusMetrics.adapterCreatedConnections, "Counter Vector adapterCreatedConnections should be nil")
 	assert.Nil(t, prometheusMetrics.adapterConnectionWaitTime, "Counter Vector adapterConnectionWaitTime should be nil")
 	assert.Nil(t, prometheusMetrics.tlsHandhakeTimer, "Counter Vector tlsHandhakeTimer should be nil")
+	assert.Nil(t, prometheusMetrics.adapterGDPRBlockedRequests, "Counter Vector adapterGDPRBlockedRequests should be nil")
 }
 
 func TestRecordRequestPrivacy(t *testing.T) {
@@ -1412,15 +1416,7 @@ func TestRecordRequestPrivacy(t *testing.T) {
 	})
 	m.RecordRequestPrivacy(metrics.PrivacyLabels{
 		GDPREnforced:   true,
-		GDPRTCFVersion: metrics.TCFVersionV1,
-	})
-	m.RecordRequestPrivacy(metrics.PrivacyLabels{
-		GDPREnforced:   true,
 		GDPRTCFVersion: metrics.TCFVersionV2,
-	})
-	m.RecordRequestPrivacy(metrics.PrivacyLabels{
-		GDPREnforced:   true,
-		GDPRTCFVersion: metrics.TCFVersionV1,
 	})
 
 	assertCounterVecValue(t, "", "privacy_ccpa", m.privacyCCPA,
@@ -1454,13 +1450,6 @@ func TestRecordRequestPrivacy(t *testing.T) {
 		prometheus.Labels{
 			sourceLabel:  sourceRequest,
 			versionLabel: "err",
-		})
-
-	assertCounterVecValue(t, "", "privacy_tcf:v1", m.privacyTCF,
-		float64(2),
-		prometheus.Labels{
-			sourceLabel:  sourceRequest,
-			versionLabel: "v1",
 		})
 
 	assertCounterVecValue(t, "", "privacy_tcf:v2", m.privacyTCF,
@@ -1714,4 +1703,19 @@ func processMetrics(collector prometheus.Collector, handler func(m dto.Metric)) 
 func assertHistogram(t *testing.T, name string, histogram dto.Histogram, expectedCount uint64, expectedSum float64) {
 	assert.Equal(t, expectedCount, histogram.GetSampleCount(), name+":count")
 	assert.Equal(t, expectedSum, histogram.GetSampleSum(), name+":sum")
+}
+
+func TestRecordAdapterGDPRRequestBlocked(t *testing.T) {
+	m := createMetricsForTesting()
+
+	m.RecordAdapterGDPRRequestBlocked(openrtb_ext.BidderAppnexus)
+
+	assertCounterVecValue(t,
+		"Increment adapter GDPR request blocked counter",
+		"adapter_gdpr_requests_blocked",
+		m.adapterGDPRBlockedRequests,
+		1,
+		prometheus.Labels{
+			adapterLabel: string(openrtb_ext.BidderAppnexus),
+		})
 }

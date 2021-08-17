@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
+	"github.com/stretchr/testify/mock"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -572,6 +574,125 @@ func TestResolveVideoSizeId(t *testing.T) {
 	}
 }
 
+func TestOpenRTBRequestWithDifferentBidFloorAttributes(t *testing.T) {
+	testScenarios := []struct {
+		bidFloor         float64
+		bidFloorCur      string
+		setMock          func(m *mock.Mock)
+		expectedBidFloor float64
+		expectedBidCur   string
+		expectedErrors   []error
+	}{
+		{
+			bidFloor:         1,
+			bidFloorCur:      "WRONG",
+			setMock:          func(m *mock.Mock) { m.On("GetRate", "WRONG", "USD").Return(2.5, errors.New("some error")) },
+			expectedBidFloor: 0,
+			expectedBidCur:   "",
+			expectedErrors: []error{
+				&errortypes.BadInput{Message: "Unable to convert provided bid floor currency from WRONG to USD"},
+			},
+		},
+		{
+			bidFloor:         1,
+			bidFloorCur:      "USD",
+			setMock:          func(m *mock.Mock) {},
+			expectedBidFloor: 1,
+			expectedBidCur:   "USD",
+			expectedErrors:   nil,
+		},
+		{
+			bidFloor:         1,
+			bidFloorCur:      "EUR",
+			setMock:          func(m *mock.Mock) { m.On("GetRate", "EUR", "USD").Return(1.2, nil) },
+			expectedBidFloor: 1.2,
+			expectedBidCur:   "USD",
+			expectedErrors:   nil,
+		},
+		{
+			bidFloor:         0,
+			bidFloorCur:      "",
+			setMock:          func(m *mock.Mock) {},
+			expectedBidFloor: 0,
+			expectedBidCur:   "",
+			expectedErrors:   nil,
+		},
+		{
+			bidFloor:         -1,
+			bidFloorCur:      "CZK",
+			setMock:          func(m *mock.Mock) {},
+			expectedBidFloor: -1,
+			expectedBidCur:   "CZK",
+			expectedErrors:   nil,
+		},
+	}
+
+	for _, scenario := range testScenarios {
+		mockConversions := &mockCurrencyConversion{}
+		scenario.setMock(&mockConversions.Mock)
+
+		extraRequestInfo := adapters.ExtraRequestInfo{
+			CurrencyConversions: mockConversions,
+		}
+
+		SIZE_ID := getTestSizes()
+		bidder := new(RubiconAdapter)
+
+		request := &openrtb2.BidRequest{
+			ID: "test-request-id",
+			Imp: []openrtb2.Imp{{
+				ID:          "test-imp-id",
+				BidFloorCur: scenario.bidFloorCur,
+				BidFloor:    scenario.bidFloor,
+				Banner: &openrtb2.Banner{
+					Format: []openrtb2.Format{
+						SIZE_ID[15],
+						SIZE_ID[10],
+					},
+				},
+				Ext: json.RawMessage(`{"bidder": {
+										"zoneId": 8394,
+										"siteId": 283282,
+										"accountId": 7891
+                                      }}`),
+			}},
+			App: &openrtb2.App{
+				ID:   "com.test",
+				Name: "testApp",
+			},
+		}
+
+		reqs, errs := bidder.MakeRequests(request, &extraRequestInfo)
+
+		mockConversions.AssertExpectations(t)
+
+		if scenario.expectedErrors == nil {
+			rubiconReq := &openrtb2.BidRequest{}
+			if err := json.Unmarshal(reqs[0].Body, rubiconReq); err != nil {
+				t.Fatalf("Unexpected error while decoding request: %s", err)
+			}
+			assert.Equal(t, scenario.expectedBidFloor, rubiconReq.Imp[0].BidFloor)
+			assert.Equal(t, scenario.expectedBidCur, rubiconReq.Imp[0].BidFloorCur)
+		} else {
+			assert.Equal(t, scenario.expectedErrors, errs)
+		}
+	}
+}
+
+type mockCurrencyConversion struct {
+	mock.Mock
+}
+
+func (m mockCurrencyConversion) GetRate(from string, to string) (float64, error) {
+	args := m.Called(from, to)
+	return args.Get(0).(float64), args.Error(1)
+}
+
+func (m mockCurrencyConversion) GetRates() *map[string]map[string]float64 {
+	args := m.Called()
+	return args.Get(0).(*map[string]map[string]float64)
+}
+
 func TestNoContentResponse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
@@ -989,15 +1110,15 @@ func TestOpenRTBRequest(t *testing.T) {
 				}
 			}}`),
 		}},
+		App: &openrtb2.App{
+			ID:   "com.test",
+			Name: "testApp",
+		},
 		Device: &openrtb2.Device{
 			PxRatio: rubidata.devicePxRatio,
 		},
 		User: &openrtb2.User{
-			Ext: json.RawMessage(`{"digitrust": {
-                    "id": "some-digitrust-id",
-                    "keyv": 1,
-                    "pref": 0
-                },
+			Ext: json.RawMessage(`{
 				"eids": [{
                     "source": "pubcid",
                     "id": "2402fc76-7b39-4f0e-bfc2-060ef7693648"
@@ -1071,10 +1192,6 @@ func TestOpenRTBRequest(t *testing.T) {
 			t.Fatal("Error unmarshalling request.user.ext object.")
 		}
 
-		assert.Equal(t, "some-digitrust-id", userExt.DigiTrust.ID, "DigiTrust ID id not as expected!")
-		assert.Equal(t, 1, userExt.DigiTrust.KeyV, "DigiTrust KeyV id not as expected!")
-		assert.Equal(t, 0, userExt.DigiTrust.Pref, "DigiTrust Pref id not as expected!")
-
 		assert.NotNil(t, userExt.Eids)
 		assert.Equal(t, 1, len(userExt.Eids), "Eids values are not as expected!")
 		assert.Contains(t, userExt.Eids, openrtb_ext.ExtUserEid{Source: "pubcid", ID: "2402fc76-7b39-4f0e-bfc2-060ef7693648"})
@@ -1108,6 +1225,10 @@ func TestOpenRTBRequestWithBannerImpEvenIfImpHasVideo(t *testing.T) {
 				"visitor": {"key2" : "val2"}
 			}}`),
 		}},
+		App: &openrtb2.App{
+			ID:   "com.test",
+			Name: "testApp",
+		},
 	}
 
 	reqs, errs := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
@@ -1157,6 +1278,10 @@ func TestOpenRTBRequestWithImpAndAdSlotIncluded(t *testing.T) {
 				}
 			}`),
 		}},
+		App: &openrtb2.App{
+			ID:   "com.test",
+			Name: "testApp",
+		},
 	}
 
 	reqs, _ := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
@@ -1212,6 +1337,10 @@ func TestOpenRTBRequestWithBadvOverflowed(t *testing.T) {
 				}
 			}`),
 		}},
+		App: &openrtb2.App{
+			ID:   "com.test",
+			Name: "testApp",
+		},
 	}
 
 	reqs, _ := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
@@ -1245,6 +1374,10 @@ func TestOpenRTBRequestWithSpecificExtUserEids(t *testing.T) {
 				"accountId": 7891
 			}}`),
 		}},
+		App: &openrtb2.App{
+			ID:   "com.test",
+			Name: "testApp",
+		},
 		User: &openrtb2.User{
 			Ext: json.RawMessage(`{"eids": [
 			{
@@ -1353,6 +1486,10 @@ func TestOpenRTBRequestWithVideoImpEvenIfImpHasBannerButAllRequiredVideoFields(t
 				"video": {"size_id": 1}
 			}}`),
 		}},
+		App: &openrtb2.App{
+			ID:   "com.test",
+			Name: "testApp",
+		},
 	}
 
 	reqs, errs := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
@@ -1398,6 +1535,10 @@ func TestOpenRTBRequestWithVideoImpAndEnabledRewardedInventoryFlag(t *testing.T)
 				"video": {"size_id": 1}
 			}}`),
 		}},
+		App: &openrtb2.App{
+			ID:   "com.test",
+			Name: "testApp",
+		},
 	}
 
 	reqs, _ := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})

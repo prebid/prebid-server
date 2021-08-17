@@ -182,13 +182,16 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		return
 	}
 
+	secGPC := r.Header.Get("Sec-GPC")
+
 	auctionRequest := exchange.AuctionRequest{
-		BidRequest:   req,
-		Account:      *account,
-		UserSyncs:    usersyncs,
-		RequestType:  labels.RType,
-		StartTime:    start,
-		LegacyLabels: labels,
+		BidRequest:                 req,
+		Account:                    *account,
+		UserSyncs:                  usersyncs,
+		RequestType:                labels.RType,
+		StartTime:                  start,
+		LegacyLabels:               labels,
+		GlobalPrivacyControlHeader: secGPC,
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
@@ -307,7 +310,7 @@ func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openr
 
 	// At this point, we should have a valid request that definitely has Targeting and Cache turned on
 
-	e = deps.validateRequest(req)
+	e = deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: req})
 	errs = append(errs, e...)
 	return
 }

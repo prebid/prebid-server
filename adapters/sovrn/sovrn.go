@@ -287,7 +287,10 @@ func preprocess(imp *openrtb2.Imp) (string, error) {
 	}
 
 	imp.TagID = getTagid(sovrnExt)
-	imp.BidFloor = sovrnExt.BidFloor
+
+	if imp.BidFloor == 0 && sovrnExt.BidFloor > 0 {
+		imp.BidFloor = sovrnExt.BidFloor
+	}
 
 	return imp.TagID, nil
 }

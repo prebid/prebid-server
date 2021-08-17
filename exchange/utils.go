@@ -28,18 +28,16 @@ var integrationTypeMap = map[metrics.RequestType]config.IntegrationType{
 
 const unknownBidder string = ""
 
-func BidderToPrebidSChains(req *openrtb_ext.ExtRequest) (map[string]*openrtb_ext.ExtRequestPrebidSChainSChain, error) {
+func BidderToPrebidSChains(sChains []*openrtb_ext.ExtRequestPrebidSChain) (map[string]*openrtb_ext.ExtRequestPrebidSChainSChain, error) {
 	bidderToSChains := make(map[string]*openrtb_ext.ExtRequestPrebidSChainSChain)
 
-	if req != nil {
-		for _, schainWrapper := range req.Prebid.SChains {
-			for _, bidder := range schainWrapper.Bidders {
-				if _, present := bidderToSChains[bidder]; present {
-					return nil, fmt.Errorf("request.ext.prebid.schains contains multiple schains for bidder %s; "+
-						"it must contain no more than one per bidder.", bidder)
-				} else {
-					bidderToSChains[bidder] = &schainWrapper.SChain
-				}
+	for _, schainWrapper := range sChains {
+		for _, bidder := range schainWrapper.Bidders {
+			if _, present := bidderToSChains[bidder]; present {
+				return nil, fmt.Errorf("request.ext.prebid.schains contains multiple schains for bidder %s; "+
+					"it must contain no more than one per bidder.", bidder)
+			} else {
+				bidderToSChains[bidder] = &schainWrapper.SChain
 			}
 		}
 	}
@@ -56,9 +54,10 @@ func cleanOpenRTBRequests(ctx context.Context,
 	req AuctionRequest,
 	requestExt *openrtb_ext.ExtRequest,
 	gDPR gdpr.Permissions,
-	usersyncIfAmbiguous bool,
+	metricsEngine metrics.MetricsEngine,
+	gdprDefaultValue gdpr.Signal,
 	privacyConfig config.Privacy,
-	account *config.Account) (bidderRequests []BidderRequest, privacyLabels metrics.PrivacyLabels, errs []error) {
+	account *config.Account) (allowedBidderRequests []BidderRequest, privacyLabels metrics.PrivacyLabels, errs []error) {
 
 	impsByBidder, err := splitImps(req.BidRequest.Imp)
 	if err != nil {
@@ -71,9 +70,10 @@ func cleanOpenRTBRequests(ctx context.Context,
 		return
 	}
 
-	bidderRequests, errs = getAuctionBidderRequests(req, requestExt, impsByBidder, aliases)
+	var allBidderRequests []BidderRequest
+	allBidderRequests, errs = getAuctionBidderRequests(req, requestExt, impsByBidder, aliases)
 
-	if len(bidderRequests) == 0 {
+	if len(allBidderRequests) == 0 {
 		return
 	}
 
@@ -85,7 +85,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 	if err != nil {
 		errs = append(errs, err)
 	}
-	gdprEnforced := gdprSignal == gdpr.SignalYes || (gdprSignal == gdpr.SignalAmbiguous && !usersyncIfAmbiguous)
+	gdprEnforced := gdprSignal == gdpr.SignalYes || (gdprSignal == gdpr.SignalAmbiguous && gdprDefaultValue == gdpr.SignalYes)
 
 	ccpaEnforcer, err := extractCCPA(req.BidRequest, privacyConfig, &req.Account, aliases, integrationTypeMap[req.LegacyLabels.RType])
 	if err != nil {
@@ -117,7 +117,10 @@ func cleanOpenRTBRequests(ctx context.Context,
 	}
 
 	// bidder level privacy policies
-	for _, bidderRequest := range bidderRequests {
+	allowedBidderRequests = make([]BidderRequest, 0, len(allBidderRequests))
+	for _, bidderRequest := range allBidderRequests {
+		bidRequestAllowed := true
+
 		// CCPA
 		privacyEnforcement.CCPA = ccpaEnforcer.ShouldEnforce(bidderRequest.BidderName.String())
 
@@ -133,7 +136,9 @@ func cleanOpenRTBRequests(ctx context.Context,
 				}
 			}
 			var publisherID = req.LegacyLabels.PubID
-			_, geo, id, err := gDPR.PersonalInfoAllowed(ctx, bidderRequest.BidderCoreName, publisherID, gdprSignal, consent, weakVendorEnforcement)
+			bidReq, geo, id, err := gDPR.AuctionActivitiesAllowed(ctx, bidderRequest.BidderCoreName, publisherID, gdprSignal, consent, weakVendorEnforcement)
+			bidRequestAllowed = bidReq
+
 			if err == nil {
 				privacyEnforcement.GDPRGeo = !geo
 				privacyEnforcement.GDPRID = !id
@@ -141,9 +146,16 @@ func cleanOpenRTBRequests(ctx context.Context,
 				privacyEnforcement.GDPRGeo = true
 				privacyEnforcement.GDPRID = true
 			}
+
+			if !bidRequestAllowed {
+				metricsEngine.RecordAdapterGDPRRequestBlocked(bidderRequest.BidderCoreName)
+			}
 		}
 
-		privacyEnforcement.Apply(bidderRequest.BidRequest)
+		if bidRequestAllowed {
+			privacyEnforcement.Apply(bidderRequest.BidRequest)
+			allowedBidderRequests = append(allowedBidderRequests, bidderRequest)
+		}
 	}
 
 	return
@@ -164,7 +176,8 @@ func ccpaEnabled(account *config.Account, privacyConfig config.Privacy, requestT
 }
 
 func extractCCPA(orig *openrtb2.BidRequest, privacyConfig config.Privacy, account *config.Account, aliases map[string]string, requestType config.IntegrationType) (privacy.PolicyEnforcer, error) {
-	ccpaPolicy, err := ccpa.ReadFromRequest(orig)
+	// Quick extra wrapper until RequestWrapper makes its way into CleanRequests
+	ccpaPolicy, err := ccpa.ReadFromRequestWrapper(&openrtb_ext.RequestWrapper{BidRequest: orig})
 	if err != nil {
 		return privacy.NilPolicyEnforcer{}, err
 	}
@@ -234,9 +247,12 @@ func getAuctionBidderRequests(req AuctionRequest,
 
 	var sChainsByBidder map[string]*openrtb_ext.ExtRequestPrebidSChainSChain
 
-	sChainsByBidder, err = BidderToPrebidSChains(requestExt)
-	if err != nil {
-		return nil, []error{err}
+	// Quick extra wrapper until RequestWrapper makes its way into CleanRequests
+	if requestExt != nil {
+		sChainsByBidder, err = BidderToPrebidSChains(requestExt.Prebid.SChains)
+		if err != nil {
+			return nil, []error{err}
+		}
 	}
 
 	reqExt, err := getExtJson(req.BidRequest, requestExt)
@@ -364,7 +380,7 @@ func extractBuyerUIDs(user *openrtb2.User) (map[string]string, error) {
 	userExt.Prebid = nil
 
 	// Remarshal (instead of removing) if the ext has other known fields
-	if userExt.Consent != "" || userExt.DigiTrust != nil || len(userExt.Eids) > 0 {
+	if userExt.Consent != "" || len(userExt.Eids) > 0 {
 		if newUserExtBytes, err := json.Marshal(userExt); err != nil {
 			return nil, err
 		} else {

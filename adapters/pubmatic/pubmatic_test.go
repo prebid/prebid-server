@@ -73,7 +73,7 @@ func DummyPubMaticServer(w http.ResponseWriter, r *http.Request) {
 	var bids []openrtb2.Bid
 
 	for i, imp := range breq.Imp {
-		bid := openrtb2.Bid{
+		bids = append(bids, openrtb2.Bid{
 			ID:     fmt.Sprintf("SeatID_%d", i),
 			ImpID:  imp.ID,
 			Price:  float64(int(rand.Float64()*1000)) / 100,
@@ -83,9 +83,7 @@ func DummyPubMaticServer(w http.ResponseWriter, r *http.Request) {
 			W:      *imp.Banner.W,
 			H:      *imp.Banner.H,
 			DealID: fmt.Sprintf("DealID_%d", i),
-		}
-
-		bids = append(bids, bid)
+		})
 	}
 	resp.SeatBid[0].Bid = bids
 

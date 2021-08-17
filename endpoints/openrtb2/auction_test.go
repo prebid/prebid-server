@@ -17,17 +17,19 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/stored_requests"
-
 	"github.com/buger/jsonparser"
 	jsonpatch "github.com/evanphx/json-patch"
+	"github.com/mxmCherry/openrtb/v15/native1"
+	nativeRequests "github.com/mxmCherry/openrtb/v15/native1/request"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/util/iputil"
 	"github.com/stretchr/testify/assert"
@@ -44,11 +46,13 @@ type testCase struct {
 }
 
 type testConfigValues struct {
-	AccountRequired     bool     `json:"accountRequired"`
-	AliasJSON           string   `json:"aliases"`
-	BlacklistedAccounts []string `json:"blacklistedAccts"`
-	BlacklistedApps     []string `json:"blacklistedApps"`
-	DisabledAdapters    []string `json:"disabledAdapters"`
+	AccountRequired     bool                          `json:"accountRequired"`
+	AliasJSON           string                        `json:"aliases"`
+	BlacklistedAccounts []string                      `json:"blacklistedAccts"`
+	BlacklistedApps     []string                      `json:"blacklistedApps"`
+	DisabledAdapters    []string                      `json:"disabledAdapters"`
+	CurrencyRates       map[string]map[string]float64 `json:"currencyRates"`
+	MockBidder          mockBidExchangeBidder         `json:"mockBidder"`
 }
 
 func TestJsonSampleRequests(t *testing.T) {
@@ -103,6 +107,22 @@ func TestJsonSampleRequests(t *testing.T) {
 		{
 			"Requests with first party data context info found in imp[i].ext.prebid.bidder,context",
 			"first-party-data",
+		},
+		{
+			"Assert we correctly use the server conversion rates when needed",
+			"currency-conversion/server-rates/valid",
+		},
+		{
+			"Assert we correctly throw an error when no conversion rate was found in the server conversions map",
+			"currency-conversion/server-rates/errors",
+		},
+		{
+			"Assert we correctly use request-defined custom currency rates when present in root.ext",
+			"currency-conversion/custom-rates/valid",
+		},
+		{
+			"Assert we correctly validate request-defined custom currency rates when present in root.ext",
+			"currency-conversion/custom-rates/errors",
 		},
 	}
 	for _, test := range testSuites {
@@ -247,6 +267,7 @@ func assertBidResponseEqual(t *testing.T, testFile string, expectedBidResponse o
 	assert.Equalf(t, expectedBidResponse.ID, actualBidResponse.ID, "BidResponse.ID doesn't match expected. Test: %s\n", testFile)
 	assert.Equalf(t, expectedBidResponse.BidID, actualBidResponse.BidID, "BidResponse.BidID doesn't match expected. Test: %s\n", testFile)
 	assert.Equalf(t, expectedBidResponse.NBR, actualBidResponse.NBR, "BidResponse.NBR doesn't match expected. Test: %s\n", testFile)
+	assert.Equalf(t, expectedBidResponse.Cur, actualBidResponse.Cur, "BidResponse.Cur doesn't match expected. Test: %s\n", testFile)
 
 	//Assert []SeatBid and their Bid elements independently of their order
 	assert.Len(t, actualBidResponse.SeatBid, len(expectedBidResponse.SeatBid), "BidResponse.SeatBid array doesn't match expected. Test: %s\n", testFile)
@@ -440,8 +461,10 @@ func doRequest(t *testing.T, test testCase) (int, string) {
 	bidderMap := exchange.GetActiveBidders(bidderInfos)
 	disabledBidders := exchange.GetDisabledBiddersErrorMessages(bidderInfos)
 
+	mockExchange := newMockBidExchange(test.Config.MockBidder, test.Config.CurrencyRates)
+
 	endpoint, _ := NewEndpoint(
-		&mockBidExchange{},
+		mockExchange,
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -1183,6 +1206,113 @@ func TestContentType(t *testing.T) {
 	}
 }
 
+func TestValidateCustomRates(t *testing.T) {
+	boolTrue := true
+	boolFalse := false
+
+	testCases := []struct {
+		desc               string
+		inBidReqCurrencies *openrtb_ext.ExtRequestCurrency
+		outCurrencyError   error
+	}{
+		{
+			desc:               "nil input, no errors expected",
+			inBidReqCurrencies: nil,
+			outCurrencyError:   nil,
+		},
+		{
+			desc: "empty custom currency rates but UsePBSRates is set to false, we don't return error nor warning",
+			inBidReqCurrencies: &openrtb_ext.ExtRequestCurrency{
+				ConversionRates: map[string]map[string]float64{},
+				UsePBSRates:     &boolFalse,
+			},
+			outCurrencyError: nil,
+		},
+		{
+			desc: "empty custom currency rates but UsePBSRates is set to true, no need to return error because we can use PBS rates",
+			inBidReqCurrencies: &openrtb_ext.ExtRequestCurrency{
+				ConversionRates: map[string]map[string]float64{},
+				UsePBSRates:     &boolTrue,
+			},
+			outCurrencyError: nil,
+		},
+		{
+			desc: "UsePBSRates is nil and defaults to true, bidExt fromCurrency is invalid, expect bad input error",
+			inBidReqCurrencies: &openrtb_ext.ExtRequestCurrency{
+				ConversionRates: map[string]map[string]float64{
+					"FOO": {
+						"GBP": 1.2,
+						"MXN": 0.05,
+						"JPY": 0.95,
+					},
+				},
+			},
+			outCurrencyError: &errortypes.BadInput{Message: "currency code FOO is not recognized or malformed"},
+		},
+		{
+			desc: "UsePBSRates set to false, bidExt fromCurrency is invalid, expect bad input error",
+			inBidReqCurrencies: &openrtb_ext.ExtRequestCurrency{
+				ConversionRates: map[string]map[string]float64{
+					"FOO": {
+						"GBP": 1.2,
+						"MXN": 0.05,
+						"JPY": 0.95,
+					},
+				},
+				UsePBSRates: &boolFalse,
+			},
+			outCurrencyError: &errortypes.BadInput{Message: "currency code FOO is not recognized or malformed"},
+		},
+		{
+			desc: "UsePBSRates set to false, some of the bidExt 'to' Currencies are invalid, expect bad input error when parsing the first invalid currency code",
+			inBidReqCurrencies: &openrtb_ext.ExtRequestCurrency{
+				ConversionRates: map[string]map[string]float64{
+					"USD": {
+						"FOO": 10.0,
+						"MXN": 0.05,
+					},
+				},
+				UsePBSRates: &boolFalse,
+			},
+			outCurrencyError: &errortypes.BadInput{Message: "currency code FOO is not recognized or malformed"},
+		},
+		{
+			desc: "UsePBSRates set to false, some of the bidExt 'from' and 'to' currencies are invalid, expect bad input error when parsing the first invalid currency code",
+			inBidReqCurrencies: &openrtb_ext.ExtRequestCurrency{
+				ConversionRates: map[string]map[string]float64{
+					"FOO": {
+						"MXN": 0.05,
+						"CAD": 0.95,
+					},
+				},
+				UsePBSRates: &boolFalse,
+			},
+			outCurrencyError: &errortypes.BadInput{Message: "currency code FOO is not recognized or malformed"},
+		},
+		{
+			desc: "All 3-digit currency codes exist, expect no error",
+			inBidReqCurrencies: &openrtb_ext.ExtRequestCurrency{
+				ConversionRates: map[string]map[string]float64{
+					"USD": {
+						"MXN": 0.05,
+					},
+					"MXN": {
+						"JPY": 10.0,
+						"EUR": 10.95,
+					},
+				},
+				UsePBSRates: &boolFalse,
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		actualErr := validateCustomRates(tc.inBidReqCurrencies)
+
+		assert.Equal(t, tc.outCurrencyError, actualErr, tc.desc)
+	}
+}
+
 func TestValidateImpExt(t *testing.T) {
 	type testCase struct {
 		description    string
@@ -1457,7 +1587,7 @@ func TestCurrencyTrunc(t *testing.T) {
 		Cur: []string{"USD", "EUR"},
 	}
 
-	errL := deps.validateRequest(&req)
+	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req})
 
 	expectedError := errortypes.Warning{Message: "A prebid request can only process one currency. Taking the first currency in the list, USD, as the active currency"}
 	assert.ElementsMatch(t, errL, []error{&expectedError})
@@ -1503,14 +1633,12 @@ func TestCCPAInvalid(t *testing.T) {
 		},
 	}
 
-	errL := deps.validateRequest(&req)
+	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req})
 
 	expectedWarning := errortypes.Warning{
 		Message:     "CCPA consent is invalid and will be ignored. (request.regs.ext.us_privacy must contain 4 characters)",
 		WarningCode: errortypes.InvalidPrivacyConsentWarningCode}
 	assert.ElementsMatch(t, errL, []error{&expectedWarning})
-
-	assert.Empty(t, req.Regs.Ext, "Invalid Consent Removed From Request")
 }
 
 func TestNoSaleInvalid(t *testing.T) {
@@ -1554,7 +1682,7 @@ func TestNoSaleInvalid(t *testing.T) {
 		Ext: json.RawMessage(`{"prebid": {"nosale": ["*", "appnexus"]} }`),
 	}
 
-	errL := deps.validateRequest(&req)
+	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req})
 
 	expectedError := errors.New("request.ext.prebid.nosale is invalid: can only specify all bidders if no other bidders are provided")
 	assert.ElementsMatch(t, errL, []error{expectedError})
@@ -1601,7 +1729,7 @@ func TestValidateSourceTID(t *testing.T) {
 		},
 	}
 
-	deps.validateRequest(&req)
+	deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req})
 	assert.NotEmpty(t, req.Source.TID, "Expected req.Source.TID to be filled with a randomly generated UID")
 }
 
@@ -1643,7 +1771,7 @@ func TestSChainInvalid(t *testing.T) {
 		Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller1.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}, {"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller2.com","sid":"00002","rid":"BidRequest2","hp":1}],"ver":"1.0"}}]}}`),
 	}
 
-	errL := deps.validateRequest(&req)
+	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req})
 
 	expectedError := errors.New("request.ext.prebid.schains contains multiple schains for bidder appnexus; it must contain no more than one per bidder.")
 	assert.ElementsMatch(t, errL, []error{expectedError})
@@ -1862,7 +1990,7 @@ func TestEidPermissionsInvalid(t *testing.T) {
 		Ext: json.RawMessage(`{"prebid": {"data": {"eidpermissions": [{"source":"a", "bidders":[]}]} } }`),
 	}
 
-	errL := deps.validateRequest(&req)
+	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req})
 
 	expectedError := errors.New(`request.ext.prebid.data.eidpermissions[0] missing or empty required field: "bidders"`)
 	assert.ElementsMatch(t, errL, []error{expectedError})
@@ -1877,11 +2005,6 @@ func TestValidateEidPermissions(t *testing.T) {
 		request       *openrtb_ext.ExtRequest
 		expectedError error
 	}{
-		{
-			description:   "Valid - Nil ext",
-			request:       nil,
-			expectedError: nil,
-		},
 		{
 			description:   "Valid - Empty ext",
 			request:       &openrtb_ext.ExtRequest{},
@@ -1966,7 +2089,7 @@ func TestValidateEidPermissions(t *testing.T) {
 
 	endpoint := &endpointDeps{bidderMap: knownBidders}
 	for _, test := range testCases {
-		result := endpoint.validateEidPermissions(test.request, knownAliases)
+		result := endpoint.validateEidPermissions(test.request.Prebid.Data, knownAliases)
 		assert.Equal(t, test.expectedError, result, test.description)
 	}
 }
@@ -2145,6 +2268,425 @@ func TestAuctionWarnings(t *testing.T) {
 	assert.Equal(t, errortypes.InvalidPrivacyConsentWarningCode, actualWarning.WarningCode, "Warning code is incorrect")
 }
 
+func TestValidateNativeContextTypes(t *testing.T) {
+	impIndex := 4
+
+	testCases := []struct {
+		description      string
+		givenContextType native1.ContextType
+		givenSubType     native1.ContextSubType
+		expectedError    string
+	}{
+		{
+			description:      "No Types Specified",
+			givenContextType: 0,
+			givenSubType:     0,
+			expectedError:    "",
+		},
+		{
+			description:      "All Types Exchange Specific",
+			givenContextType: 500,
+			givenSubType:     500,
+			expectedError:    "",
+		},
+		{
+			description:      "Context Type Known Value - Sub Type Unspecified",
+			givenContextType: 1,
+			givenSubType:     0,
+			expectedError:    "",
+		},
+		{
+			description:      "Context Type Negative",
+			givenContextType: -1,
+			givenSubType:     0,
+			expectedError:    "request.imp[4].native.request.context is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
+		},
+		{
+			description:      "Context Type Just Above Range",
+			givenContextType: 4, // Range is currently 1-3
+			givenSubType:     0,
+			expectedError:    "request.imp[4].native.request.context is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
+		},
+		{
+			description:      "Sub Type Negative",
+			givenContextType: 1,
+			givenSubType:     -1,
+			expectedError:    "request.imp[4].native.request.contextsubtype value can't be less than 0. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
+		},
+		{
+			description:      "Content - Sub Type Just Below Range",
+			givenContextType: 1, // Content constant
+			givenSubType:     9, // Content range is currently 10-15
+			expectedError:    "request.imp[4].native.request.contextsubtype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
+		},
+		{
+			description:      "Content - Sub Type In Range",
+			givenContextType: 1,  // Content constant
+			givenSubType:     10, // Content range is currently 10-15
+			expectedError:    "",
+		},
+		{
+			description:      "Content - Sub Type In Range - Context Type Exchange Specific Boundary",
+			givenContextType: 500,
+			givenSubType:     10, // Content range is currently 10-15
+			expectedError:    "",
+		},
+		{
+			description:      "Content - Sub Type In Range - Context Type Exchange Specific Boundary + 1",
+			givenContextType: 501,
+			givenSubType:     10, // Content range is currently 10-15
+			expectedError:    "",
+		},
+		{
+			description:      "Content - Sub Type Just Above Range",
+			givenContextType: 1,  // Content constant
+			givenSubType:     16, // Content range is currently 10-15
+			expectedError:    "request.imp[4].native.request.contextsubtype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
+		},
+		{
+			description:      "Content - Sub Type Exchange Specific Boundary",
+			givenContextType: 1, // Content constant
+			givenSubType:     500,
+			expectedError:    "",
+		},
+		{
+			description:      "Content - Sub Type Exchange Specific Boundary + 1",
+			givenContextType: 1, // Content constant
+			givenSubType:     501,
+			expectedError:    "",
+		},
+		{
+			description:      "Content - Invalid Context Type",
+			givenContextType: 2,  // Not content constant
+			givenSubType:     10, // Content range is currently 10-15
+			expectedError:    "request.imp[4].native.request.context is 2, but contextsubtype is 10. This is an invalid combination. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
+		},
+		{
+			description:      "Social - Sub Type Just Below Range",
+			givenContextType: 2,  // Social constant
+			givenSubType:     19, // Social range is currently 20-22
+			expectedError:    "request.imp[4].native.request.contextsubtype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
+		},
+		{
+			description:      "Social - Sub Type In Range",
+			givenContextType: 2,  // Social constant
+			givenSubType:     20, // Social range is currently 20-22
+			expectedError:    "",
+		},
+		{
+			description:      "Social - Sub Type In Range - Context Type Exchange Specific Boundary",
+			givenContextType: 500,
+			givenSubType:     20, // Social range is currently 20-22
+			expectedError:    "",
+		},
+		{
+			description:      "Social - Sub Type In Range - Context Type Exchange Specific Boundary + 1",
+			givenContextType: 501,
+			givenSubType:     20, // Social range is currently 20-22
+			expectedError:    "",
+		},
+		{
+			description:      "Social - Sub Type Just Above Range",
+			givenContextType: 2,  // Social constant
+			givenSubType:     23, // Social range is currently 20-22
+			expectedError:    "request.imp[4].native.request.contextsubtype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
+		},
+		{
+			description:      "Social - Sub Type Exchange Specific Boundary",
+			givenContextType: 2, // Social constant
+			givenSubType:     500,
+			expectedError:    "",
+		},
+		{
+			description:      "Social - Sub Type Exchange Specific Boundary + 1",
+			givenContextType: 2, // Social constant
+			givenSubType:     501,
+			expectedError:    "",
+		},
+		{
+			description:      "Social - Invalid Context Type",
+			givenContextType: 3,  // Not social constant
+			givenSubType:     20, // Social range is currently 20-22
+			expectedError:    "request.imp[4].native.request.context is 3, but contextsubtype is 20. This is an invalid combination. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
+		},
+		{
+			description:      "Product - Sub Type Just Below Range",
+			givenContextType: 3,  // Product constant
+			givenSubType:     29, // Product range is currently 30-32
+			expectedError:    "request.imp[4].native.request.contextsubtype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
+		},
+		{
+			description:      "Product - Sub Type In Range",
+			givenContextType: 3,  // Product constant
+			givenSubType:     30, // Product range is currently 30-32
+			expectedError:    "",
+		},
+		{
+			description:      "Product - Sub Type In Range - Context Type Exchange Specific Boundary",
+			givenContextType: 500,
+			givenSubType:     30, // Product range is currently 30-32
+			expectedError:    "",
+		},
+		{
+			description:      "Product - Sub Type In Range - Context Type Exchange Specific Boundary + 1",
+			givenContextType: 501,
+			givenSubType:     30, // Product range is currently 30-32
+			expectedError:    "",
+		},
+		{
+			description:      "Product - Sub Type Just Above Range",
+			givenContextType: 3,  // Product constant
+			givenSubType:     33, // Product range is currently 30-32
+			expectedError:    "request.imp[4].native.request.contextsubtype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
+		},
+		{
+			description:      "Product - Sub Type Exchange Specific Boundary",
+			givenContextType: 3, // Product constant
+			givenSubType:     500,
+			expectedError:    "",
+		},
+		{
+			description:      "Product - Sub Type Exchange Specific Boundary + 1",
+			givenContextType: 3, // Product constant
+			givenSubType:     501,
+			expectedError:    "",
+		},
+		{
+			description:      "Product - Invalid Context Type",
+			givenContextType: 1,  // Not product constant
+			givenSubType:     30, // Product range is currently 30-32
+			expectedError:    "request.imp[4].native.request.context is 1, but contextsubtype is 30. This is an invalid combination. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39",
+		},
+	}
+
+	for _, test := range testCases {
+		err := validateNativeContextTypes(test.givenContextType, test.givenSubType, impIndex)
+		if test.expectedError == "" {
+			assert.NoError(t, err, test.description)
+		} else {
+			assert.EqualError(t, err, test.expectedError, test.description)
+		}
+	}
+}
+
+func TestValidateNativePlacementType(t *testing.T) {
+	impIndex := 4
+
+	testCases := []struct {
+		description        string
+		givenPlacementType native1.PlacementType
+		expectedError      string
+	}{
+		{
+			description:        "Not Specified",
+			givenPlacementType: 0,
+			expectedError:      "",
+		},
+		{
+			description:        "Known Value",
+			givenPlacementType: 1, // Range is currently 1-4
+			expectedError:      "",
+		},
+		{
+			description:        "Exchange Specific - Boundary",
+			givenPlacementType: 500,
+			expectedError:      "",
+		},
+		{
+			description:        "Exchange Specific - Boundary + 1",
+			givenPlacementType: 501,
+			expectedError:      "",
+		},
+		{
+			description:        "Negative",
+			givenPlacementType: -1,
+			expectedError:      "request.imp[4].native.request.plcmttype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=40",
+		},
+		{
+			description:        "Just Above Range",
+			givenPlacementType: 5, // Range is currently 1-4
+			expectedError:      "request.imp[4].native.request.plcmttype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=40",
+		},
+	}
+
+	for _, test := range testCases {
+		err := validateNativePlacementType(test.givenPlacementType, impIndex)
+		if test.expectedError == "" {
+			assert.NoError(t, err, test.description)
+		} else {
+			assert.EqualError(t, err, test.expectedError, test.description)
+		}
+	}
+}
+
+func TestValidateNativeEventTracker(t *testing.T) {
+	impIndex := 4
+	eventIndex := 8
+
+	testCases := []struct {
+		description   string
+		givenEvent    nativeRequests.EventTracker
+		expectedError string
+	}{
+		{
+			description: "Valid",
+			givenEvent: nativeRequests.EventTracker{
+				Event:   1,
+				Methods: []native1.EventTrackingMethod{1},
+			},
+			expectedError: "",
+		},
+		{
+			description: "Event - Exchange Specific - Boundary",
+			givenEvent: nativeRequests.EventTracker{
+				Event:   500,
+				Methods: []native1.EventTrackingMethod{1},
+			},
+			expectedError: "",
+		},
+		{
+			description: "Event - Exchange Specific - Boundary + 1",
+			givenEvent: nativeRequests.EventTracker{
+				Event:   501,
+				Methods: []native1.EventTrackingMethod{1},
+			},
+			expectedError: "",
+		},
+		{
+			description: "Event - Negative",
+			givenEvent: nativeRequests.EventTracker{
+				Event:   -1,
+				Methods: []native1.EventTrackingMethod{1},
+			},
+			expectedError: "request.imp[4].native.request.eventtrackers[8].event is invalid. See section 7.6: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=43",
+		},
+		{
+			description: "Event - Just Above Range",
+			givenEvent: nativeRequests.EventTracker{
+				Event:   5, // Range is currently 1-4
+				Methods: []native1.EventTrackingMethod{1},
+			},
+			expectedError: "request.imp[4].native.request.eventtrackers[8].event is invalid. See section 7.6: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=43",
+		},
+		{
+			description: "Methods - Many Valid",
+			givenEvent: nativeRequests.EventTracker{
+				Event:   1,
+				Methods: []native1.EventTrackingMethod{1, 2},
+			},
+			expectedError: "",
+		},
+		{
+			description: "Methods - Empty",
+			givenEvent: nativeRequests.EventTracker{
+				Event:   1,
+				Methods: []native1.EventTrackingMethod{},
+			},
+			expectedError: "request.imp[4].native.request.eventtrackers[8].method is required. See section 7.7: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=43",
+		},
+		{
+			description: "Methods - Exchange Specific - Boundary",
+			givenEvent: nativeRequests.EventTracker{
+				Event:   1,
+				Methods: []native1.EventTrackingMethod{500},
+			},
+			expectedError: "",
+		},
+		{
+			description: "Methods - Exchange Specific - Boundary + 1",
+			givenEvent: nativeRequests.EventTracker{
+				Event:   1,
+				Methods: []native1.EventTrackingMethod{501},
+			},
+			expectedError: "",
+		},
+		{
+			description: "Methods - Negative",
+			givenEvent: nativeRequests.EventTracker{
+				Event:   1,
+				Methods: []native1.EventTrackingMethod{-1},
+			},
+			expectedError: "request.imp[4].native.request.eventtrackers[8].methods[0] is invalid. See section 7.7: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=43",
+		},
+		{
+			description: "Methods - Just Above Range",
+			givenEvent: nativeRequests.EventTracker{
+				Event:   1,
+				Methods: []native1.EventTrackingMethod{3}, // Known values are currently 1-2
+			},
+			expectedError: "request.imp[4].native.request.eventtrackers[8].methods[0] is invalid. See section 7.7: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=43",
+		},
+		{
+			description: "Methods - Mixed Valid + Invalid",
+			givenEvent: nativeRequests.EventTracker{
+				Event:   1,
+				Methods: []native1.EventTrackingMethod{1, -1},
+			},
+			expectedError: "request.imp[4].native.request.eventtrackers[8].methods[1] is invalid. See section 7.7: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=43",
+		},
+	}
+
+	for _, test := range testCases {
+		err := validateNativeEventTracker(test.givenEvent, impIndex, eventIndex)
+		if test.expectedError == "" {
+			assert.NoError(t, err, test.description)
+		} else {
+			assert.EqualError(t, err, test.expectedError, test.description)
+		}
+	}
+}
+
+func TestValidateNativeAssetData(t *testing.T) {
+	impIndex := 4
+	assetIndex := 8
+
+	testCases := []struct {
+		description   string
+		givenData     nativeRequests.Data
+		expectedError string
+	}{
+		{
+			description:   "Valid",
+			givenData:     nativeRequests.Data{Type: 1},
+			expectedError: "",
+		},
+		{
+			description:   "Exchange Specific - Boundary",
+			givenData:     nativeRequests.Data{Type: 500},
+			expectedError: "",
+		},
+		{
+			description:   "Exchange Specific - Boundary + 1",
+			givenData:     nativeRequests.Data{Type: 501},
+			expectedError: "",
+		},
+		{
+			description:   "Not Specified",
+			givenData:     nativeRequests.Data{},
+			expectedError: "request.imp[4].native.request.assets[8].data.type is invalid. See section 7.4: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=40",
+		},
+		{
+			description:   "Negative",
+			givenData:     nativeRequests.Data{Type: -1},
+			expectedError: "request.imp[4].native.request.assets[8].data.type is invalid. See section 7.4: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=40",
+		},
+		{
+			description:   "Just Above Range",
+			givenData:     nativeRequests.Data{Type: 13}, // Range is currently 1-12
+			expectedError: "request.imp[4].native.request.assets[8].data.type is invalid. See section 7.4: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=40",
+		},
+	}
+
+	for _, test := range testCases {
+		err := validateNativeAssetData(&test.givenData, impIndex, assetIndex)
+		if test.expectedError == "" {
+			assert.NoError(t, err, test.description)
+		} else {
+			assert.EqualError(t, err, test.expectedError, test.description)
+		}
+	}
+}
+
 // warningsCheckExchange is a well-behaved exchange which stores all incoming warnings.
 type warningsCheckExchange struct {
 	auctionRequest exchange.AuctionRequest
@@ -2170,7 +2712,49 @@ func (e *nobidExchange) HoldAuction(ctx context.Context, r exchange.AuctionReque
 }
 
 type mockBidExchange struct {
-	gotRequest *openrtb2.BidRequest
+	mockBidder mockBidExchangeBidder
+	pbsRates   map[string]map[string]float64
+}
+
+func newMockBidExchange(bidder mockBidExchangeBidder, mockCurrencyConversionRates map[string]map[string]float64) *mockBidExchange {
+	if bidder.BidCurrency == "" {
+		bidder.BidCurrency = "USD"
+	}
+
+	return &mockBidExchange{
+		mockBidder: bidder,
+		pbsRates:   mockCurrencyConversionRates,
+	}
+}
+
+// getAuctionCurrencyRates copies the logic of the exchange package for testing purposes
+func (e *mockBidExchange) getAuctionCurrencyRates(customRates *openrtb_ext.ExtRequestCurrency) currency.Conversions {
+	if customRates == nil {
+		// The timestamp is required for the function signature, but is not used and its
+		// value has no significance in the tests
+		return currency.NewRates(time.Now(), e.pbsRates)
+	}
+
+	usePbsRates := true
+	if customRates.UsePBSRates != nil {
+		usePbsRates = *customRates.UsePBSRates
+	}
+
+	if !usePbsRates {
+		// The timestamp is required for the function signature, but is not used and its
+		// value has no significance in the tests
+		return currency.NewRates(time.Now(), customRates.ConversionRates)
+	}
+
+	// Both PBS and custom rates can be used, check if ConversionRates is not empty
+	if len(customRates.ConversionRates) == 0 {
+		// Custom rates map is empty, use PBS rates only
+		return currency.NewRates(time.Now(), e.pbsRates)
+	}
+
+	// Return an AggregateConversions object that includes both custom and PBS currency rates but will
+	// prioritize custom rates over PBS rates whenever a currency rate is found in both
+	return currency.NewAggregateConversions(currency.NewRates(time.Time{}, customRates.ConversionRates), currency.NewRates(time.Now(), e.pbsRates))
 }
 
 // mockBidExchange is a well-behaved exchange that lists the bidders found in every bidRequest.Imp[i].Ext
@@ -2181,6 +2765,36 @@ func (e *mockBidExchange) HoldAuction(ctx context.Context, r exchange.AuctionReq
 		BidID: "test bid id",
 		NBR:   openrtb2.NoBidReasonCodeUnknownError.Ptr(),
 	}
+
+	// Use currencies inside r.BidRequest.Cur, if any, and convert currencies if needed
+	if len(r.BidRequest.Cur) == 0 {
+		r.BidRequest.Cur = []string{"USD"}
+	}
+
+	var currencyFrom string = e.mockBidder.getBidCurrency()
+	var conversionRate float64 = 0.00
+	var err error
+
+	var requestExt openrtb_ext.ExtRequest
+	if len(r.BidRequest.Ext) > 0 {
+		if err := json.Unmarshal(r.BidRequest.Ext, &requestExt); err != nil {
+			return nil, fmt.Errorf("request.ext is invalid: %v", err)
+		}
+	}
+
+	conversions := e.getAuctionCurrencyRates(requestExt.Prebid.CurrencyConversions)
+	for _, bidReqCur := range r.BidRequest.Cur {
+		if conversionRate, err = conversions.GetRate(currencyFrom, bidReqCur); err == nil {
+			bidResponse.Cur = bidReqCur
+			break
+		}
+	}
+
+	if conversionRate == 0 {
+		// Can't have bids if there's not even a 1 USD to 1 USD conversion rate
+		return nil, errors.New("Can't produce bid with no valid currency to use or currency conversion to convert to.")
+	}
+
 	if len(r.BidRequest.Imp) > 0 {
 		var SeatBidMap = make(map[string]openrtb2.SeatBid, 0)
 		for _, imp := range r.BidRequest.Imp {
@@ -2205,9 +2819,17 @@ func (e *mockBidExchange) HoldAuction(ctx context.Context, r exchange.AuctionReq
 			for bidderNameOrAlias := range bidderExts {
 				if isBidderToValidate(bidderNameOrAlias) {
 					if val, ok := SeatBidMap[bidderNameOrAlias]; ok {
-						val.Bid = append(val.Bid, openrtb2.Bid{ID: fmt.Sprintf("%s-bid", bidderNameOrAlias)})
+						val.Bid = append(val.Bid, openrtb2.Bid{ID: e.mockBidder.getBidId(bidderNameOrAlias)})
 					} else {
-						SeatBidMap[bidderNameOrAlias] = openrtb2.SeatBid{Seat: fmt.Sprintf("%s-bids", bidderNameOrAlias), Bid: []openrtb2.Bid{{ID: fmt.Sprintf("%s-bid", bidderNameOrAlias)}}}
+						SeatBidMap[bidderNameOrAlias] = openrtb2.SeatBid{
+							Seat: e.mockBidder.getSeatName(bidderNameOrAlias),
+							Bid: []openrtb2.Bid{
+								{
+									ID:    e.mockBidder.getBidId(bidderNameOrAlias),
+									Price: e.mockBidder.getBidPrice() * conversionRate,
+								},
+							},
+						}
 					}
 				}
 			}
@@ -2218,6 +2840,24 @@ func (e *mockBidExchange) HoldAuction(ctx context.Context, r exchange.AuctionReq
 	}
 
 	return bidResponse, nil
+}
+
+type mockBidExchangeBidder struct {
+	BidCurrency string  `json:"currency"`
+	BidPrice    float64 `json:"price"`
+}
+
+func (bidder mockBidExchangeBidder) getBidCurrency() string {
+	return bidder.BidCurrency
+}
+func (bidder mockBidExchangeBidder) getBidPrice() float64 {
+	return bidder.BidPrice
+}
+func (bidder mockBidExchangeBidder) getSeatName(bidderNameOrAlias string) string {
+	return fmt.Sprintf("%s-bids", bidderNameOrAlias)
+}
+func (bidder mockBidExchangeBidder) getBidId(bidderNameOrAlias string) string {
+	return fmt.Sprintf("%s-bid", bidderNameOrAlias)
 }
 
 type brokenExchange struct{}
