@@ -1330,7 +1330,7 @@ func TestGetDebugInfo(t *testing.T) {
 		},
 	}
 	for _, test := range testCases {
-		actualDebugInfo := getDebugInfo(test.in.bidRequest, test.in.requestExt)
+		actualDebugInfo := parseRequestDebugValues(test.in.bidRequest, test.in.requestExt)
 
 		assert.Equal(t, test.out, actualDebugInfo, "%s. Unexpected debug value. \n", test.desc)
 	}
