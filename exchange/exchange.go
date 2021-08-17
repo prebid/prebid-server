@@ -391,11 +391,6 @@ func updateHbPbCatDur(bid *pbsOrtbBid, dealTier openrtb_ext.DealTier, bidCategor
 	}
 }
 
-func (e *exchange) makeDebugContext(ctx context.Context, debugInfo bool) (debugCtx context.Context) {
-	debugCtx = context.WithValue(ctx, DebugContextKey, debugInfo)
-	return
-}
-
 func (e *exchange) makeAuctionContext(ctx context.Context, needsCache bool) (auctionCtx context.Context, cancel context.CancelFunc) {
 	auctionCtx = ctx
 	cancel = func() {}

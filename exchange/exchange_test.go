@@ -2052,38 +2052,6 @@ func TestTimeoutComputation(t *testing.T) {
 	}
 }
 
-func TestSetDebugContextKey(t *testing.T) {
-	// Test cases
-	testCases := []struct {
-		desc              string
-		inDebugInfo       bool
-		expectedDebugInfo bool
-	}{
-		{
-			desc:              "debugInfo flag on, we expect to find DebugContextKey key in context",
-			inDebugInfo:       true,
-			expectedDebugInfo: true,
-		},
-		{
-			desc:              "debugInfo flag off, we don't expect to find DebugContextKey key in context",
-			inDebugInfo:       false,
-			expectedDebugInfo: false,
-		},
-	}
-
-	// Setup test
-	ex := exchange{}
-
-	// Run tests
-	for _, test := range testCases {
-		auctionCtx := ex.makeDebugContext(context.Background(), test.inDebugInfo)
-
-		debugInfo := auctionCtx.Value(DebugContextKey)
-		assert.NotNil(t, debugInfo, "%s. Flag set, `debugInfo` shouldn't be nil")
-		assert.Equal(t, test.expectedDebugInfo, debugInfo.(bool), "Desc: %s. Incorrect value mapped to DebugContextKey(`debugInfo`) in the context\n", test.desc)
-	}
-}
-
 // TestExchangeJSON executes tests for all the *.json files in exchangetest.
 func TestExchangeJSON(t *testing.T) {
 	if specFiles, err := ioutil.ReadDir("./exchangetest"); err == nil {
