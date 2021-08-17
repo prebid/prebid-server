@@ -54,7 +54,6 @@ func TestReadWriteRates(t *testing.T) {
 		wantUpdateErr     bool
 		wantConstantRates bool
 		wantLastUpdated   time.Time
-		wantDataAsOf      time.Time
 		wantConversions   map[string]map[string]float64
 	}{
 		{
@@ -63,7 +62,6 @@ func TestReadWriteRates(t *testing.T) {
 			giveMockResponse: getMockRates(),
 			giveMockStatus:   200,
 			wantLastUpdated:  time.Date(2018, time.September, 12, 30, 0, 0, 0, time.UTC),
-			wantDataAsOf:     time.Date(2018, time.September, 12, 0, 0, 0, 0, time.UTC),
 			wantConversions:  map[string]map[string]float64{"USD": {"GBP": 0.77208}, "GBP": {"USD": 1.2952}},
 		},
 		{
@@ -72,7 +70,6 @@ func TestReadWriteRates(t *testing.T) {
 			giveMockResponse: []byte("{}"),
 			giveMockStatus:   200,
 			wantLastUpdated:  time.Date(2018, time.September, 12, 30, 0, 0, 0, time.UTC),
-			wantDataAsOf:     time.Time{},
 			wantConversions:  nil,
 		},
 		{
