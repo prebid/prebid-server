@@ -233,14 +233,10 @@ func TestDebugBehaviour(t *testing.T) {
 			generateWarnings: true,
 		},
 		{
-			desc: "test account level debug disabled",
-			in:   inTest{test: -1, debug: true},
-			out:  outTest{debugInfoIncluded: false},
-			debugData: debugData{
-				bidderLevelDebugAllowed:    true,
-				accountLevelDebugAllowed:   false,
-				headerOverrideDebugAllowed: false,
-			},
+			desc:             "test account level debug disabled",
+			in:               inTest{test: -1, debug: true},
+			out:              outTest{debugInfoIncluded: false},
+			debugData:        debugData{true, false, false},
 			generateWarnings: true,
 		},
 		{
