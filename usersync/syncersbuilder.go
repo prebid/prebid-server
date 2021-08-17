@@ -29,7 +29,7 @@ func BuildSyncers(hostConfig *config.Configuration, bidderInfos config.BidderInf
 	// map syncer config by bidder
 	cfgByBidder := make(map[string]config.Syncer, len(bidderInfos))
 	for bidder, cfg := range bidderInfos {
-		if cfg.Enabled && cfg.Syncer != nil {
+		if shouldCreateSyncer(cfg) {
 			cfgByBidder[bidder] = *cfg.Syncer
 		}
 	}
@@ -78,6 +78,20 @@ func BuildSyncers(hostConfig *config.Configuration, bidderInfos config.BidderInf
 		return nil, errs
 	}
 	return syncers, nil
+}
+
+func shouldCreateSyncer(cfg config.BidderInfo) bool {
+	if !cfg.Enabled {
+		return false
+	}
+
+	if cfg.Syncer == nil {
+		return false
+	}
+
+	// a syncer may provide just a Supports field to provide hints to the host. we should only try to create a syncer
+	// if there is at least one non-Supports value populated.
+	return cfg.Syncer.Key != "" || cfg.Syncer.Default != "" || cfg.Syncer.IFrame != nil || cfg.Syncer.Redirect != nil || cfg.Syncer.SupportCORS != nil
 }
 
 func chooseSyncerConfig(biddersSyncerConfig []namedSyncerConfig) (namedSyncerConfig, error) {

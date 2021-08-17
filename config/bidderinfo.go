@@ -56,6 +56,11 @@ type Syncer struct {
 	// `iframe` and `redirect`.
 	Default string `yaml:"default" mapstructure:"default"`
 
+	// Supports allows bidders to specify which user sync endpoints they support but which don't have
+	// good defaults. Host companies should contact the bidder for the endpoint configuration. Hosts
+	// may not override this value.
+	Supports []string `yaml:"supports"`
+
 	// IFrame configures an iframe endpoint for user syncing.
 	IFrame *SyncerEndpoint `yaml:"iframe" mapstructure:"iframe"`
 
@@ -67,6 +72,9 @@ type Syncer struct {
 	SupportCORS *bool `yaml:"supportCors" mapstructure:"support_cors"`
 }
 
+// Override returns a new Syncer object where values in the original are replaced by non-empty/non-default
+// values in the override, except for the Supports field which may not be overridden. No changes are made
+// to the original or override Syncer.
 func (s *Syncer) Override(original *Syncer) *Syncer {
 	if s == nil && original == nil {
 		return nil
@@ -163,7 +171,8 @@ type SyncerEndpoint struct {
 	UserMacro string `yaml:"userMacro" mapstructure:"user_macro"`
 }
 
-// Override returns a new SyncerEndpoint with original values overridden by non empty values.
+// Override returns a new SyncerEndpoint object where values in the original are replaced by non-empty/non-default
+// values in the override. No changes are made to the original or override SyncerEndpoint.
 func (s *SyncerEndpoint) Override(original *SyncerEndpoint) *SyncerEndpoint {
 	if s == nil && original == nil {
 		return nil

@@ -95,7 +95,19 @@ func TestApplyBidderInfoConfigOverrides(t *testing.T) {
 			expectedBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{IFrame: &config.SyncerEndpoint{URL: "override"}}}},
 		},
 		{
+			description:         "UserSyncURL Supports IFrame",
+			givenBidderInfos:    config.BidderInfos{"a": {Syncer: &config.Syncer{Supports: []string{"iframe"}}}},
+			givenAdaptersCfg:    map[string]config.Adapter{"a": {UserSyncURL: "override"}},
+			expectedBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{Supports: []string{"iframe"}, IFrame: &config.SyncerEndpoint{URL: "override"}}}},
+		},
+		{
 			description:         "UserSyncURL Override Redirect",
+			givenBidderInfos:    config.BidderInfos{"a": {Syncer: &config.Syncer{Supports: []string{"redirect"}}}},
+			givenAdaptersCfg:    map[string]config.Adapter{"a": {UserSyncURL: "override"}},
+			expectedBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{Supports: []string{"redirect"}, Redirect: &config.SyncerEndpoint{URL: "override"}}}},
+		},
+		{
+			description:         "UserSyncURL Supports Redirect",
 			givenBidderInfos:    config.BidderInfos{"a": {Syncer: &config.Syncer{Redirect: &config.SyncerEndpoint{URL: "original"}}}},
 			givenAdaptersCfg:    map[string]config.Adapter{"a": {UserSyncURL: "override"}},
 			expectedBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{Redirect: &config.SyncerEndpoint{URL: "override"}}}},
@@ -110,13 +122,19 @@ func TestApplyBidderInfoConfigOverrides(t *testing.T) {
 			description:      "UserSyncURL Override Syncer Endpoints Not Defined",
 			givenBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{}}},
 			givenAdaptersCfg: map[string]config.Adapter{"a": {UserSyncURL: "override"}},
-			expectedError:    "adapters.a.usersync_url cannot be applied, bidder does not define user sync endpoints",
+			expectedError:    "adapters.a.usersync_url cannot be applied, bidder does not define user sync endpoints and does not define supported endpoints",
 		},
 		{
 			description:      "UserSyncURL Override Ambiguous",
 			givenBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{IFrame: &config.SyncerEndpoint{URL: "originalIFrame"}, Redirect: &config.SyncerEndpoint{URL: "originalRedirect"}}}},
 			givenAdaptersCfg: map[string]config.Adapter{"a": {UserSyncURL: "override"}},
-			expectedError:    "adapters.a.usersync_url cannot be applied, bidder defines multiple user sync endpoints",
+			expectedError:    "adapters.a.usersync_url cannot be applied, bidder defines multiple user sync endpoints or supports multiple endpoints",
+		},
+		{
+			description:      "UserSyncURL Supports Ambiguous",
+			givenBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{Supports: []string{"iframe", "redirect"}}}},
+			givenAdaptersCfg: map[string]config.Adapter{"a": {UserSyncURL: "override"}},
+			expectedError:    "adapters.a.usersync_url cannot be applied, bidder defines multiple user sync endpoints or supports multiple endpoints",
 		},
 	}
 

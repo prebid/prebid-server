@@ -44,6 +44,7 @@ import (
 	"github.com/prebid/prebid-server/server/ssl"
 	storedRequestsConf "github.com/prebid/prebid-server/stored_requests/config"
 	"github.com/prebid/prebid-server/usersync"
+	"github.com/prebid/prebid-server/util/sliceutil"
 
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
@@ -354,14 +355,26 @@ func applyBidderInfoConfigOverrides(bidderInfos config.BidderInfos, adaptersCfg 
 					endpointsCount++
 				}
 
+				// use Supports as a hint if there are no good defaults provided
 				if endpointsCount == 0 {
-					return fmt.Errorf("adapters.%s.usersync_url cannot be applied, bidder does not define user sync endpoints", strings.ToLower(bidderName))
+					if sliceutil.ContainsStringIgnoreCase(bidderInfo.Syncer.Supports, "iframe") {
+						bidderInfo.Syncer.IFrame = &config.SyncerEndpoint{URL: adapterCfg.UserSyncURL}
+						endpointsCount++
+					}
+					if sliceutil.ContainsStringIgnoreCase(bidderInfo.Syncer.Supports, "redirect") {
+						bidderInfo.Syncer.Redirect = &config.SyncerEndpoint{URL: adapterCfg.UserSyncURL}
+						endpointsCount++
+					}
+				}
+
+				if endpointsCount == 0 {
+					return fmt.Errorf("adapters.%s.usersync_url cannot be applied, bidder does not define user sync endpoints and does not define supported endpoints", strings.ToLower(bidderName))
 				}
 
 				// if the bidder defines both an iframe and redirect endpoint, we can't be sure which config value to
 				// override, and  it wouldn't be both. this is a fatal configuration error.
 				if endpointsCount > 1 {
-					return fmt.Errorf("adapters.%s.usersync_url cannot be applied, bidder defines multiple user sync endpoints", strings.ToLower(bidderName))
+					return fmt.Errorf("adapters.%s.usersync_url cannot be applied, bidder defines multiple user sync endpoints or supports multiple endpoints", strings.ToLower(bidderName))
 				}
 
 				// provide a warning that this compatibility layer is temporary
