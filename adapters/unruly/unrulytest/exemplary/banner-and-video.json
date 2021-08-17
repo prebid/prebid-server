@@ -83,8 +83,7 @@
               },
               "ext": {
                 "bidder": {
-                  "siteid": "72721",
-                  "S2S": true
+                  "siteid": "72721"
                 }
               }
             },
@@ -120,8 +119,7 @@
               },
               "ext": {
                 "bidder": {
-                  "siteid": "72721",
-                  "S2S": true
+                  "siteid": "72721"
                 }
               }
             }

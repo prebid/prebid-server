@@ -68,12 +68,11 @@ func (a *UnrulyAdapter) preProcess(req *openrtb2.BidRequest, errors []error) (*o
 		err = json.Unmarshal(bidderExt.Bidder, &unrulyExt)
 		if err != nil {
 			err = &errortypes.BadInput{
-				Message: fmt.Sprintf("sitid not provided in imp id=%s. Abort all Request", imp.ID),
+				Message: fmt.Sprintf("siteid not provided in imp id=%s. Abort all Request", imp.ID),
 			}
 			errors = append(errors, err)
 			return nil, "", errors
 		}
-		unrulyExt.S2S = true
 		unrulyExtCopy, err := json.Marshal(&unrulyExt)
 		if err != nil {
 			errors = append(errors, err)
