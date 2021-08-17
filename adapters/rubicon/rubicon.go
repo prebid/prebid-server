@@ -13,6 +13,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/jinzhu/copier"
 
+	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/cache/skanidlist"
@@ -206,7 +207,9 @@ type rubiconDeviceExtRP struct {
 }
 
 type rubiconDeviceExt struct {
-	RP rubiconDeviceExtRP `json:"rp"`
+	ATTS *openrtb_ext.IOSAppTrackingStatus `json:"atts,omitempty"`
+	IFV  string                            `json:"ifv,omitempty"`
+	RP   rubiconDeviceExtRP                `json:"rp"`
 }
 
 type rubiconUser struct {
@@ -550,7 +553,16 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		rubiReq.User = &userCopy
 
 		deviceCopy := *rubiReq.Device
-		deviceExt := rubiconDeviceExt{RP: rubiconDeviceExtRP{PixelRatio: rubiReq.Device.PxRatio}}
+		atts, _ := openrtb_ext.ParseDeviceExtATTS(rubiReq.Device.Ext)
+		ifv, _ := jsonparser.GetString(rubiReq.Device.Ext, "ifv")
+		deviceExt := rubiconDeviceExt{
+			ATTS: atts,
+			IFV:  ifv,
+
+			RP: rubiconDeviceExtRP{
+				PixelRatio: rubiReq.Device.PxRatio,
+			},
+		}
 		deviceCopy.Ext, err = json.Marshal(&deviceExt)
 		rubiReq.Device = &deviceCopy
 
@@ -898,7 +910,15 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 
 		if request.Device != nil {
 			deviceCopy := *request.Device
-			deviceExt := rubiconDeviceExt{RP: rubiconDeviceExtRP{PixelRatio: request.Device.PxRatio}}
+			atts, _ := openrtb_ext.ParseDeviceExtATTS(request.Device.Ext)
+			ifv, _ := jsonparser.GetString(request.Device.Ext, "ifv")
+			deviceExt := rubiconDeviceExt{
+				ATTS: atts,
+				IFV:  ifv,
+				RP: rubiconDeviceExtRP{
+					PixelRatio: request.Device.PxRatio,
+				},
+			}
 			deviceCopy.Ext, err = json.Marshal(&deviceExt)
 			rubiconRequest.Device = &deviceCopy
 		}
