@@ -1283,7 +1283,7 @@ func TestGetExtTargetData(t *testing.T) {
 	}
 }
 
-func TestGetDebugInfo(t *testing.T) {
+func TestParseRequestDebugValues(t *testing.T) {
 	type inTest struct {
 		bidRequest *openrtb2.BidRequest
 		requestExt *openrtb_ext.ExtRequest
@@ -1333,6 +1333,78 @@ func TestGetDebugInfo(t *testing.T) {
 		actualDebugInfo := parseRequestDebugValues(test.in.bidRequest, test.in.requestExt)
 
 		assert.Equal(t, test.out, actualDebugInfo, "%s. Unexpected debug value. \n", test.desc)
+	}
+}
+
+func TestSetDebugLogValues(t *testing.T) {
+
+	type aTest struct {
+		desc               string
+		inAccountDebugFlag bool
+		inDebugLog         *DebugLog
+		expectedDebugLog   *DebugLog
+	}
+
+	testGroups := []struct {
+		desc      string
+		testCases []aTest
+	}{
+
+		{
+			"nil debug log",
+			[]aTest{
+				{
+					desc:               "accountDebugFlag false, expect all false flags in resulting debugLog",
+					inAccountDebugFlag: false,
+					inDebugLog:         nil,
+					expectedDebugLog:   &DebugLog{},
+				},
+				{
+					desc:               "accountDebugFlag true, expect debugLog.Enabled to be true",
+					inAccountDebugFlag: true,
+					inDebugLog:         nil,
+					expectedDebugLog:   &DebugLog{Enabled: true},
+				},
+			},
+		},
+		{
+			"non-nil debug log",
+			[]aTest{
+				{
+					desc:               "both accountDebugFlag and DebugEnabledOrOverridden are false, expect debugLog.Enabled to be false",
+					inAccountDebugFlag: false,
+					inDebugLog:         &DebugLog{},
+					expectedDebugLog:   &DebugLog{},
+				},
+				{
+					desc:               "accountDebugFlag false but DebugEnabledOrOverridden is true, expect debugLog.Enabled to be true",
+					inAccountDebugFlag: false,
+					inDebugLog:         &DebugLog{DebugEnabledOrOverridden: true},
+					expectedDebugLog:   &DebugLog{DebugEnabledOrOverridden: true, Enabled: true},
+				},
+				{
+					desc:               "accountDebugFlag true but DebugEnabledOrOverridden is false, expect debugLog.Enabled to be true",
+					inAccountDebugFlag: true,
+					inDebugLog:         &DebugLog{},
+					expectedDebugLog:   &DebugLog{Enabled: true},
+				},
+				{
+					desc:               "Both accountDebugFlag and DebugEnabledOrOverridden are true, expect debugLog.Enabled to be true",
+					inAccountDebugFlag: true,
+					inDebugLog:         &DebugLog{DebugEnabledOrOverridden: true},
+					expectedDebugLog:   &DebugLog{DebugEnabledOrOverridden: true, Enabled: true},
+				},
+			},
+		},
+	}
+
+	for _, group := range testGroups {
+		for _, tc := range group.testCases {
+			// run
+			actualDebugLog := setDebugLogValues(tc.inAccountDebugFlag, tc.inDebugLog)
+			// assertions
+			assert.Equal(t, tc.expectedDebugLog, actualDebugLog, "%s. %s", group.desc, tc.desc)
+		}
 	}
 }
 
