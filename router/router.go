@@ -221,6 +221,10 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		return nil, err
 	}
 
+	if err := checkSupportedUserSyncEndpoints(bidderInfos); err != nil {
+		return nil, err
+	}
+
 	syncersByBidder, errs := usersync.BuildSyncers(cfg, bidderInfos)
 	if len(errs) > 0 {
 		return nil, errortypes.NewAggregateError("user sync", errs)
@@ -382,6 +386,31 @@ func applyBidderInfoConfigOverrides(bidderInfos config.BidderInfos, adaptersCfg 
 			}
 
 			bidderInfos[bidderName] = bidderInfo
+		}
+	}
+	return nil
+}
+
+func checkSupportedUserSyncEndpoints(bidderInfos config.BidderInfos) error {
+	for name, info := range bidderInfos {
+		if info.Syncer == nil {
+			continue
+		}
+
+		for _, endpoint := range info.Syncer.Supports {
+			endpointLower := strings.ToLower(endpoint)
+			switch endpointLower {
+			case "iframe":
+				if info.Syncer.IFrame == nil {
+					glog.Warningf("bidder %s supports iframe user sync, but doesn't have a default and must be configured by the host", name)
+				}
+			case "redirect":
+				if info.Syncer.Redirect == nil {
+					glog.Warningf("bidder %s supports redirect user sync, but doesn't have a default and must be configured by the host", name)
+				}
+			default:
+				return fmt.Errorf("failed to load bidder info for %s, user sync supported endpoint '%s' is unrecognized", name, endpoint)
+			}
 		}
 	}
 	return nil

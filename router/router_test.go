@@ -149,6 +149,103 @@ func TestApplyBidderInfoConfigOverrides(t *testing.T) {
 	}
 }
 
+func TestCheckSupportedUserSyncEndpoints(t *testing.T) {
+	anyEndpoint := &config.SyncerEndpoint{URL: "anyURL"}
+
+	var testCases = []struct {
+		description      string
+		givenBidderInfos config.BidderInfos
+		expectedError    string
+	}{
+		{
+			description:      "None",
+			givenBidderInfos: config.BidderInfos{},
+			expectedError:    "",
+		},
+		{
+			description: "One - No Syncer",
+			givenBidderInfos: config.BidderInfos{
+				"a": config.BidderInfo{Syncer: nil},
+			},
+			expectedError: "",
+		},
+		{
+			description: "One - Invalid Supported Endpoint",
+			givenBidderInfos: config.BidderInfos{
+				"a": config.BidderInfo{Syncer: &config.Syncer{Supports: []string{"invalid"}}},
+			},
+			expectedError: "failed to load bidder info for a, user sync supported endpoint 'invalid' is unrecognized",
+		},
+		{
+			description: "One - IFrame Supported - Not Specified",
+			givenBidderInfos: config.BidderInfos{
+				"a": config.BidderInfo{Syncer: &config.Syncer{Supports: []string{"iframe"}, IFrame: nil}},
+			},
+			expectedError: "",
+		},
+		{
+			description: "One - IFrame Supported - Specified",
+			givenBidderInfos: config.BidderInfos{
+				"a": config.BidderInfo{Syncer: &config.Syncer{Supports: []string{"iframe"}, IFrame: anyEndpoint}},
+			},
+			expectedError: "",
+		},
+		{
+			description: "One - Redirect Supported - Not Specified",
+			givenBidderInfos: config.BidderInfos{
+				"a": config.BidderInfo{Syncer: &config.Syncer{Supports: []string{"redirect"}, Redirect: nil}},
+			},
+			expectedError: "",
+		},
+		{
+			description: "One - IFrame Supported - Specified",
+			givenBidderInfos: config.BidderInfos{
+				"a": config.BidderInfo{Syncer: &config.Syncer{Supports: []string{"redirect"}, Redirect: anyEndpoint}},
+			},
+			expectedError: "",
+		},
+		{
+			description: "One - IFrame + Redirect Supported - Not Specified",
+			givenBidderInfos: config.BidderInfos{
+				"a": config.BidderInfo{Syncer: &config.Syncer{Supports: []string{"iframe", "redirect"}, IFrame: nil, Redirect: nil}},
+			},
+			expectedError: "",
+		},
+		{
+			description: "One - IFrame + Redirect Supported - Specified",
+			givenBidderInfos: config.BidderInfos{
+				"a": config.BidderInfo{Syncer: &config.Syncer{Supports: []string{"iframe", "redirect"}, IFrame: anyEndpoint, Redirect: anyEndpoint}},
+			},
+			expectedError: "",
+		},
+		{
+			description: "Many - With Invalid Supported Endpoint",
+			givenBidderInfos: config.BidderInfos{
+				"a": config.BidderInfo{},
+				"b": config.BidderInfo{Syncer: &config.Syncer{Supports: []string{"invalid"}}},
+			},
+			expectedError: "failed to load bidder info for foo, user sync supported endpoint 'invalid' is unrecognized",
+		},
+		{
+			description: "Many - Specified + Not Specified",
+			givenBidderInfos: config.BidderInfos{
+				"a": config.BidderInfo{Syncer: &config.Syncer{Supports: []string{"iframe"}, IFrame: anyEndpoint}},
+				"b": config.BidderInfo{Syncer: &config.Syncer{Supports: []string{"redirect"}, Redirect: nil}},
+			},
+			expectedError: "",
+		},
+	}
+
+	for _, test := range testCases {
+		resultErr := checkSupportedUserSyncEndpoints(test.givenBidderInfos)
+		if test.expectedError == "" {
+			assert.NoError(t, resultErr, test.description)
+		} else {
+			assert.EqualError(t, resultErr, test.expectedError, test.description)
+		}
+	}
+}
+
 // Prevents #648
 func TestCORSSupport(t *testing.T) {
 	const origin = "https://publisher-domain.com"
