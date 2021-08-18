@@ -224,7 +224,7 @@ func TestCheckSupportedUserSyncEndpoints(t *testing.T) {
 				"a": config.BidderInfo{},
 				"b": config.BidderInfo{Syncer: &config.Syncer{Supports: []string{"invalid"}}},
 			},
-			expectedError: "failed to load bidder info for foo, user sync supported endpoint 'invalid' is unrecognized",
+			expectedError: "failed to load bidder info for b, user sync supported endpoint 'invalid' is unrecognized",
 		},
 		{
 			description: "Many - Specified + Not Specified",
