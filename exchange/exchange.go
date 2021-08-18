@@ -1015,7 +1015,7 @@ func (e *exchange) getAuctionCurrencyRates(requestRates *openrtb_ext.ExtRequestC
 		// At this point, we can safely assume the ConversionRates map is not empty because
 		// validateCustomRates(bidReqCurrencyRates *openrtb_ext.ExtRequestCurrency) would have
 		// thrown an error under such conditions.
-		return currency.NewRates(time.Time{}, requestRates.ConversionRates)
+		return currency.NewRates(requestRates.ConversionRates)
 	}
 
 	// Both PBS and custom rates can be used, check if ConversionRates is not empty
@@ -1026,7 +1026,7 @@ func (e *exchange) getAuctionCurrencyRates(requestRates *openrtb_ext.ExtRequestC
 
 	// Return an AggregateConversions object that includes both custom and PBS currency rates but will
 	// prioritize custom rates over PBS rates whenever a currency rate is found in both
-	return currency.NewAggregateConversions(currency.NewRates(time.Time{}, requestRates.ConversionRates), e.currencyConverter.Rates())
+	return currency.NewAggregateConversions(currency.NewRates(requestRates.ConversionRates), e.currencyConverter.Rates())
 }
 
 func findCacheID(bid *pbsOrtbBid, auction *auction) (string, bool) {
