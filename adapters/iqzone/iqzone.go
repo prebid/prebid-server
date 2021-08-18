@@ -43,13 +43,6 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		return nil, nil
 	}
 
-	if responseData.StatusCode == http.StatusBadRequest {
-		err := &errortypes.BadInput{
-			Message: "Unexpected status code: 400. Bad request from publisher. Run with request.debug = 1 for more info.",
-		}
-		return nil, []error{err}
-	}
-
 	if responseData.StatusCode != http.StatusOK {
 		err := &errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info.", responseData.StatusCode),
@@ -65,11 +58,15 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
 	bidResponse.Currency = response.Cur
 	for _, seatBid := range response.SeatBid {
-		for _, bid := range seatBid.Bid {
-			bid := bid // pin https://github.com/kyoh86/scopelint#whats-this
+		for i := range seatBid.Bid {
+			bidType, err := getMediaTypeForImp(seatBid.Bid[i].ImpID, request.Imp)
+			if err != nil {
+				return nil, []error{err}
+			}
+
 			b := &adapters.TypedBid{
-				Bid:     &bid,
-				BidType: getMediaTypeForImp(bid.ImpID, request.Imp),
+				Bid:     &seatBid.Bid[i],
+				BidType: bidType,
 			}
 			bidResponse.Bids = append(bidResponse.Bids, b)
 		}
@@ -77,18 +74,26 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	return bidResponse, nil
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
-	mediaType := openrtb_ext.BidTypeBanner
+func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
+	var mediaType openrtb_ext.BidType = ""
 	for _, imp := range imps {
 		if imp.ID == impID {
+			if imp.Banner != nil {
+				mediaType = openrtb_ext.BidTypeBanner
+				return mediaType, nil
+			}
 			if imp.Banner == nil && imp.Video != nil {
 				mediaType = openrtb_ext.BidTypeVideo
+				return mediaType, nil
 			}
 			if imp.Banner == nil && imp.Video == nil && imp.Native != nil {
 				mediaType = openrtb_ext.BidTypeNative
+				return mediaType, nil
 			}
-			return mediaType
 		}
 	}
-	return mediaType
+
+	return "", &errortypes.BadInput{
+		Message: fmt.Sprintf("Failed to find impression \"%s\"", impID),
+	}
 }

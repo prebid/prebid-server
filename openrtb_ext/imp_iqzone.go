@@ -1,5 +1,5 @@
 package openrtb_ext
 
-type ImpExtFoo struct {
+type ImpExtIQZone struct {
 	PlacementID string `json:"placementId"`
 }

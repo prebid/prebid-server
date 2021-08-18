@@ -18,7 +18,7 @@
                 },
                 "ext": {
                     "bidder": {
-                        "placementId": "test"
+                        "TagID": "test"
                     }
                 }
             }
@@ -54,7 +54,7 @@
                         },
                         "ext": {
                             "bidder": {
-                                "placementId": "test"
+                                "TagID": "test"
                             }
                         }
                     }
@@ -70,9 +70,14 @@
             }
 		},
 		"mockResponse": {
-			"status": 204,
+			"status": 404,
 			"body": {}
 		}
     }],
-    "expectedBidResponses": []
+    "expectedMakeBidsErrors": [
+        {
+          "value": "Unexpected status code: 404. Run with request.debug = 1 for more info.",
+          "comparison": "literal"
+        }
+    ]
 }

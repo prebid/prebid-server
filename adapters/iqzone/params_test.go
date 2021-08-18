@@ -35,8 +35,11 @@ func TestInvalidParams(t *testing.T) {
 
 var validParams = []string{
 	`{"placementId": "test"}`,
+	`{"placementId": "1"}`,
 }
 
 var invalidParams = []string{
 	`{"placementId": 42}`,
+	`{}`,
+	`{"someOtherParam": "value"}`,
 }
