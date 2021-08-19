@@ -3491,3 +3491,32 @@ type hardcodedResponseIPValidator struct {
 func (v hardcodedResponseIPValidator) IsValid(net.IP, iputil.IPVersion) bool {
 	return v.response
 }
+
+func TestValidateBanner(t *testing.T) {
+	impIndex := 4
+
+	testCases := []struct {
+		description   string
+		banner        *openrtb2.Banner
+		imp           *openrtb2.Imp
+		expectedError error
+	}{
+		{
+			description:   "Interstitial - Not Equal 1",
+			banner:        &openrtb2.Banner{},
+			imp:           &openrtb2.Imp{Instl: 2},
+			expectedError: nil,
+		},
+		{
+			description:   "Interstitial - Equal 1",
+			banner:        &openrtb2.Banner{},
+			imp:           &openrtb2.Imp{Instl: 1},
+			expectedError: nil,
+		},
+	}
+
+	for _, test := range testCases {
+		result := validateBanner(test.banner, test.imp, impIndex)
+		assert.Equal(t, test.expectedError, result, test.description)
+	}
+}
