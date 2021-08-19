@@ -3494,6 +3494,7 @@ func (v hardcodedResponseIPValidator) IsValid(net.IP, iputil.IPVersion) bool {
 
 func TestValidateBanner(t *testing.T) {
 	impIndex := 4
+	ui := int64(1)
 
 	testCases := []struct {
 		description   string
@@ -3503,13 +3504,13 @@ func TestValidateBanner(t *testing.T) {
 	}{
 		{
 			description:   "Interstitial - Not Equal 1",
-			banner:        &openrtb2.Banner{},
+			banner:        &openrtb2.Banner{W: &ui, H: &ui},
 			imp:           &openrtb2.Imp{Instl: 2},
-			expectedError: nil,
+			expectedError: errors.New("request.imp[%d].banner has no sizes. Define \"w\" and \"h\", or include \"format\" elements."),
 		},
 		{
 			description:   "Interstitial - Equal 1",
-			banner:        &openrtb2.Banner{},
+			banner:        &openrtb2.Banner{W: &ui, H: &ui},
 			imp:           &openrtb2.Imp{Instl: 1},
 			expectedError: nil,
 		},
