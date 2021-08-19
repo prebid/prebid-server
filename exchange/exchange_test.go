@@ -1789,7 +1789,7 @@ func TestRaceIntegration(t *testing.T) {
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 
 	auctionRequest := AuctionRequest{
-		BidRequest: newRaceCheckingRequest(t),
+		BidRequest: getTestBuildRequest(t),
 		Account:    config.Account{},
 		UserSyncs:  &emptyUsersync{},
 	}
@@ -1814,9 +1814,7 @@ func newCategoryFetcher(directory string) (stored_requests.CategoryFetcher, erro
 	return catfetcher, nil
 }
 
-// newRaceCheckingRequest builds a BidRequest from all the params in the
-// adapters/{bidder}/{bidder}test/params/race/*.json files
-func newRaceCheckingRequest(t *testing.T) *openrtb2.BidRequest {
+func getTestBuildRequest(t *testing.T) *openrtb2.BidRequest {
 	dnt := int8(1)
 	return &openrtb2.BidRequest{
 		Site: &openrtb2.Site{
@@ -1856,7 +1854,7 @@ func newRaceCheckingRequest(t *testing.T) *openrtb2.BidRequest {
 					H: 600,
 				}},
 			},
-			Ext: buildImpExt(t, "banner"),
+			Ext: json.RawMessage(`{"ext_field":"value}"}`),
 		}, {
 			Video: &openrtb2.Video{
 				MIMEs:       []string{"video/mp4"},
@@ -1865,7 +1863,7 @@ func newRaceCheckingRequest(t *testing.T) *openrtb2.BidRequest {
 				W:           300,
 				H:           600,
 			},
-			Ext: buildImpExt(t, "video"),
+			Ext: json.RawMessage(`{"ext_field":"value}"}`),
 		}},
 	}
 }
@@ -1927,30 +1925,7 @@ func TestPanicRecovery(t *testing.T) {
 	recovered(bidderRequests[0], nil)
 }
 
-func buildImpExt(t *testing.T, jsonFilename string) json.RawMessage {
-	adapterFolders, err := ioutil.ReadDir("../adapters")
-	if err != nil {
-		t.Fatalf("Failed to open adapters directory: %v", err)
-	}
-	bidderExts := make(map[string]json.RawMessage)
-	for _, adapterFolder := range adapterFolders {
-		if adapterFolder.IsDir() && adapterFolder.Name() != "adapterstest" {
-			bidderName := adapterFolder.Name()
-			sampleParams := "../adapters/" + bidderName + "/" + bidderName + "test/params/race/" + jsonFilename + ".json"
-			// If the file doesn't exist, don't worry about it. I don't think the Go APIs offer a reliable way to check for this.
-			fileContents, err := ioutil.ReadFile(sampleParams)
-			if err == nil {
-				bidderExts[bidderName] = json.RawMessage(fileContents)
-			}
-		}
-	}
-	toReturn, err := json.Marshal(bidderExts)
-	if err != nil {
-		t.Fatalf("Failed to marshal JSON: %v", err)
-	}
-	return json.RawMessage(toReturn)
-}
-
+// TestPanicRecoveryHighLevel calls HoldAuction with a panicingAdapter{}
 func TestPanicRecoveryHighLevel(t *testing.T) {
 	noBidServer := func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(204)
@@ -2014,7 +1989,7 @@ func TestPanicRecoveryHighLevel(t *testing.T) {
 					H: 600,
 				}},
 			},
-			Ext: buildImpExt(t, "banner"),
+			Ext: json.RawMessage(`{"ext_field": "value"}`),
 		}},
 	}
 
