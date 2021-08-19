@@ -78,10 +78,8 @@
       }
     }
   ],
-  "expectedMakeBidsErrors": [
+  "expectedBidResponses": [
     {
-      "value": "Failed to find impression for ID: \"WRONG-IMPRESSION_ID\"",
-      "comparison": "literal"
     }
   ]
 }
