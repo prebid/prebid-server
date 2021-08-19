@@ -3504,13 +3504,13 @@ func TestValidateBanner(t *testing.T) {
 	}{
 		{
 			description:   "Interstitial - Not Equal 1",
-			banner:        &openrtb2.Banner{W: &ui, H: &ui},
+			banner:        &openrtb2.Banner{W: nil, H: nil, Format: nil},
 			imp:           &openrtb2.Imp{Instl: 2},
-			expectedError: errors.New("request.imp[%d].banner has no sizes. Define \"w\" and \"h\", or include \"format\" elements.", impIndex),
+			expectedError: errors.New("request.imp[4].banner has no sizes. Define \"w\" and \"h\", or include \"format\" elements."),
 		},
 		{
 			description:   "Interstitial - Equal 1",
-			banner:        &openrtb2.Banner{W: &ui, H: &ui},
+			banner:        &openrtb2.Banner{W: &ui, H: &ui, Format: nil},
 			imp:           &openrtb2.Imp{Instl: 1},
 			expectedError: nil,
 		},
