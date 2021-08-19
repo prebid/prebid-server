@@ -11,10 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/buger/jsonparser"
-	"github.com/golang/glog"
-	"github.com/julienschmidt/httprouter"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/amp"
 	"github.com/prebid/prebid-server/analytics"
@@ -30,6 +26,11 @@ import (
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/usersync"
 	"github.com/prebid/prebid-server/util/iputil"
+
+	"github.com/buger/jsonparser"
+	"github.com/golang/glog"
+	"github.com/julienschmidt/httprouter"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 )
 
 const defaultAmpRequestTimeoutMillis = 900
@@ -152,11 +153,11 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	}
 	defer cancel()
 
-	usersyncs := usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie))
-	if usersyncs.LiveSyncCount() == 0 {
-		labels.CookieFlag = metrics.CookieFlagNo
-	} else {
+	usersyncs := usersync.ParseCookieFromRequest(r, &(deps.cfg.HostCookie))
+	if usersyncs.HasAnyLiveSyncs() {
 		labels.CookieFlag = metrics.CookieFlagYes
+	} else {
+		labels.CookieFlag = metrics.CookieFlagNo
 	}
 	labels.PubID = getAccountID(req.Site.Publisher)
 	// Look up account now that we have resolved the pubID value

@@ -14,10 +14,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/buger/jsonparser"
-	"github.com/gofrs/uuid"
-	"github.com/golang/glog"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
@@ -27,6 +23,12 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/usersync"
+
+	"github.com/buger/jsonparser"
+	"github.com/gofrs/uuid"
+	"github.com/golang/glog"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 )
 
 type ContextKey string
@@ -45,14 +47,14 @@ type Exchange interface {
 
 // IdFetcher can find the user's ID for a specific Bidder.
 type IdFetcher interface {
-	// GetId returns the ID for the bidder. The boolean will be true if the ID exists, and false otherwise.
-	GetId(bidder openrtb_ext.BidderName) (string, bool)
-	LiveSyncCount() int
+	GetUID(key string) (uid string, exists bool, notExpired bool)
+	HasAnyLiveSyncs() bool
 }
 
 type exchange struct {
 	adapterMap        map[openrtb_ext.BidderName]adaptedBidder
 	bidderInfo        config.BidderInfos
+	bidderToSyncerKey map[string]string
 	me                metrics.MetricsEngine
 	cache             prebid_cache_client.Client
 	cacheTime         time.Duration
@@ -109,7 +111,12 @@ func (randomDeduplicateBidBooleanGenerator) Generate() bool {
 	return rand.Intn(100) < 50
 }
 
-func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine metrics.MetricsEngine, infos config.BidderInfos, gDPR gdpr.Permissions, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher) Exchange {
+func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, metricsEngine metrics.MetricsEngine, infos config.BidderInfos, gDPR gdpr.Permissions, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher) Exchange {
+	bidderToSyncerKey := map[string]string{}
+	for bidder, syncer := range syncersByBidder {
+		bidderToSyncerKey[bidder] = syncer.Key()
+	}
+
 	gdprDefaultValue := gdpr.SignalYes
 	if cfg.GDPR.DefaultValue == "0" {
 		gdprDefaultValue = gdpr.SignalNo
@@ -118,6 +125,7 @@ func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid
 	return &exchange{
 		adapterMap:        adapters,
 		bidderInfo:        infos,
+		bidderToSyncerKey: bidderToSyncerKey,
 		cache:             cache,
 		cacheTime:         time.Duration(cfg.CacheURL.ExpectedTimeMillis) * time.Millisecond,
 		categoriesFetcher: categoriesFetcher,
@@ -200,7 +208,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	gdprDefaultValue := e.parseGDPRDefaultValue(r.BidRequest)
 
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
-	bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(ctx, r, requestExt, e.gDPR, e.me, gdprDefaultValue, e.privacyConfig, &r.Account)
+	bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(ctx, r, requestExt, e.bidderToSyncerKey, e.gDPR, e.me, gdprDefaultValue, e.privacyConfig, &r.Account)
 
 	e.me.RecordRequestPrivacy(privacyLabels)
 

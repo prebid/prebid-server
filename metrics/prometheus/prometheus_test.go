@@ -14,11 +14,12 @@ import (
 )
 
 func createMetricsForTesting() *Metrics {
+	syncerKeys := []string{}
 	return NewMetrics(config.PrometheusMetrics{
 		Port:      8080,
 		Namespace: "prebid",
 		Subsystem: "server",
-	}, config.DisabledMetrics{})
+	}, config.DisabledMetrics{}, syncerKeys)
 }
 
 func TestMetricCountGatekeeping(t *testing.T) {
@@ -922,58 +923,6 @@ func TestAdapterTimeMetric(t *testing.T) {
 	}
 }
 
-func TestAdapterCookieSyncMetric(t *testing.T) {
-	m := createMetricsForTesting()
-	adapterName := "anyName"
-	privacyBlocked := true
-
-	m.RecordAdapterCookieSync(openrtb_ext.BidderName(adapterName), privacyBlocked)
-
-	expectedCount := float64(1)
-	assertCounterVecValue(t, "", "adapterCookieSync", m.adapterCookieSync,
-		expectedCount,
-		prometheus.Labels{
-			adapterLabel:        adapterName,
-			privacyBlockedLabel: "true",
-		})
-}
-
-func TestUserIDSetMetric(t *testing.T) {
-	m := createMetricsForTesting()
-	adapterName := "anyName"
-	action := metrics.RequestActionSet
-
-	m.RecordUserIDSet(metrics.UserLabels{
-		Bidder: openrtb_ext.BidderName(adapterName),
-		Action: action,
-	})
-
-	expectedCount := float64(1)
-	assertCounterVecValue(t, "", "adapterUserSync", m.adapterUserSync,
-		expectedCount,
-		prometheus.Labels{
-			adapterLabel: adapterName,
-			actionLabel:  string(action),
-		})
-}
-
-func TestUserIDSetMetricWhenBidderEmpty(t *testing.T) {
-	m := createMetricsForTesting()
-	action := metrics.RequestActionErr
-
-	m.RecordUserIDSet(metrics.UserLabels{
-		Bidder: openrtb_ext.BidderName(""),
-		Action: action,
-	})
-
-	expectedTotalCount := float64(0)
-	actualTotalCount := float64(0)
-	processMetrics(m.adapterUserSync, func(m dto.Metric) {
-		actualTotalCount += m.GetCounter().GetValue()
-	})
-	assert.Equal(t, expectedTotalCount, actualTotalCount, "total count")
-}
-
 func TestAdapterPanicMetric(t *testing.T) {
 	m := createMetricsForTesting()
 	adapterName := "anyName"
@@ -1050,14 +999,150 @@ func TestAccountCacheResultMetric(t *testing.T) {
 		})
 }
 
-func TestCookieMetric(t *testing.T) {
-	m := createMetricsForTesting()
+func TestCookieSyncMetric(t *testing.T) {
+	tests := []struct {
+		status metrics.CookieSyncStatus
+		label  string
+	}{
+		{
+			status: metrics.CookieSyncOK,
+			label:  "ok",
+		},
+		{
+			status: metrics.CookieSyncBadRequest,
+			label:  "bad_request",
+		},
+		{
+			status: metrics.CookieSyncOptOut,
+			label:  "opt_out",
+		},
+		{
+			status: metrics.CookieSyncGDPRHostCookieBlocked,
+			label:  "gdpr_blocked_host_cookie",
+		},
+	}
 
-	m.RecordCookieSync()
+	for _, test := range tests {
+		m := createMetricsForTesting()
 
-	expectedCount := float64(1)
-	assertCounterValue(t, "", "cookieSync", m.cookieSync,
-		expectedCount)
+		m.RecordCookieSync(test.status)
+
+		assertCounterVecValue(t, "", "cookie_sync_requests:"+test.label, m.cookieSync,
+			float64(1),
+			prometheus.Labels{
+				statusLabel: string(test.status),
+			})
+	}
+}
+
+func TestRecordSyncerRequestMetric(t *testing.T) {
+	key := "anyKey"
+
+	tests := []struct {
+		status metrics.SyncerCookieSyncStatus
+		label  string
+	}{
+		{
+			status: metrics.SyncerCookieSyncOK,
+			label:  "ok",
+		},
+		{
+			status: metrics.SyncerCookieSyncPrivacyBlocked,
+			label:  "privacy_blocked",
+		},
+		{
+			status: metrics.SyncerCookieSyncAlreadySynced,
+			label:  "already_synced",
+		},
+		{
+			status: metrics.SyncerCookieSyncTypeNotSupported,
+			label:  "type_not_supported",
+		},
+	}
+
+	for _, test := range tests {
+		m := createMetricsForTesting()
+
+		m.RecordSyncerRequest(key, test.status)
+
+		assertCounterVecValue(t, "", "syncer_requests:"+test.label, m.syncerRequests,
+			float64(1),
+			prometheus.Labels{
+				syncerLabel: key,
+				statusLabel: string(test.status),
+			})
+	}
+}
+
+func TestSetUidMetric(t *testing.T) {
+	tests := []struct {
+		status metrics.SetUidStatus
+		label  string
+	}{
+		{
+			status: metrics.SetUidOK,
+			label:  "ok",
+		},
+		{
+			status: metrics.SetUidBadRequest,
+			label:  "bad_request",
+		},
+		{
+			status: metrics.SetUidOptOut,
+			label:  "opt_out",
+		},
+		{
+			status: metrics.SetUidGDPRHostCookieBlocked,
+			label:  "gdpr_blocked_host_cookie",
+		},
+		{
+			status: metrics.SetUidSyncerUnknown,
+			label:  "syncer_unknown",
+		},
+	}
+
+	for _, test := range tests {
+		m := createMetricsForTesting()
+
+		m.RecordSetUid(test.status)
+
+		assertCounterVecValue(t, "", "setuid_requests:"+test.label, m.setUid,
+			float64(1),
+			prometheus.Labels{
+				statusLabel: string(test.status),
+			})
+	}
+}
+
+func TestRecordSyncerSetMetric(t *testing.T) {
+	key := "anyKey"
+
+	tests := []struct {
+		status metrics.SyncerSetUidStatus
+		label  string
+	}{
+		{
+			status: metrics.SyncerSetUidOK,
+			label:  "ok",
+		},
+		{
+			status: metrics.SyncerSetUidCleared,
+			label:  "cleared",
+		},
+	}
+
+	for _, test := range tests {
+		m := createMetricsForTesting()
+
+		m.RecordSyncerSet(key, test.status)
+
+		assertCounterVecValue(t, "", "syncer_sets:"+test.label, m.syncerSets,
+			float64(1),
+			prometheus.Labels{
+				syncerLabel: key,
+				statusLabel: string(test.status),
+			})
+	}
 }
 
 func TestPrebidCacheRequestTimeMetric(t *testing.T) {
@@ -1349,7 +1434,8 @@ func TestDisabledMetrics(t *testing.T) {
 	}, config.DisabledMetrics{
 		AdapterConnectionMetrics:  true,
 		AdapterGDPRRequestBlocked: true,
-	})
+	},
+		nil)
 
 	// Assert counter vector was not initialized
 	assert.Nil(t, prometheusMetrics.adapterReusedConnections, "Counter Vector adapterReusedConnections should be nil")
