@@ -11,6 +11,7 @@ import (
 
 	"encoding/json"
 
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -213,6 +214,9 @@ func TestDefaults(t *testing.T) {
 		},
 	}
 	assert.Equal(t, expectedTCF2, cfg.GDPR.TCF2, "gdpr.tcf2")
+
+	// Assert User Sync Override Defaults To Nil
+	assert.Nil(t, cfg.Adapters["appnexus"].Syncer, "User Sync")
 }
 
 var fullConfig = []byte(`
@@ -323,10 +327,13 @@ adapters:
     endpoint: http://ixtest.com/api
   rubicon:
     endpoint: http://rubitest.com/api
-    usersync_url: http://pixel.rubiconproject.com/sync.php?p=prebid
     xapi:
       username: rubiuser
       password: rubipw23
+    usersync:
+      redirect:
+        url: http://rubitest.com/sync
+        user_macro: "{UID}"
   brightroll:
     usersync_url: http://test-bh.ybp.yahoo.com/sync/appnexuspbs?gdpr={{.GDPR}}&euconsent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&url=%s
     endpoint: http://test-bid.ybp.yahoo.com/bid/appnexuspbs
@@ -354,38 +361,16 @@ adapters:
       tracker: anxsTrack
     disabled: true
     extra_info: "{\"native\":\"http://www.native.org/endpoint\",\"video\":\"http://www.video.org/endpoint\"}"
-  audienceNetwork:
-    endpoint: http://facebook.com/pbs
-    usersync_url: http://facebook.com/ortb/prebid-s2s
-    platform_id: abcdefgh1234
-  ix:
-    endpoint: http://ixtest.com/api
-  rubicon:
-    endpoint: http://rubitest.com/api
-    usersync_url: http://pixel.rubiconproject.com/sync.php?p=prebid
-    xapi:
-      username: rubiuser
-      password: rubipw23
-  brightroll:
-    usersync_url: http://test-bh.ybp.yahoo.com/sync/appnexuspbs?gdpr={{.GDPR}}&euconsent={{.GDPRConsent}}&url=%s
-    endpoint: http://test-bid.ybp.yahoo.com/bid/appnexuspbs
-  adkerneladn:
-     usersync_url: https://tag.adkernel.com/syncr?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r=
-blacklisted_apps: ["spamAppID","sketchy-app-id"]
 `)
 
 var invalidAdapterEndpointConfig = []byte(`
 adapters:
   appnexus:
     endpoint: ib.adnxs.com/some/endpoint
-  audienceNetwork:
-    endpoint: http://facebook.com/pbs
-    usersync_url: http://facebook.com/ortb/prebid-s2s
-    platform_id: abcdefgh1234
   brightroll:
-    usersync_url: http://http://test-bh.ybp.yahoo.com/sync/appnexuspbs?gdpr={{.GDPR}}&euconsent={{.GDPRConsent}}&url=%s
-  adkerneladn:
-     usersync_url: https://tag.adkernel.com/syncr?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r=
+    usersync:
+      redirect:
+      url: http://http://test-bh.ybp.yahoo.com/sync/appnexuspbs?gdpr={{.GDPR}}&euconsent={{.GDPRConsent}}&url=%s
 `)
 
 var oldStoredRequestsConfig = []byte(`
@@ -407,6 +392,11 @@ func cmpInts(t *testing.T, key string, a int, b int) {
 func cmpBools(t *testing.T, key string, a bool, b bool) {
 	t.Helper()
 	assert.Equal(t, a, b, "%s: %t != %t", key, a, b)
+}
+
+func cmpNils(t *testing.T, key string, a interface{}) {
+	t.Helper()
+	assert.Nilf(t, a, "%s: %t != nil", key, a)
 }
 
 func TestFullConfig(t *testing.T) {
@@ -565,12 +555,16 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "adapters.audiencenetwork.endpoint", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAudienceNetwork))].Endpoint, "http://facebook.com/pbs")
 	cmpStrings(t, "adapters.audiencenetwork.platform_id", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAudienceNetwork))].PlatformID, "abcdefgh1234")
 	cmpStrings(t, "adapters.audiencenetwork.app_secret", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAudienceNetwork))].AppSecret, "987abc")
+	cmpStrings(t, "adapters.audiencenetwork.usersync_url", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAudienceNetwork))].UserSyncURL, "http://facebook.com/ortb/prebid-s2s")
 	cmpStrings(t, "adapters.beachfront.endpoint", cfg.Adapters[string(openrtb_ext.BidderBeachfront)].Endpoint, "https://display.bfmio.com/prebid_display")
 	cmpStrings(t, "adapters.beachfront.extra_info", cfg.Adapters[string(openrtb_ext.BidderBeachfront)].ExtraAdapterInfo, "{\"video_endpoint\":\"https://reachms.bfmio.com/bid.json?exchange_id\"}")
 	cmpStrings(t, "adapters.ix.endpoint", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderIx))].Endpoint, "http://ixtest.com/api")
 	cmpStrings(t, "adapters.rubicon.endpoint", cfg.Adapters[string(openrtb_ext.BidderRubicon)].Endpoint, "http://rubitest.com/api")
 	cmpStrings(t, "adapters.rubicon.xapi.username", cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Username, "rubiuser")
 	cmpStrings(t, "adapters.rubicon.xapi.password", cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Password, "rubipw23")
+	cmpStrings(t, "adapters.rubicon.usersync.redirect.url", cfg.Adapters[string(openrtb_ext.BidderRubicon)].Syncer.Redirect.URL, "http://rubitest.com/sync")
+	cmpNils(t, "adapters.rubicon.usersync.iframe", cfg.Adapters[string(openrtb_ext.BidderRubicon)].Syncer.IFrame)
+	cmpStrings(t, "adapters.rubicon.usersync.redirect.user_macro", cfg.Adapters[string(openrtb_ext.BidderRubicon)].Syncer.Redirect.UserMacro, "{UID}")
 	cmpStrings(t, "adapters.brightroll.endpoint", cfg.Adapters[string(openrtb_ext.BidderBrightroll)].Endpoint, "http://test-bid.ybp.yahoo.com/bid/appnexuspbs")
 	cmpStrings(t, "adapters.rhythmone.endpoint", cfg.Adapters[string(openrtb_ext.BidderRhythmone)].Endpoint, "http://tag.1rx.io/rmp")
 	cmpBools(t, "account_required", cfg.AccountRequired, true)
@@ -597,9 +591,6 @@ func TestUnmarshalAdapterExtraInfo(t *testing.T) {
 	// Assert correctly unmarshaled
 	assert.NoError(t, err, "invalid endpoint in config should return an error")
 
-	// Unescape quotes of JSON-formatted string
-	strings.Replace(cfg.Adapters[string(openrtb_ext.BidderAppnexus)].ExtraAdapterInfo, "\\\"", "\"", -1)
-
 	// Assert JSON-formatted string
 	assert.JSONEqf(t, `{"native":"http://www.native.org/endpoint","video":"http://www.video.org/endpoint"}`, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].ExtraAdapterInfo, "Unexpected value of the ExtraAdapterInfo String \n")
 
@@ -619,7 +610,7 @@ func TestUnmarshalAdapterExtraInfo(t *testing.T) {
 	assert.Equal(t, "http://www.video.org/endpoint", AppNexusAdapterExtraInfo.VideoEndpoint)
 }
 
-func TestValidConfig(t *testing.T) {
+func TestValidateConfig(t *testing.T) {
 	cfg := Configuration{
 		GDPR: GDPR{
 			DefaultValue: "1",
@@ -757,7 +748,11 @@ func TestInvalidAdapterEndpointConfig(t *testing.T) {
 	v.SetConfigType("yaml")
 	v.ReadConfig(bytes.NewBuffer(invalidAdapterEndpointConfig))
 	_, err := New(v)
-	assert.Error(t, err, "invalid endpoint in config should return an error")
+
+	if assert.IsType(t, errortypes.AggregateError{}, err) {
+		aggErr := err.(errortypes.AggregateError)
+		assert.ElementsMatch(t, []error{errors.New("The endpoint: ib.adnxs.com/some/endpoint for appnexus is not a valid URL")}, aggErr.Errors)
+	}
 }
 
 func TestNegativeRequestSize(t *testing.T) {
@@ -934,6 +929,53 @@ func TestValidateAccountsConfigRestrictions(t *testing.T) {
 	errs := cfg.validate(v)
 	assert.Len(t, errs, 1)
 	assert.Contains(t, errs, errors.New("accounts.postgres: retrieving accounts via postgres not available, use accounts.files"))
+}
+
+func TestUserSyncFromEnv(t *testing.T) {
+	truePtr := true
+
+	// setup env vars for testing
+	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_APPNEXUS_USERSYNC_REDIRECT_URL"); ok {
+		defer os.Setenv("PBS_ADAPTERS_APPNEXUS_USERSYNC_REDIRECT_URL", oldval)
+	} else {
+		defer os.Unsetenv("PBS_ADAPTERS_APPNEXUS_USERSYNC_REDIRECT_URL")
+	}
+
+	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_APPNEXUS_USERSYNC_REDIRECT_USER_MACRO"); ok {
+		defer os.Setenv("PBS_ADAPTERS_APPNEXUS_USERSYNC_REDIRECT_USER_MACRO", oldval)
+	} else {
+		defer os.Unsetenv("PBS_ADAPTERS_APPNEXUS_USERSYNC_REDIRECT_USER_MACRO")
+	}
+
+	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_APPNEXUS_USERSYNC_SUPPORT_CORS"); ok {
+		defer os.Setenv("PBS_ADAPTERS_APPNEXUS_USERSYNC_SUPPORT_CORS", oldval)
+	} else {
+		defer os.Unsetenv("PBS_ADAPTERS_APPNEXUS_USERSYNC_SUPPORT_CORS")
+	}
+
+	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_RUBICON_USERSYNC_IFRAME_URL"); ok {
+		defer os.Setenv("PBS_ADAPTERS_RUBICON_USERSYNC_IFRAME_URL", oldval)
+	} else {
+		defer os.Unsetenv("PBS_ADAPTERS_RUBICON_USERSYNC_IFRAME_URL")
+	}
+
+	// set new
+	os.Setenv("PBS_ADAPTERS_APPNEXUS_USERSYNC_REDIRECT_URL", "http://some.url/sync?redirect={{.RedirectURL}}")
+	os.Setenv("PBS_ADAPTERS_APPNEXUS_USERSYNC_REDIRECT_USER_MACRO", "[UID]")
+	os.Setenv("PBS_ADAPTERS_APPNEXUS_USERSYNC_SUPPORT_CORS", "true")
+	os.Setenv("PBS_ADAPTERS_RUBICON_USERSYNC_IFRAME_URL", "http://somedifferent.url/sync?redirect={{.RedirectURL}}")
+
+	cfg, _ := newDefaultConfig(t)
+	assert.Equal(t, cfg.Adapters["appnexus"].Syncer.Redirect.URL, "http://some.url/sync?redirect={{.RedirectURL}}")
+	assert.Equal(t, cfg.Adapters["appnexus"].Syncer.Redirect.UserMacro, "[UID]")
+	assert.Nil(t, cfg.Adapters["appnexus"].Syncer.IFrame)
+	assert.Equal(t, cfg.Adapters["appnexus"].Syncer.SupportCORS, &truePtr)
+
+	assert.Equal(t, cfg.Adapters["rubicon"].Syncer.IFrame.URL, "http://somedifferent.url/sync?redirect={{.RedirectURL}}")
+	assert.Nil(t, cfg.Adapters["rubicon"].Syncer.Redirect)
+	assert.Nil(t, cfg.Adapters["rubicon"].Syncer.SupportCORS)
+
+	assert.Nil(t, cfg.Adapters["brightroll"].Syncer)
 }
 
 func newDefaultConfig(t *testing.T) (*Configuration, *viper.Viper) {
