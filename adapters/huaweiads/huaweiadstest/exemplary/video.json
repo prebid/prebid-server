@@ -23,10 +23,10 @@
           "bidder": {
             "slotid": "m8x9x3roll",
             "adtype": "roll",
-            "publisherid": "123",
+            "publisherid": "123123123",
             "signkey": "signkey",
             "keyid": "41",
-            "isAddAuthorization": "false"
+            "isTestAuthorization": "true"
           }
         }
       }
@@ -84,6 +84,9 @@
           ],
           "User-Agent": [
             "useragent"
+          ],
+          "Authorization": [
+            "Digest username=123123123,realm=ppsadx/getResult,nonce=1629473330823,response=6fdc975d3adac426cbe607eec736f40ad3db8413312457431e391580e1b475c4,algorithm=HmacSHA256,usertype=1,keyid=41"
           ]
         },
         "body": {

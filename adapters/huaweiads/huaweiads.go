@@ -270,12 +270,12 @@ func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest,
 	}
 
 	//	our request header's Authorization is changing by time, cannot verify by a certain string,
-	//	use isAddAuthorization = false only when run testcase
-	var isAddAuthorization = true
-	if huaweiAdsImpExt != nil && huaweiAdsImpExt.IsAddAuthorization == "false" {
-		isAddAuthorization = false
+	//	use isTestAuthorization = true only when run testcase
+	var isTestAuthorization = false
+	if huaweiAdsImpExt != nil && huaweiAdsImpExt.IsTestAuthorization == "true" {
+		isTestAuthorization = true
 	}
-	header = getHeaders(huaweiAdsImpExt, openRTBRequest, isAddAuthorization)
+	header = getHeaders(huaweiAdsImpExt, openRTBRequest, isTestAuthorization)
 	bidRequest := &adapters.RequestData{
 		Method:  http.MethodPost,
 		Uri:     a.endpoint,
@@ -321,17 +321,14 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 }
 
 // getHeaders: get request header, Authorization -> digest
-func getHeaders(huaweiAdsImpExt *openrtb_ext.ExtImpHuaweiAds, request *openrtb2.BidRequest, isAddAuthorization bool) http.Header {
+func getHeaders(huaweiAdsImpExt *openrtb_ext.ExtImpHuaweiAds, request *openrtb2.BidRequest, isTestAuthorization bool) http.Header {
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 	if huaweiAdsImpExt == nil {
 		return headers
 	}
-
-	if isAddAuthorization {
-		headers.Add("Authorization", getDigestAuthorization(huaweiAdsImpExt))
-	}
+	headers.Add("Authorization", getDigestAuthorization(huaweiAdsImpExt, isTestAuthorization))
 
 	if request.Device != nil && len(request.Device.UA) > 0 {
 		headers.Add("User-Agent", request.Device.UA)
@@ -1281,8 +1278,12 @@ func computeHmacSha256(message string, signKey string) string {
 }
 
 // getDigestAuthorization: get digest authorization for request header
-func getDigestAuthorization(huaweiAdsImpExt *openrtb_ext.ExtImpHuaweiAds) string {
+func getDigestAuthorization(huaweiAdsImpExt *openrtb_ext.ExtImpHuaweiAds, isTestAuthorization bool) string {
 	var nonce = strconv.FormatInt(time.Now().UnixNano()/1e6, 10)
+	// this is for test case, time 2021/8/20 19:30
+	if isTestAuthorization {
+		nonce = "1629473330823"
+	}
 	var apiKey = huaweiAdsImpExt.PublisherId + ":ppsadx/getResult:" + huaweiAdsImpExt.SignKey
 	return "Digest username=" + huaweiAdsImpExt.PublisherId + "," +
 		"realm=ppsadx/getResult," +

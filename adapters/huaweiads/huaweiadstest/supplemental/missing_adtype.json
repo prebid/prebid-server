@@ -22,7 +22,7 @@
             "signkey": "signkey",
             "keyid": "12",
             "clienttime": "2018-11-02 16:34:07.981+1300",
-            "isAddAuthorization": "false"
+            "isTestAuthorization": "true"
           }
         }
       }

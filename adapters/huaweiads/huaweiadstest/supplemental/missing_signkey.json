@@ -21,7 +21,7 @@
             "publisherid": "123",
             "signkey": "",
             "keyid": "12",
-            "isAddAuthorization": "false"
+            "isTestAuthorization": "true"
           }
         }
       }

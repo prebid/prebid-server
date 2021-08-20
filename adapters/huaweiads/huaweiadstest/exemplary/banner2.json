@@ -31,7 +31,7 @@
             "publisherid": "123",
             "signkey": "signkey",
             "keyid": "41",
-            "isAddAuthorization": "false"
+            "isTestAuthorization": "true"
           }
         }
       }
@@ -109,6 +109,9 @@
           ],
           "User-Agent": [
             "ua"
+          ],
+          "Authorization": [
+            "Digest username=123,realm=ppsadx/getResult,nonce=1629473330823,response=d1d61a13a83e1468aa4dff5c8a6cee0b8b381173ca3eb6fa9b313937684d87c0,algorithm=HmacSHA256,usertype=1,keyid=41"
           ]
         },
         "body": {

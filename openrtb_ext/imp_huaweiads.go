@@ -1,12 +1,12 @@
 package openrtb_ext
 
 type ExtImpHuaweiAds struct {
-	SlotId             string `json:"slotid"`
-	Adtype             string `json:"adtype"`
-	PublisherId        string `json:"publisherid"`
-	SignKey            string `json:"signkey"`
-	KeyId              string `json:"keyid"`
-	IsAddAuthorization string `json:"isAddAuthorization,omitempty"`
+	SlotId              string `json:"slotid"`
+	Adtype              string `json:"adtype"`
+	PublisherId         string `json:"publisherid"`
+	SignKey             string `json:"signkey"`
+	KeyId               string `json:"keyid"`
+	IsTestAuthorization string `json:"isTestAuthorization,omitempty"`
 }
 
 type ExtUserDataHuaweiAds struct {
