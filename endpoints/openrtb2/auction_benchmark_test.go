@@ -7,14 +7,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/currency"
-
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/gdpr"
+	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
+	"github.com/prebid/prebid-server/usersync"
 )
 
 // dummyServer returns the header bidding test ad. This response was scraped from a real appnexus server response.
@@ -66,7 +67,9 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 		return
 	}
 
-	adapters, adaptersErr := exchange.BuildAdapters(server.Client(), &config.Configuration{}, infos, newTestMetrics())
+	nilMetrics := &metricsConfig.DummyMetricsEngine{}
+
+	adapters, adaptersErr := exchange.BuildAdapters(server.Client(), &config.Configuration{}, infos, nilMetrics)
 	if adaptersErr != nil {
 		b.Fatal("unable to build adapters")
 	}
@@ -75,7 +78,8 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 		adapters,
 		nil,
 		&config.Configuration{},
-		newTestMetrics(),
+		map[string]usersync.Syncer{},
+		nilMetrics,
 		infos,
 		gdpr.AlwaysAllow{},
 		currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
@@ -88,7 +92,7 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		newTestMetrics(),
+		nilMetrics,
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
