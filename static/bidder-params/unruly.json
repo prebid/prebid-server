@@ -5,7 +5,7 @@
     "type": "object",
     "properties": {
       "siteid": {
-        "type": "string",
+        "type": "integer",
         "description": "ID for publisher site"
       }
     },

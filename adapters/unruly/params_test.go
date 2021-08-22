@@ -34,11 +34,12 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	`{"siteid": "123"}`,
+	`{"siteid": 123}`,
 }
 
 var invalidParams = []string{
 	`{}`,                // Missing required siteId
+	`{"siteid": "123"}`, // Invalid siteId type
 	`{"uuid": "123"}`,   // Missing required siteId
 	`{"SiteId": "abc"}`, // Invalid capitalization (json is case sensitive)
 
