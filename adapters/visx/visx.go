@@ -102,14 +102,42 @@ func (a *VisxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReq
 			bid.ADomain = sb.Bid[i].ADomain
 			bid.DealID = sb.Bid[i].DealID
 
+			bidType, err := getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp)
+			if err != nil {
+				return nil, []error{err}
+			}
+
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &bid,
-				BidType: "banner",
+				BidType: bidType,
 			})
 		}
 	}
 	return bidResponse, nil
 
+}
+
+func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
+	for _, imp := range imps {
+		if imp.ID == impID {
+			if imp.Banner != nil {
+				return openrtb_ext.BidTypeBanner, nil
+			}
+
+			if imp.Video != nil {
+				return openrtb_ext.BidTypeVideo, nil
+			}
+
+			return "", &errortypes.BadServerResponse{
+				Message: fmt.Sprintf("Unknown impression type for ID: \"%s\"", impID),
+			}
+		}
+	}
+
+	// This shouldnt happen. Lets handle it just incase by returning an error.
+	return "", &errortypes.BadServerResponse{
+		Message: fmt.Sprintf("Failed to find impression for ID: \"%s\"", impID),
+	}
 }
 
 // Builder builds a new instance of the Visx adapter for the given bidder with the given config.
