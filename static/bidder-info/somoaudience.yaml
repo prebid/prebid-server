@@ -11,3 +11,7 @@ capabilities:
       - banner
       - native
       - video
+userSync:
+  redirect:
+    url: "https://publisher-east.mobileadtrading.com/usersync?ru={{.RedirectURL}}"
+    userMacro: "${UID}"

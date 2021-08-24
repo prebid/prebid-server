@@ -8,3 +8,7 @@ capabilities:
       - banner
       - video
       - native
+userSync:
+  redirect:
+    url: "http://visitor.omnitagjs.com/visitor/bsync?uid=19340f4f097d16f41f34fc0274981ca4&name=PrebidServer&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&url={{.RedirectURL}}"
+    userMacro: "[BUYER_USERID]"

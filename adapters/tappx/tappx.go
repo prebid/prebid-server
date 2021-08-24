@@ -22,7 +22,7 @@ const TAPPX_BIDDER_VERSION = "1.3"
 const TYPE_CNN = "prebid"
 
 type TappxAdapter struct {
-	endpointTemplate template.Template
+	endpointTemplate *template.Template
 }
 
 type Bidder struct {
@@ -44,7 +44,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	}
 
 	bidder := &TappxAdapter{
-		endpointTemplate: *template,
+		endpointTemplate: template,
 	}
 	return bidder, nil
 }
