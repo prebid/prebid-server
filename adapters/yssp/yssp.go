@@ -2,7 +2,6 @@ package yssp
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -13,20 +12,12 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type YSSPAdapter struct {
+type adapter struct {
 	URI string
 }
 
-func (a *YSSPAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	errors := make([]error, 0, 1)
-
-	if len(request.Imp) == 0 {
-		err := &errortypes.BadInput{
-			Message: "No impression in the bid request",
-		}
-		errors = append(errors, err)
-		return nil, errors
-	}
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	var errors []error
 
 	reqs := make([]*adapters.RequestData, 0, len(request.Imp))
 	headers := http.Header{}
@@ -55,22 +46,6 @@ func (a *YSSPAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapte
 		if err != nil {
 			err = &errortypes.BadInput{
 				Message: fmt.Sprintf("imp #%d: %s", idx, err.Error()),
-			}
-			errors = append(errors, err)
-			continue
-		}
-
-		if ysspExt.Dcn == "" {
-			err = &errortypes.BadInput{
-				Message: fmt.Sprintf("imp #%d: missing param dcn", idx),
-			}
-			errors = append(errors, err)
-			continue
-		}
-
-		if ysspExt.Pos == "" {
-			err = &errortypes.BadInput{
-				Message: fmt.Sprintf("imp #%d: missing param pos", idx),
 			}
 			errors = append(errors, err)
 			continue
@@ -111,7 +86,7 @@ func (a *YSSPAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapte
 	return reqs, errors
 }
 
-func (a *YSSPAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -134,6 +109,7 @@ func (a *YSSPAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReq
 
 	for _, sb := range bidResp.SeatBid {
 		for _, bid := range sb.Bid {
+			bid := bid
 			exists, mediaTypeId := getImpInfo(bid.ImpID, internalRequest.Imp)
 			if !exists {
 				return nil, []error{&errortypes.BadServerResponse{
@@ -189,13 +165,13 @@ func changeRequestForBidService(request *openrtb2.BidRequest, extension *openrtb
 
 	if banner.W != nil && banner.H != nil {
 		if *banner.W == 0 || *banner.H == 0 {
-			return errors.New(fmt.Sprintf("Invalid sizes provided for Banner %dx%d", *banner.W, *banner.H))
+			return fmt.Errorf("Invalid sizes provided for Banner %dx%d", *banner.W, *banner.H)
 		}
 		return nil
 	}
 
 	if len(banner.Format) == 0 {
-		return errors.New(fmt.Sprintf("No sizes provided for Banner %v", banner.Format))
+		return fmt.Errorf("No sizes provided for Banner %v", banner.Format)
 	}
 
 	banner.W = openrtb2.Int64Ptr(banner.Format[0].W)
@@ -206,7 +182,7 @@ func changeRequestForBidService(request *openrtb2.BidRequest, extension *openrtb
 
 // Builder builds a new instance of the YSSP adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &YSSPAdapter{
+	bidder := &adapter{
 		URI: config.Endpoint,
 	}
 	return bidder, nil

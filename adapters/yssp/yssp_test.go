@@ -18,7 +18,7 @@ func TestYSSPBidderEndpointConfig(t *testing.T) {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	bidderYSSP := bidder.(*YSSPAdapter)
+	bidderYSSP := bidder.(*adapter)
 
 	assert.Equal(t, "http://localhost/bid", bidderYSSP.URI)
 }

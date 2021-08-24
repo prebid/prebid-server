@@ -6,10 +6,12 @@
 	"properties": {
 		"dcn": {
 			"type": "string",
+			"minLength": 1,
 			"description": "Site ID provided by One Mobile"
 		},
 		"pos": {
 			"type": "string",
+			"minLength": 1,
 			"description": "Placement ID"
 		}
 	},
