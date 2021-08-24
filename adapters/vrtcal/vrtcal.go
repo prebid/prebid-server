@@ -68,6 +68,7 @@ func (a *VrtcalAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
 
+	var errs []error
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
 			bidType, err := getReturnTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp)
@@ -76,10 +77,12 @@ func (a *VrtcalAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 					Bid:     &sb.Bid[i],
 					BidType: bidType,
 				})
+			} else {
+				errs = append(errs, err)
 			}
 		}
 	}
-	return bidResponse, nil
+	return bidResponse, errs
 
 }
 
