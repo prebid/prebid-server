@@ -29,12 +29,12 @@ import (
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
 	"github.com/prebid/prebid-server/usersync"
+	"github.com/prebid/prebid-server/util/jsonutil"
 
 	"github.com/buger/jsonparser"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/yudai/gojsondiff"
-	"github.com/yudai/gojsondiff/formatter"
 )
 
 func TestNewExchange(t *testing.T) {
@@ -380,7 +380,7 @@ func TestDebugBehaviour(t *testing.T) {
 
 			// If not nil, assert bid extension
 			if test.in.debug {
-				diffJson(t, test.desc, bidRequest.Ext, actualExt.Debug.ResolvedRequest.Ext)
+				jsonutil.DiffJson(t, test.desc, bidRequest.Ext, actualExt.Debug.ResolvedRequest.Ext)
 			}
 		} else if !test.debugData.bidderLevelDebugAllowed && test.debugData.accountLevelDebugAllowed {
 			assert.Equal(t, len(actualExt.Debug.HttpCalls), 0, "%s. ext.debug.httpcalls array should not be empty", "With bidder level debug disable option http calls should be empty")
@@ -2179,7 +2179,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 	}
 	if spec.IncomingRequest.OrtbRequest.Test == 1 {
 		//compare debug info
-		diffJson(t, "Debug info modified", bid.Ext, spec.Response.Ext)
+		jsonutil.DiffJson(t, "Debug info modified", bid.Ext, spec.Response.Ext)
 	}
 }
 
@@ -3585,6 +3585,60 @@ func TestMakeBidExtJSON(t *testing.T) {
 	}
 }
 
+func TestFPDData(t *testing.T) {
+
+	bidRequest := &openrtb2.BidRequest{
+		ID: "some-request-id",
+		Imp: []openrtb2.Imp{{
+			ID:    "some-impression-id",
+			Video: &openrtb2.Video{W: 100, H: 50},
+			Ext:   json.RawMessage(`{"appnexus": {"placementId": 1}}`),
+		}},
+		Site: &openrtb2.Site{ID: "Req site id", Page: "prebid.org", Ext: json.RawMessage(`{"amp":0}`)},
+		AT:   1,
+		TMax: 500,
+	}
+
+	fpdData := make(map[openrtb_ext.BidderName]*openrtb_ext.FPDData)
+
+	apnFpd := openrtb_ext.FPDData{
+		Site: &openrtb2.Site{ID: "fpdSite"},
+		App:  &openrtb2.App{ID: "fpdApp"},
+		User: &openrtb2.User{ID: "fpdUser"},
+	}
+	fpdData[openrtb_ext.BidderName("appnexus")] = &apnFpd
+
+	e := new(exchange)
+	e.adapterMap = map[openrtb_ext.BidderName]adaptedBidder{
+		openrtb_ext.BidderAppnexus: &fpdBidder{},
+	}
+	e.me = &metricsConf.DummyMetricsEngine{}
+	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+
+	ctx := context.Background()
+
+	auctionRequest := AuctionRequest{
+		BidRequest:     bidRequest,
+		UserSyncs:      &emptyUsersync{},
+		FirstPartyData: fpdData,
+	}
+
+	debugLog := &DebugLog{DebugOverride: true, DebugEnabledOrOverridden: true}
+
+	outBidResponse, err := e.HoldAuction(ctx, auctionRequest, debugLog)
+
+	assert.NotNilf(t, outBidResponse, "outBidResponse should not be nil")
+	assert.Nil(t, err, "Error should be nil")
+
+	request := e.adapterMap[openrtb_ext.BidderAppnexus].(*fpdBidder).req
+
+	assert.NotNil(t, request, "Bidder request should not be nil")
+	assert.Equal(t, request.Site, apnFpd.Site, "Site is incorrect")
+	assert.Equal(t, request.App, apnFpd.App, "App is incorrect")
+	assert.Equal(t, request.User, apnFpd.User, "User is incorrect")
+
+}
+
 type exchangeSpec struct {
 	GDPREnabled       bool                   `json:"gdpr_enabled"`
 	IncomingRequest   exchangeRequest        `json:"incomingRequest"`
@@ -3705,6 +3759,15 @@ func (b *validatingBidder) requestBid(ctx context.Context, request *openrtb2.Bid
 	return
 }
 
+type fpdBidder struct {
+	req *openrtb2.BidRequest
+}
+
+func (b *fpdBidder) requestBid(ctx context.Context, request *openrtb2.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool) (seatBid *pbsOrtbSeatBid, errs []error) {
+	b.req = request
+	return &pbsOrtbSeatBid{}, nil
+}
+
 func diffOrtbRequests(t *testing.T, description string, expected *openrtb2.BidRequest, actual *openrtb2.BidRequest) {
 	t.Helper()
 	actualJSON, err := json.Marshal(actual)
@@ -3717,7 +3780,7 @@ func diffOrtbRequests(t *testing.T, description string, expected *openrtb2.BidRe
 		t.Fatalf("%s failed to marshal expected BidRequest into JSON. %v", description, err)
 	}
 
-	diffJson(t, description, actualJSON, expectedJSON)
+	jsonutil.DiffJson(t, description, actualJSON, expectedJSON)
 }
 
 func diffOrtbResponses(t *testing.T, description string, expected *openrtb2.BidResponse, actual *openrtb2.BidResponse) {
@@ -3740,7 +3803,7 @@ func diffOrtbResponses(t *testing.T, description string, expected *openrtb2.BidR
 		t.Fatalf("%s failed to marshal expected BidResponse into JSON. %v", description, err)
 	}
 
-	diffJson(t, description, actualJSON, expectedJSON)
+	jsonutil.DiffJson(t, description, actualJSON, expectedJSON)
 }
 
 func mapifySeatBids(t *testing.T, context string, seatBids []openrtb2.SeatBid) map[string]*openrtb2.SeatBid {
@@ -3754,32 +3817,6 @@ func mapifySeatBids(t *testing.T, context string, seatBids []openrtb2.SeatBid) m
 		}
 	}
 	return seatMap
-}
-
-// diffJson compares two JSON byte arrays for structural equality. It will produce an error if either
-// byte array is not actually JSON.
-func diffJson(t *testing.T, description string, actual []byte, expected []byte) {
-	t.Helper()
-	diff, err := gojsondiff.New().Compare(actual, expected)
-	if err != nil {
-		t.Fatalf("%s json diff failed. %v", description, err)
-	}
-
-	if diff.Modified() {
-		var left interface{}
-		if err := json.Unmarshal(actual, &left); err != nil {
-			t.Fatalf("%s json did not match, but unmarshalling failed. %v", description, err)
-		}
-		printer := formatter.NewAsciiFormatter(left, formatter.AsciiFormatterConfig{
-			ShowArrayIndex: true,
-		})
-		output, err := printer.Format(diff)
-		if err != nil {
-			t.Errorf("%s did not match, but diff formatting failed. %v", description, err)
-		} else {
-			t.Errorf("%s json did not match expected.\n\n%s", description, output)
-		}
-	}
 }
 
 func mockHandler(statusCode int, getBody string, postBody string) http.Handler {

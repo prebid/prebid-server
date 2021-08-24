@@ -1,0 +1,120 @@
+{
+  "inputRequestData": {
+    "id": "bid_id",
+    "imp": [
+      {
+        "id": "1_0",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "maxduration": 30,
+          "protocols": [
+            2,
+            3
+          ],
+          "w": 640,
+          "h": 480
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 14997137
+          }
+        }
+      }
+    ],
+    "device": {
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.87 Safari/537.36",
+      "ip": "123.145.167.10",
+      "devicetype": 1,
+      "ifa": "AA000DFE74168477C70D291f574D344790E0BB11"
+    },
+    "test": 1,
+    "at": 1,
+    "tmax": 5000
+  },
+  "outputRequestData": {
+    "id": "bid_id",
+    "imp": [
+      {
+        "id": "1_0",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "maxduration": 30,
+          "protocols": [
+            2,
+            3
+          ],
+          "w": 640,
+          "h": 480
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 14997137
+          }
+        }
+      }
+    ],
+
+    "device": {
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.87 Safari/537.36",
+      "ip": "123.145.167.10",
+      "devicetype": 1,
+      "ifa": "AA000DFE74168477C70D291f574D344790E0BB11"
+    },
+    "app": {
+      "id": "apnAppId",
+      "ext": {
+        "data": {
+          "morefpdData": "morefpddata",
+          "appFpddata": "siteFpddata",
+          "moreFpd": {
+            "fpd": 123
+          }
+        }
+      }
+    },
+    "user": {
+      "id": "apnUserId",
+      "ext": {
+        "data": {
+          "moreFpd": {
+            "fpd": 567
+          }
+        }
+      }
+    },
+    "test": 1,
+    "at": 1,
+    "tmax": 5000
+  },
+  "biddersFPD": {
+    "appnexus": {
+      "app": {
+        "id": "apnAppId",
+        "ext": {
+          "data": {
+            "morefpdData": "morefpddata",
+            "appFpddata": "siteFpddata",
+            "moreFpd": {
+              "fpd": 123
+            }
+          }
+        }
+      },
+      "user": {
+        "id": "apnUserId",
+        "ext": {
+          "data": {
+            "moreFpd": {
+              "fpd": 567
+            }
+          }
+        }
+      }
+    }
+  }
+}
+

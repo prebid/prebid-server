@@ -33,7 +33,11 @@ import (
 
 type ContextKey string
 
-const DebugContextKey = ContextKey("debugInfo")
+const (
+	DebugContextKey = ContextKey("debugInfo")
+	bidderconfig    = "bidderconfig"
+	data            = "data"
+)
 
 type extCacheInstructions struct {
 	cacheBids, cacheVAST, returnCreative bool
@@ -162,7 +166,8 @@ type AuctionRequest struct {
 
 	// LegacyLabels is included here for temporary compatability with cleanOpenRTBRequests
 	// in HoldAuction until we get to factoring it away. Do not use for anything new.
-	LegacyLabels metrics.Labels
+	LegacyLabels   metrics.Labels
+	FirstPartyData map[openrtb_ext.BidderName]*openrtb_ext.FPDData
 }
 
 // BidderRequest holds the bidder specific request and all other
@@ -223,7 +228,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	// Get currency rates conversions for the auction
 	conversions := e.getAuctionCurrencyRates(requestExt.Prebid.CurrencyConversions)
 
-	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, r.Account.DebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride)
+	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, r.Account.DebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride, r.FirstPartyData)
 
 	var auc *auction
 	var cacheErrs []error
@@ -434,7 +439,8 @@ func (e *exchange) getAllBids(
 	conversions currency.Conversions,
 	accountDebugAllowed bool,
 	globalPrivacyControlHeader string,
-	headerDebugAllowed bool) (
+	headerDebugAllowed bool,
+	fpdData map[openrtb_ext.BidderName]*openrtb_ext.FPDData) (
 	map[openrtb_ext.BidderName]*pbsOrtbSeatBid,
 	map[openrtb_ext.BidderName]*seatResponseExtra, bool) {
 	// Set up pointers to the bid results
@@ -457,6 +463,9 @@ func (e *exchange) getAllBids(
 			defer func() {
 				e.me.RecordAdapterRequest(bidderRequest.BidderLabels)
 			}()
+
+			applyFPD(fpdData, bidderRequest.BidRequest, bidderRequest.BidderName)
+
 			start := time.Now()
 
 			adjustmentFactor := 1.0
@@ -515,6 +524,20 @@ func (e *exchange) getAllBids(
 	}
 
 	return adapterBids, adapterExtra, bidsFound
+}
+
+func applyFPD(fpdData map[openrtb_ext.BidderName]*openrtb_ext.FPDData, bidReq *openrtb2.BidRequest, bidderName openrtb_ext.BidderName) {
+	if fpdData != nil && fpdData[bidderName] != nil {
+		if fpdData[bidderName].Site != nil {
+			bidReq.Site = fpdData[bidderName].Site
+		}
+		if fpdData[bidderName].App != nil {
+			bidReq.App = fpdData[bidderName].App
+		}
+		if fpdData[bidderName].User != nil {
+			bidReq.User = fpdData[bidderName].User
+		}
+	}
 }
 
 func (e *exchange) recoverSafely(bidderRequests []BidderRequest,

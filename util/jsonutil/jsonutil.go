@@ -3,17 +3,30 @@ package jsonutil
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
+	"github.com/buger/jsonparser"
 	"io"
+	"testing"
+
+	"github.com/yudai/gojsondiff"
+	"github.com/yudai/gojsondiff/formatter"
 )
 
 var comma = []byte(",")[0]
 var colon = []byte(":")[0]
+var sqBracket = []byte("]")[0]
+var openCurlyBracket = []byte("{")[0]
+var closingCurlyBracket = []byte("}")[0]
+var quote = []byte(`"`)[0]
 
-func findElementIndexes(extension []byte, elementName string) (bool, int64, int64, error) {
-	found := false
+func FindElement(extension []byte, elementNames ...string) (bool, int64, int64, error) {
+
+	elementName := elementNames[0]
+
 	buf := bytes.NewBuffer(extension)
 	dec := json.NewDecoder(buf)
-	var startIndex int64
+	found := false
+	var startIndex, endIndex int64
 	var i interface{}
 	for {
 		token, err := dec.Token()
@@ -26,12 +39,12 @@ func findElementIndexes(extension []byte, elementName string) (bool, int64, int6
 		}
 
 		if token == elementName {
+
 			err := dec.Decode(&i)
 			if err != nil {
 				return false, -1, -1, err
 			}
-			found = true
-			endIndex := dec.InputOffset()
+			endIndex = dec.InputOffset()
 
 			if dec.More() {
 				//if there were other elements before
@@ -48,43 +61,144 @@ func findElementIndexes(extension []byte, elementName string) (bool, int64, int6
 					endIndex++
 				}
 			}
-			return found, startIndex, endIndex, nil
+			found = true
+			break
 		} else {
 			startIndex = dec.InputOffset()
 		}
 
 	}
+	if found {
+		if len(elementNames) == 1 {
+			return found, startIndex, endIndex, nil
+		} else if len(elementNames) > 1 {
 
-	return false, -1, -1, nil
+			for {
+				//find the beginning of nested element
+				if extension[startIndex] == colon {
+					startIndex++
+					break
+				}
+				startIndex++
+			}
+
+			for {
+				if endIndex == int64(len(extension)) {
+					endIndex--
+				}
+
+				//if structure had more elements, need to find index of comma at the end
+				if extension[endIndex] == sqBracket || extension[endIndex] == closingCurlyBracket {
+					break
+				}
+
+				if extension[endIndex] == comma {
+					endIndex--
+					break
+				} else {
+					endIndex--
+				}
+
+			}
+
+			if found {
+				found, startInd, endInd, err := FindElement(extension[startIndex:endIndex], elementNames[1:]...)
+				return found, startIndex + startInd, startIndex + endInd, err
+			}
+			return found, startIndex, startIndex, nil
+		}
+
+	}
+	return found, startIndex, endIndex, nil
 }
 
-func DropElement(extension []byte, elementName string) ([]byte, error) {
-	found, startIndex, endIndex, err := findElementIndexes(extension, elementName)
+func DropElement(extension []byte, elementNames ...string) ([]byte, error) {
+	//Doesnt support drop element from array
+	found, startIndex, endIndex, err := FindElement(extension, elementNames...)
+	if err != nil {
+		return nil, err
+	}
+
 	if found {
 		extension = append(extension[:startIndex], extension[endIndex:]...)
 	}
-	return extension, err
+
+	return extension, nil
+
 }
 
-func FindElement(extension []byte, elementName string) (bool, []byte, error) {
+func SetElement(originDataInput []byte, setValue []byte, keys ...string) ([]byte, error) {
+	if len(keys) != 1 {
+		return originDataInput, errors.New("only one key is now supported")
+	}
+	key := keys[0]
 
-	found, startIndex, endIndex, err := findElementIndexes(extension, elementName)
+	originData := make(map[string]interface{})
+	setValueData := make(map[string]interface{})
 
-	if found && err == nil {
-		element := extension[startIndex:endIndex]
-		index := 0
-		for {
-			if index < len(element) && element[index] != colon {
-				index++
-			} else {
-				index++
-				break
-			}
-		}
-		element = element[index:]
-		return found, element, err
+	err := json.Unmarshal(originDataInput, &originData)
+	if err != nil {
+		return originDataInput, err
+	}
+	err = json.Unmarshal(setValue, &setValueData)
+	if err != nil {
+		return originDataInput, err
 	}
 
-	return found, nil, err
+	if val, ok := originData[key]; ok {
+		//element exists already - add new element(s) to it
+		data := val.(map[string]interface{})
+		for k, v := range setValueData {
+			data[k] = v
+		}
+		originData[key] = data
+	} else {
+		//element doesn't exist - set value as is
+		originData[key] = setValueData
+	}
+	res, err := json.Marshal(originData)
+	return res, err
+}
 
+// diffJson compares two JSON byte arrays for structural equality. It will produce an error if either
+// byte array is not actually JSON.
+func DiffJson(t *testing.T, description string, actual []byte, expected []byte) {
+	t.Helper()
+	diff, err := gojsondiff.New().Compare(actual, expected)
+	if err != nil {
+		t.Fatalf("%s json diff failed. %v", description, err)
+	}
+
+	if diff.Modified() {
+		var left interface{}
+		if err := json.Unmarshal(actual, &left); err != nil {
+			t.Fatalf("%s json did not match, but unmarshalling failed. %v", description, err)
+		}
+		printer := formatter.NewAsciiFormatter(left, formatter.AsciiFormatterConfig{
+			ShowArrayIndex: true,
+		})
+		output, err := printer.Format(diff)
+		if err != nil {
+			t.Errorf("%s did not match, but diff formatting failed. %v", description, err)
+		} else {
+			t.Errorf("%s json did not match expected.\n\n%s", description, output)
+		}
+	}
+}
+
+func FindAndDropElement(input []byte, elementNames ...string) ([]byte, []byte, error) {
+	element, _, _, err := jsonparser.Get(input, elementNames...)
+	if err != nil && err != jsonparser.KeyPathNotFoundError {
+		return input, nil, err
+	}
+	elementCopy := make([]byte, len(element))
+	if element != nil {
+		copy(elementCopy, element)
+
+		input, err = DropElement(input, elementNames...)
+		if err != nil {
+			return input, nil, err
+		}
+	}
+	return input, elementCopy, nil
 }

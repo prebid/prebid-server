@@ -61,6 +61,7 @@
                                 "foo": "appnexus"
                             },
                             "data": {
+                                "bidders": null,
                                 "eidpermissions": [{
                                     "source": "source1",
                                     "bidders": ["foo"]

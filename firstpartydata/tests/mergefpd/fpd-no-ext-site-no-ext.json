@@ -1,0 +1,48 @@
+{
+  "inputRequestData": {
+      "id": "reqSiteId",
+      "page": "http://www.foobar.com/1234.html",
+      "publisher": {
+        "id": "1"
+      },
+      "content": {
+        "episode": 6,
+        "title": "episodeName",
+        "series": "TvName",
+        "season": "season3",
+        "len": 900
+      }
+  },
+  "outputRequestData": {
+    "id": "apnSiteId",
+    "page": "http://www.foobar.com/1234.html",
+    "publisher": {
+      "id": "1"
+    },
+    "content": {
+      "episode": 6,
+      "title": "episodeName",
+      "series": "TvName",
+      "season": "season3",
+      "len": 900
+    },
+    "ext": {
+      "data": {
+        "siteFpd": 123
+      }
+    }
+  },
+  "biddersFPD": {
+    "appnexus": {
+      "site": {
+        "id": "apnSiteId"
+      }
+    }
+  },
+  "firstPartyData": {
+    "site": {
+      "siteFpd": 123
+    }
+  }
+}
+
