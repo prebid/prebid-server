@@ -202,6 +202,24 @@ func extractLMT(orig *openrtb2.BidRequest, privacyConfig config.Privacy) privacy
 	}
 }
 
+func getBidderExts(reqExt *openrtb_ext.ExtRequest) (map[string]json.RawMessage, error) {
+	if reqExt == nil {
+		return nil, nil
+	}
+
+	if reqExt.Prebid.BidderParams == nil {
+		return nil, nil
+	}
+
+	var bidderParams map[string]json.RawMessage
+	err := json.Unmarshal(reqExt.Prebid.BidderParams, &bidderParams)
+	if err != nil {
+		return nil, err
+	}
+
+	return bidderParams, nil
+}
+
 func getAuctionBidderRequests(req AuctionRequest,
 	requestExt *openrtb_ext.ExtRequest,
 	impsByBidder map[string][]openrtb2.Imp,
@@ -212,6 +230,14 @@ func getAuctionBidderRequests(req AuctionRequest,
 	explicitBuyerUIDs, err := extractBuyerUIDs(req.BidRequest.User)
 	if err != nil {
 		return nil, []error{err}
+	}
+
+	var bidderExt map[string]json.RawMessage
+	if requestExt != nil {
+		bidderExt, err = getBidderExts(requestExt)
+		if err != nil {
+			return nil, []error{err}
+		}
 	}
 
 	var sChainsByBidder map[string]*openrtb_ext.ExtRequestPrebidSChainSChain
@@ -238,6 +264,21 @@ func getAuctionBidderRequests(req AuctionRequest,
 		reqCopy.Ext = reqExt
 
 		prepareSource(&reqCopy, bidder, sChainsByBidder)
+
+		if len(bidderExt) != 0 {
+			bidderName := openrtb_ext.BidderName(bidder)
+			if bidderParams, ok := bidderExt[string(bidderName)]; ok {
+				requestExt.Prebid.BidderParams = bidderParams
+			} else {
+				requestExt.Prebid.BidderParams = nil
+			}
+
+			if reqCopy.Ext, err = getExtJson(req.BidRequest, requestExt); err != nil {
+				return nil, []error{err}
+			}
+		} else {
+			reqCopy.Ext = reqExt
+		}
 
 		if err := removeUnpermissionedEids(&reqCopy, bidder, requestExt); err != nil {
 			errs = append(errs, fmt.Errorf("unable to enforce request.ext.prebid.data.eidpermissions because %v", err))

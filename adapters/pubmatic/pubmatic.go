@@ -47,6 +47,12 @@ type pubmaticParams struct {
 	Keywords    map[string]string `json:"keywords,omitempty"`
 }
 
+type pubmaticWrapperExt struct {
+	ProfileID    int    `json:"profile,omitempty"`
+	VersionID    int    `json:"version,omitempty"`
+	WrapperImpID string `json:"wiid,omitempty"`
+}
+
 type pubmaticBidExtVideo struct {
 	Duration *int `json:"duration,omitempty"`
 }
@@ -334,14 +340,54 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	return bids, nil
 }
 
+func getBidderParams(request *openrtb2.BidRequest) (map[string]json.RawMessage, error) {
+	var reqExt openrtb_ext.ExtRequest
+	if len(request.Ext) <= 0 {
+		return nil, nil
+	}
+	err := json.Unmarshal(request.Ext, &reqExt)
+	if err != nil {
+		err := fmt.Errorf("[PUBMATIC] Error unmarshalling request.ext: %v", string(request.Ext))
+		return nil, err
+	}
+
+	if reqExt.Prebid.BidderParams == nil {
+		return nil, nil
+	}
+
+	var bidderParams map[string]json.RawMessage
+	err = json.Unmarshal(reqExt.Prebid.BidderParams, &bidderParams)
+	if err != nil {
+		return nil, err
+	}
+
+	return bidderParams, nil
+}
+
 func (a *PubmaticAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 
-	wrapExt := ""
+	wrapperExt := new(pubmaticWrapperExt)
 	pubID := ""
+	wrapperExtPresent := false
+
+	reqExtBidderParams, err := getBidderParams(request)
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	var cookies []string
+	c, present := reqExtBidderParams["Cookie"]
+	if present {
+		err = json.Unmarshal(c, &cookies)
+		if err != nil {
+			err := fmt.Errorf("[PUBMATIC] Error unmarshalling retrieving cookies from request.ext.prebid.ext: %v", string(c))
+			errs = append(errs, err)
+		}
+	}
 
 	for i := 0; i < len(request.Imp); i++ {
-		err := parseImpressionObject(&request.Imp[i], &wrapExt, &pubID)
+		err := parseImpressionObject(&request.Imp[i], wrapperExt, &pubID, &wrapperExtPresent)
 		// If the parsing is failed, remove imp and add the error.
 		if err != nil {
 			errs = append(errs, err)
@@ -355,8 +401,14 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ad
 		return nil, errs
 	}
 
-	if wrapExt != "" {
-		rawExt := fmt.Sprintf("{\"wrapper\": %s}", wrapExt)
+	//if wrapper ext is present, then add it in request.ext
+	if wrapperExtPresent {
+		//get wrapper impression ID from request ext bidder params
+		if wbytes, present := reqExtBidderParams["wiid"]; present && len(wbytes) != 0 {
+			wrapperExt.WrapperImpID, _ = strconv.Unquote(string(wbytes))
+		}
+		jsonData, _ := json.Marshal(wrapperExt)
+		rawExt := fmt.Sprintf("{\"wrapper\": %s}", string(jsonData))
 		request.Ext = json.RawMessage(rawExt)
 	}
 
@@ -391,6 +443,9 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ad
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
+	for _, line := range cookies {
+		headers.Add("Cookie", line)
+	}
 	return []*adapters.RequestData{{
 		Method:  "POST",
 		Uri:     a.URI,
@@ -460,7 +515,7 @@ func assignBannerWidthAndHeight(banner *openrtb2.Banner, w, h int64) *openrtb2.B
 }
 
 // parseImpressionObject parse the imp to get it ready to send to pubmatic
-func parseImpressionObject(imp *openrtb2.Imp, wrapExt *string, pubID *string) error {
+func parseImpressionObject(imp *openrtb2.Imp, wrapExt *pubmaticWrapperExt, pubID *string, wrapperExtSet *bool) error {
 	// PubMatic supports banner and video impressions.
 	if imp.Banner == nil && imp.Video == nil {
 		return fmt.Errorf("Invalid MediaType. PubMatic only supports Banner and Video. Ignoring ImpID=%s", imp.ID)
@@ -485,13 +540,12 @@ func parseImpressionObject(imp *openrtb2.Imp, wrapExt *string, pubID *string) er
 	}
 
 	// Parse Wrapper Extension only once per request
-	if *wrapExt == "" && len(pubmaticExt.WrapExt) != 0 {
-		var wrapExtMap map[string]int
-		err := json.Unmarshal([]byte(pubmaticExt.WrapExt), &wrapExtMap)
+	if !*wrapperExtSet && len(pubmaticExt.WrapExt) != 0 {
+		err := json.Unmarshal([]byte(pubmaticExt.WrapExt), &wrapExt)
 		if err != nil {
 			return fmt.Errorf("Error in Wrapper Parameters = %v  for ImpID = %v WrapperExt = %v", err.Error(), imp.ID, string(pubmaticExt.WrapExt))
 		}
-		*wrapExt = string(pubmaticExt.WrapExt)
+		*wrapperExtSet = true
 	}
 
 	if err := validateAdSlot(strings.TrimSpace(pubmaticExt.AdSlot), imp); err != nil {
