@@ -990,7 +990,6 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("analytics.pubstack.buffers.timeout", "900s")
 	v.SetDefault("amp_timeout_adjustment_ms", 0)
 	v.BindEnv("gdpr.default_value")
-	v.SetDefault("gdpr.default_value", "0")
 	v.SetDefault("gdpr.enabled", true)
 	v.SetDefault("gdpr.host_vendor_id", 0)
 	v.SetDefault("gdpr.timeouts_ms.init_vendorlist_fetches", 0)
