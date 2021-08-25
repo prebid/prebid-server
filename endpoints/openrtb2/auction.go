@@ -1623,7 +1623,7 @@ func getAccountID(pub *openrtb2.Publisher) string {
 	return metrics.PublisherUnknown
 }
 
-func processFPD(deps *endpointDeps, req *openrtb_ext.RequestWrapper, fpdData map[string][]byte) (map[openrtb_ext.BidderName]*openrtb_ext.FPDData, []error) {
+func processFPD(deps *endpointDeps, req *openrtb_ext.RequestWrapper, globalFpdData map[string][]byte) (map[openrtb_ext.BidderName]*openrtb_ext.FPDData, []error) {
 	errL := []error{}
 	var resolvedFPD map[openrtb_ext.BidderName]*openrtb_ext.FPDData
 	reqExt, _ := req.GetRequestExt()
@@ -1631,14 +1631,19 @@ func processFPD(deps *endpointDeps, req *openrtb_ext.RequestWrapper, fpdData map
 		fpdBidderData, reqExtPrebid := firstpartydata.PreprocessBidderFPD(*reqExt.GetPrebid())
 		reqExt.SetPrebid(&reqExtPrebid)
 
-		var fpdErrors []error
-		initialFPD, buildFpdErr := firstpartydata.BuildFPD(req.BidRequest, fpdBidderData, fpdData)
-		if buildFpdErr != nil {
-			errL = append(errL, buildFpdErr)
-		} else {
-			resolvedFPD, fpdErrors = deps.validateFpdRequest(req.BidRequest, initialFPD)
-			if len(fpdErrors) > 0 {
-				errL = append(errL, fpdErrors...)
+		if len(fpdBidderData) > 0 {
+			//If ext.prebid.data.bidders isn't defined, the default is there's no permission filtering
+			openRtbGlobalFPD := firstpartydata.ExtractOpenRtbGlobalFPD(req.BidRequest)
+
+			var fpdErrors []error
+			initialFPD, buildFpdErr := firstpartydata.BuildFPD(req.BidRequest, fpdBidderData, globalFpdData, openRtbGlobalFPD)
+			if buildFpdErr != nil {
+				errL = append(errL, buildFpdErr)
+			} else {
+				resolvedFPD, fpdErrors = deps.validateFpdRequest(req.BidRequest, initialFPD)
+				if len(fpdErrors) > 0 {
+					errL = append(errL, fpdErrors...)
+				}
 			}
 		}
 	}

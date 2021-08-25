@@ -17,6 +17,10 @@ const (
 	user = "user"
 	data = "data"
 	ext  = "ext"
+
+	userData        = "userData"
+	appContentData  = "appContentData"
+	siteContentData = "siteContentData"
 )
 
 func GetGlobalFPDData(request []byte) ([]byte, map[string][]byte, error) {
@@ -45,7 +49,30 @@ func GetGlobalFPDData(request []byte) ([]byte, map[string][]byte, error) {
 	return request, fpdReqData, nil
 }
 
-func BuildFPD(bidRequest *openrtb2.BidRequest, fpdBidderData map[openrtb_ext.BidderName]*openrtb_ext.FPDData, globalFPD map[string][]byte) (map[openrtb_ext.BidderName]*openrtb_ext.FPDData, error) {
+func ExtractOpenRtbGlobalFPD(bidRequest *openrtb2.BidRequest) map[string][]openrtb2.Data {
+	//Delete user.data and {app/site}.content.data from request
+
+	openRtbGlobalFPD := make(map[string][]openrtb2.Data, 0)
+	if bidRequest.User != nil && len(bidRequest.User.Data) > 0 {
+		openRtbGlobalFPD[userData] = bidRequest.User.Data
+		bidRequest.User.Data = nil
+	}
+
+	if bidRequest.Site != nil && bidRequest.Site.Content != nil && len(bidRequest.Site.Content.Data) > 0 {
+		openRtbGlobalFPD[siteContentData] = bidRequest.Site.Content.Data
+		bidRequest.Site.Content.Data = nil
+	}
+
+	if bidRequest.App != nil && bidRequest.App.Content != nil && len(bidRequest.App.Content.Data) > 0 {
+		openRtbGlobalFPD[appContentData] = bidRequest.App.Content.Data
+		bidRequest.App.Content.Data = nil
+	}
+
+	return openRtbGlobalFPD
+
+}
+
+func BuildFPD(bidRequest *openrtb2.BidRequest, fpdBidderData map[openrtb_ext.BidderName]*openrtb_ext.FPDData, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data) (map[openrtb_ext.BidderName]*openrtb_ext.FPDData, error) {
 
 	// If an attribute doesn't pass defined validation checks,
 	// entire request should be rejected with error message
@@ -56,19 +83,19 @@ func BuildFPD(bidRequest *openrtb2.BidRequest, fpdBidderData map[openrtb_ext.Bid
 
 		resolvedFpdConfig := &openrtb_ext.FPDData{}
 
-		newUser, err := resolveUser(fpdConfig.User, bidRequest.User, globalFPD)
+		newUser, err := resolveUser(fpdConfig.User, bidRequest.User, globalFPD, openRtbGlobalFPD)
 		if err != nil {
 			return nil, err
 		}
 		resolvedFpdConfig.User = newUser
 
-		newApp, err := resolveApp(fpdConfig.App, bidRequest.App, globalFPD)
+		newApp, err := resolveApp(fpdConfig.App, bidRequest.App, globalFPD, openRtbGlobalFPD)
 		if err != nil {
 			return nil, err
 		}
 		resolvedFpdConfig.App = newApp
 
-		newSite, err := resolveSite(fpdConfig.Site, bidRequest.Site, globalFPD)
+		newSite, err := resolveSite(fpdConfig.Site, bidRequest.Site, globalFPD, openRtbGlobalFPD)
 		if err != nil {
 			return nil, err
 		}
@@ -79,65 +106,99 @@ func BuildFPD(bidRequest *openrtb2.BidRequest, fpdBidderData map[openrtb_ext.Bid
 	return resolvedFpdData, nil
 }
 
-func resolveUser(fpdConfigUser *openrtb2.User, bidRequestUser *openrtb2.User, globalFPD map[string][]byte) (*openrtb2.User, error) {
-	if fpdConfigUser != nil {
-		if bidRequestUser == nil {
-			return fpdConfigUser, nil
-		} else {
-			resUser, err := mergeFPD(bidRequestUser, fpdConfigUser, globalFPD, user)
-			if err != nil {
-				return nil, err
-			}
-			newUser := &openrtb2.User{}
-			err = json.Unmarshal(resUser, newUser)
-			if err != nil {
-				return nil, err
-			}
-			return newUser, err
-		}
+func resolveUser(fpdConfigUser *openrtb2.User, bidRequestUser *openrtb2.User, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data) (*openrtb2.User, error) {
+	if bidRequestUser == nil && fpdConfigUser == nil {
+		return nil, nil
 	}
-	return nil, nil
+	if bidRequestUser == nil {
+		bidRequestUser = &openrtb2.User{}
+	}
+	if fpdConfigUser == nil {
+		fpdConfigUser = &openrtb2.User{}
+	}
+
+	resUser, err := mergeFPD(bidRequestUser, fpdConfigUser, globalFPD, user)
+	if err != nil {
+		return nil, err
+	}
+
+	newUser := &openrtb2.User{}
+	err = json.Unmarshal(resUser, newUser)
+	if err != nil {
+		return nil, err
+	}
+	if len(openRtbGlobalFPD[userData]) > 0 {
+		newUser.Data = openRtbGlobalFPD[userData]
+	}
+	return newUser, nil
+
 }
 
-func resolveSite(fpdConfigSite *openrtb2.Site, bidRequestSite *openrtb2.Site, globalFPD map[string][]byte) (*openrtb2.Site, error) {
-	if fpdConfigSite != nil {
-		if bidRequestSite == nil {
-			return fpdConfigSite, nil
+func resolveSite(fpdConfigSite *openrtb2.Site, bidRequestSite *openrtb2.Site, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data) (*openrtb2.Site, error) {
+
+	if bidRequestSite == nil && fpdConfigSite == nil {
+		return nil, nil
+	}
+	if bidRequestSite == nil {
+		bidRequestSite = &openrtb2.Site{}
+	}
+	if fpdConfigSite == nil {
+		fpdConfigSite = &openrtb2.Site{}
+	}
+
+	resSite, err := mergeFPD(bidRequestSite, fpdConfigSite, globalFPD, site)
+	if err != nil {
+		return nil, err
+	}
+
+	newSite := &openrtb2.Site{}
+	err = json.Unmarshal(resSite, newSite)
+	if err != nil {
+		return nil, err
+	}
+	if len(openRtbGlobalFPD[siteContentData]) > 0 {
+		if newSite.Content != nil {
+			newSite.Content.Data = openRtbGlobalFPD[siteContentData]
 		} else {
-			resSite, err := mergeFPD(bidRequestSite, fpdConfigSite, globalFPD, site)
-			if err != nil {
-				return nil, err
-			}
-			newSite := &openrtb2.Site{}
-			err = json.Unmarshal(resSite, newSite)
-			if err != nil {
-				return nil, err
-			}
-			return newSite, nil
+			newSiteContent := &openrtb2.Content{Data: openRtbGlobalFPD[siteContentData]}
+			newSite.Content = newSiteContent
 		}
 	}
-	return nil, nil
+	return newSite, nil
 }
 
-func resolveApp(fpdConfigApp *openrtb2.App, bidRequestApp *openrtb2.App, globalFPD map[string][]byte) (*openrtb2.App, error) {
-	if fpdConfigApp != nil {
-		if bidRequestApp == nil {
-			return fpdConfigApp, nil
-		} else {
-			resApp, err := mergeFPD(bidRequestApp, fpdConfigApp, globalFPD, app)
-			if err != nil {
-				return nil, err
-			}
+func resolveApp(fpdConfigApp *openrtb2.App, bidRequestApp *openrtb2.App, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data) (*openrtb2.App, error) {
 
-			newApp := &openrtb2.App{}
-			err = json.Unmarshal(resApp, newApp)
-			if err != nil {
-				return nil, err
-			}
-			return newApp, nil
+	if bidRequestApp == nil && fpdConfigApp == nil {
+		return nil, nil
+	}
+	if bidRequestApp == nil {
+		bidRequestApp = &openrtb2.App{}
+	}
+	if fpdConfigApp == nil {
+		fpdConfigApp = &openrtb2.App{}
+	}
+
+	resApp, err := mergeFPD(bidRequestApp, fpdConfigApp, globalFPD, app)
+	if err != nil {
+		return nil, err
+	}
+
+	newApp := &openrtb2.App{}
+	err = json.Unmarshal(resApp, newApp)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(openRtbGlobalFPD[appContentData]) > 0 {
+		if newApp.Content != nil {
+			newApp.Content.Data = openRtbGlobalFPD[appContentData]
+		} else {
+			newAppContent := &openrtb2.Content{Data: openRtbGlobalFPD[appContentData]}
+			newApp.Content = newAppContent
 		}
 	}
-	return nil, nil
+	return newApp, nil
 }
 
 func mergeFPD(input interface{}, fpd interface{}, data map[string][]byte, value string) ([]byte, error) {
