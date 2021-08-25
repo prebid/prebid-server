@@ -1016,6 +1016,7 @@ func TestParseImpInfoSingleImpression(t *testing.T) {
 			ImpExtPrebid: openrtb_ext.ExtImpPrebid{StoredRequest: &openrtb_ext.ExtStoredRequest{ID: "2"}, Options: &openrtb_ext.Options{Echovideoattrs: false}},
 		},
 		{
+			//in this case impression doesn't have storedrequest so we don't expect any data about this imp will be returned
 			Imp:          json.RawMessage(`{"id": "some-static-imp","video":{"mimes":["video/mp4"]},"ext": {"appnexus": {"placementId": "abc","position": "below"}}}`),
 			ImpExtPrebid: openrtb_ext.ExtImpPrebid{},
 		},
@@ -2367,6 +2368,36 @@ func TestAuctionWarnings(t *testing.T) {
 	assert.Equal(t, expectedMessage, actualWarning.Message, "Warning message is incorrect")
 
 	assert.Equal(t, errortypes.InvalidPrivacyConsentWarningCode, actualWarning.WarningCode, "Warning code is incorrect")
+}
+
+func TestParseRequestParseImpInfoError(t *testing.T) {
+	reqBody := validRequest(t, "imp-info-invalid.json")
+	deps := &endpointDeps{
+		&warningsCheckExchange{},
+		newParamsValidator(t),
+		&mockStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: int64(len(reqBody))},
+		&metricsConfig.DummyMetricsEngine{},
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		false,
+		[]byte{},
+		openrtb_ext.BuildBidderMap(),
+		nil,
+		nil,
+		hardcodedResponseIPValidator{response: true},
+	}
+
+	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
+
+	resReq, impExtInfoMap, errL := deps.parseRequest(req)
+
+	assert.Nil(t, resReq, "Result request should be nil due to incorrect imp")
+	assert.Nil(t, impExtInfoMap, "Impression info map should be nil due to incorrect imp")
+	assert.Len(t, errL, 1, "One error should be returned")
+	assert.Contains(t, errL[0].Error(), "echovideoattrs of type bool", "Incorrect error message")
 }
 
 func TestValidateNativeContextTypes(t *testing.T) {
