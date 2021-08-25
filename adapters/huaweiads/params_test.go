@@ -35,7 +35,6 @@ func TestInvalidParams(t *testing.T) {
 var validParams = []string{
 	`{"slotid": "m8x9x3rzff","adtype": "banner","publisherid": "123","signkey": "2f910deac52ff34f0d80585d8664c55e3422ff3c6aeb5e1cf2ff94f1ac6a9642","keyid": "41","clienttime": "2018-11-02 16:34:07.981+1300"}`,
 	`{"slotid": "m8x9x3rzff","adtype": "banner","publisherid": "123","signkey": "2f910deac52ff34f0d80585d8664c55e3422ff3c6aeb5e1cf2ff94f1ac6a9642","keyid": "41"}`,
-	`{"slotid": "o68q7hg4i4","adtype": "native","publisherid": "123","signkey": "2f910deac52ff34f0d80585d8664c55e3422ff3c6aeb5e1cf2ff94f1ac6a9642","keyid": "35"}`,
 }
 
 var invalidParams = []string{

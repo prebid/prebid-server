@@ -240,7 +240,7 @@ func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest,
 	var multislot = make([]adslot30, 0, numRequests)
 
 	var huaweiAdsImpExt *openrtb_ext.ExtImpHuaweiAds
-	for index := 0; index < numRequests && numRequests > 0; index++ {
+	for index := 0; index < numRequests; index++ {
 		var err1 error
 		huaweiAdsImpExt, err1 = unmarshalExtImpHuaweiAds(&openRTBRequest.Imp[index])
 		if err1 != nil {
@@ -757,9 +757,6 @@ func (a *adapter) convertHuaweiAdsResp2BidderResp(huaweiAdsResponse *huaweiAdsRe
 	if len(mapSlotid2MediaType) < 1 || len(mapSlotid2Imp) < 1 {
 		return nil, errors.New("convertHuaweiAdsResp2BidderResp: openRTBRequest.imp is nil")
 	}
-	if huaweiAdsResponse.Multiad == nil {
-		return nil, errors.New("convertHuaweiAdsResp2BidderResp: huaweiAdsResponse.Multiad is nil")
-	}
 
 	for _, ad30 := range huaweiAdsResponse.Multiad {
 		if mapSlotid2Imp[ad30.Slotid].ID == "" {
@@ -1045,11 +1042,13 @@ func (a *adapter) extractAdmPicture(content *content) (adm string, adWidth int64
 
 func getDspImpClickTrackings(content *content) (dspImpTrackings []string, dspClickTrackings string) {
 	for _, monitor := range content.Monitor {
-		if monitor.EventType == "imp" && len(monitor.Url) != 0 {
-			dspImpTrackings = monitor.Url
-		}
-		if monitor.EventType == "click" && len(monitor.Url) != 0 {
-			dspClickTrackings = getStrings(monitor.Url)
+		if len(monitor.Url) != 0 {
+			switch monitor.EventType {
+			case "imp":
+				dspImpTrackings = monitor.Url
+			case "click":
+				dspClickTrackings = getStrings(monitor.Url)
+			}
 		}
 	}
 	return dspImpTrackings, dspClickTrackings
@@ -1071,40 +1070,9 @@ func getStrings(eles []string) string {
 
 // getDuration: millisecond -> format: 00:00:00.000
 func getDuration(duration int64) string {
-	// duration millisecond
-	if duration == 0 {
-		return "00:00:00.000"
-	}
-	var totalSec = int(duration) / 1000
-	var mmm = int(duration) % 1000
-	var hour = totalSec / 3600
-	var tmp = totalSec % 3600
-	var min = tmp / 60
-	var sec = tmp % 60
-	var result strings.Builder
-	result.WriteString(addZero(strconv.Itoa(hour), ":", false))
-	result.WriteString(addZero(strconv.Itoa(min), ":", false))
-	result.WriteString(addZero(strconv.Itoa(sec), ".", false))
-	result.WriteString(addZero(strconv.Itoa(mmm), "", true))
-	return result.String()
-}
-
-func addZero(str string, separator string, isMmm bool) (result string) {
-	if isMmm == false {
-		if len(str) < 2 {
-			return "0" + str + separator
-		} else {
-			return str + separator
-		}
-	} else {
-		if len(str) == 1 {
-			return "00" + str
-		} else if len(str) == 2 {
-			return "0" + str
-		} else {
-			return str
-		}
-	}
+	var dur time.Duration = time.Duration(duration) * time.Millisecond
+	t := time.Time{}.Add(dur)
+	return t.Format("15:04:05.000")
 }
 
 // extractAdmVideo: get field adm for video, vast 3.0
