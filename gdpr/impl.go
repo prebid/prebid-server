@@ -2,6 +2,7 @@ package gdpr
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/prebid/go-gdpr/api"
@@ -14,19 +15,6 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-// This file implements GDPR permissions for the app.
-// For more info, see https://github.com/prebid/prebid-server/issues/501
-//
-// Nothing in this file is exported. Public APIs can be found in gdpr.go
-
-type Signal int
-
-const (
-	SignalAmbiguous Signal = -1
-	SignalNo        Signal = 0
-	SignalYes       Signal = 1
-)
-
 type permissionsImpl struct {
 	cfg              config.GDPR
 	gdprDefaultValue Signal
@@ -36,7 +24,7 @@ type permissionsImpl struct {
 }
 
 func (p *permissionsImpl) HostCookiesAllowed(ctx context.Context, gdprSignal Signal, consent string) (bool, error) {
-	gdprSignal = p.normalizeGDPR(gdprSignal)
+	gdprSignal = SignalNormalize(gdprSignal, p.cfg)
 
 	if gdprSignal == SignalNo {
 		return true, nil
@@ -46,7 +34,7 @@ func (p *permissionsImpl) HostCookiesAllowed(ctx context.Context, gdprSignal Sig
 }
 
 func (p *permissionsImpl) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, gdprSignal Signal, consent string) (bool, error) {
-	gdprSignal = p.normalizeGDPR(gdprSignal)
+	gdprSignal = SignalNormalize(gdprSignal, p.cfg)
 
 	if gdprSignal == SignalNo {
 		return true, nil
@@ -71,7 +59,7 @@ func (p *permissionsImpl) AuctionActivitiesAllowed(ctx context.Context,
 		return true, true, true, nil
 	}
 
-	gdprSignal = p.normalizeGDPR(gdprSignal)
+	gdprSignal = SignalNormalize(gdprSignal, p.cfg)
 
 	if gdprSignal == SignalNo {
 		return true, true, true, nil
@@ -94,20 +82,7 @@ func (p *permissionsImpl) defaultVendorPermissions() (allowBidRequest bool, pass
 	return false, false, false, nil
 }
 
-func (p *permissionsImpl) normalizeGDPR(gdprSignal Signal) Signal {
-	if gdprSignal != SignalAmbiguous {
-		return gdprSignal
-	}
-
-	if p.gdprDefaultValue == SignalNo {
-		return SignalNo
-	}
-
-	return SignalYes
-}
-
 func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consent string, vendorException bool) (bool, error) {
-
 	if consent == "" {
 		return false, nil
 	}
@@ -126,7 +101,7 @@ func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consen
 	}
 	consentMeta, ok := parsedConsent.(tcf2.ConsentMetadata)
 	if !ok {
-		err := fmt.Errorf("Unable to access TCF2 parsed consent")
+		err := errors.New("Unable to access TCF2 parsed consent")
 		return false, err
 	}
 	return p.checkPurpose(consentMeta, vendor, vendorID, tcf2ConsentConstants.InfoStorageAccess, vendorException, false), nil
@@ -260,8 +235,8 @@ func (p *permissionsImpl) parseVendor(ctx context.Context, vendorID uint16, cons
 	parsedConsent, err = vendorconsent.ParseString(consent)
 	if err != nil {
 		err = &ErrorMalformedConsent{
-			consent: consent,
-			cause:   err,
+			Consent: consent,
+			Cause:   err,
 		}
 		return
 	}
