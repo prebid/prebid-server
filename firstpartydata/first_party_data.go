@@ -12,39 +12,38 @@ import (
 )
 
 const (
-	site = "site"
-	app  = "app"
-	user = "user"
-	data = "data"
-	ext  = "ext"
+	siteKey = "site"
+	appKey  = "app"
+	userKey = "user"
+	dataKey = "data"
+	extKey  = "ext"
 
-	userData        = "userData"
-	appContentData  = "appContentData"
-	siteContentData = "siteContentData"
+	userDataKey        = "userData"
+	appContentDataKey  = "appContentData"
+	siteContentDataKey = "siteContentData"
 )
 
 func GetGlobalFPDData(request []byte) ([]byte, map[string][]byte, error) {
 	//If {site,app,user}.ext.data exists, collect it and remove {site,app,user}.ext.data
 
-	fpdReqData := make(map[string][]byte, 0)
-	request, siteFPD, err := jsonutil.FindAndDropElement(request, site, ext, data)
+	fpdReqData := make(map[string][]byte, 3)
+	request, siteFPD, err := jsonutil.FindAndDropElement(request, siteKey, extKey, dataKey)
 	if err != nil {
 		return request, nil, err
 	}
-	fpdReqData[site] = siteFPD
+	fpdReqData[siteKey] = siteFPD
 
-	request, appFPD, err := jsonutil.FindAndDropElement(request, app, ext, data)
+	request, appFPD, err := jsonutil.FindAndDropElement(request, appKey, extKey, dataKey)
 	if err != nil {
 		return request, nil, err
 	}
-	fpdReqData[app] = appFPD
+	fpdReqData[appKey] = appFPD
 
-	fpdReqData[user] = []byte{}
-	request, userFPD, err := jsonutil.FindAndDropElement(request, user, ext, data)
+	request, userFPD, err := jsonutil.FindAndDropElement(request, userKey, extKey, dataKey)
 	if err != nil {
 		return request, nil, err
 	}
-	fpdReqData[user] = userFPD
+	fpdReqData[userKey] = userFPD
 
 	return request, fpdReqData, nil
 }
@@ -54,17 +53,17 @@ func ExtractOpenRtbGlobalFPD(bidRequest *openrtb2.BidRequest) map[string][]openr
 
 	openRtbGlobalFPD := make(map[string][]openrtb2.Data, 0)
 	if bidRequest.User != nil && len(bidRequest.User.Data) > 0 {
-		openRtbGlobalFPD[userData] = bidRequest.User.Data
+		openRtbGlobalFPD[userDataKey] = bidRequest.User.Data
 		bidRequest.User.Data = nil
 	}
 
 	if bidRequest.Site != nil && bidRequest.Site.Content != nil && len(bidRequest.Site.Content.Data) > 0 {
-		openRtbGlobalFPD[siteContentData] = bidRequest.Site.Content.Data
+		openRtbGlobalFPD[siteContentDataKey] = bidRequest.Site.Content.Data
 		bidRequest.Site.Content.Data = nil
 	}
 
 	if bidRequest.App != nil && bidRequest.App.Content != nil && len(bidRequest.App.Content.Data) > 0 {
-		openRtbGlobalFPD[appContentData] = bidRequest.App.Content.Data
+		openRtbGlobalFPD[appContentDataKey] = bidRequest.App.Content.Data
 		bidRequest.App.Content.Data = nil
 	}
 
@@ -72,7 +71,7 @@ func ExtractOpenRtbGlobalFPD(bidRequest *openrtb2.BidRequest) map[string][]openr
 
 }
 
-func BuildFPD(bidRequest *openrtb2.BidRequest, fpdBidderData map[openrtb_ext.BidderName]*openrtb_ext.FPDData, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data) (map[openrtb_ext.BidderName]*openrtb_ext.FPDData, error) {
+func BuildResolvedFPDForBidders(bidRequest *openrtb2.BidRequest, fpdBidderData map[openrtb_ext.BidderName]*openrtb_ext.FPDData, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data) (map[openrtb_ext.BidderName]*openrtb_ext.FPDData, error) {
 
 	// If an attribute doesn't pass defined validation checks,
 	// entire request should be rejected with error message
@@ -117,7 +116,7 @@ func resolveUser(fpdConfigUser *openrtb2.User, bidRequestUser *openrtb2.User, gl
 		fpdConfigUser = &openrtb2.User{}
 	}
 
-	resUser, err := mergeFPD(bidRequestUser, fpdConfigUser, globalFPD, user)
+	resUser, err := mergeFPD(bidRequestUser, fpdConfigUser, globalFPD, userKey)
 	if err != nil {
 		return nil, err
 	}
@@ -127,8 +126,8 @@ func resolveUser(fpdConfigUser *openrtb2.User, bidRequestUser *openrtb2.User, gl
 	if err != nil {
 		return nil, err
 	}
-	if len(openRtbGlobalFPD[userData]) > 0 {
-		newUser.Data = openRtbGlobalFPD[userData]
+	if len(openRtbGlobalFPD[userDataKey]) > 0 {
+		newUser.Data = openRtbGlobalFPD[userDataKey]
 	}
 	return newUser, nil
 
@@ -146,7 +145,7 @@ func resolveSite(fpdConfigSite *openrtb2.Site, bidRequestSite *openrtb2.Site, gl
 		fpdConfigSite = &openrtb2.Site{}
 	}
 
-	resSite, err := mergeFPD(bidRequestSite, fpdConfigSite, globalFPD, site)
+	resSite, err := mergeFPD(bidRequestSite, fpdConfigSite, globalFPD, siteKey)
 	if err != nil {
 		return nil, err
 	}
@@ -156,11 +155,11 @@ func resolveSite(fpdConfigSite *openrtb2.Site, bidRequestSite *openrtb2.Site, gl
 	if err != nil {
 		return nil, err
 	}
-	if len(openRtbGlobalFPD[siteContentData]) > 0 {
+	if len(openRtbGlobalFPD[siteContentDataKey]) > 0 {
 		if newSite.Content != nil {
-			newSite.Content.Data = openRtbGlobalFPD[siteContentData]
+			newSite.Content.Data = openRtbGlobalFPD[siteContentDataKey]
 		} else {
-			newSiteContent := &openrtb2.Content{Data: openRtbGlobalFPD[siteContentData]}
+			newSiteContent := &openrtb2.Content{Data: openRtbGlobalFPD[siteContentDataKey]}
 			newSite.Content = newSiteContent
 		}
 	}
@@ -179,7 +178,7 @@ func resolveApp(fpdConfigApp *openrtb2.App, bidRequestApp *openrtb2.App, globalF
 		fpdConfigApp = &openrtb2.App{}
 	}
 
-	resApp, err := mergeFPD(bidRequestApp, fpdConfigApp, globalFPD, app)
+	resApp, err := mergeFPD(bidRequestApp, fpdConfigApp, globalFPD, appKey)
 	if err != nil {
 		return nil, err
 	}
@@ -190,11 +189,11 @@ func resolveApp(fpdConfigApp *openrtb2.App, bidRequestApp *openrtb2.App, globalF
 		return nil, err
 	}
 
-	if len(openRtbGlobalFPD[appContentData]) > 0 {
+	if len(openRtbGlobalFPD[appContentDataKey]) > 0 {
 		if newApp.Content != nil {
-			newApp.Content.Data = openRtbGlobalFPD[appContentData]
+			newApp.Content.Data = openRtbGlobalFPD[appContentDataKey]
 		} else {
-			newAppContent := &openrtb2.Content{Data: openRtbGlobalFPD[appContentData]}
+			newAppContent := &openrtb2.Content{Data: openRtbGlobalFPD[appContentDataKey]}
 			newApp.Content = newAppContent
 		}
 	}
@@ -248,32 +247,28 @@ func PreprocessBidderFPD(reqExtPrebid openrtb_ext.ExtRequestPrebid) (map[openrtb
 
 	if reqExtPrebid.Data != nil && len(reqExtPrebid.Data.Bidders) != 0 && reqExtPrebid.BidderConfigs != nil {
 
-		//every entry in ext.prebid.bidderconfig[].bidders would also need to be in ext.prebid.data.bidders or it will be ignored
+		//every bidder in ext.prebid.data.bidders should receive fpd data if defined
 		bidderTable := make(map[string]interface{}) //just need to check existence of the element in map
 		for _, bidder := range reqExtPrebid.Data.Bidders {
 			bidderTable[bidder] = true
+			fpdData[openrtb_ext.BidderName(bidder)] = &openrtb_ext.FPDData{}
 		}
 
 		for _, bidderConfig := range *reqExtPrebid.BidderConfigs {
 			for _, bidder := range bidderConfig.Bidders {
 				if _, present := bidderTable[bidder]; present {
-
-					if fpdData[openrtb_ext.BidderName(bidder)] == nil {
-						fpdData[openrtb_ext.BidderName(bidder)] = bidderConfig.FPDConfig.FPDData
-					} else {
-						//this will overwrite previously set site/app/user.
-						//Last defined bidder-specific config will take precedence
-						fpdBidderData := fpdData[openrtb_ext.BidderName(bidder)]
-						if bidderConfig.FPDConfig != nil && bidderConfig.FPDConfig.FPDData != nil {
-							if bidderConfig.FPDConfig.FPDData.Site != nil {
-								fpdBidderData.Site = bidderConfig.FPDConfig.FPDData.Site
-							}
-							if bidderConfig.FPDConfig.FPDData.App != nil {
-								fpdBidderData.App = bidderConfig.FPDConfig.FPDData.App
-							}
-							if bidderConfig.FPDConfig.FPDData.User != nil {
-								fpdBidderData.User = bidderConfig.FPDConfig.FPDData.User
-							}
+					//this will overwrite previously set site/app/user.
+					//Last defined bidder-specific config will take precedence
+					fpdBidderData := fpdData[openrtb_ext.BidderName(bidder)]
+					if bidderConfig.Config != nil && bidderConfig.Config.FPDData != nil {
+						if bidderConfig.Config.FPDData.Site != nil {
+							fpdBidderData.Site = bidderConfig.Config.FPDData.Site
+						}
+						if bidderConfig.Config.FPDData.App != nil {
+							fpdBidderData.App = bidderConfig.Config.FPDData.App
+						}
+						if bidderConfig.Config.FPDData.User != nil {
+							fpdBidderData.User = bidderConfig.Config.FPDData.User
 						}
 					}
 				}

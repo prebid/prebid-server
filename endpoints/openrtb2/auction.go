@@ -138,7 +138,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	req, impExtInfoMap, globalFPD, errL := deps.parseRequest(r)
 
-	resolvedFPD, fpdErrors := processFPD(deps, req, globalFPD)
+	resolvedFPD, fpdErrors := deps.processFPD(req, globalFPD)
 	if len(fpdErrors) > 0 {
 		errL = append(errL, fpdErrors...)
 	}
@@ -252,7 +252,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_
 		R: httpRequest.Body,
 		N: deps.cfg.MaxRequestSize,
 	}
-	requestJson, err := ioutil.ReadAll(lr)
+	rawRequestJson, err := ioutil.ReadAll(lr)
 	if err != nil {
 		errs = []error{err}
 		return
@@ -265,17 +265,17 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_
 		}
 	}
 
-	timeout := parseTimeout(requestJson, time.Duration(storedRequestTimeoutMillis)*time.Millisecond)
+	timeout := parseTimeout(rawRequestJson, time.Duration(storedRequestTimeoutMillis)*time.Millisecond)
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	// Fetch the Stored Request data and merge it into the HTTP request.
-	if requestJson, impExtInfoMap, errs = deps.processStoredRequests(ctx, requestJson); len(errs) > 0 {
+	if rawRequestJson, impExtInfoMap, errs = deps.processStoredRequests(ctx, rawRequestJson); len(errs) > 0 {
 		return
 	}
 
-	//If {site,app,user}.data exists, merge it into {site,app,user}.ext.data and remove {site,app,user}.data
-	requestJson, globalFPD, err = firstpartydata.GetGlobalFPDData(requestJson)
+	//If {site,app,user}.ext.data exists, collect it and remove {site,app,user}.ext.data from request
+	requestJson, globalFPD, err := firstpartydata.GetGlobalFPDData(rawRequestJson)
 	if err != nil {
 		errs = []error{err}
 		return
@@ -319,7 +319,7 @@ func parseTimeout(requestJson []byte, defaultTimeout time.Duration) time.Duratio
 	return defaultTimeout
 }
 
-func (deps *endpointDeps) validateFpdRequest(bidRequest *openrtb2.BidRequest, fpdBiddersData map[openrtb_ext.BidderName]*openrtb_ext.FPDData) (map[openrtb_ext.BidderName]*openrtb_ext.FPDData, []error) {
+func (deps *endpointDeps) getValidatedFPDBidderData(bidRequest *openrtb2.BidRequest, fpdBiddersData map[openrtb_ext.BidderName]*openrtb_ext.FPDData) (map[openrtb_ext.BidderName]*openrtb_ext.FPDData, []error) {
 
 	errL := make([]error, 0)
 	validatedFpdData := make(map[openrtb_ext.BidderName]*openrtb_ext.FPDData)
@@ -1623,10 +1623,14 @@ func getAccountID(pub *openrtb2.Publisher) string {
 	return metrics.PublisherUnknown
 }
 
-func processFPD(deps *endpointDeps, req *openrtb_ext.RequestWrapper, globalFpdData map[string][]byte) (map[openrtb_ext.BidderName]*openrtb_ext.FPDData, []error) {
+func (deps *endpointDeps) processFPD(req *openrtb_ext.RequestWrapper, globalFpdData map[string][]byte) (map[openrtb_ext.BidderName]*openrtb_ext.FPDData, []error) {
 	errL := []error{}
 	var resolvedFPD map[openrtb_ext.BidderName]*openrtb_ext.FPDData
-	reqExt, _ := req.GetRequestExt()
+	reqExt, err := req.GetRequestExt()
+	if err != nil {
+		errL = append(errL, err)
+		return resolvedFPD, errL
+	}
 	if reqExt != nil && reqExt.GetPrebid() != nil {
 		fpdBidderData, reqExtPrebid := firstpartydata.PreprocessBidderFPD(*reqExt.GetPrebid())
 		reqExt.SetPrebid(&reqExtPrebid)
@@ -1636,11 +1640,11 @@ func processFPD(deps *endpointDeps, req *openrtb_ext.RequestWrapper, globalFpdDa
 			openRtbGlobalFPD := firstpartydata.ExtractOpenRtbGlobalFPD(req.BidRequest)
 
 			var fpdErrors []error
-			initialFPD, buildFpdErr := firstpartydata.BuildFPD(req.BidRequest, fpdBidderData, globalFpdData, openRtbGlobalFPD)
+			initialFPD, buildFpdErr := firstpartydata.BuildResolvedFPDForBidders(req.BidRequest, fpdBidderData, globalFpdData, openRtbGlobalFPD)
 			if buildFpdErr != nil {
 				errL = append(errL, buildFpdErr)
 			} else {
-				resolvedFPD, fpdErrors = deps.validateFpdRequest(req.BidRequest, initialFPD)
+				resolvedFPD, fpdErrors = deps.getValidatedFPDBidderData(req.BidRequest, initialFPD)
 				if len(fpdErrors) > 0 {
 					errL = append(errL, fpdErrors...)
 				}

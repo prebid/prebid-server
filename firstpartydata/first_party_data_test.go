@@ -331,7 +331,7 @@ func TestApplyFPD(t *testing.T) {
 			reqFPD["app"] = fpdFile.FirstPartyData["app"]
 			reqFPD["user"] = fpdFile.FirstPartyData["user"]
 
-			resultFPD, err := BuildFPD(&inputReq, fpdFile.BiddersFPD, reqFPD)
+			resultFPD, err := BuildResolvedFPDForBidders(&inputReq, fpdFile.BiddersFPD, reqFPD, nil)
 
 			assert.NoError(t, err, "No errors should be returned")
 			assert.Equal(t, inputReq, inputReqCopy, "Original request should not be modified")
@@ -412,10 +412,10 @@ type fpdFile struct {
 
 func TestValidateFPDConfig(t *testing.T) {
 
-	bidderConfigs := &[]openrtb_ext.FPDBidderConfig{
+	bidderConfigs := &[]openrtb_ext.BidderConfig{
 		{
 			Bidders: []string{"testBidder1"},
-			FPDConfig: &openrtb_ext.FPDConfig{
+			Config: &openrtb_ext.Config{
 				FPDData: &openrtb_ext.FPDData{
 					Site: &openrtb2.Site{ID: "testBidder1SiteId"},
 				},
@@ -423,10 +423,10 @@ func TestValidateFPDConfig(t *testing.T) {
 		},
 	}
 
-	bidderConfigsNoConfigs := &[]openrtb_ext.FPDBidderConfig{
+	bidderConfigsNoConfigs := &[]openrtb_ext.BidderConfig{
 		{
-			Bidders:   []string{"testBidder1"},
-			FPDConfig: nil,
+			Bidders: []string{"testBidder1"},
+			Config:  nil,
 		},
 	}
 

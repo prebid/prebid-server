@@ -44,15 +44,15 @@ type ExtRequestPrebid struct {
 	NoSale []string `json:"nosale,omitempty"`
 
 	CurrencyConversions *ExtRequestCurrency `json:"currency,omitempty"`
-	BidderConfigs       *[]FPDBidderConfig  `json:"bidderconfig,omitempty"`
+	BidderConfigs       *[]BidderConfig     `json:"bidderconfig,omitempty"`
 }
 
-type FPDBidderConfig struct {
-	Bidders   []string   `json:"bidders,omitempty"`
-	FPDConfig *FPDConfig `json:"config,omitempty"`
+type BidderConfig struct {
+	Bidders []string `json:"bidders,omitempty"`
+	Config  *Config  `json:"config,omitempty"`
 }
 
-type FPDConfig struct {
+type Config struct {
 	FPDData *FPDData `json:"ortb2,omitempty"`
 }
 

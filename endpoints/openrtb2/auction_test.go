@@ -2888,7 +2888,7 @@ func TestValidateFpdRequest(t *testing.T) {
 				t.Errorf("Unable to unmarshal input request: %s", fileName)
 			}
 
-			validatedFPD, errL := deps.validateFpdRequest(&inputReq, fpdFile.InputBiddersFPD)
+			validatedFPD, errL := deps.getValidatedFPDBidderData(&inputReq, fpdFile.InputBiddersFPD)
 			assert.Equal(t, inputReq, inputReqCopy, "Original request should not be modified")
 
 			assert.Equalf(t, validatedFPD, fpdFile.ResultBiddersFPD, "Incorrect fpd")
