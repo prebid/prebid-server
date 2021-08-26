@@ -247,7 +247,6 @@ func TestPreprocessFPD(t *testing.T) {
 			if err != nil {
 				t.Errorf("Unable to unmarshal input request: %s", fileName)
 			}
-
 			fpdData, reqExtPrebid := PreprocessBidderFPD(extReq)
 
 			if reqExtPrebid.Data != nil {

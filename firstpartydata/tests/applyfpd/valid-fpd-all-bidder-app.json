@@ -109,7 +109,12 @@
     "user": {
       "id": "reqUserID",
       "yob": 1982,
-      "gender": "M"
+      "gender": "M",
+      "ext": {
+        "data": {
+          "testUserFpd": "testuser"
+        }
+      }
     },
     "test": 1,
     "at": 1,
