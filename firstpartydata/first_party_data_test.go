@@ -11,7 +11,7 @@ import (
 	"testing"
 )
 
-func TestGetFPDData(t *testing.T) {
+func TestGetGlobalFPDData(t *testing.T) {
 
 	testCases := []struct {
 		description     string
@@ -232,6 +232,143 @@ func TestGetFPDData(t *testing.T) {
 	}
 }
 
+func TestExtractOpenRtbGlobalFPD(t *testing.T) {
+
+	testCases := []struct {
+		description     string
+		input           []byte
+		output          []byte
+		expectedFpdData map[string][]openrtb2.Data
+	}{
+		{
+			description: "Site, app and user data present",
+			input: []byte(`{
+  				"id": "bid_id",
+			 	"imp":[{"id":"impid"}],
+  				"site": {
+  				  "id":"reqSiteId",
+				  "content": {
+					"data":[
+						{ 
+						  "id": "siteDataId1",
+						  "name": "siteDataName1"
+						},
+						{
+ 						  "id": "siteDataId2",
+            			  "name": "siteDataName2"
+						}
+					]
+				  }
+  				},
+  				"user": {
+  				  "id": "reqUserID",
+  				  "yob": 1982,
+  				  "gender": "M",
+				  "data":[
+						{ 
+						  "id": "userDataId1",
+						  "name": "userDataName1"
+						}
+					]
+  				},
+  				"app": {
+  				  "id": "appId",
+					"content":{
+						"data": [
+							{ 
+							  "id": "appDataId1",
+							  "name": "appDataName1"
+							}
+						]
+					}
+  				}
+			}`),
+			output: []byte(`{
+  				"id": "bid_id",
+				"imp":[{"id":"impid"}],
+  				"site": {
+  				  "id":"reqSiteId",
+				  "content": {}
+  				},
+  				"user": {
+  				  "id": "reqUserID",
+  				  "yob": 1982,
+  				  "gender": "M"
+  				},
+  				"app": {
+  				  "id": "appId",
+				  "content": {}
+  				}
+			}`),
+			expectedFpdData: map[string][]openrtb2.Data{
+				siteContentDataKey: {{ID: "siteDataId1", Name: "siteDataName1"}, {ID: "siteDataId2", Name: "siteDataName2"}},
+				userDataKey:        {{ID: "userDataId1", Name: "userDataName1"}},
+				appContentDataKey:  {{ID: "appDataId1", Name: "appDataName1"}},
+			},
+		}, {
+			description: "User only data present",
+			input: []byte(`{
+  				"id": "bid_id",
+			 	"imp":[{"id":"impid"}],
+  				"site": {
+  				  "id":"reqSiteId"
+  				},
+  				"user": {
+  				  "id": "reqUserID",
+  				  "yob": 1982,
+  				  "gender": "M",
+				  "data":[
+						{ 
+						  "id": "userDataId1",
+						  "name": "userDataName1"
+						}
+					]
+  				},
+  				"app": {
+  				  "id": "appId"
+  				}
+			}`),
+			output: []byte(`{
+  				"id": "bid_id",
+				"imp":[{"id":"impid"}],
+  				"site": {
+  				  "id":"reqSiteId"
+  				},
+  				"user": {
+  				  "id": "reqUserID",
+  				  "yob": 1982,
+  				  "gender": "M"
+  				},
+  				"app": {
+  				  "id": "appId"
+  				}
+			}`),
+			expectedFpdData: map[string][]openrtb2.Data{
+				siteContentDataKey: nil,
+				userDataKey:        {{ID: "userDataId1", Name: "userDataName1"}},
+				appContentDataKey:  nil,
+			},
+		},
+	}
+	for _, test := range testCases {
+
+		var req openrtb2.BidRequest
+		err := json.Unmarshal(test.input, &req)
+		assert.NoError(t, err, "Error should be nil")
+
+		res := ExtractOpenRtbGlobalFPD(&req)
+
+		resReq, err := json.Marshal(req)
+		assert.NoError(t, err, "Error should be nil")
+
+		assert.JSONEq(t, string(test.output), string(resReq), "Result request is incorrect")
+		assert.Equal(t, test.expectedFpdData[siteContentDataKey], res[siteContentDataKey], "siteContentData data is incorrect")
+		assert.Equal(t, test.expectedFpdData[userDataKey], res[userDataKey], "userData is incorrect")
+		assert.Equal(t, test.expectedFpdData[appContentDataKey], res[appContentDataKey], "appContentData is incorrect")
+
+	}
+}
+
 func TestPreprocessFPD(t *testing.T) {
 
 	if specFiles, err := ioutil.ReadDir("./tests/preprocessfpd"); err == nil {
@@ -295,7 +432,7 @@ func TestPreprocessFPD(t *testing.T) {
 	}
 }
 
-func TestApplyFPD(t *testing.T) {
+func TestBuildResolvedFPDForBidders(t *testing.T) {
 
 	if specFiles, err := ioutil.ReadDir("./tests/applyfpd"); err == nil {
 		for _, specFile := range specFiles {
@@ -324,37 +461,72 @@ func TestApplyFPD(t *testing.T) {
 				t.Errorf("Unable to unmarshal output request: %s", fileName)
 			}
 
-			reqFPD := make(map[string][]byte, 0)
+			reqExtFPD := make(map[string][]byte, 3)
+			reqExtFPD["site"] = fpdFile.FirstPartyData["site"]
+			reqExtFPD["app"] = fpdFile.FirstPartyData["app"]
+			reqExtFPD["user"] = fpdFile.FirstPartyData["user"]
 
-			reqFPD["site"] = fpdFile.FirstPartyData["site"]
-			reqFPD["app"] = fpdFile.FirstPartyData["app"]
-			reqFPD["user"] = fpdFile.FirstPartyData["user"]
+			reqFPD := make(map[string][]openrtb2.Data, 3)
 
-			resultFPD, err := BuildResolvedFPDForBidders(&inputReq, fpdFile.BiddersFPD, reqFPD, nil)
+			reqFPDSiteContentData := fpdFile.FirstPartyData[siteContentDataKey]
+			if len(reqFPDSiteContentData) > 0 {
+				var siteConData []openrtb2.Data
+				err = json.Unmarshal(reqFPDSiteContentData, &siteConData)
+				if err != nil {
+					t.Errorf("Unable to unmarshal site.content.data: %s", fileName)
+				}
+				reqFPD[siteContentDataKey] = siteConData
+			}
+
+			reqFPDAppContentData := fpdFile.FirstPartyData[appContentDataKey]
+			if len(reqFPDAppContentData) > 0 {
+				var appConData []openrtb2.Data
+				err = json.Unmarshal(reqFPDAppContentData, &appConData)
+				if err != nil {
+					t.Errorf("Unable to unmarshal app.content.data: %s", fileName)
+				}
+				reqFPD[appContentDataKey] = appConData
+			}
+
+			reqFPDUserData := fpdFile.FirstPartyData[userDataKey]
+			if len(reqFPDUserData) > 0 {
+				var userData []openrtb2.Data
+				err = json.Unmarshal(reqFPDUserData, &userData)
+				if err != nil {
+					t.Errorf("Unable to unmarshal app.content.data: %s", fileName)
+				}
+				reqFPD[userDataKey] = userData
+			}
+			if fpdFile.BiddersFPD == nil {
+				fpdFile.BiddersFPD = make(map[openrtb_ext.BidderName]*openrtb_ext.FPDData)
+				fpdFile.BiddersFPD["appnexus"] = &openrtb_ext.FPDData{}
+			}
+
+			resultFPD, err := BuildResolvedFPDForBidders(&inputReq, fpdFile.BiddersFPD, reqExtFPD, reqFPD)
 
 			assert.NoError(t, err, "No errors should be returned")
 			assert.Equal(t, inputReq, inputReqCopy, "Original request should not be modified")
 
-			biddrFPD := resultFPD["appnexus"]
+			bidderFPD := resultFPD["appnexus"]
 
-			if biddrFPD.Site != nil && len(biddrFPD.Site.Ext) > 0 {
-				resSiteExt := biddrFPD.Site.Ext
+			if bidderFPD.Site != nil && len(bidderFPD.Site.Ext) > 0 {
+				resSiteExt := bidderFPD.Site.Ext
 				expectedSiteExt := outputReq.Site.Ext
-				biddrFPD.Site.Ext = nil
+				bidderFPD.Site.Ext = nil
 				outputReq.Site.Ext = nil
 				jsonutil.DiffJson(t, "site.ext is incorrect", resSiteExt, expectedSiteExt)
 			}
-			if biddrFPD.App != nil && len(biddrFPD.App.Ext) > 0 {
-				resAppExt := biddrFPD.App.Ext
+			if bidderFPD.App != nil && len(bidderFPD.App.Ext) > 0 {
+				resAppExt := bidderFPD.App.Ext
 				expectedAppExt := outputReq.App.Ext
-				biddrFPD.App.Ext = nil
+				bidderFPD.App.Ext = nil
 				outputReq.App.Ext = nil
 				jsonutil.DiffJson(t, "app.ext is incorrect", resAppExt, expectedAppExt)
 			}
-			if biddrFPD.User != nil && len(biddrFPD.User.Ext) > 0 {
-				resUserExt := biddrFPD.User.Ext
+			if bidderFPD.User != nil && len(bidderFPD.User.Ext) > 0 {
+				resUserExt := bidderFPD.User.Ext
 				expectedUserExt := outputReq.User.Ext
-				biddrFPD.User.Ext = nil
+				bidderFPD.User.Ext = nil
 				outputReq.User.Ext = nil
 				jsonutil.DiffJson(t, "user.ext is incorrect", resUserExt, expectedUserExt)
 			}

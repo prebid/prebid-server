@@ -87,7 +87,17 @@
         "title": "episodeName",
         "series": "TvName",
         "season": "season3",
-        "len": 900
+        "len": 900,
+        "data": [
+          {
+            "id": "appData1",
+            "name": "appName1"
+          },
+          {
+            "id": "appData2",
+            "name": "appName2"
+          }
+        ]
       },
       "ext": {
         "data": {
@@ -110,6 +120,16 @@
       "id": "reqUserID",
       "yob": 1982,
       "gender": "M",
+      "data": [
+        {
+          "id": "userData1",
+          "name": "userName1"
+        },
+        {
+          "id": "userData2",
+          "name": "userName2"
+        }
+      ],
       "ext": {
         "data": {
           "testUserFpd": "testuser"
@@ -142,7 +162,27 @@
     },
     "user": {
       "testUserFpd": "testuser"
-    }
+    },
+    "appContentData":[
+      {
+        "id": "appData1",
+        "name": "appName1"
+      },
+      {
+        "id": "appData2",
+        "name": "appName2"
+      }
+    ],
+    "userData": [
+      {
+        "id": "userData1",
+        "name": "userName1"
+      },
+      {
+        "id": "userData2",
+        "name": "userName2"
+      }
+    ]
   }
 }
 

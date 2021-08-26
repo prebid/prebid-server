@@ -87,7 +87,17 @@
         "title": "episodeName",
         "series": "TvName",
         "season": "season3",
-        "len": 900
+        "len": 900,
+        "data": [
+          {
+            "id": "siteData1",
+            "name": "siteName1"
+          },
+          {
+            "id": "siteData2",
+            "name": "siteName2"
+          }
+        ]
       },
       "ext": {
         "data": {
@@ -147,7 +157,17 @@
     },
     "user": {
       "testUserFpd": "testuser"
-    }
+    },
+    "siteContentData":[
+      {
+        "id": "siteData1",
+        "name": "siteName1"
+      },
+      {
+        "id": "siteData2",
+        "name": "siteName2"
+      }
+    ]
   }
 }
 
