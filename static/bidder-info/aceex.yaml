@@ -1,0 +1,14 @@
+maintainer:
+  email: "tech@aceex.io"
+gvlVendorID: 0
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
