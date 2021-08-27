@@ -34,8 +34,7 @@
             ],
             "wrapper": {
               "version": 1,
-              "profile": 5123,
-              "wiid": "abcd"
+              "profile": 5123
             }
           }
         }
@@ -47,11 +46,8 @@
     "ext": {
       "prebid": {
         "bidderparams": {
-          "wiid": "pqrs",
-          "Cookie": [
-            "a1",
-            "a2"
-          ]
+          "profile": 1234,
+          "version": 2
         }
       }
     },
@@ -99,9 +95,8 @@
           },
           "ext": {
             "wrapper": {
-              "profile": 5123,
-              "version": 1,
-              "wiid": "pqrs"
+              "profile": 1234,
+              "version": 2
             }
           }
         }

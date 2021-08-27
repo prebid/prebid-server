@@ -1,6 +1,7 @@
 package adapters
 
 import (
+	"reflect"
 	"testing"
 
 	"encoding/json"
@@ -540,4 +541,61 @@ func TestGDPRMobile(t *testing.T) {
 
 	assert.EqualValues(t, resp.User.Ext, userExt)
 	assert.EqualValues(t, resp.Regs.Ext, regsExt)
+}
+
+func TestExtractBidderParams(t *testing.T) {
+	type args struct {
+		bidRequest *openrtb2.BidRequest
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    map[string]json.RawMessage
+		wantErr bool
+	}{
+		{
+			name: "extract bidder params from nil req",
+			args: args{
+				bidRequest: nil,
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "extract bidder params from nil req.Ext",
+			args: args{
+				bidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{}}`)},
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "extract bidder params from req.Ext for input request before adapter code",
+			args: args{
+				bidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"bidderparams": {"pubmatic": {"profile": 1234, "version": 1}, "appnexus": {"key1": 123, "key2": {"innerKey1":"innerValue1"}} }}}`)},
+			},
+			want:    map[string]json.RawMessage{"pubmatic": json.RawMessage(`{"profile": 1234, "version": 1}`), "appnexus": json.RawMessage(`{"key1": 123, "key2": {"innerKey1":"innerValue1"}}`)},
+			wantErr: false,
+		},
+		{
+			name: "extract bidder params from req.Ext for input request in adapter code",
+			args: args{
+				bidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"bidderparams": {"profile": 1234, "version": 1}}}`)},
+			},
+			want:    map[string]json.RawMessage{"profile": json.RawMessage(`1234`), "version": json.RawMessage(`1`)},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ExtractBidderParams(tt.args.bidRequest)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ExtractBidderParams() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ExtractBidderParams() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

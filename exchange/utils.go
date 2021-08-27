@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/prebid/prebid-server/adapters"
 	"math/rand"
 
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
@@ -203,24 +204,6 @@ func extractLMT(orig *openrtb2.BidRequest, privacyConfig config.Privacy) privacy
 	}
 }
 
-func getBidderExts(reqExt *openrtb_ext.ExtRequest) (map[string]json.RawMessage, error) {
-	if reqExt == nil {
-		return nil, nil
-	}
-
-	if reqExt.Prebid.BidderParams == nil {
-		return nil, nil
-	}
-
-	var bidderParams map[string]json.RawMessage
-	err := json.Unmarshal(reqExt.Prebid.BidderParams, &bidderParams)
-	if err != nil {
-		return nil, err
-	}
-
-	return bidderParams, nil
-}
-
 func getAuctionBidderRequests(req AuctionRequest,
 	requestExt *openrtb_ext.ExtRequest,
 	bidderToSyncerKey map[string]string,
@@ -235,11 +218,9 @@ func getAuctionBidderRequests(req AuctionRequest,
 	}
 
 	var bidderExt map[string]json.RawMessage
-	if requestExt != nil {
-		bidderExt, err = getBidderExts(requestExt)
-		if err != nil {
-			return nil, []error{err}
-		}
+	bidderExt, err = adapters.ExtractBidderParams(req.BidRequest)
+	if err != nil {
+		return nil, []error{err}
 	}
 
 	var sChainsByBidder map[string]*openrtb_ext.ExtRequestPrebidSChainSChain

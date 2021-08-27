@@ -48,9 +48,8 @@ type pubmaticParams struct {
 }
 
 type pubmaticWrapperExt struct {
-	ProfileID    int    `json:"profile,omitempty"`
-	VersionID    int    `json:"version,omitempty"`
-	WrapperImpID string `json:"wiid,omitempty"`
+	ProfileID int `json:"profile,omitempty"`
+	VersionID int `json:"version,omitempty"`
 }
 
 type pubmaticBidExtVideo struct {
@@ -340,54 +339,20 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	return bids, nil
 }
 
-func getBidderParams(request *openrtb2.BidRequest) (map[string]json.RawMessage, error) {
-	var reqExt openrtb_ext.ExtRequest
-	if len(request.Ext) <= 0 {
-		return nil, nil
-	}
-	err := json.Unmarshal(request.Ext, &reqExt)
-	if err != nil {
-		err := fmt.Errorf("[PUBMATIC] Error unmarshalling request.ext: %v", string(request.Ext))
-		return nil, err
-	}
-
-	if reqExt.Prebid.BidderParams == nil {
-		return nil, nil
-	}
-
-	var bidderParams map[string]json.RawMessage
-	err = json.Unmarshal(reqExt.Prebid.BidderParams, &bidderParams)
-	if err != nil {
-		return nil, err
-	}
-
-	return bidderParams, nil
-}
-
 func (a *PubmaticAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 
 	wrapperExt := new(pubmaticWrapperExt)
 	pubID := ""
-	wrapperExtPresent := false
+	wrapperExtSet := false
 
-	reqExtBidderParams, err := getBidderParams(request)
+	reqExtBidderParams, err := adapters.ExtractBidderParams(request)
 	if err != nil {
-		errs = append(errs, err)
-	}
-
-	var cookies []string
-	c, present := reqExtBidderParams["Cookie"]
-	if present {
-		err = json.Unmarshal(c, &cookies)
-		if err != nil {
-			err := fmt.Errorf("[PUBMATIC] Error unmarshalling retrieving cookies from request.ext.prebid.ext: %v", string(c))
-			errs = append(errs, err)
-		}
+		return nil, []error{err}
 	}
 
 	for i := 0; i < len(request.Imp); i++ {
-		err := parseImpressionObject(&request.Imp[i], wrapperExt, &pubID, &wrapperExtPresent)
+		err := parseImpressionObject(&request.Imp[i], wrapperExt, &pubID, &wrapperExtSet)
 		// If the parsing is failed, remove imp and add the error.
 		if err != nil {
 			errs = append(errs, err)
@@ -401,12 +366,24 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ad
 		return nil, errs
 	}
 
-	//if wrapper ext is present, then add it in request.ext
-	if wrapperExtPresent {
-		//get wrapper impression ID from request ext bidder params
-		if wbytes, present := reqExtBidderParams["wiid"]; present && len(wbytes) != 0 {
-			wrapperExt.WrapperImpID, _ = strconv.Unquote(string(wbytes))
+	//get request ext bidder params
+	if profileRaw, present := reqExtBidderParams["profile"]; present && len(profileRaw) != 0 {
+		var profile int
+		err = json.Unmarshal(profileRaw, &profile)
+		if err == nil {
+			wrapperExt.ProfileID = profile
+			wrapperExtSet = true
 		}
+	}
+	if versionRaw, present := reqExtBidderParams["version"]; present && len(versionRaw) != 0 {
+		var version int
+		err = json.Unmarshal(versionRaw, &version)
+		if err == nil {
+			wrapperExt.VersionID = version
+			wrapperExtSet = true
+		}
+	}
+	if wrapperExtSet {
 		jsonData, _ := json.Marshal(wrapperExt)
 		rawExt := fmt.Sprintf("{\"wrapper\": %s}", string(jsonData))
 		request.Ext = json.RawMessage(rawExt)
@@ -443,9 +420,6 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ad
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
-	for _, line := range cookies {
-		headers.Add("Cookie", line)
-	}
 	return []*adapters.RequestData{{
 		Method:  "POST",
 		Uri:     a.URI,
