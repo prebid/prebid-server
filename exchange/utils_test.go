@@ -922,7 +922,7 @@ func TestCleanOpenRTBRequestsBidderParams(t *testing.T) {
 			for _, r := range bidderRequests {
 				expected := test.expectedExt[r.BidderName.String()]
 				actual := r.BidRequest.Ext
-				assert.Equal(t, expected, actual, test.description+":Ext.Prebid.BidderParams")
+				assert.Equal(t, expected, actual, test.description+" Req:Ext.Prebid.BidderParams")
 			}
 		}
 	}

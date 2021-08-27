@@ -243,15 +243,15 @@ func getAuctionBidderRequests(req AuctionRequest,
 		prepareSource(&reqCopy, bidder, sChainsByBidder)
 
 		if len(bidderExt) != 0 {
-			var params json.RawMessage = nil
 			bidderName := openrtb_ext.BidderName(bidder)
 			if bidderParams, ok := bidderExt[string(bidderName)]; ok {
-				params = bidderParams
+				if requestExt == nil {
+					requestExt = &openrtb_ext.ExtRequest{}
+				}
+				requestExt.Prebid.BidderParams = bidderParams
+			} else if requestExt != nil {
+				requestExt.Prebid.BidderParams = nil
 			}
-			if requestExt == nil {
-				requestExt = &openrtb_ext.ExtRequest{}
-			}
-			requestExt.Prebid.BidderParams = params
 		}
 
 		reqExt, err := getExtJson(req.BidRequest, requestExt)
