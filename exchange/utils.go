@@ -233,35 +233,32 @@ func getAuctionBidderRequests(req AuctionRequest,
 		}
 	}
 
-	reqExt, err := getExtJson(req.BidRequest, requestExt)
-	if err != nil {
-		return nil, []error{err}
-	}
-
 	var errs []error
 	for bidder, imps := range impsByBidder {
 		coreBidder := resolveBidder(bidder, aliases)
 
 		reqCopy := *req.BidRequest
 		reqCopy.Imp = imps
-		reqCopy.Ext = reqExt
 
 		prepareSource(&reqCopy, bidder, sChainsByBidder)
 
 		if len(bidderExt) != 0 {
+			var params json.RawMessage = nil
 			bidderName := openrtb_ext.BidderName(bidder)
 			if bidderParams, ok := bidderExt[string(bidderName)]; ok {
-				requestExt.Prebid.BidderParams = bidderParams
-			} else {
-				requestExt.Prebid.BidderParams = nil
+				params = bidderParams
 			}
-
-			if reqCopy.Ext, err = getExtJson(req.BidRequest, requestExt); err != nil {
-				return nil, []error{err}
+			if requestExt == nil {
+				requestExt = &openrtb_ext.ExtRequest{}
 			}
-		} else {
-			reqCopy.Ext = reqExt
+			requestExt.Prebid.BidderParams = params
 		}
+
+		reqExt, err := getExtJson(req.BidRequest, requestExt)
+		if err != nil {
+			return nil, []error{err}
+		}
+		reqCopy.Ext = reqExt
 
 		if err := removeUnpermissionedEids(&reqCopy, bidder, requestExt); err != nil {
 			errs = append(errs, fmt.Errorf("unable to enforce request.ext.prebid.data.eidpermissions because %v", err))

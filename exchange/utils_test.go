@@ -883,13 +883,13 @@ func TestCleanOpenRTBRequestsBidderParams(t *testing.T) {
 		},
 		{
 			description: "Bidder params for single partner",
-			inExt:       json.RawMessage(`{"prebid":{"bidderparams": {"pubmatic": {"wiid":"pqrs"}}}}`),
+			inExt:       json.RawMessage(`{"prebid":{"bidderparams": {"pubmatic": {"profile":1234,"version":2}}}}`),
 			expectedExt: getExpectedReqExt(false, true, false),
 			hasError:    false,
 		},
 		{
 			description: "Bidder params for two partners",
-			inExt:       json.RawMessage(`{"prebid":{"bidderparams": {"pubmatic": {"wiid":"pqrs"}, "appnexus": {"key1": 123, "key2": {"innerKey1":"innerValue1"}} }}}`),
+			inExt:       json.RawMessage(`{"prebid":{"bidderparams": {"pubmatic": {"profile":1234,"version":2}, "appnexus": {"key1": 123, "key2": {"innerKey1":"innerValue1"}} }}}`),
 			expectedExt: getExpectedReqExt(false, true, true),
 			hasError:    false,
 		},
@@ -910,9 +910,10 @@ func TestCleanOpenRTBRequestsBidderParams(t *testing.T) {
 			UserSyncs:  &emptyUsersync{},
 		}
 
+		bidderToSyncerKey := map[string]string{}
 		permissions := permissionsMock{allowAllBidders: true, passGeo: true, passID: true}
 		metrics := metrics.MetricsEngineMock{}
-		bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, &permissions, &metrics, gdpr.SignalNo, config.Privacy{}, nil)
+		bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, bidderToSyncerKey, &permissions, &metrics, gdpr.SignalNo, config.Privacy{}, nil)
 		if test.hasError == true {
 			assert.NotNil(t, errs)
 			assert.Len(t, bidderRequests, 0)
@@ -937,7 +938,7 @@ func getExpectedReqExt(nilExt, includePubmaticParams, includeAppnexusParams bool
 	}
 
 	if includePubmaticParams {
-		bidderParamsMap["pubmatic"] = json.RawMessage(`{"prebid":{"bidderparams":{"wiid":"pqrs"}}}`)
+		bidderParamsMap["pubmatic"] = json.RawMessage(`{"prebid":{"bidderparams":{"profile":1234,"version":2}}}`)
 	} else {
 		bidderParamsMap["pubmatic"] = json.RawMessage(`{"prebid":{}}`)
 	}
@@ -1984,7 +1985,6 @@ func newBidRequestWithBidderParams(t *testing.T) *openrtb2.BidRequest {
 			},
 			Ext: json.RawMessage(`{"appnexus": {"placementId": 1}, "pubmatic":{"publisherId": "1234"}}`),
 		}},
-		Ext: json.RawMessage(`{"prebid": {"bidderparams": {"pubmatic":{"wiid": "pqrs"}, "appnexus":{"param1":"value1"}}}}`),
 	}
 }
 

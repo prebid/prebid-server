@@ -89,8 +89,7 @@
           "ext": {
             "wrapper": {
               "profile": 5123,
-              "version": 1,
-              "wiid": "abcd"
+              "version": 1
             }
           }
         }
