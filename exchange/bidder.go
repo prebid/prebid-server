@@ -49,7 +49,7 @@ type adaptedBidder interface {
 	//
 	// Any errors will be user-facing in the API.
 	// Error messages should help publishers understand what might account for "bad" bids.
-	requestBid(ctx context.Context, request *openrtb2.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool) (*pbsOrtbSeatBid, []error)
+	requestBid(ctx context.Context, request *openrtb2.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, revision string, accountDebugAllowed, headerDebugAllowed bool) (*pbsOrtbSeatBid, []error)
 }
 
 // pbsOrtbBid is a Bid returned by an adaptedBidder.
@@ -128,7 +128,7 @@ type bidderAdapterConfig struct {
 	DebugInfo          config.DebugInfo
 }
 
-func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb2.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool) (*pbsOrtbSeatBid, []error) {
+func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb2.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, revision string, accountDebugAllowed, headerDebugAllowed bool) (*pbsOrtbSeatBid, []error) {
 	reqData, errs := bidder.Bidder.MakeRequests(request, reqInfo)
 
 	if len(reqData) == 0 {
@@ -139,16 +139,19 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb2.B
 		return nil, errs
 	}
 
-	if reqInfo.GlobalPrivacyControlHeader == "1" {
-		for i := 0; i < len(reqData); i++ {
-			if reqData[i].Headers != nil {
-				reqHeader := reqData[i].Headers.Clone()
-				reqHeader.Add("Sec-GPC", reqInfo.GlobalPrivacyControlHeader)
-				reqData[i].Headers = reqHeader
-			} else {
-				reqData[i].Headers = http.Header{}
-				reqData[i].Headers.Add("Sec-GPC", reqInfo.GlobalPrivacyControlHeader)
-			}
+	xPrebidHeader := buildXPrebidHeader(request, revision)
+
+	for i := 0; i < len(reqData); i++ {
+		if reqData[i].Headers != nil {
+			reqData[i].Headers = reqData[i].Headers.Clone()
+		} else {
+			reqData[i].Headers = http.Header{}
+		}
+		if revision != "" {
+			reqData[i].Headers.Add("X-Prebid", xPrebidHeader)
+		}
+		if reqInfo.GlobalPrivacyControlHeader == "1" {
+			reqData[i].Headers.Add("Sec-GPC", reqInfo.GlobalPrivacyControlHeader)
 		}
 	}
 

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"strings"
 
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/go-gdpr/vendorconsent"
@@ -699,4 +700,43 @@ func getExtBidAdjustmentFactors(requestExt *openrtb_ext.ExtRequest) map[string]f
 		bidAdjustmentFactors = requestExt.Prebid.BidAdjustmentFactors
 	}
 	return bidAdjustmentFactors
+}
+
+func buildXPrebidHeader(bidRequest *openrtb2.BidRequest, revision string) string {
+	req := &openrtb_ext.RequestWrapper{BidRequest: bidRequest}
+
+	pbsRecord := createNameVersionRecord("pbs-go", revision)
+
+	var channelVersionRecord string
+	if reqExt, _ := req.GetRequestExt(); reqExt != nil {
+		if prebidExt := reqExt.GetPrebid(); prebidExt != nil {
+			if channel := prebidExt.Channel; channel != nil {
+				channelVersionRecord = createNameVersionRecord(channel.Name, channel.Version)
+			}
+		}
+	}
+	var sdkVersionRecord string
+	if appExt, _ := req.GetAppExt(); appExt != nil {
+		if prebidExt := appExt.GetPrebid(); prebidExt != nil {
+			sdkVersionRecord = createNameVersionRecord(prebidExt.Source, prebidExt.Version)
+		}
+	}
+
+	var nonEmptyRecords []string
+	for _, record := range []string{pbsRecord, channelVersionRecord, sdkVersionRecord} {
+		if record != "" {
+			nonEmptyRecords = append(nonEmptyRecords, record)
+		}
+	}
+	return strings.Join(nonEmptyRecords, ",")
+}
+
+func createNameVersionRecord(name, version string) string {
+	if name == "" {
+		return ""
+	}
+	if version == "" {
+		version = "unknown"
+	}
+	return fmt.Sprintf("%s/%s", name, version)
 }

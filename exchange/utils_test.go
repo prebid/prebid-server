@@ -2228,3 +2228,98 @@ func TestRemoveUnpermissionedEidsEmptyValidations(t *testing.T) {
 		assert.Equal(t, &requestExpected, test.request, test.description+":request")
 	}
 }
+
+func TestBuildXPrebidHeader(t *testing.T) {
+	testCases := []struct {
+		description   string
+		revision      string
+		requestExt    *openrtb_ext.ExtRequest
+		requestAppExt *openrtb_ext.ExtApp
+		result        string
+	}{
+		{
+			description: "No versions",
+			revision:    "",
+			result:      "pbs-go/unknown",
+		},
+		{
+			description: "pbs",
+			revision:    "test-version",
+			result:      "pbs-go/test-version",
+		},
+		{
+			description: "prebid.js",
+			revision:    "test-version",
+			requestExt: &openrtb_ext.ExtRequest{
+				Prebid: openrtb_ext.ExtRequestPrebid{
+					Channel: &openrtb_ext.ExtRequestPrebidChannel{
+						Name:    "pbjs",
+						Version: "test-pbjs-version",
+					},
+				},
+			},
+			result: "pbs-go/test-version,pbjs/test-pbjs-version",
+		},
+		{
+			description: "unknown prebid.js",
+			revision:    "test-version",
+			requestExt: &openrtb_ext.ExtRequest{
+				Prebid: openrtb_ext.ExtRequestPrebid{
+					Channel: &openrtb_ext.ExtRequestPrebidChannel{
+						Name: "pbjs",
+					},
+				},
+			},
+			result: "pbs-go/test-version,pbjs/unknown",
+		},
+		{
+			description: "channel without a name",
+			revision:    "test-version",
+			requestExt: &openrtb_ext.ExtRequest{
+				Prebid: openrtb_ext.ExtRequestPrebid{
+					Channel: &openrtb_ext.ExtRequestPrebidChannel{
+						Version: "test-version",
+					},
+				},
+			},
+			result: "pbs-go/test-version",
+		},
+		{
+			description: "prebid-mobile",
+			revision:    "test-version",
+			requestAppExt: &openrtb_ext.ExtApp{
+				Prebid: openrtb_ext.ExtAppPrebid{
+					Source:  "prebid-mobile",
+					Version: "test-prebid-mobile-version",
+				},
+			},
+			result: "pbs-go/test-version,prebid-mobile/test-prebid-mobile-version",
+		},
+		{
+			description: "app ext without a source",
+			revision:    "test-version",
+			requestAppExt: &openrtb_ext.ExtApp{
+				Prebid: openrtb_ext.ExtAppPrebid{
+					Version: "test-version",
+				},
+			},
+			result: "pbs-go/test-version",
+		},
+	}
+
+	for _, test := range testCases {
+		req := &openrtb2.BidRequest{}
+		if test.requestExt != nil {
+			reqExt, err := json.Marshal(test.requestExt)
+			assert.NoError(t, err, test.description+":err marshalling reqExt")
+			req.Ext = reqExt
+		}
+		if test.requestAppExt != nil {
+			reqAppExt, err := json.Marshal(test.requestAppExt)
+			assert.NoError(t, err, test.description+":err marshalling reqAppExt")
+			req.App = &openrtb2.App{Ext: reqAppExt}
+		}
+		result := buildXPrebidHeader(req, test.revision)
+		assert.Equal(t, result, test.result, test.description+":result")
+	}
+}
