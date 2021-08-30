@@ -1,0 +1,61 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [{
+        "id": "test-imp-id",
+        "audio": {},
+        "ext": {
+          "bidder": {
+            "placementId": "posid00001",
+            "accountId": "accountid01"
+          }
+        }
+      }]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bid.adview.com/agent/thirdAdxService/accountid01",
+        "body": {
+          "id": "test-request-id",
+          "imp": [{
+            "ext": {
+              "bidder": {
+                "placementId": "posid00001",
+                "accountId": "accountid01"
+              }
+            },
+            "id": "test-imp-id",
+            "audio": {
+              "mimes": null
+            },
+            "tagid": "posid00001"
+          }]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [{
+            "bid": [{
+              "id": "test-bid-id",
+              "impid": "test-imp-id",
+              "price": 10,
+              "adm": "{vast xml}",
+              "crid": "test-creative-id"
+            }]
+          }],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [],
+  "expectedMakeBidsErrors": [ 
+    {
+      "value": "Failed to find supported impression \"test-imp-id\" mediatype",
+      "comparison": "literal" 
+    }
+  ]
+}

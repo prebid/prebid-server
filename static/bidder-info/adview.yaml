@@ -1,0 +1,9 @@
+maintainer:
+  email: "partner@adview.com"
+gvlVendorID: 1022
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - native
+      - video
