@@ -71,11 +71,10 @@ func (a *AdprimeAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 		reqCopy.Imp[0].Ext = newExt
 
 		// keywords
-		if len(adprimeExt.Keywords) > 0 {
-			if reqCopy.Site == nil {
-				reqCopy.Site = &openrtb2.Site{}
-			}
-			reqCopy.Site.Keywords = strings.Join(adprimeExt.Keywords, ",")
+		if reqCopy.Site != nil && len(adprimeExt.Keywords) > 0 {
+			siteCopy := *reqCopy.Site
+			siteCopy.Keywords = strings.Join(adprimeExt.Keywords, ",")
+			reqCopy.Site = &siteCopy
 		}
 
 		// audiences
@@ -83,7 +82,9 @@ func (a *AdprimeAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			if reqCopy.User == nil {
 				reqCopy.User = &openrtb2.User{}
 			}
-			reqCopy.User.CustomData = strings.Join(adprimeExt.Audiences, ",")
+			userCopy := *reqCopy.User
+			userCopy.CustomData = strings.Join(adprimeExt.Audiences, ",")
+			reqCopy.User = &userCopy
 		}
 
 		adapterReq, errors := a.makeRequest(&reqCopy)
@@ -163,21 +164,21 @@ func (a *AdprimeAdapter) MakeBids(internalRequest *openrtb2.BidRequest, external
 }
 
 func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
-	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impID {
-			if imp.Banner == nil && imp.Video != nil {
-				mediaType = openrtb_ext.BidTypeVideo
+			if imp.Banner != nil {
+				return openrtb_ext.BidTypeBanner, nil
 			}
-			if imp.Banner == nil && imp.Video == nil && imp.Native != nil {
-				mediaType = openrtb_ext.BidTypeNative
+			if imp.Video != nil {
+				return openrtb_ext.BidTypeVideo, nil
 			}
-			return mediaType, nil
+			if imp.Native != nil {
+				return openrtb_ext.BidTypeNative, nil
+			}
 		}
 	}
 
-	// This shouldnt happen. Lets handle it just incase by returning an error.
 	return "", &errortypes.BadInput{
-		Message: fmt.Sprintf("Failed to find impression \"%s\" ", impID),
+		Message: fmt.Sprintf("Failed to find impression \"%s\"", impID),
 	}
 }
