@@ -2320,6 +2320,6 @@ func TestBuildXPrebidHeader(t *testing.T) {
 			req.App = &openrtb2.App{Ext: reqAppExt}
 		}
 		result := buildXPrebidHeader(req, test.revision)
-		assert.Equal(t, result, test.result, test.description+":result")
+		assert.Equal(t, test.result, result, test.description+":result")
 	}
 }
