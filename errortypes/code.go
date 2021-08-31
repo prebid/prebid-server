@@ -13,6 +13,7 @@ const (
 	AcctRequiredErrorCode
 	NoConversionRateErrorCode
 	NoBidPriceErrorCode
+	BidderFailedSchemaValidationErrorCode
 )
 
 // Defines numeric codes for well-known warnings.

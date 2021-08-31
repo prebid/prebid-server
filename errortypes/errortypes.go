@@ -198,3 +198,22 @@ func (err *NoBidPrice) Code() int {
 func (err *NoBidPrice) Severity() Severity {
 	return SeverityWarning
 }
+
+// BidderFailedSchemaValidation is used at the request validation step,
+// when the bidder parameters fail the schema validation, we want to
+// continue processing the request and still return an error message.
+type BidderFailedSchemaValidation struct {
+	Message string
+}
+
+func (err *BidderFailedSchemaValidation) Error() string {
+	return err.Message
+}
+
+func (err *BidderFailedSchemaValidation) Code() int {
+	return BidderFailedSchemaValidationErrorCode
+}
+
+func (err *BidderFailedSchemaValidation) Severity() Severity {
+	return SeverityWarning
+}
