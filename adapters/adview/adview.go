@@ -20,13 +20,13 @@ type adapter struct {
 
 // Builder builds a new instance of the adview adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
+	endpointTemplate, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 
 	bidder := &adapter{
-		endpoint: template,
+		endpoint: endpointTemplate,
 	}
 	return bidder, nil
 }
@@ -34,7 +34,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errors []error
 	var bidderExt adapters.ExtImpBidder
-	imp := &request.Imp[0];
+	imp := &request.Imp[0]
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		errors = append(errors, &errortypes.BadInput{
 			Message: fmt.Sprintf("invalid imp.ext, %s", err),
@@ -66,16 +66,15 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		return nil, []error{err}
 	}
 
-	imp.Ext = nil //do not forward ext to adview
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
 		return nil, []error{err}
 	}
 
 	return []*adapters.RequestData{{
-		Method:  http.MethodPost,
-		Body:    reqJSON,
-		Uri:     url,
+		Method: http.MethodPost,
+		Body:   reqJSON,
+		Uri:    url,
 	}}, nil
 }
 
