@@ -1002,18 +1002,18 @@ func TestRefererParsing(t *testing.T) {
 
 func TestParseImpInfoSingleImpression(t *testing.T) {
 
-	expectedRes := []ImpData{
+	expectedRes := []ImpExtPrebidData{
 		{
 			Imp:          json.RawMessage(`{"video":{"h":300,"w":200},"ext": {"prebid": {"storedrequest": {"id": "1"},"options": {"echovideoattrs": true}}}}`),
-			ImpExtPrebid: openrtb_ext.ExtImpPrebid{StoredRequest: &openrtb_ext.ExtStoredRequest{ID: "1"}, Options: &openrtb_ext.Options{Echovideoattrs: true}},
+			ImpExtPrebid: openrtb_ext.ExtImpPrebid{StoredRequest: &openrtb_ext.ExtStoredRequest{ID: "1"}, Options: &openrtb_ext.Options{EchoVideoAttrs: true}},
 		},
 		{
 			Imp:          json.RawMessage(`{"id": "adUnit2","ext": {"prebid": {"storedrequest": {"id": "1"},"options": {"echovideoattrs": true}},"appnexus": {"placementId": "def","trafficSourceCode": "mysite.com","reserve": null},"rubicon": null}}`),
-			ImpExtPrebid: openrtb_ext.ExtImpPrebid{StoredRequest: &openrtb_ext.ExtStoredRequest{ID: "1"}, Options: &openrtb_ext.Options{Echovideoattrs: true}},
+			ImpExtPrebid: openrtb_ext.ExtImpPrebid{StoredRequest: &openrtb_ext.ExtStoredRequest{ID: "1"}, Options: &openrtb_ext.Options{EchoVideoAttrs: true}},
 		},
 		{
 			Imp:          json.RawMessage(`{"ext": {"prebid": {"storedrequest": {"id": "2"},"options": {"echovideoattrs": false}}}}`),
-			ImpExtPrebid: openrtb_ext.ExtImpPrebid{StoredRequest: &openrtb_ext.ExtStoredRequest{ID: "2"}, Options: &openrtb_ext.Options{Echovideoattrs: false}},
+			ImpExtPrebid: openrtb_ext.ExtImpPrebid{StoredRequest: &openrtb_ext.ExtStoredRequest{ID: "2"}, Options: &openrtb_ext.Options{EchoVideoAttrs: false}},
 		},
 		{
 			//in this case impression doesn't have storedrequest so we don't expect any data about this imp will be returned
@@ -1068,14 +1068,14 @@ func TestParseImpInfoMultipleImpressions(t *testing.T) {
 		]
 	}`)
 
-	expectedRes := []ImpData{
+	expectedRes := []ImpExtPrebidData{
 		{
 			Imp:          json.RawMessage(`{"id": "imp1","ext": {"prebid": {"storedrequest": {"id": "1"},"options": {"echovideoattrs": true}}}}`),
-			ImpExtPrebid: openrtb_ext.ExtImpPrebid{StoredRequest: &openrtb_ext.ExtStoredRequest{ID: "1"}, Options: &openrtb_ext.Options{Echovideoattrs: true}},
+			ImpExtPrebid: openrtb_ext.ExtImpPrebid{StoredRequest: &openrtb_ext.ExtStoredRequest{ID: "1"}, Options: &openrtb_ext.Options{EchoVideoAttrs: true}},
 		},
 		{
 			Imp:          json.RawMessage(`{"id": "imp2","ext": {"prebid": {"storedrequest": {"id": "2"},"options": {"echovideoattrs": false}}}}`),
-			ImpExtPrebid: openrtb_ext.ExtImpPrebid{StoredRequest: &openrtb_ext.ExtStoredRequest{ID: "2"}, Options: &openrtb_ext.Options{Echovideoattrs: false}},
+			ImpExtPrebid: openrtb_ext.ExtImpPrebid{StoredRequest: &openrtb_ext.ExtStoredRequest{ID: "2"}, Options: &openrtb_ext.Options{EchoVideoAttrs: false}},
 		},
 		{
 			Imp:          json.RawMessage(`{"id": "imp3"}`),

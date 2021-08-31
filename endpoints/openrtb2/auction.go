@@ -1322,7 +1322,7 @@ func getJsonSyntaxError(testJSON []byte) (bool, string) {
 	return false, ""
 }
 
-func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson []byte, impInfo []ImpData) ([]byte, map[string]exchange.ImpExtInfo, []error) {
+func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson []byte, impInfo []ImpExtPrebidData) ([]byte, map[string]exchange.ImpExtInfo, []error) {
 	// Parse the Stored Request IDs from the BidRequest and Imps.
 	storedBidRequestId, hasStoredBidRequest, err := getStoredRequestId(requestJson)
 	if err != nil {
@@ -1335,16 +1335,14 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 		storedReqIds = []string{storedBidRequestId}
 	}
 
-	//impStoredReqIds list of all stored impression ids
 	impStoredReqIds := make([]string, 0)
-	impStoredReqIdsUnique := make(map[string]interface{})
+	impStoredReqIdsUniqueTracker := make(map[string]struct{})
 	for _, impData := range impInfo {
 		if impData.ImpExtPrebid.StoredRequest != nil && len(impData.ImpExtPrebid.StoredRequest.ID) > 0 {
 			storedImpId := impData.ImpExtPrebid.StoredRequest.ID
-			_, present := impStoredReqIdsUnique[storedImpId]
-			if !present {
+			if _, present := impStoredReqIdsUniqueTracker[storedImpId]; !present {
 				impStoredReqIds = append(impStoredReqIds, storedImpId)
-				impStoredReqIdsUnique[storedImpId] = true
+				impStoredReqIdsUniqueTracker[storedImpId] = struct{}{}
 			}
 		}
 	}
@@ -1394,7 +1392,7 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 	// Apply any Stored Imps, if they exist. Since the JSON Merge Patch overrides arrays,
 	// and Prebid Server defers to the HTTP Request to resolve conflicts, it's safe to
 	// assume that the request.imp data did not change when applying the Stored BidRequest.
-	impExtInfoMap := make(map[string]exchange.ImpExtInfo, 0)
+	impExtInfoMap := make(map[string]exchange.ImpExtInfo, len(impInfo))
 	resolvedImps := make([]json.RawMessage, 0)
 	for i, impData := range impInfo {
 		if impData.ImpExtPrebid.StoredRequest != nil && len(impData.ImpExtPrebid.StoredRequest.ID) > 0 {
@@ -1421,7 +1419,7 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 
 			echovideoAttributes := false
 			if impData.ImpExtPrebid.Options != nil {
-				echovideoAttributes = impData.ImpExtPrebid.Options.Echovideoattrs
+				echovideoAttributes = impData.ImpExtPrebid.Options.EchoVideoAttrs
 			}
 			impExtInfoMap[impId] = exchange.ImpExtInfo{EchoVideoAttrs: echovideoAttributes, StoredImp: storedImps[impData.ImpExtPrebid.StoredRequest.ID]}
 
@@ -1445,7 +1443,7 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 }
 
 // parseImpInfo parses the request JSON and returns impression and unmarshalled imp.ext.prebid
-func parseImpInfo(requestJson []byte) (impData []ImpData, errs []error) {
+func parseImpInfo(requestJson []byte) (impData []ImpExtPrebidData, errs []error) {
 
 	if impArray, dataType, _, err := jsonparser.Get(requestJson, "imp"); err == nil && dataType == jsonparser.Array {
 		_, err = jsonparser.ArrayEach(impArray, func(imp []byte, _ jsonparser.ValueType, _ int, err error) {
@@ -1456,14 +1454,14 @@ func parseImpInfo(requestJson []byte) (impData []ImpData, errs []error) {
 					errs = append(errs, err)
 				}
 			}
-			newImpData := ImpData{imp, impExtPrebid}
+			newImpData := ImpExtPrebidData{imp, impExtPrebid}
 			impData = append(impData, newImpData)
 		})
 	}
 	return
 }
 
-type ImpData struct {
+type ImpExtPrebidData struct {
 	Imp          json.RawMessage
 	ImpExtPrebid openrtb_ext.ExtImpPrebid
 }

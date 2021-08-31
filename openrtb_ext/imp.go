@@ -24,5 +24,5 @@ type ExtStoredRequest struct {
 }
 
 type Options struct {
-	Echovideoattrs bool `json:"echovideoattrs"`
+	EchoVideoAttrs bool `json:"echovideoattrs"`
 }
