@@ -10,7 +10,7 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderAdview, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderAdView, config.Adapter{
 		Endpoint: "https://bid.adview.com/agent/thirdAdxService/{{.AccountID}}"})
 
 	if buildErr != nil {
@@ -21,7 +21,7 @@ func TestJsonSamples(t *testing.T) {
 }
 
 func TestEndpointTemplateMalformed(t *testing.T) {
-	_, buildErr := Builder(openrtb_ext.BidderAdview, config.Adapter{
+	_, buildErr := Builder(openrtb_ext.BidderAdView, config.Adapter{
 		Endpoint: "{{Malformed}}"})
 
 	assert.Error(t, buildErr)

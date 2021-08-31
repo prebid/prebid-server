@@ -14,8 +14,8 @@ func TestValidParams(t *testing.T) {
 	}
 
 	for _, validParam := range validParams {
-		if err := validator.Validate(openrtb_ext.BidderAdview, json.RawMessage(validParam)); err != nil {
-			t.Errorf("Schema rejected Adview params: %s", validParam)
+		if err := validator.Validate(openrtb_ext.BidderAdView, json.RawMessage(validParam)); err != nil {
+			t.Errorf("Schema rejected adview params: %s", validParam)
 		}
 	}
 }
@@ -27,7 +27,7 @@ func TestInvalidParams(t *testing.T) {
 	}
 
 	for _, invalidParam := range invalidParams {
-		if err := validator.Validate(openrtb_ext.BidderAdview, json.RawMessage(invalidParam)); err == nil {
+		if err := validator.Validate(openrtb_ext.BidderAdView, json.RawMessage(invalidParam)); err == nil {
 			t.Errorf("Schema allowed unexpected params: %s", invalidParam)
 		}
 	}
@@ -40,12 +40,9 @@ var validParams = []string{
 var invalidParams = []string{
 	``,
 	`null`,
-	`true`,
-	`5`,
-	`4.2`,
-	`[]`,
 	`{}`,
 	`{"adCode": "string", "seatCode": 5, "originalPublisherid": "string"}`,
 	`{ "accountId": "accountid01" }`,
+	`{ "placementId": "posid00001" }`,
 	`{ "placementId": "", "accountId": "" }`,
 }
