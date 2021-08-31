@@ -147,9 +147,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb2.B
 		} else {
 			reqData[i].Headers = http.Header{}
 		}
-		if revision != "" {
-			reqData[i].Headers.Add("X-Prebid", xPrebidHeader)
-		}
+		reqData[i].Headers.Add("X-Prebid", xPrebidHeader)
 		if reqInfo.GlobalPrivacyControlHeader == "1" {
 			reqData[i].Headers.Add("Sec-GPC", reqInfo.GlobalPrivacyControlHeader)
 		}
