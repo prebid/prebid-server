@@ -1,6 +1,5 @@
 maintainer:
   email: "tech@aceex.io"
-gvlVendorID: 0
 capabilities:
   app:
     mediaTypes:
