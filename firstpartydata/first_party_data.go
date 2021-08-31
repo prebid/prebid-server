@@ -2,7 +2,6 @@ package firstpartydata
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/evanphx/json-patch"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
@@ -282,25 +281,4 @@ func PreprocessBidderFPD(reqExtPrebid openrtb_ext.ExtRequestPrebid) (map[openrtb
 	}
 
 	return fpdData, reqExtPrebid
-}
-
-func ValidateFPDConfig(reqExtPrebid openrtb_ext.ExtRequestPrebid) error {
-
-	//Both FPD global and bidder specific permissions are specified
-	if reqExtPrebid.Data == nil && reqExtPrebid.BidderConfigs == nil {
-		return nil
-	}
-
-	if reqExtPrebid.Data != nil && len(reqExtPrebid.Data.Bidders) != 0 && reqExtPrebid.BidderConfigs == nil {
-		return errors.New(`request.ext.prebid.data.bidders are specified but reqExtPrebid.BidderConfigs are not`)
-	}
-	if reqExtPrebid.Data != nil && len(reqExtPrebid.Data.Bidders) == 0 && reqExtPrebid.BidderConfigs != nil {
-		return errors.New(`request.ext.prebid.data.bidders are not specified but reqExtPrebid.BidderConfigs are`)
-	}
-
-	if reqExtPrebid.Data == nil && reqExtPrebid.BidderConfigs != nil {
-		return errors.New(`request.ext.prebid.data is not specified but reqExtPrebid.BidderConfigs are`)
-	}
-
-	return nil
 }

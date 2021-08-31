@@ -2806,49 +2806,6 @@ func TestParseRequestFPD(t *testing.T) {
 	}
 }
 
-func TestValidateFPDBidders(t *testing.T) {
-	deps := &endpointDeps{
-		&warningsCheckExchange{},
-		newParamsValidator(t),
-		&mockStoredReqFetcher{},
-		empty_fetcher.EmptyFetcher{},
-		empty_fetcher.EmptyFetcher{},
-		nil,
-		&metricsConfig.DummyMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
-		map[string]string{},
-		false,
-		[]byte{},
-		openrtb_ext.BuildBidderMap(),
-		nil,
-		nil,
-		hardcodedResponseIPValidator{response: true},
-	}
-
-	expectedFpdBiddersValidationErrors := map[string]string{
-		"fpd-bidders-valid.json":                  "",
-		"fpd-bidders-valid-no-fpd.json":           "",
-		"fpd-bidders-invalid-no-global.json":      "[request.ext.prebid.data.bidders are not specified but reqExtPrebid.BidderConfigs are]",
-		"fpd-bidders-invalid-no-bidder-conf.json": "[request.ext.prebid.data.bidders are specified but reqExtPrebid.BidderConfigs are not]",
-	}
-
-	if specFiles, err := ioutil.ReadDir("sample-requests/valid-whole/supplementary/firstPartyDataBidders"); err == nil {
-		for _, specFile := range specFiles {
-			reqBody := validRequest(t, fmt.Sprintf("firstPartyDataBidders/%s", specFile.Name()))
-			deps.cfg = &config.Configuration{MaxRequestSize: int64(len(reqBody))}
-			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
-			_, _, _, errL := deps.parseRequest(req)
-
-			err := expectedFpdBiddersValidationErrors[specFile.Name()]
-			if err == "" {
-				assert.Len(t, errL, 0, "No errors expected after parse request")
-			} else {
-				assert.True(t, strings.Contains(err, errL[0].Error()), "Incorrect error message")
-			}
-
-		}
-	}
-}
 func TestValidateFpdRequest(t *testing.T) {
 	deps := &endpointDeps{
 		&warningsCheckExchange{},

@@ -413,10 +413,6 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper) []err
 		if err := validateCustomRates(reqPrebid.CurrencyConversions); err != nil {
 			return []error{err}
 		}
-
-		if err := firstpartydata.ValidateFPDConfig(*reqPrebid); err != nil {
-			return []error{err}
-		}
 	}
 
 	if (req.Site == nil && req.App == nil) || (req.Site != nil && req.App != nil) {
