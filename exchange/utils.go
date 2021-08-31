@@ -708,7 +708,7 @@ func buildXPrebidHeader(bidRequest *openrtb2.BidRequest, revision string) string
 	pbsRecord := createNameVersionRecord("pbs-go", revision)
 
 	var channelVersionRecord string
-	if reqExt, _ := req.GetRequestExt(); reqExt != nil {
+	if reqExt, err := req.GetRequestExt(); err == nil && reqExt != nil {
 		if prebidExt := reqExt.GetPrebid(); prebidExt != nil {
 			if channel := prebidExt.Channel; channel != nil {
 				channelVersionRecord = createNameVersionRecord(channel.Name, channel.Version)
@@ -716,7 +716,7 @@ func buildXPrebidHeader(bidRequest *openrtb2.BidRequest, revision string) string
 		}
 	}
 	var sdkVersionRecord string
-	if appExt, _ := req.GetAppExt(); appExt != nil {
+	if appExt, err := req.GetAppExt(); err == nil && appExt != nil {
 		if prebidExt := appExt.GetPrebid(); prebidExt != nil {
 			sdkVersionRecord = createNameVersionRecord(prebidExt.Source, prebidExt.Version)
 		}
