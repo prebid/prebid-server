@@ -49,7 +49,7 @@ type adaptedBidder interface {
 	//
 	// Any errors will be user-facing in the API.
 	// Error messages should help publishers understand what might account for "bad" bids.
-	requestBid(ctx context.Context, request *openrtb2.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, revision string, accountDebugAllowed, headerDebugAllowed bool) (*pbsOrtbSeatBid, []error)
+	requestBid(ctx context.Context, request *openrtb2.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, version string, accountDebugAllowed, headerDebugAllowed bool) (*pbsOrtbSeatBid, []error)
 }
 
 // pbsOrtbBid is a Bid returned by an adaptedBidder.
@@ -128,7 +128,7 @@ type bidderAdapterConfig struct {
 	DebugInfo          config.DebugInfo
 }
 
-func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb2.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, revision string, accountDebugAllowed, headerDebugAllowed bool) (*pbsOrtbSeatBid, []error) {
+func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb2.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, version string, accountDebugAllowed, headerDebugAllowed bool) (*pbsOrtbSeatBid, []error) {
 	reqData, errs := bidder.Bidder.MakeRequests(request, reqInfo)
 
 	if len(reqData) == 0 {
@@ -139,7 +139,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb2.B
 		return nil, errs
 	}
 
-	xPrebidHeader := buildXPrebidHeader(request, revision)
+	xPrebidHeader := buildXPrebidHeader(request, version)
 
 	for i := 0; i < len(reqData); i++ {
 		if reqData[i].Headers != nil {

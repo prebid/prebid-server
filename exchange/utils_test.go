@@ -2232,24 +2232,24 @@ func TestRemoveUnpermissionedEidsEmptyValidations(t *testing.T) {
 func TestBuildXPrebidHeader(t *testing.T) {
 	testCases := []struct {
 		description   string
-		revision      string
+		version       string
 		requestExt    *openrtb_ext.ExtRequest
 		requestAppExt *openrtb_ext.ExtApp
 		result        string
 	}{
 		{
 			description: "No versions",
-			revision:    "",
+			version:     "",
 			result:      "pbs-go/unknown",
 		},
 		{
 			description: "pbs",
-			revision:    "test-version",
+			version:     "test-version",
 			result:      "pbs-go/test-version",
 		},
 		{
 			description: "prebid.js",
-			revision:    "test-version",
+			version:     "test-version",
 			requestExt: &openrtb_ext.ExtRequest{
 				Prebid: openrtb_ext.ExtRequestPrebid{
 					Channel: &openrtb_ext.ExtRequestPrebidChannel{
@@ -2262,7 +2262,7 @@ func TestBuildXPrebidHeader(t *testing.T) {
 		},
 		{
 			description: "unknown prebid.js",
-			revision:    "test-version",
+			version:     "test-version",
 			requestExt: &openrtb_ext.ExtRequest{
 				Prebid: openrtb_ext.ExtRequestPrebid{
 					Channel: &openrtb_ext.ExtRequestPrebidChannel{
@@ -2274,7 +2274,7 @@ func TestBuildXPrebidHeader(t *testing.T) {
 		},
 		{
 			description: "channel without a name",
-			revision:    "test-version",
+			version:     "test-version",
 			requestExt: &openrtb_ext.ExtRequest{
 				Prebid: openrtb_ext.ExtRequestPrebid{
 					Channel: &openrtb_ext.ExtRequestPrebidChannel{
@@ -2286,7 +2286,7 @@ func TestBuildXPrebidHeader(t *testing.T) {
 		},
 		{
 			description: "prebid-mobile",
-			revision:    "test-version",
+			version:     "test-version",
 			requestAppExt: &openrtb_ext.ExtApp{
 				Prebid: openrtb_ext.ExtAppPrebid{
 					Source:  "prebid-mobile",
@@ -2297,7 +2297,7 @@ func TestBuildXPrebidHeader(t *testing.T) {
 		},
 		{
 			description: "app ext without a source",
-			revision:    "test-version",
+			version:     "test-version",
 			requestAppExt: &openrtb_ext.ExtApp{
 				Prebid: openrtb_ext.ExtAppPrebid{
 					Version: "test-version",
@@ -2319,7 +2319,7 @@ func TestBuildXPrebidHeader(t *testing.T) {
 			assert.NoError(t, err, test.description+":err marshalling reqAppExt")
 			req.App = &openrtb2.App{Ext: reqAppExt}
 		}
-		result := buildXPrebidHeader(req, test.revision)
+		result := buildXPrebidHeader(req, test.version)
 		assert.Equal(t, test.result, result, test.description+":result")
 	}
 }

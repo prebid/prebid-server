@@ -48,7 +48,7 @@ func NewVideoEndpoint(
 	disabledBidders map[string]string,
 	defReqJSON []byte,
 	bidderMap map[string]openrtb_ext.BidderName,
-	revision string,
+	version string,
 	cache prebid_cache_client.Client,
 ) (httprouter.Handle, error) {
 
@@ -81,7 +81,7 @@ func NewVideoEndpoint(
 		cache,
 		videoEndpointRegexp,
 		ipValidator,
-		revision}).VideoAuctionEndpoint), nil
+		version}).VideoAuctionEndpoint), nil
 }
 
 /*
@@ -288,7 +288,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		StartTime:                  start,
 		LegacyLabels:               labels,
 		GlobalPrivacyControlHeader: secGPC,
-		Revision:                   deps.revision,
+		Version:                    deps.version,
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, &debugLog)

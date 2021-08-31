@@ -25,6 +25,13 @@ import (
 // See issue #559
 var Rev string
 
+// Version holds the version derived from the latest git tag
+// Set manually at build time using:
+//    go build -ldflags "-X main.Version=`git describe --tags | sed 's/^v//`"
+// Populated automatically at build / releases
+//   TODO
+var Version string
+
 func init() {
 	rand.Seed(time.Now().UnixNano())
 }
@@ -37,7 +44,7 @@ func main() {
 		glog.Exitf("Configuration could not be loaded or did not pass validation: %v", err)
 	}
 
-	err = serve(Rev, cfg)
+	err = serve(Version, Rev, cfg)
 	if err != nil {
 		glog.Exitf("prebid-server failed: %v", err)
 	}
@@ -51,7 +58,7 @@ func loadConfig() (*config.Configuration, error) {
 	return config.New(v)
 }
 
-func serve(revision string, cfg *config.Configuration) error {
+func serve(version string, revision string, cfg *config.Configuration) error {
 	fetchingInterval := time.Duration(cfg.CurrencyConverter.FetchIntervalSeconds) * time.Second
 	staleRatesThreshold := time.Duration(cfg.CurrencyConverter.StaleRatesSeconds) * time.Second
 	currencyConverter := currency.NewRateConverter(&http.Client{}, cfg.CurrencyConverter.FetchURL, staleRatesThreshold)
@@ -59,7 +66,7 @@ func serve(revision string, cfg *config.Configuration) error {
 	currencyConverterTickerTask := task.NewTickerTask(fetchingInterval, currencyConverter)
 	currencyConverterTickerTask.Start()
 
-	r, err := router.New(cfg, currencyConverter, revision)
+	r, err := router.New(cfg, currencyConverter, version)
 	if err != nil {
 		return err
 	}
