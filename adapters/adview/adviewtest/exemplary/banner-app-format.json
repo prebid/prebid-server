@@ -28,10 +28,12 @@
       {
         "id": "some-impression-id",
         "banner": {
-          "format": {
-            "w": 320,
-            "h": 50
-          }
+          "format": [
+            {
+              "w": 320,
+              "h": 50
+            }
+          ]
         },
         "ext": {
           "bidder": {
@@ -61,10 +63,12 @@
               "banner": {
                 "w": 320,
                 "h": 50,
-                "format": {
-                  "w": 320,
-                  "h": 50
-                }
+                "format": [
+                  {
+                    "w": 320,
+                    "h": 50
+                  }
+                ]
               },
               "tagid": "posid00001",
         	  "ext": {
