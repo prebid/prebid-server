@@ -14,7 +14,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type AceexAdapter struct {
+type adapter struct {
 	endpoint *template.Template
 }
 
@@ -25,7 +25,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 
-	bidder := &AceexAdapter{
+	bidder := &adapter{
 		endpoint: template,
 	}
 	return bidder, nil
@@ -54,7 +54,7 @@ func getHeaders(request *openrtb2.BidRequest) http.Header {
 	return headers
 }
 
-func (a *AceexAdapter) MakeRequests(
+func (a *adapter) MakeRequests(
 	openRTBRequest *openrtb2.BidRequest,
 	reqInfo *adapters.ExtraRequestInfo,
 ) (
@@ -87,7 +87,7 @@ func (a *AceexAdapter) MakeRequests(
 	}}, nil
 }
 
-func (a *AceexAdapter) getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtAceex, error) {
+func (a *adapter) getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtAceex, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
@@ -104,12 +104,12 @@ func (a *AceexAdapter) getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtAcee
 	return &aceexExt, nil
 }
 
-func (a *AceexAdapter) buildEndpointURL(params *openrtb_ext.ExtAceex) (string, error) {
+func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtAceex) (string, error) {
 	endpointParams := macros.EndpointTemplateParams{AccountID: params.AccountID}
 	return macros.ResolveMacros(a.endpoint, endpointParams)
 }
 
-func (a *AceexAdapter) checkResponseStatusCodes(response *adapters.ResponseData) error {
+func (a *adapter) checkResponseStatusCodes(response *adapters.ResponseData) error {
 	if response.StatusCode == http.StatusNoContent {
 		return nil
 	}
@@ -135,7 +135,7 @@ func (a *AceexAdapter) checkResponseStatusCodes(response *adapters.ResponseData)
 	return nil
 }
 
-func (a *AceexAdapter) MakeBids(
+func (a *adapter) MakeBids(
 	openRTBRequest *openrtb2.BidRequest,
 	requestToBidder *adapters.RequestData,
 	bidderRawResponse *adapters.ResponseData,
@@ -143,10 +143,6 @@ func (a *AceexAdapter) MakeBids(
 	bidderResponse *adapters.BidderResponse,
 	errs []error,
 ) {
-	if bidderRawResponse.StatusCode == http.StatusNoContent {
-		return nil, nil
-	}
-
 	httpStatusError := a.checkResponseStatusCodes(bidderRawResponse)
 	if httpStatusError != nil {
 		return nil, []error{httpStatusError}
