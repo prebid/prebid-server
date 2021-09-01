@@ -502,7 +502,7 @@ func TestBuildResolvedFPDForBidders(t *testing.T) {
 				fpdFile.BiddersFPD["appnexus"] = &openrtb_ext.FPDData{}
 			}
 
-			resultFPD, err := BuildResolvedFPDForBidders(&inputReq, fpdFile.BiddersFPD, reqExtFPD, reqFPD)
+			resultFPD, err := BuildResolvedFPDForBidders(&inputReq, fpdFile.BiddersFPD, reqExtFPD, reqFPD, []string{"appnexus"})
 
 			assert.NoError(t, err, "No errors should be returned")
 			assert.Equal(t, inputReq, inputReqCopy, "Original request should not be modified")
@@ -530,32 +530,6 @@ func TestBuildResolvedFPDForBidders(t *testing.T) {
 				outputReq.User.Ext = nil
 				jsonutil.DiffJson(t, "user.ext is incorrect", resUserExt, expectedUserExt)
 			}
-		}
-	}
-}
-
-func TestMergeFPDData(t *testing.T) {
-
-	if specFiles, err := ioutil.ReadDir("./tests/mergefpd"); err == nil {
-		for _, specFile := range specFiles {
-			fileName := "./tests/mergefpd/" + specFile.Name()
-
-			fpdFile, err := loadFpdFile(fileName)
-			if err != nil {
-				t.Errorf("Unable to load file: %s", fileName)
-			}
-			rawData := []byte(fpdFile.FirstPartyData["site"])
-			firstPartyData := make(map[string][]byte)
-			firstPartyData["site"] = rawData
-
-			fpdData := fpdFile.BiddersFPD["appnexus"].Site
-
-			resSite, err := mergeFPD(fpdFile.InputRequestData, fpdData, firstPartyData, "site")
-
-			assert.Nil(t, err, "Error should be nil")
-
-			jsonutil.DiffJson(t, "Result is incorrect"+fileName, resSite, fpdFile.OutputRequestData)
-
 		}
 	}
 }
