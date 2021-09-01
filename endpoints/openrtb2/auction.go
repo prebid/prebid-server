@@ -1393,19 +1393,19 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 	// and Prebid Server defers to the HTTP Request to resolve conflicts, it's safe to
 	// assume that the request.imp data did not change when applying the Stored BidRequest.
 	impExtInfoMap := make(map[string]exchange.ImpExtInfo, len(impInfo))
-	resolvedImps := make([]json.RawMessage, 0)
+	resolvedImps := make([]json.RawMessage, 0, len(impInfo))
 	for i, impData := range impInfo {
 		if impData.ImpExtPrebid.StoredRequest != nil && len(impData.ImpExtPrebid.StoredRequest.ID) > 0 {
 			resolvedImp, err := jsonpatch.MergePatch(storedImps[impData.ImpExtPrebid.StoredRequest.ID], impData.Imp)
 
 			if err != nil {
-				hasErr, Err := getJsonSyntaxError(impData.Imp)
+				hasErr, errMessage := getJsonSyntaxError(impData.Imp)
 				if hasErr {
-					err = fmt.Errorf("Invalid JSON in Imp[%d] of Incoming Request: %s", i, Err)
+					err = fmt.Errorf("Invalid JSON in Imp[%d] of Incoming Request: %s", i, errMessage)
 				} else {
-					hasErr, Err = getJsonSyntaxError(storedImps[impData.ImpExtPrebid.StoredRequest.ID])
+					hasErr, errMessage = getJsonSyntaxError(storedImps[impData.ImpExtPrebid.StoredRequest.ID])
 					if hasErr {
-						err = fmt.Errorf("imp.ext.prebid.storedrequest.id %s: Stored Imp has Invalid JSON: %s", impData.ImpExtPrebid.StoredRequest.ID, Err)
+						err = fmt.Errorf("imp.ext.prebid.storedrequest.id %s: Stored Imp has Invalid JSON: %s", impData.ImpExtPrebid.StoredRequest.ID, errMessage)
 					}
 				}
 				return nil, nil, []error{err}
