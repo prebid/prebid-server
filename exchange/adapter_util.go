@@ -78,8 +78,7 @@ func GetActiveBidders(infos config.BidderInfos) map[string]openrtb_ext.BidderNam
 // GetDisabledBiddersErrorMessages returns a map of error messages for disabled bidders.
 func GetDisabledBiddersErrorMessages(infos config.BidderInfos) map[string]string {
 	disabledBidders := map[string]string{
-		"lifestreet":   `Bidder "lifestreet" is no longer available in Prebid Server. Please update your configuration.`,
-		"verizonmedia": `Bidder "verizonmedia" is replaced wth bidder 'yssp'. Please update your configuration.`,
+		"lifestreet": `Bidder "lifestreet" is no longer available in Prebid Server. Please update your configuration.`,
 	}
 
 	for name, info := range infos {
