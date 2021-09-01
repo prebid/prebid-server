@@ -21,10 +21,10 @@ type openwebImpExt struct {
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-
 	totalImps := len(request.Imp)
 	errors := make([]error, 0, totalImps)
 	sourceIdToImpIds := make(map[int][]int)
+	var sourceIds []int
 
 	for i := 0; i < totalImps; i++ {
 
@@ -37,6 +37,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 		if _, ok := sourceIdToImpIds[sourceId]; !ok {
 			sourceIdToImpIds[sourceId] = make([]int, 0, totalImps-i)
+			sourceIds = append(sourceIds, sourceId)
 		}
 
 		sourceIdToImpIds[sourceId] = append(sourceIdToImpIds[sourceId], i)
@@ -44,7 +45,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	}
 
 	totalReqs := len(sourceIdToImpIds)
-	if 0 == totalReqs {
+	if totalReqs == 0 {
 		return nil, errors
 	}
 
@@ -55,15 +56,17 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	reqs := make([]*adapters.RequestData, 0, totalReqs)
 
 	imps := request.Imp
-	request.Imp = make([]openrtb2.Imp, 0, len(imps))
-	for sourceId, impIds := range sourceIdToImpIds {
-		request.Imp = request.Imp[:0]
+	reqCopy := *request
+	reqCopy.Imp = make([]openrtb2.Imp, totalImps)
+	for _, sourceId := range sourceIds {
+		impIds := sourceIdToImpIds[sourceId]
+		reqCopy.Imp = reqCopy.Imp[:0]
 
 		for i := 0; i < len(impIds); i++ {
-			request.Imp = append(request.Imp, imps[impIds[i]])
+			reqCopy.Imp = append(reqCopy.Imp, imps[impIds[i]])
 		}
 
-		body, err := json.Marshal(request)
+		body, err := json.Marshal(reqCopy)
 		if err != nil {
 			errors = append(errors, fmt.Errorf("error while encoding bidRequest, err: %s", err))
 			return nil, errors
@@ -107,20 +110,7 @@ func (a *adapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.Request
 
 			bid := sb.Bid[i]
 
-			impOK := false
-			mediaType := openrtb_ext.BidTypeBanner
-			for _, imp := range bidReq.Imp {
-				if imp.ID == bid.ImpID {
-
-					impOK = true
-
-					if imp.Video != nil {
-						mediaType = openrtb_ext.BidTypeVideo
-						break
-					}
-				}
-			}
-
+			mediaType, impOK := getBidType(bidReq.Imp, bid.ImpID)
 			if !impOK {
 				errors = append(errors, &errortypes.BadServerResponse{
 					Message: fmt.Sprintf("ignoring bid id=%s, request doesn't contain any impression with id=%s", bid.ID, bid.ImpID),
@@ -136,6 +126,23 @@ func (a *adapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.Request
 	}
 
 	return bidResponse, errors
+}
+
+func getBidType(imps []openrtb2.Imp, impId string) (mediaType openrtb_ext.BidType, ok bool) {
+	mediaType = openrtb_ext.BidTypeBanner
+	for _, imp := range imps {
+		if imp.ID == impId {
+			ok = true
+
+			if imp.Video != nil {
+				mediaType = openrtb_ext.BidTypeVideo
+			}
+
+			break
+		}
+	}
+
+	return
 }
 
 func validateImpression(imp *openrtb2.Imp) (int, error) {

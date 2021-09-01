@@ -4,15 +4,13 @@
     "imp": [
       {
         "id": "test-imp-id",
-        "banner": {
-          "format": [
-            {
-              "w": 300,
-              "h": 250
-            }
-          ],
-          "w": 100,
-          "h": 400
+        "video": {
+          "w": 900,
+          "h": 250,
+          "mimes": [
+            "video/x-flv",
+            "video/mp4"
+          ]
         },
         "ext": {
           "bidder": {
@@ -22,6 +20,7 @@
       }
     ]
   },
+
   "httpCalls": [
     {
       "expectedRequest": {
@@ -30,20 +29,18 @@
           "id": "test-request-id",
           "imp": [
             {
-              "id": "test-imp-id",
-              "banner": {
-                "format": [
-                  {
-                    "w": 300,
-                    "h": 250
-                  }
-                ],
-                "w": 100,
-                "h": 400
+              "id":"test-imp-id",
+              "video": {
+                "w": 900,
+                "h": 250,
+                "mimes": [
+                  "video/x-flv",
+                  "video/mp4"
+                ]
               },
               "ext": {
                 "openweb": {
-                 "aid": 1000
+                  "aid": 1000
                 }
               }
             }
@@ -51,9 +48,18 @@
         }
       },
       "mockResponse": {
-        "status": 204
+        "status": 500,
+        "body": "Internal error"
       }
     }
   ],
+
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Remote server error: \"Internal error\"",
+      "comparison": "literal"
+    }
+  ],
+
   "expectedBidResponses": []
 }

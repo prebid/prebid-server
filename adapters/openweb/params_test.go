@@ -53,7 +53,7 @@ var invalidParams = []string{
 	`4.2`,
 	`[]`,
 	`{}`,
-	`{"aid":"123"}`,
+	`{"aid":"some string instead of int"}`,
 	`{"aid":"0"}`,
 	`{"aid":"123","placementId":"123"}`,
 	`{"aid":123, "placementId":"123", "siteId":"321"}`,
