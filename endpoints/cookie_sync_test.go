@@ -276,7 +276,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			description: "Complete Request",
 			givenBody: strings.NewReader(`{` +
 				`"bidders":["a", "b"],` +
-				`"gdpr":"1",` +
+				`"gdpr":1,` +
 				`"gdpr_consent":"anyGDPRConsent",` +
 				`"us_privacy":"1NYN",` +
 				`"limit":42,` +
@@ -322,7 +322,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			description: "Complete Request - Legacy Fields Only",
 			givenBody: strings.NewReader(`{` +
 				`"bidders":["a", "b"],` +
-				`"gdpr":"1",` +
+				`"gdpr":1,` +
 				`"gdpr_consent":"anyGDPRConsent",` +
 				`"us_privacy":"1NYN",` +
 				`"limit":42` +
@@ -585,14 +585,14 @@ func TestCookieSyncParseRequest(t *testing.T) {
 		},
 		{
 			description:      "Invalid GDPR Signal",
-			givenBody:        strings.NewReader(`{"gdpr":"invalid"}`),
+			givenBody:        strings.NewReader(`{"gdpr":5}`),
 			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
 			expectedError:    "GDPR signal should be integer 0 or 1",
 		},
 		{
 			description:      "Missing GDPR Consent - Explicit Signal 0",
-			givenBody:        strings.NewReader(`{"gdpr":"0"}`),
+			givenBody:        strings.NewReader(`{"gdpr":0}`),
 			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
 			expectedPrivacy: privacy.Policies{
@@ -610,7 +610,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 		},
 		{
 			description:      "Missing GDPR Consent - Explicit Signal 1",
-			givenBody:        strings.NewReader(`{"gdpr":"1"}`),
+			givenBody:        strings.NewReader(`{"gdpr":1}`),
 			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
 			expectedError:    "gdpr_consent is required if gdpr=1",
