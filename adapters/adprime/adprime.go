@@ -78,7 +78,7 @@ func (a *AdprimeAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 		}
 
 		// audiences
-		if len(adprimeExt.Audiences) > 0 {
+		if reqCopy.Site != nil && len(adprimeExt.Audiences) > 0 {
 			if reqCopy.User == nil {
 				reqCopy.User = &openrtb2.User{}
 			}
