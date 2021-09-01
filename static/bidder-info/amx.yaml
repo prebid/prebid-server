@@ -10,3 +10,7 @@ capabilities:
     mediaTypes:
       - banner
       - video
+userSync:
+  redirect:
+    url: "https://prebid.a-mo.net/cchain/0?gdpr={{.GDPR}}&us_privacy={{.USPrivacy}}&cb={{.RedirectURL}}"
+    userMacro: ""

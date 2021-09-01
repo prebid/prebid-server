@@ -129,10 +129,12 @@ const (
 	BidderGamoshi           BidderName = "gamoshi"
 	BidderGrid              BidderName = "grid"
 	BidderGumGum            BidderName = "gumgum"
+	BidderHuaweiAds         BidderName = "huaweiads"
 	BidderImprovedigital    BidderName = "improvedigital"
 	BidderInMobi            BidderName = "inmobi"
 	BidderInteractiveoffers BidderName = "interactiveoffers"
 	BidderInvibes           BidderName = "invibes"
+	BidderIQZone            BidderName = "iqzone"
 	BidderIx                BidderName = "ix"
 	BidderJixie             BidderName = "jixie"
 	BidderKayzen            BidderName = "kayzen"
@@ -170,6 +172,7 @@ const (
 	BidderSilverMob         BidderName = "silvermob"
 	BidderSmaato            BidderName = "smaato"
 	BidderSmartAdserver     BidderName = "smartadserver"
+	BidderSmartHub          BidderName = "smarthub"
 	BidderSmartRTB          BidderName = "smartrtb"
 	BidderSmartyAds         BidderName = "smartyads"
 	BidderSmileWanted       BidderName = "smilewanted"
@@ -256,10 +259,12 @@ func CoreBidderNames() []BidderName {
 		BidderGamoshi,
 		BidderGrid,
 		BidderGumGum,
+		BidderHuaweiAds,
 		BidderImprovedigital,
 		BidderInMobi,
 		BidderInteractiveoffers,
 		BidderInvibes,
+		BidderIQZone,
 		BidderIx,
 		BidderJixie,
 		BidderKayzen,
@@ -297,6 +302,7 @@ func CoreBidderNames() []BidderName {
 		BidderSilverMob,
 		BidderSmaato,
 		BidderSmartAdserver,
+		BidderSmartHub,
 		BidderSmartRTB,
 		BidderSmartyAds,
 		BidderSmileWanted,

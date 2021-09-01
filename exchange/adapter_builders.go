@@ -58,10 +58,12 @@ import (
 	"github.com/prebid/prebid-server/adapters/gamoshi"
 	"github.com/prebid/prebid-server/adapters/grid"
 	"github.com/prebid/prebid-server/adapters/gumgum"
+	"github.com/prebid/prebid-server/adapters/huaweiads"
 	"github.com/prebid/prebid-server/adapters/improvedigital"
 	"github.com/prebid/prebid-server/adapters/inmobi"
 	"github.com/prebid/prebid-server/adapters/interactiveoffers"
 	"github.com/prebid/prebid-server/adapters/invibes"
+	"github.com/prebid/prebid-server/adapters/iqzone"
 	"github.com/prebid/prebid-server/adapters/ix"
 	"github.com/prebid/prebid-server/adapters/jixie"
 	"github.com/prebid/prebid-server/adapters/kayzen"
@@ -98,6 +100,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/silvermob"
 	"github.com/prebid/prebid-server/adapters/smaato"
 	"github.com/prebid/prebid-server/adapters/smartadserver"
+	"github.com/prebid/prebid-server/adapters/smarthub"
 	"github.com/prebid/prebid-server/adapters/smartrtb"
 	"github.com/prebid/prebid-server/adapters/smartyads"
 	"github.com/prebid/prebid-server/adapters/smilewanted"
@@ -185,10 +188,12 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderGamoshi:           gamoshi.Builder,
 		openrtb_ext.BidderGrid:              grid.Builder,
 		openrtb_ext.BidderGumGum:            gumgum.Builder,
+		openrtb_ext.BidderHuaweiAds:         huaweiads.Builder,
 		openrtb_ext.BidderImprovedigital:    improvedigital.Builder,
 		openrtb_ext.BidderInMobi:            inmobi.Builder,
 		openrtb_ext.BidderInteractiveoffers: interactiveoffers.Builder,
 		openrtb_ext.BidderInvibes:           invibes.Builder,
+		openrtb_ext.BidderIQZone:            iqzone.Builder,
 		openrtb_ext.BidderIx:                ix.Builder,
 		openrtb_ext.BidderJixie:             jixie.Builder,
 		openrtb_ext.BidderKayzen:            kayzen.Builder,
@@ -226,6 +231,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderSilverMob:         silvermob.Builder,
 		openrtb_ext.BidderSmaato:            smaato.Builder,
 		openrtb_ext.BidderSmartAdserver:     smartadserver.Builder,
+		openrtb_ext.BidderSmartHub:          smarthub.Builder,
 		openrtb_ext.BidderSmartRTB:          smartrtb.Builder,
 		openrtb_ext.BidderSmartyAds:         smartyads.Builder,
 		openrtb_ext.BidderSmileWanted:       smilewanted.Builder,
