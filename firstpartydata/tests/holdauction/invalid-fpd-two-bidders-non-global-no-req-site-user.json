@@ -27,21 +27,9 @@
         }
       }
     ],
-    "site": {
-      "id": "reqSiteId",
-      "page": "http://www.foobar.com/1234.html",
-      "publisher": {
-        "id": "1"
-      }
-    },
     "test": 1,
     "ext": {
       "prebid": {
-        "data": {
-          "bidders": [
-            "appnexus", "telaria"
-          ]
-        },
         "bidderconfig": [
           {
             "bidders": [
@@ -50,10 +38,29 @@
             "config": {
               "ortb2": {
                 "site": {
-                  "id": "apnSiteId"
+                  "id": "apnFpdsiteId",
+                  "page": "https://foobar.com/site",
+                  "bundle": "apnFpdsiteBundle",
+                  "cat": ["books"],
+                  "content": {
+                    "len": 900,
+                    "title": "apnFpdsiteIdContentTitle",
+                    "season": "apnFpdsiteIdContentSeason",
+                    "data": [
+                      {
+                        "id": "apnFpdsiteIdContentDataId1",
+                        "name": "apnFpdsiteIdContentDataName1"
+                      },
+                      {
+                        "id": "apnFpdsiteIdContentDataId2",
+                        "name": "apnFpdsiteIdContentDataName2"
+                      }
+                    ]
+                  }
                 },
                 "user": {
-                  "id": "apnUserId"
+                  "id": "apnFpdUserId",
+                  "keywords": "apnFpdUserKeyword"
                 }
               }
             }
@@ -65,7 +72,7 @@
             "config": {
               "ortb2": {
                 "user": {
-                  "keywords": "telariaUserKeywords"
+                  "id": "telariaFpdUserId"
                 }
               }
             }
@@ -102,36 +109,27 @@
         }
       }
     ],
-    "site": {
-      "id": "reqSiteId",
-      "page": "http://www.foobar.com/1234.html",
-      "publisher": {
-        "id": "1"
-      },
-      "ext": {"amp":0}
-    },
     "test": 1,
     "ext": {"prebid":{"data":{"eidpermissions":null,"bidders":null}}}
   },
   "resultBiddersFPD": {
     "appnexus": {
       "site": {
-        "id": "reqSiteId",
-        "page": "",
-        "publisher": {
-          "id": "1"
-        },
-        "ext": {"amp":0}
+        "id": "",
+        "cat": ["books"],
+        "ver": "apnFpdsiteVersion",
+        "page": "https://foobar.com/site"
       },
       "user": {
-        "id": ""
+        "id": "",
+        "keywords": "apnFpdUserKeyword"
       }
     },
     "telaria": {
       "user": {
-        "keywords": "telariaUserKeywords"
+        "id": "telariaFpdUserId"
       }
     }
   },
-  "validationErrors": []
+  "validationErrors": ["Invalid first party data for bidder telaria: request.site or request.app must be defined, but not both."]
 }

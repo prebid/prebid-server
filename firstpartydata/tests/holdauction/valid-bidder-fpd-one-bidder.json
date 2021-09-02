@@ -46,7 +46,8 @@
             "config": {
               "ortb2": {
                 "site": {
-                  "id": "apnSiteId"
+                  "id": "apnSiteId",
+                  "page": "http://www.foobar.com/1234.html"
                 }
               }
             }
@@ -93,7 +94,7 @@
   "resultBiddersFPD": {
     "appnexus": {
       "site": {
-        "id": "apnSiteId",
+        "id": "reqSiteId",
         "page": "http://www.foobar.com/1234.html",
         "publisher": {
           "id": "1"

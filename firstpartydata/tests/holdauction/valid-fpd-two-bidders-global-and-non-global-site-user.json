@@ -30,8 +30,25 @@
     "site": {
       "id": "reqSiteId",
       "page": "http://www.foobar.com/1234.html",
+      "name": "reqSiteName",
+      "cat": ["electronics", "phone"],
       "publisher": {
         "id": "1"
+      },
+      "content": {
+        "len": 900,
+        "title": "reqContentTitle",
+        "season": "reqContentSeason",
+        "data": [
+          {
+            "id": "reqContentDataId1",
+            "name": "reqContentDataName1"
+          },
+          {
+            "id": "reqContentDataId2",
+            "name": "reqContentDataName2"
+          }
+        ]
       }
     },
     "test": 1,
@@ -39,7 +56,7 @@
       "prebid": {
         "data": {
           "bidders": [
-            "appnexus", "telaria"
+            "appnexus"
           ]
         },
         "bidderconfig": [
@@ -50,10 +67,32 @@
             "config": {
               "ortb2": {
                 "site": {
-                  "id": "apnSiteId"
+                  "id": "apnFpdSiteId",
+                  "page": "http://www.foobar.com/4321.html",
+                  "name": "apnFpdSiteIdSiteName",
+                  "cat": ["books", "news"],
+                  "publisher": {
+                    "id": "1"
+                  },
+                  "content": {
+                    "len": 900,
+                    "title": "apnFpdSiteIdContentTitle",
+                    "season": "apnFpdSiteIdContentSeason",
+                    "data": [
+                      {
+                        "id": "apnFpdSiteIdContentDataId1",
+                        "name": "apnFpdSiteIdContentDataName1"
+                      },
+                      {
+                        "id": "apnFpdSiteIdContentDataId2",
+                        "name": "apnFpdSiteIdContentDataName2"
+                      }
+                    ]
+                  }
                 },
                 "user": {
-                  "id": "apnUserId"
+                  "id": "apnUserId",
+                  "keywords": "apnFpdUserKeyword"
                 }
               }
             }
@@ -65,7 +104,7 @@
             "config": {
               "ortb2": {
                 "user": {
-                  "keywords": "telariaUserKeywords"
+                  "keywords": "telariaFpdUserKeywords"
                 }
               }
             }
@@ -105,8 +144,15 @@
     "site": {
       "id": "reqSiteId",
       "page": "http://www.foobar.com/1234.html",
+      "name": "reqSiteName",
+      "cat": ["electronics", "phone"],
       "publisher": {
         "id": "1"
+      },
+      "content": {
+        "len": 900,
+        "title": "reqContentTitle",
+        "season": "reqContentSeason"
       },
       "ext": {"amp":0}
     },
@@ -117,19 +163,36 @@
     "appnexus": {
       "site": {
         "id": "reqSiteId",
-        "page": "",
+        "page": "http://www.foobar.com/4321.html",
+        "name": "apnFpdSiteIdSiteName",
+        "cat": ["books", "news"],
         "publisher": {
           "id": "1"
+        },
+        "content": {
+          "len": 900,
+          "title": "reqContentTitle",
+          "season": "reqContentSeason",
+          "data": [
+            {
+              "id": "reqContentDataId1",
+              "name": "reqContentDataName1"
+            },
+            {
+              "id": "reqContentDataId2",
+              "name": "reqContentDataName2"
+            }
+          ]
         },
         "ext": {"amp":0}
       },
       "user": {
-        "id": ""
+        "keywords": "apnFpdUserKeyword"
       }
     },
     "telaria": {
       "user": {
-        "keywords": "telariaUserKeywords"
+        "keywords": "telariaFpdUserKeywords"
       }
     }
   },

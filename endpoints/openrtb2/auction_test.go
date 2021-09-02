@@ -106,7 +106,7 @@ func TestJsonSampleRequests(t *testing.T) {
 			"disabled/good",
 		},
 		{
-			"Requests with first party data context info found in imp[i].ext.prebid.bidder,context",
+			"Requests with first party data context info found in imp[i].ext.prebid.bidder.context",
 			"first-party-data",
 		},
 		{
@@ -2884,11 +2884,11 @@ func TestFPDHoldAuction(t *testing.T) {
 		hardcodedResponseIPValidator{response: true},
 	}
 
-	if specFiles, err := ioutil.ReadDir("./firstpartydata/tests/holdauction"); err == nil {
+	if specFiles, err := ioutil.ReadDir("../../firstpartydata/tests/holdauction"); err == nil {
 		for _, specFile := range specFiles {
-			fileName := "./firstpartydata/tests/holdauction/" + specFile.Name()
-
+			fileName := "../../firstpartydata/tests/holdauction/" + specFile.Name()
 			fpdFile, err := loadFpdFile(fileName)
+
 			if err != nil {
 				t.Errorf("Unable to load file: %s", fileName)
 			}
@@ -2909,8 +2909,10 @@ func TestFPDHoldAuction(t *testing.T) {
 
 			if recorder.Code != http.StatusOK {
 
+				assert.False(t, len(fpdFile.ValidationErrors) == 0, "Incorrect case, no validation errors defined in input file")
+
 				resp, err := ioutil.ReadAll(recorder.Body)
-				assert.NoError(t, err, "Error shuld not be nil")
+				assert.NoError(t, err, "Error should not be nil")
 
 				for i := range fpdFile.ValidationErrors {
 					assert.Contains(t, string(resp), fpdFile.ValidationErrors[i], "Incorrect first party data warning message")

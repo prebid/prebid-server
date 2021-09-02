@@ -1,0 +1,229 @@
+{
+  "inputRequestData": {
+    "id": "bid_id",
+    "imp": [
+      {
+        "id": "1_0",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "maxduration": 30,
+          "protocols": [
+            2,
+            3
+          ],
+          "w": 640,
+          "h": 480
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 14997137
+          },
+          "telaria": {
+            "seatCode": "TAMTESTseat",
+            "adCode": "TAMTESTseat-u8sfw"
+          }
+        }
+      }
+    ],
+    "site": {
+      "id": "reqSiteId",
+      "page": "http://www.foobar.com/1234.html",
+      "name": "reqSiteName",
+      "cat": ["electronics", "phone"],
+      "publisher": {
+        "id": "1"
+      },
+      "content": {
+        "len": 900,
+        "title": "reqContentTitle",
+        "season": "reqContentSeason",
+        "data": [
+          {
+            "id": "reqContentDataId1",
+            "name": "reqContentDataName1"
+          },
+          {
+            "id": "reqContentDataId2",
+            "name": "reqContentDataName2"
+          }
+        ]
+      }
+    },
+    "test": 1,
+    "ext": {
+      "prebid": {
+        "data": {
+          "bidders": [
+            "appnexus"
+          ]
+        },
+        "bidderconfig": [
+          {
+            "bidders": [
+              "appnexus"
+            ],
+            "config": {
+              "ortb2": {
+                "site": {
+                  "id": "apnFpdSiteId",
+                  "page": "http://www.foobar.com/4321.html",
+                  "name": "apnFpdSiteIdSiteName",
+                  "cat": ["books", "news"],
+                  "publisher": {
+                    "id": "1"
+                  },
+                  "content": {
+                    "len": 900,
+                    "title": "apnFpdSiteIdContentTitle",
+                    "season": "apnFpdSiteIdContentSeason",
+                    "data": [
+                      {
+                        "id": "apnFpdSiteIdContentDataId1",
+                        "name": "apnFpdSiteIdContentDataName1"
+                      },
+                      {
+                        "id": "apnFpdSiteIdContentDataId2",
+                        "name": "apnFpdSiteIdContentDataName2"
+                      }
+                    ]
+                  }
+                },
+                "user": {
+                  "id": "apnUserId",
+                  "gender": "F",
+                  "yob": 2000,
+                  "keywords": "apnFpdUserKeyword",
+                  "data": [
+                    {
+                      "id": "apnFpdUserContentDataId1",
+                      "name": "apnFpdUserContentDataName1"
+                    },
+                    {
+                      "id": "apnFpdUserContentDataId2",
+                      "name": "apnFpdUserContentDataName2"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "bidders": [
+              "telaria"
+            ],
+            "config": {
+              "ortb2": {
+                "user": {
+                  "id": "telariaFpdUserId",
+                  "gender": "M",
+                  "yob": 2001,
+                  "keywords": "telariaFpdUserKeyword",
+                  "data": [
+                    {
+                      "id": "telariaFpdUserContentDataId1",
+                      "name": "telariaFpdUserContentDataName1"
+                    },
+                    {
+                      "id": "telariaFpdUserContentDataId2",
+                      "name": "telariaFpdUserContentDataName2"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "resultRequestData":  {
+    "id": "bid_id",
+    "imp": [
+      {
+        "id": "1_0",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "maxduration": 30,
+          "protocols": [
+            2,
+            3
+          ],
+          "w": 640,
+          "h": 480
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 14997137
+          },
+          "telaria": {
+            "seatCode": "TAMTESTseat",
+            "adCode": "TAMTESTseat-u8sfw"
+          }
+        }
+      }
+    ],
+    "site": {
+      "id": "reqSiteId",
+      "page": "http://www.foobar.com/1234.html",
+      "name": "reqSiteName",
+      "cat": ["electronics", "phone"],
+      "publisher": {
+        "id": "1"
+      },
+      "content": {
+        "len": 900,
+        "title": "reqContentTitle",
+        "season": "reqContentSeason"
+      },
+      "ext": {"amp":0}
+    },
+    "test": 1,
+    "ext": {"prebid":{"data":{"eidpermissions":null,"bidders":null}}}
+  },
+  "resultBiddersFPD": {
+    "appnexus": {
+      "site": {
+        "id": "reqSiteId",
+        "page": "http://www.foobar.com/4321.html",
+        "name": "apnFpdSiteIdSiteName",
+        "cat": ["books", "news"],
+        "publisher": {
+          "id": "1"
+        },
+        "content": {
+          "len": 900,
+          "title": "reqContentTitle",
+          "season": "reqContentSeason",
+          "data": [
+            {
+              "id": "reqContentDataId1",
+              "name": "reqContentDataName1"
+            },
+            {
+              "id": "reqContentDataId2",
+              "name": "reqContentDataName2"
+            }
+          ]
+        },
+        "ext": {"amp":0}
+      },
+      "user": {
+        "gender": "F",
+        "yob": 2000,
+        "keywords": "apnFpdUserKeyword"
+      }
+    },
+    "telaria": {
+      "user": {
+        "gender": "M",
+        "yob": 2001,
+        "keywords": "telariaFpdUserKeyword"
+      }
+    }
+  },
+  "validationErrors": []
+}

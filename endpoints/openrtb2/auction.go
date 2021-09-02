@@ -42,6 +42,7 @@ import (
 )
 
 const storedRequestTimeoutMillis = 50
+const siteAppValidationMessage = "request.site or request.app must be defined, but not both."
 
 var (
 	dntKey      string = http.CanonicalHeaderKey("DNT")
@@ -139,6 +140,11 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	req, impExtInfoMap, globalFPD, errL := deps.parseRequest(r)
 
 	resolvedFPD, fpdErrors := deps.processFPD(req, globalFPD)
+
+	if len(errL) == 1 && errL[0].Error() == siteAppValidationMessage && len(fpdErrors) == 0 && len(resolvedFPD) > 0 {
+		//if first party data exists and request validation passed - ignore site/app validation error for initial request
+		errL = make([]error, 0)
+	}
 	if len(fpdErrors) > 0 {
 		errL = append(errL, fpdErrors...)
 	}
@@ -162,7 +168,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		labels.Source = metrics.DemandApp
 		labels.RType = metrics.ReqTypeORTB2App
 		labels.PubID = getAccountID(req.App.Publisher)
-	} else { //req.Site != nil
+	} else if req.Site != nil { //Site and app can be nil in some cases where request has first party data
 		labels.Source = metrics.DemandWeb
 		if usersyncs.HasAnyLiveSyncs() {
 			labels.CookieFlag = metrics.CookieFlagYes
@@ -416,7 +422,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper) []err
 	}
 
 	if (req.Site == nil && req.App == nil) || (req.Site != nil && req.App != nil) {
-		return append(errL, errors.New("request.site or request.app must be defined, but not both."))
+		return append(errL, errors.New(siteAppValidationMessage))
 	}
 
 	if err := deps.validateSite(req); err != nil {
@@ -1627,8 +1633,13 @@ func (deps *endpointDeps) processFPD(req *openrtb_ext.RequestWrapper, globalFpdD
 		errL = append(errL, err)
 		return resolvedFPD, errL
 	}
-	if reqExt != nil && reqExt.GetPrebid() != nil && reqExt.GetPrebid().Data != nil {
-		biddersWithGlobalFPD := reqExt.GetPrebid().Data.Bidders
+	if reqExt != nil && reqExt.GetPrebid() != nil {
+		biddersWithGlobalFPD := make([]string, 0)
+
+		if reqExt.GetPrebid().Data != nil {
+			biddersWithGlobalFPD = reqExt.GetPrebid().Data.Bidders
+		}
+
 		fpdBidderData, reqExtPrebid := firstpartydata.PreprocessBidderFPD(*reqExt.GetPrebid())
 		reqExt.SetPrebid(&reqExtPrebid)
 
