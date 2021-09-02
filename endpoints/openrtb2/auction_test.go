@@ -613,8 +613,7 @@ func TestNilValidator(t *testing.T) {
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
-		openrtb_ext.BuildBidderMap(),
-	)
+		openrtb_ext.BuildBidderMap())
 
 	if err == nil {
 		t.Errorf("NewEndpoint should return an error when given a nil BidderParamValidator.")
