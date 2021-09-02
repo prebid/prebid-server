@@ -1627,7 +1627,7 @@ func (deps *endpointDeps) processFPD(req *openrtb_ext.RequestWrapper, globalFpdD
 		errL = append(errL, err)
 		return resolvedFPD, errL
 	}
-	if reqExt != nil && reqExt.GetPrebid() != nil {
+	if reqExt != nil && reqExt.GetPrebid() != nil && reqExt.GetPrebid().Data != nil {
 		biddersWithGlobalFPD := reqExt.GetPrebid().Data.Bidders
 		fpdBidderData, reqExtPrebid := firstpartydata.PreprocessBidderFPD(*reqExt.GetPrebid())
 		reqExt.SetPrebid(&reqExtPrebid)

@@ -186,7 +186,9 @@ func resolveSite(fpdConfigSite *openrtb2.Site, bidRequestSite *openrtb2.Site, gl
 		}
 		if len(openRtbGlobalFPD[siteContentDataKey]) > 0 {
 			if newSite.Content != nil {
-				newSite.Content.Data = openRtbGlobalFPD[siteContentDataKey]
+				contentCopy := *newSite.Content
+				contentCopy.Data = openRtbGlobalFPD[siteContentDataKey]
+				newSite.Content = &contentCopy
 			} else {
 				newSiteContent := &openrtb2.Content{Data: openRtbGlobalFPD[siteContentDataKey]}
 				newSite.Content = newSiteContent
@@ -251,7 +253,9 @@ func resolveApp(fpdConfigApp *openrtb2.App, bidRequestApp *openrtb2.App, globalF
 		}
 		if len(openRtbGlobalFPD[appContentDataKey]) > 0 {
 			if newApp.Content != nil {
-				newApp.Content.Data = openRtbGlobalFPD[appContentDataKey]
+				contentCopy := *newApp.Content
+				contentCopy.Data = openRtbGlobalFPD[appContentDataKey]
+				newApp.Content = &contentCopy
 			} else {
 				newAppContent := &openrtb2.Content{Data: openRtbGlobalFPD[appContentDataKey]}
 				newApp.Content = newAppContent
@@ -305,15 +309,17 @@ func PreprocessBidderFPD(reqExtPrebid openrtb_ext.ExtRequestPrebid) (map[openrtb
 	//map to store bidder configs to process
 	fpdData := make(map[openrtb_ext.BidderName]*openrtb_ext.FPDData)
 
-	if (reqExtPrebid.Data != nil && len(reqExtPrebid.Data.Bidders) != 0) || reqExtPrebid.BidderConfigs != nil {
+	//every bidder in ext.prebid.data.bidders should receive fpd data if defined
+	bidderTable := make(map[string]struct{}) //just need to check existence of the element in map
 
-		//every bidder in ext.prebid.data.bidders should receive fpd data if defined
-		bidderTable := make(map[string]struct{}) //just need to check existence of the element in map
+	if reqExtPrebid.Data != nil && len(reqExtPrebid.Data.Bidders) != 0 {
+
 		for _, bidder := range reqExtPrebid.Data.Bidders {
 			bidderTable[bidder] = struct{}{}
 			fpdData[openrtb_ext.BidderName(bidder)] = &openrtb_ext.FPDData{}
 		}
-
+	}
+	if reqExtPrebid.BidderConfigs != nil {
 		for _, bidderConfig := range *reqExtPrebid.BidderConfigs {
 			for _, bidder := range bidderConfig.Bidders {
 
