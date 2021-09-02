@@ -3,6 +3,7 @@ package exchange
 import (
 	"github.com/prebid/prebid-server/adapters"
 	ttx "github.com/prebid/prebid-server/adapters/33across"
+	"github.com/prebid/prebid-server/adapters/aceex"
 	"github.com/prebid/prebid-server/adapters/acuityads"
 	"github.com/prebid/prebid-server/adapters/adagio"
 	"github.com/prebid/prebid-server/adapters/adf"
@@ -133,6 +134,7 @@ import (
 func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 	return map[openrtb_ext.BidderName]adapters.Builder{
 		openrtb_ext.Bidder33Across:          ttx.Builder,
+		openrtb_ext.BidderAceex:             aceex.Builder,
 		openrtb_ext.BidderAcuityAds:         acuityads.Builder,
 		openrtb_ext.BidderAdagio:            adagio.Builder,
 		openrtb_ext.BidderAdf:               adf.Builder,
