@@ -985,7 +985,7 @@ func makeBidExtJSON(ext json.RawMessage, prebid *openrtb_ext.ExtBidPrebid, impEx
 			} `json:"prebid"`
 		}{}
 		if err := json.Unmarshal(ext, &metaContainer); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error validaing response from server, %s", err)
 		}
 		prebid.Meta = &metaContainer.Prebid.Meta
 	}

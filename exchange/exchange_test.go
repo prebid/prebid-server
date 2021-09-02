@@ -3491,11 +3491,19 @@ func TestMakeBidExtJSON(t *testing.T) {
 
 	testCases := []aTest{
 		{
-			description:        "Valid extension, non empty extBidPrebid and valid imp ext info",
+			description:        "Valid extension, non empty extBidPrebid, valid imp ext info, meta from adapter",
 			ext:                json.RawMessage(`{"video":{"h":100}}`),
+			extBidPrebid:       openrtb_ext.ExtBidPrebid{Type: openrtb_ext.BidType("video"), Meta: &openrtb_ext.ExtBidPrebidMeta{BrandName: "foo"}},
+			impExtInfo:         map[string]ImpExtInfo{"test_imp_id": {true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`)}},
+			expectedBidExt:     `{"prebid":{"meta": {"brandName": "foo"}, "type":"video"},"storedrequestattributes":{"h":480,"mimes":["video/mp4"]},"video":{"h":100}}`,
+			expectedErrMessage: "",
+		},
+		{
+			description:        "Valid extension, non empty extBidPrebid, valid imp ext info, meta from response",
+			ext:                json.RawMessage(`{"video":{"h":100},"prebid":{"meta": {"brandName": "foo"}}}`),
 			extBidPrebid:       openrtb_ext.ExtBidPrebid{Type: openrtb_ext.BidType("video")},
 			impExtInfo:         map[string]ImpExtInfo{"test_imp_id": {true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`)}},
-			expectedBidExt:     `{"prebid":{"type":"video"},"storedrequestattributes":{"h":480,"mimes":["video/mp4"]},"video":{"h":100}}`,
+			expectedBidExt:     `{"prebid":{"meta": {"brandName": "foo"}, "type":"video"},"storedrequestattributes":{"h":480,"mimes":["video/mp4"]},"video":{"h":100}}`,
 			expectedErrMessage: "",
 		},
 		{
@@ -3611,6 +3619,14 @@ func TestMakeBidExtJSON(t *testing.T) {
 			expectedBidExt:     ``,
 			expectedErrMessage: "invalid character",
 		},
+		{
+			description:        "Meta - Invalid",
+			ext:                json.RawMessage(`{"prebid":{"meta":{"brandId":"foo"}}}`), // brandId should be an int, but is a string in this test case
+			extBidPrebid:       openrtb_ext.ExtBidPrebid{Type: openrtb_ext.BidType("banner")},
+			impExtInfo:         nil,
+			expectedErrMessage: "error validaing response from server, json: cannot unmarshal string into Go struct field ExtBidPrebidMeta.prebid.meta.brandId of type int",
+		},
+		// add invalid
 	}
 
 	for _, test := range testCases {
