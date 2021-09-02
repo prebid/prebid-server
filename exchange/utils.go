@@ -705,7 +705,7 @@ func getExtBidAdjustmentFactors(requestExt *openrtb_ext.ExtRequest) map[string]f
 func buildXPrebidHeader(bidRequest *openrtb2.BidRequest, version string) string {
 	req := &openrtb_ext.RequestWrapper{BidRequest: bidRequest}
 
-	sb := new(strings.Builder)
+	sb := &strings.Builder{}
 	writeNameVersionRecord(sb, "pbs-go", version)
 
 	if reqExt, err := req.GetRequestExt(); err == nil && reqExt != nil {
