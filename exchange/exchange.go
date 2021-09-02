@@ -65,7 +65,6 @@ type exchange struct {
 	privacyConfig     config.Privacy
 	categoriesFetcher stored_requests.CategoryFetcher
 	bidIDGenerator    BidIDGenerator
-	version           string
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
