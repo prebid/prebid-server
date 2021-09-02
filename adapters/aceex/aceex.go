@@ -110,10 +110,6 @@ func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtAceex) (string, error)
 }
 
 func (a *adapter) checkResponseStatusCodes(response *adapters.ResponseData) error {
-	if response.StatusCode == http.StatusNoContent {
-		return nil
-	}
-
 	if response.StatusCode == http.StatusBadRequest {
 		return &errortypes.BadInput{
 			Message: fmt.Sprintf("Unexpected status code: [ %d ]", response.StatusCode),
@@ -143,6 +139,10 @@ func (a *adapter) MakeBids(
 	bidderResponse *adapters.BidderResponse,
 	errs []error,
 ) {
+	if bidderRawResponse.StatusCode == http.StatusNoContent {
+		return nil, nil
+	}
+
 	httpStatusError := a.checkResponseStatusCodes(bidderRawResponse)
 	if httpStatusError != nil {
 		return nil, []error{httpStatusError}
