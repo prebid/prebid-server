@@ -83,8 +83,7 @@ func NewAmpEndpoint(
 		bidderMap,
 		nil,
 		nil,
-		ipValidator,
-	}).AmpAuction), nil
+		ipValidator}).AmpAuction), nil
 
 }
 
