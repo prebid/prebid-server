@@ -8,45 +8,26 @@ import (
 )
 
 type versionModel struct {
-	Version string `json:"version"`
-}
-
-type revisionModel struct {
+	Version  string `json:"version"`
 	Revision string `json:"revision"`
 }
 
-// NewVersionEndpoint returns the version derived from the latest git tag from which the binary was built
-func NewVersionEndpoint(version string) http.HandlerFunc {
+// NewVersionEndpoint returns the latest git tag as the version and commit hash as the revision from which the binary was built
+func NewVersionEndpoint(version string, revision string) http.HandlerFunc {
 	if version == "" {
 		version = "not-set"
 	}
-
-	return func(w http.ResponseWriter, _ *http.Request) {
-		jsonOutput, err := json.Marshal(versionModel{
-			Version: version,
-		})
-		if err != nil {
-			glog.Errorf("/version Critical error when trying to marshal versionModel: %v", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		w.Write(jsonOutput)
-	}
-}
-
-// NewRevisionEndpoint returns the latest commit sha1 from which the binary was built
-func NewRevisionEndpoint(revision string) http.HandlerFunc {
 	if revision == "" {
 		revision = "not-set"
 	}
 
 	return func(w http.ResponseWriter, _ *http.Request) {
-		jsonOutput, err := json.Marshal(revisionModel{
+		jsonOutput, err := json.Marshal(versionModel{
+			Version:  version,
 			Revision: revision,
 		})
 		if err != nil {
-			glog.Errorf("/revision Critical error when trying to marshal revisionModel: %v", err)
+			glog.Errorf("/version Critical error when trying to marshal versionModel: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}

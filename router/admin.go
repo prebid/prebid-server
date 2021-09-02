@@ -22,7 +22,6 @@ func Admin(rateConverter *currency.RateConverter, rateConverterFetchingInterval 
 	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
 	// Register prebid-server defined admin handlers
 	mux.HandleFunc("/currency/rates", endpoints.NewCurrencyRatesEndpoint(rateConverter, rateConverterFetchingInterval))
-	mux.HandleFunc("/version", endpoints.NewVersionEndpoint(version.Ver))
-	mux.HandleFunc("/revision", endpoints.NewRevisionEndpoint(version.Rev))
+	mux.HandleFunc("/version", endpoints.NewVersionEndpoint(version.Ver, version.Rev))
 	return mux
 }
