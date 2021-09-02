@@ -705,34 +705,35 @@ func getExtBidAdjustmentFactors(requestExt *openrtb_ext.ExtRequest) map[string]f
 func buildXPrebidHeader(bidRequest *openrtb2.BidRequest, version string) string {
 	req := &openrtb_ext.RequestWrapper{BidRequest: bidRequest}
 
-	var sb strings.Builder
-	sb.WriteString(createNameVersionRecord("pbs-go", version))
+	sb := new(strings.Builder)
+	writeNameVersionRecord(sb,"pbs-go", version)
 
 	if reqExt, err := req.GetRequestExt(); err == nil && reqExt != nil {
 		if prebidExt := reqExt.GetPrebid(); prebidExt != nil {
 			if channel := prebidExt.Channel; channel != nil {
-				if record := createNameVersionRecord(channel.Name, channel.Version); record != "" {
-					sb.WriteString(fmt.Sprintf(",%s", record))
-				}
+				writeNameVersionRecord(sb, channel.Name, channel.Version)
 			}
 		}
 	}
 	if appExt, err := req.GetAppExt(); err == nil && appExt != nil {
 		if prebidExt := appExt.GetPrebid(); prebidExt != nil {
-			if record := createNameVersionRecord(prebidExt.Source, prebidExt.Version); record != "" {
-				sb.WriteString(fmt.Sprintf(",%s", record))
-			}
+			writeNameVersionRecord(sb, prebidExt.Source, prebidExt.Version)
 		}
 	}
 	return sb.String()
 }
 
-func createNameVersionRecord(name, version string) string {
+func writeNameVersionRecord(sb *strings.Builder, name, version string) {
 	if name == "" {
-		return ""
+		return
 	}
 	if version == "" {
 		version = "unknown"
 	}
-	return fmt.Sprintf("%s/%s", name, version)
+	if sb.Len() != 0 {
+		sb.WriteString(",")
+	}
+	sb.WriteString(name)
+	sb.WriteString("/")
+	sb.WriteString(version)
 }
