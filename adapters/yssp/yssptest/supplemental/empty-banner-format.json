@@ -5,7 +5,7 @@
       {
         "id": "test-imp-id",
         "banner": {
-          "format": [{"w": 728, "h": 90}]
+          "format": []
         },
         "ext": {
           "bidder": {
@@ -19,7 +19,7 @@
 
   "expectedMakeRequestsErrors": [
     {
-      "value": "imp #0: missing param pos",
+      "value": "No sizes provided for Banner []",
       "comparison": "literal"
     }
   ]

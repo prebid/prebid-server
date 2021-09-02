@@ -1,4 +1,4 @@
-package verizonmedia
+package yssp
 
 import (
 	"testing"
@@ -9,8 +9,8 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-func TestVerizonMediaBidderEndpointConfig(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderVerizonMedia, config.Adapter{
+func TestYSSPBidderEndpointConfig(t *testing.T) {
+	bidder, buildErr := Builder(openrtb_ext.BidderYSSP, config.Adapter{
 		Endpoint: "http://localhost/bid",
 	})
 
@@ -18,17 +18,17 @@ func TestVerizonMediaBidderEndpointConfig(t *testing.T) {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	bidderVerizonMedia := bidder.(*VerizonMediaAdapter)
+	bidderYSSP := bidder.(*adapter)
 
-	assert.Equal(t, "http://localhost/bid", bidderVerizonMedia.URI)
+	assert.Equal(t, "http://localhost/bid", bidderYSSP.URI)
 }
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderVerizonMedia, config.Adapter{})
+	bidder, buildErr := Builder(openrtb_ext.BidderYSSP, config.Adapter{})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	adapterstest.RunJSONBidderTest(t, "verizonmediatest", bidder)
+	adapterstest.RunJSONBidderTest(t, "yssptest", bidder)
 }

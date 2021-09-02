@@ -5,7 +5,8 @@
       {
         "id": "test-imp-id",
         "banner": {
-          "format": [{"w": 728, "h": 90}]
+          "w": 0,
+          "h": 90
         },
         "ext": {
           "bidder": {
@@ -18,7 +19,7 @@
 
   "expectedMakeRequestsErrors": [
     {
-      "value": "imp #0: missing param dcn",
+      "value": "Invalid sizes provided for Banner 0x90",
       "comparison": "literal"
     }
   ]
