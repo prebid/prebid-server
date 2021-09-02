@@ -27,7 +27,6 @@
     "imp": [
       {
         "id": "some-impression-id",
-        "tagid": "posid00001",
         "video": {
           "mimes": [
             "video/mp4"
@@ -71,12 +70,12 @@
                 "w": 640,
                 "h": 480
               },
-        	  "ext": {
-          	    "bidder": {
-            	  "placementId": "posid00001",
-            	  "accountId": "accountid01"
-          	    }   
-        	  },   
+              "ext": {
+                "bidder": {
+                  "placementId": "posid00001",
+                  "accountId": "accountid01"
+                }   
+              },   
               "tagid": "posid00001"
             }
           ],
@@ -124,7 +123,7 @@
           "cur": "USD",
           "ext": {
             "responsetimemillis": {
-              "acuityads": 154
+              "adview": 154
             },
             "tmaxrequest": 1000
           }

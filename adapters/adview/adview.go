@@ -32,22 +32,19 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var errors []error
 	var bidderExt adapters.ExtImpBidder
 	imp := &request.Imp[0]
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		errors = append(errors, &errortypes.BadInput{
-			Message: fmt.Sprintf("invalid imp.ext, %s", err),
-		})
-		return nil, append(errors, err)
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("invalid imp.ext, %s", err.Error()),
+		}}
 	}
 	//use adview
 	var advImpExt openrtb_ext.ExtImpAdView
 	if err := json.Unmarshal(bidderExt.Bidder, &advImpExt); err != nil {
-		errors = append(errors, &errortypes.BadInput{
-			Message: fmt.Sprintf("invalid bidderExt.Bidder, %s", err),
-		})
-		return nil, append(errors, err)
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("invalid bidderExt.Bidder, %s", err.Error()),
+		}}
 	}
 
 	imp.TagID = advImpExt.MasterTagID //tagid means posid

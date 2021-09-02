@@ -71,7 +71,7 @@
                 ]
               },
               "tagid": "posid00001",
-        	  "ext": {
+              "ext": {
                  "bidder": {
                    "placementId": "posid00001",
                    "accountId": "accountid01"
