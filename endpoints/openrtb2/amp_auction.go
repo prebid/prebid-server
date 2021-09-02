@@ -55,7 +55,6 @@ func NewAmpEndpoint(
 	disabledBidders map[string]string,
 	defReqJSON []byte,
 	bidderMap map[string]openrtb_ext.BidderName,
-	version string,
 ) (httprouter.Handle, error) {
 
 	if ex == nil || validator == nil || requestsById == nil || accounts == nil || cfg == nil || met == nil {
@@ -85,7 +84,7 @@ func NewAmpEndpoint(
 		nil,
 		nil,
 		ipValidator,
-		version}).AmpAuction), nil
+	}).AmpAuction), nil
 
 }
 
@@ -195,7 +194,6 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		StartTime:                  start,
 		LegacyLabels:               labels,
 		GlobalPrivacyControlHeader: secGPC,
-		Version:                    deps.version,
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)

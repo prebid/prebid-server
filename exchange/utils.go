@@ -706,7 +706,7 @@ func buildXPrebidHeader(bidRequest *openrtb2.BidRequest, version string) string 
 	req := &openrtb_ext.RequestWrapper{BidRequest: bidRequest}
 
 	sb := new(strings.Builder)
-	writeNameVersionRecord(sb,"pbs-go", version)
+	writeNameVersionRecord(sb, "pbs-go", version)
 
 	if reqExt, err := req.GetRequestExt(); err == nil && reqExt != nil {
 		if prebidExt := reqExt.GetPrebid(); prebidExt != nil {

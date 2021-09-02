@@ -48,7 +48,6 @@ func TestGoodAmpRequests(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
-		"test-version",
 	)
 
 	for requestID := range goodRequests {
@@ -102,7 +101,6 @@ func TestAMPPageInfo(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
-		"test-version",
 	)
 	request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&curl=%s", url.QueryEscape(page)), nil)
 	recorder := httptest.NewRecorder()
@@ -200,7 +198,6 @@ func TestGDPRConsent(t *testing.T) {
 			map[string]string{},
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
-			"test-version",
 		)
 
 		// Invoke Endpoint
@@ -353,7 +350,6 @@ func TestCCPAConsent(t *testing.T) {
 			map[string]string{},
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
-			"test-version",
 		)
 
 		// Invoke Endpoint
@@ -464,7 +460,6 @@ func TestConsentWarnings(t *testing.T) {
 			map[string]string{},
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
-			"test-version",
 		)
 
 		// Invoke Endpoint
@@ -557,7 +552,6 @@ func TestNewAndLegacyConsentBothProvided(t *testing.T) {
 			map[string]string{},
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
-			"test-version",
 		)
 
 		// Invoke Endpoint
@@ -609,7 +603,6 @@ func TestAMPSiteExt(t *testing.T) {
 		nil,
 		nil,
 		openrtb_ext.BuildBidderMap(),
-		"test-version",
 	)
 	request, err := http.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1", nil)
 	if !assert.NoError(t, err) {
@@ -646,7 +639,6 @@ func TestAmpBadRequests(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
-		"test-version",
 	)
 	for requestID := range badRequests {
 		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s", requestID), nil)
@@ -677,7 +669,6 @@ func TestAmpDebug(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
-		"test-version",
 	)
 
 	for requestID := range requests {
@@ -750,7 +741,6 @@ func TestQueryParamOverrides(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
-		"test-version",
 	)
 
 	requestID := "1"
@@ -903,7 +893,6 @@ func (s formatOverrideSpec) execute(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
-		"test-version",
 	)
 
 	url := fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&debug=1&w=%d&h=%d&ow=%d&oh=%d&ms=%s&account=%s", s.width, s.height, s.overrideWidth, s.overrideHeight, s.multisize, s.account)
@@ -1283,7 +1272,6 @@ func TestBuildAmpObject(t *testing.T) {
 			map[string]string{},
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
-			"test-version",
 		)
 
 		// Run test

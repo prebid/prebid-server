@@ -440,7 +440,6 @@ func TestExplicitUserId(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
-		"test-version",
 	)
 
 	endpoint(httptest.NewRecorder(), request, nil)
@@ -483,7 +482,6 @@ func doRequest(t *testing.T, test testCase) (int, string) {
 		disabledBidders,
 		[]byte(test.Config.AliasJSON),
 		bidderMap,
-		"test-version",
 	)
 
 	request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(test.BidRequest))
@@ -548,7 +546,6 @@ func doBadAliasRequest(t *testing.T, filename string, expectMsg string) {
 		disabledBidders,
 		aliasJSON,
 		bidderMap,
-		"test-version",
 	)
 
 	request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(testBidRequest))
@@ -599,7 +596,6 @@ func TestNilExchange(t *testing.T) {
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
-		"test-version",
 	)
 
 	if err == nil {
@@ -622,7 +618,6 @@ func TestNilValidator(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
-		"test-version",
 	)
 
 	if err == nil {
@@ -645,7 +640,6 @@ func TestExchangeError(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
-		"test-version",
 	)
 
 	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
@@ -769,7 +763,6 @@ func TestImplicitIPsEndToEnd(t *testing.T) {
 			map[string]string{},
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
-			"test-version",
 		)
 
 		httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, test.reqJSONFile)))
@@ -965,7 +958,6 @@ func TestImplicitDNTEndToEnd(t *testing.T) {
 			map[string]string{},
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
-			"test-version",
 		)
 
 		httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, test.reqJSONFile)))
@@ -1034,7 +1026,6 @@ func TestStoredRequests(t *testing.T) {
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
-		"test-version",
 	}
 
 	testStoreVideoAttr := []bool{true, true, false, false}
@@ -1081,7 +1072,6 @@ func TestStoredRequestsVideoErrors(t *testing.T) {
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
-		"test-version",
 	}
 
 	// tests processStoredRequests function behavior in parsing incorrect input related to echovideoattrs feature
@@ -1118,7 +1108,6 @@ func TestOversizedRequest(t *testing.T) {
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
-		"test-version",
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -1154,7 +1143,6 @@ func TestRequestSizeEdgeCase(t *testing.T) {
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
-		"test-version",
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -1184,7 +1172,6 @@ func TestNoEncoding(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
-		"test-version",
 	)
 	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	recorder := httptest.NewRecorder()
@@ -1260,7 +1247,6 @@ func TestContentType(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
-		"test-version",
 	)
 	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	recorder := httptest.NewRecorder()
@@ -1585,7 +1571,6 @@ func TestValidateImpExt(t *testing.T) {
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
-		"test-version",
 	}
 
 	for _, group := range testGroups {
@@ -1632,7 +1617,6 @@ func TestCurrencyTrunc(t *testing.T) {
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
-		"test-version",
 	}
 
 	ui := int64(1)
@@ -1677,7 +1661,6 @@ func TestCCPAInvalid(t *testing.T) {
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
-		"test-version",
 	}
 
 	ui := int64(1)
@@ -1726,7 +1709,6 @@ func TestNoSaleInvalid(t *testing.T) {
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
-		"test-version",
 	}
 
 	ui := int64(1)
@@ -1778,7 +1760,6 @@ func TestValidateSourceTID(t *testing.T) {
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
-		"test-version",
 	}
 
 	ui := int64(1)
@@ -1820,7 +1801,6 @@ func TestSChainInvalid(t *testing.T) {
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
-		"test-version",
 	}
 
 	ui := int64(1)
@@ -2040,7 +2020,6 @@ func TestEidPermissionsInvalid(t *testing.T) {
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
-		"test-version",
 	}
 
 	ui := int64(1)
@@ -2287,7 +2266,6 @@ func TestIOS14EndToEnd(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
-		"test-version",
 	)
 
 	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "app-ios140-no-ifa.json")))
@@ -2321,7 +2299,6 @@ func TestAuctionWarnings(t *testing.T) {
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
-		"test-version",
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))

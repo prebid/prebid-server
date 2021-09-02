@@ -59,7 +59,6 @@ func NewEndpoint(
 	disabledBidders map[string]string,
 	defReqJSON []byte,
 	bidderMap map[string]openrtb_ext.BidderName,
-	version string,
 ) (httprouter.Handle, error) {
 	if ex == nil || validator == nil || requestsById == nil || accounts == nil || cfg == nil || met == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
@@ -87,7 +86,7 @@ func NewEndpoint(
 		bidderMap,
 		nil,
 		nil,
-		ipValidator, version}).Auction), nil
+		ipValidator}).Auction), nil
 }
 
 type endpointDeps struct {
@@ -106,7 +105,6 @@ type endpointDeps struct {
 	cache                     prebid_cache_client.Client
 	debugLogRegexp            *regexp.Regexp
 	privateNetworkIPValidator iputil.IPValidator
-	version                   string
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -195,7 +193,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		Warnings:                   warnings,
 		GlobalPrivacyControlHeader: secGPC,
 		ImpExtInfoMap:              impExtInfoMap,
-		Version:                    deps.version,
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
