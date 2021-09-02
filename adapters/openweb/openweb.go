@@ -164,9 +164,14 @@ func validateImpression(imp *openrtb2.Imp) (int, error) {
 
 	var impExtBuffer []byte
 
-	impExtBuffer, _ = json.Marshal(&openwebImpExt{
+	impExtBuffer, err = json.Marshal(&openwebImpExt{
 		OpenWeb: impExt,
 	})
+	if err != nil {
+		return 0, &errortypes.BadInput{
+			Message: fmt.Sprintf("ignoring imp id=%s, error while encoding impExt, err: %s", imp.ID, err),
+		}
+	}
 
 	if impExt.BidFloor > 0 {
 		imp.BidFloor = impExt.BidFloor
