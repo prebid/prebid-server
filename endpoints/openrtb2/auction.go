@@ -1335,8 +1335,8 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 		storedReqIds = []string{storedBidRequestId}
 	}
 
-	impStoredReqIds := make([]string, 0)
-	impStoredReqIdsUniqueTracker := make(map[string]struct{})
+	impStoredReqIds := make([]string, 0, len(impInfo))
+	impStoredReqIdsUniqueTracker := make(map[string]struct{}, len(impInfo))
 	for _, impData := range impInfo {
 		if impData.ImpExtPrebid.StoredRequest != nil && len(impData.ImpExtPrebid.StoredRequest.ID) > 0 {
 			storedImpId := impData.ImpExtPrebid.StoredRequest.ID
@@ -1417,11 +1417,11 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 				return nil, nil, []error{err}
 			}
 
-			echovideoAttributes := false
+			echoVideoAttributes := false
 			if impData.ImpExtPrebid.Options != nil {
-				echovideoAttributes = impData.ImpExtPrebid.Options.EchoVideoAttrs
+				echoVideoAttributes = impData.ImpExtPrebid.Options.EchoVideoAttrs
 			}
-			impExtInfoMap[impId] = exchange.ImpExtInfo{EchoVideoAttrs: echovideoAttributes, StoredImp: storedImps[impData.ImpExtPrebid.StoredRequest.ID]}
+			impExtInfoMap[impId] = exchange.ImpExtInfo{EchoVideoAttrs: echoVideoAttributes, StoredImp: storedImps[impData.ImpExtPrebid.StoredRequest.ID]}
 
 		} else {
 			resolvedImps = append(resolvedImps, impData.Imp)
