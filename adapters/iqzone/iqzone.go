@@ -23,19 +23,76 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	return bidder, nil
 }
 
-func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	requestJSON, err := json.Marshal(request)
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	var errs []error
+	var err error
+	var bidderExt adapters.ExtImpBidder
+	var iqzoneExt openrtb_ext.ImpExtIQZone
+	var adapterRequests []*adapters.RequestData
+
+	reqCopy := *request
+	for i, imp := range request.Imp {
+		reqCopy.Imp = []openrtb2.Imp{imp}
+
+		if err = json.Unmarshal(reqCopy.Imp[i].Ext, &bidderExt); err != nil {
+			return nil, append(errs, err)
+		}
+		if err = json.Unmarshal(bidderExt.Bidder, &iqzoneExt); err != nil {
+			return nil, append(errs, err)
+		}
+
+		if iqzoneExt.PlacementID == "" && iqzoneExt.EndpointID == "" {
+			return nil, append(errs, &errortypes.BadInput{
+				Message: "bad bidder params",
+			})
+		}
+
+		finalyImpExt := reqCopy.Imp[0].Ext
+		if iqzoneExt.PlacementID != "" {
+			finalyImpExt, _ = json.Marshal(map[string]interface{}{
+				"bidder": map[string]interface{}{
+					"placementId": iqzoneExt.PlacementID,
+					"type":        "publisher",
+				},
+			})
+		} else if iqzoneExt.EndpointID != "" {
+			finalyImpExt, _ = json.Marshal(map[string]interface{}{
+				"bidder": map[string]interface{}{
+					"endpointId": iqzoneExt.EndpointID,
+					"type":       "network",
+				},
+			})
+		}
+
+		reqCopy.Imp[0].Ext = finalyImpExt
+
+		adapterReq, errors := a.makeRequest(&reqCopy)
+		if adapterReq != nil {
+			adapterRequests = append(adapterRequests, adapterReq)
+		}
+		errs = append(errs, errors...)
+	}
+	return adapterRequests, errs
+}
+
+func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, []error) {
+	var errs []error
+
+	reqJSON, err := json.Marshal(request)
 	if err != nil {
-		return nil, []error{err}
+		errs = append(errs, err)
+		return nil, errs
 	}
 
-	requestData := &adapters.RequestData{
-		Method: "POST",
-		Uri:    a.endpoint,
-		Body:   requestJSON,
-	}
-
-	return []*adapters.RequestData{requestData}, nil
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
+	return &adapters.RequestData{
+		Method:  "POST",
+		Uri:     a.endpoint,
+		Body:    reqJSON,
+		Headers: headers,
+	}, errs
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
@@ -75,20 +132,16 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 }
 
 func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
-	var mediaType openrtb_ext.BidType = ""
 	for _, imp := range imps {
 		if imp.ID == impID {
 			if imp.Banner != nil {
-				mediaType = openrtb_ext.BidTypeBanner
-				return mediaType, nil
+				return openrtb_ext.BidTypeBanner, nil
 			}
 			if imp.Banner == nil && imp.Video != nil {
-				mediaType = openrtb_ext.BidTypeVideo
-				return mediaType, nil
+				return openrtb_ext.BidTypeVideo, nil
 			}
 			if imp.Banner == nil && imp.Video == nil && imp.Native != nil {
-				mediaType = openrtb_ext.BidTypeNative
-				return mediaType, nil
+				return openrtb_ext.BidTypeNative, nil
 			}
 		}
 	}
