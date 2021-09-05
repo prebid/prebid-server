@@ -10,3 +10,7 @@ capabilities:
     mediaTypes:
       - banner
       - video
+userSync:
+  redirect:
+    url: "https://sync.aralego.com/idsync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&usprivacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
+    userMacro: "SspCookieUserId"

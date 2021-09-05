@@ -27,6 +27,8 @@ import (
 	"github.com/prebid/prebid-server/usersync"
 )
 
+var allSyncTypes []usersync.SyncType = []usersync.SyncType{usersync.SyncTypeIFrame, usersync.SyncTypeRedirect}
+
 type bidResult struct {
 	bidder  *pbs.PBSBidder
 	bidList pbs.PBSBidSlice
@@ -57,22 +59,22 @@ func writeAuctionError(w http.ResponseWriter, s string, err error) {
 }
 
 type auction struct {
-	cfg           *config.Configuration
-	syncers       map[openrtb_ext.BidderName]usersync.Usersyncer
-	gdprPerms     gdpr.Permissions
-	metricsEngine metrics.MetricsEngine
-	dataCache     cache.Cache
-	exchanges     map[string]adapters.Adapter
+	cfg             *config.Configuration
+	syncersByBidder map[string]usersync.Syncer
+	gdprPerms       gdpr.Permissions
+	metricsEngine   metrics.MetricsEngine
+	dataCache       cache.Cache
+	exchanges       map[string]adapters.Adapter
 }
 
-func Auction(cfg *config.Configuration, syncers map[openrtb_ext.BidderName]usersync.Usersyncer, gdprPerms gdpr.Permissions, metricsEngine metrics.MetricsEngine, dataCache cache.Cache, exchanges map[string]adapters.Adapter) httprouter.Handle {
+func Auction(cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, gdprPerms gdpr.Permissions, metricsEngine metrics.MetricsEngine, dataCache cache.Cache, exchanges map[string]adapters.Adapter) httprouter.Handle {
 	a := &auction{
-		cfg:           cfg,
-		syncers:       syncers,
-		gdprPerms:     gdprPerms,
-		metricsEngine: metricsEngine,
-		dataCache:     dataCache,
-		exchanges:     exchanges,
+		cfg:             cfg,
+		syncersByBidder: syncersByBidder,
+		gdprPerms:       gdprPerms,
+		metricsEngine:   metricsEngine,
+		dataCache:       dataCache,
+		exchanges:       exchanges,
 	}
 	return a.auction
 }
@@ -374,11 +376,11 @@ func setLabelSource(labels *metrics.Labels, req *pbs.PBSRequest, status *string)
 		labels.Source = metrics.DemandApp
 	} else {
 		labels.Source = metrics.DemandWeb
-		if req.Cookie.LiveSyncCount() == 0 {
+		if req.Cookie.HasAnyLiveSyncs() {
+			labels.CookieFlag = metrics.CookieFlagYes
+		} else {
 			labels.CookieFlag = metrics.CookieFlagNo
 			*status = "no_cookie"
-		} else {
-			labels.CookieFlag = metrics.CookieFlagYes
 		}
 	}
 }
@@ -480,8 +482,8 @@ func (a *auction) processUserSync(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bl
 	if syncerCode == "districtm" {
 		syncerCode = "appnexus"
 	}
-	syncer := a.syncers[openrtb_ext.BidderName(syncerCode)]
-	uid, _, _ := req.Cookie.GetUID(syncer.FamilyName())
+	syncer := a.syncersByBidder[syncerCode]
+	uid, _, _ := req.Cookie.GetUID(syncer.Key())
 	if uid == "" {
 		bidder.NoCookie = true
 		privacyPolicies := privacy.Policies{
@@ -491,9 +493,13 @@ func (a *auction) processUserSync(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bl
 			},
 		}
 		if a.shouldUsersync(*ctx, openrtb_ext.BidderName(syncerCode), privacyPolicies.GDPR) {
-			syncInfo, err := syncer.GetUsersyncInfo(privacyPolicies)
+			sync, err := syncer.GetSync(allSyncTypes, privacyPolicies)
 			if err == nil {
-				bidder.UsersyncInfo = syncInfo
+				bidder.UsersyncInfo = &pbs.UsersyncInfo{
+					URL:         sync.URL,
+					Type:        string(sync.Type),
+					SupportCORS: sync.SupportCORS,
+				}
 			} else {
 				glog.Errorf("Failed to get usersync info for %s: %v", syncerCode, err)
 			}

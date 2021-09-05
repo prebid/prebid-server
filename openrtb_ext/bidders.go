@@ -74,6 +74,7 @@ func IsBidderNameReserved(name string) bool {
 // Please keep this list alphabetized to minimize merge conflicts.
 const (
 	Bidder33Across          BidderName = "33across"
+	BidderAceex             BidderName = "aceex"
 	BidderAcuityAds         BidderName = "acuityads"
 	BidderAdagio            BidderName = "adagio"
 	BidderAdf               BidderName = "adf"
@@ -129,6 +130,7 @@ const (
 	BidderGamoshi           BidderName = "gamoshi"
 	BidderGrid              BidderName = "grid"
 	BidderGumGum            BidderName = "gumgum"
+	BidderHuaweiAds         BidderName = "huaweiads"
 	BidderImprovedigital    BidderName = "improvedigital"
 	BidderInMobi            BidderName = "inmobi"
 	BidderInteractiveoffers BidderName = "interactiveoffers"
@@ -154,6 +156,7 @@ const (
 	BidderNinthDecimal      BidderName = "ninthdecimal"
 	BidderNoBid             BidderName = "nobid"
 	BidderOneTag            BidderName = "onetag"
+	BidderOpenWeb           BidderName = "openweb"
 	BidderOpenx             BidderName = "openx"
 	BidderOperaads          BidderName = "operaads"
 	BidderOrbidder          BidderName = "orbidder"
@@ -195,6 +198,7 @@ const (
 	BidderYieldlab          BidderName = "yieldlab"
 	BidderYieldmo           BidderName = "yieldmo"
 	BidderYieldone          BidderName = "yieldone"
+	BidderYSSP              BidderName = "yssp"
 	BidderZeroClickFraud    BidderName = "zeroclickfraud"
 )
 
@@ -202,6 +206,7 @@ const (
 func CoreBidderNames() []BidderName {
 	return []BidderName{
 		Bidder33Across,
+		BidderAceex,
 		BidderAcuityAds,
 		BidderAdagio,
 		BidderAdf,
@@ -257,6 +262,7 @@ func CoreBidderNames() []BidderName {
 		BidderGamoshi,
 		BidderGrid,
 		BidderGumGum,
+		BidderHuaweiAds,
 		BidderImprovedigital,
 		BidderInMobi,
 		BidderInteractiveoffers,
@@ -282,6 +288,7 @@ func CoreBidderNames() []BidderName {
 		BidderNinthDecimal,
 		BidderNoBid,
 		BidderOneTag,
+		BidderOpenWeb,
 		BidderOpenx,
 		BidderOperaads,
 		BidderOrbidder,
@@ -323,6 +330,7 @@ func CoreBidderNames() []BidderName {
 		BidderYieldlab,
 		BidderYieldmo,
 		BidderYieldone,
+		BidderYSSP,
 		BidderZeroClickFraud,
 	}
 }
