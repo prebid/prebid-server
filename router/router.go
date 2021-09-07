@@ -31,6 +31,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/dv360"
 	"github.com/prebid/prebid-server/adapters/ix"
 	"github.com/prebid/prebid-server/adapters/liftoff"
+	"github.com/prebid/prebid-server/adapters/mintegral"
 	"github.com/prebid/prebid-server/adapters/moloco"
 	"github.com/prebid/prebid-server/adapters/molococloud"
 	"github.com/prebid/prebid-server/adapters/pubmatic"
@@ -183,6 +184,12 @@ func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
 			cfg.Adapters[string(openrtb_ext.BidderLiftoff)].XAPI.EndpointUSEast,
 			cfg.Adapters[string(openrtb_ext.BidderLiftoff)].XAPI.EndpointEU,
 			cfg.Adapters[string(openrtb_ext.BidderLiftoff)].XAPI.EndpointAPAC),
+		"mintegral": mintegral.NewMintegralLegacyAdapter(
+			adapters.DefaultHTTPAdapterConfig,
+			cfg.Adapters[string(openrtb_ext.BidderMintegral)].Endpoint,
+			cfg.Adapters[string(openrtb_ext.BidderMintegral)].XAPI.EndpointHK,
+			cfg.Adapters[string(openrtb_ext.BidderMintegral)].XAPI.EndpointSG,
+			cfg.Adapters[string(openrtb_ext.BidderMintegral)].XAPI.EndpointVG),
 		"moloco": moloco.NewMolocoLegacyAdapter(
 			adapters.DefaultHTTPAdapterConfig,
 			cfg.Adapters[string(openrtb_ext.BidderMoloco)].Endpoint,

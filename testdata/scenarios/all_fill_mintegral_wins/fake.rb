@@ -63,7 +63,8 @@ endpoints = [
   Endpoint.new('../../responses/molococloud/fill_low_bid.json', 'POST', '/molococloud_givemeads'),
   Endpoint.new('../../responses/pangle/fill_low_bid.json', 'POST', '/pangle_givemeads'),
   Endpoint.new('../../responses/dv360/fill_low_bid.json', 'POST', '/dv360_givemeads'),
-  Endpoint.new('../../responses/aarki/fill_high_bid.json', 'POST', '/aarki_givemeads'),
+  Endpoint.new('../../responses/aarki/fill_low_bid.json', 'POST', '/aarki_givemeads'),
+  Endpoint.new('../../responses/mintegral/fill_high_bid.json', 'POST', '/mintegral_givemeads'),
 ]
 
 endpoints.each do |e|
