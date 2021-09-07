@@ -148,7 +148,7 @@ func (data *ExternalCache) validate(errs []error) []error {
 	if strings.HasSuffix(data.Host, "/") {
 		return append(errs, errors.New(fmt.Sprintf("External cache Host '%s' must not end with a path separator", data.Host)))
 	}
-	if strings.ContainsAny(data.Host, "://") {
+	if strings.Contains(data.Host, "://") {
 		return append(errs, errors.New(fmt.Sprintf("External cache Host must not specify a protocol. '%s'", data.Host)))
 	}
 	if !strings.HasPrefix(data.Path, "/") {

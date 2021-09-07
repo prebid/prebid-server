@@ -108,6 +108,11 @@ func TestExternalCacheURLValidate(t *testing.T) {
 			data:      ExternalCache{Scheme: "https", Host: "www.google.com", Path: "/path/v1"},
 			expErrors: 0,
 		},
+		{
+			desc:      "Host with port",
+			data:      ExternalCache{Scheme: "https", Host: "localhost:2424", Path: "/path/v1"},
+			expErrors: 0,
+		},
 	}
 	for _, test := range testCases {
 		errs := test.data.validate([]error{})
