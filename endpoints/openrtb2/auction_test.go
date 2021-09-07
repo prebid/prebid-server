@@ -1207,7 +1207,9 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 
 	for _, test := range testCases {
 		deps.cfg.GenerateRequestID = test.givenGenerateRequestID
-		newRequest, _, errList := deps.processStoredRequests(context.Background(), json.RawMessage(test.givenRawData))
+		impInfo, errs := parseImpInfo([]byte(test.givenRawData))
+		assert.Empty(t, errs, test.description)
+		newRequest, _, errList := deps.processStoredRequests(context.Background(), json.RawMessage(test.givenRawData), impInfo)
 		assert.Empty(t, errList, test.description)
 
 		if err := json.Unmarshal(newRequest, req); err != nil {
@@ -2463,6 +2465,7 @@ func TestAuctionWarnings(t *testing.T) {
 func TestParseRequestParseImpInfoError(t *testing.T) {
 	reqBody := validRequest(t, "imp-info-invalid.json")
 	deps := &endpointDeps{
+		fakeUUIDGenerator{},
 		&warningsCheckExchange{},
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
