@@ -148,7 +148,7 @@ func (data *ExternalCache) validate(errs []error) []error {
 	if strings.HasSuffix(data.Host, "/") {
 		return append(errs, errors.New(fmt.Sprintf("External cache Host '%s' must not end with a path separator", data.Host)))
 	}
-	if strings.ContainsAny(data.Host, "://") {
+	if strings.Contains(data.Host, "://") {
 		return append(errs, errors.New(fmt.Sprintf("External cache Host must not specify a protocol. '%s'", data.Host)))
 	}
 	if !strings.HasPrefix(data.Path, "/") {
@@ -738,6 +738,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	// for them and specify all the parameters they need for them to work correctly.
 	v.SetDefault("adapters.33across.endpoint", "https://ssc.33across.com/api/v1/s2s")
 	v.SetDefault("adapters.33across.partner_id", "")
+	v.SetDefault("adapters.aceex.endpoint", "http://bl-us.aceex.io/?uqhash={{.AccountID}}")
 	v.SetDefault("adapters.acuityads.endpoint", "http://{{.Host}}.admanmedia.com/bid?token={{.AccountID}}")
 	v.SetDefault("adapters.adagio.endpoint", "https://mp.4dex.io/ortb2")
 	v.SetDefault("adapters.adf.endpoint", "https://adx.adform.net/adx/openrtb")
@@ -756,6 +757,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.adtarget.endpoint", "http://ghb.console.adtarget.com.tr/pbs/ortb")
 	v.SetDefault("adapters.adtelligent.endpoint", "http://ghb.adtelligent.com/pbs/ortb")
 	v.SetDefault("adapters.advangelists.endpoint", "http://nep.advangelists.com/xp/get?pubid={{.PublisherID}}")
+	v.SetDefault("adapters.adview.endpoint", "https://bid.adview.com/agent/thirdAdxService/{{.AccountID}}")
 	v.SetDefault("adapters.adxcg.disabled", true)
 	v.SetDefault("adapters.adyoulike.endpoint", "https://broker.omnitagjs.com/broker/bid?partnerId=19340f4f097d16f41f34fc0274981ca4")
 	v.SetDefault("adapters.aja.endpoint", "https://ad.as.amanad.adtdp.com/v1/bid/4")
@@ -797,9 +799,11 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.gamoshi.endpoint", "https://rtb.gamoshi.io")
 	v.SetDefault("adapters.grid.endpoint", "https://grid.bidswitch.net/sp_bid?sp=prebid")
 	v.SetDefault("adapters.gumgum.endpoint", "https://g2.gumgum.com/providers/prbds2s/bid")
+	v.SetDefault("adapters.huaweiads.endpoint", "https://acd.op.hicloud.com/ppsadx/getResult")
+	v.SetDefault("adapters.huaweiads.disabled", true)
 	v.SetDefault("adapters.improvedigital.endpoint", "http://ad.360yield.com/pbs")
 	v.SetDefault("adapters.inmobi.endpoint", "https://api.w.inmobi.com/showad/openrtb/bidder/prebid")
-	v.SetDefault("adapters.interactiveoffers.endpoint", "https://prebid-server.ioadx.com/bidRequest/?partnerId=d9e56d418c4825d466ee96c7a31bf1da6b62fa04")
+	v.SetDefault("adapters.interactiveoffers.endpoint", "https://prebid-server.ioadx.com/bidRequest/?partnerId={{.AccountID}}")
 	v.SetDefault("adapters.ix.disabled", true)
 	v.SetDefault("adapters.jixie.endpoint", "https://hb.jixie.io/v2/hbsvrpost")
 	v.SetDefault("adapters.kayzen.endpoint", "https://bids-{{.ZoneID}}.bidder.kayzen.io/?exchange={{.AccountID}}")
@@ -822,6 +826,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.ninthdecimal.endpoint", "http://rtb.ninthdecimal.com/xp/get?pubid={{.PublisherID}}")
 	v.SetDefault("adapters.nobid.endpoint", "https://ads.servenobid.com/ortb_adreq?tek=pbs&ver=1")
 	v.SetDefault("adapters.onetag.endpoint", "https://prebid-server.onetag-sys.com/prebid-server/{{.PublisherID}}")
+	v.SetDefault("adapters.openweb.endpoint", "http://ghb.spotim.market/pbs/ortb")
 	v.SetDefault("adapters.openx.endpoint", "http://rtb.openx.net/prebid")
 	v.SetDefault("adapters.operaads.endpoint", "https://s.adx.opera.com/ortb/v2/{{.PublisherID}}?ep={{.AccountID}}")
 	v.SetDefault("adapters.orbidder.endpoint", "https://orbidder.otto.de/openrtb2")
@@ -866,6 +871,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.yieldlab.endpoint", "https://ad.yieldlab.net/yp/")
 	v.SetDefault("adapters.yieldmo.endpoint", "https://ads.yieldmo.com/exchange/prebid-server")
 	v.SetDefault("adapters.yieldone.endpoint", "https://y.one.impact-ad.jp/hbs_imp")
+	v.SetDefault("adapters.yssp.disabled", true)
 	v.SetDefault("adapters.zeroclickfraud.endpoint", "http://{{.Host}}/openrtb2?sid={{.SourceId}}")
 
 	v.SetDefault("max_request_size", 1024*256)

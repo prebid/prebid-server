@@ -1000,6 +1000,97 @@ func TestRefererParsing(t *testing.T) {
 	}
 }
 
+func TestParseImpInfoSingleImpression(t *testing.T) {
+
+	expectedRes := []ImpExtPrebidData{
+		{
+			Imp:          json.RawMessage(`{"video":{"h":300,"w":200},"ext": {"prebid": {"storedrequest": {"id": "1"},"options": {"echovideoattrs": true}}}}`),
+			ImpExtPrebid: openrtb_ext.ExtImpPrebid{StoredRequest: &openrtb_ext.ExtStoredRequest{ID: "1"}, Options: &openrtb_ext.Options{EchoVideoAttrs: true}},
+		},
+		{
+			Imp:          json.RawMessage(`{"id": "adUnit2","ext": {"prebid": {"storedrequest": {"id": "1"},"options": {"echovideoattrs": true}},"appnexus": {"placementId": "def","trafficSourceCode": "mysite.com","reserve": null},"rubicon": null}}`),
+			ImpExtPrebid: openrtb_ext.ExtImpPrebid{StoredRequest: &openrtb_ext.ExtStoredRequest{ID: "1"}, Options: &openrtb_ext.Options{EchoVideoAttrs: true}},
+		},
+		{
+			Imp:          json.RawMessage(`{"ext": {"prebid": {"storedrequest": {"id": "2"},"options": {"echovideoattrs": false}}}}`),
+			ImpExtPrebid: openrtb_ext.ExtImpPrebid{StoredRequest: &openrtb_ext.ExtStoredRequest{ID: "2"}, Options: &openrtb_ext.Options{EchoVideoAttrs: false}},
+		},
+		{
+			//in this case impression doesn't have storedrequest so we don't expect any data about this imp will be returned
+			Imp:          json.RawMessage(`{"id": "some-static-imp","video":{"mimes":["video/mp4"]},"ext": {"appnexus": {"placementId": "abc","position": "below"}}}`),
+			ImpExtPrebid: openrtb_ext.ExtImpPrebid{},
+		},
+	}
+
+	for i, requestData := range testStoredRequests {
+		impInfo, errs := parseImpInfo([]byte(requestData))
+		assert.Len(t, errs, 0, "No errors should be returned")
+		assert.JSONEq(t, string(expectedRes[i].Imp), string(impInfo[0].Imp), "Incorrect impression data")
+		assert.Equal(t, expectedRes[i].ImpExtPrebid, impInfo[0].ImpExtPrebid, "Incorrect impression ext prebid data")
+
+	}
+}
+
+func TestParseImpInfoMultipleImpressions(t *testing.T) {
+
+	inputData := []byte(`{
+		"id": "ThisID",
+		"imp": [
+			{
+				"id": "imp1",
+				"ext": {
+					"prebid": {
+						"storedrequest": {
+							"id": "1"
+						},
+						"options": {
+							"echovideoattrs": true
+						}
+					}
+				}
+			},
+			{
+				"id": "imp2",
+				"ext": {
+					"prebid": {
+						"storedrequest": {
+							"id": "2"
+						},
+						"options": {
+							"echovideoattrs": false
+						}
+					}
+				}
+			},
+			{
+				"id": "imp3"
+			}
+		]
+	}`)
+
+	expectedRes := []ImpExtPrebidData{
+		{
+			Imp:          json.RawMessage(`{"id": "imp1","ext": {"prebid": {"storedrequest": {"id": "1"},"options": {"echovideoattrs": true}}}}`),
+			ImpExtPrebid: openrtb_ext.ExtImpPrebid{StoredRequest: &openrtb_ext.ExtStoredRequest{ID: "1"}, Options: &openrtb_ext.Options{EchoVideoAttrs: true}},
+		},
+		{
+			Imp:          json.RawMessage(`{"id": "imp2","ext": {"prebid": {"storedrequest": {"id": "2"},"options": {"echovideoattrs": false}}}}`),
+			ImpExtPrebid: openrtb_ext.ExtImpPrebid{StoredRequest: &openrtb_ext.ExtStoredRequest{ID: "2"}, Options: &openrtb_ext.Options{EchoVideoAttrs: false}},
+		},
+		{
+			Imp:          json.RawMessage(`{"id": "imp3"}`),
+			ImpExtPrebid: openrtb_ext.ExtImpPrebid{},
+		},
+	}
+
+	impInfo, errs := parseImpInfo([]byte(inputData))
+	assert.Len(t, errs, 0, "No errors should be returned")
+	for i, res := range expectedRes {
+		assert.JSONEq(t, string(res.Imp), string(impInfo[i].Imp), "Incorrect impression data")
+		assert.Equal(t, res.ImpExtPrebid, impInfo[i].ImpExtPrebid, "Incorrect impression ext prebid data")
+	}
+}
+
 // Test the stored request functionality
 func TestStoredRequests(t *testing.T) {
 	deps := &endpointDeps{
@@ -1023,7 +1114,9 @@ func TestStoredRequests(t *testing.T) {
 	testStoreVideoAttr := []bool{true, true, false, false}
 
 	for i, requestData := range testStoredRequests {
-		newRequest, impExtInfoMap, errList := deps.processStoredRequests(context.Background(), json.RawMessage(requestData))
+		impInfo, errs := parseImpInfo([]byte(requestData))
+		assert.Len(t, errs, 0, "No errors should be returned")
+		newRequest, impExtInfoMap, errList := deps.processStoredRequests(context.Background(), json.RawMessage(requestData), impInfo)
 		if len(errList) != 0 {
 			for _, err := range errList {
 				if err != nil {
@@ -1044,40 +1137,6 @@ func TestStoredRequests(t *testing.T) {
 
 		}
 		assert.Equalf(t, testStoreVideoAttr[i], impExtInfoMap[expectedImp].EchoVideoAttrs, "EchoVideoAttrs value is incorrect")
-	}
-}
-
-func TestStoredRequestsVideoErrors(t *testing.T) {
-	deps := &endpointDeps{
-		&nobidExchange{},
-		newParamsValidator(t),
-		&mockStoredReqFetcher{},
-		empty_fetcher.EmptyFetcher{},
-		empty_fetcher.EmptyFetcher{},
-		&config.Configuration{MaxRequestSize: maxSize},
-		&metricsConfig.DummyMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
-		map[string]string{},
-		false,
-		[]byte{},
-		openrtb_ext.BuildBidderMap(),
-		nil,
-		nil,
-		hardcodedResponseIPValidator{response: true},
-	}
-
-	// tests processStoredRequests function behavior in parsing incorrect input related to echovideoattrs feature
-	// this test now has 2 scenarios:
-	// 1) expected value we get using jsonparser.GetBoolean is integer
-	// 2) imp id is not found using jsonparser.GetString
-	// this loop iterates over testStoredRequestsErrors where input json has incorrect set up
-	// testStoredRequestsErrorsResults variable contains error message for every iteration
-
-	for i, requestData := range testStoredRequestsErrors {
-		_, _, errList := deps.processStoredRequests(context.Background(), json.RawMessage(requestData))
-
-		assert.NotEmpty(t, errList, "processStoredRequests should return error")
-		assert.Contains(t, errList[0].Error(), testStoredRequestsErrorsResults[i], "Incorrect error")
 	}
 }
 
@@ -2311,6 +2370,36 @@ func TestAuctionWarnings(t *testing.T) {
 	assert.Equal(t, errortypes.InvalidPrivacyConsentWarningCode, actualWarning.WarningCode, "Warning code is incorrect")
 }
 
+func TestParseRequestParseImpInfoError(t *testing.T) {
+	reqBody := validRequest(t, "imp-info-invalid.json")
+	deps := &endpointDeps{
+		&warningsCheckExchange{},
+		newParamsValidator(t),
+		&mockStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: int64(len(reqBody))},
+		&metricsConfig.DummyMetricsEngine{},
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		false,
+		[]byte{},
+		openrtb_ext.BuildBidderMap(),
+		nil,
+		nil,
+		hardcodedResponseIPValidator{response: true},
+	}
+
+	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
+
+	resReq, impExtInfoMap, errL := deps.parseRequest(req)
+
+	assert.Nil(t, resReq, "Result request should be nil due to incorrect imp")
+	assert.Nil(t, impExtInfoMap, "Impression info map should be nil due to incorrect imp")
+	assert.Len(t, errL, 1, "One error should be returned")
+	assert.Contains(t, errL[0].Error(), "echovideoattrs of type bool", "Incorrect error message")
+}
+
 func TestValidateNativeContextTypes(t *testing.T) {
 	impIndex := 4
 
@@ -3139,73 +3228,6 @@ var testStoredRequests = []string{
 			}
 		}
 	}`,
-}
-
-var testStoredRequestsErrors = []string{
-	`{
-		"id": "ThisID",
-		"imp": [
-			{
-				"video":{
-					"h":300,
-					"w":200
-				},
-				"ext": {
-					"prebid": {
-						"storedrequest": {
-							"id": "1"
-						},
-						"options": {
-							"echovideoattrs": 1
-						}
-					}
-				}
-			}
-		],
-		"ext": {
-			"prebid": {
-				"cache": {
-					"markup": 1
-				},
-				"targeting": {
-				}
-			}
-		}
-	}`, `{
-		"id": "ThisID",
-		"imp": [
-			{
-				"video":{
-					"h":300,
-					"w":200
-				},
-				"ext": {
-					"prebid": {
-						"storedrequest": {
-							"id": "10"
-						},
-						"options": {
-							"echovideoattrs": true
-						}
-					}
-				}
-			}
-		],
-		"ext": {
-			"prebid": {
-				"cache": {
-					"markup": 1
-				},
-				"targeting": {
-				}
-			}
-		}
-	}`,
-}
-
-var testStoredRequestsErrorsResults = []string{
-	"Value is not a boolean: 1",
-	"Key path not found",
 }
 
 // The expected requests after stored request processing
