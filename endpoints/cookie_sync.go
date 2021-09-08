@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
@@ -105,7 +106,11 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 		return usersync.Request{}, privacy.Policies{}, fmt.Errorf("JSON parsing failed: %s", err.Error())
 	}
 
-	gdprSignal, err := gdpr.SignalParse(request.GDPR)
+	var gdprString string
+	if request.GDPR != nil {
+		gdprString = strconv.Itoa(*request.GDPR)
+	}
+	gdprSignal, err := gdpr.SignalParse(gdprString)
 	if err != nil {
 		return usersync.Request{}, privacy.Policies{}, err
 	}
@@ -122,7 +127,7 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 
 	privacyPolicies := privacy.Policies{
 		GDPR: gdprPrivacy.Policy{
-			Signal:  request.GDPR,
+			Signal:  gdprString,
 			Consent: request.GDPRConsent,
 		},
 		CCPA: ccpa.Policy{
@@ -308,7 +313,7 @@ func mapBidderStatusToAnalytics(from []cookieSyncResponseBidder) []*analytics.Co
 
 type cookieSyncRequest struct {
 	Bidders         []string                         `json:"bidders"`
-	GDPR            string                           `json:"gdpr"`
+	GDPR            *int                             `json:"gdpr"`
 	GDPRConsent     string                           `json:"gdpr_consent"`
 	USPrivacy       string                           `json:"us_privacy"`
 	Limit           int                              `json:"limit"`

@@ -26,7 +26,7 @@ require (
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/mitchellh/copystructure v1.1.2
 	github.com/mxmCherry/openrtb/v15 v15.0.0
-	github.com/prebid/go-gdpr v0.9.0
+	github.com/prebid/go-gdpr v1.10.0
 	github.com/prometheus/client_golang v0.0.0-20180623155954-77e8f2ddcfed
 	github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4
 	github.com/prometheus/common v0.0.0-20180801064454-c7de2306084e // indirect

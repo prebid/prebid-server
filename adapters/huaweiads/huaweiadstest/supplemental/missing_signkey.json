@@ -1,0 +1,78 @@
+{
+  "mockBidRequest": {
+    "id": "test-req-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ],
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "slotid": "m8x9x3rzff",
+            "adtype": "banner",
+            "publisherid": "123",
+            "signkey": "",
+            "keyid": "12",
+            "isTestAuthorization": "true"
+          }
+        }
+      }
+    ],
+    "app": {
+      "bundle": "com.wavehk.android",
+      "name": "Huawei Browser",
+      "ver": "9.1.0.301"
+    },
+    "device": {
+      "ua": "useragent",
+      "h": 1920,
+      "language": "zh",
+      "geoCountry": "CH",
+      "model": "COL-TEST",
+      "os": "android",
+      "osv": "10.0.0",
+      "devicetype": 4,
+      "make": "huawei",
+      "w": 1080,
+      "ip": "ip",
+      "pxratio": 23.01,
+      "geo": {
+        "country": ""
+      }
+    },
+    "user": {
+      "ext": {
+        "data": {
+          "gaid": [
+          ],
+          "oaid": [
+            "oaid"
+          ],
+          "clientTime": [
+            "2018-11-02 16:34:07.981+1300"
+          ]
+        }
+      }
+    },
+    "ext": {
+    }
+  },
+  "httpcalls": [
+  ],
+  "expectedBidResponses": [
+  ],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "ExtHuaweiAds: signkey is empty.",
+      "comparison": "literal"
+    }
+  ]
+}
