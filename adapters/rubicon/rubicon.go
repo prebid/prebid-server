@@ -953,18 +953,14 @@ func updateImpRpTargetWithFpdAttributes(extImp openrtb_ext.ExtImpRubicon, imp op
 		}
 	}
 
-	impExtContextAttributes, _, _, _ := jsonparser.Get(imp.Ext, "context", "data")
-	if err != nil {
-		logParsingError(err)
-	}
-	impExtDataAttributes, _, _, _ := jsonparser.Get(imp.Ext, "data")
+	impExtContextAttributes, _, _, err := jsonparser.Get(imp.Ext, "context", "data")
 	if err != nil {
 		logParsingError(err)
 	}
 
-	if impExtContextAttributes != nil && len(impExtContextAttributes) > 0 {
+	if len(impExtContextAttributes) > 0 {
 		target = populateFirstPartyDataAttributes(impExtContextAttributes, target)
-	} else if impExtDataAttributes != nil && len(impExtDataAttributes) > 0 {
+	} else if impExtDataAttributes, _, _, err := jsonparser.Get(imp.Ext, "data"); err == nil && len(impExtDataAttributes) > 0 {
 		target = populateFirstPartyDataAttributes(impExtDataAttributes, target)
 	}
 
