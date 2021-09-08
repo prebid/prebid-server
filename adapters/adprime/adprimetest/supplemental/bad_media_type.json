@@ -5,18 +5,6 @@
             {
                 "id": "test-imp-id",
                 "tagid": "test",
-                "banner": {
-                    "format": [
-                        {
-                            "w": 300,
-                            "h": 250
-                        },
-                        {
-                            "w": 300,
-                            "h": 600
-                        }
-                    ]
-                },
                 "ext": {
                     "bidder": {
                         "TagID": "test",
@@ -44,18 +32,6 @@
                         {
                             "id": "test-imp-id",
                             "tagid": "test",
-                            "banner": {
-                                "format": [
-                                    {
-                                        "w": 300,
-                                        "h": 250
-                                    },
-                                    {
-                                        "w": 300,
-                                        "h": 600
-                                    }
-                                ]
-                            },
                             "ext": {
                                 "bidder": {
                                     "placementId": "test",
@@ -106,29 +82,10 @@
             }
         }
     ],
-    "expectedBidResponses": [
+    "expectedMakeBidsErrors": [
         {
-            "bids": [
-                {
-                    "bid": {
-                        "id": "test_bid_id",
-                        "impid": "test-imp-id",
-                        "price": 0.27543,
-                        "adm": "<iframe id=\"adm-banner-1\" width=\"468\" height=\"60\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"https://delta.adprime.com/?c=o&m=adm&k=bc2d316f39931a07d9a8dd249bf85fc0\"></iframe>",
-                        "cid": "test_cid",
-                        "crid": "test_crid",
-                        "dealid": "test_dealid",
-                        "w": 468,
-                        "h": 60,
-                        "ext": {
-                            "prebid": {
-                                "type": "banner"
-                            }
-                        }
-                    },
-                    "type": "banner"
-                }
-            ]
+            "value": "Failed to find impression \"test-imp-id\"",
+            "comparison": "literal"
         }
     ]
 }
