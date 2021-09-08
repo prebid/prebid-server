@@ -2305,6 +2305,25 @@ func TestBuildXPrebidHeader(t *testing.T) {
 			},
 			result: "pbs-go/test-version",
 		},
+		{
+			description: "Version found in both req.Ext and req.App.Ext",
+			version:     "test-version",
+			requestExt: &openrtb_ext.ExtRequest{
+				Prebid: openrtb_ext.ExtRequestPrebid{
+					Channel: &openrtb_ext.ExtRequestPrebidChannel{
+						Name:    "pbjs",
+						Version: "test-pbjs-version",
+					},
+				},
+			},
+			requestAppExt: &openrtb_ext.ExtApp{
+				Prebid: openrtb_ext.ExtAppPrebid{
+					Source:  "prebid-mobile",
+					Version: "test-prebid-mobile-version",
+				},
+			},
+			result: "pbs-go/test-version,pbjs/test-pbjs-version,prebid-mobile/test-prebid-mobile-version",
+		},
 	}
 
 	for _, test := range testCases {
