@@ -275,14 +275,13 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	impInfo, errs := parseImpInfo(requestJson)
+	impInfo, errs := parseImpInfo(rawRequestJson)
 	if len(errs) > 0 {
-		return nil, nil, errs
+		return nil, nil, nil, errs
 	}
 
 	// Fetch the Stored Request data and merge it into the HTTP request.
-	if requestJson, impExtInfoMap, errs = deps.processStoredRequests(ctx, requestJson, impInfo); len(errs) > 0 {
-	if rawRequestJson, impExtInfoMap, errs = deps.processStoredRequests(ctx, rawRequestJson); len(errs) > 0 {
+	if rawRequestJson, impExtInfoMap, errs = deps.processStoredRequests(ctx, rawRequestJson, impInfo); len(errs) > 0 {
 		return
 	}
 

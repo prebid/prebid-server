@@ -2392,10 +2392,11 @@ func TestParseRequestParseImpInfoError(t *testing.T) {
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
 
-	resReq, impExtInfoMap, errL := deps.parseRequest(req)
+	resReq, impExtInfoMap, fpd, errL := deps.parseRequest(req)
 
 	assert.Nil(t, resReq, "Result request should be nil due to incorrect imp")
 	assert.Nil(t, impExtInfoMap, "Impression info map should be nil due to incorrect imp")
+	assert.Nil(t, fpd, "First party data is not expected")
 	assert.Len(t, errL, 1, "One error should be returned")
 	assert.Contains(t, errL[0].Error(), "echovideoattrs of type bool", "Incorrect error message")
 }
