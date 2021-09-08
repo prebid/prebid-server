@@ -30,8 +30,11 @@ func TestVersion(t *testing.T) {
 
 		// Verify:
 		var result, expected versionModel
-		responseBodyBytes, _ := ioutil.ReadAll(w.Body)
-		err := json.Unmarshal(responseBodyBytes, &result)
+		responseBodyBytes, err := ioutil.ReadAll(w.Body)
+		if err != nil {
+			t.Errorf("Error reading response body bytes: %s", err)
+		}
+		err = json.Unmarshal(responseBodyBytes, &result)
 		if err != nil {
 			t.Errorf("Bad response body. Expected: %s, got an error %s", tc.expected, err)
 		}
