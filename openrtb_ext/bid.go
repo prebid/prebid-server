@@ -39,7 +39,7 @@ type ExtBidPrebidCacheBids struct {
 
 // ExtBidPrebidMeta defines the contract for bidresponse.seatbid.bid[i].ext.prebid.meta
 type ExtBidPrebidMeta struct {
-	AdvertiserDomains    []string        `json:"advertiserDomains,omitempty"` // or advertiserDomain?
+	AdvertiserDomains    []string        `json:"advertiserDomains,omitempty"`
 	AdvertiserID         int             `json:"advertiserId,omitempty"`
 	AdvertiserName       string          `json:"advertiserName,omitempty"`
 	AgencyID             int             `json:"agencyId,omitempty"`

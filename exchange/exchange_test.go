@@ -3602,6 +3602,14 @@ func TestMakeBidExtJSON(t *testing.T) {
 			expectedBidExt:     `{"prebid":{"meta":{"brandName":"foo"},"type":"banner"}}`,
 			expectedErrMessage: "",
 		},
+		{
+			description:        "Meta - Not Defined",
+			ext:                nil,
+			extBidPrebid:       openrtb_ext.ExtBidPrebid{Type: openrtb_ext.BidType("banner")},
+			impExtInfo:         nil,
+			expectedBidExt:     `{"prebid":{"type":"banner"}}`,
+			expectedErrMessage: "",
+		},
 		//Error cases
 		{
 			description:        "Invalid extension, valid extBidPrebid and valid imp ext info",

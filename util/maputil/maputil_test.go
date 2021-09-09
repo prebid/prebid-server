@@ -211,7 +211,7 @@ func TestHasElement(t *testing.T) {
 		{
 			description: "Keys Nil",
 			value:       map[string]interface{}{"foo": "exists"},
-			keys:        []string{},
+			keys:        nil,
 			expected:    false,
 		},
 		{
