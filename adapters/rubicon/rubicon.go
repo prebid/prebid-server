@@ -851,7 +851,8 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 				if len(siteTarget) > 0 {
 					updatedSiteTarget, err := json.Marshal(siteTarget)
 					if err != nil {
-						logParsingError(err)
+						errs = append(errs, err)
+						continue
 					}
 					siteExtRP.RP.Target = updatedSiteTarget
 				}
@@ -972,7 +973,7 @@ func updateImpRpTargetWithFpdAttributes(extImp openrtb_ext.ExtImpRubicon, imp op
 	}
 	updatedTarget, err := json.Marshal(target)
 	if err != nil {
-		logParsingError(err)
+		return nil, err
 	}
 	return updatedTarget, nil
 }
@@ -1038,7 +1039,7 @@ func updateUserRpTargetWithFpdAttributes(visitor json.RawMessage, user openrtb2.
 
 	updatedTarget, err := json.Marshal(target)
 	if err != nil {
-		logParsingError(err)
+		return nil, err
 	}
 	return updatedTarget, nil
 }
