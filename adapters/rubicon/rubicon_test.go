@@ -41,8 +41,8 @@ type rubiAppendTrackerUrlTestScenario struct {
 
 type rubiPopulateFpdAttributesScenario struct {
 	source json.RawMessage
-	target json.RawMessage
-	result json.RawMessage
+	target map[string]interface{}
+	result map[string]interface{}
 }
 
 type rubiSetNetworkIdTestScenario struct {
@@ -1386,44 +1386,44 @@ func TestOpenRTBFirstPartyDataPopulating(t *testing.T) {
 	testScenarios := []rubiPopulateFpdAttributesScenario{
 		{
 			source: json.RawMessage(`{"sourceKey": ["sourceValue", "sourceValue2"]}`),
-			target: json.RawMessage(`{"targetKey": ["targetValue"]}`),
-			result: json.RawMessage(`{"sourceKey":["sourceValue","sourceValue2"],"targetKey":["targetValue"]}`),
+			target: map[string]interface{}{"targetKey": []interface{}{"targetValue"}},
+			result: map[string]interface{}{"targetKey": []interface{}{"targetValue"}, "sourceKey": []interface{}{"sourceValue", "sourceValue2"}},
 		},
 		{
 			source: json.RawMessage(`{"sourceKey": ["sourceValue", "sourceValue2"]}`),
-			target: nil,
-			result: json.RawMessage(`{"sourceKey":["sourceValue","sourceValue2"]}`),
+			target: make(map[string]interface{}),
+			result: map[string]interface{}{"sourceKey": []interface{}{"sourceValue", "sourceValue2"}},
 		},
 		{
 			source: json.RawMessage(`{"sourceKey": "sourceValue"}`),
-			target: nil,
-			result: json.RawMessage(`{"sourceKey":["sourceValue"]}`),
+			target: make(map[string]interface{}),
+			result: map[string]interface{}{"sourceKey": [1]string{"sourceValue"}},
 		},
 		{
 			source: json.RawMessage(`{"sourceKey": true, "sourceKey2": [true, false, true]}`),
-			target: nil,
-			result: json.RawMessage(`{"sourceKey":["true"],"sourceKey2":["true","false","true"]}`),
+			target: make(map[string]interface{}),
+			result: map[string]interface{}{"sourceKey": [1]string{"true"}, "sourceKey2": []string{"true", "false", "true"}},
 		},
 		{
 			source: json.RawMessage(`{"sourceKey": 1, "sourceKey2": [1, 2, 3]}`),
-			target: nil,
-			result: json.RawMessage(`{"sourceKey":["1"]}`),
+			target: make(map[string]interface{}),
+			result: map[string]interface{}{"sourceKey": [1]string{"1"}},
 		},
 		{
 			source: json.RawMessage(`{"sourceKey": 1, "sourceKey2": 3.23}`),
-			target: nil,
-			result: json.RawMessage(`{"sourceKey":["1"]}`),
+			target: make(map[string]interface{}),
+			result: map[string]interface{}{"sourceKey": [1]string{"1"}},
 		},
 		{
 			source: json.RawMessage(`{"sourceKey": {}`),
-			target: nil,
-			result: json.RawMessage(`{}`),
+			target: make(map[string]interface{}),
+			result: make(map[string]interface{}),
 		},
 	}
 
 	for _, scenario := range testScenarios {
-		res := populateFirstPartyDataAttributes(scenario.source, scenario.target)
-		assert.Equal(t, scenario.result, res)
+		populateFirstPartyDataAttributes(scenario.source, scenario.target)
+		assert.Equal(t, scenario.result, scenario.target)
 	}
 }
 

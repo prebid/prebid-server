@@ -846,12 +846,15 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			siteCopy := *request.Site
 			siteExtRP := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: rubiconExt.SiteId}}
 			if siteCopy.Content != nil {
-				target, err := updateExtWithIabAttribute(nil, siteCopy.Content.Data, []int{1, 2, 5, 6})
-				if err != nil {
-					errs = append(errs, err)
-					continue
+				siteTarget := make(map[string]interface{})
+				updateExtWithIabAttribute(siteTarget, siteCopy.Content.Data, []int{1, 2, 5, 6})
+				if len(siteTarget) > 0 {
+					updatedSiteTarget, err := json.Marshal(siteTarget)
+					if err != nil {
+						logParsingError(err)
+					}
+					siteExtRP.RP.Target = updatedSiteTarget
 				}
-				siteExtRP.RP.Target = target
 			}
 
 			siteCopy.Ext, err = json.Marshal(&siteExtRP)
@@ -915,41 +918,41 @@ func updateImpRpTargetWithFpdAttributes(extImp openrtb_ext.ExtImpRubicon, imp op
 	if err != nil {
 		logParsingError(err)
 	}
-
-	target := populateFirstPartyDataAttributes(extImp.Inventory, existingTarget)
+	target := rawJSONToMap(existingTarget)
+	populateFirstPartyDataAttributes(extImp.Inventory, target)
 
 	if site != nil {
 		siteExtData, _, _, err := jsonparser.Get(site.Ext, "data")
 		if err != nil {
 			logParsingError(err)
 		}
-		target = populateFirstPartyDataAttributes(siteExtData, target)
+		populateFirstPartyDataAttributes(siteExtData, target)
 		if len(site.SectionCat) > 0 {
-			target = addStringArrayAttribute(site.SectionCat, target, "sectioncat")
+			addStringArrayAttribute(site.SectionCat, target, "sectioncat")
 		}
 		if len(site.PageCat) > 0 {
-			target = addStringArrayAttribute(site.PageCat, target, "pagecat")
+			addStringArrayAttribute(site.PageCat, target, "pagecat")
 		}
 		if site.Page != "" {
-			target = addStringAttribute(site.Page, target, "page")
+			addStringAttribute(site.Page, target, "page")
 		}
 		if site.Ref != "" {
-			target = addStringAttribute(site.Ref, target, "ref")
+			addStringAttribute(site.Ref, target, "ref")
 		}
 		if site.Search != "" {
-			target = addStringAttribute(site.Search, target, "search")
+			addStringAttribute(site.Search, target, "search")
 		}
 	} else {
 		appExtData, _, _, err := jsonparser.Get(app.Ext, "data")
 		if err != nil {
 			logParsingError(err)
 		}
-		target = populateFirstPartyDataAttributes(appExtData, target)
+		populateFirstPartyDataAttributes(appExtData, target)
 		if len(app.SectionCat) > 0 {
-			target = addStringArrayAttribute(app.SectionCat, target, "sectioncat")
+			addStringArrayAttribute(app.SectionCat, target, "sectioncat")
 		}
 		if len(app.PageCat) > 0 {
-			target = addStringArrayAttribute(app.PageCat, target, "pagecat")
+			addStringArrayAttribute(app.PageCat, target, "pagecat")
 		}
 	}
 
@@ -959,36 +962,31 @@ func updateImpRpTargetWithFpdAttributes(extImp openrtb_ext.ExtImpRubicon, imp op
 	}
 
 	if len(impExtContextAttributes) > 0 {
-		target = populateFirstPartyDataAttributes(impExtContextAttributes, target)
+		populateFirstPartyDataAttributes(impExtContextAttributes, target)
 	} else if impExtDataAttributes, _, _, err := jsonparser.Get(imp.Ext, "data"); err == nil && len(impExtDataAttributes) > 0 {
-		target = populateFirstPartyDataAttributes(impExtDataAttributes, target)
+		populateFirstPartyDataAttributes(impExtDataAttributes, target)
 	}
 
 	if len(extImp.Keywords) > 0 {
-		target = addStringArrayAttribute(extImp.Keywords, target, "keywords")
+		addStringArrayAttribute(extImp.Keywords, target, "keywords")
 	}
-
-	return target, nil
+	updatedTarget, err := json.Marshal(target)
+	if err != nil {
+		logParsingError(err)
+	}
+	return updatedTarget, nil
 }
 
 func logParsingError(err error) {
 	glog.Infof(fmt.Sprintf("Error while parsing. Error: %s", err.Error()))
 }
 
-func addStringAttribute(attribute string, target json.RawMessage, attributeName string) json.RawMessage {
-	targetAsMap := rawJSONToMap(target)
-	targetAsMap[attributeName] = [1]string{attribute}
-
-	updatedTarget, _ := json.Marshal(targetAsMap)
-	return updatedTarget
+func addStringAttribute(attribute string, target map[string]interface{}, attributeName string) {
+	target[attributeName] = [1]string{attribute}
 }
 
-func addStringArrayAttribute(attribute []string, target json.RawMessage, attributeName string) json.RawMessage {
-	targetAsMap := rawJSONToMap(target)
-	targetAsMap[attributeName] = attribute
-
-	updatedTarget, _ := json.Marshal(targetAsMap)
-	return updatedTarget
+func addStringArrayAttribute(attribute []string, target map[string]interface{}, attributeName string) {
+	target[attributeName] = attribute
 }
 
 func getAdSlot(imp openrtb2.Imp) string {
@@ -1027,71 +1025,55 @@ func updateUserRpTargetWithFpdAttributes(visitor json.RawMessage, user openrtb2.
 	if err != nil {
 		logParsingError(err)
 	}
-
-	target := populateFirstPartyDataAttributes(visitor, existingTarget)
+	target := rawJSONToMap(existingTarget)
+	populateFirstPartyDataAttributes(visitor, target)
 
 	userExtData, _, _, err := jsonparser.Get(user.Ext, "data")
 	if err != nil {
 		logParsingError(err)
 	}
-	target = populateFirstPartyDataAttributes(userExtData, target)
+	populateFirstPartyDataAttributes(userExtData, target)
 
-	target, err = updateExtWithIabAttribute(target, user.Data, []int{4})
+	updateExtWithIabAttribute(target, user.Data, []int{4})
+
+	updatedTarget, err := json.Marshal(target)
 	if err != nil {
-		return nil, &errortypes.BadInput{Message: err.Error()}
+		logParsingError(err)
 	}
-	return target, nil
+	return updatedTarget, nil
 }
 
-func updateExtWithIabAttribute(target json.RawMessage, data []openrtb2.Data, segTaxes []int) (json.RawMessage, error) {
+func updateExtWithIabAttribute(target map[string]interface{}, data []openrtb2.Data, segTaxes []int) {
 	var segmentIdsToCopy = getSegmentIdsToCopy(data, segTaxes)
 	if len(segmentIdsToCopy) == 0 {
-		return target, nil
+		return
 	}
 
-	extRPTarget := make(map[string]interface{})
-
-	if target != nil {
-		if err := json.Unmarshal(target, &extRPTarget); err != nil {
-			return nil, &errortypes.BadInput{Message: err.Error()}
-		}
-	}
-
-	extRPTarget["iab"] = segmentIdsToCopy
-
-	jsonTarget, err := json.Marshal(&extRPTarget)
-	if err != nil {
-		return nil, &errortypes.BadInput{Message: err.Error()}
-	}
-	return jsonTarget, nil
+	target["iab"] = segmentIdsToCopy
 }
 
-func populateFirstPartyDataAttributes(source json.RawMessage, target json.RawMessage) json.RawMessage {
-	targetAsMap := rawJSONToMap(target)
+func populateFirstPartyDataAttributes(source json.RawMessage, target map[string]interface{}) {
 	sourceAsMap := rawJSONToMap(source)
 
 	for key, val := range sourceAsMap {
 		switch typedValue := val.(type) {
 		case string:
-			targetAsMap[key] = [1]string{typedValue}
+			target[key] = [1]string{typedValue}
 		case float64:
 			if typedValue == float64(int(typedValue)) {
-				targetAsMap[key] = [1]string{strconv.Itoa(int(typedValue))}
+				target[key] = [1]string{strconv.Itoa(int(typedValue))}
 			}
 		case bool:
-			targetAsMap[key] = [1]string{strconv.FormatBool(typedValue)}
+			target[key] = [1]string{strconv.FormatBool(typedValue)}
 		case []interface{}:
 			if isStringArray(typedValue) {
-				targetAsMap[key] = typedValue
+				target[key] = typedValue
 			}
 			if isBoolArray(typedValue) {
-				targetAsMap[key] = convertToStringArray(typedValue)
+				target[key] = convertToStringArray(typedValue)
 			}
 		}
 	}
-
-	updatedTarget, _ := json.Marshal(targetAsMap)
-	return updatedTarget
 }
 
 func isStringArray(array []interface{}) bool {
