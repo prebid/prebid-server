@@ -48,6 +48,8 @@ type AdapterXAPI struct {
 	EndpointAPAC   string `mapstructure:"endpoint_apac"`
 	EndpointJP     string `mapstructure:"endpoint_jp"`
 	EndpointSG     string `mapstructure:"endpoint_sg"`
+	EndpointHK     string `mapstructure:"endpoint_hk"`
+	EndpointVG     string `mapstructure:"endpoint_vg"`
 }
 
 // validateAdapters validates adapter's endpoint and user sync URL
