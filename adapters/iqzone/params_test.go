@@ -38,10 +38,10 @@ var validParams = []string{
 	`{"placementId": "1"}`,
 	`{"endpointId": "test"}`,
 	`{"endpointId": "1"}`,
-	`{"placementId": "1", "endpointId": "1"}`,
 }
 
 var invalidParams = []string{
 	`{"placementId": 42}`,
 	`{"endpointId": 42}`,
+	`{"placementId": "1", "endpointId": "1"}`,
 }

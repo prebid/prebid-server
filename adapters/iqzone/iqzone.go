@@ -41,12 +41,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			return nil, append(errs, err)
 		}
 
-		if iqzoneExt.PlacementID == "" && iqzoneExt.EndpointID == "" {
-			return nil, append(errs, &errortypes.BadInput{
-				Message: "bad bidder params",
-			})
-		}
-
 		finalyImpExt := reqCopy.Imp[0].Ext
 		if iqzoneExt.PlacementID != "" {
 			finalyImpExt, _ = json.Marshal(map[string]interface{}{
