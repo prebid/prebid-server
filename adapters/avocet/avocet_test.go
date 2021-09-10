@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/config"
@@ -30,7 +30,7 @@ func TestAvocetAdapter_MakeRequests(t *testing.T) {
 		Endpoint string
 	}
 	type args struct {
-		request *openrtb.BidRequest
+		request *openrtb2.BidRequest
 		reqInfo *adapters.ExtraRequestInfo
 	}
 	type reqData []*adapters.RequestData
@@ -45,7 +45,7 @@ func TestAvocetAdapter_MakeRequests(t *testing.T) {
 			name:   "return nil if zero imps",
 			fields: fields{Endpoint: "https://bid.avct.cloud"},
 			args: args{
-				&openrtb.BidRequest{},
+				&openrtb2.BidRequest{},
 				nil,
 			},
 			want:     nil,
@@ -55,7 +55,7 @@ func TestAvocetAdapter_MakeRequests(t *testing.T) {
 			name:   "makes POST request with JSON content",
 			fields: fields{Endpoint: "https://bid.avct.cloud"},
 			args: args{
-				&openrtb.BidRequest{Imp: []openrtb.Imp{{}}},
+				&openrtb2.BidRequest{Imp: []openrtb2.Imp{{}}},
 				nil,
 			},
 			want: reqData{
@@ -100,7 +100,7 @@ func TestAvocetAdapter_MakeBids(t *testing.T) {
 		Endpoint string
 	}
 	type args struct {
-		internalRequest *openrtb.BidRequest
+		internalRequest *openrtb2.BidRequest
 		externalRequest *adapters.RequestData
 		response        *adapters.ResponseData
 	}
@@ -195,7 +195,7 @@ func TestAvocetAdapter_MakeBids(t *testing.T) {
 
 func Test_getBidType(t *testing.T) {
 	type args struct {
-		bid openrtb.Bid
+		bid openrtb2.Bid
 		ext avocetBidExt
 	}
 	tests := []struct {
@@ -205,17 +205,17 @@ func Test_getBidType(t *testing.T) {
 	}{
 		{
 			name: "VPAID 1.0",
-			args: args{openrtb.Bid{API: openrtb.APIFrameworkVPAID10}, avocetBidExt{}},
+			args: args{openrtb2.Bid{API: openrtb2.APIFrameworkVPAID10}, avocetBidExt{}},
 			want: openrtb_ext.BidTypeVideo,
 		},
 		{
 			name: "VPAID 2.0",
-			args: args{openrtb.Bid{API: openrtb.APIFrameworkVPAID20}, avocetBidExt{}},
+			args: args{openrtb2.Bid{API: openrtb2.APIFrameworkVPAID20}, avocetBidExt{}},
 			want: openrtb_ext.BidTypeVideo,
 		},
 		{
 			name: "other",
-			args: args{openrtb.Bid{}, avocetBidExt{}},
+			args: args{openrtb2.Bid{}, avocetBidExt{}},
 			want: openrtb_ext.BidTypeBanner,
 		},
 	}
@@ -228,7 +228,7 @@ func Test_getBidType(t *testing.T) {
 	}
 }
 
-var validBannerBid = openrtb.Bid{
+var validBannerBid = openrtb2.Bid{
 	AdM:      "<iframe src=\"http://ads.staging.avct.cloud/sv?pp=${AUCTION_PRICE}&uuid=0df2c449-6d85-4179-b5d5-37f2f91caa24&ty=h&crid=5b51e49634f2021f127ff7c9&tacid=5b51e4ed89654741306813a8&aid=749d36d7-c993-455f-aefd-ffd8a7e3ccf_0&accid=5b51dd1634f2021f127ff7c0&brid=5b51e20f34f2021f127ff7c4&ioid=5b51e22089654741306813a1&caid=5b51e2d689654741306813a4&it=1&iobsid=496e8cff35b2c0110029534d&ext_aid=749d36d7-c993-455f-aefd-ffd8a7e3ccf_0&bp=15.64434783&bt=1591874537316649768&h=250&w=300&vpr=0&vdp=0&domain=example.com&gco=54510b3b816269000061a0f7&stid=542d2c1615e3c013de53a6e2&glat=0&glong=0&bip4=3232238090&ext_siid=5ea89200c865f911007f1b0e&ext_pid=1&ext_sid=5ea84df8c865f911007f1ade&ext_plid=5ea9601ac865f911007f1b6a&optv=latest:latest&invsrc=5e722ee9bd6df11d063a8013&ug=0d&ca=0&biid=requestd-54644474bf-l7gx4|eu-central-1-staging&reg=eu-central-1&ck=1_5d99a849\" height=\"250\" width=\"300\" marginwidth=0 marginheight=0 hspace=0 vspace=0 frameborder=0 scrolling=\"no\"></iframe>",
 	ADomain:  []string{"avocet.io"},
 	CID:      "5b51e2d689654741306813a4",
@@ -267,7 +267,7 @@ var validBannerBidResponseBody = []byte(`{
 	]
 }`)
 
-var validVideoBid = openrtb.Bid{
+var validVideoBid = openrtb2.Bid{
 	AdM:      "<VAST version=\"3.0\"><Ad id=\"5ec530e32d57fe1100f17d87\"><Wrapper><AdSystem>Avocet</AdSystem><VASTAdTagURI><![CDATA[http://ads.staging.avct.cloud/vast?x=1&uuid=0df2c449-6d85-4179-b5d5-37f2f91caa24&ty=h&crid=5ec530e32d57fe1100f17d87&tacid=5ec531d32d57fe1100f17d89&aid=749d36d7-c993-455f-aefd-ffd8a7e3ccf_0&accid=5b51dd1634f2021f127ff7c0&brid=5b51e20f34f2021f127ff7c4&ioid=5b51e22089654741306813a1&caid=5b51e2d689654741306813a4&it=2&iobsid=496e8cff35b2c0110029534d&ext_aid=749d36d7-c993-455f-aefd-ffd8a7e3ccf_0&bp=15.64434783&bt=1591875033134290518&h=396&w=600&vpr=0&vdp=0&domain=example.com&gco=54510b3b816269000061a0f7&stid=542d2c1615e3c013de53a6e2&glat=0&glong=0&bip4=3232238090&ext_siid=5ea89200c865f911007f1b0e&ext_pid=1&ext_sid=5ea84df8c865f911007f1ade&ext_plid=5ea9601ac865f911007f1b6a&optv=latest:latest&invsrc=5e722ee9bd6df11d063a8013&ug=0d&ca=0&biid=requestd-54644474bf-l7gx4|eu-central-1-staging&reg=eu-central-1&pixel=1&ck=1_c343bf14]]></VASTAdTagURI><Impression><![CDATA[http://ads.staging.avct.cloud/sv?pp=${AUCTION_PRICE}&uuid=0df2c449-6d85-4179-b5d5-37f2f91caa24&ty=h&crid=5ec530e32d57fe1100f17d87&tacid=5ec531d32d57fe1100f17d89&aid=749d36d7-c993-455f-aefd-ffd8a7e3ccf_0&accid=5b51dd1634f2021f127ff7c0&brid=5b51e20f34f2021f127ff7c4&ioid=5b51e22089654741306813a1&caid=5b51e2d689654741306813a4&it=2&iobsid=496e8cff35b2c0110029534d&ext_aid=749d36d7-c993-455f-aefd-ffd8a7e3ccf_0&bp=15.64434783&bt=1591875033134290518&h=396&w=600&vpr=0&vdp=0&domain=example.com&gco=54510b3b816269000061a0f7&stid=542d2c1615e3c013de53a6e2&glat=0&glong=0&bip4=3232238090&ext_siid=5ea89200c865f911007f1b0e&ext_pid=1&ext_sid=5ea84df8c865f911007f1ade&ext_plid=5ea9601ac865f911007f1b6a&optv=latest:latest&invsrc=5e722ee9bd6df11d063a8013&ug=0d&ca=0&biid=requestd-54644474bf-l7gx4|eu-central-1-staging&reg=eu-central-1&pixel=1&ck=1_c343bf14]]></Impression><Creatives><Creative AdId=\"5ec530e32d57fe1100f17d87\"><Linear><TrackingEvents></TrackingEvents><VideoClicks></VideoClicks></Linear></Creative></Creatives></Wrapper></Ad></VAST>",
 	ADomain:  []string{"avocet.io"},
 	CID:      "5b51e2d689654741306813a4",

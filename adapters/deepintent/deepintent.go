@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -33,7 +33,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 }
 
 //MakeRequests which creates request object for Deepintent DSP
-func (d *DeepintentAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (d *DeepintentAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var deepintentExt openrtb_ext.ExtImpDeepintent
 	var err error
@@ -42,7 +42,7 @@ func (d *DeepintentAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 
 	reqCopy := *request
 	for _, imp := range request.Imp {
-		reqCopy.Imp = []openrtb.Imp{imp}
+		reqCopy.Imp = []openrtb2.Imp{imp}
 
 		var bidderExt adapters.ExtImpBidder
 		if err = json.Unmarshal(reqCopy.Imp[0].Ext, &bidderExt); err != nil {
@@ -76,7 +76,7 @@ func (d *DeepintentAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 }
 
 // MakeBids makes the bids
-func (d *DeepintentAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (d *DeepintentAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var errs []error
 
 	if response.StatusCode == http.StatusNoContent {
@@ -89,7 +89,7 @@ func (d *DeepintentAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
@@ -114,11 +114,11 @@ func (d *DeepintentAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 	return bidResponse, errs
 }
 
-func (d *DeepintentAdapter) preprocess(request openrtb.BidRequest) (*adapters.RequestData, []error) {
+func (d *DeepintentAdapter) preprocess(request openrtb2.BidRequest) (*adapters.RequestData, []error) {
 
 	var errs []error
 	impsCount := len(request.Imp)
-	resImps := make([]openrtb.Imp, 0, impsCount)
+	resImps := make([]openrtb2.Imp, 0, impsCount)
 
 	for _, imp := range request.Imp {
 
@@ -150,7 +150,7 @@ func (d *DeepintentAdapter) preprocess(request openrtb.BidRequest) (*adapters.Re
 	}, errs
 }
 
-func buildImpBanner(imp *openrtb.Imp) error {
+func buildImpBanner(imp *openrtb2.Imp) error {
 
 	if imp.Banner == nil {
 		return &errortypes.BadInput{
@@ -176,7 +176,7 @@ func buildImpBanner(imp *openrtb.Imp) error {
 	return nil
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb.Imp) (openrtb_ext.BidType, error) {
+func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
 	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impID {

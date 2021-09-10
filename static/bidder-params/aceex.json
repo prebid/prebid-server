@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Aceex Adapter Params",
+  "description": "A schema which validates params accepted by the Aceex adapter",
+  "type": "object",
+  "properties": {
+    "accountid": {
+      "type": "string",
+      "description": "Account id",
+      "minLength": 1
+    }
+  },
+  "required": ["accountid"]
+}

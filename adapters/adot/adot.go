@@ -3,12 +3,13 @@ package adot
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/mxmCherry/openrtb"
+	"net/http"
+
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"net/http"
 )
 
 type adapter struct {
@@ -32,7 +33,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 }
 
 // MakeRequests makes the HTTP requests which should be made to fetch bids.
-func (a *adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var reqJSON []byte
 	var err error
 
@@ -53,7 +54,7 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.Ex
 
 // MakeBids unpacks the server's response into Bids.
 // The bidder return a status code 204 when it cannot delivery an ad.
-func (a *adapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -70,7 +71,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest 
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
@@ -96,7 +97,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest 
 }
 
 // getMediaTypeForBid determines which type of bid.
-func getMediaTypeForBid(bid *openrtb.Bid) (openrtb_ext.BidType, error) {
+func getMediaTypeForBid(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 	if bid == nil {
 		return "", fmt.Errorf("the bid request object is nil")
 	}

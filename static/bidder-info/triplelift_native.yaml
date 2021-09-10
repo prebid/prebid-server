@@ -1,5 +1,6 @@
 maintainer:
   email: "prebid@triplelift.com"
+gvlVendorID: 28
 capabilities:
   app:
     mediaTypes:
@@ -7,3 +8,7 @@ capabilities:
   site:
     mediaTypes:
       - native
+userSync:
+  redirect:
+    url: "https://eb2.3lift.com/getuid?gdpr={{.GDPR}}&cmp_cs={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir={{.RedirectURL}}"
+    userMacro: "$UID"

@@ -22,7 +22,7 @@ import (
 
 // Client stores values in Prebid Cache. For more info, see https://github.com/prebid/prebid-cache
 type Client interface {
-	// PutJson stores JSON values for the given openrtb.Bids in the cache. Null values will be
+	// PutJson stores JSON values for the given openrtb2.Bids in the cache. Null values will be
 	//
 	// The returned string slice will always have the same number of elements as the values argument. If a
 	// value could not be saved, the element will be an empty string. Implementations are responsible for

@@ -1,5 +1,6 @@
 maintainer:
   email: devops@onetag.com
+gvlVendorID: 241
 capabilities:
   app:
     mediaTypes:
@@ -11,3 +12,7 @@ capabilities:
       - banner
       - video
       - native
+userSync:
+  iframe:
+    url: "https://onetag-sys.com/usync/?redir={{.RedirectURL}}"
+    userMacro: "${USER_TOKEN}"

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -22,9 +22,9 @@ func TestAppNotSupported(t *testing.T) {
 		},
 	}
 	constrained := adapters.BuildInfoAwareBidder(bidder, info)
-	bids, errs := constrained.MakeRequests(&openrtb.BidRequest{
-		Imp: []openrtb.Imp{{ID: "imp-1", Banner: &openrtb.Banner{}}},
-		App: &openrtb.App{},
+	bids, errs := constrained.MakeRequests(&openrtb2.BidRequest{
+		Imp: []openrtb2.Imp{{ID: "imp-1", Banner: &openrtb2.Banner{}}},
+		App: &openrtb2.App{},
 	}, &adapters.ExtraRequestInfo{})
 	if !assert.Len(t, errs, 1) {
 		return
@@ -44,9 +44,9 @@ func TestSiteNotSupported(t *testing.T) {
 		},
 	}
 	constrained := adapters.BuildInfoAwareBidder(bidder, info)
-	bids, errs := constrained.MakeRequests(&openrtb.BidRequest{
-		Imp:  []openrtb.Imp{{ID: "imp-1", Banner: &openrtb.Banner{}}},
-		Site: &openrtb.Site{},
+	bids, errs := constrained.MakeRequests(&openrtb2.BidRequest{
+		Imp:  []openrtb2.Imp{{ID: "imp-1", Banner: &openrtb2.Banner{}}},
+		Site: &openrtb2.Site{},
 	}, &adapters.ExtraRequestInfo{})
 	if !assert.Len(t, errs, 1) {
 		return
@@ -73,15 +73,15 @@ func TestImpFiltering(t *testing.T) {
 
 	testCases := []struct {
 		description    string
-		inBidRequest   *openrtb.BidRequest
+		inBidRequest   *openrtb2.BidRequest
 		expectedErrors []error
 		expectedImpLen int
 	}{
 		{
 			description: "Empty Imp array. MakeRequest() call not expected",
-			inBidRequest: &openrtb.BidRequest{
-				Imp:  []openrtb.Imp{},
-				Site: &openrtb.Site{},
+			inBidRequest: &openrtb2.BidRequest{
+				Imp:  []openrtb2.Imp{},
+				Site: &openrtb2.Site{},
 			},
 			expectedErrors: []error{
 				&errortypes.BadInput{Message: "Bid request didn't contain media types supported by the bidder"},
@@ -90,9 +90,9 @@ func TestImpFiltering(t *testing.T) {
 		},
 		{
 			description: "Sole imp in bid request is of wrong media type. MakeRequest() call not expected",
-			inBidRequest: &openrtb.BidRequest{
-				Imp: []openrtb.Imp{{ID: "imp-1", Video: &openrtb.Video{}}},
-				App: &openrtb.App{},
+			inBidRequest: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{{ID: "imp-1", Video: &openrtb2.Video{}}},
+				App: &openrtb2.App{},
 			},
 			expectedErrors: []error{
 				&errortypes.BadInput{Message: "request.imp[0] uses video, but this bidder doesn't support it"},
@@ -102,13 +102,13 @@ func TestImpFiltering(t *testing.T) {
 		},
 		{
 			description: "All imps in bid request of wrong media type, MakeRequest() call not expected",
-			inBidRequest: &openrtb.BidRequest{
-				Imp: []openrtb.Imp{
-					{ID: "imp-1", Video: &openrtb.Video{}},
-					{ID: "imp-2", Native: &openrtb.Native{}},
-					{ID: "imp-3", Audio: &openrtb.Audio{}},
+			inBidRequest: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{ID: "imp-1", Video: &openrtb2.Video{}},
+					{ID: "imp-2", Native: &openrtb2.Native{}},
+					{ID: "imp-3", Audio: &openrtb2.Audio{}},
 				},
-				App: &openrtb.App{},
+				App: &openrtb2.App{},
 			},
 			expectedErrors: []error{
 				&errortypes.BadInput{Message: "request.imp[0] uses video, but this bidder doesn't support it"},
@@ -120,25 +120,25 @@ func TestImpFiltering(t *testing.T) {
 		},
 		{
 			description: "Some imps with correct media type, MakeRequest() call expected",
-			inBidRequest: &openrtb.BidRequest{
-				Imp: []openrtb.Imp{
+			inBidRequest: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
 					{
 						ID:    "imp-1",
-						Video: &openrtb.Video{},
+						Video: &openrtb2.Video{},
 					},
 					{
-						Native: &openrtb.Native{},
+						Native: &openrtb2.Native{},
 					},
 					{
 						ID:     "imp-2",
-						Video:  &openrtb.Video{},
-						Native: &openrtb.Native{},
+						Video:  &openrtb2.Video{},
+						Native: &openrtb2.Native{},
 					},
 					{
-						Banner: &openrtb.Banner{},
+						Banner: &openrtb2.Banner{},
 					},
 				},
-				Site: &openrtb.Site{},
+				Site: &openrtb2.Site{},
 			},
 			expectedErrors: []error{
 				&errortypes.BadInput{Message: "request.imp[1] uses native, but this bidder doesn't support it"},
@@ -151,12 +151,12 @@ func TestImpFiltering(t *testing.T) {
 		},
 		{
 			description: "All imps with correct media type, MakeRequest() call expected",
-			inBidRequest: &openrtb.BidRequest{
-				Imp: []openrtb.Imp{
-					{ID: "imp-1", Video: &openrtb.Video{}},
-					{ID: "imp-2", Video: &openrtb.Video{}},
+			inBidRequest: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{ID: "imp-1", Video: &openrtb2.Video{}},
+					{ID: "imp-2", Video: &openrtb2.Video{}},
 				},
-				Site: &openrtb.Site{},
+				Site: &openrtb2.Site{},
 			},
 			expectedErrors: nil,
 			expectedImpLen: 2,
@@ -178,10 +178,10 @@ func TestImpFiltering(t *testing.T) {
 }
 
 type mockBidder struct {
-	gotRequest *openrtb.BidRequest
+	gotRequest *openrtb2.BidRequest
 }
 
-func (m *mockBidder) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (m *mockBidder) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var adapterRequests []*adapters.RequestData
 
 	for i := 0; i < len(request.Imp); i++ {
@@ -191,6 +191,6 @@ func (m *mockBidder) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters
 	return adapterRequests, nil
 }
 
-func (m *mockBidder) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (m *mockBidder) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	return nil, []error{errors.New("mock MakeBids error")}
 }

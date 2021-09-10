@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -16,7 +16,7 @@ func TestAllValidBids(t *testing.T) {
 		bidResponse: &pbsOrtbSeatBid{
 			bids: []*pbsOrtbBid{
 				{
-					bid: &openrtb.Bid{
+					bid: &openrtb2.Bid{
 						ID:    "one-bid",
 						ImpID: "thisImp",
 						Price: 0.45,
@@ -24,7 +24,7 @@ func TestAllValidBids(t *testing.T) {
 					},
 				},
 				{
-					bid: &openrtb.Bid{
+					bid: &openrtb2.Bid{
 						ID:    "thatBid",
 						ImpID: "thatImp",
 						Price: 0.40,
@@ -32,18 +32,27 @@ func TestAllValidBids(t *testing.T) {
 					},
 				},
 				{
-					bid: &openrtb.Bid{
+					bid: &openrtb2.Bid{
 						ID:    "123",
 						ImpID: "456",
 						Price: 0.44,
 						CrID:  "789",
 					},
 				},
+				{
+					bid: &openrtb2.Bid{
+						ID:     "zeroPriceBid",
+						ImpID:  "444",
+						Price:  0.00,
+						CrID:   "555",
+						DealID: "777",
+					},
+				},
 			},
 		},
 	})
-	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, openrtb_ext.BidderAppnexus, 1.0, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, true)
-	assert.Len(t, seatBid.bids, 3)
+	seatBid, errs := bidder.requestBid(context.Background(), &openrtb2.BidRequest{}, openrtb_ext.BidderAppnexus, 1.0, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, true, false)
+	assert.Len(t, seatBid.bids, 4)
 	assert.Len(t, errs, 0)
 }
 
@@ -52,40 +61,57 @@ func TestAllBadBids(t *testing.T) {
 		bidResponse: &pbsOrtbSeatBid{
 			bids: []*pbsOrtbBid{
 				{
-					bid: &openrtb.Bid{
+					bid: &openrtb2.Bid{
 						ID:    "one-bid",
 						Price: 0.45,
 						CrID:  "thisCreative",
 					},
 				},
 				{
-					bid: &openrtb.Bid{
+					bid: &openrtb2.Bid{
 						ID:    "thatBid",
 						ImpID: "thatImp",
 						CrID:  "thatCreative",
 					},
 				},
 				{
-					bid: &openrtb.Bid{
+					bid: &openrtb2.Bid{
 						ID:    "123",
 						ImpID: "456",
 						Price: 0.44,
 					},
 				},
 				{
-					bid: &openrtb.Bid{
+					bid: &openrtb2.Bid{
 						ImpID: "456",
 						Price: 0.44,
 						CrID:  "blah",
+					},
+				},
+				{
+					bid: &openrtb2.Bid{
+						ID:     "zeroPriceBidNoDeal",
+						ImpID:  "444",
+						Price:  0.00,
+						CrID:   "555",
+						DealID: "",
+					},
+				},
+				{
+					bid: &openrtb2.Bid{
+						ID:    "negativePrice",
+						ImpID: "999",
+						Price: -0.10,
+						CrID:  "888",
 					},
 				},
 				{},
 			},
 		},
 	})
-	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, openrtb_ext.BidderAppnexus, 1.0, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, true)
+	seatBid, errs := bidder.requestBid(context.Background(), &openrtb2.BidRequest{}, openrtb_ext.BidderAppnexus, 1.0, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, true, false)
 	assert.Len(t, seatBid.bids, 0)
-	assert.Len(t, errs, 5)
+	assert.Len(t, errs, 7)
 }
 
 func TestMixedBids(t *testing.T) {
@@ -93,7 +119,7 @@ func TestMixedBids(t *testing.T) {
 		bidResponse: &pbsOrtbSeatBid{
 			bids: []*pbsOrtbBid{
 				{
-					bid: &openrtb.Bid{
+					bid: &openrtb2.Bid{
 						ID:    "one-bid",
 						ImpID: "thisImp",
 						Price: 0.45,
@@ -101,14 +127,14 @@ func TestMixedBids(t *testing.T) {
 					},
 				},
 				{
-					bid: &openrtb.Bid{
+					bid: &openrtb2.Bid{
 						ID:    "thatBid",
 						ImpID: "thatImp",
 						CrID:  "thatCreative",
 					},
 				},
 				{
-					bid: &openrtb.Bid{
+					bid: &openrtb2.Bid{
 						ID:    "123",
 						ImpID: "456",
 						Price: 0.44,
@@ -116,19 +142,45 @@ func TestMixedBids(t *testing.T) {
 					},
 				},
 				{
-					bid: &openrtb.Bid{
+					bid: &openrtb2.Bid{
 						ImpID: "456",
 						Price: 0.44,
 						CrID:  "blah",
+					},
+				},
+				{
+					bid: &openrtb2.Bid{
+						ID:     "zeroPriceBid",
+						ImpID:  "444",
+						Price:  0.00,
+						CrID:   "555",
+						DealID: "777",
+					},
+				},
+				{
+					bid: &openrtb2.Bid{
+						ID:     "zeroPriceBidNoDeal",
+						ImpID:  "444",
+						Price:  0.00,
+						CrID:   "555",
+						DealID: "",
+					},
+				},
+				{
+					bid: &openrtb2.Bid{
+						ID:    "negativePrice",
+						ImpID: "999",
+						Price: -0.10,
+						CrID:  "888",
 					},
 				},
 				{},
 			},
 		},
 	})
-	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, openrtb_ext.BidderAppnexus, 1.0, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, true)
-	assert.Len(t, seatBid.bids, 2)
-	assert.Len(t, errs, 3)
+	seatBid, errs := bidder.requestBid(context.Background(), &openrtb2.BidRequest{}, openrtb_ext.BidderAppnexus, 1.0, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, true, false)
+	assert.Len(t, seatBid.bids, 3)
+	assert.Len(t, errs, 5)
 }
 
 func TestCurrencyBids(t *testing.T) {
@@ -210,7 +262,7 @@ func TestCurrencyBids(t *testing.T) {
 	for _, tc := range currencyTestCases {
 		bids := []*pbsOrtbBid{
 			{
-				bid: &openrtb.Bid{
+				bid: &openrtb2.Bid{
 					ID:    "one-bid",
 					ImpID: "thisImp",
 					Price: 0.45,
@@ -218,7 +270,7 @@ func TestCurrencyBids(t *testing.T) {
 				},
 			},
 			{
-				bid: &openrtb.Bid{
+				bid: &openrtb2.Bid{
 					ID:    "thatBid",
 					ImpID: "thatImp",
 					Price: 0.44,
@@ -242,11 +294,11 @@ func TestCurrencyBids(t *testing.T) {
 			expectedValidBids = 0
 		}
 
-		request := &openrtb.BidRequest{
+		request := &openrtb2.BidRequest{
 			Cur: tc.brqCur,
 		}
 
-		seatBid, errs := bidder.requestBid(context.Background(), request, openrtb_ext.BidderAppnexus, 1.0, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, true)
+		seatBid, errs := bidder.requestBid(context.Background(), request, openrtb_ext.BidderAppnexus, 1.0, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, true, false)
 		assert.Len(t, seatBid.bids, expectedValidBids)
 		assert.Len(t, errs, expectedErrs)
 	}
@@ -257,6 +309,6 @@ type mockAdaptedBidder struct {
 	errorResponse []error
 }
 
-func (b *mockAdaptedBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed bool) (*pbsOrtbSeatBid, []error) {
+func (b *mockAdaptedBidder) requestBid(ctx context.Context, request *openrtb2.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool) (*pbsOrtbSeatBid, []error) {
 	return b.bidResponse, b.errorResponse
 }

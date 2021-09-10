@@ -1,12 +1,13 @@
 package config
 
 import (
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"os"
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 )
@@ -19,8 +20,8 @@ func TestSampleModule(t *testing.T) {
 	am.LogAuctionObject(&analytics.AuctionObject{
 		Status:   http.StatusOK,
 		Errors:   nil,
-		Request:  &openrtb.BidRequest{},
-		Response: &openrtb.BidResponse{},
+		Request:  &openrtb2.BidRequest{},
+		Response: &openrtb2.BidResponse{},
 	})
 	if count != 1 {
 		t.Errorf("PBSAnalyticsModule failed at LogAuctionObject")

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -28,8 +28,8 @@ type validatedBidder struct {
 	bidder adaptedBidder
 }
 
-func (v *validatedBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed bool) (*pbsOrtbSeatBid, []error) {
-	seatBid, errs := v.bidder.requestBid(ctx, request, name, bidAdjustment, conversions, reqInfo, accountDebugAllowed)
+func (v *validatedBidder) requestBid(ctx context.Context, request *openrtb2.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool) (*pbsOrtbSeatBid, []error) {
+	seatBid, errs := v.bidder.requestBid(ctx, request, name, bidAdjustment, conversions, reqInfo, accountDebugAllowed, headerDebugAllowed)
 	if validationErrors := removeInvalidBids(request, seatBid); len(validationErrors) > 0 {
 		errs = append(errs, validationErrors...)
 	}
@@ -37,7 +37,7 @@ func (v *validatedBidder) requestBid(ctx context.Context, request *openrtb.BidRe
 }
 
 // validateBids will run some validation checks on the returned bids and excise any invalid bids
-func removeInvalidBids(request *openrtb.BidRequest, seatBid *pbsOrtbSeatBid) []error {
+func removeInvalidBids(request *openrtb2.BidRequest, seatBid *pbsOrtbSeatBid) []error {
 	// Exit early if there is nothing to do.
 	if seatBid == nil || len(seatBid.bids) == 0 {
 		return nil
@@ -110,8 +110,11 @@ func validateBid(bid *pbsOrtbBid) (bool, error) {
 	if bid.bid.ImpID == "" {
 		return false, fmt.Errorf("Bid \"%s\" missing required field 'impid'", bid.bid.ID)
 	}
-	if bid.bid.Price <= 0.0 {
-		return false, fmt.Errorf("Bid \"%s\" does not contain a positive 'price'", bid.bid.ID)
+	if bid.bid.Price < 0.0 {
+		return false, fmt.Errorf("Bid \"%s\" does not contain a positive (or zero if there is a deal) 'price'", bid.bid.ID)
+	}
+	if bid.bid.Price == 0.0 && bid.bid.DealID == "" {
+		return false, fmt.Errorf("Bid \"%s\" does not contain positive 'price' which is required since there is no deal set for this bid", bid.bid.ID)
 	}
 	if bid.bid.CrID == "" {
 		return false, fmt.Errorf("Bid \"%s\" missing creative ID", bid.bid.ID)

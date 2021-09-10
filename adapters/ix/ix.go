@@ -7,15 +7,18 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sort"
+	"strings"
 
-	"golang.org/x/net/context/ctxhttp"
-
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/native1"
+	native1response "github.com/mxmCherry/openrtb/v15/native1/response"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
+	"golang.org/x/net/context/ctxhttp"
 )
 
 type IxAdapter struct {
@@ -46,8 +49,8 @@ type ixBidResult struct {
 
 type callOneObject struct {
 	requestJSON bytes.Buffer
-	width       uint64
-	height      uint64
+	width       int64
+	height      int64
 	bidType     string
 }
 
@@ -87,11 +90,11 @@ func (a *IxAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.P
 
 			thisImp.TagID = unit.Code
 			if thisImp.Banner != nil {
-				thisImp.Banner.Format = []openrtb.Format{format}
+				thisImp.Banner.Format = []openrtb2.Format{format}
 				thisImp.Banner.W = &format.W
 				thisImp.Banner.H = &format.H
 			}
-			indexReq.Imp = []openrtb.Imp{thisImp}
+			indexReq.Imp = []openrtb2.Imp{thisImp}
 			// Index spec says "adunit path representing ad server inventory" but we don't have this
 			// ext is DFP div ID and KV pairs if avail
 			//indexReq.Imp[i].Ext = json.RawMessage("{}")
@@ -99,7 +102,7 @@ func (a *IxAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.P
 			if indexReq.Site != nil {
 				// Any objects pointed to by indexReq *must not be mutated*, or we will get race conditions.
 				siteCopy := *indexReq.Site
-				siteCopy.Publisher = &openrtb.Publisher{ID: params.SiteID}
+				siteCopy.Publisher = &openrtb2.Publisher{ID: params.SiteID}
 				indexReq.Site = &siteCopy
 			}
 
@@ -221,7 +224,7 @@ func (a *IxAdapter) callOne(ctx context.Context, reqJSON bytes.Buffer) (ixBidRes
 	}
 	result.ResponseBody = string(body)
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	err = json.Unmarshal(body, &bidResp)
 	if err != nil {
 		return result, &errortypes.BadServerResponse{
@@ -251,7 +254,7 @@ func (a *IxAdapter) callOne(ctx context.Context, reqJSON bytes.Buffer) (ixBidRes
 	return result, nil
 }
 
-func (a *IxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *IxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	nImp := len(request.Imp)
 	if nImp > a.maxRequests {
 		request.Imp = request.Imp[:a.maxRequests]
@@ -286,8 +289,8 @@ func (a *IxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.
 			formats := getBannerFormats(&banner)
 			for iFmt := range formats {
 				banner.Format = formats[iFmt : iFmt+1]
-				banner.W = openrtb.Uint64Ptr(banner.Format[0].W)
-				banner.H = openrtb.Uint64Ptr(banner.Format[0].H)
+				banner.W = openrtb2.Int64Ptr(banner.Format[0].W)
+				banner.H = openrtb2.Int64Ptr(banner.Format[0].H)
 				if requestData, err := createRequestData(a, request, &headers); err == nil {
 					if iFmt == 0 {
 						requests = append(requests, requestData)
@@ -312,12 +315,12 @@ func (a *IxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.
 	return append(requests, multiSizeRequests...), errs
 }
 
-func setSitePublisherId(request *openrtb.BidRequest, iImp int) error {
+func setSitePublisherId(request *openrtb2.BidRequest, iImp int) error {
 	if iImp == 0 {
 		// first impression - create a site and pub copy
 		site := *request.Site
 		if site.Publisher == nil {
-			site.Publisher = &openrtb.Publisher{}
+			site.Publisher = &openrtb2.Publisher{}
 		} else {
 			publisher := *site.Publisher
 			site.Publisher = &publisher
@@ -339,14 +342,14 @@ func setSitePublisherId(request *openrtb.BidRequest, iImp int) error {
 	return nil
 }
 
-func getBannerFormats(banner *openrtb.Banner) []openrtb.Format {
+func getBannerFormats(banner *openrtb2.Banner) []openrtb2.Format {
 	if len(banner.Format) == 0 && banner.W != nil && banner.H != nil {
-		banner.Format = []openrtb.Format{{W: *banner.W, H: *banner.H}}
+		banner.Format = []openrtb2.Format{{W: *banner.W, H: *banner.H}}
 	}
 	return banner.Format
 }
 
-func createRequestData(a *IxAdapter, request *openrtb.BidRequest, headers *http.Header) (*adapters.RequestData, error) {
+func createRequestData(a *IxAdapter, request *openrtb2.BidRequest, headers *http.Header) (*adapters.RequestData, error) {
 	body, err := json.Marshal(request)
 	return &adapters.RequestData{
 		Method:  "POST",
@@ -356,7 +359,7 @@ func createRequestData(a *IxAdapter, request *openrtb.BidRequest, headers *http.
 	}, err
 }
 
-func (a *IxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *IxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	switch {
 	case response.StatusCode == http.StatusNoContent:
 		return nil, nil
@@ -370,7 +373,7 @@ func (a *IxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReques
 		}}
 	}
 
-	var bidResponse openrtb.BidResponse
+	var bidResponse openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResponse); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("JSON parsing error: %v", err),
@@ -401,11 +404,49 @@ func (a *IxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReques
 		for _, bid := range seatBid.Bid {
 			bidType, ok := impMediaType[bid.ImpID]
 			if !ok {
-				errs = append(errs, fmt.Errorf("Unmatched impression id: %s.", bid.ImpID))
+				errs = append(errs, fmt.Errorf("unmatched impression id: %s", bid.ImpID))
 			}
+
+			var bidExtVideo *openrtb_ext.ExtBidPrebidVideo
+			var bidExt openrtb_ext.ExtBid
+			if bidType == openrtb_ext.BidTypeVideo {
+				unmarshalExtErr := json.Unmarshal(bid.Ext, &bidExt)
+				if unmarshalExtErr == nil && bidExt.Prebid != nil && bidExt.Prebid.Video != nil {
+					bidExtVideo = &openrtb_ext.ExtBidPrebidVideo{
+						Duration: bidExt.Prebid.Video.Duration,
+					}
+					if len(bid.Cat) == 0 {
+						bid.Cat = []string{bidExt.Prebid.Video.PrimaryCategory}
+					}
+				}
+			}
+
+			var bidNative1v1 *Native11Wrapper
+			if bidType == openrtb_ext.BidTypeNative {
+				err := json.Unmarshal([]byte(bid.AdM), &bidNative1v1)
+				if err == nil && len(bidNative1v1.Native.EventTrackers) > 0 {
+					mergeNativeImpTrackers(&bidNative1v1.Native)
+					if json, err := marshalJsonWithoutUnicode(bidNative1v1); err == nil {
+						bid.AdM = string(json)
+					}
+				}
+			}
+
+			var bidNative1v2 *native1response.Response
+			if bidType == openrtb_ext.BidTypeNative {
+				err := json.Unmarshal([]byte(bid.AdM), &bidNative1v2)
+				if err == nil && len(bidNative1v2.EventTrackers) > 0 {
+					mergeNativeImpTrackers(bidNative1v2)
+					if json, err := marshalJsonWithoutUnicode(bidNative1v2); err == nil {
+						bid.AdM = string(json)
+					}
+				}
+			}
+
 			bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
-				Bid:     &bid,
-				BidType: bidType,
+				Bid:      &bid,
+				BidType:  bidType,
+				BidVideo: bidExtVideo,
 			})
 		}
 	}
@@ -428,4 +469,51 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 		maxRequests: 20,
 	}
 	return bidder, nil
+}
+
+// native 1.2 to 1.1 tracker compatibility handling
+
+type Native11Wrapper struct {
+	Native native1response.Response `json:"native,omitempty"`
+}
+
+func mergeNativeImpTrackers(bidNative *native1response.Response) {
+
+	// create unique list of imp pixels urls from `imptrackers` and `eventtrackers`
+	uniqueImpPixels := map[string]struct{}{}
+	for _, v := range bidNative.ImpTrackers {
+		uniqueImpPixels[v] = struct{}{}
+	}
+
+	for _, v := range bidNative.EventTrackers {
+		if v.Event == native1.EventTypeImpression && v.Method == native1.EventTrackingMethodImage {
+			uniqueImpPixels[v.URL] = struct{}{}
+		}
+	}
+
+	// rewrite `imptrackers` with new deduped list of imp pixels
+	bidNative.ImpTrackers = make([]string, 0)
+	for k := range uniqueImpPixels {
+		bidNative.ImpTrackers = append(bidNative.ImpTrackers, k)
+	}
+
+	// sort so tests pass correctly
+	sort.Strings(bidNative.ImpTrackers)
+}
+
+func marshalJsonWithoutUnicode(v interface{}) (string, error) {
+	// json.Marshal uses HTMLEscape for strings inside JSON which affects URLs
+	// this is a problem with Native responses that embed JSON within JSON
+	// a custom encoder can be used to disable this encoding.
+	// https://pkg.go.dev/encoding/json#Marshal
+	// https://pkg.go.dev/encoding/json#Encoder.SetEscapeHTML
+	sb := &strings.Builder{}
+	encoder := json.NewEncoder(sb)
+	encoder.SetEscapeHTML(false)
+	if err := encoder.Encode(v); err != nil {
+		return "", err
+	}
+	// json.Encode also writes a newline, need to remove
+	// https://pkg.go.dev/encoding/json#Encoder.Encode
+	return strings.TrimSuffix(sb.String(), "\n"), nil
 }

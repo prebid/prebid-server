@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -37,7 +37,7 @@ func getBidType(ext TripleliftRespExt) openrtb_ext.BidType {
 	return openrtb_ext.BidTypeNative
 }
 
-func processImp(imp *openrtb.Imp) error {
+func processImp(imp *openrtb2.Imp) error {
 	// get the triplelift extension
 	var ext adapters.ExtImpBidder
 	var tlext openrtb_ext.ExtImpTriplelift
@@ -64,7 +64,7 @@ func processImp(imp *openrtb.Imp) error {
 }
 
 // Returns the effective publisher ID
-func effectivePubID(pub *openrtb.Publisher) string {
+func effectivePubID(pub *openrtb2.Publisher) string {
 	if pub != nil {
 		if pub.Ext != nil {
 			var pubExt openrtb_ext.ExtPublisher
@@ -80,13 +80,13 @@ func effectivePubID(pub *openrtb.Publisher) string {
 	return "unknown"
 }
 
-func (a *TripleliftNativeAdapter) MakeRequests(request *openrtb.BidRequest, extra *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *TripleliftNativeAdapter) MakeRequests(request *openrtb2.BidRequest, extra *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp)+1)
 	reqs := make([]*adapters.RequestData, 0, 1)
 	// copy the request, because we are going to mutate it
 	tlRequest := *request
 	// this will contain all the valid impressions
-	var validImps []openrtb.Imp
+	var validImps []openrtb2.Imp
 	// pre-process the imps
 	for _, imp := range tlRequest.Imp {
 		if err := processImp(&imp); err == nil {
@@ -124,14 +124,14 @@ func (a *TripleliftNativeAdapter) MakeRequests(request *openrtb.BidRequest, extr
 	return reqs, errs
 }
 
-func getPublisher(request *openrtb.BidRequest) *openrtb.Publisher {
+func getPublisher(request *openrtb2.BidRequest) *openrtb2.Publisher {
 	if request.App != nil {
 		return request.App.Publisher
 	}
 	return request.Site.Publisher
 }
 
-func getBidCount(bidResponse openrtb.BidResponse) int {
+func getBidCount(bidResponse openrtb2.BidResponse) int {
 	c := 0
 	for _, sb := range bidResponse.SeatBid {
 		c = c + len(sb.Bid)
@@ -139,7 +139,7 @@ func getBidCount(bidResponse openrtb.BidResponse) int {
 	return c
 }
 
-func (a *TripleliftNativeAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *TripleliftNativeAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -153,7 +153,7 @@ func (a *TripleliftNativeAdapter) MakeBids(internalRequest *openrtb.BidRequest, 
 	if response.StatusCode != http.StatusOK {
 		return nil, []error{&errortypes.BadServerResponse{Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}}
 	}
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}

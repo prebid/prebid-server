@@ -1,5 +1,6 @@
 maintainer:
   email: "pubgrowth.engineering@sharethrough.com"
+gvlVendorID: 80
 capabilities:
   app:
     mediaTypes:
@@ -9,3 +10,7 @@ capabilities:
     mediaTypes:
       - native
       - banner
+userSync:
+  redirect:
+    url: "https://match.sharethrough.com/FGMrCMMc/v1?redirectUri={{.RedirectURL}}"
+    userMacro: "$UID"

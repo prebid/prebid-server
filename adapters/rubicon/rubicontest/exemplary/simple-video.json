@@ -9,6 +9,101 @@
       "id": "1",
       "bundle": "com.wls.testwlsapplication"
     },
+    "site": {
+      "content": {
+        "data": [
+          {
+            "ext": {
+              "segtax": 1
+            },
+            "segment": [
+              {
+                "id": "segmentId1"
+              },
+              {
+                "id": "segmentId2"
+              }
+            ]
+          },
+          {
+            "ext": {
+              "segtax": "1"
+            },
+            "segment": [
+              {
+                "id": "shouldNotBeCopied"
+              }
+            ]
+          },
+          {
+            "ext": {
+              "segtax": 2
+            },
+            "segment": [
+              {
+                "id": "segmentId3"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "user": {
+      "data": [
+        {
+          "ext": {
+            "segtax": 4
+          },
+          "segment": [
+            {
+              "id": "idToCopy"
+            }
+          ]
+        },
+        {
+          "ext": {
+            "segtax": "someValue"
+          },
+          "segment": [
+            {
+              "id": "shouldNotBeCopied"
+            }
+          ]
+        },
+        {
+          "ext": {
+            "segtax": "4"
+          },
+          "segment": [
+            {
+              "id": "shouldNotBeCopied2"
+            }
+          ]
+        },
+        {
+          "ext": {
+            "segtax": 4
+          },
+          "segment": [
+            {
+              "id": "idToCopy2"
+            }
+          ]
+        },
+        {
+          "ext": {
+            "segtax": [
+              4
+            ]
+          },
+          "segment": [
+            {
+              "id": "shouldNotBeCopied3"
+            }
+          ]
+        }
+      ]
+    },
     "imp": [
       {
         "id": "test-imp-id",
@@ -30,8 +125,8 @@
             "video": {
             },
             "accountId": 1001,
-            "siteId":113932,
-            "zoneId":535510
+            "siteId": 113932,
+            "zoneId": 535510
           }
         }
       }
@@ -52,11 +147,54 @@
             "ip": "123.123.123.123",
             "ifa": "zxcjbzxmc-zxcbmz-zxbcz-zxczx"
           },
-          "app": {
-            "id": "1",
+          "site": {
+            "content": {
+              "data": [
+                {
+                  "ext": {
+                    "segtax": 1
+                  },
+                  "segment": [
+                    {
+                      "id": "segmentId1"
+                    },
+                    {
+                      "id": "segmentId2"
+                    }
+                  ]
+                },
+                {
+                  "ext": {
+                    "segtax": "1"
+                  },
+                  "segment": [
+                    {
+                      "id": "shouldNotBeCopied"
+                    }
+                  ]
+                },
+                {
+                  "ext": {
+                    "segtax": 2
+                  },
+                  "segment": [
+                    {
+                      "id": "segmentId3"
+                    }
+                  ]
+                }
+              ]
+            },
             "ext": {
               "rp": {
-                "site_id": 113932
+                "site_id": 113932,
+                "target": {
+                  "iab": [
+                    "segmentId1",
+                    "segmentId2",
+                    "segmentId3"
+                  ]
+                }
               }
             },
             "publisher": {
@@ -65,7 +203,76 @@
                   "account_id": 1001
                 }
               }
-            },
+            }
+          },
+          "user": {
+            "data": [
+              {
+                "ext": {
+                  "segtax": 4
+                },
+                "segment": [
+                  {
+                    "id": "idToCopy"
+                  }
+                ]
+              },
+              {
+                "ext": {
+                  "segtax": "someValue"
+                },
+                "segment": [
+                  {
+                    "id": "shouldNotBeCopied"
+                  }
+                ]
+              },
+              {
+                "ext": {
+                  "segtax": "4"
+                },
+                "segment": [
+                  {
+                    "id": "shouldNotBeCopied2"
+                  }
+                ]
+              },
+              {
+                "ext": {
+                  "segtax": 4
+                },
+                "segment": [
+                  {
+                    "id": "idToCopy2"
+                  }
+                ]
+              },
+              {
+                "ext": {
+                  "segtax": [
+                    4
+                  ]
+                },
+                "segment": [
+                  {
+                    "id": "shouldNotBeCopied3"
+                  }
+                ]
+              }
+            ],
+            "ext": {
+              "rp": {
+                "target": {
+                  "iab": [
+                    "idToCopy",
+                    "idToCopy2"
+                  ]
+                }
+              }
+            }
+          },
+          "app": {
+            "id": "1",
             "bundle": "com.wls.testwlsapplication"
           },
           "imp": [
@@ -91,7 +298,7 @@
               },
               "ext": {
                 "rp": {
-                  "track":{
+                  "track": {
                     "mint": "",
                     "mint_version": ""
                   },
@@ -108,6 +315,7 @@
           "id": "test-request-id",
           "seatbid": [
             {
+              "buyer": "123",
               "bid": [
                 {
                   "id": "test_bid_id",
@@ -119,6 +327,9 @@
                   "dealid": "test_dealid",
                   "ext": {
                     "prebid": {
+                      "meta": {
+                        "networkId": 123
+                      },
                       "type": "video"
                     }
                   }
@@ -147,6 +358,9 @@
             "dealid": "test_dealid",
             "ext": {
               "prebid": {
+                "meta": {
+                  "networkId": 123
+                },
                 "type": "video"
               }
             }

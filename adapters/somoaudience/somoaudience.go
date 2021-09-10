@@ -6,12 +6,11 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
-
-	"github.com/mxmCherry/openrtb"
 )
 
 const hbconfig = "hb_pbs_1.0.0"
@@ -24,12 +23,12 @@ type somoaudienceReqExt struct {
 	BidderConfig string `json:"prebid"`
 }
 
-func (a *SomoaudienceAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *SomoaudienceAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
 	var errs []error
-	var bannerImps []openrtb.Imp
-	var videoImps []openrtb.Imp
-	var nativeImps []openrtb.Imp
+	var bannerImps []openrtb2.Imp
+	var videoImps []openrtb2.Imp
+	var nativeImps []openrtb2.Imp
 
 	for _, imp := range request.Imp {
 		if imp.Banner != nil {
@@ -53,7 +52,7 @@ func (a *SomoaudienceAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo 
 
 	// Somoaudience only supports single imp video request
 	for _, videoImp := range videoImps {
-		reqCopy.Imp = []openrtb.Imp{videoImp}
+		reqCopy.Imp = []openrtb2.Imp{videoImp}
 		adapterReq, errors := a.makeRequest(&reqCopy)
 		if adapterReq != nil {
 			adapterRequests = append(adapterRequests, adapterReq)
@@ -63,7 +62,7 @@ func (a *SomoaudienceAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo 
 
 	// Somoaudience only supports single imp video request
 	for _, nativeImp := range nativeImps {
-		reqCopy.Imp = []openrtb.Imp{nativeImp}
+		reqCopy.Imp = []openrtb2.Imp{nativeImp}
 		adapterReq, errors := a.makeRequest(&reqCopy)
 		if adapterReq != nil {
 			adapterRequests = append(adapterRequests, adapterReq)
@@ -74,10 +73,10 @@ func (a *SomoaudienceAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo 
 
 }
 
-func (a *SomoaudienceAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
+func (a *SomoaudienceAdapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, []error) {
 	var errs []error
 	var err error
-	var validImps []openrtb.Imp
+	var validImps []openrtb2.Imp
 	reqExt := somoaudienceReqExt{BidderConfig: hbconfig}
 
 	var placementHash string
@@ -132,7 +131,7 @@ func (a *SomoaudienceAdapter) makeRequest(request *openrtb.BidRequest) (*adapter
 	}, errs
 }
 
-func preprocess(imp *openrtb.Imp, reqExt *somoaudienceReqExt) (string, error) {
+func preprocess(imp *openrtb2.Imp, reqExt *somoaudienceReqExt) (string, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return "", &errortypes.BadInput{
@@ -153,7 +152,7 @@ func preprocess(imp *openrtb.Imp, reqExt *somoaudienceReqExt) (string, error) {
 	return somoExt.PlacementHash, nil
 }
 
-func (a *SomoaudienceAdapter) MakeBids(bidReq *openrtb.BidRequest, unused *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *SomoaudienceAdapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -171,7 +170,7 @@ func (a *SomoaudienceAdapter) MakeBids(bidReq *openrtb.BidRequest, unused *adapt
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
@@ -190,7 +189,7 @@ func (a *SomoaudienceAdapter) MakeBids(bidReq *openrtb.BidRequest, unused *adapt
 	return bidResponse, nil
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb.Imp) openrtb_ext.BidType {
+func getMediaTypeForImp(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
 	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impID {
