@@ -42,7 +42,6 @@ import (
 )
 
 const storedRequestTimeoutMillis = 50
-const siteAppValidationMessage = "request.site or request.app must be defined, but not both."
 
 var (
 	dntKey      string = http.CanonicalHeaderKey("DNT")
@@ -138,13 +137,11 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}()
 
 	req, impExtInfoMap, globalFPD, errL := deps.parseRequest(r)
+	if errortypes.ContainsFatalError(errL) && writeError(errL, w, &labels) {
+		return
+	}
 
 	resolvedFPD, fpdErrors := deps.processFPD(req, globalFPD)
-
-	if len(errL) == 1 && errL[0].Error() == siteAppValidationMessage && len(fpdErrors) == 0 && len(resolvedFPD) > 0 {
-		//if first party data exists and request validation passed - ignore site/app validation error for initial request
-		errL = make([]error, 0)
-	}
 	if len(fpdErrors) > 0 {
 		errL = append(errL, fpdErrors...)
 	}
@@ -168,7 +165,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		labels.Source = metrics.DemandApp
 		labels.RType = metrics.ReqTypeORTB2App
 		labels.PubID = getAccountID(req.App.Publisher)
-	} else if req.Site != nil { //Site and app can be nil in some cases where request has first party data
+	} else { //req.Site != nil
 		labels.Source = metrics.DemandWeb
 		if usersyncs.HasAnyLiveSyncs() {
 			labels.CookieFlag = metrics.CookieFlagYes
@@ -427,7 +424,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper) []err
 	}
 
 	if (req.Site == nil && req.App == nil) || (req.Site != nil && req.App != nil) {
-		return append(errL, errors.New(siteAppValidationMessage))
+		return append(errL, errors.New("request.site or request.app must be defined, but not both."))
 	}
 
 	if err := deps.validateSite(req); err != nil {
