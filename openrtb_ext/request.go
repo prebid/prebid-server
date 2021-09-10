@@ -29,6 +29,7 @@ type ExtRequestPrebid struct {
 	Aliases              map[string]string         `json:"aliases,omitempty"`
 	BidAdjustmentFactors map[string]float64        `json:"bidadjustmentfactors,omitempty"`
 	Cache                *ExtRequestPrebidCache    `json:"cache,omitempty"`
+	Channel              *ExtRequestPrebidChannel  `json:"channel,omitempty"`
 	Data                 *ExtRequestPrebidData     `json:"data,omitempty"`
 	Debug                bool                      `json:"debug,omitempty"`
 	Events               json.RawMessage           `json:"events,omitempty"`
@@ -78,6 +79,12 @@ type ExtRequestPrebidSChainSChainNode struct {
 // SourceExt defines the contract for bidrequest.source.ext
 type SourceExt struct {
 	SChain ExtRequestPrebidSChainSChain `json:"schain"`
+}
+
+// ExtRequestPrebidChannel defines the contract for bidrequest.ext.prebid.channel
+type ExtRequestPrebidChannel struct {
+	Name    string `json:"name"`
+	Version string `json:"version"`
 }
 
 // ExtRequestPrebidCache defines the contract for bidrequest.ext.prebid.cache
