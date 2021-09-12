@@ -31,10 +31,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	var adapterRequests []*adapters.RequestData
 
 	reqCopy := *request
-	for i, imp := range request.Imp {
+	for _, imp := range request.Imp {
 		reqCopy.Imp = []openrtb2.Imp{imp}
 
-		if err = json.Unmarshal(reqCopy.Imp[i].Ext, &bidderExt); err != nil {
+		if err = json.Unmarshal(reqCopy.Imp[0].Ext, &bidderExt); err != nil {
 			return nil, append(errs, err)
 		}
 		if err = json.Unmarshal(bidderExt.Bidder, &iqzoneExt); err != nil {
