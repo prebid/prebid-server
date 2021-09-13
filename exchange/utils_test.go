@@ -876,7 +876,7 @@ func TestCleanOpenRTBRequestsBidderParams(t *testing.T) {
 		hasError    bool
 	}{
 		{
-			description: "Bidder params for single partner",
+			description: "Nil Bidder params",
 			inExt:       nil,
 			expectedExt: getExpectedReqExt(true, false, false),
 			hasError:    false,
