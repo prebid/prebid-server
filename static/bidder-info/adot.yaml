@@ -14,6 +14,6 @@ capabilities:
       - native
 userSync:
   redirect:
-    url: "https://sync.prod.adotmob.com/cookie/pbs?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&r={{.RedirectURL}}"
+    url: "https://sync.adotmob.com/cookie/pbs?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&r={{.RedirectURL}}"
     userMacro: "{amob_user_id}"
     redirectUrl: "{{.ExternalURL}}/setuid?bidder={{.SyncerKey}}&f={{.SyncType}}&uid={{.UserMacro}}"
