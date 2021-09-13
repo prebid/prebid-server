@@ -376,7 +376,7 @@ func TestPreprocessFPD(t *testing.T) {
 			if err != nil {
 				t.Errorf("Unable to unmarshal input request: %s", fileName)
 			}
-			fpdData, reqExtPrebid := PreprocessBidderFPD(extReq)
+			fpdData, reqExtPrebid := ExtractBidderConfigFPD(extReq)
 
 			if reqExtPrebid.Data != nil {
 				assert.Nil(t, reqExtPrebid.Data.Bidders, "Global FPD config should be removed from request")
@@ -494,7 +494,7 @@ func TestBuildResolvedFPDForBidders(t *testing.T) {
 				fpdFile.BiddersFPD["appnexus"] = &openrtb_ext.FPDData{}
 			}
 
-			resultFPD, err := BuildResolvedFPDForBidders(&inputReq, fpdFile.BiddersFPD, reqExtFPD, reqFPD, []string{"appnexus"})
+			resultFPD, err := ResolveFPDData(&inputReq, fpdFile.BiddersFPD, reqExtFPD, reqFPD, []string{"appnexus"})
 
 			assert.NoError(t, err, "No errors should be returned")
 			assert.Equal(t, inputReq, inputReqCopy, "Original request should not be modified")

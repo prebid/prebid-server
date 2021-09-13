@@ -141,7 +141,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		return
 	}
 
-	resolvedFPD, fpdErrors := deps.processFPD(req)
+	resolvedFPD, fpdErrors := deps.GetResolvedFPDForBidders(req)
 	if len(fpdErrors) > 0 {
 		errL = append(errL, fpdErrors...)
 	}
@@ -1631,7 +1631,7 @@ func getAccountID(pub *openrtb2.Publisher) string {
 	return metrics.PublisherUnknown
 }
 
-func (deps *endpointDeps) processFPD(req *openrtb_ext.RequestWrapper) (map[openrtb_ext.BidderName]*openrtb_ext.FPDData, []error) {
+func (deps *endpointDeps) GetResolvedFPDForBidders(req *openrtb_ext.RequestWrapper) (map[openrtb_ext.BidderName]*openrtb_ext.FPDData, []error) {
 	errL := []error{}
 	var resolvedFPD map[openrtb_ext.BidderName]*openrtb_ext.FPDData
 
@@ -1654,7 +1654,7 @@ func (deps *endpointDeps) processFPD(req *openrtb_ext.RequestWrapper) (map[openr
 			biddersWithGlobalFPD = reqExt.GetPrebid().Data.Bidders
 		}
 
-		fpdBidderData, reqExtPrebid := firstpartydata.PreprocessBidderFPD(*reqExt.GetPrebid())
+		fpdBidderData, reqExtPrebid := firstpartydata.ExtractBidderConfigFPD(*reqExt.GetPrebid())
 		reqExt.SetPrebid(&reqExtPrebid)
 
 		if len(fpdBidderData) > 0 {
@@ -1662,7 +1662,7 @@ func (deps *endpointDeps) processFPD(req *openrtb_ext.RequestWrapper) (map[openr
 			openRtbGlobalFPD := firstpartydata.ExtractOpenRtbGlobalFPD(req.BidRequest)
 
 			var fpdErrors []error
-			initialFPD, buildFpdErr := firstpartydata.BuildResolvedFPDForBidders(req.BidRequest, fpdBidderData, globalFpdData, openRtbGlobalFPD, biddersWithGlobalFPD)
+			initialFPD, buildFpdErr := firstpartydata.ResolveFPDData(req.BidRequest, fpdBidderData, globalFpdData, openRtbGlobalFPD, biddersWithGlobalFPD)
 			if buildFpdErr != nil {
 				errL = append(errL, buildFpdErr)
 			} else {
