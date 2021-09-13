@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
-	"github.com/evanphx/json-patch"
+	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/gofrs/uuid"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
@@ -1364,17 +1364,15 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 		if err != nil {
 			return nil, nil, []error{err}
 		}
-		if isAppRequest {
+		if isAppRequest && hasStoredBidRequest {
 			uuidPatch, err := generateUuidForBidRequest(deps.uuidGenerator)
 			if err != nil {
 				return nil, nil, []error{err}
 			}
-			if hasStoredBidRequest {
-				uuidPatch, err = jsonpatch.MergePatch(storedRequests[storedBidRequestId], uuidPatch)
-				if err != nil {
-					errL := storedRequestErrorChecker(requestJson, storedRequests, storedBidRequestId)
-					return nil, nil, errL
-				}
+			uuidPatch, err = jsonpatch.MergePatch(storedRequests[storedBidRequestId], uuidPatch)
+			if err != nil {
+				errL := storedRequestErrorChecker(requestJson, storedRequests, storedBidRequestId)
+				return nil, nil, errL
 			}
 			resolvedRequest, err = jsonpatch.MergePatch(requestJson, uuidPatch)
 			if err != nil {
