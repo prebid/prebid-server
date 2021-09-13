@@ -89,6 +89,14 @@ func TestApplyBidderInfoConfigOverrides(t *testing.T) {
 			expectedBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{Key: "override"}}},
 		},
 		{
+			// Adapter Configs use a lower case bidder name, but the Bidder Infos follow the official
+			// bidder name casing.
+			description:         "Syncer Override - Case Sensitivity",
+			givenBidderInfos:    config.BidderInfos{"A": {Syncer: &config.Syncer{Key: "original"}}},
+			givenAdaptersCfg:    map[string]config.Adapter{"a": {Syncer: &config.Syncer{Key: "override"}}},
+			expectedBidderInfos: config.BidderInfos{"A": {Syncer: &config.Syncer{Key: "override"}}},
+		},
+		{
 			description:         "UserSyncURL Override IFrame",
 			givenBidderInfos:    config.BidderInfos{"a": {Syncer: &config.Syncer{IFrame: &config.SyncerEndpoint{URL: "original"}}}},
 			givenAdaptersCfg:    map[string]config.Adapter{"a": {UserSyncURL: "override"}},
