@@ -1007,7 +1007,7 @@ func getAdPodBidCreative(video *openrtb2.Video, adpod *types.AdPodBid) *string {
 
 //getAdPodBidExtension get commulative adpod bid details
 func getAdPodBidExtension(adpod *types.AdPodBid) json.RawMessage {
-	bidExt := &openrtb_ext.ExtCTVBid{
+	bidExt := &openrtb_ext.ExtOWBid{
 		ExtBid: openrtb_ext.ExtBid{
 			Prebid: &openrtb_ext.ExtBidPrebid{
 				Type:  openrtb_ext.BidTypeVideo,

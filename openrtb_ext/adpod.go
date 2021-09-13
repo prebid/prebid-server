@@ -1,6 +1,7 @@
 package openrtb_ext
 
 import (
+	"encoding/json"
 	"errors"
 	"strings"
 )
@@ -26,7 +27,7 @@ var (
 )
 
 // ExtCTVBid defines the contract for bidresponse.seatbid.bid[i].ext
-type ExtCTVBid struct {
+type ExtOWBid struct {
 	ExtBid
 	AdPod       *BidAdPodExt    `json:"adpod,omitempty"`
 	SKAdNetwork json.RawMessage `json:"skadn,omitempty"`
