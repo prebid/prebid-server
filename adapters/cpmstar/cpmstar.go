@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -16,7 +16,7 @@ type Adapter struct {
 	endpoint string
 }
 
-func (a *Adapter) MakeRequests(request *openrtb.BidRequest, unused *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *Adapter) MakeRequests(request *openrtb2.BidRequest, unused *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var adapterRequests []*adapters.RequestData
 
@@ -36,7 +36,7 @@ func (a *Adapter) MakeRequests(request *openrtb.BidRequest, unused *adapters.Ext
 	return adapterRequests, errs
 }
 
-func (a *Adapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, error) {
+func (a *Adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, error) {
 	var err error
 
 	jsonBody, err := json.Marshal(request)
@@ -55,7 +55,7 @@ func (a *Adapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestDat
 	}, nil
 }
 
-func preprocess(request *openrtb.BidRequest) error {
+func preprocess(request *openrtb2.BidRequest) error {
 	if len(request.Imp) == 0 {
 		return &errortypes.BadInput{
 			Message: "No Imps in Bid Request",
@@ -88,7 +88,7 @@ func preprocess(request *openrtb.BidRequest) error {
 	return nil
 }
 
-func validateImp(imp *openrtb.Imp) error {
+func validateImp(imp *openrtb2.Imp) error {
 	if imp.Banner == nil && imp.Video == nil {
 		return &errortypes.BadInput{
 			Message: "Only Banner and Video bid-types are supported at this time",
@@ -98,7 +98,7 @@ func validateImp(imp *openrtb.Imp) error {
 }
 
 // MakeBids based on cpmstar server response
-func (a *Adapter) MakeBids(bidRequest *openrtb.BidRequest, unused *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *Adapter) MakeBids(bidRequest *openrtb2.BidRequest, unused *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if responseData.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -109,7 +109,7 @@ func (a *Adapter) MakeBids(bidRequest *openrtb.BidRequest, unused *adapters.Requ
 		}}
 	}
 
-	var bidResponse openrtb.BidResponse
+	var bidResponse openrtb2.BidResponse
 
 	if err := json.Unmarshal(responseData.Body, &bidResponse); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{

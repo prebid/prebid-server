@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -20,7 +20,7 @@ type Ext struct {
 	PlacementId string `json:"placement_id"`
 }
 
-func (a *YieldmoAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *YieldmoAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var adapterRequests []*adapters.RequestData
 
@@ -33,7 +33,7 @@ func (a *YieldmoAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 	return adapterRequests, errors
 }
 
-func (a *YieldmoAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
+func (a *YieldmoAdapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, []error) {
 	var errs []error
 
 	if err := preprocess(request); err != nil {
@@ -59,7 +59,7 @@ func (a *YieldmoAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.Req
 }
 
 // Mutate the request to get it ready to send to yieldmo.
-func preprocess(request *openrtb.BidRequest) error {
+func preprocess(request *openrtb2.BidRequest) error {
 	for i := 0; i < len(request.Imp); i++ {
 		var imp = request.Imp[i]
 		var bidderExt adapters.ExtImpBidder
@@ -95,7 +95,7 @@ func preprocess(request *openrtb.BidRequest) error {
 }
 
 // MakeBids make the bids for the bid response.
-func (a *YieldmoAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *YieldmoAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -112,7 +112,7 @@ func (a *YieldmoAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
@@ -140,7 +140,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	return bidder, nil
 }
 
-func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
+func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 	//default to video unless banner exists in impression
 	for _, imp := range imps {
 		if imp.ID == impId && imp.Banner != nil {

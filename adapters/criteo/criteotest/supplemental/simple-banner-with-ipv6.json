@@ -1,0 +1,126 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "id": "site-id",
+      "page": "criteo.com"
+    },
+    "device": {
+      "os": "android",
+      "ipv6": "fd36:ce97:0fa1:dec0:0000:0000:0000:0000",
+      "ua": "random user agent"
+    },
+    "user": {
+      "ext": {
+        "eids": [{
+          "source": "criteo.com",
+          "uids": [{
+            "id": "criteo-eid"
+          }]
+        }]
+      }
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "zoneid": 123456,
+            "networkid": 78910
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bidder.criteo.com/cdb?profileId=230",
+        "headers": {
+          "X-Forwarded-For": ["fd36:ce97:0fa1:dec0:0000:0000:0000:0000"],
+          "User-Agent": ["random user agent"]
+        },
+        "body": {
+          "id": "test-request-id",
+          "publisher": {
+            "siteid": "site-id",
+            "url": "criteo.com",
+            "networkid": 78910
+          },
+          "user": {
+            "ipv6": "fd36:ce97:0fa1:dec0:0000:0000:0000:0000",
+            "ua": "random user agent",
+            "deviceos": "android",
+            "deviceidtype": "gaid"
+          },
+          "gdprconsent": {},
+          "slots": [
+            {
+              "slotid": "00000000-0000-0000-00000000",
+              "impid": "test-imp-id",
+              "zoneid": 123456,
+              "networkid": 78910,
+              "sizes": [
+                "300x250"
+              ]
+            }
+          ],
+          "eids": [
+            {
+              "source": "criteo.com",
+              "uids": [
+                {
+                  "id": "criteo-eid"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "slots": [
+            {
+              "arbitrageid": "test-slot-id",
+              "impid": "test-imp-id",
+              "zoneid": 123456,
+              "networkid": 78910,
+              "cpm": 0.1,
+              "currency": "USD",
+              "width": 300,
+              "height": 250,
+              "creativecode": "creative-123",
+              "creative": "<iframe id='789abc' name='789abc' src='http://creative-url.criteo.com'></iframe>"
+            }
+          ]
+        }
+      }
+    }
+  ],
+    "expectedBidResponses": [
+      {
+        "currency": "USD",
+        "bids": [
+          {
+            "bid": {
+              "id": "test-slot-id",
+              "impid": "test-imp-id",
+              "price": 0.1,
+              "crid": "creative-123",
+              "adm": "<iframe id='789abc' name='789abc' src='http://creative-url.criteo.com'></iframe>",
+              "w": 300,
+              "h": 250
+            },
+            "type": "banner"
+          }
+        ]
+      }
+  ]
+}
+

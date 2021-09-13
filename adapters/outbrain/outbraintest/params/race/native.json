@@ -1,0 +1,10 @@
+{
+  "publisher": {
+    "id": "publisher-id",
+    "name": "publisher-name",
+    "domain": "publisher-domain.com"
+  },
+  "tagid": "tag-id",
+  "bcat": ["bad-category"],
+  "badv": ["bad-advertiser"]
+}

@@ -5,27 +5,28 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/buger/jsonparser"
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"html/template"
 	"net"
 	"net/url"
 	"regexp"
 	"strconv"
 	"time"
+
+	"github.com/buger/jsonparser"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 const minChromeVersion = 53
 const minSafariVersion = 10
 
 type UtilityInterface interface {
-	gdprApplies(*openrtb.BidRequest) bool
-	parseUserInfo(*openrtb.User) userInfo
+	gdprApplies(*openrtb2.BidRequest) bool
+	parseUserInfo(*openrtb2.User) userInfo
 
 	getAdMarkup([]byte, openrtb_ext.ExtImpSharethroughResponse, *StrAdSeverParams) (string, error)
-	getBestFormat([]openrtb.Format) (uint64, uint64)
-	getPlacementSize(openrtb.Imp, openrtb_ext.ExtImpSharethrough) (uint64, uint64)
+	getBestFormat([]openrtb2.Format) (int64, int64)
+	getPlacementSize(openrtb2.Imp, openrtb_ext.ExtImpSharethrough) (int64, int64)
 
 	canAutoPlayVideo(string, UserAgentParsers) bool
 	isAndroid(string) bool
@@ -123,10 +124,10 @@ func (u Util) getAdMarkup(strRawResp []byte, strResp openrtb_ext.ExtImpSharethro
 	return templatedBuf.String(), nil
 }
 
-func (u Util) getPlacementSize(imp openrtb.Imp, strImpParams openrtb_ext.ExtImpSharethrough) (height uint64, width uint64) {
+func (u Util) getPlacementSize(imp openrtb2.Imp, strImpParams openrtb_ext.ExtImpSharethrough) (height, width int64) {
 	height, width = 1, 1
 	if len(strImpParams.IframeSize) >= 2 {
-		height, width = uint64(strImpParams.IframeSize[0]), uint64(strImpParams.IframeSize[1])
+		height, width = int64(strImpParams.IframeSize[0]), int64(strImpParams.IframeSize[1])
 	} else if imp.Banner != nil {
 		height, width = u.getBestFormat(imp.Banner.Format)
 	}
@@ -134,7 +135,7 @@ func (u Util) getPlacementSize(imp openrtb.Imp, strImpParams openrtb_ext.ExtImpS
 	return
 }
 
-func (u Util) getBestFormat(formats []openrtb.Format) (height uint64, width uint64) {
+func (u Util) getBestFormat(formats []openrtb2.Format) (height, width int64) {
 	height, width = 1, 1
 	for i := 0; i < len(formats); i++ {
 		format := formats[i]
@@ -195,7 +196,7 @@ func (u Util) isAtMinSafariVersion(userAgent string, parser *regexp.Regexp) bool
 	return u.isAtMinVersion(userAgent, parser, minSafariVersion)
 }
 
-func (u Util) gdprApplies(request *openrtb.BidRequest) bool {
+func (u Util) gdprApplies(request *openrtb2.BidRequest) bool {
 	var gdprApplies int64
 
 	if request.Regs != nil {
@@ -208,7 +209,7 @@ func (u Util) gdprApplies(request *openrtb.BidRequest) bool {
 	return gdprApplies != 0
 }
 
-func (u Util) parseUserInfo(user *openrtb.User) (ui userInfo) {
+func (u Util) parseUserInfo(user *openrtb2.User) (ui userInfo) {
 	if user == nil {
 		return
 	}

@@ -26,6 +26,5 @@ func TestLogicadSyncer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "https://localhost/cookiesender?r=true&gdpr=1&gdpr_consent=A&ru=localhost%2Fsetuid%3Fbidder%3Dlogicad%26gdpr%3D1%26gdpr_consent%3DA%26uid%3D%24UID", syncInfo.URL)
 	assert.Equal(t, "redirect", syncInfo.Type)
-	assert.EqualValues(t, 0, syncer.GDPRVendorID())
 	assert.Equal(t, false, syncInfo.SupportCORS)
 }

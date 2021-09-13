@@ -4,13 +4,15 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/prebid/prebid-server/errortypes"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/prebid-server/errortypes"
 
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/cache/dummycache"
@@ -21,7 +23,6 @@ import (
 
 	"strings"
 
-	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -81,7 +82,7 @@ func DummyRubiconServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var breq openrtb.BidRequest
+	var breq openrtb2.BidRequest
 	err = json.Unmarshal(body, &breq)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -126,14 +127,14 @@ func DummyRubiconServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := openrtb.BidResponse{
+	resp := openrtb2.BidResponse{
 		ID:    "test-response-id",
 		BidID: "test-bid-id",
 		Cur:   "USD",
-		SeatBid: []openrtb.SeatBid{
+		SeatBid: []openrtb2.SeatBid{
 			{
 				Seat: "RUBICON",
-				Bid:  make([]openrtb.Bid, 2),
+				Bid:  make([]openrtb2.Bid, 2),
 			},
 		},
 	}
@@ -185,7 +186,7 @@ func DummyRubiconServer(w http.ResponseWriter, r *http.Request) {
 	targeting := "{\"rp\":{\"targeting\":[{\"key\":\"key1\",\"values\":[\"value1\"]},{\"key\":\"key2\",\"values\":[\"value2\"]}]}}"
 	rawTargeting := json.RawMessage(targeting)
 
-	resp.SeatBid[0].Bid[0] = openrtb.Bid{
+	resp.SeatBid[0].Bid[0] = openrtb2.Bid{
 		ID:    "random-id",
 		ImpID: imp.ID,
 		Price: rubidata.tags[ix].bid,
@@ -320,8 +321,8 @@ func TestRubiconUserSyncInfo(t *testing.T) {
 	assert.False(t, an.SkipNoCookies(), "SkipNoCookies should be false")
 }
 
-func getTestSizes() map[int]openrtb.Format {
-	return map[int]openrtb.Format{
+func getTestSizes() map[int]openrtb2.Format {
+	return map[int]openrtb2.Format{
 		15: {W: 300, H: 250},
 		10: {W: 300, H: 600},
 		2:  {W: 728, H: 91},
@@ -335,7 +336,7 @@ func getTestSizes() map[int]openrtb.Format {
 func TestParseSizes(t *testing.T) {
 	SIZE_ID := getTestSizes()
 
-	sizes := []openrtb.Format{
+	sizes := []openrtb2.Format{
 		SIZE_ID[10],
 		SIZE_ID[15],
 	}
@@ -345,7 +346,7 @@ func TestParseSizes(t *testing.T) {
 	assert.Equal(t, 1, len(alt), "Alt not len 1")
 	assert.Equal(t, 10, alt[0], "Alt not 10: %d", alt[0])
 
-	sizes = []openrtb.Format{
+	sizes = []openrtb2.Format{
 		{
 			W: 1111,
 			H: 2222,
@@ -357,7 +358,7 @@ func TestParseSizes(t *testing.T) {
 	assert.Equal(t, 15, primary, "Primary %d != 15", primary)
 	assert.Equal(t, 0, len(alt), "Alt len %d != 0", len(alt))
 
-	sizes = []openrtb.Format{
+	sizes = []openrtb2.Format{
 		SIZE_ID[15],
 	}
 	primary, alt, err = parseRubiconSizes(sizes)
@@ -365,7 +366,7 @@ func TestParseSizes(t *testing.T) {
 	assert.Equal(t, 15, primary, "Primary %d != 15", primary)
 	assert.Equal(t, 0, len(alt), "Alt len %d != 0", len(alt))
 
-	sizes = []openrtb.Format{
+	sizes = []openrtb2.Format{
 		{
 			W: 1111,
 			H: 1222,
@@ -385,20 +386,20 @@ func TestMASAlgorithm(t *testing.T) {
 		ok      bool
 	}
 	type testStub struct {
-		input  []openrtb.Format
+		input  []openrtb2.Format
 		output output
 	}
 
 	testStubs := []testStub{
 		{
-			[]openrtb.Format{
+			[]openrtb2.Format{
 				SIZE_ID[2],
 				SIZE_ID[9],
 			},
 			output{2, []int{9}, false},
 		},
 		{
-			[]openrtb.Format{
+			[]openrtb2.Format{
 
 				SIZE_ID[9],
 				SIZE_ID[15],
@@ -406,14 +407,14 @@ func TestMASAlgorithm(t *testing.T) {
 			output{15, []int{9}, false},
 		},
 		{
-			[]openrtb.Format{
+			[]openrtb2.Format{
 				SIZE_ID[2],
 				SIZE_ID[15],
 			},
 			output{15, []int{2}, false},
 		},
 		{
-			[]openrtb.Format{
+			[]openrtb2.Format{
 				SIZE_ID[15],
 				SIZE_ID[9],
 				SIZE_ID[2],
@@ -421,7 +422,7 @@ func TestMASAlgorithm(t *testing.T) {
 			output{15, []int{2, 9}, false},
 		},
 		{
-			[]openrtb.Format{
+			[]openrtb2.Format{
 				SIZE_ID[10],
 				SIZE_ID[9],
 				SIZE_ID[2],
@@ -429,7 +430,7 @@ func TestMASAlgorithm(t *testing.T) {
 			output{2, []int{10, 9}, false},
 		},
 		{
-			[]openrtb.Format{
+			[]openrtb2.Format{
 				SIZE_ID[33],
 				SIZE_ID[8],
 				SIZE_ID[15],
@@ -437,7 +438,7 @@ func TestMASAlgorithm(t *testing.T) {
 			output{15, []int{33, 8}, false},
 		},
 		{
-			[]openrtb.Format{
+			[]openrtb2.Format{
 				SIZE_ID[33],
 				SIZE_ID[8],
 				SIZE_ID[9],
@@ -446,7 +447,7 @@ func TestMASAlgorithm(t *testing.T) {
 			output{2, []int{33, 8, 9}, false},
 		},
 		{
-			[]openrtb.Format{
+			[]openrtb2.Format{
 				SIZE_ID[33],
 				SIZE_ID[8],
 				SIZE_ID[9],
@@ -454,7 +455,7 @@ func TestMASAlgorithm(t *testing.T) {
 			output{9, []int{33, 8}, false},
 		},
 		{
-			[]openrtb.Format{
+			[]openrtb2.Format{
 				SIZE_ID[33],
 				SIZE_ID[8],
 				SIZE_ID[2],
@@ -462,24 +463,24 @@ func TestMASAlgorithm(t *testing.T) {
 			output{2, []int{33, 8}, false},
 		},
 		{
-			[]openrtb.Format{
+			[]openrtb2.Format{
 				SIZE_ID[33],
 				SIZE_ID[2],
 			},
 			output{2, []int{33}, false},
 		},
 		{
-			[]openrtb.Format{
+			[]openrtb2.Format{
 				SIZE_ID[8],
 			},
 			output{8, []int{}, false},
 		},
 		{
-			[]openrtb.Format{},
+			[]openrtb2.Format{},
 			output{0, []int{}, true},
 		},
 		{
-			[]openrtb.Format{
+			[]openrtb2.Format{
 				{W: 1111,
 					H: 2345,
 				},
@@ -527,7 +528,7 @@ func TestAppendTracker(t *testing.T) {
 
 func TestResolveVideoSizeId(t *testing.T) {
 	testScenarios := []struct {
-		placement   openrtb.VideoPlacementType
+		placement   openrtb2.VideoPlacementType
 		instl       int8
 		impId       string
 		expected    int
@@ -568,6 +569,52 @@ func TestResolveVideoSizeId(t *testing.T) {
 		res, err := resolveVideoSizeId(scenario.placement, scenario.instl, scenario.impId)
 		assert.Equal(t, scenario.expected, res)
 		assert.Equal(t, scenario.expectedErr, err)
+	}
+}
+
+func TestResolveBidFloorAttributes(t *testing.T) {
+	testScenarios := []struct {
+		bidFloor            float64
+		bidFloorCur         string
+		expectedBidFloor    float64
+		expectedBidFloorCur string
+	}{
+		{
+			bidFloor:            1,
+			bidFloorCur:         "EUR",
+			expectedBidFloor:    1.2,
+			expectedBidFloorCur: "USD",
+		},
+		{
+			bidFloor:            1,
+			bidFloorCur:         "Eur",
+			expectedBidFloor:    1.2,
+			expectedBidFloorCur: "USD",
+		},
+		{
+			bidFloor:            0,
+			bidFloorCur:         "EUR",
+			expectedBidFloor:    0,
+			expectedBidFloorCur: "EUR",
+		},
+		{
+			bidFloor:            -1,
+			bidFloorCur:         "EUR",
+			expectedBidFloor:    -1,
+			expectedBidFloorCur: "EUR",
+		},
+		{
+			bidFloor:            1,
+			bidFloorCur:         "USD",
+			expectedBidFloor:    1,
+			expectedBidFloorCur: "USD",
+		},
+	}
+
+	for _, scenario := range testScenarios {
+		bidFloor, bidFloorCur := resolveBidFloorAttributes(scenario.bidFloor, scenario.bidFloorCur)
+		assert.Equal(t, scenario.expectedBidFloor, bidFloor)
+		assert.Equal(t, scenario.expectedBidFloorCur, bidFloorCur)
 	}
 }
 
@@ -626,11 +673,11 @@ func TestWrongFormatResponse(t *testing.T) {
 
 func TestZeroSeatBidResponse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		resp := openrtb.BidResponse{
+		resp := openrtb2.BidResponse{
 			ID:      "test-response-id",
 			BidID:   "test-bid-id",
 			Cur:     "USD",
-			SeatBid: []openrtb.SeatBid{},
+			SeatBid: []openrtb2.SeatBid{},
 		}
 		js, _ := json.Marshal(resp)
 		w.Write(js)
@@ -647,14 +694,14 @@ func TestZeroSeatBidResponse(t *testing.T) {
 
 func TestEmptyBidResponse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		resp := openrtb.BidResponse{
+		resp := openrtb2.BidResponse{
 			ID:    "test-response-id",
 			BidID: "test-bid-id",
 			Cur:   "USD",
-			SeatBid: []openrtb.SeatBid{
+			SeatBid: []openrtb2.SeatBid{
 				{
 					Seat: "RUBICON",
-					Bid:  make([]openrtb.Bid, 0),
+					Bid:  make([]openrtb2.Bid, 0),
 				},
 			},
 		}
@@ -673,18 +720,18 @@ func TestEmptyBidResponse(t *testing.T) {
 
 func TestWrongBidIdResponse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		resp := openrtb.BidResponse{
+		resp := openrtb2.BidResponse{
 			ID:    "test-response-id",
 			BidID: "test-bid-id",
 			Cur:   "USD",
-			SeatBid: []openrtb.SeatBid{
+			SeatBid: []openrtb2.SeatBid{
 				{
 					Seat: "RUBICON",
-					Bid:  make([]openrtb.Bid, 2),
+					Bid:  make([]openrtb2.Bid, 2),
 				},
 			},
 		}
-		resp.SeatBid[0].Bid[0] = openrtb.Bid{
+		resp.SeatBid[0].Bid[0] = openrtb2.Bid{
 			ID:    "random-id",
 			ImpID: "zma",
 			Price: 1.67,
@@ -710,18 +757,18 @@ func TestWrongBidIdResponse(t *testing.T) {
 func TestZeroPriceBidResponse(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		resp := openrtb.BidResponse{
+		resp := openrtb2.BidResponse{
 			ID:    "test-response-id",
 			BidID: "test-bid-id",
 			Cur:   "USD",
-			SeatBid: []openrtb.SeatBid{
+			SeatBid: []openrtb2.SeatBid{
 				{
 					Seat: "RUBICON",
-					Bid:  make([]openrtb.Bid, 1),
+					Bid:  make([]openrtb2.Bid, 1),
 				},
 			},
 		}
-		resp.SeatBid[0].Bid[0] = openrtb.Bid{
+		resp.SeatBid[0].Bid[0] = openrtb2.Bid{
 			ID:    "test-bid-id",
 			ImpID: "first-tag",
 			Price: 0,
@@ -747,7 +794,7 @@ func TestDifferentRequest(t *testing.T) {
 	an, ctx, pbReq := CreatePrebidRequest(server, t)
 
 	// test app not nil
-	pbReq.App = &openrtb.App{
+	pbReq.App = &openrtb2.App{
 		ID:   "com.test",
 		Name: "testApp",
 	}
@@ -775,13 +822,13 @@ func TestDifferentRequest(t *testing.T) {
 	pbReq.Bidders[0].AdUnits[0].Params = json.RawMessage(fmt.Sprintf("{\"zoneId\": %d, \"siteId\": %d, \"accountId\": %d, \"visitor\": %s, \"inventory\": %s}", 8394, rubidata.siteID, rubidata.accountID, rubidata.visitorTargeting, rubidata.inventoryTargeting))
 
 	// test invalid size
-	pbReq.Bidders[0].AdUnits[0].Sizes = []openrtb.Format{
+	pbReq.Bidders[0].AdUnits[0].Sizes = []openrtb2.Format{
 		{
 			W: 2222,
 			H: 333,
 		},
 	}
-	pbReq.Bidders[0].AdUnits[1].Sizes = []openrtb.Format{
+	pbReq.Bidders[0].AdUnits[1].Sizes = []openrtb2.Format{
 		{
 			W: 222,
 			H: 3333,
@@ -795,7 +842,7 @@ func TestDifferentRequest(t *testing.T) {
 	b, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
 	assert.NotNil(t, err, "Should have gotten an error: %v", err)
 
-	pbReq.Bidders[0].AdUnits[1].Sizes = []openrtb.Format{
+	pbReq.Bidders[0].AdUnits[1].Sizes = []openrtb2.Format{
 		{
 			W: 222,
 			H: 3333,
@@ -861,7 +908,7 @@ func CreatePrebidRequest(server *httptest.Server, t *testing.T) (an *RubiconAdap
 
 	pbin := pbs.PBSRequest{
 		AdUnits: make([]pbs.AdUnit, 3),
-		Device:  &openrtb.Device{PxRatio: rubidata.devicePxRatio},
+		Device:  &openrtb2.Device{PxRatio: rubidata.devicePxRatio},
 		SDK:     &pbs.SDK{Source: rubidata.sdkSource, Platform: rubidata.sdkPlatform, Version: rubidata.sdkVersion},
 	}
 
@@ -869,7 +916,7 @@ func CreatePrebidRequest(server *httptest.Server, t *testing.T) (an *RubiconAdap
 		pbin.AdUnits[i] = pbs.AdUnit{
 			Code:       tag.code,
 			MediaTypes: []string{tag.mediaType},
-			Sizes: []openrtb.Format{
+			Sizes: []openrtb2.Format{
 				SIZE_ID[10],
 				SIZE_ID[15],
 			},
@@ -946,12 +993,12 @@ func TestOpenRTBRequest(t *testing.T) {
 		devicePxRatio: 4.0,
 	}
 
-	request := &openrtb.BidRequest{
+	request := &openrtb2.BidRequest{
 		ID: "test-request-id",
-		Imp: []openrtb.Imp{{
+		Imp: []openrtb2.Imp{{
 			ID: "test-imp-banner-id",
-			Banner: &openrtb.Banner{
-				Format: []openrtb.Format{
+			Banner: &openrtb2.Banner{
+				Format: []openrtb2.Format{
 					SIZE_ID[15],
 					SIZE_ID[10],
 				},
@@ -965,7 +1012,7 @@ func TestOpenRTBRequest(t *testing.T) {
 			}}`),
 		}, {
 			ID: "test-imp-video-id",
-			Video: &openrtb.Video{
+			Video: &openrtb2.Video{
 				W:           640,
 				H:           360,
 				MIMEs:       []string{"video/mp4"},
@@ -988,15 +1035,15 @@ func TestOpenRTBRequest(t *testing.T) {
 				}
 			}}`),
 		}},
-		Device: &openrtb.Device{
+		App: &openrtb2.App{
+			ID:   "com.test",
+			Name: "testApp",
+		},
+		Device: &openrtb2.Device{
 			PxRatio: rubidata.devicePxRatio,
 		},
-		User: &openrtb.User{
-			Ext: json.RawMessage(`{"digitrust": {
-                    "id": "some-digitrust-id",
-                    "keyv": 1,
-                    "pref": 0
-                },
+		User: &openrtb2.User{
+			Ext: json.RawMessage(`{
 				"eids": [{
                     "source": "pubcid",
                     "id": "2402fc76-7b39-4f0e-bfc2-060ef7693648"
@@ -1015,7 +1062,7 @@ func TestOpenRTBRequest(t *testing.T) {
 		httpReq := reqs[i]
 		assert.Equal(t, "POST", httpReq.Method, "Expected a POST message. Got %s", httpReq.Method)
 
-		var rpRequest openrtb.BidRequest
+		var rpRequest openrtb2.BidRequest
 		if err := json.Unmarshal(httpReq.Body, &rpRequest); err != nil {
 			t.Fatalf("Failed to unmarshal HTTP request: %v", rpRequest)
 		}
@@ -1031,16 +1078,16 @@ func TestOpenRTBRequest(t *testing.T) {
 				t.Fatal("Error unmarshalling request from the outgoing request.")
 			}
 
-			assert.Equal(t, uint64(300), rpRequest.Imp[0].Banner.Format[0].W,
+			assert.Equal(t, int64(300), rpRequest.Imp[0].Banner.Format[0].W,
 				"Banner width does not match. Expected %d, Got %d", 300, rpRequest.Imp[0].Banner.Format[0].W)
 
-			assert.Equal(t, uint64(250), rpRequest.Imp[0].Banner.Format[0].H,
+			assert.Equal(t, int64(250), rpRequest.Imp[0].Banner.Format[0].H,
 				"Banner height does not match. Expected %d, Got %d", 250, rpRequest.Imp[0].Banner.Format[0].H)
 
-			assert.Equal(t, uint64(300), rpRequest.Imp[0].Banner.Format[1].W,
+			assert.Equal(t, int64(300), rpRequest.Imp[0].Banner.Format[1].W,
 				"Banner width does not match. Expected %d, Got %d", 300, rpRequest.Imp[0].Banner.Format[1].W)
 
-			assert.Equal(t, uint64(600), rpRequest.Imp[0].Banner.Format[1].H,
+			assert.Equal(t, int64(600), rpRequest.Imp[0].Banner.Format[1].H,
 				"Banner height does not match. Expected %d, Got %d", 600, rpRequest.Imp[0].Banner.Format[1].H)
 		} else if rpRequest.Imp[0].ID == "test-imp-video-id" {
 			var rpExt rubiconVideoExt
@@ -1048,10 +1095,10 @@ func TestOpenRTBRequest(t *testing.T) {
 				t.Fatal("Error unmarshalling request from the outgoing request.")
 			}
 
-			assert.Equal(t, uint64(640), rpRequest.Imp[0].Video.W,
+			assert.Equal(t, int64(640), rpRequest.Imp[0].Video.W,
 				"Video width does not match. Expected %d, Got %d", 640, rpRequest.Imp[0].Video.W)
 
-			assert.Equal(t, uint64(360), rpRequest.Imp[0].Video.H,
+			assert.Equal(t, int64(360), rpRequest.Imp[0].Video.H,
 				"Video height does not match. Expected %d, Got %d", 360, rpRequest.Imp[0].Video.H)
 
 			assert.Equal(t, "video/mp4", rpRequest.Imp[0].Video.MIMEs[0], "Video MIMEs do not match. Expected %s, Got %s", "video/mp4", rpRequest.Imp[0].Video.MIMEs[0])
@@ -1070,10 +1117,6 @@ func TestOpenRTBRequest(t *testing.T) {
 			t.Fatal("Error unmarshalling request.user.ext object.")
 		}
 
-		assert.Equal(t, "some-digitrust-id", userExt.DigiTrust.ID, "DigiTrust ID id not as expected!")
-		assert.Equal(t, 1, userExt.DigiTrust.KeyV, "DigiTrust KeyV id not as expected!")
-		assert.Equal(t, 0, userExt.DigiTrust.Pref, "DigiTrust Pref id not as expected!")
-
 		assert.NotNil(t, userExt.Eids)
 		assert.Equal(t, 1, len(userExt.Eids), "Eids values are not as expected!")
 		assert.Contains(t, userExt.Eids, openrtb_ext.ExtUserEid{Source: "pubcid", ID: "2402fc76-7b39-4f0e-bfc2-060ef7693648"})
@@ -1084,17 +1127,17 @@ func TestOpenRTBRequestWithBannerImpEvenIfImpHasVideo(t *testing.T) {
 	SIZE_ID := getTestSizes()
 	bidder := new(RubiconAdapter)
 
-	request := &openrtb.BidRequest{
+	request := &openrtb2.BidRequest{
 		ID: "test-request-id",
-		Imp: []openrtb.Imp{{
+		Imp: []openrtb2.Imp{{
 			ID: "test-imp-id",
-			Banner: &openrtb.Banner{
-				Format: []openrtb.Format{
+			Banner: &openrtb2.Banner{
+				Format: []openrtb2.Format{
 					SIZE_ID[15],
 					SIZE_ID[10],
 				},
 			},
-			Video: &openrtb.Video{
+			Video: &openrtb2.Video{
 				W:     640,
 				H:     360,
 				MIMEs: []string{"video/mp4"},
@@ -1107,6 +1150,10 @@ func TestOpenRTBRequestWithBannerImpEvenIfImpHasVideo(t *testing.T) {
 				"visitor": {"key2" : "val2"}
 			}}`),
 		}},
+		App: &openrtb2.App{
+			ID:   "com.test",
+			Name: "testApp",
+		},
 	}
 
 	reqs, errs := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
@@ -1115,7 +1162,7 @@ func TestOpenRTBRequestWithBannerImpEvenIfImpHasVideo(t *testing.T) {
 
 	assert.Equal(t, 1, len(reqs), "Unexpected number of HTTP requests. Got %d. Expected %d", len(reqs), 1)
 
-	rubiconReq := &openrtb.BidRequest{}
+	rubiconReq := &openrtb2.BidRequest{}
 	if err := json.Unmarshal(reqs[0].Body, rubiconReq); err != nil {
 		t.Fatalf("Unexpected error while decoding request: %s", err)
 	}
@@ -1131,12 +1178,12 @@ func TestOpenRTBRequestWithImpAndAdSlotIncluded(t *testing.T) {
 	SIZE_ID := getTestSizes()
 	bidder := new(RubiconAdapter)
 
-	request := &openrtb.BidRequest{
+	request := &openrtb2.BidRequest{
 		ID: "test-request-id",
-		Imp: []openrtb.Imp{{
+		Imp: []openrtb2.Imp{{
 			ID: "test-imp-id",
-			Banner: &openrtb.Banner{
-				Format: []openrtb.Format{
+			Banner: &openrtb2.Banner{
+				Format: []openrtb2.Format{
 					SIZE_ID[15],
 					SIZE_ID[10],
 				},
@@ -1156,11 +1203,15 @@ func TestOpenRTBRequestWithImpAndAdSlotIncluded(t *testing.T) {
 				}
 			}`),
 		}},
+		App: &openrtb2.App{
+			ID:   "com.test",
+			Name: "testApp",
+		},
 	}
 
 	reqs, _ := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
 
-	rubiconReq := &openrtb.BidRequest{}
+	rubiconReq := &openrtb2.BidRequest{}
 	if err := json.Unmarshal(reqs[0].Body, rubiconReq); err != nil {
 		t.Fatalf("Unexpected error while decoding request: %s", err)
 	}
@@ -1191,13 +1242,13 @@ func TestOpenRTBRequestWithBadvOverflowed(t *testing.T) {
 		badvOverflowed[i] = strconv.Itoa(i)
 	}
 
-	request := &openrtb.BidRequest{
+	request := &openrtb2.BidRequest{
 		ID:   "test-request-id",
 		BAdv: badvOverflowed,
-		Imp: []openrtb.Imp{{
+		Imp: []openrtb2.Imp{{
 			ID: "test-imp-id",
-			Banner: &openrtb.Banner{
-				Format: []openrtb.Format{
+			Banner: &openrtb2.Banner{
+				Format: []openrtb2.Format{
 					SIZE_ID[15],
 				},
 			},
@@ -1211,11 +1262,15 @@ func TestOpenRTBRequestWithBadvOverflowed(t *testing.T) {
 				}
 			}`),
 		}},
+		App: &openrtb2.App{
+			ID:   "com.test",
+			Name: "testApp",
+		},
 	}
 
 	reqs, _ := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
 
-	rubiconReq := &openrtb.BidRequest{}
+	rubiconReq := &openrtb2.BidRequest{}
 	if err := json.Unmarshal(reqs[0].Body, rubiconReq); err != nil {
 		t.Fatalf("Unexpected error while decoding request: %s", err)
 	}
@@ -1228,12 +1283,12 @@ func TestOpenRTBRequestWithSpecificExtUserEids(t *testing.T) {
 	SIZE_ID := getTestSizes()
 	bidder := new(RubiconAdapter)
 
-	request := &openrtb.BidRequest{
+	request := &openrtb2.BidRequest{
 		ID: "test-request-id",
-		Imp: []openrtb.Imp{{
+		Imp: []openrtb2.Imp{{
 			ID: "test-imp-id",
-			Banner: &openrtb.Banner{
-				Format: []openrtb.Format{
+			Banner: &openrtb2.Banner{
+				Format: []openrtb2.Format{
 					SIZE_ID[15],
 					SIZE_ID[10],
 				},
@@ -1244,7 +1299,11 @@ func TestOpenRTBRequestWithSpecificExtUserEids(t *testing.T) {
 				"accountId": 7891
 			}}`),
 		}},
-		User: &openrtb.User{
+		App: &openrtb2.App{
+			ID:   "com.test",
+			Name: "testApp",
+		},
+		User: &openrtb2.User{
 			Ext: json.RawMessage(`{"eids": [
 			{
 				"source": "pubcid",
@@ -1283,7 +1342,7 @@ func TestOpenRTBRequestWithSpecificExtUserEids(t *testing.T) {
 
 	reqs, _ := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
 
-	rubiconReq := &openrtb.BidRequest{}
+	rubiconReq := &openrtb2.BidRequest{}
 	if err := json.Unmarshal(reqs[0].Body, rubiconReq); err != nil {
 		t.Fatalf("Unexpected error while decoding request: %s", err)
 	}
@@ -1324,24 +1383,24 @@ func TestOpenRTBRequestWithVideoImpEvenIfImpHasBannerButAllRequiredVideoFields(t
 	SIZE_ID := getTestSizes()
 	bidder := new(RubiconAdapter)
 
-	request := &openrtb.BidRequest{
+	request := &openrtb2.BidRequest{
 		ID: "test-request-id",
-		Imp: []openrtb.Imp{{
+		Imp: []openrtb2.Imp{{
 			ID: "test-imp-id",
-			Banner: &openrtb.Banner{
-				Format: []openrtb.Format{
+			Banner: &openrtb2.Banner{
+				Format: []openrtb2.Format{
 					SIZE_ID[15],
 					SIZE_ID[10],
 				},
 			},
-			Video: &openrtb.Video{
+			Video: &openrtb2.Video{
 				W:           640,
 				H:           360,
 				MIMEs:       []string{"video/mp4"},
-				Protocols:   []openrtb.Protocol{openrtb.ProtocolVAST10},
+				Protocols:   []openrtb2.Protocol{openrtb2.ProtocolVAST10},
 				MaxDuration: 30,
 				Linearity:   1,
-				API:         []openrtb.APIFramework{},
+				API:         []openrtb2.APIFramework{},
 			},
 			Ext: json.RawMessage(`{"bidder": {
 				"zoneId": 8394,
@@ -1352,6 +1411,10 @@ func TestOpenRTBRequestWithVideoImpEvenIfImpHasBannerButAllRequiredVideoFields(t
 				"video": {"size_id": 1}
 			}}`),
 		}},
+		App: &openrtb2.App{
+			ID:   "com.test",
+			Name: "testApp",
+		},
 	}
 
 	reqs, errs := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
@@ -1360,7 +1423,7 @@ func TestOpenRTBRequestWithVideoImpEvenIfImpHasBannerButAllRequiredVideoFields(t
 
 	assert.Equal(t, 1, len(reqs), "Unexpected number of HTTP requests. Got %d. Expected %d", len(reqs), 1)
 
-	rubiconReq := &openrtb.BidRequest{}
+	rubiconReq := &openrtb2.BidRequest{}
 	if err := json.Unmarshal(reqs[0].Body, rubiconReq); err != nil {
 		t.Fatalf("Unexpected error while decoding request: %s", err)
 	}
@@ -1376,18 +1439,18 @@ func TestOpenRTBRequestWithVideoImpEvenIfImpHasBannerButAllRequiredVideoFields(t
 func TestOpenRTBRequestWithVideoImpAndEnabledRewardedInventoryFlag(t *testing.T) {
 	bidder := new(RubiconAdapter)
 
-	request := &openrtb.BidRequest{
+	request := &openrtb2.BidRequest{
 		ID: "test-request-id",
-		Imp: []openrtb.Imp{{
+		Imp: []openrtb2.Imp{{
 			ID: "test-imp-id",
-			Video: &openrtb.Video{
+			Video: &openrtb2.Video{
 				W:           640,
 				H:           360,
 				MIMEs:       []string{"video/mp4"},
-				Protocols:   []openrtb.Protocol{openrtb.ProtocolVAST10},
+				Protocols:   []openrtb2.Protocol{openrtb2.ProtocolVAST10},
 				MaxDuration: 30,
 				Linearity:   1,
-				API:         []openrtb.APIFramework{},
+				API:         []openrtb2.APIFramework{},
 			},
 			Ext: json.RawMessage(`{
 			"prebid":{
@@ -1397,11 +1460,15 @@ func TestOpenRTBRequestWithVideoImpAndEnabledRewardedInventoryFlag(t *testing.T)
 				"video": {"size_id": 1}
 			}}`),
 		}},
+		App: &openrtb2.App{
+			ID:   "com.test",
+			Name: "testApp",
+		},
 	}
 
 	reqs, _ := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
 
-	rubiconReq := &openrtb.BidRequest{}
+	rubiconReq := &openrtb2.BidRequest{}
 	if err := json.Unmarshal(reqs[0].Body, rubiconReq); err != nil {
 		t.Fatalf("Unexpected error while decoding request: %s", err)
 	}
@@ -1439,12 +1506,12 @@ func TestOpenRTBSurpriseResponse(t *testing.T) {
 }
 
 func TestOpenRTBStandardResponse(t *testing.T) {
-	request := &openrtb.BidRequest{
+	request := &openrtb2.BidRequest{
 		ID: "test-request-id",
-		Imp: []openrtb.Imp{{
+		Imp: []openrtb2.Imp{{
 			ID: "test-imp-id",
-			Banner: &openrtb.Banner{
-				Format: []openrtb.Format{{
+			Banner: &openrtb2.Banner{
+				Format: []openrtb2.Format{{
 					W: 320,
 					H: 50,
 				}},
@@ -1486,12 +1553,12 @@ func TestOpenRTBStandardResponse(t *testing.T) {
 }
 
 func TestOpenRTBResponseOverridePriceFromBidRequest(t *testing.T) {
-	request := &openrtb.BidRequest{
+	request := &openrtb2.BidRequest{
 		ID: "test-request-id",
-		Imp: []openrtb.Imp{{
+		Imp: []openrtb2.Imp{{
 			ID: "test-imp-id",
-			Banner: &openrtb.Banner{
-				Format: []openrtb.Format{{
+			Banner: &openrtb2.Banner{
+				Format: []openrtb2.Format{{
 					W: 320,
 					H: 50,
 				}},
@@ -1533,12 +1600,12 @@ func TestOpenRTBResponseOverridePriceFromBidRequest(t *testing.T) {
 }
 
 func TestOpenRTBResponseOverridePriceFromCorrespondingImp(t *testing.T) {
-	request := &openrtb.BidRequest{
+	request := &openrtb2.BidRequest{
 		ID: "test-request-id",
-		Imp: []openrtb.Imp{{
+		Imp: []openrtb2.Imp{{
 			ID: "test-imp-id",
-			Banner: &openrtb.Banner{
-				Format: []openrtb.Format{{
+			Banner: &openrtb2.Banner{
+				Format: []openrtb2.Format{{
 					W: 320,
 					H: 50,
 				}},
@@ -1583,9 +1650,9 @@ func TestOpenRTBResponseOverridePriceFromCorrespondingImp(t *testing.T) {
 }
 
 func TestOpenRTBCopyBidIdFromResponseIfZero(t *testing.T) {
-	request := &openrtb.BidRequest{
+	request := &openrtb2.BidRequest{
 		ID:  "test-request-id",
-		Imp: []openrtb.Imp{{}},
+		Imp: []openrtb2.Imp{{}},
 	}
 
 	requestJson, _ := json.Marshal(request)

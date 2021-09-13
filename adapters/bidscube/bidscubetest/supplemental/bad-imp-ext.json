@@ -1,0 +1,41 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidscube": {
+            "placementId": "1"
+          }
+        }
+      }
+    ],
+    "app": {
+      "id": "1",
+      "bundle": "com.wls.testwlsapplication"
+    },
+    "device": {
+      "ip": "123.123.123.123",
+      "ifa": "zxcjbzxmc-zxcbmz-zxbcz-zxczx"
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "bidder parameters required",
+      "comparison": "literal"
+    }
+  ]
+}

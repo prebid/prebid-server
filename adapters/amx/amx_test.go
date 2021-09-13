@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -48,7 +48,7 @@ func TestEndpointQueryStringMalformed(t *testing.T) {
 
 func TestMakeRequestsTagID(t *testing.T) {
 	var w, h int = 300, 250
-	var width, height uint64 = uint64(w), uint64(h)
+	var width, height int64 = int64(w), int64(h)
 
 	bidder, buildErr := Builder(openrtb_ext.BidderAMX, config.Adapter{
 		Endpoint: amxTestEndpoint})
@@ -75,12 +75,12 @@ func TestMakeRequestsTagID(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		imp1 := openrtb.Imp{
+		imp1 := openrtb2.Imp{
 			ID: "sample_imp_1",
-			Banner: &openrtb.Banner{
+			Banner: &openrtb2.Banner{
 				W: &width,
 				H: &height,
-				Format: []openrtb.Format{
+				Format: []openrtb2.Format{
 					{W: 300, H: 250},
 				},
 			}}
@@ -94,16 +94,16 @@ func TestMakeRequestsTagID(t *testing.T) {
 			imp1.TagID = tc.tagID
 		}
 
-		inputRequest := openrtb.BidRequest{
-			User: &openrtb.User{},
-			Imp:  []openrtb.Imp{imp1},
-			Site: &openrtb.Site{},
+		inputRequest := openrtb2.BidRequest{
+			User: &openrtb2.User{},
+			Imp:  []openrtb2.Imp{imp1},
+			Site: &openrtb2.Site{},
 		}
 
 		actualAdapterRequests, err := bidder.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
 		assert.Len(t, actualAdapterRequests, 1)
 		assert.Empty(t, err)
-		var body openrtb.BidRequest
+		var body openrtb2.BidRequest
 		assert.Nil(t, json.Unmarshal(actualAdapterRequests[0].Body, &body))
 		assert.Equal(t, tc.expectedTagID, body.Imp[0].TagID)
 	}
@@ -111,7 +111,7 @@ func TestMakeRequestsTagID(t *testing.T) {
 
 func TestMakeRequestsPublisherId(t *testing.T) {
 	var w, h int = 300, 250
-	var width, height uint64 = uint64(w), uint64(h)
+	var width, height int64 = int64(w), int64(h)
 
 	bidder, buildErr := Builder(openrtb_ext.BidderAMX, config.Adapter{
 		Endpoint: amxTestEndpoint})
@@ -137,12 +137,12 @@ func TestMakeRequestsPublisherId(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		imp1 := openrtb.Imp{
+		imp1 := openrtb2.Imp{
 			ID: "sample_imp_1",
-			Banner: &openrtb.Banner{
+			Banner: &openrtb2.Banner{
 				W: &width,
 				H: &height,
-				Format: []openrtb.Format{
+				Format: []openrtb2.Format{
 					{W: 300, H: 250},
 				},
 			}}
@@ -152,15 +152,15 @@ func TestMakeRequestsPublisherId(t *testing.T) {
 				fmt.Sprintf(`{"bidder":{"tagId":"%s"}}`, tc.extTagID))
 		}
 
-		inputRequest := openrtb.BidRequest{
-			User: &openrtb.User{ID: "example_user_id"},
-			Imp:  []openrtb.Imp{imp1},
-			Site: &openrtb.Site{},
+		inputRequest := openrtb2.BidRequest{
+			User: &openrtb2.User{ID: "example_user_id"},
+			Imp:  []openrtb2.Imp{imp1},
+			Site: &openrtb2.Site{},
 			ID:   "1234",
 		}
 
 		if tc.publisherID != "" || !tc.blankNil {
-			inputRequest.Site.Publisher = &openrtb.Publisher{
+			inputRequest.Site.Publisher = &openrtb2.Publisher{
 				ID: tc.publisherID,
 			}
 		}
@@ -168,7 +168,7 @@ func TestMakeRequestsPublisherId(t *testing.T) {
 		actualAdapterRequests, err := bidder.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
 		assert.Len(t, actualAdapterRequests, 1)
 		assert.Empty(t, err)
-		var body openrtb.BidRequest
+		var body openrtb2.BidRequest
 		assert.Nil(t, json.Unmarshal(actualAdapterRequests[0].Body, &body))
 		assert.Equal(t, tc.expectedPublisherID, body.Site.Publisher.ID)
 	}
@@ -182,7 +182,7 @@ func countImpressionPixels(vast string) int {
 }
 
 func TestVideoImpInsertion(t *testing.T) {
-	markup := interpolateImpressions(openrtb.Bid{
+	markup := interpolateImpressions(openrtb2.Bid{
 		AdM:  sampleVastADM,
 		NURL: "https://example2.com/nurl",
 	}, amxBidExt{Himp: []string{"https://example.com/pixel.png"}})
@@ -191,14 +191,14 @@ func TestVideoImpInsertion(t *testing.T) {
 	assert.Equal(t, 3, countImpressionPixels(markup), "should have 3 Impression pixels")
 
 	// make sure that a blank NURL won't result in a blank impression tag
-	markup = interpolateImpressions(openrtb.Bid{
+	markup = interpolateImpressions(openrtb2.Bid{
 		AdM:  sampleVastADM,
 		NURL: "",
 	}, amxBidExt{})
 	assert.Equal(t, 1, countImpressionPixels(markup), "should have 1 impression pixels")
 
 	// we should also ignore blank ext.Himp pixels
-	markup = interpolateImpressions(openrtb.Bid{
+	markup = interpolateImpressions(openrtb2.Bid{
 		AdM:  sampleVastADM,
 		NURL: "https://example-nurl.com/nurl",
 	}, amxBidExt{Himp: []string{"", "", ""}})
@@ -206,7 +206,7 @@ func TestVideoImpInsertion(t *testing.T) {
 }
 
 func TestNoDisplayImpInsertion(t *testing.T) {
-	data := interpolateImpressions(openrtb.Bid{
+	data := interpolateImpressions(openrtb2.Bid{
 		AdM:  sampleDisplayADM,
 		NURL: "https://example2.com/nurl",
 	}, amxBidExt{Himp: []string{"https://example.com/pixel.png"}})

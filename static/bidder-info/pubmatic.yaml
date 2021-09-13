@@ -1,5 +1,6 @@
 maintainer:
   email: "header-bidding@pubmatic.com"
+gvlVendorID: 76
 capabilities:
   app:
     mediaTypes:

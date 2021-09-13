@@ -41,6 +41,8 @@ func TestInvalidParams(t *testing.T) {
 
 var validParams = []string{
 	`{"publisherId":"test-id-1234-smaato","adspaceId": "1123581321"}`,
+	`{"publisherId":"test-id-1234-smaato","adbreakId": "4123581321"}`,
+	`{"publisherId":"test-id-1234-smaato","adspaceId": "1123581321","adbreakId": "4123581321"}`,
 }
 
 var invalidParams = []string{

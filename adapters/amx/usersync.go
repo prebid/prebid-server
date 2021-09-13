@@ -9,5 +9,5 @@ import (
 
 // NewAMXSyncer produces an AMX RTB usersyncer
 func NewAMXSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("amx", 737, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("amx", temp, adapters.SyncTypeRedirect)
 }

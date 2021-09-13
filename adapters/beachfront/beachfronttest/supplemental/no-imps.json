@@ -1,0 +1,16 @@
+{
+  "mockBidRequest": {
+    "id": "some_test_ad",
+    "site": {
+      "page": "https://some.domain.us/some/page.html"
+    },
+    "imp": []
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "no valid impressions were found in the request",
+      "comparison": "literal"
+    }
+  ]
+}

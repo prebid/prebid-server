@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -16,10 +16,10 @@ type NanoInteractiveAdapter struct {
 	endpoint string
 }
 
-func (a *NanoInteractiveAdapter) MakeRequests(bidRequest *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *NanoInteractiveAdapter) MakeRequests(bidRequest *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
 	var errs []error
-	var validImps []openrtb.Imp
+	var validImps []openrtb2.Imp
 
 	var adapterRequests []*adapters.RequestData
 	var referer string = ""
@@ -47,7 +47,7 @@ func (a *NanoInteractiveAdapter) MakeRequests(bidRequest *openrtb.BidRequest, re
 	// set referer origin
 	if referer != "" {
 		if bidRequest.Site == nil {
-			bidRequest.Site = &openrtb.Site{}
+			bidRequest.Site = &openrtb2.Site{}
 		}
 		bidRequest.Site.Ref = referer
 	}
@@ -88,21 +88,23 @@ func (a *NanoInteractiveAdapter) MakeRequests(bidRequest *openrtb.BidRequest, re
 }
 
 func (a *NanoInteractiveAdapter) MakeBids(
-	internalRequest *openrtb.BidRequest,
+	internalRequest *openrtb2.BidRequest,
 	externalRequest *adapters.RequestData,
 	response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	} else if response.StatusCode == http.StatusBadRequest {
-		return nil, []error{adapters.BadInput("Invalid request.")}
+		return nil, []error{&errortypes.BadInput{
+			Message: "Invalid request.",
+		}}
 	} else if response.StatusCode != http.StatusOK {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("unexpected HTTP status %d.", response.StatusCode),
 		}}
 	}
 
-	var openRtbBidResponse openrtb.BidResponse
+	var openRtbBidResponse openrtb2.BidResponse
 
 	if err := json.Unmarshal(response.Body, &openRtbBidResponse); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
@@ -127,7 +129,7 @@ func (a *NanoInteractiveAdapter) MakeBids(
 	return bidResponse, nil
 }
 
-func checkImp(imp *openrtb.Imp) (string, error) {
+func checkImp(imp *openrtb2.Imp) (string, error) {
 	// We support only banner impression
 	if imp.Banner == nil {
 		return "", fmt.Errorf("invalid MediaType. NanoInteractive only supports Banner type. ImpID=%s", imp.ID)

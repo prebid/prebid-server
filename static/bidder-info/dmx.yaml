@@ -1,5 +1,6 @@
 maintainer:
-  email: "steve@districtm.net"
+  email: "prebid@districtm.net"
+gvlVendorID: 144
 capabilities:
   site:
     mediaTypes:

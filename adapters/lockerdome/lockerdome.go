@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -20,7 +20,7 @@ type LockerDomeAdapter struct {
 }
 
 // MakeRequests makes the HTTP requests which should be made to fetch bids [from the bidder, in this case, LockerDome]
-func (adapter *LockerDomeAdapter) MakeRequests(openRTBRequest *openrtb.BidRequest, extraReqInfo *adapters.ExtraRequestInfo) (requestsToBidder []*adapters.RequestData, errs []error) {
+func (adapter *LockerDomeAdapter) MakeRequests(openRTBRequest *openrtb2.BidRequest, extraReqInfo *adapters.ExtraRequestInfo) (requestsToBidder []*adapters.RequestData, errs []error) {
 
 	numberOfImps := len(openRTBRequest.Imp)
 
@@ -70,7 +70,7 @@ func (adapter *LockerDomeAdapter) MakeRequests(openRTBRequest *openrtb.BidReques
 		indexesOfValidImps = append(indexesOfValidImps, i)
 	}
 	if numberOfImps > len(indexesOfValidImps) {
-		var validImps []openrtb.Imp
+		var validImps []openrtb2.Imp
 		for j := 0; j < len(indexesOfValidImps); j++ {
 			validImps = append(validImps, openRTBRequest.Imp[j])
 		}
@@ -109,7 +109,7 @@ func (adapter *LockerDomeAdapter) MakeRequests(openRTBRequest *openrtb.BidReques
 }
 
 // MakeBids unpacks the server's response into Bids.
-func (adapter *LockerDomeAdapter) MakeBids(openRTBRequest *openrtb.BidRequest, requestToBidder *adapters.RequestData, bidderRawResponse *adapters.ResponseData) (bidderResponse *adapters.BidderResponse, errs []error) {
+func (adapter *LockerDomeAdapter) MakeBids(openRTBRequest *openrtb2.BidRequest, requestToBidder *adapters.RequestData, bidderRawResponse *adapters.ResponseData) (bidderResponse *adapters.BidderResponse, errs []error) {
 
 	if bidderRawResponse.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -127,7 +127,7 @@ func (adapter *LockerDomeAdapter) MakeBids(openRTBRequest *openrtb.BidRequest, r
 		}}
 	}
 
-	var openRTBBidderResponse openrtb.BidResponse
+	var openRTBBidderResponse openrtb2.BidResponse
 	if err := json.Unmarshal(bidderRawResponse.Body, &openRTBBidderResponse); err != nil {
 		return nil, []error{
 			fmt.Errorf("Error unmarshaling LockerDome bid response - %s", err.Error()),

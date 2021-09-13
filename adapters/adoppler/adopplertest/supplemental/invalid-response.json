@@ -49,7 +49,7 @@
   ],
   "expectedMakeBidsErrors":[
     {
-      "value":"invalid body: json: cannot unmarshal string into Go value of type openrtb.BidResponse",
+      "value":"invalid body: json: cannot unmarshal string into Go value of type openrtb2.BidResponse",
       "comparison":"literal"
     }
   ]

@@ -9,5 +9,5 @@ import (
 
 // NewColossusSyncer returns colossus syncer
 func NewColossusSyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("colossus", 0, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("colossus", temp, adapters.SyncTypeRedirect)
 }

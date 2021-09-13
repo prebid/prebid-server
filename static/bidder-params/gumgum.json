@@ -8,7 +8,26 @@
       "type": "string",
       "description": "A tracking id used to identify GumGum zone.",
       "minLength": 8
+    },
+    "pubId": {
+      "type": "integer",
+      "description": "A tracking id used to identify GumGum publisher"
+    },
+    "irisid": {
+      "type": "string",
+      "description": "A hashed IRIS.TV Content ID"
     }
   },
-  "required": ["zone"]
+  "anyOf": [
+    {
+      "required": [
+        "zone"
+      ]
+    },
+    {
+      "required": [
+        "pubId"
+      ]
+    }
+  ]
 }

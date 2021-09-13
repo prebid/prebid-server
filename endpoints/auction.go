@@ -146,6 +146,8 @@ func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.P
 
 			go bidderRunner(bidder, blabels)
 
+		} else if bidder.BidderCode == "lifestreet" {
+			bidder.Error = "Bidder is no longer available"
 		} else {
 			bidder.Error = "Unsupported bidder"
 		}
@@ -189,21 +191,16 @@ func (a *auction) recoverSafely(inner func(*pbs.PBSBidder, metrics.AdapterLabels
 }
 
 func (a *auction) shouldUsersync(ctx context.Context, bidder openrtb_ext.BidderName, gdprPrivacyPolicy gdprPrivacy.Policy) bool {
-	switch gdprPrivacyPolicy.Signal {
-	case "0":
-		return true
-	case "1":
-		if gdprPrivacyPolicy.Consent == "" {
-			return false
-		}
-		fallthrough
-	default:
-		if canSync, err := a.gdprPerms.HostCookiesAllowed(ctx, gdprPrivacyPolicy.Consent); !canSync || err != nil {
-			return false
-		}
-		canSync, err := a.gdprPerms.BidderSyncAllowed(ctx, bidder, gdprPrivacyPolicy.Consent)
-		return canSync && err == nil
+	gdprSignal := gdpr.SignalAmbiguous
+	if signal, err := gdpr.SignalParse(gdprPrivacyPolicy.Signal); err != nil {
+		gdprSignal = signal
 	}
+
+	if canSync, err := a.gdprPerms.HostCookiesAllowed(ctx, gdprSignal, gdprPrivacyPolicy.Consent); err != nil || !canSync {
+		return false
+	}
+	canSync, err := a.gdprPerms.BidderSyncAllowed(ctx, bidder, gdprSignal, gdprPrivacyPolicy.Consent)
+	return canSync && err == nil
 }
 
 // cache video bids only for Web
@@ -312,8 +309,8 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 
 			hbSize := ""
 			if bid.Width != 0 && bid.Height != 0 {
-				width := strconv.FormatUint(bid.Width, 10)
-				height := strconv.FormatUint(bid.Height, 10)
+				width := strconv.FormatInt(bid.Width, 10)
+				height := strconv.FormatInt(bid.Height, 10)
 				hbSize = width + "x" + height
 			}
 

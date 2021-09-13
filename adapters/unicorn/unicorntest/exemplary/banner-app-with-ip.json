@@ -1,0 +1,236 @@
+{
+  "mockBidRequest": {
+    "at": 1,
+    "imp": [
+      {
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ],
+          "api": [5]
+        },
+        "id": "29D2F33E-F865-40DA-9320-16EF77935254",
+        "secure": 1,
+        "ext": {
+          "prebid": {
+            "storedrequest": {
+              "id": "test_unicorn"
+            }
+          },
+          "bidder": {
+            "accountId": 199578,
+            "publisherId": 123456,
+            "mediaId": "test_media",
+            "placementId": "test_placement"
+          }
+        }
+      }
+    ],
+    "cur": ["JPY"],
+    "app": {
+      "publisher": {
+        "id": "test"
+      },
+      "ext": {
+        "prebid": {
+          "source": "prebid-mobile",
+          "version": "1.9.0"
+        }
+      },
+      "bundle": "net.ada.test",
+      "ver": "1.9.0"
+    },
+    "id": "CFD24FB1-916F-467D-8825-34892B315DB7",
+    "source": {
+      "tid": "A4B3EA9F-FF57-4716-AC85-6CBF6A46CFBD"
+    },
+    "device": {
+      "make": "Apple",
+      "osv": "14.4",
+      "ip": "12.1.2.3",
+      "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 14_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+      "connectiontype": 1,
+      "os": "iOS",
+      "w": 320,
+      "model": "Simulator",
+      "ifa": "00000000-0000-0000-0000-000000000000",
+      "devtime": 1612413327,
+      "h": 568,
+      "pxratio": 2,
+      "ext": {
+        "atts": 0
+      }
+    },
+    "user": {
+      "gender": "O"
+    },
+    "ext": {
+      "prebid": {
+        "targeting": {},
+        "cache": {
+          "bids": {}
+        },
+        "storedrequest": {
+          "id": "test"
+        }
+      }
+    }
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://ds.uncn.jp",
+        "body": {
+          "app": {
+            "bundle": "net.ada.test",
+            "ext": {
+              "prebid": {
+                "source": "prebid-mobile",
+                "version": "1.9.0"
+              }
+            },
+            "publisher": {
+              "id": "test"
+            },
+            "ver": "1.9.0"
+          },
+          "at": 1,
+          "cur": ["JPY"],
+          "device": {
+            "connectiontype": 1,
+            "ext": {
+              "atts": 0
+            },
+            "ip": "12.1.2.3",
+            "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 14_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+            "h": 568,
+            "ifa": "00000000-0000-0000-0000-000000000000",
+            "make": "Apple",
+            "model": "Simulator",
+            "os": "iOS",
+            "osv": "14.4",
+            "pxratio": 2,
+            "w": 320
+          },
+          "ext": {
+            "prebid": {
+              "bidder": null,
+              "is_rewarded_inventory": 0,
+              "storedrequest": {
+                "id": "test"
+              }
+            },
+            "accountId": 199578
+          },
+          "id": "CFD24FB1-916F-467D-8825-34892B315DB7",
+          "imp": [
+            {
+              "banner": {
+                "api": [5],
+                "format": [
+                  {
+                    "h": 250,
+                    "w": 300
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "accountId": 199578,
+                  "publisherId": 123456,
+                  "mediaId": "test_media",
+                  "placementId": "test_placement"
+                }
+              },
+              "tagid": "test_placement",
+              "id": "29D2F33E-F865-40DA-9320-16EF77935254",
+              "secure": 1
+            }
+          ],
+          "source": {
+            "ext": {
+              "bidder": "unicorn",
+              "stype": "prebid_server_uncn"
+            },
+            "tid": "A4B3EA9F-FF57-4716-AC85-6CBF6A46CFBD"
+          },
+          "user": {
+            "gender": "O"
+          }
+        }
+      },
+      "mockResponse": {
+        "url": "https://ds.uncn.jp",
+        "status": 200,
+        "headers": {
+          "Content-Type": ["application/json"],
+          "Date": ["Thu, 04 Feb 2021 06:36:31 GMT"],
+          "Vary": ["Accept-Encoding"]
+        },
+        "body": {
+          "bidid": "f1248280-24ec-4fbc-bdf5-6a866e7dcea4",
+          "cur": "JPY",
+          "ext": {},
+          "id": "CFD24FB1-916F-467D-8825-34892B315DB7",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "adid": "uoNYbq1L_-123456",
+                  "adm": "awesome domain",
+                  "adomain": ["example.com"],
+                  "attr": [],
+                  "bundle": "example.com",
+                  "cid": "7314",
+                  "crid": "-123456",
+                  "ext": {},
+                  "h": 250,
+                  "id": "1",
+                  "impid": "29D2F33E-F865-40DA-9320-16EF77935254",
+                  "iurl": "https://example.com/banner.png",
+                  "price": 73.283,
+                  "w": 300
+                }
+              ],
+              "group": 0,
+              "seat": "274"
+            }
+          ],
+          "units": 0
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "Currency": "JPY",
+      "bids": [
+        {
+          "Bid": {
+            "id": "1",
+            "impid": "29D2F33E-F865-40DA-9320-16EF77935254",
+            "price": 73.283,
+            "adm": "awesome domain",
+            "adid": "uoNYbq1L_-123456",
+            "adomain": ["example.com"],
+            "bundle": "example.com",
+            "iurl": "https://example.com/banner.png",
+            "cid": "7314",
+            "crid": "-123456",
+            "w": 300,
+            "h": 250,
+            "ext": {}
+          },
+          "type": "banner",
+          "BidType": "banner",
+          "BidVideo": null,
+          "DealPriority": 0
+        }
+      ]
+    }
+  ]
+}
