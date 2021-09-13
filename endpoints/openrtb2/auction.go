@@ -136,12 +136,12 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		deps.analytics.LogAuctionObject(&ao)
 	}()
 
-	req, impExtInfoMap, globalFPD, errL := deps.parseRequest(r)
+	req, impExtInfoMap, errL := deps.parseRequest(r)
 	if errortypes.ContainsFatalError(errL) && writeError(errL, w, &labels) {
 		return
 	}
 
-	resolvedFPD, fpdErrors := deps.processFPD(req, globalFPD)
+	resolvedFPD, fpdErrors := deps.processFPD(req)
 	if len(fpdErrors) > 0 {
 		errL = append(errL, fpdErrors...)
 	}
@@ -245,7 +245,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 // possible, it will return errors with messages that suggest improvements.
 //
 // If the errors list has at least one element, then no guarantees are made about the returned request.
-func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_ext.RequestWrapper, impExtInfoMap map[string]exchange.ImpExtInfo, globalFPD map[string][]byte, errs []error) {
+func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_ext.RequestWrapper, impExtInfoMap map[string]exchange.ImpExtInfo, errs []error) {
 	req = &openrtb_ext.RequestWrapper{}
 	req.BidRequest = &openrtb2.BidRequest{}
 	errs = nil
@@ -255,7 +255,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_
 		R: httpRequest.Body,
 		N: deps.cfg.MaxRequestSize,
 	}
-	rawRequestJson, err := ioutil.ReadAll(lr)
+	requestJson, err := ioutil.ReadAll(lr)
 	if err != nil {
 		errs = []error{err}
 		return
@@ -268,27 +268,19 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_
 		}
 	}
 
-	timeout := parseTimeout(rawRequestJson, time.Duration(storedRequestTimeoutMillis)*time.Millisecond)
+	timeout := parseTimeout(requestJson, time.Duration(storedRequestTimeoutMillis)*time.Millisecond)
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	impInfo, errs := parseImpInfo(rawRequestJson)
+	impInfo, errs := parseImpInfo(requestJson)
 	if len(errs) > 0 {
-		return nil, nil, nil, errs
+		return nil, nil, errs
 	}
 
 	// Fetch the Stored Request data and merge it into the HTTP request.
-	if rawRequestJson, impExtInfoMap, errs = deps.processStoredRequests(ctx, rawRequestJson, impInfo); len(errs) > 0 {
+	if requestJson, impExtInfoMap, errs = deps.processStoredRequests(ctx, requestJson, impInfo); len(errs) > 0 {
 		return
 	}
-
-	//If {site,app,user}.ext.data exists, collect it and remove {site,app,user}.ext.data from request
-	requestJson, globalFPD, err := firstpartydata.GetGlobalFPDData(rawRequestJson)
-	if err != nil {
-		errs = []error{err}
-		return
-	}
-
 	if err := json.Unmarshal(requestJson, req.BidRequest); err != nil {
 		errs = []error{err}
 		return
@@ -1639,9 +1631,17 @@ func getAccountID(pub *openrtb2.Publisher) string {
 	return metrics.PublisherUnknown
 }
 
-func (deps *endpointDeps) processFPD(req *openrtb_ext.RequestWrapper, globalFpdData map[string][]byte) (map[openrtb_ext.BidderName]*openrtb_ext.FPDData, []error) {
+func (deps *endpointDeps) processFPD(req *openrtb_ext.RequestWrapper) (map[openrtb_ext.BidderName]*openrtb_ext.FPDData, []error) {
 	errL := []error{}
 	var resolvedFPD map[openrtb_ext.BidderName]*openrtb_ext.FPDData
+
+	//If {site,app,user}.ext.data exists, collect it and remove {site,app,user}.ext.data from request
+	globalFpdData, err := firstpartydata.GetGlobalFPDData(req)
+	if err != nil {
+		errL = []error{err}
+		return resolvedFPD, errL
+	}
+
 	reqExt, err := req.GetRequestExt()
 	if err != nil {
 		errL = append(errL, err)

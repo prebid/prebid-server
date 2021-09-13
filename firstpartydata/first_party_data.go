@@ -12,36 +12,64 @@ const (
 	appKey  = "app"
 	userKey = "user"
 	dataKey = "data"
-	extKey  = "ext"
 
 	userDataKey        = "userData"
 	appContentDataKey  = "appContentData"
 	siteContentDataKey = "siteContentData"
 )
 
-func GetGlobalFPDData(request []byte) ([]byte, map[string][]byte, error) {
+func GetGlobalFPDData(req *openrtb_ext.RequestWrapper) (map[string][]byte, error) {
 	//If {site,app,user}.ext.data exists, collect it and remove {site,app,user}.ext.data
 
 	fpdReqData := make(map[string][]byte, 3)
-	request, siteFPD, err := jsonutil.FindAndDropElement(request, siteKey, extKey, dataKey)
-	if err != nil {
-		return request, nil, err
-	}
-	fpdReqData[siteKey] = siteFPD
 
-	request, appFPD, err := jsonutil.FindAndDropElement(request, appKey, extKey, dataKey)
+	siteExt, err := req.GetSiteExt()
 	if err != nil {
-		return request, nil, err
+		return nil, err
 	}
-	fpdReqData[appKey] = appFPD
 
-	request, userFPD, err := jsonutil.FindAndDropElement(request, userKey, extKey, dataKey)
+	if siteExt != nil && len(siteExt.GetExt()[dataKey]) > 0 {
+		//set global site fpd
+		fpdReqData[siteKey] = siteExt.GetExt()[dataKey]
+		//remove req.Site.Ext.data from request
+		newSiteExt, err := jsonutil.DropElement(req.Site.Ext, dataKey)
+		if err != nil {
+			return nil, err
+		}
+		req.Site.Ext = newSiteExt
+	}
+
+	appExt, err := req.GetAppExt()
 	if err != nil {
-		return request, nil, err
+		return nil, err
 	}
-	fpdReqData[userKey] = userFPD
+	if appExt != nil && len(appExt.GetExt()[dataKey]) > 0 {
+		//set global app fpd
+		fpdReqData[appKey] = appExt.GetExt()[dataKey]
+		//remove req.App.Ext.data from request
+		newAppExt, err := jsonutil.DropElement(req.App.Ext, dataKey)
+		if err != nil {
+			return nil, err
+		}
+		req.App.Ext = newAppExt
+	}
 
-	return request, fpdReqData, nil
+	userExt, err := req.GetUserExt()
+	if err != nil {
+		return nil, err
+	}
+	if req.User != nil && len(userExt.GetExt()[dataKey]) > 0 {
+		//set global user fpd
+		fpdReqData[userKey] = userExt.GetExt()[dataKey]
+		//remove req.App.Ext.data from request
+		newUserExt, err := jsonutil.DropElement(req.User.Ext, dataKey)
+		if err != nil {
+			return nil, err
+		}
+		req.User.Ext = newUserExt
+	}
+
+	return fpdReqData, nil
 }
 
 func ExtractOpenRtbGlobalFPD(bidRequest *openrtb2.BidRequest) map[string][]openrtb2.Data {

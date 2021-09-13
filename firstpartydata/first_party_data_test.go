@@ -63,18 +63,21 @@ func TestGetGlobalFPDData(t *testing.T) {
   				  "publisher": {
   				    "id": "1"
   				  },
-				  "ext": {}
+				  "ext": {
+				  }
   				},
   				"user": {
   				  "id": "reqUserID",
   				  "yob": 1982,
   				  "gender": "M",
-				  "ext": {}
+				  "ext": {
+				  }
   				},
   				"app": {
   				  "id": "appId",
   				  "data": 123,
-				  "ext": {}
+				  "ext": {
+				  }
   				},
   				"tmax": 5000,
   				"source": {
@@ -136,7 +139,8 @@ func TestGetGlobalFPDData(t *testing.T) {
 			},
 			errorExpected: false,
 			errorContains: "",
-		}, {
+		},
+		{
 			description: "Site FPD different format",
 			input: []byte(`{
   				"id": "bid_id",
@@ -184,51 +188,39 @@ func TestGetGlobalFPDData(t *testing.T) {
 			errorExpected: false,
 			errorContains: "",
 		},
-		{
-			description: "Malformed input",
-			input: []byte(`{
-  				"id": "bid_id",
-  				"site": {
-  				  "id":"reqSiteId",
-  				  "page": "http://www.foobar.com/1234.html",
-  				  "ext": {"data": meappfpd": "appfpdDataTest"}}
-  				},
-  				: 5000,
-  				"source": {
-  				  "tid": "ad839de0-5ae6-40bb-92b2-af8bad6439
-  				}
-			}`),
-			output: []byte(`{
-  				"id": "bid_id",
-  				"site": {
-  				  "id":"reqSiteId",
-  				  "page": "http://www.foobar.com/1234.html",
-  				  "ext": {"data": meappfpd": "appfpdDataTest"}}
-  				},
-  				: 5000,
-  				"source": {
-  				  "tid": "ad839de0-5ae6-40bb-92b2-af8bad6439
-  				}
-			}`),
-			expectedFpdData: map[string][]byte{},
-			errorExpected:   true,
-			errorContains:   "Unknown value type",
-		},
 	}
 	for _, test := range testCases {
-		res, fpd, err := GetGlobalFPDData(test.input)
+		var inputTestReq openrtb_ext.RequestWrapper
+		err := json.Unmarshal(test.input, &inputTestReq)
+		assert.NoError(t, err, "Error should be nil")
+
+		fpd, err := GetGlobalFPDData(&inputTestReq)
+		assert.NoError(t, err, "Error should be nil")
+
+		var outputTestReq openrtb_ext.RequestWrapper
+		err = json.Unmarshal(test.output, &outputTestReq)
+		assert.NoError(t, err, "Error should be nil")
 
 		if test.errorExpected {
 			assert.Error(t, err, "Error should not be nil")
 			//result should be still returned
-			assert.Equal(t, string(test.output), string(res), "Result is incorrect")
+			assert.Equal(t, inputTestReq, outputTestReq, "Result is incorrect")
 			assert.True(t, strings.Contains(err.Error(), test.errorContains))
 		} else {
 			assert.NoError(t, err, "Error should be nil")
-			assert.JSONEq(t, string(test.output), string(res), "Result is incorrect")
-			assert.Equal(t, test.expectedFpdData, fpd, "FPD is incorrect")
+			if fpd[userKey] != nil {
+				assert.JSONEq(t, string(inputTestReq.User.Ext), string(outputTestReq.User.Ext), "Result is incorrect")
+				assert.Equal(t, test.expectedFpdData[userKey], fpd[userKey], "FPD is incorrect")
+			}
+			if fpd[appKey] != nil {
+				assert.JSONEq(t, string(inputTestReq.App.Ext), string(outputTestReq.App.Ext), "Result is incorrect")
+				assert.Equal(t, test.expectedFpdData[appKey], fpd[appKey], "FPD is incorrect")
+			}
+			if fpd[siteKey] != nil {
+				assert.JSONEq(t, string(inputTestReq.Site.Ext), string(outputTestReq.Site.Ext), "Result is incorrect")
+				assert.Equal(t, test.expectedFpdData[siteKey], fpd[siteKey], "FPD is incorrect")
+			}
 		}
-
 	}
 }
 

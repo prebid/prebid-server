@@ -2392,11 +2392,10 @@ func TestParseRequestParseImpInfoError(t *testing.T) {
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
 
-	resReq, impExtInfoMap, fpd, errL := deps.parseRequest(req)
+	resReq, impExtInfoMap, errL := deps.parseRequest(req)
 
 	assert.Nil(t, resReq, "Result request should be nil due to incorrect imp")
 	assert.Nil(t, impExtInfoMap, "Impression info map should be nil due to incorrect imp")
-	assert.Nil(t, fpd, "First party data is not expected")
 	assert.Len(t, errL, 1, "One error should be returned")
 	assert.Contains(t, errL[0].Error(), "echovideoattrs of type bool", "Incorrect error message")
 }
@@ -2816,82 +2815,6 @@ func TestValidateNativeAssetData(t *testing.T) {
 			assert.NoError(t, err, test.description)
 		} else {
 			assert.EqualError(t, err, test.expectedError, test.description)
-		}
-	}
-}
-
-func TestParseRequestFPD(t *testing.T) {
-	deps := &endpointDeps{
-		&warningsCheckExchange{},
-		newParamsValidator(t),
-		&mockStoredReqFetcher{},
-		empty_fetcher.EmptyFetcher{},
-		empty_fetcher.EmptyFetcher{},
-		nil,
-		&metricsConfig.DummyMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
-		map[string]string{},
-		false,
-		[]byte{},
-		openrtb_ext.BuildBidderMap(),
-		nil,
-		nil,
-		hardcodedResponseIPValidator{response: true},
-	}
-
-	expectedFpd := map[string]map[string]string{
-		"fpd-site-user.json": {
-			"site": `{"someSiteFpd": "siteFpdDataTest"}`,
-			"user": `{"someUserFpd": "userFpdDataTest"}`,
-			"app":  ``,
-		},
-		"fpd-site.json": {
-			"site": `{"someSiteFpd": "siteFpdDataTest"}`,
-			"user": ``,
-			"app":  ``,
-		},
-		"fpd-app-user.json": {
-			"site": ``,
-			"user": `{"someUserFpd": "userFpdDataTest"}`,
-			"app":  `{"someAppFpd": "appFpdDataTest"}`,
-		},
-		"fpd-user.json": {
-			"site": ``,
-			"user": `{"someUserFpd": "userFpdDataTest"}`,
-			"app":  ``,
-		},
-		"no-fpd.json": {
-			"site": ``,
-			"user": ``,
-			"app":  ``,
-		},
-	}
-
-	if specFiles, err := ioutil.ReadDir("sample-requests/valid-whole/supplementary/firstPartyData"); err == nil {
-		for _, specFile := range specFiles {
-			reqBody := validRequest(t, fmt.Sprintf("firstPartyData/%s", specFile.Name()))
-			deps.cfg = &config.Configuration{MaxRequestSize: int64(len(reqBody))}
-			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
-			_, _, fpData, errL := deps.parseRequest(req)
-
-			assert.Len(t, errL, 0, "No errors expected")
-			expFPD := expectedFpd[specFile.Name()]
-			if len(expFPD["site"]) > 0 {
-				assert.JSONEq(t, expFPD["site"], string(fpData["site"]), "Request is incorrect")
-			} else {
-				assert.Equal(t, "", string(fpData["site"]), "Request is incorrect")
-			}
-			if len(expFPD["app"]) > 0 {
-				assert.JSONEq(t, expFPD["app"], string(fpData["app"]), "Request is incorrect")
-			} else {
-				assert.Equal(t, "", string(fpData["app"]), "Request is incorrect")
-			}
-			if len(expFPD["user"]) > 0 {
-				assert.JSONEq(t, expFPD["user"], string(fpData["user"]), "Request is incorrect")
-			} else {
-				assert.Equal(t, "", string(fpData["user"]), "Request is incorrect")
-			}
-
 		}
 	}
 }
