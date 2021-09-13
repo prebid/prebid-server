@@ -327,7 +327,8 @@ func mergeApps(originalApp *openrtb2.App, fpdConfigApp *openrtb2.App) (openrtb2.
 }
 
 func buildExtData(data []byte) []byte {
-	res := []byte(`{"data":`)
+	res := make([]byte, 0, len(data))
+	res = append(res, []byte(`{"data":`)...)
 	res = append(res, data...)
 	res = append(res, []byte(`}`)...)
 	return res
