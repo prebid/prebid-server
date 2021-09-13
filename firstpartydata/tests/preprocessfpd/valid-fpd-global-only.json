@@ -72,10 +72,6 @@
       "preferdeals": false
     }
   },
-  "biddersFPD": {
-    "appnexus": {},
-    "telaria": {},
-    "testBidder": {}
-  }
+  "biddersFPD": {}
 }
 

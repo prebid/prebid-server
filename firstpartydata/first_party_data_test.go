@@ -378,9 +378,6 @@ func TestPreprocessFPD(t *testing.T) {
 			}
 			fpdData, reqExtPrebid := ExtractBidderConfigFPD(extReq)
 
-			if reqExtPrebid.Data != nil {
-				assert.Nil(t, reqExtPrebid.Data.Bidders, "Global FPD config should be removed from request")
-			}
 			assert.Nil(t, reqExtPrebid.BidderConfigs, "Bidder specific FPD config should be removed from request")
 
 			assert.Equal(t, len(fpdFile.BiddersFPD), len(fpdData), "Incorrect fpd data")

@@ -1652,12 +1652,13 @@ func (deps *endpointDeps) GetResolvedFPDForBidders(req *openrtb_ext.RequestWrapp
 
 		if reqExt.GetPrebid().Data != nil {
 			biddersWithGlobalFPD = reqExt.GetPrebid().Data.Bidders
+			reqExt.GetPrebid().Data.Bidders = nil
 		}
 
 		fpdBidderData, reqExtPrebid := firstpartydata.ExtractBidderConfigFPD(*reqExt.GetPrebid())
 		reqExt.SetPrebid(&reqExtPrebid)
 
-		if len(fpdBidderData) > 0 {
+		if len(fpdBidderData) > 0 || len(biddersWithGlobalFPD) > 0 {
 			//If ext.prebid.data.bidders isn't defined, the default is there's no permission filtering
 			openRtbGlobalFPD := firstpartydata.ExtractOpenRtbGlobalFPD(req.BidRequest)
 
