@@ -14,6 +14,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/adkernelAdn"
 	"github.com/prebid/prebid-server/adapters/adman"
 	"github.com/prebid/prebid-server/adapters/admixer"
+	"github.com/prebid/prebid-server/adapters/adnuntius"
 	"github.com/prebid/prebid-server/adapters/adocean"
 	"github.com/prebid/prebid-server/adapters/adoppler"
 	"github.com/prebid/prebid-server/adapters/adot"
@@ -51,7 +52,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/decenterads"
 	"github.com/prebid/prebid-server/adapters/deepintent"
 	"github.com/prebid/prebid-server/adapters/dmx"
-	"github.com/prebid/prebid-server/adapters/e_volution"
+	evolution "github.com/prebid/prebid-server/adapters/e_volution"
 	"github.com/prebid/prebid-server/adapters/emx_digital"
 	"github.com/prebid/prebid-server/adapters/engagebdr"
 	"github.com/prebid/prebid-server/adapters/eplanning"
@@ -97,7 +98,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/rhythmone"
 	"github.com/prebid/prebid-server/adapters/rtbhouse"
 	"github.com/prebid/prebid-server/adapters/rubicon"
-	"github.com/prebid/prebid-server/adapters/sa_lunamedia"
+	salunamedia "github.com/prebid/prebid-server/adapters/sa_lunamedia"
 	"github.com/prebid/prebid-server/adapters/sharethrough"
 	"github.com/prebid/prebid-server/adapters/silvermob"
 	"github.com/prebid/prebid-server/adapters/smaato"
@@ -146,6 +147,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAdkernelAdn:       adkernelAdn.Builder,
 		openrtb_ext.BidderAdman:             adman.Builder,
 		openrtb_ext.BidderAdmixer:           admixer.Builder,
+		openrtb_ext.BidderAdnuntius:         adnuntius.Builder,
 		openrtb_ext.BidderAdOcean:           adocean.Builder,
 		openrtb_ext.BidderAdoppler:          adoppler.Builder,
 		openrtb_ext.BidderAdpone:            adpone.Builder,
