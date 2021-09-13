@@ -1,0 +1,9 @@
+maintainer:
+  email: hello@adnuintius.com
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner
