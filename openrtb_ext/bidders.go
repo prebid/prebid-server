@@ -74,7 +74,9 @@ func IsBidderNameReserved(name string) bool {
 // Please keep this list alphabetized to minimize merge conflicts.
 const (
 	Bidder33Across          BidderName = "33across"
+	BidderAceex             BidderName = "aceex"
 	BidderAcuityAds         BidderName = "acuityads"
+	BidderAdagio            BidderName = "adagio"
 	BidderAdf               BidderName = "adf"
 	BidderAdform            BidderName = "adform"
 	BidderAdgeneration      BidderName = "adgeneration"
@@ -91,6 +93,7 @@ const (
 	BidderAdtarget          BidderName = "adtarget"
 	BidderAdtelligent       BidderName = "adtelligent"
 	BidderAdvangelists      BidderName = "advangelists"
+	BidderAdView            BidderName = "adview"
 	BidderAdxcg             BidderName = "adxcg"
 	BidderAdyoulike         BidderName = "adyoulike"
 	BidderAJA               BidderName = "aja"
@@ -128,10 +131,12 @@ const (
 	BidderGamoshi           BidderName = "gamoshi"
 	BidderGrid              BidderName = "grid"
 	BidderGumGum            BidderName = "gumgum"
+	BidderHuaweiAds         BidderName = "huaweiads"
 	BidderImprovedigital    BidderName = "improvedigital"
 	BidderInMobi            BidderName = "inmobi"
 	BidderInteractiveoffers BidderName = "interactiveoffers"
 	BidderInvibes           BidderName = "invibes"
+	BidderIQZone            BidderName = "iqzone"
 	BidderIx                BidderName = "ix"
 	BidderJixie             BidderName = "jixie"
 	BidderKayzen            BidderName = "kayzen"
@@ -152,7 +157,9 @@ const (
 	BidderNinthDecimal      BidderName = "ninthdecimal"
 	BidderNoBid             BidderName = "nobid"
 	BidderOneTag            BidderName = "onetag"
+	BidderOpenWeb           BidderName = "openweb"
 	BidderOpenx             BidderName = "openx"
+	BidderOperaads          BidderName = "operaads"
 	BidderOrbidder          BidderName = "orbidder"
 	BidderOutbrain          BidderName = "outbrain"
 	BidderPangle            BidderName = "pangle"
@@ -167,6 +174,7 @@ const (
 	BidderSilverMob         BidderName = "silvermob"
 	BidderSmaato            BidderName = "smaato"
 	BidderSmartAdserver     BidderName = "smartadserver"
+	BidderSmartHub          BidderName = "smarthub"
 	BidderSmartRTB          BidderName = "smartrtb"
 	BidderSmartyAds         BidderName = "smartyads"
 	BidderSmileWanted       BidderName = "smilewanted"
@@ -191,6 +199,7 @@ const (
 	BidderYieldlab          BidderName = "yieldlab"
 	BidderYieldmo           BidderName = "yieldmo"
 	BidderYieldone          BidderName = "yieldone"
+	BidderYSSP              BidderName = "yssp"
 	BidderZeroClickFraud    BidderName = "zeroclickfraud"
 )
 
@@ -198,7 +207,9 @@ const (
 func CoreBidderNames() []BidderName {
 	return []BidderName{
 		Bidder33Across,
+		BidderAceex,
 		BidderAcuityAds,
+		BidderAdagio,
 		BidderAdf,
 		BidderAdform,
 		BidderAdgeneration,
@@ -215,6 +226,7 @@ func CoreBidderNames() []BidderName {
 		BidderAdtarget,
 		BidderAdtelligent,
 		BidderAdvangelists,
+		BidderAdView,
 		BidderAdxcg,
 		BidderAdyoulike,
 		BidderAJA,
@@ -252,10 +264,12 @@ func CoreBidderNames() []BidderName {
 		BidderGamoshi,
 		BidderGrid,
 		BidderGumGum,
+		BidderHuaweiAds,
 		BidderImprovedigital,
 		BidderInMobi,
 		BidderInteractiveoffers,
 		BidderInvibes,
+		BidderIQZone,
 		BidderIx,
 		BidderJixie,
 		BidderKayzen,
@@ -276,7 +290,9 @@ func CoreBidderNames() []BidderName {
 		BidderNinthDecimal,
 		BidderNoBid,
 		BidderOneTag,
+		BidderOpenWeb,
 		BidderOpenx,
+		BidderOperaads,
 		BidderOrbidder,
 		BidderOutbrain,
 		BidderPangle,
@@ -291,6 +307,7 @@ func CoreBidderNames() []BidderName {
 		BidderSilverMob,
 		BidderSmaato,
 		BidderSmartAdserver,
+		BidderSmartHub,
 		BidderSmartRTB,
 		BidderSmartyAds,
 		BidderSmileWanted,
@@ -315,6 +332,7 @@ func CoreBidderNames() []BidderName {
 		BidderYieldlab,
 		BidderYieldmo,
 		BidderYieldone,
+		BidderYSSP,
 		BidderZeroClickFraud,
 	}
 }

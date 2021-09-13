@@ -1,0 +1,26 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "w": 0,
+          "h": 90
+        },
+        "ext": {
+          "bidder": {
+          }
+        }
+      }
+    ],
+    "site": {}
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Invalid sizes provided for Banner 0x90",
+      "comparison": "literal"
+    }
+  ]
+}

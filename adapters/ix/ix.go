@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"sort"
+	"strings"
 
 	"github.com/mxmCherry/openrtb/v15/native1"
 	native1response "github.com/mxmCherry/openrtb/v15/native1/response"
@@ -425,7 +426,7 @@ func (a *IxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReque
 				err := json.Unmarshal([]byte(bid.AdM), &bidNative1v1)
 				if err == nil && len(bidNative1v1.Native.EventTrackers) > 0 {
 					mergeNativeImpTrackers(&bidNative1v1.Native)
-					if json, err := json.Marshal(bidNative1v1); err == nil {
+					if json, err := marshalJsonWithoutUnicode(bidNative1v1); err == nil {
 						bid.AdM = string(json)
 					}
 				}
@@ -436,7 +437,7 @@ func (a *IxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReque
 				err := json.Unmarshal([]byte(bid.AdM), &bidNative1v2)
 				if err == nil && len(bidNative1v2.EventTrackers) > 0 {
 					mergeNativeImpTrackers(bidNative1v2)
-					if json, err := json.Marshal(bidNative1v2); err == nil {
+					if json, err := marshalJsonWithoutUnicode(bidNative1v2); err == nil {
 						bid.AdM = string(json)
 					}
 				}
@@ -498,4 +499,21 @@ func mergeNativeImpTrackers(bidNative *native1response.Response) {
 
 	// sort so tests pass correctly
 	sort.Strings(bidNative.ImpTrackers)
+}
+
+func marshalJsonWithoutUnicode(v interface{}) (string, error) {
+	// json.Marshal uses HTMLEscape for strings inside JSON which affects URLs
+	// this is a problem with Native responses that embed JSON within JSON
+	// a custom encoder can be used to disable this encoding.
+	// https://pkg.go.dev/encoding/json#Marshal
+	// https://pkg.go.dev/encoding/json#Encoder.SetEscapeHTML
+	sb := &strings.Builder{}
+	encoder := json.NewEncoder(sb)
+	encoder.SetEscapeHTML(false)
+	if err := encoder.Encode(v); err != nil {
+		return "", err
+	}
+	// json.Encode also writes a newline, need to remove
+	// https://pkg.go.dev/encoding/json#Encoder.Encode
+	return strings.TrimSuffix(sb.String(), "\n"), nil
 }

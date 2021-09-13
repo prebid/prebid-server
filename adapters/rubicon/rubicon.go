@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/golang/glog"
@@ -186,6 +187,21 @@ type rubiconDeviceExt struct {
 
 type rubiconUser struct {
 	Language string `json:"language"`
+}
+
+type rubiconBidResponse struct {
+	openrtb2.BidResponse
+	SeatBid []rubiconSeatBid `json:"seatbid,omitempty"`
+}
+
+type rubiconSeatBid struct {
+	openrtb2.SeatBid
+	Buyer string `json:"buyer,omitempty"`
+}
+
+type extPrebid struct {
+	Prebid *openrtb_ext.ExtBidPrebid `json:"prebid,omitempty"`
+	Bidder json.RawMessage           `json:"bidder,omitempty"`
 }
 
 type rubiSize struct {
@@ -676,7 +692,6 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 	numRequests := len(request.Imp)
 	errs := make([]error, 0, len(request.Imp))
 	var err error
-
 	requestData := make([]*adapters.RequestData, 0, numRequests)
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
@@ -750,9 +765,19 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			continue
 		}
 
-		resolvedBidFloor, resolvedBidFloorCur := resolveBidFloorAttributes(thisImp.BidFloor, thisImp.BidFloorCur)
-		thisImp.BidFloorCur = resolvedBidFloorCur
-		thisImp.BidFloor = resolvedBidFloor
+		resolvedBidFloor, err := resolveBidFloor(thisImp.BidFloor, thisImp.BidFloorCur, reqInfo)
+		if err != nil {
+			errs = append(errs, &errortypes.BadInput{
+				Message: fmt.Sprintf("Unable to convert provided bid floor currency from %s to USD",
+					thisImp.BidFloorCur),
+			})
+			continue
+		}
+
+		if resolvedBidFloor > 0 {
+			thisImp.BidFloorCur = "USD"
+			thisImp.BidFloor = resolvedBidFloor
+		}
 
 		if request.User != nil {
 			userCopy := *request.User
@@ -908,15 +933,12 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 	return requestData, errs
 }
 
-// Will be replaced after https://github.com/prebid/prebid-server/issues/1482 resolution
-func resolveBidFloorAttributes(bidFloor float64, bidFloorCur string) (float64, string) {
-	if bidFloor > 0 {
-		if strings.ToUpper(bidFloorCur) == "EUR" {
-			return bidFloor * 1.2, "USD"
-		}
+func resolveBidFloor(bidFloor float64, bidFloorCur string, reqInfo *adapters.ExtraRequestInfo) (float64, error) {
+	if bidFloor > 0 && bidFloorCur != "" && strings.ToUpper(bidFloorCur) != "USD" {
+		return reqInfo.ConvertCurrency(bidFloor, bidFloorCur, "USD")
 	}
 
-	return bidFloor, bidFloorCur
+	return bidFloor, nil
 }
 
 func updateExtWithIabAttribute(target json.RawMessage, data []openrtb2.Data, segTaxes []int) (json.RawMessage, error) {
@@ -1088,7 +1110,7 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb2.BidRequest, external
 		}}
 	}
 
-	var bidResp openrtb2.BidResponse
+	var bidResp rubiconBidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: err.Error(),
@@ -1113,9 +1135,17 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb2.BidRequest, external
 	cmpOverride := cmpOverrideFromBidRequest(internalRequest)
 
 	for _, sb := range bidResp.SeatBid {
+		buyer, err := strconv.Atoi(sb.Buyer)
+		if err != nil {
+			buyer = 0
+		}
 		for i := 0; i < len(sb.Bid); i++ {
 			bid := sb.Bid[i]
 
+			updatedBidExt := updateBidExtWithMetaNetworkId(bid, buyer)
+			if updatedBidExt != nil {
+				bid.Ext = updatedBidExt
+			}
 			bidCmpOverride, ok := impToCpmOverride[bid.ImpID]
 			if !ok || bidCmpOverride == 0 {
 				bidCmpOverride = cmpOverride
@@ -1142,15 +1172,6 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb2.BidRequest, external
 	return bidResponse, nil
 }
 
-func cmpOverrideFromBidRequest(bidRequest *openrtb2.BidRequest) float64 {
-	var bidRequestExt bidRequestExt
-	if err := json.Unmarshal(bidRequest.Ext, &bidRequestExt); err != nil {
-		return 0
-	}
-
-	return bidRequestExt.Prebid.Bidders.Rubicon.Debug.CpmOverride
-}
-
 func mapImpIdToCpmOverride(imps []openrtb2.Imp) map[string]float64 {
 	impIdToCmpOverride := make(map[string]float64)
 	for _, imp := range imps {
@@ -1167,4 +1188,45 @@ func mapImpIdToCpmOverride(imps []openrtb2.Imp) map[string]float64 {
 		impIdToCmpOverride[imp.ID] = rubiconExt.Debug.CpmOverride
 	}
 	return impIdToCmpOverride
+}
+
+func cmpOverrideFromBidRequest(bidRequest *openrtb2.BidRequest) float64 {
+	var bidRequestExt bidRequestExt
+	if err := json.Unmarshal(bidRequest.Ext, &bidRequestExt); err != nil {
+		return 0
+	}
+
+	return bidRequestExt.Prebid.Bidders.Rubicon.Debug.CpmOverride
+}
+
+func updateBidExtWithMetaNetworkId(bid openrtb2.Bid, buyer int) json.RawMessage {
+	if buyer <= 0 {
+		return nil
+	}
+	var bidExt *extPrebid
+	if bid.Ext != nil {
+		if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
+			return nil
+		}
+	}
+
+	if bidExt != nil {
+		if bidExt.Prebid != nil {
+			if bidExt.Prebid.Meta != nil {
+				bidExt.Prebid.Meta.NetworkID = buyer
+			} else {
+				bidExt.Prebid.Meta = &openrtb_ext.ExtBidPrebidMeta{NetworkID: buyer}
+			}
+		} else {
+			bidExt.Prebid = &openrtb_ext.ExtBidPrebid{Meta: &openrtb_ext.ExtBidPrebidMeta{NetworkID: buyer}}
+		}
+	} else {
+		bidExt = &extPrebid{Prebid: &openrtb_ext.ExtBidPrebid{Meta: &openrtb_ext.ExtBidPrebidMeta{NetworkID: buyer}}}
+	}
+
+	marshalledExt, err := json.Marshal(&bidExt)
+	if err == nil {
+		return marshalledExt
+	}
+	return nil
 }

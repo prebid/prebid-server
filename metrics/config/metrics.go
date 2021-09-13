@@ -13,7 +13,7 @@ import (
 
 // NewMetricsEngine reads the configuration and returns the appropriate metrics engine
 // for this instance.
-func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.BidderName) *DetailedMetricsEngine {
+func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.BidderName, syncerKeys []string) *DetailedMetricsEngine {
 	// Create a list of metrics engines to use.
 	// Capacity of 2, as unlikely to have more than 2 metrics backends, and in the case
 	// of 1 we won't use the list so it will be garbage collected.
@@ -22,7 +22,7 @@ func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.Bidde
 
 	if cfg.Metrics.Influxdb.Host != "" {
 		// Currently use go-metrics as the metrics piece for influx
-		returnEngine.GoMetrics = metrics.NewMetrics(gometrics.NewPrefixedRegistry("prebidserver."), adapterList, cfg.Metrics.Disabled)
+		returnEngine.GoMetrics = metrics.NewMetrics(gometrics.NewPrefixedRegistry("prebidserver."), adapterList, cfg.Metrics.Disabled, syncerKeys)
 		engineList = append(engineList, returnEngine.GoMetrics)
 		// Set up the Influx logger
 		go influxdb.InfluxDB(
@@ -37,7 +37,7 @@ func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.Bidde
 	}
 	if cfg.Metrics.Prometheus.Port != 0 {
 		// Set up the Prometheus metrics.
-		returnEngine.PrometheusMetrics = prometheusmetrics.NewMetrics(cfg.Metrics.Prometheus, cfg.Metrics.Disabled)
+		returnEngine.PrometheusMetrics = prometheusmetrics.NewMetrics(cfg.Metrics.Prometheus, cfg.Metrics.Disabled, syncerKeys)
 		engineList = append(engineList, returnEngine.PrometheusMetrics)
 	}
 
@@ -175,9 +175,30 @@ func (me *MultiMetricsEngine) RecordAdapterTime(labels metrics.AdapterLabels, le
 }
 
 // RecordCookieSync across all engines
-func (me *MultiMetricsEngine) RecordCookieSync() {
+func (me *MultiMetricsEngine) RecordCookieSync(status metrics.CookieSyncStatus) {
 	for _, thisME := range *me {
-		thisME.RecordCookieSync()
+		thisME.RecordCookieSync(status)
+	}
+}
+
+// RecordSyncerRequest across all engines
+func (me *MultiMetricsEngine) RecordSyncerRequest(key string, status metrics.SyncerCookieSyncStatus) {
+	for _, thisME := range *me {
+		thisME.RecordSyncerRequest(key, status)
+	}
+}
+
+// RecordSetUid across all engines
+func (me *MultiMetricsEngine) RecordSetUid(status metrics.SetUidStatus) {
+	for _, thisME := range *me {
+		thisME.RecordSetUid(status)
+	}
+}
+
+// RecordSyncerSet across all engines
+func (me *MultiMetricsEngine) RecordSyncerSet(key string, status metrics.SyncerSetUidStatus) {
+	for _, thisME := range *me {
+		thisME.RecordSyncerSet(key, status)
 	}
 }
 
@@ -199,20 +220,6 @@ func (me *MultiMetricsEngine) RecordStoredImpCacheResult(cacheResult metrics.Cac
 func (me *MultiMetricsEngine) RecordAccountCacheResult(cacheResult metrics.CacheResult, inc int) {
 	for _, thisME := range *me {
 		thisME.RecordAccountCacheResult(cacheResult, inc)
-	}
-}
-
-// RecordAdapterCookieSync across all engines
-func (me *MultiMetricsEngine) RecordAdapterCookieSync(adapter openrtb_ext.BidderName, gdprBlocked bool) {
-	for _, thisME := range *me {
-		thisME.RecordAdapterCookieSync(adapter, gdprBlocked)
-	}
-}
-
-// RecordUserIDSet across all engines
-func (me *MultiMetricsEngine) RecordUserIDSet(userLabels metrics.UserLabels) {
-	for _, thisME := range *me {
-		thisME.RecordUserIDSet(userLabels)
 	}
 }
 
@@ -319,15 +326,19 @@ func (me *DummyMetricsEngine) RecordAdapterTime(labels metrics.AdapterLabels, le
 }
 
 // RecordCookieSync as a noop
-func (me *DummyMetricsEngine) RecordCookieSync() {
+func (me *DummyMetricsEngine) RecordCookieSync(status metrics.CookieSyncStatus) {
 }
 
-// RecordAdapterCookieSync as a noop
-func (me *DummyMetricsEngine) RecordAdapterCookieSync(adapter openrtb_ext.BidderName, gdprBlocked bool) {
+// RecordSyncerRequest as a noop
+func (me *DummyMetricsEngine) RecordSyncerRequest(key string, status metrics.SyncerCookieSyncStatus) {
 }
 
-// RecordUserIDSet as a noop
-func (me *DummyMetricsEngine) RecordUserIDSet(userLabels metrics.UserLabels) {
+// RecordSetUid as a noop
+func (me *DummyMetricsEngine) RecordSetUid(status metrics.SetUidStatus) {
+}
+
+// RecordSyncerSet as a noop
+func (me *DummyMetricsEngine) RecordSyncerSet(key string, status metrics.SyncerSetUidStatus) {
 }
 
 // RecordStoredReqCacheResult as a noop

@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "AdView Adapter Params",
+  "description": "A schema which validates params accepted by the adview adapter",
+  "type": "object",
+  "properties": {
+    "placementId": {
+      "type": "string",
+      "description": "An ID which identifies the placement selling the impression",
+      "minLength": 1
+    },
+    "accountId": {
+      "type": "string",
+      "description": "Account id",
+      "minLength": 1
+    } 
+  },
+  "required": ["placementId", "accountId"]
+}
