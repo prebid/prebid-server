@@ -213,7 +213,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	gdprDefaultValue := e.parseGDPRDefaultValue(r.BidRequest)
 
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
-	bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(ctx, r, requestExt, e.bidderToSyncerKey, e.gDPR, e.me, gdprDefaultValue, e.privacyConfig, &r.Account)
+	bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(ctx, r, requestExt, e.bidderToSyncerKey, e.gDPR, e.me, gdprDefaultValue, e.privacyConfig, &r.Account, r.FirstPartyData)
 
 	e.me.RecordRequestPrivacy(privacyLabels)
 
@@ -228,7 +228,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	// Get currency rates conversions for the auction
 	conversions := e.getAuctionCurrencyRates(requestExt.Prebid.CurrencyConversions)
 
-	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, r.Account.DebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride, r.FirstPartyData)
+	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, r.Account.DebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride)
 
 	var auc *auction
 	var cacheErrs []error
@@ -439,8 +439,7 @@ func (e *exchange) getAllBids(
 	conversions currency.Conversions,
 	accountDebugAllowed bool,
 	globalPrivacyControlHeader string,
-	headerDebugAllowed bool,
-	fpdData map[openrtb_ext.BidderName]*openrtb_ext.FPDData) (
+	headerDebugAllowed bool) (
 	map[openrtb_ext.BidderName]*pbsOrtbSeatBid,
 	map[openrtb_ext.BidderName]*seatResponseExtra, bool) {
 	// Set up pointers to the bid results
@@ -463,8 +462,6 @@ func (e *exchange) getAllBids(
 			defer func() {
 				e.me.RecordAdapterRequest(bidderRequest.BidderLabels)
 			}()
-
-			applyFPD(fpdData, bidderRequest.BidRequest, bidderRequest.BidderName)
 
 			start := time.Now()
 

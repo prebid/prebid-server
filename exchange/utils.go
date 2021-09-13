@@ -58,7 +58,8 @@ func cleanOpenRTBRequests(ctx context.Context,
 	metricsEngine metrics.MetricsEngine,
 	gdprDefaultValue gdpr.Signal,
 	privacyConfig config.Privacy,
-	account *config.Account) (allowedBidderRequests []BidderRequest, privacyLabels metrics.PrivacyLabels, errs []error) {
+	account *config.Account,
+	fpdData map[openrtb_ext.BidderName]*openrtb_ext.FPDData) (allowedBidderRequests []BidderRequest, privacyLabels metrics.PrivacyLabels, errs []error) {
 
 	impsByBidder, err := splitImps(req.BidRequest.Imp)
 	if err != nil {
@@ -152,6 +153,8 @@ func cleanOpenRTBRequests(ctx context.Context,
 				metricsEngine.RecordAdapterGDPRRequestBlocked(bidderRequest.BidderCoreName)
 			}
 		}
+
+		applyFPD(fpdData, bidderRequest.BidRequest, bidderRequest.BidderName)
 
 		if bidRequestAllowed {
 			privacyEnforcement.Apply(bidderRequest.BidRequest)
