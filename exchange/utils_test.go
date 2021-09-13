@@ -491,16 +491,16 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 }
 
 func TestCleanOpenRTBRequestsWithFPD(t *testing.T) {
-	fpdData := make(map[openrtb_ext.BidderName]*openrtb_ext.FPDData)
+	fpdData := make(map[openrtb_ext.BidderName]*openrtb_ext.ORTB2)
 
-	apnFpd := openrtb_ext.FPDData{
+	apnFpd := openrtb_ext.ORTB2{
 		Site: &openrtb2.Site{Name: "fpdApnSite"},
 		App:  &openrtb2.App{Name: "fpdApnApp"},
 		User: &openrtb2.User{Keywords: "fpdApnUser"},
 	}
 	fpdData[openrtb_ext.BidderName("appnexus")] = &apnFpd
 
-	brightrollFpd := openrtb_ext.FPDData{
+	brightrollFpd := openrtb_ext.ORTB2{
 		Site: &openrtb2.Site{Name: "fpdBrightrollSite"},
 		App:  &openrtb2.App{Name: "fpdBrightrollApp"},
 		User: &openrtb2.User{Keywords: "fpdBrightrollUser"},
@@ -510,7 +510,7 @@ func TestCleanOpenRTBRequestsWithFPD(t *testing.T) {
 	testCases := []struct {
 		description     string
 		req             AuctionRequest
-		fpd             map[openrtb_ext.BidderName]*openrtb_ext.FPDData
+		fpd             map[openrtb_ext.BidderName]*openrtb_ext.ORTB2
 		fpdDataExpected bool
 	}{
 		{

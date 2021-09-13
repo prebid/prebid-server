@@ -95,12 +95,12 @@ func ExtractOpenRtbGlobalFPD(bidRequest *openrtb2.BidRequest) map[string][]openr
 
 }
 
-func ResolveFPDData(bidRequest *openrtb2.BidRequest, fpdBidderData map[openrtb_ext.BidderName]*openrtb_ext.FPDData, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data, biddersWithGlobalFPD []string) (map[openrtb_ext.BidderName]*openrtb_ext.FPDData, error) {
+func ResolveFPDData(bidRequest *openrtb2.BidRequest, fpdBidderData map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data, biddersWithGlobalFPD []string) (map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, error) {
 
 	// If an attribute doesn't pass defined validation checks,
 	// entire request should be rejected with error message
 
-	resolvedFpdData := make(map[openrtb_ext.BidderName]*openrtb_ext.FPDData)
+	resolvedFpdData := make(map[openrtb_ext.BidderName]*openrtb_ext.ORTB2)
 
 	//convert list to map to optimize check if value exists
 	globalBiddersTable := make(map[string]struct{}) //just need to check existence of the element in map
@@ -112,7 +112,7 @@ func ResolveFPDData(bidRequest *openrtb2.BidRequest, fpdBidderData map[openrtb_e
 
 		_, hasGlobalFPD := globalBiddersTable[string(bidderName)]
 
-		resolvedFpdConfig := &openrtb_ext.FPDData{}
+		resolvedFpdConfig := &openrtb_ext.ORTB2{}
 
 		newUser, err := resolveUser(fpdConfig.User, bidRequest.User, globalFPD, openRtbGlobalFPD, hasGlobalFPD)
 		if err != nil {
@@ -334,9 +334,9 @@ func buildExtData(data []byte) []byte {
 	return res
 }
 
-func ExtractBidderConfigFPD(reqExtPrebid openrtb_ext.ExtRequestPrebid) (map[openrtb_ext.BidderName]*openrtb_ext.FPDData, openrtb_ext.ExtRequestPrebid) {
+func ExtractBidderConfigFPD(reqExtPrebid openrtb_ext.ExtRequestPrebid) (map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, openrtb_ext.ExtRequestPrebid) {
 	//map to store bidder configs to process
-	fpdData := make(map[openrtb_ext.BidderName]*openrtb_ext.FPDData)
+	fpdData := make(map[openrtb_ext.BidderName]*openrtb_ext.ORTB2)
 
 	//every bidder in ext.prebid.data.bidders should receive fpd data if defined
 	bidderTable := make(map[string]struct{}) //just need to check existence of the element in map
@@ -347,20 +347,20 @@ func ExtractBidderConfigFPD(reqExtPrebid openrtb_ext.ExtRequestPrebid) (map[open
 
 				if _, present := bidderTable[bidder]; !present {
 					bidderTable[bidder] = struct{}{}
-					fpdData[openrtb_ext.BidderName(bidder)] = &openrtb_ext.FPDData{}
+					fpdData[openrtb_ext.BidderName(bidder)] = &openrtb_ext.ORTB2{}
 				}
 				//this will overwrite previously set site/app/user.
 				//Last defined bidder-specific config will take precedence
 				fpdBidderData := fpdData[openrtb_ext.BidderName(bidder)]
-				if bidderConfig.Config != nil && bidderConfig.Config.FPDData != nil {
-					if bidderConfig.Config.FPDData.Site != nil {
-						fpdBidderData.Site = bidderConfig.Config.FPDData.Site
+				if bidderConfig.Config != nil && bidderConfig.Config.ORTB2 != nil {
+					if bidderConfig.Config.ORTB2.Site != nil {
+						fpdBidderData.Site = bidderConfig.Config.ORTB2.Site
 					}
-					if bidderConfig.Config.FPDData.App != nil {
-						fpdBidderData.App = bidderConfig.Config.FPDData.App
+					if bidderConfig.Config.ORTB2.App != nil {
+						fpdBidderData.App = bidderConfig.Config.ORTB2.App
 					}
-					if bidderConfig.Config.FPDData.User != nil {
-						fpdBidderData.User = bidderConfig.Config.FPDData.User
+					if bidderConfig.Config.ORTB2.User != nil {
+						fpdBidderData.User = bidderConfig.Config.ORTB2.User
 					}
 				}
 

@@ -487,8 +487,8 @@ func TestBuildResolvedFPDForBidders(t *testing.T) {
 				reqFPD[userDataKey] = userData
 			}
 			if fpdFile.BiddersFPD == nil {
-				fpdFile.BiddersFPD = make(map[openrtb_ext.BidderName]*openrtb_ext.FPDData)
-				fpdFile.BiddersFPD["appnexus"] = &openrtb_ext.FPDData{}
+				fpdFile.BiddersFPD = make(map[openrtb_ext.BidderName]*openrtb_ext.ORTB2)
+				fpdFile.BiddersFPD["appnexus"] = &openrtb_ext.ORTB2{}
 			}
 
 			resultFPD, err := ResolveFPDData(&inputReq, fpdFile.BiddersFPD, reqExtFPD, reqFPD, []string{"appnexus"})
@@ -538,8 +538,8 @@ func loadFpdFile(filename string) (fpdFile, error) {
 }
 
 type fpdFile struct {
-	InputRequestData  json.RawMessage                                 `json:"inputRequestData,omitempty"`
-	OutputRequestData json.RawMessage                                 `json:"outputRequestData,omitempty"`
-	BiddersFPD        map[openrtb_ext.BidderName]*openrtb_ext.FPDData `json:"biddersFPD,omitempty"`
-	FirstPartyData    map[string]json.RawMessage                      `json:"firstPartyData,omitempty"`
+	InputRequestData  json.RawMessage                               `json:"inputRequestData,omitempty"`
+	OutputRequestData json.RawMessage                               `json:"outputRequestData,omitempty"`
+	BiddersFPD        map[openrtb_ext.BidderName]*openrtb_ext.ORTB2 `json:"biddersFPD,omitempty"`
+	FirstPartyData    map[string]json.RawMessage                    `json:"firstPartyData,omitempty"`
 }

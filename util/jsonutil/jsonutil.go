@@ -113,7 +113,9 @@ func FindElement(extension []byte, elementNames ...string) (bool, int64, int64, 
 }
 
 func DropElement(extension []byte, elementNames ...string) ([]byte, error) {
-	//Doesnt support drop element from array
+	//Doesn't support drop element from array
+	//Keys in the path can skip levels
+	//First found element will be removed
 	found, startIndex, endIndex, err := FindElement(extension, elementNames...)
 	if err != nil {
 		return nil, err

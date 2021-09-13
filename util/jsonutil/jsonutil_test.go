@@ -113,6 +113,14 @@ func TestDropElement(t *testing.T) {
 			errorContains:   "",
 		},
 		{
+			description:     "Drop Nested Element Multiple Occurrence Skip Path",
+			input:           []byte(`{"consented_providers_settings":{"consented_providers":[1608,765,492],"data": {"amp":1, "test": 25}}}`),
+			elementToRemove: []string{"consented_providers_settings", "test"},
+			output:          []byte(`{"consented_providers_settings":{"consented_providers":[1608,765,492],"data": {"amp":1}}}`),
+			errorExpected:   false,
+			errorContains:   "",
+		},
+		{
 			description:     "Drop Nested Structure Single Occurrence",
 			input:           []byte(`{"consented_providers":{"providers":[1608,765,492],"test":{"nested":true}},"data": [{"test":5},{"test": [1,2,3]}]}`),
 			elementToRemove: []string{"consented_providers", "test"},

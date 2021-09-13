@@ -319,10 +319,10 @@ func parseTimeout(requestJson []byte, defaultTimeout time.Duration) time.Duratio
 	return defaultTimeout
 }
 
-func (deps *endpointDeps) getValidatedFPDBidderData(bidRequest *openrtb2.BidRequest, fpdBiddersData map[openrtb_ext.BidderName]*openrtb_ext.FPDData) (map[openrtb_ext.BidderName]*openrtb_ext.FPDData, []error) {
+func (deps *endpointDeps) getValidatedFPDBidderData(bidRequest *openrtb2.BidRequest, fpdBiddersData map[openrtb_ext.BidderName]*openrtb_ext.ORTB2) (map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, []error) {
 
 	errL := make([]error, 0)
-	validatedFpdData := make(map[openrtb_ext.BidderName]*openrtb_ext.FPDData)
+	validatedFpdData := make(map[openrtb_ext.BidderName]*openrtb_ext.ORTB2)
 
 	for bidderName, fpdBidderData := range fpdBiddersData {
 		tempBidRequest := *bidRequest //copy of bid request to validate FPD
@@ -1631,9 +1631,9 @@ func getAccountID(pub *openrtb2.Publisher) string {
 	return metrics.PublisherUnknown
 }
 
-func (deps *endpointDeps) GetResolvedFPDForBidders(req *openrtb_ext.RequestWrapper) (map[openrtb_ext.BidderName]*openrtb_ext.FPDData, []error) {
+func (deps *endpointDeps) GetResolvedFPDForBidders(req *openrtb_ext.RequestWrapper) (map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, []error) {
 	errL := []error{}
-	var resolvedFPD map[openrtb_ext.BidderName]*openrtb_ext.FPDData
+	var resolvedFPD map[openrtb_ext.BidderName]*openrtb_ext.ORTB2
 
 	//If {site,app,user}.ext.data exists, collect it and remove {site,app,user}.ext.data from request
 	globalFpdData, err := firstpartydata.GetGlobalFPDData(req)

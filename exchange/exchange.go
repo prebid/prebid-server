@@ -167,7 +167,7 @@ type AuctionRequest struct {
 	// LegacyLabels is included here for temporary compatability with cleanOpenRTBRequests
 	// in HoldAuction until we get to factoring it away. Do not use for anything new.
 	LegacyLabels   metrics.Labels
-	FirstPartyData map[openrtb_ext.BidderName]*openrtb_ext.FPDData
+	FirstPartyData map[openrtb_ext.BidderName]*openrtb_ext.ORTB2
 }
 
 // BidderRequest holds the bidder specific request and all other
@@ -523,7 +523,7 @@ func (e *exchange) getAllBids(
 	return adapterBids, adapterExtra, bidsFound
 }
 
-func applyFPD(fpdData map[openrtb_ext.BidderName]*openrtb_ext.FPDData, bidReq *openrtb2.BidRequest, bidderName openrtb_ext.BidderName) {
+func applyFPD(fpdData map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, bidReq *openrtb2.BidRequest, bidderName openrtb_ext.BidderName) {
 	if fpdData != nil && fpdData[bidderName] != nil {
 		if fpdData[bidderName].Site != nil {
 			bidReq.Site = fpdData[bidderName].Site

@@ -3599,9 +3599,9 @@ func TestFPDData(t *testing.T) {
 		TMax: 500,
 	}
 
-	fpdData := make(map[openrtb_ext.BidderName]*openrtb_ext.FPDData)
+	fpdData := make(map[openrtb_ext.BidderName]*openrtb_ext.ORTB2)
 
-	apnFpd := openrtb_ext.FPDData{
+	apnFpd := openrtb_ext.ORTB2{
 		Site: &openrtb2.Site{ID: "fpdSite"},
 		App:  &openrtb2.App{ID: "fpdApp"},
 		User: &openrtb2.User{ID: "fpdUser"},

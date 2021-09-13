@@ -2971,11 +2971,11 @@ func loadFpdFile(filename string) (fpdFile, error) {
 }
 
 type fpdFile struct {
-	InputRequestData  json.RawMessage                                 `json:"inputRequestData,omitempty"`
-	ResultRequestData json.RawMessage                                 `json:"resultRequestData,omitempty"`
-	InputBiddersFPD   map[openrtb_ext.BidderName]*openrtb_ext.FPDData `json:"inputBiddersFPD,omitempty"`
-	ResultBiddersFPD  map[openrtb_ext.BidderName]*openrtb_ext.FPDData `json:"resultBiddersFPD,omitempty"`
-	ValidationErrors  []string                                        `json:"validationErrors,omitempty"`
+	InputRequestData  json.RawMessage                               `json:"inputRequestData,omitempty"`
+	ResultRequestData json.RawMessage                               `json:"resultRequestData,omitempty"`
+	InputBiddersFPD   map[openrtb_ext.BidderName]*openrtb_ext.ORTB2 `json:"inputBiddersFPD,omitempty"`
+	ResultBiddersFPD  map[openrtb_ext.BidderName]*openrtb_ext.ORTB2 `json:"resultBiddersFPD,omitempty"`
+	ValidationErrors  []string                                      `json:"validationErrors,omitempty"`
 }
 
 // warningsCheckExchange is a well-behaved exchange which stores all incoming warnings.

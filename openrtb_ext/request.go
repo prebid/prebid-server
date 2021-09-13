@@ -53,10 +53,10 @@ type BidderConfig struct {
 }
 
 type Config struct {
-	FPDData *FPDData `json:"ortb2,omitempty"`
+	ORTB2 *ORTB2 `json:"ortb2,omitempty"`
 }
 
-type FPDData struct {
+type ORTB2 struct { //First party data
 	Site *openrtb2.Site `json:"site,omitempty"`
 	App  *openrtb2.App  `json:"app,omitempty"`
 	User *openrtb2.User `json:"user,omitempty"`
