@@ -28,7 +28,8 @@ var (
 // ExtCTVBid defines the contract for bidresponse.seatbid.bid[i].ext
 type ExtCTVBid struct {
 	ExtBid
-	AdPod *BidAdPodExt `json:"adpod,omitempty"`
+	AdPod       *BidAdPodExt    `json:"adpod,omitempty"`
+	SKAdNetwork json.RawMessage `json:"skadn,omitempty"`
 }
 
 // BidAdPodExt defines the prebid adpod response in bidresponse.ext.adpod parameter
