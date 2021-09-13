@@ -24,6 +24,7 @@ import (
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/usersync"
+	"github.com/prebid/prebid-server/util/maputil"
 
 	"github.com/buger/jsonparser"
 	"github.com/gofrs/uuid"
@@ -966,9 +967,6 @@ func (e *exchange) makeBid(bids []*pbsOrtbBid, auc *auction, returnCreative bool
 }
 
 func makeBidExtJSON(ext json.RawMessage, prebid *openrtb_ext.ExtBidPrebid, impExtInfoMap map[string]ImpExtInfo, impId string) (json.RawMessage, error) {
-	// update existing bid.ext with prebid section
-	// if bid.ext.prebid already exists, it will be overwritten.
-	// if echoVideoAttrs set to true stored video attributes will be added to bid.ext.storedrequestattributes
 	var extMap map[string]interface{}
 
 	if len(ext) != 0 {
@@ -979,10 +977,22 @@ func makeBidExtJSON(ext json.RawMessage, prebid *openrtb_ext.ExtBidPrebid, impEx
 		extMap = make(map[string]interface{})
 	}
 
+	// ext.prebid
+	if prebid.Meta == nil && maputil.HasElement(extMap, "prebid", "meta") {
+		metaContainer := struct {
+			Prebid struct {
+				Meta openrtb_ext.ExtBidPrebidMeta `json:"meta"`
+			} `json:"prebid"`
+		}{}
+		if err := json.Unmarshal(ext, &metaContainer); err != nil {
+			return nil, fmt.Errorf("error validaing response from server, %s", err)
+		}
+		prebid.Meta = &metaContainer.Prebid.Meta
+	}
 	extMap[openrtb_ext.PrebidExtKey] = prebid
 
+	// ext.storedrequestattributes
 	if impExtInfo, ok := impExtInfoMap[impId]; ok && impExtInfo.EchoVideoAttrs {
-
 		videoData, _, _, err := jsonparser.Get(impExtInfo.StoredImp, "video")
 		if err != nil && err != jsonparser.KeyPathNotFoundError {
 			return nil, err
