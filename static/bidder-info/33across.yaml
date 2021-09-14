@@ -8,5 +8,5 @@ capabilities:
     - video
 userSync:
   iframe:
-    url: "https://ic.tynt.com/r/d?m=xch&rt=html&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&ru={{.RedirectURL}}&id=zzz000000000002zzz"
+    url: "https://ssc-cms.33across.com/ps/?m=xch&rt=html&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&ru={{.RedirectURL}}&id=zzz000000000002zzz"
     userMacro: "33XUSERID33X"
