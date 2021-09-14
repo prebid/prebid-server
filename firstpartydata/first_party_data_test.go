@@ -491,34 +491,40 @@ func TestBuildResolvedFPDForBidders(t *testing.T) {
 				fpdFile.BiddersFPD["appnexus"] = &openrtb_ext.ORTB2{}
 			}
 
-			resultFPD, err := ResolveFPDData(&inputReq, fpdFile.BiddersFPD, reqExtFPD, reqFPD, []string{"appnexus"})
+			resultFPD, errL := ResolveFPDData(&inputReq, fpdFile.BiddersFPD, reqExtFPD, reqFPD, []string{"appnexus"})
 
-			assert.NoError(t, err, "No errors should be returned")
-			assert.Equal(t, inputReq, inputReqCopy, "Original request should not be modified")
+			if len(errL) == 0 {
+				assert.Equal(t, inputReq, inputReqCopy, "Original request should not be modified")
 
-			bidderFPD := resultFPD["appnexus"]
+				bidderFPD := resultFPD["appnexus"]
 
-			if bidderFPD.Site != nil && len(bidderFPD.Site.Ext) > 0 {
-				resSiteExt := bidderFPD.Site.Ext
-				expectedSiteExt := outputReq.Site.Ext
-				bidderFPD.Site.Ext = nil
-				outputReq.Site.Ext = nil
-				jsonutil.DiffJson(t, "site.ext is incorrect", resSiteExt, expectedSiteExt)
+				if bidderFPD.Site != nil && len(bidderFPD.Site.Ext) > 0 {
+					resSiteExt := bidderFPD.Site.Ext
+					expectedSiteExt := outputReq.Site.Ext
+					bidderFPD.Site.Ext = nil
+					outputReq.Site.Ext = nil
+					jsonutil.DiffJson(t, "site.ext is incorrect", resSiteExt, expectedSiteExt)
+				}
+				if bidderFPD.App != nil && len(bidderFPD.App.Ext) > 0 {
+					resAppExt := bidderFPD.App.Ext
+					expectedAppExt := outputReq.App.Ext
+					bidderFPD.App.Ext = nil
+					outputReq.App.Ext = nil
+					jsonutil.DiffJson(t, "app.ext is incorrect", resAppExt, expectedAppExt)
+				}
+				if bidderFPD.User != nil && len(bidderFPD.User.Ext) > 0 {
+					resUserExt := bidderFPD.User.Ext
+					expectedUserExt := outputReq.User.Ext
+					bidderFPD.User.Ext = nil
+					outputReq.User.Ext = nil
+					jsonutil.DiffJson(t, "user.ext is incorrect", resUserExt, expectedUserExt)
+				}
+			} else {
+				for i := range fpdFile.ValidationErrors {
+					assert.Contains(t, errL[i].Error(), fpdFile.ValidationErrors[i], "Incorrect first party data warning message")
+				}
 			}
-			if bidderFPD.App != nil && len(bidderFPD.App.Ext) > 0 {
-				resAppExt := bidderFPD.App.Ext
-				expectedAppExt := outputReq.App.Ext
-				bidderFPD.App.Ext = nil
-				outputReq.App.Ext = nil
-				jsonutil.DiffJson(t, "app.ext is incorrect", resAppExt, expectedAppExt)
-			}
-			if bidderFPD.User != nil && len(bidderFPD.User.Ext) > 0 {
-				resUserExt := bidderFPD.User.Ext
-				expectedUserExt := outputReq.User.Ext
-				bidderFPD.User.Ext = nil
-				outputReq.User.Ext = nil
-				jsonutil.DiffJson(t, "user.ext is incorrect", resUserExt, expectedUserExt)
-			}
+
 		}
 	}
 }
@@ -542,4 +548,5 @@ type fpdFile struct {
 	OutputRequestData json.RawMessage                               `json:"outputRequestData,omitempty"`
 	BiddersFPD        map[openrtb_ext.BidderName]*openrtb_ext.ORTB2 `json:"biddersFPD,omitempty"`
 	FirstPartyData    map[string]json.RawMessage                    `json:"firstPartyData,omitempty"`
+	ValidationErrors  []string                                      `json:"validationErrors,omitempty"`
 }

@@ -319,43 +319,6 @@ func parseTimeout(requestJson []byte, defaultTimeout time.Duration) time.Duratio
 	return defaultTimeout
 }
 
-func (deps *endpointDeps) getValidatedFPDBidderData(bidRequest *openrtb2.BidRequest, fpdBiddersData map[openrtb_ext.BidderName]*openrtb_ext.ORTB2) (map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, []error) {
-
-	errL := make([]error, 0)
-	validatedFpdData := make(map[openrtb_ext.BidderName]*openrtb_ext.ORTB2)
-
-	for bidderName, fpdBidderData := range fpdBiddersData {
-		tempBidRequest := *bidRequest //copy of bid request to validate FPD
-
-		if fpdBidderData.Site != nil {
-			tempBidRequest.Site = fpdBidderData.Site
-		}
-		if fpdBidderData.App != nil {
-			tempBidRequest.App = fpdBidderData.App
-		}
-		if fpdBidderData.User != nil {
-			tempBidRequest.User = fpdBidderData.User
-		}
-
-		tempRequestWrapper := &openrtb_ext.RequestWrapper{BidRequest: &tempBidRequest}
-		errsList := deps.validateRequest(tempRequestWrapper)
-
-		if len(errsList) == 0 {
-			//valid fpd bidder config - will need to apply it to request
-			validatedFpdData[bidderName] = fpdBidderData
-		} else {
-			//return validation error as InvalidFirstPartyDataWarning
-			for _, fpdValidationError := range errsList {
-				firstPartyDataError := errortypes.BadInput{
-					Message: fmt.Sprintf("Invalid first party data for bidder %s: %s", bidderName, fpdValidationError),
-				}
-				errL = append(errL, &firstPartyDataError)
-			}
-		}
-	}
-	return validatedFpdData, errL
-}
-
 func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper) []error {
 	errL := []error{}
 	if req.ID == "" {
@@ -1663,14 +1626,9 @@ func (deps *endpointDeps) GetResolvedFPDForBidders(req *openrtb_ext.RequestWrapp
 			openRtbGlobalFPD := firstpartydata.ExtractOpenRtbGlobalFPD(req.BidRequest)
 
 			var fpdErrors []error
-			initialFPD, buildFpdErr := firstpartydata.ResolveFPDData(req.BidRequest, fpdBidderData, globalFpdData, openRtbGlobalFPD, biddersWithGlobalFPD)
-			if buildFpdErr != nil {
-				errL = append(errL, buildFpdErr)
-			} else {
-				resolvedFPD, fpdErrors = deps.getValidatedFPDBidderData(req.BidRequest, initialFPD)
-				if len(fpdErrors) > 0 {
-					errL = append(errL, fpdErrors...)
-				}
+			resolvedFPD, fpdErrors = firstpartydata.ResolveFPDData(req.BidRequest, fpdBidderData, globalFpdData, openRtbGlobalFPD, biddersWithGlobalFPD)
+			if fpdErrors != nil {
+				errL = append(errL, fpdErrors...)
 			}
 		}
 	}

@@ -76,5 +76,8 @@
   },
   "resultRequestData":  {},
   "resultBiddersFPD": {},
-  "validationErrors": ["Invalid first party data for bidder telaria: request.site or request.app must be defined, but not both."]
+  "validationErrors": [
+    "incorrect First Party Data for bidder appnexus: User object is not defined in request, but defined in FPD config",
+    "incorrect First Party Data for bidder telaria: App object is not defined in request, but defined in FPD config"
+  ]
 }

@@ -1,6 +1,7 @@
 package firstpartydata
 
 import (
+	"fmt"
 	"github.com/evanphx/json-patch"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -95,8 +96,8 @@ func ExtractOpenRtbGlobalFPD(bidRequest *openrtb2.BidRequest) map[string][]openr
 
 }
 
-func ResolveFPDData(bidRequest *openrtb2.BidRequest, fpdBidderData map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data, biddersWithGlobalFPD []string) (map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, error) {
-
+func ResolveFPDData(bidRequest *openrtb2.BidRequest, fpdBidderData map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data, biddersWithGlobalFPD []string) (map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, []error) {
+	errL := []error{}
 	// If an attribute doesn't pass defined validation checks,
 	// entire request should be rejected with error message
 
@@ -108,42 +109,46 @@ func ResolveFPDData(bidRequest *openrtb2.BidRequest, fpdBidderData map[openrtb_e
 		globalBiddersTable[bidderName] = struct{}{}
 	}
 
-	for bidderName, fpdConfig := range fpdBidderData {
+	for bName, fpdConfig := range fpdBidderData {
+		bidderName := string(bName)
 
-		_, hasGlobalFPD := globalBiddersTable[string(bidderName)]
+		_, hasGlobalFPD := globalBiddersTable[bidderName]
 
 		resolvedFpdConfig := &openrtb_ext.ORTB2{}
 
-		newUser, err := resolveUser(fpdConfig.User, bidRequest.User, globalFPD, openRtbGlobalFPD, hasGlobalFPD)
+		newUser, err := resolveUser(fpdConfig.User, bidRequest.User, globalFPD, openRtbGlobalFPD, hasGlobalFPD, bidderName)
 		if err != nil {
-			return nil, err
+			errL = append(errL, err)
 		}
 		resolvedFpdConfig.User = newUser
 
-		newApp, err := resolveApp(fpdConfig.App, bidRequest.App, globalFPD, openRtbGlobalFPD, hasGlobalFPD)
+		newApp, err := resolveApp(fpdConfig.App, bidRequest.App, globalFPD, openRtbGlobalFPD, hasGlobalFPD, bidderName)
 		if err != nil {
-			return nil, err
+			errL = append(errL, err)
 		}
 		resolvedFpdConfig.App = newApp
 
-		newSite, err := resolveSite(fpdConfig.Site, bidRequest.Site, globalFPD, openRtbGlobalFPD, hasGlobalFPD)
+		newSite, err := resolveSite(fpdConfig.Site, bidRequest.Site, globalFPD, openRtbGlobalFPD, hasGlobalFPD, bidderName)
 		if err != nil {
-			return nil, err
+			errL = append(errL, err)
 		}
-		resolvedFpdConfig.Site = newSite
+		if len(errL) == 0 {
+			resolvedFpdConfig.Site = newSite
 
-		resolvedFpdData[bidderName] = resolvedFpdConfig
+			resolvedFpdData[bName] = resolvedFpdConfig
+		}
 	}
-	return resolvedFpdData, nil
+	return resolvedFpdData, errL
 }
 
-func resolveUser(fpdConfigUser *openrtb2.User, bidRequestUser *openrtb2.User, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data, hasGlobalFPD bool) (*openrtb2.User, error) {
+func resolveUser(fpdConfigUser *openrtb2.User, bidRequestUser *openrtb2.User, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data, hasGlobalFPD bool, bidderName string) (*openrtb2.User, error) {
+
 	if bidRequestUser == nil && fpdConfigUser == nil {
 		return nil, nil
 	}
 
-	if bidRequestUser == nil {
-		bidRequestUser = &openrtb2.User{}
+	if bidRequestUser == nil && fpdConfigUser != nil {
+		return nil, fmt.Errorf("incorrect First Party Data for bidder %s: User object is not defined in request, but defined in FPD config", bidderName)
 	}
 
 	newUser := *bidRequestUser
@@ -191,14 +196,15 @@ func mergeUsers(original *openrtb2.User, fpdConfigUser *openrtb2.User) (openrtb2
 	return newUser, err
 }
 
-func resolveSite(fpdConfigSite *openrtb2.Site, bidRequestSite *openrtb2.Site, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data, hasGlobalFPD bool) (*openrtb2.Site, error) {
+func resolveSite(fpdConfigSite *openrtb2.Site, bidRequestSite *openrtb2.Site, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data, hasGlobalFPD bool, bidderName string) (*openrtb2.Site, error) {
 
 	if bidRequestSite == nil && fpdConfigSite == nil {
 		return nil, nil
 	}
-	if bidRequestSite == nil {
-		bidRequestSite = &openrtb2.Site{}
+	if bidRequestSite == nil && fpdConfigSite != nil {
+		return nil, fmt.Errorf("incorrect First Party Data for bidder %s: Site object is not defined in request, but defined in FPD config", bidderName)
 	}
+
 	newSite := *bidRequestSite
 	var err error
 
@@ -226,6 +232,11 @@ func resolveSite(fpdConfigSite *openrtb2.Site, bidRequestSite *openrtb2.Site, gl
 
 	if fpdConfigSite != nil {
 		//apply bidder specific fpd if present
+		//result site should have ID or Page, fpd becomes incorrect if it overwrites page to empty one and ID is empty in original site
+		if fpdConfigSite.Page == "" && newSite.Page != "" && newSite.ID == "" {
+			return nil, fmt.Errorf("incorrect First Party Data for bidder %s: Site object cannot set empty page if req.site.id is empty", bidderName)
+
+		}
 		newSite, err = mergeSites(&newSite, fpdConfigSite)
 	}
 	return &newSite, err
@@ -258,14 +269,16 @@ func mergeSites(originalSite *openrtb2.Site, fpdConfigSite *openrtb2.Site) (open
 	return newSite, err
 }
 
-func resolveApp(fpdConfigApp *openrtb2.App, bidRequestApp *openrtb2.App, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data, hasGlobalFPD bool) (*openrtb2.App, error) {
+func resolveApp(fpdConfigApp *openrtb2.App, bidRequestApp *openrtb2.App, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data, hasGlobalFPD bool, bidderName string) (*openrtb2.App, error) {
 
 	if bidRequestApp == nil && fpdConfigApp == nil {
 		return nil, nil
 	}
-	if bidRequestApp == nil {
-		bidRequestApp = &openrtb2.App{}
+
+	if bidRequestApp == nil && fpdConfigApp != nil {
+		return nil, fmt.Errorf("incorrect First Party Data for bidder %s: App object is not defined in request, but defined in FPD config", bidderName)
 	}
+
 	newApp := *bidRequestApp
 	var err error
 

@@ -2819,64 +2819,6 @@ func TestValidateNativeAssetData(t *testing.T) {
 	}
 }
 
-func TestValidateFpdRequest(t *testing.T) {
-	deps := &endpointDeps{
-		&warningsCheckExchange{},
-		newParamsValidator(t),
-		&mockStoredReqFetcher{},
-		empty_fetcher.EmptyFetcher{},
-		empty_fetcher.EmptyFetcher{},
-		&config.Configuration{},
-		&metricsConfig.DummyMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
-		map[string]string{},
-		false,
-		[]byte{},
-		openrtb_ext.BuildBidderMap(),
-		nil,
-		nil,
-		hardcodedResponseIPValidator{response: true},
-	}
-	if specFiles, err := ioutil.ReadDir("./firstpartydata/tests/validatefpd"); err == nil {
-		for _, specFile := range specFiles {
-			fileName := "./firstpartydata/tests/validatefpd/" + specFile.Name()
-
-			fpdFile, err := loadFpdFile(fileName)
-			if err != nil {
-				t.Errorf("Unable to load file: %s", fileName)
-			}
-
-			var inputReq openrtb2.BidRequest
-			err = json.Unmarshal(fpdFile.InputRequestData, &inputReq)
-			if err != nil {
-				t.Errorf("Unable to unmarshal input request: %s", fileName)
-			}
-
-			var inputReqCopy openrtb2.BidRequest
-			err = json.Unmarshal(fpdFile.InputRequestData, &inputReqCopy)
-			if err != nil {
-				t.Errorf("Unable to unmarshal input request: %s", fileName)
-			}
-
-			validatedFPD, errL := deps.getValidatedFPDBidderData(&inputReq, fpdFile.InputBiddersFPD)
-			assert.Equal(t, inputReq, inputReqCopy, "Original request should not be modified")
-
-			assert.Equalf(t, validatedFPD, fpdFile.ResultBiddersFPD, "Incorrect fpd")
-
-			if len(fpdFile.ValidationErrors) != 0 {
-				assert.Equal(t, len(fpdFile.ValidationErrors), len(errL), "Incorrect number of expected errors")
-
-				//subject to change to for loop
-				for i := range errL {
-					assert.Contains(t, errL[i].Error(), fpdFile.ValidationErrors[i], "Validation Error is incorrect")
-				}
-			} else {
-				assert.Len(t, errL, 0, "Error list should be empty")
-			}
-		}
-	}
-}
-
 func TestFPDHoldAuction(t *testing.T) {
 
 	deps := &endpointDeps{

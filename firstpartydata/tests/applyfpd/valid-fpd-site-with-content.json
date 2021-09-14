@@ -109,17 +109,6 @@
       "devicetype": 1,
       "ifa": "AA000DFE74168477C70D291f574D344790E0BB11"
     },
-    "user": {
-      "id": "apnUserId",
-      "ext": {
-        "data": {
-          "moreFpd": {
-            "fpd": 567
-          },
-          "testUserFpd": "testuser"
-        }
-      }
-    },
     "test": 1,
     "at": 1,
     "tmax": 5000
@@ -148,24 +137,10 @@
             }
           }
         }
-      },
-      "user": {
-        "id": "apnUserId",
-        "keywords": "fpd user keywords",
-        "ext": {
-          "data": {
-            "moreFpd": {
-              "fpd": 567
-            }
-          }
-        }
       }
     }
   },
   "firstPartyData": {
-    "user": {
-      "testUserFpd": "testuser"
-    },
     "site": {
       "testSiteFpd": "testSite"
     },
@@ -177,16 +152,6 @@
       {
         "id": "siteData2",
         "name": "siteName2"
-      }
-    ],
-    "userData": [
-      {
-        "id": "userData1",
-        "name": "userName1"
-      },
-      {
-        "id": "userData2",
-        "name": "userName2"
       }
     ]
   }
