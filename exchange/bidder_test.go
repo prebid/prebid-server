@@ -68,7 +68,6 @@ func TestSingleBidder(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	ctx = context.WithValue(ctx, DebugContextKey, true)
 
 	for _, test := range testCases {
 		mockBidderResponse := &adapters.BidderResponse{
@@ -163,7 +162,6 @@ func TestRequestBidRemovesSensitiveHeaders(t *testing.T) {
 
 	debugInfo := &config.DebugInfo{Allow: true}
 	ctx := context.Background()
-	ctx = context.WithValue(ctx, DebugContextKey, true)
 
 	bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, debugInfo)
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
@@ -204,7 +202,6 @@ func TestSetGPCHeader(t *testing.T) {
 
 	debugInfo := &config.DebugInfo{Allow: true}
 	ctx := context.Background()
-	ctx = context.WithValue(ctx, DebugContextKey, true)
 
 	bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, debugInfo)
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
@@ -242,7 +239,6 @@ func TestSetGPCHeaderNil(t *testing.T) {
 
 	debugInfo := &config.DebugInfo{Allow: true}
 	ctx := context.Background()
-	ctx = context.WithValue(ctx, DebugContextKey, true)
 
 	bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, debugInfo)
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))

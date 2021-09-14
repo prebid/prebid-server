@@ -690,10 +690,10 @@ func getExtTargetData(requestExt *openrtb_ext.ExtRequest, cacheInstructions *ext
 // also sets the debugLog information
 func getDebugInfo(bidRequest *openrtb2.BidRequest, requestExt *openrtb_ext.ExtRequest, accountDebugFlag bool, debugLog *DebugLog) (bool, bool, *DebugLog) {
 	requestDebugAllow := parseRequestDebugValues(bidRequest, requestExt)
-
 	debugLog = setDebugLogValues(accountDebugFlag, debugLog)
-	responseDebugAllow := debugLog.DebugEnabledOrOverridden || (requestDebugAllow && accountDebugFlag)
-	accountDebugAllow := accountDebugFlag && (debugLog.DebugEnabledOrOverridden || requestDebugAllow)
+
+	responseDebugAllow := (requestDebugAllow && accountDebugFlag) || debugLog.DebugEnabledOrOverridden
+	accountDebugAllow := (requestDebugAllow && accountDebugFlag) || (debugLog.DebugEnabledOrOverridden && accountDebugFlag)
 
 	return responseDebugAllow, accountDebugAllow, debugLog
 }

@@ -321,9 +321,6 @@ func TestDebugBehaviour(t *testing.T) {
 			openrtb_ext.BidderAppnexus: adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, &config.DebugInfo{Allow: test.debugData.bidderLevelDebugAllowed}),
 		}
 
-		//request level debug key
-		ctx = context.WithValue(ctx, DebugContextKey, test.in.debug)
-
 		bidRequest.Test = test.in.test
 
 		if test.in.debug {
@@ -2136,7 +2133,6 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		auctionRequest.StartTime = time.Unix(0, spec.StartTime*1e+6)
 	}
 	ctx := context.Background()
-	ctx = context.WithValue(ctx, DebugContextKey, true)
 
 	bid, err := ex.HoldAuction(ctx, auctionRequest, debugLog)
 	responseTimes := extractResponseTimes(t, filename, bid)

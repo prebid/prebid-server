@@ -2224,6 +2224,118 @@ func TestRemoveUnpermissionedEidsUnmarshalErrors(t *testing.T) {
 	}
 }
 
+func TestGetDebugInfo(t *testing.T) {
+	type testInput struct {
+		debugEnabledOrOverridden bool
+		accountDebugFlag         bool
+	}
+	type testOut struct {
+		responseDebugAllow bool
+		accountDebugAllow  bool
+		debugLog           *DebugLog
+	}
+	type testCase struct {
+		in       testInput
+		expected testOut
+	}
+
+	testGroups := []struct {
+		desc   string
+		bidReq *openrtb2.BidRequest
+		tests  []testCase
+	}{
+		{
+			"Bid request doesn't call for debug info",
+			&openrtb2.BidRequest{Test: 0},
+			[]testCase{
+				{
+					testInput{debugEnabledOrOverridden: false, accountDebugFlag: false},
+					testOut{
+						responseDebugAllow: false,
+						accountDebugAllow:  false,
+						debugLog:           &DebugLog{Enabled: false},
+					},
+				},
+				{
+					testInput{debugEnabledOrOverridden: false, accountDebugFlag: true},
+					testOut{
+						responseDebugAllow: false,
+						accountDebugAllow:  false,
+						debugLog:           &DebugLog{Enabled: true},
+					},
+				},
+				{
+					testInput{debugEnabledOrOverridden: true, accountDebugFlag: false},
+					testOut{
+						responseDebugAllow: true,
+						accountDebugAllow:  false,
+						debugLog:           &DebugLog{DebugEnabledOrOverridden: true, Enabled: true},
+					},
+				},
+				{
+					testInput{debugEnabledOrOverridden: true, accountDebugFlag: true},
+					testOut{
+						responseDebugAllow: true,
+						accountDebugAllow:  true,
+						debugLog:           &DebugLog{DebugEnabledOrOverridden: true, Enabled: true},
+					},
+				},
+			},
+		},
+		{
+			"Bid request requires debug info",
+			&openrtb2.BidRequest{Test: 1},
+			[]testCase{
+				{
+					testInput{debugEnabledOrOverridden: false, accountDebugFlag: false},
+					testOut{
+						responseDebugAllow: false,
+						accountDebugAllow:  false,
+						debugLog:           &DebugLog{Enabled: false},
+					},
+				},
+				{
+					testInput{debugEnabledOrOverridden: false, accountDebugFlag: true},
+					testOut{
+						responseDebugAllow: true,
+						accountDebugAllow:  true,
+						debugLog:           &DebugLog{Enabled: true},
+					},
+				},
+				{
+					testInput{debugEnabledOrOverridden: true, accountDebugFlag: false},
+					testOut{
+						responseDebugAllow: true,
+						accountDebugAllow:  false,
+						debugLog:           &DebugLog{DebugEnabledOrOverridden: true, Enabled: true},
+					},
+				},
+				{
+					testInput{debugEnabledOrOverridden: true, accountDebugFlag: true},
+					testOut{
+						responseDebugAllow: true,
+						accountDebugAllow:  true,
+						debugLog:           &DebugLog{DebugEnabledOrOverridden: true, Enabled: true},
+					},
+				},
+			},
+		},
+	}
+	for _, group := range testGroups {
+		for i, tc := range group.tests {
+			inDebugLog := &DebugLog{DebugEnabledOrOverridden: tc.in.debugEnabledOrOverridden}
+
+			// run
+			responseDebugAllow, accountDebugAllow, debugLog := getDebugInfo(group.bidReq, nil, tc.in.accountDebugFlag, inDebugLog)
+
+			// assertions
+			assert.Equal(t, tc.expected.responseDebugAllow, responseDebugAllow, "%s - %d", group.desc, i)
+			assert.Equal(t, tc.expected.accountDebugAllow, accountDebugAllow, "%s - %d", group.desc, i)
+			assert.Equal(t, tc.expected.debugLog, debugLog, "%s - %d", group.desc, i)
+		}
+	}
+}
+
 func TestRemoveUnpermissionedEidsEmptyValidations(t *testing.T) {
 	testCases := []struct {
 		description string

@@ -29,10 +29,6 @@ import (
 	"github.com/prebid/prebid-server/stored_requests"
 )
 
-type ContextKey string
-
-const DebugContextKey = ContextKey("debugInfo")
-
 type extCacheInstructions struct {
 	cacheBids, cacheVAST, returnCreative bool
 }

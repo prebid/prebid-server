@@ -179,7 +179,6 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb2.B
 		// If this is a test bid, capture debugging info from the requests.
 		// Write debug data to ext in case if:
 		// - headerDebugAllowed (debug override header specified correct) - it overrides all other debug restrictions
-		// - debugContextKey (url param) in true
 		// - account debug is allowed
 		// - bidder debug is allowed
 		if headerDebugAllowed {
