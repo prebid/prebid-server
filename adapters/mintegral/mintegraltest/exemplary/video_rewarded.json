@@ -83,7 +83,7 @@
                   4
                 ],
                 "ext": {
-                  "orientation": "h",
+                  "orientation": 2,
                   "placementtype": "rewarded",
                   "skip": 0,
                   "skipdelay": 0

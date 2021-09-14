@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/config"
 	"net/http"
+
+	"github.com/prebid/prebid-server/config"
 
 	openrtb "github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
@@ -24,11 +25,11 @@ const (
 )
 
 // Orientation ...
-type Orientation string
+type Orientation int
 
 const (
-	Horizontal Orientation = "h"
-	Vertical   Orientation = "v"
+	Vertical   Orientation = 1
+	Horizontal Orientation = 2
 )
 
 // SKAN IDs must be lower case
@@ -52,7 +53,7 @@ func (a *adapter) SkipNoCookies() bool {
 
 type mintegralVideoExt struct {
 	PlacementType string `json:"placementtype"`
-	Orientation   string `json:"orientation"`
+	Orientation   int    `json:"orientation"`
 	Skip          int    `json:"skip"`
 	SkipDelay     int    `json:"skipdelay"`
 }
@@ -167,7 +168,7 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 			videoCopy := *thisImp.Video
 			videoExt := mintegralVideoExt{
 				PlacementType: string(placementType),
-				Orientation:   string(orientation),
+				Orientation:   int(orientation),
 				Skip:          mintegralExt.Video.Skip,
 				SkipDelay:     mintegralExt.Video.SkipDelay,
 			}
