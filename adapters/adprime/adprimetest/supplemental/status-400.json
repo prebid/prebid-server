@@ -74,13 +74,13 @@
             }
 		},
 		"mockResponse": {
-			"status": 404,
+			"status": 400,
 			"body": {}
 		}
     }],
     "expectedMakeBidsErrors": [
         {
-          "value": "Page not found: 404. Run with request.debug = 1 for more info",
+          "value": "Unexpected status code: 400. Run with request.debug = 1 for more info",
           "comparison": "literal"
         }
     ]

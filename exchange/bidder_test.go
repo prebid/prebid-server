@@ -26,6 +26,7 @@ import (
 	"github.com/prebid/prebid-server/metrics"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/version"
 	"github.com/prebid/prebid-server/util/jsonutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -146,6 +147,12 @@ func TestRequestBidRemovesSensitiveHeaders(t *testing.T) {
 	server := httptest.NewServer(mockHandler(200, "getBody", "responseJson"))
 	defer server.Close()
 
+	oldVer := version.Ver
+	version.Ver = "test-version"
+	defer func() {
+		version.Ver = oldVer
+	}()
+
 	requestHeaders := http.Header{}
 	requestHeaders.Add("Content-Type", "application/json")
 	requestHeaders.Add("Authorization", "anySecret")
@@ -174,7 +181,7 @@ func TestRequestBidRemovesSensitiveHeaders(t *testing.T) {
 		{
 			Uri:            server.URL,
 			RequestBody:    "requestJson",
-			RequestHeaders: map[string][]string{"Content-Type": {"application/json"}},
+			RequestHeaders: map[string][]string{"Content-Type": {"application/json"}, "X-Prebid": {"pbs-go/test-version"}},
 			ResponseBody:   "responseJson",
 			Status:         200,
 		},
@@ -215,7 +222,7 @@ func TestSetGPCHeader(t *testing.T) {
 		{
 			Uri:            server.URL,
 			RequestBody:    "requestJson",
-			RequestHeaders: map[string][]string{"Content-Type": {"application/json"}, "Sec-Gpc": {"1"}},
+			RequestHeaders: map[string][]string{"Content-Type": {"application/json"}, "X-Prebid": {"pbs-go/unknown"}, "Sec-Gpc": {"1"}},
 			ResponseBody:   "responseJson",
 			Status:         200,
 		},
@@ -253,7 +260,7 @@ func TestSetGPCHeaderNil(t *testing.T) {
 		{
 			Uri:            server.URL,
 			RequestBody:    "requestJson",
-			RequestHeaders: map[string][]string{"Sec-Gpc": {"1"}},
+			RequestHeaders: map[string][]string{"X-Prebid": {"pbs-go/unknown"}, "Sec-Gpc": {"1"}},
 			ResponseBody:   "responseJson",
 			Status:         200,
 		},
