@@ -430,6 +430,7 @@ func TestExplicitUserId(t *testing.T) {
 	})
 
 	endpoint, _ := NewEndpoint(
+		fakeUUIDGenerator{},
 		ex,
 		newParamsValidator(t),
 		empty_fetcher.EmptyFetcher{},
@@ -464,6 +465,7 @@ func doRequest(t *testing.T, test testCase) (int, string) {
 	mockExchange := newMockBidExchange(test.Config.MockBidder, test.Config.CurrencyRates)
 
 	endpoint, _ := NewEndpoint(
+		fakeUUIDGenerator{},
 		mockExchange,
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
@@ -534,6 +536,7 @@ func doBadAliasRequest(t *testing.T, filename string, expectMsg string) {
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
 	endpoint, _ := NewEndpoint(
+		fakeUUIDGenerator{},
 		&nobidExchange{},
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
@@ -584,6 +587,7 @@ func TestNilExchange(t *testing.T) {
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
 	_, err := NewEndpoint(
+		fakeUUIDGenerator{},
 		nil,
 		newParamsValidator(t),
 		empty_fetcher.EmptyFetcher{},
@@ -604,6 +608,7 @@ func TestNilValidator(t *testing.T) {
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
 	_, err := NewEndpoint(
+		fakeUUIDGenerator{},
 		&nobidExchange{},
 		nil,
 		empty_fetcher.EmptyFetcher{},
@@ -625,6 +630,7 @@ func TestExchangeError(t *testing.T) {
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
 	endpoint, _ := NewEndpoint(
+		fakeUUIDGenerator{},
 		&brokenExchange{},
 		newParamsValidator(t),
 		empty_fetcher.EmptyFetcher{},
@@ -747,6 +753,7 @@ func TestImplicitIPsEndToEnd(t *testing.T) {
 			},
 		}
 		endpoint, _ := NewEndpoint(
+			fakeUUIDGenerator{},
 			exchange,
 			newParamsValidator(t),
 			&mockStoredReqFetcher{},
@@ -941,6 +948,7 @@ func TestImplicitDNTEndToEnd(t *testing.T) {
 	for _, test := range testCases {
 		exchange := &nobidExchange{}
 		endpoint, _ := NewEndpoint(
+			fakeUUIDGenerator{},
 			exchange,
 			newParamsValidator(t),
 			&mockStoredReqFetcher{},
@@ -1094,6 +1102,7 @@ func TestParseImpInfoMultipleImpressions(t *testing.T) {
 // Test the stored request functionality
 func TestStoredRequests(t *testing.T) {
 	deps := &endpointDeps{
+		fakeUUIDGenerator{},
 		&nobidExchange{},
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
@@ -1140,10 +1149,81 @@ func TestStoredRequests(t *testing.T) {
 	}
 }
 
+func TestStoredRequestGenerateUuid(t *testing.T) {
+	uuid := "foo"
+
+	deps := &endpointDeps{
+		fakeUUIDGenerator{id: "foo", err: nil},
+		&nobidExchange{},
+		newParamsValidator(t),
+		&mockStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: maxSize},
+		&metricsConfig.DummyMetricsEngine{},
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		false,
+		[]byte{},
+		openrtb_ext.BuildBidderMap(),
+		nil,
+		nil,
+		hardcodedResponseIPValidator{response: true},
+	}
+
+	req := &openrtb2.BidRequest{}
+
+	testCases := []struct {
+		description            string
+		givenRawData           string
+		givenGenerateRequestID bool
+		expectedID             string
+	}{
+		{
+			description:            "GenerateRequestID is true, rawData is an app request, and stored bid we should generate uuid",
+			givenRawData:           testStoredRequestsUuid[2],
+			givenGenerateRequestID: true,
+			expectedID:             uuid,
+		},
+		{
+			description:            "GenerateRequestID is true, rawData is an app request, but no stored bid, we should not generate uuid",
+			givenRawData:           testStoredRequestsUuid[0],
+			givenGenerateRequestID: true,
+			expectedID:             "ThisID",
+		},
+		{
+			description:            "GenerateRequestID is false so we should not generate uuid",
+			givenRawData:           testStoredRequestsUuid[0],
+			givenGenerateRequestID: false,
+			expectedID:             "ThisID",
+		},
+		{
+			description:            "GenerateRequestID is true, but rawData is a site request, we should not generate uuid",
+			givenRawData:           testStoredRequestsUuid[1],
+			givenGenerateRequestID: true,
+			expectedID:             "ThisID",
+		},
+	}
+
+	for _, test := range testCases {
+		deps.cfg.GenerateRequestID = test.givenGenerateRequestID
+		impInfo, errs := parseImpInfo([]byte(test.givenRawData))
+		assert.Empty(t, errs, test.description)
+		newRequest, _, errList := deps.processStoredRequests(context.Background(), json.RawMessage(test.givenRawData), impInfo)
+		assert.Empty(t, errList, test.description)
+
+		if err := json.Unmarshal(newRequest, req); err != nil {
+			t.Errorf("processStoredRequests Error: %s", err.Error())
+		}
+		assert.Equalf(t, test.expectedID, req.ID, "The Bid Request ID is incorrect: %s\n", test.description)
+	}
+}
+
 // TestOversizedRequest makes sure we behave properly when the request size exceeds the configured max.
 func TestOversizedRequest(t *testing.T) {
 	reqBody := validRequest(t, "site.json")
 	deps := &endpointDeps{
+		fakeUUIDGenerator{},
 		&nobidExchange{},
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
@@ -1179,6 +1259,7 @@ func TestOversizedRequest(t *testing.T) {
 func TestRequestSizeEdgeCase(t *testing.T) {
 	reqBody := validRequest(t, "site.json")
 	deps := &endpointDeps{
+		fakeUUIDGenerator{},
 		&nobidExchange{},
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
@@ -1213,6 +1294,7 @@ func TestRequestSizeEdgeCase(t *testing.T) {
 // TestNoEncoding prevents #231.
 func TestNoEncoding(t *testing.T) {
 	endpoint, _ := NewEndpoint(
+		fakeUUIDGenerator{},
 		&mockExchange{},
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
@@ -1288,6 +1370,7 @@ func TestExplicitAMP(t *testing.T) {
 // TestContentType prevents #328
 func TestContentType(t *testing.T) {
 	endpoint, _ := NewEndpoint(
+		fakeUUIDGenerator{},
 		&mockExchange{},
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
@@ -1607,6 +1690,7 @@ func TestValidateImpExt(t *testing.T) {
 	}
 
 	deps := &endpointDeps{
+		fakeUUIDGenerator{},
 		&nobidExchange{},
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
@@ -1653,6 +1737,7 @@ func validRequest(t *testing.T, filename string) string {
 
 func TestCurrencyTrunc(t *testing.T) {
 	deps := &endpointDeps{
+		fakeUUIDGenerator{},
 		&nobidExchange{},
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
@@ -1697,6 +1782,7 @@ func TestCurrencyTrunc(t *testing.T) {
 
 func TestCCPAInvalid(t *testing.T) {
 	deps := &endpointDeps{
+		fakeUUIDGenerator{},
 		&nobidExchange{},
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
@@ -1745,6 +1831,7 @@ func TestCCPAInvalid(t *testing.T) {
 
 func TestNoSaleInvalid(t *testing.T) {
 	deps := &endpointDeps{
+		fakeUUIDGenerator{},
 		&nobidExchange{},
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
@@ -1796,6 +1883,7 @@ func TestValidateSourceTID(t *testing.T) {
 	}
 
 	deps := &endpointDeps{
+		fakeUUIDGenerator{},
 		&nobidExchange{},
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
@@ -1837,6 +1925,7 @@ func TestValidateSourceTID(t *testing.T) {
 
 func TestSChainInvalid(t *testing.T) {
 	deps := &endpointDeps{
+		fakeUUIDGenerator{},
 		&nobidExchange{},
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
@@ -2056,6 +2145,7 @@ func TestValidateAndFillSourceTID(t *testing.T) {
 
 func TestEidPermissionsInvalid(t *testing.T) {
 	deps := &endpointDeps{
+		fakeUUIDGenerator{},
 		&nobidExchange{},
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
@@ -2307,6 +2397,7 @@ func TestIOS14EndToEnd(t *testing.T) {
 	exchange := &nobidExchange{}
 
 	endpoint, _ := NewEndpoint(
+		fakeUUIDGenerator{},
 		exchange,
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
@@ -2334,6 +2425,7 @@ func TestIOS14EndToEnd(t *testing.T) {
 func TestAuctionWarnings(t *testing.T) {
 	reqBody := validRequest(t, "us-privacy-invalid.json")
 	deps := &endpointDeps{
+		fakeUUIDGenerator{},
 		&warningsCheckExchange{},
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
@@ -2373,6 +2465,7 @@ func TestAuctionWarnings(t *testing.T) {
 func TestParseRequestParseImpInfoError(t *testing.T) {
 	reqBody := validRequest(t, "imp-info-invalid.json")
 	deps := &endpointDeps{
+		fakeUUIDGenerator{},
 		&warningsCheckExchange{},
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
@@ -3452,6 +3545,105 @@ var testStoredImps = []string{
 	``,
 }
 
+var testStoredRequestsUuid = []string{
+	`{
+		"id": "ThisID",
+		"app": {
+			"id": "123"
+		},
+		"imp": [
+			{
+				"video":{
+					"h":300,
+					"w":200
+				},
+				"ext": {
+					"prebid": {
+						"storedrequest": {
+							"id": "1"
+						},
+						"options": {
+							"echovideoattrs": true
+						}
+					}
+				}
+			}
+		],
+		"ext": {
+			"prebid": {
+				"cache": {
+					"markup": 1
+				},
+				"targeting": {
+				}
+			}
+		}
+	}`,
+	`{
+		"id": "ThisID",
+		"site": {
+			"page": "prebid.org"
+		},
+		"imp": [
+			{
+				"id": "adUnit2",
+				"ext": {
+					"prebid": {
+						"storedrequest": {
+							"id": "1"
+						},
+						"options": {
+							"echovideoattrs": true
+						}
+					},
+					"appnexus": {
+						"placementId": "def",
+						"trafficSourceCode": "mysite.com",
+						"reserve": null
+					},
+					"rubicon": null
+				}
+			}
+		],
+		"ext": {
+			"prebid": {
+				"cache": {
+					"markup": 1
+				},
+				"targeting": {
+				}
+			}
+		}
+	}`,
+	`{
+		"id": "ThisID",
+		"app": {
+			"id": "123"
+		},
+		"imp": [
+			{
+				"ext": {
+					"prebid": {
+						"storedrequest": {
+							"id": "2"
+						},
+						"options": {
+							"echovideoattrs": false
+						}
+					}
+				}
+			}
+		],
+		"ext": {
+			"prebid": {
+				"storedrequest": {
+					"id": "2"
+				}
+			}
+		}
+	}`,
+}
+
 type mockStoredReqFetcher struct {
 }
 
@@ -3513,4 +3705,13 @@ type hardcodedResponseIPValidator struct {
 
 func (v hardcodedResponseIPValidator) IsValid(net.IP, iputil.IPVersion) bool {
 	return v.response
+}
+
+type fakeUUIDGenerator struct {
+	id  string
+	err error
+}
+
+func (f fakeUUIDGenerator) Generate() (string, error) {
+	return f.id, f.err
 }
