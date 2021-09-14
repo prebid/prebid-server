@@ -82,7 +82,7 @@
                   4
                 ],
                 "ext": {
-                  "orientation": "v",
+                  "orientation": 1,
                   "placementtype": "interstitial",
                   "skip": 1,
                   "skipdelay": 5
