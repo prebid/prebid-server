@@ -26,13 +26,14 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var err error
-	var bidderExt adapters.ExtImpBidder
-	var iqzoneExt openrtb_ext.ImpExtIQZone
 	var adapterRequests []*adapters.RequestData
 
 	reqCopy := *request
 	for _, imp := range request.Imp {
 		reqCopy.Imp = []openrtb2.Imp{imp}
+
+		var bidderExt adapters.ExtImpBidder
+		var iqzoneExt openrtb_ext.ImpExtIQZone
 
 		if err = json.Unmarshal(reqCopy.Imp[0].Ext, &bidderExt); err != nil {
 			return nil, append(errs, err)
