@@ -130,6 +130,11 @@ func DropElement(extension []byte, elementNames ...string) ([]byte, error) {
 }
 
 func SetElement(originDataInput []byte, setValue []byte, keys ...string) ([]byte, error) {
+	//only one key is now supported
+	//can set new element to existing top level element
+	//can create new top level element
+	//element may have any type
+
 	if len(keys) != 1 {
 		return originDataInput, errors.New("only one key is now supported")
 	}

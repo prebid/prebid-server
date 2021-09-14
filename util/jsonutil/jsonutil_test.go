@@ -205,6 +205,15 @@ func TestSetElement(t *testing.T) {
 			errorContains: "",
 		},
 		{
+			description:   "Set Object Element Nested Exists",
+			input:         []byte(`{"data":{"sitedata":"mysitedata"}}`),
+			setValue:      []byte(`{"somefpd":{"id":"test","present":true}}`),
+			setTo:         []string{"data"},
+			output:        []byte(`{"data":{"sitedata":"mysitedata","somefpd":{"id":"test","present":true}}}`),
+			errorExpected: false,
+			errorContains: "",
+		},
+		{
 			description:   "Set Element Nested Doesn't Exists",
 			input:         []byte(`{"data":{"sitedata":"mysitedata"}}`),
 			setValue:      []byte(`{"somefpd":"fpdDataTest"}`),
