@@ -104,10 +104,23 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
+   
+    
+	type Bird struct {
+		Id   string
+		Name string
+		Huhu string
+	}
 
+	var bird Bird
+
+    json.Unmarshal([]byte(response.Body), &bird)
+
+	fmt.Println("BID",bird.Id)
 	
-
+    	
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
+	
 
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
