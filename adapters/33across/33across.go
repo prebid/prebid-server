@@ -71,10 +71,16 @@ func (a *TtxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapter
 	for i := 0; i < len(request.Imp); i++ {
 		if impCopy, err := makeImps(request.Imp[i]); err == nil {
 			var impExt Ext
-			json.Unmarshal(impCopy.Ext, &impExt)
 
-			impKey := impExt.Ttx.Prod + impExt.Ttx.Zoneid
-			groupedImps[impKey] = append(groupedImps[impKey], impCopy)
+			// Skip over imps whose extensions cannot be read since
+			// we cannot glean Prod or ZoneID which are required to
+			// group together. However let's not block request creation.
+			if err := json.Unmarshal(impCopy.Ext, &impExt); err == nil {
+				impKey := impExt.Ttx.Prod + impExt.Ttx.Zoneid
+				groupedImps[impKey] = append(groupedImps[impKey], impCopy)
+			} else {
+				errs = append(errs, err)
+			}
 		} else {
 			errs = append(errs, err)
 		}
