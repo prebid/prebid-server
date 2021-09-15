@@ -15,6 +15,8 @@ import (
 	"time"
 
 	nr "github.com/prebid/prebid-server/monitoring/newrelic"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/buger/jsonparser"
 	jsonpatch "github.com/evanphx/json-patch"
@@ -157,6 +159,22 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		return
 	}
 	warnings := errortypes.WarningOnly(errL)
+
+	// Tapjoy added request duration feature
+	if reqStartTimeHeader := r.Header.Get("X-Request-Time"); reqStartTimeHeader != "" {
+		reqStartTime, err := strconv.ParseInt(reqStartTimeHeader, 10, 64)
+		if err == nil {
+			reqDuration := time.Now().Sub(time.Unix(reqStartTime, 0)).Milliseconds()
+
+			// report to honeycomb
+			trace.SpanFromContext(ctx).SetAttributes(
+				attribute.Int64("req_start", reqStartTime),
+				attribute.Int64("req_duration", reqDuration),
+			)
+
+			req.TMax = req.TMax - (reqDuration + 10) // adding 10ms as a response threshold duration
+		}
+	}
 
 	timeout := deps.cfg.AuctionTimeouts.LimitAuctionTimeout(time.Duration(req.TMax) * time.Millisecond)
 	if timeout > 0 {
