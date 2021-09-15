@@ -340,7 +340,9 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 
 func applyBidderInfoConfigOverrides(bidderInfos config.BidderInfos, adaptersCfg map[string]config.Adapter) error {
 	for bidderName, bidderInfo := range bidderInfos {
-		if adapterCfg, exists := adaptersCfg[bidderName]; exists {
+		// bidder name from bidderInfos is case-sensitive, but bidder name from adaptersCfg
+		// is always expressed as lower case. need to adapt for the difference here.
+		if adapterCfg, exists := adaptersCfg[strings.ToLower(bidderName)]; exists {
 			bidderInfo.Syncer = adapterCfg.Syncer.Override(bidderInfo.Syncer)
 
 			// validate and try to apply the legacy usersync_url configuration in attempt to provide
