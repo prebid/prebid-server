@@ -35,11 +35,19 @@
         "ext": {
           "bidder": {
             "region": "us_east",
-            "placementtype": "rewarded"
+            "placementtype": "rewarded",
+            "header_bidding": 1,
+            "mediator_id": "test_mediator_id"
           }
         }
       }
-    ]
+    ],
+    "source": {
+      "fd": 5,
+      "ext": {
+        "test": "yolo!"
+      }
+    }
   },
   "httpCalls": [
     {
@@ -83,7 +91,15 @@
                 }
               }
             }
-          ]
+          ],
+          "source": {
+            "fd": 5,
+            "ext": {
+              "header_bidding": 1,
+              "mediator_id": "test_mediator_id",
+              "test": "yolo!"
+            }
+          }
         }
       },
       "mockResponse": {

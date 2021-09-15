@@ -6,4 +6,6 @@ type ExtImpMoloco struct {
 	Region         string `json:"region"`          // this field added to support multiple moloco endpoints
 	SKADNSupported bool   `json:"skadn_supported"` // enable skadn ext parameters
 	MRAIDSupported bool   `json:"mraid_supported"`
+	HeaderBidding  int    `json:"header_bidding"`
+	MediatorID     string `json:"mediator_id"`
 }
