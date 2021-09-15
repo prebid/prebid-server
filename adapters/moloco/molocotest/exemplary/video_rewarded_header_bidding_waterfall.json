@@ -35,8 +35,8 @@
         "ext": {
           "bidder": {
             "region": "us_east",
-            "placementtype": "interstitial",
-            "header_bidding": 1,
+            "placementtype": "rewarded",
+            "header_bidding": 0,
             "mediator_id": "test_mediator_id"
           }
         }
@@ -81,14 +81,14 @@
                   4
                 ],
                 "ext": {
-                  "placementtype": "interstitial"
+                  "placementtype": "rewarded"
                 }
               }
             }
           ],
           "source": {
             "ext": {
-              "header_bidding": 1,
+              "header_bidding": 0,
               "mediator_id": "test_mediator_id"
             }
           }
