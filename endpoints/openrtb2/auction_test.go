@@ -1180,9 +1180,15 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 		expectedID             string
 	}{
 		{
-			description:            "GenerateRequestID is true, rawData is an app request, and stored bid we should generate uuid",
+			description:            "GenerateRequestID is true, rawData is an app request and has stored bid we should generate uuid",
 			givenRawData:           testStoredRequestsUuid[2],
 			givenGenerateRequestID: true,
+			expectedID:             uuid,
+		},
+		{
+			description:            "GenerateRequestID is false, rawData is an app request and has stored bid, but bidrequestID is the macro {{UUID}}, so we should generate uuid",
+			givenRawData:           testStoredRequestsUuid[2],
+			givenGenerateRequestID: false,
 			expectedID:             uuid,
 		},
 		{
@@ -1192,7 +1198,7 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 			expectedID:             "ThisID",
 		},
 		{
-			description:            "GenerateRequestID is false so we should not generate uuid",
+			description:            "GenerateRequestID is false and macro ID is not present, so we should not generate uuid",
 			givenRawData:           testStoredRequestsUuid[0],
 			givenGenerateRequestID: false,
 			expectedID:             "ThisID",
@@ -3616,7 +3622,7 @@ var testStoredRequestsUuid = []string{
 		}
 	}`,
 	`{
-		"id": "ThisID",
+		"id": "{{UUID}}",
 		"app": {
 			"id": "123"
 		},
