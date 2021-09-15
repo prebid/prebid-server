@@ -1210,6 +1210,7 @@ func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *m
 	metrics := metrics.NewMetrics(gometrics.NewRegistry(), openrtb_ext.CoreBidderNames(), config.DisabledMetrics{}, nil)
 
 	deps := &endpointDeps{
+		fakeUUIDGenerator{},
 		ex,
 		newParamsValidator(t),
 		&mockVideoStoredReqFetcher{},
@@ -1252,6 +1253,7 @@ func (m *mockAnalyticsModule) LogNotificationEventObject(ne *analytics.Notificat
 
 func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 	deps := &endpointDeps{
+		fakeUUIDGenerator{},
 		ex,
 		newParamsValidator(t),
 		&mockVideoStoredReqFetcher{},
@@ -1274,6 +1276,7 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 
 func mockDepsAppendBidderNames(t *testing.T, ex *mockExchangeAppendBidderNames) *endpointDeps {
 	deps := &endpointDeps{
+		fakeUUIDGenerator{},
 		ex,
 		newParamsValidator(t),
 		&mockVideoStoredReqFetcher{},
@@ -1296,6 +1299,7 @@ func mockDepsAppendBidderNames(t *testing.T, ex *mockExchangeAppendBidderNames) 
 
 func mockDepsNoBids(t *testing.T, ex *mockExchangeVideoNoBids) *endpointDeps {
 	edep := &endpointDeps{
+		fakeUUIDGenerator{},
 		ex,
 		newParamsValidator(t),
 		&mockVideoStoredReqFetcher{},

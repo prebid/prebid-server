@@ -31,6 +31,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/prebid-server/util/uuidutil"
 )
 
 const defaultAmpRequestTimeoutMillis = 900
@@ -45,6 +46,7 @@ type AmpResponse struct {
 // NewAmpEndpoint modifies the OpenRTB endpoint to handle AMP requests. This will basically modify the parsing
 // of the request, and the return value, using the OpenRTB machinery to handle everything in between.
 func NewAmpEndpoint(
+	uuidGenerator uuidutil.UUIDGenerator,
 	ex exchange.Exchange,
 	validator openrtb_ext.BidderParamValidator,
 	requestsById stored_requests.Fetcher,
@@ -69,6 +71,7 @@ func NewAmpEndpoint(
 	}
 
 	return httprouter.Handle((&endpointDeps{
+		uuidGenerator,
 		ex,
 		validator,
 		requestsById,
@@ -343,6 +346,15 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 	if err := json.Unmarshal(requestJSON, req); err != nil {
 		errs = []error{err}
 		return
+	}
+
+	if deps.cfg.GenerateRequestID {
+		newBidRequestId, err := deps.uuidGenerator.Generate()
+		if err != nil {
+			errs = []error{err}
+			return
+		}
+		req.ID = newBidRequestId
 	}
 
 	if ampParams.Debug {

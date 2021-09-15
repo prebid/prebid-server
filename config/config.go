@@ -83,6 +83,8 @@ type Configuration struct {
 	AutoGenSourceTID bool `mapstructure:"auto_gen_source_tid"`
 	//When true, new bid id will be generated in seatbid[].bid[].ext.prebid.bidid and used in event urls instead
 	GenerateBidID bool `mapstructure:"generate_bid_id"`
+	// GenerateRequestID overrides the bidrequest.id in an AMP Request or an App Stored Request with a generated UUID if set to true. The default is false.
+	GenerateRequestID bool `mapstructure:"generate_request_id"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
@@ -944,6 +946,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("certificates_file", "")
 	v.SetDefault("auto_gen_source_tid", true)
 	v.SetDefault("generate_bid_id", false)
+	v.SetDefault("generate_request_id", false)
 
 	v.SetDefault("request_timeout_headers.request_time_in_queue", "")
 	v.SetDefault("request_timeout_headers.request_timeout_in_queue", "")
