@@ -115,7 +115,7 @@ func TestExternalCacheURLValidate(t *testing.T) {
 	}
 }
 
-	func TestDefaults(t *testing.T) {
+func TestDefaults(t *testing.T) {
 	cfg, _ := newDefaultConfig(t)
 
 	cmpInts(t, "port", cfg.Port, 8000)

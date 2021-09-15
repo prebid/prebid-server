@@ -938,7 +938,7 @@ func TestGetVideoEventTracking(t *testing.T) {
 			name: "valid_scenario",
 			args: args{
 				trackerURL: "http://company.tracker.com?eventId=[EVENT_ID]&appbundle=[DOMAIN]",
-				bid: &openrtb2.Bid{
+				bid:        &openrtb2.Bid{
 					// AdM: vastXMLWith2Creatives,
 				},
 				req: &openrtb2.BidRequest{
