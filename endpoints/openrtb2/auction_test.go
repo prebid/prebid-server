@@ -2915,6 +2915,7 @@ func TestValidateNativeAssetData(t *testing.T) {
 func TestFPDHoldAuction(t *testing.T) {
 
 	deps := &endpointDeps{
+		fakeUUIDGenerator{},
 		&warningsCheckExchange{},
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
