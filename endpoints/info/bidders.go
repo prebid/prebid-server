@@ -27,25 +27,16 @@ func NewBiddersEndpoint(bidders config.BidderInfos, aliases map[string]string) h
 
 	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		var writeErr error
-
-		enabledOnly, exists := readEnabledOnly(r)
-
-		if !exists {
-			// Backwards compatibility. PBS would previously respond with all enabled bidders.
+		switch readEnabledOnly(r) {
+		case "true":
+			w.Header().Set("Content-Type", "application/json")
+			_, writeErr = w.Write(responseEnabledOnly)
+		case "false":
 			w.Header().Set("Content-Type", "application/json")
 			_, writeErr = w.Write(responseAll)
-		} else {
-			switch enabledOnly {
-			case "true":
-				w.Header().Set("Content-Type", "application/json")
-				_, writeErr = w.Write(responseEnabledOnly)
-			case "false":
-				w.Header().Set("Content-Type", "application/json")
-				_, writeErr = w.Write(responseAll)
-			default:
-				w.WriteHeader(http.StatusBadRequest)
-				_, writeErr = w.Write(invalidEnabledOnly)
-			}
+		default:
+			w.WriteHeader(http.StatusBadRequest)
+			_, writeErr = w.Write(invalidEnabledOnly)
 		}
 
 		if writeErr != nil {
@@ -54,16 +45,18 @@ func NewBiddersEndpoint(bidders config.BidderInfos, aliases map[string]string) h
 	}
 }
 
-func readEnabledOnly(r *http.Request) (string, bool) {
+func readEnabledOnly(r *http.Request) string {
 	q := r.URL.Query()
 
-	v, ok := q["enabledonly"]
+	v, exists := q["enabledonly"]
 
-	if !ok || len(v) == 0 {
-		return "", false
+	if !exists || len(v) == 0 {
+		// if the enabledOnly query parameter is not specified, default to false to match
+		// previous behavior of returning all adapters regardless of their enabled status.
+		return "false"
 	}
 
-	return strings.ToLower(v[0]), true
+	return strings.ToLower(v[0])
 }
 
 func prepareBiddersResponseAll(bidders config.BidderInfos, aliases map[string]string) ([]byte, error) {
