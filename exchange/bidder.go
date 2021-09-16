@@ -15,6 +15,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/config/util"
 	"github.com/prebid/prebid-server/currency"
+	"github.com/prebid/prebid-server/version"
 
 	nativeRequests "github.com/mxmCherry/openrtb/v15/native1/request"
 	nativeResponse "github.com/mxmCherry/openrtb/v15/native1/response"
@@ -138,17 +139,17 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb2.B
 		}
 		return nil, errs
 	}
+	xPrebidHeader := buildXPrebidHeader(request, version.Ver)
 
-	if reqInfo.GlobalPrivacyControlHeader == "1" {
-		for i := 0; i < len(reqData); i++ {
-			if reqData[i].Headers != nil {
-				reqHeader := reqData[i].Headers.Clone()
-				reqHeader.Add("Sec-GPC", reqInfo.GlobalPrivacyControlHeader)
-				reqData[i].Headers = reqHeader
-			} else {
-				reqData[i].Headers = http.Header{}
-				reqData[i].Headers.Add("Sec-GPC", reqInfo.GlobalPrivacyControlHeader)
-			}
+	for i := 0; i < len(reqData); i++ {
+		if reqData[i].Headers != nil {
+			reqData[i].Headers = reqData[i].Headers.Clone()
+		} else {
+			reqData[i].Headers = http.Header{}
+		}
+		reqData[i].Headers.Add("X-Prebid", xPrebidHeader)
+		if reqInfo.GlobalPrivacyControlHeader == "1" {
+			reqData[i].Headers.Add("Sec-GPC", reqInfo.GlobalPrivacyControlHeader)
 		}
 	}
 

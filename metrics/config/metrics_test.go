@@ -7,6 +7,7 @@ import (
 	mainConfig "github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
+
 	gometrics "github.com/rcrowley/go-metrics"
 )
 
@@ -14,7 +15,8 @@ import (
 func TestDummyMetricsEngine(t *testing.T) {
 	cfg := mainConfig.Configuration{}
 	adapterList := make([]openrtb_ext.BidderName, 0, 2)
-	testEngine := NewMetricsEngine(&cfg, adapterList)
+	syncerKeys := []string{"keyA", "keyB"}
+	testEngine := NewMetricsEngine(&cfg, adapterList, syncerKeys)
 	_, ok := testEngine.MetricsEngine.(*DummyMetricsEngine)
 	if !ok {
 		t.Error("Expected a DummyMetricsEngine, but didn't get it")
@@ -25,7 +27,8 @@ func TestGoMetricsEngine(t *testing.T) {
 	cfg := mainConfig.Configuration{}
 	cfg.Metrics.Influxdb.Host = "localhost"
 	adapterList := make([]openrtb_ext.BidderName, 0, 2)
-	testEngine := NewMetricsEngine(&cfg, adapterList)
+	syncerKeys := []string{"keyA", "keyB"}
+	testEngine := NewMetricsEngine(&cfg, adapterList, syncerKeys)
 	_, ok := testEngine.MetricsEngine.(*metrics.Metrics)
 	if !ok {
 		t.Error("Expected a legacy Metrics as MetricsEngine, but didn't get it")
@@ -37,7 +40,7 @@ func TestMultiMetricsEngine(t *testing.T) {
 	cfg := mainConfig.Configuration{}
 	cfg.Metrics.Influxdb.Host = "localhost"
 	adapterList := openrtb_ext.CoreBidderNames()
-	goEngine := metrics.NewMetrics(gometrics.NewPrefixedRegistry("prebidserver."), adapterList, mainConfig.DisabledMetrics{})
+	goEngine := metrics.NewMetrics(gometrics.NewPrefixedRegistry("prebidserver."), adapterList, mainConfig.DisabledMetrics{}, nil)
 	engineList := make(MultiMetricsEngine, 2)
 	engineList[0] = goEngine
 	engineList[1] = &DummyMetricsEngine{}

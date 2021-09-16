@@ -7,3 +7,8 @@ capabilities:
     - banner
     - video
     - native
+userSync:
+  iframe:
+    url: "https://match.bnmla.com/usersync/s2s_sync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&r={{.RedirectURL}}"
+    userMacro: "${UUID}"
+

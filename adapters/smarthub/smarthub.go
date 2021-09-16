@@ -19,7 +19,7 @@ const (
 )
 
 type adapter struct {
-	endpoint template.Template
+	endpoint *template.Template
 }
 
 type bidExt struct {
@@ -33,7 +33,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	}
 
 	bidder := &adapter{
-		endpoint: *template,
+		endpoint: template,
 	}
 
 	return bidder, nil
