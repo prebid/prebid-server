@@ -164,7 +164,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	if reqStartTimeHeader := r.Header.Get("X-Request-Time"); reqStartTimeHeader != "" {
 		reqStartTime, err := strconv.ParseInt(reqStartTimeHeader, 10, 64)
 		if err == nil {
-			reqDuration := time.Now().Sub(time.Unix(reqStartTime, 0)).Milliseconds()
+			reqDuration := time.Now().Sub(time.Unix(0, reqStartTime)).Milliseconds()
 
 			// report to honeycomb
 			trace.SpanFromContext(ctx).SetAttributes(
@@ -172,7 +172,12 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 				attribute.Int64("req_duration", reqDuration),
 			)
 
-			req.TMax = req.TMax - (reqDuration + 10) // adding 10ms as a response threshold duration
+			modifiedTMax := req.TMax - (reqDuration + 10) // adding 10ms as a response threshold duration
+			if modifiedTMax <= 0 {
+				req.TMax = 1
+			} else {
+				req.TMax = modifiedTMax
+			}
 		}
 	}
 
