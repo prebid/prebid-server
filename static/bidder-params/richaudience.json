@@ -1,0 +1,23 @@
+{
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"title": "richaudience Adapter Params",
+	"description": "A schema which validates params accepted by the richaudience adapter",
+	"type": "object",
+
+	"properties": {
+		"pid": {
+		  "type": "string",
+		  "description": "Placement ID"
+		},
+		"supplyType": {
+			"type": "string",
+			"description": "Type integration"
+		},
+		"testRa": {
+			"type": "boolean",
+			"description": "TestMode"
+		}
+	  },
+	
+	  "required": ["pid", "supplyType"]
+}

@@ -1,0 +1,16 @@
+maintainer:
+  email: cert@richaudience.com
+gvlVendorID: 108
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  iframe:
+    url: "https://sync.richaudience.com/74889303289e27f327ad0c6de7be7264/?consentString={{.GDPRConsent}}&r={{.RedirectURL}}[PDID]"
