@@ -916,18 +916,27 @@ func resolveBidFloor(bidFloor float64, bidFloorCur string, reqInfo *adapters.Ext
 func updateImpRpTargetWithFpdAttributes(extImp openrtb_ext.ExtImpRubicon, imp openrtb2.Imp,
 	site *openrtb2.Site, app *openrtb2.App) (json.RawMessage, error) {
 	existingTarget, _, _, err := jsonparser.Get(imp.Ext, "rp", "target")
-	if err != nil {
-		logParsingError(err)
+	if isNotKeyPathError(err) {
+		return nil, err
 	}
-	target := rawJSONToMap(existingTarget)
-	populateFirstPartyDataAttributes(extImp.Inventory, target)
+	target, err := rawJSONToMap(existingTarget)
+	if err != nil {
+		return nil, err
+	}
+	err = populateFirstPartyDataAttributes(extImp.Inventory, target)
+	if err != nil {
+		return nil, err
+	}
 
 	if site != nil {
 		siteExtData, _, _, err := jsonparser.Get(site.Ext, "data")
-		if err != nil {
-			logParsingError(err)
+		if isNotKeyPathError(err) {
+			return nil, err
 		}
-		populateFirstPartyDataAttributes(siteExtData, target)
+		err = populateFirstPartyDataAttributes(siteExtData, target)
+		if err != nil {
+			return nil, err
+		}
 		if len(site.SectionCat) > 0 {
 			addStringArrayAttribute(site.SectionCat, target, "sectioncat")
 		}
@@ -945,10 +954,13 @@ func updateImpRpTargetWithFpdAttributes(extImp openrtb_ext.ExtImpRubicon, imp op
 		}
 	} else {
 		appExtData, _, _, err := jsonparser.Get(app.Ext, "data")
-		if err != nil {
-			logParsingError(err)
+		if isNotKeyPathError(err) {
+			return nil, err
 		}
-		populateFirstPartyDataAttributes(appExtData, target)
+		err = populateFirstPartyDataAttributes(appExtData, target)
+		if err != nil {
+			return nil, err
+		}
 		if len(app.SectionCat) > 0 {
 			addStringArrayAttribute(app.SectionCat, target, "sectioncat")
 		}
@@ -958,14 +970,23 @@ func updateImpRpTargetWithFpdAttributes(extImp openrtb_ext.ExtImpRubicon, imp op
 	}
 
 	impExtContextAttributes, _, _, err := jsonparser.Get(imp.Ext, "context", "data")
-	if err != nil {
-		logParsingError(err)
+	if isNotKeyPathError(err) {
+		return nil, err
 	}
 
 	if len(impExtContextAttributes) > 0 {
-		populateFirstPartyDataAttributes(impExtContextAttributes, target)
+		err = populateFirstPartyDataAttributes(impExtContextAttributes, target)
+		if err != nil {
+			return nil, err
+		}
 	} else if impExtDataAttributes, _, _, err := jsonparser.Get(imp.Ext, "data"); err == nil && len(impExtDataAttributes) > 0 {
-		populateFirstPartyDataAttributes(impExtDataAttributes, target)
+		err = populateFirstPartyDataAttributes(impExtDataAttributes, target)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if isNotKeyPathError(err) {
+		return nil, err
 	}
 
 	if len(extImp.Keywords) > 0 {
@@ -978,8 +999,8 @@ func updateImpRpTargetWithFpdAttributes(extImp openrtb_ext.ExtImpRubicon, imp op
 	return updatedTarget, nil
 }
 
-func logParsingError(err error) {
-	glog.Infof(fmt.Sprintf("Error while parsing. Error: %s", err.Error()))
+func isNotKeyPathError(err error) bool {
+	return err != nil && err.Error() != "Key path not found"
 }
 
 func addStringAttribute(attribute string, target map[string]interface{}, attributeName string) {
@@ -1023,18 +1044,25 @@ func getAdSlot(imp openrtb2.Imp) string {
 
 func updateUserRpTargetWithFpdAttributes(visitor json.RawMessage, user openrtb2.User) (json.RawMessage, error) {
 	existingTarget, _, _, err := jsonparser.Get(user.Ext, "rp", "target")
-	if err != nil {
-		logParsingError(err)
+	if isNotKeyPathError(err) {
+		return nil, err
 	}
-	target := rawJSONToMap(existingTarget)
-	populateFirstPartyDataAttributes(visitor, target)
-
+	target, err := rawJSONToMap(existingTarget)
+	if err != nil {
+		return nil, err
+	}
+	err = populateFirstPartyDataAttributes(visitor, target)
+	if err != nil {
+		return nil, err
+	}
 	userExtData, _, _, err := jsonparser.Get(user.Ext, "data")
-	if err != nil {
-		logParsingError(err)
+	if isNotKeyPathError(err) {
+		return nil, err
 	}
-	populateFirstPartyDataAttributes(userExtData, target)
-
+	err = populateFirstPartyDataAttributes(userExtData, target)
+	if err != nil {
+		return nil, err
+	}
 	updateExtWithIabAttribute(target, user.Data, []int{4})
 
 	updatedTarget, err := json.Marshal(target)
@@ -1053,8 +1081,11 @@ func updateExtWithIabAttribute(target map[string]interface{}, data []openrtb2.Da
 	target["iab"] = segmentIdsToCopy
 }
 
-func populateFirstPartyDataAttributes(source json.RawMessage, target map[string]interface{}) {
-	sourceAsMap := rawJSONToMap(source)
+func populateFirstPartyDataAttributes(source json.RawMessage, target map[string]interface{}) error {
+	sourceAsMap, err := rawJSONToMap(source)
+	if err != nil {
+		return err
+	}
 
 	for key, val := range sourceAsMap {
 		switch typedValue := val.(type) {
@@ -1075,6 +1106,7 @@ func populateFirstPartyDataAttributes(source json.RawMessage, target map[string]
 			}
 		}
 	}
+	return nil
 }
 
 func isStringArray(array []interface{}) bool {
@@ -1108,13 +1140,20 @@ func convertToStringArray(arr []interface{}) []string {
 	return stringArray
 }
 
-func rawJSONToMap(message json.RawMessage) map[string]interface{} {
+func rawJSONToMap(message json.RawMessage) (map[string]interface{}, error) {
+	if message == nil {
+		return make(map[string]interface{}), nil
+	}
+
+	return mapFromRawJSON(message)
+}
+func mapFromRawJSON(message json.RawMessage) (map[string]interface{}, error) {
 	targetAsMap := make(map[string]interface{})
 	err := json.Unmarshal(message, &targetAsMap)
 	if err != nil {
-		logParsingError(err)
+		return nil, err
 	}
-	return targetAsMap
+	return targetAsMap, nil
 }
 
 func getSegmentIdsToCopy(data []openrtb2.Data, segTaxValues []int) []string {

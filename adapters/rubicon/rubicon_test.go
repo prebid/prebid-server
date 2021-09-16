@@ -52,11 +52,6 @@ type rubiSetNetworkIdTestScenario struct {
 	isNetworkIdSet    bool
 }
 
-type rubiSiteSegTaxScenario struct {
-	segTax      int
-	iabExpected bool
-}
-
 type rubiTagInfo struct {
 	code              string
 	zoneID            int
