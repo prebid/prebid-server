@@ -257,7 +257,8 @@
               "prebid": {
                 "type": "video"
               },
-              "rp": {}
+              "rp": {},
+              "skadn": {}
             }
           },
           "type": "video"
