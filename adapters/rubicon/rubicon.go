@@ -344,6 +344,7 @@ func (rbr rubiconBidResponse) AqID() string {
 
 type rubiconBidExt struct {
 	RP     rubiconBidExtRP     `json:"rp,omitempty"`
+	SKADN  rubiconBidExtSKADN  `json:"skadn,omitempty"`
 	Prebid rubiconBidExtPrebid `json:"prebid,omitempty"`
 }
 
@@ -352,6 +353,25 @@ type rubiconBidExtRP struct {
 	Mime   string `json:"mime,omitempty"`
 	SizeID int    `json:"size_id,omitempty"`
 	AqID   string `json:"aqid,omitempty"`
+}
+
+type rubiconBidExtSKADN struct {
+	Version    string                       `json:"version,omitempty"`    // Version of SKAdNetwork desired. Must be 2.0 or above.
+	Network    string                       `json:"network,omitempty"`    // Ad network identifier used in signature. Should match one of the items in the skadnetids array in the request
+	Campaign   string                       `json:"campaign,omitempty"`   // Campaign ID compatible with Apple’s spec. As of 2.0, should be an integer between 1 and 100, expressed as a string
+	ITunesItem string                       `json:"itunesitem,omitempty"` // ID of advertiser’s app in Apple’s app store. Should match BidResponse.bid.bundle
+	Nonce      string                       `json:"nonce,omitempty"`      // An id unique to each ad response
+	SourceApp  string                       `json:"sourceapp,omitempty"`  // ID of publisher’s app in Apple’s app store. Should match BidRequest.imp.ext.skad.sourceapp
+	Timestamp  string                       `json:"timestamp,omitempty"`  // Unix time in millis string used at the time of signature
+	Signature  string                       `json:"signature,omitempty"`  // SKAdNetwork signature as specified by Apple
+	Fidelities []rubiconBidExtSKADNFidelity `json:"fidelities,omitempty"` // Supports multiple fidelity types introduced in SKAdNetwork v2.2
+}
+
+type rubiconBidExtSKADNFidelity struct {
+	Fidelity  int    `json:"fidelity"`            // The fidelity-type of the attribution to track
+	Signature string `json:"signature,omitempty"` // SKAdNetwork signature as specified by Apple
+	Nonce     string `json:"nonce,omitempty"`     // An id unique to each ad response
+	Timestamp string `json:"timestamp,omitempty"` // Unix time in millis string used at the time of signature
 }
 
 type rubiconBidExtPrebid struct {
