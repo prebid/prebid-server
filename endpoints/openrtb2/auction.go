@@ -577,7 +577,11 @@ func (deps *endpointDeps) validateImp(imp *openrtb2.Imp, aliases map[string]stri
 }
 
 func isInterstitial(imp *openrtb2.Imp) bool {
-	return imp.Instl == 1
+	if imp.Instl == 1 {
+		return true
+	}
+
+	return false
 }
 
 func validateBanner(banner *openrtb2.Banner, impIndex int, isInterstitial bool) error {
