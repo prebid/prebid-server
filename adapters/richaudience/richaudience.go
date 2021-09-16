@@ -289,7 +289,7 @@ func setDevice(request *openrtb2.BidRequest, richaudienceRequest *richaudienceRe
 		richaudienceRequest.Device.UA = request.Device.UA
 	}
 
-	request.Device.IP = "11.222.33.44"
+	//request.Device.IP = "11.222.33.44"
 
 	if request.Device.IP == "" {
 		err = &errortypes.BadInput{

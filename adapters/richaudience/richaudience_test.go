@@ -15,7 +15,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderRichaudience, config.Adapter{
-		Endpoint: "http://eu-ortb.richaudience.com/ortb/",
+		Endpoint: "http://ortb.richaudience.com/ortb/?bidder=pbs",
 	})
 
 	if buildErr != nil {
@@ -27,7 +27,7 @@ func TestJsonSamples(t *testing.T) {
 
 func TestGetBuilder(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderRichaudience, config.Adapter{
-		Endpoint: "http://eu-ortb.richaudience.com/ortb/"})
+		Endpoint: "http://ortb.richaudience.com/ortb/?bidder=pbs"})
 
 	if buildErr != nil {
 		t.Errorf("error %s", buildErr)

@@ -38,7 +38,7 @@
     "httpCalls": [
       {
         "expectedRequest": {
-          "uri": "http://eu-ortb.richaudience.com/ortb/",
+          "uri": "http://ortb.richaudience.com/ortb/?bidder=pbs",
           "headers": {
             "Content-Type": ["application/json;charset=utf-8"],
             "Accept": ["application/json"],
