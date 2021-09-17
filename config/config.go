@@ -511,9 +511,9 @@ func New(v *viper.Viper) (*Configuration, error) {
 		c.GDPR.NonStandardPublisherMap[c.GDPR.NonStandardPublishers[i]] = s
 	}
 
-	c.GDPR.EEACountriesMap = make(map[string]struct{})
-	for i := 0; i < len(c.GDPR.EEACountriesMap); i++ {
-		c.GDPR.NonStandardPublisherMap[c.GDPR.EEACountries[i]] = s
+	c.GDPR.EEACountriesMap = make(map[string]struct{}, len(c.GDPR.EEACountries))
+	for _, v := range c.GDPR.EEACountries {
+		c.GDPR.EEACountriesMap[v] = s
 	}
 
 	// To look for a purpose's vendor exceptions in O(1) time, for each purpose we fill this hash table located in the
