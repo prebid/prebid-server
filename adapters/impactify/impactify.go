@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-type ImpactifyAdapter struct {
+type adapter struct {
 	endpoint string
 }
 
@@ -24,23 +24,13 @@ type DefaultExtBidder struct {
 	Bidder openrtb_ext.ExtImpImpactify `json:"bidder"`
 }
 
-func (a *ImpactifyAdapter) MakeRequests(bidRequest *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(bidRequest *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var validImps []openrtb2.Imp
 
 	var adapterRequests []*adapters.RequestData
-	var referer string = ""
 
 	for i := 0; i < len(bidRequest.Imp); i++ {
-		ref, err := checkImp(&bidRequest.Imp[i])
-		// If the parsing is failed, remove imp and add the error.
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-		if referer == "" && ref != "" {
-			referer = ref
-		}
 		// Check if imp comes with bid floor amount defined in a foreign currency
 		if bidRequest.Imp[i].BidFloor > 0 && bidRequest.Imp[i].BidFloorCur != "" && strings.ToUpper(bidRequest.Imp[i].BidFloorCur) != "USD" {
 			// Convert to US dollars
@@ -53,6 +43,7 @@ func (a *ImpactifyAdapter) MakeRequests(bidRequest *openrtb2.BidRequest, reqInfo
 		}
 
 		var impactifyExt ImpactifyExtBidder
+
 		var defaultExt DefaultExtBidder
 		json.Unmarshal(bidRequest.Imp[i].Ext, &defaultExt)
 		impactifyExt.Impactify = defaultExt.Bidder
@@ -66,17 +57,9 @@ func (a *ImpactifyAdapter) MakeRequests(bidRequest *openrtb2.BidRequest, reqInfo
 			return nil, errs
 		} else {
 			return nil, []error{&errortypes.BadInput{
-				Message: "No impressions in the bid request",
+				Message: "No valid impressions in the bid request",
 			}}
 		}
-	}
-
-	// Set referer origin
-	if referer != "" {
-		if bidRequest.Site == nil {
-			bidRequest.Site = &openrtb2.Site{}
-		}
-		bidRequest.Site.Ref = referer
 	}
 
 	bidRequest.Imp = validImps
@@ -92,8 +75,15 @@ func (a *ImpactifyAdapter) MakeRequests(bidRequest *openrtb2.BidRequest, reqInfo
 	headers.Add("Accept", "application/json")
 	headers.Add("x-openrtb-version", "2.5")
 	if bidRequest.Device != nil {
-		headers.Add("User-Agent", bidRequest.Device.UA)
-		headers.Add("X-Forwarded-For", bidRequest.Device.IP)
+		if bidRequest.Device.UA != "" {
+			headers.Add("User-Agent", bidRequest.Device.UA)
+		}
+		// Add IPv4 or IPv6 if available
+		if bidRequest.Device.IP != "" {
+			headers.Add("X-Forwarded-For", bidRequest.Device.IP)
+		} else if bidRequest.Device.IPv6 != "" {
+			headers.Add("X-Forwarded-For", bidRequest.Device.IPv6)
+		}
 	}
 	if bidRequest.Site != nil {
 		headers.Add("Referer", bidRequest.Site.Page)
@@ -114,7 +104,7 @@ func (a *ImpactifyAdapter) MakeRequests(bidRequest *openrtb2.BidRequest, reqInfo
 	return adapterRequests, errs
 }
 
-func (a *ImpactifyAdapter) MakeBids(
+func (a *adapter) MakeBids(
 	internalRequest *openrtb2.BidRequest,
 	externalRequest *adapters.RequestData,
 	response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
@@ -151,61 +141,45 @@ func (a *ImpactifyAdapter) MakeBids(
 		if !(sb.Bid[i].Price > 0) {
 			continue
 		}
+		impMediaType, err := getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp)
+		if err != nil {
+			return nil, []error{err}
+		}
+
 		bid := sb.Bid[i]
 		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 			Bid:     &bid,
-			BidType: getMediaTypeForImp(bid.ImpID, internalRequest.Imp),
+			BidType: impMediaType,
 		})
 	}
 	return bidResponse, nil
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
+func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
+	var mediaType openrtb_ext.BidType = ""
 	for _, imp := range imps {
 		if imp.ID == impID {
 			if imp.Banner != nil {
-				return openrtb_ext.BidTypeBanner
+				mediaType = openrtb_ext.BidTypeBanner
+				return mediaType, nil
 			} else if imp.Video != nil {
-				return openrtb_ext.BidTypeVideo
+				mediaType = openrtb_ext.BidTypeVideo
+				return mediaType, nil
 			} else if imp.Native != nil {
-				return openrtb_ext.BidTypeNative
+				mediaType = openrtb_ext.BidTypeNative
+				return mediaType, nil
 			}
 		}
 	}
-	return openrtb_ext.BidTypeBanner
-}
 
-func checkImp(imp *openrtb2.Imp) (string, error) {
-	// We support only video or banner impression
-	if imp.Video == nil && imp.Banner == nil {
-		return "", fmt.Errorf("No valid type imp")
+	return "", &errortypes.BadInput{
+		Message: fmt.Sprintf("Failed to find a supported media type impression \"%s\" ", impID),
 	}
-
-	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return "", fmt.Errorf("Invalid impactify ext")
-	}
-
-	var impactifyExt openrtb_ext.ExtImpImpactify
-	if err := json.Unmarshal(bidderExt.Bidder, &impactifyExt); err != nil {
-		return "", fmt.Errorf("ext.bidder not provided")
-	}
-	if impactifyExt.AppID == "" {
-		return "", fmt.Errorf("appId parameter is empty")
-	}
-	if impactifyExt.Style == "" {
-		return "", fmt.Errorf("style parameter is empty")
-	}
-	if impactifyExt.Format == "" {
-		return "", fmt.Errorf("format parameter is empty")
-	}
-
-	return "", nil
 }
 
 // Builder builds a new instance of the Impactify adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &ImpactifyAdapter{
+	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}
 	return bidder, nil

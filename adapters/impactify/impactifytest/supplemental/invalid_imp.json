@@ -11,7 +11,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "No impressions in the bid request",
+      "value": "No valid impressions in the bid request",
       "comparison": "literal"
     }
   ]

@@ -41,7 +41,7 @@
                 "h": 576
               },
               "ext": {
-                "bidder": {
+                "impactify": {
                   "appId": "impactify.io",
                   "format": "screen",
                   "style": "impact"
