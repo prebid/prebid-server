@@ -1186,6 +1186,12 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 			expectedID:             uuid,
 		},
 		{
+			description:            "GenerateRequestID is true, rawData is an app request, has stored bid, and bidrequestID is not the macro {{UUID}}, we should generate uuid",
+			givenRawData:           testStoredRequestsUuid[3],
+			givenGenerateRequestID: true,
+			expectedID:             uuid,
+		},
+		{
 			description:            "GenerateRequestID is false, rawData is an app request and has stored bid, but bidrequestID is the macro {{UUID}}, so we should generate uuid",
 			givenRawData:           testStoredRequestsUuid[2],
 			givenGenerateRequestID: false,
@@ -3623,6 +3629,33 @@ var testStoredRequestsUuid = []string{
 	}`,
 	`{
 		"id": "{{UUID}}",
+		"app": {
+			"id": "123"
+		},
+		"imp": [
+			{
+				"ext": {
+					"prebid": {
+						"storedrequest": {
+							"id": "2"
+						},
+						"options": {
+							"echovideoattrs": false
+						}
+					}
+				}
+			}
+		],
+		"ext": {
+			"prebid": {
+				"storedrequest": {
+					"id": "2"
+				}
+			}
+		}
+	}`,
+	`{
+		"id": "ThisID",
 		"app": {
 			"id": "123"
 		},
