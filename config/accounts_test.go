@@ -3,6 +3,8 @@ package config
 import (
 	"testing"
 
+	"github.com/prebid/go-gdpr/consentconstants"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -239,5 +241,438 @@ func TestAccountIntegrationGetByIntegrationType(t *testing.T) {
 			assert.NotNil(t, result, tt.description)
 			assert.Equal(t, *tt.wantEnabled, *result, tt.description)
 		}
+	}
+}
+
+func TestPurposeEnforced(t *testing.T) {
+	tests := []struct{
+		description          string
+		givePurpose1Enforced string
+		givePurpose2Enforced string
+		givePurpose          consentconstants.Purpose
+		wantEnforcedSet      bool
+		wantEnforced         bool
+	}{
+		{
+			description:          "Purpose 1 Enforced not set",
+			givePurpose1Enforced: "",
+			givePurpose:           1,
+			wantEnforcedSet:      false,
+			wantEnforced:         true,
+		},
+		{
+			description:          "Purpose 1 Enforced set to full enforcement",
+			givePurpose1Enforced: TCF2FullEnforcement,
+			givePurpose:           1,
+			wantEnforcedSet:      true,
+			wantEnforced:         true,
+		},
+		{
+			description:          "Purpose 1 Enforced set to no enforcement",
+			givePurpose1Enforced: TCF2NoEnforcement,
+			givePurpose:           1,
+			wantEnforcedSet:      true,
+			wantEnforced:         false,
+		},
+		{
+			description:          "Purpose 2 Enforced set to full enforcement",
+			givePurpose2Enforced: TCF2FullEnforcement,
+			givePurpose:           2,
+			wantEnforcedSet:      true,
+			wantEnforced:         true,
+		},
+	}
+
+	for _, tt := range tests {
+		accountGDPR := AccountGDPR{
+			PurposeConfigs: map[consentconstants.Purpose]*AccountGDPRPurpose{
+				1: {
+					EnforcePurpose: tt.givePurpose1Enforced,
+				},
+				2: {
+					EnforcePurpose: tt.givePurpose2Enforced,
+				},
+			},
+		}
+
+		value, present := accountGDPR.PurposeEnforced(tt.givePurpose)
+
+		assert.Equal(t, tt.wantEnforced, value, tt.description)
+		assert.Equal(t, tt.wantEnforcedSet, present, tt.description)
+	}
+}
+
+func TestPurposeEnforcingVendors(t *testing.T) {
+	tests := []struct{
+		description           string
+		givePurpose1Enforcing *bool
+		givePurpose2Enforcing *bool
+		givePurpose           consentconstants.Purpose
+		wantEnforcingSet      bool
+		wantEnforcing         bool
+	}{
+		{
+			description:           "Purpose 1 Enforcing not set",
+			givePurpose1Enforcing: nil,
+			givePurpose:           1,
+			wantEnforcingSet:      false,
+			wantEnforcing:         true,
+		},
+		{
+			description:           "Purpose 1 Enforcing set to true",
+			givePurpose1Enforcing: &[]bool{true}[0],
+			givePurpose:           1,
+			wantEnforcingSet:      true,
+			wantEnforcing:         true,
+		},
+		{
+			description:           "Purpose 1 Enforcing set to false",
+			givePurpose1Enforcing: &[]bool{false}[0],
+			givePurpose:           1,
+			wantEnforcingSet:      true,
+			wantEnforcing:         false,
+		},
+		{
+			description:           "Purpose 2 Enforcing set to true",
+			givePurpose2Enforcing: &[]bool{true}[0],
+			givePurpose:           2,
+			wantEnforcingSet:      true,
+			wantEnforcing:         true,
+		},
+	}
+
+	for _, tt := range tests {
+		accountGDPR := AccountGDPR{
+			PurposeConfigs: map[consentconstants.Purpose]*AccountGDPRPurpose{
+				1: &AccountGDPRPurpose{
+					EnforceVendors: tt.givePurpose1Enforcing,
+				},
+				2: &AccountGDPRPurpose{
+					EnforceVendors: tt.givePurpose2Enforcing,
+				},
+			},
+		}
+
+		value, present := accountGDPR.PurposeEnforcingVendors(tt.givePurpose)
+
+		assert.Equal(t, tt.wantEnforcing, value, tt.description)
+		assert.Equal(t, tt.wantEnforcingSet, present, tt.description)
+	}
+}
+
+func TestPurposeVendorException(t *testing.T) {
+	tests := []struct{
+		description string
+		givePurpose1ExceptionMap map[openrtb_ext.BidderName]struct{}
+		givePurpose2ExceptionMap map[openrtb_ext.BidderName]struct{}
+		givePurpose              consentconstants.Purpose
+		giveBidder               openrtb_ext.BidderName
+		wantVendorExceptionSet   bool
+		wantIsVendorException    bool
+	}{
+		{
+			description: "Nil - exception map not defined for purpose",
+			givePurpose: 1,
+			giveBidder: "appnexus",
+			wantVendorExceptionSet: false,
+			wantIsVendorException:  false,
+		},
+		{
+			description: "Empty - exception map empty for purpose",
+			givePurpose: 1,
+			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			giveBidder: "appnexus",
+			wantVendorExceptionSet: true,
+			wantIsVendorException:  false,
+		},
+		{
+			description: "One - bidder found in purpose exception map containing one entry",
+			givePurpose: 1,
+			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{"appnexus":{}},
+			giveBidder: "appnexus",
+			wantVendorExceptionSet: true,
+			wantIsVendorException:  true,
+		},
+		{
+			description: "Many - bidder found in purpose exception map containing multiple entries",
+			givePurpose: 1,
+			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
+			giveBidder:  "appnexus",
+			wantVendorExceptionSet: true,
+			wantIsVendorException:  true,
+		},
+		{
+			description: "Many - bidder not found in purpose exception map containing multiple entries",
+			givePurpose: 1,
+			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
+			givePurpose2ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "openx": {}},
+			giveBidder:  "openx",
+			wantVendorExceptionSet: true,
+			wantIsVendorException:  false,
+		},
+		{
+			description: "Many - bidder found in different purpose exception map containing multiple entries",
+			givePurpose: 2,
+			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
+			givePurpose2ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "openx": {}},
+			giveBidder:  "openx",
+			wantVendorExceptionSet: true,
+			wantIsVendorException:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		accountGDPR := AccountGDPR{
+			PurposeConfigs: map[consentconstants.Purpose]*AccountGDPRPurpose{
+				1: &AccountGDPRPurpose{
+					VendorExceptionMap: tt.givePurpose1ExceptionMap,
+				},
+				2: &AccountGDPRPurpose{
+					VendorExceptionMap: tt.givePurpose2ExceptionMap,
+				},
+			},
+		}
+
+		value, present := accountGDPR.PurposeVendorException(tt.givePurpose, tt.giveBidder)
+
+		assert.Equal(t, tt.wantIsVendorException, value, tt.description)
+		assert.Equal(t, tt.wantVendorExceptionSet, present, tt.description)
+	}
+}
+
+func TestFeatureOneEnforced(t *testing.T) {
+	tests := []struct{
+		description     string
+		giveEnforce     *bool
+		wantEnforcedSet bool
+		wantEnforced    bool
+	}{
+		{
+			description:     "Special feature 1 enforce not set",
+			giveEnforce:     nil,
+			wantEnforcedSet: false,
+			wantEnforced:    true,
+		},
+		{
+			description:     "Special feature 1 enforce set to true",
+			giveEnforce:     &[]bool{true}[0],
+			wantEnforcedSet: true,
+			wantEnforced:    true,
+		},
+		{
+			description:     "Special feature 1 enforce set to false",
+			giveEnforce:     &[]bool{false}[0],
+			wantEnforcedSet: true,
+			wantEnforced:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		accountGDPR := AccountGDPR{
+			SpecialFeature1: AccountGDPRSpecialFeature{
+				Enforce: tt.giveEnforce,
+			},
+		}
+
+		value, present := accountGDPR.FeatureOneEnforced()
+
+		assert.Equal(t, tt.wantEnforced, value, tt.description)
+		assert.Equal(t, tt.wantEnforcedSet, present, tt.description)
+	}
+}
+
+func TestFeatureOneVendorException(t *testing.T) {
+	tests := []struct{
+		description            string
+		giveExceptionMap       map[openrtb_ext.BidderName]struct{}
+		giveBidder             openrtb_ext.BidderName
+		wantVendorExceptionSet bool
+		wantIsVendorException  bool
+	}{
+		{
+			description: "Nil - exception map not defined",
+			giveBidder: "appnexus",
+			wantVendorExceptionSet: false,
+			wantIsVendorException:  false,
+		},
+		{
+			description: "Empty - exception map empty",
+			giveExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			giveBidder: "appnexus",
+			wantVendorExceptionSet: true,
+			wantIsVendorException:  false,
+		},
+		{
+			description: "One - bidder found in exception map containing one entry",
+			giveExceptionMap: map[openrtb_ext.BidderName]struct{}{"appnexus":{}},
+			giveBidder: "appnexus",
+			wantVendorExceptionSet: true,
+			wantIsVendorException:  true,
+		},
+		{
+			description: "Many - bidder found in exception map containing multiple entries",
+			giveExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
+			giveBidder:  "appnexus",
+			wantVendorExceptionSet: true,
+			wantIsVendorException:  true,
+		},
+		{
+			description: "Many - bidder not found in exception map containing multiple entries",
+			giveExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
+			giveBidder:  "openx",
+			wantVendorExceptionSet: true,
+			wantIsVendorException:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		accountGDPR := AccountGDPR{
+			SpecialFeature1: AccountGDPRSpecialFeature{
+				VendorExceptionMap: tt.giveExceptionMap,
+			},
+		}
+
+		value, present := accountGDPR.FeatureOneVendorException(tt.giveBidder)
+
+		assert.Equal(t, tt.wantIsVendorException, value, tt.description)
+		assert.Equal(t, tt.wantVendorExceptionSet, present, tt.description)
+	}
+}
+
+func TestPurposeOneTreatmentEnabled(t *testing.T) {
+	tests := []struct{
+		description    string
+		giveEnabled    *bool
+		wantEnabledSet bool
+		wantEnabled    bool
+	}{
+		{
+			description:    "Purpose one treatment enabled not set",
+			giveEnabled:    nil,
+			wantEnabledSet: false,
+			wantEnabled:    true,
+		},
+		{
+			description:    "Purpose one treatment enabled set to true",
+			giveEnabled:    &[]bool{true}[0],
+			wantEnabledSet: true,
+			wantEnabled:    true,
+		},
+		{
+			description:    "Purpose one treatment enabled set to false",
+			giveEnabled:    &[]bool{false}[0],
+			wantEnabledSet: true,
+			wantEnabled:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		accountGDPR := AccountGDPR{
+			PurposeOneTreatment: AccountGDPRPurposeOneTreatment{
+				Enabled: tt.giveEnabled,
+			},
+		}
+
+		value, present := accountGDPR.PurposeOneTreatmentEnabled()
+
+		assert.Equal(t, tt.wantEnabled, value, tt.description)
+		assert.Equal(t, tt.wantEnabledSet, present, tt.description)
+	}
+}
+
+func TestPurposeOneTreatmentAccessAllowed(t *testing.T) {
+	tests := []struct{
+		description    string
+		giveAllowed    *bool
+		wantAllowedSet bool
+		wantAllowed    bool
+	}{
+		{
+			description:    "Purpose one treatment access allowed not set",
+			giveAllowed:    nil,
+			wantAllowedSet: false,
+			wantAllowed:    true,
+		},
+		{
+			description:    "Purpose one treatment access allowed set to true",
+			giveAllowed:    &[]bool{true}[0],
+			wantAllowedSet: true,
+			wantAllowed:    true,
+		},
+		{
+			description:    "Purpose one treatment access allowed set to false",
+			giveAllowed:    &[]bool{false}[0],
+			wantAllowedSet: true,
+			wantAllowed:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		accountGDPR := AccountGDPR{
+			PurposeOneTreatment: AccountGDPRPurposeOneTreatment{
+				AccessAllowed: tt.giveAllowed,
+			},
+		}
+
+		value, present := accountGDPR.PurposeOneTreatmentAccessAllowed()
+
+		assert.Equal(t, tt.wantAllowed, value, tt.description)
+		assert.Equal(t, tt.wantAllowedSet, present, tt.description)
+	}
+}
+
+func TestBasicEnforcementVendor(t *testing.T) {
+	tests := []struct{
+		description        string
+		giveBasicVendorMap map[string]struct{}
+		giveBidder         openrtb_ext.BidderName
+		wantBasicVendorSet bool
+		wantIsBasicVendor  bool
+	}{
+		{
+			description: "Nil - basic vendor map not defined",
+			giveBidder: "appnexus",
+			wantBasicVendorSet: false,
+			wantIsBasicVendor:  false,
+		},
+		{
+			description: "Empty - basic vendor map empty",
+			giveBasicVendorMap: map[string]struct{}{},
+			giveBidder: "appnexus",
+			wantBasicVendorSet: true,
+			wantIsBasicVendor:  false,
+		},
+		{
+			description: "One - bidder found in basic vendor map containing one entry",
+			giveBasicVendorMap: map[string]struct{}{"appnexus":{}},
+			giveBidder: "appnexus",
+			wantBasicVendorSet: true,
+			wantIsBasicVendor:  true,
+		},
+		{
+			description: "Many - bidder found in basic vendor map containing multiple entries",
+			giveBasicVendorMap: map[string]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
+			giveBidder:  "appnexus",
+			wantBasicVendorSet: true,
+			wantIsBasicVendor:  true,
+		},
+		{
+			description: "Many - bidder not found in basic vendor map containing multiple entries",
+			giveBasicVendorMap: map[string]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
+			giveBidder:  "openx",
+			wantBasicVendorSet: true,
+			wantIsBasicVendor:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		accountGDPR := AccountGDPR{
+			BasicEnforcementVendorsMap: tt.giveBasicVendorMap,
+		}
+
+		value, present := accountGDPR.BasicEnforcementVendor(tt.giveBidder)
+
+		assert.Equal(t, tt.wantIsBasicVendor, value, tt.description)
+		assert.Equal(t, tt.wantBasicVendorSet, present, tt.description)
 	}
 }

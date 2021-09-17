@@ -196,7 +196,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	gdprDefaultValue := e.parseGDPRDefaultValue(r.BidRequest)
 
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
-	bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(ctx, r, requestExt, e.bidderToSyncerKey, e.gDPR, e.me, gdprDefaultValue, e.privacyConfig, &r.Account)
+	bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(ctx, r, requestExt, e.bidderToSyncerKey, e.gDPR, e.me, gdprDefaultValue, e.privacyConfig)
 
 	e.me.RecordRequestPrivacy(privacyLabels)
 

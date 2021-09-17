@@ -44,8 +44,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 	gDPR gdpr.Permissions,
 	metricsEngine metrics.MetricsEngine,
 	gdprDefaultValue gdpr.Signal,
-	privacyConfig config.Privacy,
-	account *config.Account) (allowedBidderRequests []BidderRequest, privacyLabels metrics.PrivacyLabels, errs []error) {
+	privacyConfig config.Privacy) (allowedBidderRequests []BidderRequest, privacyLabels metrics.PrivacyLabels, errs []error) {
 
 	impsByBidder, err := splitImps(req.BidRequest.Imp)
 	if err != nil {
@@ -73,7 +72,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 	if err != nil {
 		errs = append(errs, err)
 	}
-	gdprEnforced := gdprSignal == gdpr.SignalYes || (gdprSignal == gdpr.SignalAmbiguous && gdprDefaultValue == gdpr.SignalYes)
+	gdprApplies := gdprSignal == gdpr.SignalYes || (gdprSignal == gdpr.SignalAmbiguous && gdprDefaultValue == gdpr.SignalYes)
 
 	ccpaEnforcer, err := extractCCPA(req.BidRequest, privacyConfig, &req.Account, aliases, integrationTypeMap[req.LegacyLabels.RType])
 	if err != nil {
@@ -93,7 +92,14 @@ func cleanOpenRTBRequests(ctx context.Context,
 	privacyLabels.COPPAEnforced = privacyEnforcement.COPPA
 	privacyLabels.LMTEnforced = lmtEnforcer.ShouldEnforce(unknownBidder)
 
-	gdprEnforced = gdprEnforced && gdprEnabled(&req.Account, privacyConfig, integrationTypeMap[req.LegacyLabels.RType])
+	// gdprCfg := gdpr.NewTCF2ConfigReader(privacyConfig.GDPR.TCF2, req.Account.GDPR) // TODO: account should always be defined. delete one of the account params to CleanOpenRTBRequests. Do we want to pass the account by value or reference?
+	// gdprEnforced = gdprEnforced && gdprCfg.IntegrationEnabled(integrationTypeMap[req.LegacyLabels.RType])
+	var gdprCfg gdpr.TCF2ConfigReader
+	var gdprEnforced bool
+	if gdprApplies {
+		gdprCfg = gdpr.NewTCF2ConfigReader(privacyConfig.GDPR.TCF2, req.Account.GDPR)
+		gdprEnforced = gdprCfg.IntegrationEnabled(integrationTypeMap[req.LegacyLabels.RType])
+	}
 
 	if gdprEnforced {
 		privacyLabels.GDPREnforced = true
@@ -114,17 +120,8 @@ func cleanOpenRTBRequests(ctx context.Context,
 
 		// GDPR
 		if gdprEnforced {
-			weakVendorEnforcement := false
-			if account != nil {
-				for _, vendor := range account.GDPR.BasicEnforcementVendors {
-					if vendor == string(bidderRequest.BidderCoreName) {
-						weakVendorEnforcement = true
-						break
-					}
-				}
-			}
 			var publisherID = req.LegacyLabels.PubID
-			bidReq, geo, id, err := gDPR.AuctionActivitiesAllowed(ctx, bidderRequest.BidderCoreName, publisherID, gdprSignal, consent, weakVendorEnforcement)
+			bidReq, geo, id, err := gDPR.AuctionActivitiesAllowed(ctx, gdprCfg, bidderRequest.BidderCoreName, publisherID, gdprSignal, consent)
 			bidRequestAllowed = bidReq
 
 			if err == nil {
@@ -151,13 +148,6 @@ func cleanOpenRTBRequests(ctx context.Context,
 	}
 
 	return
-}
-
-func gdprEnabled(account *config.Account, privacyConfig config.Privacy, integrationType config.IntegrationType) bool {
-	if accountEnabled := account.GDPR.EnabledForIntegrationType(integrationType); accountEnabled != nil {
-		return *accountEnabled
-	}
-	return privacyConfig.GDPR.Enabled
 }
 
 func ccpaEnabled(account *config.Account, privacyConfig config.Privacy, requestType config.IntegrationType) bool {

@@ -9,6 +9,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/metrics"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/stretchr/testify/assert"
 )
@@ -90,5 +91,62 @@ func TestGetAccount(t *testing.T) {
 				assert.IsType(t, test.err, errors[0], "error is of unexpected type")
 			}
 		})
+	}
+}
+
+func TestSetDerivedConfig(t *testing.T) {
+	tests := []struct{
+		description              string
+		purpose1VendorExceptions []openrtb_ext.BidderName
+		feature1VendorExceptions []openrtb_ext.BidderName
+		basicEnforcementVendors  []string
+	}{
+		{
+			description: "",
+			purpose1VendorExceptions: []openrtb_ext.BidderName{"appnexus"},
+		},
+		{
+			description: "",
+			feature1VendorExceptions: []openrtb_ext.BidderName{"appnexus"},
+		},
+		{
+			description: "",
+			basicEnforcementVendors: []string{"appnexus"},
+		},
+	}
+
+	for _, tt := range tests {
+		account := config.Account{
+			GDPR: config.AccountGDPR{
+				Purpose1: config.AccountGDPRPurpose{
+					VendorExceptions: tt.purpose1VendorExceptions,
+				},
+				SpecialFeature1: config.AccountGDPRSpecialFeature{
+					VendorExceptions: tt.feature1VendorExceptions,
+				},
+				BasicEnforcementVendors: tt.basicEnforcementVendors,
+			},
+		}
+
+		setDerivedConfig(&account)
+
+		purpose1ExceptionMapKeys := make([]openrtb_ext.BidderName, 0)
+		for k := range account.GDPR.Purpose1.VendorExceptionMap {
+			purpose1ExceptionMapKeys = append(purpose1ExceptionMapKeys, k)
+		}
+
+		feature1ExceptionMapKeys := make([]openrtb_ext.BidderName, 0)
+		for k := range account.GDPR.SpecialFeature1.VendorExceptionMap {
+			feature1ExceptionMapKeys = append(feature1ExceptionMapKeys, k)
+		}
+
+		basicEnforcementMapKeys := make([]string, 0)
+		for k := range account.GDPR.BasicEnforcementVendorsMap {
+			basicEnforcementMapKeys = append(basicEnforcementMapKeys, k)
+		}
+
+		assert.ElementsMatch(t, purpose1ExceptionMapKeys, tt.purpose1VendorExceptions, tt.description)
+		assert.ElementsMatch(t, feature1ExceptionMapKeys, tt.feature1VendorExceptions, tt.description)
+		assert.ElementsMatch(t, basicEnforcementMapKeys, tt.basicEnforcementVendors, tt.description)
 	}
 }

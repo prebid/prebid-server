@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -226,6 +227,18 @@ func TestDefaults(t *testing.T) {
 			Enabled:       true,
 			AccessAllowed: true,
 		},
+	}
+	expectedTCF2.PurposeConfigs = map[consentconstants.Purpose]*TCF2Purpose{
+		1:  &expectedTCF2.Purpose1,
+		2:  &expectedTCF2.Purpose2,
+		3:  &expectedTCF2.Purpose3,
+		4:  &expectedTCF2.Purpose4,
+		5:  &expectedTCF2.Purpose5,
+		6:  &expectedTCF2.Purpose6,
+		7:  &expectedTCF2.Purpose7,
+		8:  &expectedTCF2.Purpose8,
+		9:  &expectedTCF2.Purpose9,
+		10: &expectedTCF2.Purpose10,
 	}
 	assert.Equal(t, expectedTCF2, cfg.GDPR.TCF2, "gdpr.tcf2")
 
@@ -549,6 +562,18 @@ func TestFullConfig(t *testing.T) {
 			Enabled:       true, // true by default
 			AccessAllowed: true, // true by default
 		},
+	}
+	expectedTCF2.PurposeConfigs = map[consentconstants.Purpose]*TCF2Purpose{
+		1:  &expectedTCF2.Purpose1,
+		2:  &expectedTCF2.Purpose2,
+		3:  &expectedTCF2.Purpose3,
+		4:  &expectedTCF2.Purpose4,
+		5:  &expectedTCF2.Purpose5,
+		6:  &expectedTCF2.Purpose6,
+		7:  &expectedTCF2.Purpose7,
+		8:  &expectedTCF2.Purpose8,
+		9:  &expectedTCF2.Purpose9,
+		10: &expectedTCF2.Purpose10,
 	}
 	assert.Equal(t, expectedTCF2, cfg.GDPR.TCF2, "gdpr.tcf2")
 

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/spf13/viper"
@@ -288,8 +289,47 @@ type TCF2 struct {
 	Purpose8            TCF2Purpose             `mapstructure:"purpose8"`
 	Purpose9            TCF2Purpose             `mapstructure:"purpose9"`
 	Purpose10           TCF2Purpose             `mapstructure:"purpose10"`
+	// Map of purpose configs for easy purpose lookup
+	PurposeConfigs      map[consentconstants.Purpose]*TCF2Purpose
 	SpecialFeature1     TCF2SpecialFeature      `mapstructure:"special_feature1"`
 	PurposeOneTreatment TCF2PurposeOneTreatment `mapstructure:"purpose_one_treatment"`
+}
+
+func (t *TCF2) PurposeEnforced(purpose consentconstants.Purpose) (value bool) {
+	if t.PurposeConfigs[purpose].EnforcePurpose == TCF2FullEnforcement {
+		return true
+	}
+	return false
+}
+
+func (t *TCF2) PurposeEnforcingVendors(purpose consentconstants.Purpose) (value bool) {
+	return t.PurposeConfigs[purpose].EnforceVendors
+}
+
+func (t *TCF2) PurposeVendorException(purpose consentconstants.Purpose, bidder openrtb_ext.BidderName) (value bool) {
+	if _, ok := t.PurposeConfigs[purpose].VendorExceptionMap[bidder]; ok {
+		return true
+	}
+	return false
+}
+
+func (t *TCF2) FeatureOneEnforced() (value bool) {
+	return t.SpecialFeature1.Enforce
+}
+
+func (t *TCF2) FeatureOneVendorException(bidder openrtb_ext.BidderName) (value bool) {
+	if _, ok := t.SpecialFeature1.VendorExceptionMap[bidder]; ok {
+		return true
+	}
+	return false
+}
+
+func (t *TCF2) PurposeOneTreatmentEnabled() (value bool) {
+	return t.PurposeOneTreatment.Enabled
+}
+
+func (t *TCF2) PurposeOneTreatmentAccessAllowed() (value bool) {
+	return t.PurposeOneTreatment.AccessAllowed
 }
 
 // Making a purpose struct so purpose specific details can be added later.
@@ -551,27 +591,36 @@ func New(v *viper.Viper) (*Configuration, error) {
 		c.GDPR.EEACountriesMap[v] = s
 	}
 
-	// To look for a purpose's vendor exceptions in O(1) time, for each purpose we fill this hash table located in the
-	// VendorExceptions field of the GDPR.TCF2.PurposeX struct defined in this file
-	purposeConfigs := []*TCF2Purpose{
-		&c.GDPR.TCF2.Purpose1,
-		&c.GDPR.TCF2.Purpose2,
-		&c.GDPR.TCF2.Purpose3,
-		&c.GDPR.TCF2.Purpose4,
-		&c.GDPR.TCF2.Purpose5,
-		&c.GDPR.TCF2.Purpose6,
-		&c.GDPR.TCF2.Purpose7,
-		&c.GDPR.TCF2.Purpose8,
-		&c.GDPR.TCF2.Purpose9,
-		&c.GDPR.TCF2.Purpose10,
+	// for each purpose we capture a reference to the purpose config in a map for easy purpose config lookup
+	c.GDPR.TCF2.PurposeConfigs = map[consentconstants.Purpose]*TCF2Purpose{
+		1:  &c.GDPR.TCF2.Purpose1,
+		2:  &c.GDPR.TCF2.Purpose2,
+		3:  &c.GDPR.TCF2.Purpose3,
+		4:  &c.GDPR.TCF2.Purpose4,
+		5:  &c.GDPR.TCF2.Purpose5,
+		6:  &c.GDPR.TCF2.Purpose6,
+		7:  &c.GDPR.TCF2.Purpose7,
+		8:  &c.GDPR.TCF2.Purpose8,
+		9:  &c.GDPR.TCF2.Purpose9,
+		10: &c.GDPR.TCF2.Purpose10,
 	}
-	for c := 0; c < len(purposeConfigs); c++ {
-		purposeConfigs[c].VendorExceptionMap = make(map[openrtb_ext.BidderName]struct{})
-
-		for v := 0; v < len(purposeConfigs[c].VendorExceptions); v++ {
-			bidderName := purposeConfigs[c].VendorExceptions[v]
-			purposeConfigs[c].VendorExceptionMap[bidderName] = struct{}{}
+	
+	// To look for a purpose's vendor exceptions in O(1) time, for each purpose we fill this hash table with bidders 
+	// located in the VendorExceptions field of the GDPR.TCF2.PurposeX struct defined in this file
+	for _, pc := range c.GDPR.TCF2.PurposeConfigs {
+		pc.VendorExceptionMap = make(map[openrtb_ext.BidderName]struct{})
+		for v := 0; v < len(pc.VendorExceptions); v++ {
+			bidderName := pc.VendorExceptions[v]
+			pc.VendorExceptionMap[bidderName] = struct{}{}
 		}
+	}
+	
+	// To look for a special feature's vendor exceptions in O(1) time, we fill this hash table with bidders located in the
+	// VendorExceptions field of the GDPR.TCF2.SpecialFeature1 struct defined in this file
+	c.GDPR.TCF2.SpecialFeature1.VendorExceptionMap = make(map[openrtb_ext.BidderName]struct{})
+	for v := 0; v < len(c.GDPR.TCF2.SpecialFeature1.VendorExceptions); v++ {
+		bidderName := c.GDPR.TCF2.SpecialFeature1.VendorExceptions[v]
+		c.GDPR.TCF2.SpecialFeature1.VendorExceptionMap[bidderName] = struct{}{}
 	}
 
 	// To look for a special feature's vendor exceptions in O(1) time, we fill this hash table with bidders located in the
