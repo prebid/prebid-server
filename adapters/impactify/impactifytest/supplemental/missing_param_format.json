@@ -12,7 +12,9 @@
         },
         "ext": {
           "bidder": {
-            "zone":""
+            "appId":"impactify.io",
+            "style": "impact",
+            "format": ""
           }
         }
 
@@ -21,7 +23,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "Zone is empty",
+      "value": "format parameter is empty",
       "comparison": "literal"
     }
   ]

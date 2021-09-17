@@ -61,6 +61,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/grid"
 	"github.com/prebid/prebid-server/adapters/gumgum"
 	"github.com/prebid/prebid-server/adapters/huaweiads"
+	"github.com/prebid/prebid-server/adapters/impactify"
 	"github.com/prebid/prebid-server/adapters/improvedigital"
 	"github.com/prebid/prebid-server/adapters/inmobi"
 	"github.com/prebid/prebid-server/adapters/interactiveoffers"
@@ -193,6 +194,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderGrid:              grid.Builder,
 		openrtb_ext.BidderGumGum:            gumgum.Builder,
 		openrtb_ext.BidderHuaweiAds:         huaweiads.Builder,
+		openrtb_ext.BidderImpactify:         impactify.Builder,
 		openrtb_ext.BidderImprovedigital:    improvedigital.Builder,
 		openrtb_ext.BidderInMobi:            inmobi.Builder,
 		openrtb_ext.BidderInteractiveoffers: interactiveoffers.Builder,
