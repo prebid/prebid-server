@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
-	"github.com/evanphx/json-patch"
+	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/gofrs/uuid"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
@@ -37,6 +37,7 @@ import (
 	"github.com/prebid/prebid-server/usersync"
 	"github.com/prebid/prebid-server/util/httputil"
 	"github.com/prebid/prebid-server/util/iputil"
+	"github.com/prebid/prebid-server/util/uuidutil"
 	"golang.org/x/net/publicsuffix"
 	"golang.org/x/text/currency"
 )
@@ -50,6 +51,7 @@ var (
 )
 
 func NewEndpoint(
+	uuidGenerator uuidutil.UUIDGenerator,
 	ex exchange.Exchange,
 	validator openrtb_ext.BidderParamValidator,
 	requestsById stored_requests.Fetcher,
@@ -73,6 +75,7 @@ func NewEndpoint(
 	}
 
 	return httprouter.Handle((&endpointDeps{
+		uuidGenerator,
 		ex,
 		validator,
 		requestsById,
@@ -91,6 +94,7 @@ func NewEndpoint(
 }
 
 type endpointDeps struct {
+	uuidGenerator             uuidutil.UUIDGenerator
 	ex                        exchange.Exchange
 	paramsValidator           openrtb_ext.BidderParamValidator
 	storedReqFetcher          stored_requests.Fetcher
@@ -1422,20 +1426,33 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 
 	// Apply the Stored BidRequest, if it exists
 	resolvedRequest := requestJson
-	if hasStoredBidRequest {
+
+	if deps.cfg.GenerateRequestID {
+		isAppRequest, err := checkIfAppRequest(requestJson)
+		if err != nil {
+			return nil, nil, []error{err}
+		}
+		if isAppRequest && hasStoredBidRequest {
+			uuidPatch, err := generateUuidForBidRequest(deps.uuidGenerator)
+			if err != nil {
+				return nil, nil, []error{err}
+			}
+			uuidPatch, err = jsonpatch.MergePatch(storedRequests[storedBidRequestId], uuidPatch)
+			if err != nil {
+				errL := storedRequestErrorChecker(requestJson, storedRequests, storedBidRequestId)
+				return nil, nil, errL
+			}
+			resolvedRequest, err = jsonpatch.MergePatch(requestJson, uuidPatch)
+			if err != nil {
+				errL := storedRequestErrorChecker(requestJson, storedRequests, storedBidRequestId)
+				return nil, nil, errL
+			}
+		}
+	} else if hasStoredBidRequest {
 		resolvedRequest, err = jsonpatch.MergePatch(storedRequests[storedBidRequestId], requestJson)
 		if err != nil {
-			hasErr, Err := getJsonSyntaxError(requestJson)
-			if hasErr {
-				err = fmt.Errorf("Invalid JSON in Incoming Request: %s", Err)
-			} else {
-				hasErr, Err = getJsonSyntaxError(storedRequests[storedBidRequestId])
-				if hasErr {
-					err = fmt.Errorf("Invalid JSON in Stored Request with ID %s: %s", storedBidRequestId, Err)
-					err = fmt.Errorf("ext.prebid.storedrequest.id refers to Stored Request %s which contains Invalid JSON: %s", storedBidRequestId, Err)
-				}
-			}
-			return nil, nil, []error{err}
+			errL := storedRequestErrorChecker(requestJson, storedRequests, storedBidRequestId)
+			return nil, nil, errL
 		}
 	}
 
@@ -1539,7 +1556,8 @@ type ImpExtPrebidData struct {
 // (e.g. malformed json, id not a string, etc).
 func getStoredRequestId(data []byte) (string, bool, error) {
 	// These keys must be kept in sync with openrtb_ext.ExtStoredRequest
-	value, dataType, _, err := jsonparser.Get(data, "ext", openrtb_ext.PrebidExtKey, "storedrequest", "id")
+	storedRequestId, dataType, _, err := jsonparser.Get(data, "ext", openrtb_ext.PrebidExtKey, "storedrequest", "id")
+
 	if dataType == jsonparser.NotExist {
 		return "", false, nil
 	}
@@ -1549,8 +1567,7 @@ func getStoredRequestId(data []byte) (string, bool, error) {
 	if dataType != jsonparser.String {
 		return "", true, errors.New("ext.prebid.storedrequest.id must be a string")
 	}
-
-	return string(value), true, nil
+	return string(storedRequestId), true, nil
 }
 
 // setIPImplicitly sets the IP address on bidReq, if it's not explicitly defined and we can figure it out.
@@ -1651,4 +1668,36 @@ func getAccountID(pub *openrtb2.Publisher) string {
 		}
 	}
 	return metrics.PublisherUnknown
+}
+
+func storedRequestErrorChecker(requestJson []byte, storedRequests map[string]json.RawMessage, storedBidRequestId string) []error {
+	if hasErr, syntaxErr := getJsonSyntaxError(requestJson); hasErr {
+		return []error{fmt.Errorf("Invalid JSON in Incoming Request: %s", syntaxErr)}
+	}
+	if hasErr, syntaxErr := getJsonSyntaxError(storedRequests[storedBidRequestId]); hasErr {
+		return []error{fmt.Errorf("ext.prebid.storedrequest.id refers to Stored Request %s which contains Invalid JSON: %s", storedBidRequestId, syntaxErr)}
+	}
+	return nil
+}
+
+func generateUuidForBidRequest(uuidGenerator uuidutil.UUIDGenerator) ([]byte, error) {
+	newBidRequestID, err := uuidGenerator.Generate()
+	if err != nil {
+		return nil, err
+	}
+	return []byte(`{"id":"` + newBidRequestID + `"}`), nil
+}
+
+func checkIfAppRequest(request []byte) (bool, error) {
+	requestApp, dataType, _, err := jsonparser.Get(request, "app")
+	if dataType == jsonparser.NotExist {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	if requestApp != nil {
+		return true, nil
+	}
+	return false, nil
 }

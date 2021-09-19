@@ -83,6 +83,8 @@ type Configuration struct {
 	AutoGenSourceTID bool `mapstructure:"auto_gen_source_tid"`
 	//When true, new bid id will be generated in seatbid[].bid[].ext.prebid.bidid and used in event urls instead
 	GenerateBidID bool `mapstructure:"generate_bid_id"`
+	// GenerateRequestID overrides the bidrequest.id in an AMP Request or an App Stored Request with a generated UUID if set to true. The default is false.
+	GenerateRequestID bool `mapstructure:"generate_request_id"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
@@ -753,7 +755,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.adoppler.endpoint", "http://{{.AccountID}}.trustedmarketplace.io/ads/processHeaderBid/{{.AdUnit}}")
 	v.SetDefault("adapters.adot.endpoint", "https://dsp.adotmob.com/headerbidding/bidrequest")
 	v.SetDefault("adapters.adpone.endpoint", "http://rtb.adpone.com/bid-request?src=prebid_server")
-	v.SetDefault("adapters.adprime.endpoint", "http://delta.adprime.com/?c=o&m=ortb")
+	v.SetDefault("adapters.adprime.endpoint", "http://delta.adprime.com/pserver")
 	v.SetDefault("adapters.adtarget.endpoint", "http://ghb.console.adtarget.com.tr/pbs/ortb")
 	v.SetDefault("adapters.adtelligent.endpoint", "http://ghb.adtelligent.com/pbs/ortb")
 	v.SetDefault("adapters.advangelists.endpoint", "http://nep.advangelists.com/xp/get?pubid={{.PublisherID}}")
@@ -865,7 +867,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.valueimpression.endpoint", "https://rtb.valueimpression.com/endpoint")
 	v.SetDefault("adapters.verizonmedia.disabled", true)
 	v.SetDefault("adapters.viewdeos.endpoint", "http://ghb.sync.viewdeos.com/pbs/ortb")
-	v.SetDefault("adapters.visx.endpoint", "https://t.visx.net/s2s_bid?wrapperType=s2s_prebid_standard")
+	v.SetDefault("adapters.visx.endpoint", "https://t.visx.net/s2s_bid?wrapperType=s2s_prebid_standard:0.1.0")
 	v.SetDefault("adapters.vrtcal.endpoint", "http://rtb.vrtcal.com/bidder_prebid.vap?ssp=1804")
 	v.SetDefault("adapters.yeahmobi.endpoint", "https://{{.Host}}/prebid/bid")
 	v.SetDefault("adapters.yieldlab.endpoint", "https://ad.yieldlab.net/yp/")
@@ -944,6 +946,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("certificates_file", "")
 	v.SetDefault("auto_gen_source_tid", true)
 	v.SetDefault("generate_bid_id", false)
+	v.SetDefault("generate_request_id", false)
 
 	v.SetDefault("request_timeout_headers.request_time_in_queue", "")
 	v.SetDefault("request_timeout_headers.request_timeout_in_queue", "")

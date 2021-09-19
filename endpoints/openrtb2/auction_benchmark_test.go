@@ -87,6 +87,7 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 	)
 
 	endpoint, _ := NewEndpoint(
+		fakeUUIDGenerator{},
 		exchange,
 		paramValidator,
 		empty_fetcher.EmptyFetcher{},
