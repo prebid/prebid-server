@@ -26,6 +26,7 @@ import (
 	"github.com/prebid/prebid-server/metrics"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/version"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -145,6 +146,12 @@ func TestRequestBidRemovesSensitiveHeaders(t *testing.T) {
 	server := httptest.NewServer(mockHandler(200, "getBody", "responseJson"))
 	defer server.Close()
 
+	oldVer := version.Ver
+	version.Ver = "test-version"
+	defer func() {
+		version.Ver = oldVer
+	}()
+
 	requestHeaders := http.Header{}
 	requestHeaders.Add("Content-Type", "application/json")
 	requestHeaders.Add("Authorization", "anySecret")
@@ -173,7 +180,7 @@ func TestRequestBidRemovesSensitiveHeaders(t *testing.T) {
 		{
 			Uri:            server.URL,
 			RequestBody:    "requestJson",
-			RequestHeaders: map[string][]string{"Content-Type": {"application/json"}},
+			RequestHeaders: map[string][]string{"Content-Type": {"application/json"}, "X-Prebid": {"pbs-go/test-version"}},
 			ResponseBody:   "responseJson",
 			Status:         200,
 		},
@@ -214,7 +221,7 @@ func TestSetGPCHeader(t *testing.T) {
 		{
 			Uri:            server.URL,
 			RequestBody:    "requestJson",
-			RequestHeaders: map[string][]string{"Content-Type": {"application/json"}, "Sec-Gpc": {"1"}},
+			RequestHeaders: map[string][]string{"Content-Type": {"application/json"}, "X-Prebid": {"pbs-go/unknown"}, "Sec-Gpc": {"1"}},
 			ResponseBody:   "responseJson",
 			Status:         200,
 		},
@@ -252,7 +259,7 @@ func TestSetGPCHeaderNil(t *testing.T) {
 		{
 			Uri:            server.URL,
 			RequestBody:    "requestJson",
-			RequestHeaders: map[string][]string{"Sec-Gpc": {"1"}},
+			RequestHeaders: map[string][]string{"X-Prebid": {"pbs-go/unknown"}, "Sec-Gpc": {"1"}},
 			ResponseBody:   "responseJson",
 			Status:         200,
 		},
@@ -424,7 +431,6 @@ func TestMultiCurrencies(t *testing.T) {
 				{currency: "USD", price: 1.3},
 			},
 			rates: currency.Rates{
-				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"GBP": {
 						"USD": 1.3050530256,
@@ -449,7 +455,6 @@ func TestMultiCurrencies(t *testing.T) {
 				{currency: "", price: 1.3},
 			},
 			rates: currency.Rates{
-				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"GBP": {
 						"USD": 1.3050530256,
@@ -474,7 +479,6 @@ func TestMultiCurrencies(t *testing.T) {
 				{currency: "EUR", price: 1.3},
 			},
 			rates: currency.Rates{
-				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"GBP": {
 						"USD": 1.3050530256,
@@ -499,7 +503,6 @@ func TestMultiCurrencies(t *testing.T) {
 				{currency: "GBP", price: 1.3},
 			},
 			rates: currency.Rates{
-				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"GBP": {
 						"USD": 1.3050530256,
@@ -524,7 +527,6 @@ func TestMultiCurrencies(t *testing.T) {
 				{currency: "GBP", price: 1.3},
 			},
 			rates: currency.Rates{
-				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"GBP": {
 						"USD": 1.3050530256,
@@ -549,7 +551,6 @@ func TestMultiCurrencies(t *testing.T) {
 				{currency: "GBP", price: 1.3},
 			},
 			rates: currency.Rates{
-				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"GBP": {
 						"USD": 1.3050530256,
@@ -575,7 +576,6 @@ func TestMultiCurrencies(t *testing.T) {
 				{currency: "DKK", price: 1.3},
 			},
 			rates: currency.Rates{
-				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"GBP": {
 						"USD": 1.3050530256,
@@ -600,7 +600,6 @@ func TestMultiCurrencies(t *testing.T) {
 				{currency: "CCC", price: 1.3},
 			},
 			rates: currency.Rates{
-				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"GBP": {
 						"USD": 1.3050530256,
@@ -858,7 +857,6 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			expectedPickedCurrency: "EUR",
 			expectedError:          false,
 			rates: currency.Rates{
-				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"JPY": {
 						"USD": 0.0089,
@@ -879,7 +877,6 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			expectedPickedCurrency: "JPY",
 			expectedError:          false,
 			rates: currency.Rates{
-				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"JPY": {
 						"USD": 0.0089,
@@ -894,7 +891,6 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			expectedPickedCurrency: "USD",
 			expectedError:          false,
 			rates: currency.Rates{
-				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"JPY": {
 						"USD": 0.0089,
@@ -915,7 +911,6 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			expectedPickedCurrency: "",
 			expectedError:          true,
 			rates: currency.Rates{
-				DataAsOf:    time.Now(),
 				Conversions: map[string]map[string]float64{},
 			},
 			description: "Case 4 - None allowed currencies in bid request are known, an error is returned",
@@ -926,7 +921,6 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			expectedPickedCurrency: "USD",
 			expectedError:          false,
 			rates: currency.Rates{
-				DataAsOf:    time.Now(),
 				Conversions: map[string]map[string]float64{},
 			},
 			description: "Case 5 - None allowed currencies in bid request are known but the default one (`USD`), no rates are set but default currency will be picked",
@@ -937,7 +931,6 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			expectedPickedCurrency: "USD",
 			expectedError:          false,
 			rates: currency.Rates{
-				DataAsOf:    time.Now(),
 				Conversions: map[string]map[string]float64{},
 			},
 			description: "Case 6 - No allowed currencies specified in bid request, default one is picked: `USD`",

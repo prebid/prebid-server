@@ -10,3 +10,7 @@ capabilities:
     mediaTypes:
       - banner
       - video
+userSync:
+  redirect:
+    url: "https://sync.go.sonobi.com/us.gif?loc={{.RedirectURL}}"
+    userMacro: "[UID]"

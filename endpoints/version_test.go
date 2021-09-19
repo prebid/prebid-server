@@ -11,17 +11,18 @@ import (
 func TestVersion(t *testing.T) {
 	// Setup:
 	var testCases = []struct {
-		input    string
+		version  string
+		revision string
 		expected string
 	}{
-		{"", `{"revision": "not-set"}`},
-		{"abc", `{"revision": "abc"}`},
-		{"d6cd1e2bd19e03a81132a23b2025920577f84e37", `{"revision": "d6cd1e2bd19e03a81132a23b2025920577f84e37"}`},
+		{"", "", `{"version":"not-set","revision":"not-set"}`},
+		{"abc", "def", `{"version":"abc","revision"	:"def"}`},
+		{"1.2.3", "d6cd1e2bd19e03a81132a23b2025920577f84e37", `{"version":"1.2.3","revision":"d6cd1e2bd19e03a81132a23b2025920577f84e37"}`},
 	}
 
 	for _, tc := range testCases {
 
-		handler := NewVersionEndpoint(tc.input)
+		handler := NewVersionEndpoint(tc.version, tc.revision)
 		w := httptest.NewRecorder()
 
 		// Execute:
@@ -29,7 +30,11 @@ func TestVersion(t *testing.T) {
 
 		// Verify:
 		var result, expected versionModel
-		err := json.NewDecoder(w.Body).Decode(&result)
+		responseBodyBytes, err := ioutil.ReadAll(w.Body)
+		if err != nil {
+			t.Errorf("Error reading response body bytes: %s", err)
+		}
+		err = json.Unmarshal(responseBodyBytes, &result)
 		if err != nil {
 			t.Errorf("Bad response body. Expected: %s, got an error %s", tc.expected, err)
 		}
@@ -40,7 +45,6 @@ func TestVersion(t *testing.T) {
 		}
 
 		if !reflect.DeepEqual(expected, result) {
-			responseBodyBytes, _ := ioutil.ReadAll(w.Body)
 			responseBodyString := string(responseBodyBytes)
 			t.Errorf("Bad response body. Expected: %s, got %s", tc.expected, responseBodyString)
 		}
