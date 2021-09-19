@@ -175,25 +175,23 @@ func copyFormats(sizes []openrtb2.Format) []openrtb2.Format {
 	return sizesCopy
 }
 
-func ExtractBidderParams(bidRequest *openrtb2.BidRequest) (map[string]json.RawMessage, error) {
-	if bidRequest == nil {
+func ExtractBidderParams(req *openrtb_ext.RequestWrapper) (map[string]json.RawMessage, error) {
+	if req == nil || req.BidRequest == nil {
 		return nil, fmt.Errorf("error bidRequest should not be nil")
 	}
 
-	reqExt := &openrtb_ext.ExtRequest{}
-	if len(bidRequest.Ext) > 0 {
-		err := json.Unmarshal(bidRequest.Ext, &reqExt)
-		if err != nil {
-			return nil, fmt.Errorf("error decoding Request.ext : %s", err.Error())
-		}
+	reqExt, err := req.GetRequestExt()
+	if err != nil {
+		return nil, fmt.Errorf("error decoding Request.ext : %s", err.Error())
 	}
 
-	if reqExt.Prebid.BidderParams == nil {
+	prebidExt := reqExt.GetPrebid()
+	if prebidExt == nil || prebidExt.BidderParams == nil{
 		return nil, nil
 	}
 
 	var bidderParams map[string]json.RawMessage
-	err := json.Unmarshal(reqExt.Prebid.BidderParams, &bidderParams)
+	err = json.Unmarshal(prebidExt.BidderParams, &bidderParams)
 	if err != nil {
 		return nil, err
 	}

@@ -3514,3 +3514,89 @@ type hardcodedResponseIPValidator struct {
 func (v hardcodedResponseIPValidator) IsValid(net.IP, iputil.IPVersion) bool {
 	return v.response
 }
+
+func TestParseRequestMergeBidderParams(t *testing.T) {
+	type args struct {
+		reqBody string
+	}
+	tests := []struct {
+		name           string
+		args           args
+		expectedImpExt json.RawMessage
+		expectedReqExt json.RawMessage
+		errL           int
+	}{
+		{
+			name: "copy request level bidder-params in imp[].ext",
+			args: args{
+				reqBody: validRequest(t, "req-ext-bidder-params.json"),
+			},
+			expectedImpExt: getObject(t, "req-ext-bidder-params.json", "expectedImpExt"),
+			expectedReqExt: getObject(t, "req-ext-bidder-params.json", "expectedReqExt"),
+			errL:           0,
+		},
+		{
+			name: "Merge request level bidder-params in imp[].ext with preference for imp[].ext params",
+			args: args{
+				reqBody: validRequest(t, "req-ext-bidder-params-merge.json"),
+			},
+			expectedImpExt: getObject(t, "req-ext-bidder-params-merge.json", "expectedImpExt"),
+			expectedReqExt: getObject(t, "req-ext-bidder-params-merge.json", "expectedReqExt"),
+			errL:           0,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			deps := &endpointDeps{
+				&warningsCheckExchange{},
+				newParamsValidator(t),
+				&mockStoredReqFetcher{},
+				empty_fetcher.EmptyFetcher{},
+				empty_fetcher.EmptyFetcher{},
+				&config.Configuration{MaxRequestSize: int64(len(tt.args.reqBody))},
+				&metricsConfig.DummyMetricsEngine{},
+				analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+				map[string]string{},
+				false,
+				[]byte{},
+				openrtb_ext.BuildBidderMap(),
+				nil,
+				nil,
+				hardcodedResponseIPValidator{response: true},
+			}
+
+			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(tt.args.reqBody))
+
+			resReq, _, errL := deps.parseRequest(req)
+
+			var expIExt, iExt map[string]interface{}
+			_ = json.Unmarshal(tt.expectedImpExt, &expIExt)
+			_ = json.Unmarshal(resReq.BidRequest.Imp[0].Ext, &iExt)
+			assert.Equal(t, expIExt, iExt, "bidderparams in imp[].Ext should match")
+
+			var eReqE, reqE map[string]interface{}
+			_ = json.Unmarshal(tt.expectedReqExt, &eReqE)
+			_ = json.Unmarshal(resReq.BidRequest.Ext, &reqE)
+			assert.Equal(t, eReqE, reqE, "req.Ext should match")
+
+			assert.Len(t, errL, tt.errL, "error length should match")
+		})
+	}
+}
+
+func getObject(t *testing.T, filename, key string) json.RawMessage {
+	requestData, err := ioutil.ReadFile("sample-requests/valid-whole/supplementary/" + filename)
+	if err != nil {
+		t.Fatalf("Failed to fetch a valid request: %v", err)
+	}
+	testBidRequest, _, _, err := jsonparser.Get(requestData, key)
+	assert.NoError(t, err, "Error jsonparsing root.mockBidRequest from file %s. Desc: %v.", filename, err)
+
+	var obj json.RawMessage
+	err = json.Unmarshal(testBidRequest, &obj)
+	if err != nil {
+		t.Fatalf("Failed to fetch object with key '%s' ... got error: %v", key, err)
+	}
+	return obj
+}

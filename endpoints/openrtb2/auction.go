@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/prebid/prebid-server/adapters"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -277,6 +278,11 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_
 		return
 	}
 
+	if err := mergeBidderParams(req); err != nil {
+		errs = []error{err}
+		return
+	}
+
 	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
 	deps.setFieldsImplicitly(httpRequest, req.BidRequest)
 
@@ -308,6 +314,68 @@ func parseTimeout(requestJson []byte, defaultTimeout time.Duration) time.Duratio
 		}
 	}
 	return defaultTimeout
+}
+
+// mergeBidderParams merges bidder parameters passed at req.ext level with imp[].ext level.
+// Preference is given to parameters at imp[].ext level over req.ext level.
+// Parameters at req.ext level are propagated to adapters as is without any validation.
+func mergeBidderParams(req *openrtb_ext.RequestWrapper) error {
+	var reqBidderParams map[string]json.RawMessage
+
+	reqBidderParams, err := adapters.ExtractBidderParams(req)
+	if err != nil {
+		return err
+	}
+
+	impCpy := make([]openrtb2.Imp, 0)
+	for _, imp := range req.BidRequest.Imp {
+		updatedImp := imp
+		var impExt map[string]map[string]interface{}
+		if len(imp.Ext) == 0 {
+			impCpy = append(impCpy, updatedImp)
+			continue
+		}
+
+		err := json.Unmarshal(imp.Ext, &impExt)
+		if err != nil {
+			return fmt.Errorf("error decoding imp[].ext : %s", err.Error())
+		}
+
+		for bidder, impParams := range impExt {
+			if !isBidderToValidate(bidder) {
+				continue
+			}
+
+			reqExtP, ok := reqBidderParams[bidder]
+			if !ok {
+				continue
+			}
+
+			var reqLevelParams map[string]interface{}
+			err := json.Unmarshal(reqExtP, &reqLevelParams)
+			if err != nil {
+				return fmt.Errorf("error decoding imp[].ext : %s for bidder: %s", err.Error(), bidder)
+			}
+
+			for rParamName, rParamValue := range reqLevelParams {
+				if _, present := impParams[rParamName]; !present {
+					impParams[rParamName] = rParamValue
+				}
+			}
+			impExt[bidder] = impParams
+		}
+
+		iExt, err := json.Marshal(impExt)
+		if err != nil {
+			return fmt.Errorf("error marshalling imp[].ext : %s", err.Error())
+		}
+
+		updatedImp.Ext = iExt
+		impCpy = append(impCpy, updatedImp)
+	}
+
+	req.BidRequest.Imp = impCpy
+	return nil
 }
 
 func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper) []error {

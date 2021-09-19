@@ -1,0 +1,90 @@
+{
+  "description": "Well formed request with bidder params",
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "test.somepage.com"
+    },
+    "imp": [
+      {
+        "id": "my-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "pmp": {
+          "deals": [
+            {
+              "id": "some-deal-id"
+            }
+          ]
+        },
+        "ext": {
+          "appnexus": {},
+          "pubmatic": {}
+        }
+      }
+    ],
+    "ext": {
+      "prebid": {
+        "targeting": {
+          "pricegranularity": "low"
+        },
+        "cache": {
+          "bids": {}
+        },
+        "bidderparams": {
+          "appnexus": {
+            "placementId": 12883451
+          },
+          "pubmatic": {
+            "publisherId": "1234",
+            "wrapper": {
+              "profile": 1234,
+              "version": 2
+            }
+          }
+        }
+      }
+    }
+  },
+  "expectedReqExt": {
+    "prebid": {
+      "targeting": {
+        "pricegranularity": "low"
+      },
+      "cache": {
+        "bids": {}
+      },
+      "bidderparams": {
+        "appnexus": {
+          "placementId": 12883451
+        },
+        "pubmatic": {
+          "publisherId": "1234",
+          "wrapper": {
+            "profile": 1234,
+            "version": 2
+          }
+        }
+      }
+    }
+  },
+  "expectedImpExt": {
+    "appnexus": {
+      "placementId": 12883451
+    },
+    "pubmatic": {
+      "publisherId": "1234",
+      "wrapper": {
+        "profile": 1234,
+        "version": 2
+      }
+    }
+  },
+  "expectedReturnCode": 200
+}

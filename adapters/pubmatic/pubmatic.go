@@ -367,22 +367,21 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ad
 	}
 
 	//get request ext bidder params
-	if profileRaw, present := reqExtBidderParams["profile"]; present && len(profileRaw) != 0 {
-		var profile int
-		err = json.Unmarshal(profileRaw, &profile)
+	if wrapperObj, present := reqExtBidderParams["wrapper"]; present && len(wrapperObj) != 0 {
+		var wrpExt pubmaticWrapperExt
+		err = json.Unmarshal(wrapperObj, &wrpExt)
 		if err == nil {
-			wrapperExt.ProfileID = profile
-			wrapperExtSet = true
+			if wrpExt.ProfileID != 0 {
+				wrapperExt.ProfileID = wrpExt.ProfileID
+				wrapperExtSet = true
+			}
+			if wrpExt.VersionID != 0 {
+				wrapperExt.VersionID = wrpExt.VersionID
+				wrapperExtSet = true
+			}
 		}
 	}
-	if versionRaw, present := reqExtBidderParams["version"]; present && len(versionRaw) != 0 {
-		var version int
-		err = json.Unmarshal(versionRaw, &version)
-		if err == nil {
-			wrapperExt.VersionID = version
-			wrapperExtSet = true
-		}
-	}
+
 	if wrapperExtSet {
 		jsonData, _ := json.Marshal(wrapperExt)
 		rawExt := fmt.Sprintf("{\"wrapper\": %s}", string(jsonData))

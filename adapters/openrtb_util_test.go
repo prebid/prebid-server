@@ -1,6 +1,7 @@
 package adapters
 
 import (
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"reflect"
 	"testing"
 
@@ -545,7 +546,7 @@ func TestGDPRMobile(t *testing.T) {
 
 func TestExtractBidderParams(t *testing.T) {
 	type args struct {
-		bidRequest *openrtb2.BidRequest
+		request *openrtb_ext.RequestWrapper
 	}
 	tests := []struct {
 		name    string
@@ -556,7 +557,7 @@ func TestExtractBidderParams(t *testing.T) {
 		{
 			name: "extract bidder params from nil req",
 			args: args{
-				bidRequest: nil,
+				request: nil,
 			},
 			want:    nil,
 			wantErr: true,
@@ -564,7 +565,7 @@ func TestExtractBidderParams(t *testing.T) {
 		{
 			name: "extract bidder params from nil req.Ext",
 			args: args{
-				bidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{}}`)},
+				request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{}}`)}},
 			},
 			want:    nil,
 			wantErr: false,
@@ -572,7 +573,7 @@ func TestExtractBidderParams(t *testing.T) {
 		{
 			name: "extract bidder params from req.Ext for input request before adapter code",
 			args: args{
-				bidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"bidderparams": {"pubmatic": {"profile": 1234, "version": 1}, "appnexus": {"key1": 123, "key2": {"innerKey1":"innerValue1"}} }}}`)},
+				request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"bidderparams": {"pubmatic": {"profile": 1234, "version": 1}, "appnexus": {"key1": 123, "key2": {"innerKey1":"innerValue1"}} }}}`)}},
 			},
 			want:    map[string]json.RawMessage{"pubmatic": json.RawMessage(`{"profile": 1234, "version": 1}`), "appnexus": json.RawMessage(`{"key1": 123, "key2": {"innerKey1":"innerValue1"}}`)},
 			wantErr: false,
@@ -580,7 +581,7 @@ func TestExtractBidderParams(t *testing.T) {
 		{
 			name: "extract bidder params from req.Ext for input request in adapter code",
 			args: args{
-				bidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"bidderparams": {"profile": 1234, "version": 1}}}`)},
+				request: &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"bidderparams": {"profile": 1234, "version": 1}}}`)}},
 			},
 			want:    map[string]json.RawMessage{"profile": json.RawMessage(`1234`), "version": json.RawMessage(`1`)},
 			wantErr: false,
@@ -588,7 +589,7 @@ func TestExtractBidderParams(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ExtractBidderParams(tt.args.bidRequest)
+			got, err := ExtractBidderParams(tt.args.request)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ExtractBidderParams() error = %v, wantErr %v", err, tt.wantErr)
 				return
