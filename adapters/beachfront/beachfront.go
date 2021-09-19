@@ -294,14 +294,12 @@ func getBannerRequest(request *openrtb2.BidRequest) (beachfrontBannerRequest, []
 			continue
 		}
 
+		setBidFloor(&beachfrontExt, &request.Imp[i])
+
 		slot := beachfrontSlot{
 			Id:       appid,
 			Slot:     request.Imp[i].ID,
-			Bidfloor: beachfrontExt.BidFloor,
-		}
-
-		if beachfrontExt.BidFloor <= minBidFloor {
-			slot.Bidfloor = 0
+			Bidfloor: request.Imp[i].BidFloor,
 		}
 
 		for j := 0; j < len(request.Imp[i].Banner.Format); j++ {
@@ -451,8 +449,9 @@ func getVideoRequests(request *openrtb2.BidRequest) ([]beachfrontVideoRequest, [
 				var chunks = strings.Split(strings.Trim(bfReqs[i].Request.App.Bundle, "_"), ".")
 
 				if len(chunks) > 1 {
-					bfReqs[i].Request.App.Domain =
-						fmt.Sprintf("%s.%s", chunks[len(chunks)-(len(chunks)-1)], chunks[0])
+					appCopy := *bfReqs[i].Request.App
+					appCopy.Domain = fmt.Sprintf("%s.%s", chunks[len(chunks)-(len(chunks)-1)], chunks[0])
+					bfReqs[i].Request.App = &appCopy
 				}
 			}
 		}
@@ -468,12 +467,7 @@ func getVideoRequests(request *openrtb2.BidRequest) ([]beachfrontVideoRequest, [
 		imp.Banner = nil
 		imp.Ext = nil
 		imp.Secure = &secure
-
-		if beachfrontExt.BidFloor <= minBidFloor {
-			imp.BidFloor = 0
-		} else {
-			imp.BidFloor = beachfrontExt.BidFloor
-		}
+		setBidFloor(&beachfrontExt, &imp)
 
 		if imp.Video.H == 0 && imp.Video.W == 0 {
 			imp.Video.W = defaultVideoWidth
@@ -562,6 +556,24 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb2.BidRequest, exter
 	}
 
 	return bidResponse, errs
+}
+
+func setBidFloor(ext *openrtb_ext.ExtImpBeachfront, imp *openrtb2.Imp) {
+	var floor float64
+
+	if imp.BidFloor > 0 {
+		floor = imp.BidFloor
+	} else if ext.BidFloor > 0 {
+		floor = ext.BidFloor
+	} else {
+		floor = minBidFloor
+	}
+
+	if floor <= minBidFloor {
+		floor = 0
+	}
+
+	imp.BidFloor = floor
 }
 
 func (a *BeachfrontAdapter) getBidType(externalRequest *adapters.RequestData) openrtb_ext.BidType {

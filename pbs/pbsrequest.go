@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/stored_requests"
@@ -21,6 +20,7 @@ import (
 	"github.com/blang/semver"
 	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"golang.org/x/net/publicsuffix"
 )
 
@@ -121,17 +121,23 @@ type SDK struct {
 }
 
 type PBSBidder struct {
-	BidderCode   string                 `json:"bidder"`
-	AdUnitCode   string                 `json:"ad_unit,omitempty"` // for index to dedup responses
-	ResponseTime int                    `json:"response_time_ms,omitempty"`
-	NumBids      int                    `json:"num_bids,omitempty"`
-	Error        string                 `json:"error,omitempty"`
-	NoCookie     bool                   `json:"no_cookie,omitempty"`
-	NoBid        bool                   `json:"no_bid,omitempty"`
-	UsersyncInfo *usersync.UsersyncInfo `json:"usersync,omitempty"`
-	Debug        []*BidderDebug         `json:"debug,omitempty"`
+	BidderCode   string         `json:"bidder"`
+	AdUnitCode   string         `json:"ad_unit,omitempty"` // for index to dedup responses
+	ResponseTime int            `json:"response_time_ms,omitempty"`
+	NumBids      int            `json:"num_bids,omitempty"`
+	Error        string         `json:"error,omitempty"`
+	NoCookie     bool           `json:"no_cookie,omitempty"`
+	NoBid        bool           `json:"no_bid,omitempty"`
+	UsersyncInfo *UsersyncInfo  `json:"usersync,omitempty"`
+	Debug        []*BidderDebug `json:"debug,omitempty"`
 
 	AdUnits []PBSAdUnit `json:"-"`
+}
+
+type UsersyncInfo struct {
+	URL         string `json:"url,omitempty"`
+	Type        string `json:"type,omitempty"`
+	SupportCORS bool   `json:"supportCORS,omitempty"`
 }
 
 func (bidder *PBSBidder) LookupBidID(Code string) string {
@@ -168,12 +174,12 @@ type PBSRequest struct {
 	SDK           *SDK             `json:"sdk"`
 
 	// internal
-	Bidders []*PBSBidder        `json:"-"`
-	User    *openrtb2.User      `json:"-"`
-	Cookie  *usersync.PBSCookie `json:"-"`
-	Url     string              `json:"-"`
-	Domain  string              `json:"-"`
-	Regs    *openrtb2.Regs      `json:"-"`
+	Bidders []*PBSBidder     `json:"-"`
+	User    *openrtb2.User   `json:"-"`
+	Cookie  *usersync.Cookie `json:"-"`
+	Url     string           `json:"-"`
+	Domain  string           `json:"-"`
+	Regs    *openrtb2.Regs   `json:"-"`
 	Start   time.Time
 }
 
@@ -217,7 +223,7 @@ func ParseMediaTypes(types []string) []MediaType {
 	return mtypes
 }
 
-var ipv4Validator iputil.IPValidator = iputil.VersionIPValidator{iputil.IPv4}
+var ipv4Validator iputil.IPValidator = iputil.VersionIPValidator{Version: iputil.IPv4}
 
 func ParsePBSRequest(r *http.Request, cfg *config.AuctionTimeouts, cache cache.Cache, hostCookieConfig *config.HostCookie) (*PBSRequest, error) {
 	defer r.Body.Close()
@@ -264,7 +270,7 @@ func ParsePBSRequest(r *http.Request, cfg *config.AuctionTimeouts, cache cache.C
 
 	// use client-side data for web requests
 	if pbsReq.App == nil {
-		pbsReq.Cookie = usersync.ParsePBSCookieFromRequest(r, hostCookieConfig)
+		pbsReq.Cookie = usersync.ParseCookieFromRequest(r, hostCookieConfig)
 
 		pbsReq.Device.UA = r.Header.Get("User-Agent")
 

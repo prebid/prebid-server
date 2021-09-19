@@ -17,20 +17,22 @@ import (
 	"testing"
 	"time"
 
-	"github.com/buger/jsonparser"
-	jsonpatch "github.com/evanphx/json-patch"
-	"github.com/mxmCherry/openrtb/v15/native1"
-	nativeRequests "github.com/mxmCherry/openrtb/v15/native1/request"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/metrics"
+	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/util/iputil"
+
+	"github.com/buger/jsonparser"
+	"github.com/mxmCherry/openrtb/v15/native1"
+	nativeRequests "github.com/mxmCherry/openrtb/v15/native1/request"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -45,11 +47,13 @@ type testCase struct {
 }
 
 type testConfigValues struct {
-	AccountRequired     bool     `json:"accountRequired"`
-	AliasJSON           string   `json:"aliases"`
-	BlacklistedAccounts []string `json:"blacklistedAccts"`
-	BlacklistedApps     []string `json:"blacklistedApps"`
-	DisabledAdapters    []string `json:"disabledAdapters"`
+	AccountRequired     bool                          `json:"accountRequired"`
+	AliasJSON           string                        `json:"aliases"`
+	BlacklistedAccounts []string                      `json:"blacklistedAccts"`
+	BlacklistedApps     []string                      `json:"blacklistedApps"`
+	DisabledAdapters    []string                      `json:"disabledAdapters"`
+	CurrencyRates       map[string]map[string]float64 `json:"currencyRates"`
+	MockBidder          mockBidExchangeBidder         `json:"mockBidder"`
 }
 
 func TestJsonSampleRequests(t *testing.T) {
@@ -104,6 +108,22 @@ func TestJsonSampleRequests(t *testing.T) {
 		{
 			"Requests with first party data context info found in imp[i].ext.prebid.bidder,context",
 			"first-party-data",
+		},
+		{
+			"Assert we correctly use the server conversion rates when needed",
+			"currency-conversion/server-rates/valid",
+		},
+		{
+			"Assert we correctly throw an error when no conversion rate was found in the server conversions map",
+			"currency-conversion/server-rates/errors",
+		},
+		{
+			"Assert we correctly use request-defined custom currency rates when present in root.ext",
+			"currency-conversion/custom-rates/valid",
+		},
+		{
+			"Assert we correctly validate request-defined custom currency rates when present in root.ext",
+			"currency-conversion/custom-rates/errors",
 		},
 	}
 	for _, test := range testSuites {
@@ -248,6 +268,7 @@ func assertBidResponseEqual(t *testing.T, testFile string, expectedBidResponse o
 	assert.Equalf(t, expectedBidResponse.ID, actualBidResponse.ID, "BidResponse.ID doesn't match expected. Test: %s\n", testFile)
 	assert.Equalf(t, expectedBidResponse.BidID, actualBidResponse.BidID, "BidResponse.BidID doesn't match expected. Test: %s\n", testFile)
 	assert.Equalf(t, expectedBidResponse.NBR, actualBidResponse.NBR, "BidResponse.NBR doesn't match expected. Test: %s\n", testFile)
+	assert.Equalf(t, expectedBidResponse.Cur, actualBidResponse.Cur, "BidResponse.Cur doesn't match expected. Test: %s\n", testFile)
 
 	//Assert []SeatBid and their Bid elements independently of their order
 	assert.Len(t, actualBidResponse.SeatBid, len(expectedBidResponse.SeatBid), "BidResponse.SeatBid array doesn't match expected. Test: %s\n", testFile)
@@ -407,15 +428,15 @@ func TestExplicitUserId(t *testing.T) {
 		Name:  cookieName,
 		Value: mockId,
 	})
-	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
-	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
+
 	endpoint, _ := NewEndpoint(
+		fakeUUIDGenerator{},
 		ex,
 		newParamsValidator(t),
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		cfg,
-		newTestMetrics(),
+		&metricsConfig.DummyMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
@@ -441,8 +462,11 @@ func doRequest(t *testing.T, test testCase) (int, string) {
 	bidderMap := exchange.GetActiveBidders(bidderInfos)
 	disabledBidders := exchange.GetDisabledBiddersErrorMessages(bidderInfos)
 
+	mockExchange := newMockBidExchange(test.Config.MockBidder, test.Config.CurrencyRates)
+
 	endpoint, _ := NewEndpoint(
-		&mockBidExchange{},
+		fakeUUIDGenerator{},
+		mockExchange,
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -454,7 +478,7 @@ func doRequest(t *testing.T, test testCase) (int, string) {
 			BlacklistedAcctMap: test.Config.getBlackListedAccountMap(),
 			AccountRequired:    test.Config.AccountRequired,
 		},
-		newTestMetrics(),
+		&metricsConfig.DummyMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		disabledBidders,
 		[]byte(test.Config.AliasJSON),
@@ -512,12 +536,13 @@ func doBadAliasRequest(t *testing.T, filename string, expectMsg string) {
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
 	endpoint, _ := NewEndpoint(
+		fakeUUIDGenerator{},
 		&nobidExchange{},
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		newTestMetrics(),
+		&metricsConfig.DummyMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		disabledBidders,
 		aliasJSON,
@@ -562,12 +587,13 @@ func TestNilExchange(t *testing.T) {
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
 	_, err := NewEndpoint(
+		fakeUUIDGenerator{},
 		nil,
 		newParamsValidator(t),
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		newTestMetrics(),
+		&metricsConfig.DummyMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap())
@@ -582,12 +608,13 @@ func TestNilValidator(t *testing.T) {
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
 	_, err := NewEndpoint(
+		fakeUUIDGenerator{},
 		&nobidExchange{},
 		nil,
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		newTestMetrics(),
+		&metricsConfig.DummyMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
@@ -603,12 +630,13 @@ func TestExchangeError(t *testing.T) {
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
 	endpoint, _ := NewEndpoint(
+		fakeUUIDGenerator{},
 		&brokenExchange{},
 		newParamsValidator(t),
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		newTestMetrics(),
+		&metricsConfig.DummyMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
@@ -725,12 +753,13 @@ func TestImplicitIPsEndToEnd(t *testing.T) {
 			},
 		}
 		endpoint, _ := NewEndpoint(
+			fakeUUIDGenerator{},
 			exchange,
 			newParamsValidator(t),
 			&mockStoredReqFetcher{},
 			empty_fetcher.EmptyFetcher{},
 			cfg,
-			newTestMetrics(),
+			&metricsConfig.DummyMetricsEngine{},
 			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 			map[string]string{},
 			[]byte{},
@@ -919,12 +948,13 @@ func TestImplicitDNTEndToEnd(t *testing.T) {
 	for _, test := range testCases {
 		exchange := &nobidExchange{}
 		endpoint, _ := NewEndpoint(
+			fakeUUIDGenerator{},
 			exchange,
 			newParamsValidator(t),
 			&mockStoredReqFetcher{},
 			empty_fetcher.EmptyFetcher{},
 			&config.Configuration{MaxRequestSize: maxSize},
-			newTestMetrics(),
+			&metricsConfig.DummyMetricsEngine{},
 			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 			map[string]string{},
 			[]byte{},
@@ -978,16 +1008,108 @@ func TestRefererParsing(t *testing.T) {
 	}
 }
 
+func TestParseImpInfoSingleImpression(t *testing.T) {
+
+	expectedRes := []ImpExtPrebidData{
+		{
+			Imp:          json.RawMessage(`{"video":{"h":300,"w":200},"ext": {"prebid": {"storedrequest": {"id": "1"},"options": {"echovideoattrs": true}}}}`),
+			ImpExtPrebid: openrtb_ext.ExtImpPrebid{StoredRequest: &openrtb_ext.ExtStoredRequest{ID: "1"}, Options: &openrtb_ext.Options{EchoVideoAttrs: true}},
+		},
+		{
+			Imp:          json.RawMessage(`{"id": "adUnit2","ext": {"prebid": {"storedrequest": {"id": "1"},"options": {"echovideoattrs": true}},"appnexus": {"placementId": "def","trafficSourceCode": "mysite.com","reserve": null},"rubicon": null}}`),
+			ImpExtPrebid: openrtb_ext.ExtImpPrebid{StoredRequest: &openrtb_ext.ExtStoredRequest{ID: "1"}, Options: &openrtb_ext.Options{EchoVideoAttrs: true}},
+		},
+		{
+			Imp:          json.RawMessage(`{"ext": {"prebid": {"storedrequest": {"id": "2"},"options": {"echovideoattrs": false}}}}`),
+			ImpExtPrebid: openrtb_ext.ExtImpPrebid{StoredRequest: &openrtb_ext.ExtStoredRequest{ID: "2"}, Options: &openrtb_ext.Options{EchoVideoAttrs: false}},
+		},
+		{
+			//in this case impression doesn't have storedrequest so we don't expect any data about this imp will be returned
+			Imp:          json.RawMessage(`{"id": "some-static-imp","video":{"mimes":["video/mp4"]},"ext": {"appnexus": {"placementId": "abc","position": "below"}}}`),
+			ImpExtPrebid: openrtb_ext.ExtImpPrebid{},
+		},
+	}
+
+	for i, requestData := range testStoredRequests {
+		impInfo, errs := parseImpInfo([]byte(requestData))
+		assert.Len(t, errs, 0, "No errors should be returned")
+		assert.JSONEq(t, string(expectedRes[i].Imp), string(impInfo[0].Imp), "Incorrect impression data")
+		assert.Equal(t, expectedRes[i].ImpExtPrebid, impInfo[0].ImpExtPrebid, "Incorrect impression ext prebid data")
+
+	}
+}
+
+func TestParseImpInfoMultipleImpressions(t *testing.T) {
+
+	inputData := []byte(`{
+		"id": "ThisID",
+		"imp": [
+			{
+				"id": "imp1",
+				"ext": {
+					"prebid": {
+						"storedrequest": {
+							"id": "1"
+						},
+						"options": {
+							"echovideoattrs": true
+						}
+					}
+				}
+			},
+			{
+				"id": "imp2",
+				"ext": {
+					"prebid": {
+						"storedrequest": {
+							"id": "2"
+						},
+						"options": {
+							"echovideoattrs": false
+						}
+					}
+				}
+			},
+			{
+				"id": "imp3"
+			}
+		]
+	}`)
+
+	expectedRes := []ImpExtPrebidData{
+		{
+			Imp:          json.RawMessage(`{"id": "imp1","ext": {"prebid": {"storedrequest": {"id": "1"},"options": {"echovideoattrs": true}}}}`),
+			ImpExtPrebid: openrtb_ext.ExtImpPrebid{StoredRequest: &openrtb_ext.ExtStoredRequest{ID: "1"}, Options: &openrtb_ext.Options{EchoVideoAttrs: true}},
+		},
+		{
+			Imp:          json.RawMessage(`{"id": "imp2","ext": {"prebid": {"storedrequest": {"id": "2"},"options": {"echovideoattrs": false}}}}`),
+			ImpExtPrebid: openrtb_ext.ExtImpPrebid{StoredRequest: &openrtb_ext.ExtStoredRequest{ID: "2"}, Options: &openrtb_ext.Options{EchoVideoAttrs: false}},
+		},
+		{
+			Imp:          json.RawMessage(`{"id": "imp3"}`),
+			ImpExtPrebid: openrtb_ext.ExtImpPrebid{},
+		},
+	}
+
+	impInfo, errs := parseImpInfo([]byte(inputData))
+	assert.Len(t, errs, 0, "No errors should be returned")
+	for i, res := range expectedRes {
+		assert.JSONEq(t, string(res.Imp), string(impInfo[i].Imp), "Incorrect impression data")
+		assert.Equal(t, res.ImpExtPrebid, impInfo[i].ImpExtPrebid, "Incorrect impression ext prebid data")
+	}
+}
+
 // Test the stored request functionality
 func TestStoredRequests(t *testing.T) {
 	deps := &endpointDeps{
+		fakeUUIDGenerator{},
 		&nobidExchange{},
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		newTestMetrics(),
+		&metricsConfig.DummyMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		false,
@@ -998,8 +1120,12 @@ func TestStoredRequests(t *testing.T) {
 		hardcodedResponseIPValidator{response: true},
 	}
 
+	testStoreVideoAttr := []bool{true, true, false, false}
+
 	for i, requestData := range testStoredRequests {
-		newRequest, errList := deps.processStoredRequests(context.Background(), json.RawMessage(requestData))
+		impInfo, errs := parseImpInfo([]byte(requestData))
+		assert.Len(t, errs, 0, "No errors should be returned")
+		newRequest, impExtInfoMap, errList := deps.processStoredRequests(context.Background(), json.RawMessage(requestData), impInfo)
 		if len(errList) != 0 {
 			for _, err := range errList {
 				if err != nil {
@@ -1010,9 +1136,86 @@ func TestStoredRequests(t *testing.T) {
 			}
 		}
 		expectJson := json.RawMessage(testFinalRequests[i])
-		if !jsonpatch.Equal(newRequest, expectJson) {
-			t.Errorf("Error in processStoredRequests, test %d failed on compare\nFound:\n%s\nExpected:\n%s", i, string(newRequest), string(expectJson))
+
+		assert.JSONEq(t, string(expectJson), string(newRequest), "Incorrect result request %d", i)
+
+		expectedImp := testStoredImpIds[i]
+		expectedStoredImp := json.RawMessage(testStoredImps[i])
+		if len(impExtInfoMap[expectedImp].StoredImp) > 0 {
+			assert.JSONEq(t, string(expectedStoredImp), string(impExtInfoMap[expectedImp].StoredImp), "Incorrect expected stored imp %d", i)
+
 		}
+		assert.Equalf(t, testStoreVideoAttr[i], impExtInfoMap[expectedImp].EchoVideoAttrs, "EchoVideoAttrs value is incorrect")
+	}
+}
+
+func TestStoredRequestGenerateUuid(t *testing.T) {
+	uuid := "foo"
+
+	deps := &endpointDeps{
+		fakeUUIDGenerator{id: "foo", err: nil},
+		&nobidExchange{},
+		newParamsValidator(t),
+		&mockStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: maxSize},
+		&metricsConfig.DummyMetricsEngine{},
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		false,
+		[]byte{},
+		openrtb_ext.BuildBidderMap(),
+		nil,
+		nil,
+		hardcodedResponseIPValidator{response: true},
+	}
+
+	req := &openrtb2.BidRequest{}
+
+	testCases := []struct {
+		description            string
+		givenRawData           string
+		givenGenerateRequestID bool
+		expectedID             string
+	}{
+		{
+			description:            "GenerateRequestID is true, rawData is an app request, and stored bid we should generate uuid",
+			givenRawData:           testStoredRequestsUuid[2],
+			givenGenerateRequestID: true,
+			expectedID:             uuid,
+		},
+		{
+			description:            "GenerateRequestID is true, rawData is an app request, but no stored bid, we should not generate uuid",
+			givenRawData:           testStoredRequestsUuid[0],
+			givenGenerateRequestID: true,
+			expectedID:             "ThisID",
+		},
+		{
+			description:            "GenerateRequestID is false so we should not generate uuid",
+			givenRawData:           testStoredRequestsUuid[0],
+			givenGenerateRequestID: false,
+			expectedID:             "ThisID",
+		},
+		{
+			description:            "GenerateRequestID is true, but rawData is a site request, we should not generate uuid",
+			givenRawData:           testStoredRequestsUuid[1],
+			givenGenerateRequestID: true,
+			expectedID:             "ThisID",
+		},
+	}
+
+	for _, test := range testCases {
+		deps.cfg.GenerateRequestID = test.givenGenerateRequestID
+		impInfo, errs := parseImpInfo([]byte(test.givenRawData))
+		assert.Empty(t, errs, test.description)
+		newRequest, _, errList := deps.processStoredRequests(context.Background(), json.RawMessage(test.givenRawData), impInfo)
+		assert.Empty(t, errList, test.description)
+
+		if err := json.Unmarshal(newRequest, req); err != nil {
+			t.Errorf("processStoredRequests Error: %s", err.Error())
+		}
+		assert.Equalf(t, test.expectedID, req.ID, "The Bid Request ID is incorrect: %s\n", test.description)
 	}
 }
 
@@ -1020,13 +1223,14 @@ func TestStoredRequests(t *testing.T) {
 func TestOversizedRequest(t *testing.T) {
 	reqBody := validRequest(t, "site.json")
 	deps := &endpointDeps{
+		fakeUUIDGenerator{},
 		&nobidExchange{},
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: int64(len(reqBody) - 1)},
-		newTestMetrics(),
+		&metricsConfig.DummyMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		false,
@@ -1055,13 +1259,14 @@ func TestOversizedRequest(t *testing.T) {
 func TestRequestSizeEdgeCase(t *testing.T) {
 	reqBody := validRequest(t, "site.json")
 	deps := &endpointDeps{
+		fakeUUIDGenerator{},
 		&nobidExchange{},
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: int64(len(reqBody))},
-		newTestMetrics(),
+		&metricsConfig.DummyMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		false,
@@ -1089,12 +1294,13 @@ func TestRequestSizeEdgeCase(t *testing.T) {
 // TestNoEncoding prevents #231.
 func TestNoEncoding(t *testing.T) {
 	endpoint, _ := NewEndpoint(
+		fakeUUIDGenerator{},
 		&mockExchange{},
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		newTestMetrics(),
+		&metricsConfig.DummyMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
@@ -1164,12 +1370,13 @@ func TestExplicitAMP(t *testing.T) {
 // TestContentType prevents #328
 func TestContentType(t *testing.T) {
 	endpoint, _ := NewEndpoint(
+		fakeUUIDGenerator{},
 		&mockExchange{},
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		newTestMetrics(),
+		&metricsConfig.DummyMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
@@ -1181,6 +1388,113 @@ func TestContentType(t *testing.T) {
 
 	if recorder.Header().Get("Content-Type") != "application/json" {
 		t.Errorf("Content-Type should be application/json. Got %s", recorder.Header().Get("Content-Type"))
+	}
+}
+
+func TestValidateCustomRates(t *testing.T) {
+	boolTrue := true
+	boolFalse := false
+
+	testCases := []struct {
+		desc               string
+		inBidReqCurrencies *openrtb_ext.ExtRequestCurrency
+		outCurrencyError   error
+	}{
+		{
+			desc:               "nil input, no errors expected",
+			inBidReqCurrencies: nil,
+			outCurrencyError:   nil,
+		},
+		{
+			desc: "empty custom currency rates but UsePBSRates is set to false, we don't return error nor warning",
+			inBidReqCurrencies: &openrtb_ext.ExtRequestCurrency{
+				ConversionRates: map[string]map[string]float64{},
+				UsePBSRates:     &boolFalse,
+			},
+			outCurrencyError: nil,
+		},
+		{
+			desc: "empty custom currency rates but UsePBSRates is set to true, no need to return error because we can use PBS rates",
+			inBidReqCurrencies: &openrtb_ext.ExtRequestCurrency{
+				ConversionRates: map[string]map[string]float64{},
+				UsePBSRates:     &boolTrue,
+			},
+			outCurrencyError: nil,
+		},
+		{
+			desc: "UsePBSRates is nil and defaults to true, bidExt fromCurrency is invalid, expect bad input error",
+			inBidReqCurrencies: &openrtb_ext.ExtRequestCurrency{
+				ConversionRates: map[string]map[string]float64{
+					"FOO": {
+						"GBP": 1.2,
+						"MXN": 0.05,
+						"JPY": 0.95,
+					},
+				},
+			},
+			outCurrencyError: &errortypes.BadInput{Message: "currency code FOO is not recognized or malformed"},
+		},
+		{
+			desc: "UsePBSRates set to false, bidExt fromCurrency is invalid, expect bad input error",
+			inBidReqCurrencies: &openrtb_ext.ExtRequestCurrency{
+				ConversionRates: map[string]map[string]float64{
+					"FOO": {
+						"GBP": 1.2,
+						"MXN": 0.05,
+						"JPY": 0.95,
+					},
+				},
+				UsePBSRates: &boolFalse,
+			},
+			outCurrencyError: &errortypes.BadInput{Message: "currency code FOO is not recognized or malformed"},
+		},
+		{
+			desc: "UsePBSRates set to false, some of the bidExt 'to' Currencies are invalid, expect bad input error when parsing the first invalid currency code",
+			inBidReqCurrencies: &openrtb_ext.ExtRequestCurrency{
+				ConversionRates: map[string]map[string]float64{
+					"USD": {
+						"FOO": 10.0,
+						"MXN": 0.05,
+					},
+				},
+				UsePBSRates: &boolFalse,
+			},
+			outCurrencyError: &errortypes.BadInput{Message: "currency code FOO is not recognized or malformed"},
+		},
+		{
+			desc: "UsePBSRates set to false, some of the bidExt 'from' and 'to' currencies are invalid, expect bad input error when parsing the first invalid currency code",
+			inBidReqCurrencies: &openrtb_ext.ExtRequestCurrency{
+				ConversionRates: map[string]map[string]float64{
+					"FOO": {
+						"MXN": 0.05,
+						"CAD": 0.95,
+					},
+				},
+				UsePBSRates: &boolFalse,
+			},
+			outCurrencyError: &errortypes.BadInput{Message: "currency code FOO is not recognized or malformed"},
+		},
+		{
+			desc: "All 3-digit currency codes exist, expect no error",
+			inBidReqCurrencies: &openrtb_ext.ExtRequestCurrency{
+				ConversionRates: map[string]map[string]float64{
+					"USD": {
+						"MXN": 0.05,
+					},
+					"MXN": {
+						"JPY": 10.0,
+						"EUR": 10.95,
+					},
+				},
+				UsePBSRates: &boolFalse,
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		actualErr := validateCustomRates(tc.inBidReqCurrencies)
+
+		assert.Equal(t, tc.outCurrencyError, actualErr, tc.desc)
 	}
 }
 
@@ -1376,13 +1690,14 @@ func TestValidateImpExt(t *testing.T) {
 	}
 
 	deps := &endpointDeps{
+		fakeUUIDGenerator{},
 		&nobidExchange{},
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: int64(8096)},
-		newTestMetrics(),
+		&metricsConfig.DummyMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{"disabledbidder": "The bidder 'disabledbidder' has been disabled."},
 		false,
@@ -1422,13 +1737,14 @@ func validRequest(t *testing.T, filename string) string {
 
 func TestCurrencyTrunc(t *testing.T) {
 	deps := &endpointDeps{
+		fakeUUIDGenerator{},
 		&nobidExchange{},
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{},
-		newTestMetrics(),
+		&metricsConfig.DummyMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		false,
@@ -1458,7 +1774,7 @@ func TestCurrencyTrunc(t *testing.T) {
 		Cur: []string{"USD", "EUR"},
 	}
 
-	errL := deps.validateRequest(&req)
+	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req})
 
 	expectedError := errortypes.Warning{Message: "A prebid request can only process one currency. Taking the first currency in the list, USD, as the active currency"}
 	assert.ElementsMatch(t, errL, []error{&expectedError})
@@ -1466,13 +1782,14 @@ func TestCurrencyTrunc(t *testing.T) {
 
 func TestCCPAInvalid(t *testing.T) {
 	deps := &endpointDeps{
+		fakeUUIDGenerator{},
 		&nobidExchange{},
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{},
-		newTestMetrics(),
+		&metricsConfig.DummyMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		false,
@@ -1504,25 +1821,24 @@ func TestCCPAInvalid(t *testing.T) {
 		},
 	}
 
-	errL := deps.validateRequest(&req)
+	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req})
 
 	expectedWarning := errortypes.Warning{
 		Message:     "CCPA consent is invalid and will be ignored. (request.regs.ext.us_privacy must contain 4 characters)",
 		WarningCode: errortypes.InvalidPrivacyConsentWarningCode}
 	assert.ElementsMatch(t, errL, []error{&expectedWarning})
-
-	assert.Empty(t, req.Regs.Ext, "Invalid Consent Removed From Request")
 }
 
 func TestNoSaleInvalid(t *testing.T) {
 	deps := &endpointDeps{
+		fakeUUIDGenerator{},
 		&nobidExchange{},
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{},
-		newTestMetrics(),
+		&metricsConfig.DummyMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		false,
@@ -1555,7 +1871,7 @@ func TestNoSaleInvalid(t *testing.T) {
 		Ext: json.RawMessage(`{"prebid": {"nosale": ["*", "appnexus"]} }`),
 	}
 
-	errL := deps.validateRequest(&req)
+	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req})
 
 	expectedError := errors.New("request.ext.prebid.nosale is invalid: can only specify all bidders if no other bidders are provided")
 	assert.ElementsMatch(t, errL, []error{expectedError})
@@ -1567,13 +1883,14 @@ func TestValidateSourceTID(t *testing.T) {
 	}
 
 	deps := &endpointDeps{
+		fakeUUIDGenerator{},
 		&nobidExchange{},
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		cfg,
-		newTestMetrics(),
+		&metricsConfig.DummyMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		false,
@@ -1602,19 +1919,20 @@ func TestValidateSourceTID(t *testing.T) {
 		},
 	}
 
-	deps.validateRequest(&req)
+	deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req})
 	assert.NotEmpty(t, req.Source.TID, "Expected req.Source.TID to be filled with a randomly generated UID")
 }
 
 func TestSChainInvalid(t *testing.T) {
 	deps := &endpointDeps{
+		fakeUUIDGenerator{},
 		&nobidExchange{},
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{},
-		newTestMetrics(),
+		&metricsConfig.DummyMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		false,
@@ -1644,7 +1962,7 @@ func TestSChainInvalid(t *testing.T) {
 		Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller1.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}, {"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller2.com","sid":"00002","rid":"BidRequest2","hp":1}],"ver":"1.0"}}]}}`),
 	}
 
-	errL := deps.validateRequest(&req)
+	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req})
 
 	expectedError := errors.New("request.ext.prebid.schains contains multiple schains for bidder appnexus; it must contain no more than one per bidder.")
 	assert.ElementsMatch(t, errL, []error{expectedError})
@@ -1827,13 +2145,14 @@ func TestValidateAndFillSourceTID(t *testing.T) {
 
 func TestEidPermissionsInvalid(t *testing.T) {
 	deps := &endpointDeps{
+		fakeUUIDGenerator{},
 		&nobidExchange{},
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{},
-		newTestMetrics(),
+		&metricsConfig.DummyMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		false,
@@ -1863,7 +2182,7 @@ func TestEidPermissionsInvalid(t *testing.T) {
 		Ext: json.RawMessage(`{"prebid": {"data": {"eidpermissions": [{"source":"a", "bidders":[]}]} } }`),
 	}
 
-	errL := deps.validateRequest(&req)
+	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req})
 
 	expectedError := errors.New(`request.ext.prebid.data.eidpermissions[0] missing or empty required field: "bidders"`)
 	assert.ElementsMatch(t, errL, []error{expectedError})
@@ -1878,11 +2197,6 @@ func TestValidateEidPermissions(t *testing.T) {
 		request       *openrtb_ext.ExtRequest
 		expectedError error
 	}{
-		{
-			description:   "Valid - Nil ext",
-			request:       nil,
-			expectedError: nil,
-		},
 		{
 			description:   "Valid - Empty ext",
 			request:       &openrtb_ext.ExtRequest{},
@@ -1967,7 +2281,7 @@ func TestValidateEidPermissions(t *testing.T) {
 
 	endpoint := &endpointDeps{bidderMap: knownBidders}
 	for _, test := range testCases {
-		result := endpoint.validateEidPermissions(test.request, knownAliases)
+		result := endpoint.validateEidPermissions(test.request.Prebid.Data, knownAliases)
 		assert.Equal(t, test.expectedError, result, test.description)
 	}
 }
@@ -2083,12 +2397,13 @@ func TestIOS14EndToEnd(t *testing.T) {
 	exchange := &nobidExchange{}
 
 	endpoint, _ := NewEndpoint(
+		fakeUUIDGenerator{},
 		exchange,
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		newTestMetrics(),
+		&metricsConfig.DummyMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
@@ -2110,13 +2425,14 @@ func TestIOS14EndToEnd(t *testing.T) {
 func TestAuctionWarnings(t *testing.T) {
 	reqBody := validRequest(t, "us-privacy-invalid.json")
 	deps := &endpointDeps{
+		fakeUUIDGenerator{},
 		&warningsCheckExchange{},
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: int64(len(reqBody))},
-		newTestMetrics(),
+		&metricsConfig.DummyMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		false,
@@ -2144,6 +2460,37 @@ func TestAuctionWarnings(t *testing.T) {
 	assert.Equal(t, expectedMessage, actualWarning.Message, "Warning message is incorrect")
 
 	assert.Equal(t, errortypes.InvalidPrivacyConsentWarningCode, actualWarning.WarningCode, "Warning code is incorrect")
+}
+
+func TestParseRequestParseImpInfoError(t *testing.T) {
+	reqBody := validRequest(t, "imp-info-invalid.json")
+	deps := &endpointDeps{
+		fakeUUIDGenerator{},
+		&warningsCheckExchange{},
+		newParamsValidator(t),
+		&mockStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: int64(len(reqBody))},
+		&metricsConfig.DummyMetricsEngine{},
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		false,
+		[]byte{},
+		openrtb_ext.BuildBidderMap(),
+		nil,
+		nil,
+		hardcodedResponseIPValidator{response: true},
+	}
+
+	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
+
+	resReq, impExtInfoMap, errL := deps.parseRequest(req)
+
+	assert.Nil(t, resReq, "Result request should be nil due to incorrect imp")
+	assert.Nil(t, impExtInfoMap, "Impression info map should be nil due to incorrect imp")
+	assert.Len(t, errL, 1, "One error should be returned")
+	assert.Contains(t, errL[0].Error(), "echovideoattrs of type bool", "Incorrect error message")
 }
 
 func TestValidateNativeContextTypes(t *testing.T) {
@@ -2590,7 +2937,49 @@ func (e *nobidExchange) HoldAuction(ctx context.Context, r exchange.AuctionReque
 }
 
 type mockBidExchange struct {
-	gotRequest *openrtb2.BidRequest
+	mockBidder mockBidExchangeBidder
+	pbsRates   map[string]map[string]float64
+}
+
+func newMockBidExchange(bidder mockBidExchangeBidder, mockCurrencyConversionRates map[string]map[string]float64) *mockBidExchange {
+	if bidder.BidCurrency == "" {
+		bidder.BidCurrency = "USD"
+	}
+
+	return &mockBidExchange{
+		mockBidder: bidder,
+		pbsRates:   mockCurrencyConversionRates,
+	}
+}
+
+// getAuctionCurrencyRates copies the logic of the exchange package for testing purposes
+func (e *mockBidExchange) getAuctionCurrencyRates(customRates *openrtb_ext.ExtRequestCurrency) currency.Conversions {
+	if customRates == nil {
+		// The timestamp is required for the function signature, but is not used and its
+		// value has no significance in the tests
+		return currency.NewRates(e.pbsRates)
+	}
+
+	usePbsRates := true
+	if customRates.UsePBSRates != nil {
+		usePbsRates = *customRates.UsePBSRates
+	}
+
+	if !usePbsRates {
+		// The timestamp is required for the function signature, but is not used and its
+		// value has no significance in the tests
+		return currency.NewRates(customRates.ConversionRates)
+	}
+
+	// Both PBS and custom rates can be used, check if ConversionRates is not empty
+	if len(customRates.ConversionRates) == 0 {
+		// Custom rates map is empty, use PBS rates only
+		return currency.NewRates(e.pbsRates)
+	}
+
+	// Return an AggregateConversions object that includes both custom and PBS currency rates but will
+	// prioritize custom rates over PBS rates whenever a currency rate is found in both
+	return currency.NewAggregateConversions(currency.NewRates(customRates.ConversionRates), currency.NewRates(e.pbsRates))
 }
 
 // mockBidExchange is a well-behaved exchange that lists the bidders found in every bidRequest.Imp[i].Ext
@@ -2601,6 +2990,36 @@ func (e *mockBidExchange) HoldAuction(ctx context.Context, r exchange.AuctionReq
 		BidID: "test bid id",
 		NBR:   openrtb2.NoBidReasonCodeUnknownError.Ptr(),
 	}
+
+	// Use currencies inside r.BidRequest.Cur, if any, and convert currencies if needed
+	if len(r.BidRequest.Cur) == 0 {
+		r.BidRequest.Cur = []string{"USD"}
+	}
+
+	var currencyFrom string = e.mockBidder.getBidCurrency()
+	var conversionRate float64 = 0.00
+	var err error
+
+	var requestExt openrtb_ext.ExtRequest
+	if len(r.BidRequest.Ext) > 0 {
+		if err := json.Unmarshal(r.BidRequest.Ext, &requestExt); err != nil {
+			return nil, fmt.Errorf("request.ext is invalid: %v", err)
+		}
+	}
+
+	conversions := e.getAuctionCurrencyRates(requestExt.Prebid.CurrencyConversions)
+	for _, bidReqCur := range r.BidRequest.Cur {
+		if conversionRate, err = conversions.GetRate(currencyFrom, bidReqCur); err == nil {
+			bidResponse.Cur = bidReqCur
+			break
+		}
+	}
+
+	if conversionRate == 0 {
+		// Can't have bids if there's not even a 1 USD to 1 USD conversion rate
+		return nil, errors.New("Can't produce bid with no valid currency to use or currency conversion to convert to.")
+	}
+
 	if len(r.BidRequest.Imp) > 0 {
 		var SeatBidMap = make(map[string]openrtb2.SeatBid, 0)
 		for _, imp := range r.BidRequest.Imp {
@@ -2625,9 +3044,17 @@ func (e *mockBidExchange) HoldAuction(ctx context.Context, r exchange.AuctionReq
 			for bidderNameOrAlias := range bidderExts {
 				if isBidderToValidate(bidderNameOrAlias) {
 					if val, ok := SeatBidMap[bidderNameOrAlias]; ok {
-						val.Bid = append(val.Bid, openrtb2.Bid{ID: fmt.Sprintf("%s-bid", bidderNameOrAlias)})
+						val.Bid = append(val.Bid, openrtb2.Bid{ID: e.mockBidder.getBidId(bidderNameOrAlias)})
 					} else {
-						SeatBidMap[bidderNameOrAlias] = openrtb2.SeatBid{Seat: fmt.Sprintf("%s-bids", bidderNameOrAlias), Bid: []openrtb2.Bid{{ID: fmt.Sprintf("%s-bid", bidderNameOrAlias)}}}
+						SeatBidMap[bidderNameOrAlias] = openrtb2.SeatBid{
+							Seat: e.mockBidder.getSeatName(bidderNameOrAlias),
+							Bid: []openrtb2.Bid{
+								{
+									ID:    e.mockBidder.getBidId(bidderNameOrAlias),
+									Price: e.mockBidder.getBidPrice() * conversionRate,
+								},
+							},
+						}
 					}
 				}
 			}
@@ -2638,6 +3065,24 @@ func (e *mockBidExchange) HoldAuction(ctx context.Context, r exchange.AuctionReq
 	}
 
 	return bidResponse, nil
+}
+
+type mockBidExchangeBidder struct {
+	BidCurrency string  `json:"currency"`
+	BidPrice    float64 `json:"price"`
+}
+
+func (bidder mockBidExchangeBidder) getBidCurrency() string {
+	return bidder.BidCurrency
+}
+func (bidder mockBidExchangeBidder) getBidPrice() float64 {
+	return bidder.BidPrice
+}
+func (bidder mockBidExchangeBidder) getSeatName(bidderNameOrAlias string) string {
+	return fmt.Sprintf("%s-bids", bidderNameOrAlias)
+}
+func (bidder mockBidExchangeBidder) getBidId(bidderNameOrAlias string) string {
+	return fmt.Sprintf("%s-bid", bidderNameOrAlias)
 }
 
 type brokenExchange struct{}
@@ -2682,7 +3127,24 @@ var testStoredRequestData = map[string]json.RawMessage{
 // third below has valid JSON and matches schema
 var testStoredImpData = map[string]json.RawMessage{
 	"1": json.RawMessage(`{
-"id": "adUnit1",
+			"id": "adUnit1",
+			"ext": {
+				"appnexus": {
+					"placementId": "abc",
+					"position": "above",
+					"reserve": 0.35
+				},
+				"rubicon": {
+					"accountId": "abc"
+				}
+			},
+			"video":{
+				"w":200,
+				"h":300
+			}
+		}`),
+	"2": json.RawMessage(`{
+			"id": "adUnit1",
 			"ext": {
 				"appnexus": {
 					"placementId": "abc",
@@ -2695,7 +3157,7 @@ var testStoredImpData = map[string]json.RawMessage{
 			}
 		}`),
 	"7": json.RawMessage(`{
-"id": "adUnit1",
+			"id": "adUnit1",
 			"ext": {
 				"appnexus": {
 					"placementId": 12345678,
@@ -2724,6 +3186,15 @@ var testStoredImpData = map[string]json.RawMessage{
 				}
 			}
 		}`),
+	"10": json.RawMessage(`{
+			"ext": {
+				"appnexus": {
+					"placementId": 12345678,
+					"position": "above",
+					"reserve": 0.35
+				}
+			}
+		}`),
 }
 
 // Incoming requests with stored request IDs
@@ -2732,10 +3203,17 @@ var testStoredRequests = []string{
 		"id": "ThisID",
 		"imp": [
 			{
+				"video":{
+					"h":300,
+					"w":200
+				},
 				"ext": {
 					"prebid": {
 						"storedrequest": {
 							"id": "1"
+						},
+						"options": {
+							"echovideoattrs": true
 						}
 					}
 				}
@@ -2760,6 +3238,9 @@ var testStoredRequests = []string{
 					"prebid": {
 						"storedrequest": {
 							"id": "1"
+						},
+						"options": {
+							"echovideoattrs": true
 						}
 					},
 					"appnexus": {
@@ -2788,7 +3269,10 @@ var testStoredRequests = []string{
 				"ext": {
 					"prebid": {
 						"storedrequest": {
-							"id": "1"
+							"id": "2"
+						},
+						"options": {
+							"echovideoattrs": false
 						}
 					}
 				}
@@ -2845,22 +3329,65 @@ var testFinalRequests = []string{
 		"id": "ThisID",
 		"imp": [
 			{
-				"id": "adUnit1",
-				"ext": {
-					"appnexus": {
-						"placementId": "abc",
-						"position": "above",
-						"reserve": 0.35
+				"video":{
+					"h":300,
+					"w":200
+				},
+				"ext":{
+					"appnexus":{
+						"placementId":"abc",
+						"position":"above",
+						"reserve":0.35
 					},
-					"rubicon": {
-						"accountId": "abc"
+					"prebid":{
+						"storedrequest":{
+							"id":"1"
+						},
+					"options":{
+						"echovideoattrs":true
+					}
+				},
+				"rubicon":{
+					"accountId":"abc"
+				}
+			},
+			"id":"adUnit1"
+			}
+		],
+		"ext": {
+			"prebid": {
+				"cache": {
+					"markup": 1
+				},
+				"targeting": {
+			}
+		}
+}
+	}`,
+	`{
+		"id": "ThisID",
+		"imp": [
+			{
+				"video":{
+					"w":200,
+					"h":300
+				},
+				"ext":{
+					"appnexus":{
+						"placementId":"def",
+						"position":"above",
+						"trafficSourceCode":"mysite.com"
 					},
-					"prebid": {
-						"storedrequest": {
-							"id": "1"
+					"prebid":{
+						"storedrequest":{
+							"id":"1"
+						},
+						"options":{
+							"echovideoattrs":true
 						}
 					}
-				}
+				},
+				"id":"adUnit2"
 			}
 		],
 		"ext": {
@@ -2874,101 +3401,82 @@ var testFinalRequests = []string{
 		}
 	}`,
 	`{
-		"id": "ThisID",
-		"imp": [
-			{
-				"id": "adUnit2",
-				"ext": {
-					"prebid": {
-						"storedrequest": {
-							"id": "1"
-						}
-					},
-					"appnexus": {
-						"placementId": "def",
-						"position": "above",
-						"trafficSourceCode": "mysite.com"
-					}
+  		"ext": {
+  		  "prebid": {
+  		    "storedrequest": {
+  		      "id": "2"
+  		    },
+  		    "targeting": {
+  		      "pricegranularity": "low"
+  		    }
+  		  }
+  		},
+  		"id": "ThisID",
+  		"imp": [
+  		  {
+  		    "ext": {
+  		      "appnexus": {
+  		        "placementId": "abc",
+  		        "position": "above",
+  		        "reserve": 0.35
+  		      },
+  		      "prebid": {
+  		        "storedrequest": {
+  		          "id": "2"
+  		        },
+  		        "options":{
+					"echovideoattrs":false
 				}
-			}
-		],
-		"ext": {
-			"prebid": {
-				"cache": {
-					"markup": 1
-				},
-				"targeting": {
-				}
-			}
-		}
-	}`,
-	`{
-		"id": "ThisID",
-		"imp": [
-			{
-				"id": "adUnit1",
-				"ext": {
-					"appnexus": {
-						"placementId": "abc",
-						"position": "above",
-						"reserve": 0.35
-					},
-					"rubicon": {
-						"accountId": "abc"
-					},
-					"prebid": {
-						"storedrequest": {
-							"id": "1"
-						}
-					}
-				}
-			}
-		],
-		"tmax": 500,
-		"ext": {
-			"prebid": {
-				"targeting": {
-					"pricegranularity": "low"
-				},
-				"storedrequest": {
-					"id": "2"
-				}
-			}
-		}
-	}`,
+  		      },
+  		      "rubicon": {
+  		        "accountId": "abc"
+  		      }
+  		    },
+  		    "id": "adUnit1"
+  		  }
+  		],
+  		"tmax": 500
+	}
+`,
 	`{
 	"id": "ThisID",
 	"imp": [
 		{
-			"id": "some-static-imp",
-			"video":{
-				"mimes":["video/mp4"]
-			},
-			"ext": {
-				"appnexus": {
-					"placementId": "abc",
-					"position": "below"
-				}
-			}
-		},
-		{
-			"id": "adUnit1",
-			"ext": {
-				"appnexus": {
-					"placementId": "abc",
-					"position": "above",
-					"reserve": 0.35
-				},
-				"rubicon": {
-					"accountId": "abc"
-				},
-				"prebid": {
-					"storedrequest": {
-						"id": "1"
-					}
-				}
-			}
-		}
+    		"id": "some-static-imp",
+    		"video": {
+    		  "mimes": [
+    		    "video/mp4"
+    		  ]
+    		},
+    		"ext": {
+    		  "appnexus": {
+    		    "placementId": "abc",
+    		    "position": "below"
+    		  }
+    		}
+  		},
+  		{
+  		  "ext": {
+  		    "appnexus": {
+  		      "placementId": "abc",
+  		      "position": "above",
+  		      "reserve": 0.35
+  		    },
+  		    "prebid": {
+  		      "storedrequest": {
+  		        "id": "1"
+  		      }
+  		    },
+  		    "rubicon": {
+  		      "accountId": "abc"
+  		    }
+  		  },
+  		  "id": "adUnit1",
+		  "video":{
+				"w":200,
+				"h":300
+          }
+  		}
 	],
 	"ext": {
 		"prebid": {
@@ -2980,6 +3488,160 @@ var testFinalRequests = []string{
 		}
 	}
 }`,
+}
+
+var testStoredImpIds = []string{
+	"adUnit1", "adUnit2", "adUnit1", "some-static-imp",
+}
+
+var testStoredImps = []string{
+	`{
+		"id": "adUnit1",
+        "ext": {
+        	"appnexus": {
+        		"placementId": "abc",
+        		"position": "above",
+        		"reserve": 0.35
+        	},
+        	"rubicon": {
+        		"accountId": "abc"
+        	}
+        },
+		"video":{
+        	"w":200,
+        	"h":300
+		}
+	}`,
+	`{
+		"id": "adUnit1",
+        "ext": {
+        	"appnexus": {
+        		"placementId": "abc",
+        		"position": "above",
+        		"reserve": 0.35
+        	},
+        	"rubicon": {
+        		"accountId": "abc"
+        	}
+        },
+		"video":{
+        	"w":200,
+        	"h":300
+		}
+	}`,
+	`{
+			"id": "adUnit1",
+			"ext": {
+				"appnexus": {
+					"placementId": "abc",
+					"position": "above",
+					"reserve": 0.35
+				},
+				"rubicon": {
+					"accountId": "abc"
+				}
+			}
+		}`,
+	``,
+}
+
+var testStoredRequestsUuid = []string{
+	`{
+		"id": "ThisID",
+		"app": {
+			"id": "123"
+		},
+		"imp": [
+			{
+				"video":{
+					"h":300,
+					"w":200
+				},
+				"ext": {
+					"prebid": {
+						"storedrequest": {
+							"id": "1"
+						},
+						"options": {
+							"echovideoattrs": true
+						}
+					}
+				}
+			}
+		],
+		"ext": {
+			"prebid": {
+				"cache": {
+					"markup": 1
+				},
+				"targeting": {
+				}
+			}
+		}
+	}`,
+	`{
+		"id": "ThisID",
+		"site": {
+			"page": "prebid.org"
+		},
+		"imp": [
+			{
+				"id": "adUnit2",
+				"ext": {
+					"prebid": {
+						"storedrequest": {
+							"id": "1"
+						},
+						"options": {
+							"echovideoattrs": true
+						}
+					},
+					"appnexus": {
+						"placementId": "def",
+						"trafficSourceCode": "mysite.com",
+						"reserve": null
+					},
+					"rubicon": null
+				}
+			}
+		],
+		"ext": {
+			"prebid": {
+				"cache": {
+					"markup": 1
+				},
+				"targeting": {
+				}
+			}
+		}
+	}`,
+	`{
+		"id": "ThisID",
+		"app": {
+			"id": "123"
+		},
+		"imp": [
+			{
+				"ext": {
+					"prebid": {
+						"storedrequest": {
+							"id": "2"
+						},
+						"options": {
+							"echovideoattrs": false
+						}
+					}
+				}
+			}
+		],
+		"ext": {
+			"prebid": {
+				"storedrequest": {
+					"id": "2"
+				}
+			}
+		}
+	}`,
 }
 
 type mockStoredReqFetcher struct {
@@ -3043,4 +3705,13 @@ type hardcodedResponseIPValidator struct {
 
 func (v hardcodedResponseIPValidator) IsValid(net.IP, iputil.IPVersion) bool {
 	return v.response
+}
+
+type fakeUUIDGenerator struct {
+	id  string
+	err error
+}
+
+func (f fakeUUIDGenerator) Generate() (string, error) {
+	return f.id, f.err
 }
