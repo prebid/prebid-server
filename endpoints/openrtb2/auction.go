@@ -322,7 +322,7 @@ func parseTimeout(requestJson []byte, defaultTimeout time.Duration) time.Duratio
 func mergeBidderParams(req *openrtb_ext.RequestWrapper) error {
 	var reqBidderParams map[string]json.RawMessage
 
-	reqBidderParams, err := adapters.ExtractBidderParams(req)
+	reqBidderParams, err := adapters.ExtractBidderParams(req.BidRequest)
 	if err != nil {
 		return err
 	}
