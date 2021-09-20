@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/prebid/prebid-server/adapters/appier"
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
@@ -170,6 +171,13 @@ func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
 			adapters.DefaultHTTPAdapterConfig,
 			cfg.Adapters[string(openrtb_ext.BidderAarki)].Endpoint,
 			cfg.Adapters[string(openrtb_ext.BidderAarki)].XAPI.EndpointUSEast),
+		"appier": appier.NewAppierLegacyAdapter(
+			adapters.DefaultHTTPAdapterConfig,
+			cfg.Adapters[string(openrtb_ext.BidderAppier)].Endpoint,
+			cfg.Adapters[string(openrtb_ext.BidderAppier)].XAPI.EndpointUSEast,
+			cfg.Adapters[string(openrtb_ext.BidderAppier)].XAPI.EndpointEMEA,
+			cfg.Adapters[string(openrtb_ext.BidderAppier)].XAPI.EndpointJP,
+			cfg.Adapters[string(openrtb_ext.BidderAppier)].XAPI.EndpointSG),
 		"crossinstall": crossinstall.NewCrossInstallLegacyAdapter(
 			adapters.DefaultHTTPAdapterConfig,
 			cfg.Adapters[string(openrtb_ext.BidderCrossInstall)].Endpoint,
