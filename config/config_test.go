@@ -228,7 +228,8 @@ var fullConfig = []byte(`
 gdpr:
   host_vendor_id: 15
   default_value: "1"
-  non_standard_publishers: ["siteID","fake-site-id","appID","agltb3B1Yi1pbmNyDAsSA0FwcBiJkfIUDA"]
+  non_standard_publishers: ["pub1", "pub2"]
+  eea_countries: ["eea1", "eea2"]
   tcf2:
     purpose1:
       enforce_vendors: false
@@ -440,19 +441,12 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "gdpr.default_value", cfg.GDPR.DefaultValue, "1")
 
 	//Assert the NonStandardPublishers was correctly unmarshalled
-	cmpStrings(t, "gdpr.non_standard_publishers", cfg.GDPR.NonStandardPublishers[0], "siteID")
-	cmpStrings(t, "gdpr.non_standard_publishers", cfg.GDPR.NonStandardPublishers[1], "fake-site-id")
-	cmpStrings(t, "gdpr.non_standard_publishers", cfg.GDPR.NonStandardPublishers[2], "appID")
-	cmpStrings(t, "gdpr.non_standard_publishers", cfg.GDPR.NonStandardPublishers[3], "agltb3B1Yi1pbmNyDAsSA0FwcBiJkfIUDA")
+	assert.Equal(t, []string{"pub1", "pub2"}, cfg.GDPR.NonStandardPublishers, "gdpr.non_standard_publishers")
+	assert.Equal(t, map[string]struct{}{"pub1": {}, "pub2": {}}, cfg.GDPR.NonStandardPublisherMap, "gdpr.non_standard_publishers Hash Map")
 
-	//Assert the NonStandardPublisherMap hash table was built correctly
-	var found bool
-	for i := 0; i < len(cfg.GDPR.NonStandardPublishers); i++ {
-		_, found = cfg.GDPR.NonStandardPublisherMap[cfg.GDPR.NonStandardPublishers[i]]
-		cmpBools(t, "cfg.GDPR.NonStandardPublisherMap", found, true)
-	}
-	_, found = cfg.GDPR.NonStandardPublisherMap["appnexus"]
-	cmpBools(t, "cfg.GDPR.NonStandardPublisherMap", found, false)
+	// Assert EEA Countries was correctly unmarshalled and the EEACountriesMap built correctly.
+	assert.Equal(t, []string{"eea1", "eea2"}, cfg.GDPR.EEACountries, "gdpr.eea_countries")
+	assert.Equal(t, map[string]struct{}{"eea1": {}, "eea2": {}}, cfg.GDPR.EEACountriesMap, "gdpr.eea_countries Hash Map")
 
 	cmpBools(t, "ccpa.enforce", cfg.CCPA.Enforce, true)
 	cmpBools(t, "lmt.enforce", cfg.LMT.Enforce, true)
