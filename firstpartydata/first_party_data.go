@@ -30,9 +30,7 @@ func ExtractGlobalFPDData(req *openrtb_ext.RequestWrapper) (map[string][]byte, e
 	}
 
 	if siteExt != nil && len(siteExt.GetExt()[dataKey]) > 0 {
-		//set global site fpd
 		fpdReqData[siteKey] = siteExt.GetExt()[dataKey]
-		//remove req.Site.Ext.data from request
 		newSiteExt, err := jsonutil.DropElement(req.Site.Ext, dataKey)
 		if err != nil {
 			return nil, err
@@ -45,9 +43,7 @@ func ExtractGlobalFPDData(req *openrtb_ext.RequestWrapper) (map[string][]byte, e
 		return nil, err
 	}
 	if appExt != nil && len(appExt.GetExt()[dataKey]) > 0 {
-		//set global app fpd
 		fpdReqData[appKey] = appExt.GetExt()[dataKey]
-		//remove req.App.Ext.data from request
 		newAppExt, err := jsonutil.DropElement(req.App.Ext, dataKey)
 		if err != nil {
 			return nil, err
@@ -60,9 +56,7 @@ func ExtractGlobalFPDData(req *openrtb_ext.RequestWrapper) (map[string][]byte, e
 		return nil, err
 	}
 	if req.User != nil && len(userExt.GetExt()[dataKey]) > 0 {
-		//set global user fpd
 		fpdReqData[userKey] = userExt.GetExt()[dataKey]
-		//remove req.App.Ext.data from request
 		newUserExt, err := jsonutil.DropElement(req.User.Ext, dataKey)
 		if err != nil {
 			return nil, err
@@ -74,9 +68,9 @@ func ExtractGlobalFPDData(req *openrtb_ext.RequestWrapper) (map[string][]byte, e
 }
 
 func ExtractOpenRtbGlobalFPD(bidRequest *openrtb2.BidRequest) map[string][]openrtb2.Data {
-	//Delete user.data and {app/site}.content.data from request
+	//Extract and delete user.data and {app/site}.content.data from request
 
-	openRtbGlobalFPD := make(map[string][]openrtb2.Data, 0)
+	openRtbGlobalFPD := make(map[string][]openrtb2.Data, 3)
 	if bidRequest.User != nil && len(bidRequest.User.Data) > 0 {
 		openRtbGlobalFPD[userDataKey] = bidRequest.User.Data
 		bidRequest.User.Data = nil
@@ -98,8 +92,6 @@ func ExtractOpenRtbGlobalFPD(bidRequest *openrtb2.BidRequest) map[string][]openr
 
 func ResolveFPDData(bidRequest *openrtb2.BidRequest, fpdBidderConfigData map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data, biddersWithGlobalFPD []string) (map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, []error) {
 	errL := []error{}
-	// If an attribute doesn't pass defined validation checks,
-	// entire request should be rejected with error message
 
 	resolvedFpdData := make(map[openrtb_ext.BidderName]*openrtb_ext.ORTB2)
 
@@ -179,8 +171,7 @@ func resolveUser(fpdConfigUser *openrtb2.User, bidRequestUser *openrtb2.User, gl
 func mergeUsers(original *openrtb2.User, fpdConfigUser *openrtb2.User) (openrtb2.User, error) {
 
 	var err error
-	newUser := openrtb2.User{}
-	newUser = *original
+	newUser := *original
 	newUser.Keywords = fpdConfigUser.Keywords
 	newUser.Gender = fpdConfigUser.Gender
 	newUser.Yob = fpdConfigUser.Yob
@@ -246,8 +237,7 @@ func resolveSite(fpdConfigSite *openrtb2.Site, bidRequestSite *openrtb2.Site, gl
 func mergeSites(originalSite *openrtb2.Site, fpdConfigSite *openrtb2.Site) (openrtb2.Site, error) {
 
 	var err error
-	newSite := openrtb2.Site{}
-	newSite = *originalSite
+	newSite := *originalSite
 
 	newSite.Name = fpdConfigSite.Name
 	newSite.Domain = fpdConfigSite.Domain
@@ -315,8 +305,7 @@ func resolveApp(fpdConfigApp *openrtb2.App, bidRequestApp *openrtb2.App, globalF
 func mergeApps(originalApp *openrtb2.App, fpdConfigApp *openrtb2.App) (openrtb2.App, error) {
 
 	var err error
-	newApp := openrtb2.App{}
-	newApp = *originalApp
+	newApp := *originalApp
 
 	newApp.Name = fpdConfigApp.Name
 	newApp.Bundle = fpdConfigApp.Bundle
@@ -348,7 +337,7 @@ func buildExtData(data []byte) []byte {
 }
 
 func ExtractBidderConfigFPD(reqExtPrebid openrtb_ext.ExtRequestPrebid) (map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, openrtb_ext.ExtRequestPrebid) {
-	//map to store bidder configs to process
+
 	fpdData := make(map[openrtb_ext.BidderName]*openrtb_ext.ORTB2)
 
 	//every bidder in ext.prebid.data.bidders should receive fpd data if defined
