@@ -145,13 +145,12 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		return
 	}
 
-	resolvedFPD, fpdErrors := deps.GetResolvedFPDForBidders(req)
+	resolvedFPD, fpdErrors := deps.ExtractFPDForBidders(req)
 	if len(fpdErrors) > 0 {
+		if errortypes.ContainsFatalError(fpdErrors) && writeError(fpdErrors, w, &labels) {
+			return
+		}
 		errL = append(errL, fpdErrors...)
-	}
-
-	if errortypes.ContainsFatalError(errL) && writeError(errL, w, &labels) {
-		return
 	}
 	warnings := errortypes.WarningOnly(errL)
 
@@ -1644,12 +1643,12 @@ func checkIfAppRequest(request []byte) (bool, error) {
 	return false, nil
 }
 
-func (deps *endpointDeps) GetResolvedFPDForBidders(req *openrtb_ext.RequestWrapper) (map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, []error) {
+func (deps *endpointDeps) ExtractFPDForBidders(req *openrtb_ext.RequestWrapper) (map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, []error) {
 	errL := []error{}
 	var resolvedFPD map[openrtb_ext.BidderName]*openrtb_ext.ORTB2
 
 	//If {site,app,user}.ext.data exists, collect it and remove {site,app,user}.ext.data from request
-	globalFpdData, err := firstpartydata.GetGlobalFPDData(req)
+	globalFpdData, err := firstpartydata.ExtractGlobalFPDData(req)
 	if err != nil {
 		errL = []error{err}
 		return resolvedFPD, errL
@@ -1670,10 +1669,10 @@ func (deps *endpointDeps) GetResolvedFPDForBidders(req *openrtb_ext.RequestWrapp
 		reqExt.GetPrebid().Data.Bidders = nil
 	}
 
-	fpdBidderData, reqExtPrebid := firstpartydata.ExtractBidderConfigFPD(*reqExt.GetPrebid())
+	fbdBidderConfigData, reqExtPrebid := firstpartydata.ExtractBidderConfigFPD(*reqExt.GetPrebid())
 	reqExt.SetPrebid(&reqExtPrebid)
 
-	if len(fpdBidderData) == 0 && len(biddersWithGlobalFPD) == 0 {
+	if len(fbdBidderConfigData) == 0 && len(biddersWithGlobalFPD) == 0 {
 		return resolvedFPD, errL
 	}
 
@@ -1681,7 +1680,7 @@ func (deps *endpointDeps) GetResolvedFPDForBidders(req *openrtb_ext.RequestWrapp
 	openRtbGlobalFPD := firstpartydata.ExtractOpenRtbGlobalFPD(req.BidRequest)
 
 	var fpdErrors []error
-	resolvedFPD, fpdErrors = firstpartydata.ResolveFPDData(req.BidRequest, fpdBidderData, globalFpdData, openRtbGlobalFPD, biddersWithGlobalFPD)
+	resolvedFPD, fpdErrors = firstpartydata.ResolveFPDData(req.BidRequest, fbdBidderConfigData, globalFpdData, openRtbGlobalFPD, biddersWithGlobalFPD)
 	if fpdErrors != nil {
 		errL = append(errL, fpdErrors...)
 	}
