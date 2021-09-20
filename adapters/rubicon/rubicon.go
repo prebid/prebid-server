@@ -1000,7 +1000,7 @@ func updateImpRpTargetWithFpdAttributes(extImp openrtb_ext.ExtImpRubicon, imp op
 }
 
 func isNotKeyPathError(err error) bool {
-	return err != nil && err.Error() != "Key path not found"
+	return err != nil && err != jsonparser.KeyPathNotFoundError
 }
 
 func addStringAttribute(attribute string, target map[string]interface{}, attributeName string) {
