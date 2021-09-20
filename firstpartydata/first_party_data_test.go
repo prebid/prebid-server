@@ -194,7 +194,7 @@ func TestGetGlobalFPDData(t *testing.T) {
 		err := json.Unmarshal(test.input, &inputTestReq)
 		assert.NoError(t, err, "Error should be nil")
 
-		fpd, err := GetGlobalFPDData(&inputTestReq)
+		fpd, err := ExtractGlobalFPDData(&inputTestReq)
 		assert.NoError(t, err, "Error should be nil")
 
 		var outputTestReq openrtb_ext.RequestWrapper

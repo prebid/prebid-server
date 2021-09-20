@@ -19,7 +19,7 @@ const (
 	siteContentDataKey = "siteContentData"
 )
 
-func GetGlobalFPDData(req *openrtb_ext.RequestWrapper) (map[string][]byte, error) {
+func ExtractGlobalFPDData(req *openrtb_ext.RequestWrapper) (map[string][]byte, error) {
 	//If {site,app,user}.ext.data exists, collect it and remove {site,app,user}.ext.data
 
 	fpdReqData := make(map[string][]byte, 3)
@@ -96,7 +96,7 @@ func ExtractOpenRtbGlobalFPD(bidRequest *openrtb2.BidRequest) map[string][]openr
 
 }
 
-func ResolveFPDData(bidRequest *openrtb2.BidRequest, fpdBidderData map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data, biddersWithGlobalFPD []string) (map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, []error) {
+func ResolveFPDData(bidRequest *openrtb2.BidRequest, fpdBidderConfigData map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data, biddersWithGlobalFPD []string) (map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, []error) {
 	errL := []error{}
 	// If an attribute doesn't pass defined validation checks,
 	// entire request should be rejected with error message
@@ -109,7 +109,7 @@ func ResolveFPDData(bidRequest *openrtb2.BidRequest, fpdBidderData map[openrtb_e
 		globalBiddersTable[bidderName] = struct{}{}
 	}
 
-	for bName, fpdConfig := range fpdBidderData {
+	for bName, fpdConfig := range fpdBidderConfigData {
 		bidderName := string(bName)
 
 		_, hasGlobalFPD := globalBiddersTable[bidderName]
