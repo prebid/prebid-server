@@ -2976,16 +2976,23 @@ func TestFPDHoldAuction(t *testing.T) {
 
 				if expectedValue.Site != nil {
 					assert.Equal(t, expectedValue.Site, actualValue.Site, "Incorrect first party data")
-					assert.Equal(t, resRequest.Site, actualRequest.BidRequest.Site, "Incorrect site in request")
 				}
 				if expectedValue.App != nil {
 					assert.Equal(t, expectedValue.App, actualValue.App, "Incorrect first party data")
-					assert.Equal(t, resRequest.App, actualRequest.BidRequest.App, "Incorrect app in request")
 				}
 				if expectedValue.User != nil {
 					assert.Equal(t, expectedValue.User, actualValue.User, "Incorrect first party data")
-					assert.Equal(t, resRequest.User, actualRequest.BidRequest.User, "Incorrect user in request")
 				}
+			}
+
+			if resRequest.Site != nil {
+				assert.Equal(t, resRequest.Site, actualRequest.BidRequest.Site, "Incorrect site in request")
+			}
+			if resRequest.App != nil {
+				assert.Equal(t, resRequest.App, actualRequest.BidRequest.App, "Incorrect app in request")
+			}
+			if resRequest.User != nil {
+				assert.Equal(t, resRequest.User, actualRequest.BidRequest.User, "Incorrect user in request")
 			}
 
 		}
