@@ -80,9 +80,6 @@ github.com/influxdata/influxdb/client
 github.com/influxdata/influxdb/models
 github.com/influxdata/influxdb/pkg/escape
 github.com/influxdata/influxdb/pkg/testing/assert
-# github.com/jinzhu/copier v0.2.8
-## explicit
-github.com/jinzhu/copier
 # github.com/julienschmidt/httprouter v1.3.0
 ## explicit
 github.com/julienschmidt/httprouter

@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
-	"github.com/jinzhu/copier"
 
 	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
@@ -784,17 +783,15 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 	numRequests := len(request.Imp)
 	errs := make([]error, 0, len(request.Imp))
 	var err error
-
 	requestData := make([]*adapters.RequestData, 0, numRequests)
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 	headers.Add("User-Agent", "prebid-server/1.0")
 
-	rubiconRequest := openrtb2.BidRequest{}
-	copier.CopyWithOption(&rubiconRequest, &request, copier.Option{IgnoreEmpty: false, DeepCopy: true})
+	requestImpCopy := request.Imp
 
-	requestImpCopy := rubiconRequest.Imp
+	rubiconRequest := *request
 	for i := 0; i < numRequests; i++ {
 		skanSent := false
 		placementType := adapters.Interstitial
