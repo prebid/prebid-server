@@ -361,7 +361,7 @@ func TestExtractOpenRtbGlobalFPD(t *testing.T) {
 	}
 }
 
-func TestPreprocessFPD(t *testing.T) {
+func TestExtractBidderConfigFPD(t *testing.T) {
 
 	if specFiles, err := ioutil.ReadDir("./tests/preprocessfpd"); err == nil {
 		for _, specFile := range specFiles {
@@ -421,7 +421,7 @@ func TestPreprocessFPD(t *testing.T) {
 	}
 }
 
-func TestBuildResolvedFPDForBidders(t *testing.T) {
+func TestResolveFPD(t *testing.T) {
 
 	if specFiles, err := ioutil.ReadDir("./tests/applyfpd"); err == nil {
 		for _, specFile := range specFiles {
@@ -491,7 +491,7 @@ func TestBuildResolvedFPDForBidders(t *testing.T) {
 				fpdFile.BiddersFPD["appnexus"] = &openrtb_ext.ORTB2{}
 			}
 
-			resultFPD, errL := ResolveFPDData(&inputReq, fpdFile.BiddersFPD, reqExtFPD, reqFPD, []string{"appnexus"})
+			resultFPD, errL := ResolveFPD(&inputReq, fpdFile.BiddersFPD, reqExtFPD, reqFPD, []string{"appnexus"})
 
 			if len(errL) == 0 {
 				assert.Equal(t, inputReq, inputReqCopy, "Original request should not be modified")

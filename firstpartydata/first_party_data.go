@@ -90,7 +90,7 @@ func ExtractOpenRtbGlobalFPD(bidRequest *openrtb2.BidRequest) map[string][]openr
 
 }
 
-func ResolveFPDData(bidRequest *openrtb2.BidRequest, fpdBidderConfigData map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data, biddersWithGlobalFPD []string) (map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, []error) {
+func ResolveFPD(bidRequest *openrtb2.BidRequest, fpdBidderConfigData map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data, biddersWithGlobalFPD []string) (map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, []error) {
 	errL := []error{}
 
 	resolvedFpdData := make(map[openrtb_ext.BidderName]*openrtb_ext.ORTB2)
@@ -412,7 +412,7 @@ func ExtractFPDForBidders(req *openrtb_ext.RequestWrapper) (map[openrtb_ext.Bidd
 	openRtbGlobalFPD := ExtractOpenRtbGlobalFPD(req.BidRequest)
 
 	var fpdErrors []error
-	resolvedFPD, fpdErrors = ResolveFPDData(req.BidRequest, fbdBidderConfigData, globalFpdData, openRtbGlobalFPD, biddersWithGlobalFPD)
+	resolvedFPD, fpdErrors = ResolveFPD(req.BidRequest, fbdBidderConfigData, globalFpdData, openRtbGlobalFPD, biddersWithGlobalFPD)
 	if fpdErrors != nil {
 		errL = append(errL, fpdErrors...)
 	}
