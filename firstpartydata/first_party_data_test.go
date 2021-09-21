@@ -2,6 +2,7 @@ package firstpartydata
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/util/jsonutil"
@@ -363,9 +364,9 @@ func TestExtractOpenRtbGlobalFPD(t *testing.T) {
 
 func TestExtractBidderConfigFPD(t *testing.T) {
 
-	if specFiles, err := ioutil.ReadDir("./tests/preprocessfpd"); err == nil {
+	if specFiles, err := ioutil.ReadDir("./tests/extractbidderconfigfpd"); err == nil {
 		for _, specFile := range specFiles {
-			fileName := "./tests/preprocessfpd/" + specFile.Name()
+			fileName := "./tests/extractbidderconfigfpd/" + specFile.Name()
 
 			fpdFile, err := loadFpdFile(fileName)
 			if err != nil {
@@ -423,9 +424,11 @@ func TestExtractBidderConfigFPD(t *testing.T) {
 
 func TestResolveFPD(t *testing.T) {
 
-	if specFiles, err := ioutil.ReadDir("./tests/applyfpd"); err == nil {
+	if specFiles, err := ioutil.ReadDir("./tests/resolvefpd"); err == nil {
 		for _, specFile := range specFiles {
-			fileName := "./tests/applyfpd/" + specFile.Name()
+			fileName := "./tests/resolvefpd/" + specFile.Name()
+
+			fmt.Println(fileName)
 
 			fpdFile, err := loadFpdFile(fileName)
 			if err != nil {
@@ -504,6 +507,8 @@ func TestResolveFPD(t *testing.T) {
 					bidderFPD.Site.Ext = nil
 					outputReq.Site.Ext = nil
 					jsonutil.DiffJson(t, "site.ext is incorrect", resSiteExt, expectedSiteExt)
+
+					assert.Equal(t, outputReq.Site, bidderFPD.Site, "Site is incorrect")
 				}
 				if bidderFPD.App != nil && len(bidderFPD.App.Ext) > 0 {
 					resAppExt := bidderFPD.App.Ext
@@ -511,6 +516,8 @@ func TestResolveFPD(t *testing.T) {
 					bidderFPD.App.Ext = nil
 					outputReq.App.Ext = nil
 					jsonutil.DiffJson(t, "app.ext is incorrect", resAppExt, expectedAppExt)
+
+					assert.Equal(t, outputReq.App, bidderFPD.App, "App is incorrect")
 				}
 				if bidderFPD.User != nil && len(bidderFPD.User.Ext) > 0 {
 					resUserExt := bidderFPD.User.Ext
@@ -518,6 +525,8 @@ func TestResolveFPD(t *testing.T) {
 					bidderFPD.User.Ext = nil
 					outputReq.User.Ext = nil
 					jsonutil.DiffJson(t, "user.ext is incorrect", resUserExt, expectedUserExt)
+
+					assert.Equal(t, outputReq.User, bidderFPD.User, "User is incorrect")
 				}
 			} else {
 				for i := range fpdFile.ValidationErrors {

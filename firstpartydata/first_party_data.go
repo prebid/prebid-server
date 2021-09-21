@@ -249,6 +249,7 @@ func mergeSites(originalSite *openrtb2.Site, fpdConfigSite *openrtb2.Site) (open
 	newSite.Page = fpdConfigSite.Page
 	newSite.Search = fpdConfigSite.Search
 	newSite.Keywords = fpdConfigSite.Keywords
+	newSite.Ref = fpdConfigSite.Ref
 
 	if len(fpdConfigSite.Ext) > 0 {
 		if len(originalSite.Ext) > 0 {

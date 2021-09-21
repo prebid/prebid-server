@@ -23,8 +23,8 @@
         }
       }
     ],
-    "app": {
-      "id": "reqAppId",
+    "site": {
+      "id": "reqSiteId",
       "page": "http://www.foobar.com/1234.html",
       "publisher": {
         "id": "1"
@@ -76,9 +76,8 @@
         }
       }
     ],
-    "app": {
-      "id": "apnAppId",
-      "page": "http://www.foobar.com/1234.html",
+    "site": {
+      "id": "reqSiteId",
       "publisher": {
         "id": "1"
       },
@@ -87,27 +86,7 @@
         "title": "episodeName",
         "series": "TvName",
         "season": "season3",
-        "len": 900,
-        "data": [
-          {
-            "id": "appData1",
-            "name": "appName1"
-          },
-          {
-            "id": "appData2",
-            "name": "appName2"
-          }
-        ]
-      },
-      "ext": {
-        "data": {
-          "moreFpd": {
-            "fpd": 123
-          },
-          "morefpdData": "morefpddata",
-          "appFpd": 123,
-          "appFpddata": "appFpddata"
-        }
+        "len": 900
       }
     },
     "device": {
@@ -119,20 +98,14 @@
     "user": {
       "id": "reqUserID",
       "yob": 1982,
-      "gender": "M",
-      "data": [
-        {
-          "id": "userData1",
-          "name": "userName1"
-        },
-        {
-          "id": "userData2",
-          "name": "userName2"
-        }
-      ],
       "ext": {
         "data": {
-          "testUserFpd": "testuser"
+          "testUserFpd": "testuser",
+          "morefpdData": "morefpddata",
+          "userFpddata": "siteFpddata",
+          "moreFpd": {
+            "fpd": 123
+          }
         }
       }
     },
@@ -142,12 +115,13 @@
   },
   "biddersFPD": {
     "appnexus": {
-      "app": {
-        "id": "apnAppId",
+      "user": {
+        "id": "apnUserId",
+        "yob": 1982,
         "ext": {
           "data": {
             "morefpdData": "morefpddata",
-            "appFpddata": "appFpddata",
+            "userFpddata": "siteFpddata",
             "moreFpd": {
               "fpd": 123
             }
@@ -157,32 +131,9 @@
     }
   },
   "firstPartyData": {
-    "app": {
-      "appFpd": 123
-    },
     "user": {
       "testUserFpd": "testuser"
-    },
-    "appContentData":[
-      {
-        "id": "appData1",
-        "name": "appName1"
-      },
-      {
-        "id": "appData2",
-        "name": "appName2"
-      }
-    ],
-    "userData": [
-      {
-        "id": "userData1",
-        "name": "userName1"
-      },
-      {
-        "id": "userData2",
-        "name": "userName2"
-      }
-    ]
+    }
   }
 }
 

@@ -75,8 +75,7 @@
       }
     ],
     "site": {
-      "id": "apnSiteId",
-      "page": "http://www.foobar.com/1234.html",
+      "id": "reqSiteId",
       "publisher": {
         "id": "1"
       },

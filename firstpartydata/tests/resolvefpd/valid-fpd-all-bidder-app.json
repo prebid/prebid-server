@@ -23,12 +23,8 @@
         }
       }
     ],
-    "site": {
-      "id": "reqSiteId",
-      "name": "reqSiteName",
-      "domain": "reqSiteDomain",
-      "cat": ["books", "novels"],
-      "search": "book search",
+    "app": {
+      "id": "reqAppId",
       "page": "http://www.foobar.com/1234.html",
       "publisher": {
         "id": "1"
@@ -38,11 +34,7 @@
         "title": "episodeName",
         "series": "TvName",
         "season": "season3",
-        "len": 900,
-        "data": [{
-          "id": "reqSiteData",
-          "name": "reqSiteName"
-        }]
+        "len": 900
       }
     },
     "device": {
@@ -50,6 +42,11 @@
       "ip": "123.145.167.10",
       "devicetype": 1,
       "ifa": "AA000DFE74168477C70D291f574D344790E0BB11"
+    },
+    "user": {
+      "id": "reqUserID",
+      "yob": 1982,
+      "gender": "M"
     },
     "test": 1,
     "at": 1,
@@ -79,8 +76,8 @@
         }
       }
     ],
-    "site": {
-      "id": "apnSiteId",
+    "app": {
+      "id": "reqAppId",
       "page": "http://www.foobar.com/1234.html",
       "publisher": {
         "id": "1"
@@ -90,16 +87,26 @@
         "title": "episodeName",
         "series": "TvName",
         "season": "season3",
-        "len": 900
+        "len": 900,
+        "data": [
+          {
+            "id": "appData1",
+            "name": "appName1"
+          },
+          {
+            "id": "appData2",
+            "name": "appName2"
+          }
+        ]
       },
       "ext": {
         "data": {
-          "morefpdData": "morefpddata",
-          "siteFpddata": "siteFpddata",
-          "testSiteFpd": "testSite",
           "moreFpd": {
             "fpd": 123
-          }
+          },
+          "morefpdData": "morefpddata",
+          "appFpd": 123,
+          "appFpddata": "appFpddata"
         }
       }
     },
@@ -109,29 +116,38 @@
       "devicetype": 1,
       "ifa": "AA000DFE74168477C70D291f574D344790E0BB11"
     },
+    "user": {
+      "id": "reqUserID",
+      "yob": 1982,
+      "gender": "M",
+      "data": [
+        {
+          "id": "userData1",
+          "name": "userName1"
+        },
+        {
+          "id": "userData2",
+          "name": "userName2"
+        }
+      ],
+      "ext": {
+        "data": {
+          "testUserFpd": "testuser"
+        }
+      }
+    },
     "test": 1,
     "at": 1,
     "tmax": 5000
   },
   "biddersFPD": {
     "appnexus": {
-      "site": {
-        "id": "apnSiteId",
-        "name": "apnSiteName",
-        "domain": "apnSiteDomain",
-        "content": {
-          "episode": 7,
-          "title": "apnEpisodeName",
-          "len": 600,
-          "data": [{
-            "id": "siteData3",
-            "name": "siteName3"
-          }]
-        },
+      "app": {
+        "id": "apnAppId",
         "ext": {
           "data": {
             "morefpdData": "morefpddata",
-            "siteFpddata": "siteFpddata",
+            "appFpddata": "appFpddata",
             "moreFpd": {
               "fpd": 123
             }
@@ -141,17 +157,30 @@
     }
   },
   "firstPartyData": {
-    "site": {
-      "testSiteFpd": "testSite"
+    "app": {
+      "appFpd": 123
     },
-    "siteContentData":[
+    "user": {
+      "testUserFpd": "testuser"
+    },
+    "appContentData":[
       {
-        "id": "siteData1",
-        "name": "siteName1"
+        "id": "appData1",
+        "name": "appName1"
       },
       {
-        "id": "siteData2",
-        "name": "siteName2"
+        "id": "appData2",
+        "name": "appName2"
+      }
+    ],
+    "userData": [
+      {
+        "id": "userData1",
+        "name": "userName1"
+      },
+      {
+        "id": "userData2",
+        "name": "userName2"
       }
     ]
   }
