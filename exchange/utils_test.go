@@ -491,41 +491,41 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 }
 
 func TestCleanOpenRTBRequestsWithFPD(t *testing.T) {
-	fpdData := make(map[openrtb_ext.BidderName]*openrtb_ext.ORTB2)
+	fpd := make(map[openrtb_ext.BidderName]*openrtb_ext.ORTB2)
 
 	apnFpd := openrtb_ext.ORTB2{
 		Site: &openrtb2.Site{Name: "fpdApnSite"},
 		App:  &openrtb2.App{Name: "fpdApnApp"},
 		User: &openrtb2.User{Keywords: "fpdApnUser"},
 	}
-	fpdData[openrtb_ext.BidderName("appnexus")] = &apnFpd
+	fpd[openrtb_ext.BidderName("appnexus")] = &apnFpd
 
 	brightrollFpd := openrtb_ext.ORTB2{
 		Site: &openrtb2.Site{Name: "fpdBrightrollSite"},
 		App:  &openrtb2.App{Name: "fpdBrightrollApp"},
 		User: &openrtb2.User{Keywords: "fpdBrightrollUser"},
 	}
-	fpdData[openrtb_ext.BidderName("brightroll")] = &brightrollFpd
+	fpd[openrtb_ext.BidderName("brightroll")] = &brightrollFpd
 
 	testCases := []struct {
-		description     string
-		req             AuctionRequest
-		fpdDataExpected bool
+		description string
+		req         AuctionRequest
+		fpdExpected bool
 	}{
 		{
-			description:     "Pass valid fpd data to request with one bidder",
-			req:             AuctionRequest{BidRequest: getTestBuildRequest(t), UserSyncs: &emptyUsersync{}, FirstPartyData: fpdData},
-			fpdDataExpected: false,
+			description: "Pass valid fpd data to request with one bidder",
+			req:         AuctionRequest{BidRequest: getTestBuildRequest(t), UserSyncs: &emptyUsersync{}, FirstPartyData: fpd},
+			fpdExpected: false,
 		},
 		{
-			description:     "Pass valid fpd data to request with two bidder",
-			req:             AuctionRequest{BidRequest: newAdapterAliasBidRequest(t), UserSyncs: &emptyUsersync{}, FirstPartyData: fpdData},
-			fpdDataExpected: true,
+			description: "Pass valid fpd data to request with two bidder",
+			req:         AuctionRequest{BidRequest: newAdapterAliasBidRequest(t), UserSyncs: &emptyUsersync{}, FirstPartyData: fpd},
+			fpdExpected: true,
 		},
 		{
-			description:     "No FPD data passed",
-			req:             AuctionRequest{BidRequest: newAdapterAliasBidRequest(t), UserSyncs: &emptyUsersync{}, FirstPartyData: nil},
-			fpdDataExpected: false,
+			description: "No FPD data passed",
+			req:         AuctionRequest{BidRequest: newAdapterAliasBidRequest(t), UserSyncs: &emptyUsersync{}, FirstPartyData: nil},
+			fpdExpected: false,
 		},
 	}
 
@@ -546,10 +546,10 @@ func TestCleanOpenRTBRequestsWithFPD(t *testing.T) {
 		assert.Len(t, err, 0, "No errors should be returned")
 		for _, bidderRequest := range bidderRequests {
 			bidderName := bidderRequest.BidderName
-			if test.fpdDataExpected {
-				assert.Equal(t, fpdData[bidderName].Site.Name, bidderRequest.BidRequest.Site.Name, "Incorrect FPD site name")
-				assert.Equal(t, fpdData[bidderName].App.Name, bidderRequest.BidRequest.App.Name, "Incorrect FPD app name")
-				assert.Equal(t, fpdData[bidderName].User.Keywords, bidderRequest.BidRequest.User.Keywords, "Incorrect FPD user keywords")
+			if test.fpdExpected {
+				assert.Equal(t, fpd[bidderName].Site.Name, bidderRequest.BidRequest.Site.Name, "Incorrect FPD site name")
+				assert.Equal(t, fpd[bidderName].App.Name, bidderRequest.BidRequest.App.Name, "Incorrect FPD app name")
+				assert.Equal(t, fpd[bidderName].User.Keywords, bidderRequest.BidRequest.User.Keywords, "Incorrect FPD user keywords")
 			} else {
 				assert.Equal(t, "", bidderRequest.BidRequest.Site.Name, "Incorrect FPD site name")
 				assert.Equal(t, "", bidderRequest.BidRequest.User.Keywords, "Incorrect FPD user keywords")

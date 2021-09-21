@@ -3649,7 +3649,7 @@ func TestMakeBidExtJSON(t *testing.T) {
 	}
 }
 
-func TestFPDData(t *testing.T) {
+func TestFPDD(t *testing.T) {
 
 	bidRequest := &openrtb2.BidRequest{
 		ID: "some-request-id",
@@ -3663,14 +3663,14 @@ func TestFPDData(t *testing.T) {
 		TMax: 500,
 	}
 
-	fpdData := make(map[openrtb_ext.BidderName]*openrtb_ext.ORTB2)
+	fpd := make(map[openrtb_ext.BidderName]*openrtb_ext.ORTB2)
 
 	apnFpd := openrtb_ext.ORTB2{
 		Site: &openrtb2.Site{ID: "fpdSite"},
 		App:  &openrtb2.App{ID: "fpdApp"},
 		User: &openrtb2.User{ID: "fpdUser"},
 	}
-	fpdData[openrtb_ext.BidderName("appnexus")] = &apnFpd
+	fpd[openrtb_ext.BidderName("appnexus")] = &apnFpd
 
 	e := new(exchange)
 	e.adapterMap = map[openrtb_ext.BidderName]adaptedBidder{
@@ -3684,7 +3684,7 @@ func TestFPDData(t *testing.T) {
 	auctionRequest := AuctionRequest{
 		BidRequest:     bidRequest,
 		UserSyncs:      &emptyUsersync{},
-		FirstPartyData: fpdData,
+		FirstPartyData: fpd,
 	}
 
 	debugLog := &DebugLog{DebugOverride: true, DebugEnabledOrOverridden: true}

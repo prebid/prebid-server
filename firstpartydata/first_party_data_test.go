@@ -11,15 +11,15 @@ import (
 	"testing"
 )
 
-func TestGetGlobalFPDData(t *testing.T) {
+func TestGetGlobalFPD(t *testing.T) {
 
 	testCases := []struct {
-		description     string
-		input           []byte
-		output          []byte
-		expectedFpdData map[string][]byte
-		errorExpected   bool
-		errorContains   string
+		description   string
+		input         []byte
+		output        []byte
+		expectedFpd   map[string][]byte
+		errorExpected bool
+		errorContains string
 	}{
 		{
 			description: "Site, app and user data present",
@@ -84,7 +84,7 @@ func TestGetGlobalFPDData(t *testing.T) {
   				  "tid": "ad839de0-5ae6-40bb-92b2-af8bad6439b3"
   				}
 			}`),
-			expectedFpdData: map[string][]byte{
+			expectedFpd: map[string][]byte{
 				"site": []byte(`{"somesitefpd": "sitefpdDataTest"}`),
 				"user": []byte(`{"someuserfpd": "userfpdDataTest"}`),
 				"app":  []byte(`{"someappfpd": "appfpdDataTest"}`),
@@ -132,7 +132,7 @@ func TestGetGlobalFPDData(t *testing.T) {
   				  "tid": "ad839de0-5ae6-40bb-92b2-af8bad6439b3"
   				}
 			}`),
-			expectedFpdData: map[string][]byte{
+			expectedFpd: map[string][]byte{
 				"app":  []byte(`{"someappfpd": "appfpdDataTest"}`),
 				"user": {},
 				"site": {},
@@ -180,7 +180,7 @@ func TestGetGlobalFPDData(t *testing.T) {
   				  "tid": "ad839de0-5ae6-40bb-92b2-af8bad6439b3"
   				}
 			}`),
-			expectedFpdData: map[string][]byte{
+			expectedFpd: map[string][]byte{
 				"app":  {},
 				"user": {},
 				"site": []byte(`{"someappfpd": true}`),
@@ -194,7 +194,7 @@ func TestGetGlobalFPDData(t *testing.T) {
 		err := json.Unmarshal(test.input, &inputTestReq)
 		assert.NoError(t, err, "Error should be nil")
 
-		fpd, err := ExtractGlobalFPDData(&inputTestReq)
+		fpd, err := ExtractGlobalFPD(&inputTestReq)
 		assert.NoError(t, err, "Error should be nil")
 
 		var outputTestReq openrtb_ext.RequestWrapper
@@ -210,15 +210,15 @@ func TestGetGlobalFPDData(t *testing.T) {
 			assert.NoError(t, err, "Error should be nil")
 			if fpd[userKey] != nil {
 				assert.JSONEq(t, string(inputTestReq.User.Ext), string(outputTestReq.User.Ext), "Result is incorrect")
-				assert.Equal(t, test.expectedFpdData[userKey], fpd[userKey], "FPD is incorrect")
+				assert.Equal(t, test.expectedFpd[userKey], fpd[userKey], "FPD is incorrect")
 			}
 			if fpd[appKey] != nil {
 				assert.JSONEq(t, string(inputTestReq.App.Ext), string(outputTestReq.App.Ext), "Result is incorrect")
-				assert.Equal(t, test.expectedFpdData[appKey], fpd[appKey], "FPD is incorrect")
+				assert.Equal(t, test.expectedFpd[appKey], fpd[appKey], "FPD is incorrect")
 			}
 			if fpd[siteKey] != nil {
 				assert.JSONEq(t, string(inputTestReq.Site.Ext), string(outputTestReq.Site.Ext), "Result is incorrect")
-				assert.Equal(t, test.expectedFpdData[siteKey], fpd[siteKey], "FPD is incorrect")
+				assert.Equal(t, test.expectedFpd[siteKey], fpd[siteKey], "FPD is incorrect")
 			}
 		}
 	}

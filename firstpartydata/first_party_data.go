@@ -20,7 +20,7 @@ const (
 )
 
 //If {site,app,user}.ext.data exists, collect it and remove {site,app,user}.ext.data
-func ExtractGlobalFPDData(req *openrtb_ext.RequestWrapper) (map[string][]byte, error) {
+func ExtractGlobalFPD(req *openrtb_ext.RequestWrapper) (map[string][]byte, error) {
 
 	fpdReqData := make(map[string][]byte, 3)
 
@@ -94,7 +94,7 @@ func ExtractOpenRtbGlobalFPD(bidRequest *openrtb2.BidRequest) map[string][]openr
 func ResolveFPD(bidRequest *openrtb2.BidRequest, fpdBidderConfigData map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data, biddersWithGlobalFPD []string) (map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, []error) {
 	errL := []error{}
 
-	resolvedFpdData := make(map[openrtb_ext.BidderName]*openrtb_ext.ORTB2)
+	resolvedFpd := make(map[openrtb_ext.BidderName]*openrtb_ext.ORTB2)
 
 	//convert list to map to optimize check if value exists
 	globalBiddersTable := make(map[string]struct{}) //just need to check existence of the element in map
@@ -128,10 +128,10 @@ func ResolveFPD(bidRequest *openrtb2.BidRequest, fpdBidderConfigData map[openrtb
 		if len(errL) == 0 {
 			resolvedFpdConfig.Site = newSite
 
-			resolvedFpdData[bName] = resolvedFpdConfig
+			resolvedFpd[bName] = resolvedFpdConfig
 		}
 	}
-	return resolvedFpdData, errL
+	return resolvedFpd, errL
 }
 
 func resolveUser(fpdConfigUser *openrtb2.User, bidRequestUser *openrtb2.User, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data, hasGlobalFPD bool, bidderName string) (*openrtb2.User, error) {
@@ -339,7 +339,7 @@ func buildExtData(data []byte) []byte {
 
 func ExtractBidderConfigFPD(reqExtPrebid openrtb_ext.ExtRequestPrebid) (map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, openrtb_ext.ExtRequestPrebid) {
 
-	fpdData := make(map[openrtb_ext.BidderName]*openrtb_ext.ORTB2)
+	fpd := make(map[openrtb_ext.BidderName]*openrtb_ext.ORTB2)
 
 	//every bidder in ext.prebid.data.bidders should receive fpd data if defined
 	bidderTable := make(map[string]struct{}) //just need to check existence of the element in map
@@ -350,11 +350,11 @@ func ExtractBidderConfigFPD(reqExtPrebid openrtb_ext.ExtRequestPrebid) (map[open
 
 				if _, present := bidderTable[bidder]; !present {
 					bidderTable[bidder] = struct{}{}
-					fpdData[openrtb_ext.BidderName(bidder)] = &openrtb_ext.ORTB2{}
+					fpd[openrtb_ext.BidderName(bidder)] = &openrtb_ext.ORTB2{}
 				}
 				//this will overwrite previously set site/app/user.
 				//Last defined bidder-specific config will take precedence
-				fpdBidderData := fpdData[openrtb_ext.BidderName(bidder)]
+				fpdBidderData := fpd[openrtb_ext.BidderName(bidder)]
 				if bidderConfig.Config != nil && bidderConfig.Config.ORTB2 != nil {
 					if bidderConfig.Config.ORTB2.Site != nil {
 						fpdBidderData.Site = bidderConfig.Config.ORTB2.Site
@@ -373,7 +373,7 @@ func ExtractBidderConfigFPD(reqExtPrebid openrtb_ext.ExtRequestPrebid) (map[open
 
 	reqExtPrebid.BidderConfigs = nil
 
-	return fpdData, reqExtPrebid
+	return fpd, reqExtPrebid
 }
 
 func ExtractFPDForBidders(req *openrtb_ext.RequestWrapper) (map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, []error) {
@@ -381,7 +381,7 @@ func ExtractFPDForBidders(req *openrtb_ext.RequestWrapper) (map[openrtb_ext.Bidd
 	var resolvedFPD map[openrtb_ext.BidderName]*openrtb_ext.ORTB2
 
 	//If {site,app,user}.ext.data exists, collect it and remove {site,app,user}.ext.data from request
-	globalFpdData, err := ExtractGlobalFPDData(req)
+	globalFpd, err := ExtractGlobalFPD(req)
 	if err != nil {
 		errL = []error{err}
 		return resolvedFPD, errL
@@ -413,7 +413,7 @@ func ExtractFPDForBidders(req *openrtb_ext.RequestWrapper) (map[openrtb_ext.Bidd
 	openRtbGlobalFPD := ExtractOpenRtbGlobalFPD(req.BidRequest)
 
 	var fpdErrors []error
-	resolvedFPD, fpdErrors = ResolveFPD(req.BidRequest, fbdBidderConfigData, globalFpdData, openRtbGlobalFPD, biddersWithGlobalFPD)
+	resolvedFPD, fpdErrors = ResolveFPD(req.BidRequest, fbdBidderConfigData, globalFpd, openRtbGlobalFPD, biddersWithGlobalFPD)
 	if fpdErrors != nil {
 		errL = append(errL, fpdErrors...)
 	}

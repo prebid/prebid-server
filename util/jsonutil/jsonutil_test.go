@@ -198,9 +198,9 @@ func TestSetElement(t *testing.T) {
 		{
 			description:   "Set Element Nested Exists",
 			input:         []byte(`{"data":{"sitedata":"mysitedata"}}`),
-			setValue:      []byte(`{"somefpd":"fpdDataTest"}`),
+			setValue:      []byte(`{"somefpd":"fpdTest"}`),
 			setTo:         []string{"data"},
-			output:        []byte(`{"data":{"sitedata":"mysitedata","somefpd":"fpdDataTest"}}`),
+			output:        []byte(`{"data":{"sitedata":"mysitedata","somefpd":"fpdTest"}}`),
 			errorExpected: false,
 			errorContains: "",
 		},
@@ -216,9 +216,9 @@ func TestSetElement(t *testing.T) {
 		{
 			description:   "Set Element Nested Doesn't Exists",
 			input:         []byte(`{"data":{"sitedata":"mysitedata"}}`),
-			setValue:      []byte(`{"somefpd":"fpdDataTest"}`),
+			setValue:      []byte(`{"somefpd":"fpdTest"}`),
 			setTo:         []string{"providers"},
-			output:        []byte(`{"data":{"sitedata":"mysitedata"},"providers":{"somefpd":"fpdDataTest"}}`),
+			output:        []byte(`{"data":{"sitedata":"mysitedata"},"providers":{"somefpd":"fpdTest"}}`),
 			errorExpected: false,
 			errorContains: "",
 		},
@@ -256,7 +256,7 @@ func TestFindAndDropElement(t *testing.T) {
   				  "publisher": {
   				    "id": "1"
   				  },
-  				  "data": {"somesitefpd": "sitefpdDataTest"}
+  				  "data": {"somesitefpd": "sitefpdTest"}
   				},
   				"tmax": 5000,
   				"source": {
@@ -278,7 +278,7 @@ func TestFindAndDropElement(t *testing.T) {
   				  "tid": "ad839de0-5ae6-40bb-92b2-af8bad6439b3"
   				}
 			}`),
-			foundData:     []byte(`{"somesitefpd": "sitefpdDataTest"}`),
+			foundData:     []byte(`{"somesitefpd": "sitefpdTest"}`),
 			errorExpected: false,
 			errorContains: "",
 		},
@@ -292,7 +292,7 @@ func TestFindAndDropElement(t *testing.T) {
   				  "publisher": {
   				    "id": "1"
   				  },
-  				  "data": {"somesitefpd": "sitefpdDataTest"}
+  				  "data": {"somesitefpd": "sitefpdTest"}
   				},
   				"tmax": 5000,
   				"source": {
@@ -308,7 +308,7 @@ func TestFindAndDropElement(t *testing.T) {
   				  "publisher": {
   				    "id": "1"
   				  },
-  				  "data": {"somesitefpd": "sitefpdDataTest"}
+  				  "data": {"somesitefpd": "sitefpdTest"}
   				},
   				"tmax": 5000,
   				"source": {
@@ -329,7 +329,7 @@ func TestFindAndDropElement(t *testing.T) {
   				  "publisher": {
   				    "id": "1"
   				  },
-  				  "data": {"somesitefpd": "sitefpdDataTest"}
+  				  "data": {"somesitefpd": "sitefpdTest"}
   				},
   				"tmax": 5000,
   				"source": {
@@ -344,7 +344,7 @@ func TestFindAndDropElement(t *testing.T) {
   				  "publisher": {
   				    "id": "1"
   				  },
-  				  "data": {"somesitefpd": "sitefpdDataTest"}
+  				  "data": {"somesitefpd": "sitefpdTest"}
   				},
   				"tmax": 5000,
   				"source": {
@@ -365,7 +365,7 @@ func TestFindAndDropElement(t *testing.T) {
   				  "publisher": {
   				    "id": "1"
   				  },
-  				  "data":  sitefpdDataTest"}
+  				  "data":  sitefpdTest"}
   				},
   				"tmax": 5000,
   				"source": {
@@ -381,7 +381,7 @@ func TestFindAndDropElement(t *testing.T) {
   				  "publisher": {
   				    "id": "1"
   				  },
-  				  "data":  sitefpdDataTest"}
+  				  "data":  sitefpdTest"}
   				},
   				"tmax": 5000,
   				"source": {
