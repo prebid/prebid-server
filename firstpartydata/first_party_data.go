@@ -125,8 +125,9 @@ func ResolveFPD(bidRequest *openrtb2.BidRequest, fpdBidderConfigData map[openrtb
 		if err != nil {
 			errL = append(errL, err)
 		}
+		resolvedFpdConfig.Site = newSite
+
 		if len(errL) == 0 {
-			resolvedFpdConfig.Site = newSite
 
 			resolvedFpd[bName] = resolvedFpdConfig
 		}
