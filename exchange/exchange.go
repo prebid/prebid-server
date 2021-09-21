@@ -34,11 +34,7 @@ import (
 
 type ContextKey string
 
-const (
-	DebugContextKey = ContextKey("debugInfo")
-	bidderconfig    = "bidderconfig"
-	data            = "data"
-)
+const DebugContextKey = ContextKey("debugInfo")
 
 type extCacheInstructions struct {
 	cacheBids, cacheVAST, returnCreative bool
@@ -214,7 +210,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	gdprDefaultValue := e.parseGDPRDefaultValue(r.BidRequest)
 
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
-	bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(ctx, r, requestExt, e.bidderToSyncerKey, e.gDPR, e.me, gdprDefaultValue, e.privacyConfig, &r.Account, r.FirstPartyData)
+	bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(ctx, r, requestExt, e.bidderToSyncerKey, e.gDPR, e.me, gdprDefaultValue, e.privacyConfig, &r.Account)
 
 	e.me.RecordRequestPrivacy(privacyLabels)
 

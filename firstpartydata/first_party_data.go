@@ -374,3 +374,48 @@ func ExtractBidderConfigFPD(reqExtPrebid openrtb_ext.ExtRequestPrebid) (map[open
 
 	return fpdData, reqExtPrebid
 }
+
+func ExtractFPDForBidders(req *openrtb_ext.RequestWrapper) (map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, []error) {
+	errL := []error{}
+	var resolvedFPD map[openrtb_ext.BidderName]*openrtb_ext.ORTB2
+
+	//If {site,app,user}.ext.data exists, collect it and remove {site,app,user}.ext.data from request
+	globalFpdData, err := ExtractGlobalFPDData(req)
+	if err != nil {
+		errL = []error{err}
+		return resolvedFPD, errL
+	}
+
+	reqExt, err := req.GetRequestExt()
+	if err != nil {
+		errL = append(errL, err)
+		return resolvedFPD, errL
+	}
+	if reqExt == nil || reqExt.GetPrebid() == nil {
+		return resolvedFPD, errL
+	}
+	biddersWithGlobalFPD := make([]string, 0)
+
+	if reqExt.GetPrebid().Data != nil {
+		biddersWithGlobalFPD = reqExt.GetPrebid().Data.Bidders
+		reqExt.GetPrebid().Data.Bidders = nil
+	}
+
+	fbdBidderConfigData, reqExtPrebid := ExtractBidderConfigFPD(*reqExt.GetPrebid())
+	reqExt.SetPrebid(&reqExtPrebid)
+
+	if len(fbdBidderConfigData) == 0 && len(biddersWithGlobalFPD) == 0 {
+		return resolvedFPD, errL
+	}
+
+	//If ext.prebid.data.bidders isn't defined, the default is there's no permission filtering
+	openRtbGlobalFPD := ExtractOpenRtbGlobalFPD(req.BidRequest)
+
+	var fpdErrors []error
+	resolvedFPD, fpdErrors = ResolveFPDData(req.BidRequest, fbdBidderConfigData, globalFpdData, openRtbGlobalFPD, biddersWithGlobalFPD)
+	if fpdErrors != nil {
+		errL = append(errL, fpdErrors...)
+	}
+
+	return resolvedFPD, errL
+}

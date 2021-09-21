@@ -480,7 +480,7 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 		metricsMock := metrics.MetricsEngineMock{}
 		bidderToSyncerKey := map[string]string{}
 		permissions := permissionsMock{allowAllBidders: true, passGeo: true, passID: true}
-		bidderRequests, _, err := cleanOpenRTBRequests(context.Background(), test.req, nil, bidderToSyncerKey, &permissions, &metricsMock, gdpr.SignalNo, privacyConfig, nil, nil)
+		bidderRequests, _, err := cleanOpenRTBRequests(context.Background(), test.req, nil, bidderToSyncerKey, &permissions, &metricsMock, gdpr.SignalNo, privacyConfig, nil)
 		if test.hasError {
 			assert.NotNil(t, err, "Error shouldn't be nil")
 		} else {
@@ -510,25 +510,21 @@ func TestCleanOpenRTBRequestsWithFPD(t *testing.T) {
 	testCases := []struct {
 		description     string
 		req             AuctionRequest
-		fpd             map[openrtb_ext.BidderName]*openrtb_ext.ORTB2
 		fpdDataExpected bool
 	}{
 		{
 			description:     "Pass valid fpd data to request with one bidder",
-			req:             AuctionRequest{BidRequest: getTestBuildRequest(t), UserSyncs: &emptyUsersync{}},
-			fpd:             fpdData,
+			req:             AuctionRequest{BidRequest: getTestBuildRequest(t), UserSyncs: &emptyUsersync{}, FirstPartyData: fpdData},
 			fpdDataExpected: false,
 		},
 		{
 			description:     "Pass valid fpd data to request with two bidder",
-			req:             AuctionRequest{BidRequest: newAdapterAliasBidRequest(t), UserSyncs: &emptyUsersync{}},
-			fpd:             fpdData,
+			req:             AuctionRequest{BidRequest: newAdapterAliasBidRequest(t), UserSyncs: &emptyUsersync{}, FirstPartyData: fpdData},
 			fpdDataExpected: true,
 		},
 		{
 			description:     "No FPD data passed",
-			req:             AuctionRequest{BidRequest: newAdapterAliasBidRequest(t), UserSyncs: &emptyUsersync{}},
-			fpd:             nil,
+			req:             AuctionRequest{BidRequest: newAdapterAliasBidRequest(t), UserSyncs: &emptyUsersync{}, FirstPartyData: nil},
 			fpdDataExpected: false,
 		},
 	}
@@ -546,7 +542,7 @@ func TestCleanOpenRTBRequestsWithFPD(t *testing.T) {
 		metricsMock := metrics.MetricsEngineMock{}
 		bidderToSyncerKey := map[string]string{}
 		permissions := permissionsMock{allowAllBidders: true, passGeo: true, passID: true}
-		bidderRequests, _, err := cleanOpenRTBRequests(context.Background(), test.req, nil, bidderToSyncerKey, &permissions, &metricsMock, gdpr.SignalNo, privacyConfig, nil, test.fpd)
+		bidderRequests, _, err := cleanOpenRTBRequests(context.Background(), test.req, nil, bidderToSyncerKey, &permissions, &metricsMock, gdpr.SignalNo, privacyConfig, nil)
 		assert.Len(t, err, 0, "No errors should be returned")
 		for _, bidderRequest := range bidderRequests {
 			bidderName := bidderRequest.BidderName
@@ -713,7 +709,6 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 			&metrics.MetricsEngineMock{},
 			gdpr.SignalNo,
 			privacyConfig,
-			nil,
 			nil)
 		result := bidderRequests[0]
 
@@ -775,7 +770,7 @@ func TestCleanOpenRTBRequestsCCPAErrors(t *testing.T) {
 		bidderToSyncerKey := map[string]string{}
 		permissions := permissionsMock{allowAllBidders: true, passGeo: true, passID: true}
 		metrics := metrics.MetricsEngineMock{}
-		_, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, &reqExtStruct, bidderToSyncerKey, &permissions, &metrics, gdpr.SignalNo, privacyConfig, nil, nil)
+		_, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, &reqExtStruct, bidderToSyncerKey, &permissions, &metrics, gdpr.SignalNo, privacyConfig, nil)
 
 		assert.ElementsMatch(t, []error{test.expectError}, errs, test.description)
 	}
@@ -818,7 +813,7 @@ func TestCleanOpenRTBRequestsCOPPA(t *testing.T) {
 		bidderToSyncerKey := map[string]string{}
 		permissions := permissionsMock{allowAllBidders: true, passGeo: true, passID: true}
 		metrics := metrics.MetricsEngineMock{}
-		bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), auctionReq, nil, bidderToSyncerKey, &permissions, &metrics, gdpr.SignalNo, config.Privacy{}, nil, nil)
+		bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), auctionReq, nil, bidderToSyncerKey, &permissions, &metrics, gdpr.SignalNo, config.Privacy{}, nil)
 		result := bidderRequests[0]
 
 		assert.Nil(t, errs)
@@ -928,7 +923,7 @@ func TestCleanOpenRTBRequestsSChain(t *testing.T) {
 		bidderToSyncerKey := map[string]string{}
 		permissions := permissionsMock{allowAllBidders: true, passGeo: true, passID: true}
 		metrics := metrics.MetricsEngineMock{}
-		bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, bidderToSyncerKey, &permissions, &metrics, gdpr.SignalNo, config.Privacy{}, nil, nil)
+		bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, bidderToSyncerKey, &permissions, &metrics, gdpr.SignalNo, config.Privacy{}, nil)
 		if test.hasError == true {
 			assert.NotNil(t, errs)
 			assert.Len(t, bidderRequests, 0)
@@ -1512,7 +1507,7 @@ func TestCleanOpenRTBRequestsLMT(t *testing.T) {
 		bidderToSyncerKey := map[string]string{}
 		permissions := permissionsMock{allowAllBidders: true, passGeo: true, passID: true}
 		metrics := metrics.MetricsEngineMock{}
-		results, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), auctionReq, nil, bidderToSyncerKey, &permissions, &metrics, gdpr.SignalNo, privacyConfig, nil, nil)
+		results, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), auctionReq, nil, bidderToSyncerKey, &permissions, &metrics, gdpr.SignalNo, privacyConfig, nil)
 		result := results[0]
 
 		assert.Nil(t, errs)
@@ -1735,7 +1730,6 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			&metrics.MetricsEngineMock{},
 			gdprDefaultValue,
 			privacyConfig,
-			nil,
 			nil)
 		result := results[0]
 
@@ -1829,7 +1823,6 @@ func TestCleanOpenRTBRequestsGDPRBlockBidRequest(t *testing.T) {
 			&metricsMock,
 			gdpr.SignalNo,
 			privacyConfig,
-			nil,
 			nil)
 
 		// extract bidder name from each request in the results

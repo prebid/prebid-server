@@ -106,10 +106,6 @@ func TestJsonSampleRequests(t *testing.T) {
 			"disabled/good",
 		},
 		{
-			"Requests with first party data context info found in imp[i].ext.prebid.bidder.context",
-			"first-party-data",
-		},
-		{
 			"Assert we correctly use the server conversion rates when needed",
 			"currency-conversion/server-rates/valid",
 		},
@@ -2933,9 +2929,9 @@ func TestFPDHoldAuction(t *testing.T) {
 		hardcodedResponseIPValidator{response: true},
 	}
 
-	if specFiles, err := ioutil.ReadDir("../../firstpartydata/tests/holdauction"); err == nil {
+	if specFiles, err := ioutil.ReadDir("sample-requests/first-party-data"); err == nil {
 		for _, specFile := range specFiles {
-			fileName := "../../firstpartydata/tests/holdauction/" + specFile.Name()
+			fileName := "sample-requests/first-party-data/" + specFile.Name()
 			fpdFile, err := loadFpdFile(fileName)
 
 			if err != nil {
@@ -3016,7 +3012,6 @@ func loadFpdFile(filename string) (fpdFile, error) {
 type fpdFile struct {
 	InputRequestData  json.RawMessage                               `json:"inputRequestData,omitempty"`
 	ResultRequestData json.RawMessage                               `json:"resultRequestData,omitempty"`
-	InputBiddersFPD   map[openrtb_ext.BidderName]*openrtb_ext.ORTB2 `json:"inputBiddersFPD,omitempty"`
 	ResultBiddersFPD  map[openrtb_ext.BidderName]*openrtb_ext.ORTB2 `json:"resultBiddersFPD,omitempty"`
 	ValidationErrors  []string                                      `json:"validationErrors,omitempty"`
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/prebid/prebid-server/firstpartydata"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -14,7 +15,7 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
-	jsonpatch "github.com/evanphx/json-patch"
+	"github.com/evanphx/json-patch"
 	"github.com/gofrs/uuid"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
@@ -26,7 +27,6 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
-	"github.com/prebid/prebid-server/firstpartydata"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
@@ -145,7 +145,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		return
 	}
 
-	resolvedFPD, fpdErrors := deps.ExtractFPDForBidders(req)
+	resolvedFPD, fpdErrors := firstpartydata.ExtractFPDForBidders(req)
 	if len(fpdErrors) > 0 {
 		if errortypes.ContainsFatalError(fpdErrors) && writeError(fpdErrors, w, &labels) {
 			return
@@ -1641,49 +1641,4 @@ func checkIfAppRequest(request []byte) (bool, error) {
 		return true, nil
 	}
 	return false, nil
-}
-
-func (deps *endpointDeps) ExtractFPDForBidders(req *openrtb_ext.RequestWrapper) (map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, []error) {
-	errL := []error{}
-	var resolvedFPD map[openrtb_ext.BidderName]*openrtb_ext.ORTB2
-
-	//If {site,app,user}.ext.data exists, collect it and remove {site,app,user}.ext.data from request
-	globalFpdData, err := firstpartydata.ExtractGlobalFPDData(req)
-	if err != nil {
-		errL = []error{err}
-		return resolvedFPD, errL
-	}
-
-	reqExt, err := req.GetRequestExt()
-	if err != nil {
-		errL = append(errL, err)
-		return resolvedFPD, errL
-	}
-	if reqExt == nil || reqExt.GetPrebid() == nil {
-		return resolvedFPD, errL
-	}
-	biddersWithGlobalFPD := make([]string, 0)
-
-	if reqExt.GetPrebid().Data != nil {
-		biddersWithGlobalFPD = reqExt.GetPrebid().Data.Bidders
-		reqExt.GetPrebid().Data.Bidders = nil
-	}
-
-	fbdBidderConfigData, reqExtPrebid := firstpartydata.ExtractBidderConfigFPD(*reqExt.GetPrebid())
-	reqExt.SetPrebid(&reqExtPrebid)
-
-	if len(fbdBidderConfigData) == 0 && len(biddersWithGlobalFPD) == 0 {
-		return resolvedFPD, errL
-	}
-
-	//If ext.prebid.data.bidders isn't defined, the default is there's no permission filtering
-	openRtbGlobalFPD := firstpartydata.ExtractOpenRtbGlobalFPD(req.BidRequest)
-
-	var fpdErrors []error
-	resolvedFPD, fpdErrors = firstpartydata.ResolveFPDData(req.BidRequest, fbdBidderConfigData, globalFpdData, openRtbGlobalFPD, biddersWithGlobalFPD)
-	if fpdErrors != nil {
-		errL = append(errL, fpdErrors...)
-	}
-
-	return resolvedFPD, errL
 }
