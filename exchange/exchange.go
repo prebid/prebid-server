@@ -520,20 +520,6 @@ func (e *exchange) getAllBids(
 	return adapterBids, adapterExtra, bidsFound
 }
 
-func applyFPD(fpdData map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, bidReq *openrtb2.BidRequest, bidderName openrtb_ext.BidderName) {
-	if fpdData != nil && fpdData[bidderName] != nil {
-		if fpdData[bidderName].Site != nil {
-			bidReq.Site = fpdData[bidderName].Site
-		}
-		if fpdData[bidderName].App != nil {
-			bidReq.App = fpdData[bidderName].App
-		}
-		if fpdData[bidderName].User != nil {
-			bidReq.User = fpdData[bidderName].User
-		}
-	}
-}
-
 func (e *exchange) recoverSafely(bidderRequests []BidderRequest,
 	inner func(BidderRequest, currency.Conversions),
 	chBids chan *bidResponseWrapper) func(BidderRequest, currency.Conversions) {

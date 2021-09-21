@@ -739,3 +739,17 @@ func writeNameVersionRecord(sb *strings.Builder, name, version string) {
 	sb.WriteString("/")
 	sb.WriteString(version)
 }
+
+func applyFPD(fpdData map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, bidReq *openrtb2.BidRequest, bidderName openrtb_ext.BidderName) {
+	if fpdData != nil && fpdData[bidderName] != nil {
+		if fpdData[bidderName].Site != nil {
+			bidReq.Site = fpdData[bidderName].Site
+		}
+		if fpdData[bidderName].App != nil {
+			bidReq.App = fpdData[bidderName].App
+		}
+		if fpdData[bidderName].User != nil {
+			bidReq.User = fpdData[bidderName].User
+		}
+	}
+}

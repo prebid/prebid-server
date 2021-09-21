@@ -2410,3 +2410,73 @@ func TestBuildXPrebidHeader(t *testing.T) {
 		assert.Equal(t, test.result, result, test.description+":result")
 	}
 }
+
+func TestApplyFPD(t *testing.T) {
+	bidderNameAppnexus := openrtb_ext.BidderName("appnexus")
+	bidderNameTest := openrtb_ext.BidderName("test")
+	bidderNameNotNilFPD := openrtb_ext.BidderName("notNilFPD")
+	bidderNameApp := openrtb_ext.BidderName("AppFPD")
+	fpd := map[openrtb_ext.BidderName]*openrtb_ext.ORTB2{}
+	fpd[bidderNameAppnexus] = &openrtb_ext.ORTB2{Site: &openrtb2.Site{ID: "SiteId"}}
+	fpd[bidderNameTest] = &openrtb_ext.ORTB2{Site: nil, App: nil, User: nil}
+	fpd[bidderNameNotNilFPD] = &openrtb_ext.ORTB2{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}, User: &openrtb2.User{ID: "UserId"}}
+	fpd[bidderNameApp] = &openrtb_ext.ORTB2{App: &openrtb2.App{ID: "AppId"}}
+
+	testCases := []struct {
+		description   string
+		inputFpd      map[openrtb_ext.BidderName]*openrtb_ext.ORTB2
+		bidderName    openrtb_ext.BidderName
+		inputRequest  openrtb2.BidRequest
+		outputRequest openrtb2.BidRequest
+	}{
+		{
+			description:   "Nil fpd",
+			inputFpd:      nil,
+			bidderName:    openrtb_ext.BidderName(""),
+			inputRequest:  openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}},
+			outputRequest: openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}},
+		},
+		{
+			description:   "No fpd for bidder",
+			inputFpd:      fpd,
+			bidderName:    openrtb_ext.BidderName("test1"),
+			inputRequest:  openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}},
+			outputRequest: openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}},
+		},
+		{
+			description:   "Fpd for bidder with nil site/app/user",
+			inputFpd:      fpd,
+			bidderName:    bidderNameTest,
+			inputRequest:  openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}},
+			outputRequest: openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}},
+		},
+		{
+			description:   "Fpd for bidder with not nil site/app/user",
+			inputFpd:      fpd,
+			bidderName:    bidderNameNotNilFPD,
+			inputRequest:  openrtb2.BidRequest{},
+			outputRequest: openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}, User: &openrtb2.User{ID: "UserId"}},
+		},
+		{
+			description:   "Fpd for bidder with site and fpd with app",
+			inputFpd:      fpd,
+			bidderName:    bidderNameApp,
+			inputRequest:  openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}},
+			outputRequest: openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}},
+		},
+		{
+			description:   "Fpd for bidder with site and with app and fpd with app",
+			inputFpd:      fpd,
+			bidderName:    bidderNameApp,
+			inputRequest:  openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "TestAppId"}},
+			outputRequest: openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}},
+		},
+	}
+
+	for _, testCase := range testCases {
+		applyFPD(testCase.inputFpd, &testCase.inputRequest, testCase.bidderName)
+		assert.Equal(t, testCase.inputRequest, testCase.outputRequest, fmt.Sprintf("incorrect request after applying fpd, testcase %s", testCase.description))
+
+	}
+
+}
