@@ -513,12 +513,12 @@ func TestCleanOpenRTBRequestsWithFPD(t *testing.T) {
 		fpdExpected bool
 	}{
 		{
-			description: "Pass valid fpd data to request with one bidder",
+			description: "Pass valid FPD data for bidder not found in the request",
 			req:         AuctionRequest{BidRequest: getTestBuildRequest(t), UserSyncs: &emptyUsersync{}, FirstPartyData: fpd},
 			fpdExpected: false,
 		},
 		{
-			description: "Pass valid fpd data to request with two bidder",
+			description: "Pass valid FPD data for bidders specified in request",
 			req:         AuctionRequest{BidRequest: newAdapterAliasBidRequest(t), UserSyncs: &emptyUsersync{}, FirstPartyData: fpd},
 			fpdExpected: true,
 		},

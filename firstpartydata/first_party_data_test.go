@@ -142,6 +142,109 @@ func TestGetGlobalFPD(t *testing.T) {
 			errorContains: "",
 		},
 		{
+			description: "User FPD only present",
+			input: []byte(`{
+  				"id": "bid_id",
+  				"site": {
+  				  "id":"reqSiteId",
+  				  "page": "http://www.foobar.com/1234.html",
+  				  "publisher": {
+  				    "id": "1"
+  				  }
+  				},
+  				"user": {
+  				  "id": "userId",
+  				  "ext": {
+					"data": {"someuserfpd": "userfpdDataTest"}
+                  }
+  				},
+  				"tmax": 5000,
+  				"source": {
+  				  "tid": "ad839de0-5ae6-40bb-92b2-af8bad6439b3"
+  				}
+			}`),
+			output: []byte(`{
+  				"id": "bid_id",
+  				"site": {
+  				  "id":"reqSiteId",
+  				  "page": "http://www.foobar.com/1234.html",
+  				  "publisher": {
+  				    "id": "1"
+  				  }
+  				},
+  				"user": {
+  				  "id": "appId",
+				  "ext": {}
+  				},
+  				"tmax": 5000,
+  				"source": {
+  				  "tid": "ad839de0-5ae6-40bb-92b2-af8bad6439b3"
+  				}
+			}`),
+			expectedFpd: map[string][]byte{
+				"app":  {},
+				"user": []byte(`{"someuserfpd": "userfpdDataTest"}`),
+				"site": {},
+			},
+			errorExpected: false,
+			errorContains: "",
+		},
+		{
+			description: "No FPD present in req",
+			input: []byte(`{
+  				"id": "bid_id",
+  				"site": {
+  				  "id":"reqSiteId",
+  				  "page": "http://www.foobar.com/1234.html",
+  				  "publisher": {
+  				    "id": "1"
+  				  }
+  				},
+  				"app": {
+  				  "id": "appId",
+  				  "ext": {
+                  }
+  				},
+			  	"user": {
+  				  "id": "userId",
+				  "ext": {}
+  				},
+  				"tmax": 5000,
+  				"source": {
+  				  "tid": "ad839de0-5ae6-40bb-92b2-af8bad6439b3"
+  				}
+			}`),
+			output: []byte(`{
+  				"id": "bid_id",
+  				"site": {
+  				  "id":"reqSiteId",
+  				  "page": "http://www.foobar.com/1234.html",
+  				  "publisher": {
+  				    "id": "1"
+  				  }
+  				},
+  				"app": {
+  				  "id": "appId",
+				  "ext": {}
+  				},
+				"user": {
+  				  "id": "userId",
+				  "ext": {}
+  				},
+  				"tmax": 5000,
+  				"source": {
+  				  "tid": "ad839de0-5ae6-40bb-92b2-af8bad6439b3"
+  				}
+			}`),
+			expectedFpd: map[string][]byte{
+				"app":  {},
+				"user": {},
+				"site": {},
+			},
+			errorExpected: false,
+			errorContains: "",
+		},
+		{
 			description: "Site FPD different format",
 			input: []byte(`{
   				"id": "bid_id",
