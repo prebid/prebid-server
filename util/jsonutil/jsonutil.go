@@ -19,6 +19,7 @@ var openCurlyBracket = []byte("{")[0]
 var closingCurlyBracket = []byte("}")[0]
 var quote = []byte(`"`)[0]
 
+//Finds element in json byte array with any level of nesting
 func FindElement(extension []byte, elementNames ...string) (bool, int64, int64, error) {
 
 	elementName := elementNames[0]
@@ -112,10 +113,11 @@ func FindElement(extension []byte, elementNames ...string) (bool, int64, int64, 
 	return found, startIndex, endIndex, nil
 }
 
+//Drops element from json byte array
+// - Doesn't support drop element from json list
+// - Keys in the path can skip levels
+// - First found element will be removed
 func DropElement(extension []byte, elementNames ...string) ([]byte, error) {
-	//Doesn't support drop element from array
-	//Keys in the path can skip levels
-	//First found element will be removed
 	found, startIndex, endIndex, err := FindElement(extension, elementNames...)
 	if err != nil {
 		return nil, err
@@ -129,11 +131,12 @@ func DropElement(extension []byte, elementNames ...string) ([]byte, error) {
 
 }
 
+//Sets element to json byte array to specified path
+// - only one key is now supported
+// - can set new element to existing top level element
+// - can create new top level element
+// - element may have any type
 func SetElement(originDataInput []byte, setValue []byte, keys ...string) ([]byte, error) {
-	//only one key is now supported
-	//can set new element to existing top level element
-	//can create new top level element
-	//element may have any type
 
 	if len(keys) != 1 {
 		return originDataInput, errors.New("only one key is now supported")
@@ -167,7 +170,7 @@ func SetElement(originDataInput []byte, setValue []byte, keys ...string) ([]byte
 	return res, err
 }
 
-// diffJson compares two JSON byte arrays for structural equality. It will produce an error if either
+// Compares two JSON byte arrays for structural equality. It will produce an error if either
 // byte array is not actually JSON.
 func DiffJson(t *testing.T, description string, actual []byte, expected []byte) {
 	t.Helper()
@@ -193,6 +196,7 @@ func DiffJson(t *testing.T, description string, actual []byte, expected []byte) 
 	}
 }
 
+//Finds and drops element from json byte array
 func FindAndDropElement(input []byte, elementNames ...string) ([]byte, []byte, error) {
 	element, _, _, err := jsonparser.Get(input, elementNames...)
 	if err != nil && err != jsonparser.KeyPathNotFoundError {

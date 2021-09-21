@@ -19,8 +19,8 @@ const (
 	siteContentDataKey = "siteContentData"
 )
 
+//If {site,app,user}.ext.data exists, collect it and remove {site,app,user}.ext.data
 func ExtractGlobalFPDData(req *openrtb_ext.RequestWrapper) (map[string][]byte, error) {
-	//If {site,app,user}.ext.data exists, collect it and remove {site,app,user}.ext.data
 
 	fpdReqData := make(map[string][]byte, 3)
 
@@ -67,8 +67,8 @@ func ExtractGlobalFPDData(req *openrtb_ext.RequestWrapper) (map[string][]byte, e
 	return fpdReqData, nil
 }
 
+//Extract and delete user.data and {app/site}.content.data from request
 func ExtractOpenRtbGlobalFPD(bidRequest *openrtb2.BidRequest) map[string][]openrtb2.Data {
-	//Extract and delete user.data and {app/site}.content.data from request
 
 	openRtbGlobalFPD := make(map[string][]openrtb2.Data, 3)
 	if bidRequest.User != nil && len(bidRequest.User.Data) > 0 {
@@ -90,6 +90,7 @@ func ExtractOpenRtbGlobalFPD(bidRequest *openrtb2.BidRequest) map[string][]openr
 
 }
 
+//Consolidated First Party Data from different sources and returns valid FPD that will be applied to bidders later or returns errors
 func ResolveFPD(bidRequest *openrtb2.BidRequest, fpdBidderConfigData map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data, biddersWithGlobalFPD []string) (map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, []error) {
 	errL := []error{}
 
