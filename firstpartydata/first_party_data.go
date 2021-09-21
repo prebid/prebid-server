@@ -341,20 +341,17 @@ func ExtractBidderConfigFPD(reqExtPrebid openrtb_ext.ExtRequestPrebid) (map[open
 
 	fpd := make(map[openrtb_ext.BidderName]*openrtb_ext.ORTB2)
 
-	//every bidder in ext.prebid.data.bidders should receive fpd data if defined
-	bidderTable := make(map[string]struct{}) //just need to check existence of the element in map
-
 	if reqExtPrebid.BidderConfigs != nil {
 		for _, bidderConfig := range *reqExtPrebid.BidderConfigs {
 			for _, bidder := range bidderConfig.Bidders {
 
-				if _, present := bidderTable[bidder]; !present {
-					bidderTable[bidder] = struct{}{}
+				if _, present := fpd[openrtb_ext.BidderName(bidder)]; !present {
 					fpd[openrtb_ext.BidderName(bidder)] = &openrtb_ext.ORTB2{}
 				}
 				//this will overwrite previously set site/app/user.
 				//Last defined bidder-specific config will take precedence
 				fpdBidderData := fpd[openrtb_ext.BidderName(bidder)]
+
 				if bidderConfig.Config != nil && bidderConfig.Config.ORTB2 != nil {
 					if bidderConfig.Config.ORTB2.Site != nil {
 						fpdBidderData.Site = bidderConfig.Config.ORTB2.Site
