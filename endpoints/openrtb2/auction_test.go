@@ -2955,7 +2955,7 @@ func TestFPDHoldAuction(t *testing.T) {
 			if recorder.Code != http.StatusOK {
 
 				resp, err := ioutil.ReadAll(recorder.Body)
-				assert.NoError(t, err, "Error shuld not be nil")
+				assert.NoError(t, err, "Error should not be nil")
 
 				for i := range fpdFile.ValidationErrors {
 					assert.Contains(t, string(resp), fpdFile.ValidationErrors[i], "Incorrect first party data warning message")
