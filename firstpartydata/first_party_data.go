@@ -29,7 +29,7 @@ func ExtractGlobalFPD(req *openrtb_ext.RequestWrapper) (map[string][]byte, error
 		return nil, err
 	}
 
-	if siteExt != nil && len(siteExt.GetExt()[dataKey]) > 0 {
+	if len(siteExt.GetExt()[dataKey]) > 0 {
 		fpdReqData[siteKey] = siteExt.GetExt()[dataKey]
 		newSiteExt, err := jsonutil.DropElement(req.Site.Ext, dataKey)
 		if err != nil {
@@ -42,7 +42,7 @@ func ExtractGlobalFPD(req *openrtb_ext.RequestWrapper) (map[string][]byte, error
 	if err != nil {
 		return nil, err
 	}
-	if appExt != nil && len(appExt.GetExt()[dataKey]) > 0 {
+	if len(appExt.GetExt()[dataKey]) > 0 {
 		fpdReqData[appKey] = appExt.GetExt()[dataKey]
 		newAppExt, err := jsonutil.DropElement(req.App.Ext, dataKey)
 		if err != nil {
@@ -55,7 +55,7 @@ func ExtractGlobalFPD(req *openrtb_ext.RequestWrapper) (map[string][]byte, error
 	if err != nil {
 		return nil, err
 	}
-	if req.User != nil && len(userExt.GetExt()[dataKey]) > 0 {
+	if len(userExt.GetExt()[dataKey]) > 0 {
 		fpdReqData[userKey] = userExt.GetExt()[dataKey]
 		newUserExt, err := jsonutil.DropElement(req.User.Ext, dataKey)
 		if err != nil {
