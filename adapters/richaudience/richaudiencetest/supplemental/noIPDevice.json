@@ -35,7 +35,7 @@
     },
     
     "expectedMakeRequestsErrors": [{
-        "value": "Not found IP",
+        "value": "request.Device.IP is required",
         "comparison": "literal"
       }]
   }

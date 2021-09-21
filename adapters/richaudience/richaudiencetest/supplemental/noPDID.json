@@ -36,7 +36,7 @@
     },
     
     "expectedMakeRequestsErrors": [{
-        "value": "Not found PDID",
+        "value": "request.ext.user.buyerUID is required",
         "comparison": "literal"
       }]
   }

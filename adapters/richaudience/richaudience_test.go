@@ -70,7 +70,7 @@ func TestGetSite(t *testing.T) {
 
 	setSite(raBidRequest, richaudienceRequestTest)
 
-	if "www.test.com" != richaudienceRequestTest.Site.Domain {
+	if "" != richaudienceRequestTest.Site.Domain {
 		t.Errorf("error domain is diferent %s", richaudienceRequestTest.Site.Domain)
 	}
 }
@@ -291,13 +291,6 @@ func TestResponseOK(t *testing.T) {
 
 	t.Log(bidResponse)
 	t.Log(errs)
-}
-
-func TestEndpointTemplateMalformed(t *testing.T) {
-	_, buildErr := Builder(openrtb_ext.BidderRichaudience, config.Adapter{
-		Endpoint: "{{Malformed}}"})
-
-	assert.Error(t, buildErr)
 }
 
 func TestBadConfig(t *testing.T) {

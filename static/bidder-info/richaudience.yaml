@@ -1,16 +1,15 @@
 maintainer:
-  email: cert@richaudience.com
+  email: partnerintegrations@richaudience.com
 gvlVendorID: 108
+gdpr:
+  timeouts_ms:
+    init_vendorlist_fetches: 5000
+    active_vendorlist_fetch: 5000
 modifyingVastXmlAllowed: true
 capabilities:
-  app:
-    mediaTypes:
-      - banner
-      - video
   site:
     mediaTypes:
       - banner
-      - video
 userSync:
   iframe:
     url: "https://sync.richaudience.com/74889303289e27f327ad0c6de7be7264/?consentString={{.GDPRConsent}}&r={{.RedirectURL}}[PDID]"

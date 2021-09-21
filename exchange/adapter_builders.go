@@ -51,7 +51,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/decenterads"
 	"github.com/prebid/prebid-server/adapters/deepintent"
 	"github.com/prebid/prebid-server/adapters/dmx"
-	evolution "github.com/prebid/prebid-server/adapters/e_volution"
+	"github.com/prebid/prebid-server/adapters/e_volution"
 	"github.com/prebid/prebid-server/adapters/emx_digital"
 	"github.com/prebid/prebid-server/adapters/engagebdr"
 	"github.com/prebid/prebid-server/adapters/eplanning"

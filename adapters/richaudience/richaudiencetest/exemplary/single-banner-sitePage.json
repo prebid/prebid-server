@@ -4,12 +4,21 @@
       "test": 0,
       "imp": [
         {
-          "id": "",
+          "id": "div-gpt-ad-1460505748561-0",
           "banner": {
-            "format" : [{
-                  "w": 300,
-                  "h": 250
-                }]
+              "format" : [{
+                    "w": 300,
+                    "h": 250
+                  }]
+          },
+          "bidfloor": 1e-05,
+          "bidfloorcur": "USD",
+          "ext": {
+           "bidder": {
+              "pid": "OsNsyeF68q",
+              "supplyType": "site",
+              "testRa": true
+            }
           }
         }
       ],
@@ -30,20 +39,34 @@
       {
         "expectedRequest": {
           "uri": "http://ortb.richaudience.com/ortb/?bidder=pbs",
+          "headers": {
+            "Content-Type": ["application/json;charset=utf-8"],
+            "Accept": ["application/json"],
+            "X-Openrtb-Version": ["2.5"]
+          },
           "body": {
             "id": "4d3f84eb-787b-42fb-a0cf-062690dadce3",
+            "test": 1,
             "imp": [
               {
-                "id": "",
+                "id": "div-gpt-ad-1460505748561-0",
+                "tagid" : "OsNsyeF68q",
+                "secure": 1,
                 "banner": {
-                  "format" : [{
-                        "w": 300,
-                        "h": 250
-                      }]
+                    "format" : [{
+                          "w": 300,
+                          "h": 250
+                        }]
                 },
                 "bidfloor": 1e-05,
                 "bidfloorcur": "USD",
-                "secure": 1
+                "ext": {
+                  "bidder": {
+                    "pid": "OsNsyeF68q",
+                    "supplyType": "site",
+                   "testRa": true
+                  }
+                }
               }
             ],
             "site": {

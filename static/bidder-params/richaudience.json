@@ -16,6 +16,14 @@
 		"testRa": {
 			"type": "boolean",
 			"description": "TestMode"
+		},
+		"BidFloor": {
+			"type": "number",
+			"description": "floor price"
+		},
+		"BidFloorCur": {
+			"type": "string",
+			"description": "currency floor price"
 		}
 	  },
 	

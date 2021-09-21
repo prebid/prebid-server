@@ -23,7 +23,8 @@
         }
       ],
       "site": {
-        "page": "https://bridge.richmediastudio.com//ab083674fb8200b877a6983126e4477d/PrebidServer/indexRa.html?pbjs_debug=true"
+        "page": "https://bridge.richmediastudio.com//ab083674fb8200b877a6983126e4477d/PrebidServer/indexRa.html?pbjs_debug=true",
+        "domain": "bridge.richmediastudio.com"
       },
       "device": {
         "ip": "11.222.33.44",
