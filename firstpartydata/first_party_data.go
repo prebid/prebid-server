@@ -92,7 +92,7 @@ func ExtractOpenRtbGlobalFPD(bidRequest *openrtb2.BidRequest) map[string][]openr
 
 //Consolidated First Party Data from different sources and returns valid FPD that will be applied to bidders later or returns errors
 func ResolveFPD(bidRequest *openrtb2.BidRequest, fpdBidderConfigData map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data, biddersWithGlobalFPD []string) (map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, []error) {
-	errL := []error{}
+	var errL []error
 
 	resolvedFpd := make(map[openrtb_ext.BidderName]*openrtb_ext.ORTB2)
 
@@ -217,8 +217,7 @@ func resolveSite(fpdConfigSite *openrtb2.Site, bidRequestSite *openrtb2.Site, gl
 				contentCopy.Data = openRtbGlobalFPD[siteContentDataKey]
 				newSite.Content = &contentCopy
 			} else {
-				newSiteContent := &openrtb2.Content{Data: openRtbGlobalFPD[siteContentDataKey]}
-				newSite.Content = newSiteContent
+				newSite.Content = &openrtb2.Content{Data: openRtbGlobalFPD[siteContentDataKey]}
 			}
 		}
 	}
@@ -291,8 +290,7 @@ func resolveApp(fpdConfigApp *openrtb2.App, bidRequestApp *openrtb2.App, globalF
 				contentCopy.Data = openRtbGlobalFPD[appContentDataKey]
 				newApp.Content = &contentCopy
 			} else {
-				newAppContent := &openrtb2.Content{Data: openRtbGlobalFPD[appContentDataKey]}
-				newApp.Content = newAppContent
+				newApp.Content = &openrtb2.Content{Data: openRtbGlobalFPD[appContentDataKey]}
 			}
 		}
 	}
@@ -376,46 +374,37 @@ func ExtractBidderConfigFPD(reqExtPrebid openrtb_ext.ExtRequestPrebid) (map[open
 }
 
 func ExtractFPDForBidders(req *openrtb_ext.RequestWrapper) (map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, []error) {
-	errL := []error{}
-	var resolvedFPD map[openrtb_ext.BidderName]*openrtb_ext.ORTB2
 
 	//If {site,app,user}.ext.data exists, collect it and remove {site,app,user}.ext.data from request
 	globalFpd, err := ExtractGlobalFPD(req)
 	if err != nil {
-		errL = []error{err}
-		return resolvedFPD, errL
+		return nil, []error{err}
 	}
 
 	reqExt, err := req.GetRequestExt()
 	if err != nil {
-		errL = append(errL, err)
-		return resolvedFPD, errL
+		return nil, []error{err}
 	}
 	if reqExt == nil || reqExt.GetPrebid() == nil {
-		return resolvedFPD, errL
+		return nil, nil
 	}
-	biddersWithGlobalFPD := make([]string, 0)
+	var biddersWithGlobalFPD []string
 
-	if reqExt.GetPrebid().Data != nil {
-		biddersWithGlobalFPD = reqExt.GetPrebid().Data.Bidders
-		reqExt.GetPrebid().Data.Bidders = nil
+	if prebidData := reqExt.GetPrebid().Data; prebidData != nil {
+		biddersWithGlobalFPD = prebidData.Bidders
+		prebidData.Bidders = nil
 	}
 
 	fbdBidderConfigData, reqExtPrebid := ExtractBidderConfigFPD(*reqExt.GetPrebid())
 	reqExt.SetPrebid(&reqExtPrebid)
 
 	if len(fbdBidderConfigData) == 0 && len(biddersWithGlobalFPD) == 0 {
-		return resolvedFPD, errL
+		return nil, nil
 	}
 
 	//If ext.prebid.data.bidders isn't defined, the default is there's no permission filtering
 	openRtbGlobalFPD := ExtractOpenRtbGlobalFPD(req.BidRequest)
 
-	var fpdErrors []error
-	resolvedFPD, fpdErrors = ResolveFPD(req.BidRequest, fbdBidderConfigData, globalFpd, openRtbGlobalFPD, biddersWithGlobalFPD)
-	if fpdErrors != nil {
-		errL = append(errL, fpdErrors...)
-	}
+	return ResolveFPD(req.BidRequest, fbdBidderConfigData, globalFpd, openRtbGlobalFPD, biddersWithGlobalFPD)
 
-	return resolvedFPD, errL
 }
