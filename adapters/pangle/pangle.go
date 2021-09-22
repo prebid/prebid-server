@@ -12,13 +12,22 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
+// Region ...
+type Region string
+
+const (
+	USEast Region = "us_east"
+	SG     Region = "sg"
+)
+
 // SKAN IDs must be lower case
 var pangleExtSKADNetIDs = map[string]bool{
 	"22mmun2rn5.skadnetwork": true,
 }
 
 type adapter struct {
-	Endpoint string
+	Endpoint         string
+	SupportedRegions map[Region]string
 }
 
 type NetworkIDs struct {
@@ -53,6 +62,10 @@ type bidExt struct {
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	bidder := &adapter{
 		Endpoint: config.Endpoint,
+		SupportedRegions: map[Region]string{
+			USEast: config.XAPI.EndpointUSEast,
+			SG:     config.XAPI.EndpointSG,
+		},
 	}
 
 	return bidder, nil
@@ -112,7 +125,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			continue
 		}
 
-		if imp.Banner != nil && bidderImpExt.MRAIDSupported == false {
+		if imp.Banner != nil && !bidderImpExt.MRAIDSupported {
 			imp.Banner = nil
 		}
 
@@ -181,9 +194,15 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			placementType = adapters.Rewarded
 		}
 
+		uri := a.Endpoint
+
+		if endpoint, ok := a.SupportedRegions[Region(bidderImpExt.Region)]; ok {
+			uri = endpoint
+		}
+
 		requestData := &adapters.RequestData{
 			Method: "POST",
-			Uri:    a.Endpoint,
+			Uri:    uri,
 			Body:   requestJSON,
 			Headers: http.Header{
 				"TOKEN":        []string{bidderImpExt.Token},
