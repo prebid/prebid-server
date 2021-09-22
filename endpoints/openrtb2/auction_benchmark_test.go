@@ -67,7 +67,7 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 		return
 	}
 
-	nilMetrics := &metricsConfig.DummyMetricsEngine{}
+	nilMetrics := &metricsConfig.NilMetricsEngine{}
 
 	adapters, adaptersErr := exchange.BuildAdapters(server.Client(), &config.Configuration{}, infos, nilMetrics)
 	if adaptersErr != nil {

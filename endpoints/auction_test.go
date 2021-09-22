@@ -357,7 +357,7 @@ func TestCacheVideoOnly(t *testing.T) {
 	}, nil, nil)
 	prebid_cache_client.InitPrebidCache(server.URL)
 	var labels = &metrics.Labels{}
-	if err := cacheVideoOnly(bids, ctx, &auction{cfg: cfg, syncersByBidder: syncersByBidder, gdprPerms: gdprPerms, metricsEngine: &metricsConf.DummyMetricsEngine{}}, labels); err != nil {
+	if err := cacheVideoOnly(bids, ctx, &auction{cfg: cfg, syncersByBidder: syncersByBidder, gdprPerms: gdprPerms, metricsEngine: &metricsConf.NilMetricsEngine{}}, labels); err != nil {
 		t.Errorf("Prebid cache failed: %v \n", err)
 		return
 	}
@@ -644,7 +644,7 @@ func TestPanicRecovery(t *testing.T) {
 			allowBidderSync:  false,
 			allowHostCookies: false,
 		},
-		metricsEngine: &metricsConf.DummyMetricsEngine{},
+		metricsEngine: &metricsConf.NilMetricsEngine{},
 	}
 	panicker := func(bidder *pbs.PBSBidder, blables metrics.AdapterLabels) {
 		panic("panic!")
