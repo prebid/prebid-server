@@ -26,7 +26,6 @@ import (
 	"github.com/prebid/prebid-server/metrics"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/util/jsonutil"
 	"github.com/prebid/prebid-server/version"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -1306,7 +1305,7 @@ func TestMobileNativeTypes(t *testing.T) {
 		var actualValue string
 		for _, bid := range seatBids.bids {
 			actualValue = bid.bid.AdM
-			jsonutil.DiffJson(t, tc.description, []byte(actualValue), []byte(tc.expectedValue))
+			assert.JSONEq(t, actualValue, tc.expectedValue, tc.description)
 		}
 	}
 }

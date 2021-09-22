@@ -6,10 +6,6 @@ import (
 	"errors"
 	"github.com/buger/jsonparser"
 	"io"
-	"testing"
-
-	"github.com/yudai/gojsondiff"
-	"github.com/yudai/gojsondiff/formatter"
 )
 
 var comma = []byte(",")[0]
@@ -168,32 +164,6 @@ func SetElement(originDataInput []byte, setValue []byte, keys ...string) ([]byte
 	}
 	res, err := json.Marshal(originData)
 	return res, err
-}
-
-// Compares two JSON byte arrays for structural equality. It will produce an error if either
-// byte array is not actually JSON.
-func DiffJson(t *testing.T, description string, actual []byte, expected []byte) {
-	t.Helper()
-	diff, err := gojsondiff.New().Compare(actual, expected)
-	if err != nil {
-		t.Fatalf("%s json diff failed. %v", description, err)
-	}
-
-	if diff.Modified() {
-		var left interface{}
-		if err := json.Unmarshal(actual, &left); err != nil {
-			t.Fatalf("%s json did not match, but unmarshalling failed. %v", description, err)
-		}
-		printer := formatter.NewAsciiFormatter(left, formatter.AsciiFormatterConfig{
-			ShowArrayIndex: true,
-		})
-		output, err := printer.Format(diff)
-		if err != nil {
-			t.Errorf("%s did not match, but diff formatting failed. %v", description, err)
-		} else {
-			t.Errorf("%s json did not match expected.\n\n%s", description, output)
-		}
-	}
 }
 
 //Finds and drops element from json byte array

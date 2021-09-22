@@ -68,9 +68,7 @@
       "publisher": {
         "id": "1"
       },
-      "ext": {
-        "amp": 1
-      }
+      "ext": {"amp":1}
     },
     "test": 1
   },

@@ -5,7 +5,6 @@ import (
 	"github.com/evanphx/json-patch"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/util/jsonutil"
 )
 
 const (
@@ -30,12 +29,10 @@ func ExtractGlobalFPD(req *openrtb_ext.RequestWrapper) (map[string][]byte, error
 	}
 
 	if len(siteExt.GetExt()[dataKey]) > 0 {
-		fpdReqData[siteKey] = siteExt.GetExt()[dataKey]
-		newSiteExt, err := jsonutil.DropElement(req.Site.Ext, dataKey)
-		if err != nil {
-			return nil, err
-		}
-		req.Site.Ext = newSiteExt
+		newSiteExt := siteExt.GetExt()
+		fpdReqData[siteKey] = newSiteExt[dataKey]
+		delete(newSiteExt, dataKey)
+		siteExt.SetExt(newSiteExt)
 	}
 
 	appExt, err := req.GetAppExt()
@@ -43,12 +40,10 @@ func ExtractGlobalFPD(req *openrtb_ext.RequestWrapper) (map[string][]byte, error
 		return nil, err
 	}
 	if len(appExt.GetExt()[dataKey]) > 0 {
-		fpdReqData[appKey] = appExt.GetExt()[dataKey]
-		newAppExt, err := jsonutil.DropElement(req.App.Ext, dataKey)
-		if err != nil {
-			return nil, err
-		}
-		req.App.Ext = newAppExt
+		newAppExt := appExt.GetExt()
+		fpdReqData[appKey] = newAppExt[dataKey]
+		delete(newAppExt, dataKey)
+		appExt.SetExt(newAppExt)
 	}
 
 	userExt, err := req.GetUserExt()
@@ -56,14 +51,13 @@ func ExtractGlobalFPD(req *openrtb_ext.RequestWrapper) (map[string][]byte, error
 		return nil, err
 	}
 	if len(userExt.GetExt()[dataKey]) > 0 {
-		fpdReqData[userKey] = userExt.GetExt()[dataKey]
-		newUserExt, err := jsonutil.DropElement(req.User.Ext, dataKey)
-		if err != nil {
-			return nil, err
-		}
-		req.User.Ext = newUserExt
+		newUserExt := userExt.GetExt()
+		fpdReqData[userKey] = newUserExt[dataKey]
+		delete(newUserExt, dataKey)
+		userExt.SetExt(newUserExt)
 	}
 
+	req.RebuildRequest()
 	return fpdReqData, nil
 }
 

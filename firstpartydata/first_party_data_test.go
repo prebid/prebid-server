@@ -2,10 +2,8 @@ package firstpartydata
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/util/jsonutil"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"strings"
@@ -33,7 +31,8 @@ func TestGetGlobalFPD(t *testing.T) {
   				    "id": "1"
   				  },
 				  "ext":{
-				   "data": {"somesitefpd": "sitefpdDataTest"}
+				   "data": {"somesitefpd": "sitefpdDataTest"},
+				   "amp": 1
 				  }
   				},
   				"user": {
@@ -65,20 +64,17 @@ func TestGetGlobalFPD(t *testing.T) {
   				    "id": "1"
   				  },
 				  "ext": {
+					"amp": 1
 				  }
   				},
   				"user": {
   				  "id": "reqUserID",
   				  "yob": 1982,
-  				  "gender": "M",
-				  "ext": {
-				  }
+  				  "gender": "M"
   				},
   				"app": {
   				  "id": "appId",
-  				  "data": 123,
-				  "ext": {
-				  }
+  				  "data": 123
   				},
   				"tmax": 5000,
   				"source": {
@@ -255,7 +251,8 @@ func TestGetGlobalFPD(t *testing.T) {
   				    "id": "1"
   				  },
 				  "ext": {
-					"data": {"someappfpd": true}
+					"data": {"someappfpd": true},
+					"amp": 1
                   }
   				},
   				"app": {
@@ -274,7 +271,9 @@ func TestGetGlobalFPD(t *testing.T) {
   				  "publisher": {
   				    "id": "1"
   				  },
-                  "ext": {}
+                 "ext": {
+					"amp": 1
+                  }
   				},
   				"app": {
   				  "id": "appId"
@@ -313,15 +312,21 @@ func TestGetGlobalFPD(t *testing.T) {
 		} else {
 			assert.NoError(t, err, "Error should be nil")
 			if fpd[userKey] != nil {
-				assert.JSONEq(t, string(inputTestReq.User.Ext), string(outputTestReq.User.Ext), "Result is incorrect")
+				if string(inputTestReq.User.Ext) != "" && string(outputTestReq.User.Ext) != "" {
+					assert.JSONEq(t, string(inputTestReq.User.Ext), string(outputTestReq.User.Ext), "Result is incorrect")
+				}
 				assert.Equal(t, test.expectedFpd[userKey], fpd[userKey], "FPD is incorrect")
 			}
 			if fpd[appKey] != nil {
-				assert.JSONEq(t, string(inputTestReq.App.Ext), string(outputTestReq.App.Ext), "Result is incorrect")
+				if string(inputTestReq.App.Ext) != "" && string(outputTestReq.App.Ext) != "" {
+					assert.JSONEq(t, string(inputTestReq.App.Ext), string(outputTestReq.App.Ext), "Result is incorrect")
+				}
 				assert.Equal(t, test.expectedFpd[appKey], fpd[appKey], "FPD is incorrect")
 			}
 			if fpd[siteKey] != nil {
-				assert.JSONEq(t, string(inputTestReq.Site.Ext), string(outputTestReq.Site.Ext), "Result is incorrect")
+				if string(inputTestReq.Site.Ext) != "" && string(outputTestReq.Site.Ext) != "" {
+					assert.JSONEq(t, string(inputTestReq.Site.Ext), string(outputTestReq.Site.Ext), "Result is incorrect")
+				}
 				assert.Equal(t, test.expectedFpd[siteKey], fpd[siteKey], "FPD is incorrect")
 			}
 		}
@@ -490,7 +495,7 @@ func TestExtractBidderConfigFPD(t *testing.T) {
 
 				if v.Site != nil {
 					tempSiteExt := fpdData[k].Site.Ext
-					jsonutil.DiffJson(t, "site.ext is incorrect", v.Site.Ext, tempSiteExt)
+					assert.JSONEq(t, string(v.Site.Ext), string(tempSiteExt), "site.ext is incorrect")
 					//compare extensions first and the site objects without extensions
 					//in case two or more bidders share same config(pointer), ext should be returned back
 					v.Site.Ext = nil
@@ -502,7 +507,7 @@ func TestExtractBidderConfigFPD(t *testing.T) {
 				if v.App != nil {
 
 					tempAppExt := fpdData[k].App.Ext
-					jsonutil.DiffJson(t, "app.ext is incorrect", v.App.Ext, tempAppExt)
+					assert.JSONEq(t, string(v.App.Ext), string(tempAppExt), "app.ext is incorrect")
 					//compare extensions first and the app objects without extensions
 					v.App.Ext = nil
 					fpdData[k].App.Ext = nil
@@ -512,7 +517,7 @@ func TestExtractBidderConfigFPD(t *testing.T) {
 
 				if v.User != nil {
 					tempUserExt := fpdData[k].User.Ext
-					jsonutil.DiffJson(t, "user.ext is incorrect", v.User.Ext, tempUserExt)
+					assert.JSONEq(t, string(v.User.Ext), string(tempUserExt), "user.ext is incorrect")
 					//compare extensions first and the user objects without extensions
 					v.User.Ext = nil
 					fpdData[k].User.Ext = nil
@@ -530,8 +535,6 @@ func TestResolveFPD(t *testing.T) {
 	if specFiles, err := ioutil.ReadDir("./tests/resolvefpd"); err == nil {
 		for _, specFile := range specFiles {
 			fileName := "./tests/resolvefpd/" + specFile.Name()
-
-			fmt.Println(fileName)
 
 			fpdFile, err := loadFpdFile(fileName)
 			if err != nil {
@@ -609,7 +612,7 @@ func TestResolveFPD(t *testing.T) {
 					expectedSiteExt := outputReq.Site.Ext
 					bidderFPD.Site.Ext = nil
 					outputReq.Site.Ext = nil
-					jsonutil.DiffJson(t, "site.ext is incorrect", resSiteExt, expectedSiteExt)
+					assert.JSONEq(t, string(resSiteExt), string(expectedSiteExt), "site.ext is incorrect")
 
 					assert.Equal(t, outputReq.Site, bidderFPD.Site, "Site is incorrect")
 				}
@@ -618,7 +621,7 @@ func TestResolveFPD(t *testing.T) {
 					expectedAppExt := outputReq.App.Ext
 					bidderFPD.App.Ext = nil
 					outputReq.App.Ext = nil
-					jsonutil.DiffJson(t, "app.ext is incorrect", resAppExt, expectedAppExt)
+					assert.JSONEq(t, string(resAppExt), string(expectedAppExt), "app.ext is incorrect")
 
 					assert.Equal(t, outputReq.App, bidderFPD.App, "App is incorrect")
 				}
@@ -627,7 +630,7 @@ func TestResolveFPD(t *testing.T) {
 					expectedUserExt := outputReq.User.Ext
 					bidderFPD.User.Ext = nil
 					outputReq.User.Ext = nil
-					jsonutil.DiffJson(t, "user.ext is incorrect", resUserExt, expectedUserExt)
+					assert.JSONEq(t, string(resUserExt), string(expectedUserExt), "user.ext is incorrect")
 
 					assert.Equal(t, outputReq.User, bidderFPD.User, "User is incorrect")
 				}

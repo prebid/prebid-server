@@ -29,7 +29,6 @@ import (
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
 	"github.com/prebid/prebid-server/usersync"
-	"github.com/prebid/prebid-server/util/jsonutil"
 
 	"github.com/buger/jsonparser"
 	"github.com/stretchr/testify/assert"
@@ -380,7 +379,7 @@ func TestDebugBehaviour(t *testing.T) {
 
 			// If not nil, assert bid extension
 			if test.in.debug {
-				jsonutil.DiffJson(t, test.desc, bidRequest.Ext, actualExt.Debug.ResolvedRequest.Ext)
+				assert.JSONEq(t, string(bidRequest.Ext), string(actualExt.Debug.ResolvedRequest.Ext), test.desc)
 			}
 		} else if !test.debugData.bidderLevelDebugAllowed && test.debugData.accountLevelDebugAllowed {
 			assert.Equal(t, len(actualExt.Debug.HttpCalls), 0, "%s. ext.debug.httpcalls array should not be empty", "With bidder level debug disable option http calls should be empty")
@@ -2179,7 +2178,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 	}
 	if spec.IncomingRequest.OrtbRequest.Test == 1 {
 		//compare debug info
-		jsonutil.DiffJson(t, "Debug info modified", bid.Ext, spec.Response.Ext)
+		assert.JSONEq(t, string(bid.Ext), string(spec.Response.Ext), "Debug info modified")
 	}
 }
 
@@ -3844,7 +3843,7 @@ func diffOrtbRequests(t *testing.T, description string, expected *openrtb2.BidRe
 		t.Fatalf("%s failed to marshal expected BidRequest into JSON. %v", description, err)
 	}
 
-	jsonutil.DiffJson(t, description, actualJSON, expectedJSON)
+	assert.JSONEq(t, string(actualJSON), string(expectedJSON), description)
 }
 
 func diffOrtbResponses(t *testing.T, description string, expected *openrtb2.BidResponse, actual *openrtb2.BidResponse) {
@@ -3867,7 +3866,7 @@ func diffOrtbResponses(t *testing.T, description string, expected *openrtb2.BidR
 		t.Fatalf("%s failed to marshal expected BidResponse into JSON. %v", description, err)
 	}
 
-	jsonutil.DiffJson(t, description, actualJSON, expectedJSON)
+	assert.JSONEq(t, string(actualJSON), string(expectedJSON), description)
 }
 
 func mapifySeatBids(t *testing.T, context string, seatBids []openrtb2.SeatBid) map[string]*openrtb2.SeatBid {
