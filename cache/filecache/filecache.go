@@ -103,11 +103,6 @@ func (s *accountService) Get(id string) (*cache.Account, error) {
 	}, nil
 }
 
-// Set will always return nil since this is a dummy service
-func (s *accountService) Set(account *cache.Account) error {
-	return nil
-}
-
 // ConfigService not supported, always returns an error
 type configService struct {
 	shared *shared
