@@ -406,7 +406,88 @@ func TestExtractOpenRtbGlobalFPD(t *testing.T) {
 				userDataKey:        {{ID: "userDataId1", Name: "userDataName1"}},
 				appContentDataKey:  {{ID: "appDataId1", Name: "appDataName1"}},
 			},
-		}, {
+		},
+		{
+			description: "No Site, app or user data present",
+			input: []byte(`{
+  				"id": "bid_id",
+			 	"imp":[{"id":"impid"}]
+			}`),
+			output: []byte(`{
+  				"id": "bid_id",
+				"imp":[{"id":"impid"}]
+			}`),
+			expectedFpdData: map[string][]openrtb2.Data{
+				siteContentDataKey: nil,
+				userDataKey:        nil,
+				appContentDataKey:  nil,
+			},
+		},
+		{
+			description: "Site only data present",
+			input: []byte(`{
+  				"id": "bid_id",
+			 	"imp":[{"id":"impid"}],
+  				"site": {
+  				  "id": "reqSiteID",
+  				  "page": "test/page",
+    			  "content":{
+					"data":[
+						{ 
+						  "id": "siteDataId1",
+						  "name": "siteDataName1"
+						}
+					]
+				  }
+  				}
+			}`),
+			output: []byte(`{
+  				"id": "bid_id",
+				"imp":[{"id":"impid"}],
+				"site":{
+					 "id": "reqSiteID",
+  				     "page": "test/page",
+					 "content":{}
+				}
+			}`),
+			expectedFpdData: map[string][]openrtb2.Data{
+				siteContentDataKey: {{ID: "siteDataId1", Name: "siteDataName1"}},
+				userDataKey:        nil,
+				appContentDataKey:  nil,
+			},
+		},
+		{
+			description: "App only data present",
+			input: []byte(`{
+  				"id": "bid_id",
+			 	"imp":[{"id":"impid"}],
+  				"app": {
+  				  "id": "reqSiteID",
+    			  "content":{
+					"data":[
+						{ 
+						  "id": "siteDataId1",
+						  "name": "siteDataName1"
+						}
+					]
+				  }
+  				}
+			}`),
+			output: []byte(`{
+  				"id": "bid_id",
+				"imp":[{"id":"impid"}],
+				"app":{
+					 "id": "reqSiteID",
+					 "content":{}
+				}
+			}`),
+			expectedFpdData: map[string][]openrtb2.Data{
+				siteContentDataKey: nil,
+				userDataKey:        nil,
+				appContentDataKey:  {{ID: "siteDataId1", Name: "siteDataName1"}},
+			},
+		},
+		{
 			description: "User only data present",
 			input: []byte(`{
   				"id": "bid_id",
