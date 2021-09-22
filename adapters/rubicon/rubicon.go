@@ -714,6 +714,11 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			errs = append(errs, err)
 			continue
 		}
+		adSlot, err := getAdSlot(imp)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
 
 		impExt := rubiconImpExt{
 			RP: rubiconImpExtRP{
@@ -721,7 +726,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 				Target: target,
 				Track:  rubiconImpExtRPTrack{Mint: "", MintVersion: ""},
 			},
-			GPID: getAdSlot(imp),
+			GPID: adSlot,
 		}
 		imp.Ext, err = json.Marshal(&impExt)
 		if err != nil {
@@ -1011,35 +1016,60 @@ func addStringArrayAttribute(attribute []string, target map[string]interface{}, 
 	target[attributeName] = attribute
 }
 
-func getAdSlot(imp openrtb2.Imp) string {
+func getAdSlot(imp openrtb2.Imp) (string, error) {
 	var adSlot string
+	var parsingError error
 	jsonparser.EachKey(imp.Ext, func(idx int, value []byte, vt jsonparser.ValueType, err error) {
 		switch idx {
 		case 0:
-			adServerContextName, _ := jsonparser.GetString(value, "name")
+			adServerContextName, err := jsonparser.GetString(value, "name")
+			if isNotKeyPathError(err) {
+				parsingError = err
+				return
+			}
 			if adServerContextName == "gam" {
-				contextAdSlot, _ := jsonparser.GetString(value, "adslot")
+				contextAdSlot, err := jsonparser.GetString(value, "adslot")
+				if isNotKeyPathError(err) {
+					parsingError = err
+					return
+				}
 				adSlot = contextAdSlot
 			}
 		}
 	}, []string{"context", "data", "adserver"})
 
+	if parsingError != nil {
+		return "", parsingError
+	}
+
 	if adSlot != "" {
-		return adSlot
+		return adSlot, nil
 	}
 
 	jsonparser.EachKey(imp.Ext, func(idx int, value []byte, vt jsonparser.ValueType, err error) {
 		switch idx {
 		case 0:
-			adServerDataName, _ := jsonparser.GetString(value, "name")
+			adServerDataName, err := jsonparser.GetString(value, "name")
+			if isNotKeyPathError(err) {
+				parsingError = err
+				return
+			}
 			if adServerDataName == "gam" {
-				dataAdSlot, _ := jsonparser.GetString(value, "adslot")
+				dataAdSlot, err := jsonparser.GetString(value, "adslot")
+				if isNotKeyPathError(err) {
+					parsingError = err
+					return
+				}
 				adSlot = dataAdSlot
 			}
 		}
 	}, []string{"data", "adserver"})
 
-	return adSlot
+	if parsingError != nil {
+		return "", parsingError
+	}
+
+	return adSlot, nil
 }
 
 func updateUserRpTargetWithFpdAttributes(visitor json.RawMessage, user openrtb2.User) (json.RawMessage, error) {
