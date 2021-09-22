@@ -335,7 +335,7 @@ var priceGranularityAuto = PriceGranularity{
 // ExtRequestPrebidData defines Prebid's First Party Data (FPD) and related bid request options.
 type ExtRequestPrebidData struct {
 	EidPermissions []ExtRequestPrebidDataEidPermission `json:"eidpermissions"`
-	Bidders        []string                            `json:"bidders"`
+	Bidders        []string                            `json:"bidders,omitempty"`
 }
 
 // ExtRequestPrebidDataEidPermission defines a filter rule for filter user.ext.eids

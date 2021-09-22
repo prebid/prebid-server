@@ -384,9 +384,11 @@ func ExtractFPDForBidders(req *openrtb_ext.RequestWrapper) (map[openrtb_ext.Bidd
 	}
 	var biddersWithGlobalFPD []string
 
-	if prebidData := reqExt.GetPrebid().Data; prebidData != nil {
+	extPrebid := reqExt.GetPrebid()
+	if prebidData := extPrebid.Data; prebidData != nil {
 		biddersWithGlobalFPD = prebidData.Bidders
-		prebidData.Bidders = nil
+		extPrebid.Data.Bidders = nil
+		reqExt.SetPrebid(extPrebid)
 	}
 
 	fbdBidderConfigData, reqExtPrebid := ExtractBidderConfigFPD(*reqExt.GetPrebid())
