@@ -57,7 +57,6 @@ func ExtractGlobalFPD(req *openrtb_ext.RequestWrapper) (map[string][]byte, error
 		userExt.SetExt(newUserExt)
 	}
 
-	req.RebuildRequest()
 	return fpdReqData, nil
 }
 

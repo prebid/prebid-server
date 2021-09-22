@@ -298,6 +298,7 @@ func TestGetGlobalFPD(t *testing.T) {
 		assert.NoError(t, err, "Error should be nil")
 
 		fpd, err := ExtractGlobalFPD(&inputTestReq)
+		inputTestReq.RebuildRequest()
 		assert.NoError(t, err, "Error should be nil")
 
 		var outputTestReq openrtb_ext.RequestWrapper
