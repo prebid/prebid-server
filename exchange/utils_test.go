@@ -1936,22 +1936,39 @@ func newBidRequest(t *testing.T) *openrtb2.BidRequest {
 }
 
 func TestRandomizeList(t *testing.T) {
-	adapters := make([]openrtb_ext.BidderName, 3)
-	adapters[0] = openrtb_ext.BidderName("dummy")
-	adapters[1] = openrtb_ext.BidderName("dummy2")
-	adapters[2] = openrtb_ext.BidderName("dummy3")
+	var (
+		bidder1 = openrtb_ext.BidderName("bidder1")
+		bidder2 = openrtb_ext.BidderName("bidder2")
+		bidder3 = openrtb_ext.BidderName("bidder3")
+	)
 
-	randomizeList(adapters)
-
-	if len(adapters) != 3 {
-		t.Errorf("RandomizeList, expected a list of 3, found %d", len(adapters))
+	testCases := []struct {
+		description string
+		bidders     []openrtb_ext.BidderName
+	}{
+		{
+			description: "None",
+			bidders:     []openrtb_ext.BidderName{},
+		},
+		{
+			description: "One",
+			bidders:     []openrtb_ext.BidderName{bidder1},
+		},
+		{
+			description: "Many",
+			bidders:     []openrtb_ext.BidderName{bidder1, bidder2, bidder3},
+		},
 	}
 
-	adapters = adapters[0:1]
-	randomizeList(adapters)
+	for _, test := range testCases {
+		biddersWorkingCopy := make([]openrtb_ext.BidderName, len(test.bidders))
+		copy(biddersWorkingCopy, test.bidders)
 
-	if len(adapters) != 1 {
-		t.Errorf("RandomizeList, expected a list of 1, found %d", len(adapters))
+		randomizeList(biddersWorkingCopy)
+
+		// test all bidders are still present, ignoring order. we are testing the algorithm doesn't loose
+		// elements. we are not testing the random number generator itself.
+		assert.ElementsMatch(t, test.bidders, biddersWorkingCopy)
 	}
 }
 
