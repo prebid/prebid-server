@@ -331,10 +331,10 @@ func buildExtData(data []byte) []byte {
 	return res
 }
 
-func ExtractBidderConfigFPD(reqExtPrebid openrtb_ext.ExtRequestPrebid) (map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, openrtb_ext.ExtRequestPrebid) {
+func ExtractBidderConfigFPD(reqExt *openrtb_ext.RequestExt) map[openrtb_ext.BidderName]*openrtb_ext.ORTB2 {
 
 	fpd := make(map[openrtb_ext.BidderName]*openrtb_ext.ORTB2)
-
+	reqExtPrebid := reqExt.GetPrebid()
 	if reqExtPrebid.BidderConfigs != nil {
 		for _, bidderConfig := range *reqExtPrebid.BidderConfigs {
 			for _, bidder := range bidderConfig.Bidders {
@@ -363,8 +363,8 @@ func ExtractBidderConfigFPD(reqExtPrebid openrtb_ext.ExtRequestPrebid) (map[open
 	}
 
 	reqExtPrebid.BidderConfigs = nil
-
-	return fpd, reqExtPrebid
+	reqExt.SetPrebid(reqExtPrebid)
+	return fpd
 }
 
 func ExtractFPDForBidders(req *openrtb_ext.RequestWrapper) (map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, []error) {
@@ -391,8 +391,7 @@ func ExtractFPDForBidders(req *openrtb_ext.RequestWrapper) (map[openrtb_ext.Bidd
 		reqExt.SetPrebid(extPrebid)
 	}
 
-	fbdBidderConfigData, reqExtPrebid := ExtractBidderConfigFPD(*reqExt.GetPrebid())
-	reqExt.SetPrebid(&reqExtPrebid)
+	fbdBidderConfigData := ExtractBidderConfigFPD(reqExt)
 
 	if len(fbdBidderConfigData) == 0 && len(biddersWithGlobalFPD) == 0 {
 		return nil, nil

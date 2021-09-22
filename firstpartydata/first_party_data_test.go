@@ -566,9 +566,11 @@ func TestExtractBidderConfigFPD(t *testing.T) {
 			if err != nil {
 				t.Errorf("Unable to unmarshal input request: %s", fileName)
 			}
-			fpdData, reqExtPrebid := ExtractBidderConfigFPD(extReq)
+			reqExt := openrtb_ext.RequestExt{}
+			reqExt.SetPrebid(&extReq)
+			fpdData := ExtractBidderConfigFPD(&reqExt)
 
-			assert.Nil(t, reqExtPrebid.BidderConfigs, "Bidder specific FPD config should be removed from request")
+			assert.Nil(t, reqExt.GetPrebid().BidderConfigs, "Bidder specific FPD config should be removed from request")
 
 			assert.Equal(t, len(fpdFile.BiddersFPD), len(fpdData), "Incorrect fpd data")
 
