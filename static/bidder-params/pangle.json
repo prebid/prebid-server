@@ -18,6 +18,22 @@
       "type": "string",
       "description": "Placement ID",
       "pattern": "[0-9]+"
+    },
+    "reward": {
+      "type": "integer",
+      "description": "An integer defining the reward (skip) from Pangle"
+    },
+    "region": {
+      "type": "string",
+      "description": "A string defining region for choosing the closest Pangle endpoint"
+    },
+    "skadn_supported": {
+      "type": "boolean",
+      "description": "A bool config to determine if SKADN is supported by Pangle"
+    },
+    "mraid_supported": {
+      "type": "boolean",
+      "description": "A bool config to determine if MRAID is supported by Pangle"
     }
   },
   "required": [
