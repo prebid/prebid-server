@@ -548,7 +548,7 @@ func (deps *endpointDeps) validateImp(imp *openrtb2.Imp, aliases map[string]stri
 		return []error{fmt.Errorf("request.imp[%d] must contain at least one of \"banner\", \"video\", \"audio\", or \"native\"", index)}
 	}
 
-	if err := validateBanner(imp.Banner, imp, index); err != nil {
+	if err := validateBanner(imp.Banner, index, true); err != nil {
 		return []error{err}
 	}
 
