@@ -4,7 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
 
+	"github.com/gofrs/uuid"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
@@ -14,6 +17,40 @@ import (
 
 type adapter struct {
 	endpoint string
+}
+type adnAdunit struct {
+	AuId     string `json:"auId"`
+	TargetId string `json:"targetId"`
+}
+
+type AdnResponse struct {
+	AdUnits []struct {
+		AuId       string
+		TargetId   string
+		Html       string
+		ResponseId string
+		Ads        []struct {
+			Bid struct {
+				Amount   float64
+				Currency string
+			}
+			AdId            string
+			CreativeWidth   string
+			CreativeHeight  string
+			CreativeId      string
+			LineItemId      string
+			Html            string
+			DestinationUrls map[string]string
+		}
+	}
+}
+type adnMetaData struct {
+	Usi string `json:"usi"`
+}
+type adnRequest struct {
+	AdUnits  []adnAdunit `json:"adUnits"`
+	MetaData adnMetaData `json:"metaData,omitempty"`
+	Context  string      `json:"context,omitempty"`
 }
 
 // Builder builds a new instance of the BrightMountainMedia adapter for the given bidder with the given config.
@@ -29,7 +66,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	var errs []error
 
 	for _, imp := range request.Imp {
-		extRequest, err := a.makeRequest(*request, imp)
+		extRequest, err := a.generateRequests(*request, imp)
 		if err != nil {
 			errs = append(errs, err)
 		} else {
@@ -39,16 +76,12 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	return extRequests, errs
 }
 
-func (a *adapter) makeRequest(ortbRequest openrtb2.BidRequest, ortbImp openrtb2.Imp) (*adapters.RequestData, error) {
+func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest, ortbImp openrtb2.Imp) (*adapters.RequestData, error) {
+
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 
-	if ortbImp.Banner == nil && ortbImp.Video == nil {
-		return nil, &errortypes.BadInput{
-			Message: fmt.Sprintf("For Imp ID %s Banner or Video is undefined", ortbImp.ID),
-		}
-	}
 
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(ortbImp.Ext, &bidderExt); err != nil {
@@ -64,11 +97,12 @@ func (a *adapter) makeRequest(ortbRequest openrtb2.BidRequest, ortbImp openrtb2.
 		}
 	}
 
-	ortbImp.TagID = adnuntiusExt.Auid
-	ortbImp.Ext = nil
-	ortbRequest.Imp = []openrtb2.Imp{ortbImp}
+	adnReq, reqErr := generateAdUnitRequest(adnuntiusExt, ortbRequest)
+	if reqErr != nil {
+		return nil, reqErr
+	}
 
-	requestJSON, err := json.Marshal(ortbRequest)
+	adnJson, err := json.Marshal(adnReq)
 	if err != nil {
 		return nil, err
 	}
@@ -76,13 +110,14 @@ func (a *adapter) makeRequest(ortbRequest openrtb2.BidRequest, ortbImp openrtb2.
 	requestData := &adapters.RequestData{
 		Method:  http.MethodPost,
 		Uri:     a.endpoint,
-		Body:    requestJSON,
+		Body:    adnJson,
 		Headers: headers,
 	}
+
 	return requestData, nil
 }
 
-func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -99,57 +134,102 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		}}
 	}
 
-	var bidResp openrtb2.BidResponse
-
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	var adnResponse AdnResponse
+	if err := json.Unmarshal(response.Body, &adnResponse); err != nil {
 		return nil, []error{err}
 	}
-   
-    
-	type Bird struct {
-		Id   string
-		Name string
-		Huhu string
+
+	bidResponse, bidErr := generateBidResponse(&adnResponse, request)
+	if bidErr != nil {
+		return nil, bidErr
 	}
 
-	var bird Bird
-
-    json.Unmarshal([]byte(response.Body), &bird)
-
-	fmt.Println("BID",bird.Id)
-	
-    	
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
-	
-
-	for _, sb := range bidResp.SeatBid {
-		for i := range sb.Bid {
-			sb.Bid[i].H = 600
-			sb.Bid[i].W = 500
-			sb.Bid[i].AdID = "123123123"
-			sb.Bid[i].CID = "123123"
-			sb.Bid[i].CrID = "asdasdasdas"
-
-
-			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     &sb.Bid[i],
-				BidType: getMediaTypeForBid(sb.Bid[i].ImpID, internalRequest.Imp),
-			})
-		}
-	}
 	return bidResponse, nil
 }
 
+func generateBidResponse(adnResponse *AdnResponse, request *openrtb2.BidRequest) (*adapters.BidderResponse, []error) {
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(adnResponse.AdUnits))
+	currency := bidResponse.Currency
 
-func getMediaTypeForBid(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
-	for _, imp := range imps {
-		if imp.ID == impID {
-			if imp.Banner != nil {
-				return openrtb_ext.BidTypeBanner
-			} else if imp.Video != nil {
-				return openrtb_ext.BidTypeVideo
-			}
+	for i, adunit := range adnResponse.AdUnits {
+		var bid openrtb2.Bid
+		ad := adunit.Ads[0]
+
+		currency = ad.Bid.Currency
+
+		creativeWidth, Werr := strconv.ParseInt(ad.CreativeWidth, 10, 64)
+		if Werr != nil {
+			return nil, []error{Werr}
+		}
+
+		creativeHeight, Herr := strconv.ParseInt(ad.CreativeHeight, 10, 64)
+		if Herr != nil {
+			return nil, []error{Herr}
+		}
+
+		adDomain := []string{}
+		for _, url := range ad.DestinationUrls {
+			domainArray := strings.Split(url, "/")
+			domain := strings.Replace(domainArray[2], "www.", "", -1)
+			adDomain = append(adDomain, domain)
+		}
+
+		bid = openrtb2.Bid{
+			ID:      ad.AdId,
+			ImpID:   request.Imp[i].ID,
+			W:       creativeWidth,
+			H:       creativeHeight,
+			AdID:    ad.AdId,
+			CID:     ad.LineItemId,
+			CrID:    ad.CreativeId,
+			Price:   ad.Bid.Amount * 1000,
+			AdM:     adunit.Html,
+			ADomain: adDomain,
+		}
+
+		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+			Bid:     &bid,
+			BidType: "banner",
+		})
+
+	}
+	bidResponse.Currency = currency
+	return bidResponse, nil
+}
+
+func generateAdUnitRequest(adnuntiusExt openrtb_ext.ImpExtAdnunitus, ortbRequest openrtb2.BidRequest) (*adnRequest, error) {
+	adunits := []adnAdunit{}
+	rawUuid, uidErr := uuid.NewV4()
+	if uidErr != nil {
+		return nil, uidErr
+	}
+	
+	adnuntiusAdunits := adnAdunit{
+		AuId:     adnuntiusExt.Auid,
+		TargetId: rawUuid.String(),
+	}
+
+	adunits = append(adunits, adnuntiusAdunits)
+
+	var userId string
+	ortbUser := ortbRequest.User
+	if ortbUser != nil {
+		ortbUserId := ortbRequest.User.ID
+		if ortbUserId != "" {
+			userId = ortbRequest.User.ID
 		}
 	}
-	return openrtb_ext.BidTypeBanner
+
+	var site string
+	if ortbRequest.Site != nil && ortbRequest.Site.Page != "" {
+		site = ortbRequest.Site.Page
+	}
+
+	adnuntiusRequest := adnRequest{
+		AdUnits:  adunits,
+		MetaData: adnMetaData{Usi: userId},
+		Context:  site,
+	}
+
+	return &adnuntiusRequest, nil
 }
