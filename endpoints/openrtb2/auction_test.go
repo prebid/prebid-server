@@ -3727,14 +3727,14 @@ func TestValidateBanner(t *testing.T) {
 		expectedError  error
 	}{
 		{
-			description:    "Interstitial - Not Equal 1",
+			description:    "isInterstitial Equals False",
 			banner:         &openrtb2.Banner{W: nil, H: nil, Format: nil},
 			impIndex:       impIndex,
 			isInterstitial: false,
 			expectedError:  errors.New("request.imp[0].banner has no sizes. Define \"w\" and \"h\", or include \"format\" elements."),
 		},
 		{
-			description:    "Interstitial - Equal 1",
+			description:    "isInterstitial Equals True",
 			banner:         &openrtb2.Banner{W: nil, H: nil, Format: nil},
 			impIndex:       impIndex,
 			isInterstitial: true,
