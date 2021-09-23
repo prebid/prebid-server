@@ -26,6 +26,17 @@
   "httpCalls": [
     {
       "expectedRequest": {
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "X-Openrtb-Version": [
+            "2.5"
+          ]
+        },
         "uri": "https://sonic.impactify.media/bidder",
         "body": {
           "id": "test-request-id",

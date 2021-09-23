@@ -42,12 +42,26 @@ func (a *adapter) MakeRequests(bidRequest *openrtb2.BidRequest, reqInfo *adapter
 			bidRequest.Imp[i].BidFloor = convertedValue
 		}
 
+		// Set the CUR of bid to USD after converting all floors
+		bidRequest.Cur = []string{"USD"}
+
 		var impactifyExt ImpactifyExtBidder
 
 		var defaultExt DefaultExtBidder
-		json.Unmarshal(bidRequest.Imp[i].Ext, &defaultExt)
+		err := json.Unmarshal(bidRequest.Imp[i].Ext, &defaultExt)
+		if err != nil {
+			return nil, []error{&errortypes.BadServerResponse{
+				Message: "Unable to decode the imp ext",
+			}}
+		}
+
 		impactifyExt.Impactify = defaultExt.Bidder
-		bidRequest.Imp[i].Ext, _ = json.Marshal(impactifyExt)
+		bidRequest.Imp[i].Ext, err = json.Marshal(impactifyExt)
+		if err != nil {
+			return nil, []error{&errortypes.BadServerResponse{
+				Message: "Unable to decode the imp ext",
+			}}
+		}
 
 		validImps = append(validImps, bidRequest.Imp[i])
 	}
@@ -117,7 +131,7 @@ func (a *adapter) MakeBids(
 		}}
 	} else if response.StatusCode != http.StatusOK {
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("unexpected HTTP status %d.", response.StatusCode),
+			Message: fmt.Sprintf("Unexpected HTTP status %d.", response.StatusCode),
 		}}
 	}
 
@@ -125,7 +139,7 @@ func (a *adapter) MakeBids(
 
 	if err := json.Unmarshal(response.Body, &openRtbBidResponse); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: "bad server body response",
+			Message: "Bad server body response",
 		}}
 	}
 
@@ -141,6 +155,7 @@ func (a *adapter) MakeBids(
 		if !(sb.Bid[i].Price > 0) {
 			continue
 		}
+
 		impMediaType, err := getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp)
 		if err != nil {
 			return nil, []error{err}
@@ -164,9 +179,6 @@ func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType,
 				return mediaType, nil
 			} else if imp.Video != nil {
 				mediaType = openrtb_ext.BidTypeVideo
-				return mediaType, nil
-			} else if imp.Native != nil {
-				mediaType = openrtb_ext.BidTypeNative
 				return mediaType, nil
 			}
 		}
