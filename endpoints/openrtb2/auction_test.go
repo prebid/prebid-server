@@ -3743,7 +3743,7 @@ func TestValidateBanner(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		result := validateBanner(test.banner, test.isInterstitial)
+		result := validateBanner(test.banner, test.impIndex, test.isInterstitial)
 		assert.Equal(t, test.expectedError, result, test.description)
 	}
 }
