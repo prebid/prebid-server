@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
-	"github.com/gofrs/uuid"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
@@ -53,7 +53,7 @@ type adnRequest struct {
 	Context  string      `json:"context,omitempty"`
 }
 
-// Builder builds a new instance of the BrightMountainMedia adapter for the given bidder with the given config.
+// Builder builds a new instance of the Adnuntius adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,
@@ -64,54 +64,97 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var extRequests []*adapters.RequestData
 	var errs []error
-
-	for _, imp := range request.Imp {
-		extRequest, err := a.generateRequests(*request, imp)
-		if err != nil {
-			errs = append(errs, err)
-		} else {
-			extRequests = append(extRequests, extRequest)
-		}
+	extRequests, err := a.generateRequests(*request)
+	if err != nil {
+		errs = append(errs, err)
 	}
 	return extRequests, errs
 }
 
-func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest, ortbImp openrtb2.Imp) (*adapters.RequestData, error) {
+/*
+	Generate the requests to Adnuntius to reduce the amount of requests going out.
+*/
+func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters.RequestData, error) {
+
+	var requestData []*adapters.RequestData
+	networkAdunitMap := make(map[string][]adnAdunit)
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 
+	for _, imp := range ortbRequest.Imp {
 
-	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(ortbImp.Ext, &bidderExt); err != nil {
-		return nil, &errortypes.BadInput{
-			Message: fmt.Sprintf("Error unmarshalling ExtImpBidder: %s", err.Error()),
+		var bidderExt adapters.ExtImpBidder
+		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+			return nil, &errortypes.BadInput{
+				Message: fmt.Sprintf("Error unmarshalling ExtImpBidder: %s", err.Error()),
+			}
+		}
+
+		var adnuntiusExt openrtb_ext.ImpExtAdnunitus
+		if err := json.Unmarshal(bidderExt.Bidder, &adnuntiusExt); err != nil {
+			return nil, &errortypes.BadInput{
+				Message: fmt.Sprintf("Error unmarshalling ExtImpBmtm: %s", err.Error()),
+			}
+		}
+
+		var network string
+		if adnuntiusExt.Network != "" {
+			network = adnuntiusExt.Network
+		} else {
+			network = "default"
+		}
+
+		networkAdunitMap[network] = append(
+			networkAdunitMap[network],
+			adnAdunit{
+				AuId:     adnuntiusExt.Auid,
+				TargetId: fmt.Sprintf("%s-%s", adnuntiusExt.Auid, imp.ID),
+			})
+	}
+
+	var userId string
+	ortbUser := ortbRequest.User
+	if ortbUser != nil {
+		ortbUserId := ortbRequest.User.ID
+		if ortbUserId != "" {
+			userId = ortbRequest.User.ID
 		}
 	}
 
-	var adnuntiusExt openrtb_ext.ImpExtAdnunitus
-	if err := json.Unmarshal(bidderExt.Bidder, &adnuntiusExt); err != nil {
-		return nil, &errortypes.BadInput{
-			Message: fmt.Sprintf("Error unmarshalling ExtImpBmtm: %s", err.Error()),
+	var site string
+	if ortbRequest.Site != nil && ortbRequest.Site.Page != "" {
+		site = ortbRequest.Site.Page
+	}
+
+	/*
+		Divide requests that go to different networks.
+	*/
+
+	for _, networkAdunits := range networkAdunitMap {
+
+		adnuntiusRequest := adnRequest{
+			AdUnits:  networkAdunits,
+			MetaData: adnMetaData{Usi: userId},
+			Context:  site,
 		}
-	}
 
-	adnReq, reqErr := generateAdUnitRequest(adnuntiusExt, ortbRequest)
-	if reqErr != nil {
-		return nil, reqErr
-	}
+		adnJson, err := json.Marshal(adnuntiusRequest)
+		if err != nil {
+			return nil, err
+		}
 
-	adnJson, err := json.Marshal(adnReq)
-	if err != nil {
-		return nil, err
-	}
+		_, offset := time.Now().UTC().Local().Zone()
+		tzo := - offset / 3600 *60
+		
+		requestData = append(requestData, &adapters.RequestData{
+			Method:  http.MethodPost,
+			Uri:     a.endpoint + fmt.Sprintf("&tzo=%s", fmt.Sprint(tzo)),
+			Body:    adnJson,
+			Headers: headers,
+		})
 
-	requestData := &adapters.RequestData{
-		Method:  http.MethodPost,
-		Uri:     a.endpoint,
-		Body:    adnJson,
-		Headers: headers,
 	}
 
 	return requestData, nil
@@ -152,84 +195,50 @@ func generateBidResponse(adnResponse *AdnResponse, request *openrtb2.BidRequest)
 	currency := bidResponse.Currency
 
 	for i, adunit := range adnResponse.AdUnits {
+
 		var bid openrtb2.Bid
-		ad := adunit.Ads[0]
+		if len(adunit.Ads) > 0 {
+			ad := adunit.Ads[0]
 
-		currency = ad.Bid.Currency
+			currency = ad.Bid.Currency
 
-		creativeWidth, Werr := strconv.ParseInt(ad.CreativeWidth, 10, 64)
-		if Werr != nil {
-			return nil, []error{Werr}
+			creativeWidth, Werr := strconv.ParseInt(ad.CreativeWidth, 10, 64)
+			if Werr != nil {
+				return nil, []error{Werr}
+			}
+
+			creativeHeight, Herr := strconv.ParseInt(ad.CreativeHeight, 10, 64)
+			if Herr != nil {
+				return nil, []error{Herr}
+			}
+
+			adDomain := []string{}
+			for _, url := range ad.DestinationUrls {
+				domainArray := strings.Split(url, "/")
+				domain := strings.Replace(domainArray[2], "www.", "", -1)
+				adDomain = append(adDomain, domain)
+			}
+
+			bid = openrtb2.Bid{
+				ID:      ad.AdId,
+				ImpID:   request.Imp[i].ID,
+				W:       creativeWidth,
+				H:       creativeHeight,
+				AdID:    ad.AdId,
+				CID:     ad.LineItemId,
+				CrID:    ad.CreativeId,
+				Price:   ad.Bid.Amount * 1000,
+				AdM:     adunit.Html,
+				ADomain: adDomain,
+			}
+
+			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+				Bid:     &bid,
+				BidType: "banner",
+			})
 		}
-
-		creativeHeight, Herr := strconv.ParseInt(ad.CreativeHeight, 10, 64)
-		if Herr != nil {
-			return nil, []error{Herr}
-		}
-
-		adDomain := []string{}
-		for _, url := range ad.DestinationUrls {
-			domainArray := strings.Split(url, "/")
-			domain := strings.Replace(domainArray[2], "www.", "", -1)
-			adDomain = append(adDomain, domain)
-		}
-
-		bid = openrtb2.Bid{
-			ID:      ad.AdId,
-			ImpID:   request.Imp[i].ID,
-			W:       creativeWidth,
-			H:       creativeHeight,
-			AdID:    ad.AdId,
-			CID:     ad.LineItemId,
-			CrID:    ad.CreativeId,
-			Price:   ad.Bid.Amount * 1000,
-			AdM:     adunit.Html,
-			ADomain: adDomain,
-		}
-
-		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-			Bid:     &bid,
-			BidType: "banner",
-		})
 
 	}
 	bidResponse.Currency = currency
 	return bidResponse, nil
-}
-
-func generateAdUnitRequest(adnuntiusExt openrtb_ext.ImpExtAdnunitus, ortbRequest openrtb2.BidRequest) (*adnRequest, error) {
-	adunits := []adnAdunit{}
-	rawUuid, uidErr := uuid.NewV4()
-	if uidErr != nil {
-		return nil, uidErr
-	}
-	
-	adnuntiusAdunits := adnAdunit{
-		AuId:     adnuntiusExt.Auid,
-		TargetId: rawUuid.String(),
-	}
-
-	adunits = append(adunits, adnuntiusAdunits)
-
-	var userId string
-	ortbUser := ortbRequest.User
-	if ortbUser != nil {
-		ortbUserId := ortbRequest.User.ID
-		if ortbUserId != "" {
-			userId = ortbRequest.User.ID
-		}
-	}
-
-	var site string
-	if ortbRequest.Site != nil && ortbRequest.Site.Page != "" {
-		site = ortbRequest.Site.Page
-	}
-
-	adnuntiusRequest := adnRequest{
-		AdUnits:  adunits,
-		MetaData: adnMetaData{Usi: userId},
-		Context:  site,
-	}
-
-	return &adnuntiusRequest, nil
 }
