@@ -3720,22 +3720,23 @@ func TestValidateBanner(t *testing.T) {
 	impIndex := 0
 
 	testCases := []struct {
-		description   string
-		banner        *openrtb2.Banner
-		imp           *openrtb2.Imp
-		expectedError error
+		description    string
+		banner         *openrtb2.Banner
+		impIndex       int
+		isInterstitial bool
+		expectedError  error
 	}{
 		{
-			description:   "Interstitial - Not Equal 1",
-			banner:        &openrtb2.Banner{W: nil, H: nil, Format: nil},
-			imp:           &openrtb2.Imp{Instl: 0},
-			expectedError: errors.New("request.imp[0].banner has no sizes. Define \"w\" and \"h\", or include \"format\" elements."),
+			description:    "Interstitial - Not Equal 1",
+			banner:         &openrtb2.Banner{W: nil, H: nil, Format: nil},
+			isInterstitial: false,
+			expectedError:  errors.New("request.imp[0].banner has no sizes. Define \"w\" and \"h\", or include \"format\" elements."),
 		},
 		{
-			description:   "Interstitial - Equal 1",
-			banner:        &openrtb2.Banner{W: nil, H: nil, Format: nil},
-			imp:           &openrtb2.Imp{Instl: 1},
-			expectedError: nil,
+			description:    "Interstitial - Equal 1",
+			banner:         &openrtb2.Banner{W: nil, H: nil, Format: nil},
+			isInterstitial: true,
+			expectedError:  nil,
 		},
 	}
 
