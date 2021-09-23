@@ -3729,19 +3729,21 @@ func TestValidateBanner(t *testing.T) {
 		{
 			description:    "Interstitial - Not Equal 1",
 			banner:         &openrtb2.Banner{W: nil, H: nil, Format: nil},
+			impIndex        0,
 			isInterstitial: false,
 			expectedError:  errors.New("request.imp[0].banner has no sizes. Define \"w\" and \"h\", or include \"format\" elements."),
 		},
 		{
 			description:    "Interstitial - Equal 1",
 			banner:         &openrtb2.Banner{W: nil, H: nil, Format: nil},
+			impIndex        0,
 			isInterstitial: true,
 			expectedError:  nil,
 		},
 	}
 
 	for _, test := range testCases {
-		result := validateBanner(test.banner, test.imp, impIndex)
+		result := validateBanner(test.banner, test.isInterstitial)
 		assert.Equal(t, test.expectedError, result, test.description)
 	}
 }
