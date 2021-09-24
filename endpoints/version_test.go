@@ -25,7 +25,7 @@ func TestVersion(t *testing.T) {
 			description: "Populated",
 			version:     "1.2.3",
 			revision:    "d6cd1e2bd19e03a81132a23b2025920577f84e37",
-			expected:    `{"revision":"d6cd1e2bd19e03a81132a23b2025920577f84e37","version":"1.2.3"}`,
+			expected:    `{"revision":"d6cd1e2bd19e03a8113a23b2025920577f84e37","version":"1.2.3"}`,
 		},
 	}
 
