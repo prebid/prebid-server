@@ -45,7 +45,7 @@ func TestGetSite(t *testing.T) {
 
 	richaudienceRequestTest := &richaudienceRequest{
 		Site: richaudienceSite{
-			Domain: "",
+			Domain: "www.test.com",
 		},
 	}
 
@@ -70,7 +70,7 @@ func TestGetSite(t *testing.T) {
 
 	setSite(raBidRequest, richaudienceRequestTest)
 
-	if "" != richaudienceRequestTest.Site.Domain {
+	if "" == richaudienceRequestTest.Site.Domain {
 		t.Errorf("error domain is diferent %s", richaudienceRequestTest.Site.Domain)
 	}
 }
@@ -165,22 +165,23 @@ func TestGetRequest(t *testing.T) {
 
 	request, _ := raBidder.MakeRequests(richaudienceRequestTest, &adapters.ExtraRequestInfo{})
 
-	httpReq := request[0]
-	assert.Equal(t, "POST", httpReq.Method, "Expected a POST message. Got %s", httpReq.Method)
+	if request != nil {
+		httpReq := request[0]
+		assert.Equal(t, "POST", httpReq.Method, "Expected a POST message. Got %s", httpReq.Method)
 
-	var rpRequest openrtb2.BidRequest
-	if err := json.Unmarshal(httpReq.Body, &rpRequest); err != nil {
-		t.Fatalf("Failed to unmarshal HTTP request: %v", rpRequest)
+		var rpRequest openrtb2.BidRequest
+		if err := json.Unmarshal(httpReq.Body, &rpRequest); err != nil {
+			t.Fatalf("Failed to unmarshal HTTP request: %v", rpRequest)
+		}
+
+		var rpRequestImpExt openrtb_ext.ExtImpRichaudience
+		if err := json.Unmarshal(rpRequest.Imp[0].Ext, &rpRequestImpExt); err != nil {
+			t.Fatalf("Failed to unmarshal ExtImp request: %v", rpRequestImpExt)
+		}
+
+		assert.Equal(t, "OsNsyeF68q", rpRequestImpExt.Pid)
+		assert.Equal(t, "site", rpRequestImpExt.SupplyType)
 	}
-
-	var rpRequestImpExt openrtb_ext.ExtImpRichaudience
-	if err := json.Unmarshal(rpRequest.Imp[0].Ext, &rpRequestImpExt); err != nil {
-		t.Fatalf("Failed to unmarshal ExtImp request: %v", rpRequestImpExt)
-	}
-
-	assert.Equal(t, "OsNsyeF68q", rpRequestImpExt.Pid)
-	assert.Equal(t, "site", rpRequestImpExt.SupplyType)
-
 }
 
 func TestResponseEmpty(t *testing.T) {

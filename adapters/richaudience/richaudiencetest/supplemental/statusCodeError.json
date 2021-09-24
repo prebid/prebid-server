@@ -85,7 +85,7 @@
     ],
     "expectedMakeBidsErrors": [
       {
-        "value": "unexpected end of JSON input",
+        "value": "Unexpected status code: 502. Run with request.debug = 1 for more info.",
         "comparison": "literal"
       }
     ]
