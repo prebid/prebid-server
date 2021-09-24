@@ -24,11 +24,17 @@
           ]
         },
         "ext": {
-          "prebid": {
-            "bidder": {
-              "appnexus": {},
-              "pubmatic": {}
+          "appnexus": {
+            "placementId": 111111
+          },
+          "pubmatic": {
+            "publisherId": "1234",
+            "wrapper": {
+              "profile": 1234
             }
+          },
+          "prebid": {
+            "bidder": {}
           }
         }
       }
@@ -43,12 +49,12 @@
         },
         "bidderparams": {
           "appnexus": {
-            "placementId": 12883451
+            "placementId": 222222
           },
           "pubmatic": {
-            "publisherId": "1234",
+            "publisherId": "5678",
             "wrapper": {
-              "profile": 1234,
+              "profile": 5678,
               "version": 2
             }
           }
@@ -66,12 +72,12 @@
       },
       "bidderparams": {
         "appnexus": {
-          "placementId": 12883451
+          "placementId": 222222
         },
         "pubmatic": {
-          "publisherId": "1234",
+          "publisherId": "5678",
           "wrapper": {
-            "profile": 1234,
+            "profile": 5678,
             "version": 2
           }
         }
@@ -80,14 +86,16 @@
   },
   "expectedImpExt": {
     "appnexus": {
-      "placementId": 12883451
+      "placementId": 111111
     },
     "pubmatic": {
       "publisherId": "1234",
       "wrapper": {
-        "profile": 1234,
-        "version": 2
+        "profile": 1234
       }
+    },
+    "prebid": {
+      "bidder": {}
     }
   },
   "expectedReturnCode": 200

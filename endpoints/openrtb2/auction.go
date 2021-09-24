@@ -324,9 +324,7 @@ func parseTimeout(requestJson []byte, defaultTimeout time.Duration) time.Duratio
 // Preference is given to parameters at imp[].ext level over req.ext level.
 // Parameters at req.ext level are propagated to adapters as is without any validation.
 func mergeBidderParams(req *openrtb_ext.RequestWrapper) error {
-	var reqBidderParams map[string]json.RawMessage
-
-	reqBidderParams, err := adapters.ExtractBidderParams(req.BidRequest)
+	reqBidderParams, err := adapters.ExtractReqExtBidderParams(req.BidRequest)
 	if err != nil {
 		return err
 	}
@@ -334,51 +332,98 @@ func mergeBidderParams(req *openrtb_ext.RequestWrapper) error {
 	impCpy := make([]openrtb2.Imp, 0)
 	for _, imp := range req.BidRequest.Imp {
 		updatedImp := imp
-		var impExt map[string]map[string]interface{}
+
 		if len(imp.Ext) == 0 {
 			impCpy = append(impCpy, updatedImp)
 			continue
 		}
 
+		var impExt map[string]map[string]json.RawMessage
 		err := json.Unmarshal(imp.Ext, &impExt)
 		if err != nil {
-			return fmt.Errorf("error decoding imp[].ext : %s", err.Error())
+			return err
 		}
 
-		for bidder, impParams := range impExt {
-			if !isBidderToValidate(bidder) {
-				continue
-			}
+		//merges bidder parameters passed at req.ext level with imp[].ext level.
+		err = mergeBidderParamsInImpExt(impExt, reqBidderParams)
+		if err != nil {
+			return err
+		}
 
-			reqExtP, ok := reqBidderParams[bidder]
-			if !ok {
-				continue
-			}
-
-			var reqLevelParams map[string]interface{}
-			err := json.Unmarshal(reqExtP, &reqLevelParams)
-			if err != nil {
-				return fmt.Errorf("error decoding imp[].ext : %s for bidder: %s", err.Error(), bidder)
-			}
-
-			for rParamName, rParamValue := range reqLevelParams {
-				if _, present := impParams[rParamName]; !present {
-					impParams[rParamName] = rParamValue
-				}
-			}
-			impExt[bidder] = impParams
+		//merges bidder parameters passed at req.ext level with imp[].ext.prebid.bidder level.
+		err = mergeBidderParamsInImpExtPrebid(impExt, reqBidderParams)
+		if err != nil {
+			return err
 		}
 
 		iExt, err := json.Marshal(impExt)
 		if err != nil {
 			return fmt.Errorf("error marshalling imp[].ext : %s", err.Error())
 		}
-
 		updatedImp.Ext = iExt
 		impCpy = append(impCpy, updatedImp)
 	}
 
 	req.BidRequest.Imp = impCpy
+	return nil
+}
+
+// mergeBidderParamsInImpExtPrebid merges bidder parameters passed at req.ext level with imp[].ext.prebid.bidder level.
+func mergeBidderParamsInImpExtPrebid(impExtBidder map[string]map[string]json.RawMessage, reqExtParams map[string]map[string]json.RawMessage) error {
+	var bidderParams map[string]json.RawMessage
+	if impExtBidder["prebid"] != nil && impExtBidder["prebid"]["bidder"] != nil {
+		err := json.Unmarshal(impExtBidder["prebid"]["bidder"], &bidderParams)
+		if err != nil {
+			return err
+		}
+	}
+
+	if len(bidderParams) != 0 {
+		for bidder, bidderExt := range bidderParams {
+			if !isBidderToValidate(bidder) {
+				continue
+			}
+
+			var params map[string]json.RawMessage
+			err := json.Unmarshal(bidderExt, &params)
+
+			for key, value := range reqExtParams[bidder] {
+				if _, present := params[key]; !present {
+					params[key] = value
+				}
+			}
+
+			paramsJson, err := json.Marshal(params)
+			if err != nil {
+				return err
+			}
+			bidderParams[bidder] = paramsJson
+		}
+
+		bidderParamsJson, err := json.Marshal(bidderParams)
+		if err != nil {
+			return err
+		}
+		impExtBidder["prebid"]["bidder"] = bidderParamsJson
+	}
+
+	return nil
+}
+
+// mergeBidderParamsInImpExt merges bidder parameters passed at req.ext level with imp[].ext level.
+func mergeBidderParamsInImpExt(impExtBidder map[string]map[string]json.RawMessage, reqExtParams map[string]map[string]json.RawMessage) error {
+	for bidder, bidderExt := range impExtBidder {
+		if !isBidderToValidate(bidder) {
+			continue
+		}
+
+		for key, value := range reqExtParams[bidder] {
+			if _, present := bidderExt[key]; !present {
+				bidderExt[key] = value
+			}
+		}
+		impExtBidder[bidder] = bidderExt
+	}
 	return nil
 }
 
@@ -1131,6 +1176,8 @@ func isBidderToValidate(bidder string) bool {
 	case openrtb_ext.BidderReservedPrebid:
 		return false
 	case openrtb_ext.BidderReservedSKAdN:
+		return false
+	case openrtb_ext.BidderReservedBidder:
 		return false
 	default:
 		return true

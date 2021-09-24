@@ -20,5 +20,5 @@
     }
   },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request: error decoding imp[].ext : json: cannot unmarshal string into Go value of type map[string]interface {}"
+  "expectedErrorMessage": "Invalid request: json: cannot unmarshal string into Go value of type map[string]json.RawMessage"
 }

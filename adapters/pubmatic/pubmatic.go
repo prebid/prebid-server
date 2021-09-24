@@ -342,11 +342,11 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 func (a *PubmaticAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 
-	wrapperExt := new(pubmaticWrapperExt)
+	wrapperExt := &pubmaticWrapperExt{}
 	pubID := ""
 	wrapperExtSet := false
 
-	reqExtBidderParams, err := adapters.ExtractBidderParams(request)
+	reqExtBidderParams, err := adapters.ExtractAdapterReqBidderParams(request)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -383,9 +383,13 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ad
 	}
 
 	if wrapperExtSet {
-		jsonData, _ := json.Marshal(wrapperExt)
-		rawExt := fmt.Sprintf("{\"wrapper\": %s}", string(jsonData))
-		request.Ext = json.RawMessage(rawExt)
+		reqExt := make(map[string]interface{})
+		reqExt["wrapper"] = wrapperExt
+		rawExt, err := json.Marshal(reqExt)
+		if err != nil {
+			return nil, []error{err}
+		}
+		request.Ext = rawExt
 	}
 
 	if request.Site != nil {

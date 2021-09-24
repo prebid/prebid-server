@@ -3773,13 +3773,23 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 			resReq, _, errL := deps.parseRequest(req)
 
 			var expIExt, iExt map[string]interface{}
-			_ = json.Unmarshal(tt.expectedImpExt, &expIExt)
-			_ = json.Unmarshal(resReq.BidRequest.Imp[0].Ext, &iExt)
-			assert.Equal(t, expIExt, iExt, "bidderparams in imp[].Ext should match")
+			err := json.Unmarshal(tt.expectedImpExt, &expIExt)
+			assert.Nil(t, err, "unmarshal() should return nil error")
+
+			assert.NotNil(t, resReq.BidRequest.Imp[0].Ext, "imp[0].Ext should not be nil")
+			err = json.Unmarshal(resReq.BidRequest.Imp[0].Ext, &iExt)
+			assert.Nil(t, err, "unmarshal() should return nil error")
+
+			prebid := iExt["prebid"].(map[string]interface{})
+			assert.Equal(t, expIExt, prebid["bidder"], "bidderparams in imp[].Ext should match")
 
 			var eReqE, reqE map[string]interface{}
-			_ = json.Unmarshal(tt.expectedReqExt, &eReqE)
-			_ = json.Unmarshal(resReq.BidRequest.Ext, &reqE)
+			err = json.Unmarshal(tt.expectedReqExt, &eReqE)
+			assert.Nil(t, err, "unmarshal() should return nil error")
+
+			err = json.Unmarshal(resReq.BidRequest.Ext, &reqE)
+			assert.Nil(t, err, "unmarshal() should return nil error")
+
 			assert.Equal(t, eReqE, reqE, "req.Ext should match")
 
 			assert.Len(t, errL, tt.errL, "error length should match")

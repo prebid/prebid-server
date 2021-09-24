@@ -218,8 +218,7 @@ func getAuctionBidderRequests(req AuctionRequest,
 		return nil, []error{err}
 	}
 
-	var bidderExt map[string]json.RawMessage
-	bidderExt, err = adapters.ExtractBidderParams(req.BidRequest)
+	bidderParamsInReqExt, err := adapters.ExtractReqExtBidderParams(req.BidRequest)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -243,15 +242,18 @@ func getAuctionBidderRequests(req AuctionRequest,
 
 		prepareSource(&reqCopy, bidder, sChainsByBidder)
 
-		if len(bidderExt) != 0 {
-			if bidderParams, ok := bidderExt[bidder]; ok {
-				if requestExt == nil {
-					requestExt = &openrtb_ext.ExtRequest{}
-				}
-				requestExt.Prebid.BidderParams = bidderParams
-			} else if requestExt != nil {
-				requestExt.Prebid.BidderParams = nil
+		if len(bidderParamsInReqExt) != 0 {
+
+			params, err := getBidderParamsForBidder(bidderParamsInReqExt, bidder)
+			if err != nil {
+				return nil, []error{err}
 			}
+
+			if params != nil && requestExt == nil {
+				requestExt = &openrtb_ext.ExtRequest{}
+			}
+			requestExt.Prebid.BidderParams = params
+
 		}
 
 		reqExt, err := getExtJson(req.BidRequest, requestExt)
@@ -289,6 +291,18 @@ func getAuctionBidderRequests(req AuctionRequest,
 		bidderRequests = append(bidderRequests, bidderRequest)
 	}
 	return bidderRequests, errs
+}
+
+func getBidderParamsForBidder(bidderParamsInReqExt map[string]map[string]json.RawMessage, bidder string) (json.RawMessage, error) {
+	var params json.RawMessage
+	if bidderParams, ok := bidderParamsInReqExt[bidder]; ok {
+		var err error
+		params, err = json.Marshal(bidderParams)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return params, nil
 }
 
 func getExtJson(req *openrtb2.BidRequest, unpackedExt *openrtb_ext.ExtRequest) (json.RawMessage, error) {
