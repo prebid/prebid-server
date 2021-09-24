@@ -2971,23 +2971,53 @@ func TestFPDHoldAuction(t *testing.T) {
 				actualValue := actualRequest.FirstPartyData[k]
 
 				if expectedValue.Site != nil {
+					if len(expectedValue.Site.Ext) > 0 {
+						assert.JSONEq(t, string(expectedValue.Site.Ext), string(actualValue.Site.Ext), "Incorrect first party data")
+						expectedValue.Site.Ext = nil
+						actualValue.Site.Ext = nil
+					}
 					assert.Equal(t, expectedValue.Site, actualValue.Site, "Incorrect first party data")
 				}
 				if expectedValue.App != nil {
+					if len(expectedValue.App.Ext) > 0 {
+						assert.JSONEq(t, string(expectedValue.App.Ext), string(actualValue.App.Ext), "Incorrect first party data")
+						expectedValue.App.Ext = nil
+						actualValue.App.Ext = nil
+					}
 					assert.Equal(t, expectedValue.App, actualValue.App, "Incorrect first party data")
 				}
 				if expectedValue.User != nil {
+					if len(expectedValue.User.Ext) > 0 {
+						assert.JSONEq(t, string(expectedValue.User.Ext), string(actualValue.User.Ext), "Incorrect first party data")
+						expectedValue.User.Ext = nil
+						actualValue.User.Ext = nil
+					}
 					assert.Equal(t, expectedValue.User, actualValue.User, "Incorrect first party data")
 				}
 			}
 
 			if resRequest.Site != nil {
+				if len(resRequest.Site.Ext) > 0 {
+					assert.JSONEq(t, string(resRequest.Site.Ext), string(actualRequest.BidRequest.Site.Ext), "Incorrect site in request")
+					resRequest.Site.Ext = nil
+					actualRequest.BidRequest.Site.Ext = nil
+				}
 				assert.Equal(t, resRequest.Site, actualRequest.BidRequest.Site, "Incorrect site in request")
 			}
 			if resRequest.App != nil {
+				if len(resRequest.App.Ext) > 0 {
+					assert.JSONEq(t, string(resRequest.App.Ext), string(actualRequest.BidRequest.App.Ext), "Incorrect app in request")
+					resRequest.App.Ext = nil
+					actualRequest.BidRequest.App.Ext = nil
+				}
 				assert.Equal(t, resRequest.App, actualRequest.BidRequest.App, "Incorrect app in request")
 			}
 			if resRequest.User != nil {
+				if len(resRequest.User.Ext) > 0 {
+					assert.JSONEq(t, string(resRequest.User.Ext), string(actualRequest.BidRequest.User.Ext), "Incorrect user in request")
+					resRequest.User.Ext = nil
+					actualRequest.BidRequest.User.Ext = nil
+				}
 				assert.Equal(t, resRequest.User, actualRequest.BidRequest.User, "Incorrect user in request")
 			}
 
