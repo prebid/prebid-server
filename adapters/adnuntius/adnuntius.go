@@ -45,7 +45,7 @@ type AdnResponse struct {
 	}
 }
 type adnMetaData struct {
-	Usi string `json:"usi"`
+	Usi string `json:"usi,omitempty"`
 }
 type adnRequest struct {
 	AdUnits  []adnAdunit `json:"adUnits"`
@@ -84,7 +84,11 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 	headers.Add("Accept", "application/json")
 
 	for _, imp := range ortbRequest.Imp {
-
+		if imp.Banner == nil {
+			return nil, &errortypes.BadInput{
+				Message: fmt.Sprintf("ignoring imp id=%s, Adnuntius supports only Banner", imp.ID),
+			}
+		}
 		var bidderExt adapters.ExtImpBidder
 		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			return nil, &errortypes.BadInput{
@@ -114,18 +118,11 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 			})
 	}
 
-	var userId string
-	ortbUser := ortbRequest.User
-	if ortbUser != nil {
-		ortbUserId := ortbRequest.User.ID
-		if ortbUserId != "" {
-			userId = ortbRequest.User.ID
-		}
-	}
-
 	var site string
 	if ortbRequest.Site != nil && ortbRequest.Site.Page != "" {
 		site = ortbRequest.Site.Page
+	} else {
+		site = "unknown"
 	}
 
 	/*
@@ -135,9 +132,16 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 	for _, networkAdunits := range networkAdunitMap {
 
 		adnuntiusRequest := adnRequest{
-			AdUnits:  networkAdunits,
-			MetaData: adnMetaData{Usi: userId},
-			Context:  site,
+			AdUnits: networkAdunits,
+			Context: site,
+		}
+
+		ortbUser := ortbRequest.User
+		if ortbUser != nil {
+			ortbUserId := ortbRequest.User.ID
+			if ortbUserId != "" {
+				adnuntiusRequest.MetaData.Usi = ortbRequest.User.ID
+			}
 		}
 
 		adnJson, err := json.Marshal(adnuntiusRequest)
@@ -146,8 +150,8 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 		}
 
 		_, offset := time.Now().UTC().Local().Zone()
-		tzo := - offset / 3600 *60
-		
+		tzo := -offset / 3600 * 60
+
 		requestData = append(requestData, &adapters.RequestData{
 			Method:  http.MethodPost,
 			Uri:     a.endpoint + fmt.Sprintf("&tzo=%s", fmt.Sprint(tzo)),
