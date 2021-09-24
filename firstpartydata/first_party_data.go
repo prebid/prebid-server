@@ -18,7 +18,7 @@ const (
 	siteContentDataKey = "siteContentData"
 )
 
-//If {site,app,user}.ext.data exists, collect it and remove {site,app,user}.ext.data
+//ExtractGlobalFPD collect it and remove req.{site,app,user}.ext.data if exists
 func ExtractGlobalFPD(req *openrtb_ext.RequestWrapper) (map[string][]byte, error) {
 
 	fpdReqData := make(map[string][]byte, 3)
@@ -60,7 +60,7 @@ func ExtractGlobalFPD(req *openrtb_ext.RequestWrapper) (map[string][]byte, error
 	return fpdReqData, nil
 }
 
-//Extract and delete user.data and {app/site}.content.data from request
+//ExtractOpenRtbGlobalFPD extracts and deletes user.data and {app/site}.content.data from request
 func ExtractOpenRtbGlobalFPD(bidRequest *openrtb2.BidRequest) map[string][]openrtb2.Data {
 
 	openRtbGlobalFPD := make(map[string][]openrtb2.Data, 3)
@@ -83,7 +83,7 @@ func ExtractOpenRtbGlobalFPD(bidRequest *openrtb2.BidRequest) map[string][]openr
 
 }
 
-//Consolidated First Party Data from different sources and returns valid FPD that will be applied to bidders later or returns errors
+//ResolveFPD consolidates First Party Data from different sources and returns valid FPD that will be applied to bidders later or returns errors
 func ResolveFPD(bidRequest *openrtb2.BidRequest, fpdBidderConfigData map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data, biddersWithGlobalFPD []string) (map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, []error) {
 	var errL []error
 
@@ -330,6 +330,7 @@ func buildExtData(data []byte) []byte {
 	return res
 }
 
+//ExtractBidderConfigFPD extracts bidder specific configs from req.ext.prebid.bidderconfig
 func ExtractBidderConfigFPD(reqExt *openrtb_ext.RequestExt) map[openrtb_ext.BidderName]*openrtb_ext.ORTB2 {
 
 	fpd := make(map[openrtb_ext.BidderName]*openrtb_ext.ORTB2)
@@ -366,6 +367,7 @@ func ExtractBidderConfigFPD(reqExt *openrtb_ext.RequestExt) map[openrtb_ext.Bidd
 	return fpd
 }
 
+//ExtractFPDForBidders extracts FPD data from request if specified
 func ExtractFPDForBidders(req *openrtb_ext.RequestWrapper) (map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, []error) {
 
 	//If {site,app,user}.ext.data exists, collect it and remove {site,app,user}.ext.data from request
