@@ -3648,7 +3648,7 @@ func TestMakeBidExtJSON(t *testing.T) {
 	}
 }
 
-func TestFPDD(t *testing.T) {
+func TestFPD(t *testing.T) {
 
 	bidRequest := &openrtb2.BidRequest{
 		ID: "some-request-id",
@@ -3673,7 +3673,7 @@ func TestFPDD(t *testing.T) {
 
 	e := new(exchange)
 	e.adapterMap = map[openrtb_ext.BidderName]adaptedBidder{
-		openrtb_ext.BidderAppnexus: &fpdBidder{},
+		openrtb_ext.BidderAppnexus: &capturingRequestBidder{},
 	}
 	e.me = &metricsConf.DummyMetricsEngine{}
 	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
@@ -3693,7 +3693,7 @@ func TestFPDD(t *testing.T) {
 	assert.NotNilf(t, outBidResponse, "outBidResponse should not be nil")
 	assert.Nil(t, err, "Error should be nil")
 
-	request := e.adapterMap[openrtb_ext.BidderAppnexus].(*fpdBidder).req
+	request := e.adapterMap[openrtb_ext.BidderAppnexus].(*capturingRequestBidder).req
 
 	assert.NotNil(t, request, "Bidder request should not be nil")
 	assert.Equal(t, request.Site, apnFpd.Site, "Site is incorrect")
@@ -3822,11 +3822,11 @@ func (b *validatingBidder) requestBid(ctx context.Context, request *openrtb2.Bid
 	return
 }
 
-type fpdBidder struct {
+type capturingRequestBidder struct {
 	req *openrtb2.BidRequest
 }
 
-func (b *fpdBidder) requestBid(ctx context.Context, request *openrtb2.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool) (seatBid *pbsOrtbSeatBid, errs []error) {
+func (b *capturingRequestBidder) requestBid(ctx context.Context, request *openrtb2.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool) (seatBid *pbsOrtbSeatBid, errs []error) {
 	b.req = request
 	return &pbsOrtbSeatBid{}, nil
 }

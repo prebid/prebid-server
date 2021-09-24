@@ -543,7 +543,7 @@ func TestCleanOpenRTBRequestsWithFPD(t *testing.T) {
 		bidderToSyncerKey := map[string]string{}
 		permissions := permissionsMock{allowAllBidders: true, passGeo: true, passID: true}
 		bidderRequests, _, err := cleanOpenRTBRequests(context.Background(), test.req, nil, bidderToSyncerKey, &permissions, &metricsMock, gdpr.SignalNo, privacyConfig, nil)
-		assert.Len(t, err, 0, "No errors should be returned")
+		assert.Empty(t, err, "No errors should be returned")
 		for _, bidderRequest := range bidderRequests {
 			bidderName := bidderRequest.BidderName
 			if test.fpdExpected {
