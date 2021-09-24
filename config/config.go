@@ -85,6 +85,10 @@ type Configuration struct {
 	GenerateBidID bool `mapstructure:"generate_bid_id"`
 	// GenerateRequestID overrides the bidrequest.id in an AMP Request or an App Stored Request with a generated UUID if set to true. The default is false.
 	GenerateRequestID bool `mapstructure:"generate_request_id"`
+
+	// EnableLegacyAuction specifies if the original /auction endpoint with a custom PBS data model is allowed
+	// by the host.
+	EnableLegacyAuction bool `mapstructure:"enable_legacy_auction"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
@@ -948,6 +952,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("auto_gen_source_tid", true)
 	v.SetDefault("generate_bid_id", false)
 	v.SetDefault("generate_request_id", false)
+	v.SetDefault("enable_legacy_auction", true)
 
 	v.SetDefault("request_timeout_headers.request_time_in_queue", "")
 	v.SetDefault("request_timeout_headers.request_timeout_in_queue", "")
