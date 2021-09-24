@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -15,6 +16,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
+type QueryString map[string]string
 type adapter struct {
 	endpoint string
 }
@@ -71,17 +73,50 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	return extRequests, errs
 }
 
+func setHeaders() http.Header {
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
+	return headers
+}
+
+func makeEndpointUrl(ortbRequest openrtb2.BidRequest, endpoint string) (string, []error) {
+	uri, err := url.Parse(endpoint)
+	if err != nil {
+		return "", []error{fmt.Errorf("failed to parse yieldlab endpoint: %v", err)}
+	}
+
+	_, offset := time.Now().UTC().Local().Zone()
+	tzo := -offset / 3600 * 60
+
+	gdpr, consent, err := getGDPR(&ortbRequest)
+	if err != nil {
+		return "", []error{fmt.Errorf("failed to parse yieldlab endpoint: %v", err)}
+	}
+
+	q := uri.Query()
+	if gdpr != "" && consent != "" {
+		q.Set("gdpr", gdpr)
+		q.Set("consentString", consent)
+	}
+	q.Set("tzo", fmt.Sprint(tzo))
+	q.Set("format", "json")
+
+	url := endpoint + "?" + q.Encode()
+	return url, nil
+}
+
 /*
 	Generate the requests to Adnuntius to reduce the amount of requests going out.
 */
 func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters.RequestData, error) {
-
 	var requestData []*adapters.RequestData
 	networkAdunitMap := make(map[string][]adnAdunit)
-
-	headers := http.Header{}
-	headers.Add("Content-Type", "application/json;charset=utf-8")
-	headers.Add("Accept", "application/json")
+	headers := setHeaders()
+	endpoint, err := makeEndpointUrl(ortbRequest, a.endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse URL: %v", err)
+	}
 
 	for _, imp := range ortbRequest.Imp {
 		if imp.Banner == nil {
@@ -125,10 +160,6 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 		site = "unknown"
 	}
 
-	/*
-		Divide requests that go to different networks.
-	*/
-
 	for _, networkAdunits := range networkAdunitMap {
 
 		adnuntiusRequest := adnRequest{
@@ -149,12 +180,9 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 			return nil, err
 		}
 
-		_, offset := time.Now().UTC().Local().Zone()
-		tzo := -offset / 3600 * 60
-
 		requestData = append(requestData, &adapters.RequestData{
 			Method:  http.MethodPost,
-			Uri:     a.endpoint + fmt.Sprintf("&tzo=%s", fmt.Sprint(tzo)),
+			Uri:     endpoint,
 			Body:    adnJson,
 			Headers: headers,
 		})
@@ -192,6 +220,30 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *adapte
 	}
 
 	return bidResponse, nil
+}
+
+func getGDPR(request *openrtb2.BidRequest) (string, string, error) {
+	gdpr := ""
+	var extRegs openrtb_ext.ExtRegs
+	if request.Regs != nil {
+		if err := json.Unmarshal(request.Regs.Ext, &extRegs); err != nil {
+			return "", "", fmt.Errorf("failed to parse ExtRegs in Yieldlab GDPR check: %v", err)
+		}
+		if extRegs.GDPR != nil && (*extRegs.GDPR == 0 || *extRegs.GDPR == 1) {
+			gdpr = strconv.Itoa(int(*extRegs.GDPR))
+		}
+	}
+
+	consent := ""
+	if request.User != nil && request.User.Ext != nil {
+		var extUser openrtb_ext.ExtUser
+		if err := json.Unmarshal(request.User.Ext, &extUser); err != nil {
+			return "", "", fmt.Errorf("failed to parse ExtUser in Yieldlab GDPR check: %v", err)
+		}
+		consent = extUser.Consent
+	}
+
+	return gdpr, consent, nil
 }
 
 func generateBidResponse(adnResponse *AdnResponse, request *openrtb2.BidRequest) (*adapters.BidderResponse, []error) {
