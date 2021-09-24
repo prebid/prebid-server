@@ -1,6 +1,17 @@
 {
     "mockBidRequest": {
         "id": "test-request-id",
+        "user": {
+            "id": "1kjh3429kjh295jkl",
+            "ext": {
+                "consent": "CONSENT_STRING"
+            }
+        },
+        "regs": {
+            "ext": {
+                "gdpr": 1
+            }
+        },
         "imp": [
             {
                 "id": "test-imp-id",
@@ -28,7 +39,7 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "http://whatever.url?format=json&tzo=0",
+                "uri": "http://whatever.url?consentString=CONSENT_STRING&format=json&gdpr=1&tzo=0",
                 "body": {
                     "adUnits": [
                         {
@@ -36,8 +47,10 @@
                             "targetId": "123-test-imp-id"
                         }
                     ],
-                    "context": "unknown",
-                    "metaData": {}
+                    "metaData": {
+                        "usi": "1kjh3429kjh295jkl"
+                    },
+                    "context": "unknown"
                 }
             },
             "mockResponse": {
