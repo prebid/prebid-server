@@ -47,7 +47,7 @@
               "ortb2": {
                 "site": {
                   "id": "apnSiteId",
-                  "page": "http://www.foobar.com/1234.html"
+                  "page": "http://www.foobar.com/testurl.html"
                 }
               }
             }
@@ -95,7 +95,7 @@
     "appnexus": {
       "site": {
         "id": "reqSiteId",
-        "page": "http://www.foobar.com/1234.html",
+        "page": "http://www.foobar.com/testurl.html",
         "publisher": {
           "id": "1"
         },
