@@ -1,6 +1,9 @@
 {
     "mockBidRequest": {
         "id": "test-request-id",
+        "user": {
+            "id": "1kjh3429kjh295jkl"
+        },
         "imp": [
             {
                 "id": "test-imp-id",
@@ -36,8 +39,10 @@
                             "targetId": "123-test-imp-id"
                         }
                     ],
-                    "context": "unknown",
-                    "metaData": {}
+                    "metaData": {
+                        "usi": "1kjh3429kjh295jkl"
+                    },
+                    "context": "unknown"
                 }
             },
             "mockResponse": {
