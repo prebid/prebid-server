@@ -7,11 +7,11 @@ import (
 	"github.com/golang/glog"
 )
 
-const versionNotSet = "not-set"
+const versionEndpointValueNotSet = "not-set"
 
 // NewVersionEndpoint returns the latest git tag as the version and commit hash as the revision from which the binary was built
 func NewVersionEndpoint(version, revision string) http.HandlerFunc {
-	response, err := prepareVersionResponse(version, revision)
+	response, err := prepareVersionEndpointResponse(version, revision)
 	if err != nil {
 		glog.Fatalf("error creating /version endpoint response: %v", err)
 	}
@@ -21,12 +21,12 @@ func NewVersionEndpoint(version, revision string) http.HandlerFunc {
 	}
 }
 
-func prepareVersionResponse(version, revision string) (json.RawMessage, error) {
+func prepareVersionEndpointResponse(version, revision string) (json.RawMessage, error) {
 	if version == "" {
-		version = versionNotSet
+		version = versionEndpointValueNotSet
 	}
 	if revision == "" {
-		revision = versionNotSet
+		revision = versionEndpointValueNotSet
 	}
 
 	return json.Marshal(struct {
