@@ -22,7 +22,19 @@ func TestVersion(t *testing.T) {
 			expected:    `{"revision":"not-set","version":"not-set"}`,
 		},
 		{
-			description: "Populated",
+			description: "Version Only",
+			version:     "1.2.3",
+			revision:    "",
+			expected:    `{"revision":"not-set","version":"1.2.3"}`,
+		},
+		{
+			description: "Revision Only",
+			version:     "",
+			revision:    "d6cd1e2bd19e03a81132a23b2025920577f84e37",
+			expected:    `{"revision":"d6cd1e2bd19e03a81132a23b2025920577f84e37","version":"not-set"}`,
+		},
+		{
+			description: "Fully Populated",
 			version:     "1.2.3",
 			revision:    "d6cd1e2bd19e03a81132a23b2025920577f84e37",
 			expected:    `{"revision":"d6cd1e2bd19e03a81132a23b2025920577f84e37","version":"1.2.3"}`,
