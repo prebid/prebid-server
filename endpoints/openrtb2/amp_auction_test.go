@@ -1315,6 +1315,12 @@ func TestIdGeneration(t *testing.T) {
 			givenGenerateRequestID: false,
 			expectedID:             uuid,
 		},
+		{
+			description:            "Macro ID case sensitivity check. The id is {{uuid}}, but we should only generate an id if it's all uppercase {{UUID}}. So the ID shouldn't change.",
+			givenInStoredRequest:   json.RawMessage(`{"id":"{{uuid}}","site":{"page":"prebid.org"},"imp":[{"id":"some-imp-id","banner":{"format":[{"w":300,"h":250}]},"ext":{"appnexus":{"placementId":1}}}],"tmax":1}`),
+			givenGenerateRequestID: false,
+			expectedID:             "{{uuid}}",
+		},
 	}
 
 	request := httptest.NewRequest("GET", "/openrtb2/auction/amp?tag_id=test", nil)

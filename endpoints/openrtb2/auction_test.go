@@ -1215,6 +1215,12 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 			givenGenerateRequestID: true,
 			expectedID:             "ThisID",
 		},
+		{
+			description:            "Macro ID {{UUID}} case sensitivity check meaning a macro that is lowercase {{uuid}} shouldn't generate a uuid",
+			givenRawData:           testBidRequests[2],
+			givenGenerateRequestID: false,
+			expectedID:             "ThisID",
+		},
 	}
 
 	for _, test := range testCases {
@@ -3113,6 +3119,7 @@ func (e *brokenExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequ
 var testStoredRequestData = map[string]json.RawMessage{
 	"1": json.RawMessage(`{"id": "{{UUID}}"}`),
 	"2": json.RawMessage(`{
+		"id": "{{uuid}}",
 		"tmax": 500,
 		"ext": {
 			"prebid": {
