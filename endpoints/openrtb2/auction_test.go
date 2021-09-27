@@ -3715,3 +3715,35 @@ type fakeUUIDGenerator struct {
 func (f fakeUUIDGenerator) Generate() (string, error) {
 	return f.id, f.err
 }
+
+func TestValidateBanner(t *testing.T) {
+	impIndex := 0
+
+	testCases := []struct {
+		description    string
+		banner         *openrtb2.Banner
+		impIndex       int
+		isInterstitial bool
+		expectedError  error
+	}{
+		{
+			description:    "isInterstitial Equals False (not set to 1)",
+			banner:         &openrtb2.Banner{W: nil, H: nil, Format: nil},
+			impIndex:       impIndex,
+			isInterstitial: false,
+			expectedError:  errors.New("request.imp[0].banner has no sizes. Define \"w\" and \"h\", or include \"format\" elements."),
+		},
+		{
+			description:    "isInterstitial Equals True (is set to 1)",
+			banner:         &openrtb2.Banner{W: nil, H: nil, Format: nil},
+			impIndex:       impIndex,
+			isInterstitial: true,
+			expectedError:  nil,
+		},
+	}
+
+	for _, test := range testCases {
+		result := validateBanner(test.banner, test.impIndex, test.isInterstitial)
+		assert.Equal(t, test.expectedError, result, test.description)
+	}
+}
