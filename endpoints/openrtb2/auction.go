@@ -1352,11 +1352,11 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 	}
 
 	storedRequests, storedImps, errs := deps.storedReqFetcher.FetchRequests(ctx, storedReqIds, impStoredReqIds)
+
 	if len(errs) != 0 {
 		return nil, nil, errs
 	}
-
-	bidRequestID, err := getBidRequestID(requestJson)
+	bidRequestID, err := getBidRequestID(storedRequests[storedBidRequestId])
 	if err != nil {
 		return nil, nil, []error{err}
 	}
@@ -1507,7 +1507,7 @@ func getStoredRequestId(data []byte) (string, bool, error) {
 	return string(storedRequestId), true, nil
 }
 
-func getBidRequestID(data []byte) (string, error) {
+func getBidRequestID(data json.RawMessage) (string, error) {
 	bidRequestID, dataType, _, err := jsonparser.Get(data, "id")
 	if dataType == jsonparser.NotExist {
 		return "", nil

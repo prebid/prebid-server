@@ -1180,38 +1180,38 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 		expectedID             string
 	}{
 		{
-			description:            "GenerateRequestID is true, rawData is an app request and has stored bid we should generate uuid",
-			givenRawData:           testStoredRequestsUuid[2],
+			description:            "GenerateRequestID is true, rawData is an app request and has stored bid request we should generate uuid",
+			givenRawData:           testBidRequests[2],
 			givenGenerateRequestID: true,
 			expectedID:             uuid,
 		},
 		{
-			description:            "GenerateRequestID is true, rawData is an app request, has stored bid, and bidrequestID is not the macro {{UUID}}, we should generate uuid",
-			givenRawData:           testStoredRequestsUuid[3],
+			description:            "GenerateRequestID is true, rawData is an app request, has stored bid, and stored bidrequestID is not the macro {{UUID}}, we should generate uuid",
+			givenRawData:           testBidRequests[3],
 			givenGenerateRequestID: true,
 			expectedID:             uuid,
 		},
 		{
-			description:            "GenerateRequestID is false, rawData is an app request and has stored bid, but bidrequestID is the macro {{UUID}}, so we should generate uuid",
-			givenRawData:           testStoredRequestsUuid[2],
+			description:            "GenerateRequestID is false, rawData is an app request and has stored bid, but stored bidrequestID is the macro {{UUID}}, so we should generate uuid",
+			givenRawData:           testBidRequests[4],
 			givenGenerateRequestID: false,
 			expectedID:             uuid,
 		},
 		{
 			description:            "GenerateRequestID is true, rawData is an app request, but no stored bid, we should not generate uuid",
-			givenRawData:           testStoredRequestsUuid[0],
+			givenRawData:           testBidRequests[0],
 			givenGenerateRequestID: true,
 			expectedID:             "ThisID",
 		},
 		{
 			description:            "GenerateRequestID is false and macro ID is not present, so we should not generate uuid",
-			givenRawData:           testStoredRequestsUuid[0],
+			givenRawData:           testBidRequests[0],
 			givenGenerateRequestID: false,
 			expectedID:             "ThisID",
 		},
 		{
 			description:            "GenerateRequestID is true, but rawData is a site request, we should not generate uuid",
-			givenRawData:           testStoredRequestsUuid[1],
+			givenRawData:           testBidRequests[1],
 			givenGenerateRequestID: true,
 			expectedID:             "ThisID",
 		},
@@ -3111,8 +3111,9 @@ func (e *brokenExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequ
 // first below is valid JSON
 // second below is identical to first but with extra '}' for invalid JSON
 var testStoredRequestData = map[string]json.RawMessage{
+	"1": json.RawMessage(`{"id": "{{UUID}}"}`),
 	"2": json.RawMessage(`{
-"tmax": 500,
+		"tmax": 500,
 		"ext": {
 			"prebid": {
 				"targeting": {
@@ -3122,7 +3123,7 @@ var testStoredRequestData = map[string]json.RawMessage{
 		}
 	}`),
 	"3": json.RawMessage(`{
-"tmax": 500,
+		"tmax": 500,
 				"ext": {
 						"prebid": {
 								"targeting": {
@@ -3557,7 +3558,7 @@ var testStoredImps = []string{
 	``,
 }
 
-var testStoredRequestsUuid = []string{
+var testBidRequests = []string{
 	`{
 		"id": "ThisID",
 		"app": {
@@ -3628,7 +3629,7 @@ var testStoredRequestsUuid = []string{
 		}
 	}`,
 	`{
-		"id": "{{UUID}}",
+		"id": "ThisID",
 		"app": {
 			"id": "123"
 		},
@@ -3677,6 +3678,33 @@ var testStoredRequestsUuid = []string{
 			"prebid": {
 				"storedrequest": {
 					"id": "2"
+				}
+			}
+		}
+	}`,
+	`{
+		"id": "ThisID",
+		"app": {
+			"id": "123"
+		},
+		"imp": [
+			{
+				"ext": {
+					"prebid": {
+						"storedrequest": {
+							"id": "1"
+						},
+						"options": {
+							"echovideoattrs": false
+						}
+					}
+				}
+			}
+		],
+		"ext": {
+			"prebid": {
+				"storedrequest": {
+					"id": "1"
 				}
 			}
 		}
