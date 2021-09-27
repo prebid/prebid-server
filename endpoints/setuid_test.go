@@ -234,7 +234,7 @@ func TestSetUIDEndpoint(t *testing.T) {
 		},
 	}
 
-	metrics := &metricsConf.DummyMetricsEngine{}
+	metrics := &metricsConf.NilMetricsEngine{}
 	for _, test := range testCases {
 		response := doRequest(makeRequest(test.uri, test.existingSyncs), metrics,
 			test.syncersBidderNameToKey, test.gdprAllowsHostCookies, test.gdprReturnsError, test.gdprMalformed)
@@ -379,7 +379,7 @@ func TestOptedOut(t *testing.T) {
 	cookie.SetOptOut(true)
 	addCookie(request, cookie)
 	syncersBidderNameToKey := map[string]string{"pubmatic": "pubmatic"}
-	metrics := &metricsConf.DummyMetricsEngine{}
+	metrics := &metricsConf.NilMetricsEngine{}
 	response := doRequest(request, metrics, syncersBidderNameToKey, true, false, false)
 
 	assert.Equal(t, http.StatusUnauthorized, response.Code)
