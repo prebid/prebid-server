@@ -87,6 +87,13 @@ data:
   PBS_ADAPTERS_AARKI_DISABLED:              "false"
   PBS_ADAPTERS_AARKI_XAPI_ENDPOINT_US_EAST: "http://localhost:4646/aarki_givemeads"
 
+  # appier values
+  PBS_ADAPTERS_APPIER_DISABLED: "false"
+  PBS_ADAPTERS_APPIER_XAPI_ENDPOINT_US_EAST: "http://localhost:4646/appier_givemeads"
+  PBS_ADAPTERS_APPIER_XAPI_ENDPOINT_EMEA: "http://localhost:4646/appier_givemeads"
+  PBS_ADAPTERS_APPIER_XAPI_ENDPOINT_JP: "http://localhost:4646/appier_givemeads"
+  PBS_ADAPTERS_APPIER_XAPI_ENDPOINT_SG: "http://localhost:4646/appier_givemeads"
+
   # crossinstall values
   PBS_ADAPTERS_CROSSINSTALL_DISABLED:              "false"
   PBS_ADAPTERS_CROSSINSTALL_XAPI_ENDPOINT_US_EAST: "http://localhost:4646/crossinstall_givemeads"

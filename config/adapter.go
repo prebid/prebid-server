@@ -46,6 +46,7 @@ type AdapterXAPI struct {
 	EndpointUSWest string `mapstructure:"endpoint_us_west"`
 	EndpointEU     string `mapstructure:"endpoint_eu"`
 	EndpointAPAC   string `mapstructure:"endpoint_apac"`
+	EndpointEMEA   string `mapstructure:"endpoint_emea"`
 	EndpointJP     string `mapstructure:"endpoint_jp"`
 	EndpointSG     string `mapstructure:"endpoint_sg"`
 	EndpointHK     string `mapstructure:"endpoint_hk"`

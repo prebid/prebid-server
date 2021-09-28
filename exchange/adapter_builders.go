@@ -26,6 +26,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/aja"
 	"github.com/prebid/prebid-server/adapters/algorix"
 	"github.com/prebid/prebid-server/adapters/amx"
+	"github.com/prebid/prebid-server/adapters/appier"
 	"github.com/prebid/prebid-server/adapters/applogy"
 	"github.com/prebid/prebid-server/adapters/appnexus"
 	"github.com/prebid/prebid-server/adapters/audienceNetwork"
@@ -156,6 +157,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAJA:               aja.Builder,
 		openrtb_ext.BidderAlgorix:           algorix.Builder,
 		openrtb_ext.BidderAMX:               amx.Builder,
+		openrtb_ext.BidderAppier:            appier.Builder,
 		openrtb_ext.BidderApplogy:           applogy.Builder,
 		openrtb_ext.BidderAppnexus:          appnexus.Builder,
 		openrtb_ext.BidderAudienceNetwork:   audienceNetwork.Builder,
