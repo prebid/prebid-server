@@ -36,7 +36,14 @@
         }
       }
     },
-    "test": 1
+    "test": 1,
+    "ext": {
+      "prebid": {
+        "data": {
+          "bidders": []
+        }
+      }
+    }
   },
   "resultRequestData":  {
     "id": "bid_id",
@@ -68,7 +75,9 @@
       "publisher": {
         "id": "1"
       },
-      "ext": {"amp":1}
+      "ext": {
+        "amp":1
+      }
     },
     "test": 1
   },

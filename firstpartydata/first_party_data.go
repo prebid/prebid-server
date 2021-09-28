@@ -334,7 +334,7 @@ func ExtractBidderConfigFPD(reqExt *openrtb_ext.RequestExt) map[openrtb_ext.Bidd
 
 	fpd := make(map[openrtb_ext.BidderName]*openrtb_ext.ORTB2)
 	reqExtPrebid := reqExt.GetPrebid()
-	if reqExtPrebid.BidderConfigs != nil {
+	if reqExtPrebid != nil && reqExtPrebid.BidderConfigs != nil {
 		for _, bidderConfig := range *reqExtPrebid.BidderConfigs {
 			for _, bidder := range bidderConfig.Bidders {
 
@@ -356,24 +356,17 @@ func ExtractBidderConfigFPD(reqExt *openrtb_ext.RequestExt) map[openrtb_ext.Bidd
 						fpdBidderData.User = bidderConfig.Config.ORTB2.User
 					}
 				}
-
 			}
 		}
+		reqExtPrebid.BidderConfigs = nil
+		reqExt.SetPrebid(reqExtPrebid)
 	}
-
-	reqExtPrebid.BidderConfigs = nil
-	reqExt.SetPrebid(reqExtPrebid)
 	return fpd
+
 }
 
 //ExtractFPDForBidders extracts FPD data from request if specified
 func ExtractFPDForBidders(req *openrtb_ext.RequestWrapper) (map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, []error) {
-
-	//If {site,app,user}.ext.data exists, collect it and remove {site,app,user}.ext.data from request
-	globalFpd, err := ExtractGlobalFPD(req)
-	if err != nil {
-		return nil, []error{err}
-	}
 
 	reqExt, err := req.GetRequestExt()
 	if err != nil {
@@ -392,6 +385,16 @@ func ExtractFPDForBidders(req *openrtb_ext.RequestWrapper) (map[openrtb_ext.Bidd
 	}
 
 	fbdBidderConfigData := ExtractBidderConfigFPD(reqExt)
+
+	var globalFpd map[string][]byte
+	// if global bidder list is nill (different from empty list!)
+	// or doesn't exists - don't remove {site/app/user}.ext.data from request
+	if biddersWithGlobalFPD != nil {
+		globalFpd, err = ExtractGlobalFPD(req)
+		if err != nil {
+			return nil, []error{err}
+		}
+	}
 
 	if len(fbdBidderConfigData) == 0 && len(biddersWithGlobalFPD) == 0 {
 		return nil, nil
