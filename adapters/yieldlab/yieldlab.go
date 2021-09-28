@@ -294,7 +294,7 @@ func (a *YieldlabAdapter) makeBannerAdSource(req *openrtb2.BidRequest, ext *open
 }
 
 func (a *YieldlabAdapter) makeVast(req *openrtb2.BidRequest, ext *openrtb_ext.ExtImpYieldlab, res *bidResponse) string {
-	return fmt.Sprintf(vastMarkup, a.makeAdSourceURL(req, ext, res))
+	return fmt.Sprintf(vastMarkup, ext.AdslotID, a.makeAdSourceURL(req, ext, res))
 }
 
 func (a *YieldlabAdapter) makeAdSourceURL(req *openrtb2.BidRequest, ext *openrtb_ext.ExtImpYieldlab, res *bidResponse) string {
