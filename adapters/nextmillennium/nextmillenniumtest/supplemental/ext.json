@@ -24,9 +24,9 @@
       }
     ]
   },
-"expectedMakeRequestsErrors": [
-    {
-        "value": "unexpected end of JSON input",
-        "comparison": "literal"
-    }]
+  "expectedMakeRequestsErrors": [
+  {
+      "value": "unexpected end of JSON input",
+      "comparison": "literal"
+  }]
 }
