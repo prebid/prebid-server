@@ -575,38 +575,35 @@ func TestExtractBidderConfigFPD(t *testing.T) {
 
 			assert.Equal(t, len(fpdFile.BiddersFPD), len(fpdData), "Incorrect fpd data")
 
-			for k, v := range fpdFile.BiddersFPD {
+			for bidderName, bidderFPD := range fpdFile.BiddersFPD {
 
-				if v.Site != nil {
-					tempSiteExt := fpdData[k].Site.Ext
-					assert.JSONEq(t, string(v.Site.Ext), string(tempSiteExt), "site.ext is incorrect")
-					//compare extensions first and the site objects without extensions
-					//in case two or more bidders share same config(pointer), ext should be returned back
-					v.Site.Ext = nil
-					fpdData[k].Site.Ext = nil
-					assert.Equal(t, v.Site, fpdData[k].Site, "Incorrect site fpd data")
-					fpdData[k].Site.Ext = tempSiteExt
+				if bidderFPD.Site != nil {
+					resSite := *fpdData[bidderName].Site
+					for k, v := range *bidderFPD.Site {
+						assert.NotNil(t, resSite[k], "Property is not found in result")
+						assert.JSONEq(t, string(v), string(resSite[k]), "site is incorrect")
+					}
 				}
 
-				if v.App != nil {
+				if bidderFPD.App != nil {
 
-					tempAppExt := fpdData[k].App.Ext
+					/*tempAppExt := fpdData[k].App.Ext
 					assert.JSONEq(t, string(v.App.Ext), string(tempAppExt), "app.ext is incorrect")
 					//compare extensions first and the app objects without extensions
 					v.App.Ext = nil
 					fpdData[k].App.Ext = nil
 					assert.Equal(t, v.App, fpdData[k].App, "Incorrect app fpd data")
-					fpdData[k].App.Ext = tempAppExt
+					fpdData[k].App.Ext = tempAppExt*/
 				}
 
-				if v.User != nil {
-					tempUserExt := fpdData[k].User.Ext
+				if bidderFPD.User != nil {
+					/*tempUserExt := fpdData[k].User.Ext
 					assert.JSONEq(t, string(v.User.Ext), string(tempUserExt), "user.ext is incorrect")
 					//compare extensions first and the user objects without extensions
 					v.User.Ext = nil
 					fpdData[k].User.Ext = nil
 					assert.Equal(t, v.User, fpdData[k].User, "Incorrect user fpd data")
-					fpdData[k].User.Ext = tempUserExt
+					fpdData[k].User.Ext = tempUserExt*/
 				}
 
 			}
@@ -743,9 +740,10 @@ func loadFpdFile(filename string) (fpdFile, error) {
 }
 
 type fpdFile struct {
-	InputRequestData  json.RawMessage                               `json:"inputRequestData,omitempty"`
-	OutputRequestData json.RawMessage                               `json:"outputRequestData,omitempty"`
-	BiddersFPD        map[openrtb_ext.BidderName]*openrtb_ext.ORTB2 `json:"biddersFPD,omitempty"`
-	FirstPartyData    map[string]json.RawMessage                    `json:"firstPartyData,omitempty"`
-	ValidationErrors  []string                                      `json:"validationErrors,omitempty"`
+	InputRequestData   json.RawMessage                                    `json:"inputRequestData,omitempty"`
+	OutputRequestData  json.RawMessage                                    `json:"outputRequestData,omitempty"`
+	BiddersFPD         map[openrtb_ext.BidderName]*openrtb_ext.ORTB2      `json:"biddersFPD,omitempty"`
+	BiddersFPDResolved map[openrtb_ext.BidderName]*ResolvedFirstPartyData `json:"biddersFPDResolved,omitempty"`
+	FirstPartyData     map[string]json.RawMessage                         `json:"firstPartyData,omitempty"`
+	ValidationErrors   []string                                           `json:"validationErrors,omitempty"`
 }

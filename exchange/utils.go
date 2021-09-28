@@ -12,6 +12,7 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/firstpartydata"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -740,7 +741,7 @@ func writeNameVersionRecord(sb *strings.Builder, name, version string) {
 	sb.WriteString(version)
 }
 
-func applyFPD(fpd map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, bidReq *openrtb2.BidRequest, bidderName openrtb_ext.BidderName) {
+func applyFPD(fpd map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData, bidReq *openrtb2.BidRequest, bidderName openrtb_ext.BidderName) {
 	if fpd != nil && fpd[bidderName] != nil {
 		if fpd[bidderName].Site != nil {
 			bidReq.Site = fpd[bidderName].Site

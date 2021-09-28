@@ -3,7 +3,6 @@ package openrtb_ext
 import (
 	"encoding/json"
 	"errors"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
 )
 
 // FirstPartyDataExtKey defines a field name within request.ext and request.imp.ext reserved for first party data.
@@ -58,9 +57,9 @@ type Config struct {
 }
 
 type ORTB2 struct { //First party data
-	Site *openrtb2.Site `json:"site,omitempty"`
-	App  *openrtb2.App  `json:"app,omitempty"`
-	User *openrtb2.User `json:"user,omitempty"`
+	Site *map[string]json.RawMessage `json:"site,omitempty"`
+	App  *map[string]json.RawMessage `json:"app,omitempty"`
+	User *map[string]json.RawMessage `json:"user,omitempty"`
 }
 
 type ExtRequestCurrency struct {
