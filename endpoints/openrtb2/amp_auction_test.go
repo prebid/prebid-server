@@ -1304,10 +1304,22 @@ func TestIdGeneration(t *testing.T) {
 			expectedID:             "ThisID",
 		},
 		{
-			description:            "The givenGenerateRequestID flag is true, and if the id field isn't included in the stored request",
+			description:            "The givenGenerateRequestID flag is true, and the id field isn't included in the stored request, we should still generate a uuid",
 			givenInStoredRequest:   json.RawMessage(`{"site":{"page":"prebid.org"},"imp":[{"id":"some-imp-id","banner":{"format":[{"w":300,"h":250}]},"ext":{"appnexus":{"placementId":1}}}],"tmax":1}`),
 			givenGenerateRequestID: true,
 			expectedID:             uuid,
+		},
+		{
+			description:            "The givenGenerateRequestID flag is false, but id field is the macro option {{UUID}}, we should generate a uuid",
+			givenInStoredRequest:   json.RawMessage(`{"id":"{{UUID}}","site":{"page":"prebid.org"},"imp":[{"id":"some-imp-id","banner":{"format":[{"w":300,"h":250}]},"ext":{"appnexus":{"placementId":1}}}],"tmax":1}`),
+			givenGenerateRequestID: false,
+			expectedID:             uuid,
+		},
+		{
+			description:            "Macro ID case sensitivity check. The id is {{uuid}}, but we should only generate an id if it's all uppercase {{UUID}}. So the ID shouldn't change.",
+			givenInStoredRequest:   json.RawMessage(`{"id":"{{uuid}}","site":{"page":"prebid.org"},"imp":[{"id":"some-imp-id","banner":{"format":[{"w":300,"h":250}]},"ext":{"appnexus":{"placementId":1}}}],"tmax":1}`),
+			givenGenerateRequestID: false,
+			expectedID:             "{{uuid}}",
 		},
 	}
 

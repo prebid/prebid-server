@@ -1356,14 +1356,19 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 	}
 
 	storedRequests, storedImps, errs := deps.storedReqFetcher.FetchRequests(ctx, storedReqIds, impStoredReqIds)
+
 	if len(errs) != 0 {
 		return nil, nil, errs
+	}
+	bidRequestID, err := getBidRequestID(storedRequests[storedBidRequestId])
+	if err != nil {
+		return nil, nil, []error{err}
 	}
 
 	// Apply the Stored BidRequest, if it exists
 	resolvedRequest := requestJson
 
-	if deps.cfg.GenerateRequestID {
+	if deps.cfg.GenerateRequestID || bidRequestID == "{{UUID}}" {
 		isAppRequest, err := checkIfAppRequest(requestJson)
 		if err != nil {
 			return nil, nil, []error{err}
@@ -1504,6 +1509,17 @@ func getStoredRequestId(data []byte) (string, bool, error) {
 		return "", true, errors.New("ext.prebid.storedrequest.id must be a string")
 	}
 	return string(storedRequestId), true, nil
+}
+
+func getBidRequestID(data json.RawMessage) (string, error) {
+	bidRequestID, dataType, _, err := jsonparser.Get(data, "id")
+	if dataType == jsonparser.NotExist {
+		return "", nil
+	}
+	if err != nil {
+		return "", err
+	}
+	return string(bidRequestID), nil
 }
 
 // setIPImplicitly sets the IP address on bidReq, if it's not explicitly defined and we can figure it out.
