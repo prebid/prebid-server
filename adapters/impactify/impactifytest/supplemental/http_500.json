@@ -78,43 +78,16 @@
         }
       },
       "mockResponse": {
-        "status": 200,
-        "body": {
-          "id": "test-request-id",
-          "cur": "USD",
-          "seatbid": [
-            {
-              "seat": "impactify",
-              "bid": [{
-                "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
-                "impid": "test-imp-id",
-                "price": 18,
-                "adm": "<script>window.impactifyTag = window.impactifyTag || [];impactifyTag.push({appId: 'deco.fr', format: 'screen', style: 'impact'});(function(d, s, id) {var js, ijs = d.getElementsByTagName(s)[0];if (d.getElementById(id)) return;js = d.createElement(s); js.id = id;js.src = 'https://ad.impactify.io/static/ad/tag.js';ijs.parentNode.insertBefore(js, ijs);}(document, 'script', 'impactify-sdk'));</script>",
-                "crid": "crid_10",
-                "w": 1,
-                "h": 1
-              }]
-            }
-          ]
-        }
+        "status": 500,
+        "body": {}
       }
     }
   ],
 
-  "expectedBidResponses": [
+  "expectedMakeBidsErrors": [
     {
-      "bids": [{
-        "bid": {
-          "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
-          "impid": "test-imp-id",
-          "price": 18,
-          "adm": "<script>window.impactifyTag = window.impactifyTag || [];impactifyTag.push({appId: 'deco.fr', format: 'screen', style: 'impact'});(function(d, s, id) {var js, ijs = d.getElementsByTagName(s)[0];if (d.getElementById(id)) return;js = d.createElement(s); js.id = id;js.src = 'https://ad.impactify.io/static/ad/tag.js';ijs.parentNode.insertBefore(js, ijs);}(document, 'script', 'impactify-sdk'));</script>",
-          "crid": "crid_10",
-          "w": 1,
-          "h": 1
-        },
-        "type": "video"
-      }]
+      "value": "Unexpected HTTP status 500.",
+      "comparison": "literal"
     }
   ]
 }
