@@ -34,14 +34,14 @@
         },
         "ext": {
           "bidder": {
-            "region": "not_supported",
+            "region": "us_east",
             "video": {
-              "skip": 1,
-              "skipdelay": 5,
-              "width": 320,
-              "height": 480
+              "skip": 0,
+              "skipdelay": 0,
+              "width": 480,
+              "height": 320
             },
-            "header_bidding": 1,
+            "header_bidding": 0,
             "mediator_id": "test_mediator_id"
           }
         }
@@ -85,20 +85,20 @@
                   4
                 ],
                 "ext": {
-                  "orientation": 1,
-                  "placementtype": "interstitial",
-                  "skip": 1,
-                  "skipdelay": 5
+                  "orientation": 2,
+                  "placementtype": "rewarded",
+                  "skip": 0,
+                  "skipdelay": 0
                 }
               },
               "ext": {
-                "rewarded": 0
+                "rewarded": 1
               }
             }
           ],
           "source": {
             "ext": {
-              "header_bidding": 1,
+              "header_bidding": 0,
               "mediator_id": "test_mediator_id"
             }
           }
