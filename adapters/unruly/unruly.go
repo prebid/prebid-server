@@ -12,19 +12,19 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type UnrulyAdapter struct {
+type adapter struct {
 	endPoint string
 }
 
 // Builder builds a new instance of the Unruly adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &UnrulyAdapter{
+	bidder := &adapter{
 		endPoint: config.Endpoint,
 	}
 	return bidder, nil
 }
 
-func (a *UnrulyAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 
 	var uri string
@@ -50,14 +50,13 @@ func (a *UnrulyAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adap
 	return nil, errs
 }
 
-func (a *UnrulyAdapter) preProcess(req *openrtb2.BidRequest, errors []error) (*openrtb2.BidRequest, string, []error) {
+func (a *adapter) preProcess(req *openrtb2.BidRequest, errors []error) (*openrtb2.BidRequest, string, []error) {
 	numRequests := len(req.Imp)
 	var uri string = ""
 	for i := 0; i < numRequests; i++ {
 		imp := req.Imp[i]
 		var bidderExt adapters.ExtImpBidder
-		err := json.Unmarshal(imp.Ext, &bidderExt)
-		if err != nil {
+		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			err = &errortypes.BadInput{
 				Message: fmt.Sprintf("ext data not provided in imp id=%s. Abort all Request", imp.ID),
 			}
@@ -65,8 +64,9 @@ func (a *UnrulyAdapter) preProcess(req *openrtb2.BidRequest, errors []error) (*o
 			return nil, "", errors
 		}
 		var unrulyExt openrtb_ext.ExtImpUnruly
-		err = json.Unmarshal(bidderExt.Bidder, &unrulyExt)
-		if err != nil {
+		//err = json.Unmarshal(bidderExt.Bidder, &unrulyExt)
+		//if err != nil {
+		if err := json.Unmarshal(bidderExt.Bidder, &unrulyExt); err != nil {
 			err = &errortypes.BadInput{
 				Message: fmt.Sprintf("siteid not provided in imp id=%s. Abort all Request", imp.ID),
 			}
@@ -95,7 +95,7 @@ func (a *UnrulyAdapter) preProcess(req *openrtb2.BidRequest, errors []error) (*o
 	return req, uri, errors
 }
 
-func (a *UnrulyAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -118,21 +118,27 @@ func (a *UnrulyAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 		}}
 	}
 
-	var errs []error
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
 
+	var errs []error
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
-			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     &sb.Bid[i],
-				BidType: getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp),
-			})
+			var bla, err = getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp)
+			if err != nil {
+				errs = append(errs, err...)
+			} else {
+				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+					Bid:     &sb.Bid[i],
+					BidType: bla,
+				})
+			}
 		}
 	}
 	return bidResponse, errs
 }
 
-func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
+func getMediaTypeForImp(impId string, imps []openrtb2.Imp) (openrtb_ext.BidType, []error) {
+	var errs []error
 	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impId {
@@ -140,9 +146,14 @@ func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 				mediaType = openrtb_ext.BidTypeBanner
 			} else if imp.Video != nil {
 				mediaType = openrtb_ext.BidTypeVideo
+			} else {
+				errs = append(errs, fmt.Errorf("bid responses mediaType didn't match supported mediaTypes"))
 			}
-			return mediaType
+			return mediaType, nil
+		} else {
+			errs = append(errs, fmt.Errorf("impId doesn't match with any of the imp.ID"))
+
 		}
 	}
-	return mediaType
+	return mediaType, nil
 }

@@ -42,5 +42,5 @@ var invalidParams = []string{
 	`{"siteid": "123"}`, // Invalid siteId type
 	`{"uuid": "123"}`,   // Missing required siteId
 	`{"SiteId": "abc"}`, // Invalid capitalization (json is case sensitive)
-
+	`{"siteId": []}`,    // Invalid siteid data type
 }
