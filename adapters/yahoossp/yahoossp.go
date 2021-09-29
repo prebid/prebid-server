@@ -1,4 +1,4 @@
-package yssp
+package yahoossp
 
 import (
 	"encoding/json"
@@ -41,8 +41,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			continue
 		}
 
-		var ysspExt openrtb_ext.ExtImpYSSP
-		err = json.Unmarshal(bidderExt.Bidder, &ysspExt)
+		var yahoosspExt openrtb_ext.ExtImpYahooSSP
+		err = json.Unmarshal(bidderExt.Bidder, &yahoosspExt)
 		if err != nil {
 			err = &errortypes.BadInput{
 				Message: fmt.Sprintf("imp #%d: %s", idx, err.Error()),
@@ -64,7 +64,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			reqCopy.App = &appCopy
 		}
 
-		if err := changeRequestForBidService(&reqCopy, &ysspExt); err != nil {
+		if err := changeRequestForBidService(&reqCopy, &yahoosspExt); err != nil {
 			errors = append(errors, err)
 			continue
 		}
@@ -147,7 +147,7 @@ func getImpInfo(impId string, imps []openrtb2.Imp) (bool, openrtb_ext.BidType) {
 	return exists, mediaType
 }
 
-func changeRequestForBidService(request *openrtb2.BidRequest, extension *openrtb_ext.ExtImpYSSP) error {
+func changeRequestForBidService(request *openrtb2.BidRequest, extension *openrtb_ext.ExtImpYahooSSP) error {
 	/* Always override the tag ID and (site ID or app ID) of the request */
 	request.Imp[0].TagID = extension.Pos
 	if request.Site != nil {
@@ -180,7 +180,7 @@ func changeRequestForBidService(request *openrtb2.BidRequest, extension *openrtb
 	return nil
 }
 
-// Builder builds a new instance of the YSSP adapter for the given bidder with the given config.
+// Builder builds a new instance of the YahooSSP adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	bidder := &adapter{
 		URI: config.Endpoint,

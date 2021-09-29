@@ -348,7 +348,7 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 		return
 	}
 
-	if deps.cfg.GenerateRequestID {
+	if deps.cfg.GenerateRequestID || req.ID == "{{UUID}}" {
 		newBidRequestId, err := deps.uuidGenerator.Generate()
 		if err != nil {
 			errs = []error{err}

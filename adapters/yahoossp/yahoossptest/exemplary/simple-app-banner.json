@@ -7,6 +7,7 @@
         "banner": {
           "format": [{"w": 728, "h": 90}]
         },
+        "tagid": "123",
         "ext": {
           "bidder": {
             "dcn": "dcn1",
@@ -19,8 +20,8 @@
       "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
       "ip": "127.0.0.1"
     },
-    "site": {
-      "id": ""
+    "app": {
+      "id": "test-app-id"
     }
   },
 
@@ -65,7 +66,7 @@
               }
             }
           ],
-          "site": {
+          "app": {
             "id": "dcn1"
           }
         }
@@ -76,10 +77,10 @@
           "id": "test-request-id",
           "seatbid": [
             {
-              "seat": "yssp",
+              "seat": "yahoossp",
               "bid": [{
                 "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
-                "impid": "wrong",
+                "impid": "test-imp-id",
                 "price": 0.500000,
                 "adm": "some-test-ad",
                 "crid": "crid_10",
@@ -94,10 +95,23 @@
     }
   ],
 
-  "expectedMakeBidsErrors": [
+  "expectedBidResponses": [
     {
-      "value": "Unknown ad unit code 'wrong'",
-      "comparison": "literal"
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+            "impid": "test-imp-id",
+            "price": 0.5,
+            "adm": "some-test-ad",
+            "crid": "crid_10",
+            "w": 728,
+            "h": 90
+          },
+          "type": "banner"
+        }
+      ]
     }
   ]
 }
