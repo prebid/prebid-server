@@ -8,6 +8,5 @@
       "type": "string",
       "description": "Zone ID to use."
     }
-  },
-  "required": ["zoneId"]
+  }
 }
