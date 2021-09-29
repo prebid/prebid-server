@@ -29,7 +29,7 @@
     },
     "httpCalls": [{
         "expectedRequest": {
-            "uri": "https://ib.beintoo.com",
+            "uri": "https://ib.beintoo4.com",
             "body": {
                 "id": "some_test_auction",
                 "imp": [{
