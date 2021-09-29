@@ -22,7 +22,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "Unable to decode the imp ext",
+      "value": "Unable to decode the imp ext : \"test-imp-id\"",
       "comparison": "literal"
     }
   ]

@@ -25,9 +25,6 @@ type DefaultExtBidder struct {
 }
 
 func (a *adapter) MakeRequests(bidRequest *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var errs []error
-	var validImps []openrtb2.Imp
-
 	var adapterRequests []*adapters.RequestData
 
 	for i := 0; i < len(bidRequest.Imp); i++ {
@@ -50,38 +47,29 @@ func (a *adapter) MakeRequests(bidRequest *openrtb2.BidRequest, reqInfo *adapter
 		var defaultExt DefaultExtBidder
 		err := json.Unmarshal(bidRequest.Imp[i].Ext, &defaultExt)
 		if err != nil {
-			return nil, []error{&errortypes.BadServerResponse{
-				Message: "Unable to decode the imp ext",
+			return nil, []error{&errortypes.BadInput{
+				Message: fmt.Sprintf("Unable to decode the imp ext : \"%s\"", bidRequest.Imp[i].ID),
 			}}
 		}
 
 		impactifyExt.Impactify = defaultExt.Bidder
 		bidRequest.Imp[i].Ext, err = json.Marshal(impactifyExt)
 		if err != nil {
-			return nil, []error{&errortypes.BadServerResponse{
-				Message: "Unable to decode the imp ext",
-			}}
-		}
-
-		validImps = append(validImps, bidRequest.Imp[i])
-	}
-
-	if len(validImps) == 0 {
-		if errs != nil {
-			return nil, errs
-		} else {
 			return nil, []error{&errortypes.BadInput{
-				Message: "No valid impressions in the bid request",
+				Message: fmt.Sprintf("Unable to decode the imp ext : \"%s\"", bidRequest.Imp[i].ID),
 			}}
 		}
 	}
 
-	bidRequest.Imp = validImps
+	if len(bidRequest.Imp) == 0 {
+		return nil, []error{&errortypes.BadInput{
+			Message: "No valid impressions in the bid request",
+		}}
+	}
 
 	reqJSON, err := json.Marshal(bidRequest)
 	if err != nil {
-		errs = append(errs, err)
-		return nil, errs
+		return nil, []error{err}
 	}
 
 	headers := http.Header{}
@@ -115,7 +103,7 @@ func (a *adapter) MakeRequests(bidRequest *openrtb2.BidRequest, reqInfo *adapter
 		Headers: headers,
 	})
 
-	return adapterRequests, errs
+	return adapterRequests, nil
 }
 
 func (a *adapter) MakeBids(
