@@ -113,7 +113,7 @@ func TestGetDevice(t *testing.T) {
 }
 
 func TestGetRequest(t *testing.T) {
-	raBidder := new(RichaudienceAdapter)
+	raBidder := new(adapter)
 
 	richaudienceRequestTest := &openrtb2.BidRequest{
 		ID: "test-request-id",
@@ -188,7 +188,7 @@ func TestResponseEmpty(t *testing.T) {
 	httpResp := &adapters.ResponseData{
 		StatusCode: http.StatusNoContent,
 	}
-	bidder := new(RichaudienceAdapter)
+	bidder := new(adapter)
 	bidResponse, errs := bidder.MakeBids(nil, nil, httpResp)
 
 	assert.Nil(t, bidResponse, "Expected Nil")
@@ -287,7 +287,7 @@ func TestResponseOK(t *testing.T) {
 		  }`),
 	}
 
-	bidder := new(RichaudienceAdapter)
+	bidder := new(adapter)
 	bidResponse, errs := bidder.MakeBids(richaudienceRequestTest, reqData, httpResp)
 
 	t.Log(bidResponse)

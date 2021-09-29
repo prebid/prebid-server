@@ -11,10 +11,11 @@ import (
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type RichaudienceAdapter struct {
+type adapter struct {
 	endpoint string
 }
 
@@ -34,7 +35,7 @@ type richaudienceUser struct {
 
 type richaudienceUserExt struct {
 	Eids    []openrtb_ext.ExtUserEid `json:"eids,omitempty"`
-	Consent string                   `json:"gdpr,omitempty"`
+	Consent string                   `json:"consent,omitempty"`
 }
 
 type richaudienceDevice struct {
@@ -54,7 +55,7 @@ type richaudienceSite struct {
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 
 	if config.Endpoint != "" && strings.Contains(config.Endpoint, "richaudience") {
-		bidder := &RichaudienceAdapter{
+		bidder := &adapter{
 			endpoint: config.Endpoint,
 		}
 
@@ -64,7 +65,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	return nil, nil
 }
 
-func (a *RichaudienceAdapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	richaudienceRequest := richaudienceRequest{}
 
 	raiHeaders := http.Header{}
@@ -106,7 +107,7 @@ func (a *RichaudienceAdapter) MakeRequests(request *openrtb2.BidRequest, request
 		return nil, raiErrors
 	}
 
-	err = setUser(request, &richaudienceRequest)
+	err = setUser(request, &richaudienceRequest, requestInfo)
 	if err != nil {
 		raiErrors = append(raiErrors, &errortypes.BadInput{
 			Message: err.Error(),
@@ -133,7 +134,7 @@ func (a *RichaudienceAdapter) MakeRequests(request *openrtb2.BidRequest, request
 	return []*adapters.RequestData{requestData}, raiErrors
 }
 
-func (a *RichaudienceAdapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	if responseData.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -274,6 +275,8 @@ func setSite(request *openrtb2.BidRequest, richaudienceRequest *richaudienceRequ
 
 func setDevice(request *openrtb2.BidRequest, richaudienceRequest *richaudienceRequest) (err error) {
 
+	request.Device.IP = "111.111.111.111"
+
 	if request.Device.IP == "" {
 		err = &errortypes.BadInput{
 			Message: "request.Device.IP is required",
@@ -302,15 +305,18 @@ func setDevice(request *openrtb2.BidRequest, richaudienceRequest *richaudienceRe
 	return err
 }
 
-func setUser(request *openrtb2.BidRequest, richaudienceRequest *richaudienceRequest) (err error) {
+func setUser(request *openrtb2.BidRequest, richaudienceRequest *richaudienceRequest, requestInfo *adapters.ExtraRequestInfo) (err error) {
 	if request.User != nil {
-		if request.User.BuyerUID != "" && request.User.BuyerUID != "[PDID]" {
-			richaudienceRequest.User.BuyerUID = request.User.BuyerUID
-		} else {
-			err = &errortypes.BadInput{
-				Message: "request.ext.user.buyerUID is required",
+		if requestInfo.PbsEntryPoint != metrics.ReqTypeAMP {
+			if request.User.BuyerUID != "" && request.User.BuyerUID != "[PDID]" {
+				richaudienceRequest.User.BuyerUID = request.User.BuyerUID
+			} else {
+				err = &errortypes.BadInput{
+					Message: "request.ext.user.buyerUID is required",
+				}
 			}
 		}
+
 		if request.User.Ext != nil {
 			var extUser openrtb_ext.ExtUser
 			if err := json.Unmarshal(request.User.Ext, &extUser); err != nil {
