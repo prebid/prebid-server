@@ -275,8 +275,6 @@ func setSite(request *openrtb2.BidRequest, richaudienceRequest *richaudienceRequ
 
 func setDevice(request *openrtb2.BidRequest, richaudienceRequest *richaudienceRequest) (err error) {
 
-	request.Device.IP = "111.111.111.111"
-
 	if request.Device.IP == "" {
 		err = &errortypes.BadInput{
 			Message: "request.Device.IP is required",

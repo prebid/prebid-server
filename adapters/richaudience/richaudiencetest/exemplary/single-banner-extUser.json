@@ -33,7 +33,6 @@
       "user": {
         "buyeruid": "189f4055-78a3-46eb-b7fd-0915a1a43bd2a",
         "ext": {
-            "consent": "CPItQrlPItQrlAKAfAENBhCsAP_AAHLAAAiQIBtf_X__bX9j",
             "eids": [
                 {
                   "source": "id5-sync.com",
@@ -48,7 +47,8 @@
                     }
                   ]
                 }
-              ]
+              ],
+              "consent": "CPItQrlPItQrlAKAfAENBhCsAP_AAHLAAAiQIBtf_X__bX9j"
           }
       }
     },
@@ -93,7 +93,7 @@
             "user": {
               "buyeruid": "189f4055-78a3-46eb-b7fd-0915a1a43bd2a",
               "ext": {
-                "gdpr": "CPItQrlPItQrlAKAfAENBhCsAP_AAHLAAAiQIBtf_X__bX9j",
+                "consent": "CPItQrlPItQrlAKAfAENBhCsAP_AAHLAAAiQIBtf_X__bX9j",
                 "eids": [
                     {
                       "source": "id5-sync.com",
