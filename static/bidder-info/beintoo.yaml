@@ -8,5 +8,5 @@ capabilities:
 userSync:
   key: "Beintoo"
   iframe:
-    url: "https://ib.beintoo.com/um?ssp=pbs&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
+    url: "https://ib.beintoo4.com/um?ssp=pbs&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
     userMacro: "$UID"
