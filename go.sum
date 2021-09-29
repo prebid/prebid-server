@@ -242,8 +242,6 @@ github.com/mitchellh/reflectwalk v1.0.1/go.mod h1:mSTlrgnPZtwu0c4WaC2kGObEpuNDbx
 github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421/go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q=
 github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742/go.mod h1:bx2lNnkwVCuqBIxFjflWJWanXIb3RllmbCylyMrvgv0=
 github.com/modern-go/reflect2 v1.0.1/go.mod h1:bx2lNnkwVCuqBIxFjflWJWanXIb3RllmbCylyMrvgv0=
-github.com/mxmCherry/openrtb v13.0.0+incompatible h1:KEnUHAJFovM54lcicyjiJgZZ4mWKNw+h0GOJXWOoJ4A=
-github.com/mxmCherry/openrtb v13.0.0+incompatible/go.mod h1:zpnz6Au3bzTGplpRU0kvFPNT6g4ROAKx/GkrslFDwZk=
 github.com/mxmCherry/openrtb/v15 v15.0.0 h1:inLuQ3Bsima9HLB2v6WjbtEFF69SWOT5Dux4QZtYdrw=
 github.com/mxmCherry/openrtb/v15 v15.0.0/go.mod h1:TVgncsz6MOzbL7lhun1lNuUBzVBlVDbxf9Fyy1TyhZA=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=

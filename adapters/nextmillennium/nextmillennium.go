@@ -4,18 +4,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"text/template"
 
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type NextMillenniumAdapter struct {
-	EndpointTemplate *template.Template
+type adapter struct {
+	endpoint string
 }
 
 type NextMillenniumBidRequest struct {
@@ -31,33 +29,26 @@ type NextMillenniumBidRequest struct {
 }
 
 //MakeRequests prepares request information for prebid-server core
-func (adapter *NextMillenniumAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	errs := make([]error, 0, len(request.Imp))
-	if len(request.Imp) == 0 {
-		errs = append(errs, &errortypes.BadInput{Message: "No impression in the bid request"})
-		return nil, errs
-	}
+func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	pub2impressions, imps, err := getImpressionsInfo(request.Imp)
 	if len(imps) == 0 {
 		return nil, err
 	}
-	errs = append(errs, err...)
 
 	if len(pub2impressions) == 0 {
-		return nil, errs
+		return nil, err
 	}
 
 	result := make([]*adapters.RequestData, 0, len(pub2impressions))
 	for k, imps := range pub2impressions {
 		bidRequest, err := adapter.buildAdapterRequest(request, &k, imps)
 		if err != nil {
-			errs = append(errs, err)
-			return nil, errs
+			return nil, []error{err}
 		} else {
 			result = append(result, bidRequest)
 		}
 	}
-	return result, errs
+	return result, nil
 }
 
 // getImpressionsInfo checks each impression for validity and returns impressions copy with corresponding exts
@@ -110,7 +101,7 @@ func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ImpExtNextMillennium, err
 	return &NextMillenniumExt, nil
 }
 
-func (adapter *NextMillenniumAdapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ImpExtNextMillennium, imps []openrtb2.Imp) (*adapters.RequestData, error) {
+func (adapter *adapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ImpExtNextMillennium, imps []openrtb2.Imp) (*adapters.RequestData, error) {
 	newBidRequest := createBidRequest(prebidBidRequest, params, imps)
 
 	reqJSON, err := json.Marshal(newBidRequest)
@@ -123,14 +114,9 @@ func (adapter *NextMillenniumAdapter) buildAdapterRequest(prebidBidRequest *open
 	headers.Add("Accept", "application/json")
 	headers.Add("x-openrtb-version", "2.5")
 
-	url, err := adapter.buildEndpointURL(params)
-	if err != nil {
-		return nil, err
-	}
-
 	return &adapters.RequestData{
 		Method:  "POST",
-		Uri:     url,
+		Uri:     adapter.endpoint,
 		Body:    reqJSON,
 		Headers: headers}, nil
 }
@@ -145,13 +131,8 @@ func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext
 	return &bidRequest
 }
 
-// Builds enpoint url based on adapter-specific pub settings from imp.ext
-func (adapter *NextMillenniumAdapter) buildEndpointURL(params *openrtb_ext.ImpExtNextMillennium) (string, error) {
-	return macros.ResolveMacros(adapter.EndpointTemplate, nil)
-}
-
 //MakeBids translates NextMillennium bid response to prebid-server specific format
-func (adapter *NextMillenniumAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var msg = ""
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -178,31 +159,15 @@ func (adapter *NextMillenniumAdapter) MakeBids(internalRequest *openrtb2.BidRequ
 		bid := seatBid.Bid[i]
 		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 			Bid:     &bid,
-			BidType: getMediaTypeForImpID(bid.ImpID, internalRequest.Imp),
+			BidType: openrtb_ext.BidTypeBanner,
 		})
 	}
 	return bidResponse, nil
 }
 
-// getMediaTypeForImp figures out which media type this bid is for
-func getMediaTypeForImpID(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
-	for _, imp := range imps {
-		if imp.ID == impID && imp.Video != nil {
-			return openrtb_ext.BidTypeVideo
-		}
-	}
-	return openrtb_ext.BidTypeBanner
-}
-
 // Builder builds a new instance of the NextMillennium adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
-	}
-
-	bidder := &NextMillenniumAdapter{
-		EndpointTemplate: template,
-	}
-	return bidder, nil
+	return &adapter{
+		endpoint: config.Endpoint,
+	}, nil
 }

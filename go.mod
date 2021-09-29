@@ -25,7 +25,6 @@ require (
 	github.com/mattn/go-colorable v0.1.2 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/mitchellh/copystructure v1.1.2
-	github.com/mxmCherry/openrtb v13.0.0+incompatible // indirect
 	github.com/mxmCherry/openrtb/v15 v15.0.0
 	github.com/prebid/go-gdpr v0.9.0
 	github.com/prometheus/client_golang v0.0.0-20180623155954-77e8f2ddcfed
