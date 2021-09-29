@@ -45,14 +45,11 @@ var validParams = []string{
 
 var invalidParams = []string{
 	`{"zoneId": 100}`,
-	`{"headerbidding": false}`,
 	`{"zoneId": true}`,
-	`{"zoneID": "1"}`,
 	``,
 	`null`,
 	`true`,
 	`9`,
 	`1.2`,
 	`[]`,
-	`{}`,
 }
