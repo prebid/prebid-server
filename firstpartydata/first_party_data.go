@@ -13,6 +13,7 @@ const (
 	appKey  = "app"
 	userKey = "user"
 	dataKey = "data"
+	extKey  = "ext"
 
 	userDataKey        = "userData"
 	appContentDataKey  = "appContentData"
@@ -172,7 +173,7 @@ func resolveUser(fpdConfigUser *map[string]json.RawMessage, bidRequestUser *open
 				newUser.Ext = extData
 			}
 		}
-		if len(openRtbGlobalFPD[userDataKey]) > 0 {
+		if openRtbGlobalFPD != nil && len(openRtbGlobalFPD[userDataKey]) > 0 {
 			newUser.Data = openRtbGlobalFPD[userDataKey]
 		}
 	}
@@ -211,9 +212,9 @@ func resolveExtension(fpdConfig map[string]json.RawMessage, originalExt json.Raw
 	resExt := originalExt
 	var err error
 
-	fpdConfigExt, present := fpdConfig["ext"]
+	fpdConfigExt, present := fpdConfig[extKey]
 	if present {
-		delete(fpdConfig, "ext")
+		delete(fpdConfig, extKey)
 		resExt, err = jsonpatch.MergePatch(resExt, fpdConfigExt)
 		if err != nil {
 			return nil, err
@@ -287,7 +288,7 @@ func resolveSite(fpdConfigSite *map[string]json.RawMessage, bidRequestSite *open
 				newSite.Ext = extData
 			}
 		}
-		if len(openRtbGlobalFPD[siteContentDataKey]) > 0 {
+		if openRtbGlobalFPD != nil && len(openRtbGlobalFPD[siteContentDataKey]) > 0 {
 			if newSite.Content != nil {
 				contentCopy := *newSite.Content
 				contentCopy.Data = openRtbGlobalFPD[siteContentDataKey]
@@ -410,7 +411,7 @@ func resolveApp(fpdConfigApp *map[string]json.RawMessage, bidRequestApp *openrtb
 				newApp.Ext = extData
 			}
 		}
-		if len(openRtbGlobalFPD[appContentDataKey]) > 0 {
+		if openRtbGlobalFPD != nil && len(openRtbGlobalFPD[appContentDataKey]) > 0 {
 			if newApp.Content != nil {
 				contentCopy := *newApp.Content
 				contentCopy.Data = openRtbGlobalFPD[appContentDataKey]
@@ -571,6 +572,8 @@ func ExtractFPDForBidders(req *openrtb_ext.RequestWrapper) (map[openrtb_ext.Bidd
 	fbdBidderConfigData := ExtractBidderConfigFPD(reqExt)
 
 	var globalFpd map[string][]byte
+	var openRtbGlobalFPD map[string][]openrtb2.Data
+
 	// if global bidder list is nill (different from empty list!)
 	// or doesn't exists - don't remove {site/app/user}.ext.data from request
 	if biddersWithGlobalFPD != nil {
@@ -578,14 +581,13 @@ func ExtractFPDForBidders(req *openrtb_ext.RequestWrapper) (map[openrtb_ext.Bidd
 		if err != nil {
 			return nil, []error{err}
 		}
+		//If ext.prebid.data.bidders isn't defined, the default is there's no permission filtering
+		openRtbGlobalFPD = ExtractOpenRtbGlobalFPD(req.BidRequest)
 	}
 
 	if len(fbdBidderConfigData) == 0 && len(biddersWithGlobalFPD) == 0 {
 		return nil, nil
 	}
-
-	//If ext.prebid.data.bidders isn't defined, the default is there's no permission filtering
-	openRtbGlobalFPD := ExtractOpenRtbGlobalFPD(req.BidRequest)
 
 	return ResolveFPD(req.BidRequest, fbdBidderConfigData, globalFpd, openRtbGlobalFPD, biddersWithGlobalFPD)
 
