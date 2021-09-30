@@ -30,7 +30,8 @@
                         "id": "test-imp-id",
                         "ext": {
                             "bidder": {
-                                "placementId": "test"
+                                "placementId": "test",
+                                "type": "publisher"
                             }
                         }
                     }

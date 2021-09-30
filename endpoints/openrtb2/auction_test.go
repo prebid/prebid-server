@@ -432,7 +432,7 @@ func TestExplicitUserId(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		cfg,
-		&metricsConfig.DummyMetricsEngine{},
+		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
@@ -474,7 +474,7 @@ func doRequest(t *testing.T, test testCase) (int, string) {
 			BlacklistedAcctMap: test.Config.getBlackListedAccountMap(),
 			AccountRequired:    test.Config.AccountRequired,
 		},
-		&metricsConfig.DummyMetricsEngine{},
+		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		disabledBidders,
 		[]byte(test.Config.AliasJSON),
@@ -538,7 +538,7 @@ func doBadAliasRequest(t *testing.T, filename string, expectMsg string) {
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		&metricsConfig.DummyMetricsEngine{},
+		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		disabledBidders,
 		aliasJSON,
@@ -589,7 +589,7 @@ func TestNilExchange(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		&metricsConfig.DummyMetricsEngine{},
+		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap())
@@ -610,7 +610,7 @@ func TestNilValidator(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		&metricsConfig.DummyMetricsEngine{},
+		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
@@ -632,7 +632,7 @@ func TestExchangeError(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		&metricsConfig.DummyMetricsEngine{},
+		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
@@ -755,7 +755,7 @@ func TestImplicitIPsEndToEnd(t *testing.T) {
 			&mockStoredReqFetcher{},
 			empty_fetcher.EmptyFetcher{},
 			cfg,
-			&metricsConfig.DummyMetricsEngine{},
+			&metricsConfig.NilMetricsEngine{},
 			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 			map[string]string{},
 			[]byte{},
@@ -950,7 +950,7 @@ func TestImplicitDNTEndToEnd(t *testing.T) {
 			&mockStoredReqFetcher{},
 			empty_fetcher.EmptyFetcher{},
 			&config.Configuration{MaxRequestSize: maxSize},
-			&metricsConfig.DummyMetricsEngine{},
+			&metricsConfig.NilMetricsEngine{},
 			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 			map[string]string{},
 			[]byte{},
@@ -1105,7 +1105,7 @@ func TestStoredRequests(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		&metricsConfig.DummyMetricsEngine{},
+		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		false,
@@ -1156,7 +1156,7 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		&metricsConfig.DummyMetricsEngine{},
+		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		false,
@@ -1176,27 +1176,45 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 		expectedID             string
 	}{
 		{
-			description:            "GenerateRequestID is true, rawData is an app request, and stored bid we should generate uuid",
-			givenRawData:           testStoredRequestsUuid[2],
+			description:            "GenerateRequestID is true, rawData is an app request and has stored bid request we should generate uuid",
+			givenRawData:           testBidRequests[2],
 			givenGenerateRequestID: true,
 			expectedID:             uuid,
 		},
 		{
+			description:            "GenerateRequestID is true, rawData is an app request, has stored bid, and stored bidrequestID is not the macro {{UUID}}, we should generate uuid",
+			givenRawData:           testBidRequests[3],
+			givenGenerateRequestID: true,
+			expectedID:             uuid,
+		},
+		{
+			description:            "GenerateRequestID is false, rawData is an app request and has stored bid, but stored bidrequestID is the macro {{UUID}}, so we should generate uuid",
+			givenRawData:           testBidRequests[4],
+			givenGenerateRequestID: false,
+			expectedID:             uuid,
+		},
+		{
 			description:            "GenerateRequestID is true, rawData is an app request, but no stored bid, we should not generate uuid",
-			givenRawData:           testStoredRequestsUuid[0],
+			givenRawData:           testBidRequests[0],
 			givenGenerateRequestID: true,
 			expectedID:             "ThisID",
 		},
 		{
-			description:            "GenerateRequestID is false so we should not generate uuid",
-			givenRawData:           testStoredRequestsUuid[0],
+			description:            "GenerateRequestID is false and macro ID is not present, so we should not generate uuid",
+			givenRawData:           testBidRequests[0],
 			givenGenerateRequestID: false,
 			expectedID:             "ThisID",
 		},
 		{
 			description:            "GenerateRequestID is true, but rawData is a site request, we should not generate uuid",
-			givenRawData:           testStoredRequestsUuid[1],
+			givenRawData:           testBidRequests[1],
 			givenGenerateRequestID: true,
+			expectedID:             "ThisID",
+		},
+		{
+			description:            "Macro ID {{UUID}} case sensitivity check meaning a macro that is lowercase {{uuid}} shouldn't generate a uuid",
+			givenRawData:           testBidRequests[2],
+			givenGenerateRequestID: false,
 			expectedID:             "ThisID",
 		},
 	}
@@ -1226,7 +1244,7 @@ func TestOversizedRequest(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: int64(len(reqBody) - 1)},
-		&metricsConfig.DummyMetricsEngine{},
+		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		false,
@@ -1262,7 +1280,7 @@ func TestRequestSizeEdgeCase(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: int64(len(reqBody))},
-		&metricsConfig.DummyMetricsEngine{},
+		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		false,
@@ -1296,7 +1314,7 @@ func TestNoEncoding(t *testing.T) {
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		&metricsConfig.DummyMetricsEngine{},
+		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
@@ -1372,7 +1390,7 @@ func TestContentType(t *testing.T) {
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		&metricsConfig.DummyMetricsEngine{},
+		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
@@ -1693,7 +1711,7 @@ func TestValidateImpExt(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: int64(8096)},
-		&metricsConfig.DummyMetricsEngine{},
+		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{"disabledbidder": "The bidder 'disabledbidder' has been disabled."},
 		false,
@@ -1740,7 +1758,7 @@ func TestCurrencyTrunc(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{},
-		&metricsConfig.DummyMetricsEngine{},
+		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		false,
@@ -1785,7 +1803,7 @@ func TestCCPAInvalid(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{},
-		&metricsConfig.DummyMetricsEngine{},
+		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		false,
@@ -1834,7 +1852,7 @@ func TestNoSaleInvalid(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{},
-		&metricsConfig.DummyMetricsEngine{},
+		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		false,
@@ -1886,7 +1904,7 @@ func TestValidateSourceTID(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		cfg,
-		&metricsConfig.DummyMetricsEngine{},
+		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		false,
@@ -1928,7 +1946,7 @@ func TestSChainInvalid(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{},
-		&metricsConfig.DummyMetricsEngine{},
+		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		false,
@@ -2148,7 +2166,7 @@ func TestEidPermissionsInvalid(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{},
-		&metricsConfig.DummyMetricsEngine{},
+		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		false,
@@ -2399,7 +2417,7 @@ func TestIOS14EndToEnd(t *testing.T) {
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		&metricsConfig.DummyMetricsEngine{},
+		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
@@ -2428,7 +2446,7 @@ func TestAuctionWarnings(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: int64(len(reqBody))},
-		&metricsConfig.DummyMetricsEngine{},
+		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		false,
@@ -2468,7 +2486,7 @@ func TestParseRequestParseImpInfoError(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: int64(len(reqBody))},
-		&metricsConfig.DummyMetricsEngine{},
+		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		false,
@@ -3233,8 +3251,10 @@ func (e *brokenExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequ
 // first below is valid JSON
 // second below is identical to first but with extra '}' for invalid JSON
 var testStoredRequestData = map[string]json.RawMessage{
+	"1": json.RawMessage(`{"id": "{{UUID}}"}`),
 	"2": json.RawMessage(`{
-"tmax": 500,
+		"id": "{{uuid}}",
+		"tmax": 500,
 		"ext": {
 			"prebid": {
 				"targeting": {
@@ -3244,7 +3264,7 @@ var testStoredRequestData = map[string]json.RawMessage{
 		}
 	}`),
 	"3": json.RawMessage(`{
-"tmax": 500,
+		"tmax": 500,
 				"ext": {
 						"prebid": {
 								"targeting": {
@@ -3679,7 +3699,7 @@ var testStoredImps = []string{
 	``,
 }
 
-var testStoredRequestsUuid = []string{
+var testBidRequests = []string{
 	`{
 		"id": "ThisID",
 		"app": {
@@ -3776,6 +3796,60 @@ var testStoredRequestsUuid = []string{
 			}
 		}
 	}`,
+	`{
+		"id": "ThisID",
+		"app": {
+			"id": "123"
+		},
+		"imp": [
+			{
+				"ext": {
+					"prebid": {
+						"storedrequest": {
+							"id": "2"
+						},
+						"options": {
+							"echovideoattrs": false
+						}
+					}
+				}
+			}
+		],
+		"ext": {
+			"prebid": {
+				"storedrequest": {
+					"id": "2"
+				}
+			}
+		}
+	}`,
+	`{
+		"id": "ThisID",
+		"app": {
+			"id": "123"
+		},
+		"imp": [
+			{
+				"ext": {
+					"prebid": {
+						"storedrequest": {
+							"id": "1"
+						},
+						"options": {
+							"echovideoattrs": false
+						}
+					}
+				}
+			}
+		],
+		"ext": {
+			"prebid": {
+				"storedrequest": {
+					"id": "1"
+				}
+			}
+		}
+	}`,
 }
 
 type mockStoredReqFetcher struct {
@@ -3848,4 +3922,36 @@ type fakeUUIDGenerator struct {
 
 func (f fakeUUIDGenerator) Generate() (string, error) {
 	return f.id, f.err
+}
+
+func TestValidateBanner(t *testing.T) {
+	impIndex := 0
+
+	testCases := []struct {
+		description    string
+		banner         *openrtb2.Banner
+		impIndex       int
+		isInterstitial bool
+		expectedError  error
+	}{
+		{
+			description:    "isInterstitial Equals False (not set to 1)",
+			banner:         &openrtb2.Banner{W: nil, H: nil, Format: nil},
+			impIndex:       impIndex,
+			isInterstitial: false,
+			expectedError:  errors.New("request.imp[0].banner has no sizes. Define \"w\" and \"h\", or include \"format\" elements."),
+		},
+		{
+			description:    "isInterstitial Equals True (is set to 1)",
+			banner:         &openrtb2.Banner{W: nil, H: nil, Format: nil},
+			impIndex:       impIndex,
+			isInterstitial: true,
+			expectedError:  nil,
+		},
+	}
+
+	for _, test := range testCases {
+		result := validateBanner(test.banner, test.impIndex, test.isInterstitial)
+		assert.Equal(t, test.expectedError, result, test.description)
+	}
 }

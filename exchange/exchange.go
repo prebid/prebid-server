@@ -33,10 +33,6 @@ import (
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 )
 
-type ContextKey string
-
-const DebugContextKey = ContextKey("debugInfo")
-
 type extCacheInstructions struct {
 	cacheBids, cacheVAST, returnCreative bool
 }
@@ -190,18 +186,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		_, targData.cacheHost, targData.cachePath = e.cache.GetExtCacheData()
 	}
 
-	if debugLog == nil {
-		debugLog = &DebugLog{Enabled: false, DebugEnabledOrOverridden: false}
-	}
-
-	requestDebugInfo := getDebugInfo(r.BidRequest, requestExt)
-
-	debugInfo := debugLog.DebugEnabledOrOverridden || (requestDebugInfo && r.Account.DebugAllow)
-	debugLog.Enabled = debugLog.DebugEnabledOrOverridden || r.Account.DebugAllow
-
-	if debugInfo {
-		ctx = e.makeDebugContext(ctx, debugInfo)
-	}
+	responseDebugAllow, accountDebugAllow, debugLog := getDebugInfo(r.BidRequest, requestExt, r.Account.DebugAllow, debugLog)
 
 	bidAdjustmentFactors := getExtBidAdjustmentFactors(requestExt)
 
@@ -226,7 +211,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	// Get currency rates conversions for the auction
 	conversions := e.getAuctionCurrencyRates(requestExt.Prebid.CurrencyConversions)
 
-	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, r.Account.DebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride)
+	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, accountDebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride)
 
 	var auc *auction
 	var cacheErrs []error
@@ -270,7 +255,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 				errs = append(errs, dealErrs...)
 			}
 
-			bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, debugInfo, errs)
+			bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, responseDebugAllow, errs)
 			if debugLog.DebugEnabledOrOverridden {
 				if bidRespExtBytes, err := json.Marshal(bidResponseExt); err == nil {
 					debugLog.Data.Response = string(bidRespExtBytes)
@@ -288,9 +273,9 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 			targData.setTargeting(auc, r.BidRequest.App != nil, bidCategory)
 
 		}
-		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, debugInfo, errs)
+		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, responseDebugAllow, errs)
 	} else {
-		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, debugInfo, errs)
+		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, responseDebugAllow, errs)
 
 		if debugLog.DebugEnabledOrOverridden {
 
@@ -303,7 +288,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		}
 	}
 
-	if !r.Account.DebugAllow && requestDebugInfo && !debugLog.DebugOverride {
+	if !accountDebugAllow && !debugLog.DebugOverride {
 		accountDebugDisabledWarning := openrtb_ext.ExtBidderMessage{
 			Code:    errortypes.AccountLevelDebugDisabledWarningCode,
 			Message: "debug turned off for account",
@@ -411,11 +396,6 @@ func updateHbPbCatDur(bid *pbsOrtbBid, dealTier openrtb_ext.DealTier, bidCategor
 			bidCategory[bid.bid.ID] = newCatDur
 		}
 	}
-}
-
-func (e *exchange) makeDebugContext(ctx context.Context, debugInfo bool) (debugCtx context.Context) {
-	debugCtx = context.WithValue(ctx, DebugContextKey, debugInfo)
-	return
 }
 
 func (e *exchange) makeAuctionContext(ctx context.Context, needsCache bool) (auctionCtx context.Context, cancel context.CancelFunc) {

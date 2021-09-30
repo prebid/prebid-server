@@ -35,6 +35,12 @@ type rubiAppendTrackerUrlTestScenario struct {
 	expected string
 }
 
+type rubiPopulateFpdAttributesScenario struct {
+	source json.RawMessage
+	target map[string]interface{}
+	result map[string]interface{}
+}
+
 type rubiSetNetworkIdTestScenario struct {
 	bidExt            *openrtb_ext.ExtBidPrebid
 	buyer             string
@@ -1277,7 +1283,10 @@ func TestOpenRTBRequestWithImpAndAdSlotIncluded(t *testing.T) {
 				},
 				"context": {
 					"data": {
-						"adslot": "///test-adslot"
+                        "adserver": {
+                             "adslot": "/test-adslot",
+                             "name": "gam"
+                        }
 					}
 				}
 			}`),
@@ -1302,14 +1311,52 @@ func TestOpenRTBRequestWithImpAndAdSlotIncluded(t *testing.T) {
 	if err := json.Unmarshal(rubiconReq.Imp[0].Ext, &rpImpExt); err != nil {
 		t.Fatal("Error unmarshalling imp.ext")
 	}
+	assert.Equal(t, rpImpExt.GPID, "/test-adslot")
+}
 
-	rubiconExtInventory := make(map[string]interface{})
-	if err := json.Unmarshal(rpImpExt.RP.Target, &rubiconExtInventory); err != nil {
-		t.Fatal("Error unmarshalling imp.ext.rp.target")
+func TestOpenRTBFirstPartyDataPopulating(t *testing.T) {
+	testScenarios := []rubiPopulateFpdAttributesScenario{
+		{
+			source: json.RawMessage(`{"sourceKey": ["sourceValue", "sourceValue2"]}`),
+			target: map[string]interface{}{"targetKey": []interface{}{"targetValue"}},
+			result: map[string]interface{}{"targetKey": []interface{}{"targetValue"}, "sourceKey": []interface{}{"sourceValue", "sourceValue2"}},
+		},
+		{
+			source: json.RawMessage(`{"sourceKey": ["sourceValue", "sourceValue2"]}`),
+			target: make(map[string]interface{}),
+			result: map[string]interface{}{"sourceKey": []interface{}{"sourceValue", "sourceValue2"}},
+		},
+		{
+			source: json.RawMessage(`{"sourceKey": "sourceValue"}`),
+			target: make(map[string]interface{}),
+			result: map[string]interface{}{"sourceKey": [1]string{"sourceValue"}},
+		},
+		{
+			source: json.RawMessage(`{"sourceKey": true, "sourceKey2": [true, false, true]}`),
+			target: make(map[string]interface{}),
+			result: map[string]interface{}{"sourceKey": [1]string{"true"}, "sourceKey2": []string{"true", "false", "true"}},
+		},
+		{
+			source: json.RawMessage(`{"sourceKey": 1, "sourceKey2": [1, 2, 3]}`),
+			target: make(map[string]interface{}),
+			result: map[string]interface{}{"sourceKey": [1]string{"1"}},
+		},
+		{
+			source: json.RawMessage(`{"sourceKey": 1, "sourceKey2": 3.23}`),
+			target: make(map[string]interface{}),
+			result: map[string]interface{}{"sourceKey": [1]string{"1"}},
+		},
+		{
+			source: json.RawMessage(`{"sourceKey": {}}`),
+			target: make(map[string]interface{}),
+			result: make(map[string]interface{}),
+		},
 	}
 
-	assert.Equal(t, "test-adslot", rubiconExtInventory["dfp_ad_unit_code"],
-		"Unexpected dfp_ad_unit_code: %s", rubiconExtInventory["dfp_ad_unit_code"])
+	for _, scenario := range testScenarios {
+		populateFirstPartyDataAttributes(scenario.source, scenario.target)
+		assert.Equal(t, scenario.result, scenario.target)
+	}
 }
 
 func TestOpenRTBRequestWithBadvOverflowed(t *testing.T) {

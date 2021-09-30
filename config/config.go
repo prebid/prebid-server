@@ -511,9 +511,9 @@ func New(v *viper.Viper) (*Configuration, error) {
 		c.GDPR.NonStandardPublisherMap[c.GDPR.NonStandardPublishers[i]] = s
 	}
 
-	c.GDPR.EEACountriesMap = make(map[string]struct{})
-	for i := 0; i < len(c.GDPR.EEACountriesMap); i++ {
-		c.GDPR.NonStandardPublisherMap[c.GDPR.EEACountries[i]] = s
+	c.GDPR.EEACountriesMap = make(map[string]struct{}, len(c.GDPR.EEACountries))
+	for _, v := range c.GDPR.EEACountries {
+		c.GDPR.EEACountriesMap[v] = s
 	}
 
 	// To look for a purpose's vendor exceptions in O(1) time, for each purpose we fill this hash table located in the
@@ -869,6 +869,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.viewdeos.endpoint", "http://ghb.sync.viewdeos.com/pbs/ortb")
 	v.SetDefault("adapters.visx.endpoint", "https://t.visx.net/s2s_bid?wrapperType=s2s_prebid_standard:0.1.0")
 	v.SetDefault("adapters.vrtcal.endpoint", "http://rtb.vrtcal.com/bidder_prebid.vap?ssp=1804")
+	v.SetDefault("adapters.yahoossp.disabled", true)
 	v.SetDefault("adapters.yeahmobi.endpoint", "https://{{.Host}}/prebid/bid")
 	v.SetDefault("adapters.yieldlab.endpoint", "https://ad.yieldlab.net/yp/")
 	v.SetDefault("adapters.yieldmo.endpoint", "https://ads.yieldmo.com/exchange/prebid-server")

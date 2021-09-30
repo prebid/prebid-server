@@ -10,6 +10,7 @@ type ExtImpRubicon struct {
 	SiteId    int                `json:"siteId"`
 	ZoneId    int                `json:"zoneId"`
 	Inventory json.RawMessage    `json:"inventory,omitempty"`
+	Keywords  []string           `json:"keywords,omitempty"`
 	Visitor   json.RawMessage    `json:"visitor,omitempty"`
 	Video     rubiconVideoParams `json:"video"`
 	Debug     impExtRubiconDebug `json:"debug,omitempty"`
