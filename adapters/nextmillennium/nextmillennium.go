@@ -30,18 +30,14 @@ type NextMillenniumBidRequest struct {
 
 //MakeRequests prepares request information for prebid-server core
 func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	pub2impressions, imps, err := getImpressionsInfo(request.Imp)
-	if len(imps) == 0 {
+	resImps, err := getImpressionsInfo(request.Imp)
+	if len(resImps) == 0 {
 		return nil, err
 	}
 
-	if len(pub2impressions) == 0 {
-		return nil, err
-	}
-
-	result := make([]*adapters.RequestData, 0, len(pub2impressions))
-	for k, imps := range pub2impressions {
-		bidRequest, err := adapter.buildAdapterRequest(request, &k, imps)
+	result := make([]*adapters.RequestData, 0, len(resImps))
+	for _, imps := range resImps {
+		bidRequest, err := adapter.buildAdapterRequest(request, imps, request.Imp)
 		if err != nil {
 			return nil, []error{err}
 		} else {
@@ -52,11 +48,7 @@ func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adap
 }
 
 // getImpressionsInfo checks each impression for validity and returns impressions copy with corresponding exts
-func getImpressionsInfo(imps []openrtb2.Imp) (map[openrtb_ext.ImpExtNextMillennium][]openrtb2.Imp, []openrtb2.Imp, []error) {
-	errors := make([]error, 0, len(imps))
-	resImps := make([]openrtb2.Imp, 0, len(imps))
-	res := make(map[openrtb_ext.ImpExtNextMillennium][]openrtb2.Imp)
-
+func getImpressionsInfo(imps []openrtb2.Imp) (resImps []*openrtb_ext.ImpExtNextMillennium, errors []error) {
 	for _, imp := range imps {
 		impExt, err := getImpressionExt(&imp)
 		if err != nil {
@@ -68,13 +60,10 @@ func getImpressionsInfo(imps []openrtb2.Imp) (map[openrtb_ext.ImpExtNextMillenni
 			continue
 		}
 
-		if res[*impExt] == nil {
-			res[*impExt] = make([]openrtb2.Imp, 0)
-		}
-		res[*impExt] = append(res[*impExt], imp)
-		resImps = append(resImps, imp)
+		resImps = append(resImps, impExt)
 	}
-	return res, resImps, errors
+
+	return
 }
 
 func validateImpression(impExt *openrtb_ext.ImpExtNextMillennium) error {
