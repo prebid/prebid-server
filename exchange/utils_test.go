@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/prebid/prebid-server/firstpartydata"
 	"testing"
 
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
@@ -491,16 +492,16 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 }
 
 func TestCleanOpenRTBRequestsWithFPD(t *testing.T) {
-	fpd := make(map[openrtb_ext.BidderName]*openrtb_ext.ORTB2)
+	fpd := make(map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData)
 
-	apnFpd := openrtb_ext.ORTB2{
+	apnFpd := firstpartydata.ResolvedFirstPartyData{
 		Site: &openrtb2.Site{Name: "fpdApnSite"},
 		App:  &openrtb2.App{Name: "fpdApnApp"},
 		User: &openrtb2.User{Keywords: "fpdApnUser"},
 	}
 	fpd[openrtb_ext.BidderName("appnexus")] = &apnFpd
 
-	brightrollFpd := openrtb_ext.ORTB2{
+	brightrollFpd := firstpartydata.ResolvedFirstPartyData{
 		Site: &openrtb2.Site{Name: "fpdBrightrollSite"},
 		App:  &openrtb2.App{Name: "fpdBrightrollApp"},
 		User: &openrtb2.User{Keywords: "fpdBrightrollUser"},
@@ -2617,15 +2618,15 @@ func TestApplyFPD(t *testing.T) {
 	bidderNameTest := openrtb_ext.BidderName("test")
 	bidderNameNotNilFPD := openrtb_ext.BidderName("notNilFPD")
 	bidderNameApp := openrtb_ext.BidderName("AppFPD")
-	fpd := map[openrtb_ext.BidderName]*openrtb_ext.ORTB2{}
-	fpd[bidderNameAppnexus] = &openrtb_ext.ORTB2{Site: &openrtb2.Site{ID: "SiteId"}}
-	fpd[bidderNameTest] = &openrtb_ext.ORTB2{Site: nil, App: nil, User: nil}
-	fpd[bidderNameNotNilFPD] = &openrtb_ext.ORTB2{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}, User: &openrtb2.User{ID: "UserId"}}
-	fpd[bidderNameApp] = &openrtb_ext.ORTB2{App: &openrtb2.App{ID: "AppId"}}
+	fpd := map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData{}
+	fpd[bidderNameAppnexus] = &firstpartydata.ResolvedFirstPartyData{Site: &openrtb2.Site{ID: "SiteId"}}
+	fpd[bidderNameTest] = &firstpartydata.ResolvedFirstPartyData{Site: nil, App: nil, User: nil}
+	fpd[bidderNameNotNilFPD] = &firstpartydata.ResolvedFirstPartyData{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}, User: &openrtb2.User{ID: "UserId"}}
+	fpd[bidderNameApp] = &firstpartydata.ResolvedFirstPartyData{App: &openrtb2.App{ID: "AppId"}}
 
 	testCases := []struct {
 		description   string
-		inputFpd      map[openrtb_ext.BidderName]*openrtb_ext.ORTB2
+		inputFpd      map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData
 		bidderName    openrtb_ext.BidderName
 		inputRequest  openrtb2.BidRequest
 		outputRequest openrtb2.BidRequest

@@ -34,6 +34,8 @@
       "name": "apnSiteName",
       "page": "http://www.foobar.com/1234.html",
       "domain": "apnSiteDomain",
+      "cat": ["books", "novels"],
+      "search": "book search",
       "publisher": {
         "id": "1"
       },
@@ -54,6 +56,16 @@
       },
       "ext": {
         "data": {
+          "id":"apnSiteId",
+          "content": {
+            "episode": 7,
+            "title": "apnEpisodeName",
+            "len": 600,
+            "data": [{
+              "id": "siteData3",
+              "name": "siteName3"
+            }]
+          },
           "morefpdData": "morefpddata",
           "siteFpddata": "siteFpddata",
           "testSiteFpd": "testSite",

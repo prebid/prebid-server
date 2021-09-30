@@ -52,9 +52,11 @@
     "user": {
       "id": "reqUserID",
       "yob": 1982,
+      "gender": "M",
       "ext": {
         "userext":123,
         "data": {
+          "id":"apnUserId",
           "testUserFpd": "testuser",
           "morefpdData": "morefpddata",
           "userFpddata": "siteFpddata",

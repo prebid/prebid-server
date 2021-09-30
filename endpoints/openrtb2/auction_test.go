@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/prebid/prebid-server/firstpartydata"
 	"io"
 	"io/ioutil"
 	"net"
@@ -2936,7 +2937,7 @@ func TestFPDHoldAuction(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		nil,
-		&metricsConfig.DummyMetricsEngine{},
+		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		false,
@@ -2983,9 +2984,9 @@ func TestFPDHoldAuction(t *testing.T) {
 
 			actualRequest := deps.ex.(*warningsCheckExchange).auctionRequest
 
-			assert.Equal(t, len(actualRequest.FirstPartyData), len(fpdFile.ResultBiddersFPD))
+			assert.Equal(t, len(actualRequest.FirstPartyData), len(fpdFile.ResultBiddersFPDOpenRTB))
 
-			for k, expectedValue := range fpdFile.ResultBiddersFPD {
+			for k, expectedValue := range fpdFile.ResultBiddersFPDOpenRTB {
 				actualValue := actualRequest.FirstPartyData[k]
 
 				if expectedValue.Site != nil {
@@ -3058,10 +3059,11 @@ func loadFpdFile(filename string) (fpdFile, error) {
 }
 
 type fpdFile struct {
-	InputRequestData  json.RawMessage                               `json:"inputRequestData,omitempty"`
-	ResultRequestData json.RawMessage                               `json:"resultRequestData,omitempty"`
-	ResultBiddersFPD  map[openrtb_ext.BidderName]*openrtb_ext.ORTB2 `json:"resultBiddersFPD,omitempty"`
-	ValidationErrors  []string                                      `json:"validationErrors,omitempty"`
+	InputRequestData        json.RawMessage                                                   `json:"inputRequestData,omitempty"`
+	ResultRequestData       json.RawMessage                                                   `json:"resultRequestData,omitempty"`
+	ResultBiddersFPD        map[openrtb_ext.BidderName]*openrtb_ext.ORTB2                     `json:"resultBiddersFPD,omitempty"`
+	ResultBiddersFPDOpenRTB map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData `json:"resultBiddersFPDOpenRTB,omitempty"`
+	ValidationErrors        []string                                                          `json:"validationErrors,omitempty"`
 }
 
 // warningsCheckExchange is a well-behaved exchange which stores all incoming warnings.

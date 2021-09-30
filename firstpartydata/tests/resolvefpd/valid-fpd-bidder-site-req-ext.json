@@ -57,6 +57,8 @@
       "ext": {
         "testSiteExt": 123,
         "data": {
+          "ref":"fpdRef",
+          "id":"apnSiteId",
           "moreFpd": {
             "fpd": 123
           },

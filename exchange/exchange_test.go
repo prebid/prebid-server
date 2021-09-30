@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/prebid/prebid-server/firstpartydata"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -3626,9 +3627,9 @@ func TestFPD(t *testing.T) {
 		TMax: 500,
 	}
 
-	fpd := make(map[openrtb_ext.BidderName]*openrtb_ext.ORTB2)
+	fpd := make(map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData)
 
-	apnFpd := openrtb_ext.ORTB2{
+	apnFpd := firstpartydata.ResolvedFirstPartyData{
 		Site: &openrtb2.Site{ID: "fpdSite"},
 		App:  &openrtb2.App{ID: "fpdApp"},
 		User: &openrtb2.User{ID: "fpdUser"},
@@ -3639,7 +3640,7 @@ func TestFPD(t *testing.T) {
 	e.adapterMap = map[openrtb_ext.BidderName]adaptedBidder{
 		openrtb_ext.BidderAppnexus: &capturingRequestBidder{},
 	}
-	e.me = &metricsConf.DummyMetricsEngine{}
+	e.me = &metricsConf.NilMetricsEngine{}
 	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 
 	ctx := context.Background()

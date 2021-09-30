@@ -41,6 +41,8 @@
       },
       "ext": {
         "data": {
+          "id":"apnSiteId",
+          "ref":"fpdRef",
           "moreFpd": {
             "fpd": 123
           },
