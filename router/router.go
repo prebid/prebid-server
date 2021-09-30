@@ -301,7 +301,10 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		videoEndpoint = aspects.QueuedRequestTimeout(videoEndpoint, cfg.RequestTimeoutHeaders, r.MetricsEngine, metrics.ReqTypeVideo)
 	}
 
-	r.POST("/auction", endpoints.Auction(cfg, syncersByBidder, gdprPerms, r.MetricsEngine, dataCache, exchanges))
+	if cfg.EnableLegacyAuction {
+		r.POST("/auction", endpoints.Auction(cfg, syncersByBidder, gdprPerms, r.MetricsEngine, dataCache, exchanges))
+	}
+
 	r.POST("/openrtb2/auction", openrtbEndpoint)
 	r.POST("/openrtb2/video", videoEndpoint)
 	r.GET("/openrtb2/amp", ampEndpoint)
