@@ -1,10 +1,6 @@
 maintainer:
   email: partnerintegrations@richaudience.com
 gvlVendorID: 108
-gdpr:
-  timeouts_ms:
-    init_vendorlist_fetches: 5000
-    active_vendorlist_fetch: 5000
 modifyingVastXmlAllowed: true
 capabilities:
   site:

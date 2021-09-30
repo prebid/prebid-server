@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
 
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
@@ -39,30 +38,24 @@ type richaudienceUserExt struct {
 }
 
 type richaudienceDevice struct {
-	//GEO only Java, IFA
-	IP  string `json:"ip,omitempty"`
-	Lmt int8   `json:"lmt,omitempty"`
-	DNT int8   `json:"dnt,omitempty"`
-	UA  string `json:"ua,omitempty"`
+	IP   string `json:"ip,omitempty"`
+	IPv6 string `json:"ipv6,omitempty"`
+	Lmt  int8   `json:"lmt,omitempty"`
+	DNT  int8   `json:"dnt,omitempty"`
+	UA   string `json:"ua,omitempty"`
 }
 type richaudienceSite struct {
-	//Site: Cat IAB
 	Domain string `json:"domain,omitempty"`
 	Page   string `json:"page,omitempty"`
 }
 
-// Builder builds a new instance of the Foo adapter for the given bidder with the given config.
+// Builder builds a new instance of the RichAudience adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 
-	if config.Endpoint != "" && strings.Contains(config.Endpoint, "richaudience") {
-		bidder := &adapter{
-			endpoint: config.Endpoint,
-		}
-
-		return bidder, nil
+	bidder := &adapter{
+		endpoint: config.Endpoint,
 	}
-
-	return nil, nil
+	return bidder, nil
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -72,16 +65,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	raiErrors := make([]error, 0, len(request.Imp))
 
-	var regsExt *openrtb_ext.ExtRegs
-	if request.Regs != nil && request.Regs.Ext != nil {
-		if err := json.Unmarshal(request.Regs.Ext, &regsExt); err != nil {
-			raiErrors = append(raiErrors, &errortypes.BadInput{
-				Message: err.Error(),
-			})
-			return nil, raiErrors
-		}
-	}
-
 	setHeaders(&raiHeaders)
 
 	richaudienceRequest.ID = request.ID
@@ -89,10 +72,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	resImps, err := setImp(request, &richaudienceRequest)
 
 	if err != nil {
-		raiErrors = append(raiErrors, &errortypes.BadInput{
-			Message: err.Error(),
-		})
-		return nil, raiErrors
+		return nil, []error{err}
 	}
 
 	richaudienceRequest.Imp = resImps
@@ -101,27 +81,17 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	err = setDevice(request, &richaudienceRequest)
 	if err != nil {
-		raiErrors = append(raiErrors, &errortypes.BadInput{
-			Message: err.Error(),
-		})
-		return nil, raiErrors
+		return nil, []error{err}
 	}
 
 	err = setUser(request, &richaudienceRequest, requestInfo)
 	if err != nil {
-		raiErrors = append(raiErrors, &errortypes.BadInput{
-			Message: err.Error(),
-		})
-		return nil, raiErrors
+		return nil, []error{err}
 	}
 
-	//User: consent
 	req, err := json.Marshal(richaudienceRequest)
 	if err != nil {
-		raiErrors = append(raiErrors, &errortypes.BadInput{
-			Message: err.Error(),
-		})
-		return nil, raiErrors
+		return nil, []error{err}
 	}
 
 	requestData := &adapters.RequestData{
@@ -170,10 +140,10 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
 	bidResponse.Currency = response.Cur
 	for _, seatBid := range response.SeatBid {
-		for _, bid := range seatBid.Bid {
+		for i, _ := range seatBid.Bid {
 			b := &adapters.TypedBid{
-				Bid:     &bid,
-				BidType: "banner",
+				Bid:     &seatBid.Bid[i],
+				BidType: openrtb_ext.BidTypeBanner,
 			}
 			bidResponse.Bids = append(bidResponse.Bids, b)
 		}
@@ -189,10 +159,6 @@ func setHeaders(raiHeaders *http.Header) {
 }
 
 func setImp(request *openrtb2.BidRequest, richaudienceRequest *richaudienceRequest) (resImps []openrtb2.Imp, err error) {
-	//Imp: Id, tagId, Secure, Bidfloor, Bidfloorcur, Banner, test
-	//Banner: Id, W, H, Format
-	//Format: W, H
-
 	for _, imp := range request.Imp {
 		var secure = int8(0)
 		raiExt, errImp := parseImpExt(&imp)
@@ -206,14 +172,8 @@ func setImp(request *openrtb2.BidRequest, richaudienceRequest *richaudienceReque
 				imp.TagID = raiExt.Pid
 			}
 
-			if raiExt.TestRa {
+			if raiExt.Test {
 				richaudienceRequest.Test = int8(1)
-			}
-
-			if raiExt.BidFloor <= 0 {
-				imp.BidFloor = 0.00001
-			} else {
-				imp.BidFloor = raiExt.BidFloor
 			}
 
 			if raiExt.BidFloorCur == "" {
@@ -224,29 +184,19 @@ func setImp(request *openrtb2.BidRequest, richaudienceRequest *richaudienceReque
 		}
 
 		if request.Site != nil && request.Site.Page != "" {
-			pageURL, error := url.Parse(request.Site.Page)
-			if error == nil && pageURL.Scheme == "https" {
+			pageURL, err := url.Parse(request.Site.Page)
+			if err == nil && pageURL.Scheme == "https" {
 				secure = int8(1)
 			}
 		}
 		imp.Secure = &secure
 
-		if imp.Banner == nil {
-			err = &errortypes.BadInput{
-				Message: "Banner Object not found",
-			}
-			return nil, err
-		} else {
-			raiBanner := *imp.Banner
-			if raiBanner.W == nil && raiBanner.H == nil {
-				if len(raiBanner.Format) == 0 {
-					err = &errortypes.BadInput{
-						Message: "Format Object not found",
-					}
-					return nil, err
-				} else {
-					imp.Banner = &raiBanner
+		if imp.Banner.W == nil && imp.Banner.H == nil {
+			if len(imp.Banner.Format) == 0 {
+				err = &errortypes.BadInput{
+					Message: "Format Object not found",
 				}
+				return nil, err
 			}
 		}
 
@@ -260,8 +210,8 @@ func setSite(request *openrtb2.BidRequest, richaudienceRequest *richaudienceRequ
 	if request.Site != nil {
 		if request.Site.Page != "" {
 			if request.Site.Domain == "" {
-				pageURL, error := url.Parse(request.Site.Page)
-				if error == nil {
+				pageURL, err := url.Parse(request.Site.Page)
+				if err == nil {
 					richaudienceRequest.Site.Domain = pageURL.Host
 				}
 			} else {
@@ -275,25 +225,23 @@ func setSite(request *openrtb2.BidRequest, richaudienceRequest *richaudienceRequ
 
 func setDevice(request *openrtb2.BidRequest, richaudienceRequest *richaudienceRequest) (err error) {
 
-	if request.Device.IP == "" {
+	if request.Device.IP == "" && request.Device.IPv6 == "" {
 		err = &errortypes.BadInput{
 			Message: "request.Device.IP is required",
 		}
 		return err
-	} else {
+	} else if request.Device.IP != "" {
 		richaudienceRequest.Device.IP = request.Device.IP
+	} else if request.Device.IPv6 != "" {
+		richaudienceRequest.Device.IPv6 = request.Device.IPv6
 	}
 
 	if request.Device.DNT != nil {
 		richaudienceRequest.Device.DNT = *request.Device.DNT
-	} else {
-		richaudienceRequest.Device.DNT = 0
 	}
 
 	if request.Device.Lmt != nil {
 		richaudienceRequest.Device.Lmt = *request.Device.Lmt
-	} else {
-		richaudienceRequest.Device.Lmt = 0
 	}
 
 	if request.Device.UA != "" {
@@ -312,6 +260,7 @@ func setUser(request *openrtb2.BidRequest, richaudienceRequest *richaudienceRequ
 				err = &errortypes.BadInput{
 					Message: "request.ext.user.buyerUID is required",
 				}
+				return err
 			}
 		}
 
@@ -330,10 +279,9 @@ func setUser(request *openrtb2.BidRequest, richaudienceRequest *richaudienceRequ
 		}
 	}
 
-	return
+	return nil
 }
 
-//utils
 func parseImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpRichaudience, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {

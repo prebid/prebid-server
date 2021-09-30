@@ -17,7 +17,7 @@
            "bidder": {
               "pid": "OsNsyeF68q",
               "supplyType": "site",
-              "testRa": true
+              "test": true
             }
           }
         }
@@ -37,6 +37,6 @@
     
     "expectedMakeRequestsErrors": [{
         "value": "request.ext.user.buyerUID is required",
-        "comparison": "literal"
+        "comparison": "regex"
       }]
   }

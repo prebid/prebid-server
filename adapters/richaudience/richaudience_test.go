@@ -124,7 +124,7 @@ func TestGetRequest(t *testing.T) {
 					{W: 250, H: 300},
 				},
 			},
-			Ext: json.RawMessage(`{"pid":"OsNsyeF68q","supplyType":"site","testRa":true, "bidfloor": 1}`)},
+			Ext: json.RawMessage(`{"pid":"OsNsyeF68q","supplyType":"site","test":true, "bidfloor": 1}`)},
 		},
 		Device: &openrtb2.Device{
 			H:  300,
@@ -205,7 +205,7 @@ func TestResponseOK(t *testing.T) {
 					{W: 250, H: 300},
 				},
 			},
-			Ext: json.RawMessage(`{"pid":"OsNsyeF68q","supplyType":"site","testRa":true, "bidfloor": 1}`)},
+			Ext: json.RawMessage(`{"pid":"OsNsyeF68q","supplyType":"site","test":true, "bidfloor": 1}`)},
 		},
 		Device: &openrtb2.Device{
 			H:  300,
@@ -292,16 +292,6 @@ func TestResponseOK(t *testing.T) {
 
 	t.Log(bidResponse)
 	t.Log(errs)
-}
-
-func TestBadConfig(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderRichaudience, config.Adapter{
-		Endpoint:         `https://test.ortb`,
-		ExtraAdapterInfo: `{foo:42}`,
-	})
-
-	assert.Empty(t, bidder)
-	assert.NoError(t, buildErr)
 }
 
 func TestEmptyConfig(t *testing.T) {

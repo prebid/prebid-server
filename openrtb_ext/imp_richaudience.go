@@ -5,5 +5,5 @@ type ExtImpRichaudience struct {
 	SupplyType  string  `json:"supplyType"`
 	BidFloor    float64 `json:"bid_floor"`
 	BidFloorCur string  `json:"bid_floor_cur"`
-	TestRa      bool    `json:"testra"`
+	Test        bool    `json:"test"`
 }

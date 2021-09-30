@@ -35,7 +35,7 @@ func TestInvalidParams(t *testing.T) {
 
 var validParams = []string{
 	`{"pid":"hash", "supplyType":"site"}`,
-	`{"pid":"hash", "supplyType":"site", "TestRa": true}`,
+	`{"pid":"hash", "supplyType":"site", "test": true}`,
 }
 
 var invalidParams = []string{
@@ -45,4 +45,5 @@ var invalidParams = []string{
 	`{"pid": "hash", "supplyType":11}`,
 	`{"pid": "hash"}`,
 	`{"supplyType":"site"}`,
+	`{}`,
 }

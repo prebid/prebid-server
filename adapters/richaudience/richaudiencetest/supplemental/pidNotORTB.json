@@ -17,7 +17,7 @@
          "bidder": {
             "pid": "ADb1f40rmi",
             "supplyType": "site",
-            "testRa": true
+            "test": true
           }
         }
       }
@@ -59,7 +59,7 @@
                 "bidder": {
                   "pid": "ADb1f40rmi",
                   "supplyType": "site",
-                 "testRa": true
+                 "test": true
                 }
               }
             }

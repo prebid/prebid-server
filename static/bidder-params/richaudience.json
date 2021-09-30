@@ -13,15 +13,15 @@
 			"type": "string",
 			"description": "Type integration"
 		},
-		"testRa": {
+		"test": {
 			"type": "boolean",
 			"description": "TestMode"
 		},
-		"BidFloor": {
+		"bidFloor": {
 			"type": "number",
 			"description": "floor price"
 		},
-		"BidFloorCur": {
+		"bidFloorCur": {
 			"type": "string",
 			"description": "currency floor price"
 		}

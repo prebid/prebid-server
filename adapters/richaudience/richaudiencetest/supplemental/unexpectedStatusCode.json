@@ -16,7 +16,7 @@
            "bidder": {
               "pid": "OsNsyeF68q",
               "supplyType": "site",
-              "testRa": false
+              "test": false
             }
           }
         }
@@ -57,7 +57,7 @@
                   "bidder": {
                     "pid": "OsNsyeF68q",
                     "supplyType": "site",
-                   "testRa": false
+                   "test": false
                   }
                 }
               }
