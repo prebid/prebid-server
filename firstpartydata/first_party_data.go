@@ -17,6 +17,21 @@ const (
 	userDataKey        = "userData"
 	appContentDataKey  = "appContentData"
 	siteContentDataKey = "siteContentData"
+
+	keywordsKey   = "keywords"
+	genderKey     = "gender"
+	yobKey        = "yob"
+	pageKey       = "page"
+	nameKey       = "name"
+	domainKey     = "domain"
+	catKey        = "cat"
+	sectionCatKey = "sectioncat"
+	pageCatKey    = "pagecat"
+	searchKey     = "search"
+	refKey        = "ref"
+	bundleKey     = "bundle"
+	storeUrlKey   = "storeurl"
+	verKey        = "ver"
 )
 
 type ResolvedFirstPartyData struct {
@@ -169,14 +184,26 @@ func resolveUser(fpdConfigUser *map[string]json.RawMessage, bidRequestUser *open
 	return &newUser, err
 }
 
-func unmarshalJSONToInt64(b json.RawMessage) (int64, error) {
+func unmarshalJSONToInt64(input json.RawMessage) (int64, error) {
 	var num json.Number
-	err := json.Unmarshal(b, &num)
+	err := json.Unmarshal(input, &num)
 	if err != nil {
 		return -1, err
 	}
 	resNum, err := num.Int64()
 	return resNum, err
+}
+
+func unmarshalJSONToString(input json.RawMessage) (string, error) {
+	var inputString string
+	err := json.Unmarshal(input, &inputString)
+	return inputString, err
+}
+
+func unmarshalJSONToStringArray(input json.RawMessage) ([]string, error) {
+	var inputString []string
+	err := json.Unmarshal(input, &inputString)
+	return inputString, err
 }
 
 //resolveExtension inserts remaining {site/app/user} attributes back to {site/app/user}.ext.data
@@ -209,21 +236,26 @@ func mergeUsers(original *openrtb2.User, fpdConfigUser map[string]json.RawMessag
 	var err error
 	newUser := *original
 
-	if keywords, present := fpdConfigUser["keywords"]; present {
-		newUser.Keywords = string(keywords)
-		delete(fpdConfigUser, "keywords")
-	}
-	if gender, present := fpdConfigUser["gender"]; present {
-		newUser.Gender = string(gender)
-		delete(fpdConfigUser, "gender")
-	}
-	if yob, present := fpdConfigUser["yob"]; present {
-		yobNum, err := unmarshalJSONToInt64(yob)
+	if keywords, present := fpdConfigUser[keywordsKey]; present {
+		newUser.Keywords, err = unmarshalJSONToString(keywords)
 		if err != nil {
 			return newUser, err
 		}
-		newUser.Yob = yobNum
-		delete(fpdConfigUser, "yob")
+		delete(fpdConfigUser, keywordsKey)
+	}
+	if gender, present := fpdConfigUser[genderKey]; present {
+		newUser.Gender, err = unmarshalJSONToString(gender)
+		if err != nil {
+			return newUser, err
+		}
+		delete(fpdConfigUser, genderKey)
+	}
+	if yob, present := fpdConfigUser[yobKey]; present {
+		newUser.Yob, err = unmarshalJSONToInt64(yob)
+		if err != nil {
+			return newUser, err
+		}
+		delete(fpdConfigUser, yobKey)
 	}
 
 	if len(fpdConfigUser) > 0 {
@@ -272,14 +304,16 @@ func resolveSite(fpdConfigSite *map[string]json.RawMessage, bidRequestSite *open
 	return &newSite, err
 
 }
-
 func mergeSites(originalSite *openrtb2.Site, fpdConfigSite map[string]json.RawMessage, bidderName string) (openrtb2.Site, error) {
 
 	var err error
 	newSite := *originalSite
 
-	if page, present := fpdConfigSite["page"]; present {
-		sitePage := string(page)
+	if page, present := fpdConfigSite[pageKey]; present {
+		sitePage, err := unmarshalJSONToString(page)
+		if err != nil {
+			return newSite, err
+		}
 		//apply bidder specific fpd if present
 		//result site should have ID or Page, fpd becomes incorrect if it overwrites page to empty one and ID is empty in original site
 		if sitePage == "" && newSite.Page != "" && newSite.ID == "" {
@@ -287,54 +321,63 @@ func mergeSites(originalSite *openrtb2.Site, fpdConfigSite map[string]json.RawMe
 
 		}
 		newSite.Page = sitePage
-		delete(fpdConfigSite, "page")
+		delete(fpdConfigSite, pageKey)
 	}
-	if name, present := fpdConfigSite["name"]; present {
-		newSite.Name = string(name)
-		delete(fpdConfigSite, "name")
-	}
-	if domain, present := fpdConfigSite["domain"]; present {
-		newSite.Domain = string(domain)
-		delete(fpdConfigSite, "domain")
-	}
-	if cat, present := fpdConfigSite["cat"]; present {
-		var siteCat []string
-		err := json.Unmarshal(cat, &siteCat)
+	if name, present := fpdConfigSite[nameKey]; present {
+		newSite.Name, err = unmarshalJSONToString(name)
 		if err != nil {
 			return newSite, err
 		}
-		newSite.Cat = siteCat
-		delete(fpdConfigSite, "cat")
+		delete(fpdConfigSite, nameKey)
 	}
-	if sectionCat, present := fpdConfigSite["sectioncat"]; present {
-		var siteSectionCat []string
-		err := json.Unmarshal(sectionCat, &siteSectionCat)
+	if domain, present := fpdConfigSite[domainKey]; present {
+		newSite.Domain, err = unmarshalJSONToString(domain)
 		if err != nil {
 			return newSite, err
 		}
-		newSite.SectionCat = siteSectionCat
-		delete(fpdConfigSite, "sectioncat")
+		delete(fpdConfigSite, domainKey)
 	}
-	if pageCat, present := fpdConfigSite["pagecat"]; present {
-		var sitePageCat []string
-		err := json.Unmarshal(pageCat, &sitePageCat)
+	if cat, present := fpdConfigSite[catKey]; present {
+		newSite.Cat, err = unmarshalJSONToStringArray(cat)
 		if err != nil {
 			return newSite, err
 		}
-		newSite.PageCat = sitePageCat
-		delete(fpdConfigSite, "pagecat")
+		delete(fpdConfigSite, catKey)
 	}
-	if search, present := fpdConfigSite["search"]; present {
-		newSite.Search = string(search)
-		delete(fpdConfigSite, "search")
+	if sectionCat, present := fpdConfigSite[sectionCatKey]; present {
+		newSite.SectionCat, err = unmarshalJSONToStringArray(sectionCat)
+		if err != nil {
+			return newSite, err
+		}
+		delete(fpdConfigSite, sectionCatKey)
 	}
-	if keywords, present := fpdConfigSite["keywords"]; present {
-		newSite.Keywords = string(keywords)
-		delete(fpdConfigSite, "keywords")
+	if pageCat, present := fpdConfigSite[pageCatKey]; present {
+		newSite.PageCat, err = unmarshalJSONToStringArray(pageCat)
+		if err != nil {
+			return newSite, err
+		}
+		delete(fpdConfigSite, pageCatKey)
 	}
-	if ref, present := fpdConfigSite["ref"]; present {
-		newSite.Ref = string(ref)
-		delete(fpdConfigSite, "ref")
+	if search, present := fpdConfigSite[searchKey]; present {
+		newSite.Search, err = unmarshalJSONToString(search)
+		if err != nil {
+			return newSite, err
+		}
+		delete(fpdConfigSite, searchKey)
+	}
+	if keywords, present := fpdConfigSite[keywordsKey]; present {
+		newSite.Keywords, err = unmarshalJSONToString(keywords)
+		if err != nil {
+			return newSite, err
+		}
+		delete(fpdConfigSite, keywordsKey)
+	}
+	if ref, present := fpdConfigSite[refKey]; present {
+		newSite.Ref, err = unmarshalJSONToString(ref)
+		if err != nil {
+			return newSite, err
+		}
+		delete(fpdConfigSite, searchKey)
 	}
 
 	if len(fpdConfigSite) > 0 {
@@ -391,56 +434,68 @@ func mergeApps(originalApp *openrtb2.App, fpdConfigApp map[string]json.RawMessag
 	var err error
 	newApp := *originalApp
 
-	if name, present := fpdConfigApp["name"]; present {
-		newApp.Name = string(name)
-		delete(fpdConfigApp, "name")
-	}
-	if bundle, present := fpdConfigApp["bundle"]; present {
-		newApp.Bundle = string(bundle)
-		delete(fpdConfigApp, "bundle")
-	}
-	if domain, present := fpdConfigApp["domain"]; present {
-		newApp.Domain = string(domain)
-		delete(fpdConfigApp, "domain")
-	}
-	if storeurl, present := fpdConfigApp["storeurl"]; present {
-		newApp.StoreURL = string(storeurl)
-		delete(fpdConfigApp, "storeurl")
-	}
-	if cat, present := fpdConfigApp["cat"]; present {
-		var siteCat []string
-		err := json.Unmarshal(cat, &siteCat)
+	if name, present := fpdConfigApp[nameKey]; present {
+		newApp.Name, err = unmarshalJSONToString(name)
 		if err != nil {
 			return newApp, err
 		}
-		newApp.Cat = siteCat
-		delete(fpdConfigApp, "cat")
+		delete(fpdConfigApp, nameKey)
 	}
-	if sectionCat, present := fpdConfigApp["sectioncat"]; present {
-		var siteSectionCat []string
-		err := json.Unmarshal(sectionCat, &siteSectionCat)
+	if bundle, present := fpdConfigApp[bundleKey]; present {
+		newApp.Bundle, err = unmarshalJSONToString(bundle)
 		if err != nil {
 			return newApp, err
 		}
-		newApp.SectionCat = siteSectionCat
-		delete(fpdConfigApp, "sectioncat")
+		delete(fpdConfigApp, bundleKey)
 	}
-	if pageCat, present := fpdConfigApp["pagecat"]; present {
-		var sitePageCat []string
-		err := json.Unmarshal(pageCat, &sitePageCat)
+	if domain, present := fpdConfigApp[domainKey]; present {
+		newApp.Domain, err = unmarshalJSONToString(domain)
 		if err != nil {
 			return newApp, err
 		}
-		newApp.PageCat = sitePageCat
-		delete(fpdConfigApp, "pagecat")
+		delete(fpdConfigApp, domainKey)
 	}
-	if keywords, present := fpdConfigApp["ver"]; present {
-		newApp.Ver = string(keywords)
-		delete(fpdConfigApp, "ver")
+	if storeUrl, present := fpdConfigApp[storeUrlKey]; present {
+		newApp.StoreURL, err = unmarshalJSONToString(storeUrl)
+		if err != nil {
+			return newApp, err
+		}
+		delete(fpdConfigApp, storeUrlKey)
 	}
-	if keywords, present := fpdConfigApp["keywords"]; present {
-		newApp.Keywords = string(keywords)
-		delete(fpdConfigApp, "keywords")
+	if cat, present := fpdConfigApp[catKey]; present {
+		newApp.Cat, err = unmarshalJSONToStringArray(cat)
+		if err != nil {
+			return newApp, err
+		}
+		delete(fpdConfigApp, catKey)
+	}
+	if sectionCat, present := fpdConfigApp[sectionCatKey]; present {
+		newApp.SectionCat, err = unmarshalJSONToStringArray(sectionCat)
+		if err != nil {
+			return newApp, err
+		}
+		delete(fpdConfigApp, sectionCatKey)
+	}
+	if pageCat, present := fpdConfigApp[pageCatKey]; present {
+		newApp.PageCat, err = unmarshalJSONToStringArray(pageCat)
+		if err != nil {
+			return newApp, err
+		}
+		delete(fpdConfigApp, pageCatKey)
+	}
+	if version, present := fpdConfigApp[verKey]; present {
+		newApp.Ver, err = unmarshalJSONToString(version)
+		if err != nil {
+			return newApp, err
+		}
+		delete(fpdConfigApp, verKey)
+	}
+	if keywords, present := fpdConfigApp[keywordsKey]; present {
+		newApp.Keywords, err = unmarshalJSONToString(keywords)
+		if err != nil {
+			return newApp, err
+		}
+		delete(fpdConfigApp, keywordsKey)
 	}
 
 	if len(fpdConfigApp) > 0 {
