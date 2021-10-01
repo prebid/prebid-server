@@ -1289,7 +1289,7 @@ func TestGetExtTargetData(t *testing.T) {
 	}
 }
 
-func TestGetDebugInfo(t *testing.T) {
+func TestParseRequestDebugValues(t *testing.T) {
 	type inTest struct {
 		bidRequest *openrtb2.BidRequest
 		requestExt *openrtb_ext.ExtRequest
@@ -1336,9 +1336,81 @@ func TestGetDebugInfo(t *testing.T) {
 		},
 	}
 	for _, test := range testCases {
-		actualDebugInfo := getDebugInfo(test.in.bidRequest, test.in.requestExt)
+		actualDebugInfo := parseRequestDebugValues(test.in.bidRequest, test.in.requestExt)
 
 		assert.Equal(t, test.out, actualDebugInfo, "%s. Unexpected debug value. \n", test.desc)
+	}
+}
+
+func TestSetDebugLogValues(t *testing.T) {
+
+	type aTest struct {
+		desc               string
+		inAccountDebugFlag bool
+		inDebugLog         *DebugLog
+		expectedDebugLog   *DebugLog
+	}
+
+	testGroups := []struct {
+		desc      string
+		testCases []aTest
+	}{
+
+		{
+			"nil debug log",
+			[]aTest{
+				{
+					desc:               "accountDebugFlag false, expect all false flags in resulting debugLog",
+					inAccountDebugFlag: false,
+					inDebugLog:         nil,
+					expectedDebugLog:   &DebugLog{},
+				},
+				{
+					desc:               "accountDebugFlag true, expect debugLog.Enabled to be true",
+					inAccountDebugFlag: true,
+					inDebugLog:         nil,
+					expectedDebugLog:   &DebugLog{Enabled: true},
+				},
+			},
+		},
+		{
+			"non-nil debug log",
+			[]aTest{
+				{
+					desc:               "both accountDebugFlag and DebugEnabledOrOverridden are false, expect debugLog.Enabled to be false",
+					inAccountDebugFlag: false,
+					inDebugLog:         &DebugLog{},
+					expectedDebugLog:   &DebugLog{},
+				},
+				{
+					desc:               "accountDebugFlag false but DebugEnabledOrOverridden is true, expect debugLog.Enabled to be true",
+					inAccountDebugFlag: false,
+					inDebugLog:         &DebugLog{DebugEnabledOrOverridden: true},
+					expectedDebugLog:   &DebugLog{DebugEnabledOrOverridden: true, Enabled: true},
+				},
+				{
+					desc:               "accountDebugFlag true but DebugEnabledOrOverridden is false, expect debugLog.Enabled to be true",
+					inAccountDebugFlag: true,
+					inDebugLog:         &DebugLog{},
+					expectedDebugLog:   &DebugLog{Enabled: true},
+				},
+				{
+					desc:               "Both accountDebugFlag and DebugEnabledOrOverridden are true, expect debugLog.Enabled to be true",
+					inAccountDebugFlag: true,
+					inDebugLog:         &DebugLog{DebugEnabledOrOverridden: true},
+					expectedDebugLog:   &DebugLog{DebugEnabledOrOverridden: true, Enabled: true},
+				},
+			},
+		},
+	}
+
+	for _, group := range testGroups {
+		for _, tc := range group.testCases {
+			// run
+			actualDebugLog := setDebugLogValues(tc.inAccountDebugFlag, tc.inDebugLog)
+			// assertions
+			assert.Equal(t, tc.expectedDebugLog, actualDebugLog, "%s. %s", group.desc, tc.desc)
+		}
 	}
 }
 
@@ -1864,22 +1936,39 @@ func newBidRequest(t *testing.T) *openrtb2.BidRequest {
 }
 
 func TestRandomizeList(t *testing.T) {
-	adapters := make([]openrtb_ext.BidderName, 3)
-	adapters[0] = openrtb_ext.BidderName("dummy")
-	adapters[1] = openrtb_ext.BidderName("dummy2")
-	adapters[2] = openrtb_ext.BidderName("dummy3")
+	var (
+		bidder1 = openrtb_ext.BidderName("bidder1")
+		bidder2 = openrtb_ext.BidderName("bidder2")
+		bidder3 = openrtb_ext.BidderName("bidder3")
+	)
 
-	randomizeList(adapters)
-
-	if len(adapters) != 3 {
-		t.Errorf("RandomizeList, expected a list of 3, found %d", len(adapters))
+	testCases := []struct {
+		description string
+		bidders     []openrtb_ext.BidderName
+	}{
+		{
+			description: "None",
+			bidders:     []openrtb_ext.BidderName{},
+		},
+		{
+			description: "One",
+			bidders:     []openrtb_ext.BidderName{bidder1},
+		},
+		{
+			description: "Many",
+			bidders:     []openrtb_ext.BidderName{bidder1, bidder2, bidder3},
+		},
 	}
 
-	adapters = adapters[0:1]
-	randomizeList(adapters)
+	for _, test := range testCases {
+		biddersWorkingCopy := make([]openrtb_ext.BidderName, len(test.bidders))
+		copy(biddersWorkingCopy, test.bidders)
 
-	if len(adapters) != 1 {
-		t.Errorf("RandomizeList, expected a list of 1, found %d", len(adapters))
+		randomizeList(biddersWorkingCopy)
+
+		// test all bidders are still present, ignoring order. we are testing the algorithm doesn't loose
+		// elements. we are not testing the random number generator itself.
+		assert.ElementsMatch(t, test.bidders, biddersWorkingCopy)
 	}
 }
 
@@ -2161,6 +2250,118 @@ func TestRemoveUnpermissionedEidsUnmarshalErrors(t *testing.T) {
 
 		resultErr := removeUnpermissionedEids(request, "bidderA", requestExt)
 		assert.EqualError(t, resultErr, test.expectedErr, test.description)
+	}
+}
+
+func TestGetDebugInfo(t *testing.T) {
+	type testInput struct {
+		debugEnabledOrOverridden bool
+		accountDebugFlag         bool
+	}
+	type testOut struct {
+		responseDebugAllow bool
+		accountDebugAllow  bool
+		debugLog           *DebugLog
+	}
+	type testCase struct {
+		in       testInput
+		expected testOut
+	}
+
+	testGroups := []struct {
+		desc   string
+		bidReq *openrtb2.BidRequest
+		tests  []testCase
+	}{
+		{
+			"Bid request doesn't call for debug info",
+			&openrtb2.BidRequest{Test: 0},
+			[]testCase{
+				{
+					testInput{debugEnabledOrOverridden: false, accountDebugFlag: false},
+					testOut{
+						responseDebugAllow: false,
+						accountDebugAllow:  false,
+						debugLog:           &DebugLog{Enabled: false},
+					},
+				},
+				{
+					testInput{debugEnabledOrOverridden: false, accountDebugFlag: true},
+					testOut{
+						responseDebugAllow: false,
+						accountDebugAllow:  false,
+						debugLog:           &DebugLog{Enabled: true},
+					},
+				},
+				{
+					testInput{debugEnabledOrOverridden: true, accountDebugFlag: false},
+					testOut{
+						responseDebugAllow: true,
+						accountDebugAllow:  false,
+						debugLog:           &DebugLog{DebugEnabledOrOverridden: true, Enabled: true},
+					},
+				},
+				{
+					testInput{debugEnabledOrOverridden: true, accountDebugFlag: true},
+					testOut{
+						responseDebugAllow: true,
+						accountDebugAllow:  true,
+						debugLog:           &DebugLog{DebugEnabledOrOverridden: true, Enabled: true},
+					},
+				},
+			},
+		},
+		{
+			"Bid request requires debug info",
+			&openrtb2.BidRequest{Test: 1},
+			[]testCase{
+				{
+					testInput{debugEnabledOrOverridden: false, accountDebugFlag: false},
+					testOut{
+						responseDebugAllow: false,
+						accountDebugAllow:  false,
+						debugLog:           &DebugLog{Enabled: false},
+					},
+				},
+				{
+					testInput{debugEnabledOrOverridden: false, accountDebugFlag: true},
+					testOut{
+						responseDebugAllow: true,
+						accountDebugAllow:  true,
+						debugLog:           &DebugLog{Enabled: true},
+					},
+				},
+				{
+					testInput{debugEnabledOrOverridden: true, accountDebugFlag: false},
+					testOut{
+						responseDebugAllow: true,
+						accountDebugAllow:  false,
+						debugLog:           &DebugLog{DebugEnabledOrOverridden: true, Enabled: true},
+					},
+				},
+				{
+					testInput{debugEnabledOrOverridden: true, accountDebugFlag: true},
+					testOut{
+						responseDebugAllow: true,
+						accountDebugAllow:  true,
+						debugLog:           &DebugLog{DebugEnabledOrOverridden: true, Enabled: true},
+					},
+				},
+			},
+		},
+	}
+	for _, group := range testGroups {
+		for i, tc := range group.tests {
+			inDebugLog := &DebugLog{DebugEnabledOrOverridden: tc.in.debugEnabledOrOverridden}
+
+			// run
+			responseDebugAllow, accountDebugAllow, debugLog := getDebugInfo(group.bidReq, nil, tc.in.accountDebugFlag, inDebugLog)
+
+			// assertions
+			assert.Equal(t, tc.expected.responseDebugAllow, responseDebugAllow, "%s - %d", group.desc, i)
+			assert.Equal(t, tc.expected.accountDebugAllow, accountDebugAllow, "%s - %d", group.desc, i)
+			assert.Equal(t, tc.expected.debugLog, debugLog, "%s - %d", group.desc, i)
+		}
 	}
 }
 

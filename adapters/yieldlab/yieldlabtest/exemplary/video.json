@@ -124,6 +124,7 @@
             "id": "12345",
             "impid": "test-imp-id",
             "nurl": "https://ad.yieldlab.net/d/12345/123456789/728x90?id=abc&ids=ylid%3A34a53e82-0dc3-4815-8b7e-b725ede0361c&pvid=40cb3251-1e1e-4cfd-8edc-7d32dc1a21e5&ts=testing",
+            "adm": "<VAST version=\"2.0\"><Ad id=\"12345\"><Wrapper><AdSystem>Yieldlab</AdSystem><VASTAdTagURI><![CDATA[ https://ad.yieldlab.net/d/12345/123456789/728x90?id=abc&ids=ylid%3A34a53e82-0dc3-4815-8b7e-b725ede0361c&pvid=40cb3251-1e1e-4cfd-8edc-7d32dc1a21e5&ts=testing ]]></VASTAdTagURI><Impression></Impression><Creatives></Creatives></Wrapper></Ad></VAST>",
             "price": 2.01,
             "w": 728,
             "h": 90

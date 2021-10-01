@@ -144,6 +144,7 @@ func TestDefaults(t *testing.T) {
 	cmpStrings(t, "stored_requests.filesystem.directorypath", "./stored_requests/data/by_id", cfg.StoredRequests.Files.Path)
 	cmpBools(t, "auto_gen_source_tid", cfg.AutoGenSourceTID, true)
 	cmpBools(t, "generate_bid_id", cfg.GenerateBidID, false)
+	cmpBools(t, "enable_legacy_auction", cfg.EnableLegacyAuction, true)
 
 	//Assert purpose VendorExceptionMap hash tables were built correctly
 	expectedTCF2 := TCF2{
@@ -228,7 +229,8 @@ var fullConfig = []byte(`
 gdpr:
   host_vendor_id: 15
   default_value: "1"
-  non_standard_publishers: ["siteID","fake-site-id","appID","agltb3B1Yi1pbmNyDAsSA0FwcBiJkfIUDA"]
+  non_standard_publishers: ["pub1", "pub2"]
+  eea_countries: ["eea1", "eea2"]
   tcf2:
     purpose1:
       enforce_vendors: false
@@ -352,6 +354,7 @@ request_validation:
     ipv4_private_networks: ["1.1.1.0/24"]
     ipv6_private_networks: ["1111::/16", "2222::/16"]
 generate_bid_id: true
+enable_legacy_auction: false
 `)
 
 var adapterExtraInfoConfig = []byte(`
@@ -440,19 +443,12 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "gdpr.default_value", cfg.GDPR.DefaultValue, "1")
 
 	//Assert the NonStandardPublishers was correctly unmarshalled
-	cmpStrings(t, "gdpr.non_standard_publishers", cfg.GDPR.NonStandardPublishers[0], "siteID")
-	cmpStrings(t, "gdpr.non_standard_publishers", cfg.GDPR.NonStandardPublishers[1], "fake-site-id")
-	cmpStrings(t, "gdpr.non_standard_publishers", cfg.GDPR.NonStandardPublishers[2], "appID")
-	cmpStrings(t, "gdpr.non_standard_publishers", cfg.GDPR.NonStandardPublishers[3], "agltb3B1Yi1pbmNyDAsSA0FwcBiJkfIUDA")
+	assert.Equal(t, []string{"pub1", "pub2"}, cfg.GDPR.NonStandardPublishers, "gdpr.non_standard_publishers")
+	assert.Equal(t, map[string]struct{}{"pub1": {}, "pub2": {}}, cfg.GDPR.NonStandardPublisherMap, "gdpr.non_standard_publishers Hash Map")
 
-	//Assert the NonStandardPublisherMap hash table was built correctly
-	var found bool
-	for i := 0; i < len(cfg.GDPR.NonStandardPublishers); i++ {
-		_, found = cfg.GDPR.NonStandardPublisherMap[cfg.GDPR.NonStandardPublishers[i]]
-		cmpBools(t, "cfg.GDPR.NonStandardPublisherMap", found, true)
-	}
-	_, found = cfg.GDPR.NonStandardPublisherMap["appnexus"]
-	cmpBools(t, "cfg.GDPR.NonStandardPublisherMap", found, false)
+	// Assert EEA Countries was correctly unmarshalled and the EEACountriesMap built correctly.
+	assert.Equal(t, []string{"eea1", "eea2"}, cfg.GDPR.EEACountries, "gdpr.eea_countries")
+	assert.Equal(t, map[string]struct{}{"eea1": {}, "eea2": {}}, cfg.GDPR.EEACountriesMap, "gdpr.eea_countries Hash Map")
 
 	cmpBools(t, "ccpa.enforce", cfg.CCPA.Enforce, true)
 	cmpBools(t, "lmt.enforce", cfg.LMT.Enforce, true)
@@ -583,6 +579,7 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "request_validation.ipv6_private_networks", cfg.RequestValidation.IPv6PrivateNetworks[1], "2222::/16")
 	cmpBools(t, "generate_bid_id", cfg.GenerateBidID, true)
 	cmpStrings(t, "debug.override_token", cfg.Debug.OverrideToken, "")
+	cmpBools(t, "enable_legacy_auction", cfg.EnableLegacyAuction, false)
 }
 
 func TestUnmarshalAdapterExtraInfo(t *testing.T) {
