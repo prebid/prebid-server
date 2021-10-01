@@ -2,6 +2,7 @@ package firstpartydata
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
@@ -610,6 +611,7 @@ func TestResolveFPD(t *testing.T) {
 	if specFiles, err := ioutil.ReadDir("./tests/resolvefpd"); err == nil {
 		for _, specFile := range specFiles {
 			fileName := "./tests/resolvefpd/" + specFile.Name()
+			fmt.Println(fileName)
 
 			fpdFile, err := loadFpdFile(fileName)
 			if err != nil {
@@ -713,6 +715,97 @@ func TestResolveFPD(t *testing.T) {
 				for i := range fpdFile.ValidationErrors {
 					assert.Contains(t, errL[i].Error(), fpdFile.ValidationErrors[i], "Incorrect first party data warning message")
 				}
+			}
+
+		}
+	}
+}
+
+func TestExtractFPDForBidders(t *testing.T) {
+
+	if specFiles, err := ioutil.ReadDir("./tests/extractfpdforbidders"); err == nil {
+		for _, specFile := range specFiles {
+			fileName := "./tests/extractfpdforbidders/" + specFile.Name()
+			fpdFile, err := loadFpdFile(fileName)
+
+			fmt.Println(fileName)
+			if err != nil {
+				t.Errorf("Unable to load file: %s", fileName)
+			}
+
+			var resRequest openrtb2.BidRequest
+			err = json.Unmarshal(fpdFile.OutputRequestData, &resRequest)
+			if err != nil {
+				t.Errorf("Unable to unmarshal input request: %s", fileName)
+			}
+
+			req := &openrtb_ext.RequestWrapper{}
+			req.BidRequest = &openrtb2.BidRequest{}
+			err = json.Unmarshal(fpdFile.InputRequestData, req.BidRequest)
+			assert.NoError(t, err, "Error should be nil")
+
+			resultFPD, errL := ExtractFPDForBidders(req)
+
+			if len(fpdFile.ValidationErrors) > 0 {
+				for i := range fpdFile.ValidationErrors {
+					assert.Contains(t, errL[i].Error(), fpdFile.ValidationErrors[i], "Incorrect first party data warning message")
+				}
+				continue
+			}
+			assert.Empty(t, errL, "Error should be empty")
+			assert.Equal(t, len(resultFPD), len(fpdFile.BiddersFPDResolved))
+
+			for bidderName, expectedValue := range fpdFile.BiddersFPDResolved {
+				actualValue := resultFPD[bidderName]
+				if expectedValue.Site != nil {
+					if len(expectedValue.Site.Ext) > 0 {
+						assert.JSONEq(t, string(expectedValue.Site.Ext), string(actualValue.Site.Ext), "Incorrect first party data")
+						expectedValue.Site.Ext = nil
+						actualValue.Site.Ext = nil
+					}
+					assert.Equal(t, expectedValue.Site, actualValue.Site, "Incorrect first party data")
+				}
+				if expectedValue.App != nil {
+					if len(expectedValue.App.Ext) > 0 {
+						assert.JSONEq(t, string(expectedValue.App.Ext), string(actualValue.App.Ext), "Incorrect first party data")
+						expectedValue.App.Ext = nil
+						actualValue.App.Ext = nil
+					}
+					assert.Equal(t, expectedValue.App, actualValue.App, "Incorrect first party data")
+				}
+				if expectedValue.User != nil {
+					if len(expectedValue.User.Ext) > 0 {
+						assert.JSONEq(t, string(expectedValue.User.Ext), string(actualValue.User.Ext), "Incorrect first party data")
+						expectedValue.User.Ext = nil
+						actualValue.User.Ext = nil
+					}
+					assert.Equal(t, expectedValue.User, actualValue.User, "Incorrect first party data")
+				}
+			}
+
+			if resRequest.Site != nil {
+				if len(resRequest.Site.Ext) > 0 {
+					assert.JSONEq(t, string(resRequest.Site.Ext), string(req.BidRequest.Site.Ext), "Incorrect site in request")
+					resRequest.Site.Ext = nil
+					req.BidRequest.Site.Ext = nil
+				}
+				assert.Equal(t, resRequest.Site, req.BidRequest.Site, "Incorrect site in request")
+			}
+			if resRequest.App != nil {
+				if len(resRequest.App.Ext) > 0 {
+					assert.JSONEq(t, string(resRequest.App.Ext), string(req.BidRequest.App.Ext), "Incorrect app in request")
+					resRequest.App.Ext = nil
+					req.BidRequest.App.Ext = nil
+				}
+				assert.Equal(t, resRequest.App, req.BidRequest.App, "Incorrect app in request")
+			}
+			if resRequest.User != nil {
+				if len(resRequest.User.Ext) > 0 {
+					assert.JSONEq(t, string(resRequest.User.Ext), string(req.BidRequest.User.Ext), "Incorrect user in request")
+					resRequest.User.Ext = nil
+					req.BidRequest.User.Ext = nil
+				}
+				assert.Equal(t, resRequest.User, req.BidRequest.User, "Incorrect user in request")
 			}
 
 		}

@@ -87,13 +87,8 @@
   "biddersFPD": {
     "appnexus": {
       "app": {
-        "id": "apnAppId",
-        "ext": {
-          "data": {
-            "morefpdData": "morefpddata",
-            "appFpddata": "appFpddata"
-          }
-        }
+        "appFpddata":"appFpddata",
+        "morefpdData":"morefpddata"
       }
     }
   },

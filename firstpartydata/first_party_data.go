@@ -212,6 +212,11 @@ func resolveExtension(fpdConfig map[string]json.RawMessage, originalExt json.Raw
 	resExt := originalExt
 	var err error
 
+	if resExt == nil && len(fpdConfig) > 0 {
+		fpdExt, err := json.Marshal(fpdConfig)
+		return buildExtData(fpdExt), err
+	}
+
 	fpdConfigExt, present := fpdConfig[extKey]
 	if present {
 		delete(fpdConfig, extKey)

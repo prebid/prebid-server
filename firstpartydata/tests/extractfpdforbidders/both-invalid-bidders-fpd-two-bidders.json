@@ -1,0 +1,84 @@
+{
+  "inputRequestData": {
+    "id": "bid_id",
+    "imp": [
+      {
+        "id": "1_0",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "maxduration": 30,
+          "protocols": [
+            2,
+            3
+          ],
+          "w": 640,
+          "h": 480
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 14997137
+          },
+          "telaria": {
+            "seatCode": "TAMTESTseat",
+            "adCode": "TAMTESTseat-u8sfw"
+          }
+        }
+      }
+    ],
+    "site": {
+      "id": "reqSiteId",
+      "page": "http://www.foobar.com/1234.html",
+      "publisher": {
+        "id": "1"
+      }
+    },
+    "test": 1,
+    "ext": {
+      "prebid": {
+        "data": {
+          "bidders": [
+            "appnexus", "telaria"
+          ]
+        },
+        "bidderconfig": [
+          {
+            "bidders": [
+              "appnexus"
+            ],
+            "config": {
+              "ortb2": {
+                "app": {
+                  "id": "apnAppId"
+                },
+                "user": {
+                  "id": "apnUserId"
+                }
+              }
+            }
+          },
+          {
+            "bidders": [
+              "telaria"
+            ],
+            "config": {
+              "ortb2": {
+                "app": {
+                  "id": "telariaAppId"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "outputRequestData":{},
+  "biddersFPDResolved": {},
+  "validationErrors": [
+    "incorrect First Party Data for bidder appnexus: User object is not defined in request, but defined in FPD config",
+    "incorrect First Party Data for bidder appnexus: App object is not defined in request, but defined in FPD config",
+    "incorrect First Party Data for bidder telaria: App object is not defined in request, but defined in FPD config"
+  ]
+}

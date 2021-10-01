@@ -27,6 +27,7 @@
   "outputRequestData": {
     "site": {
       "id": "reqSiteId",
+      "page": "http://www.foobar.com/1234.html",
       "publisher": {
         "id": "1"
       },
@@ -39,11 +40,16 @@
       },
       "ext": {
         "data": {
-          "morefpdData": "morefpddata",
-          "siteFpddata": "siteFpddata",
-          "moreFpd": {
-            "fpd": 123
-          }
+          "ext": {
+            "data": {
+              "morefpdData": "morefpddata",
+              "siteFpddata": "siteFpddata",
+              "moreFpd": {
+                "fpd": 123
+              }
+            }
+          },
+          "id": "apnSiteId"
         }
       }
     },
@@ -57,6 +63,7 @@
       "id": "apnUserId",
       "ext": {
         "data": {
+          "id": "apnUserId",
           "moreFpd": {
             "fpd": 567
           },

@@ -3061,7 +3061,6 @@ func loadFpdFile(filename string) (fpdFile, error) {
 type fpdFile struct {
 	InputRequestData        json.RawMessage                                                   `json:"inputRequestData,omitempty"`
 	ResultRequestData       json.RawMessage                                                   `json:"resultRequestData,omitempty"`
-	ResultBiddersFPD        map[openrtb_ext.BidderName]*openrtb_ext.ORTB2                     `json:"resultBiddersFPD,omitempty"`
 	ResultBiddersFPDOpenRTB map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData `json:"resultBiddersFPDOpenRTB,omitempty"`
 	ValidationErrors        []string                                                          `json:"validationErrors,omitempty"`
 }

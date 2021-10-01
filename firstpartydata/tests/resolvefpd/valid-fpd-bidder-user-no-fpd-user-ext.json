@@ -49,13 +49,19 @@
     "user": {
       "id": "reqUserID",
       "yob": 1982,
+      "gender": "M",
       "ext": {
         "data": {
-          "morefpdData": "morefpddata",
-          "userFpddata": "siteFpddata",
-          "moreFpd": {
-            "fpd": 123
-          }
+          "ext": {
+            "data": {
+              "morefpdData": "morefpddata",
+              "userFpddata": "siteFpddata",
+              "moreFpd": {
+                "fpd": 123
+              }
+            }
+          },
+          "id": "apnUserId"
         }
       }
     }

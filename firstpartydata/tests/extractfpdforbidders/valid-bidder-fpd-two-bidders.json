@@ -1,0 +1,149 @@
+{
+  "inputRequestData": {
+    "id": "bid_id",
+    "imp": [
+      {
+        "id": "1_0",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "maxduration": 30,
+          "protocols": [
+            2,
+            3
+          ],
+          "w": 640,
+          "h": 480
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 14997137
+          },
+          "telaria": {
+            "seatCode": "TAMTESTseat",
+            "adCode": "TAMTESTseat-u8sfw"
+          }
+        }
+      }
+    ],
+    "site": {
+      "id": "reqSiteId",
+      "page": "http://www.foobar.com/1234.html",
+      "publisher": {
+        "id": "1"
+      }
+    },
+    "user": {
+      "id": "reqUserId"
+    },
+    "test": 1,
+    "ext": {
+      "prebid": {
+        "data": {
+          "bidders": [
+            "appnexus", "telaria"
+          ]
+        },
+        "bidderconfig": [
+          {
+            "bidders": [
+              "appnexus"
+            ],
+            "config": {
+              "ortb2": {
+                "site": {
+                  "id": "apnSiteId"
+                },
+                "user": {
+                  "id": "apnUserId"
+                }
+              }
+            }
+          },
+          {
+            "bidders": [
+              "telaria"
+            ],
+            "config": {
+              "ortb2": {
+                "user": {
+                  "keywords": "telariaUserKeywords"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "outputRequestData":  {
+    "id": "bid_id",
+    "imp": [
+      {
+        "id": "1_0",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "maxduration": 30,
+          "protocols": [
+            2,
+            3
+          ],
+          "w": 640,
+          "h": 480
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 14997137
+          },
+          "telaria": {
+            "seatCode": "TAMTESTseat",
+            "adCode": "TAMTESTseat-u8sfw"
+          }
+        }
+      }
+    ],
+    "site": {
+      "id": "reqSiteId",
+      "page": "http://www.foobar.com/1234.html",
+      "publisher": {
+        "id": "1"
+      }
+    },
+    "test": 1,
+    "ext": {"prebid":{"data":{"eidpermissions":null,"bidders":null}}}
+  },
+  "biddersFPDResolved": {
+    "appnexus": {
+      "site": {
+        "id": "reqSiteId",
+        "page": "http://www.foobar.com/1234.html",
+        "publisher": {
+          "id": "1"
+        },
+        "ext": {
+          "data":{
+            "id":"apnSiteId"
+          }
+        }
+      },
+      "user": {
+        "id": "reqUserId",
+        "ext": {
+          "data": {
+            "id":"apnUserId"
+          }
+        }
+      }
+    },
+    "telaria": {
+      "user": {
+        "id": "reqUserId",
+        "keywords": "telariaUserKeywords"
+      }
+    }
+  },
+  "validationErrors": []
+}
