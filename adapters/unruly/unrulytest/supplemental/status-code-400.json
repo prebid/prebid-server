@@ -10,14 +10,27 @@
           ],
           "minduration": 1,
           "maxduration": 2,
-          "protocols": [1,3,5],
+          "protocols": [
+            1,
+            3,
+            5
+          ],
           "w": 1020,
           "h": 780,
           "startdelay": 1,
           "placement": 1,
-          "playbackmethod": [2],
-          "delivery": [1],
-          "api": [1,2,3,4]
+          "playbackmethod": [
+            2
+          ],
+          "delivery": [
+            1
+          ],
+          "api": [
+            1,
+            2,
+            3,
+            4
+          ]
         },
         "ext": {
           "bidder": {
@@ -61,44 +74,14 @@
         }
       },
       "mockResponse": {
-        "status": 200,
-        "body": {
-          "id": "test-request-id",
-          "cur": "USD",
-          "seatbid": [
-            {
-              "seat": "Unruly",
-              "bid": [
-                {
-                  "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
-                  "impid": "test-imp-id",
-                  "price": 0.500000,
-                  "adm": "some-test-ad",
-                  "crid": "crid_10",
-                  "w": 1024,
-                  "h": 576
-                }
-              ]
-            }
-          ]
-        }
+        "status": 400
       }
     }
   ],
-  "expectedBidResponses": [
+  "expectedMakeBidsErrors": [
     {
-      "bids": [{
-        "bid": {
-          "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
-          "impid": "test-imp-id",
-          "price": 0.5,
-          "adm": "some-test-ad",
-          "crid": "crid_10",
-          "w": 1024,
-          "h": 576
-        },
-        "type": "video"
-      }]
+      "comparison": "literal",
+      "value": "unexpected status code: 400. Run with request.debug = 1 for more info"
     }
   ]
 }

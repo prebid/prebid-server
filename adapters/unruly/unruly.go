@@ -27,21 +27,20 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 
-	var uri string
-	request, uri, errs = a.preProcess(request, errs)
+	request, errs = a.preProcess(request, errs)
 	if request != nil {
 		reqJSON, err := json.Marshal(request)
 		if err != nil {
 			errs = append(errs, err)
 			return nil, errs
 		}
-		if uri != "" {
+		if a.endPoint != "" {
 			headers := http.Header{}
 			headers.Add("Content-Type", "application/json;charset=utf-8")
 			headers.Add("Accept", "application/json")
 			return []*adapters.RequestData{{
 				Method:  "POST",
-				Uri:     uri,
+				Uri:     a.endPoint,
 				Body:    reqJSON,
 				Headers: headers,
 			}}, errs
@@ -50,9 +49,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	return nil, errs
 }
 
-func (a *adapter) preProcess(req *openrtb2.BidRequest, errors []error) (*openrtb2.BidRequest, string, []error) {
+func (a *adapter) preProcess(req *openrtb2.BidRequest, errors []error) (*openrtb2.BidRequest, []error) {
 	numRequests := len(req.Imp)
-	var uri string = ""
 	for i := 0; i < numRequests; i++ {
 		imp := req.Imp[i]
 		var bidderExt adapters.ExtImpBidder
@@ -61,22 +59,20 @@ func (a *adapter) preProcess(req *openrtb2.BidRequest, errors []error) (*openrtb
 				Message: fmt.Sprintf("ext data not provided in imp id=%s. Abort all Request", imp.ID),
 			}
 			errors = append(errors, err)
-			return nil, "", errors
+			return nil, errors
 		}
 		var unrulyExt openrtb_ext.ExtImpUnruly
-		//err = json.Unmarshal(bidderExt.Bidder, &unrulyExt)
-		//if err != nil {
 		if err := json.Unmarshal(bidderExt.Bidder, &unrulyExt); err != nil {
 			err = &errortypes.BadInput{
 				Message: fmt.Sprintf("siteid not provided in imp id=%s. Abort all Request", imp.ID),
 			}
 			errors = append(errors, err)
-			return nil, "", errors
+			return nil, errors
 		}
 		unrulyExtCopy, err := json.Marshal(&unrulyExt)
 		if err != nil {
 			errors = append(errors, err)
-			return nil, "", errors
+			return nil, errors
 		}
 		bidderExtCopy := struct {
 			Bidder json.RawMessage `json:"bidder,omitempty"`
@@ -84,15 +80,13 @@ func (a *adapter) preProcess(req *openrtb2.BidRequest, errors []error) (*openrtb
 		impExtCopy, err := json.Marshal(&bidderExtCopy)
 		if err != nil {
 			errors = append(errors, err)
-			return nil, "", errors
+			return nil, errors
 		}
 		imp.Ext = impExtCopy
 		req.Imp[i] = imp
-		if uri == "" {
-			uri = fmt.Sprintf("%s", a.endPoint)
-		}
 	}
-	return req, uri, errors
+
+	return req, errors
 }
 
 func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
@@ -123,22 +117,24 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	var errs []error
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
-			var bla, err = getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp)
+			var bidType, err = getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp)
 			if err != nil {
 				errs = append(errs, err...)
 			} else {
 				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 					Bid:     &sb.Bid[i],
-					BidType: bla,
+					BidType: bidType,
 				})
 			}
 		}
 	}
+
 	return bidResponse, errs
 }
 
 func getMediaTypeForImp(impId string, imps []openrtb2.Imp) (openrtb_ext.BidType, []error) {
 	var errs []error
+	var noMatchingImps []string
 	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impId {
@@ -151,9 +147,13 @@ func getMediaTypeForImp(impId string, imps []openrtb2.Imp) (openrtb_ext.BidType,
 			}
 			return mediaType, nil
 		} else {
-			errs = append(errs, fmt.Errorf("impId doesn't match with any of the imp.ID"))
-
+			noMatchingImps = append(noMatchingImps, imp.ID)
 		}
 	}
-	return mediaType, nil
+
+	if len(noMatchingImps) > 0 {
+		errs = append(errs, fmt.Errorf("the following imps id's %v didn't match impId %s", noMatchingImps, impId))
+	}
+
+	return mediaType, errs
 }
