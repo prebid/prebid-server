@@ -145,15 +145,13 @@ func getMediaTypeForImp(impId string, imps []openrtb2.Imp) (openrtb_ext.BidType,
 			} else {
 				errs = append(errs, fmt.Errorf("bid responses mediaType didn't match supported mediaTypes"))
 			}
-			return mediaType, nil
+			return mediaType, errs
 		} else {
 			noMatchingImps = append(noMatchingImps, imp.ID)
 		}
 	}
 
-	if len(noMatchingImps) > 0 {
-		errs = append(errs, fmt.Errorf("the following imps id's %v didn't match impId %s", noMatchingImps, impId))
-	}
+	errs = append(errs, fmt.Errorf("Bid response imp ID %s not found in bid request containing imps %v\n", impId, noMatchingImps))
 
 	return mediaType, errs
 }

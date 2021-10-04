@@ -88,7 +88,7 @@
   "expectedMakeBidsErrors": [
     {
       "comparison": "literal",
-      "value": "the following imps id's [test-imp-id] didn't match impId sdf"
+      "value": "Bid response imp ID sdf not found in bid request containing imps [test-imp-id]\n"
     }
   ]
 }
