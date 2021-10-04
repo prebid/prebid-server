@@ -31,6 +31,7 @@
       },
       {
         "bidders": [
+          "appnexus",
           "telaria",
           "testBidder2"
         ],
@@ -58,58 +59,10 @@
     ]
   },
   "outputRequestData": {},
-  "biddersFPD": {
-    "appnexus": {
-      "site": {
-        "id": "apnSiteId",
-        "ext": {
-          "data": {
-            "morefpdData": "morefpddata",
-            "sitefpddata": "sitefpddata",
-            "moreFpd": {
-              "fpd": 123
-            }
-          }
-        }
-      }
-    },
-    "telaria": {
-      "user": {
-        "id": "telariaUserData",
-        "ext": {
-          "data": {
-            "userdata": "fpduserdata"
-          }
-        }
-      },
-      "app": {
-        "id": "telariaAppData",
-        "ext": {
-          "data": {
-            "appdata": "fpdappdata"
-          }
-        }
-      }
-    },
-    "testBidder2": {
-      "user": {
-        "id": "telariaUserData",
-        "ext": {
-          "data": {
-            "userdata": "fpduserdata"
-          }
-        }
-      },
-      "app": {
-        "id": "telariaAppData",
-        "ext": {
-          "data": {
-            "appdata": "fpdappdata"
-          }
-        }
-      }
-    }
-  }
+  "biddersFPD": {},
+  "validationErrors": [
+    "duplicated config for bidder: appnexus"
+  ]
 }
 
 

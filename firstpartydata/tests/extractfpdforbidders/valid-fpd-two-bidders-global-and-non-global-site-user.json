@@ -239,12 +239,6 @@
           }
         }
       }
-    },
-    "telaria": {
-      "user": {
-        "id":"reqUserId",
-        "keywords": "telariaFpdUserKeywords"
-      }
     }
   },
   "validationErrors": []

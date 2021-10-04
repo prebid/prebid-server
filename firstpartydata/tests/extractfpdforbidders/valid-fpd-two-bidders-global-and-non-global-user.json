@@ -275,29 +275,6 @@
           }
         }
       }
-    },
-    "telaria": {
-      "user": {
-        "id": "reqUserId",
-        "gender": "M",
-        "yob": 2001,
-        "keywords": "telariaFpdUserKeyword",
-        "ext": {
-          "data": {
-            "id": "telariaFpdUserId",
-            "data": [
-              {
-                "id": "telariaFpdUserContentDataId1",
-                "name": "telariaFpdUserContentDataName1"
-              },
-              {
-                "id": "telariaFpdUserContentDataId2",
-                "name": "telariaFpdUserContentDataName2"
-              }
-            ]
-          }
-        }
-      }
     }
   },
   "validationErrors": []

@@ -2,6 +2,7 @@ package firstpartydata
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
@@ -558,6 +559,7 @@ func TestExtractBidderConfigFPD(t *testing.T) {
 		for _, specFile := range specFiles {
 			fileName := "./tests/extractbidderconfigfpd/" + specFile.Name()
 
+			fmt.Println(fileName)
 			fpdFile, err := loadFpdFile(fileName)
 			if err != nil {
 				t.Errorf("Unable to load file: %s", fileName)
@@ -569,10 +571,16 @@ func TestExtractBidderConfigFPD(t *testing.T) {
 			}
 			reqExt := openrtb_ext.RequestExt{}
 			reqExt.SetPrebid(&extReq)
-			fpdData := ExtractBidderConfigFPD(&reqExt)
+			fpdData, err := ExtractBidderConfigFPD(&reqExt)
+
+			if len(fpdFile.ValidationErrors) > 0 {
+				assert.Contains(t, err.Error(), fpdFile.ValidationErrors[0], "Incorrect first party data error message")
+				continue
+			}
 
 			assert.Nil(t, reqExt.GetPrebid().BidderConfigs, "Bidder specific FPD config should be removed from request")
 
+			assert.Nil(t, err, "No error should be returned")
 			assert.Equal(t, len(fpdFile.BiddersFPD), len(fpdData), "Incorrect fpd data")
 
 			for bidderName, bidderFPD := range fpdFile.BiddersFPD {
@@ -726,6 +734,8 @@ func TestExtractFPDForBidders(t *testing.T) {
 			fileName := "./tests/extractfpdforbidders/" + specFile.Name()
 			fpdFile, err := loadFpdFile(fileName)
 
+			fmt.Println(fileName)
+
 			if err != nil {
 				t.Errorf("Unable to load file: %s", fileName)
 			}
@@ -744,6 +754,7 @@ func TestExtractFPDForBidders(t *testing.T) {
 			resultFPD, errL := ExtractFPDForBidders(req)
 
 			if len(fpdFile.ValidationErrors) > 0 {
+				assert.Equal(t, len(fpdFile.ValidationErrors), len(errL), "")
 				for i := range fpdFile.ValidationErrors {
 					assert.Contains(t, errL[i].Error(), fpdFile.ValidationErrors[i], "Incorrect first party data warning message")
 				}
