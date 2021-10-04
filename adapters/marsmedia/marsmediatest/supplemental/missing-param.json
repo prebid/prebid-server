@@ -4,11 +4,17 @@
     "imp": [
       {
         "id": "test-missing-req-param-id",
-        "video": {
-          "mimes": ["video/mp4"],
-          "protocols": [2, 5],
-          "w": 1024,
-          "h": 576
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
         },
         "ext": {
           "bidder": {
