@@ -31,7 +31,7 @@ type NextMillenniumBidRequest struct {
 //MakeRequests prepares request information for prebid-server core
 func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	resImps, err := getImpressionsInfo(request.Imp)
-	if len(resImps) == 0 {
+	if len(err) > 0 {
 		return nil, err
 	}
 
@@ -80,14 +80,14 @@ func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ImpExtNextMillennium, err
 			Message: err.Error(),
 		}
 	}
-	var NextMillenniumExt openrtb_ext.ImpExtNextMillennium
-	if err := json.Unmarshal(bidderExt.Bidder, &NextMillenniumExt); err != nil {
+	var nextMillenniumExt openrtb_ext.ImpExtNextMillennium
+	if err := json.Unmarshal(bidderExt.Bidder, &nextMillenniumExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
 
-	return &NextMillenniumExt, nil
+	return &nextMillenniumExt, nil
 }
 
 func (adapter *adapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ImpExtNextMillennium, imps []openrtb2.Imp) (*adapters.RequestData, error) {

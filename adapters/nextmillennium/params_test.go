@@ -43,4 +43,5 @@ var invalidParams = []string{
 	``,
 	`[]`,
 	`true`,
+	`{}`,
 }
