@@ -25,7 +25,6 @@ type Cache interface {
 
 type AccountsService interface {
 	Get(string) (*Account, error)
-	Set(*Account) error
 }
 
 type ConfigService interface {

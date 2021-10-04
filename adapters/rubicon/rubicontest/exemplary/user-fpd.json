@@ -5,52 +5,10 @@
       "ip": "123.123.123.123",
       "ifa": "zxcjbzxmc-zxcbmz-zxbcz-zxczx"
     },
-    "app": {
-      "id": "1",
-      "bundle": "com.wls.testwlsapplication"
-    },
     "site": {
-      "pagecat": [
-        "val1",
-        "val2"
-      ],
-      "content": {
-        "data": [
-          {
-            "ext": {
-              "segtax": 1
-            },
-            "segment": [
-              {
-                "id": "segmentId1"
-              },
-              {
-                "id": "segmentId2"
-              }
-            ]
-          },
-          {
-            "ext": {
-              "segtax": "1"
-            },
-            "segment": [
-              {
-                "id": "shouldNotBeCopied"
-              }
-            ]
-          },
-          {
-            "ext": {
-              "segtax": 2
-            },
-            "segment": [
-              {
-                "id": "segmentId3"
-              }
-            ]
-          }
-        ]
-      }
+      "page": "somePage",
+      "ref": "someRef",
+      "search": "someSearch"
     },
     "user": {
       "yob": 2000,
@@ -113,7 +71,23 @@
             }
           ]
         }
-      ]
+      ],
+      "keywords": "someKeywords",
+      "ext": {
+        "rp": {
+          "target": {
+            "someKey": "someValue"
+          }
+        },
+        "data": {
+          "dataKey1": "dataValue1",
+          "dataKey2": [
+            "dataValue2",
+            "dataValue3"
+          ],
+          "dataKey3": true
+        }
+      }
     },
     "imp": [
       {
@@ -132,6 +106,14 @@
           "h": 576
         },
         "ext": {
+          "data": {
+            "adserver": {
+              "name": "gam",
+              "adslot": "someAdSlot"
+            },
+            "dataAttr1": "dataVal1",
+            "dataAttr2": "dataVal2"
+          },
           "bidder": {
             "video": {
             },
@@ -159,57 +141,12 @@
             "ifa": "zxcjbzxmc-zxcbmz-zxbcz-zxczx"
           },
           "site": {
-            "pagecat": [
-              "val1",
-              "val2"
-            ],
-            "content": {
-              "data": [
-                {
-                  "ext": {
-                    "segtax": 1
-                  },
-                  "segment": [
-                    {
-                      "id": "segmentId1"
-                    },
-                    {
-                      "id": "segmentId2"
-                    }
-                  ]
-                },
-                {
-                  "ext": {
-                    "segtax": "1"
-                  },
-                  "segment": [
-                    {
-                      "id": "shouldNotBeCopied"
-                    }
-                  ]
-                },
-                {
-                  "ext": {
-                    "segtax": 2
-                  },
-                  "segment": [
-                    {
-                      "id": "segmentId3"
-                    }
-                  ]
-                }
-              ]
-            },
+            "page": "somePage",
+            "ref": "someRef",
+            "search": "someSearch",
             "ext": {
               "rp": {
-                "site_id": 113932,
-                "target": {
-                  "iab": [
-                    "segmentId1",
-                    "segmentId2",
-                    "segmentId3"
-                  ]
-                }
+                "site_id": 113932
               }
             },
             "publisher": {
@@ -278,17 +215,25 @@
             "ext": {
               "rp": {
                 "target": {
+                  "someKey": "someValue",
+                  "dataKey1": [
+                    "dataValue1"
+                  ],
+                  "dataKey2": [
+                    "dataValue2",
+                    "dataValue3"
+                  ],
+                  "dataKey3": [
+                    "true"
+                  ],
                   "iab": [
                     "idToCopy",
                     "idToCopy2"
                   ]
                 }
               }
-            }
-          },
-          "app": {
-            "id": "1",
-            "bundle": "com.wls.testwlsapplication"
+            },
+            "keywords": "someKeywords"
           },
           "imp": [
             {
@@ -312,11 +257,23 @@
                 "h": 576
               },
               "ext": {
+                "gpid": "someAdSlot",
                 "rp": {
                   "target": {
-                    "pagecat": [
-                      "val1",
-                      "val2"
+                    "dataAttr1": [
+                      "dataVal1"
+                    ],
+                    "dataAttr2": [
+                      "dataVal2"
+                    ],
+                    "page": [
+                      "somePage"
+                    ],
+                    "ref": [
+                      "someRef"
+                    ],
+                    "search": [
+                      "someSearch"
                     ]
                   },
                   "track": {
@@ -336,7 +293,6 @@
           "id": "test-request-id",
           "seatbid": [
             {
-              "buyer": "123",
               "bid": [
                 {
                   "id": "test_bid_id",
@@ -348,9 +304,6 @@
                   "dealid": "test_dealid",
                   "ext": {
                     "prebid": {
-                      "meta": {
-                        "networkId": 123
-                      },
                       "type": "video"
                     }
                   }
@@ -379,9 +332,6 @@
             "dealid": "test_dealid",
             "ext": {
               "prebid": {
-                "meta": {
-                  "networkId": 123
-                },
                 "type": "video"
               }
             }

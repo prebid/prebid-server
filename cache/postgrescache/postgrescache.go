@@ -104,11 +104,6 @@ func decodeAccount(b []byte) *cache.Account {
 	return &account
 }
 
-// Set the account in postgres and the lru cache
-func (s *accountService) Set(account *cache.Account) error {
-	return nil
-}
-
 // ConfigService
 type configService struct {
 	shared *shared

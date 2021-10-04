@@ -16,6 +16,7 @@ import (
 	"github.com/prebid/prebid-server/endpoints/events"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/util/uuidutil"
+	"github.com/prebid/prebid-server/version"
 
 	"github.com/prebid/prebid-server/metrics"
 
@@ -300,7 +301,10 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		videoEndpoint = aspects.QueuedRequestTimeout(videoEndpoint, cfg.RequestTimeoutHeaders, r.MetricsEngine, metrics.ReqTypeVideo)
 	}
 
-	r.POST("/auction", endpoints.Auction(cfg, syncersByBidder, gdprPerms, r.MetricsEngine, dataCache, exchanges))
+	if cfg.EnableLegacyAuction {
+		r.POST("/auction", endpoints.Auction(cfg, syncersByBidder, gdprPerms, r.MetricsEngine, dataCache, exchanges))
+	}
+
 	r.POST("/openrtb2/auction", openrtbEndpoint)
 	r.POST("/openrtb2/video", videoEndpoint)
 	r.GET("/openrtb2/amp", ampEndpoint)
@@ -310,6 +314,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	r.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncersByBidder, cfg, gdprPerms, r.MetricsEngine, pbsAnalytics, activeBidders).Handle)
 	r.GET("/status", endpoints.NewStatusEndpoint(cfg.StatusResponse))
 	r.GET("/", serveIndex)
+	r.Handler("GET", "/version", endpoints.NewVersionEndpoint(version.Ver, version.Rev))
 	r.ServeFiles("/static/*filepath", http.Dir("static"))
 
 	// vtrack endpoint

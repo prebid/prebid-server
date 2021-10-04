@@ -22,7 +22,7 @@ var (
 
 func TestBuildAdapters(t *testing.T) {
 	client := &http.Client{}
-	metricEngine := &metrics.DummyMetricsEngine{}
+	metricEngine := &metrics.NilMetricsEngine{}
 
 	appnexusBidder, _ := appnexus.Builder(openrtb_ext.BidderAppnexus, config.Adapter{})
 	appnexusBidderWithInfo := adapters.BuildInfoAwareBidder(appnexusBidder, infoEnabled)
