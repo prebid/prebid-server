@@ -2,7 +2,6 @@ package firstpartydata
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
@@ -611,7 +610,6 @@ func TestResolveFPD(t *testing.T) {
 	if specFiles, err := ioutil.ReadDir("./tests/resolvefpd"); err == nil {
 		for _, specFile := range specFiles {
 			fileName := "./tests/resolvefpd/" + specFile.Name()
-			fmt.Println(fileName)
 
 			fpdFile, err := loadFpdFile(fileName)
 			if err != nil {
@@ -728,7 +726,6 @@ func TestExtractFPDForBidders(t *testing.T) {
 			fileName := "./tests/extractfpdforbidders/" + specFile.Name()
 			fpdFile, err := loadFpdFile(fileName)
 
-			fmt.Println(fileName)
 			if err != nil {
 				t.Errorf("Unable to load file: %s", fileName)
 			}
