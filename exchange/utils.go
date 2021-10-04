@@ -244,16 +244,14 @@ func getAuctionBidderRequests(req AuctionRequest,
 
 		if len(bidderParamsInReqExt) != 0 {
 
+			// Update bidder-params(requestExt.Prebid.BidderParams) for the bidder to only contain bidder-params for
+			// this bidder only and remove bidder-params for all other bidders from requestExt.Prebid.BidderParams
 			params, err := getBidderParamsForBidder(bidderParamsInReqExt, bidder)
 			if err != nil {
 				return nil, []error{err}
 			}
 
-			if params != nil && requestExt == nil {
-				requestExt = &openrtb_ext.ExtRequest{}
-			}
 			requestExt.Prebid.BidderParams = params
-
 		}
 
 		reqExt, err := getExtJson(req.BidRequest, requestExt)

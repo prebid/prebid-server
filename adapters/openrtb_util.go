@@ -178,7 +178,7 @@ func copyFormats(sizes []openrtb2.Format) []openrtb2.Format {
 
 func ExtractAdapterReqBidderParams(bidRequest *openrtb2.BidRequest) (map[string]json.RawMessage, error) {
 	if bidRequest == nil {
-		return nil, fmt.Errorf("error bidRequest should not be nil")
+		return nil, errors.New("error bidRequest should not be nil")
 	}
 
 	reqExt := &openrtb_ext.ExtRequest{}

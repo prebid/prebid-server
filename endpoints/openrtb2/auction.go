@@ -329,7 +329,7 @@ func mergeBidderParams(req *openrtb_ext.RequestWrapper) error {
 		return err
 	}
 
-	impCpy := make([]openrtb2.Imp, 0)
+	impCpy := make([]openrtb2.Imp, 0, len(req.BidRequest.Imp))
 	for _, imp := range req.BidRequest.Imp {
 		updatedImp := imp
 

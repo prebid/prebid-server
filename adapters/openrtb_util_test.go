@@ -611,9 +611,17 @@ func TestExtractReqExtBidderParams(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "extract bidder params from nil req.Ext",
+			name: "extract bidder params from nil req.Ext.prebid",
 			args: args{
 				request: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{}}`)},
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "extract bidder params from nil req.Ext",
+			args: args{
+				request: &openrtb2.BidRequest{Ext: nil},
 			},
 			want:    nil,
 			wantErr: false,
