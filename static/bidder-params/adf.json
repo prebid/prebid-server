@@ -15,7 +15,7 @@
     },
     "mname": {
       "type": ["string"],
-      "description": "A Name which indentifies the placement selling the impression"
+      "description": "A Name which identifies the placement selling the impression"
     }
   },
   "anyOf":[
