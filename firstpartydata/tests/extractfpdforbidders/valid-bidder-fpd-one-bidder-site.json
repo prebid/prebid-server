@@ -47,6 +47,10 @@
               "ortb2": {
                 "site": {
                   "id": "apnSiteId",
+                  "keywords": "apnKeywords",
+                  "sectioncat": ["books"],
+                  "search": "books",
+                  "pagecat": ["magazines"],
                   "page": "http://www.foobar.com/testurl.html"
                 }
               }
@@ -101,6 +105,10 @@
     "appnexus": {
       "site": {
         "id": "reqSiteId",
+        "keywords": "apnKeywords",
+        "sectioncat": ["books"],
+        "pagecat": ["magazines"],
+        "search": "books",
         "page": "http://www.foobar.com/testurl.html",
         "publisher": {
           "id": "1"

@@ -1,0 +1,136 @@
+{
+  "inputRequestData": {
+    "id": "bid_id",
+    "imp": [
+      {
+        "id": "1_0",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "maxduration": 30,
+          "protocols": [
+            2,
+            3
+          ],
+          "w": 640,
+          "h": 480
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 14997137
+          }
+        }
+      }
+    ],
+    "app": {
+      "id": "reqAppId",
+      "page": "http://www.foobar.com/1234.html",
+      "publisher": {
+        "id": "1"
+      }
+    },
+    "test": 1,
+    "ext": {
+      "prebid": {
+        "data": {
+          "bidders": [
+            "appnexus"
+          ]
+        },
+        "bidderconfig": [
+          {
+            "bidders": [
+              "appnexus"
+            ],
+            "config": {
+              "ortb2": {
+                "app": {
+                  "id": "apnAppId",
+                  "name": "fpdAppName",
+                  "bundle": "fpdAppBundle",
+                  "domain": "fpdAppDomain",
+                  "storeurl": "fpdAppstoreUrl",
+                  "cat": ["books"],
+                  "sectioncat": ["books"],
+                  "pagecat": ["magazines"],
+                  "keywords": "apnKeywords",
+                  "ver": "1.2",
+                  "page": "http://www.foobar.com/testurl.html"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "outputRequestData": {
+    "id": "bid_id",
+    "imp": [
+      {
+        "id": "1_0",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "maxduration": 30,
+          "protocols": [
+            2,
+            3
+          ],
+          "w": 640,
+          "h": 480
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 14997137
+          }
+        }
+      }
+    ],
+    "app": {
+      "id": "reqAppId",
+      "page": "http://www.foobar.com/1234.html",
+      "publisher": {
+        "id": "1"
+      }
+    },
+    "test": 1,
+    "ext": {
+      "prebid": {
+        "data": {
+          "eidpermissions": null,
+          "bidders": null
+        }
+      }
+    }
+  },
+  "biddersFPDResolved": {
+    "appnexus": {
+      "app": {
+        "id": "reqAppId",
+        "name": "fpdAppName",
+        "bundle": "fpdAppBundle",
+        "domain": "fpdAppDomain",
+        "storeurl": "fpdAppstoreUrl",
+        "cat": ["books"],
+        "sectioncat": ["books"],
+        "pagecat": ["magazines"],
+        "keywords": "apnKeywords",
+        "ver": "1.2",
+        "page": "http://www.foobar.com/testurl.html",
+        "publisher": {
+          "id": "1"
+        },
+        "ext": {
+          "data": {
+            "id": "apnAppId",
+            "page": "http://www.foobar.com/testurl.html"
+          }
+        }
+      }
+    }
+  },
+  "validationErrors": []
+}

@@ -2,7 +2,6 @@ package firstpartydata
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
@@ -559,7 +558,6 @@ func TestExtractBidderConfigFPD(t *testing.T) {
 		for _, specFile := range specFiles {
 			fileName := "./tests/extractbidderconfigfpd/" + specFile.Name()
 
-			fmt.Println(fileName)
 			fpdFile, err := loadFpdFile(fileName)
 			if err != nil {
 				t.Errorf("Unable to load file: %s", fileName)
@@ -734,8 +732,6 @@ func TestExtractFPDForBidders(t *testing.T) {
 			fileName := "./tests/extractfpdforbidders/" + specFile.Name()
 			fpdFile, err := loadFpdFile(fileName)
 
-			fmt.Println(fileName)
-
 			if err != nil {
 				t.Errorf("Unable to load file: %s", fileName)
 			}
@@ -755,9 +751,14 @@ func TestExtractFPDForBidders(t *testing.T) {
 
 			if len(fpdFile.ValidationErrors) > 0 {
 				assert.Equal(t, len(fpdFile.ValidationErrors), len(errL), "")
+				errorContainsText := false
 				for i := range fpdFile.ValidationErrors {
-					assert.Contains(t, errL[i].Error(), fpdFile.ValidationErrors[i], "Incorrect first party data warning message")
+					if strings.Contains(errL[i].Error(), fpdFile.ValidationErrors[i]) {
+						errorContainsText = true
+						break
+					}
 				}
+				assert.True(t, errorContainsText, "Incorrect validation message")
 				continue
 			}
 			assert.Empty(t, errL, "Error should be empty")
