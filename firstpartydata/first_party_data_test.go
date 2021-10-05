@@ -2,6 +2,7 @@ package firstpartydata
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
@@ -557,6 +558,7 @@ func TestExtractBidderConfigFPD(t *testing.T) {
 	if specFiles, err := ioutil.ReadDir("./tests/extractbidderconfigfpd"); err == nil {
 		for _, specFile := range specFiles {
 			fileName := "./tests/extractbidderconfigfpd/" + specFile.Name()
+			fmt.Println(fileName)
 
 			fpdFile, err := loadFpdFile(fileName)
 			if err != nil {
@@ -616,6 +618,7 @@ func TestResolveFPD(t *testing.T) {
 	if specFiles, err := ioutil.ReadDir("./tests/resolvefpd"); err == nil {
 		for _, specFile := range specFiles {
 			fileName := "./tests/resolvefpd/" + specFile.Name()
+			fmt.Println(fileName)
 
 			fpdFile, err := loadFpdFile(fileName)
 			if err != nil {
@@ -693,7 +696,7 @@ func TestResolveFPD(t *testing.T) {
 					expectedSiteExt := outputReq.Site.Ext
 					bidderFPD.Site.Ext = nil
 					outputReq.Site.Ext = nil
-					assert.JSONEq(t, string(resSiteExt), string(expectedSiteExt), "site.ext is incorrect")
+					assert.JSONEq(t, string(expectedSiteExt), string(resSiteExt), "site.ext is incorrect")
 
 					assert.Equal(t, outputReq.Site, bidderFPD.Site, "Site is incorrect")
 				}
@@ -702,7 +705,7 @@ func TestResolveFPD(t *testing.T) {
 					expectedAppExt := outputReq.App.Ext
 					bidderFPD.App.Ext = nil
 					outputReq.App.Ext = nil
-					assert.JSONEq(t, string(resAppExt), string(expectedAppExt), "app.ext is incorrect")
+					assert.JSONEq(t, string(expectedAppExt), string(resAppExt), "app.ext is incorrect")
 
 					assert.Equal(t, outputReq.App, bidderFPD.App, "App is incorrect")
 				}
@@ -711,7 +714,7 @@ func TestResolveFPD(t *testing.T) {
 					expectedUserExt := outputReq.User.Ext
 					bidderFPD.User.Ext = nil
 					outputReq.User.Ext = nil
-					assert.JSONEq(t, string(resUserExt), string(expectedUserExt), "user.ext is incorrect")
+					assert.JSONEq(t, string(expectedUserExt), string(resUserExt), "user.ext is incorrect")
 
 					assert.Equal(t, outputReq.User, bidderFPD.User, "User is incorrect")
 				}
@@ -731,6 +734,7 @@ func TestExtractFPDForBidders(t *testing.T) {
 		for _, specFile := range specFiles {
 			fileName := "./tests/extractfpdforbidders/" + specFile.Name()
 			fpdFile, err := loadFpdFile(fileName)
+			fmt.Println(fileName)
 
 			if err != nil {
 				t.Errorf("Unable to load file: %s", fileName)
