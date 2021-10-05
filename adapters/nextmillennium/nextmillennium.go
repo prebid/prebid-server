@@ -36,8 +36,8 @@ func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adap
 	}
 
 	result := make([]*adapters.RequestData, 0, len(resImps))
-	for _, imps := range resImps {
-		bidRequest, err := adapter.buildAdapterRequest(request, imps, request.Imp)
+	for _, imp := range resImps {
+		bidRequest, err := adapter.buildAdapterRequest(request, imp)
 		if err != nil {
 			return nil, []error{err}
 		} else {
@@ -47,15 +47,10 @@ func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adap
 	return result, nil
 }
 
-// getImpressionsInfo checks each impression for validity and returns impressions copy with corresponding exts
 func getImpressionsInfo(imps []openrtb2.Imp) (resImps []*openrtb_ext.ImpExtNextMillennium, errors []error) {
 	for _, imp := range imps {
 		impExt, err := getImpressionExt(&imp)
 		if err != nil {
-			errors = append(errors, err)
-			continue
-		}
-		if err := validateImpression(impExt); err != nil {
 			errors = append(errors, err)
 			continue
 		}
@@ -64,13 +59,6 @@ func getImpressionsInfo(imps []openrtb2.Imp) (resImps []*openrtb_ext.ImpExtNextM
 	}
 
 	return
-}
-
-func validateImpression(impExt *openrtb_ext.ImpExtNextMillennium) error {
-	if impExt.PlacementID == "" {
-		return &errortypes.BadInput{Message: "No valid placement provided"}
-	}
-	return nil
 }
 
 func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ImpExtNextMillennium, error) {
@@ -90,8 +78,8 @@ func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ImpExtNextMillennium, err
 	return &nextMillenniumExt, nil
 }
 
-func (adapter *adapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ImpExtNextMillennium, imps []openrtb2.Imp) (*adapters.RequestData, error) {
-	newBidRequest := createBidRequest(prebidBidRequest, params, imps)
+func (adapter *adapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ImpExtNextMillennium) (*adapters.RequestData, error) {
+	newBidRequest := createBidRequest(prebidBidRequest, params)
 
 	reqJSON, err := json.Marshal(newBidRequest)
 	if err != nil {
@@ -110,7 +98,7 @@ func (adapter *adapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidReques
 		Headers: headers}, nil
 }
 
-func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ImpExtNextMillennium, imps []openrtb2.Imp) *NextMillenniumBidRequest {
+func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ImpExtNextMillennium) *NextMillenniumBidRequest {
 	bidRequest := NextMillenniumBidRequest{
 		ID:   prebidBidRequest.ID,
 		Test: uint8(prebidBidRequest.Test),
