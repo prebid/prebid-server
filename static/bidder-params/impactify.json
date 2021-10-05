@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Impactify Adapter Params",
+  "description": "A schema which validates params accepted by the Impactify adapter",
+  "type": "object",
+  "properties": {
+    "appId": {
+      "type": "string",
+      "description": "The appId of your website",
+      "minLength": 1
+    },
+    "format": {
+      "type": "string",
+      "description": "The format of the ad",
+      "minLength": 1
+    },
+    "style": {
+      "type": "string",
+      "description": "The style of the ad",
+      "minLength": 1
+    }
+  },
+
+  "required": ["appId", "format", "style"]
+}
