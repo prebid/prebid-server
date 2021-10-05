@@ -212,7 +212,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			TapjoyData: adapters.TapjoyData{
 				Bidder:        "pangle",
 				PlacementType: placementType,
-				Region:        "apac",
+				Region:        bidderImpExt.Region,
 				SKAN: adapters.SKAN{
 					Supported: bidderImpExt.SKADNSupported,
 					Sent:      skanSent,

@@ -6,12 +6,13 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/adapters/appier"
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/prebid/prebid-server/adapters/appier"
 
 	"github.com/newrelic/go-agent/v3/integrations/nrhttprouter"
 	nr "github.com/newrelic/go-agent/v3/newrelic"
@@ -35,6 +36,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/mintegral"
 	"github.com/prebid/prebid-server/adapters/moloco"
 	"github.com/prebid/prebid-server/adapters/molococloud"
+	"github.com/prebid/prebid-server/adapters/personaly"
 	"github.com/prebid/prebid-server/adapters/pubmatic"
 	"github.com/prebid/prebid-server/adapters/pulsepoint"
 	"github.com/prebid/prebid-server/adapters/rubicon"
@@ -210,6 +212,7 @@ func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
 			cfg.Adapters[string(openrtb_ext.BidderMolocoCloud)].XAPI.EndpointUSEast,
 			cfg.Adapters[string(openrtb_ext.BidderMolocoCloud)].XAPI.EndpointEU,
 			cfg.Adapters[string(openrtb_ext.BidderMolocoCloud)].XAPI.EndpointAPAC),
+		"personaly":  personaly.NewPersonalyLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPersonaly)].Endpoint),
 		"pubmatic":   pubmatic.NewPubmaticLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPubmatic)].Endpoint),
 		"pulsepoint": pulsepoint.NewPulsePointLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPulsepoint)].Endpoint),
 		"rubicon": rubicon.NewRubiconLegacyAdapter(

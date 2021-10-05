@@ -947,6 +947,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.outbrain.endpoint", "https://prebidtest.zemanta.com/api/bidder/prebidtest/bid/")
 	v.SetDefault("adapters.pangle.disabled", true)
 	v.SetDefault("adapters.pangle.endpoint", "https://pangle.io/api/get_ads")
+	v.SetDefault("adapters.personaly.disabled", true)
+	v.SetDefault("adapters.personaly.endpoint", "http://us-bidder.personaly.bid/rtb/bid/tapjoy")
 	v.SetDefault("adapters.pubmatic.disabled", true)
 	v.SetDefault("adapters.pubmatic.endpoint", "https://hbopenbid.pubmatic.com/translator?source=prebid-server")
 	v.SetDefault("adapters.pubnative.endpoint", "http://dsp.pubnative.net/bid/v1/request")
