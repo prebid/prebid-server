@@ -3,8 +3,6 @@ package jsonutil
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
-	"github.com/buger/jsonparser"
 	"io"
 )
 
@@ -104,7 +102,6 @@ func FindElement(extension []byte, elementNames ...string) (bool, int64, int64, 
 			}
 			return found, startIndex, startIndex, nil
 		}
-
 	}
 	return found, startIndex, endIndex, nil
 }
@@ -118,68 +115,8 @@ func DropElement(extension []byte, elementNames ...string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	if found {
 		extension = append(extension[:startIndex], extension[endIndex:]...)
 	}
-
 	return extension, nil
-
-}
-
-//Sets element to json byte array to specified path
-// - only one key is now supported
-// - can set new element to existing top level element
-// - can create new top level element
-// - element may have any type
-func SetElement(originDataInput []byte, setValue []byte, keys ...string) ([]byte, error) {
-
-	if len(keys) != 1 {
-		return originDataInput, errors.New("only one key is now supported")
-	}
-	key := keys[0]
-
-	originData := make(map[string]interface{})
-	setValueData := make(map[string]interface{})
-
-	err := json.Unmarshal(originDataInput, &originData)
-	if err != nil {
-		return originDataInput, err
-	}
-	err = json.Unmarshal(setValue, &setValueData)
-	if err != nil {
-		return originDataInput, err
-	}
-
-	if val, ok := originData[key]; ok {
-		//element exists already - add new element(s) to it
-		data := val.(map[string]interface{})
-		for k, v := range setValueData {
-			data[k] = v
-		}
-		originData[key] = data
-	} else {
-		//element doesn't exist - set value as is
-		originData[key] = setValueData
-	}
-	res, err := json.Marshal(originData)
-	return res, err
-}
-
-//Finds and drops element from json byte array
-func FindAndDropElement(input []byte, elementNames ...string) ([]byte, []byte, error) {
-	element, _, _, err := jsonparser.Get(input, elementNames...)
-	if err != nil && err != jsonparser.KeyPathNotFoundError {
-		return input, nil, err
-	}
-	elementCopy := make([]byte, len(element))
-	if element != nil {
-		copy(elementCopy, element)
-
-		input, err = DropElement(input, elementNames...)
-		if err != nil {
-			return input, nil, err
-		}
-	}
-	return input, elementCopy, nil
 }
