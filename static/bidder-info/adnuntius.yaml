@@ -1,9 +1,10 @@
 maintainer:
-  email: hello@adnuintius.com
+    email: hello@adnuntius.com
+gvlVendorID: 855
 capabilities:
-  app:
-    mediaTypes:
-      - banner
-  site:
-    mediaTypes:
-      - banner
+    app:
+        mediaTypes:
+            - banner
+    site:
+        mediaTypes:
+            - banner

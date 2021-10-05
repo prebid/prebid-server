@@ -58,82 +58,28 @@
                 "body": {
                     "adUnits": [
                         {
-                            "auId": "000000000001789f",
-                            "targetId": "1789f-some1111",
+                            "auId": "0000000000000123",
+                            "targetId": "123-test-imp-id",
                             "html": "<ADCODE>",
-                            "matchedAdCount": 1,
                             "responseId": "adn-rsp-900646517",
                             "ads": [
                                 {
-                                    "destinationUrlEsc": "",
-                                    "assets": {
-                                        "Image": {
-                                            "cdnId": "https://assets.adnuntius.com/PwdmnbBpj7Hgd4wdbxDpvLFRyxFgojt5DIDFAfK9rrc.jpg",
-                                            "width": "660",
-                                            "height": "200"
-                                        }
-                                    },
-                                    "text": {},
-                                    "choices": {},
-                                    "clickUrl": "https://ads.adnuntius.delivery/c/n6xZq-VhchUD8PbfezltPoCESuAfspN-w0wjkkwzHXsAAAAQCtjQz9kbGWD4nuZy3q6HaHGLVNv__f6bBEfVP76Mfd6iokhXOQf7XpiOka60HChCnQjfT3AAqAO1swCIxQR73xnw2Okk_huqOKANzHxOy9gOZB8wEKOW8bs-Po5kTzB8U8UaB4BF9d48j6zHV7ST6-6cRBhpWFyKZUaUDEgmwKXM8xlQC-OJY7F9UJ0rN8OZQis1rnmeXrbik9VvxuV8Owsd_I9ZMS4G",
-                                    "urls": {
-                                        "url": "https://ads.adnuntius.delivery/c/n6xZq-VhchUD8PbfezltPoCESuAfspN-w0wjkkwzHXsAAAAQCtjQz9kbGWD4nuZy3q6HaHGLVNv__f6bBEfVP76Mfd6iokhXOQf7XpiOka60HChCnQjfT3AAqAO1swCIxQR73xnw2Okk_huqOKANzHxOy9gOZB8wEKOW8bs-Po5kTzB8U8UaB4BF9d48j6zHV7ST6-6cRBhpWFyKZUaUDEgmwKXM8xlQC-OJY7F9UJ0rN8OZQis1rnmeXrbik9VvxuV8Owsd_I9ZMS4G?ct=2587&r=http%3A%2F%2Fwww.google.com"
-                                    },
-                                    "urlsEsc": {
-                                        "url": "https%3A%2F%2Fads.adnuntius.delivery%2Fc%2Fn6xZq-VhchUD8PbfezltPoCESuAfspN-w0wjkkwzHXsAAAAQCtjQz9kbGWD4nuZy3q6HaHGLVNv__f6bBEfVP76Mfd6iokhXOQf7XpiOka60HChCnQjfT3AAqAO1swCIxQR73xnw2Okk_huqOKANzHxOy9gOZB8wEKOW8bs-Po5kTzB8U8UaB4BF9d48j6zHV7ST6-6cRBhpWFyKZUaUDEgmwKXM8xlQC-OJY7F9UJ0rN8OZQis1rnmeXrbik9VvxuV8Owsd_I9ZMS4G%3Fct%3D2587%26r%3Dhttp%253A%252F%252Fwww.google.com"
-                                    },
                                     "destinationUrls": {
                                         "url": "http://www.google.com"
-                                    },
-                                    "cpm": {
-                                        "amount": 20000.0,
-                                        "currency": "NOK"
                                     },
                                     "bid": {
                                         "amount": 20.0,
                                         "currency": "NOK"
                                     },
-                                    "cost": {
-                                        "amount": 20.0,
-                                        "currency": "NOK"
-                                    },
-                                    "impressionTrackingUrls": [],
-                                    "impressionTrackingUrlsEsc": [],
                                     "adId": "adn-id-1559784094",
-                                    "selectedColumn": "0",
-                                    "selectedColumnPosition": "0",
-                                    "renderedPixel": "https://ads.adnuntius.delivery/b/n6xZq-VhchUD8PbfezltPoCESuAfspN-w0wjkkwzHXsAAAAQCtjQz9kbGWD4nuZy3q6HaHGLVNv__f6bBEfVP76Mfd6iokhXOQf7XpiOka60HChCnQjfT3AAqAO1swCIxQR73xnw2Okk_huqOKANzHxOy9gOZB8wEKOW8bs-Po5kTzB8U8UaB4BF9d48j6zHV7ST6-6cRBhpWFyKZUaUDEgmwKXM8xlQC-OJY7F9UJ0rN8OZQis1rnmeXrbik9VvxuV8Owsd_I9ZMS4G.html",
-                                    "renderedPixelEsc": "https%3A%2F%2Fads.adnuntius.delivery%2Fb%2Fn6xZq-VhchUD8PbfezltPoCESuAfspN-w0wjkkwzHXsAAAAQCtjQz9kbGWD4nuZy3q6HaHGLVNv__f6bBEfVP76Mfd6iokhXOQf7XpiOka60HChCnQjfT3AAqAO1swCIxQR73xnw2Okk_huqOKANzHxOy9gOZB8wEKOW8bs-Po5kTzB8U8UaB4BF9d48j6zHV7ST6-6cRBhpWFyKZUaUDEgmwKXM8xlQC-OJY7F9UJ0rN8OZQis1rnmeXrbik9VvxuV8Owsd_I9ZMS4G.html",
-                                    "visibleUrl": "https://ads.adnuntius.delivery/s?rt=n6xZq-VhchUD8PbfezltPoCESuAfspN-w0wjkkwzHXsAAAAQCtjQz9kbGWD4nuZy3q6HaHGLVNv__f6bBEfVP76Mfd6iokhXOQf7XpiOka60HChCnQjfT3AAqAO1swCIxQR73xnw2Okk_huqOKANzHxOy9gOZB8wEKOW8bs-Po5kTzB8U8UaB4BF9d48j6zHV7ST6-6cRBhpWFyKZUaUDEgmwKXM8xlQC-OJY7F9UJ0rN8OZQis1rnmeXrbik9VvxuV8Owsd_I9ZMS4G",
-                                    "visibleUrlEsc": "https%3A%2F%2Fads.adnuntius.delivery%2Fs%3Frt%3Dn6xZq-VhchUD8PbfezltPoCESuAfspN-w0wjkkwzHXsAAAAQCtjQz9kbGWD4nuZy3q6HaHGLVNv__f6bBEfVP76Mfd6iokhXOQf7XpiOka60HChCnQjfT3AAqAO1swCIxQR73xnw2Okk_huqOKANzHxOy9gOZB8wEKOW8bs-Po5kTzB8U8UaB4BF9d48j6zHV7ST6-6cRBhpWFyKZUaUDEgmwKXM8xlQC-OJY7F9UJ0rN8OZQis1rnmeXrbik9VvxuV8Owsd_I9ZMS4G",
-                                    "viewUrl": "https://ads.adnuntius.delivery/v?rt=n6xZq-VhchUD8PbfezltPoCESuAfspN-w0wjkkwzHXsAAAAQCtjQz9kbGWD4nuZy3q6HaHGLVNv__f6bBEfVP76Mfd6iokhXOQf7XpiOka60HChCnQjfT3AAqAO1swCIxQR73xnw2Okk_huqOKANzHxOy9gOZB8wEKOW8bs-Po5kTzB8U8UaB4BF9d48j6zHV7ST6-6cRBhpWFyKZUaUDEgmwKXM8xlQC-OJY7F9UJ0rN8OZQis1rnmeXrbik9VvxuV8Owsd_I9ZMS4G",
-                                    "viewUrlEsc": "https%3A%2F%2Fads.adnuntius.delivery%2Fv%3Frt%3Dn6xZq-VhchUD8PbfezltPoCESuAfspN-w0wjkkwzHXsAAAAQCtjQz9kbGWD4nuZy3q6HaHGLVNv__f6bBEfVP76Mfd6iokhXOQf7XpiOka60HChCnQjfT3AAqAO1swCIxQR73xnw2Okk_huqOKANzHxOy9gOZB8wEKOW8bs-Po5kTzB8U8UaB4BF9d48j6zHV7ST6-6cRBhpWFyKZUaUDEgmwKXM8xlQC-OJY7F9UJ0rN8OZQis1rnmeXrbik9VvxuV8Owsd_I9ZMS4G",
-                                    "rt": "n6xZq-VhchUD8PbfezltPoCESuAfspN-w0wjkkwzHXsAAAAQCtjQz9kbGWD4nuZy3q6HaHGLVNv__f6bBEfVP76Mfd6iokhXOQf7XpiOka60HChCnQjfT3AAqAO1swCIxQR73xnw2Okk_huqOKANzHxOy9gOZB8wEKOW8bs-Po5kTzB8U8UaB4BF9d48j6zHV7ST6-6cRBhpWFyKZUaUDEgmwKXM8xlQC-OJY7F9UJ0rN8OZQis1rnmeXrbik9VvxuV8Owsd_I9ZMS4G",
                                     "creativeWidth": "980",
                                     "creativeHeight": "240",
                                     "creativeId": "jn9hpzvlsf8cpdmm",
-                                    "lineItemId": "q7y9qm5b0xt9htrv",
-                                    "layoutId": "adnuntius_image_layout_1",
-                                    "layoutName": "Image",
-                                    "layoutExternalReference": "",
-                                    "renderTemplate": "<a relscript>",
-                                    "html": "<a rel=nofollow target=_top</script>"
+                                    "lineItemId": "q7y9qm5b0xt9htrv"
                                 }
                             ]
                         }
-                    ],
-                    "metaData": {
-                        "r": "0AAAAAQAA",
-                        "s": "0AAAAAQAA",
-                        "c": "0AAAAAQAA",
-                        "v": "0AAAAAQAA",
-                        "i": "0AAAAAQAA",
-                        "usi": "1kjh3429kjh295jkl",
-                        "sessionId": "328ebda9ca77c2e0d29317be1ef4336c"
-                    },
-                    "duplicateFilter": "AAAAAAAAAAA=",
-                    "segments": [],
-                    "keywords": []
+                    ]
                 }
             }
         }
@@ -156,7 +102,8 @@
                     },
                     "type": "banner"
                 }
-            ]
+            ],
+            "currency": "NOK"
         }
     ]
 }
