@@ -218,6 +218,41 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 			continue
 		}
 
+		reqSourceExt := map[string]interface{}{}
+		reqSourceExt["mediator_id"] = mintegralExt.MediatorID
+		reqSourceExt["header_bidding"] = mintegralExt.HeaderBidding
+
+		if request.Source != nil {
+			reqSource := *request.Source
+
+			if reqSource.Ext != nil {
+				if err = json.Unmarshal(reqSource.Ext, &reqSourceExt); err != nil {
+					errs = append(errs, &errortypes.BadInput{
+						Message: err.Error(),
+					})
+					continue
+				}
+			}
+
+			reqSource.Ext, err = json.Marshal(&reqSourceExt)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+
+			request.Source = &reqSource
+		} else {
+			reqSource := openrtb.Source{}
+
+			reqSource.Ext, err = json.Marshal(&reqSourceExt)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+
+			request.Source = &reqSource
+		}
+
 		request.Imp = []openrtb.Imp{thisImp}
 		request.Cur = nil
 		request.Ext = nil
