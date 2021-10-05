@@ -159,21 +159,18 @@ func (a *adapter) MakeBids(
 }
 
 func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
-	var mediaType openrtb_ext.BidType = ""
 	for _, imp := range imps {
 		if imp.ID == impID {
 			if imp.Banner != nil {
-				mediaType = openrtb_ext.BidTypeBanner
-				return mediaType, nil
+				return openrtb_ext.BidTypeBanner, nil
 			} else if imp.Video != nil {
-				mediaType = openrtb_ext.BidTypeVideo
-				return mediaType, nil
+				return openrtb_ext.BidTypeVideo, nil
 			}
 		}
 	}
 
 	return "", &errortypes.BadInput{
-		Message: fmt.Sprintf("Failed to find a supported media type impression \"%s\" ", impID),
+		Message: fmt.Sprintf("Failed to find a supported media type impression \"%s\"", impID),
 	}
 }
 
