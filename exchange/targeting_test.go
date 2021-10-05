@@ -8,17 +8,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
-
 	"github.com/prebid/prebid-server/gdpr"
-
-	metricsConf "github.com/prebid/prebid-server/metrics/config"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
-
-	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/openrtb_ext"
+
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -88,7 +85,7 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 
 	ex := &exchange{
 		adapterMap:        buildAdapterMap(mockBids, server.URL, server.Client()),
-		me:                &metricsConf.NilMetricsEngine{},
+		me:                &metricsConfig.NilMetricsEngine{},
 		cache:             &wellBehavedCache{},
 		cacheTime:         time.Duration(0),
 		gDPR:              gdpr.AlwaysAllow{},
