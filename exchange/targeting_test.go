@@ -129,14 +129,6 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 	return buildBidMap(bidResp.SeatBid, len(mockBids))
 }
 
-func buildBidderList(bids map[openrtb_ext.BidderName][]*openrtb2.Bid) []openrtb_ext.BidderName {
-	bidders := make([]openrtb_ext.BidderName, 0, len(bids))
-	for name := range bids {
-		bidders = append(bidders, name)
-	}
-	return bidders
-}
-
 func buildAdapterMap(bids map[openrtb_ext.BidderName][]*openrtb2.Bid, mockServerURL string, client *http.Client) map[openrtb_ext.BidderName]adaptedBidder {
 	adapterMap := make(map[openrtb_ext.BidderName]adaptedBidder, len(bids))
 	for bidder, bids := range bids {

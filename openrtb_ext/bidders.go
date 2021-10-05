@@ -12,8 +12,6 @@ import (
 	"github.com/xeipuuv/gojsonschema"
 )
 
-const schemaDirectory = "static/bidder-params"
-
 // BidderName refers to a core bidder id or an alias id.
 type BidderName string
 

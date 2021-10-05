@@ -2,58 +2,14 @@ package pubstack
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 	"time"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/stretchr/testify/assert"
 )
-
-func loadJSONFromFile() (*analytics.AuctionObject, error) {
-	req, err := os.Open("mocks/mock_openrtb_request.json")
-	if err != nil {
-		return nil, err
-	}
-	defer req.Close()
-
-	reqCtn := openrtb2.BidRequest{}
-	reqPayload, err := ioutil.ReadAll(req)
-	if err != nil {
-		return nil, err
-	}
-
-	err = json.Unmarshal(reqPayload, &reqCtn)
-	if err != nil {
-		return nil, err
-	}
-
-	res, err := os.Open("mocks/mock_openrtb_response.json")
-	if err != nil {
-		return nil, err
-	}
-	defer res.Close()
-
-	resCtn := openrtb2.BidResponse{}
-	resPayload, err := ioutil.ReadAll(res)
-	if err != nil {
-		return nil, err
-	}
-
-	err = json.Unmarshal(resPayload, &resCtn)
-	if err != nil {
-		return nil, err
-	}
-
-	return &analytics.AuctionObject{
-		Request:  &reqCtn,
-		Response: &resCtn,
-	}, nil
-}
 
 func TestPubstackModuleErrors(t *testing.T) {
 	tests := []struct {
