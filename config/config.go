@@ -33,7 +33,6 @@ type Configuration struct {
 	RecaptchaSecret   string          `mapstructure:"recaptcha_secret"`
 	HostCookie        HostCookie      `mapstructure:"host_cookie"`
 	Metrics           Metrics         `mapstructure:"metrics"`
-	DataCache         DataCache       `mapstructure:"datacache"`
 	StoredRequests    StoredRequests  `mapstructure:"stored_requests"`
 	StoredRequestsAMP StoredRequests  `mapstructure:"stored_amp_req"`
 	CategoryMapping   StoredRequests  `mapstructure:"category_mapping"`
@@ -397,13 +396,6 @@ func (m *PrometheusMetrics) Timeout() time.Duration {
 	return time.Duration(m.TimeoutMillisRaw) * time.Millisecond
 }
 
-type DataCache struct {
-	Type       string `mapstructure:"type"`
-	Filename   string `mapstructure:"filename"`
-	CacheSize  int    `mapstructure:"cache_size"`
-	TTLSeconds int    `mapstructure:"ttl_seconds"`
-}
-
 // ExternalCache configures the externally accessible cache url.
 type ExternalCache struct {
 	Scheme string `mapstructure:"scheme"`
@@ -656,10 +648,6 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("metrics.prometheus.namespace", "")
 	v.SetDefault("metrics.prometheus.subsystem", "")
 	v.SetDefault("metrics.prometheus.timeout_ms", 10000)
-	v.SetDefault("datacache.type", "dummy")
-	v.SetDefault("datacache.filename", "")
-	v.SetDefault("datacache.cache_size", 0)
-	v.SetDefault("datacache.ttl_seconds", 0)
 	v.SetDefault("category_mapping.filesystem.enabled", true)
 	v.SetDefault("category_mapping.filesystem.directorypath", "./static/category-mapping")
 	v.SetDefault("category_mapping.http.endpoint", "")
