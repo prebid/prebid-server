@@ -1,6 +1,7 @@
 {
   "mockBidRequest": {
     "id": "test-request-id",
+    "at": 1,
     "imp": [
       {
         "id": "test-imp-id",
@@ -11,8 +12,10 @@
           "h": 576
         },
         "ext":{
-          "bidder":{
-            "zoneId": "9999"
+          "bidder": {
+            "appId": "impactify.io",
+            "format": "screen",
+            "style": "impact"
           }
         }
       }
@@ -22,10 +25,11 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://bid306.rtbsrv.com/bidder/?bid=f3xtet&zone=9999",
+        "uri": "https://sonic.impactify.media/bidder",
         "body": {
           "id": "test-request-id",
           "at":1,
+          "cur": ["USD"],
           "imp": [
             {
               "id": "test-imp-id",
@@ -36,8 +40,10 @@
                 "h": 576
               },
               "ext": {
-                "bidder": {
-                  "zoneId": "9999"
+                "impactify": {
+                  "appId": "impactify.io",
+                  "format": "screen",
+                  "style": "impact"
                 }
               }
             }
@@ -48,21 +54,7 @@
         "status": 200,
         "body": {
           "id": "test-request-id",
-          "cur": "USD",
-          "seatbid": [
-            {
-              "seat": "Marsmedia",
-              "bid": [{
-                "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
-                "impid": "test-imp-id",
-                "price": 0.500000,
-                "adm": "some-test-ad",
-                "crid": "crid_10",
-                "w": 1024,
-                "h": 576
-              }]
-            }
-          ]
+          "cur": "USD"
         }
       }
     }
@@ -70,18 +62,7 @@
 
   "expectedBidResponses": [
     {
-      "bids": [{
-        "bid": {
-          "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
-          "impid": "test-imp-id",
-          "price": 0.5,
-          "adm": "some-test-ad",
-          "crid": "crid_10",
-          "w": 1024,
-          "h": 576
-        },
-        "type": "video"
-      }]
+      "bids": []
     }
   ]
 }

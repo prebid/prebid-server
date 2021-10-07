@@ -1,4 +1,4 @@
-package unruly
+package impactify
 
 import (
 	"testing"
@@ -9,12 +9,12 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderUnruly, config.Adapter{
-		Endpoint: "http://targeting.unrulymedia.com/unruly_prebid_server"})
+	bidder, buildErr := Builder(openrtb_ext.BidderImpactify, config.Adapter{
+		Endpoint: "https://sonic.impactify.media/bidder"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	adapterstest.RunJSONBidderTest(t, "unrulytest", bidder)
+	adapterstest.RunJSONBidderTest(t, "impactifytest", bidder)
 }

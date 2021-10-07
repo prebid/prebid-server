@@ -3,13 +3,15 @@
     "id": "test-request-id",
     "ext": {
       "bidder": {
-        "zoneId": "9999"
+        "appId": "impactify.io",
+        "format": "screen",
+        "style": "impact"
       }
     }
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "No impression in the bid request",
+      "value": "No valid impressions in the bid request",
       "comparison": "literal"
     }
   ]

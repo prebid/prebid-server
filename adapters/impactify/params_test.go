@@ -1,4 +1,4 @@
-package marsmedia
+package impactify
 
 import (
 	"encoding/json"
@@ -7,11 +7,6 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-// This file actually intends to test static/bidder-params/marsmedia.json
-//
-// These also validate the format of the external API: request.imp[i].ext.marsmedia
-
-// TestValidParams makes sure that the Marsmedia schema accepts all imp.ext fields which we intend to support.
 func TestValidParams(t *testing.T) {
 	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
 	if err != nil {
@@ -19,13 +14,12 @@ func TestValidParams(t *testing.T) {
 	}
 
 	for _, validParam := range validParams {
-		if err := validator.Validate(openrtb_ext.BidderMarsmedia, json.RawMessage(validParam)); err != nil {
-			t.Errorf("Schema rejected Marsmedia params: %s", validParam)
+		if err := validator.Validate(openrtb_ext.BidderImpactify, json.RawMessage(validParam)); err != nil {
+			t.Errorf("Schema rejected Impactify params: %s", validParam)
 		}
 	}
 }
 
-// TestInvalidParams makes sure that the Marsmedia schema rejects all the imp.ext fields we don't support.
 func TestInvalidParams(t *testing.T) {
 	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
 	if err != nil {
@@ -33,23 +27,23 @@ func TestInvalidParams(t *testing.T) {
 	}
 
 	for _, invalidParam := range invalidParams {
-		if err := validator.Validate(openrtb_ext.BidderMarsmedia, json.RawMessage(invalidParam)); err == nil {
+		if err := validator.Validate(openrtb_ext.BidderImpactify, json.RawMessage(invalidParam)); err == nil {
 			t.Errorf("Schema allowed unexpected params: %s", invalidParam)
 		}
 	}
 }
 
 var validParams = []string{
-	`{"zoneId": "9999"}`,
+	`{"appId": "impactify.io", "format": "screen", "style": "inline"}`,
+	`{"appId": "impactify.io", "format": "screen", "style": "impact"}`,
 }
 
 var invalidParams = []string{
-	`{"zoneId": 100}`,
-	`{"zoneId": true}`,
+	`{"appId":"impactify.io"}`,
+	`{"appId":"impactify.io", "format": "screen"}`,
 	``,
 	`null`,
 	`true`,
-	`9`,
-	`1.2`,
 	`[]`,
+	`{}`,
 }
