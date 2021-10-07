@@ -627,6 +627,11 @@ func ExtractFPDForBidders(req *openrtb_ext.RequestWrapper) (map[openrtb_ext.Bidd
 		openRtbGlobalFPD = ExtractOpenRtbGlobalFPD(req.BidRequest)
 	}
 
+	//fpd "kill switch" - if global bidder config is empty, but not null - do not apply global or bidder specific fpd
+	if biddersWithGlobalFPD != nil && len(biddersWithGlobalFPD) == 0 {
+		return nil, nil
+	}
+
 	if len(fbdBidderConfigData) == 0 && len(biddersWithGlobalFPD) == 0 {
 		return nil, nil
 	}
