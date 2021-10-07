@@ -953,7 +953,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("auto_gen_source_tid", true)
 	v.SetDefault("generate_bid_id", false)
 	v.SetDefault("generate_request_id", false)
-	v.SetDefault("enable_legacy_auction", true)
+	v.SetDefault("enable_legacy_auction", false)
 
 	v.SetDefault("request_timeout_headers.request_time_in_queue", "")
 	v.SetDefault("request_timeout_headers.request_timeout_in_queue", "")

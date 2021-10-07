@@ -144,7 +144,7 @@ func TestDefaults(t *testing.T) {
 	cmpStrings(t, "stored_requests.filesystem.directorypath", "./stored_requests/data/by_id", cfg.StoredRequests.Files.Path)
 	cmpBools(t, "auto_gen_source_tid", cfg.AutoGenSourceTID, true)
 	cmpBools(t, "generate_bid_id", cfg.GenerateBidID, false)
-	cmpBools(t, "enable_legacy_auction", cfg.EnableLegacyAuction, true)
+	cmpBools(t, "enable_legacy_auction", cfg.EnableLegacyAuction, false)
 
 	//Assert purpose VendorExceptionMap hash tables were built correctly
 	expectedTCF2 := TCF2{
@@ -354,7 +354,7 @@ request_validation:
     ipv4_private_networks: ["1.1.1.0/24"]
     ipv6_private_networks: ["1111::/16", "2222::/16"]
 generate_bid_id: true
-enable_legacy_auction: false
+enable_legacy_auction: true
 `)
 
 var adapterExtraInfoConfig = []byte(`
@@ -579,7 +579,7 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "request_validation.ipv6_private_networks", cfg.RequestValidation.IPv6PrivateNetworks[1], "2222::/16")
 	cmpBools(t, "generate_bid_id", cfg.GenerateBidID, true)
 	cmpStrings(t, "debug.override_token", cfg.Debug.OverrideToken, "")
-	cmpBools(t, "enable_legacy_auction", cfg.EnableLegacyAuction, false)
+	cmpBools(t, "enable_legacy_auction", cfg.EnableLegacyAuction, true)
 }
 
 func TestUnmarshalAdapterExtraInfo(t *testing.T) {
