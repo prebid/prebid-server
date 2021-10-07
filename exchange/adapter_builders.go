@@ -2,7 +2,7 @@ package exchange
 
 import (
 	"github.com/prebid/prebid-server/adapters"
-	ttx "github.com/prebid/prebid-server/adapters/33across"
+	"github.com/prebid/prebid-server/adapters/33across"
 	"github.com/prebid/prebid-server/adapters/aceex"
 	"github.com/prebid/prebid-server/adapters/acuityads"
 	"github.com/prebid/prebid-server/adapters/adagio"
@@ -98,7 +98,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/richaudience"
 	"github.com/prebid/prebid-server/adapters/rtbhouse"
 	"github.com/prebid/prebid-server/adapters/rubicon"
-	salunamedia "github.com/prebid/prebid-server/adapters/sa_lunamedia"
+	"github.com/prebid/prebid-server/adapters/sa_lunamedia"
 	"github.com/prebid/prebid-server/adapters/sharethrough"
 	"github.com/prebid/prebid-server/adapters/silvermob"
 	"github.com/prebid/prebid-server/adapters/smaato"

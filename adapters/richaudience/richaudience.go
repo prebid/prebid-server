@@ -63,13 +63,13 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	raiHeaders := http.Header{}
 
-	raiErrors := make([]error, 0, len(request.Imp))
-
 	setHeaders(&raiHeaders)
 
 	richaudienceRequest.ID = request.ID
 
-	resImps, err := setImp(request, &richaudienceRequest)
+	isUrlSecure := setSite(request, &richaudienceRequest)
+
+	resImps, err := setImp(request, &richaudienceRequest, isUrlSecure)
 
 	if err != nil {
 		return nil, []error{err}
@@ -79,13 +79,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	setSite(request, &richaudienceRequest)
 
-	err = setDevice(request, &richaudienceRequest)
-	if err != nil {
+	if err = setDevice(request, &richaudienceRequest); err != nil {
 		return nil, []error{err}
 	}
 
-	err = setUser(request, &richaudienceRequest, requestInfo)
-	if err != nil {
+	if err = setUser(request, &richaudienceRequest, requestInfo); err != nil {
 		return nil, []error{err}
 	}
 
@@ -101,7 +99,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		Headers: raiHeaders,
 	}
 
-	return []*adapters.RequestData{requestData}, raiErrors
+	return []*adapters.RequestData{requestData}, nil
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
@@ -158,7 +156,7 @@ func setHeaders(raiHeaders *http.Header) {
 	raiHeaders.Add("X-Openrtb-Version", "2.5")
 }
 
-func setImp(request *openrtb2.BidRequest, richaudienceRequest *richaudienceRequest) (resImps []openrtb2.Imp, err error) {
+func setImp(request *openrtb2.BidRequest, richaudienceRequest *richaudienceRequest, isUrlSecure bool) (resImps []openrtb2.Imp, err error) {
 	for _, imp := range request.Imp {
 		var secure = int8(0)
 		raiExt, errImp := parseImpExt(&imp)
@@ -182,19 +180,16 @@ func setImp(request *openrtb2.BidRequest, richaudienceRequest *richaudienceReque
 				imp.BidFloorCur = raiExt.BidFloorCur
 			}
 		}
-
-		if request.Site != nil && request.Site.Page != "" {
-			pageURL, err := url.Parse(request.Site.Page)
-			if err == nil && pageURL.Scheme == "https" {
-				secure = int8(1)
-			}
+		if isUrlSecure {
+			secure = int8(1)
 		}
+
 		imp.Secure = &secure
 
 		if imp.Banner.W == nil && imp.Banner.H == nil {
 			if len(imp.Banner.Format) == 0 {
 				err = &errortypes.BadInput{
-					Message: "Format Object not found",
+					Message: "request.Banner.Format is required",
 				}
 				return nil, err
 			}
@@ -206,26 +201,27 @@ func setImp(request *openrtb2.BidRequest, richaudienceRequest *richaudienceReque
 	return resImps, nil
 }
 
-func setSite(request *openrtb2.BidRequest, richaudienceRequest *richaudienceRequest) {
+func setSite(request *openrtb2.BidRequest, richaudienceRequest *richaudienceRequest) (isUrlSecure bool) {
 	if request.Site != nil {
 		if request.Site.Page != "" {
-			if request.Site.Domain == "" {
-				pageURL, err := url.Parse(request.Site.Page)
-				if err == nil {
+			richaudienceRequest.Site.Domain = request.Site.Domain
+			pageURL, err := url.Parse(request.Site.Page)
+			if err == nil {
+				if request.Site.Domain == "" {
 					richaudienceRequest.Site.Domain = pageURL.Host
 				}
-			} else {
-				richaudienceRequest.Site.Domain = request.Site.Domain
+				isUrlSecure = pageURL.Scheme == "https"
 			}
 
 			richaudienceRequest.Site.Page = request.Site.Page
 		}
 	}
+	return
 }
 
 func setDevice(request *openrtb2.BidRequest, richaudienceRequest *richaudienceRequest) (err error) {
 
-	if request.Device.IP == "" && request.Device.IPv6 == "" {
+	if request.Device != nil && request.Device.IP == "" && request.Device.IPv6 == "" {
 		err = &errortypes.BadInput{
 			Message: "request.Device.IP is required",
 		}
