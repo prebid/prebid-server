@@ -56,7 +56,7 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestDa
 		return nil, err
 	}
 
-	preProcess(request)
+	preProcess(request, algorixExt)
 	reqBody, err := json.Marshal(request)
 	if err != nil {
 		return nil, err
@@ -98,7 +98,7 @@ func (a *adapter) getEndPoint(ext *openrtb_ext.ExtImpAlgorix) (string, error) {
 	return macros.ResolveMacros(a.EndpointTemplate, endPointParams)
 }
 
-func preProcess(request *openrtb2.BidRequest) {
+func preProcess(request *openrtb2.BidRequest, ext *openrtb_ext.ExtImpAlgorix) {
 	for i := range request.Imp {
 		if request.Imp[i].Banner != nil {
 			banner := *request.Imp[i].Banner
@@ -109,6 +109,7 @@ func preProcess(request *openrtb2.BidRequest) {
 				request.Imp[i].Banner = &banner
 			}
 		}
+		request.Imp[i].TagID = ext.PlacementId
 	}
 }
 

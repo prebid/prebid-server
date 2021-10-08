@@ -10,7 +10,9 @@
         "ext": {
           "bidder": {
             "sid": "testSid",
-            "token": "testToken"
+            "token": "testToken",
+            "placementId": "testPlacementId",
+            "appId": "testAppId"
           }
         }
       }
@@ -31,10 +33,13 @@
                 "w": 320,
                 "h": 50
               },
+              "tagid": "testPlacementId",
               "ext": {
                 "bidder": {
                   "sid": "testSid",
-                  "token": "testToken"
+                  "token": "testToken",
+                  "placementId": "testPlacementId",
+                  "appId": "testAppId"
                 }
               }
             }
