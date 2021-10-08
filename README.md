@@ -1,8 +1,10 @@
+# [![Prebid Server Logo](https://github.com/prebid/prebid-server/blob/master/static/pbs-logo.svg?raw=true)](https://prebid.org/product-suite/prebid-server/)
+
 [![Build](https://img.shields.io/github/workflow/status/prebid/prebid-server/Validate/master?style=flat-square)](https://github.com/prebid/prebid-server/actions/workflows/validate.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/prebid/prebid-server?style=flat-square)](https://goreportcard.com/report/github.com/prebid/prebid-server)
 ![Go Version](https://img.shields.io/github/go-mod/go-version/prebid/prebid-server?style=flat-square)
 
-# Prebid Server
+Prebid Server is an open-source solution for server-to-server header bidding with Prebid.js and Prebid Mobile.
 
 Prebid Server is an open source implementation of Server-Side Header Bidding.
 It is managed by [Prebid.org](http://prebid.org/overview/what-is-prebid-org.html),
