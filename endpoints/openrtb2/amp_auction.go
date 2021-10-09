@@ -348,6 +348,14 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 		return
 	}
 
+	// Fetch Channel Information and Update Channel Object in config with this information
+	deps.cfg.Channel = openrtb_ext.ExtRequestPrebidChannel{}
+	deps.cfg.Channel, err = getChannelObjectAmpFromRequest(requestJSON)
+	if err != nil {
+		errs = []error{err}
+		return
+	}
+
 	if deps.cfg.GenerateRequestID || req.ID == "{{UUID}}" {
 		newBidRequestId, err := deps.uuidGenerator.Generate()
 		if err != nil {
@@ -574,4 +582,28 @@ func setEffectiveAmpPubID(req *openrtb2.BidRequest, account string) {
 			pub.ID = account
 		}
 	}
+}
+
+// Update config channel object with information found from request. If no info found, we set channel name to "amp"
+func getChannelObjectAmpFromRequest(request []byte) (openrtb_ext.ExtRequestPrebidChannel, error) {
+	channelInfo, dataType, _, err := jsonparser.Get(request, "ext", "prebid", "channel")
+
+	blankChannelObject := openrtb_ext.ExtRequestPrebidChannel{Name: "", Version: ""}
+	ampChannelObject := openrtb_ext.ExtRequestPrebidChannel{Name: "amp", Version: ""}
+	channelObject := openrtb_ext.ExtRequestPrebidChannel{Name: "", Version: ""}
+
+	if dataType == jsonparser.NotExist {
+		return ampChannelObject, nil
+	}
+	if err != nil {
+		return blankChannelObject, err
+	}
+
+	if err := json.Unmarshal(channelInfo, &channelObject); err != nil {
+		return blankChannelObject, err
+	}
+	if channelObject.Name == "" {
+		return ampChannelObject, nil
+	}
+	return channelObject, nil
 }

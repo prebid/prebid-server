@@ -89,6 +89,8 @@ type Configuration struct {
 	// EnableLegacyAuction specifies if the original /auction endpoint with a custom PBS data model is allowed
 	// by the host.
 	EnableLegacyAuction bool `mapstructure:"enable_legacy_auction"`
+	// Channel object that will hold name/version of channel info found from request
+	Channel openrtb_ext.ExtRequestPrebidChannel
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500

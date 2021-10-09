@@ -1149,6 +1149,72 @@ func TestStoredRequests(t *testing.T) {
 	}
 }
 
+func TestGetChannelInfo(t *testing.T) {
+	deps := &endpointDeps{
+		fakeUUIDGenerator{},
+		&nobidExchange{},
+		newParamsValidator(t),
+		&mockStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: maxSize},
+		&metricsConfig.NilMetricsEngine{},
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		false,
+		[]byte{},
+		openrtb_ext.BuildBidderMap(),
+		nil,
+		nil,
+		hardcodedResponseIPValidator{response: true},
+	}
+
+	testCases := []struct {
+		description           string
+		givenBidRequestData   string
+		expectedChannelObject openrtb_ext.ExtRequestPrebidChannel
+	}{
+		{
+			description:           "No channel object in app request, so we expect no channel name in the object we create",
+			givenBidRequestData:   testBidRequestForChannelTest[0],
+			expectedChannelObject: openrtb_ext.ExtRequestPrebidChannel{Name: "app", Version: ""},
+		},
+		{
+			description:           "Channel object in request, we expect same name and version in object we create",
+			givenBidRequestData:   testBidRequestForChannelTest[1],
+			expectedChannelObject: openrtb_ext.ExtRequestPrebidChannel{Name: "video", Version: "1.0"},
+		},
+		{
+			description:           "Empty channel object in app request, we expect app name in object we create",
+			givenBidRequestData:   testBidRequestForChannelTest[2],
+			expectedChannelObject: openrtb_ext.ExtRequestPrebidChannel{Name: "app", Version: ""},
+		},
+		{
+			description:           "No channel object in site request, expect empty object",
+			givenBidRequestData:   testBidRequestForChannelTest[3],
+			expectedChannelObject: openrtb_ext.ExtRequestPrebidChannel{Name: "", Version: ""},
+		},
+		{
+			description:           "Empty channel object in site request, expect empty object",
+			givenBidRequestData:   testBidRequestForChannelTest[4],
+			expectedChannelObject: openrtb_ext.ExtRequestPrebidChannel{Name: "", Version: ""},
+		},
+		{
+			description:           "Channel object in request, we expect same name and version in object we create",
+			givenBidRequestData:   testBidRequestForChannelTest[5],
+			expectedChannelObject: openrtb_ext.ExtRequestPrebidChannel{Name: "video", Version: "1.0"},
+		},
+	}
+
+	for _, test := range testCases {
+		deps.cfg.Channel = openrtb_ext.ExtRequestPrebidChannel{Name: "", Version: ""}
+		req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenBidRequestData))
+		_, _, errL := deps.parseRequest(req)
+		assert.Empty(t, errL, test.description)
+		assert.Equalf(t, test.expectedChannelObject, deps.cfg.Channel, "Channel object isn't the same: %s\n", test.description)
+	}
+}
+
 func TestStoredRequestGenerateUuid(t *testing.T) {
 	uuid := "foo"
 
@@ -3565,6 +3631,204 @@ var testStoredImps = []string{
 	``,
 }
 
+var testBidRequestForChannelTest = []string{
+	`{
+		"id": "some-request-id20",
+		"app": {
+			"id": "12345"
+		},
+		"imp": [
+			{
+				"id": "some-impression-id",
+				"banner": {
+					"format": [
+						{
+							"w": 600,
+							"h": 500
+						},
+						{
+							"w": 300,
+							"h": 600
+						}
+					]
+				},
+				"ext": {
+					"appnexus": {
+						"placementId": 12883451
+					}
+				}
+			}
+		],
+		"ext": {
+			"prebid": {
+			}
+		}
+	}`,
+	`{
+		"id": "some-request-id20",
+		"app": {
+			"id": "12345"
+		},
+		"imp": [
+			{
+				"id": "some-impression-id",
+				"banner": {
+					"format": [
+						{
+							"w": 600,
+							"h": 500
+						},
+						{
+							"w": 300,
+							"h": 600
+						}
+					]
+				},
+				"ext": {
+					"appnexus": {
+						"placementId": 12883451
+					}
+				}
+			}
+		],
+		"ext": {
+			"prebid": {
+				"channel" : {
+					"name": "video",
+					"version": "1.0"
+				}
+			}
+		}
+	}`,
+	`{
+		"id": "some-request-id20",
+		"app": {
+			"id": "12345"
+		},
+		"imp": [
+			{
+				"id": "some-impression-id",
+				"banner": {
+					"format": [
+						{
+							"w": 600,
+							"h": 500
+						},
+						{
+							"w": 300,
+							"h": 600
+						}
+					]
+				},
+				"ext": {
+					"appnexus": {
+						"placementId": 12883451
+					}
+				}
+			}
+		],
+		"ext": {
+			"prebid": {
+				"channel" : {
+				}
+			}
+		}
+	}`,
+	`{
+		"id": "some-request-id20",
+		"site": {
+			"page": "prebid.org"
+		},
+		"imp": [{
+			"id": "some-impression-id",
+			"banner": {
+				"format": [{
+						"w": 600,
+						"h": 500
+					},
+					{
+						"w": 300,
+						"h": 600
+					}
+				]
+			},
+			"ext": {
+				"appnexus": {
+					"placementId": 12883451
+				}
+			}
+		}],
+		"ext": {
+			"prebid": {
+			}
+		}
+	}`,
+	`{
+		"id": "some-request-id20",
+		"site": {
+			"page": "prebid.org"
+		},
+		"imp": [{
+			"id": "some-impression-id",
+			"banner": {
+				"format": [{
+						"w": 600,
+						"h": 500
+					},
+					{
+						"w": 300,
+						"h": 600
+					}
+				]
+			},
+			"ext": {
+				"appnexus": {
+					"placementId": 12883451
+				}
+			}
+		}],
+		"ext": {
+			"prebid": {
+				"channel" : {
+				}
+			}
+		}
+	}`,
+	`{
+		"id": "some-request-id20",
+		"site": {
+			"page": "prebid.org"
+		},
+		"imp": [{
+			"id": "some-impression-id",
+			"banner": {
+				"format": [{
+						"w": 600,
+						"h": 500
+					},
+					{
+						"w": 300,
+						"h": 600
+					}
+				]
+			},
+			"ext": {
+				"appnexus": {
+					"placementId": 12883451
+				}
+			}
+		}],
+		"ext": {
+			"prebid": {
+				"channel" : {
+					"name": "video",
+					"version": "1.0"
+				}
+			}
+		}
+	}`,
+}
+
 var testBidRequests = []string{
 	`{
 		"id": "ThisID",
@@ -3627,9 +3891,6 @@ var testBidRequests = []string{
 		],
 		"ext": {
 			"prebid": {
-				"cache": {
-					"markup": 1
-				},
 				"targeting": {
 				}
 			}

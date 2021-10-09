@@ -1360,3 +1360,33 @@ func AmpObjectTestSetup(t *testing.T, inTagId string, inStoredRequest json.RawMe
 	)
 	return &actualAmpObject, endpoint
 }
+
+func TestGetChannelObjectAmp(t *testing.T) {
+	testCases := []struct {
+		description           string
+		givenBidRequestData   string
+		expectedChannelObject openrtb_ext.ExtRequestPrebidChannel
+	}{
+		{
+			description:           "Channel object in request, we expect same name and version",
+			givenBidRequestData:   testBidRequestForChannelTest[1],
+			expectedChannelObject: openrtb_ext.ExtRequestPrebidChannel{Name: "video", Version: "1.0"},
+		},
+		{
+			description:           "No channel object in site request, expect amp object",
+			givenBidRequestData:   testBidRequestForChannelTest[3],
+			expectedChannelObject: openrtb_ext.ExtRequestPrebidChannel{Name: "amp", Version: ""},
+		},
+		{
+			description:           "Empty channel object in site request, expect empty object",
+			givenBidRequestData:   testBidRequestForChannelTest[4],
+			expectedChannelObject: openrtb_ext.ExtRequestPrebidChannel{Name: "amp", Version: ""},
+		},
+	}
+
+	for _, test := range testCases {
+		newChannel, err := getChannelObjectAmpFromRequest([]byte(test.givenBidRequestData))
+		assert.Empty(t, err, test.description)
+		assert.Equalf(t, test.expectedChannelObject, newChannel, "Channel object isn't the same: %s\n", test.description)
+	}
+}

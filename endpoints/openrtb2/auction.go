@@ -276,6 +276,30 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_
 		return
 	}
 
+	// Fetch Channel Information and Update Channel Object in config with this information
+	deps.cfg.Channel = openrtb_ext.ExtRequestPrebidChannel{}
+	channelInfo, err := getChannelInfoFromRequest(requestJson)
+	if err != nil {
+		errs = []error{err}
+		return
+	}
+
+	if err := json.Unmarshal(channelInfo, &deps.cfg.Channel); err != nil {
+		errs = []error{err}
+		return
+	}
+
+	if deps.cfg.Channel.Name == "" {
+		isAppRequest, err := checkIfAppRequest(requestJson)
+		if err != nil {
+			errs = []error{err}
+			return
+		}
+		if isAppRequest {
+			deps.cfg.Channel.Name = "app"
+		}
+	}
+
 	if err := json.Unmarshal(requestJson, req.BidRequest); err != nil {
 		errs = []error{err}
 		return
@@ -1652,4 +1676,17 @@ func checkIfAppRequest(request []byte) (bool, error) {
 		return true, nil
 	}
 	return false, nil
+}
+
+func getChannelInfoFromRequest(request []byte) ([]byte, error) {
+	channelInfo, dataType, _, err := jsonparser.Get(request, "ext", "prebid", "channel")
+	blankChannel := []byte(`{"name":""}`)
+
+	if dataType == jsonparser.NotExist {
+		return blankChannel, nil
+	}
+	if err != nil {
+		return blankChannel, err
+	}
+	return channelInfo, nil
 }
