@@ -538,6 +538,11 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb2.BidRequest, exter
 	for i := 0; i < len(bids); i++ {
 
 		if err := json.Unmarshal(bids[i].Ext, &dur); err == nil && dur.Duration > 0 {
+			if len(bids[i].Cat) == 0 {
+				return nil, []error{&errortypes.BadServerResponse{
+					Message: "server response did not include a primary category. Run with request.debug = 1 for more info",
+				}}
+			}
 			impVideo := openrtb_ext.ExtBidPrebidVideo{
 				Duration:        int(dur.Duration),
 				PrimaryCategory: bids[i].Cat[0],
