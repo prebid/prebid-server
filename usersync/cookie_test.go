@@ -338,15 +338,38 @@ func TestGetUIDsWithNilCookie(t *testing.T) {
 }
 
 func TestTrimCookiesClosestExpirationDates(t *testing.T) {
+	var expirationTime = time.Date(2021, time.January, 3, 15, 25, 0, 0, time.UTC)
+
 	cookieToSend := &Cookie{
 		uids: map[string]uidWithExpiry{
-			"k1": newTempId("12345678901234567890123456789012345678901234567890", 7),
-			"k2": newTempId("abcdefghijklmnopqrstuvwxyz", 6),
-			"k3": newTempId("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 6),
-			"k4": newTempId("12345678901234567890123456789612345678901234567890", 5),
-			"k5": newTempId("aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ", 4),
-			"k6": newTempId("12345678901234567890123456789012345678901234567890", 3),
-			"k7": newTempId("abcdefghijklmnopqrstuvwxyz", 2),
+			"k1": {
+				UID:     "12345678901234567890123456789012345678901234567890",
+				Expires: expirationTime,
+			},
+			"k2": {
+				UID:     "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwx",
+				Expires: expirationTime,
+			},
+			"k3": {
+				UID:     "ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWX",
+				Expires: expirationTime,
+			},
+			"k4": {
+				UID:     "12345678901234567890123456789612345678901234567890",
+				Expires: expirationTime,
+			},
+			"k5": {
+				UID:     "aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYz",
+				Expires: expirationTime,
+			},
+			"k6": {
+				UID:     "12345678901234567890123456789012345678901234567890",
+				Expires: expirationTime,
+			},
+			"k7": {
+				UID:     "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxy",
+				Expires: expirationTime,
+			},
 		},
 		optOut:   false,
 		birthday: timestamp(),
@@ -354,15 +377,15 @@ func TestTrimCookiesClosestExpirationDates(t *testing.T) {
 
 	type aTest struct {
 		maxCookieSize int
-		expKeys       []string
+		expNumOfKeys  int
 	}
 	testCases := []aTest{
-		{maxCookieSize: 2000, expKeys: []string{"k1", "k2", "k3", "k4", "k5", "k6", "k7"}}, //1 don't trim, set
-		{maxCookieSize: 0, expKeys: []string{"k1", "k2", "k3", "k4", "k5", "k6", "k7"}},    //2 unlimited size: don't trim, set
-		{maxCookieSize: 800, expKeys: []string{"k1", "k2", "k3", "k4"}},                    //3 trim to size and set
-		{maxCookieSize: 500, expKeys: []string{"k1", "k3"}},                                //4 trim to size and set
-		{maxCookieSize: 200, expKeys: []string{}},                                          //5 insufficient size, trim to zero length and set
-		{maxCookieSize: -100, expKeys: []string{}},                                         //6 invalid size, trim to zero length and set
+		{maxCookieSize: 2000, expNumOfKeys: 7}, //1 don't trim, set
+		{maxCookieSize: 0, expNumOfKeys: 7},    //2 unlimited size: don't trim, set
+		{maxCookieSize: 800, expNumOfKeys: 4},  //3 trim to size and set
+		{maxCookieSize: 500, expNumOfKeys: 2},  //4 trim to size and set
+		{maxCookieSize: 200, expNumOfKeys: 0},  //5 insufficient size, trim to zero length and set
+		{maxCookieSize: -100, expNumOfKeys: 0}, //6 invalid size, trim to zero length and set
 	}
 	for i := range testCases {
 		processedCookie := writeThenRead(cookieToSend, testCases[i].maxCookieSize)
@@ -372,7 +395,7 @@ func TestTrimCookiesClosestExpirationDates(t *testing.T) {
 			actualKeys = append(actualKeys, key)
 		}
 
-		assert.ElementsMatch(t, testCases[i].expKeys, actualKeys, "[Test %d]", i+1)
+		assert.Len(t, actualKeys, testCases[i].expNumOfKeys, "[Test %d]", i+1)
 	}
 }
 
