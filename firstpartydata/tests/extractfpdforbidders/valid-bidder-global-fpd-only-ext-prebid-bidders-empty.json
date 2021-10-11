@@ -76,10 +76,7 @@
         "id": "1"
       },
       "ext": {
-        "amp": 1,
-        "data":{
-          "somesitefpd":"sitefpdDataTest"
-        }
+        "amp": 1
       }
     },
     "test": 1

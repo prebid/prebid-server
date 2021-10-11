@@ -123,6 +123,35 @@
       }
     }
   },
-  "biddersFPDResolved": {},
+  "biddersFPDResolved": {
+    "appnexus": {
+      "site": {
+        "id": "reqSiteId",
+        "page": "http://www.foobar.com/1234.html",
+        "publisher": {
+          "id": "1"
+        },
+        "ext": {
+          "data":{
+            "id":"apnSiteId"
+          }
+        }
+      },
+      "user": {
+        "id": "reqUserId",
+        "ext": {
+          "data":{
+            "id":"apnUserId"
+          }
+        }
+      }
+    },
+    "telaria": {
+      "user": {
+        "id": "reqUserId",
+        "keywords": "telariaUserKeywords"
+      }
+    }
+  },
   "validationErrors": []
 }
