@@ -40,10 +40,10 @@ func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adap
 		bidRequest, err := adapter.buildAdapterRequest(request, imp)
 		if err != nil {
 			return nil, []error{err}
-		} else {
-			result = append(result, bidRequest)
 		}
+		result = append(result, bidRequest)
 	}
+
 	return result, nil
 }
 
