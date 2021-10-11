@@ -229,6 +229,32 @@ func (cfg *GDPR) validate(v *viper.Viper, errs []error) []error {
 	if cfg.AMPException == true {
 		errs = append(errs, fmt.Errorf("gdpr.amp_exception has been discontinued and must be removed from your config. If you need to disable GDPR for AMP, you may do so per-account (gdpr.integration_enabled.amp) or at the host level for the default account (account_defaults.gdpr.integration_enabled.amp)"))
 	}
+	errs = cfg.validatePurposes(errs)
+	return errs
+}
+
+func (cfg *GDPR) validatePurposes(errs []error) []error {
+	purposeConfigs := []TCF2Purpose{
+		cfg.TCF2.Purpose1,
+		cfg.TCF2.Purpose2,
+		cfg.TCF2.Purpose3,
+		cfg.TCF2.Purpose4,
+		cfg.TCF2.Purpose5,
+		cfg.TCF2.Purpose6,
+		cfg.TCF2.Purpose7,
+		cfg.TCF2.Purpose8,
+		cfg.TCF2.Purpose9,
+		cfg.TCF2.Purpose10,
+	}
+
+	for i := 0; i < len(purposeConfigs); i++ {
+		enforcePurposeValue := purposeConfigs[i].EnforcePurpose
+		enforcePurposeField := fmt.Sprintf("gdpr.tcf2.purpose%d.enforce_purpose", (i + 1))
+
+		if enforcePurposeValue != "no" && enforcePurposeValue != "full" {
+			errs = append(errs, fmt.Errorf("%s must be no or full. Got %s", enforcePurposeField, enforcePurposeValue))
+		}
+	}
 	return errs
 }
 

@@ -637,6 +637,18 @@ func TestValidateConfig(t *testing.T) {
 	cfg := Configuration{
 		GDPR: GDPR{
 			DefaultValue: "1",
+			TCF2: TCF2{
+				Purpose1:  TCF2Purpose{EnforcePurpose: "full"},
+				Purpose2:  TCF2Purpose{EnforcePurpose: "full"},
+				Purpose3:  TCF2Purpose{EnforcePurpose: "full"},
+				Purpose4:  TCF2Purpose{EnforcePurpose: "full"},
+				Purpose5:  TCF2Purpose{EnforcePurpose: "full"},
+				Purpose6:  TCF2Purpose{EnforcePurpose: "full"},
+				Purpose7:  TCF2Purpose{EnforcePurpose: "full"},
+				Purpose8:  TCF2Purpose{EnforcePurpose: "full"},
+				Purpose9:  TCF2Purpose{EnforcePurpose: "full"},
+				Purpose10: TCF2Purpose{EnforcePurpose: "full"},
+			},
 		},
 		StoredRequests: StoredRequests{
 			Files: FileFetcherConfig{Enabled: true},
@@ -1014,6 +1026,27 @@ func TestMissingGDPRDefaultValue(t *testing.T) {
 
 	cfg, _ := newDefaultConfig(t)
 	assertOneError(t, cfg.validate(v), "gdpr.default_value is required and must be specified")
+}
+
+func TestInvalidEnforcePurpose(t *testing.T) {
+	cfg, v := newDefaultConfig(t)
+	cfg.GDPR.TCF2.Purpose1.EnforcePurpose = ""
+	cfg.GDPR.TCF2.Purpose2.EnforcePurpose = "no"
+	cfg.GDPR.TCF2.Purpose3.EnforcePurpose = "no"
+	cfg.GDPR.TCF2.Purpose4.EnforcePurpose = "no"
+	cfg.GDPR.TCF2.Purpose5.EnforcePurpose = "invalid1"
+	cfg.GDPR.TCF2.Purpose6.EnforcePurpose = "invalid2"
+	cfg.GDPR.TCF2.Purpose7.EnforcePurpose = "full"
+	cfg.GDPR.TCF2.Purpose8.EnforcePurpose = "full"
+	cfg.GDPR.TCF2.Purpose9.EnforcePurpose = "full"
+	cfg.GDPR.TCF2.Purpose10.EnforcePurpose = "invalid3"
+
+	errs := cfg.validate(v)
+	assert.Len(t, errs, 4)
+	assert.EqualError(t, errs[0], "gdpr.tcf2.purpose1.enforce_purpose must be no or full. Got ")
+	assert.EqualError(t, errs[1], "gdpr.tcf2.purpose5.enforce_purpose must be no or full. Got invalid1")
+	assert.EqualError(t, errs[2], "gdpr.tcf2.purpose6.enforce_purpose must be no or full. Got invalid2")
+	assert.EqualError(t, errs[3], "gdpr.tcf2.purpose10.enforce_purpose must be no or full. Got invalid3")
 }
 
 func TestNegativeCurrencyConverterFetchInterval(t *testing.T) {
