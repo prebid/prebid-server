@@ -16,14 +16,12 @@
     },
     "placementId": {
       "type": "string",
-      "description": "An ID which identifies this placement of the impression",
-      "minLength": 1
+      "description": "An ID which identifies this placement of the impression"
     },
     "appId": {
       "type": "string",
-      "description": "An ID which identifies this app of the impression",
-      "minLength": 1
+      "description": "An ID which identifies this app of the impression"
     }
   },
-  "required": ["sid", "token", "placementId", "appId"]
+  "required": ["sid", "token"]
 }

@@ -109,7 +109,9 @@ func preProcess(request *openrtb2.BidRequest, ext *openrtb_ext.ExtImpAlgorix) {
 				request.Imp[i].Banner = &banner
 			}
 		}
-		request.Imp[i].TagID = ext.PlacementId
+		if len(ext.PlacementId) > 0 {
+			request.Imp[i].TagID = ext.PlacementId
+		}
 	}
 }
 
