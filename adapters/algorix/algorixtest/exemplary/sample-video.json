@@ -39,7 +39,6 @@
                   "video/mp4"
                 ]
               },
-              "tagid": "testPlacementId",
               "ext": {
                 "bidder": {
                   "sid": "testSid",

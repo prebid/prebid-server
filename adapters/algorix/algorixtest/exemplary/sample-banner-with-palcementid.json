@@ -7,6 +7,7 @@
         "banner": {
           "format": [{"w": 320, "h": 50}]
         },
+        "tagid": "test123",
         "ext": {
           "bidder": {
             "sid": "testSid",
@@ -33,7 +34,7 @@
                 "w": 320,
                 "h": 50
               },
-              "tagid": "testPlacementId",
+              "tagid": "test123",
               "ext": {
                 "bidder": {
                   "sid": "testSid",
