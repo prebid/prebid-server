@@ -16,7 +16,8 @@
       "prebid": {
         "data": {
           "bidders": [
-            "appnexus", "telaria"
+            "appnexus",
+            "telaria"
           ]
         },
         "bidderconfig": [
@@ -51,7 +52,7 @@
       }
     }
   },
-  "outputRequestData":  {
+  "outputRequestData": {
     "id": "bid_id",
     "site": {
       "id": "reqSiteId",
@@ -61,7 +62,14 @@
       }
     },
     "test": 1,
-    "ext": {"prebid":{"data":{"eidpermissions":null,"bidders":null}}}
+    "ext": {
+      "prebid": {
+        "data": {
+          "eidpermissions": null,
+          "bidders": null
+        }
+      }
+    }
   },
   "biddersFPDResolved": {
     "appnexus": {
@@ -72,8 +80,8 @@
           "id": "1"
         },
         "ext": {
-          "data":{
-            "id":"apnSiteId"
+          "data": {
+            "id": "apnSiteId"
           }
         }
       },
@@ -81,7 +89,7 @@
         "id": "reqUserId",
         "ext": {
           "data": {
-            "id":"apnUserId"
+            "id": "apnUserId"
           }
         }
       }
