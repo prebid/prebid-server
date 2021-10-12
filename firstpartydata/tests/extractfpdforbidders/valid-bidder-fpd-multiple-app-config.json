@@ -1,0 +1,50 @@
+{
+  "inputRequestData": {
+    "id": "bid_id",
+    "site": {
+      "id": "reqSiteId"
+    },
+    "user": {
+      "id": "reqUserId"
+    },
+    "test": 1,
+    "ext": {
+      "prebid": {
+        "data": {
+          "bidders": [
+            "appnexus"
+          ]
+        },
+        "bidderconfig": [
+          {
+            "bidders": [
+              "appnexus"
+            ],
+            "config": {
+              "ortb2": {
+                "site": {
+                  "id": "apnFpdSiteId1"
+                }
+              }
+            }
+          },
+          {
+            "bidders": [
+              "appnexus"
+            ],
+            "config": {
+              "ortb2": {
+                "app": {
+                  "id": "apnFpdAppId2"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "outputRequestData": {},
+  "biddersFPDResolved": {},
+  "validationErrors": ["duplicated config for bidder: appnexus"]
+}
