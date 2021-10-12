@@ -94,12 +94,31 @@
     }
   ],
 
-
-  "expectedMakeBidsErrors": [
+  "expectedBidResponses": [
     {
-      "value": "server response did not include a primary category. Run with request.debug = 1 for more info",
-      "comparison": "literal"
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "video1AdmVideo",
+            "impid": "video1",
+            "price": 20,
+            "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
+            "adid": "1088",
+            "adomain": [
+              "beachfront.io"
+            ],
+            "cid": "277",
+            "crid": "532",
+            "w": 300,
+            "h": 250,
+            "ext": {
+              "duration": 30
+            }
+          },
+          "type": "video"
+        }
+      ]
     }
   ]
 }
-
