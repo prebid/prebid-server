@@ -83,6 +83,14 @@ type Configuration struct {
 	//When true, new bid id will be generated in seatbid[].bid[].ext.prebid.bidid and used in event urls instead
 	GenerateBidID bool   `mapstructure:"generate_bid_id"`
 	TrackerURL    string `mapstructure:"tracker_url"`
+
+	VendorListScheduler VendorListScheduler `mapstructure:"vendor_list_scheduler"`
+}
+
+type VendorListScheduler struct {
+	Enabled  bool   `mapstructure:"enabled"`
+	Interval string `mapstructure:"interval"`
+	Timeout  string `mapstructure:"timeout"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
