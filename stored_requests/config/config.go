@@ -93,12 +93,12 @@ func CreateStoredRequests(cfg *config.StoredRequests, metricsEngine metrics.Metr
 	return
 }
 
-// NewStoredRequests returns five things:
+// NewStoredRequests returns:
 //
-// 1. A DB connection, if one was created. This may be nil.
-// 2. A function which should be called on shutdown for graceful cleanups.
-// 3. A Fetcher which can be used to get Stored Requests for /openrtb2/auction
-// 4. A Fetcher which can be used to get Stored Requests for /openrtb2/amp
+// 1. A function which should be called on shutdown for graceful cleanups.
+// 2. A Fetcher which can be used to get Stored Requests for /openrtb2/auction
+// 3. A Fetcher which can be used to get Stored Requests for /openrtb2/amp
+// 4. A Fetcher which can be used to get Account data
 // 5. A Fetcher which can be used to get Category Mapping data
 // 6. A Fetcher which can be used to get Stored Requests for /openrtb2/video
 //
