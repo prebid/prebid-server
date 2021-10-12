@@ -4,22 +4,42 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/prebid/prebid-server?style=flat-square)](https://goreportcard.com/report/github.com/prebid/prebid-server)
 ![Go Version](https://img.shields.io/github/go-mod/go-version/prebid/prebid-server?style=flat-square)
 
-Prebid Server is an open-source solution for server-to-server header bidding with Prebid.js and Prebid Mobile.
+Prebid Server is an open-source solution for server-to-server header bidding managed by [Prebid](https://prebid.org). Prebid Server supports a variety of use cases including Mobile Web, AMP, Server Side Wed with Prebid.js and Prebid Mobile SDKs, and Long Form Video/CTV.
+Utilizing Prebid Server can reduce latency between bid request and ad selection, and speed the presentation of your site and ads.
 
-Prebid Server is an open source implementation of Server-Side Header Bidding.
-It is managed by [Prebid.org](http://prebid.org/overview/what-is-prebid-org.html),
-and upholds the principles from the [Prebid Code of Conduct](http://prebid.org/wrapper_code_of_conduct.html).
+## Documentation
+Please explore both our [Marketing Website](https://prebid.org/) and [Technical Docs](https://prebid.org/) website. We are fully open source and you can contribute here and here.
+
+Highlights:
+- [Prebid & Header Bidding Overview](https://docs.prebid.org/overview/intro.html)
+- [Prebid Server Overview](https://docs.prebid.org/prebid-server/overview/prebid-server-overview.html)
+- [Prebid Server API Reference](https://docs.prebid.org/prebid-server/overview/prebid-server-overview.html)
+- [Bidders](http://prebid.org/dev-docs/pbs-bidders.html)
+
+## Host
+
+Please consider [registering your Prebid Server](https://docs.prebid.org/prebid-server/hosting/pbs-hosting.html#optional-registration) to get on the mailing list for updates, etc.
+
+use our official docker image or build your own. you must specify a gdpr.default-value to `1` if you want to require by default or `0` if you wish to ignore by default. Otherwise pbs will run out of the box with as many bidders enabled as possible. 
+
+please view our configuration guide for further setup guidance.
+
+## Develop
+
+### VS Code
+
+The quickest way to start developing Prebid Server in a reproducible environment isolated from your host OS is by using Visual Studio Code with [Remote Container Setup](devcontainer.md).
+
+## Contribute
+> All contributions must follow the [Prebid Code of Conduct](http://prebid.org/wrapper_code_of_conduct.html).
+
 
 This project does not support the same set of Bidders as Prebid.js, although there is overlap.
 The current set can be found in the [adapters](./adapters) package. If you don't see the one you want, feel free to [contribute it](https://docs.prebid.org/prebid-server/developers/add-new-bidder-go.html).
 
-For more information, see:
 
-- [What is Prebid?](https://prebid.org/overview/intro.html)
-- [Prebid Server Overview](https://docs.prebid.org/prebid-server/overview/prebid-server-overview.html)
-- [Current Bidders](http://prebid.org/dev-docs/pbs-bidders.html)
 
-Please consider [registering your Prebid Server](https://docs.prebid.org/prebid-server/hosting/pbs-hosting.html#optional-registration) to get on the mailing list for updates, etc.
+
 
 ## Installation
 
@@ -66,7 +86,3 @@ Report bugs, request features, and suggest improvements [on Github](https://gith
 
 Or better yet, [open a pull request](https://github.com/prebid/prebid-server/compare) with the changes you'd like to see.
 
-## IDE Recommendations
-
-The quickest way to start developing Prebid Server in a reproducible environment isolated from your host OS
-is by using Visual Studio Code with [Remote Container Setup](devcontainer.md).
