@@ -229,8 +229,7 @@ func (cfg *GDPR) validate(v *viper.Viper, errs []error) []error {
 	if cfg.AMPException == true {
 		errs = append(errs, fmt.Errorf("gdpr.amp_exception has been discontinued and must be removed from your config. If you need to disable GDPR for AMP, you may do so per-account (gdpr.integration_enabled.amp) or at the host level for the default account (account_defaults.gdpr.integration_enabled.amp)"))
 	}
-	errs = cfg.validatePurposes(errs)
-	return errs
+	return cfg.validatePurposes(errs)
 }
 
 func (cfg *GDPR) validatePurposes(errs []error) []error {
@@ -252,7 +251,7 @@ func (cfg *GDPR) validatePurposes(errs []error) []error {
 		enforcePurposeField := fmt.Sprintf("gdpr.tcf2.purpose%d.enforce_purpose", (i + 1))
 
 		if enforcePurposeValue != "no" && enforcePurposeValue != "full" {
-			errs = append(errs, fmt.Errorf("%s must be no or full. Got %s", enforcePurposeField, enforcePurposeValue))
+			errs = append(errs, fmt.Errorf("%s must be \"no\" or \"full\". Got %s", enforcePurposeField, enforcePurposeValue))
 		}
 	}
 	return errs
@@ -1067,7 +1066,7 @@ func migrateConfigTCF2PurposeEnabledFlags(v *viper.Viper) {
 				glog.Warningf("using %s and ignoring deprecated %s", newField, oldField)
 			} else {
 				glog.Warningf("%s is deprecated and should be changed to %s", oldField, newField)
-				if oldConfig == true {
+				if oldConfig {
 					v.Set(newField, "full")
 				} else {
 					v.Set(newField, "no")

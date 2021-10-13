@@ -3,6 +3,7 @@ package config
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"net"
 	"os"
 	"strings"
@@ -777,88 +778,6 @@ func TestMigrateConfigPurposeOneTreatment(t *testing.T) {
 }
 
 func TestMigrateConfigTCF2PurposeEnabledFlags(t *testing.T) {
-	oldPurposeConfig := []byte(`
-      gdpr:
-        tcf2:
-          purpose1:
-            enabled: false
-          purpose2:
-            enabled: true
-          purpose3:
-            enabled: false
-          purpose4:
-            enabled: true
-          purpose5:
-            enabled: false
-          purpose6:
-            enabled: true
-          purpose7:
-            enabled: false
-          purpose8:
-            enabled: true
-          purpose9:
-            enabled: false
-          purpose10:
-            enabled: true
-    `)
-	newPurposeConfig := []byte(`
-      gdpr:
-        tcf2:
-          purpose1:
-            enforce_purpose: "full"
-          purpose2:
-            enforce_purpose: "no"
-          purpose3:
-            enforce_purpose: "full"
-          purpose4:
-            enforce_purpose: "no"
-          purpose5:
-            enforce_purpose: "full"
-          purpose6:
-            enforce_purpose: "no"
-          purpose7:
-            enforce_purpose: "full"
-          purpose8:
-            enforce_purpose: "no"
-          purpose9:
-            enforce_purpose: "full"
-          purpose10:
-            enforce_purpose: "no"
-    `)
-	mixedPurposeConfig := []byte(`
-      gdpr:
-        tcf2:
-          purpose1:
-            enabled: false
-            enforce_purpose: "full"
-          purpose2:
-            enabled: false
-            enforce_purpose: "full"
-          purpose3:
-            enabled: false
-            enforce_purpose: "full"
-          purpose4:
-            enabled: false
-            enforce_purpose: "full"
-          purpose5:
-            enabled: false
-            enforce_purpose: "full"
-          purpose6:
-            enabled: false
-            enforce_purpose: "full"
-          purpose7:
-            enabled: false
-            enforce_purpose: "full"
-          purpose8:
-            enabled: false
-            enforce_purpose: "full"
-          purpose9:
-            enabled: false
-            enforce_purpose: "full"
-          purpose10:
-            enabled: false
-            enforce_purpose: "full"
-    `)
 	tests := []struct {
 		description                 string
 		config                      []byte
@@ -878,8 +797,31 @@ func TestMigrateConfigTCF2PurposeEnabledFlags(t *testing.T) {
 			config:      []byte{},
 		},
 		{
-			description:                 "New config not set, old config set - use old flags",
-			config:                      oldPurposeConfig,
+			description: "New config not set, old config set - use old flags",
+			config: []byte(`
+              gdpr:
+                tcf2:
+                  purpose1:
+                    enabled: false
+                  purpose2:
+                    enabled: true
+                  purpose3:
+                    enabled: false
+                  purpose4:
+                    enabled: true
+                  purpose5:
+                    enabled: false
+                  purpose6:
+                    enabled: true
+                  purpose7:
+                    enabled: false
+                  purpose8:
+                    enabled: true
+                  purpose9:
+                    enabled: false
+                  purpose10:
+                    enabled: true
+            `),
 			wantPurpose1EnforcePurpose:  "no",
 			wantPurpose2EnforcePurpose:  "full",
 			wantPurpose3EnforcePurpose:  "no",
@@ -892,8 +834,31 @@ func TestMigrateConfigTCF2PurposeEnabledFlags(t *testing.T) {
 			wantPurpose10EnforcePurpose: "full",
 		},
 		{
-			description:                 "New config flags set, old config flags not set - use new flags",
-			config:                      newPurposeConfig,
+			description: "New config flags set, old config flags not set - use new flags",
+			config: []byte(`
+              gdpr:
+                tcf2:
+                  purpose1:
+                    enforce_purpose: "full"
+                  purpose2:
+                    enforce_purpose: "no"
+                  purpose3:
+                    enforce_purpose: "full"
+                  purpose4:
+                    enforce_purpose: "no"
+                  purpose5:
+                    enforce_purpose: "full"
+                  purpose6:
+                    enforce_purpose: "no"
+                  purpose7:
+                    enforce_purpose: "full"
+                  purpose8:
+                    enforce_purpose: "no"
+                  purpose9:
+                    enforce_purpose: "full"
+                  purpose10:
+                    enforce_purpose: "no"
+            `),
 			wantPurpose1EnforcePurpose:  "full",
 			wantPurpose2EnforcePurpose:  "no",
 			wantPurpose3EnforcePurpose:  "full",
@@ -906,8 +871,41 @@ func TestMigrateConfigTCF2PurposeEnabledFlags(t *testing.T) {
 			wantPurpose10EnforcePurpose: "no",
 		},
 		{
-			description:                 "New config flags and old config flags set - use new flags",
-			config:                      mixedPurposeConfig,
+			description: "New config flags and old config flags set - use new flags",
+			config: []byte(`
+              gdpr:
+                tcf2:
+                  purpose1:
+                    enabled: false
+                    enforce_purpose: "full"
+                  purpose2:
+                    enabled: false
+                    enforce_purpose: "full"
+                  purpose3:
+                    enabled: false
+                    enforce_purpose: "full"
+                  purpose4:
+                    enabled: false
+                    enforce_purpose: "full"
+                  purpose5:
+                    enabled: false
+                    enforce_purpose: "full"
+                  purpose6:
+                    enabled: false
+                    enforce_purpose: "full"
+                  purpose7:
+                    enabled: false
+                    enforce_purpose: "full"
+                  purpose8:
+                    enabled: false
+                    enforce_purpose: "full"
+                  purpose9:
+                    enabled: false
+                    enforce_purpose: "full"
+                  purpose10:
+                    enabled: false
+                    enforce_purpose: "full"
+              `),
 			wantPurpose1EnforcePurpose:  "full",
 			wantPurpose2EnforcePurpose:  "full",
 			wantPurpose3EnforcePurpose:  "full",
@@ -1042,11 +1040,14 @@ func TestInvalidEnforcePurpose(t *testing.T) {
 	cfg.GDPR.TCF2.Purpose10.EnforcePurpose = "invalid3"
 
 	errs := cfg.validate(v)
-	assert.Len(t, errs, 4)
-	assert.EqualError(t, errs[0], "gdpr.tcf2.purpose1.enforce_purpose must be no or full. Got ")
-	assert.EqualError(t, errs[1], "gdpr.tcf2.purpose5.enforce_purpose must be no or full. Got invalid1")
-	assert.EqualError(t, errs[2], "gdpr.tcf2.purpose6.enforce_purpose must be no or full. Got invalid2")
-	assert.EqualError(t, errs[3], "gdpr.tcf2.purpose10.enforce_purpose must be no or full. Got invalid3")
+
+	expectedErrs := []error{
+		fmt.Errorf("gdpr.tcf2.purpose1.enforce_purpose must be \"no\" or \"full\". Got "),
+		fmt.Errorf("gdpr.tcf2.purpose5.enforce_purpose must be \"no\" or \"full\". Got invalid1"),
+		fmt.Errorf("gdpr.tcf2.purpose6.enforce_purpose must be \"no\" or \"full\". Got invalid2"),
+		fmt.Errorf("gdpr.tcf2.purpose10.enforce_purpose must be \"no\" or \"full\". Got invalid3"),
+	}
+	assert.ElementsMatch(t, errs, expectedErrs, "gdpr.tcf2.purposeX.enforce_purpose should prevent invalid values but it doesn't")
 }
 
 func TestNegativeCurrencyConverterFetchInterval(t *testing.T) {
