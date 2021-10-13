@@ -176,7 +176,7 @@ func resolveUser(fpdConfig *openrtb_ext.ORTB2, bidRequestUser *openrtb2.User, gl
 	var fpdConfigUser map[string]json.RawMessage
 
 	if fpdConfig != nil && fpdConfig.User != nil {
-		fpdConfigUser = *fpdConfig.User
+		fpdConfigUser = fpdConfig.User
 	}
 
 	if bidRequestUser == nil && fpdConfigUser == nil {
@@ -300,7 +300,7 @@ func resolveSite(fpdConfig *openrtb_ext.ORTB2, bidRequestSite *openrtb2.Site, gl
 	var fpdConfigSite map[string]json.RawMessage
 
 	if fpdConfig != nil && fpdConfig.Site != nil {
-		fpdConfigSite = *fpdConfig.Site
+		fpdConfigSite = fpdConfig.Site
 	}
 
 	if bidRequestSite == nil && fpdConfigSite == nil {
@@ -426,7 +426,7 @@ func resolveApp(fpdConfig *openrtb_ext.ORTB2, bidRequestApp *openrtb2.App, globa
 	var fpdConfigApp map[string]json.RawMessage
 
 	if fpdConfig != nil && fpdConfig.App != nil {
-		fpdConfigApp = *fpdConfig.App
+		fpdConfigApp = fpdConfig.App
 	}
 
 	if bidRequestApp == nil && fpdConfigApp == nil {
@@ -556,8 +556,8 @@ func ExtractBidderConfigFPD(reqExt *openrtb_ext.RequestExt) (map[openrtb_ext.Bid
 
 	fpd := make(map[openrtb_ext.BidderName]*openrtb_ext.ORTB2)
 	reqExtPrebid := reqExt.GetPrebid()
-	if reqExtPrebid != nil && reqExtPrebid.BidderConfigs != nil {
-		for _, bidderConfig := range *reqExtPrebid.BidderConfigs {
+	if reqExtPrebid != nil && len(reqExtPrebid.BidderConfigs) > 0 {
+		for _, bidderConfig := range reqExtPrebid.BidderConfigs {
 			for _, bidder := range bidderConfig.Bidders {
 
 				if _, present := fpd[openrtb_ext.BidderName(bidder)]; present {
@@ -624,10 +624,6 @@ func ExtractFPDForBidders(req *openrtb_ext.RequestWrapper) (map[openrtb_ext.Bidd
 			return nil, []error{err}
 		}
 		openRtbGlobalFPD = ExtractOpenRtbGlobalFPD(req.BidRequest)
-	}
-
-	if biddersWithGlobalFPD != nil && len(biddersWithGlobalFPD) == 0 {
-		return nil, nil
 	}
 
 	return ResolveFPD(req.BidRequest, fbdBidderConfigData, globalFpd, openRtbGlobalFPD, biddersWithGlobalFPD)

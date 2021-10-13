@@ -44,7 +44,7 @@ type ExtRequestPrebid struct {
 	NoSale []string `json:"nosale,omitempty"`
 
 	CurrencyConversions *ExtRequestCurrency `json:"currency,omitempty"`
-	BidderConfigs       *[]BidderConfig     `json:"bidderconfig,omitempty"`
+	BidderConfigs       []BidderConfig      `json:"bidderconfig,omitempty"`
 }
 
 type BidderConfig struct {
@@ -57,9 +57,9 @@ type Config struct {
 }
 
 type ORTB2 struct { //First party data
-	Site *map[string]json.RawMessage `json:"site,omitempty"`
-	App  *map[string]json.RawMessage `json:"app,omitempty"`
-	User *map[string]json.RawMessage `json:"user,omitempty"`
+	Site map[string]json.RawMessage `json:"site,omitempty"`
+	App  map[string]json.RawMessage `json:"app,omitempty"`
+	User map[string]json.RawMessage `json:"user,omitempty"`
 }
 
 type ExtRequestCurrency struct {

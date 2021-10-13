@@ -584,24 +584,24 @@ func TestExtractBidderConfigFPD(t *testing.T) {
 			for bidderName, bidderFPD := range fpdFile.BiddersFPD {
 
 				if bidderFPD.Site != nil {
-					resSite := *fpdData[bidderName].Site
-					for k, v := range *bidderFPD.Site {
+					resSite := fpdData[bidderName].Site
+					for k, v := range bidderFPD.Site {
 						assert.NotNil(t, resSite[k], "Property is not found in result site")
 						assert.JSONEq(t, string(v), string(resSite[k]), "site is incorrect")
 					}
 				}
 
 				if bidderFPD.App != nil {
-					resApp := *fpdData[bidderName].App
-					for k, v := range *bidderFPD.App {
+					resApp := fpdData[bidderName].App
+					for k, v := range bidderFPD.App {
 						assert.NotNil(t, resApp[k], "Property is not found in result app")
 						assert.JSONEq(t, string(v), string(resApp[k]), "app is incorrect")
 					}
 				}
 
 				if bidderFPD.User != nil {
-					resUser := *fpdData[bidderName].User
-					for k, v := range *bidderFPD.User {
+					resUser := fpdData[bidderName].User
+					for k, v := range bidderFPD.User {
 						assert.NotNil(t, resUser[k], "Property is not found in result user")
 						assert.JSONEq(t, string(v), string(resUser[k]), "site is incorrect")
 					}
