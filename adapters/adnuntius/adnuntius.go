@@ -203,9 +203,15 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
-	if response.StatusCode != http.StatusOK {
+	if response.StatusCode == http.StatusBadRequest {
 		return nil, []error{&errortypes.BadInput{
 			Message: fmt.Sprintf("Status code: %d, Request malformed", response.StatusCode),
+		}}
+	}
+
+	if response.StatusCode != http.StatusOK {
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("Status code: %d, Something went wrong with your request", response.StatusCode),
 		}}
 	}
 
