@@ -19,17 +19,28 @@ func TestJsonSamples(t *testing.T) {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 	assertTzo(t, bidder)
-	replaceTzoWithKnownTime(bidder)
+	replaceRealTimeWithKnownTime(bidder)
 
 	adapterstest.RunJSONBidderTest(t, "adnuntiustest", bidder)
 }
 
 func assertTzo(t *testing.T, bidder adapters.Bidder) {
 	bidderAdnuntius, _ := bidder.(*adapter)
-	assert.NotNil(t, bidderAdnuntius.tzo)
+	assert.NotNil(t, bidderAdnuntius.time)
 }
 
-func replaceTzoWithKnownTime(bidder adapters.Bidder) {
+// FakeTime implements the Time interface
+type FakeTime struct {
+	time time.Time
+}
+
+func (ft *FakeTime) Now() time.Time {
+	return ft.time
+}
+
+func replaceRealTimeWithKnownTime(bidder adapters.Bidder) {
 	bidderAdnuntius, _ := bidder.(*adapter)
-	bidderAdnuntius.tzo = knownTzo(time.Date(2016, 1, 1, 12, 30, 15, 0, time.UTC))
+	bidderAdnuntius.time = &FakeTime{
+		time: time.Date(2016, 1, 1, 12, 30, 15, 0, time.UTC),
+	}
 }

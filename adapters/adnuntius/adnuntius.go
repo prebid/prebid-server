@@ -13,11 +13,12 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/timeutil"
 )
 
 type QueryString map[string]string
 type adapter struct {
-	tzo      timezone
+	time     timeutil.Time
 	endpoint string
 }
 type adnAdunit struct {
@@ -58,7 +59,7 @@ type adnRequest struct {
 // Builder builds a new instance of the Adnuntius adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	bidder := &adapter{
-		tzo:      realTzo{},
+		time:     &timeutil.RealTime{},
 		endpoint: config.Endpoint,
 	}
 
@@ -94,8 +95,9 @@ func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter) (string, []err
 		return "", []error{fmt.Errorf("failed to parse Adnuntius endpoint: %v", err)}
 	}
 
-	_, offset := a.tzo.Now().UTC().Local().Zone()
-	tzo := -offset / 3600 * 60
+	const minutesInHour = 60
+	_, offset := a.time.Now().Zone()
+	tzo := -offset / minutesInHour
 
 	q := uri.Query()
 	if gdpr != "" && consent != "" {
@@ -125,22 +127,22 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 
 	for _, imp := range ortbRequest.Imp {
 		if imp.Banner == nil {
-			errors = append(errors, &errortypes.BadInput{
+			return nil, []error{&errortypes.BadInput{
 				Message: fmt.Sprintf("ignoring imp id=%s, Adnuntius supports only Banner", imp.ID),
-			})
+			}}
 		}
 		var bidderExt adapters.ExtImpBidder
 		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-			errors = append(errors, &errortypes.BadInput{
+			return nil, []error{&errortypes.BadInput{
 				Message: fmt.Sprintf("Error unmarshalling ExtImpBidder: %s", err.Error()),
-			})
+			}}
 		}
 
 		var adnuntiusExt openrtb_ext.ImpExtAdnunitus
 		if err := json.Unmarshal(bidderExt.Bidder, &adnuntiusExt); err != nil {
-			errors = append(errors, &errortypes.BadInput{
+			return nil, []error{&errortypes.BadInput{
 				Message: fmt.Sprintf("Error unmarshalling ExtImpBmtm: %s", err.Error()),
-			})
+			}}
 		}
 
 		network := "default"
@@ -198,7 +200,7 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
-	if response.StatusCode == http.StatusBadRequest {
+	if response.StatusCode != http.StatusOK {
 		return nil, []error{&errortypes.BadInput{
 			Message: fmt.Sprintf("Status code: %d, Request malformed", response.StatusCode),
 		}}
@@ -254,14 +256,14 @@ func generateBidResponse(adnResponse *AdnResponse, request *openrtb2.BidRequest)
 
 			currency = ad.Bid.Currency
 
-			creativeWidth, Werr := strconv.ParseInt(ad.CreativeWidth, 10, 64)
-			if Werr != nil {
-				adsErr = append(adsErr, Werr)
+			creativeWidth, widthErr := strconv.ParseInt(ad.CreativeWidth, 10, 64)
+			if widthErr != nil {
+				adsErr = append(adsErr, widthErr)
 			}
 
-			creativeHeight, Herr := strconv.ParseInt(ad.CreativeHeight, 10, 64)
-			if Herr != nil {
-				adsErr = append(adsErr, Herr)
+			creativeHeight, heightErr := strconv.ParseInt(ad.CreativeHeight, 10, 64)
+			if heightErr != nil {
+				adsErr = append(adsErr, heightErr)
 			}
 
 			adDomain := []string{}
