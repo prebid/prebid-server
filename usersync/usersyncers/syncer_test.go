@@ -140,6 +140,7 @@ func TestNewSyncerMap(t *testing.T) {
 		openrtb_ext.BidderMolocoCloud:       true,
 		openrtb_ext.BidderOrbidder:          true,
 		openrtb_ext.BidderPangle:            true,
+		openrtb_ext.BidderPersonaly:         true,
 		openrtb_ext.BidderPubnative:         true,
 		openrtb_ext.BidderRevcontent:        true,
 		openrtb_ext.BidderSilverMob:         true,

@@ -128,8 +128,13 @@ data:
   PBS_ADAPTERS_MOLOCOCLOUD_XAPI_ENDPOINT_APAC:    "http://localhost:4646/molococloud_givemeads"
 
   # pangle values
-  PBS_ADAPTERS_PANGLE_DISABLED: "false"
-  PBS_ADAPTERS_PANGLE_ENDPOINT: "http://localhost:4646/pangle_givemeads"
+  PBS_ADAPTERS_PANGLE_DISABLED:               "false"
+  PBS_ADAPTERS_PANGLE_XAPI_ENDPOINT_US_EAST:  "http://localhost:4646/pangle_givemeads"
+  PBS_ADAPTERS_PANGLE_XAPI_ENDPOINT_SG:       "http://localhost:4646/pangle_givemeads"
+
+  # personaly values
+  PBS_ADAPTERS_PERSONALY_DISABLED: "false"
+  PBS_ADAPTERS_PERSONALY_ENDPOINT: "http://localhost:4646/personaly_givemeads"
 
   # pubmatic values
   PBS_ADAPTERS_PUBMATIC_DISABLED: "false"
