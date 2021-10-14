@@ -56,6 +56,12 @@ type adnRequest struct {
 	Context  string      `json:"context,omitempty"`
 }
 
+
+const defaultNetwork = "default"
+const defaultSite = "unknown"
+const minutesInHour = 60
+
+
 // Builder builds a new instance of the Adnuntius adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	bidder := &adapter{
@@ -95,7 +101,7 @@ func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter) (string, []err
 		return "", []error{fmt.Errorf("failed to parse Adnuntius endpoint: %v", err)}
 	}
 
-	const minutesInHour = 60
+	
 	_, offset := a.time.Now().Zone()
 	tzo := -offset / minutesInHour
 
@@ -145,7 +151,7 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 			}}
 		}
 
-		network := "default"
+		network := defaultNetwork
 		if adnuntiusExt.Network != "" {
 			network = adnuntiusExt.Network
 		}
@@ -158,7 +164,7 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 			})
 	}
 
-	site := "unknown"
+	site := defaultSite
 	if ortbRequest.Site != nil && ortbRequest.Site.Page != "" {
 		site = ortbRequest.Site.Page
 	}
