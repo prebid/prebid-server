@@ -44,6 +44,7 @@ type richaudienceDevice struct {
 	DNT  int8   `json:"dnt,omitempty"`
 	UA   string `json:"ua,omitempty"`
 }
+
 type richaudienceSite struct {
 	Domain string `json:"domain,omitempty"`
 	Page   string `json:"page,omitempty"`
@@ -51,7 +52,6 @@ type richaudienceSite struct {
 
 // Builder builds a new instance of the RichAudience adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-
 	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}
@@ -60,24 +60,20 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	richaudienceRequest := richaudienceRequest{}
+	richaudienceRequest.ID = request.ID
 
 	raiHeaders := http.Header{}
 
 	setHeaders(&raiHeaders)
 
-	richaudienceRequest.ID = request.ID
-
 	isUrlSecure := setSite(request, &richaudienceRequest)
 
 	resImps, err := setImp(request, &richaudienceRequest, isUrlSecure)
-
 	if err != nil {
 		return nil, []error{err}
 	}
 
 	richaudienceRequest.Imp = resImps
-
-	setSite(request, &richaudienceRequest)
 
 	if err = setDevice(request, &richaudienceRequest); err != nil {
 		return nil, []error{err}
@@ -103,7 +99,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-
 	if responseData.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -160,7 +155,6 @@ func setImp(request *openrtb2.BidRequest, richaudienceRequest *richaudienceReque
 	for _, imp := range request.Imp {
 		var secure = int8(0)
 		raiExt, errImp := parseImpExt(&imp)
-
 		if errImp != nil {
 			return nil, errImp
 		}
@@ -220,7 +214,6 @@ func setSite(request *openrtb2.BidRequest, richaudienceRequest *richaudienceRequ
 }
 
 func setDevice(request *openrtb2.BidRequest, richaudienceRequest *richaudienceRequest) (err error) {
-
 	if request.Device != nil && request.Device.IP == "" && request.Device.IPv6 == "" {
 		err = &errortypes.BadInput{
 			Message: "request.Device.IP is required",
