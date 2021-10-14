@@ -111,7 +111,24 @@
         }
       }
     },
-    "testBidder2": {}
+    "testBidder2": {
+      "user": {
+        "id": "telariaUserData",
+        "ext": {
+          "data": {
+            "userdata": "fpduserdata"
+          }
+        }
+      },
+      "app": {
+        "id": "telariaAppData",
+        "ext": {
+          "data": {
+            "appdata": "fpdappdata"
+          }
+        }
+      }
+    }
   }
 }
 

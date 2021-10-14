@@ -444,12 +444,12 @@ func TestExtractOpenRtbGlobalFPD(t *testing.T) {
   				"id": "bid_id",
 			 	"imp":[{"id":"impid"}],
   				"app": {
-  				  "id": "reqSiteID",
+  				  "id": "reqAppID",
     			  "content":{
 					"data":[
 						{ 
-						  "id": "siteDataId1",
-						  "name": "siteDataName1"
+						  "id": "appDataId1",
+						  "name": "appDataName1"
 						}
 					]
 				  }
@@ -459,14 +459,14 @@ func TestExtractOpenRtbGlobalFPD(t *testing.T) {
   				"id": "bid_id",
 				"imp":[{"id":"impid"}],
 				"app":{
-					 "id": "reqSiteID",
+					 "id": "reqAppID",
 					 "content":{}
 				}
 			}`),
 			expectedFpdData: map[string][]openrtb2.Data{
 				siteContentDataKey: nil,
 				userDataKey:        nil,
-				appContentDataKey:  {{ID: "siteDataId1", Name: "siteDataName1"}},
+				appContentDataKey:  {{ID: "appDataId1", Name: "appDataName1"}},
 			},
 		},
 		{
@@ -570,6 +570,8 @@ func TestExtractBidderConfigFPD(t *testing.T) {
 						assert.NotNil(t, resSite[k], "Property is not found in result site")
 						assert.JSONEq(t, string(v), string(resSite[k]), "site is incorrect")
 					}
+				} else {
+					assert.Nil(t, fpdData[bidderName].Site, "Result site should be also nil")
 				}
 
 				if bidderFPD.App != nil {
@@ -578,6 +580,8 @@ func TestExtractBidderConfigFPD(t *testing.T) {
 						assert.NotNil(t, resApp[k], "Property is not found in result app")
 						assert.JSONEq(t, string(v), string(resApp[k]), "app is incorrect")
 					}
+				} else {
+					assert.Nil(t, fpdData[bidderName].App, "Result app should be also nil")
 				}
 
 				if bidderFPD.User != nil {
@@ -586,6 +590,8 @@ func TestExtractBidderConfigFPD(t *testing.T) {
 						assert.NotNil(t, resUser[k], "Property is not found in result user")
 						assert.JSONEq(t, string(v), string(resUser[k]), "site is incorrect")
 					}
+				} else {
+					assert.Nil(t, fpdData[bidderName].User, "Result user should be also nil")
 				}
 			}
 		}
