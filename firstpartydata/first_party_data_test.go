@@ -10,15 +10,13 @@ import (
 	"testing"
 )
 
-func TestGetGlobalFPD(t *testing.T) {
+func TestExtractGlobalFPD(t *testing.T) {
 
 	testCases := []struct {
-		description   string
-		input         []byte
-		output        []byte
-		expectedFpd   map[string][]byte
-		errorExpected bool
-		errorContains string
+		description string
+		input       []byte
+		output      []byte
+		expectedFpd map[string][]byte
 	}{
 		{
 			description: "Site, app and user data present",
@@ -86,8 +84,6 @@ func TestGetGlobalFPD(t *testing.T) {
 				"user": []byte(`{"someuserfpd": "userfpdDataTest"}`),
 				"app":  []byte(`{"someappfpd": "appfpdDataTest"}`),
 			},
-			errorExpected: false,
-			errorContains: "",
 		},
 		{
 			description: "App FPD only present",
@@ -134,8 +130,6 @@ func TestGetGlobalFPD(t *testing.T) {
 				"user": {},
 				"site": {},
 			},
-			errorExpected: false,
-			errorContains: "",
 		},
 		{
 			description: "User FPD only present",
@@ -182,8 +176,6 @@ func TestGetGlobalFPD(t *testing.T) {
 				"user": []byte(`{"someuserfpd": "userfpdDataTest"}`),
 				"site": {},
 			},
-			errorExpected: false,
-			errorContains: "",
 		},
 		{
 			description: "No FPD present in req",
@@ -237,11 +229,9 @@ func TestGetGlobalFPD(t *testing.T) {
 				"user": {},
 				"site": {},
 			},
-			errorExpected: false,
-			errorContains: "",
 		},
 		{
-			description: "Site FPD different format",
+			description: "Site FPD only present",
 			input: []byte(`{
   				"id": "bid_id",
   				"site": {
@@ -288,8 +278,6 @@ func TestGetGlobalFPD(t *testing.T) {
 				"user": {},
 				"site": []byte(`{"someappfpd": true}`),
 			},
-			errorExpected: false,
-			errorContains: "",
 		},
 	}
 	for _, test := range testCases {
@@ -305,32 +293,25 @@ func TestGetGlobalFPD(t *testing.T) {
 		err = json.Unmarshal(test.output, &outputTestReq)
 		assert.NoError(t, err, "Error should be nil")
 
-		if test.errorExpected {
-			assert.Error(t, err, "Error should not be nil")
-			//result should be still returned
-			assert.Equal(t, inputTestReq, outputTestReq, "Result is incorrect")
-			assert.True(t, strings.Contains(err.Error(), test.errorContains))
-		} else {
-			assert.NoError(t, err, "Error should be nil")
-			if fpd[userKey] != nil {
-				if string(inputTestReq.User.Ext) != "" && string(outputTestReq.User.Ext) != "" {
-					assert.JSONEq(t, string(inputTestReq.User.Ext), string(outputTestReq.User.Ext), "Result is incorrect")
-				}
-				assert.Equal(t, test.expectedFpd[userKey], fpd[userKey], "FPD is incorrect")
+		if fpd[userKey] != nil {
+			if string(inputTestReq.User.Ext) != "" && string(outputTestReq.User.Ext) != "" {
+				assert.JSONEq(t, string(inputTestReq.User.Ext), string(outputTestReq.User.Ext), "Result is incorrect")
 			}
-			if fpd[appKey] != nil {
-				if string(inputTestReq.App.Ext) != "" && string(outputTestReq.App.Ext) != "" {
-					assert.JSONEq(t, string(inputTestReq.App.Ext), string(outputTestReq.App.Ext), "Result is incorrect")
-				}
-				assert.Equal(t, test.expectedFpd[appKey], fpd[appKey], "FPD is incorrect")
-			}
-			if fpd[siteKey] != nil {
-				if string(inputTestReq.Site.Ext) != "" && string(outputTestReq.Site.Ext) != "" {
-					assert.JSONEq(t, string(inputTestReq.Site.Ext), string(outputTestReq.Site.Ext), "Result is incorrect")
-				}
-				assert.Equal(t, test.expectedFpd[siteKey], fpd[siteKey], "FPD is incorrect")
-			}
+			assert.Equal(t, test.expectedFpd[userKey], fpd[userKey], "FPD is incorrect")
 		}
+		if fpd[appKey] != nil {
+			if string(inputTestReq.App.Ext) != "" && string(outputTestReq.App.Ext) != "" {
+				assert.JSONEq(t, string(inputTestReq.App.Ext), string(outputTestReq.App.Ext), "Result is incorrect")
+			}
+			assert.Equal(t, test.expectedFpd[appKey], fpd[appKey], "FPD is incorrect")
+		}
+		if fpd[siteKey] != nil {
+			if string(inputTestReq.Site.Ext) != "" && string(outputTestReq.Site.Ext) != "" {
+				assert.JSONEq(t, string(inputTestReq.Site.Ext), string(outputTestReq.Site.Ext), "Result is incorrect")
+			}
+			assert.Equal(t, test.expectedFpd[siteKey], fpd[siteKey], "FPD is incorrect")
+		}
+
 	}
 }
 
