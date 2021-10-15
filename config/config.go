@@ -1006,6 +1006,9 @@ func SetupViper(v *viper.Viper, filename string) {
 	migrateConfigPurposeOneTreatment(v)
 	migrateConfigTCF2PurposeEnabledFlags(v)
 
+	// These defaults must be set after the migrate functions because those functions look for the presence of these
+	// config fields and there isn't a way to detect presence of a config field using the viper package if a default
+	// is set. Viper IsSet and Get functions consider default values.
 	v.SetDefault("gdpr.tcf2.purpose1.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose2.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose3.enabled", true)

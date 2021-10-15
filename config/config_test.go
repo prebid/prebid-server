@@ -3,7 +3,6 @@ package config
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"net"
 	"os"
 	"strings"
@@ -1042,10 +1041,10 @@ func TestInvalidEnforcePurpose(t *testing.T) {
 	errs := cfg.validate(v)
 
 	expectedErrs := []error{
-		fmt.Errorf("gdpr.tcf2.purpose1.enforce_purpose must be \"no\" or \"full\". Got "),
-		fmt.Errorf("gdpr.tcf2.purpose5.enforce_purpose must be \"no\" or \"full\". Got invalid1"),
-		fmt.Errorf("gdpr.tcf2.purpose6.enforce_purpose must be \"no\" or \"full\". Got invalid2"),
-		fmt.Errorf("gdpr.tcf2.purpose10.enforce_purpose must be \"no\" or \"full\". Got invalid3"),
+		errors.New("gdpr.tcf2.purpose1.enforce_purpose must be \"no\" or \"full\". Got "),
+		errors.New("gdpr.tcf2.purpose5.enforce_purpose must be \"no\" or \"full\". Got invalid1"),
+		errors.New("gdpr.tcf2.purpose6.enforce_purpose must be \"no\" or \"full\". Got invalid2"),
+		errors.New("gdpr.tcf2.purpose10.enforce_purpose must be \"no\" or \"full\". Got invalid3"),
 	}
 	assert.ElementsMatch(t, errs, expectedErrs, "gdpr.tcf2.purposeX.enforce_purpose should prevent invalid values but it doesn't")
 }
