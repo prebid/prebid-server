@@ -12,6 +12,38 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+type richaudienceRequest struct {
+	ID     string             `json:"id,omitempty"`
+	Imp    []openrtb2.Imp     `json:"imp,omitempty"`
+	User   richaudienceUser   `json:"user,omitempty"`
+	Device richaudienceDevice `json:"device,omitempty"`
+	Site   richaudienceSite   `json:"site,omitempty"`
+	Test   int8               `json:"test,omitempty"`
+}
+
+type richaudienceUser struct {
+	BuyerUID string              `json:"buyeruid,omitempty"`
+	Ext      richaudienceUserExt `json:"ext,omitempty"`
+}
+
+type richaudienceUserExt struct {
+	Eids    []openrtb_ext.ExtUserEid `json:"eids,omitempty"`
+	Consent string                   `json:"consent,omitempty"`
+}
+
+type richaudienceDevice struct {
+	IP   string `json:"ip,omitempty"`
+	IPv6 string `json:"ipv6,omitempty"`
+	Lmt  int8   `json:"lmt,omitempty"`
+	DNT  int8   `json:"dnt,omitempty"`
+	UA   string `json:"ua,omitempty"`
+}
+
+type richaudienceSite struct {
+	Domain string `json:"domain,omitempty"`
+	Page   string `json:"page,omitempty"`
+}
+
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderRichaudience, config.Adapter{
 		Endpoint: "http://ortb.richaudience.com/ortb/?bidder=pbs",
@@ -48,7 +80,7 @@ func TestGetSite(t *testing.T) {
 		},
 	}
 
-	setSite(raBidRequest, richaudienceRequestTest)
+	setSite(raBidRequest)
 
 	if raBidRequest.Site.Domain != richaudienceRequestTest.Site.Domain {
 		t.Errorf("error %s", richaudienceRequestTest.Site.Domain)
@@ -67,11 +99,7 @@ func TestGetSite(t *testing.T) {
 		},
 	}
 
-	setSite(raBidRequest, richaudienceRequestTest)
-
-	if "" == richaudienceRequestTest.Site.Domain {
-		t.Errorf("error domain is diferent %s", richaudienceRequestTest.Site.Domain)
-	}
+	setSite(raBidRequest)
 }
 
 func TestGetDevice(t *testing.T) {
@@ -92,7 +120,7 @@ func TestGetDevice(t *testing.T) {
 		},
 	}
 
-	setDevice(raBidRequest, richaudienceRequestTest)
+	setDevice(raBidRequest)
 
 	if raBidRequest.Device.IP != richaudienceRequestTest.Device.IP {
 		t.Errorf("error %s", richaudienceRequestTest.Device.IP)

@@ -10,44 +10,11 @@ import (
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 type adapter struct {
 	endpoint string
-}
-
-type richaudienceRequest struct {
-	ID     string             `json:"id,omitempty"`
-	Imp    []openrtb2.Imp     `json:"imp,omitempty"`
-	User   richaudienceUser   `json:"user,omitempty"`
-	Device richaudienceDevice `json:"device,omitempty"`
-	Site   richaudienceSite   `json:"site,omitempty"`
-	Test   int8               `json:"test,omitempty"`
-}
-
-type richaudienceUser struct {
-	BuyerUID string              `json:"buyeruid,omitempty"`
-	Ext      richaudienceUserExt `json:"ext,omitempty"`
-}
-
-type richaudienceUserExt struct {
-	Eids    []openrtb_ext.ExtUserEid `json:"eids,omitempty"`
-	Consent string                   `json:"consent,omitempty"`
-}
-
-type richaudienceDevice struct {
-	IP   string `json:"ip,omitempty"`
-	IPv6 string `json:"ipv6,omitempty"`
-	Lmt  int8   `json:"lmt,omitempty"`
-	DNT  int8   `json:"dnt,omitempty"`
-	UA   string `json:"ua,omitempty"`
-}
-
-type richaudienceSite struct {
-	Domain string `json:"domain,omitempty"`
-	Page   string `json:"page,omitempty"`
 }
 
 // Builder builds a new instance of the RichAudience adapter for the given bidder with the given config.
@@ -59,31 +26,28 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	richaudienceRequest := richaudienceRequest{}
-	richaudienceRequest.ID = request.ID
-
 	raiHeaders := http.Header{}
 
 	setHeaders(&raiHeaders)
 
-	isUrlSecure := setSite(request, &richaudienceRequest)
+	isUrlSecure := setSite(request)
 
-	resImps, err := setImp(request, &richaudienceRequest, isUrlSecure)
+	resImps, err := setImp(request, isUrlSecure)
 	if err != nil {
 		return nil, []error{err}
 	}
 
-	richaudienceRequest.Imp = resImps
+	request.Imp = resImps
 
-	if err = setDevice(request, &richaudienceRequest); err != nil {
+	if err = setDevice(request); err != nil {
 		return nil, []error{err}
 	}
 
-	if err = setUser(request, &richaudienceRequest, requestInfo); err != nil {
+	if err = setUser(request, requestInfo); err != nil {
 		return nil, []error{err}
 	}
 
-	req, err := json.Marshal(richaudienceRequest)
+	req, err := json.Marshal(request)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -151,7 +115,7 @@ func setHeaders(raiHeaders *http.Header) {
 	raiHeaders.Add("X-Openrtb-Version", "2.5")
 }
 
-func setImp(request *openrtb2.BidRequest, richaudienceRequest *richaudienceRequest, isUrlSecure bool) (resImps []openrtb2.Imp, err error) {
+func setImp(request *openrtb2.BidRequest, isUrlSecure bool) (resImps []openrtb2.Imp, err error) {
 	for _, imp := range request.Imp {
 		var secure = int8(0)
 		raiExt, errImp := parseImpExt(&imp)
@@ -165,7 +129,7 @@ func setImp(request *openrtb2.BidRequest, richaudienceRequest *richaudienceReque
 			}
 
 			if raiExt.Test {
-				richaudienceRequest.Test = int8(1)
+				request.Test = int8(1)
 			}
 
 			if raiExt.BidFloorCur == "" {
@@ -195,75 +159,38 @@ func setImp(request *openrtb2.BidRequest, richaudienceRequest *richaudienceReque
 	return resImps, nil
 }
 
-func setSite(request *openrtb2.BidRequest, richaudienceRequest *richaudienceRequest) (isUrlSecure bool) {
+func setSite(request *openrtb2.BidRequest) (isUrlSecure bool) {
 	if request.Site != nil {
 		if request.Site.Page != "" {
-			richaudienceRequest.Site.Domain = request.Site.Domain
 			pageURL, err := url.Parse(request.Site.Page)
 			if err == nil {
 				if request.Site.Domain == "" {
-					richaudienceRequest.Site.Domain = pageURL.Host
+					request.Site.Domain = pageURL.Host
 				}
 				isUrlSecure = pageURL.Scheme == "https"
 			}
-
-			richaudienceRequest.Site.Page = request.Site.Page
 		}
 	}
 	return
 }
 
-func setDevice(request *openrtb2.BidRequest, richaudienceRequest *richaudienceRequest) (err error) {
+func setDevice(request *openrtb2.BidRequest) (err error) {
+
 	if request.Device != nil && request.Device.IP == "" && request.Device.IPv6 == "" {
 		err = &errortypes.BadInput{
 			Message: "request.Device.IP is required",
 		}
 		return err
-	} else if request.Device.IP != "" {
-		richaudienceRequest.Device.IP = request.Device.IP
-	} else if request.Device.IPv6 != "" {
-		richaudienceRequest.Device.IPv6 = request.Device.IPv6
 	}
-
-	if request.Device.DNT != nil {
-		richaudienceRequest.Device.DNT = *request.Device.DNT
-	}
-
-	if request.Device.Lmt != nil {
-		richaudienceRequest.Device.Lmt = *request.Device.Lmt
-	}
-
-	if request.Device.UA != "" {
-		richaudienceRequest.Device.UA = request.Device.UA
-	}
-
 	return err
 }
 
-func setUser(request *openrtb2.BidRequest, richaudienceRequest *richaudienceRequest, requestInfo *adapters.ExtraRequestInfo) (err error) {
+func setUser(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) (err error) {
 	if request.User != nil {
-		if requestInfo.PbsEntryPoint != metrics.ReqTypeAMP {
-			if request.User.BuyerUID != "" && request.User.BuyerUID != "[PDID]" {
-				richaudienceRequest.User.BuyerUID = request.User.BuyerUID
-			} else {
-				err = &errortypes.BadInput{
-					Message: "request.ext.user.buyerUID is required",
-				}
-				return err
-			}
-		}
-
 		if request.User.Ext != nil {
 			var extUser openrtb_ext.ExtUser
 			if err := json.Unmarshal(request.User.Ext, &extUser); err != nil {
 				return err
-			} else {
-				if extUser.Eids != nil {
-					richaudienceRequest.User.Ext.Eids = extUser.Eids
-				}
-				if extUser.Consent != "" {
-					richaudienceRequest.User.Ext.Consent = extUser.Consent
-				}
 			}
 		}
 	}
