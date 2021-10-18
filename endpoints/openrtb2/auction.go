@@ -1572,15 +1572,6 @@ func setDoNotTrackImplicitly(httpReq *http.Request, bidReq *openrtb2.BidRequest)
 	}
 }
 
-// parseUserID gets this user's ID for the host machine, if it exists.
-func parseUserID(cfg *config.Configuration, httpReq *http.Request) (string, bool) {
-	if hostCookie, err := httpReq.Cookie(cfg.HostCookie.CookieName); hostCookie != nil && err == nil {
-		return hostCookie.Value, true
-	} else {
-		return "", false
-	}
-}
-
 // Write(return) errors to the client, if any. Returns true if errors were found.
 func writeError(errs []error, w http.ResponseWriter, labels *metrics.Labels) bool {
 	var rc bool = false

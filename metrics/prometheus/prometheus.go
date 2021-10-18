@@ -476,10 +476,6 @@ func (m *Metrics) RecordImps(labels metrics.ImpLabels) {
 	}).Inc()
 }
 
-func (m *Metrics) RecordLegacyImps(labels metrics.Labels, numImps int) {
-	m.impressionsLegacy.Add(float64(numImps))
-}
-
 func (m *Metrics) RecordRequestTime(labels metrics.Labels, length time.Duration) {
 	if labels.RequestStatus == metrics.RequestStatusOK {
 		m.requestsTimer.With(prometheus.Labels{

@@ -2,26 +2,18 @@ package adform
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"strconv"
 	"testing"
-	"time"
-
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters/adapterstest"
-	"github.com/prebid/prebid-server/cache/dummycache"
-	"github.com/prebid/prebid-server/pbs"
-	"github.com/prebid/prebid-server/usersync"
-
-	"fmt"
 
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -71,31 +63,6 @@ type aBidInfo struct {
 	buyerUID  string
 	secure    bool
 	currency  string
-	delay     time.Duration
-}
-
-var adformTestData aBidInfo
-
-// Legacy auction tests
-
-func DummyAdformServer(w http.ResponseWriter, r *http.Request) {
-	errorString := assertAdformServerRequest(adformTestData, r, false)
-	if errorString != nil {
-		http.Error(w, *errorString, http.StatusInternalServerError)
-		return
-	}
-
-	if adformTestData.delay > 0 {
-		<-time.After(adformTestData.delay)
-	}
-
-	adformServerResponse, err := createAdformServerResponse(adformTestData)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(adformServerResponse)
 }
 
 func createAdformServerResponse(testData aBidInfo) ([]byte, error) {
@@ -136,168 +103,6 @@ func createAdformServerResponse(testData aBidInfo) ([]byte, error) {
 	return adformServerResponse, err
 }
 
-func TestAdformBasicResponse(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(DummyAdformServer))
-	defer server.Close()
-
-	adapter, ctx, prebidRequest := initTestData(server, t)
-
-	bids, err := adapter.Call(ctx, prebidRequest, prebidRequest.Bidders[0])
-
-	if err != nil {
-		t.Fatalf("Should not have gotten adapter error: %v", err)
-	}
-	if len(bids) != 3 {
-		t.Fatalf("Received %d bids instead of 3", len(bids))
-	}
-	expectedTypes := []openrtb_ext.BidType{
-		openrtb_ext.BidTypeBanner,
-		openrtb_ext.BidTypeBanner,
-		openrtb_ext.BidTypeVideo,
-	}
-
-	for i, bid := range bids {
-
-		if bid.CreativeMediaType != string(expectedTypes[i]) {
-			t.Errorf("Expected a %s bid. Got: %s", expectedTypes[i], bid.CreativeMediaType)
-		}
-
-		matched := false
-		for _, tag := range adformTestData.tags {
-			if bid.AdUnitCode == tag.code {
-				matched = true
-				if bid.BidderCode != "adform" {
-					t.Errorf("Incorrect BidderCode '%s'", bid.BidderCode)
-				}
-				if bid.Price != tag.price {
-					t.Errorf("Incorrect bid price '%.2f' expected '%.2f'", bid.Price, tag.price)
-				}
-				if bid.Width != int64(adformTestData.width) || bid.Height != int64(adformTestData.height) {
-					t.Errorf("Incorrect bid size %dx%d, expected %dx%d", bid.Width, bid.Height, adformTestData.width, adformTestData.height)
-				}
-				if bid.Adm != tag.content {
-					t.Errorf("Incorrect bid markup '%s' expected '%s'", bid.Adm, tag.content)
-				}
-				if bid.DealId != tag.dealId {
-					t.Errorf("Incorrect deal id '%s' expected '%s'", bid.DealId, tag.dealId)
-				}
-				if bid.Creative_id != tag.creativeId {
-					t.Errorf("Incorrect creative id '%s' expected '%s'", bid.Creative_id, tag.creativeId)
-				}
-			}
-		}
-		if !matched {
-			t.Errorf("Received bid for unknown ad unit '%s'", bid.AdUnitCode)
-		}
-	}
-
-	// same test but with request timing out
-	adformTestData.delay = 5 * time.Millisecond
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
-	defer cancel()
-
-	bids, err = adapter.Call(ctx, prebidRequest, prebidRequest.Bidders[0])
-	if err == nil {
-		t.Fatalf("Should have gotten a timeout error: %v", err)
-	}
-}
-
-func initTestData(server *httptest.Server, t *testing.T) (*AdformAdapter, context.Context, *pbs.PBSRequest) {
-	adformTestData = createTestData(false)
-
-	// prepare adapter
-	conf := *adapters.DefaultHTTPAdapterConfig
-	adapter := NewAdformLegacyAdapter(&conf, server.URL)
-
-	prebidRequest := preparePrebidRequest(server.URL, t)
-	ctx := context.TODO()
-
-	return adapter, ctx, prebidRequest
-}
-
-func preparePrebidRequest(serverUrl string, t *testing.T) *pbs.PBSRequest {
-	body := preparePrebidRequestBody(adformTestData, t)
-	prebidHttpRequest := httptest.NewRequest("POST", serverUrl, body)
-	prebidHttpRequest.Header.Add("User-Agent", adformTestData.deviceUA)
-	prebidHttpRequest.Header.Add("Referer", adformTestData.referrer)
-	prebidHttpRequest.Header.Add("X-Real-IP", adformTestData.deviceIP)
-
-	pbsCookie := usersync.ParseCookieFromRequest(prebidHttpRequest, &config.HostCookie{})
-	pbsCookie.TrySync("adform", adformTestData.buyerUID)
-	fakeWriter := httptest.NewRecorder()
-
-	pbsCookie.SetCookieOnResponse(fakeWriter, false, &config.HostCookie{Domain: ""}, time.Minute)
-	prebidHttpRequest.Header.Add("Cookie", fakeWriter.Header().Get("Set-Cookie"))
-
-	cacheClient, _ := dummycache.New()
-	r, err := pbs.ParsePBSRequest(prebidHttpRequest, &config.AuctionTimeouts{
-		Default: 2000,
-		Max:     2000,
-	}, cacheClient, &config.HostCookie{})
-	if err != nil {
-		t.Fatalf("ParsePBSRequest failed: %v", err)
-	}
-	if len(r.Bidders) != 1 {
-		t.Fatalf("ParsePBSRequest returned %d bidders instead of 1", len(r.Bidders))
-	}
-	if r.Bidders[0].BidderCode != "adform" {
-		t.Fatalf("ParsePBSRequest returned invalid bidder")
-	}
-
-	// can't be set in preparePrebidRequestBody as will be lost during json serialization and deserialization
-	// for the adapters which don't support OpenRTB requests the old PBSRequest is created from OpenRTB request
-	// so User and Regs are copied from OpenRTB request, see legacy.go -> toLegacyRequest
-	regs := getRegs()
-	r.Regs = &regs
-	user := openrtb2.User{
-		Ext: getUserExt(),
-	}
-	r.User = &user
-
-	return r
-}
-
-func preparePrebidRequestBody(requestData aBidInfo, t *testing.T) *bytes.Buffer {
-	prebidRequest := pbs.PBSRequest{
-		AdUnits: make([]pbs.AdUnit, 4),
-		Device: &openrtb2.Device{
-			UA:  requestData.deviceUA,
-			IP:  requestData.deviceIP,
-			IFA: requestData.deviceIFA,
-		},
-		Tid:    requestData.tid,
-		Secure: 0,
-	}
-	for i, tag := range requestData.tags {
-		prebidRequest.AdUnits[i] = pbs.AdUnit{
-			Code: tag.code,
-			Sizes: []openrtb2.Format{
-				{
-					W: int64(requestData.width),
-					H: int64(requestData.height),
-				},
-			},
-			Bids: []pbs.Bids{
-				{
-					BidderCode: "adform",
-					BidID:      fmt.Sprintf("random-id-from-pbjs-%d", i),
-					Params:     json.RawMessage(formatAdUnitJson(tag)),
-				},
-			},
-		}
-	}
-
-	body := new(bytes.Buffer)
-	err := json.NewEncoder(body).Encode(prebidRequest)
-	if err != nil {
-		t.Fatalf("Json encoding failed: %v", err)
-	}
-	fmt.Println("body", body)
-	return body
-}
-
-// OpenRTB auction tests
-
 func TestOpenRTBRequest(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAdform, config.Adapter{
 		Endpoint: "https://adx.adform.net"})
@@ -324,7 +129,7 @@ func TestOpenRTBRequest(t *testing.T) {
 	}
 	r.Header = httpRequests[0].Headers
 
-	errorString := assertAdformServerRequest(testData, r, true)
+	errorString := assertAdformServerRequest(testData, r)
 	if errorString != nil {
 		t.Errorf("Request error: %s", *errorString)
 	}
@@ -499,16 +304,6 @@ func TestOpenRTBSurpriseResponse(t *testing.T) {
 	}
 }
 
-// Properties tests
-
-func TestAdformProperties(t *testing.T) {
-	adapter := NewAdformLegacyAdapter(adapters.DefaultHTTPAdapterConfig, "adx.adform.net/adx")
-
-	if adapter.SkipNoCookies() != false {
-		t.Fatalf("should have been false")
-	}
-}
-
 // helpers
 
 func getRegs() openrtb2.Regs {
@@ -588,7 +383,7 @@ func formatAdUnitParam(fieldName string, fieldValue string) string {
 	return ""
 }
 
-func assertAdformServerRequest(testData aBidInfo, r *http.Request, isOpenRtb bool) *string {
+func assertAdformServerRequest(testData aBidInfo, r *http.Request) *string {
 	if ok, err := equal("GET", r.Method, "HTTP method"); !ok {
 		return err
 	}
@@ -598,15 +393,8 @@ func assertAdformServerRequest(testData aBidInfo, r *http.Request, isOpenRtb boo
 		}
 	}
 
-	var midsWithCurrency = ""
-	var queryString = ""
-	if isOpenRtb {
-		midsWithCurrency = "bWlkPTMyMzQ0JnJjdXI9RVVSJm1rdj1jb2xvcjpyZWQsYWdlOjMwLTQwJm1rdz1yZWQsYmx1ZSZjZGltcz0zMDB4MzAwLDQwMHgyMDA&bWlkPTMyMzQ1JnJjdXI9RVVSJmNkaW1zPTMwMHgyMDAmbWlucD0yMy4xMA&bWlkPTMyMzQ2JnJjdXI9RVVS&bWlkPTMyMzQ3JnJjdXI9RVVS"
-		queryString = "CC=1&adid=6D92078A-8246-4BA4-AE5B-76104861E7DC&eids=eyJ0ZXN0LmNvbSI6eyJvdGhlcl91c2VyX2lkIjpbMF0sInNvbWVfdXNlcl9pZCI6WzFdfSwidGVzdDIub3JnIjp7Im90aGVyX3VzZXJfaWQiOlsyXX19&fd=1&gdpr=1&gdpr_consent=abc&ip=111.111.111.111&pt=gross&rp=4&stid=transaction-id&url=https%3A%2F%2Fadform.com%3Fa%3Db&" + midsWithCurrency
-	} else {
-		midsWithCurrency = "bWlkPTMyMzQ0JnJjdXI9VVNEJm1rdj1jb2xvcjpyZWQsYWdlOjMwLTQwJm1rdz1yZWQsYmx1ZSZjZGltcz0zMDB4MzAwLDQwMHgyMDA&bWlkPTMyMzQ1JnJjdXI9VVNEJmNkaW1zPTMwMHgyMDAmbWlucD0yMy4xMA&bWlkPTMyMzQ2JnJjdXI9VVNE&bWlkPTMyMzQ3JnJjdXI9VVNE" // no way to pass currency in legacy adapter
-		queryString = "CC=1&adid=6D92078A-8246-4BA4-AE5B-76104861E7DC&fd=1&gdpr=1&gdpr_consent=abc&ip=111.111.111.111&pt=gross&rp=4&stid=transaction-id&" + midsWithCurrency
-	}
+	midsWithCurrency := "bWlkPTMyMzQ0JnJjdXI9RVVSJm1rdj1jb2xvcjpyZWQsYWdlOjMwLTQwJm1rdz1yZWQsYmx1ZSZjZGltcz0zMDB4MzAwLDQwMHgyMDA&bWlkPTMyMzQ1JnJjdXI9RVVSJmNkaW1zPTMwMHgyMDAmbWlucD0yMy4xMA&bWlkPTMyMzQ2JnJjdXI9RVVS&bWlkPTMyMzQ3JnJjdXI9RVVS"
+	queryString := "CC=1&adid=6D92078A-8246-4BA4-AE5B-76104861E7DC&eids=eyJ0ZXN0LmNvbSI6eyJvdGhlcl91c2VyX2lkIjpbMF0sInNvbWVfdXNlcl9pZCI6WzFdfSwidGVzdDIub3JnIjp7Im90aGVyX3VzZXJfaWQiOlsyXX19&fd=1&gdpr=1&gdpr_consent=abc&ip=111.111.111.111&pt=gross&rp=4&stid=transaction-id&url=https%3A%2F%2Fadform.com%3Fa%3Db&" + midsWithCurrency
 
 	if ok, err := equal(queryString, r.URL.RawQuery, "Query string"); !ok {
 		return err
