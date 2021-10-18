@@ -153,6 +153,7 @@ const (
 	BidderMobfoxpb          BidderName = "mobfoxpb"
 	BidderMobileFuse        BidderName = "mobilefuse"
 	BidderNanoInteractive   BidderName = "nanointeractive"
+	BidderNextMillennium    BidderName = "nextmillennium"
 	BidderNinthDecimal      BidderName = "ninthdecimal"
 	BidderNoBid             BidderName = "nobid"
 	BidderOneTag            BidderName = "onetag"
@@ -288,6 +289,7 @@ func CoreBidderNames() []BidderName {
 		BidderMobfoxpb,
 		BidderMobileFuse,
 		BidderNanoInteractive,
+		BidderNextMillennium,
 		BidderNinthDecimal,
 		BidderNoBid,
 		BidderOneTag,
