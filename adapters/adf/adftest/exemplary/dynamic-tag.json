@@ -5,13 +5,29 @@
       "id": "test-imp-id",
       "ext": {
         "bidder": {
-          "mid": "828782"
+          "inv": 1234,
+          "mname": "placement"
         }
       },
       "banner": {
         "format": [{
           "w": 300,
           "h": 250
+        }]
+      }
+    }, {
+      "id": "test-imp-id2",
+      "ext": {
+        "bidder": {
+          "mid": 1111,
+          "inv": 4321,
+          "mname": "placement1"
+        }
+      },
+      "banner": {
+        "format": [{
+          "w": 300,
+          "h": 300
         }]
       }
     }],
@@ -35,7 +51,8 @@
           "id": "test-imp-id",
           "ext": {
             "bidder": {
-              "mid": "828782"
+              "inv": 1234,
+              "mname": "placement"
             }
           },
           "banner": {
@@ -43,8 +60,23 @@
               "w": 300,
               "h": 250
             }]
+          }
+        }, {
+          "id": "test-imp-id2",
+          "tagid": "1111",
+          "ext": {
+            "bidder": {
+              "mid": 1111,
+              "inv": 4321,
+              "mname": "placement1"
+            }
           },
-          "tagid": "828782"
+          "banner": {
+            "format": [{
+              "w": 300,
+              "h": 300
+            }]
+          }
         }],
         "site": {
           "publisher": {
@@ -59,47 +91,9 @@
       }
     },
     "mockResponse": {
-      "status": 200,
-      "body": {
-        "id": "test-request-id",
-        "seatbid": [{
-          "bid": [{
-            "id": "test-bid-id",
-            "impid": "test-imp-id",
-            "price": 10,
-            "adm": "{banner html}",
-            "adomain": [ "test.com" ],
-            "crid": "test-creative-id",
-            "ext": {
-              "prebid": {
-                "type": "banner"
-              }
-            }
-          }]
-        }],
-        "cur": "USD"
-      }
+      "status": 204
     }
   }],
-  "expectedBidResponses": [{
-    "currency": "USD",
-    "bids": [
-      {
-        "bid": {
-          "id": "test-bid-id",
-          "impid": "test-imp-id",
-          "price": 10,
-          "adm": "{banner html}",
-          "crid": "test-creative-id",
-          "adomain": [ "test.com" ],
-          "ext": {
-            "prebid": {
-              "type": "banner"
-            }
-          }
-        },
-        "type": "banner"
-      }
-    ]
-  }]
+  "expectedMakeRequestsErrors": [],
+  "expectedBidResponses": []
 }
