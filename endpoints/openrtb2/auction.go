@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/adapters"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -23,6 +22,7 @@ import (
 	nativeRequests "github.com/mxmCherry/openrtb/v15/native1/request"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	accountService "github.com/prebid/prebid-server/account"
+	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -345,13 +345,13 @@ func mergeBidderParams(req *openrtb_ext.RequestWrapper) error {
 		}
 
 		//merges bidder parameters passed at req.ext level with imp[].ext level.
-		err = mergeBidderParamsInImpExt(impExt, reqBidderParams)
+		err = addMissingReqExtParamsInImpExt(impExt, reqBidderParams)
 		if err != nil {
 			return err
 		}
 
 		//merges bidder parameters passed at req.ext level with imp[].ext.prebid.bidder level.
-		err = mergeBidderParamsInImpExtPrebid(impExt, reqBidderParams)
+		err = addMissingReqExtParamsInImpExtPrebid(impExt, reqBidderParams)
 		if err != nil {
 			return err
 		}
@@ -368,8 +368,8 @@ func mergeBidderParams(req *openrtb_ext.RequestWrapper) error {
 	return nil
 }
 
-// mergeBidderParamsInImpExtPrebid merges bidder parameters passed at req.ext level with imp[].ext.prebid.bidder level.
-func mergeBidderParamsInImpExtPrebid(impExtBidder map[string]map[string]json.RawMessage, reqExtParams map[string]map[string]json.RawMessage) error {
+// addMissingReqExtParamsInImpExtPrebid merges bidder parameters passed at req.ext level with imp[].ext.prebid.bidder level.
+func addMissingReqExtParamsInImpExtPrebid(impExtBidder map[string]map[string]json.RawMessage, reqExtParams map[string]map[string]json.RawMessage) error {
 	var bidderParams map[string]json.RawMessage
 	if impExtBidder["prebid"] != nil && impExtBidder["prebid"]["bidder"] != nil {
 		err := json.Unmarshal(impExtBidder["prebid"]["bidder"], &bidderParams)
@@ -410,19 +410,23 @@ func mergeBidderParamsInImpExtPrebid(impExtBidder map[string]map[string]json.Raw
 	return nil
 }
 
-// mergeBidderParamsInImpExt merges bidder parameters passed at req.ext level with imp[].ext level.
-func mergeBidderParamsInImpExt(impExtBidder map[string]map[string]json.RawMessage, reqExtParams map[string]map[string]json.RawMessage) error {
+// addMissingReqExtParamsInImpExt merges bidder parameters passed at req.ext level with imp[].ext level.
+func addMissingReqExtParamsInImpExt(impExtBidder map[string]map[string]json.RawMessage, reqExtParams map[string]map[string]json.RawMessage) error {
 	for bidder, bidderExt := range impExtBidder {
 		if !isBidderToValidate(bidder) {
 			continue
 		}
 
+		wasModified := false
 		for key, value := range reqExtParams[bidder] {
 			if _, present := bidderExt[key]; !present {
 				bidderExt[key] = value
+				wasModified = true
 			}
 		}
-		impExtBidder[bidder] = bidderExt
+		if wasModified {
+			impExtBidder[bidder] = bidderExt
+		}
 	}
 	return nil
 }

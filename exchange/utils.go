@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/adapters"
 	"math/rand"
 	"strings"
 
@@ -12,6 +11,7 @@ import (
 	"github.com/prebid/go-gdpr/vendorconsent"
 
 	"github.com/buger/jsonparser"
+	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
