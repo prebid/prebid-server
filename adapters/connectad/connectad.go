@@ -18,6 +18,10 @@ type ConnectAdAdapter struct {
 	endpoint string
 }
 
+type connectadImpExt struct {
+	ConnectAd openrtb_ext.ExtImpConnectAd `json:"connectad"`
+}
+
 // Builder builds a new instance of the ConnectAd adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	bidder := &ConnectAdAdapter{

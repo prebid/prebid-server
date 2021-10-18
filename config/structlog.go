@@ -12,7 +12,7 @@ import (
 type logMsg func(string, ...interface{})
 
 var mapregex = regexp.MustCompile(`mapstructure:"([^"]+)"`)
-var blocklistregexp = []*regexp.Regexp{
+var blacklistregexp = []*regexp.Regexp{
 	regexp.MustCompile("password"),
 }
 
@@ -84,7 +84,7 @@ func fieldNameByTag(f reflect.StructField) string {
 }
 
 func allowedName(name string) bool {
-	for _, r := range blocklistregexp {
+	for _, r := range blacklistregexp {
 		if r.MatchString(name) {
 			return false
 		}

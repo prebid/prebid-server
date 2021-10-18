@@ -7,10 +7,13 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
+	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/server/ssl"
 	"github.com/prebid/prebid-server/usersync"
 )
@@ -18,10 +21,27 @@ import (
 // Recaptcha code from https://github.com/haisum/recaptcha/blob/master/recaptcha.go
 const RECAPTCHA_URL = "https://www.google.com/recaptcha/api/siteverify"
 
+const (
+	USERSYNC_OPT_OUT     = "usersync.opt_outs"
+	USERSYNC_BAD_REQUEST = "usersync.bad_requests"
+	USERSYNC_SUCCESS     = "usersync.%s.sets"
+)
+
+// uidWithExpiry bundles the UID with an Expiration date.
+// After the expiration, the UID is no longer valid.
+type uidWithExpiry struct {
+	// UID is the ID given to a user by a particular bidder
+	UID string `json:"uid"`
+	// Expires is the time at which this UID should no longer apply.
+	Expires time.Time `json:"expires"`
+}
+
 type UserSyncDeps struct {
 	ExternalUrl      string
 	RecaptchaSecret  string
 	HostCookieConfig *config.HostCookie
+	MetricsEngine    metrics.MetricsEngine
+	PBSAnalytics     analytics.PBSAnalyticsModule
 }
 
 // Struct for parsing json in google's response
@@ -59,7 +79,7 @@ func (deps *UserSyncDeps) OptOut(w http.ResponseWriter, r *http.Request, _ httpr
 	rr := r.FormValue("g-recaptcha-response")
 
 	if rr == "" {
-		http.Redirect(w, r, fmt.Sprintf("%s/static/optout.html", deps.ExternalUrl), http.StatusMovedPermanently)
+		http.Redirect(w, r, fmt.Sprintf("%s/static/optout.html", deps.ExternalUrl), 301)
 		return
 	}
 
@@ -78,8 +98,8 @@ func (deps *UserSyncDeps) OptOut(w http.ResponseWriter, r *http.Request, _ httpr
 	pc.SetCookieOnResponse(w, false, deps.HostCookieConfig, deps.HostCookieConfig.TTLDuration())
 
 	if optout == "" {
-		http.Redirect(w, r, deps.HostCookieConfig.OptInURL, http.StatusMovedPermanently)
+		http.Redirect(w, r, deps.HostCookieConfig.OptInURL, 301)
 	} else {
-		http.Redirect(w, r, deps.HostCookieConfig.OptOutURL, http.StatusMovedPermanently)
+		http.Redirect(w, r, deps.HostCookieConfig.OptOutURL, 301)
 	}
 }

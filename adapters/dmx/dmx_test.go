@@ -13,6 +13,10 @@ import (
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 )
 
+var (
+	bidRequest string
+)
+
 func TestFetchParams(t *testing.T) {
 	var w, h int = 300, 250
 
