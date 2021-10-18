@@ -102,6 +102,8 @@ func NewFileLogger(filename string) (analytics.PBSAnalyticsModule, error) {
 	}
 }
 
+type fileAuctionObject analytics.AuctionObject
+
 func jsonifyAuctionObject(ao *analytics.AuctionObject) string {
 	type alias analytics.AuctionObject
 	b, err := json.Marshal(&struct {

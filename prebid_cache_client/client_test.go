@@ -280,18 +280,10 @@ func assertStringEqual(t *testing.T, expected, actual string) {
 	}
 }
 
-type handlerResponseObject struct {
-	UUID string `json:"uuid"`
-}
-
-type handlerResponse struct {
-	Responses []handlerResponseObject `json:"responses"`
-}
-
 func newHandler(numResponses int) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		resp := handlerResponse{
-			Responses: make([]handlerResponseObject, numResponses),
+		resp := response{
+			Responses: make([]responseObject, numResponses),
 		}
 		for i := 0; i < numResponses; i++ {
 			resp.Responses[i].UUID = strconv.Itoa(i)

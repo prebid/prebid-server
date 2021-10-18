@@ -1795,6 +1795,7 @@ func (bidder *mixedMultiBidder) MakeBids(internalRequest *openrtb2.BidRequest, e
 }
 
 type bidRejector struct {
+	httpRequest  *adapters.RequestData
 	httpResponse *adapters.ResponseData
 }
 

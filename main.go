@@ -8,6 +8,7 @@ import (
 
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
+	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/router"
 	"github.com/prebid/prebid-server/server"
 	"github.com/prebid/prebid-server/util/task"
@@ -54,6 +55,8 @@ func serve(cfg *config.Configuration) error {
 	if err != nil {
 		return err
 	}
+
+	pbc.InitPrebidCache(cfg.CacheURL.GetBaseURL())
 
 	corsRouter := router.SupportCORS(r)
 	server.Listen(cfg, router.NoCache{Handler: corsRouter}, router.Admin(currencyConverter, fetchingInterval), r.MetricsEngine)
