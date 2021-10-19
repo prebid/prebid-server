@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/evanphx/json-patch"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -184,7 +185,9 @@ func resolveUser(fpdConfig *openrtb_ext.ORTB2, bidRequestUser *openrtb2.User, gl
 	}
 
 	if bidRequestUser == nil && fpdConfigUser != nil {
-		return nil, fmt.Errorf("incorrect First Party Data for bidder %s: User object is not defined in request, but defined in FPD config", bidderName)
+		return nil, &errortypes.BadInput{
+			Message: fmt.Sprintf("incorrect First Party Data for bidder %s: User object is not defined in request, but defined in FPD config", bidderName),
+		}
 	}
 
 	newUser := *bidRequestUser
@@ -307,7 +310,9 @@ func resolveSite(fpdConfig *openrtb_ext.ORTB2, bidRequestSite *openrtb2.Site, gl
 		return nil, nil
 	}
 	if bidRequestSite == nil && fpdConfigSite != nil {
-		return nil, fmt.Errorf("incorrect First Party Data for bidder %s: Site object is not defined in request, but defined in FPD config", bidderName)
+		return nil, &errortypes.BadInput{
+			Message: fmt.Sprintf("incorrect First Party Data for bidder %s: Site object is not defined in request, but defined in FPD config", bidderName),
+		}
 	}
 
 	newSite := *bidRequestSite
@@ -351,7 +356,9 @@ func mergeSites(originalSite *openrtb2.Site, fpdConfigSite map[string]json.RawMe
 		//apply bidder specific fpd if present
 		//result site should have ID or Page, fpd becomes incorrect if it overwrites page to empty one and ID is empty in original site
 		if sitePage == "" && newSite.Page != "" && newSite.ID == "" {
-			return newSite, fmt.Errorf("incorrect First Party Data for bidder %s: Site object cannot set empty page if req.site.id is empty", bidderName)
+			return newSite, &errortypes.BadInput{
+				Message: fmt.Sprintf("incorrect First Party Data for bidder %s: Site object cannot set empty page if req.site.id is empty", bidderName),
+			}
 
 		}
 		newSite.Page = sitePage
@@ -434,7 +441,9 @@ func resolveApp(fpdConfig *openrtb_ext.ORTB2, bidRequestApp *openrtb2.App, globa
 	}
 
 	if bidRequestApp == nil && fpdConfigApp != nil {
-		return nil, fmt.Errorf("incorrect First Party Data for bidder %s: App object is not defined in request, but defined in FPD config", bidderName)
+		return nil, &errortypes.BadInput{
+			Message: fmt.Sprintf("incorrect First Party Data for bidder %s: App object is not defined in request, but defined in FPD config", bidderName),
+		}
 	}
 
 	newApp := *bidRequestApp
@@ -562,7 +571,9 @@ func ExtractBidderConfigFPD(reqExt *openrtb_ext.RequestExt) (map[openrtb_ext.Bid
 
 				if _, present := fpd[openrtb_ext.BidderName(bidder)]; present {
 					//if bidder has duplicated config - throw an error
-					return nil, fmt.Errorf("multiple First Party Data bidder configs provided for bidder: %s", bidder)
+					return nil, &errortypes.BadInput{
+						Message: fmt.Sprintf("multiple First Party Data bidder configs provided for bidder: %s", bidder),
+					}
 				}
 
 				fpdBidderData := &openrtb_ext.ORTB2{}
