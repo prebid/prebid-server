@@ -553,7 +553,7 @@ func TestExtractBidderConfigFPD(t *testing.T) {
 			fpdData, err := ExtractBidderConfigFPD(&reqExt)
 
 			if len(fpdFile.ValidationErrors) > 0 {
-				assert.Contains(t, err.Error(), fpdFile.ValidationErrors[0], "Incorrect first party data error message")
+				assert.EqualError(t, err, fpdFile.ValidationErrors[0], "Incorrect first party data error message")
 				continue
 			}
 
