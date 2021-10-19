@@ -43,7 +43,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		return nil, []error{err}
 	}
 
-	if err = setUser(request, requestInfo); err != nil {
+	if err = setUser(request); err != nil {
 		return nil, []error{err}
 	}
 
@@ -185,7 +185,7 @@ func setDevice(request *openrtb2.BidRequest) (err error) {
 	return err
 }
 
-func setUser(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) (err error) {
+func setUser(request *openrtb2.BidRequest) (err error) {
 	if request.User != nil {
 		if request.User.Ext != nil {
 			var extUser openrtb_ext.ExtUser
