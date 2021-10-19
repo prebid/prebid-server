@@ -210,7 +210,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *adapte
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return nil, []error{&errortypes.BadInput{
+		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Status code: %d, Something went wrong with your request", response.StatusCode),
 		}}
 	}
