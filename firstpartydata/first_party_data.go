@@ -41,7 +41,7 @@ type ResolvedFirstPartyData struct {
 	User *openrtb2.User
 }
 
-//ExtractGlobalFPD collect it and remove req.{site,app,user}.ext.data if exists
+// ExtractGlobalFPD extracts request level FPD from the request and removes req.{site,app,user}.ext.data if exists
 func ExtractGlobalFPD(req *openrtb_ext.RequestWrapper) (map[string][]byte, error) {
 
 	fpdReqData := make(map[string][]byte, 3)
@@ -562,7 +562,7 @@ func ExtractBidderConfigFPD(reqExt *openrtb_ext.RequestExt) (map[openrtb_ext.Bid
 
 				if _, present := fpd[openrtb_ext.BidderName(bidder)]; present {
 					//if bidder has duplicated config - throw an error
-					return nil, fmt.Errorf("duplicated config for bidder: %s", bidder)
+					return nil, fmt.Errorf("multiple First Party Data bidder configs provided for bidder: %s", bidder)
 				}
 
 				fpdBidderData := &openrtb_ext.ORTB2{}
@@ -602,8 +602,8 @@ func ExtractFPDForBidders(req *openrtb_ext.RequestWrapper) (map[openrtb_ext.Bidd
 	var biddersWithGlobalFPD []string
 
 	extPrebid := reqExt.GetPrebid()
-	if prebidData := extPrebid.Data; prebidData != nil {
-		biddersWithGlobalFPD = prebidData.Bidders
+	if extPrebid.Data != nil {
+		biddersWithGlobalFPD = extPrebid.Data.Bidders
 		extPrebid.Data.Bidders = nil
 		reqExt.SetPrebid(extPrebid)
 	}

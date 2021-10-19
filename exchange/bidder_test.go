@@ -1301,7 +1301,7 @@ func TestMobileNativeTypes(t *testing.T) {
 		var actualValue string
 		for _, bid := range seatBids.bids {
 			actualValue = bid.bid.AdM
-			assert.JSONEq(t, actualValue, tc.expectedValue, tc.description)
+			assert.JSONEq(t, tc.expectedValue, actualValue, tc.description)
 		}
 	}
 }

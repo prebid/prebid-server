@@ -43,5 +43,5 @@
   },
   "outputRequestData": {},
   "biddersFPDResolved": {},
-  "validationErrors": ["duplicated config for bidder: appnexus"]
+  "validationErrors": ["multiple First Party Data bidder configs provided for bidder: appnexus"]
 }
