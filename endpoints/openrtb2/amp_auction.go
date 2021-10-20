@@ -351,6 +351,7 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 		return
 	}
 
+	// Get bidrequest.ext.prebid.channel information, and update the channel info if it's blank from the bidrequest.
 	req = reqWrapper.BidRequest
 	requestExt, err := reqWrapper.GetRequestExt()
 	if err != nil {
@@ -359,7 +360,6 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 	}
 	requestPrebid := requestExt.GetPrebid()
 
-	// Get bidrequest.ext.prebid.channel information, and update the channel info if it's blank from the bidrequest.
 	if requestPrebid != nil {
 		channelObject := getChannelObjectFromRequest(requestPrebid)
 		if channelObject.Name == "" {
@@ -596,37 +596,5 @@ func setEffectiveAmpPubID(req *openrtb2.BidRequest, account string) {
 		if account != "" && account != "ACCOUNT_ID" {
 			pub.ID = account
 		}
-	}
-}
-
-// Update config channel object with information found from request. If no info found, we set channel name to "amp"
-func getChannelObjectAmpFromRequest(request []byte) (openrtb_ext.ExtRequestPrebidChannel, error) {
-	channelInfo, dataType, _, err := jsonparser.Get(request, "ext", "prebid", "channel")
-
-	blankChannelObject := openrtb_ext.ExtRequestPrebidChannel{Name: "", Version: ""}
-	ampChannelObject := openrtb_ext.ExtRequestPrebidChannel{Name: "amp", Version: ""}
-	channelObject := openrtb_ext.ExtRequestPrebidChannel{Name: "", Version: ""}
-
-	if dataType == jsonparser.NotExist {
-		return ampChannelObject, nil
-	}
-	if err != nil {
-		return blankChannelObject, err
-	}
-
-	if err := json.Unmarshal(channelInfo, &channelObject); err != nil {
-		return blankChannelObject, err
-	}
-	if channelObject.Name == "" {
-		return ampChannelObject, nil
-	}
-	return channelObject, nil
-}
-
-func updateRequestChannel(requestPrebid *openrtb_ext.ExtRequestPrebid, requestExt *openrtb_ext.RequestExt) {
-	channelObject := getChannelObjectFromRequest(requestPrebid)
-	if channelObject.Name == "" {
-		requestPrebid.Channel = &openrtb_ext.ExtRequestPrebidChannel{Name: "amp", Version: ""}
-		requestExt.SetPrebid(requestPrebid)
 	}
 }
