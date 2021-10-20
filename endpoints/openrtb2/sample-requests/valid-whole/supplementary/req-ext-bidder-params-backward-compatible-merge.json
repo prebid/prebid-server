@@ -1,5 +1,5 @@
 {
-  "description": "Well formed request with bidder params",
+  "description": "add missing bidder-params from req.ext.prebid.bidderparams to imp[].ext for backward compatibility",
   "mockBidRequest": {
     "id": "some-request-id",
     "site": {
@@ -28,7 +28,6 @@
             "placementId": 111111
           },
           "pubmatic": {
-            "publisherId": "1234",
             "wrapper": {
               "profile": 1234
             }
@@ -89,7 +88,7 @@
       "placementId": 111111
     },
     "pubmatic": {
-      "publisherId": "1234",
+      "publisherId": "5678",
       "wrapper": {
         "profile": 1234
       }

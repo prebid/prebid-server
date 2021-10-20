@@ -1,5 +1,5 @@
 {
-  "description": "add missing bidder-params from req.ext.prebid.bidderparams to imp[].ext.prebid.bidder with preference for imp[].ext.prebid.bidder params",
+  "description": "add missing bidder-params from req.ext.prebid.bidderparams to imp[].ext.prebid.bidder for reserved keyword",
   "mockBidRequest": {
     "id": "some-request-id",
     "site": {
@@ -26,6 +26,9 @@
         "ext": {
           "prebid": {
             "bidder": {
+              "bidder": {
+                "param1": 111111
+              },
               "appnexus": {
                 "placementId": 111111
               },
@@ -49,6 +52,9 @@
           "bids": {}
         },
         "bidderparams": {
+          "bidder": {
+            "param2": 111111
+          },
           "appnexus": {
             "placementId": 222222
           },
@@ -72,6 +78,9 @@
         "bids": {}
       },
       "bidderparams": {
+        "bidder": {
+          "param2": 111111
+        },
         "appnexus": {
           "placementId": 222222
         },
@@ -88,6 +97,9 @@
   "expectedImpExt": {
     "prebid": {
       "bidder": {
+        "bidder": {
+          "param1": 111111
+        },
         "appnexus": {
           "placementId": 111111
         },

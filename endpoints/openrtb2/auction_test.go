@@ -3834,7 +3834,7 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 		errL           int
 	}{
 		{
-			name: "copy request level bidder-params in imp[].ext",
+			name: "add missing bidder-params from req.ext.prebid.bidderparams to imp[].ext.prebid.bidder",
 			args: args{
 				reqBody: validRequest(t, "req-ext-bidder-params.json"),
 			},
@@ -3843,12 +3843,30 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 			errL:           0,
 		},
 		{
-			name: "Merge request level bidder-params in imp[].ext with preference for imp[].ext params",
+			name: "add missing bidder-params from req.ext.prebid.bidderparams to imp[].ext.prebid.bidder with preference for imp[].ext.prebid.bidder params",
 			args: args{
 				reqBody: validRequest(t, "req-ext-bidder-params-merge.json"),
 			},
 			expectedImpExt: getObject(t, "req-ext-bidder-params-merge.json", "expectedImpExt"),
 			expectedReqExt: getObject(t, "req-ext-bidder-params-merge.json", "expectedReqExt"),
+			errL:           0,
+		},
+		{
+			name: "add missing bidder-params from req.ext.prebid.bidderparams to imp[].ext for backward compatibility",
+			args: args{
+				reqBody: validRequest(t, "req-ext-bidder-params-backward-compatible-merge.json"),
+			},
+			expectedImpExt: getObject(t, "req-ext-bidder-params-backward-compatible-merge.json", "expectedImpExt"),
+			expectedReqExt: getObject(t, "req-ext-bidder-params-backward-compatible-merge.json", "expectedReqExt"),
+			errL:           0,
+		},
+		{
+			name: "add missing bidder-params from req.ext.prebid.bidderparams to imp[].ext.prebid.bidder for reserved keyword",
+			args: args{
+				reqBody: validRequest(t, "req-ext-bidder-params-merge-reserved-keyword.json"),
+			},
+			expectedImpExt: getObject(t, "req-ext-bidder-params-merge-reserved-keyword.json", "expectedImpExt"),
+			expectedReqExt: getObject(t, "req-ext-bidder-params-merge-reserved-keyword.json", "expectedReqExt"),
 			errL:           0,
 		},
 	}
@@ -3886,8 +3904,7 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 			err = json.Unmarshal(resReq.BidRequest.Imp[0].Ext, &iExt)
 			assert.Nil(t, err, "unmarshal() should return nil error")
 
-			prebid := iExt["prebid"].(map[string]interface{})
-			assert.Equal(t, expIExt, prebid["bidder"], "bidderparams in imp[].Ext should match")
+			assert.Equal(t, expIExt, iExt, "bidderparams in imp[].Ext should match")
 
 			var eReqE, reqE map[string]interface{}
 			err = json.Unmarshal(tt.expectedReqExt, &eReqE)

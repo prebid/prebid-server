@@ -1,5 +1,5 @@
 {
-  "description": "Well formed request with bidder params",
+  "description": "add missing bidder-params from req.ext.prebid.bidderparams to imp[].ext.prebid.bidder",
   "mockBidRequest": {
     "id": "some-request-id",
     "site": {
@@ -79,14 +79,18 @@
     }
   },
   "expectedImpExt": {
-    "appnexus": {
-      "placementId": 12883451
-    },
-    "pubmatic": {
-      "publisherId": "1234",
-      "wrapper": {
-        "profile": 1234,
-        "version": 2
+    "prebid": {
+      "bidder": {
+        "appnexus": {
+          "placementId": 12883451
+        },
+        "pubmatic": {
+          "publisherId": "1234",
+          "wrapper": {
+            "profile": 1234,
+            "version": 2
+          }
+        }
       }
     }
   },
