@@ -30,7 +30,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	setHeaders(&raiHeaders)
 
-	isUrlSecure := setSite(request)
+	isUrlSecure := getIsUrlSecure(request)
 
 	resImps, err := setImp(request, isUrlSecure)
 	if err != nil {
@@ -39,11 +39,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	request.Imp = resImps
 
-	if err = setDevice(request); err != nil {
+	if err = validateDevice(request); err != nil {
 		return nil, []error{err}
 	}
 
-	if err = setUser(request); err != nil {
+	if err = validateUser(request); err != nil {
 		return nil, []error{err}
 	}
 
@@ -132,10 +132,10 @@ func setImp(request *openrtb2.BidRequest, isUrlSecure bool) (resImps []openrtb2.
 				request.Test = int8(1)
 			}
 
-			if raiExt.BidFloorCur == "" {
-				imp.BidFloorCur = "USD"
-			} else {
+			if raiExt.BidFloorCur != "" {
 				imp.BidFloorCur = raiExt.BidFloorCur
+			} else if imp.BidFloorCur == "" {
+				imp.BidFloorCur = "USD"
 			}
 		}
 		if isUrlSecure {
@@ -159,7 +159,7 @@ func setImp(request *openrtb2.BidRequest, isUrlSecure bool) (resImps []openrtb2.
 	return resImps, nil
 }
 
-func setSite(request *openrtb2.BidRequest) (isUrlSecure bool) {
+func getIsUrlSecure(request *openrtb2.BidRequest) (isUrlSecure bool) {
 	if request.Site != nil {
 		if request.Site.Page != "" {
 			pageURL, err := url.Parse(request.Site.Page)
@@ -174,7 +174,7 @@ func setSite(request *openrtb2.BidRequest) (isUrlSecure bool) {
 	return
 }
 
-func setDevice(request *openrtb2.BidRequest) (err error) {
+func validateDevice(request *openrtb2.BidRequest) (err error) {
 
 	if request.Device != nil && request.Device.IP == "" && request.Device.IPv6 == "" {
 		err = &errortypes.BadInput{
@@ -185,7 +185,7 @@ func setDevice(request *openrtb2.BidRequest) (err error) {
 	return err
 }
 
-func setUser(request *openrtb2.BidRequest) (err error) {
+func validateUser(request *openrtb2.BidRequest) (err error) {
 	if request.User != nil {
 		if request.User.Ext != nil {
 			var extUser openrtb_ext.ExtUser

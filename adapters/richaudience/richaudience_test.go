@@ -80,7 +80,7 @@ func TestGetSite(t *testing.T) {
 		},
 	}
 
-	setSite(raBidRequest)
+	getIsUrlSecure(raBidRequest)
 
 	if raBidRequest.Site.Domain != richaudienceRequestTest.Site.Domain {
 		t.Errorf("error %s", richaudienceRequestTest.Site.Domain)
@@ -99,7 +99,7 @@ func TestGetSite(t *testing.T) {
 		},
 	}
 
-	setSite(raBidRequest)
+	getIsUrlSecure(raBidRequest)
 }
 
 func TestGetDevice(t *testing.T) {
@@ -120,7 +120,7 @@ func TestGetDevice(t *testing.T) {
 		},
 	}
 
-	setDevice(raBidRequest)
+	validateDevice(raBidRequest)
 
 	if raBidRequest.Device.IP != richaudienceRequestTest.Device.IP {
 		t.Errorf("error %s", richaudienceRequestTest.Device.IP)
