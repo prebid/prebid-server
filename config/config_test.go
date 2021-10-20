@@ -777,6 +777,9 @@ func TestMigrateConfigPurposeOneTreatment(t *testing.T) {
 }
 
 func TestMigrateConfigTCF2PurposeEnabledFlags(t *testing.T) {
+	trueStr := "true"
+	falseStr := "false"
+
 	tests := []struct {
 		description                 string
 		config                      []byte
@@ -790,6 +793,16 @@ func TestMigrateConfigTCF2PurposeEnabledFlags(t *testing.T) {
 		wantPurpose8EnforcePurpose  string
 		wantPurpose9EnforcePurpose  string
 		wantPurpose10EnforcePurpose string
+		wantPurpose1Enabled         string
+		wantPurpose2Enabled         string
+		wantPurpose3Enabled         string
+		wantPurpose4Enabled         string
+		wantPurpose5Enabled         string
+		wantPurpose6Enabled         string
+		wantPurpose7Enabled         string
+		wantPurpose8Enabled         string
+		wantPurpose9Enabled         string
+		wantPurpose10Enabled        string
 	}{
 		{
 			description: "New config and old config flags not set",
@@ -831,6 +844,16 @@ func TestMigrateConfigTCF2PurposeEnabledFlags(t *testing.T) {
 			wantPurpose8EnforcePurpose:  TCF2FullEnforcement,
 			wantPurpose9EnforcePurpose:  TCF2NoEnforcement,
 			wantPurpose10EnforcePurpose: TCF2FullEnforcement,
+			wantPurpose1Enabled:         falseStr,
+			wantPurpose2Enabled:         trueStr,
+			wantPurpose3Enabled:         falseStr,
+			wantPurpose4Enabled:         trueStr,
+			wantPurpose5Enabled:         falseStr,
+			wantPurpose6Enabled:         trueStr,
+			wantPurpose7Enabled:         falseStr,
+			wantPurpose8Enabled:         trueStr,
+			wantPurpose9Enabled:         falseStr,
+			wantPurpose10Enabled:        trueStr,
 		},
 		{
 			description: "New config flags set, old config flags not set - use new flags",
@@ -868,6 +891,16 @@ func TestMigrateConfigTCF2PurposeEnabledFlags(t *testing.T) {
 			wantPurpose8EnforcePurpose:  TCF2NoEnforcement,
 			wantPurpose9EnforcePurpose:  TCF2FullEnforcement,
 			wantPurpose10EnforcePurpose: TCF2NoEnforcement,
+			wantPurpose1Enabled:         trueStr,
+			wantPurpose2Enabled:         falseStr,
+			wantPurpose3Enabled:         trueStr,
+			wantPurpose4Enabled:         falseStr,
+			wantPurpose5Enabled:         trueStr,
+			wantPurpose6Enabled:         falseStr,
+			wantPurpose7Enabled:         trueStr,
+			wantPurpose8Enabled:         falseStr,
+			wantPurpose9Enabled:         trueStr,
+			wantPurpose10Enabled:        falseStr,
 		},
 		{
 			description: "New config flags and old config flags set - use new flags",
@@ -915,6 +948,16 @@ func TestMigrateConfigTCF2PurposeEnabledFlags(t *testing.T) {
 			wantPurpose8EnforcePurpose:  TCF2FullEnforcement,
 			wantPurpose9EnforcePurpose:  TCF2FullEnforcement,
 			wantPurpose10EnforcePurpose: TCF2FullEnforcement,
+			wantPurpose1Enabled:         trueStr,
+			wantPurpose2Enabled:         trueStr,
+			wantPurpose3Enabled:         trueStr,
+			wantPurpose4Enabled:         trueStr,
+			wantPurpose5Enabled:         trueStr,
+			wantPurpose6Enabled:         trueStr,
+			wantPurpose7Enabled:         trueStr,
+			wantPurpose8Enabled:         trueStr,
+			wantPurpose9Enabled:         trueStr,
+			wantPurpose10Enabled:        trueStr,
 		},
 	}
 
@@ -936,6 +979,16 @@ func TestMigrateConfigTCF2PurposeEnabledFlags(t *testing.T) {
 			assert.Equal(t, tt.wantPurpose8EnforcePurpose, v.GetString("gdpr.tcf2.purpose8.enforce_purpose"), tt.description)
 			assert.Equal(t, tt.wantPurpose9EnforcePurpose, v.GetString("gdpr.tcf2.purpose9.enforce_purpose"), tt.description)
 			assert.Equal(t, tt.wantPurpose10EnforcePurpose, v.GetString("gdpr.tcf2.purpose10.enforce_purpose"), tt.description)
+			assert.Equal(t, tt.wantPurpose1Enabled, v.GetString("gdpr.tcf2.purpose1.enabled"), tt.description)
+			assert.Equal(t, tt.wantPurpose2Enabled, v.GetString("gdpr.tcf2.purpose2.enabled"), tt.description)
+			assert.Equal(t, tt.wantPurpose3Enabled, v.GetString("gdpr.tcf2.purpose3.enabled"), tt.description)
+			assert.Equal(t, tt.wantPurpose4Enabled, v.GetString("gdpr.tcf2.purpose4.enabled"), tt.description)
+			assert.Equal(t, tt.wantPurpose5Enabled, v.GetString("gdpr.tcf2.purpose5.enabled"), tt.description)
+			assert.Equal(t, tt.wantPurpose6Enabled, v.GetString("gdpr.tcf2.purpose6.enabled"), tt.description)
+			assert.Equal(t, tt.wantPurpose7Enabled, v.GetString("gdpr.tcf2.purpose7.enabled"), tt.description)
+			assert.Equal(t, tt.wantPurpose8Enabled, v.GetString("gdpr.tcf2.purpose8.enabled"), tt.description)
+			assert.Equal(t, tt.wantPurpose9Enabled, v.GetString("gdpr.tcf2.purpose9.enabled"), tt.description)
+			assert.Equal(t, tt.wantPurpose10Enabled, v.GetString("gdpr.tcf2.purpose10.enabled"), tt.description)
 		} else {
 			assert.Nil(t, v.Get("gdpr.tcf2.purpose1.enforce_purpose"), tt.description)
 			assert.Nil(t, v.Get("gdpr.tcf2.purpose2.enforce_purpose"), tt.description)
@@ -947,6 +1000,16 @@ func TestMigrateConfigTCF2PurposeEnabledFlags(t *testing.T) {
 			assert.Nil(t, v.Get("gdpr.tcf2.purpose8.enforce_purpose"), tt.description)
 			assert.Nil(t, v.Get("gdpr.tcf2.purpose9.enforce_purpose"), tt.description)
 			assert.Nil(t, v.Get("gdpr.tcf2.purpose10.enforce_purpose"), tt.description)
+			assert.Nil(t, v.Get("gdpr.tcf2.purpose1.enabled"), tt.description)
+			assert.Nil(t, v.Get("gdpr.tcf2.purpose2.enabled"), tt.description)
+			assert.Nil(t, v.Get("gdpr.tcf2.purpose3.enabled"), tt.description)
+			assert.Nil(t, v.Get("gdpr.tcf2.purpose4.enabled"), tt.description)
+			assert.Nil(t, v.Get("gdpr.tcf2.purpose5.enabled"), tt.description)
+			assert.Nil(t, v.Get("gdpr.tcf2.purpose6.enabled"), tt.description)
+			assert.Nil(t, v.Get("gdpr.tcf2.purpose7.enabled"), tt.description)
+			assert.Nil(t, v.Get("gdpr.tcf2.purpose8.enabled"), tt.description)
+			assert.Nil(t, v.Get("gdpr.tcf2.purpose9.enabled"), tt.description)
+			assert.Nil(t, v.Get("gdpr.tcf2.purpose10.enabled"), tt.description)
 		}
 	}
 }

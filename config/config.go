@@ -1081,6 +1081,14 @@ func migrateConfigTCF2PurposeEnabledFlags(v *viper.Viper) {
 				}
 			}
 		}
+
+		if v.IsSet(newField) {
+			if v.GetString(newField) == TCF2FullEnforcement {
+				v.Set(oldField, "true")
+			} else {
+				v.Set(oldField, "false")
+			}
+		}
 	}
 }
 
