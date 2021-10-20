@@ -701,18 +701,18 @@ func TestExtractFPDForBidders(t *testing.T) {
 				t.Errorf("Unable to load file: %s", fileName)
 			}
 
-			var resRequest openrtb2.BidRequest
-			err = json.Unmarshal(fpdFile.OutputRequestData, &resRequest)
+			var expectedRequest openrtb2.BidRequest
+			err = json.Unmarshal(fpdFile.OutputRequestData, &expectedRequest)
 			if err != nil {
 				t.Errorf("Unable to unmarshal input request: %s", fileName)
 			}
 
-			req := &openrtb_ext.RequestWrapper{}
-			req.BidRequest = &openrtb2.BidRequest{}
-			err = json.Unmarshal(fpdFile.InputRequestData, req.BidRequest)
+			resultRequest := &openrtb_ext.RequestWrapper{}
+			resultRequest.BidRequest = &openrtb2.BidRequest{}
+			err = json.Unmarshal(fpdFile.InputRequestData, resultRequest.BidRequest)
 			assert.NoError(t, err, "Error should be nil")
 
-			resultFPD, errL := ExtractFPDForBidders(req)
+			resultFPD, errL := ExtractFPDForBidders(resultRequest)
 
 			if len(fpdFile.ValidationErrors) > 0 {
 				assert.Equal(t, len(fpdFile.ValidationErrors), len(errL), "")
@@ -761,29 +761,29 @@ func TestExtractFPDForBidders(t *testing.T) {
 				}
 			}
 
-			if resRequest.Site != nil {
-				if len(resRequest.Site.Ext) > 0 {
-					assert.JSONEq(t, string(resRequest.Site.Ext), string(req.BidRequest.Site.Ext), "Incorrect site in request")
-					resRequest.Site.Ext = nil
-					req.BidRequest.Site.Ext = nil
+			if expectedRequest.Site != nil {
+				if len(expectedRequest.Site.Ext) > 0 {
+					assert.JSONEq(t, string(expectedRequest.Site.Ext), string(resultRequest.BidRequest.Site.Ext), "Incorrect site in request")
+					expectedRequest.Site.Ext = nil
+					resultRequest.BidRequest.Site.Ext = nil
 				}
-				assert.Equal(t, resRequest.Site, req.BidRequest.Site, "Incorrect site in request")
+				assert.Equal(t, expectedRequest.Site, resultRequest.BidRequest.Site, "Incorrect site in request")
 			}
-			if resRequest.App != nil {
-				if len(resRequest.App.Ext) > 0 {
-					assert.JSONEq(t, string(resRequest.App.Ext), string(req.BidRequest.App.Ext), "Incorrect app in request")
-					resRequest.App.Ext = nil
-					req.BidRequest.App.Ext = nil
+			if expectedRequest.App != nil {
+				if len(expectedRequest.App.Ext) > 0 {
+					assert.JSONEq(t, string(expectedRequest.App.Ext), string(resultRequest.BidRequest.App.Ext), "Incorrect app in request")
+					expectedRequest.App.Ext = nil
+					resultRequest.BidRequest.App.Ext = nil
 				}
-				assert.Equal(t, resRequest.App, req.BidRequest.App, "Incorrect app in request")
+				assert.Equal(t, expectedRequest.App, resultRequest.BidRequest.App, "Incorrect app in request")
 			}
-			if resRequest.User != nil {
-				if len(resRequest.User.Ext) > 0 {
-					assert.JSONEq(t, string(resRequest.User.Ext), string(req.BidRequest.User.Ext), "Incorrect user in request")
-					resRequest.User.Ext = nil
-					req.BidRequest.User.Ext = nil
+			if expectedRequest.User != nil {
+				if len(expectedRequest.User.Ext) > 0 {
+					assert.JSONEq(t, string(expectedRequest.User.Ext), string(resultRequest.BidRequest.User.Ext), "Incorrect user in request")
+					expectedRequest.User.Ext = nil
+					resultRequest.BidRequest.User.Ext = nil
 				}
-				assert.Equal(t, resRequest.User, req.BidRequest.User, "Incorrect user in request")
+				assert.Equal(t, expectedRequest.User, resultRequest.BidRequest.User, "Incorrect user in request")
 			}
 
 		}
