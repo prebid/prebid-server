@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	jsonpatch "github.com/evanphx/json-patch"
 	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/amp"
 	"github.com/prebid/prebid-server/analytics"
@@ -321,7 +322,9 @@ func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openr
 
 // Load the stored OpenRTB request for an incoming AMP request, or return the errors found.
 func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req *openrtb2.BidRequest, errs []error) {
-	req = &openrtb2.BidRequest{}
+	reqWrapper := &openrtb_ext.RequestWrapper{}
+	reqWrapper.BidRequest = &openrtb2.BidRequest{}
+
 	errs = nil
 
 	ampParams, err := amp.ParseParams(httpRequest)
@@ -343,17 +346,29 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 
 	// The fetched config becomes the entire OpenRTB request
 	requestJSON := storedRequests[ampParams.StoredRequestID]
-	if err := json.Unmarshal(requestJSON, req); err != nil {
+	if err := json.Unmarshal(requestJSON, reqWrapper.BidRequest); err != nil {
 		errs = []error{err}
 		return
 	}
 
-	// Fetch Channel Information and Update Channel Object in config with this information
-	deps.cfg.Channel = openrtb_ext.ExtRequestPrebidChannel{}
-	deps.cfg.Channel, err = getChannelObjectAmpFromRequest(requestJSON)
+	req = reqWrapper.BidRequest
+	requestExt, err := reqWrapper.GetRequestExt()
 	if err != nil {
 		errs = []error{err}
 		return
+	}
+	requestPrebid := requestExt.GetPrebid()
+
+	// Get bidrequest.ext.prebid.channel information, and update the channel info if it's blank from the bidrequest.
+	if requestPrebid != nil {
+		channelObject := getChannelObjectFromRequest(requestPrebid)
+		if channelObject.Name == "" {
+			req.Ext, err = jsonpatch.MergePatch(req.Ext, []byte(`{"prebid":{"channel": {"name": "amp", "version": ""}}}`))
+			if err != nil {
+				errs = []error{err}
+				return
+			}
+		}
 	}
 
 	if deps.cfg.GenerateRequestID || req.ID == "{{UUID}}" {
@@ -606,4 +621,12 @@ func getChannelObjectAmpFromRequest(request []byte) (openrtb_ext.ExtRequestPrebi
 		return ampChannelObject, nil
 	}
 	return channelObject, nil
+}
+
+func updateRequestChannel(requestPrebid *openrtb_ext.ExtRequestPrebid, requestExt *openrtb_ext.RequestExt) {
+	channelObject := getChannelObjectFromRequest(requestPrebid)
+	if channelObject.Name == "" {
+		requestPrebid.Channel = &openrtb_ext.ExtRequestPrebidChannel{Name: "amp", Version: ""}
+		requestExt.SetPrebid(requestPrebid)
+	}
 }

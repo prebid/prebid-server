@@ -276,33 +276,27 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_
 		return
 	}
 
-	// Fetch Channel Information and Update Channel Object in config with this information
-	deps.cfg.Channel = openrtb_ext.ExtRequestPrebidChannel{}
-	channelInfo, err := getChannelInfoFromRequest(requestJson)
+	if err := json.Unmarshal(requestJson, req.BidRequest); err != nil {
+		errs = []error{err}
+		return
+	}
+
+	// Get bidrequest.ext.prebid.channel information, and update the info if the info is blank from the bidrequest.
+	requestExt, err := req.GetRequestExt()
 	if err != nil {
 		errs = []error{err}
 		return
 	}
+	requestPrebid := requestExt.GetPrebid()
 
-	if err := json.Unmarshal(channelInfo, &deps.cfg.Channel); err != nil {
-		errs = []error{err}
-		return
-	}
-
-	if deps.cfg.Channel.Name == "" {
-		isAppRequest, err := checkIfAppRequest(requestJson)
-		if err != nil {
-			errs = []error{err}
-			return
+	if requestPrebid != nil {
+		channelObject := getChannelObjectFromRequest(requestPrebid)
+		if channelObject.Name == "" {
+			if err := updateRequestChannelInfo(channelObject, requestJson, requestExt, requestPrebid); err != nil {
+				errs = []error{err}
+				return
+			}
 		}
-		if isAppRequest {
-			deps.cfg.Channel.Name = "app"
-		}
-	}
-
-	if err := json.Unmarshal(requestJson, req.BidRequest); err != nil {
-		errs = []error{err}
-		return
 	}
 
 	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
@@ -481,6 +475,20 @@ func (deps *endpointDeps) validateBidAdjustmentFactors(adjustmentFactors map[str
 				return fmt.Errorf("request.ext.prebid.bidadjustmentfactors.%s is not a known bidder or alias", bidderToAdjust)
 			}
 		}
+	}
+	return nil
+}
+
+// Check to see if request was app request, if so, set channel name to 'app'
+func updateRequestChannelInfo(channelObject *openrtb_ext.ExtRequestPrebidChannel, request []byte, requestExt *openrtb_ext.RequestExt, requestPrebid *openrtb_ext.ExtRequestPrebid) error {
+	isAppRequest, err := checkIfAppRequest(request)
+	if err != nil {
+		return err
+	}
+	if isAppRequest {
+		requestPrebid.Channel = &openrtb_ext.ExtRequestPrebidChannel{Name: "app", Version: ""}
+		requestExt.SetPrebid(requestPrebid)
+		return nil
 	}
 	return nil
 }
@@ -1678,15 +1686,10 @@ func checkIfAppRequest(request []byte) (bool, error) {
 	return false, nil
 }
 
-func getChannelInfoFromRequest(request []byte) ([]byte, error) {
-	channelInfo, dataType, _, err := jsonparser.Get(request, "ext", "prebid", "channel")
-	blankChannel := []byte(`{"name":""}`)
-
-	if dataType == jsonparser.NotExist {
-		return blankChannel, nil
+// Returns channel object from request, or blank channel if channel information isn't present in request
+func getChannelObjectFromRequest(requestPrebid *openrtb_ext.ExtRequestPrebid) *openrtb_ext.ExtRequestPrebidChannel {
+	if requestPrebid.Channel == nil {
+		return &openrtb_ext.ExtRequestPrebidChannel{Name: "", Version: ""}
 	}
-	if err != nil {
-		return blankChannel, err
-	}
-	return channelInfo, nil
+	return requestPrebid.Channel
 }

@@ -1330,7 +1330,6 @@ func TestIdGeneration(t *testing.T) {
 		// Set up and run test
 		actualAmpObject, endpoint := AmpObjectTestSetup(t, "test", test.givenInStoredRequest, test.givenGenerateRequestID)
 		endpoint(recorder, request, nil)
-
 		assert.Equalf(t, test.expectedID, actualAmpObject.Request.ID, "Bid Request ID is incorrect: %s\n", test.description)
 	}
 }
@@ -1361,32 +1360,132 @@ func AmpObjectTestSetup(t *testing.T, inTagId string, inStoredRequest json.RawMe
 	return &actualAmpObject, endpoint
 }
 
-func TestGetChannelObjectAmp(t *testing.T) {
+func TestChannelSupportAmp(t *testing.T) {
 	testCases := []struct {
-		description           string
-		givenBidRequestData   string
-		expectedChannelObject openrtb_ext.ExtRequestPrebidChannel
+		description          string
+		givenInStoredRequest json.RawMessage
+		expectedExtObject    json.RawMessage
 	}{
 		{
-			description:           "Channel object in request, we expect same name and version",
-			givenBidRequestData:   testBidRequestForChannelTest[1],
-			expectedChannelObject: openrtb_ext.ExtRequestPrebidChannel{Name: "video", Version: "1.0"},
+			description:          "Empty channel object in request, we expect channel name to be set to amp",
+			givenInStoredRequest: json.RawMessage(testStoredRequestsForChannelTest[0]),
+			expectedExtObject:    json.RawMessage(testExtObjectInfo[0]),
 		},
 		{
-			description:           "No channel object in site request, expect amp object",
-			givenBidRequestData:   testBidRequestForChannelTest[3],
-			expectedChannelObject: openrtb_ext.ExtRequestPrebidChannel{Name: "amp", Version: ""},
-		},
-		{
-			description:           "Empty channel object in site request, expect empty object",
-			givenBidRequestData:   testBidRequestForChannelTest[4],
-			expectedChannelObject: openrtb_ext.ExtRequestPrebidChannel{Name: "amp", Version: ""},
+			description:          "Channel object in request, we expect same name and version",
+			givenInStoredRequest: json.RawMessage(testStoredRequestsForChannelTest[1]),
+			expectedExtObject:    json.RawMessage(testExtObjectInfo[1]),
 		},
 	}
 
+	request := httptest.NewRequest("GET", "/openrtb2/auction/amp?tag_id=test", nil)
+	recorder := httptest.NewRecorder()
+
 	for _, test := range testCases {
-		newChannel, err := getChannelObjectAmpFromRequest([]byte(test.givenBidRequestData))
-		assert.Empty(t, err, test.description)
-		assert.Equalf(t, test.expectedChannelObject, newChannel, "Channel object isn't the same: %s\n", test.description)
+		actualAmpObject, endpoint := AmpObjectTestSetup(t, "test", test.givenInStoredRequest, false)
+		endpoint(recorder, request, nil)
+
+		assert.Equalf(t, test.expectedExtObject, actualAmpObject.Request.Ext, "Bid Request ID is incorrect: %s\n", test.description)
 	}
+}
+
+// Each entry in this list, has an altered channel object to be used for assertions for the channel test above
+var testExtObjectInfo = []string{
+	`{"prebid":{"cache":{"bids":{"returnCreative":null},"vastxml":null},"channel":{"name":"amp","version":""},"debug":true,"storedrequest":{"id":"123"},"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"includewinners":true,"includebidderkeys":true,"includebrandcategory":null,"includeformat":false,"durationrangesec":null,"preferdeals":false}}}`,
+	`{"prebid":{"cache":{"bids":{"returnCreative":null},"vastxml":null},"channel":{"name":"video","version":"1.0"},"debug":true,"storedrequest":{"id":"123"},"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"includewinners":true,"includebidderkeys":true,"includebrandcategory":null,"includeformat":false,"durationrangesec":null,"preferdeals":false}}}`,
+}
+
+var testStoredRequestsForChannelTest = []string{
+	`{
+		"id": "some-some-id",
+		"site": {
+			"page": "prebid.org",
+			"publisher": {
+				"id": "72409f4d-9858-41ac-bf45-be255b82de8"
+			}
+		},
+		"device": {
+			"ip": "152.193.6.74"
+		},
+		"user": {
+			"buyeruid": "some-buyer-id"
+		},
+		"imp": [{
+			"id": "some-impression-id",
+			"banner": {
+				"format": [{
+						"w": 600,
+						"h": 500
+					},
+					{
+						"w": 300,
+						"h": 600
+					}
+				]
+			},
+			"ext": {
+				"appnexus": {
+					"placementId": 12883451
+				}
+			}
+		}],
+		"tmax": 5000,
+		"ext": {
+			"prebid": {
+				"debug": true,
+				"storedrequest": {
+					"id": "123"
+				},
+				"channel" : {
+				}
+			}
+		}
+	}`,
+	`{
+		"id": "some-some-id",
+		"site": {
+			"page": "prebid.org",
+			"publisher": {
+				"id": "72409f4d-9858-41ac-bf45-be255b82de8"
+			}
+		},
+		"device": {
+			"ip": "152.193.6.74"
+		},
+		"user": {
+			"buyeruid": "some-buyer-id"
+		},
+		"imp": [{
+			"id": "some-impression-id",
+			"banner": {
+				"format": [{
+						"w": 600,
+						"h": 500
+					},
+					{
+						"w": 300,
+						"h": 600
+					}
+				]
+			},
+			"ext": {
+				"appnexus": {
+					"placementId": 12883451
+				}
+			}
+		}],
+		"tmax": 5000,
+		"ext": {
+			"prebid": {
+				"debug": true,
+				"storedrequest": {
+					"id": "123"
+				},
+				"channel" : {
+					"name": "video",
+					"version": "1.0"
+				}
+			}
+		}
+	}`,
 }

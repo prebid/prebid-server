@@ -1149,7 +1149,7 @@ func TestStoredRequests(t *testing.T) {
 	}
 }
 
-func TestGetChannelInfo(t *testing.T) {
+func TestChannelSupport(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&nobidExchange{},
@@ -1172,46 +1172,84 @@ func TestGetChannelInfo(t *testing.T) {
 	testCases := []struct {
 		description           string
 		givenBidRequestData   string
-		expectedChannelObject openrtb_ext.ExtRequestPrebidChannel
+		expectedChannelObject *openrtb_ext.ExtRequestPrebidChannel
 	}{
 		{
-			description:           "No channel object in app request, so we expect no channel name in the object we create",
+			description:           "No channel object in app request, so we expect channel name to be set to app",
 			givenBidRequestData:   testBidRequestForChannelTest[0],
-			expectedChannelObject: openrtb_ext.ExtRequestPrebidChannel{Name: "app", Version: ""},
+			expectedChannelObject: &openrtb_ext.ExtRequestPrebidChannel{Name: "app", Version: ""},
 		},
 		{
-			description:           "Channel object in request, we expect same name and version in object we create",
+			description:           "Channel object in request with populated name/version, we expect same name/version in object that's created",
 			givenBidRequestData:   testBidRequestForChannelTest[1],
-			expectedChannelObject: openrtb_ext.ExtRequestPrebidChannel{Name: "video", Version: "1.0"},
+			expectedChannelObject: &openrtb_ext.ExtRequestPrebidChannel{Name: "video", Version: "1.0"},
 		},
 		{
-			description:           "Empty channel object in app request, we expect app name in object we create",
+			description:           "Empty channel object in app request, so we expect channel name to be set to app",
 			givenBidRequestData:   testBidRequestForChannelTest[2],
-			expectedChannelObject: openrtb_ext.ExtRequestPrebidChannel{Name: "app", Version: ""},
+			expectedChannelObject: &openrtb_ext.ExtRequestPrebidChannel{Name: "app", Version: ""},
 		},
 		{
-			description:           "No channel object in site request, expect empty object",
+			description:           "No channel object in site request, expect nil",
 			givenBidRequestData:   testBidRequestForChannelTest[3],
-			expectedChannelObject: openrtb_ext.ExtRequestPrebidChannel{Name: "", Version: ""},
+			expectedChannelObject: nil,
 		},
 		{
 			description:           "Empty channel object in site request, expect empty object",
 			givenBidRequestData:   testBidRequestForChannelTest[4],
-			expectedChannelObject: openrtb_ext.ExtRequestPrebidChannel{Name: "", Version: ""},
-		},
-		{
-			description:           "Channel object in request, we expect same name and version in object we create",
-			givenBidRequestData:   testBidRequestForChannelTest[5],
-			expectedChannelObject: openrtb_ext.ExtRequestPrebidChannel{Name: "video", Version: "1.0"},
+			expectedChannelObject: &openrtb_ext.ExtRequestPrebidChannel{Name: "", Version: ""},
 		},
 	}
 
 	for _, test := range testCases {
-		deps.cfg.Channel = openrtb_ext.ExtRequestPrebidChannel{Name: "", Version: ""}
 		req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenBidRequestData))
-		_, _, errL := deps.parseRequest(req)
+
+		newReq, _, errL := deps.parseRequest(req)
 		assert.Empty(t, errL, test.description)
-		assert.Equalf(t, test.expectedChannelObject, deps.cfg.Channel, "Channel object isn't the same: %s\n", test.description)
+
+		requestExt, err := newReq.GetRequestExt()
+		assert.Empty(t, err, test.description)
+
+		requestPrebid := requestExt.GetPrebid()
+		assert.Equalf(t, test.expectedChannelObject, requestPrebid.Channel, "Channel information isn't correct: %s\n", test.description)
+	}
+}
+
+func TestGetChannelObjectFromRequest(t *testing.T) {
+	testCases := []struct {
+		description           string
+		givenBidRequestData   string
+		expectedChannelObject *openrtb_ext.ExtRequestPrebidChannel
+	}{
+		{
+			description:           "No channel object in app request, so we expect blank channel in the object we get returned",
+			givenBidRequestData:   testBidRequestForChannelTest[0],
+			expectedChannelObject: &openrtb_ext.ExtRequestPrebidChannel{Name: "", Version: ""},
+		},
+		{
+			description:           "Channel object in request, we expect same name and version in object we get returned",
+			givenBidRequestData:   testBidRequestForChannelTest[1],
+			expectedChannelObject: &openrtb_ext.ExtRequestPrebidChannel{Name: "video", Version: "1.0"},
+		},
+		{
+			description:           "Empty channel object in app request, we expect no name in object we create",
+			givenBidRequestData:   testBidRequestForChannelTest[2],
+			expectedChannelObject: &openrtb_ext.ExtRequestPrebidChannel{Name: "", Version: ""},
+		},
+	}
+
+	for _, test := range testCases {
+		req := &openrtb_ext.RequestWrapper{}
+		req.BidRequest = &openrtb2.BidRequest{}
+
+		err := json.Unmarshal([]byte(test.givenBidRequestData), req.BidRequest)
+		assert.Empty(t, err, test.description)
+
+		requestExt, err := req.GetRequestExt()
+		assert.Empty(t, err, test.description)
+
+		channelObject := getChannelObjectFromRequest(requestExt.GetPrebid())
+		assert.Equalf(t, test.expectedChannelObject, channelObject, "Channel object isn't the same: %s\n", test.description)
 	}
 }
 
