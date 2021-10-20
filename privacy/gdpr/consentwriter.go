@@ -3,9 +3,8 @@ package gdpr
 import (
 	"encoding/json"
 
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/openrtb_ext"
-
-	"github.com/mxmCherry/openrtb"
 )
 
 // ConsentWriter implements the PolicyWriter interface for GDPR TCF.
@@ -14,13 +13,13 @@ type ConsentWriter struct {
 }
 
 // Write mutates an OpenRTB bid request with the GDPR TCF consent.
-func (c ConsentWriter) Write(req *openrtb.BidRequest) error {
+func (c ConsentWriter) Write(req *openrtb2.BidRequest) error {
 	if c.Consent == "" {
 		return nil
 	}
 
 	if req.User == nil {
-		req.User = &openrtb.User{}
+		req.User = &openrtb2.User{}
 	}
 
 	if req.User.Ext == nil {

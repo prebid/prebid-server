@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -83,7 +83,7 @@ func TestReadDealTiersFromImp(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		imp := openrtb.Imp{Ext: test.impExt}
+		imp := openrtb2.Imp{Ext: test.impExt}
 
 		result, err := ReadDealTiersFromImp(imp)
 

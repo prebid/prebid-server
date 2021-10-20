@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -18,7 +18,7 @@ type BeintooAdapter struct {
 	endpoint string
 }
 
-func (a *BeintooAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *BeintooAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errors []error
 
 	if len(request.Imp) == 0 {
@@ -64,7 +64,7 @@ func (a *BeintooAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 	}}, errors
 }
 
-func unpackImpExt(imp *openrtb.Imp) (*openrtb_ext.ExtImpBeintoo, error) {
+func unpackImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpBeintoo, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
@@ -89,7 +89,7 @@ func unpackImpExt(imp *openrtb.Imp) (*openrtb_ext.ExtImpBeintoo, error) {
 	return &beintooExt, nil
 }
 
-func buildImpBanner(imp *openrtb.Imp) error {
+func buildImpBanner(imp *openrtb2.Imp) error {
 	imp.Ext = nil
 
 	if imp.Banner == nil {
@@ -118,7 +118,7 @@ func buildImpBanner(imp *openrtb.Imp) error {
 }
 
 // Add Beintoo required properties to Imp object
-func addImpProps(imp *openrtb.Imp, secure *int8, BeintooExt *openrtb_ext.ExtImpBeintoo) {
+func addImpProps(imp *openrtb2.Imp, secure *int8, BeintooExt *openrtb_ext.ExtImpBeintoo) {
 	imp.TagID = BeintooExt.TagID
 	imp.Secure = secure
 
@@ -144,9 +144,9 @@ func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue str
 }
 
 // Handle request errors and formatting to be sent to Beintoo
-func preprocess(request *openrtb.BidRequest) []error {
+func preprocess(request *openrtb2.BidRequest) []error {
 	errors := make([]error, 0, len(request.Imp))
-	resImps := make([]openrtb.Imp, 0, len(request.Imp))
+	resImps := make([]openrtb2.Imp, 0, len(request.Imp))
 	secure := int8(0)
 
 	if request.Site != nil && request.Site.Page != "" {
@@ -178,7 +178,7 @@ func preprocess(request *openrtb.BidRequest) []error {
 }
 
 // MakeBids make the bids for the bid response.
-func (a *BeintooAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *BeintooAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	if response.StatusCode == http.StatusNoContent {
 		// no bid response
@@ -191,7 +191,7 @@ func (a *BeintooAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{

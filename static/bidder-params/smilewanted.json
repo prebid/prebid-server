@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "SmileWanted Adapter Params",
+  "description": "A schema which validates params accepted by the SmileWanted adapter",
+  "type": "object",
+  "properties": {
+    "zoneId": {
+      "type": "string",
+      "description": "An ID which identifies the SmileWanted zone code",
+      "minLength": 1
+    }
+  },
+  "required": ["zoneId"]
+}

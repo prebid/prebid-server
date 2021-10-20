@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -24,7 +24,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	return bidder, nil
 }
 
-func (a *adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) (requests []*adapters.RequestData, errors []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) (requests []*adapters.RequestData, errors []error) {
 	rq, errs := a.makeRequest(request)
 
 	if len(errs) > 0 {
@@ -38,7 +38,7 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.Ex
 	return requests, nil
 }
 
-func (a *adapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
+func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, []error) {
 	if request.Device == nil || request.Device.IP == "" {
 		return nil, []error{&errortypes.BadInput{
 			Message: "ipv4 address is required field",
@@ -61,7 +61,7 @@ func (a *adapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestDat
 	}, nil
 }
 
-func (a *adapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -84,7 +84,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest 
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
@@ -111,7 +111,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest 
 	return bidResponse, errs
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb.Imp) openrtb_ext.BidType {
+func getMediaTypeForImp(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
 	for _, imp := range imps {
 		if imp.ID == impID {
 			if imp.Banner != nil {

@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Bright Mountain Media Adapter Params",
+  "description": "A schema which validates params accepted by the Bright Mountain Media adapter",
+  "type": "object",
+  "properties": {
+    "placement_id": {
+      "type": "number",
+      "minimum": 1,
+      "description": "Placement ID from Bright Mountain Media"
+    }
+  },
+  "required": [
+    "placement_id"
+  ]
+}

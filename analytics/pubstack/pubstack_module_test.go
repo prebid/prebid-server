@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/stretchr/testify/assert"
 )
@@ -21,7 +21,7 @@ func loadJSONFromFile() (*analytics.AuctionObject, error) {
 	}
 	defer req.Close()
 
-	reqCtn := openrtb.BidRequest{}
+	reqCtn := openrtb2.BidRequest{}
 	reqPayload, err := ioutil.ReadAll(req)
 	if err != nil {
 		return nil, err
@@ -38,7 +38,7 @@ func loadJSONFromFile() (*analytics.AuctionObject, error) {
 	}
 	defer res.Close()
 
-	resCtn := openrtb.BidResponse{}
+	resCtn := openrtb2.BidResponse{}
 	resPayload, err := ioutil.ReadAll(res)
 	if err != nil {
 		return nil, err

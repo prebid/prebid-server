@@ -3,7 +3,7 @@ package privacy
 import (
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -197,12 +197,12 @@ func TestApply(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		req := &openrtb.BidRequest{
-			Device: &openrtb.Device{},
-			User:   &openrtb.User{},
+		req := &openrtb2.BidRequest{
+			Device: &openrtb2.Device{},
+			User:   &openrtb2.User{},
 		}
-		replacedDevice := &openrtb.Device{}
-		replacedUser := &openrtb.User{}
+		replacedDevice := &openrtb2.Device{}
+		replacedUser := &openrtb2.User{}
 
 		m := &mockScrubber{}
 		m.On("ScrubDevice", req.Device, test.expectedDeviceID, test.expectedDeviceIPv4, test.expectedDeviceIPv6, test.expectedDeviceGeo).Return(replacedDevice).Once()
@@ -217,7 +217,7 @@ func TestApply(t *testing.T) {
 }
 
 func TestApplyNoneApplicable(t *testing.T) {
-	req := &openrtb.BidRequest{}
+	req := &openrtb2.BidRequest{}
 
 	m := &mockScrubber{}
 
@@ -248,12 +248,12 @@ type mockScrubber struct {
 	mock.Mock
 }
 
-func (m *mockScrubber) ScrubDevice(device *openrtb.Device, id ScrubStrategyDeviceID, ipv4 ScrubStrategyIPV4, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb.Device {
+func (m *mockScrubber) ScrubDevice(device *openrtb2.Device, id ScrubStrategyDeviceID, ipv4 ScrubStrategyIPV4, ipv6 ScrubStrategyIPV6, geo ScrubStrategyGeo) *openrtb2.Device {
 	args := m.Called(device, id, ipv4, ipv6, geo)
-	return args.Get(0).(*openrtb.Device)
+	return args.Get(0).(*openrtb2.Device)
 }
 
-func (m *mockScrubber) ScrubUser(user *openrtb.User, strategy ScrubStrategyUser, geo ScrubStrategyGeo) *openrtb.User {
+func (m *mockScrubber) ScrubUser(user *openrtb2.User, strategy ScrubStrategyUser, geo ScrubStrategyGeo) *openrtb2.User {
 	args := m.Called(user, strategy, geo)
-	return args.Get(0).(*openrtb.User)
+	return args.Get(0).(*openrtb2.User)
 }

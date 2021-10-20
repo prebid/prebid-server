@@ -1,0 +1,34 @@
+{
+  "mockBidRequest": {
+    "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
+    "site": {
+      "page": "prebid.org",
+      "ext": ""
+    },
+    "imp": [
+      {
+        "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
+        "banner": {
+          "format": [
+            {
+              "w": 320,
+              "h": 50
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "1100042525",
+            "adspaceId": "130563103"
+          }
+        }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Invalid site.ext.",
+      "comparison": "literal"
+    }
+  ]
+}

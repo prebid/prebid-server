@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -17,28 +17,43 @@ type ImprovedigitalAdapter struct {
 }
 
 // MakeRequests makes the HTTP requests which should be made to fetch bids.
-func (a *ImprovedigitalAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var errors = make([]error, 0)
+func (a *ImprovedigitalAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	numRequests := len(request.Imp)
+	errors := make([]error, 0)
+	adapterRequests := make([]*adapters.RequestData, 0, numRequests)
 
+	// Split multi-imp request into multiple ad server requests. SRA is currently not recommended.
+	for i := 0; i < numRequests; i++ {
+		if adapterReq, err := a.makeRequest(*request, request.Imp[i]); err == nil {
+			adapterRequests = append(adapterRequests, adapterReq)
+		} else {
+			errors = append(errors, err)
+		}
+	}
+
+	return adapterRequests, errors
+}
+
+func (a *ImprovedigitalAdapter) makeRequest(request openrtb2.BidRequest, imp openrtb2.Imp) (*adapters.RequestData, error) {
+	request.Imp = []openrtb2.Imp{imp}
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
-		errors = append(errors, err)
-		return nil, errors
+		return nil, err
 	}
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 
-	return []*adapters.RequestData{{
+	return &adapters.RequestData{
 		Method:  "POST",
 		Uri:     a.endpoint,
 		Body:    reqJSON,
 		Headers: headers,
-	}}, errors
+	}, nil
 }
 
 // MakeBids unpacks the server's response into Bids.
-func (a *ImprovedigitalAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *ImprovedigitalAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -55,7 +70,7 @@ func (a *ImprovedigitalAdapter) MakeBids(internalRequest *openrtb.BidRequest, ex
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
@@ -103,7 +118,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	return bidder, nil
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb.Imp) (openrtb_ext.BidType, error) {
+func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
 	for _, imp := range imps {
 		if imp.ID == impID {
 			if imp.Banner != nil {

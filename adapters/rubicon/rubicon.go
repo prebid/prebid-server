@@ -5,21 +5,21 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/buger/jsonparser"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/pbs"
-
-	"golang.org/x/net/context/ctxhttp"
-
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/pbs"
+	"golang.org/x/net/context/ctxhttp"
 )
 
 const badvLimitSize = 50
@@ -31,7 +31,6 @@ type RubiconAdapter struct {
 	XAPIPassword string
 }
 
-// used for cookies and such
 func (a *RubiconAdapter) Name() string {
 	return "rubicon"
 }
@@ -74,14 +73,15 @@ type rubiconImpExtRPTrack struct {
 	MintVersion string `json:"mint_version"`
 }
 
+type rubiconImpExt struct {
+	RP   rubiconImpExtRP `json:"rp,omitempty"`
+	GPID string          `json:"gpid,omitempty"`
+}
+
 type rubiconImpExtRP struct {
 	ZoneID int                  `json:"zone_id"`
 	Target json.RawMessage      `json:"target,omitempty"`
 	Track  rubiconImpExtRPTrack `json:"track"`
-}
-
-type rubiconImpExt struct {
-	RP rubiconImpExtRP `json:"rp"`
 }
 
 type rubiconUserExtRP struct {
@@ -93,17 +93,22 @@ type rubiconExtUserTpID struct {
 	UID    string `json:"uid"`
 }
 
+type rubiconDataExt struct {
+	SegTax int `json:"segtax"`
+}
+
 type rubiconUserExt struct {
-	Consent     string                        `json:"consent,omitempty"`
-	DigiTrust   *openrtb_ext.ExtUserDigiTrust `json:"digitrust"`
-	Eids        []openrtb_ext.ExtUserEid      `json:"eids,omitempty"`
-	TpID        []rubiconExtUserTpID          `json:"tpid,omitempty"`
-	RP          rubiconUserExtRP              `json:"rp"`
-	LiverampIdl string                        `json:"liveramp_idl,omitempty"`
+	Consent     string                   `json:"consent,omitempty"`
+	Eids        []openrtb_ext.ExtUserEid `json:"eids,omitempty"`
+	TpID        []rubiconExtUserTpID     `json:"tpid,omitempty"`
+	RP          rubiconUserExtRP         `json:"rp"`
+	LiverampIdl string                   `json:"liveramp_idl,omitempty"`
+	Data        json.RawMessage          `json:"data,omitempty"`
 }
 
 type rubiconSiteExtRP struct {
-	SiteID int `json:"site_id"`
+	SiteID int             `json:"site_id"`
+	Target json.RawMessage `json:"target,omitempty"`
 }
 
 type rubiconSiteExt struct {
@@ -126,18 +131,6 @@ type rubiconBannerExtRP struct {
 
 type rubiconBannerExt struct {
 	RP rubiconBannerExtRP `json:"rp"`
-}
-
-type ExtImpContextData struct {
-	AdSlot string `json:"adslot,omitempty"`
-}
-
-type ExtImpContext struct {
-	Data ExtImpContextData `json:"data,omitempty"`
-}
-
-type ExtImpWithContext struct {
-	Context ExtImpContext `json:"context,omitempty"` // First Party Data context
 }
 
 // ***** Video Extension *****
@@ -184,6 +177,21 @@ type rubiconDeviceExt struct {
 
 type rubiconUser struct {
 	Language string `json:"language"`
+}
+
+type rubiconBidResponse struct {
+	openrtb2.BidResponse
+	SeatBid []rubiconSeatBid `json:"seatbid,omitempty"`
+}
+
+type rubiconSeatBid struct {
+	openrtb2.SeatBid
+	Buyer string `json:"buyer,omitempty"`
+}
+
+type extPrebid struct {
+	Prebid *openrtb_ext.ExtBidPrebid `json:"prebid,omitempty"`
+	Bidder json.RawMessage           `json:"bidder,omitempty"`
 }
 
 type rubiSize struct {
@@ -322,7 +330,7 @@ func findPrimary(alt []int) (int, []int) {
 	return primary, alt
 }
 
-func parseRubiconSizes(sizes []openrtb.Format) (primary int, alt []int, err error) {
+func parseRubiconSizes(sizes []openrtb2.Format) (primary int, alt []int, err error) {
 	// Fixes #317
 	if len(sizes) < 1 {
 		err = &errortypes.BadInput{
@@ -381,7 +389,7 @@ func (a *RubiconAdapter) callOne(ctx context.Context, reqJSON bytes.Buffer) (res
 		return
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	err = json.Unmarshal(body, &bidResp)
 	if err != nil {
 		err = &errortypes.BadServerResponse{
@@ -519,14 +527,14 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		if rubiReq.Site != nil {
 			siteCopy := *rubiReq.Site
 			siteCopy.Ext, err = json.Marshal(&siteExt)
-			siteCopy.Publisher = &openrtb.Publisher{}
+			siteCopy.Publisher = &openrtb2.Publisher{}
 			siteCopy.Publisher.Ext, err = json.Marshal(&pubExt)
-			siteCopy.Content = &openrtb.Content{}
+			siteCopy.Content = &openrtb2.Content{}
 			siteCopy.Content.Language = rubiconUser.Language
 			rubiReq.Site = &siteCopy
 		} else {
-			site := &openrtb.Site{}
-			site.Content = &openrtb.Content{}
+			site := &openrtb2.Site{}
+			site.Content = &openrtb2.Content{}
 			site.Content.Language = rubiconUser.Language
 			rubiReq.Site = site
 		}
@@ -534,12 +542,12 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		if rubiReq.App != nil {
 			appCopy := *rubiReq.App
 			appCopy.Ext, err = json.Marshal(&siteExt)
-			appCopy.Publisher = &openrtb.Publisher{}
+			appCopy.Publisher = &openrtb2.Publisher{}
 			appCopy.Publisher.Ext, err = json.Marshal(&pubExt)
 			rubiReq.App = &appCopy
 		}
 
-		rubiReq.Imp = []openrtb.Imp{thisImp}
+		rubiReq.Imp = []openrtb2.Imp{thisImp}
 
 		var reqBuffer bytes.Buffer
 		err = json.NewEncoder(&reqBuffer).Encode(rubiReq)
@@ -612,7 +620,7 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 	return bids, nil
 }
 
-func resolveVideoSizeId(placement openrtb.VideoPlacementType, instl int8, impId string) (sizeID int, err error) {
+func resolveVideoSizeId(placement openrtb2.VideoPlacementType, instl int8, impId string) (sizeID int, err error) {
 	if placement != 0 {
 		if placement == 1 {
 			return 201, nil
@@ -670,11 +678,10 @@ func NewRubiconLegacyAdapter(httpConfig *adapters.HTTPAdapterConfig, uri string,
 	}
 }
 
-func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	numRequests := len(request.Imp)
 	errs := make([]error, 0, len(request.Imp))
 	var err error
-
 	requestData := make([]*adapters.RequestData, 0, numRequests)
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
@@ -684,11 +691,10 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 	requestImpCopy := request.Imp
 
 	rubiconRequest := *request
-	for i := 0; i < numRequests; i++ {
-		thisImp := requestImpCopy[i]
+	for _, imp := range requestImpCopy {
 
 		var bidderExt adapters.ExtImpBidder
-		if err = json.Unmarshal(thisImp.Ext, &bidderExt); err != nil {
+		if err = json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			errs = append(errs, &errortypes.BadInput{
 				Message: err.Error(),
 			})
@@ -703,36 +709,15 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 			continue
 		}
 
-		target := rubiconExt.Inventory
-		if rubiconExt.Inventory != nil {
-			rubiconExtInventory := make(map[string]interface{})
-			if err := json.Unmarshal(rubiconExt.Inventory, &rubiconExtInventory); err != nil {
-				errs = append(errs, &errortypes.BadInput{
-					Message: err.Error(),
-				})
-				continue
-			}
-
-			var extImpWithContext ExtImpWithContext
-			if err := json.Unmarshal(thisImp.Ext, &extImpWithContext); err != nil {
-				errs = append(errs, &errortypes.BadInput{
-					Message: err.Error(),
-				})
-				continue
-			}
-
-			// Copy imp[].ext.context.data.adslot is copied to imp[].ext.rp.target.dfp_ad_unit_code,
-			// but with any leading slash dropped
-			adSlot := extImpWithContext.Context.Data.AdSlot
-			if adSlot != "" {
-				rubiconExtInventory["dfp_ad_unit_code"] = strings.TrimLeft(adSlot, "/")
-
-				target, err = json.Marshal(&rubiconExtInventory)
-				if err != nil {
-					errs = append(errs, err)
-					continue
-				}
-			}
+		target, err := updateImpRpTargetWithFpdAttributes(rubiconExt, imp, request.Site, request.App)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		adSlot, err := getAdSlot(imp)
+		if err != nil {
+			errs = append(errs, err)
+			continue
 		}
 
 		impExt := rubiconImpExt{
@@ -741,16 +726,37 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 				Target: target,
 				Track:  rubiconImpExtRPTrack{Mint: "", MintVersion: ""},
 			},
+			GPID: adSlot,
 		}
-		thisImp.Ext, err = json.Marshal(&impExt)
+		imp.Ext, err = json.Marshal(&impExt)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
+		resolvedBidFloor, err := resolveBidFloor(imp.BidFloor, imp.BidFloorCur, reqInfo)
+		if err != nil {
+			errs = append(errs, &errortypes.BadInput{
+				Message: fmt.Sprintf("Unable to convert provided bid floor currency from %s to USD",
+					imp.BidFloorCur),
+			})
+			continue
+		}
+
+		if resolvedBidFloor > 0 {
+			imp.BidFloorCur = "USD"
+			imp.BidFloor = resolvedBidFloor
+		}
+
 		if request.User != nil {
 			userCopy := *request.User
-			userExtRP := rubiconUserExt{RP: rubiconUserExtRP{Target: rubiconExt.Visitor}}
+			target, err := updateUserRpTargetWithFpdAttributes(rubiconExt.Visitor, userCopy)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+
+			userExtRP := rubiconUserExt{RP: rubiconUserExtRP{Target: target}}
 
 			if request.User.Ext != nil {
 				var userExt *openrtb_ext.ExtUser
@@ -761,9 +767,6 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 					continue
 				}
 				userExtRP.Consent = userExt.Consent
-				if userExt.DigiTrust != nil {
-					userExtRP.DigiTrust = userExt.DigiTrust
-				}
 				userExtRP.Eids = userExt.Eids
 
 				// set user.ext.tpid
@@ -788,6 +791,10 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 				errs = append(errs, err)
 				continue
 			}
+			userCopy.Geo = nil
+			userCopy.Yob = 0
+			userCopy.Gender = ""
+
 			rubiconRequest.User = &userCopy
 		}
 
@@ -798,13 +805,13 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 			rubiconRequest.Device = &deviceCopy
 		}
 
-		isVideo := isVideo(thisImp)
+		isVideo := isVideo(imp)
 		if isVideo {
-			videoCopy := *thisImp.Video
+			videoCopy := *imp.Video
 
 			videoSizeId := rubiconExt.Video.VideoSizeID
 			if videoSizeId == 0 {
-				resolvedSizeId, err := resolveVideoSizeId(thisImp.Video.Placement, thisImp.Instl, thisImp.ID)
+				resolvedSizeId, err := resolveVideoSizeId(imp.Video.Placement, imp.Instl, imp.ID)
 				if err != nil {
 					errs = append(errs, err)
 					continue
@@ -819,39 +826,56 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 			}
 			videoExt := rubiconVideoExt{Skip: rubiconExt.Video.Skip, SkipDelay: rubiconExt.Video.SkipDelay, VideoType: videoType, RP: rubiconVideoExtRP{SizeID: videoSizeId}}
 			videoCopy.Ext, err = json.Marshal(&videoExt)
-			thisImp.Video = &videoCopy
-			thisImp.Banner = nil
+			imp.Video = &videoCopy
+			imp.Banner = nil
 		} else {
-			primarySizeID, altSizeIDs, err := parseRubiconSizes(thisImp.Banner.Format)
+			primarySizeID, altSizeIDs, err := parseRubiconSizes(imp.Banner.Format)
 			if err != nil {
 				errs = append(errs, err)
 				continue
 			}
 			bannerExt := rubiconBannerExt{RP: rubiconBannerExtRP{SizeID: primarySizeID, AltSizeIDs: altSizeIDs, MIME: "text/html"}}
-			bannerCopy := *thisImp.Banner
+			bannerCopy := *imp.Banner
 			bannerCopy.Ext, err = json.Marshal(&bannerExt)
 			if err != nil {
 				errs = append(errs, err)
 				continue
 			}
-			thisImp.Banner = &bannerCopy
-			thisImp.Video = nil
+			imp.Banner = &bannerCopy
+			imp.Video = nil
 		}
 
-		siteExt := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: rubiconExt.SiteId}}
 		pubExt := rubiconPubExt{RP: rubiconPubExtRP{AccountID: rubiconExt.AccountId}}
 
 		if request.Site != nil {
 			siteCopy := *request.Site
-			siteCopy.Ext, err = json.Marshal(&siteExt)
-			siteCopy.Publisher = &openrtb.Publisher{}
+			siteExtRP := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: rubiconExt.SiteId}}
+			if siteCopy.Content != nil {
+				siteTarget := make(map[string]interface{})
+				updateExtWithIabAttribute(siteTarget, siteCopy.Content.Data, []int{1, 2, 5, 6})
+				if len(siteTarget) > 0 {
+					updatedSiteTarget, err := json.Marshal(siteTarget)
+					if err != nil {
+						errs = append(errs, err)
+						continue
+					}
+					siteExtRP.RP.Target = updatedSiteTarget
+				}
+			}
+
+			siteCopy.Ext, err = json.Marshal(&siteExtRP)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+
+			siteCopy.Publisher = &openrtb2.Publisher{}
 			siteCopy.Publisher.Ext, err = json.Marshal(&pubExt)
 			rubiconRequest.Site = &siteCopy
-		}
-		if request.App != nil {
+		} else {
 			appCopy := *request.App
-			appCopy.Ext, err = json.Marshal(&siteExt)
-			appCopy.Publisher = &openrtb.Publisher{}
+			appCopy.Ext, err = json.Marshal(rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: rubiconExt.SiteId}})
+			appCopy.Publisher = &openrtb2.Publisher{}
 			appCopy.Publisher.Ext, err = json.Marshal(&pubExt)
 			rubiconRequest.App = &appCopy
 		}
@@ -863,7 +887,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 			}
 		}
 
-		rubiconRequest.Imp = []openrtb.Imp{thisImp}
+		rubiconRequest.Imp = []openrtb2.Imp{imp}
 		rubiconRequest.Cur = nil
 		rubiconRequest.Ext = nil
 
@@ -884,6 +908,311 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 	}
 
 	return requestData, errs
+}
+
+func resolveBidFloor(bidFloor float64, bidFloorCur string, reqInfo *adapters.ExtraRequestInfo) (float64, error) {
+	if bidFloor > 0 && bidFloorCur != "" && strings.ToUpper(bidFloorCur) != "USD" {
+		return reqInfo.ConvertCurrency(bidFloor, bidFloorCur, "USD")
+	}
+
+	return bidFloor, nil
+}
+
+func updateImpRpTargetWithFpdAttributes(extImp openrtb_ext.ExtImpRubicon, imp openrtb2.Imp,
+	site *openrtb2.Site, app *openrtb2.App) (json.RawMessage, error) {
+	existingTarget, _, _, err := jsonparser.Get(imp.Ext, "rp", "target")
+	if isNotKeyPathError(err) {
+		return nil, err
+	}
+	target, err := rawJSONToMap(existingTarget)
+	if err != nil {
+		return nil, err
+	}
+	err = populateFirstPartyDataAttributes(extImp.Inventory, target)
+	if err != nil {
+		return nil, err
+	}
+
+	if site != nil {
+		siteExtData, _, _, err := jsonparser.Get(site.Ext, "data")
+		if isNotKeyPathError(err) {
+			return nil, err
+		}
+		err = populateFirstPartyDataAttributes(siteExtData, target)
+		if err != nil {
+			return nil, err
+		}
+		if len(site.SectionCat) > 0 {
+			addStringArrayAttribute(site.SectionCat, target, "sectioncat")
+		}
+		if len(site.PageCat) > 0 {
+			addStringArrayAttribute(site.PageCat, target, "pagecat")
+		}
+		if site.Page != "" {
+			addStringAttribute(site.Page, target, "page")
+		}
+		if site.Ref != "" {
+			addStringAttribute(site.Ref, target, "ref")
+		}
+		if site.Search != "" {
+			addStringAttribute(site.Search, target, "search")
+		}
+	} else {
+		appExtData, _, _, err := jsonparser.Get(app.Ext, "data")
+		if isNotKeyPathError(err) {
+			return nil, err
+		}
+		err = populateFirstPartyDataAttributes(appExtData, target)
+		if err != nil {
+			return nil, err
+		}
+		if len(app.SectionCat) > 0 {
+			addStringArrayAttribute(app.SectionCat, target, "sectioncat")
+		}
+		if len(app.PageCat) > 0 {
+			addStringArrayAttribute(app.PageCat, target, "pagecat")
+		}
+	}
+
+	impExtContextAttributes, _, _, err := jsonparser.Get(imp.Ext, "context", "data")
+	if isNotKeyPathError(err) {
+		return nil, err
+	}
+
+	if len(impExtContextAttributes) > 0 {
+		err = populateFirstPartyDataAttributes(impExtContextAttributes, target)
+		if err != nil {
+			return nil, err
+		}
+	} else if impExtDataAttributes, _, _, err := jsonparser.Get(imp.Ext, "data"); err == nil && len(impExtDataAttributes) > 0 {
+		err = populateFirstPartyDataAttributes(impExtDataAttributes, target)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if isNotKeyPathError(err) {
+		return nil, err
+	}
+
+	if len(extImp.Keywords) > 0 {
+		addStringArrayAttribute(extImp.Keywords, target, "keywords")
+	}
+	updatedTarget, err := json.Marshal(target)
+	if err != nil {
+		return nil, err
+	}
+	return updatedTarget, nil
+}
+
+func isNotKeyPathError(err error) bool {
+	return err != nil && err != jsonparser.KeyPathNotFoundError
+}
+
+func addStringAttribute(attribute string, target map[string]interface{}, attributeName string) {
+	target[attributeName] = [1]string{attribute}
+}
+
+func addStringArrayAttribute(attribute []string, target map[string]interface{}, attributeName string) {
+	target[attributeName] = attribute
+}
+
+func getAdSlot(imp openrtb2.Imp) (string, error) {
+	var adSlot string
+	var parsingError error
+	jsonparser.EachKey(imp.Ext, func(idx int, value []byte, vt jsonparser.ValueType, err error) {
+		switch idx {
+		case 0:
+			adServerContextName, err := jsonparser.GetString(value, "name")
+			if isNotKeyPathError(err) {
+				parsingError = err
+				return
+			}
+			if adServerContextName == "gam" {
+				contextAdSlot, err := jsonparser.GetString(value, "adslot")
+				if isNotKeyPathError(err) {
+					parsingError = err
+					return
+				}
+				adSlot = contextAdSlot
+			}
+		}
+	}, []string{"context", "data", "adserver"})
+
+	if parsingError != nil {
+		return "", parsingError
+	}
+
+	if adSlot != "" {
+		return adSlot, nil
+	}
+
+	jsonparser.EachKey(imp.Ext, func(idx int, value []byte, vt jsonparser.ValueType, err error) {
+		switch idx {
+		case 0:
+			adServerDataName, err := jsonparser.GetString(value, "name")
+			if isNotKeyPathError(err) {
+				parsingError = err
+				return
+			}
+			if adServerDataName == "gam" {
+				dataAdSlot, err := jsonparser.GetString(value, "adslot")
+				if isNotKeyPathError(err) {
+					parsingError = err
+					return
+				}
+				adSlot = dataAdSlot
+			}
+		}
+	}, []string{"data", "adserver"})
+
+	if parsingError != nil {
+		return "", parsingError
+	}
+
+	return adSlot, nil
+}
+
+func updateUserRpTargetWithFpdAttributes(visitor json.RawMessage, user openrtb2.User) (json.RawMessage, error) {
+	existingTarget, _, _, err := jsonparser.Get(user.Ext, "rp", "target")
+	if isNotKeyPathError(err) {
+		return nil, err
+	}
+	target, err := rawJSONToMap(existingTarget)
+	if err != nil {
+		return nil, err
+	}
+	err = populateFirstPartyDataAttributes(visitor, target)
+	if err != nil {
+		return nil, err
+	}
+	userExtData, _, _, err := jsonparser.Get(user.Ext, "data")
+	if isNotKeyPathError(err) {
+		return nil, err
+	}
+	err = populateFirstPartyDataAttributes(userExtData, target)
+	if err != nil {
+		return nil, err
+	}
+	updateExtWithIabAttribute(target, user.Data, []int{4})
+
+	updatedTarget, err := json.Marshal(target)
+	if err != nil {
+		return nil, err
+	}
+	return updatedTarget, nil
+}
+
+func updateExtWithIabAttribute(target map[string]interface{}, data []openrtb2.Data, segTaxes []int) {
+	var segmentIdsToCopy = getSegmentIdsToCopy(data, segTaxes)
+	if len(segmentIdsToCopy) == 0 {
+		return
+	}
+
+	target["iab"] = segmentIdsToCopy
+}
+
+func populateFirstPartyDataAttributes(source json.RawMessage, target map[string]interface{}) error {
+	sourceAsMap, err := rawJSONToMap(source)
+	if err != nil {
+		return err
+	}
+
+	for key, val := range sourceAsMap {
+		switch typedValue := val.(type) {
+		case string:
+			target[key] = [1]string{typedValue}
+		case float64:
+			if typedValue == float64(int(typedValue)) {
+				target[key] = [1]string{strconv.Itoa(int(typedValue))}
+			}
+		case bool:
+			target[key] = [1]string{strconv.FormatBool(typedValue)}
+		case []interface{}:
+			if isStringArray(typedValue) {
+				target[key] = typedValue
+			}
+			if isBoolArray(typedValue) {
+				target[key] = convertToStringArray(typedValue)
+			}
+		}
+	}
+	return nil
+}
+
+func isStringArray(array []interface{}) bool {
+	for _, val := range array {
+		if _, ok := val.(string); !ok {
+			return false
+		}
+	}
+
+	return true
+}
+
+func isBoolArray(array []interface{}) bool {
+	for _, val := range array {
+		if _, ok := val.(bool); !ok {
+			return false
+		}
+	}
+
+	return true
+}
+
+func convertToStringArray(arr []interface{}) []string {
+	var stringArray []string
+	for _, val := range arr {
+		if boolVal, ok := val.(bool); ok {
+			stringArray = append(stringArray, strconv.FormatBool(boolVal))
+		}
+	}
+
+	return stringArray
+}
+
+func rawJSONToMap(message json.RawMessage) (map[string]interface{}, error) {
+	if message == nil {
+		return make(map[string]interface{}), nil
+	}
+
+	return mapFromRawJSON(message)
+}
+func mapFromRawJSON(message json.RawMessage) (map[string]interface{}, error) {
+	targetAsMap := make(map[string]interface{})
+	err := json.Unmarshal(message, &targetAsMap)
+	if err != nil {
+		return nil, err
+	}
+	return targetAsMap, nil
+}
+
+func getSegmentIdsToCopy(data []openrtb2.Data, segTaxValues []int) []string {
+	var segmentIdsToCopy = make([]string, 0, len(data))
+
+	for _, dataRecord := range data {
+		if dataRecord.Ext != nil {
+			var dataExtObject rubiconDataExt
+			err := json.Unmarshal(dataRecord.Ext, &dataExtObject)
+			if err != nil {
+				continue
+			}
+			if contains(segTaxValues, dataExtObject.SegTax) {
+				for _, segment := range dataRecord.Segment {
+					segmentIdsToCopy = append(segmentIdsToCopy, segment.ID)
+				}
+			}
+		}
+	}
+	return segmentIdsToCopy
+}
+
+func contains(s []int, e int) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
 }
 
 func getTpIdsAndSegments(eids []openrtb_ext.ExtUserEid) (mappedRubiconUidsParam, []error) {
@@ -972,7 +1301,7 @@ func updateUserExtWithTpIdsAndSegments(userExtRP *rubiconUserExt, rubiconUidsPar
 	return nil
 }
 
-func isVideo(imp openrtb.Imp) bool {
+func isVideo(imp openrtb2.Imp) bool {
 	video := imp.Video
 	if video != nil {
 		// Do any other media types exist? Or check required video fields.
@@ -981,12 +1310,12 @@ func isVideo(imp openrtb.Imp) bool {
 	return false
 }
 
-func isFullyPopulatedVideo(video *openrtb.Video) bool {
+func isFullyPopulatedVideo(video *openrtb2.Video) bool {
 	// These are just recommended video fields for XAPI
 	return video.MIMEs != nil && video.Protocols != nil && video.MaxDuration != 0 && video.Linearity != 0 && video.API != nil
 }
 
-func (a *RubiconAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *RubiconAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -1003,14 +1332,14 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp rubiconBidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: err.Error(),
 		}}
 	}
 
-	var bidReq openrtb.BidRequest
+	var bidReq openrtb2.BidRequest
 	if err := json.Unmarshal(externalRequest.Body, &bidReq); err != nil {
 		return nil, []error{err}
 	}
@@ -1028,9 +1357,17 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 	cmpOverride := cmpOverrideFromBidRequest(internalRequest)
 
 	for _, sb := range bidResp.SeatBid {
+		buyer, err := strconv.Atoi(sb.Buyer)
+		if err != nil {
+			buyer = 0
+		}
 		for i := 0; i < len(sb.Bid); i++ {
 			bid := sb.Bid[i]
 
+			updatedBidExt := updateBidExtWithMetaNetworkId(bid, buyer)
+			if updatedBidExt != nil {
+				bid.Ext = updatedBidExt
+			}
 			bidCmpOverride, ok := impToCpmOverride[bid.ImpID]
 			if !ok || bidCmpOverride == 0 {
 				bidCmpOverride = cmpOverride
@@ -1057,16 +1394,7 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 	return bidResponse, nil
 }
 
-func cmpOverrideFromBidRequest(bidRequest *openrtb.BidRequest) float64 {
-	var bidRequestExt bidRequestExt
-	if err := json.Unmarshal(bidRequest.Ext, &bidRequestExt); err != nil {
-		return 0
-	}
-
-	return bidRequestExt.Prebid.Bidders.Rubicon.Debug.CpmOverride
-}
-
-func mapImpIdToCpmOverride(imps []openrtb.Imp) map[string]float64 {
+func mapImpIdToCpmOverride(imps []openrtb2.Imp) map[string]float64 {
 	impIdToCmpOverride := make(map[string]float64)
 	for _, imp := range imps {
 		var bidderExt adapters.ExtImpBidder
@@ -1082,4 +1410,45 @@ func mapImpIdToCpmOverride(imps []openrtb.Imp) map[string]float64 {
 		impIdToCmpOverride[imp.ID] = rubiconExt.Debug.CpmOverride
 	}
 	return impIdToCmpOverride
+}
+
+func cmpOverrideFromBidRequest(bidRequest *openrtb2.BidRequest) float64 {
+	var bidRequestExt bidRequestExt
+	if err := json.Unmarshal(bidRequest.Ext, &bidRequestExt); err != nil {
+		return 0
+	}
+
+	return bidRequestExt.Prebid.Bidders.Rubicon.Debug.CpmOverride
+}
+
+func updateBidExtWithMetaNetworkId(bid openrtb2.Bid, buyer int) json.RawMessage {
+	if buyer <= 0 {
+		return nil
+	}
+	var bidExt *extPrebid
+	if bid.Ext != nil {
+		if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
+			return nil
+		}
+	}
+
+	if bidExt != nil {
+		if bidExt.Prebid != nil {
+			if bidExt.Prebid.Meta != nil {
+				bidExt.Prebid.Meta.NetworkID = buyer
+			} else {
+				bidExt.Prebid.Meta = &openrtb_ext.ExtBidPrebidMeta{NetworkID: buyer}
+			}
+		} else {
+			bidExt.Prebid = &openrtb_ext.ExtBidPrebid{Meta: &openrtb_ext.ExtBidPrebidMeta{NetworkID: buyer}}
+		}
+	} else {
+		bidExt = &extPrebid{Prebid: &openrtb_ext.ExtBidPrebid{Meta: &openrtb_ext.ExtBidPrebidMeta{NetworkID: buyer}}}
+	}
+
+	marshalledExt, err := json.Marshal(&bidExt)
+	if err == nil {
+		return marshalledExt
+	}
+	return nil
 }

@@ -1,8 +1,6 @@
 package lmt
 
-import (
-	"github.com/mxmCherry/openrtb"
-)
+import "github.com/mxmCherry/openrtb/v15/openrtb2"
 
 const (
 	trackingUnrestricted = 0
@@ -16,7 +14,7 @@ type Policy struct {
 }
 
 // ReadFromRequest extracts the LMT (Limit Ad Tracking) policy from an OpenRTB bid request.
-func ReadFromRequest(req *openrtb.BidRequest) (policy Policy) {
+func ReadFromRequest(req *openrtb2.BidRequest) (policy Policy) {
 	if req != nil && req.Device != nil && req.Device.Lmt != nil {
 		policy.Signal = int(*req.Device.Lmt)
 		policy.SignalProvided = true

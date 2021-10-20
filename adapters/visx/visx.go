@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -38,7 +38,7 @@ type visxResponse struct {
 }
 
 // MakeRequests makes the HTTP requests which should be made to fetch bids.
-func (a *VisxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *VisxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errors = make([]error, 0)
 
 	// copy the request, because we are going to mutate it
@@ -65,7 +65,7 @@ func (a *VisxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapter
 }
 
 // MakeBids unpacks the server's response into Bids.
-func (a *VisxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *VisxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -91,25 +91,53 @@ func (a *VisxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequ
 
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
-			bid := openrtb.Bid{}
+			bid := openrtb2.Bid{}
 			bid.ID = internalRequest.ID
 			bid.CrID = sb.Bid[i].CrID
 			bid.ImpID = sb.Bid[i].ImpID
 			bid.Price = sb.Bid[i].Price
 			bid.AdM = sb.Bid[i].AdM
-			bid.W = sb.Bid[i].W
-			bid.H = sb.Bid[i].H
+			bid.W = int64(sb.Bid[i].W)
+			bid.H = int64(sb.Bid[i].H)
 			bid.ADomain = sb.Bid[i].ADomain
 			bid.DealID = sb.Bid[i].DealID
 
+			bidType, err := getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp)
+			if err != nil {
+				return nil, []error{err}
+			}
+
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &bid,
-				BidType: "banner",
+				BidType: bidType,
 			})
 		}
 	}
 	return bidResponse, nil
 
+}
+
+func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
+	for _, imp := range imps {
+		if imp.ID == impID {
+			if imp.Banner != nil {
+				return openrtb_ext.BidTypeBanner, nil
+			}
+
+			if imp.Video != nil {
+				return openrtb_ext.BidTypeVideo, nil
+			}
+
+			return "", &errortypes.BadServerResponse{
+				Message: fmt.Sprintf("Unknown impression type for ID: \"%s\"", impID),
+			}
+		}
+	}
+
+	// This shouldnt happen. Lets handle it just incase by returning an error.
+	return "", &errortypes.BadServerResponse{
+		Message: fmt.Sprintf("Failed to find impression for ID: \"%s\"", impID),
+	}
 }
 
 // Builder builds a new instance of the Visx adapter for the given bidder with the given config.

@@ -1,0 +1,21 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "IQzone Adapter Params",
+    "description": "A schema which validates params accepted by the IQzone adapter",
+    "type": "object",
+  
+    "properties": {
+      "placementId": {
+        "type": "string",
+        "description": "Placement ID"
+      },
+      "endpointId": {
+        "type": "string",
+        "description": "Endpoint ID"
+      }
+    },
+    "oneOf": [
+      { "required": ["placementId"] },
+      { "required": ["endpointId"] }
+    ]
+  }

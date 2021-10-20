@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -49,9 +49,9 @@ type amxExt struct {
 	Bidder openrtb_ext.ExtImpAMX `json:"bidder"`
 }
 
-func ensurePublisherWithID(pub *openrtb.Publisher, publisherID string) openrtb.Publisher {
+func ensurePublisherWithID(pub *openrtb2.Publisher, publisherID string) openrtb2.Publisher {
 	if pub == nil {
-		return openrtb.Publisher{ID: publisherID}
+		return openrtb2.Publisher{ID: publisherID}
 	}
 
 	pubCopy := *pub
@@ -60,7 +60,7 @@ func ensurePublisherWithID(pub *openrtb.Publisher, publisherID string) openrtb.P
 }
 
 // MakeRequests creates AMX adapter requests
-func (adapter *AMXAdapter) MakeRequests(request *openrtb.BidRequest, req *adapters.ExtraRequestInfo) (reqsBidder []*adapters.RequestData, errs []error) {
+func (adapter *AMXAdapter) MakeRequests(request *openrtb2.BidRequest, req *adapters.ExtraRequestInfo) (reqsBidder []*adapters.RequestData, errs []error) {
 	reqCopy := *request
 
 	var publisherID string
@@ -119,7 +119,7 @@ type amxBidExt struct {
 }
 
 // MakeBids will parse the bids from the AMX server
-func (adapter *AMXAdapter) MakeBids(request *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (adapter *AMXAdapter) MakeBids(request *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var errs []error
 
 	if http.StatusNoContent == response.StatusCode {
@@ -140,7 +140,7 @@ func (adapter *AMXAdapter) MakeBids(request *openrtb.BidRequest, externalRequest
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
@@ -196,7 +196,7 @@ func pixelToImpression(pixel string) string {
 	return fmt.Sprintf(vastImpressionFormat, pixel)
 }
 
-func interpolateImpressions(bid openrtb.Bid, ext amxBidExt) string {
+func interpolateImpressions(bid openrtb2.Bid, ext amxBidExt) string {
 	var buffer strings.Builder
 	if bid.NURL != "" {
 		buffer.WriteString(pixelToImpression(bid.NURL))

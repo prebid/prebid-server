@@ -1,0 +1,28 @@
+{
+    "description": "Request has a negative video width.",
+
+    "mockBidRequest": {
+        "id": "req-id",
+        "site": {
+            "page": "test.somepage.com"
+        },
+        "imp": [{
+            "id": "imp-id",
+            "video": {
+                "mimes": ["video/mp4"],
+                "w": -1
+            },
+            "ext": {
+                "prebid": {
+                    "bidder": {
+                        "appnexus": {
+                            "placementId": 12345
+                        }
+                    }
+                }
+            }
+        }]
+    },
+    "expectedReturnCode": 400,
+    "expectedErrorMessage": "Invalid request: request.imp[0].video.w must be a positive number"
+}

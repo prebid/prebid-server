@@ -3,10 +3,9 @@ package analytics
 import (
 	"time"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/usersync"
 )
 
 /*
@@ -30,8 +29,8 @@ type PBSAnalyticsModule interface {
 type AuctionObject struct {
 	Status    int
 	Errors    []error
-	Request   *openrtb.BidRequest
-	Response  *openrtb.BidResponse
+	Request   *openrtb2.BidRequest
+	Response  *openrtb2.BidResponse
 	Account   *config.Account
 	StartTime time.Time
 }
@@ -40,8 +39,8 @@ type AuctionObject struct {
 type AmpObject struct {
 	Status             int
 	Errors             []error
-	Request            *openrtb.BidRequest
-	AuctionResponse    *openrtb.BidResponse
+	Request            *openrtb2.BidRequest
+	AuctionResponse    *openrtb2.BidResponse
 	AmpTargetingValues map[string]string
 	Origin             string
 	StartTime          time.Time
@@ -51,8 +50,8 @@ type AmpObject struct {
 type VideoObject struct {
 	Status        int
 	Errors        []error
-	Request       *openrtb.BidRequest
-	Response      *openrtb.BidResponse
+	Request       *openrtb2.BidRequest
+	Response      *openrtb2.BidResponse
 	VideoRequest  *openrtb_ext.BidRequestVideo
 	VideoResponse *openrtb_ext.BidResponseVideo
 	StartTime     time.Time
@@ -71,7 +70,19 @@ type SetUIDObject struct {
 type CookieSyncObject struct {
 	Status       int
 	Errors       []error
-	BidderStatus []*usersync.CookieSyncBidders
+	BidderStatus []*CookieSyncBidder
+}
+
+type CookieSyncBidder struct {
+	BidderCode   string        `json:"bidder"`
+	NoCookie     bool          `json:"no_cookie,omitempty"`
+	UsersyncInfo *UsersyncInfo `json:"usersync,omitempty"`
+}
+
+type UsersyncInfo struct {
+	URL         string `json:"url,omitempty"`
+	Type        string `json:"type,omitempty"`
+	SupportCORS bool   `json:"supportCORS,omitempty"`
 }
 
 // NotificationEvent is a loggable object

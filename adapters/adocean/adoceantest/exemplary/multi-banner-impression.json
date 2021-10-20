@@ -56,7 +56,8 @@
     },
     "device": {
       "w": 418,
-      "h": 961
+      "h": 961,
+      "dpidmd5": "f2ba45ece57cff9477d5a8083b138c9g"
     },
     "regs": {
       "ext": {
@@ -71,7 +72,7 @@
   },
   "httpCalls": [{
     "expectedRequest": {
-      "uri": "https://myao.adocean.pl/_10000000/ad.json?aid=adoceanmyaozpniqismex%3Aao-test&aid=adoceanmyaowafpdwlrks%3Asecod-twelve&aosspsizes=myaowafpdwlrks~300x250-myaozpniqismex~300x250_320x600&gdpr=1&gdpr_consent=COwK6gaOwK6gaFmAAAENAPCAAAAAAAAAAAAAAAAAAAAA.IFoEUQQgAIQwgIwQABAEAAAAOIAACAIAAAAQAIAgEAACEAAAAAgAQBAAAAAAAGBAAgAAAAAAAFAAECAAAgAAQARAEQAAAAAJAAIAAgAAAYQEAAAQmAgBC3ZAYzUw&id=tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7&nc=1&nosecure=1&pbsrv_v=1.1.0"
+      "uri": "https://myao.adocean.pl/_10000000/ad.json?aid=adoceanmyaozpniqismex%3Aao-test&aid=adoceanmyaowafpdwlrks%3Asecod-twelve&aosspsizes=myaowafpdwlrks~300x250-myaozpniqismex~300x250_320x600&devmake=&devmodel=&devos=&devosv=&dpidmd5=f2ba45ece57cff9477d5a8083b138c9g&gdpr=1&gdpr_consent=COwK6gaOwK6gaFmAAAENAPCAAAAAAAAAAAAAAAAAAAAA.IFoEUQQgAIQwgIwQABAEAAAAOIAACAIAAAAQAIAgEAACEAAAAAgAQBAAAAAAAGBAAgAAAAAAAFAAECAAAgAAQARAEQAAAAAJAAIAAgAAAYQEAAAQmAgBC3ZAYzUw&id=tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7&nc=1&nosecure=1&pbsrv_v=1.2.0"
     },
     "mockResponse": {
       "status": 200,

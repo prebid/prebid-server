@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -26,7 +27,7 @@ type Bidder interface {
 	// "subpar" in some way. For example: the request contained ad types which this bidder doesn't support.
 	//
 	// If the error is caused by bad user input, return an errortypes.BadInput.
-	MakeRequests(request *openrtb.BidRequest, reqInfo *ExtraRequestInfo) ([]*RequestData, []error)
+	MakeRequests(request *openrtb2.BidRequest, reqInfo *ExtraRequestInfo) ([]*RequestData, []error)
 
 	// MakeBids unpacks the server's response into Bids.
 	//
@@ -37,7 +38,7 @@ type Bidder interface {
 	//
 	// If the error was caused by bad user input, return a errortypes.BadInput.
 	// If the error was caused by a bad server response, return a errortypes.BadServerResponse
-	MakeBids(internalRequest *openrtb.BidRequest, externalRequest *RequestData, response *ResponseData) (*BidderResponse, []error)
+	MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *RequestData, response *ResponseData) (*BidderResponse, []error)
 }
 
 // TimeoutBidder is used to identify bidders that support timeout notifications.
@@ -84,15 +85,17 @@ func NewBidderResponse() *BidderResponse {
 	return NewBidderResponseWithBidsCapacity(0)
 }
 
-// TypedBid packages the openrtb.Bid with any bidder-specific information that PBS needs to populate an
+// TypedBid packages the openrtb2.Bid with any bidder-specific information that PBS needs to populate an
 // openrtb_ext.ExtBidPrebid.
 //
 // TypedBid.Bid.Ext will become "response.seatbid[i].bid.ext.bidder" in the final OpenRTB response.
+// TypedBid.BidMeta will become "response.seatbid[i].bid.ext.prebid.meta" in the final OpenRTB response.
 // TypedBid.BidType will become "response.seatbid[i].bid.ext.prebid.type" in the final OpenRTB response.
 // TypedBid.BidVideo will become "response.seatbid[i].bid.ext.prebid.video" in the final OpenRTB response.
 // TypedBid.DealPriority is optionally provided by adapters and used internally by the exchange to support deal targeted campaigns.
 type TypedBid struct {
-	Bid          *openrtb.Bid
+	Bid          *openrtb2.Bid
+	BidMeta      *openrtb_ext.ExtBidPrebidMeta
 	BidType      openrtb_ext.BidType
 	BidVideo     *openrtb_ext.ExtBidPrebidVideo
 	DealPriority int
@@ -136,7 +139,27 @@ func (r *RequestData) SetBasicAuth(username string, password string) {
 }
 
 type ExtraRequestInfo struct {
-	PbsEntryPoint metrics.RequestType
+	PbsEntryPoint              metrics.RequestType
+	GlobalPrivacyControlHeader string
+	CurrencyConversions        currency.Conversions
+}
+
+func NewExtraRequestInfo(c currency.Conversions) ExtraRequestInfo {
+	return ExtraRequestInfo{
+		CurrencyConversions: c,
+	}
+}
+
+// ConvertCurrency converts a given amount from one currency to another, or returns:
+//  - Error if the `from` or `to` arguments are malformed or unknown ISO-4217 codes.
+//  - ConversionNotFoundError if the conversion mapping is unknown to Prebid Server
+//    and not provided in the bid request.
+func (r ExtraRequestInfo) ConvertCurrency(value float64, from, to string) (float64, error) {
+	if rate, err := r.CurrencyConversions.GetRate(from, to); err == nil {
+		return value * rate, nil
+	} else {
+		return 0, err
+	}
 }
 
 type Builder func(openrtb_ext.BidderName, config.Adapter) (Bidder, error)

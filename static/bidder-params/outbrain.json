@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Outbrain Adapter Params",
+  "description": "A schema which validates params accepted by the Outbrain adapter",
+
+  "type": "object",
+  "properties": {
+    "publisher": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "domain": {
+          "type": "string"
+        }
+      },
+      "required": ["id"]
+    },
+    "tagid": {
+      "type": "string"
+    },
+    "bcat": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "badv": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": ["publisher"]
+}

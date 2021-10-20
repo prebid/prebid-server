@@ -11,7 +11,7 @@ import (
 
 	"fmt"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -64,7 +64,7 @@ type hbResponseAd struct {
 	Height       uint64 `json:"h,omitempty"`
 }
 
-func (adapter *EPlanningAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (adapter *EPlanningAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errors := make([]error, 0, len(request.Imp))
 	totalImps := len(request.Imp)
 	spacesStrings := make([]string, 0, totalImps)
@@ -191,8 +191,8 @@ func (adapter *EPlanningAdapter) MakeRequests(request *openrtb.BidRequest, reqIn
 	return requests, errors
 }
 
-func isMobileDevice(request *openrtb.BidRequest) bool {
-	return request.Device != nil && (request.Device.DeviceType == openrtb.DeviceTypeMobileTablet || request.Device.DeviceType == openrtb.DeviceTypePhone || request.Device.DeviceType == openrtb.DeviceTypeTablet)
+func isMobileDevice(request *openrtb2.BidRequest) bool {
+	return request.Device != nil && (request.Device.DeviceType == openrtb2.DeviceTypeMobileTablet || request.Device.DeviceType == openrtb2.DeviceTypePhone || request.Device.DeviceType == openrtb2.DeviceTypeTablet)
 }
 
 func cleanName(name string) string {
@@ -202,7 +202,7 @@ func cleanName(name string) string {
 	return name
 }
 
-func verifyImp(imp *openrtb.Imp, isMobile bool) (*openrtb_ext.ExtImpEPlanning, error) {
+func verifyImp(imp *openrtb2.Imp, isMobile bool) (*openrtb_ext.ExtImpEPlanning, error) {
 	var bidderExt adapters.ExtImpBidder
 
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
@@ -240,7 +240,7 @@ func verifyImp(imp *openrtb.Imp, isMobile bool) (*openrtb_ext.ExtImpEPlanning, e
 	return &impExt, nil
 }
 
-func searchSizePriority(hashedFormats map[string]int, format []openrtb.Format, priorityOrderForSizesAsc []string) (uint64, uint64) {
+func searchSizePriority(hashedFormats map[string]int, format []openrtb2.Format, priorityOrderForSizesAsc []string) (int64, int64) {
 	for i := len(priorityOrderForSizesAsc) - 1; i >= 0; i-- {
 		if formatIndex, wasFound := hashedFormats[priorityOrderForSizesAsc[i]]; wasFound {
 			return format[formatIndex].W, format[formatIndex].H
@@ -249,7 +249,7 @@ func searchSizePriority(hashedFormats map[string]int, format []openrtb.Format, p
 	return format[0].W, format[0].H
 }
 
-func getSizeFromImp(imp *openrtb.Imp, isMobile bool) (uint64, uint64) {
+func getSizeFromImp(imp *openrtb2.Imp, isMobile bool) (int64, int64) {
 	if imp.Banner.W != nil && imp.Banner.H != nil {
 		return *imp.Banner.W, *imp.Banner.H
 	}
@@ -279,7 +279,7 @@ func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue str
 	}
 }
 
-func (adapter *EPlanningAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (adapter *EPlanningAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -322,15 +322,15 @@ func (adapter *EPlanningAdapter) MakeBids(internalRequest *openrtb.BidRequest, e
 	for _, space := range parsedResponse.Spaces {
 		for _, ad := range space.Ads {
 			if price, err := strconv.ParseFloat(ad.Price, 64); err == nil {
-				bid := openrtb.Bid{
+				bid := openrtb2.Bid{
 					ID:    ad.ImpressionID,
 					AdID:  ad.AdID,
 					ImpID: spaceNameToImpID[space.Name],
 					Price: price,
 					AdM:   ad.AdM,
 					CrID:  ad.CrID,
-					W:     ad.Width,
-					H:     ad.Height,
+					W:     int64(ad.Width),
+					H:     int64(ad.Height),
 				}
 
 				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{

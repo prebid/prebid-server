@@ -8,7 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/pbs"
@@ -54,7 +54,7 @@ func (a *ConversantLegacyAdapter) Call(ctx context.Context, req *pbs.PBSRequest,
 	// Create a map of impression objects for both request creation
 	// and response parsing.
 
-	impMap := make(map[string]*openrtb.Imp, len(cnvrReq.Imp))
+	impMap := make(map[string]*openrtb2.Imp, len(cnvrReq.Imp))
 	for idx := range cnvrReq.Imp {
 		impMap[cnvrReq.Imp[idx].ID] = &cnvrReq.Imp[idx]
 	}
@@ -98,9 +98,9 @@ func (a *ConversantLegacyAdapter) Call(ctx context.Context, req *pbs.PBSRequest,
 		imp.BidFloor = params.BidFloor
 		imp.TagID = params.TagID
 
-		var position *openrtb.AdPosition
+		var position *openrtb2.AdPosition
 		if params.Position != nil {
-			position = openrtb.AdPosition(*params.Position).Ptr()
+			position = openrtb2.AdPosition(*params.Position).Ptr()
 		}
 
 		if imp.Banner != nil {
@@ -109,9 +109,9 @@ func (a *ConversantLegacyAdapter) Call(ctx context.Context, req *pbs.PBSRequest,
 			imp.Video.Pos = position
 
 			if len(params.API) > 0 {
-				imp.Video.API = make([]openrtb.APIFramework, 0, len(params.API))
+				imp.Video.API = make([]openrtb2.APIFramework, 0, len(params.API))
 				for _, api := range params.API {
-					imp.Video.API = append(imp.Video.API, openrtb.APIFramework(api))
+					imp.Video.API = append(imp.Video.API, openrtb2.APIFramework(api))
 				}
 			}
 
@@ -120,9 +120,9 @@ func (a *ConversantLegacyAdapter) Call(ctx context.Context, req *pbs.PBSRequest,
 			// but are overridden if the custom params object also contains them.
 
 			if len(params.Protocols) > 0 {
-				imp.Video.Protocols = make([]openrtb.Protocol, 0, len(params.Protocols))
+				imp.Video.Protocols = make([]openrtb2.Protocol, 0, len(params.Protocols))
 				for _, protocol := range params.Protocols {
-					imp.Video.Protocols = append(imp.Video.Protocols, openrtb.Protocol(protocol))
+					imp.Video.Protocols = append(imp.Video.Protocols, openrtb2.Protocol(protocol))
 				}
 			}
 
@@ -164,7 +164,7 @@ func (a *ConversantLegacyAdapter) Call(ctx context.Context, req *pbs.PBSRequest,
 	}
 
 	if cnvrReq.Device == nil {
-		cnvrReq.Device = &openrtb.Device{}
+		cnvrReq.Device = &openrtb2.Device{}
 	}
 
 	// Convert request to json to be sent over http
@@ -217,7 +217,7 @@ func (a *ConversantLegacyAdapter) Call(ctx context.Context, req *pbs.PBSRequest,
 		debug.ResponseBody = string(body)
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 
 	err = json.Unmarshal(body, &bidResp)
 	if err != nil {

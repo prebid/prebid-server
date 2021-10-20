@@ -167,7 +167,8 @@ func (err *BidderTemporarilyDisabled) Severity() Severity {
 
 // Warning is a generic non-fatal error.
 type Warning struct {
-	Message string
+	Message     string
+	WarningCode int
 }
 
 func (err *Warning) Error() string {
@@ -175,26 +176,9 @@ func (err *Warning) Error() string {
 }
 
 func (err *Warning) Code() int {
-	return UnknownWarningCode
+	return err.WarningCode
 }
 
 func (err *Warning) Severity() Severity {
-	return SeverityWarning
-}
-
-// InvalidPrivacyConsent is a warning for when the privacy consent string is invalid and is ignored.
-type InvalidPrivacyConsent struct {
-	Message string
-}
-
-func (err *InvalidPrivacyConsent) Error() string {
-	return err.Message
-}
-
-func (err *InvalidPrivacyConsent) Code() int {
-	return InvalidPrivacyConsentWarningCode
-}
-
-func (err *InvalidPrivacyConsent) Severity() Severity {
 	return SeverityWarning
 }

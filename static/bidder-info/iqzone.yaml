@@ -1,0 +1,15 @@
+maintainer:
+  email: "smartssp@iqzone.com"
+capabilities:
+  site:
+    mediaTypes:
+    - banner
+    - video
+    - native
+    
+  app:
+    mediaTypes:
+    - banner
+    - video
+    - native
+   

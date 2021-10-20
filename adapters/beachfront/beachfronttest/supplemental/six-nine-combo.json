@@ -189,6 +189,7 @@
           ],
           "domain": "example.com",
           "page": "http://example.com/whatever/something.html",
+          "real204": true,
           "referrer": "",
           "search": "",
           "secure": 0,
@@ -201,7 +202,12 @@
           "adapterName": "BF_PREBID_S2S",
           "adapterVersion": "0.9.2",
           "ip": "255.255.255.255",
-          "requestId": "six-nine-combo"
+          "requestId": "six-nine-combo",
+          "schain": {
+            "complete": 0,
+            "nodes": null,
+            "ver": ""
+          }
         }
       },
       "mockResponse": {
@@ -284,6 +290,7 @@
                 {
                   "id": "crid_7",
                   "impid": "ADMVideoWithBannerImp1",
+                  "cat":["IAB2"],
                   "price": 0.8,
                   "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
                   "w": 300,
@@ -343,6 +350,7 @@
                   "id": "crid_7",
                   "impid": "ADMVideoWithBannerImp2",
                   "price": 0.8,
+                  "cat":["IAB2"],
                   "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
                   "w": 300,
                   "h": 400,
@@ -401,6 +409,7 @@
                   "id": "crid_8",
                   "impid": "ADMVideoImp6",
                   "price": 0.8,
+                  "cat":["IAB2"],
                   "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
                   "w": 100,
                   "h": 150,
