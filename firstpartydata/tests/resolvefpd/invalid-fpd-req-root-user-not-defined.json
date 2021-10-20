@@ -11,7 +11,7 @@
     "tmax": 5000
   },
   "outputRequestData": {},
-  "biddersFPD": {
+  "bidderConfigFPD": {
     "appnexus": {
       "user": {
         "keywords": "test user keywords",

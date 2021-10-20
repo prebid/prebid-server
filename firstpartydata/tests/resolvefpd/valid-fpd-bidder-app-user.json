@@ -41,7 +41,7 @@
       ]
     }
   },
-  "firstPartyData": {
+  "globalFPD": {
     "appContentData":[
       {
         "id": "appData1",

@@ -1,0 +1,162 @@
+{
+  "description": "Valid request with First party data for two bidders, both have global and bidder specific fpd",
+  "mockBidRequest": {
+    "id": "bidreq_id",
+    "imp": [
+      {
+        "id": "1_0",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "maxduration": 30,
+          "protocols": [
+            2,
+            3
+          ],
+          "w": 640,
+          "h": 480
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 123
+          },
+          "telaria": {
+            "seatCode": "test",
+            "adCode": "test"
+          }
+        }
+      }
+    ],
+    "site": {
+      "id": "reqSiteId",
+      "page": "http://www.foobar.com/1234.html",
+      "publisher": {
+        "id": "1"
+      },
+      "content": {
+        "episode": 6,
+        "title": "episodeName",
+        "series": "TvName",
+        "season": "season3",
+        "len": 900,
+        "data": [
+          {
+            "id": "fpdSiteId!3",
+            "name": "ReqSiteContentDataName"
+          }
+        ]
+      },
+      "ext": {
+        "amp": 1,
+        "data": {
+          "someappfpd": "fpdSiteId!2"
+        }
+      }
+    },
+    "device": {
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.87 Safari/537.36",
+      "ip": "123.145.167.10",
+      "devicetype": 1,
+      "ifa": "AA000"
+    },
+    "user": {
+      "id": "reqUserID",
+      "keywords": "userKeyword!",
+      "yob": 1982,
+      "gender": "M",
+      "data": [
+        {
+          "id": "fpdSiteId!5",
+          "name": "userDataName1"
+        },
+        {
+          "id": "fpdSiteId!6",
+          "name": "userDataName2"
+        }
+      ],
+      "ext": {
+        "data": {
+          "moreuserdata": "moremyfpduserdata"
+        }
+      }
+    },
+    "test": 1,
+    "at": 1,
+    "tmax": 5000,
+    "ext": {
+      "prebid": {
+        "data": {
+          "bidders": [
+            "telaria",
+            "appnexus"
+          ]
+        },
+        "bidderconfig": [
+          {
+            "bidders": [
+              "appnexus"
+            ],
+            "config": {
+              "ortb2": {
+                "site": {
+                  "id": "fpdSiteId!1",
+                  "keywords": "fpd keywords!",
+                  "data": [
+                    {
+                      "id": "siteId1",
+                      "name": true
+                    },
+                    {
+                      "id": "siteId2",
+                      "name": false
+                    }
+                  ],
+                  "page": "",
+                  "ext": {
+                    "data": {
+                      "morefpdData": "morefpddata",
+                      "sitefpddata": "mysitefpddata"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "bidders": [
+              "telaria"
+            ],
+            "config": {
+              "ortb2": {
+                "user": {
+                  "id": "fpdSiteId!4",
+                  "yob": 2011,
+                  "gender": "F",
+                  "keywords": "fpd keywords",
+                  "data": [
+                    {
+                      "id": "fpdSiteId!8",
+                      "name": "userDataName2"
+                    },
+                    {
+                      "id": "fpdSiteId!9",
+                      "name": "userDataName3"
+                    }
+                  ],
+                  "ext": {
+                    "data": {
+                      "userdata": "biddermyfpduserdata"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "expectedBidResponse": {},
+  "expectedReturnCode": 200
+}

@@ -53,7 +53,7 @@
   },
   "outputRequestData": {
   },
-  "biddersFPD": {
+  "bidderConfigFPD": {
     "appnexus": {
       "site": {
         "id": "apnSiteId",

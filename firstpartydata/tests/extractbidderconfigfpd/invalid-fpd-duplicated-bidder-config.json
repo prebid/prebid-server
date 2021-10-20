@@ -59,7 +59,7 @@
     ]
   },
   "outputRequestData": {},
-  "biddersFPD": {},
+  "bidderConfigFPD": {},
   "validationErrors": [
     "multiple First Party Data bidder configs provided for bidder: appnexus"
   ]

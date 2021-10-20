@@ -84,7 +84,7 @@
       }
     }
   },
-  "biddersFPD": {
+  "bidderConfigFPD": {
     "appnexus": {
       "app": {
         "appFpddata":"appFpddata",
@@ -92,7 +92,7 @@
       }
     }
   },
-  "firstPartyData": {
+  "globalFPD": {
     "user": {
       "testUserFpd": "testuser"
     },

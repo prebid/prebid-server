@@ -82,7 +82,7 @@
       "ifa": "123"
     }
   },
-  "biddersFPD": {
+  "bidderConfigFPD": {
     "appnexus": {
       "site": {
         "id": "apnSiteId",
@@ -110,7 +110,7 @@
       }
     }
   },
-  "firstPartyData": {
+  "globalFPD": {
     "site": {
       "testSiteFpd": "testSite"
     },

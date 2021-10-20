@@ -19,7 +19,7 @@
     }
   },
   "outputRequestData": {},
-  "biddersFPD": {
+  "bidderConfigFPD": {
     "appnexus": {
       "site": {
         "page": "",

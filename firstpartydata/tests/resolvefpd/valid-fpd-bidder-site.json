@@ -81,7 +81,7 @@
       }
     }
   },
-  "biddersFPD": {
+  "bidderConfigFPD": {
     "appnexus": {
       "site": {
         "id": "apnSiteId",
@@ -99,7 +99,7 @@
       }
     }
   },
-  "firstPartyData": {
+  "globalFPD": {
     "site": {
       "siteFpd": 123
     },

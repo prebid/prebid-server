@@ -538,9 +538,9 @@ func TestExtractBidderConfigFPD(t *testing.T) {
 			assert.Nil(t, reqExt.GetPrebid().BidderConfigs, "Bidder specific FPD config should be removed from request")
 
 			assert.Nil(t, err, "No error should be returned")
-			assert.Equal(t, len(fpdFile.BiddersFPD), len(fpdData), "Incorrect fpd data")
+			assert.Equal(t, len(fpdFile.BidderConfigFPD), len(fpdData), "Incorrect fpd data")
 
-			for bidderName, bidderFPD := range fpdFile.BiddersFPD {
+			for bidderName, bidderFPD := range fpdFile.BidderConfigFPD {
 
 				if bidderFPD.Site != nil {
 					resSite := fpdData[bidderName].Site
@@ -606,13 +606,13 @@ func TestResolveFPD(t *testing.T) {
 			}
 
 			reqExtFPD := make(map[string][]byte, 3)
-			reqExtFPD["site"] = fpdFile.FirstPartyData["site"]
-			reqExtFPD["app"] = fpdFile.FirstPartyData["app"]
-			reqExtFPD["user"] = fpdFile.FirstPartyData["user"]
+			reqExtFPD["site"] = fpdFile.GlobalFPD["site"]
+			reqExtFPD["app"] = fpdFile.GlobalFPD["app"]
+			reqExtFPD["user"] = fpdFile.GlobalFPD["user"]
 
 			reqFPD := make(map[string][]openrtb2.Data, 3)
 
-			reqFPDSiteContentData := fpdFile.FirstPartyData[siteContentDataKey]
+			reqFPDSiteContentData := fpdFile.GlobalFPD[siteContentDataKey]
 			if len(reqFPDSiteContentData) > 0 {
 				var siteConData []openrtb2.Data
 				err = json.Unmarshal(reqFPDSiteContentData, &siteConData)
@@ -622,7 +622,7 @@ func TestResolveFPD(t *testing.T) {
 				reqFPD[siteContentDataKey] = siteConData
 			}
 
-			reqFPDAppContentData := fpdFile.FirstPartyData[appContentDataKey]
+			reqFPDAppContentData := fpdFile.GlobalFPD[appContentDataKey]
 			if len(reqFPDAppContentData) > 0 {
 				var appConData []openrtb2.Data
 				err = json.Unmarshal(reqFPDAppContentData, &appConData)
@@ -632,7 +632,7 @@ func TestResolveFPD(t *testing.T) {
 				reqFPD[appContentDataKey] = appConData
 			}
 
-			reqFPDUserData := fpdFile.FirstPartyData[userDataKey]
+			reqFPDUserData := fpdFile.GlobalFPD[userDataKey]
 			if len(reqFPDUserData) > 0 {
 				var userData []openrtb2.Data
 				err = json.Unmarshal(reqFPDUserData, &userData)
@@ -641,12 +641,12 @@ func TestResolveFPD(t *testing.T) {
 				}
 				reqFPD[userDataKey] = userData
 			}
-			if fpdFile.BiddersFPD == nil {
-				fpdFile.BiddersFPD = make(map[openrtb_ext.BidderName]*openrtb_ext.ORTB2)
-				fpdFile.BiddersFPD["appnexus"] = &openrtb_ext.ORTB2{}
+			if fpdFile.BidderConfigFPD == nil {
+				fpdFile.BidderConfigFPD = make(map[openrtb_ext.BidderName]*openrtb_ext.ORTB2)
+				fpdFile.BidderConfigFPD["appnexus"] = &openrtb_ext.ORTB2{}
 			}
 
-			resultFPD, errL := ResolveFPD(&inputReq, fpdFile.BiddersFPD, reqExtFPD, reqFPD, []string{"appnexus"})
+			resultFPD, errL := ResolveFPD(&inputReq, fpdFile.BidderConfigFPD, reqExtFPD, reqFPD, []string{"appnexus"})
 
 			if len(errL) == 0 {
 				assert.Equal(t, inputReq, inputReqCopy, "Original request should not be modified")
@@ -807,8 +807,8 @@ func loadFpdFile(filename string) (fpdFile, error) {
 type fpdFile struct {
 	InputRequestData   json.RawMessage                                    `json:"inputRequestData,omitempty"`
 	OutputRequestData  json.RawMessage                                    `json:"outputRequestData,omitempty"`
-	BiddersFPD         map[openrtb_ext.BidderName]*openrtb_ext.ORTB2      `json:"biddersFPD,omitempty"`
+	BidderConfigFPD    map[openrtb_ext.BidderName]*openrtb_ext.ORTB2      `json:"bidderConfigFPD,omitempty"`
 	BiddersFPDResolved map[openrtb_ext.BidderName]*ResolvedFirstPartyData `json:"biddersFPDResolved,omitempty"`
-	FirstPartyData     map[string]json.RawMessage                         `json:"firstPartyData,omitempty"`
+	GlobalFPD          map[string]json.RawMessage                         `json:"globalFPD,omitempty"`
 	ValidationErrors   []string                                           `json:"validationErrors,omitempty"`
 }
