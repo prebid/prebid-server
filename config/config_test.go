@@ -151,70 +151,70 @@ func TestDefaults(t *testing.T) {
 		Enabled: true,
 		Purpose1: TCF2Purpose{
 			Enabled:            true,
-			EnforcePurpose:     "full",
+			EnforcePurpose:     TCF2FullEnforcement,
 			EnforceVendors:     true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 		},
 		Purpose2: TCF2Purpose{
 			Enabled:            true,
-			EnforcePurpose:     "full",
+			EnforcePurpose:     TCF2FullEnforcement,
 			EnforceVendors:     true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 		},
 		Purpose3: TCF2Purpose{
 			Enabled:            true,
-			EnforcePurpose:     "full",
+			EnforcePurpose:     TCF2FullEnforcement,
 			EnforceVendors:     true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 		},
 		Purpose4: TCF2Purpose{
 			Enabled:            true,
-			EnforcePurpose:     "full",
+			EnforcePurpose:     TCF2FullEnforcement,
 			EnforceVendors:     true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 		},
 		Purpose5: TCF2Purpose{
 			Enabled:            true,
-			EnforcePurpose:     "full",
+			EnforcePurpose:     TCF2FullEnforcement,
 			EnforceVendors:     true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 		},
 		Purpose6: TCF2Purpose{
 			Enabled:            true,
-			EnforcePurpose:     "full",
+			EnforcePurpose:     TCF2FullEnforcement,
 			EnforceVendors:     true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 		},
 		Purpose7: TCF2Purpose{
 			Enabled:            true,
-			EnforcePurpose:     "full",
+			EnforcePurpose:     TCF2FullEnforcement,
 			EnforceVendors:     true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 		},
 		Purpose8: TCF2Purpose{
 			Enabled:            true,
-			EnforcePurpose:     "full",
+			EnforcePurpose:     TCF2FullEnforcement,
 			EnforceVendors:     true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 		},
 		Purpose9: TCF2Purpose{
 			Enabled:            true,
-			EnforcePurpose:     "full",
+			EnforcePurpose:     TCF2FullEnforcement,
 			EnforceVendors:     true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 		},
 		Purpose10: TCF2Purpose{
 			Enabled:            true,
-			EnforcePurpose:     "full",
+			EnforcePurpose:     TCF2FullEnforcement,
 			EnforceVendors:     true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
@@ -478,70 +478,70 @@ func TestFullConfig(t *testing.T) {
 		Enabled: true,
 		Purpose1: TCF2Purpose{
 			Enabled:            true, // true by default
-			EnforcePurpose:     "full",
+			EnforcePurpose:     TCF2FullEnforcement,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo1a"), openrtb_ext.BidderName("foo1b")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo1a"): {}, openrtb_ext.BidderName("foo1b"): {}},
 		},
 		Purpose2: TCF2Purpose{
 			Enabled:            false,
-			EnforcePurpose:     "no",
+			EnforcePurpose:     TCF2NoEnforcement,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo2")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo2"): {}},
 		},
 		Purpose3: TCF2Purpose{
 			Enabled:            true, // true by default
-			EnforcePurpose:     "full",
+			EnforcePurpose:     TCF2FullEnforcement,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo3")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo3"): {}},
 		},
 		Purpose4: TCF2Purpose{
 			Enabled:            true, // true by default
-			EnforcePurpose:     "full",
+			EnforcePurpose:     TCF2FullEnforcement,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo4")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo4"): {}},
 		},
 		Purpose5: TCF2Purpose{
 			Enabled:            true, // true by default
-			EnforcePurpose:     "full",
+			EnforcePurpose:     TCF2FullEnforcement,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo5")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo5"): {}},
 		},
 		Purpose6: TCF2Purpose{
 			Enabled:            true, // true by default
-			EnforcePurpose:     "full",
+			EnforcePurpose:     TCF2FullEnforcement,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo6")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo6"): {}},
 		},
 		Purpose7: TCF2Purpose{
 			Enabled:            true, // true by default
-			EnforcePurpose:     "full",
+			EnforcePurpose:     TCF2FullEnforcement,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo7")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo7"): {}},
 		},
 		Purpose8: TCF2Purpose{
 			Enabled:            true, // true by default
-			EnforcePurpose:     "full",
+			EnforcePurpose:     TCF2FullEnforcement,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo8")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo8"): {}},
 		},
 		Purpose9: TCF2Purpose{
 			Enabled:            true, // true by default
-			EnforcePurpose:     "full",
+			EnforcePurpose:     TCF2FullEnforcement,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo9")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo9"): {}},
 		},
 		Purpose10: TCF2Purpose{
 			Enabled:            true, // true by default
-			EnforcePurpose:     "full",
+			EnforcePurpose:     TCF2FullEnforcement,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo10")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo10"): {}},
@@ -638,16 +638,16 @@ func TestValidateConfig(t *testing.T) {
 		GDPR: GDPR{
 			DefaultValue: "1",
 			TCF2: TCF2{
-				Purpose1:  TCF2Purpose{EnforcePurpose: "full"},
-				Purpose2:  TCF2Purpose{EnforcePurpose: "full"},
-				Purpose3:  TCF2Purpose{EnforcePurpose: "full"},
-				Purpose4:  TCF2Purpose{EnforcePurpose: "full"},
-				Purpose5:  TCF2Purpose{EnforcePurpose: "full"},
-				Purpose6:  TCF2Purpose{EnforcePurpose: "full"},
-				Purpose7:  TCF2Purpose{EnforcePurpose: "full"},
-				Purpose8:  TCF2Purpose{EnforcePurpose: "full"},
-				Purpose9:  TCF2Purpose{EnforcePurpose: "full"},
-				Purpose10: TCF2Purpose{EnforcePurpose: "full"},
+				Purpose1:  TCF2Purpose{EnforcePurpose: TCF2FullEnforcement},
+				Purpose2:  TCF2Purpose{EnforcePurpose: TCF2FullEnforcement},
+				Purpose3:  TCF2Purpose{EnforcePurpose: TCF2FullEnforcement},
+				Purpose4:  TCF2Purpose{EnforcePurpose: TCF2FullEnforcement},
+				Purpose5:  TCF2Purpose{EnforcePurpose: TCF2FullEnforcement},
+				Purpose6:  TCF2Purpose{EnforcePurpose: TCF2FullEnforcement},
+				Purpose7:  TCF2Purpose{EnforcePurpose: TCF2FullEnforcement},
+				Purpose8:  TCF2Purpose{EnforcePurpose: TCF2FullEnforcement},
+				Purpose9:  TCF2Purpose{EnforcePurpose: TCF2FullEnforcement},
+				Purpose10: TCF2Purpose{EnforcePurpose: TCF2FullEnforcement},
 			},
 		},
 		StoredRequests: StoredRequests{
@@ -821,16 +821,16 @@ func TestMigrateConfigTCF2PurposeEnabledFlags(t *testing.T) {
                   purpose10:
                     enabled: true
             `),
-			wantPurpose1EnforcePurpose:  "no",
-			wantPurpose2EnforcePurpose:  "full",
-			wantPurpose3EnforcePurpose:  "no",
-			wantPurpose4EnforcePurpose:  "full",
-			wantPurpose5EnforcePurpose:  "no",
-			wantPurpose6EnforcePurpose:  "full",
-			wantPurpose7EnforcePurpose:  "no",
-			wantPurpose8EnforcePurpose:  "full",
-			wantPurpose9EnforcePurpose:  "no",
-			wantPurpose10EnforcePurpose: "full",
+			wantPurpose1EnforcePurpose:  TCF2NoEnforcement,
+			wantPurpose2EnforcePurpose:  TCF2FullEnforcement,
+			wantPurpose3EnforcePurpose:  TCF2NoEnforcement,
+			wantPurpose4EnforcePurpose:  TCF2FullEnforcement,
+			wantPurpose5EnforcePurpose:  TCF2NoEnforcement,
+			wantPurpose6EnforcePurpose:  TCF2FullEnforcement,
+			wantPurpose7EnforcePurpose:  TCF2NoEnforcement,
+			wantPurpose8EnforcePurpose:  TCF2FullEnforcement,
+			wantPurpose9EnforcePurpose:  TCF2NoEnforcement,
+			wantPurpose10EnforcePurpose: TCF2FullEnforcement,
 		},
 		{
 			description: "New config flags set, old config flags not set - use new flags",
@@ -858,16 +858,16 @@ func TestMigrateConfigTCF2PurposeEnabledFlags(t *testing.T) {
                   purpose10:
                     enforce_purpose: "no"
             `),
-			wantPurpose1EnforcePurpose:  "full",
-			wantPurpose2EnforcePurpose:  "no",
-			wantPurpose3EnforcePurpose:  "full",
-			wantPurpose4EnforcePurpose:  "no",
-			wantPurpose5EnforcePurpose:  "full",
-			wantPurpose6EnforcePurpose:  "no",
-			wantPurpose7EnforcePurpose:  "full",
-			wantPurpose8EnforcePurpose:  "no",
-			wantPurpose9EnforcePurpose:  "full",
-			wantPurpose10EnforcePurpose: "no",
+			wantPurpose1EnforcePurpose:  TCF2FullEnforcement,
+			wantPurpose2EnforcePurpose:  TCF2NoEnforcement,
+			wantPurpose3EnforcePurpose:  TCF2FullEnforcement,
+			wantPurpose4EnforcePurpose:  TCF2NoEnforcement,
+			wantPurpose5EnforcePurpose:  TCF2FullEnforcement,
+			wantPurpose6EnforcePurpose:  TCF2NoEnforcement,
+			wantPurpose7EnforcePurpose:  TCF2FullEnforcement,
+			wantPurpose8EnforcePurpose:  TCF2NoEnforcement,
+			wantPurpose9EnforcePurpose:  TCF2FullEnforcement,
+			wantPurpose10EnforcePurpose: TCF2NoEnforcement,
 		},
 		{
 			description: "New config flags and old config flags set - use new flags",
@@ -905,16 +905,16 @@ func TestMigrateConfigTCF2PurposeEnabledFlags(t *testing.T) {
                     enabled: false
                     enforce_purpose: "full"
               `),
-			wantPurpose1EnforcePurpose:  "full",
-			wantPurpose2EnforcePurpose:  "full",
-			wantPurpose3EnforcePurpose:  "full",
-			wantPurpose4EnforcePurpose:  "full",
-			wantPurpose5EnforcePurpose:  "full",
-			wantPurpose6EnforcePurpose:  "full",
-			wantPurpose7EnforcePurpose:  "full",
-			wantPurpose8EnforcePurpose:  "full",
-			wantPurpose9EnforcePurpose:  "full",
-			wantPurpose10EnforcePurpose: "full",
+			wantPurpose1EnforcePurpose:  TCF2FullEnforcement,
+			wantPurpose2EnforcePurpose:  TCF2FullEnforcement,
+			wantPurpose3EnforcePurpose:  TCF2FullEnforcement,
+			wantPurpose4EnforcePurpose:  TCF2FullEnforcement,
+			wantPurpose5EnforcePurpose:  TCF2FullEnforcement,
+			wantPurpose6EnforcePurpose:  TCF2FullEnforcement,
+			wantPurpose7EnforcePurpose:  TCF2FullEnforcement,
+			wantPurpose8EnforcePurpose:  TCF2FullEnforcement,
+			wantPurpose9EnforcePurpose:  TCF2FullEnforcement,
+			wantPurpose10EnforcePurpose: TCF2FullEnforcement,
 		},
 	}
 
@@ -1028,14 +1028,14 @@ func TestMissingGDPRDefaultValue(t *testing.T) {
 func TestInvalidEnforcePurpose(t *testing.T) {
 	cfg, v := newDefaultConfig(t)
 	cfg.GDPR.TCF2.Purpose1.EnforcePurpose = ""
-	cfg.GDPR.TCF2.Purpose2.EnforcePurpose = "no"
-	cfg.GDPR.TCF2.Purpose3.EnforcePurpose = "no"
-	cfg.GDPR.TCF2.Purpose4.EnforcePurpose = "no"
+	cfg.GDPR.TCF2.Purpose2.EnforcePurpose = TCF2NoEnforcement
+	cfg.GDPR.TCF2.Purpose3.EnforcePurpose = TCF2NoEnforcement
+	cfg.GDPR.TCF2.Purpose4.EnforcePurpose = TCF2NoEnforcement
 	cfg.GDPR.TCF2.Purpose5.EnforcePurpose = "invalid1"
 	cfg.GDPR.TCF2.Purpose6.EnforcePurpose = "invalid2"
-	cfg.GDPR.TCF2.Purpose7.EnforcePurpose = "full"
-	cfg.GDPR.TCF2.Purpose8.EnforcePurpose = "full"
-	cfg.GDPR.TCF2.Purpose9.EnforcePurpose = "full"
+	cfg.GDPR.TCF2.Purpose7.EnforcePurpose = TCF2FullEnforcement
+	cfg.GDPR.TCF2.Purpose8.EnforcePurpose = TCF2FullEnforcement
+	cfg.GDPR.TCF2.Purpose9.EnforcePurpose = TCF2FullEnforcement
 	cfg.GDPR.TCF2.Purpose10.EnforcePurpose = "invalid3"
 
 	errs := cfg.validate(v)

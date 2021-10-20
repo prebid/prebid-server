@@ -250,7 +250,7 @@ func (cfg *GDPR) validatePurposes(errs []error) []error {
 		enforcePurposeValue := purposeConfigs[i].EnforcePurpose
 		enforcePurposeField := fmt.Sprintf("gdpr.tcf2.purpose%d.enforce_purpose", (i + 1))
 
-		if enforcePurposeValue != "no" && enforcePurposeValue != "full" {
+		if enforcePurposeValue != TCF2NoEnforcement && enforcePurposeValue != TCF2FullEnforcement {
 			errs = append(errs, fmt.Errorf("%s must be \"no\" or \"full\". Got %s", enforcePurposeField, enforcePurposeValue))
 		}
 	}
@@ -269,6 +269,11 @@ func (t *GDPRTimeouts) InitTimeout() time.Duration {
 func (t *GDPRTimeouts) ActiveTimeout() time.Duration {
 	return time.Duration(t.ActiveVendorlistFetch) * time.Millisecond
 }
+
+const (
+	TCF2FullEnforcement = "full"
+	TCF2NoEnforcement   = "no"
+)
 
 // TCF2 defines the TCF2 specific configurations for GDPR
 type TCF2 struct {
@@ -1019,16 +1024,16 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("gdpr.tcf2.purpose8.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose9.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose10.enabled", true)
-	v.SetDefault("gdpr.tcf2.purpose1.enforce_purpose", "full")
-	v.SetDefault("gdpr.tcf2.purpose2.enforce_purpose", "full")
-	v.SetDefault("gdpr.tcf2.purpose3.enforce_purpose", "full")
-	v.SetDefault("gdpr.tcf2.purpose4.enforce_purpose", "full")
-	v.SetDefault("gdpr.tcf2.purpose5.enforce_purpose", "full")
-	v.SetDefault("gdpr.tcf2.purpose6.enforce_purpose", "full")
-	v.SetDefault("gdpr.tcf2.purpose7.enforce_purpose", "full")
-	v.SetDefault("gdpr.tcf2.purpose8.enforce_purpose", "full")
-	v.SetDefault("gdpr.tcf2.purpose9.enforce_purpose", "full")
-	v.SetDefault("gdpr.tcf2.purpose10.enforce_purpose", "full")
+	v.SetDefault("gdpr.tcf2.purpose1.enforce_purpose", TCF2FullEnforcement)
+	v.SetDefault("gdpr.tcf2.purpose2.enforce_purpose", TCF2FullEnforcement)
+	v.SetDefault("gdpr.tcf2.purpose3.enforce_purpose", TCF2FullEnforcement)
+	v.SetDefault("gdpr.tcf2.purpose4.enforce_purpose", TCF2FullEnforcement)
+	v.SetDefault("gdpr.tcf2.purpose5.enforce_purpose", TCF2FullEnforcement)
+	v.SetDefault("gdpr.tcf2.purpose6.enforce_purpose", TCF2FullEnforcement)
+	v.SetDefault("gdpr.tcf2.purpose7.enforce_purpose", TCF2FullEnforcement)
+	v.SetDefault("gdpr.tcf2.purpose8.enforce_purpose", TCF2FullEnforcement)
+	v.SetDefault("gdpr.tcf2.purpose9.enforce_purpose", TCF2FullEnforcement)
+	v.SetDefault("gdpr.tcf2.purpose10.enforce_purpose", TCF2FullEnforcement)
 	v.SetDefault("gdpr.tcf2.purpose_one_treatment.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose_one_treatment.access_allowed", true)
 }
@@ -1070,9 +1075,9 @@ func migrateConfigTCF2PurposeEnabledFlags(v *viper.Viper) {
 			} else {
 				glog.Warningf("%s is deprecated and should be changed to %s", oldField, newField)
 				if oldConfig {
-					v.Set(newField, "full")
+					v.Set(newField, TCF2FullEnforcement)
 				} else {
-					v.Set(newField, "no")
+					v.Set(newField, TCF2NoEnforcement)
 				}
 			}
 		}

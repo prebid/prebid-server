@@ -15,11 +15,6 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const (
-	fullEnforcement = "full"
-	noEnforcement   = "no"
-)
-
 type permissionsImpl struct {
 	cfg              config.GDPR
 	gdprDefaultValue Signal
@@ -101,7 +96,7 @@ func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consen
 		return false, nil
 	}
 
-	if p.cfg.TCF2.Purpose1.EnforcePurpose == noEnforcement {
+	if p.cfg.TCF2.Purpose1.EnforcePurpose == config.TCF2NoEnforcement {
 		return true, nil
 	}
 	consentMeta, ok := parsedConsent.(tcf2.ConsentMetadata)
@@ -143,7 +138,7 @@ func (p *permissionsImpl) allowActivities(ctx context.Context, vendorID uint16, 
 	} else {
 		passGeo = true
 	}
-	if p.cfg.TCF2.Purpose2.EnforcePurpose == fullEnforcement {
+	if p.cfg.TCF2.Purpose2.EnforcePurpose == config.TCF2FullEnforcement {
 		vendorException := p.isVendorException(consentconstants.Purpose(2), bidder)
 		allowBidRequest = p.checkPurpose(consentMeta, vendor, vendorID, consentconstants.Purpose(2), vendorException, weakVendorEnforcement)
 	} else {
