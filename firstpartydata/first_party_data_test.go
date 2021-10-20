@@ -653,7 +653,7 @@ func TestResolveFPD(t *testing.T) {
 
 				bidderFPD := resultFPD["appnexus"]
 
-				if bidderFPD.Site != nil && len(bidderFPD.Site.Ext) > 0 {
+				if outputReq.Site != nil && len(outputReq.Site.Ext) > 0 {
 					resSiteExt := bidderFPD.Site.Ext
 					expectedSiteExt := outputReq.Site.Ext
 					bidderFPD.Site.Ext = nil
@@ -662,7 +662,7 @@ func TestResolveFPD(t *testing.T) {
 
 					assert.Equal(t, outputReq.Site, bidderFPD.Site, "Site is incorrect")
 				}
-				if bidderFPD.App != nil && len(bidderFPD.App.Ext) > 0 {
+				if outputReq.App != nil && len(outputReq.App.Ext) > 0 {
 					resAppExt := bidderFPD.App.Ext
 					expectedAppExt := outputReq.App.Ext
 					bidderFPD.App.Ext = nil
@@ -671,7 +671,7 @@ func TestResolveFPD(t *testing.T) {
 
 					assert.Equal(t, outputReq.App, bidderFPD.App, "App is incorrect")
 				}
-				if bidderFPD.User != nil && len(bidderFPD.User.Ext) > 0 {
+				if outputReq.User != nil && len(outputReq.User.Ext) > 0 {
 					resUserExt := bidderFPD.User.Ext
 					expectedUserExt := outputReq.User.Ext
 					bidderFPD.User.Ext = nil
