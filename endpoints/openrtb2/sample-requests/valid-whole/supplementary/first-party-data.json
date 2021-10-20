@@ -1,7 +1,7 @@
 {
   "description": "Valid request with First party data for two bidders, both have global and bidder specific fpd",
   "mockBidRequest": {
-    "id": "bidreq_id",
+    "id": "bid_req_id",
     "imp": [
       {
         "id": "1_0",
@@ -42,42 +42,36 @@
         "len": 900,
         "data": [
           {
-            "id": "fpdSiteId!3",
-            "name": "ReqSiteContentDataName"
+            "id": "reqContentDataSiteId1",
+            "name": "reqContentDataSiteName1"
           }
         ]
       },
       "ext": {
         "amp": 1,
         "data": {
-          "someappfpd": "fpdSiteId!2"
+          "somesitefpd": "fpdSite"
         }
       }
     },
-    "device": {
-      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.87 Safari/537.36",
-      "ip": "123.145.167.10",
-      "devicetype": 1,
-      "ifa": "AA000"
-    },
     "user": {
       "id": "reqUserID",
-      "keywords": "userKeyword!",
+      "keywords": "userKeyword",
       "yob": 1982,
       "gender": "M",
       "data": [
         {
-          "id": "fpdSiteId!5",
-          "name": "userDataName1"
+          "id": "reqDataUserId1",
+          "name": "reqDataUserName1"
         },
         {
-          "id": "fpdSiteId!6",
-          "name": "userDataName2"
+          "id": "reqDataUserId2",
+          "name": "reqDataUserName2"
         }
       ],
       "ext": {
         "data": {
-          "moreuserdata": "moremyfpduserdata"
+          "moreuserdata": "morefpduserdata"
         }
       }
     },
@@ -88,19 +82,19 @@
       "prebid": {
         "data": {
           "bidders": [
-            "telaria",
-            "appnexus"
+            "bidder1",
+            "bidder2"
           ]
         },
         "bidderconfig": [
           {
             "bidders": [
-              "appnexus"
+              "bidder1"
             ],
             "config": {
               "ortb2": {
                 "site": {
-                  "id": "fpdSiteId!1",
+                  "id": "fpdSiteId",
                   "keywords": "fpd keywords!",
                   "data": [
                     {
@@ -125,23 +119,23 @@
           },
           {
             "bidders": [
-              "telaria"
+              "bidder2"
             ],
             "config": {
               "ortb2": {
                 "user": {
-                  "id": "fpdSiteId!4",
+                  "id": "fpdUserId",
                   "yob": 2011,
                   "gender": "F",
                   "keywords": "fpd keywords",
                   "data": [
                     {
-                      "id": "fpdSiteId!8",
-                      "name": "userDataName2"
+                      "id": "fpdUserDataId1",
+                      "name": "fpdUserDataName1"
                     },
                     {
-                      "id": "fpdSiteId!9",
-                      "name": "userDataName3"
+                      "id": "fpdUserDataId2",
+                      "name": "fpdUserDataName2"
                     }
                   ],
                   "ext": {

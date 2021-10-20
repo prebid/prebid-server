@@ -2542,15 +2542,15 @@ func TestAuctionFirstPartyData(t *testing.T) {
 
 	assert.Len(t, resultFPD, 2, "Result FPD length is incorrect")
 
-	assert.NotNil(t, resultFPD[openrtb_ext.BidderName("appnexus")], "Result FPD for Appnexus is incorrect")
-	assert.NotNil(t, resultFPD[openrtb_ext.BidderName("appnexus")].Site, "Result FPD for Appnexus.Site is incorrect")
-	assert.Nil(t, resultFPD[openrtb_ext.BidderName("appnexus")].App, "Result FPD for Appnexus.App is incorrect")
-	assert.NotNil(t, resultFPD[openrtb_ext.BidderName("appnexus")].User, "Result FPD for Appnexus.User is incorrect")
+	assert.NotNil(t, resultFPD[openrtb_ext.BidderName("bidder1")], "Result FPD for bidder1 is incorrect")
+	assert.NotNil(t, resultFPD[openrtb_ext.BidderName("bidder1")].Site, "Result FPD for bidder1.Site is incorrect")
+	assert.Nil(t, resultFPD[openrtb_ext.BidderName("bidder1")].App, "Result FPD for bidder1.App is incorrect")
+	assert.NotNil(t, resultFPD[openrtb_ext.BidderName("bidder1")].User, "Result FPD for bidder1.User is incorrect")
 
-	assert.NotNil(t, resultFPD[openrtb_ext.BidderName("telaria")], "Result FPD for Telaria is incorrect")
-	assert.NotNil(t, resultFPD[openrtb_ext.BidderName("telaria")].Site, "Result FPD for Telaria.Site is incorrect")
-	assert.Nil(t, resultFPD[openrtb_ext.BidderName("telaria")].App, "Result FPD for Telaria.App is incorrect")
-	assert.NotNil(t, resultFPD[openrtb_ext.BidderName("telaria")].User, "Result FPD for Telaria.User is incorrect")
+	assert.NotNil(t, resultFPD[openrtb_ext.BidderName("bidder2")], "Result FPD for bidder2 is incorrect")
+	assert.NotNil(t, resultFPD[openrtb_ext.BidderName("bidder2")].Site, "Result FPD for bidder2.Site is incorrect")
+	assert.Nil(t, resultFPD[openrtb_ext.BidderName("bidder2")].App, "Result FPD for bidder2.App is incorrect")
+	assert.NotNil(t, resultFPD[openrtb_ext.BidderName("bidder2")].User, "Result FPD for bidder2.User is incorrect")
 
 	assert.Nil(t, resultRequest.App, "Result request App should be nil")
 	assert.Nil(t, resultRequest.Site.Content.Data, "Result request Site.Content.Data is incorrect")
