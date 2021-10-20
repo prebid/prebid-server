@@ -127,8 +127,8 @@ func TestExtractGlobalFPD(t *testing.T) {
 			}`),
 			expectedFpd: map[string][]byte{
 				"app":  []byte(`{"someappfpd": "appfpdDataTest"}`),
-				"user": {},
-				"site": {},
+				"user": nil,
+				"site": nil,
 			},
 		},
 		{
@@ -172,9 +172,9 @@ func TestExtractGlobalFPD(t *testing.T) {
   				}
 			}`),
 			expectedFpd: map[string][]byte{
-				"app":  {},
+				"app":  nil,
 				"user": []byte(`{"someuserfpd": "userfpdDataTest"}`),
-				"site": {},
+				"site": nil,
 			},
 		},
 		{
@@ -225,9 +225,9 @@ func TestExtractGlobalFPD(t *testing.T) {
   				}
 			}`),
 			expectedFpd: map[string][]byte{
-				"app":  {},
-				"user": {},
-				"site": {},
+				"app":  nil,
+				"user": nil,
+				"site": nil,
 			},
 		},
 		{
@@ -274,8 +274,8 @@ func TestExtractGlobalFPD(t *testing.T) {
   				}
 			}`),
 			expectedFpd: map[string][]byte{
-				"app":  {},
-				"user": {},
+				"app":  nil,
+				"user": nil,
 				"site": []byte(`{"someappfpd": true}`),
 			},
 		},
@@ -293,25 +293,9 @@ func TestExtractGlobalFPD(t *testing.T) {
 		err = json.Unmarshal(test.output, &outputTestReq)
 		assert.NoError(t, err, "Error should be nil")
 
-		if fpd[userKey] != nil {
-			if string(inputTestReq.User.Ext) != "" && string(outputTestReq.User.Ext) != "" {
-				assert.JSONEq(t, string(inputTestReq.User.Ext), string(outputTestReq.User.Ext), "Result is incorrect")
-			}
-			assert.Equal(t, test.expectedFpd[userKey], fpd[userKey], "FPD is incorrect")
-		}
-		if fpd[appKey] != nil {
-			if string(inputTestReq.App.Ext) != "" && string(outputTestReq.App.Ext) != "" {
-				assert.JSONEq(t, string(inputTestReq.App.Ext), string(outputTestReq.App.Ext), "Result is incorrect")
-			}
-			assert.Equal(t, test.expectedFpd[appKey], fpd[appKey], "FPD is incorrect")
-		}
-		if fpd[siteKey] != nil {
-			if string(inputTestReq.Site.Ext) != "" && string(outputTestReq.Site.Ext) != "" {
-				assert.JSONEq(t, string(inputTestReq.Site.Ext), string(outputTestReq.Site.Ext), "Result is incorrect")
-			}
-			assert.Equal(t, test.expectedFpd[siteKey], fpd[siteKey], "FPD is incorrect")
-		}
-
+		assert.Equal(t, test.expectedFpd[userKey], fpd[userKey], "Incorrect User FPD")
+		assert.Equal(t, test.expectedFpd[appKey], fpd[appKey], "Incorrect App FPD")
+		assert.Equal(t, test.expectedFpd[siteKey], fpd[siteKey], "Incorrect Site FPDt")
 	}
 }
 
@@ -319,70 +303,62 @@ func TestExtractOpenRtbGlobalFPD(t *testing.T) {
 
 	testCases := []struct {
 		description     string
-		input           []byte
-		output          []byte
+		input           openrtb2.BidRequest
+		output          openrtb2.BidRequest
 		expectedFpdData map[string][]openrtb2.Data
 	}{
 		{
 			description: "Site, app and user data present",
-			input: []byte(`{
-  				"id": "bid_id",
-			 	"imp":[{"id":"impid"}],
-  				"site": {
-  				  "id":"reqSiteId",
-				  "content": {
-					"data":[
-						{ 
-						  "id": "siteDataId1",
-						  "name": "siteDataName1"
+			input: openrtb2.BidRequest{
+				ID: "bid_id",
+				Imp: []openrtb2.Imp{
+					{ID: "impid"},
+				},
+				Site: &openrtb2.Site{
+					ID: "reqSiteId",
+					Content: &openrtb2.Content{
+						Data: []openrtb2.Data{
+							{ID: "siteDataId1", Name: "siteDataName1"},
+							{ID: "siteDataId2", Name: "siteDataName2"},
 						},
-						{
- 						  "id": "siteDataId2",
-            			  "name": "siteDataName2"
-						}
-					]
-				  }
-  				},
-  				"user": {
-  				  "id": "reqUserID",
-  				  "yob": 1982,
-  				  "gender": "M",
-				  "data":[
-						{ 
-						  "id": "userDataId1",
-						  "name": "userDataName1"
-						}
-					]
-  				},
-  				"app": {
-  				  "id": "appId",
-					"content":{
-						"data": [
-							{ 
-							  "id": "appDataId1",
-							  "name": "appDataName1"
-							}
-						]
-					}
-  				}
-			}`),
-			output: []byte(`{
-  				"id": "bid_id",
-				"imp":[{"id":"impid"}],
-  				"site": {
-  				  "id":"reqSiteId",
-				  "content": {}
-  				},
-  				"user": {
-  				  "id": "reqUserID",
-  				  "yob": 1982,
-  				  "gender": "M"
-  				},
-  				"app": {
-  				  "id": "appId",
-				  "content": {}
-  				}
-			}`),
+					},
+				},
+				User: &openrtb2.User{
+					ID:     "reqUserID",
+					Yob:    1982,
+					Gender: "M",
+					Data: []openrtb2.Data{
+						{ID: "userDataId1", Name: "userDataName1"},
+					},
+				},
+				App: &openrtb2.App{
+					ID: "appId",
+					Content: &openrtb2.Content{
+						Data: []openrtb2.Data{
+							{ID: "appDataId1", Name: "appDataName1"},
+						},
+					},
+				},
+			},
+			output: openrtb2.BidRequest{
+				ID: "bid_id",
+				Imp: []openrtb2.Imp{
+					{ID: "impid"},
+				},
+				Site: &openrtb2.Site{
+					ID:      "reqSiteId",
+					Content: &openrtb2.Content{},
+				},
+				User: &openrtb2.User{
+					ID:     "reqUserID",
+					Yob:    1982,
+					Gender: "M",
+				},
+				App: &openrtb2.App{
+					ID:      "appId",
+					Content: &openrtb2.Content{},
+				},
+			},
 			expectedFpdData: map[string][]openrtb2.Data{
 				siteContentDataKey: {{ID: "siteDataId1", Name: "siteDataName1"}, {ID: "siteDataId2", Name: "siteDataName2"}},
 				userDataKey:        {{ID: "userDataId1", Name: "userDataName1"}},
@@ -391,14 +367,18 @@ func TestExtractOpenRtbGlobalFPD(t *testing.T) {
 		},
 		{
 			description: "No Site, app or user data present",
-			input: []byte(`{
-  				"id": "bid_id",
-			 	"imp":[{"id":"impid"}]
-			}`),
-			output: []byte(`{
-  				"id": "bid_id",
-				"imp":[{"id":"impid"}]
-			}`),
+			input: openrtb2.BidRequest{
+				ID: "bid_id",
+				Imp: []openrtb2.Imp{
+					{ID: "impid"},
+				},
+			},
+			output: openrtb2.BidRequest{
+				ID: "bid_id",
+				Imp: []openrtb2.Imp{
+					{ID: "impid"},
+				},
+			},
 			expectedFpdData: map[string][]openrtb2.Data{
 				siteContentDataKey: nil,
 				userDataKey:        nil,
@@ -407,31 +387,32 @@ func TestExtractOpenRtbGlobalFPD(t *testing.T) {
 		},
 		{
 			description: "Site only data present",
-			input: []byte(`{
-  				"id": "bid_id",
-			 	"imp":[{"id":"impid"}],
-  				"site": {
-  				  "id": "reqSiteID",
-  				  "page": "test/page",
-    			  "content":{
-					"data":[
-						{ 
-						  "id": "siteDataId1",
-						  "name": "siteDataName1"
-						}
-					]
-				  }
-  				}
-			}`),
-			output: []byte(`{
-  				"id": "bid_id",
-				"imp":[{"id":"impid"}],
-				"site":{
-					 "id": "reqSiteID",
-  				     "page": "test/page",
-					 "content":{}
-				}
-			}`),
+			input: openrtb2.BidRequest{
+				ID: "bid_id",
+				Imp: []openrtb2.Imp{
+					{ID: "impid"},
+				},
+				Site: &openrtb2.Site{
+					ID:   "reqSiteId",
+					Page: "test/page",
+					Content: &openrtb2.Content{
+						Data: []openrtb2.Data{
+							{ID: "siteDataId1", Name: "siteDataName1"},
+						},
+					},
+				},
+			},
+			output: openrtb2.BidRequest{
+				ID: "bid_id",
+				Imp: []openrtb2.Imp{
+					{ID: "impid"},
+				},
+				Site: &openrtb2.Site{
+					ID:      "reqSiteId",
+					Page:    "test/page",
+					Content: &openrtb2.Content{},
+				},
+			},
 			expectedFpdData: map[string][]openrtb2.Data{
 				siteContentDataKey: {{ID: "siteDataId1", Name: "siteDataName1"}},
 				userDataKey:        nil,
@@ -440,29 +421,30 @@ func TestExtractOpenRtbGlobalFPD(t *testing.T) {
 		},
 		{
 			description: "App only data present",
-			input: []byte(`{
-  				"id": "bid_id",
-			 	"imp":[{"id":"impid"}],
-  				"app": {
-  				  "id": "reqAppID",
-    			  "content":{
-					"data":[
-						{ 
-						  "id": "appDataId1",
-						  "name": "appDataName1"
-						}
-					]
-				  }
-  				}
-			}`),
-			output: []byte(`{
-  				"id": "bid_id",
-				"imp":[{"id":"impid"}],
-				"app":{
-					 "id": "reqAppID",
-					 "content":{}
-				}
-			}`),
+			input: openrtb2.BidRequest{
+				ID: "bid_id",
+				Imp: []openrtb2.Imp{
+					{ID: "impid"},
+				},
+				App: &openrtb2.App{
+					ID: "reqAppId",
+					Content: &openrtb2.Content{
+						Data: []openrtb2.Data{
+							{ID: "appDataId1", Name: "appDataName1"},
+						},
+					},
+				},
+			},
+			output: openrtb2.BidRequest{
+				ID: "bid_id",
+				Imp: []openrtb2.Imp{
+					{ID: "impid"},
+				},
+				App: &openrtb2.App{
+					ID:      "reqAppId",
+					Content: &openrtb2.Content{},
+				},
+			},
 			expectedFpdData: map[string][]openrtb2.Data{
 				siteContentDataKey: nil,
 				userDataKey:        nil,
@@ -471,42 +453,43 @@ func TestExtractOpenRtbGlobalFPD(t *testing.T) {
 		},
 		{
 			description: "User only data present",
-			input: []byte(`{
-  				"id": "bid_id",
-			 	"imp":[{"id":"impid"}],
-  				"site": {
-  				  "id":"reqSiteId"
-  				},
-  				"user": {
-  				  "id": "reqUserID",
-  				  "yob": 1982,
-  				  "gender": "M",
-				  "data":[
-						{ 
-						  "id": "userDataId1",
-						  "name": "userDataName1"
-						}
-					]
-  				},
-  				"app": {
-  				  "id": "appId"
-  				}
-			}`),
-			output: []byte(`{
-  				"id": "bid_id",
-				"imp":[{"id":"impid"}],
-  				"site": {
-  				  "id":"reqSiteId"
-  				},
-  				"user": {
-  				  "id": "reqUserID",
-  				  "yob": 1982,
-  				  "gender": "M"
-  				},
-  				"app": {
-  				  "id": "appId"
-  				}
-			}`),
+			input: openrtb2.BidRequest{
+				ID: "bid_id",
+				Imp: []openrtb2.Imp{
+					{ID: "impid"},
+				},
+				Site: &openrtb2.Site{
+					ID: "reqSiteId",
+				},
+				App: &openrtb2.App{
+					ID: "reqAppId",
+				},
+				User: &openrtb2.User{
+					ID:     "reqUserId",
+					Yob:    1982,
+					Gender: "M",
+					Data: []openrtb2.Data{
+						{ID: "userDataId1", Name: "userDataName1"},
+					},
+				},
+			},
+			output: openrtb2.BidRequest{
+				ID: "bid_id",
+				Imp: []openrtb2.Imp{
+					{ID: "impid"},
+				},
+				Site: &openrtb2.Site{
+					ID: "reqSiteId",
+				},
+				App: &openrtb2.App{
+					ID: "reqAppId",
+				},
+				User: &openrtb2.User{
+					ID:     "reqUserId",
+					Yob:    1982,
+					Gender: "M",
+				},
+			},
 			expectedFpdData: map[string][]openrtb2.Data{
 				siteContentDataKey: nil,
 				userDataKey:        {{ID: "userDataId1", Name: "userDataName1"}},
@@ -516,16 +499,11 @@ func TestExtractOpenRtbGlobalFPD(t *testing.T) {
 	}
 	for _, test := range testCases {
 
-		var req openrtb2.BidRequest
-		err := json.Unmarshal(test.input, &req)
-		assert.NoError(t, err, "Error should be nil")
+		inputReq := &test.input
 
-		res := ExtractOpenRtbGlobalFPD(&req)
+		res := ExtractOpenRtbGlobalFPD(inputReq)
 
-		resReq, err := json.Marshal(req)
-		assert.NoError(t, err, "Error should be nil")
-
-		assert.JSONEq(t, string(test.output), string(resReq), "Result request is incorrect")
+		assert.Equal(t, &test.output, inputReq, "Result request is incorrect")
 		assert.Equal(t, test.expectedFpdData[siteContentDataKey], res[siteContentDataKey], "siteContentData data is incorrect")
 		assert.Equal(t, test.expectedFpdData[userDataKey], res[userDataKey], "userData is incorrect")
 		assert.Equal(t, test.expectedFpdData[appContentDataKey], res[appContentDataKey], "appContentData is incorrect")
