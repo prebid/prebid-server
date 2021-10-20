@@ -287,7 +287,7 @@ func removeWrapper(ad string) string {
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	bidder := &AdgenerationAdapter{
 		config.Endpoint,
-		"1.0.2",
+		"1.0.3",
 		"JPY",
 	}
 	return bidder, nil
