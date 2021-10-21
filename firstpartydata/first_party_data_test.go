@@ -3,10 +3,10 @@ package firstpartydata
 import (
 	"encoding/json"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
-	"strings"
 	"testing"
 )
 
@@ -531,7 +531,7 @@ func TestExtractBidderConfigFPD(t *testing.T) {
 			fpdData, err := ExtractBidderConfigFPD(&reqExt)
 
 			if len(fpdFile.ValidationErrors) > 0 {
-				assert.EqualError(t, err, fpdFile.ValidationErrors[0], "Incorrect first party data error message")
+				assert.Equal(t, err.Error(), fpdFile.ValidationErrors[0].Message, "Incorrect first party data error message")
 				continue
 			}
 
@@ -681,9 +681,7 @@ func TestResolveFPD(t *testing.T) {
 					assert.Equal(t, outputReq.User, bidderFPD.User, "User is incorrect")
 				}
 			} else {
-				for i := range fpdFile.ValidationErrors {
-					assert.Contains(t, errL[i].Error(), fpdFile.ValidationErrors[i], "Incorrect first party data warning message")
-				}
+				assert.ElementsMatch(t, errL, fpdFile.ValidationErrors, "Incorrect first party data warning message")
 			}
 
 		}
@@ -715,18 +713,8 @@ func TestExtractFPDForBidders(t *testing.T) {
 			resultFPD, errL := ExtractFPDForBidders(resultRequest)
 
 			if len(fpdFile.ValidationErrors) > 0 {
-				assert.Equal(t, len(fpdFile.ValidationErrors), len(errL), "")
-				//errors can be returned in a different order from how they are specified in file
-				for _, actualValidationErr := range errL {
-					errorContainsText := false
-					for _, expectedValidationErr := range fpdFile.ValidationErrors {
-						if strings.Contains(actualValidationErr.Error(), expectedValidationErr) {
-							errorContainsText = true
-							break
-						}
-					}
-					assert.True(t, errorContainsText, "Incorrect validation message")
-				}
+				assert.Equal(t, len(fpdFile.ValidationErrors), len(errL), "Incorrect number of errors was returned")
+				assert.ElementsMatch(t, errL, fpdFile.ValidationErrors, "Incorrect errors were returned")
 				//in case or error no further assertions needed
 				continue
 			}
@@ -810,5 +798,5 @@ type fpdFile struct {
 	BidderConfigFPD    map[openrtb_ext.BidderName]*openrtb_ext.ORTB2      `json:"bidderConfigFPD,omitempty"`
 	BiddersFPDResolved map[openrtb_ext.BidderName]*ResolvedFirstPartyData `json:"biddersFPDResolved,omitempty"`
 	GlobalFPD          map[string]json.RawMessage                         `json:"globalFPD,omitempty"`
-	ValidationErrors   []string                                           `json:"validationErrors,omitempty"`
+	ValidationErrors   []*errortypes.BadInput                             `json:"validationErrors,omitempty"`
 }

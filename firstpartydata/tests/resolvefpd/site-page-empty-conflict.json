@@ -37,6 +37,7 @@
     }
   },
   "validationErrors": [
-    "incorrect First Party Data for bidder appnexus: Site object cannot set empty page if req.site.id is empty"]
+    {"Message": "incorrect First Party Data for bidder appnexus: Site object cannot set empty page if req.site.id is empty"}
+  ]
 }
 
