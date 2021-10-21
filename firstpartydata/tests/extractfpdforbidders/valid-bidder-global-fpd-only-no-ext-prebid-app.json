@@ -1,0 +1,38 @@
+{
+  "inputRequestData": {
+    "id": "bid_id",
+    "app": {
+      "id": "reqAppId",
+      "keywords": "appKeywords",
+      "publisher": {
+        "id": "1"
+      },
+      "ext": {
+        "amp": 1,
+        "data": {
+          "someappfpd": "appfpdDataTest"
+        }
+      }
+    },
+    "test": 1
+  },
+  "outputRequestData":  {
+    "id": "bid_id",
+    "app": {
+      "id": "reqAppId",
+      "keywords": "appKeywords",
+      "publisher": {
+        "id": "1"
+      },
+      "ext": {
+        "amp":1,
+        "data": {
+          "someappfpd": "appfpdDataTest"
+        }
+      }
+    },
+    "test": 1
+  },
+  "biddersFPDResolved": {},
+  "validationErrors": []
+}
