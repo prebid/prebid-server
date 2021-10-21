@@ -13,17 +13,6 @@
         "season": "season3",
         "len": 900
       }
-    },
-    "device": {
-      "ua": "testDevice",
-      "ip": "123.145.167.10",
-      "devicetype": 1,
-      "ifa": "123"
-    },
-    "user": {
-      "id": "reqUserID",
-      "yob": 1982,
-      "gender": "M"
     }
   },
   "outputRequestData": {
@@ -63,22 +52,6 @@
           "siteFpddata": "siteFpddata"
         }
       }
-    },
-    "device": {
-      "ua": "testDevice",
-      "ip": "123.145.167.10",
-      "devicetype": 1,
-      "ifa": "123"
-    },
-    "user": {
-      "id": "reqUserID",
-      "yob": 1982,
-      "gender": "M",
-      "ext": {
-        "data":{
-          "testUserFpd": "testuser"
-        }
-      }
     }
   },
   "bidderConfigFPD": {
@@ -102,14 +75,6 @@
   "globalFPD": {
     "site": {
       "siteFpd": 123
-    },
-    "app": {
-      "appFpd": {
-        "testValue": true
-      }
-    },
-    "user": {
-      "testUserFpd": "testuser"
     },
     "siteContentData":[
       {

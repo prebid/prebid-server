@@ -5,6 +5,13 @@
       "page": "http://www.foobar.com/1234.html",
       "publisher": {
         "id": "1"
+      },
+      "content": {
+        "episode": 6,
+        "title": "episodeName",
+        "series": "TvName",
+        "season": "season3",
+        "len": 900
       }
     },
     "device": {
@@ -12,11 +19,6 @@
       "ip": "123.145.167.10",
       "devicetype": 1,
       "ifa": "123"
-    },
-    "user": {
-      "id": "reqUserID",
-      "yob": 1982,
-      "gender": "M"
     }
   },
   "outputRequestData": {
@@ -27,6 +29,11 @@
         "id": "1"
       },
       "content": {
+        "episode": 6,
+        "title": "episodeName",
+        "series": "TvName",
+        "season": "season3",
+        "len": 900,
         "data": [
           {
             "id": "appData1",
@@ -40,10 +47,10 @@
       },
       "ext": {
         "data": {
+          "id":"apnAppId",
           "moreFpd": {
             "fpd": 123
           },
-          "id":"apnAppId",
           "morefpdData": "morefpddata",
           "appFpd": 123,
           "appFpddata": "appFpddata"
@@ -55,26 +62,6 @@
       "ip": "123.145.167.10",
       "devicetype": 1,
       "ifa": "123"
-    },
-    "user": {
-      "id": "reqUserID",
-      "yob": 1982,
-      "gender": "M",
-      "data": [
-        {
-          "id": "userData1",
-          "name": "userName1"
-        },
-        {
-          "id": "userData2",
-          "name": "userName2"
-        }
-      ],
-      "ext": {
-        "data": {
-          "testUserFpd": "testuser"
-        }
-      }
     }
   },
   "bidderConfigFPD": {
@@ -97,9 +84,6 @@
     "app": {
       "appFpd": 123
     },
-    "user": {
-      "testUserFpd": "testuser"
-    },
     "appContentData":[
       {
         "id": "appData1",
@@ -108,16 +92,6 @@
       {
         "id": "appData2",
         "name": "appName2"
-      }
-    ],
-    "userData": [
-      {
-        "id": "userData1",
-        "name": "userName1"
-      },
-      {
-        "id": "userData2",
-        "name": "userName2"
       }
     ]
   }

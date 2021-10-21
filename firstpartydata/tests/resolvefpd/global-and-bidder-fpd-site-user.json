@@ -16,12 +16,6 @@
     },
     "user": {
       "id": "apnUserId"
-    },
-    "device": {
-      "ua": "testDevice",
-      "ip": "123.145.167.10",
-      "devicetype": 1,
-      "ifa": "123"
     }
   },
   "outputRequestData": {
@@ -52,12 +46,6 @@
           "id": "apnSiteId"
         }
       }
-    },
-    "device": {
-      "ua": "testDevice",
-      "ip": "123.145.167.10",
-      "devicetype": 1,
-      "ifa": "123"
     },
     "user": {
       "id": "apnUserId",

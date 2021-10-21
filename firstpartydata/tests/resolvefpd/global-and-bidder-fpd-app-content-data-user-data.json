@@ -5,20 +5,7 @@
       "page": "http://www.foobar.com/1234.html",
       "publisher": {
         "id": "1"
-      },
-      "content": {
-        "episode": 6,
-        "title": "episodeName",
-        "series": "TvName",
-        "season": "season3",
-        "len": 900
       }
-    },
-    "device": {
-      "ua": "testDevice",
-      "ip": "123.145.167.10",
-      "devicetype": 1,
-      "ifa": "123"
     },
     "user": {
       "id": "reqUserID",
@@ -34,11 +21,6 @@
         "id": "1"
       },
       "content": {
-        "episode": 6,
-        "title": "episodeName",
-        "series": "TvName",
-        "season": "season3",
-        "len": 900,
         "data": [
           {
             "id": "appData1",
@@ -52,16 +34,15 @@
       },
       "ext": {
         "data": {
+          "moreFpd": {
+            "fpd": 123
+          },
+          "id":"apnAppId",
           "morefpdData": "morefpddata",
+          "appFpd": 123,
           "appFpddata": "appFpddata"
         }
       }
-    },
-    "device": {
-      "ua": "testDevice",
-      "ip": "123.145.167.10",
-      "devicetype": 1,
-      "ifa": "123"
     },
     "user": {
       "id": "reqUserID",
@@ -87,12 +68,23 @@
   "bidderConfigFPD": {
     "appnexus": {
       "app": {
-        "appFpddata":"appFpddata",
-        "morefpdData":"morefpddata"
+        "id": "apnAppId",
+        "ext": {
+          "data": {
+            "morefpdData": "morefpddata",
+            "appFpddata": "appFpddata",
+            "moreFpd": {
+              "fpd": 123
+            }
+          }
+        }
       }
     }
   },
   "globalFPD": {
+    "app": {
+      "appFpd": 123
+    },
     "user": {
       "testUserFpd": "testuser"
     },

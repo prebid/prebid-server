@@ -14,12 +14,6 @@
         "len": 900
       }
     },
-    "device": {
-      "ua": "testDevice",
-      "ip": "123.145.167.10",
-      "devicetype": 1,
-      "ifa": "123"
-    },
     "user": {
       "id": "reqUserID",
       "yob": 1982,
@@ -52,21 +46,10 @@
       },
       "ext": {
         "data": {
-          "id":"apnAppId",
-          "moreFpd": {
-            "fpd": 123
-          },
           "morefpdData": "morefpddata",
-          "appFpd": 123,
           "appFpddata": "appFpddata"
         }
       }
-    },
-    "device": {
-      "ua": "testDevice",
-      "ip": "123.145.167.10",
-      "devicetype": 1,
-      "ifa": "123"
     },
     "user": {
       "id": "reqUserID",
@@ -92,23 +75,12 @@
   "bidderConfigFPD": {
     "appnexus": {
       "app": {
-        "id": "apnAppId",
-        "ext": {
-          "data": {
-            "morefpdData": "morefpddata",
-            "appFpddata": "appFpddata",
-            "moreFpd": {
-              "fpd": 123
-            }
-          }
-        }
+        "appFpddata":"appFpddata",
+        "morefpdData":"morefpddata"
       }
     }
   },
   "globalFPD": {
-    "app": {
-      "appFpd": 123
-    },
     "user": {
       "testUserFpd": "testuser"
     },
