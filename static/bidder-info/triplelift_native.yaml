@@ -4,12 +4,10 @@ gvlVendorID: 28
 capabilities:
   app:
     mediaTypes:
-      - banner
-      - video
+      - native
   site:
     mediaTypes:
-      - banner
-      - video
+      - native
 userSync:
   # Triplelift supports user syncing but requires configuration by the host as the RedirectURL domain must be allowlisted. 
   # Contact this bidder directly at the email address above to ask about enabling user sync.
