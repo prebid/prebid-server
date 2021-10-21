@@ -1,0 +1,112 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Tapjoy Adapter Params",
+  "description": "A schema which validates params accepted by the Tapjoy adapter",
+  "type": "object",
+  "properties": {
+    "app": {
+      "type": "object",
+      "description": "An object defining additional Tapjoy app parameters",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "App ID"
+        }
+      }
+    },
+    "video": {
+      "type": "object",
+      "description": "An object defining additional Tapjoy device parameters",
+      "properties": {
+        "os": {
+          "type": "string",
+          "description": "Device OS"
+        },
+        "osv": {
+          "type": "string",
+          "description": "Device OS Version"
+        },
+        "hwv": {
+          "type": "string",
+          "description": "Device Hardware Version"
+        },
+        "make": {
+          "type": "string",
+          "description": "Device Make"
+        },
+        "model": {
+          "type": "string",
+          "description": "Device Model"
+        },
+        "device_type": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 7,
+          "description": "Device Type"
+        },
+        "country_alpha_2": {
+          "type": "string",
+          "description": "Device Geo Two Character Country Code"
+        }
+      }
+    },
+    "extensions": {
+      "type": "object",
+      "description": "An object defining Tapjoy extension parameters",
+      "properties": {
+        "app_ext": {
+          "type": "object",
+          "description": "request.app.ext"
+        },
+        "imp_ext": {
+          "type": "object",
+          "description": "request.imp.ext"
+        },
+        "regs_ext": {
+          "type": "object",
+          "description": "request.regs.ext"
+        },
+        "user_ext": {
+          "type": "object",
+          "description": "request.user.ext"
+        },
+        "video_ext": {
+          "type": "object",
+          "description": "request.imp[].video.ext"
+        },
+        "device_ext": {
+          "type": "object",
+          "description": "request.device.ext"
+        },
+        "source_ext": {
+          "type": "object",
+          "description": "request.source.ext"
+        },
+        "request_ext": {
+          "type": "object",
+          "description": "request.ext"
+        },
+        "publisher_ext": {
+          "type": "object",
+          "description": "request.app.publisher.ext"
+        }
+      }
+    },
+    "region": {
+      "type": "string",
+      "description": "A string defining region for choosing the closest Tapjoy endpoint"
+    },
+    "reward": {
+      "type": "integer",
+      "description": "An integer defining the reward (skip) from Tapjoy"
+    },
+    "skadn_supported": {
+      "type": "boolean",
+      "description": "A bool config to determine if SKADN is supported by Tapjoy"
+    },
+    "mraid_supported": {
+      "type": "boolean",
+      "description": "A bool config to determine if MRAID is supported by Tapjoy"
+    }
+  }
+}

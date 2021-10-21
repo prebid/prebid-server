@@ -147,6 +147,10 @@ data:
   PBS_ADAPTERS_RUBICONMRAID_XAPI_ENDPOINT_EU:       "http://localhost:4646/rubiconmraid_givemeads"
   PBS_ADAPTERS_RUBICONMRAID_XAPI_ENDPOINT_APAC:     "http://localhost:4646/rubiconmraid_givemeads"
 
+  # tapjoy values
+  PBS_ADAPTERS_TAPJOY_DISABLED: "false"
+  PBS_ADAPTERS_TAPJOY_ENDPOINT: "http://localhost:4646/tapjoy_givemeads"
+
   # taurusx values
   PBS_ADAPTERS_TAURUSX_DISABLED:              "false"
   PBS_ADAPTERS_TAURUSX_XAPI_ENDPOINT_US_EAST: "http://localhost:4646/taurusx_givemeads"
