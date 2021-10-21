@@ -22,10 +22,6 @@
           }
         }
       ],
-      "site": {
-        "domain": "bridge.richmediastudio.com",
-        "page": "https://bridge.richmediastudio.com//ab083674fb8200b877a6983126e4477d/PrebidServer/indexRa.html?pbjs_debug=true"
-      },
       "device": {
         "ip": "11.222.33.44",
         "ifa": "zxcjbzxmc-zxcbmz-zxbcz-zxczx"
@@ -52,7 +48,7 @@
               {
                 "id": "div-gpt-ad-1460505748561-0",
                 "tagid" : "OsNsyeF68q",
-                "secure": 1,
+                "secure": 0,
                 "banner": {
                     "format" : [{
                           "w": 300,
@@ -70,10 +66,6 @@
                 }
               }
             ],
-            "site": {
-              "domain": "bridge.richmediastudio.com",
-              "page": "https://bridge.richmediastudio.com//ab083674fb8200b877a6983126e4477d/PrebidServer/indexRa.html?pbjs_debug=true"
-            },
             "device": {
                 "ip": "11.222.33.44",
                 "ifa": "zxcjbzxmc-zxcbmz-zxbcz-zxczx"

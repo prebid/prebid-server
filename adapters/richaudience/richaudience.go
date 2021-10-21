@@ -43,10 +43,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		return nil, []error{err}
 	}
 
-	if err = validateUser(request); err != nil {
-		return nil, []error{err}
-	}
-
 	req, err := json.Marshal(request)
 	if err != nil {
 		return nil, []error{err}
@@ -183,19 +179,6 @@ func validateDevice(request *openrtb2.BidRequest) (err error) {
 		return err
 	}
 	return err
-}
-
-func validateUser(request *openrtb2.BidRequest) (err error) {
-	if request.User != nil {
-		if request.User.Ext != nil {
-			var extUser openrtb_ext.ExtUser
-			if err := json.Unmarshal(request.User.Ext, &extUser); err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
 }
 
 func parseImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpRichaudience, error) {
