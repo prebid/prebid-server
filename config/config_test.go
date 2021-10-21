@@ -130,7 +130,6 @@ func TestDefaults(t *testing.T) {
 	cmpInts(t, "max_request_size", int(cfg.MaxRequestSize), 1024*256)
 	cmpInts(t, "host_cookie.ttl_days", int(cfg.HostCookie.TTL), 90)
 	cmpInts(t, "host_cookie.max_cookie_size_bytes", cfg.HostCookie.MaxCookieSizeBytes, 0)
-	cmpStrings(t, "datacache.type", cfg.DataCache.Type, "dummy")
 	cmpStrings(t, "adapters.pubmatic.endpoint", cfg.Adapters[string(openrtb_ext.BidderPubmatic)].Endpoint, "https://hbopenbid.pubmatic.com/translator?source=prebid-server")
 	cmpInts(t, "currency_converter.fetch_interval_seconds", cfg.CurrencyConverter.FetchIntervalSeconds, 1800)
 	cmpStrings(t, "currency_converter.fetch_url", cfg.CurrencyConverter.FetchURL, "https://cdn.jsdelivr.net/gh/prebid/currency-file@1/latest.json")
@@ -144,7 +143,6 @@ func TestDefaults(t *testing.T) {
 	cmpStrings(t, "stored_requests.filesystem.directorypath", "./stored_requests/data/by_id", cfg.StoredRequests.Files.Path)
 	cmpBools(t, "auto_gen_source_tid", cfg.AutoGenSourceTID, true)
 	cmpBools(t, "generate_bid_id", cfg.GenerateBidID, false)
-	cmpBools(t, "enable_legacy_auction", cfg.EnableLegacyAuction, false)
 
 	//Assert purpose VendorExceptionMap hash tables were built correctly
 	expectedTCF2 := TCF2{
@@ -327,11 +325,6 @@ metrics:
     account_adapter_details: true
     adapter_connections_metrics: true
     adapter_gdpr_request_blocked: true
-datacache:
-  type: postgres
-  filename: /usr/db/db.db
-  cache_size: 10000000
-  ttl_seconds: 3600
 adapters:
   appnexus:
     endpoint: http://ib.adnxs.com/some/endpoint
@@ -365,7 +358,6 @@ request_validation:
     ipv4_private_networks: ["1.1.1.0/24"]
     ipv6_private_networks: ["1111::/16", "2222::/16"]
 generate_bid_id: true
-enable_legacy_auction: true
 `)
 
 var adapterExtraInfoConfig = []byte(`
@@ -566,10 +558,6 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "metrics.influxdb.username", cfg.Metrics.Influxdb.Username, "admin")
 	cmpStrings(t, "metrics.influxdb.password", cfg.Metrics.Influxdb.Password, "admin1324")
 	cmpInts(t, "metrics.influxdb.metric_send_interval", cfg.Metrics.Influxdb.MetricSendInterval, 30)
-	cmpStrings(t, "datacache.type", cfg.DataCache.Type, "postgres")
-	cmpStrings(t, "datacache.filename", cfg.DataCache.Filename, "/usr/db/db.db")
-	cmpInts(t, "datacache.cache_size", cfg.DataCache.CacheSize, 10000000)
-	cmpInts(t, "datacache.ttl_seconds", cfg.DataCache.TTLSeconds, 3600)
 	cmpStrings(t, "", cfg.CacheURL.GetBaseURL(), "http://prebidcache.net")
 	cmpStrings(t, "", cfg.GetCachedAssetURL("a0eebc99-9c0b-4ef8-bb00-6bb9bd380a11"), "http://prebidcache.net/cache?uuid=a0eebc99-9c0b-4ef8-bb00-6bb9bd380a11")
 	cmpStrings(t, "adapters.appnexus.endpoint", cfg.Adapters[string(openrtb_ext.BidderAppnexus)].Endpoint, "http://ib.adnxs.com/some/endpoint")
@@ -600,7 +588,6 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "request_validation.ipv6_private_networks", cfg.RequestValidation.IPv6PrivateNetworks[1], "2222::/16")
 	cmpBools(t, "generate_bid_id", cfg.GenerateBidID, true)
 	cmpStrings(t, "debug.override_token", cfg.Debug.OverrideToken, "")
-	cmpBools(t, "enable_legacy_auction", cfg.EnableLegacyAuction, true)
 }
 
 func TestUnmarshalAdapterExtraInfo(t *testing.T) {
