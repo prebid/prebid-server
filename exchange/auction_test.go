@@ -555,12 +555,6 @@ type pbsBid struct {
 	Bidder  openrtb_ext.BidderName `json:"bidder"`
 }
 
-type cacheComparator struct {
-	freq         int
-	expectedKeys []string
-	actualKeys   []string
-}
-
 type mockCache struct {
 	scheme string
 	host   string
