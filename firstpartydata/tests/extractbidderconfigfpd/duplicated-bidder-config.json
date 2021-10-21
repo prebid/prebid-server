@@ -1,4 +1,5 @@
 {
+  "description": "Verifies error presence in case more than one bidder config specified for the same bidder",
   "inputRequestData": {
     "data": {
       "bidders": [

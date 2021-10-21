@@ -1,4 +1,5 @@
 {
+  "description": "Global and bidder FPD defined for app",
   "inputRequestData": {
     "id": "bid_id",
     "app": {

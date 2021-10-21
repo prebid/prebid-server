@@ -1,4 +1,5 @@
 {
+  "description": "Global FPD not defined and bidders FPD for two bidders is defined",
   "inputRequestData": {
     "id": "bid_id",
     "site": {

@@ -1,4 +1,5 @@
 {
+  "description": "Global and bidder FPD defined for user",
   "inputRequestData": {
     "user": {
       "id": "reqUserID",

@@ -1,4 +1,5 @@
 {
+  "description": "Incorrect bidder specific FPD: app not defined in request",
   "inputRequestData": {
     "site": {
       "page": "http://www.foobar.com/1234.html",
@@ -12,12 +13,6 @@
         "season": "season3",
         "len": 900
       }
-    },
-    "device": {
-      "ua": "testDevice",
-      "ip": "123.145.167.10",
-      "devicetype": 1,
-      "ifa": "123"
     },
     "user": {
       "id": "reqUserID",

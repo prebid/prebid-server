@@ -1,4 +1,5 @@
 {
+  "description": "Global and bidder FPD defined for app and user. Global FPD has app.content.data and user.data",
   "inputRequestData": {
     "app": {
       "id": "reqAppId",

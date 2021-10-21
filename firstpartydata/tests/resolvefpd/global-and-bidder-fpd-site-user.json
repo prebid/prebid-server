@@ -1,4 +1,5 @@
 {
+  "description": "Global FPD defined for user and bidder FPD defined for site and user",
   "inputRequestData": {
     "site": {
       "id": "reqSiteId",

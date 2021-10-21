@@ -1,4 +1,5 @@
 {
+  "description": "Global FPD is defined and req.site.content.data defined",
   "inputRequestData": {
     "id": "bid_id",
     "site": {

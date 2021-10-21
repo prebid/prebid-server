@@ -1,4 +1,5 @@
 {
+  "description": "Incorrect bidder specific FPD: site has no id and attempts to overwrite page to empty",
   "inputRequestData": {
     "site": {
       "page": "http://www.foobar.com/1234.html",

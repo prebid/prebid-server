@@ -1,12 +1,6 @@
 {
+  "description": "Incorrect bidder specific FPD: site not defined in request",
   "inputRequestData": {
-    "device": {
-      "ua": "testDevice",
-      "ip": "123.145.167.10",
-      "devicetype": 1,
-      "ifa": "123"
-    },
-
     "user": {
       "id": "reqUserID",
       "yob": 1982,

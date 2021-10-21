@@ -1,4 +1,5 @@
 {
+  "description": "Global and bidder FPD defined for app",
   "inputRequestData": {
     "app": {
       "id": "reqAppId",
@@ -33,17 +34,7 @@
         "title": "episodeName",
         "series": "TvName",
         "season": "season3",
-        "len": 900,
-        "data": [
-          {
-            "id": "appData1",
-            "name": "appName1"
-          },
-          {
-            "id": "appData2",
-            "name": "appName2"
-          }
-        ]
+        "len": 900
       },
       "ext": {
         "data": {
@@ -83,17 +74,7 @@
   "globalFPD": {
     "app": {
       "appFpd": 123
-    },
-    "appContentData":[
-      {
-        "id": "appData1",
-        "name": "appName1"
-      },
-      {
-        "id": "appData2",
-        "name": "appName2"
-      }
-    ]
+    }
   }
 }
 

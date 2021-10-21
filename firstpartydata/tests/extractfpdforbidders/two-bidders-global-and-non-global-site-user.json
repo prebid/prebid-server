@@ -1,4 +1,5 @@
 {
+  "description": "Global FPD for one bidder defined and bidders FPD for two bidders is defined, req.site and req.user present",
   "inputRequestData": {
     "id": "bid_id",
     "site": {

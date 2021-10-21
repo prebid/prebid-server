@@ -1,4 +1,5 @@
 {
+  "description": "Bidder FPD defined only for user",
   "inputRequestData": {
     "user": {
       "id": "reqUserID",

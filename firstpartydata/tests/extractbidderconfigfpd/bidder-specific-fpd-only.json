@@ -1,4 +1,5 @@
 {
+  "description": "Extracts bidder configs for multiple bidders, only bidder configs present",
   "inputRequestData": {
     "data": {},
     "bidderconfig": [

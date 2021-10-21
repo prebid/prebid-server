@@ -1,4 +1,5 @@
 {
+  "description": "Global FPD is empty and bidder FPD defined for site",
   "inputRequestData": {
     "id": "bid_id",
     "site": {

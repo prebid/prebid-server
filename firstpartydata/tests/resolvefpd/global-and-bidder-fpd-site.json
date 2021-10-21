@@ -1,4 +1,5 @@
 {
+  "description": "Global and bidder FPD defined for site",
   "inputRequestData": {
     "site": {
       "id": "reqSiteId",
@@ -28,17 +29,7 @@
         "title": "episodeName",
         "series": "TvName",
         "season": "season3",
-        "len": 900,
-        "data": [
-          {
-            "id": "siteData1",
-            "name": "siteName1"
-          },
-          {
-            "id": "siteData2",
-            "name": "siteName2"
-          }
-        ]
+        "len": 900
       },
       "ext": {
         "data": {
@@ -75,17 +66,7 @@
   "globalFPD": {
     "site": {
       "siteFpd": 123
-    },
-    "siteContentData":[
-      {
-        "id": "siteData1",
-        "name": "siteName1"
-      },
-      {
-        "id": "siteData2",
-        "name": "siteName2"
-      }
-    ]
+    }
   }
 }
 

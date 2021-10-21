@@ -1,11 +1,6 @@
 {
+  "description": "Incorrect bidder specific FPD: user not defined in request",
   "inputRequestData": {
-    "device": {
-      "ua": "testDevice",
-      "ip": "123.145.167.10",
-      "devicetype": 1,
-      "ifa": "123"
-    },
     "test": 1,
     "at": 1,
     "tmax": 5000
