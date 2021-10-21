@@ -1,0 +1,38 @@
+{
+  "inputRequestData": {
+    "id": "bid_id",
+    "user": {
+      "id": "reqUserId",
+      "keywords": "userKeywords",
+      "publisher": {
+        "id": "1"
+      },
+      "ext": {
+        "amp": 1,
+        "data": {
+          "someuserfpd": "userfpdDataTest"
+        }
+      }
+    },
+    "test": 1
+  },
+  "outputRequestData":  {
+    "id": "bid_id",
+    "user": {
+      "id": "reqUserId",
+      "keywords": "userKeywords",
+      "publisher": {
+        "id": "1"
+      },
+      "ext": {
+        "amp":1,
+        "data": {
+          "someuserfpd": "userfpdDataTest"
+        }
+      }
+    },
+    "test": 1
+  },
+  "biddersFPDResolved": {},
+  "validationErrors": []
+}
