@@ -155,7 +155,9 @@ func cleanOpenRTBRequests(ctx context.Context,
 			}
 		}
 
-		applyFPD(req.FirstPartyData, bidderRequest.BidRequest, bidderRequest.BidderName)
+		if req.FirstPartyData != nil && req.FirstPartyData[bidderRequest.BidderName] != nil {
+			applyFPD(req.FirstPartyData[bidderRequest.BidderName], bidderRequest.BidRequest)
+		}
 
 		if bidRequestAllowed {
 			privacyEnforcement.Apply(bidderRequest.BidRequest)
@@ -764,16 +766,14 @@ func writeNameVersionRecord(sb *strings.Builder, name, version string) {
 	sb.WriteString(version)
 }
 
-func applyFPD(fpd map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData, bidReq *openrtb2.BidRequest, bidderName openrtb_ext.BidderName) {
-	if fpd != nil && fpd[bidderName] != nil {
-		if fpd[bidderName].Site != nil {
-			bidReq.Site = fpd[bidderName].Site
-		}
-		if fpd[bidderName].App != nil {
-			bidReq.App = fpd[bidderName].App
-		}
-		if fpd[bidderName].User != nil {
-			bidReq.User = fpd[bidderName].User
-		}
+func applyFPD(fpd *firstpartydata.ResolvedFirstPartyData, bidReq *openrtb2.BidRequest) {
+	if fpd.Site != nil {
+		bidReq.Site = fpd.Site
+	}
+	if fpd.App != nil {
+		bidReq.App = fpd.App
+	}
+	if fpd.User != nil {
+		bidReq.User = fpd.User
 	}
 }

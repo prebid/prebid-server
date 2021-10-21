@@ -2632,20 +2632,6 @@ func TestApplyFPD(t *testing.T) {
 		outputRequest openrtb2.BidRequest
 	}{
 		{
-			description:   "Nil fpd",
-			inputFpd:      nil,
-			bidderName:    openrtb_ext.BidderName(""),
-			inputRequest:  openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}},
-			outputRequest: openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}},
-		},
-		{
-			description:   "No fpd for bidder",
-			inputFpd:      fpd,
-			bidderName:    openrtb_ext.BidderName("test1"),
-			inputRequest:  openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}},
-			outputRequest: openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}},
-		},
-		{
 			description:   "Fpd for bidder with nil site/app/user",
 			inputFpd:      fpd,
 			bidderName:    bidderNameTest,
@@ -2676,7 +2662,7 @@ func TestApplyFPD(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		applyFPD(testCase.inputFpd, &testCase.inputRequest, testCase.bidderName)
+		applyFPD(testCase.inputFpd[testCase.bidderName], &testCase.inputRequest)
 		assert.Equal(t, testCase.inputRequest, testCase.outputRequest, fmt.Sprintf("incorrect request after applying fpd, testcase %s", testCase.description))
 
 	}
