@@ -1,42 +1,28 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "title": "Adform Adapter Params",
-  "description": "A schema which validates params accepted by the Adform adapter",
+  "description": "A schema which validates params accepted by the adf adapter",
   "type": "object",
   "properties": {
     "mid": {
       "type": ["integer", "string"],
+      "pattern": "^\\d+$",
       "description": "An ID which identifies the placement selling the impression"
     },
-    "priceType": {
-      "type": "string",
-      "enum": ["gross", "net"],
-      "description": "An expected price type (net or gross) of bids."
+    "inv": {
+      "type": ["integer"],
+      "description": "An ID which identifies the Adform inventory source id"
     },
-    "mkv": {
-      "type": "string",
-      "description": "Comma-separated key-value pairs. Forbidden symbols: &. Example: mkv='color:blue,length:350'",
-      "pattern": "^(\\s*|((\\s*[^,:&\\s]+\\s*:[^,:&]*)(,\\s*[^,:&\\s]+\\s*:[^,:&]*)*))$"
-    },
-    "mkw": {
-      "type": "string",
-      "description": "Comma-separated keywords. Forbidden symbols: &.",
-      "pattern": "^[^&]*$"
-    },
-    "cdims": {
-      "type": "string",
-      "description": "Comma-separated creative dimensions.",
-      "pattern": "(^\\d+x\\d+)(,\\d+x\\d+)*$"
-    },
-    "minp": {
-      "type": "number",
-      "description": "The minimum CPM price.",
-      "minimum": 0
-    },
-    "url": {
-      "type": "string",
-      "description": "Custom URL for targeting."
+    "mname": {
+      "type": ["string"],
+      "description": "A Name which identifies the placement selling the impression"
     }
   },
-  "required": ["mid"]
+  "anyOf":[
+    {
+      "required": ["mid"]
+    }, {
+      "required": ["inv", "mname"]
+    }
+  ]
 }
