@@ -7,20 +7,17 @@ require (
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/OneOfOne/xxhash v1.2.5 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20180720115003-f9ffefc3facf
-	github.com/blang/semver v3.5.1+incompatible
 	github.com/buger/jsonparser v1.1.1
 	github.com/cespare/xxhash v1.0.0 // indirect
 	github.com/chasex/glog v0.0.0-20160217080310-c62392af379c
 	github.com/coocood/freecache v1.0.1
 	github.com/docker/go-units v0.4.0
-	github.com/erikstmartin/go-testdb v0.0.0-20160219214506-8d10e4a1bae5
 	github.com/evanphx/json-patch v0.0.0-20180720181644-f195058310bd
 	github.com/gofrs/uuid v3.2.0+incompatible
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/influxdata/influxdb v1.6.1
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/lib/pq v1.0.0
-	github.com/magiconair/properties v1.8.5
 	github.com/mattn/go-colorable v0.1.2 // indirect
 	github.com/mitchellh/copystructure v1.1.2
 	github.com/mxmCherry/openrtb/v15 v15.0.0

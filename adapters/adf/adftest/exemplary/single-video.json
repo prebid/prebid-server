@@ -68,7 +68,12 @@
             "impid": "test-imp-id",
             "price": 10,
             "adm": "{vast xml}",
-            "crid": "test-creative-id"
+            "crid": "test-creative-id",
+            "ext": {
+              "prebid": {
+                "type": "video"
+              }
+            }
           }]
         }],
         "cur": "USD"
@@ -84,7 +89,12 @@
           "impid": "test-imp-id",
           "price": 10,
           "adm": "{vast xml}",
-          "crid": "test-creative-id"
+          "crid": "test-creative-id",
+          "ext": {
+            "prebid": {
+              "type": "video"
+            }
+          }
         },
         "type": "video"
       }
