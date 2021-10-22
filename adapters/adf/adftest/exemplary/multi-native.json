@@ -68,14 +68,24 @@
             "price": 10,
             "adm": "{json response string 1}",
             "adomain": [],
-            "crid": "test-creative-id-1"
+            "crid": "test-creative-id-1",
+            "ext": {
+              "prebid": {
+                "type": "native"
+              }
+            }
           }, {
             "id": "test-bid-id-2",
             "impid": "test-imp-id-2",
             "price": 2,
             "adm": "{json response string 2}",
             "adomain": [ "ad-domain" ],
-            "crid": "test-creative-id-2"
+            "crid": "test-creative-id-2",
+            "ext": {
+              "prebid": {
+                "type": "native"
+              }
+            }
           }]
         }],
         "cur": "EUR"
@@ -90,7 +100,12 @@
         "impid": "test-imp-id-1",
         "price": 10,
         "adm": "{json response string 1}",
-        "crid": "test-creative-id-1"
+        "crid": "test-creative-id-1",
+        "ext": {
+          "prebid": {
+            "type": "native"
+          }
+        }
       },
       "type": "native"
     }, {
@@ -100,7 +115,12 @@
         "price": 2,
         "adm": "{json response string 2}",
         "adomain": [ "ad-domain" ],
-        "crid": "test-creative-id-2"
+        "crid": "test-creative-id-2",
+        "ext": {
+          "prebid": {
+            "type": "native"
+          }
+        }
       },
       "type": "native"
     }]

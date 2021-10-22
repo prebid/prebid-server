@@ -12,137 +12,146 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type UnrulyAdapter struct {
-	URI string
+type adapter struct {
+	endPoint string
 }
 
 // Builder builds a new instance of the Unruly adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &UnrulyAdapter{
-		URI: config.Endpoint,
+	bidder := &adapter{
+		endPoint: config.Endpoint,
 	}
 	return bidder, nil
 }
 
-func (a *UnrulyAdapter) ReplaceImp(imp openrtb2.Imp, request *openrtb2.BidRequest) *openrtb2.BidRequest {
-	reqCopy := *request
-	reqCopy.Imp = append(make([]openrtb2.Imp, 0, 1), imp)
-	return &reqCopy
-}
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	errs := make([]error, 0, len(request.Imp))
 
-func (a *UnrulyAdapter) BuildRequest(request *openrtb2.BidRequest) (*adapters.RequestData, []error) {
-	reqJSON, err := json.Marshal(request)
-	if err != nil {
-		return nil, []error{err}
-	}
-
-	return &adapters.RequestData{
-		Method:  "POST",
-		Uri:     a.URI,
-		Body:    reqJSON,
-		Headers: AddHeadersToRequest(),
-	}, nil
-}
-
-func AddHeadersToRequest() http.Header {
-	headers := http.Header{}
-	headers.Add("Content-Type", "application/json;charset=utf-8")
-	headers.Add("Accept", "application/json")
-	headers.Add("X-Unruly-Origin", "Prebid-Server")
-	return headers
-}
-
-func (a *UnrulyAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var errs []error
-	var adapterRequests []*adapters.RequestData
-	for _, imp := range request.Imp {
-		impWithUnrulyExt, err := convertBidderNameInExt(&imp)
+	request, errs = a.preProcess(request, errs)
+	if request != nil {
+		reqJSON, err := json.Marshal(request)
 		if err != nil {
 			errs = append(errs, err)
-		} else {
-			newRequest := a.ReplaceImp(*impWithUnrulyExt, request)
-			adapterReq, errors := a.BuildRequest(newRequest)
-			if adapterReq != nil {
-				adapterRequests = append(adapterRequests, adapterReq)
+			return nil, errs
+		}
+		if a.endPoint != "" {
+			headers := http.Header{}
+			headers.Add("Content-Type", "application/json;charset=utf-8")
+			headers.Add("Accept", "application/json")
+			return []*adapters.RequestData{{
+				Method:  "POST",
+				Uri:     a.endPoint,
+				Body:    reqJSON,
+				Headers: headers,
+			}}, errs
+		}
+	}
+	return nil, errs
+}
+
+func (a *adapter) preProcess(req *openrtb2.BidRequest, errors []error) (*openrtb2.BidRequest, []error) {
+	numRequests := len(req.Imp)
+	for i := 0; i < numRequests; i++ {
+		imp := req.Imp[i]
+		var bidderExt adapters.ExtImpBidder
+		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+			err = &errortypes.BadInput{
+				Message: fmt.Sprintf("ext data not provided in imp id=%s. Abort all Request", imp.ID),
 			}
-			errs = append(errs, errors...)
+			errors = append(errors, err)
+			return nil, errors
 		}
+		var unrulyExt openrtb_ext.ExtImpUnruly
+		if err := json.Unmarshal(bidderExt.Bidder, &unrulyExt); err != nil {
+			err = &errortypes.BadInput{
+				Message: fmt.Sprintf("siteid not provided in imp id=%s. Abort all Request", imp.ID),
+			}
+			errors = append(errors, err)
+			return nil, errors
+		}
+		unrulyExtCopy, err := json.Marshal(&unrulyExt)
+		if err != nil {
+			errors = append(errors, err)
+			return nil, errors
+		}
+		bidderExtCopy := struct {
+			Bidder json.RawMessage `json:"bidder,omitempty"`
+		}{unrulyExtCopy}
+		impExtCopy, err := json.Marshal(&bidderExtCopy)
+		if err != nil {
+			errors = append(errors, err)
+			return nil, errors
+		}
+		imp.Ext = impExtCopy
+		req.Imp[i] = imp
 	}
-	return adapterRequests, errs
+
+	return req, errors
 }
 
-func getMediaTypeForImpWithId(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
-	for _, imp := range imps {
-		if imp.ID == impID {
-			return openrtb_ext.BidTypeVideo, nil
-		}
+func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	if response.StatusCode == http.StatusNoContent {
+		return nil, nil
 	}
-	return "", &errortypes.BadInput{
-		Message: fmt.Sprintf("Failed to find impression \"%s\" ", impID),
-	}
-}
 
-func CheckResponse(response *adapters.ResponseData) error {
+	if response.StatusCode == http.StatusBadRequest {
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+		}}
+	}
+
 	if response.StatusCode != http.StatusOK {
-		return &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
-		}
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+		}}
 	}
-	return nil
-}
-
-func convertToAdapterBidResponse(response *adapters.ResponseData, internalRequest *openrtb2.BidRequest) (*adapters.BidderResponse, []error) {
-	var errs []error
 	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
-		return nil, []error{err}
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("bad server response: %d. ", err),
+		}}
 	}
+
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
+
+	var errs []error
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
-			bidType, err := getMediaTypeForImpWithId(sb.Bid[i].ImpID, internalRequest.Imp)
+			var bidType, err = getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp)
 			if err != nil {
-				errs = append(errs, err)
+				errs = append(errs, err...)
 			} else {
-				b := &adapters.TypedBid{
+				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 					Bid:     &sb.Bid[i],
 					BidType: bidType,
-				}
-				bidResponse.Bids = append(bidResponse.Bids, b)
+				})
 			}
 		}
 	}
+
 	return bidResponse, errs
 }
 
-func convertBidderNameInExt(imp *openrtb2.Imp) (*openrtb2.Imp, error) {
-	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return nil, err
+func getMediaTypeForImp(impId string, imps []openrtb2.Imp) (openrtb_ext.BidType, []error) {
+	var errs []error
+	var noMatchingImps []string
+	mediaType := openrtb_ext.BidTypeBanner
+	for _, imp := range imps {
+		if imp.ID == impId {
+			if imp.Banner != nil {
+				mediaType = openrtb_ext.BidTypeBanner
+			} else if imp.Video != nil {
+				mediaType = openrtb_ext.BidTypeVideo
+			} else {
+				errs = append(errs, fmt.Errorf("bid responses mediaType didn't match supported mediaTypes"))
+			}
+			return mediaType, errs
+		} else {
+			noMatchingImps = append(noMatchingImps, imp.ID)
+		}
 	}
-	var unrulyExt openrtb_ext.ExtImpUnruly
-	if err := json.Unmarshal(bidderExt.Bidder, &unrulyExt); err != nil {
-		return nil, err
-	}
-	var impExtUnruly = ImpExtUnruly{Unruly: openrtb_ext.ExtImpUnruly{
-		SiteID: unrulyExt.SiteID,
-		UUID:   unrulyExt.UUID,
-	}}
-	bytes, err := json.Marshal(impExtUnruly)
-	if err != nil {
-		return nil, err
-	}
-	imp.Ext = bytes
-	return imp, nil
-}
 
-func (a *UnrulyAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if err := CheckResponse(response); err != nil {
-		return nil, []error{err}
-	}
-	return convertToAdapterBidResponse(response, internalRequest)
-}
+	errs = append(errs, fmt.Errorf("Bid response imp ID %s not found in bid request containing imps %v\n", impId, noMatchingImps))
 
-type ImpExtUnruly struct {
-	Unruly openrtb_ext.ExtImpUnruly `json:"unruly"`
+	return mediaType, errs
 }

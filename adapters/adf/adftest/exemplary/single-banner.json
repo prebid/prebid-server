@@ -69,7 +69,12 @@
             "price": 10,
             "adm": "{banner html}",
             "adomain": [ "test.com" ],
-            "crid": "test-creative-id"
+            "crid": "test-creative-id",
+            "ext": {
+              "prebid": {
+                "type": "banner"
+              }
+            }
           }]
         }],
         "cur": "USD"
@@ -86,7 +91,12 @@
           "price": 10,
           "adm": "{banner html}",
           "crid": "test-creative-id",
-          "adomain": [ "test.com" ]
+          "adomain": [ "test.com" ],
+          "ext": {
+            "prebid": {
+              "type": "banner"
+            }
+          }
         },
         "type": "banner"
       }

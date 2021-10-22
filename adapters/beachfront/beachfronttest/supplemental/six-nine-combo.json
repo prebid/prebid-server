@@ -290,6 +290,7 @@
                 {
                   "id": "crid_7",
                   "impid": "ADMVideoWithBannerImp1",
+                  "cat":["IAB2"],
                   "price": 0.8,
                   "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
                   "w": 300,
@@ -349,6 +350,7 @@
                   "id": "crid_7",
                   "impid": "ADMVideoWithBannerImp2",
                   "price": 0.8,
+                  "cat":["IAB2"],
                   "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
                   "w": 300,
                   "h": 400,
@@ -407,6 +409,7 @@
                   "id": "crid_8",
                   "impid": "ADMVideoImp6",
                   "price": 0.8,
+                  "cat":["IAB2"],
                   "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
                   "w": 100,
                   "h": 150,

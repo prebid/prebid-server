@@ -12,7 +12,7 @@ import (
 )
 
 func TestListen(t *testing.T) {
-	ep := &dummyProducer{
+	ep := &fakeProducer{
 		saves:         make(chan Save),
 		invalidations: make(chan Invalidation),
 	}
@@ -81,15 +81,15 @@ func TestListen(t *testing.T) {
 	}
 }
 
-type dummyProducer struct {
+type fakeProducer struct {
 	saves         chan Save
 	invalidations chan Invalidation
 }
 
-func (p *dummyProducer) Saves() <-chan Save {
+func (p *fakeProducer) Saves() <-chan Save {
 	return p.saves
 }
 
-func (p *dummyProducer) Invalidations() <-chan Invalidation {
+func (p *fakeProducer) Invalidations() <-chan Invalidation {
 	return p.invalidations
 }

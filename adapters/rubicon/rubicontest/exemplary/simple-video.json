@@ -10,6 +10,10 @@
       "bundle": "com.wls.testwlsapplication"
     },
     "site": {
+      "pagecat": [
+        "val1",
+        "val2"
+      ],
       "content": {
         "data": [
           {
@@ -49,6 +53,13 @@
       }
     },
     "user": {
+      "yob": 2000,
+      "geo": {
+        "country": "USA",
+        "lat": 47.627500,
+        "lon": -122.346200
+      },
+      "gender": "f",
       "data": [
         {
           "ext": {
@@ -148,6 +159,10 @@
             "ifa": "zxcjbzxmc-zxcbmz-zxbcz-zxczx"
           },
           "site": {
+            "pagecat": [
+              "val1",
+              "val2"
+            ],
             "content": {
               "data": [
                 {
@@ -298,6 +313,12 @@
               },
               "ext": {
                 "rp": {
+                  "target": {
+                    "pagecat": [
+                      "val1",
+                      "val2"
+                    ]
+                  },
                   "track": {
                     "mint": "",
                     "mint_version": ""

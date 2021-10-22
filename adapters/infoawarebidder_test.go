@@ -178,7 +178,6 @@ func TestImpFiltering(t *testing.T) {
 }
 
 type mockBidder struct {
-	gotRequest *openrtb2.BidRequest
 }
 
 func (m *mockBidder) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {

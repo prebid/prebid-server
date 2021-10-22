@@ -18,7 +18,7 @@
         },
         "ext": {
           "bidder": {
-            "zone":""
+            "zoneId":""
           }
         }
 
@@ -27,7 +27,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "Zone is empty",
+      "value": "zoneId is empty",
       "comparison": "literal"
     }
   ]

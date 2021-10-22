@@ -11,3 +11,7 @@ capabilities:
       - banner
       - video
 modifyingVastXmlAllowed: true
+userSync:
+  redirect:
+    url: "https://rtb.openx.net/sync/prebid?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r={{.RedirectURL}}"
+    userMacro: "${UID}"
