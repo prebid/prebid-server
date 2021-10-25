@@ -1,0 +1,9 @@
+maintainer:
+  email: "appdevs@nextmillennium.io"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner

@@ -12,8 +12,6 @@ import (
 	"github.com/xeipuuv/gojsonschema"
 )
 
-const schemaDirectory = "static/bidder-params"
-
 // BidderName refers to a core bidder id or an alias id.
 type BidderName string
 
@@ -74,6 +72,7 @@ func IsBidderNameReserved(name string) bool {
 // Please keep this list alphabetized to minimize merge conflicts.
 const (
 	Bidder33Across          BidderName = "33across"
+	BidderAceex             BidderName = "aceex"
 	BidderAcuityAds         BidderName = "acuityads"
 	BidderAdagio            BidderName = "adagio"
 	BidderAdf               BidderName = "adf"
@@ -131,6 +130,7 @@ const (
 	BidderGrid              BidderName = "grid"
 	BidderGumGum            BidderName = "gumgum"
 	BidderHuaweiAds         BidderName = "huaweiads"
+	BidderImpactify         BidderName = "impactify"
 	BidderImprovedigital    BidderName = "improvedigital"
 	BidderInMobi            BidderName = "inmobi"
 	BidderInteractiveoffers BidderName = "interactiveoffers"
@@ -153,9 +153,11 @@ const (
 	BidderMobfoxpb          BidderName = "mobfoxpb"
 	BidderMobileFuse        BidderName = "mobilefuse"
 	BidderNanoInteractive   BidderName = "nanointeractive"
+	BidderNextMillennium    BidderName = "nextmillennium"
 	BidderNinthDecimal      BidderName = "ninthdecimal"
 	BidderNoBid             BidderName = "nobid"
 	BidderOneTag            BidderName = "onetag"
+	BidderOpenWeb           BidderName = "openweb"
 	BidderOpenx             BidderName = "openx"
 	BidderOperaads          BidderName = "operaads"
 	BidderOrbidder          BidderName = "orbidder"
@@ -166,6 +168,7 @@ const (
 	BidderPulsepoint        BidderName = "pulsepoint"
 	BidderRevcontent        BidderName = "revcontent"
 	BidderRhythmone         BidderName = "rhythmone"
+	BidderRichaudience      BidderName = "richaudience"
 	BidderRTBHouse          BidderName = "rtbhouse"
 	BidderRubicon           BidderName = "rubicon"
 	BidderSharethrough      BidderName = "sharethrough"
@@ -193,10 +196,12 @@ const (
 	BidderVisx              BidderName = "visx"
 	BidderViewdeos          BidderName = "viewdeos"
 	BidderVrtcal            BidderName = "vrtcal"
+	BidderYahooSSP          BidderName = "yahoossp"
 	BidderYeahmobi          BidderName = "yeahmobi"
 	BidderYieldlab          BidderName = "yieldlab"
 	BidderYieldmo           BidderName = "yieldmo"
 	BidderYieldone          BidderName = "yieldone"
+	BidderYSSP              BidderName = "yssp"
 	BidderZeroClickFraud    BidderName = "zeroclickfraud"
 )
 
@@ -204,6 +209,7 @@ const (
 func CoreBidderNames() []BidderName {
 	return []BidderName{
 		Bidder33Across,
+		BidderAceex,
 		BidderAcuityAds,
 		BidderAdagio,
 		BidderAdf,
@@ -261,6 +267,7 @@ func CoreBidderNames() []BidderName {
 		BidderGrid,
 		BidderGumGum,
 		BidderHuaweiAds,
+		BidderImpactify,
 		BidderImprovedigital,
 		BidderInMobi,
 		BidderInteractiveoffers,
@@ -283,9 +290,11 @@ func CoreBidderNames() []BidderName {
 		BidderMobfoxpb,
 		BidderMobileFuse,
 		BidderNanoInteractive,
+		BidderNextMillennium,
 		BidderNinthDecimal,
 		BidderNoBid,
 		BidderOneTag,
+		BidderOpenWeb,
 		BidderOpenx,
 		BidderOperaads,
 		BidderOrbidder,
@@ -296,6 +305,7 @@ func CoreBidderNames() []BidderName {
 		BidderPulsepoint,
 		BidderRevcontent,
 		BidderRhythmone,
+		BidderRichaudience,
 		BidderRTBHouse,
 		BidderRubicon,
 		BidderSharethrough,
@@ -323,10 +333,12 @@ func CoreBidderNames() []BidderName {
 		BidderViewdeos,
 		BidderVisx,
 		BidderVrtcal,
+		BidderYahooSSP,
 		BidderYeahmobi,
 		BidderYieldlab,
 		BidderYieldmo,
 		BidderYieldone,
+		BidderYSSP,
 		BidderZeroClickFraud,
 	}
 }

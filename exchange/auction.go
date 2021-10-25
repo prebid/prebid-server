@@ -311,13 +311,6 @@ func valOrZero(useVal bool, val int) int {
 	return 0
 }
 
-func maybeMake(shouldMake bool, capacity int) []prebid_cache_client.Cacheable {
-	if shouldMake {
-		return make([]prebid_cache_client.Cacheable, 0, capacity)
-	}
-	return nil
-}
-
 func cacheTTL(impTTL int64, bidTTL int64, defTTL int64, buffer int64) (ttl int64) {
 	if impTTL <= 0 && bidTTL <= 0 {
 		// Only use default if there is no imp nor bid TTL provided. We don't want the default

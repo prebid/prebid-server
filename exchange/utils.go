@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"strings"
 
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/go-gdpr/vendorconsent"
@@ -689,7 +690,30 @@ func getExtTargetData(requestExt *openrtb_ext.ExtRequest, cacheInstructions *ext
 	return targData
 }
 
-func getDebugInfo(bidRequest *openrtb2.BidRequest, requestExt *openrtb_ext.ExtRequest) bool {
+// getDebugInfo returns the boolean flags that allow for debug information in bidResponse.Ext, the SeatBid.httpcalls slice, and
+// also sets the debugLog information
+func getDebugInfo(bidRequest *openrtb2.BidRequest, requestExt *openrtb_ext.ExtRequest, accountDebugFlag bool, debugLog *DebugLog) (bool, bool, *DebugLog) {
+	requestDebugAllow := parseRequestDebugValues(bidRequest, requestExt)
+	debugLog = setDebugLogValues(accountDebugFlag, debugLog)
+
+	responseDebugAllow := (requestDebugAllow && accountDebugFlag) || debugLog.DebugEnabledOrOverridden
+	accountDebugAllow := (requestDebugAllow && accountDebugFlag) || (debugLog.DebugEnabledOrOverridden && accountDebugFlag)
+
+	return responseDebugAllow, accountDebugAllow, debugLog
+}
+
+// setDebugLogValues initializes the DebugLog if nil. It also sets the value of the debugInfo flag
+// used in HoldAuction
+func setDebugLogValues(accountDebugFlag bool, debugLog *DebugLog) *DebugLog {
+	if debugLog == nil {
+		debugLog = &DebugLog{}
+	}
+
+	debugLog.Enabled = debugLog.DebugEnabledOrOverridden || accountDebugFlag
+	return debugLog
+}
+
+func parseRequestDebugValues(bidRequest *openrtb2.BidRequest, requestExt *openrtb_ext.ExtRequest) bool {
 	return (bidRequest != nil && bidRequest.Test == 1) || (requestExt != nil && requestExt.Prebid.Debug)
 }
 
@@ -699,4 +723,40 @@ func getExtBidAdjustmentFactors(requestExt *openrtb_ext.ExtRequest) map[string]f
 		bidAdjustmentFactors = requestExt.Prebid.BidAdjustmentFactors
 	}
 	return bidAdjustmentFactors
+}
+
+func buildXPrebidHeader(bidRequest *openrtb2.BidRequest, version string) string {
+	req := &openrtb_ext.RequestWrapper{BidRequest: bidRequest}
+
+	sb := &strings.Builder{}
+	writeNameVersionRecord(sb, "pbs-go", version)
+
+	if reqExt, err := req.GetRequestExt(); err == nil && reqExt != nil {
+		if prebidExt := reqExt.GetPrebid(); prebidExt != nil {
+			if channel := prebidExt.Channel; channel != nil {
+				writeNameVersionRecord(sb, channel.Name, channel.Version)
+			}
+		}
+	}
+	if appExt, err := req.GetAppExt(); err == nil && appExt != nil {
+		if prebidExt := appExt.GetPrebid(); prebidExt != nil {
+			writeNameVersionRecord(sb, prebidExt.Source, prebidExt.Version)
+		}
+	}
+	return sb.String()
+}
+
+func writeNameVersionRecord(sb *strings.Builder, name, version string) {
+	if name == "" {
+		return
+	}
+	if version == "" {
+		version = "unknown"
+	}
+	if sb.Len() != 0 {
+		sb.WriteString(",")
+	}
+	sb.WriteString(name)
+	sb.WriteString("/")
+	sb.WriteString(version)
 }

@@ -37,13 +37,13 @@ func (a *MarsmediaAdapter) MakeRequests(requestIn *openrtb2.BidRequest, reqInfo 
 	var marsmediaExt openrtb_ext.ExtImpMarsmedia
 	if err := json.Unmarshal(bidderExt.Bidder, &marsmediaExt); err != nil {
 		return nil, []error{&errortypes.BadInput{
-			Message: "ext.bidder.zone not provided",
+			Message: "ext.bidder.zoneId not provided",
 		}}
 	}
 
 	if marsmediaExt.ZoneID == "" {
 		return nil, []error{&errortypes.BadInput{
-			Message: "Zone is empty",
+			Message: "zoneId is empty",
 		}}
 	}
 

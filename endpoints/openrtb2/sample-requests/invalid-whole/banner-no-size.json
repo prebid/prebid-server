@@ -1,0 +1,24 @@
+{
+    "description": "Banner Ad Without Sizes Defined",
+    "mockBidRequest": {
+        "id": "some-request-id",
+        "site": {
+            "page": "test.somepage.com"
+        },
+        "imp": [{
+            "id": "some-imp-id",
+            "banner": {},
+            "ext": {
+                "prebid": {
+                    "bidder": {
+                        "appnexus": {
+                            "placementId": 12883451
+                        }
+                    }
+                }
+            }
+        }]
+    },
+    "expectedErrorMessage": "Invalid request: request.imp[0].banner has no sizes. Define \"w\" and \"h\", or include \"format\" elements.",
+    "expectedReturnCode": 400
+}
