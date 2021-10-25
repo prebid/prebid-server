@@ -125,8 +125,9 @@ type TapjoyData struct {
 	PlacementType PlacementType `json:"placement"`
 	Region        string        `json:"region"`
 
-	SKAN  SKAN
-	MRAID MRAID
+	SKAN              SKAN
+	MRAID             MRAID
+	HTMLCompanionSent bool
 }
 
 type SKAN struct {

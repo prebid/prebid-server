@@ -37,6 +37,7 @@ var (
 	skanSupportedKey  = attribute.Key("app.bidder.skan.supported")
 	skanSentKey       = attribute.Key("app.bidder.skan.sent")
 	mraidSupportedKey = attribute.Key("app.bidder.mraid.supported")
+	endcardHTMLKey    = attribute.Key("app.bidder.html_companion")
 
 	debugVerboseState = "verbose"
 	debugStateKey     = attribute.Key("debug_state")
@@ -429,6 +430,7 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 		skanSentKey.Bool(tjData.SKAN.Sent),
 		mraidSupportedKey.Bool(tjData.MRAID.Supported),
 		placementTypeKey.String(string(tjData.PlacementType)),
+		endcardHTMLKey.Bool(tjData.HTMLCompanionSent),
 	}
 	span.SetAttributes(attrs...)
 	span.SetAttributes(semconv.HTTPClientAttributesFromHTTPRequest(httpReq)...)

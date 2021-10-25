@@ -5,9 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/config"
 	"net/http"
 
+	"github.com/prebid/prebid-server/config"
+
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	openrtb "github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
@@ -171,6 +173,11 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.Ex
 			}
 
 			videoCopy := *thisImp.Video
+
+			if liftoffExt.EndcardHTMLSupported {
+				videoCopy.CompanionType = append(videoCopy.CompanionType, openrtb2.CompanionTypeHTML)
+			}
+
 			videoExt := liftoffVideoExt{
 				PlacementType: string(placementType),
 				Orientation:   string(orientation),
@@ -256,6 +263,7 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.Ex
 				MRAID: adapters.MRAID{
 					Supported: liftoffExt.MRAIDSupported,
 				},
+				HTMLCompanionSent: liftoffExt.EndcardHTMLSupported,
 			},
 		}
 
