@@ -124,20 +124,20 @@ func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 		msg = fmt.Sprintf("Bad server response: %d", err)
 		return nil, []error{&errortypes.BadServerResponse{Message: msg}}
 	}
-	if len(bidResp.SeatBid) != 1 {
+	if len(bidResp.SeatBid) == 0 {
 		var msg = fmt.Sprintf("Invalid SeatBids count: %d", len(bidResp.SeatBid))
 		return nil, []error{&errortypes.BadServerResponse{Message: msg}}
 	}
 
-	seatBid := bidResp.SeatBid[0]
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
 
-	for i := 0; i < len(seatBid.Bid); i++ {
-		bid := seatBid.Bid[i]
-		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-			Bid:     &bid,
-			BidType: openrtb_ext.BidTypeBanner,
-		})
+	for _, sb := range bidResp.SeatBid {
+		for i := range sb.Bid {
+			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+				Bid:     &sb.Bid[i],
+				BidType: openrtb_ext.BidTypeBanner,
+			})
+		}
 	}
 	return bidResponse, nil
 }
