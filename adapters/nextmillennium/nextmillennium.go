@@ -119,15 +119,15 @@ func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 		return nil, []error{&errortypes.BadServerResponse{Message: msg}}
 
 	}
-	//when not bidding - bidder is sending 200 instead of 204
-	if response.StatusCode == http.StatusOK && len(response.Body) == 0 {
-		return nil, nil
-	}
 
 	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		msg = fmt.Sprintf("Bad server response: %d", err)
 		return nil, []error{&errortypes.BadServerResponse{Message: msg}}
+	}
+
+	if len(bidResp.SeatBid) == 0 {
+		return nil, nil
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
