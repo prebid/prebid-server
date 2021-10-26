@@ -119,17 +119,18 @@ func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 		return nil, []error{&errortypes.BadServerResponse{Message: msg}}
 
 	}
+	//when not bidding - bidder is sending 200 instead of 204
+	if response.StatusCode == http.StatusOK && len(response.Body) == 0 {
+		return nil, nil
+	}
+
 	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		msg = fmt.Sprintf("Bad server response: %d", err)
 		return nil, []error{&errortypes.BadServerResponse{Message: msg}}
 	}
-	if len(bidResp.SeatBid) == 0 {
-		var msg = fmt.Sprintf("Invalid SeatBids count: %d", len(bidResp.SeatBid))
-		return nil, []error{&errortypes.BadServerResponse{Message: msg}}
-	}
 
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
 
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
