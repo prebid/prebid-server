@@ -37,15 +37,7 @@
       "yob": 1982,
       "gender": "M"
     },
-    "test": 1,
-    "ext": {
-      "prebid": {
-        "data": {
-          "eidpermissions": null,
-          "bidders": null
-        }
-      }
-    }
+    "test": 1
   },
   "biddersFPDResolved": {
     "appnexus": {

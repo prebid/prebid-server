@@ -2624,44 +2624,45 @@ func TestApplyFPD(t *testing.T) {
 	fpdBidderApp[bidderApp] = &firstpartydata.ResolvedFirstPartyData{App: &openrtb2.App{ID: "AppId"}}
 
 	testCases := []struct {
-		description   string
-		inputFpd      map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData
-		bidderName    openrtb_ext.BidderName
-		inputRequest  openrtb2.BidRequest
-		outputRequest openrtb2.BidRequest
+		description     string
+		inputFpd        map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData
+		bidderName      openrtb_ext.BidderName
+		inputRequest    openrtb2.BidRequest
+		expectedRequest openrtb2.BidRequest
 	}{
 		{
-			description:   "Fpd for bidder with nil site/app/user",
-			inputFpd:      fpdBidderTest,
-			bidderName:    bidderTest,
-			inputRequest:  openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}},
-			outputRequest: openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}},
+			description:     "req.Site defined; bidderFPD.Site not defined; expect request.Site remains the same",
+			inputFpd:        fpdBidderTest,
+			bidderName:      bidderTest,
+			inputRequest:    openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}},
+			expectedRequest: openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}},
 		},
 		{
-			description:   "Fpd for bidder with not nil site/app/user",
-			inputFpd:      fpdBidderNotNilFPD,
-			bidderName:    bidderNotNilFPD,
-			inputRequest:  openrtb2.BidRequest{},
-			outputRequest: openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}, User: &openrtb2.User{ID: "UserId"}},
+			description: "req.Site, req.App, req.User are not defined; bidderFPD.App, bidderFPD.Site and bidderFPD.User defined; " +
+				"expect req.Site, req.App, req.User to be overriden by bidderFPD.App, bidderFPD.Site and bidderFPD.User",
+			inputFpd:        fpdBidderNotNilFPD,
+			bidderName:      bidderNotNilFPD,
+			inputRequest:    openrtb2.BidRequest{},
+			expectedRequest: openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}, User: &openrtb2.User{ID: "UserId"}},
 		},
 		{
-			description:   "Fpd for bidder with site and fpd with app",
-			inputFpd:      fpdBidderApp,
-			bidderName:    bidderApp,
-			inputRequest:  openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}},
-			outputRequest: openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}},
+			description:     "req.Site, defined; bidderFPD.App defined; expect request.App to be overriden by bidderFPD.App; expect req.Site remains the same",
+			inputFpd:        fpdBidderApp,
+			bidderName:      bidderApp,
+			inputRequest:    openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}},
+			expectedRequest: openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}},
 		},
 		{
-			description:   "Fpd for bidder with site and with app and fpd with app",
-			inputFpd:      fpdBidderApp,
-			bidderName:    bidderApp,
-			inputRequest:  openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "TestAppId"}},
-			outputRequest: openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}},
+			description:     "req.Site, req.App defined; bidderFPD.App defined; expect request.App to be overriden by bidderFPD.App",
+			inputFpd:        fpdBidderApp,
+			bidderName:      bidderApp,
+			inputRequest:    openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "TestAppId"}},
+			expectedRequest: openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}},
 		},
 	}
 
 	for _, testCase := range testCases {
 		applyFPD(testCase.inputFpd[testCase.bidderName], &testCase.inputRequest)
-		assert.Equal(t, testCase.inputRequest, testCase.outputRequest, fmt.Sprintf("incorrect request after applying fpd, testcase %s", testCase.description))
+		assert.Equal(t, testCase.expectedRequest, testCase.inputRequest, fmt.Sprintf("incorrect request after applying fpd, testcase %s", testCase.description))
 	}
 }

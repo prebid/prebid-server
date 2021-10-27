@@ -1,5 +1,5 @@
 {
-  "description": "Global FPD is null and req.user.data defined",
+  "description": "req.ext.prebid.data.bidders not defined and req.user.data defined",
   "inputRequestData": {
     "id": "bid_id",
     "user": {
@@ -18,14 +18,7 @@
         }
       ]
     },
-    "test": 1,
-    "ext": {
-      "prebid": {
-        "data": {
-          "bidders": null
-        }
-      }
-    }
+    "test": 1
   },
   "outputRequestData": {
     "id": "bid_id",
@@ -45,15 +38,7 @@
         }
       ]
     },
-    "test": 1,
-    "ext": {
-      "prebid": {
-        "data": {
-          "eidpermissions": null,
-          "bidders": null
-        }
-      }
-    }
+    "test": 1
   },
   "biddersFPDResolved": {},
   "validationErrors": []

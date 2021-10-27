@@ -1,13 +1,7 @@
 {
   "description": "Multiply global bidders and bidder specific configs specified",
   "inputRequestData": {
-    "data": {
-      "bidders": [
-        "appnexus",
-        "telaria",
-        "testBidder"
-      ]
-    },
+    "data": {},
     "bidderconfig": [
       {
         "bidders": [

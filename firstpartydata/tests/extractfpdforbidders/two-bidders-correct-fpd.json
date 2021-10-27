@@ -62,15 +62,7 @@
         "id": "1"
       }
     },
-    "test": 1,
-    "ext": {
-      "prebid": {
-        "data": {
-          "eidpermissions": null,
-          "bidders": null
-        }
-      }
-    }
+    "test": 1
   },
   "biddersFPDResolved": {
     "appnexus": {
