@@ -1235,7 +1235,7 @@ func TestBuildAmpObject(t *testing.T) {
 					},
 					AT:   1,
 					TMax: 500,
-					Ext:  json.RawMessage(`{"prebid":{"cache":{"bids":{"returnCreative":null},"vastxml":null},"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"includewinners":true,"includebidderkeys":true,"includebrandcategory":null,"includeformat":false,"durationrangesec":null,"preferdeals":false}}}`),
+					Ext:  json.RawMessage(`{"prebid":{"cache":{"bids":{"returnCreative":null},"vastxml":null},"channel":{"name":"amp","version":""},"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"includewinners":true,"includebidderkeys":true,"includebrandcategory":null,"includeformat":false,"durationrangesec":null,"preferdeals":false}}}`),
 				},
 				AuctionResponse: &openrtb2.BidResponse{
 					SeatBid: []openrtb2.SeatBid{{
@@ -1367,14 +1367,14 @@ func TestChannelSupportAmp(t *testing.T) {
 		expectedExtObject    json.RawMessage
 	}{
 		{
-			description:          "Empty channel object in request, we expect channel name to be set to amp",
-			givenInStoredRequest: json.RawMessage(testStoredRequestsForChannelTest[0]),
-			expectedExtObject:    json.RawMessage(testExtObjectInfo[0]),
-		},
-		{
 			description:          "Channel object in request, we expect same name and version",
 			givenInStoredRequest: json.RawMessage(testStoredRequestsForChannelTest[1]),
 			expectedExtObject:    json.RawMessage(testExtObjectInfo[1]),
+		},
+		{
+			description:          "No channel object in request, we expect amp name",
+			givenInStoredRequest: json.RawMessage(testStoredRequestsForChannelTest[0]),
+			expectedExtObject:    json.RawMessage(testExtObjectInfo[0]),
 		},
 	}
 
@@ -1435,8 +1435,6 @@ var testStoredRequestsForChannelTest = []string{
 				"debug": true,
 				"storedrequest": {
 					"id": "123"
-				},
-				"channel" : {
 				}
 			}
 		}

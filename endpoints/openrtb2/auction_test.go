@@ -1185,19 +1185,9 @@ func TestChannelSupport(t *testing.T) {
 			expectedChannelObject: &openrtb_ext.ExtRequestPrebidChannel{Name: "video", Version: "1.0"},
 		},
 		{
-			description:           "Empty channel object in app request, so we expect channel name to be set to app",
-			givenBidRequestData:   testBidRequestForChannelTest[2],
-			expectedChannelObject: &openrtb_ext.ExtRequestPrebidChannel{Name: "app", Version: ""},
-		},
-		{
 			description:           "No channel object in site request, expect nil",
 			givenBidRequestData:   testBidRequestForChannelTest[3],
 			expectedChannelObject: nil,
-		},
-		{
-			description:           "Empty channel object in site request, expect empty object",
-			givenBidRequestData:   testBidRequestForChannelTest[4],
-			expectedChannelObject: &openrtb_ext.ExtRequestPrebidChannel{Name: "", Version: ""},
 		},
 	}
 
@@ -1212,44 +1202,6 @@ func TestChannelSupport(t *testing.T) {
 
 		requestPrebid := requestExt.GetPrebid()
 		assert.Equalf(t, test.expectedChannelObject, requestPrebid.Channel, "Channel information isn't correct: %s\n", test.description)
-	}
-}
-
-func TestGetChannelObjectFromRequest(t *testing.T) {
-	testCases := []struct {
-		description           string
-		givenBidRequestData   string
-		expectedChannelObject *openrtb_ext.ExtRequestPrebidChannel
-	}{
-		{
-			description:           "No channel object in app request, so we expect blank channel in the object we get returned",
-			givenBidRequestData:   testBidRequestForChannelTest[0],
-			expectedChannelObject: &openrtb_ext.ExtRequestPrebidChannel{Name: "", Version: ""},
-		},
-		{
-			description:           "Channel object in request, we expect same name and version in object we get returned",
-			givenBidRequestData:   testBidRequestForChannelTest[1],
-			expectedChannelObject: &openrtb_ext.ExtRequestPrebidChannel{Name: "video", Version: "1.0"},
-		},
-		{
-			description:           "Empty channel object in app request, we expect no name in object we create",
-			givenBidRequestData:   testBidRequestForChannelTest[2],
-			expectedChannelObject: &openrtb_ext.ExtRequestPrebidChannel{Name: "", Version: ""},
-		},
-	}
-
-	for _, test := range testCases {
-		req := &openrtb_ext.RequestWrapper{}
-		req.BidRequest = &openrtb2.BidRequest{}
-
-		err := json.Unmarshal([]byte(test.givenBidRequestData), req.BidRequest)
-		assert.Empty(t, err, test.description)
-
-		requestExt, err := req.GetRequestExt()
-		assert.Empty(t, err, test.description)
-
-		channelObject := getChannelObjectFromRequest(requestExt.GetPrebid())
-		assert.Equalf(t, test.expectedChannelObject, channelObject, "Channel object isn't the same: %s\n", test.description)
 	}
 }
 
@@ -1896,7 +1848,7 @@ func TestCurrencyTrunc(t *testing.T) {
 		Cur: []string{"USD", "EUR"},
 	}
 
-	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req})
+	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false)
 
 	expectedError := errortypes.Warning{Message: "A prebid request can only process one currency. Taking the first currency in the list, USD, as the active currency"}
 	assert.ElementsMatch(t, errL, []error{&expectedError})
@@ -1943,7 +1895,7 @@ func TestCCPAInvalid(t *testing.T) {
 		},
 	}
 
-	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req})
+	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false)
 
 	expectedWarning := errortypes.Warning{
 		Message:     "CCPA consent is invalid and will be ignored. (request.regs.ext.us_privacy must contain 4 characters)",
@@ -1993,7 +1945,7 @@ func TestNoSaleInvalid(t *testing.T) {
 		Ext: json.RawMessage(`{"prebid": {"nosale": ["*", "appnexus"]} }`),
 	}
 
-	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req})
+	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false)
 
 	expectedError := errors.New("request.ext.prebid.nosale is invalid: can only specify all bidders if no other bidders are provided")
 	assert.ElementsMatch(t, errL, []error{expectedError})
@@ -2041,7 +1993,7 @@ func TestValidateSourceTID(t *testing.T) {
 		},
 	}
 
-	deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req})
+	deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false)
 	assert.NotEmpty(t, req.Source.TID, "Expected req.Source.TID to be filled with a randomly generated UID")
 }
 
@@ -2084,7 +2036,7 @@ func TestSChainInvalid(t *testing.T) {
 		Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller1.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}, {"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller2.com","sid":"00002","rid":"BidRequest2","hp":1}],"ver":"1.0"}}]}}`),
 	}
 
-	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req})
+	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false)
 
 	expectedError := errors.New("request.ext.prebid.schains contains multiple schains for bidder appnexus; it must contain no more than one per bidder.")
 	assert.ElementsMatch(t, errL, []error{expectedError})
@@ -2304,7 +2256,7 @@ func TestEidPermissionsInvalid(t *testing.T) {
 		Ext: json.RawMessage(`{"prebid": {"data": {"eidpermissions": [{"source":"a", "bidders":[]}]} } }`),
 	}
 
-	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req})
+	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false)
 
 	expectedError := errors.New(`request.ext.prebid.data.eidpermissions[0] missing or empty required field: "bidders"`)
 	assert.ElementsMatch(t, errL, []error{expectedError})

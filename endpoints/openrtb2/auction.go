@@ -281,24 +281,6 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_
 		return
 	}
 
-	// Get bidrequest.ext.prebid.channel information, and update the info if the info is blank from the bidrequest.
-	requestExt, err := req.GetRequestExt()
-	if err != nil {
-		errs = []error{err}
-		return
-	}
-	requestPrebid := requestExt.GetPrebid()
-
-	if requestPrebid != nil {
-		channelObject := getChannelObjectFromRequest(requestPrebid)
-		if channelObject.Name == "" {
-			if err := updateRequestChannelInfo(channelObject, requestJson, requestExt, requestPrebid); err != nil {
-				errs = []error{err}
-				return
-			}
-		}
-	}
-
 	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
 	deps.setFieldsImplicitly(httpRequest, req.BidRequest)
 
@@ -309,7 +291,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_
 
 	lmt.ModifyForIOS(req.BidRequest)
 
-	errL := deps.validateRequest(req)
+	errL := deps.validateRequest(req, false)
 	if len(errL) > 0 {
 		errs = append(errs, errL...)
 	}
@@ -332,7 +314,7 @@ func parseTimeout(requestJson []byte, defaultTimeout time.Duration) time.Duratio
 	return defaultTimeout
 }
 
-func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper) []error {
+func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp bool) []error {
 	errL := []error{}
 	if req.ID == "" {
 		return []error{errors.New("request missing required field: \"id\"")}
@@ -371,6 +353,10 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper) []err
 		aliases = reqPrebid.Aliases
 
 		if err := deps.validateAliases(aliases); err != nil {
+			return []error{err}
+		}
+
+		if err := validateOrFillChannel(reqPrebid, reqExt, req, isAmp); err != nil {
 			return []error{err}
 		}
 
@@ -475,20 +461,6 @@ func (deps *endpointDeps) validateBidAdjustmentFactors(adjustmentFactors map[str
 				return fmt.Errorf("request.ext.prebid.bidadjustmentfactors.%s is not a known bidder or alias", bidderToAdjust)
 			}
 		}
-	}
-	return nil
-}
-
-// Check to see if request was app request, if so, set channel name to 'app'
-func updateRequestChannelInfo(channelObject *openrtb_ext.ExtRequestPrebidChannel, request []byte, requestExt *openrtb_ext.RequestExt, requestPrebid *openrtb_ext.ExtRequestPrebid) error {
-	isAppRequest, err := checkIfAppRequest(request)
-	if err != nil {
-		return err
-	}
-	if isAppRequest {
-		requestPrebid.Channel = &openrtb_ext.ExtRequestPrebidChannel{Name: "app", Version: ""}
-		requestExt.SetPrebid(requestPrebid)
-		return nil
 	}
 	return nil
 }
@@ -1262,6 +1234,28 @@ func validateDevice(device *openrtb2.Device) error {
 	return nil
 }
 
+func validateOrFillChannel(requestPrebid *openrtb_ext.ExtRequestPrebid, requestExt *openrtb_ext.RequestExt, reqWrapper *openrtb_ext.RequestWrapper, isAmp bool) error {
+	if requestPrebid != nil {
+		if requestPrebid.Channel != nil {
+			if requestPrebid.Channel.Name == "" {
+				return errors.New("ext.prebid.channel.name can't be empty")
+			}
+		} else {
+			if isAmp {
+				var err error
+				reqWrapper.Ext, err = jsonpatch.MergePatch(reqWrapper.Ext, []byte(`{"prebid":{"channel": {"name": "amp", "version": ""}}}`))
+				if err != nil {
+					return err
+				}
+			} else if reqWrapper.App != nil {
+				requestPrebid.Channel = &openrtb_ext.ExtRequestPrebidChannel{Name: "app", Version: ""}
+				requestExt.SetPrebid(requestPrebid)
+			}
+		}
+	}
+	return nil
+}
+
 func sanitizeRequest(r *openrtb2.BidRequest, ipValidator iputil.IPValidator) {
 	if r.Device != nil {
 		if ip, ver := iputil.ParseIP(r.Device.IP); ip == nil || ver != iputil.IPv4 || !ipValidator.IsValid(ip, ver) {
@@ -1684,12 +1678,4 @@ func checkIfAppRequest(request []byte) (bool, error) {
 		return true, nil
 	}
 	return false, nil
-}
-
-// Returns channel object from request, or blank channel if channel information isn't present in request
-func getChannelObjectFromRequest(requestPrebid *openrtb_ext.ExtRequestPrebid) *openrtb_ext.ExtRequestPrebidChannel {
-	if requestPrebid.Channel == nil {
-		return &openrtb_ext.ExtRequestPrebidChannel{Name: "", Version: ""}
-	}
-	return requestPrebid.Channel
 }
