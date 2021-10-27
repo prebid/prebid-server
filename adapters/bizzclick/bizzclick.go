@@ -99,7 +99,7 @@ func (a *adapter) getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtBizzclick
 			Message: "ext.bidder not provided",
 		}
 	}
-	fmt.Println(bizzclickExt)
+	
 	imp.Ext = nil
 	return &bizzclickExt, nil
 }
