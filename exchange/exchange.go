@@ -440,7 +440,6 @@ func (e *exchange) getAllBids(
 			defer func() {
 				e.me.RecordAdapterRequest(bidderRequest.BidderLabels)
 			}()
-
 			start := time.Now()
 
 			adjustmentFactor := 1.0

@@ -3661,9 +3661,9 @@ func TestFPD(t *testing.T) {
 	request := e.adapterMap[openrtb_ext.BidderAppnexus].(*capturingRequestBidder).req
 
 	assert.NotNil(t, request, "Bidder request should not be nil")
-	assert.Equal(t, request.Site, apnFpd.Site, "Site is incorrect")
-	assert.Equal(t, request.App, apnFpd.App, "App is incorrect")
-	assert.Equal(t, request.User, apnFpd.User, "User is incorrect")
+	assert.Equal(t, apnFpd.Site, request.Site, "Site is incorrect")
+	assert.Equal(t, apnFpd.App, request.App, "App is incorrect")
+	assert.Equal(t, apnFpd.User, request.User, "User is incorrect")
 
 }
 
@@ -3808,7 +3808,7 @@ func diffOrtbRequests(t *testing.T, description string, expected *openrtb2.BidRe
 		t.Fatalf("%s failed to marshal expected BidRequest into JSON. %v", description, err)
 	}
 
-	assert.JSONEq(t, string(actualJSON), string(expectedJSON), description)
+	assert.JSONEq(t, string(expectedJSON), string(actualJSON), description)
 }
 
 func diffOrtbResponses(t *testing.T, description string, expected *openrtb2.BidResponse, actual *openrtb2.BidResponse) {
@@ -3831,7 +3831,7 @@ func diffOrtbResponses(t *testing.T, description string, expected *openrtb2.BidR
 		t.Fatalf("%s failed to marshal expected BidResponse into JSON. %v", description, err)
 	}
 
-	assert.JSONEq(t, string(actualJSON), string(expectedJSON), description)
+	assert.JSONEq(t, string(expectedJSON), string(actualJSON), description)
 }
 
 func mapifySeatBids(t *testing.T, context string, seatBids []openrtb2.SeatBid) map[string]*openrtb2.SeatBid {

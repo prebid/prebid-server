@@ -524,18 +524,14 @@ func TestCleanOpenRTBRequestsWithFPD(t *testing.T) {
 			fpdExpected: true,
 		},
 		{
+			description: "Bidders specified in request but there is no fpd data for this bidder",
+			req:         AuctionRequest{BidRequest: newAdapterAliasBidRequest(t), UserSyncs: &emptyUsersync{}, FirstPartyData: make(map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData)},
+			fpdExpected: false,
+		},
+		{
 			description: "No FPD data passed",
 			req:         AuctionRequest{BidRequest: newAdapterAliasBidRequest(t), UserSyncs: &emptyUsersync{}, FirstPartyData: nil},
 			fpdExpected: false,
-		},
-	}
-
-	privacyConfig := config.Privacy{
-		CCPA: config.CCPA{
-			Enforce: true,
-		},
-		LMT: config.LMT{
-			Enforce: true,
 		},
 	}
 
@@ -543,7 +539,7 @@ func TestCleanOpenRTBRequestsWithFPD(t *testing.T) {
 		metricsMock := metrics.MetricsEngineMock{}
 		bidderToSyncerKey := map[string]string{}
 		permissions := permissionsMock{allowAllBidders: true, passGeo: true, passID: true}
-		bidderRequests, _, err := cleanOpenRTBRequests(context.Background(), test.req, nil, bidderToSyncerKey, &permissions, &metricsMock, gdpr.SignalNo, privacyConfig, nil)
+		bidderRequests, _, err := cleanOpenRTBRequests(context.Background(), test.req, nil, bidderToSyncerKey, &permissions, &metricsMock, gdpr.SignalNo, config.Privacy{}, nil)
 		assert.Empty(t, err, "No errors should be returned")
 		for _, bidderRequest := range bidderRequests {
 			bidderName := bidderRequest.BidderName
@@ -2614,15 +2610,18 @@ func TestBuildXPrebidHeader(t *testing.T) {
 }
 
 func TestApplyFPD(t *testing.T) {
-	bidderNameAppnexus := openrtb_ext.BidderName("appnexus")
-	bidderNameTest := openrtb_ext.BidderName("test")
-	bidderNameNotNilFPD := openrtb_ext.BidderName("notNilFPD")
-	bidderNameApp := openrtb_ext.BidderName("AppFPD")
-	fpd := map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData{}
-	fpd[bidderNameAppnexus] = &firstpartydata.ResolvedFirstPartyData{Site: &openrtb2.Site{ID: "SiteId"}}
-	fpd[bidderNameTest] = &firstpartydata.ResolvedFirstPartyData{Site: nil, App: nil, User: nil}
-	fpd[bidderNameNotNilFPD] = &firstpartydata.ResolvedFirstPartyData{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}, User: &openrtb2.User{ID: "UserId"}}
-	fpd[bidderNameApp] = &firstpartydata.ResolvedFirstPartyData{App: &openrtb2.App{ID: "AppId"}}
+
+	fpdBidderTest := map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData{}
+	bidderTest := openrtb_ext.BidderName("test")
+	fpdBidderTest[bidderTest] = &firstpartydata.ResolvedFirstPartyData{Site: nil, App: nil, User: nil}
+
+	fpdBidderNotNilFPD := map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData{}
+	bidderNotNilFPD := openrtb_ext.BidderName("notNilFPD")
+	fpdBidderNotNilFPD[bidderNotNilFPD] = &firstpartydata.ResolvedFirstPartyData{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}, User: &openrtb2.User{ID: "UserId"}}
+
+	fpdBidderApp := map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData{}
+	bidderApp := openrtb_ext.BidderName("AppFPD")
+	fpdBidderApp[bidderApp] = &firstpartydata.ResolvedFirstPartyData{App: &openrtb2.App{ID: "AppId"}}
 
 	testCases := []struct {
 		description   string
@@ -2633,29 +2632,29 @@ func TestApplyFPD(t *testing.T) {
 	}{
 		{
 			description:   "Fpd for bidder with nil site/app/user",
-			inputFpd:      fpd,
-			bidderName:    bidderNameTest,
+			inputFpd:      fpdBidderTest,
+			bidderName:    bidderTest,
 			inputRequest:  openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}},
 			outputRequest: openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}},
 		},
 		{
 			description:   "Fpd for bidder with not nil site/app/user",
-			inputFpd:      fpd,
-			bidderName:    bidderNameNotNilFPD,
+			inputFpd:      fpdBidderNotNilFPD,
+			bidderName:    bidderNotNilFPD,
 			inputRequest:  openrtb2.BidRequest{},
 			outputRequest: openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}, User: &openrtb2.User{ID: "UserId"}},
 		},
 		{
 			description:   "Fpd for bidder with site and fpd with app",
-			inputFpd:      fpd,
-			bidderName:    bidderNameApp,
+			inputFpd:      fpdBidderApp,
+			bidderName:    bidderApp,
 			inputRequest:  openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}},
 			outputRequest: openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}},
 		},
 		{
 			description:   "Fpd for bidder with site and with app and fpd with app",
-			inputFpd:      fpd,
-			bidderName:    bidderNameApp,
+			inputFpd:      fpdBidderApp,
+			bidderName:    bidderApp,
 			inputRequest:  openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "TestAppId"}},
 			outputRequest: openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}},
 		},
@@ -2664,7 +2663,5 @@ func TestApplyFPD(t *testing.T) {
 	for _, testCase := range testCases {
 		applyFPD(testCase.inputFpd[testCase.bidderName], &testCase.inputRequest)
 		assert.Equal(t, testCase.inputRequest, testCase.outputRequest, fmt.Sprintf("incorrect request after applying fpd, testcase %s", testCase.description))
-
 	}
-
 }
