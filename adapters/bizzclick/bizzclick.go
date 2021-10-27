@@ -68,6 +68,9 @@ func (a *adapter) MakeRequests(
 		return nil, append(errors, err)
 	}
 
+	for idx := range openRTBRequest.Imp {
+		openRTBRequest.Imp[idx].Ext = nil
+	}
 	url, err := a.buildEndpointURL(bizzclickExt)
 	if err != nil {
 		return nil, []error{err}
@@ -99,13 +102,12 @@ func (a *adapter) getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtBizzclick
 			Message: "ext.bidder not provided",
 		}
 	}
-	
-	imp.Ext = nil
+
 	return &bizzclickExt, nil
 }
 
 func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtBizzclick) (string, error) {
-	endpointParams := macros.EndpointTemplateParams{AccountID: params.AccountID, SourceId: params.SourceId}
+	endpointParams := macros.EndpointTemplateParams{AccountID: params.AccountID, SourceId: params.PlacementID}
 	return macros.ResolveMacros(a.endpoint, endpointParams)
 }
 

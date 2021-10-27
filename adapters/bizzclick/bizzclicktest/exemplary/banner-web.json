@@ -31,6 +31,20 @@
             "placementId": "placementId"
           }
         }
+      },     
+       {
+        "id": "some-impression-id",
+        "tagid": "ogTAGID",
+        "banner": {
+          "w":320,
+          "h":50
+        },
+        "ext": {
+          "bidder": {
+            "accountId": "accountId",
+            "placementId": "placementId"
+          }
+        }
       }
     ]
   },
@@ -71,6 +85,14 @@
                 "w":320,
                 "h":50
               }
+            },
+            {
+              "id": "some-impression-id",
+              "tagid": "ogTAGID",
+              "banner": {
+                "w":320,
+                "h":50
+              }
             }
           ],
           "site": {
@@ -103,6 +125,18 @@
                   "crid": "20",
                   "w": 320,
                   "h": 50
+                },
+                {
+                  "id": "a3ae1b4e2fc24a4fb45540082e98e161",
+                  "impid": "1",
+                  "price": 3.5,
+                  "adm": "awesome-markup",
+                  "adomain": [
+                    "awesome.com"
+                  ],
+                  "crid": "20",
+                  "w": 320,
+                  "h": 50
                 }
               ],
               "type": "banner",
@@ -123,6 +157,21 @@
   "expectedBidResponses": [
     {
       "bids":[
+        {
+          "bid":  {
+            "id": "a3ae1b4e2fc24a4fb45540082e98e161",
+            "impid": "1",
+            "price": 3.5,
+            "adm": "awesome-markup",
+            "crid": "20",
+            "adomain": [
+              "awesome.com"
+            ],
+            "w": 320,
+            "h": 50
+          },
+          "type": "banner"
+        },
         {
           "bid":  {
             "id": "a3ae1b4e2fc24a4fb45540082e98e161",
