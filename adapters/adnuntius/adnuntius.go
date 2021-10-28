@@ -71,14 +71,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var extRequests []*adapters.RequestData
-	var errs []error
-
-	extRequests, err := a.generateRequests(*request)
-	if err != nil {
-		errs = append(errs, err...)
-	}
-	return extRequests, errs
+	return a.generateRequests(*request)
 }
 
 func setHeaders() http.Header {
@@ -119,13 +112,14 @@ func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter) (string, []err
 */
 func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters.RequestData, []error) {
 	var requestData []*adapters.RequestData
-	var errors []error
 	networkAdunitMap := make(map[string][]adnAdunit)
 	headers := setHeaders()
 
 	endpoint, err := makeEndpointUrl(ortbRequest, a)
 	if err != nil {
-		errors = append(errors, fmt.Errorf("failed to parse URL: %v", err))
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("failed to parse URL: %s", err),
+		}}
 	}
 
 	for _, imp := range ortbRequest.Imp {
@@ -183,12 +177,11 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 
 		adnJson, err := json.Marshal(adnuntiusRequest)
 		if err != nil {
-			errors = append(errors, err)
+			return nil, []error{&errortypes.BadInput{
+				Message: fmt.Sprintf("Error unmarshalling adnuntius request: %s", err.Error()),
+			}}
 		}
 
-		if len(errors) > 0 {
-			return nil, errors
-		}
 		requestData = append(requestData, &adapters.RequestData{
 			Method:  http.MethodPost,
 			Uri:     endpoint,
@@ -258,21 +251,24 @@ func generateBidResponse(adnResponse *AdnResponse, request *openrtb2.BidRequest)
 
 	for i, adunit := range adnResponse.AdUnits {
 
-		var bid openrtb2.Bid
 		if len(adunit.Ads) > 0 {
-			var adsErr []error
+
 			ad := adunit.Ads[0]
 
 			currency = ad.Bid.Currency
 
 			creativeWidth, widthErr := strconv.ParseInt(ad.CreativeWidth, 10, 64)
 			if widthErr != nil {
-				adsErr = append(adsErr, widthErr)
+				return nil, []error{&errortypes.BadInput{
+					Message: fmt.Sprintf("Value of width: %s is not a string", ad.CreativeWidth),
+				}}
 			}
 
 			creativeHeight, heightErr := strconv.ParseInt(ad.CreativeHeight, 10, 64)
 			if heightErr != nil {
-				adsErr = append(adsErr, heightErr)
+				return nil, []error{&errortypes.BadInput{
+					Message: fmt.Sprintf("Value of height: %s is not a string", ad.CreativeHeight),
+				}}
 			}
 
 			adDomain := []string{}
@@ -282,11 +278,7 @@ func generateBidResponse(adnResponse *AdnResponse, request *openrtb2.BidRequest)
 				adDomain = append(adDomain, domain)
 			}
 
-			if len(adsErr) > 0 {
-				return nil, adsErr
-			}
-
-			bid = openrtb2.Bid{
+			bid := openrtb2.Bid{
 				ID:      ad.AdId,
 				ImpID:   request.Imp[i].ID,
 				W:       creativeWidth,
