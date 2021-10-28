@@ -14,71 +14,53 @@ func TestExtractGlobalFPD(t *testing.T) {
 
 	testCases := []struct {
 		description string
-		input       []byte
-		output      []byte
+		input       openrtb_ext.RequestWrapper
+		output      openrtb_ext.RequestWrapper
 		expectedFpd map[string][]byte
 	}{
 		{
 			description: "Site, app and user data present",
-			input: []byte(`{
-  				"id": "bid_id",
-  				"site": {
-  				  "id":"reqSiteId",
-  				  "page": "http://www.foobar.com/1234.html",
-  				  "publisher": {
-  				    "id": "1"
-  				  },
-				  "ext":{
-				   "data": {"somesitefpd": "sitefpdDataTest"},
-				   "amp": 1
-				  }
-  				},
-  				"user": {
-  				  "id": "reqUserID",
-  				  "yob": 1982,
-  				  "gender": "M",
-				  "ext":{
-				  	"data": {"someuserfpd": "userfpdDataTest"}
-				  }
-  				},
-  				"app": {
-  				  "id": "appId",
-  				  "data": 123,
-  				  "ext": {
-				     "data": {"someappfpd": "appfpdDataTest"}
-				  }
-  				},
-  				"tmax": 5000,
-  				"source": {
-  				  "tid": "ad839de0-5ae6-40bb-92b2-af8bad6439b3"
-  				}
-			}`),
-			output: []byte(`{
-  				"id": "bid_id",
-  				"site": {
-  				  "id":"reqSiteId",
-  				  "page": "http://www.foobar.com/1234.html",
-  				  "publisher": {
-  				    "id": "1"
-  				  },
-				  "ext": {
-					"amp": 1
-				  }
-  				},
-  				"user": {
-  				  "id": "reqUserID",
-  				  "yob": 1982,
-  				  "gender": "M"
-  				},
-  				"app": {
-  				  "id": "appId",
-  				  "data": 123
-  				},
-  				"tmax": 5000,
-  				"source": {
-  				  "tid": "ad839de0-5ae6-40bb-92b2-af8bad6439b3"
-  				}
-			}`),
+			input: openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID: "bid_id",
+					Site: &openrtb2.Site{
+						ID:   "reqSiteId",
+						Page: "http://www.foobar.com/1234.html",
+						Publisher: &openrtb2.Publisher{
+							ID: "1",
+						},
+						Ext: json.RawMessage(`{"data": {"somesitefpd": "sitefpdDataTest"}}`),
+					},
+					User: &openrtb2.User{
+						ID:     "reqUserID",
+						Yob:    1982,
+						Gender: "M",
+						Ext:    json.RawMessage(`{"data": {"someuserfpd": "userfpdDataTest"}}`),
+					},
+					App: &openrtb2.App{
+						ID:  "appId",
+						Ext: json.RawMessage(`{"data": {"someappfpd": "appfpdDataTest"}}`),
+					},
+				},
+			},
+			output: openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+				ID: "bid_id",
+				Site: &openrtb2.Site{
+					ID:   "reqSiteId",
+					Page: "http://www.foobar.com/1234.html",
+					Publisher: &openrtb2.Publisher{
+						ID: "1",
+					},
+				},
+				User: &openrtb2.User{
+					ID:     "reqUserID",
+					Yob:    1982,
+					Gender: "M",
+				},
+				App: &openrtb2.App{
+					ID: "appId",
+				},
+			}},
 			expectedFpd: map[string][]byte{
 				"site": []byte(`{"somesitefpd": "sitefpdDataTest"}`),
 				"user": []byte(`{"someuserfpd": "userfpdDataTest"}`),
@@ -87,44 +69,37 @@ func TestExtractGlobalFPD(t *testing.T) {
 		},
 		{
 			description: "App FPD only present",
-			input: []byte(`{
-  				"id": "bid_id",
-  				"site": {
-  				  "id":"reqSiteId",
-  				  "page": "http://www.foobar.com/1234.html",
-  				  "publisher": {
-  				    "id": "1"
-  				  }
-  				},
-  				"app": {
-  				  "id": "appId",
-  				  "ext": {
-					"data": {"someappfpd": "appfpdDataTest"}
-                  }
-  				},
-  				"tmax": 5000,
-  				"source": {
-  				  "tid": "ad839de0-5ae6-40bb-92b2-af8bad6439b3"
-  				}
-			}`),
-			output: []byte(`{
-  				"id": "bid_id",
-  				"site": {
-  				  "id":"reqSiteId",
-  				  "page": "http://www.foobar.com/1234.html",
-  				  "publisher": {
-  				    "id": "1"
-  				  }
-  				},
-  				"app": {
-  				  "id": "appId",
-				  "ext": {}
-  				},
-  				"tmax": 5000,
-  				"source": {
-  				  "tid": "ad839de0-5ae6-40bb-92b2-af8bad6439b3"
-  				}
-			}`),
+			input: openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID: "bid_id",
+					Site: &openrtb2.Site{
+						ID:   "reqSiteId",
+						Page: "http://www.foobar.com/1234.html",
+						Publisher: &openrtb2.Publisher{
+							ID: "1",
+						},
+					},
+					App: &openrtb2.App{
+						ID:  "appId",
+						Ext: json.RawMessage(`{"data": {"someappfpd": "appfpdDataTest"}}`),
+					},
+				},
+			},
+			output: openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID: "bid_id",
+					Site: &openrtb2.Site{
+						ID:   "reqSiteId",
+						Page: "http://www.foobar.com/1234.html",
+						Publisher: &openrtb2.Publisher{
+							ID: "1",
+						},
+					},
+					App: &openrtb2.App{
+						ID: "appId",
+					},
+				},
+			},
 			expectedFpd: map[string][]byte{
 				"app":  []byte(`{"someappfpd": "appfpdDataTest"}`),
 				"user": nil,
@@ -133,44 +108,41 @@ func TestExtractGlobalFPD(t *testing.T) {
 		},
 		{
 			description: "User FPD only present",
-			input: []byte(`{
-  				"id": "bid_id",
-  				"site": {
-  				  "id":"reqSiteId",
-  				  "page": "http://www.foobar.com/1234.html",
-  				  "publisher": {
-  				    "id": "1"
-  				  }
-  				},
-  				"user": {
-  				  "id": "userId",
-  				  "ext": {
-					"data": {"someuserfpd": "userfpdDataTest"}
-                  }
-  				},
-  				"tmax": 5000,
-  				"source": {
-  				  "tid": "ad839de0-5ae6-40bb-92b2-af8bad6439b3"
-  				}
-			}`),
-			output: []byte(`{
-  				"id": "bid_id",
-  				"site": {
-  				  "id":"reqSiteId",
-  				  "page": "http://www.foobar.com/1234.html",
-  				  "publisher": {
-  				    "id": "1"
-  				  }
-  				},
-  				"user": {
-  				  "id": "appId",
-				  "ext": {}
-  				},
-  				"tmax": 5000,
-  				"source": {
-  				  "tid": "ad839de0-5ae6-40bb-92b2-af8bad6439b3"
-  				}
-			}`),
+			input: openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID: "bid_id",
+					Site: &openrtb2.Site{
+						ID:   "reqSiteId",
+						Page: "http://www.foobar.com/1234.html",
+						Publisher: &openrtb2.Publisher{
+							ID: "1",
+						},
+					},
+					User: &openrtb2.User{
+						ID:     "reqUserID",
+						Yob:    1982,
+						Gender: "M",
+						Ext:    json.RawMessage(`{"data": {"someuserfpd": "userfpdDataTest"}}`),
+					},
+				},
+			},
+			output: openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID: "bid_id",
+					Site: &openrtb2.Site{
+						ID:   "reqSiteId",
+						Page: "http://www.foobar.com/1234.html",
+						Publisher: &openrtb2.Publisher{
+							ID: "1",
+						},
+					},
+					User: &openrtb2.User{
+						ID:     "reqUserID",
+						Yob:    1982,
+						Gender: "M",
+					},
+				},
+			},
 			expectedFpd: map[string][]byte{
 				"app":  nil,
 				"user": []byte(`{"someuserfpd": "userfpdDataTest"}`),
@@ -179,51 +151,46 @@ func TestExtractGlobalFPD(t *testing.T) {
 		},
 		{
 			description: "No FPD present in req",
-			input: []byte(`{
-  				"id": "bid_id",
-  				"site": {
-  				  "id":"reqSiteId",
-  				  "page": "http://www.foobar.com/1234.html",
-  				  "publisher": {
-  				    "id": "1"
-  				  }
-  				},
-  				"app": {
-  				  "id": "appId",
-  				  "ext": {
-                  }
-  				},
-			  	"user": {
-  				  "id": "userId",
-				  "ext": {}
-  				},
-  				"tmax": 5000,
-  				"source": {
-  				  "tid": "ad839de0-5ae6-40bb-92b2-af8bad6439b3"
-  				}
-			}`),
-			output: []byte(`{
-  				"id": "bid_id",
-  				"site": {
-  				  "id":"reqSiteId",
-  				  "page": "http://www.foobar.com/1234.html",
-  				  "publisher": {
-  				    "id": "1"
-  				  }
-  				},
-  				"app": {
-  				  "id": "appId",
-				  "ext": {}
-  				},
-				"user": {
-  				  "id": "userId",
-				  "ext": {}
-  				},
-  				"tmax": 5000,
-  				"source": {
-  				  "tid": "ad839de0-5ae6-40bb-92b2-af8bad6439b3"
-  				}
-			}`),
+			input: openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID: "bid_id",
+					Site: &openrtb2.Site{
+						ID:   "reqSiteId",
+						Page: "http://www.foobar.com/1234.html",
+						Publisher: &openrtb2.Publisher{
+							ID: "1",
+						},
+					},
+					User: &openrtb2.User{
+						ID:     "reqUserID",
+						Yob:    1982,
+						Gender: "M",
+					},
+					App: &openrtb2.App{
+						ID: "appId",
+					},
+				},
+			},
+			output: openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID: "bid_id",
+					Site: &openrtb2.Site{
+						ID:   "reqSiteId",
+						Page: "http://www.foobar.com/1234.html",
+						Publisher: &openrtb2.Publisher{
+							ID: "1",
+						},
+					},
+					User: &openrtb2.User{
+						ID:     "reqUserID",
+						Yob:    1982,
+						Gender: "M",
+					},
+					App: &openrtb2.App{
+						ID: "appId",
+					},
+				},
+			},
 			expectedFpd: map[string][]byte{
 				"app":  nil,
 				"user": nil,
@@ -232,47 +199,37 @@ func TestExtractGlobalFPD(t *testing.T) {
 		},
 		{
 			description: "Site FPD only present",
-			input: []byte(`{
-  				"id": "bid_id",
-  				"site": {
-  				  "id":"reqSiteId",
-  				  "page": "http://www.foobar.com/1234.html",
-  				  "publisher": {
-  				    "id": "1"
-  				  },
-				  "ext": {
-					"data": {"someappfpd": true},
-					"amp": 1
-                  }
-  				},
-  				"app": {
-  				  "id": "appId"
-  				},
-  				"tmax": 5000,
-  				"source": {
-  				  "tid": "ad839de0-5ae6-40bb-92b2-af8bad6439b3"
-  				}
-			}`),
-			output: []byte(`{
-  				"id": "bid_id",
-  				"site": {
-  				  "id":"reqSiteId",
-  				  "page": "http://www.foobar.com/1234.html",
-  				  "publisher": {
-  				    "id": "1"
-  				  },
-                 "ext": {
-					"amp": 1
-                  }
-  				},
-  				"app": {
-  				  "id": "appId"
-  				},
-  				"tmax": 5000,
-  				"source": {
-  				  "tid": "ad839de0-5ae6-40bb-92b2-af8bad6439b3"
-  				}
-			}`),
+			input: openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID: "bid_id",
+					Site: &openrtb2.Site{
+						ID:   "reqSiteId",
+						Page: "http://www.foobar.com/1234.html",
+						Publisher: &openrtb2.Publisher{
+							ID: "1",
+						},
+						Ext: json.RawMessage(`{"data": {"someappfpd": true}}`),
+					},
+					App: &openrtb2.App{
+						ID: "appId",
+					},
+				},
+			},
+			output: openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID: "bid_id",
+					Site: &openrtb2.Site{
+						ID:   "reqSiteId",
+						Page: "http://www.foobar.com/1234.html",
+						Publisher: &openrtb2.Publisher{
+							ID: "1",
+						},
+					},
+					App: &openrtb2.App{
+						ID: "appId",
+					},
+				},
+			},
 			expectedFpd: map[string][]byte{
 				"app":  nil,
 				"user": nil,
@@ -281,17 +238,14 @@ func TestExtractGlobalFPD(t *testing.T) {
 		},
 	}
 	for _, test := range testCases {
-		var inputTestReq openrtb_ext.RequestWrapper
-		err := json.Unmarshal(test.input, &inputTestReq)
+
+		inputReq := &test.input
+		fpd, err := ExtractGlobalFPD(inputReq)
+		assert.NoError(t, err, "Error should be nil")
+		err = inputReq.RebuildRequest()
 		assert.NoError(t, err, "Error should be nil")
 
-		fpd, err := ExtractGlobalFPD(&inputTestReq)
-		inputTestReq.RebuildRequest()
-		assert.NoError(t, err, "Error should be nil")
-
-		var outputTestReq openrtb_ext.RequestWrapper
-		err = json.Unmarshal(test.output, &outputTestReq)
-		assert.NoError(t, err, "Error should be nil")
+		assert.Equal(t, inputReq.BidRequest, test.output.BidRequest, "Incorrect input request after global fpd extraction")
 
 		assert.Equal(t, test.expectedFpd[userKey], fpd[userKey], "Incorrect User FPD")
 		assert.Equal(t, test.expectedFpd[appKey], fpd[appKey], "Incorrect App FPD")
