@@ -41,8 +41,8 @@ type Configuration struct {
 	Accounts          StoredRequests  `mapstructure:"accounts"`
 	UserSync          UserSync        `mapstructure:"user_sync"`
 	// Note that StoredVideo refers to stored video requests, and has nothing to do with caching video creatives.
-	StoredVideo       StoredRequests `mapstructure:"stored_video_req"`
-	StoredResponses   StoredRequests `mapstructure:"stored_responses"`
+	StoredVideo     StoredRequests `mapstructure:"stored_video_req"`
+	StoredResponses StoredRequests `mapstructure:"stored_responses"`
 
 	// Adapters should have a key for every openrtb_ext.BidderName, converted to lower-case.
 	// Se also: https://github.com/spf13/viper/issues/371#issuecomment-335388559
