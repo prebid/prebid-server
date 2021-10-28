@@ -15,9 +15,7 @@ var quote = []byte(`"`)[0]
 
 //Finds element in json byte array with any level of nesting
 func FindElement(extension []byte, elementNames ...string) (bool, int64, int64, error) {
-
 	elementName := elementNames[0]
-
 	buf := bytes.NewBuffer(extension)
 	dec := json.NewDecoder(buf)
 	found := false
@@ -32,9 +30,7 @@ func FindElement(extension []byte, elementNames ...string) (bool, int64, int64, 
 		if err != nil {
 			return false, -1, -1, err
 		}
-
 		if token == elementName {
-
 			err := dec.Decode(&i)
 			if err != nil {
 				return false, -1, -1, err
@@ -46,7 +42,6 @@ func FindElement(extension []byte, elementNames ...string) (bool, int64, int64, 
 				if extension[startIndex] == comma {
 					startIndex++
 				}
-
 				for {
 					//structure has more elements, need to find index of comma
 					if extension[endIndex] == comma {
@@ -61,13 +56,11 @@ func FindElement(extension []byte, elementNames ...string) (bool, int64, int64, 
 		} else {
 			startIndex = dec.InputOffset()
 		}
-
 	}
 	if found {
 		if len(elementNames) == 1 {
 			return found, startIndex, endIndex, nil
 		} else if len(elementNames) > 1 {
-
 			for {
 				//find the beginning of nested element
 				if extension[startIndex] == colon {
@@ -76,7 +69,6 @@ func FindElement(extension []byte, elementNames ...string) (bool, int64, int64, 
 				}
 				startIndex++
 			}
-
 			for {
 				if endIndex == int64(len(extension)) {
 					endIndex--
@@ -93,9 +85,7 @@ func FindElement(extension []byte, elementNames ...string) (bool, int64, int64, 
 				} else {
 					endIndex--
 				}
-
 			}
-
 			if found {
 				found, startInd, endInd, err := FindElement(extension[startIndex:endIndex], elementNames[1:]...)
 				return found, startIndex + startInd, startIndex + endInd, err
