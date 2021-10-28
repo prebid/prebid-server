@@ -20,7 +20,6 @@
       "gender": "M"
     }
   },
-  "outputRequestData": {},
   "bidderConfigFPD": {
     "appnexus": {
       "app": {
@@ -37,8 +36,11 @@
       }
     }
   },
+  "outputRequestData": {},
   "validationErrors": [
-    {"Message": "incorrect First Party Data for bidder appnexus: App object is not defined in request, but defined in FPD config"}
+    {
+      "Message": "incorrect First Party Data for bidder appnexus: App object is not defined in request, but defined in FPD config"
+    }
   ]
 }
 

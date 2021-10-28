@@ -14,6 +14,50 @@
       "gender": "M"
     }
   },
+  "bidderConfigFPD": {
+    "appnexus": {
+      "app": {
+        "id": "apnAppId",
+        "ext": {
+          "data": {
+            "morefpdData": "morefpddata",
+            "appFpddata": "appFpddata",
+            "moreFpd": {
+              "fpd": 123
+            }
+          }
+        }
+      }
+    }
+  },
+  "globalFPD": {
+    "app": {
+      "appFpd": 123
+    },
+    "user": {
+      "testUserFpd": "testuser"
+    },
+    "appContentData": [
+      {
+        "id": "appData1",
+        "name": "appName1"
+      },
+      {
+        "id": "appData2",
+        "name": "appName2"
+      }
+    ],
+    "userData": [
+      {
+        "id": "userData1",
+        "name": "userName1"
+      },
+      {
+        "id": "userData2",
+        "name": "userName2"
+      }
+    ]
+  },
   "outputRequestData": {
     "app": {
       "id": "reqAppId",
@@ -38,7 +82,7 @@
           "moreFpd": {
             "fpd": 123
           },
-          "id":"apnAppId",
+          "id": "apnAppId",
           "morefpdData": "morefpddata",
           "appFpd": 123,
           "appFpddata": "appFpddata"
@@ -65,50 +109,6 @@
         }
       }
     }
-  },
-  "bidderConfigFPD": {
-    "appnexus": {
-      "app": {
-        "id": "apnAppId",
-        "ext": {
-          "data": {
-            "morefpdData": "morefpddata",
-            "appFpddata": "appFpddata",
-            "moreFpd": {
-              "fpd": 123
-            }
-          }
-        }
-      }
-    }
-  },
-  "globalFPD": {
-    "app": {
-      "appFpd": 123
-    },
-    "user": {
-      "testUserFpd": "testuser"
-    },
-    "appContentData":[
-      {
-        "id": "appData1",
-        "name": "appName1"
-      },
-      {
-        "id": "appData2",
-        "name": "appName2"
-      }
-    ],
-    "userData": [
-      {
-        "id": "userData1",
-        "name": "userName1"
-      },
-      {
-        "id": "userData2",
-        "name": "userName2"
-      }
-    ]
   }
 }
 

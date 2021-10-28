@@ -30,62 +30,6 @@
       "gender": "M"
     }
   },
-  "outputRequestData": {
-    "site": {
-      "id": "reqSiteId",
-      "page": "http://www.foobar.com/1234.html",
-      "ref": "fpdRef",
-      "publisher": {
-        "id": "1"
-      },
-      "content": {
-        "episode": 6,
-        "title": "episodeName",
-        "series": "TvName",
-        "season": "season3",
-        "len": 900,
-        "data": [
-          {
-            "id": "siteData1",
-            "name": "siteName1"
-          },
-          {
-            "id": "siteData2",
-            "name": "siteName2"
-          }
-        ]
-      },
-      "ext": {
-        "testSiteExt": 123,
-        "data": {
-          "ref":"fpdRef",
-          "id":"apnSiteId",
-          "moreFpd": {
-            "fpd": 123
-          },
-          "morefpdData": "morefpddata",
-          "siteFpd": 123,
-          "siteFpddata": "siteFpddata"
-        }
-      }
-    },
-    "device": {
-      "ua": "testDevice",
-      "ip": "123.145.167.10",
-      "devicetype": 1,
-      "ifa": "123"
-    },
-    "user": {
-      "id": "reqUserID",
-      "yob": 1982,
-      "gender": "M",
-      "ext": {
-        "data":{
-          "testUserFpd": "testuser"
-        }
-      }
-    }
-  },
   "bidderConfigFPD": {
     "appnexus": {
       "site": {
@@ -116,7 +60,7 @@
     "user": {
       "testUserFpd": "testuser"
     },
-    "siteContentData":[
+    "siteContentData": [
       {
         "id": "siteData1",
         "name": "siteName1"
@@ -126,6 +70,62 @@
         "name": "siteName2"
       }
     ]
+  },
+  "outputRequestData": {
+    "site": {
+      "id": "reqSiteId",
+      "page": "http://www.foobar.com/1234.html",
+      "ref": "fpdRef",
+      "publisher": {
+        "id": "1"
+      },
+      "content": {
+        "episode": 6,
+        "title": "episodeName",
+        "series": "TvName",
+        "season": "season3",
+        "len": 900,
+        "data": [
+          {
+            "id": "siteData1",
+            "name": "siteName1"
+          },
+          {
+            "id": "siteData2",
+            "name": "siteName2"
+          }
+        ]
+      },
+      "ext": {
+        "testSiteExt": 123,
+        "data": {
+          "ref": "fpdRef",
+          "id": "apnSiteId",
+          "moreFpd": {
+            "fpd": 123
+          },
+          "morefpdData": "morefpddata",
+          "siteFpd": 123,
+          "siteFpddata": "siteFpddata"
+        }
+      }
+    },
+    "device": {
+      "ua": "testDevice",
+      "ip": "123.145.167.10",
+      "devicetype": 1,
+      "ifa": "123"
+    },
+    "user": {
+      "id": "reqUserID",
+      "yob": 1982,
+      "gender": "M",
+      "ext": {
+        "data": {
+          "testUserFpd": "testuser"
+        }
+      }
+    }
   }
 }
 

@@ -7,7 +7,6 @@
       "gender": "M"
     }
   },
-  "outputRequestData": {},
   "bidderConfigFPD": {
     "appnexus": {
       "site": {
@@ -24,8 +23,11 @@
       }
     }
   },
+  "outputRequestData": {},
   "validationErrors": [
-    {"Message": "incorrect First Party Data for bidder appnexus: Site object is not defined in request, but defined in FPD config"}
+    {
+      "Message": "incorrect First Party Data for bidder appnexus: Site object is not defined in request, but defined in FPD config"
+    }
   ]
 }
 

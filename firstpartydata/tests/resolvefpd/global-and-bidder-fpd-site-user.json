@@ -19,6 +19,37 @@
       "id": "apnUserId"
     }
   },
+  "bidderConfigFPD": {
+    "appnexus": {
+      "site": {
+        "id": "apnSiteId",
+        "ext": {
+          "data": {
+            "morefpdData": "morefpddata",
+            "siteFpddata": "siteFpddata",
+            "moreFpd": {
+              "fpd": 123
+            }
+          }
+        }
+      },
+      "user": {
+        "id": "apnUserId",
+        "ext": {
+          "data": {
+            "moreFpd": {
+              "fpd": 567
+            }
+          }
+        }
+      }
+    }
+  },
+  "globalFPD": {
+    "user": {
+      "testUserFpd": "testuser"
+    }
+  },
   "outputRequestData": {
     "site": {
       "id": "reqSiteId",
@@ -59,37 +90,6 @@
           "testUserFpd": "testuser"
         }
       }
-    }
-  },
-  "bidderConfigFPD": {
-    "appnexus": {
-      "site": {
-        "id": "apnSiteId",
-        "ext": {
-          "data": {
-            "morefpdData": "morefpddata",
-            "siteFpddata": "siteFpddata",
-            "moreFpd": {
-              "fpd": 123
-            }
-          }
-        }
-      },
-      "user": {
-        "id": "apnUserId",
-        "ext": {
-          "data": {
-            "moreFpd": {
-              "fpd": 567
-            }
-          }
-        }
-      }
-    }
-  },
-  "globalFPD": {
-    "user": {
-      "testUserFpd": "testuser"
     }
   }
 }

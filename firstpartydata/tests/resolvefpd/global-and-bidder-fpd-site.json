@@ -16,35 +16,6 @@
       }
     }
   },
-  "outputRequestData": {
-    "site": {
-      "id": "reqSiteId",
-      "page": "http://www.foobar.com/1234.html",
-      "ref": "fpdRef",
-      "publisher": {
-        "id": "1"
-      },
-      "content": {
-        "episode": 6,
-        "title": "episodeName",
-        "series": "TvName",
-        "season": "season3",
-        "len": 900
-      },
-      "ext": {
-        "data": {
-          "id":"apnSiteId",
-          "ref":"fpdRef",
-          "moreFpd": {
-            "fpd": 123
-          },
-          "morefpdData": "morefpddata",
-          "siteFpd": 123,
-          "siteFpddata": "siteFpddata"
-        }
-      }
-    }
-  },
   "bidderConfigFPD": {
     "appnexus": {
       "site": {
@@ -66,6 +37,35 @@
   "globalFPD": {
     "site": {
       "siteFpd": 123
+    }
+  },
+  "outputRequestData": {
+    "site": {
+      "id": "reqSiteId",
+      "page": "http://www.foobar.com/1234.html",
+      "ref": "fpdRef",
+      "publisher": {
+        "id": "1"
+      },
+      "content": {
+        "episode": 6,
+        "title": "episodeName",
+        "series": "TvName",
+        "season": "season3",
+        "len": 900
+      },
+      "ext": {
+        "data": {
+          "id": "apnSiteId",
+          "ref": "fpdRef",
+          "moreFpd": {
+            "fpd": 123
+          },
+          "morefpdData": "morefpddata",
+          "siteFpd": 123,
+          "siteFpddata": "siteFpddata"
+        }
+      }
     }
   }
 }

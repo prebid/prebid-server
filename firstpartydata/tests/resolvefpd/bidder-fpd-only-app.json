@@ -5,6 +5,22 @@
       "id": "reqUserID"
     }
   },
+  "bidderConfigFPD": {
+    "appnexus": {
+      "app": {
+        "id": "apnAppId",
+        "ext": {
+          "data": {
+            "morefpdData": "morefpddata",
+            "appFpddata": "appFpddata",
+            "moreFpd": {
+              "fpd": 123
+            }
+          }
+        }
+      }
+    }
+  },
   "outputRequestData": {
     "app": {
       "id": "reqUserID",
@@ -23,23 +39,6 @@
         }
       }
     }
-  },
-  "bidderConfigFPD": {
-    "appnexus": {
-      "app": {
-        "id": "apnAppId",
-        "ext": {
-          "data": {
-            "morefpdData": "morefpddata",
-            "appFpddata": "appFpddata",
-            "moreFpd": {
-              "fpd": 123
-            }
-          }
-        }
-      }
-    }
-  },
-  "globalFPD": {}
+  }
 }
 

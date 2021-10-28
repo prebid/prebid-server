@@ -7,6 +7,23 @@
       "gender": "M"
     }
   },
+  "bidderConfigFPD": {
+    "appnexus": {
+      "user": {
+        "id": "apnUserId",
+        "yob": 1982,
+        "ext": {
+          "data": {
+            "morefpdData": "morefpddata",
+            "userFpddata": "userFpddata",
+            "moreFpd": {
+              "fpd": 123
+            }
+          }
+        }
+      }
+    }
+  },
   "outputRequestData": {
     "user": {
       "id": "reqUserID",
@@ -27,24 +44,6 @@
         }
       }
     }
-  },
-  "bidderConfigFPD": {
-    "appnexus": {
-      "user": {
-        "id": "apnUserId",
-        "yob": 1982,
-        "ext": {
-          "data": {
-            "morefpdData": "morefpddata",
-            "userFpddata": "userFpddata",
-            "moreFpd": {
-              "fpd": 123
-            }
-          }
-        }
-      }
-    }
-  },
-  "globalFPD": {}
+  }
 }
 
