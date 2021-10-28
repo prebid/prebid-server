@@ -1,5 +1,5 @@
 {
-  "description": "Global FPD not defined and req.user.data defined",
+  "description": "req.user.data is present but req.ext.prebid is not defined; expect req.user.data remains the same and no FPD data for bidders",
   "inputRequestData": {
     "id": "bid_id",
     "user": {

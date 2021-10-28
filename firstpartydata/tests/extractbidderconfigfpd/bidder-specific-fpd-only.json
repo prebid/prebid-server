@@ -1,5 +1,5 @@
 {
-  "description": "Extracts bidder configs for multiple bidders, only bidder configs present",
+  "description": "Extracts bidder configs for multiple bidders, one config has two bidders; expect to have bidder FPD configs for all bidders",
   "inputRequestData": {
     "data": {},
     "bidderconfig": [

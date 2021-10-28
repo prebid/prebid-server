@@ -1,5 +1,5 @@
 {
-  "description": "Global FPD defined for one bidder and  bidders FPD for two bidders is defined, req.app and req.user present",
+  "description": "req.app.content.data defined; bidder config defined for appnexus and telaria but only appnexus listed in req.ext.prebid.data.bidders; expect all FPD data to be included only in appnexus resolved FPD and extracted from the original request",
   "inputRequestData": {
     "id": "bid_id",
     "app": {

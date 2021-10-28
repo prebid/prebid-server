@@ -1,5 +1,5 @@
 {
-  "description": "Global FPD and bidders FPD for two bidders are defined",
+  "description": "req.site is present; req.ext.prebid.data.bidders has two bidders; req.ext.prebid.bidderconfig is defined for two bidders from req.ext.prebid.data.bidders; expect to see both bidders in resolved bidder FPD",
   "inputRequestData": {
     "id": "bid_id",
     "site": {

@@ -1,5 +1,5 @@
 {
-  "description": "Global FPD is empty and req.app.content.data defined",
+  "description": "req.app.content.data defined; req.ext.prebid.data.bidders is empty; expect req.site.content.data do not contain req.app.content.data from the original request",
   "inputRequestData": {
     "id": "bid_id",
     "app": {

@@ -1,5 +1,5 @@
 {
-  "description": "Global FPD for one bidder defined and bidders FPD for two bidders is defined, req.site and req.user present",
+  "description": "req.site is present; req.ext.prebid.data.bidders has appnexus bidder only; req.ext.prebid.bidderconfig is defined for two bidders appnexus and telaria; expect to see only appnexus in resolved bidder FPD and have extra data in site.ext.data",
   "inputRequestData": {
     "id": "bid_id",
     "site": {

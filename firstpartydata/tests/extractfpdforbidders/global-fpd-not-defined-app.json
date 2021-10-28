@@ -1,5 +1,5 @@
 {
-  "description": "Global FPD not defined and req.app defined",
+  "description": "req.app.ext.data is present but req.ext.prebid is not defined; expect req.app.ext.data remains the same and no FPD data for bidders",
   "inputRequestData": {
     "id": "bid_id",
     "app": {

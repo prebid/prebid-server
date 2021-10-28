@@ -1,5 +1,5 @@
 {
-  "description": "Global FPD is empty and bidder FPD defined for user",
+  "description": "req.user.ext.data is present but req.ext.prebid.data.bidders is empty; expect req.user.ext.data to not be included in any of the resolved bidder FPD, but extracted from output request",
   "inputRequestData": {
     "id": "bid_id",
     "user": {

@@ -1,5 +1,5 @@
 {
-  "description": "Global FPD is empty and bidder FPD defined for site",
+  "description": "req.site.ext.data is present but req.ext.prebid.data.bidders is empty; expect req.site.ext.data to not be included in any of the resolved bidder FPD",
   "inputRequestData": {
     "id": "bid_id",
     "site": {

@@ -1,5 +1,5 @@
 {
-  "description": "Global FPD is defined and req.site.content.data defined",
+  "description": "req.site.content.data defined; req.ext.prebid.data.bidders contains appnexus; expect req.site.content.data to be included in the appnexus resolved FPD but extracted from the original request",
   "inputRequestData": {
     "id": "bid_id",
     "site": {
