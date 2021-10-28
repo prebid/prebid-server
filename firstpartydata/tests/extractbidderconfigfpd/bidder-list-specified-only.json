@@ -1,5 +1,5 @@
 {
-  "description": "Only global bidder list specified - no bidder configs expected",
+  "description": "Only global bidder list specified - no bidder fpds expected",
   "inputRequestData": {
     "data": {
       "bidders": [

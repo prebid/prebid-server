@@ -565,10 +565,9 @@ func ExtractBidderConfigFPD(reqExt *openrtb_ext.RequestExt) (map[openrtb_ext.Bid
 
 	fpd := make(map[openrtb_ext.BidderName]*openrtb_ext.ORTB2)
 	reqExtPrebid := reqExt.GetPrebid()
-	if reqExtPrebid != nil && len(reqExtPrebid.BidderConfigs) > 0 {
+	if reqExtPrebid != nil {
 		for _, bidderConfig := range reqExtPrebid.BidderConfigs {
 			for _, bidder := range bidderConfig.Bidders {
-
 				if _, present := fpd[openrtb_ext.BidderName(bidder)]; present {
 					//if bidder has duplicated config - throw an error
 					return nil, &errortypes.BadInput{

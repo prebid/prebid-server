@@ -1,5 +1,5 @@
 {
-  "description": "No FPD specified",
+  "description": "Bidder config not specified",
   "inputRequestData": {},
   "outputRequestData": {},
   "bidderConfigFPD": {}
