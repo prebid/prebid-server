@@ -82,7 +82,8 @@ func NewVideoEndpoint(
 		bidderMap,
 		cache,
 		videoEndpointRegexp,
-		ipValidator}).VideoAuctionEndpoint), nil
+		ipValidator,
+		nil}).VideoAuctionEndpoint), nil
 }
 
 /*
