@@ -1,0 +1,15 @@
+maintainer:
+  email: partnerintegrations@richaudience.com
+gvlVendorID: 108
+modifyingVastXmlAllowed: true
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+  app:
+    mediaTypes:
+      - banner
+userSync:
+  iframe:
+    url: "https://sync.richaudience.com/74889303289e27f327ad0c6de7be7264/?consentString={{.GDPRConsent}}&r={{.RedirectURL}}"
+    userMacro: "[PDID]"

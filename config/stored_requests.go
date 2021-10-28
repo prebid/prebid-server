@@ -133,7 +133,6 @@ func resolvedStoredRequestsConfig(cfg *Configuration) {
 	cfg.StoredVideo.dataType = VideoDataType
 	cfg.CategoryMapping.dataType = CategoryDataType
 	cfg.Accounts.dataType = AccountDataType
-	return
 }
 
 func (cfg *StoredRequests) validate(errs []error) []error {

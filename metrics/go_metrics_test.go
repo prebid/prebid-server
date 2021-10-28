@@ -36,10 +36,6 @@ func TestNewMetrics(t *testing.T) {
 	ensureContains(t, registry, "prebid_cache_request_time.ok", m.PrebidCacheRequestTimerSuccess)
 	ensureContains(t, registry, "prebid_cache_request_time.err", m.PrebidCacheRequestTimerError)
 
-	ensureContains(t, registry, "requests.ok.legacy", m.RequestStatuses[ReqTypeLegacy][RequestStatusOK])
-	ensureContains(t, registry, "requests.badinput.legacy", m.RequestStatuses[ReqTypeLegacy][RequestStatusBadInput])
-	ensureContains(t, registry, "requests.err.legacy", m.RequestStatuses[ReqTypeLegacy][RequestStatusErr])
-	ensureContains(t, registry, "requests.networkerr.legacy", m.RequestStatuses[ReqTypeLegacy][RequestStatusNetworkErr])
 	ensureContains(t, registry, "requests.ok.openrtb2-web", m.RequestStatuses[ReqTypeORTB2Web][RequestStatusOK])
 	ensureContains(t, registry, "requests.badinput.openrtb2-web", m.RequestStatuses[ReqTypeORTB2Web][RequestStatusBadInput])
 	ensureContains(t, registry, "requests.err.openrtb2-web", m.RequestStatuses[ReqTypeORTB2Web][RequestStatusErr])
