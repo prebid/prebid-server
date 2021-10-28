@@ -19,7 +19,7 @@
     },
     "imp": [
       {
-        "id": "some-impression-id",
+        "id": "some-impression-id1",
         "tagid": "ogTAGID",
         "banner": {
           "w":320,
@@ -33,7 +33,7 @@
         }
       },     
        {
-        "id": "some-impression-id",
+        "id": "some-impression-id2",
         "tagid": "ogTAGID",
         "banner": {
           "w":320,
@@ -79,7 +79,7 @@
           },
           "imp": [
             {
-              "id": "some-impression-id",
+              "id": "some-impression-id1",
               "tagid": "ogTAGID",
               "banner": {
                 "w":320,
@@ -87,7 +87,7 @@
               }
             },
             {
-              "id": "some-impression-id",
+              "id": "some-impression-id2",
               "tagid": "ogTAGID",
               "banner": {
                 "w":320,
@@ -116,7 +116,7 @@
               "bid": [
                 {
                   "id": "a3ae1b4e2fc24a4fb45540082e98e161",
-                  "impid": "1",
+                  "impid": "some-impression-id1",
                   "price": 3.5,
                   "adm": "awesome-markup",
                   "adomain": [
@@ -127,8 +127,8 @@
                   "h": 50
                 },
                 {
-                  "id": "a3ae1b4e2fc24a4fb45540082e98e161",
-                  "impid": "1",
+                  "id": "a3ae1b4e2fc24a4fb45540082e98e162",
+                  "impid": "some-impression-id2",
                   "price": 3.5,
                   "adm": "awesome-markup",
                   "adomain": [
@@ -160,7 +160,7 @@
         {
           "bid":  {
             "id": "a3ae1b4e2fc24a4fb45540082e98e161",
-            "impid": "1",
+            "impid": "some-impression-id1",
             "price": 3.5,
             "adm": "awesome-markup",
             "crid": "20",
@@ -174,8 +174,8 @@
         },
         {
           "bid":  {
-            "id": "a3ae1b4e2fc24a4fb45540082e98e161",
-            "impid": "1",
+            "id": "a3ae1b4e2fc24a4fb45540082e98e162",
+            "impid": "some-impression-id2",
             "price": 3.5,
             "adm": "awesome-markup",
             "crid": "20",

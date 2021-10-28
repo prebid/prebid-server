@@ -166,13 +166,16 @@ func (a *adapter) MakeBids(
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
 	sb := bidResp.SeatBid[0]
+	var bidsArray []*adapters.TypedBid
 
-	for _, bid := range sb.Bid {
-		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-			Bid:     &bid,
+	for idx, bid := range sb.Bid {
+		bidsArray = append(bidsArray, &adapters.TypedBid{
+			Bid:     &sb.Bid[idx],
 			BidType: getMediaTypeForImp(bid.ImpID, openRTBRequest.Imp),
 		})
 	}
+
+	bidResponse.Bids = bidsArray
 	return bidResponse, nil
 }
 
