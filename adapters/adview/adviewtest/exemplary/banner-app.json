@@ -124,6 +124,7 @@
   ],
   "expectedBidResponses": [
     {
+      "currency": "USD",
       "bids": [
         {
           "bid": {

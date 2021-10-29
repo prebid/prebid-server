@@ -100,7 +100,6 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
-	//bidResponse.Currency = response.Cur
 	bidResponse.Currency = "USD" //we just support USD for resp
 
 	var errors []error
