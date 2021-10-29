@@ -1226,7 +1226,7 @@ func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *m
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
-		nil,
+		empty_fetcher.EmptyFetcher{},
 	}
 	return deps, metrics, mockModule
 }
@@ -1270,7 +1270,7 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 		ex.cache,
 		regexp.MustCompile(`[<>]`),
 		hardcodedResponseIPValidator{response: true},
-		nil,
+		empty_fetcher.EmptyFetcher{},
 	}
 
 	return deps
@@ -1294,7 +1294,7 @@ func mockDepsAppendBidderNames(t *testing.T, ex *mockExchangeAppendBidderNames) 
 		ex.cache,
 		regexp.MustCompile(`[<>]`),
 		hardcodedResponseIPValidator{response: true},
-		nil,
+		empty_fetcher.EmptyFetcher{},
 	}
 
 	return deps
@@ -1318,7 +1318,7 @@ func mockDepsNoBids(t *testing.T, ex *mockExchangeVideoNoBids) *endpointDeps {
 		ex.cache,
 		regexp.MustCompile(`[<>]`),
 		hardcodedResponseIPValidator{response: true},
-		nil,
+		empty_fetcher.EmptyFetcher{},
 	}
 
 	return edep

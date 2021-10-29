@@ -1737,7 +1737,7 @@ func TestValidateImpExt(t *testing.T) {
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
-		nil,
+		empty_fetcher.EmptyFetcher{},
 	}
 
 	for _, group := range testGroups {
@@ -1785,7 +1785,7 @@ func TestCurrencyTrunc(t *testing.T) {
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
-		nil,
+		empty_fetcher.EmptyFetcher{},
 	}
 
 	ui := int64(1)
@@ -1831,7 +1831,7 @@ func TestCCPAInvalid(t *testing.T) {
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
-		nil,
+		empty_fetcher.EmptyFetcher{},
 	}
 
 	ui := int64(1)
@@ -1881,7 +1881,7 @@ func TestNoSaleInvalid(t *testing.T) {
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
-		nil,
+		empty_fetcher.EmptyFetcher{},
 	}
 
 	ui := int64(1)
@@ -1934,7 +1934,7 @@ func TestValidateSourceTID(t *testing.T) {
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
-		nil,
+		empty_fetcher.EmptyFetcher{},
 	}
 
 	ui := int64(1)
@@ -1977,7 +1977,7 @@ func TestSChainInvalid(t *testing.T) {
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
-		nil,
+		empty_fetcher.EmptyFetcher{},
 	}
 
 	ui := int64(1)
@@ -2198,7 +2198,7 @@ func TestEidPermissionsInvalid(t *testing.T) {
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
-		nil,
+		empty_fetcher.EmptyFetcher{},
 	}
 
 	ui := int64(1)
@@ -2446,7 +2446,7 @@ func TestIOS14EndToEnd(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
-		nil)
+		empty_fetcher.EmptyFetcher{})
 
 	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "app-ios140-no-ifa.json")))
 
@@ -2480,7 +2480,7 @@ func TestAuctionWarnings(t *testing.T) {
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
-		nil,
+		empty_fetcher.EmptyFetcher{},
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -2521,7 +2521,7 @@ func TestParseRequestParseImpInfoError(t *testing.T) {
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
-		nil,
+		empty_fetcher.EmptyFetcher{},
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))

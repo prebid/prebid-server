@@ -32,6 +32,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/usersync"
 )
 
@@ -83,7 +84,7 @@ func NewVideoEndpoint(
 		cache,
 		videoEndpointRegexp,
 		ipValidator,
-		nil}).VideoAuctionEndpoint), nil
+		empty_fetcher.EmptyFetcher{}}).VideoAuctionEndpoint), nil
 }
 
 /*
