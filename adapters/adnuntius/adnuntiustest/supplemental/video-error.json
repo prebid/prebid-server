@@ -1,0 +1,26 @@
+{
+    "mockBidRequest": {
+        "id": "unsupported-native-request",
+        "imp": [
+            {
+                "id": "unsupported-native-imp",
+                "video": {
+                    "w": 728,
+                    "h": 90
+                },
+                "ext": {
+                    "bidder": {
+                        "auId": "1"
+                    }
+                }
+            }
+        ]
+    },
+
+    "expectedMakeRequestsErrors": [
+        {
+            "value": "ignoring imp id=unsupported-native-imp, Adnuntius supports only Banner",
+            "comparison": "literal"
+        }
+    ]
+}

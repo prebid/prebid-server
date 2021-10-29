@@ -1,0 +1,19 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Adnuntius Adapter Params",
+    "description": "A schema which validates params accepted by the Adnuntius adapter",
+    "type": "object",
+
+    "properties": {
+        "auId": {
+            "type": "string",
+            "description": "Placement ID"
+        },
+        "network": {
+            "type": "string",
+            "description": "Network if required"
+        }
+    },
+
+    "required": ["auId"]
+}

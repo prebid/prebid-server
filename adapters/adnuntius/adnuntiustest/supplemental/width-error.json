@@ -1,0 +1,84 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "site": {
+            "page": "prebid.org"
+        },
+        "imp": [
+            {
+                "id": "test-imp-id",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        },
+                        {
+                            "w": 300,
+                            "h": 600
+                        }
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "auId": "123"
+                    }
+                }
+            }
+        ]
+    },
+
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "http://whatever.url?format=json&tzo=0",
+                "body": {
+                    "adUnits": [
+                        {
+                            "auId": "123",
+                            "targetId": "123-test-imp-id"
+                        }
+                    ],
+                    "context": "prebid.org",
+                    "metaData": {}
+                }
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "adUnits": [
+                        {
+                            "auId": "0000000000000123",
+                            "targetId": "123-test-imp-id",
+                            "html": "<ADCODE>",
+                            "responseId": "adn-rsp-900646517",
+                            "ads": [
+                                {
+                                    "destinationUrls": {
+                                        "url": "http://www.google.com"
+                                    },
+                                    "bid": {
+                                        "amount": 20.0,
+                                        "currency": "NOK"
+                                    },
+                                    "adId": "adn-id-1559784094",
+                                    "creativeWidth": 980,
+                                    "creativeHeight": "abc",
+                                    "creativeId": "jn9hpzvlsf8cpdmm",
+                                    "lineItemId": "q7y9qm5b0xt9htrv"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [],
+    "expectedMakeBidsErrors": [
+        {
+            "value": "json: cannot unmarshal number into Go struct field .AdUnits.Ads.CreativeWidth of type string",
+            "comparison": "literal"
+        }
+    ]
+}

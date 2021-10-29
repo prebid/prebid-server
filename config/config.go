@@ -771,6 +771,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.adman.endpoint", "http://pub.admanmedia.com/?c=o&m=ortb")
 	v.SetDefault("adapters.admixer.endpoint", "http://inv-nets.admixer.net/pbs.aspx")
 	v.SetDefault("adapters.adocean.endpoint", "https://{{.Host}}")
+	v.SetDefault("adapters.adnuntius.endpoint", "https://ads.adnuntius.delivery/i")
 	v.SetDefault("adapters.adoppler.endpoint", "http://{{.AccountID}}.trustedmarketplace.io/ads/processHeaderBid/{{.AdUnit}}")
 	v.SetDefault("adapters.adot.endpoint", "https://dsp.adotmob.com/headerbidding/bidrequest")
 	v.SetDefault("adapters.adpone.endpoint", "http://rtb.adpone.com/bid-request?src=prebid_server")
