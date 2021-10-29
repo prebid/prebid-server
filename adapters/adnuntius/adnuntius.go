@@ -117,7 +117,7 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 
 	endpoint, err := makeEndpointUrl(ortbRequest, a)
 	if err != nil {
-		return nil, []error{&errortypes.BadServerResponse{
+		return nil, []error{&errortypes.BadInput{
 			Message: fmt.Sprintf("failed to parse URL: %s", err),
 		}}
 	}
