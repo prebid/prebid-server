@@ -12,8 +12,6 @@ import (
 	"github.com/xeipuuv/gojsonschema"
 )
 
-const schemaDirectory = "static/bidder-params"
-
 // BidderName refers to a core bidder id or an alias id.
 type BidderName string
 
@@ -85,6 +83,7 @@ const (
 	BidderAdkernelAdn       BidderName = "adkernelAdn"
 	BidderAdman             BidderName = "adman"
 	BidderAdmixer           BidderName = "admixer"
+	BidderAdnuntius         BidderName = "adnuntius"
 	BidderAdOcean           BidderName = "adocean"
 	BidderAdoppler          BidderName = "adoppler"
 	BidderAdot              BidderName = "adot"
@@ -155,6 +154,7 @@ const (
 	BidderMobfoxpb          BidderName = "mobfoxpb"
 	BidderMobileFuse        BidderName = "mobilefuse"
 	BidderNanoInteractive   BidderName = "nanointeractive"
+	BidderNextMillennium    BidderName = "nextmillennium"
 	BidderNinthDecimal      BidderName = "ninthdecimal"
 	BidderNoBid             BidderName = "nobid"
 	BidderOneTag            BidderName = "onetag"
@@ -169,6 +169,7 @@ const (
 	BidderPulsepoint        BidderName = "pulsepoint"
 	BidderRevcontent        BidderName = "revcontent"
 	BidderRhythmone         BidderName = "rhythmone"
+	BidderRichaudience      BidderName = "richaudience"
 	BidderRTBHouse          BidderName = "rtbhouse"
 	BidderRubicon           BidderName = "rubicon"
 	BidderSharethrough      BidderName = "sharethrough"
@@ -220,6 +221,7 @@ func CoreBidderNames() []BidderName {
 		BidderAdkernelAdn,
 		BidderAdman,
 		BidderAdmixer,
+		BidderAdnuntius,
 		BidderAdOcean,
 		BidderAdoppler,
 		BidderAdot,
@@ -290,6 +292,7 @@ func CoreBidderNames() []BidderName {
 		BidderMobfoxpb,
 		BidderMobileFuse,
 		BidderNanoInteractive,
+		BidderNextMillennium,
 		BidderNinthDecimal,
 		BidderNoBid,
 		BidderOneTag,
@@ -304,6 +307,7 @@ func CoreBidderNames() []BidderName {
 		BidderPulsepoint,
 		BidderRevcontent,
 		BidderRhythmone,
+		BidderRichaudience,
 		BidderRTBHouse,
 		BidderRubicon,
 		BidderSharethrough,

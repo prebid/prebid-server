@@ -25,7 +25,6 @@ import (
 	"github.com/prebid/prebid-server/metrics"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/util/iputil"
 
@@ -3723,21 +3722,6 @@ type mockStoredReqFetcher struct {
 
 func (cf mockStoredReqFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
 	return testStoredRequestData, testStoredImpData, nil
-}
-
-var mockAccountData = map[string]json.RawMessage{
-	"valid_acct": json.RawMessage(`{"disabled":false}`),
-}
-
-type mockAccountFetcher struct {
-}
-
-func (af mockAccountFetcher) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {
-	if account, ok := mockAccountData[accountID]; ok {
-		return account, nil
-	} else {
-		return nil, []error{stored_requests.NotFoundError{accountID, "Account"}}
-	}
 }
 
 type mockExchange struct {

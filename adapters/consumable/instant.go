@@ -9,7 +9,7 @@ type instant interface {
 // Send a real instance when you construct it in adapter_map.go
 type realInstant struct{}
 
-func (_ realInstant) Now() time.Time {
+func (realInstant) Now() time.Time {
 	return time.Now()
 }
 

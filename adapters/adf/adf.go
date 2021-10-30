@@ -95,7 +95,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	var errors []error
 	for _, seatBid := range response.SeatBid {
 		for i, bid := range seatBid.Bid {
-			bidType, err := getMediaTypeForImp(bid.ImpID, request.Imp)
+			bidType, err := getMediaTypeForBid(bid)
 			if err != nil {
 				errors = append(errors, err)
 				continue
@@ -110,20 +110,16 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	return bidResponse, errors
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
-	for _, imp := range imps {
-		if imp.ID == impID {
-			if imp.Banner != nil {
-				return openrtb_ext.BidTypeBanner, nil
-			} else if imp.Video != nil {
-				return openrtb_ext.BidTypeVideo, nil
-			} else if imp.Native != nil {
-				return openrtb_ext.BidTypeNative, nil
-			}
+func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	if bid.Ext != nil {
+		var bidExt openrtb_ext.ExtBid
+		err := json.Unmarshal(bid.Ext, &bidExt)
+		if err == nil && bidExt.Prebid != nil {
+			return openrtb_ext.ParseBidType(string(bidExt.Prebid.Type))
 		}
 	}
 
-	return "", &errortypes.BadInput{
-		Message: fmt.Sprintf("Failed to find supported impression \"%s\" mediatype", impID),
+	return "", &errortypes.BadServerResponse{
+		Message: fmt.Sprintf("Failed to parse impression \"%s\" mediatype", bid.ImpID),
 	}
 }

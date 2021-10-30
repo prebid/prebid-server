@@ -13,6 +13,12 @@
           "video/mp4"
         ],
         "placement": 1
+      },
+      "banner": {
+        "format": [{
+          "w": 300,
+          "h": 250
+        }]
       }
     }, {
       "id": "test-imp-id-2",
@@ -20,6 +26,12 @@
         "bidder": {
           "mid": "828783"
         }
+      },
+      "video": {
+        "mimes": [
+          "video/mp4"
+        ],
+        "placement": 1
       },
       "banner": {
         "format": [{
@@ -47,6 +59,12 @@
             ],
             "placement": 1
           },
+          "banner": {
+            "format": [{
+              "w": 300,
+              "h": 250
+            }]
+          },
           "tagid": "828782"
         }, {
           "id": "test-imp-id-2",
@@ -54,6 +72,12 @@
             "bidder": {
               "mid": "828783"
             }
+          },
+          "video": {
+            "mimes": [
+              "video/mp4"
+            ],
+            "placement": 1
           },
           "banner": {
             "format": [{
@@ -76,7 +100,12 @@
             "price": 10,
             "adm": "{video xml}",
             "adomain": [],
-            "crid": "test-creative-id-1"
+            "crid": "test-creative-id-1",
+            "ext": {
+              "prebid": {
+                "type": "video"
+              }
+            }
           }]
         }, {
           "bid": [{
@@ -85,7 +114,12 @@
             "price": 2,
             "adm": "{banner html}",
             "adomain": [ "ad-domain" ],
-            "crid": "test-creative-id-2"
+            "crid": "test-creative-id-2",
+            "ext": {
+              "prebid": {
+                "type": "banner"
+              }
+            }
           }]
         }],
         "cur": "EUR"
@@ -100,7 +134,12 @@
         "impid": "test-imp-id-1",
         "price": 10,
         "adm": "{video xml}",
-        "crid": "test-creative-id-1"
+        "crid": "test-creative-id-1",
+        "ext": {
+          "prebid": {
+            "type": "video"
+          }
+        }
       },
       "type": "video"
     }, {
@@ -110,7 +149,12 @@
         "price": 2,
         "adm": "{banner html}",
         "adomain": [ "ad-domain" ],
-        "crid": "test-creative-id-2"
+        "crid": "test-creative-id-2",
+        "ext": {
+          "prebid": {
+            "type": "banner"
+          }
+        }
       },
       "type": "banner"
     }]
