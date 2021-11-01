@@ -468,10 +468,9 @@ func getVideoRequests(request *openrtb2.BidRequest) ([]beachfrontVideoRequest, [
 		imp.Banner = nil
 		imp.Ext = nil
 		imp.Secure = &secure
-		err = setBidFloor(&beachfrontExt, &imp)
-
-		if err != nil {
+		if err := setBidFloor(&beachfrontExt, &imp); err != nil {
 			errs = append(errs, err)
+			failedRequestIndicies = append(failedRequestIndicies, i)
 			continue
 		}
 
@@ -581,7 +580,6 @@ func setBidFloor(ext *openrtb_ext.ExtImpBeachfront, imp *openrtb2.Imp) error {
 	}
 
 	if floor >= 0 && imp.BidFloorCur != "" && strings.ToUpper(imp.BidFloorCur) != "USD" {
-
 		return &errortypes.BadInput{
 			Message: fmt.Sprintf("unsupported bid currency, %s. bids are currently accepted in USD only.", imp.BidFloorCur),
 		}
