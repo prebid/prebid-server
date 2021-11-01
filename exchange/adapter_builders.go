@@ -249,6 +249,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderSomoaudience:      somoaudience.Builder,
 		openrtb_ext.BidderSonobi:            sonobi.Builder,
 		openrtb_ext.BidderSovrn:             sovrn.Builder,
+		openrtb_ext.BidderStreamkey:         adtelligent.Builder,
 		openrtb_ext.BidderSynacormedia:      synacormedia.Builder,
 		openrtb_ext.BidderTappx:             tappx.Builder,
 		openrtb_ext.BidderTelaria:           telaria.Builder,
