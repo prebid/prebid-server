@@ -1,10 +1,9 @@
 {
-  "description": "req.user.data defined; req.ext.prebid.data.bidders contains appnexus; expect req.user.data to be included in the appnexus resolved FPD but extracted from the original request",
+  "description": "req.app and req.ext.prebid.data.bidders contains appnexus; expect bidder config with app data to be included in the resolved FPD for appnexus",
   "inputRequestData": {
     "id": "bid_id",
     "app": {
       "id": "reqAppId",
-      "page": "http://www.foobar.com/1234.html",
       "publisher": {
         "id": "1"
       }
@@ -34,8 +33,7 @@
                   "sectioncat": ["books"],
                   "pagecat": ["magazines"],
                   "keywords": "apnKeywords",
-                  "ver": "1.2",
-                  "page": "http://www.foobar.com/testurl.html"
+                  "ver": "1.2"
                 }
               }
             }
@@ -48,7 +46,6 @@
     "id": "bid_id",
     "app": {
       "id": "reqAppId",
-      "page": "http://www.foobar.com/1234.html",
       "publisher": {
         "id": "1"
       }
@@ -68,14 +65,12 @@
         "pagecat": ["magazines"],
         "keywords": "apnKeywords",
         "ver": "1.2",
-        "page": "http://www.foobar.com/testurl.html",
         "publisher": {
           "id": "1"
         },
         "ext": {
           "data": {
-            "id": "apnAppId",
-            "page": "http://www.foobar.com/testurl.html"
+            "id": "apnAppId"
           }
         }
       }

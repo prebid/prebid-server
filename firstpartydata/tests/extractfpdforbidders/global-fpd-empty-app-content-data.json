@@ -1,5 +1,5 @@
 {
-  "description": "req.app.content.data defined; req.ext.prebid.data.bidders is empty; expect req.site.content.data do not contain req.app.content.data from the original request",
+  "description": "req.app.content.data defined; req.ext.prebid.data.bidders is empty; expect req.app.content.data to not be included in any of the resolved bidder FPD and extracted from the original request",
   "inputRequestData": {
     "id": "bid_id",
     "app": {
