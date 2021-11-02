@@ -15,7 +15,7 @@ func TestExtractGlobalFPD(t *testing.T) {
 	testCases := []struct {
 		description string
 		input       openrtb_ext.RequestWrapper
-		output      openrtb_ext.RequestWrapper
+		expectedReq openrtb_ext.RequestWrapper
 		expectedFpd map[string][]byte
 	}{
 		{
@@ -43,7 +43,7 @@ func TestExtractGlobalFPD(t *testing.T) {
 					},
 				},
 			},
-			output: openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+			expectedReq: openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
 				ID: "bid_id",
 				Site: &openrtb2.Site{
 					ID:   "reqSiteId",
@@ -85,7 +85,7 @@ func TestExtractGlobalFPD(t *testing.T) {
 					},
 				},
 			},
-			output: openrtb_ext.RequestWrapper{
+			expectedReq: openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					ID: "bid_id",
 					Site: &openrtb2.Site{
@@ -126,7 +126,7 @@ func TestExtractGlobalFPD(t *testing.T) {
 					},
 				},
 			},
-			output: openrtb_ext.RequestWrapper{
+			expectedReq: openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					ID: "bid_id",
 					Site: &openrtb2.Site{
@@ -171,7 +171,7 @@ func TestExtractGlobalFPD(t *testing.T) {
 					},
 				},
 			},
-			output: openrtb_ext.RequestWrapper{
+			expectedReq: openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					ID: "bid_id",
 					Site: &openrtb2.Site{
@@ -215,7 +215,7 @@ func TestExtractGlobalFPD(t *testing.T) {
 					},
 				},
 			},
-			output: openrtb_ext.RequestWrapper{
+			expectedReq: openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					ID: "bid_id",
 					Site: &openrtb2.Site{
@@ -245,7 +245,7 @@ func TestExtractGlobalFPD(t *testing.T) {
 		err = inputReq.RebuildRequest()
 		assert.NoError(t, err, "Error should be nil")
 
-		assert.Equal(t, inputReq.BidRequest, test.output.BidRequest, "Incorrect input request after global fpd extraction")
+		assert.Equal(t, test.expectedReq.BidRequest, inputReq.BidRequest, "Incorrect input request after global fpd extraction")
 
 		assert.Equal(t, test.expectedFpd[userKey], fpd[userKey], "Incorrect User FPD")
 		assert.Equal(t, test.expectedFpd[appKey], fpd[appKey], "Incorrect App FPD")
