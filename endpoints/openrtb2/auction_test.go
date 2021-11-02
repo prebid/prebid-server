@@ -1186,7 +1186,7 @@ func TestChannelSupport(t *testing.T) {
 		},
 		{
 			description:           "No channel object in site request, expect nil",
-			givenBidRequestData:   testBidRequestForChannelTest[3],
+			givenBidRequestData:   testBidRequestForChannelTest[2],
 			expectedChannelObject: nil,
 		},
 	}
@@ -3692,40 +3692,6 @@ var testBidRequestForChannelTest = []string{
 	}`,
 	`{
 		"id": "some-request-id20",
-		"app": {
-			"id": "12345"
-		},
-		"imp": [
-			{
-				"id": "some-impression-id",
-				"banner": {
-					"format": [
-						{
-							"w": 600,
-							"h": 500
-						},
-						{
-							"w": 300,
-							"h": 600
-						}
-					]
-				},
-				"ext": {
-					"appnexus": {
-						"placementId": 12883451
-					}
-				}
-			}
-		],
-		"ext": {
-			"prebid": {
-				"channel" : {
-				}
-			}
-		}
-	}`,
-	`{
-		"id": "some-request-id20",
 		"site": {
 			"page": "prebid.org"
 		},
@@ -3750,70 +3716,6 @@ var testBidRequestForChannelTest = []string{
 		}],
 		"ext": {
 			"prebid": {
-			}
-		}
-	}`,
-	`{
-		"id": "some-request-id20",
-		"site": {
-			"page": "prebid.org"
-		},
-		"imp": [{
-			"id": "some-impression-id",
-			"banner": {
-				"format": [{
-						"w": 600,
-						"h": 500
-					},
-					{
-						"w": 300,
-						"h": 600
-					}
-				]
-			},
-			"ext": {
-				"appnexus": {
-					"placementId": 12883451
-				}
-			}
-		}],
-		"ext": {
-			"prebid": {
-				"channel" : {
-				}
-			}
-		}
-	}`,
-	`{
-		"id": "some-request-id20",
-		"site": {
-			"page": "prebid.org"
-		},
-		"imp": [{
-			"id": "some-impression-id",
-			"banner": {
-				"format": [{
-						"w": 600,
-						"h": 500
-					},
-					{
-						"w": 300,
-						"h": 600
-					}
-				]
-			},
-			"ext": {
-				"appnexus": {
-					"placementId": 12883451
-				}
-			}
-		}],
-		"ext": {
-			"prebid": {
-				"channel" : {
-					"name": "video",
-					"version": "1.0"
-				}
 			}
 		}
 	}`,
