@@ -2543,3 +2543,23 @@ func TestBuildXPrebidHeader(t *testing.T) {
 		assert.Equal(t, test.result, result, test.description+":result")
 	}
 }
+
+func TestSourceExtSChainCopied(t *testing.T) {
+	bidRequest := &openrtb2.BidRequest{}
+	bidderSchains := map[string]*openrtb_ext.ExtRequestPrebidSChainSChain{
+		"bidder1": {
+			Complete: 1,
+		},
+		"bidder2": {
+			Complete: 2,
+		},
+	}
+
+	copy1 := *bidRequest
+	prepareSource(&copy1, "bidder1", bidderSchains)
+	copy2 := *bidRequest
+	prepareSource(&copy2, "bidder2", bidderSchains)
+
+	assert.Equal(t, json.RawMessage(`{"schain":{"complete":1,"nodes":null,"ver":""}}`), copy1.Source.Ext, "First schain was overwritten or not set")
+	assert.Equal(t, json.RawMessage(`{"schain":{"complete":2,"nodes":null,"ver":""}}`), copy2.Source.Ext, "Second schain was overwritten or not set")
+}
