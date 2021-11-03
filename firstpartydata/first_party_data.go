@@ -418,7 +418,7 @@ func mergeSites(originalSite *openrtb2.Site, fpdConfigSite map[string]json.RawMe
 		if err != nil {
 			return newSite, err
 		}
-		delete(fpdConfigSite, searchKey)
+		delete(fpdConfigSite, refKey)
 	}
 
 	if len(fpdConfigSite) > 0 {
