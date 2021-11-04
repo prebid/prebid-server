@@ -2545,7 +2545,8 @@ func TestBuildXPrebidHeader(t *testing.T) {
 }
 
 func TestSourceExtSChainCopied(t *testing.T) {
-	bidRequest := &openrtb2.BidRequest{}
+	bidRequest := newBidRequest(t)
+
 	bidderSchains := map[string]*openrtb_ext.ExtRequestPrebidSChainSChain{
 		"bidder1": {
 			Complete: 1,
