@@ -44,6 +44,22 @@ type ExtRequestPrebid struct {
 	NoSale []string `json:"nosale,omitempty"`
 
 	CurrencyConversions *ExtRequestCurrency `json:"currency,omitempty"`
+	BidderConfigs       []BidderConfig      `json:"bidderconfig,omitempty"`
+}
+
+type BidderConfig struct {
+	Bidders []string `json:"bidders,omitempty"`
+	Config  *Config  `json:"config,omitempty"`
+}
+
+type Config struct {
+	ORTB2 *ORTB2 `json:"ortb2,omitempty"`
+}
+
+type ORTB2 struct { //First party data
+	Site map[string]json.RawMessage `json:"site,omitempty"`
+	App  map[string]json.RawMessage `json:"app,omitempty"`
+	User map[string]json.RawMessage `json:"user,omitempty"`
 }
 
 type ExtRequestCurrency struct {
@@ -318,6 +334,7 @@ var priceGranularityAuto = PriceGranularity{
 // ExtRequestPrebidData defines Prebid's First Party Data (FPD) and related bid request options.
 type ExtRequestPrebidData struct {
 	EidPermissions []ExtRequestPrebidDataEidPermission `json:"eidpermissions"`
+	Bidders        []string                            `json:"bidders,omitempty"`
 }
 
 // ExtRequestPrebidDataEidPermission defines a filter rule for filter user.ext.eids

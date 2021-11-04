@@ -18,6 +18,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/firstpartydata"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -159,7 +160,8 @@ type AuctionRequest struct {
 
 	// LegacyLabels is included here for temporary compatability with cleanOpenRTBRequests
 	// in HoldAuction until we get to factoring it away. Do not use for anything new.
-	LegacyLabels metrics.Labels
+	LegacyLabels   metrics.Labels
+	FirstPartyData map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData
 }
 
 // BidderRequest holds the bidder specific request and all other

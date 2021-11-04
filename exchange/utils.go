@@ -12,6 +12,7 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/firstpartydata"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -152,6 +153,10 @@ func cleanOpenRTBRequests(ctx context.Context,
 			if !bidRequestAllowed {
 				metricsEngine.RecordAdapterGDPRRequestBlocked(bidderRequest.BidderCoreName)
 			}
+		}
+
+		if req.FirstPartyData != nil && req.FirstPartyData[bidderRequest.BidderName] != nil {
+			applyFPD(req.FirstPartyData[bidderRequest.BidderName], bidderRequest.BidRequest)
 		}
 
 		if bidRequestAllowed {
@@ -759,4 +764,16 @@ func writeNameVersionRecord(sb *strings.Builder, name, version string) {
 	sb.WriteString(name)
 	sb.WriteString("/")
 	sb.WriteString(version)
+}
+
+func applyFPD(fpd *firstpartydata.ResolvedFirstPartyData, bidReq *openrtb2.BidRequest) {
+	if fpd.Site != nil {
+		bidReq.Site = fpd.Site
+	}
+	if fpd.App != nil {
+		bidReq.App = fpd.App
+	}
+	if fpd.User != nil {
+		bidReq.User = fpd.User
+	}
 }
