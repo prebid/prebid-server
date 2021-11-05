@@ -86,7 +86,7 @@ func NewSyncer(hostConfig config.UserSync, syncerConfig config.Syncer) (Syncer, 
 
 	if syncerConfig.IFrame != nil {
 		var err error
-		syncer.iframe, err = buildTemplate(syncerConfig.Key, setuidSyncTypeIFrame, hostConfig, *syncerConfig.IFrame)
+		syncer.iframe, err = buildTemplate(syncerConfig.Key, setuidSyncTypeIFrame, hostConfig, syncerConfig.ExternalURL, *syncerConfig.IFrame)
 		if err != nil {
 			return nil, fmt.Errorf("iframe %v", err)
 		}
@@ -97,7 +97,7 @@ func NewSyncer(hostConfig config.UserSync, syncerConfig config.Syncer) (Syncer, 
 
 	if syncerConfig.Redirect != nil {
 		var err error
-		syncer.redirect, err = buildTemplate(syncerConfig.Key, setuidSyncTypeRedirect, hostConfig, *syncerConfig.Redirect)
+		syncer.redirect, err = buildTemplate(syncerConfig.Key, setuidSyncTypeRedirect, hostConfig, syncerConfig.ExternalURL, *syncerConfig.Redirect)
 		if err != nil {
 			return nil, fmt.Errorf("redirect %v", err)
 		}
@@ -147,13 +147,16 @@ var (
 	macroRegex             = regexp.MustCompile(`{{\s*\..*?\s*}}`)
 )
 
-func buildTemplate(key, syncTypeValue string, hostConfig config.UserSync, syncerEndpoint config.SyncerEndpoint) (*template.Template, error) {
+func buildTemplate(key, syncTypeValue string, hostConfig config.UserSync, syncerExternalURL string, syncerEndpoint config.SyncerEndpoint) (*template.Template, error) {
 	redirectTemplate := syncerEndpoint.RedirectURL
 	if redirectTemplate == "" {
 		redirectTemplate = hostConfig.RedirectURL
 	}
 
 	externalURL := syncerEndpoint.ExternalURL
+	if externalURL == "" {
+		externalURL = syncerExternalURL
+	}
 	if externalURL == "" {
 		externalURL = hostConfig.ExternalURL
 	}
