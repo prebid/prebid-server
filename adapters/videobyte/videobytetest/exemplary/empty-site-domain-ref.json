@@ -35,9 +35,7 @@
       }
     ],
     "site": {
-      "domain": "example.com",
-      "page": "http://example.com/page-1",
-      "ref": "http://referer.com/page-2"
+      "page": "http://example.com/page-1"
     }
   },
   "httpCalls": [
@@ -45,12 +43,6 @@
       "expectedRequest": {
         "method": "GET",
         "headers": {
-          "Referer": [
-            "http://referer.com/page-2"
-          ],
-          "Origin": [
-            "example.com"
-          ],
           "Accept": [
             "application/json"
           ],
@@ -95,9 +87,7 @@
             }
           ],
           "site": {
-            "domain": "example.com",
-            "page": "http://example.com/page-1",
-            "ref": "http://referer.com/page-2"
+            "page": "http://example.com/page-1"
           }
         }
       },

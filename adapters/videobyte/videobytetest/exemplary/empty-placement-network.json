@@ -27,9 +27,7 @@
         },
         "ext": {
           "bidder": {
-            "pubId": "examplePublisherId",
-            "placementId": "examplePlacementId",
-            "nid": "exampleNetworkId"
+            "pubId": "examplePublisherId"
           }
         }
       }
@@ -58,7 +56,7 @@
             "application/json;charset=utf-8"
           ]
         },
-        "uri": "https://mock.videobyte.com?nid=exampleNetworkId&pid=examplePublisherId&placementId=examplePlacementId&source=pbs",
+        "uri": "https://mock.videobyte.com?pid=examplePublisherId&source=pbs",
         "body": {
           "id": "test-request-id",
           "bcat": [
@@ -87,9 +85,7 @@
               },
               "ext": {
                 "bidder": {
-                  "pubId": "examplePublisherId",
-                  "placementId": "examplePlacementId",
-                  "nid": "exampleNetworkId"
+                  "pubId": "examplePublisherId"
                 }
               }
             }

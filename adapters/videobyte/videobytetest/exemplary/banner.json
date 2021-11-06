@@ -48,10 +48,10 @@
             "example.com"
           ],
           "Accept": [
-           "application/json"
+            "application/json"
           ],
           "Content-Type": [
-           "application/json;charset=utf-8"
+            "application/json;charset=utf-8"
           ]
         },
         "uri": "https://mock.videobyte.com?nid=exampleNetworkId&pid=examplePublisherId&placementId=examplePlacementId&source=pbs",

@@ -14,21 +14,21 @@ import (
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 )
 
-type VideoByteAdapter struct {
+type adapter struct {
 	endpoint string
 }
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &VideoByteAdapter{
+	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}
 	return bidder, nil
 }
 
-func (a *VideoByteAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	impressions := request.Imp
 	adapterRequests := make([]*adapters.RequestData, 0, len(impressions))
-	errs := make([]error, 0, len(impressions))
+	var errs []error
 
 	for _, impression := range impressions {
 		impExt, err := parseExt(&impression)
@@ -56,7 +56,7 @@ func (a *VideoByteAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 	return adapterRequests, errs
 }
 
-func (a *VideoByteAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -90,7 +90,6 @@ func (a *VideoByteAdapter) MakeBids(internalRequest *openrtb2.BidRequest, extern
 	bidderResponse := adapters.NewBidderResponseWithBidsCapacity(1)
 	for _, seatBid := range ortbResponse.SeatBid {
 		for i := range seatBid.Bid {
-
 			bid := seatBid.Bid[i]
 			bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
 				Bid:     &bid,

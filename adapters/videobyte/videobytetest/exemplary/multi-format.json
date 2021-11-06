@@ -17,8 +17,12 @@
     "imp": [
       {
         "id": "test-imp-id",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
         "video": {
-          "w": 900,
+          "w": 300,
           "h": 250,
           "mimes": [
             "video/x-flv",
@@ -77,8 +81,12 @@
           "imp": [
             {
               "id": "test-imp-id",
+              "banner": {
+                "w": 300,
+                "h": 250
+              },
               "video": {
-                "w": 900,
+                "w": 300,
                 "h": 250,
                 "mimes": [
                   "video/x-flv",
@@ -117,7 +125,7 @@
                   "price": 3,
                   "impid": "test-imp-id",
                   "adid": "564",
-                  "adm": "<?xml version=\"1.0\"?><VAST version=\"2.0\"></VAST>"
+                  "adm": "<iframe bordercolor=\"#000000\" frameborder=\"0\" height=\"250\" hspace=\"0\" marginheight=\"0\" marginwidth=\"0\" scrolling=\"no\" srcdoc=\"contents\" vspace=\"0\" width=\"300\"></iframe>"
                 }
               ],
               "seat": "videobyte"
@@ -143,9 +151,9 @@
             "price": 3,
             "impid": "test-imp-id",
             "adid": "564",
-            "adm": "<?xml version=\"1.0\"?><VAST version=\"2.0\"></VAST>"
+            "adm": "<iframe bordercolor=\"#000000\" frameborder=\"0\" height=\"250\" hspace=\"0\" marginheight=\"0\" marginwidth=\"0\" scrolling=\"no\" srcdoc=\"contents\" vspace=\"0\" width=\"300\"></iframe>"
           },
-          "type": "video"
+          "type": "banner"
         }
       ]
     }
