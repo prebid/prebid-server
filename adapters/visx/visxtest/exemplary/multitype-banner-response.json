@@ -1,0 +1,199 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "site": {
+            "domain": "good.site",
+            "page": "https://good.site/url",
+            "publisher": {
+                "id": "test-publisher-id"
+            },
+            "ext": {
+                "amp": 0
+            }
+        },
+        "imp": [{
+            "id": "test-imp-id",
+            "video": {
+                "mimes": ["video/mp4"],
+                "protocols": [2, 5],
+                "w": 300,
+                "h": 250
+            },
+            "banner": {
+                "format": [{
+                    "w": 300,
+                    "h": 250
+                }]
+            },
+            "secure": 1,
+            "ext": {
+                "bidder": {
+                    "size": [
+                        300,
+                        250
+                    ],
+                    "uid": 11
+                }
+            }
+        }],
+        "device": {
+            "ua": "test-user-agent",
+            "ip": "123.123.123.123",
+            "h": 700,
+            "w": 375,
+            "ext": {
+                "prebid": {
+                    "interstitial": {
+                        "minwidthperc": 50,
+                        "minheightperc": 40
+                    }
+                }
+            }
+        },
+        "at": 1,
+        "tmax": 2000,
+        "source": {
+            "tid": "283746293874293"
+        },
+        "ext": {
+            "prebid": {
+                "aliases": {
+                    "districtm": "appnexus",
+                    "emxdigital": "appnexus"
+                }
+            }
+        }
+    },
+
+    "httpCalls": [{
+        "expectedRequest": {
+            "uri": "http://localhost/prebid",
+            "body": {
+                "id": "test-request-id",
+                "site": {
+                    "domain": "good.site",
+                    "page": "https://good.site/url",
+                    "publisher": {
+                        "id": "test-publisher-id"
+                    },
+                    "ext": {
+                        "amp": 0
+                    }
+                },
+                "cur": ["USD"],
+                "imp": [{
+                    "id": "test-imp-id",
+                    "video": {
+                        "mimes": ["video/mp4"],
+                        "protocols": [2, 5],
+                        "w": 300,
+                        "h": 250
+                    },
+                    "banner": {
+                        "format": [{
+                            "w": 300,
+                            "h": 250
+                        }]
+                    },
+                    "secure": 1,
+                    "ext": {
+                        "bidder": {
+                            "size": [
+                                300,
+                                250
+                            ],
+                            "uid": 11
+                        }
+                    }
+                }],
+                "device": {
+                    "ua": "test-user-agent",
+                    "ip": "123.123.123.123",
+                    "h": 700,
+                    "w": 375,
+                    "ext": {
+                        "prebid": {
+                            "interstitial": {
+                                "minwidthperc": 50,
+                                "minheightperc": 40
+                            }
+                        }
+                    }
+                },
+                "at": 1,
+                "tmax": 2000,
+                "source": {
+                    "tid": "283746293874293"
+                },
+                "ext": {
+                    "prebid": {
+                        "aliases": {
+                            "districtm": "appnexus",
+                            "emxdigital": "appnexus"
+                        }
+                    }
+                }
+            }
+        },
+        "mockResponse": {
+            "status": 200,
+            "body": {
+                "cur": ["USD"],
+                "seatbid": [
+                    {
+                        "bid": [
+                            {
+                                "crid": "2_260",
+                                "price": 0.500000,
+                                "adm": "some-test-ad",
+                                "impid": "test-imp-id",
+                                "auid": 11,
+                                "h": 250,
+                                "adomain": [
+                                    "goodadvertiser.com"
+                                ],
+                                "dealid": "test_deal_id",
+                                "w": 300,
+                                "ext": {
+                                    "prebid": {
+                                        "meta": {
+                                            "mediaType": "banner"
+                                        }
+                                    }
+                                }
+                            }
+                        ],
+                        "seat": "51"
+                    }
+                ]
+            }
+        }
+    }],
+
+    "expectedBidResponses": [{
+        "currency": "USD",
+        "bids": [{
+            "bid": {
+                "price": 0.5,
+                "adm": "some-test-ad",
+                "impid": "test-imp-id",
+                "id": "test-request-id",
+                "h": 250,
+                "adomain": [
+                    "goodadvertiser.com"
+                ],
+                "dealid": "test_deal_id",
+                "crid": "2_260",
+                "w": 300,
+                "ext": {
+                    "prebid": {
+                        "meta": {
+                            "mediaType": "banner"
+                        }
+                    }
+                }
+            },
+            "type": "banner"
+        }]
+    }]
+}

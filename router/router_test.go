@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
 	"github.com/prebid/prebid-server/config"
@@ -62,18 +61,6 @@ func TestNewJsonDirectoryServer(t *testing.T) {
 	ensureHasKey(t, data, "aliastest")
 }
 
-func TestExchangeMap(t *testing.T) {
-	exchanges := newExchangeMap(&config.Configuration{})
-	bidderMap := openrtb_ext.BuildBidderMap()
-	for bidderName := range exchanges {
-		// OpenRTB doesn't support hardcoded aliases... so this test skips districtm,
-		// which was the only alias in the legacy adapter map.
-		if _, ok := bidderMap[bidderName]; bidderName != "districtm" && !ok {
-			t.Errorf("Bidder %s exists in exchange, but is not a part of the BidderMap.", bidderName)
-		}
-	}
-}
-
 func TestApplyBidderInfoConfigOverrides(t *testing.T) {
 	var testCases = []struct {
 		description         string
@@ -87,6 +74,14 @@ func TestApplyBidderInfoConfigOverrides(t *testing.T) {
 			givenBidderInfos:    config.BidderInfos{"a": {Syncer: &config.Syncer{Key: "original"}}},
 			givenAdaptersCfg:    map[string]config.Adapter{"a": {Syncer: &config.Syncer{Key: "override"}}},
 			expectedBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{Key: "override"}}},
+		},
+		{
+			// Adapter Configs use a lower case bidder name, but the Bidder Infos follow the official
+			// bidder name casing.
+			description:         "Syncer Override - Case Sensitivity",
+			givenBidderInfos:    config.BidderInfos{"A": {Syncer: &config.Syncer{Key: "original"}}},
+			givenAdaptersCfg:    map[string]config.Adapter{"a": {Syncer: &config.Syncer{Key: "override"}}},
+			expectedBidderInfos: config.BidderInfos{"A": {Syncer: &config.Syncer{Key: "override"}}},
 		},
 		{
 			description:         "UserSyncURL Override IFrame",
@@ -287,38 +282,6 @@ func TestNoCache(t *testing.T) {
 	}
 	if expected := ""; expected != h.Get("ETag") {
 		t.Errorf("invalid etag header: expected: %s got: %s", expected, h.Get("ETag"))
-	}
-}
-
-func TestLoadDataCache(t *testing.T) {
-	// Test dummy
-	if err := loadDataCache(&config.Configuration{
-		DataCache: config.DataCache{
-			Type: "dummy",
-		},
-	}, nil); err != nil {
-		t.Errorf("data cache: dummy: %s", err)
-	}
-	// Test postgres error
-	if err := loadDataCache(&config.Configuration{
-		DataCache: config.DataCache{
-			Type: "postgres",
-		},
-	}, nil); err == nil {
-		t.Errorf("data cache: postgres: db nil should return error")
-	}
-	// Test file
-	d, _ := ioutil.TempDir("", "pbs-filecache")
-	defer os.RemoveAll(d)
-	f, _ := ioutil.TempFile(d, "file")
-	defer f.Close()
-	if err := loadDataCache(&config.Configuration{
-		DataCache: config.DataCache{
-			Type:     "filecache",
-			Filename: f.Name(),
-		},
-	}, nil); err != nil {
-		t.Errorf("data cache: filecache: %s", err)
 	}
 }
 
