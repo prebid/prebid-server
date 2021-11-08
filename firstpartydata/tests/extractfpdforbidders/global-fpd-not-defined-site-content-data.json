@@ -1,0 +1,67 @@
+{
+  "description": "req.site.content.data is present but req.ext.prebid is not defined; expect req.site.content.data remains the same and no FPD data for bidders",
+  "inputRequestData": {
+    "id": "bid_id",
+    "site": {
+      "id": "reqSiteId",
+      "page": "http://www.foobar.com/1234.html",
+      "name": "reqSiteName",
+      "cat": [
+        "electronics",
+        "phone"
+      ],
+      "publisher": {
+        "id": "1"
+      },
+      "content": {
+        "len": 900,
+        "title": "reqContentTitle",
+        "season": "reqContentSeason",
+        "data": [
+          {
+            "id": "reqContentDataId1",
+            "name": "reqContentDataName1"
+          },
+          {
+            "id": "reqContentDataId2",
+            "name": "reqContentDataName2"
+          }
+        ]
+      }
+    },
+    "test": 1
+  },
+  "outputRequestData": {
+    "id": "bid_id",
+    "site": {
+      "id": "reqSiteId",
+      "page": "http://www.foobar.com/1234.html",
+      "name": "reqSiteName",
+      "cat": [
+        "electronics",
+        "phone"
+      ],
+      "publisher": {
+        "id": "1"
+      },
+      "content": {
+        "len": 900,
+        "title": "reqContentTitle",
+        "season": "reqContentSeason",
+        "data": [
+          {
+            "id": "reqContentDataId1",
+            "name": "reqContentDataName1"
+          },
+          {
+            "id": "reqContentDataId2",
+            "name": "reqContentDataName2"
+          }
+        ]
+      }
+    },
+    "test": 1
+  },
+  "biddersFPDResolved": {},
+  "validationErrors": []
+}
