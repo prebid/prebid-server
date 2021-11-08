@@ -2614,24 +2614,43 @@ func TestSourceExtSChainCopied(t *testing.T) {
 
 	bidderSchains := map[string]*openrtb_ext.ExtRequestPrebidSChainSChain{
 		"bidder1": {
+			Ver:      "1.0",
 			Complete: 1,
+			Nodes: []*openrtb_ext.ExtRequestPrebidSChainSChainNode{
+				{
+					ASI: "bidder1.com",
+					SID: "0001",
+					HP:  1,
+				},
+			},
 		},
 		"bidder2": {
-			Complete: 2,
+			Ver:      "1.0",
+			Complete: 1,
+			Nodes: []*openrtb_ext.ExtRequestPrebidSChainSChainNode{
+				{
+					ASI: "bidder2.com",
+					SID: "0002",
+					HP:  1,
+				},
+			},
 		},
 	}
 
 	copy1 := *bidRequest
+	originalTid := copy1.Source.TID
 	prepareSource(&copy1, "bidder1", bidderSchains)
 	copy2 := *bidRequest
+	copy2.Source.TID = "new TID"
 	prepareSource(&copy2, "bidder2", bidderSchains)
 
-	assert.Equal(t, json.RawMessage(`{"schain":{"complete":1,"nodes":null,"ver":""}}`), copy1.Source.Ext, "First schain was overwritten or not set")
-	assert.Equal(t, json.RawMessage(`{"schain":{"complete":2,"nodes":null,"ver":""}}`), copy2.Source.Ext, "Second schain was overwritten or not set")
+	assert.Equal(t, json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"bidder1.com","sid":"0001","hp":1}],"ver":"1.0"}}`), copy1.Source.Ext, "First schain was overwritten or not set")
+	assert.Equal(t, originalTid, copy1.Source.TID, "Original TID was overwritten")
+	assert.Equal(t, json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"bidder2.com","sid":"0002","hp":1}],"ver":"1.0"}}`), copy2.Source.Ext, "Second schain was overwritten or not set")
+	assert.Equal(t, "new TID", copy2.Source.TID, "New TID was not set")
 }
 
 func TestApplyFPD(t *testing.T) {
-
 	fpdBidderTest := map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData{}
 	bidderTest := openrtb_ext.BidderName("test")
 	fpdBidderTest[bidderTest] = &firstpartydata.ResolvedFirstPartyData{Site: nil, App: nil, User: nil}
