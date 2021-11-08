@@ -1210,6 +1210,7 @@ func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *m
 	metrics := metrics.NewMetrics(gometrics.NewRegistry(), openrtb_ext.CoreBidderNames(), config.DisabledMetrics{}, nil)
 
 	deps := &endpointDeps{
+		fakeUUIDGenerator{},
 		ex,
 		newParamsValidator(t),
 		&mockVideoStoredReqFetcher{},
@@ -1252,13 +1253,14 @@ func (m *mockAnalyticsModule) LogNotificationEventObject(ne *analytics.Notificat
 
 func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 	deps := &endpointDeps{
+		fakeUUIDGenerator{},
 		ex,
 		newParamsValidator(t),
 		&mockVideoStoredReqFetcher{},
 		&mockVideoStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		&metricsConfig.DummyMetricsEngine{},
+		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		false,
@@ -1274,13 +1276,14 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 
 func mockDepsAppendBidderNames(t *testing.T, ex *mockExchangeAppendBidderNames) *endpointDeps {
 	deps := &endpointDeps{
+		fakeUUIDGenerator{},
 		ex,
 		newParamsValidator(t),
 		&mockVideoStoredReqFetcher{},
 		&mockVideoStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		&metricsConfig.DummyMetricsEngine{},
+		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		false,
@@ -1296,13 +1299,14 @@ func mockDepsAppendBidderNames(t *testing.T, ex *mockExchangeAppendBidderNames) 
 
 func mockDepsNoBids(t *testing.T, ex *mockExchangeVideoNoBids) *endpointDeps {
 	edep := &endpointDeps{
+		fakeUUIDGenerator{},
 		ex,
 		newParamsValidator(t),
 		&mockVideoStoredReqFetcher{},
 		&mockVideoStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		&metricsConfig.DummyMetricsEngine{},
+		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		false,
@@ -1430,20 +1434,4 @@ var testVideoStoredImpData = map[string]json.RawMessage{
 
 var testVideoStoredRequestData = map[string]json.RawMessage{
 	"80ce30c53c16e6ede735f123ef6e32361bfc7b22": json.RawMessage(`{"accountid": "11223344", "site": {"page": "mygame.foo.com"}}`),
-}
-
-func loadValidRequest(t *testing.T) *openrtb_ext.BidRequestVideo {
-	reqData, err := ioutil.ReadFile("sample-requests/video/video_valid_sample.json")
-	if err != nil {
-		t.Fatalf("Failed to fetch a valid request: %v", err)
-	}
-
-	reqBody := getRequestPayload(t, reqData)
-
-	reqVideo := &openrtb_ext.BidRequestVideo{}
-	if err := json.Unmarshal(reqBody, reqVideo); err != nil {
-		t.Fatalf("Failed to unmarshal the request: %v", err)
-	}
-
-	return reqVideo
 }

@@ -1,0 +1,44 @@
+{
+  "description": "Bidder FPD defined only for site",
+  "inputRequestData": {
+    "site": {
+      "id": "reqUserID"
+    }
+  },
+  "bidderConfigFPD": {
+    "appnexus": {
+      "site": {
+        "id": "apnSiteId",
+        "ext": {
+          "data": {
+            "morefpdData": "morefpddata",
+            "siteFpddata": "siteFpddata",
+            "moreFpd": {
+              "fpd": 123
+            }
+          }
+        }
+      }
+    }
+  },
+  "outputRequestData": {
+    "site": {
+      "id": "reqUserID",
+      "ext": {
+        "data": {
+          "ext": {
+            "data": {
+              "morefpdData": "morefpddata",
+              "siteFpddata": "siteFpddata",
+              "moreFpd": {
+                "fpd": 123
+              }
+            }
+          },
+          "id": "apnSiteId"
+        }
+      }
+    }
+  }
+}
+

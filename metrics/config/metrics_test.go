@@ -12,14 +12,14 @@ import (
 )
 
 // Start a simple test to insure we get valid MetricsEngines for various configurations
-func TestDummyMetricsEngine(t *testing.T) {
+func TestNilMetricsEngine(t *testing.T) {
 	cfg := mainConfig.Configuration{}
 	adapterList := make([]openrtb_ext.BidderName, 0, 2)
 	syncerKeys := []string{"keyA", "keyB"}
 	testEngine := NewMetricsEngine(&cfg, adapterList, syncerKeys)
-	_, ok := testEngine.MetricsEngine.(*DummyMetricsEngine)
+	_, ok := testEngine.MetricsEngine.(*NilMetricsEngine)
 	if !ok {
-		t.Error("Expected a DummyMetricsEngine, but didn't get it")
+		t.Error("Expected a NilMetricsEngine, but didn't get it")
 	}
 }
 
@@ -43,7 +43,7 @@ func TestMultiMetricsEngine(t *testing.T) {
 	goEngine := metrics.NewMetrics(gometrics.NewPrefixedRegistry("prebidserver."), adapterList, mainConfig.DisabledMetrics{}, nil)
 	engineList := make(MultiMetricsEngine, 2)
 	engineList[0] = goEngine
-	engineList[1] = &DummyMetricsEngine{}
+	engineList[1] = &NilMetricsEngine{}
 	var metricsEngine metrics.MetricsEngine
 	metricsEngine = &engineList
 	labels := metrics.Labels{
@@ -78,7 +78,6 @@ func TestMultiMetricsEngine(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		metricsEngine.RecordRequest(labels)
 		metricsEngine.RecordImps(impTypeLabels)
-		metricsEngine.RecordLegacyImps(labels, 2)
 		metricsEngine.RecordRequestTime(labels, time.Millisecond*20)
 		metricsEngine.RecordAdapterRequest(pubLabels)
 		metricsEngine.RecordAdapterRequest(apnLabels)
@@ -147,7 +146,6 @@ func TestMultiMetricsEngine(t *testing.T) {
 
 	VerifyMetrics(t, "Request", goEngine.RequestStatuses[metrics.ReqTypeORTB2Web][metrics.RequestStatusOK].Count(), 5)
 	VerifyMetrics(t, "ImpMeter", goEngine.ImpMeter.Count(), 8)
-	VerifyMetrics(t, "LegacyImpMeter", goEngine.LegacyImpMeter.Count(), 10)
 	VerifyMetrics(t, "NoCookieMeter", goEngine.NoCookieMeter.Count(), 0)
 	VerifyMetrics(t, "AdapterMetrics.Pubmatic.GotBidsMeter", goEngine.AdapterMetrics[openrtb_ext.BidderPubmatic].GotBidsMeter.Count(), 5)
 	VerifyMetrics(t, "AdapterMetrics.Pubmatic.NoBidMeter", goEngine.AdapterMetrics[openrtb_ext.BidderPubmatic].NoBidMeter.Count(), 0)

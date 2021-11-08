@@ -29,6 +29,7 @@ type ExtRequestPrebid struct {
 	Aliases              map[string]string         `json:"aliases,omitempty"`
 	BidAdjustmentFactors map[string]float64        `json:"bidadjustmentfactors,omitempty"`
 	Cache                *ExtRequestPrebidCache    `json:"cache,omitempty"`
+	Channel              *ExtRequestPrebidChannel  `json:"channel,omitempty"`
 	Data                 *ExtRequestPrebidData     `json:"data,omitempty"`
 	Debug                bool                      `json:"debug,omitempty"`
 	Events               json.RawMessage           `json:"events,omitempty"`
@@ -43,6 +44,22 @@ type ExtRequestPrebid struct {
 	NoSale []string `json:"nosale,omitempty"`
 
 	CurrencyConversions *ExtRequestCurrency `json:"currency,omitempty"`
+	BidderConfigs       []BidderConfig      `json:"bidderconfig,omitempty"`
+}
+
+type BidderConfig struct {
+	Bidders []string `json:"bidders,omitempty"`
+	Config  *Config  `json:"config,omitempty"`
+}
+
+type Config struct {
+	ORTB2 *ORTB2 `json:"ortb2,omitempty"`
+}
+
+type ORTB2 struct { //First party data
+	Site map[string]json.RawMessage `json:"site,omitempty"`
+	App  map[string]json.RawMessage `json:"app,omitempty"`
+	User map[string]json.RawMessage `json:"user,omitempty"`
 }
 
 type ExtRequestCurrency struct {
@@ -78,6 +95,12 @@ type ExtRequestPrebidSChainSChainNode struct {
 // SourceExt defines the contract for bidrequest.source.ext
 type SourceExt struct {
 	SChain ExtRequestPrebidSChainSChain `json:"schain"`
+}
+
+// ExtRequestPrebidChannel defines the contract for bidrequest.ext.prebid.channel
+type ExtRequestPrebidChannel struct {
+	Name    string `json:"name"`
+	Version string `json:"version"`
 }
 
 // ExtRequestPrebidCache defines the contract for bidrequest.ext.prebid.cache
@@ -311,6 +334,7 @@ var priceGranularityAuto = PriceGranularity{
 // ExtRequestPrebidData defines Prebid's First Party Data (FPD) and related bid request options.
 type ExtRequestPrebidData struct {
 	EidPermissions []ExtRequestPrebidDataEidPermission `json:"eidpermissions"`
+	Bidders        []string                            `json:"bidders,omitempty"`
 }
 
 // ExtRequestPrebidDataEidPermission defines a filter rule for filter user.ext.eids
