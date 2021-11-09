@@ -313,9 +313,10 @@ func extractPubmaticWrapperExtFromRequest(request *openrtb2.BidRequest) (*pubmat
 	//get request ext bidder params
 	if wrapperObj, present := reqExtBidderParams["wrapper"]; present && len(wrapperObj) != 0 {
 		err = json.Unmarshal(wrapperObj, &wrpExt)
-		if err == nil {
-			return &wrpExt, nil
+		if err != nil {
+			return nil, err
 		}
+		return &wrpExt, nil
 	}
 	return nil, nil
 }
