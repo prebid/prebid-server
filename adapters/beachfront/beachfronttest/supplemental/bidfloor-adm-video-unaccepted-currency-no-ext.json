@@ -8,7 +8,6 @@
         "bidfloor": 695.61,
         "ext": {
           "bidder": {
-            "bidfloor": 3.01,
             "appId": "videoAppId1"
           }
         },
@@ -31,7 +30,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "unsupported bid currency, IRP. bids are currently accepted in USD only.",
+      "value": "unsupported bid currency, IRP. bids are currently accepted in USD only. as a temporary workaround, a value in USD may be provided as imp.ext.beachfront.bidfloor",
       "comparison": "literal"
     }
   ]

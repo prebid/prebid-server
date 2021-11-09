@@ -6,7 +6,6 @@
         "id": "video1",
         "ext": {
           "bidder": {
-            "bidfloor": 3.01,
             "appId": "videoAppId1"
           }
         },
@@ -43,7 +42,6 @@
                   "video/mp4"
                 ]
               },
-              "bidfloor": 3.01,
               "id": "video1",
               "secure": 1
             }

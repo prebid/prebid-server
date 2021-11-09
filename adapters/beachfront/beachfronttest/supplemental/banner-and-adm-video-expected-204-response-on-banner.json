@@ -6,7 +6,6 @@
         "id": "mix1",
         "ext": {
           "bidder": {
-            "bidfloor": 0.41,
             "appIds": {
               "banner": "bannerAppId1",
               "video": "videoAppId1"
@@ -48,7 +47,7 @@
             {
               "slot": "mix1",
               "id": "bannerAppId1",
-              "bidfloor": 0.41,
+              "bidfloor": 0,
               "sizes": [
                 {
                   "w": 300,
@@ -99,7 +98,6 @@
                   "video/mp4"
                 ]
               },
-              "bidfloor": 0.41,
               "secure": 1,
               "id": "mix1"
             }

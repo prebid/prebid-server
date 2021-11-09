@@ -54,7 +54,7 @@
         "bidfloor": 0.01,
         "ext": {
           "bidder": {
-            "bidfloor": 10.01,
+            "bidfloor": 0.01,
             "appId": "videoAppId1"
           }
         },

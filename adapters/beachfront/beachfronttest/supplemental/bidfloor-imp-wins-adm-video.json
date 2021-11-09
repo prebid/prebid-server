@@ -4,10 +4,10 @@
     "imp": [
       {
         "id": "video1",
-        "bidfloor": 45.21,
+        "bidfloor": 5.21,
         "ext": {
           "bidder": {
-            "bidfloor": 103.01,
+            "bidfloor": 3.01,
             "appId": "videoAppId1"
           }
         },
@@ -44,7 +44,8 @@
                   "video/mp4"
                 ]
               },
-              "bidfloor": 45.21,
+              "bidfloor": 5.21,
+              "bidfloorcur": "USD",
               "id": "video1",
               "secure": 1
             }

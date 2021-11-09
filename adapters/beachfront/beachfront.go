@@ -290,10 +290,9 @@ func getBannerRequest(request *openrtb2.BidRequest) (beachfrontBannerRequest, []
 			continue
 		}
 
-		err = setBidFloor(&beachfrontExt, &request.Imp[i])
-
-		if err != nil {
+		if err := setBidFloor(&beachfrontExt, &request.Imp[i]); err != nil {
 			errs = append(errs, err)
+			// Next - check error type. continue on BadInput
 			continue
 		}
 
@@ -458,7 +457,6 @@ func getVideoRequests(request *openrtb2.BidRequest) ([]beachfrontVideoRequest, [
 		}
 
 		if deviceCopy.DeviceType == 0 {
-			// More fine graned deviceType methods will be added in the future
 			deviceCopy.DeviceType = fallBackDeviceType(request)
 		}
 		bfReqs[i].Request.Device = &deviceCopy
@@ -470,6 +468,7 @@ func getVideoRequests(request *openrtb2.BidRequest) ([]beachfrontVideoRequest, [
 		imp.Secure = &secure
 		if err := setBidFloor(&beachfrontExt, &imp); err != nil {
 			errs = append(errs, err)
+			// Next - check error type. append and continue on BadInput
 			failedRequestIndicies = append(failedRequestIndicies, i)
 			continue
 		}
@@ -570,22 +569,48 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb2.BidRequest, exter
 
 func setBidFloor(ext *openrtb_ext.ExtImpBeachfront, imp *openrtb2.Imp) error {
 	var floor float64
+	var err error
 
-	if imp.BidFloor > 0 {
+	if imp.BidFloorCur != "" && strings.ToUpper(imp.BidFloorCur) != "USD" {
+		/* Next - try to convert the currency here
+		err = the error returned by the currency converter */
+
+		err = &errortypes.BadInput{
+			Message: fmt.Sprintf("unsupported bid currency, %s. bids are currently accepted in USD only. as a temporary workaround, a value in USD may be provided as imp.ext.beachfront.bidfloor", imp.BidFloorCur),
+		}
+
+		// Next - err might be nil.
+		if err != nil {
+			if ext.BidFloor > 0 {
+				/* Next - err will be non fatal and will be returned to be added to the stack
+				instead of nilled out, but still means conversion failed. Since an ext.BidFloor (always in USD) was
+				provided, use it. */
+				imp.BidFloorCur = "USD"
+				imp.BidFloor = ext.BidFloor
+				return nil
+
+			} else {
+				/* Next - currency conversion has failed and there is no ext.bidfloor. return
+				a BadInput error */
+
+				return err
+			}
+		}
+
+		// Next - we can get here with have a converted imp.bidfloor
+	}
+
+	if imp.BidFloor > ext.BidFloor {
 		floor = imp.BidFloor
 	} else if ext.BidFloor > 0 {
 		floor = ext.BidFloor
 	} else {
-		floor = minBidFloor
+		floor = 0
 	}
 
-	if floor >= 0 && imp.BidFloorCur != "" && strings.ToUpper(imp.BidFloorCur) != "USD" {
-		return &errortypes.BadInput{
-			Message: fmt.Sprintf("unsupported bid currency, %s. bids are currently accepted in USD only.", imp.BidFloorCur),
-		}
-	}
-
-	if floor <= minBidFloor {
+	if floor > minBidFloor {
+		imp.BidFloorCur = "USD"
+	} else {
 		floor = 0
 	}
 

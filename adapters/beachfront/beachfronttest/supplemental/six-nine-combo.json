@@ -258,6 +258,7 @@
               "id": "ADMVideoWithBannerImp1",
               "secure": 0,
               "bidfloor": 1.01,
+              "bidfloorcur": "USD",
               "video": {
                 "mimes": [
                   "video/mp4"
@@ -317,6 +318,7 @@
               "id": "ADMVideoWithBannerImp2",
               "secure": 0,
               "bidfloor": 1.01,
+              "bidfloorcur": "USD",
               "video": {
                 "mimes": [
                   "video/mp4"
@@ -375,6 +377,7 @@
             {
               "id": "ADMVideoImp6",
               "bidfloor": 1.01,
+              "bidfloorcur": "USD",
               "secure": 0,
               "video": {
                 "mimes": [
@@ -435,6 +438,7 @@
             {
               "id": "NURLVideoImp3",
               "bidfloor": 1.01,
+              "bidfloorcur": "USD",
               "video": {
                 "mimes": [
                   "video/mp4"

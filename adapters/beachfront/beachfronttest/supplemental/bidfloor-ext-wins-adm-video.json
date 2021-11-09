@@ -4,6 +4,7 @@
     "imp": [
       {
         "id": "video1",
+        "bidfloor": 2.99,
         "ext": {
           "bidder": {
             "bidfloor": 3.01,
@@ -44,6 +45,7 @@
                 ]
               },
               "bidfloor": 3.01,
+              "bidfloorcur": "USD",
               "id": "video1",
               "secure": 1
             }
