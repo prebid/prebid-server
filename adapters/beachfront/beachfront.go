@@ -23,7 +23,7 @@ const defaultVideoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id"
 const nurlVideoEndpointSuffix = "&prebidserver"
 
 const beachfrontAdapterName = "BF_PREBID_S2S"
-const beachfrontAdapterVersion = "0.9.2"
+const beachfrontAdapterVersion = "1.0.0"
 
 const minBidFloor = 0.01
 
