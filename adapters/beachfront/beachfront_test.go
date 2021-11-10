@@ -145,6 +145,51 @@ func TestRequestWithDifferentBidFloorAttributes(t *testing.T) {
 			extBidFloor:      0,
 			setMock:          func(m *mock.Mock) {},
 			expectedBidFloor: 0,
+			expectedBidCur:   "",
+			expectedErrors:   nil,
+		},
+		{
+			bidFloor:         0,
+			bidFloorCur:      "USD",
+			extBidFloor:      0.01,
+			setMock:          func(m *mock.Mock) {},
+			expectedBidFloor: 0,
+			expectedBidCur:   "",
+			expectedErrors:   nil,
+		},
+		{
+			bidFloor:         0,
+			bidFloorCur:      "USD",
+			extBidFloor:      0,
+			setMock:          func(m *mock.Mock) {},
+			expectedBidFloor: 0,
+			expectedBidCur:   "",
+			expectedErrors:   nil,
+		},
+		{
+			bidFloor:         2.01,
+			bidFloorCur:      "USD",
+			extBidFloor:      1.90,
+			setMock:          func(m *mock.Mock) {},
+			expectedBidFloor: 2.01,
+			expectedBidCur:   "USD",
+			expectedErrors:   nil,
+		},
+		{
+			bidFloor:         1.01,
+			bidFloorCur:      "USD",
+			extBidFloor:      1.90,
+			setMock:          func(m *mock.Mock) {},
+			expectedBidFloor: 1.90,
+			expectedBidCur:   "USD",
+			expectedErrors:   nil,
+		},
+		{
+			bidFloor:         2.01,
+			bidFloorCur:      "USD",
+			extBidFloor:      2.90,
+			setMock:          func(m *mock.Mock) {},
+			expectedBidFloor: 2.90,
 			expectedBidCur:   "USD",
 			expectedErrors:   nil,
 		},
@@ -170,6 +215,35 @@ func TestRequestWithDifferentBidFloorAttributes(t *testing.T) {
 				&errortypes.BadInput{Message: "The following error was recieved from the currency converter while attempting to convert the imp.bidfloor value of 1.00 from WRONG to USD: \nsome error\n A value of imp.ext.beachfront.bidfloor was not provided. The bid is being skipped."},
 			},
 		},
+		{
+			bidFloor:         1.00,
+			bidFloorCur:      "XYZ",
+			extBidFloor:      1.99,
+			setMock:          func(m *mock.Mock) { m.On("GetRate", "XYZ", "USD").Return(1.5, errors.New("some error")) },
+			expectedBidFloor: 1.99,
+			expectedBidCur:   "USD",
+			expectedErrors: []error{
+				&errortypes.Warning{Message: "The following error was recieved from the currency converter while attempting to convert the imp.bidfloor value of 1.00 from XYZ to USD: \nsome error\n The provided value of imp.ext.beachfront.bidfloor, 1.99 USD is being used as a fallback."},
+			},
+		},
+		{
+			bidFloor:         1.03,
+			bidFloorCur:      "EUR",
+			extBidFloor:      1.98,
+			setMock:          func(m *mock.Mock) { m.On("GetRate", "EUR", "USD").Return(1.2, nil) },
+			expectedBidFloor: 1.98,
+			expectedBidCur:   "USD",
+			expectedErrors:   nil,
+		},
+		{
+			bidFloor:         1.80,
+			bidFloorCur:      "EUR",
+			extBidFloor:      1.98,
+			setMock:          func(m *mock.Mock) { m.On("GetRate", "EUR", "USD").Return(1.2, nil) },
+			expectedBidFloor: 2.16,
+			expectedBidCur:   "USD",
+			expectedErrors:   nil,
+		},
 	}
 
 	for _, scenario := range scenarios {
@@ -194,8 +268,8 @@ func TestRequestWithDifferentBidFloorAttributes(t *testing.T) {
 					MIMEs: []string{"video/mp4"},
 				},
 				Ext: json.RawMessage(`{"bidder": {
-										"appId": "banner-267b23c-96c61b67",
-										"bidfloor": ` + fmt.Sprintf("%f", scenario.extBidFloor) + `
+										"appId": "video-2cf761-83b5a0",
+										"bidfloor": ` + fmt.Sprintf("%.2f", scenario.extBidFloor) + `
                                       }}`),
 			}},
 			App: &openrtb2.App{
@@ -214,8 +288,8 @@ func TestRequestWithDifferentBidFloorAttributes(t *testing.T) {
 					Format: []openrtb2.Format{{W: 300, H: 250}},
 				},
 				Ext: json.RawMessage(`{"bidder": {
-										"appId": "banner-267b23c-96c61b67",
-										"bidfloor": ` + fmt.Sprintf("%f", scenario.extBidFloor) + `
+										"appId": "banner-27b23c-96cb67",
+										"bidfloor": ` + fmt.Sprintf("%.2f", scenario.extBidFloor) + `
                                       }}`),
 			}},
 			App: &openrtb2.App{
