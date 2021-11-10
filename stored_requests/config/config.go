@@ -181,15 +181,21 @@ func newFetcher(cfg *config.StoredRequests, client *http.Client, db *sql.DB) (fe
 }
 
 func newCache(cfg *config.StoredRequests) stored_requests.Cache {
-	cache := stored_requests.Cache{&nil_cache.NilCache{}, &nil_cache.NilCache{}, &nil_cache.NilCache{}}
+	cache := stored_requests.Cache{
+		Requests:  &nil_cache.NilCache{},
+		Imps:      &nil_cache.NilCache{},
+		Responses: &nil_cache.NilCache{},
+		Accounts:  &nil_cache.NilCache{}}
 	switch {
 	case cfg.InMemoryCache.Type == "none":
 		glog.Warningf("No %s cache configured. The %s Fetcher backend will be used for all data requests", cfg.DataType(), cfg.DataType())
 	case cfg.DataType() == config.AccountDataType:
 		cache.Accounts = memory.NewCache(cfg.InMemoryCache.Size, cfg.InMemoryCache.TTL, "Accounts")
 	default:
+		//!!! resp
 		cache.Requests = memory.NewCache(cfg.InMemoryCache.RequestCacheSize, cfg.InMemoryCache.TTL, "Requests")
 		cache.Imps = memory.NewCache(cfg.InMemoryCache.ImpCacheSize, cfg.InMemoryCache.TTL, "Imps")
+		cache.Responses = memory.NewCache(cfg.InMemoryCache.ResponseCacheSize, cfg.InMemoryCache.TTL, "Responses")
 	}
 	return cache
 }

@@ -16,37 +16,47 @@ func TestMultiFetcher(t *testing.T) {
 	ctx := context.Background()
 	reqIDs := []string{"abc", "def"}
 	impIDs := []string{"imp-1", "imp-2"}
+	respIDs := []string{"resp-1", "resp-2"}
 
-	f1.On("FetchRequests", ctx, reqIDs, impIDs).Return(
+	f1.On("FetchRequests", ctx, reqIDs, impIDs, respIDs).Return(
 		map[string]json.RawMessage{
 			"abc": json.RawMessage(`{"req_id": "abc"}`),
 		},
 		map[string]json.RawMessage{
 			"imp-1": json.RawMessage(`{"imp_id": "imp-1"}`),
 		},
+		map[string]json.RawMessage{
+			"resp-1": json.RawMessage(`{"resp_id": "resp-1"}`),
+		},
 		[]error{NotFoundError{"def", "Request"}, NotFoundError{"imp-2", "Imp"}},
 	)
-	f2.On("FetchRequests", ctx, []string{"def"}, []string{"imp-2"}).Return(
+	f2.On("FetchRequests", ctx, []string{"def"}, []string{"imp-2"}, []string{"resp-2"}).Return(
 		map[string]json.RawMessage{
 			"def": json.RawMessage(`{"req_id": "def"}`),
 		},
 		map[string]json.RawMessage{
 			"imp-2": json.RawMessage(`{"imp_id": "imp-2"}`),
 		},
+		map[string]json.RawMessage{
+			"resp-2": json.RawMessage(`{"resp_id": "resp-2"}`),
+		},
 		[]error{},
 	)
 
-	reqData, impData, errs := fetcher.FetchRequests(ctx, reqIDs, impIDs)
+	reqData, impData, respData, errs := fetcher.FetchRequests(ctx, reqIDs, impIDs, respIDs)
 
 	f1.AssertExpectations(t)
 	f2.AssertExpectations(t)
 	assert.Len(t, reqData, 2, "MultiFetcher should return all the requested stored req data that exists")
 	assert.Len(t, impData, 2, "MultiFetcher should return all the requested stored imp data that exists")
+	assert.Len(t, respData, 2, "MultiFetcher should return all the requested stored resp data that exists")
 	assert.Len(t, errs, 0, "MultiFetcher shouldn't return an error")
 	assert.JSONEq(t, `{"req_id": "abc"}`, string(reqData["abc"]), "MultiFetcher should return the right request data")
 	assert.JSONEq(t, `{"req_id": "def"}`, string(reqData["def"]), "MultiFetcher should return the right request data")
 	assert.JSONEq(t, `{"imp_id": "imp-1"}`, string(impData["imp-1"]), "MultiFetcher should return the right imp data")
 	assert.JSONEq(t, `{"imp_id": "imp-2"}`, string(impData["imp-2"]), "MultiFetcher should return the right imp data")
+	assert.JSONEq(t, `{"resp_id": "resp-1"}`, string(respData["resp-1"]), "MultiFetcher should return the right resp data")
+	assert.JSONEq(t, `{"resp_id": "resp-2"}`, string(respData["resp-2"]), "MultiFetcher should return the right resp data")
 }
 
 func TestMissingID(t *testing.T) {
@@ -56,8 +66,9 @@ func TestMissingID(t *testing.T) {
 	ctx := context.Background()
 	reqIDs := []string{"abc", "def", "ghi"}
 	impIDs := []string{"imp-1", "imp-2", "imp-3"}
+	respIDs := []string{}
 
-	f1.On("FetchRequests", ctx, reqIDs, impIDs).Return(
+	f1.On("FetchRequests", ctx, reqIDs, impIDs, respIDs).Return(
 		map[string]json.RawMessage{
 			"abc": json.RawMessage(`{"req_id": "abc"}`),
 		},
@@ -66,7 +77,7 @@ func TestMissingID(t *testing.T) {
 		},
 		[]error{NotFoundError{"def", "Request"}, NotFoundError{"imp-2", "Imp"}},
 	)
-	f2.On("FetchRequests", ctx, []string{"def", "ghi"}, []string{"imp-2", "imp-3"}).Return(
+	f2.On("FetchRequests", ctx, []string{"def", "ghi"}, []string{"imp-2", "imp-3"}, respIDs).Return(
 		map[string]json.RawMessage{
 			"def": json.RawMessage(`{"req_id": "def"}`),
 		},
@@ -75,8 +86,8 @@ func TestMissingID(t *testing.T) {
 		},
 		[]error{},
 	)
-
-	reqData, impData, errs := fetcher.FetchRequests(ctx, reqIDs, impIDs)
+	//!!! resp
+	reqData, impData, _, errs := fetcher.FetchRequests(ctx, reqIDs, impIDs, nil)
 
 	f1.AssertExpectations(t)
 	f2.AssertExpectations(t)
@@ -96,15 +107,16 @@ func TestOtherError(t *testing.T) {
 	ctx := context.Background()
 	reqIDs := []string{"abc", "def"}
 	impIDs := []string{"imp-1"}
+	respIDs := []string{}
 
-	f1.On("FetchRequests", ctx, reqIDs, impIDs).Return(
+	f1.On("FetchRequests", ctx, reqIDs, impIDs, respIDs).Return(
 		map[string]json.RawMessage{
 			"abc": json.RawMessage(`{"req_id": "abc"}`),
 		},
 		map[string]json.RawMessage{},
 		[]error{NotFoundError{"def", "Request"}, errors.New("Other error")},
 	)
-	f2.On("FetchRequests", ctx, []string{"def"}, []string{"imp-1"}).Return(
+	f2.On("FetchRequests", ctx, []string{"def"}, []string{"imp-1"}, respIDs).Return(
 		map[string]json.RawMessage{
 			"def": json.RawMessage(`{"req_id": "def"}`),
 		},
@@ -113,8 +125,8 @@ func TestOtherError(t *testing.T) {
 		},
 		[]error{},
 	)
-
-	reqData, impData, errs := fetcher.FetchRequests(ctx, reqIDs, impIDs)
+	//!!! resp
+	reqData, impData, _, errs := fetcher.FetchRequests(ctx, reqIDs, impIDs, respIDs)
 
 	f1.AssertExpectations(t)
 	f2.AssertExpectations(t)

@@ -16,29 +16,32 @@ func TestSingleReq(t *testing.T) {
 	fetcher, close := newTestFetcher(t, []string{"req-1"}, nil)
 	defer close()
 
-	reqData, impData, errs := fetcher.FetchRequests(context.Background(), []string{"req-1"}, nil)
+	reqData, impData, respData, errs := fetcher.FetchRequests(context.Background(), []string{"req-1"}, nil, nil)
 	assert.Empty(t, errs, "Unexpected errors fetching known requests")
 	assertMapKeys(t, reqData, "req-1")
 	assert.Empty(t, impData, "Unexpected imps returned fetching just requests")
+	assert.Empty(t, respData, "Unexpected responses returned fetching just requests")
 }
 
 func TestSeveralReqs(t *testing.T) {
 	fetcher, close := newTestFetcher(t, []string{"req-1", "req-2"}, nil)
 	defer close()
 
-	reqData, impData, errs := fetcher.FetchRequests(context.Background(), []string{"req-1", "req-2"}, nil)
+	reqData, impData, respData, errs := fetcher.FetchRequests(context.Background(), []string{"req-1", "req-2"}, nil, nil)
 	assert.Empty(t, errs, "Unexpected errors fetching known requests")
 	assertMapKeys(t, reqData, "req-1", "req-2")
 	assert.Empty(t, impData, "Unexpected imps returned fetching just requests")
+	assert.Empty(t, respData, "Unexpected responses returned fetching just requests")
 }
 
 func TestSingleImp(t *testing.T) {
 	fetcher, close := newTestFetcher(t, nil, []string{"imp-1"})
 	defer close()
 
-	reqData, impData, errs := fetcher.FetchRequests(context.Background(), nil, []string{"imp-1"})
+	reqData, impData, respData, errs := fetcher.FetchRequests(context.Background(), nil, []string{"imp-1"}, nil)
 	assert.Empty(t, errs, "Unexpected errors fetching known imps")
 	assert.Empty(t, reqData, "Unexpected requests returned fetching just imps")
+	assert.Empty(t, respData, "Unexpected responses returned fetching just imps")
 	assertMapKeys(t, impData, "imp-1")
 }
 
@@ -46,29 +49,32 @@ func TestSeveralImps(t *testing.T) {
 	fetcher, close := newTestFetcher(t, nil, []string{"imp-1", "imp-2"})
 	defer close()
 
-	reqData, impData, errs := fetcher.FetchRequests(context.Background(), nil, []string{"imp-1", "imp-2"})
+	reqData, impData, respData, errs := fetcher.FetchRequests(context.Background(), nil, []string{"imp-1", "imp-2"}, nil)
 	assert.Empty(t, errs, "Unexpected errors fetching known imps")
 	assert.Empty(t, reqData, "Unexpected requests returned fetching just imps")
 	assertMapKeys(t, impData, "imp-1", "imp-2")
+	assert.Empty(t, respData, "Unexpected responses returned fetching just imps")
 }
 
 func TestReqsAndImps(t *testing.T) {
 	fetcher, close := newTestFetcher(t, []string{"req-1"}, []string{"imp-1"})
 	defer close()
-
-	reqData, impData, errs := fetcher.FetchRequests(context.Background(), []string{"req-1"}, []string{"imp-1"})
+	//!!! add fetching responses
+	reqData, impData, respData, errs := fetcher.FetchRequests(context.Background(), []string{"req-1"}, []string{"imp-1"}, nil)
 	assert.Empty(t, errs, "Unexpected errors fetching known reqs and imps")
 	assertMapKeys(t, reqData, "req-1")
 	assertMapKeys(t, impData, "imp-1")
+	assert.Empty(t, respData, "Unexpected responses returned fetching requests and imps")
 }
 
 func TestMissingValues(t *testing.T) {
 	fetcher, close := newEmptyFetcher(t, []string{"req-1", "req-2"}, []string{"imp-1"})
 	defer close()
 
-	reqData, impData, errs := fetcher.FetchRequests(context.Background(), []string{"req-1", "req-2"}, []string{"imp-1"})
+	reqData, impData, respData, errs := fetcher.FetchRequests(context.Background(), []string{"req-1", "req-2"}, []string{"imp-1"}, []string{"resp-1"})
 	assert.Empty(t, reqData, "Fetching unknown reqs should return no reqs")
 	assert.Empty(t, impData, "Fetching unknown imps should return no imps")
+	assert.Empty(t, respData, "Fetching unknown resp should return no resp")
 	assert.Len(t, errs, 3, "Fetching 3 unknown reqs+imps should return 3 errors")
 }
 
@@ -160,9 +166,10 @@ func TestFetchAccountNoIDProvided(t *testing.T) {
 func TestErrResponse(t *testing.T) {
 	fetcher, close := newFetcherBrokenBackend()
 	defer close()
-	reqData, impData, errs := fetcher.FetchRequests(context.Background(), []string{"req-1"}, []string{"imp-1"})
+	reqData, impData, respData, errs := fetcher.FetchRequests(context.Background(), []string{"req-1"}, []string{"imp-1"}, []string{"resp-1"})
 	assertMapKeys(t, reqData)
 	assertMapKeys(t, impData)
+	assertMapKeys(t, respData)
 	assert.Len(t, errs, 1)
 }
 

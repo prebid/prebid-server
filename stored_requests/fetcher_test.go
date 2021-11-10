@@ -13,20 +13,28 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func setupFetcherWithCacheDeps() (*mockCache, *mockCache, *mockFetcher, AllFetcher, *metrics.MetricsEngineMock) {
+func setupFetcherWithCacheDeps() (*mockCache, *mockCache, *mockCache, *mockFetcher, AllFetcher, *metrics.MetricsEngineMock) {
+	//!!! resp
 	reqCache := &mockCache{}
 	impCache := &mockCache{}
+	respCache := &mockCache{}
 	metricsEngine := &metrics.MetricsEngineMock{}
 	fetcher := &mockFetcher{}
-	afetcherWithCache := WithCache(fetcher, Cache{reqCache, impCache, &nil_cache.NilCache{}}, metricsEngine)
+	afetcherWithCache := WithCache(fetcher, Cache{
+		Requests:  reqCache,
+		Imps:      impCache,
+		Responses: respCache,
+		Accounts:  &nil_cache.NilCache{}}, metricsEngine)
 
-	return reqCache, impCache, fetcher, afetcherWithCache, metricsEngine
+	return reqCache, impCache, respCache, fetcher, afetcherWithCache, metricsEngine
 }
 
 func TestPerfectCache(t *testing.T) {
-	reqCache, impCache, fetcher, aFetcherWithCache, metricsEngine := setupFetcherWithCacheDeps()
+	//!!! resp
+	reqCache, impCache, respCache, fetcher, aFetcherWithCache, metricsEngine := setupFetcherWithCacheDeps()
 	impIDs := []string{"known"}
 	reqIDs := []string{"req-id"}
+	respIDs := []string{"resp-id"}
 	ctx := context.Background()
 
 	reqCache.On("Get", ctx, reqIDs).Return(
@@ -37,12 +45,17 @@ func TestPerfectCache(t *testing.T) {
 		map[string]json.RawMessage{
 			"known": json.RawMessage(`{}`),
 		})
+	respCache.On("Get", ctx, respIDs).Return(
+		map[string]json.RawMessage{
+			"resp-id": json.RawMessage(`{"resp": true}`),
+		})
+	//!! add metrics for stored responses
 	metricsEngine.On("RecordStoredReqCacheResult", metrics.CacheHit, 1)
 	metricsEngine.On("RecordStoredReqCacheResult", metrics.CacheMiss, 0)
 	metricsEngine.On("RecordStoredImpCacheResult", metrics.CacheHit, 1)
 	metricsEngine.On("RecordStoredImpCacheResult", metrics.CacheMiss, 0)
 
-	reqData, impData, errs := aFetcherWithCache.FetchRequests(ctx, reqIDs, impIDs)
+	reqData, impData, respData, errs := aFetcherWithCache.FetchRequests(ctx, reqIDs, impIDs, respIDs)
 
 	reqCache.AssertExpectations(t)
 	impCache.AssertExpectations(t)
@@ -50,11 +63,12 @@ func TestPerfectCache(t *testing.T) {
 	metricsEngine.AssertExpectations(t)
 	assert.JSONEq(t, `{"req":true}`, string(reqData["req-id"]), "Fetch requests should fetch the right request data")
 	assert.JSONEq(t, `{}`, string(impData["known"]), "FetchRequests should fetch the right imp data")
+	assert.JSONEq(t, `{"resp":true}`, string(respData["resp-id"]), "Fetch responses should fetch the right response data")
 	assert.Len(t, errs, 0, "FetchRequest shouldn't return any errors")
 }
 
 func TestImperfectCache(t *testing.T) {
-	reqCache, impCache, fetcher, aFetcherWithCache, metricsEngine := setupFetcherWithCacheDeps()
+	reqCache, impCache, respCache, fetcher, aFetcherWithCache, metricsEngine := setupFetcherWithCacheDeps()
 	impIDs := []string{"cached", "uncached"}
 	ctx := context.Background()
 
@@ -63,6 +77,9 @@ func TestImperfectCache(t *testing.T) {
 			"cached": json.RawMessage(`true`),
 		})
 	reqCache.On("Get", ctx, []string(nil)).Return(
+		map[string]json.RawMessage{})
+
+	respCache.On("Get", ctx, []string(nil)).Return(
 		map[string]json.RawMessage{})
 
 	fetcher.On("FetchRequests", ctx, []string{}, []string{"uncached"}).Return(
@@ -77,28 +94,36 @@ func TestImperfectCache(t *testing.T) {
 			"uncached": json.RawMessage(`false`),
 		})
 	reqCache.On("Save", ctx, map[string]json.RawMessage{})
+	respCache.On("Save", ctx, map[string]json.RawMessage{})
+
+	//!! add metrics for stored resp 666 249 393
 	metricsEngine.On("RecordStoredReqCacheResult", metrics.CacheHit, 0)
 	metricsEngine.On("RecordStoredReqCacheResult", metrics.CacheMiss, 0)
 	metricsEngine.On("RecordStoredImpCacheResult", metrics.CacheHit, 1)
 	metricsEngine.On("RecordStoredImpCacheResult", metrics.CacheMiss, 1)
 
-	reqData, impData, errs := aFetcherWithCache.FetchRequests(ctx, nil, impIDs)
+	reqData, impData, respData, errs := aFetcherWithCache.FetchRequests(ctx, nil, nil, nil)
 
 	impCache.AssertExpectations(t)
 	fetcher.AssertExpectations(t)
 	metricsEngine.AssertExpectations(t)
 	assert.Len(t, reqData, 0, "Fetch requests should return nil if no request IDs were passed")
+	assert.Len(t, respData, 0, "Fetch responses should return nil if no response IDs were passed")
 	assert.JSONEq(t, `true`, string(impData["cached"]), "FetchRequests should fetch the right imp data")
 	assert.JSONEq(t, `false`, string(impData["uncached"]), "FetchRequests should fetch the right imp data")
 	assert.Len(t, errs, 0, "FetchRequest shouldn't return any errors")
 }
 
 func TestMissingData(t *testing.T) {
-	reqCache, impCache, fetcher, aFetcherWithCache, metricsEngine := setupFetcherWithCacheDeps()
+	//!!! resp
+	reqCache, impCache, respCache, fetcher, aFetcherWithCache, metricsEngine := setupFetcherWithCacheDeps()
 	impIDs := []string{"unknown"}
 	ctx := context.Background()
 
 	impCache.On("Get", ctx, impIDs).Return(
+		map[string]json.RawMessage{},
+	)
+	respCache.On("Get", ctx, impIDs).Return(
 		map[string]json.RawMessage{},
 	)
 	reqCache.On("Get", ctx, []string(nil)).Return(
@@ -116,12 +141,13 @@ func TestMissingData(t *testing.T) {
 	reqCache.On("Save", ctx,
 		map[string]json.RawMessage{},
 	)
+	//!! add resp metrics
 	metricsEngine.On("RecordStoredReqCacheResult", metrics.CacheHit, 0)
 	metricsEngine.On("RecordStoredReqCacheResult", metrics.CacheMiss, 0)
 	metricsEngine.On("RecordStoredImpCacheResult", metrics.CacheHit, 0)
 	metricsEngine.On("RecordStoredImpCacheResult", metrics.CacheMiss, 1)
 
-	reqData, impData, errs := aFetcherWithCache.FetchRequests(ctx, nil, impIDs)
+	reqData, impData, respData, errs := aFetcherWithCache.FetchRequests(ctx, nil, impIDs, nil)
 
 	reqCache.AssertExpectations(t)
 	impCache.AssertExpectations(t)
@@ -130,11 +156,12 @@ func TestMissingData(t *testing.T) {
 	assert.Len(t, errs, 1, "FetchRequests for missing data should return an error")
 	assert.Len(t, reqData, 0, "FetchRequests for missing data shouldn't return anything")
 	assert.Len(t, impData, 0, "FetchRequests for missing data shouldn't return anything")
+	assert.Len(t, respData, 0, "FetchRequests for missing data shouldn't return anything")
 }
 
 // Prevents #311
 func TestCacheSaves(t *testing.T) {
-	reqCache, impCache, fetcher, aFetcherWithCache, metricsEngine := setupFetcherWithCacheDeps()
+	reqCache, impCache, respCache, fetcher, aFetcherWithCache, metricsEngine := setupFetcherWithCacheDeps()
 	impIDs := []string{"abc", "abc"}
 	ctx := context.Background()
 
@@ -144,12 +171,16 @@ func TestCacheSaves(t *testing.T) {
 		})
 	reqCache.On("Get", ctx, []string(nil)).Return(
 		map[string]json.RawMessage{})
+
+	respCache.On("Get", ctx, []string(nil)).Return(
+		map[string]json.RawMessage{})
+	//!!! add metrics for resp
 	metricsEngine.On("RecordStoredReqCacheResult", metrics.CacheHit, 0)
 	metricsEngine.On("RecordStoredReqCacheResult", metrics.CacheMiss, 0)
 	metricsEngine.On("RecordStoredImpCacheResult", metrics.CacheHit, 2)
 	metricsEngine.On("RecordStoredImpCacheResult", metrics.CacheMiss, 0)
 
-	_, impData, errs := aFetcherWithCache.FetchRequests(ctx, nil, []string{"abc", "abc"})
+	_, impData, _, errs := aFetcherWithCache.FetchRequests(ctx, nil, []string{"abc", "abc"}, nil)
 
 	impCache.AssertExpectations(t)
 	fetcher.AssertExpectations(t)
@@ -163,7 +194,7 @@ func setupAccountFetcherWithCacheDeps() (*mockCache, *mockFetcher, AllFetcher, *
 	accCache := &mockCache{}
 	metricsEngine := &metrics.MetricsEngineMock{}
 	fetcher := &mockFetcher{}
-	afetcherWithCache := WithCache(fetcher, Cache{&nil_cache.NilCache{}, &nil_cache.NilCache{}, accCache}, metricsEngine)
+	afetcherWithCache := WithCache(fetcher, Cache{&nil_cache.NilCache{}, &nil_cache.NilCache{}, &nil_cache.NilCache{}, accCache}, metricsEngine)
 
 	return accCache, fetcher, afetcherWithCache, metricsEngine
 }
@@ -227,6 +258,7 @@ func TestComposedCache(t *testing.T) {
 	aFetcherWithCache := WithCache(fetcher, cache, metricsEngine)
 	reqIDs := []string{"1", "2", "3"}
 	impIDs := []string{}
+	respIDs := []string{}
 	ctx := context.Background()
 
 	c1.On("Get", ctx, reqIDs).Return(
@@ -241,13 +273,15 @@ func TestComposedCache(t *testing.T) {
 		map[string]json.RawMessage{
 			"3": json.RawMessage(`{"id": "3"}`),
 		})
+
+	//!!! add metrics for resp
 	impCache.On("Get", ctx, []string{}).Return(map[string]json.RawMessage{})
 	metricsEngine.On("RecordStoredReqCacheResult", metrics.CacheHit, 3)
 	metricsEngine.On("RecordStoredReqCacheResult", metrics.CacheMiss, 0)
 	metricsEngine.On("RecordStoredImpCacheResult", metrics.CacheHit, 0)
 	metricsEngine.On("RecordStoredImpCacheResult", metrics.CacheMiss, 0)
 
-	reqData, impData, errs := aFetcherWithCache.FetchRequests(ctx, reqIDs, impIDs)
+	reqData, impData, respData, errs := aFetcherWithCache.FetchRequests(ctx, reqIDs, impIDs, respIDs)
 
 	c1.AssertExpectations(t)
 	c2.AssertExpectations(t)
@@ -257,6 +291,7 @@ func TestComposedCache(t *testing.T) {
 	metricsEngine.AssertExpectations(t)
 	assert.Len(t, reqData, len(reqIDs), "FetchRequests should be able to return all request data from a composed cache")
 	assert.Len(t, impData, len(impIDs), "FetchRequests should be able to return all imp data from a composed cache")
+	assert.Len(t, respData, len(respIDs), "FetchRequests should be able to return all response data from a composed cache")
 	assert.Len(t, errs, 0, "FetchRequests shouldn't return an error when trying to use a composed cache")
 	assert.JSONEq(t, `{"id": "1"}`, string(reqData["1"]), "FetchRequests should fetch the right req data")
 	assert.JSONEq(t, `{"id": "2"}`, string(reqData["2"]), "FetchRequests should fetch the right req data")
@@ -267,9 +302,9 @@ type mockFetcher struct {
 	mock.Mock
 }
 
-func (f *mockFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (map[string]json.RawMessage, map[string]json.RawMessage, []error) {
-	args := f.Called(ctx, requestIDs, impIDs)
-	return args.Get(0).(map[string]json.RawMessage), args.Get(1).(map[string]json.RawMessage), args.Get(2).([]error)
+func (f *mockFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string, respIDs []string) (map[string]json.RawMessage, map[string]json.RawMessage, map[string]json.RawMessage, []error) {
+	args := f.Called(ctx, requestIDs, impIDs, respIDs)
+	return args.Get(0).(map[string]json.RawMessage), args.Get(1).(map[string]json.RawMessage), args.Get(2).(map[string]json.RawMessage), args.Get(3).([]error)
 }
 
 func (a *mockFetcher) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {

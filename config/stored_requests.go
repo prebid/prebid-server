@@ -337,16 +337,19 @@ func (cfg *PostgresUpdatePolling) validate(dataType DataType, errs []error) []er
 
 // MakeQuery builds a query which can fetch numReqs Stored Requests and numImps Stored Imps.
 // See the docs on PostgresConfig.QueryTemplate for a description of how it works.
-func (cfg *PostgresFetcherQueries) MakeQuery(numReqs int, numImps int) (query string) {
-	return resolve(cfg.QueryTemplate, numReqs, numImps)
+func (cfg *PostgresFetcherQueries) MakeQuery(numReqs int, numImps int, numResp int) (query string) {
+	return resolve(cfg.QueryTemplate, numReqs, numImps, numResp)
 }
 
-func resolve(template string, numReqs int, numImps int) (query string) {
+func resolve(template string, numReqs int, numImps int, numResp int) (query string) {
 	numReqs = ensureNonNegative("Request", numReqs)
 	numImps = ensureNonNegative("Imp", numImps)
+	numImps = ensureNonNegative("Response", numResp)
 
+	//!!! resp
 	query = strings.Replace(template, "%REQUEST_ID_LIST%", makeIdList(0, numReqs), -1)
 	query = strings.Replace(query, "%IMP_ID_LIST%", makeIdList(numReqs, numImps), -1)
+	query = strings.Replace(query, "%RESPONSE_ID_LIST%", makeIdList(numReqs+numImps, numResp), -1)
 	return
 }
 
@@ -401,6 +404,8 @@ type InMemoryCache struct {
 	RequestCacheSize int `mapstructure:"request_cache_size_bytes"`
 	// ImpCacheSize is the max number of bytes allowed in the cache for Stored Imps. Values <= 0 will have no limit
 	ImpCacheSize int `mapstructure:"imp_cache_size_bytes"`
+	// ResponseCacheSize is the max number of bytes allowed in the cache for Stored Responses. Values <= 0 will have no limit
+	ResponseCacheSize int `mapstructure:"response_cache_size_bytes"`
 }
 
 func (cfg *InMemoryCache) validate(dataType DataType, errs []error) []error {

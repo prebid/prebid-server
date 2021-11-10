@@ -11,7 +11,7 @@ import (
 	"github.com/prebid/prebid-server/stored_requests"
 )
 
-func NewFetcher(db *sql.DB, queryMaker func(int, int) string) stored_requests.AllFetcher {
+func NewFetcher(db *sql.DB, queryMaker func(int, int, int) string) stored_requests.AllFetcher {
 	if db == nil {
 		glog.Fatalf("The Postgres Stored Request Fetcher requires a database connection. Please report this as a bug.")
 	}
@@ -27,21 +27,27 @@ func NewFetcher(db *sql.DB, queryMaker func(int, int) string) stored_requests.Al
 // dbFetcher fetches Stored Requests from a database. This should be instantiated through the NewFetcher() function.
 type dbFetcher struct {
 	db         *sql.DB
-	queryMaker func(numReqs int, numImps int) (query string)
+	queryMaker func(numReqs int, numImps int, numResp int) (query string)
 }
 
-func (fetcher *dbFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (map[string]json.RawMessage, map[string]json.RawMessage, []error) {
-	if len(requestIDs) < 1 && len(impIDs) < 1 {
-		return nil, nil, nil
+func (fetcher *dbFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string, respIDs []string) (map[string]json.RawMessage, map[string]json.RawMessage, map[string]json.RawMessage, []error) {
+
+	//!!! resp
+	if len(requestIDs) < 1 && len(impIDs) < 1 && len(respIDs) < 1 {
+		return nil, nil, nil, nil
 	}
 
-	query := fetcher.queryMaker(len(requestIDs), len(impIDs))
-	idInterfaces := make([]interface{}, len(requestIDs)+len(impIDs))
+	query := fetcher.queryMaker(len(requestIDs), len(impIDs), len(respIDs))
+	idInterfaces := make([]interface{}, len(requestIDs)+len(impIDs)+len(respIDs))
 	for i := 0; i < len(requestIDs); i++ {
 		idInterfaces[i] = requestIDs[i]
 	}
 	for i := 0; i < len(impIDs); i++ {
 		idInterfaces[i+len(requestIDs)] = impIDs[i]
+	}
+	for i := 0; i < len(respIDs); i++ {
+		//!!! test this
+		idInterfaces[i+len(requestIDs)+len(impIDs)] = respIDs[i]
 	}
 
 	rows, err := fetcher.db.QueryContext(ctx, query, idInterfaces...)
@@ -50,9 +56,10 @@ func (fetcher *dbFetcher) FetchRequests(ctx context.Context, requestIDs []string
 			glog.Errorf("Error reading from Stored Request DB: %s", err.Error())
 			errs := appendErrors("Request", requestIDs, nil, nil)
 			errs = appendErrors("Imp", impIDs, nil, errs)
-			return nil, nil, errs
+			errs = appendErrors("Responses", respIDs, nil, errs)
+			return nil, nil, nil, errs
 		}
-		return nil, nil, []error{err}
+		return nil, nil, nil, []error{err}
 	}
 	defer func() {
 		if err := rows.Close(); err != nil {
@@ -60,8 +67,10 @@ func (fetcher *dbFetcher) FetchRequests(ctx context.Context, requestIDs []string
 		}
 	}()
 
+	//!!!! resp
 	storedRequestData := make(map[string]json.RawMessage, len(requestIDs))
 	storedImpData := make(map[string]json.RawMessage, len(impIDs))
+	storedRespData := make(map[string]json.RawMessage, len(respIDs))
 	for rows.Next() {
 		var id string
 		var data []byte
@@ -69,7 +78,7 @@ func (fetcher *dbFetcher) FetchRequests(ctx context.Context, requestIDs []string
 
 		// Fixes #338
 		if err := rows.Scan(&id, &data, &dataType); err != nil {
-			return nil, nil, []error{err}
+			return nil, nil, nil, []error{err}
 		}
 
 		switch dataType {
@@ -77,6 +86,8 @@ func (fetcher *dbFetcher) FetchRequests(ctx context.Context, requestIDs []string
 			storedRequestData[id] = data
 		case "imp":
 			storedImpData[id] = data
+		case "response":
+			storedRespData[id] = data
 		default:
 			glog.Errorf("Postgres result set with id=%s has invalid type: %s. This will be ignored.", id, dataType)
 		}
@@ -84,13 +95,14 @@ func (fetcher *dbFetcher) FetchRequests(ctx context.Context, requestIDs []string
 
 	// Fixes #338
 	if rows.Err() != nil {
-		return nil, nil, []error{rows.Err()}
+		return nil, nil, nil, []error{rows.Err()}
 	}
 
 	errs := appendErrors("Request", requestIDs, storedRequestData, nil)
 	errs = appendErrors("Imp", impIDs, storedImpData, errs)
+	errs = appendErrors("Response", respIDs, storedRespData, errs)
 
-	return storedRequestData, storedImpData, errs
+	return storedRequestData, storedImpData, storedRespData, errs
 }
 
 func (fetcher *dbFetcher) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {

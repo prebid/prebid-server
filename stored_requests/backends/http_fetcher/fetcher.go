@@ -77,19 +77,20 @@ type HttpFetcher struct {
 	Categories map[string]map[string]stored_requests.Category
 }
 
-func (fetcher *HttpFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
+func (fetcher *HttpFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string, respIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, respData map[string]json.RawMessage, errs []error) {
+	//!!! resp
 	if len(requestIDs) == 0 && len(impIDs) == 0 {
-		return nil, nil, nil
+		return nil, nil, nil, nil
 	}
 
 	httpReq, err := buildRequest(fetcher.Endpoint, requestIDs, impIDs)
 	if err != nil {
-		return nil, nil, []error{err}
+		return nil, nil, nil, []error{err}
 	}
 
 	httpResp, err := ctxhttp.Do(ctx, fetcher.client, httpReq)
 	if err != nil {
-		return nil, nil, []error{err}
+		return nil, nil, nil, []error{err}
 	}
 	defer httpResp.Body.Close()
 	requestData, impData, errs = unpackResponse(httpResp)
@@ -211,6 +212,7 @@ func (fetcher *HttpFetcher) FetchCategories(ctx context.Context, primaryAdServer
 }
 
 func buildRequest(endpoint string, requestIDs []string, impIDs []string) (*http.Request, error) {
+	//!!! resp
 	if len(requestIDs) > 0 && len(impIDs) > 0 {
 		return http.NewRequest("GET", endpoint+"request-ids=[\""+strings.Join(requestIDs, "\",\"")+"\"]&imp-ids=[\""+strings.Join(impIDs, "\",\"")+"\"]", nil)
 	} else if len(requestIDs) > 0 {

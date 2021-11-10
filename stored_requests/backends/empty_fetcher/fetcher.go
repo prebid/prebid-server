@@ -11,8 +11,10 @@ import (
 // If PBS is configured to use this, then all the OpenRTB request data must be sent in the HTTP request.
 type EmptyFetcher struct{}
 
-func (fetcher EmptyFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
-	errs = make([]error, 0, len(requestIDs)+len(impIDs))
+func (fetcher EmptyFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string, respIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, respData map[string]json.RawMessage, errs []error) {
+
+	//!!! resp
+	errs = make([]error, 0, len(requestIDs)+len(impIDs)+len(respIDs))
 	for _, id := range requestIDs {
 		errs = append(errs, stored_requests.NotFoundError{
 			ID:       id,
@@ -23,6 +25,12 @@ func (fetcher EmptyFetcher) FetchRequests(ctx context.Context, requestIDs []stri
 		errs = append(errs, stored_requests.NotFoundError{
 			ID:       id,
 			DataType: "Imp",
+		})
+	}
+	for _, id := range respIDs {
+		errs = append(errs, stored_requests.NotFoundError{
+			ID:       id,
+			DataType: "Response",
 		})
 	}
 	return

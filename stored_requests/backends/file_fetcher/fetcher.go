@@ -25,12 +25,14 @@ type eagerFetcher struct {
 	Categories map[string]map[string]stored_requests.Category
 }
 
-func (fetcher *eagerFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (map[string]json.RawMessage, map[string]json.RawMessage, []error) {
+func (fetcher *eagerFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string, respIDs []string) (map[string]json.RawMessage, map[string]json.RawMessage, map[string]json.RawMessage, []error) {
+
+	//!!! add resp
 	storedRequests := fetcher.FileSystem.Directories["stored_requests"].Files
 	storedImpressions := fetcher.FileSystem.Directories["stored_imps"].Files
 	errs := appendErrors("Request", requestIDs, storedRequests, nil)
 	errs = appendErrors("Imp", impIDs, storedImpressions, errs)
-	return storedRequests, storedImpressions, errs
+	return storedRequests, storedImpressions, nil, errs
 }
 
 // FetchAccount fetches the host account configuration for a publisher

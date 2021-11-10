@@ -21,8 +21,11 @@ type Fetcher interface {
 	// The second return value will be a map from Stored Imp data. It will have a key for every ID
 	// in the impIDs list, unless errors exist.
 	//
+	// The third return value will be a map from Stored response data. It will have a key for every ID
+	// in the respIds list, unless errors exist.
+	//
 	// The returned objects can only be read from. They may not be written to.
-	FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error)
+	FetchRequests(ctx context.Context, requestIDs []string, impIDs []string, respIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, respData map[string]json.RawMessage, errs []error)
 }
 
 type AccountFetcher interface {
@@ -63,9 +66,10 @@ func (e NotFoundError) Error() string {
 // Implementations must be safe for concurrent access by multiple goroutines.
 // To add a Cache layer in front of a Fetcher, see WithCache()
 type Cache struct {
-	Requests CacheJSON
-	Imps     CacheJSON
-	Accounts CacheJSON
+	Requests  CacheJSON
+	Imps      CacheJSON
+	Responses CacheJSON
+	Accounts  CacheJSON
 }
 type CacheJSON interface {
 	// Get works much like Fetcher.FetchRequests, with a few exceptions:
@@ -161,14 +165,17 @@ func WithCache(fetcher AllFetcher, cache Cache, metricsEngine metrics.MetricsEng
 	}
 }
 
-func (f *fetcherWithCache) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
+func (f *fetcherWithCache) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string, respIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, respData map[string]json.RawMessage, errs []error) {
 
+	//!!! add resp
 	requestData = f.cache.Requests.Get(ctx, requestIDs)
 	impData = f.cache.Imps.Get(ctx, impIDs)
+	respData = f.cache.Imps.Get(ctx, respIDs)
 
 	// Fixes #311
 	leftoverImps := findLeftovers(impIDs, impData)
 	leftoverReqs := findLeftovers(requestIDs, requestData)
+	leftoverResp := findLeftovers(respIDs, respData)
 
 	// Record cache hits for stored requests and stored imps
 	f.metricsEngine.RecordStoredReqCacheResult(metrics.CacheHit, len(requestIDs)-len(leftoverReqs))
@@ -178,14 +185,16 @@ func (f *fetcherWithCache) FetchRequests(ctx context.Context, requestIDs []strin
 	f.metricsEngine.RecordStoredImpCacheResult(metrics.CacheMiss, len(leftoverImps))
 
 	if len(leftoverReqs) > 0 || len(leftoverImps) > 0 {
-		fetcherReqData, fetcherImpData, fetcherErrs := f.fetcher.FetchRequests(ctx, leftoverReqs, leftoverImps)
+		fetcherReqData, fetcherImpData, fetcherRespData, fetcherErrs := f.fetcher.FetchRequests(ctx, leftoverReqs, leftoverImps, leftoverResp)
 		errs = fetcherErrs
 
 		f.cache.Requests.Save(ctx, fetcherReqData)
 		f.cache.Imps.Save(ctx, fetcherImpData)
+		f.cache.Imps.Save(ctx, fetcherRespData)
 
 		requestData = mergeData(requestData, fetcherReqData)
 		impData = mergeData(impData, fetcherImpData)
+		respData = mergeData(respData, fetcherRespData)
 	}
 
 	return

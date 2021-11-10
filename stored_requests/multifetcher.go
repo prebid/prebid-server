@@ -10,18 +10,24 @@ import (
 type MultiFetcher []AllFetcher
 
 // FetchRequests implements the Fetcher interface for MultiFetcher
-func (mf MultiFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
+func (mf MultiFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string, respIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, respData map[string]json.RawMessage, errs []error) {
+	//!!! resp
 	requestData = make(map[string]json.RawMessage, len(requestIDs))
 	impData = make(map[string]json.RawMessage, len(impIDs))
+	respData = make(map[string]json.RawMessage, len(respIDs))
 
 	// Loop over the fetchers
 	for _, f := range mf {
 		remainingRequestIDs := filter(requestIDs, requestData)
 		requestIDs = remainingRequestIDs
+
 		remainingImpIDs := filter(impIDs, impData)
 		impIDs = remainingImpIDs
 
-		theseRequestData, theseImpData, rerrs := f.FetchRequests(ctx, remainingRequestIDs, remainingImpIDs)
+		remainingRespIDs := filter(respIDs, respData)
+		respIDs = remainingRespIDs
+
+		theseRequestData, theseImpData, theseRespData, rerrs := f.FetchRequests(ctx, remainingRequestIDs, remainingImpIDs, remainingRespIDs)
 		// Drop NotFound errors, as other fetchers may have them. Also don't want multiple NotFound errors per ID.
 		rerrs = dropMissingIDs(rerrs)
 		if len(rerrs) > 0 {
@@ -29,10 +35,12 @@ func (mf MultiFetcher) FetchRequests(ctx context.Context, requestIDs []string, i
 		}
 		addAll(requestData, theseRequestData)
 		addAll(impData, theseImpData)
+		addAll(respData, theseRespData)
 	}
 	// Add missing ID errors back in for any IDs that are still missing
 	errs = appendNotFoundErrors("Request", requestIDs, requestData, errs)
 	errs = appendNotFoundErrors("Imp", impIDs, impData, errs)
+	errs = appendNotFoundErrors("Response", respIDs, respData, errs)
 	return
 }
 
