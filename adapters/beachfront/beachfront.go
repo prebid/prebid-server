@@ -88,8 +88,8 @@ type beachfrontSlot struct {
 }
 
 type beachfrontSize struct {
-	W uint64 `json:"w"`
-	H uint64 `json:"h"`
+	W int `json:"w"`
+	H int `json:"h"`
 }
 
 // ---------------------------------------------------
@@ -109,7 +109,10 @@ type beachfrontVideoBidExtension struct {
 	Duration int `json:"duration"`
 }
 
+var localReqInfo adapters.ExtraRequestInfo
+
 func (a *BeachfrontAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	localReqInfo = *reqInfo
 	beachfrontRequests, errs := preprocess(request)
 
 	headers := http.Header{}
@@ -140,7 +143,6 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 	var nurlBump = 0
 	var admBump = 0
 
-	// At most, I only ever have one banner request, and it does not need the cookie, so doing it first.
 	if len(beachfrontRequests.Banner.Slots) > 0 {
 		bytes, err := json.Marshal(beachfrontRequests.Banner)
 
@@ -285,15 +287,15 @@ func getBannerRequest(request *openrtb2.BidRequest) (beachfrontBannerRequest, []
 		appid, err := getAppId(beachfrontExt, openrtb_ext.BidTypeBanner)
 
 		if err != nil {
-			// Failed to get an appid, so this request is junk.
 			errs = append(errs, err)
 			continue
 		}
 
-		if err := setBidFloor(&beachfrontExt, &request.Imp[i]); err != nil {
+		if fatal, err := setBidFloor(&beachfrontExt, &request.Imp[i]); err != nil {
 			errs = append(errs, err)
-			// Next - check error type. continue on BadInput
-			continue
+			if fatal {
+				continue
+			}
 		}
 
 		slot := beachfrontSlot{
@@ -305,8 +307,8 @@ func getBannerRequest(request *openrtb2.BidRequest) (beachfrontBannerRequest, []
 		for j := 0; j < len(request.Imp[i].Banner.Format); j++ {
 
 			slot.Sizes = append(slot.Sizes, beachfrontSize{
-				H: uint64(request.Imp[i].Banner.Format[j].H),
-				W: uint64(request.Imp[i].Banner.Format[j].W),
+				H: int(request.Imp[i].Banner.Format[j].H),
+				W: int(request.Imp[i].Banner.Format[j].W),
 			})
 		}
 
@@ -401,7 +403,6 @@ func getVideoRequests(request *openrtb2.BidRequest) ([]beachfrontVideoRequest, [
 		beachfrontExt, err := getBeachfrontExtension(request.Imp[i])
 
 		if err != nil {
-			// Failed to extract the beachfrontExt, so this request is junk.
 			failedRequestIndicies = append(failedRequestIndicies, i)
 			errs = append(errs, err)
 			continue
@@ -411,7 +412,6 @@ func getVideoRequests(request *openrtb2.BidRequest) ([]beachfrontVideoRequest, [
 		bfReqs[i].AppId = appid
 
 		if err != nil {
-			// Failed to get an appid, so this request is junk.
 			failedRequestIndicies = append(failedRequestIndicies, i)
 			errs = append(errs, err)
 			continue
@@ -466,11 +466,12 @@ func getVideoRequests(request *openrtb2.BidRequest) ([]beachfrontVideoRequest, [
 		imp.Banner = nil
 		imp.Ext = nil
 		imp.Secure = &secure
-		if err := setBidFloor(&beachfrontExt, &imp); err != nil {
+		if fatal, err := setBidFloor(&beachfrontExt, &imp); err != nil {
 			errs = append(errs, err)
-			// Next - check error type. append and continue on BadInput
-			failedRequestIndicies = append(failedRequestIndicies, i)
-			continue
+			if fatal {
+				failedRequestIndicies = append(failedRequestIndicies, i)
+				continue
+			}
 		}
 
 		if imp.Video.H == 0 && imp.Video.W == 0 {
@@ -489,7 +490,6 @@ func getVideoRequests(request *openrtb2.BidRequest) ([]beachfrontVideoRequest, [
 
 	}
 
-	// Strip out any failed requests
 	if len(failedRequestIndicies) > 0 {
 		for i := 0; i < len(failedRequestIndicies); i++ {
 			bfReqs = removeVideoElement(bfReqs, failedRequestIndicies[i])
@@ -524,8 +524,6 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb2.BidRequest, exter
 	var errs = make([]error, 0)
 	var xtrnal openrtb2.BidRequest
 
-	// For video, which uses RTB for the external request, this will unmarshal as expected. For banner, it will
-	// only get the User struct and everything else will be nil
 	if err := json.Unmarshal(externalRequest.Body, &xtrnal); err != nil {
 		errs = append(errs, err)
 	} else {
@@ -567,37 +565,30 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb2.BidRequest, exter
 	return bidResponse, errs
 }
 
-func setBidFloor(ext *openrtb_ext.ExtImpBeachfront, imp *openrtb2.Imp) error {
+func setBidFloor(ext *openrtb_ext.ExtImpBeachfront, imp *openrtb2.Imp) (bool, error) {
 	var floor float64
+	var initialImpBidfloor float64 = imp.BidFloor
 	var err error
 
 	if imp.BidFloorCur != "" && strings.ToUpper(imp.BidFloorCur) != "USD" {
-		/* Next - try to convert the currency here
-		err = the error returned by the currency converter */
+		imp.BidFloor, err = localReqInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, "USD")
 
-		err = &errortypes.BadInput{
-			Message: fmt.Sprintf("unsupported bid currency, %s. bids are currently accepted in USD only. as a temporary workaround, a value in USD may be provided as imp.ext.beachfront.bidfloor", imp.BidFloorCur),
-		}
-
-		// Next - err might be nil.
 		if err != nil {
 			if ext.BidFloor > 0 {
-				/* Next - err will be non fatal and will be returned to be added to the stack
-				instead of nilled out, but still means conversion failed. Since an ext.BidFloor (always in USD) was
-				provided, use it. */
 				imp.BidFloorCur = "USD"
 				imp.BidFloor = ext.BidFloor
-				return nil
-
+				return false, &errortypes.Warning{
+					Message: fmt.Sprintf("the following error was recieved from the currency converter while attempting to convert the imp.bidfloor value of %f from %s to USD: %s. the provided value of imp.ext.beachfront.bidfloor, %f USD is being used as a fallback.",
+						initialImpBidfloor,
+						imp.BidFloorCur,
+						err,
+						ext.BidFloor,
+					),
+				}
 			} else {
-				/* Next - currency conversion has failed and there is no ext.bidfloor. return
-				a BadInput error */
-
-				return err
+				return true, err
 			}
 		}
-
-		// Next - we can get here with have a converted imp.bidfloor
 	}
 
 	if imp.BidFloor > ext.BidFloor {
@@ -615,7 +606,7 @@ func setBidFloor(ext *openrtb_ext.ExtImpBeachfront, imp *openrtb2.Imp) error {
 	}
 
 	imp.BidFloor = floor
-	return nil
+	return false, nil
 }
 
 func (a *BeachfrontAdapter) getBidType(externalRequest *adapters.RequestData) openrtb_ext.BidType {
