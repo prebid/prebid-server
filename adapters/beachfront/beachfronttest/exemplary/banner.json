@@ -57,7 +57,7 @@
           "dnt": 0,
           "ua": "",
           "adapterName": "BF_PREBID_S2S",
-          "adapterVersion": "0.9.2",
+          "adapterVersion": "1.0.0",
           "user": {},
           "schain": {
             "complete": 0,

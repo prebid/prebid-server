@@ -112,7 +112,7 @@
 
           },
           "adapterName":"BF_PREBID_S2S",
-          "adapterVersion":"0.9.2",
+          "adapterVersion":"1.0.0",
           "ip":"255.255.255.255",
           "requestId":"two-four-combo",
           "schain": {
