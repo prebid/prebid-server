@@ -69,67 +69,6 @@ func TestExtraInfoMalformed(t *testing.T) {
 }
 
 func TestRequestWithDifferentBidFloorAttributes(t *testing.T) {
-	/*
-
-		testScenarios := []struct {
-			bidFloor         float64
-			bidFloorCur      string
-			extBidFloor			 float64
-			setMock          func(m *mock.Mock)
-			expectedBidFloor float64
-			expectedBidCur   string
-			expectedErrors   []error
-		}{
-			{
-				bidFloor:         1,
-				bidFloorCur:      "WRONG",
-				extBidFloor: 0,
-				setMock:          func(m *mock.Mock) { m.On("GetRate", "WRONG", "USD").Return(2.5, errors.New("some error")) },
-				expectedBidFloor: 0,
-				expectedBidCur:   "",
-				expectedErrors: []error{
-					&errortypes.BadInput{Message: "Unable to convert provided bid floor currency from WRONG to USD"},
-				},
-			},
-			{
-				bidFloor:         1,
-				bidFloorCur:      "USD",
-				extBidFloor: 0,
-				setMock:          func(m *mock.Mock) {},
-				expectedBidFloor: 1,
-				expectedBidCur:   "USD",
-				expectedErrors:   nil,
-			},
-			{
-				bidFloor:         1,
-				bidFloorCur:      "EUR",
-				extBidFloor: 0,
-				setMock:          func(m *mock.Mock) { m.On("GetRate", "EUR", "USD").Return(1.2, nil) },
-				expectedBidFloor: 1.2,
-				expectedBidCur:   "USD",
-				expectedErrors:   nil,
-			},
-			{
-				bidFloor:         0,
-				bidFloorCur:      "",
-				extBidFloor: 0,
-				setMock:          func(m *mock.Mock) {},
-				expectedBidFloor: 0,
-				expectedBidCur:   "",
-				expectedErrors:   nil,
-			},
-			{
-				bidFloor:         -1,
-				bidFloorCur:      "CZK",
-				extBidFloor: 0,
-				setMock:          func(m *mock.Mock) {},
-				expectedBidFloor: -1,
-				expectedBidCur:   "CZK",
-				expectedErrors:   nil,
-			},
-		}
-	*/
-
 	scenarios := []struct {
 		bidFloor         float64
 		bidFloorCur      string
