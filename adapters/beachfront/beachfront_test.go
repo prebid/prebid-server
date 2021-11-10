@@ -66,7 +66,7 @@ func TestExtraInfoMalformed(t *testing.T) {
 	assert.Error(t, buildErr)
 }
 
-func TestBFBannerRequestWithDifferentBidFloorAttributes(t *testing.T) {
+func TestRequestWithDifferentBidFloorAttributes(t *testing.T) {
 	/*
 
 		testScenarios := []struct {
@@ -128,7 +128,7 @@ func TestBFBannerRequestWithDifferentBidFloorAttributes(t *testing.T) {
 		}
 	*/
 
-	testScenarios := []struct {
+	scenarios := []struct {
 		bidFloor         float64
 		bidFloorCur      string
 		extBidFloor      float64
@@ -148,7 +148,7 @@ func TestBFBannerRequestWithDifferentBidFloorAttributes(t *testing.T) {
 		},
 	}
 
-	for _, scenario := range testScenarios {
+	for _, scenario := range scenarios {
 		mockConversions := &mockCurrencyConversion{}
 		scenario.setMock(&mockConversions.Mock)
 
@@ -158,135 +158,7 @@ func TestBFBannerRequestWithDifferentBidFloorAttributes(t *testing.T) {
 
 		bidder := new(BeachfrontAdapter)
 
-		request := &openrtb2.BidRequest{
-			ID: "test-request-id",
-			Imp: []openrtb2.Imp{{
-				ID:          "test-imp-id",
-				BidFloorCur: scenario.bidFloorCur,
-				BidFloor:    scenario.bidFloor,
-				Banner: &openrtb2.Banner{
-					Format: []openrtb2.Format{{W: 300, H: 250}},
-				},
-				Ext: json.RawMessage(`{"bidder": {
-										"appId": "banner-267b23c-96c61b67",
-										"bidfloor": ` + fmt.Sprintf("%f", scenario.extBidFloor) + `
-                                      }}`),
-			}},
-			App: &openrtb2.App{
-				ID:   "com.test",
-				Name: "testApp",
-			},
-		}
-
-		reqs, errs := bidder.MakeRequests(request, &extraRequestInfo)
-
-		mockConversions.AssertExpectations(t)
-
-		if scenario.expectedErrors == nil {
-			bfmReq := &beachfrontBannerRequest{}
-			if err := json.Unmarshal(reqs[0].Body, bfmReq); err != nil {
-				t.Fatalf("Unexpected error while decoding request: %s", err)
-			}
-			assert.Equal(t, scenario.expectedBidFloor, bfmReq.Slots[0].Bidfloor)
-		} else {
-			assert.Equal(t, scenario.expectedErrors, errs)
-		}
-	}
-}
-
-func TestOpenRTBRequestWithDifferentBidFloorAttributes(t *testing.T) {
-	/*
-
-		testScenarios := []struct {
-			bidFloor         float64
-			bidFloorCur      string
-			extBidFloor			 float64
-			setMock          func(m *mock.Mock)
-			expectedBidFloor float64
-			expectedBidCur   string
-			expectedErrors   []error
-		}{
-			{
-				bidFloor:         1,
-				bidFloorCur:      "WRONG",
-				extBidFloor: 0,
-				setMock:          func(m *mock.Mock) { m.On("GetRate", "WRONG", "USD").Return(2.5, errors.New("some error")) },
-				expectedBidFloor: 0,
-				expectedBidCur:   "",
-				expectedErrors: []error{
-					&errortypes.BadInput{Message: "Unable to convert provided bid floor currency from WRONG to USD"},
-				},
-			},
-			{
-				bidFloor:         1,
-				bidFloorCur:      "USD",
-				extBidFloor: 0,
-				setMock:          func(m *mock.Mock) {},
-				expectedBidFloor: 1,
-				expectedBidCur:   "USD",
-				expectedErrors:   nil,
-			},
-			{
-				bidFloor:         1,
-				bidFloorCur:      "EUR",
-				extBidFloor: 0,
-				setMock:          func(m *mock.Mock) { m.On("GetRate", "EUR", "USD").Return(1.2, nil) },
-				expectedBidFloor: 1.2,
-				expectedBidCur:   "USD",
-				expectedErrors:   nil,
-			},
-			{
-				bidFloor:         0,
-				bidFloorCur:      "",
-				extBidFloor: 0,
-				setMock:          func(m *mock.Mock) {},
-				expectedBidFloor: 0,
-				expectedBidCur:   "",
-				expectedErrors:   nil,
-			},
-			{
-				bidFloor:         -1,
-				bidFloorCur:      "CZK",
-				extBidFloor: 0,
-				setMock:          func(m *mock.Mock) {},
-				expectedBidFloor: -1,
-				expectedBidCur:   "CZK",
-				expectedErrors:   nil,
-			},
-		}
-	*/
-
-	testScenarios := []struct {
-		bidFloor         float64
-		bidFloorCur      string
-		extBidFloor      float64
-		setMock          func(m *mock.Mock)
-		expectedBidFloor float64
-		expectedBidCur   string
-		expectedErrors   []error
-	}{
-		{
-			bidFloor:         0.01,
-			bidFloorCur:      "USD",
-			extBidFloor:      0,
-			setMock:          func(m *mock.Mock) {},
-			expectedBidFloor: 0,
-			expectedBidCur:   "USD",
-			expectedErrors:   nil,
-		},
-	}
-
-	for _, scenario := range testScenarios {
-		mockConversions := &mockCurrencyConversion{}
-		scenario.setMock(&mockConversions.Mock)
-
-		extraRequestInfo := adapters.ExtraRequestInfo{
-			CurrencyConversions: mockConversions,
-		}
-
-		bidder := new(BeachfrontAdapter)
-
-		request := &openrtb2.BidRequest{
+		videoRequest := &openrtb2.BidRequest{
 			ID: "test-request-id",
 			Imp: []openrtb2.Imp{{
 				ID:          "test-imp-id",
@@ -308,17 +180,49 @@ func TestOpenRTBRequestWithDifferentBidFloorAttributes(t *testing.T) {
 			},
 		}
 
-		reqs, errs := bidder.MakeRequests(request, &extraRequestInfo)
+		bannerRequest := &openrtb2.BidRequest{
+			ID: "test-request-id",
+			Imp: []openrtb2.Imp{{
+				ID:          "test-imp-id",
+				BidFloorCur: scenario.bidFloorCur,
+				BidFloor:    scenario.bidFloor,
+				Banner: &openrtb2.Banner{
+					Format: []openrtb2.Format{{W: 300, H: 250}},
+				},
+				Ext: json.RawMessage(`{"bidder": {
+										"appId": "banner-267b23c-96c61b67",
+										"bidfloor": ` + fmt.Sprintf("%f", scenario.extBidFloor) + `
+                                      }}`),
+			}},
+			App: &openrtb2.App{
+				ID:   "com.test",
+				Name: "testApp",
+			},
+		}
+
+		reqs, errs := bidder.MakeRequests(bannerRequest, &extraRequestInfo)
 
 		mockConversions.AssertExpectations(t)
 
 		if scenario.expectedErrors == nil {
-			bfmReq := &openrtb2.BidRequest{}
-			if err := json.Unmarshal(reqs[0].Body, bfmReq); err != nil {
+			bfmBannerReq := &beachfrontBannerRequest{}
+			if err := json.Unmarshal(reqs[0].Body, bfmBannerReq); err != nil {
 				t.Fatalf("Unexpected error while decoding request: %s", err)
 			}
-			assert.Equal(t, scenario.expectedBidFloor, bfmReq.Imp[0].BidFloor)
-			assert.Equal(t, scenario.expectedBidFloor, bfmReq.Imp[0].BidFloor)
+			assert.Equal(t, scenario.expectedBidFloor, bfmBannerReq.Slots[0].Bidfloor)
+		} else {
+			assert.Equal(t, scenario.expectedErrors, errs)
+		}
+
+		reqs, errs = bidder.MakeRequests(videoRequest, &extraRequestInfo)
+
+		if scenario.expectedErrors == nil {
+			bfmVideoReq := &openrtb2.BidRequest{}
+			if err := json.Unmarshal(reqs[0].Body, bfmVideoReq); err != nil {
+				t.Fatalf("Unexpected error while decoding request: %s", err)
+			}
+			assert.Equal(t, scenario.expectedBidFloor, bfmVideoReq.Imp[0].BidFloor)
+			assert.Equal(t, scenario.expectedBidFloor, bfmVideoReq.Imp[0].BidFloor)
 		} else {
 			assert.Equal(t, scenario.expectedErrors, errs)
 		}
