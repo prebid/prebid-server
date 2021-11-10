@@ -2,6 +2,7 @@ package beachfront
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -146,6 +148,28 @@ func TestRequestWithDifferentBidFloorAttributes(t *testing.T) {
 			expectedBidCur:   "USD",
 			expectedErrors:   nil,
 		},
+		{
+			bidFloor:         1.00,
+			bidFloorCur:      "WRONG",
+			extBidFloor:      0.99,
+			setMock:          func(m *mock.Mock) { m.On("GetRate", "WRONG", "USD").Return(2.5, errors.New("some error")) },
+			expectedBidFloor: 0.99,
+			expectedBidCur:   "USD",
+			expectedErrors: []error{
+				&errortypes.Warning{Message: "The following error was recieved from the currency converter while attempting to convert the imp.bidfloor value of 1.00 from WRONG to USD: \nsome error\n The provided value of imp.ext.beachfront.bidfloor, 0.99 USD is being used as a fallback."},
+			},
+		},
+		{
+			bidFloor:         1.00,
+			bidFloorCur:      "WRONG",
+			extBidFloor:      0,
+			setMock:          func(m *mock.Mock) { m.On("GetRate", "WRONG", "USD").Return(2.5, errors.New("some error")) },
+			expectedBidFloor: 0,
+			expectedBidCur:   "USD",
+			expectedErrors: []error{
+				&errortypes.BadInput{Message: "The following error was recieved from the currency converter while attempting to convert the imp.bidfloor value of 1.00 from WRONG to USD: \nsome error\n A value of imp.ext.beachfront.bidfloor was not provided. The bid is being skipped."},
+			},
+		},
 	}
 
 	for _, scenario := range scenarios {
@@ -222,7 +246,7 @@ func TestRequestWithDifferentBidFloorAttributes(t *testing.T) {
 				t.Fatalf("Unexpected error while decoding request: %s", err)
 			}
 			assert.Equal(t, scenario.expectedBidFloor, bfmVideoReq.Imp[0].BidFloor)
-			assert.Equal(t, scenario.expectedBidFloor, bfmVideoReq.Imp[0].BidFloor)
+			assert.Equal(t, scenario.expectedBidCur, bfmVideoReq.Imp[0].BidFloorCur)
 		} else {
 			assert.Equal(t, scenario.expectedErrors, errs)
 		}

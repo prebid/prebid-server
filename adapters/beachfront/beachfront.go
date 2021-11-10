@@ -297,6 +297,7 @@ func getBannerRequest(request *openrtb2.BidRequest) (beachfrontBannerRequest, []
 				continue
 			}
 		}
+		request.Imp[i].BidFloorCur = "USD"
 
 		slot := beachfrontSlot{
 			Id:       appid,
@@ -474,6 +475,8 @@ func getVideoRequests(request *openrtb2.BidRequest) ([]beachfrontVideoRequest, [
 			}
 		}
 
+		imp.BidFloorCur = "USD"
+
 		if imp.Video.H == 0 && imp.Video.W == 0 {
 			imp.Video.W = defaultVideoWidth
 			imp.Video.H = defaultVideoHeight
@@ -575,10 +578,9 @@ func setBidFloor(ext *openrtb_ext.ExtImpBeachfront, imp *openrtb2.Imp) (bool, er
 
 		if err != nil {
 			if ext.BidFloor > 0 {
-				imp.BidFloorCur = "USD"
 				imp.BidFloor = ext.BidFloor
 				return false, &errortypes.Warning{
-					Message: fmt.Sprintf("the following error was recieved from the currency converter while attempting to convert the imp.bidfloor value of %f from %s to USD: %s. the provided value of imp.ext.beachfront.bidfloor, %f USD is being used as a fallback.",
+					Message: fmt.Sprintf("The following error was recieved from the currency converter while attempting to convert the imp.bidfloor value of %.2f from %s to USD: \n%s\n The provided value of imp.ext.beachfront.bidfloor, %.2f USD is being used as a fallback.",
 						initialImpBidfloor,
 						imp.BidFloorCur,
 						err,
@@ -586,7 +588,13 @@ func setBidFloor(ext *openrtb_ext.ExtImpBeachfront, imp *openrtb2.Imp) (bool, er
 					),
 				}
 			} else {
-				return true, err
+				return true, &errortypes.BadInput{
+					Message: fmt.Sprintf("The following error was recieved from the currency converter while attempting to convert the imp.bidfloor value of %.2f from %s to USD: \n%s\n A value of imp.ext.beachfront.bidfloor was not provided. The bid is being skipped.",
+						initialImpBidfloor,
+						imp.BidFloorCur,
+						err,
+					),
+				}
 			}
 		}
 	}
