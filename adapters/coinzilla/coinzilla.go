@@ -14,36 +14,21 @@ import (
 )
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &coinzillaAdapter{
+	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}
 	return bidder, nil
 }
 
-type coinzillaAdapter struct {
+type adapter struct {
 	endpoint string
 }
 
-func (adapter *coinzillaAdapter) MakeRequests(openRTBRequest *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) (requestsToBidder []*adapters.RequestData, errs []error) {
+func (adapter *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) (requestsToBidder []*adapters.RequestData, errs []error) {
 	if len(openRTBRequest.Imp) == 0 {
 		return nil, []error{&errortypes.BadInput{
 			Message: "No impression in the bid request",
 		}}
-	}
-	if len(openRTBRequest.Imp) > 0 {
-		var imp = &openRTBRequest.Imp[0]
-		var bidderExt adapters.ExtImpBidder
-		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-			return nil, []error{&errortypes.BadInput{
-				Message: err.Error(),
-			}}
-		}
-		var ttxExt openrtb_ext.ExtAdpone
-		if err := json.Unmarshal(bidderExt.Bidder, &ttxExt); err != nil {
-			return nil, []error{&errortypes.BadInput{
-				Message: err.Error(),
-			}}
-		}
 	}
 	openRTBRequestJSON, err := json.Marshal(openRTBRequest)
 	if err != nil {
@@ -67,7 +52,7 @@ func (adapter *coinzillaAdapter) MakeRequests(openRTBRequest *openrtb2.BidReques
 	return requestsToBidder, errs
 }
 
-func (adapter *coinzillaAdapter) MakeBids(openRTBRequest *openrtb2.BidRequest, requestToBidder *adapters.RequestData, bidderRawResponse *adapters.ResponseData) (bidderResponse *adapters.BidderResponse, errs []error) {
+func (adapter *adapter) MakeBids(openRTBRequest *openrtb2.BidRequest, requestToBidder *adapters.RequestData, bidderRawResponse *adapters.ResponseData) (bidderResponse *adapters.BidderResponse, errs []error) {
 	switch bidderRawResponse.StatusCode {
 	case http.StatusOK:
 		break

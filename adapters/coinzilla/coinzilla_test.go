@@ -12,7 +12,7 @@ const testsDir = "coinzillatest"
 const testsBidderEndpoint = "http://request-global.czilladx.com/serve/prebid-server.php"
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderAdpone, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderCoinzilla, config.Adapter{
 		Endpoint: testsBidderEndpoint})
 
 	if buildErr != nil {
