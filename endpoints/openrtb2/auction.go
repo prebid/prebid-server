@@ -1377,12 +1377,12 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 	// Apply the Stored BidRequest, if it exists
 	resolvedRequest := requestJson
 
-	if deps.cfg.GenerateRequestID || bidRequestID == "{{UUID}}" {
+	if hasStoredBidRequest {
 		isAppRequest, err := checkIfAppRequest(requestJson)
 		if err != nil {
 			return nil, nil, []error{err}
 		}
-		if isAppRequest && hasStoredBidRequest {
+		if isAppRequest && (deps.cfg.GenerateRequestID || bidRequestID == "{{UUID}}") {
 			uuidPatch, err := generateUuidForBidRequest(deps.uuidGenerator)
 			if err != nil {
 				return nil, nil, []error{err}
@@ -1397,12 +1397,12 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 				errL := storedRequestErrorChecker(requestJson, storedRequests, storedBidRequestId)
 				return nil, nil, errL
 			}
-		}
-	} else if hasStoredBidRequest {
-		resolvedRequest, err = jsonpatch.MergePatch(storedRequests[storedBidRequestId], requestJson)
-		if err != nil {
-			errL := storedRequestErrorChecker(requestJson, storedRequests, storedBidRequestId)
-			return nil, nil, errL
+		} else {
+			resolvedRequest, err = jsonpatch.MergePatch(storedRequests[storedBidRequestId], requestJson)
+			if err != nil {
+				errL := storedRequestErrorChecker(requestJson, storedRequests, storedBidRequestId)
+				return nil, nil, errL
+			}
 		}
 	}
 
