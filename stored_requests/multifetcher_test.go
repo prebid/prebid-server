@@ -66,7 +66,7 @@ func TestMissingID(t *testing.T) {
 	ctx := context.Background()
 	reqIDs := []string{"abc", "def", "ghi"}
 	impIDs := []string{"imp-1", "imp-2", "imp-3"}
-	respIDs := []string{}
+	respIDs := []string(nil)
 
 	f1.On("FetchRequests", ctx, reqIDs, impIDs, respIDs).Return(
 		map[string]json.RawMessage{
@@ -75,6 +75,7 @@ func TestMissingID(t *testing.T) {
 		map[string]json.RawMessage{
 			"imp-1": json.RawMessage(`{"imp_id": "imp-1"}`),
 		},
+		map[string]json.RawMessage{},
 		[]error{NotFoundError{"def", "Request"}, NotFoundError{"imp-2", "Imp"}},
 	)
 	f2.On("FetchRequests", ctx, []string{"def", "ghi"}, []string{"imp-2", "imp-3"}, respIDs).Return(
@@ -84,6 +85,7 @@ func TestMissingID(t *testing.T) {
 		map[string]json.RawMessage{
 			"imp-2": json.RawMessage(`{"imp_id": "imp-2"}`),
 		},
+		map[string]json.RawMessage{},
 		[]error{},
 	)
 	//!!! resp
@@ -114,6 +116,7 @@ func TestOtherError(t *testing.T) {
 			"abc": json.RawMessage(`{"req_id": "abc"}`),
 		},
 		map[string]json.RawMessage{},
+		map[string]json.RawMessage{},
 		[]error{NotFoundError{"def", "Request"}, errors.New("Other error")},
 	)
 	f2.On("FetchRequests", ctx, []string{"def"}, []string{"imp-1"}, respIDs).Return(
@@ -123,6 +126,7 @@ func TestOtherError(t *testing.T) {
 		map[string]json.RawMessage{
 			"imp-1": json.RawMessage(`{"imp_id": "imp-1"}`),
 		},
+		map[string]json.RawMessage{},
 		[]error{},
 	)
 	//!!! resp

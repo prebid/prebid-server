@@ -9,26 +9,31 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const sampleQueryTemplate = "SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in %REQUEST_ID_LIST% UNION ALL SELECT id, impData, 'imp' as type FROM stored_requests WHERE id in %IMP_ID_LIST%"
+const sampleQueryTemplate = "SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in %REQUEST_ID_LIST% UNION ALL SELECT id, impData, 'imp' as type FROM stored_requests WHERE id in %IMP_ID_LIST% UNION ALL SELECT id, respData, 'response' as type FROM stored_responses WHERE id in %RESPONSE_ID_LIST%"
 
 //!!! add responses
 func TestNormalQueryMaker(t *testing.T) {
-	madeQuery := buildQuery(sampleQueryTemplate, 1, 3, 0)
-	assertStringsEqual(t, madeQuery, "SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in ($1) UNION ALL SELECT id, impData, 'imp' as type FROM stored_requests WHERE id in ($2, $3, $4)")
+	madeQuery := buildQuery(sampleQueryTemplate, 1, 3, 1)
+	assertStringsEqual(t, madeQuery, "SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in ($1) UNION ALL SELECT id, impData, 'imp' as type FROM stored_requests WHERE id in ($2, $3, $4) UNION ALL SELECT id, respData, 'response' as type FROM stored_responses WHERE id in ($5)")
 }
 func TestQueryMakerManyImps(t *testing.T) {
-	madeQuery := buildQuery(sampleQueryTemplate, 1, 11, 0)
-	assertStringsEqual(t, madeQuery, "SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in ($1) UNION ALL SELECT id, impData, 'imp' as type FROM stored_requests WHERE id in ($2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)")
+	madeQuery := buildQuery(sampleQueryTemplate, 1, 11, 2)
+	assertStringsEqual(t, madeQuery, "SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in ($1) UNION ALL SELECT id, impData, 'imp' as type FROM stored_requests WHERE id in ($2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) UNION ALL SELECT id, respData, 'response' as type FROM stored_responses WHERE id in ($13, $14)")
 }
 
 func TestQueryMakerNoRequests(t *testing.T) {
-	madeQuery := buildQuery(sampleQueryTemplate, 0, 3, 0)
-	assertStringsEqual(t, madeQuery, "SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in (NULL) UNION ALL SELECT id, impData, 'imp' as type FROM stored_requests WHERE id in ($1, $2, $3)")
+	madeQuery := buildQuery(sampleQueryTemplate, 0, 3, 1)
+	assertStringsEqual(t, madeQuery, "SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in (NULL) UNION ALL SELECT id, impData, 'imp' as type FROM stored_requests WHERE id in ($1, $2, $3) UNION ALL SELECT id, respData, 'response' as type FROM stored_responses WHERE id in ($4)")
 }
 
-func TestQueryMakerNoImps(t *testing.T) {
-	madeQuery := buildQuery(sampleQueryTemplate, 1, 0, 0)
-	assertStringsEqual(t, madeQuery, "SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in ($1) UNION ALL SELECT id, impData, 'imp' as type FROM stored_requests WHERE id in (NULL)")
+func TestQueryMakerNoResponses(t *testing.T) {
+	madeQuery := buildQuery(sampleQueryTemplate, 1, 2, 0)
+	assertStringsEqual(t, madeQuery, "SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in ($1) UNION ALL SELECT id, impData, 'imp' as type FROM stored_requests WHERE id in ($2, $3) UNION ALL SELECT id, respData, 'response' as type FROM stored_responses WHERE id in (NULL)")
+}
+
+func TestQueryMakerManyResponses(t *testing.T) {
+	madeQuery := buildQuery(sampleQueryTemplate, 1, 2, 5)
+	assertStringsEqual(t, madeQuery, "SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in ($1) UNION ALL SELECT id, impData, 'imp' as type FROM stored_requests WHERE id in ($2, $3) UNION ALL SELECT id, respData, 'response' as type FROM stored_responses WHERE id in ($4, $5, $6, $7, $8)")
 }
 
 func TestQueryMakerMultilists(t *testing.T) {

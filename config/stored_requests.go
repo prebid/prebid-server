@@ -344,7 +344,7 @@ func (cfg *PostgresFetcherQueries) MakeQuery(numReqs int, numImps int, numResp i
 func resolve(template string, numReqs int, numImps int, numResp int) (query string) {
 	numReqs = ensureNonNegative("Request", numReqs)
 	numImps = ensureNonNegative("Imp", numImps)
-	numImps = ensureNonNegative("Response", numResp)
+	numResp = ensureNonNegative("Response", numResp)
 
 	//!!! resp
 	query = strings.Replace(template, "%REQUEST_ID_LIST%", makeIdList(0, numReqs), -1)

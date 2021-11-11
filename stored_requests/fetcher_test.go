@@ -82,11 +82,12 @@ func TestImperfectCache(t *testing.T) {
 	respCache.On("Get", ctx, []string(nil)).Return(
 		map[string]json.RawMessage{})
 
-	fetcher.On("FetchRequests", ctx, []string{}, []string{"uncached"}).Return(
+	fetcher.On("FetchRequests", ctx, []string{}, []string{"uncached"}, []string{}).Return(
 		map[string]json.RawMessage{},
 		map[string]json.RawMessage{
 			"uncached": json.RawMessage(`false`),
 		},
+		map[string]json.RawMessage{},
 		[]error{},
 	)
 	impCache.On("Save", ctx,
@@ -96,13 +97,13 @@ func TestImperfectCache(t *testing.T) {
 	reqCache.On("Save", ctx, map[string]json.RawMessage{})
 	respCache.On("Save", ctx, map[string]json.RawMessage{})
 
-	//!! add metrics for stored resp 666 249 393
+	//!! add metrics for stored resp
 	metricsEngine.On("RecordStoredReqCacheResult", metrics.CacheHit, 0)
 	metricsEngine.On("RecordStoredReqCacheResult", metrics.CacheMiss, 0)
 	metricsEngine.On("RecordStoredImpCacheResult", metrics.CacheHit, 1)
 	metricsEngine.On("RecordStoredImpCacheResult", metrics.CacheMiss, 1)
 
-	reqData, impData, respData, errs := aFetcherWithCache.FetchRequests(ctx, nil, nil, nil)
+	reqData, impData, respData, errs := aFetcherWithCache.FetchRequests(ctx, nil, impIDs, nil)
 
 	impCache.AssertExpectations(t)
 	fetcher.AssertExpectations(t)
@@ -123,12 +124,13 @@ func TestMissingData(t *testing.T) {
 	impCache.On("Get", ctx, impIDs).Return(
 		map[string]json.RawMessage{},
 	)
-	respCache.On("Get", ctx, impIDs).Return(
+	respCache.On("Get", ctx, []string(nil)).Return(
 		map[string]json.RawMessage{},
 	)
 	reqCache.On("Get", ctx, []string(nil)).Return(
 		map[string]json.RawMessage{})
-	fetcher.On("FetchRequests", ctx, []string{}, impIDs).Return(
+	fetcher.On("FetchRequests", ctx, []string{}, impIDs, []string{}).Return(
+		map[string]json.RawMessage{},
 		map[string]json.RawMessage{},
 		map[string]json.RawMessage{},
 		[]error{
@@ -141,6 +143,9 @@ func TestMissingData(t *testing.T) {
 	reqCache.On("Save", ctx,
 		map[string]json.RawMessage{},
 	)
+	respCache.On("Save", ctx,
+		map[string]json.RawMessage{},
+	)
 	//!! add resp metrics
 	metricsEngine.On("RecordStoredReqCacheResult", metrics.CacheHit, 0)
 	metricsEngine.On("RecordStoredReqCacheResult", metrics.CacheMiss, 0)
@@ -151,6 +156,7 @@ func TestMissingData(t *testing.T) {
 
 	reqCache.AssertExpectations(t)
 	impCache.AssertExpectations(t)
+	respCache.AssertExpectations(t)
 	fetcher.AssertExpectations(t)
 	metricsEngine.AssertExpectations(t)
 	assert.Len(t, errs, 1, "FetchRequests for missing data should return an error")
@@ -249,9 +255,11 @@ func TestComposedCache(t *testing.T) {
 	c3 := &mockCache{}
 	c4 := &mockCache{}
 	impCache := &mockCache{}
+	respCache := &mockCache{}
 	cache := Cache{
-		Requests: ComposedCache{c1, c2, c3, c4},
-		Imps:     impCache,
+		Requests:  ComposedCache{c1, c2, c3, c4},
+		Imps:      impCache,
+		Responses: respCache,
 	}
 	metricsEngine := &metrics.MetricsEngineMock{}
 	fetcher := &mockFetcher{}
@@ -276,6 +284,7 @@ func TestComposedCache(t *testing.T) {
 
 	//!!! add metrics for resp
 	impCache.On("Get", ctx, []string{}).Return(map[string]json.RawMessage{})
+	respCache.On("Get", ctx, []string{}).Return(map[string]json.RawMessage{})
 	metricsEngine.On("RecordStoredReqCacheResult", metrics.CacheHit, 3)
 	metricsEngine.On("RecordStoredReqCacheResult", metrics.CacheMiss, 0)
 	metricsEngine.On("RecordStoredImpCacheResult", metrics.CacheHit, 0)

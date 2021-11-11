@@ -164,13 +164,15 @@ func TestNewEmptyCache(t *testing.T) {
 func TestNewInMemoryCache(t *testing.T) {
 	cache := newCache(&config.StoredRequests{
 		InMemoryCache: config.InMemoryCache{
-			TTL:              60,
-			RequestCacheSize: 100,
-			ImpCacheSize:     100,
+			TTL:               60,
+			RequestCacheSize:  100,
+			ImpCacheSize:      100,
+			ResponseCacheSize: 100,
 		},
 	})
 	assert.True(t, isMemoryCacheType(cache.Requests), "The newCache method should return an in-memory Request cache for StoredRequests config")
 	assert.True(t, isMemoryCacheType(cache.Imps), "The newCache method should return an in-memory Imp cache for StoredRequests config")
+	assert.True(t, isMemoryCacheType(cache.Responses), "The newCache method should return an in-memory Response cache for StoredRequests config")
 	assert.True(t, isEmptyCacheType(cache.Accounts), "The newCache method should return an empty Account cache for StoredRequests config")
 }
 

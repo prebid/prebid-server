@@ -170,7 +170,7 @@ func (f *fetcherWithCache) FetchRequests(ctx context.Context, requestIDs []strin
 	//!!! add resp
 	requestData = f.cache.Requests.Get(ctx, requestIDs)
 	impData = f.cache.Imps.Get(ctx, impIDs)
-	respData = f.cache.Imps.Get(ctx, respIDs)
+	respData = f.cache.Responses.Get(ctx, respIDs)
 
 	// Fixes #311
 	leftoverImps := findLeftovers(impIDs, impData)
@@ -190,7 +190,7 @@ func (f *fetcherWithCache) FetchRequests(ctx context.Context, requestIDs []strin
 
 		f.cache.Requests.Save(ctx, fetcherReqData)
 		f.cache.Imps.Save(ctx, fetcherImpData)
-		f.cache.Imps.Save(ctx, fetcherRespData)
+		f.cache.Responses.Save(ctx, fetcherRespData)
 
 		requestData = mergeData(requestData, fetcherReqData)
 		impData = mergeData(impData, fetcherImpData)
