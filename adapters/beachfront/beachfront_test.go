@@ -124,34 +124,25 @@ func TestRequestWithDifferentBidFloorAttributes(t *testing.T) {
 			expectedErrors:   nil,
 		},
 		{
-			bidFloor:         2.01,
-			bidFloorCur:      "USD",
-			extBidFloor:      2.90,
-			setMock:          func(m *mock.Mock) {},
-			expectedBidFloor: 2.90,
-			expectedBidCur:   "USD",
-			expectedErrors:   nil,
-		},
-		{
 			bidFloor:         1.00,
-			bidFloorCur:      "WRONG",
+			bidFloorCur:      "XYZ",
 			extBidFloor:      0.99,
 			setMock:          func(m *mock.Mock) { m.On("GetRate", "WRONG", "USD").Return(2.5, errors.New("some error")) },
 			expectedBidFloor: 0.99,
 			expectedBidCur:   "USD",
 			expectedErrors: []error{
-				&errortypes.Warning{Message: "The following error was recieved from the currency converter while attempting to convert the imp.bidfloor value of 1.00 from WRONG to USD: \nsome error\n The provided value of imp.ext.beachfront.bidfloor, 0.99 USD is being used as a fallback."},
+				&errortypes.Warning{Message: "The following error was recieved from the currency converter while attempting to convert the imp.bidfloor value of 1.00 from XYZ to USD: \nsome error\n The provided value of imp.ext.beachfront.bidfloor, 0.99 USD is being used as a fallback."},
 			},
 		},
 		{
 			bidFloor:         1.00,
-			bidFloorCur:      "WRONG",
+			bidFloorCur:      "XYZ",
 			extBidFloor:      0,
 			setMock:          func(m *mock.Mock) { m.On("GetRate", "WRONG", "USD").Return(2.5, errors.New("some error")) },
 			expectedBidFloor: 0,
 			expectedBidCur:   "USD",
 			expectedErrors: []error{
-				&errortypes.BadInput{Message: "The following error was recieved from the currency converter while attempting to convert the imp.bidfloor value of 1.00 from WRONG to USD: \nsome error\n A value of imp.ext.beachfront.bidfloor was not provided. The bid is being skipped."},
+				&errortypes.BadInput{Message: "The following error was recieved from the currency converter while attempting to convert the imp.bidfloor value of 1.00 from XYZ to USD: \nsome error\n A value of imp.ext.beachfront.bidfloor was not provided. The bid is being skipped."},
 			},
 		},
 		{
