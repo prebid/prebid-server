@@ -25,7 +25,7 @@
 
     "httpCalls": [{
         "expectedRequest": {
-            "uri": "http://request-global.czilladx.com/serve/prebid-server.php",
+            "uri": "http://test-request.com/prebid",
             "body": {
                 "id": "testRequestIdMulti",
                 "site": {

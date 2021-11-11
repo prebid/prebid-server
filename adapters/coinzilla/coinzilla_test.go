@@ -9,7 +9,7 @@ import (
 )
 
 const testsDir = "coinzillatest"
-const testsBidderEndpoint = "http://request-global.czilladx.com/serve/prebid-server.php"
+const testsBidderEndpoint = "http://test-request.com/prebid"
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderCoinzilla, config.Adapter{
