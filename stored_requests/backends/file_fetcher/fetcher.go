@@ -30,9 +30,11 @@ func (fetcher *eagerFetcher) FetchRequests(ctx context.Context, requestIDs []str
 	//!!! add resp
 	storedRequests := fetcher.FileSystem.Directories["stored_requests"].Files
 	storedImpressions := fetcher.FileSystem.Directories["stored_imps"].Files
+	storedResponses := fetcher.FileSystem.Directories["stored_responses"].Files
 	errs := appendErrors("Request", requestIDs, storedRequests, nil)
 	errs = appendErrors("Imp", impIDs, storedImpressions, errs)
-	return storedRequests, storedImpressions, nil, errs
+	errs = appendErrors("Response", respIDs, storedResponses, errs)
+	return storedRequests, storedImpressions, storedResponses, errs
 }
 
 // FetchAccount fetches the host account configuration for a publisher

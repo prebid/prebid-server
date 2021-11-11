@@ -79,11 +79,11 @@ type HttpFetcher struct {
 
 func (fetcher *HttpFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string, respIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, respData map[string]json.RawMessage, errs []error) {
 	//!!! resp
-	if len(requestIDs) == 0 && len(impIDs) == 0 {
+	if len(requestIDs) == 0 && len(impIDs) == 0 && len(respIDs) == 0 {
 		return nil, nil, nil, nil
 	}
 
-	httpReq, err := buildRequest(fetcher.Endpoint, requestIDs, impIDs)
+	httpReq, err := buildRequest(fetcher.Endpoint, requestIDs, impIDs, respIDs)
 	if err != nil {
 		return nil, nil, nil, []error{err}
 	}
@@ -93,7 +93,7 @@ func (fetcher *HttpFetcher) FetchRequests(ctx context.Context, requestIDs []stri
 		return nil, nil, nil, []error{err}
 	}
 	defer httpResp.Body.Close()
-	requestData, impData, errs = unpackResponse(httpResp)
+	requestData, impData, respData, errs = unpackResponse(httpResp)
 	return
 }
 
@@ -211,24 +211,27 @@ func (fetcher *HttpFetcher) FetchCategories(ctx context.Context, primaryAdServer
 	}
 }
 
-func buildRequest(endpoint string, requestIDs []string, impIDs []string) (*http.Request, error) {
+func buildRequest(endpoint string, requestIDs []string, impIDs []string, responseIDs []string) (*http.Request, error) {
 	//!!! resp
-	if len(requestIDs) > 0 && len(impIDs) > 0 {
-		return http.NewRequest("GET", endpoint+"request-ids=[\""+strings.Join(requestIDs, "\",\"")+"\"]&imp-ids=[\""+strings.Join(impIDs, "\",\"")+"\"]", nil)
-	} else if len(requestIDs) > 0 {
-		return http.NewRequest("GET", endpoint+"request-ids=[\""+strings.Join(requestIDs, "\",\"")+"\"]", nil)
-	} else {
-		return http.NewRequest("GET", endpoint+"imp-ids=[\""+strings.Join(impIDs, "\",\"")+"\"]", nil)
+	if len(requestIDs) > 0 {
+		endpoint = endpoint + "request-ids=[\"" + strings.Join(requestIDs, "\",\"") + "\"]&"
 	}
+	if len(impIDs) > 0 {
+		endpoint = endpoint + "imp-ids=[\"" + strings.Join(impIDs, "\",\"") + "\"]&"
+	}
+	if len(responseIDs) > 0 {
+		endpoint = endpoint + "response-ids=[\"" + strings.Join(responseIDs, "\",\"") + "\"]"
+	}
+	return http.NewRequest("GET", endpoint, nil)
 }
 
-func unpackResponse(resp *http.Response) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
+func unpackResponse(resp *http.Response) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, respData map[string]json.RawMessage, errs []error) {
 	respBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		errs = append(errs, err)
 		return
 	}
-
+	//!!! resp
 	if resp.StatusCode == http.StatusOK {
 		var responseObj responseContract
 		if err := json.Unmarshal(respBytes, &responseObj); err != nil {
@@ -238,9 +241,11 @@ func unpackResponse(resp *http.Response) (requestData map[string]json.RawMessage
 
 		requestData = responseObj.Requests
 		impData = responseObj.Imps
+		respData = responseObj.Responses
 
 		errs = convertNullsToErrs(requestData, "Request", errs)
 		errs = convertNullsToErrs(impData, "Imp", errs)
+		errs = convertNullsToErrs(respData, "Response", errs)
 
 		return
 	}
@@ -264,8 +269,9 @@ func convertNullsToErrs(m map[string]json.RawMessage, dataType string, errs []er
 
 // responseContract is used to unmarshal  for the endpoint
 type responseContract struct {
-	Requests map[string]json.RawMessage `json:"requests"`
-	Imps     map[string]json.RawMessage `json:"imps"`
+	Requests  map[string]json.RawMessage `json:"requests"`
+	Imps      map[string]json.RawMessage `json:"imps"`
+	Responses map[string]json.RawMessage `json:"responses"`
 }
 
 type accountsResponseContract struct {

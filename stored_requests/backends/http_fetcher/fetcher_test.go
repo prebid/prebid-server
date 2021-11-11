@@ -13,7 +13,7 @@ import (
 )
 
 func TestSingleReq(t *testing.T) {
-	fetcher, close := newTestFetcher(t, []string{"req-1"}, nil)
+	fetcher, close := newTestFetcher(t, []string{"req-1"}, nil, nil)
 	defer close()
 
 	reqData, impData, respData, errs := fetcher.FetchRequests(context.Background(), []string{"req-1"}, nil, nil)
@@ -24,7 +24,7 @@ func TestSingleReq(t *testing.T) {
 }
 
 func TestSeveralReqs(t *testing.T) {
-	fetcher, close := newTestFetcher(t, []string{"req-1", "req-2"}, nil)
+	fetcher, close := newTestFetcher(t, []string{"req-1", "req-2"}, nil, nil)
 	defer close()
 
 	reqData, impData, respData, errs := fetcher.FetchRequests(context.Background(), []string{"req-1", "req-2"}, nil, nil)
@@ -35,7 +35,7 @@ func TestSeveralReqs(t *testing.T) {
 }
 
 func TestSingleImp(t *testing.T) {
-	fetcher, close := newTestFetcher(t, nil, []string{"imp-1"})
+	fetcher, close := newTestFetcher(t, nil, []string{"imp-1"}, nil)
 	defer close()
 
 	reqData, impData, respData, errs := fetcher.FetchRequests(context.Background(), nil, []string{"imp-1"}, nil)
@@ -46,7 +46,7 @@ func TestSingleImp(t *testing.T) {
 }
 
 func TestSeveralImps(t *testing.T) {
-	fetcher, close := newTestFetcher(t, nil, []string{"imp-1", "imp-2"})
+	fetcher, close := newTestFetcher(t, nil, []string{"imp-1", "imp-2"}, nil)
 	defer close()
 
 	reqData, impData, respData, errs := fetcher.FetchRequests(context.Background(), nil, []string{"imp-1", "imp-2"}, nil)
@@ -56,8 +56,30 @@ func TestSeveralImps(t *testing.T) {
 	assert.Empty(t, respData, "Unexpected responses returned fetching just imps")
 }
 
+func TestSingleResponse(t *testing.T) {
+	fetcher, close := newTestFetcher(t, nil, nil, []string{"resp-1"})
+	defer close()
+
+	reqData, impData, respData, errs := fetcher.FetchRequests(context.Background(), nil, nil, []string{"resp-1"})
+	assert.Empty(t, errs, "Unexpected errors fetching known responses")
+	assert.Empty(t, reqData, "Unexpected requests returned fetching just responses")
+	assert.Empty(t, impData, "Unexpected ims returned fetching just responses")
+	assertMapKeys(t, respData, "resp-1")
+}
+
+func TestSeveralResponses(t *testing.T) {
+	fetcher, close := newTestFetcher(t, nil, nil, []string{"resp-1", "resp-2"})
+	defer close()
+
+	reqData, impData, respData, errs := fetcher.FetchRequests(context.Background(), nil, nil, []string{"resp-1", "resp-2"})
+	assert.Empty(t, errs, "Unexpected errors fetching known responses")
+	assert.Empty(t, reqData, "Unexpected requests returned fetching just responses")
+	assert.Empty(t, impData, "Unexpected imp returned fetching just responses")
+	assertMapKeys(t, respData, "resp-1", "resp-2")
+}
+
 func TestReqsAndImps(t *testing.T) {
-	fetcher, close := newTestFetcher(t, []string{"req-1"}, []string{"imp-1"})
+	fetcher, close := newTestFetcher(t, []string{"req-1"}, []string{"imp-1"}, nil)
 	defer close()
 	//!!! add fetching responses
 	reqData, impData, respData, errs := fetcher.FetchRequests(context.Background(), []string{"req-1"}, []string{"imp-1"}, nil)
@@ -67,15 +89,26 @@ func TestReqsAndImps(t *testing.T) {
 	assert.Empty(t, respData, "Unexpected responses returned fetching requests and imps")
 }
 
+func TestReqsAndResponses(t *testing.T) {
+	fetcher, close := newTestFetcher(t, []string{"req-1"}, nil, []string{"resp-1"})
+	defer close()
+	//!!! add fetching responses
+	reqData, impData, respData, errs := fetcher.FetchRequests(context.Background(), []string{"req-1"}, nil, []string{"resp-1"})
+	assert.Empty(t, errs, "Unexpected errors fetching known reqs and responses")
+	assertMapKeys(t, reqData, "req-1")
+	assertMapKeys(t, respData, "resp-1")
+	assert.Empty(t, impData, "Unexpected imps returned fetching requests and responses")
+}
+
 func TestMissingValues(t *testing.T) {
-	fetcher, close := newEmptyFetcher(t, []string{"req-1", "req-2"}, []string{"imp-1"})
+	fetcher, close := newEmptyFetcher(t, []string{"req-1", "req-2"}, []string{"imp-1"}, []string{"resp-1"})
 	defer close()
 
 	reqData, impData, respData, errs := fetcher.FetchRequests(context.Background(), []string{"req-1", "req-2"}, []string{"imp-1"}, []string{"resp-1"})
 	assert.Empty(t, reqData, "Fetching unknown reqs should return no reqs")
 	assert.Empty(t, impData, "Fetching unknown imps should return no imps")
 	assert.Empty(t, respData, "Fetching unknown resp should return no resp")
-	assert.Len(t, errs, 3, "Fetching 3 unknown reqs+imps should return 3 errors")
+	assert.Len(t, errs, 4, "Fetching 3 unknown reqs+imps+resp should return 4 errors")
 }
 
 func TestFetchAccounts(t *testing.T) {
@@ -189,29 +222,32 @@ func newFetcherBadJSON() (fetcher *HttpFetcher, closer func()) {
 	return NewFetcher(server.Client(), server.URL), server.Close
 }
 
-func newEmptyFetcher(t *testing.T, expectReqIDs []string, expectImpIDs []string) (fetcher *HttpFetcher, closer func()) {
-	handler := newHandler(t, expectReqIDs, expectImpIDs, jsonifyToNull)
+func newEmptyFetcher(t *testing.T, expectReqIDs []string, expectImpIDs []string, expectRespIDs []string) (fetcher *HttpFetcher, closer func()) {
+	handler := newHandler(t, expectReqIDs, expectImpIDs, expectRespIDs, jsonifyToNull)
 	server := httptest.NewServer(http.HandlerFunc(handler))
 	return NewFetcher(server.Client(), server.URL), server.Close
 }
 
-func newTestFetcher(t *testing.T, expectReqIDs []string, expectImpIDs []string) (fetcher *HttpFetcher, closer func()) {
-	handler := newHandler(t, expectReqIDs, expectImpIDs, jsonifyID)
+func newTestFetcher(t *testing.T, expectReqIDs []string, expectImpIDs []string, expectRespIDs []string) (fetcher *HttpFetcher, closer func()) {
+	handler := newHandler(t, expectReqIDs, expectImpIDs, expectRespIDs, jsonifyID)
 	server := httptest.NewServer(http.HandlerFunc(handler))
 	return NewFetcher(server.Client(), server.URL), server.Close
 }
 
-func newHandler(t *testing.T, expectReqIDs []string, expectImpIDs []string, jsonifier func(string) json.RawMessage) func(w http.ResponseWriter, r *http.Request) {
+func newHandler(t *testing.T, expectReqIDs []string, expectImpIDs []string, expectRespIDs []string, jsonifier func(string) json.RawMessage) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		query := r.URL.Query()
 		gotReqIDs := richSplit(query.Get("request-ids"))
 		gotImpIDs := richSplit(query.Get("imp-ids"))
+		gotRespIDs := richSplit(query.Get("response-ids"))
 
 		assertMatches(t, gotReqIDs, expectReqIDs)
 		assertMatches(t, gotImpIDs, expectImpIDs)
+		assertMatches(t, gotRespIDs, expectRespIDs)
 
 		reqIDResponse := make(map[string]json.RawMessage, len(gotReqIDs))
 		impIDResponse := make(map[string]json.RawMessage, len(gotImpIDs))
+		respIDResponse := make(map[string]json.RawMessage, len(gotRespIDs))
 
 		for _, reqID := range gotReqIDs {
 			if reqID != "" {
@@ -225,9 +261,16 @@ func newHandler(t *testing.T, expectReqIDs []string, expectImpIDs []string, json
 			}
 		}
 
+		for _, respID := range gotRespIDs {
+			if respID != "" {
+				respIDResponse[respID] = jsonifier(respID)
+			}
+		}
+
 		respObj := responseContract{
-			Requests: reqIDResponse,
-			Imps:     impIDResponse,
+			Requests:  reqIDResponse,
+			Imps:      impIDResponse,
+			Responses: respIDResponse,
 		}
 
 		if respBytes, err := json.Marshal(respObj); err != nil {

@@ -17,12 +17,13 @@ func TestFileFetcher(t *testing.T) {
 	}
 
 	//!!! resp
-	storedReqs, storedImps, _, errs := fetcher.FetchRequests(context.Background(), []string{"1", "2"}, []string{"some-imp"}, []string{"some-response"})
+	storedReqs, storedImps, storedResps, errs := fetcher.FetchRequests(context.Background(), []string{"1", "2"}, []string{"some-imp"}, []string{"some-response"})
 	assertErrorCount(t, 0, errs)
 
 	validateStoredReqOne(t, storedReqs)
 	validateStoredReqTwo(t, storedReqs)
 	validateImp(t, storedImps)
+	validateStoredResponse(t, storedResps)
 }
 
 func TestAccountFetcher(t *testing.T) {
@@ -102,6 +103,28 @@ func validateImp(t *testing.T, storedImps map[string]json.RawMessage) {
 	}
 	if !data {
 		t.Errorf(`Bad data in "imp" of stored request "some-imp". Expected true, Got %t`, data)
+	}
+}
+
+func validateStoredResponse(t *testing.T, storedResponses map[string]json.RawMessage) {
+	value, hasID := storedResponses["some-response"]
+	if !hasID {
+		t.Fatalf("Expected stored response data to have id: %d", 1)
+	}
+
+	var respVal map[string]string
+	if err := json.Unmarshal(value, &respVal); err != nil {
+		t.Errorf("Failed to unmarshal 1: %v", err)
+	}
+	if len(respVal) != 1 {
+		t.Errorf("Unexpected respVal length. Expected %d, Got %d", 1, len(respVal))
+	}
+	data, hadKey := respVal["test"]
+	if !hadKey {
+		t.Errorf("respVal should have had a \"test\" key, but it didn't.")
+	}
+	if data != "response" {
+		t.Errorf(`Bad data in "test" of stored response "some-response". Expected %s, Got %s`, "response", data)
 	}
 }
 
