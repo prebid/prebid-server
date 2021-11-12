@@ -88,8 +88,8 @@ type beachfrontSlot struct {
 }
 
 type beachfrontSize struct {
-	W int `json:"w"`
-	H int `json:"h"`
+	W uint64 `json:"w"`
+	H uint64 `json:"h"`
 }
 
 // ---------------------------------------------------
@@ -307,8 +307,8 @@ func getBannerRequest(request *openrtb2.BidRequest) (beachfrontBannerRequest, []
 		for j := 0; j < len(request.Imp[i].Banner.Format); j++ {
 
 			slot.Sizes = append(slot.Sizes, beachfrontSize{
-				H: int(request.Imp[i].Banner.Format[j].H),
-				W: int(request.Imp[i].Banner.Format[j].W),
+				H: uint64(request.Imp[i].Banner.Format[j].H),
+				W: uint64(request.Imp[i].Banner.Format[j].W),
 			})
 		}
 

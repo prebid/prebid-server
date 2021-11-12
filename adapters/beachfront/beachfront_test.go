@@ -127,7 +127,7 @@ func TestRequestWithDifferentBidFloorAttributes(t *testing.T) {
 			bidFloor:         1.00,
 			bidFloorCur:      "XYZ",
 			extBidFloor:      0.99,
-			setMock:          func(m *mock.Mock) { m.On("GetRate", "WRONG", "USD").Return(2.5, errors.New("some error")) },
+			setMock:          func(m *mock.Mock) { m.On("GetRate", "XYZ", "USD").Return(2.5, errors.New("some error")) },
 			expectedBidFloor: 0.99,
 			expectedBidCur:   "USD",
 			expectedErrors: []error{
@@ -138,7 +138,7 @@ func TestRequestWithDifferentBidFloorAttributes(t *testing.T) {
 			bidFloor:         1.00,
 			bidFloorCur:      "XYZ",
 			extBidFloor:      0,
-			setMock:          func(m *mock.Mock) { m.On("GetRate", "WRONG", "USD").Return(2.5, errors.New("some error")) },
+			setMock:          func(m *mock.Mock) { m.On("GetRate", "XYZ", "USD").Return(2.5, errors.New("some error")) },
 			expectedBidFloor: 0,
 			expectedBidCur:   "USD",
 			expectedErrors: []error{
