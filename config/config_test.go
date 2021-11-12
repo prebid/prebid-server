@@ -700,6 +700,8 @@ func TestGarbageCollectorThresholdFromEnv(t *testing.T) {
 	}
 	os.Setenv("PBS_GARBAGE_COLLECTOR_THRESHOLD", "1")
 	cfg, _ := newDefaultConfig(t)
+
+	// Assert config value defers from the default value of 0
 	cmpInts(t, "garbage_collector_threshold", 1, cfg.GarbageCollectorThreshold)
 }
 
