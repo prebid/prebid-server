@@ -9,16 +9,18 @@ import (
 
 // Save represents a bulk save
 type Save struct {
-	Requests map[string]json.RawMessage `json:"requests"`
-	Imps     map[string]json.RawMessage `json:"imps"`
-	Accounts map[string]json.RawMessage `json:"accounts"`
+	Requests  map[string]json.RawMessage `json:"requests"`
+	Imps      map[string]json.RawMessage `json:"imps"`
+	Responses map[string]json.RawMessage `json:"responses"`
+	Accounts  map[string]json.RawMessage `json:"accounts"`
 }
 
 // Invalidation represents a bulk invalidation
 type Invalidation struct {
-	Requests []string `json:"requests"`
-	Imps     []string `json:"imps"`
-	Accounts []string `json:"accounts"`
+	Requests  []string `json:"requests"`
+	Imps      []string `json:"imps"`
+	Responses []string `json:"responses"`
+	Accounts  []string `json:"accounts"`
 }
 
 // EventProducer will produce cache update and invalidation events on its channels
@@ -60,11 +62,13 @@ func (e *EventListener) Stop() {
 
 // Listen is meant to be run as a goroutine that updates/invalidates the cache when events occur
 func (e *EventListener) Listen(cache stored_requests.Cache, events EventProducer) {
+	//!!! responses
 	for {
 		select {
 		case save := <-events.Saves():
 			cache.Requests.Save(context.Background(), save.Requests)
 			cache.Imps.Save(context.Background(), save.Imps)
+			cache.Responses.Save(context.Background(), save.Responses)
 			cache.Accounts.Save(context.Background(), save.Accounts)
 			if e.onSave != nil {
 				e.onSave()
@@ -72,6 +76,7 @@ func (e *EventListener) Listen(cache stored_requests.Cache, events EventProducer
 		case invalidation := <-events.Invalidations():
 			cache.Requests.Invalidate(context.Background(), invalidation.Requests)
 			cache.Imps.Invalidate(context.Background(), invalidation.Imps)
+			cache.Responses.Invalidate(context.Background(), invalidation.Responses)
 			cache.Accounts.Invalidate(context.Background(), invalidation.Accounts)
 			if e.onInvalidate != nil {
 				e.onInvalidate()
