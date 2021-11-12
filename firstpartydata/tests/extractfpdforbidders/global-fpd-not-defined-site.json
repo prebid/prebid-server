@@ -1,0 +1,39 @@
+{
+  "description": "req.site.ext.data is present but req.ext.prebid is not defined; expect req.site.ext.data remains the same and no FPD data for bidders",
+  "inputRequestData": {
+    "id": "bid_id",
+    "site": {
+      "id": "reqSiteId",
+      "page": "http://www.foobar.com/1234.html",
+      "publisher": {
+        "id": "1"
+      },
+      "ext": {
+        "amp": 1,
+        "data": {
+          "somesitefpd": "sitefpdDataTest"
+        }
+      }
+    },
+    "test": 1
+  },
+  "outputRequestData":  {
+    "id": "bid_id",
+    "site": {
+      "id": "reqSiteId",
+      "page": "http://www.foobar.com/1234.html",
+      "publisher": {
+        "id": "1"
+      },
+      "ext": {
+        "amp":1,
+        "data": {
+          "somesitefpd": "sitefpdDataTest"
+        }
+      }
+    },
+    "test": 1
+  },
+  "biddersFPDResolved": {},
+  "validationErrors": []
+}

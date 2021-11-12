@@ -1,0 +1,51 @@
+{
+  "description": "Global and bidder FPD defined for user",
+  "inputRequestData": {
+    "user": {
+      "id": "reqUserID",
+      "yob": 1982,
+      "gender": "M"
+    }
+  },
+  "bidderConfigFPD": {
+    "appnexus": {
+      "user": {
+        "id": "apnUserId",
+        "yob": 1982,
+        "ext": {
+          "data": {
+            "morefpdData": "morefpddata",
+            "userFpddata": "siteFpddata",
+            "moreFpd": {
+              "fpd": 123
+            }
+          }
+        }
+      }
+    }
+  },
+  "globalFPD": {
+    "user": {
+      "testUserFpd": "testuser"
+    }
+  },
+  "outputRequestData": {
+    "user": {
+      "id": "reqUserID",
+      "yob": 1982,
+      "gender": "M",
+      "ext": {
+        "data": {
+          "id": "apnUserId",
+          "testUserFpd": "testuser",
+          "morefpdData": "morefpddata",
+          "userFpddata": "siteFpddata",
+          "moreFpd": {
+            "fpd": 123
+          }
+        }
+      }
+    }
+  }
+}
+

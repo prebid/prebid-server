@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/prebid/prebid-server/firstpartydata"
 	"testing"
 
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
@@ -486,6 +487,70 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 		} else {
 			assert.Nil(t, err, "Err should be nil")
 			test.bidReqAssertions(t, bidderRequests, test.applyCOPPA, test.consentedVendors)
+		}
+	}
+}
+
+func TestCleanOpenRTBRequestsWithFPD(t *testing.T) {
+	fpd := make(map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData)
+
+	apnFpd := firstpartydata.ResolvedFirstPartyData{
+		Site: &openrtb2.Site{Name: "fpdApnSite"},
+		App:  &openrtb2.App{Name: "fpdApnApp"},
+		User: &openrtb2.User{Keywords: "fpdApnUser"},
+	}
+	fpd[openrtb_ext.BidderName("appnexus")] = &apnFpd
+
+	brightrollFpd := firstpartydata.ResolvedFirstPartyData{
+		Site: &openrtb2.Site{Name: "fpdBrightrollSite"},
+		App:  &openrtb2.App{Name: "fpdBrightrollApp"},
+		User: &openrtb2.User{Keywords: "fpdBrightrollUser"},
+	}
+	fpd[openrtb_ext.BidderName("brightroll")] = &brightrollFpd
+
+	testCases := []struct {
+		description string
+		req         AuctionRequest
+		fpdExpected bool
+	}{
+		{
+			description: "Pass valid FPD data for bidder not found in the request",
+			req:         AuctionRequest{BidRequest: getTestBuildRequest(t), UserSyncs: &emptyUsersync{}, FirstPartyData: fpd},
+			fpdExpected: false,
+		},
+		{
+			description: "Pass valid FPD data for bidders specified in request",
+			req:         AuctionRequest{BidRequest: newAdapterAliasBidRequest(t), UserSyncs: &emptyUsersync{}, FirstPartyData: fpd},
+			fpdExpected: true,
+		},
+		{
+			description: "Bidders specified in request but there is no fpd data for this bidder",
+			req:         AuctionRequest{BidRequest: newAdapterAliasBidRequest(t), UserSyncs: &emptyUsersync{}, FirstPartyData: make(map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData)},
+			fpdExpected: false,
+		},
+		{
+			description: "No FPD data passed",
+			req:         AuctionRequest{BidRequest: newAdapterAliasBidRequest(t), UserSyncs: &emptyUsersync{}, FirstPartyData: nil},
+			fpdExpected: false,
+		},
+	}
+
+	for _, test := range testCases {
+		metricsMock := metrics.MetricsEngineMock{}
+		bidderToSyncerKey := map[string]string{}
+		permissions := permissionsMock{allowAllBidders: true, passGeo: true, passID: true}
+		bidderRequests, _, err := cleanOpenRTBRequests(context.Background(), test.req, nil, bidderToSyncerKey, &permissions, &metricsMock, gdpr.SignalNo, config.Privacy{}, nil)
+		assert.Empty(t, err, "No errors should be returned")
+		for _, bidderRequest := range bidderRequests {
+			bidderName := bidderRequest.BidderName
+			if test.fpdExpected {
+				assert.Equal(t, fpd[bidderName].Site.Name, bidderRequest.BidRequest.Site.Name, "Incorrect FPD site name")
+				assert.Equal(t, fpd[bidderName].App.Name, bidderRequest.BidRequest.App.Name, "Incorrect FPD app name")
+				assert.Equal(t, fpd[bidderName].User.Keywords, bidderRequest.BidRequest.User.Keywords, "Incorrect FPD user keywords")
+			} else {
+				assert.Equal(t, "", bidderRequest.BidRequest.Site.Name, "Incorrect FPD site name")
+				assert.Equal(t, "", bidderRequest.BidRequest.User.Keywords, "Incorrect FPD user keywords")
+			}
 		}
 	}
 }
@@ -2541,5 +2606,63 @@ func TestBuildXPrebidHeader(t *testing.T) {
 		}
 		result := buildXPrebidHeader(req, test.version)
 		assert.Equal(t, test.result, result, test.description+":result")
+	}
+}
+
+func TestApplyFPD(t *testing.T) {
+
+	fpdBidderTest := map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData{}
+	bidderTest := openrtb_ext.BidderName("test")
+	fpdBidderTest[bidderTest] = &firstpartydata.ResolvedFirstPartyData{Site: nil, App: nil, User: nil}
+
+	fpdBidderNotNilFPD := map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData{}
+	bidderNotNilFPD := openrtb_ext.BidderName("notNilFPD")
+	fpdBidderNotNilFPD[bidderNotNilFPD] = &firstpartydata.ResolvedFirstPartyData{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}, User: &openrtb2.User{ID: "UserId"}}
+
+	fpdBidderApp := map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData{}
+	bidderApp := openrtb_ext.BidderName("AppFPD")
+	fpdBidderApp[bidderApp] = &firstpartydata.ResolvedFirstPartyData{App: &openrtb2.App{ID: "AppId"}}
+
+	testCases := []struct {
+		description     string
+		inputFpd        map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData
+		bidderName      openrtb_ext.BidderName
+		inputRequest    openrtb2.BidRequest
+		expectedRequest openrtb2.BidRequest
+	}{
+		{
+			description:     "req.Site defined; bidderFPD.Site not defined; expect request.Site remains the same",
+			inputFpd:        fpdBidderTest,
+			bidderName:      bidderTest,
+			inputRequest:    openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}},
+			expectedRequest: openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}},
+		},
+		{
+			description: "req.Site, req.App, req.User are not defined; bidderFPD.App, bidderFPD.Site and bidderFPD.User defined; " +
+				"expect req.Site, req.App, req.User to be overriden by bidderFPD.App, bidderFPD.Site and bidderFPD.User",
+			inputFpd:        fpdBidderNotNilFPD,
+			bidderName:      bidderNotNilFPD,
+			inputRequest:    openrtb2.BidRequest{},
+			expectedRequest: openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}, User: &openrtb2.User{ID: "UserId"}},
+		},
+		{
+			description:     "req.Site, defined; bidderFPD.App defined; expect request.App to be overriden by bidderFPD.App; expect req.Site remains the same",
+			inputFpd:        fpdBidderApp,
+			bidderName:      bidderApp,
+			inputRequest:    openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}},
+			expectedRequest: openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}},
+		},
+		{
+			description:     "req.Site, req.App defined; bidderFPD.App defined; expect request.App to be overriden by bidderFPD.App",
+			inputFpd:        fpdBidderApp,
+			bidderName:      bidderApp,
+			inputRequest:    openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "TestAppId"}},
+			expectedRequest: openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}},
+		},
+	}
+
+	for _, testCase := range testCases {
+		applyFPD(testCase.inputFpd[testCase.bidderName], &testCase.inputRequest)
+		assert.Equal(t, testCase.expectedRequest, testCase.inputRequest, fmt.Sprintf("incorrect request after applying fpd, testcase %s", testCase.description))
 	}
 }

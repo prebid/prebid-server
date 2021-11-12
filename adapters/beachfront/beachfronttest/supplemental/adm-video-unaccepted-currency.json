@@ -1,0 +1,38 @@
+{
+  "mockBidRequest": {
+    "id": "adm-video-unaccepted-curency",
+    "imp": [
+      {
+        "id": "video1",
+        "bidfloorcur": "IRP",
+        "bidfloor": 695.61,
+        "ext": {
+          "bidder": {
+            "bidfloor": 3.01,
+            "appId": "videoAppId1"
+          }
+        },
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "context": "instream",
+          "w": 300,
+          "h": 250
+        }
+      }
+    ],
+    "site": {
+      "page": "https://some.domain.us/some/page.html"
+    },
+    "device":{
+      "ip":"192.168.168.168"
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "unsupported bid currency, IRP. bids are currently accepted in USD only.",
+      "comparison": "literal"
+    }
+  ]
+}
