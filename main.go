@@ -20,7 +20,7 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
-var garbageCollectionLimit []byte
+var garbageCollectionThreshold []byte
 
 func main() {
 	flag.Parse() // required for glog flags and testing package flags
@@ -31,11 +31,11 @@ func main() {
 	}
 
 	// Create a soft memory limit on the total amount of memory that PBS uses to tune the behavior
-	// of the Go garbage collector. In summary, `cfg.GarbageCollectorLimit` serves as a fixed cost
+	// of the Go garbage collector. In summary, `cfg.GarbageCollectorThreshold` serves as a fixed cost
 	// of memory that is going to be held garbage before a garbage collection cycle is triggered.
 	// This amount of virtual memory won’t translate into physical memory allocation unless we attempt
 	// to read or write to the slice below, which PBS will not do.
-	garbageCollectionLimit = make([]byte, cfg.GarbageCollectorLimit)
+	garbageCollectionThreshold = make([]byte, cfg.GarbageCollectorThreshold)
 
 	err = serve(cfg)
 	if err != nil {
