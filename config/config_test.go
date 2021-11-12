@@ -692,6 +692,17 @@ func TestMigrateConfigFromEnv(t *testing.T) {
 	cmpBools(t, "stored_requests.filesystem.enabled", true, cfg.StoredRequests.Files.Enabled)
 }
 
+func TestGarbageCollectorThresholdFromEnv(t *testing.T) {
+	if oldval, ok := os.LookupEnv("PBS_GARBAGE_COLLECTOR_THRESHOLD"); ok {
+		defer os.Setenv("PBS_GARBAGE_COLLECTOR_THRESHOLD", oldval)
+	} else {
+		defer os.Unsetenv("PBS_GARBAGE_COLLECTOR_THRESHOLD")
+	}
+	os.Setenv("PBS_GARBAGE_COLLECTOR_THRESHOLD", "1")
+	cfg, _ := newDefaultConfig(t)
+	cmpInts(t, "garbage_collector_threshold", 1, cfg.GarbageCollectorThreshold)
+}
+
 func TestMigrateConfigPurposeOneTreatment(t *testing.T) {
 	oldPurposeOneTreatmentConfig := []byte(`
       gdpr:

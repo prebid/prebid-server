@@ -4,6 +4,7 @@ import (
 	"flag"
 	"math/rand"
 	"net/http"
+	"runtime"
 	"time"
 
 	"github.com/prebid/prebid-server/config"
@@ -20,8 +21,6 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
-var garbageCollectionThreshold []byte
-
 func main() {
 	flag.Parse() // required for glog flags and testing package flags
 
@@ -35,7 +34,8 @@ func main() {
 	// of memory that is going to be held garbage before a garbage collection cycle is triggered.
 	// This amount of virtual memory won’t translate into physical memory allocation unless we attempt
 	// to read or write to the slice below, which PBS will not do.
-	garbageCollectionThreshold = make([]byte, cfg.GarbageCollectorThreshold)
+	garbageCollectionThreshold := make([]byte, cfg.GarbageCollectorThreshold)
+	defer runtime.KeepAlive(garbageCollectionThreshold)
 
 	err = serve(cfg)
 	if err != nil {
