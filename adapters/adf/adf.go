@@ -17,6 +17,7 @@ type adapter struct {
 }
 
 type adfRequestExt struct {
+	openrtb_ext.ExtRequest
 	PriceType string `json:"pt"`
 }
 
@@ -53,7 +54,19 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		validImps = append(validImps, imp)
 
 		if adfImpExt.PriceType != "" {
-			requestExt := adfRequestExt{PriceType: adfImpExt.PriceType}
+			var requestExt adfRequestExt
+
+			if len(request.Ext) > 0 {
+				if err := json.Unmarshal(request.Ext, &requestExt); err != nil {
+					errors = append(errors, err)
+					continue
+				}
+			} else {
+				requestExt = adfRequestExt{}
+			}
+
+			requestExt.PriceType = adfImpExt.PriceType
+
 			var err error
 			if request.Ext, err = json.Marshal(&requestExt); err != nil {
 				errors = append(errors, err)

@@ -1,6 +1,13 @@
 {
   "mockBidRequest": {
     "id": "test-request-id",
+    "ext":{
+      "prebid":{
+        "aliases":{
+          "adfalias": "adf"
+        }
+      }
+    },
     "imp": [{
       "id": "test-imp-id",
       "ext": {
@@ -33,7 +40,10 @@
       "body": {
         "id": "test-request-id",
         "ext": {
-          "prebid": {
+          "prebid":{
+            "aliases":{
+              "adfalias": "adf"
+            }
           },
           "pt": "gross"
         },

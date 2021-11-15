@@ -33,6 +33,8 @@
       "body": {
         "id": "test-request-id",
         "ext": {
+          "prebid": {
+          },
           "pt": "net"
         },
         "imp": [{
