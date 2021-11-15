@@ -1254,7 +1254,7 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 
 func TestValidateIntegrationType(t *testing.T) {
 	hostAllowedIntegrationTypes := make(map[string]bool)
-	hostAllowedIntegrationTypes["ValidIntegrationType1"] = true
+	hostAllowedIntegrationTypes["ValidIntegrationType"] = true
 
 	testCases := []struct {
 		description      string
@@ -1268,8 +1268,8 @@ func TestValidateIntegrationType(t *testing.T) {
 		},
 		{
 			description:      "Integration type found in request is NOT in allowed list of host",
-			givenRequestData: testBidRequests[6],
-			expectedError:    errors.New("Invalid integration value!"),
+			givenRequestData: testBidRequests[3],
+			expectedError:    errors.New("Integration value is invalid because it's not in allowed list from host company"),
 		},
 	}
 
@@ -3755,7 +3755,7 @@ var testBidRequests = []string{
 		],
 		"ext": {
 			"prebid": {
-				"integration" : "ValidIntegrationType1",
+				"integration" : "ValidIntegrationType",
 				"storedrequest": {
 					"id": "2"
 				}
@@ -3783,6 +3783,7 @@ var testBidRequests = []string{
 		],
 		"ext": {
 			"prebid": {
+				"integration" : "InvalidIntegrationType",
 				"storedrequest": {
 					"id": "2"
 				}
@@ -3848,36 +3849,6 @@ var testBidRequests = []string{
 	  "site": {
 		"page": "https://example.com"
 	  }
-	}`,
-	`{
-		"id": "some-request-id20",
-		"site": {
-			"page": "prebid.org"
-		},
-		"imp": [{
-			"id": "some-impression-id",
-			"banner": {
-				"format": [{
-						"w": 600,
-						"h": 500
-					},
-					{
-						"w": 300,
-						"h": 600
-					}
-				]
-			},
-			"ext": {
-				"appnexus": {
-					"placementId": 12883451
-				}
-			}
-		}],
-		"ext": {
-			"prebid": {
-				"integration" : "Invalid"
-			}
-		}
 	}`,
 }
 
