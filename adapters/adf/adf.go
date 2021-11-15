@@ -16,6 +16,10 @@ type adapter struct {
 	endpoint string
 }
 
+type adfRequestExt struct {
+	PriceType string `json:"pt"`
+}
+
 // Builder builds a new instance of the Adf adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	bidder := &adapter{
@@ -47,6 +51,15 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 		imp.TagID = adfImpExt.MasterTagID.String()
 		validImps = append(validImps, imp)
+
+		if adfImpExt.PriceType != "" {
+			requestExt := adfRequestExt{PriceType: adfImpExt.PriceType}
+			var err error
+			if request.Ext, err = json.Marshal(&requestExt); err != nil {
+				errors = append(errors, err)
+				continue
+			}
+		}
 	}
 
 	request.Imp = validImps
