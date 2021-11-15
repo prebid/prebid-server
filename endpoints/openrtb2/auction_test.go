@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/firstpartydata"
 	"io"
 	"io/ioutil"
 	"net"
@@ -17,6 +16,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/prebid/prebid-server/firstpartydata"
 
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
@@ -1248,6 +1249,39 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 			assert.Equalf(t, test.expectedCur, req.Cur[0], "The stored request wasn't merged properly: %s\n", test.description)
 		}
 		assert.Equalf(t, test.expectedID, req.ID, "The Bid Request ID is incorrect: %s\n", test.description)
+	}
+}
+
+func TestValidateIntegrationType(t *testing.T) {
+	hostAllowedIntegrationTypes := make(map[string]bool)
+	hostAllowedIntegrationTypes["ValidIntegrationType1"] = true
+
+	testCases := []struct {
+		description      string
+		givenRequestData string
+		expectedError    error
+	}{
+		{
+			description:      "Integration type found in request is also in allowed list of host",
+			givenRequestData: testBidRequests[2],
+			expectedError:    nil,
+		},
+		{
+			description:      "Integration type found in request is NOT in allowed list of host",
+			givenRequestData: testBidRequests[6],
+			expectedError:    errors.New("Invalid integration value!"),
+		},
+	}
+
+	for _, test := range testCases {
+		req := &openrtb_ext.RequestWrapper{}
+		req.BidRequest = &openrtb2.BidRequest{}
+
+		err := json.Unmarshal([]byte(test.givenRequestData), req.BidRequest)
+		assert.Empty(t, err, test.description)
+
+		integrationErr := validateIntegrationType(req, hostAllowedIntegrationTypes)
+		assert.Equalf(t, test.expectedError, integrationErr, "Failed Validate Test", test.description)
 	}
 }
 
@@ -3721,6 +3755,7 @@ var testBidRequests = []string{
 		],
 		"ext": {
 			"prebid": {
+				"integration" : "ValidIntegrationType1",
 				"storedrequest": {
 					"id": "2"
 				}
@@ -3813,6 +3848,36 @@ var testBidRequests = []string{
 	  "site": {
 		"page": "https://example.com"
 	  }
+	}`,
+	`{
+		"id": "some-request-id20",
+		"site": {
+			"page": "prebid.org"
+		},
+		"imp": [{
+			"id": "some-impression-id",
+			"banner": {
+				"format": [{
+						"w": 600,
+						"h": 500
+					},
+					{
+						"w": 300,
+						"h": 600
+					}
+				]
+			},
+			"ext": {
+				"appnexus": {
+					"placementId": 12883451
+				}
+			}
+		}],
+		"ext": {
+			"prebid": {
+				"integration" : "Invalid"
+			}
+		}
 	}`,
 }
 

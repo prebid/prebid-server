@@ -84,6 +84,9 @@ type Configuration struct {
 	GenerateBidID bool `mapstructure:"generate_bid_id"`
 	// GenerateRequestID overrides the bidrequest.id in an AMP Request or an App Stored Request with a generated UUID if set to true. The default is false.
 	GenerateRequestID bool `mapstructure:"generate_request_id"`
+	// IntegrationTypes will hold the integration type values that the host will allow.
+	// Map structure isn't included here because the integration type feature is still being worked on, but once complete, this variable will be updated
+	IntegrationTypes map[string]bool
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500

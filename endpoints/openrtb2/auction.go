@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/firstpartydata"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -14,8 +13,10 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/prebid/prebid-server/firstpartydata"
+
 	"github.com/buger/jsonparser"
-	"github.com/evanphx/json-patch"
+	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/gofrs/uuid"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
@@ -1652,4 +1653,24 @@ func checkIfAppRequest(request []byte) (bool, error) {
 		return true, nil
 	}
 	return false, nil
+}
+
+func getIntegrationTypeFromRequest(req *openrtb_ext.RequestWrapper) (string, error) {
+	reqExt, err := req.GetRequestExt()
+	if err != nil {
+		return "", err
+	}
+	reqPrebid := reqExt.GetPrebid()
+	return reqPrebid.IntegrationType, nil
+}
+
+func validateIntegrationType(req *openrtb_ext.RequestWrapper, integrationTypes map[string]bool) error {
+	integrationType, err := getIntegrationTypeFromRequest(req)
+	if err != nil {
+		return err
+	}
+	if _, ok := integrationTypes[integrationType]; ok {
+		return nil
+	}
+	return errors.New("Integration value is invalid because it's not in allowed list from host company")
 }
