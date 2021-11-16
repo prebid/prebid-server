@@ -194,7 +194,7 @@ func assertMakeRequestsOutput(t *testing.T, filename string, actual []*adapters.
 	for i := 0; i < len(expected); i++ {
 		var err error
 		for j := 0; j < len(actual); j++ {
-			if err = diffHttpRequests(fmt.Sprintf("%s: httpRequest[%d]", filename, i), actual[j], &(expected[i].Request)); err == nil {
+			if err = diffHttpRequests(t, fmt.Sprintf("%s: httpRequest[%d]", filename, i), actual[j], &(expected[i].Request)); err == nil {
 				break
 			}
 		}
@@ -249,14 +249,17 @@ func assertMakeBidsOutput(t *testing.T, filename string, bidderResponse *adapter
 
 // diffHttpRequests compares the actual HTTP request data to the expected one.
 // It assumes that the request bodies are JSON
-func diffHttpRequests(description string, actual *adapters.RequestData, expected *httpRequest) error {
+func diffHttpRequests(t *testing.T, description string, actual *adapters.RequestData, expected *httpRequest) error {
+	t.Helper()
+
 	if actual == nil {
 		return fmt.Errorf("Bidders cannot return nil HTTP calls. %s was nil.", description)
 	}
 
-	if err := diffStrings(fmt.Sprintf("%s.uri", description), actual.Uri, expected.Uri); err != nil {
-		return err
+	if expected.Uri != actual.Uri {
+		return fmt.Errorf(`%s.uri "%s" does not match expected "%s."`, description, actual.Uri, expected.Uri)
 	}
+
 	if expected.Headers != nil {
 		actualHeader, err := json.Marshal(actual.Headers)
 		if err != nil {
@@ -279,7 +282,7 @@ func diffBids(t *testing.T, description string, actual *adapters.TypedBid, expec
 		return
 	}
 
-	assert.NoError(t, diffStrings(fmt.Sprintf("%s.type", description), string(actual.BidType), string(expected.Type)))
+	assert.Equal(t, string(expected.Type), string(actual.BidType), fmt.Sprintf(`%s.type "%s" does not match expected "%s."`, description, string(actual.BidType), string(expected.Type)))
 	assert.NoError(t, diffOrtbBids(fmt.Sprintf("%s.bid", description), actual.Bid, expected.Bid))
 }
 
@@ -295,13 +298,6 @@ func diffOrtbBids(description string, actual *openrtb2.Bid, expected json.RawMes
 	}
 
 	return diffJson(description, actualJson, expected)
-}
-
-func diffStrings(description string, actual string, expected string) error {
-	if actual != expected {
-		return fmt.Errorf(`%s "%s" does not match expected "%s."`, description, actual, expected)
-	}
-	return nil
 }
 
 // diffJson compares two JSON byte arrays for structural equality. It will produce an error if either
