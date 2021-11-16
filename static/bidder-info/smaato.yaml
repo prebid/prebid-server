@@ -10,3 +10,7 @@ capabilities:
     mediaTypes:
       - banner
       - video
+userSync:
+  redirect:
+    url: "https://s.ad.smaato.net/c/?adExInit=p&redir={{.RedirectURL}}"
+    userMacro: "$UID"

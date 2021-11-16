@@ -212,7 +212,15 @@ func (a *YieldlabAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 		Bids:     []*adapters.TypedBid{},
 	}
 
-	for i, bid := range bids {
+	adslotToImpMap := make(map[string]*openrtb2.Imp)
+	for i := 0; i < len(internalRequest.Imp); i++ {
+		adslotID := a.extractAdslotID(internalRequest.Imp[i])
+		if internalRequest.Imp[i].Video != nil || internalRequest.Imp[i].Banner != nil {
+			adslotToImpMap[adslotID] = &internalRequest.Imp[i]
+		}
+	}
+
+	for _, bid := range bids {
 		width, height, err := splitSize(bid.Adsize)
 		if err != nil {
 			return nil, []error{err}
@@ -225,33 +233,37 @@ func (a *YieldlabAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 			}
 		}
 
-		var bidType openrtb_ext.BidType
-		responseBid := &openrtb2.Bid{
-			ID:     strconv.FormatUint(bid.ID, 10),
-			Price:  float64(bid.Price) / 100,
-			ImpID:  internalRequest.Imp[i].ID,
-			CrID:   a.makeCreativeID(req, bid),
-			DealID: strconv.FormatUint(bid.Pid, 10),
-			W:      int64(width),
-			H:      int64(height),
-		}
-
-		if internalRequest.Imp[i].Video != nil {
-			bidType = openrtb_ext.BidTypeVideo
-			responseBid.NURL = a.makeAdSourceURL(internalRequest, req, bid)
-
-		} else if internalRequest.Imp[i].Banner != nil {
-			bidType = openrtb_ext.BidTypeBanner
-			responseBid.AdM = a.makeBannerAdSource(internalRequest, req, bid)
-		} else {
-			// Yieldlab adapter currently doesn't support Audio and Native ads
+		if imp, exists := adslotToImpMap[strconv.FormatUint(bid.ID, 10)]; !exists {
 			continue
-		}
+		} else {
+			var bidType openrtb_ext.BidType
+			responseBid := &openrtb2.Bid{
+				ID:     strconv.FormatUint(bid.ID, 10),
+				Price:  float64(bid.Price) / 100,
+				ImpID:  imp.ID,
+				CrID:   a.makeCreativeID(req, bid),
+				DealID: strconv.FormatUint(bid.Pid, 10),
+				W:      int64(width),
+				H:      int64(height),
+			}
 
-		bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
-			BidType: bidType,
-			Bid:     responseBid,
-		})
+			if imp.Video != nil {
+				bidType = openrtb_ext.BidTypeVideo
+				responseBid.NURL = a.makeAdSourceURL(internalRequest, req, bid)
+				responseBid.AdM = a.makeVast(internalRequest, req, bid)
+			} else if imp.Banner != nil {
+				bidType = openrtb_ext.BidTypeBanner
+				responseBid.AdM = a.makeBannerAdSource(internalRequest, req, bid)
+			} else {
+				// Yieldlab adapter currently doesn't support Audio and Native ads
+				continue
+			}
+
+			bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
+				BidType: bidType,
+				Bid:     responseBid,
+			})
+		}
 	}
 
 	return bidderResponse, nil
@@ -259,6 +271,7 @@ func (a *YieldlabAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 
 func (a *YieldlabAdapter) findBidReq(adslotID uint64, params []*openrtb_ext.ExtImpYieldlab) *openrtb_ext.ExtImpYieldlab {
 	slotIdStr := strconv.FormatUint(adslotID, 10)
+
 	for _, p := range params {
 		if p.AdslotID == slotIdStr {
 			return p
@@ -268,8 +281,20 @@ func (a *YieldlabAdapter) findBidReq(adslotID uint64, params []*openrtb_ext.ExtI
 	return nil
 }
 
+func (a *YieldlabAdapter) extractAdslotID(internalRequestImp openrtb2.Imp) string {
+	bidderExt := new(adapters.ExtImpBidder)
+	json.Unmarshal(internalRequestImp.Ext, bidderExt)
+	yieldlabExt := new(openrtb_ext.ExtImpYieldlab)
+	json.Unmarshal(bidderExt.Bidder, yieldlabExt)
+	return yieldlabExt.AdslotID
+}
+
 func (a *YieldlabAdapter) makeBannerAdSource(req *openrtb2.BidRequest, ext *openrtb_ext.ExtImpYieldlab, res *bidResponse) string {
 	return fmt.Sprintf(adSourceBanner, a.makeAdSourceURL(req, ext, res))
+}
+
+func (a *YieldlabAdapter) makeVast(req *openrtb2.BidRequest, ext *openrtb_ext.ExtImpYieldlab, res *bidResponse) string {
+	return fmt.Sprintf(vastMarkup, ext.AdslotID, a.makeAdSourceURL(req, ext, res))
 }
 
 func (a *YieldlabAdapter) makeAdSourceURL(req *openrtb2.BidRequest, ext *openrtb_ext.ExtImpYieldlab, res *bidResponse) string {

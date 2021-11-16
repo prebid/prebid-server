@@ -34,7 +34,7 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	`{"sid": "11233", "token": "sin"}`,
+	`{"sid": "11233", "token": "sin", "placementId": "123", "appId": "abc"}`,
 	`{"sid": "11244", "token": "iad"}`,
 }
 
@@ -44,4 +44,7 @@ var invalidParams = []string{
 	`{"sid": 123, "token": "sin"}`,
 	`{"sid": "", "token": "iad"}`,
 	`{"sid": "11233", "token": ""}`,
+	`{"sid": "11233", "token": "sin", "placementId": 123, "appId": "abc"}`,
+	`{"sid": "11233", "token": "sin", "placementId": "123", "appId": 456}`,
+	`{"sid": "11233", "token": "sin", "placementId": 123, "appId": 456}`,
 }

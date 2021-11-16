@@ -1,0 +1,156 @@
+{
+  "description": "Valid request with First party data for two bidders, both have global and bidder specific fpd",
+  "mockBidRequest": {
+    "id": "bid_req_id",
+    "imp": [
+      {
+        "id": "1_0",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "maxduration": 30,
+          "protocols": [
+            2,
+            3
+          ],
+          "w": 640,
+          "h": 480
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 123
+          },
+          "telaria": {
+            "seatCode": "test",
+            "adCode": "test"
+          }
+        }
+      }
+    ],
+    "site": {
+      "id": "reqSiteId",
+      "page": "http://www.foobar.com/1234.html",
+      "publisher": {
+        "id": "1"
+      },
+      "content": {
+        "episode": 6,
+        "title": "episodeName",
+        "series": "TvName",
+        "season": "season3",
+        "len": 900,
+        "data": [
+          {
+            "id": "reqContentDataSiteId1",
+            "name": "reqContentDataSiteName1"
+          }
+        ]
+      },
+      "ext": {
+        "amp": 1,
+        "data": {
+          "somesitefpd": "fpdSite"
+        }
+      }
+    },
+    "user": {
+      "id": "reqUserID",
+      "keywords": "userKeyword",
+      "yob": 1982,
+      "gender": "M",
+      "data": [
+        {
+          "id": "reqDataUserId1",
+          "name": "reqDataUserName1"
+        },
+        {
+          "id": "reqDataUserId2",
+          "name": "reqDataUserName2"
+        }
+      ],
+      "ext": {
+        "data": {
+          "moreuserdata": "morefpduserdata"
+        }
+      }
+    },
+    "test": 1,
+    "at": 1,
+    "tmax": 5000,
+    "ext": {
+      "prebid": {
+        "data": {
+          "bidders": [
+            "bidder1",
+            "bidder2"
+          ]
+        },
+        "bidderconfig": [
+          {
+            "bidders": [
+              "bidder1"
+            ],
+            "config": {
+              "ortb2": {
+                "site": {
+                  "id": "fpdSiteId",
+                  "keywords": "fpd keywords!",
+                  "data": [
+                    {
+                      "id": "siteId1",
+                      "name": true
+                    },
+                    {
+                      "id": "siteId2",
+                      "name": false
+                    }
+                  ],
+                  "page": "",
+                  "ext": {
+                    "data": {
+                      "morefpdData": "morefpddata",
+                      "sitefpddata": "mysitefpddata"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "bidders": [
+              "bidder2"
+            ],
+            "config": {
+              "ortb2": {
+                "user": {
+                  "id": "fpdUserId",
+                  "yob": 2011,
+                  "gender": "F",
+                  "keywords": "fpd keywords",
+                  "data": [
+                    {
+                      "id": "fpdUserDataId1",
+                      "name": "fpdUserDataName1"
+                    },
+                    {
+                      "id": "fpdUserDataId2",
+                      "name": "fpdUserDataName2"
+                    }
+                  ],
+                  "ext": {
+                    "data": {
+                      "userdata": "biddermyfpduserdata"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "expectedBidResponse": {},
+  "expectedReturnCode": 200
+}
