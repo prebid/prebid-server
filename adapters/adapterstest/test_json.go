@@ -106,7 +106,6 @@ func loadFile(filename string) (*testSpec, error) {
 // More assertions will almost certainly be added in the future, as bugs come up.
 func runSpec(t *testing.T, filename string, spec *testSpec, bidder adapters.Bidder, isAmpTest, isVideoTest bool) {
 	reqInfo := getTestExtraRequestInfo(t, filename, spec, isAmpTest, isVideoTest)
-
 	requests := testMakeRequestsImpl(t, filename, spec, bidder, reqInfo)
 
 	testMakeBidsImpl(t, filename, spec, bidder, requests)
@@ -128,7 +127,7 @@ func getTestExtraRequestInfo(t *testing.T, filename string, spec *testSpec, isAm
 	reqPrebid := reqExt.GetPrebid()
 	if reqPrebid != nil && reqPrebid.CurrencyConversions != nil && len(reqPrebid.CurrencyConversions.ConversionRates) > 0 {
 		err = currency.ValidateCustomRates(reqPrebid.CurrencyConversions)
-		assert.NoError(t, err, "Error unmarshalling test currency rates. %s", filename)
+		assert.NoError(t, err, "Error validating currency rates in the test request: %s", filename)
 
 		// Get currency rates conversions from the test request.ext
 		conversions := currency.NewRates(reqPrebid.CurrencyConversions.ConversionRates)
