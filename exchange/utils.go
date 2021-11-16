@@ -309,6 +309,9 @@ func prepareSource(req *openrtb2.BidRequest, bidder string, sChainsByBidder map[
 	// set source
 	if req.Source == nil {
 		req.Source = &openrtb2.Source{}
+	} else {
+		sourceCopy := *req.Source
+		req.Source = &sourceCopy
 	}
 	schain := openrtb_ext.ExtRequestPrebidSChain{
 		SChain: *selectedSChain,
