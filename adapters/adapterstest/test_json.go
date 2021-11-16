@@ -191,14 +191,14 @@ func assertMakeRequestsOutput(t *testing.T, filename string, actual []*adapters.
 		t.Fatalf("%s: MakeRequests had wrong request count. Expected %d, got %d", filename, len(expected), len(actual))
 	}
 
-	for i := 0; i < len(actual); i++ {
+	for i := 0; i < len(expected); i++ {
 		var err error
-		for j := 0; j < len(expected); j++ {
-			if err = diffHttpRequests(fmt.Sprintf("%s: httpRequest[%d]", filename, i), actual[i], &(expected[i].Request)); err == nil {
+		for j := 0; j < len(actual); j++ {
+			if err = diffHttpRequests(fmt.Sprintf("%s: httpRequest[%d]", filename, i), actual[j], &(expected[i].Request)); err == nil {
 				break
 			}
 		}
-		assert.NoError(t, err)
+		assert.NoError(t, err, fmt.Sprintf("%s Expected RequestData was not returned by adapters' MakeRequests() implementation: httpRequest[%d]", filename, i))
 	}
 }
 
