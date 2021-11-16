@@ -6,6 +6,7 @@
   "properties": {
     "placementId": {
       "type": "string",
+      "minLength": 1,
       "description": "Placement Id or Website Id"
     }
   },

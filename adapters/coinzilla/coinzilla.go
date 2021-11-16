@@ -75,9 +75,8 @@ func (adapter *adapter) MakeBids(openRTBRequest *openrtb2.BidRequest, requestToB
 	bidderResponse.Currency = openRTBBidderResponse.Cur
 	var typedBid *adapters.TypedBid
 	for _, seatBid := range openRTBBidderResponse.SeatBid {
-		for _, bid := range seatBid.Bid {
-			bid := bid
-			typedBid = &adapters.TypedBid{Bid: &bid, BidType: "banner"}
+		for i := range seatBid.Bid {
+			typedBid = &adapters.TypedBid{Bid: &seatBid.Bid[i], BidType: "banner"}
 			bidderResponse.Bids = append(bidderResponse.Bids, typedBid)
 		}
 	}
