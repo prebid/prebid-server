@@ -3819,7 +3819,7 @@ var testBidRequests = []string{
 type mockStoredReqFetcher struct {
 }
 
-func (cf mockStoredReqFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
+func (cf mockStoredReqFetcher) Fetch(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
 	return testStoredRequestData, testStoredImpData, nil
 }
 

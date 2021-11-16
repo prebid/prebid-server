@@ -16,7 +16,7 @@ func TestFileFetcher(t *testing.T) {
 		t.Errorf("Failed to create a Fetcher: %v", err)
 	}
 
-	storedReqs, storedImps, errs := fetcher.FetchRequests(context.Background(), []string{"1", "2"}, []string{"some-imp"})
+	storedReqs, storedImps, errs := fetcher.Fetch(context.Background(), []string{"1", "2"}, []string{"some-imp"})
 	assertErrorCount(t, 0, errs)
 
 	validateStoredReqOne(t, storedReqs)

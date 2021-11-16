@@ -8,7 +8,7 @@ import (
 func TestErrorLength(t *testing.T) {
 	fetcher := EmptyFetcher{}
 
-	storedReqs, storedImps, errs := fetcher.FetchRequests(context.Background(), []string{"a", "b"}, []string{"c"})
+	storedReqs, storedImps, errs := fetcher.Fetch(context.Background(), []string{"a", "b"}, []string{"c"})
 	if len(storedReqs) != 0 {
 		t.Errorf("The empty fetcher should never return stored requests. Got %d", len(storedReqs))
 	}

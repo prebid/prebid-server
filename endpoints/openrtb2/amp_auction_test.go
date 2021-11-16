@@ -939,7 +939,7 @@ type mockAmpStoredReqFetcher struct {
 	data map[string]json.RawMessage
 }
 
-func (cf *mockAmpStoredReqFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
+func (cf *mockAmpStoredReqFetcher) Fetch(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
 	return cf.data, nil, nil
 }
 

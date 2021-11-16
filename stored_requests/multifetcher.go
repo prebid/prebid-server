@@ -9,8 +9,8 @@ import (
 // MultiFetcher is a Fetcher composed of multiple sub-Fetchers that are all polled for results.
 type MultiFetcher []AllFetcher
 
-// FetchRequests implements the Fetcher interface for MultiFetcher
-func (mf MultiFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
+// Fetch implements the Fetcher interface for MultiFetcher
+func (mf MultiFetcher) Fetch(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
 	requestData = make(map[string]json.RawMessage, len(requestIDs))
 	impData = make(map[string]json.RawMessage, len(impIDs))
 
@@ -21,7 +21,7 @@ func (mf MultiFetcher) FetchRequests(ctx context.Context, requestIDs []string, i
 		remainingImpIDs := filter(impIDs, impData)
 		impIDs = remainingImpIDs
 
-		theseRequestData, theseImpData, rerrs := f.FetchRequests(ctx, remainingRequestIDs, remainingImpIDs)
+		theseRequestData, theseImpData, rerrs := f.Fetch(ctx, remainingRequestIDs, remainingImpIDs)
 		// Drop NotFound errors, as other fetchers may have them. Also don't want multiple NotFound errors per ID.
 		rerrs = dropMissingIDs(rerrs)
 		if len(rerrs) > 0 {

@@ -24,7 +24,7 @@ func TestEmptyQuery(t *testing.T) {
 		db:         db,
 		queryMaker: successfulQueryMaker(""),
 	}
-	storedReqs, storedImps, errs := fetcher.FetchRequests(context.Background(), nil, nil)
+	storedReqs, storedImps, errs := fetcher.Fetch(context.Background(), nil, nil)
 	assertErrorCount(t, 0, errs)
 	assertMapLength(t, 0, storedReqs)
 	assertMapLength(t, 0, storedImps)
@@ -41,7 +41,7 @@ func TestGoodResponse(t *testing.T) {
 	mock, fetcher := newFetcher(t, mockReturn, mockQuery, "request-id")
 	defer fetcher.db.Close()
 
-	storedReqs, storedImps, errs := fetcher.FetchRequests(context.Background(), []string{"request-id"}, nil)
+	storedReqs, storedImps, errs := fetcher.Fetch(context.Background(), []string{"request-id"}, nil)
 
 	assertMockExpectations(t, mock)
 	assertErrorCount(t, 0, errs)
@@ -61,7 +61,7 @@ func TestPartialResponse(t *testing.T) {
 	mock, fetcher := newFetcher(t, mockReturn, mockQuery, "stored-req-id", "stored-req-id-2")
 	defer fetcher.db.Close()
 
-	storedReqs, storedImps, errs := fetcher.FetchRequests(context.Background(), []string{"stored-req-id", "stored-req-id-2"}, nil)
+	storedReqs, storedImps, errs := fetcher.Fetch(context.Background(), []string{"stored-req-id", "stored-req-id-2"}, nil)
 
 	assertMockExpectations(t, mock)
 	assertErrorCount(t, 1, errs)
@@ -78,7 +78,7 @@ func TestEmptyResponse(t *testing.T) {
 	mock, fetcher := newFetcher(t, mockReturn, mockQuery, "stored-req-id", "stored-req-id-2", "stored-imp-id")
 	defer fetcher.db.Close()
 
-	storedReqs, storedImps, errs := fetcher.FetchRequests(context.Background(), []string{"stored-req-id", "stored-req-id-2"}, []string{"stored-imp-id"})
+	storedReqs, storedImps, errs := fetcher.Fetch(context.Background(), []string{"stored-req-id", "stored-req-id-2"}, []string{"stored-imp-id"})
 
 	assertMockExpectations(t, mock)
 	assertErrorCount(t, 3, errs)
@@ -100,7 +100,7 @@ func TestDatabaseError(t *testing.T) {
 		queryMaker: successfulQueryMaker("SELECT id, data, dataType FROM my_table WHERE id IN (?, ?)"),
 	}
 
-	storedReqs, storedImps, errs := fetcher.FetchRequests(context.Background(), []string{"stored-req-id"}, nil)
+	storedReqs, storedImps, errs := fetcher.Fetch(context.Background(), []string{"stored-req-id"}, nil)
 	assertErrorCount(t, 1, errs)
 	assertMapLength(t, 0, storedReqs)
 	assertMapLength(t, 0, storedImps)
@@ -122,7 +122,7 @@ func TestContextDeadlines(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Nanosecond)
 	defer cancel()
-	_, _, errs := fetcher.FetchRequests(ctx, []string{"id"}, nil)
+	_, _, errs := fetcher.Fetch(ctx, []string{"id"}, nil)
 	if len(errs) < 1 {
 		t.Errorf("dbFetcher should return an error when the context times out.")
 	}
@@ -144,7 +144,7 @@ func TestContextCancelled(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	_, _, errs := fetcher.FetchRequests(ctx, []string{"id"}, nil)
+	_, _, errs := fetcher.Fetch(ctx, []string{"id"}, nil)
 	if len(errs) < 1 {
 		t.Errorf("dbFetcher should return an error when the context is cancelled.")
 	}
@@ -165,7 +165,7 @@ func TestRowErrors(t *testing.T) {
 		db:         db,
 		queryMaker: successfulQueryMaker("SELECT id, data, dataType FROM my_table WHERE id IN (?)"),
 	}
-	data, _, errs := fetcher.FetchRequests(context.Background(), []string{"foo", "bar"}, nil)
+	data, _, errs := fetcher.Fetch(context.Background(), []string{"foo", "bar"}, nil)
 	assertErrorCount(t, 1, errs)
 	if errs[0].Error() != "Error reading from row 1" {
 		t.Errorf("Unexpected error message: %v", errs[0].Error())

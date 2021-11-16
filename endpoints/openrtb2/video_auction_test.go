@@ -1338,7 +1338,7 @@ func (m *mockCacheClient) GetExtCacheData() (scheme string, host string, path st
 type mockVideoStoredReqFetcher struct {
 }
 
-func (cf mockVideoStoredReqFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
+func (cf mockVideoStoredReqFetcher) Fetch(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
 	return testVideoStoredRequestData, testVideoStoredImpData, nil
 }
 

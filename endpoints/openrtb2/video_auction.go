@@ -452,7 +452,7 @@ func (deps *endpointDeps) loadStoredImp(storedImpId string) (openrtb2.Imp, []err
 	defer cancel()
 
 	impr := openrtb2.Imp{}
-	_, imp, err := deps.storedReqFetcher.FetchRequests(ctx, []string{}, []string{storedImpId})
+	_, imp, err := deps.storedReqFetcher.Fetch(ctx, []string{}, []string{storedImpId})
 	if err != nil {
 		return impr, err
 	}
@@ -556,7 +556,7 @@ func findAdPod(podInd int64, pods []*openrtb_ext.AdPod) *openrtb_ext.AdPod {
 }
 
 func (deps *endpointDeps) loadStoredVideoRequest(ctx context.Context, storedRequestId string) ([]byte, []error) {
-	storedRequests, _, errs := deps.videoFetcher.FetchRequests(ctx, []string{storedRequestId}, []string{})
+	storedRequests, _, errs := deps.videoFetcher.Fetch(ctx, []string{storedRequestId}, []string{})
 	jsonString := storedRequests[storedRequestId]
 	return jsonString, errs
 }

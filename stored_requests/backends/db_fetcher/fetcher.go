@@ -30,7 +30,7 @@ type dbFetcher struct {
 	queryMaker func(numReqs int, numImps int) (query string)
 }
 
-func (fetcher *dbFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (map[string]json.RawMessage, map[string]json.RawMessage, []error) {
+func (fetcher *dbFetcher) Fetch(ctx context.Context, requestIDs []string, impIDs []string) (map[string]json.RawMessage, map[string]json.RawMessage, []error) {
 	if len(requestIDs) < 1 && len(impIDs) < 1 {
 		return nil, nil, nil
 	}

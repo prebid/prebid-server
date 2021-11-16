@@ -17,7 +17,7 @@ func TestMultiFetcher(t *testing.T) {
 	reqIDs := []string{"abc", "def"}
 	impIDs := []string{"imp-1", "imp-2"}
 
-	f1.On("FetchRequests", ctx, reqIDs, impIDs).Return(
+	f1.On("Fetch", ctx, reqIDs, impIDs).Return(
 		map[string]json.RawMessage{
 			"abc": json.RawMessage(`{"req_id": "abc"}`),
 		},
@@ -26,7 +26,7 @@ func TestMultiFetcher(t *testing.T) {
 		},
 		[]error{NotFoundError{"def", "Request"}, NotFoundError{"imp-2", "Imp"}},
 	)
-	f2.On("FetchRequests", ctx, []string{"def"}, []string{"imp-2"}).Return(
+	f2.On("Fetch", ctx, []string{"def"}, []string{"imp-2"}).Return(
 		map[string]json.RawMessage{
 			"def": json.RawMessage(`{"req_id": "def"}`),
 		},
@@ -36,7 +36,7 @@ func TestMultiFetcher(t *testing.T) {
 		[]error{},
 	)
 
-	reqData, impData, errs := fetcher.FetchRequests(ctx, reqIDs, impIDs)
+	reqData, impData, errs := fetcher.Fetch(ctx, reqIDs, impIDs)
 
 	f1.AssertExpectations(t)
 	f2.AssertExpectations(t)
@@ -57,7 +57,7 @@ func TestMissingID(t *testing.T) {
 	reqIDs := []string{"abc", "def", "ghi"}
 	impIDs := []string{"imp-1", "imp-2", "imp-3"}
 
-	f1.On("FetchRequests", ctx, reqIDs, impIDs).Return(
+	f1.On("Fetch", ctx, reqIDs, impIDs).Return(
 		map[string]json.RawMessage{
 			"abc": json.RawMessage(`{"req_id": "abc"}`),
 		},
@@ -66,7 +66,7 @@ func TestMissingID(t *testing.T) {
 		},
 		[]error{NotFoundError{"def", "Request"}, NotFoundError{"imp-2", "Imp"}},
 	)
-	f2.On("FetchRequests", ctx, []string{"def", "ghi"}, []string{"imp-2", "imp-3"}).Return(
+	f2.On("Fetch", ctx, []string{"def", "ghi"}, []string{"imp-2", "imp-3"}).Return(
 		map[string]json.RawMessage{
 			"def": json.RawMessage(`{"req_id": "def"}`),
 		},
@@ -76,7 +76,7 @@ func TestMissingID(t *testing.T) {
 		[]error{},
 	)
 
-	reqData, impData, errs := fetcher.FetchRequests(ctx, reqIDs, impIDs)
+	reqData, impData, errs := fetcher.Fetch(ctx, reqIDs, impIDs)
 
 	f1.AssertExpectations(t)
 	f2.AssertExpectations(t)
@@ -97,14 +97,14 @@ func TestOtherError(t *testing.T) {
 	reqIDs := []string{"abc", "def"}
 	impIDs := []string{"imp-1"}
 
-	f1.On("FetchRequests", ctx, reqIDs, impIDs).Return(
+	f1.On("Fetch", ctx, reqIDs, impIDs).Return(
 		map[string]json.RawMessage{
 			"abc": json.RawMessage(`{"req_id": "abc"}`),
 		},
 		map[string]json.RawMessage{},
 		[]error{NotFoundError{"def", "Request"}, errors.New("Other error")},
 	)
-	f2.On("FetchRequests", ctx, []string{"def"}, []string{"imp-1"}).Return(
+	f2.On("Fetch", ctx, []string{"def"}, []string{"imp-1"}).Return(
 		map[string]json.RawMessage{
 			"def": json.RawMessage(`{"req_id": "def"}`),
 		},
@@ -114,7 +114,7 @@ func TestOtherError(t *testing.T) {
 		[]error{},
 	)
 
-	reqData, impData, errs := fetcher.FetchRequests(ctx, reqIDs, impIDs)
+	reqData, impData, errs := fetcher.Fetch(ctx, reqIDs, impIDs)
 
 	f1.AssertExpectations(t)
 	f2.AssertExpectations(t)

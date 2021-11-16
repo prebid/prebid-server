@@ -77,7 +77,7 @@ type HttpFetcher struct {
 	Categories map[string]map[string]stored_requests.Category
 }
 
-func (fetcher *HttpFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
+func (fetcher *HttpFetcher) Fetch(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
 	if len(requestIDs) == 0 && len(impIDs) == 0 {
 		return nil, nil, nil
 	}

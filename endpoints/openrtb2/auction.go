@@ -1364,7 +1364,7 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 		}
 	}
 
-	storedRequests, storedImps, errs := deps.storedReqFetcher.FetchRequests(ctx, storedReqIds, impStoredReqIds)
+	storedRequests, storedImps, errs := deps.storedReqFetcher.Fetch(ctx, storedReqIds, impStoredReqIds)
 
 	if len(errs) != 0 {
 		return nil, nil, errs
