@@ -194,7 +194,7 @@ func assertMakeRequestsOutput(t *testing.T, filename string, actual []*adapters.
 	for i := 0; i < len(expected); i++ {
 		var err error
 		for j := 0; j < len(actual); j++ {
-			if err = diffHttpRequests(t, fmt.Sprintf("%s: httpRequest[%d]", filename, i), actual[j], &(expected[i].Request)); err == nil {
+			if err = diffHttpRequests(fmt.Sprintf("%s: httpRequest[%d]", filename, i), actual[j], &(expected[i].Request)); err == nil {
 				break
 			}
 		}
@@ -249,8 +249,7 @@ func assertMakeBidsOutput(t *testing.T, filename string, bidderResponse *adapter
 
 // diffHttpRequests compares the actual HTTP request data to the expected one.
 // It assumes that the request bodies are JSON
-func diffHttpRequests(t *testing.T, description string, actual *adapters.RequestData, expected *httpRequest) error {
-	t.Helper()
+func diffHttpRequests(description string, actual *adapters.RequestData, expected *httpRequest) error {
 
 	if actual == nil {
 		return fmt.Errorf("Bidders cannot return nil HTTP calls. %s was nil.", description)
