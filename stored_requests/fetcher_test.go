@@ -50,7 +50,7 @@ func TestPerfectCache(t *testing.T) {
 	metricsEngine.AssertExpectations(t)
 	assert.JSONEq(t, `{"req":true}`, string(reqData["req-id"]), "Fetch requests should fetch the right request data")
 	assert.JSONEq(t, `{}`, string(impData["known"]), "Fetch should fetch the right imp data")
-	assert.Len(t, errs, 0, "FetchRequest shouldn't return any errors")
+	assert.Len(t, errs, 0, "Fetch shouldn't return any errors")
 }
 
 func TestImperfectCache(t *testing.T) {
@@ -90,7 +90,7 @@ func TestImperfectCache(t *testing.T) {
 	assert.Len(t, reqData, 0, "Fetch requests should return nil if no request IDs were passed")
 	assert.JSONEq(t, `true`, string(impData["cached"]), "Fetch should fetch the right imp data")
 	assert.JSONEq(t, `false`, string(impData["uncached"]), "Fetch should fetch the right imp data")
-	assert.Len(t, errs, 0, "FetchRequest shouldn't return any errors")
+	assert.Len(t, errs, 0, "Fetch shouldn't return any errors")
 }
 
 func TestMissingData(t *testing.T) {
