@@ -4,6 +4,7 @@ import (
 	"flag"
 	"math/rand"
 	"net/http"
+	"runtime"
 	"time"
 
 	"github.com/prebid/prebid-server/config"
@@ -27,6 +28,14 @@ func main() {
 	if err != nil {
 		glog.Exitf("Configuration could not be loaded or did not pass validation: %v", err)
 	}
+
+	// Create a soft memory limit on the total amount of memory that PBS uses to tune the behavior
+	// of the Go garbage collector. In summary, `cfg.GarbageCollectorThreshold` serves as a fixed cost
+	// of memory that is going to be held garbage before a garbage collection cycle is triggered.
+	// This amount of virtual memory won’t translate into physical memory allocation unless we attempt
+	// to read or write to the slice below, which PBS will not do.
+	garbageCollectionThreshold := make([]byte, cfg.GarbageCollectorThreshold)
+	defer runtime.KeepAlive(garbageCollectionThreshold)
 
 	err = serve(cfg)
 	if err != nil {
