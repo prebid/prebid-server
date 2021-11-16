@@ -113,19 +113,19 @@ func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtBizzclick) (string, er
 
 func (a *adapter) checkResponseStatusCodes(response *adapters.ResponseData) error {
 	if response.StatusCode == http.StatusBadRequest {
-		return &errortypes.BadInput{
+		return &errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Unexpected status code: [ %d ]", response.StatusCode),
 		}
 	}
 
 	if response.StatusCode == http.StatusServiceUnavailable {
-		return &errortypes.BadInput{
+		return &errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Something went wrong, please contact your Account Manager. Status Code: [ %d ] ", response.StatusCode),
 		}
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return &errortypes.BadInput{
+		return &errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Unexpected status code: [ %d ]. Run with request.debug = 1 for more info", response.StatusCode),
 		}
 	}
