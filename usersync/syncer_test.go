@@ -384,6 +384,50 @@ func TestBuildTemplate(t *testing.T) {
 	}
 }
 
+func TestChooseExternalURL(t *testing.T) {
+	testCases := []struct {
+		description            string
+		givenSyncerEndpointURL string
+		givenSyncerURL         string
+		givenHostConfigURL     string
+		expected               string
+	}{
+		{
+			description:            "Syncer Endpoint Chosen",
+			givenSyncerEndpointURL: "a",
+			givenSyncerURL:         "b",
+			givenHostConfigURL:     "c",
+			expected:               "a",
+		},
+		{
+			description:            "Syncer Chosen",
+			givenSyncerEndpointURL: "",
+			givenSyncerURL:         "b",
+			givenHostConfigURL:     "c",
+			expected:               "b",
+		},
+		{
+			description:            "Host Config Chosen",
+			givenSyncerEndpointURL: "",
+			givenSyncerURL:         "",
+			givenHostConfigURL:     "c",
+			expected:               "c",
+		},
+		{
+			description:            "All Empty",
+			givenSyncerEndpointURL: "",
+			givenSyncerURL:         "",
+			givenHostConfigURL:     "",
+			expected:               "",
+		},
+	}
+
+	for _, test := range testCases {
+		result := chooseExternalURL(test.givenSyncerEndpointURL, test.givenSyncerURL, test.givenHostConfigURL)
+		assert.Equal(t, test.expected, result, test.description)
+	}
+}
+
 func TestEscapeTemplate(t *testing.T) {
 	testCases := []struct {
 		description string

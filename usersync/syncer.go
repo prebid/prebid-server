@@ -153,13 +153,7 @@ func buildTemplate(key, syncTypeValue string, hostConfig config.UserSync, syncer
 		redirectTemplate = hostConfig.RedirectURL
 	}
 
-	externalURL := syncerEndpoint.ExternalURL
-	if externalURL == "" {
-		externalURL = syncerExternalURL
-	}
-	if externalURL == "" {
-		externalURL = hostConfig.ExternalURL
-	}
+	externalURL := chooseExternalURL(syncerEndpoint.ExternalURL, syncerExternalURL, hostConfig.ExternalURL)
 
 	redirectURL := macroRegexSyncerKey.ReplaceAllLiteralString(redirectTemplate, key)
 	redirectURL = macroRegexSyncType.ReplaceAllLiteralString(redirectURL, syncTypeValue)
@@ -171,6 +165,19 @@ func buildTemplate(key, syncTypeValue string, hostConfig config.UserSync, syncer
 
 	templateName := strings.ToLower(key) + "_usersync_url"
 	return template.New(templateName).Parse(url)
+}
+
+// chooseExternalURL selects the external url to use for the template, where the most specific config wins.
+func chooseExternalURL(syncerEndpointURL, syncerURL, hostConfigURL string) string {
+	if syncerEndpointURL != "" {
+		return syncerEndpointURL
+	}
+
+	if syncerURL != "" {
+		return syncerURL
+	}
+
+	return hostConfigURL
 }
 
 // escapeTemplate url encodes a string template leaving the macro tags unaffected.
