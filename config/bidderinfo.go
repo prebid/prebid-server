@@ -102,13 +102,9 @@ func (s *Syncer) Override(original *Syncer) *Syncer {
 
 	if original == nil {
 		copy.IFrame = s.IFrame.Override(nil)
-	} else {
-		copy.IFrame = s.IFrame.Override(original.IFrame)
-	}
-
-	if original == nil {
 		copy.Redirect = s.Redirect.Override(nil)
 	} else {
+		copy.IFrame = s.IFrame.Override(original.IFrame)
 		copy.Redirect = s.Redirect.Override(original.Redirect)
 	}
 
