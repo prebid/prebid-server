@@ -1184,11 +1184,6 @@ func TestChannelSupport(t *testing.T) {
 			givenBidRequestData:   testBidRequestForChannelTest[1],
 			expectedChannelObject: &openrtb_ext.ExtRequestPrebidChannel{Name: "video", Version: "1.0"},
 		},
-		{
-			description:           "No channel object in site request, expect nil",
-			givenBidRequestData:   testBidRequestForChannelTest[2],
-			expectedChannelObject: nil,
-		},
 	}
 
 	for _, test := range testCases {
@@ -1202,6 +1197,84 @@ func TestChannelSupport(t *testing.T) {
 
 		requestPrebid := requestExt.GetPrebid()
 		assert.Equalf(t, test.expectedChannelObject, requestPrebid.Channel, "Channel information isn't correct: %s\n", test.description)
+	}
+}
+
+func TestValidateOrFillChannel(t *testing.T) {
+	testCases := []struct {
+		description            string
+		givenBidRequestData    string
+		givenIsAmp             bool
+		expectedError          error
+		expectedChannelObject  *openrtb_ext.ExtRequestPrebidChannel
+		expectedAmpChannelInfo json.RawMessage
+	}{
+		{
+			description:           "No channel object in app request, so we expect channel name to be set to app",
+			givenBidRequestData:   testBidRequestForChannelTest[0],
+			givenIsAmp:            false,
+			expectedError:         nil,
+			expectedChannelObject: &openrtb_ext.ExtRequestPrebidChannel{Name: "app", Version: ""},
+		},
+		{
+			description:           "Channel object in request with populated name/version, we expect same name/version in object that's created",
+			givenBidRequestData:   testBidRequestForChannelTest[1],
+			givenIsAmp:            false,
+			expectedError:         nil,
+			expectedChannelObject: &openrtb_ext.ExtRequestPrebidChannel{Name: "video", Version: "1.0"},
+		},
+		{
+			description:           "No channel object in site request, expect nil",
+			givenBidRequestData:   testBidRequestForChannelTest[2],
+			givenIsAmp:            false,
+			expectedError:         nil,
+			expectedChannelObject: nil,
+		},
+		{
+			description:           "No prebid object, expect app channel object to be created",
+			givenBidRequestData:   testBidRequestForChannelTest[3],
+			givenIsAmp:            false,
+			expectedError:         nil,
+			expectedChannelObject: &openrtb_ext.ExtRequestPrebidChannel{Name: "app", Version: ""},
+		},
+		{
+			description:            "No prebid object, expect amp channel info to be generated",
+			givenBidRequestData:    testBidRequestForChannelTest[3],
+			givenIsAmp:             true,
+			expectedError:          nil,
+			expectedAmpChannelInfo: json.RawMessage(`{"prebid":{"channel":{"name":"amp","version":""}}}`),
+		},
+		{
+			description:           "No channel name given in channel object, we expect error to be thrown",
+			givenBidRequestData:   testBidRequestForChannelTest[4],
+			givenIsAmp:            false,
+			expectedError:         errors.New("ext.prebid.channel.name can't be empty"),
+			expectedChannelObject: nil,
+		},
+	}
+
+	for _, test := range testCases {
+		req := &openrtb_ext.RequestWrapper{}
+		req.BidRequest = &openrtb2.BidRequest{}
+
+		err := json.Unmarshal([]byte(test.givenBidRequestData), req.BidRequest)
+		assert.Empty(t, err, test.description)
+
+		requestExt, err := req.GetRequestExt()
+		assert.Empty(t, err, test.description)
+
+		requestPrebid := requestExt.GetPrebid()
+
+		err = validateOrFillChannel(requestPrebid, requestExt, req, test.givenIsAmp)
+		assert.Equalf(t, test.expectedError, err, "Error doesn't match: %s\n", test.description)
+
+		// Evaluating object based on if request is for amp or app
+		if test.givenIsAmp && err == nil {
+			assert.Equalf(t, test.expectedAmpChannelInfo, req.Ext, "Channel information isn't correct: %s\n", test.description)
+		} else if err == nil {
+			requestPrebid = requestExt.GetPrebid()
+			assert.Equalf(t, test.expectedChannelObject, requestPrebid.Channel, "Channel information isn't correct: %s\n", test.description)
+		}
 	}
 }
 
@@ -3716,6 +3789,72 @@ var testBidRequestForChannelTest = []string{
 		}],
 		"ext": {
 			"prebid": {
+			}
+		}
+	}`,
+	`{
+		"id": "some-request-id20",
+		"app": {
+			"id": "12345"
+		},
+		"imp": [
+			{
+				"id": "some-impression-id",
+				"banner": {
+					"format": [
+						{
+							"w": 600,
+							"h": 500
+						},
+						{
+							"w": 300,
+							"h": 600
+						}
+					]
+				},
+				"ext": {
+					"appnexus": {
+						"placementId": 12883451
+					}
+				}
+			}
+		],
+		"ext": {
+		}
+	}`,
+	`{
+		"id": "some-request-id20",
+		"app": {
+			"id": "12345"
+		},
+		"imp": [
+			{
+				"id": "some-impression-id",
+				"banner": {
+					"format": [
+						{
+							"w": 600,
+							"h": 500
+						},
+						{
+							"w": 300,
+							"h": 600
+						}
+					]
+				},
+				"ext": {
+					"appnexus": {
+						"placementId": 12883451
+					}
+				}
+			}
+		],
+		"ext": {
+			"prebid": {
+				"channel" : {
+					"name": "",
+					"version": "1.0"
+				}
 			}
 		}
 	}`,

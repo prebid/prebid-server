@@ -356,10 +356,6 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 			return []error{err}
 		}
 
-		if err := validateOrFillChannel(reqPrebid, reqExt, req, isAmp); err != nil {
-			return []error{err}
-		}
-
 		if err := deps.validateBidAdjustmentFactors(reqPrebid.BidAdjustmentFactors, aliases); err != nil {
 			return []error{err}
 		}
@@ -375,6 +371,10 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 		if err := validateCustomRates(reqPrebid.CurrencyConversions); err != nil {
 			return []error{err}
 		}
+	}
+
+	if err := validateOrFillChannel(reqPrebid, reqExt, req, isAmp); err != nil {
+		return []error{err}
 	}
 
 	if (req.Site == nil && req.App == nil) || (req.Site != nil && req.App != nil) {
@@ -1241,17 +1241,25 @@ func validateOrFillChannel(requestPrebid *openrtb_ext.ExtRequestPrebid, requestE
 				return errors.New("ext.prebid.channel.name can't be empty")
 			}
 		} else {
-			if isAmp {
-				var err error
-				reqWrapper.Ext, err = jsonpatch.MergePatch(reqWrapper.Ext, []byte(`{"prebid":{"channel": {"name": "amp", "version": ""}}}`))
-				if err != nil {
-					return err
-				}
-			} else if reqWrapper.App != nil {
-				requestPrebid.Channel = &openrtb_ext.ExtRequestPrebidChannel{Name: "app", Version: ""}
-				requestExt.SetPrebid(requestPrebid)
-			}
+			fillChannel(requestPrebid, requestExt, reqWrapper, isAmp)
 		}
+	} else {
+		requestPrebid = &openrtb_ext.ExtRequestPrebid{}
+		fillChannel(requestPrebid, requestExt, reqWrapper, isAmp)
+	}
+	return nil
+}
+
+func fillChannel(requestPrebid *openrtb_ext.ExtRequestPrebid, requestExt *openrtb_ext.RequestExt, reqWrapper *openrtb_ext.RequestWrapper, isAmp bool) error {
+	if isAmp {
+		var err error
+		reqWrapper.Ext, err = jsonpatch.MergePatch(reqWrapper.Ext, []byte(`{"prebid":{"channel": {"name": "amp", "version": ""}}}`))
+		if err != nil {
+			return err
+		}
+	} else if reqWrapper.App != nil {
+		requestPrebid.Channel = &openrtb_ext.ExtRequestPrebidChannel{Name: "app", Version: ""}
+		requestExt.SetPrebid(requestPrebid)
 	}
 	return nil
 }
