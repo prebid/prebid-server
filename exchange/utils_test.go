@@ -933,6 +933,90 @@ func TestCleanOpenRTBRequestsSChain(t *testing.T) {
 	}
 }
 
+func TestCleanOpenRTBRequestsBidderParams(t *testing.T) {
+	testCases := []struct {
+		description string
+		inExt       json.RawMessage
+		expectedExt map[string]json.RawMessage
+		hasError    bool
+	}{
+		{
+			description: "Nil Bidder params",
+			inExt:       nil,
+			expectedExt: getExpectedReqExt(true, false, false),
+			hasError:    false,
+		},
+		{
+			description: "Bidder params for single partner",
+			inExt:       json.RawMessage(`{"prebid":{"bidderparams": {"pubmatic": {"profile":1234,"version":2}}}}`),
+			expectedExt: getExpectedReqExt(false, true, false),
+			hasError:    false,
+		},
+		{
+			description: "Bidder params for two partners",
+			inExt:       json.RawMessage(`{"prebid":{"bidderparams": {"pubmatic": {"profile":1234,"version":2}, "appnexus": {"key1": 123, "key2": {"innerKey1":"innerValue1"}} }}}`),
+			expectedExt: getExpectedReqExt(false, true, true),
+			hasError:    false,
+		},
+	}
+
+	for _, test := range testCases {
+		req := newBidRequestWithBidderParams(t)
+		var extRequest *openrtb_ext.ExtRequest
+		if test.inExt != nil {
+			req.Ext = test.inExt
+			unmarshaledExt, err := extractBidRequestExt(req)
+			assert.NoErrorf(t, err, test.description+":Error unmarshaling inExt")
+			extRequest = unmarshaledExt
+		}
+
+		auctionReq := AuctionRequest{
+			BidRequest: req,
+			UserSyncs:  &emptyUsersync{},
+		}
+
+		bidderToSyncerKey := map[string]string{}
+		permissions := permissionsMock{allowAllBidders: true, passGeo: true, passID: true}
+		metrics := metrics.MetricsEngineMock{}
+		bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, bidderToSyncerKey, &permissions, &metrics, gdpr.SignalNo, config.Privacy{}, nil)
+		if test.hasError == true {
+			assert.NotNil(t, errs)
+			assert.Len(t, bidderRequests, 0)
+		} else {
+			assert.Nil(t, errs)
+			for _, r := range bidderRequests {
+				expected := test.expectedExt[r.BidderName.String()]
+				actual := r.BidRequest.Ext
+				assert.Equal(t, expected, actual, test.description+" Req:Ext.Prebid.BidderParams")
+			}
+		}
+	}
+}
+
+func getExpectedReqExt(nilExt, includePubmaticParams, includeAppnexusParams bool) map[string]json.RawMessage {
+	bidderParamsMap := make(map[string]json.RawMessage)
+
+	if nilExt {
+		bidderParamsMap["pubmatic"] = json.RawMessage(``)
+		bidderParamsMap["appnexus"] = json.RawMessage(``)
+		return bidderParamsMap
+	}
+
+	if includePubmaticParams {
+		bidderParamsMap["pubmatic"] = json.RawMessage(`{"prebid":{"bidderparams":{"profile":1234,"version":2}}}`)
+	} else {
+		bidderParamsMap["pubmatic"] = json.RawMessage(`{"prebid":{}}`)
+	}
+
+	if includeAppnexusParams {
+		bidderParamsMap["appnexus"] = json.RawMessage(`{"prebid":{"bidderparams":{"key1":123,"key2":{"innerKey1":"innerValue1"}}}}`)
+	} else {
+		bidderParamsMap["appnexus"] = json.RawMessage(`{"prebid":{}}`)
+	}
+
+	return bidderParamsMap
+}
+
 func TestExtractBidRequestExt(t *testing.T) {
 	var boolFalse, boolTrue *bool = new(bool), new(bool)
 	*boolFalse = false
@@ -1996,6 +2080,47 @@ func newBidRequest(t *testing.T) *openrtb2.BidRequest {
 				}},
 			},
 			Ext: json.RawMessage(`{"appnexus": {"placementId": 1}}`),
+		}},
+	}
+}
+
+func newBidRequestWithBidderParams(t *testing.T) *openrtb2.BidRequest {
+	return &openrtb2.BidRequest{
+		Site: &openrtb2.Site{
+			Page:   "www.some.domain.com",
+			Domain: "domain.com",
+			Publisher: &openrtb2.Publisher{
+				ID: "some-publisher-id",
+			},
+		},
+		Device: &openrtb2.Device{
+			DIDMD5:   "some device ID hash",
+			UA:       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.87 Safari/537.36",
+			IFA:      "ifa",
+			IP:       "132.173.230.74",
+			Language: "EN",
+		},
+		Source: &openrtb2.Source{
+			TID: "61018dc9-fa61-4c41-b7dc-f90b9ae80e87",
+		},
+		User: &openrtb2.User{
+			ID:       "our-id",
+			BuyerUID: "their-id",
+			Yob:      1982,
+			Ext:      json.RawMessage(`{}`),
+		},
+		Imp: []openrtb2.Imp{{
+			ID: "some-imp-id",
+			Banner: &openrtb2.Banner{
+				Format: []openrtb2.Format{{
+					W: 300,
+					H: 250,
+				}, {
+					W: 300,
+					H: 600,
+				}},
+			},
+			Ext: json.RawMessage(`{"appnexus": {"placementId": 1}, "pubmatic":{"publisherId": "1234"}}`),
 		}},
 	}
 }

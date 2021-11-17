@@ -20,5 +20,5 @@
     }
   },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request: request.imp[0].ext.appnexus failed validation.\n(root): Invalid type. Expected: object, given: string\n"
+  "expectedErrorMessage": "Invalid request: json: cannot unmarshal string into Go value of type map[string]json.RawMessage"
 }
