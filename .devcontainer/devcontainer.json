@@ -14,6 +14,7 @@
 	},
 	"containerEnv": {
 		"GOPRIVATE": "${localEnv:GOPRIVATE}",
+		"PBS_GDPR_DEFAULT_VALUE": "0"
 	},
 	"runArgs": [ "--cap-add=SYS_PTRACE", "--security-opt", "seccomp=unconfined" ],
 
