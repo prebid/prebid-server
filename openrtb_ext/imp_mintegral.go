@@ -6,8 +6,6 @@ type ExtImpMintegral struct {
 	Region         string               `json:"region"`
 	SKADNSupported bool                 `json:"skadn_supported"`
 	MRAIDSupported bool                 `json:"mraid_supported"`
-	HeaderBidding  int                  `json:"header_bidding"`
-	MediatorID     string               `json:"mediator_id"`
 }
 
 // mintegralVideoParams defines the contract for bidrequest.imp[i].ext.mintegral.video

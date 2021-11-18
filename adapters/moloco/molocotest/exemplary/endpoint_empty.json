@@ -34,9 +34,7 @@
         },
         "ext": {
           "bidder": {
-            "placementtype": "rewarded",
-            "header_bidding": 1,
-            "mediator_id": "test_mediator_id"
+            "placementtype": "rewarded"
           }
         }
       }
@@ -84,13 +82,7 @@
                 }
               }
             }
-          ],
-          "source": {
-            "ext": {
-              "header_bidding": 1,
-              "mediator_id": "test_mediator_id"
-            }
-          }
+          ]
         }
       },
       "mockResponse": {

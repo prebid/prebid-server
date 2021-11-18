@@ -39,9 +39,7 @@
               "skipdelay": 5,
               "width": 320,
               "height": 480
-            },
-            "header_bidding": 1,
-            "mediator_id": "test_mediator_id"
+            }
           }
         }
       }
@@ -94,13 +92,7 @@
                 "rewarded": 0
               }
             }
-          ],
-          "source": {
-            "ext": {
-              "header_bidding": 1,
-              "mediator_id": "test_mediator_id"
-            }
-          }
+          ]
         }
       },
       "mockResponse": {
