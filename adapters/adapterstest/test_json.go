@@ -10,6 +10,8 @@ import (
 	"github.com/mitchellh/copystructure"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/currency"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 	"github.com/yudai/gojsondiff"
 	"github.com/yudai/gojsondiff/formatter"
@@ -103,7 +105,40 @@ func loadFile(filename string) (*testSpec, error) {
 //
 // More assertions will almost certainly be added in the future, as bugs come up.
 func runSpec(t *testing.T, filename string, spec *testSpec, bidder adapters.Bidder, isAmpTest, isVideoTest bool) {
-	reqInfo := adapters.ExtraRequestInfo{}
+	reqInfo := getTestExtraRequestInfo(t, filename, spec, isAmpTest, isVideoTest)
+	requests := testMakeRequestsImpl(t, filename, spec, bidder, reqInfo)
+
+	testMakeBidsImpl(t, filename, spec, bidder, requests)
+}
+
+// getTestExtraRequestInfo builds the ExtraRequestInfo object that will be passed to testMakeRequestsImpl
+func getTestExtraRequestInfo(t *testing.T, filename string, spec *testSpec, isAmpTest, isVideoTest bool) *adapters.ExtraRequestInfo {
+	t.Helper()
+
+	var reqInfo adapters.ExtraRequestInfo
+
+	// If test request.ext defines its own currency rates, add currency conversion to reqInfo
+	reqWrapper := &openrtb_ext.RequestWrapper{}
+	reqWrapper.BidRequest = &spec.BidRequest
+
+	reqExt, err := reqWrapper.GetRequestExt()
+	assert.NoError(t, err, "Could not unmarshall test request ext. %s", filename)
+
+	reqPrebid := reqExt.GetPrebid()
+	if reqPrebid != nil && reqPrebid.CurrencyConversions != nil && len(reqPrebid.CurrencyConversions.ConversionRates) > 0 {
+		err = currency.ValidateCustomRates(reqPrebid.CurrencyConversions)
+		assert.NoError(t, err, "Error validating currency rates in the test request: %s", filename)
+
+		// Get currency rates conversions from the test request.ext
+		conversions := currency.NewRates(reqPrebid.CurrencyConversions.ConversionRates)
+
+		// Create return adapters.ExtraRequestInfo object
+		reqInfo = adapters.NewExtraRequestInfo(conversions)
+	} else {
+		reqInfo = adapters.ExtraRequestInfo{}
+	}
+
+	// Set PbsEntryPoint if either isAmpTest or isVideoTest is true
 	if isAmpTest {
 		// simulates AMP entry point
 		reqInfo.PbsEntryPoint = "amp"
@@ -111,9 +146,7 @@ func runSpec(t *testing.T, filename string, spec *testSpec, bidder adapters.Bidd
 		reqInfo.PbsEntryPoint = "video"
 	}
 
-	requests := testMakeRequestsImpl(t, filename, spec, bidder, &reqInfo)
-
-	testMakeBidsImpl(t, filename, spec, bidder, requests)
+	return &reqInfo
 }
 
 type testSpec struct {
