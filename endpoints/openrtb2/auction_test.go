@@ -1423,113 +1423,6 @@ func TestContentType(t *testing.T) {
 	}
 }
 
-func TestValidateCustomRates(t *testing.T) {
-	boolTrue := true
-	boolFalse := false
-
-	testCases := []struct {
-		desc               string
-		inBidReqCurrencies *openrtb_ext.ExtRequestCurrency
-		outCurrencyError   error
-	}{
-		{
-			desc:               "nil input, no errors expected",
-			inBidReqCurrencies: nil,
-			outCurrencyError:   nil,
-		},
-		{
-			desc: "empty custom currency rates but UsePBSRates is set to false, we don't return error nor warning",
-			inBidReqCurrencies: &openrtb_ext.ExtRequestCurrency{
-				ConversionRates: map[string]map[string]float64{},
-				UsePBSRates:     &boolFalse,
-			},
-			outCurrencyError: nil,
-		},
-		{
-			desc: "empty custom currency rates but UsePBSRates is set to true, no need to return error because we can use PBS rates",
-			inBidReqCurrencies: &openrtb_ext.ExtRequestCurrency{
-				ConversionRates: map[string]map[string]float64{},
-				UsePBSRates:     &boolTrue,
-			},
-			outCurrencyError: nil,
-		},
-		{
-			desc: "UsePBSRates is nil and defaults to true, bidExt fromCurrency is invalid, expect bad input error",
-			inBidReqCurrencies: &openrtb_ext.ExtRequestCurrency{
-				ConversionRates: map[string]map[string]float64{
-					"FOO": {
-						"GBP": 1.2,
-						"MXN": 0.05,
-						"JPY": 0.95,
-					},
-				},
-			},
-			outCurrencyError: &errortypes.BadInput{Message: "currency code FOO is not recognized or malformed"},
-		},
-		{
-			desc: "UsePBSRates set to false, bidExt fromCurrency is invalid, expect bad input error",
-			inBidReqCurrencies: &openrtb_ext.ExtRequestCurrency{
-				ConversionRates: map[string]map[string]float64{
-					"FOO": {
-						"GBP": 1.2,
-						"MXN": 0.05,
-						"JPY": 0.95,
-					},
-				},
-				UsePBSRates: &boolFalse,
-			},
-			outCurrencyError: &errortypes.BadInput{Message: "currency code FOO is not recognized or malformed"},
-		},
-		{
-			desc: "UsePBSRates set to false, some of the bidExt 'to' Currencies are invalid, expect bad input error when parsing the first invalid currency code",
-			inBidReqCurrencies: &openrtb_ext.ExtRequestCurrency{
-				ConversionRates: map[string]map[string]float64{
-					"USD": {
-						"FOO": 10.0,
-						"MXN": 0.05,
-					},
-				},
-				UsePBSRates: &boolFalse,
-			},
-			outCurrencyError: &errortypes.BadInput{Message: "currency code FOO is not recognized or malformed"},
-		},
-		{
-			desc: "UsePBSRates set to false, some of the bidExt 'from' and 'to' currencies are invalid, expect bad input error when parsing the first invalid currency code",
-			inBidReqCurrencies: &openrtb_ext.ExtRequestCurrency{
-				ConversionRates: map[string]map[string]float64{
-					"FOO": {
-						"MXN": 0.05,
-						"CAD": 0.95,
-					},
-				},
-				UsePBSRates: &boolFalse,
-			},
-			outCurrencyError: &errortypes.BadInput{Message: "currency code FOO is not recognized or malformed"},
-		},
-		{
-			desc: "All 3-digit currency codes exist, expect no error",
-			inBidReqCurrencies: &openrtb_ext.ExtRequestCurrency{
-				ConversionRates: map[string]map[string]float64{
-					"USD": {
-						"MXN": 0.05,
-					},
-					"MXN": {
-						"JPY": 10.0,
-						"EUR": 10.95,
-					},
-				},
-				UsePBSRates: &boolFalse,
-			},
-		},
-	}
-
-	for _, tc := range testCases {
-		actualErr := validateCustomRates(tc.inBidReqCurrencies)
-
-		assert.Equal(t, tc.outCurrencyError, actualErr, tc.desc)
-	}
-}
-
 func TestValidateImpExt(t *testing.T) {
 	type testCase struct {
 		description    string
@@ -3914,4 +3807,118 @@ func TestValidateBanner(t *testing.T) {
 		result := validateBanner(test.banner, test.impIndex, test.isInterstitial)
 		assert.Equal(t, test.expectedError, result, test.description)
 	}
+}
+
+func TestParseRequestMergeBidderParams(t *testing.T) {
+	type args struct {
+		reqBody string
+	}
+	tests := []struct {
+		name           string
+		args           args
+		expectedImpExt json.RawMessage
+		expectedReqExt json.RawMessage
+		errL           int
+	}{
+		{
+			name: "add missing bidder-params from req.ext.prebid.bidderparams to imp[].ext.prebid.bidder",
+			args: args{
+				reqBody: validRequest(t, "req-ext-bidder-params.json"),
+			},
+			expectedImpExt: getObject(t, "req-ext-bidder-params.json", "expectedImpExt"),
+			expectedReqExt: getObject(t, "req-ext-bidder-params.json", "expectedReqExt"),
+			errL:           0,
+		},
+		{
+			name: "add missing bidder-params from req.ext.prebid.bidderparams to imp[].ext.prebid.bidder with preference for imp[].ext.prebid.bidder params",
+			args: args{
+				reqBody: validRequest(t, "req-ext-bidder-params-merge.json"),
+			},
+			expectedImpExt: getObject(t, "req-ext-bidder-params-merge.json", "expectedImpExt"),
+			expectedReqExt: getObject(t, "req-ext-bidder-params-merge.json", "expectedReqExt"),
+			errL:           0,
+		},
+		{
+			name: "add missing bidder-params from req.ext.prebid.bidderparams to imp[].ext for backward compatibility",
+			args: args{
+				reqBody: validRequest(t, "req-ext-bidder-params-backward-compatible-merge.json"),
+			},
+			expectedImpExt: getObject(t, "req-ext-bidder-params-backward-compatible-merge.json", "expectedImpExt"),
+			expectedReqExt: getObject(t, "req-ext-bidder-params-backward-compatible-merge.json", "expectedReqExt"),
+			errL:           0,
+		},
+		{
+			name: "add missing bidder-params from req.ext.prebid.bidderparams to imp[].ext.prebid.bidder for reserved keyword",
+			args: args{
+				reqBody: validRequest(t, "req-ext-bidder-params-merge-reserved-keyword.json"),
+			},
+			expectedImpExt: getObject(t, "req-ext-bidder-params-merge-reserved-keyword.json", "expectedImpExt"),
+			expectedReqExt: getObject(t, "req-ext-bidder-params-merge-reserved-keyword.json", "expectedReqExt"),
+			errL:           0,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			deps := &endpointDeps{
+				fakeUUIDGenerator{},
+				&warningsCheckExchange{},
+				newParamsValidator(t),
+				&mockStoredReqFetcher{},
+				empty_fetcher.EmptyFetcher{},
+				empty_fetcher.EmptyFetcher{},
+				&config.Configuration{MaxRequestSize: int64(len(tt.args.reqBody))},
+				&metricsConfig.NilMetricsEngine{},
+				analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+				map[string]string{},
+				false,
+				[]byte{},
+				openrtb_ext.BuildBidderMap(),
+				nil,
+				nil,
+				hardcodedResponseIPValidator{response: true},
+			}
+
+			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(tt.args.reqBody))
+
+			resReq, _, errL := deps.parseRequest(req)
+
+			var expIExt, iExt map[string]interface{}
+			err := json.Unmarshal(tt.expectedImpExt, &expIExt)
+			assert.Nil(t, err, "unmarshal() should return nil error")
+
+			assert.NotNil(t, resReq.BidRequest.Imp[0].Ext, "imp[0].Ext should not be nil")
+			err = json.Unmarshal(resReq.BidRequest.Imp[0].Ext, &iExt)
+			assert.Nil(t, err, "unmarshal() should return nil error")
+
+			assert.Equal(t, expIExt, iExt, "bidderparams in imp[].Ext should match")
+
+			var eReqE, reqE map[string]interface{}
+			err = json.Unmarshal(tt.expectedReqExt, &eReqE)
+			assert.Nil(t, err, "unmarshal() should return nil error")
+
+			err = json.Unmarshal(resReq.BidRequest.Ext, &reqE)
+			assert.Nil(t, err, "unmarshal() should return nil error")
+
+			assert.Equal(t, eReqE, reqE, "req.Ext should match")
+
+			assert.Len(t, errL, tt.errL, "error length should match")
+		})
+	}
+}
+
+func getObject(t *testing.T, filename, key string) json.RawMessage {
+	requestData, err := ioutil.ReadFile("sample-requests/valid-whole/supplementary/" + filename)
+	if err != nil {
+		t.Fatalf("Failed to fetch a valid request: %v", err)
+	}
+	testBidRequest, _, _, err := jsonparser.Get(requestData, key)
+	assert.NoError(t, err, "Error jsonparsing root.mockBidRequest from file %s. Desc: %v.", filename, err)
+
+	var obj json.RawMessage
+	err = json.Unmarshal(testBidRequest, &obj)
+	if err != nil {
+		t.Fatalf("Failed to fetch object with key '%s' ... got error: %v", key, err)
+	}
+	return obj
 }
