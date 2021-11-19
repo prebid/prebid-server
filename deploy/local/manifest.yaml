@@ -103,6 +103,10 @@ data:
   PBS_ADAPTERS_DV360_DISABLED: "false"
   PBS_ADAPTERS_DV360_ENDPOINT: "http://localhost:4646/dv360_givemeads"
 
+  # kaden.ai values
+  PBS_ADAPTERS_KADENAI_DISABLED: "false"
+  PBS_ADAPTERS_KADENAI_ENDPOINT: "http://localhost:4646/kadenai_givemeads"
+
   # liftoff values
   PBS_ADAPTERS_LIFTOFF_DISABLED:              "false"
   PBS_ADAPTERS_LIFTOFF_XAPI_ENDPOINT_US_EAST: "http://localhost:4646/givemeads"

@@ -32,6 +32,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/crossinstall"
 	"github.com/prebid/prebid-server/adapters/dv360"
 	"github.com/prebid/prebid-server/adapters/ix"
+	"github.com/prebid/prebid-server/adapters/kadenai"
 	"github.com/prebid/prebid-server/adapters/liftoff"
 	"github.com/prebid/prebid-server/adapters/mintegral"
 	"github.com/prebid/prebid-server/adapters/moloco"
@@ -188,6 +189,7 @@ func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
 		"districtm": appnexus.NewAppNexusLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].Endpoint, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].PlatformID),
 		"dv360":     dv360.NewDV360LegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderDV360)].Endpoint),
 		"ix":        ix.NewIxLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderIx))].Endpoint),
+		"kadenai":   kadenai.NewKadenAILegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderKadenAI)].Endpoint),
 		"liftoff": liftoff.NewLiftoffLegacyAdapter(
 			adapters.DefaultHTTPAdapterConfig,
 			cfg.Adapters[string(openrtb_ext.BidderLiftoff)].Endpoint,
