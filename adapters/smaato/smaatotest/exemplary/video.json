@@ -29,6 +29,7 @@
                         "rewarded": 0
                     }
                 },
+                "instl": 1,
                 "bidfloor": 0.00123,
                 "ext": {
                     "bidder": {
@@ -84,6 +85,7 @@
                             "id": "postbid_iframe",
                             "tagid": "130563103",
                             "bidfloor": 0.00123,
+                            "instl": 1,
                             "video": {
                                 "w": 1024,
                                 "h": 768,
