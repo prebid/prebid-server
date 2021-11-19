@@ -9,6 +9,14 @@
             "mid": 12345
           }
         }
+      },{
+        "id": "test-imp-id-2",
+        "audio": {},
+        "ext": {
+          "bidder": {
+            "mid": 12345
+          }
+        }
       }]
   },
   "httpCalls": [
@@ -28,6 +36,17 @@
               "mimes": null
             },
             "tagid": "12345"
+          }, {
+            "ext": {
+              "bidder": {
+                "mid": 12345
+              }
+            },
+            "id": "test-imp-id-2",
+            "audio": {
+              "mimes": null
+            },
+            "tagid": "12345"
           }]
         }
       },
@@ -42,6 +61,17 @@
               "price": 10,
               "adm": "{vast xml}",
               "crid": "test-creative-id"
+            }, {
+              "id": "test-bid-id",
+              "impid": "test-imp-id-2",
+              "price": 10,
+              "adm": "{vast xml}",
+              "crid": "test-creative-id",
+              "ext": {
+                "prebid": {
+                  "type": "not-a-banner"
+                }
+              }
             }]
           }],
           "cur": "USD"
@@ -52,7 +82,11 @@
   "expectedBidResponses": [],
   "expectedMakeBidsErrors": [ 
     {
-      "value": "Failed to find supported impression \"test-imp-id\" mediatype",
+      "value": "Failed to parse impression \"test-imp-id\" mediatype",
+      "comparison": "literal" 
+    },
+    {
+      "value": "invalid BidType: not-a-banner",
       "comparison": "literal" 
     }
   ]

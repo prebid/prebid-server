@@ -77,7 +77,7 @@ func (e *EventListener) Listen(cache stored_requests.Cache, events EventProducer
 				e.onInvalidate()
 			}
 		case <-e.stop:
-			break
+			return
 		}
 	}
 }

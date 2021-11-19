@@ -11,7 +11,9 @@ import (
 	"github.com/prebid/go-gdpr/vendorconsent"
 
 	"github.com/buger/jsonparser"
+	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/firstpartydata"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -154,6 +156,10 @@ func cleanOpenRTBRequests(ctx context.Context,
 			}
 		}
 
+		if req.FirstPartyData != nil && req.FirstPartyData[bidderRequest.BidderName] != nil {
+			applyFPD(req.FirstPartyData[bidderRequest.BidderName], bidderRequest.BidRequest)
+		}
+
 		if bidRequestAllowed {
 			privacyEnforcement.Apply(bidderRequest.BidRequest)
 			allowedBidderRequests = append(allowedBidderRequests, bidderRequest)
@@ -217,6 +223,11 @@ func getAuctionBidderRequests(req AuctionRequest,
 		return nil, []error{err}
 	}
 
+	bidderParamsInReqExt, err := adapters.ExtractReqExtBidderParams(req.BidRequest)
+	if err != nil {
+		return nil, []error{err}
+	}
+
 	var sChainsByBidder map[string]*openrtb_ext.ExtRequestPrebidSChainSChain
 
 	// Quick extra wrapper until RequestWrapper makes its way into CleanRequests
@@ -227,20 +238,32 @@ func getAuctionBidderRequests(req AuctionRequest,
 		}
 	}
 
-	reqExt, err := getExtJson(req.BidRequest, requestExt)
-	if err != nil {
-		return nil, []error{err}
-	}
-
 	var errs []error
 	for bidder, imps := range impsByBidder {
 		coreBidder := resolveBidder(bidder, aliases)
 
 		reqCopy := *req.BidRequest
 		reqCopy.Imp = imps
-		reqCopy.Ext = reqExt
 
 		prepareSource(&reqCopy, bidder, sChainsByBidder)
+
+		if len(bidderParamsInReqExt) != 0 {
+
+			// Update bidder-params(requestExt.Prebid.BidderParams) for the bidder to only contain bidder-params for
+			// this bidder only and remove bidder-params for all other bidders from requestExt.Prebid.BidderParams
+			params, err := getBidderParamsForBidder(bidderParamsInReqExt, bidder)
+			if err != nil {
+				return nil, []error{err}
+			}
+
+			requestExt.Prebid.BidderParams = params
+		}
+
+		reqExt, err := getExtJson(req.BidRequest, requestExt)
+		if err != nil {
+			return nil, []error{err}
+		}
+		reqCopy.Ext = reqExt
 
 		if err := removeUnpermissionedEids(&reqCopy, bidder, requestExt); err != nil {
 			errs = append(errs, fmt.Errorf("unable to enforce request.ext.prebid.data.eidpermissions because %v", err))
@@ -271,6 +294,18 @@ func getAuctionBidderRequests(req AuctionRequest,
 		bidderRequests = append(bidderRequests, bidderRequest)
 	}
 	return bidderRequests, errs
+}
+
+func getBidderParamsForBidder(bidderParamsInReqExt map[string]map[string]json.RawMessage, bidder string) (json.RawMessage, error) {
+	var params json.RawMessage
+	if bidderParams, ok := bidderParamsInReqExt[bidder]; ok {
+		var err error
+		params, err = json.Marshal(bidderParams)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return params, nil
 }
 
 func getExtJson(req *openrtb2.BidRequest, unpackedExt *openrtb_ext.ExtRequest) (json.RawMessage, error) {
@@ -304,6 +339,9 @@ func prepareSource(req *openrtb2.BidRequest, bidder string, sChainsByBidder map[
 	// set source
 	if req.Source == nil {
 		req.Source = &openrtb2.Source{}
+	} else {
+		sourceCopy := *req.Source
+		req.Source = &sourceCopy
 	}
 	schain := openrtb_ext.ExtRequestPrebidSChain{
 		SChain: *selectedSChain,
@@ -759,4 +797,16 @@ func writeNameVersionRecord(sb *strings.Builder, name, version string) {
 	sb.WriteString(name)
 	sb.WriteString("/")
 	sb.WriteString(version)
+}
+
+func applyFPD(fpd *firstpartydata.ResolvedFirstPartyData, bidReq *openrtb2.BidRequest) {
+	if fpd.Site != nil {
+		bidReq.Site = fpd.Site
+	}
+	if fpd.App != nil {
+		bidReq.App = fpd.App
+	}
+	if fpd.User != nil {
+		bidReq.User = fpd.User
+	}
 }
