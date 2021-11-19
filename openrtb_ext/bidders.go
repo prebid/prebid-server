@@ -34,6 +34,7 @@ const (
 	BidderReservedGeneral BidderName = "general" // Reserved for non-bidder specific messages when using a map keyed on the bidder name.
 	BidderReservedPrebid  BidderName = "prebid"  // Reserved for Prebid Server configuration.
 	BidderReservedSKAdN   BidderName = "skadn"   // Reserved for Apple's SKAdNetwork OpenRTB extension.
+	BidderReservedBidder  BidderName = "bidder"  // Reserved for passing bidder parameters.
 )
 
 // IsBidderNameReserved returns true if the specified name is a case insensitive match for a reserved bidder name.
@@ -59,6 +60,10 @@ func IsBidderNameReserved(name string) bool {
 	}
 
 	if strings.EqualFold(name, string(BidderReservedPrebid)) {
+		return true
+	}
+
+	if strings.EqualFold(name, string(BidderReservedBidder)) {
 		return true
 	}
 
@@ -195,6 +200,7 @@ const (
 	BidderUnruly            BidderName = "unruly"
 	BidderValueImpression   BidderName = "valueimpression"
 	BidderVerizonMedia      BidderName = "verizonmedia"
+	BidderVideoByte         BidderName = "videobyte"
 	BidderVisx              BidderName = "visx"
 	BidderViewdeos          BidderName = "viewdeos"
 	BidderVrtcal            BidderName = "vrtcal"
@@ -334,6 +340,7 @@ func CoreBidderNames() []BidderName {
 		BidderUnruly,
 		BidderValueImpression,
 		BidderVerizonMedia,
+		BidderVideoByte,
 		BidderViewdeos,
 		BidderVisx,
 		BidderVrtcal,

@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/firstpartydata"
 	"testing"
 
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/firstpartydata"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -931,6 +931,90 @@ func TestCleanOpenRTBRequestsSChain(t *testing.T) {
 			assert.Equal(t, test.outRequestExt, result.BidRequest.Ext, test.description+":Ext")
 		}
 	}
+}
+
+func TestCleanOpenRTBRequestsBidderParams(t *testing.T) {
+	testCases := []struct {
+		description string
+		inExt       json.RawMessage
+		expectedExt map[string]json.RawMessage
+		hasError    bool
+	}{
+		{
+			description: "Nil Bidder params",
+			inExt:       nil,
+			expectedExt: getExpectedReqExt(true, false, false),
+			hasError:    false,
+		},
+		{
+			description: "Bidder params for single partner",
+			inExt:       json.RawMessage(`{"prebid":{"bidderparams": {"pubmatic": {"profile":1234,"version":2}}}}`),
+			expectedExt: getExpectedReqExt(false, true, false),
+			hasError:    false,
+		},
+		{
+			description: "Bidder params for two partners",
+			inExt:       json.RawMessage(`{"prebid":{"bidderparams": {"pubmatic": {"profile":1234,"version":2}, "appnexus": {"key1": 123, "key2": {"innerKey1":"innerValue1"}} }}}`),
+			expectedExt: getExpectedReqExt(false, true, true),
+			hasError:    false,
+		},
+	}
+
+	for _, test := range testCases {
+		req := newBidRequestWithBidderParams(t)
+		var extRequest *openrtb_ext.ExtRequest
+		if test.inExt != nil {
+			req.Ext = test.inExt
+			unmarshaledExt, err := extractBidRequestExt(req)
+			assert.NoErrorf(t, err, test.description+":Error unmarshaling inExt")
+			extRequest = unmarshaledExt
+		}
+
+		auctionReq := AuctionRequest{
+			BidRequest: req,
+			UserSyncs:  &emptyUsersync{},
+		}
+
+		bidderToSyncerKey := map[string]string{}
+		permissions := permissionsMock{allowAllBidders: true, passGeo: true, passID: true}
+		metrics := metrics.MetricsEngineMock{}
+		bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, bidderToSyncerKey, &permissions, &metrics, gdpr.SignalNo, config.Privacy{}, nil)
+		if test.hasError == true {
+			assert.NotNil(t, errs)
+			assert.Len(t, bidderRequests, 0)
+		} else {
+			assert.Nil(t, errs)
+			for _, r := range bidderRequests {
+				expected := test.expectedExt[r.BidderName.String()]
+				actual := r.BidRequest.Ext
+				assert.Equal(t, expected, actual, test.description+" Req:Ext.Prebid.BidderParams")
+			}
+		}
+	}
+}
+
+func getExpectedReqExt(nilExt, includePubmaticParams, includeAppnexusParams bool) map[string]json.RawMessage {
+	bidderParamsMap := make(map[string]json.RawMessage)
+
+	if nilExt {
+		bidderParamsMap["pubmatic"] = json.RawMessage(``)
+		bidderParamsMap["appnexus"] = json.RawMessage(``)
+		return bidderParamsMap
+	}
+
+	if includePubmaticParams {
+		bidderParamsMap["pubmatic"] = json.RawMessage(`{"prebid":{"bidderparams":{"profile":1234,"version":2}}}`)
+	} else {
+		bidderParamsMap["pubmatic"] = json.RawMessage(`{"prebid":{}}`)
+	}
+
+	if includeAppnexusParams {
+		bidderParamsMap["appnexus"] = json.RawMessage(`{"prebid":{"bidderparams":{"key1":123,"key2":{"innerKey1":"innerValue1"}}}}`)
+	} else {
+		bidderParamsMap["appnexus"] = json.RawMessage(`{"prebid":{}}`)
+	}
+
+	return bidderParamsMap
 }
 
 func TestExtractBidRequestExt(t *testing.T) {
@@ -2000,6 +2084,47 @@ func newBidRequest(t *testing.T) *openrtb2.BidRequest {
 	}
 }
 
+func newBidRequestWithBidderParams(t *testing.T) *openrtb2.BidRequest {
+	return &openrtb2.BidRequest{
+		Site: &openrtb2.Site{
+			Page:   "www.some.domain.com",
+			Domain: "domain.com",
+			Publisher: &openrtb2.Publisher{
+				ID: "some-publisher-id",
+			},
+		},
+		Device: &openrtb2.Device{
+			DIDMD5:   "some device ID hash",
+			UA:       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.87 Safari/537.36",
+			IFA:      "ifa",
+			IP:       "132.173.230.74",
+			Language: "EN",
+		},
+		Source: &openrtb2.Source{
+			TID: "61018dc9-fa61-4c41-b7dc-f90b9ae80e87",
+		},
+		User: &openrtb2.User{
+			ID:       "our-id",
+			BuyerUID: "their-id",
+			Yob:      1982,
+			Ext:      json.RawMessage(`{}`),
+		},
+		Imp: []openrtb2.Imp{{
+			ID: "some-imp-id",
+			Banner: &openrtb2.Banner{
+				Format: []openrtb2.Format{{
+					W: 300,
+					H: 250,
+				}, {
+					W: 300,
+					H: 600,
+				}},
+			},
+			Ext: json.RawMessage(`{"appnexus": {"placementId": 1}, "pubmatic":{"publisherId": "1234"}}`),
+		}},
+	}
+}
+
 func TestRandomizeList(t *testing.T) {
 	var (
 		bidder1 = openrtb_ext.BidderName("bidder1")
@@ -2609,8 +2734,87 @@ func TestBuildXPrebidHeader(t *testing.T) {
 	}
 }
 
-func TestApplyFPD(t *testing.T) {
+func TestSourceExtSChainCopied(t *testing.T) {
+	bidRequest := newBidRequest(t)
 
+	bidderSchains := map[string]*openrtb_ext.ExtRequestPrebidSChainSChain{
+		"bidder1": {
+			Ver:      "1.0",
+			Complete: 1,
+			Nodes: []*openrtb_ext.ExtRequestPrebidSChainSChainNode{
+				{
+					ASI: "bidder1.com",
+					SID: "0001",
+					HP:  1,
+				},
+			},
+		},
+		"bidder2": {
+			Ver:      "1.0",
+			Complete: 1,
+			Nodes: []*openrtb_ext.ExtRequestPrebidSChainSChainNode{
+				{
+					ASI: "bidder2.com",
+					SID: "0002",
+					HP:  1,
+				},
+			},
+		},
+	}
+
+	copy1 := *bidRequest
+	originalTid := copy1.Source.TID
+	prepareSource(&copy1, "bidder1", bidderSchains)
+	copy2 := *bidRequest
+	copy2.Source.TID = "new TID"
+	prepareSource(&copy2, "bidder2", bidderSchains)
+
+	assert.Equal(t, json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"bidder1.com","sid":"0001","hp":1}],"ver":"1.0"}}`), copy1.Source.Ext, "First schain was overwritten or not set")
+	assert.Equal(t, originalTid, copy1.Source.TID, "Original TID was overwritten")
+	assert.Equal(t, json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"bidder2.com","sid":"0002","hp":1}],"ver":"1.0"}}`), copy2.Source.Ext, "Second schain was overwritten or not set")
+	assert.Equal(t, "new TID", copy2.Source.TID, "New TID was not set")
+}
+
+func TestCleanOpenRTBRequestsSChainMultipleBidders(t *testing.T) {
+	req := &openrtb2.BidRequest{
+		Site: &openrtb2.Site{},
+		Source: &openrtb2.Source{
+			TID: "61018dc9-fa61-4c41-b7dc-f90b9ae80e87",
+		},
+		Imp: []openrtb2.Imp{{
+			Ext: json.RawMessage(`{"appnexus": {"placementId": 1}, "axonix": { "supplyId": "123"}}`),
+		}},
+		Ext: json.RawMessage(`{"prebid":{"schains":[{ "bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller1.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}, {"bidders":["axonix"],"schain":{"complete":1,"nodes":[{"asi":"directseller2.com","sid":"00002","rid":"BidRequest2","hp":1}],"ver":"1.0"}}]}}`),
+	}
+
+	unmarshaledExt, err := extractBidRequestExt(req)
+	assert.NoErrorf(t, err, "Error unmarshaling inExt")
+	extRequest := unmarshaledExt
+
+	auctionReq := AuctionRequest{
+		BidRequest: req,
+		UserSyncs:  &emptyUsersync{},
+	}
+	bidderToSyncerKey := map[string]string{}
+	permissions := permissionsMock{allowAllBidders: true, passGeo: true, passID: true}
+	metrics := metrics.MetricsEngineMock{}
+	bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, bidderToSyncerKey, &permissions, &metrics, gdpr.SignalNo, config.Privacy{}, nil)
+
+	assert.Nil(t, errs)
+	assert.Len(t, bidderRequests, 2, "Bid request count is not 2")
+
+	bidRequestSourceExts := map[openrtb_ext.BidderName]json.RawMessage{}
+	for _, bidderRequest := range bidderRequests {
+		bidRequestSourceExts[bidderRequest.BidderName] = bidderRequest.BidRequest.Source.Ext
+	}
+
+	appnexusPrebidSchainsSchain := json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"directseller1.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}`)
+	axonixPrebidSchainsSchain := json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"directseller2.com","sid":"00002","rid":"BidRequest2","hp":1}],"ver":"1.0"}}`)
+	assert.Equal(t, appnexusPrebidSchainsSchain, bidRequestSourceExts["appnexus"], "Incorrect appnexus bid request schain in source.ext")
+	assert.Equal(t, axonixPrebidSchainsSchain, bidRequestSourceExts["axonix"], "Incorrect axonix bid request schain in source.ext")
+}
+
+func TestApplyFPD(t *testing.T) {
 	fpdBidderTest := map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData{}
 	bidderTest := openrtb_ext.BidderName("test")
 	fpdBidderTest[bidderTest] = &firstpartydata.ResolvedFirstPartyData{Site: nil, App: nil, User: nil}

@@ -289,6 +289,7 @@ external_url: http://prebid-server.prebid.org/
 host: prebid-server.prebid.org
 port: 1234
 admin_port: 5678
+garbage_collector_threshold: 1
 auction_timeouts_ms:
   max: 123
   default: 50
@@ -426,6 +427,7 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "host", cfg.Host, "prebid-server.prebid.org")
 	cmpInts(t, "port", cfg.Port, 1234)
 	cmpInts(t, "admin_port", cfg.AdminPort, 5678)
+	cmpInts(t, "garbage_collector_threshold", cfg.GarbageCollectorThreshold, 1)
 	cmpInts(t, "auction_timeouts_ms.default", int(cfg.AuctionTimeouts.Default), 50)
 	cmpInts(t, "auction_timeouts_ms.max", int(cfg.AuctionTimeouts.Max), 123)
 	cmpStrings(t, "cache.scheme", cfg.CacheURL.Scheme, "http")

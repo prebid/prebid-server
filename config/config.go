@@ -24,6 +24,10 @@ type Configuration struct {
 	CacheClient HTTPClient `mapstructure:"http_client_cache"`
 	AdminPort   int        `mapstructure:"admin_port"`
 	EnableGzip  bool       `mapstructure:"enable_gzip"`
+	// GarbageCollectorThreshold allocates virtual memory (in bytes) which is not used by PBS but
+	// serves as a hack to trigger the garbage collector only when the heap reaches at least this size.
+	// More info: https://github.com/golang/go/issues/48409
+	GarbageCollectorThreshold int `mapstructure:"garbage_collector_threshold"`
 	// StatusResponse is the string which will be returned by the /status endpoint when things are OK.
 	// If empty, it will return a 204 with no content.
 	StatusResponse    string          `mapstructure:"status_response"`
@@ -634,6 +638,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("port", 8000)
 	v.SetDefault("admin_port", 6060)
 	v.SetDefault("enable_gzip", false)
+	v.SetDefault("garbage_collector_threshold", 0)
 	v.SetDefault("status_response", "")
 	v.SetDefault("auction_timeouts_ms.default", 0)
 	v.SetDefault("auction_timeouts_ms.max", 0)
@@ -890,6 +895,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.unruly.endpoint", "https://targeting.unrulymedia.com/unruly_prebid_server")
 	v.SetDefault("adapters.valueimpression.endpoint", "https://rtb.valueimpression.com/endpoint")
 	v.SetDefault("adapters.verizonmedia.disabled", true)
+	v.SetDefault("adapters.videobyte.endpoint", "https://x.videobyte.com/ortbhb")
 	v.SetDefault("adapters.viewdeos.endpoint", "http://ghb.sync.viewdeos.com/pbs/ortb")
 	v.SetDefault("adapters.visx.endpoint", "https://t.visx.net/s2s_bid?wrapperType=s2s_prebid_standard:0.1.0")
 	v.SetDefault("adapters.vrtcal.endpoint", "http://rtb.vrtcal.com/bidder_prebid.vap?ssp=1804")
