@@ -16,7 +16,6 @@ import (
 	"github.com/prebid/prebid-server/firstpartydata"
 
 	"github.com/buger/jsonparser"
-	"github.com/evanphx/json-patch"
 	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/gofrs/uuid"
 	"github.com/golang/glog"
