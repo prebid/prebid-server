@@ -35,6 +35,7 @@ import (
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/privacy/ccpa"
 	"github.com/prebid/prebid-server/privacy/lmt"
+	"github.com/prebid/prebid-server/schain"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/usersync"
@@ -595,7 +596,7 @@ func (deps *endpointDeps) validateBidAdjustmentFactors(adjustmentFactors map[str
 }
 
 func validateSChains(sChains []*openrtb_ext.ExtRequestPrebidSChain) error {
-	_, err := exchange.BidderToPrebidSChains(sChains)
+	_, err := schain.BidderToPrebidSChains(sChains)
 	return err
 }
 

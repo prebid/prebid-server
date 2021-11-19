@@ -22,6 +22,7 @@ const MaxDecimalFigures int = 15
 // ExtRequest defines the contract for bidrequest.ext
 type ExtRequest struct {
 	Prebid ExtRequestPrebid `json:"prebid"`
+	SChain *ExtRequestPrebidSChainSChain `json:"schain,omitempty"`
 }
 
 // ExtRequestPrebid defines the contract for bidrequest.ext.prebid
@@ -91,11 +92,6 @@ type ExtRequestPrebidSChainSChainNode struct {
 	Domain string          `json:"domain,omitempty"`
 	HP     int             `json:"hp"`
 	Ext    json.RawMessage `json:"ext,omitempty"`
-}
-
-// SourceExt defines the contract for bidrequest.source.ext
-type SourceExt struct {
-	SChain ExtRequestPrebidSChainSChain `json:"schain"`
 }
 
 // ExtRequestPrebidChannel defines the contract for bidrequest.ext.prebid.channel
