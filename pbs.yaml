@@ -1,0 +1,21 @@
+adapters:
+  rubicon:
+    disabled : false
+  adkernel:
+    disabled : true
+  gamoshi:
+    disabled: true
+  ix:
+    debug : allow
+gdpr:
+  default_value: 0
+metrics:
+   prometheus:
+      port: 9090
+      namespace: prebid
+      subsystem: server
+      timeout_ms : 30000
+   disabled_metrics:
+     adapter_gdpr_request_blocked: false
+account_defaults:
+  debug_allow: true

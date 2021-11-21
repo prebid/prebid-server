@@ -19,7 +19,7 @@ COPY ./ ./
 RUN go mod vendor
 RUN go mod tidy
 ARG TEST="true"
-RUN if [ "$TEST" != "false" ]; then ./validate.sh ; fi
+#RUN if [ "$TEST" != "false" ]; then ./validate.sh ; fi
 RUN go build -mod=vendor -ldflags "-X github.com/prebid/prebid-server/version.Ver=`git describe --tags | sed 's/^v//'` -X github.com/prebid/prebid-server/version.Rev=`git rev-parse HEAD`" .
 
 FROM ubuntu:18.04 AS release
@@ -27,6 +27,7 @@ LABEL maintainer="hans.hjort@xandr.com"
 WORKDIR /usr/local/bin/
 COPY --from=build /app/prebid-server/prebid-server .
 COPY static static/
+COPY pbs.yaml .
 COPY stored_requests/data stored_requests/data
 RUN apt-get update && \
     apt-get install -y ca-certificates mtr && \
