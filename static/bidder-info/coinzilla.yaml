@@ -1,0 +1,10 @@
+maintainer:
+  email: "technical@sevio.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner
+
