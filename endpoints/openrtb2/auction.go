@@ -500,7 +500,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 		}
 	}
 
-	if err := validateOrFillChannel(reqPrebid, reqExt, req, isAmp); err != nil {
+	if err := validateOrFillChannel(req, isAmp); err != nil {
 		return []error{err}
 	}
 
@@ -1339,32 +1339,40 @@ func validateDevice(device *openrtb2.Device) error {
 	return nil
 }
 
-func validateOrFillChannel(requestPrebid *openrtb_ext.ExtRequestPrebid, requestExt *openrtb_ext.RequestExt, reqWrapper *openrtb_ext.RequestWrapper, isAmp bool) error {
-	if requestPrebid != nil {
-		if requestPrebid.Channel != nil {
-			if requestPrebid.Channel.Name == "" {
-				return errors.New("ext.prebid.channel.name can't be empty")
-			}
-		} else {
-			fillChannel(requestPrebid, requestExt, reqWrapper, isAmp)
-		}
-	} else {
-		requestPrebid = &openrtb_ext.ExtRequestPrebid{}
-		fillChannel(requestPrebid, requestExt, reqWrapper, isAmp)
+func validateOrFillChannel(reqWrapper *openrtb_ext.RequestWrapper, isAmp bool) error {
+	requestExt, err := reqWrapper.GetRequestExt()
+	if err != nil {
+		return err
+	}
+	requestPrebid := requestExt.GetPrebid()
+
+	if requestPrebid == nil || requestExt.GetPrebid().Channel == nil {
+		fillChannel(reqWrapper, isAmp)
+	} else if requestPrebid.Channel.Name == "" {
+		return errors.New("ext.prebid.channel.name can't be empty")
 	}
 	return nil
 }
 
-func fillChannel(requestPrebid *openrtb_ext.ExtRequestPrebid, requestExt *openrtb_ext.RequestExt, reqWrapper *openrtb_ext.RequestWrapper, isAmp bool) error {
+func fillChannel(reqWrapper *openrtb_ext.RequestWrapper, isAmp bool) error {
+	requestExt, err := reqWrapper.GetRequestExt()
+	if err != nil {
+		return err
+	}
+	requestPrebid := requestExt.GetPrebid()
+
+	if requestPrebid == nil {
+		requestPrebid = &openrtb_ext.ExtRequestPrebid{}
+	}
+
 	if isAmp {
-		var err error
-		reqWrapper.Ext, err = jsonpatch.MergePatch(reqWrapper.Ext, []byte(`{"prebid":{"channel": {"name": "amp", "version": ""}}}`))
-		if err != nil {
-			return err
-		}
+		requestPrebid.Channel = &openrtb_ext.ExtRequestPrebidChannel{Name: "amp", Version: ""}
+		requestExt.SetPrebid(requestPrebid)
+		reqWrapper.RebuildRequest()
 	} else if reqWrapper.App != nil {
 		requestPrebid.Channel = &openrtb_ext.ExtRequestPrebidChannel{Name: "app", Version: ""}
 		requestExt.SetPrebid(requestPrebid)
+		reqWrapper.RebuildRequest()
 	}
 	return nil
 }
