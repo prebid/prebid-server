@@ -62,18 +62,20 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	if priceType != "" {
 		requestExt := adfRequestExt{}
+		var err error
 
 		if len(request.Ext) > 0 {
-			if err := json.Unmarshal(request.Ext, &requestExt); err != nil {
+			if err = json.Unmarshal(request.Ext, &requestExt); err != nil {
 				errors = append(errors, err)
 			}
 		}
 
-		requestExt.PriceType = priceType
+		if err == nil {
+			requestExt.PriceType = priceType
 
-		var err error
-		if request.Ext, err = json.Marshal(&requestExt); err != nil {
-			errors = append(errors, err)
+			if request.Ext, err = json.Marshal(&requestExt); err != nil {
+				errors = append(errors, err)
+			}
 		}
 	}
 
