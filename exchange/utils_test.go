@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/firstpartydata"
 	"testing"
 
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/firstpartydata"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -2609,8 +2609,87 @@ func TestBuildXPrebidHeader(t *testing.T) {
 	}
 }
 
-func TestApplyFPD(t *testing.T) {
+func TestSourceExtSChainCopied(t *testing.T) {
+	bidRequest := newBidRequest(t)
 
+	bidderSchains := map[string]*openrtb_ext.ExtRequestPrebidSChainSChain{
+		"bidder1": {
+			Ver:      "1.0",
+			Complete: 1,
+			Nodes: []*openrtb_ext.ExtRequestPrebidSChainSChainNode{
+				{
+					ASI: "bidder1.com",
+					SID: "0001",
+					HP:  1,
+				},
+			},
+		},
+		"bidder2": {
+			Ver:      "1.0",
+			Complete: 1,
+			Nodes: []*openrtb_ext.ExtRequestPrebidSChainSChainNode{
+				{
+					ASI: "bidder2.com",
+					SID: "0002",
+					HP:  1,
+				},
+			},
+		},
+	}
+
+	copy1 := *bidRequest
+	originalTid := copy1.Source.TID
+	prepareSource(&copy1, "bidder1", bidderSchains)
+	copy2 := *bidRequest
+	copy2.Source.TID = "new TID"
+	prepareSource(&copy2, "bidder2", bidderSchains)
+
+	assert.Equal(t, json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"bidder1.com","sid":"0001","hp":1}],"ver":"1.0"}}`), copy1.Source.Ext, "First schain was overwritten or not set")
+	assert.Equal(t, originalTid, copy1.Source.TID, "Original TID was overwritten")
+	assert.Equal(t, json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"bidder2.com","sid":"0002","hp":1}],"ver":"1.0"}}`), copy2.Source.Ext, "Second schain was overwritten or not set")
+	assert.Equal(t, "new TID", copy2.Source.TID, "New TID was not set")
+}
+
+func TestCleanOpenRTBRequestsSChainMultipleBidders(t *testing.T) {
+	req := &openrtb2.BidRequest{
+		Site: &openrtb2.Site{},
+		Source: &openrtb2.Source{
+			TID: "61018dc9-fa61-4c41-b7dc-f90b9ae80e87",
+		},
+		Imp: []openrtb2.Imp{{
+			Ext: json.RawMessage(`{"appnexus": {"placementId": 1}, "axonix": { "supplyId": "123"}}`),
+		}},
+		Ext: json.RawMessage(`{"prebid":{"schains":[{ "bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller1.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}, {"bidders":["axonix"],"schain":{"complete":1,"nodes":[{"asi":"directseller2.com","sid":"00002","rid":"BidRequest2","hp":1}],"ver":"1.0"}}]}}`),
+	}
+
+	unmarshaledExt, err := extractBidRequestExt(req)
+	assert.NoErrorf(t, err, "Error unmarshaling inExt")
+	extRequest := unmarshaledExt
+
+	auctionReq := AuctionRequest{
+		BidRequest: req,
+		UserSyncs:  &emptyUsersync{},
+	}
+	bidderToSyncerKey := map[string]string{}
+	permissions := permissionsMock{allowAllBidders: true, passGeo: true, passID: true}
+	metrics := metrics.MetricsEngineMock{}
+	bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, bidderToSyncerKey, &permissions, &metrics, gdpr.SignalNo, config.Privacy{}, nil)
+
+	assert.Nil(t, errs)
+	assert.Len(t, bidderRequests, 2, "Bid request count is not 2")
+
+	bidRequestSourceExts := map[openrtb_ext.BidderName]json.RawMessage{}
+	for _, bidderRequest := range bidderRequests {
+		bidRequestSourceExts[bidderRequest.BidderName] = bidderRequest.BidRequest.Source.Ext
+	}
+
+	appnexusPrebidSchainsSchain := json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"directseller1.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}`)
+	axonixPrebidSchainsSchain := json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"directseller2.com","sid":"00002","rid":"BidRequest2","hp":1}],"ver":"1.0"}}`)
+	assert.Equal(t, appnexusPrebidSchainsSchain, bidRequestSourceExts["appnexus"], "Incorrect appnexus bid request schain in source.ext")
+	assert.Equal(t, axonixPrebidSchainsSchain, bidRequestSourceExts["axonix"], "Incorrect axonix bid request schain in source.ext")
+}
+
+func TestApplyFPD(t *testing.T) {
 	fpdBidderTest := map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData{}
 	bidderTest := openrtb_ext.BidderName("test")
 	fpdBidderTest[bidderTest] = &firstpartydata.ResolvedFirstPartyData{Site: nil, App: nil, User: nil}

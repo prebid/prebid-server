@@ -1174,6 +1174,7 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 		givenRawData           string
 		givenGenerateRequestID bool
 		expectedID             string
+		expectedCur            string
 	}{
 		{
 			description:            "GenerateRequestID is true, rawData is an app request and has stored bid request we should generate uuid",
@@ -1217,6 +1218,20 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 			givenGenerateRequestID: false,
 			expectedID:             "ThisID",
 		},
+		{
+			description:            "Test to check that stored requests are being merged when Macro ID is present with a site rquest",
+			givenRawData:           testBidRequests[5],
+			givenGenerateRequestID: false,
+			expectedID:             "ThisID",
+			expectedCur:            "USD",
+		},
+		{
+			description:            "Test to check that stored requests are being merged when Generate Request ID flag with a site rquest",
+			givenRawData:           testBidRequests[5],
+			givenGenerateRequestID: true,
+			expectedID:             "ThisID",
+			expectedCur:            "USD",
+		},
 	}
 
 	for _, test := range testCases {
@@ -1228,6 +1243,9 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 
 		if err := json.Unmarshal(newRequest, req); err != nil {
 			t.Errorf("processStoredRequests Error: %s", err.Error())
+		}
+		if test.expectedCur != "" {
+			assert.Equalf(t, test.expectedCur, req.Cur[0], "The stored request wasn't merged properly: %s\n", test.description)
 		}
 		assert.Equalf(t, test.expectedID, req.ID, "The Bid Request ID is incorrect: %s\n", test.description)
 	}
@@ -3185,6 +3203,7 @@ var testStoredRequestData = map[string]json.RawMessage{
 						}
 				}}
 		}`),
+	"4": json.RawMessage(`{"id": "{{UUID}}", "cur": ["USD"]}`),
 }
 
 // Stored Imp Requests
@@ -3761,6 +3780,39 @@ var testBidRequests = []string{
 				}
 			}
 		}
+	}`,
+	`{
+		"id": "ThisID",
+		"imp": [{
+			"id": "some-impression-id",
+			"banner": {
+				"format": [{
+						"w": 600,
+						"h": 500
+					},
+					{
+						"w": 300,
+						"h": 600
+					}
+				]
+			},
+			"ext": {
+				"appnexus": {
+					"placementId": 12883451
+				}
+			}
+		}],
+		"ext": {
+			"prebid": {
+				"debug": true,
+				"storedrequest": {
+					"id": "4"
+				}
+			}
+		},
+	  "site": {
+		"page": "https://example.com"
+	  }
 	}`,
 }
 
