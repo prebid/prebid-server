@@ -33,7 +33,7 @@ type ExtRequestPrebid struct {
 	Data                 *ExtRequestPrebidData     `json:"data,omitempty"`
 	Debug                bool                      `json:"debug,omitempty"`
 	Events               json.RawMessage           `json:"events,omitempty"`
-	IntegrationType      string                    `json:"integration,omitempty"`
+	Integration          string                    `json:"integration,omitempty"`
 	SChains              []*ExtRequestPrebidSChain `json:"schains,omitempty"`
 	StoredRequest        *ExtStoredRequest         `json:"storedrequest,omitempty"`
 	SupportDeals         bool                      `json:"supportdeals,omitempty"`

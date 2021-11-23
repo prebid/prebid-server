@@ -1661,16 +1661,19 @@ func getIntegrationTypeFromRequest(req *openrtb_ext.RequestWrapper) (string, err
 		return "", err
 	}
 	reqPrebid := reqExt.GetPrebid()
-	return reqPrebid.IntegrationType, nil
+	if reqPrebid == nil {
+		return "", nil // TODO: Default Integration value will be utilized here in future PR
+	}
+	return reqPrebid.Integration, nil
 }
 
-func validateIntegrationType(req *openrtb_ext.RequestWrapper, integrationTypes map[string]bool) error {
+func validateIntegrationType(req *openrtb_ext.RequestWrapper, integrationTypesMap map[string]*struct{}) error {
 	integrationType, err := getIntegrationTypeFromRequest(req)
 	if err != nil {
 		return err
 	}
-	if _, ok := integrationTypes[integrationType]; ok {
-		return nil
+	if _, ok := integrationTypesMap[integrationType]; ok {
+		return nil // TODO: Default Integration value will be utilized here in future PR
 	}
 	return errors.New("Integration value is invalid because it's not in allowed list from host company")
 }

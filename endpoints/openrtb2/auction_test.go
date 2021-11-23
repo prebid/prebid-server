@@ -1253,8 +1253,8 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 }
 
 func TestValidateIntegrationType(t *testing.T) {
-	hostAllowedIntegrationTypes := make(map[string]bool)
-	hostAllowedIntegrationTypes["ValidIntegrationType"] = true
+	hostAllowedIntegrationTypes := make(map[string]*struct{})
+	hostAllowedIntegrationTypes["ValidIntegrationType"] = nil
 
 	testCases := []struct {
 		description      string
@@ -1262,12 +1262,12 @@ func TestValidateIntegrationType(t *testing.T) {
 		expectedError    error
 	}{
 		{
-			description:      "Integration type found in request is also in allowed list of host",
+			description:      "Integration type found in request is also in allowed list of host, expect no error",
 			givenRequestData: testBidRequests[2],
 			expectedError:    nil,
 		},
 		{
-			description:      "Integration type found in request is NOT in allowed list of host",
+			description:      "Integration type found in request is NOT in allowed list of host, expect error",
 			givenRequestData: testBidRequests[3],
 			expectedError:    errors.New("Integration value is invalid because it's not in allowed list from host company"),
 		},
@@ -1282,6 +1282,47 @@ func TestValidateIntegrationType(t *testing.T) {
 
 		integrationErr := validateIntegrationType(req, hostAllowedIntegrationTypes)
 		assert.Equalf(t, test.expectedError, integrationErr, "Failed Validate Test", test.description)
+	}
+}
+
+func TestGetIntegrationTypeFromRequest(t *testing.T) {
+	testCases := []struct {
+		description             string
+		givenRequestData        string
+		expectedIntegrationType string
+		expectedError           error
+	}{
+		{
+			description:             "Request has path to ext.prebid.integration, expect to get integration type successfully",
+			givenRequestData:        testBidRequests[2],
+			expectedIntegrationType: "ValidIntegrationType",
+			expectedError:           nil,
+		},
+		{
+			description:             "Request doesn't have ext.prebid path, expect blank integration type",
+			givenRequestData:        testBidRequests[6],
+			expectedIntegrationType: "",
+			expectedError:           nil,
+		},
+		{
+			description:             "Request doesn't have ext path, expect blank integration type",
+			givenRequestData:        testBidRequests[7],
+			expectedIntegrationType: "",
+			expectedError:           nil,
+		},
+	}
+
+	for _, test := range testCases {
+		req := &openrtb_ext.RequestWrapper{}
+		req.BidRequest = &openrtb2.BidRequest{}
+
+		err := json.Unmarshal([]byte(test.givenRequestData), req.BidRequest)
+		assert.Empty(t, err, test.description)
+
+		integerationType, integrationErr := getIntegrationTypeFromRequest(req)
+
+		assert.Equalf(t, test.expectedIntegrationType, integerationType, "Didn't get expected integration type", test.description)
+		assert.Equalf(t, test.expectedError, integrationErr, "Didn't get expected integration type error", test.description)
 	}
 }
 
@@ -3849,6 +3890,48 @@ var testBidRequests = []string{
 	  "site": {
 		"page": "https://example.com"
 	  }
+	}`,
+	`{
+		"id": "ThisID",
+		"app": {
+			"id": "123"
+		},
+		"imp": [
+			{
+				"ext": {
+					"prebid": {
+						"storedrequest": {
+							"id": "2"
+						},
+						"options": {
+							"echovideoattrs": false
+						}
+					}
+				}
+			}
+		],
+		"ext": {
+		}
+	}`,
+	`{
+		"id": "ThisID",
+		"app": {
+			"id": "123"
+		},
+		"imp": [
+			{
+				"ext": {
+					"prebid": {
+						"storedrequest": {
+							"id": "2"
+						},
+						"options": {
+							"echovideoattrs": false
+						}
+					}
+				}
+			}
+		]
 	}`,
 }
 
