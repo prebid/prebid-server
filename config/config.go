@@ -806,6 +806,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.bidscube.endpoint", "http://supply.bidscube.com/?c=o&m=rtb")
 	v.SetDefault("adapters.bmtm.endpoint", "https://one.elitebidder.com/api/pbs")
 	v.SetDefault("adapters.brightroll.endpoint", "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
+	v.SetDefault("adapters.coinzilla.endpoint", "http://request-global.czilladx.com/serve/prebid-server.php")
 	v.SetDefault("adapters.colossus.endpoint", "http://colossusssp.com/?c=o&m=rtb")
 	v.SetDefault("adapters.connectad.endpoint", "http://bidder.connectad.io/API?src=pbs")
 	v.SetDefault("adapters.consumable.endpoint", "https://e.serverbid.com/api/v2")
@@ -895,6 +896,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.unruly.endpoint", "https://targeting.unrulymedia.com/unruly_prebid_server")
 	v.SetDefault("adapters.valueimpression.endpoint", "https://rtb.valueimpression.com/endpoint")
 	v.SetDefault("adapters.verizonmedia.disabled", true)
+	v.SetDefault("adapters.videobyte.endpoint", "https://x.videobyte.com/ortbhb")
 	v.SetDefault("adapters.viewdeos.endpoint", "http://ghb.sync.viewdeos.com/pbs/ortb")
 	v.SetDefault("adapters.visx.endpoint", "https://t.visx.net/s2s_bid?wrapperType=s2s_prebid_standard:0.1.0")
 	v.SetDefault("adapters.vrtcal.endpoint", "http://rtb.vrtcal.com/bidder_prebid.vap?ssp=1804")
@@ -1107,6 +1109,7 @@ func setBidderDefaults(v *viper.Viper, bidder string) {
 	v.BindEnv(adapterCfgPrefix + ".usersync.redirect.redirect_url")
 	v.BindEnv(adapterCfgPrefix + ".usersync.redirect.external_url")
 	v.BindEnv(adapterCfgPrefix + ".usersync.redirect.user_macro")
+	v.BindEnv(adapterCfgPrefix + ".usersync.external_url")
 	v.BindEnv(adapterCfgPrefix + ".usersync.support_cors")
 }
 

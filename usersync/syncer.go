@@ -86,7 +86,7 @@ func NewSyncer(hostConfig config.UserSync, syncerConfig config.Syncer) (Syncer, 
 
 	if syncerConfig.IFrame != nil {
 		var err error
-		syncer.iframe, err = buildTemplate(syncerConfig.Key, setuidSyncTypeIFrame, hostConfig, *syncerConfig.IFrame)
+		syncer.iframe, err = buildTemplate(syncerConfig.Key, setuidSyncTypeIFrame, hostConfig, syncerConfig.ExternalURL, *syncerConfig.IFrame)
 		if err != nil {
 			return nil, fmt.Errorf("iframe %v", err)
 		}
@@ -97,7 +97,7 @@ func NewSyncer(hostConfig config.UserSync, syncerConfig config.Syncer) (Syncer, 
 
 	if syncerConfig.Redirect != nil {
 		var err error
-		syncer.redirect, err = buildTemplate(syncerConfig.Key, setuidSyncTypeRedirect, hostConfig, *syncerConfig.Redirect)
+		syncer.redirect, err = buildTemplate(syncerConfig.Key, setuidSyncTypeRedirect, hostConfig, syncerConfig.ExternalURL, *syncerConfig.Redirect)
 		if err != nil {
 			return nil, fmt.Errorf("redirect %v", err)
 		}
@@ -147,16 +147,13 @@ var (
 	macroRegex             = regexp.MustCompile(`{{\s*\..*?\s*}}`)
 )
 
-func buildTemplate(key, syncTypeValue string, hostConfig config.UserSync, syncerEndpoint config.SyncerEndpoint) (*template.Template, error) {
+func buildTemplate(key, syncTypeValue string, hostConfig config.UserSync, syncerExternalURL string, syncerEndpoint config.SyncerEndpoint) (*template.Template, error) {
 	redirectTemplate := syncerEndpoint.RedirectURL
 	if redirectTemplate == "" {
 		redirectTemplate = hostConfig.RedirectURL
 	}
 
-	externalURL := syncerEndpoint.ExternalURL
-	if externalURL == "" {
-		externalURL = hostConfig.ExternalURL
-	}
+	externalURL := chooseExternalURL(syncerEndpoint.ExternalURL, syncerExternalURL, hostConfig.ExternalURL)
 
 	redirectURL := macroRegexSyncerKey.ReplaceAllLiteralString(redirectTemplate, key)
 	redirectURL = macroRegexSyncType.ReplaceAllLiteralString(redirectURL, syncTypeValue)
@@ -168,6 +165,19 @@ func buildTemplate(key, syncTypeValue string, hostConfig config.UserSync, syncer
 
 	templateName := strings.ToLower(key) + "_usersync_url"
 	return template.New(templateName).Parse(url)
+}
+
+// chooseExternalURL selects the external url to use for the template, where the most specific config wins.
+func chooseExternalURL(syncerEndpointURL, syncerURL, hostConfigURL string) string {
+	if syncerEndpointURL != "" {
+		return syncerEndpointURL
+	}
+
+	if syncerURL != "" {
+		return syncerURL
+	}
+
+	return hostConfigURL
 }
 
 // escapeTemplate url encodes a string template leaving the macro tags unaffected.

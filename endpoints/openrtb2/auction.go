@@ -23,8 +23,10 @@ import (
 	nativeRequests "github.com/mxmCherry/openrtb/v15/native1/request"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	accountService "github.com/prebid/prebid-server/account"
+	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/metrics"
@@ -39,7 +41,6 @@ import (
 	"github.com/prebid/prebid-server/util/iputil"
 	"github.com/prebid/prebid-server/util/uuidutil"
 	"golang.org/x/net/publicsuffix"
-	"golang.org/x/text/currency"
 )
 
 const storedRequestTimeoutMillis = 50
@@ -290,6 +291,11 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_
 		return
 	}
 
+	if err := mergeBidderParams(req); err != nil {
+		errs = []error{err}
+		return
+	}
+
 	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
 	deps.setFieldsImplicitly(httpRequest, req.BidRequest)
 
@@ -321,6 +327,117 @@ func parseTimeout(requestJson []byte, defaultTimeout time.Duration) time.Duratio
 		}
 	}
 	return defaultTimeout
+}
+
+// mergeBidderParams merges bidder parameters passed at req.ext level with imp[].ext level.
+// Preference is given to parameters at imp[].ext level over req.ext level.
+// Parameters at req.ext level are propagated to adapters as is without any validation.
+func mergeBidderParams(req *openrtb_ext.RequestWrapper) error {
+	reqBidderParams, err := adapters.ExtractReqExtBidderParams(req.BidRequest)
+	if err != nil {
+		return err
+	}
+
+	impCpy := make([]openrtb2.Imp, 0, len(req.BidRequest.Imp))
+	for _, imp := range req.BidRequest.Imp {
+		updatedImp := imp
+
+		if len(imp.Ext) == 0 {
+			impCpy = append(impCpy, updatedImp)
+			continue
+		}
+
+		var impExt map[string]map[string]json.RawMessage
+		err := json.Unmarshal(imp.Ext, &impExt)
+		if err != nil {
+			return err
+		}
+
+		//merges bidder parameters passed at req.ext level with imp[].ext level.
+		err = addMissingReqExtParamsInImpExt(impExt, reqBidderParams)
+		if err != nil {
+			return err
+		}
+
+		//merges bidder parameters passed at req.ext level with imp[].ext.prebid.bidder level.
+		err = addMissingReqExtParamsInImpExtPrebid(impExt, reqBidderParams)
+		if err != nil {
+			return err
+		}
+
+		iExt, err := json.Marshal(impExt)
+		if err != nil {
+			return fmt.Errorf("error marshalling imp[].ext : %s", err.Error())
+		}
+		updatedImp.Ext = iExt
+		impCpy = append(impCpy, updatedImp)
+	}
+
+	req.BidRequest.Imp = impCpy
+	return nil
+}
+
+// addMissingReqExtParamsInImpExtPrebid merges bidder parameters passed at req.ext level with imp[].ext.prebid.bidder level.
+func addMissingReqExtParamsInImpExtPrebid(impExtBidder map[string]map[string]json.RawMessage, reqExtParams map[string]map[string]json.RawMessage) error {
+	var bidderParams map[string]json.RawMessage
+	if impExtBidder["prebid"] != nil && impExtBidder["prebid"]["bidder"] != nil {
+		err := json.Unmarshal(impExtBidder["prebid"]["bidder"], &bidderParams)
+		if err != nil {
+			return err
+		}
+	}
+
+	if len(bidderParams) != 0 {
+		for bidder, bidderExt := range bidderParams {
+			if !isBidderToValidate(bidder) {
+				continue
+			}
+
+			var params map[string]json.RawMessage
+			err := json.Unmarshal(bidderExt, &params)
+
+			for key, value := range reqExtParams[bidder] {
+				if _, present := params[key]; !present {
+					params[key] = value
+				}
+			}
+
+			paramsJson, err := json.Marshal(params)
+			if err != nil {
+				return err
+			}
+			bidderParams[bidder] = paramsJson
+		}
+
+		bidderParamsJson, err := json.Marshal(bidderParams)
+		if err != nil {
+			return err
+		}
+		impExtBidder["prebid"]["bidder"] = bidderParamsJson
+	}
+
+	return nil
+}
+
+// addMissingReqExtParamsInImpExt merges bidder parameters passed at req.ext level with imp[].ext level.
+func addMissingReqExtParamsInImpExt(impExtBidder map[string]map[string]json.RawMessage, reqExtParams map[string]map[string]json.RawMessage) error {
+	for bidder, bidderExt := range impExtBidder {
+		if !isBidderToValidate(bidder) {
+			continue
+		}
+
+		wasModified := false
+		for key, value := range reqExtParams[bidder] {
+			if _, present := bidderExt[key]; !present {
+				bidderExt[key] = value
+				wasModified = true
+			}
+		}
+		if wasModified {
+			impExtBidder[bidder] = bidderExt
+		}
+	}
+	return nil
 }
 
 func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper) []error {
@@ -377,7 +494,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper) []err
 			return []error{err}
 		}
 
-		if err := validateCustomRates(reqPrebid.CurrencyConversions); err != nil {
+		if err := currency.ValidateCustomRates(reqPrebid.CurrencyConversions); err != nil {
 			return []error{err}
 		}
 	}
@@ -473,30 +590,6 @@ func (deps *endpointDeps) validateBidAdjustmentFactors(adjustmentFactors map[str
 func validateSChains(sChains []*openrtb_ext.ExtRequestPrebidSChain) error {
 	_, err := exchange.BidderToPrebidSChains(sChains)
 	return err
-}
-
-// validateCustomRates throws a bad input error if any of the 3-digit currency codes found in
-// the bidRequest.ext.prebid.currency field is invalid, malfomed or does not represent any actual
-// currency. No error is thrown if bidRequest.ext.prebid.currency is invalid or empty.
-func validateCustomRates(bidReqCurrencyRates *openrtb_ext.ExtRequestCurrency) error {
-	if bidReqCurrencyRates == nil {
-		return nil
-	}
-
-	for fromCurrency, rates := range bidReqCurrencyRates.ConversionRates {
-		// Check if fromCurrency is a valid 3-letter currency code
-		if _, err := currency.ParseISO(fromCurrency); err != nil {
-			return &errortypes.BadInput{Message: fmt.Sprintf("currency code %s is not recognized or malformed", fromCurrency)}
-		}
-
-		// Check if currencies mapped to fromCurrency are valid 3-letter currency codes
-		for toCurrency := range rates {
-			if _, err := currency.ParseISO(toCurrency); err != nil {
-				return &errortypes.BadInput{Message: fmt.Sprintf("currency code %s is not recognized or malformed", toCurrency)}
-			}
-		}
-	}
-	return nil
 }
 
 func (deps *endpointDeps) validateEidPermissions(prebid *openrtb_ext.ExtRequestPrebidData, aliases map[string]string) error {
@@ -1076,6 +1169,8 @@ func isBidderToValidate(bidder string) bool {
 	case openrtb_ext.BidderReservedPrebid:
 		return false
 	case openrtb_ext.BidderReservedSKAdN:
+		return false
+	case openrtb_ext.BidderReservedBidder:
 		return false
 	default:
 		return true
