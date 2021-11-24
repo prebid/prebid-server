@@ -25,6 +25,28 @@ type RubiconAdapter struct {
 	XAPIPassword string
 }
 
+type rubiconContext struct {
+	Data json.RawMessage `json:"data"`
+}
+
+type rubiconData struct {
+	AdServer rubiconAdServer `json:"adserver"`
+	PbAdSlot string          `json:"pbadslot"`
+}
+
+type rubiconAdServer struct {
+	Name   string `json:"name"`
+	AdSlot string `json:"adslot"`
+}
+
+type rubiconExtImpBidder struct {
+	Prebid  *openrtb_ext.ExtImpPrebid `json:"prebid"`
+	Bidder  json.RawMessage           `json:"bidder"`
+	Gpid    string                    `json:"gpid"`
+	Data    json.RawMessage           `json:"data"`
+	Context rubiconContext            `json:"context"`
+}
+
 type bidRequestExt struct {
 	Prebid bidRequestExtPrebid `json:"prebid"`
 }
@@ -364,7 +386,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 	rubiconRequest := *request
 	for _, imp := range requestImpCopy {
 
-		var bidderExt adapters.ExtImpBidder
+		var bidderExt rubiconExtImpBidder
 		if err = json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			errs = append(errs, &errortypes.BadInput{
 				Message: err.Error(),
@@ -380,13 +402,11 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			continue
 		}
 
-		target, err := updateImpRpTargetWithFpdAttributes(rubiconExt, imp, request.Site, request.App)
+		target, err := updateImpRpTargetWithFpdAttributes(bidderExt, rubiconExt, imp, request.Site, request.App)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
-
-		gpid, _ := jsonparser.GetString(imp.Ext, "gpid")
 
 		impExt := rubiconImpExt{
 			RP: rubiconImpExtRP{
@@ -394,8 +414,9 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 				Target: target,
 				Track:  rubiconImpExtRPTrack{Mint: "", MintVersion: ""},
 			},
-			GPID: gpid,
+			GPID: bidderExt.Gpid,
 		}
+
 		imp.Ext, err = json.Marshal(&impExt)
 		if err != nil {
 			errs = append(errs, err)
@@ -586,7 +607,7 @@ func resolveBidFloor(bidFloor float64, bidFloorCur string, reqInfo *adapters.Ext
 	return bidFloor, nil
 }
 
-func updateImpRpTargetWithFpdAttributes(extImp openrtb_ext.ExtImpRubicon, imp openrtb2.Imp,
+func updateImpRpTargetWithFpdAttributes(extImp rubiconExtImpBidder, extImpRubicon openrtb_ext.ExtImpRubicon, imp openrtb2.Imp,
 	site *openrtb2.Site, app *openrtb2.App) (json.RawMessage, error) {
 	existingTarget, _, _, err := jsonparser.Get(imp.Ext, "rp", "target")
 	if isNotKeyPathError(err) {
@@ -596,7 +617,7 @@ func updateImpRpTargetWithFpdAttributes(extImp openrtb_ext.ExtImpRubicon, imp op
 	if err != nil {
 		return nil, err
 	}
-	err = populateFirstPartyDataAttributes(extImp.Inventory, target)
+	err = populateFirstPartyDataAttributes(extImpRubicon.Inventory, target)
 	if err != nil {
 		return nil, err
 	}
@@ -642,33 +663,33 @@ func updateImpRpTargetWithFpdAttributes(extImp openrtb_ext.ExtImpRubicon, imp op
 		}
 	}
 
-	impExtContextData, _, _, err := jsonparser.Get(imp.Ext, "context", "data")
-	if isNotKeyPathError(err) {
-		return nil, err
-	}
-
-	impExtData, _, _, err := jsonparser.Get(imp.Ext, "data")
-	if isNotKeyPathError(err) {
-		return nil, err
-	}
-
-	if len(impExtContextData) > 0 {
-		err = populateFirstPartyDataAttributes(impExtContextData, target)
-	} else if len(impExtData) > 0 {
-		err = populateFirstPartyDataAttributes(impExtData, target)
+	if len(extImp.Context.Data) > 0 {
+		err = populateFirstPartyDataAttributes(extImp.Context.Data, target)
+	} else if len(extImp.Data) > 0 {
+		err = populateFirstPartyDataAttributes(extImp.Data, target)
 	}
 	if isNotKeyPathError(err) {
 		return nil, err
 	}
 
-	if pbadslot, _ := jsonparser.GetString(impExtData, "pbadslot"); pbadslot != "" {
-		target["pbadslot"] = pbadslot
-	} else if dfpAdUnitCode := extractDfpAdUnitCode(impExtContextData, impExtData); dfpAdUnitCode != "" {
-		target["dfp_ad_unit_code"] = dfpAdUnitCode
+	pbAdSlot, err := jsonparser.GetString(extImp.Data, "pbadslot")
+	if isNotKeyPathError(err) {
+		return nil, err
 	}
 
-	if len(extImp.Keywords) > 0 {
-		addStringArrayAttribute(extImp.Keywords, target, "keywords")
+	if pbAdSlot != "" {
+		target["pbadslot"] = pbAdSlot
+	} else {
+		dfpAdUnitCode, err := extractDfpAdUnitCode(extImp.Context.Data, extImp.Data)
+		if isNotKeyPathError(err) {
+			return nil, err
+		} else if dfpAdUnitCode != "" {
+			target["dfp_ad_unit_code"] = dfpAdUnitCode
+		}
+	}
+
+	if len(extImpRubicon.Keywords) > 0 {
+		addStringArrayAttribute(extImpRubicon.Keywords, target, "keywords")
 	}
 	updatedTarget, err := json.Marshal(target)
 	if err != nil {
@@ -677,25 +698,26 @@ func updateImpRpTargetWithFpdAttributes(extImp openrtb_ext.ExtImpRubicon, imp op
 	return updatedTarget, nil
 }
 
-func extractDfpAdUnitCode(contextData json.RawMessage, data json.RawMessage) string {
-	contextDataAdServerName, contextDataAdServerAdSlot := extractAdServerNameAndAdSlot(contextData)
-	if contextDataAdServerName == "gam" && contextDataAdServerAdSlot != "" {
-		return contextDataAdServerAdSlot
+func extractDfpAdUnitCode(contextDataNode json.RawMessage, dataNode json.RawMessage) (string, error) {
+	if contextDataNode != nil {
+		var data rubiconData
+		if err := json.Unmarshal(contextDataNode, &data); isNotKeyPathError(err) {
+			return "", err
+		} else if data.AdServer.Name == "gam" && data.AdServer.AdSlot != "" {
+			return data.AdServer.AdSlot, nil
+		}
 	}
 
-	dataAdServerName, dataAdServerAdSlot := extractAdServerNameAndAdSlot(data)
-	if dataAdServerName == "gam" && dataAdServerAdSlot != "" {
-		return dataAdServerAdSlot
+	if dataNode != nil {
+		var data rubiconData
+		if err := json.Unmarshal(dataNode, &data); isNotKeyPathError(err) {
+			return "", err
+		} else if data.AdServer.Name == "gam" && data.AdServer.AdSlot != "" {
+			return data.AdServer.AdSlot, nil
+		}
 	}
 
-	return ""
-}
-
-func extractAdServerNameAndAdSlot(message json.RawMessage) (string, string) {
-	adServerName, _ := jsonparser.GetString(message, "adserver", "name")
-	adServerAdSlot, _ := jsonparser.GetString(message, "adserver", "adslot")
-
-	return adServerName, adServerAdSlot
+	return "", nil
 }
 
 func isNotKeyPathError(err error) bool {
