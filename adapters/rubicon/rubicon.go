@@ -677,10 +677,26 @@ func updateImpRpTargetWithFpdAttributes(extImp rubiconExtImpBidder, extImpRubico
 		return nil, err
 	}
 
+	var data rubiconData
+	if len(extImp.Data) > 0 {
+		err := json.Unmarshal(extImp.Data, &data)
+		if isNotKeyPathError(err) {
+			return nil, err
+		}
+	}
+
+	var contextData rubiconData
+	if len(extImp.Context.Data) > 0 {
+		err := json.Unmarshal(extImp.Context.Data, &contextData)
+		if isNotKeyPathError(err) {
+			return nil, err
+		}
+	}
+
 	if pbAdSlot != "" {
 		target["pbadslot"] = pbAdSlot
 	} else {
-		dfpAdUnitCode, err := extractDfpAdUnitCode(extImp.Context.Data, extImp.Data)
+		dfpAdUnitCode, err := extractDfpAdUnitCode(data, contextData)
 		if isNotKeyPathError(err) {
 			return nil, err
 		} else if dfpAdUnitCode != "" {
@@ -698,23 +714,11 @@ func updateImpRpTargetWithFpdAttributes(extImp rubiconExtImpBidder, extImpRubico
 	return updatedTarget, nil
 }
 
-func extractDfpAdUnitCode(contextDataNode json.RawMessage, dataNode json.RawMessage) (string, error) {
-	if contextDataNode != nil {
-		var data rubiconData
-		if err := json.Unmarshal(contextDataNode, &data); isNotKeyPathError(err) {
-			return "", err
-		} else if data.AdServer.Name == "gam" && data.AdServer.AdSlot != "" {
-			return data.AdServer.AdSlot, nil
-		}
-	}
-
-	if dataNode != nil {
-		var data rubiconData
-		if err := json.Unmarshal(dataNode, &data); isNotKeyPathError(err) {
-			return "", err
-		} else if data.AdServer.Name == "gam" && data.AdServer.AdSlot != "" {
-			return data.AdServer.AdSlot, nil
-		}
+func extractDfpAdUnitCode(data rubiconData, contextData rubiconData) (string, error) {
+	if contextData.AdServer.Name == "gam" && contextData.AdServer.AdSlot != "" {
+		return contextData.AdServer.AdSlot, nil
+	} else if data.AdServer.Name == "gam" && data.AdServer.AdSlot != "" {
+		return data.AdServer.AdSlot, nil
 	}
 
 	return "", nil
