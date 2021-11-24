@@ -672,11 +672,6 @@ func updateImpRpTargetWithFpdAttributes(extImp rubiconExtImpBidder, extImpRubico
 		return nil, err
 	}
 
-	pbAdSlot, err := jsonparser.GetString(extImp.Data, "pbadslot")
-	if isNotKeyPathError(err) {
-		return nil, err
-	}
-
 	var data rubiconData
 	if len(extImp.Data) > 0 {
 		err := json.Unmarshal(extImp.Data, &data)
@@ -684,7 +679,6 @@ func updateImpRpTargetWithFpdAttributes(extImp rubiconExtImpBidder, extImpRubico
 			return nil, err
 		}
 	}
-
 	var contextData rubiconData
 	if len(extImp.Context.Data) > 0 {
 		err := json.Unmarshal(extImp.Context.Data, &contextData)
@@ -693,8 +687,8 @@ func updateImpRpTargetWithFpdAttributes(extImp rubiconExtImpBidder, extImpRubico
 		}
 	}
 
-	if pbAdSlot != "" {
-		target["pbadslot"] = pbAdSlot
+	if data.PbAdSlot != "" {
+		target["pbadslot"] = data.PbAdSlot
 	} else {
 		dfpAdUnitCode, err := extractDfpAdUnitCode(data, contextData)
 		if isNotKeyPathError(err) {
