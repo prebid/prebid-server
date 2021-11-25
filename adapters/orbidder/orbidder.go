@@ -48,13 +48,6 @@ func getValidImpressions(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRe
 	var errs []error
 	var validImps []openrtb2.Imp
 
-	// check if imps exists, if not return error and do send request to orbidder.
-	if len(request.Imp) == 0 {
-		return nil, []error{&errortypes.BadInput{
-			Message: "No impressions in request",
-		}}
-	}
-
 	for _, imp := range request.Imp {
 		if err := preprocessBidFloorCurrency(&imp, reqInfo); err != nil {
 			errs = append(errs, err)
