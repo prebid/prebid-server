@@ -119,13 +119,7 @@
                 "seat": "bizzclick"
               }
             ],
-            "cur": "USD",
-            "ext": {
-              "responsetimemillis": {
-                "bizzclick": 154
-              },
-              "tmaxrequest": 1000
-            }
+            "cur": "USD"
           }
         }
       }

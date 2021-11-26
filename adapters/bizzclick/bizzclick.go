@@ -60,12 +60,9 @@ func (a *adapter) MakeRequests(
 	requestsToBidder []*adapters.RequestData,
 	errs []error,
 ) {
-
-	var errors []error
-
 	bizzclickExt, err := a.getImpressionExt(&openRTBRequest.Imp[0])
 	if err != nil {
-		return nil, append(errors, err)
+		return nil, []error{err}
 	}
 
 	for idx := range openRTBRequest.Imp {
@@ -113,7 +110,7 @@ func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtBizzclick) (string, er
 
 func (a *adapter) checkResponseStatusCodes(response *adapters.ResponseData) error {
 	if response.StatusCode == http.StatusBadRequest {
-		return &errortypes.BadServerResponse{
+		return &errortypes.BadInput{
 			Message: fmt.Sprintf("Unexpected status code: [ %d ]", response.StatusCode),
 		}
 	}
