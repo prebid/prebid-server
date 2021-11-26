@@ -54,7 +54,7 @@
               "bid": [
                 {
                   "id": "test-bid-id",
-                  "impid": "BOGUS-IMPID",
+                  "impid": "another-imp-id",
                   "price": 3.5,
                   "w": 900,
                   "h": 250
@@ -68,7 +68,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "bid id='test-bid-id' could not find valid impid='BOGUS-IMPID'",
+      "value": "bid id='test-bid-id' could not find valid impid='another-imp-id'",
       "comparison": "regex"
     }
 ]

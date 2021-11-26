@@ -103,6 +103,7 @@ const (
 	BidderAJA               BidderName = "aja"
 	BidderAlgorix           BidderName = "algorix"
 	BidderAMX               BidderName = "amx"
+	BidderApacdex           BidderName = "apacdex"
 	BidderApplogy           BidderName = "applogy"
 	BidderAppnexus          BidderName = "appnexus"
 	BidderAudienceNetwork   BidderName = "audienceNetwork"
@@ -199,7 +200,6 @@ const (
 	BidderUcfunnel          BidderName = "ucfunnel"
 	BidderUnicorn           BidderName = "unicorn"
 	BidderUnruly            BidderName = "unruly"
-	BidderValueImpression   BidderName = "valueimpression"
 	BidderVerizonMedia      BidderName = "verizonmedia"
 	BidderVideoByte         BidderName = "videobyte"
 	BidderVisx              BidderName = "visx"
@@ -244,6 +244,7 @@ func CoreBidderNames() []BidderName {
 		BidderAJA,
 		BidderAlgorix,
 		BidderAMX,
+		BidderApacdex,
 		BidderApplogy,
 		BidderAppnexus,
 		BidderAudienceNetwork,
@@ -340,7 +341,6 @@ func CoreBidderNames() []BidderName {
 		BidderUcfunnel,
 		BidderUnicorn,
 		BidderUnruly,
-		BidderValueImpression,
 		BidderVerizonMedia,
 		BidderVideoByte,
 		BidderViewdeos,
