@@ -21,6 +21,10 @@
     "appId": {
       "type": "string",
       "description": "An ID which identifies this app of the impression"
+    },
+    "region": {
+      "type": "string",
+      "description": "Server region for PBS request, null for global, APAC for SG Region, US for USE Region"
     }
   },
   "required": ["sid", "token"]

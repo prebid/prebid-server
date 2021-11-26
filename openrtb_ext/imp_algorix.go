@@ -6,4 +6,5 @@ type ExtImpAlgorix struct {
 	Token       string `json:"token"`
 	PlacementId string `json:"placementId"`
 	AppId       string `json:"appId"`
+	Region      string `json:"region"`
 }
