@@ -564,22 +564,22 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb2.BidRequest, exter
 }
 
 func setBidFloor(ext *openrtb_ext.ExtImpBeachfront, imp *openrtb2.Imp, reqInfo *adapters.ExtraRequestInfo) (bool, error) {
-	var floor float64
 	var initialImpBidfloor float64 = imp.BidFloor
 	var err error
 
-	if imp.BidFloorCur != "" && strings.ToUpper(imp.BidFloorCur) != "USD" {
+	if imp.BidFloorCur != "" && strings.ToUpper(imp.BidFloorCur) != "USD" && imp.BidFloor > 0 {
 		imp.BidFloor, err = reqInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, "USD")
 
+		var convertedFromCurrency = imp.BidFloorCur
+		imp.BidFloorCur = "USD"
+
 		if err != nil {
-			if ext.BidFloor > 0 {
+			if ext.BidFloor > minBidFloor {
 				imp.BidFloor = ext.BidFloor
-				var failedCur = imp.BidFloorCur
-				imp.BidFloorCur = "USD"
 				return false, &errortypes.Warning{
 					Message: fmt.Sprintf("The following error was recieved from the currency converter while attempting to convert the imp.bidfloor value of %.2f from %s to USD:\n%s\nThe provided value of imp.ext.beachfront.bidfloor, %.2f USD is being used as a fallback.",
 						initialImpBidfloor,
-						failedCur,
+						convertedFromCurrency,
 						err,
 						ext.BidFloor,
 					),
@@ -588,7 +588,7 @@ func setBidFloor(ext *openrtb_ext.ExtImpBeachfront, imp *openrtb2.Imp, reqInfo *
 				return true, &errortypes.BadInput{
 					Message: fmt.Sprintf("The following error was recieved from the currency converter while attempting to convert the imp.bidfloor value of %.2f from %s to USD:\n%s\nA value of imp.ext.beachfront.bidfloor was not provided. The bid is being skipped.",
 						initialImpBidfloor,
-						imp.BidFloorCur,
+						convertedFromCurrency,
 						err,
 					),
 				}
@@ -596,22 +596,17 @@ func setBidFloor(ext *openrtb_ext.ExtImpBeachfront, imp *openrtb2.Imp, reqInfo *
 		}
 	}
 
-	if imp.BidFloor > ext.BidFloor {
-		floor = imp.BidFloor
-	} else if ext.BidFloor > 0 {
-		floor = ext.BidFloor
-	} else {
-		floor = 0
+	if imp.BidFloor < ext.BidFloor {
+		imp.BidFloor = ext.BidFloor
 	}
 
-	if floor > minBidFloor {
+	if imp.BidFloor > minBidFloor {
 		imp.BidFloorCur = "USD"
 	} else {
+		imp.BidFloor = 0
 		imp.BidFloorCur = ""
-		floor = 0
 	}
 
-	imp.BidFloor = floor
 	return false, nil
 }
 
