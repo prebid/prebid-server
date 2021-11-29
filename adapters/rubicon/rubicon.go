@@ -607,8 +607,9 @@ func resolveBidFloor(bidFloor float64, bidFloorCur string, reqInfo *adapters.Ext
 	return bidFloor, nil
 }
 
-func updateImpRpTargetWithFpdAttributes(extImp rubiconExtImpBidder, extImpRubicon openrtb_ext.ExtImpRubicon, imp openrtb2.Imp,
-	site *openrtb2.Site, app *openrtb2.App) (json.RawMessage, error) {
+func updateImpRpTargetWithFpdAttributes(extImp rubiconExtImpBidder, extImpRubicon openrtb_ext.ExtImpRubicon,
+	imp openrtb2.Imp, site *openrtb2.Site, app *openrtb2.App) (json.RawMessage, error) {
+
 	existingTarget, _, _, err := jsonparser.Get(imp.Ext, "rp", "target")
 	if isNotKeyPathError(err) {
 		return nil, err
@@ -675,14 +676,14 @@ func updateImpRpTargetWithFpdAttributes(extImp rubiconExtImpBidder, extImpRubico
 	var data rubiconData
 	if len(extImp.Data) > 0 {
 		err := json.Unmarshal(extImp.Data, &data)
-		if isNotKeyPathError(err) {
+		if err != nil {
 			return nil, err
 		}
 	}
 	var contextData rubiconData
 	if len(extImp.Context.Data) > 0 {
 		err := json.Unmarshal(extImp.Context.Data, &contextData)
-		if isNotKeyPathError(err) {
+		if err != nil {
 			return nil, err
 		}
 	}
@@ -690,10 +691,8 @@ func updateImpRpTargetWithFpdAttributes(extImp rubiconExtImpBidder, extImpRubico
 	if data.PbAdSlot != "" {
 		target["pbadslot"] = data.PbAdSlot
 	} else {
-		dfpAdUnitCode, err := extractDfpAdUnitCode(data, contextData)
-		if isNotKeyPathError(err) {
-			return nil, err
-		} else if dfpAdUnitCode != "" {
+		dfpAdUnitCode := extractDfpAdUnitCode(data, contextData)
+		if dfpAdUnitCode != "" {
 			target["dfp_ad_unit_code"] = dfpAdUnitCode
 		}
 	}
@@ -708,14 +707,14 @@ func updateImpRpTargetWithFpdAttributes(extImp rubiconExtImpBidder, extImpRubico
 	return updatedTarget, nil
 }
 
-func extractDfpAdUnitCode(data rubiconData, contextData rubiconData) (string, error) {
+func extractDfpAdUnitCode(data rubiconData, contextData rubiconData) string {
 	if contextData.AdServer.Name == "gam" && contextData.AdServer.AdSlot != "" {
-		return contextData.AdServer.AdSlot, nil
+		return contextData.AdServer.AdSlot
 	} else if data.AdServer.Name == "gam" && data.AdServer.AdSlot != "" {
-		return data.AdServer.AdSlot, nil
+		return data.AdServer.AdSlot
 	}
 
-	return "", nil
+	return ""
 }
 
 func isNotKeyPathError(err error) bool {
