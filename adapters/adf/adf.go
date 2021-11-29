@@ -16,6 +16,11 @@ type adapter struct {
 	endpoint string
 }
 
+type adfRequestExt struct {
+	openrtb_ext.ExtRequest
+	PriceType string `json:"pt"`
+}
+
 // Builder builds a new instance of the Adf adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	bidder := &adapter{
@@ -27,6 +32,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errors []error
 	var validImps = make([]openrtb2.Imp, 0, len(request.Imp))
+	priceType := ""
 
 	for _, imp := range request.Imp {
 		var bidderExt adapters.ExtImpBidder
@@ -47,6 +53,30 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 		imp.TagID = adfImpExt.MasterTagID.String()
 		validImps = append(validImps, imp)
+
+		// If imps specify priceType they should all be the same. If they differ, only the first one will be used
+		if adfImpExt.PriceType != "" && priceType == "" {
+			priceType = adfImpExt.PriceType
+		}
+	}
+
+	if priceType != "" {
+		requestExt := adfRequestExt{}
+		var err error
+
+		if len(request.Ext) > 0 {
+			if err = json.Unmarshal(request.Ext, &requestExt); err != nil {
+				errors = append(errors, err)
+			}
+		}
+
+		if err == nil {
+			requestExt.PriceType = priceType
+
+			if request.Ext, err = json.Marshal(&requestExt); err != nil {
+				errors = append(errors, err)
+			}
+		}
 	}
 
 	request.Imp = validImps
