@@ -1,0 +1,18 @@
+maintainer:
+  email: "header-bidding@pubmatic.com"
+gvlVendorID: 98
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  iframe:
+    url: "https://ads.pubmatic.com/AdServer/js/user_sync.html?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&predirect={{.RedirectURL}}"
+    userMacro: ""
+    # groupm appends the user id to end of the redirect url and does not utilize a macro
+
