@@ -6,7 +6,6 @@
     },
     "imp": [
       {
-        "bidfloor": 0.02,
         "banner": {
           "format": [
             {
@@ -17,7 +16,6 @@
         },
         "ext": {
           "bidder": {
-            "bidfloor": 0.02,
             "appId": "bannerAppId1"
           }
         }
@@ -33,7 +31,7 @@
             {
               "slot": "",
               "id": "bannerAppId1",
-              "bidfloor": 0.02,
+              "bidfloor": 0,
               "sizes": [
                 {
                   "w": 300,
@@ -56,7 +54,7 @@
           "dnt": 0,
           "ua": "",
           "adapterName": "BF_PREBID_S2S",
-          "adapterVersion": "0.9.2",
+          "adapterVersion": "1.0.0",
           "user": {},
           "schain": {
             "complete": 0,

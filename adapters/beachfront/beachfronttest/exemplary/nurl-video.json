@@ -7,7 +7,6 @@
         "ext": {
           "bidder": {
             "videoResponseType": "nurl",
-            "bidfloor": 0.01,
             "appId": "videoAppId1"
           }
         },

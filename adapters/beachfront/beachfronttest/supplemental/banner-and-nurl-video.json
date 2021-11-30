@@ -7,7 +7,6 @@
         "ext": {
           "bidder": {
             "videoResponseType": "nurl",
-            "bidfloor": 0.41,
             "appIds": {
               "banner": "bannerAppId1",
               "video": "videoAppId1"
@@ -46,7 +45,7 @@
             {
               "slot": "mix1",
               "id": "bannerAppId1",
-              "bidfloor": 0.41,
+              "bidfloor": 0,
               "sizes": [
                 {
                   "w": 300,
@@ -69,7 +68,7 @@
           "dnt": 0,
           "user": {},
           "adapterName": "BF_PREBID_S2S",
-          "adapterVersion": "0.9.2",
+          "adapterVersion": "1.0.0",
           "requestId": "banner-and-video",
           "schain": {
             "complete": 0,
@@ -106,7 +105,6 @@
                   "video/mp4"
                 ]
               },
-              "bidfloor": 0.41,
               "secure": 1,
               "id": "mix1"
             }

@@ -4,8 +4,10 @@
     "imp": [
       {
         "id": "video1",
+        "bidfloor": 0.01,
         "ext": {
           "bidder": {
+            "bidfloor": 0.01,
             "appId": "videoAppId1"
           }
         },
@@ -21,6 +23,9 @@
     ],
     "site": {
       "page": "https://some.domain.us/some/page.html"
+    },
+    "device":{
+      "ip":"192.168.168.168"
     }
   },
 
@@ -52,7 +57,7 @@
           ],
           "device":{
             "devicetype": 2,
-            "ip":"255.255.255.255"
+            "ip":"192.168.168.168"
           }
         }
       },
@@ -72,9 +77,9 @@
                   "adomain": [
                     "beachfront.io"
                   ],
+                  "cat":["IAB2"],
                   "cid": "277",
                   "crid": "532",
-                  "cat":["IAB2"],
                   "w": 300,
                   "h": 250,
                   "ext": {
@@ -92,6 +97,7 @@
 
   "expectedBidResponses": [
     {
+      "currency": "USD",
       "bids": [
         {
           "bid": {
