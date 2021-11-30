@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/config"
 	"net/http"
+
+	"github.com/prebid/prebid-server/config"
 
 	openrtb "github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
@@ -193,41 +194,6 @@ func (adapter *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.Ex
 		if err != nil {
 			errs = append(errs, err)
 			continue
-		}
-
-		reqSourceExt := map[string]interface{}{}
-		reqSourceExt["mediator_id"] = molocoExt.MediatorID
-		reqSourceExt["header_bidding"] = molocoExt.HeaderBidding
-
-		if request.Source != nil {
-			reqSource := *request.Source
-
-			if reqSource.Ext != nil {
-				if err = json.Unmarshal(reqSource.Ext, &reqSourceExt); err != nil {
-					errs = append(errs, &errortypes.BadInput{
-						Message: err.Error(),
-					})
-					continue
-				}
-			}
-
-			reqSource.Ext, err = json.Marshal(&reqSourceExt)
-			if err != nil {
-				errs = append(errs, err)
-				continue
-			}
-
-			request.Source = &reqSource
-		} else {
-			reqSource := openrtb.Source{}
-
-			reqSource.Ext, err = json.Marshal(&reqSourceExt)
-			if err != nil {
-				errs = append(errs, err)
-				continue
-			}
-
-			request.Source = &reqSource
 		}
 
 		// reinit the values in the request object

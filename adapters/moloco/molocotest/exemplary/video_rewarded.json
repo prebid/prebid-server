@@ -35,9 +35,7 @@
         "ext": {
           "bidder": {
             "region": "us_east",
-            "placementtype": "rewarded",
-            "header_bidding": 1,
-            "mediator_id": "test_mediator_id"
+            "placementtype": "rewarded"
           }
         }
       }
@@ -95,8 +93,6 @@
           "source": {
             "fd": 5,
             "ext": {
-              "header_bidding": 1,
-              "mediator_id": "test_mediator_id",
               "test": "yolo!"
             }
           }
