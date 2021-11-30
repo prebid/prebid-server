@@ -665,7 +665,12 @@ func TestOpenRTBRequestWithImpAndAdSlotIncluded(t *testing.T) {
 	if err := json.Unmarshal(rubiconReq.Imp[0].Ext, &rpImpExt); err != nil {
 		t.Fatal("Error unmarshalling imp.ext")
 	}
-	assert.Equal(t, rpImpExt.GPID, "/test-adslot")
+
+	dfpAdUnitCode, err := jsonparser.GetString(rpImpExt.RP.Target, "dfp_ad_unit_code")
+	if err != nil {
+		t.Fatal("Error extracting dfp_ad_unit_code")
+	}
+	assert.Equal(t, dfpAdUnitCode, "/test-adslot")
 }
 
 func TestOpenRTBFirstPartyDataPopulating(t *testing.T) {
