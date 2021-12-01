@@ -45,7 +45,7 @@ jobs:
     # Push the Docker image to Google Container Registry
     - name: Publish
       run: |-
-        docker push "$REGION-docker.pkg.dev/$PROJECT_ID/$PROJECT_REPO/$IMAGE:$GITHUB_SHA"
+        docker push -a "$REGION-docker.pkg.dev/$PROJECT_ID/$PROJECT_REPO/$IMAGE:latest"
 
     - name: Deploy to Google Cloud Run
       run: |-
