@@ -9,6 +9,7 @@ env:
   PROJECT_ID: ${{ secrets.PREBID_PROJECT }}
   PROJECT_REPO: ${{ secrets.PREBID_REPO }}
   IMAGE: prebid-server
+  REGION: europe-west1
 
 jobs:
   setup-build-publish-deploy:
@@ -35,8 +36,8 @@ jobs:
     - name: Build
       run: |-
         docker build \
-          --tag "europe-west1-docker.pkg.dev/$PROJECT_ID/$PROJECT_REPO/$IMAGE:$GITHUB_SHA" \
-          --tag "europe-west1-docker.pkg.dev/$PROJECT_ID/$PROJECT_REPO/$IMAGE:latest" \
+          --tag "$REGION-docker.pkg.dev/$PROJECT_ID/$PROJECT_REPO/$IMAGE:$GITHUB_SHA" \
+          --tag "$REGION-docker.pkg.dev/$PROJECT_ID/$PROJECT_REPO/$IMAGE:latest" \
           --build-arg GITHUB_SHA="$GITHUB_SHA" \
           --build-arg GITHUB_REF="$GITHUB_REF" \
           .
@@ -44,8 +45,8 @@ jobs:
     # Push the Docker image to Google Container Registry
     - name: Publish
       run: |-
-        docker push "europe-west1-docker.pkg.dev/$PROJECT_ID/$PROJECT_REPO/$IMAGE:$GITHUB_SHA"
+        docker push "$REGION-docker.pkg.dev/$PROJECT_ID/$PROJECT_REPO/$IMAGE:$GITHUB_SHA"
 
     - name: Deploy to Google Cloud Run
       run: |-
-        gcloud run deploy prebid-server --image "europe-west1-docker.pkg.dev/$PROJECT_ID/$PROJECT_REPO/$IMAGE:latest"
+        gcloud run deploy prebid-server --image "$REGION-docker.pkg.dev/$PROJECT_ID/$PROJECT_REPO/$IMAGE:latest" --region $REGION
