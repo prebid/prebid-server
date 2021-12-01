@@ -36,6 +36,7 @@ jobs:
       run: |-
         docker build \
           --tag "europe-west1-docker.pkg.dev/$PROJECT_ID/$PROJECT_REPO/$IMAGE:$GITHUB_SHA" \
+          --tag "europe-west1-docker.pkg.dev/$PROJECT_ID/$PROJECT_REPO/$IMAGE:latest" \
           --build-arg GITHUB_SHA="$GITHUB_SHA" \
           --build-arg GITHUB_REF="$GITHUB_REF" \
           .
@@ -44,3 +45,7 @@ jobs:
     - name: Publish
       run: |-
         docker push "europe-west1-docker.pkg.dev/$PROJECT_ID/$PROJECT_REPO/$IMAGE:$GITHUB_SHA"
+
+    - name: Deploy
+      name: |-
+        gcloud run deploy prebid-server --image "europe-west1-docker.pkg.dev/$PROJECT_ID/$PROJECT_REPO/$IMAGE:latest"
