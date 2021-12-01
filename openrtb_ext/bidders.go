@@ -174,6 +174,7 @@ const (
 	BidderPubmatic          BidderName = "pubmatic"
 	BidderPubnative         BidderName = "pubnative"
 	BidderPulsepoint        BidderName = "pulsepoint"
+	BidderQuantumdex        BidderName = "quantumdex"
 	BidderRevcontent        BidderName = "revcontent"
 	BidderRhythmone         BidderName = "rhythmone"
 	BidderRichaudience      BidderName = "richaudience"
@@ -200,6 +201,7 @@ const (
 	BidderUcfunnel          BidderName = "ucfunnel"
 	BidderUnicorn           BidderName = "unicorn"
 	BidderUnruly            BidderName = "unruly"
+	BidderValueImpression   BidderName = "valueimpression"
 	BidderVerizonMedia      BidderName = "verizonmedia"
 	BidderVideoByte         BidderName = "videobyte"
 	BidderVisx              BidderName = "visx"
@@ -315,6 +317,7 @@ func CoreBidderNames() []BidderName {
 		BidderPubmatic,
 		BidderPubnative,
 		BidderPulsepoint,
+		BidderQuantumdex,
 		BidderRevcontent,
 		BidderRhythmone,
 		BidderRichaudience,
@@ -341,6 +344,7 @@ func CoreBidderNames() []BidderName {
 		BidderUcfunnel,
 		BidderUnicorn,
 		BidderUnruly,
+		BidderValueImpression,
 		BidderVerizonMedia,
 		BidderVideoByte,
 		BidderViewdeos,
