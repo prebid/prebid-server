@@ -1,0 +1,8 @@
+maintainer:
+  email: prebid-maintainer@dianomi.com
+gvlVendorID: 885
+modifyingVastXmlAllowed: true
+capabilities:
+  site:
+    mediaTypes:
+      - banner
