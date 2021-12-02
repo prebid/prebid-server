@@ -12,19 +12,19 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type apacdexAdapter struct {
+type adapter struct {
 	endpoint string
 }
 
 // Builder builds a new instance of the Apacdex adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &apacdexAdapter{
+	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}
 	return bidder, nil
 }
 
-func (a *apacdexAdapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var adapterRequests []*adapters.RequestData
 
@@ -44,7 +44,7 @@ func (a *apacdexAdapter) MakeRequests(request *openrtb2.BidRequest, requestInfo 
 	return adapterRequests, errs
 }
 
-func (a *apacdexAdapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, error) {
+func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, error) {
 	var err error
 
 	jsonBody, err := json.Marshal(request)
@@ -94,7 +94,7 @@ func preprocess(request *openrtb2.BidRequest) error {
 	return nil
 }
 
-func (a *apacdexAdapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if responseData.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -164,18 +164,11 @@ func (a *apacdexAdapter) MakeBids(request *openrtb2.BidRequest, requestData *ada
 	return bidResponse, errors
 }
 
-func getImpressionForBid(imps []openrtb2.Imp, impID string) (openrtb2.Imp, error) {
-	result := openrtb2.Imp{}
-	found := false
+func getImpressionForBid(imps []openrtb2.Imp, impID string) (*openrtb2.Imp, error) {
 	for _, imp := range imps {
 		if imp.ID == impID {
-			result = imp
-			found = true
-			break
+			return &imp, nil
 		}
 	}
-	if found {
-		return result, nil
-	}
-	return result, fmt.Errorf("not found impression matched with ImpID=%s", impID)
+	return nil, fmt.Errorf("not found impression matched with ImpID=%s", impID)
 }
