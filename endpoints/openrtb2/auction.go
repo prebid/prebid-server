@@ -1346,7 +1346,7 @@ func validateOrFillChannel(reqWrapper *openrtb_ext.RequestWrapper, isAmp bool) e
 	}
 	requestPrebid := requestExt.GetPrebid()
 
-	if requestPrebid == nil || requestExt.GetPrebid().Channel == nil {
+	if requestPrebid == nil || requestPrebid.Channel == nil {
 		fillChannel(reqWrapper, isAmp)
 	} else if requestPrebid.Channel.Name == "" {
 		return errors.New("ext.prebid.channel.name can't be empty")
@@ -1355,26 +1355,28 @@ func validateOrFillChannel(reqWrapper *openrtb_ext.RequestWrapper, isAmp bool) e
 }
 
 func fillChannel(reqWrapper *openrtb_ext.RequestWrapper, isAmp bool) error {
+	var channelName string
 	requestExt, err := reqWrapper.GetRequestExt()
 	if err != nil {
 		return err
 	}
 	requestPrebid := requestExt.GetPrebid()
-
-	if requestPrebid == nil {
-		requestPrebid = &openrtb_ext.ExtRequestPrebid{}
-	}
-
 	if isAmp {
-		requestPrebid.Channel = &openrtb_ext.ExtRequestPrebidChannel{Name: "amp", Version: ""}
-		requestExt.SetPrebid(requestPrebid)
-		reqWrapper.RebuildRequest()
-	} else if reqWrapper.App != nil {
-		requestPrebid.Channel = &openrtb_ext.ExtRequestPrebidChannel{Name: "app", Version: ""}
+		channelName = "amp"
+	}
+	if reqWrapper.App != nil {
+		channelName = "app"
+	}
+	if channelName != "" {
+		if requestPrebid == nil {
+			requestPrebid = &openrtb_ext.ExtRequestPrebid{}
+		}
+		requestPrebid.Channel = &openrtb_ext.ExtRequestPrebidChannel{Name: channelName}
 		requestExt.SetPrebid(requestPrebid)
 		reqWrapper.RebuildRequest()
 	}
 	return nil
+
 }
 
 func sanitizeRequest(r *openrtb2.BidRequest, ipValidator iputil.IPValidator) {
