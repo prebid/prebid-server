@@ -45,6 +45,8 @@ import (
 )
 
 const storedRequestTimeoutMillis = 50
+const ampChannel = "amp"
+const appChannel = "app"
 
 var (
 	dntKey      string = http.CanonicalHeaderKey("DNT")
@@ -1362,10 +1364,10 @@ func fillChannel(reqWrapper *openrtb_ext.RequestWrapper, isAmp bool) error {
 	}
 	requestPrebid := requestExt.GetPrebid()
 	if isAmp {
-		channelName = "amp"
+		channelName = ampChannel
 	}
 	if reqWrapper.App != nil {
-		channelName = "app"
+		channelName = appChannel
 	}
 	if channelName != "" {
 		if requestPrebid == nil {
