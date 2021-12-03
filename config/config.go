@@ -816,7 +816,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.datablocks.endpoint", "http://{{.Host}}/openrtb2?sid={{.SourceId}}")
 	v.SetDefault("adapters.decenterads.endpoint", "http://supply.decenterads.com/?c=o&m=rtb")
 	v.SetDefault("adapters.deepintent.endpoint", "https://prebid.deepintent.com/prebid")
-	v.SetDefault("adapters.dianomi.endpoint", "https://dev.dianomi.com/smartads_prebid.pl?id={{.AdUnit}}")
+	v.SetDefault("adapters.dianomi.endpoint", "https://dev.dianomi.com/smartads_prebid.pl")
 	v.SetDefault("adapters.dianomi.disabled", true)
 	v.SetDefault("adapters.dmx.endpoint", "https://dmx-direct.districtm.io/b/v2")
 	v.SetDefault("adapters.emx_digital.endpoint", "https://hb.emxdgt.com")

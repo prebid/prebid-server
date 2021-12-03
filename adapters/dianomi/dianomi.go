@@ -5,30 +5,21 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"text/template"
 
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 type adapter struct {
-	endpoint         string
-	endpointTemplate *template.Template
+	endpoint string
 }
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
-	}
-
 	bidder := &adapter{
-		endpoint:         config.Endpoint,
-		endpointTemplate: template,
+		endpoint: config.Endpoint,
 	}
 	return bidder, nil
 }
@@ -37,7 +28,15 @@ type dianomiExtImpBidder struct {
 	Bidder json.RawMessage `json:"bidder"`
 }
 
+type dianomiRequest struct {
+	SmartadID int    `json:"smartad_id"`
+	IP        string `json:"IP"`
+}
+
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
 	numRequests := len(request.Imp)
 	requestData := make([]*adapters.RequestData, 0, numRequests)
 	errs := make([]error, 0, len(request.Imp))
@@ -62,19 +61,27 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			continue
 		}
 
-		m := macros.EndpointTemplateParams{
-			AdUnit: strconv.Itoa(dianomiExt.SmartadID),
+		if err != nil {
+			errs = append(errs, err)
+			continue
 		}
-		endpoint, err := macros.ResolveMacros(a.endpointTemplate, m)
 
+		dianomiRequest := dianomiRequest{
+			SmartadID: dianomiExt.SmartadID,
+			IP:        request.Device.IP,
+		}
+
+		reqJSON, err := json.Marshal(dianomiRequest)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
 		request := &adapters.RequestData{
-			Method: "GET",
-			Uri:    endpoint,
+			Method:  "POST",
+			Uri:     a.endpoint,
+			Headers: headers,
+			Body:    reqJSON,
 		}
 
 		requestData = append(requestData, request)
@@ -88,6 +95,8 @@ type dianomiResponse struct {
 	BidCurency string `json:"bid_currency"`
 	WinURL     string `json:"win_url"`
 	Content    string `json:"content"`
+	CrID       string `json:"crid"`
+	BidID      string `json:"bid_id"`
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
@@ -128,8 +137,8 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	for _, imp := range request.Imp {
 		b := &adapters.TypedBid{
 			Bid: &openrtb2.Bid{
-				ID:    "1234", // bid id
-				CrID:  "1234", // creative id
+				ID:    response.BidID, // bid id
+				CrID:  response.CrID,  // creative id
 				ImpID: imp.ID,
 				Price: amount,
 				AdM:   response.Content,
