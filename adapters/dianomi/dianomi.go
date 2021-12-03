@@ -29,8 +29,12 @@ type dianomiExtImpBidder struct {
 }
 
 type dianomiRequest struct {
-	SmartadID int    `json:"smartad_id"`
-	IP        string `json:"IP"`
+	SmartadID int             `json:"smartad_id"`
+	IP        string          `json:"IP"`
+	RegsExt   json.RawMessage `json:"RegsExt"`
+	UA        string          `json:"UA"`
+	Test      bool            `json:"test"`
+	PageURL   string          `json:"page_url"`
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -69,6 +73,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		dianomiRequest := dianomiRequest{
 			SmartadID: dianomiExt.SmartadID,
 			IP:        request.Device.IP,
+			UA:        request.Device.UA,
+			RegsExt:   request.Regs.Ext,
+			Test:      request.Test == 1,
+			PageURL:   request.Site.Page,
 		}
 
 		reqJSON, err := json.Marshal(dianomiRequest)
