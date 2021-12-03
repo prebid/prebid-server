@@ -2,7 +2,7 @@ package exchange
 
 import (
 	"github.com/prebid/prebid-server/adapters"
-	ttx "github.com/prebid/prebid-server/adapters/33across"
+	"github.com/prebid/prebid-server/adapters/33across"
 	"github.com/prebid/prebid-server/adapters/aceex"
 	"github.com/prebid/prebid-server/adapters/acuityads"
 	"github.com/prebid/prebid-server/adapters/adagio"
