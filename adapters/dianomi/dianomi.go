@@ -152,6 +152,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 				ImpID: imp.ID,
 				Price: amount,
 				AdM:   response.Content,
+				NURL:  response.WinURL,
 			},
 			BidType: openrtb_ext.BidTypeBanner,
 		}
