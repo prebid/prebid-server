@@ -34,4 +34,4 @@ RUN apt-get update && \
 EXPOSE 8000
 EXPOSE 6060
 ENTRYPOINT ["/usr/local/bin/prebid-server"]
-CMD ["-v", "10", "-logtostderr", "-stderrthreshold", "INFO"]
+CMD ["-v", "10", "-logtostderr"]
