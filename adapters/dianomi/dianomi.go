@@ -84,10 +84,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 }
 
 type dianomiResponse struct {
-	bidAmount  float64 `json:"bid_amount"`
-	bidCurency string  `json:"bid_currency"`
-	winURL     string  `json:"win_url"`
-	content    string  `json:"content"`
+	BidAmount  string `json:"bid_amount"`
+	BidCurency string `json:"bid_currency"`
+	WinURL     string `json:"win_url"`
+	Content    string `json:"content"`
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
@@ -115,15 +115,24 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
-	bidResponse.Currency = response.bidCurency
+	bidResponse.Currency = response.BidCurency
+
+	amount, err := strconv.ParseFloat(response.BidAmount, 64)
+	if err != nil {
+		return nil, []error{
+			&errortypes.BadServerResponse{
+				Message: fmt.Sprintf("Can't parse bid amount: %s", response.BidAmount),
+			},
+		}
+	}
 	for _, imp := range request.Imp {
 		b := &adapters.TypedBid{
 			Bid: &openrtb2.Bid{
 				ID:    "1234", // bid id
 				CrID:  "1234", // creative id
 				ImpID: imp.ID,
-				Price: response.bidAmount,
-				AdM:   response.content,
+				Price: amount,
+				AdM:   response.Content,
 			},
 			BidType: openrtb_ext.BidTypeBanner,
 		}
