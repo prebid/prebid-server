@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"text/template"
 
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
@@ -61,7 +62,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			continue
 		}
 
-		endpoint, err := macros.ResolveMacros(a.endpointTemplate, dianomiExt)
+		m := macros.EndpointTemplateParams{
+			AdUnit: strconv.Itoa(dianomiExt.SmartadID),
+		}
+		endpoint, err := macros.ResolveMacros(a.endpointTemplate, m)
 
 		if err != nil {
 			errs = append(errs, err)
