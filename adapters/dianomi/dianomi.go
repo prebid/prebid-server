@@ -35,6 +35,7 @@ type dianomiRequest struct {
 	UA        string          `json:"UA"`
 	Test      bool            `json:"test"`
 	PageURL   string          `json:"page_url"`
+	UserExt   json.RawMessage `json:"user_ext"`
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -77,6 +78,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			RegsExt:   request.Regs.Ext,
 			Test:      request.Test == 1,
 			PageURL:   request.Site.Page,
+			UserExt:   request.User.Ext,
 		}
 
 		reqJSON, err := json.Marshal(dianomiRequest)
