@@ -98,6 +98,7 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 		map[string]string{},
 		[]byte{},
 		nil,
+		empty_fetcher.EmptyFetcher{},
 	)
 
 	b.ResetTimer()

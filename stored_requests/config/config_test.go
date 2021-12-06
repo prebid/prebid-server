@@ -167,6 +167,7 @@ func TestNewInMemoryCache(t *testing.T) {
 			TTL:              60,
 			RequestCacheSize: 100,
 			ImpCacheSize:     100,
+			RespCacheSize:    100,
 		},
 	})
 	assert.True(t, isMemoryCacheType(cache.Requests), "The newCache method should return an in-memory Request cache for StoredRequests config")

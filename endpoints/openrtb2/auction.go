@@ -66,6 +66,7 @@ func NewEndpoint(
 	disabledBidders map[string]string,
 	defReqJSON []byte,
 	bidderMap map[string]openrtb_ext.BidderName,
+	storedRespFetcher stored_requests.Fetcher,
 ) (httprouter.Handle, error) {
 	if ex == nil || validator == nil || requestsById == nil || accounts == nil || cfg == nil || met == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
@@ -94,7 +95,8 @@ func NewEndpoint(
 		bidderMap,
 		nil,
 		nil,
-		ipValidator}).Auction), nil
+		ipValidator,
+		storedRespFetcher}).Auction), nil
 }
 
 type endpointDeps struct {
@@ -114,6 +116,7 @@ type endpointDeps struct {
 	cache                     prebid_cache_client.Client
 	debugLogRegexp            *regexp.Regexp
 	privateNetworkIPValidator iputil.IPValidator
+	storedRespFetcher         stored_requests.Fetcher
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -198,6 +201,18 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 
 	secGPC := r.Header.Get("Sec-GPC")
+
+	//!!!-----Delete this! Delete prints from events
+	storedResp, storedRespErr := deps.storedRespFetcher.FetchResponses(ctx, []string{req.BidRequest.ID})
+	if len(storedRespErr) != 0 {
+		fmt.Println("Stored resp err")
+	} else {
+		for k, v := range storedResp {
+			fmt.Println(k, " -> ", string(v))
+		}
+
+	}
+	//!!!-----------
 
 	auctionRequest := exchange.AuctionRequest{
 		BidRequest:                 req.BidRequest,

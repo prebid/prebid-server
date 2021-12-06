@@ -18,7 +18,7 @@ func setupFetcherWithCacheDeps() (*mockCache, *mockCache, *mockFetcher, AllFetch
 	impCache := &mockCache{}
 	metricsEngine := &metrics.MetricsEngineMock{}
 	fetcher := &mockFetcher{}
-	afetcherWithCache := WithCache(fetcher, Cache{reqCache, impCache, &nil_cache.NilCache{}}, metricsEngine)
+	afetcherWithCache := WithCache(fetcher, Cache{reqCache, impCache, &nil_cache.NilCache{}, &nil_cache.NilCache{}}, metricsEngine)
 
 	return reqCache, impCache, fetcher, afetcherWithCache, metricsEngine
 }
@@ -163,7 +163,7 @@ func setupAccountFetcherWithCacheDeps() (*mockCache, *mockFetcher, AllFetcher, *
 	accCache := &mockCache{}
 	metricsEngine := &metrics.MetricsEngineMock{}
 	fetcher := &mockFetcher{}
-	afetcherWithCache := WithCache(fetcher, Cache{&nil_cache.NilCache{}, &nil_cache.NilCache{}, accCache}, metricsEngine)
+	afetcherWithCache := WithCache(fetcher, Cache{&nil_cache.NilCache{}, &nil_cache.NilCache{}, &nil_cache.NilCache{}, accCache}, metricsEngine)
 
 	return accCache, fetcher, afetcherWithCache, metricsEngine
 }
@@ -270,6 +270,10 @@ type mockFetcher struct {
 func (f *mockFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (map[string]json.RawMessage, map[string]json.RawMessage, []error) {
 	args := f.Called(ctx, requestIDs, impIDs)
 	return args.Get(0).(map[string]json.RawMessage), args.Get(1).(map[string]json.RawMessage), args.Get(2).([]error)
+}
+
+func (f *mockFetcher) FetchResponses(ctx context.Context, ids []string) (data map[string]json.RawMessage, errs []error) {
+	return nil, nil
 }
 
 func (a *mockFetcher) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {

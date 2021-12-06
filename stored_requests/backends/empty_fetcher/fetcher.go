@@ -28,6 +28,10 @@ func (fetcher EmptyFetcher) FetchRequests(ctx context.Context, requestIDs []stri
 	return
 }
 
+func (fetcher EmptyFetcher) FetchResponses(ctx context.Context, ids []string) (data map[string]json.RawMessage, errs []error) {
+	return nil, nil
+}
+
 func (fetcher EmptyFetcher) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {
 	return nil, []error{stored_requests.NotFoundError{accountID, "Account"}}
 }
