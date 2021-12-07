@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/firstpartydata"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -14,8 +13,10 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/prebid/prebid-server/firstpartydata"
+
 	"github.com/buger/jsonparser"
-	"github.com/evanphx/json-patch"
+	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/gofrs/uuid"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
@@ -44,6 +45,8 @@ import (
 )
 
 const storedRequestTimeoutMillis = 50
+const ampChannel = "amp"
+const appChannel = "app"
 
 var (
 	dntKey      string = http.CanonicalHeaderKey("DNT")
@@ -306,7 +309,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_
 
 	lmt.ModifyForIOS(req.BidRequest)
 
-	errL := deps.validateRequest(req)
+	errL := deps.validateRequest(req, false)
 	if len(errL) > 0 {
 		errs = append(errs, errL...)
 	}
@@ -440,7 +443,7 @@ func addMissingReqExtParamsInImpExt(impExtBidder map[string]map[string]json.RawM
 	return nil
 }
 
-func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper) []error {
+func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp bool) []error {
 	errL := []error{}
 	if req.ID == "" {
 		return []error{errors.New("request missing required field: \"id\"")}
@@ -497,6 +500,10 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper) []err
 		if err := currency.ValidateCustomRates(reqPrebid.CurrencyConversions); err != nil {
 			return []error{err}
 		}
+	}
+
+	if err := validateOrFillChannel(req, isAmp); err != nil {
+		return []error{err}
 	}
 
 	if (req.Site == nil && req.App == nil) || (req.Site != nil && req.App != nil) {
@@ -1332,6 +1339,46 @@ func validateDevice(device *openrtb2.Device) error {
 	}
 
 	return nil
+}
+
+func validateOrFillChannel(reqWrapper *openrtb_ext.RequestWrapper, isAmp bool) error {
+	requestExt, err := reqWrapper.GetRequestExt()
+	if err != nil {
+		return err
+	}
+	requestPrebid := requestExt.GetPrebid()
+
+	if requestPrebid == nil || requestPrebid.Channel == nil {
+		fillChannel(reqWrapper, isAmp)
+	} else if requestPrebid.Channel.Name == "" {
+		return errors.New("ext.prebid.channel.name can't be empty")
+	}
+	return nil
+}
+
+func fillChannel(reqWrapper *openrtb_ext.RequestWrapper, isAmp bool) error {
+	var channelName string
+	requestExt, err := reqWrapper.GetRequestExt()
+	if err != nil {
+		return err
+	}
+	requestPrebid := requestExt.GetPrebid()
+	if isAmp {
+		channelName = ampChannel
+	}
+	if reqWrapper.App != nil {
+		channelName = appChannel
+	}
+	if channelName != "" {
+		if requestPrebid == nil {
+			requestPrebid = &openrtb_ext.ExtRequestPrebid{}
+		}
+		requestPrebid.Channel = &openrtb_ext.ExtRequestPrebidChannel{Name: channelName}
+		requestExt.SetPrebid(requestPrebid)
+		reqWrapper.RebuildRequest()
+	}
+	return nil
+
 }
 
 func sanitizeRequest(r *openrtb2.BidRequest, ipValidator iputil.IPValidator) {
