@@ -24,20 +24,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	return bidder, nil
 }
 
-type dianomiExtImpBidder struct {
-	Bidder json.RawMessage `json:"bidder"`
-}
-
-type dianomiRequest struct {
-	SmartadID int             `json:"smartad_id"`
-	IP        string          `json:"IP"`
-	RegsExt   json.RawMessage `json:"RegsExt"`
-	UA        string          `json:"UA"`
-	Test      bool            `json:"test"`
-	PageURL   string          `json:"page_url"`
-	UserExt   json.RawMessage `json:"user_ext"`
-}
-
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
@@ -45,57 +31,20 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	numRequests := len(request.Imp)
 	requestData := make([]*adapters.RequestData, 0, numRequests)
 	errs := make([]error, 0, len(request.Imp))
-	var err error
-
-	requestImpCopy := request.Imp
-	for _, imp := range requestImpCopy {
-
-		var bidderExt dianomiExtImpBidder
-		if err = json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-			errs = append(errs, &errortypes.BadInput{
-				Message: err.Error(),
-			})
-			continue
-		}
-
-		var dianomiExt openrtb_ext.ImpExtDianomi
-		if err = json.Unmarshal(bidderExt.Bidder, &dianomiExt); err != nil {
-			errs = append(errs, &errortypes.BadInput{
-				Message: err.Error(),
-			})
-			continue
-		}
-
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-
-		dianomiRequest := dianomiRequest{
-			SmartadID: dianomiExt.SmartadID,
-			IP:        request.Device.IP,
-			UA:        request.Device.UA,
-			RegsExt:   request.Regs.Ext,
-			Test:      request.Test == 1,
-			PageURL:   request.Site.Page,
-			UserExt:   request.User.Ext,
-		}
-
-		reqJSON, err := json.Marshal(dianomiRequest)
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-
-		request := &adapters.RequestData{
-			Method:  "POST",
-			Uri:     a.endpoint,
-			Headers: headers,
-			Body:    reqJSON,
-		}
-
-		requestData = append(requestData, request)
+	reqJSON, err := json.Marshal(request)
+	if err != nil {
+		errs = append(errs, err)
+		return nil, errs
 	}
+
+	rq := &adapters.RequestData{
+		Method:  "POST",
+		Uri:     a.endpoint,
+		Headers: headers,
+		Body:    reqJSON,
+	}
+
+	requestData = append(requestData, rq)
 
 	return requestData, errs
 }
