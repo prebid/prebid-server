@@ -25,6 +25,7 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/rtdmodule"
 	"golang.org/x/net/context/ctxhttp"
 )
 
@@ -94,12 +95,13 @@ type pbsOrtbSeatBid struct {
 //
 // The name refers to the "Adapter" architecture pattern, and should not be confused with a Prebid "Adapter"
 // (which is being phased out and replaced by Bidder for OpenRTB auctions)
-func adaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Configuration, me metrics.MetricsEngine, name openrtb_ext.BidderName, debugInfo *config.DebugInfo) adaptedBidder {
+func adaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Configuration, me metrics.MetricsEngine, name openrtb_ext.BidderName, debugInfo *config.DebugInfo, rtd rtdmodule.RtdProcessor) adaptedBidder {
 	return &bidderAdapter{
 		Bidder:     bidder,
 		BidderName: name,
 		Client:     client,
 		me:         me,
+		rtd:        rtd,
 		config: bidderAdapterConfig{
 			Debug:              cfg.Debug,
 			DisableConnMetrics: cfg.Metrics.Disabled.AdapterConnectionMetrics,
@@ -120,6 +122,7 @@ type bidderAdapter struct {
 	BidderName openrtb_ext.BidderName
 	Client     *http.Client
 	me         metrics.MetricsEngine
+	rtd        rtdmodule.RtdProcessor
 	config     bidderAdapterConfig
 }
 
@@ -130,6 +133,8 @@ type bidderAdapterConfig struct {
 }
 
 func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb2.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool) (*pbsOrtbSeatBid, []error) {
+
+	errs := bidder.rtd.Process(request)
 
 	reqData, errs := bidder.Bidder.MakeRequests(request, reqInfo)
 

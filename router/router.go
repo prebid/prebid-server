@@ -201,7 +201,9 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 
 	cacheClient := pbc.NewClient(cacheHttpClient, &cfg.CacheURL, &cfg.ExtCacheURL, r.MetricsEngine)
 
-	adapters, adaptersErrs := exchange.BuildAdapters(generalHttpClient, cfg, bidderInfos, r.MetricsEngine)
+	rtd := exchange.BuildRtdModules(generalHttpClient, cfg)
+
+	adapters, adaptersErrs := exchange.BuildAdapters(generalHttpClient, cfg, bidderInfos, r.MetricsEngine, rtd)
 	if len(adaptersErrs) > 0 {
 		errs := errortypes.NewAggregateError("Failed to initialize adapters", adaptersErrs)
 		return nil, errs

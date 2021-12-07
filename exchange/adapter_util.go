@@ -8,9 +8,10 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/rtdmodule"
 )
 
-func BuildAdapters(client *http.Client, cfg *config.Configuration, infos config.BidderInfos, me metrics.MetricsEngine) (map[openrtb_ext.BidderName]adaptedBidder, []error) {
+func BuildAdapters(client *http.Client, cfg *config.Configuration, infos config.BidderInfos, me metrics.MetricsEngine, rtd rtdmodule.RtdProcessor) (map[openrtb_ext.BidderName]adaptedBidder, []error) {
 	bidders, errs := buildBidders(cfg.Adapters, infos, newAdapterBuilders())
 	if len(errs) > 0 {
 		return nil, errs
@@ -19,7 +20,7 @@ func BuildAdapters(client *http.Client, cfg *config.Configuration, infos config.
 	exchangeBidders := make(map[openrtb_ext.BidderName]adaptedBidder, len(bidders))
 	for bidderName, bidder := range bidders {
 		info := infos[string(bidderName)]
-		exchangeBidder := adaptBidder(bidder, client, cfg, me, bidderName, info.Debug)
+		exchangeBidder := adaptBidder(bidder, client, cfg, me, bidderName, info.Debug, rtd)
 		exchangeBidder = addValidatedBidderMiddleware(exchangeBidder)
 		exchangeBidders[bidderName] = exchangeBidder
 	}

@@ -88,6 +88,8 @@ type Configuration struct {
 	GenerateBidID bool `mapstructure:"generate_bid_id"`
 	// GenerateRequestID overrides the bidrequest.id in an AMP Request or an App Stored Request with a generated UUID if set to true. The default is false.
 	GenerateRequestID bool `mapstructure:"generate_request_id"`
+
+	RtdModule map[string]RtdModule `mapstructure:"rtdmodule"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
