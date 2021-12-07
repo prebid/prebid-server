@@ -44,19 +44,25 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 		finalyImpExt := reqCopy.Imp[0].Ext
 		if compassExt.PlacementID != "" {
-			finalyImpExt, _ = json.Marshal(map[string]interface{}{
-				"bidder": map[string]interface{}{
+			finalyImpExt, err = json.Marshal(map[string]interface{}{
+				"bidder": map[string]string{
 					"placementId": compassExt.PlacementID,
 					"type":        "publisher",
 				},
 			})
+			if err != nil {
+				return nil, append(errs, err)
+			}
 		} else if compassExt.EndpointID != "" {
-			finalyImpExt, _ = json.Marshal(map[string]interface{}{
-				"bidder": map[string]interface{}{
+			finalyImpExt, err = json.Marshal(map[string]interface{}{
+				"bidder": map[string]string{
 					"endpointId": compassExt.EndpointID,
 					"type":       "network",
 				},
 			})
+			if err != nil {
+				return nil, append(errs, err)
+			}
 		}
 
 		reqCopy.Imp[0].Ext = finalyImpExt
@@ -75,8 +81,7 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestDa
 
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
-		errs = append(errs, err)
-		return nil, errs
+		return nil, append(errs, err)
 	}
 
 	headers := http.Header{}

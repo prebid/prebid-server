@@ -7,10 +7,12 @@
     "properties": {
       "placementId": {
         "type": "string",
+        "minLength": 1,
         "description": "Placement ID"
       },
       "endpointId": {
         "type": "string",
+        "minLength": 1,
         "description": "Endpoint ID"
       }
     },
