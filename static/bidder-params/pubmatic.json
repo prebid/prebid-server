@@ -12,6 +12,14 @@
 			"type": "string",
 			"description": "An ID which identifies the ad slot"
 		},
+		"pmzoneid": {
+			"type": "string",
+			"description": "Comma separated zone id. Used im deal targeting & site section targeting. e.g drama,sport"
+		},
+		"dctr": {
+			"type": "string",
+			"description": "Deals Custom Targeting, pipe separated key-value pairs e.g key1=V1,V2,V3|key2=v1|key3=v3,v5"
+		},
 		"wrapper": {
 			"type": "object",
 			"description": "Specifies pubmatic openwrap configuration for a publisher",

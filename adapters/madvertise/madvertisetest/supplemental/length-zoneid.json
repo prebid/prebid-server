@@ -1,0 +1,29 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "imp": [
+            {
+                "id": "test-imp-id-1",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        }
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "zoneId": "/22222"
+                    }
+                }
+            }
+        ]
+    },
+    "expectedMakeRequestsErrors": [
+        {
+            "value": "The minLength of zone ID is 7; ImpID=test-imp-id-1",
+            "comparison": "literal"
+        }
+    ]
+}

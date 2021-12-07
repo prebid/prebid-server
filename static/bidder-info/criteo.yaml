@@ -1,5 +1,5 @@
 maintainer:
-  email: "pi-direct@criteo.com"
+  email: "prebid@criteo.com"
 gvlVendorID: 91
 capabilities:
   app:
@@ -8,3 +8,8 @@ capabilities:
   site:
     mediaTypes:
       - banner
+userSync:
+  # criteo supports user syncing, but requires configuration by the host. contact this
+  # bidder directly at the email address in this file to ask about enabling user sync.
+  supports:
+    - redirect

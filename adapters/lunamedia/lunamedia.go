@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"text/template"
 
-	"github.com/mxmCherry/openrtb/v14/openrtb2"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -15,7 +15,7 @@ import (
 )
 
 type LunaMediaAdapter struct {
-	EndpointTemplate template.Template
+	EndpointTemplate *template.Template
 }
 
 //MakeRequests prepares request information for prebid-server core
@@ -235,7 +235,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	}
 
 	bidder := &LunaMediaAdapter{
-		EndpointTemplate: *urlTemplate,
+		EndpointTemplate: urlTemplate,
 	}
 	return bidder, nil
 }

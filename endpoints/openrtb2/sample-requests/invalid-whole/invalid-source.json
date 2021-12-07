@@ -39,5 +39,5 @@
     ]
   },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request: json: cannot unmarshal object into Go struct field ExtAppPrebid.prebid.source of type string"
+  "expectedErrorMessage": "Invalid request: json: cannot unmarshal object into Go struct field ExtAppPrebid.source of type string"
 }  

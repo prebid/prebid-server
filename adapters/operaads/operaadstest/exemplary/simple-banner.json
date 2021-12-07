@@ -1,0 +1,156 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "domain": "good.site",
+      "page": "https://good.site/url",
+      "publisher": {
+        "id": "test-publisher-id"
+      },
+      "ext": {
+        "amp": 0
+      }
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "secure": 1,
+        "ext": {
+          "bidder": {
+            "placementId": "s17890",
+            "endpointId": "ep19979",
+            "publisherId": "pub456"
+          }
+        }
+      }
+    ],
+    "device": {
+      "os": "android",
+      "ua": "test-user-agent",
+      "ip": "123.123.123.123",
+      "h": 700,
+      "w": 375
+    },
+    "at": 1,
+    "tmax": 200,
+    "test": 1,
+    "source": {
+      "tid": "283746293874293"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://example.com/operaads/ortb/v2/pub456?ep=ep19979",
+        "body": {
+          "id": "test-request-id",
+          "site": {
+            "domain": "good.site",
+            "page": "https://good.site/url",
+            "publisher": {
+              "id": "test-publisher-id"
+            },
+            "ext": {
+              "amp": 0
+            }
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "tagid": "s17890",
+              "banner": {
+                "h": 250,
+                "w": 300,
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "secure": 1,
+              "ext": {
+                "bidder": {
+                  "placementId": "s17890",
+                  "endpointId": "ep19979",
+                  "publisherId": "pub456"
+                }
+              }
+            }
+          ],
+          "device": {
+            "os": "android",
+            "ua": "test-user-agent",
+            "ip": "123.123.123.123",
+            "h": 700,
+            "w": 375
+          },
+          "at": 1,
+          "tmax": 200,
+          "test": 1,
+          "source": {
+            "tid": "283746293874293"
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "1519967420713_259406708_583019428",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "price": 0.5,
+                  "adm": "some-test-ad",
+                  "impid": "1",
+                  "auid": 46,
+                  "id": "1",
+                  "h": 250,
+                  "adomain": [
+                    "goodadvertiser.com"
+                  ],
+                  "crid": "11_222222",
+                  "w": 300
+                }
+              ],
+              "seat": "51"
+            }
+          ],
+          "bidid":"8141327771600527856",
+          "cur":"USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency":"USD",
+      "bids": [
+        {
+          "bid": {
+            "price": 0.5,
+            "adm": "some-test-ad",
+            "impid": "1",
+            "id": "1",
+            "h": 250,
+            "adomain": [
+              "goodadvertiser.com"
+            ],
+            "crid": "11_222222",
+            "w": 300
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

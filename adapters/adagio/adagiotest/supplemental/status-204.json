@@ -1,0 +1,62 @@
+{
+  "mockBidRequest": {
+    "test": 1,
+    "id": "some-request-id",
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "banner": {
+          "w": 320,
+          "h": 50
+        },
+        "ext": {
+          "bidder": {
+            "organizationId": "1000",
+            "site": "site-name",
+            "placement": "ban_atf"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
+        "uri": "http://localhost/prebid_server",
+        "body": {
+          "test": 1,
+          "id": "some-request-id",
+          "imp": [
+            {
+              "id": "some-impression-id",
+              "banner": {
+                "w": 320,
+                "h": 50
+              },
+              "ext": {
+                "bidder": {
+                  "organizationId": "1000",
+                  "site": "site-name",
+                  "placement": "ban_atf"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 204,
+        "body": {}
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}

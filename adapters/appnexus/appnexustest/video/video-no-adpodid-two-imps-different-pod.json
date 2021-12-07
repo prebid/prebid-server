@@ -1,0 +1,94 @@
+{
+	"mockBidRequest": {
+	  "id": "test-request-id",
+	  "imp": [
+		{
+		  "id": "1_1",
+		  "video": {
+			"mimes": ["video/mp4"],
+			"minduration": 15,
+			"maxduration": 30,
+			"protocols": [2, 3, 5, 6, 7, 8],
+			"w": 940,
+			"h": 560
+		  },
+		  "ext": {
+			"bidder": {
+			  "placement_id": 1
+			}
+		  }
+		},
+		{
+		  "id": "2_1",
+		  "video": {
+			  "mimes": ["video/mp4"],
+			  "minduration": 15,
+			  "maxduration": 30,
+			  "protocols": [2, 3, 5, 6, 7, 8],
+			  "w": 940,
+			  "h": 560
+		  },
+		  "ext": {
+			  "bidder": {
+				  "placement_id": 1
+			  }
+		  }
+		}
+	  ]
+	},
+
+	"httpCalls": [
+	  {
+		"expectedRequest": {
+		  "uri": "http://ib.adnxs.com/openrtb2",
+		  "body": {
+			"id": "test-request-id",
+			"ext": {
+				"appnexus": {
+				  "hb_source": 6
+				},
+				"prebid": {}
+			},
+			"imp": [
+			  {
+					"id": "1_1",
+					"video": {
+						"mimes": ["video/mp4"],
+						"minduration": 15,
+						"maxduration": 30,
+						"protocols": [2, 3, 5, 6, 7, 8],
+						"w": 940,
+						"h": 560
+					},
+					"ext": {
+						"appnexus": {
+							"placement_id": 1
+						}
+					}
+				},
+			  {
+				"id": "2_1",
+				"video": {
+					"mimes": ["video/mp4"],
+					"minduration": 15,
+					"maxduration": 30,
+					"protocols": [2, 3, 5, 6, 7, 8],
+					"w": 940,
+					"h": 560
+				  },
+				"ext": {
+				  "appnexus": {
+					  "placement_id": 1
+				  }
+				}
+			  }
+			]
+		  }
+		},
+		"mockResponse": {
+		  "status": 200,
+		  "body": {}
+		}
+	  }
+	]
+  }

@@ -111,7 +111,7 @@
     ],
     "expectedMakeBidsErrors": [
         {
-            "value": "Unmatched impression id: bad-imp-id.",
+            "value": "unmatched impression id: bad-imp-id",
             "comparison": "literal"
         }
     ]

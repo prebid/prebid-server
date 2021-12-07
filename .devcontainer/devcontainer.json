@@ -5,8 +5,8 @@
 	"build": {
 		"dockerfile": "Dockerfile",
 		"args": {
-			// Update the VARIANT arg to pick a version of Go: 1, 1.15, 1.14
-			"VARIANT": "1.14",
+			// Update the VARIANT arg to pick a version of Go
+			"VARIANT": "1.16",
 			// Options
 			"INSTALL_NODE": "false",
 			"NODE_VERSION": "lts/*",
@@ -14,6 +14,7 @@
 	},
 	"containerEnv": {
 		"GOPRIVATE": "${localEnv:GOPRIVATE}",
+		"PBS_GDPR_DEFAULT_VALUE": "0"
 	},
 	"runArgs": [ "--cap-add=SYS_PTRACE", "--security-opt", "seccomp=unconfined" ],
 

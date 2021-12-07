@@ -1,0 +1,71 @@
+{
+  "mockBidRequest": {
+    "id": "9ed903f4-383d-406b-8011-4f06526cb02c",
+    "source": {
+      "tid": "9ed903f4-383d-406b-8011-4f06526cb02c"
+    },
+    "tmax": 1000,
+    "imp": [
+      {
+        "id": "ao-test",
+        "ext": {
+          "bidder": {
+            "emiter": "myao.adocean.pl",
+            "masterId": "tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7",
+            "slaveId": "adoceanmyaozpniqismex"
+          }
+        },
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        }
+      }
+    ],
+    "test": 1,
+    "ext": {
+      "prebid": {
+        "targeting": {
+          "includewinners": true,
+          "includebidderkeys": false
+        }
+      }
+    },
+    "app": {
+      "id": "ktdf45k34h53k5hjh5k3",
+      "name": "Weather App",
+      "cat": ["IAB15","IAB15-10"],
+      "ver": "1.0.2",
+      "bundle": "12345",
+      "domain": "example.com"
+    },
+    "device": {
+      "w": 1280,
+      "h": 720,
+      "ip": "192.168.1.1",
+      "os": "iOS",
+      "devicetype": 4,
+      "ifa": "f2ba45ece57cff9477d5a8083b138c9a"
+    }
+  },
+  "httpCalls": [
+    {
+        "expectedRequest": {
+          "uri": "https://myao.adocean.pl/_10000000/ad.json?aid=adoceanmyaozpniqismex%3Aao-test&aosspsizes=myaozpniqismex~300x250&app=1&appbundle=12345&appdomain=example.com&appname=Weather+App&devmake=&devmodel=&devos=iOS&devosv=&id=tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7&ifa=f2ba45ece57cff9477d5a8083b138c9a&nc=1&nosecure=1&pbsrv_v=1.2.0"
+        },
+      "mockResponse": {
+        "status": 200,
+        "body": "{ key: nil }"
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "json: cannot unmarshal string into Go value of type []adocean.ResponseAdUnit",
+      "comparison": "literal"
+    }
+  ]
+}

@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/mxmCherry/openrtb/v14/openrtb2"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
@@ -149,10 +149,6 @@ func TestGetBestFormat(t *testing.T) {
 type userAgentTest struct {
 	input    string
 	expected bool
-}
-
-type userAgentFailureTest struct {
-	input string
 }
 
 func runUserAgentTests(tests map[string]userAgentTest, fn func(string) bool, t *testing.T) {

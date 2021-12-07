@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mxmCherry/openrtb/v14/openrtb2"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -83,7 +83,7 @@ func TestSuccessRequestFromOpenRTB(t *testing.T) {
 		"Generates the correct AdServer request from Imp (no user provided)": {
 			inputImp: openrtb2.Imp{
 				ID:  "abc",
-				Ext: []byte(`{ "bidder": {"pkey": "pkey", "iframe": true, "iframeSize": [10, 20], "bidfloor": 1.0} }`),
+				Ext: []byte(`{ "bidder": {"pkey": "pkey", "iframe": true, "iframeSize": [10, 20], "bidfloor": 1.0, "data": { "pbadslot": "adslot" } } }`),
 				Banner: &openrtb2.Banner{
 					Format: []openrtb2.Format{{H: 30, W: 40}},
 				},
@@ -435,6 +435,7 @@ func TestBuildUri(t *testing.T) {
 			inputParams: StrAdSeverParams{
 				Pkey:               "pkey",
 				BidID:              "bid",
+				GPID:               "gpid",
 				ConsentRequired:    true,
 				ConsentString:      "consent",
 				USPrivacySignal:    "ccpa",
@@ -449,6 +450,7 @@ func TestBuildUri(t *testing.T) {
 				"http://abc.com?",
 				"placement_key=pkey",
 				"bidId=bid",
+				"gpid=gpid",
 				"consent_required=true",
 				"consent_string=consent",
 				"us_privacy=ccpa",

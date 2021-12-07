@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/mxmCherry/openrtb/v14/openrtb2"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 )
 
 // ScrubStrategyIPV4 defines the approach to scrub PII from an IPV4 address.
@@ -225,11 +225,8 @@ func scrubUserExtIDs(userExt json.RawMessage) json.RawMessage {
 	}
 
 	_, hasEids := userExtParsed["eids"]
-	_, hasDigitrust := userExtParsed["digitrust"]
-	if hasEids || hasDigitrust {
+	if hasEids {
 		delete(userExtParsed, "eids")
-		delete(userExtParsed, "digitrust")
-
 		result, err := json.Marshal(userExtParsed)
 		if err == nil {
 			return result

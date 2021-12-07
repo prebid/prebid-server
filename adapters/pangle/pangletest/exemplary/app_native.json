@@ -52,6 +52,7 @@
                 "bidder": {
                   "token": "123"
                 },
+                "is_prebid": true,
                 "prebid": null
               }
             }

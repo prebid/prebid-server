@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb/v14/openrtb2"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -18,10 +18,6 @@ const displayManagerVer string = "2.0.0"
 // DeepintentAdapter struct
 type DeepintentAdapter struct {
 	URI string
-}
-
-type deepintentParams struct {
-	tagId string `json:"tagId"`
 }
 
 // Builder builds a new instance of the Deepintent adapter for the given bidder with the given config.

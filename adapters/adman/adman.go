@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb/v14/openrtb2"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -23,10 +23,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 		URI: config.Endpoint,
 	}
 	return bidder, nil
-}
-
-type admanParams struct {
-	TagID string `json:"TagID"`
 }
 
 // MakeRequests create bid request for adman demand

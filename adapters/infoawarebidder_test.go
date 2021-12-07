@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/mxmCherry/openrtb/v14/openrtb2"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -178,7 +178,6 @@ func TestImpFiltering(t *testing.T) {
 }
 
 type mockBidder struct {
-	gotRequest *openrtb2.BidRequest
 }
 
 func (m *mockBidder) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {

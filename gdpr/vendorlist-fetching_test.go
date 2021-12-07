@@ -14,71 +14,15 @@ import (
 	"github.com/prebid/prebid-server/config"
 )
 
-func TestTCF1FetcherInitialLoad(t *testing.T) {
-	// Loads two vendor lists during initialization by setting the latest vendor list version to 2.
-
-	server := httptest.NewServer(http.HandlerFunc(mockServer(serverSettings{
-		vendorListLatestVersion: 2,
-		vendorLists: map[int]string{
-			1: tcf1VendorList1,
-			2: tcf1VendorList2,
-		},
-	})))
-	defer server.Close()
-
-	testCases := []test{
-		{
-			description: "Fallback - Vendor List 1",
-			setup: testSetup{
-				enableTCF1Fallback: true,
-				vendorListVersion:  1,
-			},
-			expected: vendorListFallbackExpected,
-		},
-		{
-			description: "Fallback - Vendor List 2",
-			setup: testSetup{
-				enableTCF1Fallback: true,
-				vendorListVersion:  2,
-			},
-			expected: vendorListFallbackExpected,
-		},
-		{
-			description: "No Fallback - Vendor List 1",
-			setup: testSetup{
-				enableTCF1Fallback: false,
-				vendorListVersion:  1,
-			},
-			expected: testExpected{
-				errorMessage: "gdpr vendor list version 1 does not exist, or has not been loaded yet. Try again in a few minutes",
-			},
-		},
-		{
-			description: "No Fallback - Vendor List 2",
-			setup: testSetup{
-				enableTCF1Fallback: false,
-				vendorListVersion:  2,
-			},
-			expected: testExpected{
-				errorMessage: "gdpr vendor list version 2 does not exist, or has not been loaded yet. Try again in a few minutes",
-			},
-		},
-	}
-
-	for _, test := range testCases {
-		runTestTCF1(t, test, server)
-	}
-}
-
-func TestTCF2FetcherDynamicLoadListExists(t *testing.T) {
+func TestFetcherDynamicLoadListExists(t *testing.T) {
 	// Loads the first vendor list during initialization by setting the latest vendor list version to 1.
 	// All other vendor lists will be dynamically loaded.
 
 	server := httptest.NewServer(http.HandlerFunc(mockServer(serverSettings{
 		vendorListLatestVersion: 1,
 		vendorLists: map[int]string{
-			1: tcf2VendorList1,
-			2: tcf2VendorList2,
+			1: vendorList1,
+			2: vendorList2,
 		},
 	})))
 	defer server.Close()
@@ -91,17 +35,17 @@ func TestTCF2FetcherDynamicLoadListExists(t *testing.T) {
 		expected: vendorList2Expected,
 	}
 
-	runTestTCF2(t, test, server)
+	runTest(t, test, server)
 }
 
-func TestTCF2FetcherDynamicLoadListDoesntExist(t *testing.T) {
+func TestFetcherDynamicLoadListDoesntExist(t *testing.T) {
 	// Loads the first vendor list during initialization by setting the latest vendor list version to 1.
 	// All other vendor list load attempts will be done dynamically.
 
 	server := httptest.NewServer(http.HandlerFunc(mockServer(serverSettings{
 		vendorListLatestVersion: 1,
 		vendorLists: map[int]string{
-			1: tcf2VendorList1,
+			1: vendorList1,
 		},
 	})))
 	defer server.Close()
@@ -116,30 +60,30 @@ func TestTCF2FetcherDynamicLoadListDoesntExist(t *testing.T) {
 		},
 	}
 
-	runTestTCF2(t, test, server)
+	runTest(t, test, server)
 }
 
-func TestTCF2FetcherThrottling(t *testing.T) {
+func TestFetcherThrottling(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(mockServer(serverSettings{
 		vendorListLatestVersion: 1,
 		vendorLists: map[int]string{
-			1: tcf2MarshalVendorList(tcf2VendorList{
+			1: MarshalVendorList(vendorList{
 				VendorListVersion: 1,
-				Vendors:           map[string]*tcf2Vendor{"12": {ID: 12, Purposes: []int{1}}},
+				Vendors:           map[string]*vendor{"12": {ID: 12, Purposes: []int{1}}},
 			}),
-			2: tcf2MarshalVendorList(tcf2VendorList{
+			2: MarshalVendorList(vendorList{
 				VendorListVersion: 2,
-				Vendors:           map[string]*tcf2Vendor{"12": {ID: 12, Purposes: []int{1, 2}}},
+				Vendors:           map[string]*vendor{"12": {ID: 12, Purposes: []int{1, 2}}},
 			}),
-			3: tcf2MarshalVendorList(tcf2VendorList{
+			3: MarshalVendorList(vendorList{
 				VendorListVersion: 3,
-				Vendors:           map[string]*tcf2Vendor{"12": {ID: 12, Purposes: []int{1, 2, 3}}},
+				Vendors:           map[string]*vendor{"12": {ID: 12, Purposes: []int{1, 2, 3}}},
 			}),
 		},
 	})))
 	defer server.Close()
 
-	fetcher := newVendorListFetcherTCF2(context.Background(), testConfig(), server.Client(), testURLMaker(server))
+	fetcher := newVendorListFetcher(context.Background(), testConfig(), server.Client(), testURLMaker(server))
 
 	// Dynamically Load List 2 Successfully
 	_, errList1 := fetcher(context.Background(), 2)
@@ -151,7 +95,7 @@ func TestTCF2FetcherThrottling(t *testing.T) {
 	assert.EqualError(t, errList2, "gdpr vendor list version 3 does not exist, or has not been loaded yet. Try again in a few minutes")
 }
 
-func TestTCF2MalformedVendorlist(t *testing.T) {
+func TestMalformedVendorlist(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(mockServer(serverSettings{
 		vendorListLatestVersion: 1,
 		vendorLists: map[int]string{
@@ -160,30 +104,30 @@ func TestTCF2MalformedVendorlist(t *testing.T) {
 	})))
 	defer server.Close()
 
-	fetcher := newVendorListFetcherTCF2(context.Background(), testConfig(), server.Client(), testURLMaker(server))
+	fetcher := newVendorListFetcher(context.Background(), testConfig(), server.Client(), testURLMaker(server))
 	_, err := fetcher(context.Background(), 1)
 
 	// Fetching should fail since vendor list could not be unmarshalled.
 	assert.Error(t, err)
 }
 
-func TestTCF2ServerUrlInvalid(t *testing.T) {
+func TestServerUrlInvalid(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 	server.Close()
 
 	invalidURLGenerator := func(uint16) string { return " http://invalid-url-has-leading-whitespace" }
 
-	fetcher := newVendorListFetcherTCF2(context.Background(), testConfig(), server.Client(), invalidURLGenerator)
+	fetcher := newVendorListFetcher(context.Background(), testConfig(), server.Client(), invalidURLGenerator)
 	_, err := fetcher(context.Background(), 1)
 
 	assert.EqualError(t, err, "gdpr vendor list version 1 does not exist, or has not been loaded yet. Try again in a few minutes")
 }
 
-func TestTCF2ServerUnavailable(t *testing.T) {
+func TestServerUnavailable(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 	server.Close()
 
-	fetcher := newVendorListFetcherTCF2(context.Background(), testConfig(), server.Client(), testURLMaker(server))
+	fetcher := newVendorListFetcher(context.Background(), testConfig(), server.Client(), testURLMaker(server))
 	_, err := fetcher(context.Background(), 1)
 
 	assert.EqualError(t, err, "gdpr vendor list version 1 does not exist, or has not been loaded yet. Try again in a few minutes")
@@ -213,24 +157,14 @@ func TestVendorListURLMaker(t *testing.T) {
 	}
 }
 
-var tcf1VendorList1 = tcf1MarshalVendorList(tcf1VendorList{
+var vendorList1 = MarshalVendorList(vendorList{
 	VendorListVersion: 1,
-	Vendors:           []tcf1Vendor{{ID: 12, Purposes: []int{2}}},
+	Vendors:           map[string]*vendor{"12": {ID: 12, Purposes: []int{2}}},
 })
 
-var tcf2VendorList1 = tcf2MarshalVendorList(tcf2VendorList{
-	VendorListVersion: 1,
-	Vendors:           map[string]*tcf2Vendor{"12": {ID: 12, Purposes: []int{2}}},
-})
-
-var tcf1VendorList2 = tcf1MarshalVendorList(tcf1VendorList{
+var vendorList2 = MarshalVendorList(vendorList{
 	VendorListVersion: 2,
-	Vendors:           []tcf1Vendor{{ID: 12, Purposes: []int{2, 3}}},
-})
-
-var tcf2VendorList2 = tcf2MarshalVendorList(tcf2VendorList{
-	VendorListVersion: 2,
-	Vendors:           map[string]*tcf2Vendor{"12": {ID: 12, Purposes: []int{2, 3}}},
+	Vendors:           map[string]*vendor{"12": {ID: 12, Purposes: []int{2, 3}}},
 })
 
 var vendorList2Expected = testExpected{
@@ -245,27 +179,12 @@ var vendorListFallbackExpected = testExpected{
 	vendorPurposes:    map[int]bool{1: true, 2: false, 3: true},
 }
 
-type tcf1VendorList struct {
-	VendorListVersion uint16       `json:"vendorListVersion"`
-	Vendors           []tcf1Vendor `json:"vendors"`
+type vendorList struct {
+	VendorListVersion uint16             `json:"vendorListVersion"`
+	Vendors           map[string]*vendor `json:"vendors"`
 }
 
-type tcf1Vendor struct {
-	ID       uint16 `json:"id"`
-	Purposes []int  `json:"purposeIds"`
-}
-
-func tcf1MarshalVendorList(vendorList tcf1VendorList) string {
-	json, _ := json.Marshal(vendorList)
-	return string(json)
-}
-
-type tcf2VendorList struct {
-	VendorListVersion uint16                 `json:"vendorListVersion"`
-	Vendors           map[string]*tcf2Vendor `json:"vendors"`
-}
-
-type tcf2Vendor struct {
+type vendor struct {
 	ID               uint16 `json:"id"`
 	Purposes         []int  `json:"purposes"`
 	LegIntPurposes   []int  `json:"legIntPurposes"`
@@ -273,7 +192,7 @@ type tcf2Vendor struct {
 	SpecialPurposes  []int  `json:"specialPurposes"`
 }
 
-func tcf2MarshalVendorList(vendorList tcf2VendorList) string {
+func MarshalVendorList(vendorList vendorList) string {
 	json, _ := json.Marshal(vendorList)
 	return string(json)
 }
@@ -323,8 +242,7 @@ type test struct {
 }
 
 type testSetup struct {
-	enableTCF1Fallback bool
-	vendorListVersion  uint16
+	vendorListVersion uint16
 }
 
 type testExpected struct {
@@ -334,31 +252,9 @@ type testExpected struct {
 	vendorPurposes    map[int]bool
 }
 
-func runTestTCF1(t *testing.T, test test, server *httptest.Server) {
+func runTest(t *testing.T, test test, server *httptest.Server) {
 	config := testConfig()
-	if test.setup.enableTCF1Fallback {
-		config.TCF1.FallbackGVLPath = "../static/tcf1/fallback_gvl.json"
-	}
-
-	fetcher := newVendorListFetcherTCF1(config)
-	vendorList, err := fetcher(context.Background(), test.setup.vendorListVersion)
-
-	if test.expected.errorMessage != "" {
-		assert.EqualError(t, err, test.expected.errorMessage, test.description+":error")
-	} else {
-		assert.NoError(t, err, test.description+":vendorlist")
-		assert.Equal(t, test.expected.vendorListVersion, vendorList.Version(), test.description+":vendorlistid")
-		vendor := vendorList.Vendor(test.expected.vendorID)
-		for id, expected := range test.expected.vendorPurposes {
-			result := vendor.Purpose(consentconstants.Purpose(id))
-			assert.Equalf(t, expected, result, "%s:vendor-%d:purpose-%d", test.description, vendorList.Version(), id)
-		}
-	}
-}
-
-func runTestTCF2(t *testing.T, test test, server *httptest.Server) {
-	config := testConfig()
-	fetcher := newVendorListFetcherTCF2(context.Background(), config, server.Client(), testURLMaker(server))
+	fetcher := newVendorListFetcher(context.Background(), config, server.Client(), testURLMaker(server))
 	vendorList, err := fetcher(context.Background(), test.setup.vendorListVersion)
 
 	if test.expected.errorMessage != "" {
@@ -386,9 +282,6 @@ func testConfig() config.GDPR {
 		Timeouts: config.GDPRTimeouts{
 			InitVendorlistFetch:   60 * 1000,
 			ActiveVendorlistFetch: 1000 * 5,
-		},
-		TCF1: config.TCF1{
-			FetchGVL: true,
 		},
 	}
 }

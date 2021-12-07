@@ -1,0 +1,98 @@
+{
+  "mockBidRequest": {
+    "id": "id",
+    "imp": [{
+      "id": "id",
+      "secure": 1,
+      "bidfloor": 0.01,
+      "bidfloorcur": "USD",
+      "banner": {
+        "w": 300,
+        "h": 250
+      },
+      "ext": {
+        "bidder": {
+          "key": "test"
+        }
+      }
+    }],
+    "device": {
+      "ua": "UA",
+      "ip": "123.3.4.123"
+    },
+    "regs": {
+      "ext": {
+        "gdpr": 0
+      }
+    },
+    "user": {
+      "id": "userid"
+    },
+    "site": {
+      "id": "id",
+      "domain": "test,com",
+      "cat": ["IAB12"],
+      "publisher": {
+        "id": "pubid"
+      }
+    }
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://test.com/pserver",
+        "body": {
+          "id": "id",
+          "imp": [{
+            "id": "id",
+            "secure": 1,
+            "bidfloor": 0.01,
+            "bidfloorcur": "USD",
+            "banner": {
+              "w": 300,
+              "h": 250
+            },
+            "ext": {
+              "bidder": {
+                "key": "test"
+              }
+            }
+          }],
+          "device": {
+            "ua": "UA",
+            "ip": "123.3.4.123"
+          },
+          "regs": {
+            "ext": {
+              "gdpr": 0
+            }
+          },
+          "user": {
+            "id": "userid"
+          },
+          "site": {
+            "id": "id",
+            "domain": "test,com",
+            "cat": ["IAB12"],
+            "publisher": {
+              "id": "pubid"
+            }
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 503
+      }
+    }
+  ],
+
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Bidder unavailable. Please contact the bidder support.",
+      "comparison": "literal"
+    }
+  ],
+
+  "expectedBidResponses": []
+}

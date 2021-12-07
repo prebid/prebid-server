@@ -12,15 +12,18 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mxmCherry/openrtb/v14/openrtb2"
 	"github.com/prebid/prebid-server/analytics"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/metrics"
+	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
+
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	gometrics "github.com/rcrowley/go-metrics"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -1041,8 +1044,10 @@ func TestHandleErrorDebugLog(t *testing.T) {
 			Headers:  "test headers string",
 			Response: "test response string",
 		},
-		TTL:    int64(3600),
-		Regexp: regexp.MustCompile(`[<>]`),
+		TTL:                      int64(3600),
+		Regexp:                   regexp.MustCompile(`[<>]`),
+		DebugOverride:            false,
+		DebugEnabledOrOverridden: true,
 	}
 	handleError(&labels, recorder, []error{err1, err2}, &vo, &debugLog)
 
@@ -1085,11 +1090,13 @@ func TestCCPA(t *testing.T) {
 		description         string
 		testFilePath        string
 		expectConsentString bool
+		expectEmptyConsent  bool
 	}{
 		{
 			description:         "Missing Consent",
 			testFilePath:        "sample-requests/video/video_valid_sample.json",
 			expectConsentString: false,
+			expectEmptyConsent:  true,
 		},
 		{
 			description:         "Valid Consent",
@@ -1130,7 +1137,7 @@ func TestCCPA(t *testing.T) {
 		}
 		if test.expectConsentString {
 			assert.Len(t, extRegs.USPrivacy, 4, test.description+":consent")
-		} else {
+		} else if test.expectEmptyConsent {
 			assert.Empty(t, extRegs.USPrivacy, test.description+":consent")
 		}
 
@@ -1199,8 +1206,11 @@ func TestFormatTargetingKeyLongKey(t *testing.T) {
 
 func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *metrics.Metrics, *mockAnalyticsModule) {
 	mockModule := &mockAnalyticsModule{}
-	metrics := newTestMetrics()
+
+	metrics := metrics.NewMetrics(gometrics.NewRegistry(), openrtb_ext.CoreBidderNames(), config.DisabledMetrics{}, nil)
+
 	deps := &endpointDeps{
+		fakeUUIDGenerator{},
 		ex,
 		newParamsValidator(t),
 		&mockVideoStoredReqFetcher{},
@@ -1217,7 +1227,6 @@ func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *m
 		nil,
 		hardcodedResponseIPValidator{response: true},
 	}
-
 	return deps, metrics, mockModule
 }
 
@@ -1244,13 +1253,14 @@ func (m *mockAnalyticsModule) LogNotificationEventObject(ne *analytics.Notificat
 
 func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 	deps := &endpointDeps{
+		fakeUUIDGenerator{},
 		ex,
 		newParamsValidator(t),
 		&mockVideoStoredReqFetcher{},
 		&mockVideoStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		newTestMetrics(),
+		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		false,
@@ -1266,13 +1276,14 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 
 func mockDepsAppendBidderNames(t *testing.T, ex *mockExchangeAppendBidderNames) *endpointDeps {
 	deps := &endpointDeps{
+		fakeUUIDGenerator{},
 		ex,
 		newParamsValidator(t),
 		&mockVideoStoredReqFetcher{},
 		&mockVideoStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		newTestMetrics(),
+		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		false,
@@ -1288,13 +1299,14 @@ func mockDepsAppendBidderNames(t *testing.T, ex *mockExchangeAppendBidderNames) 
 
 func mockDepsNoBids(t *testing.T, ex *mockExchangeVideoNoBids) *endpointDeps {
 	edep := &endpointDeps{
+		fakeUUIDGenerator{},
 		ex,
 		newParamsValidator(t),
 		&mockVideoStoredReqFetcher{},
 		&mockVideoStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		newTestMetrics(),
+		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		false,
@@ -1422,20 +1434,4 @@ var testVideoStoredImpData = map[string]json.RawMessage{
 
 var testVideoStoredRequestData = map[string]json.RawMessage{
 	"80ce30c53c16e6ede735f123ef6e32361bfc7b22": json.RawMessage(`{"accountid": "11223344", "site": {"page": "mygame.foo.com"}}`),
-}
-
-func loadValidRequest(t *testing.T) *openrtb_ext.BidRequestVideo {
-	reqData, err := ioutil.ReadFile("sample-requests/video/video_valid_sample.json")
-	if err != nil {
-		t.Fatalf("Failed to fetch a valid request: %v", err)
-	}
-
-	reqBody := getRequestPayload(t, reqData)
-
-	reqVideo := &openrtb_ext.BidRequestVideo{}
-	if err := json.Unmarshal(reqBody, reqVideo); err != nil {
-		t.Fatalf("Failed to unmarshal the request: %v", err)
-	}
-
-	return reqVideo
 }

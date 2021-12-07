@@ -1,6 +1,7 @@
 maintainer:
   email: "support@epom.com"
 modifyingVastXmlAllowed: true
+gvlVendorID: 849
 capabilities:
   app:
     mediaTypes:

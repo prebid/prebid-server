@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/mxmCherry/openrtb/v14/openrtb2"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
@@ -116,6 +116,56 @@ func TestCacheJSON(t *testing.T) {
 			t.Fatalf("Failed to read contents of directory exchange/%s: %v", dir, err)
 		}
 	}
+}
+
+func TestIsDebugOverrideEnabled(t *testing.T) {
+	type inTest struct {
+		debugHeader string
+		configToken string
+	}
+	type aTest struct {
+		desc   string
+		in     inTest
+		result bool
+	}
+	testCases := []aTest{
+		{
+			desc:   "test debug header is empty, config token is empty",
+			in:     inTest{debugHeader: "", configToken: ""},
+			result: false,
+		},
+		{
+			desc:   "test debug header is present, config token is empty",
+			in:     inTest{debugHeader: "TestToken", configToken: ""},
+			result: false,
+		},
+		{
+			desc:   "test debug header is empty, config token is present",
+			in:     inTest{debugHeader: "", configToken: "TestToken"},
+			result: false,
+		},
+		{
+			desc:   "test debug header is present, config token is present, not equal",
+			in:     inTest{debugHeader: "TestToken123", configToken: "TestToken"},
+			result: false,
+		},
+		{
+			desc:   "test debug header is present, config token is present, equal",
+			in:     inTest{debugHeader: "TestToken", configToken: "TestToken"},
+			result: true,
+		},
+		{
+			desc:   "test debug header is present, config token is present, not case equal",
+			in:     inTest{debugHeader: "TestTokeN", configToken: "TestToken"},
+			result: false,
+		},
+	}
+
+	for _, test := range testCases {
+		result := IsDebugOverrideEnabled(test.in.debugHeader, test.in.configToken)
+		assert.Equal(t, test.result, result, test.desc)
+	}
+
 }
 
 // LoadCacheSpec reads and parses a file as a test case. If something goes wrong, it returns an error.
@@ -503,12 +553,6 @@ type pbsBid struct {
 	Bid     *openrtb2.Bid          `json:"bid"`
 	BidType openrtb_ext.BidType    `json:"bidType"`
 	Bidder  openrtb_ext.BidderName `json:"bidder"`
-}
-
-type cacheComparator struct {
-	freq         int
-	expectedKeys []string
-	actualKeys   []string
 }
 
 type mockCache struct {

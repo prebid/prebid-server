@@ -65,6 +65,10 @@
         "cache": {
           "bids": {}
         },
+        "channel": {
+          "name": "video",
+          "version": "1.0"
+        },
         "targeting": {
           "includewinners": false,
           "pricegranularity": {
@@ -115,6 +119,7 @@
         }
       ],
       "bidid":"test bid id",
+      "cur":"USD",
       "nbr":0
   },
   "expectedReturnCode": 200

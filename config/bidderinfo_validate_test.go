@@ -1,14 +1,17 @@
-package config
+package config_test
 
 import (
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/usersync"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v2"
 )
@@ -35,7 +38,8 @@ func TestBidderInfoFiles(t *testing.T) {
 	expectedFileInfosLength := len(openrtb_ext.CoreBidderNames())
 	assert.Len(t, fileInfos, expectedFileInfosLength, "static/bidder-info contains %d files, but there are %d known bidders. Did you forget to add a YAML file for your bidder?", len(fileInfos), expectedFileInfosLength)
 
-	// Validate Contents
+	// Load & Validate Contents
+	bidderInfos := make(config.BidderInfos)
 	for _, fileInfo := range fileInfos {
 		path := fmt.Sprintf(bidderInfoRelativePath + "/" + fileInfo.Name())
 
@@ -45,16 +49,25 @@ func TestBidderInfoFiles(t *testing.T) {
 		content, err := ioutil.ReadAll(infoFileData)
 		assert.NoError(t, err, "Failed to read static/bidder-info/%s: %v", fileInfo.Name(), err)
 
-		var fileInfoContent BidderInfo
+		var fileInfoContent config.BidderInfo
 		err = yaml.Unmarshal(content, &fileInfoContent)
 		assert.NoError(t, err, "Error interpreting content from static/bidder-info/%s: %v", fileInfo.Name(), err)
 
 		err = validateInfo(&fileInfoContent)
 		assert.NoError(t, err, "Invalid content in static/bidder-info/%s: %v", fileInfo.Name(), err)
+
+		err = validateSyncer(fileInfoContent)
+		assert.NoError(t, err, "Invalid syncer config in static/bidder-info/%s: %v", fileInfo.Name(), err)
+
+		fileNameWithoutExtension := fileInfo.Name()[:len(fileInfo.Name())-len(filepath.Ext(fileInfo.Name()))]
+		bidderInfos[fileNameWithoutExtension] = fileInfoContent
 	}
+
+	errs := validateSyncers(t, bidderInfos)
+	assert.Empty(t, errs, "syncer errors")
 }
 
-func validateInfo(info *BidderInfo) error {
+func validateInfo(info *config.BidderInfo) error {
 	if err := validateMaintainer(info.Maintainer); err != nil {
 		return err
 	}
@@ -66,14 +79,14 @@ func validateInfo(info *BidderInfo) error {
 	return nil
 }
 
-func validateMaintainer(info *MaintainerInfo) error {
+func validateMaintainer(info *config.MaintainerInfo) error {
 	if info == nil || info.Email == "" {
 		return errors.New("missing required field: maintainer.email")
 	}
 	return nil
 }
 
-func validateCapabilities(info *CapabilitiesInfo) error {
+func validateCapabilities(info *config.CapabilitiesInfo) error {
 	if info == nil {
 		return errors.New("missing required field: capabilities")
 	}
@@ -96,7 +109,7 @@ func validateCapabilities(info *CapabilitiesInfo) error {
 	return nil
 }
 
-func validatePlatformInfo(info *PlatformInfo) error {
+func validatePlatformInfo(info *config.PlatformInfo) error {
 	if info == nil {
 		return errors.New("object cannot be empty")
 	}
@@ -108,6 +121,38 @@ func validatePlatformInfo(info *PlatformInfo) error {
 	for index, mediaType := range info.MediaTypes {
 		if mediaType != "banner" && mediaType != "video" && mediaType != "native" && mediaType != "audio" {
 			return fmt.Errorf("unrecognized media type at index %d: %s", index, mediaType)
+		}
+	}
+
+	return nil
+}
+
+func validateSyncers(t *testing.T, bidderInfos config.BidderInfos) []error {
+	hostConfig := &config.Configuration{
+		UserSync: config.UserSync{
+			ExternalURL: "http://host.com",
+			RedirectURL: "{{.ExternalURL}}/host",
+		},
+	}
+
+	// enable all bidders to allow BuildSyncers to build all syncers
+	for k, v := range bidderInfos {
+		v.Enabled = true
+		bidderInfos[k] = v
+	}
+
+	_, errs := usersync.BuildSyncers(hostConfig, bidderInfos)
+	return errs
+}
+
+func validateSyncer(bidderInfo config.BidderInfo) error {
+	if bidderInfo.Syncer == nil {
+		return nil
+	}
+
+	for _, v := range bidderInfo.Syncer.Supports {
+		if !strings.EqualFold(v, "iframe") && !strings.EqualFold(v, "redirect") {
+			return fmt.Errorf("syncer could not be created, invalid supported endpoint: %s", v)
 		}
 	}
 

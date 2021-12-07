@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - '[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
   release:
@@ -13,13 +13,15 @@ jobs:
     steps:
       - name: Get Version
         id: get_version
-        run: echo ::set-output name=version::${GITHUB_REF/refs\/tags\//}
+        run: |
+          echo ::set-output name=tag::${GITHUB_REF/refs\/tags\/}
+          echo ::set-output name=version::${GITHUB_REF/refs\/tags\/v}
 
       - name: Create & Publish Release
         uses: release-drafter/release-drafter@v5.12.1
         with:
           name: ${{ steps.get_version.outputs.version }}
-          tag: ${{ steps.get_version.outputs.version }}
+          tag: ${{ steps.get_version.outputs.tag }}
           version: ${{ steps.get_version.outputs.version }}
           publish: true
         env:

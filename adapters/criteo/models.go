@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mxmCherry/openrtb/v14/openrtb2"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -286,14 +286,14 @@ func newCriteoResponseFromBytes(bytes []byte) (criteoResponse, error) {
 }
 
 type criteoResponseSlot struct {
-	ID         string  `json:"id,omitempty"`
-	ImpID      string  `json:"impid,omitempty"`
-	ZoneID     int64   `json:"zoneid,omitempty"`
-	NetworkID  int64   `json:"networkid,omitempty"`
-	CPM        float64 `json:"cpm,omitempty"`
-	Currency   string  `json:"currency,omitempty"`
-	Width      int64   `json:"width,omitempty"`
-	Height     int64   `json:"height,omitempty"`
-	Creative   string  `json:"creative,omitempty"`
-	CreativeID string  `json:"creativeid,omitempty"`
+	ArbitrageID  string  `json:"arbitrageid,omitempty"`
+	ImpID        string  `json:"impid,omitempty"`
+	ZoneID       int64   `json:"zoneid,omitempty"`
+	NetworkID    int64   `json:"networkid,omitempty"`
+	CPM          float64 `json:"cpm,omitempty"`
+	Currency     string  `json:"currency,omitempty"`
+	Width        int64   `json:"width,omitempty"`
+	Height       int64   `json:"height,omitempty"`
+	Creative     string  `json:"creative,omitempty"`
+	CreativeCode string  `json:"creativecode,omitempty"`
 }

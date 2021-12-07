@@ -5,16 +5,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mxmCherry/openrtb/v14/openrtb2"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 
 	"github.com/prebid/prebid-server/adapters/adapterstest"
-)
-
-var (
-	bidRequest string
 )
 
 func TestFetchParams(t *testing.T) {
@@ -643,50 +639,6 @@ func TestUserEidsOnly(t *testing.T) {
 	}
 }
 
-func TestUserDigitrustOnly(t *testing.T) {
-	var w, h int = 300, 250
-
-	var width, height int64 = int64(w), int64(h)
-
-	bidder, buildErr := Builder(openrtb_ext.BidderDmx, config.Adapter{
-		Endpoint: "https://dmx.districtm.io/b/v2"})
-
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
-
-	imp1 := openrtb2.Imp{
-		ID:  "imp1",
-		Ext: json.RawMessage("{\"bidder\":{\"dmxid\": \"1007\", \"memberid\": \"123456\", \"seller_id\":\"1008\"}}"),
-		Banner: &openrtb2.Banner{
-			W: &width,
-			H: &height,
-			Format: []openrtb2.Format{
-				{W: 300, H: 250},
-			},
-		}}
-
-	inputRequest := openrtb2.BidRequest{
-		Imp: []openrtb2.Imp{imp1, imp1, imp1},
-		Site: &openrtb2.Site{
-			Publisher: &openrtb2.Publisher{
-				ID: "10007",
-			},
-		},
-		User: &openrtb2.User{Ext: json.RawMessage(`{
-            "digitrust": {
-                "id": "11111111111",
-                "keyv": 4
-            }}`)},
-		ID: "1234",
-	}
-
-	actualAdapterRequests, _ := bidder.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
-	if len(actualAdapterRequests) != 1 {
-		t.Errorf("should have 1 request")
-	}
-}
-
 func TestUsersEids(t *testing.T) {
 	var w, h int = 300, 250
 
@@ -725,53 +677,56 @@ func TestUsersEids(t *testing.T) {
                         "rtiPartner": "TDID"
                     }
                 }]
-            },{
+            },
+			{
                 "source": "pubcid.org",
                 "uids": [{
-                    "id":"11111111"
+                    "id": "11111111"
                 }]
             },
-            {
+			{
                 "source": "id5-sync.com",
                 "uids": [{
                     "id": "ID5-12345"
                 }]
-            },
-            {
+            },            
+			{
                 "source": "parrable.com",
                 "uids": [{
                     "id": "01.1563917337.test-eid"
                 }]
-            },{
+            },
+			{
                 "source": "identityLink",
                 "uids": [{
                     "id": "11111111"
                 }]
-            },{
+            },
+			{
                 "source": "criteo",
                 "uids": [{
                     "id": "11111111"
                 }]
-            },{
+            },
+			{
                 "source": "britepool.com",
                 "uids": [{
                     "id": "11111111"
                 }]
-            },{
+            },
+			{
                 "source": "liveintent.com",
                 "uids": [{
                     "id": "11111111"
                 }]
-            },{
+            },
+			{
                 "source": "netid.de",
                 "uids": [{
                     "id": "11111111"
                 }]
-            }],
-            "digitrust": {
-                "id": "11111111111",
-                "keyv": 4
-            }}`)},
+            }]
+            }`)},
 		ID: "1234",
 	}
 

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb/v14/openrtb2"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -23,10 +23,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 		URI: config.Endpoint,
 	}
 	return bidder, nil
-}
-
-type sonobiParams struct {
-	TagID string `json:"TagID"`
 }
 
 // MakeRequests Makes the OpenRTB request payload
@@ -150,11 +146,5 @@ func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType,
 	// This shouldnt happen. Lets handle it just incase by returning an error.
 	return "", &errortypes.BadInput{
 		Message: fmt.Sprintf("Failed to find impression \"%s\" ", impID),
-	}
-}
-
-func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue string) {
-	if len(headerValue) > 0 {
-		headers.Add(headerName, headerValue)
 	}
 }

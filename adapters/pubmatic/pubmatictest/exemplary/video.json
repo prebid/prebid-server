@@ -73,7 +73,7 @@
                     "maxbitrate": 10
                 },
                 "ext": {
-                    "pmZoneID": "Zone1,Zone2"
+                    "pmZoneId": "Zone1,Zone2"
                 }
               }
             ], 

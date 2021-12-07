@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/mxmCherry/openrtb/v14/openrtb2"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -16,10 +16,6 @@ import (
 
 type ConnectAdAdapter struct {
 	endpoint string
-}
-
-type connectadImpExt struct {
-	ConnectAd openrtb_ext.ExtImpConnectAd `json:"connectad"`
 }
 
 // Builder builds a new instance of the ConnectAd adapter for the given bidder with the given config.

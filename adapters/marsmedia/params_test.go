@@ -40,20 +40,16 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	`{"zone": "9999"}`,
+	`{"zoneId": "9999"}`,
 }
 
 var invalidParams = []string{
-	`{"zone": 100}`,
-	`{"headerbidding": false}`,
-	`{"zone": true}`,
-	`{"zoneId": 123, "headerbidding": true}`,
-	`{"zoneID": "1"}`,
+	`{"zoneId": 100}`,
+	`{"zoneId": true}`,
 	``,
 	`null`,
 	`true`,
 	`9`,
 	`1.2`,
 	`[]`,
-	`{}`,
 }
