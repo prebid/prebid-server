@@ -5,7 +5,6 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"net"
 	"time"
 
@@ -82,7 +81,6 @@ func (e *PostgresEventProducer) fetchAll() (fetchErr error) {
 	defer cancel()
 
 	startTime := e.time.Now().UTC()
-	fmt.Print("Init query: ", ctx, e.cfg.CacheInitQuery)
 	rows, err := e.cfg.DB.QueryContext(ctx, e.cfg.CacheInitQuery)
 	elapsedTime := time.Since(startTime)
 	e.recordFetchTime(elapsedTime, metrics.FetchAll)
@@ -120,7 +118,6 @@ func (e *PostgresEventProducer) fetchDelta() (fetchErr error) {
 	defer cancel()
 
 	startTime := e.time.Now().UTC()
-	fmt.Println("Fetch delta ", e.cfg.CacheUpdateQuery)
 	rows, err := e.cfg.DB.QueryContext(ctx, e.cfg.CacheUpdateQuery, e.lastUpdate)
 	elapsedTime := time.Since(startTime)
 	e.recordFetchTime(elapsedTime, metrics.FetchDelta)
@@ -207,7 +204,6 @@ func (e *PostgresEventProducer) sendEvents(rows *sql.Rows) (err error) {
 				respInvalidations = append(respInvalidations, id)
 			} else {
 				storedRespData[id] = data
-				fmt.Println("New resp fetched: ", id)
 			}
 		default:
 			glog.Warningf("Stored Data with id=%s has invalid type: %s. This will be ignored.", id, dataType)

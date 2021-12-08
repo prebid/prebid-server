@@ -1173,6 +1173,7 @@ func TestValidateRequest(t *testing.T) {
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
+		empty_fetcher.EmptyFetcher{},
 	}
 
 	testCases := []struct {

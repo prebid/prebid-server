@@ -202,18 +202,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	secGPC := r.Header.Get("Sec-GPC")
 
-	//!!!-----Delete this! Delete prints from events
-	storedResp, storedRespErr := deps.storedRespFetcher.FetchResponses(ctx, []string{req.BidRequest.ID})
-	if len(storedRespErr) != 0 {
-		fmt.Println("Stored resp err")
-	} else {
-		for k, v := range storedResp {
-			fmt.Println(k, " -> ", string(v))
-		}
-
-	}
-	//!!!-----------
-
 	auctionRequest := exchange.AuctionRequest{
 		BidRequest:                 req.BidRequest,
 		Account:                    *account,
