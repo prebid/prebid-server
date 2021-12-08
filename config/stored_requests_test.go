@@ -10,11 +10,13 @@ import (
 )
 
 const sampleQueryTemplate = "SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in %REQUEST_ID_LIST% UNION ALL SELECT id, impData, 'imp' as type FROM stored_requests WHERE id in %IMP_ID_LIST%"
+const sampleResponsesQueryTemplate = "SELECT id, responseData, 'response' as type FROM stored_responses WHERE id in %ID_LIST%"
 
 func TestNormalQueryMaker(t *testing.T) {
 	madeQuery := buildQuery(sampleQueryTemplate, 1, 3)
 	assertStringsEqual(t, madeQuery, "SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in ($1) UNION ALL SELECT id, impData, 'imp' as type FROM stored_requests WHERE id in ($2, $3, $4)")
 }
+
 func TestQueryMakerManyImps(t *testing.T) {
 	madeQuery := buildQuery(sampleQueryTemplate, 1, 11)
 	assertStringsEqual(t, madeQuery, "SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in ($1) UNION ALL SELECT id, impData, 'imp' as type FROM stored_requests WHERE id in ($2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)")
@@ -38,6 +40,26 @@ func TestQueryMakerMultilists(t *testing.T) {
 func TestQueryMakerNegative(t *testing.T) {
 	query := buildQuery(sampleQueryTemplate, -1, -2)
 	expected := buildQuery(sampleQueryTemplate, 0, 0)
+	assertStringsEqual(t, query, expected)
+}
+
+func TestNormalResponseQueryMaker(t *testing.T) {
+	madeQuery := buildQueryResponses(sampleResponsesQueryTemplate, 1)
+	assertStringsEqual(t, madeQuery, "SELECT id, responseData, 'response' as type FROM stored_responses WHERE id in ($1)")
+}
+func TestResponseQueryMakerManyIds(t *testing.T) {
+	madeQuery := buildQueryResponses(sampleResponsesQueryTemplate, 11)
+	assertStringsEqual(t, madeQuery, "SELECT id, responseData, 'response' as type FROM stored_responses WHERE id in ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)")
+}
+
+func TestResponsesQueryMakerNoIds(t *testing.T) {
+	madeQuery := buildQueryResponses(sampleResponsesQueryTemplate, 0)
+	assertStringsEqual(t, madeQuery, "SELECT id, responseData, 'response' as type FROM stored_responses WHERE id in (NULL)")
+}
+
+func TestResponseQueryMakerNegative(t *testing.T) {
+	query := buildQueryResponses(sampleResponsesQueryTemplate, -2)
+	expected := buildQueryResponses(sampleResponsesQueryTemplate, 0)
 	assertStringsEqual(t, query, expected)
 }
 
@@ -300,6 +322,13 @@ func buildQuery(template string, numReqs int, numImps int) string {
 	cfg.QueryTemplate = template
 
 	return cfg.MakeQuery(numReqs, numImps)
+}
+
+func buildQueryResponses(template string, numResps int) string {
+	cfg := PostgresFetcherQueries{}
+	cfg.QueryTemplate = template
+
+	return cfg.MakeQueryResponses(numResps)
 }
 
 func assertStringsEqual(t *testing.T, actual string, expected string) {

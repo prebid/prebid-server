@@ -12,25 +12,28 @@ import (
 	"github.com/prebid/prebid-server/stored_requests"
 )
 
-func NewFetcher(db *sql.DB, queryMaker func(int, int) string, queryMakerSingleArr func(int) string) stored_requests.AllFetcher {
+func NewFetcher(db *sql.DB, queryMaker func(int, int) string, responseQueryMaker func(int) string) stored_requests.AllFetcher {
 	if db == nil {
 		glog.Fatalf("The Postgres Stored Request Fetcher requires a database connection. Please report this as a bug.")
 	}
 	if queryMaker == nil {
 		glog.Fatalf("The Postgres Stored Request Fetcher requires a queryMaker function. Please report this as a bug.")
 	}
+	if responseQueryMaker == nil {
+		glog.Fatalf("The Postgres Stored Response Fetcher requires a responseQueryMaker function. Please report this as a bug.")
+	}
 	return &dbFetcher{
-		db:                    db,
-		queryMaker:            queryMaker,
-		queryMakerSingleArray: queryMakerSingleArr,
+		db:                 db,
+		queryMaker:         queryMaker,
+		responseQueryMaker: responseQueryMaker,
 	}
 }
 
 // dbFetcher fetches Stored Requests from a database. This should be instantiated through the NewFetcher() function.
 type dbFetcher struct {
-	db                    *sql.DB
-	queryMaker            func(numReqs int, numImps int) (query string)
-	queryMakerSingleArray func(numIds int) (query string)
+	db                 *sql.DB
+	queryMaker         func(numReqs int, numImps int) (query string)
+	responseQueryMaker func(numIds int) (query string)
 }
 
 func (fetcher *dbFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (map[string]json.RawMessage, map[string]json.RawMessage, []error) {
@@ -101,7 +104,7 @@ func (fetcher *dbFetcher) FetchResponses(ctx context.Context, ids []string) (dat
 		return nil, nil
 	}
 
-	query := fetcher.queryMakerSingleArray(len(ids))
+	query := fetcher.responseQueryMaker(len(ids))
 	idInterfaces := make([]interface{}, len(ids))
 	for i := 0; i < len(ids); i++ {
 		idInterfaces[i] = ids[i]

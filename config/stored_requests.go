@@ -341,8 +341,8 @@ func (cfg *PostgresFetcherQueries) MakeQuery(numReqs int, numImps int) (query st
 	return resolve(cfg.QueryTemplate, numReqs, numImps)
 }
 
-func (cfg *PostgresFetcherQueries) MakeQuerySingleArray(numIds int) (query string) {
-	return resolveSingleArrayQuery(cfg.QueryTemplate, numIds)
+func (cfg *PostgresFetcherQueries) MakeQueryResponses(numIds int) (query string) {
+	return resolveQueryResponses(cfg.QueryTemplate, numIds)
 }
 
 func resolve(template string, numReqs int, numImps int) (query string) {
@@ -354,7 +354,7 @@ func resolve(template string, numReqs int, numImps int) (query string) {
 	return
 }
 
-func resolveSingleArrayQuery(template string, numIds int) (query string) {
+func resolveQueryResponses(template string, numIds int) (query string) {
 	numIds = ensureNonNegative("Response", numIds)
 
 	query = strings.Replace(template, "%ID_LIST%", makeIdList(0, numIds), -1)

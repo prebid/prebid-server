@@ -219,7 +219,7 @@ func (e *PostgresEventProducer) sendEvents(rows *sql.Rows) (err error) {
 		return rows.Err()
 	}
 
-	if len(storedRequestData) > 0 || len(storedImpData) > 0 {
+	if len(storedRequestData) > 0 || len(storedImpData) > 0 || len(storedRespData) > 0 {
 		e.saves <- events.Save{
 			Requests:  storedRequestData,
 			Imps:      storedImpData,
@@ -227,10 +227,11 @@ func (e *PostgresEventProducer) sendEvents(rows *sql.Rows) (err error) {
 		}
 	}
 
-	if (len(requestInvalidations) > 0 || len(impInvalidations) > 0) && !e.lastUpdate.IsZero() {
+	if (len(requestInvalidations) > 0 || len(impInvalidations) > 0 || len(respInvalidations) > 0) && !e.lastUpdate.IsZero() {
 		e.invalidations <- events.Invalidation{
-			Requests: requestInvalidations,
-			Imps:     impInvalidations,
+			Requests:  requestInvalidations,
+			Imps:      impInvalidations,
+			Responses: respInvalidations,
 		}
 	}
 
