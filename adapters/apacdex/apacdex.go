@@ -131,15 +131,13 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 	for _, seatbid := range response.SeatBid {
 		for _, bid := range seatbid.Bid {
-			imp, err := getImpressionForBid(request.Imp, bid.ImpID)
+			imp, err := getImpressionForBid(request.Imp, bid)
 			if err != nil {
-				errors = append(errors, &errortypes.BadServerResponse{
-					Message: fmt.Sprintf("bid id='%s' could not find valid impid='%s'", bid.ID, bid.ImpID),
-				})
+				errors = append(errors, err)
 				continue
 			}
 
-			bidType := openrtb_ext.BidTypeBanner
+			var bidType openrtb_ext.BidType
 			if imp.Banner != nil {
 				bidType = openrtb_ext.BidTypeBanner
 			} else if imp.Video != nil {
@@ -148,7 +146,8 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 				bidType = openrtb_ext.BidTypeAudio
 			} else if imp.Native != nil {
 				bidType = openrtb_ext.BidTypeNative
-			} else {
+			}
+			if len(bidType) == 0 {
 				errors = append(errors, &errortypes.BadServerResponse{
 					Message: fmt.Sprintf("Unknown bidType for bid id='%s'", bid.ID),
 				})
@@ -164,11 +163,13 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	return bidResponse, errors
 }
 
-func getImpressionForBid(imps []openrtb2.Imp, impID string) (*openrtb2.Imp, error) {
+func getImpressionForBid(imps []openrtb2.Imp, bid openrtb2.Bid) (*openrtb2.Imp, error) {
 	for _, imp := range imps {
-		if imp.ID == impID {
+		if imp.ID == bid.ImpID {
 			return &imp, nil
 		}
 	}
-	return nil, fmt.Errorf("not found impression matched with ImpID=%s", impID)
+	return nil, &errortypes.BadServerResponse{
+		Message: fmt.Sprintf("Bid id='%s' could not find valid impid='%s'", bid.ID, bid.ImpID),
+	}
 }
