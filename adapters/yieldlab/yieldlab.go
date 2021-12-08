@@ -250,7 +250,7 @@ func (a *YieldlabAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 			if imp.Video != nil {
 				bidType = openrtb_ext.BidTypeVideo
 				responseBid.NURL = a.makeAdSourceURL(internalRequest, req, bid)
-
+				responseBid.AdM = a.makeVast(internalRequest, req, bid)
 			} else if imp.Banner != nil {
 				bidType = openrtb_ext.BidTypeBanner
 				responseBid.AdM = a.makeBannerAdSource(internalRequest, req, bid)
@@ -291,6 +291,10 @@ func (a *YieldlabAdapter) extractAdslotID(internalRequestImp openrtb2.Imp) strin
 
 func (a *YieldlabAdapter) makeBannerAdSource(req *openrtb2.BidRequest, ext *openrtb_ext.ExtImpYieldlab, res *bidResponse) string {
 	return fmt.Sprintf(adSourceBanner, a.makeAdSourceURL(req, ext, res))
+}
+
+func (a *YieldlabAdapter) makeVast(req *openrtb2.BidRequest, ext *openrtb_ext.ExtImpYieldlab, res *bidResponse) string {
+	return fmt.Sprintf(vastMarkup, ext.AdslotID, a.makeAdSourceURL(req, ext, res))
 }
 
 func (a *YieldlabAdapter) makeAdSourceURL(req *openrtb2.BidRequest, ext *openrtb_ext.ExtImpYieldlab, res *bidResponse) string {

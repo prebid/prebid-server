@@ -7,7 +7,8 @@
         "ext": {
           "bidder": {
             "videoResponseType": "adm",
-            "bidfloor": 1.01,
+            "bidfloor": 1.02,
+            "bidfloorcur": "USD",
             "appIds": {
               "banner": "bannerAppId1",
               "video": "videoAppId1"
@@ -36,6 +37,7 @@
           "bidder": {
             "videoResponsetype": "nurl",
             "bidfloor": 1.01,
+            "bidfloorcur": "USD",
             "appIds": {
               "banner": "bannerAppId2",
               "video": "videoAppId1"
@@ -75,7 +77,7 @@
             {
               "slot":"ComboADMVideoWithBannerImp1",
               "id":"bannerAppId1",
-              "bidfloor":1.01,
+              "bidfloor":1.02,
               "sizes":[
                 {
                   "w":300,
@@ -110,7 +112,7 @@
 
           },
           "adapterName":"BF_PREBID_S2S",
-          "adapterVersion":"0.9.2",
+          "adapterVersion":"1.0.0",
           "ip":"255.255.255.255",
           "requestId":"two-four-combo",
           "schain": {
@@ -159,7 +161,8 @@
                 "w":300,
                 "h":400
               },
-              "bidfloor":1.01,
+              "bidfloor":1.02,
+              "bidfloorcur": "USD",
               "secure":0
             }
           ],
@@ -229,6 +232,7 @@
                 "h":150
               },
               "bidfloor":1.01,
+              "bidfloorcur": "USD",
               "secure":0
             }
           ],

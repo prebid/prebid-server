@@ -104,15 +104,6 @@ func setUidStatusesAsString() []string {
 	return valuesAsString
 }
 
-func storedDataTypesAsString() []string {
-	values := metrics.StoredDataTypes()
-	valuesAsString := make([]string, len(values))
-	for i, v := range values {
-		valuesAsString[i] = string(v)
-	}
-	return valuesAsString
-}
-
 func storedDataFetchTypesAsString() []string {
 	values := metrics.StoredDataFetchTypes()
 	valuesAsString := make([]string, len(values))

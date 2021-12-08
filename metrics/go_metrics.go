@@ -18,7 +18,6 @@ type Metrics struct {
 	ConnectionAcceptErrorMeter     metrics.Meter
 	ConnectionCloseErrorMeter      metrics.Meter
 	ImpMeter                       metrics.Meter
-	LegacyImpMeter                 metrics.Meter
 	AppRequestMeter                metrics.Meter
 	NoCookieMeter                  metrics.Meter
 	RequestTimer                   metrics.Timer
@@ -101,9 +100,6 @@ type accountMetrics struct {
 	adapterMetrics map[openrtb_ext.BidderName]*AdapterMetrics
 }
 
-// Defining an "unknown" bidder
-const unknownBidder openrtb_ext.BidderName = "unknown"
-
 // NewBlankMetrics creates a new Metrics object with all blank metrics object. This may also be useful for
 // testing routines to ensure that no metrics are written anywhere.
 //
@@ -122,7 +118,6 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		ConnectionAcceptErrorMeter:     blankMeter,
 		ConnectionCloseErrorMeter:      blankMeter,
 		ImpMeter:                       blankMeter,
-		LegacyImpMeter:                 blankMeter,
 		AppRequestMeter:                blankMeter,
 		NoCookieMeter:                  blankMeter,
 		RequestTimer:                   blankTimer,
@@ -216,7 +211,6 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 	newMetrics.ConnectionAcceptErrorMeter = metrics.GetOrRegisterMeter("connection_accept_errors", registry)
 	newMetrics.ConnectionCloseErrorMeter = metrics.GetOrRegisterMeter("connection_close_errors", registry)
 	newMetrics.ImpMeter = metrics.GetOrRegisterMeter("imps_requested", registry)
-	newMetrics.LegacyImpMeter = metrics.GetOrRegisterMeter("legacy_imps_requested", registry)
 
 	newMetrics.ImpsTypeBanner = metrics.GetOrRegisterMeter("imp_banner", registry)
 	newMetrics.ImpsTypeVideo = metrics.GetOrRegisterMeter("imp_video", registry)
@@ -450,10 +444,6 @@ func (me *Metrics) RecordImps(labels ImpLabels) {
 	if labels.NativeImps {
 		me.ImpsTypeNative.Mark(int64(1))
 	}
-}
-
-func (me *Metrics) RecordLegacyImps(labels Labels, numImps int) {
-	me.LegacyImpMeter.Mark(int64(numImps))
 }
 
 func (me *Metrics) RecordConnectionAccept(success bool) {

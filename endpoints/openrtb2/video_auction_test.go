@@ -1435,19 +1435,3 @@ var testVideoStoredImpData = map[string]json.RawMessage{
 var testVideoStoredRequestData = map[string]json.RawMessage{
 	"80ce30c53c16e6ede735f123ef6e32361bfc7b22": json.RawMessage(`{"accountid": "11223344", "site": {"page": "mygame.foo.com"}}`),
 }
-
-func loadValidRequest(t *testing.T) *openrtb_ext.BidRequestVideo {
-	reqData, err := ioutil.ReadFile("sample-requests/video/video_valid_sample.json")
-	if err != nil {
-		t.Fatalf("Failed to fetch a valid request: %v", err)
-	}
-
-	reqBody := getRequestPayload(t, reqData)
-
-	reqVideo := &openrtb_ext.BidRequestVideo{}
-	if err := json.Unmarshal(reqBody, reqVideo); err != nil {
-		t.Fatalf("Failed to unmarshal the request: %v", err)
-	}
-
-	return reqVideo
-}

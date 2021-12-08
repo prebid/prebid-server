@@ -11,7 +11,9 @@
         "ext": {
           "bidder": {
             "sid": "testSid",
-            "token": "testToken"
+            "token": "testToken",
+            "placementId": "testPlacementId",
+            "appId": "testAppId"
           }
         }
       }
@@ -33,7 +35,9 @@
               "ext": {
                 "bidder": {
                   "sid": "testSid",
-                  "token": "testToken"
+                  "token": "testToken",
+                  "placementId": "testPlacementId",
+                  "appId": "testAppId"
                 }
               }
             }

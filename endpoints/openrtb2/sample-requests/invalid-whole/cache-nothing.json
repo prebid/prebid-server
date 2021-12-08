@@ -27,5 +27,5 @@
     }
   },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request: request.ext is invalid: request.ext.prebid.cache requires one of the \"bids\" or \"vastxml\" properties\n"
+  "expectedErrorMessage": "Invalid request: error decoding Request.ext : request.ext.prebid.cache requires one of the \"bids\" or \"vastxml\" properties\n"
 }

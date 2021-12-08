@@ -74,7 +74,6 @@ func NewFetcher(client *http.Client, endpoint string) *HttpFetcher {
 type HttpFetcher struct {
 	client     *http.Client
 	Endpoint   string
-	hasQuery   bool
 	Categories map[string]map[string]stored_requests.Category
 }
 

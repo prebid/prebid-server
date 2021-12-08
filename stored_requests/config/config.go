@@ -93,12 +93,12 @@ func CreateStoredRequests(cfg *config.StoredRequests, metricsEngine metrics.Metr
 	return
 }
 
-// NewStoredRequests returns five things:
+// NewStoredRequests returns:
 //
-// 1. A DB connection, if one was created. This may be nil.
-// 2. A function which should be called on shutdown for graceful cleanups.
-// 3. A Fetcher which can be used to get Stored Requests for /openrtb2/auction
-// 4. A Fetcher which can be used to get Stored Requests for /openrtb2/amp
+// 1. A function which should be called on shutdown for graceful cleanups.
+// 2. A Fetcher which can be used to get Stored Requests for /openrtb2/auction
+// 3. A Fetcher which can be used to get Stored Requests for /openrtb2/amp
+// 4. A Fetcher which can be used to get Account data
 // 5. A Fetcher which can be used to get Category Mapping data
 // 6. A Fetcher which can be used to get Stored Requests for /openrtb2/video
 //
@@ -107,7 +107,7 @@ func CreateStoredRequests(cfg *config.StoredRequests, metricsEngine metrics.Metr
 //
 // As a side-effect, it will add some endpoints to the router if the config calls for it.
 // In the future we should look for ways to simplify this so that it's not doing two things.
-func NewStoredRequests(cfg *config.Configuration, metricsEngine metrics.MetricsEngine, client *http.Client, router *httprouter.Router) (db *sql.DB, shutdown func(), fetcher stored_requests.Fetcher, ampFetcher stored_requests.Fetcher, accountsFetcher stored_requests.AccountFetcher, categoriesFetcher stored_requests.CategoryFetcher, videoFetcher stored_requests.Fetcher) {
+func NewStoredRequests(cfg *config.Configuration, metricsEngine metrics.MetricsEngine, client *http.Client, router *httprouter.Router) (shutdown func(), fetcher stored_requests.Fetcher, ampFetcher stored_requests.Fetcher, accountsFetcher stored_requests.AccountFetcher, categoriesFetcher stored_requests.CategoryFetcher, videoFetcher stored_requests.Fetcher) {
 	// TODO: Switch this to be set in config defaults
 	//if cfg.CategoryMapping.CacheEvents.Enabled && cfg.CategoryMapping.CacheEvents.Endpoint == "" {
 	//	cfg.CategoryMapping.CacheEvents.Endpoint = "/storedrequest/categorymapping"
@@ -120,8 +120,6 @@ func NewStoredRequests(cfg *config.Configuration, metricsEngine metrics.MetricsE
 	fetcher3, shutdown3 := CreateStoredRequests(&cfg.CategoryMapping, metricsEngine, client, router, &dbc)
 	fetcher4, shutdown4 := CreateStoredRequests(&cfg.StoredVideo, metricsEngine, client, router, &dbc)
 	fetcher5, shutdown5 := CreateStoredRequests(&cfg.Accounts, metricsEngine, client, router, &dbc)
-
-	db = dbc.db
 
 	fetcher = fetcher1.(stored_requests.Fetcher)
 	ampFetcher = fetcher2.(stored_requests.Fetcher)
