@@ -68,7 +68,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "bid id='test-bid-id' could not find valid impid='another-imp-id'",
+      "value": "Bid id='test-bid-id' could not find valid impid='another-imp-id'",
       "comparison": "regex"
     }
 ]
