@@ -397,7 +397,9 @@ func addMissingReqExtParamsInImpExtPrebid(impExtBidder map[string]map[string]jso
 			}
 
 			var params map[string]json.RawMessage
-			err := json.Unmarshal(bidderExt, &params)
+			if err := json.Unmarshal(bidderExt, &params); err != nil {
+				return err
+			}
 
 			for key, value := range reqExtParams[bidder] {
 				if _, present := params[key]; !present {
