@@ -21,7 +21,7 @@ const MaxDecimalFigures int = 15
 
 // ExtRequest defines the contract for bidrequest.ext
 type ExtRequest struct {
-	Prebid ExtRequestPrebid `json:"prebid"`
+	Prebid ExtRequestPrebid              `json:"prebid"`
 	SChain *ExtRequestPrebidSChainSChain `json:"schain,omitempty"`
 }
 

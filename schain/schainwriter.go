@@ -40,14 +40,14 @@ func newORTBTwoFiveSChainWriter(schains []*openrtb_ext.ExtRequestPrebidSChain) (
 }
 
 // ORTBTwoFiveSChainWriter implements the SChainWriter interface and is used to write the appropriate schain
-// for a particular bidder defined in the ORTB 2.5 multi-schain location (req.ext.prebid.schain) to the 
+// for a particular bidder defined in the ORTB 2.5 multi-schain location (req.ext.prebid.schain) to the
 // ORTB 2.5 location (req.source.ext)
 type ORTBTwoFiveSChainWriter struct {
 	sChainsByBidder map[string]*openrtb_ext.ExtRequestPrebidSChainSChain
 }
 
 // Write selects an schain from the multi-schain ORTB 2.5 location (req.ext.prebid.schains) for the specified bidder
-// and copies it to the ORTB 2.5 location (req.source.ext). If no schain exists for the bidder in the multi-schain 
+// and copies it to the ORTB 2.5 location (req.source.ext). If no schain exists for the bidder in the multi-schain
 // location and no wildcard schain exists, the request is not modified.
 func (w ORTBTwoFiveSChainWriter) Write(req *openrtb2.BidRequest, bidder string) {
 	const sChainWildCard = "*"

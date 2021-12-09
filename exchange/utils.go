@@ -200,7 +200,7 @@ func unpackSourceExt(bidRequest *openrtb2.BidRequest) (*openrtb_ext.ExtSource, e
 	if bidRequest.Source == nil || bidRequest.Source.Ext == nil {
 		return nil, nil
 	}
-	
+
 	if len(bidRequest.Source.Ext) > 0 {
 		err := json.Unmarshal(bidRequest.Source.Ext, &sourceExt)
 		if err != nil {

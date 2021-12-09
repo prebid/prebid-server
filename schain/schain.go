@@ -6,7 +6,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-// BidderToPrebidSChains organizes the ORTB 2.5 multiple root schain nodes into a map of schain nodes by bidder 
+// BidderToPrebidSChains organizes the ORTB 2.5 multiple root schain nodes into a map of schain nodes by bidder
 func BidderToPrebidSChains(sChains []*openrtb_ext.ExtRequestPrebidSChain) (map[string]*openrtb_ext.ExtRequestPrebidSChainSChain, error) {
 	bidderToSChains := make(map[string]*openrtb_ext.ExtRequestPrebidSChainSChain)
 
