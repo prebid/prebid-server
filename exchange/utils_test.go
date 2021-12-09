@@ -249,6 +249,7 @@ func TestCreateSanitizedImpExt(t *testing.T) {
 				"data":    json.RawMessage(`"anyData"`),
 				"context": json.RawMessage(`"anyContext"`),
 				"skadn":   json.RawMessage(`"anySKAdNetwork"`),
+				"gpid":    json.RawMessage(`"anyGPID"`),
 			},
 			givenImpExtPrebid: map[string]json.RawMessage{
 				"bidder": json.RawMessage(`"anyBidder"`),
@@ -257,6 +258,7 @@ func TestCreateSanitizedImpExt(t *testing.T) {
 				"data":    json.RawMessage(`"anyData"`),
 				"context": json.RawMessage(`"anyContext"`),
 				"skadn":   json.RawMessage(`"anySKAdNetwork"`),
+				"gpid":    json.RawMessage(`"anyGPID"`),
 			},
 			expectedError: "",
 		},
@@ -267,6 +269,7 @@ func TestCreateSanitizedImpExt(t *testing.T) {
 				"data":    json.RawMessage(`"anyData"`),
 				"context": json.RawMessage(`"anyContext"`),
 				"skadn":   json.RawMessage(`"anySKAdNetwork"`),
+				"gpid":    json.RawMessage(`"anyGPID"`),
 			},
 			givenImpExtPrebid: map[string]json.RawMessage{
 				"bidder":    json.RawMessage(`"anyBidder"`),
@@ -277,6 +280,7 @@ func TestCreateSanitizedImpExt(t *testing.T) {
 				"data":    json.RawMessage(`"anyData"`),
 				"context": json.RawMessage(`"anyContext"`),
 				"skadn":   json.RawMessage(`"anySKAdNetwork"`),
+				"gpid":    json.RawMessage(`"anyGPID"`),
 			},
 			expectedError: "",
 		},
@@ -287,12 +291,14 @@ func TestCreateSanitizedImpExt(t *testing.T) {
 				"data":      json.RawMessage(`"anyData"`),
 				"context":   json.RawMessage(`"anyContext"`),
 				"skadn":     json.RawMessage(`"anySKAdNetwork"`),
+				"gpid":      json.RawMessage(`"anyGPID"`),
 			},
 			givenImpExtPrebid: map[string]json.RawMessage{},
 			expected: map[string]json.RawMessage{
 				"data":    json.RawMessage(`"anyData"`),
 				"context": json.RawMessage(`"anyContext"`),
 				"skadn":   json.RawMessage(`"anySKAdNetwork"`),
+				"gpid":    json.RawMessage(`"anyGPID"`),
 			},
 			expectedError: "",
 		},
@@ -304,6 +310,7 @@ func TestCreateSanitizedImpExt(t *testing.T) {
 				"data":      json.RawMessage(`"anyData"`),
 				"context":   json.RawMessage(`"anyContext"`),
 				"skadn":     json.RawMessage(`"anySKAdNetwork"`),
+				"gpid":      json.RawMessage(`"anyGPID"`),
 			},
 			givenImpExtPrebid: map[string]json.RawMessage{
 				"bidder": json.RawMessage(`"anyBidder"`),
@@ -312,6 +319,7 @@ func TestCreateSanitizedImpExt(t *testing.T) {
 				"data":    json.RawMessage(`"anyData"`),
 				"context": json.RawMessage(`"anyContext"`),
 				"skadn":   json.RawMessage(`"anySKAdNetwork"`),
+				"gpid":    json.RawMessage(`"anyGPID"`),
 			},
 			expectedError: "",
 		},
@@ -323,6 +331,7 @@ func TestCreateSanitizedImpExt(t *testing.T) {
 				"data":      json.RawMessage(`"anyData"`),
 				"context":   json.RawMessage(`"anyContext"`),
 				"skadn":     json.RawMessage(`"anySKAdNetwork"`),
+				"gpid":      json.RawMessage(`"anyGPID"`),
 			},
 			givenImpExtPrebid: map[string]json.RawMessage{
 				"bidder":    json.RawMessage(`"anyBidder"`),
@@ -333,6 +342,7 @@ func TestCreateSanitizedImpExt(t *testing.T) {
 				"data":    json.RawMessage(`"anyData"`),
 				"context": json.RawMessage(`"anyContext"`),
 				"skadn":   json.RawMessage(`"anySKAdNetwork"`),
+				"gpid":    json.RawMessage(`"anyGPID"`),
 			},
 			expectedError: "",
 		},
@@ -343,6 +353,7 @@ func TestCreateSanitizedImpExt(t *testing.T) {
 				"data":    json.RawMessage(`"anyData"`),
 				"context": json.RawMessage(`"anyContext"`),
 				"skadn":   json.RawMessage(`"anySKAdNetwork"`),
+				"gpid":    json.RawMessage(`"anyGPID"`),
 			},
 			givenImpExtPrebid: map[string]json.RawMessage{
 				"malformed": json.RawMessage(`json`), // String value without quotes.
@@ -401,7 +412,7 @@ func TestExtractBidderExts(t *testing.T) {
 		},
 		{
 			description:              "Special Names Ignored - imp.ext.BIDDER",
-			givenImpExt:              map[string]json.RawMessage{"prebid": json.RawMessage(`{"prebid":"value1"}}`), "context": json.RawMessage(`{"firstPartyData":"value2"}}`), "skadn": json.RawMessage(`{"skAdNetwork":"value3"}}`)},
+			givenImpExt:              map[string]json.RawMessage{"prebid": json.RawMessage(`{"prebid":"value1"}}`), "context": json.RawMessage(`{"firstPartyData":"value2"}}`), "skadn": json.RawMessage(`{"skAdNetwork":"value3"}}`), "gpid": json.RawMessage(`{"gpid":"value4"}}`)},
 			givenImpExtPrebidBidders: map[string]json.RawMessage{},
 			expected:                 map[string]json.RawMessage{},
 		},
@@ -420,8 +431,8 @@ func TestExtractBidderExts(t *testing.T) {
 		{
 			description:              "Special Names Not Treated Differently - imp.ext.prebid.bidder.BIDDER",
 			givenImpExt:              map[string]json.RawMessage{},
-			givenImpExtPrebidBidders: map[string]json.RawMessage{"prebid": json.RawMessage(`{"prebid":"value1"}}`), "context": json.RawMessage(`{"firstPartyData":"value2"}}`), "skadn": json.RawMessage(`{"skAdNetwork":"value3"}}`)},
-			expected:                 map[string]json.RawMessage{"prebid": json.RawMessage(`{"prebid":"value1"}}`), "context": json.RawMessage(`{"firstPartyData":"value2"}}`), "skadn": json.RawMessage(`{"skAdNetwork":"value3"}}`)},
+			givenImpExtPrebidBidders: map[string]json.RawMessage{"prebid": json.RawMessage(`{"prebid":"value1"}}`), "context": json.RawMessage(`{"firstPartyData":"value2"}}`), "skadn": json.RawMessage(`{"skAdNetwork":"value3"}}`), "gpid": json.RawMessage(`{"gpid":"value4"}}`)},
+			expected:                 map[string]json.RawMessage{"prebid": json.RawMessage(`{"prebid":"value1"}}`), "context": json.RawMessage(`{"firstPartyData":"value2"}}`), "skadn": json.RawMessage(`{"skAdNetwork":"value3"}}`), "gpid": json.RawMessage(`{"gpid":"value4"}}`)},
 		},
 		{
 			description:              "Mixed - Both - imp.ext.BIDDER + imp.ext.prebid.bidder.BIDDER",

@@ -29,7 +29,6 @@ func (name *BidderName) String() string {
 // Names of reserved bidders. These names may not be used by a core bidder or alias.
 const (
 	BidderReservedAll     BidderName = "all"     // Reserved for the /info/bidders/all endpoint.
-	BidderReservedBidder  BidderName = "bidder"  // Reserved for passing bidder parameters.
 	BidderReservedContext BidderName = "context" // Reserved for first party data.
 	BidderReservedData    BidderName = "data"    // Reserved for first party data.
 	BidderReservedGeneral BidderName = "general" // Reserved for non-bidder specific messages when using a map keyed on the bidder name.
@@ -41,10 +40,6 @@ const (
 // IsBidderNameReserved returns true if the specified name is a case insensitive match for a reserved bidder name.
 func IsBidderNameReserved(name string) bool {
 	if strings.EqualFold(name, string(BidderReservedAll)) {
-		return true
-	}
-
-	if strings.EqualFold(name, string(BidderReservedBidder)) {
 		return true
 	}
 
