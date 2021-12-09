@@ -305,7 +305,7 @@ func parseImpressionObject(imp *openrtb2.Imp, extractWrapperExtFromImp, extractP
 // extractPubmaticWrapperExtFromRequest parse the imp to get it ready to send to pubmatic
 func extractPubmaticWrapperExtFromRequest(request *openrtb2.BidRequest) (*pubmaticWrapperExt, error) {
 	var wrpExt pubmaticWrapperExt
-	reqExtBidderParams, err := adapters.ExtractAdapterReqBidderParams(request)
+	reqExtBidderParams, err := adapters.ExtractReqExtBidderParamsMap(request)
 	if err != nil {
 		return nil, err
 	}

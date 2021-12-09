@@ -223,7 +223,7 @@ func getAuctionBidderRequests(req AuctionRequest,
 		return nil, []error{err}
 	}
 
-	bidderParamsInReqExt, err := adapters.ExtractReqExtBidderParams(req.BidRequest)
+	bidderParamsInReqExt, err := adapters.ExtractReqExtBidderParamsEmbeddedMap(req.BidRequest)
 	if err != nil {
 		return nil, []error{err}
 	}

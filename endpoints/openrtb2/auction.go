@@ -336,17 +336,17 @@ func parseTimeout(requestJson []byte, defaultTimeout time.Duration) time.Duratio
 // Preference is given to parameters at imp[].ext level over req.ext level.
 // Parameters at req.ext level are propagated to adapters as is without any validation.
 func mergeBidderParams(req *openrtb_ext.RequestWrapper) error {
-	reqBidderParams, err := adapters.ExtractReqExtBidderParams(req.BidRequest)
+	reqBidderParams, err := adapters.ExtractReqExtBidderParamsEmbeddedMap(req.BidRequest)
 	if err != nil {
 		return err
 	}
 
-	impCpy := make([]openrtb2.Imp, 0, len(req.BidRequest.Imp))
+	imps := make([]openrtb2.Imp, 0, len(req.BidRequest.Imp))
 	for _, imp := range req.BidRequest.Imp {
 		updatedImp := imp
 
 		if len(imp.Ext) == 0 {
-			impCpy = append(impCpy, updatedImp)
+			imps = append(imps, updatedImp)
 			continue
 		}
 
@@ -373,10 +373,10 @@ func mergeBidderParams(req *openrtb_ext.RequestWrapper) error {
 			return fmt.Errorf("error marshalling imp[].ext : %s", err.Error())
 		}
 		updatedImp.Ext = iExt
-		impCpy = append(impCpy, updatedImp)
+		imps = append(imps, updatedImp)
 	}
 
-	req.BidRequest.Imp = impCpy
+	req.BidRequest.Imp = imps
 	return nil
 }
 
