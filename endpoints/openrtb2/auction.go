@@ -1169,15 +1169,17 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb2.Imp, aliases map[string]s
 // isBidderToValidate determines if the bidder name in request.imp[].prebid should be validated.
 func isBidderToValidate(bidder string) bool {
 	switch openrtb_ext.BidderName(bidder) {
+	case openrtb_ext.BidderReservedBidder:
+		return false
 	case openrtb_ext.BidderReservedContext:
 		return false
 	case openrtb_ext.BidderReservedData:
 		return false
+	case openrtb_ext.BidderReservedGPID:
+		return false
 	case openrtb_ext.BidderReservedPrebid:
 		return false
 	case openrtb_ext.BidderReservedSKAdN:
-		return false
-	case openrtb_ext.BidderReservedBidder:
 		return false
 	default:
 		return true

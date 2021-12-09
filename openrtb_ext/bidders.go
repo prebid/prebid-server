@@ -29,17 +29,22 @@ func (name *BidderName) String() string {
 // Names of reserved bidders. These names may not be used by a core bidder or alias.
 const (
 	BidderReservedAll     BidderName = "all"     // Reserved for the /info/bidders/all endpoint.
+	BidderReservedBidder  BidderName = "bidder"  // Reserved for passing bidder parameters.
 	BidderReservedContext BidderName = "context" // Reserved for first party data.
 	BidderReservedData    BidderName = "data"    // Reserved for first party data.
 	BidderReservedGeneral BidderName = "general" // Reserved for non-bidder specific messages when using a map keyed on the bidder name.
+	BidderReservedGPID    BidderName = "gpid"    // Reserved for Global Placement ID (GPID).
 	BidderReservedPrebid  BidderName = "prebid"  // Reserved for Prebid Server configuration.
 	BidderReservedSKAdN   BidderName = "skadn"   // Reserved for Apple's SKAdNetwork OpenRTB extension.
-	BidderReservedBidder  BidderName = "bidder"  // Reserved for passing bidder parameters.
 )
 
 // IsBidderNameReserved returns true if the specified name is a case insensitive match for a reserved bidder name.
 func IsBidderNameReserved(name string) bool {
 	if strings.EqualFold(name, string(BidderReservedAll)) {
+		return true
+	}
+
+	if strings.EqualFold(name, string(BidderReservedBidder)) {
 		return true
 	}
 
@@ -55,15 +60,15 @@ func IsBidderNameReserved(name string) bool {
 		return true
 	}
 
+	if strings.EqualFold(name, string(BidderReservedGPID)) {
+		return true
+	}
+
 	if strings.EqualFold(name, string(BidderReservedSKAdN)) {
 		return true
 	}
 
 	if strings.EqualFold(name, string(BidderReservedPrebid)) {
-		return true
-	}
-
-	if strings.EqualFold(name, string(BidderReservedBidder)) {
 		return true
 	}
 
