@@ -4371,13 +4371,6 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 			expectedReqExt:     getObject(t, "req-ext-bidder-params-backward-compatible-merge.json", "expectedReqExt"),
 			expectedErrorCount: 0,
 		},
-		{
-			name:               "add missing bidder-params from req.ext.prebid.bidderparams to imp[].ext.prebid.bidder for reserved keyword",
-			givenRequestBody:   validRequest(t, "req-ext-bidder-params-merge-reserved-keyword.json"),
-			expectedImpExt:     getObject(t, "req-ext-bidder-params-merge-reserved-keyword.json", "expectedImpExt"),
-			expectedReqExt:     getObject(t, "req-ext-bidder-params-merge-reserved-keyword.json", "expectedReqExt"),
-			expectedErrorCount: 0,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
