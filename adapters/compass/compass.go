@@ -16,6 +16,16 @@ type adapter struct {
 	endpoint string
 }
 
+type reqBodyExt struct {
+	CompassBidderExt reqBodyExtBidder `json:"bidder"`
+}
+
+type reqBodyExtBidder struct {
+	Type        string `json:"type"`
+	PlacementID string `json:"placementId,omitempty"`
+	EndpointID  string `json:"endpointId,omitempty"`
+}
+
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,
@@ -42,27 +52,19 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			return nil, append(errs, err)
 		}
 
-		finalyImpExt := reqCopy.Imp[0].Ext
+		temp := reqBodyExt{CompassBidderExt: reqBodyExtBidder{}}
+
 		if compassExt.PlacementID != "" {
-			finalyImpExt, err = json.Marshal(map[string]interface{}{
-				"bidder": map[string]string{
-					"placementId": compassExt.PlacementID,
-					"type":        "publisher",
-				},
-			})
-			if err != nil {
-				return nil, append(errs, err)
-			}
+			temp.CompassBidderExt.PlacementID = compassExt.PlacementID
+			temp.CompassBidderExt.Type = "publisher"
 		} else if compassExt.EndpointID != "" {
-			finalyImpExt, err = json.Marshal(map[string]interface{}{
-				"bidder": map[string]string{
-					"endpointId": compassExt.EndpointID,
-					"type":       "network",
-				},
-			})
-			if err != nil {
-				return nil, append(errs, err)
-			}
+			temp.CompassBidderExt.EndpointID = compassExt.EndpointID
+			temp.CompassBidderExt.Type = "network"
+		}
+
+		finalyImpExt, err := json.Marshal(temp)
+		if err != nil {
+			return nil, append(errs, err)
 		}
 
 		reqCopy.Imp[0].Ext = finalyImpExt
