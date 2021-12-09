@@ -4048,51 +4048,40 @@ func TestValidateBanner(t *testing.T) {
 }
 
 func TestParseRequestMergeBidderParams(t *testing.T) {
-	type args struct {
-		reqBody string
-	}
 	tests := []struct {
-		name           string
-		args           args
-		expectedImpExt json.RawMessage
-		expectedReqExt json.RawMessage
-		errL           int
+		name               string
+		givenRequestBody   string
+		expectedImpExt     json.RawMessage
+		expectedReqExt     json.RawMessage
+		expectedErrorCount int
 	}{
 		{
-			name: "add missing bidder-params from req.ext.prebid.bidderparams to imp[].ext.prebid.bidder",
-			args: args{
-				reqBody: validRequest(t, "req-ext-bidder-params.json"),
-			},
-			expectedImpExt: getObject(t, "req-ext-bidder-params.json", "expectedImpExt"),
-			expectedReqExt: getObject(t, "req-ext-bidder-params.json", "expectedReqExt"),
-			errL:           0,
+			name:               "add missing bidder-params from req.ext.prebid.bidderparams to imp[].ext.prebid.bidder",
+			givenRequestBody:   validRequest(t, "req-ext-bidder-params.json"),
+			expectedImpExt:     getObject(t, "req-ext-bidder-params.json", "expectedImpExt"),
+			expectedReqExt:     getObject(t, "req-ext-bidder-params.json", "expectedReqExt"),
+			expectedErrorCount: 0,
 		},
 		{
-			name: "add missing bidder-params from req.ext.prebid.bidderparams to imp[].ext.prebid.bidder with preference for imp[].ext.prebid.bidder params",
-			args: args{
-				reqBody: validRequest(t, "req-ext-bidder-params-merge.json"),
-			},
-			expectedImpExt: getObject(t, "req-ext-bidder-params-merge.json", "expectedImpExt"),
-			expectedReqExt: getObject(t, "req-ext-bidder-params-merge.json", "expectedReqExt"),
-			errL:           0,
+			name:               "add missing bidder-params from req.ext.prebid.bidderparams to imp[].ext.prebid.bidder with preference for imp[].ext.prebid.bidder params",
+			givenRequestBody:   validRequest(t, "req-ext-bidder-params-merge.json"),
+			expectedImpExt:     getObject(t, "req-ext-bidder-params-merge.json", "expectedImpExt"),
+			expectedReqExt:     getObject(t, "req-ext-bidder-params-merge.json", "expectedReqExt"),
+			expectedErrorCount: 0,
 		},
 		{
-			name: "add missing bidder-params from req.ext.prebid.bidderparams to imp[].ext for backward compatibility",
-			args: args{
-				reqBody: validRequest(t, "req-ext-bidder-params-backward-compatible-merge.json"),
-			},
-			expectedImpExt: getObject(t, "req-ext-bidder-params-backward-compatible-merge.json", "expectedImpExt"),
-			expectedReqExt: getObject(t, "req-ext-bidder-params-backward-compatible-merge.json", "expectedReqExt"),
-			errL:           0,
+			name:               "add missing bidder-params from req.ext.prebid.bidderparams to imp[].ext for backward compatibility",
+			givenRequestBody:   validRequest(t, "req-ext-bidder-params-backward-compatible-merge.json"),
+			expectedImpExt:     getObject(t, "req-ext-bidder-params-backward-compatible-merge.json", "expectedImpExt"),
+			expectedReqExt:     getObject(t, "req-ext-bidder-params-backward-compatible-merge.json", "expectedReqExt"),
+			expectedErrorCount: 0,
 		},
 		{
-			name: "add missing bidder-params from req.ext.prebid.bidderparams to imp[].ext.prebid.bidder for reserved keyword",
-			args: args{
-				reqBody: validRequest(t, "req-ext-bidder-params-merge-reserved-keyword.json"),
-			},
-			expectedImpExt: getObject(t, "req-ext-bidder-params-merge-reserved-keyword.json", "expectedImpExt"),
-			expectedReqExt: getObject(t, "req-ext-bidder-params-merge-reserved-keyword.json", "expectedReqExt"),
-			errL:           0,
+			name:               "add missing bidder-params from req.ext.prebid.bidderparams to imp[].ext.prebid.bidder for reserved keyword",
+			givenRequestBody:   validRequest(t, "req-ext-bidder-params-merge-reserved-keyword.json"),
+			expectedImpExt:     getObject(t, "req-ext-bidder-params-merge-reserved-keyword.json", "expectedImpExt"),
+			expectedReqExt:     getObject(t, "req-ext-bidder-params-merge-reserved-keyword.json", "expectedReqExt"),
+			expectedErrorCount: 0,
 		},
 	}
 	for _, tt := range tests {
@@ -4105,7 +4094,7 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 				&mockStoredReqFetcher{},
 				empty_fetcher.EmptyFetcher{},
 				empty_fetcher.EmptyFetcher{},
-				&config.Configuration{MaxRequestSize: int64(len(tt.args.reqBody))},
+				&config.Configuration{MaxRequestSize: int64(len(tt.givenRequestBody))},
 				&metricsConfig.NilMetricsEngine{},
 				analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 				map[string]string{},
@@ -4117,7 +4106,7 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 				hardcodedResponseIPValidator{response: true},
 			}
 
-			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(tt.args.reqBody))
+			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(tt.givenRequestBody))
 
 			resReq, _, errL := deps.parseRequest(req)
 
@@ -4140,7 +4129,7 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 
 			assert.Equal(t, eReqE, reqE, "req.Ext should match")
 
-			assert.Len(t, errL, tt.errL, "error length should match")
+			assert.Len(t, errL, tt.expectedErrorCount, "error length should match")
 		})
 	}
 }
