@@ -102,6 +102,8 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 				Price: amount,
 				AdM:   response.Content,
 				NURL:  response.WinURL,
+				W:     100,
+				H:     100,
 			},
 			BidType: openrtb_ext.BidTypeBanner,
 		}
