@@ -826,83 +826,67 @@ func TestCleanOpenRTBRequestsCOPPA(t *testing.T) {
 }
 
 func TestCleanOpenRTBRequestsSChain(t *testing.T) {
+	const seller1SChain string = `"schain":{"complete":1,"nodes":[{"asi":"directseller1.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}`
+	const seller2SChain string = `"schain":{"complete":2,"nodes":[{"asi":"directseller2.com","sid":"00002","rid":"BidRequest2","hp":2}],"ver":"2.0"}`
+
 	testCases := []struct {
 		description   string
 		inExt         json.RawMessage
 		inSourceExt   json.RawMessage
-		outSourceExt  json.RawMessage
 		outRequestExt json.RawMessage
+		outSourceExt  json.RawMessage
 		hasError      bool
 	}{
 		{
-			description:   "Empty root ext and source ext, nil unmarshaled ext",
-			inExt:         nil,
-			inSourceExt:   json.RawMessage(``),
-			outSourceExt:  json.RawMessage(``),
-			outRequestExt: json.RawMessage(``),
-			hasError:      false,
-		},
-		{
-			description:   "Empty root ext, source ext, and unmarshaled ext",
-			inExt:         json.RawMessage(``),
-			inSourceExt:   json.RawMessage(``),
-			outSourceExt:  json.RawMessage(``),
-			outRequestExt: json.RawMessage(``),
-			hasError:      false,
-		},
-		{
-			description:   "No schains in root ext and empty source ext. Unmarshaled ext is equivalent to root ext",
-			inSourceExt:   json.RawMessage(``),
-			inExt:         json.RawMessage(`{"prebid":{"schains":[]}}`),
-			outSourceExt:  json.RawMessage(``),
-			outRequestExt: json.RawMessage(`{"prebid":{}}`),
-			hasError:      false,
-		},
-		{
-			description:   "Use source schain -- no bidder schain or wildcard schain in ext.prebid.schains. Unmarshaled ext is equivalent to root ext",
-			inSourceExt:   json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"example.com","sid":"example1","rid":"ExampleReq1","hp":1}],"ver":"1.0"}}`),
-			inExt:         json.RawMessage(`{"prebid":{"schains":[{"bidders":["bidder1"],"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}]}}`),
-			outSourceExt:  json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"example.com","sid":"example1","rid":"ExampleReq1","hp":1}],"ver":"1.0"}}`),
-			outRequestExt: json.RawMessage(`{"prebid":{}}`),
-			hasError:      false,
-		},
-		{
-			description:   "Use schain for bidder in ext.prebid.schains. Unmarshaled ext is equivalent to root ext",
-			inSourceExt:   json.RawMessage(``),
-			inExt:         json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}]}}`),
-			outSourceExt:  json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}`),
-			outRequestExt: json.RawMessage(`{"prebid":{}}`),
-			hasError:      false,
-		},
-		{
-			description:   "Use wildcard schain in ext.prebid.schains. Unmarshaled ext is equivalent to root ext",
-			inSourceExt:   json.RawMessage(``),
-			inExt:         json.RawMessage(`{"prebid":{"schains":[{"bidders":["*"],"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}]}}`),
-			outSourceExt:  json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}`),
-			outRequestExt: json.RawMessage(`{"prebid":{}}`),
-			hasError:      false,
-		},
-		{
-			description:   "Use schain for bidder in ext.prebid.schains instead of wildcard. Unmarshaled ext is equivalent to root ext",
-			inSourceExt:   json.RawMessage(``),
-			inExt:         json.RawMessage(`{"prebid":{"aliases":{"appnexus":"alias1"},"schains":[{"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}, {"bidders":["*"],"schain":{"complete":1,"nodes":[{"asi":"wildcard.com","sid":"wildcard1","rid":"WildcardReq1","hp":1}],"ver":"1.0"}} ]}}`),
-			outSourceExt:  json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}`),
-			outRequestExt: json.RawMessage(`{"prebid":{"aliases":{"appnexus":"alias1"}}}`),
-			hasError:      false,
-		},
-		{
-			description:   "Use source schain -- multiple (two) bidder schains in ext.prebid.schains. Unmarshaled ext is equivalent to root ext",
-			inSourceExt:   json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"example.com","sid":"example1","rid":"ExampleReq1","hp":1}],"ver":"1.0"}}`),
-			inExt:         json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller1.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}, {"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller2.com","sid":"00002","rid":"BidRequest2","hp":1}],"ver":"1.0"}}]}}`),
+			description:   "source.ext is nil",
+			inExt:         json.RawMessage{},
+			inSourceExt:   nil,
+			outRequestExt: json.RawMessage{},
 			outSourceExt:  nil,
+		},
+		{
+			description:   "source.ext is defined with length 0",
+			inExt:         json.RawMessage{},
+			inSourceExt:   json.RawMessage{},
+			outRequestExt: json.RawMessage{},
+			outSourceExt:  json.RawMessage{},
+		},
+		{
+			description:   "ORTB 2.5 chain at source.ext.schain",
+			inExt:         json.RawMessage{},
+			inSourceExt:   json.RawMessage(`{` + seller1SChain + `}`),
+			outRequestExt: json.RawMessage{},
+			outSourceExt:  json.RawMessage(`{` + seller1SChain + `}`),
+		},
+		{
+			description:   "ORTB 2.5 schain at request.ext.prebid.schains",
+			inExt:         json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],` + seller1SChain + `}]}}`),
+			inSourceExt:   json.RawMessage{},
+			outRequestExt: json.RawMessage(`{"prebid":{}}`),
+			outSourceExt:  json.RawMessage(`{` + seller1SChain + `}`),
+		},
+		{
+			description:   "ORTB 2.4 schain at request.ext.prebid.schains",
+			inExt:         json.RawMessage(`{` + seller1SChain + `}`),
+			inSourceExt:   json.RawMessage{},
+			outRequestExt: json.RawMessage(`{"prebid":{}}`),
+			outSourceExt:  json.RawMessage(`{` + seller1SChain + `}`),
+		},
+		{
+			description:   "schainwriter instantation error -- multiple bidder schains in ext.prebid.schains.",
+			inExt:         json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],` + seller1SChain + `},{"bidders":["appnexus"],` + seller2SChain + `}]}}`),
+			inSourceExt:   json.RawMessage(`{` + seller1SChain + `}`),
 			outRequestExt: nil,
+			outSourceExt:  nil,
 			hasError:      true,
 		},
 	}
 
 	for _, test := range testCases {
 		req := newBidRequest(t)
-		req.Source.Ext = test.inSourceExt
+		if test.inSourceExt != nil {
+			req.Source.Ext = test.inSourceExt
+		}
 
 		var extRequest *openrtb_ext.ExtRequest
 		if test.inExt != nil {

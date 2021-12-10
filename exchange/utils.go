@@ -315,6 +315,7 @@ func getExtJson(req *openrtb2.BidRequest, unpackedExt *openrtb_ext.ExtRequest) (
 
 	extCopy := *unpackedExt
 	extCopy.Prebid.SChains = nil
+	extCopy.SChain = nil
 	return json.Marshal(extCopy)
 }
 
