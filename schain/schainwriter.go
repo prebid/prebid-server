@@ -119,15 +119,33 @@ func (w ORTBTwoFourSChainWriter) Write(req *openrtb2.BidRequest, bidder string) 
 
 // extPrebidSChainExists checks if an schain exists in the ORTB 2.5 req.ext.prebid.schain location
 func extPrebidSChainExists(reqExt *openrtb_ext.ExtRequest) bool {
-	return reqExt != nil && reqExt.Prebid.SChains != nil
+	if reqExt == nil {
+		return false
+	}
+	if reqExt.Prebid.SChains == nil {
+		return false
+	}
+	return true
 }
 
 // sourceExtSChainExists checks if an schain exists in the ORTB 2.5 req.source.ext.schain location
 func sourceExtSChainExists(reqSourceExt *openrtb_ext.ExtSource) bool {
-	return reqSourceExt != nil && reqSourceExt.SChain != nil
+	if reqSourceExt == nil {
+		return false
+	}
+	if reqSourceExt.SChain == nil {
+		return false
+	}
+	return true
 }
 
 // extSChainExists checks if an schain exists in the ORTB 2.4 req.ext.schain location
 func extSChainExists(reqExt *openrtb_ext.ExtRequest) bool {
-	return reqExt != nil && reqExt.SChain != nil
+	if reqExt == nil {
+		return false
+	}
+	if reqExt.SChain == nil {
+		return false
+	}
+	return true
 }

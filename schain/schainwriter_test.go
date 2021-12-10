@@ -17,10 +17,23 @@ func TestNewSChainWriter(t *testing.T) {
 		wantType    SChainWriter
 	}{
 		{
-			description: "no schains are defined",
+			description: "no schains are defined - req.ext is nil and req.source.ext is nil",
 			reqExt:      nil,
 			sourceExt:   nil,
 			wantType:    ORTBTwoFiveSChainWriter{},
+		},
+		{
+			description: "no schains are defined - req.ext.schain, req.ext.prebid.schains and req.source.ext.schain are nil",
+			reqExt: &openrtb_ext.ExtRequest{
+				Prebid: openrtb_ext.ExtRequestPrebid{
+					SChains: nil,
+				},
+				SChain: nil,
+			},
+			sourceExt: &openrtb_ext.ExtSource{
+				SChain: nil,
+			},
+			wantType: ORTBTwoFiveSChainWriter{},
 		},
 		{
 			description: "ORTB 2.5 schain defined at ext.prebid.schains",
@@ -110,8 +123,6 @@ func TestNewSChainWriter(t *testing.T) {
 	}
 }
 
-//TODO: verify nil/empty reqExt and sourceExt
-//TODO: verify parts of the source.ext are retained after mutating
 func TestORTBTwoFiveSChainWriter(t *testing.T) {
 
 	const seller1SChain string = `"schain":{"complete":1,"nodes":[{"asi":"directseller1.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}`
@@ -120,71 +131,139 @@ func TestORTBTwoFiveSChainWriter(t *testing.T) {
 	const sellerWildCardSChain string = `"schain":{"complete":1,"nodes":[{"asi":"wildcard1.com","sid":"wildcard1","rid":"WildcardReq1","hp":1}],"ver":"1.0"}`
 
 	tests := []struct {
-		description   string
-		giveReqExt    json.RawMessage
-		giveSourceExt json.RawMessage
-		giveBidder    string
-		wantReqExt    json.RawMessage
-		wantSourceExt json.RawMessage
-		wantError     bool
+		description string
+		giveRequest openrtb2.BidRequest
+		giveBidder  string
+		wantRequest openrtb2.BidRequest
+		wantError   bool
 	}{
 		{
-			description:   "Use source schain -- no bidder schain or wildcard schain in nil ext.prebid.schains",
-			giveReqExt:    json.RawMessage(`{}`),
-			giveSourceExt: json.RawMessage(`{` + seller2SChain + `}`),
-			giveBidder:    "appnexus",
-			wantReqExt:    json.RawMessage(`{}`),
-			wantSourceExt: json.RawMessage(`{` + seller2SChain + `}`),
+			description: "Use source schain -- no bidder schain or wildcard schain in nil ext.prebid.schains",
+			giveRequest: openrtb2.BidRequest{
+				Ext: json.RawMessage(`{}`),
+				Source: &openrtb2.Source{
+					Ext: json.RawMessage(`{` + seller2SChain + `}`),
+				},
+			},
+			giveBidder: "appnexus",
+			wantRequest: openrtb2.BidRequest{
+				Ext: json.RawMessage(`{}`),
+				Source: &openrtb2.Source{
+					Ext: json.RawMessage(`{` + seller2SChain + `}`),
+				},
+			},
 		},
 		{
-			description:   "Use source schain -- no bidder schain or wildcard schain in not nil ext.prebid.schains",
-			giveReqExt:    json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],` + seller1SChain + `}]}}`),
-			giveSourceExt: json.RawMessage(`{` + seller2SChain + `}`),
-			giveBidder:    "rubicon",
-			wantReqExt:    json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],` + seller1SChain + `}]}}`),
-			wantSourceExt: json.RawMessage(`{` + seller2SChain + `}`),
+			description: "Use source schain -- no bidder schain or wildcard schain in not nil ext.prebid.schains",
+			giveRequest: openrtb2.BidRequest{
+				Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],` + seller1SChain + `}]}}`),
+				Source: &openrtb2.Source{
+					Ext: json.RawMessage(`{` + seller2SChain + `}`),
+				},
+			},
+			giveBidder: "rubicon",
+			wantRequest: openrtb2.BidRequest{
+				Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],` + seller1SChain + `}]}}`),
+				Source: &openrtb2.Source{
+					Ext: json.RawMessage(`{` + seller2SChain + `}`),
+				},
+			},
 		},
 		{
-			description:   "Use schain for bidder in ext.prebid.schains.",
-			giveReqExt:    json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],` + seller1SChain + `}]}}`),
-			giveSourceExt: json.RawMessage(`{` + seller2SChain + `}`),
-			giveBidder:    "appnexus",
-			wantReqExt:    json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],` + seller1SChain + `}]}}`),
-			wantSourceExt: json.RawMessage(`{` + seller1SChain + `}`),
+			description: "Use schain for bidder in ext.prebid.schains; ensure other ext.source field values are retained.",
+			giveRequest: openrtb2.BidRequest{
+				Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],` + seller1SChain + `}]}}`),
+				Source: &openrtb2.Source{
+					FD:     1,
+					TID:    "tid data",
+					PChain: "pchain data",
+					Ext:    json.RawMessage(`{` + seller2SChain + `}`),
+				},
+			},
+			giveBidder: "appnexus",
+			wantRequest: openrtb2.BidRequest{
+				Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],` + seller1SChain + `}]}}`),
+				Source: &openrtb2.Source{
+					FD:     1,
+					TID:    "tid data",
+					PChain: "pchain data",
+					Ext:    json.RawMessage(`{` + seller1SChain + `}`),
+				},
+			},
 		},
 		{
-			description:   "Use wildcard schain in ext.prebid.schains.",
-			giveReqExt:    json.RawMessage(`{"prebid":{"schains":[{"bidders":["*"],` + sellerWildCardSChain + `}]}}`),
-			giveSourceExt: json.RawMessage(`{` + seller2SChain + `}`),
-			giveBidder:    "appnexus",
-			wantReqExt:    json.RawMessage(`{"prebid":{"schains":[{"bidders":["*"],` + sellerWildCardSChain + `}]}}`),
-			wantSourceExt: json.RawMessage(`{` + sellerWildCardSChain + `}`),
+			description: "Use schain for bidder in ext.prebid.schains, nil req.source ",
+			giveRequest: openrtb2.BidRequest{
+				Ext:    json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],` + seller1SChain + `}]}}`),
+				Source: nil,
+			},
+			giveBidder: "appnexus",
+			wantRequest: openrtb2.BidRequest{
+				Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],` + seller1SChain + `}]}}`),
+				Source: &openrtb2.Source{
+					Ext: json.RawMessage(`{` + seller1SChain + `}`),
+				},
+			},
 		},
 		{
-			description:   "Use schain for bidder in ext.prebid.schains instead of wildcard.",
-			giveReqExt:    json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],` + seller1SChain + `},{"bidders":["*"],` + sellerWildCardSChain + `}]}}`),
-			giveSourceExt: json.RawMessage(`{` + seller2SChain + `}`),
-			giveBidder:    "appnexus",
-			wantReqExt:    json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],` + seller1SChain + `},{"bidders":["*"],` + sellerWildCardSChain + `}]}}`),
-			wantSourceExt: json.RawMessage(`{` + seller1SChain + `}`),
+			description: "Use wildcard schain in ext.prebid.schains.",
+			giveRequest: openrtb2.BidRequest{
+				Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["*"],` + sellerWildCardSChain + `}]}}`),
+				Source: &openrtb2.Source{
+					Ext: nil,
+				},
+			},
+			giveBidder: "appnexus",
+			wantRequest: openrtb2.BidRequest{
+				Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["*"],` + sellerWildCardSChain + `}]}}`),
+				Source: &openrtb2.Source{
+					Ext: json.RawMessage(`{` + sellerWildCardSChain + `}`),
+				},
+			},
 		},
 		{
-			description:   "Use source schain -- multiple (two) bidder schains in ext.prebid.schains.",
-			giveReqExt:    json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],` + seller1SChain + `},{"bidders":["appnexus"],` + seller2SChain + `}]}}`),
-			giveSourceExt: json.RawMessage(`{` + seller3SChain + `}`),
-			giveBidder:    "appnexus",
-			wantReqExt:    json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],` + seller1SChain + `},{"bidders":["appnexus"],` + seller2SChain + `}]}}`),
-			wantSourceExt: json.RawMessage(`{` + seller3SChain + `}`),
-			wantError:     true,
+			description: "Use schain for bidder in ext.prebid.schains instead of wildcard.",
+			giveRequest: openrtb2.BidRequest{
+				Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],` + seller1SChain + `},{"bidders":["*"],` + sellerWildCardSChain + `}]}}`),
+				Source: &openrtb2.Source{
+					Ext: nil,
+				},
+			},
+			giveBidder: "appnexus",
+			wantRequest: openrtb2.BidRequest{
+				Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],` + seller1SChain + `},{"bidders":["*"],` + sellerWildCardSChain + `}]}}`),
+				Source: &openrtb2.Source{
+					Ext: json.RawMessage(`{` + seller1SChain + `}`),
+				},
+			},
+		},
+		{
+			description: "Use source schain -- multiple (two) bidder schains in ext.prebid.schains.",
+			giveRequest: openrtb2.BidRequest{
+				Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],` + seller1SChain + `},{"bidders":["appnexus"],` + seller2SChain + `}]}}`),
+				Source: &openrtb2.Source{
+					Ext: json.RawMessage(`{` + seller3SChain + `}`),
+				},
+			},
+			giveBidder: "appnexus",
+			wantRequest: openrtb2.BidRequest{
+				Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],` + seller1SChain + `},{"bidders":["appnexus"],` + seller2SChain + `}]}}`),
+				Source: &openrtb2.Source{
+					Ext: json.RawMessage(`{` + seller3SChain + `}`),
+				},
+			},
+			wantError: true,
 		},
 	}
 
 	for _, tt := range tests {
 		// unmarshal ext to get schains object needed to initialize writer
 		var reqExt openrtb_ext.ExtRequest
-		err := json.Unmarshal(tt.giveReqExt, &reqExt)
-		if err != nil {
-			t.Error("Unable to unmarshal request.ext")
+		if tt.giveRequest.Ext != nil {
+			err := json.Unmarshal(tt.giveRequest.Ext, &reqExt)
+			if err != nil {
+				t.Error("Unable to unmarshal request.ext")
+			}
 		}
 
 		writer, err := newORTBTwoFiveSChainWriter(reqExt.Prebid.SChains)
@@ -196,16 +275,9 @@ func TestORTBTwoFiveSChainWriter(t *testing.T) {
 			assert.Nil(t, err)
 			assert.NotNil(t, writer)
 
-			req := openrtb2.BidRequest{
-				Ext: tt.giveReqExt,
-				Source: &openrtb2.Source{
-					Ext: tt.giveSourceExt,
-				},
-			}
-			writer.Write(&req, tt.giveBidder)
+			writer.Write(&tt.giveRequest, tt.giveBidder)
 
-			assert.JSONEq(t, string(tt.wantSourceExt), string(req.Source.Ext), tt.description)
-			assert.JSONEq(t, string(tt.wantReqExt), string(req.Ext), tt.description)
+			assert.Equal(t, tt.wantRequest, tt.giveRequest, tt.description)
 		}
 	}
 }
