@@ -56,6 +56,8 @@ type dianomiResponse struct {
 	Content    string `json:"content"`
 	CrID       string `json:"crid"`
 	BidID      string `json:"bid_id"`
+	Width      int64  `json:"width"`
+	Height     int64  `json:"height"`
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
@@ -102,8 +104,8 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 				Price: amount,
 				AdM:   response.Content,
 				NURL:  response.WinURL,
-				W:     100,
-				H:     100,
+				W:     response.Width,
+				H:     response.Height,
 			},
 			BidType: openrtb_ext.BidTypeBanner,
 		}
