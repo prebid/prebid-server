@@ -1,0 +1,137 @@
+{
+  "mockBidRequest": {
+    "ext": {
+      "prebid": {
+        "debug": true
+      }
+    },
+    "id": "1234",
+    "device": {
+      "IP": "8.8.8.8"
+    },
+    "imp": [
+      {
+        "banner": {
+          "format": [
+            {
+              "h": 500,
+              "w": 600
+            },
+            {
+              "h": 600,
+              "w": 300
+            }
+          ]
+        },
+        "ext": {
+          "dianomi": {
+            "smartadID": 7131
+          }
+        },
+        "id": "1234"
+      }
+    ],
+    "site": {
+      "page": "www.marketviews.com"
+    },
+    "tmax": 500,
+    "user": {
+      "ext": {
+        "consent": "COvFyGBOvFyGBAbAAAENAPCAAOAAAAAAAAAAAEEUACCKAAA.IFoEUQQgAIQwgIwQABAEAAAAOIAACAIAAAAQAIAgEAACEAAAAAgAQBAAAAAAAGBAAgAAAAAAAFAAECAAAgAAQARAEQAAAAAJAAIAAgAAAYQEAAAQmAgBC3ZAYzUw"
+      }
+    },
+    "regs": {
+      "ext": {
+        "gdpr": 1,
+        "us_privacy": "1NYN"
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://dev-prebid.dianomi.net/cgi-bin/smartads_prebid.pl",
+        "body": {
+          "ext": {
+            "prebid": {
+              "debug": true
+            }
+          },
+          "id": "1234",
+          "device": {
+            "ip": "8.8.8.8"
+          },
+          "imp": [
+            {
+              "banner": {
+                "format": [
+                  {
+                    "h": 500,
+                    "w": 600
+                  },
+                  {
+                    "h": 600,
+                    "w": 300
+                  }
+                ]
+              },
+              "ext": {
+                "dianomi": {
+                  "smartadID": 7131
+                }
+              },
+              "id": "1234"
+            }
+          ],
+          "site": {
+            "page": "www.marketviews.com"
+          },
+          "tmax": 500,
+          "user": {
+            "ext": {
+              "consent": "COvFyGBOvFyGBAbAAAENAPCAAOAAAAAAAAAAAEEUACCKAAA.IFoEUQQgAIQwgIwQABAEAAAAOIAACAIAAAAQAIAgEAACEAAAAAgAQBAAAAAAAGBAAgAAAAAAAFAAECAAAgAAQARAEQAAAAAJAAIAAgAAAYQEAAAQmAgBC3ZAYzUw"
+            }
+          },
+          "regs": {
+            "ext": {
+              "gdpr": 1,
+              "us_privacy": "1NYN"
+            }
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "width": 488,
+          "win_url": "http://www.dianomi.com/cgi-bin/pixeltrack.pl?win=YbNYhSqODYZP1o8NH9K1UQAAAAw",
+          "content": "  \n\n\n\n\n\n\n\n\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n\n<html xmlns=\"http://www.w3.org/1999/xhtml\">\n<head>\n\t<!-- retina placeholder -->\n\t<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n\t<title></title>\t\n\n<style type=\"text/css\">.hidden { display:none; } .maintext { display:inline} \n    </style>\n  <link type=\"text/css\" href=\"/img/a/pss/1135/40.css\" rel=\"stylesheet\"/>\n</head>\n<body>\n<script type=\"text/javascript\">\n    var viewability_options = {multipleViews: false, url: 'https://dev.dianomi.com/cgi-bin/pixeltrack.pl', tagParams: ['smartad_id','impression_id','adgroup_variant_ids','device_type','smartad_variant_id','geo_ccod','geo_state','geo_dma']};\n    var dianomi_tag_params_0xD3E3738807954DF7A92115116985E659 = {\"can_programmatic\":\"1\",\"geo_country\":\"184\",\"smartad_variant_id\":1312,\"device_type\":\"computer\",\"organization\":\"digitalocean  llc\",\"referer\":\"\",\"geo_state\":\"new york\",\"publisher_id\":1,\"adgroup_ids\":\"93612\",\"impression_id\":\"YbNYhSqODYZP1o8NH9K1UQAAAAw\",\"adgroup_variant_ids\":\"228335\",\"geo_ccod\":\"us\",\"geo_dma\":501,\"organization_type\":\"Data Services\",\"hosting_facility\":1,\"smartad_id\":1};\n    </script>\n\n\n<!-- T#523-ST#1135- --><div class=\"wrapper dianomi_smartad_ _dianomi_wrapper dianomi_branded\" data-smartad-id=\"\" id=\"\" >\n<script type=\"text/javascript\" src=\"https://dev.dianomi.com/js/viewability8.js\"></script>\n    <div class=\"line2\">\r\n\t<div>Sponsored content</div>\r\n</div>\r\n\r\n<div class=\"sub-line2\"><img src=\"//www.dianomi.com/img/uploads/Ufe0-8CoyKoAADAkZXEAAAAK.png\" alt=\"Dianomi\" width=\"11\" height=\"10\" ><a href=\"https://dev.dianomi.com/whatsthis.pl?id=1\" target=\"_blank\">&nbsp;&#40;&#63;&#41;</a></div>\r\n<a href=\"https://dev.dianomi.com/whatsthis.pl?id=1\" target=\"_blank\" class=\"logohover dianomihref\"></a>\r\n\r\n\r\n\r\n\t<div id=\"dianomi_ad_1\" class=\"hero first\">\n\t\t\t <div class=\"subhero \">\n <div class=\"heading_top\"></div>\n <a id=\"dianomihref-0xD3E3738807954DF7A92115116985E659\"  rel=\"nofollow\" class=\"dianomihref dianomihref_\" target=\"_blank\"        data-adgroup-variant-id=\"228335\" href=\"https://dev.dianomioffers.co.uk/click.epl?pn=88140&offer=19370340&savid=228335&campaign=1&said=1&affiliate=:affiliate&adv=1312&unique_id=YbNYhSqODYZP1o8NH9K1UQAAAAw&smartreferer=\"  >\n<img class=\"png\" border=\"0\" alt=\"Active Funds\" srcset=\"https://dev.dianomioffers.co.uk/img/a/sav2/228335/3/219x123.jpg 2x,https://dev.dianomioffers.co.uk/img/a/sav2/228335/3/268x150.jpg 3x,https://dev.dianomioffers.co.uk/img/a/sav2/228335/3/310x174.jpg 4x\"  src=\"https://dev.dianomioffers.co.uk/img/a/sav2/228335/3/155x87.jpg\"  height=\"87\" width=\"155\"   />\n<div class=\"text\">\n  <div class=\"dianomiHeading heading\"></div>\n  <div class=\"maintext\">Improve your portfolio with private equity</div><div style=\"display:inline\" class=\"dianomi_provider_short\">Active Funds</div><div class=\"action \"></div>  \n</div>\n</a>\n</div>\n</div>\n\t         </div>\n\n<!-- adids:93612:1312:228335: -->\n<!-- pids: -->\n</body>\n</html>\n",
+          "bid_amount": "1.0",
+          "height": 114,
+          "crid": "DIANOMIRULES11234",
+          "bid_id": "YbNYhSqODYZP1o8NH9K1UQAAAAw",
+          "bid_currency": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "nurl": "http://www.dianomi.com/cgi-bin/pixeltrack.pl?win=YbNYhSqODYZP1o8NH9K1UQAAAAw",
+            "id": "YbNYhSqODYZP1o8NH9K1UQAAAAw",
+            "impid": "1234",
+            "price": 1,
+            "adm": "  \n\n\n\n\n\n\n\n\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n\n<html xmlns=\"http://www.w3.org/1999/xhtml\">\n<head>\n\t<!-- retina placeholder -->\n\t<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n\t<title></title>\t\n\n<style type=\"text/css\">.hidden { display:none; } .maintext { display:inline} \n    </style>\n  <link type=\"text/css\" href=\"/img/a/pss/1135/40.css\" rel=\"stylesheet\"/>\n</head>\n<body>\n<script type=\"text/javascript\">\n    var viewability_options = {multipleViews: false, url: 'https://dev.dianomi.com/cgi-bin/pixeltrack.pl', tagParams: ['smartad_id','impression_id','adgroup_variant_ids','device_type','smartad_variant_id','geo_ccod','geo_state','geo_dma']};\n    var dianomi_tag_params_0xD3E3738807954DF7A92115116985E659 = {\"can_programmatic\":\"1\",\"geo_country\":\"184\",\"smartad_variant_id\":1312,\"device_type\":\"computer\",\"organization\":\"digitalocean  llc\",\"referer\":\"\",\"geo_state\":\"new york\",\"publisher_id\":1,\"adgroup_ids\":\"93612\",\"impression_id\":\"YbNYhSqODYZP1o8NH9K1UQAAAAw\",\"adgroup_variant_ids\":\"228335\",\"geo_ccod\":\"us\",\"geo_dma\":501,\"organization_type\":\"Data Services\",\"hosting_facility\":1,\"smartad_id\":1};\n    </script>\n\n\n<!-- T#523-ST#1135- --><div class=\"wrapper dianomi_smartad_ _dianomi_wrapper dianomi_branded\" data-smartad-id=\"\" id=\"\" >\n<script type=\"text/javascript\" src=\"https://dev.dianomi.com/js/viewability8.js\"></script>\n    <div class=\"line2\">\r\n\t<div>Sponsored content</div>\r\n</div>\r\n\r\n<div class=\"sub-line2\"><img src=\"//www.dianomi.com/img/uploads/Ufe0-8CoyKoAADAkZXEAAAAK.png\" alt=\"Dianomi\" width=\"11\" height=\"10\" ><a href=\"https://dev.dianomi.com/whatsthis.pl?id=1\" target=\"_blank\">&nbsp;&#40;&#63;&#41;</a></div>\r\n<a href=\"https://dev.dianomi.com/whatsthis.pl?id=1\" target=\"_blank\" class=\"logohover dianomihref\"></a>\r\n\r\n\r\n\r\n\t<div id=\"dianomi_ad_1\" class=\"hero first\">\n\t\t\t <div class=\"subhero \">\n <div class=\"heading_top\"></div>\n <a id=\"dianomihref-0xD3E3738807954DF7A92115116985E659\"  rel=\"nofollow\" class=\"dianomihref dianomihref_\" target=\"_blank\"        data-adgroup-variant-id=\"228335\" href=\"https://dev.dianomioffers.co.uk/click.epl?pn=88140&offer=19370340&savid=228335&campaign=1&said=1&affiliate=:affiliate&adv=1312&unique_id=YbNYhSqODYZP1o8NH9K1UQAAAAw&smartreferer=\"  >\n<img class=\"png\" border=\"0\" alt=\"Active Funds\" srcset=\"https://dev.dianomioffers.co.uk/img/a/sav2/228335/3/219x123.jpg 2x,https://dev.dianomioffers.co.uk/img/a/sav2/228335/3/268x150.jpg 3x,https://dev.dianomioffers.co.uk/img/a/sav2/228335/3/310x174.jpg 4x\"  src=\"https://dev.dianomioffers.co.uk/img/a/sav2/228335/3/155x87.jpg\"  height=\"87\" width=\"155\"   />\n<div class=\"text\">\n  <div class=\"dianomiHeading heading\"></div>\n  <div class=\"maintext\">Improve your portfolio with private equity</div><div style=\"display:inline\" class=\"dianomi_provider_short\">Active Funds</div><div class=\"action \"></div>  \n</div>\n</a>\n</div>\n</div>\n\t         </div>\n\n<!-- adids:93612:1312:228335: -->\n<!-- pids: -->\n</body>\n</html>\n",
+            "crid": "DIANOMIRULES11234",
+            "w": 488,
+            "h": 114
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
