@@ -1,0 +1,39 @@
+{
+  "description": "req.app.ext.data is present but req.ext.prebid is not defined; expect req.app.ext.data remains the same and no FPD data for bidders",
+  "inputRequestData": {
+    "id": "bid_id",
+    "app": {
+      "id": "reqAppId",
+      "keywords": "appKeywords",
+      "publisher": {
+        "id": "1"
+      },
+      "ext": {
+        "amp": 1,
+        "data": {
+          "someappfpd": "appfpdDataTest"
+        }
+      }
+    },
+    "test": 1
+  },
+  "outputRequestData":  {
+    "id": "bid_id",
+    "app": {
+      "id": "reqAppId",
+      "keywords": "appKeywords",
+      "publisher": {
+        "id": "1"
+      },
+      "ext": {
+        "amp":1,
+        "data": {
+          "someappfpd": "appfpdDataTest"
+        }
+      }
+    },
+    "test": 1
+  },
+  "biddersFPDResolved": {},
+  "validationErrors": []
+}

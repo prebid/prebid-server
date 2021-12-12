@@ -90,13 +90,6 @@ func (me *MultiMetricsEngine) RecordImps(implabels metrics.ImpLabels) {
 	}
 }
 
-// RecordImps for the legacy endpoint
-func (me *MultiMetricsEngine) RecordLegacyImps(labels metrics.Labels, numImps int) {
-	for _, thisME := range *me {
-		thisME.RecordLegacyImps(labels, numImps)
-	}
-}
-
 // RecordRequestTime across all engines
 func (me *MultiMetricsEngine) RecordRequestTime(labels metrics.Labels, length time.Duration) {
 	for _, thisME := range *me {
@@ -276,10 +269,6 @@ func (me *NilMetricsEngine) RecordConnectionClose(success bool) {
 
 // RecordImps as a noop
 func (me *NilMetricsEngine) RecordImps(implabels metrics.ImpLabels) {
-}
-
-// RecordLegacyImps as a noop
-func (me *NilMetricsEngine) RecordLegacyImps(labels metrics.Labels, numImps int) {
 }
 
 // RecordRequestTime as a noop

@@ -33,7 +33,7 @@ func TestEmptyOptOutCookie(t *testing.T) {
 
 func TestEmptyCookie(t *testing.T) {
 	cookie := &Cookie{
-		uids:     make(map[string]uidWithExpiry, 0),
+		uids:     make(map[string]uidWithExpiry),
 		optOut:   false,
 		birthday: timestamp(),
 	}

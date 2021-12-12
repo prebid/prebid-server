@@ -1301,7 +1301,7 @@ func TestMobileNativeTypes(t *testing.T) {
 		var actualValue string
 		for _, bid := range seatBids.bids {
 			actualValue = bid.bid.AdM
-			diffJson(t, tc.description, []byte(actualValue), []byte(tc.expectedValue))
+			assert.JSONEq(t, tc.expectedValue, actualValue, tc.description)
 		}
 	}
 }
@@ -1795,7 +1795,6 @@ func (bidder *mixedMultiBidder) MakeBids(internalRequest *openrtb2.BidRequest, e
 }
 
 type bidRejector struct {
-	httpRequest  *adapters.RequestData
 	httpResponse *adapters.ResponseData
 }
 

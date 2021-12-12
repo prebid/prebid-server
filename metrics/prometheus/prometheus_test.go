@@ -26,7 +26,7 @@ func TestMetricCountGatekeeping(t *testing.T) {
 	m := createMetricsForTesting()
 
 	// Gather All Metrics
-	metricFamilies, err := m.Registry.Gather()
+	metricFamilies, err := m.Gatherer.Gather()
 	assert.NoError(t, err, "gather metics")
 
 	// Summarize By Adapter Cardinality
@@ -353,16 +353,6 @@ func TestImpressionsMetric(t *testing.T) {
 		assert.Equal(t, test.expectedAudioCount, audioCount, test.description+":audio")
 		assert.Equal(t, test.expectedNativeCount, nativeCount, test.description+":native")
 	}
-}
-
-func TestLegacyImpressionsMetric(t *testing.T) {
-	m := createMetricsForTesting()
-
-	m.RecordLegacyImps(metrics.Labels{}, 42)
-
-	expectedCount := float64(42)
-	assertCounterValue(t, "", "impressionsLegacy", m.impressionsLegacy,
-		expectedCount)
 }
 
 func TestRequestTimeMetric(t *testing.T) {
@@ -1160,18 +1150,6 @@ func TestPrebidCacheRequestTimeMetric(t *testing.T) {
 	errorExpectedSum := float64(0.2)
 	errorResult := getHistogramFromHistogramVec(m.prebidCacheWriteTimer, successLabel, "false")
 	assertHistogram(t, "Error", errorResult, errorExpectedCount, errorExpectedSum)
-}
-
-func TestMetricAccumulationSpotCheck(t *testing.T) {
-	m := createMetricsForTesting()
-
-	m.RecordLegacyImps(metrics.Labels{}, 1)
-	m.RecordLegacyImps(metrics.Labels{}, 2)
-	m.RecordLegacyImps(metrics.Labels{}, 3)
-
-	expectedValue := float64(1 + 2 + 3)
-	assertCounterValue(t, "", "impressionsLegacy", m.impressionsLegacy,
-		expectedValue)
 }
 
 func TestRecordRequestQueueTimeMetric(t *testing.T) {

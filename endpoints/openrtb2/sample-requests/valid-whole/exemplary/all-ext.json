@@ -65,6 +65,10 @@
         "cache": {
           "bids": {}
         },
+        "channel": {
+          "name": "video",
+          "version": "1.0"
+        },
         "targeting": {
           "includewinners": false,
           "pricegranularity": {
