@@ -46,6 +46,7 @@ var validParams = []string{
 
 var invalidParams = []string{
 	`{"zoneId": true}`,
+	`{"zoneId": ""}`,
 	``,
 	`null`,
 	`true`,
