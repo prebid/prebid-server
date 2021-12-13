@@ -20,6 +20,7 @@
         "uri": "https://bid.adview.com/agent/thirdAdxService/accountid01",
         "body": {
           "id": "test-request-id",
+          "cur": ["USD"],
           "imp": [{
             "ext": {
               "bidder": {

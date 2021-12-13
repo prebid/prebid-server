@@ -1,0 +1,61 @@
+{
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"title": "Groupm Adapter Params",
+	"description": "A schema which validates params accepted by the Groupm adapter",
+	"type": "object",
+	"properties": {
+		"publisherId": {
+			"type": "string",
+			"description": "An ID which identifies the publisher"
+		},
+		"adSlot": {
+			"type": "string",
+			"description": "An ID which identifies the ad slot"
+		},
+		"pmzoneid": {
+			"type": "string",
+			"description": "Comma separated zone id. Used im deal targeting & site section targeting. e.g drama,sport"
+		},
+		"dctr": {
+			"type": "string",
+			"description": "Deals Custom Targeting, pipe separated key-value pairs e.g key1=V1,V2,V3|key2=v1|key3=v3,v5"
+		},
+		"wrapper": {
+			"type": "object",
+			"description": "Specifies Groupm openwrap configuration for a publisher",
+			"properties": {
+				"profile": {
+					"type": "integer",
+					"description": "An ID which identifies the openwrap profile of publisher"
+				},
+				"version": {
+					"type": "integer",
+					"description": "An ID which identifies version of the openwrap profile"
+				}
+			},
+			"required": ["profile"]
+		},
+		"keywords": {
+			"type": "array",
+			"minItems": 1,
+			"items": {
+			  "type": "object",
+			  "description": "A key with one or more values associated with it. These are used in buy-side segment targeting.",
+			  "properties": {
+				"key": {
+				  "type": "string"
+				},
+				"value": {
+				  "type": "array",
+				  "minItems": 1,
+				  "items": {
+					"type": "string"
+				  }
+				}
+			  },
+			  "required": ["key", "value"]
+			}
+		  }
+	},
+	"required": ["publisherId"]
+}

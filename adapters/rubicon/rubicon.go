@@ -25,6 +25,28 @@ type RubiconAdapter struct {
 	XAPIPassword string
 }
 
+type rubiconContext struct {
+	Data json.RawMessage `json:"data"`
+}
+
+type rubiconData struct {
+	AdServer rubiconAdServer `json:"adserver"`
+	PbAdSlot string          `json:"pbadslot"`
+}
+
+type rubiconAdServer struct {
+	Name   string `json:"name"`
+	AdSlot string `json:"adslot"`
+}
+
+type rubiconExtImpBidder struct {
+	Prebid  *openrtb_ext.ExtImpPrebid `json:"prebid"`
+	Bidder  json.RawMessage           `json:"bidder"`
+	Gpid    string                    `json:"gpid"`
+	Data    json.RawMessage           `json:"data"`
+	Context rubiconContext            `json:"context"`
+}
+
 type bidRequestExt struct {
 	Prebid bidRequestExtPrebid `json:"prebid"`
 }
@@ -254,7 +276,7 @@ type mappedRubiconUidsParam struct {
 	liverampIdl string
 }
 
-//MAS algorithm
+// MAS algorithm
 func findPrimary(alt []int) (int, []int) {
 	min, pos, primary := 0, 0, 0
 	for i, size := range alt {
@@ -364,7 +386,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 	rubiconRequest := *request
 	for _, imp := range requestImpCopy {
 
-		var bidderExt adapters.ExtImpBidder
+		var bidderExt rubiconExtImpBidder
 		if err = json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			errs = append(errs, &errortypes.BadInput{
 				Message: err.Error(),
@@ -380,12 +402,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			continue
 		}
 
-		target, err := updateImpRpTargetWithFpdAttributes(rubiconExt, imp, request.Site, request.App)
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-		adSlot, err := getAdSlot(imp)
+		target, err := updateImpRpTargetWithFpdAttributes(bidderExt, rubiconExt, imp, request.Site, request.App)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -397,8 +414,9 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 				Target: target,
 				Track:  rubiconImpExtRPTrack{Mint: "", MintVersion: ""},
 			},
-			GPID: adSlot,
+			GPID: bidderExt.Gpid,
 		}
+
 		imp.Ext, err = json.Marshal(&impExt)
 		if err != nil {
 			errs = append(errs, err)
@@ -589,8 +607,9 @@ func resolveBidFloor(bidFloor float64, bidFloorCur string, reqInfo *adapters.Ext
 	return bidFloor, nil
 }
 
-func updateImpRpTargetWithFpdAttributes(extImp openrtb_ext.ExtImpRubicon, imp openrtb2.Imp,
-	site *openrtb2.Site, app *openrtb2.App) (json.RawMessage, error) {
+func updateImpRpTargetWithFpdAttributes(extImp rubiconExtImpBidder, extImpRubicon openrtb_ext.ExtImpRubicon,
+	imp openrtb2.Imp, site *openrtb2.Site, app *openrtb2.App) (json.RawMessage, error) {
+
 	existingTarget, _, _, err := jsonparser.Get(imp.Ext, "rp", "target")
 	if isNotKeyPathError(err) {
 		return nil, err
@@ -599,7 +618,7 @@ func updateImpRpTargetWithFpdAttributes(extImp openrtb_ext.ExtImpRubicon, imp op
 	if err != nil {
 		return nil, err
 	}
-	err = populateFirstPartyDataAttributes(extImp.Inventory, target)
+	err = populateFirstPartyDataAttributes(extImpRubicon.Inventory, target)
 	if err != nil {
 		return nil, err
 	}
@@ -645,34 +664,57 @@ func updateImpRpTargetWithFpdAttributes(extImp openrtb_ext.ExtImpRubicon, imp op
 		}
 	}
 
-	impExtContextAttributes, _, _, err := jsonparser.Get(imp.Ext, "context", "data")
-	if isNotKeyPathError(err) {
-		return nil, err
-	}
-
-	if len(impExtContextAttributes) > 0 {
-		err = populateFirstPartyDataAttributes(impExtContextAttributes, target)
-		if err != nil {
-			return nil, err
-		}
-	} else if impExtDataAttributes, _, _, err := jsonparser.Get(imp.Ext, "data"); err == nil && len(impExtDataAttributes) > 0 {
-		err = populateFirstPartyDataAttributes(impExtDataAttributes, target)
-		if err != nil {
-			return nil, err
-		}
+	if len(extImp.Context.Data) > 0 {
+		err = populateFirstPartyDataAttributes(extImp.Context.Data, target)
+	} else if len(extImp.Data) > 0 {
+		err = populateFirstPartyDataAttributes(extImp.Data, target)
 	}
 	if isNotKeyPathError(err) {
 		return nil, err
 	}
 
-	if len(extImp.Keywords) > 0 {
-		addStringArrayAttribute(extImp.Keywords, target, "keywords")
+	var data rubiconData
+	if len(extImp.Data) > 0 {
+		err := json.Unmarshal(extImp.Data, &data)
+		if err != nil {
+			return nil, err
+		}
+	}
+	var contextData rubiconData
+	if len(extImp.Context.Data) > 0 {
+		err := json.Unmarshal(extImp.Context.Data, &contextData)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if data.PbAdSlot != "" {
+		target["pbadslot"] = data.PbAdSlot
+	} else {
+		dfpAdUnitCode := extractDfpAdUnitCode(data, contextData)
+		if dfpAdUnitCode != "" {
+			target["dfp_ad_unit_code"] = dfpAdUnitCode
+		}
+	}
+
+	if len(extImpRubicon.Keywords) > 0 {
+		addStringArrayAttribute(extImpRubicon.Keywords, target, "keywords")
 	}
 	updatedTarget, err := json.Marshal(target)
 	if err != nil {
 		return nil, err
 	}
 	return updatedTarget, nil
+}
+
+func extractDfpAdUnitCode(data rubiconData, contextData rubiconData) string {
+	if contextData.AdServer.Name == "gam" && contextData.AdServer.AdSlot != "" {
+		return contextData.AdServer.AdSlot
+	} else if data.AdServer.Name == "gam" && data.AdServer.AdSlot != "" {
+		return data.AdServer.AdSlot
+	}
+
+	return ""
 }
 
 func isNotKeyPathError(err error) bool {
@@ -685,62 +727,6 @@ func addStringAttribute(attribute string, target map[string]interface{}, attribu
 
 func addStringArrayAttribute(attribute []string, target map[string]interface{}, attributeName string) {
 	target[attributeName] = attribute
-}
-
-func getAdSlot(imp openrtb2.Imp) (string, error) {
-	var adSlot string
-	var parsingError error
-	jsonparser.EachKey(imp.Ext, func(idx int, value []byte, vt jsonparser.ValueType, err error) {
-		switch idx {
-		case 0:
-			adServerContextName, err := jsonparser.GetString(value, "name")
-			if isNotKeyPathError(err) {
-				parsingError = err
-				return
-			}
-			if adServerContextName == "gam" {
-				contextAdSlot, err := jsonparser.GetString(value, "adslot")
-				if isNotKeyPathError(err) {
-					parsingError = err
-					return
-				}
-				adSlot = contextAdSlot
-			}
-		}
-	}, []string{"context", "data", "adserver"})
-
-	if parsingError != nil {
-		return "", parsingError
-	}
-
-	if adSlot != "" {
-		return adSlot, nil
-	}
-
-	jsonparser.EachKey(imp.Ext, func(idx int, value []byte, vt jsonparser.ValueType, err error) {
-		switch idx {
-		case 0:
-			adServerDataName, err := jsonparser.GetString(value, "name")
-			if isNotKeyPathError(err) {
-				parsingError = err
-				return
-			}
-			if adServerDataName == "gam" {
-				dataAdSlot, err := jsonparser.GetString(value, "adslot")
-				if isNotKeyPathError(err) {
-					parsingError = err
-					return
-				}
-				adSlot = dataAdSlot
-			}
-		}
-	}, []string{"data", "adserver"})
-
-	if parsingError != nil {
-		return "", parsingError
-	}
-
-	return adSlot, nil
 }
 
 func updateUserRpTargetWithFpdAttributes(visitor json.RawMessage, user openrtb2.User) (json.RawMessage, error) {
@@ -848,6 +834,7 @@ func rawJSONToMap(message json.RawMessage) (map[string]interface{}, error) {
 
 	return mapFromRawJSON(message)
 }
+
 func mapFromRawJSON(message json.RawMessage) (map[string]interface{}, error) {
 	targetAsMap := make(map[string]interface{})
 	err := json.Unmarshal(message, &targetAsMap)

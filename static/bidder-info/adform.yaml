@@ -5,10 +5,12 @@ capabilities:
   app:
     mediaTypes:
       - banner
+      - native
       - video
   site:
     mediaTypes:
       - banner
+      - native
       - video
 userSync:
   redirect:
