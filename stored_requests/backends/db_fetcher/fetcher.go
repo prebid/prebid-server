@@ -4,8 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"fmt"
-
 	"github.com/lib/pq"
 
 	"github.com/golang/glog"
@@ -112,7 +110,6 @@ func (fetcher *dbFetcher) FetchResponses(ctx context.Context, ids []string) (dat
 
 	rows, err := fetcher.db.QueryContext(ctx, query, idInterfaces...)
 	if err != nil {
-		fmt.Println(err.Error(), query)
 		return nil, []error{err}
 	}
 	defer func() {
@@ -127,16 +124,13 @@ func (fetcher *dbFetcher) FetchResponses(ctx context.Context, ids []string) (dat
 		var data []byte
 		var dataType string
 
-		// Fixes #338
 		if err := rows.Scan(&id, &data, &dataType); err != nil {
 			return nil, []error{err}
 		}
 		storedData[id] = data
 	}
 
-	// Fixes #338
 	if rows.Err() != nil {
-		fmt.Println(rows.Err())
 		return nil, []error{rows.Err()}
 	}
 
