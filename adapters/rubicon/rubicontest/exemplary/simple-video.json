@@ -132,6 +132,9 @@
           "h": 576
         },
         "ext": {
+          "data": {
+            "pbadslot": "pbadslot"
+          },
           "bidder": {
             "video": {
             },
@@ -314,6 +317,7 @@
               "ext": {
                 "rp": {
                   "target": {
+                    "pbadslot": "pbadslot",
                     "pagecat": [
                       "val1",
                       "val2"

@@ -16,6 +16,11 @@
     "mname": {
       "type": ["string"],
       "description": "A Name which identifies the placement selling the impression"
+    },
+    "priceType": {
+      "type": ["string"],
+      "description": "gross or net. Default is net.",
+      "pattern": "gross|net"
     }
   },
   "anyOf":[

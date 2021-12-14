@@ -11,6 +11,6 @@ capabilities:
       - banner
       - video
 userSync:
-  iframe:
-    url: "https://usermatch.targeting.unrulymedia.com/pbsync?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&rurl={{.RedirectURL}}"
-    userMacro: "$UID"
+  redirect:
+    url: "https://sync.1rx.io/usersync2/rmphb?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir={{.RedirectURL}}"
+    userMacro: "[RX_UUID]"
