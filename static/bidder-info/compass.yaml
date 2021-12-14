@@ -1,5 +1,6 @@
 maintainer:
   email: "sa-support@brightcom.com"
+gvlVendorID: 883
 capabilities:
   site:
     mediaTypes:

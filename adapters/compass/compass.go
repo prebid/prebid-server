@@ -69,21 +69,22 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 		reqCopy.Imp[0].Ext = finalyImpExt
 
-		adapterReq, errors := a.makeRequest(&reqCopy)
+		adapterReq, err := a.makeRequest(&reqCopy)
+		if err != nil {
+			return nil, append(errs, err)
+		}
+
 		if adapterReq != nil {
 			adapterRequests = append(adapterRequests, adapterReq)
 		}
-		errs = append(errs, errors...)
 	}
 	return adapterRequests, errs
 }
 
-func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, []error) {
-	var errs []error
-
+func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, error) {
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
-		return nil, append(errs, err)
+		return nil, err
 	}
 
 	headers := http.Header{}
@@ -94,7 +95,7 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestDa
 		Uri:     a.endpoint,
 		Body:    reqJSON,
 		Headers: headers,
-	}, errs
+	}, err
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
@@ -139,10 +140,10 @@ func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType,
 			if imp.Banner != nil {
 				return openrtb_ext.BidTypeBanner, nil
 			}
-			if imp.Banner == nil && imp.Video != nil {
+			if imp.Video != nil {
 				return openrtb_ext.BidTypeVideo, nil
 			}
-			if imp.Banner == nil && imp.Video == nil && imp.Native != nil {
+			if imp.Native != nil {
 				return openrtb_ext.BidTypeNative, nil
 			}
 		}
