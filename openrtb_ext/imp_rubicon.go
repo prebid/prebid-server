@@ -6,9 +6,9 @@ import (
 
 // ExtImpRubicon defines the contract for bidrequest.imp[i].ext.rubicon
 type ExtImpRubicon struct {
-	AccountId int                `json:"accountId"`
-	SiteId    int                `json:"siteId"`
-	ZoneId    int                `json:"zoneId"`
+	AccountId json.RawMessage    `json:"accountId"`
+	SiteId    json.RawMessage    `json:"siteId"`
+	ZoneId    json.RawMessage    `json:"zoneId"`
 	Inventory json.RawMessage    `json:"inventory,omitempty"`
 	Keywords  []string           `json:"keywords,omitempty"`
 	Visitor   json.RawMessage    `json:"visitor,omitempty"`
@@ -18,12 +18,12 @@ type ExtImpRubicon struct {
 
 // rubiconVideoParams defines the contract for bidrequest.imp[i].ext.rubicon.video
 type rubiconVideoParams struct {
-	Language     string `json:"language,omitempty"`
-	PlayerHeight int    `json:"playerHeight,omitempty"`
-	PlayerWidth  int    `json:"playerWidth,omitempty"`
-	VideoSizeID  int    `json:"size_id,omitempty"`
-	Skip         int    `json:"skip,omitempty"`
-	SkipDelay    int    `json:"skipdelay,omitempty"`
+	Language     string          `json:"language,omitempty"`
+	PlayerHeight json.RawMessage `json:"playerHeight,omitempty"`
+	PlayerWidth  json.RawMessage `json:"playerWidth,omitempty"`
+	VideoSizeID  int             `json:"size_id,omitempty"`
+	Skip         int             `json:"skip,omitempty"`
+	SkipDelay    int             `json:"skipdelay,omitempty"`
 }
 
 // rubiconVideoParams defines the contract for bidrequest.imp[i].ext.rubicon.debug

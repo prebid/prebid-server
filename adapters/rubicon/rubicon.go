@@ -391,9 +391,21 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			continue
 		}
 
+		siteId, err := rawMessageToInt(rubiconExt.SiteId)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		zoneId, err := rawMessageToInt(rubiconExt.ZoneId)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
 		impExt := rubiconImpExt{
 			RP: rubiconImpExtRP{
-				ZoneID: rubiconExt.ZoneId,
+				ZoneID: zoneId,
 				Target: target,
 				Track:  rubiconImpExtRPTrack{Mint: "", MintVersion: ""},
 			},
@@ -516,11 +528,17 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			imp.Video = nil
 		}
 
-		pubExt := rubiconPubExt{RP: rubiconPubExtRP{AccountID: rubiconExt.AccountId}}
+		accountId, err := rawMessageToInt(rubiconExt.AccountId)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		pubExt := rubiconPubExt{RP: rubiconPubExtRP{AccountID: accountId}}
 
 		if request.Site != nil {
 			siteCopy := *request.Site
-			siteExtRP := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: rubiconExt.SiteId}}
+			siteExtRP := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: siteId}}
 			if siteCopy.Content != nil {
 				siteTarget := make(map[string]interface{})
 				updateExtWithIabAttribute(siteTarget, siteCopy.Content.Data, []int{1, 2, 5, 6})
@@ -545,7 +563,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			rubiconRequest.Site = &siteCopy
 		} else {
 			appCopy := *request.App
-			appCopy.Ext, err = json.Marshal(rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: rubiconExt.SiteId}})
+			appCopy.Ext, err = json.Marshal(rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: siteId}})
 			appCopy.Publisher = &openrtb2.Publisher{}
 			appCopy.Publisher.Ext, err = json.Marshal(&pubExt)
 			rubiconRequest.App = &appCopy
@@ -579,6 +597,17 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 	}
 
 	return requestData, errs
+}
+
+func rawMessageToInt(message json.RawMessage) (int, error) {
+	if result, err := jsonparser.GetInt(message); err == nil {
+		return int(result), nil
+	}
+	result, err := jsonparser.GetString(message)
+	if err == nil {
+		return 0, err
+	}
+	return strconv.Atoi(result)
 }
 
 func resolveBidFloor(bidFloor float64, bidFloorCur string, reqInfo *adapters.ExtraRequestInfo) (float64, error) {
