@@ -309,6 +309,13 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_
 
 	lmt.ModifyForIOS(req.BidRequest)
 
+	// Integration Type Handling
+	err = deps.setIntegrationType(req)
+	if err != nil {
+		errs = []error{err}
+		return
+	}
+
 	errL := deps.validateRequest(req, false)
 	if len(errL) > 0 {
 		errs = append(errs, errL...)
@@ -1794,4 +1801,19 @@ func checkIfAppRequest(request []byte) (bool, error) {
 		return true, nil
 	}
 	return false, nil
+}
+
+func (deps *endpointDeps) setIntegrationType(req *openrtb_ext.RequestWrapper) error {
+	reqExt, err := req.GetRequestExt()
+	if err != nil {
+		return err
+	}
+	reqPrebid := reqExt.GetPrebid()
+	if reqPrebid == nil {
+		reqPrebid = &openrtb_ext.ExtRequestPrebid{Integration: deps.cfg.AccountDefaults.DefaultIntegration}
+		reqExt.SetPrebid(reqPrebid)
+		req.RebuildRequest()
+	}
+	deps.cfg.IntegrationType = reqPrebid.Integration
+	return nil
 }

@@ -26,10 +26,11 @@ const (
 	AccountIdParameter = "a"
 
 	// Optional
-	BidderParameter    = "bidder"
-	TimestampParameter = "ts"
-	FormatParameter    = "f"
-	AnalyticsParameter = "x"
+	BidderParameter          = "bidder"
+	TimestampParameter       = "ts"
+	FormatParameter          = "f"
+	AnalyticsParameter       = "x"
+	IntegrationTypeParameter = "int"
 )
 
 type eventEndpoint struct {
@@ -223,6 +224,10 @@ func optionalParameters(request *analytics.EventRequest) string {
 		r.Add(AnalyticsParameter, string(analytics.Enabled))
 	case analytics.Disabled:
 		r.Add(AnalyticsParameter, string(analytics.Disabled))
+	}
+
+	if request.IntegrationType != "" {
+		r.Add(IntegrationTypeParameter, request.IntegrationType)
 	}
 
 	opt := r.Encode()

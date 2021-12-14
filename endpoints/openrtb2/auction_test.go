@@ -1386,6 +1386,55 @@ func TestValidateOrFillChannel(t *testing.T) {
 	}
 }
 
+func TestSetIntegrationType(t *testing.T) {
+	deps := &endpointDeps{
+		fakeUUIDGenerator{},
+		&nobidExchange{},
+		newParamsValidator(t),
+		&mockStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: maxSize, AccountDefaults: config.Account{DefaultIntegration: "TestDefaultIntegrationType"}},
+		&metricsConfig.NilMetricsEngine{},
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		false,
+		[]byte{},
+		openrtb_ext.BuildBidderMap(),
+		nil,
+		nil,
+		hardcodedResponseIPValidator{response: true},
+	}
+
+	testCases := []struct {
+		description             string
+		givenRequestWrapper     *openrtb_ext.RequestWrapper
+		expectedError           error
+		expectedIntegrationType string
+	}{
+		{
+			description: "Request has integration type defined, expect that same integration type",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid":{"integration": "TestIntegrationType"}}`)},
+			},
+			expectedIntegrationType: "TestIntegrationType",
+		},
+		{
+			description: "Request doesn't have request.ext.prebid path, expect default integration value",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{Ext: []byte(``)},
+			},
+			expectedIntegrationType: "TestDefaultIntegrationType",
+		},
+	}
+
+	for _, test := range testCases {
+		err := deps.setIntegrationType(test.givenRequestWrapper)
+		assert.Empty(t, err, test.description)
+		assert.Equalf(t, test.expectedIntegrationType, deps.cfg.IntegrationType, "Integration type information isn't correct: %s\n", test.description)
+	}
+}
+
 func TestStoredRequestGenerateUuid(t *testing.T) {
 	uuid := "foo"
 

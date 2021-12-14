@@ -4,16 +4,17 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"github.com/prebid/prebid-server/analytics"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/stored_requests"
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/prebid/prebid-server/analytics"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/stretchr/testify/assert"
 )
 
 // Mock Analytics Module
@@ -651,6 +652,19 @@ func TestEventRequestToUrl(t *testing.T) {
 				Analytics: analytics.Disabled,
 			},
 			want: "http://localhost:8000/event?t=win&b=bidid&a=accountId&bidder=bidder&f=i&ts=1234567&x=0",
+		},
+		"three": {
+			er: &analytics.EventRequest{
+				Type:            analytics.Win,
+				BidID:           "bidid",
+				AccountID:       "accountId",
+				Bidder:          "bidder",
+				Timestamp:       1234567,
+				Format:          analytics.Image,
+				Analytics:       analytics.Disabled,
+				IntegrationType: "integrationType",
+			},
+			want: "http://localhost:8000/event?t=win&b=bidid&a=accountId&bidder=bidder&f=i&int=integrationType&ts=1234567&x=0",
 		},
 	}
 

@@ -88,6 +88,8 @@ type Configuration struct {
 	GenerateBidID bool `mapstructure:"generate_bid_id"`
 	// GenerateRequestID overrides the bidrequest.id in an AMP Request or an App Stored Request with a generated UUID if set to true. The default is false.
 	GenerateRequestID bool `mapstructure:"generate_request_id"`
+	// Integration Type value lives in config so that it can be updated from the request, and then passed for the event URL
+	IntegrationType string
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
@@ -970,6 +972,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("auto_gen_source_tid", true)
 	v.SetDefault("generate_bid_id", false)
 	v.SetDefault("generate_request_id", false)
+	v.SetDefault("account_defaults.default_integration", "") // Default Integration For Accounts Can Be Set Here
 
 	v.SetDefault("request_timeout_headers.request_time_in_queue", "")
 	v.SetDefault("request_timeout_headers.request_timeout_in_queue", "")

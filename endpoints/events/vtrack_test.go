@@ -633,8 +633,8 @@ func TestShouldRespondWithInternalErrorPbsCacheIsNotConfigured(t *testing.T) {
 }
 
 func TestVastUrlShouldReturnExpectedUrl(t *testing.T) {
-	url := GetVastUrlTracking("http://external-url", "bidId", "bidder", "accountId", 1000)
-	assert.Equal(t, "http://external-url/event?t=imp&b=bidId&a=accountId&bidder=bidder&f=b&ts=1000", url, "Invalid vast url")
+	url := GetVastUrlTracking("http://external-url", "bidId", "bidder", "accountId", 1000, "integrationType")
+	assert.Equal(t, "http://external-url/event?t=imp&b=bidId&a=accountId&bidder=bidder&f=b&int=integrationType&ts=1000", url, "Invalid vast url")
 }
 
 func getValidVTrackRequestBody(withImpression bool, withContent bool) (string, error) {
