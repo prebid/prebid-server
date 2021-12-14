@@ -44,7 +44,7 @@
                 },
                 "ext": {
                   "bidder": {
-                    "zoneId": "9999"
+                    "zoneId": 9999
                   }
                 }
               }
