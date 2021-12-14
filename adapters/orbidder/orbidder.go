@@ -83,11 +83,7 @@ func preprocessExtensions(imp *openrtb2.Imp) error {
 
 func preprocessBidFloorCurrency(imp *openrtb2.Imp, reqInfo *adapters.ExtraRequestInfo) error {
 	// we expect every currency related data to be EUR
-	if imp.BidFloorCur == "" {
-		imp.BidFloorCur = "EUR"
-	}
-
-	if imp.BidFloor > 0 && strings.ToUpper(imp.BidFloorCur) != "EUR" {
+	if imp.BidFloor > 0 && strings.ToUpper(imp.BidFloorCur) != "EUR" && imp.BidFloorCur != "" {
 		if convertedValue, err := reqInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, "EUR"); err != nil {
 			return err
 		} else {
