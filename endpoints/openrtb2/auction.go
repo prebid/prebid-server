@@ -332,16 +332,14 @@ func parseTimeout(requestJson []byte, defaultTimeout time.Duration) time.Duratio
 	return defaultTimeout
 }
 
-// mergeBidderParams merges bidder parameters passed at req.ext level with imp[].ext level.
-// Preference is given to parameters at imp[].ext level over req.ext level.
-// Parameters at req.ext level are propagated to adapters as is without any validation.
+// mergeBidderParams merges bidder parameters in req.ext down to the imp[].ext level, with
+// priority given to imp[].ext in case of a conflict. No validation of bidder parameters or
+// of the ext json is performed. Unmarshal errors are not expected since the ext json was
+// validated during the bid request unmarshal. If there is an unmarshal error for some reason,
+// we rely on downstream validation to return the error.
 func mergeBidderParams(req *openrtb_ext.RequestWrapper) error {
 	reqBidderParams, err := adapters.ExtractReqExtBidderParamsEmbeddedMap(req.BidRequest)
-	if err != nil {
-		return nil
-	}
-
-	if len(reqBidderParams) == 0 {
+	if err != nil || len(reqBidderParams) == 0 {
 		return nil
 	}
 
