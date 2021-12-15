@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
@@ -49,17 +48,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	return requestData, errs
 }
 
-type dianomiResponse struct {
-	BidAmount  string `json:"bid_amount"`
-	BidCurency string `json:"bid_currency"`
-	WinURL     string `json:"win_url"`
-	Content    string `json:"content"`
-	CrID       string `json:"crid"`
-	BidID      string `json:"bid_id"`
-	Width      int64  `json:"width"`
-	Height     int64  `json:"height"`
-}
-
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if responseData.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -79,37 +67,29 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		return nil, []error{err}
 	}
 
-	var response dianomiResponse
+	var response openrtb2.BidResponse
 	if err := json.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
-	bidResponse.Currency = response.BidCurency
+	bidResponse.Currency = response.Cur
 
-	amount, err := strconv.ParseFloat(response.BidAmount, 64)
-	if err != nil {
-		return nil, []error{
-			&errortypes.BadServerResponse{
-				Message: fmt.Sprintf("Can't parse bid amount: %s", response.BidAmount),
-			},
+	for _, sb := range response.SeatBid {
+		for i := range sb.Bid {
+			var extBid openrtb_ext.ExtBid
+			if err := json.Unmarshal(sb.Bid[i].Ext, &extBid); err != nil {
+				return nil, []error{err}
+			}
+
+			bidType := extBid.Prebid.Type
+
+			b := &adapters.TypedBid{
+				Bid:     &sb.Bid[i],
+				BidType: bidType,
+			}
+			bidResponse.Bids = append(bidResponse.Bids, b)
 		}
-	}
-	for _, imp := range request.Imp {
-		b := &adapters.TypedBid{
-			Bid: &openrtb2.Bid{
-				ID:    response.BidID, // bid id
-				CrID:  response.CrID,  // creative id
-				ImpID: imp.ID,
-				Price: amount,
-				AdM:   response.Content,
-				NURL:  response.WinURL,
-				W:     response.Width,
-				H:     response.Height,
-			},
-			BidType: openrtb_ext.BidTypeBanner,
-		}
-		bidResponse.Bids = append(bidResponse.Bids, b)
 	}
 
 	return bidResponse, nil
