@@ -29,7 +29,6 @@ func TestPreprocessExtensions(t *testing.T) {
 	for name, tc := range testCasesExtension {
 		t.Run(name, func(t *testing.T) {
 			imp := tc.imp
-
 			err := preprocessExtensions(&imp)
 			if tc.expectErr {
 				assert.Error(t, err)
