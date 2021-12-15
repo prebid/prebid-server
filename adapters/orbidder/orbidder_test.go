@@ -25,6 +25,22 @@ func TestUnmarshalOrbidderExtImp(t *testing.T) {
 	}, impExt)
 }
 
+func TestPreprocessExtensions(t *testing.T) {
+	for name, tc := range testCasesExtension {
+		t.Run(name, func(t *testing.T) {
+			imp := tc.imp
+
+			err := preprocessExtensions(&imp)
+			if tc.expectErr {
+				assert.Error(t, err)
+			}
+			if !tc.expectErr {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderOrbidder, config.Adapter{
 		Endpoint: "https://orbidder-test"})
@@ -36,7 +52,7 @@ func TestJsonSamples(t *testing.T) {
 	adapterstest.RunJSONBidderTest(t, "orbiddertest", bidder)
 }
 
-var testCases = map[string]struct {
+var testCasesCurrency = map[string]struct {
 	imp         openrtb2.Imp
 	setMock     func(m *mock.Mock)
 	expectedImp openrtb2.Imp
@@ -100,8 +116,26 @@ var testCases = map[string]struct {
 	},
 }
 
+var testCasesExtension = map[string]struct {
+	imp       openrtb2.Imp
+	expectErr bool
+}{
+	"Valid Orbidder Extension": {
+		imp: openrtb2.Imp{
+			Ext: json.RawMessage(`{"bidder":{"accountId":"orbidder-test", "placementId":"center-banner", "bidfloor": 0.1}}`),
+		},
+		expectErr: false,
+	},
+	"Invalid Orbidder Extension": {
+		imp: openrtb2.Imp{
+			Ext: json.RawMessage(`{"there's'":{"something":"strange", "in the":"neighbourhood", "who you gonna call?": 0.1}}`),
+		},
+		expectErr: true,
+	},
+}
+
 func TestPreprocessBidFloorCurrency(t *testing.T) {
-	for name, tc := range testCases {
+	for name, tc := range testCasesCurrency {
 		t.Run(name, func(t *testing.T) {
 			imp := tc.imp
 			mockConversions := &mockCurrencyConversion{}
