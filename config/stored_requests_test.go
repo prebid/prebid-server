@@ -43,24 +43,38 @@ func TestQueryMakerNegative(t *testing.T) {
 	assertStringsEqual(t, query, expected)
 }
 
-func TestNormalResponseQueryMaker(t *testing.T) {
-	madeQuery := buildQueryResponses(sampleResponsesQueryTemplate, 1)
-	assertStringsEqual(t, madeQuery, "SELECT id, responseData, 'response' as type FROM stored_responses WHERE id in ($1)")
-}
-func TestResponseQueryMakerManyIds(t *testing.T) {
-	madeQuery := buildQueryResponses(sampleResponsesQueryTemplate, 11)
-	assertStringsEqual(t, madeQuery, "SELECT id, responseData, 'response' as type FROM stored_responses WHERE id in ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)")
-}
+func TestResponseQueryMaker(t *testing.T) {
+	testCases := []struct {
+		description     string
+		inputRespNumber int
+		expectedQuery   string
+	}{
+		{
+			description:     "single response query maker",
+			inputRespNumber: 1,
+			expectedQuery:   "SELECT id, responseData, 'response' as type FROM stored_responses WHERE id in ($1)",
+		},
+		{
+			description:     "many responses query maker",
+			inputRespNumber: 11,
+			expectedQuery:   "SELECT id, responseData, 'response' as type FROM stored_responses WHERE id in ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
+		},
+		{
+			description:     "no responses query maker",
+			inputRespNumber: 0,
+			expectedQuery:   "SELECT id, responseData, 'response' as type FROM stored_responses WHERE id in (NULL)",
+		},
+		{
+			description:     "no responses query maker",
+			inputRespNumber: -2,
+			expectedQuery:   "SELECT id, responseData, 'response' as type FROM stored_responses WHERE id in (NULL)",
+		},
+	}
 
-func TestResponsesQueryMakerNoIds(t *testing.T) {
-	madeQuery := buildQueryResponses(sampleResponsesQueryTemplate, 0)
-	assertStringsEqual(t, madeQuery, "SELECT id, responseData, 'response' as type FROM stored_responses WHERE id in (NULL)")
-}
-
-func TestResponseQueryMakerNegative(t *testing.T) {
-	query := buildQueryResponses(sampleResponsesQueryTemplate, -2)
-	expected := buildQueryResponses(sampleResponsesQueryTemplate, 0)
-	assertStringsEqual(t, query, expected)
+	for _, test := range testCases {
+		query := buildQueryResponses(sampleResponsesQueryTemplate, test.inputRespNumber)
+		assertStringsEqual(t, query, test.expectedQuery)
+	}
 }
 
 func TestPostgressConnString(t *testing.T) {
