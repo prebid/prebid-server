@@ -12,6 +12,14 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
+type bidExt struct {
+	PBS bidExtPBS `json:"pbs"`
+}
+
+type bidExtPBS struct {
+	MediaType string `json:"mediaType"`
+}
+
 type adapter struct {
 	endpoint string
 }
@@ -131,45 +139,36 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 	for _, seatbid := range response.SeatBid {
 		for _, bid := range seatbid.Bid {
-			imp, err := getImpressionForBid(request.Imp, bid)
-			if err != nil {
+			var bidExt bidExt
+			if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
 				errors = append(errors, err)
-				continue
+			} else {
+				if bidType, err := getMediaTypeForBid(&bidExt); err == nil {
+					bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+						Bid:     &bid,
+						BidType: bidType,
+					})
+				} else {
+					errors = append(errors, err)
+				}
 			}
-
-			var bidType openrtb_ext.BidType
-			if imp.Banner != nil {
-				bidType = openrtb_ext.BidTypeBanner
-			} else if imp.Video != nil {
-				bidType = openrtb_ext.BidTypeVideo
-			} else if imp.Audio != nil {
-				bidType = openrtb_ext.BidTypeAudio
-			} else if imp.Native != nil {
-				bidType = openrtb_ext.BidTypeNative
-			}
-			if len(bidType) == 0 {
-				errors = append(errors, &errortypes.BadServerResponse{
-					Message: fmt.Sprintf("Unknown bidType for bid id='%s'", bid.ID),
-				})
-				continue
-			}
-
-			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     &bid,
-				BidType: bidType,
-			})
 		}
 	}
 	return bidResponse, errors
 }
 
-func getImpressionForBid(imps []openrtb2.Imp, bid openrtb2.Bid) (*openrtb2.Imp, error) {
-	for _, imp := range imps {
-		if imp.ID == bid.ImpID {
-			return &imp, nil
-		}
-	}
-	return nil, &errortypes.BadServerResponse{
-		Message: fmt.Sprintf("Bid id='%s' could not find valid impid='%s'", bid.ID, bid.ImpID),
+// getMediaTypeForBid determines which type of bid.
+func getMediaTypeForBid(bidExt *bidExt) (openrtb_ext.BidType, error) {
+	switch bidExt.PBS.MediaType {
+	case "banner":
+		return openrtb_ext.BidTypeBanner, nil
+	case "video":
+		return openrtb_ext.BidTypeVideo, nil
+	case "audio":
+		return openrtb_ext.BidTypeAudio, nil
+	case "native":
+		return openrtb_ext.BidTypeNative, nil
+	default:
+		return "", fmt.Errorf("unrecognized media type in response: %v", bidExt.PBS.MediaType)
 	}
 }
