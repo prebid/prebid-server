@@ -38,6 +38,20 @@
     "httpCalls": [
         {
             "expectedRequest": {
+                "headers": {
+                    "Content-Type": [
+                        "application/json;charset=utf-8"
+                    ],
+                    "Accept": [
+                        "application/json"
+                    ],
+                    "X-Forwarded-For": [
+                        "158.174.81.143"
+                    ],
+                    "User-Agent": [
+                        "Mozilla/5.0 (Linux; Android 8.0; Pixel 2 Build/OPD3.170816.012) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.93 Mobile Safari/537.36"
+                    ]
+                },
                 "uri": "http://whatever.url?format=json&tzo=0",
                 "body": {
                     "adUnits": [
