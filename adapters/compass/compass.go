@@ -34,7 +34,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var errs []error
 	var err error
 	var adapterRequests []*adapters.RequestData
 
@@ -46,10 +45,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		var compassExt openrtb_ext.ImpExtCompass
 
 		if err = json.Unmarshal(reqCopy.Imp[0].Ext, &bidderExt); err != nil {
-			return nil, append(errs, err)
+			return nil, []error{err}
 		}
 		if err = json.Unmarshal(bidderExt.Bidder, &compassExt); err != nil {
-			return nil, append(errs, err)
+			return nil, []error{err}
 		}
 
 		temp := reqBodyExt{CompassBidderExt: reqBodyExtBidder{}}
@@ -64,21 +63,21 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 		finalyImpExt, err := json.Marshal(temp)
 		if err != nil {
-			return nil, append(errs, err)
+			return nil, []error{err}
 		}
 
 		reqCopy.Imp[0].Ext = finalyImpExt
 
 		adapterReq, err := a.makeRequest(&reqCopy)
 		if err != nil {
-			return nil, append(errs, err)
+			return nil, []error{err}
 		}
 
 		if adapterReq != nil {
 			adapterRequests = append(adapterRequests, adapterReq)
 		}
 	}
-	return adapterRequests, errs
+	return adapterRequests, nil
 }
 
 func (a *adapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, error) {
