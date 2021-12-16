@@ -332,115 +332,138 @@ func parseTimeout(requestJson []byte, defaultTimeout time.Duration) time.Duratio
 	return defaultTimeout
 }
 
-// mergeBidderParams merges bidder parameters passed at req.ext level with imp[].ext level.
-// Preference is given to parameters at imp[].ext level over req.ext level.
-// Parameters at req.ext level are propagated to adapters as is without any validation.
+// mergeBidderParams merges bidder parameters in req.ext down to the imp[].ext level, with
+// priority given to imp[].ext in case of a conflict. No validation of bidder parameters or
+// of the ext json is performed. Unmarshal errors are not expected since the ext json was
+// validated during the bid request unmarshal. If there is an unmarshal error for some reason,
+// we rely on downstream validation to return the error.
 func mergeBidderParams(req *openrtb_ext.RequestWrapper) error {
-	reqBidderParams, err := adapters.ExtractReqExtBidderParams(req.BidRequest)
-	if err != nil {
-		return err
+	reqBidderParams, err := adapters.ExtractReqExtBidderParamsEmbeddedMap(req.BidRequest)
+	if err != nil || len(reqBidderParams) == 0 {
+		return nil
 	}
 
-	impCpy := make([]openrtb2.Imp, 0, len(req.BidRequest.Imp))
-	for _, imp := range req.BidRequest.Imp {
+	imps := make([]openrtb2.Imp, 0, len(req.BidRequest.Imp))
+	for impIndex, imp := range req.BidRequest.Imp {
 		updatedImp := imp
 
 		if len(imp.Ext) == 0 {
-			impCpy = append(impCpy, updatedImp)
+			imps = append(imps, updatedImp)
 			continue
 		}
 
-		var impExt map[string]map[string]json.RawMessage
-		err := json.Unmarshal(imp.Ext, &impExt)
-		if err != nil {
-			return err
+		var impExt map[string]json.RawMessage
+		if err := json.Unmarshal(imp.Ext, &impExt); err != nil {
+			// imp.ext should be parsable, but we haven't validated yet so there may be another issue. ignore it here
+			// and let the validation catch it later on.
+			imps = append(imps, updatedImp)
+			continue
 		}
 
 		//merges bidder parameters passed at req.ext level with imp[].ext level.
-		err = addMissingReqExtParamsInImpExt(impExt, reqBidderParams)
+		impExtModified, err := addMissingReqExtParamsInImpExt(impExt, reqBidderParams)
 		if err != nil {
-			return err
+			return fmt.Errorf("error processing bidder parameters for imp[%d]: %s", impIndex, err.Error())
 		}
 
 		//merges bidder parameters passed at req.ext level with imp[].ext.prebid.bidder level.
-		err = addMissingReqExtParamsInImpExtPrebid(impExt, reqBidderParams)
+		impExtPrebidModified, err := addMissingReqExtParamsInImpExtPrebid(impExt, reqBidderParams)
 		if err != nil {
-			return err
+			return fmt.Errorf("error processing bidder parameters for imp[%d]: %s", impIndex, err.Error())
 		}
 
-		iExt, err := json.Marshal(impExt)
-		if err != nil {
-			return fmt.Errorf("error marshalling imp[].ext : %s", err.Error())
+		if impExtModified || impExtPrebidModified {
+			updatedImpExt, err := json.Marshal(impExt)
+			if err != nil {
+				return fmt.Errorf("error processing bidder parameters for imp[%d]: error marshalling ext:%s", impIndex, err.Error())
+			}
+			updatedImp.Ext = updatedImpExt
 		}
-		updatedImp.Ext = iExt
-		impCpy = append(impCpy, updatedImp)
+
+		imps = append(imps, updatedImp)
 	}
 
-	req.BidRequest.Imp = impCpy
+	req.BidRequest.Imp = imps
 	return nil
 }
 
 // addMissingReqExtParamsInImpExtPrebid merges bidder parameters passed at req.ext level with imp[].ext.prebid.bidder level.
-func addMissingReqExtParamsInImpExtPrebid(impExtBidder map[string]map[string]json.RawMessage, reqExtParams map[string]map[string]json.RawMessage) error {
-	var bidderParams map[string]json.RawMessage
-	if impExtBidder["prebid"] != nil && impExtBidder["prebid"]["bidder"] != nil {
-		err := json.Unmarshal(impExtBidder["prebid"]["bidder"], &bidderParams)
-		if err != nil {
-			return err
-		}
+func addMissingReqExtParamsInImpExtPrebid(impExtByKey map[string]json.RawMessage, reqExtParams map[string]map[string]json.RawMessage) (bool, error) {
+	if _, prebidSectionExists := impExtByKey["prebid"]; !prebidSectionExists {
+		return false, nil
 	}
 
-	if len(bidderParams) != 0 {
-		for bidder, bidderExt := range bidderParams {
-			if !isBidderToValidate(bidder) {
-				continue
-			}
-
-			var params map[string]json.RawMessage
-			err := json.Unmarshal(bidderExt, &params)
-
-			for key, value := range reqExtParams[bidder] {
-				if _, present := params[key]; !present {
-					params[key] = value
-				}
-			}
-
-			paramsJson, err := json.Marshal(params)
-			if err != nil {
-				return err
-			}
-			bidderParams[bidder] = paramsJson
-		}
-
-		bidderParamsJson, err := json.Marshal(bidderParams)
-		if err != nil {
-			return err
-		}
-		impExtBidder["prebid"]["bidder"] = bidderParamsJson
+	var prebidByKey map[string]json.RawMessage
+	if err := json.Unmarshal(impExtByKey["prebid"], &prebidByKey); err != nil {
+		// prebid should be parsable, but we haven't validated yet so there may be another issue. ignore it here
+		// and let the validation catch it later on.
+		return false, nil
 	}
 
-	return nil
+	if _, prebidBidderSectionExists := prebidByKey["bidder"]; !prebidBidderSectionExists {
+		return false, nil
+	}
+
+	var prebidBidderByBidder map[string]json.RawMessage
+	if err := json.Unmarshal(prebidByKey["bidder"], &prebidBidderByBidder); err != nil {
+		// added for completeness, but not possible. would be caught by the earlier unmarshal call.
+		return false, nil
+	}
+
+	anyModified, err := addMissingReqExtParamsInImpExt(prebidBidderByBidder, reqExtParams)
+
+	if anyModified && err == nil {
+		// marshal imp.ext.prebid.bidder
+		prebidBidderJSON, err := json.Marshal(prebidBidderByBidder)
+		if err != nil {
+			return anyModified, err
+		}
+		prebidByKey["bidder"] = prebidBidderJSON
+
+		// marshal imp.ext.prebid
+		prebidJSON, err := json.Marshal(prebidByKey)
+		if err != nil {
+			return anyModified, err
+		}
+		impExtByKey["prebid"] = prebidJSON
+	}
+
+	return anyModified, err
 }
 
 // addMissingReqExtParamsInImpExt merges bidder parameters passed at req.ext level with imp[].ext level.
-func addMissingReqExtParamsInImpExt(impExtBidder map[string]map[string]json.RawMessage, reqExtParams map[string]map[string]json.RawMessage) error {
-	for bidder, bidderExt := range impExtBidder {
+func addMissingReqExtParamsInImpExt(impExtByBidder map[string]json.RawMessage, reqExtParams map[string]map[string]json.RawMessage) (bool, error) {
+	anyModified := false
+	for bidder, bidderExt := range impExtByBidder {
 		if !isBidderToValidate(bidder) {
 			continue
 		}
 
-		wasModified := false
+		var params map[string]json.RawMessage
+		if err := json.Unmarshal(bidderExt, &params); err != nil {
+			// bidder should be parsable, but we haven't validated yet so there may be another issue. ignore it here
+			// and let the validation later on catch it.
+			continue
+		}
+
+		modified := false
 		for key, value := range reqExtParams[bidder] {
-			if _, present := bidderExt[key]; !present {
-				bidderExt[key] = value
-				wasModified = true
+			if _, present := params[key]; !present {
+				params[key] = value
+				modified = true
 			}
 		}
-		if wasModified {
-			impExtBidder[bidder] = bidderExt
+
+		if modified {
+			paramsJson, err := json.Marshal(params)
+			if err != nil {
+				return anyModified, fmt.Errorf("error marshalling ext.prebid.bidder: %s", err.Error())
+			}
+			impExtByBidder[bidder] = paramsJson
+			anyModified = true
 		}
 	}
-	return nil
+	return anyModified, nil
 }
 
 func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp bool) []error {
@@ -1173,11 +1196,11 @@ func isBidderToValidate(bidder string) bool {
 		return false
 	case openrtb_ext.BidderReservedData:
 		return false
+	case openrtb_ext.BidderReservedGPID:
+		return false
 	case openrtb_ext.BidderReservedPrebid:
 		return false
 	case openrtb_ext.BidderReservedSKAdN:
-		return false
-	case openrtb_ext.BidderReservedBidder:
 		return false
 	default:
 		return true
