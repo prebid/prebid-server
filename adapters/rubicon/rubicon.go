@@ -391,13 +391,13 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			continue
 		}
 
-		siteId, err := rawMessageToInt(rubiconExt.SiteId)
+		siteId, err := rubiconExt.SiteId.Int64()
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		zoneId, err := rawMessageToInt(rubiconExt.ZoneId)
+		zoneId, err := rubiconExt.ZoneId.Int64()
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -405,7 +405,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 
 		impExt := rubiconImpExt{
 			RP: rubiconImpExtRP{
-				ZoneID: zoneId,
+				ZoneID: int(zoneId),
 				Target: target,
 				Track:  rubiconImpExtRPTrack{Mint: "", MintVersion: ""},
 			},
@@ -528,17 +528,17 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			imp.Video = nil
 		}
 
-		accountId, err := rawMessageToInt(rubiconExt.AccountId)
+		accountId, err := rubiconExt.AccountId.Int64()
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		pubExt := rubiconPubExt{RP: rubiconPubExtRP{AccountID: accountId}}
+		pubExt := rubiconPubExt{RP: rubiconPubExtRP{AccountID: int(accountId)}}
 
 		if request.Site != nil {
 			siteCopy := *request.Site
-			siteExtRP := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: siteId}}
+			siteExtRP := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: int(siteId)}}
 			if siteCopy.Content != nil {
 				siteTarget := make(map[string]interface{})
 				updateExtWithIabAttribute(siteTarget, siteCopy.Content.Data, []int{1, 2, 5, 6})
@@ -563,7 +563,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			rubiconRequest.Site = &siteCopy
 		} else {
 			appCopy := *request.App
-			appCopy.Ext, err = json.Marshal(rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: siteId}})
+			appCopy.Ext, err = json.Marshal(rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: int(siteId)}})
 			appCopy.Publisher = &openrtb2.Publisher{}
 			appCopy.Publisher.Ext, err = json.Marshal(&pubExt)
 			rubiconRequest.App = &appCopy
@@ -597,17 +597,6 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 	}
 
 	return requestData, errs
-}
-
-func rawMessageToInt(message json.RawMessage) (int, error) {
-	if result, err := jsonparser.GetInt(message); err == nil {
-		return int(result), nil
-	}
-	result, err := jsonparser.GetString(message)
-	if err == nil {
-		return 0, err
-	}
-	return strconv.Atoi(result)
 }
 
 func resolveBidFloor(bidFloor float64, bidFloorCur string, reqInfo *adapters.ExtraRequestInfo) (float64, error) {
