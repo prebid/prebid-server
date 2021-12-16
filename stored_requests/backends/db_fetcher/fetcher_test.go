@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestEmptyQuery(t *testing.T) {
@@ -57,22 +58,59 @@ func TestGoodResponse(t *testing.T) {
 	assertHasData(t, storedImps, "imp-id-2", `{"imp":true,"value":2}`)
 }
 
-func TestGoodResponseFetchResponses(t *testing.T) {
-	mockQuery := "SELECT id, data, 'response' AS dataType FROM responses_table WHERE id IN (?, ?)"
-	mockReturn := sqlmock.NewRows([]string{"id", "data", "dataType"}).
-		AddRow("resp-id-1", `{"resp":false,"value":1}`, "response").
-		AddRow("resp-id-2", `{"resp":true,"value":2}`, "response")
+func TestFetchResponses(t *testing.T) {
+	testCases := []struct {
+		description  string
+		mockQuery    string
+		mockReturn   *sqlmock.Rows
+		arguments    []driver.Value
+		respIds      []string
+		expectedResp map[string]string
+	}{
+		{
+			description: "fetch good response",
+			mockQuery:   "SELECT id, data, 'response' AS dataType FROM responses_table WHERE id IN (?, ?)",
+			mockReturn: sqlmock.NewRows([]string{"id", "data", "dataType"}).
+				AddRow("resp-id-1", `{"resp":false,"value":1}`, "response").
+				AddRow("resp-id-2", `{"resp":true,"value":2}`, "response"),
+			arguments:    []driver.Value{"resp-id-1", "resp-id-2"},
+			respIds:      []string{"resp-id-1", "resp-id-2"},
+			expectedResp: map[string]string{"resp-id-1": `{"resp":false,"value":1}`, "resp-id-2": `{"resp":true,"value":2}`},
+		},
+		{
+			description: "fetch partial response",
+			mockQuery:   "SELECT id, data, 'response' AS dataType FROM responses_table WHERE id IN (?, ?)",
+			mockReturn: sqlmock.NewRows([]string{"id", "data", "dataType"}).
+				AddRow("stored-resp-id", "{}", "response"),
+			arguments:    []driver.Value{"stored-resp-id", "stored-resp-id-2"},
+			respIds:      []string{"stored-resp-id", "stored-resp-id-2"},
+			expectedResp: map[string]string{"stored-resp-id": `{}`},
+		},
+		{
+			description:  "fetch empty response",
+			mockQuery:    "SELECT id, data, dataType FROM my_table WHERE id IN (?, ?)",
+			mockReturn:   sqlmock.NewRows([]string{"id", "data", "dataType"}),
+			arguments:    []driver.Value{"stored-resp-id", "stored-resp-id-2"},
+			respIds:      []string{"stored-resp-id", "stored-resp-id-2"},
+			expectedResp: map[string]string{},
+		},
+	}
 
-	mock, fetcher := newFetcher(t, mockReturn, mockQuery, "resp-id-1", "resp-id-2")
-	defer fetcher.db.Close()
+	for _, test := range testCases {
+		mock, fetcher := newFetcher(t, test.mockReturn, test.mockQuery, test.arguments...)
+		defer fetcher.db.Close()
 
-	storedResponses, errs := fetcher.FetchResponses(context.Background(), []string{"resp-id-1", "resp-id-2"})
+		storedResponses, errs := fetcher.FetchResponses(context.Background(), test.respIds)
 
-	assertMockExpectations(t, mock)
-	assertErrorCount(t, 0, errs)
-	assertMapLength(t, 2, storedResponses)
-	assertHasData(t, storedResponses, "resp-id-1", `{"resp":false,"value":1}`)
-	assertHasData(t, storedResponses, "resp-id-2", `{"resp":true,"value":2}`)
+		assertMockExpectations(t, mock)
+		assertErrorCount(t, 0, errs)
+		assert.Len(t, storedResponses, len(test.expectedResp))
+
+		for k, v := range test.expectedResp {
+			assertHasData(t, storedResponses, k, v)
+		}
+
+	}
 }
 
 // TestPartialResponse makes sure we unpack things properly when the DB finds some of the stored requests.
@@ -93,22 +131,6 @@ func TestPartialResponse(t *testing.T) {
 	assertHasData(t, storedReqs, "stored-req-id", "{}")
 }
 
-func TestPartialResponseFetchResponses(t *testing.T) {
-	mockQuery := "SELECT id, data, 'response' AS dataType FROM responses_table WHERE id IN (?, ?)"
-	mockReturn := sqlmock.NewRows([]string{"id", "data", "dataType"}).
-		AddRow("stored-resp-id", "{}", "response")
-
-	mock, fetcher := newFetcher(t, mockReturn, mockQuery, "stored-resp-id", "stored-resp-id-2")
-	defer fetcher.db.Close()
-
-	storedResponses, errs := fetcher.FetchResponses(context.Background(), []string{"stored-resp-id", "stored-resp-id-2"})
-
-	assertMockExpectations(t, mock)
-	assertErrorCount(t, 0, errs)
-	assertMapLength(t, 1, storedResponses)
-	assertHasData(t, storedResponses, "stored-resp-id", "{}")
-}
-
 // TestEmptyResponse makes sure we handle empty DB responses properly.
 func TestEmptyResponse(t *testing.T) {
 	mockQuery := "SELECT id, data, dataType FROM my_table WHERE id IN (?, ?)"
@@ -123,20 +145,6 @@ func TestEmptyResponse(t *testing.T) {
 	assertErrorCount(t, 3, errs)
 	assertMapLength(t, 0, storedReqs)
 	assertMapLength(t, 0, storedImps)
-}
-
-func TestEmptyResponseFetchResponses(t *testing.T) {
-	mockQuery := "SELECT id, data, dataType FROM my_table WHERE id IN (?, ?)"
-	mockReturn := sqlmock.NewRows([]string{"id", "data", "dataType"})
-
-	mock, fetcher := newFetcher(t, mockReturn, mockQuery, "stored-resp-id", "stored-resp-id-2")
-	defer fetcher.db.Close()
-
-	storedResponses, errs := fetcher.FetchResponses(context.Background(), []string{"stored-resp-id", "stored-resp-id-2"})
-
-	assertMockExpectations(t, mock)
-	assertErrorCount(t, 0, errs)
-	assertMapLength(t, 0, storedResponses)
 }
 
 // TestDatabaseError makes sure we exit with an error if the DB query fails.

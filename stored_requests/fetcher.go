@@ -198,11 +198,6 @@ func (f *fetcherWithCache) FetchResponses(ctx context.Context, ids []string) (da
 
 	leftoverResp := findLeftovers(ids, data)
 
-	// Record cache hits for stored responses
-	//f.metricsEngine.RecordStoredReqCacheResult(metrics.CacheHit, len(ids)-len(leftoverResp))
-	// Record cache misses for stored responses
-	//f.metricsEngine.RecordStoredImpCacheResult(metrics.CacheMiss, len(leftoverResp))
-
 	if len(leftoverResp) > 0 {
 		fetcherRespData, fetcherErrs := f.fetcher.FetchResponses(ctx, leftoverResp)
 		errs = fetcherErrs
