@@ -223,7 +223,7 @@ func getAuctionBidderRequests(req AuctionRequest,
 		return nil, []error{err}
 	}
 
-	bidderParamsInReqExt, err := adapters.ExtractReqExtBidderParams(req.BidRequest)
+	bidderParamsInReqExt, err := adapters.ExtractReqExtBidderParamsEmbeddedMap(req.BidRequest)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -464,6 +464,10 @@ func createSanitizedImpExt(impExt, impExtPrebid map[string]json.RawMessage) (map
 		sanitizedImpExt[openrtb_ext.SKAdNExtKey] = v
 	}
 
+	if v, exists := impExt[string(openrtb_ext.GPIDKey)]; exists {
+		sanitizedImpExt[openrtb_ext.GPIDKey] = v
+	}
+
 	return sanitizedImpExt, nil
 }
 
@@ -493,6 +497,7 @@ func isSpecialField(bidder string) bool {
 	return bidder == openrtb_ext.FirstPartyDataContextExtKey ||
 		bidder == openrtb_ext.FirstPartyDataExtKey ||
 		bidder == openrtb_ext.SKAdNExtKey ||
+		bidder == openrtb_ext.GPIDKey ||
 		bidder == openrtb_ext.PrebidExtKey
 }
 

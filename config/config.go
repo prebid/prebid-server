@@ -788,7 +788,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.adxcg.disabled", true)
 	v.SetDefault("adapters.adyoulike.endpoint", "https://broker.omnitagjs.com/broker/bid?partnerId=19340f4f097d16f41f34fc0274981ca4")
 	v.SetDefault("adapters.aja.endpoint", "https://ad.as.amanad.adtdp.com/v1/bid/4")
-	v.SetDefault("adapters.algorix.endpoint", "https://xyz.svr-algorix.com/rtb/sa?sid={{.SourceId}}&token={{.AccountID}}")
+	v.SetDefault("adapters.algorix.endpoint", "https://{{.Host}}.svr-algorix.com/rtb/sa?sid={{.SourceId}}&token={{.AccountID}}")
 	v.SetDefault("adapters.amx.endpoint", "http://pbs.amxrtb.com/auction/openrtb")
 	v.SetDefault("adapters.applogy.endpoint", "http://rtb.applogy.com/v1/prebid")
 	v.SetDefault("adapters.appnexus.endpoint", "http://ib.adnxs.com/openrtb2") // Docs: https://wiki.appnexus.com/display/supply/Incoming+Bid+Request+from+SSPs
@@ -804,8 +804,10 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.bidmachine.endpoint", "https://{{.Host}}.bidmachine.io")
 	v.SetDefault("adapters.bidmyadz.endpoint", "http://endpoint.bidmyadz.com/c0f68227d14ed938c6c49f3967cbe9bc")
 	v.SetDefault("adapters.bidscube.endpoint", "http://supply.bidscube.com/?c=o&m=rtb")
+	v.SetDefault("adapters.bizzclick.endpoint", "http://us-e-node1.bizzclick.com/bid?rtb_seat_id={{.SourceId}}&secret_key={{.AccountID}}")
 	v.SetDefault("adapters.bmtm.endpoint", "https://one.elitebidder.com/api/pbs")
 	v.SetDefault("adapters.brightroll.endpoint", "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
+	v.SetDefault("adapters.coinzilla.endpoint", "http://request-global.czilladx.com/serve/prebid-server.php")
 	v.SetDefault("adapters.colossus.endpoint", "http://colossusssp.com/?c=o&m=rtb")
 	v.SetDefault("adapters.connectad.endpoint", "http://bidder.connectad.io/API?src=pbs")
 	v.SetDefault("adapters.consumable.endpoint", "https://e.serverbid.com/api/v2")
@@ -825,6 +827,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.gamma.endpoint", "https://hb.gammaplatform.com/adx/request/")
 	v.SetDefault("adapters.gamoshi.endpoint", "https://rtb.gamoshi.io")
 	v.SetDefault("adapters.grid.endpoint", "https://grid.bidswitch.net/sp_bid?sp=prebid")
+	v.SetDefault("adapters.groupm.endpoint", "https://hbopenbid.pubmatic.com/translator?source=prebid-server")
 	v.SetDefault("adapters.gumgum.endpoint", "https://g2.gumgum.com/providers/prbds2s/bid")
 	v.SetDefault("adapters.huaweiads.endpoint", "https://acd.op.hicloud.com/ppsadx/getResult")
 	v.SetDefault("adapters.huaweiads.disabled", true)
@@ -1108,6 +1111,7 @@ func setBidderDefaults(v *viper.Viper, bidder string) {
 	v.BindEnv(adapterCfgPrefix + ".usersync.redirect.redirect_url")
 	v.BindEnv(adapterCfgPrefix + ".usersync.redirect.external_url")
 	v.BindEnv(adapterCfgPrefix + ".usersync.redirect.user_macro")
+	v.BindEnv(adapterCfgPrefix + ".usersync.external_url")
 	v.BindEnv(adapterCfgPrefix + ".usersync.support_cors")
 }
 

@@ -257,7 +257,6 @@
                 "h": 576
               },
               "ext": {
-                "gpid": "someAdSlot",
                 "rp": {
                   "target": {
                     "dataAttr1": [
@@ -274,7 +273,8 @@
                     ],
                     "search": [
                       "someSearch"
-                    ]
+                    ],
+                    "dfp_ad_unit_code": "someAdSlot"
                   },
                   "track": {
                     "mint": "",
