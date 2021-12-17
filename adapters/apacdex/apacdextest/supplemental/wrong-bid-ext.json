@@ -20,7 +20,6 @@
       }
     ]
   },
-
   "httpCalls": [
     {
       "expectedRequest": {
@@ -29,7 +28,7 @@
           "id": "test-request-id",
           "imp": [
             {
-              "id":"test-imp-id",
+              "id": "test-imp-id",
               "video": {
                 "w": 900,
                 "h": 250,
@@ -69,8 +68,8 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "unrecognized media type in response: ",
+      "value": "Failed to parse impression \"another-imp-id\" mediatype",
       "comparison": "regex"
     }
-]
+  ]
 }

@@ -67,8 +67,8 @@
                   "h": 250,
                   "w": 300,
                   "ext": {
-                    "pbs": {
-                      "mediaType": "banner"
+                    "prebid": {
+                      "type": "banner"
                     }
                   }
                 }
@@ -94,8 +94,8 @@
             "w": 300,
             "h": 250,
             "ext": {
-              "pbs": {
-                "mediaType": "banner"
+              "prebid": {
+                "type": "banner"
               }
             }
           },
