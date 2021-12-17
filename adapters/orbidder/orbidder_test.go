@@ -2,6 +2,7 @@ package orbidder
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/stretchr/testify/mock"
@@ -30,12 +31,7 @@ func TestPreprocessExtensions(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			imp := tc.imp
 			err := preprocessExtensions(&imp)
-			if tc.expectErr {
-				assert.Error(t, err)
-			}
-			if !tc.expectErr {
-				assert.NoError(t, err)
-			}
+			tc.assertError(t, err)
 		})
 	}
 }
@@ -55,6 +51,7 @@ var testCasesCurrency = map[string]struct {
 	imp         openrtb2.Imp
 	setMock     func(m *mock.Mock)
 	expectedImp openrtb2.Imp
+	assertError func(t assert.TestingT, err error, msgAndArgs ...interface{}) bool
 }{
 	"EUR: no bidfloor, no currency": {
 		imp: openrtb2.Imp{
@@ -66,6 +63,7 @@ var testCasesCurrency = map[string]struct {
 			BidFloor:    0,
 			BidFloorCur: "EUR",
 		},
+		assertError: assert.NoError,
 	},
 	"EUR: bidfloor, no currency": {
 		imp: openrtb2.Imp{
@@ -77,6 +75,7 @@ var testCasesCurrency = map[string]struct {
 			BidFloor:    1,
 			BidFloorCur: "EUR",
 		},
+		assertError: assert.NoError,
 	},
 	"EUR: bidfloor and currency": {
 		imp: openrtb2.Imp{
@@ -88,6 +87,7 @@ var testCasesCurrency = map[string]struct {
 			BidFloor:    1,
 			BidFloorCur: "EUR",
 		},
+		assertError: assert.NoError,
 	},
 	"USD: bidfloor with currency": {
 		imp: openrtb2.Imp{
@@ -101,6 +101,7 @@ var testCasesCurrency = map[string]struct {
 			BidFloor:    2.5,
 			BidFloorCur: "EUR",
 		},
+		assertError: assert.NoError,
 	},
 	"USD: no bidfloor": {
 		imp: openrtb2.Imp{
@@ -112,24 +113,39 @@ var testCasesCurrency = map[string]struct {
 			BidFloor:    0,
 			BidFloorCur: "EUR",
 		},
+		assertError: assert.NoError,
+	},
+	"ABC: invalid currency code": {
+		imp: openrtb2.Imp{
+			BidFloor:    1,
+			BidFloorCur: "ABC",
+		},
+		setMock: func(m *mock.Mock) {
+			m.On("GetRate", "ABC", "EUR").Return(0.0, errors.New("currency conversion error"))
+		},
+		expectedImp: openrtb2.Imp{
+			BidFloor:    1,
+			BidFloorCur: "ABC",
+		},
+		assertError: assert.Error,
 	},
 }
 
 var testCasesExtension = map[string]struct {
-	imp       openrtb2.Imp
-	expectErr bool
+	imp         openrtb2.Imp
+	assertError func(t assert.TestingT, err error, msgAndArgs ...interface{}) bool
 }{
 	"Valid Orbidder Extension": {
 		imp: openrtb2.Imp{
 			Ext: json.RawMessage(`{"bidder":{"accountId":"orbidder-test", "placementId":"center-banner", "bidfloor": 0.1}}`),
 		},
-		expectErr: false,
+		assertError: assert.NoError,
 	},
 	"Invalid Orbidder Extension": {
 		imp: openrtb2.Imp{
 			Ext: json.RawMessage(`{"there's'":{"something":"strange", "in the":"neighbourhood", "who you gonna call?": 0.1}}`),
 		},
-		expectErr: true,
+		assertError: assert.Error,
 	},
 }
 
@@ -142,9 +158,9 @@ func TestPreprocessBidFloorCurrency(t *testing.T) {
 			extraRequestInfo := adapters.ExtraRequestInfo{
 				CurrencyConversions: mockConversions,
 			}
-
 			err := preprocessBidFloorCurrency(&imp, &extraRequestInfo)
-			assert.NoError(t, err)
+			assert.True(t, mockConversions.AssertExpectations(t))
+			tc.assertError(t, err)
 			assert.Equal(t, tc.expectedImp, imp)
 		})
 	}
