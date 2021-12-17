@@ -6,3 +6,4 @@ capabilities:
   site:
     mediaTypes:
       - banner
+      - native
