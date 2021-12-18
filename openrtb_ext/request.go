@@ -14,6 +14,9 @@ const FirstPartyDataContextExtKey = "context"
 // SKAdNExtKey defines the field name within request.ext reserved for Apple's SKAdNetwork.
 const SKAdNExtKey = "skadn"
 
+// GPIDKey defines the field name within request.ext reserved for the Global Placement ID (GPID),
+const GPIDKey = "gpid"
+
 // NativeExchangeSpecificLowerBound defines the lower threshold of exchange specific types for native ads. There is no upper bound.
 const NativeExchangeSpecificLowerBound = 500
 
