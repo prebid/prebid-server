@@ -210,7 +210,7 @@ func (rw *RequestWrapper) rebuildSiteExt() error {
 		if err != nil {
 			return err
 		}
-		rw.Regs.Ext = siteJson
+		rw.Site.Ext = siteJson
 	}
 	return nil
 }

@@ -32,6 +32,7 @@ const (
 	BidderReservedContext BidderName = "context" // Reserved for first party data.
 	BidderReservedData    BidderName = "data"    // Reserved for first party data.
 	BidderReservedGeneral BidderName = "general" // Reserved for non-bidder specific messages when using a map keyed on the bidder name.
+	BidderReservedGPID    BidderName = "gpid"    // Reserved for Global Placement ID (GPID).
 	BidderReservedPrebid  BidderName = "prebid"  // Reserved for Prebid Server configuration.
 	BidderReservedSKAdN   BidderName = "skadn"   // Reserved for Apple's SKAdNetwork OpenRTB extension.
 )
@@ -51,6 +52,10 @@ func IsBidderNameReserved(name string) bool {
 	}
 
 	if strings.EqualFold(name, string(BidderReservedGeneral)) {
+		return true
+	}
+
+	if strings.EqualFold(name, string(BidderReservedGPID)) {
 		return true
 	}
 
@@ -83,6 +88,7 @@ const (
 	BidderAdkernelAdn       BidderName = "adkernelAdn"
 	BidderAdman             BidderName = "adman"
 	BidderAdmixer           BidderName = "admixer"
+	BidderAdnuntius         BidderName = "adnuntius"
 	BidderAdOcean           BidderName = "adocean"
 	BidderAdoppler          BidderName = "adoppler"
 	BidderAdot              BidderName = "adot"
@@ -108,8 +114,10 @@ const (
 	BidderBidmachine        BidderName = "bidmachine"
 	BidderBidmyadz          BidderName = "bidmyadz"
 	BidderBidsCube          BidderName = "bidscube"
+	BidderBizzclick         BidderName = "bizzclick"
 	BidderBmtm              BidderName = "bmtm"
 	BidderBrightroll        BidderName = "brightroll"
+	BidderCoinzilla         BidderName = "coinzilla"
 	BidderColossus          BidderName = "colossus"
 	BidderConnectAd         BidderName = "connectad"
 	BidderConsumable        BidderName = "consumable"
@@ -128,6 +136,7 @@ const (
 	BidderGamma             BidderName = "gamma"
 	BidderGamoshi           BidderName = "gamoshi"
 	BidderGrid              BidderName = "grid"
+	BidderGroupm            BidderName = "groupm"
 	BidderGumGum            BidderName = "gumgum"
 	BidderHuaweiAds         BidderName = "huaweiads"
 	BidderImpactify         BidderName = "impactify"
@@ -182,6 +191,7 @@ const (
 	BidderSomoaudience      BidderName = "somoaudience"
 	BidderSonobi            BidderName = "sonobi"
 	BidderSovrn             BidderName = "sovrn"
+	BidderStreamkey         BidderName = "streamkey"
 	BidderSynacormedia      BidderName = "synacormedia"
 	BidderTappx             BidderName = "tappx"
 	BidderTelaria           BidderName = "telaria"
@@ -193,6 +203,7 @@ const (
 	BidderUnruly            BidderName = "unruly"
 	BidderValueImpression   BidderName = "valueimpression"
 	BidderVerizonMedia      BidderName = "verizonmedia"
+	BidderVideoByte         BidderName = "videobyte"
 	BidderVisx              BidderName = "visx"
 	BidderViewdeos          BidderName = "viewdeos"
 	BidderVrtcal            BidderName = "vrtcal"
@@ -220,6 +231,7 @@ func CoreBidderNames() []BidderName {
 		BidderAdkernelAdn,
 		BidderAdman,
 		BidderAdmixer,
+		BidderAdnuntius,
 		BidderAdOcean,
 		BidderAdoppler,
 		BidderAdot,
@@ -245,8 +257,10 @@ func CoreBidderNames() []BidderName {
 		BidderBidmachine,
 		BidderBidmyadz,
 		BidderBidsCube,
+		BidderBizzclick,
 		BidderBmtm,
 		BidderBrightroll,
+		BidderCoinzilla,
 		BidderColossus,
 		BidderConnectAd,
 		BidderConsumable,
@@ -265,6 +279,7 @@ func CoreBidderNames() []BidderName {
 		BidderGamma,
 		BidderGamoshi,
 		BidderGrid,
+		BidderGroupm,
 		BidderGumGum,
 		BidderHuaweiAds,
 		BidderImpactify,
@@ -319,6 +334,7 @@ func CoreBidderNames() []BidderName {
 		BidderSomoaudience,
 		BidderSonobi,
 		BidderSovrn,
+		BidderStreamkey,
 		BidderSynacormedia,
 		BidderTappx,
 		BidderTelaria,
@@ -330,6 +346,7 @@ func CoreBidderNames() []BidderName {
 		BidderUnruly,
 		BidderValueImpression,
 		BidderVerizonMedia,
+		BidderVideoByte,
 		BidderViewdeos,
 		BidderVisx,
 		BidderVrtcal,
