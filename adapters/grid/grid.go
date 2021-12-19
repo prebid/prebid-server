@@ -19,6 +19,18 @@ type GridAdapter struct {
 	endpoint string
 }
 
+type GridBidType struct {
+	ContentType openrtb_ext.BidType `json:"content_type"`
+}
+
+type GridSeatBidType struct {
+	Bid []GridBidType `json:"bid"`
+}
+
+type GridResponseType struct {
+	SeatBid []GridSeatBidType `json:"seatbid,omitempty"`
+}
+
 type GridBidExt struct {
 	Bidder ExtBidder `json:"bidder"`
 }
@@ -333,19 +345,23 @@ func (a *GridAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReq
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
+	var bidRespWithType GridResponseType
+	if err := json.Unmarshal(response.Body, &bidRespWithType); err != nil {
+		return nil, []error{err}
+	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
 
-	for _, sb := range bidResp.SeatBid {
-		for i := range sb.Bid {
-			bidMeta, err := getBidMeta(sb.Bid[i].Ext)
-			bidType, err := getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp)
+	for i, sb := range bidResp.SeatBid {
+		for j := range sb.Bid {
+			bidMeta, err := getBidMeta(sb.Bid[j].Ext)
+			bidType, err := getMediaTypeForImp(sb.Bid[j].ImpID, internalRequest.Imp, bidRespWithType.SeatBid[i].Bid[j])
 			if err != nil {
 				return nil, []error{err}
 			}
 
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     &sb.Bid[i],
+				Bid:     &sb.Bid[j],
 				BidType: bidType,
 				BidMeta: bidMeta,
 			})
@@ -378,19 +394,23 @@ func getBidMeta(ext json.RawMessage) (*openrtb_ext.ExtBidPrebidMeta, error) {
 	return bidMeta, nil
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
-	for _, imp := range imps {
-		if imp.ID == impID {
-			if imp.Banner != nil {
-				return openrtb_ext.BidTypeBanner, nil
-			}
+func getMediaTypeForImp(impID string, imps []openrtb2.Imp, bidWithType GridBidType) (openrtb_ext.BidType, error) {
+	if bidWithType.ContentType != "" {
+		return bidWithType.ContentType, nil
+	} else {
+		for _, imp := range imps {
+			if imp.ID == impID {
+				if imp.Banner != nil {
+					return openrtb_ext.BidTypeBanner, nil
+				}
 
-			if imp.Video != nil {
-				return openrtb_ext.BidTypeVideo, nil
-			}
+				if imp.Video != nil {
+					return openrtb_ext.BidTypeVideo, nil
+				}
 
-			return "", &errortypes.BadServerResponse{
-				Message: fmt.Sprintf("Unknown impression type for ID: \"%s\"", impID),
+				return "", &errortypes.BadServerResponse{
+					Message: fmt.Sprintf("Unknown impression type for ID: \"%s\"", impID),
+				}
 			}
 		}
 	}
