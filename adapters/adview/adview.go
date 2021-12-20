@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"text/template"
 
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
@@ -58,6 +59,22 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		}
 	}
 
+	// Check if imp comes with bid floor amount defined in a foreign currency
+	if imp.BidFloor > 0 && imp.BidFloorCur != "" && strings.ToUpper(imp.BidFloorCur) != "USD" {
+		// Convert to US dollars
+		convertedValue, err := requestInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, "USD")
+		if err != nil {
+			return nil, []error{err}
+		}
+		// Update after conversion. All imp elements inside request.Imp are shallow copies
+		// therefore, their non-pointer values are not shared memory and are safe to modify.
+		imp.BidFloorCur = "USD"
+		imp.BidFloor = convertedValue
+	}
+
+	// Set the CUR of bid to USD after converting all floors
+	request.Cur = []string{"USD"}
+
 	url, err := a.buildEndpointURL(&advImpExt)
 	if err != nil {
 		return nil, []error{err}
@@ -100,7 +117,8 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
-	bidResponse.Currency = response.Cur
+	bidResponse.Currency = "USD" //we just support USD for resp
+
 	var errors []error
 	for _, seatBid := range response.SeatBid {
 		for i, bid := range seatBid.Bid {

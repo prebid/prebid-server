@@ -46,6 +46,8 @@ var validParams = []string{
 	`{"inv":321,"mname":"12345"}`,
 	`{"mid":123,"inv":321,"mname":"pcl1"}`,
 	`{"mid":"123","inv":321,"mname":"pcl1"}`,
+	`{"mid":"123","priceType":"gross"}`,
+	`{"mid":"123","priceType":"net"}`,
 }
 
 var invalidParams = []string{
@@ -62,4 +64,5 @@ var invalidParams = []string{
 	`{"inv":321}`,
 	`{"inv":"321"}`,
 	`{"mname":"12345"}`,
+	`{"mid":"123","priceType":"GROSS"}`,
 }

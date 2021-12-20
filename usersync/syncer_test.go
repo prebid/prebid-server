@@ -29,6 +29,7 @@ func TestNewSyncer(t *testing.T) {
 		givenDefault        string
 		givenIFrameConfig   *config.SyncerEndpoint
 		givenRedirectConfig *config.SyncerEndpoint
+		givenExternalURL    string
 		expectedError       string
 		expectedDefault     SyncType
 		expectedIFrame      string
@@ -100,6 +101,17 @@ func TestNewSyncer(t *testing.T) {
 			givenRedirectConfig: errInvalidConfig,
 			expectedError:       "redirect composed url: \"notAURL:http%3A%2F%2Fhost.com%2Fhost\" is invalid",
 		},
+		{
+			description:         "Syncer Level External URL",
+			givenKey:            "a",
+			givenDefault:        "iframe",
+			givenExternalURL:    "http://syncer.com",
+			givenIFrameConfig:   iframeConfig,
+			givenRedirectConfig: redirectConfig,
+			expectedDefault:     SyncTypeIFrame,
+			expectedIFrame:      "https://bidder.com/iframe?redirect=http%3A%2F%2Fsyncer.com%2Fhost",
+			expectedRedirect:    "https://bidder.com/redirect?redirect=http%3A%2F%2Fsyncer.com%2Fhost",
+		},
 	}
 
 	for _, test := range testCases {
@@ -109,6 +121,7 @@ func TestNewSyncer(t *testing.T) {
 			Default:     test.givenDefault,
 			IFrame:      test.givenIFrameConfig,
 			Redirect:    test.givenRedirectConfig,
+			ExternalURL: test.givenExternalURL,
 		}
 
 		result, err := NewSyncer(hostConfig, syncerConfig)
@@ -232,11 +245,12 @@ func TestBuildTemplate(t *testing.T) {
 	)
 
 	testCases := []struct {
-		description         string
-		givenHostConfig     config.UserSync
-		givenSyncerEndpoint config.SyncerEndpoint
-		expectedError       string
-		expectedRendered    string
+		description            string
+		givenHostConfig        config.UserSync
+		givenSyncerExternalURL string
+		givenSyncerEndpoint    config.SyncerEndpoint
+		expectedError          string
+		expectedRendered       string
 	}{
 		{
 			description: "No Composed Macros",
@@ -272,6 +286,23 @@ func TestBuildTemplate(t *testing.T) {
 		},
 		{
 			description: "External URL From Host",
+			givenSyncerEndpoint: config.SyncerEndpoint{
+				URL:         "https://bidder.com/sync?redirect={{.RedirectURL}}",
+				ExternalURL: "http://syncer.com",
+			},
+			expectedRendered: "https://bidder.com/sync?redirect=http%3A%2F%2Fsyncer.com%2Fhost",
+		},
+		{
+			description:            "External URL From Syncer Config",
+			givenSyncerExternalURL: "http://syncershared.com",
+			givenSyncerEndpoint: config.SyncerEndpoint{
+				URL: "https://bidder.com/sync?redirect={{.RedirectURL}}",
+			},
+			expectedRendered: "https://bidder.com/sync?redirect=http%3A%2F%2Fsyncershared.com%2Fhost",
+		},
+		{
+			description:            "External URL From Syncer Config (Most Specific Wins)",
+			givenSyncerExternalURL: "http://syncershared.com",
 			givenSyncerEndpoint: config.SyncerEndpoint{
 				URL:         "https://bidder.com/sync?redirect={{.RedirectURL}}",
 				ExternalURL: "http://syncer.com",
@@ -339,7 +370,7 @@ func TestBuildTemplate(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		result, err := buildTemplate(key, syncTypeValue, hostConfig, test.givenSyncerEndpoint)
+		result, err := buildTemplate(key, syncTypeValue, hostConfig, test.givenSyncerExternalURL, test.givenSyncerEndpoint)
 
 		if test.expectedError == "" {
 			assert.NoError(t, err, test.description+":err")
@@ -350,6 +381,50 @@ func TestBuildTemplate(t *testing.T) {
 		} else {
 			assert.EqualError(t, err, test.expectedError, test.description+":err")
 		}
+	}
+}
+
+func TestChooseExternalURL(t *testing.T) {
+	testCases := []struct {
+		description            string
+		givenSyncerEndpointURL string
+		givenSyncerURL         string
+		givenHostConfigURL     string
+		expected               string
+	}{
+		{
+			description:            "Syncer Endpoint Chosen",
+			givenSyncerEndpointURL: "a",
+			givenSyncerURL:         "b",
+			givenHostConfigURL:     "c",
+			expected:               "a",
+		},
+		{
+			description:            "Syncer Chosen",
+			givenSyncerEndpointURL: "",
+			givenSyncerURL:         "b",
+			givenHostConfigURL:     "c",
+			expected:               "b",
+		},
+		{
+			description:            "Host Config Chosen",
+			givenSyncerEndpointURL: "",
+			givenSyncerURL:         "",
+			givenHostConfigURL:     "c",
+			expected:               "c",
+		},
+		{
+			description:            "All Empty",
+			givenSyncerEndpointURL: "",
+			givenSyncerURL:         "",
+			givenHostConfigURL:     "",
+			expected:               "",
+		},
+	}
+
+	for _, test := range testCases {
+		result := chooseExternalURL(test.givenSyncerEndpointURL, test.givenSyncerURL, test.givenHostConfigURL)
+		assert.Equal(t, test.expected, result, test.description)
 	}
 }
 

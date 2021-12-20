@@ -104,12 +104,15 @@ func TestIsBidderNameReserved(t *testing.T) {
 		{"general", true},
 		{"gEnErAl", true},
 		{"GENERAL", true},
-		{"skadn", true},
-		{"skADN", true},
-		{"SKADN", true},
+		{"gpid", true},
+		{"GPID", true},
+		{"GPid", true},
 		{"prebid", true},
 		{"PREbid", true},
 		{"PREBID", true},
+		{"skadn", true},
+		{"skADN", true},
+		{"SKADN", true},
 		{"notreserved", false},
 	}
 

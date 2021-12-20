@@ -14,6 +14,8 @@
             }
           ]
         },
+        "bidfloor": 1.00,
+        "bidfloorcur": "MXN",
         "ext":{
           "bidder": {
             "appId": "impactify.io",
@@ -22,7 +24,19 @@
           }
         }
       }
-    ]
+    ],
+    "ext": {
+      "prebid": {
+        "currency": {
+          "rates": {
+            "MXN": {
+              "USD": 0.05
+            }
+          },
+          "usepbsrates": false
+        }
+      }
+    }
   },
 
   "httpCalls": [
@@ -45,6 +59,8 @@
                   }
                 ]
               },
+              "bidfloor": 0.05,
+              "bidfloorcur": "USD",
               "ext": {
                 "impactify": {
                   "appId": "impactify.io",
@@ -53,7 +69,19 @@
                 }
               }
             }
-          ]
+          ],
+          "ext": {
+            "prebid": {
+              "currency": {
+                "rates": {
+                  "MXN": {
+                    "USD": 0.05
+                  }
+                },
+                "usepbsrates": false
+              }
+            }
+          }
         }
       },
       "mockResponse": {

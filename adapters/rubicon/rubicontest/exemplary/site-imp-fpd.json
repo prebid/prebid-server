@@ -200,7 +200,7 @@
           "data": {
             "adserver": {
               "name": "gam",
-              "adslot": "someAdSlot"
+              "adslot": "adSlotFromData"
             },
             "dataAttr1": "dataVal1",
             "dataAttr2": "dataVal2"
@@ -428,7 +428,6 @@
                 "h": 576
               },
               "ext": {
-                "gpid": "someAdSlot",
                 "rp": {
                   "target": {
                     "dataAttr1": [
@@ -472,7 +471,8 @@
                     "sectioncat": [
                       "sectionCat1",
                       "sectionCat2"
-                    ]
+                    ],
+                    "dfp_ad_unit_code": "adSlotFromData"
                   },
                   "track": {
                     "mint": "",

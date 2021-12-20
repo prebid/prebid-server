@@ -83,7 +83,7 @@ func (a *MarsmediaAdapter) MakeRequests(requestIn *openrtb2.BidRequest, reqInfo 
 		}}
 	}
 
-	uri := a.URI + "&zone=" + marsmediaExt.ZoneID
+	uri := a.URI + "&zone=" + marsmediaExt.ZoneID.String()
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
