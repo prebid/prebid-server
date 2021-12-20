@@ -1,16 +1,16 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "title": "Valueimpression Adapter Params",
-  "description": "A schema which validates params accepted by the Valueimpression adapter",
+  "title": "Apacdex Adapter Params",
+  "description": "A schema which validates params accepted by the Apacdex adapter",
   "type": "object",
   "properties": {
     "placementId": {
       "type": "string",
-      "description": "Placement ID provided by Valueimpression"
+      "description": "Placement ID provided by Apacdex"
     },
     "siteId": {
       "type": "string",
-      "description": "Publisher site ID from Valueimpression"
+      "description": "Publisher site ID from Apacdex"
     },
     "floorPrice": {
       "type": "number",

@@ -20,7 +20,6 @@
       }
     ]
   },
-
   "httpCalls": [
     {
       "expectedRequest": {
@@ -29,7 +28,7 @@
           "id": "test-request-id",
           "imp": [
             {
-              "id":"test-imp-id",
+              "id": "test-imp-id",
               "video": {
                 "w": 900,
                 "h": 250,
@@ -54,10 +53,11 @@
               "bid": [
                 {
                   "id": "test-bid-id",
-                  "impid": "BOGUS-IMPID",
+                  "impid": "another-imp-id",
                   "price": 3.5,
                   "w": 900,
-                  "h": 250
+                  "h": 250,
+                  "ext": {}
                 }
               ]
             }
@@ -68,8 +68,8 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "bid id='test-bid-id' could not find valid impid='BOGUS-IMPID'",
+      "value": "Failed to parse bid mediatype for impression \"another-imp-id\"",
       "comparison": "regex"
     }
-]
+  ]
 }
