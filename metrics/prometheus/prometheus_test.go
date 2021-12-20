@@ -26,7 +26,7 @@ func TestMetricCountGatekeeping(t *testing.T) {
 	m := createMetricsForTesting()
 
 	// Gather All Metrics
-	metricFamilies, err := m.Registry.Gather()
+	metricFamilies, err := m.Gatherer.Gather()
 	assert.NoError(t, err, "gather metics")
 
 	// Summarize By Adapter Cardinality

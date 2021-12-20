@@ -54,6 +54,7 @@ type bidTtxExt struct {
 func (a *TtxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var adapterRequests []*adapters.RequestData
+	var groupedImps = make(map[string][]openrtb2.Imp)
 
 	// Construct request extension common to all imps
 	// NOTE: not blocking adapter requests on errors
@@ -64,27 +65,39 @@ func (a *TtxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapter
 	}
 	request.Ext = reqExt
 
-	// Break up multi-imp request into multiple external requests since we don't
-	// support SRA in our exchange server
+	// We only support SRA for requests containing same prod and
+	// zoneID, therefore group all imps accordingly and create a http
+	// request for each such group
 	for i := 0; i < len(request.Imp); i++ {
-		if adapterReq, err := a.makeRequest(*request, request.Imp[i]); err == nil {
-			adapterRequests = append(adapterRequests, adapterReq)
+		if impCopy, err := makeImps(request.Imp[i]); err == nil {
+			var impExt Ext
+
+			// Skip over imps whose extensions cannot be read since
+			// we cannot glean Prod or ZoneID which are required to
+			// group together. However let's not block request creation.
+			if err := json.Unmarshal(impCopy.Ext, &impExt); err == nil {
+				impKey := impExt.Ttx.Prod + impExt.Ttx.Zoneid
+				groupedImps[impKey] = append(groupedImps[impKey], impCopy)
+			} else {
+				errs = append(errs, err)
+			}
 		} else {
 			errs = append(errs, err)
 		}
 	}
 
+	for _, impList := range groupedImps {
+		if adapterReq, err := a.makeRequest(*request, impList); err == nil {
+			adapterRequests = append(adapterRequests, adapterReq)
+		} else {
+			errs = append(errs, err)
+		}
+	}
 	return adapterRequests, errs
 }
 
-func (a *TtxAdapter) makeRequest(request openrtb2.BidRequest, imp openrtb2.Imp) (*adapters.RequestData, error) {
-	impCopy, err := makeImps(imp)
-
-	if err != nil {
-		return nil, err
-	}
-
-	request.Imp = []openrtb2.Imp{*impCopy}
+func (a *TtxAdapter) makeRequest(request openrtb2.BidRequest, impList []openrtb2.Imp) (*adapters.RequestData, error) {
+	request.Imp = impList
 
 	// Last Step
 	reqJSON, err := json.Marshal(request)
@@ -103,23 +116,23 @@ func (a *TtxAdapter) makeRequest(request openrtb2.BidRequest, imp openrtb2.Imp) 
 	}, nil
 }
 
-func makeImps(imp openrtb2.Imp) (*openrtb2.Imp, error) {
+func makeImps(imp openrtb2.Imp) (openrtb2.Imp, error) {
 	if imp.Banner == nil && imp.Video == nil {
-		return nil, &errortypes.BadInput{
+		return openrtb2.Imp{}, &errortypes.BadInput{
 			Message: fmt.Sprintf("Imp ID %s must have at least one of [Banner, Video] defined", imp.ID),
 		}
 	}
 
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return nil, &errortypes.BadInput{
+		return openrtb2.Imp{}, &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
 
 	var ttxExt openrtb_ext.ExtImp33across
 	if err := json.Unmarshal(bidderExt.Bidder, &ttxExt); err != nil {
-		return nil, &errortypes.BadInput{
+		return openrtb2.Imp{}, &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
@@ -135,7 +148,7 @@ func makeImps(imp openrtb2.Imp) (*openrtb2.Imp, error) {
 
 	impExtJSON, err := json.Marshal(impExt)
 	if err != nil {
-		return nil, &errortypes.BadInput{
+		return openrtb2.Imp{}, &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
@@ -149,13 +162,13 @@ func makeImps(imp openrtb2.Imp) (*openrtb2.Imp, error) {
 		imp.Video = videoCopy
 
 		if err != nil {
-			return nil, &errortypes.BadInput{
+			return openrtb2.Imp{}, &errortypes.BadInput{
 				Message: err.Error(),
 			}
 		}
 	}
 
-	return &imp, nil
+	return imp, nil
 }
 
 func makeReqExt(request *openrtb2.BidRequest) ([]byte, error) {

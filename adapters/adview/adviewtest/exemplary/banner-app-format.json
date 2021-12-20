@@ -50,6 +50,7 @@
         "uri": "https://bid.adview.com/agent/thirdAdxService/accountid01",
         "body": {
           "id": "some-request-id",
+          "cur": ["USD"],
           "device": {
             "ua": "test-user-agent",
             "ip": "123.123.123.123",
@@ -134,6 +135,7 @@
   ],
   "expectedBidResponses": [
     {
+      "currency": "USD",
       "bids": [
         {
           "bid": {

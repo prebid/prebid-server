@@ -5,8 +5,8 @@
   "type": "object",
   "properties": {
     "zoneId": {
-      "type": "string",
-      "description": "Zone ID to use."
+      "type": ["integer", "string"],
+      "description": "The zone ID from Mars Media Group."
     }
   }
 }

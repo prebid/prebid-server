@@ -227,6 +227,12 @@ func TestSyncerOverride(t *testing.T) {
 			expected:      &Syncer{Redirect: &SyncerEndpoint{URL: "override"}},
 		},
 		{
+			description:   "Override ExternalURL",
+			givenOriginal: &Syncer{ExternalURL: "original"},
+			givenOverride: &Syncer{ExternalURL: "override"},
+			expected:      &Syncer{ExternalURL: "override"},
+		},
+		{
 			description:   "Override SupportCORS",
 			givenOriginal: &Syncer{SupportCORS: &trueValue},
 			givenOverride: &Syncer{SupportCORS: &falseValue},
