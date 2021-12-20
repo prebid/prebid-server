@@ -30,6 +30,10 @@ const defaultUnknownNetworkType = 0
 const timeFormat = "2006-01-02 15:04:05.000"
 const defaultTimeZone = "+0200"
 const defaultModelName = "HUAWEI"
+const chineseSiteEndPoint = "https://acd.op.hicloud.com/ppsadx/getResult"
+const europeanSiteEndPoint = "https://adx-dre.op.hicloud.com/ppsadx/getResult"
+const asianSiteEndPoint = "https://adx-dra.op.hicloud.com/ppsadx/getResult"
+const russianSiteEndPoint = "https://adx-drru.op.hicloud.com/ppsadx/getResult"
 
 // creative type
 const (
@@ -228,7 +232,20 @@ type monitor struct {
 }
 
 type adapter struct {
-	endpoint string
+	endpoint  string
+	extraInfo ExtraInfo
+}
+
+type ExtraInfo struct {
+	PkgNameConvert []pkgNameConvert `json:"pkgNameConvert,omitempty"`
+}
+
+type pkgNameConvert struct {
+	ConvertedPkgName           string   `json:"convertedPkgName,omitempty"`
+	UnconvertedPkgNames        []string `json:"unconvertedPkgNames,omitempty"`
+	UnconvertedPkgNameKeyWords []string `json:"unconvertedPkgNameKeyWords,omitempty"`
+	UnconvertedPkgNamePrefixs  []string `json:"unconvertedPkgNamePrefixs,omitempty"`
+	ExceptionPkgNames          []string `json:"exceptionPkgNames,omitempty"`
 }
 
 func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest,
@@ -260,7 +277,8 @@ func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest,
 	}
 	request.Multislot = multislot
 
-	if err := getHuaweiAdsReqJson(&request, openRTBRequest, huaweiAdsImpExt); err != nil {
+	countryCode, err := getHuaweiAdsReqJson(&request, openRTBRequest, huaweiAdsImpExt, a.extraInfo)
+	if err != nil {
 		return nil, []error{err}
 	}
 
@@ -278,12 +296,39 @@ func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest,
 	header = getHeaders(huaweiAdsImpExt, openRTBRequest, isTestAuthorization)
 	bidRequest := &adapters.RequestData{
 		Method:  http.MethodPost,
-		Uri:     a.endpoint,
+		Uri:     getFinalEndPoint(countryCode, a.endpoint),
 		Body:    reqJSON,
 		Headers: header,
 	}
 
 	return []*adapters.RequestData{bidRequest}, nil
+}
+
+// countryCode is alpha2, choose the corresponding site end point
+func getFinalEndPoint(countryCode string, defaultEndpoint string) string {
+	if countryCode == "" || len(countryCode) > 2 {
+		return defaultEndpoint
+	}
+
+	var europeanSiteCountryCodeGroup = map[string]string{"AX": "1", "AL": "1", "AD": "1", "AU": "1", "AT": "1", "BE": "1",
+		"BA": "1", "BG": "1", "CA": "1", "HR": "1", "CY": "1", "CZ": "1", "DK": "1", "EE": "1", "FO": "1", "FI": "1",
+		"FR": "1", "DE": "1", "GI": "1", "GR": "1", "GL": "1", "GG": "1", "VA": "1", "HU": "1", "IS": "1", "IE": "1",
+		"IM": "1", "IL": "1", "IT": "1", "JE": "1", "YK": "1", "LV": "1", "LI": "1", "LT": "1", "LU": "1", "MT": "1",
+		"MD": "1", "MC": "1", "ME": "1", "NL": "1", "AN": "1", "NZ": "1", "NO": "1", "PL": "1", "PT": "1", "RO": "1",
+		"MF": "1", "VC": "1", "SM": "1", "RS": "1", "SX": "1", "SK": "1", "SI": "1", "ES": "1", "SE": "1", "CH": "1",
+		"TR": "1", "UA": "1", "GB": "1", "US": "1", "MK": "1", "SJ": "1", "BQ": "1", "PM": "1", "CW": "1"}
+	var russianSiteCountryCodeGroup = map[string]string{"RU": "1"}
+	var chineseSiteCountryCodeGroup = map[string]string{"CN": "1"}
+	// choose site
+	if _, exists := chineseSiteCountryCodeGroup[countryCode]; exists {
+		return chineseSiteEndPoint
+	} else if _, exists := russianSiteCountryCodeGroup[countryCode]; exists {
+		return russianSiteEndPoint
+	} else if _, exists := europeanSiteCountryCodeGroup[countryCode]; exists {
+		return europeanSiteEndPoint
+	} else {
+		return asianSiteEndPoint
+	}
 }
 
 func (a *adapter) MakeBids(openRTBRequest *openrtb2.BidRequest, requestToBidder *adapters.RequestData,
@@ -314,10 +359,28 @@ func (a *adapter) MakeBids(openRTBRequest *openrtb2.BidRequest, requestToBidder 
 
 // Builder builds a new instance of the HuaweiAds adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	extraInfo, err := getExtraInfo(config.ExtraAdapterInfo)
+	if err != nil {
+		return nil, err
+	}
+
 	bidder := &adapter{
-		endpoint: config.Endpoint,
+		endpoint:  config.Endpoint,
+		extraInfo: extraInfo,
 	}
 	return bidder, nil
+}
+
+func getExtraInfo(v string) (ExtraInfo, error) {
+	var extraInfo ExtraInfo
+	if len(v) == 0 {
+		return extraInfo, nil
+	}
+
+	if err := json.Unmarshal([]byte(v), &extraInfo); err != nil {
+		return extraInfo, fmt.Errorf("invalid extra info: %v , pls check", err)
+	}
+	return extraInfo, nil
 }
 
 // getHeaders: get request header, Authorization -> digest
@@ -337,19 +400,21 @@ func getHeaders(huaweiAdsImpExt *openrtb_ext.ExtImpHuaweiAds, request *openrtb2.
 }
 
 // getHuaweiAdsReqJson: get body json for HuaweiAds request
-func getHuaweiAdsReqJson(request *huaweiAdsRequest, openRTBRequest *openrtb2.BidRequest, huaweiAdsImpExt *openrtb_ext.ExtImpHuaweiAds) error {
+func getHuaweiAdsReqJson(request *huaweiAdsRequest, openRTBRequest *openrtb2.BidRequest,
+	huaweiAdsImpExt *openrtb_ext.ExtImpHuaweiAds, extraInfo ExtraInfo) (string, error) {
 	request.Version = huaweiAdxApiVersion
 	var err error
-	if err = getHuaweiAdsReqAppInfo(request, openRTBRequest); err != nil {
-		return err
+	var countryCode string
+	if countryCode, err = getHuaweiAdsReqAppInfo(request, openRTBRequest, extraInfo); err != nil {
+		return "", err
 	}
 	if err = getHuaweiAdsReqDeviceInfo(request, openRTBRequest, huaweiAdsImpExt); err != nil {
-		return err
+		return "", err
 	}
 	getHuaweiAdsReqNetWorkInfo(request, openRTBRequest)
 	getHuaweiAdsReqRegsInfo(request, openRTBRequest)
 	getHuaweiAdsReqGeoInfo(request, openRTBRequest)
-	return nil
+	return countryCode, nil
 }
 
 func getHuaweiAdsReqAdslot30(huaweiAdsImpExt *openrtb_ext.ExtImpHuaweiAds,
@@ -459,7 +524,7 @@ func convertAdtypeString2Integer(adtypeLower string) int32 {
 }
 
 // getHuaweiAdsReqAppInfo: get app information for HuaweiAds request
-func getHuaweiAdsReqAppInfo(request *huaweiAdsRequest, openRTBRequest *openrtb2.BidRequest) error {
+func getHuaweiAdsReqAppInfo(request *huaweiAdsRequest, openRTBRequest *openrtb2.BidRequest, extraInfo ExtraInfo) (countryCode string, err error) {
 	var app app
 	if openRTBRequest.App != nil {
 		if openRTBRequest.App.Ver != "" {
@@ -471,9 +536,9 @@ func getHuaweiAdsReqAppInfo(request *huaweiAdsRequest, openRTBRequest *openrtb2.
 
 		// bundle cannot be empty, we need package name.
 		if openRTBRequest.App.Bundle != "" {
-			app.Pkgname = openRTBRequest.App.Bundle
+			app.Pkgname = getFinalPkgName(openRTBRequest.App.Bundle, extraInfo)
 		} else {
-			return errors.New("HuaweiAdsReqApp: Pkgname is empty.")
+			return "", errors.New("HuaweiAdsReqApp: Pkgname is empty.")
 		}
 
 		if openRTBRequest.App.Content != nil && openRTBRequest.App.Content.Language != "" {
@@ -482,9 +547,48 @@ func getHuaweiAdsReqAppInfo(request *huaweiAdsRequest, openRTBRequest *openrtb2.
 			app.Lang = "en"
 		}
 	}
-	app.Country = getCountryCode(openRTBRequest)
+	countryCode = getCountryCode(openRTBRequest)
+	app.Country = countryCode
 	request.App = app
-	return nil
+	return countryCode, nil
+}
+
+// when it has pkgNameConvert (include different rules)
+// 1. when bundleName in ExceptionPkgNames, finalPkgname = bundleName
+// 2. when bundleName conform UnconvertedPkgNames, finalPkgname = ConvertedPkgName
+// 3. when bundleName conform keyword, finalPkgname = ConvertedPkgName
+// 4. when bundleName conform prefix, finalPkgname = ConvertedPkgName
+func getFinalPkgName(bundleName string, extraInfo ExtraInfo) string {
+	for _, convert := range extraInfo.PkgNameConvert {
+		if convert.ConvertedPkgName == "" {
+			continue
+		}
+
+		for _, name := range convert.ExceptionPkgNames {
+			if name == bundleName {
+				return bundleName
+			}
+		}
+
+		for _, name := range convert.UnconvertedPkgNames {
+			if name == bundleName || name == "*" {
+				return convert.ConvertedPkgName
+			}
+		}
+
+		for _, keyword := range convert.UnconvertedPkgNameKeyWords {
+			if strings.Index(bundleName, keyword) > 0 {
+				return convert.ConvertedPkgName
+			}
+		}
+
+		for _, prefix := range convert.UnconvertedPkgNamePrefixs {
+			if strings.HasPrefix(bundleName, prefix) {
+				return convert.ConvertedPkgName
+			}
+		}
+	}
+	return bundleName
 }
 
 // getClientTime: get field clientTime, format: 2006-01-02 15:04:05.000+0200
@@ -552,7 +656,12 @@ func convertCountryCode(country string) (out string) {
 	if country == "" {
 		return defaultCountryName
 	}
-	var mapCountryCodeAlpha3ToAlpha2 = map[string]string{"CHL": "CL", "CHN": "CN", "ARE": "AE"}
+	var mapCountryCodeAlpha3ToAlpha2 = map[string]string{"AND": "AD", "AGO": "AO", "AUT": "AT", "BGD": "BD",
+		"BLR": "BY", "CAF": "CF", "TCD": "TD", "CHL": "CL", "CHN": "CN", "COG": "CG", "COD": "CD", "DNK": "DK",
+		"GNQ": "GQ", "EST": "EE", "GIN": "GN", "GNB": "GW", "GUY": "GY", "IRQ": "IQ", "IRL": "IE", "ISR": "IL",
+		"KAZ": "KZ", "LBY": "LY", "MDG": "MG", "MDV": "MV", "MEX": "MX", "MNE": "ME", "MOZ": "MZ", "PAK": "PK",
+		"PNG": "PG", "PRY": "PY", "POL": "PL", "PRT": "PT", "SRB": "RS", "SVK": "SK", "SVN": "SI", "SWE": "SE",
+		"TUN": "TN", "TUR": "TR", "TKM": "TM", "UKR": "UA", "ARE": "AE", "URY": "UY"}
 	if mappedCountry, exists := mapCountryCodeAlpha3ToAlpha2[country]; exists {
 		return mappedCountry
 	}
