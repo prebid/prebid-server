@@ -68,7 +68,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "Failed to parse impression \"another-imp-id\" mediatype",
+      "value": "Failed to parse bid mediatype for impression \"another-imp-id\"",
       "comparison": "regex"
     }
   ]
