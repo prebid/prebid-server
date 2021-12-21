@@ -18,7 +18,7 @@ func TestGoodRequests(t *testing.T) {
 	cache := stored_requests.Cache{
 		Requests:  memory.NewCache(256*1024, -1, "Request"),
 		Imps:      memory.NewCache(256*1024, -1, "Imp"),
-		Responses: memory.NewCache(256*1024, -1, "Responseds"),
+		Responses: memory.NewCache(256*1024, -1, "Responses"),
 		Accounts:  memory.NewCache(256*1024, -1, "Account"),
 	}
 	id := "1"

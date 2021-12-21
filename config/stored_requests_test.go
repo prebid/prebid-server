@@ -72,7 +72,8 @@ func TestResponseQueryMaker(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		query := buildQueryResponses(sampleResponsesQueryTemplate, test.inputRespNumber)
+		cfg := PostgresFetcherQueries{QueryTemplate: sampleResponsesQueryTemplate}
+		query := cfg.MakeQueryResponses(test.inputRespNumber)
 		assertStringsEqual(t, query, test.expectedQuery)
 	}
 }
@@ -336,13 +337,6 @@ func buildQuery(template string, numReqs int, numImps int) string {
 	cfg.QueryTemplate = template
 
 	return cfg.MakeQuery(numReqs, numImps)
-}
-
-func buildQueryResponses(template string, numResps int) string {
-	cfg := PostgresFetcherQueries{}
-	cfg.QueryTemplate = template
-
-	return cfg.MakeQueryResponses(numResps)
 }
 
 func assertStringsEqual(t *testing.T, actual string, expected string) {
