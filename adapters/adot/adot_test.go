@@ -75,3 +75,11 @@ func TestMediaTypeForBid(t *testing.T) {
 		t.Errorf("the type is not the valid one. actual: %v, expected: %v", bidTypeNative, openrtb_ext.BidTypeVideo)
 	}
 }
+
+//Test macros resolution for adm and nurl
+func TestResolveMacros(t *testing.T) {
+	bid := &openrtb2.Bid{AdM: "adm:imp_${AUCTION_PRICE} amd:creativeview_${AUCTION_PRICE}", NURL: "nurl_${AUCTION_PRICE}", Price: 123.45}
+	resolveMacros(bid)
+	assert.Equal(t, "adm:imp_123.45 amd:creativeview_123.45", bid.AdM)
+	assert.Equal(t, "nurl_123.45", bid.NURL)
+}
