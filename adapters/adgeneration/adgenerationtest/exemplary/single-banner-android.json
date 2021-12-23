@@ -6,10 +6,12 @@
         },
         "device": {
             "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36",
-            "ip": "0.0.0.0"
+            "ip": "0.0.0.0",
+            "os": "android",
+            "ifa": "advertising_id"
         },
-        "source": {
-            "TID": "transactionid"
+        "app": {
+            "name": "adgneration"
         },
         "imp": [
             {
@@ -59,7 +61,7 @@
                 "tmax": 500
             },
             "expectedRequest":{
-                "uri": "https://d.socdm.com/adsv/v1?adapterver=1.0.3&currency=JPY&hb=true&id=58278&posall=SSPLOC&sdkname=prebidserver&sdktype=0&sizes=300x250&t=json3&tp=http%3A%2F%2Fexample.com%2Ftest.html&transactionid=transactionid",
+                "uri": "https://d.socdm.com/adsv/v1?adapterver=1.0.3&advertising_id=advertising_id&appname=adgneration&currency=JPY&hb=true&id=58278&posall=SSPLOC&sdkname=prebidserver&sdktype=1&sizes=300x250&t=json3&tp=http%3A%2F%2Fexample.com%2Ftest.html",
                 "headers": {
                     "Accept": [
                         "application/json"
