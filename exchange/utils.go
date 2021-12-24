@@ -74,6 +74,11 @@ func cleanOpenRTBRequests(ctx context.Context,
 		return
 	}
 
+	aliasesGVLIDs, errs := parseAliasesGVLIDs(req.BidRequest)
+	if len(errs) > 0 {
+		return
+	}
+
 	var allBidderRequests []BidderRequest
 	allBidderRequests, errs = getAuctionBidderRequests(req, requestExt, bidderToSyncerKey, impsByBidder, aliases)
 
@@ -140,7 +145,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 				}
 			}
 			var publisherID = req.LegacyLabels.PubID
-			bidReq, geo, id, err := gDPR.AuctionActivitiesAllowed(ctx, bidderRequest.BidderCoreName, publisherID, gdprSignal, consent, weakVendorEnforcement)
+			bidReq, geo, id, err := gDPR.AuctionActivitiesAllowed(ctx, bidderRequest.BidderCoreName, bidderRequest.BidderName, publisherID, gdprSignal, consent, weakVendorEnforcement, aliasesGVLIDs)
 			bidRequestAllowed = bidReq
 
 			if err == nil {
@@ -647,6 +652,19 @@ func parseAliases(orig *openrtb2.BidRequest) (map[string]string, []error) {
 		return nil, []error{err}
 	}
 	return aliases, nil
+}
+
+// parseAliasesGVLIDs parses the Bidder Alias GVLIDs from the BidRequest
+func parseAliasesGVLIDs(orig *openrtb2.BidRequest) (map[string]uint16, []error) {
+	var aliasesGVLIDs map[string]uint16
+	if value, dataType, _, err := jsonparser.Get(orig.Ext, openrtb_ext.PrebidExtKey, "aliasgvlids"); dataType == jsonparser.Object && err == nil {
+		if err := json.Unmarshal(value, &aliasesGVLIDs); err != nil {
+			return nil, []error{err}
+		}
+	} else if dataType != jsonparser.NotExist && err != jsonparser.KeyPathNotFoundError {
+		return nil, []error{err}
+	}
+	return aliasesGVLIDs, nil
 }
 
 func GetValidBidders(aliases map[string]string) map[string]struct{} {

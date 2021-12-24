@@ -30,6 +30,7 @@ type ExtRequest struct {
 // ExtRequestPrebid defines the contract for bidrequest.ext.prebid
 type ExtRequestPrebid struct {
 	Aliases              map[string]string         `json:"aliases,omitempty"`
+	AliasGVLIDs          map[string]uint16         `json:"aliasgvlids,omitempty"`
 	BidAdjustmentFactors map[string]float64        `json:"bidadjustmentfactors,omitempty"`
 	Cache                *ExtRequestPrebidCache    `json:"cache,omitempty"`
 	Channel              *ExtRequestPrebidChannel  `json:"channel,omitempty"`
