@@ -4,11 +4,10 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/prebid/prebid-server/openrtb_ext"
-
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
-
 	"github.com/prebid/prebid-server/endpoints/openrtb2/ctv/types"
+	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -201,6 +200,144 @@ func TestGetTargeting(t *testing.T) {
 				assert.Empty(t, value)
 			}
 			assert.Equal(t, test.expectValue, value)
+		})
+	}
+}
+
+func TestGetNearestDuration(t *testing.T) {
+	type args struct {
+		duration int64
+		config   []*types.ImpAdPodConfig
+	}
+	tests := []struct {
+		name         string
+		args         args
+		wantDuration int64
+	}{
+		// TODO: Add test cases.
+		{
+			name: "sorted_array_exact_match",
+			args: args{
+				duration: 20,
+				config: []*types.ImpAdPodConfig{
+					{MaxDuration: 10},
+					{MaxDuration: 20},
+					{MaxDuration: 30},
+					{MaxDuration: 40},
+				},
+			},
+			wantDuration: 20,
+		},
+		{
+			name: "sorted_array_first_element",
+			args: args{
+				duration: 5,
+				config: []*types.ImpAdPodConfig{
+					{MaxDuration: 10},
+					{MaxDuration: 20},
+					{MaxDuration: 30},
+					{MaxDuration: 40},
+				},
+			},
+			wantDuration: 10,
+		},
+		{
+			name: "sorted_array_not_found",
+			args: args{
+				duration: 45,
+				config: []*types.ImpAdPodConfig{
+					{MaxDuration: 10},
+					{MaxDuration: 20},
+					{MaxDuration: 30},
+					{MaxDuration: 40},
+				},
+			},
+			wantDuration: -1,
+		},
+		{
+			name: "unsorted_array_exact_match",
+			args: args{
+				duration: 10,
+				config: []*types.ImpAdPodConfig{
+					{MaxDuration: 40},
+					{MaxDuration: 20},
+					{MaxDuration: 10},
+					{MaxDuration: 30},
+				},
+			},
+			wantDuration: 10,
+		},
+		{
+			name: "unsorted_array_round_to_minimum",
+			args: args{
+				duration: 5,
+				config: []*types.ImpAdPodConfig{
+					{MaxDuration: 40},
+					{MaxDuration: 20},
+					{MaxDuration: 10},
+					{MaxDuration: 30},
+				},
+			},
+			wantDuration: 10,
+		},
+		{
+			name: "unsorted_array_invalid",
+			args: args{
+				duration: 45,
+				config: []*types.ImpAdPodConfig{
+					{MaxDuration: 40},
+					{MaxDuration: 20},
+					{MaxDuration: 10},
+					{MaxDuration: 30},
+				},
+			},
+			wantDuration: -1,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			duration := GetNearestDuration(tt.args.duration, tt.args.config)
+			assert.Equal(t, tt.wantDuration, duration)
+		})
+	}
+}
+
+func TestErrToBidderMessage(t *testing.T) {
+	type args struct {
+		err error
+	}
+	tests := []struct {
+		name string
+		args args
+		want *openrtb_ext.ExtBidderMessage
+	}{
+		{
+			name: `nil_check`,
+			args: args{err: nil},
+			want: nil,
+		},
+		{
+			name: `normal_error`,
+			args: args{err: fmt.Errorf(`normal_error`)},
+			want: &openrtb_ext.ExtBidderMessage{
+				Code:    errortypes.UnknownErrorCode,
+				Message: `normal_error`,
+			},
+		},
+		{
+			name: `prebid_ctv_error`,
+			args: args{err: &errortypes.Timeout{Message: `timeout`}},
+			want: &openrtb_ext.ExtBidderMessage{
+				Code:    errortypes.TimeoutErrorCode,
+				Message: `timeout`,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			got := ErrToBidderMessage(tt.args.err)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

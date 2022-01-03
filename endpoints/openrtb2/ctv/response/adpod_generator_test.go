@@ -1,9 +1,10 @@
 package response
 
 import (
-	"github.com/prebid/prebid-server/endpoints/openrtb2/ctv/constant"
 	"sort"
 	"testing"
+
+	"github.com/prebid/prebid-server/endpoints/openrtb2/ctv/constant"
 
 	"github.com/stretchr/testify/assert"
 
@@ -123,9 +124,9 @@ func TestAdPodGenerator_getMaxAdPodBid(t *testing.T) {
 				results: []*highestCombination{
 					{
 						filteredBids: map[string]*filteredBid{
-							`bid-1`: {bid: &types.Bid{Bid: &openrtb2.Bid{ID: `bid-1`}}, reasonCode: constant.CTVRCCategoryExclusion},
-							`bid-2`: {bid: &types.Bid{Bid: &openrtb2.Bid{ID: `bid-2`}}, reasonCode: constant.CTVRCCategoryExclusion},
-							`bid-3`: {bid: &types.Bid{Bid: &openrtb2.Bid{ID: `bid-3`}}, reasonCode: constant.CTVRCCategoryExclusion},
+							`bid-1`: {bid: &types.Bid{Bid: &openrtb2.Bid{ID: `bid-1`}}, status: constant.StatusCategoryExclusion},
+							`bid-2`: {bid: &types.Bid{Bid: &openrtb2.Bid{ID: `bid-2`}}, status: constant.StatusCategoryExclusion},
+							`bid-3`: {bid: &types.Bid{Bid: &openrtb2.Bid{ID: `bid-3`}}, status: constant.StatusCategoryExclusion},
 						},
 					},
 				},
@@ -158,7 +159,7 @@ func TestAdPodGenerator_getMaxAdPodBid(t *testing.T) {
 							`domain-2`: 1,
 						},
 						filteredBids: map[string]*filteredBid{
-							`bid-4`: {bid: &types.Bid{Bid: &openrtb2.Bid{ID: `bid-4`}}, reasonCode: constant.CTVRCCategoryExclusion},
+							`bid-4`: {bid: &types.Bid{Bid: &openrtb2.Bid{ID: `bid-4`}}, status: constant.StatusCategoryExclusion},
 						},
 					},
 				},

@@ -21,8 +21,8 @@ type IAdPodGenerator interface {
 	GetAdPodBids() *types.AdPodBid
 }
 type filteredBid struct {
-	bid        *types.Bid
-	reasonCode constant.FilterReasonCode
+	bid    *types.Bid
+	status constant.BidStatus
 }
 type highestCombination struct {
 	bids              []*types.Bid
@@ -175,8 +175,8 @@ func (o *AdPodGenerator) getMaxAdPodBid(results []*highestCombination) *types.Ad
 	var maxResult *highestCombination
 	for _, result := range results {
 		for _, rc := range result.filteredBids {
-			if constant.CTVRCDidNotGetChance == rc.bid.FilterReasonCode {
-				rc.bid.FilterReasonCode = rc.reasonCode
+			if constant.StatusOK == rc.bid.Status {
+				rc.bid.Status = rc.status
 			}
 		}
 		if len(result.bidIDs) == 0 {
@@ -258,7 +258,7 @@ func findUniqueCombinations(data [][]*types.Bid, combination []int, maxCategoryS
 
 	hc := &highestCombination{}
 	var ehc *highestCombination
-	var rc constant.FilterReasonCode
+	var rc constant.BidStatus
 	inext, jnext := n-1, 0
 	filterBids := map[string]*filteredBid{}
 
@@ -279,7 +279,7 @@ func findUniqueCombinations(data [][]*types.Bid, combination []int, maxCategoryS
 				for j := 0; j < combination[i] && !(i == inext && j > jnext); j++ {
 					bid := data[i][indices[i][j]]
 					if _, ok := filterBids[bid.ID]; !ok {
-						filterBids[bid.ID] = &filteredBid{bid: bid, reasonCode: rc}
+						filterBids[bid.ID] = &filteredBid{bid: bid, status: rc}
 					}
 				}
 			}
@@ -336,7 +336,7 @@ func findUniqueCombinations(data [][]*types.Bid, combination []int, maxCategoryS
 	return hc
 }
 
-func evaluate(bids [][]*types.Bid, indices [][]int, totalBids int, maxCategoryScore, maxDomainScore int) (*highestCombination, int, int, constant.FilterReasonCode) {
+func evaluate(bids [][]*types.Bid, indices [][]int, totalBids int, maxCategoryScore, maxDomainScore int) (*highestCombination, int, int, constant.BidStatus) {
 
 	hbc := &highestCombination{
 		bids:          make([]*types.Bid, totalBids),
@@ -368,7 +368,7 @@ func evaluate(bids [][]*types.Bid, indices [][]int, totalBids int, maxCategorySc
 			for _, cat := range bid.Cat {
 				hbc.categoryScore[cat]++
 				if hbc.categoryScore[cat] > 1 && (hbc.categoryScore[cat]*100/totalBids) > maxCategoryScore {
-					return nil, inext, jnext, constant.CTVRCCategoryExclusion
+					return nil, inext, jnext, constant.StatusCategoryExclusion
 				}
 			}
 
@@ -376,11 +376,11 @@ func evaluate(bids [][]*types.Bid, indices [][]int, totalBids int, maxCategorySc
 			for _, domain := range bid.ADomain {
 				hbc.domainScore[domain]++
 				if hbc.domainScore[domain] > 1 && (hbc.domainScore[domain]*100/totalBids) > maxDomainScore {
-					return nil, inext, jnext, constant.CTVRCDomainExclusion
+					return nil, inext, jnext, constant.StatusDomainExclusion
 				}
 			}
 		}
 	}
 
-	return hbc, -1, -1, constant.CTVRCWinningBid
+	return hbc, -1, -1, constant.StatusWinningBid
 }

@@ -103,12 +103,15 @@ func (c *generator) Init(podMinDuration, podMaxDuration uint64, config *openrtb_
 //Next - Get next ad slot combination
 //returns empty array if next combination is not present
 func (c *generator) Next() []uint64 {
+	var comb []uint64
+	if len(c.slotDurations) <= 0 {
+		return comb
+	}
 	if c.state.resetFlags {
 		reset(c)
 		c.state.resetFlags = false
 	}
-	comb := make([]uint64, 0)
-	for true {
+	for {
 		comb = c.lazyNext()
 		if len(comb) == 0 || isValidCombination(c, comb) {
 			break
@@ -161,7 +164,7 @@ func compute(c *generator, noOfAds uint64, recursion bool) uint64 {
 	// can not limit till  c.minAds
 	// because we want to construct
 	// c.combinationCountMap required by subtractUnwantedRepeatations
-	if noOfAds <= 0 {
+	if noOfAds <= 0 || len(c.slotDurations) <= 0 {
 		return 0
 	}
 	var noOfCombinations *big.Int
@@ -262,8 +265,7 @@ func (c *generator) lazyNext() []uint64 {
 	if c.state.lastCombination == nil {
 		c.combinations = make([][]uint64, 0)
 	}
-	data := new([]uint64)
-	data = &c.state.lastCombination
+	data := &c.state.lastCombination
 	if *data == nil || uint64(len(*data)) != r {
 		*data = make([]uint64, r)
 	}
@@ -277,8 +279,6 @@ func (c *generator) lazyNext() []uint64 {
 		c.state.valueUpdated = false
 		result = make([]uint64, len(*data))
 		copy(result, *data)
-	} else {
-		result = make([]uint64, 0)
 	}
 	return result
 }

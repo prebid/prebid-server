@@ -243,6 +243,8 @@ func PriceGranularityFromString(gran string) PriceGranularity {
 		return priceGranularityAuto
 	case "dense":
 		return priceGranularityDense
+	case "ow-ctv-med":
+		return priceGranularityOWCTVMed
 	}
 	// Return empty if not matched
 	return PriceGranularity{}
@@ -312,6 +314,14 @@ var priceGranularityAuto = PriceGranularity{
 			Increment: 0.5,
 		},
 	},
+}
+
+var priceGranularityOWCTVMed = PriceGranularity{
+	Precision: 2,
+	Ranges: []GranularityRange{{
+		Min:       0,
+		Max:       100,
+		Increment: 0.5}},
 }
 
 // ExtRequestPrebidData defines Prebid's First Party Data (FPD) and related bid request options.

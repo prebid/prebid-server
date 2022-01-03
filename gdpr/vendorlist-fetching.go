@@ -78,7 +78,7 @@ func preloadCache(ctx context.Context, client *http.Client, urlMaker func(uint16
 // this will fetch the latest version.
 func vendorListURLMaker(vendorListVersion uint16) string {
 	if vendorListVersion == 0 {
-			return "https://vendor-list.consensu.org/v2/vendor-list.json"
+		return "https://vendor-list.consensu.org/v2/vendor-list.json"
 	}
 	return "https://vendor-list.consensu.org/v2/archives/vendor-list-v" + strconv.Itoa(int(vendorListVersion)) + ".json"
 }

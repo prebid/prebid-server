@@ -1,10 +1,6 @@
 package constant
 
-type ErrorCode = int
-type FilterReasonCode = int
-
 const (
-	PrebidCTVSeatName        = `prebid_ctv`
 	CTVImpressionIDSeparator = `_`
 	CTVImpressionIDFormat    = `%v` + CTVImpressionIDSeparator + `%v`
 	CTVUniqueBidIDFormat     = `%v-%v`
@@ -30,14 +26,28 @@ var (
 	VASTVersionsStr = []string{"0", "1.0", "2.0", "3.0", "4.0"}
 )
 
-const (
-	CTVErrorNoValidImpressionsForAdPodConfig ErrorCode = 601
+//ErrorCode contains list of error codes for validation of ctv requests
+type ErrorCode = int
 
-	//Filter Reason Code
-	CTVRCDidNotGetChance   FilterReasonCode = 0
-	CTVRCWinningBid        FilterReasonCode = 1
-	CTVRCCategoryExclusion FilterReasonCode = 2
-	CTVRCDomainExclusion   FilterReasonCode = 3
+const (
+	//CTVErrorNoValidImpressionsForAdPodConfig ...
+	CTVErrorNoValidImpressionsForAdPodConfig ErrorCode = 601
+)
+
+//BidStatus contains bids filtering reason
+type BidStatus = int
+
+const (
+	//StatusOK ...
+	StatusOK BidStatus = 0
+	//StatusWinningBid ...
+	StatusWinningBid BidStatus = 1
+	//StatusCategoryExclusion ...
+	StatusCategoryExclusion BidStatus = 2
+	//StatusDomainExclusion ...
+	StatusDomainExclusion BidStatus = 3
+	//StatusDurationMismatch ...
+	StatusDurationMismatch BidStatus = 4
 )
 
 // MonitorKey provides the unique key for moniroting the algorithms

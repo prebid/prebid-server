@@ -1,6 +1,11 @@
 package openrtb_ext
 
-/*
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
 func TestVideoAdPod_Validate(t *testing.T) {
 	type fields struct {
 		MinAds                      *int
@@ -13,91 +18,91 @@ func TestVideoAdPod_Validate(t *testing.T) {
 	tests := []struct {
 		name    string
 		fields  fields
-		wantErr error
+		wantErr []error
 	}{
 		{
 			name: "ErrInvalidMinAds",
 			fields: fields{
 				MinAds: getIntPtr(-1),
 			},
-			wantErr: errInvalidMinAds,
+			wantErr: []error{errInvalidMinAds},
 		},
 		{
 			name: "ZeroMinAds",
 			fields: fields{
 				MinAds: getIntPtr(0),
 			},
-			wantErr: errInvalidMinAds,
+			wantErr: []error{errInvalidMinAds},
 		},
 		{
 			name: "ErrInvalidMaxAds",
 			fields: fields{
 				MaxAds: getIntPtr(-1),
 			},
-			wantErr: errInvalidMaxAds,
+			wantErr: []error{errInvalidMaxAds},
 		},
 		{
 			name: "ZeroMaxAds",
 			fields: fields{
 				MaxAds: getIntPtr(0),
 			},
-			wantErr: errInvalidMaxAds,
+			wantErr: []error{errInvalidMaxAds},
 		},
 		{
 			name: "ErrInvalidMinDuration",
 			fields: fields{
 				MinDuration: getIntPtr(-1),
 			},
-			wantErr: errInvalidMinDuration,
+			wantErr: []error{errInvalidMinDuration},
 		},
 		{
 			name: "ZeroMinDuration",
 			fields: fields{
 				MinDuration: getIntPtr(0),
 			},
-			wantErr: errInvalidMinDuration,
+			wantErr: []error{errInvalidMinDuration},
 		},
 		{
 			name: "ErrInvalidMaxDuration",
 			fields: fields{
 				MaxDuration: getIntPtr(-1),
 			},
-			wantErr: errInvalidMaxDuration,
+			wantErr: []error{errInvalidMaxDuration},
 		},
 		{
 			name: "ZeroMaxDuration",
 			fields: fields{
 				MaxDuration: getIntPtr(0),
 			},
-			wantErr: errInvalidMaxDuration,
+			wantErr: []error{errInvalidMaxDuration},
 		},
 		{
 			name: "ErrInvalidAdvertiserExclusionPercent_NegativeValue",
 			fields: fields{
 				AdvertiserExclusionPercent: getIntPtr(-1),
 			},
-			wantErr: errInvalidAdvertiserExclusionPercent,
+			wantErr: []error{errInvalidAdvertiserExclusionPercent},
 		},
 		{
 			name: "ErrInvalidAdvertiserExclusionPercent_InvalidRange",
 			fields: fields{
 				AdvertiserExclusionPercent: getIntPtr(-1),
 			},
-			wantErr: errInvalidAdvertiserExclusionPercent,
+			wantErr: []error{errInvalidAdvertiserExclusionPercent},
 		},
 		{
 			name: "ErrInvalidIABCategoryExclusionPercent_Negative",
 			fields: fields{
 				IABCategoryExclusionPercent: getIntPtr(-1),
 			},
-			wantErr: errInvalidIABCategoryExclusionPercent,
+			wantErr: []error{errInvalidIABCategoryExclusionPercent},
 		},
 		{
 			name: "ErrInvalidIABCategoryExclusionPercent_InvalidRange",
 			fields: fields{
 				IABCategoryExclusionPercent: getIntPtr(101),
 			},
-			wantErr: errInvalidIABCategoryExclusionPercent,
+			wantErr: []error{errInvalidIABCategoryExclusionPercent},
 		},
 		{
 			name: "ErrInvalidMinMaxAds",
@@ -105,7 +110,7 @@ func TestVideoAdPod_Validate(t *testing.T) {
 				MinAds: getIntPtr(5),
 				MaxAds: getIntPtr(2),
 			},
-			wantErr: errInvalidMinMaxAds,
+			wantErr: []error{errInvalidMinMaxAds},
 		},
 		{
 			name: "ErrInvalidMinMaxDuration",
@@ -113,7 +118,7 @@ func TestVideoAdPod_Validate(t *testing.T) {
 				MinDuration: getIntPtr(5),
 				MaxDuration: getIntPtr(2),
 			},
-			wantErr: errInvalidMinMaxDuration,
+			wantErr: []error{errInvalidMinMaxDuration},
 		},
 		{
 			name: "Valid",
@@ -153,53 +158,61 @@ func TestExtRequestAdPod_Validate(t *testing.T) {
 		CrossPodIABCategoryExclusionPercent *int
 		IABCategoryExclusionWindow          *int
 		AdvertiserExclusionWindow           *int
+		VideoLengthMatching                 string
 	}
 	tests := []struct {
 		name    string
 		fields  fields
-		wantErr error
+		wantErr []error
 	}{
 		{
 			name: "ErrInvalidCrossPodAdvertiserExclusionPercent_Negative",
 			fields: fields{
 				CrossPodAdvertiserExclusionPercent: getIntPtr(-1),
 			},
-			wantErr: errInvalidCrossPodAdvertiserExclusionPercent,
+			wantErr: []error{errInvalidCrossPodAdvertiserExclusionPercent},
 		},
 		{
 			name: "ErrInvalidCrossPodAdvertiserExclusionPercent_InvalidRange",
 			fields: fields{
 				CrossPodAdvertiserExclusionPercent: getIntPtr(101),
 			},
-			wantErr: errInvalidCrossPodAdvertiserExclusionPercent,
+			wantErr: []error{errInvalidCrossPodAdvertiserExclusionPercent},
 		},
 		{
 			name: "ErrInvalidCrossPodIABCategoryExclusionPercent_Negative",
 			fields: fields{
 				CrossPodIABCategoryExclusionPercent: getIntPtr(-1),
 			},
-			wantErr: errInvalidCrossPodIABCategoryExclusionPercent,
+			wantErr: []error{errInvalidCrossPodIABCategoryExclusionPercent},
 		},
 		{
 			name: "ErrInvalidCrossPodIABCategoryExclusionPercent_InvalidRange",
 			fields: fields{
 				CrossPodIABCategoryExclusionPercent: getIntPtr(101),
 			},
-			wantErr: errInvalidCrossPodIABCategoryExclusionPercent,
+			wantErr: []error{errInvalidCrossPodIABCategoryExclusionPercent},
 		},
 		{
 			name: "ErrInvalidIABCategoryExclusionWindow",
 			fields: fields{
 				IABCategoryExclusionWindow: getIntPtr(-1),
 			},
-			wantErr: errInvalidIABCategoryExclusionWindow,
+			wantErr: []error{errInvalidIABCategoryExclusionWindow},
 		},
 		{
 			name: "ErrInvalidAdvertiserExclusionWindow",
 			fields: fields{
 				AdvertiserExclusionWindow: getIntPtr(-1),
 			},
-			wantErr: errInvalidAdvertiserExclusionWindow,
+			wantErr: []error{errInvalidAdvertiserExclusionWindow},
+		},
+		{
+			name: "ErrInvalidVideoLengthMatching",
+			fields: fields{
+				VideoLengthMatching: "invalid",
+			},
+			wantErr: []error{errInvalidVideoLengthMatching},
 		},
 		{
 			name: "InvalidAdPod",
@@ -208,7 +221,7 @@ func TestExtRequestAdPod_Validate(t *testing.T) {
 					MinAds: getIntPtr(-1),
 				},
 			},
-			wantErr: errInvalidMinAds,
+			wantErr: []error{getRequestAdPodError(errInvalidMinAds)},
 		},
 		{
 			name: "Valid",
@@ -238,6 +251,7 @@ func TestExtRequestAdPod_Validate(t *testing.T) {
 				CrossPodIABCategoryExclusionPercent: tt.fields.CrossPodIABCategoryExclusionPercent,
 				IABCategoryExclusionWindow:          tt.fields.IABCategoryExclusionWindow,
 				AdvertiserExclusionWindow:           tt.fields.AdvertiserExclusionWindow,
+				VideoLengthMatching:                 tt.fields.VideoLengthMatching,
 			}
 			actualErr := ext.Validate()
 			assert.Equal(t, tt.wantErr, actualErr)
@@ -253,14 +267,14 @@ func TestExtVideoAdPod_Validate(t *testing.T) {
 	tests := []struct {
 		name    string
 		fields  fields
-		wantErr error
+		wantErr []error
 	}{
 		{
 			name: "ErrInvalidAdPodOffset",
 			fields: fields{
 				Offset: getIntPtr(-1),
 			},
-			wantErr: errInvalidAdPodOffset,
+			wantErr: []error{errInvalidAdPodOffset},
 		},
 		{
 			name: "InvalidAdPod",
@@ -269,7 +283,7 @@ func TestExtVideoAdPod_Validate(t *testing.T) {
 					MinAds: getIntPtr(-1),
 				},
 			},
-			wantErr: errInvalidMinAds,
+			wantErr: []error{getRequestAdPodError(errInvalidMinAds)},
 		},
 		{
 			name: "Valid",
@@ -299,6 +313,3 @@ func TestExtVideoAdPod_Validate(t *testing.T) {
 		})
 	}
 }
-
-
-*/

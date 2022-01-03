@@ -3,39 +3,17 @@ package openrtb2
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/endpoints/openrtb2/ctv/types"
 	"net/url"
 	"strings"
 	"testing"
 
 	"github.com/beevik/etree"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/prebid-server/endpoints/openrtb2/ctv/constant"
+	"github.com/prebid/prebid-server/endpoints/openrtb2/ctv/types"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
-
-func TestGetAdDuration(t *testing.T) {
-	var tests = []struct {
-		scenario      string
-		adDuration    string // actual ad duration. 0 value will be assumed as no ad duration
-		maxAdDuration int    // requested max ad duration
-		expect        int
-	}{
-		{"0sec ad duration", "0", 200, 200},
-		{"30sec ad duration", "30", 100, 30},
-		{"negative ad duration", "-30", 100, 100},
-		{"invalid ad duration", "invalid", 80, 80},
-		{"ad duration breaking bid.Ext json", `""quote""`, 50, 50},
-	}
-	for _, test := range tests {
-		t.Run(test.scenario, func(t *testing.T) {
-			bid := openrtb2.Bid{
-				Ext: []byte(`{"prebid" : {"video" : {"duration" : ` + test.adDuration + `}}}`),
-			}
-			assert.Equal(t, test.expect, getAdDuration(bid, int64(test.maxAdDuration)))
-		})
-	}
-}
 
 func TestAddTargetingKeys(t *testing.T) {
 	var tests = []struct {
@@ -374,6 +352,311 @@ func TestFilterImpsVastTagsByDuration(t *testing.T) {
 			for i, datum := range deps.impData {
 				assert.Equal(t, tc.expectedOutput.blockedTags[i], datum.BlockedVASTTags, "Expected and actual impData was different")
 			}
+		})
+	}
+}
+
+func TestGetBidDuration(t *testing.T) {
+	type args struct {
+		bid             *openrtb2.Bid
+		reqExt          *openrtb_ext.ExtRequestAdPod
+		config          []*types.ImpAdPodConfig
+		defaultDuration int64
+	}
+	type want struct {
+		duration int64
+		status   constant.BidStatus
+	}
+	var tests = []struct {
+		name   string
+		args   args
+		want   want
+		expect int
+	}{
+		{
+			name: "nil_bid_ext",
+			args: args{
+				bid:             &openrtb2.Bid{},
+				reqExt:          nil,
+				config:          nil,
+				defaultDuration: 100,
+			},
+			want: want{
+				duration: 100,
+				status:   constant.StatusOK,
+			},
+		},
+		{
+			name: "use_default_duration",
+			args: args{
+				bid: &openrtb2.Bid{
+					Ext: json.RawMessage(`{"tmp":123}`),
+				},
+				reqExt:          nil,
+				config:          nil,
+				defaultDuration: 100,
+			},
+			want: want{
+				duration: 100,
+				status:   constant.StatusOK,
+			},
+		},
+		{
+			name: "invalid_duration_in_bid_ext",
+			args: args{
+				bid: &openrtb2.Bid{
+					Ext: json.RawMessage(`{"prebid":{"video":{"duration":"invalid"}}}`),
+				},
+				reqExt:          nil,
+				config:          nil,
+				defaultDuration: 100,
+			},
+			want: want{
+				duration: 100,
+				status:   constant.StatusOK,
+			},
+		},
+		{
+			name: "0sec_duration_in_bid_ext",
+			args: args{
+				bid: &openrtb2.Bid{
+					Ext: json.RawMessage(`{"prebid":{"video":{"duration":0}}}`),
+				},
+				reqExt:          nil,
+				config:          nil,
+				defaultDuration: 100,
+			},
+			want: want{
+				duration: 100,
+				status:   constant.StatusOK,
+			},
+		},
+		{
+			name: "negative_duration_in_bid_ext",
+			args: args{
+				bid: &openrtb2.Bid{
+					Ext: json.RawMessage(`{"prebid":{"video":{"duration":-30}}}`),
+				},
+				reqExt:          nil,
+				config:          nil,
+				defaultDuration: 100,
+			},
+			want: want{
+				duration: 100,
+				status:   constant.StatusOK,
+			},
+		},
+		{
+			name: "30sec_duration_in_bid_ext",
+			args: args{
+				bid: &openrtb2.Bid{
+					Ext: json.RawMessage(`{"prebid":{"video":{"duration":30}}}`),
+				},
+				reqExt:          nil,
+				config:          nil,
+				defaultDuration: 100,
+			},
+			want: want{
+				duration: 30,
+				status:   constant.StatusOK,
+			},
+		},
+		{
+			name: "duration_matching_empty",
+			args: args{
+				bid: &openrtb2.Bid{
+					Ext: json.RawMessage(`{"prebid":{"video":{"duration":30}}}`),
+				},
+				reqExt: &openrtb_ext.ExtRequestAdPod{
+					VideoLengthMatching: "",
+				},
+				config:          nil,
+				defaultDuration: 100,
+			},
+			want: want{
+				duration: 30,
+				status:   constant.StatusOK,
+			},
+		},
+		{
+			name: "duration_matching_exact",
+			args: args{
+				bid: &openrtb2.Bid{
+					Ext: json.RawMessage(`{"prebid":{"video":{"duration":30}}}`),
+				},
+				reqExt: &openrtb_ext.ExtRequestAdPod{
+					VideoLengthMatching: openrtb_ext.OWExactVideoLengthsMatching,
+				},
+				config: []*types.ImpAdPodConfig{
+					{MaxDuration: 10},
+					{MaxDuration: 20},
+					{MaxDuration: 30},
+					{MaxDuration: 40},
+				},
+				defaultDuration: 100,
+			},
+			want: want{
+				duration: 30,
+				status:   constant.StatusOK,
+			},
+		},
+		{
+			name: "duration_matching_exact_not_present",
+			args: args{
+				bid: &openrtb2.Bid{
+					Ext: json.RawMessage(`{"prebid":{"video":{"duration":35}}}`),
+				},
+				reqExt: &openrtb_ext.ExtRequestAdPod{
+					VideoLengthMatching: openrtb_ext.OWExactVideoLengthsMatching,
+				},
+				config: []*types.ImpAdPodConfig{
+					{MaxDuration: 10},
+					{MaxDuration: 20},
+					{MaxDuration: 30},
+					{MaxDuration: 40},
+				},
+				defaultDuration: 100,
+			},
+			want: want{
+				duration: 35,
+				status:   constant.StatusDurationMismatch,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			duration, status := getBidDuration(tt.args.bid, tt.args.reqExt, tt.args.config, tt.args.defaultDuration)
+			assert.Equal(t, tt.want.duration, duration)
+			assert.Equal(t, tt.want.status, status)
+		})
+	}
+}
+
+func Test_getDurationBasedOnDurationMatchingPolicy(t *testing.T) {
+	type args struct {
+		duration int64
+		policy   openrtb_ext.OWVideoLengthMatchingPolicy
+		config   []*types.ImpAdPodConfig
+	}
+	type want struct {
+		duration int64
+		status   constant.BidStatus
+	}
+	tests := []struct {
+		name string
+		args args
+		want want
+	}{
+		{
+			name: "empty_duration_policy",
+			args: args{
+				duration: 10,
+				policy:   "",
+				config: []*types.ImpAdPodConfig{
+					{MaxDuration: 10},
+					{MaxDuration: 20},
+					{MaxDuration: 30},
+					{MaxDuration: 40},
+				},
+			},
+			want: want{
+				duration: 10,
+				status:   constant.StatusOK,
+			},
+		},
+		{
+			name: "policy_exact",
+			args: args{
+				duration: 10,
+				policy:   openrtb_ext.OWExactVideoLengthsMatching,
+				config: []*types.ImpAdPodConfig{
+					{MaxDuration: 10},
+					{MaxDuration: 20},
+					{MaxDuration: 30},
+					{MaxDuration: 40},
+				},
+			},
+			want: want{
+				duration: 10,
+				status:   constant.StatusOK,
+			},
+		},
+		{
+			name: "policy_exact_didnot_match",
+			args: args{
+				duration: 15,
+				policy:   openrtb_ext.OWExactVideoLengthsMatching,
+				config: []*types.ImpAdPodConfig{
+					{MaxDuration: 10},
+					{MaxDuration: 20},
+					{MaxDuration: 30},
+					{MaxDuration: 40},
+				},
+			},
+			want: want{
+				duration: 15,
+				status:   constant.StatusDurationMismatch,
+			},
+		},
+		{
+			name: "policy_roundup_exact",
+			args: args{
+				duration: 20,
+				policy:   openrtb_ext.OWRoundupVideoLengthMatching,
+				config: []*types.ImpAdPodConfig{
+					{MaxDuration: 10},
+					{MaxDuration: 20},
+					{MaxDuration: 30},
+					{MaxDuration: 40},
+				},
+			},
+			want: want{
+				duration: 20,
+				status:   constant.StatusOK,
+			},
+		},
+		{
+			name: "policy_roundup",
+			args: args{
+				duration: 25,
+				policy:   openrtb_ext.OWRoundupVideoLengthMatching,
+				config: []*types.ImpAdPodConfig{
+					{MaxDuration: 10},
+					{MaxDuration: 20},
+					{MaxDuration: 30},
+					{MaxDuration: 40},
+				},
+			},
+			want: want{
+				duration: 30,
+				status:   constant.StatusOK,
+			},
+		},
+		{
+			name: "policy_roundup_didnot_match",
+			args: args{
+				duration: 45,
+				policy:   openrtb_ext.OWRoundupVideoLengthMatching,
+				config: []*types.ImpAdPodConfig{
+					{MaxDuration: 10},
+					{MaxDuration: 20},
+					{MaxDuration: 30},
+					{MaxDuration: 40},
+				},
+			},
+			want: want{
+				duration: 45,
+				status:   constant.StatusDurationMismatch,
+			},
+		},
+
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			duration, status := getDurationBasedOnDurationMatchingPolicy(tt.args.duration, tt.args.policy, tt.args.config)
+			assert.Equal(t, tt.want.duration, duration)
+			assert.Equal(t, tt.want.status, status)
 		})
 	}
 }

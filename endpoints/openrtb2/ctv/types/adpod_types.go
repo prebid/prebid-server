@@ -10,7 +10,7 @@ import (
 type Bid struct {
 	*openrtb2.Bid
 	Duration          int
-	FilterReasonCode  constant.FilterReasonCode
+	Status            constant.BidStatus
 	DealTierSatisfied bool
 }
 
@@ -53,10 +53,10 @@ type ImpAdPodConfig struct {
 //ImpData example
 type ImpData struct {
 	//AdPodGenerator
-	ImpID           string                     `json:"-"`
-	VideoExt        *openrtb_ext.ExtVideoAdPod `json:"vidext,omitempty"`
-	Config          []*ImpAdPodConfig          `json:"imp,omitempty"`
-	ErrorCode       *int                       `json:"ec,omitempty"`
-	BlockedVASTTags map[string][]string        `json:"blockedtags,omitempty"`
-	Bid             *AdPodBid                  `json:"-"`
+	ImpID           string                        `json:"-"`
+	Bid             *AdPodBid                     `json:"-"`
+	VideoExt        *openrtb_ext.ExtVideoAdPod    `json:"vidext,omitempty"`
+	Config          []*ImpAdPodConfig             `json:"imp,omitempty"`
+	BlockedVASTTags map[string][]string           `json:"blockedtags,omitempty"`
+	Error           *openrtb_ext.ExtBidderMessage `json:"ec,omitempty"`
 }

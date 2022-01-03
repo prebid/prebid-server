@@ -27,12 +27,18 @@ const (
 	//	4. Ad Pod Duration = Ad Pod Min Duration, Number of Ads = max ads
 	//	5. Ad Pod Duration = Ad Pod Min Duration, Number of Ads = min ads
 	MinMaxAlgorithm
+	// ByDurationRanges algorithm plots the impression objects based on expected video duration
+	// ranges reveived in the input prebid-request. Based on duration matching policy
+	// it will generate the impression objects. in case 'exact' duration matching impression
+	// min duration = max duration. In case 'round up' this algorithm will not be executed.Instead
+	ByDurationRanges
 )
 
 // MonitorKey provides the unique key for moniroting the impressions algorithm
 var MonitorKey = map[Algorithm]string{
 	MaximizeForDuration: `a1_max`,
 	MinMaxAlgorithm:     `a2_min_max`,
+	ByDurationRanges:    `a3_duration`,
 }
 
 // Value use to compute Ad Slot Durations and Pod Durations for internal computation
@@ -50,16 +56,25 @@ type IImpressions interface {
 // based on input algorithm type
 // if invalid algorithm type is passed, it returns default algorithm which will compute
 // impressions based on minimum ad slot duration
-func NewImpressions(podMinDuration, podMaxDuration int64, vPod *openrtb_ext.VideoAdPod, algorithm Algorithm) IImpressions {
+func NewImpressions(podMinDuration, podMaxDuration int64, reqAdPod *openrtb_ext.ExtRequestAdPod, vPod *openrtb_ext.VideoAdPod, algorithm Algorithm) IImpressions {
 	switch algorithm {
 	case MaximizeForDuration:
-		util.Logf("Selected 'MaximizeForDuration'")
+		util.Logf("Selected ImpGen Algorithm - 'MaximizeForDuration'")
 		g := newMaximizeForDuration(podMinDuration, podMaxDuration, *vPod)
 		return &g
 
 	case MinMaxAlgorithm:
-		util.Logf("Selected 'MinMaxAlgorithm'")
+		util.Logf("Selected ImpGen Algorithm - 'MinMaxAlgorithm'")
 		g := newMinMaxAlgorithm(podMinDuration, podMaxDuration, *vPod)
+		return &g
+
+	case ByDurationRanges:
+		util.Logf("Selected ImpGen Algorithm - 'ByDurationRanges'")
+
+		g := newByDurationRanges(reqAdPod.VideoLengthMatching, reqAdPod.VideoLengths,
+			int(*vPod.MaxAds),
+			*vPod.MinDuration, *vPod.MaxDuration)
+
 		return &g
 	}
 
@@ -72,6 +87,20 @@ func NewImpressions(podMinDuration, podMaxDuration int64, vPod *openrtb_ext.Vide
 		MaxDuration: vPod.MinDuration, // sending slot minduration as max duration
 	})
 	return &defaultGenerator
+}
+
+// SelectAlgorithm is factory function which will return valid Algorithm based on adpod parameters
+// Return Value:
+//  - MinMaxAlgorithm (default)
+//  - ByDurationRanges: if reqAdPod extension has VideoLengths and VideoLengthMatchingPolicy is "exact" algorithm
+func SelectAlgorithm(reqAdPod *openrtb_ext.ExtRequestAdPod) Algorithm {
+	if nil != reqAdPod {
+		if len(reqAdPod.VideoLengths) > 0 &&
+			(openrtb_ext.OWExactVideoLengthsMatching == reqAdPod.VideoLengthMatching || openrtb_ext.OWRoundupVideoLengthMatching == reqAdPod.VideoLengthMatching) {
+			return ByDurationRanges
+		}
+	}
+	return MinMaxAlgorithm
 }
 
 // Duration indicates the position
