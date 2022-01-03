@@ -52,5 +52,6 @@ var invalidParams = []string{
 	`[]`,
 	`{}`,
 	`{"notmid":"123"}`,
-	`{"zone_id":123}`,
+	`{"zoneId":123}`,
+	`{"zoneId":""}`,
 }

@@ -20,23 +20,10 @@ func (a adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.Ex
 
 	reqs := make([]*adapters.RequestData, 0, len(request.Imp))
 
-	for idx, imp := range request.Imp {
-		var bidderExt adapters.ExtImpBidder
-		err := json.Unmarshal(imp.Ext, &bidderExt)
-		if err != nil {
-			err = &errortypes.BadInput{
-				Message: fmt.Sprintf("imp #%d: ext.bidder not provided", idx),
-			}
-			errors = append(errors, err)
-			continue
-		}
+	for _, imp := range request.Imp {
 
-		var vidoomyExt openrtb_ext.ImpExtVidoomy
-		err = json.Unmarshal(bidderExt.Bidder, &vidoomyExt)
+		vidoomyExt, err := parseExt(&imp)
 		if err != nil {
-			err = &errortypes.BadInput{
-				Message: fmt.Sprintf("imp #%d: %s", idx, err.Error()),
-			}
 			errors = append(errors, err)
 			continue
 		}
@@ -46,7 +33,7 @@ func (a adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.Ex
 		reqCopy := *request
 		reqCopy.Imp = []openrtb2.Imp{imp}
 
-		if err := changeRequestForBidService(&reqCopy, &vidoomyExt); err != nil {
+		if err := changeRequestForBidService(&reqCopy, vidoomyExt); err != nil {
 			errors = append(errors, err)
 			continue
 		}
@@ -172,15 +159,37 @@ func getImpInfo(impId string, imps []openrtb2.Imp) (bool, openrtb_ext.BidType) {
 	for _, imp := range imps {
 		if imp.ID == impId {
 			exists = true
+
 			if imp.Banner != nil {
 				mediaType = openrtb_ext.BidTypeBanner
 			} else if imp.Video != nil {
 				mediaType = openrtb_ext.BidTypeVideo
 			}
-			break
+
+			return exists, mediaType
 		}
 	}
 	return exists, mediaType
+}
+
+func parseExt(imp *openrtb2.Imp) (*openrtb_ext.ImpExtVidoomy, error) {
+	var bidderExt adapters.ExtImpBidder
+	err := json.Unmarshal(imp.Ext, &bidderExt)
+	if err != nil {
+		return nil, &errortypes.BadInput{
+			Message: fmt.Sprintf("Ignoring imp id=%s, error while decoding extImpBidder, err: %s", imp.ID, err),
+		}
+	}
+
+	var vidoomyExt openrtb_ext.ImpExtVidoomy
+	err = json.Unmarshal(bidderExt.Bidder, &vidoomyExt)
+	if err != nil {
+		return nil, &errortypes.BadInput{
+			Message: fmt.Sprintf("Ignoring imp id=%s, error while decoding extImpBidder, err: %s", imp.ID, err),
+		}
+	}
+
+	return &vidoomyExt, nil
 }
 
 // Builder builds a new instance of the Vidoomy adapter for the given bidder with the given config.

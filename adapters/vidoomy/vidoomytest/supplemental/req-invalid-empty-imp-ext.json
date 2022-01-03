@@ -31,7 +31,7 @@
   "expectedBidResponses": [],
   "expectedMakeRequestsErrors": [
     {
-      "value": "imp #0: unexpected end of JSON input",
+      "value": "Ignoring imp id=test-req, error while decoding extImpBidder, err: unexpected end of JSON input",
       "comparison": "literal"
     }
   ]
