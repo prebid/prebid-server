@@ -26,14 +26,6 @@ var (
 	VASTVersionsStr = []string{"0", "1.0", "2.0", "3.0", "4.0"}
 )
 
-//ErrorCode contains list of error codes for validation of ctv requests
-type ErrorCode = int
-
-const (
-	//CTVErrorNoValidImpressionsForAdPodConfig ...
-	CTVErrorNoValidImpressionsForAdPodConfig ErrorCode = 601
-)
-
 //BidStatus contains bids filtering reason
 type BidStatus = int
 

@@ -335,7 +335,6 @@ func TestErrToBidderMessage(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			got := ErrToBidderMessage(tt.args.err)
 			assert.Equal(t, tt.want, got)
 		})
