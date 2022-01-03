@@ -29,14 +29,11 @@ import (
 	"github.com/prebid/prebid-server/adapters/adform"
 	"github.com/prebid/prebid-server/adapters/appnexus"
 	"github.com/prebid/prebid-server/adapters/conversant"
-	"github.com/prebid/prebid-server/adapters/crossinstall"
 	"github.com/prebid/prebid-server/adapters/dv360"
 	"github.com/prebid/prebid-server/adapters/ix"
 	"github.com/prebid/prebid-server/adapters/kadenai"
 	"github.com/prebid/prebid-server/adapters/liftoff"
-	"github.com/prebid/prebid-server/adapters/mintegral"
 	"github.com/prebid/prebid-server/adapters/moloco"
-	"github.com/prebid/prebid-server/adapters/molococloud"
 	"github.com/prebid/prebid-server/adapters/personaly"
 	"github.com/prebid/prebid-server/adapters/pubmatic"
 	"github.com/prebid/prebid-server/adapters/pulsepoint"
@@ -181,11 +178,6 @@ func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
 			cfg.Adapters[string(openrtb_ext.BidderAppier)].XAPI.EndpointEMEA,
 			cfg.Adapters[string(openrtb_ext.BidderAppier)].XAPI.EndpointJP,
 			cfg.Adapters[string(openrtb_ext.BidderAppier)].XAPI.EndpointSG),
-		"crossinstall": crossinstall.NewCrossInstallLegacyAdapter(
-			adapters.DefaultHTTPAdapterConfig,
-			cfg.Adapters[string(openrtb_ext.BidderCrossInstall)].Endpoint,
-			cfg.Adapters[string(openrtb_ext.BidderCrossInstall)].XAPI.EndpointUSEast,
-			cfg.Adapters[string(openrtb_ext.BidderCrossInstall)].XAPI.EndpointUSWest),
 		"districtm": appnexus.NewAppNexusLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].Endpoint, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].PlatformID),
 		"dv360":     dv360.NewDV360LegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderDV360)].Endpoint),
 		"ix":        ix.NewIxLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderIx))].Endpoint),
@@ -196,24 +188,12 @@ func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
 			cfg.Adapters[string(openrtb_ext.BidderLiftoff)].XAPI.EndpointUSEast,
 			cfg.Adapters[string(openrtb_ext.BidderLiftoff)].XAPI.EndpointEU,
 			cfg.Adapters[string(openrtb_ext.BidderLiftoff)].XAPI.EndpointAPAC),
-		"mintegral": mintegral.NewMintegralLegacyAdapter(
-			adapters.DefaultHTTPAdapterConfig,
-			cfg.Adapters[string(openrtb_ext.BidderMintegral)].Endpoint,
-			cfg.Adapters[string(openrtb_ext.BidderMintegral)].XAPI.EndpointHK,
-			cfg.Adapters[string(openrtb_ext.BidderMintegral)].XAPI.EndpointSG,
-			cfg.Adapters[string(openrtb_ext.BidderMintegral)].XAPI.EndpointVG),
 		"moloco": moloco.NewMolocoLegacyAdapter(
 			adapters.DefaultHTTPAdapterConfig,
 			cfg.Adapters[string(openrtb_ext.BidderMoloco)].Endpoint,
 			cfg.Adapters[string(openrtb_ext.BidderMoloco)].XAPI.EndpointUSEast,
 			cfg.Adapters[string(openrtb_ext.BidderMoloco)].XAPI.EndpointEU,
 			cfg.Adapters[string(openrtb_ext.BidderMoloco)].XAPI.EndpointAPAC),
-		"molococloud": molococloud.NewMolocoCloudLegacyAdapter(
-			adapters.DefaultHTTPAdapterConfig,
-			cfg.Adapters[string(openrtb_ext.BidderMolocoCloud)].Endpoint,
-			cfg.Adapters[string(openrtb_ext.BidderMolocoCloud)].XAPI.EndpointUSEast,
-			cfg.Adapters[string(openrtb_ext.BidderMolocoCloud)].XAPI.EndpointEU,
-			cfg.Adapters[string(openrtb_ext.BidderMolocoCloud)].XAPI.EndpointAPAC),
 		"personaly":  personaly.NewPersonalyLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPersonaly)].Endpoint),
 		"pubmatic":   pubmatic.NewPubmaticLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPubmatic)].Endpoint),
 		"pulsepoint": pulsepoint.NewPulsePointLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPulsepoint)].Endpoint),
