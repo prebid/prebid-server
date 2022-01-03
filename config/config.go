@@ -815,6 +815,10 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.madvertise.endpoint", "https://mobile.mng-ads.com/bidrequest{{.ZoneID}}")
 	v.SetDefault("adapters.marsmedia.endpoint", "https://bid306.rtbsrv.com/bidder/?bid=f3xtet")
 	v.SetDefault("adapters.mediafuse.endpoint", "http://ghb.hbmp.mediafuse.com/pbs/ortb")
+
+	v.SetDefault("adapters.medianet.endpoint", "http://10.6.33.199:5001/Ext1")
+	//v.SetDefault("adapters.medianet.endpoint", "https://prebid-adapter.media.net/rtb/pb/prebids2s?src={{.Host}}")
+
 	v.SetDefault("adapters.mgid.endpoint", "https://prebid.mgid.com/prebid/")
 	v.SetDefault("adapters.mobilefuse.endpoint", "http://mfx.mobilefuse.com/openrtb?pub_id={{.PublisherID}}")
 	v.SetDefault("adapters.mobfoxpb.endpoint", "http://bes.mobfox.com/?c=__route__&m=__method__&key=__key__")
@@ -878,7 +882,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("analytics.pubstack.buffers.count", 100)
 	v.SetDefault("analytics.pubstack.buffers.timeout", "900s")
 	v.SetDefault("amp_timeout_adjustment_ms", 0)
-	v.BindEnv("gdpr.default_value")
+	v.SetDefault("gdpr.default_value", 0)
 	v.SetDefault("gdpr.enabled", true)
 	v.SetDefault("gdpr.host_vendor_id", 0)
 	v.SetDefault("gdpr.timeouts_ms.init_vendorlist_fetches", 0)

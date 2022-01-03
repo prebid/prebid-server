@@ -1,0 +1,22 @@
+maintainer:
+  email: "prebid@media.net"
+gvlVendorID: 142
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  key: medianet
+  redirect:
+    url: https://hbx.media.net/cksync.php?cs=1&type=pbs&ovsid=setstatuscode&redirect=
+    redirect_url: /setuid?bidder=medianet&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&uid={{.UserMacro}}
+    userMacro: "${UUID}"
+  supportCors: false

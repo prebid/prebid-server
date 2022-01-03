@@ -1,0 +1,20 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Medianet Adapter Params",
+    "description": "A schema which validates params accepted by the Medianet adapter",
+    "type": "object",
+    "properties": {
+      "cid": {
+        "type": "string",
+        "description": "The customer id provided by Media.net."
+      },
+      "crid": {
+        "type": "string",
+        "description": "The placement id provided by Media.net."
+      }
+    },
+    "required": [
+      "cid",
+      "crid"
+    ]
+}
