@@ -74,10 +74,19 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	return a.generateRequests(*request)
 }
 
-func setHeaders() http.Header {
+func setHeaders(ortbRequest openrtb2.BidRequest) http.Header {
+
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
+	if ortbRequest.Device != nil {
+		if ortbRequest.Device.IP != "" {
+			headers.Add("X-Forwarded-For", ortbRequest.Device.IP)
+		}
+		if ortbRequest.Device.UA != "" {
+			headers.Add("user-agent", ortbRequest.Device.UA)
+		}
+	}
 	return headers
 }
 
@@ -113,7 +122,7 @@ func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter) (string, []err
 func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters.RequestData, []error) {
 	var requestData []*adapters.RequestData
 	networkAdunitMap := make(map[string][]adnAdunit)
-	headers := setHeaders()
+	headers := setHeaders(ortbRequest)
 
 	endpoint, err := makeEndpointUrl(ortbRequest, a)
 	if err != nil {
