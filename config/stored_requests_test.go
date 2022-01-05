@@ -157,6 +157,12 @@ func TestInMemoryCacheValidationStoredRequests(t *testing.T) {
 		Type:             "lru",
 		RequestCacheSize: 1000,
 		ImpCacheSize:     0,
+		RespCacheSize:    1000,
+	}).validate(RequestDataType, nil))
+	assertErrsExist(t, (&InMemoryCache{
+		Type:             "lru",
+		RequestCacheSize: 1000,
+		ImpCacheSize:     1000,
 		RespCacheSize:    0,
 	}).validate(RequestDataType, nil))
 	assertErrsExist(t, (&InMemoryCache{
