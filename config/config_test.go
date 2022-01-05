@@ -217,8 +217,8 @@ func TestDefaults(t *testing.T) {
 			VendorExceptions:   []openrtb_ext.BidderName{},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 		},
-		SpecialPurpose1: TCF2Purpose{
-			Enabled:            true,
+		SpecialFeature1: TCF2SpecialFeature{
+			Enforce:            true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 		},
@@ -272,7 +272,7 @@ gdpr:
     purpose10:
       enforce_vendors: false
       vendor_exceptions: ["foo10"]
-    special_purpose1:
+    special_feature1:
       vendor_exceptions: ["fooSP1"]
 ccpa:
   enforce: true
@@ -540,8 +540,8 @@ func TestFullConfig(t *testing.T) {
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo10")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo10"): {}},
 		},
-		SpecialPurpose1: TCF2Purpose{
-			Enabled:            true, // true by default
+		SpecialFeature1: TCF2SpecialFeature{
+			Enforce:            true, // true by default
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("fooSP1")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("fooSP1"): {}},
 		},
@@ -761,6 +761,79 @@ func TestMigrateConfigPurposeOneTreatment(t *testing.T) {
 		} else {
 			assert.Nil(t, v.Get("gdpr.tcf2.purpose_one_treatment.enabled"), tt.description)
 			assert.Nil(t, v.Get("gdpr.tcf2.purpose_one_treatment.access_allowed"), tt.description)
+		}
+	}
+}
+
+func TestMigrateConfigSpecialFeature1(t *testing.T) {
+	oldSpecialFeature1Config := []byte(`
+      gdpr:
+        tcf2:
+          special_purpose1:
+            enabled: true
+            vendor_exceptions: ["appnexus"]
+    `)
+	newSpecialFeature1Config := []byte(`
+      gdpr:
+        tcf2:
+          special_feature1:
+            enforce: true
+            vendor_exceptions: ["appnexus"]
+    `)
+	oldAndNewSpecialFeature1Config := []byte(`
+      gdpr:
+        tcf2:
+          special_purpose1:
+            enabled: false
+            vendor_exceptions: ["appnexus"]
+          special_feature1:
+            enforce: true
+            vendor_exceptions: ["rubicon"]
+    `)
+
+	tests := []struct {
+		description                         string
+		config                              []byte
+		wantSpecialFeature1Enforce          bool
+		wantSpecialFeature1VendorExceptions []string
+	}{
+		{
+			description: "New config and old config not set",
+			config:      []byte{},
+		},
+		{
+			description:                         "New config not set, old config set",
+			config:                              oldSpecialFeature1Config,
+			wantSpecialFeature1Enforce:          true,
+			wantSpecialFeature1VendorExceptions: []string{"appnexus"},
+		},
+		{
+			description:                         "New config set, old config not set",
+			config:                              newSpecialFeature1Config,
+			wantSpecialFeature1Enforce:          true,
+			wantSpecialFeature1VendorExceptions: []string{"appnexus"},
+		},
+		{
+			description:                         "New config and old config set",
+			config:                              oldAndNewSpecialFeature1Config,
+			wantSpecialFeature1Enforce:          true,
+			wantSpecialFeature1VendorExceptions: []string{"rubicon"},
+		},
+	}
+
+	for _, tt := range tests {
+		v := viper.New()
+		v.SetConfigType("yaml")
+		v.ReadConfig(bytes.NewBuffer(tt.config))
+
+		migrateConfigSpecialFeature1(v)
+
+		if len(tt.config) > 0 {
+			assert.Equal(t, tt.wantSpecialFeature1Enforce, v.Get("gdpr.tcf2.special_feature1.enforce").(bool), tt.description)
+			assert.Equal(t, tt.wantSpecialFeature1VendorExceptions, v.GetStringSlice("gdpr.tcf2.special_feature1.vendor_exceptions"), tt.description)
+		} else {
+			assert.Nil(t, v.Get("gdpr.tcf2.special_feature1.enforce"), tt.description)
+			assert.Nil(t, v.Get("gdpr.tcf2.special_feature1.vendor_exceptions"), tt.description)
 		}
 	}
 }

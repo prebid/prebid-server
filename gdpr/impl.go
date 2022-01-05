@@ -132,9 +132,9 @@ func (p *permissionsImpl) allowActivities(ctx context.Context, vendorID uint16, 
 		return
 	}
 
-	if p.cfg.TCF2.SpecialPurpose1.Enabled {
-		vendorException := p.isSpecialPurposeVendorException(bidder)
-		passGeo = vendorException || (consentMeta.SpecialFeatureOptIn(1) && (vendor.SpecialPurpose(1) || weakVendorEnforcement))
+	if p.cfg.TCF2.SpecialFeature1.Enforce {
+		vendorException := p.isSpecialFeatureVendorException(bidder)
+		passGeo = vendorException || (consentMeta.SpecialFeatureOptIn(1) && (vendor.SpecialFeature(1) || weakVendorEnforcement))
 	} else {
 		passGeo = true
 	}
@@ -162,8 +162,8 @@ func (p *permissionsImpl) isVendorException(purpose consentconstants.Purpose, bi
 	return
 }
 
-func (p *permissionsImpl) isSpecialPurposeVendorException(bidder openrtb_ext.BidderName) (vendorException bool) {
-	if _, ok := p.cfg.TCF2.SpecialPurpose1.VendorExceptionMap[bidder]; ok {
+func (p *permissionsImpl) isSpecialFeatureVendorException(bidder openrtb_ext.BidderName) (vendorException bool) {
+	if _, ok := p.cfg.TCF2.SpecialFeature1.VendorExceptionMap[bidder]; ok {
 		vendorException = true
 	}
 	return
@@ -293,6 +293,9 @@ func (v vendorTrue) LegitimateInterest(purposeID consentconstants.Purpose) bool 
 	return true
 }
 func (v vendorTrue) LegitimateInterestStrict(purposeID consentconstants.Purpose) bool {
+	return true
+}
+func (v vendorTrue) SpecialFeature(featureID consentconstants.SpecialFeature) (hasSpecialFeature bool) {
 	return true
 }
 func (v vendorTrue) SpecialPurpose(purposeID consentconstants.Purpose) (hasSpecialPurpose bool) {
