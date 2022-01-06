@@ -19,6 +19,14 @@ type adapter struct {
 	EndpointTemplate *template.Template
 }
 
+type algorixVideoExt struct {
+	Rewarded int `json:"rewarded"`
+}
+
+type algorixResponseBidExt struct {
+	MediaType string `json:"mediaType"`
+}
+
 // Builder builds a new instance of the AlgoriX adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	endpoint, err := template.New("endpointTemplate").Parse(config.Endpoint)
@@ -121,6 +129,19 @@ func preProcess(request *openrtb2.BidRequest) {
 				request.Imp[i].Banner = &banner
 			}
 		}
+		if request.Imp[i].Video != nil {
+			var impExt adapters.ExtImpBidder
+			err := json.Unmarshal(request.Imp[i].Ext, &impExt)
+			if err != nil {
+				continue
+			}
+			if impExt.Prebid != nil && impExt.Prebid.IsRewardedInventory == 1 {
+				videoCopy := *request.Imp[i].Video
+				videoExt := algorixVideoExt{Rewarded: 1}
+				videoCopy.Ext, err = json.Marshal(&videoExt)
+				request.Imp[i].Video = &videoCopy
+			}
+		}
 	}
 }
 
@@ -150,7 +171,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 
 	for _, seatBid := range bidResp.SeatBid {
 		for idx := range seatBid.Bid {
-			mediaType := getBidType(seatBid.Bid[idx].ImpID, internalRequest.Imp)
+			mediaType := getBidType(seatBid.Bid[idx], internalRequest.Imp)
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &seatBid.Bid[idx],
 				BidType: mediaType,
@@ -160,9 +181,21 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	return bidResponse, nil
 }
 
-func getBidType(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
+func getBidType(bid openrtb2.Bid, imps []openrtb2.Imp) openrtb_ext.BidType {
+	var bidExt algorixResponseBidExt
+	err := json.Unmarshal(bid.Ext, &bidExt)
+	if err == nil {
+		switch bidExt.MediaType {
+		case "banner":
+			return openrtb_ext.BidTypeBanner
+		case "native":
+			return openrtb_ext.BidTypeNative
+		case "video":
+			return openrtb_ext.BidTypeVideo
+		}
+	}
 	for _, imp := range imps {
-		if imp.ID == impId {
+		if imp.ID == bid.ImpID {
 			if imp.Banner != nil {
 				break
 			}
