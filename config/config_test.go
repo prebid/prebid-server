@@ -1364,3 +1364,58 @@ func doTimeoutTest(t *testing.T, expected int, requested int, max uint64, def ui
 	limited := cfg.LimitAuctionTimeout(time.Duration(requested) * time.Millisecond)
 	assert.Equal(t, limited, expectedDuration, "Expected %dms timeout, got %dms", expectedDuration, limited/time.Millisecond)
 }
+
+func TestSpecialFeature1VendorExceptionMap(t *testing.T) {
+	baseConfig := []byte(`
+    gdpr:
+      default_value: 0
+      tcf2:
+        special_feature1:
+          vendor_exceptions: `)
+
+	tests := []struct {
+		description             string
+		configVendorExceptions  []byte
+		wantVendorExceptions    []openrtb_ext.BidderName
+		wantVendorExceptionsMap map[openrtb_ext.BidderName]struct{}
+	}{
+		{
+			description:             "nil vendor exceptions",
+			configVendorExceptions:  []byte(`null`),
+			wantVendorExceptions:    []openrtb_ext.BidderName{},
+			wantVendorExceptionsMap: map[openrtb_ext.BidderName]struct{}{},
+		},
+		{
+			description:             "no vendor exceptions",
+			configVendorExceptions:  []byte(`[]`),
+			wantVendorExceptions:    []openrtb_ext.BidderName{},
+			wantVendorExceptionsMap: map[openrtb_ext.BidderName]struct{}{},
+		},
+		{
+			description:             "one vendor exception",
+			configVendorExceptions:  []byte(`["vendor1"]`),
+			wantVendorExceptions:    []openrtb_ext.BidderName{openrtb_ext.BidderName("vendor1")},
+			wantVendorExceptionsMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("vendor1"): {}},
+		},
+		{
+			description:             "many exceptions",
+			configVendorExceptions:  []byte(`["vendor1","vendor2"]`),
+			wantVendorExceptions:    []openrtb_ext.BidderName{openrtb_ext.BidderName("vendor1"), openrtb_ext.BidderName("vendor2")},
+			wantVendorExceptionsMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("vendor1"): {}, openrtb_ext.BidderName("vendor2"): {}},
+		},
+	}
+
+	for _, tt := range tests {
+		config := append(baseConfig, tt.configVendorExceptions...)
+
+		v := viper.New()
+		SetupViper(v, "")
+		v.SetConfigType("yaml")
+		v.ReadConfig(bytes.NewBuffer(config))
+		cfg, err := New(v)
+		assert.NoError(t, err, "Setting up config error", tt.description)
+
+		assert.Equal(t, tt.wantVendorExceptions, cfg.GDPR.TCF2.SpecialFeature1.VendorExceptions, tt.description)
+		assert.Equal(t, tt.wantVendorExceptionsMap, cfg.GDPR.TCF2.SpecialFeature1.VendorExceptionMap, tt.description)
+	}
+}
