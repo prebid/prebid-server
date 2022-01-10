@@ -10,11 +10,13 @@ import (
 )
 
 const sampleQueryTemplate = "SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in %REQUEST_ID_LIST% UNION ALL SELECT id, impData, 'imp' as type FROM stored_requests WHERE id in %IMP_ID_LIST%"
+const sampleResponsesQueryTemplate = "SELECT id, responseData, 'response' as type FROM stored_responses WHERE id in %ID_LIST%"
 
 func TestNormalQueryMaker(t *testing.T) {
 	madeQuery := buildQuery(sampleQueryTemplate, 1, 3)
 	assertStringsEqual(t, madeQuery, "SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in ($1) UNION ALL SELECT id, impData, 'imp' as type FROM stored_requests WHERE id in ($2, $3, $4)")
 }
+
 func TestQueryMakerManyImps(t *testing.T) {
 	madeQuery := buildQuery(sampleQueryTemplate, 1, 11)
 	assertStringsEqual(t, madeQuery, "SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in ($1) UNION ALL SELECT id, impData, 'imp' as type FROM stored_requests WHERE id in ($2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)")
@@ -39,6 +41,41 @@ func TestQueryMakerNegative(t *testing.T) {
 	query := buildQuery(sampleQueryTemplate, -1, -2)
 	expected := buildQuery(sampleQueryTemplate, 0, 0)
 	assertStringsEqual(t, query, expected)
+}
+
+func TestResponseQueryMaker(t *testing.T) {
+	testCases := []struct {
+		description     string
+		inputRespNumber int
+		expectedQuery   string
+	}{
+		{
+			description:     "single response query maker",
+			inputRespNumber: 1,
+			expectedQuery:   "SELECT id, responseData, 'response' as type FROM stored_responses WHERE id in ($1)",
+		},
+		{
+			description:     "many responses query maker",
+			inputRespNumber: 11,
+			expectedQuery:   "SELECT id, responseData, 'response' as type FROM stored_responses WHERE id in ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
+		},
+		{
+			description:     "no responses query maker",
+			inputRespNumber: 0,
+			expectedQuery:   "SELECT id, responseData, 'response' as type FROM stored_responses WHERE id in (NULL)",
+		},
+		{
+			description:     "no responses query maker",
+			inputRespNumber: -2,
+			expectedQuery:   "SELECT id, responseData, 'response' as type FROM stored_responses WHERE id in (NULL)",
+		},
+	}
+
+	for _, test := range testCases {
+		cfg := PostgresFetcherQueries{QueryTemplate: sampleResponsesQueryTemplate}
+		query := cfg.MakeQueryResponses(test.inputRespNumber)
+		assertStringsEqual(t, query, test.expectedQuery)
+	}
 }
 
 func TestPostgressConnString(t *testing.T) {
@@ -89,6 +126,7 @@ func TestInMemoryCacheValidationStoredRequests(t *testing.T) {
 		Type:             "lru",
 		RequestCacheSize: 1000,
 		ImpCacheSize:     1000,
+		RespCacheSize:    1000,
 	}).validate(RequestDataType, nil))
 	assertErrsExist(t, (&InMemoryCache{
 		Type: "unrecognized",
@@ -102,6 +140,10 @@ func TestInMemoryCacheValidationStoredRequests(t *testing.T) {
 		RequestCacheSize: 1000,
 	}).validate(RequestDataType, nil))
 	assertErrsExist(t, (&InMemoryCache{
+		Type:          "unbounded",
+		RespCacheSize: 1000,
+	}).validate(RequestDataType, nil))
+	assertErrsExist(t, (&InMemoryCache{
 		Type: "unbounded",
 		TTL:  500,
 	}).validate(RequestDataType, nil))
@@ -109,11 +151,19 @@ func TestInMemoryCacheValidationStoredRequests(t *testing.T) {
 		Type:             "lru",
 		RequestCacheSize: 0,
 		ImpCacheSize:     1000,
+		RespCacheSize:    1000,
 	}).validate(RequestDataType, nil))
 	assertErrsExist(t, (&InMemoryCache{
 		Type:             "lru",
 		RequestCacheSize: 1000,
 		ImpCacheSize:     0,
+		RespCacheSize:    1000,
+	}).validate(RequestDataType, nil))
+	assertErrsExist(t, (&InMemoryCache{
+		Type:             "lru",
+		RequestCacheSize: 1000,
+		ImpCacheSize:     1000,
+		RespCacheSize:    0,
 	}).validate(RequestDataType, nil))
 	assertErrsExist(t, (&InMemoryCache{
 		Type: "lru",
@@ -154,6 +204,10 @@ func TestInMemoryCacheValidationSingleCache(t *testing.T) {
 	assertErrsExist(t, (&InMemoryCache{
 		Type:         "lru",
 		ImpCacheSize: 1000,
+	}).validate(AccountDataType, nil))
+	assertErrsExist(t, (&InMemoryCache{
+		Type:          "lru",
+		RespCacheSize: 1000,
 	}).validate(AccountDataType, nil))
 }
 
