@@ -128,16 +128,16 @@ func (v *vtrackEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httpro
 }
 
 // GetVastUrlTracking creates a vast url tracking
-func GetVastUrlTracking(externalUrl string, bidid string, bidder string, accountId string, timestamp int64, integrationType string) string {
+func GetVastUrlTracking(externalUrl string, bidid string, bidder string, accountId string, timestamp int64, integration string) string {
 
 	eventReq := &analytics.EventRequest{
-		Type:            analytics.Imp,
-		BidID:           bidid,
-		AccountID:       accountId,
-		Bidder:          bidder,
-		Timestamp:       timestamp,
-		Format:          analytics.Blank,
-		IntegrationType: integrationType,
+		Type:        analytics.Imp,
+		BidID:       bidid,
+		AccountID:   accountId,
+		Bidder:      bidder,
+		Timestamp:   timestamp,
+		Format:      analytics.Blank,
+		Integration: integration,
 	}
 
 	return EventRequestToUrl(externalUrl, eventReq)

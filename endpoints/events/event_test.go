@@ -655,16 +655,16 @@ func TestEventRequestToUrl(t *testing.T) {
 		},
 		"three": {
 			er: &analytics.EventRequest{
-				Type:            analytics.Win,
-				BidID:           "bidid",
-				AccountID:       "accountId",
-				Bidder:          "bidder",
-				Timestamp:       1234567,
-				Format:          analytics.Image,
-				Analytics:       analytics.Disabled,
-				IntegrationType: "integrationType",
+				Type:        analytics.Win,
+				BidID:       "bidid",
+				AccountID:   "accountId",
+				Bidder:      "bidder",
+				Timestamp:   1234567,
+				Format:      analytics.Image,
+				Analytics:   analytics.Disabled,
+				Integration: "integration",
 			},
-			want: "http://localhost:8000/event?t=win&b=bidid&a=accountId&bidder=bidder&f=i&int=integrationType&ts=1234567&x=0",
+			want: "http://localhost:8000/event?t=win&b=bidid&a=accountId&bidder=bidder&f=i&int=integration&ts=1234567&x=0",
 		},
 	}
 

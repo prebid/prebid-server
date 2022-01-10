@@ -20,7 +20,7 @@ type Account struct {
 	CCPA               AccountCCPA `mapstructure:"ccpa" json:"ccpa"`
 	GDPR               AccountGDPR `mapstructure:"gdpr" json:"gdpr"`
 	DebugAllow         bool        `mapstructure:"debug_allow" json:"debug_allow"`
-	DefaultIntegration string      `mapstructure:"default_integration"`
+	DefaultIntegration string      `mapstructure:"default_integration" json:"default_integration"`
 }
 
 // AccountCCPA represents account-specific CCPA configuration

@@ -1003,7 +1003,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("auto_gen_source_tid", true)
 	v.SetDefault("generate_bid_id", false)
 	v.SetDefault("generate_request_id", false)
-	v.SetDefault("account_defaults.default_integration", "") // Default Integration For Accounts Can Be Set Here
+	v.SetDefault("account_defaults.default_integration", "")
 
 	v.SetDefault("request_timeout_headers.request_time_in_queue", "")
 	v.SetDefault("request_timeout_headers.request_timeout_in_queue", "")

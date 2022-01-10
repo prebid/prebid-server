@@ -1838,7 +1838,9 @@ func (deps *endpointDeps) setIntegrationType(req *openrtb_ext.RequestWrapper) er
 	if reqPrebid == nil {
 		reqPrebid = &openrtb_ext.ExtRequestPrebid{Integration: deps.cfg.AccountDefaults.DefaultIntegration}
 		reqExt.SetPrebid(reqPrebid)
-		req.RebuildRequest()
+	} else if reqPrebid.Integration == "" {
+		reqPrebid.Integration = deps.cfg.AccountDefaults.DefaultIntegration
+		reqExt.SetPrebid(reqPrebid)
 	}
 	deps.cfg.IntegrationType = reqPrebid.Integration
 	return nil

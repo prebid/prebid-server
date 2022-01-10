@@ -226,8 +226,8 @@ func optionalParameters(request *analytics.EventRequest) string {
 		r.Add(AnalyticsParameter, string(analytics.Disabled))
 	}
 
-	if request.IntegrationType != "" {
-		r.Add(IntegrationTypeParameter, request.IntegrationType)
+	if request.Integration != "" {
+		r.Add(IntegrationTypeParameter, request.Integration)
 	}
 
 	opt := r.Encode()

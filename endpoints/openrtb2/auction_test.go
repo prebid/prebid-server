@@ -1709,6 +1709,7 @@ func TestSetIntegrationType(t *testing.T) {
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
+		empty_fetcher.EmptyFetcher{},
 	}
 
 	testCases := []struct {
@@ -1728,6 +1729,13 @@ func TestSetIntegrationType(t *testing.T) {
 			description: "Request doesn't have request.ext.prebid path, expect default integration value",
 			givenRequestWrapper: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{Ext: []byte(``)},
+			},
+			expectedIntegrationType: "TestDefaultIntegrationType",
+		},
+		{
+			description: "Test 3",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid":{"integration": ""}}`)},
 			},
 			expectedIntegrationType: "TestDefaultIntegrationType",
 		},
