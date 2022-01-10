@@ -3423,6 +3423,34 @@ func TestValidateNativeAssetData(t *testing.T) {
 	}
 }
 
+func TestAuctionResponseHeaders(t *testing.T) {
+	exchange := &nobidExchange{}
+	endpoint, _ := NewEndpoint(
+		fakeUUIDGenerator{},
+		exchange,
+		newParamsValidator(t),
+		&mockStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: maxSize},
+		&metricsConfig.NilMetricsEngine{},
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		[]byte{},
+		openrtb_ext.BuildBidderMap())
+
+	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
+	recorder := httptest.NewRecorder()
+
+	endpoint(recorder, httpReq, nil)
+
+	expectedHeaders := http.Header{}
+	expectedHeaders.Set("Content-Type", "application/json")
+	expectedHeaders.Set("X-Prebid", "pbs-go/unknown")
+
+	assert.Equal(t, recorder.Result().StatusCode, 200, "statuscode")
+	assert.Equal(t, recorder.Result().Header, expectedHeaders, "headers")
+}
+
 // warningsCheckExchange is a well-behaved exchange which stores all incoming warnings.
 type warningsCheckExchange struct {
 	auctionRequest exchange.AuctionRequest

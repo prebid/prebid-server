@@ -12,6 +12,30 @@ import (
 
 func TestBuildXPrebidHeader(t *testing.T) {
 	testCases := []struct {
+		description string
+		version     string
+		result      string
+	}{
+		{
+			description: "No Version",
+			version:     "",
+			result:      "pbs-go/unknown",
+		},
+		{
+			description: "Version",
+			version:     "0.100.0",
+			result:      "pbs-go/0.100.0",
+		},
+	}
+
+	for _, test := range testCases {
+		result := BuildXPrebidHeader(test.version)
+		assert.Equal(t, test.result, result, test.description)
+	}
+}
+
+func TestBuildXPrebidHeaderForRequest(t *testing.T) {
+	testCases := []struct {
 		description   string
 		version       string
 		requestExt    *openrtb_ext.ExtRequest
@@ -119,7 +143,7 @@ func TestBuildXPrebidHeader(t *testing.T) {
 			assert.NoError(t, err, test.description+":err marshalling reqAppExt")
 			req.App = &openrtb2.App{Ext: reqAppExt}
 		}
-		result := BuildXPrebidHeader(req, test.version)
+		result := BuildXPrebidHeaderForRequest(req, test.version)
 		assert.Equal(t, test.result, result, test.description+":result")
 	}
 }

@@ -8,11 +8,19 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-func BuildXPrebidHeader(bidRequest *openrtb2.BidRequest, version string) string {
+const xPrebidHeaderVersionPrefix = "pbs-go"
+
+func BuildXPrebidHeader(version string) string {
+	sb := &strings.Builder{}
+	writeNameVersionRecord(sb, xPrebidHeaderVersionPrefix, version)
+	return sb.String()
+}
+
+func BuildXPrebidHeaderForRequest(bidRequest *openrtb2.BidRequest, version string) string {
 	req := &openrtb_ext.RequestWrapper{BidRequest: bidRequest}
 
 	sb := &strings.Builder{}
-	writeNameVersionRecord(sb, "pbs-go", version)
+	writeNameVersionRecord(sb, xPrebidHeaderVersionPrefix, version)
 
 	if reqExt, err := req.GetRequestExt(); err == nil && reqExt != nil {
 		if prebidExt := reqExt.GetPrebid(); prebidExt != nil {
