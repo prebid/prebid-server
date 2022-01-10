@@ -114,10 +114,6 @@ func NewStoredRequests(cfg *config.Configuration, metricsEngine metrics.MetricsE
 	categoriesFetcher stored_requests.CategoryFetcher,
 	videoFetcher stored_requests.Fetcher,
 	storedRespFetcher stored_requests.Fetcher) {
-	// TODO: Switch this to be set in config defaults
-	//if cfg.CategoryMapping.CacheEvents.Enabled && cfg.CategoryMapping.CacheEvents.Endpoint == "" {
-	//	cfg.CategoryMapping.CacheEvents.Endpoint = "/storedrequest/categorymapping"
-	//}
 
 	var dbc dbConnection
 
