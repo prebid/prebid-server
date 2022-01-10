@@ -32,9 +32,9 @@ const (
 	BidderReservedContext BidderName = "context" // Reserved for first party data.
 	BidderReservedData    BidderName = "data"    // Reserved for first party data.
 	BidderReservedGeneral BidderName = "general" // Reserved for non-bidder specific messages when using a map keyed on the bidder name.
+	BidderReservedGPID    BidderName = "gpid"    // Reserved for Global Placement ID (GPID).
 	BidderReservedPrebid  BidderName = "prebid"  // Reserved for Prebid Server configuration.
 	BidderReservedSKAdN   BidderName = "skadn"   // Reserved for Apple's SKAdNetwork OpenRTB extension.
-	BidderReservedBidder  BidderName = "bidder"  // Reserved for passing bidder parameters.
 )
 
 // IsBidderNameReserved returns true if the specified name is a case insensitive match for a reserved bidder name.
@@ -55,15 +55,15 @@ func IsBidderNameReserved(name string) bool {
 		return true
 	}
 
+	if strings.EqualFold(name, string(BidderReservedGPID)) {
+		return true
+	}
+
 	if strings.EqualFold(name, string(BidderReservedSKAdN)) {
 		return true
 	}
 
 	if strings.EqualFold(name, string(BidderReservedPrebid)) {
-		return true
-	}
-
-	if strings.EqualFold(name, string(BidderReservedBidder)) {
 		return true
 	}
 
@@ -103,6 +103,7 @@ const (
 	BidderAJA               BidderName = "aja"
 	BidderAlgorix           BidderName = "algorix"
 	BidderAMX               BidderName = "amx"
+	BidderApacdex           BidderName = "apacdex"
 	BidderApplogy           BidderName = "applogy"
 	BidderAppnexus          BidderName = "appnexus"
 	BidderAudienceNetwork   BidderName = "audienceNetwork"
@@ -114,10 +115,12 @@ const (
 	BidderBidmachine        BidderName = "bidmachine"
 	BidderBidmyadz          BidderName = "bidmyadz"
 	BidderBidsCube          BidderName = "bidscube"
+	BidderBizzclick         BidderName = "bizzclick"
 	BidderBmtm              BidderName = "bmtm"
 	BidderBrightroll        BidderName = "brightroll"
 	BidderCoinzilla         BidderName = "coinzilla"
 	BidderColossus          BidderName = "colossus"
+	BidderCompass           BidderName = "compass"
 	BidderConnectAd         BidderName = "connectad"
 	BidderConsumable        BidderName = "consumable"
 	BidderConversant        BidderName = "conversant"
@@ -174,6 +177,7 @@ const (
 	BidderPubmatic          BidderName = "pubmatic"
 	BidderPubnative         BidderName = "pubnative"
 	BidderPulsepoint        BidderName = "pulsepoint"
+	BidderQuantumdex        BidderName = "quantumdex"
 	BidderRevcontent        BidderName = "revcontent"
 	BidderRhythmone         BidderName = "rhythmone"
 	BidderRichaudience      BidderName = "richaudience"
@@ -245,6 +249,7 @@ func CoreBidderNames() []BidderName {
 		BidderAJA,
 		BidderAlgorix,
 		BidderAMX,
+		BidderApacdex,
 		BidderApplogy,
 		BidderAppnexus,
 		BidderAudienceNetwork,
@@ -256,10 +261,12 @@ func CoreBidderNames() []BidderName {
 		BidderBidmachine,
 		BidderBidmyadz,
 		BidderBidsCube,
+		BidderBizzclick,
 		BidderBmtm,
 		BidderBrightroll,
 		BidderCoinzilla,
 		BidderColossus,
+		BidderCompass,
 		BidderConnectAd,
 		BidderConsumable,
 		BidderConversant,
@@ -316,6 +323,7 @@ func CoreBidderNames() []BidderName {
 		BidderPubmatic,
 		BidderPubnative,
 		BidderPulsepoint,
+		BidderQuantumdex,
 		BidderRevcontent,
 		BidderRhythmone,
 		BidderRichaudience,

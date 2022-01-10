@@ -28,6 +28,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/aja"
 	"github.com/prebid/prebid-server/adapters/algorix"
 	"github.com/prebid/prebid-server/adapters/amx"
+	"github.com/prebid/prebid-server/adapters/apacdex"
 	"github.com/prebid/prebid-server/adapters/applogy"
 	"github.com/prebid/prebid-server/adapters/appnexus"
 	"github.com/prebid/prebid-server/adapters/audienceNetwork"
@@ -39,10 +40,12 @@ import (
 	"github.com/prebid/prebid-server/adapters/bidmachine"
 	"github.com/prebid/prebid-server/adapters/bidmyadz"
 	"github.com/prebid/prebid-server/adapters/bidscube"
+	"github.com/prebid/prebid-server/adapters/bizzclick"
 	"github.com/prebid/prebid-server/adapters/bmtm"
 	"github.com/prebid/prebid-server/adapters/brightroll"
 	"github.com/prebid/prebid-server/adapters/coinzilla"
 	"github.com/prebid/prebid-server/adapters/colossus"
+	"github.com/prebid/prebid-server/adapters/compass"
 	"github.com/prebid/prebid-server/adapters/connectad"
 	"github.com/prebid/prebid-server/adapters/consumable"
 	"github.com/prebid/prebid-server/adapters/conversant"
@@ -121,7 +124,6 @@ import (
 	"github.com/prebid/prebid-server/adapters/ucfunnel"
 	"github.com/prebid/prebid-server/adapters/unicorn"
 	"github.com/prebid/prebid-server/adapters/unruly"
-	"github.com/prebid/prebid-server/adapters/valueimpression"
 	"github.com/prebid/prebid-server/adapters/videobyte"
 	"github.com/prebid/prebid-server/adapters/visx"
 	"github.com/prebid/prebid-server/adapters/vrtcal"
@@ -166,6 +168,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAJA:               aja.Builder,
 		openrtb_ext.BidderAlgorix:           algorix.Builder,
 		openrtb_ext.BidderAMX:               amx.Builder,
+		openrtb_ext.BidderApacdex:           apacdex.Builder,
 		openrtb_ext.BidderApplogy:           applogy.Builder,
 		openrtb_ext.BidderAppnexus:          appnexus.Builder,
 		openrtb_ext.BidderAudienceNetwork:   audienceNetwork.Builder,
@@ -177,10 +180,12 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderBidmachine:        bidmachine.Builder,
 		openrtb_ext.BidderBidmyadz:          bidmyadz.Builder,
 		openrtb_ext.BidderBidsCube:          bidscube.Builder,
+		openrtb_ext.BidderBizzclick:         bizzclick.Builder,
 		openrtb_ext.BidderBmtm:              bmtm.Builder,
 		openrtb_ext.BidderBrightroll:        brightroll.Builder,
 		openrtb_ext.BidderCoinzilla:         coinzilla.Builder,
 		openrtb_ext.BidderColossus:          colossus.Builder,
+		openrtb_ext.BidderCompass:           compass.Builder,
 		openrtb_ext.BidderConnectAd:         connectad.Builder,
 		openrtb_ext.BidderConsumable:        consumable.Builder,
 		openrtb_ext.BidderConversant:        conversant.Builder,
@@ -237,6 +242,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderPubmatic:          pubmatic.Builder,
 		openrtb_ext.BidderPubnative:         pubnative.Builder,
 		openrtb_ext.BidderPulsepoint:        pulsepoint.Builder,
+		openrtb_ext.BidderQuantumdex:        apacdex.Builder,
 		openrtb_ext.BidderRevcontent:        revcontent.Builder,
 		openrtb_ext.BidderRhythmone:         rhythmone.Builder,
 		openrtb_ext.BidderRichaudience:      richaudience.Builder,
@@ -263,7 +269,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderUcfunnel:          ucfunnel.Builder,
 		openrtb_ext.BidderUnicorn:           unicorn.Builder,
 		openrtb_ext.BidderUnruly:            unruly.Builder,
-		openrtb_ext.BidderValueImpression:   valueimpression.Builder,
+		openrtb_ext.BidderValueImpression:   apacdex.Builder,
 		openrtb_ext.BidderVerizonMedia:      yahoossp.Builder,
 		openrtb_ext.BidderVideoByte:         videobyte.Builder,
 		openrtb_ext.BidderViewdeos:          adtelligent.Builder,
