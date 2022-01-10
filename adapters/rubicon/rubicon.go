@@ -408,9 +408,21 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			continue
 		}
 
+		siteId, err := rubiconExt.SiteId.Int64()
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		zoneId, err := rubiconExt.ZoneId.Int64()
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
 		impExt := rubiconImpExt{
 			RP: rubiconImpExtRP{
-				ZoneID: rubiconExt.ZoneId,
+				ZoneID: int(zoneId),
 				Target: target,
 				Track:  rubiconImpExtRPTrack{Mint: "", MintVersion: ""},
 			},
@@ -534,11 +546,17 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			imp.Video = nil
 		}
 
-		pubExt := rubiconPubExt{RP: rubiconPubExtRP{AccountID: rubiconExt.AccountId}}
+		accountId, err := rubiconExt.AccountId.Int64()
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		pubExt := rubiconPubExt{RP: rubiconPubExtRP{AccountID: int(accountId)}}
 
 		if request.Site != nil {
 			siteCopy := *request.Site
-			siteExtRP := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: rubiconExt.SiteId}}
+			siteExtRP := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: int(siteId)}}
 			if siteCopy.Content != nil {
 				siteTarget := make(map[string]interface{})
 				updateExtWithIabAttribute(siteTarget, siteCopy.Content.Data, []int{1, 2, 5, 6})
@@ -563,7 +581,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			rubiconRequest.Site = &siteCopy
 		} else {
 			appCopy := *request.App
-			appCopy.Ext, err = json.Marshal(rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: rubiconExt.SiteId}})
+			appCopy.Ext, err = json.Marshal(rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: int(siteId)}})
 			appCopy.Publisher = &openrtb2.Publisher{}
 			appCopy.Publisher.Ext, err = json.Marshal(&pubExt)
 			rubiconRequest.App = &appCopy
