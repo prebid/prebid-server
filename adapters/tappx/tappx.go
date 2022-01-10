@@ -120,7 +120,6 @@ func (a *TappxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 // Builds enpoint url based on adapter-specific pub settings from imp.ext
 func (a *TappxAdapter) buildEndpointURL(params *openrtb_ext.ExtImpTappx, test int) (string, error) {
 
-
 	if params.Endpoint == "" {
 		return "", &errortypes.BadInput{
 			Message: "Tappx endpoint undefined",
@@ -135,7 +134,7 @@ func (a *TappxAdapter) buildEndpointURL(params *openrtb_ext.ExtImpTappx, test in
 
 	tappxHost := "tappx.com"
 	isNewEndpoint, err := regexp.Match(`^(zz|vz)[0-9]{3,}([a-z]{2}|test)$`, []byte(params.Endpoint))
-	if (isNewEndpoint) {
+	if isNewEndpoint {
 		tappxHost = params.Endpoint + ".pub." + tappxHost + "/rtb/"
 	} else {
 		tappxHost = "ssp.api." + tappxHost + "/rtb/v2/"
@@ -157,8 +156,7 @@ func (a *TappxAdapter) buildEndpointURL(params *openrtb_ext.ExtImpTappx, test in
 		}
 	}
 
-
-	if (!isNewEndpoint) {
+	if !isNewEndpoint {
 		thisURI.Path += params.Endpoint
 	}
 
