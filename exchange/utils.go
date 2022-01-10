@@ -194,22 +194,6 @@ func extractLMT(orig *openrtb2.BidRequest, privacyConfig config.Privacy) privacy
 	}
 }
 
-func unpackSourceExt(bidRequest *openrtb2.BidRequest) (*openrtb_ext.ExtSource, error) {
-	var sourceExt *openrtb_ext.ExtSource
-
-	if bidRequest.Source == nil || bidRequest.Source.Ext == nil {
-		return nil, nil
-	}
-
-	if len(bidRequest.Source.Ext) > 0 {
-		err := json.Unmarshal(bidRequest.Source.Ext, &sourceExt)
-		if err != nil {
-			return nil, fmt.Errorf("Error decoding Request.source.ext: %s", err.Error())
-		}
-	}
-	return sourceExt, nil
-}
-
 func getAuctionBidderRequests(req AuctionRequest,
 	requestExt *openrtb_ext.ExtRequest,
 	bidderToSyncerKey map[string]string,
@@ -228,12 +212,7 @@ func getAuctionBidderRequests(req AuctionRequest,
 		return nil, []error{err}
 	}
 
-	requestSourceExt, err := unpackSourceExt(req.BidRequest)
-	if err != nil {
-		return nil, []error{err}
-	}
-
-	sChainWriter, err := schain.NewSChainWriter(requestExt, requestSourceExt)
+	sChainWriter, err := schain.NewSChainWriter(requestExt)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -315,7 +294,6 @@ func getExtJson(req *openrtb2.BidRequest, unpackedExt *openrtb_ext.ExtRequest) (
 
 	extCopy := *unpackedExt
 	extCopy.Prebid.SChains = nil
-	extCopy.SChain = nil
 	return json.Marshal(extCopy)
 }
 

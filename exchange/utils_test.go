@@ -866,13 +866,6 @@ func TestCleanOpenRTBRequestsSChain(t *testing.T) {
 			outSourceExt:  json.RawMessage(`{` + seller1SChain + `}`),
 		},
 		{
-			description:   "ORTB 2.4 schain at request.ext.prebid.schains",
-			inExt:         json.RawMessage(`{` + seller1SChain + `}`),
-			inSourceExt:   json.RawMessage{},
-			outRequestExt: json.RawMessage(`{"prebid":{}}`),
-			outSourceExt:  json.RawMessage(`{` + seller1SChain + `}`),
-		},
-		{
 			description:   "schainwriter instantation error -- multiple bidder schains in ext.prebid.schains.",
 			inExt:         json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],` + seller1SChain + `},{"bidders":["appnexus"],` + seller2SChain + `}]}}`),
 			inSourceExt:   json.RawMessage(`{` + seller1SChain + `}`),
