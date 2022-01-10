@@ -64,7 +64,7 @@
           },
           "imp": [
             {
-              "id": "test-imp-id",
+              "id": "test-imp-id:opa:banner",
               "tagid": "s17890",
               "banner": {
                 "h": 250,
@@ -111,7 +111,7 @@
                 {
                   "price": 0.5,
                   "adm": "some-test-ad",
-                  "impid": "1",
+                  "impid": "test-imp-id:opa:banner",
                   "auid": 46,
                   "id": "1",
                   "h": 250,
@@ -125,21 +125,21 @@
               "seat": "51"
             }
           ],
-          "bidid":"8141327771600527856",
-          "cur":"USD"
+          "bidid": "8141327771600527856",
+          "cur": "USD"
         }
       }
     }
   ],
   "expectedBidResponses": [
     {
-      "currency":"USD",
+      "currency": "USD",
       "bids": [
         {
           "bid": {
             "price": 0.5,
             "adm": "some-test-ad",
-            "impid": "1",
+            "impid": "test-imp-id",
             "id": "1",
             "h": 250,
             "adomain": [

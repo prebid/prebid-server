@@ -295,6 +295,9 @@ func (v vendorTrue) LegitimateInterest(purposeID consentconstants.Purpose) bool 
 func (v vendorTrue) LegitimateInterestStrict(purposeID consentconstants.Purpose) bool {
 	return true
 }
+func (v vendorTrue) SpecialFeature(featureID consentconstants.SpecialFeature) (hasSpecialFeature bool) {
+	return true
+}
 func (v vendorTrue) SpecialPurpose(purposeID consentconstants.Purpose) (hasSpecialPurpose bool) {
 	return true
 }
