@@ -3424,6 +3424,31 @@ func TestValidateNativeAssetData(t *testing.T) {
 }
 
 func TestAuctionResponseHeaders(t *testing.T) {
+	testCases := []struct {
+		description     string
+		requestBody     string
+		expectedStatus  int
+		expectedHeaders func(http.Header)
+	}{
+		{
+			description:    "Success Response",
+			requestBody:    validRequest(t, "site.json"),
+			expectedStatus: 200,
+			expectedHeaders: func(h http.Header) {
+				h.Set("X-Prebid", "pbs-go/unknown")
+				h.Set("Content-Type", "application/json")
+			},
+		},
+		{
+			description:    "Failure Response",
+			requestBody:    "{}",
+			expectedStatus: 400,
+			expectedHeaders: func(h http.Header) {
+				h.Set("X-Prebid", "pbs-go/unknown")
+			},
+		},
+	}
+
 	exchange := &nobidExchange{}
 	endpoint, _ := NewEndpoint(
 		fakeUUIDGenerator{},
@@ -3438,17 +3463,18 @@ func TestAuctionResponseHeaders(t *testing.T) {
 		[]byte{},
 		openrtb_ext.BuildBidderMap())
 
-	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
-	recorder := httptest.NewRecorder()
+	for _, test := range testCases {
+		httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.requestBody))
+		recorder := httptest.NewRecorder()
 
-	endpoint(recorder, httpReq, nil)
+		endpoint(recorder, httpReq, nil)
 
-	expectedHeaders := http.Header{}
-	expectedHeaders.Set("Content-Type", "application/json")
-	expectedHeaders.Set("X-Prebid", "pbs-go/unknown")
+		expectedHeaders := http.Header{}
+		test.expectedHeaders(expectedHeaders)
 
-	assert.Equal(t, recorder.Result().StatusCode, 200, "statuscode")
-	assert.Equal(t, recorder.Result().Header, expectedHeaders, "headers")
+		assert.Equal(t, test.expectedStatus, recorder.Result().StatusCode, test.description+":statuscode")
+		assert.Equal(t, expectedHeaders, recorder.Result().Header, test.description+":statuscode")
+	}
 }
 
 // warningsCheckExchange is a well-behaved exchange which stores all incoming warnings.
