@@ -22,18 +22,12 @@ func (a adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.Ex
 
 	for _, imp := range request.Imp {
 
-		vidoomyExt, err := parseExt(&imp)
-		if err != nil {
-			errors = append(errors, err)
-			continue
-		}
-
 		// Split up multi-impression requests into multiple requests so that
 		// each split request is only associated to a single impression
 		reqCopy := *request
 		reqCopy.Imp = []openrtb2.Imp{imp}
 
-		if err := changeRequestForBidService(&reqCopy, vidoomyExt); err != nil {
+		if err := changeRequestForBidService(&reqCopy); err != nil {
 			errors = append(errors, err)
 			continue
 		}
@@ -82,7 +76,7 @@ func getHeaders(request *openrtb2.BidRequest) http.Header {
 	return headers
 }
 
-func changeRequestForBidService(request *openrtb2.BidRequest, extension *openrtb_ext.ImpExtVidoomy) error {
+func changeRequestForBidService(request *openrtb2.BidRequest) error {
 	if request.Imp[0].Banner == nil {
 		return nil
 	}
@@ -160,36 +154,16 @@ func getImpInfo(impId string, imps []openrtb2.Imp) (bool, openrtb_ext.BidType) {
 		if imp.ID == impId {
 			exists = true
 
-			if imp.Banner != nil {
-				mediaType = openrtb_ext.BidTypeBanner
-			} else if imp.Video != nil {
+			if imp.Video != nil {
 				mediaType = openrtb_ext.BidTypeVideo
+			} else if imp.Banner != nil {
+				mediaType = openrtb_ext.BidTypeBanner
 			}
 
 			return exists, mediaType
 		}
 	}
 	return exists, mediaType
-}
-
-func parseExt(imp *openrtb2.Imp) (*openrtb_ext.ImpExtVidoomy, error) {
-	var bidderExt adapters.ExtImpBidder
-	err := json.Unmarshal(imp.Ext, &bidderExt)
-	if err != nil {
-		return nil, &errortypes.BadInput{
-			Message: fmt.Sprintf("Ignoring imp id=%s, error while decoding extImpBidder, err: %s", imp.ID, err),
-		}
-	}
-
-	var vidoomyExt openrtb_ext.ImpExtVidoomy
-	err = json.Unmarshal(bidderExt.Bidder, &vidoomyExt)
-	if err != nil {
-		return nil, &errortypes.BadInput{
-			Message: fmt.Sprintf("Ignoring imp id=%s, error while decoding extImpBidder, err: %s", imp.ID, err),
-		}
-	}
-
-	return &vidoomyExt, nil
 }
 
 // Builder builds a new instance of the Vidoomy adapter for the given bidder with the given config.
