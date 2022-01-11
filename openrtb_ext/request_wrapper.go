@@ -511,6 +511,9 @@ func (re *RequestExt) SetPrebid(prebid *ExtRequestPrebid) {
 	re.prebidDirty = true
 }
 
+// These schain methods on the request.ext are only for ORTB 2.4 backwards compatibility and
+// should not be used for any other purposes. To access ORTB 2.5 schains, see source.ext.schain
+// or request.ext.prebid.schains.
 func (re *RequestExt) GetSChain() *ExtRequestPrebidSChainSChain {
 	if re.schain == nil {
 		return nil

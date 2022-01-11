@@ -2250,22 +2250,14 @@ func TestMapSChains(t *testing.T) {
 				assert.Fail(t, "Error getting request ext from wrapper", tt.description)
 			}
 			reqExtSChain := reqExt.GetSChain()
-			if tt.wantReqExtSChain == nil {
-				assert.Nil(t, reqExtSChain, tt.description)
-			} else {
-				assert.Equal(t, tt.wantReqExtSChain, reqExtSChain, tt.description)
-			}
+			assert.Equal(t, tt.wantReqExtSChain, reqExtSChain, tt.description)
 
 			sourceExt, err := reqWrapper.GetSourceExt()
 			if err != nil {
 				assert.Fail(t, "Error getting source ext from wrapper", tt.description)
 			}
 			sourceExtSChain := sourceExt.GetSChain()
-			if tt.wantSourceExtSChain == nil {
-				assert.Nil(t, sourceExtSChain, tt.description)
-			} else {
-				assert.Equal(t, tt.wantSourceExtSChain, sourceExtSChain, tt.description)
-			}
+			assert.Equal(t, tt.wantSourceExtSChain, sourceExtSChain, tt.description)
 		}
 	}
 }
