@@ -107,11 +107,13 @@ func CreateStoredRequests(cfg *config.StoredRequests, metricsEngine metrics.Metr
 //
 // As a side-effect, it will add some endpoints to the router if the config calls for it.
 // In the future we should look for ways to simplify this so that it's not doing two things.
-func NewStoredRequests(cfg *config.Configuration, metricsEngine metrics.MetricsEngine, client *http.Client, router *httprouter.Router) (shutdown func(), fetcher stored_requests.Fetcher, ampFetcher stored_requests.Fetcher, accountsFetcher stored_requests.AccountFetcher, categoriesFetcher stored_requests.CategoryFetcher, videoFetcher stored_requests.Fetcher) {
-	// TODO: Switch this to be set in config defaults
-	//if cfg.CategoryMapping.CacheEvents.Enabled && cfg.CategoryMapping.CacheEvents.Endpoint == "" {
-	//	cfg.CategoryMapping.CacheEvents.Endpoint = "/storedrequest/categorymapping"
-	//}
+func NewStoredRequests(cfg *config.Configuration, metricsEngine metrics.MetricsEngine, client *http.Client, router *httprouter.Router) (shutdown func(),
+	fetcher stored_requests.Fetcher,
+	ampFetcher stored_requests.Fetcher,
+	accountsFetcher stored_requests.AccountFetcher,
+	categoriesFetcher stored_requests.CategoryFetcher,
+	videoFetcher stored_requests.Fetcher,
+	storedRespFetcher stored_requests.Fetcher) {
 
 	var dbc dbConnection
 
@@ -120,12 +122,14 @@ func NewStoredRequests(cfg *config.Configuration, metricsEngine metrics.MetricsE
 	fetcher3, shutdown3 := CreateStoredRequests(&cfg.CategoryMapping, metricsEngine, client, router, &dbc)
 	fetcher4, shutdown4 := CreateStoredRequests(&cfg.StoredVideo, metricsEngine, client, router, &dbc)
 	fetcher5, shutdown5 := CreateStoredRequests(&cfg.Accounts, metricsEngine, client, router, &dbc)
+	fetcher6, shutdown6 := CreateStoredRequests(&cfg.StoredResponses, metricsEngine, client, router, &dbc)
 
 	fetcher = fetcher1.(stored_requests.Fetcher)
 	ampFetcher = fetcher2.(stored_requests.Fetcher)
 	categoriesFetcher = fetcher3.(stored_requests.CategoryFetcher)
 	videoFetcher = fetcher4.(stored_requests.Fetcher)
 	accountsFetcher = fetcher5.(stored_requests.AccountFetcher)
+	storedRespFetcher = fetcher6.(stored_requests.Fetcher)
 
 	shutdown = func() {
 		shutdown1()
@@ -133,6 +137,7 @@ func NewStoredRequests(cfg *config.Configuration, metricsEngine metrics.MetricsE
 		shutdown3()
 		shutdown4()
 		shutdown5()
+		shutdown6()
 	}
 
 	return
@@ -163,7 +168,7 @@ func newFetcher(cfg *config.StoredRequests, client *http.Client, db *sql.DB) (fe
 	}
 	if cfg.Postgres.FetcherQueries.QueryTemplate != "" {
 		glog.Infof("Loading Stored %s data via Postgres.\nQuery: %s", cfg.DataType(), cfg.Postgres.FetcherQueries.QueryTemplate)
-		idList = append(idList, db_fetcher.NewFetcher(db, cfg.Postgres.FetcherQueries.MakeQuery))
+		idList = append(idList, db_fetcher.NewFetcher(db, cfg.Postgres.FetcherQueries.MakeQuery, cfg.Postgres.FetcherQueries.MakeQueryResponses))
 	} else if cfg.Postgres.CacheInitialization.Query != "" && cfg.Postgres.PollUpdates.Query != "" {
 		//in this case data will be loaded to cache via poll for updates event
 		idList = append(idList, empty_fetcher.EmptyFetcher{})
@@ -178,7 +183,12 @@ func newFetcher(cfg *config.StoredRequests, client *http.Client, db *sql.DB) (fe
 }
 
 func newCache(cfg *config.StoredRequests) stored_requests.Cache {
-	cache := stored_requests.Cache{&nil_cache.NilCache{}, &nil_cache.NilCache{}, &nil_cache.NilCache{}}
+	cache := stored_requests.Cache{
+		Requests:  &nil_cache.NilCache{},
+		Imps:      &nil_cache.NilCache{},
+		Responses: &nil_cache.NilCache{},
+		Accounts:  &nil_cache.NilCache{},
+	}
 	switch {
 	case cfg.InMemoryCache.Type == "none":
 		glog.Warningf("No %s cache configured. The %s Fetcher backend will be used for all data requests", cfg.DataType(), cfg.DataType())
@@ -187,6 +197,7 @@ func newCache(cfg *config.StoredRequests) stored_requests.Cache {
 	default:
 		cache.Requests = memory.NewCache(cfg.InMemoryCache.RequestCacheSize, cfg.InMemoryCache.TTL, "Requests")
 		cache.Imps = memory.NewCache(cfg.InMemoryCache.ImpCacheSize, cfg.InMemoryCache.TTL, "Imps")
+		cache.Responses = memory.NewCache(cfg.InMemoryCache.RespCacheSize, cfg.InMemoryCache.TTL, "Responses")
 	}
 	return cache
 }
