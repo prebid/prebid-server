@@ -1,7 +1,0 @@
-maintainer:
-  email: "support@tapjoy.com"
-capabilities:
-  app:
-    mediaTypes:
-      - video
-      - banner

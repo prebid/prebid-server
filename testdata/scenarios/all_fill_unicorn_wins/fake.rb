@@ -56,7 +56,6 @@ endpoints = [
   Endpoint.new('../../responses/rubicon/fill_low_bid.json', 'POST', '/a/api/exchange.json'),
   Endpoint.new('../../responses/liftoff/fill_low_bid.json', 'POST', '/givemeads'),
   Endpoint.new('../../responses/moloco/fill_low_bid.json', 'POST', '/moloco_givemeads'),
-  Endpoint.new('../../responses/crossinstall/fill_low_bid.json', 'POST', '/crossinstall_givemeads'),
   Endpoint.new('../../responses/taurusx/fill_low_bid.json', 'POST', '/taurusx_givemeads'),
   Endpoint.new('../../responses/unicorn/fill_high_bid.json', 'POST', '/unicorn_givemeads'),
 ]

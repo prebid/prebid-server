@@ -44,7 +44,6 @@ import (
 	"github.com/prebid/prebid-server/adapters/conversant"
 	"github.com/prebid/prebid-server/adapters/cpmstar"
 	"github.com/prebid/prebid-server/adapters/criteo"
-	"github.com/prebid/prebid-server/adapters/crossinstall"
 	"github.com/prebid/prebid-server/adapters/datablocks"
 	"github.com/prebid/prebid-server/adapters/decenterads"
 	"github.com/prebid/prebid-server/adapters/deepintent"
@@ -77,11 +76,9 @@ import (
 	"github.com/prebid/prebid-server/adapters/madvertise"
 	"github.com/prebid/prebid-server/adapters/marsmedia"
 	"github.com/prebid/prebid-server/adapters/mgid"
-	"github.com/prebid/prebid-server/adapters/mintegral"
 	"github.com/prebid/prebid-server/adapters/mobfoxpb"
 	"github.com/prebid/prebid-server/adapters/mobilefuse"
 	"github.com/prebid/prebid-server/adapters/moloco"
-	"github.com/prebid/prebid-server/adapters/molococloud"
 	"github.com/prebid/prebid-server/adapters/nanointeractive"
 	"github.com/prebid/prebid-server/adapters/ninthdecimal"
 	"github.com/prebid/prebid-server/adapters/nobid"
@@ -177,7 +174,6 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderConversant:        conversant.Builder,
 		openrtb_ext.BidderCpmstar:           cpmstar.Builder,
 		openrtb_ext.BidderCriteo:            criteo.Builder,
-		openrtb_ext.BidderCrossInstall:      crossinstall.Builder,
 		openrtb_ext.BidderDatablocks:        datablocks.Builder,
 		openrtb_ext.BidderDecenterAds:       decenterads.Builder,
 		openrtb_ext.BidderDeepintent:        deepintent.Builder,
@@ -211,11 +207,9 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderMarsmedia:         marsmedia.Builder,
 		openrtb_ext.BidderMediafuse:         adtelligent.Builder,
 		openrtb_ext.BidderMgid:              mgid.Builder,
-		openrtb_ext.BidderMintegral:         mintegral.Builder,
 		openrtb_ext.BidderMobfoxpb:          mobfoxpb.Builder,
 		openrtb_ext.BidderMobileFuse:        mobilefuse.Builder,
 		openrtb_ext.BidderMoloco:            moloco.Builder,
-		openrtb_ext.BidderMolocoCloud:       molococloud.Builder,
 		openrtb_ext.BidderNanoInteractive:   nanointeractive.Builder,
 		openrtb_ext.BidderNinthDecimal:      ninthdecimal.Builder,
 		openrtb_ext.BidderNoBid:             nobid.Builder,

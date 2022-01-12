@@ -83,8 +83,6 @@ github.com/influxdata/influxdb/pkg/testing/assert
 # github.com/julienschmidt/httprouter v1.3.0
 ## explicit
 github.com/julienschmidt/httprouter
-# github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88
-## explicit
 # github.com/konsorten/go-windows-terminal-sequences v1.0.3
 github.com/konsorten/go-windows-terminal-sequences
 # github.com/lib/pq v1.0.0

@@ -115,7 +115,6 @@ const (
 	BidderConversant        BidderName = "conversant"
 	BidderCpmstar           BidderName = "cpmstar"
 	BidderCriteo            BidderName = "criteo"
-	BidderCrossInstall      BidderName = "crossinstall"
 	BidderDatablocks        BidderName = "datablocks"
 	BidderDmx               BidderName = "dmx"
 	BidderDecenterAds       BidderName = "decenterads"
@@ -149,11 +148,9 @@ const (
 	BidderMarsmedia         BidderName = "marsmedia"
 	BidderMediafuse         BidderName = "mediafuse"
 	BidderMgid              BidderName = "mgid"
-	BidderMintegral         BidderName = "mintegral"
 	BidderMobfoxpb          BidderName = "mobfoxpb"
 	BidderMobileFuse        BidderName = "mobilefuse"
 	BidderMoloco            BidderName = "moloco"
-	BidderMolocoCloud       BidderName = "molococloud"
 	BidderNanoInteractive   BidderName = "nanointeractive"
 	BidderNinthDecimal      BidderName = "ninthdecimal"
 	BidderNoBid             BidderName = "nobid"
@@ -248,7 +245,6 @@ func CoreBidderNames() []BidderName {
 		BidderConversant,
 		BidderCpmstar,
 		BidderCriteo,
-		BidderCrossInstall,
 		BidderDatablocks,
 		BidderDecenterAds,
 		BidderDeepintent,
@@ -282,11 +278,9 @@ func CoreBidderNames() []BidderName {
 		BidderMarsmedia,
 		BidderMediafuse,
 		BidderMgid,
-		BidderMintegral,
 		BidderMobfoxpb,
 		BidderMobileFuse,
 		BidderMoloco,
-		BidderMolocoCloud,
 		BidderNanoInteractive,
 		BidderNinthDecimal,
 		BidderNoBid,
