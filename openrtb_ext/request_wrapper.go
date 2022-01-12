@@ -464,8 +464,6 @@ func (re *RequestExt) marshal() (json.RawMessage, error) {
 		if err != nil {
 			return nil, err
 		}
-		glog.Warningf("LENGTH IS...%d\n", len(schainJson))
-		glog.Warningf("VALUE IS: %s\n", string(schainJson))
 		if len(schainJson) > 2 && re.schain != nil {
 			re.ext["schain"] = json.RawMessage(schainJson)
 		} else {
