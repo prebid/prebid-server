@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 )
 
