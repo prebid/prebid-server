@@ -20,6 +20,7 @@ func (a adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.Ex
 
 	reqs := make([]*adapters.RequestData, 0, len(request.Imp))
 
+	header := getHeaders(request)
 	for _, imp := range request.Imp {
 
 		// Split up multi-impression requests into multiple requests so that
@@ -38,7 +39,6 @@ func (a adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.Ex
 			continue
 		}
 
-		header := getHeaders(request)
 		reqs = append(reqs, &adapters.RequestData{
 			Method:  "POST",
 			Uri:     a.endpoint,
@@ -149,10 +149,8 @@ func (a adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest 
 
 func getImpInfo(impId string, imps []openrtb2.Imp) (bool, openrtb_ext.BidType) {
 	var mediaType openrtb_ext.BidType
-	var exists bool
 	for _, imp := range imps {
 		if imp.ID == impId {
-			exists = true
 
 			if imp.Video != nil {
 				mediaType = openrtb_ext.BidTypeVideo
@@ -160,10 +158,10 @@ func getImpInfo(impId string, imps []openrtb2.Imp) (bool, openrtb_ext.BidType) {
 				mediaType = openrtb_ext.BidTypeBanner
 			}
 
-			return exists, mediaType
+			return true, mediaType
 		}
 	}
-	return exists, mediaType
+	return false, mediaType
 }
 
 // Builder builds a new instance of the Vidoomy adapter for the given bidder with the given config.
