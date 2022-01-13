@@ -74,7 +74,6 @@ func NewFetcher(client *http.Client, endpoint string) *HttpFetcher {
 type HttpFetcher struct {
 	client     *http.Client
 	Endpoint   string
-	hasQuery   bool
 	Categories map[string]map[string]stored_requests.Category
 }
 
@@ -95,6 +94,10 @@ func (fetcher *HttpFetcher) FetchRequests(ctx context.Context, requestIDs []stri
 	defer httpResp.Body.Close()
 	requestData, impData, errs = unpackResponse(httpResp)
 	return
+}
+
+func (fetcher *HttpFetcher) FetchResponses(ctx context.Context, ids []string) (data map[string]json.RawMessage, errs []error) {
+	return nil, nil
 }
 
 // FetchAccounts retrieves account configurations

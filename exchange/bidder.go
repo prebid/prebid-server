@@ -15,6 +15,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/config/util"
 	"github.com/prebid/prebid-server/currency"
+	"github.com/prebid/prebid-server/version"
 
 	nativeRequests "github.com/mxmCherry/openrtb/v15/native1/request"
 	nativeResponse "github.com/mxmCherry/openrtb/v15/native1/response"
@@ -129,6 +130,7 @@ type bidderAdapterConfig struct {
 }
 
 func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb2.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool) (*pbsOrtbSeatBid, []error) {
+
 	reqData, errs := bidder.Bidder.MakeRequests(request, reqInfo)
 
 	if len(reqData) == 0 {
@@ -138,17 +140,17 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb2.B
 		}
 		return nil, errs
 	}
+	xPrebidHeader := buildXPrebidHeader(request, version.Ver)
 
-	if reqInfo.GlobalPrivacyControlHeader == "1" {
-		for i := 0; i < len(reqData); i++ {
-			if reqData[i].Headers != nil {
-				reqHeader := reqData[i].Headers.Clone()
-				reqHeader.Add("Sec-GPC", reqInfo.GlobalPrivacyControlHeader)
-				reqData[i].Headers = reqHeader
-			} else {
-				reqData[i].Headers = http.Header{}
-				reqData[i].Headers.Add("Sec-GPC", reqInfo.GlobalPrivacyControlHeader)
-			}
+	for i := 0; i < len(reqData); i++ {
+		if reqData[i].Headers != nil {
+			reqData[i].Headers = reqData[i].Headers.Clone()
+		} else {
+			reqData[i].Headers = http.Header{}
+		}
+		reqData[i].Headers.Add("X-Prebid", xPrebidHeader)
+		if reqInfo.GlobalPrivacyControlHeader == "1" {
+			reqData[i].Headers.Add("Sec-GPC", reqInfo.GlobalPrivacyControlHeader)
 		}
 	}
 
@@ -179,24 +181,20 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb2.B
 		// If this is a test bid, capture debugging info from the requests.
 		// Write debug data to ext in case if:
 		// - headerDebugAllowed (debug override header specified correct) - it overrides all other debug restrictions
-		// - debugContextKey (url param) in true
 		// - account debug is allowed
 		// - bidder debug is allowed
 		if headerDebugAllowed {
 			seatBid.httpCalls = append(seatBid.httpCalls, makeExt(httpInfo))
 		} else {
-			debugInfo := ctx.Value(DebugContextKey)
-			if debugInfo != nil && debugInfo.(bool) {
-				if accountDebugAllowed {
-					if bidder.config.DebugInfo.Allow {
-						seatBid.httpCalls = append(seatBid.httpCalls, makeExt(httpInfo))
-					} else {
-						debugDisabledWarning := errortypes.Warning{
-							WarningCode: errortypes.BidderLevelDebugDisabledWarningCode,
-							Message:     "debug turned off for bidder",
-						}
-						errs = append(errs, &debugDisabledWarning)
+			if accountDebugAllowed {
+				if bidder.config.DebugInfo.Allow {
+					seatBid.httpCalls = append(seatBid.httpCalls, makeExt(httpInfo))
+				} else {
+					debugDisabledWarning := errortypes.Warning{
+						WarningCode: errortypes.BidderLevelDebugDisabledWarningCode,
+						Message:     "debug turned off for bidder",
 					}
+					errs = append(errs, &debugDisabledWarning)
 				}
 			}
 		}

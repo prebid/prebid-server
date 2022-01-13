@@ -47,7 +47,7 @@ func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.Bidde
 	} else if len(engineList) == 1 {
 		returnEngine.MetricsEngine = engineList[0]
 	} else {
-		returnEngine.MetricsEngine = &DummyMetricsEngine{}
+		returnEngine.MetricsEngine = &NilMetricsEngine{}
 	}
 
 	return &returnEngine
@@ -87,13 +87,6 @@ func (me *MultiMetricsEngine) RecordConnectionClose(success bool) {
 func (me *MultiMetricsEngine) RecordImps(implabels metrics.ImpLabels) {
 	for _, thisME := range *me {
 		thisME.RecordImps(implabels)
-	}
-}
-
-// RecordImps for the legacy endpoint
-func (me *MultiMetricsEngine) RecordLegacyImps(labels metrics.Labels, numImps int) {
-	for _, thisME := range *me {
-		thisME.RecordLegacyImps(labels, numImps)
 	}
 }
 
@@ -258,117 +251,114 @@ func (me *MultiMetricsEngine) RecordAdapterGDPRRequestBlocked(adapter openrtb_ex
 	}
 }
 
-// DummyMetricsEngine is a Noop metrics engine in case no metrics are configured. (may also be useful for tests)
-type DummyMetricsEngine struct{}
+// NilMetricsEngine implements the MetricsEngine interface where no metrics are actually captured. This is
+// used if no metric backend is configured and also for tests.
+type NilMetricsEngine struct{}
 
 // RecordRequest as a noop
-func (me *DummyMetricsEngine) RecordRequest(labels metrics.Labels) {
+func (me *NilMetricsEngine) RecordRequest(labels metrics.Labels) {
 }
 
 // RecordConnectionAccept as a noop
-func (me *DummyMetricsEngine) RecordConnectionAccept(success bool) {
+func (me *NilMetricsEngine) RecordConnectionAccept(success bool) {
 }
 
 // RecordConnectionClose as a noop
-func (me *DummyMetricsEngine) RecordConnectionClose(success bool) {
+func (me *NilMetricsEngine) RecordConnectionClose(success bool) {
 }
 
 // RecordImps as a noop
-func (me *DummyMetricsEngine) RecordImps(implabels metrics.ImpLabels) {
-}
-
-// RecordLegacyImps as a noop
-func (me *DummyMetricsEngine) RecordLegacyImps(labels metrics.Labels, numImps int) {
+func (me *NilMetricsEngine) RecordImps(implabels metrics.ImpLabels) {
 }
 
 // RecordRequestTime as a noop
-func (me *DummyMetricsEngine) RecordRequestTime(labels metrics.Labels, length time.Duration) {
+func (me *NilMetricsEngine) RecordRequestTime(labels metrics.Labels, length time.Duration) {
 }
 
 // RecordStoredDataFetchTime as a noop
-func (me *DummyMetricsEngine) RecordStoredDataFetchTime(labels metrics.StoredDataLabels, length time.Duration) {
+func (me *NilMetricsEngine) RecordStoredDataFetchTime(labels metrics.StoredDataLabels, length time.Duration) {
 }
 
 // RecordStoredDataError as a noop
-func (me *DummyMetricsEngine) RecordStoredDataError(labels metrics.StoredDataLabels) {
+func (me *NilMetricsEngine) RecordStoredDataError(labels metrics.StoredDataLabels) {
 }
 
 // RecordAdapterPanic as a noop
-func (me *DummyMetricsEngine) RecordAdapterPanic(labels metrics.AdapterLabels) {
+func (me *NilMetricsEngine) RecordAdapterPanic(labels metrics.AdapterLabels) {
 }
 
 // RecordAdapterRequest as a noop
-func (me *DummyMetricsEngine) RecordAdapterRequest(labels metrics.AdapterLabels) {
+func (me *NilMetricsEngine) RecordAdapterRequest(labels metrics.AdapterLabels) {
 }
 
 // RecordAdapterConnections as a noop
-func (me *DummyMetricsEngine) RecordAdapterConnections(bidderName openrtb_ext.BidderName, connWasReused bool, connWaitTime time.Duration) {
+func (me *NilMetricsEngine) RecordAdapterConnections(bidderName openrtb_ext.BidderName, connWasReused bool, connWaitTime time.Duration) {
 }
 
 // RecordDNSTime as a noop
-func (me *DummyMetricsEngine) RecordDNSTime(dnsLookupTime time.Duration) {
+func (me *NilMetricsEngine) RecordDNSTime(dnsLookupTime time.Duration) {
 }
 
 // RecordTLSHandshakeTime as a noop
-func (me *DummyMetricsEngine) RecordTLSHandshakeTime(tlsHandshakeTime time.Duration) {
+func (me *NilMetricsEngine) RecordTLSHandshakeTime(tlsHandshakeTime time.Duration) {
 }
 
 // RecordAdapterBidReceived as a noop
-func (me *DummyMetricsEngine) RecordAdapterBidReceived(labels metrics.AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
+func (me *NilMetricsEngine) RecordAdapterBidReceived(labels metrics.AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
 }
 
 // RecordAdapterPrice as a noop
-func (me *DummyMetricsEngine) RecordAdapterPrice(labels metrics.AdapterLabels, cpm float64) {
+func (me *NilMetricsEngine) RecordAdapterPrice(labels metrics.AdapterLabels, cpm float64) {
 }
 
 // RecordAdapterTime as a noop
-func (me *DummyMetricsEngine) RecordAdapterTime(labels metrics.AdapterLabels, length time.Duration) {
+func (me *NilMetricsEngine) RecordAdapterTime(labels metrics.AdapterLabels, length time.Duration) {
 }
 
 // RecordCookieSync as a noop
-func (me *DummyMetricsEngine) RecordCookieSync(status metrics.CookieSyncStatus) {
+func (me *NilMetricsEngine) RecordCookieSync(status metrics.CookieSyncStatus) {
 }
 
 // RecordSyncerRequest as a noop
-func (me *DummyMetricsEngine) RecordSyncerRequest(key string, status metrics.SyncerCookieSyncStatus) {
+func (me *NilMetricsEngine) RecordSyncerRequest(key string, status metrics.SyncerCookieSyncStatus) {
 }
 
 // RecordSetUid as a noop
-func (me *DummyMetricsEngine) RecordSetUid(status metrics.SetUidStatus) {
+func (me *NilMetricsEngine) RecordSetUid(status metrics.SetUidStatus) {
 }
 
 // RecordSyncerSet as a noop
-func (me *DummyMetricsEngine) RecordSyncerSet(key string, status metrics.SyncerSetUidStatus) {
+func (me *NilMetricsEngine) RecordSyncerSet(key string, status metrics.SyncerSetUidStatus) {
 }
 
 // RecordStoredReqCacheResult as a noop
-func (me *DummyMetricsEngine) RecordStoredReqCacheResult(cacheResult metrics.CacheResult, inc int) {
+func (me *NilMetricsEngine) RecordStoredReqCacheResult(cacheResult metrics.CacheResult, inc int) {
 }
 
 // RecordStoredImpCacheResult as a noop
-func (me *DummyMetricsEngine) RecordStoredImpCacheResult(cacheResult metrics.CacheResult, inc int) {
+func (me *NilMetricsEngine) RecordStoredImpCacheResult(cacheResult metrics.CacheResult, inc int) {
 }
 
 // RecordAccountCacheResult as a noop
-func (me *DummyMetricsEngine) RecordAccountCacheResult(cacheResult metrics.CacheResult, inc int) {
+func (me *NilMetricsEngine) RecordAccountCacheResult(cacheResult metrics.CacheResult, inc int) {
 }
 
 // RecordPrebidCacheRequestTime as a noop
-func (me *DummyMetricsEngine) RecordPrebidCacheRequestTime(success bool, length time.Duration) {
+func (me *NilMetricsEngine) RecordPrebidCacheRequestTime(success bool, length time.Duration) {
 }
 
 // RecordRequestQueueTime as a noop
-func (me *DummyMetricsEngine) RecordRequestQueueTime(success bool, requestType metrics.RequestType, length time.Duration) {
+func (me *NilMetricsEngine) RecordRequestQueueTime(success bool, requestType metrics.RequestType, length time.Duration) {
 }
 
 // RecordTimeoutNotice as a noop
-func (me *DummyMetricsEngine) RecordTimeoutNotice(success bool) {
+func (me *NilMetricsEngine) RecordTimeoutNotice(success bool) {
 }
 
 // RecordRequestPrivacy as a noop
-func (me *DummyMetricsEngine) RecordRequestPrivacy(privacy metrics.PrivacyLabels) {
+func (me *NilMetricsEngine) RecordRequestPrivacy(privacy metrics.PrivacyLabels) {
 }
 
 // RecordAdapterGDPRRequestBlocked as a noop
-func (me *DummyMetricsEngine) RecordAdapterGDPRRequestBlocked(adapter openrtb_ext.BidderName) {
+func (me *NilMetricsEngine) RecordAdapterGDPRRequestBlocked(adapter openrtb_ext.BidderName) {
 }

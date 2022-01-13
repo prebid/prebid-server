@@ -1,6 +1,7 @@
 package openrtb_ext
 
 import (
+	"encoding/json"
 	"fmt"
 )
 
@@ -38,18 +39,20 @@ type ExtBidPrebidCacheBids struct {
 
 // ExtBidPrebidMeta defines the contract for bidresponse.seatbid.bid[i].ext.prebid.meta
 type ExtBidPrebidMeta struct {
-	AdvertiserDomains    []string `json:"advertiserDomains,omitempty"` // or advertiserDomain?
-	AdvertiserID         int      `json:"advertiserId,omitempty"`
-	AdvertiserName       string   `json:"advertiserName,omitempty"`
-	AgencyID             int      `json:"agencyId,omitempty"`
-	AgencyName           string   `json:"agencyName,omitempty"`
-	BrandID              int      `json:"brandId,omitempty"`
-	BrandName            string   `json:"brandName,omitempty"`
-	MediaType            string   `json:"mediaType,omitempty"`
-	NetworkID            int      `json:"networkId,omitempty"`
-	NetworkName          string   `json:"networkName,omitempty"`
-	PrimaryCategoryID    string   `json:"primaryCatId,omitempty"`
-	SecondaryCategoryIDs []string `json:"secondaryCatIds,omitempty"`
+	AdvertiserDomains    []string        `json:"advertiserDomains,omitempty"`
+	AdvertiserID         int             `json:"advertiserId,omitempty"`
+	AdvertiserName       string          `json:"advertiserName,omitempty"`
+	AgencyID             int             `json:"agencyId,omitempty"`
+	AgencyName           string          `json:"agencyName,omitempty"`
+	BrandID              int             `json:"brandId,omitempty"`
+	BrandName            string          `json:"brandName,omitempty"`
+	DemandSource         string          `json:"demandSource,omitempty"`
+	DChain               json.RawMessage `json:"dchain,omitempty"`
+	MediaType            string          `json:"mediaType,omitempty"`
+	NetworkID            int             `json:"networkId,omitempty"`
+	NetworkName          string          `json:"networkName,omitempty"`
+	PrimaryCategoryID    string          `json:"primaryCatId,omitempty"`
+	SecondaryCategoryIDs []string        `json:"secondaryCatIds,omitempty"`
 }
 
 // ExtBidPrebidVideo defines the contract for bidresponse.seatbid.bid[i].ext.prebid.video

@@ -90,10 +90,22 @@ func getImpAlgoriXExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpAlgorix, error) {
 	return &extImpAlgoriX, nil
 }
 
+func getRegionInfo(region string) string {
+	switch region {
+	case "APAC":
+		return "apac.xyz"
+	case "USE":
+		return "use.xyz"
+	default:
+		return "xyz"
+	}
+}
+
 func (a *adapter) getEndPoint(ext *openrtb_ext.ExtImpAlgorix) (string, error) {
 	endPointParams := macros.EndpointTemplateParams{
 		SourceId:  url.PathEscape(ext.Sid),
 		AccountID: url.PathEscape(ext.Token),
+		Host:      url.PathEscape(getRegionInfo(ext.Region)),
 	}
 	return macros.ResolveMacros(a.EndpointTemplate, endPointParams)
 }

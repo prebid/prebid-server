@@ -32,6 +32,54 @@ func TestModifyForIOS(t *testing.T) {
 			},
 			expectedLMT: openrtb2.Int8Ptr(1),
 		},
+		{
+			description: "14.1",
+			givenRequest: &openrtb2.BidRequest{
+				App:    &openrtb2.App{},
+				Device: &openrtb2.Device{OS: "iOS", OSV: "14.1", IFA: "", Lmt: nil},
+			},
+			expectedLMT: openrtb2.Int8Ptr(1),
+		},
+		{
+			description: "14.1.3",
+			givenRequest: &openrtb2.BidRequest{
+				App:    &openrtb2.App{},
+				Device: &openrtb2.Device{OS: "iOS", OSV: "14.1.3", IFA: "", Lmt: nil},
+			},
+			expectedLMT: openrtb2.Int8Ptr(1),
+		},
+		{
+			description: "14.2",
+			givenRequest: &openrtb2.BidRequest{
+				App:    &openrtb2.App{},
+				Device: &openrtb2.Device{Ext: json.RawMessage(`{"atts":0}`), OS: "iOS", OSV: "14.2", IFA: "", Lmt: nil},
+			},
+			expectedLMT: openrtb2.Int8Ptr(0),
+		},
+		{
+			description: "14.2",
+			givenRequest: &openrtb2.BidRequest{
+				App:    &openrtb2.App{},
+				Device: &openrtb2.Device{Ext: json.RawMessage(`{"atts":2}`), OS: "iOS", OSV: "14.2", IFA: "", Lmt: openrtb2.Int8Ptr(0)},
+			},
+			expectedLMT: openrtb2.Int8Ptr(1),
+		},
+		{
+			description: "14.2.7",
+			givenRequest: &openrtb2.BidRequest{
+				App:    &openrtb2.App{},
+				Device: &openrtb2.Device{Ext: json.RawMessage(`{"atts":1}`), OS: "iOS", OSV: "14.2.7", IFA: "", Lmt: nil},
+			},
+			expectedLMT: openrtb2.Int8Ptr(1),
+		},
+		{
+			description: "14.2.7",
+			givenRequest: &openrtb2.BidRequest{
+				App:    &openrtb2.App{},
+				Device: &openrtb2.Device{Ext: json.RawMessage(`{"atts":3}`), OS: "iOS", OSV: "14.2.7", IFA: "", Lmt: openrtb2.Int8Ptr(1)},
+			},
+			expectedLMT: openrtb2.Int8Ptr(0),
+		},
 	}
 
 	for _, test := range testCases {

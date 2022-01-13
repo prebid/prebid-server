@@ -25,10 +25,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	return bidder, nil
 }
 
-type admanParams struct {
-	TagID string `json:"TagID"`
-}
-
 // MakeRequests create bid request for adman demand
 func (a *AdmanAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error

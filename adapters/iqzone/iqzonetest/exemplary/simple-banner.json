@@ -57,7 +57,8 @@
                             },
                             "ext": {
                                 "bidder": {
-                                    "placementId": "test"
+                                    "placementId": "test",
+                                    "type": "publisher"
                                 }
                             }
                         }

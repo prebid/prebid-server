@@ -25,10 +25,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	return bidder, nil
 }
 
-type sonobiParams struct {
-	TagID string `json:"TagID"`
-}
-
 // MakeRequests Makes the OpenRTB request payload
 func (a *SonobiAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
@@ -150,11 +146,5 @@ func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType,
 	// This shouldnt happen. Lets handle it just incase by returning an error.
 	return "", &errortypes.BadInput{
 		Message: fmt.Sprintf("Failed to find impression \"%s\" ", impID),
-	}
-}
-
-func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue string) {
-	if len(headerValue) > 0 {
-		headers.Add(headerName, headerValue)
 	}
 }

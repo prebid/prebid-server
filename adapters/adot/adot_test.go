@@ -25,7 +25,6 @@ func TestJsonSamples(t *testing.T) {
 	adapterstest.RunJSONBidderTest(t, "adottest", bidder)
 }
 
-//Test the media type error
 func TestMediaTypeError(t *testing.T) {
 	_, err := getMediaTypeForBid(nil)
 
@@ -37,7 +36,6 @@ func TestMediaTypeError(t *testing.T) {
 	assert.Error(t, err)
 }
 
-//Test the bid response when the bidder return a status code 204
 func TestBidResponseNoContent(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAdot, config.Adapter{
 		Endpoint: "https://dsp.adotmob.com/headerbidding/bidrequest"})
@@ -54,7 +52,6 @@ func TestBidResponseNoContent(t *testing.T) {
 	}
 }
 
-//Test the media type for a bid response
 func TestMediaTypeForBid(t *testing.T) {
 	byteBanner, _ := json.Marshal(&adotBidExt{Adot: bidExt{"banner"}})
 	byteVideo, _ := json.Marshal(&adotBidExt{Adot: bidExt{"video"}})
@@ -74,4 +71,11 @@ func TestMediaTypeForBid(t *testing.T) {
 	if bidTypeNative != openrtb_ext.BidTypeNative {
 		t.Errorf("the type is not the valid one. actual: %v, expected: %v", bidTypeNative, openrtb_ext.BidTypeVideo)
 	}
+}
+
+func TestResolveMacros(t *testing.T) {
+	bid := &openrtb2.Bid{AdM: "adm:imp_${AUCTION_PRICE} amd:creativeview_${AUCTION_PRICE}", NURL: "nurl_${AUCTION_PRICE}", Price: 123.45}
+	resolveMacros(bid)
+	assert.Equal(t, "adm:imp_123.45 amd:creativeview_123.45", bid.AdM)
+	assert.Equal(t, "nurl_123.45", bid.NURL)
 }

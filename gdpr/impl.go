@@ -96,7 +96,7 @@ func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consen
 		return false, nil
 	}
 
-	if !p.cfg.TCF2.Purpose1.Enabled {
+	if p.cfg.TCF2.Purpose1.EnforcePurpose == config.TCF2NoEnforcement {
 		return true, nil
 	}
 	consentMeta, ok := parsedConsent.(tcf2.ConsentMetadata)
@@ -138,7 +138,7 @@ func (p *permissionsImpl) allowActivities(ctx context.Context, vendorID uint16, 
 	} else {
 		passGeo = true
 	}
-	if p.cfg.TCF2.Purpose2.Enabled {
+	if p.cfg.TCF2.Purpose2.EnforcePurpose == config.TCF2FullEnforcement {
 		vendorException := p.isVendorException(consentconstants.Purpose(2), bidder)
 		allowBidRequest = p.checkPurpose(consentMeta, vendor, vendorID, consentconstants.Purpose(2), vendorException, weakVendorEnforcement)
 	} else {
@@ -293,6 +293,9 @@ func (v vendorTrue) LegitimateInterest(purposeID consentconstants.Purpose) bool 
 	return true
 }
 func (v vendorTrue) LegitimateInterestStrict(purposeID consentconstants.Purpose) bool {
+	return true
+}
+func (v vendorTrue) SpecialFeature(featureID consentconstants.SpecialFeature) (hasSpecialFeature bool) {
 	return true
 }
 func (v vendorTrue) SpecialPurpose(purposeID consentconstants.Purpose) (hasSpecialPurpose bool) {

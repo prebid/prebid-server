@@ -9,6 +9,13 @@ capabilities:
     mediaTypes:
       - native
 userSync:
+  # Triplelift supports user syncing but requires configuration by the host as the RedirectURL domain must be allowlisted. 
+  # Contact this bidder directly at the email address above to ask about enabling user sync.
+  # 
+  default: iframe
+  iframe:
+    url: "https://eb2.3lift.com/sync?gdpr={{.GDPR}}&cmp_cs={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir={{.RedirectURL}}"
+    userMacro: $UID
   redirect:
     url: "https://eb2.3lift.com/getuid?gdpr={{.GDPR}}&cmp_cs={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir={{.RedirectURL}}"
     userMacro: "$UID"

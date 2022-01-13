@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/julienschmidt/httprouter"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/analytics"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
@@ -19,7 +21,6 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -38,12 +39,13 @@ func TestGoodAmpRequests(t *testing.T) {
 	}
 
 	endpoint, _ := NewAmpEndpoint(
+		fakeUUIDGenerator{},
 		&mockAmpExchange{},
 		newParamsValidator(t),
 		&mockAmpStoredReqFetcher{goodRequests},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		&metricsConfig.DummyMetricsEngine{},
+		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
@@ -91,12 +93,13 @@ func TestAMPPageInfo(t *testing.T) {
 	exchange := &mockAmpExchange{}
 
 	endpoint, _ := NewAmpEndpoint(
+		fakeUUIDGenerator{},
 		exchange,
 		newParamsValidator(t),
 		&mockAmpStoredReqFetcher{stored},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		&metricsConfig.DummyMetricsEngine{},
+		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
@@ -188,12 +191,13 @@ func TestGDPRConsent(t *testing.T) {
 		// Build Exchange Endpoint
 		mockExchange := &mockAmpExchange{}
 		endpoint, _ := NewAmpEndpoint(
+			fakeUUIDGenerator{},
 			mockExchange,
 			newParamsValidator(t),
 			&mockAmpStoredReqFetcher{stored},
 			empty_fetcher.EmptyFetcher{},
 			&config.Configuration{MaxRequestSize: maxSize},
-			&metricsConfig.DummyMetricsEngine{},
+			&metricsConfig.NilMetricsEngine{},
 			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 			map[string]string{},
 			[]byte{},
@@ -340,12 +344,13 @@ func TestCCPAConsent(t *testing.T) {
 		// Build Exchange Endpoint
 		mockExchange := &mockAmpExchange{}
 		endpoint, _ := NewAmpEndpoint(
+			fakeUUIDGenerator{},
 			mockExchange,
 			newParamsValidator(t),
 			&mockAmpStoredReqFetcher{stored},
 			empty_fetcher.EmptyFetcher{},
 			&config.Configuration{MaxRequestSize: maxSize},
-			&metricsConfig.DummyMetricsEngine{},
+			&metricsConfig.NilMetricsEngine{},
 			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 			map[string]string{},
 			[]byte{},
@@ -450,12 +455,13 @@ func TestConsentWarnings(t *testing.T) {
 			mockExchange = &mockAmpExchange{}
 		}
 		endpoint, _ := NewAmpEndpoint(
+			fakeUUIDGenerator{},
 			mockExchange,
 			newParamsValidator(t),
 			&mockAmpStoredReqFetcher{stored},
 			empty_fetcher.EmptyFetcher{},
 			&config.Configuration{MaxRequestSize: maxSize},
-			&metricsConfig.DummyMetricsEngine{},
+			&metricsConfig.NilMetricsEngine{},
 			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 			map[string]string{},
 			[]byte{},
@@ -542,12 +548,13 @@ func TestNewAndLegacyConsentBothProvided(t *testing.T) {
 		// Build Exchange Endpoint
 		mockExchange := &mockAmpExchange{}
 		endpoint, _ := NewAmpEndpoint(
+			fakeUUIDGenerator{},
 			mockExchange,
 			newParamsValidator(t),
 			&mockAmpStoredReqFetcher{stored},
 			empty_fetcher.EmptyFetcher{},
 			&config.Configuration{MaxRequestSize: maxSize},
-			&metricsConfig.DummyMetricsEngine{},
+			&metricsConfig.NilMetricsEngine{},
 			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 			map[string]string{},
 			[]byte{},
@@ -593,12 +600,13 @@ func TestAMPSiteExt(t *testing.T) {
 	}
 	exchange := &mockAmpExchange{}
 	endpoint, _ := NewAmpEndpoint(
+		fakeUUIDGenerator{},
 		exchange,
 		newParamsValidator(t),
 		&mockAmpStoredReqFetcher{stored},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		&metricsConfig.DummyMetricsEngine{},
+		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		nil,
 		nil,
@@ -629,12 +637,13 @@ func TestAmpBadRequests(t *testing.T) {
 	}
 
 	endpoint, _ := NewAmpEndpoint(
+		fakeUUIDGenerator{},
 		&mockAmpExchange{},
 		newParamsValidator(t),
 		&mockAmpStoredReqFetcher{badRequests},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		&metricsConfig.DummyMetricsEngine{},
+		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
@@ -659,12 +668,13 @@ func TestAmpDebug(t *testing.T) {
 	}
 
 	endpoint, _ := NewAmpEndpoint(
+		fakeUUIDGenerator{},
 		&mockAmpExchange{},
 		newParamsValidator(t),
 		&mockAmpStoredReqFetcher{requests},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		&metricsConfig.DummyMetricsEngine{},
+		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
@@ -731,12 +741,13 @@ func TestQueryParamOverrides(t *testing.T) {
 	}
 
 	endpoint, _ := NewAmpEndpoint(
+		fakeUUIDGenerator{},
 		&mockAmpExchange{},
 		newParamsValidator(t),
 		&mockAmpStoredReqFetcher{requests},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		&metricsConfig.DummyMetricsEngine{},
+		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
@@ -883,12 +894,13 @@ func (s formatOverrideSpec) execute(t *testing.T) {
 	}
 
 	endpoint, _ := NewAmpEndpoint(
+		fakeUUIDGenerator{},
 		&mockAmpExchange{},
 		newParamsValidator(t),
 		&mockAmpStoredReqFetcher{requests},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		&metricsConfig.DummyMetricsEngine{},
+		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
@@ -929,6 +941,10 @@ type mockAmpStoredReqFetcher struct {
 
 func (cf *mockAmpStoredReqFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
 	return cf.data, nil, nil
+}
+
+func (cf *mockAmpStoredReqFetcher) FetchResponses(ctx context.Context, ids []string) (data map[string]json.RawMessage, errs []error) {
+	return nil, nil
 }
 
 type mockAmpExchange struct {
@@ -1223,7 +1239,7 @@ func TestBuildAmpObject(t *testing.T) {
 					},
 					AT:   1,
 					TMax: 500,
-					Ext:  json.RawMessage(`{"prebid":{"cache":{"bids":{"returnCreative":null},"vastxml":null},"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"includewinners":true,"includebidderkeys":true,"includebrandcategory":null,"includeformat":false,"durationrangesec":null,"preferdeals":false}}}`),
+					Ext:  json.RawMessage(`{"prebid":{"cache":{"bids":{"returnCreative":null},"vastxml":null},"channel":{"name":"amp","version":""},"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"includewinners":true,"includebidderkeys":true,"includebrandcategory":null,"includeformat":false,"durationrangesec":null,"preferdeals":false}}}`),
 				},
 				AuctionResponse: &openrtb2.BidResponse{
 					SeatBid: []openrtb2.SeatBid{{
@@ -1249,31 +1265,8 @@ func TestBuildAmpObject(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
 	for _, test := range testCases {
-
 		// Set up test, declare a new mock logger every time
-		actualAmpObject := new(analytics.AmpObject)
-
-		logger := newMockLogger(actualAmpObject)
-
-		mockAmpFetcher := &mockAmpStoredReqFetcher{
-			data: map[string]json.RawMessage{
-				test.inTagId: json.RawMessage(test.inStoredRequest),
-			},
-		}
-
-		endpoint, _ := NewAmpEndpoint(
-			&mockAmpExchange{},
-			newParamsValidator(t),
-			mockAmpFetcher,
-			empty_fetcher.EmptyFetcher{},
-			&config.Configuration{MaxRequestSize: maxSize},
-			&metricsConfig.DummyMetricsEngine{},
-			logger,
-			map[string]string{},
-			[]byte{},
-			openrtb_ext.BuildBidderMap(),
-		)
-
+		actualAmpObject, endpoint := AmpObjectTestSetup(t, test.inTagId, test.inStoredRequest, false)
 		// Run test
 		endpoint(recorder, request, nil)
 
@@ -1285,4 +1278,88 @@ func TestBuildAmpObject(t *testing.T) {
 		assert.Equalf(t, test.expectedAmpObject.AmpTargetingValues, actualAmpObject.AmpTargetingValues, "Amp Object AmpTargetingValues doesn't match expected: %s\n", test.description)
 		assert.Equalf(t, test.expectedAmpObject.Origin, actualAmpObject.Origin, "Amp Object Origin field doesn't match expected: %s\n", test.description)
 	}
+}
+
+func TestIdGeneration(t *testing.T) {
+	uuid := "foo"
+
+	testCases := []struct {
+		description            string
+		givenInStoredRequest   json.RawMessage
+		givenGenerateRequestID bool
+		expectedID             string
+	}{
+		{
+			description:            "The givenGenerateRequestID flag is set to true, so even though the stored amp request already has an id, we should still generate a new uuid",
+			givenInStoredRequest:   json.RawMessage(`{"id":"ThisID","site":{"page":"prebid.org"},"imp":[{"id":"some-imp-id","banner":{"format":[{"w":300,"h":250}]},"ext":{"appnexus":{"placementId":1}}}],"tmax":1}`),
+			givenGenerateRequestID: true,
+			expectedID:             uuid,
+		},
+		{
+			description:            "The givenGenerateRequestID flag is set to true and the stored amp request ID is blank, so we should generate a new uuid for the request",
+			givenInStoredRequest:   json.RawMessage(`{"id":"","site":{"page":"prebid.org"},"imp":[{"id":"some-imp-id","banner":{"format":[{"w":300,"h":250}]},"ext":{"appnexus":{"placementId":1}}}],"tmax":1}`),
+			givenGenerateRequestID: true,
+			expectedID:             uuid,
+		},
+		{
+			description:            "The givenGenerateRequestID flag is false, so the ID shouldn't change",
+			givenInStoredRequest:   json.RawMessage(`{"id":"ThisID","site":{"page":"prebid.org"},"imp":[{"id":"some-imp-id","banner":{"format":[{"w":300,"h":250}]},"ext":{"appnexus":{"placementId":1}}}],"tmax":1}`),
+			givenGenerateRequestID: false,
+			expectedID:             "ThisID",
+		},
+		{
+			description:            "The givenGenerateRequestID flag is true, and the id field isn't included in the stored request, we should still generate a uuid",
+			givenInStoredRequest:   json.RawMessage(`{"site":{"page":"prebid.org"},"imp":[{"id":"some-imp-id","banner":{"format":[{"w":300,"h":250}]},"ext":{"appnexus":{"placementId":1}}}],"tmax":1}`),
+			givenGenerateRequestID: true,
+			expectedID:             uuid,
+		},
+		{
+			description:            "The givenGenerateRequestID flag is false, but id field is the macro option {{UUID}}, we should generate a uuid",
+			givenInStoredRequest:   json.RawMessage(`{"id":"{{UUID}}","site":{"page":"prebid.org"},"imp":[{"id":"some-imp-id","banner":{"format":[{"w":300,"h":250}]},"ext":{"appnexus":{"placementId":1}}}],"tmax":1}`),
+			givenGenerateRequestID: false,
+			expectedID:             uuid,
+		},
+		{
+			description:            "Macro ID case sensitivity check. The id is {{uuid}}, but we should only generate an id if it's all uppercase {{UUID}}. So the ID shouldn't change.",
+			givenInStoredRequest:   json.RawMessage(`{"id":"{{uuid}}","site":{"page":"prebid.org"},"imp":[{"id":"some-imp-id","banner":{"format":[{"w":300,"h":250}]},"ext":{"appnexus":{"placementId":1}}}],"tmax":1}`),
+			givenGenerateRequestID: false,
+			expectedID:             "{{uuid}}",
+		},
+	}
+
+	request := httptest.NewRequest("GET", "/openrtb2/auction/amp?tag_id=test", nil)
+	recorder := httptest.NewRecorder()
+
+	for _, test := range testCases {
+		// Set up and run test
+		actualAmpObject, endpoint := AmpObjectTestSetup(t, "test", test.givenInStoredRequest, test.givenGenerateRequestID)
+		endpoint(recorder, request, nil)
+		assert.Equalf(t, test.expectedID, actualAmpObject.Request.ID, "Bid Request ID is incorrect: %s\n", test.description)
+	}
+}
+
+func AmpObjectTestSetup(t *testing.T, inTagId string, inStoredRequest json.RawMessage, generateRequestID bool) (*analytics.AmpObject, httprouter.Handle) {
+	actualAmpObject := analytics.AmpObject{}
+	logger := newMockLogger(&actualAmpObject)
+
+	mockAmpFetcher := &mockAmpStoredReqFetcher{
+		data: map[string]json.RawMessage{
+			inTagId: json.RawMessage(inStoredRequest),
+		},
+	}
+
+	endpoint, _ := NewAmpEndpoint(
+		fakeUUIDGenerator{id: "foo", err: nil},
+		&mockAmpExchange{},
+		newParamsValidator(t),
+		mockAmpFetcher,
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: maxSize, GenerateRequestID: generateRequestID},
+		&metricsConfig.NilMetricsEngine{},
+		logger,
+		map[string]string{},
+		[]byte{},
+		openrtb_ext.BuildBidderMap(),
+	)
+	return &actualAmpObject, endpoint
 }
