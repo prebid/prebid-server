@@ -1194,6 +1194,7 @@ func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *m
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
+		empty_fetcher.EmptyFetcher{},
 	}
 	return deps, metrics, mockModule
 }
@@ -1237,6 +1238,7 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 		ex.cache,
 		regexp.MustCompile(`[<>]`),
 		hardcodedResponseIPValidator{response: true},
+		empty_fetcher.EmptyFetcher{},
 	}
 }
 
@@ -1258,6 +1260,7 @@ func mockDepsAppendBidderNames(t *testing.T, ex *mockExchangeAppendBidderNames) 
 		ex.cache,
 		regexp.MustCompile(`[<>]`),
 		hardcodedResponseIPValidator{response: true},
+		empty_fetcher.EmptyFetcher{},
 	}
 
 	return deps
@@ -1281,6 +1284,7 @@ func mockDepsNoBids(t *testing.T, ex *mockExchangeVideoNoBids) *endpointDeps {
 		ex.cache,
 		regexp.MustCompile(`[<>]`),
 		hardcodedResponseIPValidator{response: true},
+		empty_fetcher.EmptyFetcher{},
 	}
 
 	return edep
@@ -1306,6 +1310,10 @@ type mockVideoStoredReqFetcher struct {
 
 func (cf mockVideoStoredReqFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
 	return testVideoStoredRequestData, testVideoStoredImpData, nil
+}
+
+func (cf mockVideoStoredReqFetcher) FetchResponses(ctx context.Context, ids []string) (data map[string]json.RawMessage, errs []error) {
+	return nil, nil
 }
 
 type mockExchangeVideo struct {

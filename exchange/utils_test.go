@@ -14,6 +14,7 @@ import (
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/version"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -837,83 +838,60 @@ func TestCleanOpenRTBRequestsCOPPA(t *testing.T) {
 }
 
 func TestCleanOpenRTBRequestsSChain(t *testing.T) {
+	const seller1SChain string = `"schain":{"complete":1,"nodes":[{"asi":"directseller1.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}`
+	const seller2SChain string = `"schain":{"complete":2,"nodes":[{"asi":"directseller2.com","sid":"00002","rid":"BidRequest2","hp":2}],"ver":"2.0"}`
+
 	testCases := []struct {
 		description   string
 		inExt         json.RawMessage
 		inSourceExt   json.RawMessage
-		outSourceExt  json.RawMessage
 		outRequestExt json.RawMessage
+		outSourceExt  json.RawMessage
 		hasError      bool
 	}{
 		{
-			description:   "Empty root ext and source ext, nil unmarshaled ext",
-			inExt:         nil,
-			inSourceExt:   json.RawMessage(``),
-			outSourceExt:  json.RawMessage(``),
-			outRequestExt: json.RawMessage(``),
-			hasError:      false,
-		},
-		{
-			description:   "Empty root ext, source ext, and unmarshaled ext",
-			inExt:         json.RawMessage(``),
-			inSourceExt:   json.RawMessage(``),
-			outSourceExt:  json.RawMessage(``),
-			outRequestExt: json.RawMessage(``),
-			hasError:      false,
-		},
-		{
-			description:   "No schains in root ext and empty source ext. Unmarshaled ext is equivalent to root ext",
-			inSourceExt:   json.RawMessage(``),
-			inExt:         json.RawMessage(`{"prebid":{"schains":[]}}`),
-			outSourceExt:  json.RawMessage(``),
-			outRequestExt: json.RawMessage(`{"prebid":{}}`),
-			hasError:      false,
-		},
-		{
-			description:   "Use source schain -- no bidder schain or wildcard schain in ext.prebid.schains. Unmarshaled ext is equivalent to root ext",
-			inSourceExt:   json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"example.com","sid":"example1","rid":"ExampleReq1","hp":1}],"ver":"1.0"}}`),
-			inExt:         json.RawMessage(`{"prebid":{"schains":[{"bidders":["bidder1"],"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}]}}`),
-			outSourceExt:  json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"example.com","sid":"example1","rid":"ExampleReq1","hp":1}],"ver":"1.0"}}`),
-			outRequestExt: json.RawMessage(`{"prebid":{}}`),
-			hasError:      false,
-		},
-		{
-			description:   "Use schain for bidder in ext.prebid.schains. Unmarshaled ext is equivalent to root ext",
-			inSourceExt:   json.RawMessage(``),
-			inExt:         json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}]}}`),
-			outSourceExt:  json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}`),
-			outRequestExt: json.RawMessage(`{"prebid":{}}`),
-			hasError:      false,
-		},
-		{
-			description:   "Use wildcard schain in ext.prebid.schains. Unmarshaled ext is equivalent to root ext",
-			inSourceExt:   json.RawMessage(``),
-			inExt:         json.RawMessage(`{"prebid":{"schains":[{"bidders":["*"],"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}]}}`),
-			outSourceExt:  json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}`),
-			outRequestExt: json.RawMessage(`{"prebid":{}}`),
-			hasError:      false,
-		},
-		{
-			description:   "Use schain for bidder in ext.prebid.schains instead of wildcard. Unmarshaled ext is equivalent to root ext",
-			inSourceExt:   json.RawMessage(``),
-			inExt:         json.RawMessage(`{"prebid":{"aliases":{"appnexus":"alias1"},"schains":[{"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}, {"bidders":["*"],"schain":{"complete":1,"nodes":[{"asi":"wildcard.com","sid":"wildcard1","rid":"WildcardReq1","hp":1}],"ver":"1.0"}} ]}}`),
-			outSourceExt:  json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"directseller.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}`),
-			outRequestExt: json.RawMessage(`{"prebid":{"aliases":{"appnexus":"alias1"}}}`),
-			hasError:      false,
-		},
-		{
-			description:   "Use source schain -- multiple (two) bidder schains in ext.prebid.schains. Unmarshaled ext is equivalent to root ext",
-			inSourceExt:   json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"example.com","sid":"example1","rid":"ExampleReq1","hp":1}],"ver":"1.0"}}`),
-			inExt:         json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller1.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}, {"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller2.com","sid":"00002","rid":"BidRequest2","hp":1}],"ver":"1.0"}}]}}`),
+			description:   "source.ext is nil",
+			inExt:         json.RawMessage{},
+			inSourceExt:   nil,
+			outRequestExt: json.RawMessage{},
 			outSourceExt:  nil,
+		},
+		{
+			description:   "source.ext is defined with length 0",
+			inExt:         json.RawMessage{},
+			inSourceExt:   json.RawMessage{},
+			outRequestExt: json.RawMessage{},
+			outSourceExt:  json.RawMessage{},
+		},
+		{
+			description:   "ORTB 2.5 chain at source.ext.schain",
+			inExt:         json.RawMessage{},
+			inSourceExt:   json.RawMessage(`{` + seller1SChain + `}`),
+			outRequestExt: json.RawMessage{},
+			outSourceExt:  json.RawMessage(`{` + seller1SChain + `}`),
+		},
+		{
+			description:   "ORTB 2.5 schain at request.ext.prebid.schains",
+			inExt:         json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],` + seller1SChain + `}]}}`),
+			inSourceExt:   json.RawMessage{},
+			outRequestExt: json.RawMessage(`{"prebid":{}}`),
+			outSourceExt:  json.RawMessage(`{` + seller1SChain + `}`),
+		},
+		{
+			description:   "schainwriter instantation error -- multiple bidder schains in ext.prebid.schains.",
+			inExt:         json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],` + seller1SChain + `},{"bidders":["appnexus"],` + seller2SChain + `}]}}`),
+			inSourceExt:   json.RawMessage(`{` + seller1SChain + `}`),
 			outRequestExt: nil,
+			outSourceExt:  nil,
 			hasError:      true,
 		},
 	}
 
 	for _, test := range testCases {
 		req := newBidRequest(t)
-		req.Source.Ext = test.inSourceExt
+		if test.inSourceExt != nil {
+			req.Source.Ext = test.inSourceExt
+		}
 
 		var extRequest *openrtb_ext.ExtRequest
 		if test.inExt != nil {
@@ -2173,101 +2151,6 @@ func TestRandomizeList(t *testing.T) {
 	}
 }
 
-func TestBidderToPrebidChains(t *testing.T) {
-	input := openrtb_ext.ExtRequest{
-		Prebid: openrtb_ext.ExtRequestPrebid{
-			SChains: []*openrtb_ext.ExtRequestPrebidSChain{
-				{
-					Bidders: []string{"Bidder1", "Bidder2"},
-					SChain: openrtb_ext.ExtRequestPrebidSChainSChain{
-						Complete: 1,
-						Nodes: []*openrtb_ext.ExtRequestPrebidSChainSChainNode{
-							{
-								ASI:    "asi1",
-								SID:    "sid1",
-								Name:   "name1",
-								RID:    "rid1",
-								Domain: "domain1",
-								HP:     1,
-							},
-							{
-								ASI:    "asi2",
-								SID:    "sid2",
-								Name:   "name2",
-								RID:    "rid2",
-								Domain: "domain2",
-								HP:     2,
-							},
-						},
-						Ver: "version1",
-					},
-				},
-				{
-					Bidders: []string{"Bidder3", "Bidder4"},
-					SChain:  openrtb_ext.ExtRequestPrebidSChainSChain{},
-				},
-			},
-		},
-	}
-
-	output, err := BidderToPrebidSChains(input.Prebid.SChains)
-
-	assert.Nil(t, err)
-	assert.Equal(t, len(output), 4)
-	assert.Same(t, output["Bidder1"], &input.Prebid.SChains[0].SChain)
-	assert.Same(t, output["Bidder2"], &input.Prebid.SChains[0].SChain)
-	assert.Same(t, output["Bidder3"], &input.Prebid.SChains[1].SChain)
-	assert.Same(t, output["Bidder4"], &input.Prebid.SChains[1].SChain)
-}
-
-func TestBidderToPrebidChainsDiscardMultipleChainsForBidder(t *testing.T) {
-	input := openrtb_ext.ExtRequest{
-		Prebid: openrtb_ext.ExtRequestPrebid{
-			SChains: []*openrtb_ext.ExtRequestPrebidSChain{
-				{
-					Bidders: []string{"Bidder1"},
-					SChain:  openrtb_ext.ExtRequestPrebidSChainSChain{},
-				},
-				{
-					Bidders: []string{"Bidder1", "Bidder2"},
-					SChain:  openrtb_ext.ExtRequestPrebidSChainSChain{},
-				},
-			},
-		},
-	}
-
-	output, err := BidderToPrebidSChains(input.Prebid.SChains)
-
-	assert.NotNil(t, err)
-	assert.Nil(t, output)
-}
-
-func TestBidderToPrebidChainsNilSChains(t *testing.T) {
-	input := openrtb_ext.ExtRequest{
-		Prebid: openrtb_ext.ExtRequestPrebid{
-			SChains: nil,
-		},
-	}
-
-	output, err := BidderToPrebidSChains(input.Prebid.SChains)
-
-	assert.Nil(t, err)
-	assert.Equal(t, len(output), 0)
-}
-
-func TestBidderToPrebidChainsZeroLengthSChains(t *testing.T) {
-	input := openrtb_ext.ExtRequest{
-		Prebid: openrtb_ext.ExtRequestPrebid{
-			SChains: []*openrtb_ext.ExtRequestPrebidSChain{},
-		},
-	}
-
-	output, err := BidderToPrebidSChains(input.Prebid.SChains)
-
-	assert.Nil(t, err)
-	assert.Equal(t, len(output), 0)
-}
-
 func TestRemoveUnpermissionedEids(t *testing.T) {
 	bidder := "bidderA"
 
@@ -2631,45 +2514,118 @@ func TestRemoveUnpermissionedEidsEmptyValidations(t *testing.T) {
 	}
 }
 
-func TestSourceExtSChainCopied(t *testing.T) {
-	bidRequest := newBidRequest(t)
-
-	bidderSchains := map[string]*openrtb_ext.ExtRequestPrebidSChainSChain{
-		"bidder1": {
-			Ver:      "1.0",
-			Complete: 1,
-			Nodes: []*openrtb_ext.ExtRequestPrebidSChainSChainNode{
-				{
-					ASI: "bidder1.com",
-					SID: "0001",
-					HP:  1,
-				},
-			},
+func TestBuildXPrebidHeader(t *testing.T) {
+	testCases := []struct {
+		description   string
+		version       string
+		requestExt    *openrtb_ext.ExtRequest
+		requestAppExt *openrtb_ext.ExtApp
+		result        string
+	}{
+		{
+			description: "No versions",
+			version:     "",
+			result:      "pbs-go/unknown",
 		},
-		"bidder2": {
-			Ver:      "1.0",
-			Complete: 1,
-			Nodes: []*openrtb_ext.ExtRequestPrebidSChainSChainNode{
-				{
-					ASI: "bidder2.com",
-					SID: "0002",
-					HP:  1,
+		{
+			description: "pbs",
+			version:     "test-version",
+			result:      "pbs-go/test-version",
+		},
+		{
+			description: "prebid.js",
+			version:     "test-version",
+			requestExt: &openrtb_ext.ExtRequest{
+				Prebid: openrtb_ext.ExtRequestPrebid{
+					Channel: &openrtb_ext.ExtRequestPrebidChannel{
+						Name:    "pbjs",
+						Version: "test-pbjs-version",
+					},
 				},
 			},
+			result: "pbs-go/test-version,pbjs/test-pbjs-version",
+		},
+		{
+			description: "unknown prebid.js",
+			version:     "test-version",
+			requestExt: &openrtb_ext.ExtRequest{
+				Prebid: openrtb_ext.ExtRequestPrebid{
+					Channel: &openrtb_ext.ExtRequestPrebidChannel{
+						Name: "pbjs",
+					},
+				},
+			},
+			result: "pbs-go/test-version,pbjs/unknown",
+		},
+		{
+			description: "channel without a name",
+			version:     "test-version",
+			requestExt: &openrtb_ext.ExtRequest{
+				Prebid: openrtb_ext.ExtRequestPrebid{
+					Channel: &openrtb_ext.ExtRequestPrebidChannel{
+						Version: "test-version",
+					},
+				},
+			},
+			result: "pbs-go/test-version",
+		},
+		{
+			description: "prebid-mobile",
+			version:     "test-version",
+			requestAppExt: &openrtb_ext.ExtApp{
+				Prebid: openrtb_ext.ExtAppPrebid{
+					Source:  "prebid-mobile",
+					Version: "test-prebid-mobile-version",
+				},
+			},
+			result: "pbs-go/test-version,prebid-mobile/test-prebid-mobile-version",
+		},
+		{
+			description: "app ext without a source",
+			version:     "test-version",
+			requestAppExt: &openrtb_ext.ExtApp{
+				Prebid: openrtb_ext.ExtAppPrebid{
+					Version: "test-version",
+				},
+			},
+			result: "pbs-go/test-version",
+		},
+		{
+			description: "Version found in both req.Ext and req.App.Ext",
+			version:     "test-version",
+			requestExt: &openrtb_ext.ExtRequest{
+				Prebid: openrtb_ext.ExtRequestPrebid{
+					Channel: &openrtb_ext.ExtRequestPrebidChannel{
+						Name:    "pbjs",
+						Version: "test-pbjs-version",
+					},
+				},
+			},
+			requestAppExt: &openrtb_ext.ExtApp{
+				Prebid: openrtb_ext.ExtAppPrebid{
+					Source:  "prebid-mobile",
+					Version: "test-prebid-mobile-version",
+				},
+			},
+			result: "pbs-go/test-version,pbjs/test-pbjs-version,prebid-mobile/test-prebid-mobile-version",
 		},
 	}
 
-	copy1 := *bidRequest
-	originalTid := copy1.Source.TID
-	prepareSource(&copy1, "bidder1", bidderSchains)
-	copy2 := *bidRequest
-	copy2.Source.TID = "new TID"
-	prepareSource(&copy2, "bidder2", bidderSchains)
-
-	assert.Equal(t, json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"bidder1.com","sid":"0001","hp":1}],"ver":"1.0"}}`), copy1.Source.Ext, "First schain was overwritten or not set")
-	assert.Equal(t, originalTid, copy1.Source.TID, "Original TID was overwritten")
-	assert.Equal(t, json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"bidder2.com","sid":"0002","hp":1}],"ver":"1.0"}}`), copy2.Source.Ext, "Second schain was overwritten or not set")
-	assert.Equal(t, "new TID", copy2.Source.TID, "New TID was not set")
+	for _, test := range testCases {
+		req := &openrtb2.BidRequest{}
+		if test.requestExt != nil {
+			reqExt, err := json.Marshal(test.requestExt)
+			assert.NoError(t, err, test.description+":err marshalling reqExt")
+			req.Ext = reqExt
+		}
+		if test.requestAppExt != nil {
+			reqAppExt, err := json.Marshal(test.requestAppExt)
+			assert.NoError(t, err, test.description+":err marshalling reqAppExt")
+			req.App = &openrtb2.App{Ext: reqAppExt}
+		}
+		result := version.BuildXPrebidHeaderForRequest(req, test.version)
+		assert.Equal(t, test.result, result, test.description+":result")
+	}
 }
 
 func TestCleanOpenRTBRequestsSChainMultipleBidders(t *testing.T) {

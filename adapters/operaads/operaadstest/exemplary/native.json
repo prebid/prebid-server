@@ -39,7 +39,7 @@
           "id":"some-req-id",
           "imp":[
             {
-              "id":"some-imp-id",
+              "id":"some-imp-id:opa:native",
               "tagid":"s123456",
               "ext":{
                 "bidder":{
@@ -78,7 +78,7 @@
               "bid":[
                 {
                   "id":"928185755156387460",
-                  "impid":"some-imp-id",
+                  "impid":"some-imp-id:opa:native",
                   "price":1,
                   "adid":"69595837",
                   "adm":"{\"assets\":[{\"id\": 2,\"img\":{\"url\":\"http://example.com/p/creative-image/5e/b6/de/c3/5eb6dec3-4854-4dcd-980a-347f36ab502e.jpg\",\"w\": 344,\"h\": 194}},{\"id\": 3,\"img\":{\"url\":\"http://example.com/p/creative-image/5e/b6/de/c3/5eb6dec3-4854-4dcd-980a-347f36ab502e.jpg\",\"w\": 100,\"h\": 100}} ,{\"id\": 1,\"title\":{\"text\":\"This is an example Prebid Native creative\"}},{\"id\": 4,\"data\":{\"value\":\"This is a Prebid Native Creative. There are many like it, but this one is mine.\"}},{\"id\": 6,\"data\":{\"value\":\"Please.\"}} ],\"link\":{\"url\":\"http://example.com/click?AAAAAAAA8D8AAAAAAADwPwAAAAAAAAAAAAAAAAAA8D8AAAAAAADwPwhdYz3ZyNFNG3fXpZUyLXNZ0o5aAAAAACrElgC-AwAAvgMAAAIAAAC98iUEeP4QAAAAAABVU0QAVVNEAAEAAQARIAAAAAABAgQCAAAAAAEAhBaSXgAAAAA./pp=${AUCTION_PRICE}/cnd=%21OwwGAQiGmooHEL3llyEY-PxDIAQoADoRZGVmYXVsdCNOWU0yOjQwMjM./bn=75922/test=1/referrer=prebid.org/clickenc=http%3A%2F%2Fprebid.org%2Fdev-docs%2Fshow-native-ads.html\"},\"imptrackers\":[\"http://example.com/openrtb_win?e=wqT_3QLFBqBFAwAAAwDWAAUBCNmku9QFEIi6jeuTm_LoTRib7t2u2tLMlnMqNgkAAAECCPA_EQEHEAAA8D8ZCQkIAAAhCQkI8D8pEQkAMQkJqAAAMKqI2wQ4vgdAvgdIAlC95ZchWPj8Q2AAaJFAeJLRBIABAYoBA1VTRJIFBvBQmAEBoAEBqAEBsAEAuAECwAEEyAEC0AEJ2AEA4AEB8AEAigI7dWYoJ2EnLCAxMzc2ODYwLCAxNTE5MzA5NDAxKTt1ZigncicsIDY5NTk1ODM3Nh4A8IqSAvUBIXRETkdfUWlHbW9vSEVMM2xseUVZQUNENF9FTXdBRGdBUUFSSXZnZFFxb2piQkZnQVlMTURhQUJ3QUhnQWdBRUFpQUVBa0FFQm1BRUJvQUVCcUFFRHNBRUF1UUVwaTRpREFBRHdQOEVCS1l1SWd3QUE4RF9KQVhfelYzek1zXzBfMlFFQUFBAQMkRHdQLUFCQVBVQgEOLEFKZ0NBS0FDQUxVQwUQBEwwCQjwTE1BQ0FNZ0NBT0FDQU9nQ0FQZ0NBSUFEQVpBREFKZ0RBYWdEaHBxS0I3b0RFV1JsWm1GMWJIUWpUbGxOTWpvME1ESXqaAjkhT3d3R0FRNvgA8E4tUHhESUFRb0FEb1JaR1ZtWVhWc2RDTk9XVTB5T2pRd01qTS7YAugH4ALH0wHqAgpwcmViaWQub3Jn8gIRCgZBRFZfSUQSBzEzNzY4NjDyARQMQ1BHXwEUNDM1MDMwOTjyAhEKBUNQARPwmQgxNDg0NzIzOIADAYgDAZADAJgDFKADAaoDAMADkBzIAwDYAwDgAwDoAwD4AwOABACSBAkvb3BlbnJ0YjKYBACiBAwxNTIuMTkzLjYuNzSoBJrMI7IEDAgAEAAYACAAMAA4ALgEAMAEAMgEANIEEWRlZmF1bHQjTllNMjo0MDIz2gQCCADgBADwBL3llyGIBQGYBQCgBf____8FA1ABqgULc29tZS1yZXEtaWTABQDJBQAFARTwP9IFCQkFC2QAAADYBQHgBQHwBd4C-gUECAAQAJAGAZgGAA..&s=08b1535744639c904684afe46e3c6c0e4786089f&test=1&referrer=prebid.org&pp=${AUCTION_PRICE}\"]}",
