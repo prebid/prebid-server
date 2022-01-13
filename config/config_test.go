@@ -835,6 +835,18 @@ func TestMigrateConfigSpecialFeature1(t *testing.T) {
 			assert.Nil(t, v.Get("gdpr.tcf2.special_feature1.enforce"), tt.description)
 			assert.Nil(t, v.Get("gdpr.tcf2.special_feature1.vendor_exceptions"), tt.description)
 		}
+
+		var c Configuration
+		err := v.Unmarshal(&c)
+		assert.NoError(t, err, tt.description)
+		assert.Equal(t, tt.wantSpecialFeature1Enforce, c.GDPR.TCF2.SpecialFeature1.Enforce, tt.description)
+
+		// convert expected vendor exceptions to type BidderName
+		expectedVendorExceptions := make([]openrtb_ext.BidderName, 0, 0)
+		for _, ve := range tt.wantSpecialFeature1VendorExceptions {
+			expectedVendorExceptions = append(expectedVendorExceptions, openrtb_ext.BidderName(ve))
+		}
+		assert.ElementsMatch(t, expectedVendorExceptions, c.GDPR.TCF2.SpecialFeature1.VendorExceptions, tt.description)
 	}
 }
 
