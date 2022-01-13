@@ -2450,6 +2450,134 @@ func TestSChainInvalid(t *testing.T) {
 	assert.ElementsMatch(t, errL, []error{expectedError})
 }
 
+func TestMapSChains(t *testing.T) {
+	const seller1SChain string = `"schain":{"complete":1,"nodes":[{"asi":"directseller1.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}`
+	const seller2SChain string = `"schain":{"complete":2,"nodes":[{"asi":"directseller2.com","sid":"00002","rid":"BidRequest2","hp":2}],"ver":"2.0"}`
+
+	seller1SChainUnpacked := openrtb_ext.ExtRequestPrebidSChainSChain{
+		Complete: 1,
+		Nodes: []*openrtb_ext.ExtRequestPrebidSChainSChainNode{{
+			ASI: "directseller1.com",
+			SID: "00001",
+			RID: "BidRequest1",
+			HP:  1,
+		}},
+		Ver: "1.0",
+	}
+
+	tests := []struct {
+		description         string
+		bidRequest          openrtb2.BidRequest
+		wantReqExtSChain    *openrtb_ext.ExtRequestPrebidSChainSChain
+		wantSourceExtSChain *openrtb_ext.ExtRequestPrebidSChainSChain
+		wantError           bool
+	}{
+		{
+			description: "invalid req.ext",
+			bidRequest: openrtb2.BidRequest{
+				Ext: json.RawMessage(`{"prebid":{"schains":invalid}}`),
+				Source: &openrtb2.Source{
+					Ext: json.RawMessage(`{}`),
+				},
+			},
+			wantError: true,
+		},
+		{
+			description: "invalid source.ext",
+			bidRequest: openrtb2.BidRequest{
+				Ext: json.RawMessage(`{}`),
+				Source: &openrtb2.Source{
+					Ext: json.RawMessage(`{"schain":invalid}}`),
+				},
+			},
+			wantError: true,
+		},
+		{
+			description: "req.ext.prebid.schains, req.source.ext.schain and req.ext.schain are nil",
+			bidRequest: openrtb2.BidRequest{
+				Ext: json.RawMessage(`{}`),
+				Source: &openrtb2.Source{
+					Ext: json.RawMessage(`{}`),
+				},
+			},
+			wantReqExtSChain:    nil,
+			wantSourceExtSChain: nil,
+		},
+		{
+			description: "req.ext.prebid.schains is not nil",
+			bidRequest: openrtb2.BidRequest{
+				Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],` + seller1SChain + `}]}}`),
+				Source: &openrtb2.Source{
+					Ext: json.RawMessage(`{}`),
+				},
+			},
+			wantReqExtSChain:    nil,
+			wantSourceExtSChain: nil,
+		},
+		{
+			description: "req.source.ext is not nil",
+			bidRequest: openrtb2.BidRequest{
+				Ext: json.RawMessage(`{}`),
+				Source: &openrtb2.Source{
+					Ext: json.RawMessage(`{` + seller1SChain + `}`),
+				},
+			},
+			wantReqExtSChain:    nil,
+			wantSourceExtSChain: &seller1SChainUnpacked,
+		},
+		{
+			description: "req.ext.schain is not nil",
+			bidRequest: openrtb2.BidRequest{
+				Ext: json.RawMessage(`{` + seller1SChain + `}`),
+				Source: &openrtb2.Source{
+					Ext: json.RawMessage(`{}`),
+				},
+			},
+			wantReqExtSChain:    nil,
+			wantSourceExtSChain: &seller1SChainUnpacked,
+		},
+		{
+			description: "req.source.ext.schain and req.ext.schain are not nil",
+			bidRequest: openrtb2.BidRequest{
+				Ext: json.RawMessage(`{` + seller2SChain + `}`),
+				Source: &openrtb2.Source{
+					Ext: json.RawMessage(`{` + seller1SChain + `}`),
+				},
+			},
+			wantReqExtSChain:    nil,
+			wantSourceExtSChain: &seller1SChainUnpacked,
+		},
+	}
+
+	for _, tt := range tests {
+		reqWrapper := openrtb_ext.RequestWrapper{
+			BidRequest: &tt.bidRequest,
+		}
+
+		err := mapSChains(&reqWrapper)
+
+		if tt.wantError {
+			assert.NotNil(t, err, tt.description)
+		} else {
+			assert.Nil(t, err, tt.description)
+
+			reqExt, err := reqWrapper.GetRequestExt()
+			if err != nil {
+				assert.Fail(t, "Error getting request ext from wrapper", tt.description)
+			}
+			reqExtSChain := reqExt.GetSChain()
+			assert.Equal(t, tt.wantReqExtSChain, reqExtSChain, tt.description)
+
+			sourceExt, err := reqWrapper.GetSourceExt()
+			if err != nil {
+				assert.Fail(t, "Error getting source ext from wrapper", tt.description)
+			}
+			sourceExtSChain := sourceExt.GetSChain()
+			assert.Equal(t, tt.wantSourceExtSChain, sourceExtSChain, tt.description)
+		}
+	}
+}
+
 func TestGetAccountID(t *testing.T) {
 	testPubID := "test-pub"
 	testParentAccount := "test-account"

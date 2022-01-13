@@ -20,6 +20,7 @@ import (
 	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/privacy/ccpa"
 	"github.com/prebid/prebid-server/privacy/lmt"
+	"github.com/prebid/prebid-server/schain"
 )
 
 var integrationTypeMap = map[metrics.RequestType]config.IntegrationType{
@@ -30,23 +31,6 @@ var integrationTypeMap = map[metrics.RequestType]config.IntegrationType{
 }
 
 const unknownBidder string = ""
-
-func BidderToPrebidSChains(sChains []*openrtb_ext.ExtRequestPrebidSChain) (map[string]*openrtb_ext.ExtRequestPrebidSChainSChain, error) {
-	bidderToSChains := make(map[string]*openrtb_ext.ExtRequestPrebidSChainSChain)
-
-	for _, schainWrapper := range sChains {
-		for _, bidder := range schainWrapper.Bidders {
-			if _, present := bidderToSChains[bidder]; present {
-				return nil, fmt.Errorf("request.ext.prebid.schains contains multiple schains for bidder %s; "+
-					"it must contain no more than one per bidder.", bidder)
-			} else {
-				bidderToSChains[bidder] = &schainWrapper.SChain
-			}
-		}
-	}
-
-	return bidderToSChains, nil
-}
 
 // cleanOpenRTBRequests splits the input request into requests which are sanitized for each bidder. Intended behavior is:
 //
@@ -228,14 +212,9 @@ func getAuctionBidderRequests(req AuctionRequest,
 		return nil, []error{err}
 	}
 
-	var sChainsByBidder map[string]*openrtb_ext.ExtRequestPrebidSChainSChain
-
-	// Quick extra wrapper until RequestWrapper makes its way into CleanRequests
-	if requestExt != nil {
-		sChainsByBidder, err = BidderToPrebidSChains(requestExt.Prebid.SChains)
-		if err != nil {
-			return nil, []error{err}
-		}
+	sChainWriter, err := schain.NewSChainWriter(requestExt)
+	if err != nil {
+		return nil, []error{err}
 	}
 
 	var errs []error
@@ -245,7 +224,7 @@ func getAuctionBidderRequests(req AuctionRequest,
 		reqCopy := *req.BidRequest
 		reqCopy.Imp = imps
 
-		prepareSource(&reqCopy, bidder, sChainsByBidder)
+		sChainWriter.Write(&reqCopy, bidder)
 
 		if len(bidderParamsInReqExt) != 0 {
 
@@ -316,40 +295,6 @@ func getExtJson(req *openrtb2.BidRequest, unpackedExt *openrtb_ext.ExtRequest) (
 	extCopy := *unpackedExt
 	extCopy.Prebid.SChains = nil
 	return json.Marshal(extCopy)
-}
-
-func prepareSource(req *openrtb2.BidRequest, bidder string, sChainsByBidder map[string]*openrtb_ext.ExtRequestPrebidSChainSChain) {
-	const sChainWildCard = "*"
-	var selectedSChain *openrtb_ext.ExtRequestPrebidSChainSChain
-
-	wildCardSChain := sChainsByBidder[sChainWildCard]
-	bidderSChain := sChainsByBidder[bidder]
-
-	// source should not be modified
-	if bidderSChain == nil && wildCardSChain == nil {
-		return
-	}
-
-	if bidderSChain != nil {
-		selectedSChain = bidderSChain
-	} else {
-		selectedSChain = wildCardSChain
-	}
-
-	// set source
-	if req.Source == nil {
-		req.Source = &openrtb2.Source{}
-	} else {
-		sourceCopy := *req.Source
-		req.Source = &sourceCopy
-	}
-	schain := openrtb_ext.ExtRequestPrebidSChain{
-		SChain: *selectedSChain,
-	}
-	sourceExt, err := json.Marshal(schain)
-	if err == nil {
-		req.Source.Ext = sourceExt
-	}
 }
 
 // extractBuyerUIDs parses the values from user.ext.prebid.buyeruids, and then deletes those values from the ext.
