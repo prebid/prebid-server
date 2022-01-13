@@ -168,44 +168,58 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
+	var errs []error
 
 	for _, seatBid := range bidResp.SeatBid {
 		for idx := range seatBid.Bid {
-			mediaType := getBidType(seatBid.Bid[idx], internalRequest.Imp)
-			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     &seatBid.Bid[idx],
-				BidType: mediaType,
-			})
+			mediaType, err := getBidType(seatBid.Bid[idx], internalRequest.Imp)
+			if err != nil {
+				errs = append(errs, err)
+			} else {
+				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+					Bid:     &seatBid.Bid[idx],
+					BidType: mediaType,
+				})
+			}
 		}
 	}
-	return bidResponse, nil
+
+	return bidResponse, errs
 }
 
-func getBidType(bid openrtb2.Bid, imps []openrtb2.Imp) openrtb_ext.BidType {
+func getBidType(bid openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
 	var bidExt algorixResponseBidExt
 	err := json.Unmarshal(bid.Ext, &bidExt)
 	if err == nil {
 		switch bidExt.MediaType {
 		case "banner":
-			return openrtb_ext.BidTypeBanner
+			return openrtb_ext.BidTypeBanner, nil
 		case "native":
-			return openrtb_ext.BidTypeNative
+			return openrtb_ext.BidTypeNative, nil
 		case "video":
-			return openrtb_ext.BidTypeVideo
+			return openrtb_ext.BidTypeVideo, nil
 		}
 	}
+	var mediaType openrtb_ext.BidType
+	var typeCnt = 0
 	for _, imp := range imps {
 		if imp.ID == bid.ImpID {
 			if imp.Banner != nil {
-				break
+				typeCnt += 1
+				mediaType = openrtb_ext.BidTypeBanner
 			}
 			if imp.Native != nil {
-				return openrtb_ext.BidTypeNative
+				typeCnt += 1
+				mediaType = openrtb_ext.BidTypeNative
 			}
 			if imp.Video != nil {
-				return openrtb_ext.BidTypeVideo
+				typeCnt += 1
+				mediaType = openrtb_ext.BidTypeVideo
 			}
 		}
 	}
-	return openrtb_ext.BidTypeBanner
+	if typeCnt == 1 {
+		return mediaType, nil
+	}
+	return mediaType, fmt.Errorf("unable to fetch mediaType in multi-format: %s", bid.ImpID)
 }
