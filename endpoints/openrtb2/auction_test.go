@@ -3608,14 +3608,15 @@ func TestAuctionResponseHeaders(t *testing.T) {
 		fakeUUIDGenerator{},
 		exchange,
 		newParamsValidator(t),
-		&mockStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
-		openrtb_ext.BuildBidderMap())
+		openrtb_ext.BuildBidderMap(),
+		empty_fetcher.EmptyFetcher{})
 
 	for _, test := range testCases {
 		httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.requestBody))
