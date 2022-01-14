@@ -63,6 +63,11 @@ func (mp *MacroProcessor) processKey(key string) (string, bool) {
 		//Search for bidder keys
 		if nil != mp.bidderKeys {
 			if value, found = mp.bidderKeys[tmpKey]; found {
+				//default escaping of bidder keys
+				if len(value) > 0 && nEscaping == 0 {
+					//escape parameter only if _ESC is not present
+					value = url.QueryEscape(value)
+				}
 				break
 			}
 		}
@@ -71,6 +76,13 @@ func (mp *MacroProcessor) processKey(key string) (string, bool) {
 		if found {
 			//found callback function
 			value = valueCallback.callback(mp.bidderMacro, tmpKey)
+
+			//checking if default escaping needed or not
+			if len(value) > 0 && valueCallback.escape && nEscaping == 0 {
+				//escape parameter only if defaultescaping is true and _ESC is not present
+				value = url.QueryEscape(value)
+			}
+
 			break
 		} else if strings.HasSuffix(tmpKey, macroEscapeSuffix) {
 			//escaping macro found
@@ -97,8 +109,8 @@ func (mp *MacroProcessor) processKey(key string) (string, bool) {
 	return value, found
 }
 
-//ProcessString : Substitute macros in input string
-func (mp *MacroProcessor) ProcessString(in string) (response string) {
+//Process : Substitute macros in input string
+func (mp *MacroProcessor) Process(in string) (response string) {
 	var out bytes.Buffer
 	pos, start, end, size := 0, 0, 0, len(in)
 
@@ -149,58 +161,6 @@ func (mp *MacroProcessor) ProcessString(in string) (response string) {
 	response = out.String()
 	glog.V(3).Infof("[MACRO]:in:[%s] replaced:[%s]", in, response)
 	return
-}
-
-//ProcessURL : Substitute macros in input string
-func (mp *MacroProcessor) ProcessURL(uri string, flags Flags) (response string) {
-	if !flags.RemoveEmptyParam {
-		return mp.ProcessString(uri)
-	}
-
-	murl, _ := url.Parse(uri)
-
-	murl.Path = mp.ProcessString(murl.Path)
-	murl.RawQuery = mp.processURLValues(murl.Query(), flags)
-	murl.Fragment = mp.ProcessString(murl.Fragment)
-
-	response = murl.String()
-
-	glog.V(3).Infof("[MACRO]:in:[%s] replaced:[%s]", uri, response)
-	return
-}
-
-//processURLValues : returns replaced macro values of url.values
-func (mp *MacroProcessor) processURLValues(values url.Values, flags Flags) (response string) {
-	var out bytes.Buffer
-	for k, v := range values {
-		macroKey := v[0]
-		found := false
-		value := ""
-
-		if len(macroKey) > (macroPrefixLen+macroSuffixLen) &&
-			strings.HasPrefix(macroKey, macroPrefix) &&
-			strings.HasSuffix(macroKey, macroSuffix) {
-			//Check macro key directly if present
-			newKey := macroKey[macroPrefixLen : len(macroKey)-macroSuffixLen]
-			value, found = mp.processKey(newKey)
-		}
-
-		if !found {
-			//if key is not present then process it as normal string
-			value = mp.ProcessString(macroKey)
-		}
-
-		if flags.RemoveEmptyParam == false || len(value) > 0 {
-			//append
-			if out.Len() > 0 {
-				out.WriteByte('&')
-			}
-			out.WriteString(k)
-			out.WriteByte('=')
-			out.WriteString(url.QueryEscape(value))
-		}
-	}
-	return out.String()
 }
 
 //GetMacroKey will return macro formatted key

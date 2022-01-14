@@ -8,11 +8,6 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-//Flags of each tag bidder
-type Flags struct {
-	RemoveEmptyParam bool `json:"remove_empty,omitempty"`
-}
-
 //IBidderMacro interface will capture all macro definition
 type IBidderMacro interface {
 	//Helper Function

@@ -246,17 +246,20 @@ func getPricingDetails(version string, ad *etree.Element) (float64, string) {
 	var currency string
 	var node *etree.Element
 
-	if `2.0` == version {
+	if version == `2.0` {
 		node = ad.FindElement(`./Extensions/Extension/Price`)
+		if node == nil {
+			node = ad.FindElement(`./Extensions/Extension/Pricing`)
+		}
 	} else {
 		node = ad.FindElement(`./Pricing`)
 	}
 
-	if nil == node {
+	if node == nil {
 		return 0.0, currency
 	}
 
-	priceValue, err := strconv.ParseFloat(node.Text(), 64)
+	priceValue, err := getPricingValue(node)
 	if nil != err {
 		return 0.0, currency
 	}
@@ -267,6 +270,31 @@ func getPricingDetails(version string, ad *etree.Element) (float64, string) {
 	}
 
 	return priceValue, currency
+}
+
+//getPricingValue return pricing value from vast xml node
+func getPricingValue(node *etree.Element) (float64, error) {
+	value := strings.TrimSpace(node.Text())
+	if len(value) == 0 {
+		//added custom logic for ignoring whitespaces elements while reading pricing node
+		/*
+			<Pricing>
+				<![CDATA[
+					0.05
+				]]>
+			</Pricing>
+		*/
+		for _, t := range node.Child {
+			if c, ok := t.(*etree.CharData); ok {
+				value = strings.TrimSpace(c.Data)
+				if len(value) > 0 {
+					//found value
+					break
+				}
+			}
+		}
+	}
+	return strconv.ParseFloat(value, 64)
 }
 
 // getDuration extracts the duration of the bid from input creative of Linear type.

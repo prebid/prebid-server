@@ -105,9 +105,8 @@ func (tag *BidderMacro) LoadVASTTag(vastTag *openrtb_ext.ExtImpVASTBidderTag) {
 
 //GetBidderKeys will set bidder level keys
 func (tag *BidderMacro) GetBidderKeys() map[string]string {
-	var keys map[string]string
 	//Adding VAST Tag Bidder Parameters
-	keys = NormalizeJSON(tag.VASTTag.Params)
+	keys := NormalizeJSON(tag.VASTTag.Params)
 
 	//Adding VAST Tag Standard Params
 	keys["dur"] = strconv.Itoa(tag.VASTTag.Duration)
@@ -1207,7 +1206,7 @@ func setDefaultHeaders(tag *BidderMacro) {
 }
 
 func setHeaders(headers http.Header, key, value string) {
-	if "" != value {
+	if len(value) > 0 {
 		headers.Set(key, value)
 	}
 }

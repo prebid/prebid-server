@@ -75,6 +75,98 @@ func TestVASTTagResponseHandler_vastTagToBidderResponse(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: `ExtensionPricingNode`,
+			args: args{
+				internalRequest: &openrtb2.BidRequest{
+					ID: `request_id_1`,
+					Imp: []openrtb2.Imp{
+						{
+							ID: `imp_id_1`,
+						},
+					},
+				},
+				externalRequest: &adapters.RequestData{
+					Params: &adapters.BidRequestParams{
+						ImpIndex: 0,
+					},
+				},
+				response: &adapters.ResponseData{
+					Body: []byte(`<VAST version="2.0"> <Ad id="1"> <InLine> <Creatives> <Creative sequence="1"> <Linear> <MediaFiles> <MediaFile><![CDATA[ad.mp4]]></MediaFile> </MediaFiles> </Linear> </Creative> </Creatives> <Extensions> <Extension type="LR-Pricing"> <Pricing model="CPM" currency="USD"><![CDATA[0.05]]></Pricing> </Extension> </Extensions> </InLine> </Ad> </VAST>`),
+				},
+				vastTag: &openrtb_ext.ExtImpVASTBidderTag{
+					TagID:    "101",
+					Duration: 15,
+				},
+			},
+			want: want{
+				bidderResponse: &adapters.BidderResponse{
+					Bids: []*adapters.TypedBid{
+						{
+							Bid: &openrtb2.Bid{
+								ID:    `1234`,
+								ImpID: `imp_id_1`,
+								Price: 0.05,
+								AdM:   `<VAST version="2.0"> <Ad id="1"> <InLine> <Creatives> <Creative sequence="1"> <Linear> <MediaFiles> <MediaFile><![CDATA[ad.mp4]]></MediaFile> </MediaFiles> </Linear> </Creative> </Creatives> <Extensions> <Extension type="LR-Pricing"> <Pricing model="CPM" currency="USD"><![CDATA[0.05]]></Pricing> </Extension> </Extensions> </InLine> </Ad> </VAST>`,
+								CrID:  "cr_1234",
+							},
+							BidType: openrtb_ext.BidTypeVideo,
+							BidVideo: &openrtb_ext.ExtBidPrebidVideo{
+								VASTTagID: "101",
+								Duration:  15,
+							},
+						},
+					},
+					Currency: `USD`,
+				},
+			},
+		},
+		{
+			name: `InlinePricingNodeWithSpaces`,
+			args: args{
+				internalRequest: &openrtb2.BidRequest{
+					ID: `request_id_1`,
+					Imp: []openrtb2.Imp{
+						{
+							ID: `imp_id_1`,
+						},
+					},
+				},
+				externalRequest: &adapters.RequestData{
+					Params: &adapters.BidRequestParams{
+						ImpIndex: 0,
+					},
+				},
+				response: &adapters.ResponseData{
+					Body: []byte(`<VAST version="3.0" xmlns:xs="http://www.w3.org/2001/XMLSchema"> <Ad id="20001"> <InLine> <AdSystem version="4.0">iabtechlab</AdSystem> <AdTitle>iabtechlab video ad</AdTitle> <Pricing model="cpm" currency="USD"> <![CDATA[ 7 ]]> </Pricing> <Error>https://example.com/error</Error> <Impression id="Impression-ID">https://example.com/track/impression</Impression> <Creatives> <Creative id="5480" sequence="1"> <Linear > <Duration>00:00:15</Duration> <VideoClicks> <ClickTracking id="blog"> <![CDATA[https://iabtechlab.com]]> </ClickTracking> <CustomClick>http://iabtechlab.com</CustomClick> </VideoClicks> <MediaFiles> <MediaFile id="5241" delivery="progressive" type="video/mp4" bitrate="500" width="400" height="300" minBitrate="360" maxBitrate="1080" scalable="1" maintainAspectRatio="1" codec="0"> <![CDATA[https://tech-stack-mgmt.pubmatic.com/master/owtools/vasttaggen/videos/7c3dec9e-2665-4c24-aefa-dada2a7bb859.mp4]]> </MediaFile> </MediaFiles> </Linear> </Creative> </Creatives> <Extensions> <Extension type="iab-Count"> <total_available> <![CDATA[ 2 ]]> </total_available> </Extension> </Extensions> </InLine> </Ad> </VAST>`),
+				},
+				vastTag: &openrtb_ext.ExtImpVASTBidderTag{
+					TagID:    "101",
+					Duration: 15,
+				},
+			},
+			want: want{
+				bidderResponse: &adapters.BidderResponse{
+					Bids: []*adapters.TypedBid{
+						{
+							Bid: &openrtb2.Bid{
+								ID:    `1234`,
+								ImpID: `imp_id_1`,
+								Price: 7,
+								AdM:   `<VAST version="3.0" xmlns:xs="http://www.w3.org/2001/XMLSchema"> <Ad id="20001"> <InLine> <AdSystem version="4.0">iabtechlab</AdSystem> <AdTitle>iabtechlab video ad</AdTitle> <Pricing model="cpm" currency="USD"> <![CDATA[ 7 ]]> </Pricing> <Error>https://example.com/error</Error> <Impression id="Impression-ID">https://example.com/track/impression</Impression> <Creatives> <Creative id="5480" sequence="1"> <Linear > <Duration>00:00:15</Duration> <VideoClicks> <ClickTracking id="blog"> <![CDATA[https://iabtechlab.com]]> </ClickTracking> <CustomClick>http://iabtechlab.com</CustomClick> </VideoClicks> <MediaFiles> <MediaFile id="5241" delivery="progressive" type="video/mp4" bitrate="500" width="400" height="300" minBitrate="360" maxBitrate="1080" scalable="1" maintainAspectRatio="1" codec="0"> <![CDATA[https://tech-stack-mgmt.pubmatic.com/master/owtools/vasttaggen/videos/7c3dec9e-2665-4c24-aefa-dada2a7bb859.mp4]]> </MediaFile> </MediaFiles> </Linear> </Creative> </Creatives> <Extensions> <Extension type="iab-Count"> <total_available> <![CDATA[ 2 ]]> </total_available> </Extension> </Extensions> </InLine> </Ad> </VAST>`,
+								CrID:  "5480",
+							},
+							BidType: openrtb_ext.BidTypeVideo,
+							BidVideo: &openrtb_ext.ExtBidPrebidVideo{
+								VASTTagID: "101",
+								Duration:  15,
+							},
+						},
+					},
+					Currency: `USD`,
+				},
+			},
+		},
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
