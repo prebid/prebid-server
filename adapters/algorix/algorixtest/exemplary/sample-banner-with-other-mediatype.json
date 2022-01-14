@@ -57,7 +57,7 @@
                 "adm": "some-ads",
                 "crid": "crid_testid",
                 "ext": {
-                  "mediaType": "audio"
+                  "mediaType": "video"
                 }
               }]
             }
@@ -80,10 +80,10 @@
             "adm": "some-ads",
             "crid": "crid_testid",
             "ext": {
-              "mediaType": "audio"
+              "mediaType": "video"
             }
           },
-          "type": "banner"
+          "type": "video"
         }
       ]
     }
