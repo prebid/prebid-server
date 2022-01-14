@@ -288,7 +288,7 @@ type TCF2 struct {
 	Purpose8            TCF2Purpose             `mapstructure:"purpose8"`
 	Purpose9            TCF2Purpose             `mapstructure:"purpose9"`
 	Purpose10           TCF2Purpose             `mapstructure:"purpose10"`
-	SpecialPurpose1     TCF2Purpose             `mapstructure:"special_purpose1"`
+	SpecialFeature1     TCF2SpecialFeature      `mapstructure:"special_feature1"`
 	PurposeOneTreatment TCF2PurposeOneTreatment `mapstructure:"purpose_one_treatment"`
 }
 
@@ -297,6 +297,13 @@ type TCF2Purpose struct {
 	Enabled        bool   `mapstructure:"enabled"` // Deprecated: Use enforce_purpose instead
 	EnforcePurpose string `mapstructure:"enforce_purpose"`
 	EnforceVendors bool   `mapstructure:"enforce_vendors"`
+	// Array of vendor exceptions that is used to create the hash table VendorExceptionMap so vendor names can be instantly accessed
+	VendorExceptions   []openrtb_ext.BidderName `mapstructure:"vendor_exceptions"`
+	VendorExceptionMap map[openrtb_ext.BidderName]struct{}
+}
+
+type TCF2SpecialFeature struct {
+	Enforce bool `mapstructure:"enforce"`
 	// Array of vendor exceptions that is used to create the hash table VendorExceptionMap so vendor names can be instantly accessed
 	VendorExceptions   []openrtb_ext.BidderName `mapstructure:"vendor_exceptions"`
 	VendorExceptionMap map[openrtb_ext.BidderName]struct{}
@@ -557,7 +564,6 @@ func New(v *viper.Viper) (*Configuration, error) {
 		&c.GDPR.TCF2.Purpose8,
 		&c.GDPR.TCF2.Purpose9,
 		&c.GDPR.TCF2.Purpose10,
-		&c.GDPR.TCF2.SpecialPurpose1,
 	}
 	for c := 0; c < len(purposeConfigs); c++ {
 		purposeConfigs[c].VendorExceptionMap = make(map[openrtb_ext.BidderName]struct{})
@@ -566,6 +572,14 @@ func New(v *viper.Viper) (*Configuration, error) {
 			bidderName := purposeConfigs[c].VendorExceptions[v]
 			purposeConfigs[c].VendorExceptionMap[bidderName] = struct{}{}
 		}
+	}
+
+	// To look for a special feature's vendor exceptions in O(1) time, we fill this hash table with bidders located in the
+	// VendorExceptions field of the GDPR.TCF2.SpecialFeature1 struct defined in this file
+	c.GDPR.TCF2.SpecialFeature1.VendorExceptionMap = make(map[openrtb_ext.BidderName]struct{})
+	for v := 0; v < len(c.GDPR.TCF2.SpecialFeature1.VendorExceptions); v++ {
+		bidderName := c.GDPR.TCF2.SpecialFeature1.VendorExceptions[v]
+		c.GDPR.TCF2.SpecialFeature1.VendorExceptionMap[bidderName] = struct{}{}
 	}
 
 	// To look for a request's app_id in O(1) time, we fill this hash table located in the
@@ -977,8 +991,6 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("gdpr.tcf2.purpose8.vendor_exceptions", []openrtb_ext.BidderName{})
 	v.SetDefault("gdpr.tcf2.purpose9.vendor_exceptions", []openrtb_ext.BidderName{})
 	v.SetDefault("gdpr.tcf2.purpose10.vendor_exceptions", []openrtb_ext.BidderName{})
-	v.SetDefault("gdpr.tcf2.special_purpose1.enabled", true)
-	v.SetDefault("gdpr.tcf2.special_purpose1.vendor_exceptions", []openrtb_ext.BidderName{})
 	v.SetDefault("gdpr.amp_exception", false)
 	v.SetDefault("gdpr.eea_countries", []string{"ALA", "AUT", "BEL", "BGR", "HRV", "CYP", "CZE", "DNK", "EST",
 		"FIN", "FRA", "GUF", "DEU", "GIB", "GRC", "GLP", "GGY", "HUN", "ISL", "IRL", "IMN", "ITA", "JEY", "LVA",
@@ -1035,6 +1047,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	// Migrate config settings to maintain compatibility with old configs
 	migrateConfig(v)
 	migrateConfigPurposeOneTreatment(v)
+	migrateConfigSpecialFeature1(v)
 	migrateConfigTCF2PurposeEnabledFlags(v)
 
 	// These defaults must be set after the migrate functions because those functions look for the presence of these
@@ -1062,6 +1075,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("gdpr.tcf2.purpose10.enforce_purpose", TCF2FullEnforcement)
 	v.SetDefault("gdpr.tcf2.purpose_one_treatment.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose_one_treatment.access_allowed", true)
+	v.SetDefault("gdpr.tcf2.special_feature1.enforce", true)
+	v.SetDefault("gdpr.tcf2.special_feature1.vendor_exceptions", []openrtb_ext.BidderName{})
 }
 
 func migrateConfig(v *viper.Viper) {
@@ -1085,6 +1100,19 @@ func migrateConfigPurposeOneTreatment(v *viper.Viper) {
 			glog.Warning("gdpr.tcf2.purpose_one_treatement.enabled should be changed to gdpr.tcf2.purpose_one_treatment.enabled")
 			glog.Warning("gdpr.tcf2.purpose_one_treatement.access_allowed should be changed to gdpr.tcf2.purpose_one_treatment.access_allowed")
 			v.Set("gdpr.tcf2.purpose_one_treatment", oldConfig)
+		}
+	}
+}
+
+func migrateConfigSpecialFeature1(v *viper.Viper) {
+	if oldConfig, ok := v.Get("gdpr.tcf2.special_purpose1").(map[string]interface{}); ok {
+		if v.IsSet("gdpr.tcf2.special_feature1") {
+			glog.Warning("using gdpr.tcf2.special_feature1 and ignoring deprecated gdpr.tcf2.special_purpose1")
+		} else {
+			glog.Warning("gdpr.tcf2.special_purpose1.enabled is deprecated and should be changed to gdpr.tcf2.special_feature1.enforce")
+			glog.Warning("gdpr.tcf2.special_purpose1.vendor_exceptions is deprecated and should be changed to gdpr.tcf2.special_feature1.vendor_exceptions")
+			v.Set("gdpr.tcf2.special_feature1.enforce", oldConfig["enabled"])
+			v.Set("gdpr.tcf2.special_feature1.vendor_exceptions", oldConfig["vendor_exceptions"])
 		}
 	}
 }
