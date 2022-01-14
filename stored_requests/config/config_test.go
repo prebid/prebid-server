@@ -158,6 +158,7 @@ func TestNewEmptyCache(t *testing.T) {
 	cache := newCache(&config.StoredRequests{InMemoryCache: config.InMemoryCache{Type: "none"}})
 	assert.True(t, isEmptyCacheType(cache.Requests), "The newCache method should return an empty Request cache")
 	assert.True(t, isEmptyCacheType(cache.Imps), "The newCache method should return an empty Imp cache")
+	assert.True(t, isEmptyCacheType(cache.Responses), "The newCache method should return an empty Responses cache")
 	assert.True(t, isEmptyCacheType(cache.Accounts), "The newCache method should return an empty Account cache")
 }
 
@@ -167,10 +168,12 @@ func TestNewInMemoryCache(t *testing.T) {
 			TTL:              60,
 			RequestCacheSize: 100,
 			ImpCacheSize:     100,
+			RespCacheSize:    100,
 		},
 	})
 	assert.True(t, isMemoryCacheType(cache.Requests), "The newCache method should return an in-memory Request cache for StoredRequests config")
 	assert.True(t, isMemoryCacheType(cache.Imps), "The newCache method should return an in-memory Imp cache for StoredRequests config")
+	assert.True(t, isMemoryCacheType(cache.Responses), "The newCache method should return an in-memory Responses cache for StoredResponses config")
 	assert.True(t, isEmptyCacheType(cache.Accounts), "The newCache method should return an empty Account cache for StoredRequests config")
 }
 
@@ -184,6 +187,7 @@ func TestNewInMemoryAccountCache(t *testing.T) {
 	assert.True(t, isMemoryCacheType(cache.Accounts), "The newCache method should return an in-memory Account cache for Accounts config")
 	assert.True(t, isEmptyCacheType(cache.Requests), "The newCache method should return an empty Request cache for Accounts config")
 	assert.True(t, isEmptyCacheType(cache.Imps), "The newCache method should return an empty Imp cache for Accounts config")
+	assert.True(t, isEmptyCacheType(cache.Responses), "The newCache method should return an empty Responses cache for Accounts config")
 }
 
 func TestNewPostgresEventProducers(t *testing.T) {
