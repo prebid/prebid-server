@@ -106,7 +106,6 @@ func setImp(request *openrtb2.BidRequest, isUrlSecure bool, a *adapter) (request
 				imp.TagID = raiExt.Pid
 			}
 
-			request.Test = 1
 			if raiExt.Test {
 				request.Test = int8(1)
 			}
