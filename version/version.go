@@ -6,6 +6,9 @@ package version
 // Populated automatically at build / releases in the Docker image
 var Ver string
 
+// VerUnknown is the version used if Ver has not been set by ldflags.
+const VerUnknown = "unknown"
+
 // Rev holds binary revision string
 // Populated using:
 //    go build -ldflags "-X github.com/prebid/prebid-server/version.Rev=`git rev-parse --short HEAD`"

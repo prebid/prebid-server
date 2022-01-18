@@ -22,6 +22,7 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/util/iputil"
 	"github.com/prebid/prebid-server/util/uuidutil"
+	"github.com/prebid/prebid-server/version"
 
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
@@ -152,6 +153,8 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
 		deps.analytics.LogVideoObject(&vo)
 	}()
+
+	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
 
 	lr := &io.LimitedReader{
 		R: r.Body,
