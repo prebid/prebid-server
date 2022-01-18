@@ -237,7 +237,8 @@ type adapter struct {
 }
 
 type ExtraInfo struct {
-	PkgNameConvert []pkgNameConvert `json:"pkgNameConvert,omitempty"`
+	PkgNameConvert              []pkgNameConvert `json:"pkgNameConvert,omitempty"`
+	CloseSiteSelectionByCountry string           `json:"closeSiteSelectionByCountry,omitempty"`
 }
 
 type pkgNameConvert struct {
@@ -246,6 +247,9 @@ type pkgNameConvert struct {
 	UnconvertedPkgNameKeyWords []string `json:"unconvertedPkgNameKeyWords,omitempty"`
 	UnconvertedPkgNamePrefixs  []string `json:"unconvertedPkgNamePrefixs,omitempty"`
 	ExceptionPkgNames          []string `json:"exceptionPkgNames,omitempty"`
+}
+
+type empty struct {
 }
 
 func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest,
@@ -296,7 +300,7 @@ func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest,
 	header = getHeaders(huaweiAdsImpExt, openRTBRequest, isTestAuthorization)
 	bidRequest := &adapters.RequestData{
 		Method:  http.MethodPost,
-		Uri:     getFinalEndPoint(countryCode, a.endpoint),
+		Uri:     getFinalEndPoint(countryCode, a.endpoint, a.extraInfo),
 		Body:    reqJSON,
 		Headers: header,
 	}
@@ -305,20 +309,24 @@ func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest,
 }
 
 // countryCode is alpha2, choose the corresponding site end point
-func getFinalEndPoint(countryCode string, defaultEndpoint string) string {
-	if countryCode == "" || len(countryCode) > 2 {
+func getFinalEndPoint(countryCode string, defaultEndpoint string, extraInfo ExtraInfo) string {
+	// closeSiteSelectionByCountry == 1, close site selection, use the defaultEndpoint
+	if "1" == extraInfo.CloseSiteSelectionByCountry {
 		return defaultEndpoint
 	}
 
-	var europeanSiteCountryCodeGroup = map[string]string{"AX": "1", "AL": "1", "AD": "1", "AU": "1", "AT": "1", "BE": "1",
-		"BA": "1", "BG": "1", "CA": "1", "HR": "1", "CY": "1", "CZ": "1", "DK": "1", "EE": "1", "FO": "1", "FI": "1",
-		"FR": "1", "DE": "1", "GI": "1", "GR": "1", "GL": "1", "GG": "1", "VA": "1", "HU": "1", "IS": "1", "IE": "1",
-		"IM": "1", "IL": "1", "IT": "1", "JE": "1", "YK": "1", "LV": "1", "LI": "1", "LT": "1", "LU": "1", "MT": "1",
-		"MD": "1", "MC": "1", "ME": "1", "NL": "1", "AN": "1", "NZ": "1", "NO": "1", "PL": "1", "PT": "1", "RO": "1",
-		"MF": "1", "VC": "1", "SM": "1", "RS": "1", "SX": "1", "SK": "1", "SI": "1", "ES": "1", "SE": "1", "CH": "1",
-		"TR": "1", "UA": "1", "GB": "1", "US": "1", "MK": "1", "SJ": "1", "BQ": "1", "PM": "1", "CW": "1"}
-	var russianSiteCountryCodeGroup = map[string]string{"RU": "1"}
-	var chineseSiteCountryCodeGroup = map[string]string{"CN": "1"}
+	if countryCode == "" || len(countryCode) > 2 {
+		return defaultEndpoint
+	}
+	var europeanSiteCountryCodeGroup = map[string]empty{"AX": {}, "AL": {}, "AD": {}, "AU": {}, "AT": {}, "BE": {},
+		"BA": {}, "BG": {}, "CA": {}, "HR": {}, "CY": {}, "CZ": {}, "DK": {}, "EE": {}, "FO": {}, "FI": {},
+		"FR": {}, "DE": {}, "GI": {}, "GR": {}, "GL": {}, "GG": {}, "VA": {}, "HU": {}, "IS": {}, "IE": {},
+		"IM": {}, "IL": {}, "IT": {}, "JE": {}, "YK": {}, "LV": {}, "LI": {}, "LT": {}, "LU": {}, "MT": {},
+		"MD": {}, "MC": {}, "ME": {}, "NL": {}, "AN": {}, "NZ": {}, "NO": {}, "PL": {}, "PT": {}, "RO": {},
+		"MF": {}, "VC": {}, "SM": {}, "RS": {}, "SX": {}, "SK": {}, "SI": {}, "ES": {}, "SE": {}, "CH": {},
+		"TR": {}, "UA": {}, "GB": {}, "US": {}, "MK": {}, "SJ": {}, "BQ": {}, "PM": {}, "CW": {}}
+	var russianSiteCountryCodeGroup = map[string]empty{"RU": {}}
+	var chineseSiteCountryCodeGroup = map[string]empty{"CN": {}}
 	// choose site
 	if _, exists := chineseSiteCountryCodeGroup[countryCode]; exists {
 		return chineseSiteEndPoint
@@ -380,6 +388,28 @@ func getExtraInfo(v string) (ExtraInfo, error) {
 	if err := json.Unmarshal([]byte(v), &extraInfo); err != nil {
 		return extraInfo, fmt.Errorf("invalid extra info: %v , pls check", err)
 	}
+
+	for _, convert := range extraInfo.PkgNameConvert {
+		if convert.ConvertedPkgName == "" {
+			return extraInfo, fmt.Errorf("invalid extra info: ConvertedPkgName is empty, pls check")
+		}
+
+		if convert.UnconvertedPkgNameKeyWords != nil {
+			for _, keyword := range convert.UnconvertedPkgNameKeyWords {
+				if keyword == "" {
+					return extraInfo, fmt.Errorf("invalid extra info: UnconvertedPkgNameKeyWords has a empty keyword, pls check")
+				}
+			}
+		}
+
+		if convert.UnconvertedPkgNamePrefixs != nil {
+			for _, prefix := range convert.UnconvertedPkgNamePrefixs {
+				if prefix == "" {
+					return extraInfo, fmt.Errorf("invalid extra info: UnconvertedPkgNamePrefixs has a empty value, pls check")
+				}
+			}
+		}
+	}
 	return extraInfo, nil
 }
 
@@ -401,10 +431,8 @@ func getHeaders(huaweiAdsImpExt *openrtb_ext.ExtImpHuaweiAds, request *openrtb2.
 
 // getHuaweiAdsReqJson: get body json for HuaweiAds request
 func getHuaweiAdsReqJson(request *huaweiAdsRequest, openRTBRequest *openrtb2.BidRequest,
-	huaweiAdsImpExt *openrtb_ext.ExtImpHuaweiAds, extraInfo ExtraInfo) (string, error) {
+	huaweiAdsImpExt *openrtb_ext.ExtImpHuaweiAds, extraInfo ExtraInfo) (countryCode string, err error) {
 	request.Version = huaweiAdxApiVersion
-	var err error
-	var countryCode string
 	if countryCode, err = getHuaweiAdsReqAppInfo(request, openRTBRequest, extraInfo); err != nil {
 		return "", err
 	}
