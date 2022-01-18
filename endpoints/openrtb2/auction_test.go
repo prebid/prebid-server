@@ -437,7 +437,8 @@ func TestExplicitUserId(t *testing.T) {
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
-		openrtb_ext.BuildBidderMap())
+		openrtb_ext.BuildBidderMap(),
+		empty_fetcher.EmptyFetcher{})
 
 	endpoint(httptest.NewRecorder(), request, nil)
 
@@ -479,7 +480,8 @@ func doRequest(t *testing.T, test testCase) (int, string) {
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		disabledBidders,
 		[]byte(test.Config.AliasJSON),
-		bidderMap)
+		bidderMap,
+		empty_fetcher.EmptyFetcher{})
 
 	request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(test.BidRequest))
 	recorder := httptest.NewRecorder()
@@ -543,7 +545,8 @@ func doBadAliasRequest(t *testing.T, filename string, expectMsg string) {
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		disabledBidders,
 		aliasJSON,
-		bidderMap)
+		bidderMap,
+		empty_fetcher.EmptyFetcher{})
 
 	request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(testBidRequest))
 	recorder := httptest.NewRecorder()
@@ -593,7 +596,8 @@ func TestNilExchange(t *testing.T) {
 		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{},
 		[]byte{},
-		openrtb_ext.BuildBidderMap())
+		openrtb_ext.BuildBidderMap(),
+		empty_fetcher.EmptyFetcher{})
 
 	if err == nil {
 		t.Errorf("NewEndpoint should return an error when given a nil Exchange.")
@@ -615,7 +619,8 @@ func TestNilValidator(t *testing.T) {
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
-		openrtb_ext.BuildBidderMap())
+		openrtb_ext.BuildBidderMap(),
+		empty_fetcher.EmptyFetcher{})
 
 	if err == nil {
 		t.Errorf("NewEndpoint should return an error when given a nil BidderParamValidator.")
@@ -637,7 +642,8 @@ func TestExchangeError(t *testing.T) {
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
-		openrtb_ext.BuildBidderMap())
+		openrtb_ext.BuildBidderMap(),
+		empty_fetcher.EmptyFetcher{})
 
 	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	recorder := httptest.NewRecorder()
@@ -760,7 +766,8 @@ func TestImplicitIPsEndToEnd(t *testing.T) {
 			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 			map[string]string{},
 			[]byte{},
-			openrtb_ext.BuildBidderMap())
+			openrtb_ext.BuildBidderMap(),
+			empty_fetcher.EmptyFetcher{})
 
 		httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, test.reqJSONFile)))
 		httpReq.Header.Set("X-Forwarded-For", test.xForwardedForHeader)
@@ -955,7 +962,8 @@ func TestImplicitDNTEndToEnd(t *testing.T) {
 			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 			map[string]string{},
 			[]byte{},
-			openrtb_ext.BuildBidderMap())
+			openrtb_ext.BuildBidderMap(),
+			empty_fetcher.EmptyFetcher{})
 
 		httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, test.reqJSONFile)))
 		httpReq.Header.Set("DNT", test.dntHeader)
@@ -1115,6 +1123,7 @@ func TestStoredRequests(t *testing.T) {
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
+		empty_fetcher.EmptyFetcher{},
 	}
 
 	testStoreVideoAttr := []bool{true, true, false, false}
@@ -1459,6 +1468,7 @@ func TestValidateRequest(t *testing.T) {
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
+		empty_fetcher.EmptyFetcher{},
 	}
 
 	testCases := []struct {
@@ -1701,6 +1711,7 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
+		empty_fetcher.EmptyFetcher{},
 	}
 
 	req := &openrtb2.BidRequest{}
@@ -1807,6 +1818,7 @@ func TestOversizedRequest(t *testing.T) {
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
+		empty_fetcher.EmptyFetcher{},
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -1843,6 +1855,7 @@ func TestRequestSizeEdgeCase(t *testing.T) {
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
+		empty_fetcher.EmptyFetcher{},
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -1873,6 +1886,7 @@ func TestNoEncoding(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
+		empty_fetcher.EmptyFetcher{},
 	)
 	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	recorder := httptest.NewRecorder()
@@ -1949,6 +1963,7 @@ func TestContentType(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
+		empty_fetcher.EmptyFetcher{},
 	)
 	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	recorder := httptest.NewRecorder()
@@ -2167,6 +2182,7 @@ func TestValidateImpExt(t *testing.T) {
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
+		empty_fetcher.EmptyFetcher{},
 	}
 
 	for _, group := range testGroups {
@@ -2214,6 +2230,7 @@ func TestCurrencyTrunc(t *testing.T) {
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
+		empty_fetcher.EmptyFetcher{},
 	}
 
 	ui := int64(1)
@@ -2259,6 +2276,7 @@ func TestCCPAInvalid(t *testing.T) {
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
+		empty_fetcher.EmptyFetcher{},
 	}
 
 	ui := int64(1)
@@ -2308,6 +2326,7 @@ func TestNoSaleInvalid(t *testing.T) {
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
+		empty_fetcher.EmptyFetcher{},
 	}
 
 	ui := int64(1)
@@ -2360,6 +2379,7 @@ func TestValidateSourceTID(t *testing.T) {
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
+		empty_fetcher.EmptyFetcher{},
 	}
 
 	ui := int64(1)
@@ -2402,6 +2422,7 @@ func TestSChainInvalid(t *testing.T) {
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
+		empty_fetcher.EmptyFetcher{},
 	}
 
 	ui := int64(1)
@@ -2427,6 +2448,134 @@ func TestSChainInvalid(t *testing.T) {
 
 	expectedError := errors.New("request.ext.prebid.schains contains multiple schains for bidder appnexus; it must contain no more than one per bidder.")
 	assert.ElementsMatch(t, errL, []error{expectedError})
+}
+
+func TestMapSChains(t *testing.T) {
+	const seller1SChain string = `"schain":{"complete":1,"nodes":[{"asi":"directseller1.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}`
+	const seller2SChain string = `"schain":{"complete":2,"nodes":[{"asi":"directseller2.com","sid":"00002","rid":"BidRequest2","hp":2}],"ver":"2.0"}`
+
+	seller1SChainUnpacked := openrtb_ext.ExtRequestPrebidSChainSChain{
+		Complete: 1,
+		Nodes: []*openrtb_ext.ExtRequestPrebidSChainSChainNode{{
+			ASI: "directseller1.com",
+			SID: "00001",
+			RID: "BidRequest1",
+			HP:  1,
+		}},
+		Ver: "1.0",
+	}
+
+	tests := []struct {
+		description         string
+		bidRequest          openrtb2.BidRequest
+		wantReqExtSChain    *openrtb_ext.ExtRequestPrebidSChainSChain
+		wantSourceExtSChain *openrtb_ext.ExtRequestPrebidSChainSChain
+		wantError           bool
+	}{
+		{
+			description: "invalid req.ext",
+			bidRequest: openrtb2.BidRequest{
+				Ext: json.RawMessage(`{"prebid":{"schains":invalid}}`),
+				Source: &openrtb2.Source{
+					Ext: json.RawMessage(`{}`),
+				},
+			},
+			wantError: true,
+		},
+		{
+			description: "invalid source.ext",
+			bidRequest: openrtb2.BidRequest{
+				Ext: json.RawMessage(`{}`),
+				Source: &openrtb2.Source{
+					Ext: json.RawMessage(`{"schain":invalid}}`),
+				},
+			},
+			wantError: true,
+		},
+		{
+			description: "req.ext.prebid.schains, req.source.ext.schain and req.ext.schain are nil",
+			bidRequest: openrtb2.BidRequest{
+				Ext: json.RawMessage(`{}`),
+				Source: &openrtb2.Source{
+					Ext: json.RawMessage(`{}`),
+				},
+			},
+			wantReqExtSChain:    nil,
+			wantSourceExtSChain: nil,
+		},
+		{
+			description: "req.ext.prebid.schains is not nil",
+			bidRequest: openrtb2.BidRequest{
+				Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],` + seller1SChain + `}]}}`),
+				Source: &openrtb2.Source{
+					Ext: json.RawMessage(`{}`),
+				},
+			},
+			wantReqExtSChain:    nil,
+			wantSourceExtSChain: nil,
+		},
+		{
+			description: "req.source.ext is not nil",
+			bidRequest: openrtb2.BidRequest{
+				Ext: json.RawMessage(`{}`),
+				Source: &openrtb2.Source{
+					Ext: json.RawMessage(`{` + seller1SChain + `}`),
+				},
+			},
+			wantReqExtSChain:    nil,
+			wantSourceExtSChain: &seller1SChainUnpacked,
+		},
+		{
+			description: "req.ext.schain is not nil",
+			bidRequest: openrtb2.BidRequest{
+				Ext: json.RawMessage(`{` + seller1SChain + `}`),
+				Source: &openrtb2.Source{
+					Ext: json.RawMessage(`{}`),
+				},
+			},
+			wantReqExtSChain:    nil,
+			wantSourceExtSChain: &seller1SChainUnpacked,
+		},
+		{
+			description: "req.source.ext.schain and req.ext.schain are not nil",
+			bidRequest: openrtb2.BidRequest{
+				Ext: json.RawMessage(`{` + seller2SChain + `}`),
+				Source: &openrtb2.Source{
+					Ext: json.RawMessage(`{` + seller1SChain + `}`),
+				},
+			},
+			wantReqExtSChain:    nil,
+			wantSourceExtSChain: &seller1SChainUnpacked,
+		},
+	}
+
+	for _, tt := range tests {
+		reqWrapper := openrtb_ext.RequestWrapper{
+			BidRequest: &tt.bidRequest,
+		}
+
+		err := mapSChains(&reqWrapper)
+
+		if tt.wantError {
+			assert.NotNil(t, err, tt.description)
+		} else {
+			assert.Nil(t, err, tt.description)
+
+			reqExt, err := reqWrapper.GetRequestExt()
+			if err != nil {
+				assert.Fail(t, "Error getting request ext from wrapper", tt.description)
+			}
+			reqExtSChain := reqExt.GetSChain()
+			assert.Equal(t, tt.wantReqExtSChain, reqExtSChain, tt.description)
+
+			sourceExt, err := reqWrapper.GetSourceExt()
+			if err != nil {
+				assert.Fail(t, "Error getting source ext from wrapper", tt.description)
+			}
+			sourceExtSChain := sourceExt.GetSChain()
+			assert.Equal(t, tt.wantSourceExtSChain, sourceExtSChain, tt.description)
+		}
+	}
 }
 
 func TestGetAccountID(t *testing.T) {
@@ -2622,6 +2771,7 @@ func TestEidPermissionsInvalid(t *testing.T) {
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
+		empty_fetcher.EmptyFetcher{},
 	}
 
 	ui := int64(1)
@@ -2868,7 +3018,8 @@ func TestIOS14EndToEnd(t *testing.T) {
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
-		openrtb_ext.BuildBidderMap())
+		openrtb_ext.BuildBidderMap(),
+		empty_fetcher.EmptyFetcher{})
 
 	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "app-ios140-no-ifa.json")))
 
@@ -2902,6 +3053,7 @@ func TestAuctionWarnings(t *testing.T) {
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
+		empty_fetcher.EmptyFetcher{},
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -2942,6 +3094,7 @@ func TestParseRequestParseImpInfoError(t *testing.T) {
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
+		empty_fetcher.EmptyFetcher{},
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -2973,6 +3126,7 @@ func TestAuctionFirstPartyData(t *testing.T) {
 		nil,
 		nil,
 		hardcodedResponseIPValidator{response: true},
+		empty_fetcher.EmptyFetcher{},
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -4249,6 +4403,10 @@ func (cf mockStoredReqFetcher) FetchRequests(ctx context.Context, requestIDs []s
 	return testStoredRequestData, testStoredImpData, nil
 }
 
+func (cf mockStoredReqFetcher) FetchResponses(ctx context.Context, ids []string) (data map[string]json.RawMessage, errs []error) {
+	return nil, nil
+}
+
 type mockExchange struct {
 	lastRequest *openrtb2.BidRequest
 }
@@ -4392,6 +4550,7 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 				nil,
 				nil,
 				hardcodedResponseIPValidator{response: true},
+				empty_fetcher.EmptyFetcher{},
 			}
 
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(tt.givenRequestBody))

@@ -341,7 +341,7 @@ func buildVendorList34() vendorList {
 				ID:               6,
 				Purposes:         []int{1, 2, 4},
 				LegIntPurposes:   []int{7},
-				SpecialPurposes:  []int{1},
+				SpecialFeatures:  []int{1},
 				FlexiblePurposes: []int{1, 2, 4, 7},
 			},
 			"8": {
@@ -352,7 +352,7 @@ func buildVendorList34() vendorList {
 			"10": {
 				ID:              10,
 				Purposes:        []int{2, 4, 7},
-				SpecialPurposes: []int{1},
+				SpecialFeatures: []int{1},
 			},
 			"20": {
 				ID:               20,
@@ -384,7 +384,7 @@ func allPurposesEnabledPermissions() (perms permissionsImpl) {
 				Purpose8:        config.TCF2Purpose{EnforcePurpose: config.TCF2FullEnforcement, EnforceVendors: true},
 				Purpose9:        config.TCF2Purpose{EnforcePurpose: config.TCF2FullEnforcement, EnforceVendors: true},
 				Purpose10:       config.TCF2Purpose{EnforcePurpose: config.TCF2FullEnforcement, EnforceVendors: true},
-				SpecialPurpose1: config.TCF2Purpose{Enabled: true, EnforceVendors: true},
+				SpecialFeature1: config.TCF2SpecialFeature{Enforce: true},
 			},
 		},
 	}
@@ -431,7 +431,7 @@ func TestAllowActivitiesGeoAndID(t *testing.T) {
 		}),
 	}
 
-	// COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA : full consents to purposes and vendors 2, 6, 8
+	// COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA : full consents to purposes and vendors 2, 6, 8 and special feature 1 opt-in
 	testDefs := []testDef{
 		{
 			description: "Appnexus vendor test, insufficient purposes claimed",
@@ -536,7 +536,7 @@ func TestAllowActivitiesPubRestrict(t *testing.T) {
 	}
 
 	// COwAdDhOwAdDhN4ABAENAPCgAAQAAv___wAAAFP_AAp_4AI6ACACAA - vendors 1-10 legit interest only,
-	// Pub restriction on purpose 7, consent only ... no allowPI will pass, no Special purpose 1 consent
+	// Pub restriction on purpose 7, consent only ... no allowPI will pass, no special feature 1 consent
 	testDefs := []testDef{
 		{
 			description: "Appnexus vendor test, insufficient purposes claimed",
@@ -840,7 +840,7 @@ func TestAllowActivitiesVendorException(t *testing.T) {
 	testDefs := []struct {
 		description           string
 		p2VendorExceptionMap  map[openrtb_ext.BidderName]struct{}
-		sp1VendorExceptionMap map[openrtb_ext.BidderName]struct{}
+		sf1VendorExceptionMap map[openrtb_ext.BidderName]struct{}
 		bidder                openrtb_ext.BidderName
 		consent               string
 		allowBid              bool
@@ -859,7 +859,7 @@ func TestAllowActivitiesVendorException(t *testing.T) {
 		{
 			description:           "Bid/ID allowed by vendor exception - p2 enabled with p2 vendor exception, pub restricts none",
 			p2VendorExceptionMap:  map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderAppnexus: {}},
-			sp1VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			sf1VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 			bidder:                openrtb_ext.BidderAppnexus,
 			consent:               noPurposeOrVendorConsentAndPubRestrictsNone,
 			allowBid:              true,
@@ -867,9 +867,9 @@ func TestAllowActivitiesVendorException(t *testing.T) {
 			passID:                true,
 		},
 		{
-			description:           "Geo blocked - sp1 enabled but no consent",
+			description:           "Geo blocked - sf1 enabled but no consent",
 			p2VendorExceptionMap:  map[openrtb_ext.BidderName]struct{}{},
-			sp1VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			sf1VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 			bidder:                openrtb_ext.BidderAppnexus,
 			consent:               noPurposeOrVendorConsentAndPubRestrictsNone,
 			allowBid:              false,
@@ -877,9 +877,9 @@ func TestAllowActivitiesVendorException(t *testing.T) {
 			passID:                false,
 		},
 		{
-			description:           "Geo allowed by vendor exception - sp1 enabled with sp1 vendor exception",
+			description:           "Geo allowed by vendor exception - sf1 enabled with sf1 vendor exception",
 			p2VendorExceptionMap:  map[openrtb_ext.BidderName]struct{}{},
-			sp1VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderAppnexus: {}},
+			sf1VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderAppnexus: {}},
 			bidder:                openrtb_ext.BidderAppnexus,
 			consent:               noPurposeOrVendorConsentAndPubRestrictsNone,
 			allowBid:              false,
@@ -896,7 +896,7 @@ func TestAllowActivitiesVendorException(t *testing.T) {
 				TCF2: config.TCF2{
 					Enabled:         true,
 					Purpose2:        config.TCF2Purpose{EnforcePurpose: config.TCF2FullEnforcement, VendorExceptionMap: td.p2VendorExceptionMap},
-					SpecialPurpose1: config.TCF2Purpose{Enabled: true, VendorExceptionMap: td.sp1VendorExceptionMap},
+					SpecialFeature1: config.TCF2SpecialFeature{Enforce: true, VendorExceptionMap: td.sf1VendorExceptionMap},
 				},
 			},
 			vendorIDs: map[openrtb_ext.BidderName]uint16{
