@@ -493,10 +493,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 		}
 	}
 
-	var (
-		aliases     map[string]string
-		aliasgvlids map[string]uint16
-	)
+	var aliases map[string]string
 
 	reqExt, err := req.GetRequestExt()
 	if err != nil {
@@ -507,13 +504,12 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 		return []error{err}
 	} else if reqPrebid != nil {
 		aliases = reqPrebid.Aliases
-		aliasgvlids = reqPrebid.AliasGVLIDs
 
 		if err := deps.validateAliases(aliases); err != nil {
 			return []error{err}
 		}
 
-		if err := deps.validateAliasesGVLIds(aliasgvlids, aliases); err != nil {
+		if err := deps.validateAliasesGVLIds(reqPrebid.AliasGVLIDs, aliases); err != nil {
 			return []error{err}
 		}
 
