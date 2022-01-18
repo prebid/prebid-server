@@ -942,7 +942,10 @@ func TestOpenRTBRequestWithVideoImpAndEnabledRewardedInventoryFlag(t *testing.T)
 				"is_rewarded_inventory": 1
 			},
 			"bidder": {
-				"video": {"size_id": 1}
+				"video": {"size_id": 1},
+				"zoneId": "123",
+				"siteId": 1234,
+				"accountId": "444"
 			}}`),
 		}},
 		App: &openrtb2.App{
