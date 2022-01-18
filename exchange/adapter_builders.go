@@ -125,6 +125,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/unicorn"
 	"github.com/prebid/prebid-server/adapters/unruly"
 	"github.com/prebid/prebid-server/adapters/videobyte"
+	"github.com/prebid/prebid-server/adapters/vidoomy"
 	"github.com/prebid/prebid-server/adapters/visx"
 	"github.com/prebid/prebid-server/adapters/vrtcal"
 	"github.com/prebid/prebid-server/adapters/yahoossp"
@@ -272,6 +273,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderValueImpression:   apacdex.Builder,
 		openrtb_ext.BidderVerizonMedia:      yahoossp.Builder,
 		openrtb_ext.BidderVideoByte:         videobyte.Builder,
+		openrtb_ext.BidderVidoomy:           vidoomy.Builder,
 		openrtb_ext.BidderViewdeos:          adtelligent.Builder,
 		openrtb_ext.BidderVisx:              visx.Builder,
 		openrtb_ext.BidderVrtcal:            vrtcal.Builder,

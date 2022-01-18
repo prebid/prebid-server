@@ -943,6 +943,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.valueimpression.endpoint", "http://useast.quantumdex.io/auction/pbs")
 	v.SetDefault("adapters.verizonmedia.disabled", true)
 	v.SetDefault("adapters.videobyte.endpoint", "https://x.videobyte.com/ortbhb")
+	v.SetDefault("adapters.vidoomy.endpoint", "https://p.vidoomy.com/api/rtbserver/pbs")
 	v.SetDefault("adapters.viewdeos.endpoint", "http://ghb.sync.viewdeos.com/pbs/ortb")
 	v.SetDefault("adapters.visx.endpoint", "https://t.visx.net/s2s_bid?wrapperType=s2s_prebid_standard:0.1.0")
 	v.SetDefault("adapters.vrtcal.endpoint", "http://rtb.vrtcal.com/bidder_prebid.vap?ssp=1804")
