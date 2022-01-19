@@ -1,22 +1,22 @@
-package main
+package prebidServer
 
 import (
-	"flag"
-	"math/rand"
 	"net/http"
-	"runtime"
 	"time"
+
+	"github.com/prebid/prebid-server/usersync"
 
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/router"
-	"github.com/prebid/prebid-server/server"
 	"github.com/prebid/prebid-server/util/task"
 
-	"github.com/golang/glog"
 	"github.com/spf13/viper"
 )
 
+const schemaDirectory = "/home/http/GO_SERVER/dmhbserver/static/"
+
+/*
 func init() {
 	rand.Seed(time.Now().UnixNano())
 }
@@ -42,12 +42,15 @@ func main() {
 		glog.Exitf("prebid-server failed: %v", err)
 	}
 }
+*/
 
 const configFileName = "pbs"
 
-func loadConfig() (*config.Configuration, error) {
+func loadConfig(configFileName string) (*config.Configuration, error) {
 	v := viper.New()
 	config.SetupViper(v, configFileName)
+	v.SetConfigFile(configFileName)
+	v.ReadInConfig()
 	return config.New(v)
 }
 
@@ -59,14 +62,46 @@ func serve(cfg *config.Configuration) error {
 	currencyConverterTickerTask := task.NewTickerTask(fetchingInterval, currencyConverter)
 	currencyConverterTickerTask.Start()
 
-	r, err := router.New(cfg, currencyConverter)
+	_, err := router.New(cfg, currencyConverter)
 	if err != nil {
 		return err
 	}
 
-	corsRouter := router.SupportCORS(r)
-	server.Listen(cfg, router.NoCache{Handler: corsRouter}, router.Admin(currencyConverter, fetchingInterval), r.MetricsEngine)
+	// corsRouter := router.SupportCORS(r)
+	// server.Listen(cfg, router.NoCache{Handler: corsRouter}, router.Admin(currencyConverter, fetchingInterval), r.MetricsEngine)
 
-	r.Shutdown()
+	//r.Shutdown()
+
+	// pbc.InitPrebidCache(cfg.CacheURL.GetBaseURL())
+	// pbc.InitPrebidCacheURL(cfg.ExternalURL)
+
 	return nil
+}
+
+func OrtbAuction(w http.ResponseWriter, r *http.Request) error {
+	return router.OrtbAuctionEndpointWrapper(w, r)
+}
+
+var VideoAuction = func(w http.ResponseWriter, r *http.Request) error {
+	return router.VideoAuctionEndpointWrapper(w, r)
+}
+
+func Auction(w http.ResponseWriter, r *http.Request) {
+	// router.AuctionWrapper(w, r)
+}
+
+func GetUIDS(w http.ResponseWriter, r *http.Request) {
+	router.GetUIDSWrapper(w, r)
+}
+
+func SetUIDS(w http.ResponseWriter, r *http.Request) {
+	router.SetUIDSWrapper(w, r)
+}
+
+func CookieSync(w http.ResponseWriter, r *http.Request) {
+	router.CookieSync(w, r)
+}
+
+func SyncerMap() map[string]usersync.Syncer {
+	return router.SyncerMap()
 }

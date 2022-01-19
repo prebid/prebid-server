@@ -16,6 +16,8 @@ type ExtImpPrebid struct {
 	Bidder map[string]json.RawMessage `json:"bidder"`
 
 	Options *Options `json:"options,omitempty"`
+
+	SKAdnetwork json.RawMessage `json:"skadn,omitempty"`
 }
 
 // ExtStoredRequest defines the contract for bidrequest.imp[i].ext.prebid.storedrequest

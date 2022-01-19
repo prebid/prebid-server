@@ -12,6 +12,8 @@ import (
 	"github.com/xeipuuv/gojsonschema"
 )
 
+const schemaDirectory = "static/bidder-params"
+
 // BidderName refers to a core bidder id or an alias id.
 type BidderName string
 
@@ -194,6 +196,7 @@ const (
 	BidderSomoaudience      BidderName = "somoaudience"
 	BidderSonobi            BidderName = "sonobi"
 	BidderSovrn             BidderName = "sovrn"
+	BidderSpotX             BidderName = "spotx"
 	BidderStreamkey         BidderName = "streamkey"
 	BidderSynacormedia      BidderName = "synacormedia"
 	BidderTappx             BidderName = "tappx"
@@ -205,6 +208,7 @@ const (
 	BidderUnicorn           BidderName = "unicorn"
 	BidderUnruly            BidderName = "unruly"
 	BidderValueImpression   BidderName = "valueimpression"
+	BidderVASTBidder        BidderName = "vastbidder"
 	BidderVerizonMedia      BidderName = "verizonmedia"
 	BidderVideoByte         BidderName = "videobyte"
 	BidderVisx              BidderName = "visx"
@@ -340,6 +344,7 @@ func CoreBidderNames() []BidderName {
 		BidderSomoaudience,
 		BidderSonobi,
 		BidderSovrn,
+		BidderSpotX,
 		BidderStreamkey,
 		BidderSynacormedia,
 		BidderTappx,
@@ -351,6 +356,7 @@ func CoreBidderNames() []BidderName {
 		BidderUnicorn,
 		BidderUnruly,
 		BidderValueImpression,
+		BidderVASTBidder,
 		BidderVerizonMedia,
 		BidderVideoByte,
 		BidderViewdeos,

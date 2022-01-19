@@ -67,8 +67,8 @@ func (me *MetricsEngineMock) RecordDNSTime(dnsLookupTime time.Duration) {
 	me.Called(dnsLookupTime)
 }
 
-func (me *MetricsEngineMock) RecordTLSHandshakeTime(tlsHandshakeTime time.Duration) {
-	me.Called(tlsHandshakeTime)
+func (me *MetricsEngineMock) RecordTLSHandshakeTime(adapterName openrtb_ext.BidderName, tlsHandshakeTime time.Duration) {
+	me.Called(adapterName, tlsHandshakeTime)
 }
 
 // RecordAdapterBidReceived mock
@@ -144,4 +144,34 @@ func (me *MetricsEngineMock) RecordRequestPrivacy(privacy PrivacyLabels) {
 // RecordAdapterGDPRRequestBlocked mock
 func (me *MetricsEngineMock) RecordAdapterGDPRRequestBlocked(adapterName openrtb_ext.BidderName) {
 	me.Called(adapterName)
+}
+
+// RecordAdapterDuplicateBidID across all engines
+func (me *MetricsEngineMock) RecordAdapterDuplicateBidID(adaptor string, collisions int) {
+	me.Called(adaptor, collisions)
+}
+
+// RecordRequestHavingDuplicateBidID across all engines
+func (me *MetricsEngineMock) RecordRequestHavingDuplicateBidID() {
+	me.Called()
+}
+
+// RecordPodImpGenTime across all engines
+func (me *MetricsEngineMock) RecordPodImpGenTime(labels PodLabels, startTime time.Time) {
+	me.Called(labels, startTime)
+}
+
+// RecordPodCombGenTime as a noop
+func (me *MetricsEngineMock) RecordPodCombGenTime(labels PodLabels, elapsedTime time.Duration) {
+	me.Called(labels, elapsedTime)
+}
+
+// RecordPodCompititveExclusionTime as a noop
+func (me *MetricsEngineMock) RecordPodCompititveExclusionTime(labels PodLabels, elapsedTime time.Duration) {
+	me.Called(labels, elapsedTime)
+}
+
+// RecordAdapterVideoBidDuration as a noop
+func (me *MetricsEngineMock) RecordAdapterVideoBidDuration(labels AdapterLabels, videoBidDuration int) {
+	me.Called(labels, videoBidDuration)
 }

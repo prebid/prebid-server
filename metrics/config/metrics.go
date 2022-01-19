@@ -140,9 +140,9 @@ func (me *MultiMetricsEngine) RecordDNSTime(dnsLookupTime time.Duration) {
 	}
 }
 
-func (me *MultiMetricsEngine) RecordTLSHandshakeTime(tlsHandshakeTime time.Duration) {
+func (me *MultiMetricsEngine) RecordTLSHandshakeTime(adapterName openrtb_ext.BidderName, tlsHandshakeTime time.Duration) {
 	for _, thisME := range *me {
-		thisME.RecordTLSHandshakeTime(tlsHandshakeTime)
+		thisME.RecordTLSHandshakeTime(adapterName, tlsHandshakeTime)
 	}
 }
 
@@ -300,7 +300,7 @@ func (me *NilMetricsEngine) RecordDNSTime(dnsLookupTime time.Duration) {
 }
 
 // RecordTLSHandshakeTime as a noop
-func (me *NilMetricsEngine) RecordTLSHandshakeTime(tlsHandshakeTime time.Duration) {
+func (me *NilMetricsEngine) RecordTLSHandshakeTime(adapterName openrtb_ext.BidderName, tlsHandshakeTime time.Duration) {
 }
 
 // RecordAdapterBidReceived as a noop
@@ -361,4 +361,195 @@ func (me *NilMetricsEngine) RecordRequestPrivacy(privacy metrics.PrivacyLabels) 
 
 // RecordAdapterGDPRRequestBlocked as a noop
 func (me *NilMetricsEngine) RecordAdapterGDPRRequestBlocked(adapter openrtb_ext.BidderName) {
+}
+
+// RecordAdapterDuplicateBidID across all engines
+func (me *NilMetricsEngine) RecordAdapterDuplicateBidID(adaptor string, collisions int) {
+}
+
+// RecordRequestHavingDuplicateBidID across all engines
+func (me *NilMetricsEngine) RecordRequestHavingDuplicateBidID() {
+}
+
+// RecordPodImpGenTime across all engines
+func (me *NilMetricsEngine) RecordPodImpGenTime(labels metrics.PodLabels, startTime time.Time) {
+}
+
+// RecordPodCombGenTime as a noop
+func (me *NilMetricsEngine) RecordPodCombGenTime(labels metrics.PodLabels, elapsedTime time.Duration) {
+}
+
+// RecordPodCompititveExclusionTime as a noop
+func (me *NilMetricsEngine) RecordPodCompititveExclusionTime(labels metrics.PodLabels, elapsedTime time.Duration) {
+}
+
+// RecordAdapterVideoBidDuration as a noop
+func (me *NilMetricsEngine) RecordAdapterVideoBidDuration(labels metrics.AdapterLabels, videoBidDuration int) {
+}
+
+// RecordAdapterDuplicateBidID across all engines
+func (me *MultiMetricsEngine) RecordAdapterDuplicateBidID(adaptor string, collisions int) {
+	for _, thisME := range *me {
+		thisME.RecordAdapterDuplicateBidID(adaptor, collisions)
+	}
+}
+
+// RecordRequestHavingDuplicateBidID across all engines
+func (me *MultiMetricsEngine) RecordRequestHavingDuplicateBidID() {
+	for _, thisME := range *me {
+		thisME.RecordRequestHavingDuplicateBidID()
+	}
+}
+
+// RecordPodImpGenTime across all engines
+func (me *MultiMetricsEngine) RecordPodImpGenTime(labels metrics.PodLabels, startTime time.Time) {
+	for _, thisME := range *me {
+		thisME.RecordPodImpGenTime(labels, startTime)
+	}
+}
+
+// RecordPodCombGenTime as a noop
+func (me *MultiMetricsEngine) RecordPodCombGenTime(labels metrics.PodLabels, elapsedTime time.Duration) {
+	for _, thisME := range *me {
+		thisME.RecordPodCombGenTime(labels, elapsedTime)
+	}
+}
+
+// RecordPodCompititveExclusionTime as a noop
+func (me *MultiMetricsEngine) RecordPodCompititveExclusionTime(labels metrics.PodLabels, elapsedTime time.Duration) {
+	for _, thisME := range *me {
+		thisME.RecordPodCompititveExclusionTime(labels, elapsedTime)
+	}
+}
+
+// RecordAdapterVideoBidDuration as a noop
+func (me *MultiMetricsEngine) RecordAdapterVideoBidDuration(labels metrics.AdapterLabels, videoBidDuration int) {
+	for _, thisME := range *me {
+		thisME.RecordAdapterVideoBidDuration(labels, videoBidDuration)
+	}
+}
+
+// DummyMetricsEngine is a Noop metrics engine in case no metrics are configured. (may also be useful for tests)
+type DummyMetricsEngine struct{}
+
+func (me *DummyMetricsEngine) RecordAdapterDuplicateBidID(adaptor string, collisions int) {
+}
+
+func (me *DummyMetricsEngine) RecordRequestHavingDuplicateBidID() {
+}
+
+func (me *DummyMetricsEngine) RecordPodImpGenTime(labels metrics.PodLabels, startTime time.Time) {
+}
+
+func (me *DummyMetricsEngine) RecordPodCombGenTime(labels metrics.PodLabels, elapsedTime time.Duration) {
+}
+
+func (me *DummyMetricsEngine) RecordPodCompititveExclusionTime(labels metrics.PodLabels, elapsedTime time.Duration) {
+}
+
+func (me *DummyMetricsEngine) RecordAdapterVideoBidDuration(labels metrics.AdapterLabels, videoBidDuration int) {
+}
+
+// RecordRequest as a noop
+func (me *DummyMetricsEngine) RecordRequest(labels metrics.Labels) {
+}
+
+// RecordConnectionAccept as a noop
+func (me *DummyMetricsEngine) RecordConnectionAccept(success bool) {
+}
+
+// RecordConnectionClose as a noop
+func (me *DummyMetricsEngine) RecordConnectionClose(success bool) {
+}
+
+// RecordImps as a noop
+func (me *DummyMetricsEngine) RecordImps(implabels metrics.ImpLabels) {
+}
+
+// RecordLegacyImps as a noop
+func (me *DummyMetricsEngine) RecordLegacyImps(labels metrics.Labels, numImps int) {
+}
+
+// RecordRequestTime as a noop
+func (me *DummyMetricsEngine) RecordRequestTime(labels metrics.Labels, length time.Duration) {
+}
+
+// RecordStoredDataFetchTime as a noop
+func (me *DummyMetricsEngine) RecordStoredDataFetchTime(labels metrics.StoredDataLabels, length time.Duration) {
+}
+
+// RecordStoredDataError as a noop
+func (me *DummyMetricsEngine) RecordStoredDataError(labels metrics.StoredDataLabels) {
+}
+
+// RecordAdapterPanic as a noop
+func (me *DummyMetricsEngine) RecordAdapterPanic(labels metrics.AdapterLabels) {
+}
+
+// RecordAdapterRequest as a noop
+func (me *DummyMetricsEngine) RecordAdapterRequest(labels metrics.AdapterLabels) {
+}
+
+// RecordAdapterConnections as a noop
+func (me *DummyMetricsEngine) RecordAdapterConnections(bidderName openrtb_ext.BidderName, connWasReused bool, connWaitTime time.Duration) {
+}
+
+// RecordDNSTime as a noop
+func (me *DummyMetricsEngine) RecordDNSTime(dnsLookupTime time.Duration) {
+}
+
+// RecordTLSHandshakeTime as a noop
+func (me *DummyMetricsEngine) RecordTLSHandshakeTime(adapterName openrtb_ext.BidderName, tlsHandshakeTime time.Duration) {
+}
+
+// RecordAdapterBidReceived as a noop
+func (me *DummyMetricsEngine) RecordAdapterBidReceived(labels metrics.AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
+}
+
+// RecordAdapterPrice as a noop
+func (me *DummyMetricsEngine) RecordAdapterPrice(labels metrics.AdapterLabels, cpm float64) {
+}
+
+// RecordAdapterTime as a noop
+func (me *DummyMetricsEngine) RecordAdapterTime(labels metrics.AdapterLabels, length time.Duration) {
+}
+
+// RecordCookieSync as a noop
+func (me *DummyMetricsEngine) RecordCookieSync() {
+}
+
+// RecordAdapterCookieSync as a noop
+func (me *DummyMetricsEngine) RecordAdapterCookieSync(adapter openrtb_ext.BidderName, gdprBlocked bool) {
+}
+
+// RecordStoredReqCacheResult as a noop
+func (me *DummyMetricsEngine) RecordStoredReqCacheResult(cacheResult metrics.CacheResult, inc int) {
+}
+
+// RecordStoredImpCacheResult as a noop
+func (me *DummyMetricsEngine) RecordStoredImpCacheResult(cacheResult metrics.CacheResult, inc int) {
+}
+
+// RecordAccountCacheResult as a noop
+func (me *DummyMetricsEngine) RecordAccountCacheResult(cacheResult metrics.CacheResult, inc int) {
+}
+
+// RecordPrebidCacheRequestTime as a noop
+func (me *DummyMetricsEngine) RecordPrebidCacheRequestTime(success bool, length time.Duration) {
+}
+
+// RecordRequestQueueTime as a noop
+func (me *DummyMetricsEngine) RecordRequestQueueTime(success bool, requestType metrics.RequestType, length time.Duration) {
+}
+
+// RecordTimeoutNotice as a noop
+func (me *DummyMetricsEngine) RecordTimeoutNotice(success bool) {
+}
+
+// RecordRequestPrivacy as a noop
+func (me *DummyMetricsEngine) RecordRequestPrivacy(privacy metrics.PrivacyLabels) {
+}
+
+// RecordAdapterGDPRRequestBlocked as a noop
+func (me *DummyMetricsEngine) RecordAdapterGDPRRequestBlocked(adapter openrtb_ext.BidderName) {
 }

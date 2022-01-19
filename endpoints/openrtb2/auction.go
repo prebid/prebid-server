@@ -1150,6 +1150,7 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb2.Imp, aliases map[string]s
 	/* Process all the bidder exts in the request */
 	disabledBidders := []string{}
 	otherExtElements := 0
+	validationFailedBidders := []string{}
 	for bidder, ext := range bidderExts {
 		if isBidderToValidate(bidder) {
 			coreBidder := bidder
@@ -1158,7 +1159,10 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb2.Imp, aliases map[string]s
 			}
 			if bidderName, isValid := deps.bidderMap[coreBidder]; isValid {
 				if err := deps.paramsValidator.Validate(bidderName, ext); err != nil {
-					return []error{fmt.Errorf("request.imp[%d].ext.%s failed validation.\n%v", impIndex, coreBidder, err)}
+					validationFailedBidders = append(validationFailedBidders, bidder)
+					msg := fmt.Sprintf("request.imp[%d].ext.%s failed validation.\n%v", impIndex, coreBidder, err)
+					glog.Errorf("BidderSchemaValidationError: %s", msg)
+					errL = append(errL, &errortypes.BidderFailedSchemaValidation{Message: msg})
 				}
 			} else {
 				if msg, isDisabled := deps.disabledBidders[bidder]; isDisabled {
@@ -1178,6 +1182,16 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb2.Imp, aliases map[string]s
 		for _, bidder := range disabledBidders {
 			delete(bidderExts, bidder)
 		}
+	}
+
+	// delete bidders with invalid params
+	if len(validationFailedBidders) > 0 {
+		for _, bidder := range validationFailedBidders {
+			delete(bidderExts, bidder)
+		}
+	}
+
+	if len(disabledBidders) > 0 || len(validationFailedBidders) > 0 {
 		extJSON, err := json.Marshal(bidderExts)
 		if err != nil {
 			return []error{err}

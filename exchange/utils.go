@@ -210,6 +210,29 @@ func extractLMT(orig *openrtb2.BidRequest, privacyConfig config.Privacy) privacy
 	}
 }
 
+func getBidderExts(reqExt *openrtb_ext.ExtRequest) (map[string]map[string]interface{}, error) {
+	if reqExt == nil {
+		return nil, nil
+	}
+
+	if reqExt.Prebid.BidderParams == nil {
+		return nil, nil
+	}
+
+	pbytes, err := json.Marshal(reqExt.Prebid.BidderParams)
+	if err != nil {
+		return nil, err
+	}
+
+	var bidderParams map[string]map[string]interface{}
+	err = json.Unmarshal(pbytes, &bidderParams)
+	if err != nil {
+		return nil, err
+	}
+
+	return bidderParams, nil
+}
+
 func getAuctionBidderRequests(req AuctionRequest,
 	requestExt *openrtb_ext.ExtRequest,
 	bidderToSyncerKey map[string]string,
