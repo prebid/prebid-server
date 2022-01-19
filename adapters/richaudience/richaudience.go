@@ -26,11 +26,82 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	var requestDataRequest []*adapters.RequestData
+
+	errs := make([]error, 0, len(request.Imp))
+
+	raiHeaders := http.Header{}
+	setHeaders(&raiHeaders)
+
 	isUrlSecure := getIsUrlSecure(request)
 
-	requestDataRequest, err := setImp(request, isUrlSecure, a)
-	if err != nil {
-		return nil, []error{err}
+	for _, imp := range request.Imp {
+		var secure = int8(0)
+		raiExt, err := parseImpExt(&imp)
+		if err != nil {
+			errs = append(errs, &errortypes.BadInput{
+				Message: err.Error(),
+			})
+			return nil, errs
+		}
+
+		if raiExt != nil {
+			if raiExt.Pid != "" {
+				imp.TagID = raiExt.Pid
+			}
+
+			if raiExt.Test {
+				request.Device.IP = "11.222.33.44"
+				request.Test = int8(1)
+			}
+
+			if raiExt.BidFloorCur != "" {
+				imp.BidFloorCur = raiExt.BidFloorCur
+			} else if imp.BidFloorCur == "" {
+				imp.BidFloorCur = "USD"
+			}
+		}
+		if isUrlSecure {
+			secure = int8(1)
+		}
+
+		imp.Secure = &secure
+
+		if imp.Banner != nil {
+			if imp.Banner.W == nil && imp.Banner.H == nil {
+				if len(imp.Banner.Format) == 0 {
+					errs = append(errs, &errortypes.BadInput{
+						Message: "request.Banner.Format is required",
+					})
+					return nil, errs
+				}
+			}
+		}
+
+		request.Imp = []openrtb2.Imp{imp}
+
+		if err = validateDevice(request); err != nil {
+			errs = append(errs, &errortypes.BadInput{
+				Message: err.Error(),
+			})
+			return nil, errs
+		}
+
+		req, err := json.Marshal(request)
+		if err != nil {
+			errs = append(errs, &errortypes.BadInput{
+				Message: err.Error(),
+			})
+			return nil, errs
+		}
+
+		requestDataRequest = append(requestDataRequest, &adapters.RequestData{
+			Method:  "POST",
+			Uri:     a.endpoint,
+			Body:    req,
+			Headers: raiHeaders,
+		})
+
 	}
 
 	return requestDataRequest, nil
@@ -87,72 +158,6 @@ func setHeaders(raiHeaders *http.Header) {
 	raiHeaders.Set("Content-Type", "application/json;charset=utf-8")
 	raiHeaders.Set("Accept", "application/json")
 	raiHeaders.Add("X-Openrtb-Version", "2.5")
-}
-
-func setImp(request *openrtb2.BidRequest, isUrlSecure bool, a *adapter) (requestDataRequest []*adapters.RequestData, err error) {
-	raiHeaders := http.Header{}
-
-	setHeaders(&raiHeaders)
-
-	for _, imp := range request.Imp {
-		var secure = int8(0)
-		raiExt, errImp := parseImpExt(&imp)
-		if errImp != nil {
-			return nil, errImp
-		}
-
-		if raiExt != nil {
-			if raiExt.Pid != "" {
-				imp.TagID = raiExt.Pid
-			}
-
-			if raiExt.Test {
-				request.Test = int8(1)
-			}
-
-			if raiExt.BidFloorCur != "" {
-				imp.BidFloorCur = raiExt.BidFloorCur
-			} else if imp.BidFloorCur == "" {
-				imp.BidFloorCur = "USD"
-			}
-		}
-		if isUrlSecure {
-			secure = int8(1)
-		}
-
-		imp.Secure = &secure
-
-		if imp.Banner != nil {
-			if imp.Banner.W == nil && imp.Banner.H == nil {
-				if len(imp.Banner.Format) == 0 {
-					err = &errortypes.BadInput{
-						Message: "request.Banner.Format is required",
-					}
-					return nil, err
-				}
-			}
-		}
-
-		request.Imp = []openrtb2.Imp{imp}
-
-		if err = validateDevice(request); err != nil {
-			return nil, err
-		}
-
-		req, err := json.Marshal(request)
-		if err != nil {
-			return nil, err
-		}
-
-		requestDataRequest = append(requestDataRequest, &adapters.RequestData{
-			Method:  "POST",
-			Uri:     a.endpoint,
-			Body:    req,
-			Headers: raiHeaders,
-		})
-
-	}
-	return requestDataRequest, nil
 }
 
 func getIsUrlSecure(request *openrtb2.BidRequest) (isUrlSecure bool) {

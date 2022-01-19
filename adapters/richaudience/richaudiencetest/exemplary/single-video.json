@@ -5,12 +5,12 @@
       "imp": [
         {
           "id": "div-gpt-ad-1460505748561-0",
-          "banner": {
-              "format" : [{
-                    "w": 300,
-                    "h": 250
-                  }]
-          },
+          "video": {
+              "mimes": ["video/mp4"],
+                "w": 640,
+                "h": 480,
+                "placement": 1
+            },
           "bidfloor": 1e-05,
           "bidfloorcur": "USD",
           "ext": {
@@ -28,7 +28,6 @@
       },
       "device": {
         "ip": "11.222.33.44",
-        "ipv6": "2607:fb90:f27:4512:d800:cb23:a603:e245",
         "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36"
     },
       "user": {
@@ -54,12 +53,12 @@
                 "id": "div-gpt-ad-1460505748561-0",
                 "tagid" : "OsNsyeF68q",
                 "secure": 1,
-                "banner": {
-                    "format" : [{
-                          "w": 300,
-                          "h": 250
-                        }]
-                },
+                "video": {
+                    "mimes": ["video/mp4"],
+                      "w": 640,
+                      "h": 480,
+                      "placement": 1
+                  },
                 "bidfloor": 1e-05,
                 "bidfloorcur": "USD",
                 "ext": {
@@ -77,7 +76,6 @@
             },
             "device": {
                 "ip": "11.222.33.44",
-                "ipv6": "2607:fb90:f27:4512:d800:cb23:a603:e245",
                 "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36"
             },
             "user": {
@@ -98,7 +96,7 @@
                     "impid": "div-gpt-ad-1460505748561-0",
                     "price": 99,
                     "crid": "999999",
-                    "adm": "<!-- creative -->",
+                    "adm": "<!-- VAST video -->",
                     "adomain": ["richaudience.com"],
                     "h": 250,
                     "w": 300
@@ -118,13 +116,13 @@
               "id": "47286888",
               "impid": "div-gpt-ad-1460505748561-0",
               "price": 99,
-              "adm": "<!-- creative -->",
+              "adm": "<!-- VAST video -->",
               "adomain": ["richaudience.com"],
               "crid": "999999",
               "w": 300,
               "h": 250
             },
-            "type": "banner"
+            "type": "video"
           }
         ]
       }

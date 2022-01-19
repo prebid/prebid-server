@@ -6,8 +6,11 @@
         {
           "id": "div-gpt-ad-1460505748561-0",
           "banner": {
-              "format" : []
-          },
+            "format" : [{
+                  "w": 300,
+                  "h": 250
+                }]
+        },
           "bidfloor": 1e-05,
           "bidfloorcur": "USD",
           "ext": {
@@ -33,7 +36,7 @@
     },
     
     "expectedMakeRequestsErrors": [{
-        "value": "request.Banner.Format is required",
+        "value": "request.Device.IP is required",
         "comparison": "literal"
       }]
   }
