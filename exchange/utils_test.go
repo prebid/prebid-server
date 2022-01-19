@@ -2922,12 +2922,22 @@ func Test_parseAliasesGVLIDs(t *testing.T) {
 			nil,
 			true,
 		},
+		{
+			"Missing AliasGVLID",
+			args{
+				orig: &openrtb2.BidRequest{
+					Ext: json.RawMessage(`{"prebid":{"aliases":{"brightroll":"appnexus"}}`),
+				},
+			},
+			nil,
+			false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1 := parseAliasesGVLIDs(tt.args.orig)
+			got, err := parseAliasesGVLIDs(tt.args.orig)
 			assert.Equal(t, tt.want, got, "parseAliasesGVLIDs() got = %v, want %v", got, tt.want)
-			if (got1 != nil) != tt.wantError {
+			if !tt.wantError && err != nil {
 				t.Errorf("parseAliasesGVLIDs() expected error got nil")
 			}
 		})
