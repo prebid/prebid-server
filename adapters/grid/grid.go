@@ -19,16 +19,19 @@ type GridAdapter struct {
 	endpoint string
 }
 
-type GridBidType struct {
+type GridBid struct {
+	*openrtb2.Bid
 	ContentType openrtb_ext.BidType `json:"content_type"`
 }
 
-type GridSeatBidType struct {
-	Bid []GridBidType `json:"bid"`
+type GridSeatBid struct {
+	*openrtb2.SeatBid
+	Bid []GridBid `json:"bid"`
 }
 
-type GridResponseType struct {
-	SeatBid []GridSeatBidType `json:"seatbid,omitempty"`
+type GridResponse struct {
+	*openrtb2.BidResponse
+	SeatBid []GridSeatBid `json:"seatbid,omitempty"`
 }
 
 type GridBidExt struct {
@@ -341,27 +344,25 @@ func (a *GridAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReq
 		}}
 	}
 
-	var bidResp openrtb2.BidResponse
+	var bidResp GridResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
-		return nil, []error{err}
-	}
-	var bidRespWithType GridResponseType
-	if err := json.Unmarshal(response.Body, &bidRespWithType); err != nil {
 		return nil, []error{err}
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
 
-	for i, sb := range bidResp.SeatBid {
-		for j := range sb.Bid {
-			bidMeta, err := getBidMeta(sb.Bid[j].Ext)
-			bidType, err := getMediaTypeForImp(sb.Bid[j].ImpID, internalRequest.Imp, bidRespWithType.SeatBid[i].Bid[j])
+	for _, sb := range bidResp.SeatBid {
+		for i := range sb.Bid {
+			bidMeta, err := getBidMeta(sb.Bid[i].Ext)
+			bidType, err := getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp, sb.Bid[i])
 			if err != nil {
 				return nil, []error{err}
 			}
 
+			openrtb2Bid := sb.Bid[i].Bid
+
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     &sb.Bid[j],
+				Bid:     openrtb2Bid,
 				BidType: bidType,
 				BidMeta: bidMeta,
 			})
@@ -394,7 +395,7 @@ func getBidMeta(ext json.RawMessage) (*openrtb_ext.ExtBidPrebidMeta, error) {
 	return bidMeta, nil
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb2.Imp, bidWithType GridBidType) (openrtb_ext.BidType, error) {
+func getMediaTypeForImp(impID string, imps []openrtb2.Imp, bidWithType GridBid) (openrtb_ext.BidType, error) {
 	if bidWithType.ContentType != "" {
 		return bidWithType.ContentType, nil
 	} else {
