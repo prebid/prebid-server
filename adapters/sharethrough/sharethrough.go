@@ -1,62 +1,95 @@
 package sharethrough
 
 import (
+	"encoding/json"
 	"fmt"
-	"net/http"
-	"regexp"
-
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"net/http"
+	"strings"
 )
 
-const supplyId = "FGMrCMMc"
-const strVersion = 8
+const strVersion = 10
 
-// Builder builds a new instance of the Sharethrough adapter for the given bidder with the given config.
+type SharethroughAdapter struct {
+	endpoint string
+}
+
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	bidder := &SharethroughAdapter{
-		AdServer: StrOpenRTBTranslator{
-			UriHelper: StrUriHelper{BaseURI: config.Endpoint, Clock: Clock{}},
-			Util:      Util{Clock: Clock{}},
-			UserAgentParsers: UserAgentParsers{
-				ChromeVersion:    regexp.MustCompile(`Chrome\/(?P<ChromeVersion>\d+)`),
-				ChromeiOSVersion: regexp.MustCompile(`CriOS\/(?P<chromeiOSVersion>\d+)`),
-				SafariVersion:    regexp.MustCompile(`Version\/(?P<safariVersion>\d+)`),
-			},
-		},
+		endpoint: config.Endpoint,
 	}
 	return bidder, nil
 }
 
-type SharethroughAdapter struct {
-	AdServer StrOpenRTBInterface
-}
-
 func (a SharethroughAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var reqs []*adapters.RequestData
+	var requests []*adapters.RequestData
+	var errors []error
 
-	if request.Site == nil {
-		return nil, []error{fmt.Errorf("request must include a site; in-app placements are not supported")}
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
+
+	var sourceExt map[string]interface{}
+	if err := json.Unmarshal(request.Source.Ext, &sourceExt); err == nil {
+		sourceExt["str"] = strVersion
+	} else {
+		sourceExt = map[string]interface{}{"str": strVersion}
 	}
-	var domain = Util{}.parseDomain(request.Site.Page)
+	request.Source.Ext, _ = json.Marshal(sourceExt)
 
-	for i := 0; i < len(request.Imp); i++ {
-		req, err := a.AdServer.requestFromOpenRTB(request.Imp[i], request, domain)
-
-		if err != nil {
-			return nil, []error{err}
+	requestCopy := *request
+	for _, imp := range request.Imp {
+		// Extract Sharethrough Params
+		var strImpExt adapters.ExtImpBidder
+		if err := json.Unmarshal(imp.Ext, &strImpExt); err != nil {
+			errors = append(errors, err)
+			continue
 		}
-		reqs = append(reqs, req)
+		var strImpParams openrtb_ext.ExtImpSharethrough
+		if err := json.Unmarshal(strImpExt.Bidder, &strImpParams); err != nil {
+			errors = append(errors, err)
+			continue
+		}
+
+		// Convert Floor into USD
+		if imp.BidFloor > 0 && imp.BidFloorCur != "" && strings.ToUpper(imp.BidFloorCur) != "USD" {
+			convertedValue, err := reqInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, "USD")
+			if err != nil {
+				return nil, []error{err}
+			}
+			imp.BidFloorCur = "USD"
+			imp.BidFloor = convertedValue
+		}
+
+		imp.TagID = strImpParams.Pkey
+		requestCopy.BCat = strImpParams.BCat
+		requestCopy.BAdv = strImpParams.BAdv
+
+		requestCopy.Imp = []openrtb2.Imp{imp}
+
+		requestJSON, err := json.Marshal(requestCopy)
+		if err != nil {
+			errors = append(errors, err)
+			continue
+		}
+
+		requestData := &adapters.RequestData{
+			Method:  "POST",
+			Uri:     a.endpoint,
+			Body:    requestJSON,
+			Headers: headers,
+		}
+		requests = append(requests, requestData)
 	}
 
-	// We never add to the errs slice (early return), so we just create an empty one to return
-	return reqs, []error{}
+	return requests, errors
 }
 
-func (a SharethroughAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a SharethroughAdapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -71,5 +104,32 @@ func (a SharethroughAdapter) MakeBids(internalRequest *openrtb2.BidRequest, exte
 		return nil, []error{fmt.Errorf("unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
 	}
 
-	return a.AdServer.responseToOpenRTB(response.Body, externalRequest)
+	var bidReq openrtb2.BidRequest
+	if err := json.Unmarshal(requestData.Body, &bidReq); err != nil {
+		return nil, []error{err}
+	}
+
+	var bidResp openrtb2.BidResponse
+	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+		return nil, []error{err}
+	}
+
+	bidderResponse := adapters.NewBidderResponse()
+	bidderResponse.Currency = "USD"
+
+	for _, seatBid := range bidResp.SeatBid {
+		for _, bid := range seatBid.Bid {
+			bidType := openrtb_ext.BidTypeBanner
+			if bidReq.Imp[0].Video != nil {
+				bidType = openrtb_ext.BidTypeVideo
+			}
+
+			bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
+				BidType: bidType,
+				Bid:     &bid,
+			})
+		}
+	}
+
+	return bidderResponse, nil
 }

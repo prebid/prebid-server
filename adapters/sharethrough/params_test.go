@@ -35,9 +35,12 @@ func TestInvalidParams(t *testing.T) {
 
 var validParams = []string{
 	`{"pkey": "123"}`,
-	`{"pkey": "123", "iframe": true}`,
-	`{"pkey": "abc", "iframe": false}`,
-	`{"pkey": "abc123", "iframe": true, "iframeSize": [20, 20]}`,
+	`{"pkey": "123", "bcat": []}`,
+	`{"pkey": "123", "bcat": ["IAB-1"]}`,
+	`{"pkey": "abc", "badv": []}`,
+	`{"pkey": "abc", "badv": ["advertiser.com"]}`,
+	`{"pkey": "abc123", "bcat": [], "badv": []}`,
+	`{"pkey": "abc123", "bcat": ["IAB-1", "IAB-2"], "badv": ["other.advertiser.com"]}`,
 }
 
 var invalidParams = []string{
@@ -49,10 +52,10 @@ var invalidParams = []string{
 	`[]`,
 	`{}`,
 	`{"pkey": 123}`,
-	`{"iframe": 123}`,
-	`{"iframeSize": [20, 20]}`,
-	`{"pkey": 123, "iframe": 123}`,
-	`{"pkey": 123, "iframe": true, "iframeSize": [20]}`,
-	`{"pkey": 123, "iframe": true, "iframeSize": []}`,
-	`{"pkey": 123, "iframe": true, "iframeSize": 123}`,
+	`{"bcat": 123}`,
+	`{"badv": 123}`,
+	`{"bcat": ["IAB-1", "IAB-2"]}`,
+	`{"badv": ["other.advertiser.com"]}`,
+	`{"bcat": ["IAB-1", "IAB-2"], "badv": ["other.advertiser.com"]}`,
+	`{"pkey": 123, "bcat": ["IAB-1", "IAB-2"], "badv": ["other.advertiser.com"]}`,
 }
