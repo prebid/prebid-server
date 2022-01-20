@@ -206,13 +206,13 @@ func parseImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpRichaudience, error) {
 }
 
 func getMediaType(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
+	var mediatype openrtb_ext.BidType
 	for _, imp := range imps {
-		if imp.ID == impId {
-			if imp.Video != nil {
-				return openrtb_ext.BidTypeVideo
-			}
-			return openrtb_ext.BidTypeBanner
+		if imp.Video != nil {
+			mediatype = openrtb_ext.BidTypeVideo
+		} else {
+			mediatype = openrtb_ext.BidTypeBanner
 		}
 	}
-	return openrtb_ext.BidTypeBanner
+	return mediatype
 }
