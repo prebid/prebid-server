@@ -95,22 +95,22 @@ func TestGetAccount(t *testing.T) {
 }
 
 func TestSetDerivedConfig(t *testing.T) {
-	tests := []struct{
+	tests := []struct {
 		description              string
 		purpose1VendorExceptions []openrtb_ext.BidderName
 		feature1VendorExceptions []openrtb_ext.BidderName
 		basicEnforcementVendors  []string
 	}{
 		{
-			description: "",
+			description:              "",
 			purpose1VendorExceptions: []openrtb_ext.BidderName{"appnexus"},
 		},
 		{
-			description: "",
+			description:              "",
 			feature1VendorExceptions: []openrtb_ext.BidderName{"appnexus"},
 		},
 		{
-			description: "",
+			description:             "",
 			basicEnforcementVendors: []string{"appnexus"},
 		},
 	}

@@ -667,6 +667,7 @@ func TestProhibitedVendorSync(t *testing.T) {
 	assert.NoErrorf(t, err, "Error processing BidderSyncAllowed")
 	assert.EqualValuesf(t, false, allowSync, "BidderSyncAllowed failure")
 }
+
 // ***** END ***** //
 func parseVendorListDataV2(t *testing.T, data string) vendorlist.VendorList {
 	t.Helper()
@@ -1002,4 +1003,5 @@ func TestBidderSyncAllowedVendorException(t *testing.T) {
 		assert.EqualValuesf(t, td.allowSync, allowSync, "AllowSync failure on %s", td.description)
 	}
 }
+
 // ***** END ***** //

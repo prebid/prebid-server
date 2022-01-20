@@ -245,7 +245,7 @@ func TestAccountIntegrationGetByIntegrationType(t *testing.T) {
 }
 
 func TestPurposeEnforced(t *testing.T) {
-	tests := []struct{
+	tests := []struct {
 		description          string
 		givePurpose1Enforced string
 		givePurpose2Enforced string
@@ -256,28 +256,28 @@ func TestPurposeEnforced(t *testing.T) {
 		{
 			description:          "Purpose 1 Enforced not set",
 			givePurpose1Enforced: "",
-			givePurpose:           1,
+			givePurpose:          1,
 			wantEnforcedSet:      false,
 			wantEnforced:         true,
 		},
 		{
 			description:          "Purpose 1 Enforced set to full enforcement",
 			givePurpose1Enforced: TCF2FullEnforcement,
-			givePurpose:           1,
+			givePurpose:          1,
 			wantEnforcedSet:      true,
 			wantEnforced:         true,
 		},
 		{
 			description:          "Purpose 1 Enforced set to no enforcement",
 			givePurpose1Enforced: TCF2NoEnforcement,
-			givePurpose:           1,
+			givePurpose:          1,
 			wantEnforcedSet:      true,
 			wantEnforced:         false,
 		},
 		{
 			description:          "Purpose 2 Enforced set to full enforcement",
 			givePurpose2Enforced: TCF2FullEnforcement,
-			givePurpose:           2,
+			givePurpose:          2,
 			wantEnforcedSet:      true,
 			wantEnforced:         true,
 		},
@@ -303,7 +303,7 @@ func TestPurposeEnforced(t *testing.T) {
 }
 
 func TestPurposeEnforcingVendors(t *testing.T) {
-	tests := []struct{
+	tests := []struct {
 		description           string
 		givePurpose1Enforcing *bool
 		givePurpose2Enforcing *bool
@@ -344,10 +344,10 @@ func TestPurposeEnforcingVendors(t *testing.T) {
 	for _, tt := range tests {
 		accountGDPR := AccountGDPR{
 			PurposeConfigs: map[consentconstants.Purpose]*AccountGDPRPurpose{
-				1: &AccountGDPRPurpose{
+				1: {
 					EnforceVendors: tt.givePurpose1Enforcing,
 				},
-				2: &AccountGDPRPurpose{
+				2: {
 					EnforceVendors: tt.givePurpose2Enforcing,
 				},
 			},
@@ -361,8 +361,8 @@ func TestPurposeEnforcingVendors(t *testing.T) {
 }
 
 func TestPurposeVendorException(t *testing.T) {
-	tests := []struct{
-		description string
+	tests := []struct {
+		description              string
 		givePurpose1ExceptionMap map[openrtb_ext.BidderName]struct{}
 		givePurpose2ExceptionMap map[openrtb_ext.BidderName]struct{}
 		givePurpose              consentconstants.Purpose
@@ -371,63 +371,63 @@ func TestPurposeVendorException(t *testing.T) {
 		wantIsVendorException    bool
 	}{
 		{
-			description: "Nil - exception map not defined for purpose",
-			givePurpose: 1,
-			giveBidder: "appnexus",
+			description:            "Nil - exception map not defined for purpose",
+			givePurpose:            1,
+			giveBidder:             "appnexus",
 			wantVendorExceptionSet: false,
 			wantIsVendorException:  false,
 		},
 		{
-			description: "Empty - exception map empty for purpose",
-			givePurpose: 1,
+			description:              "Empty - exception map empty for purpose",
+			givePurpose:              1,
 			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{},
-			giveBidder: "appnexus",
-			wantVendorExceptionSet: true,
-			wantIsVendorException:  false,
+			giveBidder:               "appnexus",
+			wantVendorExceptionSet:   true,
+			wantIsVendorException:    false,
 		},
 		{
-			description: "One - bidder found in purpose exception map containing one entry",
-			givePurpose: 1,
-			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{"appnexus":{}},
-			giveBidder: "appnexus",
-			wantVendorExceptionSet: true,
-			wantIsVendorException:  true,
+			description:              "One - bidder found in purpose exception map containing one entry",
+			givePurpose:              1,
+			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{"appnexus": {}},
+			giveBidder:               "appnexus",
+			wantVendorExceptionSet:   true,
+			wantIsVendorException:    true,
 		},
 		{
-			description: "Many - bidder found in purpose exception map containing multiple entries",
-			givePurpose: 1,
+			description:              "Many - bidder found in purpose exception map containing multiple entries",
+			givePurpose:              1,
 			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
-			giveBidder:  "appnexus",
-			wantVendorExceptionSet: true,
-			wantIsVendorException:  true,
+			giveBidder:               "appnexus",
+			wantVendorExceptionSet:   true,
+			wantIsVendorException:    true,
 		},
 		{
-			description: "Many - bidder not found in purpose exception map containing multiple entries",
-			givePurpose: 1,
-			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
-			givePurpose2ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "openx": {}},
-			giveBidder:  "openx",
-			wantVendorExceptionSet: true,
-			wantIsVendorException:  false,
-		},
-		{
-			description: "Many - bidder found in different purpose exception map containing multiple entries",
-			givePurpose: 2,
+			description:              "Many - bidder not found in purpose exception map containing multiple entries",
+			givePurpose:              1,
 			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
 			givePurpose2ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "openx": {}},
-			giveBidder:  "openx",
-			wantVendorExceptionSet: true,
-			wantIsVendorException:  true,
+			giveBidder:               "openx",
+			wantVendorExceptionSet:   true,
+			wantIsVendorException:    false,
+		},
+		{
+			description:              "Many - bidder found in different purpose exception map containing multiple entries",
+			givePurpose:              2,
+			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
+			givePurpose2ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "openx": {}},
+			giveBidder:               "openx",
+			wantVendorExceptionSet:   true,
+			wantIsVendorException:    true,
 		},
 	}
 
 	for _, tt := range tests {
 		accountGDPR := AccountGDPR{
 			PurposeConfigs: map[consentconstants.Purpose]*AccountGDPRPurpose{
-				1: &AccountGDPRPurpose{
+				1: {
 					VendorExceptionMap: tt.givePurpose1ExceptionMap,
 				},
-				2: &AccountGDPRPurpose{
+				2: {
 					VendorExceptionMap: tt.givePurpose2ExceptionMap,
 				},
 			},
@@ -441,7 +441,7 @@ func TestPurposeVendorException(t *testing.T) {
 }
 
 func TestFeatureOneEnforced(t *testing.T) {
-	tests := []struct{
+	tests := []struct {
 		description     string
 		giveEnforce     *bool
 		wantEnforcedSet bool
@@ -482,7 +482,7 @@ func TestFeatureOneEnforced(t *testing.T) {
 }
 
 func TestFeatureOneVendorException(t *testing.T) {
-	tests := []struct{
+	tests := []struct {
 		description            string
 		giveExceptionMap       map[openrtb_ext.BidderName]struct{}
 		giveBidder             openrtb_ext.BidderName
@@ -490,36 +490,36 @@ func TestFeatureOneVendorException(t *testing.T) {
 		wantIsVendorException  bool
 	}{
 		{
-			description: "Nil - exception map not defined",
-			giveBidder: "appnexus",
+			description:            "Nil - exception map not defined",
+			giveBidder:             "appnexus",
 			wantVendorExceptionSet: false,
 			wantIsVendorException:  false,
 		},
 		{
-			description: "Empty - exception map empty",
-			giveExceptionMap: map[openrtb_ext.BidderName]struct{}{},
-			giveBidder: "appnexus",
+			description:            "Empty - exception map empty",
+			giveExceptionMap:       map[openrtb_ext.BidderName]struct{}{},
+			giveBidder:             "appnexus",
 			wantVendorExceptionSet: true,
 			wantIsVendorException:  false,
 		},
 		{
-			description: "One - bidder found in exception map containing one entry",
-			giveExceptionMap: map[openrtb_ext.BidderName]struct{}{"appnexus":{}},
-			giveBidder: "appnexus",
+			description:            "One - bidder found in exception map containing one entry",
+			giveExceptionMap:       map[openrtb_ext.BidderName]struct{}{"appnexus": {}},
+			giveBidder:             "appnexus",
 			wantVendorExceptionSet: true,
 			wantIsVendorException:  true,
 		},
 		{
-			description: "Many - bidder found in exception map containing multiple entries",
-			giveExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
-			giveBidder:  "appnexus",
+			description:            "Many - bidder found in exception map containing multiple entries",
+			giveExceptionMap:       map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
+			giveBidder:             "appnexus",
 			wantVendorExceptionSet: true,
 			wantIsVendorException:  true,
 		},
 		{
-			description: "Many - bidder not found in exception map containing multiple entries",
-			giveExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
-			giveBidder:  "openx",
+			description:            "Many - bidder not found in exception map containing multiple entries",
+			giveExceptionMap:       map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
+			giveBidder:             "openx",
 			wantVendorExceptionSet: true,
 			wantIsVendorException:  false,
 		},
@@ -540,7 +540,7 @@ func TestFeatureOneVendorException(t *testing.T) {
 }
 
 func TestPurposeOneTreatmentEnabled(t *testing.T) {
-	tests := []struct{
+	tests := []struct {
 		description    string
 		giveEnabled    *bool
 		wantEnabledSet bool
@@ -581,7 +581,7 @@ func TestPurposeOneTreatmentEnabled(t *testing.T) {
 }
 
 func TestPurposeOneTreatmentAccessAllowed(t *testing.T) {
-	tests := []struct{
+	tests := []struct {
 		description    string
 		giveAllowed    *bool
 		wantAllowedSet bool
@@ -622,7 +622,7 @@ func TestPurposeOneTreatmentAccessAllowed(t *testing.T) {
 }
 
 func TestBasicEnforcementVendor(t *testing.T) {
-	tests := []struct{
+	tests := []struct {
 		description        string
 		giveBasicVendorMap map[string]struct{}
 		giveBidder         openrtb_ext.BidderName
@@ -630,36 +630,36 @@ func TestBasicEnforcementVendor(t *testing.T) {
 		wantIsBasicVendor  bool
 	}{
 		{
-			description: "Nil - basic vendor map not defined",
-			giveBidder: "appnexus",
+			description:        "Nil - basic vendor map not defined",
+			giveBidder:         "appnexus",
 			wantBasicVendorSet: false,
 			wantIsBasicVendor:  false,
 		},
 		{
-			description: "Empty - basic vendor map empty",
+			description:        "Empty - basic vendor map empty",
 			giveBasicVendorMap: map[string]struct{}{},
-			giveBidder: "appnexus",
+			giveBidder:         "appnexus",
 			wantBasicVendorSet: true,
 			wantIsBasicVendor:  false,
 		},
 		{
-			description: "One - bidder found in basic vendor map containing one entry",
-			giveBasicVendorMap: map[string]struct{}{"appnexus":{}},
-			giveBidder: "appnexus",
+			description:        "One - bidder found in basic vendor map containing one entry",
+			giveBasicVendorMap: map[string]struct{}{"appnexus": {}},
+			giveBidder:         "appnexus",
 			wantBasicVendorSet: true,
 			wantIsBasicVendor:  true,
 		},
 		{
-			description: "Many - bidder found in basic vendor map containing multiple entries",
+			description:        "Many - bidder found in basic vendor map containing multiple entries",
 			giveBasicVendorMap: map[string]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
-			giveBidder:  "appnexus",
+			giveBidder:         "appnexus",
 			wantBasicVendorSet: true,
 			wantIsBasicVendor:  true,
 		},
 		{
-			description: "Many - bidder not found in basic vendor map containing multiple entries",
+			description:        "Many - bidder not found in basic vendor map containing multiple entries",
 			giveBasicVendorMap: map[string]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
-			giveBidder:  "openx",
+			giveBidder:         "openx",
 			wantBasicVendorSet: true,
 			wantIsBasicVendor:  false,
 		},

@@ -278,17 +278,17 @@ const (
 
 // TCF2 defines the TCF2 specific configurations for GDPR
 type TCF2 struct {
-	Enabled             bool                    `mapstructure:"enabled"`
-	Purpose1            TCF2Purpose             `mapstructure:"purpose1"`
-	Purpose2            TCF2Purpose             `mapstructure:"purpose2"`
-	Purpose3            TCF2Purpose             `mapstructure:"purpose3"`
-	Purpose4            TCF2Purpose             `mapstructure:"purpose4"`
-	Purpose5            TCF2Purpose             `mapstructure:"purpose5"`
-	Purpose6            TCF2Purpose             `mapstructure:"purpose6"`
-	Purpose7            TCF2Purpose             `mapstructure:"purpose7"`
-	Purpose8            TCF2Purpose             `mapstructure:"purpose8"`
-	Purpose9            TCF2Purpose             `mapstructure:"purpose9"`
-	Purpose10           TCF2Purpose             `mapstructure:"purpose10"`
+	Enabled   bool        `mapstructure:"enabled"`
+	Purpose1  TCF2Purpose `mapstructure:"purpose1"`
+	Purpose2  TCF2Purpose `mapstructure:"purpose2"`
+	Purpose3  TCF2Purpose `mapstructure:"purpose3"`
+	Purpose4  TCF2Purpose `mapstructure:"purpose4"`
+	Purpose5  TCF2Purpose `mapstructure:"purpose5"`
+	Purpose6  TCF2Purpose `mapstructure:"purpose6"`
+	Purpose7  TCF2Purpose `mapstructure:"purpose7"`
+	Purpose8  TCF2Purpose `mapstructure:"purpose8"`
+	Purpose9  TCF2Purpose `mapstructure:"purpose9"`
+	Purpose10 TCF2Purpose `mapstructure:"purpose10"`
 	// Map of purpose configs for easy purpose lookup
 	PurposeConfigs      map[consentconstants.Purpose]*TCF2Purpose
 	SpecialFeature1     TCF2SpecialFeature      `mapstructure:"special_feature1"`
@@ -604,8 +604,8 @@ func New(v *viper.Viper) (*Configuration, error) {
 		9:  &c.GDPR.TCF2.Purpose9,
 		10: &c.GDPR.TCF2.Purpose10,
 	}
-	
-	// To look for a purpose's vendor exceptions in O(1) time, for each purpose we fill this hash table with bidders 
+
+	// To look for a purpose's vendor exceptions in O(1) time, for each purpose we fill this hash table with bidders
 	// located in the VendorExceptions field of the GDPR.TCF2.PurposeX struct defined in this file
 	for _, pc := range c.GDPR.TCF2.PurposeConfigs {
 		pc.VendorExceptionMap = make(map[openrtb_ext.BidderName]struct{})
@@ -614,7 +614,7 @@ func New(v *viper.Viper) (*Configuration, error) {
 			pc.VendorExceptionMap[bidderName] = struct{}{}
 		}
 	}
-	
+
 	// To look for a special feature's vendor exceptions in O(1) time, we fill this hash table with bidders located in the
 	// VendorExceptions field of the GDPR.TCF2.SpecialFeature1 struct defined in this file
 	c.GDPR.TCF2.SpecialFeature1.VendorExceptionMap = make(map[openrtb_ext.BidderName]struct{})

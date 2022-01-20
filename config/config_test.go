@@ -11,8 +11,8 @@ import (
 
 	"encoding/json"
 
-	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/go-gdpr/consentconstants"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"

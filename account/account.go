@@ -87,10 +87,10 @@ func setDerivedConfig(account *config.Account) {
 		7:  &account.GDPR.Purpose7,
 		8:  &account.GDPR.Purpose8,
 		9:  &account.GDPR.Purpose9,
-		10: &account.GDPR.Purpose10,		
+		10: &account.GDPR.Purpose10,
 	}
 
-	// To look for a purpose's vendor exceptions in O(1) time, for each purpose we fill this hash table with bidders 
+	// To look for a purpose's vendor exceptions in O(1) time, for each purpose we fill this hash table with bidders
 	// located in the VendorExceptions field of the GDPR.PurposeX struct
 	for _, pc := range account.GDPR.PurposeConfigs {
 		if pc.VendorExceptions == nil {
@@ -102,7 +102,7 @@ func setDerivedConfig(account *config.Account) {
 		}
 	}
 
-	// To look for special feature 1's vendor exceptions in O(1) time, we fill this hash table with bidders 
+	// To look for special feature 1's vendor exceptions in O(1) time, we fill this hash table with bidders
 	// located in the VendorExceptions field
 	if account.GDPR.SpecialFeature1.VendorExceptions != nil {
 		account.GDPR.SpecialFeature1.VendorExceptionMap = make(map[openrtb_ext.BidderName]struct{})
@@ -112,7 +112,7 @@ func setDerivedConfig(account *config.Account) {
 		}
 	}
 
-	// To look for basic enforcement vendors in O(1) time, we fill this hash table with bidders 
+	// To look for basic enforcement vendors in O(1) time, we fill this hash table with bidders
 	// located in the BasicEnforcementVendors field
 	if account.GDPR.BasicEnforcementVendors != nil {
 		account.GDPR.BasicEnforcementVendorsMap = make(map[string]struct{})

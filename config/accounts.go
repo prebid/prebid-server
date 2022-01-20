@@ -59,9 +59,9 @@ type AccountGDPR struct {
 	Purpose9                   AccountGDPRPurpose `mapstructure:"purpose9" json:"purpose9"`
 	Purpose10                  AccountGDPRPurpose `mapstructure:"purpose10" json:"purpose10"`
 	//
-	PurposeConfigs             map[consentconstants.Purpose]*AccountGDPRPurpose
-	PurposeOneTreatment        AccountGDPRPurposeOneTreatment `mapstructure:"purpose_one_treatment" json:"purpose_one_treatment"`
-	SpecialFeature1            AccountGDPRSpecialFeature      `mapstructure:"special_purpose1" json:"special_purpose1"`
+	PurposeConfigs      map[consentconstants.Purpose]*AccountGDPRPurpose
+	PurposeOneTreatment AccountGDPRPurposeOneTreatment `mapstructure:"purpose_one_treatment" json:"purpose_one_treatment"`
+	SpecialFeature1     AccountGDPRSpecialFeature      `mapstructure:"special_purpose1" json:"special_purpose1"`
 }
 
 // EnabledForIntegrationType indicates whether GDPR is turned on at the account level for the specified integration type
@@ -146,15 +146,15 @@ func (a *AccountGDPR) BasicEnforcementVendor(bidder openrtb_ext.BidderName) (val
 }
 
 type AccountGDPRPurpose struct {
-	EnforcePurpose     string                   `mapstructure:"enforce_purpose" json:"enforce_purpose,omitempty"`
-	EnforceVendors     *bool                    `mapstructure:"enforce_vendors" json:"enforce_vendors,omitempty"`
+	EnforcePurpose string `mapstructure:"enforce_purpose" json:"enforce_purpose,omitempty"`
+	EnforceVendors *bool  `mapstructure:"enforce_vendors" json:"enforce_vendors,omitempty"`
 	// Array of vendor exceptions that is used to create the hash table VendorExceptionMap so vendor names can be instantly accessed
 	VendorExceptions   []openrtb_ext.BidderName `mapstructure:"vendor_exceptions" json:"vendor_exceptions"`
 	VendorExceptionMap map[openrtb_ext.BidderName]struct{}
 }
 
 type AccountGDPRSpecialFeature struct {
-	Enforce            *bool `mapstructure:"enforce" json:"enforce"`
+	Enforce *bool `mapstructure:"enforce" json:"enforce"`
 	// Array of vendor exceptions that is used to create the hash table VendorExceptionMap so vendor names can be instantly accessed
 	VendorExceptions   []openrtb_ext.BidderName `mapstructure:"vendor_exceptions" json:"vendor_exceptions"`
 	VendorExceptionMap map[openrtb_ext.BidderName]struct{}

@@ -63,7 +63,7 @@ func NewPermissions(ctx context.Context, cfg config.GDPR, vendorIDs map[openrtb_
 		nonStandardPublishers: cfg.NonStandardPublisherMap,
 		purposeConfigs:        purposeConfigs,
 		vendorIDs:             vendorIDs,
-		fetchVendorList:       map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
+		fetchVendorList: map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
 			tcf2SpecVersion: newVendorListFetcher(ctx, cfg, client, vendorListURLMaker)},
 	}
 

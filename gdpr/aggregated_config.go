@@ -10,7 +10,7 @@ import (
 // Need to figure out how to create the VendorExceptionMap for the account config
 //	- can we cache it?
 //  - should we just create it here for now? would rather not
-// 
+//
 
 // OPTIONS:
 // 1) construct final config on instantiation
