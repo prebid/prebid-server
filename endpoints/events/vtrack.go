@@ -21,9 +21,10 @@ import (
 )
 
 const (
-	AccountParameter   = "a"
-	ImpressionCloseTag = "</Impression>"
-	ImpressionOpenTag  = "<Impression>"
+	AccountParameter     = "a"
+	IntegrationParameter = "int"
+	ImpressionCloseTag   = "</Impression>"
+	ImpressionOpenTag    = "<Impression>"
 )
 
 type vtrackEndpoint struct {
@@ -69,6 +70,9 @@ func (v *vtrackEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httpro
 		return
 	}
 
+	// get integration value from request parameter
+	integrationType := getIntegrationType(r)
+
 	// parse puts request from request body
 	req, err := ParseVTrackRequest(r, v.Cfg.MaxRequestSize+1)
 
@@ -96,7 +100,7 @@ func (v *vtrackEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httpro
 
 	// insert impression tracking if account allows events and bidder allows VAST modification
 	if v.Cache != nil {
-		cachingResponse, errs := v.handleVTrackRequest(ctx, req, account)
+		cachingResponse, errs := v.handleVTrackRequest(ctx, req, account, integrationType)
 
 		if len(errs) > 0 {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -191,10 +195,10 @@ func ParseVTrackRequest(httpRequest *http.Request, maxRequestSize int64) (req *B
 }
 
 // handleVTrackRequest handles a VTrack request
-func (v *vtrackEndpoint) handleVTrackRequest(ctx context.Context, req *BidCacheRequest, account *config.Account) (*BidCacheResponse, []error) {
+func (v *vtrackEndpoint) handleVTrackRequest(ctx context.Context, req *BidCacheRequest, account *config.Account, integration string) (*BidCacheResponse, []error) {
 	biddersAllowingVastUpdate := getBiddersAllowingVastUpdate(req, &v.BidderInfos, v.Cfg.VTrack.AllowUnknownBidder)
 	// cache data
-	r, errs := v.cachePutObjects(ctx, req, biddersAllowingVastUpdate, account.ID)
+	r, errs := v.cachePutObjects(ctx, req, biddersAllowingVastUpdate, account.ID, integration)
 
 	// handle pbs caching errors
 	if len(errs) != 0 {
@@ -217,7 +221,7 @@ func (v *vtrackEndpoint) handleVTrackRequest(ctx context.Context, req *BidCacheR
 }
 
 // cachePutObjects caches BidCacheRequest data
-func (v *vtrackEndpoint) cachePutObjects(ctx context.Context, req *BidCacheRequest, biddersAllowingVastUpdate map[string]struct{}, accountId string) ([]string, []error) {
+func (v *vtrackEndpoint) cachePutObjects(ctx context.Context, req *BidCacheRequest, biddersAllowingVastUpdate map[string]struct{}, accountId string, integration string) ([]string, []error) {
 	var cacheables []prebid_cache_client.Cacheable
 
 	for _, c := range req.Puts {
@@ -230,7 +234,7 @@ func (v *vtrackEndpoint) cachePutObjects(ctx context.Context, req *BidCacheReque
 		}
 
 		if _, ok := biddersAllowingVastUpdate[c.Bidder]; ok && nc.Data != nil {
-			nc.Data = ModifyVastXmlJSON(v.Cfg.ExternalURL, nc.Data, c.BidID, c.Bidder, accountId, c.Timestamp, v.Cfg.IntegrationType)
+			nc.Data = ModifyVastXmlJSON(v.Cfg.ExternalURL, nc.Data, c.BidID, c.Bidder, accountId, c.Timestamp, integration)
 		}
 
 		cacheables = append(cacheables, *nc)
@@ -267,6 +271,10 @@ func isAllowVastForBidder(bidder string, bidderInfos *config.BidderInfos, allowU
 // getAccountId extracts an account id from an HTTP Request
 func getAccountId(httpRequest *http.Request) string {
 	return httpRequest.URL.Query().Get(AccountParameter)
+}
+
+func getIntegrationType(httpRequest *http.Request) string {
+	return httpRequest.URL.Query().Get(IntegrationParameter)
 }
 
 // ModifyVastXmlString rewrites and returns the string vastXML and a flag indicating if it was modified

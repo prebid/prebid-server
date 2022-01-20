@@ -193,6 +193,14 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		return
 	}
 
+	// Set Integration Information
+	err := deps.setIntegrationType(req, account)
+	if err != nil {
+		errL = append(errL, err)
+		writeError(errL, w, &labels)
+		return
+	}
+
 	// rebuild/resync the request in the request wrapper.
 	if err := req.RebuildRequest(); err != nil {
 		errL = append(errL, err)
@@ -311,13 +319,6 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_
 	}
 
 	lmt.ModifyForIOS(req.BidRequest)
-
-	// Integration Type Handling
-	err = deps.setIntegrationType(req)
-	if err != nil {
-		errs = []error{err}
-		return
-	}
 
 	errL := deps.validateRequest(req, false)
 	if len(errL) > 0 {
@@ -1829,19 +1830,27 @@ func checkIfAppRequest(request []byte) (bool, error) {
 	return false, nil
 }
 
-func (deps *endpointDeps) setIntegrationType(req *openrtb_ext.RequestWrapper) error {
+func (deps *endpointDeps) setIntegrationType(req *openrtb_ext.RequestWrapper, account *config.Account) error {
 	reqExt, err := req.GetRequestExt()
 	if err != nil {
 		return err
 	}
 	reqPrebid := reqExt.GetPrebid()
 	if reqPrebid == nil {
-		reqPrebid = &openrtb_ext.ExtRequestPrebid{Integration: deps.cfg.AccountDefaults.DefaultIntegration}
+		reqPrebid = &openrtb_ext.ExtRequestPrebid{Integration: account.DefaultIntegration}
 		reqExt.SetPrebid(reqPrebid)
 	} else if reqPrebid.Integration == "" {
-		reqPrebid.Integration = deps.cfg.AccountDefaults.DefaultIntegration
+		reqPrebid.Integration = account.DefaultIntegration
 		reqExt.SetPrebid(reqPrebid)
 	}
-	deps.cfg.IntegrationType = reqPrebid.Integration
 	return nil
+}
+
+func getIntegrationFromRequest(req *openrtb_ext.RequestWrapper) (string, error) {
+	reqExt, err := req.GetRequestExt()
+	if err != nil {
+		return "", err
+	}
+	reqPrebid := reqExt.GetPrebid()
+	return reqPrebid.Integration, nil
 }

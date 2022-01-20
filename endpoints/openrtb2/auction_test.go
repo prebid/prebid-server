@@ -1699,7 +1699,7 @@ func TestSetIntegrationType(t *testing.T) {
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
-		&config.Configuration{MaxRequestSize: maxSize, AccountDefaults: config.Account{DefaultIntegration: "TestDefaultIntegrationType"}},
+		&config.Configuration{},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
@@ -1715,6 +1715,7 @@ func TestSetIntegrationType(t *testing.T) {
 	testCases := []struct {
 		description             string
 		givenRequestWrapper     *openrtb_ext.RequestWrapper
+		givenAccount            *config.Account
 		expectedError           error
 		expectedIntegrationType string
 	}{
@@ -1723,6 +1724,7 @@ func TestSetIntegrationType(t *testing.T) {
 			givenRequestWrapper: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid":{"integration": "TestIntegrationType"}}`)},
 			},
+			givenAccount:            &config.Account{DefaultIntegration: "TestDefaultIntegration"},
 			expectedIntegrationType: "TestIntegrationType",
 		},
 		{
@@ -1730,21 +1732,25 @@ func TestSetIntegrationType(t *testing.T) {
 			givenRequestWrapper: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{Ext: []byte(``)},
 			},
-			expectedIntegrationType: "TestDefaultIntegrationType",
+			givenAccount:            &config.Account{DefaultIntegration: "TestDefaultIntegration"},
+			expectedIntegrationType: "TestDefaultIntegration",
 		},
 		{
-			description: "Test 3",
+			description: "Request has blank integration in request, expect default integration value ",
 			givenRequestWrapper: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid":{"integration": ""}}`)},
 			},
-			expectedIntegrationType: "TestDefaultIntegrationType",
+			givenAccount:            &config.Account{DefaultIntegration: "TestDefaultIntegration"},
+			expectedIntegrationType: "TestDefaultIntegration",
 		},
 	}
 
 	for _, test := range testCases {
-		err := deps.setIntegrationType(test.givenRequestWrapper)
+		err := deps.setIntegrationType(test.givenRequestWrapper, test.givenAccount)
 		assert.Empty(t, err, test.description)
-		assert.Equalf(t, test.expectedIntegrationType, deps.cfg.IntegrationType, "Integration type information isn't correct: %s\n", test.description)
+		integrationTypeFromReq, err2 := getIntegrationFromRequest(test.givenRequestWrapper)
+		assert.Empty(t, err2, test.description)
+		assert.Equalf(t, test.expectedIntegrationType, integrationTypeFromReq, "Integration type information isn't correct: %s\n", test.description)
 	}
 }
 
