@@ -8,11 +8,12 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/version"
 	"net/http"
 	"strings"
 )
 
-const strVersion = 10
+var strVersion = "10.0"
 
 type SharethroughAdapter struct {
 	endpoint string
@@ -33,13 +34,19 @@ func (a SharethroughAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo 
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 
-	var sourceExt map[string]interface{}
-	if err := json.Unmarshal(request.Source.Ext, &sourceExt); err == nil {
-		sourceExt["str"] = strVersion
-	} else {
-		sourceExt = map[string]interface{}{"str": strVersion}
+	modifiableSource := openrtb2.Source{}
+	if request.Source != nil {
+		modifiableSource = *request.Source
 	}
-	request.Source.Ext, _ = json.Marshal(sourceExt)
+	var sourceExt map[string]interface{}
+	if err := json.Unmarshal(modifiableSource.Ext, &sourceExt); err == nil {
+		sourceExt["str"] = strVersion
+		sourceExt["version"] = version.Ver
+	} else {
+		sourceExt = map[string]interface{}{"str": strVersion, "version": version.Ver}
+	}
+	modifiableSource.Ext, _ = json.Marshal(sourceExt)
+	request.Source = &modifiableSource
 
 	requestCopy := *request
 	for _, imp := range request.Imp {
@@ -65,6 +72,7 @@ func (a SharethroughAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo 
 			imp.BidFloor = convertedValue
 		}
 
+		// Relocate Custom Params
 		imp.TagID = strImpParams.Pkey
 		requestCopy.BCat = strImpParams.BCat
 		requestCopy.BAdv = strImpParams.BAdv

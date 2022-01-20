@@ -10,12 +10,12 @@ import (
 func TestValidParams(t *testing.T) {
 	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
 	if err != nil {
-		t.Fatalf("Failed to fetch the json-schemas. %v", err)
+		t.Fatalf("Failed to fetch the json schema. %v", err)
 	}
 
-	for _, validParam := range validParams {
-		if err := validator.Validate(openrtb_ext.BidderSharethrough, json.RawMessage(validParam)); err != nil {
-			t.Errorf("Schema rejected Sharethrough params: %s", validParam)
+	for _, p := range validParams {
+		if err := validator.Validate(openrtb_ext.BidderSharethrough, json.RawMessage(p)); err != nil {
+			t.Errorf("Schema rejected valid params: %s", p)
 		}
 	}
 }
@@ -23,12 +23,12 @@ func TestValidParams(t *testing.T) {
 func TestInvalidParams(t *testing.T) {
 	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
 	if err != nil {
-		t.Fatalf("Failed to fetch the json-schemas. %v", err)
+		t.Fatalf("Failed to fetch the json schema. %v", err)
 	}
 
-	for _, invalidParam := range invalidParams {
-		if err := validator.Validate(openrtb_ext.BidderSharethrough, json.RawMessage(invalidParam)); err == nil {
-			t.Errorf("Schema allowed unexpected params: %s", invalidParam)
+	for _, p := range invalidParams {
+		if err := validator.Validate(openrtb_ext.BidderSharethrough, json.RawMessage(p)); err == nil {
+			t.Errorf("Schema allowed invalid params: %s", p)
 		}
 	}
 }
