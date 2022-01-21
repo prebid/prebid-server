@@ -246,13 +246,13 @@ func getPricingDetails(version string, ad *etree.Element) (float64, string) {
 	var currency string
 	var node *etree.Element
 
-	if `2.0` == version {
+	if version == `2.0` {
 		node = ad.FindElement(`./Extensions/Extension/Price`)
 	} else {
 		node = ad.FindElement(`./Pricing`)
 	}
 
-	if nil == node {
+	if node == nil {
 		return 0.0, currency
 	}
 
