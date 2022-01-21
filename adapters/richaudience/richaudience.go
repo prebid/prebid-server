@@ -51,6 +51,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			}
 
 			if raiExt.Test {
+				a.endpoint = "http://eu-ortb.richaudience.com/ortb/?bidder=pbs"
 				request.Device.IP = "11.222.33.44"
 				request.Test = int8(1)
 			}
@@ -206,13 +207,13 @@ func parseImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtImpRichaudience, error) {
 }
 
 func getMediaType(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
-	var mediatype openrtb_ext.BidType
 	for _, imp := range imps {
-		if imp.Video != nil {
-			mediatype = openrtb_ext.BidTypeVideo
-		} else {
-			mediatype = openrtb_ext.BidTypeBanner
+		if imp.ID == impId {
+			if imp.Video != nil {
+				return openrtb_ext.BidTypeVideo
+			}
+			return openrtb_ext.BidTypeBanner
 		}
 	}
-	return mediatype
+	return openrtb_ext.BidTypeBanner
 }
