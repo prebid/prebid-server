@@ -51,7 +51,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			}
 
 			if raiExt.Test {
-				a.endpoint = "http://eu-ortb.richaudience.com/ortb/?bidder=pbs"
 				request.Device.IP = "11.222.33.44"
 				request.Test = int8(1)
 			}
