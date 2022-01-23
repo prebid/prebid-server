@@ -19,11 +19,6 @@ type MedianetAdapter struct {
 func (a *MedianetAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 
-	//if len(request.Imp) == 0 {
-	//	return nil, []error{&errortypes.BadInput{
-	//		Message: "No impression in the request",
-	//	}}
-	//}
 	for _, imp := range request.Imp {
 		if err := preprocess(&imp); err != nil {
 			errs = append(errs, err)
