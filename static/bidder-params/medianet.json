@@ -6,10 +6,12 @@
     "properties": {
       "cid": {
         "type": "string",
+        "minLength": 1,
         "description": "The customer id provided by Media.net."
       },
       "crid": {
         "type": "string",
+        "minLength": 1,
         "description": "The placement id provided by Media.net."
       }
     },
