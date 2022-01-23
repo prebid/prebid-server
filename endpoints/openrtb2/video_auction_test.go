@@ -1,7 +1,6 @@
 package openrtb2
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -29,11 +28,7 @@ import (
 
 func TestVideoEndpointImpressionsNumber(t *testing.T) {
 	ex := &mockExchangeVideo{}
-	reqData, err := ioutil.ReadFile("sample-requests/video/video_valid_sample.json")
-	if err != nil {
-		t.Fatalf("Failed to fetch a valid request: %v", err)
-	}
-	reqBody := string(getRequestPayload(t, reqData))
+	reqBody := readVideoTestFile(t, "sample-requests/video/video_valid_sample.json")
 	req := httptest.NewRequest("POST", "/openrtb2/video", strings.NewReader(reqBody))
 	recorder := httptest.NewRecorder()
 
@@ -62,16 +57,11 @@ func TestVideoEndpointImpressionsNumber(t *testing.T) {
 	assert.Len(t, resp.AdPods[4].Targeting, 3, "Incorrect Targeting data in response")
 
 	assert.Equal(t, resp.AdPods[4].Targeting[0].HbPbCatDur, "20.00_395_30s", "Incorrect number of Ad Pods in response")
-
 }
 
 func TestVideoEndpointImpressionsDuration(t *testing.T) {
 	ex := &mockExchangeVideo{}
-	reqData, err := ioutil.ReadFile("sample-requests/video/video_valid_sample_different_durations.json")
-	if err != nil {
-		t.Fatalf("Failed to fetch a valid request: %v", err)
-	}
-	reqBody := string(getRequestPayload(t, reqData))
+	reqBody := readVideoTestFile(t, "sample-requests/video/video_valid_sample_different_durations.json")
 	req := httptest.NewRequest("POST", "/openrtb2/video", strings.NewReader(reqBody))
 	recorder := httptest.NewRecorder()
 
@@ -102,7 +92,6 @@ func TestVideoEndpointImpressionsDuration(t *testing.T) {
 	assert.Equal(t, ex.lastRequest.Imp[17].ID, "2_5", "Incorrect impression id in request")
 	assert.Equal(t, ex.lastRequest.Imp[17].Video.MaxDuration, int64(30), "Incorrect impression max duration in request")
 	assert.Equal(t, ex.lastRequest.Imp[17].Video.MinDuration, int64(30), "Incorrect impression min duration in request")
-
 }
 
 func TestCreateBidExtension(t *testing.T) {
@@ -143,7 +132,6 @@ func TestCreateBidExtension(t *testing.T) {
 	}
 	assert.Equal(t, resExt.Prebid.Targeting.DurationRangeSec, durationRange, "Duration range seconds is incorrect")
 	assert.Equal(t, resExt.Prebid.Targeting.PriceGranularity.Ranges, priceGranRanges, "Price granularity is incorrect")
-
 }
 
 func TestCreateBidExtensionExactDurTrueNoPriceRange(t *testing.T) {
@@ -183,11 +171,7 @@ func TestVideoEndpointDebugQueryTrue(t *testing.T) {
 	ex := &mockExchangeVideo{
 		cache: &mockCacheClient{},
 	}
-	reqData, err := ioutil.ReadFile("sample-requests/video/video_valid_sample.json")
-	if err != nil {
-		t.Fatalf("Failed to fetch a valid request: %v", err)
-	}
-	reqBody := string(getRequestPayload(t, reqData))
+	reqBody := readVideoTestFile(t, "sample-requests/video/video_valid_sample.json")
 	req := httptest.NewRequest("POST", "/openrtb2/video?debug=true", strings.NewReader(reqBody))
 	recorder := httptest.NewRecorder()
 
@@ -225,11 +209,7 @@ func TestVideoEndpointDebugQueryFalse(t *testing.T) {
 	ex := &mockExchangeVideo{
 		cache: &mockCacheClient{},
 	}
-	reqData, err := ioutil.ReadFile("sample-requests/video/video_valid_sample.json")
-	if err != nil {
-		t.Fatalf("Failed to fetch a valid request: %v", err)
-	}
-	reqBody := string(getRequestPayload(t, reqData))
+	reqBody := readVideoTestFile(t, "sample-requests/video/video_valid_sample.json")
 	req := httptest.NewRequest("POST", "/openrtb2/video?debug=123", strings.NewReader(reqBody))
 	recorder := httptest.NewRecorder()
 
@@ -267,11 +247,7 @@ func TestVideoEndpointDebugError(t *testing.T) {
 	ex := &mockExchangeVideo{
 		cache: &mockCacheClient{},
 	}
-	reqData, err := ioutil.ReadFile("sample-requests/video/video_invalid_sample.json")
-	if err != nil {
-		t.Fatalf("Failed to fetch a valid request: %v", err)
-	}
-	reqBody := string(getRequestPayload(t, reqData))
+	reqBody := readVideoTestFile(t, "sample-requests/video/video_invalid_sample.json")
 	req := httptest.NewRequest("POST", "/openrtb2/video?debug=true", strings.NewReader(reqBody))
 	recorder := httptest.NewRecorder()
 
@@ -289,11 +265,7 @@ func TestVideoEndpointDebugNoAdPods(t *testing.T) {
 	ex := &mockExchangeVideoNoBids{
 		cache: &mockCacheClient{},
 	}
-	reqData, err := ioutil.ReadFile("sample-requests/video/video_valid_sample.json")
-	if err != nil {
-		t.Fatalf("Failed to fetch a valid request: %v", err)
-	}
-	reqBody := string(getRequestPayload(t, reqData))
+	reqBody := readVideoTestFile(t, "sample-requests/video/video_valid_sample.json")
 	req := httptest.NewRequest("POST", "/openrtb2/video?debug=true", strings.NewReader(reqBody))
 	recorder := httptest.NewRecorder()
 
@@ -323,11 +295,7 @@ func TestVideoEndpointDebugNoAdPods(t *testing.T) {
 
 func TestVideoEndpointNoPods(t *testing.T) {
 	ex := &mockExchangeVideo{}
-	reqData, err := ioutil.ReadFile("sample-requests/video/video_invalid_sample.json")
-	if err != nil {
-		t.Fatalf("Failed to fetch a valid request: %v", err)
-	}
-	reqBody := string(getRequestPayload(t, reqData))
+	reqBody := readVideoTestFile(t, "sample-requests/video/video_invalid_sample.json")
 	req := httptest.NewRequest("POST", "/openrtb2/video", strings.NewReader(reqBody))
 	recorder := httptest.NewRecorder()
 
@@ -877,11 +845,7 @@ func TestHandleError(t *testing.T) {
 
 func TestHandleErrorMetrics(t *testing.T) {
 	ex := &mockExchangeVideo{}
-	reqData, err := ioutil.ReadFile("sample-requests/video/video_invalid_sample.json")
-	if err != nil {
-		t.Fatalf("Failed to fetch a valid request: %v", err)
-	}
-	reqBody := string(getRequestPayload(t, reqData))
+	reqBody := readVideoTestFile(t, "sample-requests/video/video_invalid_sample.json")
 	req := httptest.NewRequest("POST", "/openrtb2/video", strings.NewReader(reqBody))
 	recorder := httptest.NewRecorder()
 
@@ -899,87 +863,64 @@ func TestHandleErrorMetrics(t *testing.T) {
 
 func TestParseVideoRequestWithUserAgentAndHeader(t *testing.T) {
 	ex := &mockExchangeVideo{}
-	reqData, err := ioutil.ReadFile("sample-requests/video/video_valid_sample_with_device_user_agent.json")
-	if err != nil {
-		t.Fatalf("Failed to fetch a valid request: %v", err)
-	}
+	reqBody := readVideoTestFile(t, "sample-requests/video/video_valid_sample_with_device_user_agent.json")
 	headers := http.Header{}
 	headers.Add("User-Agent", "TestHeader")
 
 	deps := mockDeps(t, ex)
-	reqBody := string(getRequestPayload(t, reqData))
 	req, valErr, podErr := deps.parseVideoRequest([]byte(reqBody), headers)
 
 	assert.Equal(t, "TestHeaderSample", req.Device.UA, "Header should be taken from original request")
 	assert.Equal(t, []error(nil), valErr, "No validation errors should be returned")
 	assert.Equal(t, make([]PodError, 0), podErr, "No pod errors should be returned")
-
 }
 
 func TestParseVideoRequestWithUserAgentAndEmptyHeader(t *testing.T) {
 	ex := &mockExchangeVideo{}
-	reqData, err := ioutil.ReadFile("sample-requests/video/video_valid_sample_with_device_user_agent.json")
-	if err != nil {
-		t.Fatalf("Failed to fetch a valid request: %v", err)
-	}
+	reqBody := readVideoTestFile(t, "sample-requests/video/video_valid_sample_with_device_user_agent.json")
 
 	headers := http.Header{}
 
 	deps := mockDeps(t, ex)
-	reqBody := string(getRequestPayload(t, reqData))
 	req, valErr, podErr := deps.parseVideoRequest([]byte(reqBody), headers)
 
 	assert.Equal(t, "TestHeaderSample", req.Device.UA, "Header should be taken from original request")
 	assert.Equal(t, []error(nil), valErr, "No validation errors should be returned")
 	assert.Equal(t, make([]PodError, 0), podErr, "No pod errors should be returned")
-
 }
 
 func TestParseVideoRequestWithoutUserAgentWithHeader(t *testing.T) {
 	ex := &mockExchangeVideo{}
-	reqData, err := ioutil.ReadFile("sample-requests/video/video_valid_sample_without_device_user_agent.json")
-	if err != nil {
-		t.Fatalf("Failed to fetch a valid request: %v", err)
-	}
-
+	reqBody := readVideoTestFile(t, "sample-requests/video/video_valid_sample_without_device_user_agent.json")
 	headers := http.Header{}
 	headers.Add("User-Agent", "TestHeader")
 
 	deps := mockDeps(t, ex)
-	reqBody := string(getRequestPayload(t, reqData))
 	req, valErr, podErr := deps.parseVideoRequest([]byte(reqBody), headers)
 
 	assert.Equal(t, "TestHeader", req.Device.UA, "Device.ua should be taken from request header")
 	assert.Equal(t, []error(nil), valErr, "No validation errors should be returned")
 	assert.Equal(t, make([]PodError, 0), podErr, "No pod errors should be returned")
-
 }
 
 func TestParseVideoRequestWithoutUserAgentAndEmptyHeader(t *testing.T) {
 	ex := &mockExchangeVideo{}
-	reqData, err := ioutil.ReadFile("sample-requests/video/video_valid_sample_without_device_user_agent.json")
-	if err != nil {
-		t.Fatalf("Failed to fetch a valid request: %v", err)
-	}
+	reqBody := readVideoTestFile(t, "sample-requests/video/video_valid_sample_without_device_user_agent.json")
 
 	headers := http.Header{}
 
 	deps := mockDeps(t, ex)
-	reqBody := string(getRequestPayload(t, reqData))
+
 	req, valErr, podErr := deps.parseVideoRequest([]byte(reqBody), headers)
 
 	assert.Equal(t, "", req.Device.UA, "Device.ua should be empty")
 	assert.Equal(t, []error(nil), valErr, "No validation errors should be returned")
 	assert.Equal(t, make([]PodError, 0), podErr, "No pod errors should be returned")
-
 }
 
 func TestParseVideoRequestWithEncodedUserAgentInHeader(t *testing.T) {
 	ex := &mockExchangeVideo{}
-	reqData, err := ioutil.ReadFile("sample-requests/video/video_valid_sample_without_device_user_agent.json")
-	if err != nil {
-		t.Fatalf("Failed to fetch a valid request: %v", err)
-	}
+	reqBody := readVideoTestFile(t, "sample-requests/video/video_valid_sample_without_device_user_agent.json")
 
 	uaEncoded := "Mozilla%2F5.0%20%28Macintosh%3B%20Intel%20Mac%20OS%20X%2010_14_6%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F78.0.3904.87%20Safari%2F537.36"
 	uaDecoded := "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.87 Safari/537.36"
@@ -988,21 +929,16 @@ func TestParseVideoRequestWithEncodedUserAgentInHeader(t *testing.T) {
 	headers.Add("User-Agent", uaEncoded)
 
 	deps := mockDeps(t, ex)
-	reqBody := string(getRequestPayload(t, reqData))
 	req, valErr, podErr := deps.parseVideoRequest([]byte(reqBody), headers)
 
 	assert.Equal(t, uaDecoded, req.Device.UA, "Device.ua should be taken from request header")
 	assert.Equal(t, []error(nil), valErr, "No validation errors should be returned")
 	assert.Equal(t, make([]PodError, 0), podErr, "No pod errors should be returned")
-
 }
 
 func TestParseVideoRequestWithDecodedUserAgentInHeader(t *testing.T) {
 	ex := &mockExchangeVideo{}
-	reqData, err := ioutil.ReadFile("sample-requests/video/video_valid_sample_without_device_user_agent.json")
-	if err != nil {
-		t.Fatalf("Failed to fetch a valid request: %v", err)
-	}
+	reqBody := readVideoTestFile(t, "sample-requests/video/video_valid_sample_without_device_user_agent.json")
 
 	uaDecoded := "Mozilla/5.0+(Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.87 Safari/537.36"
 
@@ -1010,13 +946,11 @@ func TestParseVideoRequestWithDecodedUserAgentInHeader(t *testing.T) {
 	headers.Add("User-Agent", uaDecoded)
 
 	deps := mockDeps(t, ex)
-	reqBody := string(getRequestPayload(t, reqData))
 	req, valErr, podErr := deps.parseVideoRequest([]byte(reqBody), headers)
 
 	assert.Equal(t, uaDecoded, req.Device.UA, "Device.ua should be taken from request header")
 	assert.Equal(t, []error(nil), valErr, "No validation errors should be returned")
 	assert.Equal(t, make([]PodError, 0), podErr, "No pod errors should be returned")
-
 }
 
 func TestHandleErrorDebugLog(t *testing.T) {
@@ -1111,15 +1045,10 @@ func TestCCPA(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		// Load Test Request
-		requestContainerBytes, err := ioutil.ReadFile(test.testFilePath)
-		if err != nil {
-			t.Fatalf("%s: Failed to fetch a valid request: %v", test.description, err)
-		}
-		requestBytes := getRequestPayload(t, requestContainerBytes)
+		reqBody := readVideoTestFile(t, test.testFilePath)
 
 		// Create HTTP Request + Response Recorder
-		httpRequest := httptest.NewRequest("POST", "/openrtb2/video", bytes.NewReader(requestBytes))
+		httpRequest := httptest.NewRequest("POST", "/openrtb2/video", strings.NewReader(reqBody))
 		httpResponseRecorder := httptest.NewRecorder()
 
 		// Run Test
@@ -1132,7 +1061,7 @@ func TestCCPA(t *testing.T) {
 			t.Fatalf("%s: The request never made it into the exchange.", test.description)
 		}
 		extRegs := &openrtb_ext.ExtRegs{}
-		if err = json.Unmarshal(ex.lastRequest.Regs.Ext, extRegs); err != nil {
+		if err := json.Unmarshal(ex.lastRequest.Regs.Ext, extRegs); err != nil {
 			t.Fatalf("%s: Failed to unmarshal reg.ext in request to the exchange: %v", test.description, err)
 		}
 		if test.expectConsentString {
@@ -1154,11 +1083,7 @@ func TestCCPA(t *testing.T) {
 
 func TestVideoEndpointAppendBidderNames(t *testing.T) {
 	ex := &mockExchangeAppendBidderNames{}
-	reqData, err := ioutil.ReadFile("sample-requests/video/video_valid_sample_appendbiddernames.json")
-	if err != nil {
-		t.Fatalf("Failed to fetch a valid request: %v", err)
-	}
-	reqBody := string(getRequestPayload(t, reqData))
+	reqBody := readVideoTestFile(t, "sample-requests/video/video_valid_sample_appendbiddernames.json")
 	req := httptest.NewRequest("POST", "/openrtb2/video", strings.NewReader(reqBody))
 	recorder := httptest.NewRecorder()
 
@@ -1191,7 +1116,6 @@ func TestVideoEndpointAppendBidderNames(t *testing.T) {
 	assert.Len(t, resp.AdPods[4].Targeting, 3, "Incorrect Targeting data in response")
 
 	assert.Equal(t, resp.AdPods[4].Targeting[0].HbPbCatDur, "20.00_395_30s_appnexus", "Incorrect number of Ad Pods in response")
-
 }
 
 func TestFormatTargetingKey(t *testing.T) {
@@ -1202,6 +1126,50 @@ func TestFormatTargetingKey(t *testing.T) {
 func TestFormatTargetingKeyLongKey(t *testing.T) {
 	res := formatTargetingKey(openrtb_ext.HbpbConstantKey, "20.00")
 	assert.Equal(t, "hb_pb_20.00", res, "Tergeting key constructed incorrectly")
+}
+
+func TestVideoAuctionResponseHeaders(t *testing.T) {
+	testCases := []struct {
+		description     string
+		givenTestFile   string
+		expectedStatus  int
+		expectedHeaders func(http.Header)
+	}{
+		{
+			description:    "Success Response",
+			givenTestFile:  "sample-requests/video/video_valid_sample.json",
+			expectedStatus: 200,
+			expectedHeaders: func(h http.Header) {
+				h.Set("X-Prebid", "pbs-go/unknown")
+				h.Set("Content-Type", "application/json")
+			},
+		}, {
+			description:    "Failure Response",
+			givenTestFile:  "sample-requests/video/video_invalid_sample.json",
+			expectedStatus: 500,
+			expectedHeaders: func(h http.Header) {
+				h.Set("X-Prebid", "pbs-go/unknown")
+			},
+		},
+	}
+
+	exchange := &mockExchangeVideo{}
+	endpoint := mockDeps(t, exchange)
+
+	for _, test := range testCases {
+		requestBody := readVideoTestFile(t, test.givenTestFile)
+
+		httpReq := httptest.NewRequest("POST", "/openrtb2/video", strings.NewReader(requestBody))
+		recorder := httptest.NewRecorder()
+
+		endpoint.VideoAuctionEndpoint(recorder, httpReq, nil)
+
+		expectedHeaders := http.Header{}
+		test.expectedHeaders(expectedHeaders)
+
+		assert.Equal(t, test.expectedStatus, recorder.Result().StatusCode, test.description+":statuscode")
+		assert.Equal(t, expectedHeaders, recorder.Result().Header, test.description+":statuscode")
+	}
 }
 
 func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *metrics.Metrics, *mockAnalyticsModule) {
@@ -1253,7 +1221,7 @@ func (m *mockAnalyticsModule) LogAmpObject(ao *analytics.AmpObject) { return }
 func (m *mockAnalyticsModule) LogNotificationEventObject(ne *analytics.NotificationEvent) { return }
 
 func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
-	deps := &endpointDeps{
+	return &endpointDeps{
 		fakeUUIDGenerator{},
 		ex,
 		newParamsValidator(t),
@@ -1272,8 +1240,6 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
 	}
-
-	return deps
 }
 
 func mockDepsAppendBidderNames(t *testing.T, ex *mockExchangeAppendBidderNames) *endpointDeps {
@@ -1442,4 +1408,13 @@ var testVideoStoredImpData = map[string]json.RawMessage{
 
 var testVideoStoredRequestData = map[string]json.RawMessage{
 	"80ce30c53c16e6ede735f123ef6e32361bfc7b22": json.RawMessage(`{"accountid": "11223344", "site": {"page": "mygame.foo.com"}}`),
+}
+
+func readVideoTestFile(t *testing.T, filename string) string {
+	requestData, err := ioutil.ReadFile(filename)
+	if err != nil {
+		t.Fatalf("Failed to fetch a valid request: %v", err)
+	}
+
+	return string(getRequestPayload(t, requestData))
 }

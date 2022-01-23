@@ -63,7 +63,7 @@
   "httpcalls": [
     {
       "expectedRequest": {
-        "uri": "https://huaweiads.com/adxtest/",
+        "uri": "https://adx-dra.op.hicloud.com/ppsadx/getResult",
         "headers": {
           "Accept": [
             "application/json"
