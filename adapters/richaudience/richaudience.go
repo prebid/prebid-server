@@ -37,6 +37,14 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	for _, imp := range request.Imp {
 		var secure = int8(0)
+
+		if err := validateDevice(request); err != nil {
+			errs = append(errs, &errortypes.BadInput{
+				Message: err.Error(),
+			})
+			return nil, errs
+		}
+
 		raiExt, err := parseImpExt(&imp)
 		if err != nil {
 			errs = append(errs, &errortypes.BadInput{
@@ -79,13 +87,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		}
 
 		request.Imp = []openrtb2.Imp{imp}
-
-		if err = validateDevice(request); err != nil {
-			errs = append(errs, &errortypes.BadInput{
-				Message: err.Error(),
-			})
-			return nil, errs
-		}
 
 		req, err := json.Marshal(request)
 		if err != nil {
