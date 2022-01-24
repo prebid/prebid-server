@@ -12,11 +12,11 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type MedianetAdapter struct {
+type adapter struct {
 	endpoint string
 }
 
-func (a *MedianetAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 
 	for _, imp := range request.Imp {
@@ -43,7 +43,7 @@ func (a *MedianetAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ad
 	}}, errs
 }
 
-func (a *MedianetAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var errs []error
 
 	if response.StatusCode == http.StatusNoContent {
@@ -89,7 +89,7 @@ func (a *MedianetAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 
 // Builder builds a new instance of the Medianet adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	return &MedianetAdapter{
+	return &adapter{
 		endpoint: config.Endpoint,
 	}, nil
 }
@@ -105,14 +105,6 @@ func preprocess(imp *openrtb2.Imp) error {
 	var medianetExt openrtb_ext.ExtImpMedianet
 	if err := json.Unmarshal(bidderExt.Bidder, &medianetExt); err != nil {
 		return &errortypes.BadInput{Message: "bad Medianet bidder ext"}
-	}
-
-	if len(medianetExt.Cid) == 0 && len(medianetExt.Crid) == 0 {
-		return &errortypes.BadInput{Message: "'cid' and 'crid' are required attribute for Medianet's bidder ext"}
-	} else if len(medianetExt.Cid) == 0 {
-		return &errortypes.BadInput{Message: "'cid' is required attribute for Medianet's bidder ext"}
-	} else if len(medianetExt.Crid) == 0 {
-		return &errortypes.BadInput{Message: "'crid' is required attribute for Medianet's bidder ext"}
 	}
 
 	return nil

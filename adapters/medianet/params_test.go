@@ -46,6 +46,7 @@ var invalidParams = []string{
 	`4.2`,
 	`[]`,
 	`{}`,
+	`{"cid":"", "crid":""}`,
 	`{"cid":"only cid is present"}`,
 	`{"crid":"only crid is present"}`,
 	`{"ccid":"123","ccrid":"123"}`,
