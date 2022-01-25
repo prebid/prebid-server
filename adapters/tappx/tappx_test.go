@@ -41,13 +41,12 @@ func TestTsValue(t *testing.T) {
 	var test int
 	test = 0
 	var tappxExt openrtb_ext.ExtImpTappx
-	tappxExt.Host = "example.host.tappx.com"
 	tappxExt.Endpoint = "DUMMYENDPOINT"
 	tappxExt.TappxKey = "dummy-tappx-key"
 
 	url, err := bidderTappx.buildEndpointURL(&tappxExt, test)
 
-	match, err := regexp.MatchString(`http://example\.host\.tappx\.com/DUMMYENDPOINT\?tappxkey=dummy-tappx-key&ts=[0-9]{13}&type_cnn=prebid&v=1\.3`, url)
+	match, err := regexp.MatchString(`http://ssp\.api\.tappx\.com/rtb/v2/DUMMYENDPOINT\?tappxkey=dummy-tappx-key&ts=[0-9]{13}&type_cnn=prebid&v=1\.4`, url)
 	if err != nil {
 		t.Errorf("Error while running regex validation: %s", err.Error())
 		return
