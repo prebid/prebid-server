@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
@@ -18,13 +19,6 @@ type adapter struct {
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
-
-	for _, imp := range request.Imp {
-		if err := preprocess(&imp); err != nil {
-			errs = append(errs, err)
-			return nil, errs
-		}
-	}
 
 	reqJson, err := json.Marshal(request)
 	if err != nil {
@@ -89,25 +83,10 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 
 // Builder builds a new instance of the Medianet adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	url := buildEndpoint(config.Endpoint, config.ExtraAdapterInfo)
 	return &adapter{
-		endpoint: config.Endpoint,
+		endpoint: url,
 	}, nil
-}
-
-func preprocess(imp *openrtb2.Imp) error {
-	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return &errortypes.BadInput{
-			Message: err.Error(),
-		}
-	}
-
-	var medianetExt openrtb_ext.ExtImpMedianet
-	if err := json.Unmarshal(bidderExt.Bidder, &medianetExt); err != nil {
-		return &errortypes.BadInput{Message: "bad Medianet bidder ext"}
-	}
-
-	return nil
 }
 
 func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
@@ -124,4 +103,16 @@ func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType,
 	return "", &errortypes.BadInput{
 		Message: fmt.Sprintf("Failed to find impression \"%s\" ", impID),
 	}
+}
+
+func buildEndpoint(mnetUrl, hostUrl string) string {
+
+	urlObject, err := url.Parse(mnetUrl)
+	if err != nil || len(hostUrl) == 0 {
+		return mnetUrl
+	}
+	values := urlObject.Query()
+	values.Add("src", hostUrl)
+	urlObject.RawQuery = values.Encode()
+	return urlObject.String()
 }
