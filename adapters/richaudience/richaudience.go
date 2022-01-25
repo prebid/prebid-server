@@ -35,15 +35,15 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	isUrlSecure := getIsUrlSecure(request)
 
+	if err := validateDevice(request); err != nil {
+		errs = append(errs, &errortypes.BadInput{
+			Message: err.Error(),
+		})
+		return nil, errs
+	}
+
 	for _, imp := range request.Imp {
 		var secure = int8(0)
-
-		if err := validateDevice(request); err != nil {
-			errs = append(errs, &errortypes.BadInput{
-				Message: err.Error(),
-			})
-			return nil, errs
-		}
 
 		raiExt, err := parseImpExt(&imp)
 		if err != nil {
