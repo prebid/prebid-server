@@ -11,7 +11,9 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderMedianet, config.Adapter{
-		Endpoint: "https://example.media.net/rtb/prebid"})
+		Endpoint:         "https://example.media.net/rtb/prebid",
+		ExtraAdapterInfo: "http://localhost:8080/extrnal_url",
+	})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
