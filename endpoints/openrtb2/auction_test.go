@@ -1743,14 +1743,33 @@ func TestSetIntegrationType(t *testing.T) {
 			givenAccount:            &config.Account{DefaultIntegration: "TestDefaultIntegration"},
 			expectedIntegrationType: "TestDefaultIntegration",
 		},
+		{
+			description: "Given integration type is too long, expect error to be thrown",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid":{"integration": "IntegrationTypeLongerThanMaxIntegrationTypeLongerThanMaxIntegration"}}`)},
+			},
+			expectedError: errors.New("integration type length is too long"),
+		},
+		{
+			description: "Default integration type contains invalid characters, expect error to be thrown",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{Ext: []byte(`{"prebid":{"integration": ""}}`)},
+			},
+			givenAccount:  &config.Account{DefaultIntegration: "$$TestDefaultIntegration$$"},
+			expectedError: errors.New("integration type can only contain numbers, letters and these characters '-', '_'"),
+		},
 	}
 
 	for _, test := range testCases {
 		err := deps.setIntegrationType(test.givenRequestWrapper, test.givenAccount)
-		assert.Empty(t, err, test.description)
-		integrationTypeFromReq, err2 := getIntegrationFromRequest(test.givenRequestWrapper)
-		assert.Empty(t, err2, test.description)
-		assert.Equalf(t, test.expectedIntegrationType, integrationTypeFromReq, "Integration type information isn't correct: %s\n", test.description)
+		if test.expectedError != nil {
+			assert.Equalf(t, test.expectedError, err, "Error doesn't match expected")
+		} else {
+			assert.Empty(t, err, test.description)
+			integrationTypeFromReq, err2 := getIntegrationFromRequest(test.givenRequestWrapper)
+			assert.Empty(t, err2, test.description)
+			assert.Equalf(t, test.expectedIntegrationType, integrationTypeFromReq, "Integration type information isn't correct: %s\n", test.description)
+		}
 	}
 }
 
@@ -4530,4 +4549,13 @@ func getObject(t *testing.T, filename, key string) json.RawMessage {
 		t.Fatalf("Failed to fetch object with key '%s' ... got error: %v", key, err)
 	}
 	return obj
+}
+
+func getIntegrationFromRequest(req *openrtb_ext.RequestWrapper) (string, error) {
+	reqExt, err := req.GetRequestExt()
+	if err != nil {
+		return "", err
+	}
+	reqPrebid := reqExt.GetPrebid()
+	return reqPrebid.Integration, nil
 }
