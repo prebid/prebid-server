@@ -3,15 +3,15 @@ module github.com/prebid/prebid-server
 go 1.16
 
 require (
-	github.com/DATA-DOG/go-sqlmock v1.3.0
+	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/OneOfOne/xxhash v1.2.5 // indirect
-	github.com/asaskevich/govalidator v0.0.0-20180720115003-f9ffefc3facf
+	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/buger/jsonparser v1.1.1
 	github.com/chasex/glog v0.0.0-20160217080310-c62392af379c
 	github.com/coocood/freecache v1.2.0
 	github.com/docker/go-units v0.4.0
-	github.com/evanphx/json-patch v0.0.0-20180720181644-f195058310bd
+	github.com/evanphx/json-patch/v5 v5.6.0
 	github.com/gofrs/uuid v4.2.0+incompatible
 	github.com/golang/glog v1.0.0
 	github.com/influxdata/influxdb v1.6.1
@@ -24,7 +24,7 @@ require (
 	github.com/prometheus/client_golang v1.11.0
 	github.com/prometheus/client_model v0.2.0
 	github.com/rcrowley/go-metrics v0.0.0-20180503174638-e2704e165165
-	github.com/rs/cors v1.5.0
+	github.com/rs/cors v1.8.2
 	github.com/sergi/go-diff v1.0.0 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/spf13/viper v1.8.1
