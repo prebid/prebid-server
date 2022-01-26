@@ -112,10 +112,11 @@ func (ev *eventTracking) makeEventURL(evType analytics.EventType, pbsBid *pbsOrt
 	}
 	return events.EventRequestToUrl(ev.externalURL,
 		&analytics.EventRequest{
-			Type:      evType,
-			BidID:     bidId,
-			Bidder:    string(bidderName),
-			AccountID: ev.accountID,
-			Timestamp: ev.auctionTimestampMs,
+			Type:        evType,
+			BidID:       bidId,
+			Bidder:      string(bidderName),
+			AccountID:   ev.accountID,
+			Timestamp:   ev.auctionTimestampMs,
+			Integration: ev.integrationType,
 		})
 }
