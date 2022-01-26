@@ -247,52 +247,62 @@ func TestAccountIntegrationGetByIntegrationType(t *testing.T) {
 func TestPurposeEnforced(t *testing.T) {
 	tests := []struct {
 		description          string
+		givePurposeConfigNil bool
 		givePurpose1Enforced string
 		givePurpose2Enforced string
 		givePurpose          consentconstants.Purpose
-		wantEnforcedSet      bool
 		wantEnforced         bool
+		wantEnforcedSet      bool
 	}{
+		{
+			description:          "Purpose config is nil",
+			givePurposeConfigNil: true,
+			givePurpose:          1,
+			wantEnforced:         true,
+			wantEnforcedSet:      false,
+		},
 		{
 			description:          "Purpose 1 Enforced not set",
 			givePurpose1Enforced: "",
 			givePurpose:          1,
-			wantEnforcedSet:      false,
 			wantEnforced:         true,
+			wantEnforcedSet:      false,
 		},
 		{
 			description:          "Purpose 1 Enforced set to full enforcement",
 			givePurpose1Enforced: TCF2FullEnforcement,
 			givePurpose:          1,
-			wantEnforcedSet:      true,
 			wantEnforced:         true,
+			wantEnforcedSet:      true,
 		},
 		{
 			description:          "Purpose 1 Enforced set to no enforcement",
 			givePurpose1Enforced: TCF2NoEnforcement,
 			givePurpose:          1,
-			wantEnforcedSet:      true,
 			wantEnforced:         false,
+			wantEnforcedSet:      true,
 		},
 		{
 			description:          "Purpose 2 Enforced set to full enforcement",
 			givePurpose2Enforced: TCF2FullEnforcement,
 			givePurpose:          2,
-			wantEnforcedSet:      true,
 			wantEnforced:         true,
+			wantEnforcedSet:      true,
 		},
 	}
 
 	for _, tt := range tests {
-		accountGDPR := AccountGDPR{
-			PurposeConfigs: map[consentconstants.Purpose]*AccountGDPRPurpose{
+		accountGDPR := AccountGDPR{}
+
+		if !tt.givePurposeConfigNil {
+			accountGDPR.PurposeConfigs = map[consentconstants.Purpose]*AccountGDPRPurpose{
 				1: {
 					EnforcePurpose: tt.givePurpose1Enforced,
 				},
 				2: {
 					EnforcePurpose: tt.givePurpose2Enforced,
 				},
-			},
+			}
 		}
 
 		value, present := accountGDPR.PurposeEnforced(tt.givePurpose)
@@ -305,52 +315,62 @@ func TestPurposeEnforced(t *testing.T) {
 func TestPurposeEnforcingVendors(t *testing.T) {
 	tests := []struct {
 		description           string
+		givePurposeConfigNil  bool
 		givePurpose1Enforcing *bool
 		givePurpose2Enforcing *bool
 		givePurpose           consentconstants.Purpose
-		wantEnforcingSet      bool
 		wantEnforcing         bool
+		wantEnforcingSet      bool
 	}{
+		{
+			description:          "Purpose config is nil",
+			givePurposeConfigNil: true,
+			givePurpose:          1,
+			wantEnforcing:        true,
+			wantEnforcingSet:     false,
+		},
 		{
 			description:           "Purpose 1 Enforcing not set",
 			givePurpose1Enforcing: nil,
 			givePurpose:           1,
-			wantEnforcingSet:      false,
 			wantEnforcing:         true,
+			wantEnforcingSet:      false,
 		},
 		{
 			description:           "Purpose 1 Enforcing set to true",
 			givePurpose1Enforcing: &[]bool{true}[0],
 			givePurpose:           1,
-			wantEnforcingSet:      true,
 			wantEnforcing:         true,
+			wantEnforcingSet:      true,
 		},
 		{
 			description:           "Purpose 1 Enforcing set to false",
 			givePurpose1Enforcing: &[]bool{false}[0],
 			givePurpose:           1,
-			wantEnforcingSet:      true,
 			wantEnforcing:         false,
+			wantEnforcingSet:      true,
 		},
 		{
 			description:           "Purpose 2 Enforcing set to true",
 			givePurpose2Enforcing: &[]bool{true}[0],
 			givePurpose:           2,
-			wantEnforcingSet:      true,
 			wantEnforcing:         true,
+			wantEnforcingSet:      true,
 		},
 	}
 
 	for _, tt := range tests {
-		accountGDPR := AccountGDPR{
-			PurposeConfigs: map[consentconstants.Purpose]*AccountGDPRPurpose{
+		accountGDPR := AccountGDPR{}
+
+		if !tt.givePurposeConfigNil {
+			accountGDPR.PurposeConfigs = map[consentconstants.Purpose]*AccountGDPRPurpose{
 				1: {
 					EnforceVendors: tt.givePurpose1Enforcing,
 				},
 				2: {
 					EnforceVendors: tt.givePurpose2Enforcing,
 				},
-			},
+			}
 		}
 
 		value, present := accountGDPR.PurposeEnforcingVendors(tt.givePurpose)
@@ -363,43 +383,52 @@ func TestPurposeEnforcingVendors(t *testing.T) {
 func TestPurposeVendorException(t *testing.T) {
 	tests := []struct {
 		description              string
+		givePurposeConfigNil     bool
 		givePurpose1ExceptionMap map[openrtb_ext.BidderName]struct{}
 		givePurpose2ExceptionMap map[openrtb_ext.BidderName]struct{}
 		givePurpose              consentconstants.Purpose
 		giveBidder               openrtb_ext.BidderName
-		wantVendorExceptionSet   bool
 		wantIsVendorException    bool
+		wantVendorExceptionSet   bool
 	}{
+		{
+			description:            "Purpose config is nil",
+			givePurposeConfigNil:   true,
+			givePurpose:            1,
+			giveBidder:             "appnexus",
+			wantIsVendorException:  false,
+			wantVendorExceptionSet: false,
+		},
 		{
 			description:            "Nil - exception map not defined for purpose",
 			givePurpose:            1,
 			giveBidder:             "appnexus",
-			wantVendorExceptionSet: false,
 			wantIsVendorException:  false,
+			wantVendorExceptionSet: false,
 		},
 		{
 			description:              "Empty - exception map empty for purpose",
 			givePurpose:              1,
 			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 			giveBidder:               "appnexus",
-			wantVendorExceptionSet:   true,
 			wantIsVendorException:    false,
+			wantVendorExceptionSet:   true,
 		},
 		{
 			description:              "One - bidder found in purpose exception map containing one entry",
 			givePurpose:              1,
 			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{"appnexus": {}},
 			giveBidder:               "appnexus",
-			wantVendorExceptionSet:   true,
 			wantIsVendorException:    true,
+			wantVendorExceptionSet:   true,
 		},
 		{
 			description:              "Many - bidder found in purpose exception map containing multiple entries",
 			givePurpose:              1,
 			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
 			giveBidder:               "appnexus",
-			wantVendorExceptionSet:   true,
 			wantIsVendorException:    true,
+			wantVendorExceptionSet:   true,
 		},
 		{
 			description:              "Many - bidder not found in purpose exception map containing multiple entries",
@@ -407,8 +436,8 @@ func TestPurposeVendorException(t *testing.T) {
 			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
 			givePurpose2ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "openx": {}},
 			giveBidder:               "openx",
-			wantVendorExceptionSet:   true,
 			wantIsVendorException:    false,
+			wantVendorExceptionSet:   true,
 		},
 		{
 			description:              "Many - bidder found in different purpose exception map containing multiple entries",
@@ -416,21 +445,23 @@ func TestPurposeVendorException(t *testing.T) {
 			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
 			givePurpose2ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "openx": {}},
 			giveBidder:               "openx",
-			wantVendorExceptionSet:   true,
 			wantIsVendorException:    true,
+			wantVendorExceptionSet:   true,
 		},
 	}
 
 	for _, tt := range tests {
-		accountGDPR := AccountGDPR{
-			PurposeConfigs: map[consentconstants.Purpose]*AccountGDPRPurpose{
+		accountGDPR := AccountGDPR{}
+
+		if !tt.givePurposeConfigNil {
+			accountGDPR.PurposeConfigs = map[consentconstants.Purpose]*AccountGDPRPurpose{
 				1: {
 					VendorExceptionMap: tt.givePurpose1ExceptionMap,
 				},
 				2: {
 					VendorExceptionMap: tt.givePurpose2ExceptionMap,
 				},
-			},
+			}
 		}
 
 		value, present := accountGDPR.PurposeVendorException(tt.givePurpose, tt.giveBidder)

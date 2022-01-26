@@ -74,6 +74,9 @@ func (a *AccountGDPR) EnabledForIntegrationType(integrationType IntegrationType)
 }
 
 func (a *AccountGDPR) PurposeEnforced(purpose consentconstants.Purpose) (value, exists bool) {
+	if a.PurposeConfigs[purpose] == nil {
+		return true, false
+	}
 	if a.PurposeConfigs[purpose].EnforcePurpose == TCF2FullEnforcement {
 		return true, true
 	}
@@ -86,6 +89,9 @@ func (a *AccountGDPR) PurposeEnforced(purpose consentconstants.Purpose) (value, 
 
 func (a *AccountGDPR) PurposeEnforcingVendors(purpose consentconstants.Purpose) (value, exists bool) {
 	// defaults to enforcing vendors matching host default behavior
+	if a.PurposeConfigs[purpose] == nil {
+		return true, false
+	}
 	if a.PurposeConfigs[purpose].EnforceVendors == nil {
 		return true, false
 	}
@@ -93,6 +99,9 @@ func (a *AccountGDPR) PurposeEnforcingVendors(purpose consentconstants.Purpose) 
 }
 
 func (a *AccountGDPR) PurposeVendorException(purpose consentconstants.Purpose, bidder openrtb_ext.BidderName) (value, exists bool) {
+	if a.PurposeConfigs[purpose] == nil {
+		return false, false
+	}
 	if a.PurposeConfigs[purpose].VendorExceptionMap == nil {
 		return false, false
 	}
