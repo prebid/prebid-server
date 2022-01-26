@@ -107,8 +107,11 @@ func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType,
 
 func buildEndpoint(mnetUrl, hostUrl string) string {
 
+	if len(hostUrl) == 0 {
+		return mnetUrl
+	}
 	urlObject, err := url.Parse(mnetUrl)
-	if err != nil || len(hostUrl) == 0 {
+	if err != nil {
 		return mnetUrl
 	}
 	values := urlObject.Query()
