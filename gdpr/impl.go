@@ -16,17 +16,15 @@ import (
 )
 
 type permissionsImpl struct {
-	cfg                   config.GDPR
-	gdprDefaultValue      Signal
+	gdprDefaultValue      string
 	hostVendorID          int
 	nonStandardPublishers map[string]struct{}
-	purposeConfigs        map[consentconstants.Purpose]config.TCF2Purpose
 	vendorIDs             map[openrtb_ext.BidderName]uint16
 	fetchVendorList       map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error)
 }
 
 func (p *permissionsImpl) HostCookiesAllowed(ctx context.Context, cfg TCF2ConfigReader, gdprSignal Signal, consent string) (bool, error) {
-	gdprSignal = SignalNormalize(gdprSignal, p.cfg)
+	gdprSignal = SignalNormalize(gdprSignal, config.GDPR{DefaultValue: p.gdprDefaultValue})
 
 	if gdprSignal == SignalNo {
 		return true, nil
@@ -36,7 +34,7 @@ func (p *permissionsImpl) HostCookiesAllowed(ctx context.Context, cfg TCF2Config
 }
 
 func (p *permissionsImpl) BidderSyncAllowed(ctx context.Context, cfg TCF2ConfigReader, bidder openrtb_ext.BidderName, gdprSignal Signal, consent string) (bool, error) {
-	gdprSignal = SignalNormalize(gdprSignal, p.cfg)
+	gdprSignal = SignalNormalize(gdprSignal, config.GDPR{DefaultValue: p.gdprDefaultValue})
 
 	if gdprSignal == SignalNo {
 		return true, nil
@@ -61,7 +59,7 @@ func (p *permissionsImpl) AuctionActivitiesAllowed(ctx context.Context,
 		return true, true, true, nil
 	}
 
-	gdprSignal = SignalNormalize(gdprSignal, p.cfg)
+	gdprSignal = SignalNormalize(gdprSignal, config.GDPR{DefaultValue: p.gdprDefaultValue})
 
 	if gdprSignal == SignalNo {
 		return true, true, true, nil
@@ -113,7 +111,8 @@ func (p *permissionsImpl) allowSync(ctx context.Context, cfg TCF2ConfigReader, v
 		return cfg.PurposeOneTreatmentAccessAllowed(), nil
 	}
 
-	return p.checkPurpose(consentMeta, vendor, vendorID, tcf2ConsentConstants.InfoStorageAccess, vendorException, false), nil
+	enforceVendors := cfg.PurposeEnforcingVendors(tcf2ConsentConstants.InfoStorageAccess)
+	return p.checkPurpose(consentMeta, vendor, vendorID, tcf2ConsentConstants.InfoStorageAccess, enforceVendors, vendorException, false), nil
 }
 
 // move to TCF2 object
@@ -149,14 +148,16 @@ func (p *permissionsImpl) allowActivities(ctx context.Context, cfg TCF2ConfigRea
 		passGeo = true
 	}
 	if cfg.PurposeEnforced(consentconstants.Purpose(2)) {
+		enforceVendors := cfg.PurposeEnforcingVendors(consentconstants.Purpose(2))
 		vendorException := cfg.PurposeVendorException(consentconstants.Purpose(2), bidder)
-		allowBidRequest = p.checkPurpose(consentMeta, vendor, vendorID, consentconstants.Purpose(2), vendorException, weakVendorEnforcement)
+		allowBidRequest = p.checkPurpose(consentMeta, vendor, vendorID, consentconstants.Purpose(2), enforceVendors, vendorException, weakVendorEnforcement)
 	} else {
 		allowBidRequest = true
 	}
 	for i := 2; i <= 10; i++ {
+		enforceVendors := cfg.PurposeEnforcingVendors(consentconstants.Purpose(i))
 		vendorException := cfg.PurposeVendorException(consentconstants.Purpose(i), bidder)
-		if p.checkPurpose(consentMeta, vendor, vendorID, consentconstants.Purpose(i), vendorException, weakVendorEnforcement) {
+		if p.checkPurpose(consentMeta, vendor, vendorID, consentconstants.Purpose(i), enforceVendors, vendorException, weakVendorEnforcement) {
 			passID = true
 			break
 		}
@@ -170,7 +171,7 @@ const pubRestrictRequireConsent = 1
 const pubRestrictRequireLegitInterest = 2
 
 // move to full enforcement object
-func (p *permissionsImpl) checkPurpose(consent tcf2.ConsentMetadata, vendor api.Vendor, vendorID uint16, purpose consentconstants.Purpose, vendorException, weakVendorEnforcement bool) bool {
+func (p *permissionsImpl) checkPurpose(consent tcf2.ConsentMetadata, vendor api.Vendor, vendorID uint16, purpose consentconstants.Purpose, enforceVendors, vendorException, weakVendorEnforcement bool) bool {
 	if consent.CheckPubRestriction(uint8(purpose), pubRestrictNotAllowed, vendorID) {
 		return false
 	}
@@ -179,8 +180,8 @@ func (p *permissionsImpl) checkPurpose(consent tcf2.ConsentMetadata, vendor api.
 		return true
 	}
 
-	purposeAllowed := p.consentEstablished(consent, vendor, vendorID, purpose, weakVendorEnforcement)
-	legitInterest := p.legitInterestEstablished(consent, vendor, vendorID, purpose, weakVendorEnforcement)
+	purposeAllowed := p.consentEstablished(consent, vendor, vendorID, purpose, enforceVendors, weakVendorEnforcement)
+	legitInterest := p.legitInterestEstablished(consent, vendor, vendorID, purpose, enforceVendors, weakVendorEnforcement)
 
 	if consent.CheckPubRestriction(uint8(purpose), pubRestrictRequireConsent, vendorID) {
 		return purposeAllowed
@@ -194,14 +195,14 @@ func (p *permissionsImpl) checkPurpose(consent tcf2.ConsentMetadata, vendor api.
 }
 
 // move to full enforcement object
-func (p *permissionsImpl) consentEstablished(consent tcf2.ConsentMetadata, vendor api.Vendor, vendorID uint16, purpose consentconstants.Purpose, weakVendorEnforcement bool) bool {
+func (p *permissionsImpl) consentEstablished(consent tcf2.ConsentMetadata, vendor api.Vendor, vendorID uint16, purpose consentconstants.Purpose, enforceVendors, weakVendorEnforcement bool) bool {
 	if !consent.PurposeAllowed(purpose) {
 		return false
 	}
 	if weakVendorEnforcement {
 		return true
 	}
-	if !p.purposeConfigs[purpose].EnforceVendors {
+	if !enforceVendors {
 		return true
 	}
 	if vendor.Purpose(purpose) && consent.VendorConsent(vendorID) {
@@ -211,14 +212,14 @@ func (p *permissionsImpl) consentEstablished(consent tcf2.ConsentMetadata, vendo
 }
 
 // move to full enforcement object
-func (p *permissionsImpl) legitInterestEstablished(consent tcf2.ConsentMetadata, vendor api.Vendor, vendorID uint16, purpose consentconstants.Purpose, weakVendorEnforcement bool) bool {
+func (p *permissionsImpl) legitInterestEstablished(consent tcf2.ConsentMetadata, vendor api.Vendor, vendorID uint16, purpose consentconstants.Purpose, enforceVendors, weakVendorEnforcement bool) bool {
 	if !consent.PurposeLITransparency(purpose) {
 		return false
 	}
 	if weakVendorEnforcement {
 		return true
 	}
-	if !p.purposeConfigs[purpose].EnforceVendors {
+	if !enforceVendors {
 		return true
 	}
 	if vendor.LegitimateInterest(purpose) && consent.VendorLegitInterest(vendorID) {

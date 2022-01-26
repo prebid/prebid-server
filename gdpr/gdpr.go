@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/go-gdpr/vendorlist"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -38,30 +37,10 @@ func NewPermissions(ctx context.Context, cfg config.GDPR, vendorIDs map[openrtb_
 		return &AlwaysAllow{}
 	}
 
-	gdprDefaultValue := SignalYes
-	if cfg.DefaultValue == "0" {
-		gdprDefaultValue = SignalNo
-	}
-
-	purposeConfigs := map[consentconstants.Purpose]config.TCF2Purpose{
-		1:  cfg.TCF2.Purpose1,
-		2:  cfg.TCF2.Purpose2,
-		3:  cfg.TCF2.Purpose3,
-		4:  cfg.TCF2.Purpose4,
-		5:  cfg.TCF2.Purpose5,
-		6:  cfg.TCF2.Purpose6,
-		7:  cfg.TCF2.Purpose7,
-		8:  cfg.TCF2.Purpose8,
-		9:  cfg.TCF2.Purpose9,
-		10: cfg.TCF2.Purpose10,
-	}
-
 	permissionsImpl := &permissionsImpl{
-		cfg:                   cfg, //TODO(BFS): should we pass this in just so we have access to the GDPR config for default value?
-		gdprDefaultValue:      gdprDefaultValue,
+		gdprDefaultValue:      cfg.DefaultValue,
 		hostVendorID:          cfg.HostVendorID,
 		nonStandardPublishers: cfg.NonStandardPublisherMap,
-		purposeConfigs:        purposeConfigs,
 		vendorIDs:             vendorIDs,
 		fetchVendorList: map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error){
 			tcf2SpecVersion: newVendorListFetcher(ctx, cfg, client, vendorListURLMaker)},
