@@ -28,7 +28,7 @@ import (
 	"golang.org/x/net/context/ctxhttp"
 )
 
-// adaptedBidder defines the contract needed to participate in an Auction within an Exchange.
+// AdaptedBidder defines the contract needed to participate in an Auction within an Exchange.
 //
 // This interface exists to help segregate core auction logic.
 //
@@ -37,10 +37,10 @@ import (
 //
 // This interface differs from adapters.Bidder to help minimize code duplication across the
 // adapters.Bidder implementations.
-type adaptedBidder interface {
+type AdaptedBidder interface {
 	// requestBid fetches bids for the given request.
 	//
-	// An adaptedBidder *may* return two non-nil values here. Errors should describe situations which
+	// An AdaptedBidder *may* return two non-nil values here. Errors should describe situations which
 	// make the bid (or no-bid) "less than ideal." Common examples include:
 	//
 	// 1. Connection issues.
@@ -53,7 +53,7 @@ type adaptedBidder interface {
 	requestBid(ctx context.Context, request *openrtb2.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool) (*pbsOrtbSeatBid, []error)
 }
 
-// pbsOrtbBid is a Bid returned by an adaptedBidder.
+// pbsOrtbBid is a Bid returned by an AdaptedBidder.
 //
 // pbsOrtbBid.bid.Ext will become "response.seatbid[i].bid.ext.bidder" in the final OpenRTB response.
 // pbsOrtbBid.bidMeta will become "response.seatbid[i].bid.ext.prebid.meta" in the final OpenRTB response.
@@ -76,11 +76,11 @@ type pbsOrtbBid struct {
 	generatedBidID    string
 }
 
-// pbsOrtbSeatBid is a SeatBid returned by an adaptedBidder.
+// pbsOrtbSeatBid is a SeatBid returned by an AdaptedBidder.
 //
 // This is distinct from the openrtb2.SeatBid so that the prebid-server ext can be passed back with typesafety.
 type pbsOrtbSeatBid struct {
-	// bids is the list of bids which this adaptedBidder wishes to make.
+	// bids is the list of bids which this AdaptedBidder wishes to make.
 	bids []*pbsOrtbBid
 	// currency is the currency in which the bids are made.
 	// Should be a valid currency ISO code.
@@ -90,11 +90,11 @@ type pbsOrtbSeatBid struct {
 	httpCalls []*openrtb_ext.ExtHttpCall
 }
 
-// adaptBidder converts an adapters.Bidder into an exchange.adaptedBidder.
+// AdaptBidder converts an adapters.Bidder into an exchange.AdaptedBidder.
 //
 // The name refers to the "Adapter" architecture pattern, and should not be confused with a Prebid "Adapter"
 // (which is being phased out and replaced by Bidder for OpenRTB auctions)
-func adaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Configuration, me metrics.MetricsEngine, name openrtb_ext.BidderName, debugInfo *config.DebugInfo) adaptedBidder {
+func AdaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Configuration, me metrics.MetricsEngine, name openrtb_ext.BidderName, debugInfo *config.DebugInfo) AdaptedBidder {
 	return &bidderAdapter{
 		Bidder:     bidder,
 		BidderName: name,

@@ -12,7 +12,7 @@ import (
 )
 
 func TestAllValidBids(t *testing.T) {
-	var bidder adaptedBidder = addValidatedBidderMiddleware(&mockAdaptedBidder{
+	var bidder AdaptedBidder = addValidatedBidderMiddleware(&mockAdaptedBidder{
 		bidResponse: &pbsOrtbSeatBid{
 			bids: []*pbsOrtbBid{
 				{
