@@ -27,11 +27,9 @@
                         "profile": 5123
                     }
                 },
-                "prebid": {
-                   "skadn": {
-                      "skadnetids": ["k674qkevps.skadnetwork"],
-                      "version": "2.0"
-                    }
+                "skadn": {
+                  "skadnetids": ["k674qkevps.skadnetwork"],
+                  "version": "2.0"
                 }
             }
         }],
@@ -65,7 +63,7 @@
                 ],
                 "h": 250,
                 "w": 300
-            },
+              },
                 "ext": {
                     "pmZoneId": "Zone1,Zone2",
                     "preference": "sports,movies",

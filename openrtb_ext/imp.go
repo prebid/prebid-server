@@ -14,8 +14,6 @@ type ExtImpPrebid struct {
 
 	// Bidder is the preferred approach for providing paramters to be interepreted by the bidder's adapter.
 	Bidder map[string]json.RawMessage `json:"bidder"`
-
-	SKAdnetwork json.RawMessage `json:"skadn,omitempty"`
 }
 
 // ExtStoredRequest defines the contract for bidrequest.imp[i].ext.prebid.storedrequest
