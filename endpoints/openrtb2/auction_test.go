@@ -273,7 +273,7 @@ func assertBidResponseEqual(t *testing.T, testFile string, expectedBidResponse o
 	assert.Equalf(t, expectedBidResponse.Cur, actualBidResponse.Cur, "BidResponse.Cur doesn't match expected. Test: %s\n", testFile)
 
 	//Assert []SeatBid and their Bid elements independently of their order
-	assert.Len(t, actualBidResponse.SeatBid, len(expectedBidResponse.SeatBid), "BidResponse.SeatBid array doesn't match expected. Test: %s\n", testFile)
+	assert.Len(t, actualBidResponse.SeatBid, len(expectedBidResponse.SeatBid), "BidResponse.SeatBid is expected to contain %d elements but contains %d. Test: %s\n", len(expectedBidResponse.SeatBid), len(actualBidResponse.SeatBid), testFile)
 
 	//Given that bidResponses have the same length, compare them in an order-independent way using maps
 	var actualSeatBidsMap map[string]openrtb2.SeatBid = make(map[string]openrtb2.SeatBid, 0)
@@ -291,10 +291,10 @@ func assertBidResponseEqual(t *testing.T, testFile string, expectedBidResponse o
 		assert.Equalf(t, expectedSeatBid.Seat, actualSeatBidsMap[k].Seat, "actualSeatBidsMap[%s].Seat doesn't match expected. Test: %s\n", k, testFile)
 		assert.Equalf(t, expectedSeatBid.Group, actualSeatBidsMap[k].Group, "actualSeatBidsMap[%s].Group doesn't match expected. Test: %s\n", k, testFile)
 		assert.Equalf(t, expectedSeatBid.Ext, actualSeatBidsMap[k].Ext, "actualSeatBidsMap[%s].Ext doesn't match expected. Test: %s\n", k, testFile)
-		assert.Len(t, actualSeatBidsMap[k].Bid, len(expectedSeatBid.Bid), "BidResponse.SeatBid[].Bid array doesn't match expected. Test: %s\n", testFile)
+		assert.Len(t, actualSeatBidsMap[k].Bid, len(expectedSeatBid.Bid), "BidResponse.SeatBid[].Bid array is expected to contain %d elements but has %d. Test: %s\n", len(expectedSeatBid.Bid), len(actualSeatBidsMap[k].Bid), testFile)
 
 		//Assert Bid arrays
-		assert.ElementsMatch(t, expectedSeatBid.Bid, actualSeatBidsMap[k].Bid, "BidResponse.SeatBid array doesn't match expected. Test: %s\n", testFile)
+		assert.ElementsMatch(t, expectedSeatBid.Bid, actualSeatBidsMap[k].Bid, "BidResponse.SeatBid[%s] array doesn't match expected. Test: %s\n", k, testFile)
 	}
 }
 
@@ -510,7 +510,10 @@ func doRequest(t *testing.T, test testCase) (int, string) {
 	bidderMap := exchange.GetActiveBidders(bidderInfos)
 	disabledBidders := exchange.GetDisabledBiddersErrorMessages(bidderInfos)
 
-	mockBidder := FooBidServer{test.Config.MockBidder}
+	mockBidder := FooBidServer{
+		theBid:     test.Config.MockBidder,
+		bidderName: "appnexus",
+	}
 
 	server := httptest.NewServer(http.HandlerFunc(mockBidder.bid))
 	defer server.Close()
@@ -521,6 +524,14 @@ func doRequest(t *testing.T, test testCase) (int, string) {
 		openrtb_ext.BidderAppnexus: exchange.AdaptBidder(
 			mockBidderAdapter,
 			server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil),
+		openrtb_ext.BidderDmx: exchange.AdaptBidder(
+			mockBidderAdapter,
+			server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil,
+		),
+		//openrtb_ext.BidderRubicon: exchange.AdaptBidder(
+		//mockBidderAdapter,
+		//server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil,
+		//),
 	}
 
 	endpoint, _ := NewEndpoint(
@@ -1752,112 +1763,112 @@ func TestValidateOrFillChannel(t *testing.T) {
 	}
 }
 
-func TestStoredRequestGenerateUuid(t *testing.T) {
-	uuid := "foo"
-
-	deps := &endpointDeps{
-		fakeUUIDGenerator{id: "foo", err: nil},
-		&nobidExchange{},
-		newParamsValidator(t),
-		&mockStoredReqFetcher{},
-		empty_fetcher.EmptyFetcher{},
-		empty_fetcher.EmptyFetcher{},
-		&config.Configuration{MaxRequestSize: maxSize},
-		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
-		map[string]string{},
-		false,
-		[]byte{},
-		openrtb_ext.BuildBidderMap(),
-		nil,
-		nil,
-		hardcodedResponseIPValidator{response: true},
-		empty_fetcher.EmptyFetcher{},
-	}
-
-	req := &openrtb2.BidRequest{}
-
-	testCases := []struct {
-		description            string
-		givenRawData           string
-		givenGenerateRequestID bool
-		expectedID             string
-		expectedCur            string
-	}{
-		{
-			description:            "GenerateRequestID is true, rawData is an app request and has stored bid request we should generate uuid",
-			givenRawData:           testBidRequests[2],
-			givenGenerateRequestID: true,
-			expectedID:             uuid,
-		},
-		{
-			description:            "GenerateRequestID is true, rawData is an app request, has stored bid, and stored bidrequestID is not the macro {{UUID}}, we should generate uuid",
-			givenRawData:           testBidRequests[3],
-			givenGenerateRequestID: true,
-			expectedID:             uuid,
-		},
-		{
-			description:            "GenerateRequestID is false, rawData is an app request and has stored bid, but stored bidrequestID is the macro {{UUID}}, so we should generate uuid",
-			givenRawData:           testBidRequests[4],
-			givenGenerateRequestID: false,
-			expectedID:             uuid,
-		},
-		{
-			description:            "GenerateRequestID is true, rawData is an app request, but no stored bid, we should not generate uuid",
-			givenRawData:           testBidRequests[0],
-			givenGenerateRequestID: true,
-			expectedID:             "ThisID",
-		},
-		{
-			description:            "GenerateRequestID is false and macro ID is not present, so we should not generate uuid",
-			givenRawData:           testBidRequests[0],
-			givenGenerateRequestID: false,
-			expectedID:             "ThisID",
-		},
-		{
-			description:            "GenerateRequestID is true, but rawData is a site request, we should not generate uuid",
-			givenRawData:           testBidRequests[1],
-			givenGenerateRequestID: true,
-			expectedID:             "ThisID",
-		},
-		{
-			description:            "Macro ID {{UUID}} case sensitivity check meaning a macro that is lowercase {{uuid}} shouldn't generate a uuid",
-			givenRawData:           testBidRequests[2],
-			givenGenerateRequestID: false,
-			expectedID:             "ThisID",
-		},
-		{
-			description:            "Test to check that stored requests are being merged when Macro ID is present with a site rquest",
-			givenRawData:           testBidRequests[5],
-			givenGenerateRequestID: false,
-			expectedID:             "ThisID",
-			expectedCur:            "USD",
-		},
-		{
-			description:            "Test to check that stored requests are being merged when Generate Request ID flag with a site rquest",
-			givenRawData:           testBidRequests[5],
-			givenGenerateRequestID: true,
-			expectedID:             "ThisID",
-			expectedCur:            "USD",
-		},
-	}
-
-	for _, test := range testCases {
-		deps.cfg.GenerateRequestID = test.givenGenerateRequestID
-		impInfo, errs := parseImpInfo([]byte(test.givenRawData))
-		assert.Empty(t, errs, test.description)
-		newRequest, _, errList := deps.processStoredRequests(context.Background(), json.RawMessage(test.givenRawData), impInfo)
-		assert.Empty(t, errList, test.description)
-
-		if err := json.Unmarshal(newRequest, req); err != nil {
-			t.Errorf("processStoredRequests Error: %s", err.Error())
-		}
-		if test.expectedCur != "" {
-			assert.Equalf(t, test.expectedCur, req.Cur[0], "The stored request wasn't merged properly: %s\n", test.description)
-		}
-		assert.Equalf(t, test.expectedID, req.ID, "The Bid Request ID is incorrect: %s\n", test.description)
-	}
-}
+//func TestStoredRequestGenerateUuid(t *testing.T) {
+//	uuid := "foo"
+//
+//	deps := &endpointDeps{
+//		fakeUUIDGenerator{id: "foo", err: nil},
+//		&nobidExchange{},
+//		newParamsValidator(t),
+//		&mockStoredReqFetcher{},
+//		empty_fetcher.EmptyFetcher{},
+//		empty_fetcher.EmptyFetcher{},
+//		&config.Configuration{MaxRequestSize: maxSize},
+//		&metricsConfig.NilMetricsEngine{},
+//		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+//		map[string]string{},
+//		false,
+//		[]byte{},
+//		openrtb_ext.BuildBidderMap(),
+//		nil,
+//		nil,
+//		hardcodedResponseIPValidator{response: true},
+//		empty_fetcher.EmptyFetcher{},
+//	}
+//
+//	req := &openrtb2.BidRequest{}
+//
+//	testCases := []struct {
+//		description            string
+//		givenRawData           string
+//		givenGenerateRequestID bool
+//		expectedID             string
+//		expectedCur            string
+//	}{
+//		{
+//			description:            "GenerateRequestID is true, rawData is an app request and has stored bid request we should generate uuid",
+//			givenRawData:           testBidRequests[2],
+//			givenGenerateRequestID: true,
+//			expectedID:             uuid,
+//		},
+//		{
+//			description:            "GenerateRequestID is true, rawData is an app request, has stored bid, and stored bidrequestID is not the macro {{UUID}}, we should generate uuid",
+//			givenRawData:           testBidRequests[3],
+//			givenGenerateRequestID: true,
+//			expectedID:             uuid,
+//		},
+//		{
+//			description:            "GenerateRequestID is false, rawData is an app request and has stored bid, but stored bidrequestID is the macro {{UUID}}, so we should generate uuid",
+//			givenRawData:           testBidRequests[4],
+//			givenGenerateRequestID: false,
+//			expectedID:             uuid,
+//		},
+//		{
+//			description:            "GenerateRequestID is true, rawData is an app request, but no stored bid, we should not generate uuid",
+//			givenRawData:           testBidRequests[0],
+//			givenGenerateRequestID: true,
+//			expectedID:             "ThisID",
+//		},
+//		{
+//			description:            "GenerateRequestID is false and macro ID is not present, so we should not generate uuid",
+//			givenRawData:           testBidRequests[0],
+//			givenGenerateRequestID: false,
+//			expectedID:             "ThisID",
+//		},
+//		{
+//			description:            "GenerateRequestID is true, but rawData is a site request, we should not generate uuid",
+//			givenRawData:           testBidRequests[1],
+//			givenGenerateRequestID: true,
+//			expectedID:             "ThisID",
+//		},
+//		{
+//			description:            "Macro ID {{UUID}} case sensitivity check meaning a macro that is lowercase {{uuid}} shouldn't generate a uuid",
+//			givenRawData:           testBidRequests[2],
+//			givenGenerateRequestID: false,
+//			expectedID:             "ThisID",
+//		},
+//		{
+//			description:            "Test to check that stored requests are being merged when Macro ID is present with a site rquest",
+//			givenRawData:           testBidRequests[5],
+//			givenGenerateRequestID: false,
+//			expectedID:             "ThisID",
+//			expectedCur:            "USD",
+//		},
+//		{
+//			description:            "Test to check that stored requests are being merged when Generate Request ID flag with a site rquest",
+//			givenRawData:           testBidRequests[5],
+//			givenGenerateRequestID: true,
+//			expectedID:             "ThisID",
+//			expectedCur:            "USD",
+//		},
+//	}
+//
+//	for _, test := range testCases {
+//		deps.cfg.GenerateRequestID = test.givenGenerateRequestID
+//		impInfo, errs := parseImpInfo([]byte(test.givenRawData))
+//		assert.Empty(t, errs, test.description)
+//		newRequest, _, errList := deps.processStoredRequests(context.Background(), json.RawMessage(test.givenRawData), impInfo)
+//		assert.Empty(t, errList, test.description)
+//
+//		if err := json.Unmarshal(newRequest, req); err != nil {
+//			t.Errorf("processStoredRequests Error: %s", err.Error())
+//		}
+//		if test.expectedCur != "" {
+//			assert.Equalf(t, test.expectedCur, req.Cur[0], "The stored request wasn't merged properly: %s\n", test.description)
+//		}
+//		assert.Equalf(t, test.expectedID, req.ID, "The Bid Request ID is incorrect: %s\n", test.description)
+//	}
+//}
 
 // TestOversizedRequest makes sure we behave properly when the request size exceeds the configured max.
 func TestOversizedRequest(t *testing.T) {
@@ -4718,7 +4729,8 @@ func getObject(t *testing.T, filename, key string) json.RawMessage {
 // the json file
 // -----------------------------------------
 type FooBidServer struct {
-	theBid mockBid
+	theBid     mockBid
+	bidderName string
 }
 
 func (b FooBidServer) bid(w http.ResponseWriter, req *http.Request) {
@@ -4733,31 +4745,27 @@ func (b FooBidServer) bid(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	var openrtb2ImpExt adapters.ExtImpBidder
+	var openrtb2ImpExt map[string]json.RawMessage
 	if err := json.Unmarshal(openrtb2Request.Imp[0].Ext, &openrtb2ImpExt); err != nil {
 		//http.Error(w, err.Error(), http.StatusInternalServerError)
 		http.Error(w, err.Error(), http.StatusNotImplemented)
 		return
 	}
 
-	var bidderToData map[string]json.RawMessage
-	if err := json.Unmarshal(openrtb2ImpExt.Bidder, &bidderToData); err != nil {
+	_, exists := openrtb2ImpExt["bidder"]
+	if !exists {
 		//http.Error(w, err.Error(), http.StatusInternalServerError)
-		http.Error(w, err.Error(), http.StatusBadGateway)
+		http.Error(w, "This request is not meant for this bidder", http.StatusServiceUnavailable)
 		return
 	}
 
 	// Values we need to build response
 	currency := b.theBid.BidCurrency
-	price := 0.00
-	bidderName := ""
+	price := b.theBid.BidPrice
 
-	for bidder, _ := range bidderToData {
-		bidderName = bidder
-	}
-	if price == 0 {
-		price = 1.00
-	}
+	//if price == 0 {
+	//price = 1.00
+	//}
 	if len(currency) == 0 {
 		currency = "USD"
 	}
@@ -4772,14 +4780,31 @@ func (b FooBidServer) bid(w http.ResponseWriter, req *http.Request) {
 			{
 				Bid: []openrtb2.Bid{
 					{
-						ID:    bidderName + "-bid",
+						ID:    b.bidderName,
 						ImpID: openrtb2Request.Imp[0].ID,
 						Price: price,
 					},
 				},
+				Seat: b.bidderName,
 			},
 		},
 	}
+
+	//var i int = 0
+	//for bidderName, _ := range bidderToData {
+	//	seatBid := []openrtb2.SeatBid{
+	//		Bid: []openrtb2.Bid{
+	//			{
+	//				ID:    bidderName + "-bid",
+	//				ImpID: openrtb2Request.Imp[i].ID,
+	//				Price: price,
+	//			},
+	//		},
+	//		Seat: bidderName + "-bids",
+	//	}
+	//	i++
+	//	serverResponseObject.SeatBid = append(serverResponseObject.SeatBid, seatBid)
+	//}
 
 	// Marshal the response and http write it
 	serverJsonResponse, err := json.Marshal(&serverResponseObject)
@@ -4855,13 +4880,17 @@ func (a FooBidAdapter) MakeBids(request *openrtb2.BidRequest, requestData *adapt
 	rv := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
 	rv.Currency = publisherResponse.Cur
 	for _, seatBid := range publisherResponse.SeatBid {
-		for i := range seatBid.Bid {
-			b := &adapters.TypedBid{
-				Bid: &seatBid.Bid[i],
-				//BidType: getMediaTypeForBid(bid),
-				BidType: openrtb_ext.BidTypeBanner,
+		for i, bid := range seatBid.Bid {
+			for _, imp := range request.Imp {
+				if imp.ID == bid.ImpID {
+					b := &adapters.TypedBid{
+						Bid: &seatBid.Bid[i],
+						//BidType: getMediaTypeForBid(bid),
+						BidType: openrtb_ext.BidTypeBanner,
+					}
+					rv.Bids = append(rv.Bids, b)
+				}
 			}
-			rv.Bids = append(rv.Bids, b)
 		}
 	}
 	return rv, nil
