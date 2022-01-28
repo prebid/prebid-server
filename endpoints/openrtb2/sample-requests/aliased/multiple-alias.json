@@ -58,32 +58,32 @@
       {
         "bid": [
           {
-            "id": "alias1-bid",
-            "impid": "",
+            "id": "appnexus-bid",
+            "impid": "my-imp-id",
             "price": 0
           }
         ],
-        "seat": "alias1-bids"
+        "seat": "alias1"
       },
       {
         "bid": [
           {
-            "id": "alias2-bid",
-            "impid": "",
+            "id": "rubicon-bid",
+            "impid": "my-imp-id",
             "price": 0
           }
         ],
-        "seat": "alias2-bids"
+        "seat": "alias2"
       },
       {
         "bid": [
           {
             "id": "appnexus-bid",
-            "impid": "",
+            "impid": "my-imp-id",
             "price": 0
           }
         ],
-        "seat": "appnexus-bids"
+        "seat": "appnexus"
       }
     ],
     "bidid": "test bid id",

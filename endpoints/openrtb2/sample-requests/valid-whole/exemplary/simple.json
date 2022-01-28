@@ -36,7 +36,7 @@
         {
           "bid": [
             {
-              "id": "appnexus",
+              "id": "appnexus-bid",
               "impid": "some-impression-id",
               "price": 0,
               "ext": {"prebid":{"type":"banner"}}

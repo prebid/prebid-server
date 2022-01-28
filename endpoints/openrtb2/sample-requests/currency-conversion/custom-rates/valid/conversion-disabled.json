@@ -50,11 +50,11 @@
           "bid": [
             {
               "id": "appnexus-bid",
-              "impid": "",
+              "impid": "my-imp-id",
               "price": 1.00
             }
           ],
-          "seat": "appnexus-bids"
+          "seat": "appnexus"
         }
       ]
   },

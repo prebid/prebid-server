@@ -3,7 +3,6 @@ package exchange
 import (
 	"context"
 	"errors"
-	"net/http"
 	"strconv"
 	"time"
 
@@ -15,14 +14,15 @@ import (
 	"github.com/prebid/prebid-server/stored_requests"
 )
 
-func BuildTestExchange(adapterMap map[openrtb_ext.BidderName]AdaptedBidder, categoriesFetcher stored_requests.CategoryFetcher) *exchange {
+func BuildTestExchange(adapterMap map[openrtb_ext.BidderName]AdaptedBidder, categoriesFetcher stored_requests.CategoryFetcher, currencyConverter *currency.RateConverter) *exchange {
 	return &exchange{
-		adapterMap:        adapterMap,
-		me:                &metricsConfig.NilMetricsEngine{},
-		cache:             &wellBehavedCache{},
-		cacheTime:         time.Duration(0),
-		gDPR:              gdpr.AlwaysAllow{},
-		currencyConverter: currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
+		adapterMap: adapterMap,
+		me:         &metricsConfig.NilMetricsEngine{},
+		cache:      &wellBehavedCache{},
+		cacheTime:  time.Duration(0),
+		gDPR:       gdpr.AlwaysAllow{},
+		//currencyConverter: currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
+		currencyConverter: currencyConverter,
 		gdprDefaultValue:  gdpr.SignalYes,
 		categoriesFetcher: categoriesFetcher,
 		bidIDGenerator:    &mockBidIDGenerator{false, false},

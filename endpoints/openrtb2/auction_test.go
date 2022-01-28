@@ -67,64 +67,62 @@ func TestJsonSampleRequests(t *testing.T) {
 			"Assert 200s on all bidRequests from exemplary folder",
 			"valid-whole/exemplary",
 		},
-		/*
-			{
-				"Asserts we return 200s on well-formed Native requests.",
-				"valid-native",
-			},
-			{
-				"Asserts we return 400s on requests that are not supposed to pass validation",
-				"invalid-whole",
-			},
-			{
-				"Asserts we return 400s on requests with Native requests that don't pass validation",
-				"invalid-native",
-			},
-			{
-				"Makes sure we handle (default) aliased bidders properly",
-				"aliased",
-			},
-			{
-				"Asserts we return 503s on requests with blacklisted accounts and apps.",
-				"blacklisted",
-			},
-			{
-				"Assert that requests that come with no user id nor app id return error if the `AccountRequired` field in the `config.Configuration` structure is set to true",
-				"account-required/no-account",
-			},
-			{
-				"Assert requests that come with a valid user id or app id when account is required",
-				"account-required/with-account",
-			},
-			{
-				"Tests diagnostic messages for invalid stored requests",
-				"invalid-stored",
-			},
-			{
-				"Make sure requests with disabled bidders will fail",
-				"disabled/bad",
-			},
-			{
-				"There are both disabled and non-disabled bidders, we expect a 200",
-				"disabled/good",
-			},
-			{
-				"Assert we correctly use the server conversion rates when needed",
-				"currency-conversion/server-rates/valid",
-			},
-			{
-				"Assert we correctly throw an error when no conversion rate was found in the server conversions map",
-				"currency-conversion/server-rates/errors",
-			},
-			{
-				"Assert we correctly use request-defined custom currency rates when present in root.ext",
-				"currency-conversion/custom-rates/valid",
-			},
-			{
-				"Assert we correctly validate request-defined custom currency rates when present in root.ext",
-				"currency-conversion/custom-rates/errors",
-			},
-		*/
+		{
+			"Asserts we return 200s on well-formed Native requests.",
+			"valid-native",
+		},
+		{
+			"Asserts we return 400s on requests that are not supposed to pass validation",
+			"invalid-whole",
+		},
+		{
+			"Asserts we return 400s on requests with Native requests that don't pass validation",
+			"invalid-native",
+		},
+		{
+			"Makes sure we handle (default) aliased bidders properly",
+			"aliased",
+		},
+		{
+			"Asserts we return 503s on requests with blacklisted accounts and apps.",
+			"blacklisted",
+		},
+		{
+			"Assert that requests that come with no user id nor app id return error if the `AccountRequired` field in the `config.Configuration` structure is set to true",
+			"account-required/no-account",
+		},
+		{
+			"Assert requests that come with a valid user id or app id when account is required",
+			"account-required/with-account",
+		},
+		{
+			"Tests diagnostic messages for invalid stored requests",
+			"invalid-stored",
+		},
+		{
+			"Make sure requests with disabled bidders will fail",
+			"disabled/bad",
+		},
+		{
+			"There are both disabled and non-disabled bidders, we expect a 200",
+			"disabled/good",
+		},
+		{
+			"Assert we correctly use the server conversion rates when needed",
+			"currency-conversion/server-rates/valid",
+		},
+		{
+			"Assert we correctly throw an error when no conversion rate was found in the server conversions map",
+			"currency-conversion/server-rates/errors",
+		},
+		{
+			"Assert we correctly use request-defined custom currency rates when present in root.ext",
+			"currency-conversion/custom-rates/valid",
+		},
+		{
+			"Assert we correctly validate request-defined custom currency rates when present in root.ext",
+			"currency-conversion/custom-rates/errors",
+		},
 	}
 	for _, test := range testSuites {
 		testCaseFiles, err := getTestFiles(filepath.Join("sample-requests", test.sampleRequestsSubDir))
@@ -274,6 +272,7 @@ func assertBidResponseEqual(t *testing.T, testFile string, expectedBidResponse o
 
 	//Assert []SeatBid and their Bid elements independently of their order
 	assert.Len(t, actualBidResponse.SeatBid, len(expectedBidResponse.SeatBid), "BidResponse.SeatBid is expected to contain %d elements but contains %d. Test: %s\n", len(expectedBidResponse.SeatBid), len(actualBidResponse.SeatBid), testFile)
+	//assert.ElementsMatch(t, expectedBidResponse.SeatBid, actualBidResponse.SeatBid, "BidResponse.SeatBid array doesn't match expected. Test: %s\n", testFile)
 
 	//Given that bidResponses have the same length, compare them in an order-independent way using maps
 	var actualSeatBidsMap map[string]openrtb2.SeatBid = make(map[string]openrtb2.SeatBid, 0)
@@ -286,15 +285,35 @@ func assertBidResponseEqual(t *testing.T, testFile string, expectedBidResponse o
 		expectedSeatBidsMap[seatBid.Seat] = seatBid
 	}
 
-	for k, expectedSeatBid := range expectedSeatBidsMap {
-		//Assert non-array SeatBid fields
-		assert.Equalf(t, expectedSeatBid.Seat, actualSeatBidsMap[k].Seat, "actualSeatBidsMap[%s].Seat doesn't match expected. Test: %s\n", k, testFile)
-		assert.Equalf(t, expectedSeatBid.Group, actualSeatBidsMap[k].Group, "actualSeatBidsMap[%s].Group doesn't match expected. Test: %s\n", k, testFile)
-		assert.Equalf(t, expectedSeatBid.Ext, actualSeatBidsMap[k].Ext, "actualSeatBidsMap[%s].Ext doesn't match expected. Test: %s\n", k, testFile)
-		assert.Len(t, actualSeatBidsMap[k].Bid, len(expectedSeatBid.Bid), "BidResponse.SeatBid[].Bid array is expected to contain %d elements but has %d. Test: %s\n", len(expectedSeatBid.Bid), len(actualSeatBidsMap[k].Bid), testFile)
+	for bidderName, expectedSeatBid := range expectedSeatBidsMap {
+		if !assert.Contains(t, actualSeatBidsMap, bidderName, "BidResponse.SeatBid[%s] was not found as expected. Test: %s\n", bidderName, testFile) {
+			continue
+		}
 
-		//Assert Bid arrays
-		assert.ElementsMatch(t, expectedSeatBid.Bid, actualSeatBidsMap[k].Bid, "BidResponse.SeatBid[%s] array doesn't match expected. Test: %s\n", k, testFile)
+		//Assert non-array SeatBid fields
+		assert.Equalf(t, expectedSeatBid.Seat, actualSeatBidsMap[bidderName].Seat, "actualSeatBidsMap[%s].Seat doesn't match expected. Test: %s\n", bidderName, testFile)
+		assert.Equalf(t, expectedSeatBid.Group, actualSeatBidsMap[bidderName].Group, "actualSeatBidsMap[%s].Group doesn't match expected. Test: %s\n", bidderName, testFile)
+		assert.Equalf(t, expectedSeatBid.Ext, actualSeatBidsMap[bidderName].Ext, "actualSeatBidsMap[%s].Ext doesn't match expected. Test: %s\n", bidderName, testFile)
+		assert.Len(t, actualSeatBidsMap[bidderName].Bid, len(expectedSeatBid.Bid), "BidResponse.SeatBid[].Bid array is expected to contain %d elements but has %d. Test: %s\n", len(expectedSeatBid.Bid), len(actualSeatBidsMap[bidderName].Bid), testFile)
+
+		// Assert Bid arrays
+		//assert.ElementsMatch(t, expectedSeatBid.Bid, actualSeatBidsMap[bidderName].Bid, "BidResponse.SeatBid[%s].Bid array doesn't match expected. Test: %s\n", bidderName, testFile)
+
+		// Given that actualSeatBidsMap[bidderName].Bid and expectedSeatBid.Bid have the same length, compare them in an order-independent way using maps
+		for bidIndex, expectedBid := range expectedSeatBid.Bid {
+			matched := false
+			for _, actualBid := range actualSeatBidsMap[bidderName].Bid {
+				if expectedBid.ID == actualBid.ID && expectedBid.ImpID == actualBid.ImpID && expectedBid.Price == actualBid.Price {
+					matched = true
+				}
+				//assert.Equalf(t, expectedBid.ID, actualBid.ID, "BidResponse.SeatBid[%s].Bid[%d].ID doesn't match expected. Test: %s\n", bidderName, bidIndex, testFile)
+				//assert.Equalf(t, expectedBid.ImpID, actualBid.ImpID, "BidResponse.SeatBid[%s].Bid[%d].ImpID doesn't match expected. Test: %s\n", bidderName, bidIndex, testFile)
+				//assert.Equalf(t, expectedBid.Price, actualBid.Price, "BidResponse.SeatBid[%s].Bid[%d].Price doesn't match expected. Test: %s\n", bidderName, bidIndex, testFile)
+			}
+			if !assert.True(t, matched, "BidResponse.SeatBid[%s].Bid[%d] didn't find a match. Test: %s\n", bidderName, bidIndex, testFile) {
+				assert.ElementsMatch(t, expectedSeatBid.Bid, actualSeatBidsMap[bidderName].Bid, "BidResponse.SeatBid[%s].Bid array doesn't match expected. Test: %s\n", bidderName, testFile)
+			}
+		}
 	}
 }
 
@@ -510,33 +529,50 @@ func doRequest(t *testing.T, test testCase) (int, string) {
 	bidderMap := exchange.GetActiveBidders(bidderInfos)
 	disabledBidders := exchange.GetDisabledBiddersErrorMessages(bidderInfos)
 
-	mockBidder := FooBidServer{
-		theBid:     test.Config.MockBidder,
-		bidderName: "appnexus",
+	// Adapter map with mock adapters that point to mock bid servers
+	adapterMap := make(map[openrtb_ext.BidderName]exchange.AdaptedBidder, 0)
+
+	// AppNexus mock bid server and adapter
+	appNexusBidder := FooBidServer{bidInfo: test.Config.MockBidder, bidderName: "appnexus"}
+	appNexusServer := httptest.NewServer(http.HandlerFunc(appNexusBidder.bid))
+	defer appNexusServer.Close()
+	appNexusBidderAdapter := FooBidAdapter{mockServerURL: appNexusServer.URL + "/some/path"}
+	adapterMap[openrtb_ext.BidderAppnexus] = exchange.AdaptBidder(appNexusBidderAdapter, appNexusServer.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil)
+
+	// openX mock bid server and adapter
+	openXBidder := FooBidServer{bidInfo: test.Config.MockBidder, bidderName: "openx"}
+	openXServer := httptest.NewServer(http.HandlerFunc(openXBidder.bid))
+	defer openXServer.Close()
+	openXBidderAdapter := FooBidAdapter{mockServerURL: openXServer.URL + "/some/path"}
+	adapterMap[openrtb_ext.BidderOpenx] = exchange.AdaptBidder(openXBidderAdapter, openXServer.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderOpenx, nil)
+
+	// Rubicon mock bid server and adapter
+	rubiconBidder := FooBidServer{bidInfo: test.Config.MockBidder, bidderName: "rubicon"}
+	rubiconServer := httptest.NewServer(http.HandlerFunc(rubiconBidder.bid))
+	defer rubiconServer.Close()
+	rubiconBidderAdapter := FooBidAdapter{mockServerURL: rubiconServer.URL + "/some/path"}
+	adapterMap[openrtb_ext.BidderRubicon] = exchange.AdaptBidder(rubiconBidderAdapter, rubiconServer.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderRubicon, nil)
+
+	//adapterMap := map[openrtb_ext.BidderName]exchange.AdaptedBidder{
+	//openrtb_ext.BidderAppnexus: exchange.AdaptBidder( mockBidderAdapter, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil),
+	//openrtb_ext.BidderDmx: exchange.AdaptBidder(mockBidderAdapter, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil),
+	//openrtb_ext.BidderRubicon: exchange.AdaptBidder(mockBidderAdapter, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil),
+	//}
+
+	// Mock prebid Server's currency converter, instantiate and start
+	mockCurrencyConversionService := mockCurrencyRatesClient{
+		currencyInfo{
+			Conversions: test.Config.CurrencyRates,
+		},
 	}
-
-	server := httptest.NewServer(http.HandlerFunc(mockBidder.bid))
-	defer server.Close()
-
-	mockBidderAdapter := FooBidAdapter{mockServerURL: server.URL + "/some/path"}
-
-	adapterMap := map[openrtb_ext.BidderName]exchange.AdaptedBidder{
-		openrtb_ext.BidderAppnexus: exchange.AdaptBidder(
-			mockBidderAdapter,
-			server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil),
-		openrtb_ext.BidderDmx: exchange.AdaptBidder(
-			mockBidderAdapter,
-			server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil,
-		),
-		//openrtb_ext.BidderRubicon: exchange.AdaptBidder(
-		//mockBidderAdapter,
-		//server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil,
-		//),
-	}
+	mockCurrencyRatesServer := httptest.NewServer(http.HandlerFunc(mockCurrencyConversionService.handle))
+	defer rubiconServer.Close()
+	mockCurrencyConverter := currency.NewRateConverter(mockCurrencyRatesServer.Client(), mockCurrencyRatesServer.URL, time.Second)
+	mockCurrencyConverter.Run()
 
 	endpoint, _ := NewEndpoint(
 		fakeUUIDGenerator{},
-		exchange.BuildTestExchange(adapterMap, empty_fetcher.EmptyFetcher{}),
+		exchange.BuildTestExchange(adapterMap, empty_fetcher.EmptyFetcher{}, mockCurrencyConverter),
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -4725,11 +4761,44 @@ func getObject(t *testing.T, filename, key string) json.RawMessage {
 }
 
 // -----------------------------------------
+// Mock currency rate server whose rates can be configured in the json test file
+// -----------------------------------------
+type mockCurrencyRatesClient struct {
+	data currencyInfo
+}
+
+type currencyInfo struct {
+	Conversions map[string]map[string]float64 `json:"conversions"`
+	DataAsOfRaw string                        `json:"dataAsOf"`
+}
+
+func (s mockCurrencyRatesClient) handle(w http.ResponseWriter, req *http.Request) {
+	s.data.DataAsOfRaw = "2018-09-12"
+
+	// Marshal the response and http write it
+	currencyServerJsonResponse, err := json.Marshal(&s.data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Write(currencyServerJsonResponse)
+	return
+}
+
+//func (m *mockCurrencyRatesClient) Do(req *http.Request) (*http.Response, error) {
+//	return &http.Response{
+//		Status:     "200 OK",
+//		StatusCode: http.StatusOK,
+//		Body:       ioutil.NopCloser(strings.NewReader(m.responseBody)),
+//	}, nil
+//}
+
+// -----------------------------------------
 // Sample mock bidder service whose bids can be configured from
 // the json file
 // -----------------------------------------
 type FooBidServer struct {
-	theBid     mockBid
+	bidInfo    mockBid
 	bidderName string
 }
 
@@ -4738,49 +4807,43 @@ func (b FooBidServer) bid(w http.ResponseWriter, req *http.Request) {
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(req.Body)
 
-	// Unmarshal
+	// Unmarshal exit if error
 	var openrtb2Request openrtb2.BidRequest
 	if err := json.Unmarshal(buf.Bytes(), &openrtb2Request); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	var openrtb2ImpExt map[string]json.RawMessage
 	if err := json.Unmarshal(openrtb2Request.Imp[0].Ext, &openrtb2ImpExt); err != nil {
-		//http.Error(w, err.Error(), http.StatusInternalServerError)
-		http.Error(w, err.Error(), http.StatusNotImplemented)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	_, exists := openrtb2ImpExt["bidder"]
 	if !exists {
-		//http.Error(w, err.Error(), http.StatusInternalServerError)
-		http.Error(w, "This request is not meant for this bidder", http.StatusServiceUnavailable)
+		http.Error(w, "This request is not meant for this bidder", http.StatusBadRequest)
 		return
 	}
 
 	// Values we need to build response
-	currency := b.theBid.BidCurrency
-	price := b.theBid.BidPrice
+	currency := b.bidInfo.BidCurrency
+	price := b.bidInfo.BidPrice
 
-	//if price == 0 {
-	//price = 1.00
-	//}
+	// default values
 	if len(currency) == 0 {
 		currency = "USD"
 	}
 
 	// Create bid service openrtb2.BidResponse with one bid according to JSON test file values
 	var serverResponseObject = openrtb2.BidResponse{
-		ID: openrtb2Request.ID,
-		//BidID: "test bid id",
+		ID:  openrtb2Request.ID,
 		Cur: currency,
-		//NBR:   openrtb2.NoBidReasonCodeUnknownError.Ptr(),
 		SeatBid: []openrtb2.SeatBid{
 			{
 				Bid: []openrtb2.Bid{
 					{
-						ID:    b.bidderName,
+						ID:    b.bidderName + "-bid",
 						ImpID: openrtb2Request.Imp[0].ID,
 						Price: price,
 					},
@@ -4790,29 +4853,13 @@ func (b FooBidServer) bid(w http.ResponseWriter, req *http.Request) {
 		},
 	}
 
-	//var i int = 0
-	//for bidderName, _ := range bidderToData {
-	//	seatBid := []openrtb2.SeatBid{
-	//		Bid: []openrtb2.Bid{
-	//			{
-	//				ID:    bidderName + "-bid",
-	//				ImpID: openrtb2Request.Imp[i].ID,
-	//				Price: price,
-	//			},
-	//		},
-	//		Seat: bidderName + "-bids",
-	//	}
-	//	i++
-	//	serverResponseObject.SeatBid = append(serverResponseObject.SeatBid, seatBid)
-	//}
-
 	// Marshal the response and http write it
 	serverJsonResponse, err := json.Marshal(&serverResponseObject)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.Write(serverJsonResponse) // implies htt.StatusOK
+	w.Write(serverJsonResponse)
 	return
 }
 
@@ -4832,6 +4879,8 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	return adapter, nil
 }
 
+// ID:  "some-impression-id"
+// Ext: `{"bidder":{...}}`
 func (a FooBidAdapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var requests []*adapters.RequestData
 	var errors []error
