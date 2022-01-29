@@ -11,7 +11,6 @@ import (
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
-	"github.com/prebid/prebid-server/gdpr"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 
@@ -83,18 +82,7 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 		t.Errorf("Failed to create a category Fetcher: %v", error)
 	}
 
-	//ex := BuildTestExchange(buildAdapterMap(mockBids, server.URL, server.Client()), categoriesFetcher)
-	ex := &exchange{
-		adapterMap:        buildAdapterMap(mockBids, server.URL, server.Client()),
-		me:                &metricsConfig.NilMetricsEngine{},
-		cache:             &wellBehavedCache{},
-		cacheTime:         time.Duration(0),
-		gDPR:              gdpr.AlwaysAllow{},
-		currencyConverter: currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
-		gdprDefaultValue:  gdpr.SignalYes,
-		categoriesFetcher: categoriesFetcher,
-		bidIDGenerator:    &mockBidIDGenerator{false, false},
-	}
+	ex := NewExchangeFromAdapterMapFetcherAndCurrencyConv(buildAdapterMap(mockBids, server.URL, server.Client()), categoriesFetcher, currency.NewRateConverter(&http.Client{}, "", time.Duration(0)))
 
 	imps := buildImps(t, mockBids)
 

@@ -489,21 +489,21 @@ func doRequest(t *testing.T, test testCase) (int, string) {
 	appNexusBidder := mockBidderHandler{bidInfo: test.Config.MockBidder, bidderName: "appnexus"}
 	appNexusServer := httptest.NewServer(http.HandlerFunc(appNexusBidder.bid))
 	defer appNexusServer.Close()
-	appNexusBidderAdapter := mockAdapter{mockServerURL: appNexusServer.URL + "/some/path"}
+	appNexusBidderAdapter := mockAdapter{mockServerURL: appNexusServer.URL}
 	adapterMap[openrtb_ext.BidderAppnexus] = exchange.AdaptBidder(appNexusBidderAdapter, appNexusServer.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil)
 
 	// openX mock bid server and adapter
 	openXBidder := mockBidderHandler{bidInfo: test.Config.MockBidder, bidderName: "openx"}
 	openXServer := httptest.NewServer(http.HandlerFunc(openXBidder.bid))
 	defer openXServer.Close()
-	openXBidderAdapter := mockAdapter{mockServerURL: openXServer.URL + "/some/path"}
+	openXBidderAdapter := mockAdapter{mockServerURL: openXServer.URL}
 	adapterMap[openrtb_ext.BidderOpenx] = exchange.AdaptBidder(openXBidderAdapter, openXServer.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderOpenx, nil)
 
 	// Rubicon mock bid server and adapter
 	rubiconBidder := mockBidderHandler{bidInfo: test.Config.MockBidder, bidderName: "rubicon"}
 	rubiconServer := httptest.NewServer(http.HandlerFunc(rubiconBidder.bid))
 	defer rubiconServer.Close()
-	rubiconBidderAdapter := mockAdapter{mockServerURL: rubiconServer.URL + "/some/path"}
+	rubiconBidderAdapter := mockAdapter{mockServerURL: rubiconServer.URL}
 	adapterMap[openrtb_ext.BidderRubicon] = exchange.AdaptBidder(rubiconBidderAdapter, rubiconServer.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderRubicon, nil)
 
 	// Mock prebid Server's currency converter, instantiate and start
@@ -520,7 +520,7 @@ func doRequest(t *testing.T, test testCase) (int, string) {
 	// Instantiate auction endpoint
 	endpoint, _ := NewEndpoint(
 		fakeUUIDGenerator{},
-		exchange.BuildTestExchange(adapterMap, empty_fetcher.EmptyFetcher{}, mockCurrencyConverter),
+		exchange.NewExchangeFromAdapterMapFetcherAndCurrencyConv(adapterMap, empty_fetcher.EmptyFetcher{}, mockCurrencyConverter),
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
