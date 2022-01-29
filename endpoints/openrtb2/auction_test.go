@@ -67,64 +67,62 @@ func TestJsonSampleRequests(t *testing.T) {
 			"Assert 200s on all bidRequests from exemplary folder",
 			"valid-whole/exemplary",
 		},
-		/*
-			{
-				"Asserts we return 200s on well-formed Native requests.",
-				"valid-native",
-			},
-			{
-				"Asserts we return 400s on requests that are not supposed to pass validation",
-				"invalid-whole",
-			},
-			{
-				"Asserts we return 400s on requests with Native requests that don't pass validation",
-				"invalid-native",
-			},
-			{
-				"Makes sure we handle (default) aliased bidders properly",
-				"aliased",
-			},
-			{
-				"Asserts we return 503s on requests with blacklisted accounts and apps.",
-				"blacklisted",
-			},
-			{
-				"Assert that requests that come with no user id nor app id return error if the `AccountRequired` field in the `config.Configuration` structure is set to true",
-				"account-required/no-account",
-			},
-			{
-				"Assert requests that come with a valid user id or app id when account is required",
-				"account-required/with-account",
-			},
-			{
-				"Tests diagnostic messages for invalid stored requests",
-				"invalid-stored",
-			},
-			{
-				"Make sure requests with disabled bidders will fail",
-				"disabled/bad",
-			},
-			{
-				"There are both disabled and non-disabled bidders, we expect a 200",
-				"disabled/good",
-			},
-			{
-				"Assert we correctly use the server conversion rates when needed",
-				"currency-conversion/server-rates/valid",
-			},
-			{
-				"Assert we correctly throw an error when no conversion rate was found in the server conversions map",
-				"currency-conversion/server-rates/errors",
-			},
-			{
-				"Assert we correctly use request-defined custom currency rates when present in root.ext",
-				"currency-conversion/custom-rates/valid",
-			},
-			{
-				"Assert we correctly validate request-defined custom currency rates when present in root.ext",
-				"currency-conversion/custom-rates/errors",
-			},
-		*/
+		{
+			"Asserts we return 200s on well-formed Native requests.",
+			"valid-native",
+		},
+		{
+			"Asserts we return 400s on requests that are not supposed to pass validation",
+			"invalid-whole",
+		},
+		{
+			"Asserts we return 400s on requests with Native requests that don't pass validation",
+			"invalid-native",
+		},
+		{
+			"Makes sure we handle (default) aliased bidders properly",
+			"aliased",
+		},
+		{
+			"Asserts we return 503s on requests with blacklisted accounts and apps.",
+			"blacklisted",
+		},
+		{
+			"Assert that requests that come with no user id nor app id return error if the `AccountRequired` field in the `config.Configuration` structure is set to true",
+			"account-required/no-account",
+		},
+		{
+			"Assert requests that come with a valid user id or app id when account is required",
+			"account-required/with-account",
+		},
+		{
+			"Tests diagnostic messages for invalid stored requests",
+			"invalid-stored",
+		},
+		{
+			"Make sure requests with disabled bidders will fail",
+			"disabled/bad",
+		},
+		{
+			"There are both disabled and non-disabled bidders, we expect a 200",
+			"disabled/good",
+		},
+		{
+			"Assert we correctly use the server conversion rates when needed",
+			"currency-conversion/server-rates/valid",
+		},
+		{
+			"Assert we correctly throw an error when no conversion rate was found in the server conversions map",
+			"currency-conversion/server-rates/errors",
+		},
+		{
+			"Assert we correctly use request-defined custom currency rates when present in root.ext",
+			"currency-conversion/custom-rates/valid",
+		},
+		{
+			"Assert we correctly validate request-defined custom currency rates when present in root.ext",
+			"currency-conversion/custom-rates/errors",
+		},
 	}
 	for _, test := range testSuites {
 		testCaseFiles, err := getTestFiles(filepath.Join("sample-requests", test.sampleRequestsSubDir))
@@ -3776,8 +3774,7 @@ func (e *nobidExchange) HoldAuction(ctx context.Context, r exchange.AuctionReque
 	}, nil
 }
 
-// mockBidInfo carries mock bidder server information that will be read
-// from JSON test files
+// mockBidInfo carries mock bidder server information that will be read from JSON test files
 type mockBidInfo struct {
 	BidCurrency string  `json:"currency"`
 	BidPrice    float64 `json:"price"`
@@ -4631,7 +4628,7 @@ func getObject(t *testing.T, filename, key string) json.RawMessage {
 }
 
 // mockCurrencyRatesClient is a mock currency rate server and the rates it returns
-// are set in the json test file
+// are set in the JSON test file
 type mockCurrencyRatesClient struct {
 	data currencyInfo
 }
@@ -4654,9 +4651,9 @@ func (s mockCurrencyRatesClient) handle(w http.ResponseWriter, req *http.Request
 	return
 }
 
-// mockBidderHandler is a mock bidder service. Its bidder name can be set upon
-// instantiation and its whose bid price, and bid currency can be set in the
-// json test file
+// mockBidderHandler defines the handle function of a a mock bidder service. Its bidder
+// name can be set upon instantiation and its bid price and bid currency can be set in the
+// JSON test file itself
 type mockBidderHandler struct {
 	bidInfo    mockBidInfo
 	bidderName string
@@ -4723,9 +4720,7 @@ func (b mockBidderHandler) bid(w http.ResponseWriter, req *http.Request) {
 	return
 }
 
-// -----------------------------------------
-// Mock impression splitting adapter
-// -----------------------------------------
+// mockAdapter is a mock impression-splitting adapter
 type mockAdapter struct {
 	mockServerURL string
 }
@@ -4789,8 +4784,7 @@ func (a mockAdapter) MakeBids(request *openrtb2.BidRequest, requestData *adapter
 			for _, imp := range request.Imp {
 				if imp.ID == bid.ImpID {
 					b := &adapters.TypedBid{
-						Bid: &seatBid.Bid[i],
-						//BidType: getMediaTypeForBid(bid),
+						Bid:     &seatBid.Bid[i],
 						BidType: openrtb_ext.BidTypeBanner,
 					}
 					rv.Bids = append(rv.Bids, b)
