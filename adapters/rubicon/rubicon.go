@@ -268,6 +268,7 @@ type rubiconUserExtEidExt struct {
 // defines the contract for bidrequest.user.ext.eids[i].uids[j].ext
 type rubiconUserExtEidUidExt struct {
 	RtiPartner string `json:"rtiPartner,omitempty"`
+	Stype      string `json:"stype"`
 }
 
 type mappedRubiconUidsParam struct {
@@ -458,6 +459,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			}
 
 			userExtRP := rubiconUserExt{RP: rubiconUserExtRP{Target: target}}
+			userBuyerUID := userCopy.BuyerUID
 
 			if request.User.Ext != nil {
 				var userExt *openrtb_ext.ExtUser
@@ -472,6 +474,10 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 
 				// set user.ext.tpid
 				if len(userExt.Eids) > 0 {
+					if userBuyerUID == "" {
+						userBuyerUID = extractUserBuyerUID(userExt.Eids)
+					}
+
 					mappedRubiconUidsParam, errors := getTpIdsAndSegments(userExt.Eids)
 					if len(errors) > 0 {
 						errs = append(errs, errors...)
@@ -495,6 +501,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			userCopy.Geo = nil
 			userCopy.Yob = 0
 			userCopy.Gender = ""
+			userCopy.BuyerUID = userBuyerUID
 
 			rubiconRequest.User = &userCopy
 		}
@@ -889,6 +896,28 @@ func contains(s []int, e int) bool {
 		}
 	}
 	return false
+}
+
+func extractUserBuyerUID(eids []openrtb_ext.ExtUserEid) string {
+	for _, eid := range eids {
+		if eid.Source != "rubiconproject.com" {
+			continue
+		}
+
+		for _, uid := range eid.Uids {
+			var uidExt rubiconUserExtEidUidExt
+			err := json.Unmarshal(uid.Ext, &uidExt)
+			if err != nil {
+				continue
+			}
+
+			if uidExt.Stype == "ppuid" || uidExt.Stype == "other" {
+				return uid.ID
+			}
+		}
+	}
+
+	return ""
 }
 
 func getTpIdsAndSegments(eids []openrtb_ext.ExtUserEid) (mappedRubiconUidsParam, []error) {

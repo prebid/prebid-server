@@ -6,9 +6,11 @@ capabilities:
   site:
     mediaTypes:
       - banner
+      - video
   app:
     mediaTypes:
       - banner
+      - video
 userSync:
   iframe:
     url: "https://sync.richaudience.com/74889303289e27f327ad0c6de7be7264/?consentString={{.GDPRConsent}}&r={{.RedirectURL}}"

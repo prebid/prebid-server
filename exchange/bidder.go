@@ -140,7 +140,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb2.B
 		}
 		return nil, errs
 	}
-	xPrebidHeader := buildXPrebidHeader(request, version.Ver)
+	xPrebidHeader := version.BuildXPrebidHeaderForRequest(request, version.Ver)
 
 	for i := 0; i < len(reqData); i++ {
 		if reqData[i].Headers != nil {

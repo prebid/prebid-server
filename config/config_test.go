@@ -217,8 +217,8 @@ func TestDefaults(t *testing.T) {
 			VendorExceptions:   []openrtb_ext.BidderName{},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 		},
-		SpecialPurpose1: TCF2Purpose{
-			Enabled:            true,
+		SpecialFeature1: TCF2SpecialFeature{
+			Enforce:            true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 		},
@@ -272,7 +272,7 @@ gdpr:
     purpose10:
       enforce_vendors: false
       vendor_exceptions: ["foo10"]
-    special_purpose1:
+    special_feature1:
       vendor_exceptions: ["fooSP1"]
 ccpa:
   enforce: true
@@ -540,8 +540,8 @@ func TestFullConfig(t *testing.T) {
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo10")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo10"): {}},
 		},
-		SpecialPurpose1: TCF2Purpose{
-			Enabled:            true, // true by default
+		SpecialFeature1: TCF2SpecialFeature{
+			Enforce:            true, // true by default
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("fooSP1")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("fooSP1"): {}},
 		},
@@ -762,6 +762,91 @@ func TestMigrateConfigPurposeOneTreatment(t *testing.T) {
 			assert.Nil(t, v.Get("gdpr.tcf2.purpose_one_treatment.enabled"), tt.description)
 			assert.Nil(t, v.Get("gdpr.tcf2.purpose_one_treatment.access_allowed"), tt.description)
 		}
+	}
+}
+
+func TestMigrateConfigSpecialFeature1(t *testing.T) {
+	oldSpecialFeature1Config := []byte(`
+      gdpr:
+        tcf2:
+          special_purpose1:
+            enabled: true
+            vendor_exceptions: ["appnexus"]
+    `)
+	newSpecialFeature1Config := []byte(`
+      gdpr:
+        tcf2:
+          special_feature1:
+            enforce: true
+            vendor_exceptions: ["appnexus"]
+    `)
+	oldAndNewSpecialFeature1Config := []byte(`
+      gdpr:
+        tcf2:
+          special_purpose1:
+            enabled: false
+            vendor_exceptions: ["appnexus"]
+          special_feature1:
+            enforce: true
+            vendor_exceptions: ["rubicon"]
+    `)
+
+	tests := []struct {
+		description                         string
+		config                              []byte
+		wantSpecialFeature1Enforce          bool
+		wantSpecialFeature1VendorExceptions []string
+	}{
+		{
+			description: "New config and old config not set",
+			config:      []byte{},
+		},
+		{
+			description:                         "New config not set, old config set",
+			config:                              oldSpecialFeature1Config,
+			wantSpecialFeature1Enforce:          true,
+			wantSpecialFeature1VendorExceptions: []string{"appnexus"},
+		},
+		{
+			description:                         "New config set, old config not set",
+			config:                              newSpecialFeature1Config,
+			wantSpecialFeature1Enforce:          true,
+			wantSpecialFeature1VendorExceptions: []string{"appnexus"},
+		},
+		{
+			description:                         "New config and old config set",
+			config:                              oldAndNewSpecialFeature1Config,
+			wantSpecialFeature1Enforce:          true,
+			wantSpecialFeature1VendorExceptions: []string{"rubicon"},
+		},
+	}
+
+	for _, tt := range tests {
+		v := viper.New()
+		v.SetConfigType("yaml")
+		v.ReadConfig(bytes.NewBuffer(tt.config))
+
+		migrateConfigSpecialFeature1(v)
+
+		if len(tt.config) > 0 {
+			assert.Equal(t, tt.wantSpecialFeature1Enforce, v.Get("gdpr.tcf2.special_feature1.enforce").(bool), tt.description)
+			assert.Equal(t, tt.wantSpecialFeature1VendorExceptions, v.GetStringSlice("gdpr.tcf2.special_feature1.vendor_exceptions"), tt.description)
+		} else {
+			assert.Nil(t, v.Get("gdpr.tcf2.special_feature1.enforce"), tt.description)
+			assert.Nil(t, v.Get("gdpr.tcf2.special_feature1.vendor_exceptions"), tt.description)
+		}
+
+		var c Configuration
+		err := v.Unmarshal(&c)
+		assert.NoError(t, err, tt.description)
+		assert.Equal(t, tt.wantSpecialFeature1Enforce, c.GDPR.TCF2.SpecialFeature1.Enforce, tt.description)
+
+		// convert expected vendor exceptions to type BidderName
+		expectedVendorExceptions := make([]openrtb_ext.BidderName, 0, 0)
+		for _, ve := range tt.wantSpecialFeature1VendorExceptions {
+			expectedVendorExceptions = append(expectedVendorExceptions, openrtb_ext.BidderName(ve))
+		}
+		assert.ElementsMatch(t, expectedVendorExceptions, c.GDPR.TCF2.SpecialFeature1.VendorExceptions, tt.description)
 	}
 }
 
@@ -1290,4 +1375,59 @@ func doTimeoutTest(t *testing.T, expected int, requested int, max uint64, def ui
 	expectedDuration := time.Duration(expected) * time.Millisecond
 	limited := cfg.LimitAuctionTimeout(time.Duration(requested) * time.Millisecond)
 	assert.Equal(t, limited, expectedDuration, "Expected %dms timeout, got %dms", expectedDuration, limited/time.Millisecond)
+}
+
+func TestSpecialFeature1VendorExceptionMap(t *testing.T) {
+	baseConfig := []byte(`
+    gdpr:
+      default_value: 0
+      tcf2:
+        special_feature1:
+          vendor_exceptions: `)
+
+	tests := []struct {
+		description             string
+		configVendorExceptions  []byte
+		wantVendorExceptions    []openrtb_ext.BidderName
+		wantVendorExceptionsMap map[openrtb_ext.BidderName]struct{}
+	}{
+		{
+			description:             "nil vendor exceptions",
+			configVendorExceptions:  []byte(`null`),
+			wantVendorExceptions:    []openrtb_ext.BidderName{},
+			wantVendorExceptionsMap: map[openrtb_ext.BidderName]struct{}{},
+		},
+		{
+			description:             "no vendor exceptions",
+			configVendorExceptions:  []byte(`[]`),
+			wantVendorExceptions:    []openrtb_ext.BidderName{},
+			wantVendorExceptionsMap: map[openrtb_ext.BidderName]struct{}{},
+		},
+		{
+			description:             "one vendor exception",
+			configVendorExceptions:  []byte(`["vendor1"]`),
+			wantVendorExceptions:    []openrtb_ext.BidderName{openrtb_ext.BidderName("vendor1")},
+			wantVendorExceptionsMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("vendor1"): {}},
+		},
+		{
+			description:             "many exceptions",
+			configVendorExceptions:  []byte(`["vendor1","vendor2"]`),
+			wantVendorExceptions:    []openrtb_ext.BidderName{openrtb_ext.BidderName("vendor1"), openrtb_ext.BidderName("vendor2")},
+			wantVendorExceptionsMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("vendor1"): {}, openrtb_ext.BidderName("vendor2"): {}},
+		},
+	}
+
+	for _, tt := range tests {
+		config := append(baseConfig, tt.configVendorExceptions...)
+
+		v := viper.New()
+		SetupViper(v, "")
+		v.SetConfigType("yaml")
+		v.ReadConfig(bytes.NewBuffer(config))
+		cfg, err := New(v)
+		assert.NoError(t, err, "Setting up config error", tt.description)
+
+		assert.Equal(t, tt.wantVendorExceptions, cfg.GDPR.TCF2.SpecialFeature1.VendorExceptions, tt.description)
+		assert.Equal(t, tt.wantVendorExceptionsMap, cfg.GDPR.TCF2.SpecialFeature1.VendorExceptionMap, tt.description)
+	}
 }

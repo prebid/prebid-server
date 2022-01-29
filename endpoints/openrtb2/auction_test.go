@@ -1540,6 +1540,68 @@ func TestValidateRequest(t *testing.T) {
 			expectedErrorList: []error{errors.New("ext.prebid.channel.name can't be empty")},
 		},
 		{
+			description: "AliasGVLID validation error",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID:  "Some-ID",
+					App: &openrtb2.App{},
+					Imp: []openrtb2.Imp{
+						{
+							ID: "Some-Imp-ID",
+							Banner: &openrtb2.Banner{
+								Format: []openrtb2.Format{
+									{
+										W: 600,
+										H: 500,
+									},
+									{
+										W: 300,
+										H: 600,
+									},
+								},
+							},
+							Ext: []byte(`{"appnexus":{"placementId": 12345678}}`),
+						},
+					},
+					Ext: []byte(`{"prebid":{"aliases":{"brightroll":"appnexus"}, "aliasgvlids":{"pubmatic1":1}}}`),
+				},
+			},
+			givenIsAmp:            false,
+			expectedErrorList:     []error{errors.New("request.ext.prebid.aliasgvlids. vendorId 1 refers to unknown bidder alias: pubmatic1")},
+			expectedChannelObject: &openrtb_ext.ExtRequestPrebidChannel{Name: appChannel, Version: ""},
+		},
+		{
+			description: "AliasGVLID validation error as vendorID < 1",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID:  "Some-ID",
+					App: &openrtb2.App{},
+					Imp: []openrtb2.Imp{
+						{
+							ID: "Some-Imp-ID",
+							Banner: &openrtb2.Banner{
+								Format: []openrtb2.Format{
+									{
+										W: 600,
+										H: 500,
+									},
+									{
+										W: 300,
+										H: 600,
+									},
+								},
+							},
+							Ext: []byte(`{"appnexus":{"placementId": 12345678}}`),
+						},
+					},
+					Ext: []byte(`{"prebid":{"aliases":{"brightroll":"appnexus"}, "aliasgvlids":{"brightroll":0}}}`),
+				},
+			},
+			givenIsAmp:            false,
+			expectedErrorList:     []error{errors.New("request.ext.prebid.aliasgvlids. Invalid vendorId 0 for alias: brightroll. Choose a different vendorId, or remove this entry.")},
+			expectedChannelObject: &openrtb_ext.ExtRequestPrebidChannel{Name: appChannel, Version: ""},
+		},
+		{
 			description: "No errors in bid request with request.ext.prebid but no channel info, expect validate request to throw no errors and fill channel with app",
 			givenRequestWrapper: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
@@ -1563,7 +1625,7 @@ func TestValidateRequest(t *testing.T) {
 							Ext: []byte(`{"appnexus":{"placementId": 12345678}}`),
 						},
 					},
-					Ext: []byte(`{"prebid":{}}`),
+					Ext: []byte(`{"prebid":{"aliases":{"brightroll":"appnexus"}, "aliasgvlids":{"brightroll":1}}}`),
 				},
 			},
 			givenIsAmp:            false,
@@ -2448,6 +2510,134 @@ func TestSChainInvalid(t *testing.T) {
 
 	expectedError := errors.New("request.ext.prebid.schains contains multiple schains for bidder appnexus; it must contain no more than one per bidder.")
 	assert.ElementsMatch(t, errL, []error{expectedError})
+}
+
+func TestMapSChains(t *testing.T) {
+	const seller1SChain string = `"schain":{"complete":1,"nodes":[{"asi":"directseller1.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}`
+	const seller2SChain string = `"schain":{"complete":2,"nodes":[{"asi":"directseller2.com","sid":"00002","rid":"BidRequest2","hp":2}],"ver":"2.0"}`
+
+	seller1SChainUnpacked := openrtb_ext.ExtRequestPrebidSChainSChain{
+		Complete: 1,
+		Nodes: []*openrtb_ext.ExtRequestPrebidSChainSChainNode{{
+			ASI: "directseller1.com",
+			SID: "00001",
+			RID: "BidRequest1",
+			HP:  1,
+		}},
+		Ver: "1.0",
+	}
+
+	tests := []struct {
+		description         string
+		bidRequest          openrtb2.BidRequest
+		wantReqExtSChain    *openrtb_ext.ExtRequestPrebidSChainSChain
+		wantSourceExtSChain *openrtb_ext.ExtRequestPrebidSChainSChain
+		wantError           bool
+	}{
+		{
+			description: "invalid req.ext",
+			bidRequest: openrtb2.BidRequest{
+				Ext: json.RawMessage(`{"prebid":{"schains":invalid}}`),
+				Source: &openrtb2.Source{
+					Ext: json.RawMessage(`{}`),
+				},
+			},
+			wantError: true,
+		},
+		{
+			description: "invalid source.ext",
+			bidRequest: openrtb2.BidRequest{
+				Ext: json.RawMessage(`{}`),
+				Source: &openrtb2.Source{
+					Ext: json.RawMessage(`{"schain":invalid}}`),
+				},
+			},
+			wantError: true,
+		},
+		{
+			description: "req.ext.prebid.schains, req.source.ext.schain and req.ext.schain are nil",
+			bidRequest: openrtb2.BidRequest{
+				Ext: json.RawMessage(`{}`),
+				Source: &openrtb2.Source{
+					Ext: json.RawMessage(`{}`),
+				},
+			},
+			wantReqExtSChain:    nil,
+			wantSourceExtSChain: nil,
+		},
+		{
+			description: "req.ext.prebid.schains is not nil",
+			bidRequest: openrtb2.BidRequest{
+				Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],` + seller1SChain + `}]}}`),
+				Source: &openrtb2.Source{
+					Ext: json.RawMessage(`{}`),
+				},
+			},
+			wantReqExtSChain:    nil,
+			wantSourceExtSChain: nil,
+		},
+		{
+			description: "req.source.ext is not nil",
+			bidRequest: openrtb2.BidRequest{
+				Ext: json.RawMessage(`{}`),
+				Source: &openrtb2.Source{
+					Ext: json.RawMessage(`{` + seller1SChain + `}`),
+				},
+			},
+			wantReqExtSChain:    nil,
+			wantSourceExtSChain: &seller1SChainUnpacked,
+		},
+		{
+			description: "req.ext.schain is not nil",
+			bidRequest: openrtb2.BidRequest{
+				Ext: json.RawMessage(`{` + seller1SChain + `}`),
+				Source: &openrtb2.Source{
+					Ext: json.RawMessage(`{}`),
+				},
+			},
+			wantReqExtSChain:    nil,
+			wantSourceExtSChain: &seller1SChainUnpacked,
+		},
+		{
+			description: "req.source.ext.schain and req.ext.schain are not nil",
+			bidRequest: openrtb2.BidRequest{
+				Ext: json.RawMessage(`{` + seller2SChain + `}`),
+				Source: &openrtb2.Source{
+					Ext: json.RawMessage(`{` + seller1SChain + `}`),
+				},
+			},
+			wantReqExtSChain:    nil,
+			wantSourceExtSChain: &seller1SChainUnpacked,
+		},
+	}
+
+	for _, tt := range tests {
+		reqWrapper := openrtb_ext.RequestWrapper{
+			BidRequest: &tt.bidRequest,
+		}
+
+		err := mapSChains(&reqWrapper)
+
+		if tt.wantError {
+			assert.NotNil(t, err, tt.description)
+		} else {
+			assert.Nil(t, err, tt.description)
+
+			reqExt, err := reqWrapper.GetRequestExt()
+			if err != nil {
+				assert.Fail(t, "Error getting request ext from wrapper", tt.description)
+			}
+			reqExtSChain := reqExt.GetSChain()
+			assert.Equal(t, tt.wantReqExtSChain, reqExtSChain, tt.description)
+
+			sourceExt, err := reqWrapper.GetSourceExt()
+			if err != nil {
+				assert.Fail(t, "Error getting source ext from wrapper", tt.description)
+			}
+			sourceExtSChain := sourceExt.GetSChain()
+			assert.Equal(t, tt.wantSourceExtSChain, sourceExtSChain, tt.description)
+		}
+	}
 }
 
 func TestGetAccountID(t *testing.T) {
@@ -3446,6 +3636,61 @@ func TestValidateNativeAssetData(t *testing.T) {
 		} else {
 			assert.EqualError(t, err, test.expectedError, test.description)
 		}
+	}
+}
+
+func TestAuctionResponseHeaders(t *testing.T) {
+	testCases := []struct {
+		description     string
+		requestBody     string
+		expectedStatus  int
+		expectedHeaders func(http.Header)
+	}{
+		{
+			description:    "Success Response",
+			requestBody:    validRequest(t, "site.json"),
+			expectedStatus: 200,
+			expectedHeaders: func(h http.Header) {
+				h.Set("X-Prebid", "pbs-go/unknown")
+				h.Set("Content-Type", "application/json")
+			},
+		},
+		{
+			description:    "Failure Response",
+			requestBody:    "{}",
+			expectedStatus: 400,
+			expectedHeaders: func(h http.Header) {
+				h.Set("X-Prebid", "pbs-go/unknown")
+			},
+		},
+	}
+
+	exchange := &nobidExchange{}
+	endpoint, _ := NewEndpoint(
+		fakeUUIDGenerator{},
+		exchange,
+		newParamsValidator(t),
+		empty_fetcher.EmptyFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: maxSize},
+		&metricsConfig.NilMetricsEngine{},
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		[]byte{},
+		openrtb_ext.BuildBidderMap(),
+		empty_fetcher.EmptyFetcher{})
+
+	for _, test := range testCases {
+		httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.requestBody))
+		recorder := httptest.NewRecorder()
+
+		endpoint(recorder, httpReq, nil)
+
+		expectedHeaders := http.Header{}
+		test.expectedHeaders(expectedHeaders)
+
+		assert.Equal(t, test.expectedStatus, recorder.Result().StatusCode, test.description+":statuscode")
+		assert.Equal(t, expectedHeaders, recorder.Result().Header, test.description+":statuscode")
 	}
 }
 

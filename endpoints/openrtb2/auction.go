@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/firstpartydata"
+	"github.com/prebid/prebid-server/version"
 
 	"github.com/buger/jsonparser"
 	jsonpatch "github.com/evanphx/json-patch"
@@ -35,6 +36,7 @@ import (
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/privacy/ccpa"
 	"github.com/prebid/prebid-server/privacy/lmt"
+	"github.com/prebid/prebid-server/schain"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/usersync"
@@ -147,6 +149,8 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		deps.analytics.LogAuctionObject(&ao)
 	}()
 
+	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
+
 	req, impExtInfoMap, errL := deps.parseRequest(r)
 	if errortypes.ContainsFatalError(errL) && writeError(errL, w, &labels) {
 		return
@@ -233,7 +237,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
 
-	// Fixes #328
 	w.Header().Set("Content-Type", "application/json")
 
 	// If an error happens when encoding the response, there isn't much we can do.
@@ -511,6 +514,10 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 			return []error{err}
 		}
 
+		if err := deps.validateAliasesGVLIDs(reqPrebid.AliasGVLIDs, aliases); err != nil {
+			return []error{err}
+		}
+
 		if err := deps.validateBidAdjustmentFactors(reqPrebid.BidAdjustmentFactors, aliases); err != nil {
 			return []error{err}
 		}
@@ -526,6 +533,10 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 		if err := currency.ValidateCustomRates(reqPrebid.CurrencyConversions); err != nil {
 			return []error{err}
 		}
+	}
+
+	if err := mapSChains(req); err != nil {
+		return []error{err}
 	}
 
 	if err := validateOrFillChannel(req, isAmp); err != nil {
@@ -592,6 +603,32 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 	return errL
 }
 
+// mapSChains maps an schain defined in an ORTB 2.4 location (req.ext.schain) to the ORTB 2.5 location
+// (req.source.ext.schain) if no ORTB 2.5 schain (req.source.ext.schain, req.ext.prebid.schains) exists.
+// An ORTB 2.4 schain is always deleted from the 2.4 location regardless of whether an ORTB 2.5 schain exists.
+func mapSChains(req *openrtb_ext.RequestWrapper) error {
+	reqExt, err := req.GetRequestExt()
+	if err != nil {
+		return fmt.Errorf("req.ext is invalid: %v", err)
+	}
+	sourceExt, err := req.GetSourceExt()
+	if err != nil {
+		return fmt.Errorf("source.ext is invalid: %v", err)
+	}
+
+	reqExtSChain := reqExt.GetSChain()
+	reqExt.SetSChain(nil)
+
+	if reqPrebid := reqExt.GetPrebid(); reqPrebid != nil && reqPrebid.SChains != nil {
+		return nil
+	} else if sourceExt.GetSChain() != nil {
+		return nil
+	} else if reqExtSChain != nil {
+		sourceExt.SetSChain(reqExtSChain)
+	}
+	return nil
+}
+
 func validateAndFillSourceTID(req *openrtb2.BidRequest) error {
 	if req.Source == nil {
 		req.Source = &openrtb2.Source{}
@@ -621,7 +658,7 @@ func (deps *endpointDeps) validateBidAdjustmentFactors(adjustmentFactors map[str
 }
 
 func validateSChains(sChains []*openrtb_ext.ExtRequestPrebidSChain) error {
-	_, err := exchange.BidderToPrebidSChains(sChains)
+	_, err := schain.BidderToPrebidSChains(sChains)
 	return err
 }
 
@@ -1229,6 +1266,20 @@ func (deps *endpointDeps) validateAliases(aliases map[string]string) error {
 
 		if alias == coreBidder {
 			return fmt.Errorf("request.ext.prebid.aliases.%s defines a no-op alias. Choose a different alias, or remove this entry.", alias)
+		}
+	}
+	return nil
+}
+
+func (deps *endpointDeps) validateAliasesGVLIDs(aliasesGVLIDs map[string]uint16, aliases map[string]string) error {
+	for alias, vendorId := range aliasesGVLIDs {
+
+		if _, aliasExist := aliases[alias]; !aliasExist {
+			return fmt.Errorf("request.ext.prebid.aliasgvlids. vendorId %d refers to unknown bidder alias: %s", vendorId, alias)
+		}
+
+		if vendorId < 1 {
+			return fmt.Errorf("request.ext.prebid.aliasgvlids. Invalid vendorId %d for alias: %s. Choose a different vendorId, or remove this entry.", vendorId, alias)
 		}
 	}
 	return nil
