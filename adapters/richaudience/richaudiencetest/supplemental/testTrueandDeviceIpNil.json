@@ -30,11 +30,11 @@
         "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36"
     },
       "user": {
-        "buyeruid": "",
+        "buyeruid": "189f4055-78a3-46eb-b7fd-0915a1a43bd2a",
         "ext": {}
       }
     },
-    
+
     "expectedMakeRequestsErrors": [{
         "value": "request.Device.IP is required",
         "comparison": "literal"
