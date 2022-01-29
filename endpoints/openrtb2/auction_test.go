@@ -55,7 +55,7 @@ type testConfigValues struct {
 	BlacklistedApps     []string                      `json:"blacklistedApps"`
 	DisabledAdapters    []string                      `json:"disabledAdapters"`
 	CurrencyRates       map[string]map[string]float64 `json:"currencyRates"`
-	MockBidder          mockBid                       `json:"mockBidder"`
+	MockBidder          mockBidInfo                   `json:"mockBidder"`
 }
 
 func TestJsonSampleRequests(t *testing.T) {
@@ -177,12 +177,10 @@ func runTestCase(t *testing.T, fileData []byte, testFile string) {
 
 		err = json.Unmarshal(test.ExpectedBidResponse, &expectedBidResponse)
 		if assert.NoError(t, err, "Could not unmarshal expected bidResponse taken from test file.\n Test file: %s\n Error:%s\n", testFile, err) {
-			//if assert.Equal(t, "", actualJsonBidResponse, "Json bid response shouldn't be empty.\n Test file: %s\n ", testFile) {
 			err = json.Unmarshal([]byte(actualJsonBidResponse), &actualBidResponse)
 			if assert.NoError(t, err, "Could not unmarshal actual bidResponse from auction.\n Test file: %s\n Error:%s\n", testFile, err) {
 				assertBidResponseEqual(t, testFile, expectedBidResponse, actualBidResponse)
 			}
-			//}
 		}
 	}
 }
@@ -479,85 +477,34 @@ func TestExplicitUserId(t *testing.T) {
 	}
 }
 
-//// Just like the last one but with an endpoint. We start from the basis that the test above works, so we'll modify to see whether or not this
-//// one also works
-//func TestCopyRunTargetingAuctionWithEndpoint(t *testing.T) {
-//	mockServer := func(w http.ResponseWriter, req *http.Request) {
-//		w.Write([]byte("{}"))
-//	}
-//	server := httptest.NewServer(http.HandlerFunc(mockServer))
-//	defer server.Close()
-//
-//	adapterMap := map[openrtb_ext.BidderName]exchange.AdaptedBidder{
-//		openrtb_ext.BidderAppnexus: exchange.AdaptBidder(
-//			sampleAdapter{
-//				mockServerURL: server.URL + "/some/path",
-//			},
-//			server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil),
-//	}
-//
-//	ex := exchange.BuildTestExchange(adapterMap, empty_fetcher.EmptyFetcher{})
-//
-//	jsonReqBody := []byte(`{"id":"some-request-id","site":{"page":"test.somepage.com"},"imp":[{"id":"some-imp-id","instl":1,"banner":{},"ext":{"prebid":{"bidder":{"appnexus":{"placementId":12883451}}}}}]}`)
-//
-//	endpoint, _ := NewEndpoint(
-//		fakeUUIDGenerator{},
-//		ex,
-//		newParamsValidator(t),
-//		&mockStoredReqFetcher{},
-//		empty_fetcher.EmptyFetcher{},
-//		&config.Configuration{MaxRequestSize: 500},
-//		&metricsConfig.NilMetricsEngine{},
-//		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
-//		map[string]string{},
-//		[]byte(`{"ext":{"prebid":{"aliases": {"test1": "appnexus", "test2": "rubicon", "test3": "openx"}}}}`),
-//		openrtb_ext.BuildBidderMap(),
-//		empty_fetcher.EmptyFetcher{},
-//	)
-//
-//	requestHttp := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(jsonReqBody))
-//	recorder := httptest.NewRecorder()
-//	endpoint(recorder, requestHttp, nil)
-//
-//	// assertions
-//	assert.Equal(t, 200, recorder.Code)
-//	assert.Equal(t, "sample response", recorder.Body.String())
-//}
-
 func doRequest(t *testing.T, test testCase) (int, string) {
 	bidderInfos := getBidderInfos(test.Config.getAdaptersConfigMap(), openrtb_ext.CoreBidderNames())
 	bidderMap := exchange.GetActiveBidders(bidderInfos)
 	disabledBidders := exchange.GetDisabledBiddersErrorMessages(bidderInfos)
 
-	// Adapter map with mock adapters that point to mock bid servers
+	// Adapter map with mock adapters needed to run JSON test cases
 	adapterMap := make(map[openrtb_ext.BidderName]exchange.AdaptedBidder, 0)
 
 	// AppNexus mock bid server and adapter
-	appNexusBidder := FooBidServer{bidInfo: test.Config.MockBidder, bidderName: "appnexus"}
+	appNexusBidder := mockBidderHandler{bidInfo: test.Config.MockBidder, bidderName: "appnexus"}
 	appNexusServer := httptest.NewServer(http.HandlerFunc(appNexusBidder.bid))
 	defer appNexusServer.Close()
-	appNexusBidderAdapter := FooBidAdapter{mockServerURL: appNexusServer.URL + "/some/path"}
+	appNexusBidderAdapter := mockAdapter{mockServerURL: appNexusServer.URL + "/some/path"}
 	adapterMap[openrtb_ext.BidderAppnexus] = exchange.AdaptBidder(appNexusBidderAdapter, appNexusServer.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil)
 
 	// openX mock bid server and adapter
-	openXBidder := FooBidServer{bidInfo: test.Config.MockBidder, bidderName: "openx"}
+	openXBidder := mockBidderHandler{bidInfo: test.Config.MockBidder, bidderName: "openx"}
 	openXServer := httptest.NewServer(http.HandlerFunc(openXBidder.bid))
 	defer openXServer.Close()
-	openXBidderAdapter := FooBidAdapter{mockServerURL: openXServer.URL + "/some/path"}
+	openXBidderAdapter := mockAdapter{mockServerURL: openXServer.URL + "/some/path"}
 	adapterMap[openrtb_ext.BidderOpenx] = exchange.AdaptBidder(openXBidderAdapter, openXServer.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderOpenx, nil)
 
 	// Rubicon mock bid server and adapter
-	rubiconBidder := FooBidServer{bidInfo: test.Config.MockBidder, bidderName: "rubicon"}
+	rubiconBidder := mockBidderHandler{bidInfo: test.Config.MockBidder, bidderName: "rubicon"}
 	rubiconServer := httptest.NewServer(http.HandlerFunc(rubiconBidder.bid))
 	defer rubiconServer.Close()
-	rubiconBidderAdapter := FooBidAdapter{mockServerURL: rubiconServer.URL + "/some/path"}
+	rubiconBidderAdapter := mockAdapter{mockServerURL: rubiconServer.URL + "/some/path"}
 	adapterMap[openrtb_ext.BidderRubicon] = exchange.AdaptBidder(rubiconBidderAdapter, rubiconServer.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderRubicon, nil)
-
-	//adapterMap := map[openrtb_ext.BidderName]exchange.AdaptedBidder{
-	//openrtb_ext.BidderAppnexus: exchange.AdaptBidder( mockBidderAdapter, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil),
-	//openrtb_ext.BidderDmx: exchange.AdaptBidder(mockBidderAdapter, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil),
-	//openrtb_ext.BidderRubicon: exchange.AdaptBidder(mockBidderAdapter, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil),
-	//}
 
 	// Mock prebid Server's currency converter, instantiate and start
 	mockCurrencyConversionService := mockCurrencyRatesClient{
@@ -570,6 +517,7 @@ func doRequest(t *testing.T, test testCase) (int, string) {
 	mockCurrencyConverter := currency.NewRateConverter(mockCurrencyRatesServer.Client(), mockCurrencyRatesServer.URL, time.Second)
 	mockCurrencyConverter.Run()
 
+	// Instantiate auction endpoint
 	endpoint, _ := NewEndpoint(
 		fakeUUIDGenerator{},
 		exchange.BuildTestExchange(adapterMap, empty_fetcher.EmptyFetcher{}, mockCurrencyConverter),
@@ -591,9 +539,11 @@ func doRequest(t *testing.T, test testCase) (int, string) {
 		bidderMap,
 		empty_fetcher.EmptyFetcher{})
 
+	// Hit the auction endpoint with the test case configuration and mockBidRequest
 	request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(test.BidRequest))
 	recorder := httptest.NewRecorder()
 	endpoint(recorder, request, nil) //Request comes from the unmarshalled mockBidRequest
+
 	return recorder.Code, recorder.Body.String()
 }
 
@@ -1799,112 +1749,112 @@ func TestValidateOrFillChannel(t *testing.T) {
 	}
 }
 
-//func TestStoredRequestGenerateUuid(t *testing.T) {
-//	uuid := "foo"
-//
-//	deps := &endpointDeps{
-//		fakeUUIDGenerator{id: "foo", err: nil},
-//		&nobidExchange{},
-//		newParamsValidator(t),
-//		&mockStoredReqFetcher{},
-//		empty_fetcher.EmptyFetcher{},
-//		empty_fetcher.EmptyFetcher{},
-//		&config.Configuration{MaxRequestSize: maxSize},
-//		&metricsConfig.NilMetricsEngine{},
-//		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
-//		map[string]string{},
-//		false,
-//		[]byte{},
-//		openrtb_ext.BuildBidderMap(),
-//		nil,
-//		nil,
-//		hardcodedResponseIPValidator{response: true},
-//		empty_fetcher.EmptyFetcher{},
-//	}
-//
-//	req := &openrtb2.BidRequest{}
-//
-//	testCases := []struct {
-//		description            string
-//		givenRawData           string
-//		givenGenerateRequestID bool
-//		expectedID             string
-//		expectedCur            string
-//	}{
-//		{
-//			description:            "GenerateRequestID is true, rawData is an app request and has stored bid request we should generate uuid",
-//			givenRawData:           testBidRequests[2],
-//			givenGenerateRequestID: true,
-//			expectedID:             uuid,
-//		},
-//		{
-//			description:            "GenerateRequestID is true, rawData is an app request, has stored bid, and stored bidrequestID is not the macro {{UUID}}, we should generate uuid",
-//			givenRawData:           testBidRequests[3],
-//			givenGenerateRequestID: true,
-//			expectedID:             uuid,
-//		},
-//		{
-//			description:            "GenerateRequestID is false, rawData is an app request and has stored bid, but stored bidrequestID is the macro {{UUID}}, so we should generate uuid",
-//			givenRawData:           testBidRequests[4],
-//			givenGenerateRequestID: false,
-//			expectedID:             uuid,
-//		},
-//		{
-//			description:            "GenerateRequestID is true, rawData is an app request, but no stored bid, we should not generate uuid",
-//			givenRawData:           testBidRequests[0],
-//			givenGenerateRequestID: true,
-//			expectedID:             "ThisID",
-//		},
-//		{
-//			description:            "GenerateRequestID is false and macro ID is not present, so we should not generate uuid",
-//			givenRawData:           testBidRequests[0],
-//			givenGenerateRequestID: false,
-//			expectedID:             "ThisID",
-//		},
-//		{
-//			description:            "GenerateRequestID is true, but rawData is a site request, we should not generate uuid",
-//			givenRawData:           testBidRequests[1],
-//			givenGenerateRequestID: true,
-//			expectedID:             "ThisID",
-//		},
-//		{
-//			description:            "Macro ID {{UUID}} case sensitivity check meaning a macro that is lowercase {{uuid}} shouldn't generate a uuid",
-//			givenRawData:           testBidRequests[2],
-//			givenGenerateRequestID: false,
-//			expectedID:             "ThisID",
-//		},
-//		{
-//			description:            "Test to check that stored requests are being merged when Macro ID is present with a site rquest",
-//			givenRawData:           testBidRequests[5],
-//			givenGenerateRequestID: false,
-//			expectedID:             "ThisID",
-//			expectedCur:            "USD",
-//		},
-//		{
-//			description:            "Test to check that stored requests are being merged when Generate Request ID flag with a site rquest",
-//			givenRawData:           testBidRequests[5],
-//			givenGenerateRequestID: true,
-//			expectedID:             "ThisID",
-//			expectedCur:            "USD",
-//		},
-//	}
-//
-//	for _, test := range testCases {
-//		deps.cfg.GenerateRequestID = test.givenGenerateRequestID
-//		impInfo, errs := parseImpInfo([]byte(test.givenRawData))
-//		assert.Empty(t, errs, test.description)
-//		newRequest, _, errList := deps.processStoredRequests(context.Background(), json.RawMessage(test.givenRawData), impInfo)
-//		assert.Empty(t, errList, test.description)
-//
-//		if err := json.Unmarshal(newRequest, req); err != nil {
-//			t.Errorf("processStoredRequests Error: %s", err.Error())
-//		}
-//		if test.expectedCur != "" {
-//			assert.Equalf(t, test.expectedCur, req.Cur[0], "The stored request wasn't merged properly: %s\n", test.description)
-//		}
-//		assert.Equalf(t, test.expectedID, req.ID, "The Bid Request ID is incorrect: %s\n", test.description)
-//	}
-//}
+func TestStoredRequestGenerateUuid(t *testing.T) {
+	uuid := "foo"
+
+	deps := &endpointDeps{
+		fakeUUIDGenerator{id: "foo", err: nil},
+		&nobidExchange{},
+		newParamsValidator(t),
+		&mockStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: maxSize},
+		&metricsConfig.NilMetricsEngine{},
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		false,
+		[]byte{},
+		openrtb_ext.BuildBidderMap(),
+		nil,
+		nil,
+		hardcodedResponseIPValidator{response: true},
+		empty_fetcher.EmptyFetcher{},
+	}
+
+	req := &openrtb2.BidRequest{}
+
+	testCases := []struct {
+		description            string
+		givenRawData           string
+		givenGenerateRequestID bool
+		expectedID             string
+		expectedCur            string
+	}{
+		{
+			description:            "GenerateRequestID is true, rawData is an app request and has stored bid request we should generate uuid",
+			givenRawData:           testBidRequests[2],
+			givenGenerateRequestID: true,
+			expectedID:             uuid,
+		},
+		{
+			description:            "GenerateRequestID is true, rawData is an app request, has stored bid, and stored bidrequestID is not the macro {{UUID}}, we should generate uuid",
+			givenRawData:           testBidRequests[3],
+			givenGenerateRequestID: true,
+			expectedID:             uuid,
+		},
+		{
+			description:            "GenerateRequestID is false, rawData is an app request and has stored bid, but stored bidrequestID is the macro {{UUID}}, so we should generate uuid",
+			givenRawData:           testBidRequests[4],
+			givenGenerateRequestID: false,
+			expectedID:             uuid,
+		},
+		{
+			description:            "GenerateRequestID is true, rawData is an app request, but no stored bid, we should not generate uuid",
+			givenRawData:           testBidRequests[0],
+			givenGenerateRequestID: true,
+			expectedID:             "ThisID",
+		},
+		{
+			description:            "GenerateRequestID is false and macro ID is not present, so we should not generate uuid",
+			givenRawData:           testBidRequests[0],
+			givenGenerateRequestID: false,
+			expectedID:             "ThisID",
+		},
+		{
+			description:            "GenerateRequestID is true, but rawData is a site request, we should not generate uuid",
+			givenRawData:           testBidRequests[1],
+			givenGenerateRequestID: true,
+			expectedID:             "ThisID",
+		},
+		{
+			description:            "Macro ID {{UUID}} case sensitivity check meaning a macro that is lowercase {{uuid}} shouldn't generate a uuid",
+			givenRawData:           testBidRequests[2],
+			givenGenerateRequestID: false,
+			expectedID:             "ThisID",
+		},
+		{
+			description:            "Test to check that stored requests are being merged when Macro ID is present with a site rquest",
+			givenRawData:           testBidRequests[5],
+			givenGenerateRequestID: false,
+			expectedID:             "ThisID",
+			expectedCur:            "USD",
+		},
+		{
+			description:            "Test to check that stored requests are being merged when Generate Request ID flag with a site rquest",
+			givenRawData:           testBidRequests[5],
+			givenGenerateRequestID: true,
+			expectedID:             "ThisID",
+			expectedCur:            "USD",
+		},
+	}
+
+	for _, test := range testCases {
+		deps.cfg.GenerateRequestID = test.givenGenerateRequestID
+		impInfo, errs := parseImpInfo([]byte(test.givenRawData))
+		assert.Empty(t, errs, test.description)
+		newRequest, _, errList := deps.processStoredRequests(context.Background(), json.RawMessage(test.givenRawData), impInfo)
+		assert.Empty(t, errList, test.description)
+
+		if err := json.Unmarshal(newRequest, req); err != nil {
+			t.Errorf("processStoredRequests Error: %s", err.Error())
+		}
+		if test.expectedCur != "" {
+			assert.Equalf(t, test.expectedCur, req.Cur[0], "The stored request wasn't merged properly: %s\n", test.description)
+		}
+		assert.Equalf(t, test.expectedID, req.ID, "The Bid Request ID is incorrect: %s\n", test.description)
+	}
+}
 
 // TestOversizedRequest makes sure we behave properly when the request size exceeds the configured max.
 func TestOversizedRequest(t *testing.T) {
@@ -3764,153 +3714,11 @@ func (e *nobidExchange) HoldAuction(ctx context.Context, r exchange.AuctionReque
 	}, nil
 }
 
-type mockBidExchange struct {
-	mockBidder mockBid
-	pbsRates   map[string]map[string]float64
-}
-
-func newMockBidExchange(bidder mockBid, mockCurrencyConversionRates map[string]map[string]float64) *mockBidExchange {
-	if bidder.BidCurrency == "" {
-		bidder.BidCurrency = "USD"
-	}
-
-	return &mockBidExchange{
-		mockBidder: bidder,
-		pbsRates:   mockCurrencyConversionRates,
-	}
-}
-
-// getAuctionCurrencyRates copies the logic of the exchange package for testing purposes
-func (e *mockBidExchange) getAuctionCurrencyRates(customRates *openrtb_ext.ExtRequestCurrency) currency.Conversions {
-	if customRates == nil {
-		// The timestamp is required for the function signature, but is not used and its
-		// value has no significance in the tests
-		return currency.NewRates(e.pbsRates)
-	}
-
-	usePbsRates := true
-	if customRates.UsePBSRates != nil {
-		usePbsRates = *customRates.UsePBSRates
-	}
-
-	if !usePbsRates {
-		// The timestamp is required for the function signature, but is not used and its
-		// value has no significance in the tests
-		return currency.NewRates(customRates.ConversionRates)
-	}
-
-	// Both PBS and custom rates can be used, check if ConversionRates is not empty
-	if len(customRates.ConversionRates) == 0 {
-		// Custom rates map is empty, use PBS rates only
-		return currency.NewRates(e.pbsRates)
-	}
-
-	// Return an AggregateConversions object that includes both custom and PBS currency rates but will
-	// prioritize custom rates over PBS rates whenever a currency rate is found in both
-	return currency.NewAggregateConversions(currency.NewRates(customRates.ConversionRates), currency.NewRates(e.pbsRates))
-}
-
-// mockBidExchange is a well-behaved exchange that lists the bidders found in every bidRequest.Imp[i].Ext
-// into the bidResponse.Ext to assert the bidder adapters that were not filtered out in the validation process
-func (e *mockBidExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
-	bidResponse := &openrtb2.BidResponse{
-		ID:    r.BidRequest.ID,
-		BidID: "test bid id",
-		NBR:   openrtb2.NoBidReasonCodeUnknownError.Ptr(),
-	}
-
-	// Use currencies inside r.BidRequest.Cur, if any, and convert currencies if needed
-	if len(r.BidRequest.Cur) == 0 {
-		r.BidRequest.Cur = []string{"USD"}
-	}
-
-	var currencyFrom string = e.mockBidder.getBidCurrency()
-	var conversionRate float64 = 0.00
-	var err error
-
-	var requestExt openrtb_ext.ExtRequest
-	if len(r.BidRequest.Ext) > 0 {
-		if err := json.Unmarshal(r.BidRequest.Ext, &requestExt); err != nil {
-			return nil, fmt.Errorf("request.ext is invalid: %v", err)
-		}
-	}
-
-	conversions := e.getAuctionCurrencyRates(requestExt.Prebid.CurrencyConversions)
-	for _, bidReqCur := range r.BidRequest.Cur {
-		if conversionRate, err = conversions.GetRate(currencyFrom, bidReqCur); err == nil {
-			bidResponse.Cur = bidReqCur
-			break
-		}
-	}
-
-	if conversionRate == 0 {
-		// Can't have bids if there's not even a 1 USD to 1 USD conversion rate
-		return nil, errors.New("Can't produce bid with no valid currency to use or currency conversion to convert to.")
-	}
-
-	if len(r.BidRequest.Imp) > 0 {
-		var SeatBidMap = make(map[string]openrtb2.SeatBid, 0)
-		for _, imp := range r.BidRequest.Imp {
-			var bidderExts map[string]json.RawMessage
-			if err := json.Unmarshal(imp.Ext, &bidderExts); err != nil {
-				return nil, err
-			}
-
-			if rawPrebidExt, ok := bidderExts[openrtb_ext.PrebidExtKey]; ok {
-				var prebidExt openrtb_ext.ExtImpPrebid
-				if err := json.Unmarshal(rawPrebidExt, &prebidExt); err == nil && prebidExt.Bidder != nil {
-					for bidder, ext := range prebidExt.Bidder {
-						if ext == nil {
-							continue
-						}
-
-						bidderExts[bidder] = ext
-					}
-				}
-			}
-
-			for bidderNameOrAlias := range bidderExts {
-				if isBidderToValidate(bidderNameOrAlias) {
-					if val, ok := SeatBidMap[bidderNameOrAlias]; ok {
-						val.Bid = append(val.Bid, openrtb2.Bid{ID: e.mockBidder.getBidId(bidderNameOrAlias)})
-					} else {
-						SeatBidMap[bidderNameOrAlias] = openrtb2.SeatBid{
-							Seat: e.mockBidder.getSeatName(bidderNameOrAlias),
-							Bid: []openrtb2.Bid{
-								{
-									ID:    e.mockBidder.getBidId(bidderNameOrAlias),
-									Price: e.mockBidder.getBidPrice() * conversionRate,
-								},
-							},
-						}
-					}
-				}
-			}
-		}
-		for _, seatBid := range SeatBidMap {
-			bidResponse.SeatBid = append(bidResponse.SeatBid, seatBid)
-		}
-	}
-
-	return bidResponse, nil
-}
-
-type mockBid struct {
+// mockBidInfo carries mock bidder server information that will be read
+// from JSON test files
+type mockBidInfo struct {
 	BidCurrency string  `json:"currency"`
 	BidPrice    float64 `json:"price"`
-}
-
-func (bidder mockBid) getBidCurrency() string {
-	return bidder.BidCurrency
-}
-func (bidder mockBid) getBidPrice() float64 {
-	return bidder.BidPrice
-}
-func (bidder mockBid) getSeatName(bidderNameOrAlias string) string {
-	return fmt.Sprintf("%s-bids", bidderNameOrAlias)
-}
-func (bidder mockBid) getBidId(bidderNameOrAlias string) string {
-	return fmt.Sprintf("%s-bid", bidderNameOrAlias)
 }
 
 type brokenExchange struct{}
@@ -4760,9 +4568,8 @@ func getObject(t *testing.T, filename, key string) json.RawMessage {
 	return obj
 }
 
-// -----------------------------------------
-// Mock currency rate server whose rates can be configured in the json test file
-// -----------------------------------------
+// mockCurrencyRatesClient is a mock currency rate server and the rates it returns
+// are set in the json test file
 type mockCurrencyRatesClient struct {
 	data currencyInfo
 }
@@ -4785,24 +4592,15 @@ func (s mockCurrencyRatesClient) handle(w http.ResponseWriter, req *http.Request
 	return
 }
 
-//func (m *mockCurrencyRatesClient) Do(req *http.Request) (*http.Response, error) {
-//	return &http.Response{
-//		Status:     "200 OK",
-//		StatusCode: http.StatusOK,
-//		Body:       ioutil.NopCloser(strings.NewReader(m.responseBody)),
-//	}, nil
-//}
-
-// -----------------------------------------
-// Sample mock bidder service whose bids can be configured from
-// the json file
-// -----------------------------------------
-type FooBidServer struct {
-	bidInfo    mockBid
+// mockBidderHandler is a mock bidder service. Its bidder name can be set upon
+// instantiation and its whose bid price, and bid currency can be set in the
+// json test file
+type mockBidderHandler struct {
+	bidInfo    mockBidInfo
 	bidderName string
 }
 
-func (b FooBidServer) bid(w http.ResponseWriter, req *http.Request) {
+func (b mockBidderHandler) bid(w http.ResponseWriter, req *http.Request) {
 	// Read request Body
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(req.Body)
@@ -4864,24 +4662,20 @@ func (b FooBidServer) bid(w http.ResponseWriter, req *http.Request) {
 }
 
 // -----------------------------------------
-// Sample impression splitting adapter
+// Mock impression splitting adapter
 // -----------------------------------------
-type FooBidAdapter struct {
+type mockAdapter struct {
 	mockServerURL string
-	BidCurrency   string
-	bids          []*openrtb2.Bid
 }
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	adapter := &FooBidAdapter{
+	adapter := &mockAdapter{
 		mockServerURL: config.Endpoint,
 	}
 	return adapter, nil
 }
 
-// ID:  "some-impression-id"
-// Ext: `{"bidder":{...}}`
-func (a FooBidAdapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a mockAdapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var requests []*adapters.RequestData
 	var errors []error
 
@@ -4905,7 +4699,7 @@ func (a FooBidAdapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *a
 	return requests, errors
 }
 
-func (a FooBidAdapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a mockAdapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if responseData.StatusCode != http.StatusOK {
 		switch responseData.StatusCode {
 		case http.StatusNoContent:
