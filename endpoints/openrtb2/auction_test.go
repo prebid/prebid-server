@@ -520,7 +520,7 @@ func doRequest(t *testing.T, test testCase) (int, string) {
 	// Instantiate auction endpoint
 	endpoint, _ := NewEndpoint(
 		fakeUUIDGenerator{},
-		exchange.NewExchangeFromAdapterMapFetcherAndCurrencyConv(adapterMap, empty_fetcher.EmptyFetcher{}, mockCurrencyConverter),
+		exchange.NewExchangeFromMockAdapters(adapterMap, empty_fetcher.EmptyFetcher{}, mockCurrencyConverter),
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},

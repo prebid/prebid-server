@@ -82,7 +82,7 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 		t.Errorf("Failed to create a category Fetcher: %v", error)
 	}
 
-	ex := NewExchangeFromAdapterMapFetcherAndCurrencyConv(buildAdapterMap(mockBids, server.URL, server.Client()), categoriesFetcher, currency.NewRateConverter(&http.Client{}, "", time.Duration(0)))
+	ex := NewExchangeFromMockAdapters(buildAdapterMap(mockBids, server.URL, server.Client()), categoriesFetcher, currency.NewRateConverter(&http.Client{}, "", time.Duration(0)))
 
 	imps := buildImps(t, mockBids)
 

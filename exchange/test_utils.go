@@ -14,7 +14,7 @@ import (
 	"github.com/prebid/prebid-server/stored_requests"
 )
 
-func NewExchangeFromAdapterMapFetcherAndCurrencyConv(adapterMap map[openrtb_ext.BidderName]AdaptedBidder, categoriesFetcher stored_requests.CategoryFetcher, currencyConverter *currency.RateConverter) *exchange {
+func NewExchangeFromMockAdapters(adapterMap map[openrtb_ext.BidderName]AdaptedBidder, categoriesFetcher stored_requests.CategoryFetcher, currencyConverter *currency.RateConverter) *exchange {
 	return &exchange{
 		adapterMap:        adapterMap,
 		me:                &metricsConfig.NilMetricsEngine{},
