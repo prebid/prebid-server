@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -630,7 +631,10 @@ func TestAMPSiteExt(t *testing.T) {
 
 // TestBadRequests makes sure we return 400's on bad requests.
 func TestAmpBadRequests(t *testing.T) {
-	files := fetchFiles(t, "sample-requests/invalid-whole")
+	dir := "sample-requests/invalid-whole"
+	files, err := ioutil.ReadDir(dir)
+	assert.NoError(t, err, "Failed to read folder: %s", dir)
+
 	badRequests := make(map[string]json.RawMessage, len(files))
 	for index, file := range files {
 		badRequests[strconv.Itoa(100+index)] = readFile(t, "sample-requests/invalid-whole/"+file.Name())
