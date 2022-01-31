@@ -10,7 +10,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPrepareBiddersResponse(t *testing.T) {
+func TestPrepareBiddersResponseAll(t *testing.T) {
+	var (
+		enabled  = config.BidderInfo{Enabled: true}
+		disabled = config.BidderInfo{Enabled: false}
+	)
+
 	testCases := []struct {
 		description  string
 		givenBidders config.BidderInfos
@@ -24,45 +29,133 @@ func TestPrepareBiddersResponse(t *testing.T) {
 			expected:     `[]`,
 		},
 		{
-			description:  "Core Bidders Only - One",
-			givenBidders: config.BidderInfos{"a": {}},
+			description:  "Core Bidders Only - One - Enabled",
+			givenBidders: config.BidderInfos{"a": enabled},
+			givenAliases: nil,
+			expected:     `["a"]`,
+		},
+		{
+			description:  "Core Bidders Only - One - Disabled",
+			givenBidders: config.BidderInfos{"a": disabled},
 			givenAliases: nil,
 			expected:     `["a"]`,
 		},
 		{
 			description:  "Core Bidders Only - Many",
-			givenBidders: config.BidderInfos{"a": {}, "b": {}},
+			givenBidders: config.BidderInfos{"a": enabled, "b": enabled},
 			givenAliases: nil,
 			expected:     `["a","b"]`,
 		},
 		{
-			description:  "Core Bidders Only - Many Sorted",
-			givenBidders: config.BidderInfos{"z": {}, "a": {}},
+			description:  "Core Bidders Only - Many - Mixed",
+			givenBidders: config.BidderInfos{"a": disabled, "b": enabled},
 			givenAliases: nil,
-			expected:     `["a","z"]`,
+			expected:     `["a","b"]`,
+		},
+		{
+			description:  "Core Bidders Only - Many - Sorted",
+			givenBidders: config.BidderInfos{"b": enabled, "a": enabled},
+			givenAliases: nil,
+			expected:     `["a","b"]`,
 		},
 		{
 			description:  "With Aliases - One",
-			givenBidders: config.BidderInfos{"a": {}},
-			givenAliases: map[string]string{"b": "b"},
+			givenBidders: config.BidderInfos{"a": enabled},
+			givenAliases: map[string]string{"b": "a"},
 			expected:     `["a","b"]`,
 		},
 		{
 			description:  "With Aliases - Many",
-			givenBidders: config.BidderInfos{"a": {}},
-			givenAliases: map[string]string{"b": "b", "c": "c"},
-			expected:     `["a","b","c"]`,
+			givenBidders: config.BidderInfos{"a": enabled, "b": disabled},
+			givenAliases: map[string]string{"x": "a", "y": "b"},
+			expected:     `["a","b","x","y"]`,
 		},
 		{
 			description:  "With Aliases - Sorted",
-			givenBidders: config.BidderInfos{"z": {}},
-			givenAliases: map[string]string{"a": "a"},
+			givenBidders: config.BidderInfos{"z": enabled},
+			givenAliases: map[string]string{"a": "z"},
 			expected:     `["a","z"]`,
 		},
 	}
 
 	for _, test := range testCases {
-		result, err := prepareBiddersResponse(test.givenBidders, test.givenAliases)
+		result, err := prepareBiddersResponseAll(test.givenBidders, test.givenAliases)
+
+		assert.NoError(t, err, test.description)
+		assert.Equal(t, []byte(test.expected), result, test.description)
+	}
+}
+
+func TestPrepareBiddersResponseEnabledOnly(t *testing.T) {
+	var (
+		enabled  = config.BidderInfo{Enabled: true}
+		disabled = config.BidderInfo{Enabled: false}
+	)
+
+	testCases := []struct {
+		description  string
+		givenBidders config.BidderInfos
+		givenAliases map[string]string
+		expected     string
+	}{
+		{
+			description:  "None",
+			givenBidders: config.BidderInfos{},
+			givenAliases: nil,
+			expected:     `[]`,
+		},
+		{
+			description:  "Core Bidders Only - One - Enabled",
+			givenBidders: config.BidderInfos{"a": enabled},
+			givenAliases: nil,
+			expected:     `["a"]`,
+		},
+		{
+			description:  "Core Bidders Only - One - Disabled",
+			givenBidders: config.BidderInfos{"a": disabled},
+			givenAliases: nil,
+			expected:     `[]`,
+		},
+		{
+			description:  "Core Bidders Only - Many",
+			givenBidders: config.BidderInfos{"a": enabled, "b": enabled},
+			givenAliases: nil,
+			expected:     `["a","b"]`,
+		},
+		{
+			description:  "Core Bidders Only - Many - Mixed",
+			givenBidders: config.BidderInfos{"a": disabled, "b": enabled},
+			givenAliases: nil,
+			expected:     `["b"]`,
+		},
+		{
+			description:  "Core Bidders Only - Many - Sorted",
+			givenBidders: config.BidderInfos{"b": enabled, "a": enabled},
+			givenAliases: nil,
+			expected:     `["a","b"]`,
+		},
+		{
+			description:  "With Aliases - One",
+			givenBidders: config.BidderInfos{"a": enabled},
+			givenAliases: map[string]string{"b": "a"},
+			expected:     `["a","b"]`,
+		},
+		{
+			description:  "With Aliases - Many",
+			givenBidders: config.BidderInfos{"a": enabled, "b": disabled},
+			givenAliases: map[string]string{"x": "a", "y": "b"},
+			expected:     `["a","x"]`,
+		},
+		{
+			description:  "With Aliases - Sorted",
+			givenBidders: config.BidderInfos{"z": enabled},
+			givenAliases: map[string]string{"a": "z"},
+			expected:     `["a","z"]`,
+		},
+	}
+
+	for _, test := range testCases {
+		result, err := prepareBiddersResponseEnabledOnly(test.givenBidders, test.givenAliases)
 
 		assert.NoError(t, err, test.description)
 		assert.Equal(t, []byte(test.expected), result, test.description)
@@ -70,20 +163,87 @@ func TestPrepareBiddersResponse(t *testing.T) {
 }
 
 func TestBiddersHandler(t *testing.T) {
-	bidders := config.BidderInfos{"a": {}}
-	aliases := map[string]string{"b": "b"}
+	var (
+		enabled  = config.BidderInfo{Enabled: true}
+		disabled = config.BidderInfo{Enabled: false}
+	)
 
-	handler := NewBiddersEndpoint(bidders, aliases)
+	bidders := config.BidderInfos{"a": enabled, "b": disabled}
+	aliases := map[string]string{"x": "a", "y": "b"}
 
-	responseRecorder := httptest.NewRecorder()
-	handler(responseRecorder, nil, nil)
+	testCases := []struct {
+		description     string
+		givenURL        string
+		expectedStatus  int
+		expectedBody    string
+		expectedHeaders http.Header
+	}{
+		{
+			description:     "No Query Paramters - Backwards Compatability",
+			givenURL:        "/info/bidders",
+			expectedStatus:  http.StatusOK,
+			expectedBody:    `["a","b","x","y"]`,
+			expectedHeaders: http.Header{"Content-Type": []string{"application/json"}},
+		},
+		{
+			description:     "Enabled Only - False",
+			givenURL:        "/info/bidders?enabledonly=false",
+			expectedStatus:  http.StatusOK,
+			expectedBody:    `["a","b","x","y"]`,
+			expectedHeaders: http.Header{"Content-Type": []string{"application/json"}},
+		},
+		{
+			description:     "Enabled Only - False - Case Insensitive",
+			givenURL:        "/info/bidders?enabledonly=fAlSe",
+			expectedStatus:  http.StatusOK,
+			expectedBody:    `["a","b","x","y"]`,
+			expectedHeaders: http.Header{"Content-Type": []string{"application/json"}},
+		},
+		{
+			description:     "Enabled Only - True",
+			givenURL:        "/info/bidders?enabledonly=true",
+			expectedStatus:  http.StatusOK,
+			expectedBody:    `["a","x"]`,
+			expectedHeaders: http.Header{"Content-Type": []string{"application/json"}},
+		},
+		{
+			description:     "Enabled Only - True - Case Insensitive",
+			givenURL:        "/info/bidders?enabledonly=TrUe",
+			expectedStatus:  http.StatusOK,
+			expectedBody:    `["a","x"]`,
+			expectedHeaders: http.Header{"Content-Type": []string{"application/json"}},
+		},
+		{
+			description:     "Enabled Only - Invalid",
+			givenURL:        "/info/bidders?enabledonly=foo",
+			expectedStatus:  http.StatusBadRequest,
+			expectedBody:    `Invalid value for 'enabledonly' query param, must be of boolean type`,
+			expectedHeaders: http.Header{},
+		},
+		{
+			description:     "Enabled Only - Missing Value",
+			givenURL:        "/info/bidders?enabledonly=",
+			expectedStatus:  http.StatusBadRequest,
+			expectedBody:    `Invalid value for 'enabledonly' query param, must be of boolean type`,
+			expectedHeaders: http.Header{},
+		},
+	}
 
-	result := responseRecorder.Result()
-	assert.Equal(t, result.StatusCode, http.StatusOK)
+	for _, test := range testCases {
+		handler := NewBiddersEndpoint(bidders, aliases)
 
-	resultBody, _ := ioutil.ReadAll(result.Body)
-	assert.Equal(t, []byte(`["a","b"]`), resultBody)
+		request := httptest.NewRequest("GET", test.givenURL, nil)
 
-	resultHeaders := result.Header
-	assert.Equal(t, http.Header{"Content-Type": []string{"application/json"}}, resultHeaders)
+		responseRecorder := httptest.NewRecorder()
+		handler(responseRecorder, request, nil)
+
+		result := responseRecorder.Result()
+		assert.Equal(t, result.StatusCode, test.expectedStatus)
+
+		resultBody, _ := ioutil.ReadAll(result.Body)
+		assert.Equal(t, []byte(test.expectedBody), resultBody)
+
+		resultHeaders := result.Header
+		assert.Equal(t, test.expectedHeaders, resultHeaders)
+	}
 }

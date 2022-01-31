@@ -20,7 +20,7 @@ import (
 )
 
 type AdheseAdapter struct {
-	endpointTemplate template.Template
+	endpointTemplate *template.Template
 }
 
 func extractSlotParameter(parameters openrtb_ext.ExtImpAdhese) string {
@@ -109,7 +109,7 @@ func (a *AdheseAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adap
 	// Compose url
 	endpointParams := macros.EndpointTemplateParams{AccountID: params.Account}
 
-	host, err := macros.ResolveMacros(*&a.endpointTemplate, endpointParams)
+	host, err := macros.ResolveMacros(a.endpointTemplate, endpointParams)
 	if err != nil {
 		errs = append(errs, WrapReqError("Could not compose url from template and request account val: "+err.Error()))
 		return nil, errs
@@ -276,7 +276,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	}
 
 	bidder := &AdheseAdapter{
-		endpointTemplate: *template,
+		endpointTemplate: template,
 	}
 	return bidder, nil
 }

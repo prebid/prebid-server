@@ -1,0 +1,43 @@
+{
+  "description": "req.app.ext.data is present but req.ext.prebid.data.bidders is empty; expect req.app.ext.data to not be included in any of the resolved bidder FPD and to have been extracted from the original request",
+    "inputRequestData": {
+    "id": "bid_id",
+    "app": {
+      "id": "reqAppId",
+      "keywords": "appKeywords",
+      "publisher": {
+        "id": "1"
+      },
+      "ext": {
+        "amp": 1,
+        "data": {
+          "someappfpd": "appfpdDataTest"
+        }
+      }
+    },
+    "test": 1,
+    "ext": {
+      "prebid": {
+        "data": {
+          "bidders": []
+        }
+      }
+    }
+  },
+  "outputRequestData":  {
+    "id": "bid_id",
+    "app": {
+      "id": "reqAppId",
+      "keywords": "appKeywords",
+      "publisher": {
+        "id": "1"
+      },
+      "ext": {
+        "amp": 1
+      }
+    },
+    "test": 1
+  },
+  "biddersFPDResolved": {},
+  "validationErrors": []
+}

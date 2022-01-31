@@ -36,7 +36,7 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	`{"TagID": "1"}`,
+	`{"TagID": "test"}`,
 }
 
 var invalidParams = []string{

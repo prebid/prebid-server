@@ -151,10 +151,6 @@ type userAgentTest struct {
 	expected bool
 }
 
-type userAgentFailureTest struct {
-	input string
-}
-
 func runUserAgentTests(tests map[string]userAgentTest, fn func(string) bool, t *testing.T) {
 	for testName, test := range tests {
 		t.Logf("Test case: %s\n", testName)

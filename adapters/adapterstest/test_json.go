@@ -10,6 +10,8 @@ import (
 	"github.com/mitchellh/copystructure"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/currency"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 	"github.com/yudai/gojsondiff"
 	"github.com/yudai/gojsondiff/formatter"
@@ -103,7 +105,40 @@ func loadFile(filename string) (*testSpec, error) {
 //
 // More assertions will almost certainly be added in the future, as bugs come up.
 func runSpec(t *testing.T, filename string, spec *testSpec, bidder adapters.Bidder, isAmpTest, isVideoTest bool) {
-	reqInfo := adapters.ExtraRequestInfo{}
+	reqInfo := getTestExtraRequestInfo(t, filename, spec, isAmpTest, isVideoTest)
+	requests := testMakeRequestsImpl(t, filename, spec, bidder, reqInfo)
+
+	testMakeBidsImpl(t, filename, spec, bidder, requests)
+}
+
+// getTestExtraRequestInfo builds the ExtraRequestInfo object that will be passed to testMakeRequestsImpl
+func getTestExtraRequestInfo(t *testing.T, filename string, spec *testSpec, isAmpTest, isVideoTest bool) *adapters.ExtraRequestInfo {
+	t.Helper()
+
+	var reqInfo adapters.ExtraRequestInfo
+
+	// If test request.ext defines its own currency rates, add currency conversion to reqInfo
+	reqWrapper := &openrtb_ext.RequestWrapper{}
+	reqWrapper.BidRequest = &spec.BidRequest
+
+	reqExt, err := reqWrapper.GetRequestExt()
+	assert.NoError(t, err, "Could not unmarshall test request ext. %s", filename)
+
+	reqPrebid := reqExt.GetPrebid()
+	if reqPrebid != nil && reqPrebid.CurrencyConversions != nil && len(reqPrebid.CurrencyConversions.ConversionRates) > 0 {
+		err = currency.ValidateCustomRates(reqPrebid.CurrencyConversions)
+		assert.NoError(t, err, "Error validating currency rates in the test request: %s", filename)
+
+		// Get currency rates conversions from the test request.ext
+		conversions := currency.NewRates(reqPrebid.CurrencyConversions.ConversionRates)
+
+		// Create return adapters.ExtraRequestInfo object
+		reqInfo = adapters.NewExtraRequestInfo(conversions)
+	} else {
+		reqInfo = adapters.ExtraRequestInfo{}
+	}
+
+	// Set PbsEntryPoint if either isAmpTest or isVideoTest is true
 	if isAmpTest {
 		// simulates AMP entry point
 		reqInfo.PbsEntryPoint = "amp"
@@ -111,9 +146,7 @@ func runSpec(t *testing.T, filename string, spec *testSpec, bidder adapters.Bidd
 		reqInfo.PbsEntryPoint = "video"
 	}
 
-	requests := testMakeRequestsImpl(t, filename, spec, bidder, &reqInfo)
-
-	testMakeBidsImpl(t, filename, spec, bidder, requests)
+	return &reqInfo
 }
 
 type testSpec struct {
@@ -190,8 +223,15 @@ func assertMakeRequestsOutput(t *testing.T, filename string, actual []*adapters.
 	if len(expected) != len(actual) {
 		t.Fatalf("%s: MakeRequests had wrong request count. Expected %d, got %d", filename, len(expected), len(actual))
 	}
-	for i := 0; i < len(actual); i++ {
-		diffHttpRequests(t, fmt.Sprintf("%s: httpRequest[%d]", filename, i), actual[i], &(expected[i].Request))
+
+	for i := 0; i < len(expected); i++ {
+		var err error
+		for j := 0; j < len(actual); j++ {
+			if err = diffHttpRequests(fmt.Sprintf("%s: httpRequest[%d]", filename, i), actual[j], &(expected[i].Request)); err == nil {
+				break
+			}
+		}
+		assert.NoError(t, err, fmt.Sprintf("%s Expected RequestData was not returned by adapters' MakeRequests() implementation: httpRequest[%d]", filename, i))
 	}
 }
 
@@ -242,19 +282,30 @@ func assertMakeBidsOutput(t *testing.T, filename string, bidderResponse *adapter
 
 // diffHttpRequests compares the actual HTTP request data to the expected one.
 // It assumes that the request bodies are JSON
-func diffHttpRequests(t *testing.T, description string, actual *adapters.RequestData, expected *httpRequest) {
+func diffHttpRequests(description string, actual *adapters.RequestData, expected *httpRequest) error {
+
 	if actual == nil {
-		t.Errorf("Bidders cannot return nil HTTP calls. %s was nil.", description)
-		return
+		return fmt.Errorf("Bidders cannot return nil HTTP calls. %s was nil.", description)
 	}
 
-	diffStrings(t, fmt.Sprintf("%s.uri", description), actual.Uri, expected.Uri)
-	if expected.Headers != nil {
-		actualHeader, _ := json.Marshal(actual.Headers)
-		expectedHeader, _ := json.Marshal(expected.Headers)
-		diffJson(t, description, actualHeader, expectedHeader)
+	if expected.Uri != actual.Uri {
+		return fmt.Errorf(`%s.uri "%s" does not match expected "%s."`, description, actual.Uri, expected.Uri)
 	}
-	diffJson(t, description, actual.Body, expected.Body)
+
+	if expected.Headers != nil {
+		actualHeader, err := json.Marshal(actual.Headers)
+		if err != nil {
+			return fmt.Errorf(`%s actual.Headers could not be marshalled. Error: %s"`, description, err.Error())
+		}
+		expectedHeader, err := json.Marshal(expected.Headers)
+		if err != nil {
+			return fmt.Errorf(`%s expected.Headers could not be marshalled. Error: %s"`, description, err.Error())
+		}
+		if err := diffJson(description, actualHeader, expectedHeader); err != nil {
+			return err
+		}
+	}
+	return diffJson(description, actual.Body, expected.Body)
 }
 
 func diffBids(t *testing.T, description string, actual *adapters.TypedBid, expected *expectedBid) {
@@ -263,60 +314,54 @@ func diffBids(t *testing.T, description string, actual *adapters.TypedBid, expec
 		return
 	}
 
-	diffStrings(t, fmt.Sprintf("%s.type", description), string(actual.BidType), string(expected.Type))
-	diffOrtbBids(t, fmt.Sprintf("%s.bid", description), actual.Bid, expected.Bid)
+	assert.Equal(t, string(expected.Type), string(actual.BidType), fmt.Sprintf(`%s.type "%s" does not match expected "%s."`, description, string(actual.BidType), string(expected.Type)))
+	assert.NoError(t, diffOrtbBids(fmt.Sprintf("%s.bid", description), actual.Bid, expected.Bid))
 }
 
 // diffOrtbBids compares the actual Bid made by the adapter to the expectation from the JSON file.
-func diffOrtbBids(t *testing.T, description string, actual *openrtb2.Bid, expected json.RawMessage) {
+func diffOrtbBids(description string, actual *openrtb2.Bid, expected json.RawMessage) error {
 	if actual == nil {
-		t.Errorf("Bidders cannot return nil Bids. %s was nil.", description)
-		return
+		return fmt.Errorf("Bidders cannot return nil Bids. %s was nil.", description)
 	}
 
 	actualJson, err := json.Marshal(actual)
 	if err != nil {
-		t.Fatalf("%s failed to marshal actual Bid into JSON. %v", description, err)
+		return fmt.Errorf("%s failed to marshal actual Bid into JSON. %v", description, err)
 	}
 
-	diffJson(t, description, actualJson, expected)
-}
-
-func diffStrings(t *testing.T, description string, actual string, expected string) {
-	if actual != expected {
-		t.Errorf(`%s "%s" does not match expected "%s."`, description, actual, expected)
-	}
+	return diffJson(description, actualJson, expected)
 }
 
 // diffJson compares two JSON byte arrays for structural equality. It will produce an error if either
 // byte array is not actually JSON.
-func diffJson(t *testing.T, description string, actual []byte, expected []byte) {
+func diffJson(description string, actual []byte, expected []byte) error {
 	if len(actual) == 0 && len(expected) == 0 {
-		return
+		return nil
 	}
 	if len(actual) == 0 || len(expected) == 0 {
-		t.Fatalf("%s json diff failed. Expected %d bytes in body, but got %d.", description, len(expected), len(actual))
+		return fmt.Errorf("%s json diff failed. Expected %d bytes in body, but got %d.", description, len(expected), len(actual))
 	}
 	diff, err := gojsondiff.New().Compare(actual, expected)
 	if err != nil {
-		t.Fatalf("%s json diff failed. %v", description, err)
+		return fmt.Errorf("%s json diff failed. %v", description, err)
 	}
 
 	if diff.Modified() {
 		var left interface{}
 		if err := json.Unmarshal(actual, &left); err != nil {
-			t.Fatalf("%s json did not match, but unmarshalling failed. %v", description, err)
+			return fmt.Errorf("%s json did not match, but unmarshalling failed. %v", description, err)
 		}
 		printer := formatter.NewAsciiFormatter(left, formatter.AsciiFormatterConfig{
 			ShowArrayIndex: true,
 		})
 		output, err := printer.Format(diff)
 		if err != nil {
-			t.Errorf("%s did not match, but diff formatting failed. %v", description, err)
+			return fmt.Errorf("%s did not match, but diff formatting failed. %v", description, err)
 		} else {
-			t.Errorf("%s json did not match expected.\n\n%s", description, output)
+			return fmt.Errorf("%s json did not match expected.\n\n%s", description, output)
 		}
 	}
+	return nil
 }
 
 // testMakeRequestsImpl asserts the resulting values of the bidder's `MakeRequests()` implementation

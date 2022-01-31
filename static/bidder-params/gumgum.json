@@ -16,6 +16,10 @@
     "irisid": {
       "type": "string",
       "description": "A hashed IRIS.TV Content ID"
+    },
+    "slot": {
+      "type": "integer",
+      "description": "A slot id used to identify a slot placement mapped to a GumGum zone or publisher"
     }
   },
   "anyOf": [

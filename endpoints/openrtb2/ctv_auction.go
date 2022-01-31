@@ -36,6 +36,7 @@ import (
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/usersync"
 	"github.com/prebid/prebid-server/util/iputil"
+	"github.com/prebid/prebid-server/util/uuidutil"
 )
 
 //CTV Specific Endpoint
@@ -80,8 +81,10 @@ func NewCTVEndpoint(
 		IPv6PrivateNetworks: cfg.RequestValidation.IPv6PrivateNetworksParsed,
 	}
 
+	var uuidGenerator uuidutil.UUIDGenerator
 	return httprouter.Handle((&ctvEndpointDeps{
 		endpointDeps: endpointDeps{
+			uuidGenerator,
 			ex,
 			validator,
 			requestsByID,
@@ -97,6 +100,7 @@ func NewCTVEndpoint(
 			nil,
 			nil,
 			ipValidator,
+			nil,
 		},
 	}).CTVAuctionEndpoint), nil
 }
@@ -137,7 +141,7 @@ func (deps *ctvEndpointDeps) CTVAuctionEndpoint(w http.ResponseWriter, r *http.R
 	}()
 
 	//Parse ORTB Request and do Standard Validation
-	reqWrapper, errL = deps.parseRequest(r)
+	reqWrapper, _, errL = deps.parseRequest(r)
 	if errortypes.ContainsFatalError(errL) && writeError(errL, w, &deps.labels) {
 		return
 	}
@@ -167,14 +171,14 @@ func (deps *ctvEndpointDeps) CTVAuctionEndpoint(w http.ResponseWriter, r *http.R
 	}
 
 	//Parsing Cookies and Set Stats
-	usersyncs := usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie))
+	usersyncs := usersync.ParseCookieFromRequest(r, &(deps.cfg.HostCookie))
 	if request.App != nil {
 		deps.labels.Source = metrics.DemandApp
 		deps.labels.RType = metrics.ReqTypeVideo
 		deps.labels.PubID = getAccountID(request.App.Publisher)
 	} else { //request.Site != nil
 		deps.labels.Source = metrics.DemandWeb
-		if usersyncs.LiveSyncCount() == 0 {
+		if !usersyncs.HasAnyLiveSyncs() {
 			deps.labels.CookieFlag = metrics.CookieFlagNo
 		} else {
 			deps.labels.CookieFlag = metrics.CookieFlagYes
@@ -250,7 +254,7 @@ func (deps *ctvEndpointDeps) CTVAuctionEndpoint(w http.ResponseWriter, r *http.R
 	}
 }
 
-func (deps *ctvEndpointDeps) holdAuction(request *openrtb2.BidRequest, usersyncs *usersync.PBSCookie, account *config.Account, startTime time.Time) (*openrtb2.BidResponse, error) {
+func (deps *ctvEndpointDeps) holdAuction(request *openrtb2.BidRequest, usersyncs *usersync.Cookie, account *config.Account, startTime time.Time) (*openrtb2.BidResponse, error) {
 	defer util.TimeTrack(time.Now(), fmt.Sprintf("Tid:%v CTVHoldAuction", deps.request.ID))
 
 	//Hold OpenRTB Standard Auction

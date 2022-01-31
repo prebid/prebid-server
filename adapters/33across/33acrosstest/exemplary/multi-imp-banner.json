@@ -25,6 +25,30 @@
             "productId": "inview"
           }
         }
+      },
+      {
+        "id": "test-imp-id3",
+        "banner": {
+          "format": [{"w": 728, "h": 90}]
+        },
+        "ext": {
+          "bidder": {
+            "siteId": "fake-site-id1",
+            "productId": "inview"
+          }
+        }
+      },
+      {
+        "id": "test-imp-id4",
+        "banner": {
+          "format": [{"w": 728, "h": 90}]
+        },
+        "ext": {
+          "bidder": {
+            "siteId": "fake-site-id",
+            "productId": "siab"
+          }
+        }
       }
     ],
     "site": {}
@@ -58,54 +82,7 @@
                   "zoneid": "fake-site-id"
                 }
               }
-            }
-          ],
-          "site": {}
-        }
-      },
-      "mockResponse": {
-        "status": 200,
-        "body": {
-          "id": "test-request-id",
-          "seatbid": [
-            {
-              "seat": "ttx",
-              "bid": [{
-                "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
-                "impid": "test-imp-id1",
-                "price": 0.500000,
-                "adm": "some-test-ad",
-                "crid": "crid_10",
-                "h": 90,
-                "w": 728,
-                "ext": {
-                  "ttx": {
-                    "mediaType": "banner"
-                  }
-                }
-              }]
-            }
-          ],
-          "cur": "USD"
-        }
-      }
-    },
-    {
-      "expectedRequest": {
-        "uri": "http://ssc.33across.com",
-        "body": {
-          "ext": {
-            "ttx": {
-              "caller": [
-                {
-                  "name": "Prebid-Server",
-                  "version": "n/a"
-                }
-              ]
-            }
-          },
-          "id": "test-request-id",
-          "imp": [
+            },
             {
               "id":"test-imp-id2",
               "banner": {
@@ -129,10 +106,11 @@
           "seatbid": [
             {
               "seat": "ttx",
-              "bid": [{
+              "bid": [
+                {
                 "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
-                "impid": "test-imp-id2",
-                "price": 0.600000,
+                "impid": "test-imp-id1",
+                "price": 0.500000,
                 "adm": "some-test-ad",
                 "crid": "crid_10",
                 "h": 90,
@@ -142,7 +120,144 @@
                     "mediaType": "banner"
                   }
                 }
-              }]
+                },
+                {
+                  "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                  "impid": "test-imp-id2",
+                  "price": 0.600000,
+                  "adm": "some-test-ad",
+                  "crid": "crid_10",
+                  "h": 90,
+                  "w": 728,
+                  "ext": {
+                    "ttx": {
+                      "mediaType": "banner"
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "http://ssc.33across.com",
+        "body": {
+          "ext": {
+            "ttx": {
+              "caller": [
+                {
+                  "name": "Prebid-Server",
+                  "version": "n/a"
+                }
+              ]
+            }
+          },
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id":"test-imp-id3",
+              "banner": {
+                "format": [{"w": 728, "h": 90}]
+              },
+              "ext": {
+                "ttx": {
+                  "prod": "inview",
+                  "zoneid": "fake-site-id1"
+                }
+              }
+            }
+          ],
+          "site": {}
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "ttx",
+              "bid": [
+                {
+                  "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                  "impid": "test-imp-id3",
+                  "price": 0.500000,
+                  "adm": "some-test-ad",
+                  "crid": "crid_10",
+                  "h": 90,
+                  "w": 728,
+                  "ext": {
+                    "ttx": {
+                      "mediaType": "banner"
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "http://ssc.33across.com",
+        "body": {
+          "ext": {
+            "ttx": {
+              "caller": [
+                {
+                  "name": "Prebid-Server",
+                  "version": "n/a"
+                }
+              ]
+            }
+          },
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id":"test-imp-id4",
+              "banner": {
+                "format": [{"w": 728, "h": 90}]
+              },
+              "ext": {
+                "ttx": {
+                  "prod": "siab",
+                  "zoneid": "fake-site-id"
+                }
+              }
+            }
+          ],
+          "site": {}
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "ttx",
+              "bid": [
+                {
+                "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                  "impid": "test-imp-id4",
+                  "price": 0.500000,
+                "adm": "some-test-ad",
+                "crid": "crid_10",
+                "h": 90,
+                "w": 728,
+                "ext": {
+                  "ttx": {
+                    "mediaType": "banner"
+                  }
+                }
+                }
+              ]
             }
           ],
           "cur": "USD"
@@ -171,6 +286,23 @@
             }
           },
           "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+            "impid": "test-imp-id2",
+            "price": 0.6,
+            "adm": "some-test-ad",
+            "crid": "crid_10",
+            "w": 728,
+            "h": 90,
+            "ext": {
+              "ttx": {
+                "mediaType": "banner"
+              }
+            }
+          },
+          "type": "banner"
         }
       ]
     },
@@ -180,8 +312,30 @@
         {
           "bid": {
             "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
-            "impid": "test-imp-id2",
-            "price": 0.6,
+            "impid": "test-imp-id3",
+            "price": 0.5,
+            "adm": "some-test-ad",
+            "crid": "crid_10",
+            "w": 728,
+            "h": 90,
+            "ext": {
+              "ttx": {
+                "mediaType": "banner"
+              }
+            }
+          },
+          "type": "banner"
+        }
+      ]
+    },
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+            "impid": "test-imp-id4",
+            "price": 0.5,
             "adm": "some-test-ad",
             "crid": "crid_10",
             "w": 728,

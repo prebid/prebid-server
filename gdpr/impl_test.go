@@ -6,12 +6,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
-
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/go-gdpr/vendorlist"
 	"github.com/prebid/go-gdpr/vendorlist2"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -66,7 +65,7 @@ func TestAllowedSyncs(t *testing.T) {
 			HostVendorID: 2,
 			TCF2: config.TCF2{
 				Purpose1: config.TCF2Purpose{
-					Enabled:        true,
+					EnforcePurpose: config.TCF2FullEnforcement,
 					EnforceVendors: true,
 				},
 			},
@@ -110,7 +109,7 @@ func TestProhibitedPurposes(t *testing.T) {
 			HostVendorID: 2,
 			TCF2: config.TCF2{
 				Purpose1: config.TCF2Purpose{
-					Enabled: true,
+					EnforcePurpose: config.TCF2FullEnforcement,
 				},
 			},
 		},
@@ -149,7 +148,7 @@ func TestProhibitedVendors(t *testing.T) {
 			HostVendorID: 2,
 			TCF2: config.TCF2{
 				Purpose1: config.TCF2Purpose{
-					Enabled:        true,
+					EnforcePurpose: config.TCF2FullEnforcement,
 					EnforceVendors: true,
 				},
 			},
@@ -193,22 +192,26 @@ func TestMalformedConsent(t *testing.T) {
 
 func TestAllowActivities(t *testing.T) {
 	bidderAllowedByConsent := openrtb_ext.BidderAppnexus
+	aliasedBidderAllowedByConsent := openrtb_ext.BidderName("appnexus1")
 	bidderBlockedByConsent := openrtb_ext.BidderRubicon
 	vendor2AndPurpose2Consent := "CPGWbY_PGWbY_GYAAAENABCAAEAAAAAAAAAAACEAAAAA"
 
 	tests := []struct {
 		description           string
 		bidderName            openrtb_ext.BidderName
+		bidderCoreName        openrtb_ext.BidderName
 		publisherID           string
 		gdprDefaultValue      string
 		gdpr                  Signal
 		consent               string
 		passID                bool
 		weakVendorEnforcement bool
+		aliasGVLIDs           map[string]uint16
 	}{
 		{
 			description:      "Allow PI - Non standard publisher",
 			bidderName:       bidderBlockedByConsent,
+			bidderCoreName:   bidderBlockedByConsent,
 			publisherID:      "appNexusAppID",
 			gdprDefaultValue: "1",
 			gdpr:             SignalYes,
@@ -218,6 +221,7 @@ func TestAllowActivities(t *testing.T) {
 		{
 			description:      "Allow PI - known vendor with No GDPR",
 			bidderName:       bidderBlockedByConsent,
+			bidderCoreName:   bidderBlockedByConsent,
 			gdprDefaultValue: "1",
 			gdpr:             SignalNo,
 			consent:          vendor2AndPurpose2Consent,
@@ -226,14 +230,36 @@ func TestAllowActivities(t *testing.T) {
 		{
 			description:      "Allow PI - known vendor with Yes GDPR",
 			bidderName:       bidderAllowedByConsent,
+			bidderCoreName:   bidderAllowedByConsent,
 			gdprDefaultValue: "1",
 			gdpr:             SignalYes,
 			consent:          vendor2AndPurpose2Consent,
 			passID:           true,
 		},
 		{
+			description:      "Allow PI - known Alias vendor GVLID with Yes GDPR",
+			bidderName:       aliasedBidderAllowedByConsent,
+			bidderCoreName:   bidderAllowedByConsent,
+			gdprDefaultValue: "1",
+			gdpr:             SignalYes,
+			consent:          vendor2AndPurpose2Consent,
+			passID:           true,
+			aliasGVLIDs:      map[string]uint16{"appnexus1": 2},
+		},
+		{
+			description:      "Don't allow PI - known alias vendor with Yes GDPR, alias vendor does not consent to purpose 2",
+			bidderName:       aliasedBidderAllowedByConsent,
+			bidderCoreName:   bidderAllowedByConsent,
+			gdprDefaultValue: "1",
+			gdpr:             SignalYes,
+			consent:          vendor2AndPurpose2Consent,
+			passID:           false,
+			aliasGVLIDs:      map[string]uint16{"appnexus1": 1},
+		},
+		{
 			description:      "PI allowed according to host setting gdprDefaultValue 0 - known vendor with ambiguous GDPR and empty consent",
 			bidderName:       bidderAllowedByConsent,
+			bidderCoreName:   bidderAllowedByConsent,
 			gdprDefaultValue: "0",
 			gdpr:             SignalAmbiguous,
 			consent:          "",
@@ -242,6 +268,7 @@ func TestAllowActivities(t *testing.T) {
 		{
 			description:      "PI allowed according to host setting gdprDefaultValue 0 - known vendor with ambiguous GDPR and non-empty consent",
 			bidderName:       bidderAllowedByConsent,
+			bidderCoreName:   bidderAllowedByConsent,
 			gdprDefaultValue: "0",
 			gdpr:             SignalAmbiguous,
 			consent:          vendor2AndPurpose2Consent,
@@ -250,6 +277,7 @@ func TestAllowActivities(t *testing.T) {
 		{
 			description:      "PI allowed according to host setting gdprDefaultValue 1 - known vendor with ambiguous GDPR and empty consent",
 			bidderName:       bidderAllowedByConsent,
+			bidderCoreName:   bidderAllowedByConsent,
 			gdprDefaultValue: "1",
 			gdpr:             SignalAmbiguous,
 			consent:          "",
@@ -258,6 +286,7 @@ func TestAllowActivities(t *testing.T) {
 		{
 			description:      "PI allowed according to host setting gdprDefaultValue 1 - known vendor with ambiguous GDPR and non-empty consent",
 			bidderName:       bidderAllowedByConsent,
+			bidderCoreName:   bidderAllowedByConsent,
 			gdprDefaultValue: "1",
 			gdpr:             SignalAmbiguous,
 			consent:          vendor2AndPurpose2Consent,
@@ -266,6 +295,7 @@ func TestAllowActivities(t *testing.T) {
 		{
 			description:      "Don't allow PI - known vendor with Yes GDPR and empty consent",
 			bidderName:       bidderAllowedByConsent,
+			bidderCoreName:   bidderAllowedByConsent,
 			gdprDefaultValue: "1",
 			gdpr:             SignalYes,
 			consent:          "",
@@ -274,6 +304,7 @@ func TestAllowActivities(t *testing.T) {
 		{
 			description:      "Don't allow PI - default vendor with Yes GDPR and non-empty consent",
 			bidderName:       bidderBlockedByConsent,
+			bidderCoreName:   bidderBlockedByConsent,
 			gdprDefaultValue: "1",
 			gdpr:             SignalYes,
 			consent:          vendor2AndPurpose2Consent,
@@ -297,7 +328,7 @@ func TestAllowActivities(t *testing.T) {
 			TCF2: config.TCF2{
 				Enabled: true,
 				Purpose2: config.TCF2Purpose{
-					Enabled:        true,
+					EnforcePurpose: config.TCF2FullEnforcement,
 					EnforceVendors: true,
 				},
 			},
@@ -323,7 +354,7 @@ func TestAllowActivities(t *testing.T) {
 			perms.gdprDefaultValue = SignalYes
 		}
 
-		_, _, passID, err := perms.AuctionActivitiesAllowed(context.Background(), tt.bidderName, tt.publisherID, tt.gdpr, tt.consent, tt.weakVendorEnforcement)
+		_, _, passID, err := perms.AuctionActivitiesAllowed(context.Background(), tt.bidderCoreName, tt.bidderName, tt.publisherID, tt.gdpr, tt.consent, tt.weakVendorEnforcement, tt.aliasGVLIDs)
 
 		assert.Nil(t, err, tt.description)
 		assert.Equal(t, tt.passID, passID, tt.description)
@@ -342,7 +373,7 @@ func buildVendorList34() vendorList {
 				ID:               6,
 				Purposes:         []int{1, 2, 4},
 				LegIntPurposes:   []int{7},
-				SpecialPurposes:  []int{1},
+				SpecialFeatures:  []int{1},
 				FlexiblePurposes: []int{1, 2, 4, 7},
 			},
 			"8": {
@@ -353,7 +384,7 @@ func buildVendorList34() vendorList {
 			"10": {
 				ID:              10,
 				Purposes:        []int{2, 4, 7},
-				SpecialPurposes: []int{1},
+				SpecialFeatures: []int{1},
 			},
 			"20": {
 				ID:               20,
@@ -375,17 +406,17 @@ func allPurposesEnabledPermissions() (perms permissionsImpl) {
 			HostVendorID: 2,
 			TCF2: config.TCF2{
 				Enabled:         true,
-				Purpose1:        config.TCF2Purpose{Enabled: true, EnforceVendors: true},
-				Purpose2:        config.TCF2Purpose{Enabled: true, EnforceVendors: true},
-				Purpose3:        config.TCF2Purpose{Enabled: true, EnforceVendors: true},
-				Purpose4:        config.TCF2Purpose{Enabled: true, EnforceVendors: true},
-				Purpose5:        config.TCF2Purpose{Enabled: true, EnforceVendors: true},
-				Purpose6:        config.TCF2Purpose{Enabled: true, EnforceVendors: true},
-				Purpose7:        config.TCF2Purpose{Enabled: true, EnforceVendors: true},
-				Purpose8:        config.TCF2Purpose{Enabled: true, EnforceVendors: true},
-				Purpose9:        config.TCF2Purpose{Enabled: true, EnforceVendors: true},
-				Purpose10:       config.TCF2Purpose{Enabled: true, EnforceVendors: true},
-				SpecialPurpose1: config.TCF2Purpose{Enabled: true, EnforceVendors: true},
+				Purpose1:        config.TCF2Purpose{EnforcePurpose: config.TCF2FullEnforcement, EnforceVendors: true},
+				Purpose2:        config.TCF2Purpose{EnforcePurpose: config.TCF2FullEnforcement, EnforceVendors: true},
+				Purpose3:        config.TCF2Purpose{EnforcePurpose: config.TCF2FullEnforcement, EnforceVendors: true},
+				Purpose4:        config.TCF2Purpose{EnforcePurpose: config.TCF2FullEnforcement, EnforceVendors: true},
+				Purpose5:        config.TCF2Purpose{EnforcePurpose: config.TCF2FullEnforcement, EnforceVendors: true},
+				Purpose6:        config.TCF2Purpose{EnforcePurpose: config.TCF2FullEnforcement, EnforceVendors: true},
+				Purpose7:        config.TCF2Purpose{EnforcePurpose: config.TCF2FullEnforcement, EnforceVendors: true},
+				Purpose8:        config.TCF2Purpose{EnforcePurpose: config.TCF2FullEnforcement, EnforceVendors: true},
+				Purpose9:        config.TCF2Purpose{EnforcePurpose: config.TCF2FullEnforcement, EnforceVendors: true},
+				Purpose10:       config.TCF2Purpose{EnforcePurpose: config.TCF2FullEnforcement, EnforceVendors: true},
+				SpecialFeature1: config.TCF2SpecialFeature{Enforce: true},
 			},
 		},
 	}
@@ -412,6 +443,8 @@ type testDef struct {
 	passGeo               bool
 	passID                bool
 	weakVendorEnforcement bool
+	bidderCoreName        openrtb_ext.BidderName
+	aliasGVLIDs           map[string]uint16
 }
 
 func TestAllowActivitiesGeoAndID(t *testing.T) {
@@ -432,19 +465,31 @@ func TestAllowActivitiesGeoAndID(t *testing.T) {
 		}),
 	}
 
-	// COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA : full consents to purposes and vendors 2, 6, 8
+	// COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA : full consents to purposes and vendors 2, 6, 8 and special feature 1 opt-in
 	testDefs := []testDef{
 		{
-			description: "Appnexus vendor test, insufficient purposes claimed",
-			bidder:      openrtb_ext.BidderAppnexus,
-			consent:     "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA",
-			allowBid:    false,
-			passGeo:     false,
-			passID:      false,
+			description:    "Appnexus vendor test, insufficient purposes claimed",
+			bidder:         openrtb_ext.BidderAppnexus,
+			bidderCoreName: openrtb_ext.BidderAppnexus,
+			consent:        "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA",
+			allowBid:       false,
+			passGeo:        false,
+			passID:         false,
+		},
+		{
+			description:    "Pubmatic Alias vendor test, insufficient purposes claimed",
+			bidder:         "pubmatic1",
+			bidderCoreName: openrtb_ext.BidderPubmatic,
+			consent:        "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA",
+			allowBid:       false,
+			passGeo:        false,
+			passID:         false,
+			aliasGVLIDs:    map[string]uint16{"pubmatic1": 1},
 		},
 		{
 			description:           "Appnexus vendor test, insufficient purposes claimed, basic enforcement",
 			bidder:                openrtb_ext.BidderAppnexus,
+			bidderCoreName:        openrtb_ext.BidderAppnexus,
 			consent:               "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA",
 			allowBid:              true,
 			passGeo:               true,
@@ -454,6 +499,7 @@ func TestAllowActivitiesGeoAndID(t *testing.T) {
 		{
 			description:           "Unknown vendor test, insufficient purposes claimed, basic enforcement",
 			bidder:                openrtb_ext.BidderAudienceNetwork,
+			bidderCoreName:        openrtb_ext.BidderAudienceNetwork,
 			consent:               "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA",
 			allowBid:              true,
 			passGeo:               true,
@@ -461,36 +507,49 @@ func TestAllowActivitiesGeoAndID(t *testing.T) {
 			weakVendorEnforcement: true,
 		},
 		{
-			description: "Pubmatic vendor test, flex purposes claimed",
-			bidder:      openrtb_ext.BidderPubmatic,
-			consent:     "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA",
-			allowBid:    true,
-			passGeo:     true,
-			passID:      true,
+			description:    "Pubmatic vendor test, flex purposes claimed",
+			bidder:         openrtb_ext.BidderPubmatic,
+			bidderCoreName: openrtb_ext.BidderPubmatic,
+			consent:        "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA",
+			allowBid:       true,
+			passGeo:        true,
+			passID:         true,
 		},
 		{
-			description: "Rubicon vendor test, Specific purposes/LIs claimed, no geo claimed",
-			bidder:      openrtb_ext.BidderRubicon,
-			consent:     "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA",
-			allowBid:    true,
-			passGeo:     false,
-			passID:      true,
+			description:    "Pubmatic Alias vendor test, flex purposes claimed",
+			bidder:         "pubmatic1",
+			bidderCoreName: openrtb_ext.BidderPubmatic,
+			consent:        "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA",
+			allowBid:       true,
+			passGeo:        true,
+			passID:         true,
+			aliasGVLIDs:    map[string]uint16{"pubmatic1": 6},
+		},
+		{
+			description:    "Rubicon vendor test, Specific purposes/LIs claimed, no geo claimed",
+			bidder:         openrtb_ext.BidderRubicon,
+			bidderCoreName: openrtb_ext.BidderRubicon,
+			consent:        "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA",
+			allowBid:       true,
+			passGeo:        false,
+			passID:         true,
 		},
 		{
 			// This requires publisher restrictions on any claimed purposes, 2-10. Vendor must declare all claimed purposes
 			// as flex with legit interest as primary.
 			// Using vendor 20 for this.
-			description: "OpenX vendor test, Specific purposes/LIs claimed, no geo claimed, Publisher restrictions apply",
-			bidder:      openrtb_ext.BidderOpenx,
-			consent:     "CPAavcCPAavcCAGABCFRBKCsAP_AAH_AAAqIHFNf_X_fb3_j-_59_9t0eY1f9_7_v-0zjgeds-8Nyd_X_L8X5mM7vB36pq4KuR4Eu3LBAQdlHOHcTUmw6IkVqTPsbk2Mr7NKJ7PEinMbe2dYGH9_n9XT_ZKY79_____7__-_____7_f__-__3_vp9V---wOJAIMBAUAgAEMAAQIFCIQAAQhiQAAAABBCIBQJIAEqgAWVwEdoIEACAxAQgQAgBBQgwCAAQAAJKAgBACwQCAAiAQAAgAEAIAAEIAILACQEAAAEAJCAAiACECAgiAAg5DAgIgCCAFABAAAuJDACAMooASBAPGQGAAKAAqACGAEwALgAjgBlgDUAHZAPsA_ACMAFLAK2AbwBMQCbAFogLYAYEAw8BkQDOQGeAM-EQHwAVABWAC4AIYAZAAywBqADZAHYAPwAgABGAClgFPANYAdUA-QCGwEOgIvASIAmwBOwCkQFyAMCAYSAw8Bk4DOQGfCQAYADgBzgN_CQTgAEAALgAoACoAGQAOAAeABAACIAFQAMIAaABqADyAIYAigBMgCqAKwAWAAuABvADmAHoAQ0AiACJgEsAS4AmgBSgC3AGGAMgAZcA1ADVAGyAO8AewA-IB9gH6AQAAjABQQClgFPAL8AYoA1gBtADcAG8AOIAegA-QCGwEOgIqAReAkQBMQCZQE2AJ2AUOApEBYoC2AFyALvAYEAwYBhIDDQGHgMiAZIAycBlwDOQGfANIAadA1gDWQoAEAYQaBIACoAKwAXABDADIAGWANQAbIA7AB-AEAAIKARgApYBT4C0ALSAawA3gB1QD5AIbAQ6Ai8BIgCbAE7AKRAXIAwIBhIDDwGMAMnAZyAzwBnwcAEAA4Bv4qA2ABQAFQAQwAmABcAEcAMsAagA7AB-AEYAKXAWgBaQDeAJBATEAmwBTYC2AFyAMCAYeAyIBnIDPAGfANyHQWQAFwAUABUADIAHAAQAAiABdADAAMYAaABqADwAH0AQwBFACZAFUAVgAsABcADEAGYAN4AcwA9ACGAERAJYAmABNACjAFKALEAW4AwwBkADKAGiANQAbIA3wB3gD2gH2AfoBGACVAFBAKeAWKAtAC0gFzALyAX4AxQBuADiQHTAdQA9ACGwEOgIiAReAkEBIgCbAE7AKHAU0AqwBYsC2ALZAXAAuQBdoC7wGEgMNAYeAxIBjADHgGSAMnAZUAywBlwDOQGfANEgaQBpIDSwGnANYAbGPABAIqAb-QgZgALAAoABkAEQALgAYgBDACYAFUALgAYgAzABvAD0AI4AWIAygBqADfAHfAPsA_ACMAFBAKGAU-AtAC0gF-AMUAdQA9ACQQEiAJsAU0AsUBaMC2ALaAXAAuQBdoDDwGJAMiAZOAzkBngDPgGiANJAaWA4AlAyAAQAAsACgAGQAOAAigBgAGIAPAAiABMACqAFwAMQAZgA2gCGgEQARIAowBSgC3AGEAMoAaoA2QB3gD8AIwAU-AtAC0gGKANwAcQA6gCHQEXgJEATYAsUBbAC7QGHgMiAZOAywBnIDPAGfANIAawA4AmACARUA38pBBAAXABQAFQAMgAcABAACKAGAAYwA0ADUAHkAQwBFACYAFIAKoAWAAuABiADMAHMAQwAiABRgClAFiALcAZQA0QBqgDZAHfAPsA_ACMAFBAKGAVsAuYBeQDaAG4APQAh0BF4CRAE2AJ2AUOApoBWwCxQFsALgAXIAu0BhoDDwGMAMiAZIAycBlwDOQGeAM-gaQBpMDWANZAbGVABAA-Ab-A.YAAAAAAAAAAA",
-			allowBid:    true,
-			passGeo:     false,
-			passID:      true,
+			description:    "OpenX vendor test, Specific purposes/LIs claimed, no geo claimed, Publisher restrictions apply",
+			bidder:         openrtb_ext.BidderOpenx,
+			bidderCoreName: openrtb_ext.BidderOpenx,
+			consent:        "CPAavcCPAavcCAGABCFRBKCsAP_AAH_AAAqIHFNf_X_fb3_j-_59_9t0eY1f9_7_v-0zjgeds-8Nyd_X_L8X5mM7vB36pq4KuR4Eu3LBAQdlHOHcTUmw6IkVqTPsbk2Mr7NKJ7PEinMbe2dYGH9_n9XT_ZKY79_____7__-_____7_f__-__3_vp9V---wOJAIMBAUAgAEMAAQIFCIQAAQhiQAAAABBCIBQJIAEqgAWVwEdoIEACAxAQgQAgBBQgwCAAQAAJKAgBACwQCAAiAQAAgAEAIAAEIAILACQEAAAEAJCAAiACECAgiAAg5DAgIgCCAFABAAAuJDACAMooASBAPGQGAAKAAqACGAEwALgAjgBlgDUAHZAPsA_ACMAFLAK2AbwBMQCbAFogLYAYEAw8BkQDOQGeAM-EQHwAVABWAC4AIYAZAAywBqADZAHYAPwAgABGAClgFPANYAdUA-QCGwEOgIvASIAmwBOwCkQFyAMCAYSAw8Bk4DOQGfCQAYADgBzgN_CQTgAEAALgAoACoAGQAOAAeABAACIAFQAMIAaABqADyAIYAigBMgCqAKwAWAAuABvADmAHoAQ0AiACJgEsAS4AmgBSgC3AGGAMgAZcA1ADVAGyAO8AewA-IB9gH6AQAAjABQQClgFPAL8AYoA1gBtADcAG8AOIAegA-QCGwEOgIqAReAkQBMQCZQE2AJ2AUOApEBYoC2AFyALvAYEAwYBhIDDQGHgMiAZIAycBlwDOQGfANIAadA1gDWQoAEAYQaBIACoAKwAXABDADIAGWANQAbIA7AB-AEAAIKARgApYBT4C0ALSAawA3gB1QD5AIbAQ6Ai8BIgCbAE7AKRAXIAwIBhIDDwGMAMnAZyAzwBnwcAEAA4Bv4qA2ABQAFQAQwAmABcAEcAMsAagA7AB-AEYAKXAWgBaQDeAJBATEAmwBTYC2AFyAMCAYeAyIBnIDPAGfANyHQWQAFwAUABUADIAHAAQAAiABdADAAMYAaABqADwAH0AQwBFACZAFUAVgAsABcADEAGYAN4AcwA9ACGAERAJYAmABNACjAFKALEAW4AwwBkADKAGiANQAbIA3wB3gD2gH2AfoBGACVAFBAKeAWKAtAC0gFzALyAX4AxQBuADiQHTAdQA9ACGwEOgIiAReAkEBIgCbAE7AKHAU0AqwBYsC2ALZAXAAuQBdoC7wGEgMNAYeAxIBjADHgGSAMnAZUAywBlwDOQGfANEgaQBpIDSwGnANYAbGPABAIqAb-QgZgALAAoABkAEQALgAYgBDACYAFUALgAYgAzABvAD0AI4AWIAygBqADfAHfAPsA_ACMAFBAKGAU-AtAC0gF-AMUAdQA9ACQQEiAJsAU0AsUBaMC2ALaAXAAuQBdoDDwGJAMiAZOAzkBngDPgGiANJAaWA4AlAyAAQAAsACgAGQAOAAigBgAGIAPAAiABMACqAFwAMQAZgA2gCGgEQARIAowBSgC3AGEAMoAaoA2QB3gD8AIwAU-AtAC0gGKANwAcQA6gCHQEXgJEATYAsUBbAC7QGHgMiAZOAywBnIDPAGfANIAawA4AmACARUA38pBBAAXABQAFQAMgAcABAACKAGAAYwA0ADUAHkAQwBFACYAFIAKoAWAAuABiADMAHMAQwAiABRgClAFiALcAZQA0QBqgDZAHfAPsA_ACMAFBAKGAVsAuYBeQDaAG4APQAh0BF4CRAE2AJ2AUOApoBWwCxQFsALgAXIAu0BhoDDwGMAMiAZIAycBlwDOQGeAM-gaQBpMDWANZAbGVABAA-Ab-A.YAAAAAAAAAAA",
+			allowBid:       true,
+			passGeo:        false,
+			passID:         true,
 		},
 	}
 
 	for _, td := range testDefs {
-		allowBid, passGeo, passID, err := perms.AuctionActivitiesAllowed(context.Background(), td.bidder, "", SignalYes, td.consent, td.weakVendorEnforcement)
+		allowBid, passGeo, passID, err := perms.AuctionActivitiesAllowed(context.Background(), td.bidderCoreName, td.bidder, "", SignalYes, td.consent, td.weakVendorEnforcement, td.aliasGVLIDs)
 		assert.NoErrorf(t, err, "Error processing AuctionActivitiesAllowed for %s", td.description)
 		assert.EqualValuesf(t, td.allowBid, allowBid, "AllowBid failure on %s", td.description)
 		assert.EqualValuesf(t, td.passGeo, passGeo, "PassGeo failure on %s", td.description)
@@ -515,7 +574,7 @@ func TestAllowActivitiesWhitelist(t *testing.T) {
 
 	// Assert that an item that otherwise would not be allowed PI access, gets approved because it is found in the GDPR.NonStandardPublishers array
 	perms.cfg.NonStandardPublisherMap = map[string]struct{}{"appNexusAppID": {}}
-	_, passGeo, passID, err := perms.AuctionActivitiesAllowed(context.Background(), openrtb_ext.BidderAppnexus, "appNexusAppID", SignalYes, "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA", false)
+	_, passGeo, passID, err := perms.AuctionActivitiesAllowed(context.Background(), openrtb_ext.BidderAppnexus, openrtb_ext.BidderAppnexus, "appNexusAppID", SignalYes, "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA", false, map[string]uint16{})
 	assert.NoErrorf(t, err, "Error processing AuctionActivitiesAllowed")
 	assert.EqualValuesf(t, true, passGeo, "PassGeo failure")
 	assert.EqualValuesf(t, true, passID, "PassID failure")
@@ -537,33 +596,48 @@ func TestAllowActivitiesPubRestrict(t *testing.T) {
 	}
 
 	// COwAdDhOwAdDhN4ABAENAPCgAAQAAv___wAAAFP_AAp_4AI6ACACAA - vendors 1-10 legit interest only,
-	// Pub restriction on purpose 7, consent only ... no allowPI will pass, no Special purpose 1 consent
+	// Pub restriction on purpose 7, consent only ... no allowPI will pass, no special feature 1 consent
 	testDefs := []testDef{
 		{
-			description: "Appnexus vendor test, insufficient purposes claimed",
-			bidder:      openrtb_ext.BidderAppnexus,
-			consent:     "COwAdDhOwAdDhN4ABAENAPCgAAQAAv___wAAAFP_AAp_4AI6ACACAA",
-			passGeo:     false,
-			passID:      false,
+			description:    "Appnexus vendor test, insufficient purposes claimed",
+			bidder:         openrtb_ext.BidderAppnexus,
+			bidderCoreName: openrtb_ext.BidderAppnexus,
+			consent:        "COwAdDhOwAdDhN4ABAENAPCgAAQAAv___wAAAFP_AAp_4AI6ACACAA",
+			passGeo:        false,
+			passID:         false,
+			aliasGVLIDs:    map[string]uint16{},
 		},
 		{
-			description: "Pubmatic vendor test, flex purposes claimed",
-			bidder:      openrtb_ext.BidderPubmatic,
-			consent:     "COwAdDhOwAdDhN4ABAENAPCgAAQAAv___wAAAFP_AAp_4AI6ACACAA",
-			passGeo:     false,
-			passID:      false,
+			description:    "Pubmatic vendor test, flex purposes claimed",
+			bidder:         openrtb_ext.BidderPubmatic,
+			bidderCoreName: openrtb_ext.BidderPubmatic,
+			consent:        "COwAdDhOwAdDhN4ABAENAPCgAAQAAv___wAAAFP_AAp_4AI6ACACAA",
+			passGeo:        false,
+			passID:         false,
+			aliasGVLIDs:    map[string]uint16{},
 		},
 		{
-			description: "Rubicon vendor test, Specific purposes/LIs claimed, no geo claimed",
-			bidder:      openrtb_ext.BidderRubicon,
-			consent:     "COwAdDhOwAdDhN4ABAENAPCgAAQAAv___wAAAFP_AAp_4AI6ACACAA",
-			passGeo:     false,
-			passID:      true,
+			description:    "Pubmatic Alias vendor test, flex purposes claimed",
+			bidder:         "pubmatic1",
+			bidderCoreName: openrtb_ext.BidderPubmatic,
+			consent:        "COwAdDhOwAdDhN4ABAENAPCgAAQAAv___wAAAFP_AAp_4AI6ACACAA",
+			passGeo:        false,
+			passID:         false,
+			aliasGVLIDs:    map[string]uint16{"pubmatic1": 32},
+		},
+		{
+			description:    "Rubicon vendor test, Specific purposes/LIs claimed, no geo claimed",
+			bidder:         openrtb_ext.BidderRubicon,
+			bidderCoreName: openrtb_ext.BidderRubicon,
+			consent:        "COwAdDhOwAdDhN4ABAENAPCgAAQAAv___wAAAFP_AAp_4AI6ACACAA",
+			passGeo:        false,
+			passID:         true,
+			aliasGVLIDs:    map[string]uint16{},
 		},
 	}
 
 	for _, td := range testDefs {
-		_, passGeo, passID, err := perms.AuctionActivitiesAllowed(context.Background(), td.bidder, "", SignalYes, td.consent, td.weakVendorEnforcement)
+		_, passGeo, passID, err := perms.AuctionActivitiesAllowed(context.Background(), td.bidderCoreName, td.bidder, "", SignalYes, td.consent, td.weakVendorEnforcement, td.aliasGVLIDs)
 		assert.NoErrorf(t, err, "Error processing AuctionActivitiesAllowed for %s", td.description)
 		assert.EqualValuesf(t, td.passGeo, passGeo, "PassGeo failure on %s", td.description)
 		assert.EqualValuesf(t, td.passID, passID, "PassID failure on %s", td.description)
@@ -651,15 +725,6 @@ func TestProhibitedVendorSync(t *testing.T) {
 	assert.EqualValuesf(t, false, allowSync, "BidderSyncAllowed failure")
 }
 
-func parseVendorListData(t *testing.T, data string) vendorlist.VendorList {
-	t.Helper()
-	parsed, err := vendorlist.ParseEagerly([]byte(data))
-	if err != nil {
-		t.Fatalf("Failed to parse vendor list data. %v", err)
-	}
-	return parsed
-}
-
 func parseVendorListDataV2(t *testing.T, data string) vendorlist.VendorList {
 	t.Helper()
 	parsed, err := vendorlist2.ParseEagerly([]byte(data))
@@ -708,77 +773,6 @@ func assertBoolsEqual(t *testing.T, expected bool, actual bool) {
 	}
 }
 
-func assertStringsEqual(t *testing.T, expected string, actual string) {
-	t.Helper()
-	if expected != actual {
-		t.Errorf("Expected %s, got %s", expected, actual)
-	}
-}
-
-func TestNormalizeGDPR(t *testing.T) {
-	tests := []struct {
-		description      string
-		gdprDefaultValue string
-		giveSignal       Signal
-		wantSignal       Signal
-	}{
-		{
-			description:      "Don't normalize - Signal No and gdprDefaultValue 1",
-			gdprDefaultValue: "1",
-			giveSignal:       SignalNo,
-			wantSignal:       SignalNo,
-		},
-		{
-			description:      "Don't normalize - Signal No and gdprDefaultValue 0",
-			gdprDefaultValue: "0",
-			giveSignal:       SignalNo,
-			wantSignal:       SignalNo,
-		},
-		{
-			description:      "Don't normalize - Signal Yes and gdprDefaultValue 1",
-			gdprDefaultValue: "1",
-			giveSignal:       SignalYes,
-			wantSignal:       SignalYes,
-		},
-		{
-			description:      "Don't normalize - Signal Yes and gdprDefaultValue 0",
-			gdprDefaultValue: "0",
-			giveSignal:       SignalYes,
-			wantSignal:       SignalYes,
-		},
-		{
-			description:      "Normalize - Signal Ambiguous and gdprDefaultValue 1",
-			gdprDefaultValue: "1",
-			giveSignal:       SignalAmbiguous,
-			wantSignal:       SignalYes,
-		},
-		{
-			description:      "Normalize - Signal Ambiguous and gdprDefaultValue 0",
-			gdprDefaultValue: "0",
-			giveSignal:       SignalAmbiguous,
-			wantSignal:       SignalNo,
-		},
-	}
-
-	for _, tt := range tests {
-		perms := permissionsImpl{
-			cfg: config.GDPR{
-				DefaultValue: tt.gdprDefaultValue,
-			},
-		}
-
-		if tt.gdprDefaultValue == "0" {
-			perms.gdprDefaultValue = SignalNo
-		} else {
-			perms.gdprDefaultValue = SignalYes
-		}
-
-		normalizedSignal := perms.normalizeGDPR(tt.giveSignal)
-
-		assert.Equal(t, tt.wantSignal, normalizedSignal, tt.description)
-	}
-}
-
 func TestAllowActivitiesBidRequests(t *testing.T) {
 	purpose2AndVendorConsent := "CPF_61ePF_61eFxAAAENAiCAAEAAAAAAAAAAADAQAAAAAA"
 	purpose2ConsentWithoutVendorConsent := "CPF_61ePF_61eFxAAAENAiCAAEAAAAAAAAAAABIAAAAA"
@@ -788,30 +782,58 @@ func TestAllowActivitiesBidRequests(t *testing.T) {
 
 	testDefs := []struct {
 		description            string
-		purpose2Enabled        bool
+		purpose2EnforcePurpose string
 		purpose2EnforceVendors bool
 		bidder                 openrtb_ext.BidderName
+		bidderCoreName         openrtb_ext.BidderName
 		consent                string
 		allowBid               bool
 		passGeo                bool
 		passID                 bool
 		weakVendorEnforcement  bool
+		aliasGVLIDs            map[string]uint16
 	}{
 		{
 			description:            "Bid blocked - p2 enabled, user consents to p2 but not vendor, vendor consents to p2",
-			purpose2Enabled:        true,
+			purpose2EnforcePurpose: config.TCF2FullEnforcement,
 			purpose2EnforceVendors: true,
 			bidder:                 openrtb_ext.BidderPubmatic,
+			bidderCoreName:         openrtb_ext.BidderPubmatic,
 			consent:                purpose2ConsentWithoutVendorConsent,
 			allowBid:               false,
 			passGeo:                false,
 			passID:                 false,
 		},
 		{
+			description:            "Bid allowed - p2 enabled, user consents to p2 and vendor, alias vendor consents to p2",
+			purpose2EnforcePurpose: config.TCF2FullEnforcement,
+			purpose2EnforceVendors: true,
+			bidder:                 "pubmatic1",
+			bidderCoreName:         openrtb_ext.BidderPubmatic,
+			consent:                purpose2AndVendorConsent,
+			allowBid:               true,
+			passGeo:                false,
+			passID:                 true,
+			aliasGVLIDs:            map[string]uint16{"pubmatic1": 6},
+		},
+		{
+			description:            "Bid blocked - p2 enabled, user consents to p2 and vendor, alias vendor does not consent to p2",
+			purpose2EnforcePurpose: config.TCF2FullEnforcement,
+			purpose2EnforceVendors: true,
+			bidder:                 "pubmatic1",
+			bidderCoreName:         openrtb_ext.BidderPubmatic,
+			consent:                purpose2AndVendorConsent,
+			allowBid:               false,
+			passGeo:                false,
+			passID:                 false,
+			aliasGVLIDs:            map[string]uint16{"pubmatic1": 1},
+		},
+		{
 			description:            "Bid allowed - p2 enabled not enforcing vendors, user consents to p2 but not vendor, vendor consents to p2",
-			purpose2Enabled:        true,
+			purpose2EnforcePurpose: config.TCF2FullEnforcement,
 			purpose2EnforceVendors: false,
 			bidder:                 openrtb_ext.BidderPubmatic,
+			bidderCoreName:         openrtb_ext.BidderPubmatic,
 			consent:                purpose2ConsentWithoutVendorConsent,
 			allowBid:               true,
 			passGeo:                false,
@@ -819,9 +841,10 @@ func TestAllowActivitiesBidRequests(t *testing.T) {
 		},
 		{
 			description:            "Bid allowed - p2 disabled, user consents to p2 but not vendor, vendor consents to p2",
-			purpose2Enabled:        false,
+			purpose2EnforcePurpose: config.TCF2NoEnforcement,
 			purpose2EnforceVendors: true,
 			bidder:                 openrtb_ext.BidderPubmatic,
+			bidderCoreName:         openrtb_ext.BidderPubmatic,
 			consent:                purpose2ConsentWithoutVendorConsent,
 			allowBid:               true,
 			passGeo:                false,
@@ -829,9 +852,10 @@ func TestAllowActivitiesBidRequests(t *testing.T) {
 		},
 		{
 			description:            "Bid allowed - p2 enabled, user consents to p2 and vendor, vendor consents to p2",
-			purpose2Enabled:        true,
+			purpose2EnforcePurpose: config.TCF2FullEnforcement,
 			purpose2EnforceVendors: true,
 			bidder:                 openrtb_ext.BidderPubmatic,
+			bidderCoreName:         openrtb_ext.BidderPubmatic,
 			consent:                purpose2AndVendorConsent,
 			allowBid:               true,
 			passGeo:                false,
@@ -839,9 +863,10 @@ func TestAllowActivitiesBidRequests(t *testing.T) {
 		},
 		{
 			description:            "Bid blocked - p2 enabled, user consents to p2 LI but not vendor, vendor consents to p2",
-			purpose2Enabled:        true,
+			purpose2EnforcePurpose: config.TCF2FullEnforcement,
 			purpose2EnforceVendors: true,
 			bidder:                 openrtb_ext.BidderRubicon,
+			bidderCoreName:         openrtb_ext.BidderRubicon,
 			consent:                purpose2LIWithoutVendorLI,
 			allowBid:               false,
 			passGeo:                false,
@@ -849,9 +874,10 @@ func TestAllowActivitiesBidRequests(t *testing.T) {
 		},
 		{
 			description:            "Bid allowed - p2 enabled, user consents to p2 LI and vendor, vendor consents to p2",
-			purpose2Enabled:        true,
+			purpose2EnforcePurpose: config.TCF2FullEnforcement,
 			purpose2EnforceVendors: true,
 			bidder:                 openrtb_ext.BidderRubicon,
+			bidderCoreName:         openrtb_ext.BidderRubicon,
 			consent:                purpose2AndVendorLI,
 			allowBid:               true,
 			passGeo:                false,
@@ -859,9 +885,10 @@ func TestAllowActivitiesBidRequests(t *testing.T) {
 		},
 		{
 			description:            "Bid allowed - p2 enabled not enforcing vendors, user consents to p2 LI but not vendor, vendor consents to p2",
-			purpose2Enabled:        true,
+			purpose2EnforcePurpose: config.TCF2FullEnforcement,
 			purpose2EnforceVendors: false,
 			bidder:                 openrtb_ext.BidderPubmatic,
+			bidderCoreName:         openrtb_ext.BidderPubmatic,
 			consent:                purpose2AndVendorLI,
 			allowBid:               true,
 			passGeo:                false,
@@ -882,13 +909,13 @@ func TestAllowActivitiesBidRequests(t *testing.T) {
 				34: parseVendorListDataV2(t, vendorListData),
 			}),
 		}
-		perms.cfg.TCF2.Purpose2.Enabled = td.purpose2Enabled
+		perms.cfg.TCF2.Purpose2.EnforcePurpose = td.purpose2EnforcePurpose
 		p2Config := perms.purposeConfigs[consentconstants.Purpose(2)]
-		p2Config.Enabled = td.purpose2Enabled
+		p2Config.EnforcePurpose = td.purpose2EnforcePurpose
 		p2Config.EnforceVendors = td.purpose2EnforceVendors
 		perms.purposeConfigs[consentconstants.Purpose(2)] = p2Config
 
-		allowBid, passGeo, passID, err := perms.AuctionActivitiesAllowed(context.Background(), td.bidder, "", SignalYes, td.consent, td.weakVendorEnforcement)
+		allowBid, passGeo, passID, err := perms.AuctionActivitiesAllowed(context.Background(), td.bidderCoreName, td.bidder, "", SignalYes, td.consent, td.weakVendorEnforcement, td.aliasGVLIDs)
 		assert.NoErrorf(t, err, "Error processing AuctionActivitiesAllowed for %s", td.description)
 		assert.EqualValuesf(t, td.allowBid, allowBid, "AllowBid failure on %s", td.description)
 		assert.EqualValuesf(t, td.passGeo, passGeo, "PassGeo failure on %s", td.description)
@@ -906,7 +933,7 @@ func TestTCF1Consent(t *testing.T) {
 		},
 	}
 
-	bidReq, passGeo, passID, err := perms.AuctionActivitiesAllowed(context.Background(), bidderAllowedByConsent, "", SignalYes, tcf1Consent, false)
+	bidReq, passGeo, passID, err := perms.AuctionActivitiesAllowed(context.Background(), bidderAllowedByConsent, bidderAllowedByConsent, "", SignalYes, tcf1Consent, false, map[string]uint16{})
 
 	assert.Nil(t, err, "TCF1 consent - no error returned")
 	assert.Equal(t, false, bidReq, "TCF1 consent - bid request not allowed")
@@ -921,17 +948,19 @@ func TestAllowActivitiesVendorException(t *testing.T) {
 	testDefs := []struct {
 		description           string
 		p2VendorExceptionMap  map[openrtb_ext.BidderName]struct{}
-		sp1VendorExceptionMap map[openrtb_ext.BidderName]struct{}
+		sf1VendorExceptionMap map[openrtb_ext.BidderName]struct{}
 		bidder                openrtb_ext.BidderName
 		consent               string
 		allowBid              bool
 		passGeo               bool
 		passID                bool
+		bidderCoreName        openrtb_ext.BidderName
 	}{
 		{
 			description:          "Bid/ID blocked by publisher - p2 enabled with p2 vendor exception, pub restricts p2 for vendor",
 			p2VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderAppnexus: {}},
 			bidder:               openrtb_ext.BidderAppnexus,
+			bidderCoreName:       openrtb_ext.BidderAppnexus,
 			consent:              noPurposeOrVendorConsentAndPubRestrictsP2,
 			allowBid:             false,
 			passGeo:              false,
@@ -940,28 +969,31 @@ func TestAllowActivitiesVendorException(t *testing.T) {
 		{
 			description:           "Bid/ID allowed by vendor exception - p2 enabled with p2 vendor exception, pub restricts none",
 			p2VendorExceptionMap:  map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderAppnexus: {}},
-			sp1VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			sf1VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 			bidder:                openrtb_ext.BidderAppnexus,
+			bidderCoreName:        openrtb_ext.BidderAppnexus,
 			consent:               noPurposeOrVendorConsentAndPubRestrictsNone,
 			allowBid:              true,
 			passGeo:               false,
 			passID:                true,
 		},
 		{
-			description:           "Geo blocked - sp1 enabled but no consent",
+			description:           "Geo blocked - sf1 enabled but no consent",
 			p2VendorExceptionMap:  map[openrtb_ext.BidderName]struct{}{},
-			sp1VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			sf1VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 			bidder:                openrtb_ext.BidderAppnexus,
+			bidderCoreName:        openrtb_ext.BidderAppnexus,
 			consent:               noPurposeOrVendorConsentAndPubRestrictsNone,
 			allowBid:              false,
 			passGeo:               false,
 			passID:                false,
 		},
 		{
-			description:           "Geo allowed by vendor exception - sp1 enabled with sp1 vendor exception",
+			description:           "Geo allowed by vendor exception - sf1 enabled with sf1 vendor exception",
 			p2VendorExceptionMap:  map[openrtb_ext.BidderName]struct{}{},
-			sp1VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderAppnexus: {}},
+			sf1VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderAppnexus: {}},
 			bidder:                openrtb_ext.BidderAppnexus,
+			bidderCoreName:        openrtb_ext.BidderAppnexus,
 			consent:               noPurposeOrVendorConsentAndPubRestrictsNone,
 			allowBid:              false,
 			passGeo:               true,
@@ -976,8 +1008,8 @@ func TestAllowActivitiesVendorException(t *testing.T) {
 				HostVendorID: 2,
 				TCF2: config.TCF2{
 					Enabled:         true,
-					Purpose2:        config.TCF2Purpose{Enabled: true, VendorExceptionMap: td.p2VendorExceptionMap},
-					SpecialPurpose1: config.TCF2Purpose{Enabled: true, VendorExceptionMap: td.sp1VendorExceptionMap},
+					Purpose2:        config.TCF2Purpose{EnforcePurpose: config.TCF2FullEnforcement, VendorExceptionMap: td.p2VendorExceptionMap},
+					SpecialFeature1: config.TCF2SpecialFeature{Enforce: true, VendorExceptionMap: td.sf1VendorExceptionMap},
 				},
 			},
 			vendorIDs: map[openrtb_ext.BidderName]uint16{
@@ -994,7 +1026,7 @@ func TestAllowActivitiesVendorException(t *testing.T) {
 			consentconstants.Purpose(3): perms.cfg.TCF2.Purpose3,
 		}
 
-		allowBid, passGeo, passID, err := perms.AuctionActivitiesAllowed(context.Background(), td.bidder, "", SignalYes, td.consent, false)
+		allowBid, passGeo, passID, err := perms.AuctionActivitiesAllowed(context.Background(), td.bidderCoreName, td.bidder, "", SignalYes, td.consent, false, map[string]uint16{})
 		assert.NoErrorf(t, err, "Error processing AuctionActivitiesAllowed for %s", td.description)
 		assert.EqualValuesf(t, td.allowBid, allowBid, "AllowBid failure on %s", td.description)
 		assert.EqualValuesf(t, td.passGeo, passGeo, "PassGeo failure on %s", td.description)
@@ -1043,7 +1075,7 @@ func TestBidderSyncAllowedVendorException(t *testing.T) {
 				HostVendorID: 2,
 				TCF2: config.TCF2{
 					Enabled:  true,
-					Purpose1: config.TCF2Purpose{Enabled: true, VendorExceptionMap: td.p1VendorExceptionMap},
+					Purpose1: config.TCF2Purpose{EnforcePurpose: config.TCF2FullEnforcement, VendorExceptionMap: td.p1VendorExceptionMap},
 				},
 			},
 			vendorIDs: map[openrtb_ext.BidderName]uint16{

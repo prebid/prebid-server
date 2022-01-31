@@ -22,7 +22,7 @@ var (
 
 func TestBuildAdapters(t *testing.T) {
 	client := &http.Client{}
-	metricEngine := &metrics.DummyMetricsEngine{}
+	metricEngine := &metrics.NilMetricsEngine{}
 
 	appnexusBidder, _ := appnexus.Builder(openrtb_ext.BidderAppnexus, config.Adapter{})
 	appnexusBidderWithInfo := adapters.BuildInfoAwareBidder(appnexusBidder, infoEnabled)
@@ -238,6 +238,7 @@ func TestGetDisabledBiddersErrorMessages(t *testing.T) {
 			bidderInfos: map[string]config.BidderInfo{},
 			expected: map[string]string{
 				"lifestreet": `Bidder "lifestreet" is no longer available in Prebid Server. Please update your configuration.`,
+				"adagio":     `Bidder "adagio" is no longer available in Prebid Server. Please update your configuration.`,
 			},
 		},
 		{
@@ -245,6 +246,7 @@ func TestGetDisabledBiddersErrorMessages(t *testing.T) {
 			bidderInfos: map[string]config.BidderInfo{"appnexus": infoEnabled},
 			expected: map[string]string{
 				"lifestreet": `Bidder "lifestreet" is no longer available in Prebid Server. Please update your configuration.`,
+				"adagio":     `Bidder "adagio" is no longer available in Prebid Server. Please update your configuration.`,
 			},
 		},
 		{
@@ -252,6 +254,7 @@ func TestGetDisabledBiddersErrorMessages(t *testing.T) {
 			bidderInfos: map[string]config.BidderInfo{"appnexus": infoDisabled},
 			expected: map[string]string{
 				"lifestreet": `Bidder "lifestreet" is no longer available in Prebid Server. Please update your configuration.`,
+				"adagio":     `Bidder "adagio" is no longer available in Prebid Server. Please update your configuration.`,
 				"appnexus":   `Bidder "appnexus" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.`,
 			},
 		},
@@ -260,6 +263,7 @@ func TestGetDisabledBiddersErrorMessages(t *testing.T) {
 			bidderInfos: map[string]config.BidderInfo{"appnexus": infoDisabled, "openx": infoEnabled},
 			expected: map[string]string{
 				"lifestreet": `Bidder "lifestreet" is no longer available in Prebid Server. Please update your configuration.`,
+				"adagio":     `Bidder "adagio" is no longer available in Prebid Server. Please update your configuration.`,
 				"appnexus":   `Bidder "appnexus" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.`,
 			},
 		},

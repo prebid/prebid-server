@@ -1,12 +1,13 @@
 package config
 
 import (
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"os"
 	"testing"
 
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 )

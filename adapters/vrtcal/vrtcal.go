@@ -68,15 +68,21 @@ func (a *VrtcalAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
 
+	var errs []error
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
-			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     &sb.Bid[i],
-				BidType: "banner",
-			})
+			bidType, err := getReturnTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp)
+			if err == nil {
+				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+					Bid:     &sb.Bid[i],
+					BidType: bidType,
+				})
+			} else {
+				errs = append(errs, err)
+			}
 		}
 	}
-	return bidResponse, nil
+	return bidResponse, errs
 
 }
 
@@ -86,4 +92,27 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 		endpoint: config.Endpoint,
 	}
 	return bidder, nil
+}
+
+func getReturnTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
+	for _, imp := range imps {
+		if imp.ID == impID {
+			if imp.Banner != nil {
+				return openrtb_ext.BidTypeBanner, nil
+			}
+
+			if imp.Video != nil {
+				return openrtb_ext.BidTypeVideo, nil
+			}
+
+			return "", &errortypes.BadServerResponse{
+				Message: fmt.Sprintf("Unsupported return type for ID: \"%s\"", impID),
+			}
+		}
+	}
+
+	//Failsafe default in case impression ID is not found
+	return "", &errortypes.BadServerResponse{
+		Message: fmt.Sprintf("Failed to find impression for ID: \"%s\"", impID),
+	}
 }
