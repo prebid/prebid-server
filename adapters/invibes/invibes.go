@@ -279,7 +279,7 @@ func (a *InvibesAdapter) makeParameter(invibesParams InvibesInternalParams, requ
 }
 
 func (a *InvibesAdapter) makeURL(request *openrtb2.BidRequest, domainID int) (string, error) {
-	subdomain := "bid"
+	var subdomain string
 	if domainID == 0 || domainID == 1 || domainID == 1001 {
 		subdomain = "bid"
 	} else if domainID < 1002 {
