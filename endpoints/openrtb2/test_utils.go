@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"strconv"
 	"testing"
 	"time"
 
@@ -24,11 +25,20 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/firstpartydata"
+	"github.com/prebid/prebid-server/gdpr"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/util/iputil"
 )
+
+// In this file we define:
+//  - Auxiliary types
+//  - Interface implementation with the purspose of testing
+//  - Other auxiliary functions that don't make assertions and don't take t *testing.T as parameter
+//
+// All of the above are useful for this package's unit test framework.
 
 // ----------------------
 // test auxiliary types
@@ -701,6 +711,11 @@ var testBidRequests = []string{
 	}`,
 }
 
+// ---------------------------------------------------------
+// Some interfaces implemented with the purspose of testing
+// ---------------------------------------------------------
+
+// mockStoredReqFetcher implements the Fetcher interface
 type mockStoredReqFetcher struct {
 }
 
@@ -712,6 +727,7 @@ func (cf mockStoredReqFetcher) FetchResponses(ctx context.Context, ids []string)
 	return nil, nil
 }
 
+// mockExchange implements the Exchange interface
 type mockExchange struct {
 	lastRequest *openrtb2.BidRequest
 }
@@ -727,6 +743,7 @@ func (m *mockExchange) HoldAuction(ctx context.Context, r exchange.AuctionReques
 	}, nil
 }
 
+// mockExchangeFPD implements the Exchange interface
 type mockExchangeFPD struct {
 	lastRequest    *openrtb2.BidRequest
 	firstPartyData map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData
@@ -738,24 +755,7 @@ func (m *mockExchangeFPD) HoldAuction(ctx context.Context, r exchange.AuctionReq
 	return &openrtb2.BidResponse{}, nil
 }
 
-func getBidderInfos(cfg map[string]config.Adapter, biddersNames []openrtb_ext.BidderName) config.BidderInfos {
-	biddersInfos := make(config.BidderInfos)
-	for _, name := range biddersNames {
-		adapterConfig, ok := cfg[string(name)]
-		if !ok {
-			adapterConfig = config.Adapter{}
-		}
-		biddersInfos[string(name)] = newBidderInfo(adapterConfig)
-	}
-	return biddersInfos
-}
-
-func newBidderInfo(cfg config.Adapter) config.BidderInfo {
-	return config.BidderInfo{
-		Enabled: !cfg.Disabled,
-	}
-}
-
+// hardcodedResponseIPValidator implements the IPValidator interface.
 type hardcodedResponseIPValidator struct {
 	response bool
 }
@@ -764,6 +764,7 @@ func (v hardcodedResponseIPValidator) IsValid(net.IP, iputil.IPVersion) bool {
 	return v.response
 }
 
+// fakeUUIDGenerator implements the UUIDGenerator interface
 type fakeUUIDGenerator struct {
 	id  string
 	err error
@@ -774,6 +775,7 @@ func (f fakeUUIDGenerator) Generate() (string, error) {
 }
 
 // warningsCheckExchange is a well-behaved exchange which stores all incoming warnings.
+// implements the Exchange interface
 type warningsCheckExchange struct {
 	auctionRequest exchange.AuctionRequest
 }
@@ -784,6 +786,7 @@ func (e *warningsCheckExchange) HoldAuction(ctx context.Context, r exchange.Auct
 }
 
 // nobidExchange is a well-behaved exchange which always bids "no bid".
+// implements the Exchange interface
 type nobidExchange struct {
 	gotRequest *openrtb2.BidRequest
 }
@@ -795,248 +798,6 @@ func (e *nobidExchange) HoldAuction(ctx context.Context, r exchange.AuctionReque
 		BidID: "test bid id",
 		NBR:   openrtb2.NoBidReasonCodeUnknownError.Ptr(),
 	}, nil
-}
-
-// ---------------------------------------------------------
-// Auxiliary functions that don't make assertions and don't
-// take t *testing.T as parameter
-// ---------------------------------------------------------
-func getTestFiles(dir string) ([]string, error) {
-	var filesToAssert []string
-
-	fileList, err := ioutil.ReadDir(dir)
-	if err != nil {
-		return nil, err
-	}
-
-	// Append the path of every file found in `dir` to the `filesToAssert` array
-	for _, fileInfo := range fileList {
-		filesToAssert = append(filesToAssert, filepath.Join(dir, fileInfo.Name()))
-	}
-
-	return filesToAssert, nil
-}
-
-func parseTestFile(fileData []byte, testFile string) (testCase, error) {
-
-	parsedTestData := testCase{}
-	var err, errEm error
-
-	// Get testCase values
-	parsedTestData.BidRequest, _, _, err = jsonparser.Get(fileData, "mockBidRequest")
-	if err != nil {
-		return parsedTestData, fmt.Errorf("Error jsonparsing root.mockBidRequest from file %s. Desc: %v.", testFile, err)
-	}
-
-	// Get testCaseConfig values
-	parsedTestData.Config = &testConfigValues{}
-	var jsonTestConfig json.RawMessage
-
-	jsonTestConfig, _, _, err = jsonparser.Get(fileData, "config")
-	if err == nil {
-		if err = json.Unmarshal(jsonTestConfig, parsedTestData.Config); err != nil {
-			return parsedTestData, fmt.Errorf("Error unmarshaling root.config from file %s. Desc: %v.", testFile, err)
-		}
-	}
-
-	// Get the return code we expect PBS to throw back given test's bidRequest and config
-	parsedReturnCode, err := jsonparser.GetInt(fileData, "expectedReturnCode")
-	if err != nil {
-		return parsedTestData, fmt.Errorf("Error jsonparsing root.code from file %s. Desc: %v.", testFile, err)
-	}
-
-	// Get both bid response and error message, if any
-	parsedTestData.ExpectedBidResponse, _, _, err = jsonparser.Get(fileData, "expectedBidResponse")
-	parsedTestData.ExpectedErrorMessage, errEm = jsonparser.GetString(fileData, "expectedErrorMessage")
-
-	if err == nil && errEm == nil {
-		return parsedTestData, errors.New("Test case file can't have both a valid expectedBidResponse and a valid expectedErrorMessage, fields are mutually exclusive")
-	} else if err != nil && errEm != nil {
-		return parsedTestData, errors.New("Test case file should come with either a valid expectedBidResponse or a valid expectedErrorMessage, not both.")
-	}
-
-	parsedTestData.ExpectedReturnCode = int(parsedReturnCode)
-
-	return parsedTestData, nil
-}
-
-func (tc *testConfigValues) getBlacklistedAppMap() map[string]bool {
-	var blacklistedAppMap map[string]bool
-
-	if len(tc.BlacklistedApps) > 0 {
-		blacklistedAppMap = make(map[string]bool, len(tc.BlacklistedApps))
-		for _, app := range tc.BlacklistedApps {
-			blacklistedAppMap[app] = true
-		}
-	}
-	return blacklistedAppMap
-}
-
-func (tc *testConfigValues) getBlackListedAccountMap() map[string]bool {
-	var blacklistedAccountMap map[string]bool
-
-	if len(tc.BlacklistedAccounts) > 0 {
-		blacklistedAccountMap = make(map[string]bool, len(tc.BlacklistedAccounts))
-		for _, account := range tc.BlacklistedAccounts {
-			blacklistedAccountMap[account] = true
-		}
-	}
-	return blacklistedAccountMap
-}
-
-func (tc *testConfigValues) getAdaptersConfigMap() map[string]config.Adapter {
-	var adaptersConfig map[string]config.Adapter
-
-	if len(tc.DisabledAdapters) > 0 {
-		adaptersConfig = make(map[string]config.Adapter, len(tc.DisabledAdapters))
-		for _, adapterName := range tc.DisabledAdapters {
-			adaptersConfig[adapterName] = config.Adapter{Disabled: true}
-		}
-	}
-	return adaptersConfig
-}
-
-func buildTestEndpoint(test testCase, paramValidator openrtb_ext.BidderParamValidator) (httprouter.Handle, *httptest.Server, *httptest.Server, *httptest.Server, *httptest.Server, error) {
-	bidderInfos := getBidderInfos(test.Config.getAdaptersConfigMap(), openrtb_ext.CoreBidderNames())
-	bidderMap := exchange.GetActiveBidders(bidderInfos)
-	disabledBidders := exchange.GetDisabledBiddersErrorMessages(bidderInfos)
-
-	// Adapter map with mock adapters needed to run JSON test cases
-	adapterMap := make(map[openrtb_ext.BidderName]exchange.AdaptedBidder, 0)
-
-	// AppNexus mock bid server and adapter
-	appNexusBidder := mockBidderHandler{bidInfo: test.Config.MockBidder, bidderName: "appnexus"}
-	appNexusServer := httptest.NewServer(http.HandlerFunc(appNexusBidder.bid))
-	//defer appNexusServer.Close()
-	appNexusBidderAdapter := mockAdapter{mockServerURL: appNexusServer.URL}
-	adapterMap[openrtb_ext.BidderAppnexus] = exchange.AdaptBidder(appNexusBidderAdapter, appNexusServer.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil)
-
-	// openX mock bid server and adapter
-	openXBidder := mockBidderHandler{bidInfo: test.Config.MockBidder, bidderName: "openx"}
-	openXServer := httptest.NewServer(http.HandlerFunc(openXBidder.bid))
-	//defer openXServer.Close()
-	openXBidderAdapter := mockAdapter{mockServerURL: openXServer.URL}
-	adapterMap[openrtb_ext.BidderOpenx] = exchange.AdaptBidder(openXBidderAdapter, openXServer.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderOpenx, nil)
-
-	// Rubicon mock bid server and adapter
-	rubiconBidder := mockBidderHandler{bidInfo: test.Config.MockBidder, bidderName: "rubicon"}
-	rubiconServer := httptest.NewServer(http.HandlerFunc(rubiconBidder.bid))
-	//defer rubiconServer.Close()
-	rubiconBidderAdapter := mockAdapter{mockServerURL: rubiconServer.URL}
-	adapterMap[openrtb_ext.BidderRubicon] = exchange.AdaptBidder(rubiconBidderAdapter, rubiconServer.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderRubicon, nil)
-
-	// Mock prebid Server's currency converter, instantiate and start
-	mockCurrencyConversionService := mockCurrencyRatesClient{
-		currencyInfo{
-			Conversions: test.Config.CurrencyRates,
-		},
-	}
-	mockCurrencyRatesServer := httptest.NewServer(http.HandlerFunc(mockCurrencyConversionService.handle))
-	//defer mockCurrencyRatesServer.Close()
-	mockCurrencyConverter := currency.NewRateConverter(mockCurrencyRatesServer.Client(), mockCurrencyRatesServer.URL, time.Second)
-	mockCurrencyConverter.Run()
-
-	// Instantiate auction endpoint
-	endpoint, err := NewEndpoint(
-		fakeUUIDGenerator{},
-		exchange.NewExchangeFromMockAdapters(adapterMap, empty_fetcher.EmptyFetcher{}, mockCurrencyConverter),
-		paramValidator,
-		&mockStoredReqFetcher{},
-		empty_fetcher.EmptyFetcher{},
-		&config.Configuration{
-			MaxRequestSize:     maxSize,
-			BlacklistedApps:    test.Config.BlacklistedApps,
-			BlacklistedAppMap:  test.Config.getBlacklistedAppMap(),
-			BlacklistedAccts:   test.Config.BlacklistedAccounts,
-			BlacklistedAcctMap: test.Config.getBlackListedAccountMap(),
-			AccountRequired:    test.Config.AccountRequired,
-		},
-		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
-		disabledBidders,
-		[]byte(test.Config.AliasJSON),
-		bidderMap,
-		empty_fetcher.EmptyFetcher{})
-
-	return endpoint, appNexusServer, openXServer, rubiconServer, mockCurrencyRatesServer, err
-}
-
-//func doRequest(test testCase, paramValidator openrtb_ext.BidderParamValidator) (int, string) {
-//	bidderInfos := getBidderInfos(test.Config.getAdaptersConfigMap(), openrtb_ext.CoreBidderNames())
-//	bidderMap := exchange.GetActiveBidders(bidderInfos)
-//	disabledBidders := exchange.GetDisabledBiddersErrorMessages(bidderInfos)
-//
-//	// Adapter map with mock adapters needed to run JSON test cases
-//	adapterMap := make(map[openrtb_ext.BidderName]exchange.AdaptedBidder, 0)
-//
-//	// AppNexus mock bid server and adapter
-//	appNexusBidder := mockBidderHandler{bidInfo: test.Config.MockBidder, bidderName: "appnexus"}
-//	appNexusServer := httptest.NewServer(http.HandlerFunc(appNexusBidder.bid))
-//	defer appNexusServer.Close()
-//	appNexusBidderAdapter := mockAdapter{mockServerURL: appNexusServer.URL}
-//	adapterMap[openrtb_ext.BidderAppnexus] = exchange.AdaptBidder(appNexusBidderAdapter, appNexusServer.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil)
-//
-//	// openX mock bid server and adapter
-//	openXBidder := mockBidderHandler{bidInfo: test.Config.MockBidder, bidderName: "openx"}
-//	openXServer := httptest.NewServer(http.HandlerFunc(openXBidder.bid))
-//	defer openXServer.Close()
-//	openXBidderAdapter := mockAdapter{mockServerURL: openXServer.URL}
-//	adapterMap[openrtb_ext.BidderOpenx] = exchange.AdaptBidder(openXBidderAdapter, openXServer.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderOpenx, nil)
-//
-//	// Rubicon mock bid server and adapter
-//	rubiconBidder := mockBidderHandler{bidInfo: test.Config.MockBidder, bidderName: "rubicon"}
-//	rubiconServer := httptest.NewServer(http.HandlerFunc(rubiconBidder.bid))
-//	defer rubiconServer.Close()
-//	rubiconBidderAdapter := mockAdapter{mockServerURL: rubiconServer.URL}
-//	adapterMap[openrtb_ext.BidderRubicon] = exchange.AdaptBidder(rubiconBidderAdapter, rubiconServer.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderRubicon, nil)
-//
-//	// Mock prebid Server's currency converter, instantiate and start
-//	mockCurrencyConversionService := mockCurrencyRatesClient{
-//		currencyInfo{
-//			Conversions: test.Config.CurrencyRates,
-//		},
-//	}
-//	mockCurrencyRatesServer := httptest.NewServer(http.HandlerFunc(mockCurrencyConversionService.handle))
-//	defer rubiconServer.Close()
-//	mockCurrencyConverter := currency.NewRateConverter(mockCurrencyRatesServer.Client(), mockCurrencyRatesServer.URL, time.Second)
-//	mockCurrencyConverter.Run()
-//
-//	// Instantiate auction endpoint
-//	endpoint, _ := NewEndpoint(
-//		fakeUUIDGenerator{},
-//		exchange.NewExchangeFromMockAdapters(adapterMap, empty_fetcher.EmptyFetcher{}, mockCurrencyConverter),
-//		paramValidator,
-//		&mockStoredReqFetcher{},
-//		empty_fetcher.EmptyFetcher{},
-//		&config.Configuration{
-//			MaxRequestSize:     maxSize,
-//			BlacklistedApps:    test.Config.BlacklistedApps,
-//			BlacklistedAppMap:  test.Config.getBlacklistedAppMap(),
-//			BlacklistedAccts:   test.Config.BlacklistedAccounts,
-//			BlacklistedAcctMap: test.Config.getBlackListedAccountMap(),
-//			AccountRequired:    test.Config.AccountRequired,
-//		},
-//		&metricsConfig.NilMetricsEngine{},
-//		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
-//		disabledBidders,
-//		[]byte(test.Config.AliasJSON),
-//		bidderMap,
-//		empty_fetcher.EmptyFetcher{})
-//
-//	// Hit the auction endpoint with the test case configuration and mockBidRequest
-//	request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(test.BidRequest))
-//	recorder := httptest.NewRecorder()
-//	endpoint(recorder, request, nil) //Request comes from the unmarshalled mockBidRequest
-//
-//	return recorder.Code, recorder.Body.String()
-//}
-
-func readFile(t *testing.T, filename string) []byte {
-	data, err := ioutil.ReadFile(filename)
-	if err != nil {
-		t.Fatalf("Failed to read file %s: %v", filename, err)
-	}
-	return data
 }
 
 // mockCurrencyRatesClient is a mock currency rate server and the rates it returns
@@ -1205,4 +966,223 @@ func (a mockAdapter) MakeBids(request *openrtb2.BidRequest, requestData *adapter
 		}
 	}
 	return rv, nil
+}
+
+// ---------------------------------------------------------
+// Auxiliary functions that don't make assertions and don't
+// take t *testing.T as parameter
+// ---------------------------------------------------------
+func getBidderInfos(cfg map[string]config.Adapter, biddersNames []openrtb_ext.BidderName) config.BidderInfos {
+	biddersInfos := make(config.BidderInfos)
+	for _, name := range biddersNames {
+		adapterConfig, ok := cfg[string(name)]
+		if !ok {
+			adapterConfig = config.Adapter{}
+		}
+		biddersInfos[string(name)] = newBidderInfo(adapterConfig)
+	}
+	return biddersInfos
+}
+
+func newBidderInfo(cfg config.Adapter) config.BidderInfo {
+	return config.BidderInfo{
+		Enabled: !cfg.Disabled,
+	}
+}
+
+func getTestFiles(dir string) ([]string, error) {
+	var filesToAssert []string
+
+	fileList, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	// Append the path of every file found in `dir` to the `filesToAssert` array
+	for _, fileInfo := range fileList {
+		filesToAssert = append(filesToAssert, filepath.Join(dir, fileInfo.Name()))
+	}
+
+	return filesToAssert, nil
+}
+
+func parseTestFile(fileData []byte, testFile string) (testCase, error) {
+
+	parsedTestData := testCase{}
+	var err, errEm error
+
+	// Get testCase values
+	parsedTestData.BidRequest, _, _, err = jsonparser.Get(fileData, "mockBidRequest")
+	if err != nil {
+		return parsedTestData, fmt.Errorf("Error jsonparsing root.mockBidRequest from file %s. Desc: %v.", testFile, err)
+	}
+
+	// Get testCaseConfig values
+	parsedTestData.Config = &testConfigValues{}
+	var jsonTestConfig json.RawMessage
+
+	jsonTestConfig, _, _, err = jsonparser.Get(fileData, "config")
+	if err == nil {
+		if err = json.Unmarshal(jsonTestConfig, parsedTestData.Config); err != nil {
+			return parsedTestData, fmt.Errorf("Error unmarshaling root.config from file %s. Desc: %v.", testFile, err)
+		}
+	}
+
+	// Get the return code we expect PBS to throw back given test's bidRequest and config
+	parsedReturnCode, err := jsonparser.GetInt(fileData, "expectedReturnCode")
+	if err != nil {
+		return parsedTestData, fmt.Errorf("Error jsonparsing root.code from file %s. Desc: %v.", testFile, err)
+	}
+
+	// Get both bid response and error message, if any
+	parsedTestData.ExpectedBidResponse, _, _, err = jsonparser.Get(fileData, "expectedBidResponse")
+	parsedTestData.ExpectedErrorMessage, errEm = jsonparser.GetString(fileData, "expectedErrorMessage")
+
+	if err == nil && errEm == nil {
+		return parsedTestData, errors.New("Test case file can't have both a valid expectedBidResponse and a valid expectedErrorMessage, fields are mutually exclusive")
+	} else if err != nil && errEm != nil {
+		return parsedTestData, errors.New("Test case file should come with either a valid expectedBidResponse or a valid expectedErrorMessage, not both.")
+	}
+
+	parsedTestData.ExpectedReturnCode = int(parsedReturnCode)
+
+	return parsedTestData, nil
+}
+
+func (tc *testConfigValues) getBlacklistedAppMap() map[string]bool {
+	var blacklistedAppMap map[string]bool
+
+	if len(tc.BlacklistedApps) > 0 {
+		blacklistedAppMap = make(map[string]bool, len(tc.BlacklistedApps))
+		for _, app := range tc.BlacklistedApps {
+			blacklistedAppMap[app] = true
+		}
+	}
+	return blacklistedAppMap
+}
+
+func (tc *testConfigValues) getBlackListedAccountMap() map[string]bool {
+	var blacklistedAccountMap map[string]bool
+
+	if len(tc.BlacklistedAccounts) > 0 {
+		blacklistedAccountMap = make(map[string]bool, len(tc.BlacklistedAccounts))
+		for _, account := range tc.BlacklistedAccounts {
+			blacklistedAccountMap[account] = true
+		}
+	}
+	return blacklistedAccountMap
+}
+
+func (tc *testConfigValues) getAdaptersConfigMap() map[string]config.Adapter {
+	var adaptersConfig map[string]config.Adapter
+
+	if len(tc.DisabledAdapters) > 0 {
+		adaptersConfig = make(map[string]config.Adapter, len(tc.DisabledAdapters))
+		for _, adapterName := range tc.DisabledAdapters {
+			adaptersConfig[adapterName] = config.Adapter{Disabled: true}
+		}
+	}
+	return adaptersConfig
+}
+
+func buildTestEndpoint(test testCase, paramValidator openrtb_ext.BidderParamValidator) (httprouter.Handle, *httptest.Server, *httptest.Server, *httptest.Server, *httptest.Server, error) {
+	bidderInfos := getBidderInfos(test.Config.getAdaptersConfigMap(), openrtb_ext.CoreBidderNames())
+	bidderMap := exchange.GetActiveBidders(bidderInfos)
+	disabledBidders := exchange.GetDisabledBiddersErrorMessages(bidderInfos)
+
+	// Adapter map with mock adapters needed to run JSON test cases
+	adapterMap := make(map[openrtb_ext.BidderName]exchange.AdaptedBidder, 0)
+
+	// AppNexus mock bid server and adapter
+	appNexusBidder := mockBidderHandler{bidInfo: test.Config.MockBidder, bidderName: "appnexus"}
+	appNexusServer := httptest.NewServer(http.HandlerFunc(appNexusBidder.bid))
+	//defer appNexusServer.Close()
+	appNexusBidderAdapter := mockAdapter{mockServerURL: appNexusServer.URL}
+	adapterMap[openrtb_ext.BidderAppnexus] = exchange.AdaptBidder(appNexusBidderAdapter, appNexusServer.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil)
+
+	// openX mock bid server and adapter
+	openXBidder := mockBidderHandler{bidInfo: test.Config.MockBidder, bidderName: "openx"}
+	openXServer := httptest.NewServer(http.HandlerFunc(openXBidder.bid))
+	//defer openXServer.Close()
+	openXBidderAdapter := mockAdapter{mockServerURL: openXServer.URL}
+	adapterMap[openrtb_ext.BidderOpenx] = exchange.AdaptBidder(openXBidderAdapter, openXServer.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderOpenx, nil)
+
+	// Rubicon mock bid server and adapter
+	rubiconBidder := mockBidderHandler{bidInfo: test.Config.MockBidder, bidderName: "rubicon"}
+	rubiconServer := httptest.NewServer(http.HandlerFunc(rubiconBidder.bid))
+	//defer rubiconServer.Close()
+	rubiconBidderAdapter := mockAdapter{mockServerURL: rubiconServer.URL}
+	adapterMap[openrtb_ext.BidderRubicon] = exchange.AdaptBidder(rubiconBidderAdapter, rubiconServer.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderRubicon, nil)
+
+	// Mock prebid Server's currency converter, instantiate and start
+	mockCurrencyConversionService := mockCurrencyRatesClient{
+		currencyInfo{
+			Conversions: test.Config.CurrencyRates,
+		},
+	}
+	mockCurrencyRatesServer := httptest.NewServer(http.HandlerFunc(mockCurrencyConversionService.handle))
+	//defer mockCurrencyRatesServer.Close()
+	mockCurrencyConverter := currency.NewRateConverter(mockCurrencyRatesServer.Client(), mockCurrencyRatesServer.URL, time.Second)
+	mockCurrencyConverter.Run()
+
+	cfg := &config.Configuration{
+		MaxRequestSize:     maxSize,
+		BlacklistedApps:    test.Config.BlacklistedApps,
+		BlacklistedAppMap:  test.Config.getBlacklistedAppMap(),
+		BlacklistedAccts:   test.Config.BlacklistedAccounts,
+		BlacklistedAcctMap: test.Config.getBlackListedAccountMap(),
+		AccountRequired:    test.Config.AccountRequired,
+	}
+
+	met := &metricsConfig.NilMetricsEngine{}
+	mockFetcher := empty_fetcher.EmptyFetcher{}
+
+	ex := exchange.NewExchange(adapterMap,
+		&wellBehavedCache{},
+		cfg,
+		nil,
+		met,
+		bidderInfos,
+		gdpr.AlwaysAllow{},
+		mockCurrencyConverter,
+		mockFetcher)
+
+	// Instantiate auction endpoint
+	endpoint, err := NewEndpoint(
+		fakeUUIDGenerator{},
+		ex,
+		paramValidator,
+		&mockStoredReqFetcher{},
+		mockFetcher,
+		cfg,
+		met,
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		disabledBidders,
+		[]byte(test.Config.AliasJSON),
+		bidderMap,
+		empty_fetcher.EmptyFetcher{})
+
+	return endpoint, appNexusServer, openXServer, rubiconServer, mockCurrencyRatesServer, err
+}
+
+type wellBehavedCache struct{}
+
+func (c *wellBehavedCache) GetExtCacheData() (scheme string, host string, path string) {
+	return "https", "www.pbcserver.com", "/pbcache/endpoint"
+}
+
+func (c *wellBehavedCache) PutJson(ctx context.Context, values []pbc.Cacheable) ([]string, []error) {
+	ids := make([]string, len(values))
+	for i := 0; i < len(values); i++ {
+		ids[i] = strconv.Itoa(i)
+	}
+	return ids, nil
+}
+
+func readFile(t *testing.T, filename string) []byte {
+	data, err := ioutil.ReadFile(filename)
+	if err != nil {
+		t.Fatalf("Failed to read file %s: %v", filename, err)
+	}
+	return data
 }

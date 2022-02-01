@@ -10,17 +10,17 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/prebid/prebid-server/firstpartydata"
 
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/firstpartydata"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
 	metricsConf "github.com/prebid/prebid-server/metrics/config"
@@ -2249,6 +2249,25 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 	}
 }
 
+type mockBidIDGenerator struct {
+	GenerateBidID bool `json:"generateBidID"`
+	ReturnError   bool `json:"returnError"`
+}
+
+func (big *mockBidIDGenerator) Enabled() bool {
+	return big.GenerateBidID
+}
+
+func (big *mockBidIDGenerator) New() (string, error) {
+
+	if big.ReturnError {
+		err := errors.New("Test error generating bid.ext.prebid.bidid")
+		return "", err
+	}
+	return "mock_uuid", nil
+
+}
+
 type fakeRandomDeduplicateBidBooleanGenerator struct {
 	returnValue bool
 }
@@ -3846,6 +3865,20 @@ func mockSlowHandler(delay time.Duration, statusCode int, body string) http.Hand
 		w.WriteHeader(statusCode)
 		w.Write([]byte(body))
 	})
+}
+
+type wellBehavedCache struct{}
+
+func (c *wellBehavedCache) GetExtCacheData() (scheme string, host string, path string) {
+	return "https", "www.pbcserver.com", "/pbcache/endpoint"
+}
+
+func (c *wellBehavedCache) PutJson(ctx context.Context, values []pbc.Cacheable) ([]string, []error) {
+	ids := make([]string, len(values))
+	for i := 0; i < len(values); i++ {
+		ids[i] = strconv.Itoa(i)
+	}
+	return ids, nil
 }
 
 type emptyUsersync struct{}
