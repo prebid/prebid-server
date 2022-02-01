@@ -1,6 +1,8 @@
 package openrtb2
 
 import (
+	"bytes"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -105,4 +107,46 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		endpoint(httptest.NewRecorder(), benchmarkBuildTestRequest(), nil)
 	}
+}
+
+// BenchmarkAllExtRequest benchmarks the processing of  "sample-requests/valid-whole/exemplary/all-ext.json"
+// on the openrtb2/acution endpoint with the `exchange`'s package implementation of `HoldAuction()`
+func BenchmarkAllExtRequest(b *testing.B) {
+	b.StopTimer()
+
+	// Set up
+	testFile := "sample-requests/valid-whole/exemplary/all-ext.json"
+	paramValidator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
+	if err != nil {
+		b.Fatal("unable to build params validator")
+	}
+	fileData, err := ioutil.ReadFile(testFile)
+	if err != nil {
+		b.Fatalf("unable to read file %s", testFile)
+	}
+	test, err := parseTestFile(fileData, testFile)
+	if err != nil {
+		b.Fatal(err.Error())
+	}
+
+	auctionEndpointHandler, appNexusServer, openXServer, rubiconServer, mockCurrencyRatesServer, err := buildTestEndpoint(test, paramValidator)
+	if err != nil {
+		b.Fatal(err.Error())
+	}
+	request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(test.BidRequest))
+	recorder := httptest.NewRecorder()
+
+	// Run benchmark
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		b.StartTimer()
+		auctionEndpointHandler(recorder, request, nil) //Request comes from the unmarshalled mockBidRequest
+		b.StopTimer()
+	}
+
+	// Close mock servers
+	appNexusServer.Close()
+	openXServer.Close()
+	rubiconServer.Close()
+	mockCurrencyRatesServer.Close()
 }

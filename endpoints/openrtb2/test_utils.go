@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
+	"github.com/julienschmidt/httprouter"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
@@ -895,7 +896,7 @@ func (tc *testConfigValues) getAdaptersConfigMap() map[string]config.Adapter {
 	return adaptersConfig
 }
 
-func doRequest(test testCase, paramValidator openrtb_ext.BidderParamValidator) (int, string) {
+func buildTestEndpoint(test testCase, paramValidator openrtb_ext.BidderParamValidator) (httprouter.Handle, *httptest.Server, *httptest.Server, *httptest.Server, *httptest.Server, error) {
 	bidderInfos := getBidderInfos(test.Config.getAdaptersConfigMap(), openrtb_ext.CoreBidderNames())
 	bidderMap := exchange.GetActiveBidders(bidderInfos)
 	disabledBidders := exchange.GetDisabledBiddersErrorMessages(bidderInfos)
@@ -906,21 +907,21 @@ func doRequest(test testCase, paramValidator openrtb_ext.BidderParamValidator) (
 	// AppNexus mock bid server and adapter
 	appNexusBidder := mockBidderHandler{bidInfo: test.Config.MockBidder, bidderName: "appnexus"}
 	appNexusServer := httptest.NewServer(http.HandlerFunc(appNexusBidder.bid))
-	defer appNexusServer.Close()
+	//defer appNexusServer.Close()
 	appNexusBidderAdapter := mockAdapter{mockServerURL: appNexusServer.URL}
 	adapterMap[openrtb_ext.BidderAppnexus] = exchange.AdaptBidder(appNexusBidderAdapter, appNexusServer.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil)
 
 	// openX mock bid server and adapter
 	openXBidder := mockBidderHandler{bidInfo: test.Config.MockBidder, bidderName: "openx"}
 	openXServer := httptest.NewServer(http.HandlerFunc(openXBidder.bid))
-	defer openXServer.Close()
+	//defer openXServer.Close()
 	openXBidderAdapter := mockAdapter{mockServerURL: openXServer.URL}
 	adapterMap[openrtb_ext.BidderOpenx] = exchange.AdaptBidder(openXBidderAdapter, openXServer.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderOpenx, nil)
 
 	// Rubicon mock bid server and adapter
 	rubiconBidder := mockBidderHandler{bidInfo: test.Config.MockBidder, bidderName: "rubicon"}
 	rubiconServer := httptest.NewServer(http.HandlerFunc(rubiconBidder.bid))
-	defer rubiconServer.Close()
+	//defer rubiconServer.Close()
 	rubiconBidderAdapter := mockAdapter{mockServerURL: rubiconServer.URL}
 	adapterMap[openrtb_ext.BidderRubicon] = exchange.AdaptBidder(rubiconBidderAdapter, rubiconServer.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderRubicon, nil)
 
@@ -931,12 +932,12 @@ func doRequest(test testCase, paramValidator openrtb_ext.BidderParamValidator) (
 		},
 	}
 	mockCurrencyRatesServer := httptest.NewServer(http.HandlerFunc(mockCurrencyConversionService.handle))
-	defer rubiconServer.Close()
+	//defer mockCurrencyRatesServer.Close()
 	mockCurrencyConverter := currency.NewRateConverter(mockCurrencyRatesServer.Client(), mockCurrencyRatesServer.URL, time.Second)
 	mockCurrencyConverter.Run()
 
 	// Instantiate auction endpoint
-	endpoint, _ := NewEndpoint(
+	endpoint, err := NewEndpoint(
 		fakeUUIDGenerator{},
 		exchange.NewExchangeFromMockAdapters(adapterMap, empty_fetcher.EmptyFetcher{}, mockCurrencyConverter),
 		paramValidator,
@@ -957,13 +958,78 @@ func doRequest(test testCase, paramValidator openrtb_ext.BidderParamValidator) (
 		bidderMap,
 		empty_fetcher.EmptyFetcher{})
 
-	// Hit the auction endpoint with the test case configuration and mockBidRequest
-	request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(test.BidRequest))
-	recorder := httptest.NewRecorder()
-	endpoint(recorder, request, nil) //Request comes from the unmarshalled mockBidRequest
-
-	return recorder.Code, recorder.Body.String()
+	return endpoint, appNexusServer, openXServer, rubiconServer, mockCurrencyRatesServer, err
 }
+
+//func doRequest(test testCase, paramValidator openrtb_ext.BidderParamValidator) (int, string) {
+//	bidderInfos := getBidderInfos(test.Config.getAdaptersConfigMap(), openrtb_ext.CoreBidderNames())
+//	bidderMap := exchange.GetActiveBidders(bidderInfos)
+//	disabledBidders := exchange.GetDisabledBiddersErrorMessages(bidderInfos)
+//
+//	// Adapter map with mock adapters needed to run JSON test cases
+//	adapterMap := make(map[openrtb_ext.BidderName]exchange.AdaptedBidder, 0)
+//
+//	// AppNexus mock bid server and adapter
+//	appNexusBidder := mockBidderHandler{bidInfo: test.Config.MockBidder, bidderName: "appnexus"}
+//	appNexusServer := httptest.NewServer(http.HandlerFunc(appNexusBidder.bid))
+//	defer appNexusServer.Close()
+//	appNexusBidderAdapter := mockAdapter{mockServerURL: appNexusServer.URL}
+//	adapterMap[openrtb_ext.BidderAppnexus] = exchange.AdaptBidder(appNexusBidderAdapter, appNexusServer.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil)
+//
+//	// openX mock bid server and adapter
+//	openXBidder := mockBidderHandler{bidInfo: test.Config.MockBidder, bidderName: "openx"}
+//	openXServer := httptest.NewServer(http.HandlerFunc(openXBidder.bid))
+//	defer openXServer.Close()
+//	openXBidderAdapter := mockAdapter{mockServerURL: openXServer.URL}
+//	adapterMap[openrtb_ext.BidderOpenx] = exchange.AdaptBidder(openXBidderAdapter, openXServer.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderOpenx, nil)
+//
+//	// Rubicon mock bid server and adapter
+//	rubiconBidder := mockBidderHandler{bidInfo: test.Config.MockBidder, bidderName: "rubicon"}
+//	rubiconServer := httptest.NewServer(http.HandlerFunc(rubiconBidder.bid))
+//	defer rubiconServer.Close()
+//	rubiconBidderAdapter := mockAdapter{mockServerURL: rubiconServer.URL}
+//	adapterMap[openrtb_ext.BidderRubicon] = exchange.AdaptBidder(rubiconBidderAdapter, rubiconServer.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderRubicon, nil)
+//
+//	// Mock prebid Server's currency converter, instantiate and start
+//	mockCurrencyConversionService := mockCurrencyRatesClient{
+//		currencyInfo{
+//			Conversions: test.Config.CurrencyRates,
+//		},
+//	}
+//	mockCurrencyRatesServer := httptest.NewServer(http.HandlerFunc(mockCurrencyConversionService.handle))
+//	defer rubiconServer.Close()
+//	mockCurrencyConverter := currency.NewRateConverter(mockCurrencyRatesServer.Client(), mockCurrencyRatesServer.URL, time.Second)
+//	mockCurrencyConverter.Run()
+//
+//	// Instantiate auction endpoint
+//	endpoint, _ := NewEndpoint(
+//		fakeUUIDGenerator{},
+//		exchange.NewExchangeFromMockAdapters(adapterMap, empty_fetcher.EmptyFetcher{}, mockCurrencyConverter),
+//		paramValidator,
+//		&mockStoredReqFetcher{},
+//		empty_fetcher.EmptyFetcher{},
+//		&config.Configuration{
+//			MaxRequestSize:     maxSize,
+//			BlacklistedApps:    test.Config.BlacklistedApps,
+//			BlacklistedAppMap:  test.Config.getBlacklistedAppMap(),
+//			BlacklistedAccts:   test.Config.BlacklistedAccounts,
+//			BlacklistedAcctMap: test.Config.getBlackListedAccountMap(),
+//			AccountRequired:    test.Config.AccountRequired,
+//		},
+//		&metricsConfig.NilMetricsEngine{},
+//		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+//		disabledBidders,
+//		[]byte(test.Config.AliasJSON),
+//		bidderMap,
+//		empty_fetcher.EmptyFetcher{})
+//
+//	// Hit the auction endpoint with the test case configuration and mockBidRequest
+//	request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(test.BidRequest))
+//	recorder := httptest.NewRecorder()
+//	endpoint(recorder, request, nil) //Request comes from the unmarshalled mockBidRequest
+//
+//	return recorder.Code, recorder.Body.String()
+//}
 
 func readFile(t *testing.T, filename string) []byte {
 	data, err := ioutil.ReadFile(filename)

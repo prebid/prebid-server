@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/julienschmidt/httprouter"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -98,35 +99,49 @@ func TestJsonSampleRequests(t *testing.T) {
 			"currency-conversion/custom-rates/errors",
 		},
 	}
+
+	paramsValidator := newParamsValidator(t)
+
 	for _, test := range testSuites {
 		testCaseFiles, err := getTestFiles(filepath.Join("sample-requests", test.sampleRequestsSubDir))
 		if assert.NoError(t, err, "Test case %s. Error reading files from directory %s \n", test.description, test.sampleRequestsSubDir) {
-			for _, file := range testCaseFiles {
-				data, err := ioutil.ReadFile(file)
-				if assert.NoError(t, err, "Test case %s. Error reading file %s \n", test.description, file) {
-					runTestCase(t, data, file)
+			for _, testFile := range testCaseFiles {
+				fileData, err := ioutil.ReadFile(testFile)
+				if assert.NoError(t, err, "Test case %s. Error reading file %s \n", test.description, testFile) {
+					// Retrieve values from JSON file
+					test, err := parseTestFile(fileData, testFile)
+					if !assert.NoError(t, err) {
+						continue
+					}
+
+					auctionEndpointHandler, appNexusServer, openXServer, rubiconServer, mockCurrencyRatesServer, err := buildTestEndpoint(test, paramsValidator)
+					if !assert.NoError(t, err) {
+						continue
+					}
+
+					runTestCase(t, auctionEndpointHandler, test, fileData, testFile)
+
+					appNexusServer.Close()
+					openXServer.Close()
+					rubiconServer.Close()
+					mockCurrencyRatesServer.Close()
 				}
 			}
 		}
 	}
 }
 
-func runTestCase(t *testing.T, fileData []byte, testFile string) {
+func runTestCase(t *testing.T, auctionEndpointHandler httprouter.Handle, test testCase, fileData []byte, testFile string) {
 	t.Helper()
 
-	// Retrieve values from JSON file
-	test, err := parseTestFile(fileData, testFile)
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	// Validate adapter JSON schemas
-	paramsValidator := newParamsValidator(t)
-
-	// Run test
-	actualCode, actualJsonBidResponse := doRequest(test, paramsValidator)
+	// Hit the auction endpoint with the test case configuration and mockBidRequest
+	request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(test.BidRequest))
+	recorder := httptest.NewRecorder()
+	auctionEndpointHandler(recorder, request, nil) //Request comes from the unmarshalled mockBidRequest
 
 	// Assertions
+	actualCode := recorder.Code
+	actualJsonBidResponse := recorder.Body.String()
 	assert.Equal(t, test.ExpectedReturnCode, actualCode, "Test failed. Filename: %s \n", testFile)
 
 	// Either assert bid response or expected error
