@@ -57,10 +57,12 @@ type ExtImpData struct {
 }
 
 type ExtImp struct {
-	Prebid *openrtb_ext.ExtImpPrebid `json:"prebid,omitempty"`
-	Bidder json.RawMessage           `json:"bidder"`
-	Data   *ExtImpData               `json:"data,omitempty"`
-	Gpid   string                    `json:"gpid,omitempty"`
+	Prebid  *openrtb_ext.ExtImpPrebid `json:"prebid,omitempty"`
+	Bidder  json.RawMessage           `json:"bidder"`
+	Data    *ExtImpData               `json:"data,omitempty"`
+	Gpid    string                    `json:"gpid,omitempty"`
+	Skadn   json.RawMessage           `json:"skadn,omitempty"`
+	Context json.RawMessage           `json:"context,omitempty"`
 }
 
 type KeywordSegment struct {
