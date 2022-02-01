@@ -46,6 +46,8 @@ type pubmaticParams struct {
 	AdSlot      string            `json:"adSlot"`
 	WrapExt     json.RawMessage   `json:"wrapper,omitempty"`
 	Keywords    map[string]string `json:"keywords,omitempty"`
+
+	SiteID int `json:"site_id"`
 }
 
 type pubmaticBidExtVideo struct {
@@ -89,11 +91,6 @@ const (
 	ImpExtAdUnitKey    = "dfp_ad_unit_code"
 	AdServerGAM        = "gam"
 )
-
-type pubmaticImpExt struct {
-	Reward int                `json:"reward,omitempty"`
-	SKADN  *openrtb_ext.SKADN `json:"skadn,omitempty"`
-}
 
 func PrepareLogMessage(tID, pubId, adUnitId, bidID, details string, args ...interface{}) string {
 	return fmt.Sprintf("[PUBMATIC] ReqID [%s] PubID [%s] AdUnit [%s] BidID [%s] %s \n",
@@ -221,6 +218,9 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		}
 		if pbReq.App != nil {
 			appCopy := *pbReq.App
+			if params.SiteID != 0 {
+				appCopy.ID = strconv.Itoa(params.SiteID)
+			}
 			appCopy.Publisher = &openrtb2.Publisher{ID: params.PublisherId, Domain: req.Domain}
 			pbReq.App = &appCopy
 		}
@@ -388,6 +388,11 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ad
 		} else {
 			appCopy.Publisher = &openrtb2.Publisher{ID: pubID}
 		}
+
+		if impData.pubmatic.SiteID != 0 {
+			appCopy.ID = strconv.Itoa(impData.pubmatic.SiteID)
+		}
+
 		request.App = &appCopy
 	}
 

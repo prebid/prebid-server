@@ -17,6 +17,7 @@ type ExtImpPubmatic struct {
 	Keywords    []*ExtImpPubmaticKeyVal `json:"keywords,omitempty"`
 
 	Reward         int  `json:"reward"`
+	SiteID         int  `json:"site_id"`
 	SKADNSupported bool `json:"skadn_supported"`
 	MRAIDSupported bool `json:"mraid_supported"`
 }
