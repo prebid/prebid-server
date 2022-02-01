@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
-	"strings"
 
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/go-gdpr/vendorconsent"
@@ -54,6 +53,11 @@ func cleanOpenRTBRequests(ctx context.Context,
 	}
 
 	aliases, errs := parseAliases(req.BidRequest)
+	if len(errs) > 0 {
+		return
+	}
+
+	aliasesGVLIDs, errs := parseAliasesGVLIDs(req.BidRequest)
 	if len(errs) > 0 {
 		return
 	}
@@ -124,7 +128,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 				}
 			}
 			var publisherID = req.LegacyLabels.PubID
-			bidReq, geo, id, err := gDPR.AuctionActivitiesAllowed(ctx, bidderRequest.BidderCoreName, publisherID, gdprSignal, consent, weakVendorEnforcement)
+			bidReq, geo, id, err := gDPR.AuctionActivitiesAllowed(ctx, bidderRequest.BidderCoreName, bidderRequest.BidderName, publisherID, gdprSignal, consent, weakVendorEnforcement, aliasesGVLIDs)
 			bidRequestAllowed = bidReq
 
 			if err == nil {
@@ -594,6 +598,19 @@ func parseAliases(orig *openrtb2.BidRequest) (map[string]string, []error) {
 	return aliases, nil
 }
 
+// parseAliasesGVLIDs parses the Bidder Alias GVLIDs from the BidRequest
+func parseAliasesGVLIDs(orig *openrtb2.BidRequest) (map[string]uint16, []error) {
+	var aliasesGVLIDs map[string]uint16
+	if value, dataType, _, err := jsonparser.Get(orig.Ext, openrtb_ext.PrebidExtKey, "aliasgvlids"); dataType == jsonparser.Object && err == nil {
+		if err := json.Unmarshal(value, &aliasesGVLIDs); err != nil {
+			return nil, []error{err}
+		}
+	} else if dataType != jsonparser.NotExist && err != jsonparser.KeyPathNotFoundError {
+		return nil, []error{err}
+	}
+	return aliasesGVLIDs, nil
+}
+
 func GetValidBidders(aliases map[string]string) map[string]struct{} {
 	validBidders := openrtb_ext.BuildBidderNameHashSet()
 
@@ -711,42 +728,6 @@ func getExtBidAdjustmentFactors(requestExt *openrtb_ext.ExtRequest) map[string]f
 		bidAdjustmentFactors = requestExt.Prebid.BidAdjustmentFactors
 	}
 	return bidAdjustmentFactors
-}
-
-func buildXPrebidHeader(bidRequest *openrtb2.BidRequest, version string) string {
-	req := &openrtb_ext.RequestWrapper{BidRequest: bidRequest}
-
-	sb := &strings.Builder{}
-	writeNameVersionRecord(sb, "pbs-go", version)
-
-	if reqExt, err := req.GetRequestExt(); err == nil && reqExt != nil {
-		if prebidExt := reqExt.GetPrebid(); prebidExt != nil {
-			if channel := prebidExt.Channel; channel != nil {
-				writeNameVersionRecord(sb, channel.Name, channel.Version)
-			}
-		}
-	}
-	if appExt, err := req.GetAppExt(); err == nil && appExt != nil {
-		if prebidExt := appExt.GetPrebid(); prebidExt != nil {
-			writeNameVersionRecord(sb, prebidExt.Source, prebidExt.Version)
-		}
-	}
-	return sb.String()
-}
-
-func writeNameVersionRecord(sb *strings.Builder, name, version string) {
-	if name == "" {
-		return
-	}
-	if version == "" {
-		version = "unknown"
-	}
-	if sb.Len() != 0 {
-		sb.WriteString(",")
-	}
-	sb.WriteString(name)
-	sb.WriteString("/")
-	sb.WriteString(version)
 }
 
 func applyFPD(fpd *firstpartydata.ResolvedFirstPartyData, bidReq *openrtb2.BidRequest) {

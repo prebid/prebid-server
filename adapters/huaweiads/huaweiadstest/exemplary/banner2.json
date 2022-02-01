@@ -55,7 +55,7 @@
       }
     },
     "app": {
-      "bundle": "org.prebid.mobile.prebidjavademo",
+      "bundle": "com.example.p10",
       "ver": "1.11",
       "name": "API1.0Demo",
       "publisher": {
@@ -99,7 +99,7 @@
   "httpcalls": [
     {
       "expectedRequest": {
-        "uri": "https://huaweiads.com/adxtest/",
+        "uri": "https://adx-dra.op.hicloud.com/ppsadx/getResult",
         "headers": {
           "Accept": [
             "application/json"
@@ -119,7 +119,7 @@
             "lang": "en",
             "country": "ZA",
             "name": "API1.0Demo",
-            "pkgname": "org.prebid.mobile.prebidjavademo",
+            "pkgname": "com.example.pkgname2",
             "version": "1.11"
           },
           "multislot": [

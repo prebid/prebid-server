@@ -27,7 +27,7 @@
       }
     ],
     "app": {
-      "bundle": "com.wavehk.android",
+      "bundle": "com.example.p1",
       "name": "Huawei Browser",
       "ver": "9.1.0.301",
       "content": {
@@ -38,7 +38,6 @@
       "ua": "useragent",
       "h": 1920,
       "language": "zh",
-      "geoCountry": "CH",
       "model": "COL-TEST",
       "os": "android",
       "osv": "10.0.0",
@@ -75,7 +74,7 @@
   "httpcalls": [
     {
       "expectedRequest": {
-        "uri": "https://huaweiads.com/adxtest/",
+        "uri": "https://acd.op.hicloud.com/ppsadx/getResult",
         "headers": {
           "Accept": [
             "application/json"
@@ -95,7 +94,7 @@
             "lang": "zh",
             "country": "CN",
             "name": "Huawei Browser",
-            "pkgname": "com.wavehk.android",
+            "pkgname": "com.example.pkgname1",
             "version": "9.1.0.301"
           },
           "multislot": [
