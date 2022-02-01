@@ -109,8 +109,9 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 	}
 }
 
-// BenchmarkAllExtRequest benchmarks the processing of  "sample-requests/valid-whole/exemplary/all-ext.json"
-// on the openrtb2/acution endpoint with the `exchange`'s package implementation of `HoldAuction()`
+// BenchmarkAllExtRequest benchmarks the process that results of hitting the `openrtb2/auction` with a
+// json bid request like the one found in "sample-requests/valid-whole/exemplary/all-ext.json". As
+// especified in said file, we expect this bid request to succeed with a 200 status code.
 func BenchmarkAllExtRequest(b *testing.B) {
 	b.StopTimer()
 
