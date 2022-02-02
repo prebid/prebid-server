@@ -139,9 +139,9 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		deps.analytics.LogAuctionObject(&ao)
 	}()
 
-	req, impExtInfoMap, errL := deps.parseRequest(r)
+	req, impExtInfoMap, errL, requestJson := deps.parseRequest(r)
 
-	if errortypes.ContainsFatalError(errL) && writeError(errL, w, &labels) {
+	if errortypes.ContainsFatalError(errL) && writeError(errL, w, &labels, requestJson) {
 		return
 	}
 	warnings := errortypes.WarningOnly(errL)
@@ -174,14 +174,14 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	account, acctIDErrs := accountService.GetAccount(ctx, deps.cfg, deps.accounts, labels.PubID)
 	if len(acctIDErrs) > 0 {
 		errL = append(errL, acctIDErrs...)
-		writeError(errL, w, &labels)
+		writeError(errL, w, &labels, requestJson)
 		return
 	}
 
 	// rebuild/resync the request in the request wrapper.
 	if err := req.RebuildRequest(); err != nil {
 		errL = append(errL, err)
-		writeError(errL, w, &labels)
+		writeError(errL, w, &labels, requestJson)
 		return
 	}
 
@@ -239,7 +239,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 // possible, it will return errors with messages that suggest improvements.
 //
 // If the errors list has at least one element, then no guarantees are made about the returned request.
-func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_ext.RequestWrapper, impExtInfoMap map[string]exchange.ImpExtInfo, errs []error) {
+func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_ext.RequestWrapper, impExtInfoMap map[string]exchange.ImpExtInfo, errs []error, requestJson []byte) {
 	req = &openrtb_ext.RequestWrapper{}
 	req.BidRequest = &openrtb2.BidRequest{}
 	errs = nil
@@ -268,7 +268,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_
 
 	impInfo, errs := parseImpInfo(requestJson)
 	if len(errs) > 0 {
-		return nil, nil, errs
+		return nil, nil, errs, requestJson
 	}
 
 	// Fetch the Stored Request data and merge it into the HTTP request.
@@ -1562,7 +1562,7 @@ func parseUserID(cfg *config.Configuration, httpReq *http.Request) (string, bool
 }
 
 // Write(return) errors to the client, if any. Returns true if errors were found.
-func writeError(errs []error, w http.ResponseWriter, labels *metrics.Labels) bool {
+func writeError(errs []error, w http.ResponseWriter, labels *metrics.Labels, requestJson []byte) bool {
 	var rc bool = false
 	if len(errs) > 0 {
 		httpStatus := http.StatusBadRequest
@@ -1581,6 +1581,7 @@ func writeError(errs []error, w http.ResponseWriter, labels *metrics.Labels) boo
 			w.Write([]byte(fmt.Sprintf("Invalid request: %s\n", err.Error())))
 			if glog.V(2) {
 				glog.Infof("Invalid request: %s", err.Error())
+				glog.Infof("Request: %s", string(requestJson))
 			}
 		}
 		rc = true
