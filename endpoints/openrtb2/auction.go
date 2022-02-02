@@ -1579,6 +1579,9 @@ func writeError(errs []error, w http.ResponseWriter, labels *metrics.Labels) boo
 		labels.RequestStatus = metricsStatus
 		for _, err := range errs {
 			w.Write([]byte(fmt.Sprintf("Invalid request: %s\n", err.Error())))
+			if glog.V(2) {
+				glog.Infof("Invalid request: %s", err.Error())
+			}
 		}
 		rc = true
 	}
