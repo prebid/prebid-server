@@ -20,7 +20,7 @@ type Account struct {
 	CCPA          AccountCCPA `mapstructure:"ccpa" json:"ccpa"`
 	GDPR          AccountGDPR `mapstructure:"gdpr" json:"gdpr"`
 	DebugAllow    bool        `mapstructure:"debug_allow" json:"debug_allow"`
-	Events        Events      `mapstructure:"events" json:"events"`
+	Events        Events      `mapstructure:"events" json:"events"` // Don't enable this feature. It is still under developmment - https://github.com/prebid/prebid-server/issues/1725
 }
 
 // AccountCCPA represents account-specific CCPA configuration
@@ -92,6 +92,7 @@ type VASTEvent struct {
 
 // Events indicates the various types of events to be captured typically for injecting tracker URLs
 // within the VAST XML
+// Don't enable this feature. It is still under developmment - https://github.com/prebid/prebid-server/issues/1725
 type Events struct {
 	Enabled    bool        `mapstructure:"enabled" json:"enabled"`
 	DefaultURL string      `mapstructure:"default_url" json:"default_url"`
