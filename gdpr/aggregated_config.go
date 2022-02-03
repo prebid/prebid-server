@@ -7,17 +7,6 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-// Need to figure out how to create the VendorExceptionMap for the account config
-//	- can we cache it?
-//  - should we just create it here for now? would rather not
-//
-
-// OPTIONS:
-// 1) construct final config on instantiation
-//	- could be done by copying hostConfig and overwriting applicable fields
-//  - could be done by creating a new object
-// 2) compute needed config every time we try to access config info
-// 3) lazily compute needed config and memoize results
 type TCF2ConfigReader interface { //TODO: change to TCF2Config
 	BasicEnforcementVendor(openrtb_ext.BidderName) bool
 	Enabled() bool

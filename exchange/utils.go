@@ -92,8 +92,6 @@ func cleanOpenRTBRequests(ctx context.Context,
 	privacyLabels.COPPAEnforced = privacyEnforcement.COPPA
 	privacyLabels.LMTEnforced = lmtEnforcer.ShouldEnforce(unknownBidder)
 
-	// gdprCfg := gdpr.NewTCF2ConfigReader(privacyConfig.GDPR.TCF2, req.Account.GDPR) // TODO: account should always be defined. delete one of the account params to CleanOpenRTBRequests. Do we want to pass the account by value or reference?
-	// gdprEnforced = gdprEnforced && gdprCfg.IntegrationEnabled(integrationTypeMap[req.LegacyLabels.RType])
 	var gdprCfg gdpr.TCF2ConfigReader
 	var gdprEnforced bool
 	if gdprApplies {

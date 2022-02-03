@@ -73,9 +73,6 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 	return account, nil
 }
 
-//TODO(BFS): optimization opportunity - only call this if GDPR applies and is being enforced. The tradeoff is this is would then
-//TODO(BFS): be called from the core logic instead of encapsulating it within the account fetcher logic that would return a fully
-//TODO(BFS): initialized account
 func setDerivedConfig(account *config.Account) {
 	account.GDPR.PurposeConfigs = map[consentconstants.Purpose]*config.AccountGDPRPurpose{
 		1:  &account.GDPR.Purpose1,

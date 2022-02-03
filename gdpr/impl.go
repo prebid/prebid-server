@@ -115,7 +115,6 @@ func (p *permissionsImpl) allowSync(ctx context.Context, cfg TCF2ConfigReader, v
 	return p.checkPurpose(consentMeta, vendor, vendorID, tcf2ConsentConstants.InfoStorageAccess, enforceVendors, vendorException, false), nil
 }
 
-// move to TCF2 object
 func (p *permissionsImpl) allowActivities(ctx context.Context, cfg TCF2ConfigReader, vendorID uint16, bidder openrtb_ext.BidderName, consent string, weakVendorEnforcement bool) (allowBidRequest bool, passGeo bool, passID bool, err error) {
 	parsedConsent, vendor, err := p.parseVendor(ctx, vendorID, consent)
 	if err != nil {
@@ -170,7 +169,6 @@ const pubRestrictNotAllowed = 0
 const pubRestrictRequireConsent = 1
 const pubRestrictRequireLegitInterest = 2
 
-// move to full enforcement object
 func (p *permissionsImpl) checkPurpose(consent tcf2.ConsentMetadata, vendor api.Vendor, vendorID uint16, purpose consentconstants.Purpose, enforceVendors, vendorException, weakVendorEnforcement bool) bool {
 	if consent.CheckPubRestriction(uint8(purpose), pubRestrictNotAllowed, vendorID) {
 		return false
@@ -194,7 +192,6 @@ func (p *permissionsImpl) checkPurpose(consent tcf2.ConsentMetadata, vendor api.
 	return purposeAllowed || legitInterest
 }
 
-// move to full enforcement object
 func (p *permissionsImpl) consentEstablished(consent tcf2.ConsentMetadata, vendor api.Vendor, vendorID uint16, purpose consentconstants.Purpose, enforceVendors, weakVendorEnforcement bool) bool {
 	if !consent.PurposeAllowed(purpose) {
 		return false
@@ -211,7 +208,6 @@ func (p *permissionsImpl) consentEstablished(consent tcf2.ConsentMetadata, vendo
 	return false
 }
 
-// move to full enforcement object
 func (p *permissionsImpl) legitInterestEstablished(consent tcf2.ConsentMetadata, vendor api.Vendor, vendorID uint16, purpose consentconstants.Purpose, enforceVendors, weakVendorEnforcement bool) bool {
 	if !consent.PurposeLITransparency(purpose) {
 		return false
