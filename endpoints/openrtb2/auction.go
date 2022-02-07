@@ -12,7 +12,6 @@ import (
 	"regexp"
 	"strconv"
 	"time"
-	"unicode"
 
 	"github.com/prebid/prebid-server/firstpartydata"
 
@@ -48,7 +47,6 @@ import (
 const storedRequestTimeoutMillis = 50
 const ampChannel = "amp"
 const appChannel = "app"
-const integrationParamMaxLength = 64
 
 var (
 	dntKey      string = http.CanonicalHeaderKey("DNT")
@@ -1839,36 +1837,11 @@ func (deps *endpointDeps) setIntegrationType(req *openrtb_ext.RequestWrapper, ac
 	}
 	reqPrebid := reqExt.GetPrebid()
 	if reqPrebid == nil && account != nil {
-		err := validateIntegrationType(account.DefaultIntegration)
-		if err != nil {
-			return err
-		}
 		reqPrebid = &openrtb_ext.ExtRequestPrebid{Integration: account.DefaultIntegration}
 		reqExt.SetPrebid(reqPrebid)
 	} else if reqPrebid.Integration == "" && account.DefaultIntegration != "" {
-		err := validateIntegrationType(account.DefaultIntegration)
-		if err != nil {
-			return err
-		}
 		reqPrebid.Integration = account.DefaultIntegration
 		reqExt.SetPrebid(reqPrebid)
-	} else {
-		err := validateIntegrationType(reqPrebid.Integration)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func validateIntegrationType(integrationType string) error {
-	if len(integrationType) > integrationParamMaxLength {
-		return errors.New("integration type length is too long")
-	}
-	for _, char := range integrationType {
-		if !(unicode.IsDigit(char) || unicode.IsLetter(char)) && char != '-' && char != '_' {
-			return errors.New("integration type can only contain numbers, letters and these characters '-', '_'")
-		}
 	}
 	return nil
 }

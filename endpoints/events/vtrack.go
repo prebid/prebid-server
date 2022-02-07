@@ -71,7 +71,11 @@ func (v *vtrackEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httpro
 	}
 
 	// get integration value from request parameter
-	integrationType := getIntegrationType(r)
+	integrationType, err := getIntegrationType(r)
+	if err != nil {
+		w.Write([]byte(fmt.Sprintf("Invalid integration type: %s\n", err.Error())))
+		return
+	}
 
 	// parse puts request from request body
 	req, err := ParseVTrackRequest(r, v.Cfg.MaxRequestSize+1)
@@ -273,8 +277,13 @@ func getAccountId(httpRequest *http.Request) string {
 	return httpRequest.URL.Query().Get(AccountParameter)
 }
 
-func getIntegrationType(httpRequest *http.Request) string {
-	return httpRequest.URL.Query().Get(IntegrationParameter)
+func getIntegrationType(httpRequest *http.Request) (string, error) {
+	integrationType := httpRequest.URL.Query().Get(IntegrationParameter)
+	err := validateIntegrationType(integrationType)
+	if err != nil {
+		return "", err
+	}
+	return integrationType, nil
 }
 
 // ModifyVastXmlString rewrites and returns the string vastXML and a flag indicating if it was modified

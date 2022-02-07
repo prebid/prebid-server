@@ -588,15 +588,16 @@ func TestShouldParseEventCorrectly(t *testing.T) {
 		expected *analytics.EventRequest
 	}{
 		"one": {
-			req: httptest.NewRequest("GET", "/event?t=win&b=bidId&f=b&ts=1000&x=1&a=accountId&bidder=bidder", strings.NewReader("")),
+			req: httptest.NewRequest("GET", "/event?t=win&b=bidId&f=b&ts=1000&x=1&a=accountId&bidder=bidder&int=intType", strings.NewReader("")),
 			expected: &analytics.EventRequest{
-				Type:      analytics.Win,
-				BidID:     "bidId",
-				Timestamp: 1000,
-				Bidder:    "bidder",
-				AccountID: "",
-				Format:    analytics.Blank,
-				Analytics: analytics.Enabled,
+				Type:        analytics.Win,
+				BidID:       "bidId",
+				Timestamp:   1000,
+				Bidder:      "bidder",
+				AccountID:   "",
+				Format:      analytics.Blank,
+				Analytics:   analytics.Enabled,
+				Integration: "intType",
 			},
 		},
 		"two": {
