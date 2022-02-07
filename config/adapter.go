@@ -42,6 +42,9 @@ type AdapterXAPI struct {
 	Password string `mapstructure:"password"`
 	Tracker  string `mapstructure:"tracker"`
 
+	EndpointMatureIOS     string `mapstructure:"endpoint_mature_ios"`
+	EndpointMatureAndroid string `mapstructure:"endpoint_mature_android"`
+
 	EndpointUSEast string `mapstructure:"endpoint_us_east"`
 	EndpointUSWest string `mapstructure:"endpoint_us_west"`
 	EndpointEU     string `mapstructure:"endpoint_eu"`
