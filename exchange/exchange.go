@@ -162,6 +162,8 @@ type AuctionRequest struct {
 	// in HoldAuction until we get to factoring it away. Do not use for anything new.
 	LegacyLabels   metrics.Labels
 	FirstPartyData map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData
+	// map of imp id to stored response
+	StoredAuctionResponses map[string]json.RawMessage
 }
 
 // BidderRequest holds the bidder specific request and all other
@@ -211,7 +213,20 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	// Get currency rates conversions for the auction
 	conversions := e.getAuctionCurrencyRates(requestExt.Prebid.CurrencyConversions)
 
-	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, accountDebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride)
+	var adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid
+	var adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra
+	var anyBidsReturned bool
+
+	if len(r.StoredAuctionResponses) > 0 {
+		adapterBids, liveAdapters, err = buildStoreAuctionResponse(r.StoredAuctionResponses)
+		if err != nil {
+			return nil, err
+		}
+		anyBidsReturned = true
+
+	} else {
+		adapterBids, adapterExtra, anyBidsReturned = e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, accountDebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride)
+	}
 
 	var auc *auction
 	var cacheErrs []error
@@ -1075,4 +1090,40 @@ func listBiddersWithRequests(bidderRequests []BidderRequest) []openrtb_ext.Bidde
 	randomizeList(liveAdapters)
 
 	return liveAdapters
+}
+
+func buildStoreAuctionResponse(storedActionResponses map[string]json.RawMessage) (map[openrtb_ext.BidderName]*pbsOrtbSeatBid, []openrtb_ext.BidderName, error) {
+
+	adapterBids := make(map[openrtb_ext.BidderName]*pbsOrtbSeatBid, 0)
+	liveAdapters := make([]openrtb_ext.BidderName, 0)
+	for impId, storedResp := range storedActionResponses {
+		var seatBids []openrtb2.SeatBid
+
+		if err := json.Unmarshal(storedResp, &seatBids); err != nil {
+			return nil, nil, err
+		}
+		for _, seat := range seatBids {
+			var bidsToAdd []*pbsOrtbBid
+			//set imp id from request
+			for _, bid := range seat.Bid {
+				bid.ImpID = impId
+				bidsToAdd = append(bidsToAdd, &pbsOrtbBid{bid: &bid})
+			}
+
+			bidderName := openrtb_ext.BidderName(seat.Seat)
+
+			if _, ok := adapterBids[bidderName]; ok {
+				adapterBids[bidderName].bids = append(adapterBids[bidderName].bids, bidsToAdd...)
+
+			} else {
+				//create new seat bid and add it to live adapters
+				liveAdapters = append(liveAdapters, bidderName)
+				newSeatBid := pbsOrtbSeatBid{bidsToAdd, "", nil}
+				adapterBids[bidderName] = &newSeatBid
+
+			}
+		}
+	}
+
+	return adapterBids, liveAdapters, nil
 }
