@@ -1114,6 +1114,8 @@ func setBidderDefaults(v *viper.Viper, bidder string) {
 	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_apac", "")
 	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_jp", "")
 	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_sg", "")
+	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_mature_ios", "")
+	v.SetDefault(adapterCfgPrefix+bidder+".xapi.endpoint_mature_android", "")
 	v.SetDefault(adapterCfgPrefix+bidder+".disabled", false)
 	v.SetDefault(adapterCfgPrefix+bidder+".partner_id", "")
 	v.SetDefault(adapterCfgPrefix+bidder+".extra_info", "")

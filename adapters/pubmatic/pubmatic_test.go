@@ -98,7 +98,7 @@ func DummyPubMaticServer(w http.ResponseWriter, r *http.Request) {
 
 func TestPubmaticInvalidCall(t *testing.T) {
 
-	an := NewPubmaticLegacyAdapter(adapters.DefaultHTTPAdapterConfig, "blah")
+	an := NewPubmaticLegacyAdapter(adapters.DefaultHTTPAdapterConfig, "blah", "blah", "blah")
 
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
@@ -119,7 +119,7 @@ func TestPubmaticTimeout(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticLegacyAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL, server.URL, server.URL)
 	ctx, cancel := context.WithTimeout(context.Background(), 0)
 	defer cancel()
 
@@ -156,7 +156,7 @@ func TestPubmaticInvalidJson(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticLegacyAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL, server.URL, server.URL)
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -192,7 +192,7 @@ func TestPubmaticInvalidStatusCode(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticLegacyAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL, server.URL, server.URL)
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -223,7 +223,7 @@ func TestPubmaticInvalidInputParameters(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticLegacyAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL, server.URL, server.URL)
 	ctx := context.Background()
 
 	pbReq := pbs.PBSRequest{}
@@ -296,7 +296,7 @@ func TestPubmaticBasicResponse_MandatoryParams(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticLegacyAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL, server.URL, server.URL)
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -332,7 +332,7 @@ func TestPubmaticBasicResponse_AllParams(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticLegacyAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL, server.URL, server.URL)
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -376,7 +376,7 @@ func TestPubmaticMultiImpressionResponse(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticLegacyAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL, server.URL, server.URL)
 
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
@@ -424,7 +424,7 @@ func TestPubmaticMultiAdUnitResponse(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticLegacyAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL, server.URL, server.URL)
 
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
@@ -473,7 +473,7 @@ func TestPubmaticMobileResponse(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticLegacyAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL, server.URL, server.URL)
 
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
@@ -514,7 +514,7 @@ func TestPubmaticInvalidLookupBidIDParameter(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticLegacyAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL, server.URL, server.URL)
 
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
@@ -545,7 +545,7 @@ func TestPubmaticAdSlotParams(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticLegacyAdapter(&conf, server.URL)
+	an := NewPubmaticLegacyAdapter(&conf, server.URL, server.URL, server.URL)
 
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}

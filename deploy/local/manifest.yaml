@@ -126,6 +126,8 @@ data:
   # pubmatic values
   PBS_ADAPTERS_PUBMATIC_DISABLED: "false"
   PBS_ADAPTERS_PUBMATIC_ENDPOINT: "http://localhost:4646/pubmatic_givemeads"
+  PBS_ADAPTERS_PUBMATIC_XAPI_ENDPOINT_MATURE_IOS: "http://localhost:4646/pubmatic_givemeads2"
+  PBS_ADAPTERS_PUBMATIC_XAPI_ENDPOINT_MATURE_ANDROID: "http://localhost:4646/pubmatic_givemeads3"
 
   # rubicon values
   PBS_ADAPTERS_RUBICON_DISABLED:              "false"
