@@ -49,12 +49,7 @@ func (p *permissionsImpl) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 	return false, nil
 }
 
-func (p *permissionsImpl) AuctionActivitiesAllowed(ctx context.Context,
-	bidder openrtb_ext.BidderName,
-	PublisherID string,
-	gdprSignal Signal,
-	consent string,
-	weakVendorEnforcement bool) (allowBidRequest bool, passGeo bool, passID bool, err error) {
+func (p *permissionsImpl) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string, weakVendorEnforcement bool, aliasGVLIDs map[string]uint16) (allowBidReq bool, passGeo bool, passID bool, err error) {
 	if _, ok := p.cfg.NonStandardPublisherMap[PublisherID]; ok {
 		return true, true, true, nil
 	}
@@ -69,10 +64,10 @@ func (p *permissionsImpl) AuctionActivitiesAllowed(ctx context.Context,
 		return false, false, false, nil
 	}
 
-	if id, ok := p.vendorIDs[bidder]; ok {
-		return p.allowActivities(ctx, id, bidder, consent, weakVendorEnforcement)
+	if id, ok := p.resolveVendorId(bidderCoreName, bidder, aliasGVLIDs); ok {
+		return p.allowActivities(ctx, id, bidderCoreName, consent, weakVendorEnforcement)
 	} else if weakVendorEnforcement {
-		return p.allowActivities(ctx, 0, bidder, consent, weakVendorEnforcement)
+		return p.allowActivities(ctx, 0, bidderCoreName, consent, weakVendorEnforcement)
 	}
 
 	return p.defaultVendorPermissions()
@@ -80,6 +75,16 @@ func (p *permissionsImpl) AuctionActivitiesAllowed(ctx context.Context,
 
 func (p *permissionsImpl) defaultVendorPermissions() (allowBidRequest bool, passGeo bool, passID bool, err error) {
 	return false, false, false, nil
+}
+
+func (p *permissionsImpl) resolveVendorId(bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName, aliasGVLIDs map[string]uint16) (id uint16, ok bool) {
+	if id, ok = aliasGVLIDs[string(bidder)]; ok {
+		return id, ok
+	}
+
+	id, ok = p.vendorIDs[bidderCoreName]
+
+	return id, ok
 }
 
 func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consent string, vendorException bool) (bool, error) {
@@ -132,9 +137,9 @@ func (p *permissionsImpl) allowActivities(ctx context.Context, vendorID uint16, 
 		return
 	}
 
-	if p.cfg.TCF2.SpecialPurpose1.Enabled {
-		vendorException := p.isSpecialPurposeVendorException(bidder)
-		passGeo = vendorException || (consentMeta.SpecialFeatureOptIn(1) && (vendor.SpecialPurpose(1) || weakVendorEnforcement))
+	if p.cfg.TCF2.SpecialFeature1.Enforce {
+		vendorException := p.isSpecialFeatureVendorException(bidder)
+		passGeo = vendorException || (consentMeta.SpecialFeatureOptIn(1) && (vendor.SpecialFeature(1) || weakVendorEnforcement))
 	} else {
 		passGeo = true
 	}
@@ -162,8 +167,8 @@ func (p *permissionsImpl) isVendorException(purpose consentconstants.Purpose, bi
 	return
 }
 
-func (p *permissionsImpl) isSpecialPurposeVendorException(bidder openrtb_ext.BidderName) (vendorException bool) {
-	if _, ok := p.cfg.TCF2.SpecialPurpose1.VendorExceptionMap[bidder]; ok {
+func (p *permissionsImpl) isSpecialFeatureVendorException(bidder openrtb_ext.BidderName) (vendorException bool) {
+	if _, ok := p.cfg.TCF2.SpecialFeature1.VendorExceptionMap[bidder]; ok {
 		vendorException = true
 	}
 	return
@@ -276,7 +281,7 @@ func (a AlwaysAllow) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.B
 	return true, nil
 }
 
-func (a AlwaysAllow) AuctionActivitiesAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string, weakVendorEnforcement bool) (allowBidRequest bool, passGeo bool, passID bool, err error) {
+func (a AlwaysAllow) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string, weakVendorEnforcement bool, aliasGVLIDs map[string]uint16) (allowBidReq bool, passGeo bool, passID bool, err error) {
 	return true, true, true, nil
 }
 

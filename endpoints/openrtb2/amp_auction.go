@@ -26,6 +26,7 @@ import (
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/usersync"
 	"github.com/prebid/prebid-server/util/iputil"
+	"github.com/prebid/prebid-server/version"
 
 	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
@@ -133,6 +134,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	// and "Access-Control-Allow-Credentials" are handled in CORS middleware
 	w.Header().Set("AMP-Access-Control-Allow-Source-Origin", origin)
 	w.Header().Set("Access-Control-Expose-Headers", "AMP-Access-Control-Allow-Source-Origin")
+	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
 
 	req, errL := deps.parseAmpRequest(r)
 	ao.Errors = append(ao.Errors, errL...)

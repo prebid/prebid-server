@@ -38,6 +38,7 @@ type RequestWrapper struct {
 	appExt     *AppExt
 	regExt     *RegExt
 	siteExt    *SiteExt
+	sourceExt  *SourceExt
 }
 
 func (rw *RequestWrapper) GetUserExt() (*UserExt, error) {
@@ -107,6 +108,17 @@ func (rw *RequestWrapper) GetSiteExt() (*SiteExt, error) {
 	return rw.siteExt, rw.siteExt.unmarshal(rw.Site.Ext)
 }
 
+func (rw *RequestWrapper) GetSourceExt() (*SourceExt, error) {
+	if rw.sourceExt != nil {
+		return rw.sourceExt, nil
+	}
+	rw.sourceExt = &SourceExt{}
+	if rw.BidRequest == nil || rw.Source == nil || rw.Source.Ext == nil {
+		return rw.sourceExt, rw.sourceExt.unmarshal(json.RawMessage{})
+	}
+	return rw.sourceExt, rw.sourceExt.unmarshal(rw.Source.Ext)
+}
+
 func (rw *RequestWrapper) RebuildRequest() error {
 	if rw.BidRequest == nil {
 		return errors.New("Requestwrapper Sync called on a nil BidRequest")
@@ -128,6 +140,9 @@ func (rw *RequestWrapper) RebuildRequest() error {
 		return err
 	}
 	if err := rw.rebuildSiteExt(); err != nil {
+		return err
+	}
+	if err := rw.rebuildSourceExt(); err != nil {
 		return err
 	}
 
@@ -211,6 +226,20 @@ func (rw *RequestWrapper) rebuildSiteExt() error {
 			return err
 		}
 		rw.Site.Ext = siteJson
+	}
+	return nil
+}
+
+func (rw *RequestWrapper) rebuildSourceExt() error {
+	if rw.Source == nil && rw.sourceExt != nil && rw.sourceExt.Dirty() {
+		rw.Source = &openrtb2.Source{}
+	}
+	if rw.sourceExt != nil && rw.sourceExt.Dirty() {
+		sourceJson, err := rw.sourceExt.marshal()
+		if err != nil {
+			return err
+		}
+		rw.Source.Ext = sourceJson
 	}
 	return nil
 }
@@ -382,6 +411,8 @@ type RequestExt struct {
 	extDirty    bool
 	prebid      *ExtRequestPrebid
 	prebidDirty bool
+	schain      *ExtRequestPrebidSChainSChain // ORTB 2.4 location
+	schainDirty bool
 }
 
 func (re *RequestExt) unmarshal(extJson json.RawMessage) error {
@@ -401,6 +432,11 @@ func (re *RequestExt) unmarshal(extJson json.RawMessage) error {
 		re.prebid = &ExtRequestPrebid{}
 		err = json.Unmarshal(prebidJson, re.prebid)
 	}
+	schainJson, hasSChain := re.ext["schain"]
+	if hasSChain {
+		re.schain = &ExtRequestPrebidSChainSChain{}
+		err = json.Unmarshal(schainJson, re.schain)
+	}
 
 	return err
 }
@@ -419,6 +455,22 @@ func (re *RequestExt) marshal() (json.RawMessage, error) {
 		re.prebidDirty = false
 	}
 
+	if re.schainDirty {
+		if re.schain == nil {
+		}
+
+		schainJson, err := json.Marshal(re.schain)
+		if err != nil {
+			return nil, err
+		}
+		if len(schainJson) > 2 && re.schain != nil {
+			re.ext["schain"] = json.RawMessage(schainJson)
+		} else {
+			delete(re.ext, "schain")
+		}
+		re.schainDirty = false
+	}
+
 	re.extDirty = false
 	if len(re.ext) == 0 {
 		return nil, nil
@@ -427,7 +479,7 @@ func (re *RequestExt) marshal() (json.RawMessage, error) {
 }
 
 func (re *RequestExt) Dirty() bool {
-	return re.extDirty || re.prebidDirty
+	return re.extDirty || re.prebidDirty || re.schainDirty
 }
 
 func (re *RequestExt) GetExt() map[string]json.RawMessage {
@@ -454,6 +506,22 @@ func (re *RequestExt) GetPrebid() *ExtRequestPrebid {
 func (re *RequestExt) SetPrebid(prebid *ExtRequestPrebid) {
 	re.prebid = prebid
 	re.prebidDirty = true
+}
+
+// These schain methods on the request.ext are only for ORTB 2.4 backwards compatibility and
+// should not be used for any other purposes. To access ORTB 2.5 schains, see source.ext.schain
+// or request.ext.prebid.schains.
+func (re *RequestExt) GetSChain() *ExtRequestPrebidSChainSChain {
+	if re.schain == nil {
+		return nil
+	}
+	schain := *re.schain
+	return &schain
+}
+
+func (re *RequestExt) SetSChain(schain *ExtRequestPrebidSChainSChain) {
+	re.schain = schain
+	re.schainDirty = true
 }
 
 // ---------------------------------------------------------------
@@ -784,4 +852,86 @@ func (se *SiteExt) GetAmp() int8 {
 func (se *SiteExt) SetUSPrivacy(amp int8) {
 	se.amp = amp
 	se.ampDirty = true
+}
+
+// ---------------------------------------------------------------
+// SourceExt provides an interface for request.source.ext
+// ---------------------------------------------------------------
+
+type SourceExt struct {
+	ext         map[string]json.RawMessage
+	extDirty    bool
+	schain      *ExtRequestPrebidSChainSChain
+	schainDirty bool
+}
+
+func (se *SourceExt) unmarshal(extJson json.RawMessage) error {
+	if len(se.ext) != 0 || se.Dirty() {
+		return nil
+	}
+	se.ext = make(map[string]json.RawMessage)
+	if len(extJson) == 0 {
+		return nil
+	}
+	err := json.Unmarshal(extJson, &se.ext)
+	if err != nil {
+		return err
+	}
+	schainJson, hasSChain := se.ext["schain"]
+	if hasSChain {
+		err = json.Unmarshal(schainJson, &se.schain)
+	}
+
+	return err
+}
+
+func (se *SourceExt) marshal() (json.RawMessage, error) {
+	if se.schainDirty {
+		schainJson, err := json.Marshal(se.schain)
+		if err != nil {
+			return nil, err
+		}
+		if len(schainJson) > 2 {
+			se.ext["schain"] = json.RawMessage(schainJson)
+		} else {
+			delete(se.ext, "schain")
+		}
+		se.schainDirty = false
+	}
+
+	se.extDirty = false
+	if len(se.ext) == 0 {
+		return nil, nil
+	}
+	return json.Marshal(se.ext)
+}
+
+func (se *SourceExt) Dirty() bool {
+	return se.extDirty || se.schainDirty
+}
+
+func (se *SourceExt) GetExt() map[string]json.RawMessage {
+	ext := make(map[string]json.RawMessage)
+	for k, v := range se.ext {
+		ext[k] = v
+	}
+	return ext
+}
+
+func (se *SourceExt) SetExt(ext map[string]json.RawMessage) {
+	se.ext = ext
+	se.extDirty = true
+}
+
+func (se *SourceExt) GetSChain() *ExtRequestPrebidSChainSChain {
+	if se.schain == nil {
+		return nil
+	}
+	schain := *se.schain
+	return &schain
+}
+
+func (se *SourceExt) SetSChain(schain *ExtRequestPrebidSChainSChain) {
+	se.schain = schain
+	se.schainDirty = true
 }

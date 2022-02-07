@@ -24,7 +24,7 @@ type Permissions interface {
 	// Determines whether or not to send PI information to a bidder, or mask it out.
 	//
 	// If the consent string was nonsensical, the returned error will be an ErrorMalformedConsent.
-	AuctionActivitiesAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string, weakVendorEnforcement bool) (allowBidReq bool, passGeo bool, passID bool, err error)
+	AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string, weakVendorEnforcement bool, aliasGVLIDs map[string]uint16) (allowBidReq bool, passGeo bool, passID bool, err error)
 }
 
 // Versions of the GDPR TCF technical specification.
