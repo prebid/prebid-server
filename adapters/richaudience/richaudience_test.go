@@ -120,8 +120,6 @@ func TestGetDevice(t *testing.T) {
 		},
 	}
 
-	validateDevice(raBidRequest)
-
 	if raBidRequest.Device.IP != richaudienceRequestTest.Device.IP {
 		t.Errorf("error %s", richaudienceRequestTest.Device.IP)
 	}

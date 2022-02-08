@@ -14,9 +14,10 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/firstpartydata"
+	"github.com/prebid/prebid-server/version"
 
 	"github.com/buger/jsonparser"
-	jsonpatch "github.com/evanphx/json-patch"
+	jsonpatch "github.com/evanphx/json-patch/v5"
 	"github.com/gofrs/uuid"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
@@ -148,6 +149,8 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		deps.analytics.LogAuctionObject(&ao)
 	}()
 
+	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
+
 	req, impExtInfoMap, errL := deps.parseRequest(r)
 	if errortypes.ContainsFatalError(errL) && writeError(errL, w, &labels) {
 		return
@@ -234,7 +237,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
 
-	// Fixes #328
 	w.Header().Set("Content-Type", "application/json")
 
 	// If an error happens when encoding the response, there isn't much we can do.
@@ -509,6 +511,10 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 		aliases = reqPrebid.Aliases
 
 		if err := deps.validateAliases(aliases); err != nil {
+			return []error{err}
+		}
+
+		if err := deps.validateAliasesGVLIDs(reqPrebid.AliasGVLIDs, aliases); err != nil {
 			return []error{err}
 		}
 
@@ -1260,6 +1266,20 @@ func (deps *endpointDeps) validateAliases(aliases map[string]string) error {
 
 		if alias == coreBidder {
 			return fmt.Errorf("request.ext.prebid.aliases.%s defines a no-op alias. Choose a different alias, or remove this entry.", alias)
+		}
+	}
+	return nil
+}
+
+func (deps *endpointDeps) validateAliasesGVLIDs(aliasesGVLIDs map[string]uint16, aliases map[string]string) error {
+	for alias, vendorId := range aliasesGVLIDs {
+
+		if _, aliasExist := aliases[alias]; !aliasExist {
+			return fmt.Errorf("request.ext.prebid.aliasgvlids. vendorId %d refers to unknown bidder alias: %s", vendorId, alias)
+		}
+
+		if vendorId < 1 {
+			return fmt.Errorf("request.ext.prebid.aliasgvlids. Invalid vendorId %d for alias: %s. Choose a different vendorId, or remove this entry.", vendorId, alias)
 		}
 	}
 	return nil
