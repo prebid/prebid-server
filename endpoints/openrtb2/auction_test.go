@@ -4761,6 +4761,104 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 	}
 }
 
+func TestParseRequestStoredResponses(t *testing.T) {
+	mockStoredResponses := map[string]json.RawMessage{
+		"6d718149": json.RawMessage(`[{"bid": [{"id": "bid_id1"],"seat": "appnexus"}]`),
+		"6d715835": json.RawMessage(`[{"bid": [{"id": "bid_id2"],"seat": "appnexus"}]`),
+	}
+
+	tests := []struct {
+		name                    string
+		givenRequestBody        string
+		expectedStoredResponses map[string]json.RawMessage
+		expectedErrorCount      int
+		expectedError           string
+	}{
+		{
+			name:             "reqimp has valid stored response",
+			givenRequestBody: validRequest(t, "req-imp-stored-response.json"),
+			expectedStoredResponses: map[string]json.RawMessage{
+				"imp-id1": json.RawMessage(`[{"bid": [{"id": "bid_id1"],"seat": "appnexus"}]`),
+			},
+			expectedErrorCount: 0,
+		},
+		{
+			name:             "req has two imps valid stored responses",
+			givenRequestBody: validRequest(t, "req-two-imps-stored-response.json"),
+			expectedStoredResponses: map[string]json.RawMessage{
+				"imp-id1": json.RawMessage(`[{"bid": [{"id": "bid_id1"],"seat": "appnexus"}]`),
+				"imp-id2": json.RawMessage(`[{"bid": [{"id": "bid_id2"],"seat": "appnexus"}]`),
+			},
+			expectedErrorCount: 0,
+		},
+		{
+			name:             "req has two imps with missing stored responses",
+			givenRequestBody: validRequest(t, "req-two-imps-missing-stored-response.json"),
+			expectedStoredResponses: map[string]json.RawMessage{
+				"imp-id1": json.RawMessage(`[{"bid": [{"id": "bid_id1"],"seat": "appnexus"}]`),
+				"imp-id2": json.RawMessage(nil),
+			},
+			expectedErrorCount: 0,
+		},
+		{
+			name:             "req has two imps: one with stored response and another imp without stored resp",
+			givenRequestBody: validRequest(t, "req-two-imps-one-stored-response.json"),
+			expectedStoredResponses: map[string]json.RawMessage{
+				"imp-id1": json.RawMessage(`[{"bid": [{"id": "bid_id1"],"seat": "appnexus"}]`),
+			},
+			expectedErrorCount: 1,
+			expectedError:      `request validation failed. The StoredAuctionResponse.ID field must be completely present with, or completely absent from, all impressions in request. No StoredAuctionResponse data found for request.imp[1].ext.prebid`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			deps := &endpointDeps{
+				fakeUUIDGenerator{},
+				&warningsCheckExchange{},
+				newParamsValidator(t),
+				&mockStoredReqFetcher{},
+				empty_fetcher.EmptyFetcher{},
+				empty_fetcher.EmptyFetcher{},
+				&config.Configuration{MaxRequestSize: int64(len(tt.givenRequestBody))},
+				&metricsConfig.NilMetricsEngine{},
+				analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+				map[string]string{},
+				false,
+				[]byte{},
+				openrtb_ext.BuildBidderMap(),
+				nil,
+				nil,
+				hardcodedResponseIPValidator{response: true},
+				&mockStoredResponseFetcher{mockStoredResponses},
+			}
+
+			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(tt.givenRequestBody))
+
+			_, _, storedResponses, errL := deps.parseRequest(req)
+
+			if tt.expectedErrorCount == 0 {
+				assert.Equal(t, tt.expectedStoredResponses, storedResponses, "stored responses should match")
+			} else {
+				assert.Contains(t, errL[0].Error(), tt.expectedError, "error should match")
+			}
+
+		})
+	}
+}
+
+type mockStoredResponseFetcher struct {
+	data map[string]json.RawMessage
+}
+
+func (cf *mockStoredResponseFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
+	return nil, nil, nil
+}
+
+func (cf *mockStoredResponseFetcher) FetchResponses(ctx context.Context, ids []string) (data map[string]json.RawMessage, errs []error) {
+	return cf.data, nil
+}
+
 func getObject(t *testing.T, filename, key string) json.RawMessage {
 	requestData, err := ioutil.ReadFile("sample-requests/valid-whole/supplementary/" + filename)
 	if err != nil {
