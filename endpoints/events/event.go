@@ -351,7 +351,7 @@ func validateIntegrationType(integrationType string) error {
 		return errors.New("integration type length is too long")
 	}
 	for _, char := range integrationType {
-		if !(unicode.IsDigit(char) || unicode.IsLetter(char)) && char != '-' && char != '_' {
+		if !unicode.IsDigit(char) && !unicode.IsLetter(char) && char != '-' && char != '_' {
 			return errors.New("integration type can only contain numbers, letters and these characters '-', '_'")
 		}
 	}
