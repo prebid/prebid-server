@@ -184,6 +184,11 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 					pbReq.Imp[i].Banner.W = openrtb2.Int64Ptr(int64(width))
 					pbReq.Imp[i].Banner.H = openrtb2.Int64Ptr(int64(height))
 
+					// for usa requests -- set bidfloor to a min of 5.0
+					if pbReq.Device != nil && pbReq.Device.Geo != nil && strings.ToLower(pbReq.Device.Geo.Country) == "usa" && pbReq.Imp[i].BidFloor < 5.0 {
+						pbReq.Imp[i].BidFloor = 5.0
+					}
+
 					if len(params.Keywords) != 0 {
 						kvstr := prepareImpressionExt(params.Keywords)
 						pbReq.Imp[i].Ext = json.RawMessage([]byte(kvstr))
