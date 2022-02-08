@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -675,5 +676,72 @@ func TestEventRequestToUrl(t *testing.T) {
 			// validate
 			assert.Equal(t, test.want, expected)
 		})
+	}
+}
+
+func TestReadIntegrationType(t *testing.T) {
+	testCases := []struct {
+		description             string
+		givenHttpRequest        *http.Request
+		givenEventRequest       *analytics.EventRequest
+		expectedIntegrationType string
+		expectedError           error
+	}{
+		{
+			description:      "Integration type in http request is valid, expect same integration time and no errors",
+			givenHttpRequest: httptest.NewRequest("GET", "/event?t=win&b=bidId&f=b&ts=1000&x=1&a=accountId&bidder=bidder&int=TestIntegrationType", strings.NewReader("")),
+			givenEventRequest: &analytics.EventRequest{
+				Type:        analytics.Imp,
+				BidID:       "bidid",
+				AccountID:   "accountId",
+				Bidder:      "bidder",
+				Timestamp:   1234567,
+				Format:      analytics.Blank,
+				Analytics:   analytics.Enabled,
+				Integration: "",
+			},
+			expectedIntegrationType: "TestIntegrationType",
+			expectedError:           nil,
+		},
+		{
+			description:      "Integration type in http request is too long, expect too long error",
+			givenHttpRequest: httptest.NewRequest("GET", "/event?t=win&b=bidId&f=b&ts=1000&x=1&a=accountId&bidder=bidder&int=TestIntegrationTypeTooLongTestIntegrationTypeTooLongTestIntegrationType", strings.NewReader("")),
+			givenEventRequest: &analytics.EventRequest{
+				Type:        analytics.Imp,
+				BidID:       "bidid",
+				AccountID:   "accountId",
+				Bidder:      "bidder",
+				Timestamp:   1234567,
+				Format:      analytics.Blank,
+				Analytics:   analytics.Enabled,
+				Integration: "",
+			},
+			expectedError: errors.New("integration type length is too long"),
+		},
+		{
+			description:      "Integration type in http request contains invalid character, expect invalid character error",
+			givenHttpRequest: httptest.NewRequest("GET", "/event?t=win&b=bidId&f=b&ts=1000&x=1&a=accountId&bidder=bidder&int=Te$tIntegrationType", strings.NewReader("")),
+			givenEventRequest: &analytics.EventRequest{
+				Type:        analytics.Imp,
+				BidID:       "bidid",
+				AccountID:   "accountId",
+				Bidder:      "bidder",
+				Timestamp:   1234567,
+				Format:      analytics.Blank,
+				Analytics:   analytics.Enabled,
+				Integration: "",
+			},
+			expectedError: errors.New("integration type can only contain numbers, letters and these characters '-', '_'"),
+		},
+	}
+
+	for _, test := range testCases {
+		err := readIntegrationType(test.givenEventRequest, test.givenHttpRequest)
+		if err != nil {
+			assert.Equal(t, test.expectedError, err, test.description)
+		} else {
+			assert.Empty(t, err, test.description)
+			assert.Equalf(t, test.expectedIntegrationType, test.givenEventRequest.Integration, test.description)
+		}
 	}
 }
