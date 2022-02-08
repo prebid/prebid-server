@@ -10,7 +10,7 @@ import (
 func TestValidParams(t *testing.T) {
 	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
 	if err != nil {
-		t.Fatalf("Failed to fetch the json schema. %v", err)
+		t.Fatalf("Failed to fetch the JSON schema. %v", err)
 	}
 
 	for _, p := range validParams {
@@ -23,7 +23,7 @@ func TestValidParams(t *testing.T) {
 func TestInvalidParams(t *testing.T) {
 	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
 	if err != nil {
-		t.Fatalf("Failed to fetch the json schema. %v", err)
+		t.Fatalf("Failed to fetch the JSON schema. %v", err)
 	}
 
 	for _, p := range invalidParams {
