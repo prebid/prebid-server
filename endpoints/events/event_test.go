@@ -394,6 +394,41 @@ func TestShouldNotPassEventToAnalyticsReporterWhenAccountNotFound(t *testing.T) 
 	assert.Equal(t, "Account 'testacc' doesn't support events", string(d))
 }
 
+func TestShouldReturnBadRequestWhenIntegrationValueIsInvalid(t *testing.T) {
+	// mock AccountsFetcher
+	mockAccountsFetcher := &mockAccountsFetcher{}
+
+	// mock PBS Analytics Module
+	mockAnalyticsModule := &eventsMockAnalyticsModule{
+		Fail: false,
+	}
+
+	// mock config
+	cfg := &config.Configuration{
+		AccountDefaults: config.Account{},
+	}
+
+	// prepare
+	reqData := ""
+
+	req := httptest.NewRequest("GET", "/event?t=win&b=bidId&f=b&ts=1000&x=1&a=accountId&bidder=bidder&int=Te$tIntegrationType", strings.NewReader(reqData))
+	recorder := httptest.NewRecorder()
+
+	e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule)
+
+	// execute
+	e(recorder, req, nil)
+
+	d, err := ioutil.ReadAll(recorder.Result().Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// validate
+	assert.Equal(t, 400, recorder.Result().StatusCode, "Expected 400 on request with invalid integration type parameter")
+	assert.Equal(t, "invalid request: integration type can only contain numbers, letters and these characters '-', '_'\n", string(d))
+}
+
 func TestShouldNotPassEventToAnalyticsReporterWhenAccountEventNotEnabled(t *testing.T) {
 
 	// mock AccountsFetcher
