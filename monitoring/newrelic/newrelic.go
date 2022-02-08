@@ -25,6 +25,7 @@ func Make(cfg config.NewRelic) (*newrelic.Application, error) {
 		newrelic.ConfigDistributedTracerEnabled(true),
 		nrlogrus.ConfigLogger(l),
 		ConfigIgnoreStatusCodes([]int{http.StatusUnprocessableEntity, http.StatusBadGateway}),
+		ConfigTransactionTracerEnabled(false),
 	)
 }
 
