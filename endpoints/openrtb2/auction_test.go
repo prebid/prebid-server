@@ -4847,6 +4847,164 @@ func TestParseRequestStoredResponses(t *testing.T) {
 	}
 }
 
+func TestValidateStoredResp(t *testing.T) {
+	deps := &endpointDeps{
+		fakeUUIDGenerator{},
+		&nobidExchange{},
+		newParamsValidator(t),
+		&mockStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: maxSize},
+		&metricsConfig.NilMetricsEngine{},
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		false,
+		[]byte{},
+		openrtb_ext.BuildBidderMap(),
+		nil,
+		nil,
+		hardcodedResponseIPValidator{response: true},
+		&mockStoredResponseFetcher{},
+	}
+
+	testCases := []struct {
+		description         string
+		givenIsAmp          bool
+		givenRequestWrapper *openrtb_ext.RequestWrapper
+		expectedErrorList   []error
+		hasStoredResponses  bool
+	}{
+		{
+			description: "One imp with stored response, expect validate request to throw no errors",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID:  "Some-ID",
+					App: &openrtb2.App{},
+					Imp: []openrtb2.Imp{
+						{
+							ID: "Some-Imp-ID",
+							Banner: &openrtb2.Banner{
+								Format: []openrtb2.Format{
+									{
+										W: 600,
+										H: 500,
+									},
+									{
+										W: 300,
+										H: 600,
+									},
+								},
+							},
+							Ext: []byte(`{"appnexus":{"placementId": 12345678}, "prebid": {"storedAuctionResponse": {"id": "6d718149-6dfe-25ae-a7d6-305399f77f04"}}}`),
+						},
+					},
+				},
+			},
+			givenIsAmp:         false,
+			expectedErrorList:  []error{},
+			hasStoredResponses: true,
+		},
+		{
+			description: "Two imps with stored responses, expect validate request to throw no errors",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID:  "Some-ID",
+					App: &openrtb2.App{},
+					Imp: []openrtb2.Imp{
+						{
+							ID: "Some-Imp-ID",
+							Banner: &openrtb2.Banner{
+								Format: []openrtb2.Format{
+									{
+										W: 600,
+										H: 500,
+									},
+									{
+										W: 300,
+										H: 600,
+									},
+								},
+							},
+							Ext: []byte(`{"appnexus":{"placementId": 12345678}, "prebid": {"storedAuctionResponse": {"id": "6d718149-6dfe-25ae-a7d6-305399f77f04"}}}`),
+						},
+						{
+							ID: "Some-Imp-ID2",
+							Banner: &openrtb2.Banner{
+								Format: []openrtb2.Format{
+									{
+										W: 600,
+										H: 500,
+									},
+									{
+										W: 300,
+										H: 600,
+									},
+								},
+							},
+							Ext: []byte(`{"appnexus":{"placementId": 12345678}, "prebid": {"storedAuctionResponse": {"id": "6d718149-6dfe-25ae-a7d6-305399f77f04"}}}`),
+						},
+					},
+				},
+			},
+			givenIsAmp:         false,
+			expectedErrorList:  []error{},
+			hasStoredResponses: true,
+		},
+		{
+			description: "Two imps, one with stored response, expect validate request to throw validation error",
+			givenRequestWrapper: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID:  "Some-ID",
+					App: &openrtb2.App{},
+					Imp: []openrtb2.Imp{
+						{
+							ID: "Some-Imp-ID",
+							Banner: &openrtb2.Banner{
+								Format: []openrtb2.Format{
+									{
+										W: 600,
+										H: 500,
+									},
+									{
+										W: 300,
+										H: 600,
+									},
+								},
+							},
+							Ext: []byte(`{"appnexus":{"placementId": 12345678}, "prebid": {"storedAuctionResponse": {"id": "6d718149-6dfe-25ae-a7d6-305399f77f04"}}}`),
+						},
+						{
+							ID: "Some-Imp-ID2",
+							Banner: &openrtb2.Banner{
+								Format: []openrtb2.Format{
+									{
+										W: 600,
+										H: 500,
+									},
+									{
+										W: 300,
+										H: 600,
+									},
+								},
+							},
+							Ext: []byte(`{"appnexus":{"placementId": 12345678}}`),
+						},
+					},
+				},
+			},
+			givenIsAmp:         false,
+			expectedErrorList:  []error{errors.New("request validation failed. The StoredAuctionResponse.ID field must be completely present with, or completely absent from, all impressions in request. No StoredAuctionResponse data found for request.imp[1].ext.prebid \n")},
+			hasStoredResponses: true,
+		},
+	}
+
+	for _, test := range testCases {
+		errorList := deps.validateRequest(test.givenRequestWrapper, test.givenIsAmp, test.hasStoredResponses)
+		assert.Equalf(t, test.expectedErrorList, errorList, "Error doesn't match: %s\n", test.description)
+	}
+}
+
 type mockStoredResponseFetcher struct {
 	data map[string]json.RawMessage
 }

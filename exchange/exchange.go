@@ -1105,9 +1105,9 @@ func buildStoreAuctionResponse(storedActionResponses map[string]json.RawMessage)
 		for _, seat := range seatBids {
 			var bidsToAdd []*pbsOrtbBid
 			//set imp id from request
-			for _, bid := range seat.Bid {
-				bid.ImpID = impId
-				bidsToAdd = append(bidsToAdd, &pbsOrtbBid{bid: &bid})
+			for i := range seat.Bid {
+				seat.Bid[i].ImpID = impId
+				bidsToAdd = append(bidsToAdd, &pbsOrtbBid{bid: &seat.Bid[i]})
 			}
 
 			bidderName := openrtb_ext.BidderName(seat.Seat)

@@ -3667,6 +3667,190 @@ func TestFPD(t *testing.T) {
 
 }
 
+func TestStoredAuctionResponses(t *testing.T) {
+
+	type testIn struct {
+		StoredAuctionResponses map[string]json.RawMessage
+	}
+	type testResults struct {
+		BidResp *openrtb2.BidResponse
+	}
+
+	testCases := []struct {
+		desc     string
+		in       testIn
+		expected testResults
+	}{
+		{
+			desc: "Single imp with single stored response bid",
+			in: testIn{
+				StoredAuctionResponses: map[string]json.RawMessage{
+					"impression-id": json.RawMessage(`[{"bid": [{"id": "bid_id"}],"seat": "appnexus"}]`),
+				},
+			},
+			expected: testResults{BidResp: &openrtb2.BidResponse{
+				ID: "request-id",
+				SeatBid: []openrtb2.SeatBid{
+					{
+						Bid: []openrtb2.Bid{
+							{ID: "bid_id", ImpID: "impression-id", Ext: json.RawMessage(`{"prebid":{"type":""}}`)},
+						},
+						Seat: "appnexus",
+					},
+				},
+			}},
+		},
+		{
+			desc: "Single imp with multiple bids in stored response one bidder",
+			in: testIn{
+				StoredAuctionResponses: map[string]json.RawMessage{
+					"impression-id": json.RawMessage(`[{"bid": [{"id": "bid_id1"}, {"id": "bid_id2"}],"seat": "appnexus"}]`),
+				},
+			},
+			expected: testResults{BidResp: &openrtb2.BidResponse{
+				ID: "request-id",
+				SeatBid: []openrtb2.SeatBid{
+					{
+						Bid: []openrtb2.Bid{
+							{ID: "bid_id1", ImpID: "impression-id", Ext: json.RawMessage(`{"prebid":{"type":""}}`)},
+							{ID: "bid_id2", ImpID: "impression-id", Ext: json.RawMessage(`{"prebid":{"type":""}}`)},
+						},
+						Seat: "appnexus",
+					},
+				},
+			}},
+		},
+		{
+			desc: "Single imp with multiple bids in stored response two bidders",
+			in: testIn{
+				StoredAuctionResponses: map[string]json.RawMessage{
+					"impression-id": json.RawMessage(`[{"bid": [{"id": "apn_id1"}, {"id": "apn_id2"}],"seat": "appnexus"}, {"bid": [{"id": "rubicon_id1"}, {"id": "rubicon_id2"}],"seat": "rubicon"}]`),
+				},
+			},
+			expected: testResults{BidResp: &openrtb2.BidResponse{
+				ID: "request-id",
+				SeatBid: []openrtb2.SeatBid{
+					{
+						Bid: []openrtb2.Bid{
+							{ID: "apn_id1", ImpID: "impression-id", Ext: json.RawMessage(`{"prebid":{"type":""}}`)},
+							{ID: "apn_id2", ImpID: "impression-id", Ext: json.RawMessage(`{"prebid":{"type":""}}`)},
+						},
+						Seat: "appnexus",
+					},
+					{
+						Bid: []openrtb2.Bid{
+							{ID: "rubicon_id1", ImpID: "impression-id", Ext: json.RawMessage(`{"prebid":{"type":""}}`)},
+							{ID: "rubicon_id2", ImpID: "impression-id", Ext: json.RawMessage(`{"prebid":{"type":""}}`)},
+						},
+						Seat: "rubicon",
+					},
+				},
+			}},
+		},
+		{
+			desc: "Two imp with two bids in stored response two bidders, different bids number",
+			in: testIn{
+				StoredAuctionResponses: map[string]json.RawMessage{
+					"impression-id1": json.RawMessage(`[{"bid": [{"id": "apn_id1"}, {"id": "apn_id2"}],"seat": "appnexus"}]`),
+					"impression-id2": json.RawMessage(`[{"bid": [{"id": "apn_id1"}, {"id": "apn_id2"}],"seat": "appnexus"}, {"bid": [{"id": "rubicon_id1"}, {"id": "rubicon_id2"}],"seat": "rubicon"}]`),
+				},
+			},
+			expected: testResults{BidResp: &openrtb2.BidResponse{
+				ID: "request-id",
+				SeatBid: []openrtb2.SeatBid{
+					{
+						Bid: []openrtb2.Bid{
+							{ID: "apn_id1", ImpID: "impression-id1", Ext: json.RawMessage(`{"prebid":{"type":""}}`)},
+							{ID: "apn_id2", ImpID: "impression-id1", Ext: json.RawMessage(`{"prebid":{"type":""}}`)},
+							{ID: "apn_id1", ImpID: "impression-id2", Ext: json.RawMessage(`{"prebid":{"type":""}}`)},
+							{ID: "apn_id2", ImpID: "impression-id2", Ext: json.RawMessage(`{"prebid":{"type":""}}`)},
+						},
+						Seat: "appnexus",
+					},
+					{
+						Bid: []openrtb2.Bid{
+							{ID: "rubicon_id1", ImpID: "impression-id2", Ext: json.RawMessage(`{"prebid":{"type":""}}`)},
+							{ID: "rubicon_id2", ImpID: "impression-id2", Ext: json.RawMessage(`{"prebid":{"type":""}}`)},
+						},
+						Seat: "rubicon",
+					},
+				},
+			}},
+		}, {
+			desc: "Two imp with two bids in stored response two bidders",
+			in: testIn{
+				StoredAuctionResponses: map[string]json.RawMessage{
+					"impression-id1": json.RawMessage(`[{"bid": [{"id": "apn_id1"}, {"id": "apn_id2"}],"seat": "appnexus"}, {"bid": [{"id": "rubicon_id1"}, {"id": "rubicon_id2"}],"seat": "rubicon"}]`),
+					"impression-id2": json.RawMessage(`[{"bid": [{"id": "apn_id1"}, {"id": "apn_id2"}],"seat": "appnexus"}, {"bid": [{"id": "rubicon_id1"}, {"id": "rubicon_id2"}],"seat": "rubicon"}]`),
+				},
+			},
+			expected: testResults{BidResp: &openrtb2.BidResponse{
+				ID: "request-id",
+				SeatBid: []openrtb2.SeatBid{
+					{
+						Bid: []openrtb2.Bid{
+							{ID: "apn_id1", ImpID: "impression-id1", Ext: json.RawMessage(`{"prebid":{"type":""}}`)},
+							{ID: "apn_id2", ImpID: "impression-id1", Ext: json.RawMessage(`{"prebid":{"type":""}}`)},
+							{ID: "apn_id1", ImpID: "impression-id2", Ext: json.RawMessage(`{"prebid":{"type":""}}`)},
+							{ID: "apn_id2", ImpID: "impression-id2", Ext: json.RawMessage(`{"prebid":{"type":""}}`)},
+						},
+						Seat: "appnexus",
+					},
+					{
+						Bid: []openrtb2.Bid{
+							{ID: "rubicon_id1", ImpID: "impression-id1", Ext: json.RawMessage(`{"prebid":{"type":""}}`)},
+							{ID: "rubicon_id2", ImpID: "impression-id1", Ext: json.RawMessage(`{"prebid":{"type":""}}`)},
+							{ID: "rubicon_id1", ImpID: "impression-id2", Ext: json.RawMessage(`{"prebid":{"type":""}}`)},
+							{ID: "rubicon_id2", ImpID: "impression-id2", Ext: json.RawMessage(`{"prebid":{"type":""}}`)},
+						},
+						Seat: "rubicon",
+					},
+				},
+			}},
+		},
+	}
+
+	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
+	if error != nil {
+		t.Errorf("Failed to create a category Fetcher: %v", error)
+	}
+
+	e := new(exchange)
+	e.cache = &wellBehavedCache{}
+	e.me = &metricsConf.NilMetricsEngine{}
+	e.gDPR = gdpr.AlwaysAllow{}
+	e.categoriesFetcher = categoriesFetcher
+	e.bidIDGenerator = &mockBidIDGenerator{false, false}
+	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+
+	// Define mock incoming bid requeset
+	mockBidRequest := &openrtb2.BidRequest{
+		ID: "request-id",
+		Imp: []openrtb2.Imp{{
+			ID:    "impression-id",
+			Video: &openrtb2.Video{W: 400, H: 300},
+		}},
+	}
+
+	// Run tests
+	for _, test := range testCases {
+
+		auctionRequest := AuctionRequest{
+			BidRequest:             mockBidRequest,
+			Account:                config.Account{},
+			UserSyncs:              &emptyUsersync{},
+			StoredAuctionResponses: test.in.StoredAuctionResponses,
+		}
+
+		// Run test
+		outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, &DebugLog{})
+		assert.NoErrorf(t, err, "%s. HoldAuction error: %v \n", test.desc, err)
+
+		outBidResponse.Ext = nil
+		assert.Equal(t, test.expected.BidResp, outBidResponse, "Incorrect stored auction response")
+	}
+}
+
 type exchangeSpec struct {
 	GDPREnabled       bool                   `json:"gdpr_enabled"`
 	IncomingRequest   exchangeRequest        `json:"incomingRequest"`
