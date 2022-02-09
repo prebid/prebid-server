@@ -8,3 +8,10 @@ func ConfigIgnoreStatusCodes(ignoreStatusCodes []int) nr.ConfigOption {
 		cfg.ErrorCollector.IgnoreStatusCodes = append(cfg.ErrorCollector.IgnoreStatusCodes, ignoreStatusCodes...)
 	}
 }
+
+// ConfigTransactionTracerEnabled sets TransactionTracer to enabled/disabled
+func ConfigTransactionTracerEnabled(enabled bool) nr.ConfigOption {
+	return func(cfg *nr.Config) {
+		cfg.TransactionTracer.Enabled = enabled
+	}
+}
