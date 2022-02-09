@@ -295,28 +295,58 @@ type TCF2 struct {
 	PurposeOneTreatment TCF2PurposeOneTreatment `mapstructure:"purpose_one_treatment"`
 }
 
+// BasicEnforcementVendor checks if the given bidder is considered a basic enforcement vendor which indicates whether
+// weak vendor enforcement applies to that bidder.
+func (t *TCF2) BasicEnforcementVendor(openrtb_ext.BidderName) bool {
+	return false
+}
+
+// IsEnabled indicates if TCF2 is enabled
+func (t *TCF2) IsEnabled() bool {
+	return t.Enabled
+}
+
+// PurposeEnforced checks if full enforcement is turned on for a given purpose. With full enforcement enabled, the
+// GDPR full enforcement algorithm will execute for that purpose determining legal basis; otherwise it's skipped.
 func (t *TCF2) PurposeEnforced(purpose consentconstants.Purpose) (value bool) {
+	if t.PurposeConfigs[purpose] == nil {
+		return false
+	}
 	if t.PurposeConfigs[purpose].EnforcePurpose == TCF2FullEnforcement {
 		return true
 	}
 	return false
 }
 
+// PurposeEnforcingVendors checks if enforcing vendors is turned on for a given purpose. With enforcing vendors
+// enabled, the GDPR full enforcement algorithm considers the GVL when determining legal basis; otherwise it's skipped.
 func (t *TCF2) PurposeEnforcingVendors(purpose consentconstants.Purpose) (value bool) {
+	if t.PurposeConfigs[purpose] == nil {
+		return false
+	}
 	return t.PurposeConfigs[purpose].EnforceVendors
 }
 
+// PurposeVendorException checks if the specified bidder is considered a vendor exception for a given purpose. If a
+// bidder is a vendor exception, the GDPR full enforcement algorithm will bypass the legal basis calculation assuming
+// the request is valid and there isn't a "deny all" publisher restriction
 func (t *TCF2) PurposeVendorException(purpose consentconstants.Purpose, bidder openrtb_ext.BidderName) (value bool) {
+	if t.PurposeConfigs[purpose] == nil {
+		return false
+	}
 	if _, ok := t.PurposeConfigs[purpose].VendorExceptionMap[bidder]; ok {
 		return true
 	}
 	return false
 }
 
+// FeatureOneEnforced checks if special feature one is enforced. If it is enforced, geo may be used to determine...TODO
 func (t *TCF2) FeatureOneEnforced() (value bool) {
 	return t.SpecialFeature1.Enforce
 }
 
+// FeatureOneVendorException checks if the specified bidder is considered a vendor exception for special feature one.
+// If a bidder is a vendor exception...TODO
 func (t *TCF2) FeatureOneVendorException(bidder openrtb_ext.BidderName) (value bool) {
 	if _, ok := t.SpecialFeature1.VendorExceptionMap[bidder]; ok {
 		return true
@@ -324,10 +354,12 @@ func (t *TCF2) FeatureOneVendorException(bidder openrtb_ext.BidderName) (value b
 	return false
 }
 
+// PurposeOneTreatmentEnabled checks if purpose one treatment is enabled. If enabled...TODO
 func (t *TCF2) PurposeOneTreatmentEnabled() (value bool) {
 	return t.PurposeOneTreatment.Enabled
 }
 
+// PurposeOneTreatmentAccessAllowed checks if purpose one treatment access is allowed. If allowed...TODO
 func (t *TCF2) PurposeOneTreatmentAccessAllowed() (value bool) {
 	return t.PurposeOneTreatment.AccessAllowed
 }

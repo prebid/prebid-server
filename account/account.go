@@ -73,6 +73,7 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 	return account, nil
 }
 
+// setDerivedConfig modifies an account object by setting fields derived from other fields set in the account configuration
 func setDerivedConfig(account *config.Account) {
 	account.GDPR.PurposeConfigs = map[consentconstants.Purpose]*config.AccountGDPRPurpose{
 		1:  &account.GDPR.Purpose1,

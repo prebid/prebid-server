@@ -7,12 +7,13 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type TCF2ConfigReader interface { //TODO: change to TCF2Config
+// TCFConfigReader is an interface to access TCF2 configurations 
+type TCF2ConfigReader interface {
 	BasicEnforcementVendor(openrtb_ext.BidderName) bool
-	Enabled() bool
 	FeatureOneEnforced() bool
 	FeatureOneVendorException(openrtb_ext.BidderName) bool
 	IntegrationEnabled(config.IntegrationType) bool
+	IsEnabled() bool
 	PurposeEnforced(consentconstants.Purpose) bool
 	PurposeEnforcingVendors(consentconstants.Purpose) bool
 	PurposeVendorException(consentconstants.Purpose, openrtb_ext.BidderName) bool
@@ -20,32 +21,37 @@ type TCF2ConfigReader interface { //TODO: change to TCF2Config
 	PurposeOneTreatmentAccessAllowed() bool
 }
 
-type TCF2Config struct { //TODO: rename so no conflict - doesn't need to be exported. maybe just config or tcf2Config?
+type tcf2Config struct {
 	HostConfig    config.TCF2
 	AccountConfig config.AccountGDPR
 }
 
-func NewTCF2ConfigReader(hostConfig config.TCF2, accountConfig config.AccountGDPR) TCF2ConfigReader {
-	return &TCF2Config{
+// NewTCF2Config creates an instance of tcf2Config which implements the TCF2ConfigReader interface
+func NewTCF2Config(hostConfig config.TCF2, accountConfig config.AccountGDPR) *tcf2Config {
+	return &tcf2Config{
 		HostConfig:    hostConfig,
 		AccountConfig: accountConfig,
 	}
 }
 
-func (tc *TCF2Config) Enabled() bool {
+// IsEnabled indicates if TCF2 is enabled
+func (tc *tcf2Config) IsEnabled() bool {
 	return tc.HostConfig.Enabled
 }
 
-func (tc *TCF2Config) IntegrationEnabled(integrationType config.IntegrationType) bool {
+// IntegrationEnabled checks if a given integration type is enabled at the account level. If it is not set at the
+// account level, the host TCF2 enabled flag is used to determine if the integration type is enabled.
+func (tc *tcf2Config) IntegrationEnabled(integrationType config.IntegrationType) bool {
 	if accountEnabled := tc.AccountConfig.EnabledForIntegrationType(integrationType); accountEnabled != nil {
 		return *accountEnabled
 	}
 	return tc.HostConfig.Enabled
 }
 
-// PurposeEnforced checks if full enforcement is turned on for a given purpose. With full enforcement enabled, the
+// PurposeEnforced checks if full enforcement is turned on for a given purpose by first looking at the account
+// settings, and if not set there, defaulting to the host configuration. With full enforcement enabled, the
 // GDPR full enforcement algorithm will execute for that purpose determining legal basis; otherwise it's skipped.
-func (tc *TCF2Config) PurposeEnforced(purpose consentconstants.Purpose) bool {
+func (tc *tcf2Config) PurposeEnforced(purpose consentconstants.Purpose) bool {
 	if value, exists := tc.AccountConfig.PurposeEnforced(purpose); exists {
 		return value
 	}
@@ -54,9 +60,10 @@ func (tc *TCF2Config) PurposeEnforced(purpose consentconstants.Purpose) bool {
 	return value
 }
 
-// PurposeEnforcingVendors checks if enforcing vendors is turned on for a given purpose. With enforcing vendors
-// enabled, the GDPR full enforcement algorithm considers the GVL when determining legal basis; otherwise it's skipped.
-func (tc *TCF2Config) PurposeEnforcingVendors(purpose consentconstants.Purpose) bool {
+// PurposeEnforcingVendors checks if enforcing vendors is turned on for a given purpose by first looking at the
+// account settings, and if not set there, defaulting to the host configuration. With enforcing vendors enabled,
+// the GDPR full enforcement algorithm considers the GVL when determining legal basis; otherwise it's skipped.
+func (tc *tcf2Config) PurposeEnforcingVendors(purpose consentconstants.Purpose) bool {
 	if value, exists := tc.AccountConfig.PurposeEnforcingVendors(purpose); exists {
 		return value
 	}
@@ -65,10 +72,11 @@ func (tc *TCF2Config) PurposeEnforcingVendors(purpose consentconstants.Purpose) 
 	return value
 }
 
-// PurposeVendorException checks if the specified bidder is considered a vendor exception for a given purpose. If a bidder is a
-// vendor exception, the GDPR full enforcement algorithm will bypass the legal basis calculation assuming the request is valid
-// and there isn't "deny all" publisher restriction
-func (tc *TCF2Config) PurposeVendorException(purpose consentconstants.Purpose, bidder openrtb_ext.BidderName) bool {
+// PurposeVendorException checks if the specified bidder is considered a vendor exception for a given purpose by first
+// looking at the account settings, and if not set there, defaulting to the host configuration. If a bidder is a vendor
+// exception, the GDPR full enforcement algorithm will bypass the legal basis calculation assuming the request is valid
+// and there isn't a "deny all" publisher restriction
+func (tc *tcf2Config) PurposeVendorException(purpose consentconstants.Purpose, bidder openrtb_ext.BidderName) bool {
 	if value, exists := tc.AccountConfig.PurposeVendorException(purpose, bidder); exists {
 		return value
 	}
@@ -76,8 +84,9 @@ func (tc *TCF2Config) PurposeVendorException(purpose consentconstants.Purpose, b
 	return value
 }
 
-// FeatureOneEnforced checks if special feature one is enforced. If it is enforced, geo may be used to determine...TODO
-func (tc *TCF2Config) FeatureOneEnforced() bool {
+// FeatureOneEnforced checks if special feature one is enforced by first looking at the account settings, and if not
+// set there, defaulting to the host configuration. If it is enforced, geo may be used to determine...TODO
+func (tc *tcf2Config) FeatureOneEnforced() bool {
 	if value, exists := tc.AccountConfig.FeatureOneEnforced(); exists {
 		return value
 	}
@@ -85,9 +94,10 @@ func (tc *TCF2Config) FeatureOneEnforced() bool {
 	return value
 }
 
-// FeatureOneVendorException checks if the specified bidder is considered a vendor exception for special feature one. If a bider
+// FeatureOneVendorException checks if the specified bidder is considered a vendor exception for special feature one
+// by first looking at the account settings, and if not set there, defaulting to the host configuration. If a bidder
 // is a vendor exception...TODO
-func (tc *TCF2Config) FeatureOneVendorException(bidder openrtb_ext.BidderName) bool {
+func (tc *tcf2Config) FeatureOneVendorException(bidder openrtb_ext.BidderName) bool {
 	if value, exists := tc.AccountConfig.FeatureOneVendorException(bidder); exists {
 		return value
 	}
@@ -95,8 +105,9 @@ func (tc *TCF2Config) FeatureOneVendorException(bidder openrtb_ext.BidderName) b
 	return value
 }
 
-// PurposeOneTreatmentEnabled...TODO
-func (tc *TCF2Config) PurposeOneTreatmentEnabled() bool {
+// PurposeOneTreatmentEnabled checks if purpose one treatment is enabled by first looking at the account settings, and
+// if not set there, defaulting to the host configuration. If enabled...TODO
+func (tc *tcf2Config) PurposeOneTreatmentEnabled() bool {
 	if value, exists := tc.AccountConfig.PurposeOneTreatmentEnabled(); exists {
 		return value
 	}
@@ -104,8 +115,9 @@ func (tc *TCF2Config) PurposeOneTreatmentEnabled() bool {
 	return value
 }
 
-// PurposeOneTreatmentAccessAllowed...TODO
-func (tc *TCF2Config) PurposeOneTreatmentAccessAllowed() bool {
+// PurposeOneTreatmentAccessAllowed checks if purpose one treatment access is allowed by first looking at the account
+// settings, and if not set there, defaulting to the host configuration. If allowed...TODO
+func (tc *tcf2Config) PurposeOneTreatmentAccessAllowed() bool {
 	if value, exists := tc.AccountConfig.PurposeOneTreatmentAccessAllowed(); exists {
 		return value
 	}
@@ -113,8 +125,9 @@ func (tc *TCF2Config) PurposeOneTreatmentAccessAllowed() bool {
 	return value
 }
 
-// BasicEnforcementVendor...TODO...weakVendorEnforcement
-func (tc *TCF2Config) BasicEnforcementVendor(bidder openrtb_ext.BidderName) bool {
+// BasicEnforcementVendor checks if the given bidder is considered a basic enforcement vendor by looking at the account
+// settings, and if not set there, defaulting to false. If set, ...weakVendorEnforcement...TODO
+func (tc *tcf2Config) BasicEnforcementVendor(bidder openrtb_ext.BidderName) bool {
 	if value, exists := tc.AccountConfig.BasicEnforcementVendor(bidder); exists {
 		return value
 	}
