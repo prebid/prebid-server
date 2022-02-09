@@ -21,11 +21,20 @@ import (
 	"golang.org/x/net/context/ctxhttp"
 )
 
+// Region ...
+type Region string
+
+const (
+	MatureIOS     Region = "mature_ios"
+	MatureAndroid Region = "mature_android"
+)
+
 const MAX_IMPRESSIONS_PUBMATIC = 30
 
 type PubmaticAdapter struct {
-	http *adapters.HTTPAdapter
-	URI  string
+	http             *adapters.HTTPAdapter
+	URI              string
+	SupportedRegions map[Region]string
 }
 
 // used for cookies and such
@@ -408,6 +417,10 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ad
 
 	thisURI := a.URI
 
+	if endpoint, ok := a.SupportedRegions[Region(impData.pubmatic.Region)]; ok {
+		thisURI = endpoint
+	}
+
 	// If all the requests are invalid, Call to adaptor is skipped
 	if len(request.Imp) == 0 {
 		return nil, errs
@@ -716,12 +729,16 @@ func logf(msg string, args ...interface{}) {
 	}
 }
 
-func NewPubmaticLegacyAdapter(config *adapters.HTTPAdapterConfig, uri string) *PubmaticAdapter {
+func NewPubmaticLegacyAdapter(config *adapters.HTTPAdapterConfig, uri, matureIOSURI, matureAndroidURI string) *PubmaticAdapter {
 	a := adapters.NewHTTPAdapter(config)
 
 	return &PubmaticAdapter{
 		http: a,
 		URI:  uri,
+		SupportedRegions: map[Region]string{
+			MatureIOS:     matureIOSURI,
+			MatureAndroid: matureAndroidURI,
+		},
 	}
 }
 
@@ -729,6 +746,10 @@ func NewPubmaticLegacyAdapter(config *adapters.HTTPAdapterConfig, uri string) *P
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	bidder := &PubmaticAdapter{
 		URI: config.Endpoint,
+		SupportedRegions: map[Region]string{
+			MatureIOS:     config.XAPI.EndpointMatureIOS,
+			MatureAndroid: config.XAPI.EndpointMatureAndroid,
+		},
 	}
 	return bidder, nil
 }

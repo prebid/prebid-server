@@ -194,8 +194,12 @@ func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
 			cfg.Adapters[string(openrtb_ext.BidderMoloco)].XAPI.EndpointUSEast,
 			cfg.Adapters[string(openrtb_ext.BidderMoloco)].XAPI.EndpointEU,
 			cfg.Adapters[string(openrtb_ext.BidderMoloco)].XAPI.EndpointAPAC),
-		"personaly":  personaly.NewPersonalyLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPersonaly)].Endpoint),
-		"pubmatic":   pubmatic.NewPubmaticLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPubmatic)].Endpoint),
+		"personaly": personaly.NewPersonalyLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPersonaly)].Endpoint),
+		"pubmatic": pubmatic.NewPubmaticLegacyAdapter(
+			adapters.DefaultHTTPAdapterConfig,
+			cfg.Adapters[string(openrtb_ext.BidderPubmatic)].Endpoint,
+			cfg.Adapters[string(openrtb_ext.BidderPubmatic)].XAPI.EndpointMatureIOS,
+			cfg.Adapters[string(openrtb_ext.BidderPubmatic)].XAPI.EndpointMatureAndroid),
 		"pulsepoint": pulsepoint.NewPulsePointLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPulsepoint)].Endpoint),
 		"rubicon": rubicon.NewRubiconLegacyAdapter(
 			adapters.DefaultHTTPAdapterConfig,
