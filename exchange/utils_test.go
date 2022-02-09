@@ -35,7 +35,7 @@ func (p *permissionsMock) BidderSyncAllowed(ctx context.Context, cfg gdpr.TCF2Co
 	return true, nil
 }
 
-func (p *permissionsMock) AuctionActivitiesAllowed(ctx context.Context, cfg gdpr.TCF2ConfigReader, bidder openrtb_ext.BidderName, PublisherID string, gdpr gdpr.Signal, consent string) (allowBidRequest bool, passGeo bool, passID bool, err error) {
+func (p *permissionsMock) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName, PublisherID string, gdpr gdpr.Signal, consent string, aliasGVLIDs map[string]uint16) (allowBidRequest bool, passGeo bool, passID bool, err error) {
 	if p.allowAllBidders {
 		return true, p.passGeo, p.passID, p.activitiesError
 	}
@@ -2510,120 +2510,6 @@ func TestRemoveUnpermissionedEidsEmptyValidations(t *testing.T) {
 	}
 }
 
-func TestBuildXPrebidHeader(t *testing.T) {
-	testCases := []struct {
-		description   string
-		version       string
-		requestExt    *openrtb_ext.ExtRequest
-		requestAppExt *openrtb_ext.ExtApp
-		result        string
-	}{
-		{
-			description: "No versions",
-			version:     "",
-			result:      "pbs-go/unknown",
-		},
-		{
-			description: "pbs",
-			version:     "test-version",
-			result:      "pbs-go/test-version",
-		},
-		{
-			description: "prebid.js",
-			version:     "test-version",
-			requestExt: &openrtb_ext.ExtRequest{
-				Prebid: openrtb_ext.ExtRequestPrebid{
-					Channel: &openrtb_ext.ExtRequestPrebidChannel{
-						Name:    "pbjs",
-						Version: "test-pbjs-version",
-					},
-				},
-			},
-			result: "pbs-go/test-version,pbjs/test-pbjs-version",
-		},
-		{
-			description: "unknown prebid.js",
-			version:     "test-version",
-			requestExt: &openrtb_ext.ExtRequest{
-				Prebid: openrtb_ext.ExtRequestPrebid{
-					Channel: &openrtb_ext.ExtRequestPrebidChannel{
-						Name: "pbjs",
-					},
-				},
-			},
-			result: "pbs-go/test-version,pbjs/unknown",
-		},
-		{
-			description: "channel without a name",
-			version:     "test-version",
-			requestExt: &openrtb_ext.ExtRequest{
-				Prebid: openrtb_ext.ExtRequestPrebid{
-					Channel: &openrtb_ext.ExtRequestPrebidChannel{
-						Version: "test-version",
-					},
-				},
-			},
-			result: "pbs-go/test-version",
-		},
-		{
-			description: "prebid-mobile",
-			version:     "test-version",
-			requestAppExt: &openrtb_ext.ExtApp{
-				Prebid: openrtb_ext.ExtAppPrebid{
-					Source:  "prebid-mobile",
-					Version: "test-prebid-mobile-version",
-				},
-			},
-			result: "pbs-go/test-version,prebid-mobile/test-prebid-mobile-version",
-		},
-		{
-			description: "app ext without a source",
-			version:     "test-version",
-			requestAppExt: &openrtb_ext.ExtApp{
-				Prebid: openrtb_ext.ExtAppPrebid{
-					Version: "test-version",
-				},
-			},
-			result: "pbs-go/test-version",
-		},
-		{
-			description: "Version found in both req.Ext and req.App.Ext",
-			version:     "test-version",
-			requestExt: &openrtb_ext.ExtRequest{
-				Prebid: openrtb_ext.ExtRequestPrebid{
-					Channel: &openrtb_ext.ExtRequestPrebidChannel{
-						Name:    "pbjs",
-						Version: "test-pbjs-version",
-					},
-				},
-			},
-			requestAppExt: &openrtb_ext.ExtApp{
-				Prebid: openrtb_ext.ExtAppPrebid{
-					Source:  "prebid-mobile",
-					Version: "test-prebid-mobile-version",
-				},
-			},
-			result: "pbs-go/test-version,pbjs/test-pbjs-version,prebid-mobile/test-prebid-mobile-version",
-		},
-	}
-
-	for _, test := range testCases {
-		req := &openrtb2.BidRequest{}
-		if test.requestExt != nil {
-			reqExt, err := json.Marshal(test.requestExt)
-			assert.NoError(t, err, test.description+":err marshalling reqExt")
-			req.Ext = reqExt
-		}
-		if test.requestAppExt != nil {
-			reqAppExt, err := json.Marshal(test.requestAppExt)
-			assert.NoError(t, err, test.description+":err marshalling reqAppExt")
-			req.App = &openrtb2.App{Ext: reqAppExt}
-		}
-		result := buildXPrebidHeader(req, test.version)
-		assert.Equal(t, test.result, result, test.description+":result")
-	}
-}
-
 func TestCleanOpenRTBRequestsSChainMultipleBidders(t *testing.T) {
 	req := &openrtb2.BidRequest{
 		Site: &openrtb2.Site{},
@@ -2717,5 +2603,67 @@ func TestApplyFPD(t *testing.T) {
 	for _, testCase := range testCases {
 		applyFPD(testCase.inputFpd[testCase.bidderName], &testCase.inputRequest)
 		assert.Equal(t, testCase.expectedRequest, testCase.inputRequest, fmt.Sprintf("incorrect request after applying fpd, testcase %s", testCase.description))
+	}
+}
+
+func Test_parseAliasesGVLIDs(t *testing.T) {
+	type args struct {
+		orig *openrtb2.BidRequest
+	}
+	tests := []struct {
+		name      string
+		args      args
+		want      map[string]uint16
+		wantError bool
+	}{
+		{
+			"AliasGVLID Parsed Correctly",
+			args{
+				orig: &openrtb2.BidRequest{
+					Ext: json.RawMessage(`{"prebid":{"aliases":{"brightroll":"appnexus"}, "aliasgvlids":{"brightroll":1}}}`),
+				},
+			},
+			map[string]uint16{"brightroll": 1},
+			false,
+		},
+		{
+			"AliasGVLID parsing error",
+			args{
+				orig: &openrtb2.BidRequest{
+					Ext: json.RawMessage(`{"prebid":{"aliases":{"brightroll":"appnexus"}, "aliasgvlids": {"brightroll":"abc"}`),
+				},
+			},
+			nil,
+			true,
+		},
+		{
+			"Invalid AliasGVLID",
+			args{
+				orig: &openrtb2.BidRequest{
+					Ext: json.RawMessage(`{"prebid":{"aliases":{"brightroll":"appnexus"}, "aliasgvlids":"abc"}`),
+				},
+			},
+			nil,
+			true,
+		},
+		{
+			"Missing AliasGVLID",
+			args{
+				orig: &openrtb2.BidRequest{
+					Ext: json.RawMessage(`{"prebid":{"aliases":{"brightroll":"appnexus"}}`),
+				},
+			},
+			nil,
+			false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseAliasesGVLIDs(tt.args.orig)
+			assert.Equal(t, tt.want, got, "parseAliasesGVLIDs() got = %v, want %v", got, tt.want)
+			if !tt.wantError && err != nil {
+				t.Errorf("parseAliasesGVLIDs() expected error got nil")
+			}
+		})
 	}
 }

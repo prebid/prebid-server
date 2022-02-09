@@ -10,8 +10,7 @@
         },
         "ext": {
           "bidder": {
-            "endpoint": "ZZ123456PS",
-            "host": "testing.ssp.tappx.com/rtb/v2/"
+            "endpoint": "ZZ123456PS"
           }
         }
       }
