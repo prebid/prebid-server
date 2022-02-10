@@ -40,6 +40,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/rubicon"
 	"github.com/prebid/prebid-server/adapters/rubiconmraid"
 	"github.com/prebid/prebid-server/adapters/sovrn"
+	"github.com/prebid/prebid-server/adapters/tapjoy"
 	"github.com/prebid/prebid-server/adapters/taurusx"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/cache"
@@ -224,6 +225,9 @@ func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
 		"conversant": conversant.NewConversantLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderConversant)].Endpoint),
 		"adform":     adform.NewAdformLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderAdform)].Endpoint),
 		"sovrn":      sovrn.NewSovrnLegacyAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderSovrn)].Endpoint),
+		"tapjoy": tapjoy.NewTapjoyLegacyAdapter(
+			adapters.DefaultHTTPAdapterConfig,
+			cfg.Adapters[string(openrtb_ext.BidderTapjoy)].Endpoint),
 		"taurusx": taurusx.NewTaurusXLegacyAdapter(
 			adapters.DefaultHTTPAdapterConfig,
 			cfg.Adapters[string(openrtb_ext.BidderTaurusX)].Endpoint,

@@ -969,6 +969,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.sovrn.endpoint", "http://ap.lijit.com/rtb/bid?src=prebid_server")
 	v.SetDefault("adapters.synacormedia.endpoint", "http://{{.Host}}.technoratimedia.com/openrtb/bids/{{.Host}}")
 	v.SetDefault("adapters.tappx.endpoint", "http://{{.Host}}")
+	v.SetDefault("adapters.tapjoy.disabled", true)
+	v.SetDefault("adapters.tapjoy.endpoint", "http://legacy-discovery:7286/bid")
 	v.SetDefault("adapters.taurusx.disabled", true)
 	v.SetDefault("adapters.taurusx.endpoint", "https://tapjoy.rtb.rtblab.net/tapjoy/bid")
 	v.SetDefault("adapters.telaria.endpoint", "https://ads.tremorhub.com/ad/rtb/prebid")

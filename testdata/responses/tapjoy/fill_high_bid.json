@@ -1,0 +1,35 @@
+{
+  "id": "92c0d380d9bdb60a8802e8f695e10a6b0ba8726c",
+  "seatbid": [
+    {
+      "bid": [
+        {
+          "impid": "1",
+          "price": 73.385084,
+          "cid": "95629fac-5352-4946-b241-5e51973d61dd",
+          "crid": "dummy_crid",
+          "adomain": null,
+          "bundle": "com.igg.android.lordsmobile",
+          "ext": {
+            "third_party_amount": 0.009670782364193544,
+            "advertiser_amount": 0.2890508621931076,
+            "rtb_disable": 0,
+            "skadn": null
+          }
+        }
+      ]
+    }
+  ],
+  "ext": {
+    "algo": "135,0",
+    "exp_label": "root.mediation_dp",
+    "inventory_source": "applovin_programmatic_mediation",
+    "auction_id": "92c0d380d9bdb60a8802e8f695e10a6b0ba8726c",
+    "ad_view_id": "0aeb39c4-2fb9-48ee-a23d-f8992a9eab19",
+    "ml": {
+      "bucket_name": "i2i-1-0-10-a45_ecpiv3",
+      "models": "",
+      "eligible_for_active_models": 0
+    }
+  }
+}
