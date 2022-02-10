@@ -12,3 +12,7 @@ capabilities:
       - banner
       - video
       - native
+userSync:
+  redirect:
+    url: "https://t.adx.opera.com/pbs/sync?gdpr={{.GDPR}}&us_privacy={{.USPrivacy}}&gdpr_consent={{.GDPRConsent}}&r={{.RedirectURL}}"
+    userMacro: "${UID}"

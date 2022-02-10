@@ -1,6 +1,7 @@
 package axonix
 
 import (
+	"github.com/stretchr/testify/assert"
 	"testing"
 
 	"github.com/prebid/prebid-server/adapters/adapterstest"
@@ -8,9 +9,10 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-func TestJsonSamplesWithConfiguredURI(t *testing.T) {
+func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAxonix, config.Adapter{
-		Endpoint: "https://openrtb-us-east-1.axonix.com/supply/prebid-server/24cc9034-f861-47b8-a6a8-b7e0968c00b8"})
+		Endpoint: "https://axonix.com/supply/prebid-server/{{.AccountID}}",
+	})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -19,12 +21,8 @@ func TestJsonSamplesWithConfiguredURI(t *testing.T) {
 	adapterstest.RunJSONBidderTest(t, "axonixtest", bidder)
 }
 
-func TestJsonSamplesWithHardcodedURI(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderAxonix, config.Adapter{})
+func TestEndpointTemplateMalformed(t *testing.T) {
+	_, buildErr := Builder(openrtb_ext.BidderAxonix, config.Adapter{Endpoint: "{{Malformed}}"})
 
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
-
-	adapterstest.RunJSONBidderTest(t, "axonixtest", bidder)
+	assert.Error(t, buildErr)
 }

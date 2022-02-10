@@ -14,3 +14,7 @@ capabilities:
       - video
       - audio
       - native
+userSync:
+  redirect:
+    url: "https://bh.contextweb.com/rtset?pid=561205&ev=1&rurl={{.RedirectURL}}"
+    userMacro: "%%VGUID%%"

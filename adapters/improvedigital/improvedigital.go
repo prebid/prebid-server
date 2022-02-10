@@ -18,23 +18,38 @@ type ImprovedigitalAdapter struct {
 
 // MakeRequests makes the HTTP requests which should be made to fetch bids.
 func (a *ImprovedigitalAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var errors = make([]error, 0)
+	numRequests := len(request.Imp)
+	errors := make([]error, 0)
+	adapterRequests := make([]*adapters.RequestData, 0, numRequests)
 
+	// Split multi-imp request into multiple ad server requests. SRA is currently not recommended.
+	for i := 0; i < numRequests; i++ {
+		if adapterReq, err := a.makeRequest(*request, request.Imp[i]); err == nil {
+			adapterRequests = append(adapterRequests, adapterReq)
+		} else {
+			errors = append(errors, err)
+		}
+	}
+
+	return adapterRequests, errors
+}
+
+func (a *ImprovedigitalAdapter) makeRequest(request openrtb2.BidRequest, imp openrtb2.Imp) (*adapters.RequestData, error) {
+	request.Imp = []openrtb2.Imp{imp}
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
-		errors = append(errors, err)
-		return nil, errors
+		return nil, err
 	}
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 
-	return []*adapters.RequestData{{
+	return &adapters.RequestData{
 		Method:  "POST",
 		Uri:     a.endpoint,
 		Body:    reqJSON,
 		Headers: headers,
-	}}, errors
+	}, nil
 }
 
 // MakeBids unpacks the server's response into Bids.

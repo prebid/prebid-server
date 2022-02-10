@@ -11,6 +11,7 @@ import (
 
 	"encoding/json"
 
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -107,6 +108,11 @@ func TestExternalCacheURLValidate(t *testing.T) {
 			data:      ExternalCache{Scheme: "https", Host: "www.google.com", Path: "/path/v1"},
 			expErrors: 0,
 		},
+		{
+			desc:      "Host with port",
+			data:      ExternalCache{Scheme: "https", Host: "localhost:2424", Path: "/path/v1"},
+			expErrors: 0,
+		},
 	}
 	for _, test := range testCases {
 		errs := test.data.validate([]error{})
@@ -124,7 +130,6 @@ func TestDefaults(t *testing.T) {
 	cmpInts(t, "max_request_size", int(cfg.MaxRequestSize), 1024*256)
 	cmpInts(t, "host_cookie.ttl_days", int(cfg.HostCookie.TTL), 90)
 	cmpInts(t, "host_cookie.max_cookie_size_bytes", cfg.HostCookie.MaxCookieSizeBytes, 0)
-	cmpStrings(t, "datacache.type", cfg.DataCache.Type, "dummy")
 	cmpStrings(t, "adapters.pubmatic.endpoint", cfg.Adapters[string(openrtb_ext.BidderPubmatic)].Endpoint, "https://hbopenbid.pubmatic.com/translator?source=prebid-server")
 	cmpInts(t, "currency_converter.fetch_interval_seconds", cfg.CurrencyConverter.FetchIntervalSeconds, 1800)
 	cmpStrings(t, "currency_converter.fetch_url", cfg.CurrencyConverter.FetchURL, "https://cdn.jsdelivr.net/gh/prebid/currency-file@1/latest.json")
@@ -144,66 +149,76 @@ func TestDefaults(t *testing.T) {
 		Enabled: true,
 		Purpose1: TCF2Purpose{
 			Enabled:            true,
+			EnforcePurpose:     TCF2FullEnforcement,
 			EnforceVendors:     true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 		},
 		Purpose2: TCF2Purpose{
 			Enabled:            true,
+			EnforcePurpose:     TCF2FullEnforcement,
 			EnforceVendors:     true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 		},
 		Purpose3: TCF2Purpose{
 			Enabled:            true,
+			EnforcePurpose:     TCF2FullEnforcement,
 			EnforceVendors:     true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 		},
 		Purpose4: TCF2Purpose{
 			Enabled:            true,
+			EnforcePurpose:     TCF2FullEnforcement,
 			EnforceVendors:     true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 		},
 		Purpose5: TCF2Purpose{
 			Enabled:            true,
+			EnforcePurpose:     TCF2FullEnforcement,
 			EnforceVendors:     true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 		},
 		Purpose6: TCF2Purpose{
 			Enabled:            true,
+			EnforcePurpose:     TCF2FullEnforcement,
 			EnforceVendors:     true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 		},
 		Purpose7: TCF2Purpose{
 			Enabled:            true,
+			EnforcePurpose:     TCF2FullEnforcement,
 			EnforceVendors:     true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 		},
 		Purpose8: TCF2Purpose{
 			Enabled:            true,
+			EnforcePurpose:     TCF2FullEnforcement,
 			EnforceVendors:     true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 		},
 		Purpose9: TCF2Purpose{
 			Enabled:            true,
+			EnforcePurpose:     TCF2FullEnforcement,
 			EnforceVendors:     true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 		},
 		Purpose10: TCF2Purpose{
 			Enabled:            true,
+			EnforcePurpose:     TCF2FullEnforcement,
 			EnforceVendors:     true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 		},
-		SpecialPurpose1: TCF2Purpose{
-			Enabled:            true,
+		SpecialFeature1: TCF2SpecialFeature{
+			Enforce:            true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{},
 		},
@@ -213,19 +228,24 @@ func TestDefaults(t *testing.T) {
 		},
 	}
 	assert.Equal(t, expectedTCF2, cfg.GDPR.TCF2, "gdpr.tcf2")
+
+	// Assert User Sync Override Defaults To Nil
+	assert.Nil(t, cfg.Adapters["appnexus"].Syncer, "User Sync")
 }
 
 var fullConfig = []byte(`
 gdpr:
   host_vendor_id: 15
   default_value: "1"
-  non_standard_publishers: ["siteID","fake-site-id","appID","agltb3B1Yi1pbmNyDAsSA0FwcBiJkfIUDA"]
+  non_standard_publishers: ["pub1", "pub2"]
+  eea_countries: ["eea1", "eea2"]
   tcf2:
     purpose1:
       enforce_vendors: false
       vendor_exceptions: ["foo1a", "foo1b"]
     purpose2:
       enabled: false
+      enforce_purpose: "no"
       enforce_vendors: false
       vendor_exceptions: ["foo2"]
     purpose3:
@@ -252,7 +272,7 @@ gdpr:
     purpose10:
       enforce_vendors: false
       vendor_exceptions: ["foo10"]
-    special_purpose1:
+    special_feature1:
       vendor_exceptions: ["fooSP1"]
 ccpa:
   enforce: true
@@ -269,6 +289,7 @@ external_url: http://prebid-server.prebid.org/
 host: prebid-server.prebid.org
 port: 1234
 admin_port: 5678
+garbage_collector_threshold: 1
 auction_timeouts_ms:
   max: 123
   default: 50
@@ -305,11 +326,6 @@ metrics:
     account_adapter_details: true
     adapter_connections_metrics: true
     adapter_gdpr_request_blocked: true
-datacache:
-  type: postgres
-  filename: /usr/db/db.db
-  cache_size: 10000000
-  ttl_seconds: 3600
 adapters:
   appnexus:
     endpoint: http://ib.adnxs.com/some/endpoint
@@ -323,10 +339,13 @@ adapters:
     endpoint: http://ixtest.com/api
   rubicon:
     endpoint: http://rubitest.com/api
-    usersync_url: http://pixel.rubiconproject.com/sync.php?p=prebid
     xapi:
       username: rubiuser
       password: rubipw23
+    usersync:
+      redirect:
+        url: http://rubitest.com/sync
+        user_macro: "{UID}"
   brightroll:
     usersync_url: http://test-bh.ybp.yahoo.com/sync/appnexuspbs?gdpr={{.GDPR}}&euconsent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&url=%s
     endpoint: http://test-bid.ybp.yahoo.com/bid/appnexuspbs
@@ -354,52 +373,16 @@ adapters:
       tracker: anxsTrack
     disabled: true
     extra_info: "{\"native\":\"http://www.native.org/endpoint\",\"video\":\"http://www.video.org/endpoint\"}"
-  audienceNetwork:
-    endpoint: http://facebook.com/pbs
-    usersync_url: http://facebook.com/ortb/prebid-s2s
-    platform_id: abcdefgh1234
-  ix:
-    endpoint: http://ixtest.com/api
-  rubicon:
-    endpoint: http://rubitest.com/api
-    usersync_url: http://pixel.rubiconproject.com/sync.php?p=prebid
-    xapi:
-      username: rubiuser
-      password: rubipw23
-  brightroll:
-    usersync_url: http://test-bh.ybp.yahoo.com/sync/appnexuspbs?gdpr={{.GDPR}}&euconsent={{.GDPRConsent}}&url=%s
-    endpoint: http://test-bid.ybp.yahoo.com/bid/appnexuspbs
-  adkerneladn:
-     usersync_url: https://tag.adkernel.com/syncr?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r=
-blacklisted_apps: ["spamAppID","sketchy-app-id"]
 `)
 
 var invalidAdapterEndpointConfig = []byte(`
 adapters:
   appnexus:
     endpoint: ib.adnxs.com/some/endpoint
-  audienceNetwork:
-    endpoint: http://facebook.com/pbs
-    usersync_url: http://facebook.com/ortb/prebid-s2s
-    platform_id: abcdefgh1234
   brightroll:
-    usersync_url: http://http://test-bh.ybp.yahoo.com/sync/appnexuspbs?gdpr={{.GDPR}}&euconsent={{.GDPRConsent}}&url=%s
-  adkerneladn:
-     usersync_url: https://tag.adkernel.com/syncr?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r=
-`)
-
-var invalidUserSyncURLConfig = []byte(`
-adapters:
-  appnexus:
-    endpoint: http://ib.adnxs.com/some/endpoint
-  audienceNetwork:
-    endpoint: http://facebook.com/pbs
-    usersync_url: http://facebook.com/ortb/prebid-s2s
-    platform_id: abcdefgh1234
-  brightroll:
-    usersync_url: http//test-bh.ybp.yahoo.com/sync/appnexuspbs?gdpr={{.GDPR}}&euconsent={{.GDPRConsent}}&url=%s
-  adkerneladn:
-     usersync_url: http:\\tag.adkernel.com/syncr?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r=
+    usersync:
+      redirect:
+      url: http://http://test-bh.ybp.yahoo.com/sync/appnexuspbs?gdpr={{.GDPR}}&euconsent={{.GDPRConsent}}&url=%s
 `)
 
 var oldStoredRequestsConfig = []byte(`
@@ -423,6 +406,11 @@ func cmpBools(t *testing.T, key string, a bool, b bool) {
 	assert.Equal(t, a, b, "%s: %t != %t", key, a, b)
 }
 
+func cmpNils(t *testing.T, key string, a interface{}) {
+	t.Helper()
+	assert.Nilf(t, a, "%s: %t != nil", key, a)
+}
+
 func TestFullConfig(t *testing.T) {
 	v := viper.New()
 	SetupViper(v, "")
@@ -439,6 +427,7 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "host", cfg.Host, "prebid-server.prebid.org")
 	cmpInts(t, "port", cfg.Port, 1234)
 	cmpInts(t, "admin_port", cfg.AdminPort, 5678)
+	cmpInts(t, "garbage_collector_threshold", cfg.GarbageCollectorThreshold, 1)
 	cmpInts(t, "auction_timeouts_ms.default", int(cfg.AuctionTimeouts.Default), 50)
 	cmpInts(t, "auction_timeouts_ms.max", int(cfg.AuctionTimeouts.Max), 123)
 	cmpStrings(t, "cache.scheme", cfg.CacheURL.Scheme, "http")
@@ -459,19 +448,12 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "gdpr.default_value", cfg.GDPR.DefaultValue, "1")
 
 	//Assert the NonStandardPublishers was correctly unmarshalled
-	cmpStrings(t, "gdpr.non_standard_publishers", cfg.GDPR.NonStandardPublishers[0], "siteID")
-	cmpStrings(t, "gdpr.non_standard_publishers", cfg.GDPR.NonStandardPublishers[1], "fake-site-id")
-	cmpStrings(t, "gdpr.non_standard_publishers", cfg.GDPR.NonStandardPublishers[2], "appID")
-	cmpStrings(t, "gdpr.non_standard_publishers", cfg.GDPR.NonStandardPublishers[3], "agltb3B1Yi1pbmNyDAsSA0FwcBiJkfIUDA")
+	assert.Equal(t, []string{"pub1", "pub2"}, cfg.GDPR.NonStandardPublishers, "gdpr.non_standard_publishers")
+	assert.Equal(t, map[string]struct{}{"pub1": {}, "pub2": {}}, cfg.GDPR.NonStandardPublisherMap, "gdpr.non_standard_publishers Hash Map")
 
-	//Assert the NonStandardPublisherMap hash table was built correctly
-	var found bool
-	for i := 0; i < len(cfg.GDPR.NonStandardPublishers); i++ {
-		_, found = cfg.GDPR.NonStandardPublisherMap[cfg.GDPR.NonStandardPublishers[i]]
-		cmpBools(t, "cfg.GDPR.NonStandardPublisherMap", found, true)
-	}
-	_, found = cfg.GDPR.NonStandardPublisherMap["appnexus"]
-	cmpBools(t, "cfg.GDPR.NonStandardPublisherMap", found, false)
+	// Assert EEA Countries was correctly unmarshalled and the EEACountriesMap built correctly.
+	assert.Equal(t, []string{"eea1", "eea2"}, cfg.GDPR.EEACountries, "gdpr.eea_countries")
+	assert.Equal(t, map[string]struct{}{"eea1": {}, "eea2": {}}, cfg.GDPR.EEACountriesMap, "gdpr.eea_countries Hash Map")
 
 	cmpBools(t, "ccpa.enforce", cfg.CCPA.Enforce, true)
 	cmpBools(t, "lmt.enforce", cfg.LMT.Enforce, true)
@@ -490,66 +472,76 @@ func TestFullConfig(t *testing.T) {
 		Enabled: true,
 		Purpose1: TCF2Purpose{
 			Enabled:            true, // true by default
+			EnforcePurpose:     TCF2FullEnforcement,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo1a"), openrtb_ext.BidderName("foo1b")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo1a"): {}, openrtb_ext.BidderName("foo1b"): {}},
 		},
 		Purpose2: TCF2Purpose{
 			Enabled:            false,
+			EnforcePurpose:     TCF2NoEnforcement,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo2")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo2"): {}},
 		},
 		Purpose3: TCF2Purpose{
 			Enabled:            true, // true by default
+			EnforcePurpose:     TCF2FullEnforcement,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo3")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo3"): {}},
 		},
 		Purpose4: TCF2Purpose{
 			Enabled:            true, // true by default
+			EnforcePurpose:     TCF2FullEnforcement,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo4")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo4"): {}},
 		},
 		Purpose5: TCF2Purpose{
 			Enabled:            true, // true by default
+			EnforcePurpose:     TCF2FullEnforcement,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo5")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo5"): {}},
 		},
 		Purpose6: TCF2Purpose{
 			Enabled:            true, // true by default
+			EnforcePurpose:     TCF2FullEnforcement,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo6")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo6"): {}},
 		},
 		Purpose7: TCF2Purpose{
 			Enabled:            true, // true by default
+			EnforcePurpose:     TCF2FullEnforcement,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo7")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo7"): {}},
 		},
 		Purpose8: TCF2Purpose{
 			Enabled:            true, // true by default
+			EnforcePurpose:     TCF2FullEnforcement,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo8")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo8"): {}},
 		},
 		Purpose9: TCF2Purpose{
 			Enabled:            true, // true by default
+			EnforcePurpose:     TCF2FullEnforcement,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo9")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo9"): {}},
 		},
 		Purpose10: TCF2Purpose{
 			Enabled:            true, // true by default
+			EnforcePurpose:     TCF2FullEnforcement,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo10")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("foo10"): {}},
 		},
-		SpecialPurpose1: TCF2Purpose{
-			Enabled:            true, // true by default
+		SpecialFeature1: TCF2SpecialFeature{
+			Enforce:            true, // true by default
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("fooSP1")},
 			VendorExceptionMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("fooSP1"): {}},
 		},
@@ -568,30 +560,25 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "metrics.influxdb.username", cfg.Metrics.Influxdb.Username, "admin")
 	cmpStrings(t, "metrics.influxdb.password", cfg.Metrics.Influxdb.Password, "admin1324")
 	cmpInts(t, "metrics.influxdb.metric_send_interval", cfg.Metrics.Influxdb.MetricSendInterval, 30)
-	cmpStrings(t, "datacache.type", cfg.DataCache.Type, "postgres")
-	cmpStrings(t, "datacache.filename", cfg.DataCache.Filename, "/usr/db/db.db")
-	cmpInts(t, "datacache.cache_size", cfg.DataCache.CacheSize, 10000000)
-	cmpInts(t, "datacache.ttl_seconds", cfg.DataCache.TTLSeconds, 3600)
 	cmpStrings(t, "", cfg.CacheURL.GetBaseURL(), "http://prebidcache.net")
 	cmpStrings(t, "", cfg.GetCachedAssetURL("a0eebc99-9c0b-4ef8-bb00-6bb9bd380a11"), "http://prebidcache.net/cache?uuid=a0eebc99-9c0b-4ef8-bb00-6bb9bd380a11")
 	cmpStrings(t, "adapters.appnexus.endpoint", cfg.Adapters[string(openrtb_ext.BidderAppnexus)].Endpoint, "http://ib.adnxs.com/some/endpoint")
 	cmpStrings(t, "adapters.appnexus.extra_info", cfg.Adapters[string(openrtb_ext.BidderAppnexus)].ExtraAdapterInfo, "{\"native\":\"http://www.native.org/endpoint\",\"video\":\"http://www.video.org/endpoint\"}")
 	cmpStrings(t, "adapters.audiencenetwork.endpoint", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAudienceNetwork))].Endpoint, "http://facebook.com/pbs")
-	cmpStrings(t, "adapters.audiencenetwork.usersync_url", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAudienceNetwork))].UserSyncURL, "http://facebook.com/ortb/prebid-s2s")
 	cmpStrings(t, "adapters.audiencenetwork.platform_id", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAudienceNetwork))].PlatformID, "abcdefgh1234")
 	cmpStrings(t, "adapters.audiencenetwork.app_secret", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAudienceNetwork))].AppSecret, "987abc")
+	cmpStrings(t, "adapters.audiencenetwork.usersync_url", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAudienceNetwork))].UserSyncURL, "http://facebook.com/ortb/prebid-s2s")
 	cmpStrings(t, "adapters.beachfront.endpoint", cfg.Adapters[string(openrtb_ext.BidderBeachfront)].Endpoint, "https://display.bfmio.com/prebid_display")
 	cmpStrings(t, "adapters.beachfront.extra_info", cfg.Adapters[string(openrtb_ext.BidderBeachfront)].ExtraAdapterInfo, "{\"video_endpoint\":\"https://reachms.bfmio.com/bid.json?exchange_id\"}")
 	cmpStrings(t, "adapters.ix.endpoint", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderIx))].Endpoint, "http://ixtest.com/api")
 	cmpStrings(t, "adapters.rubicon.endpoint", cfg.Adapters[string(openrtb_ext.BidderRubicon)].Endpoint, "http://rubitest.com/api")
-	cmpStrings(t, "adapters.rubicon.usersync_url", cfg.Adapters[string(openrtb_ext.BidderRubicon)].UserSyncURL, "http://pixel.rubiconproject.com/sync.php?p=prebid")
 	cmpStrings(t, "adapters.rubicon.xapi.username", cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Username, "rubiuser")
 	cmpStrings(t, "adapters.rubicon.xapi.password", cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Password, "rubipw23")
+	cmpStrings(t, "adapters.rubicon.usersync.redirect.url", cfg.Adapters[string(openrtb_ext.BidderRubicon)].Syncer.Redirect.URL, "http://rubitest.com/sync")
+	cmpNils(t, "adapters.rubicon.usersync.iframe", cfg.Adapters[string(openrtb_ext.BidderRubicon)].Syncer.IFrame)
+	cmpStrings(t, "adapters.rubicon.usersync.redirect.user_macro", cfg.Adapters[string(openrtb_ext.BidderRubicon)].Syncer.Redirect.UserMacro, "{UID}")
 	cmpStrings(t, "adapters.brightroll.endpoint", cfg.Adapters[string(openrtb_ext.BidderBrightroll)].Endpoint, "http://test-bid.ybp.yahoo.com/bid/appnexuspbs")
-	cmpStrings(t, "adapters.brightroll.usersync_url", cfg.Adapters[string(openrtb_ext.BidderBrightroll)].UserSyncURL, "http://test-bh.ybp.yahoo.com/sync/appnexuspbs?gdpr={{.GDPR}}&euconsent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&url=%s")
-	cmpStrings(t, "adapters.adkerneladn.usersync_url", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAdkernelAdn))].UserSyncURL, "https://tag.adkernel.com/syncr?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r=")
 	cmpStrings(t, "adapters.rhythmone.endpoint", cfg.Adapters[string(openrtb_ext.BidderRhythmone)].Endpoint, "http://tag.1rx.io/rmp")
-	cmpStrings(t, "adapters.rhythmone.usersync_url", cfg.Adapters[string(openrtb_ext.BidderRhythmone)].UserSyncURL, "https://sync.1rx.io/usersync2/rmphb?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir=http%3A%2F%2Fprebid-server.prebid.org%2F%2Fsetuid%3Fbidder%3Drhythmone%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%5BRX_UUID%5D")
 	cmpBools(t, "account_required", cfg.AccountRequired, true)
 	cmpBools(t, "auto_gen_source_tid", cfg.AutoGenSourceTID, false)
 	cmpBools(t, "account_adapter_details", cfg.Metrics.Disabled.AccountAdapterDetails, true)
@@ -616,9 +603,6 @@ func TestUnmarshalAdapterExtraInfo(t *testing.T) {
 	// Assert correctly unmarshaled
 	assert.NoError(t, err, "invalid endpoint in config should return an error")
 
-	// Unescape quotes of JSON-formatted string
-	strings.Replace(cfg.Adapters[string(openrtb_ext.BidderAppnexus)].ExtraAdapterInfo, "\\\"", "\"", -1)
-
 	// Assert JSON-formatted string
 	assert.JSONEqf(t, `{"native":"http://www.native.org/endpoint","video":"http://www.video.org/endpoint"}`, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].ExtraAdapterInfo, "Unexpected value of the ExtraAdapterInfo String \n")
 
@@ -638,10 +622,22 @@ func TestUnmarshalAdapterExtraInfo(t *testing.T) {
 	assert.Equal(t, "http://www.video.org/endpoint", AppNexusAdapterExtraInfo.VideoEndpoint)
 }
 
-func TestValidConfig(t *testing.T) {
+func TestValidateConfig(t *testing.T) {
 	cfg := Configuration{
 		GDPR: GDPR{
 			DefaultValue: "1",
+			TCF2: TCF2{
+				Purpose1:  TCF2Purpose{EnforcePurpose: TCF2FullEnforcement},
+				Purpose2:  TCF2Purpose{EnforcePurpose: TCF2FullEnforcement},
+				Purpose3:  TCF2Purpose{EnforcePurpose: TCF2FullEnforcement},
+				Purpose4:  TCF2Purpose{EnforcePurpose: TCF2FullEnforcement},
+				Purpose5:  TCF2Purpose{EnforcePurpose: TCF2FullEnforcement},
+				Purpose6:  TCF2Purpose{EnforcePurpose: TCF2FullEnforcement},
+				Purpose7:  TCF2Purpose{EnforcePurpose: TCF2FullEnforcement},
+				Purpose8:  TCF2Purpose{EnforcePurpose: TCF2FullEnforcement},
+				Purpose9:  TCF2Purpose{EnforcePurpose: TCF2FullEnforcement},
+				Purpose10: TCF2Purpose{EnforcePurpose: TCF2FullEnforcement},
+			},
 		},
 		StoredRequests: StoredRequests{
 			Files: FileFetcherConfig{Enabled: true},
@@ -769,6 +765,329 @@ func TestMigrateConfigPurposeOneTreatment(t *testing.T) {
 	}
 }
 
+func TestMigrateConfigSpecialFeature1(t *testing.T) {
+	oldSpecialFeature1Config := []byte(`
+      gdpr:
+        tcf2:
+          special_purpose1:
+            enabled: true
+            vendor_exceptions: ["appnexus"]
+    `)
+	newSpecialFeature1Config := []byte(`
+      gdpr:
+        tcf2:
+          special_feature1:
+            enforce: true
+            vendor_exceptions: ["appnexus"]
+    `)
+	oldAndNewSpecialFeature1Config := []byte(`
+      gdpr:
+        tcf2:
+          special_purpose1:
+            enabled: false
+            vendor_exceptions: ["appnexus"]
+          special_feature1:
+            enforce: true
+            vendor_exceptions: ["rubicon"]
+    `)
+
+	tests := []struct {
+		description                         string
+		config                              []byte
+		wantSpecialFeature1Enforce          bool
+		wantSpecialFeature1VendorExceptions []string
+	}{
+		{
+			description: "New config and old config not set",
+			config:      []byte{},
+		},
+		{
+			description:                         "New config not set, old config set",
+			config:                              oldSpecialFeature1Config,
+			wantSpecialFeature1Enforce:          true,
+			wantSpecialFeature1VendorExceptions: []string{"appnexus"},
+		},
+		{
+			description:                         "New config set, old config not set",
+			config:                              newSpecialFeature1Config,
+			wantSpecialFeature1Enforce:          true,
+			wantSpecialFeature1VendorExceptions: []string{"appnexus"},
+		},
+		{
+			description:                         "New config and old config set",
+			config:                              oldAndNewSpecialFeature1Config,
+			wantSpecialFeature1Enforce:          true,
+			wantSpecialFeature1VendorExceptions: []string{"rubicon"},
+		},
+	}
+
+	for _, tt := range tests {
+		v := viper.New()
+		v.SetConfigType("yaml")
+		v.ReadConfig(bytes.NewBuffer(tt.config))
+
+		migrateConfigSpecialFeature1(v)
+
+		if len(tt.config) > 0 {
+			assert.Equal(t, tt.wantSpecialFeature1Enforce, v.Get("gdpr.tcf2.special_feature1.enforce").(bool), tt.description)
+			assert.Equal(t, tt.wantSpecialFeature1VendorExceptions, v.GetStringSlice("gdpr.tcf2.special_feature1.vendor_exceptions"), tt.description)
+		} else {
+			assert.Nil(t, v.Get("gdpr.tcf2.special_feature1.enforce"), tt.description)
+			assert.Nil(t, v.Get("gdpr.tcf2.special_feature1.vendor_exceptions"), tt.description)
+		}
+
+		var c Configuration
+		err := v.Unmarshal(&c)
+		assert.NoError(t, err, tt.description)
+		assert.Equal(t, tt.wantSpecialFeature1Enforce, c.GDPR.TCF2.SpecialFeature1.Enforce, tt.description)
+
+		// convert expected vendor exceptions to type BidderName
+		expectedVendorExceptions := make([]openrtb_ext.BidderName, 0, 0)
+		for _, ve := range tt.wantSpecialFeature1VendorExceptions {
+			expectedVendorExceptions = append(expectedVendorExceptions, openrtb_ext.BidderName(ve))
+		}
+		assert.ElementsMatch(t, expectedVendorExceptions, c.GDPR.TCF2.SpecialFeature1.VendorExceptions, tt.description)
+	}
+}
+
+func TestMigrateConfigTCF2PurposeEnabledFlags(t *testing.T) {
+	trueStr := "true"
+	falseStr := "false"
+
+	tests := []struct {
+		description                 string
+		config                      []byte
+		wantPurpose1EnforcePurpose  string
+		wantPurpose2EnforcePurpose  string
+		wantPurpose3EnforcePurpose  string
+		wantPurpose4EnforcePurpose  string
+		wantPurpose5EnforcePurpose  string
+		wantPurpose6EnforcePurpose  string
+		wantPurpose7EnforcePurpose  string
+		wantPurpose8EnforcePurpose  string
+		wantPurpose9EnforcePurpose  string
+		wantPurpose10EnforcePurpose string
+		wantPurpose1Enabled         string
+		wantPurpose2Enabled         string
+		wantPurpose3Enabled         string
+		wantPurpose4Enabled         string
+		wantPurpose5Enabled         string
+		wantPurpose6Enabled         string
+		wantPurpose7Enabled         string
+		wantPurpose8Enabled         string
+		wantPurpose9Enabled         string
+		wantPurpose10Enabled        string
+	}{
+		{
+			description: "New config and old config flags not set",
+			config:      []byte{},
+		},
+		{
+			description: "New config not set, old config set - use old flags",
+			config: []byte(`
+              gdpr:
+                tcf2:
+                  purpose1:
+                    enabled: false
+                  purpose2:
+                    enabled: true
+                  purpose3:
+                    enabled: false
+                  purpose4:
+                    enabled: true
+                  purpose5:
+                    enabled: false
+                  purpose6:
+                    enabled: true
+                  purpose7:
+                    enabled: false
+                  purpose8:
+                    enabled: true
+                  purpose9:
+                    enabled: false
+                  purpose10:
+                    enabled: true
+            `),
+			wantPurpose1EnforcePurpose:  TCF2NoEnforcement,
+			wantPurpose2EnforcePurpose:  TCF2FullEnforcement,
+			wantPurpose3EnforcePurpose:  TCF2NoEnforcement,
+			wantPurpose4EnforcePurpose:  TCF2FullEnforcement,
+			wantPurpose5EnforcePurpose:  TCF2NoEnforcement,
+			wantPurpose6EnforcePurpose:  TCF2FullEnforcement,
+			wantPurpose7EnforcePurpose:  TCF2NoEnforcement,
+			wantPurpose8EnforcePurpose:  TCF2FullEnforcement,
+			wantPurpose9EnforcePurpose:  TCF2NoEnforcement,
+			wantPurpose10EnforcePurpose: TCF2FullEnforcement,
+			wantPurpose1Enabled:         falseStr,
+			wantPurpose2Enabled:         trueStr,
+			wantPurpose3Enabled:         falseStr,
+			wantPurpose4Enabled:         trueStr,
+			wantPurpose5Enabled:         falseStr,
+			wantPurpose6Enabled:         trueStr,
+			wantPurpose7Enabled:         falseStr,
+			wantPurpose8Enabled:         trueStr,
+			wantPurpose9Enabled:         falseStr,
+			wantPurpose10Enabled:        trueStr,
+		},
+		{
+			description: "New config flags set, old config flags not set - use new flags",
+			config: []byte(`
+              gdpr:
+                tcf2:
+                  purpose1:
+                    enforce_purpose: "full"
+                  purpose2:
+                    enforce_purpose: "no"
+                  purpose3:
+                    enforce_purpose: "full"
+                  purpose4:
+                    enforce_purpose: "no"
+                  purpose5:
+                    enforce_purpose: "full"
+                  purpose6:
+                    enforce_purpose: "no"
+                  purpose7:
+                    enforce_purpose: "full"
+                  purpose8:
+                    enforce_purpose: "no"
+                  purpose9:
+                    enforce_purpose: "full"
+                  purpose10:
+                    enforce_purpose: "no"
+            `),
+			wantPurpose1EnforcePurpose:  TCF2FullEnforcement,
+			wantPurpose2EnforcePurpose:  TCF2NoEnforcement,
+			wantPurpose3EnforcePurpose:  TCF2FullEnforcement,
+			wantPurpose4EnforcePurpose:  TCF2NoEnforcement,
+			wantPurpose5EnforcePurpose:  TCF2FullEnforcement,
+			wantPurpose6EnforcePurpose:  TCF2NoEnforcement,
+			wantPurpose7EnforcePurpose:  TCF2FullEnforcement,
+			wantPurpose8EnforcePurpose:  TCF2NoEnforcement,
+			wantPurpose9EnforcePurpose:  TCF2FullEnforcement,
+			wantPurpose10EnforcePurpose: TCF2NoEnforcement,
+			wantPurpose1Enabled:         trueStr,
+			wantPurpose2Enabled:         falseStr,
+			wantPurpose3Enabled:         trueStr,
+			wantPurpose4Enabled:         falseStr,
+			wantPurpose5Enabled:         trueStr,
+			wantPurpose6Enabled:         falseStr,
+			wantPurpose7Enabled:         trueStr,
+			wantPurpose8Enabled:         falseStr,
+			wantPurpose9Enabled:         trueStr,
+			wantPurpose10Enabled:        falseStr,
+		},
+		{
+			description: "New config flags and old config flags set - use new flags",
+			config: []byte(`
+              gdpr:
+                tcf2:
+                  purpose1:
+                    enabled: false
+                    enforce_purpose: "full"
+                  purpose2:
+                    enabled: false
+                    enforce_purpose: "full"
+                  purpose3:
+                    enabled: false
+                    enforce_purpose: "full"
+                  purpose4:
+                    enabled: false
+                    enforce_purpose: "full"
+                  purpose5:
+                    enabled: false
+                    enforce_purpose: "full"
+                  purpose6:
+                    enabled: false
+                    enforce_purpose: "full"
+                  purpose7:
+                    enabled: false
+                    enforce_purpose: "full"
+                  purpose8:
+                    enabled: false
+                    enforce_purpose: "full"
+                  purpose9:
+                    enabled: false
+                    enforce_purpose: "full"
+                  purpose10:
+                    enabled: false
+                    enforce_purpose: "full"
+              `),
+			wantPurpose1EnforcePurpose:  TCF2FullEnforcement,
+			wantPurpose2EnforcePurpose:  TCF2FullEnforcement,
+			wantPurpose3EnforcePurpose:  TCF2FullEnforcement,
+			wantPurpose4EnforcePurpose:  TCF2FullEnforcement,
+			wantPurpose5EnforcePurpose:  TCF2FullEnforcement,
+			wantPurpose6EnforcePurpose:  TCF2FullEnforcement,
+			wantPurpose7EnforcePurpose:  TCF2FullEnforcement,
+			wantPurpose8EnforcePurpose:  TCF2FullEnforcement,
+			wantPurpose9EnforcePurpose:  TCF2FullEnforcement,
+			wantPurpose10EnforcePurpose: TCF2FullEnforcement,
+			wantPurpose1Enabled:         trueStr,
+			wantPurpose2Enabled:         trueStr,
+			wantPurpose3Enabled:         trueStr,
+			wantPurpose4Enabled:         trueStr,
+			wantPurpose5Enabled:         trueStr,
+			wantPurpose6Enabled:         trueStr,
+			wantPurpose7Enabled:         trueStr,
+			wantPurpose8Enabled:         trueStr,
+			wantPurpose9Enabled:         trueStr,
+			wantPurpose10Enabled:        trueStr,
+		},
+	}
+
+	for _, tt := range tests {
+		v := viper.New()
+		v.SetConfigType("yaml")
+		v.ReadConfig(bytes.NewBuffer(tt.config))
+
+		migrateConfigTCF2PurposeEnabledFlags(v)
+
+		if len(tt.config) > 0 {
+			assert.Equal(t, tt.wantPurpose1EnforcePurpose, v.GetString("gdpr.tcf2.purpose1.enforce_purpose"), tt.description)
+			assert.Equal(t, tt.wantPurpose2EnforcePurpose, v.GetString("gdpr.tcf2.purpose2.enforce_purpose"), tt.description)
+			assert.Equal(t, tt.wantPurpose3EnforcePurpose, v.GetString("gdpr.tcf2.purpose3.enforce_purpose"), tt.description)
+			assert.Equal(t, tt.wantPurpose4EnforcePurpose, v.GetString("gdpr.tcf2.purpose4.enforce_purpose"), tt.description)
+			assert.Equal(t, tt.wantPurpose5EnforcePurpose, v.GetString("gdpr.tcf2.purpose5.enforce_purpose"), tt.description)
+			assert.Equal(t, tt.wantPurpose6EnforcePurpose, v.GetString("gdpr.tcf2.purpose6.enforce_purpose"), tt.description)
+			assert.Equal(t, tt.wantPurpose7EnforcePurpose, v.GetString("gdpr.tcf2.purpose7.enforce_purpose"), tt.description)
+			assert.Equal(t, tt.wantPurpose8EnforcePurpose, v.GetString("gdpr.tcf2.purpose8.enforce_purpose"), tt.description)
+			assert.Equal(t, tt.wantPurpose9EnforcePurpose, v.GetString("gdpr.tcf2.purpose9.enforce_purpose"), tt.description)
+			assert.Equal(t, tt.wantPurpose10EnforcePurpose, v.GetString("gdpr.tcf2.purpose10.enforce_purpose"), tt.description)
+			assert.Equal(t, tt.wantPurpose1Enabled, v.GetString("gdpr.tcf2.purpose1.enabled"), tt.description)
+			assert.Equal(t, tt.wantPurpose2Enabled, v.GetString("gdpr.tcf2.purpose2.enabled"), tt.description)
+			assert.Equal(t, tt.wantPurpose3Enabled, v.GetString("gdpr.tcf2.purpose3.enabled"), tt.description)
+			assert.Equal(t, tt.wantPurpose4Enabled, v.GetString("gdpr.tcf2.purpose4.enabled"), tt.description)
+			assert.Equal(t, tt.wantPurpose5Enabled, v.GetString("gdpr.tcf2.purpose5.enabled"), tt.description)
+			assert.Equal(t, tt.wantPurpose6Enabled, v.GetString("gdpr.tcf2.purpose6.enabled"), tt.description)
+			assert.Equal(t, tt.wantPurpose7Enabled, v.GetString("gdpr.tcf2.purpose7.enabled"), tt.description)
+			assert.Equal(t, tt.wantPurpose8Enabled, v.GetString("gdpr.tcf2.purpose8.enabled"), tt.description)
+			assert.Equal(t, tt.wantPurpose9Enabled, v.GetString("gdpr.tcf2.purpose9.enabled"), tt.description)
+			assert.Equal(t, tt.wantPurpose10Enabled, v.GetString("gdpr.tcf2.purpose10.enabled"), tt.description)
+		} else {
+			assert.Nil(t, v.Get("gdpr.tcf2.purpose1.enforce_purpose"), tt.description)
+			assert.Nil(t, v.Get("gdpr.tcf2.purpose2.enforce_purpose"), tt.description)
+			assert.Nil(t, v.Get("gdpr.tcf2.purpose3.enforce_purpose"), tt.description)
+			assert.Nil(t, v.Get("gdpr.tcf2.purpose4.enforce_purpose"), tt.description)
+			assert.Nil(t, v.Get("gdpr.tcf2.purpose5.enforce_purpose"), tt.description)
+			assert.Nil(t, v.Get("gdpr.tcf2.purpose6.enforce_purpose"), tt.description)
+			assert.Nil(t, v.Get("gdpr.tcf2.purpose7.enforce_purpose"), tt.description)
+			assert.Nil(t, v.Get("gdpr.tcf2.purpose8.enforce_purpose"), tt.description)
+			assert.Nil(t, v.Get("gdpr.tcf2.purpose9.enforce_purpose"), tt.description)
+			assert.Nil(t, v.Get("gdpr.tcf2.purpose10.enforce_purpose"), tt.description)
+			assert.Nil(t, v.Get("gdpr.tcf2.purpose1.enabled"), tt.description)
+			assert.Nil(t, v.Get("gdpr.tcf2.purpose2.enabled"), tt.description)
+			assert.Nil(t, v.Get("gdpr.tcf2.purpose3.enabled"), tt.description)
+			assert.Nil(t, v.Get("gdpr.tcf2.purpose4.enabled"), tt.description)
+			assert.Nil(t, v.Get("gdpr.tcf2.purpose5.enabled"), tt.description)
+			assert.Nil(t, v.Get("gdpr.tcf2.purpose6.enabled"), tt.description)
+			assert.Nil(t, v.Get("gdpr.tcf2.purpose7.enabled"), tt.description)
+			assert.Nil(t, v.Get("gdpr.tcf2.purpose8.enabled"), tt.description)
+			assert.Nil(t, v.Get("gdpr.tcf2.purpose9.enabled"), tt.description)
+			assert.Nil(t, v.Get("gdpr.tcf2.purpose10.enabled"), tt.description)
+		}
+	}
+}
+
 func TestInvalidAdapterEndpointConfig(t *testing.T) {
 	v := viper.New()
 	SetupViper(v, "")
@@ -776,17 +1095,11 @@ func TestInvalidAdapterEndpointConfig(t *testing.T) {
 	v.SetConfigType("yaml")
 	v.ReadConfig(bytes.NewBuffer(invalidAdapterEndpointConfig))
 	_, err := New(v)
-	assert.Error(t, err, "invalid endpoint in config should return an error")
-}
 
-func TestInvalidAdapterUserSyncURLConfig(t *testing.T) {
-	v := viper.New()
-	SetupViper(v, "")
-	v.Set("gdpr.default_value", "0")
-	v.SetConfigType("yaml")
-	v.ReadConfig(bytes.NewBuffer(invalidUserSyncURLConfig))
-	_, err := New(v)
-	assert.Error(t, err, "invalid user_sync URL in config should return an error")
+	if assert.IsType(t, errortypes.AggregateError{}, err) {
+		aggErr := err.(errortypes.AggregateError)
+		assert.ElementsMatch(t, []error{errors.New("The endpoint: ib.adnxs.com/some/endpoint for appnexus is not a valid URL")}, aggErr.Errors)
+	}
 }
 
 func TestNegativeRequestSize(t *testing.T) {
@@ -847,6 +1160,30 @@ func TestMissingGDPRDefaultValue(t *testing.T) {
 
 	cfg, _ := newDefaultConfig(t)
 	assertOneError(t, cfg.validate(v), "gdpr.default_value is required and must be specified")
+}
+
+func TestInvalidEnforcePurpose(t *testing.T) {
+	cfg, v := newDefaultConfig(t)
+	cfg.GDPR.TCF2.Purpose1.EnforcePurpose = ""
+	cfg.GDPR.TCF2.Purpose2.EnforcePurpose = TCF2NoEnforcement
+	cfg.GDPR.TCF2.Purpose3.EnforcePurpose = TCF2NoEnforcement
+	cfg.GDPR.TCF2.Purpose4.EnforcePurpose = TCF2NoEnforcement
+	cfg.GDPR.TCF2.Purpose5.EnforcePurpose = "invalid1"
+	cfg.GDPR.TCF2.Purpose6.EnforcePurpose = "invalid2"
+	cfg.GDPR.TCF2.Purpose7.EnforcePurpose = TCF2FullEnforcement
+	cfg.GDPR.TCF2.Purpose8.EnforcePurpose = TCF2FullEnforcement
+	cfg.GDPR.TCF2.Purpose9.EnforcePurpose = TCF2FullEnforcement
+	cfg.GDPR.TCF2.Purpose10.EnforcePurpose = "invalid3"
+
+	errs := cfg.validate(v)
+
+	expectedErrs := []error{
+		errors.New("gdpr.tcf2.purpose1.enforce_purpose must be \"no\" or \"full\". Got "),
+		errors.New("gdpr.tcf2.purpose5.enforce_purpose must be \"no\" or \"full\". Got invalid1"),
+		errors.New("gdpr.tcf2.purpose6.enforce_purpose must be \"no\" or \"full\". Got invalid2"),
+		errors.New("gdpr.tcf2.purpose10.enforce_purpose must be \"no\" or \"full\". Got invalid3"),
+	}
+	assert.ElementsMatch(t, errs, expectedErrs, "gdpr.tcf2.purposeX.enforce_purpose should prevent invalid values but it doesn't")
 }
 
 func TestNegativeCurrencyConverterFetchInterval(t *testing.T) {
@@ -965,6 +1302,53 @@ func TestValidateAccountsConfigRestrictions(t *testing.T) {
 	assert.Contains(t, errs, errors.New("accounts.postgres: retrieving accounts via postgres not available, use accounts.files"))
 }
 
+func TestUserSyncFromEnv(t *testing.T) {
+	truePtr := true
+
+	// setup env vars for testing
+	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_APPNEXUS_USERSYNC_REDIRECT_URL"); ok {
+		defer os.Setenv("PBS_ADAPTERS_APPNEXUS_USERSYNC_REDIRECT_URL", oldval)
+	} else {
+		defer os.Unsetenv("PBS_ADAPTERS_APPNEXUS_USERSYNC_REDIRECT_URL")
+	}
+
+	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_APPNEXUS_USERSYNC_REDIRECT_USER_MACRO"); ok {
+		defer os.Setenv("PBS_ADAPTERS_APPNEXUS_USERSYNC_REDIRECT_USER_MACRO", oldval)
+	} else {
+		defer os.Unsetenv("PBS_ADAPTERS_APPNEXUS_USERSYNC_REDIRECT_USER_MACRO")
+	}
+
+	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_APPNEXUS_USERSYNC_SUPPORT_CORS"); ok {
+		defer os.Setenv("PBS_ADAPTERS_APPNEXUS_USERSYNC_SUPPORT_CORS", oldval)
+	} else {
+		defer os.Unsetenv("PBS_ADAPTERS_APPNEXUS_USERSYNC_SUPPORT_CORS")
+	}
+
+	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_RUBICON_USERSYNC_IFRAME_URL"); ok {
+		defer os.Setenv("PBS_ADAPTERS_RUBICON_USERSYNC_IFRAME_URL", oldval)
+	} else {
+		defer os.Unsetenv("PBS_ADAPTERS_RUBICON_USERSYNC_IFRAME_URL")
+	}
+
+	// set new
+	os.Setenv("PBS_ADAPTERS_APPNEXUS_USERSYNC_REDIRECT_URL", "http://some.url/sync?redirect={{.RedirectURL}}")
+	os.Setenv("PBS_ADAPTERS_APPNEXUS_USERSYNC_REDIRECT_USER_MACRO", "[UID]")
+	os.Setenv("PBS_ADAPTERS_APPNEXUS_USERSYNC_SUPPORT_CORS", "true")
+	os.Setenv("PBS_ADAPTERS_RUBICON_USERSYNC_IFRAME_URL", "http://somedifferent.url/sync?redirect={{.RedirectURL}}")
+
+	cfg, _ := newDefaultConfig(t)
+	assert.Equal(t, cfg.Adapters["appnexus"].Syncer.Redirect.URL, "http://some.url/sync?redirect={{.RedirectURL}}")
+	assert.Equal(t, cfg.Adapters["appnexus"].Syncer.Redirect.UserMacro, "[UID]")
+	assert.Nil(t, cfg.Adapters["appnexus"].Syncer.IFrame)
+	assert.Equal(t, cfg.Adapters["appnexus"].Syncer.SupportCORS, &truePtr)
+
+	assert.Equal(t, cfg.Adapters["rubicon"].Syncer.IFrame.URL, "http://somedifferent.url/sync?redirect={{.RedirectURL}}")
+	assert.Nil(t, cfg.Adapters["rubicon"].Syncer.Redirect)
+	assert.Nil(t, cfg.Adapters["rubicon"].Syncer.SupportCORS)
+
+	assert.Nil(t, cfg.Adapters["brightroll"].Syncer)
+}
+
 func newDefaultConfig(t *testing.T) (*Configuration, *viper.Viper) {
 	v := viper.New()
 	SetupViper(v, "")
@@ -991,4 +1375,59 @@ func doTimeoutTest(t *testing.T, expected int, requested int, max uint64, def ui
 	expectedDuration := time.Duration(expected) * time.Millisecond
 	limited := cfg.LimitAuctionTimeout(time.Duration(requested) * time.Millisecond)
 	assert.Equal(t, limited, expectedDuration, "Expected %dms timeout, got %dms", expectedDuration, limited/time.Millisecond)
+}
+
+func TestSpecialFeature1VendorExceptionMap(t *testing.T) {
+	baseConfig := []byte(`
+    gdpr:
+      default_value: 0
+      tcf2:
+        special_feature1:
+          vendor_exceptions: `)
+
+	tests := []struct {
+		description             string
+		configVendorExceptions  []byte
+		wantVendorExceptions    []openrtb_ext.BidderName
+		wantVendorExceptionsMap map[openrtb_ext.BidderName]struct{}
+	}{
+		{
+			description:             "nil vendor exceptions",
+			configVendorExceptions:  []byte(`null`),
+			wantVendorExceptions:    []openrtb_ext.BidderName{},
+			wantVendorExceptionsMap: map[openrtb_ext.BidderName]struct{}{},
+		},
+		{
+			description:             "no vendor exceptions",
+			configVendorExceptions:  []byte(`[]`),
+			wantVendorExceptions:    []openrtb_ext.BidderName{},
+			wantVendorExceptionsMap: map[openrtb_ext.BidderName]struct{}{},
+		},
+		{
+			description:             "one vendor exception",
+			configVendorExceptions:  []byte(`["vendor1"]`),
+			wantVendorExceptions:    []openrtb_ext.BidderName{openrtb_ext.BidderName("vendor1")},
+			wantVendorExceptionsMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("vendor1"): {}},
+		},
+		{
+			description:             "many exceptions",
+			configVendorExceptions:  []byte(`["vendor1","vendor2"]`),
+			wantVendorExceptions:    []openrtb_ext.BidderName{openrtb_ext.BidderName("vendor1"), openrtb_ext.BidderName("vendor2")},
+			wantVendorExceptionsMap: map[openrtb_ext.BidderName]struct{}{openrtb_ext.BidderName("vendor1"): {}, openrtb_ext.BidderName("vendor2"): {}},
+		},
+	}
+
+	for _, tt := range tests {
+		config := append(baseConfig, tt.configVendorExceptions...)
+
+		v := viper.New()
+		SetupViper(v, "")
+		v.SetConfigType("yaml")
+		v.ReadConfig(bytes.NewBuffer(config))
+		cfg, err := New(v)
+		assert.NoError(t, err, "Setting up config error", tt.description)
+
+		assert.Equal(t, tt.wantVendorExceptions, cfg.GDPR.TCF2.SpecialFeature1.VendorExceptions, tt.description)
+		assert.Equal(t, tt.wantVendorExceptionsMap, cfg.GDPR.TCF2.SpecialFeature1.VendorExceptionMap, tt.description)
+	}
 }

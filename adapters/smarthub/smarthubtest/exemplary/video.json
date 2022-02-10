@@ -1,0 +1,200 @@
+{
+  "mockBidRequest": {
+    "id": "id",
+    "imp": [
+      {
+        "id": "id",
+        "secure": 1,
+        "bidfloor": 0.01,
+        "bidfloorcur": "USD",
+        "video": {
+          "mimes": [
+            "video/mp4",
+            "video/ogg",
+            "video/webm"
+          ],
+          "minduration": 3,
+          "maxduration": 3000,
+          "protocols": [
+            2,
+            3,
+            5,
+            6,
+            7,
+            8
+          ],
+          "w": 480,
+          "h": 320,
+          "linearity": 1,
+          "playbackmethod": [
+            2
+          ],
+          "pos": 0
+        },
+        "ext": {
+          "bidder": {
+            "partnerName": "partnertest",
+            "seat": "9Q20EdGxzgWdfPYShScl",
+            "token": "zpl5iB5Ugpe9ofVTzi44WzfjZZYq1yer"
+          }
+        }
+      }
+    ],
+    "device": {
+      "ua": "UA",
+      "ip": "123.3.4.123"
+    },
+    "regs": {
+      "ext": {
+        "gdpr": 0
+      }
+    },
+    "user": {
+      "id": "userid"
+    },
+    "site": {
+      "id": "id",
+      "domain": "test,com",
+      "cat": [
+        "IAB12"
+      ],
+      "publisher": {
+        "id": "pubid"
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://partnertest-prebid.smart-hub.io/?seat=9Q20EdGxzgWdfPYShScl&token=zpl5iB5Ugpe9ofVTzi44WzfjZZYq1yer",
+        "body": {
+          "id": "id",
+          "imp": [
+            {
+              "id": "id",
+              "secure": 1,
+              "bidfloor": 0.01,
+              "bidfloorcur": "USD",
+              "video": {
+                "mimes": [
+                  "video/mp4",
+                  "video/ogg",
+                  "video/webm"
+                ],
+                "minduration": 3,
+                "maxduration": 3000,
+                "protocols": [
+                  2,
+                  3,
+                  5,
+                  6,
+                  7,
+                  8
+                ],
+                "w": 480,
+                "h": 320,
+                "linearity": 1,
+                "playbackmethod": [
+                  2
+                ],
+                "pos": 0
+              },
+              "ext": {
+                "bidder": {
+                  "partnerName": "partnertest",
+                  "seat": "9Q20EdGxzgWdfPYShScl",
+                  "token": "zpl5iB5Ugpe9ofVTzi44WzfjZZYq1yer"
+                }
+              }
+            }
+          ],
+          "device": {
+            "ua": "UA",
+            "ip": "123.3.4.123"
+          },
+          "regs": {
+            "ext": {
+              "gdpr": 0
+            }
+          },
+          "user": {
+            "id": "userid"
+          },
+          "site": {
+            "id": "id",
+            "domain": "test,com",
+            "cat": [
+              "IAB12"
+            ],
+            "publisher": {
+              "id": "pubid"
+            }
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "id",
+          "bidid": "id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "id",
+                  "impid": "id",
+                  "price": 0.1,
+                  "nurl": "http://test.com/nurl",
+                  "burl": "http://test.com/burl",
+                  "adm": "<VAST>",
+                  "adomain": [
+                    "test.com"
+                  ],
+                  "cat": [
+                    "IAB1"
+                  ],
+                  "cid": "cid",
+                  "crid": "crid",
+                  "ext": {
+                    "mediaType": "video"
+                  }
+                }
+              ],
+              "seat": "seat"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "id",
+            "impid": "id",
+            "price": 0.1,
+            "nurl": "http://test.com/nurl",
+            "burl": "http://test.com/burl",
+            "adm": "<VAST>",
+            "adomain": [
+              "test.com"
+            ],
+            "cat": [
+              "IAB1"
+            ],
+            "cid": "cid",
+            "crid": "crid",
+            "ext": {
+              "mediaType": "video"
+            }
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

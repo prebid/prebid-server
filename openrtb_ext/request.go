@@ -14,6 +14,9 @@ const FirstPartyDataContextExtKey = "context"
 // SKAdNExtKey defines the field name within request.ext reserved for Apple's SKAdNetwork.
 const SKAdNExtKey = "skadn"
 
+// GPIDKey defines the field name within request.ext reserved for the Global Placement ID (GPID),
+const GPIDKey = "gpid"
+
 // NativeExchangeSpecificLowerBound defines the lower threshold of exchange specific types for native ads. There is no upper bound.
 const NativeExchangeSpecificLowerBound = 500
 
@@ -21,14 +24,17 @@ const MaxDecimalFigures int = 15
 
 // ExtRequest defines the contract for bidrequest.ext
 type ExtRequest struct {
-	Prebid ExtRequestPrebid `json:"prebid"`
+	Prebid ExtRequestPrebid              `json:"prebid"`
+	SChain *ExtRequestPrebidSChainSChain `json:"schain,omitempty"`
 }
 
 // ExtRequestPrebid defines the contract for bidrequest.ext.prebid
 type ExtRequestPrebid struct {
 	Aliases              map[string]string         `json:"aliases,omitempty"`
+	AliasGVLIDs          map[string]uint16         `json:"aliasgvlids,omitempty"`
 	BidAdjustmentFactors map[string]float64        `json:"bidadjustmentfactors,omitempty"`
 	Cache                *ExtRequestPrebidCache    `json:"cache,omitempty"`
+	Channel              *ExtRequestPrebidChannel  `json:"channel,omitempty"`
 	Data                 *ExtRequestPrebidData     `json:"data,omitempty"`
 	Debug                bool                      `json:"debug,omitempty"`
 	Events               json.RawMessage           `json:"events,omitempty"`
@@ -36,7 +42,7 @@ type ExtRequestPrebid struct {
 	StoredRequest        *ExtStoredRequest         `json:"storedrequest,omitempty"`
 	SupportDeals         bool                      `json:"supportdeals,omitempty"`
 	Targeting            *ExtRequestTargeting      `json:"targeting,omitempty"`
-	BidderParams         interface{}               `json:"bidderparams,omitempty"`
+	BidderParams         json.RawMessage           `json:"bidderparams,omitempty"`
 
 	// NoSale specifies bidders with whom the publisher has a legal relationship where the
 	// passing of personally identifiable information doesn't constitute a sale per CCPA law.
@@ -48,6 +54,22 @@ type ExtRequestPrebid struct {
 	Macros map[string]string `json:"macros,omitempty"`
 
 	CurrencyConversions *ExtRequestCurrency `json:"currency,omitempty"`
+	BidderConfigs       []BidderConfig      `json:"bidderconfig,omitempty"`
+}
+
+type BidderConfig struct {
+	Bidders []string `json:"bidders,omitempty"`
+	Config  *Config  `json:"config,omitempty"`
+}
+
+type Config struct {
+	ORTB2 *ORTB2 `json:"ortb2,omitempty"`
+}
+
+type ORTB2 struct { //First party data
+	Site map[string]json.RawMessage `json:"site,omitempty"`
+	App  map[string]json.RawMessage `json:"app,omitempty"`
+	User map[string]json.RawMessage `json:"user,omitempty"`
 }
 
 type ExtRequestCurrency struct {
@@ -80,9 +102,10 @@ type ExtRequestPrebidSChainSChainNode struct {
 	Ext    json.RawMessage `json:"ext,omitempty"`
 }
 
-// SourceExt defines the contract for bidrequest.source.ext
-type SourceExt struct {
-	SChain ExtRequestPrebidSChainSChain `json:"schain"`
+// ExtRequestPrebidChannel defines the contract for bidrequest.ext.prebid.channel
+type ExtRequestPrebidChannel struct {
+	Name    string `json:"name"`
+	Version string `json:"version"`
 }
 
 // ExtRequestPrebidCache defines the contract for bidrequest.ext.prebid.cache
@@ -327,6 +350,7 @@ var priceGranularityOWCTVMed = PriceGranularity{
 // ExtRequestPrebidData defines Prebid's First Party Data (FPD) and related bid request options.
 type ExtRequestPrebidData struct {
 	EidPermissions []ExtRequestPrebidDataEidPermission `json:"eidpermissions"`
+	Bidders        []string                            `json:"bidders,omitempty"`
 }
 
 // ExtRequestPrebidDataEidPermission defines a filter rule for filter user.ext.eids

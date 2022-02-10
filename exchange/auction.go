@@ -299,14 +299,13 @@ func makeVAST(bid *openrtb2.Bid) string {
 		`<VASTAdTagURI><![CDATA[%v]]></VASTAdTagURI>` +
 		`<Impression></Impression><Creatives></Creatives>` +
 		`</Wrapper></Ad></VAST>`
-	adm := bid.AdM
 
-	if adm == "" {
+	if bid.AdM == "" {
 		return fmt.Sprintf(wrapperVASTTemplate, bid.NURL) // set nurl as VASTAdTagURI
 	}
 
-	if strings.HasPrefix(adm, "http") { // check if it contains URL
-		return fmt.Sprintf(wrapperVASTTemplate, adm) // set adm as VASTAdTagURI
+	if strings.HasPrefix(bid.AdM, "http") { // check if it contains URL
+		return fmt.Sprintf(wrapperVASTTemplate, bid.AdM) // set adm as VASTAdTagURI
 	}
 	return bid.AdM
 }
@@ -316,13 +315,6 @@ func valOrZero(useVal bool, val int) int {
 		return val
 	}
 	return 0
-}
-
-func maybeMake(shouldMake bool, capacity int) []prebid_cache_client.Cacheable {
-	if shouldMake {
-		return make([]prebid_cache_client.Cacheable, 0, capacity)
-	}
-	return nil
 }
 
 func cacheTTL(impTTL int64, bidTTL int64, defTTL int64, buffer int64) (ttl int64) {

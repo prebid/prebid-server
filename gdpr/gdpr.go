@@ -3,12 +3,10 @@ package gdpr
 import (
 	"context"
 	"net/http"
-	"strconv"
 
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/go-gdpr/vendorlist"
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -26,7 +24,7 @@ type Permissions interface {
 	// Determines whether or not to send PI information to a bidder, or mask it out.
 	//
 	// If the consent string was nonsensical, the returned error will be an ErrorMalformedConsent.
-	AuctionActivitiesAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string, weakVendorEnforcement bool) (allowBidReq bool, passGeo bool, passID bool, err error)
+	AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string, weakVendorEnforcement bool, aliasGVLIDs map[string]uint16) (allowBidReq bool, passGeo bool, passID bool, err error)
 }
 
 // Versions of the GDPR TCF technical specification.
@@ -79,28 +77,10 @@ func NewPermissions(ctx context.Context, cfg config.GDPR, vendorIDs map[openrtb_
 // An ErrorMalformedConsent will be returned by the Permissions interface if
 // the consent string argument was the reason for the failure.
 type ErrorMalformedConsent struct {
-	consent string
-	cause   error
+	Consent string
+	Cause   error
 }
 
 func (e *ErrorMalformedConsent) Error() string {
-	return "malformed consent string " + e.consent + ": " + e.cause.Error()
-}
-
-// SignalParse parses a raw signal and returns
-func SignalParse(rawSignal string) (Signal, error) {
-	if rawSignal == "" {
-		return SignalAmbiguous, nil
-	}
-
-	i, err := strconv.Atoi(rawSignal)
-
-	if err != nil {
-		return SignalAmbiguous, err
-	}
-	if i != 0 && i != 1 {
-		return SignalAmbiguous, &errortypes.BadInput{Message: "GDPR signal should be integer 0 or 1"}
-	}
-
-	return Signal(i), nil
+	return "malformed consent string " + e.Consent + ": " + e.Cause.Error()
 }

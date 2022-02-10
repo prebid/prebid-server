@@ -70,7 +70,7 @@ func (a *InvibesInternalParams) IsTestRequest() bool {
 }
 
 type InvibesAdapter struct {
-	EndpointTemplate template.Template
+	EndpointTemplate *template.Template
 }
 
 // Builder builds a new instance of the Invibes adapter for the given bidder with the given config.
@@ -81,7 +81,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	}
 
 	bidder := InvibesAdapter{
-		EndpointTemplate: *template,
+		EndpointTemplate: template,
 	}
 	return &bidder, nil
 }

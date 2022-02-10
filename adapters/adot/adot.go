@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
@@ -85,6 +87,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
 			if bidType, err := getMediaTypeForBid(&sb.Bid[i]); err == nil {
+				resolveMacros(&sb.Bid[i])
 				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 					Bid:     &sb.Bid[i],
 					BidType: bidType,
@@ -115,4 +118,14 @@ func getMediaTypeForBid(bid *openrtb2.Bid) (openrtb_ext.BidType, error) {
 	}
 
 	return "", fmt.Errorf("unrecognized bid type in response from adot")
+}
+
+// resolveMacros resolves OpenRTB macros in nurl and adm
+func resolveMacros(bid *openrtb2.Bid) {
+	if bid == nil {
+		return
+	}
+	price := strconv.FormatFloat(bid.Price, 'f', -1, 64)
+	bid.NURL = strings.Replace(bid.NURL, "${AUCTION_PRICE}", price, -1)
+	bid.AdM = strings.Replace(bid.AdM, "${AUCTION_PRICE}", price, -1)
 }

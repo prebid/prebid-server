@@ -1,0 +1,54 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "imp": [
+            {
+                "id": "test-imp-id",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        },
+                        {
+                            "w": 300,
+                            "h": 600
+                        }
+                    ]
+                },
+                "ext": {
+                    "bidder": {
+                        "auI": "1"
+                    }
+                }
+            }
+        ]
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "http://whatever.url?format=json&tzo=0",
+                "body": {
+                    "adUnits": [
+                        {
+                            "auId": "",
+                            "targetId": "-test-imp-id"
+                        }
+                    ],
+                    "context": "unknown",
+                    "metaData": {}
+                }
+            },
+            "mockResponse": {
+                "status": 400,
+                "body": {}
+            }
+        }
+    ],
+    "expectedMakeBidsErrors": [
+        {
+            "value": "Status code: 400, Request malformed",
+            "comparison": "literal"
+        }
+    ]
+}

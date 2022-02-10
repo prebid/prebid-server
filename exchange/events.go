@@ -2,10 +2,10 @@ package exchange
 
 import (
 	"encoding/json"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"time"
 
-	"github.com/evanphx/json-patch"
+	jsonpatch "github.com/evanphx/json-patch"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/endpoints/events"
@@ -40,11 +40,8 @@ func getEventTracking(requestExtPrebid *openrtb_ext.ExtRequestPrebid, ts time.Ti
 // modifyBidsForEvents adds bidEvents and modifies VAST AdM if necessary.
 func (ev *eventTracking) modifyBidsForEvents(seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, req *openrtb2.BidRequest, trackerURL string) map[openrtb_ext.BidderName]*pbsOrtbSeatBid {
 	for bidderName, seatBid := range seatBids {
-		// modifyingVastXMLAllowed := ev.isModifyingVASTXMLAllowed(bidderName.String())
 		for _, pbsBid := range seatBid.bids {
-			// if modifyingVastXMLAllowed {
 			ev.modifyBidVAST(pbsBid, bidderName, seatBid.bidderCoreName, req, trackerURL)
-			// }
 			pbsBid.bidEvents = ev.makeBidExtEvents(pbsBid, bidderName)
 		}
 	}

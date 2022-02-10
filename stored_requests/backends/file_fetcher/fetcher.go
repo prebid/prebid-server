@@ -33,6 +33,10 @@ func (fetcher *eagerFetcher) FetchRequests(ctx context.Context, requestIDs []str
 	return storedRequests, storedImpressions, errs
 }
 
+func (fetcher *eagerFetcher) FetchResponses(ctx context.Context, ids []string) (data map[string]json.RawMessage, errs []error) {
+	return nil, nil
+}
+
 // FetchAccount fetches the host account configuration for a publisher
 func (fetcher *eagerFetcher) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {
 	if len(accountID) == 0 {
