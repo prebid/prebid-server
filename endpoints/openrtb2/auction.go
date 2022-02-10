@@ -1888,13 +1888,13 @@ func (deps *endpointDeps) setIntegrationType(req *openrtb_ext.RequestWrapper, ac
 	}
 	reqPrebid := reqExt.GetPrebid()
 
-	if account == nil {
+	if account == nil || account.DefaultIntegration == "" {
 		return nil
 	}
 	if reqPrebid == nil {
 		reqPrebid = &openrtb_ext.ExtRequestPrebid{Integration: account.DefaultIntegration}
 		reqExt.SetPrebid(reqPrebid)
-	} else if reqPrebid.Integration == "" && account.DefaultIntegration != "" {
+	} else if reqPrebid.Integration == "" {
 		reqPrebid.Integration = account.DefaultIntegration
 		reqExt.SetPrebid(reqPrebid)
 	}

@@ -742,7 +742,7 @@ func TestReadIntegrationType(t *testing.T) {
 	for _, test := range testCases {
 		testEventRequest := &analytics.EventRequest{}
 		err := readIntegrationType(testEventRequest, test.givenHttpRequest)
-		if err != nil {
+		if test.expectedError != nil {
 			assert.Equal(t, test.expectedError, err, test.description)
 		} else {
 			assert.Empty(t, err, test.description)

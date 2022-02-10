@@ -720,7 +720,7 @@ func TestGetIntegrationType(t *testing.T) {
 
 	for _, test := range testCases {
 		integrationType, err := getIntegrationType(test.givenHttpRequest)
-		if err != nil {
+		if test.expectedError != nil {
 			assert.Equal(t, test.expectedError, err, test.description)
 		} else {
 			assert.Empty(t, err, test.description)

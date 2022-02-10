@@ -73,6 +73,7 @@ func (v *vtrackEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httpro
 	// get integration value from request parameter
 	integrationType, err := getIntegrationType(r)
 	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(fmt.Sprintf("Invalid integration type: %s\n", err.Error())))
 		return
 	}
