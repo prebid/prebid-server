@@ -147,6 +147,7 @@ type IBidderMacro interface {
 	MacroDeviceJS(string) string
 	MacroDeviceLanguage(string) string
 	MacroDeviceIFA(string) string
+	MacroDeviceIFAType(string) string
 	MacroDeviceDIDSHA1(string) string
 	MacroDeviceDIDMD5(string) string
 	MacroDeviceDPIDSHA1(string) string

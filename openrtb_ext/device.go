@@ -34,6 +34,8 @@ type ExtDevice struct {
 	// Description:
 	//   Prebid extensions for the Device object.
 	Prebid ExtDevicePrebid `json:"prebid"`
+
+	IFAType string `json:"ifa_type"`
 }
 
 // IOSAppTrackingStatus describes the values for iOS app tracking authorization status.

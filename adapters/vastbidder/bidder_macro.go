@@ -34,6 +34,7 @@ type BidderMacro struct {
 	VASTTag      *openrtb_ext.ExtImpVASTBidderTag
 	UserExt      *openrtb_ext.ExtUser
 	RegsExt      *openrtb_ext.ExtRegs
+	DeviceExt    *openrtb_ext.ExtDevice
 
 	//Impression level Request Headers
 	ImpReqHeaders http.Header
@@ -72,6 +73,15 @@ func (tag *BidderMacro) init() {
 		err := json.Unmarshal(tag.Request.Regs.Ext, &ext)
 		if nil == err {
 			tag.RegsExt = &ext
+		}
+	}
+
+	//Read Device Extensions
+	if nil != tag.Request.Device && nil != tag.Request.Device.Ext {
+		var ext openrtb_ext.ExtDevice
+		err := json.Unmarshal(tag.Request.Device.Ext, &ext)
+		if nil == err {
+			tag.DeviceExt = &ext
 		}
 	}
 }
@@ -984,6 +994,14 @@ func (tag *BidderMacro) MacroDeviceLanguage(key string) string {
 func (tag *BidderMacro) MacroDeviceIFA(key string) string {
 	if nil != tag.Request.Device {
 		return tag.Request.Device.IFA
+	}
+	return ""
+}
+
+//MacroDeviceIFAType contains definition for DeviceIFAType
+func (tag *BidderMacro) MacroDeviceIFAType(key string) string {
+	if nil != tag.DeviceExt {
+		return tag.DeviceExt.IFAType
 	}
 	return ""
 }

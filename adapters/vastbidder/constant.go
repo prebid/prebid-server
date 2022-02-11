@@ -133,6 +133,7 @@ const (
 	MacroDeviceJS        = `js`
 	MacroDeviceLanguage  = `lang`
 	MacroDeviceIFA       = `ifa`
+	MacroDeviceIFAType   = `ifa_type`
 	MacroDeviceDIDSHA1   = `didsha1`
 	MacroDeviceDIDMD5    = `didmd5`
 	MacroDeviceDPIDSHA1  = `dpidsha1`
