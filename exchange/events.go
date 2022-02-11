@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/evanphx/json-patch"
+	jsonpatch "github.com/evanphx/json-patch/v5"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/endpoints/events"

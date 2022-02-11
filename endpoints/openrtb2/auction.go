@@ -17,7 +17,7 @@ import (
 	"github.com/prebid/prebid-server/version"
 
 	"github.com/buger/jsonparser"
-	jsonpatch "github.com/evanphx/json-patch"
+	jsonpatch "github.com/evanphx/json-patch/v5"
 	"github.com/gofrs/uuid"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
