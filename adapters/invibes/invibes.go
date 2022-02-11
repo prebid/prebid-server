@@ -279,19 +279,17 @@ func (a *InvibesAdapter) makeParameter(invibesParams InvibesInternalParams, requ
 }
 
 func (a *InvibesAdapter) makeURL(request *openrtb2.BidRequest, domainID int) (string, error) {
-	host := "bid.videostep.com"
-	if domainID == 1 {
-		host = "adweb.videostepstage.com"
-	} else if domainID == 2 {
-		host = "adweb.invibesstage.com"
-	} else if domainID == 1001 {
-		host = "bid.videostep.com"
-	} else if domainID >= 1002 {
-		host = "bid" + strconv.Itoa(domainID-1000) + ".videostep.com"
+	var subdomain string
+	if domainID == 0 || domainID == 1 || domainID == 1001 {
+		subdomain = "bid"
+	} else if domainID < 1002 {
+		subdomain = "bid" + strconv.Itoa(domainID)
+	} else {
+		subdomain = "bid" + strconv.Itoa(domainID-1000)
 	}
 
 	var endpointURL *url.URL
-	endpointParams := macros.EndpointTemplateParams{Host: host}
+	endpointParams := macros.EndpointTemplateParams{ZoneID: subdomain}
 	host, err := macros.ResolveMacros(a.EndpointTemplate, endpointParams)
 
 	if err == nil {
