@@ -197,6 +197,14 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		return
 	}
 
+	// Set Integration Information
+	err := deps.setIntegrationType(req, account)
+	if err != nil {
+		errL = append(errL, err)
+		writeError(errL, w, &labels)
+		return
+	}
+
 	// rebuild/resync the request in the request wrapper.
 	if err := req.RebuildRequest(); err != nil {
 		errL = append(errL, err)
@@ -1871,4 +1879,24 @@ func checkIfAppRequest(request []byte) (bool, error) {
 		return true, nil
 	}
 	return false, nil
+}
+
+func (deps *endpointDeps) setIntegrationType(req *openrtb_ext.RequestWrapper, account *config.Account) error {
+	reqExt, err := req.GetRequestExt()
+	if err != nil {
+		return err
+	}
+	reqPrebid := reqExt.GetPrebid()
+
+	if account == nil || account.DefaultIntegration == "" {
+		return nil
+	}
+	if reqPrebid == nil {
+		reqPrebid = &openrtb_ext.ExtRequestPrebid{Integration: account.DefaultIntegration}
+		reqExt.SetPrebid(reqPrebid)
+	} else if reqPrebid.Integration == "" {
+		reqPrebid.Integration = account.DefaultIntegration
+		reqExt.SetPrebid(reqPrebid)
+	}
+	return nil
 }
