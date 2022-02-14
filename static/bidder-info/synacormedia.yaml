@@ -1,5 +1,5 @@
 maintainer:
-  email: "eng-demand@synacor.com"
+  email: "eng-demand@imds.tv"
 capabilities:
   app:
     mediaTypes:
@@ -11,7 +11,7 @@ capabilities:
       - video
 userSync:
   iframe:
-    url: "https://sync.technoratimedia.com/services?srv=cs&pid=70&cb={{.RedirectURL}}"
+    url: "https://ad-cdn.technoratimedia.com/html/usersync.html?cb={{.RedirectURL}}"
     userMacro: "[USER_ID]"
 userSync:
   # synacormedia supports user syncing, but requires configuration by the host. contact this
