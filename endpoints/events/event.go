@@ -145,6 +145,10 @@ func ParseEventRequest(r *http.Request) (*analytics.EventRequest, []error) {
 		if err := readVType(event, r); err != nil {
 			errs = append(errs, err)
 		}
+	} else {
+		if t := r.URL.Query().Get(VTypeParameter); t != "" {
+			errs = append(errs, &errortypes.BadInput{Message: "parameter 'vtype' is only required for t=vast"})
+		}
 	}
 
 	// validate bidid
