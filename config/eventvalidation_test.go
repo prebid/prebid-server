@@ -6,183 +6,330 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// isValidCreateElement tests
-func TestIsValidCreateElementEmpty(t *testing.T) {
-	assert.False(t, isValidCreateElement(""))
-}
-func TestIsValidCreateElementFalse(t *testing.T) {
-	assert.False(t, isValidCreateElement("invalid_element"))
-}
-func TestIsValidCreateElementTrue(t *testing.T) {
-	assert.True(t, isValidCreateElement("tracking"))
-}
-func TestIsValidCreateElementCaseSensitive(t *testing.T) {
-	assert.False(t, isValidCreateElement("Tracking"))
-}
-
-// isValidType tests
-func TestIsValidTypeEmpty(t *testing.T) {
-	assert.True(t, isValidType(VASTEvent{
-		Type: "",
-	}))
-}
-
-// type shuold NOT be empty when create element is tracking
-func TestIsValidTypeEmptyWithCreateElementTracking(t *testing.T) {
-	assert.False(t, isValidType(VASTEvent{
-		CreateElement: "tracking",
-		Type:          "",
-	}))
-}
-
-func TestIsValidTypeFalse(t *testing.T) {
-	assert.False(t, isValidType(VASTEvent{
-		CreateElement: "tracking",
-		Type:          "invalid_type",
-	}))
-}
-func TestIsValidTypeTrue(t *testing.T) {
-	assert.True(t, isValidType(VASTEvent{
-		CreateElement: "tracking",
-		Type:          "complete",
-	}))
-}
-
-func TestIsValidTypeCaseSensitive(t *testing.T) {
-	assert.False(t, isValidType(VASTEvent{
-		CreateElement: "tracking",
-		Type:          "COMPlete",
-	}))
-}
-
-// isValidURL tests
-func TestIsValidURLEmpty(t *testing.T) {
-	assert.False(t, isValidURL(""))
-}
-func TestIsValidURLTrue(t *testing.T) {
-	assert.True(t, isValidURL("http://PREBID.ORG"))
-	assert.True(t, isValidURL("https://PBS_HOST/event?t=##PBS-EVENTTYPE##&vtype=##PBS-VASTEVENT##&b=##PBS-BIDID##&f=i&a=##PBS-ACCOUNTID##&ts=##PBS-TIMESTAMP##&bidder=##PBS-BIDDER##&int=##PBS-INTEGRATION##&mt=##PBS-MEDIATYPE##&ch=##PBS-CHANNEL##&aid=##PBS-AUCTIONID##&l=##PBS-LINEID##"))
-
-}
-func TestIsValidURLFalse(t *testing.T) {
-	assert.False(t, isValidURL("HTTP://PREBID.ORG"))
-	assert.False(t, isValidURL("HTTPE://PREBID.ORG"))
-	assert.False(t, isValidURL("HTTPE://PREBID.ORG:8000"))
-	assert.False(t, isValidURL("https://prebid.org::8000"))
-}
-func TestIsValidURLWithPortTrue(t *testing.T) {
-	assert.True(t, isValidURL("https://prebid.org:8000"))
-}
-
-// isTrackingEvent tests
-func TestIsTrackingEventEmpty(t *testing.T) {
-	assert.False(t, isTrackingEvent(VASTEvent{}))
-}
-func TestIsTrackingEventTrue(t *testing.T) {
-	assert.True(t, isTrackingEvent(VASTEvent{
-		CreateElement: "tracking",
-	}))
-}
-func TestIsTrackingEventCaseSensitive(t *testing.T) {
-	assert.False(t, isTrackingEvent(VASTEvent{
-		CreateElement: "Tracking",
-	}))
-}
-
-// validateVASTEvent tests
-
-// tests for
-// ** there must be at least one url in each vast event object
-
-// expect no error as ExcludeDefaultURL=false will consider
-// host level default_url
-func TestVASTEventWithNoURLAndExcludeDefaultURLFalse(t *testing.T) {
-	assert.Nil(t, validateVASTEvent(VASTEvent{
-		CreateElement:     "tracking",
-		Type:              "start",
-		ExcludeDefaultURL: false,
-		URLs:              nil,
-	}, 0))
-}
-
-// expect error (non nil object) as ExcludeDefaultURL=true and no urls
-func TestVASTEventWithNoURLAndExcludeDefaultURLTrue(t *testing.T) {
-	assert.NotNil(t, validateVASTEvent(VASTEvent{
-		CreateElement:     "tracking",
-		Type:              "start",
-		ExcludeDefaultURL: true,
-		URLs:              nil,
-	}, 0))
-}
-
-// expect error  i.e. non nil object when create element is invalid
-func TestValidateVASTEventInvalidCreateElement(t *testing.T) {
-	assert.NotNil(t, validateVASTEvent(VASTEvent{}, 0))
-}
-
-// expect error (non nil object) when create_element=tracking and type is invalid
-func TestValidateVASTEventInvalidTypeForTrackingCreateElement(t *testing.T) {
-	assert.NotNil(t, validateVASTEvent(VASTEvent{
-		CreateElement: "tracking",
-		Type:          "some_type",
-	}, 0))
-}
-
-// expect error (non nil object) when URLs[] contains invalid values
-func TestValidateVASTEventInvalidURLs(t *testing.T) {
-	assert.NotNil(t, validateVASTEvent(VASTEvent{
-		CreateElement: "impression",
-		URLs:          []string{"http://url.com?k1=v1&k2=###PBS-MACRO##", "httpE://invalid.url"},
-	}, 0))
-}
-
-// expect error (non nil object) when type is valid but create-element is not 'tracking'
-func TestValidateVASTEventTypeNotApplicable(t *testing.T) {
-	assert.NotNil(t, validateVASTEvent(VASTEvent{
-		CreateElement: "impression",
-		Type:          "some_type",
-	}, 0))
-}
-
-// Validate tests
-
-// Expect error (non nil object) becase default_url = "" i.e. invalid
-func TestValidateEventsEnabled(t *testing.T) {
-	e := Events{Enabled: true}
-	assert.NotNil(t, e.validate(make([]error, 0)))
-}
-
-// Expect no error when no vast events are there but
-// enabled = true and valid default_url is present
-func TestValidateEventsEmptyVASTEvents(t *testing.T) {
-	e := Events{Enabled: true, DefaultURL: "http://prebid.org"}
-	assert.Empty(t, e.validate(make([]error, 0)))
-}
-
-// Expect error (non nil object) becase of invalid vast events
-func TestValidateInvalidVASTEvents(t *testing.T) {
-	e := Events{Enabled: true, DefaultURL: "http://prebid.org",
-		VASTEvents: []VASTEvent{
-			{}, // this is invalid vast event as no create element specified
-		}}
-	assert.NotNil(t, e.validate(make([]error, 0)))
-}
-
-// validateVASTEvents tests
-
-// Expect no error if vast events array is empty
-func TestValidateVASTEventsNilArray(t *testing.T) {
-	assert.Nil(t, validateVASTEvents(nil))
-}
-
-// Expect error (non nil object) when vast events array contains
-// invalid event object
-func TestValidateVASTEventsWithInvalidEvent(t *testing.T) {
-	events := []VASTEvent{
+func TestIsValidCreateElement(t *testing.T) {
+	testCases := []struct {
+		description   string
+		createElement VASTEventElement
+		valid         bool
+	}{
 		{
-			CreateElement: "impression",
+			description:   "Empty create element",
+			createElement: "",
+			valid:         false,
 		},
-		{}, // this is invalid object as no create element present
+		{
+			description:   "Invalid create element",
+			createElement: "invalid_element",
+			valid:         false,
+		},
+		{
+			description:   "Valid create element",
+			createElement: "tracking",
+			valid:         true,
+		},
+		{
+			description:   "Case sensitivity of create element",
+			createElement: "Tracking",
+			valid:         false,
+		},
 	}
-	assert.NotNil(t, validateVASTEvents(events))
+	for _, test := range testCases {
+		isValid := isValidCreateElement(test.createElement)
+		assert.Equal(t, test.valid, isValid, test.description)
+	}
+
+}
+
+func TestIsValidType(t *testing.T) {
+	testCases := []struct {
+		description string
+		vastEvent   VASTEvent
+		valid       bool
+	}{
+		{
+			description: "Empty type",
+			vastEvent:   VASTEvent{},
+			valid:       true,
+		},
+		{
+			description: "Empty type for tracking event",
+			vastEvent: VASTEvent{
+				CreateElement: TrackingVASTElement,
+			},
+			valid: false,
+		},
+		{
+			description: "Invalid type for tracking event",
+			vastEvent: VASTEvent{
+				CreateElement: TrackingVASTElement,
+				Type:          "invalid_type",
+			},
+			valid: false,
+		},
+		{
+			description: "Valid type for tracking event",
+			vastEvent: VASTEvent{
+				CreateElement: TrackingVASTElement,
+				Type:          MidPoint,
+			},
+			valid: true,
+		},
+		{
+			description: "Case sensitivity of type for tracking event",
+			vastEvent: VASTEvent{
+				CreateElement: TrackingVASTElement,
+				Type:          "COMplete",
+			},
+			valid: true,
+		},
+	}
+	for _, test := range testCases {
+		isValid := isValidType(test.vastEvent)
+		assert.Equal(t, test.valid, isValid, test.description)
+	}
+}
+
+func TestIsValidURL(t *testing.T) {
+	testCases := []struct {
+		description string
+		url         string
+		valid       bool
+	}{
+		{
+			description: "Empty Url",
+			url:         "",
+			valid:       false,
+		},
+		{
+			description: "Capital Domain name",
+			url:         "http://PREBID.ORG",
+			valid:       true,
+		},
+		{
+			description: "Url with Macros",
+			url:         "https://PBS_HOST/event?t=##PBS-EVENTTYPE##&vtype=##PBS-VASTEVENT##&b=##PBS-BIDID##&f=i&a=##PBS-ACCOUNTID##&ts=##PBS-TIMESTAMP##&bidder=##PBS-BIDDER##&int=##PBS-INTEGRATION##&mt=##PBS-MEDIATYPE##&ch=##PBS-CHANNEL##&aid=##PBS-AUCTIONID##&l=##PBS-LINEID##",
+			valid:       true,
+		},
+		{
+			description: "Invalid http syntax",
+			url:         "HTTP://PREBID.ORG",
+			valid:       false,
+		},
+		{
+			description: "Invalid protocol",
+			url:         "HTTPE://PREBID.ORG",
+			valid:       false,
+		},
+		{
+			description: "Double colon after domain name",
+			url:         "https://prebid.org::8000",
+			valid:       false,
+		},
+		{
+			description: "Url with Port",
+			url:         "https://prebid.org:8000",
+			valid:       true,
+		},
+		{
+			description: "Url with invalid Port",
+			url:         "https://prebid.org:100000",
+			valid:       false,
+		},
+	}
+	for _, test := range testCases {
+		isValid := isValidURL(test.url)
+		assert.Equal(t, test.valid, isValid, test.description)
+	}
+}
+
+func TestIsTrackingEvent(t *testing.T) {
+	testCases := []struct {
+		description string
+		vastEvent   VASTEvent
+		valid       bool
+	}{
+		{
+			description: "Empty Tracking Event",
+			vastEvent:   VASTEvent{},
+			valid:       false,
+		},
+		{
+			description: "Valid Tracking Event",
+			vastEvent: VASTEvent{
+				CreateElement: "tracking",
+			},
+			valid: true,
+		},
+		{
+			description: "Case Sensitivity in Tracking Event",
+			vastEvent: VASTEvent{
+				CreateElement: "Tracking",
+			},
+			valid: false,
+		},
+	}
+	for _, test := range testCases {
+		isValid := isTrackingEvent(test.vastEvent)
+		assert.Equal(t, test.valid, isValid, test.description)
+	}
+}
+
+func TestValidateVASTEvent(t *testing.T) {
+	testCases := []struct {
+		description string
+		vastEvent   VASTEvent
+		index       int
+		expectErr   bool
+	}{
+		{
+			description: "Default URL as at least one URL",
+			vastEvent: VASTEvent{
+				CreateElement:     "tracking",
+				Type:              "start",
+				ExcludeDefaultURL: false,
+				URLs:              nil,
+			},
+			index:     0,
+			expectErr: false,
+		},
+		{
+			description: "URLs has at least one URL, default URL is excluded",
+			vastEvent: VASTEvent{
+				CreateElement:     "impression",
+				ExcludeDefaultURL: true,
+				URLs:              []string{"http://mytracker.comm"},
+			},
+			index:     0,
+			expectErr: true,
+		},
+		{
+			description: "No URLs and default URL Excluded",
+			vastEvent: VASTEvent{
+				CreateElement:     "impression",
+				ExcludeDefaultURL: true,
+				URLs:              nil,
+			},
+			index:     0,
+			expectErr: true,
+		},
+		{
+			description: "Invalid Create Elemment",
+			vastEvent:   VASTEvent{},
+			index:       0,
+			expectErr:   true,
+		},
+		{
+			description: "Invalid Type",
+			vastEvent: VASTEvent{
+				CreateElement: "tracking",
+				Type:          "invalid_type",
+			},
+			index:     0,
+			expectErr: true,
+		},
+		{
+			description: "Invalid URLs",
+			vastEvent: VASTEvent{
+				CreateElement: "impression",
+				URLs:          []string{"http://url.com?k1=v1&k2=###PBS-MACRO##", "httpE://invalid.url"},
+			},
+			index:     0,
+			expectErr: true,
+		},
+		{
+			description: "Valid type but create element is other than tracking",
+			vastEvent: VASTEvent{
+				CreateElement: "impression",
+				Type:          "start",
+			},
+			index:     0,
+			expectErr: true,
+		},
+	}
+	for _, test := range testCases {
+		err := validateVASTEvent(test.vastEvent, test.index)
+		assert.Equal(t, !test.expectErr, err == nil, test.description)
+	}
+}
+
+func TestValidate(t *testing.T) {
+	testCases := []struct {
+		description string
+		events      Events
+		expectErr   bool
+	}{
+		{
+			description: "Empty default URL",
+			events: Events{
+				Enabled: true,
+			},
+			expectErr: true,
+		},
+		{
+			description: "Events are disabled. Skips validations",
+			events: Events{
+				Enabled:    false,
+				DefaultURL: "",
+			},
+			expectErr: false,
+		},
+		{
+			description: "No VAST Events and default URL present",
+			events: Events{
+				Enabled:    true,
+				DefaultURL: "http://prebid.org",
+			},
+			expectErr: false,
+		},
+		{
+			description: "Invalid VAST Event",
+			events: Events{
+				Enabled:    true,
+				DefaultURL: "http://prebid.org",
+				VASTEvents: []VASTEvent{
+					{},
+				},
+			},
+			expectErr: true,
+		},
+	}
+	for _, test := range testCases {
+		errs := test.events.validate(make([]error, 0))
+		assert.Equal(t, !test.expectErr, len(errs) == 0, test.description)
+	}
+}
+
+func TestValidateVASTEvents(t *testing.T) {
+	testCases := []struct {
+		description string
+		events      []VASTEvent
+		expectErr   bool
+	}{
+		{
+			description: "No Vast Events",
+			events:      nil,
+			expectErr:   false,
+		},
+		{
+
+			description: "Invalid Event Object",
+			events: []VASTEvent{
+				{
+					CreateElement: "impression",
+				},
+				{},
+			},
+			expectErr: true,
+		},
+		{
+
+			description: "Invalid Event Object",
+			events:      []VASTEvent{},
+			expectErr:   true,
+		},
+	}
+	for _, test := range testCases {
+		err := validateVASTEvents(test.events)
+		assert.Equal(t, !test.expectErr, err == nil, test.description)
+	}
 }

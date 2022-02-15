@@ -85,10 +85,10 @@ func (a *AccountIntegration) GetByIntegrationType(integrationType IntegrationTyp
 // VASTEvent indicates the configurations required for injecting VAST event trackers within
 // VAST XML
 type VASTEvent struct {
-	CreateElement     string   `mapstructure:"create_element" json:"create_element"`
-	Type              string   `mapstructure:"type" json:"type,omitempty"`
-	ExcludeDefaultURL bool     `mapstructure:"exclude_default_url" json:"exclude_default_url"`
-	URLs              []string `mapstructure:"urls" json:"urls"`
+	CreateElement     VASTEventElement  `mapstructure:"create_element" json:"create_element"`
+	Type              TrackingEventType `mapstructure:"type" json:"type,omitempty"`
+	ExcludeDefaultURL bool              `mapstructure:"exclude_default_url" json:"exclude_default_url"`
+	URLs              []string          `mapstructure:"urls" json:"urls"`
 }
 
 // Events indicates the various types of events to be captured typically for injecting tracker URLs
