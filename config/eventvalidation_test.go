@@ -80,7 +80,7 @@ func TestIsValidType(t *testing.T) {
 				CreateElement: TrackingVASTElement,
 				Type:          "COMplete",
 			},
-			valid: true,
+			valid: false,
 		},
 	}
 	for _, test := range testCases {
@@ -200,7 +200,7 @@ func TestValidateVASTEvent(t *testing.T) {
 				URLs:              []string{"http://mytracker.comm"},
 			},
 			index:     0,
-			expectErr: true,
+			expectErr: false,
 		},
 		{
 			description: "No URLs and default URL Excluded",
@@ -320,12 +320,6 @@ func TestValidateVASTEvents(t *testing.T) {
 				{},
 			},
 			expectErr: true,
-		},
-		{
-
-			description: "Invalid Event Object",
-			events:      []VASTEvent{},
-			expectErr:   true,
 		},
 	}
 	for _, test := range testCases {
