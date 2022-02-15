@@ -132,12 +132,10 @@ type Router struct {
 	Shutdown        func()
 }
 
-var SchemaDirectory = "/home/http/GO_SERVER/dmhbserver/static/bidder-params"
-var InfoDirectory = "/home/http/GO_SERVER/dmhbserver/static/bidder-info"
-
 func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *Router, err error) {
-	schemaDirectory := SchemaDirectory
-	infoDirectory := InfoDirectory
+	const schemaDirectory = "/home/http/GO_SERVER/dmhbserver/static/bidder-params"
+	const infoDirectory = "/home/http/GO_SERVER/dmhbserver/static/bidder-info"
+
 	r = &Router{
 		Router: httprouter.New(),
 	}

@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/router"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/spf13/viper"
@@ -68,7 +67,5 @@ func TestViperEnv(t *testing.T) {
 }
 
 func TestInitPrebidServer(t *testing.T) {
-	router.SchemaDirectory = "static/bidder-params"
-	router.InfoDirectory = "static/bidder-info"
 	InitPrebidServer("")
 }
