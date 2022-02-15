@@ -28,6 +28,8 @@ jobs:
 
     - name: Validate
       run: |
+        mkdir -p /home/http/GO_SERVER/dmhbserver/
+        cp -rv ./static /home/http/GO_SERVER/dmhbserver/
         ./validate.sh --nofmt --cov --race 10
       env:
         GO111MODULE: "on"
