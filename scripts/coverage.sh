@@ -25,6 +25,10 @@ generate_cover_data() {
         if ! [[ "$pkg" =~ ^github\.com\/PubMatic\-OpenWrap\/prebid\-server$ ]]; then
             cover="-covermode=$mode -coverprofile=$f"
         fi
+        # util/task uses _test package name
+        if [[ "$pkg" =~ ^github\.com\/PubMatic\-OpenWrap\/prebid\-server\/util\/task$ ]]; then
+            cover+=" -coverpkg=github.com/prebid/prebid-server/util/task"
+        fi
         go test ${cover} "$pkg"
     done
 
