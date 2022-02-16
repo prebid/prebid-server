@@ -23,23 +23,14 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://localhost/prebid_server",
+        "uri": "http://rtbhouse.com/givemeads",
         "body": {
           "id": "test-request-id",
           "imp": [
             {
               "id": "test-imp-id",
-              "banner": {
-                "format": [
-                  {
-                    "w": 300,
-                    "h": 250
-                  }
-                ]
-              },
               "ext": {
-                "bidder": {
-                }
+                "rewarded": 1
               }
             }
           ]

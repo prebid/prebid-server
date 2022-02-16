@@ -14,6 +14,13 @@
         },
         "ext": {
           "bidder": {
+            "region": "apac",
+            "video": {
+              "skip": 1,
+              "skipdelay": 5,
+              "width": 320,
+              "height": 480
+            }
           }
         }
       }
@@ -23,23 +30,14 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://localhost/prebid_server",
+        "uri": "http://rtbhouse.com/givemeads_apac",
         "body": {
           "id": "test-request-id",
           "imp": [
             {
               "id": "test-imp-id",
-              "banner": {
-                "format": [
-                  {
-                    "w": 300,
-                    "h": 250
-                  }
-                ]
-              },
               "ext": {
-                "bidder": {
-                }
+                "rewarded": 0
               }
             }
           ]

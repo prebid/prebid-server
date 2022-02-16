@@ -9,11 +9,20 @@ import (
 )
 
 const testsDir = "rtbhousetest"
-const testsBidderEndpoint = "http://localhost/prebid_server"
+const testsBidderEndpoint = "http://rtbhouse.com/givemeads"
+const testsBidderEndpointUSEast = "http://rtbhouse.com/givemeads_useast"
+const testsBidderEndpointAPAC = "http://rtbhouse.com/givemeads_apac"
+const testsBidderEndpointEU = "http://rtbhouse.com/givemeads_eu"
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderRTBHouse, config.Adapter{
-		Endpoint: testsBidderEndpoint})
+		Endpoint: testsBidderEndpoint,
+		XAPI: config.AdapterXAPI{
+			EndpointUSEast: testsBidderEndpointUSEast,
+			EndpointAPAC:   testsBidderEndpointAPAC,
+			EndpointEU:     testsBidderEndpointEU,
+		},
+	})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)

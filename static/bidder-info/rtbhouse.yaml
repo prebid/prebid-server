@@ -2,6 +2,9 @@ maintainer:
   email: "prebid@rtbhouse.com"
 gvlVendorID: 16
 capabilities:
+  app:
+    mediaTypes:
+      - video
   site:
     mediaTypes:
       - banner

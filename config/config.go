@@ -952,6 +952,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.revcontent.disabled", true)
 	v.SetDefault("adapters.revcontent.endpoint", "https://trends.revcontent.com/rtb")
 	v.SetDefault("adapters.rhythmone.endpoint", "http://tag.1rx.io/rmp")
+	v.SetDefault("adapters.rtbhouse.disabled", true)
 	v.SetDefault("adapters.rtbhouse.endpoint", "http://prebidserver-s2s-ams.creativecdn.com/bidder/prebidserver/bids")
 	v.SetDefault("adapters.rubicon.disabled", true)
 	v.SetDefault("adapters.rubicon.endpoint", "http://exapi-us-east.rubiconproject.com/a/api/exchange.json")
