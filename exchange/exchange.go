@@ -202,9 +202,6 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 
 	e.me.RecordRequestPrivacy(privacyLabels)
 
-	// List of bidders we have requests for.
-	liveAdapters := listBiddersWithRequests(bidderRequests)
-
 	// If we need to cache bids, then it will take some time to call prebid cache.
 	// We should reduce the amount of time the bidders have, to compensate.
 	auctionCtx, cancel := e.makeAuctionContext(ctx, cacheInstructions.cacheBids)
@@ -217,6 +214,9 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	var adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra
 	var anyBidsReturned bool
 
+	// List of bidders we have requests for.
+	var liveAdapters []openrtb_ext.BidderName
+
 	if len(r.StoredAuctionResponses) > 0 {
 		adapterBids, liveAdapters, err = buildStoreAuctionResponse(r.StoredAuctionResponses)
 		if err != nil {
@@ -225,6 +225,8 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		anyBidsReturned = true
 
 	} else {
+		// List of bidders we have requests for.
+		liveAdapters = listBiddersWithRequests(bidderRequests)
 		adapterBids, adapterExtra, anyBidsReturned = e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, accountDebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride)
 	}
 
