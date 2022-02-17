@@ -304,7 +304,6 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_
 		return
 	}
 
-	//Stored auction responses should be processed after stored requests due to possible impression modification
 	storedAuctionResponses, errs = deps.processStoredAuctionResponses(ctx, requestJson)
 	if len(errs) > 0 {
 		return nil, nil, nil, errs
@@ -330,7 +329,8 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_
 
 	lmt.ModifyForIOS(req.BidRequest)
 
-	errL := deps.validateRequest(req, false, len(storedAuctionResponses) > 0)
+	hasStoredResponses := len(storedAuctionResponses) > 0
+	errL := deps.validateRequest(req, false, hasStoredResponses)
 	if len(errL) > 0 {
 		errs = append(errs, errL...)
 	}
@@ -1576,12 +1576,13 @@ func getJsonSyntaxError(testJSON []byte) (bool, string) {
 	return false, ""
 }
 
+// processStoredAuctionResponses takes the incoming request as JSON with any
+// stored requests/imps already merged into it, scans it to find any stored auction response ids
+// in the request/imps and produces a map of imp IDs to stored auction responses.
+// Note that processStoredAuctionResponses must be called after processStoredRequests
+// because stored imps and stored requests can contain stored auction responses
+// so the stored requests/imps have to be merged into the incoming request prior to processing stored auction responses.
 func (deps *endpointDeps) processStoredAuctionResponses(ctx context.Context, requestJson []byte) (map[string]json.RawMessage, []error) {
-	// Input request may have stored request or stored imps that will modify imps from incoming request
-	// Cases:
-	// - there is only stored request id in incoming request
-	// - there is at least one stored imp with stored auction response
-	// Need to update ImpExtPrebid after stored responses/impressions applied to incoming request
 	impInfo, errs := parseImpInfo(requestJson)
 	if len(errs) > 0 {
 		return nil, errs

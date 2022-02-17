@@ -218,7 +218,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	var liveAdapters []openrtb_ext.BidderName
 
 	if len(r.StoredAuctionResponses) > 0 {
-		adapterBids, liveAdapters, err = buildStoreAuctionResponse(r.StoredAuctionResponses)
+		adapterBids, liveAdapters, err = buildStoredAuctionResponse(r.StoredAuctionResponses)
 		if err != nil {
 			return nil, err
 		}
@@ -1094,7 +1094,7 @@ func listBiddersWithRequests(bidderRequests []BidderRequest) []openrtb_ext.Bidde
 	return liveAdapters
 }
 
-func buildStoreAuctionResponse(storedActionResponses map[string]json.RawMessage) (map[openrtb_ext.BidderName]*pbsOrtbSeatBid, []openrtb_ext.BidderName, error) {
+func buildStoredAuctionResponse(storedActionResponses map[string]json.RawMessage) (map[openrtb_ext.BidderName]*pbsOrtbSeatBid, []openrtb_ext.BidderName, error) {
 
 	adapterBids := make(map[openrtb_ext.BidderName]*pbsOrtbSeatBid, 0)
 	liveAdapters := make([]openrtb_ext.BidderName, 0)

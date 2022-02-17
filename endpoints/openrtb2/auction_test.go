@@ -4870,7 +4870,6 @@ func TestValidateStoredResp(t *testing.T) {
 
 	testCases := []struct {
 		description         string
-		givenIsAmp          bool
 		givenRequestWrapper *openrtb_ext.RequestWrapper
 		expectedErrorList   []error
 		hasStoredResponses  bool
@@ -4901,7 +4900,6 @@ func TestValidateStoredResp(t *testing.T) {
 					},
 				},
 			},
-			givenIsAmp:         false,
 			expectedErrorList:  []error{},
 			hasStoredResponses: true,
 		},
@@ -4947,7 +4945,6 @@ func TestValidateStoredResp(t *testing.T) {
 					},
 				},
 			},
-			givenIsAmp:         false,
 			expectedErrorList:  []error{},
 			hasStoredResponses: true,
 		},
@@ -4993,16 +4990,89 @@ func TestValidateStoredResp(t *testing.T) {
 					},
 				},
 			},
-			givenIsAmp:         false,
 			expectedErrorList:  []error{errors.New("request validation failed. The StoredAuctionResponse.ID field must be completely present with, or completely absent from, all impressions in request. No StoredAuctionResponse data found for request.imp[1].ext.prebid \n")},
 			hasStoredResponses: true,
 		},
 	}
 
 	for _, test := range testCases {
-		errorList := deps.validateRequest(test.givenRequestWrapper, test.givenIsAmp, test.hasStoredResponses)
+		errorList := deps.validateRequest(test.givenRequestWrapper, false, test.hasStoredResponses)
 		assert.Equalf(t, test.expectedErrorList, errorList, "Error doesn't match: %s\n", test.description)
 	}
+}
+
+func TestProcessStoredAuctionResponsesErrors(t *testing.T) {
+	deps := &endpointDeps{}
+
+	testCases := []struct {
+		description       string
+		requestJson       []byte
+		expectedErrorList []error
+	}{
+		{
+			description: "Invalid stored auction response format: empty stored Auction Response Id",
+			requestJson: []byte(`{"imp": [
+    			  {
+    			    "id": "imp-id1",
+    			    "ext": {
+    			      "prebid": {
+    			        "storedauctionresponse": {
+    			        }
+    			      }
+    			    }
+    			  }
+    			]}`),
+			expectedErrorList: []error{errors.New("request.imp[0] has ext.prebid.storedauctionresponse specified, but \"id\" field is missing ")},
+		},
+		{
+			description: "Invalid stored auction response format: empty stored Auction Response Id in second imp",
+			requestJson: []byte(`{"imp": [
+    			  {
+    			    "id": "imp-id1",
+    			    "ext": {
+    			      "prebid": {
+    			        "storedauctionresponse": {
+							"id":"123"
+    			        }
+    			      }
+    			    }
+    			  },
+			      {
+    			    "id": "imp-id2",
+    			    "ext": {
+    			      "prebid": {
+    			        "storedauctionresponse": {
+							"id":""
+    			        }
+    			      }
+    			    }
+    			  }
+    			]}`),
+			expectedErrorList: []error{errors.New("request.imp[1] has ext.prebid.storedauctionresponse specified, but \"id\" field is missing ")},
+		},
+		{
+			description: "Invalid stored auction response format: integer imp Id",
+			requestJson: []byte(`{"imp": [
+    			  {
+    			    "id": 123,
+    			    "ext": {
+    			      "prebid": {
+    			        "storedauctionresponse": {
+							"id":"123"
+    			        }
+    			      }
+    			    }
+    			  }
+    			]}`),
+			expectedErrorList: []error{errors.New("Value is not a string: 123")},
+		},
+	}
+
+	for _, test := range testCases {
+		_, errorList := deps.processStoredAuctionResponses(nil, test.requestJson)
+		assert.Equalf(t, test.expectedErrorList, errorList, "Error doesn't match: %s\n", test.description)
+	}
+
 }
 
 type mockStoredResponseFetcher struct {

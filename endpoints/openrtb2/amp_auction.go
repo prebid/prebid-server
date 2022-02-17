@@ -318,7 +318,8 @@ func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openr
 	}
 
 	// At this point, we should have a valid request that definitely has Targeting and Cache turned on
-	e = deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: req}, true, len(storedAuctionResponses) > 0)
+	hasStoredResponses := len(storedAuctionResponses) > 0
+	e = deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: req}, true, hasStoredResponses)
 	errs = append(errs, e...)
 	return
 }
