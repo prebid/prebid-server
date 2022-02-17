@@ -63,6 +63,7 @@ func NewCookieSyncEndpoint(
 type cookieSyncEndpoint struct {
 	chooser          usersync.Chooser
 	config           config.UserSync
+	accountConfig    config.Account
 	hostCookieConfig *config.HostCookie
 	privacyConfig    usersyncPrivacyConfig
 	metrics          metrics.MetricsEngine
@@ -123,6 +124,15 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 		if gdprSignal == gdpr.SignalAmbiguous && gdpr.SignalNormalize(gdprSignal, c.privacyConfig.gdprConfig) == gdpr.SignalYes {
 			return usersync.Request{}, privacy.Policies{}, errCookieSyncGDPRConsentMissingSignalAmbiguous
 		}
+	}
+
+	if request.Limit == 0 {
+		request.Limit = c.accountConfig.DefaultLimit
+	} else if request.Limit > c.accountConfig.MaxLimit {
+		request.Limit = c.accountConfig.MaxLimit
+	}
+	if request.CooperativeSync == nil {
+		request.CooperativeSync = &c.accountConfig.DefaultCoopSync
 	}
 
 	privacyPolicies := privacy.Policies{

@@ -21,6 +21,9 @@ type Account struct {
 	GDPR               AccountGDPR `mapstructure:"gdpr" json:"gdpr"`
 	DebugAllow         bool        `mapstructure:"debug_allow" json:"debug_allow"`
 	DefaultIntegration string      `mapstructure:"default_integration" json:"default_integration"`
+	DefaultLimit       int         `mapstructure:"default_limit" json:"default_limit"`
+	MaxLimit           int         `mapstructure:"max_limit" json:"max_limit"`
+	DefaultCoopSync    bool        `mapstructure:"default_coop_sync" json:"default_coop_sync"`
 }
 
 // AccountCCPA represents account-specific CCPA configuration

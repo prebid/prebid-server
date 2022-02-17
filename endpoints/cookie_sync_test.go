@@ -263,14 +263,15 @@ func TestCookieSyncParseRequest(t *testing.T) {
 	expectedCCPAParsedPolicy, _ := ccpa.Policy{Consent: "1NYN"}.Parse(map[string]struct{}{})
 
 	testCases := []struct {
-		description      string
-		givenConfig      config.UserSync
-		givenBody        io.Reader
-		givenGDPRConfig  config.GDPR
-		givenCCPAEnabled bool
-		expectedError    string
-		expectedPrivacy  privacy.Policies
-		expectedRequest  usersync.Request
+		description        string
+		givenConfig        config.UserSync
+		givenAccountConfig config.Account
+		givenBody          io.Reader
+		givenGDPRConfig    config.GDPR
+		givenCCPAEnabled   bool
+		expectedError      string
+		expectedPrivacy    privacy.Policies
+		expectedRequest    usersync.Request
 	}{
 		{
 			description: "Complete Request",
@@ -290,6 +291,9 @@ func TestCookieSyncParseRequest(t *testing.T) {
 					EnabledByDefault: false,
 					PriorityGroups:   [][]string{{"a", "b", "c"}},
 				},
+			},
+			givenAccountConfig: config.Account{
+				MaxLimit: 100,
 			},
 			expectedPrivacy: privacy.Policies{
 				GDPR: gdprPrivacy.Policy{
@@ -334,6 +338,9 @@ func TestCookieSyncParseRequest(t *testing.T) {
 					EnabledByDefault: false,
 					PriorityGroups:   [][]string{{"a", "b", "c"}},
 				},
+			},
+			givenAccountConfig: config.Account{
+				MaxLimit: 100,
 			},
 			expectedPrivacy: privacy.Policies{
 				GDPR: gdprPrivacy.Policy{
@@ -388,6 +395,9 @@ func TestCookieSyncParseRequest(t *testing.T) {
 					EnabledByDefault: true,
 					PriorityGroups:   [][]string{{"a", "b", "c"}},
 				},
+			},
+			givenAccountConfig: config.Account{
+				DefaultCoopSync: true,
 			},
 			expectedPrivacy: privacy.Policies{},
 			expectedRequest: usersync.Request{
@@ -647,6 +657,99 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			givenCCPAEnabled: true,
 			expectedError:    "Failed to read request body",
 		},
+		{
+			description: "Request where account level defaults are applied: - MaxLimit and Default Coop",
+			givenBody: strings.NewReader(`{` +
+				`"bidders":["a", "b"],` +
+				`"gdpr":1,` +
+				`"gdpr_consent":"anyGDPRConsent",` +
+				`"us_privacy":"1NYN",` +
+				`"limit":42` +
+				`}`),
+			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
+			givenCCPAEnabled: true,
+			givenConfig: config.UserSync{
+				Cooperative: config.UserSyncCooperative{
+					PriorityGroups: [][]string{{"a", "b", "c"}},
+				},
+			},
+			givenAccountConfig: config.Account{
+				MaxLimit:        41,
+				DefaultCoopSync: true,
+			},
+			expectedPrivacy: privacy.Policies{
+				GDPR: gdprPrivacy.Policy{
+					Signal:  "1",
+					Consent: "anyGDPRConsent",
+				},
+				CCPA: ccpa.Policy{
+					Consent: "1NYN",
+				},
+			},
+			expectedRequest: usersync.Request{
+				Bidders: []string{"a", "b"},
+				Cooperative: usersync.Cooperative{
+					Enabled:        true,
+					PriorityGroups: [][]string{{"a", "b", "c"}},
+				},
+				Limit: 41,
+				Privacy: usersyncPrivacy{
+					gdprSignal:       gdpr.SignalYes,
+					gdprConsent:      "anyGDPRConsent",
+					ccpaParsedPolicy: expectedCCPAParsedPolicy,
+				},
+				SyncTypeFilter: usersync.SyncTypeFilter{
+					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+					Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+				},
+			},
+		},
+		{
+			description: "Request where account level defaults are applied: - DefaultLimit",
+			givenBody: strings.NewReader(`{` +
+				`"bidders":["a", "b"],` +
+				`"gdpr":1,` +
+				`"gdpr_consent":"anyGDPRConsent",` +
+				`"us_privacy":"1NYN"` +
+				`}`),
+			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
+			givenCCPAEnabled: true,
+			givenConfig: config.UserSync{
+				Cooperative: config.UserSyncCooperative{
+					EnabledByDefault: false,
+					PriorityGroups:   [][]string{{"a", "b", "c"}},
+				},
+			},
+			givenAccountConfig: config.Account{
+				DefaultLimit: 42,
+			},
+			expectedPrivacy: privacy.Policies{
+				GDPR: gdprPrivacy.Policy{
+					Signal:  "1",
+					Consent: "anyGDPRConsent",
+				},
+				CCPA: ccpa.Policy{
+					Consent: "1NYN",
+				},
+			},
+			expectedRequest: usersync.Request{
+				Bidders: []string{"a", "b"},
+				Cooperative: usersync.Cooperative{
+					Enabled:        false,
+					PriorityGroups: [][]string{{"a", "b", "c"}},
+				},
+				Limit: 42,
+				Privacy: usersyncPrivacy{
+					gdprSignal:       gdpr.SignalYes,
+					gdprConsent:      "anyGDPRConsent",
+					ccpaParsedPolicy: expectedCCPAParsedPolicy,
+				},
+				SyncTypeFilter: usersync.SyncTypeFilter{
+					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+					Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+				},
+			},
+		},
 	}
 
 	for _, test := range testCases {
@@ -658,6 +761,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 				gdprConfig:  test.givenGDPRConfig,
 				ccpaEnforce: test.givenCCPAEnabled,
 			},
+			accountConfig: test.givenAccountConfig,
 		}
 		request, privacyPolicies, err := endpoint.parseRequest(httpRequest)
 
