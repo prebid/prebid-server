@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	validator "github.com/asaskevich/govalidator"
+	"github.com/golang/glog"
 )
 
 // VASTEventElement indicates valid VAST event element
@@ -51,6 +52,7 @@ var trackingEventTypeMap = map[TrackingEventType]struct{}{
 // validate verifies the events object  and returns error if at least one is invalid.
 func (e Events) validate(errs []error) []error {
 	if e.Enabled { // validate only if events are enabled
+		glog.Warning(`Don't enable this feature. It is still under developmment - https://github.com/prebid/prebid-server/issues/1725`)
 		if !isValidURL(e.DefaultURL) {
 			return append(errs, errors.New("Invalid events.default_url"))
 		}
