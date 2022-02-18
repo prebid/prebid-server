@@ -416,8 +416,10 @@ func (cfg *Metrics) validate(errs []error) []error {
 type InfluxMetrics struct {
 	Host               string `mapstructure:"host"`
 	Database           string `mapstructure:"database"`
+	Measurement        string `mapstructure:"measurement"`
 	Username           string `mapstructure:"username"`
 	Password           string `mapstructure:"password"`
+	AlignSendTimestamp bool   `mapstructure:"align_send_timestamp"`
 	MetricSendInterval int    `mapstructure:"metric_send_interval"`
 }
 

@@ -13,17 +13,16 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/prebid/prebid-server/firstpartydata"
-	"github.com/prebid/prebid-server/version"
-
 	"github.com/buger/jsonparser"
-	jsonpatch "github.com/evanphx/json-patch/v5"
 	"github.com/gofrs/uuid"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/mxmCherry/openrtb/v15/native1"
 	nativeRequests "github.com/mxmCherry/openrtb/v15/native1/request"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"golang.org/x/net/publicsuffix"
+	jsonpatch "gopkg.in/evanphx/json-patch.v4"
+
 	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/analytics"
@@ -31,6 +30,7 @@ import (
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/firstpartydata"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
@@ -43,7 +43,7 @@ import (
 	"github.com/prebid/prebid-server/util/httputil"
 	"github.com/prebid/prebid-server/util/iputil"
 	"github.com/prebid/prebid-server/util/uuidutil"
-	"golang.org/x/net/publicsuffix"
+	"github.com/prebid/prebid-server/version"
 )
 
 const storedRequestTimeoutMillis = 50
