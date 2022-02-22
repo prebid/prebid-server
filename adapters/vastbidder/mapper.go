@@ -145,6 +145,7 @@ var _defaultMapper = Mapper{
 	MacroDeviceJS:        &macroCallBack{cached: true, callback: IBidderMacro.MacroDeviceJS},
 	MacroDeviceLanguage:  &macroCallBack{cached: true, escape: true, callback: IBidderMacro.MacroDeviceLanguage},
 	MacroDeviceIFA:       &macroCallBack{cached: true, escape: true, callback: IBidderMacro.MacroDeviceIFA},
+	MacroDeviceIFAType:   &macroCallBack{cached: true, escape: true, callback: IBidderMacro.MacroDeviceIFAType},
 	MacroDeviceDIDSHA1:   &macroCallBack{cached: true, escape: true, callback: IBidderMacro.MacroDeviceDIDSHA1},
 	MacroDeviceDIDMD5:    &macroCallBack{cached: true, escape: true, callback: IBidderMacro.MacroDeviceDIDMD5},
 	MacroDeviceDPIDSHA1:  &macroCallBack{cached: true, escape: true, callback: IBidderMacro.MacroDeviceDPIDSHA1},
