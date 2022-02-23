@@ -4,10 +4,50 @@
     "description": "A schema which validates params accepted by the RTB House adapter",
     "type": "object",
     "properties": {
-        "publisherId": {
-            "type": "string",
-            "description": "The publisher’s ID provided by RTB House"
+      "publisherId": {
+        "type": "string",
+        "description": "The publisher’s ID provided by RTB House"
+      },
+      "video": {
+        "type": "object",
+        "description": "An object defining additional RTB House video parameters",
+        "properties": {
+          "width": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Width of the screen resolution to decide orientation"
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Height of the screen resolution to decide orientation"
+          },
+          "skip": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "skip=0 (not skippable, rewarded), skip=1 (skippable, interstitial)"
+          },
+          "skipdelay": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The time to spend before revealing skip button"
+          }
         }
+      },
+      "region": {
+        "type": "string",
+        "description": "A string defining region for choosing the closest RTB House endpoint"
+      },
+      "skadn_supported": {
+        "type": "boolean",
+        "description": "A bool config to determine if SKADN is supported by RTB House"
+      },
+      "mraid_supported": {
+        "type": "boolean",
+        "description": "A bool config to determine if MRAID is supported by RTB House"
+      }
     },
-    "required": ["publisherId"]
+    "required": [
+      "publisherId"
+    ]
 }

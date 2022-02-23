@@ -88,11 +88,11 @@ data:
   PBS_ADAPTERS_AARKI_XAPI_ENDPOINT_US_EAST: "http://localhost:4646/aarki_givemeads"
 
   # appier values
-  PBS_ADAPTERS_APPIER_DISABLED: "false"
-  PBS_ADAPTERS_APPIER_XAPI_ENDPOINT_US_EAST: "http://localhost:4646/appier_givemeads"
-  PBS_ADAPTERS_APPIER_XAPI_ENDPOINT_EMEA: "http://localhost:4646/appier_givemeads"
-  PBS_ADAPTERS_APPIER_XAPI_ENDPOINT_JP: "http://localhost:4646/appier_givemeads"
-  PBS_ADAPTERS_APPIER_XAPI_ENDPOINT_SG: "http://localhost:4646/appier_givemeads"
+  PBS_ADAPTERS_APPIER_DISABLED:               "false"
+  PBS_ADAPTERS_APPIER_XAPI_ENDPOINT_US_EAST:  "http://localhost:4646/appier_givemeads"
+  PBS_ADAPTERS_APPIER_XAPI_ENDPOINT_EMEA:     "http://localhost:4646/appier_givemeads"
+  PBS_ADAPTERS_APPIER_XAPI_ENDPOINT_JP:       "http://localhost:4646/appier_givemeads"
+  PBS_ADAPTERS_APPIER_XAPI_ENDPOINT_SG:       "http://localhost:4646/appier_givemeads"
 
   # dv360 values
   PBS_ADAPTERS_DV360_DISABLED: "false"
@@ -124,10 +124,16 @@ data:
   PBS_ADAPTERS_PERSONALY_ENDPOINT: "http://localhost:4646/personaly_givemeads"
 
   # pubmatic values
-  PBS_ADAPTERS_PUBMATIC_DISABLED: "false"
-  PBS_ADAPTERS_PUBMATIC_ENDPOINT: "http://localhost:4646/pubmatic_givemeads"
-  PBS_ADAPTERS_PUBMATIC_XAPI_ENDPOINT_MATURE_IOS: "http://localhost:4646/pubmatic_givemeads2"
+  PBS_ADAPTERS_PUBMATIC_DISABLED:                     "false"
+  PBS_ADAPTERS_PUBMATIC_ENDPOINT:                     "http://localhost:4646/pubmatic_givemeads"
+  PBS_ADAPTERS_PUBMATIC_XAPI_ENDPOINT_MATURE_IOS:     "http://localhost:4646/pubmatic_givemeads2"
   PBS_ADAPTERS_PUBMATIC_XAPI_ENDPOINT_MATURE_ANDROID: "http://localhost:4646/pubmatic_givemeads3"
+
+  # rtbhouse values
+  PBS_ADAPTERS_RTBHOUSE_DISABLED:               "false"
+  PBS_ADAPTERS_RTBHOUSE_XAPI_ENDPOINT_US_EAST:  "http://localhost:4646/rtbhouse_givemeads"
+  PBS_ADAPTERS_RTBHOUSE_XAPI_ENDPOINT_EU:       "http://localhost:4646/rtbhouse_givemeads"
+  PBS_ADAPTERS_RTBHOUSE_XAPI_ENDPOINT_APAC:     "http://localhost:4646/rtbhouse_givemeads"
 
   # rubicon values
   PBS_ADAPTERS_RUBICON_DISABLED:              "false"
