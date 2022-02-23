@@ -5,6 +5,7 @@ capabilities:
   app:
     mediaTypes:
       - video
+      - banner
   site:
     mediaTypes:
       - banner
