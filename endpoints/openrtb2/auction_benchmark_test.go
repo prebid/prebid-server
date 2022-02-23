@@ -2,6 +2,7 @@ package openrtb2
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -109,45 +110,55 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 	}
 }
 
-// BenchmarkAllExtRequest benchmarks the process that results of hitting the `openrtb2/auction` with a
-// json bid request like the one found in "sample-requests/valid-whole/exemplary/all-ext.json". As
+// BenchmarkValidWholeExemplary benchmarks the process that results of hitting the `openrtb2/auction` with
+// the different JSON bid requests found in the `sample-requests/valid-whole/exemplary/` directory. As
 // especified in said file, we expect this bid request to succeed with a 200 status code.
-func BenchmarkAllExtRequest(b *testing.B) {
-	b.StopTimer()
-
-	// Set up
-	testFile := "sample-requests/valid-whole/exemplary/all-ext.json"
-	paramValidator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
-	if err != nil {
-		b.Fatal("unable to build params validator")
-	}
-	fileData, err := ioutil.ReadFile(testFile)
-	if err != nil {
-		b.Fatalf("unable to read file %s", testFile)
-	}
-	test, err := parseTestFile(fileData, testFile)
-	if err != nil {
-		b.Fatal(err.Error())
+func BenchmarkValidWholeExemplary(b *testing.B) {
+	var benchInput = []string{
+		"sample-requests/valid-whole/exemplary/all-ext.json",
+		"sample-requests/valid-whole/exemplary/interstitial-no-size.json",
+		"sample-requests/valid-whole/exemplary/prebid-test-ad.json",
+		"sample-requests/valid-whole/exemplary/simple.json",
+		"sample-requests/valid-whole/exemplary/skadn.json",
 	}
 
-	auctionEndpointHandler, appNexusServer, openXServer, rubiconServer, mockCurrencyRatesServer, err := buildTestEndpoint(test, paramValidator)
-	if err != nil {
-		b.Fatal(err.Error())
-	}
-	request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(test.BidRequest))
-	recorder := httptest.NewRecorder()
+	for _, testFile := range benchInput {
+		b.Run(fmt.Sprintf("input_file_%s", testFile), func(b *testing.B) {
+			b.StopTimer()
+			// Set up
+			paramValidator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
+			if err != nil {
+				b.Fatal("unable to build params validator")
+			}
+			fileData, err := ioutil.ReadFile(testFile)
+			if err != nil {
+				b.Fatalf("unable to read file %s", testFile)
+			}
+			test, err := parseTestFile(fileData, testFile)
+			if err != nil {
+				b.Fatal(err.Error())
+			}
 
-	// Run benchmark
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		b.StartTimer()
-		auctionEndpointHandler(recorder, request, nil) //Request comes from the unmarshalled mockBidRequest
-		b.StopTimer()
-	}
+			auctionEndpointHandler, appNexusServer, openXServer, rubiconServer, mockCurrencyRatesServer, err := buildTestEndpoint(test, paramValidator)
+			if err != nil {
+				b.Fatal(err.Error())
+			}
+			request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(test.BidRequest))
+			recorder := httptest.NewRecorder()
 
-	// Close mock servers
-	appNexusServer.Close()
-	openXServer.Close()
-	rubiconServer.Close()
-	mockCurrencyRatesServer.Close()
+			// Run benchmark
+			b.ResetTimer()
+			for n := 0; n < b.N; n++ {
+				b.StartTimer()
+				auctionEndpointHandler(recorder, request, nil) //Request comes from the unmarshalled mockBidRequest
+				b.StopTimer()
+			}
+
+			// Close mock servers
+			appNexusServer.Close()
+			openXServer.Close()
+			rubiconServer.Close()
+			mockCurrencyRatesServer.Close()
+		})
+	}
 }
