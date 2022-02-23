@@ -34,7 +34,7 @@ func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.Bidde
 			cfg.Metrics.Influxdb.Measurement,                                   // your measurement
 			cfg.Metrics.Influxdb.Username,                                      // your InfluxDB user
 			cfg.Metrics.Influxdb.Password,                                      // your InfluxDB password,
-			cfg.Metrics.Influxdb.AlignSendTimestamp,                            // align timestamps
+			cfg.Metrics.Influxdb.AlignTimestamps,                               // align timestamps
 		)
 		// Influx is not added to the engine list as goMetrics takes care of it already.
 	}
