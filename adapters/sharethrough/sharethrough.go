@@ -3,30 +3,32 @@ package sharethrough
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"strings"
+
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/version"
-	"net/http"
-	"strings"
 )
 
-var strVersion = "10.0"
+var adapterVersion = "10.0"
 
-type SharethroughAdapter struct {
+type adapter struct {
 	endpoint string
 }
 
+// Builder builds a new instance of the Sharethrough adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &SharethroughAdapter{
+	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}
 	return bidder, nil
 }
 
-func (a SharethroughAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var requests []*adapters.RequestData
 	var errors []error
 
@@ -40,12 +42,16 @@ func (a SharethroughAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo 
 	}
 	var sourceExt map[string]interface{}
 	if err := json.Unmarshal(modifiableSource.Ext, &sourceExt); err == nil {
-		sourceExt["str"] = strVersion
+		sourceExt["str"] = adapterVersion
 		sourceExt["version"] = version.Ver
 	} else {
-		sourceExt = map[string]interface{}{"str": strVersion, "version": version.Ver}
+		sourceExt = map[string]interface{}{"str": adapterVersion, "version": version.Ver}
 	}
-	modifiableSource.Ext, _ = json.Marshal(sourceExt)
+
+	var err error
+	if modifiableSource.Ext, err = json.Marshal(sourceExt); err != nil {
+		errors = append(errors, err)
+	}
 	request.Source = &modifiableSource
 
 	requestCopy := *request
@@ -63,7 +69,7 @@ func (a SharethroughAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo 
 		}
 
 		// Convert Floor into USD
-		if imp.BidFloor > 0 && imp.BidFloorCur != "" && strings.ToUpper(imp.BidFloorCur) != "USD" {
+		if imp.BidFloor > 0 && strings.EqualFold(imp.BidFloorCur, "USD") {
 			convertedValue, err := reqInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, "USD")
 			if err != nil {
 				return nil, []error{err}
@@ -74,8 +80,8 @@ func (a SharethroughAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo 
 
 		// Relocate Custom Params
 		imp.TagID = strImpParams.Pkey
-		requestCopy.BCat = strImpParams.BCat
-		requestCopy.BAdv = strImpParams.BAdv
+		requestCopy.BCat = append(requestCopy.BCat, strImpParams.BCat...)
+		requestCopy.BAdv = append(requestCopy.BAdv, strImpParams.BAdv...)
 
 		requestCopy.Imp = []openrtb2.Imp{imp}
 
@@ -97,7 +103,7 @@ func (a SharethroughAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo 
 	return requests, errors
 }
 
-func (a SharethroughAdapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -126,7 +132,7 @@ func (a SharethroughAdapter) MakeBids(request *openrtb2.BidRequest, requestData 
 	bidderResponse.Currency = "USD"
 
 	for _, seatBid := range bidResp.SeatBid {
-		for _, bid := range seatBid.Bid {
+		for i := range seatBid.Bid {
 			bidType := openrtb_ext.BidTypeBanner
 			if bidReq.Imp[0].Video != nil {
 				bidType = openrtb_ext.BidTypeVideo
@@ -134,7 +140,7 @@ func (a SharethroughAdapter) MakeBids(request *openrtb2.BidRequest, requestData 
 
 			bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
 				BidType: bidType,
-				Bid:     &bid,
+				Bid:     &seatBid.Bid[i],
 			})
 		}
 	}

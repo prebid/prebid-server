@@ -10,7 +10,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	version.Ver = "42.42"
-	strVersion = "10.0"
+	adapterVersion = "10.0"
 
 	bidder, buildErr := Builder(openrtb_ext.BidderSharethrough, config.Adapter{
 		Endpoint: "http://whatever.url",
