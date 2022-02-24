@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/firstpartydata"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -16,7 +15,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/prebid-server/firstpartydata"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	jsonpatch "gopkg.in/evanphx/json-patch.v4"
+
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
@@ -30,11 +35,6 @@ import (
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
 	"github.com/prebid/prebid-server/usersync"
-
-	"github.com/buger/jsonparser"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	"github.com/yudai/gojsondiff"
 )
 
 func TestNewExchange(t *testing.T) {
@@ -2177,7 +2177,7 @@ func extractResponseTimes(t *testing.T, context string, bid *openrtb2.BidRespons
 		// Delete the response times so that they don't appear in the JSON, because they can't be tested reliably anyway.
 		// If there's no other ext, just delete it altogether.
 		bid.Ext = jsonparser.Delete(bid.Ext, "responsetimemillis")
-		if diff, err := gojsondiff.New().Compare(bid.Ext, []byte("{}")); err == nil && !diff.Modified() {
+		if jsonpatch.Equal(bid.Ext, []byte("{}")) {
 			bid.Ext = nil
 		}
 		return responseTimes
