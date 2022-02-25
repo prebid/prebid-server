@@ -81,21 +81,3 @@ func (a *AccountIntegration) GetByIntegrationType(integrationType IntegrationTyp
 
 	return integrationEnabled
 }
-
-// VASTEvent indicates the configurations required for injecting VAST event trackers within
-// VAST XML
-type VASTEvent struct {
-	CreateElement     VASTEventElement  `mapstructure:"create_element" json:"create_element"`
-	Type              TrackingEventType `mapstructure:"type" json:"type,omitempty"`
-	ExcludeDefaultURL bool              `mapstructure:"exclude_default_url" json:"exclude_default_url"`
-	URLs              []string          `mapstructure:"urls" json:"urls"`
-}
-
-// Events indicates the various types of events to be captured typically for injecting tracker URLs
-// within the VAST XML
-// Don't enable this feature. It is still under developmment - https://github.com/prebid/prebid-server/issues/1725
-type Events struct {
-	Enabled    bool        `mapstructure:"enabled" json:"enabled"`
-	DefaultURL string      `mapstructure:"default_url" json:"default_url"`
-	VASTEvents []VASTEvent `mapstructure:"vast_events" json:"vast_events,omitempty"`
-}

@@ -34,13 +34,13 @@ func TestIsValidCreateElement(t *testing.T) {
 		},
 	}
 	for _, test := range testCases {
-		isValid := isValidCreateElement(test.createElement)
+		isValid := test.createElement.isValid()
 		assert.Equal(t, test.valid, isValid, test.description)
 	}
 
 }
 
-func TestIsValidType(t *testing.T) {
+func TestIsValidTrackingEventType(t *testing.T) {
 	testCases := []struct {
 		description string
 		vastEvent   VASTEvent
@@ -49,7 +49,7 @@ func TestIsValidType(t *testing.T) {
 		{
 			description: "Empty type",
 			vastEvent:   VASTEvent{},
-			valid:       true,
+			valid:       false,
 		},
 		{
 			description: "Empty type for tracking event",
@@ -84,7 +84,7 @@ func TestIsValidType(t *testing.T) {
 		},
 	}
 	for _, test := range testCases {
-		isValid := isValidType(test.vastEvent)
+		isValid := test.vastEvent.Type.isValid()
 		assert.Equal(t, test.valid, isValid, test.description)
 	}
 }
@@ -169,7 +169,7 @@ func TestIsTrackingEvent(t *testing.T) {
 		},
 	}
 	for _, test := range testCases {
-		isValid := isTrackingEvent(test.vastEvent)
+		isValid := test.vastEvent.isTrackingEvent()
 		assert.Equal(t, test.valid, isValid, test.description)
 	}
 }
@@ -182,7 +182,7 @@ func TestValidateVASTEvent(t *testing.T) {
 		expectErr   bool
 	}{
 		{
-			description: "Default URL as at least one URL",
+			description: "At least one URL - Default URL",
 			vastEvent: VASTEvent{
 				CreateElement:     "tracking",
 				Type:              "start",
@@ -247,7 +247,7 @@ func TestValidateVASTEvent(t *testing.T) {
 		},
 	}
 	for _, test := range testCases {
-		err := validateVASTEvent(test.vastEvent, test.index)
+		err := test.vastEvent.validate()
 		assert.Equal(t, !test.expectErr, err == nil, test.description)
 	}
 }
