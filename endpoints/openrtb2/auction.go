@@ -306,7 +306,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_
 
 	storedAuctionResponses, errs = deps.processStoredAuctionResponses(ctx, requestJson)
 	if len(errs) > 0 {
-		return nil, nil, nil, errs
+		return
 	}
 
 	if err := json.Unmarshal(requestJson, req.BidRequest); err != nil {
@@ -1198,7 +1198,7 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb2.Imp, aliases map[string]s
 			}
 		}
 	}
-	if hasStoredResponses && (extPrebid.StoredAuctionResponse == nil || len(extPrebid.StoredAuctionResponse.ID) == 0) {
+	if hasStoredResponses && extPrebid.StoredAuctionResponse == nil {
 		return []error{fmt.Errorf("request validation failed. The StoredAuctionResponse.ID field must be completely present with, or completely absent from, all impressions in request. No StoredAuctionResponse data found for request.imp[%d].ext.prebid \n", impIndex)}
 	}
 
