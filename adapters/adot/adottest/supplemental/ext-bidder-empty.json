@@ -1,14 +1,21 @@
 {
   "mockBidRequest": {
-    "id": "test-request-native-id",
+    "id": "test-request-publishPath-id",
     "imp": [
       {
-        "id": "test-imp-native-id",
-        "native": {
-          "request": "test-native",
-          "ver": "1.1"
+        "id": "test-imp-publishPath-id",
+        "banner": {
+          "format": [
+            {
+              "w": 320,
+              "h": 250
+            }
+          ],
+          "w": 320,
+          "h": 250
         },
         "ext": {
+          "bidder": {},
           "adot": {}
         }
       }
@@ -19,15 +26,23 @@
       "expectedRequest": {
         "uri": "https://dsp.adotmob.com/headerbidding/bidrequest",
         "body": {
-          "id": "test-request-native-id",
+          "id": "test-request-publishPath-id",
           "imp": [
             {
-              "id": "test-imp-native-id",
-              "native": {
-                "request": "test-native",
-                "ver": "1.1"
+              "id": "test-imp-publishPath-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 320,
+                    "h": 250
+                  }
+                ],
+                "w": 320,
+                "h": 250
               },
               "ext": {
+                "bidder": {
+                },
                 "adot": {}
               }
             }
@@ -37,22 +52,22 @@
       "mockResponse": {
         "status": 200,
         "body": {
-          "id": "test-request-id",
+          "id": "test-request-publishPath-id",
           "seatbid": [
             {
               "seat": "adot",
               "bid": [
                 {
-                  "id": "test-request-native-id",
-                  "impid": "test-imp-native-id",
+                  "id": "test-request-publishPath-id",
+                  "impid": "test-imp-publishPath-id",
                   "price": 1.16346,
                   "adm": "some-test-ad imp_${AUCTION_PRICE} creativeview_${AUCTION_PRICE}",
                   "nurl": "nurl.link/win?p=${AUCTION_PRICE}",
-                  "w": 300,
-                  "h": 250,
+                  "w": 320,
+                  "h": 50,
                   "ext": {
                     "adot": {
-                      "media_type": "native"
+                      "media_type": "banner"
                     }
                   }
                 }
@@ -67,23 +82,24 @@
 
   "expectedBidResponses": [
     {
+      "currency": "USD",
       "bids": [
         {
           "bid": {
-            "id": "test-request-native-id",
-            "impid": "test-imp-native-id",
+            "id": "test-request-publishPath-id",
+            "impid": "test-imp-publishPath-id",
             "price": 1.16346,
             "adm": "some-test-ad imp_1.16346 creativeview_1.16346",
             "nurl": "nurl.link/win?p=1.16346",
-            "w": 300,
-            "h": 250,
+            "w": 320,
+            "h": 50,
             "ext": {
               "adot": {
-                "media_type": "native"
+                "media_type": "banner"
               }
             }
           },
-          "type": "native"
+          "type": "banner"
         }
       ]
     }
