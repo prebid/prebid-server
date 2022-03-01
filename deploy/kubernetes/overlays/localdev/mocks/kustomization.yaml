@@ -1,0 +1,19 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+nameSuffix: -mocks
+
+resources:
+  - app.yaml
+
+commonLabels:
+  app.kubernetes.io/part-of: tpe_prebid_service
+  app.kubernetes.io/component: mocks
+  app.kubernetes.io/instance: mocks
+  app.kubernetes.io/managed-by: kustomize
+  environment: development
+
+images:
+  - name: mocks
+    newName: localhost:5000/tapjoy/mock_service
+    newTag: 730392874e82574f52cf991350d6f71ac0d2a26c

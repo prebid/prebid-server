@@ -1,0 +1,44 @@
+---
+# Workload-related Manifests
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tpe-prebid-service
+spec:
+  selector:
+  template:
+    spec:
+      # We're iterating in a development environment, optimize for the iteration loop by reducing time between pods
+      terminationGracePeriodSeconds: 0
+      volumes:
+        - name: src
+          persistentVolumeClaim:
+            claimName: tpe-prebid-service
+        - name: tapjoy-tooling
+          configMap:
+            name: tpe-prebid-service-tooling
+            defaultMode: 0755 # Make scripts executable
+      containers:
+        - name: app
+          imagePullPolicy: Never # We will build the baseimage on every `make dev`
+          command: ["/tapjoy/tooling/entrypoint-localdev.sh"]
+          args:
+            - prepare_and_run make run
+          envFrom:
+            - configMapRef:
+                name: tpe-prebid-service-env
+            - secretRef:
+                name: tpe-prebid-service-env # Secret is generated during `make dev-manifest`
+          ports:
+            - containerPort: 40000
+              name: debug
+              protocol: TCP
+          securityContext:
+            capabilities:
+              add: ["SYS_PTRACE"]
+          volumeMounts:
+            - name: src
+              mountPath: /go/src/github.com/tapjoy/tpe_prebid_service
+            - name: tapjoy-tooling
+              mountPath: /tapjoy/tooling
+              readOnly: true

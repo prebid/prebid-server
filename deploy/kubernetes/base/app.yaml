@@ -1,0 +1,111 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tpe-prebid-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tpe-prebid-service
+spec:
+  type: ClusterIP
+  ports:
+    - name: app
+      port: 80
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tpe-prebid-service
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          image: app
+          env:
+            - name: MY_NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: MY_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: MY_POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: MY_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: MY_POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          envFrom:
+            - configMapRef:
+              name: tpe-prebid-service-env
+          resources:
+          ports:
+            - name: app
+              containerPort: 8000
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: app
+        - name: nginx
+          image: nginx
+          imagePullPolicy: Always
+          resources: # This should be the same in every environment for nginx
+            requests:
+              # nginx can handle quite a bit of throughput (1000s of QPS) without using much CPU/memory (10s of millicores CPU, MiB memory)
+              cpu: 150m
+              memory: 125Mi
+            # Excessive overhead. We want the app to constrain first, not nginx
+            limits:
+              cpu: 2000m
+              # Plenty of overhead to avoid aggressive OOMkills
+              memory: 500Mi
+          command: ["/entrypoint.sh"]
+          env:
+            - name: MY_NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: MY_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: MY_POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: MY_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: MY_POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: ACCESS_LOG
+              value: "/dev/stdout"
+            - name: APP_PORT
+              value: "8000"
+            - name: SERVER_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP

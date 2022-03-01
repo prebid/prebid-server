@@ -1,0 +1,128 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+nameSuffix: -web-internal
+
+commonLabels:
+  app.kubernetes.io/instance: web-internal
+  app.kubernetes.io/component: app
+  app.kubernetes.io/managed-by: kustomize
+  app.kubernetes.io/part-of: tpe_prebid_service
+  environment: development
+
+resources:
+  - ../../../base
+  - storage.yaml
+
+images:
+  - name: app
+    newName: localhost:5000/tapjoy/tpe_prebid_service
+    newTag: baseimage
+  - name: nginx
+    newName: localhost:5000/tapjoy/nginx
+    newTag: latest
+
+patchesStrategicMerge:
+  - app-patch.yaml
+
+components:
+  - ../../../components/tooling/localdev
+
+configMapGenerator:
+  - name: tpe-prebid-service-env
+    literals:
+      # Placeholder until we need some real ENV for the application
+      - RACK_ENV="development"
+
+      # new relic values
+      - PBS_MONITORING_NEWRELIC_APP_NAME="tpe_prebid_service-dev"
+      - PBS_MONITORING_NEWRELIC_LOG_LEVEL="error" # // values: https://github.com/sirupsen/logrus/blob/39a5ad12948d094ddd5d5a6a4a4281f453d77562/logrus.go#L25
+
+      # opentelemetry values
+      - PBS_MONITORING_OPENTELEMETRY_ENABLED="true"
+      - PBS_MONITORING_OPENTELEMETRY_SAMPLE_RATE="1.0"
+      - PBS_MONITORING_OPENTELEMETRY_ENDPOINT="otelcol-gateway.observability-system:4139"
+
+      # aarki values
+      - PBS_ADAPTERS_AARKI_DISABLED="false"
+      - PBS_ADAPTERS_AARKI_XAPI_ENDPOINT_US_EAST="http://tpe-prebid-service-mocks.default.svc.cluster.local/aarki_givemeads"
+
+      # appier values
+      - PBS_ADAPTERS_APPIER_DISABLED="false"
+      - PBS_ADAPTERS_APPIER_XAPI_ENDPOINT_US_EAST="http://tpe-prebid-service-mocks.default.svc.cluster.local/appier_givemeads"
+      - PBS_ADAPTERS_APPIER_XAPI_ENDPOINT_EMEA="http://tpe-prebid-service-mocks.default.svc.cluster.local/appier_givemeads"
+      - PBS_ADAPTERS_APPIER_XAPI_ENDPOINT_JP="http://tpe-prebid-service-mocks.default.svc.cluster.local/appier_givemeads"
+      - PBS_ADAPTERS_APPIER_XAPI_ENDPOINT_SG="http://tpe-prebid-service-mocks.default.svc.cluster.local/appier_givemeads"
+
+      # dv360 values
+      - PBS_ADAPTERS_DV360_DISABLED="false"
+      - PBS_ADAPTERS_DV360_ENDPOINT="http://tpe-prebid-service-mocks.default.svc.cluster.local/dv360_givemeads"
+
+      # kaden.ai values
+      - PBS_ADAPTERS_KADENAI_DISABLED="false"
+      - PBS_ADAPTERS_KADENAI_ENDPOINT="http://tpe-prebid-service-mocks.default.svc.cluster.local/kadenai_givemeads"
+
+      # liftoff values
+      - PBS_ADAPTERS_LIFTOFF_DISABLED="false"
+      - PBS_ADAPTERS_LIFTOFF_XAPI_ENDPOINT_US_EAST="http://tpe-prebid-service-mocks.default.svc.cluster.local/givemeads"
+      - PBS_ADAPTERS_LIFTOFF_XAPI_ENDPOINT_EU="http://tpe-prebid-service-mocks.default.svc.cluster.local/givemeads"
+      - PBS_ADAPTERS_LIFTOFF_XAPI_ENDPOINT_APAC="http://tpe-prebid-service-mocks.default.svc.cluster.local/givemeads"
+
+      # moloco values
+      - PBS_ADAPTERS_MOLOCO_DISABLED="false"
+      - PBS_ADAPTERS_MOLOCO_XAPI_ENDPOINT_US_EAST="http://tpe-prebid-service-mocks.default.svc.cluster.local/moloco_givemeads"
+      - PBS_ADAPTERS_MOLOCO_XAPI_ENDPOINT_EU="http://tpe-prebid-service-mocks.default.svc.cluster.local/moloco_givemeads"
+      - PBS_ADAPTERS_MOLOCO_XAPI_ENDPOINT_APAC="http://tpe-prebid-service-mocks.default.svc.cluster.local/moloco_givemeads"
+
+      # pangle values
+      - PBS_ADAPTERS_PANGLE_DISABLED="false"
+      - PBS_ADAPTERS_PANGLE_XAPI_ENDPOINT_US_EAST="http://tpe-prebid-service-mocks.default.svc.cluster.local/pangle_givemeads"
+      - PBS_ADAPTERS_PANGLE_XAPI_ENDPOINT_SG="http://tpe-prebid-service-mocks.default.svc.cluster.local/pangle_givemeads"
+
+      # personaly values
+      - PBS_ADAPTERS_PERSONALY_DISABLED="false"
+      - PBS_ADAPTERS_PERSONALY_ENDPOINT="http://tpe-prebid-service-mocks.default.svc.cluster.local/personaly_givemeads"
+
+      # pubmatic values
+      - PBS_ADAPTERS_PUBMATIC_DISABLED="false"
+      - PBS_ADAPTERS_PUBMATIC_ENDPOINT="http://tpe-prebid-service-mocks.default.svc.cluster.local/pubmatic_givemeads"
+      - PBS_ADAPTERS_PUBMATIC_XAPI_ENDPOINT_MATURE_IOS="http://tpe-prebid-service-mocks.default.svc.cluster.local/pubmatic_givemeads2"
+      - PBS_ADAPTERS_PUBMATIC_XAPI_ENDPOINT_MATURE_ANDROID="http://tpe-prebid-service-mocks.default.svc.cluster.local/pubmatic_givemeads3"
+
+      # rtbhouse values
+      - PBS_ADAPTERS_RTBHOUSE_DISABLED="false"
+      - PBS_ADAPTERS_RTBHOUSE_XAPI_ENDPOINT_US_EAST="http://tpe-prebid-service-mocks.default.svc.cluster.local/rtbhouse_givemeads"
+      - PBS_ADAPTERS_RTBHOUSE_XAPI_ENDPOINT_EU="http://tpe-prebid-service-mocks.default.svc.cluster.local/rtbhouse_givemeads"
+      - PBS_ADAPTERS_RTBHOUSE_XAPI_ENDPOINT_APAC="http://tpe-prebid-service-mocks.default.svc.cluster.local/rtbhouse_givemeads"
+
+      # rubicon values
+      - PBS_ADAPTERS_RUBICON_DISABLED="false"
+      - PBS_ADAPTERS_RUBICON_XAPI_USERNAME="username"
+      - PBS_ADAPTERS_RUBICON_XAPI_PASSWORD="password"
+      - PBS_ADAPTERS_RUBICON_XAPI_ENDPOINT_US_EAST="http://tpe-prebid-service-mocks.default.svc.cluster.local/a/api/exchange.json"
+      - PBS_ADAPTERS_RUBICON_XAPI_ENDPOINT_US_WEST="http://tpe-prebid-service-mocks.default.svc.cluster.local/a/api/exchange.json"
+      - PBS_ADAPTERS_RUBICON_XAPI_ENDPOINT_EU="http://tpe-prebid-service-mocks.default.svc.cluster.local/a/api/exchange.json"
+      - PBS_ADAPTERS_RUBICON_XAPI_ENDPOINT_APAC="http://tpe-prebid-service-mocks.default.svc.cluster.local/a/api/exchange.json"
+
+      # rubiconmraid values
+      - PBS_ADAPTERS_RUBICONMRAID_DISABLED="false"
+      - PBS_ADAPTERS_RUBICONMRAID_XAPI_USERNAME="username"
+      - PBS_ADAPTERS_RUBICONMRAID_XAPI_PASSWORD="password"
+      - PBS_ADAPTERS_RUBICONMRAID_XAPI_ENDPOINT_US_EAST="http://tpe-prebid-service-mocks.default.svc.cluster.local/rubiconmraid_givemeads"
+      - PBS_ADAPTERS_RUBICONMRAID_XAPI_ENDPOINT_US_WEST="http://tpe-prebid-service-mocks.default.svc.cluster.local/rubiconmraid_givemeads"
+      - PBS_ADAPTERS_RUBICONMRAID_XAPI_ENDPOINT_EU="http://tpe-prebid-service-mocks.default.svc.cluster.local/rubiconmraid_givemeads"
+      - PBS_ADAPTERS_RUBICONMRAID_XAPI_ENDPOINT_APAC="http://tpe-prebid-service-mocks.default.svc.cluster.local/rubiconmraid_givemeads"
+
+      # tapjoy values
+      - PBS_ADAPTERS_TAPJOY_DISABLED="false"
+      - PBS_ADAPTERS_TAPJOY_ENDPOINT="http://tpe-prebid-service-mocks.default.svc.cluster.local/tapjoy_givemeads"
+
+      # taurusx values
+      - PBS_ADAPTERS_TAURUSX_DISABLED="false"
+      - PBS_ADAPTERS_TAURUSX_XAPI_ENDPOINT_US_EAST="http://tpe-prebid-service-mocks.default.svc.cluster.local/taurusx_givemeads"
+      - PBS_ADAPTERS_TAURUSX_XAPI_ENDPOINT_JP="http://tpe-prebid-service-mocks.default.svc.cluster.local/taurusx_givemeads"
+      - PBS_ADAPTERS_TAURUSX_XAPI_ENDPOINT_SG="http://tpe-prebid-service-mocks.default.svc.cluster.local/taurusx_givemeads"
+
+      # unicorn values
+      - PBS_ADAPTERS_UNICORN_DISABLED="false"
+      - PBS_ADAPTERS_UNICORN_XAPI_ENDPOINT_JP="http://tpe-prebid-service-mocks.default.svc.cluster.local/unicorn_givemeads"

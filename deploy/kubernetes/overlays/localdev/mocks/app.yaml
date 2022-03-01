@@ -1,0 +1,37 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tpe-prebid-service
+spec:
+  publishNotReadyAddresses: true # Create DNS record immediately so app crashes less on turnup
+  type: ClusterIP
+  ports:
+    - name: mocks
+      port: 80
+      targetPort: app
+---
+# Workload-related Manifests
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tpe-prebid-service
+spec:
+  selector:
+  template:
+    spec:
+      # We're iterating in a development environment, optimize for the iteration loop by reducing time between pods
+      terminationGracePeriodSeconds: 0
+      containers:
+        - name: app
+          image: mocks
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: "PORT"
+              value: "4646"
+          ports:
+            - name: app
+              containerPort: 4646
+          livenessProbe:
+            tcpSocket:
+              port: app

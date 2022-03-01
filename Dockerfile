@@ -1,8 +1,8 @@
-ARG GO_IMAGE
+ARG ROOT_IMAGE
 ###################
 ### Base Image  ###
 ###################
-FROM ${GO_IMAGE} as baseimage
+FROM ${ROOT_IMAGE} as baseimage
 
 # Install OS-level language locales
 ENV DEBIAN_FRONTEND=noninteractive LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8
