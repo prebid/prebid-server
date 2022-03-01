@@ -4,12 +4,10 @@ import (
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/version"
 	"testing"
 )
 
 func TestJsonSamples(t *testing.T) {
-	version.Ver = "42.42"
 	adapterVersion = "10.0"
 
 	bidder, buildErr := Builder(openrtb_ext.BidderSharethrough, config.Adapter{

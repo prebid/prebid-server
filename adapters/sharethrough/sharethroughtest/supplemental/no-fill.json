@@ -86,46 +86,12 @@
         }
       },
       "mockResponse": {
-        "status": 200,
-        "body": {
-          "id": "web-banner",
-          "cur": "USD",
-          "seatbid": [
-            {
-              "bid": [
-                {
-                  "id": "web-banner",
-                  "impid": "banner-imp-id",
-                  "crid": "some-creative-id",
-                  "adm": "<div>Ad</div>",
-                  "price": 20,
-                  "w": 300,
-                  "h": 250
-                }
-              ]
-            }
-          ]
-        }
+        "status": 204
       }
     }
   ],
   "expectedBidResponses": [
-    {
-      "currency": "USD",
-      "bids": [
-        {
-          "bid": {
-            "id": "web-banner",
-            "impid": "banner-imp-id",
-            "crid": "some-creative-id",
-            "adm": "<div>Ad</div>",
-            "price": 20,
-            "w": 300,
-            "h": 250
-          },
-          "type": "banner"
-        }
-      ]
-    }
-  ]
+    null
+  ],
+  "expectedMakeBidsErrors": []
 }

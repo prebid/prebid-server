@@ -69,7 +69,7 @@ func (a adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.Ex
 		}
 
 		// Convert Floor into USD
-		if imp.BidFloor > 0 && strings.EqualFold(imp.BidFloorCur, "USD") {
+		if imp.BidFloor > 0 && imp.BidFloorCur != "" && !strings.EqualFold(imp.BidFloorCur, "USD") {
 			convertedValue, err := reqInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, "USD")
 			if err != nil {
 				return nil, []error{err}
