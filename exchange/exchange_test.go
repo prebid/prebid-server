@@ -3667,6 +3667,236 @@ func TestFPD(t *testing.T) {
 
 }
 
+func TestStoredAuctionResponses(t *testing.T) {
+	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
+	if error != nil {
+		t.Errorf("Failed to create a category Fetcher: %v", error)
+	}
+
+	e := new(exchange)
+	e.cache = &wellBehavedCache{}
+	e.me = &metricsConf.NilMetricsEngine{}
+	e.gDPR = gdpr.AlwaysAllow{}
+	e.categoriesFetcher = categoriesFetcher
+	e.bidIDGenerator = &mockBidIDGenerator{false, false}
+	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+
+	// Define mock incoming bid requeset
+	mockBidRequest := &openrtb2.BidRequest{
+		ID: "request-id",
+		Imp: []openrtb2.Imp{{
+			ID:    "impression-id",
+			Video: &openrtb2.Video{W: 400, H: 300},
+		}},
+	}
+
+	expectedBidResponse := &openrtb2.BidResponse{
+		ID: "request-id",
+		SeatBid: []openrtb2.SeatBid{
+			{
+				Bid: []openrtb2.Bid{
+					{ID: "bid_id", ImpID: "impression-id", Ext: json.RawMessage(`{"prebid":{"type":""}}`)},
+				},
+				Seat: "appnexus",
+			},
+		},
+	}
+
+	testCases := []struct {
+		desc              string
+		storedAuctionResp map[string]json.RawMessage
+		errorExpected     bool
+	}{
+		{
+			desc: "Single imp with valid stored response",
+			storedAuctionResp: map[string]json.RawMessage{
+				"impression-id": json.RawMessage(`[{"bid": [{"id": "bid_id"}],"seat": "appnexus"}]`),
+			},
+			errorExpected: false,
+		},
+		{
+			desc: "Single imp with invalid stored response",
+			storedAuctionResp: map[string]json.RawMessage{
+				"impression-id": json.RawMessage(`[}]`),
+			},
+			errorExpected: true,
+		},
+	}
+
+	for _, test := range testCases {
+
+		auctionRequest := AuctionRequest{
+			BidRequest:             mockBidRequest,
+			Account:                config.Account{},
+			UserSyncs:              &emptyUsersync{},
+			StoredAuctionResponses: test.storedAuctionResp,
+		}
+
+		// Run test
+		outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, &DebugLog{})
+		if test.errorExpected {
+			assert.Error(t, err, "Error should be returned")
+		} else {
+			assert.NoErrorf(t, err, "%s. HoldAuction error: %v \n", test.desc, err)
+			outBidResponse.Ext = nil
+			assert.Equal(t, expectedBidResponse, outBidResponse, "Incorrect stored auction response")
+		}
+
+	}
+}
+
+func TestBuildStoredAuctionResponses(t *testing.T) {
+
+	type testIn struct {
+		StoredAuctionResponses map[string]json.RawMessage
+	}
+	type testResults struct {
+		adapterBids  map[openrtb_ext.BidderName]*pbsOrtbSeatBid
+		liveAdapters []openrtb_ext.BidderName
+	}
+
+	testCases := []struct {
+		desc     string
+		in       testIn
+		expected testResults
+	}{
+		{
+			desc: "Single imp with single stored response bid",
+			in: testIn{
+				StoredAuctionResponses: map[string]json.RawMessage{
+					"impression-id": json.RawMessage(`[{"bid": [{"id": "bid_id"}],"seat": "appnexus"}]`),
+				},
+			},
+			expected: testResults{
+				adapterBids: map[openrtb_ext.BidderName]*pbsOrtbSeatBid{
+					openrtb_ext.BidderName("appnexus"): {
+						bids: []*pbsOrtbBid{
+							{
+								bid: &openrtb2.Bid{ID: "bid_id", ImpID: "impression-id"},
+							},
+						},
+					},
+				},
+				liveAdapters: []openrtb_ext.BidderName{openrtb_ext.BidderName("appnexus")},
+			},
+		},
+		{
+			desc: "Single imp with multiple bids in stored response one bidder",
+			in: testIn{
+				StoredAuctionResponses: map[string]json.RawMessage{
+					"impression-id": json.RawMessage(`[{"bid": [{"id": "bid_id1"}, {"id": "bid_id2"}],"seat": "appnexus"}]`),
+				},
+			},
+			expected: testResults{
+				adapterBids: map[openrtb_ext.BidderName]*pbsOrtbSeatBid{
+					openrtb_ext.BidderName("appnexus"): {
+						bids: []*pbsOrtbBid{
+							{bid: &openrtb2.Bid{ID: "bid_id1", ImpID: "impression-id"}},
+							{bid: &openrtb2.Bid{ID: "bid_id2", ImpID: "impression-id"}},
+						},
+					},
+				},
+				liveAdapters: []openrtb_ext.BidderName{openrtb_ext.BidderName("appnexus")},
+			},
+		},
+		{
+			desc: "Single imp with multiple bids in stored response two bidders",
+			in: testIn{
+				StoredAuctionResponses: map[string]json.RawMessage{
+					"impression-id": json.RawMessage(`[{"bid": [{"id": "apn_id1"}, {"id": "apn_id2"}],"seat": "appnexus"}, {"bid": [{"id": "rubicon_id1"}, {"id": "rubicon_id2"}],"seat": "rubicon"}]`),
+				},
+			},
+			expected: testResults{
+				adapterBids: map[openrtb_ext.BidderName]*pbsOrtbSeatBid{
+					openrtb_ext.BidderName("appnexus"): {
+						bids: []*pbsOrtbBid{
+							{bid: &openrtb2.Bid{ID: "apn_id1", ImpID: "impression-id"}},
+							{bid: &openrtb2.Bid{ID: "apn_id2", ImpID: "impression-id"}},
+						},
+					},
+					openrtb_ext.BidderName("rubicon"): {
+						bids: []*pbsOrtbBid{
+							{bid: &openrtb2.Bid{ID: "rubicon_id1", ImpID: "impression-id"}},
+							{bid: &openrtb2.Bid{ID: "rubicon_id2", ImpID: "impression-id"}},
+						},
+					},
+				},
+				liveAdapters: []openrtb_ext.BidderName{openrtb_ext.BidderName("appnexus"), openrtb_ext.BidderName("rubicon")},
+			},
+		},
+		{
+			desc: "Two imps with two bids in stored response two bidders, different bids number",
+			in: testIn{
+				StoredAuctionResponses: map[string]json.RawMessage{
+					"impression-id1": json.RawMessage(`[{"bid": [{"id": "apn_id1"}, {"id": "apn_id2"}],"seat": "appnexus"}]`),
+					"impression-id2": json.RawMessage(`[{"bid": [{"id": "apn_id1"}, {"id": "apn_id2"}],"seat": "appnexus"}, {"bid": [{"id": "rubicon_id1"}, {"id": "rubicon_id2"}],"seat": "rubicon"}]`),
+				},
+			},
+			expected: testResults{
+				adapterBids: map[openrtb_ext.BidderName]*pbsOrtbSeatBid{
+					openrtb_ext.BidderName("appnexus"): {
+						bids: []*pbsOrtbBid{
+							{bid: &openrtb2.Bid{ID: "apn_id1", ImpID: "impression-id1"}},
+							{bid: &openrtb2.Bid{ID: "apn_id2", ImpID: "impression-id1"}},
+							{bid: &openrtb2.Bid{ID: "apn_id1", ImpID: "impression-id2"}},
+							{bid: &openrtb2.Bid{ID: "apn_id2", ImpID: "impression-id2"}},
+						},
+					},
+					openrtb_ext.BidderName("rubicon"): {
+						bids: []*pbsOrtbBid{
+							{bid: &openrtb2.Bid{ID: "rubicon_id1", ImpID: "impression-id2"}},
+							{bid: &openrtb2.Bid{ID: "rubicon_id2", ImpID: "impression-id2"}},
+						},
+					},
+				},
+				liveAdapters: []openrtb_ext.BidderName{openrtb_ext.BidderName("appnexus"), openrtb_ext.BidderName("rubicon")},
+			},
+		},
+		{
+			desc: "Two imps with two bids in stored response two bidders",
+			in: testIn{
+				StoredAuctionResponses: map[string]json.RawMessage{
+					"impression-id1": json.RawMessage(`[{"bid": [{"id": "apn_id1"}, {"id": "apn_id2"}],"seat": "appnexus"}, {"bid": [{"id": "rubicon_id1"}, {"id": "rubicon_id2"}],"seat": "rubicon"}]`),
+					"impression-id2": json.RawMessage(`[{"bid": [{"id": "apn_id1"}, {"id": "apn_id2"}],"seat": "appnexus"}, {"bid": [{"id": "rubicon_id1"}, {"id": "rubicon_id2"}],"seat": "rubicon"}]`),
+				},
+			},
+			expected: testResults{
+				adapterBids: map[openrtb_ext.BidderName]*pbsOrtbSeatBid{
+					openrtb_ext.BidderName("appnexus"): {
+						bids: []*pbsOrtbBid{
+							{bid: &openrtb2.Bid{ID: "apn_id1", ImpID: "impression-id1"}},
+							{bid: &openrtb2.Bid{ID: "apn_id2", ImpID: "impression-id1"}},
+							{bid: &openrtb2.Bid{ID: "apn_id1", ImpID: "impression-id2"}},
+							{bid: &openrtb2.Bid{ID: "apn_id2", ImpID: "impression-id2"}},
+						},
+					},
+					openrtb_ext.BidderName("rubicon"): {
+						bids: []*pbsOrtbBid{
+							{bid: &openrtb2.Bid{ID: "rubicon_id1", ImpID: "impression-id1"}},
+							{bid: &openrtb2.Bid{ID: "rubicon_id2", ImpID: "impression-id1"}},
+							{bid: &openrtb2.Bid{ID: "rubicon_id1", ImpID: "impression-id2"}},
+							{bid: &openrtb2.Bid{ID: "rubicon_id2", ImpID: "impression-id2"}},
+						},
+					},
+				},
+				liveAdapters: []openrtb_ext.BidderName{openrtb_ext.BidderName("appnexus"), openrtb_ext.BidderName("rubicon")},
+			},
+		},
+	}
+	for _, test := range testCases {
+
+		bids, adapters, err := buildStoredAuctionResponse(test.in.StoredAuctionResponses)
+		assert.NoErrorf(t, err, "%s. HoldAuction error: %v \n", test.desc, err)
+
+		assert.ElementsMatch(t, test.expected.liveAdapters, adapters, "Incorrect adapter list")
+
+		for _, bidderName := range test.expected.liveAdapters {
+			assert.ElementsMatch(t, test.expected.adapterBids[bidderName].bids, bids[bidderName].bids, "Incorrect bids")
+		}
+
+	}
+}
+
 type exchangeSpec struct {
 	GDPREnabled       bool                   `json:"gdpr_enabled"`
 	IncomingRequest   exchangeRequest        `json:"incomingRequest"`
