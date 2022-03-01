@@ -35,7 +35,7 @@ func (p *permissionsMock) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 	return true, nil
 }
 
-func (p *permissionsMock) AuctionActivitiesAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdpr gdpr.Signal, consent string, weakVendorEnforcement bool) (allowBidRequest bool, passGeo bool, passID bool, err error) {
+func (p *permissionsMock) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string, weakVendorEnforcement bool, aliasGVLIDs map[string]uint16) (allowBidRequest bool, passGeo bool, passID bool, err error) {
 	if p.allowAllBidders {
 		return true, p.passGeo, p.passID, p.activitiesError
 	}
@@ -2606,5 +2606,67 @@ func TestApplyFPD(t *testing.T) {
 	for _, testCase := range testCases {
 		applyFPD(testCase.inputFpd[testCase.bidderName], &testCase.inputRequest)
 		assert.Equal(t, testCase.expectedRequest, testCase.inputRequest, fmt.Sprintf("incorrect request after applying fpd, testcase %s", testCase.description))
+	}
+}
+
+func Test_parseAliasesGVLIDs(t *testing.T) {
+	type args struct {
+		orig *openrtb2.BidRequest
+	}
+	tests := []struct {
+		name      string
+		args      args
+		want      map[string]uint16
+		wantError bool
+	}{
+		{
+			"AliasGVLID Parsed Correctly",
+			args{
+				orig: &openrtb2.BidRequest{
+					Ext: json.RawMessage(`{"prebid":{"aliases":{"brightroll":"appnexus"}, "aliasgvlids":{"brightroll":1}}}`),
+				},
+			},
+			map[string]uint16{"brightroll": 1},
+			false,
+		},
+		{
+			"AliasGVLID parsing error",
+			args{
+				orig: &openrtb2.BidRequest{
+					Ext: json.RawMessage(`{"prebid":{"aliases":{"brightroll":"appnexus"}, "aliasgvlids": {"brightroll":"abc"}`),
+				},
+			},
+			nil,
+			true,
+		},
+		{
+			"Invalid AliasGVLID",
+			args{
+				orig: &openrtb2.BidRequest{
+					Ext: json.RawMessage(`{"prebid":{"aliases":{"brightroll":"appnexus"}, "aliasgvlids":"abc"}`),
+				},
+			},
+			nil,
+			true,
+		},
+		{
+			"Missing AliasGVLID",
+			args{
+				orig: &openrtb2.BidRequest{
+					Ext: json.RawMessage(`{"prebid":{"aliases":{"brightroll":"appnexus"}}`),
+				},
+			},
+			nil,
+			false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseAliasesGVLIDs(tt.args.orig)
+			assert.Equal(t, tt.want, got, "parseAliasesGVLIDs() got = %v, want %v", got, tt.want)
+			if !tt.wantError && err != nil {
+				t.Errorf("parseAliasesGVLIDs() expected error got nil")
+			}
+		})
 	}
 }

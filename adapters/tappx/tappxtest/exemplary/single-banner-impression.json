@@ -12,8 +12,7 @@
         "ext": {
          "bidder": {
             "tappxkey": "pub-12345-android-9876",
-            "endpoint": "ZZ123456PS",
-            "host": "testing.ssp.tappx.com/rtb/v2/"
+            "endpoint": "ZZ123456PS"
           }
         }
       }
@@ -33,7 +32,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://testing.ssp.tappx.com/rtb/v2/ZZ123456PS?tappxkey=pub-12345-android-9876&type_cnn=prebid&v=1.3",
+        "uri": "http://ssp.api.tappx.com/rtb/v2/ZZ123456PS?tappxkey=pub-12345-android-9876&type_cnn=prebid&v=1.4",
         "body": {
           "id": "0000000000001",
           "test": 1,
@@ -47,8 +46,7 @@
               "ext": {
                 "bidder": {
                   "tappxkey": "pub-12345-android-9876",
-                  "endpoint": "ZZ123456PS",
-                 "host": "testing.ssp.tappx.com/rtb/v2/"
+                  "endpoint": "ZZ123456PS"
                 }
               }
             }

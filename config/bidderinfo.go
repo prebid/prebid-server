@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 // BidderInfos contains a mapping of bidder name to bidder info.
