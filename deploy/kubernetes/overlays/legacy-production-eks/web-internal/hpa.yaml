@@ -1,0 +1,25 @@
+---
+kind: HorizontalPodAutoscaler
+apiVersion: autoscaling/v2beta2
+metadata:
+  name: tpe-prebid-service
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: tpe-prebid-service
+ # DO NOT increase scaling thresholds & change Pod resource requests in the same deploy. HPA changes do not go through
+ # a canary-style burn-in period. Instead they are applied immediately, and take effect while the prior workload is
+ # still running. Changing pod resource requests while increasing scaling thresholds can severely constrain capacity.
+ #
+ # Decreasing thresholds or adding another metric while making resource changes is okay, as it can only result in
+ # *more* capacity. The HPA controller chooses the calculation that results in the most replicas.
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+  minReplicas: 5
+  maxReplicas: 300

@@ -1,0 +1,30 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+nameSuffix: -web-internal
+
+commonLabels:
+  app.kubernetes.io/instance: web_internal
+  app.kubernetes.io/managed-by: kustomize
+  app.kubernetes.io/part-of: tpe_prebid_service
+  ops.tapjoy.net/billing-category: cogs
+  ops.tapjoy.net/environment: legacy-production-eks
+
+resources:
+- ../../../base/
+- hpa.yaml
+
+patchesStrategicMerge:
+- app-patch.yaml
+
+components:
+- ../../../components/tooling/production
+
+configMapGenerator:
+- name: tpe-prebid-service-env
+  behavior: merge
+
+images:
+- name: nginx
+  newName: localhost:5000/tapjoy/nginx
+  newTag: latest

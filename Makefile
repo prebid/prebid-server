@@ -13,7 +13,8 @@ MAKEFLAGS += --no-print-directory
 KUBECONFIG :=
 
 KUSTOMIZE_OVERLAY_DIR ?= deploy/kubernetes/overlays
-DEPLOY_FACETS := legacy-production-eks/web-internal
+DEPLOY_INFRAS := legacy-production-eks
+FACETS := web-internal
 
 GOLANG_VERSION := 1.16
 
@@ -23,7 +24,8 @@ GOFLAGS := -mod=vendor
 GOSUMDB := off
 
 VERSION           := 0.0.1
-GIT_SHA           := $(shell git rev-parse HEAD)
+GIT_SHA := $$(git rev-parse HEAD)
+export PRODUCTION_IMAGE_TAG := $$(git rev-parse HEAD^)
 
 BUILD             := $(shell date +%FT%T%z)
 BUILD_FOLDER      := ./build
@@ -162,6 +164,7 @@ dev-restart:
 
 .PHONY: dev-mocks
 dev-mocks: MOCK_HOST ?= tpe-prebid-service-mocks.default.svc.cluster.local
+dev-mocks: SCENARIO ?=
 dev-mocks:
 	@test -z "${SCENARIO}" && { echo "SCENARIO must be set, and its value should be one of the following:"; ls testdata/scenarios; exit 1; } || true
 
@@ -232,38 +235,126 @@ baseimage:
 
 	@rm -rf ${CACHE_DIR}
 
+.PHONY: inspect-baseimage
+inspect-baseimage: baseimage
+	kubectl run ${PROJECT_DNS_NAME}-baseimage \
+		--rm -it \
+		--image=${IMAGE_NAME}:baseimage \
+		--command -- bash -l
+
 .PHONY: artifact
 artifact:
+	# NOTE: This must be run on a build box that has AWS credentials, either via env var or IAM instance profile
 	docker build \
 		--target artifact \
-		--tag ${IMAGE_NAME}:${GIT_SHA} \
+		--build-arg ROOT_IMAGE=${ROOT_IMAGE} \
+		--tag ${IMAGE_NAME}:${PRODUCTION_IMAGE_TAG} \
 		.
+
+.PHONY: inspect-artifact
+inspect-artifact:
+# Artifact builds are very time-consuming, so we're not going to run artifact as a dependency of this task
+	kubectl run ${PROJECT_DNS_NAME}-artifact \
+		--rm -it \
+		--image=${IMAGE_NAME}:${PRODUCTION_IMAGE_TAG} \
+		--command -- bash -l
 
 .PHONY: artifact-prep
 artifact-prep: build
-	@# All build-time steps needed for preparing a deployment artifact should be contained here
-	@# This would generally be tasks like bundle installs, asset building, bundling GeoIP data and so on
-	@## NOTE: Once slugs of a project are no longer deployed, this task can be moved to the Dockerfile
+# All build-time steps needed for preparing a deployment artifact should be contained here
+# This would generally be tasks like bundle installs, asset building, bundling GeoIP data and so on
+## NOTE: Once slugs of a project are no longer deployed, this task can be moved to the Dockerfile
 
-	@# Create shafile containing current git SHA
+# Create shafile containing current git SHA
 	echo ${GIT_SHA} > shafile
 
-	@# Remove everything but the binary and supporting files needed in production.
-	@### NOTES
-	@## We are keeping the `.git` directory around for slug artifacts, as `slugforge` needs it to be there in order to
-	@## properly name the slugs it builds.
-	@##
-	@## We are keeping the `static` and `stored_requests` directories because there is a dependency on them in the
-	@## application config (`tpe_prebid_service/config/config.go`) and the compiled binary will not execute without them.
+# Create pids directory
+	mkdir pids
+
+# Remove everything but the binary and supporting files needed in production.
+### NOTES
+## We are keeping the `.git` directory around for slug artifacts, as `slugforge` needs it to be there in order to
+## properly name the slugs it builds.
+##
+## We are keeping the `static` and `stored_requests` directories because there is a dependency on them in the
+## application config (`tpe_prebid_service/config/config.go`) and the compiled binary will not execute without them.
 	rm -r `ls -A | grep -v -E "\.git|build|Makefile|Procfile|deploy|data|grace-shepherd|pids|db|bin|static|stored_requests"`
 
-	@# Move the built binary and remove the build directory
-	@# Ensure the binary exists where our deployment tooling expects and remove the build directory
+# Move the built binary and remove the build directory
+# Ensure the binary exists where our deployment tooling expects and remove the build directory
 	mv ${BUILD_FILE} ./${PROJECT_NAME} && rm -rf build
+
+.PHONY: artifact-sha
+artifact-sha:
+# Reports back the git sha that should be for given artifact
+# in non-kustomized environments this will be $GIT_SHA
+# in kustomized environments this will be $PRODUCTION_IMAGE_TAG
+	@echo ${PRODUCTION_IMAGE_TAG}
+
+.PHONY: artifact-preflight
+ifeq ($(DEPLOY_INFRAS),)
+artifact-preflight:
+	@echo "No preflight necessary until DEPLOY_INFRAS has members"
+else
+artifact-preflight:
+# Last-mile setup that updates the manifest to set the tag of the image used by Kubernetes to the current git sha
+# This should be done by the deploy mechanism (deployboard, not Harness)
+	@if ! git show HEAD --summary | grep -q "Automated Kustomize edits" || ! git show HEAD | grep -q "${PRODUCTION_IMAGE_TAG}"; then \
+		1>/dev/null git commit --allow-empty -m "Automated Kustomize edits. Refer to previous commit." &&\
+		for infra in ${DEPLOY_INFRAS}; do \
+			for facet in ${FACETS}; do \
+				&>/dev/null pushd ${KUSTOMIZE_OVERLAY_DIR}/$${infra}/$${facet} &&\
+				kustomize edit set image app=${IMAGE_NAME}:${PRODUCTION_IMAGE_TAG} &&\
+				&>/dev/null popd ;\
+			done ;\
+		done &&\
+		1>/dev/null git commit -a --amend --no-edit ;\
+	fi
+endif
 
 .PHONY: artifact-publish
 artifact-publish: artifact
-	docker push ${IMAGE_NAME}:${GIT_SHA}
+	docker push ${IMAGE_NAME}:${PRODUCTION_IMAGE_TAG}
 	@# We'll need to clean up after ourselves so long as legacy Jenkins is the builder component
-	docker rmi ${IMAGE_NAME}:${GIT_SHA}
+	docker rmi ${IMAGE_NAME}:${PRODUCTION_IMAGE_TAG}
 	docker rmi `docker images -q -f dangling=true`
+
+.PHONY: slug-builder
+slug-builder: IMAGE_TAG := $$(test -z "$$(git diff origin/master Dockerfile)" && printf baseimage || printf baseimage-${GIT_SHA})
+slug-builder: WORKDIR := /go/src/github.com/tapjoy/${PROJECT_NAME}
+slug-builder: fix-permissions
+# Build the base image for build container. If the Dockerfile hasn't changed, the image will
+# likely be in the Docker build cache already.
+	IMAGE_TAG=${IMAGE_TAG} make baseimage
+
+# Run the deployment artifact preparation steps
+## - This Docker command will be run in the context of a `slugforge build` call by the Jenkins slug builder
+	IMAGE_TAG=${IMAGE_TAG} docker run \
+		--rm \
+		--env AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY --env AWS_SESSION_TOKEN \
+		-v "$$(pwd)":${WORKDIR} \
+		"${IMAGE_NAME}:${IMAGE_TAG}" \
+		make artifact-prep
+
+	make fix-permissions
+
+.PHONY: fix-permissions
+fix-permissions:
+# The contents of vendor/bundle and other files created by package preparation steps (assets, etc.)
+# during a containerized build workflow will be owned by root
+# during the duration of the slug build and packaging process.
+# If prep steps create any files with read-only permissions (data files in gems, etc.)
+# The fpm run in slugforge will fail due to permissions issues.
+# Explicitly change ownership of all files to the user running the build.
+	sudo chown -R $$(id -u):$$(id -g) .
+
+.PHONY: manifest
+manifest:
+	@for infra in ${DEPLOY_INFRAS}; do \
+		for facet in ${FACETS}; do \
+			&>/dev/null pushd deploy/kubernetes/overlays/$${infra}/$${facet} &&\
+			echo "---" &&\
+			kustomize build &&\
+			&>/dev/null popd ;\
+		done ;\
+	done

@@ -25,6 +25,8 @@ spec:
           args:
             - prepare_and_run make run
           envFrom:
+            # configMapRef is duplicated from the base because for some reason (kustomize bug?) it will disappear
+            # if we only set the secretRef here
             - configMapRef:
                 name: tpe-prebid-service-env
             - secretRef:

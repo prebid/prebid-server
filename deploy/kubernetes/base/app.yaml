@@ -20,8 +20,20 @@ kind: Deployment
 metadata:
   name: tpe-prebid-service
 spec:
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: "100%"
+      maxUnavailable: 0 # We must *always* be at/above HPA-determined capacity so we will roll out by *first* scaling up
   template:
     spec:
+      securityContext:
+        fsGroup: 65534
+        sysctls:
+        # https://v1-21.docs.kubernetes.io/docs/tasks/administer-cluster/sysctl-cluster/
+          - name: "net.ipv4.ip_local_port_range"
+            value: "1024 65023"
+      serviceAccountName: tpe-prebid-service
       containers:
         - name: app
           image: app
@@ -48,16 +60,12 @@ spec:
                   fieldPath: metadata.namespace
           envFrom:
             - configMapRef:
-              name: tpe-prebid-service-env
+                name: tpe-prebid-service-env
           resources:
           ports:
             - name: app
               containerPort: 8000
               protocol: TCP
-          readinessProbe:
-            httpGet:
-              path: /healthz
-              port: app
         - name: nginx
           image: nginx
           imagePullPolicy: Always

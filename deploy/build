@@ -4,40 +4,4 @@
 
 set -eux
 
-GIT_TAG=$(git rev-parse --short HEAD)
-IMAGE_TAG=baseimage
-# PROJECT_NAME var will be passed in by the slug builder container
-IMAGE_NAME=localhost:5000/tapjoy/${PROJECT_NAME}
-PROJECT_HOME=/go/src/github.com/tapjoy/${PROJECT_NAME}
-
-# BEGIN FUNCTIONS
-
-function run_build() {
-  # Tag new build-container image w/ SHA if the Dockerfile has changed.
-  if [[ ! -z "$(git diff origin/master Dockerfile)" ]]; then
-    echo "Dockerfile updates detected. Updating application's base image."
-    ## Affix git tag to base image to be built, from which a container will be created,
-    ## in which the deployment artifact will be built.
-    IMAGE_TAG=${IMAGE_TAG}-${GIT_TAG}
-  fi
-
-  # Build the base image for build container. If the Dockerfile hasn't changed, the image will
-  # likely be in the Docker build cache already.
-  IMAGE_TAG=${IMAGE_TAG} make baseimage
-
-  # Run the deployment artifact preparation steps (prepare_for_deployment function in entrypoint)
-  ## - This Docker command will be run in the context of a `slugforge build` call by the Jenkins slug builder
-  ## - Setting BUNDLE_APP_CONFIG is required because the official Ruby image sets this variable, which breaks artifact builds
-  docker run --rm \
-    -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY \
-    -e PROJECT_NAME \
-    -e BUNDLE_APP_CONFIG=.bundle \
-    -v "$(pwd):${PROJECT_HOME:-/project}" \
-    -v ~/.ssh/:/root/.ssh/ \
-    "${IMAGE_NAME}:${IMAGE_TAG}" \
-    make artifact-prep
-}
-
-# END FUNCTIONS
-
-run_build
+make slug-builder
