@@ -2,6 +2,7 @@ package endpoints
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
@@ -34,6 +35,7 @@ func TestNewCookieSyncEndpoint(t *testing.T) {
 		configCCPAEnforce = true
 		metrics           = metrics.MetricsEngineMock{}
 		analytics         = MockAnalytics{}
+		fetcher           = FakeAccountsFetcher{}
 		bidders           = map[string]openrtb_ext.BidderName{"bidderA": openrtb_ext.BidderName("bidderA"), "bidderB": openrtb_ext.BidderName("bidderB")}
 	)
 
@@ -48,12 +50,19 @@ func TestNewCookieSyncEndpoint(t *testing.T) {
 		&gdprPerms,
 		&metrics,
 		&analytics,
+		&fetcher,
 		bidders,
 	)
 
 	expected := &cookieSyncEndpoint{
-		chooser:          usersync.NewChooser(syncersByBidder),
-		config:           configUserSync,
+		chooser: usersync.NewChooser(syncersByBidder),
+		config: &config.Configuration{
+			UserSync:   configUserSync,
+			HostCookie: configHostCookie,
+			GDPR:       configGDPR,
+			CCPA:       config.CCPA{Enforce: configCCPAEnforce},
+		},
+		configUserSync:   configUserSync,
 		hostCookieConfig: &configHostCookie,
 		privacyConfig: usersyncPrivacyConfig{
 			gdprConfig:      configGDPR,
@@ -61,8 +70,9 @@ func TestNewCookieSyncEndpoint(t *testing.T) {
 			ccpaEnforce:     configCCPAEnforce,
 			bidderHashSet:   map[string]struct{}{"bidderA": {}, "bidderB": {}},
 		},
-		metrics:      &metrics,
-		pbsAnalytics: &analytics,
+		metrics:         &metrics,
+		pbsAnalytics:    &analytics,
+		accountsFetcher: &fetcher,
 	}
 
 	assert.Equal(t, expected, endpoint)
@@ -263,15 +273,14 @@ func TestCookieSyncParseRequest(t *testing.T) {
 	expectedCCPAParsedPolicy, _ := ccpa.Policy{Consent: "1NYN"}.Parse(map[string]struct{}{})
 
 	testCases := []struct {
-		description        string
-		givenConfig        config.UserSync
-		givenAccountConfig config.Account
-		givenBody          io.Reader
-		givenGDPRConfig    config.GDPR
-		givenCCPAEnabled   bool
-		expectedError      string
-		expectedPrivacy    privacy.Policies
-		expectedRequest    usersync.Request
+		description      string
+		givenConfig      config.UserSync
+		givenBody        io.Reader
+		givenGDPRConfig  config.GDPR
+		givenCCPAEnabled bool
+		expectedError    string
+		expectedPrivacy  privacy.Policies
+		expectedRequest  usersync.Request
 	}{
 		{
 			description: "Complete Request",
@@ -291,9 +300,6 @@ func TestCookieSyncParseRequest(t *testing.T) {
 					EnabledByDefault: false,
 					PriorityGroups:   [][]string{{"a", "b", "c"}},
 				},
-			},
-			givenAccountConfig: config.Account{
-				MaxLimit: 100,
 			},
 			expectedPrivacy: privacy.Policies{
 				GDPR: gdprPrivacy.Policy{
@@ -338,9 +344,6 @@ func TestCookieSyncParseRequest(t *testing.T) {
 					EnabledByDefault: false,
 					PriorityGroups:   [][]string{{"a", "b", "c"}},
 				},
-			},
-			givenAccountConfig: config.Account{
-				MaxLimit: 100,
 			},
 			expectedPrivacy: privacy.Policies{
 				GDPR: gdprPrivacy.Policy{
@@ -395,9 +398,6 @@ func TestCookieSyncParseRequest(t *testing.T) {
 					EnabledByDefault: true,
 					PriorityGroups:   [][]string{{"a", "b", "c"}},
 				},
-			},
-			givenAccountConfig: config.Account{
-				DefaultCoopSync: true,
 			},
 			expectedPrivacy: privacy.Policies{},
 			expectedRequest: usersync.Request{
@@ -664,7 +664,8 @@ func TestCookieSyncParseRequest(t *testing.T) {
 				`"gdpr":1,` +
 				`"gdpr_consent":"anyGDPRConsent",` +
 				`"us_privacy":"1NYN",` +
-				`"limit":42` +
+				`"limit":42,` +
+				`"account":"TestAccount"` +
 				`}`),
 			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
@@ -672,10 +673,6 @@ func TestCookieSyncParseRequest(t *testing.T) {
 				Cooperative: config.UserSyncCooperative{
 					PriorityGroups: [][]string{{"a", "b", "c"}},
 				},
-			},
-			givenAccountConfig: config.Account{
-				MaxLimit:        41,
-				DefaultCoopSync: true,
 			},
 			expectedPrivacy: privacy.Policies{
 				GDPR: gdprPrivacy.Policy{
@@ -692,7 +689,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 					Enabled:        true,
 					PriorityGroups: [][]string{{"a", "b", "c"}},
 				},
-				Limit: 41,
+				Limit: 30,
 				Privacy: usersyncPrivacy{
 					gdprSignal:       gdpr.SignalYes,
 					gdprConsent:      "anyGDPRConsent",
@@ -710,7 +707,8 @@ func TestCookieSyncParseRequest(t *testing.T) {
 				`"bidders":["a", "b"],` +
 				`"gdpr":1,` +
 				`"gdpr_consent":"anyGDPRConsent",` +
-				`"us_privacy":"1NYN"` +
+				`"us_privacy":"1NYN",` +
+				`"account":"TestAccount"` +
 				`}`),
 			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
@@ -719,9 +717,6 @@ func TestCookieSyncParseRequest(t *testing.T) {
 					EnabledByDefault: false,
 					PriorityGroups:   [][]string{{"a", "b", "c"}},
 				},
-			},
-			givenAccountConfig: config.Account{
-				DefaultLimit: 42,
 			},
 			expectedPrivacy: privacy.Policies{
 				GDPR: gdprPrivacy.Policy{
@@ -735,10 +730,10 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			expectedRequest: usersync.Request{
 				Bidders: []string{"a", "b"},
 				Cooperative: usersync.Cooperative{
-					Enabled:        false,
+					Enabled:        true,
 					PriorityGroups: [][]string{{"a", "b", "c"}},
 				},
-				Limit: 42,
+				Limit: 20,
 				Privacy: usersyncPrivacy{
 					gdprSignal:       gdpr.SignalYes,
 					gdprConsent:      "anyGDPRConsent",
@@ -756,13 +751,15 @@ func TestCookieSyncParseRequest(t *testing.T) {
 		httpRequest := httptest.NewRequest("POST", "/cookiesync", test.givenBody)
 
 		endpoint := cookieSyncEndpoint{
-			config: test.givenConfig,
+			config:         &config.Configuration{},
+			configUserSync: test.givenConfig,
 			privacyConfig: usersyncPrivacyConfig{
 				gdprConfig:  test.givenGDPRConfig,
 				ccpaEnforce: test.givenCCPAEnabled,
 			},
-			accountConfig: test.givenAccountConfig,
+			accountsFetcher: FakeAccountsFetcher{},
 		}
+		assert.NoError(t, endpoint.config.MarshalAccountDefaults())
 		request, privacyPolicies, err := endpoint.parseRequest(httpRequest)
 
 		if test.expectedError == "" {
@@ -1423,6 +1420,20 @@ func (m *MockGDPRPerms) BidderSyncAllowed(ctx context.Context, bidder openrtb_ex
 func (m *MockGDPRPerms) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string, weakVendorEnforcement bool, aliasGVLIDs map[string]uint16) (allowBidReq bool, passGeo bool, passID bool, err error) {
 	args := m.Called(ctx, bidderCoreName, bidder, PublisherID, gdprSignal, consent, weakVendorEnforcement, aliasGVLIDs)
 	return args.Bool(0), args.Bool(1), args.Bool(2), args.Error(3)
+}
+
+var mockAccountData = map[string]json.RawMessage{
+	"TestAccount": json.RawMessage(`{"cookie_sync": {"default_limit": 20, "max_limit": 30, "default_coop_sync": true}}`),
+}
+
+type FakeAccountsFetcher struct {
+}
+
+func (f FakeAccountsFetcher) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {
+	if account, ok := mockAccountData[accountID]; ok {
+		return account, nil
+	}
+	return nil, []error{errors.New("Account not found")}
 }
 
 // ErrReader returns an io.Reader that returns 0, err from all Read calls. This is added in

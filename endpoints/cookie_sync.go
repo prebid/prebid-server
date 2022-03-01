@@ -11,6 +11,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
+	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/gdpr"
@@ -19,6 +20,7 @@ import (
 	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/privacy/ccpa"
 	gdprPrivacy "github.com/prebid/prebid-server/privacy/gdpr"
+	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/usersync"
 )
 
@@ -38,6 +40,7 @@ func NewCookieSyncEndpoint(
 	gdprPermissions gdpr.Permissions,
 	metrics metrics.MetricsEngine,
 	pbsAnalytics analytics.PBSAnalyticsModule,
+	accountsFetcher stored_requests.AccountFetcher,
 	bidders map[string]openrtb_ext.BidderName) HTTPRouterHandler {
 
 	bidderHashSet := make(map[string]struct{}, len(bidders))
@@ -47,7 +50,8 @@ func NewCookieSyncEndpoint(
 
 	return &cookieSyncEndpoint{
 		chooser:          usersync.NewChooser(syncersByBidder),
-		config:           config.UserSync,
+		config:           config,
+		configUserSync:   config.UserSync,
 		hostCookieConfig: &config.HostCookie,
 		privacyConfig: usersyncPrivacyConfig{
 			gdprConfig:      config.GDPR,
@@ -55,19 +59,21 @@ func NewCookieSyncEndpoint(
 			ccpaEnforce:     config.CCPA.Enforce,
 			bidderHashSet:   bidderHashSet,
 		},
-		metrics:      metrics,
-		pbsAnalytics: pbsAnalytics,
+		metrics:         metrics,
+		pbsAnalytics:    pbsAnalytics,
+		accountsFetcher: accountsFetcher,
 	}
 }
 
 type cookieSyncEndpoint struct {
 	chooser          usersync.Chooser
-	config           config.UserSync
-	accountConfig    config.Account
+	config           *config.Configuration
+	configUserSync   config.UserSync
 	hostCookieConfig *config.HostCookie
 	privacyConfig    usersyncPrivacyConfig
 	metrics          metrics.MetricsEngine
 	pbsAnalytics     analytics.PBSAnalyticsModule
+	accountsFetcher  stored_requests.AccountFetcher
 }
 
 func (c *cookieSyncEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -126,13 +132,19 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 		}
 	}
 
-	if request.Limit == 0 {
-		request.Limit = c.accountConfig.DefaultLimit
-	} else if request.Limit > c.accountConfig.MaxLimit {
-		request.Limit = c.accountConfig.MaxLimit
-	}
-	if request.CooperativeSync == nil {
-		request.CooperativeSync = &c.accountConfig.DefaultCoopSync
+	if request.Account != "" {
+		accountInfo, errs := accountService.GetAccount(context.Background(), c.config, c.accountsFetcher, request.Account)
+		if len(errs) > 0 {
+			return usersync.Request{}, privacy.Policies{}, errs[0]
+		}
+		if request.Limit == 0 {
+			request.Limit = accountInfo.Defaults.DefaultLimit
+		} else if request.Limit > accountInfo.Defaults.MaxLimit {
+			request.Limit = accountInfo.Defaults.MaxLimit
+		}
+		if request.CooperativeSync == nil {
+			request.CooperativeSync = &accountInfo.Defaults.DefaultCoopSync
+		}
 	}
 
 	privacyPolicies := privacy.Policies{
@@ -164,8 +176,8 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 	rx := usersync.Request{
 		Bidders: request.Bidders,
 		Cooperative: usersync.Cooperative{
-			Enabled:        (request.CooperativeSync != nil && *request.CooperativeSync) || (request.CooperativeSync == nil && c.config.Cooperative.EnabledByDefault),
-			PriorityGroups: c.config.Cooperative.PriorityGroups,
+			Enabled:        (request.CooperativeSync != nil && *request.CooperativeSync) || (request.CooperativeSync == nil && c.configUserSync.Cooperative.EnabledByDefault),
+			PriorityGroups: c.configUserSync.Cooperative.PriorityGroups,
 		},
 		Limit: request.Limit,
 		Privacy: usersyncPrivacy{
@@ -329,6 +341,7 @@ type cookieSyncRequest struct {
 	Limit           int                              `json:"limit"`
 	CooperativeSync *bool                            `json:"coopSync"`
 	FilterSettings  *cookieSyncRequestFilterSettings `json:"filterSettings"`
+	Account         string                           `json:"account"`
 }
 
 type cookieSyncRequestFilterSettings struct {
