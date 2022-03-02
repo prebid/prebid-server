@@ -1,0 +1,78 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Opera Ads Adapter Params",
+    "description": "A schema which validates params accepted by the Opera Ads adapter",
+    "type": "object",
+    "properties": {
+      "publisherId": {
+        "type": "string",
+        "description": "Publisher ID",
+        "minLength": 1
+      },
+      "endpointId": {
+        "type": "string",
+        "description": "Endpoint ID",
+        "minLength": 1
+      },
+      "placementId": {
+        "type": "object",
+        "description": "Placement ID",
+        "properties": {
+          "banner": {
+            "type": "string",
+            "description": "Banner PlacementId"
+          },
+          "video": {
+            "type": "string",
+            "description": "Video PlacementId "
+          },
+          "native": {
+            "type": "string",
+            "description": "Native PlacementId"
+          }
+        }
+      },
+      "video": {
+        "type": "object",
+        "description": "An object defining additional Opera Ads video parameters",
+        "properties": {
+          "width": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Width of the screen resolution to decide orientation"
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Height of the screen resolution to decide orientation"
+          },
+          "skip": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "skip=0 (not skippable, rewarded), skip=1 (skippable, interstitial)"
+          },
+          "skipdelay": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The time to spend before revealing skip button"
+          }
+        }
+      },
+      "region": {
+        "type": "string",
+        "description": "A string defining region for choosing the closest Opera Ads endpoint"
+      },
+      "skadn_supported": {
+        "type": "boolean",
+        "description": "A bool config to determine if SKADN is supported by Opera Ads"
+      },
+      "mraid_supported": {
+        "type": "boolean",
+        "description": "A bool config to determine if MRAID is supported by Opera Ads"
+      }
+    },
+    "required": [
+      "publisherId",
+      "endpointId"
+    ]
+}

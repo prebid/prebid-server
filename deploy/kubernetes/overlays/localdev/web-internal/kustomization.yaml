@@ -43,6 +43,12 @@ configMapGenerator:
       - PBS_MONITORING_OPENTELEMETRY_ENABLED="true"
       - PBS_MONITORING_OPENTELEMETRY_SAMPLE_RATE="1.0"
       - PBS_MONITORING_OPENTELEMETRY_ENDPOINT="otelcol-gateway.observability-system:4139"
+      
+      # operaads values
+      - PBS_ADAPTERS_OPERAADS_DISABLED="false"
+      - PBS_ADAPTERS_OPERAADS_XAPI_ENDPOINT_US_EAST="http://tpe-prebid-service-mocks.default.svc.cluster.local/operaads_givemeads"
+      - PBS_ADAPTERS_OPERAADS_XAPI_ENDPOINT_EU="http://tpe-prebid-service-mocks.default.svc.cluster.local/operaads_givemeads"
+      - PBS_ADAPTERS_OPERAADS_XAPI_ENDPOINT_APAC="http://tpe-prebid-service-mocks.default.svc.cluster.local/operaads_givemeads"
 
       # aarki values
       - PBS_ADAPTERS_AARKI_DISABLED="false"

@@ -1,0 +1,11 @@
+maintainer:
+  email: "prebid@operaads.com"
+gvlVendorID: 16
+capabilities:
+  app:
+    mediaTypes:
+      - video
+      - banner
+  site:
+    mediaTypes:
+      - banner

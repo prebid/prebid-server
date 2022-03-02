@@ -63,6 +63,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/nobid"
 	"github.com/prebid/prebid-server/adapters/onetag"
 	"github.com/prebid/prebid-server/adapters/openx"
+	"github.com/prebid/prebid-server/adapters/operaads"
 	"github.com/prebid/prebid-server/adapters/outbrain"
 	"github.com/prebid/prebid-server/adapters/pubmatic"
 	"github.com/prebid/prebid-server/adapters/pulsepoint"
@@ -164,6 +165,7 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderOneTag, onetag.NewSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderOutbrain, outbrain.NewOutbrainSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderOpenx, openx.NewOpenxSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderOperaAds, operaads.NewOperaAdsSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderPubmatic, pubmatic.NewPubmaticSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderPulsepoint, pulsepoint.NewPulsepointSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderRhythmone, rhythmone.NewRhythmoneSyncer)

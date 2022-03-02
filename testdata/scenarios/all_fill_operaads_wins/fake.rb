@@ -65,7 +65,8 @@ endpoints = [
   Endpoint.new('../../responses/appier/fill_low_bid.json', 'POST', '/appier_givemeads'),
   Endpoint.new('../../responses/personaly/fill_low_bid.json', 'POST', '/personaly_givemeads'),
   Endpoint.new('../../responses/kadenai/fill_low_bid.json', 'POST', '/kadenai_givemeads'),
-  Endpoint.new('../../responses/rtbhouse/fill_high_bid.json', 'POST', '/rtbhouse_givemeads'),
+  Endpoint.new('../../responses/rtbhouse/fill_low_bid.json', 'POST', '/rtbhouse_givemeads'),
+  Endpoint.new('../../responses/operaads/fill_high_bid.json', 'POST', '/operaads_givemeads'),
 ]
 
 endpoints.each do |e|
