@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
-	"strings"
 
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/go-gdpr/vendorconsent"
@@ -20,6 +19,7 @@ import (
 	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/privacy/ccpa"
 	"github.com/prebid/prebid-server/privacy/lmt"
+	"github.com/prebid/prebid-server/schain"
 )
 
 var integrationTypeMap = map[metrics.RequestType]config.IntegrationType{
@@ -30,23 +30,6 @@ var integrationTypeMap = map[metrics.RequestType]config.IntegrationType{
 }
 
 const unknownBidder string = ""
-
-func BidderToPrebidSChains(sChains []*openrtb_ext.ExtRequestPrebidSChain) (map[string]*openrtb_ext.ExtRequestPrebidSChainSChain, error) {
-	bidderToSChains := make(map[string]*openrtb_ext.ExtRequestPrebidSChainSChain)
-
-	for _, schainWrapper := range sChains {
-		for _, bidder := range schainWrapper.Bidders {
-			if _, present := bidderToSChains[bidder]; present {
-				return nil, fmt.Errorf("request.ext.prebid.schains contains multiple schains for bidder %s; "+
-					"it must contain no more than one per bidder.", bidder)
-			} else {
-				bidderToSChains[bidder] = &schainWrapper.SChain
-			}
-		}
-	}
-
-	return bidderToSChains, nil
-}
 
 // cleanOpenRTBRequests splits the input request into requests which are sanitized for each bidder. Intended behavior is:
 //
@@ -70,6 +53,11 @@ func cleanOpenRTBRequests(ctx context.Context,
 	}
 
 	aliases, errs := parseAliases(req.BidRequest)
+	if len(errs) > 0 {
+		return
+	}
+
+	aliasesGVLIDs, errs := parseAliasesGVLIDs(req.BidRequest)
 	if len(errs) > 0 {
 		return
 	}
@@ -140,7 +128,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 				}
 			}
 			var publisherID = req.LegacyLabels.PubID
-			bidReq, geo, id, err := gDPR.AuctionActivitiesAllowed(ctx, bidderRequest.BidderCoreName, publisherID, gdprSignal, consent, weakVendorEnforcement)
+			bidReq, geo, id, err := gDPR.AuctionActivitiesAllowed(ctx, bidderRequest.BidderCoreName, bidderRequest.BidderName, publisherID, gdprSignal, consent, weakVendorEnforcement, aliasesGVLIDs)
 			bidRequestAllowed = bidReq
 
 			if err == nil {
@@ -223,19 +211,14 @@ func getAuctionBidderRequests(req AuctionRequest,
 		return nil, []error{err}
 	}
 
-	bidderParamsInReqExt, err := adapters.ExtractReqExtBidderParams(req.BidRequest)
+	bidderParamsInReqExt, err := adapters.ExtractReqExtBidderParamsEmbeddedMap(req.BidRequest)
 	if err != nil {
 		return nil, []error{err}
 	}
 
-	var sChainsByBidder map[string]*openrtb_ext.ExtRequestPrebidSChainSChain
-
-	// Quick extra wrapper until RequestWrapper makes its way into CleanRequests
-	if requestExt != nil {
-		sChainsByBidder, err = BidderToPrebidSChains(requestExt.Prebid.SChains)
-		if err != nil {
-			return nil, []error{err}
-		}
+	sChainWriter, err := schain.NewSChainWriter(requestExt)
+	if err != nil {
+		return nil, []error{err}
 	}
 
 	var errs []error
@@ -245,7 +228,7 @@ func getAuctionBidderRequests(req AuctionRequest,
 		reqCopy := *req.BidRequest
 		reqCopy.Imp = imps
 
-		prepareSource(&reqCopy, bidder, sChainsByBidder)
+		sChainWriter.Write(&reqCopy, bidder)
 
 		if len(bidderParamsInReqExt) != 0 {
 
@@ -316,40 +299,6 @@ func getExtJson(req *openrtb2.BidRequest, unpackedExt *openrtb_ext.ExtRequest) (
 	extCopy := *unpackedExt
 	extCopy.Prebid.SChains = nil
 	return json.Marshal(extCopy)
-}
-
-func prepareSource(req *openrtb2.BidRequest, bidder string, sChainsByBidder map[string]*openrtb_ext.ExtRequestPrebidSChainSChain) {
-	const sChainWildCard = "*"
-	var selectedSChain *openrtb_ext.ExtRequestPrebidSChainSChain
-
-	wildCardSChain := sChainsByBidder[sChainWildCard]
-	bidderSChain := sChainsByBidder[bidder]
-
-	// source should not be modified
-	if bidderSChain == nil && wildCardSChain == nil {
-		return
-	}
-
-	if bidderSChain != nil {
-		selectedSChain = bidderSChain
-	} else {
-		selectedSChain = wildCardSChain
-	}
-
-	// set source
-	if req.Source == nil {
-		req.Source = &openrtb2.Source{}
-	} else {
-		sourceCopy := *req.Source
-		req.Source = &sourceCopy
-	}
-	schain := openrtb_ext.ExtRequestPrebidSChain{
-		SChain: *selectedSChain,
-	}
-	sourceExt, err := json.Marshal(schain)
-	if err == nil {
-		req.Source.Ext = sourceExt
-	}
 }
 
 // extractBuyerUIDs parses the values from user.ext.prebid.buyeruids, and then deletes those values from the ext.
@@ -464,6 +413,10 @@ func createSanitizedImpExt(impExt, impExtPrebid map[string]json.RawMessage) (map
 		sanitizedImpExt[openrtb_ext.SKAdNExtKey] = v
 	}
 
+	if v, exists := impExt[string(openrtb_ext.GPIDKey)]; exists {
+		sanitizedImpExt[openrtb_ext.GPIDKey] = v
+	}
+
 	return sanitizedImpExt, nil
 }
 
@@ -493,6 +446,7 @@ func isSpecialField(bidder string) bool {
 	return bidder == openrtb_ext.FirstPartyDataContextExtKey ||
 		bidder == openrtb_ext.FirstPartyDataExtKey ||
 		bidder == openrtb_ext.SKAdNExtKey ||
+		bidder == openrtb_ext.GPIDKey ||
 		bidder == openrtb_ext.PrebidExtKey
 }
 
@@ -644,6 +598,19 @@ func parseAliases(orig *openrtb2.BidRequest) (map[string]string, []error) {
 	return aliases, nil
 }
 
+// parseAliasesGVLIDs parses the Bidder Alias GVLIDs from the BidRequest
+func parseAliasesGVLIDs(orig *openrtb2.BidRequest) (map[string]uint16, []error) {
+	var aliasesGVLIDs map[string]uint16
+	if value, dataType, _, err := jsonparser.Get(orig.Ext, openrtb_ext.PrebidExtKey, "aliasgvlids"); dataType == jsonparser.Object && err == nil {
+		if err := json.Unmarshal(value, &aliasesGVLIDs); err != nil {
+			return nil, []error{err}
+		}
+	} else if dataType != jsonparser.NotExist && err != jsonparser.KeyPathNotFoundError {
+		return nil, []error{err}
+	}
+	return aliasesGVLIDs, nil
+}
+
 func GetValidBidders(aliases map[string]string) map[string]struct{} {
 	validBidders := openrtb_ext.BuildBidderNameHashSet()
 
@@ -761,42 +728,6 @@ func getExtBidAdjustmentFactors(requestExt *openrtb_ext.ExtRequest) map[string]f
 		bidAdjustmentFactors = requestExt.Prebid.BidAdjustmentFactors
 	}
 	return bidAdjustmentFactors
-}
-
-func buildXPrebidHeader(bidRequest *openrtb2.BidRequest, version string) string {
-	req := &openrtb_ext.RequestWrapper{BidRequest: bidRequest}
-
-	sb := &strings.Builder{}
-	writeNameVersionRecord(sb, "pbs-go", version)
-
-	if reqExt, err := req.GetRequestExt(); err == nil && reqExt != nil {
-		if prebidExt := reqExt.GetPrebid(); prebidExt != nil {
-			if channel := prebidExt.Channel; channel != nil {
-				writeNameVersionRecord(sb, channel.Name, channel.Version)
-			}
-		}
-	}
-	if appExt, err := req.GetAppExt(); err == nil && appExt != nil {
-		if prebidExt := appExt.GetPrebid(); prebidExt != nil {
-			writeNameVersionRecord(sb, prebidExt.Source, prebidExt.Version)
-		}
-	}
-	return sb.String()
-}
-
-func writeNameVersionRecord(sb *strings.Builder, name, version string) {
-	if name == "" {
-		return
-	}
-	if version == "" {
-		version = "unknown"
-	}
-	if sb.Len() != 0 {
-		sb.WriteString(",")
-	}
-	sb.WriteString(name)
-	sb.WriteString("/")
-	sb.WriteString(version)
 }
 
 func applyFPD(fpd *firstpartydata.ResolvedFirstPartyData, bidReq *openrtb2.BidRequest) {

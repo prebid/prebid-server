@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -633,8 +635,8 @@ func TestShouldRespondWithInternalErrorPbsCacheIsNotConfigured(t *testing.T) {
 }
 
 func TestVastUrlShouldReturnExpectedUrl(t *testing.T) {
-	url := GetVastUrlTracking("http://external-url", "bidId", "bidder", "accountId", 1000)
-	assert.Equal(t, "http://external-url/event?t=imp&b=bidId&a=accountId&bidder=bidder&f=b&ts=1000", url, "Invalid vast url")
+	url := GetVastUrlTracking("http://external-url", "bidId", "bidder", "accountId", 1000, "integrationType")
+	assert.Equal(t, "http://external-url/event?t=imp&b=bidId&a=accountId&bidder=bidder&f=b&int=integrationType&ts=1000", url, "Invalid vast url")
 }
 
 func getValidVTrackRequestBody(withImpression bool, withContent bool) (string, error) {
@@ -689,4 +691,40 @@ func getVTrackRequestData(wi bool, wic bool) (db []byte, e error) {
 	}
 
 	return data.Bytes(), e
+}
+
+func TestGetIntegrationType(t *testing.T) {
+	testCases := []struct {
+		description             string
+		givenHttpRequest        *http.Request
+		expectedIntegrationType string
+		expectedError           error
+	}{
+		{
+			description:             "Integration type in http request is valid, expect same integration time and no errors",
+			givenHttpRequest:        httptest.NewRequest("GET", "/event?t=win&b=bidId&f=b&ts=1000&x=1&a=accountId&bidder=bidder&int=TestIntegrationType", strings.NewReader("")),
+			expectedIntegrationType: "TestIntegrationType",
+			expectedError:           nil,
+		},
+		{
+			description:      "Integration type in http request is too long, expect too long error",
+			givenHttpRequest: httptest.NewRequest("GET", "/event?t=win&b=bidId&f=b&ts=1000&x=1&a=accountId&bidder=bidder&int=TestIntegrationTypeTooLongTestIntegrationTypeTooLongTestIntegrationType", strings.NewReader("")),
+			expectedError:    errors.New("integration type length is too long"),
+		},
+		{
+			description:      "Integration type in http request contains invalid character, expect invalid character error",
+			givenHttpRequest: httptest.NewRequest("GET", "/event?t=win&b=bidId&f=b&ts=1000&x=1&a=accountId&bidder=bidder&int=Te$tIntegrationType", strings.NewReader("")),
+			expectedError:    errors.New("integration type can only contain numbers, letters and these characters '-', '_'"),
+		},
+	}
+
+	for _, test := range testCases {
+		integrationType, err := getIntegrationType(test.givenHttpRequest)
+		if test.expectedError != nil {
+			assert.Equal(t, test.expectedError, err, test.description)
+		} else {
+			assert.Empty(t, err, test.description)
+			assert.Equalf(t, test.expectedIntegrationType, integrationType, test.description)
+		}
+	}
 }

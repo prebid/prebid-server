@@ -2,16 +2,15 @@ package adyoulike
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 
 	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
@@ -88,7 +87,7 @@ func (a *adapter) MakeBids(
 	case http.StatusOK:
 		break
 	case http.StatusNoContent:
-		return nil, []error{errors.New("MakeBids error: No Content")}
+		return nil, nil
 	case http.StatusBadRequest:
 		err := &errortypes.BadInput{
 			Message: fmt.Sprintf(unexpectedStatusCodeFormat, bidderRawResponse.StatusCode),

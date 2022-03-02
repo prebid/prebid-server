@@ -189,7 +189,7 @@ type vendor struct {
 	Purposes         []int  `json:"purposes"`
 	LegIntPurposes   []int  `json:"legIntPurposes"`
 	FlexiblePurposes []int  `json:"flexiblePurposes"`
-	SpecialPurposes  []int  `json:"specialPurposes"`
+	SpecialFeatures  []int  `json:"specialFeatures"`
 }
 
 func MarshalVendorList(vendorList vendorList) string {

@@ -32,10 +32,15 @@ func TestGoodAmpRequests(t *testing.T) {
 	goodRequests := map[string]json.RawMessage{
 		"1": json.RawMessage(validRequest(t, "aliased-buyeruids.json")),
 		"2": json.RawMessage(validRequest(t, "aliases.json")),
+		"3": json.RawMessage(validRequest(t, "imp-with-stored-resp.json")),
 		"5": json.RawMessage(validRequest(t, "gdpr-no-consentstring.json")),
 		"6": json.RawMessage(validRequest(t, "gdpr.json")),
 		"7": json.RawMessage(validRequest(t, "site.json")),
 		"9": json.RawMessage(validRequest(t, "user.json")),
+	}
+
+	goodStoredResponses := map[string]json.RawMessage{
+		"6d718149": json.RawMessage(`[{"bid": [{"id": "bid_id", "ext": {"prebid": {"targeting": { "hb_pb": "1.20", "hb_cat": "IAB-20", "hb_cache_id": "some_id"}}}}],"seat": "appnexus"}]`),
 	}
 
 	endpoint, _ := NewAmpEndpoint(
@@ -50,6 +55,7 @@ func TestGoodAmpRequests(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
+		&mockAmpStoredResponseFetcher{goodStoredResponses},
 	)
 
 	for requestID := range goodRequests {
@@ -104,6 +110,7 @@ func TestAMPPageInfo(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
+		empty_fetcher.EmptyFetcher{},
 	)
 	request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&curl=%s", url.QueryEscape(page)), nil)
 	recorder := httptest.NewRecorder()
@@ -202,6 +209,7 @@ func TestGDPRConsent(t *testing.T) {
 			map[string]string{},
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
+			empty_fetcher.EmptyFetcher{},
 		)
 
 		// Invoke Endpoint
@@ -355,6 +363,7 @@ func TestCCPAConsent(t *testing.T) {
 			map[string]string{},
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
+			empty_fetcher.EmptyFetcher{},
 		)
 
 		// Invoke Endpoint
@@ -466,6 +475,7 @@ func TestConsentWarnings(t *testing.T) {
 			map[string]string{},
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
+			empty_fetcher.EmptyFetcher{},
 		)
 
 		// Invoke Endpoint
@@ -559,6 +569,7 @@ func TestNewAndLegacyConsentBothProvided(t *testing.T) {
 			map[string]string{},
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
+			empty_fetcher.EmptyFetcher{},
 		)
 
 		// Invoke Endpoint
@@ -611,6 +622,7 @@ func TestAMPSiteExt(t *testing.T) {
 		nil,
 		nil,
 		openrtb_ext.BuildBidderMap(),
+		empty_fetcher.EmptyFetcher{},
 	)
 	request, err := http.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1", nil)
 	if !assert.NoError(t, err) {
@@ -648,6 +660,7 @@ func TestAmpBadRequests(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
+		empty_fetcher.EmptyFetcher{},
 	)
 	for requestID := range badRequests {
 		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s", requestID), nil)
@@ -679,6 +692,7 @@ func TestAmpDebug(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
+		empty_fetcher.EmptyFetcher{},
 	)
 
 	for requestID := range requests {
@@ -752,6 +766,7 @@ func TestQueryParamOverrides(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
+		empty_fetcher.EmptyFetcher{},
 	)
 
 	requestID := "1"
@@ -905,6 +920,7 @@ func (s formatOverrideSpec) execute(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
+		empty_fetcher.EmptyFetcher{},
 	)
 
 	url := fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&debug=1&w=%d&h=%d&ow=%d&oh=%d&ms=%s&account=%s", s.width, s.height, s.overrideWidth, s.overrideHeight, s.multisize, s.account)
@@ -943,6 +959,22 @@ func (cf *mockAmpStoredReqFetcher) FetchRequests(ctx context.Context, requestIDs
 	return cf.data, nil, nil
 }
 
+func (cf *mockAmpStoredReqFetcher) FetchResponses(ctx context.Context, ids []string) (data map[string]json.RawMessage, errs []error) {
+	return nil, nil
+}
+
+type mockAmpStoredResponseFetcher struct {
+	data map[string]json.RawMessage
+}
+
+func (cf *mockAmpStoredResponseFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
+	return nil, nil, nil
+}
+
+func (cf *mockAmpStoredResponseFetcher) FetchResponses(ctx context.Context, ids []string) (data map[string]json.RawMessage, errs []error) {
+	return cf.data, nil
+}
+
 type mockAmpExchange struct {
 	lastRequest *openrtb2.BidRequest
 }
@@ -967,6 +999,14 @@ func (m *mockAmpExchange) HoldAuction(ctx context.Context, r exchange.AuctionReq
 			}},
 		}},
 		Ext: json.RawMessage(`{ "errors": {"openx":[ { "code": 1, "message": "The request exceeded the timeout allocated" } ] } }`),
+	}
+	if len(r.StoredAuctionResponses) > 0 {
+		var seatBids []openrtb2.SeatBid
+
+		if err := json.Unmarshal(r.StoredAuctionResponses[r.BidRequest.Imp[0].ID], &seatBids); err != nil {
+			return nil, err
+		}
+		response.SeatBid = seatBids
 	}
 
 	if r.BidRequest.Test == 1 {
@@ -1262,7 +1302,7 @@ func TestBuildAmpObject(t *testing.T) {
 
 	for _, test := range testCases {
 		// Set up test, declare a new mock logger every time
-		actualAmpObject, endpoint := AmpObjectTestSetup(t, test.inTagId, test.inStoredRequest, false)
+		actualAmpObject, endpoint := ampObjectTestSetup(t, test.inTagId, test.inStoredRequest, false)
 		// Run test
 		endpoint(recorder, request, nil)
 
@@ -1328,13 +1368,13 @@ func TestIdGeneration(t *testing.T) {
 
 	for _, test := range testCases {
 		// Set up and run test
-		actualAmpObject, endpoint := AmpObjectTestSetup(t, "test", test.givenInStoredRequest, test.givenGenerateRequestID)
+		actualAmpObject, endpoint := ampObjectTestSetup(t, "test", test.givenInStoredRequest, test.givenGenerateRequestID)
 		endpoint(recorder, request, nil)
 		assert.Equalf(t, test.expectedID, actualAmpObject.Request.ID, "Bid Request ID is incorrect: %s\n", test.description)
 	}
 }
 
-func AmpObjectTestSetup(t *testing.T, inTagId string, inStoredRequest json.RawMessage, generateRequestID bool) (*analytics.AmpObject, httprouter.Handle) {
+func ampObjectTestSetup(t *testing.T, inTagId string, inStoredRequest json.RawMessage, generateRequestID bool) (*analytics.AmpObject, httprouter.Handle) {
 	actualAmpObject := analytics.AmpObject{}
 	logger := newMockLogger(&actualAmpObject)
 
@@ -1356,6 +1396,70 @@ func AmpObjectTestSetup(t *testing.T, inTagId string, inStoredRequest json.RawMe
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
+		empty_fetcher.EmptyFetcher{},
 	)
 	return &actualAmpObject, endpoint
+}
+
+func TestAmpAuctionResponseHeaders(t *testing.T) {
+	testCases := []struct {
+		description         string
+		requestURLArguments string
+		expectedStatus      int
+		expectedHeaders     func(http.Header)
+	}{
+		{
+			description:         "Success Response",
+			requestURLArguments: "?tag_id=1&__amp_source_origin=foo",
+			expectedStatus:      200,
+			expectedHeaders: func(h http.Header) {
+				h.Set("AMP-Access-Control-Allow-Source-Origin", "foo")
+				h.Set("Access-Control-Expose-Headers", "AMP-Access-Control-Allow-Source-Origin")
+				h.Set("X-Prebid", "pbs-go/unknown")
+				h.Set("Content-Type", "text/plain; charset=utf-8")
+			},
+		},
+		{
+			description:         "Failure Response",
+			requestURLArguments: "?tag_id=invalid&__amp_source_origin=foo",
+			expectedStatus:      400,
+			expectedHeaders: func(h http.Header) {
+				h.Set("AMP-Access-Control-Allow-Source-Origin", "foo")
+				h.Set("Access-Control-Expose-Headers", "AMP-Access-Control-Allow-Source-Origin")
+				h.Set("X-Prebid", "pbs-go/unknown")
+			},
+		},
+	}
+
+	storedRequests := map[string]json.RawMessage{
+		"1": json.RawMessage(validRequest(t, "site.json")),
+	}
+	exchange := &nobidExchange{}
+	endpoint, _ := NewAmpEndpoint(
+		fakeUUIDGenerator{},
+		exchange,
+		newParamsValidator(t),
+		&mockAmpStoredReqFetcher{storedRequests},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: maxSize},
+		&metricsConfig.NilMetricsEngine{},
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		[]byte{},
+		openrtb_ext.BuildBidderMap(),
+		empty_fetcher.EmptyFetcher{},
+	)
+
+	for _, test := range testCases {
+		httpReq := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp"+test.requestURLArguments), nil)
+		recorder := httptest.NewRecorder()
+
+		endpoint(recorder, httpReq, nil)
+
+		expectedHeaders := http.Header{}
+		test.expectedHeaders(expectedHeaders)
+
+		assert.Equal(t, test.expectedStatus, recorder.Result().StatusCode, test.description+":statuscode")
+		assert.Equal(t, expectedHeaders, recorder.Result().Header, test.description+":statuscode")
+	}
 }

@@ -2,8 +2,9 @@ package adot
 
 import (
 	"encoding/json"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"testing"
+
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 // This file actually intends to test static/bidder-params/adot.json
@@ -42,12 +43,16 @@ var validParams = []string{
 	`{"placementId": "test-114"}`,
 	`{"placementId": "test-113", "parallax": true}`,
 	`{"placementId": "test-113", "parallax": false}`,
+	`{"placementId": "test-113", "parallax": false, "publisherPath": "/hubvisor"}`,
+	`{"placementId": "test-113", "parallax": false, "publisherPath": ""}`,
 }
 
 var invalidParams = []string{
 	`{"parallax": 1}`,
 	`{"placementId": 135123}`,
+	`{"publisherPath": 111}`,
 	`{"placementId": 113, "parallax": 1}`,
 	`{"placementId": 142, "parallax": true}`,
 	`{"placementId": "test-114", "parallax": 1}`,
+	`{"placementId": "test-114", "parallax": true, "publisherPath": 111}`,
 }

@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strconv"
 	"time"
+	"unicode"
 
 	"github.com/julienschmidt/httprouter"
 	accountService "github.com/prebid/prebid-server/account"
@@ -26,11 +27,14 @@ const (
 	AccountIdParameter = "a"
 
 	// Optional
-	BidderParameter    = "bidder"
-	TimestampParameter = "ts"
-	FormatParameter    = "f"
-	AnalyticsParameter = "x"
+	BidderParameter          = "bidder"
+	TimestampParameter       = "ts"
+	FormatParameter          = "f"
+	AnalyticsParameter       = "x"
+	IntegrationTypeParameter = "int"
 )
+
+const integrationParamMaxLength = 64
 
 type eventEndpoint struct {
 	Accounts      stored_requests.AccountFetcher
@@ -162,6 +166,10 @@ func ParseEventRequest(r *http.Request) (*analytics.EventRequest, []error) {
 		errs = append(errs, err)
 	}
 
+	if err := readIntegrationType(event, r); err != nil {
+		errs = append(errs, err)
+	}
+
 	// Bidder
 	event.Bidder = r.URL.Query().Get(BidderParameter)
 
@@ -223,6 +231,10 @@ func optionalParameters(request *analytics.EventRequest) string {
 		r.Add(AnalyticsParameter, string(analytics.Enabled))
 	case analytics.Disabled:
 		r.Add(AnalyticsParameter, string(analytics.Disabled))
+	}
+
+	if request.Integration != "" {
+		r.Add(IntegrationTypeParameter, request.Integration)
 	}
 
 	opt := r.Encode()
@@ -322,4 +334,26 @@ func checkRequiredParameter(httpRequest *http.Request, parameter string) (string
 	}
 
 	return t, nil
+}
+
+func readIntegrationType(er *analytics.EventRequest, httpRequest *http.Request) error {
+	integrationType := httpRequest.URL.Query().Get(IntegrationParameter)
+	err := validateIntegrationType(integrationType)
+	if err != nil {
+		return err
+	}
+	er.Integration = integrationType
+	return nil
+}
+
+func validateIntegrationType(integrationType string) error {
+	if len(integrationType) > integrationParamMaxLength {
+		return errors.New("integration type length is too long")
+	}
+	for _, char := range integrationType {
+		if !unicode.IsDigit(char) && !unicode.IsLetter(char) && char != '-' && char != '_' {
+			return errors.New("integration type can only contain numbers, letters and these characters '-', '_'")
+		}
+	}
+	return nil
 }

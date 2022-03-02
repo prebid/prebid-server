@@ -14,6 +14,9 @@ const FirstPartyDataContextExtKey = "context"
 // SKAdNExtKey defines the field name within request.ext reserved for Apple's SKAdNetwork.
 const SKAdNExtKey = "skadn"
 
+// GPIDKey defines the field name within request.ext reserved for the Global Placement ID (GPID),
+const GPIDKey = "gpid"
+
 // NativeExchangeSpecificLowerBound defines the lower threshold of exchange specific types for native ads. There is no upper bound.
 const NativeExchangeSpecificLowerBound = 500
 
@@ -21,17 +24,20 @@ const MaxDecimalFigures int = 15
 
 // ExtRequest defines the contract for bidrequest.ext
 type ExtRequest struct {
-	Prebid ExtRequestPrebid `json:"prebid"`
+	Prebid ExtRequestPrebid              `json:"prebid"`
+	SChain *ExtRequestPrebidSChainSChain `json:"schain,omitempty"`
 }
 
 // ExtRequestPrebid defines the contract for bidrequest.ext.prebid
 type ExtRequestPrebid struct {
 	Aliases              map[string]string         `json:"aliases,omitempty"`
+	AliasGVLIDs          map[string]uint16         `json:"aliasgvlids,omitempty"`
 	BidAdjustmentFactors map[string]float64        `json:"bidadjustmentfactors,omitempty"`
 	Cache                *ExtRequestPrebidCache    `json:"cache,omitempty"`
 	Channel              *ExtRequestPrebidChannel  `json:"channel,omitempty"`
 	Data                 *ExtRequestPrebidData     `json:"data,omitempty"`
 	Debug                bool                      `json:"debug,omitempty"`
+	Integration          string                    `json:"integration,omitempty"`
 	Events               json.RawMessage           `json:"events,omitempty"`
 	SChains              []*ExtRequestPrebidSChain `json:"schains,omitempty"`
 	StoredRequest        *ExtStoredRequest         `json:"storedrequest,omitempty"`
@@ -91,11 +97,6 @@ type ExtRequestPrebidSChainSChainNode struct {
 	Domain string          `json:"domain,omitempty"`
 	HP     int             `json:"hp"`
 	Ext    json.RawMessage `json:"ext,omitempty"`
-}
-
-// SourceExt defines the contract for bidrequest.source.ext
-type SourceExt struct {
-	SChain ExtRequestPrebidSChainSChain `json:"schain"`
 }
 
 // ExtRequestPrebidChannel defines the contract for bidrequest.ext.prebid.channel

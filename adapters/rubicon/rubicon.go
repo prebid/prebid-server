@@ -268,6 +268,7 @@ type rubiconUserExtEidExt struct {
 // defines the contract for bidrequest.user.ext.eids[i].uids[j].ext
 type rubiconUserExtEidUidExt struct {
 	RtiPartner string `json:"rtiPartner,omitempty"`
+	Stype      string `json:"stype"`
 }
 
 type mappedRubiconUidsParam struct {
@@ -408,9 +409,21 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			continue
 		}
 
+		siteId, err := rubiconExt.SiteId.Int64()
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		zoneId, err := rubiconExt.ZoneId.Int64()
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
 		impExt := rubiconImpExt{
 			RP: rubiconImpExtRP{
-				ZoneID: rubiconExt.ZoneId,
+				ZoneID: int(zoneId),
 				Target: target,
 				Track:  rubiconImpExtRPTrack{Mint: "", MintVersion: ""},
 			},
@@ -446,6 +459,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			}
 
 			userExtRP := rubiconUserExt{RP: rubiconUserExtRP{Target: target}}
+			userBuyerUID := userCopy.BuyerUID
 
 			if request.User.Ext != nil {
 				var userExt *openrtb_ext.ExtUser
@@ -460,6 +474,10 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 
 				// set user.ext.tpid
 				if len(userExt.Eids) > 0 {
+					if userBuyerUID == "" {
+						userBuyerUID = extractUserBuyerUID(userExt.Eids)
+					}
+
 					mappedRubiconUidsParam, errors := getTpIdsAndSegments(userExt.Eids)
 					if len(errors) > 0 {
 						errs = append(errs, errors...)
@@ -483,6 +501,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			userCopy.Geo = nil
 			userCopy.Yob = 0
 			userCopy.Gender = ""
+			userCopy.BuyerUID = userBuyerUID
 
 			rubiconRequest.User = &userCopy
 		}
@@ -534,11 +553,17 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			imp.Video = nil
 		}
 
-		pubExt := rubiconPubExt{RP: rubiconPubExtRP{AccountID: rubiconExt.AccountId}}
+		accountId, err := rubiconExt.AccountId.Int64()
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		pubExt := rubiconPubExt{RP: rubiconPubExtRP{AccountID: int(accountId)}}
 
 		if request.Site != nil {
 			siteCopy := *request.Site
-			siteExtRP := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: rubiconExt.SiteId}}
+			siteExtRP := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: int(siteId)}}
 			if siteCopy.Content != nil {
 				siteTarget := make(map[string]interface{})
 				updateExtWithIabAttribute(siteTarget, siteCopy.Content.Data, []int{1, 2, 5, 6})
@@ -563,7 +588,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			rubiconRequest.Site = &siteCopy
 		} else {
 			appCopy := *request.App
-			appCopy.Ext, err = json.Marshal(rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: rubiconExt.SiteId}})
+			appCopy.Ext, err = json.Marshal(rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: int(siteId)}})
 			appCopy.Publisher = &openrtb2.Publisher{}
 			appCopy.Publisher.Ext, err = json.Marshal(&pubExt)
 			rubiconRequest.App = &appCopy
@@ -871,6 +896,28 @@ func contains(s []int, e int) bool {
 		}
 	}
 	return false
+}
+
+func extractUserBuyerUID(eids []openrtb_ext.ExtUserEid) string {
+	for _, eid := range eids {
+		if eid.Source != "rubiconproject.com" {
+			continue
+		}
+
+		for _, uid := range eid.Uids {
+			var uidExt rubiconUserExtEidUidExt
+			err := json.Unmarshal(uid.Ext, &uidExt)
+			if err != nil {
+				continue
+			}
+
+			if uidExt.Stype == "ppuid" || uidExt.Stype == "other" {
+				return uid.ID
+			}
+		}
+	}
+
+	return ""
 }
 
 func getTpIdsAndSegments(eids []openrtb_ext.ExtUserEid) (mappedRubiconUidsParam, []error) {
