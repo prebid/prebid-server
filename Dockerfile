@@ -25,9 +25,11 @@ RUN go build -mod=vendor -ldflags "-X github.com/prebid/prebid-server/version.Ve
 FROM ubuntu:18.04 AS release
 LABEL maintainer="hans.hjort@xandr.com" 
 WORKDIR /usr/local/bin/
-COPY --chmod=a+xr --from=build /app/prebid-server .
-COPY --chmod=a+r static static/
-COPY --chmod=a+r stored_requests/data stored_requests/data
+COPY --from=build /app/prebid-server .
+RUN chmod a+xr prebid-server
+COPY static static/
+COPY stored_requests/data stored_requests/data
+RUN chmod -R a+r static/ stored_requests/data
 RUN apt-get update && \
     apt-get install -y ca-certificates mtr && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
