@@ -416,8 +416,10 @@ func (cfg *Metrics) validate(errs []error) []error {
 type InfluxMetrics struct {
 	Host               string `mapstructure:"host"`
 	Database           string `mapstructure:"database"`
+	Measurement        string `mapstructure:"measurement"`
 	Username           string `mapstructure:"username"`
 	Password           string `mapstructure:"password"`
+	AlignTimestamps    bool   `mapstructure:"align_timestamps"`
 	MetricSendInterval int    `mapstructure:"metric_send_interval"`
 }
 
@@ -692,8 +694,10 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("metrics.disabled_metrics.adapter_gdpr_request_blocked", false)
 	v.SetDefault("metrics.influxdb.host", "")
 	v.SetDefault("metrics.influxdb.database", "")
+	v.SetDefault("metrics.influxdb.measurement", "")
 	v.SetDefault("metrics.influxdb.username", "")
 	v.SetDefault("metrics.influxdb.password", "")
+	v.SetDefault("metrics.influxdb.align_timestamps", false)
 	v.SetDefault("metrics.influxdb.metric_send_interval", 20)
 	v.SetDefault("metrics.prometheus.port", 0)
 	v.SetDefault("metrics.prometheus.namespace", "")
@@ -818,7 +822,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.adocean.endpoint", "https://{{.Host}}")
 	v.SetDefault("adapters.adnuntius.endpoint", "https://ads.adnuntius.delivery/i")
 	v.SetDefault("adapters.adoppler.endpoint", "http://{{.AccountID}}.trustedmarketplace.io/ads/processHeaderBid/{{.AdUnit}}")
-	v.SetDefault("adapters.adot.endpoint", "https://dsp.adotmob.com/headerbidding/bidrequest")
+	v.SetDefault("adapters.adot.endpoint", "https://dsp.adotmob.com/headerbidding{PUBLISHER_PATH}/bidrequest")
 	v.SetDefault("adapters.adpone.endpoint", "http://rtb.adpone.com/bid-request?src=prebid_server")
 	v.SetDefault("adapters.adprime.endpoint", "http://delta.adprime.com/pserver")
 	v.SetDefault("adapters.adtarget.endpoint", "http://ghb.console.adtarget.com.tr/pbs/ortb")
@@ -881,7 +885,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.jixie.endpoint", "https://hb.jixie.io/v2/hbsvrpost")
 	v.SetDefault("adapters.kayzen.endpoint", "https://bids-{{.ZoneID}}.bidder.kayzen.io/?exchange={{.AccountID}}")
 	v.SetDefault("adapters.krushmedia.endpoint", "http://ads4.krushmedia.com/?c=rtb&m=req&key={{.AccountID}}")
-	v.SetDefault("adapters.invibes.endpoint", "https://{{.Host}}/bid/ServerBidAdContent")
+	v.SetDefault("adapters.invibes.endpoint", "https://{{.ZoneID}}.videostep.com/bid/ServerBidAdContent")
 	v.SetDefault("adapters.iqzone.endpoint", "http://smartssp-us-east.iqzone.com/pserver")
 	v.SetDefault("adapters.kidoz.endpoint", "http://prebid-adapter.kidoz.net/openrtb2/auction?src=prebid-server")
 	v.SetDefault("adapters.kubient.endpoint", "https://kssp.kbntx.ch/prebid")
@@ -892,6 +896,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.madvertise.endpoint", "https://mobile.mng-ads.com/bidrequest{{.ZoneID}}")
 	v.SetDefault("adapters.marsmedia.endpoint", "https://bid306.rtbsrv.com/bidder/?bid=f3xtet")
 	v.SetDefault("adapters.mediafuse.endpoint", "http://ghb.hbmp.mediafuse.com/pbs/ortb")
+	v.SetDefault("adapters.medianet.endpoint", "https://prebid-adapter.media.net/rtb/pb/prebids2s")
+	v.SetDefault("adapters.medianet.extra_info", "https://medianet.golang.pbs.com")
 	v.SetDefault("adapters.mgid.endpoint", "https://prebid.mgid.com/prebid/")
 	v.SetDefault("adapters.mobilefuse.endpoint", "http://mfx.mobilefuse.com/openrtb?pub_id={{.PublisherID}}")
 	v.SetDefault("adapters.mobfoxpb.endpoint", "http://bes.mobfox.com/?c=__route__&m=__method__&key=__key__")
@@ -925,7 +931,6 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.smartrtb.endpoint", "http://market-east.smrtb.com/json/publisher/rtb?pubid={{.PublisherID}}")
 	v.SetDefault("adapters.smartyads.endpoint", "http://{{.Host}}.smartyads.com/bid?rtb_seat_id={{.SourceId}}&secret_key={{.AccountID}}")
 	v.SetDefault("adapters.smilewanted.endpoint", "http://prebid-server.smilewanted.com")
-	v.SetDefault("adapters.somoaudience.endpoint", "http://publisher-east.mobileadtrading.com/rtb/bid")
 	v.SetDefault("adapters.sonobi.endpoint", "https://apex.go.sonobi.com/prebid?partnerid=71d9d3d8af")
 	v.SetDefault("adapters.sovrn.endpoint", "http://ap.lijit.com/rtb/bid?src=prebid_server")
 	v.SetDefault("adapters.streamkey.endpoint", "http://ghb.hb.streamkey.net/pbs/ortb")

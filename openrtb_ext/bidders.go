@@ -162,6 +162,7 @@ const (
 	BidderMgid              BidderName = "mgid"
 	BidderMobfoxpb          BidderName = "mobfoxpb"
 	BidderMobileFuse        BidderName = "mobilefuse"
+	BidderMedianet          BidderName = "medianet"
 	BidderNanoInteractive   BidderName = "nanointeractive"
 	BidderNextMillennium    BidderName = "nextmillennium"
 	BidderNinthDecimal      BidderName = "ninthdecimal"
@@ -190,7 +191,6 @@ const (
 	BidderSmartRTB          BidderName = "smartrtb"
 	BidderSmartyAds         BidderName = "smartyads"
 	BidderSmileWanted       BidderName = "smilewanted"
-	BidderSomoaudience      BidderName = "somoaudience"
 	BidderSonobi            BidderName = "sonobi"
 	BidderSovrn             BidderName = "sovrn"
 	BidderStreamkey         BidderName = "streamkey"
@@ -305,6 +305,7 @@ func CoreBidderNames() []BidderName {
 		BidderMadvertise,
 		BidderMarsmedia,
 		BidderMediafuse,
+		BidderMedianet,
 		BidderMgid,
 		BidderMobfoxpb,
 		BidderMobileFuse,
@@ -336,7 +337,6 @@ func CoreBidderNames() []BidderName {
 		BidderSmartRTB,
 		BidderSmartyAds,
 		BidderSmileWanted,
-		BidderSomoaudience,
 		BidderSonobi,
 		BidderSovrn,
 		BidderStreamkey,

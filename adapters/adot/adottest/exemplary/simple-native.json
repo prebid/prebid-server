@@ -41,20 +41,22 @@
           "seatbid": [
             {
               "seat": "adot",
-              "bid": [{
-                "id": "test-request-native-id",
-                "impid": "test-imp-native-id",
-                "price": 1.16346,
-                "adm": "some-test-ad imp_${AUCTION_PRICE} creativeview_${AUCTION_PRICE}",
-                "nurl": "nurl.link/win?p=${AUCTION_PRICE}",
-                "w": 300,
-                "h": 250,
-                "ext": {
-                  "adot": {
-                    "media_type": "native"
+              "bid": [
+                {
+                  "id": "test-request-native-id",
+                  "impid": "test-imp-native-id",
+                  "price": 1.16346,
+                  "adm": "some-test-ad imp_${AUCTION_PRICE} creativeview_${AUCTION_PRICE}",
+                  "nurl": "nurl.link/win?p=${AUCTION_PRICE}",
+                  "w": 300,
+                  "h": 250,
+                  "ext": {
+                    "adot": {
+                      "media_type": "native"
+                    }
                   }
                 }
-              }]
+              ]
             }
           ],
           "cur": "USD"
@@ -87,4 +89,3 @@
     }
   ]
 }
-
