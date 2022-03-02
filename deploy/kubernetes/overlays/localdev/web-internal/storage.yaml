@@ -1,0 +1,37 @@
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: tpe-prebid-service
+  labels:
+    volume: src
+spec:
+  capacity:
+    storage: 15Gi # Required setting. Arbitrarily chosen advertised storage capacity.
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: nfs
+  nfs:
+    server: ${MINIKUBE_GATEWAY}
+    path: ${PWD}
+  mountOptions:
+    - local_lock=all,sync
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: tpe-prebid-service
+  labels:
+    volume: src
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/part-of: tpe_prebid_service
+      volume: src
+  storageClassName: nfs
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 15Gi # Required setting. Matches the advertised capacity of the PersistentVolume.

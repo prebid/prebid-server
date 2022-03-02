@@ -16,7 +16,7 @@ ACTION="$@"
 ## - if no CLI arguments provided, run whatever has been defined as the default run target
 function prepare_and_run() {
   echo "Container setup finished, running '$@'" &&\
-  exec "$@"
+  exec bash -c "$*"
 }
 
 # END FUNCTIONS
@@ -24,4 +24,4 @@ function prepare_and_run() {
 # This is the actual "entry point", by which we mean the invocation that will directly result in PID 1 on the container.
 ## We will run whatever was passed to the container run command.
 ## In local development, commands will usually start w/ calls to functions in this script (e.g. `prepare_and_run rake console`)
-${ACTION}
+[[ "${INSPECT_PODS:-}" ]] && exec tail -f /dev/null || ${ACTION}

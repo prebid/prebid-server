@@ -2,25 +2,48 @@
 ## GLOBAL VARIABLES & GENERAL PURPOSE TARGETS
 ########################################################################################################################
 
-PROJECT_NAME  := tpe_prebid_service
-VERSION       := 0.0.1
-GIT_SHA       := $(shell git rev-parse HEAD)
-BUILD         := $(shell date +%FT%T%z)
-BUILD_FOLDER  := ./build
-BUILD_FILE    := ${BUILD_FOLDER}/prebid-server
+PROJECT_NAME      := tpe_prebid_service
+PROJECT_DNS_NAME  := tpe-prebid-service
 
-# Do nothing by default. Ensure this is first in the list of tasks
+SHELL := /bin/bash
+MAKEFLAGS += --no-print-directory
+
+# Tasks that interact w/ k8s should never be run in production. Localdev setups use the default kube config
+# (~/.kube/config), whereas production kubeconfigs are kept in separate files.
+KUBECONFIG :=
+
+KUSTOMIZE_OVERLAY_DIR ?= deploy/kubernetes/overlays
+DEPLOY_FACETS := legacy-production-eks/web-internal
+
+GOLANG_VERSION := 1.16
+
+# We track library dependencies in the repo, so we do not want *any* of the Golang-hosted package interactions
+GOPROXY := direct
+GOFLAGS := -mod=vendor
+GOSUMDB := off
+
+VERSION           := 0.0.1
+GIT_SHA           := $(shell git rev-parse HEAD)
+
+BUILD             := $(shell date +%FT%T%z)
+BUILD_FOLDER      := ./build
+BUILD_FILE        := ${BUILD_FOLDER}/prebid-server
+
 .PHONY: no-args
 no-args:
+# Do nothing by default. Ensure this is first in the list of tasks
+
+.PHONY: print-%
+print-%: ; @echo $*=$($*)
+# Use to print the evaluated value of a make variable. e.g. `make print-SHELL`
 
 # deps will clean out the vendor directory and use go mod for a fresh install
 .PHONY: deps
 deps:
 	GOPROXY="https://proxy.golang.org" go mod vendor -v && go mod tidy -v
 
-# test will ensure that all of our dependencies are available and run validate.sh
 .PHONY: test
-test: deps
+test:
 # If there is no indentation, Make will treat it as a directive for itself; otherwise, it's regarded as a shell script.
 # https://stackoverflow.com/a/4483467
 ifeq "$(adapter)" ""
@@ -52,25 +75,144 @@ clean:
 ######################################################################################################################
 
 .PHONY: dev
-dev: PATH := "${GOPATH}/bin:${PATH}"
-dev: dev-deps dev-clean baseimage
-	@envtpl deploy/local/manifest.yaml | kubectl apply -f -
-
-.PHONY: dev-deps
-dev-deps:
-	@# Checks for template parser and installs it if necessary
-	@which envtpl &>/dev/null 2>&1 || go get -v github.com/subfuzion/envtpl/...
+dev: TAIL_STDOUT ?= true
+dev: dev-clean baseimage
+	@make dev-manifest | kubectl apply -f -
+	@test ${TAIL_STDOUT} == "false" || { clear; make dev-wait && make dev-logs; }
 
 .PHONY: dev-clean
-dev-clean: PATH := "${GOPATH}/bin:${PATH}"
-dev-clean: dev-deps
-	@envtpl deploy/local/manifest.yaml | kubectl delete --ignore-not-found -f -
+dev-clean:
+dev-clean:
+	@kubectl delete deployment,statefulset,svc,cm,secret --wait=false -l app.kubernetes.io/part-of=${PROJECT_NAME}
+# Only remove the source code pv,pvc, persisting state/vendor data (see dev-clean-state & dev-clean-vendor)
+	@kubectl delete pv,pvc --wait=false -l app.kubernetes.io/part-of=${PROJECT_NAME},app.kubernetes.io/component=app,volume=src
+
+# TODO: Temporary for transition of k8s labels. Remove after 5/1/2022.
+	@kubectl delete pod,deployment,statefulset,svc,cm,secret,pv,pvc --wait=false -l app=${PROJECT_NAME}
+
+.PHONY: dev-clean-state
+dev-clean-state: dev-clean
+# Not relevant to localdev for this application
+
+.PHONY: dev-clean-vendor
+dev-clean-vendor: dev-clean
+# Not relevant to localdev for this application
+
+.PHONY: dev-clean-all
+dev-clean-all: dev-clean dev-clean-state dev-clean-vendor
+
+.PHONY: dev-wait
+dev-wait: INSTANCE ?= web-internal
+dev-wait: TRIES ?= 45
+dev-wait:
+	@i=0; \
+	until kubectl get pod -l app.kubernetes.io/part-of=${PROJECT_NAME},app.kubernetes.io/instance=${INSTANCE} | grep -q "Running"; do \
+		if test $${i} -eq ${TRIES}; then echo "Did not see a running pod after $${i} tries, bailing."; exit 1; fi; \
+		((i+=1)); \
+		sleep 1; \
+	done
+
+.PHONY: dev-inspect
+dev-inspect: export INSPECT_PODS := true
+dev-inspect: export TAIL_STDOUT := false
+dev-inspect: CONTAINER ?= app
+dev-inspect: INSTANCE ?= web-internal
+dev-inspect:
+# Use this target as an escape hatch if your app is crashing on turnup or you're iterating on the manifest
+# The localdev entrypoint consumes this env var
+	@make dev
+	@CONTAINER=${CONTAINER} INSTANCE=${INSTANCE} make dev-shell
+
+.PHONY: dev-list-pods
+dev-list-pods:
+	kubectl get pod -l app.kubernetes.io/part-of=${PROJECT_NAME} --watch || true
+
+.PHONY: dev-describe-pods
+dev-describe-pods:
+	kubectl describe pod -l app.kubernetes.io/part-of=${PROJECT_NAME}
+
+.PHONY: dev-logs
+dev-logs: INSTANCE ?= web-internal
+dev-logs: CONTAINER ?= app
+dev-logs:
+	kubectl logs -l app.kubernetes.io/part-of=${PROJECT_NAME},app.kubernetes.io/instance=${INSTANCE} --follow --container ${CONTAINER} || true
+
+.PHONY: dev-shell
+dev-shell: INSTANCE ?= web-internal
+dev-shell: CONTAINER ?= app
+dev-shell: CMD ?= bash
+dev-shell:
+	@CONTAINER=${CONTAINER} INSTANCE=${INSTANCE} make dev-wait
+	kubectl exec --tty --stdin $$(kubectl get pod -l app.kubernetes.io/part-of=${PROJECT_NAME},app.kubernetes.io/instance=${INSTANCE} --output=jsonpath={.items[0].metadata.name}) --container ${CONTAINER} -- ${CMD}
+
+.PHONY: dev-fqdn
+dev-fqdn: INSTANCE ?= web-internal
+dev-fqdn:
+	@kubectl get svc -l app.kubernetes.io/part-of=${PROJECT_NAME},app.kubernetes.io/instance=${INSTANCE} -o=jsonpath={.items[].metadata.name}.{.items[0].metadata.namespace}.svc.cluster.local
+
+.PHONY: dev-host
+dev-host: dev-fqdn
+
+.PHONY: dev-restart
+dev-restart: COMPONENT ?= app
+dev-restart:
+	@kubectl delete pod -l app.kubernetes.io/part-of=${PROJECT_NAME},app.kubernetes.io/component=${COMPONENT} --wait=false
+	@make dev-wait
+	@make dev-logs
+
+.PHONY: dev-mocks
+dev-mocks: MOCK_HOST ?= tpe-prebid-service-mocks.default.svc.cluster.local
+dev-mocks:
+	@test -z "${SCENARIO}" && { echo "SCENARIO must be set, and its value should be one of the following:"; ls testdata/scenarios; exit 1; } || true
+
+	MOCK_HOST=${MOCK_HOST} ruby testdata/scenarios/${SCENARIO}/fake.rb
+
+.PHONY: dev-manifest
+# Literal variables
+dev-manifest: CONFIGMAP_ENV_VARS := INSPECT_PODS
+dev-manifest: SECRET_ENV_VARS := AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY PBS_MONITORING_NEWRELIC_LICENSE_KEY
+dev-manifest: STORAGE_ENV_VARS := MINIKUBE_GATEWAY PWD
+dev-manifest: export PBS_MONITORING_NEWRELIC_LICENSE_KEY ?= abcdefghijklmnopqrstuvwxyzabcdefghijklmn
+dev-manifest:
+# Kustomize config for localdev is lightly templated, but `kustomize` is dogmatic about "no templating". So we will
+# stage the files to a temporary overlay location (to avoid creating changes that could get picked up via `git` commits)
+# and do the substitutions necessary for localdev. While this goes against the kustomize template-free philosophy, it's
+# super narrow, for development only, and we preferentially use the `kustomize` tooling to update values when possible
+	@rm -rf ${KUSTOMIZE_OVERLAY_DIR}/tmp
+	@cp -af ${KUSTOMIZE_OVERLAY_DIR}/localdev ${KUSTOMIZE_OVERLAY_DIR}/tmp
+
+# Add workload environment variables to ConfigMap from local environment variables
+	@cd ${KUSTOMIZE_OVERLAY_DIR}/tmp/web-internal &&\
+	for envkey in ${CONFIGMAP_ENV_VARS}; do \
+		envval=$$(printenv $${envkey} | tr -d '\n') ;\
+		kustomize edit add configmap ${PROJECT_DNS_NAME}-env --from-literal $${envkey}=$${envval} ;\
+	done
+
+# Add workload environment variables to Secret from local environment variables
+	@PBS_MONITORING_NEWRELIC_LICENSE_KEY=${PBS_MONITORING_NEWRELIC_LICENSE_KEY} \
+	cd ${KUSTOMIZE_OVERLAY_DIR}/tmp/web-internal &&\
+	for envkey in ${SECRET_ENV_VARS}; do \
+		envval=$$(printenv $${envkey} | tr -d '\n') ;\
+		kustomize edit add secret ${PROJECT_DNS_NAME}-env --from-literal $${envkey}=$${envval} ;\
+	done
+
+# Substitute storage.yaml w/ appropriate settings. Doing string substitution here because `kustomize` does not have CLI
+# commands for modifying PersistentVolumes
+	@for envkey in ${STORAGE_ENV_VARS}; do \
+		envval=$$(printenv $${envkey} | tr -d '\n') ;\
+		sed -i'' -e s+\\\$${$${envkey}}+$${envval}+g ${KUSTOMIZE_OVERLAY_DIR}/tmp/web-internal/storage.yaml ;\
+	done
+
+	@echo "---"
+	@kustomize build ${KUSTOMIZE_OVERLAY_DIR}/tmp/mocks
+	@echo "---"
+	@kustomize build ${KUSTOMIZE_OVERLAY_DIR}/tmp/web-internal
 
 ########################################################################################################################
 ## ARTIFACT RELATED TARGETS
 ########################################################################################################################
 
-GO_IMAGE := golang:1.16
+ROOT_IMAGE := golang:${GOLANG_VERSION}
 REGISTRY := localhost:5000/tapjoy
 IMAGE_NAME := ${REGISTRY}/${PROJECT_NAME}
 
@@ -83,7 +225,7 @@ baseimage:
 	@cp Dockerfile ${CACHE_DIR}
 
 	docker build \
-		--build-arg GO_IMAGE=${GO_IMAGE} \
+		--build-arg ROOT_IMAGE=${ROOT_IMAGE} \
 		--target baseimage \
 		--tag ${IMAGE_NAME}:${IMAGE_TAG} \
 		${CACHE_DIR}
