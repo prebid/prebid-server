@@ -205,6 +205,9 @@ func (a *TelariaAdapter) MakeRequests(requestIn *openrtb2.BidRequest, reqInfo *a
 		// Swap the tagID with adCode
 		request.Imp[i].TagID = telariaImpExt.AdCode
 	}
+	if len(request.Imp) > 1 {
+		request.Imp = request.Imp[0:1]
+	}
 
 	// Add the Extra from Imp to the top level Ext
 	if telariaImpExt != nil && telariaImpExt.Extra != nil {
@@ -282,11 +285,15 @@ func (a *TelariaAdapter) MakeBids(internalRequest *openrtb2.BidRequest, external
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
 	sb := bidResp.SeatBid[0]
 
-	for _, bid := range sb.Bid {
-		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-			Bid:     &bid,
-			BidType: openrtb_ext.BidTypeVideo,
-		})
+	for i := range sb.Bid {
+		bid := sb.Bid[i]
+		if i < len(internalRequest.Imp) {
+			bid.ImpID = internalRequest.Imp[i].ID
+			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+				Bid:     &bid,
+				BidType: openrtb_ext.BidTypeVideo,
+			})
+		}
 	}
 	return bidResponse, nil
 }
