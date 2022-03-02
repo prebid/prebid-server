@@ -21,10 +21,13 @@ components:
 - ../../../components/tooling/production
 
 configMapGenerator:
-- name: tpe-prebid-service-env
-  behavior: merge
+- behavior: merge
+  name: tpe-prebid-service-env
 
 images:
+- name: app
+  newName: localhost:5000/tapjoy/tpe_prebid_service
+  newTag: d8a7c8f163ed34fbf2b02d52d95bda1fd1c5b0bd
 - name: nginx
   newName: localhost:5000/tapjoy/nginx
   newTag: latest
