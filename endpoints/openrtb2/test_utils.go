@@ -35,7 +35,7 @@ import (
 
 // In this file we define:
 //  - Auxiliary types
-//  - Interface implementation with the purspose of testing
+//  - Unit test interface implementations such as mocks
 //  - Other auxiliary functions that don't make assertions and don't take t *testing.T as parameter
 //
 // All of the above are useful for this package's unit test framework.
