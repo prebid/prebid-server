@@ -3,3 +3,6 @@ kind: Kustomization
 
 resources:
   - app.yaml
+
+configMapGenerator:
+  - name: tpe-prebid-service-env

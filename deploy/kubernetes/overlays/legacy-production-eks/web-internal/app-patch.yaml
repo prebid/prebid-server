@@ -1,0 +1,71 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tpe-prebid-service
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::266171351246:role/tpe_prebid_service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tpe-prebid-service
+spec:
+  template:
+    spec:
+      volumes:
+        - name: tapjoy-tooling
+          configMap:
+            name: tpe-prebid-service-tooling
+            defaultMode: 0755 # Make scripts executable
+      containers:
+        - name: app
+          command: ["/tapjoy/tooling/entrypoint-aws.sh"]
+          args:
+            # TODO Remove env var overrides once app runs exclusively in k8s or the env vars are no longer published
+            # PBS_ADAPTERS_TAPJOY_ENDPOINT setup is a gift for devs living in a future when optsoa runs in EKS
+            - chamber exec devops/aws/production/tpe_prebid_service-web_internal/env --
+              env PBS_ADAPTERS_TAPJOY_ENDPOINT=http://legacy-discovery:7286/bid
+              ./tpe_prebid_service
+          resources:
+            requests:
+              cpu: 500m # Total guess
+              memory: 150Mi # Total guess
+            limits:
+              cpu: 3000m # Total guess
+              memory: 2000Mi # Total guess
+          volumeMounts:
+            - name: tapjoy-tooling
+              mountPath: /tapjoy/tooling
+              readOnly: true
+          # Attempt to restart container if the app is truly unavailable for 1min
+          livenessProbe:
+            tcpSocket:
+              port: app
+            failureThreshold: 6
+            successThreshold: 1
+          # Introduce a delay to the shutdown sequence to wait for the
+          # pod to be taken out of Service backends.
+          ## https://blog.gruntwork.io/delaying-shutdown-to-wait-for-pod-deletion-propagation-445f779a8304
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - sh
+                  - -c
+                  - sleep 30
+          # Introduce a delay to the shutdown sequence to wait for the
+          # pod to be taken out of Service backends.
+          ## https://blog.gruntwork.io/delaying-shutdown-to-wait-for-pod-deletion-propagation-445f779a8304
+        - name: nginx
+          readinessProbe:
+            periodSeconds: 1
+            failureThreshold: 1
+            successThreshold: 3
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - sh
+                  - -c
+                  - sleep 30 && /usr/sbin/nginx -s quit
