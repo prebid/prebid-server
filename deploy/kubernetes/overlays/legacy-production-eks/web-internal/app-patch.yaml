@@ -25,7 +25,7 @@ spec:
             # TODO Remove env var overrides once app runs exclusively in k8s or the env vars are no longer published
             # PBS_ADAPTERS_TAPJOY_ENDPOINT setup is a gift for devs living in a future when optsoa runs in EKS
             - chamber exec devops/aws/production/tpe_prebid_service-web_internal/env --
-              env PBS_ADAPTERS_TAPJOY_ENDPOINT=http://legacy-discovery:7286/bid
+              env PBS_ADAPTERS_TAPJOY_ENDPOINT=http://legacy-discovery:7286/bid PBS_MONITORING_OPENTELEMETRY_ENDPOINT=otelcol-gateway.observability-system:4139
               ./tpe_prebid_service
           resources:
             requests:
