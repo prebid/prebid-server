@@ -21,10 +21,10 @@ type Account struct {
 	GDPR               AccountGDPR `mapstructure:"gdpr" json:"gdpr"`
 	DebugAllow         bool        `mapstructure:"debug_allow" json:"debug_allow"`
 	DefaultIntegration string      `mapstructure:"default_integration" json:"default_integration"`
-	Defaults           CookieSync  `mapstructure:"cookie_sync" json:"cookie_sync"`
+	CookieSync         CookieSync  `mapstructure:"cookie_sync" json:"cookie_sync"`
 }
 
-// Represents the Account-Level Defaults for the Cookie Sync Endpoint
+// CookieSync represents the account-level defaults for the cookie sync endpoint.
 type CookieSync struct {
 	DefaultLimit    int  `mapstructure:"default_limit" json:"default_limit"`
 	MaxLimit        int  `mapstructure:"max_limit" json:"max_limit"`

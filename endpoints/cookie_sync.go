@@ -51,7 +51,6 @@ func NewCookieSyncEndpoint(
 	return &cookieSyncEndpoint{
 		chooser:          usersync.NewChooser(syncersByBidder),
 		config:           config,
-		configUserSync:   config.UserSync,
 		hostCookieConfig: &config.HostCookie,
 		privacyConfig: usersyncPrivacyConfig{
 			gdprConfig:      config.GDPR,
@@ -68,7 +67,6 @@ func NewCookieSyncEndpoint(
 type cookieSyncEndpoint struct {
 	chooser          usersync.Chooser
 	config           *config.Configuration
-	configUserSync   config.UserSync
 	hostCookieConfig *config.HostCookie
 	privacyConfig    usersyncPrivacyConfig
 	metrics          metrics.MetricsEngine
@@ -138,12 +136,12 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 			return usersync.Request{}, privacy.Policies{}, errs[0]
 		}
 		if request.Limit == 0 {
-			request.Limit = accountInfo.Defaults.DefaultLimit
-		} else if request.Limit > accountInfo.Defaults.MaxLimit {
-			request.Limit = accountInfo.Defaults.MaxLimit
+			request.Limit = accountInfo.CookieSync.DefaultLimit
+		} else if request.Limit > accountInfo.CookieSync.MaxLimit {
+			request.Limit = accountInfo.CookieSync.MaxLimit
 		}
 		if request.CooperativeSync == nil {
-			request.CooperativeSync = &accountInfo.Defaults.DefaultCoopSync
+			request.CooperativeSync = &accountInfo.CookieSync.DefaultCoopSync
 		}
 	}
 
@@ -176,8 +174,8 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 	rx := usersync.Request{
 		Bidders: request.Bidders,
 		Cooperative: usersync.Cooperative{
-			Enabled:        (request.CooperativeSync != nil && *request.CooperativeSync) || (request.CooperativeSync == nil && c.configUserSync.Cooperative.EnabledByDefault),
-			PriorityGroups: c.configUserSync.Cooperative.PriorityGroups,
+			Enabled:        (request.CooperativeSync != nil && *request.CooperativeSync) || (request.CooperativeSync == nil && c.config.UserSync.Cooperative.EnabledByDefault),
+			PriorityGroups: c.config.UserSync.Cooperative.PriorityGroups,
 		},
 		Limit: request.Limit,
 		Privacy: usersyncPrivacy{
