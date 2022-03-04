@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const testsBidderEndpoint = "https://dsp.adotmob.com/headerbidding/bidrequest"
+const testsBidderEndpoint = "https://dsp.adotmob.com/headerbidding{PUBLISHER_PATH}/bidrequest"
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAdot, config.Adapter{
@@ -38,7 +38,7 @@ func TestMediaTypeError(t *testing.T) {
 
 func TestBidResponseNoContent(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAdot, config.Adapter{
-		Endpoint: "https://dsp.adotmob.com/headerbidding/bidrequest"})
+		Endpoint: "https://dsp.adotmob.com/headerbidding{PUBLISHER_PATH}/bidrequest"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -78,4 +78,19 @@ func TestResolveMacros(t *testing.T) {
 	resolveMacros(bid)
 	assert.Equal(t, "adm:imp_123.45 amd:creativeview_123.45", bid.AdM)
 	assert.Equal(t, "nurl_123.45", bid.NURL)
+}
+
+func TestGetImpAdotExt(t *testing.T) {
+	ext := &openrtb2.Imp{Ext: json.RawMessage(`{"bidder":{"publisherPath": "/hubvisor"}}`)}
+	adotExt := getImpAdotExt(ext)
+	assert.Equal(t, adotExt.PublisherPath, "/hubvisor")
+
+	emptyBidderExt := &openrtb2.Imp{Ext: json.RawMessage(`{"bidder":{}}`)}
+	emptyAdotBidderExt := getImpAdotExt(emptyBidderExt)
+	assert.NotNil(t, emptyAdotBidderExt)
+	assert.Equal(t, emptyAdotBidderExt.PublisherPath, "")
+
+	emptyExt := &openrtb2.Imp{Ext: json.RawMessage(`{}`)}
+	emptyAdotExt := getImpAdotExt(emptyExt)
+	assert.Nil(t, emptyAdotExt)
 }

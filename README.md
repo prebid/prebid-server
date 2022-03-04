@@ -21,7 +21,7 @@ Please consider [registering your Prebid Server](https://docs.prebid.org/prebid-
 
 ## Installation
 
-First install [Go](https://golang.org/doc/install) version 1.15 or newer.
+First install [Go](https://golang.org/doc/install) version 1.16 or newer.
 
 Note that prebid-server is using [Go modules](https://blog.golang.org/using-go-modules).
 We officially support the most recent two major versions of the Go runtime. However, if you'd like to use a version <1.13 and are inside GOPATH `GO111MODULE` needs to be set to `GO111MODULE=on`.
