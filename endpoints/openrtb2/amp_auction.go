@@ -58,6 +58,7 @@ func NewAmpEndpoint(
 	disabledBidders map[string]string,
 	defReqJSON []byte,
 	bidderMap map[string]openrtb_ext.BidderName,
+	storedRespFetcher stored_requests.Fetcher,
 ) (httprouter.Handle, error) {
 
 	if ex == nil || validator == nil || requestsById == nil || accounts == nil || cfg == nil || met == nil {
@@ -88,7 +89,7 @@ func NewAmpEndpoint(
 		nil,
 		nil,
 		ipValidator,
-		empty_fetcher.EmptyFetcher{}}).AmpAuction), nil
+		storedRespFetcher}).AmpAuction), nil
 
 }
 
@@ -136,7 +137,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	w.Header().Set("Access-Control-Expose-Headers", "AMP-Access-Control-Allow-Source-Origin")
 	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
 
-	req, errL := deps.parseAmpRequest(r)
+	req, storedAuctionResponses, errL := deps.parseAmpRequest(r)
 	ao.Errors = append(ao.Errors, errL...)
 
 	if errortypes.ContainsFatalError(errL) {
@@ -199,6 +200,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		StartTime:                  start,
 		LegacyLabels:               labels,
 		GlobalPrivacyControlHeader: secGPC,
+		StoredAuctionResponses:     storedAuctionResponses,
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
@@ -299,9 +301,9 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 // possible, it will return errors with messages that suggest improvements.
 //
 // If the errors list has at least one element, then no guarantees are made about the returned request.
-func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openrtb2.BidRequest, errs []error) {
+func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openrtb2.BidRequest, storedAuctionResponses map[string]json.RawMessage, errs []error) {
 	// Load the stored request for the AMP ID.
-	req, e := deps.loadRequestJSONForAmp(httpRequest)
+	req, storedAuctionResponses, e := deps.loadRequestJSONForAmp(httpRequest)
 	if errs = append(errs, e...); errortypes.ContainsFatalError(errs) {
 		return
 	}
@@ -316,19 +318,20 @@ func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openr
 	}
 
 	// At this point, we should have a valid request that definitely has Targeting and Cache turned on
-	e = deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: req}, true)
+	hasStoredResponses := len(storedAuctionResponses) > 0
+	e = deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: req}, true, hasStoredResponses)
 	errs = append(errs, e...)
 	return
 }
 
 // Load the stored OpenRTB request for an incoming AMP request, or return the errors found.
-func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req *openrtb2.BidRequest, errs []error) {
+func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req *openrtb2.BidRequest, storedAuctionResponses map[string]json.RawMessage, errs []error) {
 	req = &openrtb2.BidRequest{}
 	errs = nil
 
 	ampParams, err := amp.ParseParams(httpRequest)
 	if err != nil {
-		return nil, []error{err}
+		return nil, nil, []error{err}
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(storedRequestTimeoutMillis)*time.Millisecond)
@@ -336,7 +339,7 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 
 	storedRequests, _, errs := deps.storedReqFetcher.FetchRequests(ctx, []string{ampParams.StoredRequestID}, nil)
 	if len(errs) > 0 {
-		return nil, errs
+		return nil, nil, errs
 	}
 	if len(storedRequests) == 0 {
 		errs = []error{fmt.Errorf("No AMP config found for tag_id '%s'", ampParams.StoredRequestID)}
@@ -346,6 +349,12 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 	// The fetched config becomes the entire OpenRTB request
 	requestJSON := storedRequests[ampParams.StoredRequestID]
 	if err := json.Unmarshal(requestJSON, req); err != nil {
+		errs = []error{err}
+		return
+	}
+
+	storedAuctionResponses, errs = deps.processStoredAuctionResponses(ctx, requestJSON)
+	if err != nil {
 		errs = []error{err}
 		return
 	}

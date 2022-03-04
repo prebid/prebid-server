@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	jsonpatch "github.com/evanphx/json-patch/v5"
+	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"

@@ -55,7 +55,7 @@ func TestBidderParamValidatorValidate(t *testing.T) {
 		{
 			description:   "Invalid - Empty Object",
 			ext:           json.RawMessage(`{}`),
-			expectedError: "placementId: placementId is required",
+			expectedError: "(root): placementId is required",
 		},
 		{
 			description:   "Malformed",
