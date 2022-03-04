@@ -32,7 +32,7 @@ spec:
               cpu: 500m # Total guess
               memory: 150Mi # Total guess
             limits:
-              cpu: 3000m # Total guess
+              cpu: 6000m # Total guess
               memory: 2000Mi # Total guess
           volumeMounts:
             - name: tapjoy-tooling
