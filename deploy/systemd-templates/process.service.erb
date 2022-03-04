@@ -1,0 +1,28 @@
+# This file is an override of the generic systemd process.service.erb template
+# found in slugforge-internal
+# The variables that are normall doubly escaped (`<%%=  %>`) for pre-processing
+# by slugforge have been normally escaped (`<%= %>`)
+# Any futher modification should conform to this pattern
+
+[Unit]
+Description=<%= app %>-<%= name %>[<%= num %>]
+# The process is part of the application target
+PartOf=<%= app %>.target
+
+[Service]
+# By default we assume we are working with a non-forking application (simple)
+# TODO: Forked processes (unicorn/etc.) may be able to do away with
+# using shepherd scripts in Systemd managed environments
+Type=simple
+User=<%= user %>
+WorkingDirectory=<%= engine.root %>
+ExecStart=/bin/bash -l -c 'cd <%= engine.root %>/current ; if [ -f <%= engine.root %>/shared/env ] ; then source <%= engine.root %>/shared/env ; fi ; if [ -f <%= engine.root %>/shared/env-export ] ; then source <%= engine.root %>/shared/env-export ; fi ; <%= process.command %> 2>&1 | setsid logger -t <%= app %>-<%= name %>[<%= num %>]'
+# Systemd starts processes in user shells that do not use PAM for login
+# so any per user /etc/security/limits.conf overrides are ignored
+# Explicitly up the file and process count to give deployboard's runner
+# a lot of resources to work with
+LimitNOFILE=100000
+LimitNPROC=100000
+Restart=always
+RestartSec=2s
+KillMode=mixed
