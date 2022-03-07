@@ -120,6 +120,9 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 	if cfg.AccountDefaults.Disabled {
 		glog.Warning(`With account_defaults.disabled=true, host-defined accounts must exist and have "disabled":false. All other requests will be rejected.`)
 	}
+	if cfg.AccountDefaults.Events.Enabled {
+		glog.Warning(`account_defaults.events will currently not do anything as the feature is still under development. Please follow https://github.com/prebid/prebid-server/issues/1725 for more updates`)
+	}
 	return errs
 }
 
@@ -416,8 +419,10 @@ func (cfg *Metrics) validate(errs []error) []error {
 type InfluxMetrics struct {
 	Host               string `mapstructure:"host"`
 	Database           string `mapstructure:"database"`
+	Measurement        string `mapstructure:"measurement"`
 	Username           string `mapstructure:"username"`
 	Password           string `mapstructure:"password"`
+	AlignTimestamps    bool   `mapstructure:"align_timestamps"`
 	MetricSendInterval int    `mapstructure:"metric_send_interval"`
 }
 
@@ -692,8 +697,10 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("metrics.disabled_metrics.adapter_gdpr_request_blocked", false)
 	v.SetDefault("metrics.influxdb.host", "")
 	v.SetDefault("metrics.influxdb.database", "")
+	v.SetDefault("metrics.influxdb.measurement", "")
 	v.SetDefault("metrics.influxdb.username", "")
 	v.SetDefault("metrics.influxdb.password", "")
+	v.SetDefault("metrics.influxdb.align_timestamps", false)
 	v.SetDefault("metrics.influxdb.metric_send_interval", 20)
 	v.SetDefault("metrics.prometheus.port", 0)
 	v.SetDefault("metrics.prometheus.namespace", "")
@@ -818,7 +825,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.adocean.endpoint", "https://{{.Host}}")
 	v.SetDefault("adapters.adnuntius.endpoint", "https://ads.adnuntius.delivery/i")
 	v.SetDefault("adapters.adoppler.endpoint", "http://{{.AccountID}}.trustedmarketplace.io/ads/processHeaderBid/{{.AdUnit}}")
-	v.SetDefault("adapters.adot.endpoint", "https://dsp.adotmob.com/headerbidding/bidrequest")
+	v.SetDefault("adapters.adot.endpoint", "https://dsp.adotmob.com/headerbidding{PUBLISHER_PATH}/bidrequest")
 	v.SetDefault("adapters.adpone.endpoint", "http://rtb.adpone.com/bid-request?src=prebid_server")
 	v.SetDefault("adapters.adprime.endpoint", "http://delta.adprime.com/pserver")
 	v.SetDefault("adapters.adtarget.endpoint", "http://ghb.console.adtarget.com.tr/pbs/ortb")
@@ -1078,6 +1085,9 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("gdpr.tcf2.purpose_one_treatment.access_allowed", true)
 	v.SetDefault("gdpr.tcf2.special_feature1.enforce", true)
 	v.SetDefault("gdpr.tcf2.special_feature1.vendor_exceptions", []openrtb_ext.BidderName{})
+
+	// Defaults for account_defaults.events.default_url
+	v.SetDefault("account_defaults.events.default_url", "https://PBS_HOST/event?t=##PBS-EVENTTYPE##&vtype=##PBS-VASTEVENT##&b=##PBS-BIDID##&f=i&a=##PBS-ACCOUNTID##&ts=##PBS-TIMESTAMP##&bidder=##PBS-BIDDER##&int=##PBS-INTEGRATION##&mt=##PBS-MEDIATYPE##&ch=##PBS-CHANNEL##&aid=##PBS-AUCTIONID##&l=##PBS-LINEID##")
 }
 
 func migrateConfig(v *viper.Viper) {

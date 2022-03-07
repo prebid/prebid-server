@@ -22,6 +22,7 @@ type Account struct {
 	DebugAllow         bool        `mapstructure:"debug_allow" json:"debug_allow"`
 	DefaultIntegration string      `mapstructure:"default_integration" json:"default_integration"`
 	CookieSync         CookieSync  `mapstructure:"cookie_sync" json:"cookie_sync"`
+	Events             Events      `mapstructure:"events" json:"events"` // Don't enable this feature. It is still under developmment - https://github.com/prebid/prebid-server/issues/1725
 }
 
 // CookieSync represents the account-level defaults for the cookie sync endpoint.
