@@ -49,8 +49,9 @@
       "mockResponse": {
         "status": 200,
         "body": "fail for unmarshal"
-        }
-    }],
+      }
+    }
+  ],
 
   "expectedMakeBidsErrors": [
     {
@@ -59,4 +60,3 @@
     }
   ]
 }
-

@@ -41,12 +41,13 @@ const (
 )
 
 type EventRequest struct {
-	Type      EventType      `json:"type,omitempty"`
-	Format    ResponseFormat `json:"format,omitempty"`
-	Analytics Analytics      `json:"analytics,omitempty"`
-	BidID     string         `json:"bidid,omitempty"`
-	AccountID string         `json:"account_id,omitempty"`
-	Bidder    string         `json:"bidder,omitempty"`
-	Timestamp int64          `json:"timestamp,omitempty"`
-	VType     VastType       `json:"vtype,omitempty"`
+	Type        EventType      `json:"type,omitempty"`
+	Format      ResponseFormat `json:"format,omitempty"`
+	Analytics   Analytics      `json:"analytics,omitempty"`
+	BidID       string         `json:"bidid,omitempty"`
+	AccountID   string         `json:"account_id,omitempty"`
+	Bidder      string         `json:"bidder,omitempty"`
+	Timestamp   int64          `json:"timestamp,omitempty"`
+	Integration string         `json:"integration,omitempty"`
+	VType       VastType       `json:"vtype,omitempty"`
 }

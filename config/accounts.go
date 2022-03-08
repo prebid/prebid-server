@@ -13,14 +13,15 @@ const (
 
 // Account represents a publisher account configuration
 type Account struct {
-	ID            string      `mapstructure:"id" json:"id"`
-	Disabled      bool        `mapstructure:"disabled" json:"disabled"`
-	CacheTTL      DefaultTTLs `mapstructure:"cache_ttl" json:"cache_ttl"`
-	EventsEnabled bool        `mapstructure:"events_enabled" json:"events_enabled"`
-	CCPA          AccountCCPA `mapstructure:"ccpa" json:"ccpa"`
-	GDPR          AccountGDPR `mapstructure:"gdpr" json:"gdpr"`
-	DebugAllow    bool        `mapstructure:"debug_allow" json:"debug_allow"`
-	Events        Events      `mapstructure:"events" json:"events"` // Don't enable this feature. It is still under developmment - https://github.com/prebid/prebid-server/issues/1725
+	ID                 string      `mapstructure:"id" json:"id"`
+	Disabled           bool        `mapstructure:"disabled" json:"disabled"`
+	CacheTTL           DefaultTTLs `mapstructure:"cache_ttl" json:"cache_ttl"`
+	EventsEnabled      bool        `mapstructure:"events_enabled" json:"events_enabled"`
+	CCPA               AccountCCPA `mapstructure:"ccpa" json:"ccpa"`
+	GDPR               AccountGDPR `mapstructure:"gdpr" json:"gdpr"`
+	DebugAllow         bool        `mapstructure:"debug_allow" json:"debug_allow"`
+	DefaultIntegration string      `mapstructure:"default_integration" json:"default_integration"`
+	Events             Events      `mapstructure:"events" json:"events"` // Don't enable this feature. It is still under developmment - https://github.com/prebid/prebid-server/issues/1725
 }
 
 // AccountCCPA represents account-specific CCPA configuration
@@ -79,22 +80,4 @@ func (a *AccountIntegration) GetByIntegrationType(integrationType IntegrationTyp
 	}
 
 	return integrationEnabled
-}
-
-// VASTEvent indicates the configurations required for injecting VAST event trackers within
-// VAST XML
-type VASTEvent struct {
-	CreateElement     string   `mapstructure:"create_element" json:"create_element"`
-	Type              string   `mapstructure:"type" json:"type,omitempty"`
-	ExcludeDefaultURL bool     `mapstructure:"exclude_default_url" json:"exclude_default_url"`
-	URLs              []string `mapstructure:"urls" json:"urls"`
-}
-
-// Events indicates the various types of events to be captured typically for injecting tracker URLs
-// within the VAST XML
-// Don't enable this feature. It is still under developmment - https://github.com/prebid/prebid-server/issues/1725
-type Events struct {
-	Enabled    bool        `mapstructure:"enabled" json:"enabled"`
-	DefaultURL string      `mapstructure:"default_url" json:"default_url"`
-	VASTEvents []VASTEvent `mapstructure:"vast_events" json:"vast_events,omitempty"`
 }

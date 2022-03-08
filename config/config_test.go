@@ -319,8 +319,10 @@ metrics:
   influxdb:
     host: upstream:8232
     database: metricsdb
+    measurement: anyMeasurement
     username: admin
     password: admin1324
+    align_timestamps: true
     metric_send_interval: 30
   disabled_metrics:
     account_adapter_details: true
@@ -557,8 +559,10 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "recaptcha_secret", cfg.RecaptchaSecret, "asdfasdfasdfasdf")
 	cmpStrings(t, "metrics.influxdb.host", cfg.Metrics.Influxdb.Host, "upstream:8232")
 	cmpStrings(t, "metrics.influxdb.database", cfg.Metrics.Influxdb.Database, "metricsdb")
+	cmpStrings(t, "metrics.influxdb.measurement", cfg.Metrics.Influxdb.Measurement, "anyMeasurement")
 	cmpStrings(t, "metrics.influxdb.username", cfg.Metrics.Influxdb.Username, "admin")
 	cmpStrings(t, "metrics.influxdb.password", cfg.Metrics.Influxdb.Password, "admin1324")
+	cmpBools(t, "metrics.influxdb.align_timestamps", cfg.Metrics.Influxdb.AlignTimestamps, true)
 	cmpInts(t, "metrics.influxdb.metric_send_interval", cfg.Metrics.Influxdb.MetricSendInterval, 30)
 	cmpStrings(t, "", cfg.CacheURL.GetBaseURL(), "http://prebidcache.net")
 	cmpStrings(t, "", cfg.GetCachedAssetURL("a0eebc99-9c0b-4ef8-bb00-6bb9bd380a11"), "http://prebidcache.net/cache?uuid=a0eebc99-9c0b-4ef8-bb00-6bb9bd380a11")

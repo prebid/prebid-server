@@ -78,16 +78,13 @@ func validateImpression(imp *openrtb2.Imp, impExt *openrtb_ext.ExtImpAdkernel) e
 	if impExt.ZoneId < 1 {
 		return newBadInputError(fmt.Sprintf("Invalid zoneId value: %d. Ignoring imp id=%s", impExt.ZoneId, imp.ID))
 	}
-	if len(impExt.Host) == 0 {
-		return newBadInputError(fmt.Sprintf("Host is empty. Ignoring imp id=%s", imp.ID))
-	}
-	if imp.Video == nil && imp.Banner == nil {
-		return newBadInputError(fmt.Sprintf("Invalid imp id=%s. Expected imp.banner or imp.video", imp.ID))
+	if imp.Video == nil && imp.Banner == nil && imp.Native == nil {
+		return newBadInputError(fmt.Sprintf("Invalid imp id=%s. Expected imp.banner / imp.video / imp.native", imp.ID))
 	}
 	return nil
 }
 
-//Group impressions by AdKernel-specific parameters `zoneId` & `host`
+//Group impressions by AdKernel-specific parameter `zoneId`
 func dispatchImpressions(imps []openrtb2.Imp, impsExt []openrtb_ext.ExtImpAdkernel) (map[openrtb_ext.ExtImpAdkernel][]openrtb2.Imp, []error) {
 	res := make(map[openrtb_ext.ExtImpAdkernel][]openrtb2.Imp)
 	errors := make([]error, 0)
@@ -116,6 +113,9 @@ func compatImpression(imp *openrtb2.Imp) error {
 	if imp.Video != nil {
 		return compatVideoImpression(imp)
 	}
+	if imp.Native != nil {
+		return compatNativeImpression(imp)
+	}
 	return newBadInputError("Invalid impression")
 }
 
@@ -130,6 +130,13 @@ func compatVideoImpression(imp *openrtb2.Imp) error {
 	imp.Banner = nil
 	imp.Audio = nil
 	imp.Native = nil
+	return nil
+}
+
+func compatNativeImpression(imp *openrtb2.Imp) error {
+	imp.Banner = nil
+	imp.Audio = nil
+	imp.Video = nil
 	return nil
 }
 
@@ -193,7 +200,7 @@ func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext
 
 // Builds endpoint url based on adapter-specific pub settings from imp.ext
 func (adapter *adkernelAdapter) buildEndpointURL(params *openrtb_ext.ExtImpAdkernel) (string, error) {
-	endpointParams := macros.EndpointTemplateParams{Host: params.Host, ZoneID: strconv.Itoa(params.ZoneId)}
+	endpointParams := macros.EndpointTemplateParams{ZoneID: strconv.Itoa(params.ZoneId)}
 	return macros.ResolveMacros(adapter.EndpointTemplate, endpointParams)
 }
 
