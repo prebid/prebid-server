@@ -11,7 +11,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAdkernel, config.Adapter{
-		Endpoint: "http://{{.Host}}/hb?zone={{.ZoneID}}"})
+		Endpoint: "https://pbs.adksrv.com/hb?zone={{.ZoneID}}"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
