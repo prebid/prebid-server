@@ -156,6 +156,7 @@ const (
 	BidderNoBid             BidderName = "nobid"
 	BidderOneTag            BidderName = "onetag"
 	BidderOpenx             BidderName = "openx"
+	BidderOperaAds          BidderName = "operaads"
 	BidderOrbidder          BidderName = "orbidder"
 	BidderOutbrain          BidderName = "outbrain"
 	BidderPangle            BidderName = "pangle"
@@ -287,6 +288,7 @@ func CoreBidderNames() []BidderName {
 		BidderNoBid,
 		BidderOneTag,
 		BidderOpenx,
+		BidderOperaAds,
 		BidderOrbidder,
 		BidderOutbrain,
 		BidderPangle,

@@ -75,7 +75,13 @@ func (adapter *RTBHouseAdapter) Name() string {
 }
 
 // MakeRequests prepares the HTTP requests which should be made to fetch bids.
-func (adapter *RTBHouseAdapter) MakeRequests(openRTBRequest *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (adapter *RTBHouseAdapter) MakeRequests(
+	openRTBRequest *openrtb2.BidRequest,
+	reqInfo *adapters.ExtraRequestInfo,
+) (
+	[]*adapters.RequestData,
+	[]error,
+) {
 	numRequests := len(openRTBRequest.Imp)
 
 	requestData := make([]*adapters.RequestData, 0, numRequests)
@@ -235,46 +241,68 @@ const unexpectedStatusCodeFormat = "" +
 
 // MakeBids unpacks the server's response into Bids.
 func (adapter *RTBHouseAdapter) MakeBids(
-	openRTBRequest *openrtb2.BidRequest,
-	requestToBidder *adapters.RequestData,
-	bidderRawResponse *adapters.ResponseData,
+	internalRequest *openrtb2.BidRequest,
+	externalRequest *adapters.RequestData,
+	response *adapters.ResponseData,
 ) (
-	bidderResponse *adapters.BidderResponse,
-	errs []error,
+	*adapters.BidderResponse,
+	[]error,
 ) {
-	switch bidderRawResponse.StatusCode {
-	case http.StatusOK:
-		break
-	case http.StatusNoContent:
+	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
-	case http.StatusBadRequest:
-		err := &errortypes.BadInput{
-			Message: fmt.Sprintf(unexpectedStatusCodeFormat, bidderRawResponse.StatusCode),
-		}
-		return nil, []error{err}
-	default:
-		err := &errortypes.BadServerResponse{
-			Message: fmt.Sprintf(unexpectedStatusCodeFormat, bidderRawResponse.StatusCode),
-		}
+	}
+
+	if response.StatusCode == http.StatusBadRequest {
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+		}}
+	}
+
+	if response.StatusCode != http.StatusOK {
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+		}}
+	}
+
+	var bidResp openrtb2.BidResponse
+	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: err.Error(),
+		}}
+	}
+
+	if len(bidResp.SeatBid) == 0 {
+		return nil, nil
+	}
+
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
+
+	var bidReq openrtb2.BidRequest
+	if err := json.Unmarshal(externalRequest.Body, &bidReq); err != nil {
 		return nil, []error{err}
 	}
 
-	var openRTBBidderResponse openrtb2.BidResponse
-	if err := json.Unmarshal(bidderRawResponse.Body, &openRTBBidderResponse); err != nil {
-		return nil, []error{err}
+	bidType := openrtb_ext.BidTypeBanner
+
+	if bidReq.Imp[0].Video != nil {
+		bidType = openrtb_ext.BidTypeVideo
 	}
 
-	bidsCapacity := len(openRTBBidderResponse.SeatBid[0].Bid)
-	bidderResponse = adapters.NewBidderResponseWithBidsCapacity(bidsCapacity)
-	var typedBid *adapters.TypedBid
-	for _, seatBid := range openRTBBidderResponse.SeatBid {
-		for _, bid := range seatBid.Bid {
-			bid := bid // pin! -> https://github.com/kyoh86/scopelint#whats-this
-			typedBid = &adapters.TypedBid{Bid: &bid, BidType: "banner"}
-			bidderResponse.Bids = append(bidderResponse.Bids, typedBid)
+	for _, sb := range bidResp.SeatBid {
+		for _, b := range sb.Bid {
+			if b.Price != 0 {
+				// copy response.bidid to openrtb_response.seatbid.bid.bidid
+				if b.ID == "0" {
+					b.ID = bidResp.BidID
+				}
+
+				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+					Bid:     &b,
+					BidType: bidType,
+				})
+			}
 		}
 	}
 
-	return bidderResponse, nil
-
+	return bidResponse, nil
 }
