@@ -645,6 +645,16 @@ func TestShouldParseEventCorrectly(t *testing.T) {
 				Analytics: analytics.Enabled,
 			},
 		},
+		"three": {
+			req: httptest.NewRequest("GET", "/event?t=vast&vtype=start&b=bidId&ts=0&a=accountId", strings.NewReader("")),
+			expected: &analytics.EventRequest{
+				Type:      analytics.Vast,
+				VType:     analytics.Start,
+				BidID:     "bidId",
+				Timestamp: 0,
+				Analytics: analytics.Enabled,
+			},
+		},
 	}
 
 	for name, test := range tests {
@@ -748,5 +758,59 @@ func TestReadIntegrationType(t *testing.T) {
 			assert.Empty(t, err, test.description)
 			assert.Equalf(t, test.expectedIntegrationType, testEventRequest.Integration, test.description)
 		}
+	}
+}
+
+func TestShouldReturnBadRequestWhenVTypeIsInvalid(t *testing.T) {
+
+	// prepare
+	reqData := ""
+
+	tests := map[string]struct {
+		req                *http.Request
+		expectedStatusCode int
+		expectedStatus     string
+	}{
+		"vtype parameter is missing": {
+			httptest.NewRequest("GET", "/event?t=vast&b=bidID", strings.NewReader(reqData)),
+			400,
+			"invalid request: parameter 'vtype' is required\n",
+		},
+		"invalid vtype parameter": {
+			httptest.NewRequest("GET", "/event?t=vast&vtype=abc&b=bidID", strings.NewReader(reqData)),
+			400,
+			"invalid request: unknown vtype: 'abc'\n",
+		},
+	}
+
+	for _, test := range tests {
+		// mock AccountsFetcher
+		mockAccountsFetcher := &mockAccountsFetcher{}
+
+		// mock PBS Analytics Module
+		mockAnalyticsModule := &eventsMockAnalyticsModule{
+			Fail: false,
+		}
+
+		// mock config
+		cfg := &config.Configuration{
+			AccountDefaults: config.Account{},
+		}
+
+		recorder := httptest.NewRecorder()
+
+		e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule)
+		// execute
+		e(recorder, test.req, nil)
+
+		d, err := ioutil.ReadAll(recorder.Result().Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// validate
+		assert.Equal(t, test.expectedStatusCode, recorder.Result().StatusCode, "Expected 400 on request with invalid vtype parameter")
+		assert.Equal(t, test.expectedStatus, string(d))
+
 	}
 }
