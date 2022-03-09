@@ -33,7 +33,7 @@ const defaultModelName = "HUAWEI"
 const chineseSiteEndPoint = "https://acd.op.hicloud.com/ppsadx/getResult"
 const europeanSiteEndPoint = "https://adx-dre.op.hicloud.com/ppsadx/getResult"
 const asianSiteEndPoint = "https://adx-dra.op.hicloud.com/ppsadx/getResult"
-const russianSiteEndPoint = "https://adx-drru.op.hicloud.com/ppsadx/getResult"
+const russianSiteEndPoint = "https://adx-drru.op.dbankcloud.ru/ppsadx/getResult"
 
 // creative type
 const (
