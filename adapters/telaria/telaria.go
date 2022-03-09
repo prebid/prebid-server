@@ -278,13 +278,14 @@ func (a *TelariaAdapter) MakeBids(internalRequest *openrtb2.BidRequest, external
 
 	for i := range sb.Bid {
 		bid := sb.Bid[i]
-		if i < len(internalRequest.Imp) {
-			bid.ImpID = internalRequest.Imp[i].ID
-			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     &bid,
-				BidType: openrtb_ext.BidTypeVideo,
-			})
+		if i >= len(internalRequest.Imp) {
+			break
 		}
+		bid.ImpID = internalRequest.Imp[i].ID
+		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+			Bid:     &bid,
+			BidType: openrtb_ext.BidTypeVideo,
+		})
 	}
 	return bidResponse, nil
 }
