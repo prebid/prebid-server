@@ -1,0 +1,55 @@
+{
+  "mockBidRequest": {
+    "id": "test-bid-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 480,
+              "h": 320
+            }
+          ]
+        },
+        "bidfloor": 5.00000,
+        "bidfloorcur": "GBP",
+        "ext": {
+          "bidder": {
+            "placementId": 999999999
+          }
+        }
+      }
+    ],
+    "user": {
+      "id": "test-user-id",
+      "buyeruid": "test-user-buyeruid"
+    },
+    "device": {
+      "ua": "test-device-ua",
+      "ip": "255.255.255.255"
+    },
+    "site": {
+      "id": "test-site-id",
+      "domain": "test-site-domain"
+    },
+    "ext": {
+      "prebid": {
+        "currency": {
+          "rates": {
+            "CNY": {
+              "RUB": 12.0
+            }
+          },
+          "usepbsrates": false
+        }
+      }
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Currency conversion rate not found: 'GBP' => 'RUB'",
+      "comparison": "literal"
+    }
+  ]
+}

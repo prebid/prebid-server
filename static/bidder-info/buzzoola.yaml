@@ -1,0 +1,18 @@
+maintainer:
+  email: devteam@buzzoola.com
+modifyingVastXmlAllowed: false
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  redirect:
+    url: https://exchange.buzzoola.com/cookiesync/redirect/prebidserver?redirect_url={{.RedirectURL}}
+    userMacro: ${UUID}
