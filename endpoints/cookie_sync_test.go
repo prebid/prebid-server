@@ -767,7 +767,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 				gdprConfig:  test.givenGDPRConfig,
 				ccpaEnforce: test.givenCCPAEnabled,
 			},
-			accountsFetcher: FakeAccountsFetcher{MockAccountData: map[string]json.RawMessage{
+			accountsFetcher: FakeAccountsFetcher{AccountData: map[string]json.RawMessage{
 				"TestAccount":     json.RawMessage(`{"cookie_sync": {"default_limit": 20, "max_limit": 30, "default_coop_sync": true}}`),
 				"DisabledAccount": json.RawMessage(`{"disabled":true}`),
 			}},
@@ -1356,6 +1356,35 @@ func TestUsersyncPrivacyCCPAAllowsBidderSync(t *testing.T) {
 	}
 }
 
+func TestCombineErrors(t *testing.T) {
+	testCases := []struct {
+		description    string
+		givenErrorList []error
+		expectedError  error
+	}{
+		{
+			description:    "No errors given",
+			givenErrorList: []error{},
+			expectedError:  errors.New(""),
+		},
+		{
+			description:    "One error given",
+			givenErrorList: []error{errors.New("Error #1")},
+			expectedError:  errors.New("Error #1"),
+		},
+		{
+			description:    "Multiple errors given",
+			givenErrorList: []error{errors.New("Error #1"), errors.New("Error #2")},
+			expectedError:  errors.New("Error #1 Error #2"),
+		},
+	}
+
+	for _, test := range testCases {
+		combinedErrors := combineErrors(test.givenErrorList)
+		assert.Equal(t, test.expectedError, combinedErrors, test.description)
+	}
+}
+
 type FakeChooser struct {
 	Result usersync.Result
 }
@@ -1436,11 +1465,11 @@ func (m *MockGDPRPerms) AuctionActivitiesAllowed(ctx context.Context, bidderCore
 }
 
 type FakeAccountsFetcher struct {
-	MockAccountData map[string]json.RawMessage
+	AccountData map[string]json.RawMessage
 }
 
 func (f FakeAccountsFetcher) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {
-	if account, ok := f.MockAccountData[accountID]; ok {
+	if account, ok := f.AccountData[accountID]; ok {
 		return account, nil
 	}
 	return nil, []error{errors.New("Account not found")}

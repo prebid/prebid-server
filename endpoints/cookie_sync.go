@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
@@ -133,7 +134,7 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 	if request.Account != "" {
 		accountInfo, errs := accountService.GetAccount(context.Background(), c.config, c.accountsFetcher, request.Account)
 		if len(errs) > 0 {
-			return usersync.Request{}, privacy.Policies{}, errs[0]
+			return usersync.Request{}, privacy.Policies{}, combineErrors(errs)
 		}
 		if request.Limit == 0 {
 			request.Limit = accountInfo.CookieSync.DefaultLimit
@@ -255,6 +256,15 @@ func (c *cookieSyncEndpoint) handleError(w http.ResponseWriter, err error, httpS
 		Errors:       []error{err},
 		BidderStatus: []*analytics.CookieSyncBidder{},
 	})
+}
+
+func combineErrors(errs []error) error {
+	var errorStringList []string
+	for i := range errs {
+		errorStringList = append(errorStringList, errs[i].Error())
+	}
+	combinedErrors := strings.Join(errorStringList, " ")
+	return errors.New(combinedErrors)
 }
 
 func (c *cookieSyncEndpoint) writeBidderMetrics(biddersEvaluated []usersync.BidderEvaluation) {
