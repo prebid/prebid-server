@@ -2,10 +2,11 @@ package openrtb_ext
 
 // ExtImpAppier defines the contract for bidrequest.imp[i].ext.appier
 type ExtImpAppier struct {
-	Video          appierVideoParams `json:"video"`
-	Region         string            `json:"region"`
-	SKADNSupported bool              `json:"skadn_supported"`
-	MRAIDSupported bool              `json:"mraid_supported"`
+	Video                appierVideoParams `json:"video"`
+	Region               string            `json:"region"`
+	SKADNSupported       bool              `json:"skadn_supported"`
+	MRAIDSupported       bool              `json:"mraid_supported"`
+	EndcardHTMLSupported bool              `json:"endcard_html_supported"`
 }
 
 // appierVideoParams defines the contract for bidrequest.imp[i].ext.appier.video

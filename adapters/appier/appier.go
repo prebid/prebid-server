@@ -169,6 +169,11 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 			}
 
 			videoCopy := *thisImp.Video
+
+			if appierExt.EndcardHTMLSupported {
+				videoCopy.CompanionType = append(videoCopy.CompanionType, openrtb.CompanionTypeHTML)
+			}
+
 			videoExt := appierVideoExt{
 				PlacementType: string(placementType),
 				Orientation:   int(orientation),
