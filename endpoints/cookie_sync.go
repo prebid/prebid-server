@@ -259,11 +259,11 @@ func (c *cookieSyncEndpoint) handleError(w http.ResponseWriter, err error, httpS
 }
 
 func combineErrors(errs []error) error {
-	var errorStringList []string
+	var errorStrings []string
 	for i := range errs {
-		errorStringList = append(errorStringList, errs[i].Error())
+		errorStrings = append(errorStrings, errs[i].Error())
 	}
-	combinedErrors := strings.Join(errorStringList, " ")
+	combinedErrors := strings.Join(errorStrings, " ")
 	return errors.New(combinedErrors)
 }
 
