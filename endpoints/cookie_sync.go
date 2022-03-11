@@ -138,7 +138,8 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 		}
 		if request.Limit == 0 {
 			request.Limit = accountInfo.CookieSync.DefaultLimit
-		} else if request.Limit > accountInfo.CookieSync.MaxLimit {
+		}
+		if request.Limit == 0 || request.Limit > accountInfo.CookieSync.MaxLimit {
 			request.Limit = accountInfo.CookieSync.MaxLimit
 		}
 		if request.CooperativeSync == nil {

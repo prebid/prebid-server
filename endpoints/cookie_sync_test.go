@@ -753,6 +753,39 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			expectedError:        "Prebid-server has disabled Account ID: DisabledAccount, please reach out to the prebid server host.",
 			givenAccountRequired: true,
 		},
+		{
+			description: "Account Defaults - Request Limit value is 0",
+			givenBody: strings.NewReader(`{` +
+				`"bidders":["a", "b"],` +
+				`"limit":0,` +
+				`"account":"ZeroLimitAccount"` +
+				`}`),
+			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
+			givenCCPAEnabled: true,
+			givenConfig: config.UserSync{
+				Cooperative: config.UserSyncCooperative{
+					EnabledByDefault: false,
+					PriorityGroups:   [][]string{{"a", "b", "c"}},
+				},
+			},
+			expectedPrivacy: privacy.Policies{},
+			expectedRequest: usersync.Request{
+				Bidders: []string{"a", "b"},
+				Cooperative: usersync.Cooperative{
+					Enabled:        true,
+					PriorityGroups: [][]string{{"a", "b", "c"}},
+				},
+				Limit: 30,
+				Privacy: usersyncPrivacy{
+					gdprSignal: gdpr.SignalAmbiguous,
+				},
+				SyncTypeFilter: usersync.SyncTypeFilter{
+					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+					Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+				},
+			},
+			givenAccountRequired: true,
+		},
 	}
 
 	for _, test := range testCases {
@@ -768,8 +801,9 @@ func TestCookieSyncParseRequest(t *testing.T) {
 				ccpaEnforce: test.givenCCPAEnabled,
 			},
 			accountsFetcher: FakeAccountsFetcher{AccountData: map[string]json.RawMessage{
-				"TestAccount":     json.RawMessage(`{"cookie_sync": {"default_limit": 20, "max_limit": 30, "default_coop_sync": true}}`),
-				"DisabledAccount": json.RawMessage(`{"disabled":true}`),
+				"TestAccount":      json.RawMessage(`{"cookie_sync": {"default_limit": 20, "max_limit": 30, "default_coop_sync": true}}`),
+				"DisabledAccount":  json.RawMessage(`{"disabled":true}`),
+				"ZeroLimitAccount": json.RawMessage(`{"cookie_sync": {"default_limit": 0, "max_limit": 30, "default_coop_sync": true}}`),
 			}},
 		}
 		assert.NoError(t, endpoint.config.MarshalAccountDefaults())
