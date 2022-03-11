@@ -22,6 +22,7 @@ type Account struct {
 	DebugAllow         bool        `mapstructure:"debug_allow" json:"debug_allow"`
 	DefaultIntegration string      `mapstructure:"default_integration" json:"default_integration"`
 	Events             Events      `mapstructure:"events" json:"events"` // Don't enable this feature. It is still under developmment - https://github.com/prebid/prebid-server/issues/1725
+	TruncateTargetAttr *int        `mapstructure:"truncate_target_attr" json:"truncate_target_attr"`
 }
 
 // AccountCCPA represents account-specific CCPA configuration
