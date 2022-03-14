@@ -19,7 +19,33 @@
     },
     "imp": [
       {
-        "id": "some-impression-id",
+        "id": "0_0",
+        "tagid": "ogTAGID",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 640,
+          "h": 480,
+          "minduration": 120,
+          "maxduration": 150,
+          "ext": {
+            "podduration": 30,
+            "maxseq": 2
+          }
+        },
+        "ext": {
+          "bidder": {
+            "adCode": "my-adcode",
+            "seatCode": "my-seatcode",
+            "extra": {
+              "custom": "1234"
+            }
+          }
+        }
+      },
+      {
+        "id": "0_1",
         "tagid": "ogTAGID",
         "video": {
           "mimes": [
@@ -79,7 +105,7 @@
           },
           "imp": [
             {
-              "id": "some-impression-id",
+              "id": "0_0",
               "tagid": "my-adcode",
               "video": {
                 "mimes": [
@@ -88,7 +114,11 @@
                 "minduration": 120,
                 "maxduration": 150,
                 "w": 640,
-                "h": 480
+                "h": 480,
+                "ext": {
+                  "podduration": 30,
+                  "maxseq": 2
+                }
               },
               "ext": {
                 "originalTagid": "ogTAGID",
@@ -122,7 +152,24 @@
               "bid": [
                 {
                   "id": "a3ae1b4e2fc24a4fb45540082e98e161",
-                  "impid": "some-impression-id",
+                  "impid": "0_0",
+                  "price": 3.5,
+                  "adm": "awesome-markup",
+                  "adomain": [
+                    "awesome.com"
+                  ],
+                  "crid": "20",
+                  "w": 1280,
+                  "h": 720,
+                  "ext": {
+                    "prebid": {
+                      "type": "video"
+                    }
+                  }
+                },
+                {
+                  "id": "25c6976b14e041029afd5b00acabd933",
+                  "impid": "0_0",
                   "price": 3.5,
                   "adm": "awesome-markup",
                   "adomain": [
@@ -157,7 +204,26 @@
       "bids": [{
         "bid": {
           "id": "a3ae1b4e2fc24a4fb45540082e98e161",
-          "impid": "some-impression-id",
+          "impid": "0_0",
+          "price": 3.5,
+          "adm": "awesome-markup",
+          "adomain": [
+            "awesome.com"
+          ],
+          "crid": "20",
+          "w": 1280,
+          "h": 720,
+          "ext": {
+            "prebid": {
+              "type": "video"
+            }
+          }
+        },
+        "type": "video"
+      },{
+        "bid": {
+          "id": "25c6976b14e041029afd5b00acabd933",
+          "impid": "0_1",
           "price": 3.5,
           "adm": "awesome-markup",
           "adomain": [
