@@ -54,8 +54,7 @@ var operaAdsSKADNetIDs = map[string]bool{
 }
 
 var (
-	errBannerFormatMiss = errors.New("size information missing for banner")
-	errDeviceOrOSMiss   = errors.New("impression is missing device OS information")
+	errDeviceOrOSMiss = errors.New("impression is missing device OS information")
 )
 
 // Builder builds a new instance of the operaads adapter for the given bidder with the given config.
@@ -123,6 +122,8 @@ func (a *OperaAdsAdapter) MakeRequests(
 			uri = endpoint
 		}
 
+		imp.TagID = operaadsExt.PlacementId.Video
+
 		if err != nil {
 			errs = append(errs, &errortypes.BadInput{
 				Message: err.Error(),
@@ -181,17 +182,6 @@ func (a *OperaAdsAdapter) MakeRequests(
 			}
 		}
 
-		formats := make([]interface{}, 0, 1)
-		if imp.Native != nil {
-			formats = append(formats, imp.Native)
-		}
-		if imp.Video != nil {
-			formats = append(formats, imp.Video)
-		}
-		if imp.Banner != nil {
-			formats = append(formats, imp.Banner)
-		}
-
 		impExt := operaAdsImpExt{
 			Rewarded: rewarded,
 		}
@@ -205,92 +195,47 @@ func (a *OperaAdsAdapter) MakeRequests(
 			}
 		}
 
+		imp.ID = buildOperaImpId(imp.ID, openrtb_ext.BidTypeVideo)
+
 		imp.Ext, err = json.Marshal(&impExt)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
-		for _, format := range formats {
-			req, err := flatImp(*request, imp, headers, uri, format, placementType, operaadsExt, skanSent)
-			if err != nil {
-				errs = append(errs, &errortypes.BadInput{
-					Message: err.Error(),
-				})
-				continue
-			}
-			if req != nil {
-				requestData = append(requestData, req)
-			}
+		request.Imp = []openrtb2.Imp{imp}
+		request.Cur = nil
+		request.Ext = nil
+
+		reqJSON, err := json.Marshal(request)
+		if err != nil {
+			errs = append(errs, err)
+			continue
 		}
+
+		reqData := &adapters.RequestData{
+			Method:  "POST",
+			Uri:     uri,
+			Body:    reqJSON,
+			Headers: headers,
+
+			TapjoyData: adapters.TapjoyData{
+				Bidder:        string(openrtb_ext.BidderOperaAds),
+				PlacementType: placementType,
+				Region:        operaadsExt.Region,
+				SKAN: adapters.SKAN{
+					Supported: operaadsExt.SKADNSupported,
+					Sent:      skanSent,
+				},
+				MRAID: adapters.MRAID{
+					Supported: operaadsExt.MRAIDSupported,
+				},
+			},
+		}
+
+		requestData = append(requestData, reqData)
 	}
 	return requestData, errs
-}
-
-func flatImp(
-	requestCopy openrtb2.BidRequest,
-	impCopy openrtb2.Imp,
-	headers http.Header,
-	uri string,
-	format interface{},
-	placementType adapters.PlacementType,
-	operaAdsExt openrtb_ext.ExtImpOperaAds,
-	skanSent bool,
-) (
-	*adapters.RequestData, error,
-) {
-	switch format.(type) {
-
-	case *openrtb2.Banner:
-		impCopy.ID = buildOperaImpId(impCopy.ID, openrtb_ext.BidTypeBanner)
-		impCopy.Native = nil
-		impCopy.Video = nil
-		impCopy.TagID = operaAdsExt.PlacementId.Banner // TagID must be overwritten by correct placementID for each request type.
-
-	// Native is not supported
-	case *openrtb2.Native:
-		impCopy.Banner = nil
-		impCopy.ID = buildOperaImpId(impCopy.ID, openrtb_ext.BidTypeNative)
-		impCopy.Video = nil
-		impCopy.TagID = operaAdsExt.PlacementId.Native
-
-	case *openrtb2.Video:
-		impCopy.Banner = nil
-		impCopy.Native = nil
-		impCopy.ID = buildOperaImpId(impCopy.ID, openrtb_ext.BidTypeVideo)
-		impCopy.TagID = operaAdsExt.PlacementId.Video // TagID must be overwritten by dedicated placementID for each request type
-
-	default: // do not need flat
-		return nil, nil
-	}
-	err := convertImpression(&impCopy)
-	if err != nil {
-		return nil, err
-	}
-	requestCopy.Imp = []openrtb2.Imp{impCopy}
-	reqJSON, err := json.Marshal(&requestCopy)
-	if err != nil {
-		return nil, err
-	}
-	return &adapters.RequestData{
-		Method:  http.MethodPost,
-		Uri:     uri,
-		Body:    reqJSON,
-		Headers: headers,
-
-		TapjoyData: adapters.TapjoyData{
-			Bidder:        string(openrtb_ext.BidderOperaAds),
-			PlacementType: placementType,
-			Region:        operaAdsExt.Region,
-			SKAN: adapters.SKAN{
-				Supported: operaAdsExt.SKADNSupported,
-				Sent:      skanSent,
-			},
-			MRAID: adapters.MRAID{
-				Supported: operaAdsExt.MRAIDSupported,
-			},
-		},
-	}, nil
 }
 
 func checkRequest(request *openrtb2.BidRequest) error {
@@ -301,52 +246,8 @@ func checkRequest(request *openrtb2.BidRequest) error {
 	return nil
 }
 
-func convertImpression(imp *openrtb2.Imp) error {
-	if imp.Banner != nil {
-		bannerCopy, err := convertBanner(imp.Banner)
-		if err != nil {
-			return err
-		}
-		imp.Banner = bannerCopy
-	}
-	if imp.Native != nil && imp.Native.Request != "" {
-		v := make(map[string]interface{})
-		err := json.Unmarshal([]byte(imp.Native.Request), &v)
-		if err != nil {
-			return err
-		}
-		_, ok := v["native"]
-		if !ok {
-			body, err := json.Marshal(struct {
-				Native interface{} `json:"native"`
-			}{
-				Native: v,
-			})
-			if err != nil {
-				return err
-			}
-			native := *imp.Native
-			native.Request = string(body)
-			imp.Native = &native
-		}
-	}
-	return nil
-}
-
-// make sure that banner has openrtb 2.3-compatible size information
-func convertBanner(banner *openrtb2.Banner) (*openrtb2.Banner, error) {
-	if banner.W == nil || banner.H == nil || *banner.W == 0 || *banner.H == 0 {
-		if len(banner.Format) > 0 {
-			f := banner.Format[0]
-			bannerCopy := *banner
-			bannerCopy.W = openrtb2.Int64Ptr(f.W)
-			bannerCopy.H = openrtb2.Int64Ptr(f.H)
-			return &bannerCopy, nil
-		} else {
-			return nil, errBannerFormatMiss
-		}
-	}
-	return banner, nil
+func buildOperaImpId(originId string, bidType openrtb_ext.BidType) string {
+	return strings.Join([]string{originId, "opa", string(bidType)}, ":")
 }
 
 const unexpectedStatusCodeFormat = "" +
@@ -391,10 +292,6 @@ func (a *OperaAdsAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 		}
 	}
 	return bidResponse, nil
-}
-
-func buildOperaImpId(originId string, bidType openrtb_ext.BidType) string {
-	return strings.Join([]string{originId, "opa", string(bidType)}, ":")
 }
 
 func parseOriginImpId(impId string) (originId string, bidType openrtb_ext.BidType) {
