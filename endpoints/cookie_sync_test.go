@@ -13,6 +13,7 @@ import (
 
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -750,7 +751,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 					Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
 				},
 			},
-			expectedError:        "Prebid-server has disabled Account ID: DisabledAccount, please reach out to the prebid server host.",
+			expectedError:        errCookieSyncAccountBlocked.Error(),
 			givenAccountRequired: true,
 		},
 		{
@@ -818,6 +819,65 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			assert.Empty(t, request, test.description+":request")
 			assert.Empty(t, privacyPolicies, test.description+":privacy")
 		}
+	}
+}
+
+func TestWriteParseRequestErrorMetrics(t *testing.T) {
+	err := errors.New("anyError")
+
+	mockAnalytics := MockAnalytics{}
+	mockAnalytics.On("LogCookieSyncObject", mock.Anything)
+	writer := httptest.NewRecorder()
+
+	endpoint := cookieSyncEndpoint{pbsAnalytics: &mockAnalytics}
+	endpoint.handleError(writer, err, 418)
+
+	assert.Equal(t, writer.Code, 418)
+	assert.Equal(t, writer.Body.String(), "anyError\n")
+	mockAnalytics.AssertCalled(t, "LogCookieSyncObject", &analytics.CookieSyncObject{
+		Status:       418,
+		Errors:       []error{err},
+		BidderStatus: []*analytics.CookieSyncBidder{},
+	})
+}
+
+func TestCookieSyncWriteParseRequestErrorMetrics(t *testing.T) {
+	testCases := []struct {
+		description     string
+		err             error
+		setExpectations func(*metrics.MetricsEngineMock)
+	}{
+		{
+			description: "Account Blocked",
+			err:         errCookieSyncAccountBlocked,
+			setExpectations: func(m *metrics.MetricsEngineMock) {
+				m.On("RecordCookieSync", metrics.CookieSyncAccountBlocked).Once()
+			},
+		},
+		{
+			description: "Account Invalid",
+			err:         errCookieSyncAccountInvalid,
+			setExpectations: func(m *metrics.MetricsEngineMock) {
+				m.On("RecordCookieSync", metrics.CookieSyncAccountInvalid).Once()
+			},
+		},
+		{
+			description: "No Special Case",
+			err:         errors.New("any error"),
+			setExpectations: func(m *metrics.MetricsEngineMock) {
+				m.On("RecordCookieSync", metrics.CookieSyncBadRequest).Once()
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		mockMetrics := metrics.MetricsEngineMock{}
+		test.setExpectations(&mockMetrics)
+
+		endpoint := &cookieSyncEndpoint{metrics: &mockMetrics}
+		endpoint.writeParseRequestErrorMetrics(test.err)
+
+		mockMetrics.AssertExpectations(t)
 	}
 }
 
@@ -1410,6 +1470,21 @@ func TestCombineErrors(t *testing.T) {
 			description:    "Multiple errors given",
 			givenErrorList: []error{errors.New("Error #1"), errors.New("Error #2")},
 			expectedError:  errors.New("Error #1 Error #2"),
+		},
+		{
+			description:    "Special Case: blocked (rejected via block list)",
+			givenErrorList: []error{&errortypes.BlacklistedAcct{}},
+			expectedError:  errCookieSyncAccountBlocked,
+		},
+		{
+			description:    "Special Case: invalid (rejected via allow list)",
+			givenErrorList: []error{&errortypes.AcctRequired{}},
+			expectedError:  errCookieSyncAccountInvalid,
+		},
+		{
+			description:    "Special Case: multiple special cases, first one wins",
+			givenErrorList: []error{&errortypes.BlacklistedAcct{}, &errortypes.AcctRequired{}},
+			expectedError:  errCookieSyncAccountBlocked,
 		},
 	}
 

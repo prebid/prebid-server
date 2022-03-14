@@ -300,6 +300,8 @@ const (
 	CookieSyncBadRequest            CookieSyncStatus = "bad_request"
 	CookieSyncOptOut                CookieSyncStatus = "opt_out"
 	CookieSyncGDPRHostCookieBlocked CookieSyncStatus = "gdpr_blocked_host_cookie"
+	CookieSyncAccountBlocked        CookieSyncStatus = "acct_blocked"
+	CookieSyncAccountInvalid        CookieSyncStatus = "acct_invalid"
 )
 
 // CookieSyncStatuses returns possible cookie sync statuses.

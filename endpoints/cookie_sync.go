@@ -15,6 +15,7 @@ import (
 	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -31,6 +32,8 @@ var (
 	errCookieSyncGDPRConsentMissing                = errors.New("gdpr_consent is required if gdpr=1")
 	errCookieSyncGDPRConsentMissingSignalAmbiguous = errors.New("gdpr_consent is required. gdpr is not specified and is assumed to be 1 by the server. set gdpr=0 to exempt this request")
 	errCookieSyncInvalidBiddersType                = errors.New("invalid bidders type. must either be a string '*' or a string array of bidders")
+	errCookieSyncAccountBlocked                    = errors.New("account is disabled, please reach out to the prebid server host")
+	errCookieSyncAccountInvalid                    = errors.New("account must be valid if provided, please reach out to the prebid server host")
 )
 
 var cookieSyncBidderFilterAllowAll = usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude)
@@ -78,7 +81,7 @@ type cookieSyncEndpoint struct {
 func (c *cookieSyncEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	request, privacyPolicies, err := c.parseRequest(r)
 	if err != nil {
-		c.metrics.RecordCookieSync(metrics.CookieSyncBadRequest)
+		c.writeParseRequestErrorMetrics(err)
 		c.handleError(w, err, http.StatusBadRequest)
 		return
 	}
@@ -190,6 +193,16 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 	}
 	return rx, privacyPolicies, nil
 }
+func (c *cookieSyncEndpoint) writeParseRequestErrorMetrics(err error) {
+	switch err {
+	case errCookieSyncAccountBlocked:
+		c.metrics.RecordCookieSync(metrics.CookieSyncAccountBlocked)
+	case errCookieSyncAccountInvalid:
+		c.metrics.RecordCookieSync(metrics.CookieSyncAccountInvalid)
+	default:
+		c.metrics.RecordCookieSync(metrics.CookieSyncBadRequest)
+	}
+}
 
 func parseTypeFilter(request *cookieSyncRequestFilterSettings) (usersync.SyncTypeFilter, error) {
 	syncTypeFilter := usersync.SyncTypeFilter{
@@ -261,8 +274,16 @@ func (c *cookieSyncEndpoint) handleError(w http.ResponseWriter, err error, httpS
 
 func combineErrors(errs []error) error {
 	var errorStrings []string
-	for i := range errs {
-		errorStrings = append(errorStrings, errs[i].Error())
+	for _, err := range errs {
+		// preserve knowledge of special account errors
+		switch errortypes.ReadCode(err) {
+		case errortypes.BlacklistedAcctErrorCode:
+			return errCookieSyncAccountBlocked
+		case errortypes.AcctRequiredErrorCode:
+			return errCookieSyncAccountInvalid
+		}
+
+		errorStrings = append(errorStrings, err.Error())
 	}
 	combinedErrors := strings.Join(errorStrings, " ")
 	return errors.New(combinedErrors)
