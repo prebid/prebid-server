@@ -26,7 +26,7 @@ func (af mockAccountFetcher) FetchAccount(ctx context.Context, accountID string)
 	if account, ok := mockAccountData[accountID]; ok {
 		return account, nil
 	}
-	return nil, []error{stored_requests.NotFoundError{accountID, "Account"}}
+	return nil, []error{stored_requests.NotFoundError{ID: accountID, DataType: "Account"}}
 }
 
 func TestGetAccount(t *testing.T) {
@@ -102,16 +102,40 @@ func TestSetDerivedConfig(t *testing.T) {
 		basicEnforcementVendors  []string
 	}{
 		{
-			description:              "",
+			description:              "Nil purpose 1 vendor exceptions",
+			purpose1VendorExceptions: nil,
+		},
+		{
+			description:              "One purpose 1 vendor exception",
 			purpose1VendorExceptions: []openrtb_ext.BidderName{"appnexus"},
 		},
 		{
-			description:              "",
+			description:              "Multiple purpose 1 vendor exceptions",
+			purpose1VendorExceptions: []openrtb_ext.BidderName{"appnexus", "rubicon"},
+		},
+		{
+			description:              "Nil feature 1 vendor exceptions",
+			feature1VendorExceptions: nil,
+		},
+		{
+			description:              "One feature 1 vendor exception",
 			feature1VendorExceptions: []openrtb_ext.BidderName{"appnexus"},
 		},
 		{
-			description:             "",
+			description:              "Multiple feature 1 vendor exceptions",
+			feature1VendorExceptions: []openrtb_ext.BidderName{"appnexus", "rubicon"},
+		},
+		{
+			description:             "Nil basic enforcement vendors",
+			basicEnforcementVendors: nil,
+		},
+		{
+			description:             "One basic enforcement vendor",
 			basicEnforcementVendors: []string{"appnexus"},
+		},
+		{
+			description:             "Multiple basic enforcement vendors",
+			basicEnforcementVendors: []string{"appnexus", "rubicon"},
 		},
 	}
 

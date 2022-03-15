@@ -85,7 +85,8 @@ func (tc *tcf2Config) PurposeVendorException(purpose consentconstants.Purpose, b
 }
 
 // FeatureOneEnforced checks if special feature one is enforced by first looking at the account settings, and if not
-// set there, defaulting to the host configuration. If it is enforced, geo may be used to determine...TODO
+// set there, defaulting to the host configuration. If it is enforced, PBS will determine whether geo information
+// may be passed through in the bid request.
 func (tc *tcf2Config) FeatureOneEnforced() bool {
 	if value, exists := tc.AccountConfig.FeatureOneEnforced(); exists {
 		return value
@@ -96,7 +97,7 @@ func (tc *tcf2Config) FeatureOneEnforced() bool {
 
 // FeatureOneVendorException checks if the specified bidder is considered a vendor exception for special feature one
 // by first looking at the account settings, and if not set there, defaulting to the host configuration. If a bidder
-// is a vendor exception...TODO
+// is a vendor exception, PBS will bypass the pass geo calculation passing the geo information in the bid request.
 func (tc *tcf2Config) FeatureOneVendorException(bidder openrtb_ext.BidderName) bool {
 	if value, exists := tc.AccountConfig.FeatureOneVendorException(bidder); exists {
 		return value
@@ -106,7 +107,7 @@ func (tc *tcf2Config) FeatureOneVendorException(bidder openrtb_ext.BidderName) b
 }
 
 // PurposeOneTreatmentEnabled checks if purpose one treatment is enabled by first looking at the account settings, and
-// if not set there, defaulting to the host configuration. If enabled...TODO
+// if not set there, defaulting to the host configuration.
 func (tc *tcf2Config) PurposeOneTreatmentEnabled() bool {
 	if value, exists := tc.AccountConfig.PurposeOneTreatmentEnabled(); exists {
 		return value
@@ -116,7 +117,7 @@ func (tc *tcf2Config) PurposeOneTreatmentEnabled() bool {
 }
 
 // PurposeOneTreatmentAccessAllowed checks if purpose one treatment access is allowed by first looking at the account
-// settings, and if not set there, defaulting to the host configuration. If allowed...TODO
+// settings, and if not set there, defaulting to the host configuration.
 func (tc *tcf2Config) PurposeOneTreatmentAccessAllowed() bool {
 	if value, exists := tc.AccountConfig.PurposeOneTreatmentAccessAllowed(); exists {
 		return value
@@ -126,7 +127,10 @@ func (tc *tcf2Config) PurposeOneTreatmentAccessAllowed() bool {
 }
 
 // BasicEnforcementVendor checks if the given bidder is considered a basic enforcement vendor by looking at the account
-// settings, and if not set there, defaulting to false. If set, ...weakVendorEnforcement...TODO
+// settings, and if not set there, defaulting to false. If set, the legal basis calculation for the bidder only considers
+// consent to the purpose, not the vendor. The idea is that the publisher trusts this vendor to enforce the
+// appropriate rules on their own. This only comes into play when enforceVendors is true as it lists those vendors that
+// are exempt for vendor enforcement.
 func (tc *tcf2Config) BasicEnforcementVendor(bidder openrtb_ext.BidderName) bool {
 	if value, exists := tc.AccountConfig.BasicEnforcementVendor(bidder); exists {
 		return value

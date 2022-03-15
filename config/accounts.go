@@ -43,7 +43,7 @@ func (a *AccountCCPA) EnabledForIntegrationType(integrationType IntegrationType)
 	return a.Enabled
 }
 
-// AccountGDPR represents account-specific GDPR configuration and implements the TCF2ConfigReader interfac
+// AccountGDPR represents account-specific GDPR configuration and implements the TCF2ConfigReader interface
 type AccountGDPR struct {
 	Enabled            *bool              `mapstructure:"enabled" json:"enabled,omitempty"`
 	IntegrationEnabled AccountIntegration `mapstructure:"integration_enabled" json:"integration_enabled"`
@@ -66,6 +66,17 @@ type AccountGDPR struct {
 	SpecialFeature1     AccountGDPRSpecialFeature      `mapstructure:"special_feature1" json:"special_feature1"`
 }
 
+// BasicEnforcementVendor checks if the given bidder is considered a basic enforcement vendor which indicates whether
+// weak vendor enforcement applies to that bidder.
+func (a *AccountGDPR) BasicEnforcementVendor(bidder openrtb_ext.BidderName) (value, exists bool) {
+	if a.BasicEnforcementVendorsMap == nil {
+		return false, false
+	}
+	_, found := a.BasicEnforcementVendorsMap[string(bidder)]
+
+	return found, true
+}
+
 // EnabledForIntegrationType indicates whether GDPR is turned on at the account level for the specified integration type
 // by using the integration type setting if defined or the general GDPR setting if defined; otherwise it returns nil.
 func (a *AccountGDPR) EnabledForIntegrationType(integrationType IntegrationType) *bool {
@@ -73,6 +84,25 @@ func (a *AccountGDPR) EnabledForIntegrationType(integrationType IntegrationType)
 		return integrationEnabled
 	}
 	return a.Enabled
+}
+
+// FeatureOneEnforced gets the account level feature one enforced setting returning the value and whether or not it
+// was set. If not set, a default value of true is returned matching host default behavior.
+func (a *AccountGDPR) FeatureOneEnforced() (value, exists bool) {
+	if a.SpecialFeature1.Enforce == nil {
+		return true, false
+	}
+	return *a.SpecialFeature1.Enforce, true
+}
+
+// FeatureOneVendorException checks if the given bidder is a vendor exception.
+func (a *AccountGDPR) FeatureOneVendorException(bidder openrtb_ext.BidderName) (value, exists bool) {
+	if a.SpecialFeature1.VendorExceptionMap == nil {
+		return false, false
+	}
+	_, found := a.SpecialFeature1.VendorExceptionMap[bidder]
+
+	return found, true
 }
 
 // PurposeEnforced checks if full enforcement is turned on for a given purpose at the account level. It returns the
@@ -116,25 +146,6 @@ func (a *AccountGDPR) PurposeVendorException(purpose consentconstants.Purpose, b
 	return found, true
 }
 
-// FeatureOneEnforced gets the account level feature one enforced setting returning the value and whether or not it
-// was set. If not set, a default value of true is returned matching host default behavior.
-func (a *AccountGDPR) FeatureOneEnforced() (value, exists bool) {
-	if a.SpecialFeature1.Enforce == nil {
-		return true, false
-	}
-	return *a.SpecialFeature1.Enforce, true
-}
-
-// FeatureOneVendorException checks if the given bidder is a vendor exception.
-func (a *AccountGDPR) FeatureOneVendorException(bidder openrtb_ext.BidderName) (value, exists bool) {
-	if a.SpecialFeature1.VendorExceptionMap == nil {
-		return false, false
-	}
-	_, exists = a.SpecialFeature1.VendorExceptionMap[bidder]
-
-	return exists, true
-}
-
 // PurposeOneTreatmentEnabled gets the account level purpose one treatment enabled setting returning the value and
 // whether or not it is set. If not set, a default value of true is returned matching host default behavior.
 func (a *AccountGDPR) PurposeOneTreatmentEnabled() (value, exists bool) {
@@ -147,22 +158,10 @@ func (a *AccountGDPR) PurposeOneTreatmentEnabled() (value, exists bool) {
 // PurposeOneTreatmentAccessAllowed gets the account level purpose one treatment access allowed setting returning the
 // value and whether or not it is set. If not set, a default value of true is returned matching host default behavior.
 func (a *AccountGDPR) PurposeOneTreatmentAccessAllowed() (value, exists bool) {
-	// default to allowed matching host default behavior
 	if a.PurposeOneTreatment.AccessAllowed == nil {
 		return true, false
 	}
 	return *a.PurposeOneTreatment.AccessAllowed, true
-}
-
-// BasicEnforcementVendor checks if the given bidder is considered a basic enforcement vendor which indicates whether
-// weak vendor enforcement applies to that bidder.
-func (a *AccountGDPR) BasicEnforcementVendor(bidder openrtb_ext.BidderName) (value, exists bool) {
-	if a.BasicEnforcementVendorsMap == nil {
-		return false, false
-	}
-	_, exists = a.BasicEnforcementVendorsMap[string(bidder)]
-
-	return exists, true
 }
 
 // AccountGDPRPurpose represents account-specific GDPR purpose configuration
