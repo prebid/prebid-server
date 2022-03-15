@@ -1460,3 +1460,252 @@ func TestSpecialFeature1VendorExceptionMap(t *testing.T) {
 		assert.Equal(t, tt.wantVendorExceptionsMap, cfg.GDPR.TCF2.SpecialFeature1.VendorExceptionMap, tt.description)
 	}
 }
+
+func TestTCF2PurposeEnforced(t *testing.T) {
+	tests := []struct {
+		description          string
+		givePurposeConfigNil bool
+		givePurpose1Enforced string
+		givePurpose2Enforced string
+		givePurpose          consentconstants.Purpose
+		wantEnforced         bool
+	}{
+		{
+			description:          "Purpose config is nil",
+			givePurposeConfigNil: true,
+			givePurpose:          1,
+			wantEnforced:         false,
+		},
+		{
+			description:          "Purpose 1 Enforced not set",
+			givePurpose1Enforced: "",
+			givePurpose:          1,
+			wantEnforced:         false,
+		},
+		{
+			description:          "Purpose 1 Enforced set to full enforcement",
+			givePurpose1Enforced: TCF2FullEnforcement,
+			givePurpose:          1,
+			wantEnforced:         true,
+		},
+		{
+			description:          "Purpose 1 Enforced set to no enforcement",
+			givePurpose1Enforced: TCF2NoEnforcement,
+			givePurpose:          1,
+			wantEnforced:         false,
+		},
+		{
+			description:          "Purpose 2 Enforced set to full enforcement",
+			givePurpose2Enforced: TCF2FullEnforcement,
+			givePurpose:          2,
+			wantEnforced:         true,
+		},
+	}
+
+	for _, tt := range tests {
+		tcf2 := TCF2{}
+
+		if !tt.givePurposeConfigNil {
+			tcf2.PurposeConfigs = map[consentconstants.Purpose]*TCF2Purpose{
+				1: {
+					EnforcePurpose: tt.givePurpose1Enforced,
+				},
+				2: {
+					EnforcePurpose: tt.givePurpose2Enforced,
+				},
+			}
+		}
+
+		value := tcf2.PurposeEnforced(tt.givePurpose)
+
+		assert.Equal(t, tt.wantEnforced, value, tt.description)
+	}
+}
+
+func TestTCF2PurposeEnforcingVendors(t *testing.T) {
+	tests := []struct {
+		description           string
+		givePurposeConfigNil  bool
+		givePurpose1Enforcing bool
+		givePurpose2Enforcing bool
+		givePurpose           consentconstants.Purpose
+		wantEnforcing         bool
+	}{
+		{
+			description:          "Purpose config is nil",
+			givePurposeConfigNil: true,
+			givePurpose:          1,
+			wantEnforcing:        false,
+		},
+		{
+			description:           "Purpose 1 Enforcing set to true",
+			givePurpose1Enforcing: true,
+			givePurpose:           1,
+			wantEnforcing:         true,
+		},
+		{
+			description:           "Purpose 1 Enforcing set to false",
+			givePurpose1Enforcing: false,
+			givePurpose:           1,
+			wantEnforcing:         false,
+		},
+		{
+			description:           "Purpose 2 Enforcing set to true",
+			givePurpose2Enforcing: true,
+			givePurpose:           2,
+			wantEnforcing:         true,
+		},
+	}
+
+	for _, tt := range tests {
+		tcf2 := TCF2{}
+
+		if !tt.givePurposeConfigNil {
+			tcf2.PurposeConfigs = map[consentconstants.Purpose]*TCF2Purpose{
+				1: {
+					EnforceVendors: tt.givePurpose1Enforcing,
+				},
+				2: {
+					EnforceVendors: tt.givePurpose2Enforcing,
+				},
+			}
+		}
+
+		value := tcf2.PurposeEnforcingVendors(tt.givePurpose)
+
+		assert.Equal(t, tt.wantEnforcing, value, tt.description)
+	}
+}
+
+func TestTCF2PurposeVendorException(t *testing.T) {
+	tests := []struct {
+		description              string
+		givePurposeConfigNil     bool
+		givePurpose1ExceptionMap map[openrtb_ext.BidderName]struct{}
+		givePurpose2ExceptionMap map[openrtb_ext.BidderName]struct{}
+		givePurpose              consentconstants.Purpose
+		giveBidder               openrtb_ext.BidderName
+		wantIsVendorException    bool
+	}{
+		{
+			description:           "Purpose config is nil",
+			givePurposeConfigNil:  true,
+			givePurpose:           1,
+			giveBidder:            "appnexus",
+			wantIsVendorException: false,
+		},
+		{
+			description:           "Nil - exception map not defined for purpose",
+			givePurpose:           1,
+			giveBidder:            "appnexus",
+			wantIsVendorException: false,
+		},
+		{
+			description:              "Empty - exception map empty for purpose",
+			givePurpose:              1,
+			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			giveBidder:               "appnexus",
+			wantIsVendorException:    false,
+		},
+		{
+			description:              "One - bidder found in purpose exception map containing one entry",
+			givePurpose:              1,
+			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{"appnexus": {}},
+			giveBidder:               "appnexus",
+			wantIsVendorException:    true,
+		},
+		{
+			description:              "Many - bidder found in purpose exception map containing multiple entries",
+			givePurpose:              1,
+			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
+			giveBidder:               "appnexus",
+			wantIsVendorException:    true,
+		},
+		{
+			description:              "Many - bidder not found in purpose exception map containing multiple entries",
+			givePurpose:              1,
+			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
+			givePurpose2ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "openx": {}},
+			giveBidder:               "openx",
+			wantIsVendorException:    false,
+		},
+		{
+			description:              "Many - bidder found in different purpose exception map containing multiple entries",
+			givePurpose:              2,
+			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
+			givePurpose2ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "openx": {}},
+			giveBidder:               "openx",
+			wantIsVendorException:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		tcf2 := TCF2{}
+
+		if !tt.givePurposeConfigNil {
+			tcf2.PurposeConfigs = map[consentconstants.Purpose]*TCF2Purpose{
+				1: {
+					VendorExceptionMap: tt.givePurpose1ExceptionMap,
+				},
+				2: {
+					VendorExceptionMap: tt.givePurpose2ExceptionMap,
+				},
+			}
+		}
+
+		value := tcf2.PurposeVendorException(tt.givePurpose, tt.giveBidder)
+
+		assert.Equal(t, tt.wantIsVendorException, value, tt.description)
+	}
+}
+
+func TestTCF2FeatureOneVendorException(t *testing.T) {
+	tests := []struct {
+		description           string
+		giveExceptionMap      map[openrtb_ext.BidderName]struct{}
+		giveBidder            openrtb_ext.BidderName
+		wantIsVendorException bool
+	}{
+		{
+			description:           "Nil - exception map not defined",
+			giveBidder:            "appnexus",
+			wantIsVendorException: false,
+		},
+		{
+			description:           "Empty - exception map empty",
+			giveExceptionMap:      map[openrtb_ext.BidderName]struct{}{},
+			giveBidder:            "appnexus",
+			wantIsVendorException: false,
+		},
+		{
+			description:           "One - bidder found in exception map containing one entry",
+			giveExceptionMap:      map[openrtb_ext.BidderName]struct{}{"appnexus": {}},
+			giveBidder:            "appnexus",
+			wantIsVendorException: true,
+		},
+		{
+			description:           "Many - bidder found in exception map containing multiple entries",
+			giveExceptionMap:      map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
+			giveBidder:            "appnexus",
+			wantIsVendorException: true,
+		},
+		{
+			description:           "Many - bidder not found in exception map containing multiple entries",
+			giveExceptionMap:      map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
+			giveBidder:            "openx",
+			wantIsVendorException: false,
+		},
+	}
+
+	for _, tt := range tests {
+		tcf2 := TCF2{
+			SpecialFeature1: TCF2SpecialFeature{
+				VendorExceptionMap: tt.giveExceptionMap,
+			},
+		}
+
+		value := tcf2.FeatureOneVendorException(tt.giveBidder)
+
+		assert.Equal(t, tt.wantIsVendorException, value, tt.description)
+	}
+}
