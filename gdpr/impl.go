@@ -50,7 +50,7 @@ func (p *permissionsImpl) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 }
 
 func (p *permissionsImpl) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string, aliasGVLIDs map[string]uint16) (allowBidReq bool, passGeo bool, passID bool, err error) {
-	if _, ok := p.cfg.NonStandardPublisherMap[PublisherID]; ok {
+	if _, ok := p.nonStandardPublishers[PublisherID]; ok {
 		return true, true, true, nil
 	}
 

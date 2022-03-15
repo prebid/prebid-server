@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 
-	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/stored_requests"
+	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 )
 
 // GetAccount looks up the config.Account object referenced by the given accountID, with access rules applied

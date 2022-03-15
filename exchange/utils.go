@@ -40,11 +40,12 @@ func cleanOpenRTBRequests(ctx context.Context,
 	req AuctionRequest,
 	requestExt *openrtb_ext.ExtRequest,
 	bidderToSyncerKey map[string]string,
-	vendorListFetcher gdpr.VendorListFetcher,
 	metricsEngine metrics.MetricsEngine,
 	gdprDefaultValue gdpr.Signal,
+	gdprPerms gdpr.Permissions,
 	privacyConfig config.Privacy,
-	gvlVendorIDs map[openrtb_ext.BidderName]uint16) (allowedBidderRequests []BidderRequest, privacyLabels metrics.PrivacyLabels, errs []error) {
+	tcf2Cfg gdpr.TCF2ConfigReader,
+) (allowedBidderRequests []BidderRequest, privacyLabels metrics.PrivacyLabels, errs []error) {
 
 	impsByBidder, err := splitImps(req.BidRequest.Imp)
 	if err != nil {
@@ -97,11 +98,9 @@ func cleanOpenRTBRequests(ctx context.Context,
 	privacyLabels.COPPAEnforced = privacyEnforcement.COPPA
 	privacyLabels.LMTEnforced = lmtEnforcer.ShouldEnforce(unknownBidder)
 
-	var gdprCfg gdpr.TCF2ConfigReader
 	var gdprEnforced bool
 	if gdprApplies {
-		gdprCfg = gdpr.NewTCF2Config(privacyConfig.GDPR.TCF2, req.Account.GDPR)
-		gdprEnforced = gdprCfg.IntegrationEnabled(integrationTypeMap[req.LegacyLabels.RType])
+		gdprEnforced = tcf2Cfg.IntegrationEnabled(integrationTypeMap[req.LegacyLabels.RType])
 	}
 
 	if gdprEnforced {
@@ -124,8 +123,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 		// GDPR
 		if gdprEnforced {
 			var publisherID = req.LegacyLabels.PubID
-			gDPR := gdpr.NewPermissions(privacyConfig.GDPR, gdprCfg, gvlVendorIDs, vendorListFetcher)
-			bidReq, geo, id, err := gDPR.AuctionActivitiesAllowed(ctx, bidderRequest.BidderCoreName, bidderRequest.BidderName, publisherID, gdprSignal, consent, aliasesGVLIDs)
+			bidReq, geo, id, err := gdprPerms.AuctionActivitiesAllowed(ctx, bidderRequest.BidderCoreName, bidderRequest.BidderName, publisherID, gdprSignal, consent, aliasesGVLIDs)
 			bidRequestAllowed = bidReq
 
 			if err == nil {

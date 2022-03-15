@@ -43,12 +43,12 @@ func (a *AccountCCPA) EnabledForIntegrationType(integrationType IntegrationType)
 	return a.Enabled
 }
 
-// AccountGDPR represents account-specific GDPR configuration
+// AccountGDPR represents account-specific GDPR configuration and implements the TCF2ConfigReader interfac
 type AccountGDPR struct {
-	Enabled                    *bool              `mapstructure:"enabled" json:"enabled,omitempty"`
-	IntegrationEnabled         AccountIntegration `mapstructure:"integration_enabled" json:"integration_enabled"`
+	Enabled            *bool              `mapstructure:"enabled" json:"enabled,omitempty"`
+	IntegrationEnabled AccountIntegration `mapstructure:"integration_enabled" json:"integration_enabled"`
 	// Array of basic enforcement vendors that is used to create the hash table so vendor names can be instantly accessed
-	BasicEnforcementVendors    []string           `mapstructure:"basic_enforcement_vendors" json:"basic_enforcement_vendors"`
+	BasicEnforcementVendors    []string `mapstructure:"basic_enforcement_vendors" json:"basic_enforcement_vendors"`
 	BasicEnforcementVendorsMap map[string]struct{}
 	Purpose1                   AccountGDPRPurpose `mapstructure:"purpose1" json:"purpose1"`
 	Purpose2                   AccountGDPRPurpose `mapstructure:"purpose2" json:"purpose2"`
@@ -74,8 +74,9 @@ func (a *AccountGDPR) EnabledForIntegrationType(integrationType IntegrationType)
 	}
 	return a.Enabled
 }
-// PurposeEnforced checks if full enforcement is turned on for a given purpose at the account level. It returns the 
-// enforcement strategy type and whether or not it is set on the account. If not set, a default value of true is 
+
+// PurposeEnforced checks if full enforcement is turned on for a given purpose at the account level. It returns the
+// enforcement strategy type and whether or not it is set on the account. If not set, a default value of true is
 // returned matching host default behavior.
 func (a *AccountGDPR) PurposeEnforced(purpose consentconstants.Purpose) (value, exists bool) {
 	if a.PurposeConfigs[purpose] == nil {
@@ -110,9 +111,9 @@ func (a *AccountGDPR) PurposeVendorException(purpose consentconstants.Purpose, b
 	if a.PurposeConfigs[purpose].VendorExceptionMap == nil {
 		return false, false
 	}
-	_, exists = a.PurposeConfigs[purpose].VendorExceptionMap[bidder]
+	_, found := a.PurposeConfigs[purpose].VendorExceptionMap[bidder]
 
-	return exists, true
+	return found, true
 }
 
 // FeatureOneEnforced gets the account level feature one enforced setting returning the value and whether or not it

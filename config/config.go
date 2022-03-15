@@ -301,6 +301,10 @@ func (t *TCF2) BasicEnforcementVendor(openrtb_ext.BidderName) bool {
 	return false
 }
 
+func (t *TCF2) IntegrationEnabled(integrationType IntegrationType) bool {
+	return t.Enabled
+}
+
 // IsEnabled indicates if TCF2 is enabled
 func (t *TCF2) IsEnabled() bool {
 	return t.Enabled

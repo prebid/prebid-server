@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func MakeTCF2ConfigPurposeMaps(tcf2Config *TCF2Config) {
+func MakeTCF2ConfigPurposeMaps(tcf2Config *tcf2Config) {
 	tcf2Config.AccountConfig.PurposeConfigs = map[consentconstants.Purpose]*config.AccountGDPRPurpose{
 		1:  &tcf2Config.AccountConfig.Purpose1,
 		2:  &tcf2Config.AccountConfig.Purpose2,
@@ -73,7 +73,7 @@ func TestIntegrationEnabled(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tcf2Config := TCF2Config{
+		cfg := tcf2Config{
 			AccountConfig: config.AccountGDPR{
 				Enabled: tt.giveAccountGDPREnabled,
 			},
@@ -82,7 +82,7 @@ func TestIntegrationEnabled(t *testing.T) {
 			},
 		}
 
-		result := tcf2Config.IntegrationEnabled(config.IntegrationTypeWeb)
+		result := cfg.IntegrationEnabled(config.IntegrationTypeWeb)
 
 		assert.Equal(t, tt.wantIntegrationEnabled, result, tt.description)
 	}
@@ -136,7 +136,7 @@ func TestPurposeEnforced(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tcf2Config := TCF2Config{
+		cfg := tcf2Config{
 			AccountConfig: config.AccountGDPR{
 				Purpose1: config.AccountGDPRPurpose{
 					EnforcePurpose: tt.givePurpose1AccountEnforcement,
@@ -154,9 +154,9 @@ func TestPurposeEnforced(t *testing.T) {
 				},
 			},
 		}
-		MakeTCF2ConfigPurposeMaps(&tcf2Config)
+		MakeTCF2ConfigPurposeMaps(&cfg)
 
-		result := tcf2Config.PurposeEnforced(consentconstants.Purpose(tt.givePurpose))
+		result := cfg.PurposeEnforced(consentconstants.Purpose(tt.givePurpose))
 
 		assert.Equal(t, tt.wantEnforced, result, tt.description)
 	}
@@ -210,7 +210,7 @@ func TestPurposeEnforcingVendors(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tcf2Config := TCF2Config{
+		cfg := tcf2Config{
 			AccountConfig: config.AccountGDPR{
 				Purpose1: config.AccountGDPRPurpose{
 					EnforceVendors: tt.givePurpose1AccountEnforcing,
@@ -228,9 +228,9 @@ func TestPurposeEnforcingVendors(t *testing.T) {
 				},
 			},
 		}
-		MakeTCF2ConfigPurposeMaps(&tcf2Config)
+		MakeTCF2ConfigPurposeMaps(&cfg)
 
-		result := tcf2Config.PurposeEnforcingVendors(consentconstants.Purpose(tt.givePurpose))
+		result := cfg.PurposeEnforcingVendors(consentconstants.Purpose(tt.givePurpose))
 
 		assert.Equal(t, tt.wantEnforcing, result, tt.description)
 	}
@@ -298,7 +298,7 @@ func TestPurposeVendorException(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tcf2Config := TCF2Config{
+		cfg := tcf2Config{
 			AccountConfig: config.AccountGDPR{
 				Purpose1: config.AccountGDPRPurpose{
 					VendorExceptionMap: tt.givePurpose1AccountVendorExceptionMap,
@@ -316,9 +316,9 @@ func TestPurposeVendorException(t *testing.T) {
 				},
 			},
 		}
-		MakeTCF2ConfigPurposeMaps(&tcf2Config)
+		MakeTCF2ConfigPurposeMaps(&cfg)
 
-		result := tcf2Config.PurposeVendorException(consentconstants.Purpose(tt.givePurpose), tt.giveBidder)
+		result := cfg.PurposeVendorException(consentconstants.Purpose(tt.givePurpose), tt.giveBidder)
 
 		assert.Equal(t, tt.wantVendorException, result, tt.description)
 	}
@@ -359,7 +359,7 @@ func TestFeatureOneEnforced(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tcf2Config := TCF2Config{
+		cfg := tcf2Config{
 			AccountConfig: config.AccountGDPR{
 				SpecialFeature1: config.AccountGDPRSpecialFeature{
 					Enforce: tt.giveAccountEnforcing,
@@ -372,7 +372,7 @@ func TestFeatureOneEnforced(t *testing.T) {
 			},
 		}
 
-		result := tcf2Config.FeatureOneEnforced()
+		result := cfg.FeatureOneEnforced()
 
 		assert.Equal(t, tt.wantEnforcing, result, tt.description)
 	}
@@ -424,7 +424,7 @@ func TestFeatureOneVendorException(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tcf2Config := TCF2Config{
+		cfg := tcf2Config{
 			AccountConfig: config.AccountGDPR{
 				SpecialFeature1: config.AccountGDPRSpecialFeature{
 					VendorExceptionMap: tt.giveAccountVendorExceptionMap,
@@ -437,7 +437,7 @@ func TestFeatureOneVendorException(t *testing.T) {
 			},
 		}
 
-		result := tcf2Config.FeatureOneVendorException(tt.giveBidder)
+		result := cfg.FeatureOneVendorException(tt.giveBidder)
 
 		assert.Equal(t, tt.wantVendorException, result, tt.description)
 	}
@@ -477,7 +477,7 @@ func TestPurposeOneTreatmentEnabled(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tcf2Config := TCF2Config{
+		cfg := tcf2Config{
 			AccountConfig: config.AccountGDPR{
 				PurposeOneTreatment: config.AccountGDPRPurposeOneTreatment{
 					Enabled: tt.giveAccountEnabled,
@@ -490,7 +490,7 @@ func TestPurposeOneTreatmentEnabled(t *testing.T) {
 			},
 		}
 
-		result := tcf2Config.PurposeOneTreatmentEnabled()
+		result := cfg.PurposeOneTreatmentEnabled()
 
 		assert.Equal(t, tt.wantEnabled, result, tt.description)
 	}
@@ -530,7 +530,7 @@ func TestPurposeOneTreatmentAllowed(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tcf2Config := TCF2Config{
+		cfg := tcf2Config{
 			AccountConfig: config.AccountGDPR{
 				PurposeOneTreatment: config.AccountGDPRPurposeOneTreatment{
 					AccessAllowed: tt.giveAccountAccessAllowed,
@@ -543,7 +543,7 @@ func TestPurposeOneTreatmentAllowed(t *testing.T) {
 			},
 		}
 
-		result := tcf2Config.PurposeOneTreatmentAccessAllowed()
+		result := cfg.PurposeOneTreatmentAccessAllowed()
 
 		assert.Equal(t, tt.wantAccessAllowed, result, tt.description)
 	}
@@ -577,13 +577,13 @@ func TestBasicEnforcementVendor(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tcf2Config := TCF2Config{
+		cfg := tcf2Config{
 			AccountConfig: config.AccountGDPR{
 				BasicEnforcementVendorsMap: tt.giveAccountBasicEnforcementVendorMap,
 			},
 		}
 
-		result := tcf2Config.BasicEnforcementVendor(tt.giveBidder)
+		result := cfg.BasicEnforcementVendor(tt.giveBidder)
 
 		assert.Equal(t, tt.wantBasicEnforcement, result, tt.description)
 	}

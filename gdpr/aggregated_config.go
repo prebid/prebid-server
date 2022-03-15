@@ -7,7 +7,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-// TCFConfigReader is an interface to access TCF2 configurations 
+// TCFConfigReader is an interface to access TCF2 configurations
 type TCF2ConfigReader interface {
 	BasicEnforcementVendor(openrtb_ext.BidderName) bool
 	FeatureOneEnforced() bool
