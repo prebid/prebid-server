@@ -56,6 +56,7 @@ const (
 	pmZoneIDKeyNameOld = "pmZoneID"
 	ImpExtAdUnitKey    = "dfp_ad_unit_code"
 	AdServerGAM        = "gam"
+	kadfloor           = "kadfloor"
 )
 
 func (a *PubmaticAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -269,6 +270,14 @@ func parseImpressionObject(imp *openrtb2.Imp, extractWrapperExtFromImp, extractP
 			return wrapExt, pubID, err
 		}
 		imp.Banner = bannerCopy
+	}
+
+	if pubmaticExt.Kadfloor != "" {
+		bidfloor, err := strconv.ParseFloat(pubmaticExt.Kadfloor, 64)
+		if err == nil {
+			//do not overwrite existing value if kadfloor is invalid
+			imp.BidFloor = bidfloor
+		}
 	}
 
 	extMap := make(map[string]interface{}, 0)
