@@ -24,6 +24,8 @@ type Permissions interface {
 	AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string, aliasGVLIDs map[string]uint16) (allowBidReq bool, passGeo bool, passID bool, err error)
 }
 
+type PermissionsBuilder func(config.GDPR, TCF2ConfigReader, map[openrtb_ext.BidderName]uint16, VendorListFetcher) Permissions
+
 // NewPermissions gets an instance of the Permissions for use elsewhere in the project.
 func NewPermissions(cfg config.GDPR, tcf2Config TCF2ConfigReader, vendorIDs map[openrtb_ext.BidderName]uint16, fetcher VendorListFetcher) Permissions {
 	if !cfg.Enabled {

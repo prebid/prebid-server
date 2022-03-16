@@ -21,13 +21,15 @@ type TCF2ConfigReader interface {
 	PurposeOneTreatmentAccessAllowed() bool
 }
 
+type TCF2ConfigBuilder func(hostConfig config.TCF2, accountConfig config.AccountGDPR) TCF2ConfigReader
+
 type tcf2Config struct {
 	HostConfig    config.TCF2
 	AccountConfig config.AccountGDPR
 }
 
 // NewTCF2Config creates an instance of tcf2Config which implements the TCF2ConfigReader interface
-func NewTCF2Config(hostConfig config.TCF2, accountConfig config.AccountGDPR) *tcf2Config {
+func NewTCF2Config(hostConfig config.TCF2, accountConfig config.AccountGDPR) TCF2ConfigReader {
 	return &tcf2Config{
 		HostConfig:    hostConfig,
 		AccountConfig: accountConfig,

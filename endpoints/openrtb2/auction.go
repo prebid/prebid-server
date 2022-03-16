@@ -31,6 +31,7 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/firstpartydata"
+	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
@@ -226,6 +227,8 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		ImpExtInfoMap:              impExtInfoMap,
 		FirstPartyData:             resolvedFPD,
 		StoredAuctionResponses:     storedAuctionResponses,
+		TCF2ConfigBuilder:          gdpr.NewTCF2Config,
+		GDPRPermissionsBuilder:     gdpr.NewPermissions,
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)

@@ -334,10 +334,12 @@ func TestDebugBehaviour(t *testing.T) {
 		}
 
 		auctionRequest := AuctionRequest{
-			BidRequest: bidRequest,
-			Account:    config.Account{DebugAllow: test.debugData.accountLevelDebugAllowed},
-			UserSyncs:  &emptyUsersync{},
-			StartTime:  time.Now(),
+			BidRequest:             bidRequest,
+			Account:                config.Account{DebugAllow: test.debugData.accountLevelDebugAllowed},
+			UserSyncs:              &emptyUsersync{},
+			StartTime:              time.Now(),
+			GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
+			TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
 		}
 		if test.generateWarnings {
 			var errL []error
@@ -490,10 +492,12 @@ func TestTwoBiddersDebugDisabledAndEnabled(t *testing.T) {
 		bidRequest.Ext = json.RawMessage(`{"prebid":{"debug":true}}`)
 
 		auctionRequest := AuctionRequest{
-			BidRequest: bidRequest,
-			Account:    config.Account{DebugAllow: true},
-			UserSyncs:  &emptyUsersync{},
-			StartTime:  time.Now(),
+			BidRequest:             bidRequest,
+			Account:                config.Account{DebugAllow: true},
+			UserSyncs:              &emptyUsersync{},
+			StartTime:              time.Now(),
+			GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
+			TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
 		}
 
 		e.adapterMap = map[openrtb_ext.BidderName]adaptedBidder{
@@ -662,9 +666,11 @@ func TestOverrideWithCustomCurrency(t *testing.T) {
 		mockBidRequest.Cur = []string{test.in.bidRequestCurrency}
 
 		auctionRequest := AuctionRequest{
-			BidRequest: mockBidRequest,
-			Account:    config.Account{},
-			UserSyncs:  &emptyUsersync{},
+			BidRequest:             mockBidRequest,
+			Account:                config.Account{},
+			UserSyncs:              &emptyUsersync{},
+			GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
+			TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
 		}
 
 		// Run test
@@ -746,9 +752,11 @@ func TestAdapterCurrency(t *testing.T) {
 
 	// Run Auction
 	auctionRequest := AuctionRequest{
-		BidRequest: request,
-		Account:    config.Account{},
-		UserSyncs:  &emptyUsersync{},
+		BidRequest:             request,
+		Account:                config.Account{},
+		UserSyncs:              &emptyUsersync{},
+		GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
+		TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
 	}
 	response, err := e.HoldAuction(context.Background(), auctionRequest, &DebugLog{})
 	assert.NoError(t, err)
@@ -1131,9 +1139,11 @@ func TestReturnCreativeEndToEnd(t *testing.T) {
 			mockBidRequest.Ext = test.inExt
 
 			auctionRequest := AuctionRequest{
-				BidRequest: mockBidRequest,
-				Account:    config.Account{},
-				UserSyncs:  &emptyUsersync{},
+				BidRequest:             mockBidRequest,
+				Account:                config.Account{},
+				UserSyncs:              &emptyUsersync{},
+				GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
+				TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
 			}
 
 			// Run test
@@ -1796,9 +1806,11 @@ func TestRaceIntegration(t *testing.T) {
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 
 	auctionRequest := AuctionRequest{
-		BidRequest: getTestBuildRequest(t),
-		Account:    config.Account{},
-		UserSyncs:  &emptyUsersync{},
+		BidRequest:             getTestBuildRequest(t),
+		Account:                config.Account{},
+		UserSyncs:              &emptyUsersync{},
+		GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
+		TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
 	}
 
 	debugLog := DebugLog{}
@@ -2004,9 +2016,11 @@ func TestPanicRecoveryHighLevel(t *testing.T) {
 	}
 
 	auctionRequest := AuctionRequest{
-		BidRequest: request,
-		Account:    config.Account{},
-		UserSyncs:  &emptyUsersync{},
+		BidRequest:             request,
+		Account:                config.Account{},
+		UserSyncs:              &emptyUsersync{},
+		GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
+		TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
 	}
 	debugLog := DebugLog{}
 	_, err = e.HoldAuction(context.Background(), auctionRequest, &debugLog)
@@ -2034,20 +2048,20 @@ func TestTimeoutComputation(t *testing.T) {
 }
 
 // TestExchangeJSON executes tests for all the *.json files in exchangetest.
-// func TestExchangeJSON(t *testing.T) {
-// 	if specFiles, err := ioutil.ReadDir("./exchangetest"); err == nil {
-// 		for _, specFile := range specFiles {
-// 			fileName := "./exchangetest/" + specFile.Name()
-// 			fileDisplayName := "exchange/exchangetest/" + specFile.Name()
-// 			t.Run(fileDisplayName, func(t *testing.T) {
-// 				specData, err := loadFile(fileName)
-// 				if assert.NoError(t, err, "Failed to load contents of file %s: %v", fileDisplayName, err) {
-// 					runSpec(t, fileDisplayName, specData)
-// 				}
-// 			})
-// 		}
-// 	}
-// }
+func TestExchangeJSON(t *testing.T) {
+	if specFiles, err := ioutil.ReadDir("./exchangetest"); err == nil {
+		for _, specFile := range specFiles {
+			fileName := "./exchangetest/" + specFile.Name()
+			fileDisplayName := "exchange/exchangetest/" + specFile.Name()
+			t.Run(fileDisplayName, func(t *testing.T) {
+				specData, err := loadFile(fileName)
+				if assert.NoError(t, err, "Failed to load contents of file %s: %v", fileDisplayName, err) {
+					runSpec(t, fileDisplayName, specData)
+				}
+			})
+		}
+	}
+}
 
 // LoadFile reads and parses a file as a test case. If something goes wrong, it returns an error.
 func loadFile(filename string) (*exchangeSpec, error) {
@@ -2118,7 +2132,9 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 			EventsEnabled: spec.EventsEnabled,
 			DebugAllow:    true,
 		},
-		UserSyncs: mockIdFetcher(spec.IncomingRequest.Usersyncs),
+		UserSyncs:              mockIdFetcher(spec.IncomingRequest.Usersyncs),
+		GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
+		TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
 	}
 	if spec.StartTime > 0 {
 		auctionRequest.StartTime = time.Unix(0, spec.StartTime*1e+6)
@@ -3662,9 +3678,11 @@ func TestFPD(t *testing.T) {
 	ctx := context.Background()
 
 	auctionRequest := AuctionRequest{
-		BidRequest:     bidRequest,
-		UserSyncs:      &emptyUsersync{},
-		FirstPartyData: fpd,
+		BidRequest:             bidRequest,
+		UserSyncs:              &emptyUsersync{},
+		FirstPartyData:         fpd,
+		GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
+		TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
 	}
 
 	debugLog := &DebugLog{DebugOverride: true, DebugEnabledOrOverridden: true}
@@ -3746,6 +3764,8 @@ func TestStoredAuctionResponses(t *testing.T) {
 			Account:                config.Account{},
 			UserSyncs:              &emptyUsersync{},
 			StoredAuctionResponses: test.storedAuctionResp,
+			GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
+			TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
 		}
 
 		// Run test
@@ -4189,4 +4209,14 @@ func (m *mockBidder) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapter
 func (m *mockBidder) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	args := m.Called(internalRequest, externalRequest, response)
 	return args.Get(0).(*adapters.BidderResponse), args.Get(1).([]error)
+}
+
+func mockGDPRPermissionsBuilder(cfg config.GDPR, tcf2Config gdpr.TCF2ConfigReader, vendorIDs map[openrtb_ext.BidderName]uint16, fetcher gdpr.VendorListFetcher) gdpr.Permissions {
+	return &permissionsMock{allowAllBidders: true}
+}
+
+func mockTCF2ConfigBuilder(hostConfig config.TCF2, accountConfig config.AccountGDPR) gdpr.TCF2ConfigReader {
+	return &config.TCF2{
+		Enabled: hostConfig.Enabled,
+	}
 }
