@@ -1,0 +1,192 @@
+{
+    "at": 1,
+    "cur": [
+        "USD"
+    ],
+    "device": {
+        "ip": "192.0.2.1",
+        "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36"
+    },
+    "ext": {
+        "prebid": {
+            "aliases": {
+                "adg": "adgeneration",
+                "appnexus-1": "pubmatic",
+                "districtm": "appnexus",
+                "districtmDMX": "dmx",
+                "pubmatic2": "pubmatic"
+            },
+            "bidderparams": {
+                "appnexus-1": {
+                    "Cookie": [
+                        "KADUSERCOOKIE=8DAF6F37-8EC8-4939-A931-BFC55208BC6F; KRTBCOOKIE_22=14911-4058645345409124231; KRTBCOOKIE_377=6810-3a92847b-ad9c-4f00-af31-a2ccf79b93a8&KRTB&22918-3a92847b-ad9c-4f00-af31-a2ccf79b93a8&KRTB&23031-3a92847b-ad9c-4f00-af31-a2ccf79b93a8; KRTBCOOKIE_218=22978-YULviQAB6x3lyAAT&KRTB&23194-YULviQAB6x3lyAAT&KRTB&23209-YULviQAB6x3lyAAT&KRTB&23244-YULviQAB6x3lyAAT; KRTBCOOKIE_27=16735-uid:22016142-ef86-4b00-aa03-3a27d85a3a74&KRTB&16736-uid:22016142-ef86-4b00-aa03-3a27d85a3a74&KRTB&23019-uid:22016142-ef86-4b00-aa03-3a27d85a3a74&KRTB&23114-uid:22016142-ef86-4b00-aa03-3a27d85a3a74; KRTBCOOKIE_188=3189-c1122520-a0a9-4efd-ba20-03a7612d6b4e-6142ef9a-494e; KRTBCOOKIE_32=11175-AQEIwd98wlkwywInm4eQAQEBAQE&KRTB&22713-AQEIwd98wlkwywInm4eQAQEBAQE&KRTB&22715-AQEIwd98wlkwywInm4eQAQEBAQE; KRTBCOOKIE_279=22890-996bf50f-177e-11ec-a62f-8b111f176bef&KRTB&23011-996bf50f-177e-11ec-a62f-8b111f176bef; KRTBCOOKIE_153=19420-fCyoenJ4-n1nKv8se3ixfHMurX1nfv55enxgqAX7&KRTB&22979-fCyoenJ4-n1nKv8se3ixfHMurX1nfv55enxgqAX7; KRTBCOOKIE_466=16530-2e1c3b97-2f2c-4bed-a84a-2cf2b80626d8; KRTBCOOKIE_391=22924-7031417660688250890&KRTB&23263-7031417660688250890; KRTBCOOKIE_52=22772-R1B342_E38B4ACF_24BD52093&KRTB&23092-R1B342_E38B4ACF_24BD52093; KRTBCOOKIE_1074=22956-u_3138b3d3-78e9-45e4-b706-2a4a6dd33a41; KRTBCOOKIE_964=20918-cuid_0731d033-178f-11ec-b960-12bc57b19708; KRTBCOOKIE_107=1471-uid:wl13WqrG1MqLF35; KRTBCOOKIE_469=8273-608058979073; KRTBCOOKIE_286=5193-Q6851457002000790575&KRTB&22521-Q6851457002000790575; KRTBCOOKIE_860=16335-2MwMas2BQjRfONNkkwS0HA; KRTBCOOKIE_904=16787-uptF4COvDvKmx8_h61tEYQ&KRTB&23130-uptF4COvDvKmx8_h61tEYQ; KRTBCOOKIE_10=22808-NmIyNzlkZmQzMjVhZDNiMTIyOWM5MWEzZDRhNzkwZWY&KRTB&22883-NmIyNzlkZmQzMjVhZDNiMTIyOWM5MWEzZDRhNzkwZWY; PUBMDCID=4; KRTBCOOKIE_1159=23138-48d1ce90e3ae42709138f4f0d3853849; KRTBCOOKIE_1235=23226-a83d0d63-3d08-455b-a700-1c2f6be98d79-tuct83de16a:$UID; SSCookie=1; KRTBCOOKIE_594=17105-RX-e5655201-843b-478e-b50a-af5ebc7bc4fa-005&KRTB&17107-RX-e5655201-843b-478e-b50a-af5ebc7bc4fa-005; KRTBCOOKIE_80=22987-CAESEFB_IYA6r3mT612v5clnf4o&KRTB&16514-CAESEFB_IYA6r3mT612v5clnf4o&KRTB&23025-CAESEFB_IYA6r3mT612v5clnf4o; pp=156957; KRTBCOOKIE_699=22727-AAEsdU7CiGUAAGo9-3HhPQ; SyncRTB3=1634428800%3A224_63%7C1634515200%3A223_15_2%7C1634256000%3A231_234_5_99_8_7_176_222_204_189_56_3_96%7C1634169600%3A71_21_22_54_13_220%7C1634601600%3A107_209_35_179%7C1637020800%3A69; PugT=1633942842; PSync3=1634515200%3A164%7C1633996800%3A174%7C1634601600%3A226%7C1634774400%3A232%7C1634169600%3A201_197; chkChromeAb67Sec=56; DPSync3=1634169600%3A201_197%7C1634601600%3A164_226%7C1634083200%3A174%7C1634774400%3A232; uids=eyJ0ZW1wVUlEcyI6eyJwdWJtYXRpYyI6eyJ1aWQiOiI4REFGNkYzNy04RUM4LTQ5MzktQTkzMS1CRkM1NTIwOEJDNkYiLCJleHBpcmVzIjoiMjAyMS0xMC0yNlQwOTo1NDoxNi4wNTQ5ODQwOTVaIn19LCJiZGF5IjoiMjAyMS0wOS0yN1QxNzo0MDo1MS41MTI1NzAxODNaIn0=; SPugT=1634032459"
+                    ],
+                    "wiid": "c07bd5c0-db73-4217-be8a-487eec9283cc"
+                },
+                "pubmatic": {
+                    "Cookie": [
+                        "KADUSERCOOKIE=8DAF6F37-8EC8-4939-A931-BFC55208BC6F; KRTBCOOKIE_22=14911-4058645345409124231; KRTBCOOKIE_377=6810-3a92847b-ad9c-4f00-af31-a2ccf79b93a8&KRTB&22918-3a92847b-ad9c-4f00-af31-a2ccf79b93a8&KRTB&23031-3a92847b-ad9c-4f00-af31-a2ccf79b93a8; KRTBCOOKIE_218=22978-YULviQAB6x3lyAAT&KRTB&23194-YULviQAB6x3lyAAT&KRTB&23209-YULviQAB6x3lyAAT&KRTB&23244-YULviQAB6x3lyAAT; KRTBCOOKIE_27=16735-uid:22016142-ef86-4b00-aa03-3a27d85a3a74&KRTB&16736-uid:22016142-ef86-4b00-aa03-3a27d85a3a74&KRTB&23019-uid:22016142-ef86-4b00-aa03-3a27d85a3a74&KRTB&23114-uid:22016142-ef86-4b00-aa03-3a27d85a3a74; KRTBCOOKIE_188=3189-c1122520-a0a9-4efd-ba20-03a7612d6b4e-6142ef9a-494e; KRTBCOOKIE_32=11175-AQEIwd98wlkwywInm4eQAQEBAQE&KRTB&22713-AQEIwd98wlkwywInm4eQAQEBAQE&KRTB&22715-AQEIwd98wlkwywInm4eQAQEBAQE; KRTBCOOKIE_279=22890-996bf50f-177e-11ec-a62f-8b111f176bef&KRTB&23011-996bf50f-177e-11ec-a62f-8b111f176bef; KRTBCOOKIE_153=19420-fCyoenJ4-n1nKv8se3ixfHMurX1nfv55enxgqAX7&KRTB&22979-fCyoenJ4-n1nKv8se3ixfHMurX1nfv55enxgqAX7; KRTBCOOKIE_466=16530-2e1c3b97-2f2c-4bed-a84a-2cf2b80626d8; KRTBCOOKIE_391=22924-7031417660688250890&KRTB&23263-7031417660688250890; KRTBCOOKIE_52=22772-R1B342_E38B4ACF_24BD52093&KRTB&23092-R1B342_E38B4ACF_24BD52093; KRTBCOOKIE_1074=22956-u_3138b3d3-78e9-45e4-b706-2a4a6dd33a41; KRTBCOOKIE_964=20918-cuid_0731d033-178f-11ec-b960-12bc57b19708; KRTBCOOKIE_107=1471-uid:wl13WqrG1MqLF35; KRTBCOOKIE_469=8273-608058979073; KRTBCOOKIE_286=5193-Q6851457002000790575&KRTB&22521-Q6851457002000790575; KRTBCOOKIE_860=16335-2MwMas2BQjRfONNkkwS0HA; KRTBCOOKIE_904=16787-uptF4COvDvKmx8_h61tEYQ&KRTB&23130-uptF4COvDvKmx8_h61tEYQ; KRTBCOOKIE_10=22808-NmIyNzlkZmQzMjVhZDNiMTIyOWM5MWEzZDRhNzkwZWY&KRTB&22883-NmIyNzlkZmQzMjVhZDNiMTIyOWM5MWEzZDRhNzkwZWY; PUBMDCID=4; KRTBCOOKIE_1159=23138-48d1ce90e3ae42709138f4f0d3853849; KRTBCOOKIE_1235=23226-a83d0d63-3d08-455b-a700-1c2f6be98d79-tuct83de16a:$UID; SSCookie=1; KRTBCOOKIE_594=17105-RX-e5655201-843b-478e-b50a-af5ebc7bc4fa-005&KRTB&17107-RX-e5655201-843b-478e-b50a-af5ebc7bc4fa-005; KRTBCOOKIE_80=22987-CAESEFB_IYA6r3mT612v5clnf4o&KRTB&16514-CAESEFB_IYA6r3mT612v5clnf4o&KRTB&23025-CAESEFB_IYA6r3mT612v5clnf4o; pp=156957; KRTBCOOKIE_699=22727-AAEsdU7CiGUAAGo9-3HhPQ; SyncRTB3=1634428800%3A224_63%7C1634515200%3A223_15_2%7C1634256000%3A231_234_5_99_8_7_176_222_204_189_56_3_96%7C1634169600%3A71_21_22_54_13_220%7C1634601600%3A107_209_35_179%7C1637020800%3A69; PugT=1633942842; PSync3=1634515200%3A164%7C1633996800%3A174%7C1634601600%3A226%7C1634774400%3A232%7C1634169600%3A201_197; chkChromeAb67Sec=56; DPSync3=1634169600%3A201_197%7C1634601600%3A164_226%7C1634083200%3A174%7C1634774400%3A232; uids=eyJ0ZW1wVUlEcyI6eyJwdWJtYXRpYyI6eyJ1aWQiOiI4REFGNkYzNy04RUM4LTQ5MzktQTkzMS1CRkM1NTIwOEJDNkYiLCJleHBpcmVzIjoiMjAyMS0xMC0yNlQwOTo1NDoxNi4wNTQ5ODQwOTVaIn19LCJiZGF5IjoiMjAyMS0wOS0yN1QxNzo0MDo1MS41MTI1NzAxODNaIn0=; SPugT=1634032459"
+                    ],
+                    "wiid": "c07bd5c0-db73-4217-be8a-487eec9283cc"
+                }
+            },
+            "channel": {
+                "name": "app",
+                "version": ""
+            },
+            "debug": true,
+            "macros": {
+                "[PLATFORM]": "3",
+                "[PROFILE_ID]": "6852",
+                "[PROFILE_VERSION]": "2",
+                "[UNIX_TIMESTAMP]": "1645792450",
+                "[WRAPPER_IMPRESSION_ID]": "c07bd5c0-db73-4217-be8a-487eec9283cc"
+            },
+            "targeting": {
+                "durationrangesec": null,
+                "includebidderkeys": true,
+                "includebrandcategory": null,
+                "includeformat": false,
+                "includewinners": true,
+                "preferdeals": false,
+                "pricegranularity": {
+                    "precision": 2,
+                    "ranges": [
+                        {
+                            "increment": 0.05,
+                            "max": 5,
+                            "min": 0
+                        },
+                        {
+                            "increment": 0.1,
+                            "max": 10,
+                            "min": 5
+                        },
+                        {
+                            "increment": 0.5,
+                            "max": 20,
+                            "min": 10
+                        }
+                    ]
+                }
+            }
+        }
+    },
+    "id": "95d6643c-3da6-40a2-b9ca-12279393ffb2",
+    "imp": [
+        {
+            "bidfloor":123.213,
+            "banner": {
+                "h": 250,
+                "w": 300
+            },
+            "displaymanager": "PubMatic_OpenBid_SDK",
+            "displaymanagerver": "1.4.0",
+            "ext": {
+                "appnexus-1": {
+                    "Cookie": [
+                        "KADUSERCOOKIE=8DAF6F37-8EC8-4939-A931-BFC55208BC6F; KRTBCOOKIE_22=14911-4058645345409124231; KRTBCOOKIE_377=6810-3a92847b-ad9c-4f00-af31-a2ccf79b93a8&KRTB&22918-3a92847b-ad9c-4f00-af31-a2ccf79b93a8&KRTB&23031-3a92847b-ad9c-4f00-af31-a2ccf79b93a8; KRTBCOOKIE_218=22978-YULviQAB6x3lyAAT&KRTB&23194-YULviQAB6x3lyAAT&KRTB&23209-YULviQAB6x3lyAAT&KRTB&23244-YULviQAB6x3lyAAT; KRTBCOOKIE_27=16735-uid:22016142-ef86-4b00-aa03-3a27d85a3a74&KRTB&16736-uid:22016142-ef86-4b00-aa03-3a27d85a3a74&KRTB&23019-uid:22016142-ef86-4b00-aa03-3a27d85a3a74&KRTB&23114-uid:22016142-ef86-4b00-aa03-3a27d85a3a74; KRTBCOOKIE_188=3189-c1122520-a0a9-4efd-ba20-03a7612d6b4e-6142ef9a-494e; KRTBCOOKIE_32=11175-AQEIwd98wlkwywInm4eQAQEBAQE&KRTB&22713-AQEIwd98wlkwywInm4eQAQEBAQE&KRTB&22715-AQEIwd98wlkwywInm4eQAQEBAQE; KRTBCOOKIE_279=22890-996bf50f-177e-11ec-a62f-8b111f176bef&KRTB&23011-996bf50f-177e-11ec-a62f-8b111f176bef; KRTBCOOKIE_153=19420-fCyoenJ4-n1nKv8se3ixfHMurX1nfv55enxgqAX7&KRTB&22979-fCyoenJ4-n1nKv8se3ixfHMurX1nfv55enxgqAX7; KRTBCOOKIE_466=16530-2e1c3b97-2f2c-4bed-a84a-2cf2b80626d8; KRTBCOOKIE_391=22924-7031417660688250890&KRTB&23263-7031417660688250890; KRTBCOOKIE_52=22772-R1B342_E38B4ACF_24BD52093&KRTB&23092-R1B342_E38B4ACF_24BD52093; KRTBCOOKIE_1074=22956-u_3138b3d3-78e9-45e4-b706-2a4a6dd33a41; KRTBCOOKIE_964=20918-cuid_0731d033-178f-11ec-b960-12bc57b19708; KRTBCOOKIE_107=1471-uid:wl13WqrG1MqLF35; KRTBCOOKIE_469=8273-608058979073; KRTBCOOKIE_286=5193-Q6851457002000790575&KRTB&22521-Q6851457002000790575; KRTBCOOKIE_860=16335-2MwMas2BQjRfONNkkwS0HA; KRTBCOOKIE_904=16787-uptF4COvDvKmx8_h61tEYQ&KRTB&23130-uptF4COvDvKmx8_h61tEYQ; KRTBCOOKIE_10=22808-NmIyNzlkZmQzMjVhZDNiMTIyOWM5MWEzZDRhNzkwZWY&KRTB&22883-NmIyNzlkZmQzMjVhZDNiMTIyOWM5MWEzZDRhNzkwZWY; PUBMDCID=4; KRTBCOOKIE_1159=23138-48d1ce90e3ae42709138f4f0d3853849; KRTBCOOKIE_1235=23226-a83d0d63-3d08-455b-a700-1c2f6be98d79-tuct83de16a:$UID; SSCookie=1; KRTBCOOKIE_594=17105-RX-e5655201-843b-478e-b50a-af5ebc7bc4fa-005&KRTB&17107-RX-e5655201-843b-478e-b50a-af5ebc7bc4fa-005; KRTBCOOKIE_80=22987-CAESEFB_IYA6r3mT612v5clnf4o&KRTB&16514-CAESEFB_IYA6r3mT612v5clnf4o&KRTB&23025-CAESEFB_IYA6r3mT612v5clnf4o; pp=156957; KRTBCOOKIE_699=22727-AAEsdU7CiGUAAGo9-3HhPQ; SyncRTB3=1634428800%3A224_63%7C1634515200%3A223_15_2%7C1634256000%3A231_234_5_99_8_7_176_222_204_189_56_3_96%7C1634169600%3A71_21_22_54_13_220%7C1634601600%3A107_209_35_179%7C1637020800%3A69; PugT=1633942842; PSync3=1634515200%3A164%7C1633996800%3A174%7C1634601600%3A226%7C1634774400%3A232%7C1634169600%3A201_197; chkChromeAb67Sec=56; DPSync3=1634169600%3A201_197%7C1634601600%3A164_226%7C1634083200%3A174%7C1634774400%3A232; uids=eyJ0ZW1wVUlEcyI6eyJwdWJtYXRpYyI6eyJ1aWQiOiI4REFGNkYzNy04RUM4LTQ5MzktQTkzMS1CRkM1NTIwOEJDNkYiLCJleHBpcmVzIjoiMjAyMS0xMC0yNlQwOTo1NDoxNi4wNTQ5ODQwOTVaIn19LCJiZGF5IjoiMjAyMS0wOS0yN1QxNzo0MDo1MS41MTI1NzAxODNaIn0=; SPugT=1634032459"
+                    ],
+                    "adSlot": "/43743431/DMDemo",
+                    "publisherId": "5890",
+                    "wiid": "c07bd5c0-db73-4217-be8a-487eec9283cc",
+                    "wrapper": {
+                        "profile": 6841,
+                        "version": 0
+                    }
+                },
+                "pubmatic": {
+                    "Cookie": [
+                        "KADUSERCOOKIE=8DAF6F37-8EC8-4939-A931-BFC55208BC6F; KRTBCOOKIE_22=14911-4058645345409124231; KRTBCOOKIE_377=6810-3a92847b-ad9c-4f00-af31-a2ccf79b93a8&KRTB&22918-3a92847b-ad9c-4f00-af31-a2ccf79b93a8&KRTB&23031-3a92847b-ad9c-4f00-af31-a2ccf79b93a8; KRTBCOOKIE_218=22978-YULviQAB6x3lyAAT&KRTB&23194-YULviQAB6x3lyAAT&KRTB&23209-YULviQAB6x3lyAAT&KRTB&23244-YULviQAB6x3lyAAT; KRTBCOOKIE_27=16735-uid:22016142-ef86-4b00-aa03-3a27d85a3a74&KRTB&16736-uid:22016142-ef86-4b00-aa03-3a27d85a3a74&KRTB&23019-uid:22016142-ef86-4b00-aa03-3a27d85a3a74&KRTB&23114-uid:22016142-ef86-4b00-aa03-3a27d85a3a74; KRTBCOOKIE_188=3189-c1122520-a0a9-4efd-ba20-03a7612d6b4e-6142ef9a-494e; KRTBCOOKIE_32=11175-AQEIwd98wlkwywInm4eQAQEBAQE&KRTB&22713-AQEIwd98wlkwywInm4eQAQEBAQE&KRTB&22715-AQEIwd98wlkwywInm4eQAQEBAQE; KRTBCOOKIE_279=22890-996bf50f-177e-11ec-a62f-8b111f176bef&KRTB&23011-996bf50f-177e-11ec-a62f-8b111f176bef; KRTBCOOKIE_153=19420-fCyoenJ4-n1nKv8se3ixfHMurX1nfv55enxgqAX7&KRTB&22979-fCyoenJ4-n1nKv8se3ixfHMurX1nfv55enxgqAX7; KRTBCOOKIE_466=16530-2e1c3b97-2f2c-4bed-a84a-2cf2b80626d8; KRTBCOOKIE_391=22924-7031417660688250890&KRTB&23263-7031417660688250890; KRTBCOOKIE_52=22772-R1B342_E38B4ACF_24BD52093&KRTB&23092-R1B342_E38B4ACF_24BD52093; KRTBCOOKIE_1074=22956-u_3138b3d3-78e9-45e4-b706-2a4a6dd33a41; KRTBCOOKIE_964=20918-cuid_0731d033-178f-11ec-b960-12bc57b19708; KRTBCOOKIE_107=1471-uid:wl13WqrG1MqLF35; KRTBCOOKIE_469=8273-608058979073; KRTBCOOKIE_286=5193-Q6851457002000790575&KRTB&22521-Q6851457002000790575; KRTBCOOKIE_860=16335-2MwMas2BQjRfONNkkwS0HA; KRTBCOOKIE_904=16787-uptF4COvDvKmx8_h61tEYQ&KRTB&23130-uptF4COvDvKmx8_h61tEYQ; KRTBCOOKIE_10=22808-NmIyNzlkZmQzMjVhZDNiMTIyOWM5MWEzZDRhNzkwZWY&KRTB&22883-NmIyNzlkZmQzMjVhZDNiMTIyOWM5MWEzZDRhNzkwZWY; PUBMDCID=4; KRTBCOOKIE_1159=23138-48d1ce90e3ae42709138f4f0d3853849; KRTBCOOKIE_1235=23226-a83d0d63-3d08-455b-a700-1c2f6be98d79-tuct83de16a:$UID; SSCookie=1; KRTBCOOKIE_594=17105-RX-e5655201-843b-478e-b50a-af5ebc7bc4fa-005&KRTB&17107-RX-e5655201-843b-478e-b50a-af5ebc7bc4fa-005; KRTBCOOKIE_80=22987-CAESEFB_IYA6r3mT612v5clnf4o&KRTB&16514-CAESEFB_IYA6r3mT612v5clnf4o&KRTB&23025-CAESEFB_IYA6r3mT612v5clnf4o; pp=156957; KRTBCOOKIE_699=22727-AAEsdU7CiGUAAGo9-3HhPQ; SyncRTB3=1634428800%3A224_63%7C1634515200%3A223_15_2%7C1634256000%3A231_234_5_99_8_7_176_222_204_189_56_3_96%7C1634169600%3A71_21_22_54_13_220%7C1634601600%3A107_209_35_179%7C1637020800%3A69; PugT=1633942842; PSync3=1634515200%3A164%7C1633996800%3A174%7C1634601600%3A226%7C1634774400%3A232%7C1634169600%3A201_197; chkChromeAb67Sec=56; DPSync3=1634169600%3A201_197%7C1634601600%3A164_226%7C1634083200%3A174%7C1634774400%3A232; uids=eyJ0ZW1wVUlEcyI6eyJwdWJtYXRpYyI6eyJ1aWQiOiI4REFGNkYzNy04RUM4LTQ5MzktQTkzMS1CRkM1NTIwOEJDNkYiLCJleHBpcmVzIjoiMjAyMS0xMC0yNlQwOTo1NDoxNi4wNTQ5ODQwOTVaIn19LCJiZGF5IjoiMjAyMS0wOS0yN1QxNzo0MDo1MS41MTI1NzAxODNaIn0=; SPugT=1634032459"
+                    ],
+                    "adSlot": "/43743431/DMDemo@300x250",
+                    "publisherId": "5890",
+                    "wiid": "c07bd5c0-db73-4217-be8a-487eec9283cc",
+                    "wrapper": {
+                        "profile": 6852,
+                        "version": 2
+                    }
+                }
+            },
+            "id": "imp176227948",
+            "instl": 1,
+            "secure": 0,
+            "tagid": "/43743431/DMDemo",
+            "video": {
+                "api": [
+                    5,
+                    6,
+                    7
+                ],
+                "boxingallowed": 1,
+                "companionad": [
+                    {
+                        "api": [
+                            5,
+                            6,
+                            7
+                        ],
+                        "format": [
+                            {
+                                "h": 480,
+                                "w": 320
+                            }
+                        ],
+                        "pos": 7
+                    }
+                ],
+                "companiontype": [
+                    1,
+                    2,
+                    3
+                ],
+                "delivery": [
+                    2
+                ],
+                "h": 480,
+                "linearity": 1,
+                "maxbitrate": 600,
+                "mimes": [
+                    "video/3gpp",
+                    "video/mp4",
+                    "video/webm"
+                ],
+                "placement": 5,
+                "playbackend": 1,
+                "playbackmethod": [
+                    1
+                ],
+                "pos": 7,
+                "protocols": [
+                    2,
+                    3,
+                    5,
+                    6,
+                    7,
+                    8
+                ],
+                "startdelay": 0,
+                "w": 320
+            }
+        }
+    ],
+    "source": {
+        "ext": {
+            "newKey": "newValue",
+            "omidpv": "1.2.11-Pubmatic"
+        },
+        "tid": "95d6643c-3da6-40a2-b9ca-12279393ffb2"
+    },
+    "tmax": 42515,
+    "user": {
+        "customdata": "8DAF6F37-8EC8-4939-A931-BFC55208BC6F"
+    },
+    "site": {
+        "page": "http://ebay.com/inte/automation/openwrap_prebidv1.X/pwt_parameter_validation_single_slot_one_size.html?pwtvc=1&pwtv=1&profileid=7390",
+        "ref": "",
+        "publisher": {
+            "id": "5890"
+        },
+        "domain": "ebay.com"
+    }
+}
