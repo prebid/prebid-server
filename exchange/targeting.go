@@ -86,6 +86,9 @@ func (targData *targetData) addKeys(keys map[string]string, key openrtb_ext.Targ
 	var maxLength int
 	if truncateTargetAttr != nil {
 		maxLength = *truncateTargetAttr
+		if maxLength < 0 {
+			maxLength = MaxKeyLength
+		}
 	} else {
 		maxLength = MaxKeyLength
 	}

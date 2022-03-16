@@ -264,7 +264,7 @@ var bid084 *openrtb2.Bid = &openrtb2.Bid{
 
 var truncateTargetAttrValueLess int = 10
 var truncateTargetAttrValueGreater int = 25
-
+var truncateTargetAttrValueNegative int = -1
 var TargetingTests []TargetingTestData = []TargetingTestData{
 	{
 		Description: "Targeting winners only (most basic targeting example)",
@@ -486,6 +486,40 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 			},
 		},
 		TruncateTargetAttr: &truncateTargetAttrValueGreater,
+	},
+	{
+		Description: "Truncate Targeting Attribute value is given and is negative",
+		TargetData: targetData{
+			priceGranularity:  openrtb_ext.PriceGranularityFromString("med"),
+			includeBidderKeys: true,
+		},
+		Auction: auction{
+			winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*pbsOrtbBid{
+				"ImpId-1": {
+					openrtb_ext.BidderAppnexus: {
+						bid:     bid123,
+						bidType: openrtb_ext.BidTypeBanner,
+					},
+					openrtb_ext.BidderRubicon: {
+						bid:     bid084,
+						bidType: openrtb_ext.BidTypeBanner,
+					},
+				},
+			},
+		},
+		ExpectedBidTargetsByBidder: map[string]map[openrtb_ext.BidderName]map[string]string{
+			"ImpId-1": {
+				openrtb_ext.BidderAppnexus: {
+					"hb_bidder_appnexus": "appnexus",
+					"hb_pb_appnexus":     "1.20",
+				},
+				openrtb_ext.BidderRubicon: {
+					"hb_bidder_rubicon": "rubicon",
+					"hb_pb_rubicon":     "0.80",
+				},
+			},
+		},
+		TruncateTargetAttr: &truncateTargetAttrValueNegative,
 	},
 }
 
