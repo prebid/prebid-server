@@ -53,9 +53,8 @@ func NewCookieSyncEndpoint(
 	}
 
 	return &cookieSyncEndpoint{
-		chooser:          usersync.NewChooser(syncersByBidder),
-		config:           config,
-		hostCookieConfig: &config.HostCookie,
+		chooser: usersync.NewChooser(syncersByBidder),
+		config:  config,
 		privacyConfig: usersyncPrivacyConfig{
 			gdprConfig:      config.GDPR,
 			gdprPermissions: gdprPermissions,
@@ -69,13 +68,12 @@ func NewCookieSyncEndpoint(
 }
 
 type cookieSyncEndpoint struct {
-	chooser          usersync.Chooser
-	config           *config.Configuration
-	hostCookieConfig *config.HostCookie
-	privacyConfig    usersyncPrivacyConfig
-	metrics          metrics.MetricsEngine
-	pbsAnalytics     analytics.PBSAnalyticsModule
-	accountsFetcher  stored_requests.AccountFetcher
+	chooser         usersync.Chooser
+	config          *config.Configuration
+	privacyConfig   usersyncPrivacyConfig
+	metrics         metrics.MetricsEngine
+	pbsAnalytics    analytics.PBSAnalyticsModule
+	accountsFetcher stored_requests.AccountFetcher
 }
 
 func (c *cookieSyncEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -86,7 +84,7 @@ func (c *cookieSyncEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ ht
 		return
 	}
 
-	cookie := usersync.ParseCookieFromRequest(r, c.hostCookieConfig)
+	cookie := usersync.ParseCookieFromRequest(r, &c.config.HostCookie)
 
 	result := c.chooser.Choose(request, cookie)
 	switch result.Status {
@@ -193,6 +191,7 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 	}
 	return rx, privacyPolicies, nil
 }
+
 func (c *cookieSyncEndpoint) writeParseRequestErrorMetrics(err error) {
 	switch err {
 	case errCookieSyncAccountBlocked:

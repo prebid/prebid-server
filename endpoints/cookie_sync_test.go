@@ -63,7 +63,6 @@ func TestNewCookieSyncEndpoint(t *testing.T) {
 			GDPR:       configGDPR,
 			CCPA:       config.CCPA{Enforce: configCCPAEnforce},
 		},
-		hostCookieConfig: &configHostCookie,
 		privacyConfig: usersyncPrivacyConfig{
 			gdprConfig:      configGDPR,
 			gdprPermissions: &gdprPerms,
@@ -248,9 +247,8 @@ func TestCookieSyncHandle(t *testing.T) {
 		writer := httptest.NewRecorder()
 
 		endpoint := cookieSyncEndpoint{
-			chooser:          FakeChooser{Result: test.givenChooserResult},
-			config:           &config.Configuration{},
-			hostCookieConfig: &config.HostCookie{},
+			chooser: FakeChooser{Result: test.givenChooserResult},
+			config:  &config.Configuration{},
 			privacyConfig: usersyncPrivacyConfig{
 				gdprConfig: config.GDPR{
 					Enabled:      true,
