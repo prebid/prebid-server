@@ -56,7 +56,6 @@ const (
 	pmZoneIDKeyNameOld = "pmZoneID"
 	ImpExtAdUnitKey    = "dfp_ad_unit_code"
 	AdServerGAM        = "gam"
-	kadfloor           = "kadfloor"
 )
 
 func (a *PubmaticAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
