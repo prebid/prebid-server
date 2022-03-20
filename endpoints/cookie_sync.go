@@ -132,20 +132,9 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 		}
 	}
 
-	if request.Account != "" {
-		accountInfo, errs := accountService.GetAccount(context.Background(), c.config, c.accountsFetcher, request.Account)
-		if len(errs) > 0 {
-			return usersync.Request{}, privacy.Policies{}, combineErrors(errs)
-		}
-		if request.Limit == 0 {
-			request.Limit = accountInfo.CookieSync.DefaultLimit
-		}
-		if request.Limit == 0 || request.Limit > accountInfo.CookieSync.MaxLimit {
-			request.Limit = accountInfo.CookieSync.MaxLimit
-		}
-		if request.CooperativeSync == nil {
-			request.CooperativeSync = &accountInfo.CookieSync.DefaultCoopSync
-		}
+	request, err = c.setLimit(request)
+	if err != nil {
+		return usersync.Request{}, privacy.Policies{}, err
 	}
 
 	privacyPolicies := privacy.Policies{
@@ -201,6 +190,28 @@ func (c *cookieSyncEndpoint) writeParseRequestErrorMetrics(err error) {
 	default:
 		c.metrics.RecordCookieSync(metrics.CookieSyncBadRequest)
 	}
+}
+
+func (c *cookieSyncEndpoint) setLimit(request cookieSyncRequest) (cookieSyncRequest, error) {
+	if request.Account != "" {
+		accountInfo, errs := accountService.GetAccount(context.Background(), c.config, c.accountsFetcher, request.Account)
+		if len(errs) > 0 {
+			return request, combineErrors(errs)
+		}
+		if request.Limit <= 0 {
+			request.Limit = accountInfo.CookieSync.DefaultLimit
+		}
+		if request.Limit <= 0 || request.Limit > accountInfo.CookieSync.MaxLimit {
+			request.Limit = accountInfo.CookieSync.MaxLimit
+		}
+		if request.Limit < 0 {
+			request.Limit = 0
+		}
+		if request.CooperativeSync == nil {
+			request.CooperativeSync = &accountInfo.CookieSync.DefaultCoopSync
+		}
+	}
+	return request, nil
 }
 
 func parseTypeFilter(request *cookieSyncRequestFilterSettings) (usersync.SyncTypeFilter, error) {
