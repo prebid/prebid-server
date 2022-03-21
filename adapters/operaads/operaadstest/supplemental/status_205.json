@@ -50,8 +50,8 @@
           "id":"some-req-id",
           "imp":[
             {
-              "id":"some-imp-id:opa:native",
-              "tagid":"n00000",
+              "id":"some-imp-id:opa:video",
+              "tagid":"v00000",
               "ext":{
                 "rewarded":0
               },
