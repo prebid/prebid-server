@@ -1,6 +1,6 @@
 maintainer:
   email: devteam@buzzoola.com
-modifyingVastXmlAllowed: false
+modifyingVastXmlAllowed: true
 capabilities:
   app:
     mediaTypes:
