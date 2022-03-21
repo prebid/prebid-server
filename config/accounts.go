@@ -13,16 +13,17 @@ const (
 
 // Account represents a publisher account configuration
 type Account struct {
-	ID                 string      `mapstructure:"id" json:"id"`
-	Disabled           bool        `mapstructure:"disabled" json:"disabled"`
-	CacheTTL           DefaultTTLs `mapstructure:"cache_ttl" json:"cache_ttl"`
-	EventsEnabled      bool        `mapstructure:"events_enabled" json:"events_enabled"`
-	CCPA               AccountCCPA `mapstructure:"ccpa" json:"ccpa"`
-	GDPR               AccountGDPR `mapstructure:"gdpr" json:"gdpr"`
-	DebugAllow         bool        `mapstructure:"debug_allow" json:"debug_allow"`
-	DefaultIntegration string      `mapstructure:"default_integration" json:"default_integration"`
-	CookieSync         CookieSync  `mapstructure:"cookie_sync" json:"cookie_sync"`
-	Events             Events      `mapstructure:"events" json:"events"` // Don't enable this feature. It is still under developmment - https://github.com/prebid/prebid-server/issues/1725
+	ID                      string      `mapstructure:"id" json:"id"`
+	Disabled                bool        `mapstructure:"disabled" json:"disabled"`
+	CacheTTL                DefaultTTLs `mapstructure:"cache_ttl" json:"cache_ttl"`
+	EventsEnabled           bool        `mapstructure:"events_enabled" json:"events_enabled"`
+	CCPA                    AccountCCPA `mapstructure:"ccpa" json:"ccpa"`
+	GDPR                    AccountGDPR `mapstructure:"gdpr" json:"gdpr"`
+	DebugAllow              bool        `mapstructure:"debug_allow" json:"debug_allow"`
+	DefaultIntegration      string      `mapstructure:"default_integration" json:"default_integration"`
+	CookieSync              CookieSync  `mapstructure:"cookie_sync" json:"cookie_sync"`
+	Events                  Events      `mapstructure:"events" json:"events"` // Don't enable this feature. It is still under developmment - https://github.com/prebid/prebid-server/issues/1725
+	TruncateTargetAttribute *int        `mapstructure:"truncate_target_attr" json:"truncate_target_attr"`
 }
 
 // CookieSync represents the account-level defaults for the cookie sync endpoint.
