@@ -9,7 +9,7 @@ import (
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 )
 
-// Params defines the paramters of an AMP request.
+// Params defines the parameters of an AMP request.
 type Params struct {
 	Account         string
 	CanonicalURL    string
@@ -31,7 +31,7 @@ type Size struct {
 	Width          int64
 }
 
-// ParseParams parses the AMP paramters from a HTTP request.
+// ParseParams parses the AMP parameters from a HTTP request.
 func ParseParams(httpRequest *http.Request) (Params, error) {
 	query := httpRequest.URL.Query()
 
@@ -104,7 +104,7 @@ func chooseConsent(consent, gdprConsent string) string {
 		return consent
 	}
 
-	// Fallback to 'gdpr_consent' for compatability until it's no longer used. This was our original
+	// Fallback to 'gdpr_consent' for compatibility until it's no longer used. This was our original
 	// implementation before the same AMP macro was reused for CCPA.
 	return gdprConsent
 }
