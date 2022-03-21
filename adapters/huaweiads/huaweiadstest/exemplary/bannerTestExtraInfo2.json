@@ -99,7 +99,7 @@
   "httpcalls": [
     {
       "expectedRequest": {
-        "uri": "https://adx-drru.op.hicloud.com/ppsadx/getResult",
+        "uri": "https://adx-drru.op.dbankcloud.ru/ppsadx/getResult",
         "headers": {
           "Accept": [
             "application/json"
