@@ -9,7 +9,6 @@ import (
 
 	"github.com/prebid/prebid-server/config"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	openrtb "github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
@@ -175,7 +174,7 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.Ex
 			videoCopy := *thisImp.Video
 
 			if liftoffExt.EndcardHTMLSupported {
-				videoCopy.CompanionType = append(videoCopy.CompanionType, openrtb2.CompanionTypeHTML)
+				videoCopy.CompanionType = append(videoCopy.CompanionType, openrtb.CompanionTypeHTML)
 			}
 
 			videoExt := liftoffVideoExt{

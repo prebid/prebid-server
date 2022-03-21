@@ -147,6 +147,10 @@ func (adapter *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.Ex
 			// clone the current video element
 			videoCopy := *thisImp.Video
 
+			if molocoExt.EndcardHTMLSupported {
+				videoCopy.CompanionType = append(videoCopy.CompanionType, openrtb.CompanionTypeHTML)
+			}
+
 			// assign moloco video extension to cloned video element
 			videoCopy.Ext, err = json.Marshal(&videoExt)
 			if err != nil {

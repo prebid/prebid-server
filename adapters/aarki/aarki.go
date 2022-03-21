@@ -132,6 +132,11 @@ func (adapter *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.Ex
 
 		if thisImp.Video != nil {
 			videoCopy := *thisImp.Video
+
+			if aarkiExt.EndcardHTMLSupported {
+				videoCopy.CompanionType = append(videoCopy.CompanionType, openrtb.CompanionTypeHTML)
+			}
+
 			videoExt := aarkiVideoExt{
 				Rewarded: aarkiExt.Reward,
 			}
