@@ -20,7 +20,7 @@ jobs:
       with:
         go-version: ${{ matrix.go-version }}
 
-    - name: Checkout Branch
+    - name: Checkout Code
       uses: actions/checkout@v2
       with:
         # Resolves to empty string for push events and falls back to HEAD.
