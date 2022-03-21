@@ -10,5 +10,10 @@
     },
     "events": {
         "enabled": true
+    },
+    "cookie_sync": {
+        "default_limt": 20,
+        "max_limit": 50,
+        "default_coop_sync": true
     }
 }
