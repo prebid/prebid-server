@@ -762,7 +762,7 @@ func TestResolveUser(t *testing.T) {
 	fpdConfigUser[yobKey] = []byte(`1980`)
 	fpdConfigUser[genderKey] = []byte(`"M"`)
 	fpdConfigUser[keywordsKey] = []byte(`"fpdConfigUserKeywords"`)
-	fpdConfigUser["data"] = []byte(`[{"id":"UserDataId1", "name":"UserDataName1"}, {"id":"UserDataId2", "name":"UserDataName2"}]`)
+	fpdConfigUser[dataKey] = []byte(`[{"id":"UserDataId1", "name":"UserDataName1"}, {"id":"UserDataId2", "name":"UserDataName2"}]`)
 	fpdConfigUser["ext"] = []byte(`{"data":{"fpdConfigUserExt": 123}}`)
 
 	bidRequestUser := &openrtb2.User{
@@ -789,6 +789,8 @@ func TestResolveUser(t *testing.T) {
 		Data: []openrtb2.Data{
 			{ID: "openRtbGlobalFPDUserDataId1", Name: "openRtbGlobalFPDUserDataName1"},
 			{ID: "openRtbGlobalFPDUserDataId2", Name: "openRtbGlobalFPDUserDataName2"},
+			{ID: "UserDataId1", Name: "UserDataName1"},
+			{ID: "UserDataId2", Name: "UserDataName2"},
 		},
 	}
 
@@ -801,10 +803,6 @@ func TestResolveUser(t *testing.T) {
 			description:       "bid request user.ext is nil",
 			bidRequestUserExt: nil,
 			expectedUserExt: `{"data":{
-									"data":[
-										{"id":"UserDataId1","name":"UserDataName1"},
-										{"id":"UserDataId2","name":"UserDataName2"}
-									],
 									"fpdConfigUserExt":123,
 									"globalFPDUserData":"globalFPDUserDataValue",
 									"id":"fpdConfigUserId"
@@ -815,10 +813,6 @@ func TestResolveUser(t *testing.T) {
 			description:       "bid request user.ext is not nil",
 			bidRequestUserExt: []byte(`{"bidRequestUserExt": 1234}`),
 			expectedUserExt: `{"data":{
-									"data":[
-										{"id":"UserDataId1","name":"UserDataName1"},
-										{"id":"UserDataId2","name":"UserDataName2"}
-									],
 									"fpdConfigUserExt":123,
 									"globalFPDUserData":"globalFPDUserDataValue",
 									"id":"fpdConfigUserId"
@@ -836,7 +830,7 @@ func TestResolveUser(t *testing.T) {
 		fpdConfigUser[yobKey] = []byte(`1980`)
 		fpdConfigUser[genderKey] = []byte(`"M"`)
 		fpdConfigUser[keywordsKey] = []byte(`"fpdConfigUserKeywords"`)
-		fpdConfigUser["data"] = []byte(`[{"id":"UserDataId1", "name":"UserDataName1"}, {"id":"UserDataId2", "name":"UserDataName2"}]`)
+		fpdConfigUser[dataKey] = []byte(`[{"id":"UserDataId1", "name":"UserDataName1"}, {"id":"UserDataId2", "name":"UserDataName2"}]`)
 		fpdConfigUser["ext"] = []byte(`{"data":{"fpdConfigUserExt": 123}}`)
 		fpdConfig := &openrtb_ext.ORTB2{User: fpdConfigUser}
 
@@ -885,7 +879,7 @@ func TestMergeUsers(t *testing.T) {
 	fpdConfigUser[yobKey] = []byte(`1980`)
 	fpdConfigUser[genderKey] = []byte(`"M"`)
 	fpdConfigUser[keywordsKey] = []byte(`"fpdConfigUserKeywords"`)
-	fpdConfigUser["data"] = []byte(`[{"id":"UserDataId1", "name":"UserDataName1"}, {"id":"UserDataId2", "name":"UserDataName2"}]`)
+	fpdConfigUser[dataKey] = []byte(`[{"id":"UserDataId1", "name":"UserDataName1"}, {"id":"UserDataId2", "name":"UserDataName2"}]`)
 	fpdConfigUser["ext"] = []byte(`{"data":{"fpdConfigUserExt": 123}}`)
 
 	resultUser, err := mergeUsers(originalUser, fpdConfigUser)
@@ -893,9 +887,6 @@ func TestMergeUsers(t *testing.T) {
 
 	expectedUserExt := `{"bidRequestUserExt":1234,
 						 "data":{
-							"data":[
-								{"id":"UserDataId1","name":"UserDataName1"},
-								{"id":"UserDataId2","name":"UserDataName2"}],
 							"fpdConfigUserExt":123,
 							"id":"fpdConfigUserId"}
 						 }`
@@ -910,6 +901,8 @@ func TestMergeUsers(t *testing.T) {
 		Data: []openrtb2.Data{
 			{ID: "openRtbGlobalFPDUserDataId1", Name: "openRtbGlobalFPDUserDataName1"},
 			{ID: "openRtbGlobalFPDUserDataId2", Name: "openRtbGlobalFPDUserDataName2"},
+			{ID: "UserDataId1", Name: "UserDataName1"},
+			{ID: "UserDataId2", Name: "UserDataName2"},
 		},
 	}
 	assert.Equal(t, expectedUser, resultUser, "Result user is incorrect")
@@ -959,7 +952,7 @@ func TestResolveSite(t *testing.T) {
 	fpdConfigSite[keywordsKey] = []byte(`"fpdConfigSiteKeywords"`)
 	fpdConfigSite[nameKey] = []byte(`"fpdConfigSiteName"`)
 	fpdConfigSite[pageKey] = []byte(`"fpdConfigSitePage"`)
-	fpdConfigSite["data"] = []byte(`[{"id":"SiteDataId1", "name":"SiteDataName1"}, {"id":"SiteDataId2", "name":"SiteDataName2"}]`)
+	fpdConfigSite[dataKey] = []byte(`[{"id":"SiteDataId1", "name":"SiteDataName1"}, {"id":"SiteDataId2", "name":"SiteDataName2"}]`)
 	fpdConfigSite["ext"] = []byte(`{"data":{"fpdConfigSiteExt": 123}}`)
 
 	bidRequestSite := &openrtb2.Site{
@@ -1070,7 +1063,7 @@ func TestResolveSite(t *testing.T) {
 		fpdConfigSite := make(map[string]json.RawMessage, 0)
 		fpdConfigSite["id"] = []byte(`"fpdConfigSiteId"`)
 		fpdConfigSite[keywordsKey] = []byte(`"fpdConfigSiteKeywords"`)
-		fpdConfigSite["data"] = []byte(`[{"id":"SiteDataId1", "name":"SiteDataName1"}, {"id":"SiteDataId2", "name":"SiteDataName2"}]`)
+		fpdConfigSite[dataKey] = []byte(`[{"id":"SiteDataId1", "name":"SiteDataName1"}, {"id":"SiteDataId2", "name":"SiteDataName2"}]`)
 		fpdConfigSite["ext"] = []byte(`{"data":{"fpdConfigSiteExt": 123}}`)
 		fpdConfig := &openrtb_ext.ORTB2{Site: fpdConfigSite}
 
@@ -1134,7 +1127,7 @@ func TestMergeSites(t *testing.T) {
 	fpdConfigSite[pageCatKey] = []byte(`["cars3", "auto3"]`)
 	fpdConfigSite[searchKey] = []byte(`"fpdConfigSiteSearch"`)
 	fpdConfigSite[refKey] = []byte(`"fpdConfigSiteRef"`)
-	fpdConfigSite["data"] = []byte(`[{"id":"SiteDataId1", "name":"SiteDataName1"}, {"id":"SiteDataId2", "name":"SiteDataName2"}]`)
+	fpdConfigSite[dataKey] = []byte(`[{"id":"SiteDataId1", "name":"SiteDataName1"}, {"id":"SiteDataId2", "name":"SiteDataName2"}]`)
 	fpdConfigSite["ext"] = []byte(`{"data":{"fpdConfigSiteExt": 123}}`)
 
 	resultSite, err := mergeSites(originalSite, fpdConfigSite, "appnexus")
@@ -1181,7 +1174,7 @@ func TestResolveApp(t *testing.T) {
 	fpdConfigApp[keywordsKey] = []byte(`"fpdConfigAppKeywords"`)
 	fpdConfigApp[nameKey] = []byte(`"fpdConfigAppName"`)
 	fpdConfigApp[bundleKey] = []byte(`"fpdConfigAppBundle"`)
-	fpdConfigApp["data"] = []byte(`[{"id":"AppDataId1", "name":"AppDataName1"}, {"id":"AppDataId2", "name":"AppDataName2"}]`)
+	fpdConfigApp[dataKey] = []byte(`[{"id":"AppDataId1", "name":"AppDataName1"}, {"id":"AppDataId2", "name":"AppDataName2"}]`)
 	fpdConfigApp["ext"] = []byte(`{"data":{"fpdConfigAppExt": 123}}`)
 
 	bidRequestApp := &openrtb2.App{
@@ -1292,7 +1285,7 @@ func TestResolveApp(t *testing.T) {
 		fpdConfigApp := make(map[string]json.RawMessage, 0)
 		fpdConfigApp["id"] = []byte(`"fpdConfigAppId"`)
 		fpdConfigApp[keywordsKey] = []byte(`"fpdConfigAppKeywords"`)
-		fpdConfigApp["data"] = []byte(`[{"id":"AppDataId1", "name":"AppDataName1"}, {"id":"AppDataId2", "name":"AppDataName2"}]`)
+		fpdConfigApp[dataKey] = []byte(`[{"id":"AppDataId1", "name":"AppDataName1"}, {"id":"AppDataId2", "name":"AppDataName2"}]`)
 		fpdConfigApp["ext"] = []byte(`{"data":{"fpdConfigAppExt": 123}}`)
 		fpdConfig := &openrtb_ext.ORTB2{App: fpdConfigApp}
 
@@ -1356,7 +1349,7 @@ func TestMergeApps(t *testing.T) {
 	fpdConfigApp[catKey] = []byte(`["cars1", "auto1"]`)
 	fpdConfigApp[sectionCatKey] = []byte(`["cars2", "auto2"]`)
 	fpdConfigApp[pageCatKey] = []byte(`["cars3", "auto3"]`)
-	fpdConfigApp["data"] = []byte(`[{"id":"AppDataId1", "name":"AppDataName1"}, {"id":"AppDataId2", "name":"AppDataName2"}]`)
+	fpdConfigApp[dataKey] = []byte(`[{"id":"AppDataId1", "name":"AppDataName1"}, {"id":"AppDataId2", "name":"AppDataName2"}]`)
 	fpdConfigApp["ext"] = []byte(`{"data":{"fpdConfigAppExt": 123}}`)
 
 	resultApp, err := mergeApps(originalApp, fpdConfigApp)

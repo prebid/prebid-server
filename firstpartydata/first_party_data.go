@@ -226,15 +226,21 @@ func unmarshalJSONToInt64(input json.RawMessage) (int64, error) {
 }
 
 func unmarshalJSONToString(input json.RawMessage) (string, error) {
-	var inputString string
-	err := json.Unmarshal(input, &inputString)
-	return inputString, err
+	var resultString string
+	err := json.Unmarshal(input, &resultString)
+	return resultString, err
+}
+
+func unmarshalJSONToData(input json.RawMessage) ([]openrtb2.Data, error) {
+	var resultData []openrtb2.Data
+	err := json.Unmarshal(input, &resultData)
+	return resultData, err
 }
 
 func unmarshalJSONToStringArray(input json.RawMessage) ([]string, error) {
-	var inputString []string
-	err := json.Unmarshal(input, &inputString)
-	return inputString, err
+	var resultStringList []string
+	err := json.Unmarshal(input, &resultStringList)
+	return resultStringList, err
 }
 
 //resolveExtension inserts remaining {site/app/user} attributes back to {site/app/user}.ext.data
@@ -292,6 +298,19 @@ func mergeUsers(original *openrtb2.User, fpdConfigUser map[string]json.RawMessag
 			return newUser, err
 		}
 		delete(fpdConfigUser, yobKey)
+	}
+
+	if userData, present := fpdConfigUser[dataKey]; present {
+		newUserData, err := unmarshalJSONToData(userData)
+		if err != nil {
+			return newUser, err
+		}
+		if len(newUser.Data) > 0 {
+			newUser.Data = append(newUser.Data, newUserData...)
+		} else {
+			newUser.Data = newUserData
+		}
+		delete(fpdConfigUser, dataKey)
 	}
 
 	if len(fpdConfigUser) > 0 {
