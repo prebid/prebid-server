@@ -128,6 +128,17 @@ func TestParseImpressionObject(t *testing.T) {
 			},
 			expectedBidfloor: 0.11,
 		},
+		{
+			name: "kadfloor string set with whitespace",
+			args: args{
+				imp: &openrtb2.Imp{
+					BidFloor: 0.12,
+					Video:    &openrtb2.Video{},
+					Ext:      json.RawMessage(`{"bidder":{"kadfloor":" \t  0.13  "}}`),
+				},
+			},
+			expectedBidfloor: 0.13,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
