@@ -819,7 +819,7 @@ func TestShouldReturnBadRequestWhenVTypeIsInvalid(t *testing.T) {
 	}
 }
 
-func Test_readVType(t *testing.T) {
+func TestReadVType(t *testing.T) {
 	type args struct {
 		er  *analytics.EventRequest
 		req *http.Request
@@ -828,7 +828,7 @@ func Test_readVType(t *testing.T) {
 		name          string
 		args          args
 		expectedError error
-		wantVType     analytics.VastType
+		expectedVType analytics.VastType
 	}{
 		{
 			name: "vtype = start",
@@ -839,7 +839,7 @@ func Test_readVType(t *testing.T) {
 				req: httptest.NewRequest("GET", "/event?t=vast&vtype=start&b=bidId&ts=0&a=accountId", strings.NewReader("")),
 			},
 			expectedError: nil,
-			wantVType:     analytics.Start,
+			expectedVType: analytics.Start,
 		},
 		{
 			name: "vtype = firstQuartile",
@@ -850,7 +850,7 @@ func Test_readVType(t *testing.T) {
 				req: httptest.NewRequest("GET", "/event?t=vast&vtype=firstQuartile&b=bidId&ts=0&a=accountId", strings.NewReader("")),
 			},
 			expectedError: nil,
-			wantVType:     analytics.FirstQuartile,
+			expectedVType: analytics.FirstQuartile,
 		},
 		{
 			name: "vtype = midPoint",
@@ -861,7 +861,7 @@ func Test_readVType(t *testing.T) {
 				req: httptest.NewRequest("GET", "/event?t=vast&vtype=midPoint&b=bidId&ts=0&a=accountId", strings.NewReader("")),
 			},
 			expectedError: nil,
-			wantVType:     analytics.MidPoint,
+			expectedVType: analytics.MidPoint,
 		},
 		{
 			name: "vtype = thirdQuartile",
@@ -872,7 +872,7 @@ func Test_readVType(t *testing.T) {
 				req: httptest.NewRequest("GET", "/event?t=vast&vtype=thirdQuartile&b=bidId&ts=0&a=accountId", strings.NewReader("")),
 			},
 			expectedError: nil,
-			wantVType:     analytics.ThirdQuartile,
+			expectedVType: analytics.ThirdQuartile,
 		},
 		{
 			name: "vtype = complete",
@@ -883,7 +883,7 @@ func Test_readVType(t *testing.T) {
 				req: httptest.NewRequest("GET", "/event?t=vast&vtype=complete&b=bidId&ts=0&a=accountId", strings.NewReader("")),
 			},
 			expectedError: nil,
-			wantVType:     analytics.Complete,
+			expectedVType: analytics.Complete,
 		},
 		{
 			name: "unknown vtype",
@@ -894,14 +894,14 @@ func Test_readVType(t *testing.T) {
 				req: httptest.NewRequest("GET", "/event?t=vast&vtype=test&b=bidId&ts=0&a=accountId", strings.NewReader("")),
 			},
 			expectedError: &errortypes.BadInput{Message: "unknown vtype: 'test'"},
-			wantVType:     "",
+			expectedVType: "",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := readVType(tt.args.er, tt.args.req)
 			assert.Equal(t, tt.expectedError, err, tt.name)
-			assert.Equal(t, tt.wantVType, tt.args.er.VType, tt.name)
+			assert.Equal(t, tt.expectedVType, tt.args.er.VType, tt.name)
 		})
 	}
 }
