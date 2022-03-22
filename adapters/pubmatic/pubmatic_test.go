@@ -2,7 +2,6 @@ package pubmatic
 
 import (
 	"encoding/json"
-	"reflect"
 	"testing"
 
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
@@ -72,19 +71,19 @@ func TestGetBidTypeForUnsupportedCode(t *testing.T) {
 	}
 }
 
-func Test_parseImpressionObject(t *testing.T) {
+func TestParseImpressionObject(t *testing.T) {
 	type args struct {
 		imp                      *openrtb2.Imp
 		extractWrapperExtFromImp bool
 		extractPubIDFromImp      bool
 	}
 	tests := []struct {
-		name    string
-		args    args
-		want    *pubmaticWrapperExt
-		want1   string
-		wantErr bool
-		wantImp *openrtb2.Imp
+		name                string
+		args                args
+		expectedWrapperExt  *pubmaticWrapperExt
+		expectedPublisherId string
+		wantErr             bool
+		expectedBidfloor    float64
 	}{
 		{
 			name: "imp.bidfloor empty and kadfloor set",
@@ -94,9 +93,7 @@ func Test_parseImpressionObject(t *testing.T) {
 					Ext:   json.RawMessage(`{"bidder":{"kadfloor":"0.12"}}`),
 				},
 			},
-			wantImp: &openrtb2.Imp{
-				BidFloor: 0.12,
-			},
+			expectedBidfloor: 0.12,
 		},
 		{
 			name: "imp.bidfloor set and kadfloor empty",
@@ -107,9 +104,7 @@ func Test_parseImpressionObject(t *testing.T) {
 					Ext:      json.RawMessage(`{"bidder":{}}`),
 				},
 			},
-			wantImp: &openrtb2.Imp{
-				BidFloor: 0.12,
-			},
+			expectedBidfloor: 0.12,
 		},
 		{
 			name: "imp.bidfloor set and kadfloor invalid",
@@ -120,9 +115,7 @@ func Test_parseImpressionObject(t *testing.T) {
 					Ext:      json.RawMessage(`{"bidder":{"kadfloor":"aaa"}}`),
 				},
 			},
-			wantImp: &openrtb2.Imp{
-				BidFloor: 0.12,
-			},
+			expectedBidfloor: 0.12,
 		},
 		{
 			name: "imp.bidfloor set and kadfloor set, preference to kadfloor",
@@ -133,25 +126,16 @@ func Test_parseImpressionObject(t *testing.T) {
 					Ext:      json.RawMessage(`{"bidder":{"kadfloor":"0.11"}}`),
 				},
 			},
-			wantImp: &openrtb2.Imp{
-				BidFloor: 0.11,
-			},
+			expectedBidfloor: 0.11,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1, err := parseImpressionObject(tt.args.imp, tt.args.extractWrapperExtFromImp, tt.args.extractPubIDFromImp)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("parseImpressionObject() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("parseImpressionObject() got = %v, want %v", got, tt.want)
-			}
-			if got1 != tt.want1 {
-				t.Errorf("parseImpressionObject() got1 = %v, want %v", got1, tt.want1)
-			}
-			assert.Equal(t, tt.args.imp.BidFloor, tt.wantImp.BidFloor)
+			receivedWrapperExt, receivedPublisherId, err := parseImpressionObject(tt.args.imp, tt.args.extractWrapperExtFromImp, tt.args.extractPubIDFromImp)
+			assert.Equal(t, tt.wantErr, err != nil)
+			assert.Equal(t, tt.expectedWrapperExt, receivedWrapperExt)
+			assert.Equal(t, tt.expectedPublisherId, receivedPublisherId)
+			assert.Equal(t, tt.expectedBidfloor, tt.args.imp.BidFloor)
 		})
 	}
 }
