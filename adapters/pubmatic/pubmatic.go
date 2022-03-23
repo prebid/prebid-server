@@ -271,6 +271,14 @@ func parseImpressionObject(imp *openrtb2.Imp, extractWrapperExtFromImp, extractP
 		imp.Banner = bannerCopy
 	}
 
+	if pubmaticExt.Kadfloor != "" {
+		bidfloor, err := strconv.ParseFloat(strings.TrimSpace(pubmaticExt.Kadfloor), 64)
+		if err == nil {
+			//do not overwrite existing value if kadfloor is invalid
+			imp.BidFloor = bidfloor
+		}
+	}
+
 	extMap := make(map[string]interface{}, 0)
 	if pubmaticExt.Keywords != nil && len(pubmaticExt.Keywords) != 0 {
 		addKeywordsToExt(pubmaticExt.Keywords, extMap)
