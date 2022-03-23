@@ -307,7 +307,7 @@ func parseImpressionObject(imp *openrtb2.Imp, extractWrapperExtFromImp, extractP
 	return wrapExt, pubID, nil
 }
 
-// extractPubmaticExtFromRequest parse the imp to get it ready to send to pubmatic
+// extractPubmaticExtFromRequest parse the req.ext to fetch wrapper and acat params
 func extractPubmaticExtFromRequest(request *openrtb2.BidRequest) (*pubmaticWrapperExt, []string, error) {
 	var acat []string
 	var wrpExt *pubmaticWrapperExt
