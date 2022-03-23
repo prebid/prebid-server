@@ -14,6 +14,7 @@ import (
 
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/stretchr/testify/assert"
 )
@@ -645,6 +646,16 @@ func TestShouldParseEventCorrectly(t *testing.T) {
 				Analytics: analytics.Enabled,
 			},
 		},
+		"three - vtype = start": {
+			req: httptest.NewRequest("GET", "/event?t=vast&vtype=start&b=bidId&ts=0&a=accountId", strings.NewReader("")),
+			expected: &analytics.EventRequest{
+				Type:      analytics.Vast,
+				VType:     analytics.Start,
+				BidID:     "bidId",
+				Timestamp: 0,
+				Analytics: analytics.Enabled,
+			},
+		},
 	}
 
 	for name, test := range tests {
@@ -748,5 +759,149 @@ func TestReadIntegrationType(t *testing.T) {
 			assert.Empty(t, err, test.description)
 			assert.Equalf(t, test.expectedIntegrationType, testEventRequest.Integration, test.description)
 		}
+	}
+}
+
+func TestShouldReturnBadRequestWhenVTypeIsInvalid(t *testing.T) {
+
+	reqData := ""
+
+	tests := []struct {
+		description        string
+		req                *http.Request
+		expectedStatusCode int
+		expectedStatus     string
+	}{
+		{
+			description:        "vtype parameter is missing",
+			req:                httptest.NewRequest("GET", "/event?t=vast&b=bidID", strings.NewReader(reqData)),
+			expectedStatusCode: 400,
+			expectedStatus:     "invalid request: parameter 'vtype' is required\n",
+		},
+		{
+			description:        "invalid vtype parameter",
+			req:                httptest.NewRequest("GET", "/event?t=vast&vtype=abc&b=bidID", strings.NewReader(reqData)),
+			expectedStatusCode: 400,
+			expectedStatus:     "invalid request: unknown vtype: 'abc'\n",
+		},
+		{
+			description:        "vtype is passed when event != vast",
+			req:                httptest.NewRequest("GET", "/event?t=win&vtype=startc&b=bidID", strings.NewReader(reqData)),
+			expectedStatusCode: 400,
+			expectedStatus:     "invalid request: parameter 'vtype' is only required for t=vast\n",
+		},
+	}
+
+	for _, test := range tests {
+		mockAccountsFetcher := &mockAccountsFetcher{}
+
+		mockAnalyticsModule := &eventsMockAnalyticsModule{
+			Fail: false,
+		}
+
+		cfg := &config.Configuration{
+			AccountDefaults: config.Account{},
+		}
+
+		recorder := httptest.NewRecorder()
+
+		e := NewEventEndpoint(cfg, mockAccountsFetcher, mockAnalyticsModule)
+		e(recorder, test.req, nil)
+
+		d, err := ioutil.ReadAll(recorder.Result().Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, test.expectedStatusCode, recorder.Result().StatusCode, test.description)
+		assert.Equal(t, test.expectedStatus, string(d), test.description)
+
+	}
+}
+
+func TestReadVType(t *testing.T) {
+	type args struct {
+		er  *analytics.EventRequest
+		req *http.Request
+	}
+	tests := []struct {
+		name          string
+		args          args
+		expectedError error
+		expectedVType analytics.VastType
+	}{
+		{
+			name: "vtype = start",
+			args: args{
+				er: &analytics.EventRequest{
+					Type: analytics.Vast,
+				},
+				req: httptest.NewRequest("GET", "/event?t=vast&vtype=start&b=bidId&ts=0&a=accountId", strings.NewReader("")),
+			},
+			expectedError: nil,
+			expectedVType: analytics.Start,
+		},
+		{
+			name: "vtype = firstQuartile",
+			args: args{
+				er: &analytics.EventRequest{
+					Type: analytics.Vast,
+				},
+				req: httptest.NewRequest("GET", "/event?t=vast&vtype=firstQuartile&b=bidId&ts=0&a=accountId", strings.NewReader("")),
+			},
+			expectedError: nil,
+			expectedVType: analytics.FirstQuartile,
+		},
+		{
+			name: "vtype = midPoint",
+			args: args{
+				er: &analytics.EventRequest{
+					Type: analytics.Vast,
+				},
+				req: httptest.NewRequest("GET", "/event?t=vast&vtype=midPoint&b=bidId&ts=0&a=accountId", strings.NewReader("")),
+			},
+			expectedError: nil,
+			expectedVType: analytics.MidPoint,
+		},
+		{
+			name: "vtype = thirdQuartile",
+			args: args{
+				er: &analytics.EventRequest{
+					Type: analytics.Vast,
+				},
+				req: httptest.NewRequest("GET", "/event?t=vast&vtype=thirdQuartile&b=bidId&ts=0&a=accountId", strings.NewReader("")),
+			},
+			expectedError: nil,
+			expectedVType: analytics.ThirdQuartile,
+		},
+		{
+			name: "vtype = complete",
+			args: args{
+				er: &analytics.EventRequest{
+					Type: analytics.Vast,
+				},
+				req: httptest.NewRequest("GET", "/event?t=vast&vtype=complete&b=bidId&ts=0&a=accountId", strings.NewReader("")),
+			},
+			expectedError: nil,
+			expectedVType: analytics.Complete,
+		},
+		{
+			name: "unknown vtype",
+			args: args{
+				er: &analytics.EventRequest{
+					Type: analytics.Vast,
+				},
+				req: httptest.NewRequest("GET", "/event?t=vast&vtype=test&b=bidId&ts=0&a=accountId", strings.NewReader("")),
+			},
+			expectedError: &errortypes.BadInput{Message: "unknown vtype: 'test'"},
+			expectedVType: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := readVType(tt.args.er, tt.args.req)
+			assert.Equal(t, tt.expectedError, err, tt.name)
+			assert.Equal(t, tt.expectedVType, tt.args.er.VType, tt.name)
+		})
 	}
 }
