@@ -321,7 +321,7 @@ func extractPubmaticExtFromRequest(request *openrtb2.BidRequest) (*pubmaticWrapp
 	var wrpExt *pubmaticWrapperExt
 	reqExtBidderParams, err := adapters.ExtractReqExtBidderParamsMap(request)
 	if err != nil {
-		return wrpExt, acat, err
+		return nil, acat, err
 	}
 
 	//get request ext bidder params
