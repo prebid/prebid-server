@@ -5,17 +5,29 @@
   "type": "object",
   "properties": {
     "accountId": {
-      "type": "integer",
+      "type": [
+        "integer",
+        "string"
+      ],
+      "pattern": "^\\d+$",
       "minimum": 1,
       "description": "An ID which identifies the publisher's account"
     },
     "siteId": {
-      "type": "integer",
+      "type": [
+        "integer",
+        "string"
+      ],
+      "pattern": "^\\d+$",
       "minimum": 1,
       "description": "An ID which identifies the site selling the impression"
     },
     "zoneId": {
-      "type": "integer",
+      "type": [
+        "integer",
+        "string"
+      ],
+      "pattern": "^\\d+$",
       "minimum": 1,
       "description": "An ID which identifies the sub-section of the site where the impression is located"
     },
@@ -33,6 +45,10 @@
         "type": "array"
       }
     },
+    "pchain": {
+      "type": "string",
+      "description": "A payment ID chain string"
+    },
     "video": {
       "type": "object",
       "description": "An object defining additional Rubicon video parameters",
@@ -42,11 +58,11 @@
           "description": "Language of the ad - should match content video"
         },
         "playerHeight": {
-          "type": "integer",
+          "type": ["integer", "string"],
           "description": "Height in pixels of the video player"
         },
         "playerWidth": {
-          "type": "integer",
+          "type": ["integer", "string"],
           "description": "Width in pixels of the video player"
         },
         "size_id": {
@@ -55,7 +71,7 @@
         },
         "skip": {
           "type": "integer",
-          "description": "Can this ad be skipped ( 0 = no, 1 = yes)"
+          "description": "Can this ad be skipped (0 = no, 1 = yes)"
         },
         "skipdelay": {
           "type": "integer",
@@ -64,5 +80,9 @@
       }
     }
   },
-  "required": ["accountId", "siteId", "zoneId"]
+  "required": [
+    "accountId",
+    "siteId",
+    "zoneId"
+  ]
 }

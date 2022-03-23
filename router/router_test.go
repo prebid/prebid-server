@@ -62,18 +62,6 @@ func TestNewJsonDirectoryServer(t *testing.T) {
 	ensureHasKey(t, data, "aliastest")
 }
 
-func TestExchangeMap(t *testing.T) {
-	exchanges := newExchangeMap(&config.Configuration{})
-	bidderMap := openrtb_ext.BuildBidderMap()
-	for bidderName := range exchanges {
-		// OpenRTB doesn't support hardcoded aliases... so this test skips districtm,
-		// which was the only alias in the legacy adapter map.
-		if _, ok := bidderMap[bidderName]; bidderName != "districtm" && !ok {
-			t.Errorf("Bidder %s exists in exchange, but is not a part of the BidderMap.", bidderName)
-		}
-	}
-}
-
 func TestApplyBidderInfoConfigOverrides(t *testing.T) {
 	var testCases = []struct {
 		description         string
