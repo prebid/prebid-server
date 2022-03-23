@@ -667,14 +667,6 @@ func New(v *viper.Viper) (*Configuration, error) {
 		c.GDPR.TCF2.SpecialFeature1.VendorExceptionMap[bidderName] = struct{}{}
 	}
 
-	// To look for a special feature's vendor exceptions in O(1) time, we fill this hash table with bidders located in the
-	// VendorExceptions field of the GDPR.TCF2.SpecialFeature1 struct defined in this file
-	c.GDPR.TCF2.SpecialFeature1.VendorExceptionMap = make(map[openrtb_ext.BidderName]struct{})
-	for v := 0; v < len(c.GDPR.TCF2.SpecialFeature1.VendorExceptions); v++ {
-		bidderName := c.GDPR.TCF2.SpecialFeature1.VendorExceptions[v]
-		c.GDPR.TCF2.SpecialFeature1.VendorExceptionMap[bidderName] = struct{}{}
-	}
-
 	// To look for a request's app_id in O(1) time, we fill this hash table located in the
 	// the BlacklistedApps field of the Configuration struct defined in this file
 	c.BlacklistedAppMap = make(map[string]bool)
