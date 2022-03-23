@@ -30,7 +30,7 @@
 			"items": {
 				"type": "string"
 			}
-        },
+		},
 		"wrapper": {
 			"type": "object",
 			"description": "Specifies pubmatic openwrap configuration for a publisher",
