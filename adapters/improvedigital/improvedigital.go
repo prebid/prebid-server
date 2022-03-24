@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
@@ -36,6 +37,8 @@ func (a *ImprovedigitalAdapter) MakeRequests(request *openrtb2.BidRequest, reqIn
 
 func (a *ImprovedigitalAdapter) makeRequest(request openrtb2.BidRequest, imp openrtb2.Imp) (*adapters.RequestData, error) {
 	request.Imp = []openrtb2.Imp{imp}
+
+	request = a.applyAdditionalConsentProvidersArray(request)
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
 		return nil, err
@@ -143,4 +146,78 @@ func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType,
 	return "", &errortypes.BadServerResponse{
 		Message: fmt.Sprintf("Failed to find impression for ID: \"%s\"", impID),
 	}
+}
+
+// This method responsible to clone request and convert additional consent providers string to array when additional consent provider found
+func (a *ImprovedigitalAdapter) applyAdditionalConsentProvidersArray(request openrtb2.BidRequest) openrtb2.BidRequest {
+	// If user/user.ext not defined, no need to parse additional consent
+	if request.User == nil || request.User.Ext == nil {
+		return request
+	}
+
+	var (
+		err     error
+		reqJSON json.RawMessage
+		cpStr   string
+	)
+
+	// Start validating additional consent
+	// Check key exist user.ext.ConsentedProvidersSettings.consented_providers
+	var userExtMap = make(map[string]json.RawMessage)
+	if err = json.Unmarshal(request.User.Ext, &userExtMap); err != nil {
+		return request
+	}
+
+	cpsMapValue, cpsJSONFound := userExtMap["ConsentedProvidersSettings"]
+	if !cpsJSONFound {
+		return request
+	}
+
+	// Check key exist user.ext.ConsentedProvidersSettings.consented_providers
+	var cpMap = make(map[string]json.RawMessage)
+	if err = json.Unmarshal(cpsMapValue, &cpMap); err != nil {
+		return request
+	}
+
+	cpMapValue, cpJSONFound := cpMap["consented_providers"]
+	if !cpJSONFound {
+		return request
+	}
+	// End validating additional consent
+
+	// Check if string contain ~, then substring after ~ to end of string
+	consentStr := string(cpMapValue)
+	var tildaPosition int
+	if tildaPosition = strings.Index(consentStr, "~"); tildaPosition == -1 {
+		return request
+	}
+	cpStr = consentStr[tildaPosition+1 : len(consentStr)-1]
+
+	// Prepare consent providers string for append
+	cpStr = fmt.Sprintf("[%s]", strings.Replace(cpStr, ".", ",", -1))
+	cpMap["consented_providers"] = json.RawMessage(cpStr)
+
+	cpJSON, _ := json.Marshal(cpMap)
+	userExtMap["consented_providers_settings"] = cpJSON
+
+	extJson, extErr := json.Marshal(userExtMap)
+	if extErr != nil {
+		return request
+	}
+
+	// Start request closing
+	reqJSON, err = json.Marshal(request)
+	if err != nil {
+		return request
+	}
+
+	var reqClone openrtb2.BidRequest
+	if err = json.Unmarshal(reqJSON, &reqClone); err != nil {
+		return request
+	}
+	// End request closing
+
+	reqClone.User.Ext = extJson
+
+	return reqClone
 }
