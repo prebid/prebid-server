@@ -1,6 +1,21 @@
 maintainer:
   email: "pdu-supply-prebid@indexexchange.com"
+gvlVendorID: 10
 capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+      - audio
   site:
     mediaTypes:
       - banner
+      - video
+      - native
+      - audio
+userSync:
+  redirect:
+    url: "https://ssum.casalemedia.com/usermatchredir?s=194962&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&cb={{.RedirectURL}}"
+    userMacro: ""
+    # ix appends the user id to end of the redirect url and does not utilize a macro

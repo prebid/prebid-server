@@ -1,0 +1,21 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "imp": [
+            {
+                "id": "test-imp-id",
+                "ext": {
+                }
+            }
+        ],
+        "site": {
+            "page": "https://www.example.com/"
+        }
+    },
+    "expectedMakeRequestsErrors": [
+        {
+            "value": "unexpected end of JSON input",
+            "comparison": "literal"
+        }
+    ]
+}

@@ -1,6 +1,6 @@
 {
-  "message": "Invalid request: request.imp[0].ext contains unknown bidder: noBidderShouldEverHaveThisName. Did you forget an alias in request.ext.prebid.aliases?\n",
-  "requestPayload": {
+  "description": "Unknown biddername in bid request's sole imp element's ext",
+  "mockBidRequest": {
     "id": "req-id",
     "imp": [
       {
@@ -8,7 +8,7 @@
         "audio": {
           "mimes": [
             "video/mp4"
-          ]
+            ]
         },
         "ext": {
           "noBidderShouldEverHaveThisName": {
@@ -20,5 +20,7 @@
     "app": {
       "id": "app_001"
     }
-  }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: request.imp[0].ext contains unknown bidder: noBidderShouldEverHaveThisName. Did you forget an alias in request.ext.prebid.aliases?\n"
 }

@@ -12,6 +12,7 @@ type EndpointTemplateParams struct {
 	ZoneID      string
 	SourceId    string
 	AccountID   string
+	AdUnit      string
 }
 
 // UserSyncTemplateParams specifies params for an user sync URL template
@@ -22,7 +23,7 @@ type UserSyncTemplateParams struct {
 }
 
 // ResolveMacros resolves macros in the given template with the provided params
-func ResolveMacros(aTemplate template.Template, params interface{}) (string, error) {
+func ResolveMacros(aTemplate *template.Template, params interface{}) (string, error) {
 	strBuf := bytes.Buffer{}
 
 	err := aTemplate.Execute(&strBuf, params)

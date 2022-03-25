@@ -1,5 +1,25 @@
 {
-    "context": 1,
-    "plcmttype": 1,
-    "assets": []
+  "description": "Native request with an empty assets array in its imp.native.request field",
+  "mockBidRequest": {
+    "id": "req-id",
+    "site": {
+      "page": "some.page.com"
+    },
+    "tmax": 500,
+    "imp": [
+      {
+        "id": "some-imp",
+        "native": {
+          "request": "{\"context\":1,\"plcmttype\":1,\"assets\":[]}"
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          }
+        }
+      }
+    ]
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request"
 }

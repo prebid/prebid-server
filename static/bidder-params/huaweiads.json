@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "HuaweiAds Adapter Params",
+  "description": "A schema which validates params accepted by the HuaweiAds adapter",
+  "type": "object",
+  "properties": {
+    "publisherid": {
+      "type": "string",
+      "description": "publisher id",
+      "minLength": 1
+    },
+    "signkey": {
+      "type": "string",
+      "description": "the sign key of publisher",
+      "minLength": 1
+    },
+    "keyid": {
+      "type": "string",
+      "description": "the key id of publisher",
+      "minLength": 1
+    },
+    "slotid": {
+      "type": "string",
+      "description": "ad slot id",
+      "minLength": 1
+    },
+    "adtype": {
+      "type": "string",
+      "description": "ad type",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "publisherid",
+    "signkey",
+    "keyid",
+    "slotid",
+    "adtype"
+  ]
+}

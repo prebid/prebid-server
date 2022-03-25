@@ -1,0 +1,28 @@
+{
+  "mockBidRequest": {
+    "id": "req-id",
+    "imp": [
+      {
+        "banner": {
+          "format": [
+            {
+              "w": 320,
+              "h": 50
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "plc": true
+          }
+        }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "bad InMobi bidder ext",
+      "comparison": "literal"
+    }
+  ]
+}

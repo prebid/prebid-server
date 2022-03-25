@@ -1,5 +1,6 @@
 maintainer:
   email: product@pubnative.net
+gvlVendorID: 512
 capabilities:
   app:
     mediaTypes:

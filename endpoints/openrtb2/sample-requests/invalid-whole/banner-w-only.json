@@ -1,6 +1,6 @@
 {
-  "message": "Invalid request: request.imp[0].banner has no sizes. Define \"w\" and \"h\", or include \"format\" elements.\n",
-  "requestPayload": {
+  "description": "Request comes with a banner that defines no 'h' value",
+  "mockBidRequest": {
     "id":"req-id",
     "site": {
       "id": "some-site"
@@ -18,5 +18,7 @@
         }
       }
     ]
-  }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: request.imp[0].banner has no sizes. Define \"w\" and \"h\", or include \"format\" elements.\n"
 }

@@ -1,0 +1,178 @@
+{
+  "mockBidRequest": {
+    "allimps": 0,
+    "app": {
+      "bundle": "639881495",
+      "name": "Imgur (iOS)",
+      "storeurl": "https://apps.apple.com/us/app/imgur-meme-gif-maker/id639881495",
+      "ver": "2020.4",
+      "publisher": {
+        "id": "unused-overridden"
+      }
+    },
+    "device": {
+      "connectiontype": 2,
+      "dnt": 0,
+      "h": 1024,
+      "ifa": "201461F8-0F14-4ADD-A87F-AAAAAAAAA",
+      "ip": "73.221.0.0",
+      "language": "en",
+      "os": "ios",
+      "ua": "Mozilla/5.0 (iPad; CPU OS 12_4_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+      "w": 768
+    },
+    "id": "WQ5V2DWVTMNXRSWL",
+    "imp": [
+      {
+        "banner": {
+          "api": [
+            3,
+            5
+          ],
+          "format": [
+            {
+              "h": 50,
+              "w": 320
+            }
+          ],
+          "h": 50,
+          "pos": 1,
+          "topframe": 1,
+          "w": 320
+        },
+        "bidfloor": 0.5,
+        "bidfloorcur": "USD",
+        "clickbrowser": 1,
+        "id": "1",
+        "instl": 1,
+        "secure": 1,
+        "ext": {
+          "bidder": {
+            "tagId": "cHJlYmlkLm9yZw",
+            "adUnitId": "sample-ad-unit-id"
+          }
+        }
+      }
+    ],
+    "regs": {
+      "ext": {
+        "gdpr": 0
+      }
+    },
+    "tmax": 300
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://pbs-dev.amxrtb.com/auction/openrtb?v=pbs1.1",
+        "body": {
+          "app": {
+            "bundle": "639881495",
+            "name": "Imgur (iOS)",
+            "storeurl": "https://apps.apple.com/us/app/imgur-meme-gif-maker/id639881495",
+            "ver": "2020.4",
+            "publisher": {
+              "id": "cHJlYmlkLm9yZw"
+            }
+          },
+          "device": {
+            "connectiontype": 2,
+            "dnt": 0,
+            "h": 1024,
+            "ifa": "201461F8-0F14-4ADD-A87F-AAAAAAAAA",
+            "ip": "73.221.0.0",
+            "language": "en",
+            "os": "ios",
+            "ua": "Mozilla/5.0 (iPad; CPU OS 12_4_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+            "w": 768
+          },
+          "id": "WQ5V2DWVTMNXRSWL",
+          "imp": [
+            {
+              "banner": {
+                "api": [
+                  3,
+                  5
+                ],
+                "format": [
+                  {
+                    "h": 50,
+                    "w": 320
+                  }
+                ],
+                "h": 50,
+                "pos": 1,
+                "topframe": 1,
+                "w": 320
+              },
+              "bidfloor": 0.5,
+              "bidfloorcur": "USD",
+              "clickbrowser": 1,
+              "id": "1",
+              "instl": 1,
+              "secure": 1,
+              "tagid": "sample-ad-unit-id",
+              "ext": {
+                "bidder": {
+                  "tagId": "cHJlYmlkLm9yZw",
+                  "adUnitId": "sample-ad-unit-id"
+                }
+              }
+            }
+          ],
+          "regs": {
+            "ext": {
+              "gdpr": 0
+            }
+          },
+          "tmax": 300
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "WQ5V2DWVTMNXRSWL",
+          "seatbid": [{
+            "bid": [{
+              "id": "TEST",
+              "impid": "1",
+              "price": 10.0,
+              "adid": "1",
+              "adm": "<script src=\"https://assets.a-mo.net/tmode.v1.js\"></script>",
+              "adomain": ["amxrtb.com"],
+              "iurl": "https://assets.a-mo.net/300x250.v2.png",
+              "cid": "1",
+              "crid": "1",
+              "h": 300,
+              "w": 250
+            }]
+          }],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "TEST",
+            "impid": "1",
+            "price": 10.0,
+            "adid": "1",
+            "adm": "<script src=\"https://assets.a-mo.net/tmode.v1.js\"></script>",
+            "adomain": ["amxrtb.com"],
+            "iurl": "https://assets.a-mo.net/300x250.v2.png",
+            "cid": "1",
+            "crid": "1",
+            "h": 300,
+            "w": 250
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

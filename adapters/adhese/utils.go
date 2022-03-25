@@ -1,6 +1,6 @@
 package adhese
 
-import "github.com/mxmCherry/openrtb"
+import "github.com/mxmCherry/openrtb/v15/openrtb2"
 
 type AdheseOriginData struct {
 	Priority                  string `json:"priority"`
@@ -22,13 +22,13 @@ type AdheseExt struct {
 }
 
 type AdheseBid struct {
-	Origin         string              `json:"origin"`
-	OriginData     openrtb.BidResponse `json:"originData"`
-	OriginInstance string              `json:"originInstance,omitempty"`
-	Body           string              `json:"body,omitempty"`
-	Height         string              `json:"height"`
-	Width          string              `json:"width"`
-	Extension      Prebid              `json:"extension"`
+	Origin         string               `json:"origin"`
+	OriginData     openrtb2.BidResponse `json:"originData"`
+	OriginInstance string               `json:"originInstance,omitempty"`
+	Body           string               `json:"body,omitempty"`
+	Height         string               `json:"height"`
+	Width          string               `json:"width"`
+	Extension      Prebid               `json:"extension"`
 }
 
 type Prebid struct {

@@ -1,6 +1,6 @@
 {
-  "message": "Invalid request: request.imp[0].ext is required\n",
-  "requestPayload": {
+  "description": "Bid request's sole imp element has no ext field",
+  "mockBidRequest": {
     "id": "req-id",
     "imp": [
       {
@@ -8,12 +8,14 @@
         "video": {
           "mimes": [
             "video/mp4"
-          ]
+            ]
         }
       }
     ],
     "app": {
       "id": "app_001"
     }
-  }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: request.imp[0].ext is required\n"
 }

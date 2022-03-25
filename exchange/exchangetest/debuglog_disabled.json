@@ -175,9 +175,6 @@
     },
     "ext": {
       "debug": {
-        "httpcalls": {
-          "appnexus": null
-        },
         "resolvedrequest": {
           "id": "some-request-id",
           "imp": [

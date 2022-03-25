@@ -11,8 +11,8 @@ import (
 	"testing"
 
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/pbsmetrics"
-	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
+	"github.com/prebid/prebid-server/metrics"
+	metricsConf "github.com/prebid/prebid-server/metrics/config"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -25,7 +25,7 @@ func TestEmptyPut(t *testing.T) {
 	server := httptest.NewServer(handler)
 	defer server.Close()
 
-	metricsMock := &pbsmetrics.MetricsEngineMock{}
+	metricsMock := &metrics.MetricsEngineMock{}
 
 	client := &clientImpl{
 		httpClient: server.Client(),
@@ -47,7 +47,7 @@ func TestBadResponse(t *testing.T) {
 	server := httptest.NewServer(handler)
 	defer server.Close()
 
-	metricsMock := &pbsmetrics.MetricsEngineMock{}
+	metricsMock := &metrics.MetricsEngineMock{}
 	metricsMock.On("RecordPrebidCacheRequestTime", true, mock.Anything).Once()
 
 	client := &clientImpl{
@@ -115,7 +115,7 @@ func TestCancelledContext(t *testing.T) {
 
 	// Run Tests
 	for _, testCase := range testCases {
-		metricsMock := &pbsmetrics.MetricsEngineMock{}
+		metricsMock := &metrics.MetricsEngineMock{}
 		metricsMock.On("RecordPrebidCacheRequestTime", false, mock.Anything).Once()
 
 		client := &clientImpl{
@@ -142,7 +142,7 @@ func TestSuccessfulPut(t *testing.T) {
 	server := httptest.NewServer(newHandler(2))
 	defer server.Close()
 
-	metricsMock := &pbsmetrics.MetricsEngineMock{}
+	metricsMock := &metrics.MetricsEngineMock{}
 	metricsMock.On("RecordPrebidCacheRequestTime", true, mock.Anything).Once()
 
 	client := &clientImpl{
@@ -174,8 +174,11 @@ func TestEncodeValueToBuffer(t *testing.T) {
 		Type:       TypeJSON,
 		Data:       json.RawMessage(`{}`),
 		TTLSeconds: 300,
+		BidID:      "bid",
+		Bidder:     "bdr",
+		Timestamp:  123456789,
 	}
-	expected := string(`{"type":"json","ttlseconds":300,"value":{}}`)
+	expected := string(`{"type":"json","ttlseconds":300,"value":{},"bidid":"bid","bidder":"bdr","timestamp":123456789}`)
 	_ = encodeValueToBuffer(testCache, false, buf)
 	actual := buf.String()
 	assertStringEqual(t, expected, actual)
@@ -254,7 +257,7 @@ func TestStripCacheHostAndPath(t *testing.T) {
 		},
 	}
 	for _, test := range testInput {
-		cacheClient := NewClient(&http.Client{}, &inCacheURL, &test.inExtCacheURL, &metricsConf.DummyMetricsEngine{})
+		cacheClient := NewClient(&http.Client{}, &inCacheURL, &test.inExtCacheURL, &metricsConf.NilMetricsEngine{})
 		scheme, host, path := cacheClient.GetExtCacheData()
 
 		assert.Equal(t, test.expectedScheme, scheme)
@@ -277,10 +280,18 @@ func assertStringEqual(t *testing.T, expected, actual string) {
 	}
 }
 
+type handlerResponseObject struct {
+	UUID string `json:"uuid"`
+}
+
+type handlerResponse struct {
+	Responses []handlerResponseObject `json:"responses"`
+}
+
 func newHandler(numResponses int) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		resp := response{
-			Responses: make([]responseObject, numResponses),
+		resp := handlerResponse{
+			Responses: make([]handlerResponseObject, numResponses),
 		}
 		for i := 0; i < numResponses; i++ {
 			resp.Responses[i].UUID = strconv.Itoa(i)

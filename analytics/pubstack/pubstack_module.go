@@ -125,6 +125,9 @@ func (p *PubstackModule) LogAuctionObject(ao *analytics.AuctionObject) {
 	p.eventChannels[auction].Push(payload)
 }
 
+func (p *PubstackModule) LogNotificationEventObject(ne *analytics.NotificationEvent) {
+}
+
 func (p *PubstackModule) LogVideoObject(vo *analytics.VideoObject) {
 	p.muxConfig.RLock()
 	defer p.muxConfig.RUnlock()

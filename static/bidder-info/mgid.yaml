@@ -1,5 +1,6 @@
 maintainer:
   email: "prebid@mgid.com"
+gvlVendorID: 358
 capabilities:
   app:
     mediaTypes:
@@ -9,3 +10,7 @@ capabilities:
     mediaTypes:
       - banner
       - native
+userSync:
+  redirect:
+    url: "https://cm.mgid.com/m?cdsp=363893&adu={{.RedirectURL}}"
+    userMacro: "{muidn}"

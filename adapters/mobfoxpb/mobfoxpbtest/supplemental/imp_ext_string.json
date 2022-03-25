@@ -1,0 +1,37 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "imp": [
+            {
+                "id": "test-imp-id",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        },
+                        {
+                            "w": 300,
+                            "h": 600
+                        }
+                    ]
+                },
+                "ext": ""
+            }
+        ],
+        "app": {
+            "id": "1",
+            "bundle": "com.wls.testwlsapplication"
+        },
+        "device": {
+            "ip": "123.123.123.123",
+            "ifa": "zxcjbzxmc-zxcbmz-zxbcz-zxczx"
+        }
+    },
+    "expectedMakeRequestsErrors": [
+        {
+            "value": "Invalid or non existing key and tagId, atleast one should be present",
+            "comparison": "literal"
+        }
+    ]
+}

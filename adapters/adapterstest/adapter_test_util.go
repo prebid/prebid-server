@@ -8,13 +8,13 @@ import (
 
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 )
 
 // OrtbMockService Represents a scaffolded OpenRTB service.
 type OrtbMockService struct {
 	Server          *httptest.Server
-	LastBidRequest  *openrtb.BidRequest
+	LastBidRequest  *openrtb2.BidRequest
 	LastHttpRequest *http.Request
 }
 
@@ -30,8 +30,8 @@ func BidOnTags(tags string) map[string]bool {
 }
 
 // SampleBid Produces a sample bid based on params given.
-func SampleBid(width *uint64, height *uint64, impId string, index int) openrtb.Bid {
-	return openrtb.Bid{
+func SampleBid(width *int64, height *int64, impId string, index int) openrtb2.Bid {
+	return openrtb2.Bid{
 		ID:    "Bid-123",
 		ImpID: fmt.Sprintf("div-adunit-%d", index),
 		Price: 2.1,
@@ -64,7 +64,7 @@ func VerifyBoolValue(value bool, expected bool, t *testing.T) {
 }
 
 // VerifyBannerSize helper function to assert banner size
-func VerifyBannerSize(banner *openrtb.Banner, expectedWidth int, expectedHeight int, t *testing.T) {
+func VerifyBannerSize(banner *openrtb2.Banner, expectedWidth int, expectedHeight int, t *testing.T) {
 	VerifyIntValue(int(*(banner.W)), expectedWidth, t)
 	VerifyIntValue(int(*(banner.H)), expectedHeight, t)
 }

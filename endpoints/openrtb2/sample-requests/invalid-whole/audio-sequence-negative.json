@@ -1,0 +1,28 @@
+{
+    "description": "Request has a negative audio sequence.",
+
+    "mockBidRequest": {
+        "id": "some-request-id",
+        "site": {
+            "page": "test.somepage.com"
+        },
+        "imp": [{
+            "id": "some-imp-id",
+            "audio": {
+                "mimes": ["audio/mp4"],
+                "sequence": -1
+            },
+            "ext": {
+                "prebid": {
+                    "bidder": {
+                        "appnexus": {
+                            "placementId": 12345
+                        }
+                    }
+                }
+            }
+        }]
+    },
+    "expectedReturnCode": 400,
+    "expectedErrorMessage": "Invalid request: request.imp[0].audio.sequence must be a positive number"
+}

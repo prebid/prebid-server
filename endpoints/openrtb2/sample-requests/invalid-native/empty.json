@@ -1,0 +1,25 @@
+{
+  "description": "Bid request with an empty native.request field in its only imp element",
+  "mockBidRequest": {
+    "id": "req-id",
+    "site": {
+      "page": "some.page.com"
+    },
+    "tmax": 500,
+    "imp": [
+      {
+        "id": "some-imp",
+        "native": {
+          "request": ""
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          }
+        }
+      }
+    ]
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request"
+}

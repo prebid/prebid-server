@@ -20,9 +20,12 @@
                     "appnexus": {
                         "placementId": 1
                     },
+                    "data": {
+                        "keywords": "prebid server example"
+                    },
                     "context": {
                         "data": {
-                            "keywords": "prebid server example"
+                            "keywords": "another prebid server example"
                         }
                     }
                 }
@@ -52,9 +55,12 @@
                             "bidder": {
                                 "placementId": 1
                             },
+                            "data": {
+                                "keywords": "prebid server example"
+                            },
                             "context": {
                                 "data": {
-                                    "keywords": "prebid server example"
+                                    "keywords": "another prebid server example"
                                 }
                             }
                         }

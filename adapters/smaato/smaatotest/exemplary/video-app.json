@@ -1,0 +1,231 @@
+{
+    "mockBidRequest": {
+        "id": "447a0a1d-389d-4730-a418-3777e95de7bd",
+        "imp": [
+            {
+                "id": "postbid_iframe",
+                "video": {
+                    "mimes": [
+                        "video/mp4",
+                        "video/quicktime",
+                        "video/3gpp",
+                        "video/x-m4v"
+                    ],
+                    "minduration": 5,
+                    "maxduration": 30,
+                    "protocols": [
+                        7
+                    ],
+                    "w": 1024,
+                    "h": 768,
+                    "startdelay": 0,
+                    "linearity": 1,
+                    "skip": 1,
+                    "skipmin": 5,
+                    "api": [
+                        7
+                    ],
+                    "ext": {
+                        "rewarded": 0
+                    }
+                },
+                "ext": {
+                    "bidder": {
+                        "publisherId": "1100042525",
+                        "adspaceId": "130563103"
+                    }
+                }
+            }
+        ],
+        "app": {
+            "id": "app-id",
+            "name": "app-name",
+            "bundle": "app-bundle",
+            "storeurl": "app-storeurl",
+            "cat": [
+                "IAB3-1"
+            ],
+            "ver": "app-version",
+            "paid": 1,
+            "content": {
+                "id": "content-id",
+                "title": "content-title",
+                "series": "content-series",
+                "genre": "content-genre",
+                "producer": {
+                    "id": "producer-id",
+                    "name": "producer-name"
+                },
+                "cat": [
+                    "IAB8-6"
+                ],
+                "livestream": 1,
+                "language": "en"
+            },
+            "keywords": "keywords"
+        },
+        "device": {
+            "ua": "test-user-agent"
+        },
+        "user": {
+            "ext": {
+                "data": {}
+            }
+        },
+        "ext": {
+            "prebid": {
+                "auctiontimestamp": 1598262728811,
+                "targeting": {
+                    "includewinners": true,
+                    "includebidderkeys": false
+                }
+            }
+        }
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "headers": {
+                    "Content-Type": [
+                        "application/json;charset=utf-8"
+                    ],
+                    "Accept": [
+                        "application/json"
+                    ]
+                },
+                "uri": "https://prebid/bidder",
+                "body": {
+                    "id": "447a0a1d-389d-4730-a418-3777e95de7bd",
+                    "imp": [
+                        {
+                            "id": "postbid_iframe",
+                            "tagid": "130563103",
+                            "video": {
+                                "w": 1024,
+                                "h": 768,
+                                "ext": {
+                                    "rewarded": 0
+                                },
+                                "mimes": [
+                                    "video/mp4",
+                                    "video/quicktime",
+                                    "video/3gpp",
+                                    "video/x-m4v"
+                                ],
+                                "minduration": 5,
+                                "startdelay": 0,
+                                "linearity": 1,
+                                "maxduration": 30,
+                                "skip": 1,
+                                "protocols": [
+                                    7
+                                ],
+                                "skipmin": 5,
+                                "api": [
+                                    7
+                                ]
+                            }
+                        }
+                    ],
+                    "user": {
+                        "ext": {
+                        }
+                    },
+                    "device": {
+                        "ua": "test-user-agent"
+                    },
+                    "app": {
+                        "publisher": {
+                            "id": "1100042525"
+                        },
+                        "id": "app-id",
+                        "name": "app-name",
+                        "bundle": "app-bundle",
+                        "storeurl": "app-storeurl",
+                        "cat": [
+                            "IAB3-1"
+                        ],
+                        "ver": "app-version",
+                        "paid": 1,
+                        "content": {
+                            "id": "content-id",
+                            "title": "content-title",
+                            "series": "content-series",
+                            "genre": "content-genre",
+                            "producer": {
+                                "id": "producer-id",
+                                "name": "producer-name"
+                            },
+                            "cat": [
+                                "IAB8-6"
+                            ],
+                            "livestream": 1,
+                            "language": "en"
+                        },
+                        "keywords": "keywords"
+                    },
+                    "ext": {
+                        "client": "prebid_server_0.4"
+                    }
+                }
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "5ebea288-f13a-4754-be6d-4ade66c68877",
+                    "seatbid": [
+                        {
+                            "seat": "CM6523",
+                            "bid": [
+                                {
+                                    "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?><VAST version=\"2.0\"></VAST>",
+                                    "adomain": [
+                                        "smaato.com"
+                                    ],
+                                    "bidderName": "smaato",
+                                    "cid": "CM6523",
+                                    "crid": "CR69381",
+                                    "id": "6906aae8-7f74-4edd-9a4f-f49379a3cadd",
+                                    "impid": "1C86242D-9535-47D6-9576-7B1FE87F282C",
+                                    "iurl": "https://iurl",
+                                    "nurl": "https://nurl",
+                                    "price": 0.01,
+                                    "w": 1024,
+                                    "h": 768
+                                }
+                            ]
+                        }
+                    ],
+                    "bidid": "04db8629-179d-4bcd-acce-e54722969006",
+                    "cur": "USD"
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "currency": "USD",
+            "bids": [
+                {
+                    "bid": {
+                        "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?><VAST version=\"2.0\"></VAST>",
+                        "adomain": [
+                            "smaato.com"
+                        ],
+                        "cid": "CM6523",
+                        "crid": "CR69381",
+                        "id": "6906aae8-7f74-4edd-9a4f-f49379a3cadd",
+                        "impid": "1C86242D-9535-47D6-9576-7B1FE87F282C",
+                        "iurl": "https://iurl",
+                        "nurl": "https://nurl",
+                        "price": 0.01,
+                        "w": 1024,
+                        "h": 768,
+                        "exp": 300
+                    },
+                    "type": "video"
+                }
+            ]
+        }
+    ]
+}

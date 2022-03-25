@@ -1,0 +1,32 @@
+{
+  "mockBidRequest": {
+    "id": "testauction",
+    "imp": [
+      {
+        "id": "1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+        }
+      }
+    ],
+    "device": {
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.91 Safari/537.36",
+      "ip": "192.168.1.1",
+      "dnt": 1
+    },
+    "site": {
+      "domain": "www.mypage.com"
+    }
+  },
+  "expectedMakeRequestsErrors": [{
+    "value": "Impression[0] missing ext.bidder object",
+    "comparison": "literal"
+  }]
+}

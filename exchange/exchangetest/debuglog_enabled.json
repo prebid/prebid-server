@@ -1,6 +1,8 @@
 {
   "debugLog": {
     "Enabled": true,
+    "DebugEnabledOrOverridden": true,
+    "DebugOverride": false,
     "CacheType": "xml",
     "TTL": 3600,
     "Data": {
@@ -175,9 +177,6 @@
     },
     "ext": {
       "debug": {
-        "httpcalls": {
-          "appnexus": null
-        },
         "resolvedrequest": {
           "id": "some-request-id",
           "imp": [

@@ -1,0 +1,26 @@
+{
+    "mockBidRequest": {
+      "id": "test-request-id",
+      "imp": [
+        {
+          "id": "test-banner-imp-id",
+          "ext": {
+            "bidder": {
+              "tagId": "16"
+            }
+          }
+        }
+      ],
+      "site": {
+        "domain": "deepintent.com",
+        "page": "http://deepintent.com/"
+      }
+    },
+    "expectedMakeRequestsErrors": [
+      {
+        "value": "We need a Banner Object in the request",
+        "comparison": "literal"
+      }
+    ]
+  }
+  

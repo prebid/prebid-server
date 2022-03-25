@@ -24,7 +24,7 @@
     },
     "expectedMakeRequestsErrors": [
         {
-            "value": "imp[0].ext.bidder.rubicon.video.size_id must be defined for video impression",
+            "value": "video.size_id can not be resolved in impression with id : test-imp-1",
             "comparison": "literal"
         }
     ]

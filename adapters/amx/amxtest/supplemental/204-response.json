@@ -1,0 +1,109 @@
+{
+  "mockBidRequest": {
+    "device": {
+      "dnt": 0,
+      "h": 1120,
+      "ip": "98.249.0.0",
+      "language": "en",
+      "os": "macos",
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.102 Safari/537.36",
+      "w": 1792
+    },
+    "id": "TL3JS6F43CKNDQFY",
+    "imp": [
+      {
+        "video": {
+          "api": [1,2],
+          "h": 300,
+          "pos": 1,
+          "w": 640
+        },
+        "id": "1",
+        "secure": 1
+      }
+    ],
+    "site": {
+      "ext": {
+        "amp": 0
+      }
+    },
+    "source": {
+      "ext": {
+        "schain": {
+          "complete": 1,
+          "nodes": [
+            {
+              "asi": "amxrtb.com",
+              "hp": 1,
+              "sid": "1234"
+            }
+          ],
+          "ver": "1.0"
+        }
+      }
+    },
+    "test": 0,
+    "tmax": 300
+  },
+  "httpCalls": [{
+    "expectedRequest": {
+      "uri": "http://pbs-dev.amxrtb.com/auction/openrtb?v=pbs1.1",
+      "body": {
+        "device": {
+          "dnt": 0,
+          "h": 1120,
+          "ip": "98.249.0.0",
+          "language": "en",
+          "os": "macos",
+          "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.102 Safari/537.36",
+          "w": 1792
+        },
+        "id": "TL3JS6F43CKNDQFY",
+        "imp": [
+          {
+            "video": {
+              "api": [1,2],
+              "mimes": null,
+              "h": 300,
+              "pos": 1,
+              "w": 640
+            },
+            "id": "1",
+            "secure": 1
+          }
+        ],
+        "site": {
+          "ext": {
+            "amp": 0
+          }
+        },
+        "source": {
+          "ext": {
+            "schain": {
+              "complete": 1,
+              "nodes": [
+                {
+                  "asi": "amxrtb.com",
+                  "hp": 1,
+                  "sid": "1234"
+                }
+              ],
+              "ver": "1.0"
+            }
+          }
+        },
+        "tmax": 300
+      }
+    },
+    "mockResponse": {
+      "status": 204,
+      "headers": {
+        "X-Nbr": [
+          "3b"
+        ]
+      },
+      "body": {}
+    }
+  }],
+  "expectedMakeBidsErrors": []
+}

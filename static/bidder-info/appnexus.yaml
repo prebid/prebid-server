@@ -1,5 +1,6 @@
 maintainer:
   email: "prebid-server@xandr.com"
+gvlVendorID: 32
 capabilities:
   app:
     mediaTypes:
@@ -11,3 +12,8 @@ capabilities:
       - banner
       - video
       - native
+userSync:
+  key: "adnxs"
+  redirect:
+    url: "https://ib.adnxs.com/getuid?{{.RedirectURL}}"
+    userMacro: "$UID"

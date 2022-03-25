@@ -3,32 +3,29 @@ package ucfunnel
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 	"net/url"
+
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 type UcfunnelAdapter struct {
 	URI string
 }
 
-func NewUcfunnelBidder(endpoint string) *UcfunnelAdapter {
-	return &UcfunnelAdapter{
-		URI: endpoint}
+// Builder builds a new instance of the Ucfunnel adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &UcfunnelAdapter{
+		URI: config.Endpoint,
+	}
+	return bidder, nil
 }
 
-func (a *UcfunnelAdapter) Name() string {
-	return "ucfunnel"
-}
-
-func (a *UcfunnelAdapter) SkipNoCookies() bool {
-	return false
-}
-
-func (a *UcfunnelAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *UcfunnelAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -46,12 +43,12 @@ func (a *UcfunnelAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 	}
 
 	var errs []error
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
-	var bidReq openrtb.BidRequest
+	var bidReq openrtb2.BidRequest
 	if err := json.Unmarshal(externalRequest.Body, &bidReq); err != nil {
 		return nil, []error{err}
 	}
@@ -72,7 +69,7 @@ func (a *UcfunnelAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 	return bidResponse, errs
 }
 
-func (a *UcfunnelAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *UcfunnelAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 
 	// If all the requests were malformed, don't bother making a server call with no impressions.
@@ -104,7 +101,7 @@ func (a *UcfunnelAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 	}}, errs
 }
 
-func getPartnerId(request *openrtb.BidRequest) (string, []error) {
+func getPartnerId(request *openrtb2.BidRequest) (string, []error) {
 	var ext ExtBidderUcfunnel
 	var errs = []error{}
 	err := json.Unmarshal(request.Imp[0].Ext, &ext)
@@ -128,7 +125,7 @@ func checkBidderParameter(ext ExtBidderUcfunnel) []error {
 	return nil
 }
 
-func getBidType(bidReq openrtb.BidRequest, impid string) openrtb_ext.BidType {
+func getBidType(bidReq openrtb2.BidRequest, impid string) openrtb_ext.BidType {
 	for i := range bidReq.Imp {
 		if bidReq.Imp[i].ID == impid {
 			if bidReq.Imp[i].Banner != nil {

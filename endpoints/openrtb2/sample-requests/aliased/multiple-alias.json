@@ -1,0 +1,94 @@
+{
+  "description": "Imp extension comes with a valid bidder name and valid bidder aliases as defined in the config.aliases list. Given that 'alias1' refers to the 'appnexus' bidder, we only bid appnexus once.",
+  "config": {
+      "aliases": "{\"ext\":{\"prebid\":{\"aliases\":{\"alias1\":\"appnexus\",\"alias2\":\"rubicon\"}}}}"
+  },
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "test.somepage.com"
+    },
+    "imp": [
+      {
+        "id": "my-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "pmp": {
+          "deals": [
+            {
+              "id": "some-deal-id"
+            }
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          },
+          "alias1": {
+            "placementId": 12883451
+          },
+          "alias2": {
+            "accountId": 1001,
+            "siteId": 113932,
+            "zoneId": 535510
+          }          
+        }
+      }
+    ],
+    "ext": {
+      "prebid": {
+        "targeting": {
+          "pricegranularity": "low"
+        },
+        "cache": {
+          "bids": {}
+        }
+      }
+    }
+  },
+  "expectedBidResponse": {
+    "id": "some-request-id",
+    "seatbid": [
+      {
+        "bid": [
+          {
+            "id": "alias1-bid",
+            "impid": "",
+            "price": 0
+          }
+        ],
+        "seat": "alias1-bids"
+      },
+      {
+        "bid": [
+          {
+            "id": "alias2-bid",
+            "impid": "",
+            "price": 0
+          }
+        ],
+        "seat": "alias2-bids"
+      },
+      {
+        "bid": [
+          {
+            "id": "appnexus-bid",
+            "impid": "",
+            "price": 0
+          }
+        ],
+        "seat": "appnexus-bids"
+      }
+    ],
+    "bidid": "test bid id",
+    "cur": "USD",
+    "nbr": 0
+  },
+  "expectedReturnCode": 200
+}

@@ -28,6 +28,7 @@
                         "value": ["Zone1", "Zone2"]
                       }
                     ],
+                    "kadfloor": "0.12",
                     "wrapper": {
                         "version": 1,
                         "profile": 5123
@@ -72,8 +73,9 @@
                     "minbitrate": 10,
                     "maxbitrate": 10
                 },
+                "bidfloor": 0.12,
                 "ext": {
-                    "pmZoneID": "Zone1,Zone2"
+                    "pmZoneId": "Zone1,Zone2"
                 }
               }
             ], 

@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestScrubDevice(t *testing.T) {
-	device := &openrtb.Device{
+	device := &openrtb2.Device{
 		DIDMD5:   "anyDIDMD5",
 		DIDSHA1:  "anyDIDSHA1",
 		DPIDMD5:  "anyDPIDMD5",
@@ -19,7 +19,7 @@ func TestScrubDevice(t *testing.T) {
 		IFA:      "anyIFA",
 		IP:       "1.2.3.4",
 		IPv6:     "2001:0db8:0000:0000:0000:ff00:0042:8329",
-		Geo: &openrtb.Geo{
+		Geo: &openrtb2.Geo{
 			Lat:   123.456,
 			Lon:   678.89,
 			Metro: "some metro",
@@ -30,13 +30,23 @@ func TestScrubDevice(t *testing.T) {
 
 	testCases := []struct {
 		description string
-		expected    *openrtb.Device
+		expected    *openrtb2.Device
+		id          ScrubStrategyDeviceID
+		ipv4        ScrubStrategyIPV4
 		ipv6        ScrubStrategyIPV6
 		geo         ScrubStrategyGeo
 	}{
 		{
-			description: "IPv6 Lowest 32 & Geo Full",
-			expected: &openrtb.Device{
+			description: "All Strategies - None",
+			expected:    device,
+			id:          ScrubStrategyDeviceIDNone,
+			ipv4:        ScrubStrategyIPV4None,
+			ipv6:        ScrubStrategyIPV6None,
+			geo:         ScrubStrategyGeoNone,
+		},
+		{
+			description: "All Strategies - Strictest",
+			expected: &openrtb2.Device{
 				DIDMD5:   "",
 				DIDSHA1:  "",
 				DPIDMD5:  "",
@@ -46,14 +56,16 @@ func TestScrubDevice(t *testing.T) {
 				IFA:      "",
 				IP:       "1.2.3.0",
 				IPv6:     "2001:0db8:0000:0000:0000:ff00:0:0",
-				Geo:      &openrtb.Geo{},
+				Geo:      &openrtb2.Geo{},
 			},
+			id:   ScrubStrategyDeviceIDAll,
+			ipv4: ScrubStrategyIPV4Lowest8,
 			ipv6: ScrubStrategyIPV6Lowest32,
 			geo:  ScrubStrategyGeoFull,
 		},
 		{
-			description: "IPv6 Lowest 16 & Geo Full",
-			expected: &openrtb.Device{
+			description: "Isolated - ID - All",
+			expected: &openrtb2.Device{
 				DIDMD5:   "",
 				DIDSHA1:  "",
 				DPIDMD5:  "",
@@ -61,189 +73,137 @@ func TestScrubDevice(t *testing.T) {
 				MACSHA1:  "",
 				MACMD5:   "",
 				IFA:      "",
-				IP:       "1.2.3.0",
-				IPv6:     "2001:0db8:0000:0000:0000:ff00:0042:0",
-				Geo:      &openrtb.Geo{},
+				IP:       "1.2.3.4",
+				IPv6:     "2001:0db8:0000:0000:0000:ff00:0042:8329",
+				Geo:      device.Geo,
 			},
-			ipv6: ScrubStrategyIPV6Lowest16,
-			geo:  ScrubStrategyGeoFull,
+			id:   ScrubStrategyDeviceIDAll,
+			ipv4: ScrubStrategyIPV4None,
+			ipv6: ScrubStrategyIPV6None,
+			geo:  ScrubStrategyGeoNone,
 		},
 		{
-			description: "IPv6 None & Geo Full",
-			expected: &openrtb.Device{
-				DIDMD5:   "",
-				DIDSHA1:  "",
-				DPIDMD5:  "",
-				DPIDSHA1: "",
-				MACSHA1:  "",
-				MACMD5:   "",
-				IFA:      "",
+			description: "Isolated - IPv4 - Lowest 8",
+			expected: &openrtb2.Device{
+				DIDMD5:   "anyDIDMD5",
+				DIDSHA1:  "anyDIDSHA1",
+				DPIDMD5:  "anyDPIDMD5",
+				DPIDSHA1: "anyDPIDSHA1",
+				MACSHA1:  "anyMACSHA1",
+				MACMD5:   "anyMACMD5",
+				IFA:      "anyIFA",
 				IP:       "1.2.3.0",
 				IPv6:     "2001:0db8:0000:0000:0000:ff00:0042:8329",
-				Geo:      &openrtb.Geo{},
+				Geo:      device.Geo,
 			},
+			id:   ScrubStrategyDeviceIDNone,
+			ipv4: ScrubStrategyIPV4Lowest8,
 			ipv6: ScrubStrategyIPV6None,
-			geo:  ScrubStrategyGeoFull,
+			geo:  ScrubStrategyGeoNone,
 		},
 		{
-			description: "IPv6 Lowest 32 & Geo Reduced",
-			expected: &openrtb.Device{
-				DIDMD5:   "",
-				DIDSHA1:  "",
-				DPIDMD5:  "",
-				DPIDSHA1: "",
-				MACSHA1:  "",
-				MACMD5:   "",
-				IFA:      "",
-				IP:       "1.2.3.0",
+			description: "Isolated - IPv6 - Lowest 16",
+			expected: &openrtb2.Device{
+				DIDMD5:   "anyDIDMD5",
+				DIDSHA1:  "anyDIDSHA1",
+				DPIDMD5:  "anyDPIDMD5",
+				DPIDSHA1: "anyDPIDSHA1",
+				MACSHA1:  "anyMACSHA1",
+				MACMD5:   "anyMACMD5",
+				IFA:      "anyIFA",
+				IP:       "1.2.3.4",
+				IPv6:     "2001:0db8:0000:0000:0000:ff00:0042:0",
+				Geo:      device.Geo,
+			},
+			id:   ScrubStrategyDeviceIDNone,
+			ipv4: ScrubStrategyIPV4None,
+			ipv6: ScrubStrategyIPV6Lowest16,
+			geo:  ScrubStrategyGeoNone,
+		},
+		{
+			description: "Isolated - IPv6 - Lowest 32",
+			expected: &openrtb2.Device{
+				DIDMD5:   "anyDIDMD5",
+				DIDSHA1:  "anyDIDSHA1",
+				DPIDMD5:  "anyDPIDMD5",
+				DPIDSHA1: "anyDPIDSHA1",
+				MACSHA1:  "anyMACSHA1",
+				MACMD5:   "anyMACMD5",
+				IFA:      "anyIFA",
+				IP:       "1.2.3.4",
 				IPv6:     "2001:0db8:0000:0000:0000:ff00:0:0",
-				Geo: &openrtb.Geo{
-					Lat:   123.46,
-					Lon:   678.89,
-					Metro: "some metro",
-					City:  "some city",
-					ZIP:   "some zip",
-				},
+				Geo:      device.Geo,
 			},
-			ipv6: ScrubStrategyIPV6Lowest32,
-			geo:  ScrubStrategyGeoReducedPrecision,
-		},
-		{
-			description: "IPv6 Lowest 16 & Geo Reduced",
-			expected: &openrtb.Device{
-				DIDMD5:   "",
-				DIDSHA1:  "",
-				DPIDMD5:  "",
-				DPIDSHA1: "",
-				MACSHA1:  "",
-				MACMD5:   "",
-				IFA:      "",
-				IP:       "1.2.3.0",
-				IPv6:     "2001:0db8:0000:0000:0000:ff00:0042:0",
-				Geo: &openrtb.Geo{
-					Lat:   123.46,
-					Lon:   678.89,
-					Metro: "some metro",
-					City:  "some city",
-					ZIP:   "some zip",
-				},
-			},
-			ipv6: ScrubStrategyIPV6Lowest16,
-			geo:  ScrubStrategyGeoReducedPrecision,
-		},
-		{
-			description: "IPv6 None & Geo Reduced",
-			expected: &openrtb.Device{
-				DIDMD5:   "",
-				DIDSHA1:  "",
-				DPIDMD5:  "",
-				DPIDSHA1: "",
-				MACSHA1:  "",
-				MACMD5:   "",
-				IFA:      "",
-				IP:       "1.2.3.0",
-				IPv6:     "2001:0db8:0000:0000:0000:ff00:0042:8329",
-				Geo: &openrtb.Geo{
-					Lat:   123.46,
-					Lon:   678.89,
-					Metro: "some metro",
-					City:  "some city",
-					ZIP:   "some zip",
-				},
-			},
-			ipv6: ScrubStrategyIPV6None,
-			geo:  ScrubStrategyGeoReducedPrecision,
-		},
-		{
-			description: "IPv6 Lowest 32 & Geo None",
-			expected: &openrtb.Device{
-				DIDMD5:   "",
-				DIDSHA1:  "",
-				DPIDMD5:  "",
-				DPIDSHA1: "",
-				MACSHA1:  "",
-				MACMD5:   "",
-				IFA:      "",
-				IP:       "1.2.3.0",
-				IPv6:     "2001:0db8:0000:0000:0000:ff00:0:0",
-				Geo: &openrtb.Geo{
-					Lat:   123.456,
-					Lon:   678.89,
-					Metro: "some metro",
-					City:  "some city",
-					ZIP:   "some zip",
-				},
-			},
+			id:   ScrubStrategyDeviceIDNone,
+			ipv4: ScrubStrategyIPV4None,
 			ipv6: ScrubStrategyIPV6Lowest32,
 			geo:  ScrubStrategyGeoNone,
 		},
 		{
-			description: "IPv6 Lowest 16 & Geo None",
-			expected: &openrtb.Device{
-				DIDMD5:   "",
-				DIDSHA1:  "",
-				DPIDMD5:  "",
-				DPIDSHA1: "",
-				MACSHA1:  "",
-				MACMD5:   "",
-				IFA:      "",
-				IP:       "1.2.3.0",
-				IPv6:     "2001:0db8:0000:0000:0000:ff00:0042:0",
-				Geo: &openrtb.Geo{
-					Lat:   123.456,
+			description: "Isolated - Geo - Reduced Precision",
+			expected: &openrtb2.Device{
+				DIDMD5:   "anyDIDMD5",
+				DIDSHA1:  "anyDIDSHA1",
+				DPIDMD5:  "anyDPIDMD5",
+				DPIDSHA1: "anyDPIDSHA1",
+				MACSHA1:  "anyMACSHA1",
+				MACMD5:   "anyMACMD5",
+				IFA:      "anyIFA",
+				IP:       "1.2.3.4",
+				IPv6:     "2001:0db8:0000:0000:0000:ff00:0042:8329",
+				Geo: &openrtb2.Geo{
+					Lat:   123.46,
 					Lon:   678.89,
 					Metro: "some metro",
 					City:  "some city",
 					ZIP:   "some zip",
 				},
 			},
-			ipv6: ScrubStrategyIPV6Lowest16,
-			geo:  ScrubStrategyGeoNone,
+			id:   ScrubStrategyDeviceIDNone,
+			ipv4: ScrubStrategyIPV4None,
+			ipv6: ScrubStrategyIPV6None,
+			geo:  ScrubStrategyGeoReducedPrecision,
 		},
 		{
-			description: "IPv6 None & Geo None",
-			expected: &openrtb.Device{
-				DIDMD5:   "",
-				DIDSHA1:  "",
-				DPIDMD5:  "",
-				DPIDSHA1: "",
-				MACSHA1:  "",
-				MACMD5:   "",
-				IFA:      "",
-				IP:       "1.2.3.0",
+			description: "Isolated - Geo - Full",
+			expected: &openrtb2.Device{
+				DIDMD5:   "anyDIDMD5",
+				DIDSHA1:  "anyDIDSHA1",
+				DPIDMD5:  "anyDPIDMD5",
+				DPIDSHA1: "anyDPIDSHA1",
+				MACSHA1:  "anyMACSHA1",
+				MACMD5:   "anyMACMD5",
+				IFA:      "anyIFA",
+				IP:       "1.2.3.4",
 				IPv6:     "2001:0db8:0000:0000:0000:ff00:0042:8329",
-				Geo: &openrtb.Geo{
-					Lat:   123.456,
-					Lon:   678.89,
-					Metro: "some metro",
-					City:  "some city",
-					ZIP:   "some zip",
-				},
+				Geo:      &openrtb2.Geo{},
 			},
+			id:   ScrubStrategyDeviceIDNone,
+			ipv4: ScrubStrategyIPV4None,
 			ipv6: ScrubStrategyIPV6None,
-			geo:  ScrubStrategyGeoNone,
+			geo:  ScrubStrategyGeoFull,
 		},
 	}
 
 	for _, test := range testCases {
-		result := NewScrubber().ScrubDevice(device, test.ipv6, test.geo)
+		result := NewScrubber().ScrubDevice(device, test.id, test.ipv4, test.ipv6, test.geo)
 		assert.Equal(t, test.expected, result, test.description)
 	}
 }
 
 func TestScrubDeviceNil(t *testing.T) {
-	result := NewScrubber().ScrubDevice(nil, ScrubStrategyIPV6None, ScrubStrategyGeoNone)
+	result := NewScrubber().ScrubDevice(nil, ScrubStrategyDeviceIDNone, ScrubStrategyIPV4None, ScrubStrategyIPV6None, ScrubStrategyGeoNone)
 	assert.Nil(t, result)
 }
 
 func TestScrubUser(t *testing.T) {
-	user := &openrtb.User{
+	user := &openrtb2.User{
 		ID:       "anyID",
 		BuyerUID: "anyBuyerUID",
 		Yob:      42,
 		Gender:   "anyGender",
-		Ext:      json.RawMessage(`{"digitrust":{"id":"anyId","keyv":4,"pref":8}}`),
-		Geo: &openrtb.Geo{
+		Ext:      json.RawMessage(`{}`),
+		Geo: &openrtb2.Geo{
 			Lat:   123.456,
 			Lon:   678.89,
 			Metro: "some metro",
@@ -254,32 +214,32 @@ func TestScrubUser(t *testing.T) {
 
 	testCases := []struct {
 		description string
-		expected    *openrtb.User
+		expected    *openrtb2.User
 		scrubUser   ScrubStrategyUser
 		scrubGeo    ScrubStrategyGeo
 	}{
 		{
 			description: "User ID And Demographic & Geo Full",
-			expected: &openrtb.User{
+			expected: &openrtb2.User{
 				ID:       "",
 				BuyerUID: "",
 				Yob:      0,
 				Gender:   "",
 				Ext:      json.RawMessage(`{}`),
-				Geo:      &openrtb.Geo{},
+				Geo:      &openrtb2.Geo{},
 			},
 			scrubUser: ScrubStrategyUserIDAndDemographic,
 			scrubGeo:  ScrubStrategyGeoFull,
 		},
 		{
 			description: "User ID And Demographic & Geo Reduced",
-			expected: &openrtb.User{
+			expected: &openrtb2.User{
 				ID:       "",
 				BuyerUID: "",
 				Yob:      0,
 				Gender:   "",
 				Ext:      json.RawMessage(`{}`),
-				Geo: &openrtb.Geo{
+				Geo: &openrtb2.Geo{
 					Lat:   123.46,
 					Lon:   678.89,
 					Metro: "some metro",
@@ -292,13 +252,13 @@ func TestScrubUser(t *testing.T) {
 		},
 		{
 			description: "User ID And Demographic & Geo None",
-			expected: &openrtb.User{
+			expected: &openrtb2.User{
 				ID:       "",
 				BuyerUID: "",
 				Yob:      0,
 				Gender:   "",
 				Ext:      json.RawMessage(`{}`),
-				Geo: &openrtb.Geo{
+				Geo: &openrtb2.Geo{
 					Lat:   123.456,
 					Lon:   678.89,
 					Metro: "some metro",
@@ -311,26 +271,26 @@ func TestScrubUser(t *testing.T) {
 		},
 		{
 			description: "User ID & Geo Full",
-			expected: &openrtb.User{
+			expected: &openrtb2.User{
 				ID:       "",
 				BuyerUID: "",
 				Yob:      42,
 				Gender:   "anyGender",
 				Ext:      json.RawMessage(`{}`),
-				Geo:      &openrtb.Geo{},
+				Geo:      &openrtb2.Geo{},
 			},
 			scrubUser: ScrubStrategyUserID,
 			scrubGeo:  ScrubStrategyGeoFull,
 		},
 		{
 			description: "User ID & Geo Reduced",
-			expected: &openrtb.User{
+			expected: &openrtb2.User{
 				ID:       "",
 				BuyerUID: "",
 				Yob:      42,
 				Gender:   "anyGender",
 				Ext:      json.RawMessage(`{}`),
-				Geo: &openrtb.Geo{
+				Geo: &openrtb2.Geo{
 					Lat:   123.46,
 					Lon:   678.89,
 					Metro: "some metro",
@@ -343,13 +303,13 @@ func TestScrubUser(t *testing.T) {
 		},
 		{
 			description: "User ID & Geo None",
-			expected: &openrtb.User{
+			expected: &openrtb2.User{
 				ID:       "",
 				BuyerUID: "",
 				Yob:      42,
 				Gender:   "anyGender",
 				Ext:      json.RawMessage(`{}`),
-				Geo: &openrtb.Geo{
+				Geo: &openrtb2.Geo{
 					Lat:   123.456,
 					Lon:   678.89,
 					Metro: "some metro",
@@ -362,26 +322,26 @@ func TestScrubUser(t *testing.T) {
 		},
 		{
 			description: "User None & Geo Full",
-			expected: &openrtb.User{
+			expected: &openrtb2.User{
 				ID:       "anyID",
 				BuyerUID: "anyBuyerUID",
 				Yob:      42,
 				Gender:   "anyGender",
-				Ext:      json.RawMessage(`{"digitrust":{"id":"anyId","keyv":4,"pref":8}}`),
-				Geo:      &openrtb.Geo{},
+				Ext:      json.RawMessage(`{}`),
+				Geo:      &openrtb2.Geo{},
 			},
 			scrubUser: ScrubStrategyUserNone,
 			scrubGeo:  ScrubStrategyGeoFull,
 		},
 		{
 			description: "User None & Geo Reduced",
-			expected: &openrtb.User{
+			expected: &openrtb2.User{
 				ID:       "anyID",
 				BuyerUID: "anyBuyerUID",
 				Yob:      42,
 				Gender:   "anyGender",
-				Ext:      json.RawMessage(`{"digitrust":{"id":"anyId","keyv":4,"pref":8}}`),
-				Geo: &openrtb.Geo{
+				Ext:      json.RawMessage(`{}`),
+				Geo: &openrtb2.Geo{
 					Lat:   123.46,
 					Lon:   678.89,
 					Metro: "some metro",
@@ -394,13 +354,13 @@ func TestScrubUser(t *testing.T) {
 		},
 		{
 			description: "User None & Geo None",
-			expected: &openrtb.User{
+			expected: &openrtb2.User{
 				ID:       "anyID",
 				BuyerUID: "anyBuyerUID",
 				Yob:      42,
 				Gender:   "anyGender",
-				Ext:      json.RawMessage(`{"digitrust":{"id":"anyId","keyv":4,"pref":8}}`),
-				Geo: &openrtb.Geo{
+				Ext:      json.RawMessage(`{}`),
+				Geo: &openrtb2.Geo{
 					Lat:   123.456,
 					Lon:   678.89,
 					Metro: "some metro",
@@ -458,7 +418,7 @@ func TestScrubIPV4(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		result := scrubIPV4(test.IP)
+		result := scrubIPV4Lowest8(test.IP)
 		assert.Equal(t, test.cleanedIP, result, test.description)
 	}
 }
@@ -543,14 +503,14 @@ func TestScrubIPV6Lowest32Bits(t *testing.T) {
 }
 
 func TestScrubGeoFull(t *testing.T) {
-	geo := &openrtb.Geo{
+	geo := &openrtb2.Geo{
 		Lat:   123.456,
 		Lon:   678.89,
 		Metro: "some metro",
 		City:  "some city",
 		ZIP:   "some zip",
 	}
-	geoExpected := &openrtb.Geo{
+	geoExpected := &openrtb2.Geo{
 		Lat:   0,
 		Lon:   0,
 		Metro: "",
@@ -569,14 +529,14 @@ func TestScrubGeoFullWhenNil(t *testing.T) {
 }
 
 func TestScrubGeoPrecision(t *testing.T) {
-	geo := &openrtb.Geo{
+	geo := &openrtb2.Geo{
 		Lat:   123.456,
 		Lon:   678.89,
 		Metro: "some metro",
 		City:  "some city",
 		ZIP:   "some zip",
 	}
-	geoExpected := &openrtb.Geo{
+	geoExpected := &openrtb2.Geo{
 		Lat:   123.46,
 		Lon:   678.89,
 		Metro: "some metro",
@@ -626,18 +586,18 @@ func TestScrubUserExtIDs(t *testing.T) {
 			expected:    json.RawMessage(`{"anyExisting":42}}`),
 		},
 		{
-			description: "Remove eids + digitrust",
-			userExt:     json.RawMessage(`{"eids":[{"source":"anySource","id":"anyId","uids":[{"id":"anyId","ext":{"id":42}}],"ext":{"id":42}}],"digitrust":{"id":"anyId","keyv":4,"pref":8}}`),
+			description: "Remove eids",
+			userExt:     json.RawMessage(`{"eids":[{"source":"anySource","id":"anyId","uids":[{"id":"anyId","ext":{"id":42}}],"ext":{"id":42}}]}`),
 			expected:    json.RawMessage(`{}`),
 		},
 		{
-			description: "Remove eids + digitrust - With Other Data",
-			userExt:     json.RawMessage(`{"anyExisting":42,"eids":[{"source":"anySource","id":"anyId","uids":[{"id":"anyId","ext":{"id":42}}],"ext":{"id":42}}],"digitrust":{"id":"anyId","keyv":4,"pref":8}}`),
+			description: "Remove eids - With Other Data",
+			userExt:     json.RawMessage(`{"anyExisting":42,"eids":[{"source":"anySource","id":"anyId","uids":[{"id":"anyId","ext":{"id":42}}],"ext":{"id":42}}]}`),
 			expected:    json.RawMessage(`{"anyExisting":42}`),
 		},
 		{
-			description: "Remove eids + digitrust - With Other Nested Data",
-			userExt:     json.RawMessage(`{"anyExisting":{"existing":42},"eids":[{"source":"anySource","id":"anyId","uids":[{"id":"anyId","ext":{"id":42}}],"ext":{"id":42}}],"digitrust":{"id":"anyId","keyv":4,"pref":8}}`),
+			description: "Remove eids - With Other Nested Data",
+			userExt:     json.RawMessage(`{"anyExisting":{"existing":42},"eids":[{"source":"anySource","id":"anyId","uids":[{"id":"anyId","ext":{"id":42}}],"ext":{"id":42}}]}`),
 			expected:    json.RawMessage(`{"anyExisting":{"existing":42}}`),
 		},
 		{
@@ -658,21 +618,6 @@ func TestScrubUserExtIDs(t *testing.T) {
 		{
 			description: "Remove eids Only - With Other Nested Data",
 			userExt:     json.RawMessage(`{"anyExisting":{"existing":42},"eids":[{"source":"anySource","id":"anyId","uids":[{"id":"anyId","ext":{"id":42}}],"ext":{"id":42}}]}`),
-			expected:    json.RawMessage(`{"anyExisting":{"existing":42}}`),
-		},
-		{
-			description: "Remove digitrust Only",
-			userExt:     json.RawMessage(`{"digitrust":{"id":"anyId","keyv":4,"pref":8}}`),
-			expected:    json.RawMessage(`{}`),
-		},
-		{
-			description: "Remove digitrust Only - With Other Data",
-			userExt:     json.RawMessage(`{"anyExisting":42,"digitrust":{"id":"anyId","keyv":4,"pref":8}}`),
-			expected:    json.RawMessage(`{"anyExisting":42}`),
-		},
-		{
-			description: "Remove digitrust Only - With Other Nested Data",
-			userExt:     json.RawMessage(`{"anyExisting":{"existing":42},"digitrust":{"id":"anyId","keyv":4,"pref":8}}`),
 			expected:    json.RawMessage(`{"anyExisting":{"existing":42}}`),
 		},
 	}

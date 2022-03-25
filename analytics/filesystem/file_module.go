@@ -12,11 +12,12 @@ import (
 type RequestType string
 
 const (
-	COOKIE_SYNC RequestType = "/cookie_sync"
-	AUCTION     RequestType = "/openrtb2/auction"
-	VIDEO       RequestType = "/openrtb2/video"
-	SETUID      RequestType = "/set_uid"
-	AMP         RequestType = "/openrtb2/amp"
+	COOKIE_SYNC        RequestType = "/cookie_sync"
+	AUCTION            RequestType = "/openrtb2/auction"
+	VIDEO              RequestType = "/openrtb2/video"
+	SETUID             RequestType = "/set_uid"
+	AMP                RequestType = "/openrtb2/amp"
+	NOTIFICATION_EVENT RequestType = "/event"
 )
 
 //Module that can perform transactional logging
@@ -72,6 +73,18 @@ func (f *FileLogger) LogAmpObject(ao *analytics.AmpObject) {
 	f.Logger.Flush()
 }
 
+//Logs NotificationEvent to file
+func (f *FileLogger) LogNotificationEventObject(ne *analytics.NotificationEvent) {
+	if ne == nil {
+		return
+	}
+	//Code to parse the object and log in a way required
+	var b bytes.Buffer
+	b.WriteString(jsonifyNotificationEventObject(ne))
+	f.Logger.Debug(b.String())
+	f.Logger.Flush()
+}
+
 //Method to initialize the analytic module
 func NewFileLogger(filename string) (analytics.PBSAnalyticsModule, error) {
 	options := glog.LogOptions{
@@ -88,8 +101,6 @@ func NewFileLogger(filename string) (analytics.PBSAnalyticsModule, error) {
 		return nil, err
 	}
 }
-
-type fileAuctionObject analytics.AuctionObject
 
 func jsonifyAuctionObject(ao *analytics.AuctionObject) string {
 	type alias analytics.AuctionObject
@@ -174,5 +185,22 @@ func jsonifyAmpObject(ao *analytics.AmpObject) string {
 		return string(b)
 	} else {
 		return fmt.Sprintf("Transactional Logs Error: Amp object badly formed %v", err)
+	}
+}
+
+func jsonifyNotificationEventObject(ne *analytics.NotificationEvent) string {
+	type alias analytics.NotificationEvent
+	b, err := json.Marshal(&struct {
+		Type RequestType `json:"type"`
+		*alias
+	}{
+		Type:  NOTIFICATION_EVENT,
+		alias: (*alias)(ne),
+	})
+
+	if err == nil {
+		return string(b)
+	} else {
+		return fmt.Sprintf("Transactional Logs Error: NotificationEvent object badly formed %v", err)
 	}
 }

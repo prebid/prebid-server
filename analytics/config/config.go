@@ -69,3 +69,9 @@ func (ea enabledAnalytics) LogAmpObject(ao *analytics.AmpObject) {
 		module.LogAmpObject(ao)
 	}
 }
+
+func (ea enabledAnalytics) LogNotificationEventObject(ne *analytics.NotificationEvent) {
+	for _, module := range ea {
+		module.LogNotificationEventObject(ne)
+	}
+}

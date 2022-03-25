@@ -19,7 +19,7 @@ func TestValidParams(t *testing.T) {
 	}
 
 	for _, validParam := range validParams {
-		if err := validator.Validate(openrtb_ext.BidderSmartadserver, json.RawMessage(validParam)); err != nil {
+		if err := validator.Validate(openrtb_ext.BidderSmartAdserver, json.RawMessage(validParam)); err != nil {
 			t.Errorf("Schema rejected smartadserver params: %s \n Error: %s", validParam, err)
 		}
 	}
@@ -33,7 +33,7 @@ func TestInvalidParams(t *testing.T) {
 	}
 
 	for _, invalidParam := range invalidParams {
-		if err := validator.Validate(openrtb_ext.BidderSmartadserver, json.RawMessage(invalidParam)); err == nil {
+		if err := validator.Validate(openrtb_ext.BidderSmartAdserver, json.RawMessage(invalidParam)); err == nil {
 			t.Errorf("Schema allowed unexpected params: %s", invalidParam)
 		}
 	}

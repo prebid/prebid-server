@@ -8,8 +8,9 @@ import (
 	"path"
 	"strconv"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -18,14 +19,16 @@ type SmartAdserverAdapter struct {
 	host string
 }
 
-func NewSmartadserverBidder(host string) *SmartAdserverAdapter {
-	return &SmartAdserverAdapter{
-		host: host,
+// Builder builds a new instance of the SmartAdserver adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &SmartAdserverAdapter{
+		host: config.Endpoint,
 	}
+	return bidder, nil
 }
 
 // MakeRequests makes the HTTP requests which should be made to fetch bids.
-func (a *SmartAdserverAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *SmartAdserverAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	if len(request.Imp) == 0 {
 		return nil, []error{&errortypes.BadInput{
 			Message: "No impression in the bid request",
@@ -40,7 +43,7 @@ func (a *SmartAdserverAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo
 
 	// We create or copy the Site object.
 	if smartRequest.Site == nil {
-		smartRequest.Site = &openrtb.Site{}
+		smartRequest.Site = &openrtb2.Site{}
 	} else {
 		site := *smartRequest.Site
 		smartRequest.Site = &site
@@ -48,7 +51,7 @@ func (a *SmartAdserverAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo
 
 	// We create or copy the Publisher object.
 	if smartRequest.Site.Publisher == nil {
-		smartRequest.Site.Publisher = &openrtb.Publisher{}
+		smartRequest.Site.Publisher = &openrtb2.Publisher{}
 	} else {
 		publisher := *smartRequest.Site.Publisher
 		smartRequest.Site.Publisher = &publisher
@@ -76,7 +79,7 @@ func (a *SmartAdserverAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo
 		smartRequest.Site.Publisher.ID = strconv.Itoa(smartadserverExt.NetworkID)
 
 		// We send one request for each impression.
-		smartRequest.Imp = []openrtb.Imp{imp}
+		smartRequest.Imp = []openrtb2.Imp{imp}
 
 		var errMarshal error
 		if imp.Ext, errMarshal = json.Marshal(smartadserverExt); errMarshal != nil {
@@ -114,7 +117,7 @@ func (a *SmartAdserverAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo
 }
 
 // MakeBids unpacks the server's response into Bids.
-func (a *SmartAdserverAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *SmartAdserverAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -131,7 +134,7 @@ func (a *SmartAdserverAdapter) MakeBids(internalRequest *openrtb.BidRequest, ext
 		}}
 	}
 
-	var bidResp openrtb.BidResponse
+	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
@@ -166,7 +169,7 @@ func (a *SmartAdserverAdapter) BuildEndpointURL(params *openrtb_ext.ExtImpSmarta
 	return uri.String(), nil
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb.Imp) openrtb_ext.BidType {
+func getMediaTypeForImp(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
 	for _, imp := range imps {
 		if imp.ID == impID {
 			if imp.Video != nil {

@@ -1,5 +1,6 @@
 maintainer:
   email: "sovrnoss@sovrn.com"
+gvlVendorID: 13
 capabilities:
   app:
     mediaTypes:
@@ -7,3 +8,7 @@ capabilities:
   site:
     mediaTypes:
       - banner
+userSync:
+  redirect:
+    url: "https://ap.lijit.com/pixel?redir={{.RedirectURL}}"
+    userMacro: "$UID"

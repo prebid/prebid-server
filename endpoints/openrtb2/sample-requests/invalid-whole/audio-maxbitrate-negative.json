@@ -1,0 +1,28 @@
+{
+    "description": "Request has a negative audio max bitrate.",
+
+    "mockBidRequest": {
+        "id": "some-request-id",
+        "site": {
+            "page": "test.somepage.com"
+        },
+        "imp": [{
+            "id": "some-imp-id",
+            "audio": {
+                "mimes": ["audio/mp4"],
+                "maxbitrate": -1
+            },
+            "ext": {
+                "prebid": {
+                    "bidder": {
+                        "appnexus": {
+                            "placementId": 12345
+                        }
+                    }
+                }
+            }
+        }]
+    },
+    "expectedReturnCode": 400,
+    "expectedErrorMessage": "Invalid request: request.imp[0].audio.maxbitrate must be a positive number"
+}

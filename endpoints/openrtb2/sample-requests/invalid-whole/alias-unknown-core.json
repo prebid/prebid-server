@@ -1,6 +1,6 @@
 {
-  "message": "Invalid request: request.ext.prebid.aliases.unknown refers to unknown bidder: other-unknown\n",
-  "requestPayload": {
+  "description": "Request targets an unknown bidder",
+  "mockBidRequest": {
     "id": "some-request-id",
     "site": {
       "page": "test.somepage.com"
@@ -11,7 +11,7 @@
         "video": {
           "mimes": [
             "video/mp4"
-          ]
+            ]
         },
         "ext": {
           "unknown": {
@@ -27,5 +27,7 @@
         }
       }
     }
-  }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: request.ext.prebid.aliases.unknown refers to unknown bidder: other-unknown\n"
 }

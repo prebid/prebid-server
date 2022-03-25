@@ -1,6 +1,6 @@
 {
-  "message": "Invalid request: request.user.ext.prebid requires a \"buyeruids\" property with at least one ID defined. If none exist, then request.user.ext.prebid should not be defined.\n",
-  "requestPayload": {
+  "description": "Bid request with an empty request.user.ext.prebid object",
+  "mockBidRequest": {
     "id": "request-without-user-ext-obj",
     "site": {
       "page": "test.somepage.com"
@@ -28,5 +28,7 @@
         "prebid": {}
       }
     }
-  }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: request.user.ext.prebid requires a \"buyeruids\" property with at least one ID defined. If none exist, then request.user.ext.prebid should not be defined.\n"
 }

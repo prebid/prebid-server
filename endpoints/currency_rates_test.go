@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/currencies"
+	"github.com/prebid/prebid-server/currency"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -170,11 +170,11 @@ type rateConverterMock struct {
 	syncSourceURL       string
 	rates               *conversionMock
 	lastUpdated         time.Time
-	rateConverterInfos  currencies.ConverterInfo
+	rateConverterInfos  currency.ConverterInfo
 	shouldReturnNilInfo bool
 }
 
-func (m rateConverterMock) GetInfo() currencies.ConverterInfo {
+func (m rateConverterMock) GetInfo() currency.ConverterInfo {
 
 	if m.shouldReturnNilInfo {
 		return nil
@@ -208,7 +208,7 @@ func newRateConverterMock(
 	}
 }
 
-func newRateConverterMockWithInfo(rateConverterInfos currencies.ConverterInfo) rateConverterMock {
+func newRateConverterMockWithInfo(rateConverterInfos currency.ConverterInfo) rateConverterMock {
 	return rateConverterMock{
 		rateConverterInfos: rateConverterInfos,
 	}

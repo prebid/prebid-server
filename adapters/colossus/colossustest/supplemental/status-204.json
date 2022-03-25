@@ -75,5 +75,6 @@
 			"status": 204,
 			"body": {}
 		}
-	}]
+    }],
+    "expectedBidResponses": []
 }

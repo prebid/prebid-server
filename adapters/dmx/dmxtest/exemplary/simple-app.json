@@ -49,7 +49,12 @@
             "id":"ed6207cefff74c14878963566683c070",
             "name":"Skout - iOS Match Buy",
             "publisher":{
-              "id":"10400"
+              "id":"10400",
+              "ext": {
+                "dmx": {
+                  "id": "10400"
+                }
+              }
             },
             "storeurl":"https://itunes.apple.com/app/id302324249"
           },

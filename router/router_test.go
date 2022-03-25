@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
 	"github.com/prebid/prebid-server/config"
@@ -38,7 +37,8 @@ func ensureHasKey(t *testing.T, data map[string]json.RawMessage, key string) {
 }
 
 func TestNewJsonDirectoryServer(t *testing.T) {
-	handler := NewJsonDirectoryServer("../static/bidder-params", &testValidator{}, nil)
+	alias := map[string]string{"aliastest": "appnexus"}
+	handler := NewJsonDirectoryServer("../static/bidder-params", &testValidator{}, alias)
 	recorder := httptest.NewRecorder()
 	request, _ := http.NewRequest("GET", "/whatever", nil)
 	handler(recorder, request, nil)
@@ -57,15 +57,186 @@ func TestNewJsonDirectoryServer(t *testing.T) {
 			ensureHasKey(t, data, adapterFile.Name())
 		}
 	}
+
+	ensureHasKey(t, data, "aliastest")
 }
 
-func TestExchangeMap(t *testing.T) {
-	exchanges := newExchangeMap(&config.Configuration{})
-	for bidderName := range exchanges {
-		// OpenRTB doesn't support hardcoded aliases... so this test skips districtm,
-		// which was the only alias in the legacy adapter map.
-		if _, ok := openrtb_ext.BidderMap[bidderName]; bidderName != "districtm" && !ok {
-			t.Errorf("Bidder %s exists in exchange, but is not a part of the BidderMap.", bidderName)
+func TestApplyBidderInfoConfigOverrides(t *testing.T) {
+	var testCases = []struct {
+		description         string
+		givenBidderInfos    config.BidderInfos
+		givenAdaptersCfg    map[string]config.Adapter
+		expectedError       string
+		expectedBidderInfos config.BidderInfos
+	}{
+		{
+			description:         "Syncer Override",
+			givenBidderInfos:    config.BidderInfos{"a": {Syncer: &config.Syncer{Key: "original"}}},
+			givenAdaptersCfg:    map[string]config.Adapter{"a": {Syncer: &config.Syncer{Key: "override"}}},
+			expectedBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{Key: "override"}}},
+		},
+		{
+			// Adapter Configs use a lower case bidder name, but the Bidder Infos follow the official
+			// bidder name casing.
+			description:         "Syncer Override - Case Sensitivity",
+			givenBidderInfos:    config.BidderInfos{"A": {Syncer: &config.Syncer{Key: "original"}}},
+			givenAdaptersCfg:    map[string]config.Adapter{"a": {Syncer: &config.Syncer{Key: "override"}}},
+			expectedBidderInfos: config.BidderInfos{"A": {Syncer: &config.Syncer{Key: "override"}}},
+		},
+		{
+			description:         "UserSyncURL Override IFrame",
+			givenBidderInfos:    config.BidderInfos{"a": {Syncer: &config.Syncer{IFrame: &config.SyncerEndpoint{URL: "original"}}}},
+			givenAdaptersCfg:    map[string]config.Adapter{"a": {UserSyncURL: "override"}},
+			expectedBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{IFrame: &config.SyncerEndpoint{URL: "override"}}}},
+		},
+		{
+			description:         "UserSyncURL Supports IFrame",
+			givenBidderInfos:    config.BidderInfos{"a": {Syncer: &config.Syncer{Supports: []string{"iframe"}}}},
+			givenAdaptersCfg:    map[string]config.Adapter{"a": {UserSyncURL: "override"}},
+			expectedBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{Supports: []string{"iframe"}, IFrame: &config.SyncerEndpoint{URL: "override"}}}},
+		},
+		{
+			description:         "UserSyncURL Override Redirect",
+			givenBidderInfos:    config.BidderInfos{"a": {Syncer: &config.Syncer{Supports: []string{"redirect"}}}},
+			givenAdaptersCfg:    map[string]config.Adapter{"a": {UserSyncURL: "override"}},
+			expectedBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{Supports: []string{"redirect"}, Redirect: &config.SyncerEndpoint{URL: "override"}}}},
+		},
+		{
+			description:         "UserSyncURL Supports Redirect",
+			givenBidderInfos:    config.BidderInfos{"a": {Syncer: &config.Syncer{Redirect: &config.SyncerEndpoint{URL: "original"}}}},
+			givenAdaptersCfg:    map[string]config.Adapter{"a": {UserSyncURL: "override"}},
+			expectedBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{Redirect: &config.SyncerEndpoint{URL: "override"}}}},
+		},
+		{
+			description:      "UserSyncURL Override Syncer Not Defined",
+			givenBidderInfos: config.BidderInfos{"a": {}},
+			givenAdaptersCfg: map[string]config.Adapter{"a": {UserSyncURL: "override"}},
+			expectedError:    "adapters.a.usersync_url cannot be applied, bidder does not define a user sync",
+		},
+		{
+			description:      "UserSyncURL Override Syncer Endpoints Not Defined",
+			givenBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{}}},
+			givenAdaptersCfg: map[string]config.Adapter{"a": {UserSyncURL: "override"}},
+			expectedError:    "adapters.a.usersync_url cannot be applied, bidder does not define user sync endpoints and does not define supported endpoints",
+		},
+		{
+			description:      "UserSyncURL Override Ambiguous",
+			givenBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{IFrame: &config.SyncerEndpoint{URL: "originalIFrame"}, Redirect: &config.SyncerEndpoint{URL: "originalRedirect"}}}},
+			givenAdaptersCfg: map[string]config.Adapter{"a": {UserSyncURL: "override"}},
+			expectedError:    "adapters.a.usersync_url cannot be applied, bidder defines multiple user sync endpoints or supports multiple endpoints",
+		},
+		{
+			description:      "UserSyncURL Supports Ambiguous",
+			givenBidderInfos: config.BidderInfos{"a": {Syncer: &config.Syncer{Supports: []string{"iframe", "redirect"}}}},
+			givenAdaptersCfg: map[string]config.Adapter{"a": {UserSyncURL: "override"}},
+			expectedError:    "adapters.a.usersync_url cannot be applied, bidder defines multiple user sync endpoints or supports multiple endpoints",
+		},
+	}
+
+	for _, test := range testCases {
+		resultErr := applyBidderInfoConfigOverrides(test.givenBidderInfos, test.givenAdaptersCfg)
+		if test.expectedError == "" {
+			assert.NoError(t, resultErr, test.description+":err")
+			assert.Equal(t, test.expectedBidderInfos, test.givenBidderInfos, test.description+":result")
+		} else {
+			assert.EqualError(t, resultErr, test.expectedError, test.description+":err")
+		}
+	}
+}
+
+func TestCheckSupportedUserSyncEndpoints(t *testing.T) {
+	anyEndpoint := &config.SyncerEndpoint{URL: "anyURL"}
+
+	var testCases = []struct {
+		description      string
+		givenBidderInfos config.BidderInfos
+		expectedError    string
+	}{
+		{
+			description:      "None",
+			givenBidderInfos: config.BidderInfos{},
+			expectedError:    "",
+		},
+		{
+			description: "One - No Syncer",
+			givenBidderInfos: config.BidderInfos{
+				"a": config.BidderInfo{Syncer: nil},
+			},
+			expectedError: "",
+		},
+		{
+			description: "One - Invalid Supported Endpoint",
+			givenBidderInfos: config.BidderInfos{
+				"a": config.BidderInfo{Syncer: &config.Syncer{Supports: []string{"invalid"}}},
+			},
+			expectedError: "failed to load bidder info for a, user sync supported endpoint 'invalid' is unrecognized",
+		},
+		{
+			description: "One - IFrame Supported - Not Specified",
+			givenBidderInfos: config.BidderInfos{
+				"a": config.BidderInfo{Syncer: &config.Syncer{Supports: []string{"iframe"}, IFrame: nil}},
+			},
+			expectedError: "",
+		},
+		{
+			description: "One - IFrame Supported - Specified",
+			givenBidderInfos: config.BidderInfos{
+				"a": config.BidderInfo{Syncer: &config.Syncer{Supports: []string{"iframe"}, IFrame: anyEndpoint}},
+			},
+			expectedError: "",
+		},
+		{
+			description: "One - Redirect Supported - Not Specified",
+			givenBidderInfos: config.BidderInfos{
+				"a": config.BidderInfo{Syncer: &config.Syncer{Supports: []string{"redirect"}, Redirect: nil}},
+			},
+			expectedError: "",
+		},
+		{
+			description: "One - IFrame Supported - Specified",
+			givenBidderInfos: config.BidderInfos{
+				"a": config.BidderInfo{Syncer: &config.Syncer{Supports: []string{"redirect"}, Redirect: anyEndpoint}},
+			},
+			expectedError: "",
+		},
+		{
+			description: "One - IFrame + Redirect Supported - Not Specified",
+			givenBidderInfos: config.BidderInfos{
+				"a": config.BidderInfo{Syncer: &config.Syncer{Supports: []string{"iframe", "redirect"}, IFrame: nil, Redirect: nil}},
+			},
+			expectedError: "",
+		},
+		{
+			description: "One - IFrame + Redirect Supported - Specified",
+			givenBidderInfos: config.BidderInfos{
+				"a": config.BidderInfo{Syncer: &config.Syncer{Supports: []string{"iframe", "redirect"}, IFrame: anyEndpoint, Redirect: anyEndpoint}},
+			},
+			expectedError: "",
+		},
+		{
+			description: "Many - With Invalid Supported Endpoint",
+			givenBidderInfos: config.BidderInfos{
+				"a": config.BidderInfo{},
+				"b": config.BidderInfo{Syncer: &config.Syncer{Supports: []string{"invalid"}}},
+			},
+			expectedError: "failed to load bidder info for b, user sync supported endpoint 'invalid' is unrecognized",
+		},
+		{
+			description: "Many - Specified + Not Specified",
+			givenBidderInfos: config.BidderInfos{
+				"a": config.BidderInfo{Syncer: &config.Syncer{Supports: []string{"iframe"}, IFrame: anyEndpoint}},
+				"b": config.BidderInfo{Syncer: &config.Syncer{Supports: []string{"redirect"}, Redirect: nil}},
+			},
+			expectedError: "",
+		},
+	}
+
+	for _, test := range testCases {
+		resultErr := checkSupportedUserSyncEndpoints(test.givenBidderInfos)
+		if test.expectedError == "" {
+			assert.NoError(t, resultErr, test.description)
+		} else {
+			assert.EqualError(t, resultErr, test.expectedError, test.description)
 		}
 	}
 }
@@ -114,38 +285,6 @@ func TestNoCache(t *testing.T) {
 	}
 }
 
-func TestLoadDataCache(t *testing.T) {
-	// Test dummy
-	if err := loadDataCache(&config.Configuration{
-		DataCache: config.DataCache{
-			Type: "dummy",
-		},
-	}, nil); err != nil {
-		t.Errorf("data cache: dummy: %s", err)
-	}
-	// Test postgres error
-	if err := loadDataCache(&config.Configuration{
-		DataCache: config.DataCache{
-			Type: "postgres",
-		},
-	}, nil); err == nil {
-		t.Errorf("data cache: postgres: db nil should return error")
-	}
-	// Test file
-	d, _ := ioutil.TempDir("", "pbs-filecache")
-	defer os.RemoveAll(d)
-	f, _ := ioutil.TempFile(d, "file")
-	defer f.Close()
-	if err := loadDataCache(&config.Configuration{
-		DataCache: config.DataCache{
-			Type:     "filecache",
-			Filename: f.Name(),
-		},
-	}, nil); err != nil {
-		t.Errorf("data cache: filecache: %s", err)
-	}
-}
-
 var testDefReqConfig = config.DefReqConfig{
 	Type: "file",
 	FileSystem: config.DefReqFiles{
@@ -176,5 +315,43 @@ func TestLoadDefaultAliasesNoInfo(t *testing.T) {
 
 	assert.JSONEq(t, string(expectedJSON), string(aliasJSON))
 	assert.Equal(t, expectedAliases, defAliases)
+}
 
+func TestValidateDefaultAliases(t *testing.T) {
+	var testCases = []struct {
+		description   string
+		givenAliases  map[string]string
+		expectedError string
+	}{
+		{
+			description:   "None",
+			givenAliases:  map[string]string{},
+			expectedError: "",
+		},
+		{
+			description:   "Valid",
+			givenAliases:  map[string]string{"aAlias": "a"},
+			expectedError: "",
+		},
+		{
+			description:   "Invalid",
+			givenAliases:  map[string]string{"all": "a"},
+			expectedError: "default request alias errors (1 error):\n  1: alias all is a reserved bidder name and cannot be used\n",
+		},
+		{
+			description:   "Mixed",
+			givenAliases:  map[string]string{"aAlias": "a", "all": "a"},
+			expectedError: "default request alias errors (1 error):\n  1: alias all is a reserved bidder name and cannot be used\n",
+		},
+	}
+
+	for _, test := range testCases {
+		err := validateDefaultAliases(test.givenAliases)
+
+		if test.expectedError == "" {
+			assert.NoError(t, err, test.description)
+		} else {
+			assert.EqualError(t, err, test.expectedError, test.description)
+		}
+	}
 }

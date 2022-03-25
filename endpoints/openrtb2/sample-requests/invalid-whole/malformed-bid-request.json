@@ -1,0 +1,6 @@
+{
+  "description": "Malformed bid request throws an error",
+  "mockBidRequest": "malformed",
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: invalid character 'm' looking for beginning of value\n"
+}

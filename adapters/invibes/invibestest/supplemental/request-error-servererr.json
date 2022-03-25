@@ -1,0 +1,67 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "page": "https://publisher.com/url"
+    },
+    "user": {
+      "buyerUid": "123"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 150
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "2eb6bd58-865c-47ce-af7f-a918108c3fd2",
+            "domainId": 1001,
+            "debug": {
+              "testLog": true
+            }
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bid.videostep.com/bid/ServerBidAdContent",
+        "body": {
+          "BidParamsJson": "{\"PlacementIds\":[\"2eb6bd58-865c-47ce-af7f-a918108c3fd2\"],\"BidVersion\":\"4\",\"Properties\":{\"2eb6bd58-865c-47ce-af7f-a918108c3fd2\":{\"Formats\":[{\"w\":300,\"h\":150}],\"ImpId\":\"test-imp-id\"}}}",
+          "Bvid": "",
+          "Gdpr": true,
+          "GdprConsent": "",
+          "Height": "",
+          "IsAmp": false,
+          "Kw": "",
+          "Lid": "123",
+          "Location": "https://publisher.com/url",
+          "IsTestBid": false,
+          "InvibBVLog": true,
+          "VideoAdDebug": true,
+          "Width": ""
+        }
+      },
+      "mockResponse": {
+        "body": {
+          "error": "Server err"
+        },
+        "status": 200
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Server error: Server err.",
+      "comparison": "literal"
+    }
+  ]
+}

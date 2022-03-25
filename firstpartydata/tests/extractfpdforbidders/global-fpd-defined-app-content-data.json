@@ -1,0 +1,87 @@
+{
+  "description": "req.app.content.data defined; req.ext.prebid.data.bidders contains appnexus; expect req.app.content to be in the resolved FPD for appnexus but extracted from the original request",
+  "inputRequestData": {
+    "id": "bid_id",
+    "app": {
+      "id": "reqAppId",
+      "domain": "http://www.foobar.com/1234.html",
+      "name": "reqAppName",
+      "cat": [
+        "electronics",
+        "phone"
+      ],
+      "content": {
+        "len": 900,
+        "title": "reqContentTitle",
+        "season": "reqContentSeason",
+        "data": [
+          {
+            "id": "reqContentDataId1",
+            "name": "reqContentDataName1"
+          },
+          {
+            "id": "reqContentDataId2",
+            "name": "reqContentDataName2"
+          }
+        ]
+      }
+    },
+    "test": 1,
+    "ext": {
+      "prebid": {
+        "data": {
+          "bidders": [
+            "appnexus"
+          ]
+        }
+      }
+    }
+  },
+  "outputRequestData": {
+    "id": "bid_id",
+    "app": {
+      "id": "reqAppId",
+      "domain": "http://www.foobar.com/1234.html",
+      "name": "reqAppName",
+      "cat": [
+        "electronics",
+        "phone"
+      ],
+      "content": {
+        "len": 900,
+        "title": "reqContentTitle",
+        "season": "reqContentSeason"
+      }
+    },
+    "test": 1
+  },
+  "biddersFPDResolved": {
+    "appnexus": {
+      "app": {
+        "id": "reqAppId",
+        "domain": "http://www.foobar.com/1234.html",
+        "name": "reqAppName",
+        "cat": [
+          "electronics",
+          "phone"
+        ],
+        "content": {
+          "len": 900,
+          "title": "reqContentTitle",
+          "season": "reqContentSeason",
+          "data": [
+            {
+              "id": "reqContentDataId1",
+              "name": "reqContentDataName1"
+            },
+            {
+              "id": "reqContentDataId2",
+              "name": "reqContentDataName2"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "validationErrors": []
+}

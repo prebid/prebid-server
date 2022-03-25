@@ -1,0 +1,24 @@
+
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "ConnectAd S2S dapter Params",
+    "description": "A schema which validates params accepted by the ConnectAd Adapter",
+  
+    "type": "object",
+    "properties": {
+      "networkId": {
+        "type": "integer",
+        "description": "NetworkId"
+      },
+      "siteId": {
+        "type": "integer",
+        "description": "SiteId"
+      },
+      "bidfloor": {
+        "type": "number",
+        "description": "Requests Floorprice"
+      }
+    },
+    "required": ["networkId", "siteId"]
+  }
+  

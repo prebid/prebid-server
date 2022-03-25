@@ -1,0 +1,143 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app":{
+      "bundle":"302324249",
+      "id":"ed6207cefff74c14878963566683c070",
+      "name":"Skout - iOS Match Buy",
+      "publisher":{
+        "id":"10400"
+      },
+      "storeurl":"https://itunes.apple.com/app/id302324249"
+    },
+    "imp": [
+      {
+        "bidfloor": 0.35,
+        "id": "test-imp-id",
+        "banner": {
+
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "dmxid": "123454",
+            "publisher_id": "10400"
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "",
+        "body": {
+          "id": "test-request-id",
+          "app":{
+            "bundle":"302324249",
+            "id":"ed6207cefff74c14878963566683c070",
+            "name":"Skout - iOS Match Buy",
+            "publisher":{
+              "id":"10400",
+              "ext": {
+                "dmx": {
+                  "id": "10400"
+                }
+              }
+            },
+            "storeurl":"https://itunes.apple.com/app/id302324249"
+          },
+          "imp": [
+            {
+              "bidfloor": 0.35,
+              "id": "test-imp-id",
+              "tagid": "123454",
+              "secure": 1,
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  },
+                  {
+                    "w": 300,
+                    "h": 600
+                  }
+                ],
+                "w": 300,
+                "h": 250
+              },
+              "ext": {
+                "bidder": {
+                  "publisher_id": "10400",
+                  "dmxid": "123454"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "958",
+              "bid": [{
+                "id": "7706636740145184841",
+                "impid": "test-imp-id",
+                "price": 1.75,
+                "adid": "29681110",
+                "adm": "<div>banner-ads</div>",
+                "adomain": ["dmx.districtm.io"],
+                "iurl": "https://dmx.districtm.io/b/v2",
+                "cid": "958",
+                "crid": "29681110",
+                "h": 250,
+                "w": 300
+              }]
+            }
+          ],
+          "bidid": "5778926625248726496",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "7706636740145184841",
+            "impid": "test-imp-id",
+            "price": 1.75,
+            "adm": "<div>banner-ads</div>",
+            "adid": "29681110",
+            "adomain": ["dmx.districtm.io"],
+            "iurl": "https://dmx.districtm.io/b/v2",
+            "cid": "958",
+            "crid": "29681110",
+            "w": 300,
+            "h": 250
+
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

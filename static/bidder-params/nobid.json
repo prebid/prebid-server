@@ -1,0 +1,18 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "NoBid Adapter Params",
+    "description": "A schema which validates params accepted by the NoBid adapter",
+  
+    "type": "object",
+    "properties": {
+      "siteId": {
+        "type": "integer",
+        "description": "A Required ID which identifies the NoBid site. The siteId parameter is provided by your NoBid account manager."
+      }, "placementId": { 
+    	  "type": "integer",
+    	  "description": "An optional ID which identifies an adunit in a site. The placementId parameter is provided by your NoBid account manager."
+      }
+    },
+    "required": ["siteId"]
+  }
+  

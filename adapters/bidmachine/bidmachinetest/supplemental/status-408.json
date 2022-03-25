@@ -1,0 +1,69 @@
+{
+  "mockBidRequest":
+  {
+    "id": "test-request-id",
+    "imp": [
+    {
+      "id": "test-impression-id-1",
+      "banner":
+      {
+        "format": [
+        {
+          "h": 250,
+          "w": 300
+        }]
+      },
+      "ext":
+      {
+        "bidder":
+        {
+          "seller_id": "1",
+          "host": "api-eu",
+          "path": "auction/rtb/v2"
+        }
+      }
+    }]
+  },
+  "httpCalls": [
+  {
+    "expectedRequest":
+    {
+      "uri": "https://api-eu.bidmachine.io/auction/rtb/v2/1",
+      "body":
+      {
+        "id": "test-request-id",
+        "imp": [
+        {
+          "id": "test-impression-id-1",
+          "banner":
+          {
+            "format": [
+            {
+              "h": 250,
+              "w": 300
+            }]
+          },
+          "ext":
+          {
+            "bidder":
+            {
+              "seller_id": "1",
+              "host": "api-eu",
+              "path": "auction/rtb/v2"
+            }
+          }
+        }]
+      }
+    },
+    "mockResponse":
+    {
+      "status": 408,
+      "body": "server text here"
+    }
+  }],
+  "expectedMakeBidsErrors": [
+  {
+    "value": "unexpected status code: 408 \"server text here\"",
+    "comparison": "literal"
+  }]
+}

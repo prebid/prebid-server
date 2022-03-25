@@ -1,0 +1,111 @@
+{
+    "incomingRequest": {
+        "ortbRequest": {
+            "id": "some-request-id",
+            "site": {
+                "page": "test.somepage.com"
+            },
+            "user": {
+                "ext": {
+                    "eids": [{
+                        "source": "source1",
+                        "id": "anyId"
+                    }]
+                }
+            },
+            "ext": {
+                "prebid": {
+                    "data": {
+                        "eidpermissions": [{
+                            "source": "source1",
+                            "bidders": ["otherBidder"]
+                        }]
+                    }
+                }
+            },
+            "imp": [{
+                "id": "my-imp-id",
+                "video": {
+                    "mimes": ["video/mp4"]
+                },
+                "ext": {
+                    "appnexus": {
+                        "placementId": 1
+                    }
+                }
+            }]
+        }
+    },
+    "outgoingRequests": {
+        "appnexus": {
+            "expectRequest": {
+                "ortbRequest": {
+                    "id": "some-request-id",
+                    "site": {
+                        "page": "test.somepage.com"
+                    },
+                    "user": {
+                    },
+                    "ext": {
+                        "prebid": {
+                            "data": {
+                                "eidpermissions": [{
+                                    "source": "source1",
+                                    "bidders": ["otherBidder"]
+                                }]
+                            }
+                        }
+                    },
+                    "imp": [{
+                        "id": "my-imp-id",
+                        "video": {
+                            "mimes": ["video/mp4"]
+                        },
+                        "ext": {
+                            "bidder": {
+                                "placementId": 1
+                            }
+                        }
+                    }]
+                },
+                "bidAdjustment": 1.0
+            },
+            "mockResponse": {
+                "pbsSeatBid": {
+                    "pbsBids": [{
+                        "ortbBid": {
+                            "id": "apn-bid",
+                            "impid": "my-imp-id",
+                            "price": 0.3,
+                            "w": 200,
+                            "h": 250,
+                            "crid": "creative-1"
+                        },
+                        "bidType": "video"
+                    }]
+                }
+            }
+        }
+    },
+    "response": {
+        "bids": {
+            "id": "some-request-id",
+            "seatbid": [{
+                "seat": "appnexus",
+                "bid": [{
+                    "id": "apn-bid",
+                    "impid": "my-imp-id",
+                    "price": 0.3,
+                    "w": 200,
+                    "h": 250,
+                    "crid": "creative-1",
+                    "ext": {
+                        "prebid": {
+                            "type": "video"
+                        }
+                    }
+                }]
+            }]
+        }
+    }
+}

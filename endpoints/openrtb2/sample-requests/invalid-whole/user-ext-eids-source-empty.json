@@ -1,6 +1,6 @@
 {
-  "message": "Invalid request: request.user.ext.eids[0] missing required field: \"source\"\n",
-  "requestPayload": {
+  "description": "Bid request with user.ext.eids array element array element that does not contain source field",
+  "mockBidRequest": {
     "id": "b9c97a4b-cbc4-483d-b2c4-58a19ed5cfc5",
     "site": {
       "page": "prebid.org",
@@ -46,5 +46,7 @@
         ]
       }
     }
-  }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: request.user.ext.eids[0] missing required field: \"source\"\n"
 }

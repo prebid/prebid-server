@@ -1,0 +1,29 @@
+{
+    "mockBidRequest": {
+      "id": "test-request-id",
+      "imp": [
+        {
+          "id": "test-banner-imp-id",
+          "banner": {
+            "format": [
+              {
+                "w": 300,
+                "h": 250
+              }
+            ]
+          }
+        }
+      ],
+      "site": {
+        "domain": "deepintent.com",
+        "page": "http://deepintent.com/"
+      }
+    },
+    "expectedMakeRequestsErrors": [
+      {
+        "value": "Impression id=test-banner-imp-id has an Error: unexpected end of JSON input",
+        "comparison": "literal"
+      }
+    ]
+  }
+  

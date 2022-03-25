@@ -1,0 +1,11 @@
+maintainer:
+  email: "support@madvertise.com"
+gvlVendorID: 153
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner

@@ -1,0 +1,87 @@
+{
+  "description": "This request comes with an account id and which is required by the config",
+  "config": {
+    "accountRequired": true
+  },
+
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "publisher": { "id": "not_bad_acct"},
+      "page": "test.somepage.com"
+    },
+    "user": { },
+    "imp": [
+      {
+        "id": "my-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "pmp": {
+          "deals": [
+            {
+              "id": "some-deal-id"
+            }
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          }
+        }
+      }
+    ],
+    "tmax": 500,
+    "ext": {
+      "prebid": {
+        "aliases": {
+          "districtm": "appnexus"
+        },
+        "bidadjustmentfactors": {
+          "appnexus": 1.01,
+          "districtm": 0.98,
+          "rubicon": 0.99
+        },
+        "cache": {
+          "bids": {}
+        },
+        "targeting": {
+          "includewinners": false,
+          "pricegranularity": {
+            "precision": 2,
+            "ranges": [
+              {
+                "max": 20,
+                "increment": 0.10
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "expectedBidResponse": {
+      "id":"some-request-id",
+      "bidid":"test bid id",
+      "cur": "USD",
+      "nbr":0,
+      "seatbid": [
+        {
+          "bid": [
+            {
+              "id": "appnexus-bid",
+              "impid": "",
+              "price": 0
+            }
+          ],
+          "seat": "appnexus-bids"
+        }
+      ]
+  },
+  "expectedReturnCode": 200
+}

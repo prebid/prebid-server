@@ -1,0 +1,15 @@
+maintainer:
+  email: "support@epom.com"
+modifyingVastXmlAllowed: true
+gvlVendorID: 849
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native

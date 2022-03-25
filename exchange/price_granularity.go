@@ -7,33 +7,32 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-// DEFAULT_PRECISION should be taken care of in openrtb_ext/request.go, but throwing an additional safety check here.
-
-// GetCpmStringValue is the externally facing function for computing CPM buckets
-func GetCpmStringValue(cpm float64, config openrtb_ext.PriceGranularity) (string, error) {
+// GetPriceBucket is the externally facing function for computing CPM buckets
+func GetPriceBucket(cpm float64, config openrtb_ext.PriceGranularity) string {
 	cpmStr := ""
 	bucketMax := 0.0
 	increment := 0.0
 	precision := config.Precision
-	// calculate max of highest bucket
+
 	for i := 0; i < len(config.Ranges); i++ {
 		if config.Ranges[i].Max > bucketMax {
 			bucketMax = config.Ranges[i].Max
 		}
-	} // calculate which bucket cpm is in
-	if cpm > bucketMax {
-		// If we are over max, just return that
-		return strconv.FormatFloat(bucketMax, 'f', precision, 64), nil
-	}
-	for i := 0; i < len(config.Ranges); i++ {
+		// find what range cpm is in
 		if cpm >= config.Ranges[i].Min && cpm <= config.Ranges[i].Max {
 			increment = config.Ranges[i].Increment
 		}
 	}
-	if increment > 0 {
+
+	if cpm > bucketMax {
+		// We are over max, just return that
+		cpmStr = strconv.FormatFloat(bucketMax, 'f', precision, 64)
+	} else if increment > 0 {
+		// If increment exists, get cpm string value
 		cpmStr = getCpmTarget(cpm, increment, precision)
 	}
-	return cpmStr, nil
+
+	return cpmStr
 }
 
 func getCpmTarget(cpm float64, increment float64, precision int) string {

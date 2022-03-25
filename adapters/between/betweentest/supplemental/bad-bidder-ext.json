@@ -1,0 +1,35 @@
+{
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": []
+        }
+      }
+    ],
+    "site": {
+      "page": "prebid.org"
+    },
+    "device": {
+      "ip": "8.8.8.8"
+    },
+    "at": 1,
+    "tmax": 500
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "ignoring imp id=some-impression-id, invalid ImpExt",
+      "comparison": "literal"
+    }
+  ]
+}

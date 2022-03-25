@@ -1,6 +1,6 @@
 {
-  "message": "Invalid request: request.imp[0].pmp.deals[0] missing required field: \"id\"\n",
-  "requestPayload": {
+  "description": "Empty id field in the deals array of the pmp field",
+  "mockBidRequest": {
     "id": "req-id",
     "imp": [
       {
@@ -8,7 +8,7 @@
         "video": {
           "mimes": [
             "video/mp4"
-          ]
+            ]
         },
         "pmp": {
           "deals": [
@@ -23,5 +23,7 @@
     "app": {
       "id": "app_001"
     }
-  }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: request.imp[0].pmp.deals[0] missing required field: \"id\"\n"
 }

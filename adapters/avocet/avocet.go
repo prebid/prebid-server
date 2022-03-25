@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -17,7 +18,7 @@ type AvocetAdapter struct {
 	Endpoint string
 }
 
-func (a *AvocetAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *AvocetAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	if len(request.Imp) == 0 {
 		return nil, nil
 	}
@@ -49,7 +50,7 @@ type avocetBidExtension struct {
 	DealPriority int `json:"deal_priority"`
 }
 
-func (a *AvocetAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *AvocetAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -67,7 +68,7 @@ func (a *AvocetAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 		}}
 	}
 
-	var br openrtb.BidResponse
+	var br openrtb2.BidResponse
 	err := json.Unmarshal(response.Body, &br)
 	if err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
@@ -104,21 +105,22 @@ func (a *AvocetAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 }
 
 // getBidType returns the openrtb_ext.BidType for the provided bid.
-func getBidType(bid openrtb.Bid, ext avocetBidExt) openrtb_ext.BidType {
+func getBidType(bid openrtb2.Bid, ext avocetBidExt) openrtb_ext.BidType {
 	if ext.Avocet.Duration != 0 {
 		return openrtb_ext.BidTypeVideo
 	}
 	switch bid.API {
-	case openrtb.APIFrameworkVPAID10, openrtb.APIFrameworkVPAID20:
+	case openrtb2.APIFrameworkVPAID10, openrtb2.APIFrameworkVPAID20:
 		return openrtb_ext.BidTypeVideo
 	default:
 		return openrtb_ext.BidTypeBanner
 	}
 }
 
-// NewAvocetAdapter returns a new AvocetAdapter using the provided endpoint.
-func NewAvocetAdapter(endpoint string) *AvocetAdapter {
-	return &AvocetAdapter{
-		Endpoint: endpoint,
+// Builder builds a new instance of the Avocet adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &AvocetAdapter{
+		Endpoint: config.Endpoint,
 	}
+	return bidder, nil
 }

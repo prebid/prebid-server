@@ -1,0 +1,30 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Mobfox Adapter Params",
+    "description": "A schema which validates params accepted by the Mobfox adapter",
+    "type": "object",
+    "properties": {
+        "TagID": {
+            "type": "string",
+            "minLength": 1,
+            "description": "An ID which identifies the mobfox ad tag"
+        },
+        "key": {
+            "type": "string",
+            "minLength": 1,
+            "description": "An ID which identifies the mobfox adexchange partner"
+        }
+    },
+    "oneOf": [
+        {
+            "required": [
+                "TagID"
+            ]
+        },
+        {
+            "required": [
+                "key"
+            ]
+        }
+    ]
+}

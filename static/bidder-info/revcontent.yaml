@@ -1,0 +1,12 @@
+maintainer:
+  email: "developers@revcontent.com"
+gvlVendorID: 203
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - native

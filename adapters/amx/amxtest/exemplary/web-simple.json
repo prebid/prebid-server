@@ -1,0 +1,246 @@
+{
+  "mockBidRequest": {
+    "device": {
+      "dnt": 0,
+      "h": 1120,
+      "ip": "98.249.0.0",
+      "language": "en",
+      "os": "macos",
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.102 Safari/537.36",
+      "w": 1792
+    },
+    "id": "TL3JS6F43CKNDQFY",
+    "imp": [
+      {
+        "banner": {
+          "format": [
+            {
+              "h": 600,
+              "w": 300
+            }
+          ],
+          "h": 600,
+          "pos": 1,
+          "w": 300
+        },
+        "ext": {
+          "bidder": {
+            "tagId": "cHJlYmlkLm9yZw"
+          }
+        },
+        "tagid": "example-tag-id",
+        "id": "1",
+        "secure": 1
+      }
+    ],
+    "regs": {
+      "ext": {
+        "gdpr": 0,
+        "us_privacy": "1---"
+      }
+    },
+    "site": {
+      "domain": "www.example.com",
+      "ext": {
+        "amp": 0
+      },
+      "publisher": {
+        "id": "unused_publisher_id"
+      },
+      "page": "https://www.example.com/es6/es6_objects.htm",
+      "ref": "https://www.example.com/es6/es6_objects.htm"
+    },
+    "source": {
+      "ext": {
+        "schain": {
+          "complete": 1,
+          "nodes": [
+            {
+              "asi": "amxrtb.com",
+              "hp": 1,
+              "sid": "1234"
+            }
+          ],
+          "ver": "1.0"
+        }
+      }
+    },
+    "test": 0,
+    "tmax": 300,
+    "user": {
+      "ext": {
+        "eids": [
+          {
+            "source": "amxid",
+            "uids": [
+              {
+                "atype": 1,
+                "id": "88de601e-3d98-48e7-81d7-00000000"
+              }
+            ]
+          },
+          {
+            "source": "adserver.org",
+            "uids": [
+              {
+                "id": "1234567",
+                "ext": {
+                  "rtiPartner": "TDID"
+                }
+              }
+            ]
+          }
+        ],
+        "gdpr": 0,
+        "us_privacy": "1---"
+      }
+    }
+  },
+  "httpCalls": [{
+    "expectedRequest": {
+      "uri": "http://pbs-dev.amxrtb.com/auction/openrtb?v=pbs1.1",
+      "body": {
+        "device": {
+          "dnt": 0,
+          "h": 1120,
+          "ip": "98.249.0.0",
+          "language": "en",
+          "os": "macos",
+          "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.102 Safari/537.36",
+          "w": 1792
+        },
+        "id": "TL3JS6F43CKNDQFY",
+        "imp": [
+          {
+            "tagid": "example-tag-id",
+            "banner": {
+              "format": [
+                {
+                  "h": 600,
+                  "w": 300
+                }
+              ],
+              "h": 600,
+              "pos": 1,
+              "w": 300
+            },
+            "ext": {
+              "bidder": {
+                "tagId": "cHJlYmlkLm9yZw"
+              }
+            },
+            "id": "1",
+            "secure": 1
+          }
+        ],
+        "regs": {
+          "ext": {
+            "gdpr": 0,
+            "us_privacy": "1---"
+          }
+        },
+        "site": {
+          "domain": "www.example.com",
+          "ext": {
+            "amp": 0
+          },
+          "publisher": {
+            "id": "cHJlYmlkLm9yZw"
+          },
+          "page": "https://www.example.com/es6/es6_objects.htm",
+          "ref": "https://www.example.com/es6/es6_objects.htm"
+        },
+        "source": {
+          "ext": {
+            "schain": {
+              "complete": 1,
+              "nodes": [
+                {
+                  "asi": "amxrtb.com",
+                  "hp": 1,
+                  "sid": "1234"
+                }
+              ],
+              "ver": "1.0"
+            }
+          }
+        },
+        "tmax": 300,
+        "user": {
+          "ext": {
+            "eids": [
+              {
+                "source": "amxid",
+                "uids": [
+                  {
+                    "atype": 1,
+                    "id": "88de601e-3d98-48e7-81d7-00000000"
+                  }
+                ]
+              },
+              {
+                "source": "adserver.org",
+                "uids": [
+                  {
+                    "id": "1234567",
+                    "ext": {
+                      "rtiPartner": "TDID"
+                    }
+                  }
+                ]
+              }
+            ],
+            "gdpr": 0,
+            "us_privacy": "1---"
+          }
+        }
+      }
+    },
+    "mockResponse": {
+      "status": 200,
+      "body": {
+        "id": "WQ5V2DWVTMNXABDD",
+        "seatbid": [{
+          "bid": [{
+            "id": "TEST",
+            "impid": "1",
+            "price": 10.0,
+            "adid": "1",
+            "adm": "<script src=\"https://assets.a-mo.net/tmode.v1.js\"></script>",
+            "adomain": ["amxrtb.com"],
+            "iurl": "https://assets.a-mo.net/300x250.v2.png",
+            "cid": "1",
+            "crid": "1",
+            "h": 600,
+            "w": 300
+          }]
+        }],
+        "cur": "USD"
+      }
+    }
+  }],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "TEST",
+            "impid": "1",
+            "price": 10.0,
+            "adid": "1",
+            "adm": "<script src=\"https://assets.a-mo.net/tmode.v1.js\"></script>",
+            "adomain": ["amxrtb.com"],
+            "iurl": "https://assets.a-mo.net/300x250.v2.png",
+            "cid": "1",
+            "crid": "1",
+            "h": 600,
+            "w": 300
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

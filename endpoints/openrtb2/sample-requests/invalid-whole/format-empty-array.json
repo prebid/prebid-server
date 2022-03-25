@@ -1,6 +1,6 @@
 {
-  "message": "Invalid request: request.imp[0].banner has no sizes. Define \"w\" and \"h\", or include \"format\" elements.\n",
-  "requestPayload": {
+  "description": "Banner with empty format array does not define width nor height in w and h fields",
+  "mockBidRequest": {
     "id":"req-id",
     "site": {
       "id": "some-site"
@@ -18,5 +18,7 @@
         }
       }
     ]
-  }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: request.imp[0].banner has no sizes. Define \"w\" and \"h\", or include \"format\" elements.\n"
 }

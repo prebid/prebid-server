@@ -1,0 +1,35 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-impression-id-1",
+        "banner": {
+          "format": [
+            {
+              "w": 320,
+              "h": 50
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "host": "`",
+            "path": "auction/rtb/v2",
+            "seller_id": "1"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [],
+  "expectedBidResponses": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Failed to create final URL with provided host",
+      "comparison": "literal"
+    }
+  ],
+  "expectedMakeBidsErrors": []
+}
+

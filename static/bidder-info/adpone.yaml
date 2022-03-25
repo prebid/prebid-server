@@ -1,5 +1,6 @@
 maintainer:
   email: "tech@adpone.com"
+gvlVendorID: 799
 capabilities:
   app:
     mediaTypes:
@@ -7,3 +8,7 @@ capabilities:
   site:
     mediaTypes:
       - banner
+userSync:
+  redirect:
+    url: "https://usersync.adpone.com/csync?redir={{.RedirectURL}}"
+    userMacro: "{uid}"

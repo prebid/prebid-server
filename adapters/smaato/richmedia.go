@@ -3,6 +3,7 @@ package smaato
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/prebid/prebid-server/errortypes"
 	"net/url"
 	"strings"
 )
@@ -22,31 +23,27 @@ type richmedia struct {
 	Clicktrackers      []string  `json:"clicktrackers"`
 }
 
-func extractAdmRichMedia(adapterResponseAdm string) (string, error) {
-	var richMediaMarkup string
-	var err error
-
+func extractAdmRichMedia(adMarkup string) (string, error) {
 	var richMediaAd richMediaAd
-	err = json.Unmarshal([]byte(adapterResponseAdm), &richMediaAd)
-	var richMedia = richMediaAd.RichMedia
-
-	if err == nil {
-		var clickEvent strings.Builder
-		var impressionTracker strings.Builder
-
-		for _, clicktracker := range richMedia.Clicktrackers {
-			clickEvent.WriteString("fetch(decodeURIComponent('" + url.QueryEscape(clicktracker) + "'), " +
-				"{cache: 'no-cache'});")
+	if err := json.Unmarshal([]byte(adMarkup), &richMediaAd); err != nil {
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Invalid ad markup %s.", adMarkup),
 		}
-		for _, impression := range richMedia.Impressiontrackers {
-
-			impressionTracker.WriteString(fmt.Sprintf(`<img src="%s" alt="" width="0" height="0"/>`, impression))
-		}
-
-		richMediaMarkup = fmt.Sprintf(`<div onclick="%s">%s%s</div>`,
-			&clickEvent,
-			richMedia.MediaData.Content,
-			&impressionTracker)
 	}
-	return richMediaMarkup, err
+
+	var clickEvent strings.Builder
+	var impressionTracker strings.Builder
+
+	for _, clicktracker := range richMediaAd.RichMedia.Clicktrackers {
+		clickEvent.WriteString("fetch(decodeURIComponent('" + url.QueryEscape(clicktracker) + "'), " +
+			"{cache: 'no-cache'});")
+	}
+	for _, impression := range richMediaAd.RichMedia.Impressiontrackers {
+		impressionTracker.WriteString(fmt.Sprintf(`<img src="%s" alt="" width="0" height="0"/>`, impression))
+	}
+
+	richmediaAdMarkup := fmt.Sprintf(`<div onclick="%s">%s%s</div>`,
+		&clickEvent, richMediaAd.RichMedia.MediaData.Content, &impressionTracker)
+
+	return richmediaAdMarkup, nil
 }

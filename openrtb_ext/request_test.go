@@ -190,21 +190,43 @@ var validGranularityTests []granularityTestData = []granularityTestData{
 }
 
 func TestGranularityUnmarshalBad(t *testing.T) {
-	tests := [][]byte{
-		[]byte(`[]`),
-		[]byte(`{"precision": -1, "ranges": [{"max":20, "increment":0.5}]}`),
-		[]byte(`{"ranges":[{"max":20, "increment": -1}]}`),
-		[]byte(`{"ranges":[{"max":"20", "increment": "0.1"}]}`),
-		[]byte(`{"ranges":[{"max":20, "increment":0.1}. {"max":10, "increment":0.02}]}`),
-		[]byte(`{"ranges":[{"max":20, "min":10, "increment": 0.1}, {"max":10, "min":0, "increment":0.05}]}`),
-		[]byte(`{"ranges":[{"max":1.0, "increment": 0.07}, {"max" 1.0, "increment": 0.03}]}`),
+	testCases := []struct {
+		description          string
+		jsonPriceGranularity []byte
+	}{
+		{
+			"Malformed",
+			[]byte(`[]`),
+		},
+		{
+			"Negative precision",
+			[]byte(`{"precision": -1, "ranges": [{"max":20, "increment":0.5}]}`),
+		},
+		{
+			"Precision greater than MaxDecimalFigures supported",
+			[]byte(`{"precision": 16, "ranges": [{"max":20, "increment":0.5}]}`),
+		},
+		{
+			"Negative increment",
+			[]byte(`{"ranges":[{"max":20, "increment": -1}]}`),
+		},
+		{
+			"Range with non float64 max value",
+			[]byte(`{"ranges":[{"max":"20", "increment": "0.1"}]}`),
+		},
+		{
+			"Ranges in decreasing order",
+			[]byte(`{"ranges":[{"max":20, "increment":0.1}. {"max":10, "increment":0.02}]}`),
+		},
+		{
+			"Max equal to previous max",
+			[]byte(`{"ranges":[{"max":1.0, "increment": 0.07}, {"max" 1.0, "increment": 0.03}]}`),
+		},
 	}
-	var resolved PriceGranularity
-	for _, b := range tests {
-		resolved = PriceGranularity{}
-		err := json.Unmarshal(b, &resolved)
-		if err == nil {
-			t.Errorf("Invalid granularity unmarshalled without error.\nJSON was: %s\n Resolved to: %v", string(b), resolved)
-		}
+
+	for _, test := range testCases {
+		resolved := PriceGranularity{}
+		err := json.Unmarshal(test.jsonPriceGranularity, &resolved)
+		assert.Errorf(t, err, "Invalid granularity unmarshalled without error.\nJSON was: %s\n Resolved to: %v. Test: %s", string(test.jsonPriceGranularity), resolved, test.description)
 	}
 }

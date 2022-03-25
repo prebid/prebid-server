@@ -6,9 +6,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/analytics"
-	"github.com/prebid/prebid-server/usersync"
+	"github.com/prebid/prebid-server/config"
+
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 )
 
 const TEST_DIR string = "testFiles"
@@ -17,7 +18,7 @@ func TestAmpObject_ToJson(t *testing.T) {
 	ao := &analytics.AmpObject{
 		Status:             http.StatusOK,
 		Errors:             make([]error, 0),
-		AuctionResponse:    &openrtb.BidResponse{},
+		AuctionResponse:    &openrtb2.BidResponse{},
 		AmpTargetingValues: map[string]string{},
 	}
 	if aoJson := jsonifyAmpObject(ao); strings.Contains(aoJson, "Transactional Logs Error") {
@@ -57,10 +58,24 @@ func TestSetUIDObject_ToJson(t *testing.T) {
 func TestCookieSyncObject_ToJson(t *testing.T) {
 	cso := &analytics.CookieSyncObject{
 		Status:       http.StatusOK,
-		BidderStatus: []*usersync.CookieSyncBidders{},
+		BidderStatus: []*analytics.CookieSyncBidder{},
 	}
 	if csoJson := jsonifyCookieSync(cso); strings.Contains(csoJson, "Transactional Logs Error") {
 		t.Fatalf("CookieSyncObject failed to convert to json")
+	}
+}
+
+func TestLogNotificationEventObject_ToJson(t *testing.T) {
+	neo := &analytics.NotificationEvent{
+		Request: &analytics.EventRequest{
+			Bidder: "bidder",
+		},
+		Account: &config.Account{
+			ID: "id",
+		},
+	}
+	if neoJson := jsonifyNotificationEventObject(neo); strings.Contains(neoJson, "Transactional Logs Error") {
+		t.Fatalf("NotificationEventObject failed to convert to json")
 	}
 }
 
@@ -77,6 +92,7 @@ func TestFileLogger_LogObjects(t *testing.T) {
 		fl.LogAmpObject(&analytics.AmpObject{})
 		fl.LogSetUIDObject(&analytics.SetUIDObject{})
 		fl.LogCookieSyncObject(&analytics.CookieSyncObject{})
+		fl.LogNotificationEventObject(&analytics.NotificationEvent{})
 	} else {
 		t.Fatalf("Couldn't initialize file logger: %v", err)
 	}

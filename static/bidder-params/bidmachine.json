@@ -1,0 +1,28 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Bidmachine Adapter Params",
+    "description": "A schema which validates params accepted by the Kidoz adapter",
+    "type": "object",
+    "properties": {
+        "host": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Host"
+        },
+        "path": {
+            "type": "string",
+            "minLength": 1,
+            "description": "URL path"
+        },
+        "seller_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Seller Identifier"
+        }
+    },
+    "required": [
+        "host",
+        "path",
+        "seller_id"
+    ]
+}

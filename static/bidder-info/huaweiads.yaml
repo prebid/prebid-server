@@ -1,0 +1,9 @@
+maintainer:
+  email: hwads@huawei.com
+gvlVendorID: 856
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - native

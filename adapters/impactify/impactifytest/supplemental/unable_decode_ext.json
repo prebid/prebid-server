@@ -1,0 +1,29 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "video": {
+          "mimes": ["video/mp4"],
+          "protocols": [2, 5],
+          "w": 1024,
+          "h": 576
+        },
+        "ext":{
+          "bidder": {
+            "appId": "impactify.io",
+            "format": "screen",
+            "style": 123
+          }
+        }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Unable to decode the imp ext : \"test-imp-id\"",
+      "comparison": "literal"
+    }
+  ]
+}

@@ -36,13 +36,13 @@
     }],
     "expectedCacheables": [
         {
-            "Type": "json",
-            "TTLSeconds": 660,
-            "Data": "{\"id\": \"bidOne\", \"impid\": \"oneImp\", \"price\": 7.64}"
+            "type": "json",
+            "ttlseconds": 660,
+            "value": "{\"id\": \"bidOne\", \"impid\": \"oneImp\", \"price\": 7.64}"
         }, {
-            "Type": "json",
-            "TTLSeconds": 3660,
-            "Data": "{\"id\": \"bidTwo\", \"impid\": \"twoImp\", \"price\": 5.64}"
+            "type": "json",
+            "ttlseconds": 3660,
+            "value": "{\"id\": \"bidTwo\", \"impid\": \"twoImp\", \"price\": 5.64}"
         }
     ],
     "defaultTTLs": {
