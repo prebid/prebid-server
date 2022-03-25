@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
@@ -36,6 +37,23 @@ func (a *adapter) MakeRequests(
 	reqCopy := *openRTBRequest
 	reqCopy.Imp = []openrtb2.Imp{}
 	for ind, imp := range openRTBRequest.Imp {
+
+		// Check if imp comes with bid floor amount defined in a foreign currency
+		if imp.BidFloor > 0 && imp.BidFloorCur != "" && strings.ToUpper(imp.BidFloorCur) != "USD" {
+			// Convert to US dollars
+			convertedValue, err := reqInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, "USD")
+			if err != nil {
+				return nil, []error{err}
+			}
+			// Update after conversion. All imp elements inside request.Imp are shallow copies
+			// therefore, their non-pointer values are not shared memory and are safe to modify.
+			imp.BidFloorCur = "USD"
+			imp.BidFloor = convertedValue
+		}
+
+		// Set the CUR of bid to USD after converting all floors
+		reqCopy.Cur = []string{"USD"}
+
 		reqCopy.Imp = append(reqCopy.Imp, imp)
 
 		tagID, err = jsonparser.GetString(reqCopy.Imp[ind].Ext, "bidder", "placement")
@@ -106,7 +124,8 @@ func (a *adapter) MakeBids(
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(openRTBRequest.Imp))
-	bidResponse.Currency = openRTBBidderResponse.Cur
+	bidResponse.Currency = "USD"
+
 	for _, seatBid := range openRTBBidderResponse.SeatBid {
 		for idx := range seatBid.Bid {
 			b := &adapters.TypedBid{
