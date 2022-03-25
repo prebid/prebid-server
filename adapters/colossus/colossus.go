@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
@@ -29,21 +28,25 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 func (a *ColossusAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var err error
-	var tagID string
 
+	var bidderExt adapters.ExtImpBidder
+	var collossusExt openrtb_ext.ExtImpColossus
 	var adapterRequests []*adapters.RequestData
 
 	reqCopy := *request
 	for _, imp := range request.Imp {
 		reqCopy.Imp = []openrtb2.Imp{imp}
 
-		tagID, err = jsonparser.GetString(reqCopy.Imp[0].Ext, "bidder", "TagID")
-		if err != nil {
-			errs = append(errs, err)
-			continue
+		if err = json.Unmarshal(reqCopy.Imp[0].Ext, &bidderExt); err != nil {
+			return nil, append(errs, err)
+		}
+		if err = json.Unmarshal(bidderExt.Bidder, &collossusExt); err != nil {
+			return nil, append(errs, err)
 		}
 
-		reqCopy.Imp[0].TagID = tagID
+		if collossusExt.TagID != "" {
+			reqCopy.Imp[0].TagID = collossusExt.TagID
+		}
 
 		adapterReq, errors := a.makeRequest(&reqCopy)
 		if adapterReq != nil {
