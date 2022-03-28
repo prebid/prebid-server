@@ -11,7 +11,6 @@ capabilities:
       - banner
       - video
 userSync:
-  default: iframe
   iframe:
     url: https://sync.quantumdex.io/usersync/pbs?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&r={{.RedirectURL}}
     userMacro: "[UID]"
