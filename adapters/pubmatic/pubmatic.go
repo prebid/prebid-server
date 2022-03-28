@@ -335,6 +335,9 @@ func extractPubmaticExtFromRequest(request *openrtb2.BidRequest) (*pubmaticWrapp
 
 	if _acat, ok := reqExtBidderParams["acat"]; ok {
 		err = json.Unmarshal(_acat, &acat)
+		for i := 0; i < len(acat); i++ {
+			acat[i] = strings.TrimSpace(acat[i])
+		}
 	}
 
 	return wrpExt, acat, err

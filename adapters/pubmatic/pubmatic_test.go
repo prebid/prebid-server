@@ -198,11 +198,11 @@ func TestExtractPubmaticExtFromRequest(t *testing.T) {
 			name: "Valid Pubmatic acat ext",
 			args: args{
 				request: &openrtb2.BidRequest{
-					Ext: json.RawMessage(`{"prebid":{"bidderparams":{"acat":["drg”,”dlu”,”ssr"],"wrapper":{"profile":123,"version":456}}}}`),
+					Ext: json.RawMessage(`{"prebid":{"bidderparams":{"acat":[" drg \t","dlu","ssr"],"wrapper":{"profile":123,"version":456}}}}`),
 				},
 			},
 			expectedWrapperExt: &pubmaticWrapperExt{ProfileID: 123, VersionID: 456},
-			expectedAcat:       []string{"drg”,”dlu”,”ssr"},
+			expectedAcat:       []string{"drg", "dlu", "ssr"},
 			wantErr:            false,
 		},
 		{
