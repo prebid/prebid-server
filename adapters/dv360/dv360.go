@@ -204,6 +204,11 @@ func (adapter *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.Ex
 			impCopy.Video = &videoCopy
 		}
 
+		// Overwrite BidFloor if present
+		if dv360Ext.BidFloor != nil {
+			impCopy.BidFloor = *dv360Ext.BidFloor
+		}
+
 		// create impression extension object
 		// Hardcode serverside to 1 as per external disc https://tapjoy.atlassian.net/browse/NGS-44
 		impExt := dv360ImpExt{

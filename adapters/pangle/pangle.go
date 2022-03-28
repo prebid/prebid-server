@@ -129,6 +129,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			imp.Banner = nil
 		}
 
+		// Overwrite BidFloor if present
+		if bidderImpExt.BidFloor != nil {
+			imp.BidFloor = *bidderImpExt.BidFloor
+		}
+
 		if bidderImpExt.SKADNSupported {
 			skadn := adapters.FilterPrebidSKADNExt(impExt.Prebid, pangleExtSKADNetIDs)
 			// only add if present

@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/config"
 	"net/http"
+
+	"github.com/prebid/prebid-server/config"
 
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
@@ -163,6 +164,11 @@ func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.E
 			} else {
 				thisImp.Banner = nil
 			}
+		}
+
+		// Overwrite BidFloor if present
+		if taurusxExt.BidFloor != nil {
+			thisImp.BidFloor = *taurusxExt.BidFloor
 		}
 
 		impExt := taurusxImpExt{}

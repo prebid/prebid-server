@@ -5,6 +5,7 @@ type ExtImpPersonaly struct {
 	Video          personalyVideoParams `json:"video"`
 	SKADNSupported bool                 `json:"skadn_supported"`
 	MRAIDSupported bool                 `json:"mraid_supported"`
+	BidFloor       *float64             `json:"bid_floor,omitempty"`
 }
 
 // personalyVideoParams defines the contract for bidrequest.imp[i].ext.personaly.video

@@ -7,6 +7,7 @@ type ExtImpAppier struct {
 	SKADNSupported       bool              `json:"skadn_supported"`
 	MRAIDSupported       bool              `json:"mraid_supported"`
 	EndcardHTMLSupported bool              `json:"endcard_html_supported"`
+	BidFloor             *float64          `json:"bid_floor,omitempty"`
 }
 
 // appierVideoParams defines the contract for bidrequest.imp[i].ext.appier.video

@@ -166,6 +166,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			thisImp.Video = &videoCopy
 		}
 
+		// Overwrite BidFloor if present
+		if unicornExt.BidFloor != nil {
+			thisImp.BidFloor = *unicornExt.BidFloor
+		}
+
 		impExt := unicornImpExt{}
 
 		if unicornExt.SKADNSupported {

@@ -193,16 +193,6 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 					pbReq.Imp[i].Banner.W = openrtb2.Int64Ptr(int64(width))
 					pbReq.Imp[i].Banner.H = openrtb2.Int64Ptr(int64(height))
 
-					// for usa requests -- set bidfloor to a min of 10.0 for RW, 8.00 for NonRW
-					if pbReq.Device != nil && pbReq.Device.Geo != nil && strings.ToLower(pbReq.Device.Geo.Country) == "usa" {
-						if pbReq.Imp[i].Video != nil && pbReq.Imp[i].Video.Skip != nil && *pbReq.Imp[i].Video.Skip == 0 && pbReq.Imp[i].BidFloor < 10.0 {
-							pbReq.Imp[i].BidFloor = 10.0
-						}
-						if pbReq.Imp[i].Video != nil && pbReq.Imp[i].Video.Skip != nil && *pbReq.Imp[i].Video.Skip == 1 && pbReq.Imp[i].BidFloor < 8.0 {
-							pbReq.Imp[i].BidFloor = 8.0
-						}
-					}
-
 					if len(params.Keywords) != 0 {
 						kvstr := prepareImpressionExt(params.Keywords)
 						pbReq.Imp[i].Ext = json.RawMessage([]byte(kvstr))
@@ -383,14 +373,9 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ad
 		return nil, errs
 	}
 
-	// for usa requests -- set bidfloor to a min of 10.0 for RW, 8.00 for NonRW
-	if request.Device != nil && request.Device.Geo != nil && strings.ToLower(request.Device.Geo.Country) == "usa" {
-		if impData.pubmatic.Reward == 1 && request.Imp[0].BidFloor < 10.0 {
-			request.Imp[0].BidFloor = 10.0
-		}
-		if impData.pubmatic.Reward != 1 && request.Imp[0].BidFloor < 8.0 {
-			request.Imp[0].BidFloor = 8.0
-		}
+	// Overwrite BidFloor if present
+	if impData.pubmatic.BidFloor != nil {
+		request.Imp[0].BidFloor = *impData.pubmatic.BidFloor
 	}
 
 	if wrapExt != "" {

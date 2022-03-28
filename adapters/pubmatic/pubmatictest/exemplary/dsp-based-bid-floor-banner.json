@@ -3,6 +3,7 @@
         "id": "test-request-id",
         "imp": [{
             "id": "test-imp-id",
+            "bidfloor":10.0,
             "banner": {
                 "format": [{
                     "w": 300,
@@ -26,7 +27,8 @@
                         "version": 1,
                         "profile": 5123
                     },
-                    "mraid_supported": true
+                    "mraid_supported": true,
+                    "bid_floor":100.0
                 }
             }
         }],
@@ -64,7 +66,8 @@
                 "ext": {
                   "pmZoneId": "Zone1,Zone2",
                   "preference": "sports,movies"
-                }
+                },
+                "bidfloor":100.0
               }
             ], 
             "device":{

@@ -210,6 +210,10 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.Ex
 				thisImp.Banner = nil
 			}
 		}
+		// Overwrite BidFloor if present
+		if liftoffExt.BidFloor != nil {
+			thisImp.BidFloor = *liftoffExt.BidFloor
+		}
 
 		impExt := liftoffImpExt{
 			Rewarded: rewarded,

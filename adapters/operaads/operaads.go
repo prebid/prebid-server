@@ -182,6 +182,11 @@ func (a *OperaAdsAdapter) MakeRequests(
 			}
 		}
 
+		// Overwrite BidFloor if present
+		if operaadsExt.BidFloor != nil {
+			imp.BidFloor = *operaadsExt.BidFloor
+		}
+
 		impExt := operaAdsImpExt{
 			Rewarded: rewarded,
 		}
