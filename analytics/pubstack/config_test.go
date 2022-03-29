@@ -1,11 +1,12 @@
 package pubstack
 
 import (
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestFetchConfig(t *testing.T) {
@@ -24,7 +25,6 @@ func TestFetchConfig(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		defer req.Body.Close()
 		res.Write([]byte(configResponse))
-		res.WriteHeader(200)
 	}))
 
 	defer server.Close()
@@ -49,7 +49,6 @@ func TestFetchConfig_Error(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		defer req.Body.Close()
 		res.Write([]byte(configResponse))
-		res.WriteHeader(200)
 	}))
 
 	defer server.Close()
