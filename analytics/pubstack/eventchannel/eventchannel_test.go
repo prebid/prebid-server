@@ -122,18 +122,14 @@ func TestEventChannel_Push(t *testing.T) {
 	eventChannel := NewEventChannel(send, 15000, 5, 5*time.Millisecond)
 	defer eventChannel.Close()
 
-	eventChannel.Push([]byte("one"))
-	eventChannel.Push([]byte("two"))
-	eventChannel.Push([]byte("three"))
-	eventChannel.Push([]byte("four"))
-	eventChannel.Push([]byte("five"))
-	eventChannel.Push([]byte("six"))
-	eventChannel.Push([]byte("seven"))
+	eventChannel.Push([]byte("1"))
+	eventChannel.Push([]byte("2"))
+	eventChannel.Push([]byte("3"))
 
+	// wait for events to be pushed
 	time.Sleep(10 * time.Millisecond)
 
-	assert.Equal(t, string(data), "onetwothreefourfivesixseven")
-
+	assert.ElementsMatch(t, []byte{'1', '2', '3'}, data)
 }
 
 func TestEventChannel_OutputFormat(t *testing.T) {
