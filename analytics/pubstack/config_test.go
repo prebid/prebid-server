@@ -32,13 +32,13 @@ func TestFetchConfig(t *testing.T) {
 	endpoint, _ := url.Parse(server.URL)
 	cfg, _ := fetchConfig(server.Client(), endpoint)
 
-	assert.Equal(t, cfg.ScopeID, "scopeId")
-	assert.Equal(t, cfg.Endpoint, "https://pubstack.io")
-	assert.Equal(t, cfg.Features[auction], true)
-	assert.Equal(t, cfg.Features[cookieSync], true)
-	assert.Equal(t, cfg.Features[amp], true)
-	assert.Equal(t, cfg.Features[setUID], false)
-	assert.Equal(t, cfg.Features[video], false)
+	assert.Equal(t, "scopeId", cfg.ScopeID)
+	assert.Equal(t, "https://pubstack.io", cfg.Endpoint)
+	assert.Equal(t, true, cfg.Features[auction])
+	assert.Equal(t, true, cfg.Features[cookieSync])
+	assert.Equal(t, true, cfg.Features[amp])
+	assert.Equal(t, false, cfg.Features[setUID])
+	assert.Equal(t, false, cfg.Features[video])
 }
 
 func TestFetchConfig_Error(t *testing.T) {
@@ -57,7 +57,7 @@ func TestFetchConfig_Error(t *testing.T) {
 	cfg, err := fetchConfig(server.Client(), endpoint)
 
 	assert.Nil(t, cfg)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestIsSameAs(t *testing.T) {
@@ -97,5 +97,4 @@ func TestIsSameAs(t *testing.T) {
 	assert.True(t, a.isSameAs(b))
 	b.Features["auction"] = false
 	assert.False(t, a.isSameAs(b))
-
 }

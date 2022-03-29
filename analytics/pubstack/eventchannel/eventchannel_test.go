@@ -36,8 +36,7 @@ func newSender(data *[]byte) Sender {
 }
 
 func TestEventChannel_isBufferFull(t *testing.T) {
-
-	send := func(_ []byte) error { return nil }
+	send := func([]byte) error { return nil }
 
 	eventChannel := NewEventChannel(send, maxByteSize, maxEventCount, maxTime)
 	defer eventChannel.Close()
@@ -45,42 +44,41 @@ func TestEventChannel_isBufferFull(t *testing.T) {
 	eventChannel.buffer([]byte("one"))
 	eventChannel.buffer([]byte("two"))
 
-	assert.Equal(t, eventChannel.isBufferFull(), false)
+	assert.False(t, eventChannel.isBufferFull())
 
 	eventChannel.buffer([]byte("three"))
 
-	assert.Equal(t, eventChannel.isBufferFull(), true)
+	assert.True(t, eventChannel.isBufferFull())
 
 	eventChannel.reset()
 
-	assert.Equal(t, eventChannel.isBufferFull(), false)
+	assert.False(t, eventChannel.isBufferFull())
 
 	eventChannel.buffer([]byte("big-event-abcdefghijklmnopqrstuvwxyz"))
 
-	assert.Equal(t, eventChannel.isBufferFull(), true)
-
+	assert.True(t, eventChannel.isBufferFull())
 }
 
 func TestEventChannel_reset(t *testing.T) {
-	send := func(_ []byte) error { return nil }
+	send := func([]byte) error { return nil }
 
 	eventChannel := NewEventChannel(send, maxByteSize, maxEventCount, maxTime)
 	defer eventChannel.Close()
 
-	assert.Equal(t, eventChannel.metrics.eventCount, int64(0))
-	assert.Equal(t, eventChannel.metrics.bufferSize, int64(0))
+	assert.Zero(t, eventChannel.metrics.eventCount)
+	assert.Zero(t, eventChannel.metrics.bufferSize)
 
 	eventChannel.buffer([]byte("one"))
 	eventChannel.buffer([]byte("two"))
 
-	assert.NotEqual(t, eventChannel.metrics.eventCount, int64(0))
-	assert.NotEqual(t, eventChannel.metrics.bufferSize, int64(0))
+	assert.NotZero(t, eventChannel.metrics.eventCount)
+	assert.NotZero(t, eventChannel.metrics.bufferSize)
 
 	eventChannel.reset()
 
-	assert.Equal(t, eventChannel.buff.Len(), 0)
-	assert.Equal(t, eventChannel.metrics.eventCount, int64(0))
-	assert.Equal(t, eventChannel.metrics.bufferSize, int64(0))
+	assert.Zero(t, eventChannel.buff.Len())
+	assert.Zero(t, eventChannel.metrics.eventCount)
+	assert.Zero(t, eventChannel.metrics.bufferSize)
 }
 
 func TestEventChannel_flush(t *testing.T) {
@@ -96,7 +94,7 @@ func TestEventChannel_flush(t *testing.T) {
 	eventChannel.flush()
 	time.Sleep(10 * time.Millisecond)
 
-	assert.Equal(t, string(data), "onetwothree")
+	assert.Equal(t, "onetwothree", string(data))
 }
 
 func TestEventChannel_close(t *testing.T) {
@@ -112,7 +110,7 @@ func TestEventChannel_close(t *testing.T) {
 
 	time.Sleep(10 * time.Millisecond)
 
-	assert.Equal(t, string(data), "onetwothree")
+	assert.Equal(t, "onetwothree", string(data))
 }
 
 func TestEventChannel_Push(t *testing.T) {
@@ -133,7 +131,6 @@ func TestEventChannel_Push(t *testing.T) {
 }
 
 func TestEventChannel_OutputFormat(t *testing.T) {
-
 	toGzip := func(payload string) []byte {
 		var buf bytes.Buffer
 		zw := gzip.NewWriter(&buf)
@@ -168,7 +165,6 @@ func TestEventChannel_OutputFormat(t *testing.T) {
 	time.Sleep(1 * time.Millisecond)
 
 	eventChannel.Close()
-
 	time.Sleep(1 * time.Millisecond)
 
 	expected := append(toGzip("one"), toGzip("twothree")...)
