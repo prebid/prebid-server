@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 
@@ -40,7 +41,7 @@ func TestPubstackModuleErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		_, err := NewPubstackModule(&http.Client{}, "scope", "http://example.com", tt.refreshDelay, 100, tt.maxByteSize, tt.maxTime)
-		assert.NotNil(t, err, tt.description)
+		assert.Error(t, err, tt.description)
 	}
 }
 
@@ -95,6 +96,7 @@ func TestPubstackModuleSuccess(t *testing.T) {
 				tt.feature: false,
 			},
 		}
+
 		// updated config is hot-reloaded after some time passes
 		// the feature is enabled so events should be sent
 		updatedConfig := &Configuration{
@@ -105,20 +107,24 @@ func TestPubstackModuleSuccess(t *testing.T) {
 
 		// create server with root endpoint that returns the current config
 		// add an intake endpoint that PBS hits when events are sent
-		rootCount := 0
+		var isFirstQuery bool = true
+		var isFirstQueryMutex sync.Mutex
 		mux := http.NewServeMux()
 		mux.HandleFunc("/", func(res http.ResponseWriter, req *http.Request) {
-			rootCount++
+			isFirstQueryMutex.Lock()
+			defer isFirstQueryMutex.Unlock()
+
 			defer req.Body.Close()
 
-			if rootCount > 1 {
-				if data, err := json.Marshal(updatedConfig); err != nil {
+			if isFirstQuery {
+				isFirstQuery = false
+				if data, err := json.Marshal(origConfig); err != nil {
 					res.WriteHeader(http.StatusBadRequest)
 				} else {
 					res.Write(data)
 				}
 			} else {
-				if data, err := json.Marshal(origConfig); err != nil {
+				if data, err := json.Marshal(updatedConfig); err != nil {
 					res.WriteHeader(http.StatusBadRequest)
 				} else {
 					res.Write(data)
@@ -137,14 +143,15 @@ func TestPubstackModuleSuccess(t *testing.T) {
 		origConfig.Endpoint = server.URL
 		updatedConfig.Endpoint = server.URL
 
-		// instantiate module with 25ms config refresh rate
+		// instantiate module with 15ms config refresh rate
 		module, err := NewPubstackModule(client, "scope", server.URL, "15ms", 100, "1B", "10ms")
-		assert.Nil(t, err, tt.description)
+		assert.NoError(t, err, tt.description)
 
 		// allow time for the module to load the original config
 		time.Sleep(10 * time.Millisecond)
 
 		pubstack, _ := module.(*PubstackModule)
+
 		// attempt to log but no event channel was created because the feature is disabled in the original config
 		tt.logObject(pubstack)
 
@@ -163,6 +170,7 @@ func TestPubstackModuleSuccess(t *testing.T) {
 }
 
 func assertChanNone(t *testing.T, c <-chan int, msgAndArgs ...interface{}) bool {
+	t.Helper()
 	select {
 	case <-c:
 		return assert.Fail(t, "Should NOT receive an event, but did", msgAndArgs...)
@@ -172,6 +180,7 @@ func assertChanNone(t *testing.T, c <-chan int, msgAndArgs ...interface{}) bool 
 }
 
 func assertChanOne(t *testing.T, c <-chan int, msgAndArgs ...interface{}) bool {
+	t.Helper()
 	select {
 	case <-c:
 		return true
