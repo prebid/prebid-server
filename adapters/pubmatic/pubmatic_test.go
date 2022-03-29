@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -223,6 +224,43 @@ func TestExtractPubmaticExtFromRequest(t *testing.T) {
 			assert.Equal(t, tt.wantErr, err != nil)
 			assert.Equal(t, tt.expectedWrapperExt, gotWrapperExt)
 			assert.Equal(t, tt.expectedAcat, gotAcat)
+		})
+	}
+}
+
+func TestPubmaticAdapter_MakeRequests(t *testing.T) {
+	type fields struct {
+		URI string
+	}
+	type args struct {
+		request *openrtb2.BidRequest
+		reqInfo *adapters.ExtraRequestInfo
+	}
+	tests := []struct {
+		name            string
+		fields          fields
+		args            args
+		expectedReqData []*adapters.RequestData
+		wantErr         bool
+	}{
+		// Happy paths covered by TestJsonSamples()
+		// Covering only error scenarios here
+		{
+			name: "invalid bidderparams",
+			args: args{
+				request: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"bidderparams":{"wrapper":"123"}}}`)},
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := &PubmaticAdapter{
+				URI: tt.fields.URI,
+			}
+			gotReqData, gotErr := a.MakeRequests(tt.args.request, tt.args.reqInfo)
+			assert.Equal(t, tt.wantErr, len(gotErr) != 0)
+			assert.Equal(t, tt.expectedReqData, gotReqData)
 		})
 	}
 }
