@@ -10,7 +10,6 @@ import (
 	tcf2ConsentConstants "github.com/prebid/go-gdpr/consentconstants/tcf2"
 	"github.com/prebid/go-gdpr/vendorconsent"
 	tcf2 "github.com/prebid/go-gdpr/vendorconsent/tcf2"
-	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -24,7 +23,7 @@ type permissionsImpl struct {
 }
 
 func (p *permissionsImpl) HostCookiesAllowed(ctx context.Context, gdprSignal Signal, consent string) (bool, error) {
-	gdprSignal = SignalNormalize(gdprSignal, config.GDPR{DefaultValue: p.gdprDefaultValue})
+	gdprSignal = SignalNormalize(gdprSignal, p.gdprDefaultValue)
 
 	if gdprSignal == SignalNo {
 		return true, nil
@@ -34,7 +33,7 @@ func (p *permissionsImpl) HostCookiesAllowed(ctx context.Context, gdprSignal Sig
 }
 
 func (p *permissionsImpl) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, gdprSignal Signal, consent string) (bool, error) {
-	gdprSignal = SignalNormalize(gdprSignal, config.GDPR{DefaultValue: p.gdprDefaultValue})
+	gdprSignal = SignalNormalize(gdprSignal, p.gdprDefaultValue)
 
 	if gdprSignal == SignalNo {
 		return true, nil
@@ -54,7 +53,7 @@ func (p *permissionsImpl) AuctionActivitiesAllowed(ctx context.Context, bidderCo
 		return true, true, true, nil
 	}
 
-	gdprSignal = SignalNormalize(gdprSignal, config.GDPR{DefaultValue: p.gdprDefaultValue})
+	gdprSignal = SignalNormalize(gdprSignal, p.gdprDefaultValue)
 
 	if gdprSignal == SignalNo {
 		return true, true, true, nil
