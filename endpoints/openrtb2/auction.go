@@ -1661,7 +1661,11 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 	resolvedRequest := requestJson
 
 	if hasStoredBidRequest {
-		if deps.cfg.GenerateRequestID || bidRequestID == "{{UUID}}" {
+		isAppRequest, err := checkIfAppRequest(requestJson)
+		if err != nil {
+			return nil, nil, []error{err}
+		}
+		if (deps.cfg.GenerateRequestID && isAppRequest) || bidRequestID == "{{UUID}}" {
 			uuidPatch, err := generateUuidForBidRequest(deps.uuidGenerator)
 			if err != nil {
 				return nil, nil, []error{err}
@@ -1937,4 +1941,18 @@ func (deps *endpointDeps) setIntegrationType(req *openrtb_ext.RequestWrapper, ac
 		reqExt.SetPrebid(reqPrebid)
 	}
 	return nil
+}
+
+func checkIfAppRequest(request []byte) (bool, error) {
+	requestApp, dataType, _, err := jsonparser.Get(request, "app")
+	if dataType == jsonparser.NotExist {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	if requestApp != nil {
+		return true, nil
+	}
+	return false, nil
 }

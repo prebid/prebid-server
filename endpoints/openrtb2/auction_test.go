@@ -1855,10 +1855,10 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 			expectedID:             uuid,
 		},
 		{
-			description:            "GenerateRequestID is true, rawData is a site request, has stored bid, and stored bidrequestID is not the macro {{UUID}}, we should generate uuid",
+			description:            "GenerateRequestID is true, rawData is a site request, has stored bid, and stored bidrequestID is not the macro {{UUID}}, we should not generate uuid",
 			givenRawData:           testBidRequests[3],
 			givenGenerateRequestID: true,
-			expectedID:             uuid,
+			expectedID:             "ThisID",
 		},
 		{
 			description:            "GenerateRequestID is false, rawData is an app request and has stored bid, and stored bidrequestID is the macro {{UUID}}, so we should generate uuid",
@@ -1879,10 +1879,10 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 			expectedID:             "ThisID",
 		},
 		{
-			description:            "GenerateRequestID is true, and rawData is a site request, we should generate uuid",
+			description:            "GenerateRequestID is false, and rawData is a site request, and macro {{UUID}} is present, we should generate uuid",
 			givenRawData:           testBidRequests[1],
-			givenGenerateRequestID: true,
-			expectedID:             "ThisID",
+			givenGenerateRequestID: false,
+			expectedID:             uuid,
 		},
 		{
 			description:            "Macro ID {{UUID}} case sensitivity check meaning a macro that is lowercase {{uuid}} shouldn't generate a uuid",
@@ -4448,7 +4448,8 @@ var testBidRequests = []string{
 		],
 		"ext": {
 			"prebid": {
-				"targeting": {
+				"storedrequest": {
+					"id": "1"
 				}
 			}
 		}
