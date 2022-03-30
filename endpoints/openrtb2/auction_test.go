@@ -114,13 +114,13 @@ func TestJsonSampleRequests(t *testing.T) {
 						continue
 					}
 
+					// Build endpoint for testing. If no error, run test case
 					auctionEndpointHandler, appNexusServer, openXServer, rubiconServer, mockCurrencyRatesServer, err := buildTestEndpoint(test, paramsValidator)
-					if !assert.NoError(t, err) {
-						continue
+					if assert.NoError(t, err) {
+						runTestCase(t, auctionEndpointHandler, test, fileData, testFile)
 					}
 
-					runTestCase(t, auctionEndpointHandler, test, fileData, testFile)
-
+					// Close servers regardless if the test case was run or not
 					appNexusServer.Close()
 					openXServer.Close()
 					rubiconServer.Close()

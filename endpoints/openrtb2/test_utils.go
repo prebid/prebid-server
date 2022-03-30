@@ -1096,21 +1096,18 @@ func buildTestEndpoint(test testCase, paramValidator openrtb_ext.BidderParamVali
 	// AppNexus mock bid server and adapter
 	appNexusBidder := mockBidderHandler{bidInfo: test.Config.MockBidder, bidderName: "appnexus"}
 	appNexusServer := httptest.NewServer(http.HandlerFunc(appNexusBidder.bid))
-	//defer appNexusServer.Close()
 	appNexusBidderAdapter := mockAdapter{mockServerURL: appNexusServer.URL}
 	adapterMap[openrtb_ext.BidderAppnexus] = exchange.AdaptBidder(appNexusBidderAdapter, appNexusServer.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil)
 
 	// openX mock bid server and adapter
 	openXBidder := mockBidderHandler{bidInfo: test.Config.MockBidder, bidderName: "openx"}
 	openXServer := httptest.NewServer(http.HandlerFunc(openXBidder.bid))
-	//defer openXServer.Close()
 	openXBidderAdapter := mockAdapter{mockServerURL: openXServer.URL}
 	adapterMap[openrtb_ext.BidderOpenx] = exchange.AdaptBidder(openXBidderAdapter, openXServer.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderOpenx, nil)
 
 	// Rubicon mock bid server and adapter
 	rubiconBidder := mockBidderHandler{bidInfo: test.Config.MockBidder, bidderName: "rubicon"}
 	rubiconServer := httptest.NewServer(http.HandlerFunc(rubiconBidder.bid))
-	//defer rubiconServer.Close()
 	rubiconBidderAdapter := mockAdapter{mockServerURL: rubiconServer.URL}
 	adapterMap[openrtb_ext.BidderRubicon] = exchange.AdaptBidder(rubiconBidderAdapter, rubiconServer.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderRubicon, nil)
 

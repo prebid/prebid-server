@@ -140,6 +140,10 @@ func BenchmarkValidWholeExemplary(b *testing.B) {
 			}
 
 			auctionEndpointHandler, appNexusServer, openXServer, rubiconServer, mockCurrencyRatesServer, err := buildTestEndpoint(test, paramValidator)
+			defer appNexusServer.Close()
+			defer openXServer.Close()
+			defer rubiconServer.Close()
+			defer mockCurrencyRatesServer.Close()
 			if err != nil {
 				b.Fatal(err.Error())
 			}
@@ -153,12 +157,6 @@ func BenchmarkValidWholeExemplary(b *testing.B) {
 				auctionEndpointHandler(recorder, request, nil) //Request comes from the unmarshalled mockBidRequest
 				b.StopTimer()
 			}
-
-			// Close mock servers
-			appNexusServer.Close()
-			openXServer.Close()
-			rubiconServer.Close()
-			mockCurrencyRatesServer.Close()
 		})
 	}
 }
