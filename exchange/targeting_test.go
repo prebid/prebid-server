@@ -247,6 +247,7 @@ type TargetingTestData struct {
 	IsApp                      bool
 	CategoryMapping            map[string]string
 	ExpectedBidTargetsByBidder map[string]map[openrtb_ext.BidderName]map[string]string
+	TruncateTargetAttr         *int
 }
 
 var bid123 *openrtb2.Bid = &openrtb2.Bid{
@@ -261,6 +262,9 @@ var bid084 *openrtb2.Bid = &openrtb2.Bid{
 	Price: 0.84,
 }
 
+var truncateTargetAttrValueLess int = 10
+var truncateTargetAttrValueGreater int = 25
+var truncateTargetAttrValueNegative int = -1
 var TargetingTests []TargetingTestData = []TargetingTestData{
 	{
 		Description: "Targeting winners only (most basic targeting example)",
@@ -291,6 +295,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 				openrtb_ext.BidderRubicon: {},
 			},
 		},
+		TruncateTargetAttr: nil,
 	},
 	{
 		Description: "Targeting on bidders only",
@@ -324,6 +329,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 				},
 			},
 		},
+		TruncateTargetAttr: nil,
 	},
 	{
 		Description: "Full basic targeting with hd_format",
@@ -364,6 +370,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 				},
 			},
 		},
+		TruncateTargetAttr: nil,
 	},
 	{
 		Description: "Cache and deal targeting test",
@@ -410,6 +417,109 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 				},
 			},
 		},
+		TruncateTargetAttr: nil,
+	},
+	{
+		Description: "Truncate Targeting Attribute value is given and is less than const MaxKeyLength",
+		TargetData: targetData{
+			priceGranularity:  openrtb_ext.PriceGranularityFromString("med"),
+			includeBidderKeys: true,
+		},
+		Auction: auction{
+			winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*pbsOrtbBid{
+				"ImpId-1": {
+					openrtb_ext.BidderAppnexus: {
+						bid:     bid123,
+						bidType: openrtb_ext.BidTypeBanner,
+					},
+					openrtb_ext.BidderRubicon: {
+						bid:     bid084,
+						bidType: openrtb_ext.BidTypeBanner,
+					},
+				},
+			},
+		},
+		ExpectedBidTargetsByBidder: map[string]map[openrtb_ext.BidderName]map[string]string{
+			"ImpId-1": {
+				openrtb_ext.BidderAppnexus: {
+					"hb_bidder_": "appnexus",
+					"hb_pb_appn": "1.20",
+				},
+				openrtb_ext.BidderRubicon: {
+					"hb_bidder_": "rubicon",
+					"hb_pb_rubi": "0.80",
+				},
+			},
+		},
+		TruncateTargetAttr: &truncateTargetAttrValueLess,
+	},
+	{
+		Description: "Truncate Targeting Attribute value is given and is greater than const MaxKeyLength",
+		TargetData: targetData{
+			priceGranularity:  openrtb_ext.PriceGranularityFromString("med"),
+			includeBidderKeys: true,
+		},
+		Auction: auction{
+			winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*pbsOrtbBid{
+				"ImpId-1": {
+					openrtb_ext.BidderAppnexus: {
+						bid:     bid123,
+						bidType: openrtb_ext.BidTypeBanner,
+					},
+					openrtb_ext.BidderRubicon: {
+						bid:     bid084,
+						bidType: openrtb_ext.BidTypeBanner,
+					},
+				},
+			},
+		},
+		ExpectedBidTargetsByBidder: map[string]map[openrtb_ext.BidderName]map[string]string{
+			"ImpId-1": {
+				openrtb_ext.BidderAppnexus: {
+					"hb_bidder_appnexus": "appnexus",
+					"hb_pb_appnexus":     "1.20",
+				},
+				openrtb_ext.BidderRubicon: {
+					"hb_bidder_rubicon": "rubicon",
+					"hb_pb_rubicon":     "0.80",
+				},
+			},
+		},
+		TruncateTargetAttr: &truncateTargetAttrValueGreater,
+	},
+	{
+		Description: "Truncate Targeting Attribute value is given and is negative",
+		TargetData: targetData{
+			priceGranularity:  openrtb_ext.PriceGranularityFromString("med"),
+			includeBidderKeys: true,
+		},
+		Auction: auction{
+			winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*pbsOrtbBid{
+				"ImpId-1": {
+					openrtb_ext.BidderAppnexus: {
+						bid:     bid123,
+						bidType: openrtb_ext.BidTypeBanner,
+					},
+					openrtb_ext.BidderRubicon: {
+						bid:     bid084,
+						bidType: openrtb_ext.BidTypeBanner,
+					},
+				},
+			},
+		},
+		ExpectedBidTargetsByBidder: map[string]map[openrtb_ext.BidderName]map[string]string{
+			"ImpId-1": {
+				openrtb_ext.BidderAppnexus: {
+					"hb_bidder_appnexus": "appnexus",
+					"hb_pb_appnexus":     "1.20",
+				},
+				openrtb_ext.BidderRubicon: {
+					"hb_bidder_rubicon": "rubicon",
+					"hb_pb_rubicon":     "0.80",
+				},
+			},
+		},
+		TruncateTargetAttr: &truncateTargetAttrValueNegative,
 	},
 }
 
@@ -433,7 +543,7 @@ func TestSetTargeting(t *testing.T) {
 		}
 		auc.winningBids = winningBids
 		targData := test.TargetData
-		targData.setTargeting(auc, test.IsApp, test.CategoryMapping)
+		targData.setTargeting(auc, test.IsApp, test.CategoryMapping, test.TruncateTargetAttr)
 		for imp, targetsByBidder := range test.ExpectedBidTargetsByBidder {
 			for bidder, expected := range targetsByBidder {
 				assert.Equal(t,

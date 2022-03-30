@@ -15,8 +15,6 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const defaultDomain string = "tag.adkernel.com"
-
 type adkernelAdnAdapter struct {
 	EndpointTemplate *template.Template
 }
@@ -103,7 +101,6 @@ func dispatchImpressions(imps []openrtb2.Imp, impsExt []openrtb_ext.ExtImpAdkern
 			res[impExt] = make([]openrtb2.Imp, 0)
 		}
 		res[impExt] = append(res[impExt], imp)
-
 	}
 	return res, errors
 }
@@ -212,12 +209,8 @@ func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext
 
 // Builds enpoint url based on adapter-specific pub settings from imp.ext
 func (adapter *adkernelAdnAdapter) buildEndpointURL(params *openrtb_ext.ExtImpAdkernelAdn) (string, error) {
-	reqHost := defaultDomain
-	if params.Host != "" {
-		reqHost = params.Host
-	}
 	pubIDStr := strconv.Itoa(params.PublisherID)
-	endpointParams := macros.EndpointTemplateParams{Host: reqHost, PublisherID: pubIDStr}
+	endpointParams := macros.EndpointTemplateParams{PublisherID: pubIDStr}
 	return macros.ResolveMacros(adapter.EndpointTemplate, endpointParams)
 }
 

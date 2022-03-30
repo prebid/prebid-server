@@ -940,7 +940,7 @@ func validateNativeContextTypes(cType native1.ContextType, cSubtype native1.Cont
 
 func validateNativePlacementType(pt native1.PlacementType, impIndex int) error {
 	if pt == 0 {
-		// Placement Type is only reccomended, not required.
+		// Placement Type is only recommended, not required.
 		return nil
 	}
 	if pt < native1.PlacementTypeFeed || (pt > native1.PlacementTypeRecommendationWidget && pt < openrtb_ext.NativeExchangeSpecificLowerBound) {

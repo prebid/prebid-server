@@ -120,6 +120,9 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 	if cfg.AccountDefaults.Disabled {
 		glog.Warning(`With account_defaults.disabled=true, host-defined accounts must exist and have "disabled":false. All other requests will be rejected.`)
 	}
+	if cfg.AccountDefaults.Events.Enabled {
+		glog.Warning(`account_defaults.events will currently not do anything as the feature is still under development. Please follow https://github.com/prebid/prebid-server/issues/1725 for more updates`)
+	}
 	return errs
 }
 
@@ -815,8 +818,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.adform.endpoint", "https://adx.adform.net/adx/openrtb")
 	v.SetDefault("adapters.adgeneration.endpoint", "https://d.socdm.com/adsv/v1")
 	v.SetDefault("adapters.adhese.endpoint", "https://ads-{{.AccountID}}.adhese.com/json")
-	v.SetDefault("adapters.adkernel.endpoint", "http://{{.Host}}/hb?zone={{.ZoneID}}")
-	v.SetDefault("adapters.adkerneladn.endpoint", "http://{{.Host}}/rtbpub?account={{.PublisherID}}")
+	v.SetDefault("adapters.adkernel.endpoint", "https://pbs.adksrv.com/hb?zone={{.ZoneID}}")
+	v.SetDefault("adapters.adkerneladn.endpoint", "https://pbs2.adksrv.com/rtbpub?account={{.PublisherID}}")
 	v.SetDefault("adapters.adman.endpoint", "http://pub.admanmedia.com/?c=o&m=ortb")
 	v.SetDefault("adapters.admixer.endpoint", "http://inv-nets.admixer.net/pbs.aspx")
 	v.SetDefault("adapters.adocean.endpoint", "https://{{.Host}}")
@@ -882,6 +885,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.inmobi.endpoint", "https://api.w.inmobi.com/showad/openrtb/bidder/prebid")
 	v.SetDefault("adapters.interactiveoffers.endpoint", "https://prebid-server.ioadx.com/bidRequest/?partnerId={{.AccountID}}")
 	v.SetDefault("adapters.ix.disabled", true)
+	v.SetDefault("adapters.janet.endpoint", "http://ghb.bidder.jmgads.com/pbs/ortb")
 	v.SetDefault("adapters.jixie.endpoint", "https://hb.jixie.io/v2/hbsvrpost")
 	v.SetDefault("adapters.kayzen.endpoint", "https://bids-{{.ZoneID}}.bidder.kayzen.io/?exchange={{.AccountID}}")
 	v.SetDefault("adapters.krushmedia.endpoint", "http://ads4.krushmedia.com/?c=rtb&m=req&key={{.AccountID}}")
@@ -923,7 +927,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.rtbhouse.endpoint", "http://prebidserver-s2s-ams.creativecdn.com/bidder/prebidserver/bids")
 	v.SetDefault("adapters.rubicon.disabled", true)
 	v.SetDefault("adapters.rubicon.endpoint", "http://exapi-us-east.rubiconproject.com/a/api/exchange.json")
-	v.SetDefault("adapters.sharethrough.endpoint", "http://btlr.sharethrough.com/FGMrCMMc/v1")
+	v.SetDefault("adapters.sharethrough.endpoint", "https://btlr.sharethrough.com/universal/v1?supply_id=FGMrCMMc")
 	v.SetDefault("adapters.silvermob.endpoint", "http://{{.Host}}.silvermob.com/marketplace/api/dsp/bid/{{.ZoneID}}")
 	v.SetDefault("adapters.smaato.endpoint", "https://prebid.ad.smaato.net/oapi/prebid")
 	v.SetDefault("adapters.smartadserver.endpoint", "https://ssb-global.smartadserver.com")
@@ -1082,6 +1086,9 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("gdpr.tcf2.purpose_one_treatment.access_allowed", true)
 	v.SetDefault("gdpr.tcf2.special_feature1.enforce", true)
 	v.SetDefault("gdpr.tcf2.special_feature1.vendor_exceptions", []openrtb_ext.BidderName{})
+
+	// Defaults for account_defaults.events.default_url
+	v.SetDefault("account_defaults.events.default_url", "https://PBS_HOST/event?t=##PBS-EVENTTYPE##&vtype=##PBS-VASTEVENT##&b=##PBS-BIDID##&f=i&a=##PBS-ACCOUNTID##&ts=##PBS-TIMESTAMP##&bidder=##PBS-BIDDER##&int=##PBS-INTEGRATION##&mt=##PBS-MEDIATYPE##&ch=##PBS-CHANNEL##&aid=##PBS-AUCTIONID##&l=##PBS-LINEID##")
 }
 
 func migrateConfig(v *viper.Viper) {
