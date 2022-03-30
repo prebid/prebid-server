@@ -43,7 +43,7 @@ func (a *AccountCCPA) EnabledForIntegrationType(integrationType IntegrationType)
 	return a.Enabled
 }
 
-// AccountGDPR represents account-specific GDPR configuration and implements the TCF2ConfigReader interface
+// AccountGDPR represents account-specific GDPR configuration
 type AccountGDPR struct {
 	Enabled            *bool              `mapstructure:"enabled" json:"enabled,omitempty"`
 	IntegrationEnabled AccountIntegration `mapstructure:"integration_enabled" json:"integration_enabled"`
