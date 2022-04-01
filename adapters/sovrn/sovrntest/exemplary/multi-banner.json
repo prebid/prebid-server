@@ -3,7 +3,7 @@
     "id": "test-request-id",
     "imp": [
       {
-        "id": "test-imp-id",
+        "id": "test-imp-id1",
         "banner": {
           "format": [
             {
@@ -18,13 +18,37 @@
         },
         "ext": {
           "bidder": {
-            "tagid": "123456",
-            "bidfloor": 4.2
+            "tagid": "123456"
+          }
+        }
+      },
+      {
+        "id": "test-imp-id2",
+        "banner": {
+          "format": [
+            {
+              "w": 728,
+              "h": 90
+            },
+            {
+              "w": 160,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "tagid": "654321"
           }
         }
       }
     ],
-    "device": { },
+    "device": {
+      "ua": "test-user-agent",
+      "ip": "123.123.123.123",
+      "language": "en",
+      "dnt": 0
+    },
     "site": {
       "domain": "www.publisher.com",
       "page": "http://www.publisher.com/awesome/site"
@@ -39,6 +63,10 @@
       "expectedRequest": {
         "headers": {
           "Content-Type": ["application/json"],
+          "User-Agent": ["test-user-agent"],
+          "X-Forwarded-For": ["123.123.123.123"],
+          "Accept-Language": ["en"],
+          "Dnt": ["0"],
           "Cookie": ["ljt_reader=test_reader_id"]
         },
         "uri": "http://sovrn.com/test/endpoint",
@@ -46,7 +74,7 @@
           "id": "test-request-id",
           "imp": [
             {
-              "id": "test-imp-id",
+              "id": "test-imp-id1",
               "banner": {
                 "format": [
                   {
@@ -60,11 +88,30 @@
                 ]
               },
               "tagid": "123456",
-              "bidfloor": 4.2,
               "ext": {
                 "bidder": {
-                  "tagid": "123456",
-                  "bidfloor": 4.2
+                  "tagid": "123456"
+                }
+              }
+            },
+            {
+              "id": "test-imp-id2",
+              "banner": {
+                "format": [
+                  {
+                    "w": 728,
+                    "h": 90
+                  },
+                  {
+                    "w": 160,
+                    "h": 600
+                  }
+                ]
+              },
+              "tagid": "654321",
+              "ext": {
+                "bidder": {
+                  "tagid": "654321"
                 }
               }
             }
@@ -76,7 +123,12 @@
           "user": {
             "buyeruid": "test_reader_id"
           },
-          "device": { }
+          "device": {
+            "ua": "test-user-agent",
+            "ip": "123.123.123.123",
+            "dnt": 0,
+            "language": "en"
+          }
         }
       },
       "mockResponse": {
@@ -88,7 +140,7 @@
               "bid": [
                 {
                   "id": "a_449642_554a13d3b9f348fba707cf83f0f63800",
-                  "impid": "test-imp-id",
+                  "impid": "test-imp-id1",
                   "price": 3.5,
                   "nurl": "http://sovrn.com/rtb/impression?bannerid=138743&campaignid=3699&zoneid=449642&cb=69493397&tid=a_449642_554a13d3b9f348fba707cf83f0f63800",
                   "adm": "some-test-ad",
@@ -110,7 +162,7 @@
         {
           "bid": {
             "id": "a_449642_554a13d3b9f348fba707cf83f0f63800",
-            "impid": "test-imp-id",
+            "impid": "test-imp-id1",
             "price": 3.5,
             "adm": "some-test-ad",
             "nurl": "http://sovrn.com/rtb/impression?bannerid=138743&campaignid=3699&zoneid=449642&cb=69493397&tid=a_449642_554a13d3b9f348fba707cf83f0f63800",
