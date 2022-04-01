@@ -161,6 +161,13 @@ func min(x, y int) int {
 	return y
 }
 
+func (key TargetingKey) TruncateKey(maxLength int) string {
+	if maxLength > 0 {
+		return string(key)[:min(len(string(key)), maxLength)]
+	}
+	return string(key)
+}
+
 const (
 	StoredRequestAttributes = "storedrequestattributes"
 )
