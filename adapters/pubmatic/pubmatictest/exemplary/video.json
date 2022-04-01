@@ -48,7 +48,7 @@
       "ext": {
         "prebid": {
           "bidderparams": {
-            "acat": ["drg”,”dlu”,”ssr"]
+            "acat": ["drg","dlu","ssr"]
           }
         }
       }
@@ -100,7 +100,7 @@
                     "profile": 5123,
                     "version":1
                 },
-                "acat": ["drg”,”dlu”,”ssr"]
+                "acat": ["drg","dlu","ssr"]
             }
           }
         },
