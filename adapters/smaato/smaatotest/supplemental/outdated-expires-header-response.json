@@ -1,0 +1,193 @@
+{
+  "mockBidRequest": {
+    "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
+    "site": {
+      "publisher": {
+        "id": "1100042525"
+      },
+      "page": "http://localhost:3000/server.html?pbjs_debug=true&endpoint=http://localhost:3000/bidder",
+      "ext": {
+        "data": {
+          "keywords": "power tools",
+          "search": "drill",
+          "content": {
+            "userrating": 4
+          }
+        }
+      }
+    },
+    "imp": [
+      {
+        "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
+        "banner": {
+          "format": [
+            {
+              "w": 320,
+              "h": 50
+            },
+            {
+              "w": 320,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "1100042525",
+            "adspaceId": "130563103"
+          }
+        }
+      }
+    ],
+    "device": {
+      "ua": "test-user-agent",
+      "ip": "123.123.123.123",
+      "language": "en",
+      "dnt": 0
+    },
+    "user": {
+      "ext": {
+        "consent": "gdprConsentString",
+        "data": {
+          "keywords": "a,b",
+          "gender": "M",
+          "yob": 1984,
+          "geo": {
+            "country": "ca"
+          }
+        }
+      }
+    },
+    "regs": {
+      "coppa": 1,
+      "ext": {
+        "gdpr": 1,
+        "us_privacy": "uspConsentString"
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Content-Type": ["application/json;charset=utf-8"],
+          "Accept": ["application/json"]
+        },
+        "uri": "https://prebid/bidder",
+        "body": {
+          "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
+          "imp": [
+            {
+              "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
+              "tagid": "130563103",
+              "banner": {
+                "h": 50,
+                "w": 320,
+                "format": [
+                  {
+                    "w": 320,
+                    "h": 50
+                  },
+                  {
+                    "w": 320,
+                    "h": 250
+                  }
+                ]
+              }
+            }
+          ],
+          "user": {
+            "ext": {
+              "consent": "gdprConsentString"
+            },
+            "gender": "M",
+            "keywords": "a,b",
+            "yob": 1984
+          },
+          "device": {
+            "ua": "test-user-agent",
+            "ip": "123.123.123.123",
+            "language": "en",
+            "dnt": 0
+          },
+          "regs": {
+            "coppa": 1,
+            "ext": {
+              "gdpr": 1,
+              "us_privacy": "uspConsentString"
+            }
+          },
+          "site": {
+            "publisher": {
+              "id": "1100042525"
+            },
+            "page": "http://localhost:3000/server.html?pbjs_debug=true&endpoint=http://localhost:3000/bidder",
+            "keywords": "power tools"
+          },
+          "ext": {
+            "client": "prebid_server_0.4"
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "headers": {
+          "X-Smt-Expires": ["1524618800000"]
+        },
+        "body": {
+          "id": "5ebea288-f13a-4754-be6d-4ade66c68877",
+          "seatbid": [
+            {
+              "seat": "CM6523",
+              "bid": [
+                {
+                  "adm": "{\"image\":{\"img\":{\"url\":\"//prebid-test.smaatolabs.net/img/320x50.jpg\",\"w\":350,\"h\":50,\"ctaurl\":\"//prebid-test.smaatolabs.net/track/ctaurl/1\"},\"impressiontrackers\":[\"//prebid-test.smaatolabs.net/track/imp/1\",\"//prebid-test.smaatolabs.net/track/imp/2\"],\"clicktrackers\":[\"//prebid-test.smaatolabs.net/track/click/1\",\"//prebid-test.smaatolabs.net/track/click/2\"]}}",
+                  "adomain": [
+                    "smaato.com"
+                  ],
+                  "bidderName": "smaato",
+                  "cid": "CM6523",
+                  "crid": "CR69381",
+                  "id": "6906aae8-7f74-4edd-9a4f-f49379a3cadd",
+                  "impid": "1C86242D-9535-47D6-9576-7B1FE87F282C",
+                  "iurl": "https://bidstalkcreatives.s3.amazonaws.com/1x1.png",
+                  "nurl": "https://ets-eu-west-1.track.smaato.net/v1/view?sessionId=e4e17adb-9599-42b1-bb5f-a1f1b3bee572&adSourceId=6906aae8-7f74-4edd-9a4f-f49379a3cadd&originalRequestTime=1552310449698&expires=1552311350698&winurl=ama8JbpJVpFWxvEja5viE3cLXFu58qRI8dGUh23xtsOn3N2-5UU0IwkgNEmR82pI37fcMXejL5IWTNAoW6Cnsjf-Dxl_vx2dUqMrVEevX-Vdx2VVnf-D5f73gZhvi4t36iPL8Dsw4aACekoLvVOV7-eXDjz7GHy60QFqcwKf5g2AlKPOInyZ6vJg_fn4qA9argvCRgwVybXE9Ndm2W0v8La4uFYWpJBOUveDDUrSQfzal7RsYvLb_OyaMlPHdrd_bwA9qqZWuyJXd-L9lxr7RQ%3D%3D%7CMw3kt91KJR0Uy5L-oNztAg%3D%3D&dpid=4XVofb_lH-__hr2JNGhKfg%3D%3D%7Cr9ciCU1cx3zmHXihItKO0g%3D%3D",
+                  "price": 0.01,
+                  "w": 350,
+                  "h": 50
+                }
+              ]
+            }
+          ],
+          "bidid": "04db8629-179d-4bcd-acce-e54722969006",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "adm": "<div style=\"cursor:pointer\" onclick=\"fetch(decodeURIComponent('%2F%2Fprebid-test.smaatolabs.net%2Ftrack%2Fclick%2F1'.replace(/\\+/g, ' ')), {cache: 'no-cache'});fetch(decodeURIComponent('%2F%2Fprebid-test.smaatolabs.net%2Ftrack%2Fclick%2F2'.replace(/\\+/g, ' ')), {cache: 'no-cache'});;window.open(decodeURIComponent('%2F%2Fprebid-test.smaatolabs.net%2Ftrack%2Fctaurl%2F1'.replace(/\\+/g, ' ')));\"><img src=\"//prebid-test.smaatolabs.net/img/320x50.jpg\" width=\"350\" height=\"50\"/><img src=\"//prebid-test.smaatolabs.net/track/imp/1\" alt=\"\" width=\"0\" height=\"0\"/><img src=\"//prebid-test.smaatolabs.net/track/imp/2\" alt=\"\" width=\"0\" height=\"0\"/></div>",
+            "adomain": [
+              "smaato.com"
+            ],
+            "cid": "CM6523",
+            "crid": "CR69381",
+            "id": "6906aae8-7f74-4edd-9a4f-f49379a3cadd",
+            "impid": "1C86242D-9535-47D6-9576-7B1FE87F282C",
+            "iurl": "https://bidstalkcreatives.s3.amazonaws.com/1x1.png",
+            "nurl": "https://ets-eu-west-1.track.smaato.net/v1/view?sessionId=e4e17adb-9599-42b1-bb5f-a1f1b3bee572&adSourceId=6906aae8-7f74-4edd-9a4f-f49379a3cadd&originalRequestTime=1552310449698&expires=1552311350698&winurl=ama8JbpJVpFWxvEja5viE3cLXFu58qRI8dGUh23xtsOn3N2-5UU0IwkgNEmR82pI37fcMXejL5IWTNAoW6Cnsjf-Dxl_vx2dUqMrVEevX-Vdx2VVnf-D5f73gZhvi4t36iPL8Dsw4aACekoLvVOV7-eXDjz7GHy60QFqcwKf5g2AlKPOInyZ6vJg_fn4qA9argvCRgwVybXE9Ndm2W0v8La4uFYWpJBOUveDDUrSQfzal7RsYvLb_OyaMlPHdrd_bwA9qqZWuyJXd-L9lxr7RQ%3D%3D%7CMw3kt91KJR0Uy5L-oNztAg%3D%3D&dpid=4XVofb_lH-__hr2JNGhKfg%3D%3D%7Cr9ciCU1cx3zmHXihItKO0g%3D%3D",
+            "price": 0.01,
+            "w": 350,
+            "h": 50
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

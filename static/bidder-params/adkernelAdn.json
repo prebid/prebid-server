@@ -9,10 +9,6 @@
         "type": "integer",
         "minimum": 1,
         "description": "Publisher Id to use."
-      },
-      "host": {
-        "type": "string",
-        "description": "Network host to send request"
       }
   },
   "required": ["pubId"]

@@ -13,9 +13,7 @@ func (c *NilCache) Get(ctx context.Context, ids []string) map[string]json.RawMes
 }
 
 func (c *NilCache) Save(ctx context.Context, data map[string]json.RawMessage) {
-	return
 }
 
 func (c *NilCache) Invalidate(ctx context.Context, ids []string) {
-	return
 }

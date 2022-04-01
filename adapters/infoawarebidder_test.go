@@ -173,12 +173,11 @@ func TestImpFiltering(t *testing.T) {
 		}
 
 		// Extra MakeRequests() call check: our mockBidder returns an adapter request for every imp
-		assert.Len(t, actualAdapterRequests, test.expectedImpLen, "Test failed. Incorrect lenght of filtered imps: %s", test.description)
+		assert.Len(t, actualAdapterRequests, test.expectedImpLen, "Test failed. Incorrect length of filtered imps: %s", test.description)
 	}
 }
 
 type mockBidder struct {
-	gotRequest *openrtb2.BidRequest
 }
 
 func (m *mockBidder) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {

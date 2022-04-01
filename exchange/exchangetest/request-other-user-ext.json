@@ -12,11 +12,6 @@
             "buyeruids": {
               "appnexus": "explicit-appnexus"
             }
-          },
-          "digitrust": {
-            "id": "digi-id",
-            "keyv": 1,
-            "pref": 2
           }
         }
       },
@@ -48,14 +43,7 @@
           },
           "user": {
             "id": "foo",
-            "buyeruid": "explicit-appnexus",
-            "ext": {
-              "digitrust": {
-                "id": "digi-id",
-                "keyv": 1,
-                "pref": 2
-              }
-            }
+            "buyeruid": "explicit-appnexus"
           },
           "imp": [
             {

@@ -51,6 +51,7 @@
                                     }
                                 ]
                             },
+                            "bidfloorcur": "EUR",
                             "ext": {
                                 "bidder": {
                                     "accountId": "orbidder-test",

@@ -32,11 +32,6 @@ func (me *MetricsEngineMock) RecordImps(labels ImpLabels) {
 	me.Called(labels)
 }
 
-// RecordLegacyImps mock
-func (me *MetricsEngineMock) RecordLegacyImps(labels Labels, numImps int) {
-	me.Called(labels, numImps)
-}
-
 // RecordRequestTime mock
 func (me *MetricsEngineMock) RecordRequestTime(labels Labels, length time.Duration) {
 	me.Called(labels, length)
@@ -92,18 +87,23 @@ func (me *MetricsEngineMock) RecordAdapterTime(labels AdapterLabels, length time
 }
 
 // RecordCookieSync mock
-func (me *MetricsEngineMock) RecordCookieSync() {
-	me.Called()
+func (me *MetricsEngineMock) RecordCookieSync(status CookieSyncStatus) {
+	me.Called(status)
 }
 
-// RecordAdapterCookieSync mock
-func (me *MetricsEngineMock) RecordAdapterCookieSync(adapter openrtb_ext.BidderName, gdprBlocked bool) {
-	me.Called(adapter, gdprBlocked)
+// RecordSyncerRequest mock
+func (me *MetricsEngineMock) RecordSyncerRequest(key string, status SyncerCookieSyncStatus) {
+	me.Called(key, status)
 }
 
-// RecordUserIDSet mock
-func (me *MetricsEngineMock) RecordUserIDSet(userLabels UserLabels) {
-	me.Called(userLabels)
+// RecordSetUid mock
+func (me *MetricsEngineMock) RecordSetUid(status SetUidStatus) {
+	me.Called(status)
+}
+
+// RecordSyncerSet mock
+func (me *MetricsEngineMock) RecordSyncerSet(key string, status SyncerSetUidStatus) {
+	me.Called(key, status)
 }
 
 // RecordStoredReqCacheResult mock

@@ -16,8 +16,18 @@ type YieldmoAdapter struct {
 	endpoint string
 }
 
+type ExtImpBidderYieldmo struct {
+	adapters.ExtImpBidder
+	Data *ExtData `json:"data,omitempty"`
+}
+
+type ExtData struct {
+	PbAdslot string `json:"pbadslot"`
+}
+
 type Ext struct {
 	PlacementId string `json:"placement_id"`
+	Gpid        string `json:"gpid,omitempty"`
 }
 
 func (a *YieldmoAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -62,7 +72,7 @@ func (a *YieldmoAdapter) makeRequest(request *openrtb2.BidRequest) (*adapters.Re
 func preprocess(request *openrtb2.BidRequest) error {
 	for i := 0; i < len(request.Imp); i++ {
 		var imp = request.Imp[i]
-		var bidderExt adapters.ExtImpBidder
+		var bidderExt ExtImpBidderYieldmo
 
 		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			return &errortypes.BadInput{
@@ -80,6 +90,12 @@ func preprocess(request *openrtb2.BidRequest) error {
 
 		var impExt Ext
 		impExt.PlacementId = yieldmoExt.PlacementId
+
+		if bidderExt.Data != nil {
+			if bidderExt.Data.PbAdslot != "" {
+				impExt.Gpid = bidderExt.Data.PbAdslot
+			}
+		}
 
 		impExtJSON, err := json.Marshal(impExt)
 		if err != nil {
