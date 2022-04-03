@@ -30,7 +30,7 @@ func (a *ColossusAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ad
 	var err error
 
 	var bidderExt adapters.ExtImpBidder
-	var collossusExt openrtb_ext.ExtImpColossus
+	var colossusExt openrtb_ext.ExtImpColossus
 	var adapterRequests []*adapters.RequestData
 
 	reqCopy := *request
@@ -40,12 +40,12 @@ func (a *ColossusAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ad
 		if err = json.Unmarshal(reqCopy.Imp[0].Ext, &bidderExt); err != nil {
 			return nil, append(errs, err)
 		}
-		if err = json.Unmarshal(bidderExt.Bidder, &collossusExt); err != nil {
+		if err = json.Unmarshal(bidderExt.Bidder, &colossusExt); err != nil {
 			return nil, append(errs, err)
 		}
 
-		if collossusExt.TagID != "" {
-			reqCopy.Imp[0].TagID = collossusExt.TagID
+		if colossusExt.TagID != "" {
+			reqCopy.Imp[0].TagID = colossusExt.TagID
 		}
 
 		adapterReq, errors := a.makeRequest(&reqCopy)
