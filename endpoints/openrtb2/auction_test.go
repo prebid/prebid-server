@@ -1855,13 +1855,13 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 			expectedID:             uuid,
 		},
 		{
-			description:            "GenerateRequestID is true, rawData is an app request, has stored bid, and stored bidrequestID is not the macro {{UUID}}, we should generate uuid",
+			description:            "GenerateRequestID is true, rawData is a site request, has stored bid, and stored bidrequestID is not the macro {{UUID}}, we should not generate uuid",
 			givenRawData:           testBidRequests[3],
 			givenGenerateRequestID: true,
-			expectedID:             uuid,
+			expectedID:             "ThisID",
 		},
 		{
-			description:            "GenerateRequestID is false, rawData is an app request and has stored bid, but stored bidrequestID is the macro {{UUID}}, so we should generate uuid",
+			description:            "GenerateRequestID is false, rawData is an app request and has stored bid, and stored bidrequestID is the macro {{UUID}}, so we should generate uuid",
 			givenRawData:           testBidRequests[4],
 			givenGenerateRequestID: false,
 			expectedID:             uuid,
@@ -1879,10 +1879,10 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 			expectedID:             "ThisID",
 		},
 		{
-			description:            "GenerateRequestID is true, but rawData is a site request, we should not generate uuid",
+			description:            "GenerateRequestID is false, and rawData is a site request, and macro {{UUID}} is present, we should generate uuid",
 			givenRawData:           testBidRequests[1],
-			givenGenerateRequestID: true,
-			expectedID:             "ThisID",
+			givenGenerateRequestID: false,
+			expectedID:             uuid,
 		},
 		{
 			description:            "Macro ID {{UUID}} case sensitivity check meaning a macro that is lowercase {{uuid}} shouldn't generate a uuid",
@@ -1891,16 +1891,9 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 			expectedID:             "ThisID",
 		},
 		{
-			description:            "Test to check that stored requests are being merged when Macro ID is present with a site rquest",
+			description:            "Test to check that stored requests are being merged properly when UUID isn't being generated",
 			givenRawData:           testBidRequests[5],
 			givenGenerateRequestID: false,
-			expectedID:             "ThisID",
-			expectedCur:            "USD",
-		},
-		{
-			description:            "Test to check that stored requests are being merged when Generate Request ID flag with a site rquest",
-			givenRawData:           testBidRequests[5],
-			givenGenerateRequestID: true,
 			expectedID:             "ThisID",
 			expectedCur:            "USD",
 		},
@@ -3966,7 +3959,7 @@ var testStoredRequestData = map[string]json.RawMessage{
 						}
 				}}
 		}`),
-	"4": json.RawMessage(`{"id": "{{UUID}}", "cur": ["USD"]}`),
+	"4": json.RawMessage(`{"id": "ThisID", "cur": ["USD"]}`),
 }
 
 // Stored Imp Requests
@@ -4455,7 +4448,8 @@ var testBidRequests = []string{
 		],
 		"ext": {
 			"prebid": {
-				"targeting": {
+				"storedrequest": {
+					"id": "1"
 				}
 			}
 		}
@@ -4489,8 +4483,8 @@ var testBidRequests = []string{
 	}`,
 	`{
 		"id": "ThisID",
-		"app": {
-			"id": "123"
+		"site": {
+			"page": "prebid.org"
 		},
 		"imp": [
 			{
