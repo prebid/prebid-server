@@ -4,8 +4,8 @@
     "imp": [
       {
         "id": "test-imp-id",
-        "video": {
-          "mimes": ["video/mp4"]
+        "audio": {
+          "mimes": ["audio/mp3"]
         },
         "ext": {
           "bidder": {
@@ -52,8 +52,8 @@
             {
               "id": "test-imp-id",
               "tagid": "pos2",
-              "video": {
-               "mimes": ["video/mp4"]
+              "audio": {
+               "mimes": ["audio/mp3"]
               },
               "ext": {
                 "bidder": {

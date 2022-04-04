@@ -26,7 +26,6 @@ func TestNewSyncer(t *testing.T) {
 	testCases := []struct {
 		description         string
 		givenKey            string
-		givenDefault        string
 		givenIFrameConfig   *config.SyncerEndpoint
 		givenRedirectConfig *config.SyncerEndpoint
 		givenExternalURL    string
@@ -38,7 +37,6 @@ func TestNewSyncer(t *testing.T) {
 		{
 			description:         "Missing Key",
 			givenKey:            "",
-			givenDefault:        "iframe",
 			givenIFrameConfig:   iframeConfig,
 			givenRedirectConfig: nil,
 			expectedError:       "key is required",
@@ -46,23 +44,13 @@ func TestNewSyncer(t *testing.T) {
 		{
 			description:         "Missing Endpoints",
 			givenKey:            "a",
-			givenDefault:        "",
 			givenIFrameConfig:   nil,
 			givenRedirectConfig: nil,
 			expectedError:       "at least one endpoint (iframe and/or redirect) is required",
 		},
 		{
-			description:         "Resolve Default Sync Type Error ",
-			givenKey:            "a",
-			givenDefault:        "",
-			givenIFrameConfig:   iframeConfig,
-			givenRedirectConfig: redirectConfig,
-			expectedError:       "default sync type is required when more then one sync endpoint is configured",
-		},
-		{
 			description:         "IFrame & Redirect Endpoints",
 			givenKey:            "a",
-			givenDefault:        "iframe",
 			givenIFrameConfig:   iframeConfig,
 			givenRedirectConfig: redirectConfig,
 			expectedDefault:     SyncTypeIFrame,
@@ -72,7 +60,6 @@ func TestNewSyncer(t *testing.T) {
 		{
 			description:         "IFrame - Parse Error",
 			givenKey:            "a",
-			givenDefault:        "iframe",
 			givenIFrameConfig:   errParseConfig,
 			givenRedirectConfig: nil,
 			expectedError:       "iframe template: a_usersync_url:1: function \"malformed\" not defined",
@@ -80,7 +67,6 @@ func TestNewSyncer(t *testing.T) {
 		{
 			description:         "IFrame - Validation Error",
 			givenKey:            "a",
-			givenDefault:        "iframe",
 			givenIFrameConfig:   errInvalidConfig,
 			givenRedirectConfig: nil,
 			expectedError:       "iframe composed url: \"notAURL:http%3A%2F%2Fhost.com%2Fhost\" is invalid",
@@ -88,7 +74,6 @@ func TestNewSyncer(t *testing.T) {
 		{
 			description:         "Redirect - Parse Error",
 			givenKey:            "a",
-			givenDefault:        "redirect",
 			givenIFrameConfig:   nil,
 			givenRedirectConfig: errParseConfig,
 			expectedError:       "redirect template: a_usersync_url:1: function \"malformed\" not defined",
@@ -96,7 +81,6 @@ func TestNewSyncer(t *testing.T) {
 		{
 			description:         "Redirect - Validation Error",
 			givenKey:            "a",
-			givenDefault:        "redirect",
 			givenIFrameConfig:   nil,
 			givenRedirectConfig: errInvalidConfig,
 			expectedError:       "redirect composed url: \"notAURL:http%3A%2F%2Fhost.com%2Fhost\" is invalid",
@@ -104,7 +88,6 @@ func TestNewSyncer(t *testing.T) {
 		{
 			description:         "Syncer Level External URL",
 			givenKey:            "a",
-			givenDefault:        "iframe",
 			givenExternalURL:    "http://syncer.com",
 			givenIFrameConfig:   iframeConfig,
 			givenRedirectConfig: redirectConfig,
@@ -118,7 +101,6 @@ func TestNewSyncer(t *testing.T) {
 		syncerConfig := config.Syncer{
 			Key:         test.givenKey,
 			SupportCORS: &supportCORS,
-			Default:     test.givenDefault,
 			IFrame:      test.givenIFrameConfig,
 			Redirect:    test.givenRedirectConfig,
 			ExternalURL: test.givenExternalURL,
@@ -166,73 +148,27 @@ func TestResolveDefaultSyncType(t *testing.T) {
 		description      string
 		givenConfig      config.Syncer
 		expectedSyncType SyncType
-		expectedError    string
 	}{
 		{
-			description:      "IFrame & Redirect - IFrame Default",
-			givenConfig:      config.Syncer{Default: "iframe", IFrame: anyEndpoint, Redirect: anyEndpoint},
+			description:      "IFrame & Redirect",
+			givenConfig:      config.Syncer{IFrame: anyEndpoint, Redirect: anyEndpoint},
 			expectedSyncType: SyncTypeIFrame,
 		},
 		{
-			description:      "IFrame & Redirect - Redirect Default",
-			givenConfig:      config.Syncer{Default: "redirect", IFrame: anyEndpoint, Redirect: anyEndpoint},
-			expectedSyncType: SyncTypeRedirect,
-		},
-		{
-			description:      "IFrame & Redirect - No Default",
-			givenConfig:      config.Syncer{Default: "", IFrame: anyEndpoint, Redirect: anyEndpoint},
-			expectedSyncType: SyncTypeUnknown,
-			expectedError:    "default sync type is required when more then one sync endpoint is configured",
-		},
-		{
-			description:      "IFrame & Redirect - Invalid Default",
-			givenConfig:      config.Syncer{Default: "invalid", IFrame: anyEndpoint, Redirect: anyEndpoint},
-			expectedSyncType: SyncTypeUnknown,
-			expectedError:    "invalid default sync type 'invalid'",
-		},
-		{
-			description:      "IFrame Only - IFrame Default",
-			givenConfig:      config.Syncer{Default: "iframe", IFrame: anyEndpoint, Redirect: nil},
+			description:      "IFrame Only",
+			givenConfig:      config.Syncer{IFrame: anyEndpoint, Redirect: nil},
 			expectedSyncType: SyncTypeIFrame,
-		},
-		{
-			description:      "IFrame Only - No Default",
-			givenConfig:      config.Syncer{Default: "", IFrame: anyEndpoint, Redirect: nil},
-			expectedSyncType: SyncTypeIFrame,
-		},
-		{
-			description:      "IFrame Only - Redirect Default",
-			givenConfig:      config.Syncer{Default: "redirect", IFrame: anyEndpoint, Redirect: nil},
-			expectedSyncType: SyncTypeUnknown,
-			expectedError:    "default is set to redirect but no redirect endpoint is configured",
 		},
 		{
 			description:      "Redirect Only - Redirect Default",
-			givenConfig:      config.Syncer{Default: "redirect", IFrame: nil, Redirect: anyEndpoint},
+			givenConfig:      config.Syncer{IFrame: nil, Redirect: anyEndpoint},
 			expectedSyncType: SyncTypeRedirect,
-		},
-		{
-			description:      "IFrame Only - No Default",
-			givenConfig:      config.Syncer{Default: "", IFrame: nil, Redirect: anyEndpoint},
-			expectedSyncType: SyncTypeRedirect,
-		},
-		{
-			description:      "IFrame Only - IFrame Default",
-			givenConfig:      config.Syncer{Default: "iframe", IFrame: nil, Redirect: anyEndpoint},
-			expectedSyncType: SyncTypeUnknown,
-			expectedError:    "default is set to iframe but no iframe endpoint is configured",
 		},
 	}
 
 	for _, test := range testCases {
-		result, err := resolveDefaultSyncType(test.givenConfig)
-
+		result := resolveDefaultSyncType(test.givenConfig)
 		assert.Equal(t, test.expectedSyncType, result, test.description+":result")
-		if test.expectedError == "" {
-			assert.NoError(t, err, test.description+":err")
-		} else {
-			assert.EqualError(t, err, test.expectedError, test.description+":err")
-		}
 	}
 }
 

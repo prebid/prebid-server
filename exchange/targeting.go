@@ -96,7 +96,7 @@ func (targData *targetData) addKeys(keys map[string]string, key openrtb_ext.Targ
 		keys[key.BidderKey(bidderName, maxLength)] = value
 	}
 	if targData.includeWinners && overallWinner {
-		keys[string(key)] = value
+		keys[key.TruncateKey(maxLength)] = value
 	}
 }
 

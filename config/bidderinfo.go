@@ -51,11 +51,6 @@ type Syncer struct {
 	// as the key for consistency, but that is not enforced as a requirement.
 	Key string `yaml:"key" mapstructure:"key"`
 
-	// Default identifies which endpoint is preferred if both are allowed by the publisher. This is
-	// only required if there is more than one endpoint configured for the bidder. Valid values are
-	// `iframe` and `redirect`.
-	Default string `yaml:"default" mapstructure:"default"`
-
 	// Supports allows bidders to specify which user sync endpoints they support but which don't have
 	// good defaults. Host companies should contact the bidder for the endpoint configuration. Hosts
 	// may not override this value.
@@ -94,10 +89,6 @@ func (s *Syncer) Override(original *Syncer) *Syncer {
 
 	if s.Key != "" {
 		copy.Key = s.Key
-	}
-
-	if s.Default != "" {
-		copy.Default = s.Default
 	}
 
 	if original == nil {

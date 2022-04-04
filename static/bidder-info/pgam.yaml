@@ -1,6 +1,5 @@
 maintainer:
-  email: "hb-fe-tech@oath.com"
-gvlVendorID: 25
+  email: "ppatel@pgammedia.com"
 capabilities:
   app:
     mediaTypes:
@@ -11,7 +10,7 @@ capabilities:
       - banner
       - video
 userSync:
-  # yahoossp supports user syncing, but requires configuration by the host. contact this
+  # PGAM ssp supports user syncing, but requires configuration by the host. contact this
   # bidder directly at the email address in this file to ask about enabling user sync.
   supports:
-    - redirect
+    - iframe

@@ -1,10 +1,5 @@
 package usersync
 
-import (
-	"fmt"
-	"strings"
-)
-
 // SyncType specifies the mechanism used to perform a user sync.
 type SyncType string
 
@@ -20,19 +15,6 @@ const (
 	// and to expect the server to return a 302 redirect.
 	SyncTypeRedirect SyncType = "redirect"
 )
-
-// SyncTypeParse returns the SyncType parsed from a string, case insensitive.
-func SyncTypeParse(v string) (SyncType, error) {
-	if strings.EqualFold(v, string(SyncTypeIFrame)) {
-		return SyncTypeIFrame, nil
-	}
-
-	if strings.EqualFold(v, string(SyncTypeRedirect)) {
-		return SyncTypeRedirect, nil
-	}
-
-	return SyncTypeUnknown, fmt.Errorf("invalid sync type `%s`", v)
-}
 
 // SyncTypeFilter determines which sync types, if any, the bidder is permitted to use.
 type SyncTypeFilter struct {

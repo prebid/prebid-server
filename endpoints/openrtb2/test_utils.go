@@ -101,7 +101,7 @@ var testStoredRequestData = map[string]json.RawMessage{
 						}
 				}}
 		}`),
-	"4": json.RawMessage(`{"id": "{{UUID}}", "cur": ["USD"]}`),
+	"4": json.RawMessage(`{"id": "ThisID", "cur": ["USD"]}`),
 }
 
 // Stored Imp Requests
@@ -590,7 +590,8 @@ var testBidRequests = []string{
 		],
 		"ext": {
 			"prebid": {
-				"targeting": {
+				"storedrequest": {
+					"id": "1"
 				}
 			}
 		}
@@ -624,8 +625,8 @@ var testBidRequests = []string{
 	}`,
 	`{
 		"id": "ThisID",
-		"app": {
-			"id": "123"
+		"site": {
+			"page": "prebid.org"
 		},
 		"imp": [
 			{

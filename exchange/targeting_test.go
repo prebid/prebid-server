@@ -262,8 +262,9 @@ var bid084 *openrtb2.Bid = &openrtb2.Bid{
 	Price: 0.84,
 }
 
-var truncateTargetAttrValueLess int = 10
-var truncateTargetAttrValueGreater int = 25
+var truncateTargetAttrValue10 int = 10
+var truncateTargetAttrValue5 int = 5
+var truncateTargetAttrValue25 int = 25
 var truncateTargetAttrValueNegative int = -1
 var TargetingTests []TargetingTestData = []TargetingTestData{
 	{
@@ -451,7 +452,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 				},
 			},
 		},
-		TruncateTargetAttr: &truncateTargetAttrValueLess,
+		TruncateTargetAttr: &truncateTargetAttrValue10,
 	},
 	{
 		Description: "Truncate Targeting Attribute value is given and is greater than const MaxKeyLength",
@@ -485,7 +486,7 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 				},
 			},
 		},
-		TruncateTargetAttr: &truncateTargetAttrValueGreater,
+		TruncateTargetAttr: &truncateTargetAttrValue25,
 	},
 	{
 		Description: "Truncate Targeting Attribute value is given and is negative",
@@ -517,6 +518,99 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 					"hb_bidder_rubicon": "rubicon",
 					"hb_pb_rubicon":     "0.80",
 				},
+			},
+		},
+		TruncateTargetAttr: &truncateTargetAttrValueNegative,
+	},
+	{
+		Description: "Check that key gets truncated properly when value is smaller than key",
+		TargetData: targetData{
+			priceGranularity: openrtb_ext.PriceGranularityFromString("med"),
+			includeWinners:   true,
+		},
+		Auction: auction{
+			winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*pbsOrtbBid{
+				"ImpId-1": {
+					openrtb_ext.BidderAppnexus: {
+						bid:     bid123,
+						bidType: openrtb_ext.BidTypeBanner,
+					},
+					openrtb_ext.BidderRubicon: {
+						bid:     bid084,
+						bidType: openrtb_ext.BidTypeBanner,
+					},
+				},
+			},
+		},
+		ExpectedBidTargetsByBidder: map[string]map[openrtb_ext.BidderName]map[string]string{
+			"ImpId-1": {
+				openrtb_ext.BidderAppnexus: {
+					"hb_bi": "appnexus",
+					"hb_pb": "1.20",
+				},
+				openrtb_ext.BidderRubicon: {},
+			},
+		},
+		TruncateTargetAttr: &truncateTargetAttrValue5,
+	},
+	{
+		Description: "Check that key gets truncated properly when value is greater than key",
+		TargetData: targetData{
+			priceGranularity: openrtb_ext.PriceGranularityFromString("med"),
+			includeWinners:   true,
+		},
+		Auction: auction{
+			winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*pbsOrtbBid{
+				"ImpId-1": {
+					openrtb_ext.BidderAppnexus: {
+						bid:     bid123,
+						bidType: openrtb_ext.BidTypeBanner,
+					},
+					openrtb_ext.BidderRubicon: {
+						bid:     bid084,
+						bidType: openrtb_ext.BidTypeBanner,
+					},
+				},
+			},
+		},
+		ExpectedBidTargetsByBidder: map[string]map[openrtb_ext.BidderName]map[string]string{
+			"ImpId-1": {
+				openrtb_ext.BidderAppnexus: {
+					"hb_bidder": "appnexus",
+					"hb_pb":     "1.20",
+				},
+				openrtb_ext.BidderRubicon: {},
+			},
+		},
+		TruncateTargetAttr: &truncateTargetAttrValue25,
+	},
+	{
+		Description: "Check that key gets truncated properly when value is negative",
+		TargetData: targetData{
+			priceGranularity: openrtb_ext.PriceGranularityFromString("med"),
+			includeWinners:   true,
+		},
+		Auction: auction{
+			winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*pbsOrtbBid{
+				"ImpId-1": {
+					openrtb_ext.BidderAppnexus: {
+						bid:     bid123,
+						bidType: openrtb_ext.BidTypeBanner,
+					},
+					openrtb_ext.BidderRubicon: {
+						bid:     bid084,
+						bidType: openrtb_ext.BidTypeBanner,
+					},
+				},
+			},
+		},
+		ExpectedBidTargetsByBidder: map[string]map[openrtb_ext.BidderName]map[string]string{
+			"ImpId-1": {
+				openrtb_ext.BidderAppnexus: {
+					"hb_bidder": "appnexus",
+					"hb_pb":     "1.20",
+				},
+				openrtb_ext.BidderRubicon: {},
 			},
 		},
 		TruncateTargetAttr: &truncateTargetAttrValueNegative,
