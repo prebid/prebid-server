@@ -3217,7 +3217,7 @@ func TestParseRequestParseImpInfoError(t *testing.T) {
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
 
-	resReq, impExtInfoMap, _, errL := deps.parseRequest(req)
+	resReq, impExtInfoMap, _, _, errL := deps.parseRequest(req)
 
 	assert.Nil(t, resReq, "Result request should be nil due to incorrect imp")
 	assert.Nil(t, impExtInfoMap, "Impression info map should be nil due to incorrect imp")
@@ -4729,7 +4729,7 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(tt.givenRequestBody))
 
-			resReq, _, _, errL := deps.parseRequest(req)
+			resReq, _, _, _, errL := deps.parseRequest(req)
 
 			var expIExt, iExt map[string]interface{}
 			err := json.Unmarshal(tt.expectedImpExt, &expIExt)
@@ -4769,7 +4769,7 @@ func TestParseRequestStoredResponses(t *testing.T) {
 		expectedError           string
 	}{
 		{
-			name:             "reqimp has valid stored response",
+			name:             "req imp has valid stored response",
 			givenRequestBody: validRequest(t, "req-imp-stored-response.json"),
 			expectedStoredResponses: map[string]json.RawMessage{
 				"imp-id1": json.RawMessage(`[{"bid": [{"id": "bid_id1"],"seat": "appnexus"}]`),
@@ -4829,7 +4829,7 @@ func TestParseRequestStoredResponses(t *testing.T) {
 
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(tt.givenRequestBody))
 
-			_, _, storedResponses, errL := deps.parseRequest(req)
+			_, _, storedResponses, _, errL := deps.parseRequest(req)
 
 			if tt.expectedErrorCount == 0 {
 				assert.Equal(t, tt.expectedStoredResponses, storedResponses, "stored responses should match")
@@ -4837,6 +4837,91 @@ func TestParseRequestStoredResponses(t *testing.T) {
 				assert.Contains(t, errL[0].Error(), tt.expectedError, "error should match")
 			}
 
+		})
+	}
+}
+
+func TestParseRequestStoredBidResponses(t *testing.T) {
+	bidRespId1 := json.RawMessage(`{"id": "resp_id1", "seatbid": [{"bid": [{"id": "bid_id1"}], "seat": "testBidder1"}], "bidid": "123", "cur": "USD"}`)
+	bidRespId2 := json.RawMessage(`{"id": "resp_id2", "seatbid": [{"bid": [{"id": "bid_id2"}], "seat": "testBidder2"}], "bidid": "124", "cur": "USD"}`)
+	mockStoredBidResponses := map[string]json.RawMessage{
+		"bidResponseId1": bidRespId1,
+		"bidResponseId2": bidRespId2,
+	}
+
+	tests := []struct {
+		name                       string
+		givenRequestBody           string
+		expectedStoredBidResponses map[string]map[string]json.RawMessage
+		expectedErrorCount         int
+		expectedError              string
+	}{
+		{
+			name:             "req imp has valid stored bid response",
+			givenRequestBody: validRequest(t, "imp-with-stored-bid-resp.json"),
+			expectedStoredBidResponses: map[string]map[string]json.RawMessage{
+				"imp-id1": {"testBidder1": bidRespId1},
+			},
+			expectedErrorCount: 0,
+		},
+		{
+			name:             "req has two imps with valid stored bid responses",
+			givenRequestBody: validRequest(t, "req-two-imps-stored-bid-responses.json"),
+			expectedStoredBidResponses: map[string]map[string]json.RawMessage{
+				"imp-id1": {"testBidder1": bidRespId1},
+				"imp-id2": {"testBidder2": bidRespId2},
+			},
+			expectedErrorCount: 0,
+		},
+		{
+			name:             "req has two imps one with valid stored bid responses and another one without stored bid responses",
+			givenRequestBody: validRequest(t, "req-two-imps-with-and-without-stored-bid-responses.json"),
+			expectedStoredBidResponses: map[string]map[string]json.RawMessage{
+				"imp-id2": {"testBidder2": bidRespId2},
+			},
+			expectedErrorCount: 0,
+		},
+		{
+			name:             "req has two imps with missing stored bid responses",
+			givenRequestBody: validRequest(t, "req-two-imps-missing-stored-bid-response.json"),
+			expectedStoredBidResponses: map[string]map[string]json.RawMessage{
+				"imp-id1": {"testBidder1": nil},
+				"imp-id2": {"testBidder2": nil},
+			},
+			expectedErrorCount: 0,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			deps := &endpointDeps{
+				fakeUUIDGenerator{},
+				&warningsCheckExchange{},
+				newParamsValidator(t),
+				&mockStoredReqFetcher{},
+				empty_fetcher.EmptyFetcher{},
+				empty_fetcher.EmptyFetcher{},
+				&config.Configuration{MaxRequestSize: int64(len(tt.givenRequestBody))},
+				&metricsConfig.NilMetricsEngine{},
+				analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+				map[string]string{},
+				false,
+				[]byte{},
+				map[string]openrtb_ext.BidderName{"testBidder1": "testBidder1", "testBidder2": "testBidder2"},
+				nil,
+				nil,
+				hardcodedResponseIPValidator{response: true},
+				&mockStoredResponseFetcher{mockStoredBidResponses},
+			}
+
+			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(tt.givenRequestBody))
+			_, _, _, storedBidResponses, errL := deps.parseRequest(req)
+
+			if tt.expectedErrorCount == 0 {
+				assert.Equal(t, tt.expectedStoredBidResponses, storedBidResponses, "stored responses should match")
+			} else {
+				assert.Contains(t, errL[0].Error(), tt.expectedError, "error should match")
+			}
 		})
 	}
 }
@@ -4995,8 +5080,8 @@ func TestValidateStoredResp(t *testing.T) {
 	}
 }
 
-func TestProcessStoredAuctionResponsesErrors(t *testing.T) {
-	deps := &endpointDeps{}
+func TestProcessStoredAuctionAndBidResponsesErrors(t *testing.T) {
+	deps := &endpointDeps{bidderMap: map[string]openrtb_ext.BidderName{"testBidder": "testBidder"}}
 
 	testCases := []struct {
 		description       string
@@ -5017,6 +5102,51 @@ func TestProcessStoredAuctionResponsesErrors(t *testing.T) {
     			  }
     			]}`),
 			expectedErrorList: []error{errors.New("request.imp[0] has ext.prebid.storedauctionresponse specified, but \"id\" field is missing ")},
+		},
+		{
+			description: "Invalid stored bid response format: empty storedbidresponse.bidder",
+			requestJson: []byte(`{"imp": [
+    			  {
+    			    "id": "imp-id1",
+    			    "ext": {
+    			      "prebid": {
+    			        "storedbidresponse": [
+							{ "id": "123abc"}]
+    			      }
+    			    }
+    			  }
+    			]}`),
+			expectedErrorList: []error{errors.New("request.imp[0] has ext.prebid.storedbidresponse specified, but \"id\" or/and \"bidder\" fields are missing ")},
+		},
+		{
+			description: "Invalid stored bid response format: empty storedbidresponse.id",
+			requestJson: []byte(`{"imp": [
+    			  {
+    			    "id": "imp-id1",
+    			    "ext": {
+    			      "prebid": {
+    			        "storedbidresponse": [
+							{ "bidder": "testbidder"}]
+    			      }
+    			    }
+    			  }
+    			]}`),
+			expectedErrorList: []error{errors.New("request.imp[0] has ext.prebid.storedbidresponse specified, but \"id\" or/and \"bidder\" fields are missing ")},
+		},
+		{
+			description: "Invalid stored bid response: storedbidresponse.bidder not found",
+			requestJson: []byte(`{"imp": [
+    			  {
+    			    "id": "imp-id1",
+    			    "ext": {
+    			      "prebid": {
+    			        "storedbidresponse": [
+							{ "bidder": "testBidder123", "id": "123abc"}]
+    			      }
+    			    }
+    			  }
+    			]}`),
+			expectedErrorList: []error{errors.New("request.imp[impId: imp-id1].ext contains unknown bidder: testBidder123. Did you forget an alias in request.ext.prebid.aliases?")},
 		},
 		{
 			description: "Invalid stored auction response format: empty stored Auction Response Id in second imp",
@@ -5045,25 +5175,35 @@ func TestProcessStoredAuctionResponsesErrors(t *testing.T) {
 			expectedErrorList: []error{errors.New("request.imp[1] has ext.prebid.storedauctionresponse specified, but \"id\" field is missing ")},
 		},
 		{
-			description: "Invalid stored auction response format: integer imp Id",
+			description: "Invalid stored bid response format: empty stored bid Response Id in second imp",
 			requestJson: []byte(`{"imp": [
     			  {
-    			    "id": 123,
+    			    "id": "imp-id1",
     			    "ext": {
     			      "prebid": {
-    			        "storedauctionresponse": {
-							"id":"123"
-    			        }
+    			        "storedbidresponse": [
+                             {"bidder":"testBidder", "id": "123abc"}
+                        ]
+    			      }
+    			    }
+    			  },
+			      {
+    			    "id": "imp-id2",
+    			    "ext": {
+    			      "prebid": {
+    			        "storedbidresponse": [
+                             {"bidder":"testBidder", "id": ""}
+                        ]
     			      }
     			    }
     			  }
     			]}`),
-			expectedErrorList: []error{errors.New("Value is not a string: 123")},
+			expectedErrorList: []error{errors.New("request.imp[1] has ext.prebid.storedbidresponse specified, but \"id\" or/and \"bidder\" fields are missing ")},
 		},
 	}
 
 	for _, test := range testCases {
-		_, errorList := deps.processStoredAuctionResponses(nil, test.requestJson)
+		_, _, errorList := deps.processStoredResponses(nil, test.requestJson)
 		assert.Equalf(t, test.expectedErrorList, errorList, "Error doesn't match: %s\n", test.description)
 	}
 

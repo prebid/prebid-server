@@ -31,7 +31,6 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/firstpartydata"
-	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
@@ -152,7 +151,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
 
-	req, impExtInfoMap, storedAuctionResponses, errL := deps.parseRequest(r)
+	req, impExtInfoMap, storedAuctionResponses, storedBidResponses, errL := deps.parseRequest(r)
 	if errortypes.ContainsFatalError(errL) && writeError(errL, w, &labels) {
 		return
 	}
@@ -227,6 +226,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		ImpExtInfoMap:              impExtInfoMap,
 		FirstPartyData:             resolvedFPD,
 		StoredAuctionResponses:     storedAuctionResponses,
+		StoredBidResponses:         storedBidResponses,
 		TCF2ConfigBuilder:          gdpr.NewTCF2Config,
 		GDPRPermissionsBuilder:     gdpr.NewPermissions,
 	}
@@ -270,7 +270,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 // possible, it will return errors with messages that suggest improvements.
 //
 // If the errors list has at least one element, then no guarantees are made about the returned request.
-func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_ext.RequestWrapper, impExtInfoMap map[string]exchange.ImpExtInfo, storedAuctionResponses map[string]json.RawMessage, errs []error) {
+func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_ext.RequestWrapper, impExtInfoMap map[string]exchange.ImpExtInfo, storedAuctionResponses map[string]json.RawMessage, storedBidResponses map[string]map[string]json.RawMessage, errs []error) {
 	req = &openrtb_ext.RequestWrapper{}
 	req.BidRequest = &openrtb2.BidRequest{}
 	errs = nil
@@ -299,7 +299,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_
 
 	impInfo, errs := parseImpInfo(requestJson)
 	if len(errs) > 0 {
-		return nil, nil, nil, errs
+		return nil, nil, nil, nil, errs
 	}
 
 	// Fetch the Stored Request data and merge it into the HTTP request.
@@ -307,9 +307,10 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_
 		return
 	}
 
-	storedAuctionResponses, errs = deps.processStoredAuctionResponses(ctx, requestJson)
+	//Stored auction responses should be processed after stored requests due to possible impression modification
+	storedAuctionResponses, storedBidResponses, errs = deps.processStoredResponses(ctx, requestJson)
 	if len(errs) > 0 {
-		return
+		return nil, nil, nil, nil, errs
 	}
 
 	if err := json.Unmarshal(requestJson, req.BidRequest); err != nil {
@@ -332,7 +333,10 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_
 
 	lmt.ModifyForIOS(req.BidRequest)
 
-	hasStoredResponses := len(storedAuctionResponses) > 0
+	var hasStoredResponses bool
+	if len(storedAuctionResponses) > 0 {
+		hasStoredResponses = true
+	}
 	errL := deps.validateRequest(req, false, hasStoredResponses)
 	if len(errL) > 0 {
 		errs = append(errs, errL...)
@@ -1579,50 +1583,32 @@ func getJsonSyntaxError(testJSON []byte) (bool, string) {
 	return false, ""
 }
 
-// processStoredAuctionResponses takes the incoming request as JSON with any
+// processStoredResponses takes the incoming request as JSON with any
 // stored requests/imps already merged into it, scans it to find any stored auction response ids
 // in the request/imps and produces a map of imp IDs to stored auction responses.
-// Note that processStoredAuctionResponses must be called after processStoredRequests
+// Note that processStoredResponses must be called after processStoredRequests
 // because stored imps and stored requests can contain stored auction responses
 // so the stored requests/imps have to be merged into the incoming request prior to processing stored auction responses.
-func (deps *endpointDeps) processStoredAuctionResponses(ctx context.Context, requestJson []byte) (map[string]json.RawMessage, []error) {
+func (deps *endpointDeps) processStoredResponses(ctx context.Context, requestJson []byte) (map[string]json.RawMessage, map[string]map[string]json.RawMessage, []error) {
 	impInfo, errs := parseImpInfo(requestJson)
 	if len(errs) > 0 {
-		return nil, errs
+		return nil, nil, errs
+	}
+	storedResponsesIds, impBidderToStoredBidResponseId, impIdToRespId, err := extractStoredResponsesIds(impInfo, deps.bidderMap)
+	if err != nil {
+		return nil, nil, append(errs, err)
 	}
 
-	storedAuctionResponseIds := make([]string, 0, 0) //all stored responses ids from all imps
-	//because of bulk fetch responses we need to map imp id to stored resp body
-	impIdToRespId := make(map[string]string)              //imp id to stored resp id
-	impIdToStoredResp := make(map[string]json.RawMessage) //imp id to stored resp body
-	for index, impData := range impInfo {
-
-		if impData.ImpExtPrebid.StoredAuctionResponse != nil {
-			if len(impData.ImpExtPrebid.StoredAuctionResponse.ID) == 0 {
-				return nil, []error{fmt.Errorf("request.imp[%d] has ext.prebid.storedauctionresponse specified, but \"id\" field is missing ", index)}
-			}
-			storedAuctionResponseIds = append(storedAuctionResponseIds, impData.ImpExtPrebid.StoredAuctionResponse.ID)
-
-			impId, err := jsonparser.GetString(impData.Imp, "id")
-			if err != nil {
-				return nil, []error{err}
-			}
-
-			impIdToRespId[impId] = impData.ImpExtPrebid.StoredAuctionResponse.ID
-
-		}
-	}
-	if len(storedAuctionResponseIds) > 0 {
-		storedAuctionResponses, errs := deps.storedRespFetcher.FetchResponses(ctx, storedAuctionResponseIds)
+	if len(storedResponsesIds) > 0 {
+		storedResponses, errs := deps.storedRespFetcher.FetchResponses(ctx, storedResponsesIds)
 		if len(errs) > 0 {
-			return nil, errs
+			return nil, nil, errs
 		}
-		for impId, respId := range impIdToRespId {
-			impIdToStoredResp[impId] = storedAuctionResponses[respId]
-		}
-		return impIdToStoredResp, nil
+
+		impIdToStoredResp, impBidderToStoredBidResponse := buildStoredResponsesMaps(storedResponses, impBidderToStoredBidResponseId, impIdToRespId)
+		return impIdToStoredResp, impBidderToStoredBidResponse, nil
 	}
-	return nil, nil
+	return nil, nil, nil
 }
 
 func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson []byte, impInfo []ImpExtPrebidData) ([]byte, map[string]exchange.ImpExtInfo, []error) {
@@ -1958,4 +1944,70 @@ func checkIfAppRequest(request []byte) (bool, error) {
 		return true, nil
 	}
 	return false, nil
+}
+
+func extractStoredResponsesIds(impInfo []ImpExtPrebidData, bidderMap map[string]openrtb_ext.BidderName) ([]string, map[string]map[string]string, map[string]string, error) {
+	//all stored responses ids from all imps
+	storedResponsesIds := make([]string, 0, 0)
+	//imp id to stored resp id
+	impIdToRespId := make(map[string]string)
+	//stored bid responses: imp id to bidder to stored response id
+	impBidderToStoredBidResponseId := make(map[string]map[string]string)
+
+	for index, impData := range impInfo {
+		impId, err := jsonparser.GetString(impData.Imp, "id")
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("request.imp[%d] missing required field: \"id\"", index)
+		}
+
+		if impData.ImpExtPrebid.StoredAuctionResponse != nil {
+			if len(impData.ImpExtPrebid.StoredAuctionResponse.ID) == 0 {
+				return nil, nil, nil, fmt.Errorf("request.imp[%d] has ext.prebid.storedauctionresponse specified, but \"id\" field is missing ", index)
+			}
+			storedResponsesIds = append(storedResponsesIds, impData.ImpExtPrebid.StoredAuctionResponse.ID)
+
+			impIdToRespId[impId] = impData.ImpExtPrebid.StoredAuctionResponse.ID
+
+		}
+		if len(impData.ImpExtPrebid.StoredBidResponse) > 0 {
+
+			bidderStoredRespId := make(map[string]string)
+			for _, bidderResp := range impData.ImpExtPrebid.StoredBidResponse {
+				if len(bidderResp.ID) == 0 || len(bidderResp.Bidder) == 0 {
+					return nil, nil, nil, fmt.Errorf("request.imp[%d] has ext.prebid.storedbidresponse specified, but \"id\" or/and \"bidder\" fields are missing ", index)
+				}
+				//check if bidder is valid/exists
+				if _, isValid := bidderMap[bidderResp.Bidder]; !isValid {
+					return nil, nil, nil, fmt.Errorf("request.imp[impId: %s].ext contains unknown bidder: %s. Did you forget an alias in request.ext.prebid.aliases?", impId, bidderResp.Bidder)
+				}
+				// bidder is unique per one bid stored response
+				// if more than one bidder specified the last defined bidder id will take precedence
+				bidderStoredRespId[bidderResp.Bidder] = bidderResp.ID
+				impBidderToStoredBidResponseId[impId] = bidderStoredRespId
+				//storedAuctionResponseIds are not unique, but fetch will return single data for repeated ids
+				storedResponsesIds = append(storedResponsesIds, bidderResp.ID)
+			}
+		}
+	}
+	return storedResponsesIds, impBidderToStoredBidResponseId, impIdToRespId, nil
+}
+
+func buildStoredResponsesMaps(storedResponses map[string]json.RawMessage, impBidderToStoredBidResponseId map[string]map[string]string, impIdToRespId map[string]string) (map[string]json.RawMessage, map[string]map[string]json.RawMessage) {
+	//imp id to stored resp body
+	impIdToStoredResp := make(map[string]json.RawMessage)
+	//stored bid responses: imp id to bidder to stored response body
+	impBidderToStoredBidResponse := make(map[string]map[string]json.RawMessage)
+
+	for impId, respId := range impIdToRespId {
+		impIdToStoredResp[impId] = storedResponses[respId]
+	}
+
+	for impId, bidderStoredResp := range impBidderToStoredBidResponseId {
+		bidderStoredResponses := make(map[string]json.RawMessage)
+		for bidderName, id := range bidderStoredResp {
+			bidderStoredResponses[bidderName] = storedResponses[id]
+		}
+		impBidderToStoredBidResponse[impId] = bidderStoredResponses
+	}
+	return impIdToStoredResp, impBidderToStoredBidResponse
 }

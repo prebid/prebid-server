@@ -47,14 +47,18 @@ func cleanOpenRTBRequests(ctx context.Context,
 	tcf2Cfg gdpr.TCF2ConfigReader,
 ) (allowedBidderRequests []BidderRequest, privacyLabels metrics.PrivacyLabels, errs []error) {
 
-	impsByBidder, err := splitImps(req.BidRequest.Imp)
-	if err != nil {
-		errs = []error{err}
+	aliases, errs := parseAliases(req.BidRequest)
+	if len(errs) > 0 {
 		return
 	}
 
-	aliases, errs := parseAliases(req.BidRequest)
-	if len(errs) > 0 {
+	allowedBidderRequests = make([]BidderRequest, 0, 0)
+
+	bidderToBidderResponse := processStoredBidResponses(req, aliases)
+
+	impsByBidder, err := splitImps(req.BidRequest.Imp)
+	if err != nil {
+		errs = []error{err}
 		return
 	}
 
@@ -67,6 +71,12 @@ func cleanOpenRTBRequests(ctx context.Context,
 	allBidderRequests, errs = getAuctionBidderRequests(req, requestExt, bidderToSyncerKey, impsByBidder, aliases)
 
 	if len(allBidderRequests) == 0 {
+		if len(bidderToBidderResponse) > 0 {
+			//all imps have stored bid responses
+			for _, v := range bidderToBidderResponse {
+				allowedBidderRequests = append(allowedBidderRequests, v)
+			}
+		}
 		return
 	}
 
@@ -113,7 +123,6 @@ func cleanOpenRTBRequests(ctx context.Context,
 	}
 
 	// bidder level privacy policies
-	allowedBidderRequests = make([]BidderRequest, 0, len(allBidderRequests))
 	for _, bidderRequest := range allBidderRequests {
 		bidRequestAllowed := true
 
@@ -145,7 +154,22 @@ func cleanOpenRTBRequests(ctx context.Context,
 
 		if bidRequestAllowed {
 			privacyEnforcement.Apply(bidderRequest.BidRequest)
+
+			if bidderWithStoredBidResponses, ok := bidderToBidderResponse[bidderRequest.BidderName]; ok {
+				//this bidder has real imps and imps with stored bid response
+				bidderRequest.BidderStoredResponses = bidderWithStoredBidResponses.BidderStoredResponses
+				delete(bidderToBidderResponse, bidderRequest.BidderName)
+			}
+
 			allowedBidderRequests = append(allowedBidderRequests, bidderRequest)
+		}
+	}
+
+	//check if any bidders with storedBidResponses only left
+	if len(bidderToBidderResponse) > 0 {
+		for _, v := range bidderToBidderResponse {
+			v.BidRequest.Imp = nil //to indicate this bidder doesn't have real requests
+			allowedBidderRequests = append(allowedBidderRequests, v)
 		}
 	}
 
