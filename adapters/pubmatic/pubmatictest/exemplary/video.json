@@ -44,7 +44,14 @@
 		    	"publisher": {
 			    	"id": "1234"
 		  	}
-	  	}
+	  	},
+      "ext": {
+        "prebid": {
+          "bidderparams": {
+            "acat": ["drg","dlu","ssr"]
+          }
+        }
+      }
     },
   
     "httpCalls": [
@@ -92,7 +99,8 @@
                 "wrapper": {
                     "profile": 5123,
                     "version":1
-                }
+                },
+                "acat": ["drg","dlu","ssr"]
             }
           }
         },
