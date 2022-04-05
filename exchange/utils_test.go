@@ -753,13 +753,21 @@ func TestCleanOpenRTBRequestsWithBidResponses(t *testing.T) {
 	for _, test := range testCases {
 		metricsMock := metrics.MetricsEngineMock{}
 		bidderToSyncerKey := map[string]string{}
-		permissions := permissionsMock{allowAllBidders: true, passGeo: true, passID: true}
 		auctionReq := AuctionRequest{
 			BidRequest:         &openrtb2.BidRequest{Imp: test.imps},
 			UserSyncs:          &emptyUsersync{},
 			StoredBidResponses: test.storedBidResponses,
 		}
-		actualBidderRequests, _, err := cleanOpenRTBRequests(context.Background(), auctionReq, nil, bidderToSyncerKey, &permissions, &metricsMock, gdpr.SignalNo, config.Privacy{}, nil)
+		actualBidderRequests, _, err := cleanOpenRTBRequests(
+			context.Background(),
+			auctionReq,
+			nil,
+			bidderToSyncerKey,
+			&metricsMock,
+			gdpr.SignalNo,
+			gdpr.AlwaysAllow{},
+			config.Privacy{},
+			&config.TCF2{})
 		assert.Empty(t, err, "No errors should be returned")
 		assert.Len(t, actualBidderRequests, len(test.expectedBidderRequests), "result len doesn't match for testCase %s", test.description)
 		for _, actualBidderRequest := range actualBidderRequests {
