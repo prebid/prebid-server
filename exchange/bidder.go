@@ -182,7 +182,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 		}
 		for impId, bidResp := range bidderRequest.BidderStoredResponses {
 			go func(id string, resp json.RawMessage) {
-				responseChannel <- prepareStoredResponse(impId, bidResp)
+				responseChannel <- prepareStoredResponse(id, resp)
 			}(impId, bidResp)
 		}
 	}
@@ -565,4 +565,22 @@ func (bidder *bidderAdapter) addClientTrace(ctx context.Context) context.Context
 		},
 	}
 	return httptrace.WithClientTrace(ctx, trace)
+}
+
+func prepareStoredResponse(impId string, bidResp json.RawMessage) *httpCallInfo {
+	//always one element in reqData because stored response is mapped to single imp
+	reqDataForStoredResp := adapters.RequestData{
+		Method: "POST",
+		Uri:    "",
+		Body:   []byte(impId), //use it to pass imp id for stored resp
+	}
+	respData := &httpCallInfo{
+		request: &reqDataForStoredResp,
+		response: &adapters.ResponseData{
+			StatusCode: 200,
+			Body:       bidResp,
+		},
+		err: nil,
+	}
+	return respData
 }

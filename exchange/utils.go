@@ -54,7 +54,10 @@ func cleanOpenRTBRequests(ctx context.Context,
 
 	allowedBidderRequests = make([]BidderRequest, 0, 0)
 
-	bidderToBidderResponse := processStoredBidResponses(req, aliases)
+	storedResponses := StoredResponses{storedBidResponses: req.StoredBidResponses, aliases: aliases}
+	if len(storedResponses.storedBidResponses) > 0 {
+		storedResponses.initStoredBidResponses(req.BidRequest)
+	}
 
 	impsByBidder, err := splitImps(req.BidRequest.Imp)
 	if err != nil {
@@ -71,9 +74,9 @@ func cleanOpenRTBRequests(ctx context.Context,
 	allBidderRequests, errs = getAuctionBidderRequests(req, requestExt, bidderToSyncerKey, impsByBidder, aliases)
 
 	if len(allBidderRequests) == 0 {
-		if len(bidderToBidderResponse) > 0 {
+		if len(storedResponses.bidResponses) > 0 {
 			//all imps have stored bid responses
-			for _, v := range bidderToBidderResponse {
+			for _, v := range storedResponses.bidResponses {
 				allowedBidderRequests = append(allowedBidderRequests, v)
 			}
 		}
@@ -155,24 +158,17 @@ func cleanOpenRTBRequests(ctx context.Context,
 		if bidRequestAllowed {
 			privacyEnforcement.Apply(bidderRequest.BidRequest)
 
-			if bidderWithStoredBidResponses, ok := bidderToBidderResponse[bidderRequest.BidderName]; ok {
-				//this bidder has real imps and imps with stored bid response
-				bidderRequest.BidderStoredResponses = bidderWithStoredBidResponses.BidderStoredResponses
-				delete(bidderToBidderResponse, bidderRequest.BidderName)
-			}
+			storedResponses.removeBidRequestsWithRealRequests(&bidderRequest)
 
 			allowedBidderRequests = append(allowedBidderRequests, bidderRequest)
 		}
 	}
 
 	//check if any bidders with storedBidResponses only left
-	if len(bidderToBidderResponse) > 0 {
-		for _, v := range bidderToBidderResponse {
-			v.BidRequest.Imp = nil //to indicate this bidder doesn't have real requests
-			allowedBidderRequests = append(allowedBidderRequests, v)
-		}
+	remainingBidderRequests := storedResponses.addBidRequestsWithStoredBidResponses()
+	if len(remainingBidderRequests) > 0 {
+		allowedBidderRequests = append(allowedBidderRequests, remainingBidderRequests...)
 	}
-
 	return
 }
 

@@ -75,7 +75,8 @@ func TestRemoveImpsWithStoredResponses(t *testing.T) {
 	}
 	for _, testCase := range testCases {
 		request := testCase.reqIn
-		removeImpsWithStoredResponses(request)
+		sr := StoredResponses{storedBidResponses: request.StoredBidResponses}
+		sr.removeImpsWithStoredResponses(request.BidRequest)
 		assert.Equal(t, testCase.expectedImps, request.BidRequest.Imp, "incorrect Impressions for testCase %s", testCase.description)
 	}
 }
@@ -216,16 +217,11 @@ func TestBuildStoredBidResponses(t *testing.T) {
 
 	for _, testCase := range testCases {
 		request := testCase.reqIn
-		result := buildStoredBidResponses(request, aliases)
+		sr := StoredResponses{storedBidResponses: request.StoredBidResponses, aliases: aliases}
+		result := sr.buildStoredBidResponses(request.BidRequest)
 		for expectedBidderName, expectedReq := range result {
 			assert.Equal(t, testCase.expectedResult[expectedBidderName].BidderStoredResponses, expectedReq.BidderStoredResponses, "incorrect stored responses for testCase %s", testCase.description)
 			assert.Equal(t, testCase.expectedResult[expectedBidderName].BidRequest, expectedReq.BidRequest, "incorrect bid request for testCase %s", testCase.description)
 		}
 	}
-}
-
-func TestPrepareStoredResponse(t *testing.T) {
-	result := prepareStoredResponse("imp_id1", json.RawMessage(`{"id": "resp_id1"}`))
-	assert.Equal(t, []byte("imp_id1"), result.request.Body, "incorrect request body")
-	assert.Equal(t, []byte(`{"id": "resp_id1"}`), result.response.Body, "incorrect response body")
 }
