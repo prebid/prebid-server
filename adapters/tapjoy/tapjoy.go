@@ -101,6 +101,9 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 		// ensure correct value for request.imp[].displaymanager
 		thisImp.DisplayManager = "tapjoy_sdk"
 
+		// overwrite bid floor with mediator given bid floor
+		thisImp.BidFloor = tapjoyExt.Imp.BidFloor
+
 		// request.imp[].ext
 		thisImp.Ext = tapjoyExt.Extensions.ImpExt
 
