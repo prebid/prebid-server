@@ -71,7 +71,7 @@ func TestGetBidTypeForUnsupportedCode(t *testing.T) {
 
 func TestGetAdServerTargetingForEmptyExt(t *testing.T) {
 	ext := json.RawMessage(`{}`)
-	targets := getTargetingKeys(ext)
+	targets := getTargetingKeys(ext, "pubmatic")
 	// banner is the default bid type when no bidType key is present in the bid.ext
 	if targets != nil && targets["hb_buyid_pubmatic"] != "" {
 		t.Errorf("It should not contained AdserverTageting")
@@ -80,13 +80,27 @@ func TestGetAdServerTargetingForEmptyExt(t *testing.T) {
 
 func TestGetAdServerTargetingForValidExt(t *testing.T) {
 	ext := json.RawMessage("{\"buyid\":\"testBuyId\"}")
-	targets := getTargetingKeys(ext)
+	targets := getTargetingKeys(ext, "pubmatic")
 	// banner is the default bid type when no bidType key is present in the bid.ext
 	if targets == nil {
 		t.Error("It should have targets")
 		t.FailNow()
 	}
 	if targets != nil && targets["hb_buyid_pubmatic"] != "testBuyId" {
+		t.Error("It should have testBuyId as targeting")
+		t.FailNow()
+	}
+}
+
+func TestGetAdServerTargetingForPubmaticAlias(t *testing.T) {
+	ext := json.RawMessage("{\"buyid\":\"testBuyId-alias\"}")
+	targets := getTargetingKeys(ext, "dummy-alias")
+	// banner is the default bid type when no bidType key is present in the bid.ext
+	if targets == nil {
+		t.Error("It should have targets")
+		t.FailNow()
+	}
+	if targets != nil && targets["hb_buyid_dummy-alias"] != "testBuyId-alias" {
 		t.Error("It should have testBuyId as targeting")
 		t.FailNow()
 	}

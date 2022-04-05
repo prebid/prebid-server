@@ -22,7 +22,7 @@ const MAX_IMPRESSIONS_PUBMATIC = 30
 const (
 	PUBMATIC            = "[PUBMATIC]"
 	buyId               = "buyid"
-	buyIdTargetingKey   = "hb_buyid_pubmatic"
+	buyIdTargetingKey   = "hb_buyid_"
 	skAdnetworkKey      = "skadn"
 	rewardKey           = "reward"
 	dctrKeywordName     = "dctr"
@@ -463,7 +463,7 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 
 	var errs []error
 	for _, sb := range bidResp.SeatBid {
-		targets := getTargetingKeys(sb.Ext)
+		targets := getTargetingKeys(sb.Ext, string(externalRequest.BidderName))
 		for i := 0; i < len(sb.Bid); i++ {
 			bid := sb.Bid[i]
 			// Copy SeatBid Ext to Bid.Ext
@@ -529,13 +529,13 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	return bidder, nil
 }
 
-func getTargetingKeys(bidExt json.RawMessage) map[string]string {
+func getTargetingKeys(bidExt json.RawMessage, bidderName string) map[string]string {
 	targets := map[string]string{}
 	if bidExt != nil {
 		bidExtMap := make(map[string]interface{})
 		err := json.Unmarshal(bidExt, &bidExtMap)
 		if err == nil && bidExtMap[buyId] != nil {
-			targets[buyIdTargetingKey] = string(bidExtMap[buyId].(string))
+			targets[buyIdTargetingKey+bidderName] = string(bidExtMap[buyId].(string))
 		}
 	}
 	return targets
