@@ -35,12 +35,12 @@ func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.H
 	mainServer := newMainServer(cfg, handler)
 	go shutdownAfterSignals(mainServer, stopMain, done)
 
-	mainListener, err := newListener(mainServer.Addr, metrics)
+	mainListener, err := newUnixListener(mainServer.Addr, metrics)
 	if err != nil {
 		glog.Errorf("Error listening for TCP connections on %s: %v for main server", mainServer.Addr, err)
 		return
 	}
-	adminListener, err := newListener(adminServer.Addr, nil)
+	adminListener, err := newUnixListener(adminServer.Addr, nil)
 	if err != nil {
 		glog.Errorf("Error listening for TCP connections on %s: %v for admin server", adminServer.Addr, err)
 		return
@@ -51,7 +51,7 @@ func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.H
 	if cfg.Metrics.Prometheus.Port != 0 {
 		prometheusServer := newPrometheusServer(cfg, metrics)
 		go shutdownAfterSignals(prometheusServer, stopPrometheus, done)
-		prometheusListener, err := newListener(prometheusServer.Addr, nil)
+		prometheusListener, err := newUnixListener(prometheusServer.Addr, nil)
 		if err != nil {
 			glog.Errorf("Error listening for TCP connections on %s: %v for prometheus server", adminServer.Addr, err)
 			return
@@ -101,6 +101,26 @@ func newListener(address string, metrics metrics.MetricsEngine) (net.Listener, e
 
 	// This cast is in Go's core libs as Server.ListenAndServe(), so it _should_ be safe, but just in case it changes in a future version...
 	if casted, ok := ln.(*net.TCPListener); ok {
+		ln = &tcpKeepAliveListener{casted}
+	} else {
+		glog.Warning("net.Listen(\"tcp\", \"addr\") didn't return a TCPListener as it did in Go 1.9. Things will probably work fine... but this should be investigated.")
+	}
+
+	if metrics != nil {
+		ln = &monitorableListener{ln, metrics}
+	}
+
+	return ln, nil
+}
+
+func newUnixListener(address string, metrics metrics.MetricsEngine) (net.Listener, error) {
+	ln, err := net.Listen("unix", address)
+	if err != nil {
+		return nil, fmt.Errorf("Error listening for TCP connections on %s: %v", address, err)
+	}
+
+	// This cast is in Go's core libs as Server.ListenAndServe(), so it _should_ be safe, but just in case it changes in a future version...
+	if casted, ok := ln.(*net.UnixListener); ok {
 		ln = &tcpKeepAliveListener{casted}
 	} else {
 		glog.Warning("net.Listen(\"tcp\", \"addr\") didn't return a TCPListener as it did in Go 1.9. Things will probably work fine... but this should be investigated.")
