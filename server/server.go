@@ -121,7 +121,7 @@ func newUnixListener(address string, metrics metrics.MetricsEngine) (net.Listene
 
 	// This cast is in Go's core libs as Server.ListenAndServe(), so it _should_ be safe, but just in case it changes in a future version...
 	if casted, ok := ln.(*net.UnixListener); ok {
-		ln = &tcpKeepAliveListener{casted}
+		ln = &unixKeepAliveListener{casted}
 	} else {
 		glog.Warning("net.Listen(\"tcp\", \"addr\") didn't return a TCPListener as it did in Go 1.9. Things will probably work fine... but this should be investigated.")
 	}
