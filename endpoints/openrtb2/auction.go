@@ -1947,12 +1947,14 @@ func checkIfAppRequest(request []byte) (bool, error) {
 }
 
 func extractStoredResponsesIds(impInfo []ImpExtPrebidData, bidderMap map[string]openrtb_ext.BidderName) ([]string, map[string]map[string]string, map[string]string, error) {
-	//all stored responses ids from all imps
-	storedResponsesIds := make([]string, 0, 0)
-	//imp id to stored resp id
-	impIdToRespId := make(map[string]string)
-	//stored bid responses: imp id to bidder to stored response id
-	impBidderToStoredBidResponseId := make(map[string]map[string]string)
+	//extractStoredResponsesIds returns next 3 variables:
+
+	// 1) all stored responses ids from all imps
+	allStoredResponseIDs := make([]string, 0, 0)
+	// 2) stored bid responses: imp id to bidder to stored response id
+	impBiddersWithBidResponseIDs := make(map[string]map[string]string)
+	// 3) imp id to stored resp id
+	impAuctionResponseIDs := make(map[string]string)
 
 	for index, impData := range impInfo {
 		impId, err := jsonparser.GetString(impData.Imp, "id")
@@ -1964,9 +1966,9 @@ func extractStoredResponsesIds(impInfo []ImpExtPrebidData, bidderMap map[string]
 			if len(impData.ImpExtPrebid.StoredAuctionResponse.ID) == 0 {
 				return nil, nil, nil, fmt.Errorf("request.imp[%d] has ext.prebid.storedauctionresponse specified, but \"id\" field is missing ", index)
 			}
-			storedResponsesIds = append(storedResponsesIds, impData.ImpExtPrebid.StoredAuctionResponse.ID)
+			allStoredResponseIDs = append(allStoredResponseIDs, impData.ImpExtPrebid.StoredAuctionResponse.ID)
 
-			impIdToRespId[impId] = impData.ImpExtPrebid.StoredAuctionResponse.ID
+			impAuctionResponseIDs[impId] = impData.ImpExtPrebid.StoredAuctionResponse.ID
 
 		}
 		if len(impData.ImpExtPrebid.StoredBidResponse) > 0 {
@@ -1983,13 +1985,13 @@ func extractStoredResponsesIds(impInfo []ImpExtPrebidData, bidderMap map[string]
 				// bidder is unique per one bid stored response
 				// if more than one bidder specified the last defined bidder id will take precedence
 				bidderStoredRespId[bidderResp.Bidder] = bidderResp.ID
-				impBidderToStoredBidResponseId[impId] = bidderStoredRespId
+				impBiddersWithBidResponseIDs[impId] = bidderStoredRespId
 				//storedAuctionResponseIds are not unique, but fetch will return single data for repeated ids
-				storedResponsesIds = append(storedResponsesIds, bidderResp.ID)
+				allStoredResponseIDs = append(allStoredResponseIDs, bidderResp.ID)
 			}
 		}
 	}
-	return storedResponsesIds, impBidderToStoredBidResponseId, impIdToRespId, nil
+	return allStoredResponseIDs, impBiddersWithBidResponseIDs, impAuctionResponseIDs, nil
 }
 
 func buildStoredResponsesMaps(storedResponses map[string]json.RawMessage, impBidderToStoredBidResponseId map[string]map[string]string, impIdToRespId map[string]string) (map[string]json.RawMessage, map[string]map[string]json.RawMessage) {

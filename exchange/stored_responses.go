@@ -63,8 +63,8 @@ func (sr *StoredResponses) removeBidRequestsWithRealRequests(bidderRequest *Bidd
 	}
 }
 
-//addBidRequestsWithStoredBidResponses checks if any bidders with storedBidResponses only left
-func (sr *StoredResponses) addBidRequestsWithStoredBidResponses() []BidderRequest {
+//getAllRemaining checks if any bidders with storedBidResponses only left
+func (sr *StoredResponses) getAllRemaining() []BidderRequest {
 	bidderRequests := make([]BidderRequest, 0)
 	if len(sr.bidResponses) > 0 {
 		for _, bidResp := range sr.bidResponses {

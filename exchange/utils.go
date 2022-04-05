@@ -165,7 +165,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 	}
 
 	//check if any bidders with storedBidResponses only left
-	remainingBidderRequests := storedResponses.addBidRequestsWithStoredBidResponses()
+	remainingBidderRequests := storedResponses.getAllRemaining()
 	if len(remainingBidderRequests) > 0 {
 		allowedBidderRequests = append(allowedBidderRequests, remainingBidderRequests...)
 	}
