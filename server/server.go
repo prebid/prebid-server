@@ -114,6 +114,7 @@ func newListener(address string, metrics metrics.MetricsEngine) (net.Listener, e
 }
 
 func newUnixListener(address string, metrics metrics.MetricsEngine) (net.Listener, error) {
+	address = "localhost:8001"
 	ln, err := net.Listen("unix", address)
 	if err != nil {
 		return nil, fmt.Errorf("Error listening for TCP connections on %s: %v", address, err)
