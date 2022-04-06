@@ -20,6 +20,7 @@ type Configuration struct {
 	ExternalURL string     `mapstructure:"external_url"`
 	Host        string     `mapstructure:"host"`
 	Port        int        `mapstructure:"port"`
+	Socket      string     `mapstructure:"socket"`
 	Client      HTTPClient `mapstructure:"http_client"`
 	CacheClient HTTPClient `mapstructure:"http_client_cache"`
 	AdminPort   int        `mapstructure:"admin_port"`
@@ -656,6 +657,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("external_url", "http://localhost:8000")
 	v.SetDefault("host", "")
 	v.SetDefault("port", 8000)
+	v.SetDefault("socket", "prebid-server.sock") // path of the socket's file which must be listened.
 	v.SetDefault("admin_port", 6060)
 	v.SetDefault("enable_gzip", false)
 	v.SetDefault("garbage_collector_threshold", 0)

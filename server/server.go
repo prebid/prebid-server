@@ -29,29 +29,41 @@ func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.H
 	stopPrometheus := make(chan os.Signal)
 	done := make(chan struct{})
 
+	socketServer := newSocketServer(cfg, handler)
+	go shutdownAfterSignals(socketServer, stopMain, done)
+
 	adminServer := newAdminServer(cfg, adminHandler)
 	go shutdownAfterSignals(adminServer, stopAdmin, done)
 
 	mainServer := newMainServer(cfg, handler)
 	go shutdownAfterSignals(mainServer, stopMain, done)
 
-	mainListener, err := newUnixListener("~/msqGoBidder/prebid-server.sock", metrics)
+	socketListener, err := newUnixListener(socketServer.Addr, metrics)
+	if err != nil {
+		glog.Errorf("Error listening for Unix-Socket connections on path %s: %v for socket server", socketServer.Addr, err)
+		return
+	}
+
+	mainListener, err := newTCPListener(mainServer.Addr, metrics)
 	if err != nil {
 		glog.Errorf("Error listening for TCP connections on %s: %v for main server", mainServer.Addr, err)
 		return
 	}
-	adminListener, err := newListener(adminServer.Addr, nil)
+
+	adminListener, err := newTCPListener(adminServer.Addr, nil)
 	if err != nil {
 		glog.Errorf("Error listening for TCP connections on %s: %v for admin server", adminServer.Addr, err)
 		return
 	}
+
+	go runServer(socketServer, "Socket", socketListener)
 	go runServer(mainServer, "Main", mainListener)
 	go runServer(adminServer, "Admin", adminListener)
 
 	if cfg.Metrics.Prometheus.Port != 0 {
 		prometheusServer := newPrometheusServer(cfg, metrics)
 		go shutdownAfterSignals(prometheusServer, stopPrometheus, done)
-		prometheusListener, err := newListener(prometheusServer.Addr, nil)
+		prometheusListener, err := newTCPListener(prometheusServer.Addr, nil)
 		if err != nil {
 			glog.Errorf("Error listening for TCP connections on %s: %v for prometheus server", adminServer.Addr, err)
 			return
@@ -87,13 +99,27 @@ func newMainServer(cfg *config.Configuration, handler http.Handler) *http.Server
 
 }
 
+func newSocketServer(cfg *config.Configuration, handler http.Handler) *http.Server {
+	var serverHandler = handler
+	if cfg.EnableGzip {
+		serverHandler = gziphandler.GzipHandler(handler)
+	}
+
+	return &http.Server{
+		Addr:         cfg.Socket,
+		Handler:      serverHandler,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
+	}
+}
+
 func runServer(server *http.Server, name string, listener net.Listener) {
 	glog.Infof("%s server starting on: %s", name, server.Addr)
 	err := server.Serve(listener)
 	glog.Errorf("%s server quit with error: %v", name, err)
 }
 
-func newListener(address string, metrics metrics.MetricsEngine) (net.Listener, error) {
+func newTCPListener(address string, metrics metrics.MetricsEngine) (net.Listener, error) {
 	ln, err := net.Listen("tcp", address)
 	if err != nil {
 		return nil, fmt.Errorf("Error listening for TCP connections on %s: %v", address, err)
@@ -116,14 +142,13 @@ func newListener(address string, metrics metrics.MetricsEngine) (net.Listener, e
 func newUnixListener(address string, metrics metrics.MetricsEngine) (net.Listener, error) {
 	ln, err := net.Listen("unix", address)
 	if err != nil {
-		return nil, fmt.Errorf("Error listening for TCP connections on %s: %v", address, err)
+		return nil, fmt.Errorf("Error listening for Unix-Socket connections on path %s: %v", address, err)
 	}
 
-	// This cast is in Go's core libs as Server.ListenAndServe(), so it _should_ be safe, but just in case it changes in a future version...
 	if casted, ok := ln.(*net.UnixListener); ok {
 		ln = &unixKeepAliveListener{casted}
 	} else {
-		glog.Warning("net.Listen(\"tcp\", \"addr\") didn't return a TCPListener as it did in Go 1.9. Things will probably work fine... but this should be investigated.")
+		glog.Warning("net.Listen(\"unix\", \"addr\") didn't return an UnixListener.")
 	}
 
 	if metrics != nil {
