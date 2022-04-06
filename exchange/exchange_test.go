@@ -18,7 +18,6 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/go-gdpr/vendorlist"
-	"github.com/prebid/prebid-server/firstpartydata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
@@ -334,7 +333,7 @@ func TestDebugBehaviour(t *testing.T) {
 		}
 
 		auctionRequest := AuctionRequest{
-			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: bidRequest},
+			BidRequestWrapper:      &openrtb_ext.RequestWrapper{BidRequest: bidRequest},
 			Account:                config.Account{DebugAllow: test.debugData.accountLevelDebugAllowed},
 			UserSyncs:              &emptyUsersync{},
 			StartTime:              time.Now(),
@@ -494,7 +493,7 @@ func TestTwoBiddersDebugDisabledAndEnabled(t *testing.T) {
 		bidRequest.Ext = json.RawMessage(`{"prebid":{"debug":true}}`)
 
 		auctionRequest := AuctionRequest{
-			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: bidRequest},
+			BidRequestWrapper:      &openrtb_ext.RequestWrapper{BidRequest: bidRequest},
 			Account:                config.Account{DebugAllow: true},
 			UserSyncs:              &emptyUsersync{},
 			StartTime:              time.Now(),
@@ -668,7 +667,7 @@ func TestOverrideWithCustomCurrency(t *testing.T) {
 		mockBidRequest.Cur = []string{test.in.bidRequestCurrency}
 
 		auctionRequest := AuctionRequest{
-			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: mockBidRequest},
+			BidRequestWrapper:      &openrtb_ext.RequestWrapper{BidRequest: mockBidRequest},
 			Account:                config.Account{},
 			UserSyncs:              &emptyUsersync{},
 			GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
@@ -754,7 +753,7 @@ func TestAdapterCurrency(t *testing.T) {
 
 	// Run Auction
 	auctionRequest := AuctionRequest{
-		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: request},
+		BidRequestWrapper:      &openrtb_ext.RequestWrapper{BidRequest: request},
 		Account:                config.Account{},
 		UserSyncs:              &emptyUsersync{},
 		GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
@@ -1141,7 +1140,7 @@ func TestReturnCreativeEndToEnd(t *testing.T) {
 			mockBidRequest.Ext = test.inExt
 
 			auctionRequest := AuctionRequest{
-				BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: mockBidRequest},
+				BidRequestWrapper:      &openrtb_ext.RequestWrapper{BidRequest: mockBidRequest},
 				Account:                config.Account{},
 				UserSyncs:              &emptyUsersync{},
 				GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
@@ -1808,7 +1807,7 @@ func TestRaceIntegration(t *testing.T) {
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 
 	auctionRequest := AuctionRequest{
-		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: getTestBuildRequest(t)},
+		BidRequestWrapper:      &openrtb_ext.RequestWrapper{BidRequest: getTestBuildRequest(t)},
 		Account:                config.Account{},
 		UserSyncs:              &emptyUsersync{},
 		GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
@@ -2018,7 +2017,7 @@ func TestPanicRecoveryHighLevel(t *testing.T) {
 	}
 
 	auctionRequest := AuctionRequest{
-		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: request},
+		BidRequestWrapper:      &openrtb_ext.RequestWrapper{BidRequest: request},
 		Account:                config.Account{},
 		UserSyncs:              &emptyUsersync{},
 		GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
@@ -3891,13 +3890,13 @@ func TestBuildStoredAuctionResponses(t *testing.T) {
 func TestAuctionDebugEnabled(t *testing.T) {
 	categoriesFetcher, err := newCategoryFetcher("./test/category-mapping")
 	assert.NoError(t, err, "error should be nil")
-
 	e := new(exchange)
 	e.cache = &wellBehavedCache{}
 	e.me = &metricsConf.NilMetricsEngine{}
-	e.gDPR = gdpr.AlwaysAllow{}
-	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	e.vendorListFetcher = gdpr.NewVendorListFetcher(context.Background(), config.GDPR{}, &http.Client{}, gdpr.VendorListURLMaker)
 	e.categoriesFetcher = categoriesFetcher
+	e.bidIDGenerator = &mockBidIDGenerator{false, false}
+	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 
 	ctx := context.Background()
 
@@ -3907,11 +3906,13 @@ func TestAuctionDebugEnabled(t *testing.T) {
 	}
 
 	auctionRequest := AuctionRequest{
-		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: bidRequest},
-		Account:           config.Account{DebugAllow: false},
-		UserSyncs:         &emptyUsersync{},
-		StartTime:         time.Now(),
-		RequestType:       metrics.ReqTypeORTB2Web,
+		BidRequestWrapper:      &openrtb_ext.RequestWrapper{BidRequest: bidRequest},
+		Account:                config.Account{DebugAllow: false},
+		UserSyncs:              &emptyUsersync{},
+		StartTime:              time.Now(),
+		RequestType:            metrics.ReqTypeORTB2Web,
+		GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
+		TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
 	}
 
 	debugLog := &DebugLog{DebugOverride: true, DebugEnabledOrOverridden: true}

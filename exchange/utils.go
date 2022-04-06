@@ -100,7 +100,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 
 	var gdprEnforced bool
 	if gdprApplies {
-		gdprEnforced = tcf2Cfg.IntegrationEnabled(integrationTypeMap[req.LegacyLabels.RType])
+		gdprEnforced = tcf2Cfg.IntegrationEnabled(integrationTypeMap[auctionReq.LegacyLabels.RType])
 	}
 
 	if gdprEnforced {
@@ -122,7 +122,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 
 		// GDPR
 		if gdprEnforced {
-			var publisherID = req.LegacyLabels.PubID
+			var publisherID = auctionReq.LegacyLabels.PubID
 			bidReq, geo, id, err := gdprPerms.AuctionActivitiesAllowed(ctx, bidderRequest.BidderCoreName, bidderRequest.BidderName, publisherID, gdprSignal, consent, aliasesGVLIDs)
 			bidRequestAllowed = bidReq
 

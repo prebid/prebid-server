@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/prebid/prebid-server/gdpr"
 	"io"
 	"io/ioutil"
 	"net/http"
