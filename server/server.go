@@ -35,12 +35,12 @@ func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.H
 	mainServer := newMainServer(cfg, handler)
 	go shutdownAfterSignals(mainServer, stopMain, done)
 
-	mainListener, err := newUnixListener(mainServer.Addr, metrics)
+	mainListener, err := newUnixListener("localhost:8001", metrics)
 	if err != nil {
 		glog.Errorf("Error listening for TCP connections on %s: %v for main server", mainServer.Addr, err)
 		return
 	}
-	adminListener, err := newUnixListener(adminServer.Addr, nil)
+	adminListener, err := newListener(adminServer.Addr, nil)
 	if err != nil {
 		glog.Errorf("Error listening for TCP connections on %s: %v for admin server", adminServer.Addr, err)
 		return
@@ -51,7 +51,7 @@ func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.H
 	if cfg.Metrics.Prometheus.Port != 0 {
 		prometheusServer := newPrometheusServer(cfg, metrics)
 		go shutdownAfterSignals(prometheusServer, stopPrometheus, done)
-		prometheusListener, err := newUnixListener(prometheusServer.Addr, nil)
+		prometheusListener, err := newListener(prometheusServer.Addr, nil)
 		if err != nil {
 			glog.Errorf("Error listening for TCP connections on %s: %v for prometheus server", adminServer.Addr, err)
 			return
@@ -114,7 +114,6 @@ func newListener(address string, metrics metrics.MetricsEngine) (net.Listener, e
 }
 
 func newUnixListener(address string, metrics metrics.MetricsEngine) (net.Listener, error) {
-	address = "localhost:8001"
 	ln, err := net.Listen("unix", address)
 	if err != nil {
 		return nil, fmt.Errorf("Error listening for TCP connections on %s: %v", address, err)
