@@ -72,6 +72,6 @@ func (ln tcpKeepAliveListener) Accept() (net.Conn, error) {
 	return tc, nil
 }
 
-type unixKeepAliveListener struct{ *net.UnixListener }
+type unixListener struct{ *net.UnixListener }
 
-func (ln unixKeepAliveListener) Accept() (net.Conn, error) { return ln.AcceptUnix() }
+func (ln unixListener) Accept() (net.Conn, error) { return ln.AcceptUnix() }

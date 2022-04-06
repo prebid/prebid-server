@@ -146,7 +146,7 @@ func newUnixListener(address string, metrics metrics.MetricsEngine) (net.Listene
 	}
 
 	if casted, ok := ln.(*net.UnixListener); ok {
-		ln = &unixKeepAliveListener{casted}
+		ln = &unixListener{casted}
 	} else {
 		glog.Warning("net.Listen(\"unix\", \"addr\") didn't return an UnixListener.")
 	}
