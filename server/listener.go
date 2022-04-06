@@ -82,6 +82,5 @@ func (ln unixKeepAliveListener) Accept() (net.Conn, error) {
 		return nil, err
 	}
 
-	tc.SetKeepAlivePeriod(3 * time.Minute)
 	return tc, nil
 }
