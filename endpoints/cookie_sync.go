@@ -127,7 +127,7 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 			return usersync.Request{}, privacy.Policies{}, errCookieSyncGDPRConsentMissing
 		}
 
-		if gdprSignal == gdpr.SignalAmbiguous && gdpr.SignalNormalize(gdprSignal, c.privacyConfig.gdprConfig) == gdpr.SignalYes {
+		if gdprSignal == gdpr.SignalAmbiguous && gdpr.SignalNormalize(gdprSignal, c.privacyConfig.gdprConfig.DefaultValue) == gdpr.SignalYes {
 			return usersync.Request{}, privacy.Policies{}, errCookieSyncGDPRConsentMissingSignalAmbiguous
 		}
 	}

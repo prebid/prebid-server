@@ -1119,7 +1119,6 @@ func buildTestEndpoint(test testCase, paramValidator openrtb_ext.BidderParamVali
 		},
 	}
 	mockCurrencyRatesServer := httptest.NewServer(http.HandlerFunc(mockCurrencyConversionService.handle))
-	//defer mockCurrencyRatesServer.Close()
 	mockCurrencyConverter := currency.NewRateConverter(mockCurrencyRatesServer.Client(), mockCurrencyRatesServer.URL, time.Second)
 	mockCurrencyConverter.Run()
 
@@ -1141,7 +1140,7 @@ func buildTestEndpoint(test testCase, paramValidator openrtb_ext.BidderParamVali
 		nil,
 		met,
 		bidderInfos,
-		gdpr.AlwaysAllow{},
+		gdpr.NewVendorListFetcher(context.Background(), config.GDPR{}, &http.Client{}, gdpr.VendorListURLMaker),
 		mockCurrencyConverter,
 		mockFetcher)
 
