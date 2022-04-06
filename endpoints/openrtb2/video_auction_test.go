@@ -1322,7 +1322,7 @@ type mockExchangeVideo struct {
 }
 
 func (m *mockExchangeVideo) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
-	m.lastRequest = r.BidRequest
+	m.lastRequest = r.BidRequestWrapper.BidRequest
 	if debugLog != nil && debugLog.Enabled {
 		m.cache.called = true
 	}
@@ -1358,7 +1358,7 @@ type mockExchangeAppendBidderNames struct {
 }
 
 func (m *mockExchangeAppendBidderNames) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
-	m.lastRequest = r.BidRequest
+	m.lastRequest = r.BidRequestWrapper.BidRequest
 	if debugLog != nil && debugLog.Enabled {
 		m.cache.called = true
 	}
@@ -1394,7 +1394,7 @@ type mockExchangeVideoNoBids struct {
 }
 
 func (m *mockExchangeVideoNoBids) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
-	m.lastRequest = r.BidRequest
+	m.lastRequest = r.BidRequestWrapper.BidRequest
 	return &openrtb2.BidResponse{
 		SeatBid: []openrtb2.SeatBid{{}},
 	}, nil
