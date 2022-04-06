@@ -1,0 +1,39 @@
+{
+  "id": "72b866b0-9508-41df-8e46-830080942b52",
+  "seatbid": [
+    {
+      "bid": [
+        {
+          "id": "72b866b0-9508-41df-8e46-830080942b52:haggler-EXCHANGE001.us-e.ec2.spotad.io",
+          "impid": "1",
+          "price": 39.800739,
+          "adm": "<VAST version=\"3.0\"><Ad id=\"68680dc9-2ed2-4c53-b745-7aa4157babef\"><InLine><AdSystem>SpotAd</AdSystem><Error><![CDATA[https://adexp.spotad.io/vast_errors?at=&exchange=42&ad-group-id=111647&creative-id=114292&auction-id=72b866b0-9508-41df-8e46-830080942b52&device-id=9efa64ad-f8d0-4cfc-be02-622a0773ed9a&device-id-sha1=8c9d75fd08b74d2dfc8901e644de3880811729f0&device-id-type=2&device-family=4&device-model=+Unknown&os-version=9&source-app-store-id=com.timehop&targeted-city-id=&targeted-country-id=184&bid-ts=1580564051037&source-app-name=Timehop&test-groups=752&creative-tests=779&creative-tests=1094&creative-tests=1087&creative-tests=1008&doubleclick-source-app-category-ids=&do-not-track=false&prevent-redirect=&using-fnf=&vast_error_code=[ERRORCODE]&asset_url=[ASSETURI]]]></Error><AdTitle>114292</AdTitle><Impression><![CDATA[https://impression-east.spotad.io/EXCHANGE/win_notice?ad_group_id=111647&channel_id=42&creative_id=114292&device_id_sha1=8c9d75fd08b74d2dfc8901e644de3880811729f0&source_app_store_id=com.timehop&bid_ts=1580564051037&auction_id=${AUCTION_ID}&auction_price=${AUCTION_PRICE}&origin=haggler-EXCHANGE001]]></Impression><Creatives><Creative><Linear><Duration>00:00:18</Duration><MediaFiles><MediaFile width=\"360\" height=\"640\" type=\"video/mp4\" bitrate=\"1047\" delivery=\"progressive\" scalable=\"true\" maintainAspectRatio=\"true\"><![CDATA[https://cdn.spotad.io/customers/8f6ad0f580/videos/mobile/144873aebb.mp4]]></MediaFile></MediaFiles><VideoClicks><ClickThrough><![CDATA[https://click.spotad.io/v1/campaign_click/zJVFvKlkDYRrHF1cDvo0_yAis7OEGdnU7cVswcqMF7VZPwuFTIwsqIBfqrLfSibchKiuyhgr74PyWFuJKot5buoiACm6kOIaVbAhl8ELRzpIge6os2AAYUIz5CCW0G-NwM33j4rnuguGiD9-9VnPs8QJLdT-OjbZTaKWa3sCkQzUVhzTtx9cEgaE3A3emcF38imw1qfx1aV-ofjxBa2_Ya54F-4-6liZWaktW2oLUEroqE5kWWnEk_DWwnDymST8pC3-w0HZRuQq8iPDig8Zqrjz2bjouAVk-_hVLrXormWI2ONBhPA]]></ClickThrough></VideoClicks></Linear></Creative><Creative><CompanionAds><Companion assetWidth=\"640\" assetHeight=\"960\" width=\"320\" height=\"480\"><StaticResource creativeType=\"image/jpeg\"><![CDATA[https://cdn.spotad.io/customers/8f6ad0f580/images/v1/296d14d83c.jpg]]></StaticResource><CompanionClickThrough><![CDATA[https://click.spotad.io/v1/campaign_click/zJVFvKlkDYRrHF1cDvo0_yAis7OEGdnU7cVswcqMF7VZPwuFTIwsqIBfqrLfSibchKiuyhgr74PyWFuJKot5buoiACm6kOIaVbAhl8ELRzpIge6os2AAYUIz5CCW0G-NwM33j4rnuguGiD9-9VnPs8QJLdT-OjbZTaKWa3sCkQzUVhzTtx9cEgaE3A3emcF38imw1qfx1aV-ofjxBa2_Ya54F-4-6liZWaktW2oLUEroqE5kWWnEk_DWwnDymST8pC3-w0HZRuQq8iPDig8Zqrjz2bjouAVk-_hVLrXormWI2ONBhPA]]></CompanionClickThrough></Companion></CompanionAds></Creative></Creatives></InLine></Ad></VAST>",
+          "adomain": [
+            "playstudios.com"
+          ],
+          "bundle": "com.playstudios.popslots",
+          "iurl": "https://cdn.spotad.io/customers/8f6ad0f580/previews/3fe657a731.png",
+          "cid": "111647",
+          "crid": "114292",
+          "cat": [
+            "IAB9-30"
+          ],
+          "attr": [
+            6
+          ],
+          "lurl": "http://rtbnotify.spotad.io/EXCHANGE?id=72b866b0-9508-41df-8e46-830080942b52&code=${AUCTION_LOSS}&cpm=${AUCTION_PRICE}",
+          "w": 320,
+          "h": 480,
+          "ext": {
+            "imptrackers": [
+              "https://lb-www2.foobar.com/ads/notify.php?auction_id=${AUCTION_ID}&winning_price=${AUCTION_PRICE}",
+              "https://lb-www2.foobar2.com/ads/notify.php?auction_id=${AUCTION_ID}&winning_price=${AUCTION_PRICE}",
+              "https://lb-www2.foobar3.com/ads/notify.php?auction_id=${AUCTION_ID}&winning_price=${AUCTION_PRICE}",
+              "https://lb-www2.foobar4.com/ads/notify.php?auction_id=${AUCTION_ID}&winning_price=${AUCTION_PRICE}"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
