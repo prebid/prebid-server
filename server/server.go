@@ -35,7 +35,7 @@ func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.H
 	mainServer := newMainServer(cfg, handler)
 	go shutdownAfterSignals(mainServer, stopMain, done)
 
-	mainListener, err := newUnixListener("localhost:8001", metrics)
+	mainListener, err := newUnixListener(mainServer.Addr, metrics)
 	if err != nil {
 		glog.Errorf("Error listening for TCP connections on %s: %v for main server", mainServer.Addr, err)
 		return
