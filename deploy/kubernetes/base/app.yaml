@@ -27,6 +27,7 @@ spec:
       maxUnavailable: 0 # We must *always* be at/above HPA-determined capacity so we will roll out by *first* scaling up
   template:
     spec:
+      terminationGracePeriodSeconds: 60 # Default 30, override as desired in overlay
       securityContext:
         fsGroup: 65534
         sysctls:
