@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
@@ -27,25 +28,17 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 // MakeRequests create bid request for colossus demand
 func (a *ColossusAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
-	var err error
-
-	var bidderExt adapters.ExtImpBidder
-	var colossusExt openrtb_ext.ExtImpColossus
 	var adapterRequests []*adapters.RequestData
 
 	reqCopy := *request
 	for _, imp := range request.Imp {
 		reqCopy.Imp = []openrtb2.Imp{imp}
 
-		if err = json.Unmarshal(reqCopy.Imp[0].Ext, &bidderExt); err != nil {
-			return nil, append(errs, err)
-		}
-		if err = json.Unmarshal(bidderExt.Bidder, &colossusExt); err != nil {
-			return nil, append(errs, err)
-		}
-
-		if colossusExt.TagID != "" {
-			reqCopy.Imp[0].TagID = colossusExt.TagID
+		if tagID, err := jsonparser.GetString(reqCopy.Imp[0].Ext, "bidder", "TagID"); err == nil {
+			reqCopy.Imp[0].TagID = tagID
+		} else if err != jsonparser.KeyPathNotFoundError {
+			errs = append(errs, err)
+			continue
 		}
 
 		adapterReq, errors := a.makeRequest(&reqCopy)
@@ -125,18 +118,22 @@ func (a *ColossusAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 }
 
 func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
-	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impID {
-			if imp.Banner == nil && imp.Video != nil {
-				mediaType = openrtb_ext.BidTypeVideo
+			if imp.Banner != nil {
+				return openrtb_ext.BidTypeBanner, nil
 			}
-			return mediaType, nil
+			if imp.Video != nil {
+				return openrtb_ext.BidTypeVideo, nil
+			}
+			if imp.Native != nil {
+				return openrtb_ext.BidTypeNative, nil
+			}
 		}
 	}
 
 	// This shouldnt happen. Lets handle it just incase by returning an error.
 	return "", &errortypes.BadInput{
-		Message: fmt.Sprintf("Failed to find impression \"%s\" ", impID),
+		Message: fmt.Sprintf("Failed to find impression \"%s\"", impID),
 	}
 }
