@@ -524,6 +524,99 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 		},
 		TruncateTargetAttr: &truncateTargetAttrValueNegative,
 	},
+	{
+		Description: "Check that key gets truncated properly when value is smaller than key",
+		TargetData: targetData{
+			priceGranularity: openrtb_ext.PriceGranularityFromString("med"),
+			includeWinners:   true,
+		},
+		Auction: auction{
+			winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*pbsOrtbBid{
+				"ImpId-1": {
+					openrtb_ext.BidderAppnexus: {
+						bid:     bid123,
+						bidType: openrtb_ext.BidTypeBanner,
+					},
+					openrtb_ext.BidderRubicon: {
+						bid:     bid084,
+						bidType: openrtb_ext.BidTypeBanner,
+					},
+				},
+			},
+		},
+		ExpectedBidTargetsByBidder: map[string]map[openrtb_ext.BidderName]map[string]string{
+			"ImpId-1": {
+				openrtb_ext.BidderAppnexus: {
+					"hb_bi": "appnexus",
+					"hb_pb": "1.20",
+				},
+				openrtb_ext.BidderRubicon: {},
+			},
+		},
+		TruncateTargetAttr: &truncateTargetAttrValue5,
+	},
+	{
+		Description: "Check that key gets truncated properly when value is greater than key",
+		TargetData: targetData{
+			priceGranularity: openrtb_ext.PriceGranularityFromString("med"),
+			includeWinners:   true,
+		},
+		Auction: auction{
+			winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*pbsOrtbBid{
+				"ImpId-1": {
+					openrtb_ext.BidderAppnexus: {
+						bid:     bid123,
+						bidType: openrtb_ext.BidTypeBanner,
+					},
+					openrtb_ext.BidderRubicon: {
+						bid:     bid084,
+						bidType: openrtb_ext.BidTypeBanner,
+					},
+				},
+			},
+		},
+		ExpectedBidTargetsByBidder: map[string]map[openrtb_ext.BidderName]map[string]string{
+			"ImpId-1": {
+				openrtb_ext.BidderAppnexus: {
+					"hb_bidder": "appnexus",
+					"hb_pb":     "1.20",
+				},
+				openrtb_ext.BidderRubicon: {},
+			},
+		},
+		TruncateTargetAttr: &truncateTargetAttrValue25,
+	},
+	{
+		Description: "Check that key gets truncated properly when value is negative",
+		TargetData: targetData{
+			priceGranularity: openrtb_ext.PriceGranularityFromString("med"),
+			includeWinners:   true,
+		},
+		Auction: auction{
+			winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*pbsOrtbBid{
+				"ImpId-1": {
+					openrtb_ext.BidderAppnexus: {
+						bid:     bid123,
+						bidType: openrtb_ext.BidTypeBanner,
+					},
+					openrtb_ext.BidderRubicon: {
+						bid:     bid084,
+						bidType: openrtb_ext.BidTypeBanner,
+					},
+				},
+			},
+		},
+		ExpectedBidTargetsByBidder: map[string]map[openrtb_ext.BidderName]map[string]string{
+			"ImpId-1": {
+				openrtb_ext.BidderAppnexus: {
+					"hb_bidder": "appnexus",
+					"hb_pb":     "1.20",
+				},
+				openrtb_ext.BidderRubicon: {},
+			},
+		},
+		TruncateTargetAttr: &truncateTargetAttrValueNegative,
+	},
 }
 
 func TestSetTargeting(t *testing.T) {

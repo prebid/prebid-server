@@ -182,6 +182,10 @@ type BidderRequest struct {
 
 func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *DebugLog) (*openrtb2.BidResponse, error) {
 	var errs []error
+	// rebuild/resync the request in the request wrapper.
+	if err := r.BidRequestWrapper.RebuildRequest(); err != nil {
+		return nil, err
+	}
 	requestExt, err := extractBidRequestExt(r.BidRequestWrapper.BidRequest)
 	if err != nil {
 		return nil, err
@@ -191,11 +195,6 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	targData := getExtTargetData(requestExt, &cacheInstructions)
 	if targData != nil {
 		_, targData.cacheHost, targData.cachePath = e.cache.GetExtCacheData()
-	}
-
-	// rebuild/resync the request in the request wrapper.
-	if err := r.BidRequestWrapper.RebuildRequest(); err != nil {
-		return nil, err
 	}
 	responseDebugAllow, accountDebugAllow, debugLog := getDebugInfo(r.BidRequestWrapper.BidRequest, requestExt, r.Account.DebugAllow, debugLog)
 	if responseDebugAllow {
@@ -222,6 +221,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		r.FirstPartyData = resolvedFPD
 		if len(resolvedFPD) > 0 {
 			// rebuild/resync the request in the request wrapper.
+			// it needs to be here to update ReqWrapper and requestExt because req.ext was modified after FPD extraction
 			if err := r.BidRequestWrapper.RebuildRequest(); err != nil {
 				return nil, err
 			}
