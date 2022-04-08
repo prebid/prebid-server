@@ -17,14 +17,15 @@ import (
 
 // Configuration specifies the static application config.
 type Configuration struct {
-	ExternalURL string     `mapstructure:"external_url"`
-	Host        string     `mapstructure:"host"`
-	Port        int        `mapstructure:"port"`
-	Socket      string     `mapstructure:"socket"`
-	Client      HTTPClient `mapstructure:"http_client"`
-	CacheClient HTTPClient `mapstructure:"http_client_cache"`
-	AdminPort   int        `mapstructure:"admin_port"`
-	EnableGzip  bool       `mapstructure:"enable_gzip"`
+	ExternalURL  string     `mapstructure:"external_url"`
+	Host         string     `mapstructure:"host"`
+	Port         int        `mapstructure:"port"`
+	EnableSocket bool       `mapstructure:"enable_socket"`
+	Socket       string     `mapstructure:"socket"`
+	Client       HTTPClient `mapstructure:"http_client"`
+	CacheClient  HTTPClient `mapstructure:"http_client_cache"`
+	AdminPort    int        `mapstructure:"admin_port"`
+	EnableGzip   bool       `mapstructure:"enable_gzip"`
 	// GarbageCollectorThreshold allocates virtual memory (in bytes) which is not used by PBS but
 	// serves as a hack to trigger the garbage collector only when the heap reaches at least this size.
 	// More info: https://github.com/golang/go/issues/48409
@@ -657,6 +658,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("external_url", "http://localhost:8000")
 	v.SetDefault("host", "")
 	v.SetDefault("port", 8000)
+	v.SetDefault("enable_socket", false)         // boolean which decide if the socket-server will be started.
 	v.SetDefault("socket", "prebid-server.sock") // path of the socket's file which must be listened.
 	v.SetDefault("admin_port", 6060)
 	v.SetDefault("enable_gzip", false)
