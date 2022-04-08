@@ -24,6 +24,7 @@ import (
 	"github.com/prebid/prebid-server/privacy/gdpr"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
+	"github.com/prebid/prebid-server/stored_responses"
 	"github.com/prebid/prebid-server/usersync"
 	"github.com/prebid/prebid-server/util/iputil"
 	"github.com/prebid/prebid-server/version"
@@ -357,7 +358,7 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 		return
 	}
 
-	storedAuctionResponses, storedBidResponses, errs = deps.processStoredResponses(ctx, requestJSON)
+	storedAuctionResponses, storedBidResponses, errs = stored_responses.ProcessStoredResponses(ctx, requestJSON, deps.storedRespFetcher, deps.bidderMap)
 	if err != nil {
 		errs = []error{err}
 		return
