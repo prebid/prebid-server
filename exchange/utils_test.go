@@ -586,7 +586,7 @@ func TestCleanOpenRTBRequestsWithBidResponses(t *testing.T) {
 						W: 300,
 						H: 250,
 					},
-					Ext: json.RawMessage(`"prebid": {}`),
+					Ext: json.RawMessage(`{"bidderA": {"placementId":"123"}}`),
 				},
 			},
 			expectedBidderRequests: map[string]BidderRequest{
@@ -610,17 +610,17 @@ func TestCleanOpenRTBRequestsWithBidResponses(t *testing.T) {
 						W: 300,
 						H: 250,
 					},
-					Ext: json.RawMessage(`"prebid": {}`),
+					Ext: json.RawMessage(`{"bidderA": {"placementId":"123"}}`),
 				},
 				{
 					ID:  "imp-id2",
-					Ext: json.RawMessage(`{"prebid":{"aliases":{"brightroll":"bidderA"}}}`),
+					Ext: json.RawMessage(`{"bidderA": {"placementId":"123"}}`),
 				},
 			},
 			expectedBidderRequests: map[string]BidderRequest{
 				"bidderA": {
 					BidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{
-						{ID: "imp-id2", Ext: json.RawMessage(`{"prebid":{"aliases":{"brightroll":"bidderA"}}}`)},
+						{ID: "imp-id2", Ext: json.RawMessage(`{"bidder":{"placementId":"123"}}`)},
 					}},
 					BidderName: "bidderA",
 					BidderStoredResponses: map[string]json.RawMessage{
@@ -640,7 +640,7 @@ func TestCleanOpenRTBRequestsWithBidResponses(t *testing.T) {
 						W: 300,
 						H: 250,
 					},
-					Ext: json.RawMessage(`"prebid": {}`),
+					Ext: json.RawMessage(`{"bidderA": {"placementId":"123"}}`),
 				},
 			},
 			expectedBidderRequests: map[string]BidderRequest{
@@ -671,7 +671,7 @@ func TestCleanOpenRTBRequestsWithBidResponses(t *testing.T) {
 						W: 300,
 						H: 250,
 					},
-					Ext: json.RawMessage(`"prebid": {}`),
+					Ext: json.RawMessage(`{"bidderA": {"placementId":"123"}}`),
 				},
 				{
 					ID:  "imp-id2",
@@ -707,7 +707,7 @@ func TestCleanOpenRTBRequestsWithBidResponses(t *testing.T) {
 				},
 				{
 					ID:  "imp-id2",
-					Ext: json.RawMessage(`"prebid": {}`),
+					Ext: json.RawMessage(`{"bidderA": {"placementId":"123"}}`),
 				},
 			},
 			expectedBidderRequests: map[string]BidderRequest{

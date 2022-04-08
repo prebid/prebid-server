@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/prebid/prebid-server/stored_responses"
 	"math/rand"
 
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
@@ -54,16 +55,16 @@ func cleanOpenRTBRequests(ctx context.Context,
 
 	allowedBidderRequests = make([]BidderRequest, 0, 0)
 
-	storedResponses := StoredResponses{storedBidResponses: req.StoredBidResponses, aliases: aliases}
-	if len(storedResponses.storedBidResponses) > 0 {
-		storedResponses.initStoredBidResponses(req.BidRequest)
-	}
+	storedBidResp := stored_responses.StoredBidResponses{StoredBidResponses: req.StoredBidResponses}
+	storedBidResp.InitStoredBidResponses(req.BidRequest)
 
 	impsByBidder, err := splitImps(req.BidRequest.Imp)
 	if err != nil {
 		errs = []error{err}
 		return
 	}
+
+	bidderNameToBidderReq := buildBidResponseRequest(req.BidRequest, storedBidResp.BidderToImpToResponses, aliases, impsByBidder)
 
 	aliasesGVLIDs, errs := parseAliasesGVLIDs(req.BidRequest)
 	if len(errs) > 0 {
@@ -73,15 +74,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 	var allBidderRequests []BidderRequest
 	allBidderRequests, errs = getAuctionBidderRequests(req, requestExt, bidderToSyncerKey, impsByBidder, aliases)
 
-	if len(allBidderRequests) == 0 {
-		if len(storedResponses.bidResponses) > 0 {
-			//all imps have stored bid responses
-			for _, v := range storedResponses.bidResponses {
-				allowedBidderRequests = append(allowedBidderRequests, v)
-			}
-		}
-		return
-	}
+	allBidderRequests = mergeBidderRequests(allBidderRequests, bidderNameToBidderReq)
 
 	gdprSignal, err := extractGDPR(req.BidRequest)
 	if err != nil {
@@ -158,17 +151,10 @@ func cleanOpenRTBRequests(ctx context.Context,
 		if bidRequestAllowed {
 			privacyEnforcement.Apply(bidderRequest.BidRequest)
 
-			storedResponses.removeBidRequestsWithRealRequests(&bidderRequest)
-
 			allowedBidderRequests = append(allowedBidderRequests, bidderRequest)
 		}
 	}
 
-	//check if any bidders with storedBidResponses only left
-	remainingBidderRequests := storedResponses.getAllRemaining()
-	if len(remainingBidderRequests) > 0 {
-		allowedBidderRequests = append(allowedBidderRequests, remainingBidderRequests...)
-	}
 	return
 }
 
@@ -748,4 +734,53 @@ func applyFPD(fpd *firstpartydata.ResolvedFirstPartyData, bidReq *openrtb2.BidRe
 	if fpd.User != nil {
 		bidReq.User = fpd.User
 	}
+}
+
+func buildBidResponseRequest(req *openrtb2.BidRequest,
+	bidderImpResponses stored_responses.BidderImpsWithBidResponses,
+	aliases map[string]string,
+	impsByBidder map[string][]openrtb2.Imp) map[openrtb_ext.BidderName]BidderRequest {
+	bidderToBidderResponse := make(map[openrtb_ext.BidderName]BidderRequest)
+	for bidderName, impResps := range bidderImpResponses {
+		resolvedBidder := resolveBidder(string(bidderName), aliases)
+		req.Imp = impsByBidder[string(bidderName)]
+		bidderToBidderResponse[bidderName] = BidderRequest{
+			BidRequest:            req,
+			BidderCoreName:        resolvedBidder,
+			BidderName:            bidderName,
+			BidderStoredResponses: impResps,
+			BidderLabels:          metrics.AdapterLabels{Adapter: resolvedBidder},
+		}
+	}
+	return bidderToBidderResponse
+}
+
+func mergeBidderRequests(allBidderRequests []BidderRequest, bidderNameToBidderReq map[openrtb_ext.BidderName]BidderRequest) []BidderRequest {
+	if len(allBidderRequests) == 0 && len(bidderNameToBidderReq) == 0 {
+		return allBidderRequests
+	}
+	if len(allBidderRequests) == 0 && len(bidderNameToBidderReq) > 0 {
+		for _, v := range bidderNameToBidderReq {
+			allBidderRequests = append(allBidderRequests, v)
+		}
+		return allBidderRequests
+	} else if len(allBidderRequests) > 0 && len(bidderNameToBidderReq) > 0 {
+		//merge bidder requests with real imps and imps with stored resp
+		for bn, br := range bidderNameToBidderReq {
+			found := false
+			for i, ar := range allBidderRequests {
+				if ar.BidderName == bn {
+					//bidder req with real imps and imps with stored resp
+					allBidderRequests[i].BidderStoredResponses = br.BidderStoredResponses
+					found = true
+					break
+				}
+			}
+			if !found {
+				//bidder req with stored bid responses only
+				allBidderRequests = append(allBidderRequests, br)
+			}
+		}
+	}
+	return allBidderRequests
 }
