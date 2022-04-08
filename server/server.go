@@ -29,20 +29,11 @@ func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.H
 	stopPrometheus := make(chan os.Signal)
 	done := make(chan struct{})
 
-	socketServer := newSocketServer(cfg, handler)
-	go shutdownAfterSignals(socketServer, stopMain, done)
-
 	adminServer := newAdminServer(cfg, adminHandler)
 	go shutdownAfterSignals(adminServer, stopAdmin, done)
 
 	mainServer := newMainServer(cfg, handler)
 	go shutdownAfterSignals(mainServer, stopMain, done)
-
-	socketListener, err := newUnixListener(socketServer.Addr, metrics)
-	if err != nil {
-		glog.Errorf("Error listening for Unix-Socket connections on path %s: %v for socket server", socketServer.Addr, err)
-		return
-	}
 
 	mainListener, err := newTCPListener(mainServer.Addr, metrics)
 	if err != nil {
@@ -56,9 +47,20 @@ func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.H
 		return
 	}
 
-	go runServer(socketServer, "Socket", socketListener)
 	go runServer(mainServer, "Main", mainListener)
 	go runServer(adminServer, "Admin", adminListener)
+
+	if cfg.EnableSocket && len(cfg.Socket) > 0 { // start the unix_socket server if config enable-it.
+		socketServer := newSocketServer(cfg, handler)
+		go shutdownAfterSignals(socketServer, stopMain, done)
+
+		socketListener, err := newUnixListener(socketServer.Addr, metrics)
+		if err != nil {
+			glog.Errorf("Error listening for Unix-Socket connections on path %s: %v for socket server", socketServer.Addr, err)
+			return
+		}
+		go runServer(socketServer, "Socket", socketListener)
+	}
 
 	if cfg.Metrics.Prometheus.Port != 0 {
 		prometheusServer := newPrometheusServer(cfg, metrics)
