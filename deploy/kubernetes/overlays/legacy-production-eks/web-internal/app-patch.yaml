@@ -50,10 +50,7 @@ spec:
           lifecycle:
             preStop:
               exec:
-                command:
-                  - sh
-                  - -c
-                  - sleep 30
+                command: ["sleep", "30"]
           # Introduce a delay to the shutdown sequence to wait for the
           # pod to be taken out of Service backends.
           ## https://blog.gruntwork.io/delaying-shutdown-to-wait-for-pod-deletion-propagation-445f779a8304
@@ -65,7 +62,4 @@ spec:
           lifecycle:
             preStop:
               exec:
-                command:
-                  - sh
-                  - -c
-                  - sleep 30 && /usr/sbin/nginx -s quit
+                command: ["sh", "-c", "sleep 30 && /usr/sbin/nginx -s quit"]
