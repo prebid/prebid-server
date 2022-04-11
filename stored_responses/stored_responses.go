@@ -22,9 +22,11 @@ type StoredBidResponses struct {
 	BidderToImpToResponses BidderImpsWithBidResponses
 }
 
-func (sr *StoredBidResponses) InitStoredBidResponses(req *openrtb2.BidRequest) {
-	sr.removeImpsWithStoredResponses(req)
-	sr.buildStoredResp()
+func InitStoredBidResponses(req *openrtb2.BidRequest, storedBidResponses ImpBidderStoredResp) StoredBidResponses {
+	storedResponses := StoredBidResponses{StoredBidResponses: storedBidResponses}
+	storedResponses.removeImpsWithStoredResponses(req)
+	storedResponses.buildStoredResp()
+	return storedResponses
 }
 
 // removeImpsWithStoredResponses deletes imps with stored bid resp

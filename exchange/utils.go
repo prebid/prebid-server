@@ -55,8 +55,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 
 	allowedBidderRequests = make([]BidderRequest, 0, 0)
 
-	storedBidResp := stored_responses.StoredBidResponses{StoredBidResponses: req.StoredBidResponses}
-	storedBidResp.InitStoredBidResponses(req.BidRequest)
+	storedBidResp := stored_responses.InitStoredBidResponses(req.BidRequest, req.StoredBidResponses)
 
 	impsByBidder, err := splitImps(req.BidRequest.Imp)
 	if err != nil {
