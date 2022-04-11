@@ -28,13 +28,22 @@ spec:
   template:
     spec:
       terminationGracePeriodSeconds: 60 # Default 30, override as desired in overlay
+      serviceAccountName: tpe-prebid-service
       securityContext:
         fsGroup: 65534
         sysctls:
         # https://v1-21.docs.kubernetes.io/docs/tasks/administer-cluster/sysctl-cluster/
           - name: "net.ipv4.ip_local_port_range"
             value: "1024 65023"
-      serviceAccountName: tpe-prebid-service
+      # TODO This is a temporary test of reducing from the default 5 to 3 ndots. If we decide to do this we will try to
+      # do it via `kubelet` args in the EKS terraform code. We have chosen 2 here because a bunch of
+      # external calls have 2 dots.
+      ## https://medium.com/cloutive/production-ready-eks-coredns-configuration-6fea830606f8
+      ## https://pracucci.com/kubernetes-dns-resolution-ndots-options-and-why-it-may-affect-application-performances.html
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "2"
       containers:
         - name: app
           image: app
