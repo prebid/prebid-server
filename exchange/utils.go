@@ -63,8 +63,6 @@ func cleanOpenRTBRequests(ctx context.Context,
 		return
 	}
 
-	bidderNameToBidderReq := buildBidResponseRequest(req.BidRequest, storedBidResp.BidderToImpToResponses, aliases, impsByBidder)
-
 	aliasesGVLIDs, errs := parseAliasesGVLIDs(req.BidRequest)
 	if len(errs) > 0 {
 		return
@@ -73,6 +71,8 @@ func cleanOpenRTBRequests(ctx context.Context,
 	var allBidderRequests []BidderRequest
 	allBidderRequests, errs = getAuctionBidderRequests(req, requestExt, bidderToSyncerKey, impsByBidder, aliases)
 
+	bidderNameToBidderReq := buildBidResponseRequest(req.BidRequest, storedBidResp.BidderToImpToResponses, aliases)
+	//this function should be executed after getAuctionBidderRequests
 	allBidderRequests = mergeBidderRequests(allBidderRequests, bidderNameToBidderReq)
 
 	gdprSignal, err := extractGDPR(req.BidRequest)
@@ -737,12 +737,10 @@ func applyFPD(fpd *firstpartydata.ResolvedFirstPartyData, bidReq *openrtb2.BidRe
 
 func buildBidResponseRequest(req *openrtb2.BidRequest,
 	bidderImpResponses stored_responses.BidderImpsWithBidResponses,
-	aliases map[string]string,
-	impsByBidder map[string][]openrtb2.Imp) map[openrtb_ext.BidderName]BidderRequest {
+	aliases map[string]string) map[openrtb_ext.BidderName]BidderRequest {
 	bidderToBidderResponse := make(map[openrtb_ext.BidderName]BidderRequest)
 	for bidderName, impResps := range bidderImpResponses {
 		resolvedBidder := resolveBidder(string(bidderName), aliases)
-		req.Imp = impsByBidder[string(bidderName)]
 		bidderToBidderResponse[bidderName] = BidderRequest{
 			BidRequest:            req,
 			BidderCoreName:        resolvedBidder,
@@ -777,6 +775,7 @@ func mergeBidderRequests(allBidderRequests []BidderRequest, bidderNameToBidderRe
 			}
 			if !found {
 				//bidder req with stored bid responses only
+				br.BidRequest.Imp = nil // to indicate this bidder request has bidder responses only
 				allBidderRequests = append(allBidderRequests, br)
 			}
 		}

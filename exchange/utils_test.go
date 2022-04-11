@@ -696,6 +696,53 @@ func TestCleanOpenRTBRequestsWithBidResponses(t *testing.T) {
 			},
 		},
 		{
+			description: "Request with 3 imps: with 2 bidders stored bid response and 2 imps without stored responses",
+			storedBidResponses: map[string]map[string]json.RawMessage{
+				"imp-id1": {"bidderA": bidRespId1, "bidderB": bidRespId2},
+			},
+			imps: []openrtb2.Imp{
+				{
+					ID:  "imp-id3",
+					Ext: json.RawMessage(`{"bidderC": {"placementId":"1234"}}`),
+				},
+				{
+					ID: "imp-id1",
+					Video: &openrtb2.Video{
+						W: 300,
+						H: 250,
+					},
+					Ext: json.RawMessage(`{"bidderA": {"placementId":"123"}}`),
+				},
+				{
+					ID:  "imp-id2",
+					Ext: json.RawMessage(`{"bidderA": {"placementId":"123"}}`),
+				},
+			},
+			expectedBidderRequests: map[string]BidderRequest{
+				"bidderA": {
+					BidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{
+						{ID: "imp-id2", Ext: json.RawMessage(`{"bidder":{"placementId":"123"}}`)},
+					}},
+					BidderName: "bidderA",
+					BidderStoredResponses: map[string]json.RawMessage{
+						"imp-id1": bidRespId1},
+				},
+				"bidderB": {
+					BidRequest: &openrtb2.BidRequest{Imp: nil},
+					BidderName: "bidderB",
+					BidderStoredResponses: map[string]json.RawMessage{
+						"imp-id1": bidRespId2},
+				},
+				"bidderC": {
+					BidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{
+						{ID: "imp-id3", Ext: json.RawMessage(`{"bidder":{"placementId":"1234"}}`)},
+					}},
+					BidderName:            "bidderC",
+					BidderStoredResponses: nil,
+				},
+			},
+		},
+		{
 			description: "Request with 2 imps: with 1 bidders stored bid response and imp without stored responses and with the same bidder",
 			storedBidResponses: map[string]map[string]json.RawMessage{
 				"imp-id2": {"bidderA": bidRespId2},
