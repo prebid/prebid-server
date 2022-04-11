@@ -182,6 +182,11 @@ func (adapter *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.Ex
 			}
 		}
 
+		// Overwrite BidFloor if present
+		if molocoExt.BidFloor != nil {
+			thisImp.BidFloor = *molocoExt.BidFloor
+		}
+
 		// Add impression extensions
 		impExt := molocoImpExt{}
 

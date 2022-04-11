@@ -169,6 +169,11 @@ func (adapter *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.Ex
 			}
 		}
 
+		// Overwrite BidFloor if present
+		if aarkiExt.BidFloor != nil {
+			thisImp.BidFloor = *aarkiExt.BidFloor
+		}
+
 		impExt := aarkiImpExt{}
 
 		// Add SKADN if supported and present

@@ -208,6 +208,11 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 			}
 		}
 
+		// Overwrite BidFloor if present
+		if appierExt.BidFloor != nil {
+			thisImp.BidFloor = *appierExt.BidFloor
+		}
+
 		impExt := appierImpExt{
 			Rewarded: rewarded,
 		}

@@ -177,6 +177,11 @@ func (adapter *RTBHouseAdapter) MakeRequests(
 			}
 		}
 
+		// Overwrite BidFloor if present
+		if rtbHouseExt.BidFloor != nil {
+			thisImp.BidFloor = *rtbHouseExt.BidFloor
+		}
+
 		impExt := rtbHouseImpExt{
 			Rewarded: rewarded,
 		}

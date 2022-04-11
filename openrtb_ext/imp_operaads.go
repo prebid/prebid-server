@@ -9,6 +9,7 @@ type ExtImpOperaAds struct {
 	MRAIDSupported bool                 `json:"mraid_supported"`
 	EndpointId     string               `json:"endpointId"`
 	PlacementId    operaAdsPlacementIds `json:"placementId"`
+	BidFloor       *float64             `json:"bid_floor,omitempty"`
 }
 
 // operaadsVideoParams defines the contract for bidrequest.imp[i].ext.operaads.video

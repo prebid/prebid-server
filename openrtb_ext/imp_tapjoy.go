@@ -12,10 +12,11 @@ type ExtImpTapjoy struct {
 	Request    TJRequest    `json:"request"`
 	Extensions TJExtensions `json:"extensions"`
 
-	Region         string `json:"region"`
-	Reward         int    `json:"reward"`
-	SKADNSupported bool   `json:"skadn_supported"`
-	MRAIDSupported bool   `json:"mraid_supported"`
+	Region         string   `json:"region"`
+	Reward         int      `json:"reward"`
+	SKADNSupported bool     `json:"skadn_supported"`
+	MRAIDSupported bool     `json:"mraid_supported"`
+	BidFloor       *float64 `json:"bid_floor,omitempty"`
 }
 
 type TJApp struct {

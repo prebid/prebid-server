@@ -104,6 +104,11 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 		// overwrite bid floor with mediator given bid floor
 		thisImp.BidFloor = tapjoyExt.Imp.BidFloor
 
+		// Overwrite BidFloor if present
+		if tapjoyExt.BidFloor != nil {
+			thisImp.BidFloor = *tapjoyExt.BidFloor
+		}
+
 		// request.imp[].ext
 		thisImp.Ext = tapjoyExt.Extensions.ImpExt
 

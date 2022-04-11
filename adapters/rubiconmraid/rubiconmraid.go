@@ -970,6 +970,11 @@ func (a *RubiconMRAIDAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo
 			continue
 		}
 
+		// Overwrite BidFloor if present
+		if rubiconExt.BidFloor != nil {
+			thisImp.BidFloor = *rubiconExt.BidFloor
+		}
+
 		siteExt := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: rubiconExt.SiteId}}
 		pubExt := rubiconPubExt{RP: rubiconPubExtRP{AccountID: rubiconExt.AccountId}}
 

@@ -18,6 +18,7 @@ type ExtImpRubicon struct {
 	ViewabilityVendors []string `json:"viewabilityvendors"`
 	SKADNSupported     bool     `json:"skadn_supported"`
 	MRAIDSupported     bool     `json:"mraid_supported"`
+	BidFloor           *float64 `json:"bid_floor,omitempty"`
 }
 
 // rubiconVideoParams defines the contract for bidrequest.imp[i].ext.rubicon.video

@@ -186,6 +186,11 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.Ex
 			}
 		}
 
+		// Overwrite BidFloor if present
+		if kadenaiExt.BidFloor != nil {
+			thisImp.BidFloor = *kadenaiExt.BidFloor
+		}
+
 		impExt := kadenaiImpExt{
 			Rewarded: rewarded,
 		}

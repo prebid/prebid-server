@@ -7,6 +7,7 @@ type ExtImpRTBHouse struct {
 	Region         string              `json:"region"`
 	SKADNSupported bool                `json:"skadn_supported"`
 	MRAIDSupported bool                `json:"mraid_supported"`
+	BidFloor       *float64            `json:"bid_floor,omitempty"`
 }
 
 // rtbHouseVideoParams defines the contract for bidrequest.imp[i].ext.rtbhouse.video
