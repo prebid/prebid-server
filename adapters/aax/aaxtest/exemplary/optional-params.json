@@ -14,8 +14,8 @@
                 },
                 "ext": {
                     "bidder": {
-                        "cid": "8CUTSTCID",
-                        "crid": "999999999",
+                        "cid": "TCID",
+                        "crid": "1234",
                         "tagid_src": "ext"
                     }
                 }
@@ -42,8 +42,8 @@
                             },
                             "ext": {
                                 "bidder": {
-                                    "cid": "8CUTSTCID",
-                                    "crid": "999999999",
+                                    "cid": "TCID",
+                                    "crid": "1234",
                                     "tagid_src": "ext"
                                 }
                             }
