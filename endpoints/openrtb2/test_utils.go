@@ -24,7 +24,6 @@ import (
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
-	"github.com/prebid/prebid-server/firstpartydata"
 	"github.com/prebid/prebid-server/gdpr"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -733,7 +732,8 @@ type mockExchange struct {
 	lastRequest *openrtb2.BidRequest
 }
 
-func (m *mockExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+func (m *mockExchange) HoldAuction(ctx context.Context, auctionRequest exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+	r := auctionRequest.BidRequestWrapper
 	m.lastRequest = r.BidRequest
 	return &openrtb2.BidResponse{
 		SeatBid: []openrtb2.SeatBid{{
@@ -742,18 +742,6 @@ func (m *mockExchange) HoldAuction(ctx context.Context, r exchange.AuctionReques
 			}},
 		}},
 	}, nil
-}
-
-// mockExchangeFPD implements the Exchange interface
-type mockExchangeFPD struct {
-	lastRequest    *openrtb2.BidRequest
-	firstPartyData map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData
-}
-
-func (m *mockExchangeFPD) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
-	m.lastRequest = r.BidRequest
-	m.firstPartyData = r.FirstPartyData
-	return &openrtb2.BidResponse{}, nil
 }
 
 // hardcodedResponseIPValidator implements the IPValidator interface.
@@ -792,7 +780,8 @@ type nobidExchange struct {
 	gotRequest *openrtb2.BidRequest
 }
 
-func (e *nobidExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+func (e *nobidExchange) HoldAuction(ctx context.Context, auctionRequest exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+	r := auctionRequest.BidRequestWrapper
 	e.gotRequest = r.BidRequest
 	return &openrtb2.BidResponse{
 		ID:    r.BidRequest.ID,

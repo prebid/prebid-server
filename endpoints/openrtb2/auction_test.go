@@ -3098,57 +3098,6 @@ func TestParseRequestParseImpInfoError(t *testing.T) {
 	assert.Contains(t, errL[0].Error(), "echovideoattrs of type bool", "Incorrect error message")
 }
 
-func TestAuctionFirstPartyData(t *testing.T) {
-	reqBody := validRequest(t, "first-party-data.json")
-	deps := &endpointDeps{
-		fakeUUIDGenerator{},
-		&mockExchangeFPD{},
-		newParamsValidator(t),
-		&mockStoredReqFetcher{},
-		empty_fetcher.EmptyFetcher{},
-		empty_fetcher.EmptyFetcher{},
-		&config.Configuration{MaxRequestSize: int64(len(reqBody))},
-		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
-		map[string]string{},
-		false,
-		[]byte{},
-		openrtb_ext.BuildBidderMap(),
-		nil,
-		nil,
-		hardcodedResponseIPValidator{response: true},
-		empty_fetcher.EmptyFetcher{},
-	}
-
-	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
-	recorder := httptest.NewRecorder()
-
-	deps.Auction(recorder, req, nil)
-
-	if recorder.Code != http.StatusOK {
-		t.Errorf("Endpoint should return a 200")
-	}
-	resultRequest := deps.ex.(*mockExchangeFPD).lastRequest
-	resultFPD := deps.ex.(*mockExchangeFPD).firstPartyData
-
-	assert.Len(t, resultFPD, 2, "Result FPD length is incorrect")
-
-	assert.NotNil(t, resultFPD[openrtb_ext.BidderName("bidder1")], "Result FPD for bidder1 is incorrect")
-	assert.NotNil(t, resultFPD[openrtb_ext.BidderName("bidder1")].Site, "Result FPD for bidder1.Site is incorrect")
-	assert.Nil(t, resultFPD[openrtb_ext.BidderName("bidder1")].App, "Result FPD for bidder1.App is incorrect")
-	assert.NotNil(t, resultFPD[openrtb_ext.BidderName("bidder1")].User, "Result FPD for bidder1.User is incorrect")
-
-	assert.NotNil(t, resultFPD[openrtb_ext.BidderName("bidder2")], "Result FPD for bidder2 is incorrect")
-	assert.NotNil(t, resultFPD[openrtb_ext.BidderName("bidder2")].Site, "Result FPD for bidder2.Site is incorrect")
-	assert.Nil(t, resultFPD[openrtb_ext.BidderName("bidder2")].App, "Result FPD for bidder2.App is incorrect")
-	assert.NotNil(t, resultFPD[openrtb_ext.BidderName("bidder2")].User, "Result FPD for bidder2.User is incorrect")
-
-	assert.Nil(t, resultRequest.App, "Result request App should be nil")
-	assert.Nil(t, resultRequest.Site.Content.Data, "Result request Site.Content.Data is incorrect")
-	assert.JSONEq(t, string(resultRequest.Site.Ext), `{"amp": 1}`, "Result request Site.Ext is incorrect")
-	assert.Nil(t, resultRequest.User.Ext, "Result request User.Ext is incorrect")
-}
-
 func TestValidateNativeContextTypes(t *testing.T) {
 	impIndex := 4
 
