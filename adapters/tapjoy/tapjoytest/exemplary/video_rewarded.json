@@ -43,7 +43,7 @@
               "id": "6f07dc3a-3708-4a81-b6ca-680464788bbc"
             },
             "imp": {
-              "bidfloor": 123.46
+              "bidfloor": 123.45
             },
             "device": {
               "os": "android",
@@ -266,7 +266,7 @@
               "displaymanagerver": "12.8.1",
               "instl": 1,
               "tagid": "4160260845",
-              "bidfloor": 123.46,
+              "bidfloor": 123.45,
               "bidfloorcur": "USD",
               "secure": 1,
               "ext": {
