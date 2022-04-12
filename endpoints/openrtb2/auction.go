@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/prebid/prebid-server/gdpr"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -30,8 +31,6 @@ import (
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
-	"github.com/prebid/prebid-server/firstpartydata"
-	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
@@ -157,15 +156,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		return
 	}
 
-	resolvedFPD, fpdErrors := firstpartydata.ExtractFPDForBidders(req)
-	if len(fpdErrors) > 0 {
-		if errortypes.ContainsFatalError(fpdErrors) && writeError(fpdErrors, w, &labels) {
-			return
-		}
-		errL = append(errL, fpdErrors...)
-	}
-	warnings := errortypes.WarningOnly(errL)
-
 	ctx := context.Background()
 
 	timeout := deps.cfg.AuctionTimeouts.LimitAuctionTimeout(time.Duration(req.TMax) * time.Millisecond)
@@ -205,18 +195,12 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		writeError(errL, w, &labels)
 		return
 	}
-
-	// rebuild/resync the request in the request wrapper.
-	if err := req.RebuildRequest(); err != nil {
-		errL = append(errL, err)
-		writeError(errL, w, &labels)
-		return
-	}
-
 	secGPC := r.Header.Get("Sec-GPC")
 
+	warnings := errortypes.WarningOnly(errL)
+
 	auctionRequest := exchange.AuctionRequest{
-		BidRequest:                 req.BidRequest,
+		BidRequestWrapper:          req,
 		Account:                    *account,
 		UserSyncs:                  usersyncs,
 		RequestType:                labels.RType,
@@ -225,7 +209,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		Warnings:                   warnings,
 		GlobalPrivacyControlHeader: secGPC,
 		ImpExtInfoMap:              impExtInfoMap,
-		FirstPartyData:             resolvedFPD,
 		StoredAuctionResponses:     storedAuctionResponses,
 		TCF2ConfigBuilder:          gdpr.NewTCF2Config,
 		GDPRPermissionsBuilder:     gdpr.NewPermissions,
@@ -236,6 +219,10 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	ao.Response = response
 	ao.Account = account
 	if err != nil {
+		if errortypes.ReadCode(err) == errortypes.BadInputErrorCode {
+			writeError([]error{err}, w, &labels)
+			return
+		}
 		labels.RequestStatus = metrics.RequestStatusErr
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
