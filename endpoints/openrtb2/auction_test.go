@@ -17,8 +17,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/firstpartydata"
-
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
@@ -3225,57 +3223,6 @@ func TestParseRequestParseImpInfoError(t *testing.T) {
 	assert.Contains(t, errL[0].Error(), "echovideoattrs of type bool", "Incorrect error message")
 }
 
-func TestAuctionFirstPartyData(t *testing.T) {
-	reqBody := validRequest(t, "first-party-data.json")
-	deps := &endpointDeps{
-		fakeUUIDGenerator{},
-		&mockExchangeFPD{},
-		newParamsValidator(t),
-		&mockStoredReqFetcher{},
-		empty_fetcher.EmptyFetcher{},
-		empty_fetcher.EmptyFetcher{},
-		&config.Configuration{MaxRequestSize: int64(len(reqBody))},
-		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
-		map[string]string{},
-		false,
-		[]byte{},
-		openrtb_ext.BuildBidderMap(),
-		nil,
-		nil,
-		hardcodedResponseIPValidator{response: true},
-		empty_fetcher.EmptyFetcher{},
-	}
-
-	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
-	recorder := httptest.NewRecorder()
-
-	deps.Auction(recorder, req, nil)
-
-	if recorder.Code != http.StatusOK {
-		t.Errorf("Endpoint should return a 200")
-	}
-	resultRequest := deps.ex.(*mockExchangeFPD).lastRequest
-	resultFPD := deps.ex.(*mockExchangeFPD).firstPartyData
-
-	assert.Len(t, resultFPD, 2, "Result FPD length is incorrect")
-
-	assert.NotNil(t, resultFPD[openrtb_ext.BidderName("bidder1")], "Result FPD for bidder1 is incorrect")
-	assert.NotNil(t, resultFPD[openrtb_ext.BidderName("bidder1")].Site, "Result FPD for bidder1.Site is incorrect")
-	assert.Nil(t, resultFPD[openrtb_ext.BidderName("bidder1")].App, "Result FPD for bidder1.App is incorrect")
-	assert.NotNil(t, resultFPD[openrtb_ext.BidderName("bidder1")].User, "Result FPD for bidder1.User is incorrect")
-
-	assert.NotNil(t, resultFPD[openrtb_ext.BidderName("bidder2")], "Result FPD for bidder2 is incorrect")
-	assert.NotNil(t, resultFPD[openrtb_ext.BidderName("bidder2")].Site, "Result FPD for bidder2.Site is incorrect")
-	assert.Nil(t, resultFPD[openrtb_ext.BidderName("bidder2")].App, "Result FPD for bidder2.App is incorrect")
-	assert.NotNil(t, resultFPD[openrtb_ext.BidderName("bidder2")].User, "Result FPD for bidder2.User is incorrect")
-
-	assert.Nil(t, resultRequest.App, "Result request App should be nil")
-	assert.Nil(t, resultRequest.Site.Content.Data, "Result request Site.Content.Data is incorrect")
-	assert.JSONEq(t, string(resultRequest.Site.Ext), `{"amp": 1}`, "Result request Site.Ext is incorrect")
-	assert.Nil(t, resultRequest.User.Ext, "Result request User.Ext is incorrect")
-}
-
 func TestValidateNativeContextTypes(t *testing.T) {
 	impIndex := 4
 
@@ -3765,7 +3712,8 @@ type nobidExchange struct {
 	gotRequest *openrtb2.BidRequest
 }
 
-func (e *nobidExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+func (e *nobidExchange) HoldAuction(ctx context.Context, auctionRequest exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+	r := auctionRequest.BidRequestWrapper
 	e.gotRequest = r.BidRequest
 	return &openrtb2.BidResponse{
 		ID:    r.BidRequest.ID,
@@ -3822,7 +3770,8 @@ func (e *mockBidExchange) getAuctionCurrencyRates(customRates *openrtb_ext.ExtRe
 
 // mockBidExchange is a well-behaved exchange that lists the bidders found in every bidRequest.Imp[i].Ext
 // into the bidResponse.Ext to assert the bidder adapters that were not filtered out in the validation process
-func (e *mockBidExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+func (e *mockBidExchange) HoldAuction(ctx context.Context, auctionRequest exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+	r := auctionRequest.BidRequestWrapper
 	bidResponse := &openrtb2.BidResponse{
 		ID:    r.BidRequest.ID,
 		BidID: "test bid id",
@@ -4586,7 +4535,7 @@ type mockExchange struct {
 }
 
 func (m *mockExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
-	m.lastRequest = r.BidRequest
+	m.lastRequest = r.BidRequestWrapper.BidRequest
 	return &openrtb2.BidResponse{
 		SeatBid: []openrtb2.SeatBid{{
 			Bid: []openrtb2.Bid{{
@@ -4594,17 +4543,6 @@ func (m *mockExchange) HoldAuction(ctx context.Context, r exchange.AuctionReques
 			}},
 		}},
 	}, nil
-}
-
-type mockExchangeFPD struct {
-	lastRequest    *openrtb2.BidRequest
-	firstPartyData map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData
-}
-
-func (m *mockExchangeFPD) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
-	m.lastRequest = r.BidRequest
-	m.firstPartyData = r.FirstPartyData
-	return &openrtb2.BidResponse{}, nil
 }
 
 func getBidderInfos(cfg map[string]config.Adapter, biddersNames []openrtb_ext.BidderName) config.BidderInfos {
