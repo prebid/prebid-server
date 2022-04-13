@@ -59,7 +59,7 @@
                             "ext": {
                                 "bidder": {
                                     "cid": "TCID",
-                        "crid": "1234"
+                                    "crid": "1234"
                                 }
                             }
                         },
