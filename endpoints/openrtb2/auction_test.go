@@ -2665,31 +2665,31 @@ func TestMapSChains(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
+	for _, test := range tests {
 		reqWrapper := openrtb_ext.RequestWrapper{
-			BidRequest: &tt.bidRequest,
+			BidRequest: &test.bidRequest,
 		}
 
 		err := mapSChains(&reqWrapper)
 
-		if tt.wantError {
-			assert.NotNil(t, err, tt.description)
+		if test.wantError {
+			assert.NotNil(t, err, test.description)
 		} else {
-			assert.Nil(t, err, tt.description)
+			assert.Nil(t, err, test.description)
 
 			reqExt, err := reqWrapper.GetRequestExt()
 			if err != nil {
-				assert.Fail(t, "Error getting request ext from wrapper", tt.description)
+				assert.Fail(t, "Error getting request ext from wrapper", test.description)
 			}
 			reqExtSChain := reqExt.GetSChain()
-			assert.Equal(t, tt.wantReqExtSChain, reqExtSChain, tt.description)
+			assert.Equal(t, test.wantReqExtSChain, reqExtSChain, test.description)
 
 			sourceExt, err := reqWrapper.GetSourceExt()
 			if err != nil {
-				assert.Fail(t, "Error getting source ext from wrapper", tt.description)
+				assert.Fail(t, "Error getting source ext from wrapper", test.description)
 			}
 			sourceExtSChain := sourceExt.GetSChain()
-			assert.Equal(t, tt.wantSourceExtSChain, sourceExtSChain, tt.description)
+			assert.Equal(t, test.wantSourceExtSChain, sourceExtSChain, test.description)
 		}
 	}
 }
@@ -4642,8 +4642,8 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 			expectedErrorCount: 0,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 
 			deps := &endpointDeps{
 				fakeUUIDGenerator{},
@@ -4652,7 +4652,7 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 				&mockStoredReqFetcher{},
 				empty_fetcher.EmptyFetcher{},
 				empty_fetcher.EmptyFetcher{},
-				&config.Configuration{MaxRequestSize: int64(len(tt.givenRequestBody))},
+				&config.Configuration{MaxRequestSize: int64(len(test.givenRequestBody))},
 				&metricsConfig.NilMetricsEngine{},
 				analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 				map[string]string{},
@@ -4665,12 +4665,12 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 				empty_fetcher.EmptyFetcher{},
 			}
 
-			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(tt.givenRequestBody))
+			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
 
 			resReq, _, _, _, errL := deps.parseRequest(req)
 
 			var expIExt, iExt map[string]interface{}
-			err := json.Unmarshal(tt.expectedImpExt, &expIExt)
+			err := json.Unmarshal(test.expectedImpExt, &expIExt)
 			assert.Nil(t, err, "unmarshal() should return nil error")
 
 			assert.NotNil(t, resReq.BidRequest.Imp[0].Ext, "imp[0].Ext should not be nil")
@@ -4680,7 +4680,7 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 			assert.Equal(t, expIExt, iExt, "bidderparams in imp[].Ext should match")
 
 			var eReqE, reqE map[string]interface{}
-			err = json.Unmarshal(tt.expectedReqExt, &eReqE)
+			err = json.Unmarshal(test.expectedReqExt, &eReqE)
 			assert.Nil(t, err, "unmarshal() should return nil error")
 
 			err = json.Unmarshal(resReq.BidRequest.Ext, &reqE)
@@ -4688,7 +4688,7 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 
 			assert.Equal(t, eReqE, reqE, "req.Ext should match")
 
-			assert.Len(t, errL, tt.expectedErrorCount, "error length should match")
+			assert.Len(t, errL, test.expectedErrorCount, "error length should match")
 		})
 	}
 }
@@ -4742,8 +4742,8 @@ func TestParseRequestStoredResponses(t *testing.T) {
 			expectedError:      `request validation failed. The StoredAuctionResponse.ID field must be completely present with, or completely absent from, all impressions in request. No StoredAuctionResponse data found for request.imp[1].ext.prebid`,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 
 			deps := &endpointDeps{
 				fakeUUIDGenerator{},
@@ -4752,7 +4752,7 @@ func TestParseRequestStoredResponses(t *testing.T) {
 				&mockStoredReqFetcher{},
 				empty_fetcher.EmptyFetcher{},
 				empty_fetcher.EmptyFetcher{},
-				&config.Configuration{MaxRequestSize: int64(len(tt.givenRequestBody))},
+				&config.Configuration{MaxRequestSize: int64(len(test.givenRequestBody))},
 				&metricsConfig.NilMetricsEngine{},
 				analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 				map[string]string{},
@@ -4765,14 +4765,14 @@ func TestParseRequestStoredResponses(t *testing.T) {
 				&mockStoredResponseFetcher{mockStoredResponses},
 			}
 
-			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(tt.givenRequestBody))
+			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
 
 			_, _, storedResponses, _, errL := deps.parseRequest(req)
 
-			if tt.expectedErrorCount == 0 {
-				assert.Equal(t, tt.expectedStoredResponses, storedResponses, "stored responses should match")
+			if test.expectedErrorCount == 0 {
+				assert.Equal(t, test.expectedStoredResponses, storedResponses, "stored responses should match")
 			} else {
-				assert.Contains(t, errL[0].Error(), tt.expectedError, "error should match")
+				assert.Contains(t, errL[0].Error(), test.expectedError, "error should match")
 			}
 
 		})
@@ -4829,8 +4829,8 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 			expectedErrorCount: 0,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 
 			deps := &endpointDeps{
 				fakeUUIDGenerator{},
@@ -4839,7 +4839,7 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 				&mockStoredReqFetcher{},
 				empty_fetcher.EmptyFetcher{},
 				empty_fetcher.EmptyFetcher{},
-				&config.Configuration{MaxRequestSize: int64(len(tt.givenRequestBody))},
+				&config.Configuration{MaxRequestSize: int64(len(test.givenRequestBody))},
 				&metricsConfig.NilMetricsEngine{},
 				analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 				map[string]string{},
@@ -4852,13 +4852,13 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 				&mockStoredResponseFetcher{mockStoredBidResponses},
 			}
 
-			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(tt.givenRequestBody))
+			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
 			_, _, _, storedBidResponses, errL := deps.parseRequest(req)
 
-			if tt.expectedErrorCount == 0 {
-				assert.Equal(t, tt.expectedStoredBidResponses, storedBidResponses, "stored responses should match")
+			if test.expectedErrorCount == 0 {
+				assert.Equal(t, test.expectedStoredBidResponses, storedBidResponses, "stored responses should match")
 			} else {
-				assert.Contains(t, errL[0].Error(), tt.expectedError, "error should match")
+				assert.Contains(t, errL[0].Error(), test.expectedError, "error should match")
 			}
 		})
 	}

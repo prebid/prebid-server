@@ -801,7 +801,7 @@ func TestCleanOpenRTBRequestsWithBidResponses(t *testing.T) {
 		metricsMock := metrics.MetricsEngineMock{}
 		bidderToSyncerKey := map[string]string{}
 		auctionReq := AuctionRequest{
-			BidRequest:         &openrtb2.BidRequest{Imp: test.imps},
+			BidRequestWrapper:  &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Imp: test.imps}},
 			UserSyncs:          &emptyUsersync{},
 			StoredBidResponses: test.storedBidResponses,
 		}
