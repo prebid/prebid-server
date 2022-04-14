@@ -64,14 +64,14 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 
 	bidResponse := adapters.NewBidderResponse()
 
-	for _, sb := range bidResp.SeatBid {
-		for i := range sb.Bid {
-			bidType, err := getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp)
+	for _, seatBid := range bidResp.SeatBid {
+		for i := range seatBid.Bid {
+			bidType, err := getMediaTypeForImp(seatBid.Bid[i].ImpID, internalRequest.Imp)
 			if err != nil {
 				errs = append(errs, err)
 			} else {
 				b := &adapters.TypedBid{
-					Bid:     &sb.Bid[i],
+					Bid:     &seatBid.Bid[i],
 					BidType: bidType,
 				}
 				bidResponse.Bids = append(bidResponse.Bids, b)
