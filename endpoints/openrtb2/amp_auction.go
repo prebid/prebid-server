@@ -202,6 +202,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		LegacyLabels:               labels,
 		GlobalPrivacyControlHeader: secGPC,
 		TCF2ConfigBuilder:          aggregatedGDPR.NewTCF2Config,
+		GDPRPermissionsBuilder:     aggregatedGDPR.NewPermissions,
 		StoredAuctionResponses:     storedAuctionResponses,
 	}
 

@@ -295,6 +295,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		StartTime:                  start,
 		LegacyLabels:               labels,
 		TCF2ConfigBuilder:          gdpr.NewTCF2Config,
+		GDPRPermissionsBuilder:     gdpr.NewPermissions,
 		GlobalPrivacyControlHeader: secGPC,
 	}
 
