@@ -200,6 +200,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		StartTime:                  start,
 		LegacyLabels:               labels,
 		GlobalPrivacyControlHeader: secGPC,
+		TCF2ConfigBuilder:          gdpr.NewTCF2Config,
 		StoredAuctionResponses:     storedAuctionResponses,
 	}
 
