@@ -137,7 +137,7 @@ func Test_newMainServer(t *testing.T) {
 }
 
 func Test_newTCPListener(t *testing.T) {
-	const mock_address_value = "chose_your_value"
+	const mock_address_value = "chose_your_value:chose_your_port"
 
 	if ret, err := newTCPListener(mock_address_value, nil); err != nil {
 		t.Error("[Test_newTCPListener] err_ :", err)
