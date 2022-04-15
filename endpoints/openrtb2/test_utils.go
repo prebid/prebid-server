@@ -59,13 +59,7 @@ type testConfigValues struct {
 	BlacklistedApps     []string                      `json:"blacklistedApps"`
 	DisabledAdapters    []string                      `json:"disabledAdapters"`
 	CurrencyRates       map[string]map[string]float64 `json:"currencyRates"`
-	MockBidder          mockBidInfo                   `json:"mockBidder"`
-}
-
-// mockBidInfo carries mock bidder server information that will be read from JSON test files
-type mockBidInfo struct {
-	BidCurrency string  `json:"currency"`
-	BidPrice    float64 `json:"price"`
+	MockBidders         []mockBidderHandler           `json:"mockBidders"`
 }
 
 type brokenExchange struct{}
@@ -814,12 +808,12 @@ func (s mockCurrencyRatesClient) handle(w http.ResponseWriter, req *http.Request
 	return
 }
 
-// mockBidderHandler defines the handle function of a a mock bidder service. Its bidder
-// name can be set upon instantiation and its bid price and bid currency can be set in the
-// JSON test file itself
+// mockBidderHandler carries mock bidder server information that will be read from JSON test files
+// and defines a handle function of a a mock bidder service.
 type mockBidderHandler struct {
-	bidInfo    mockBidInfo
-	bidderName string
+	BidderName string  `json:"bidderName"`
+	Currency   string  `json:"currency"`
+	Price      float64 `json:"price"`
 }
 
 func (b mockBidderHandler) bid(w http.ResponseWriter, req *http.Request) {
@@ -846,29 +840,20 @@ func (b mockBidderHandler) bid(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Values we need to build response
-	currency := b.bidInfo.BidCurrency
-	price := b.bidInfo.BidPrice
-
-	// default values
-	if len(currency) == 0 {
-		currency = "USD"
-	}
-
 	// Create bid service openrtb2.BidResponse with one bid according to JSON test file values
 	var serverResponseObject = openrtb2.BidResponse{
 		ID:  openrtb2Request.ID,
-		Cur: currency,
+		Cur: b.Currency,
 		SeatBid: []openrtb2.SeatBid{
 			{
 				Bid: []openrtb2.Bid{
 					{
-						ID:    b.bidderName + "-bid",
+						ID:    b.BidderName + "-bid",
 						ImpID: openrtb2Request.Imp[0].ID,
-						Price: price,
+						Price: b.Price,
 					},
 				},
-				Seat: b.bidderName,
+				Seat: b.BidderName,
 			},
 		},
 	}
@@ -1075,31 +1060,28 @@ func (tc *testConfigValues) getAdaptersConfigMap() map[string]config.Adapter {
 	return adaptersConfig
 }
 
-func buildTestEndpoint(test testCase, paramValidator openrtb_ext.BidderParamValidator) (httprouter.Handle, *httptest.Server, *httptest.Server, *httptest.Server, *httptest.Server, error) {
+// buildTestAuctionEndpoint instantiates an openrtb2 Auction endpoint designed to test endpoints/openrtb2/auction.go
+
+func buildTestEndpoint(test testCase, paramValidator openrtb_ext.BidderParamValidator) (httprouter.Handle, []*httptest.Server, *httptest.Server, error) {
 	bidderInfos := getBidderInfos(test.Config.getAdaptersConfigMap(), openrtb_ext.CoreBidderNames())
 	bidderMap := exchange.GetActiveBidders(bidderInfos)
 	disabledBidders := exchange.GetDisabledBiddersErrorMessages(bidderInfos)
 
 	// Adapter map with mock adapters needed to run JSON test cases
 	adapterMap := make(map[openrtb_ext.BidderName]exchange.AdaptedBidder, 0)
+	mockBidServersArray := make([]*httptest.Server, 0, 3)
 
-	// AppNexus mock bid server and adapter
-	appNexusBidder := mockBidderHandler{bidInfo: test.Config.MockBidder, bidderName: "appnexus"}
-	appNexusServer := httptest.NewServer(http.HandlerFunc(appNexusBidder.bid))
-	appNexusBidderAdapter := mockAdapter{mockServerURL: appNexusServer.URL}
-	adapterMap[openrtb_ext.BidderAppnexus] = exchange.AdaptBidder(appNexusBidderAdapter, appNexusServer.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil)
+	if len(test.Config.MockBidders) == 0 {
+		test.Config.MockBidders = append(test.Config.MockBidders, mockBidderHandler{BidderName: "appnexus", Currency: "USD", Price: 0.00})
+	}
+	for _, mockBidder := range test.Config.MockBidders {
+		bidServer := httptest.NewServer(http.HandlerFunc(mockBidder.bid))
+		bidderAdapter := mockAdapter{mockServerURL: bidServer.URL}
+		bidderName := openrtb_ext.BidderName(mockBidder.BidderName)
 
-	// openX mock bid server and adapter
-	openXBidder := mockBidderHandler{bidInfo: test.Config.MockBidder, bidderName: "openx"}
-	openXServer := httptest.NewServer(http.HandlerFunc(openXBidder.bid))
-	openXBidderAdapter := mockAdapter{mockServerURL: openXServer.URL}
-	adapterMap[openrtb_ext.BidderOpenx] = exchange.AdaptBidder(openXBidderAdapter, openXServer.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderOpenx, nil)
-
-	// Rubicon mock bid server and adapter
-	rubiconBidder := mockBidderHandler{bidInfo: test.Config.MockBidder, bidderName: "rubicon"}
-	rubiconServer := httptest.NewServer(http.HandlerFunc(rubiconBidder.bid))
-	rubiconBidderAdapter := mockAdapter{mockServerURL: rubiconServer.URL}
-	adapterMap[openrtb_ext.BidderRubicon] = exchange.AdaptBidder(rubiconBidderAdapter, rubiconServer.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderRubicon, nil)
+		adapterMap[bidderName] = exchange.AdaptBidder(bidderAdapter, bidServer.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, bidderName, nil)
+		mockBidServersArray = append(mockBidServersArray, bidServer)
+	}
 
 	// Mock prebid Server's currency converter, instantiate and start
 	mockCurrencyConversionService := mockCurrencyRatesClient{
@@ -1148,7 +1130,7 @@ func buildTestEndpoint(test testCase, paramValidator openrtb_ext.BidderParamVali
 		bidderMap,
 		empty_fetcher.EmptyFetcher{})
 
-	return endpoint, appNexusServer, openXServer, rubiconServer, mockCurrencyRatesServer, err
+	return endpoint, mockBidServersArray, mockCurrencyRatesServer, err
 }
 
 type wellBehavedCache struct{}

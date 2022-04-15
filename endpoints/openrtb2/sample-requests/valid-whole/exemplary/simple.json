@@ -1,5 +1,10 @@
 {
   "description": "Simple request",
+  "config": {
+    "mockBidders": [
+      {"bidderName": "appnexus", "currency": "USD", "price": 0.00}
+    ]
+  },
   "mockBidRequest": {
     "id": "some-request-id",
     "site": {

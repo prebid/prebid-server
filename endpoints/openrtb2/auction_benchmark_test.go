@@ -140,10 +140,10 @@ func BenchmarkValidWholeExemplary(b *testing.B) {
 				b.Fatal(err.Error())
 			}
 
-			auctionEndpointHandler, appNexusServer, openXServer, rubiconServer, mockCurrencyRatesServer, err := buildTestEndpoint(test, paramValidator)
-			defer appNexusServer.Close()
-			defer openXServer.Close()
-			defer rubiconServer.Close()
+			auctionEndpointHandler, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, paramValidator)
+			for _, mockBidServer := range mockBidServers {
+				mockBidServer.Close()
+			}
 			defer mockCurrencyRatesServer.Close()
 			if err != nil {
 				b.Fatal(err.Error())

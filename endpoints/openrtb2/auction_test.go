@@ -102,12 +102,12 @@ func TestJsonSampleRequests(t *testing.T) {
 
 	paramsValidator := newParamsValidator(t)
 
-	for _, test := range testSuites {
-		testCaseFiles, err := getTestFiles(filepath.Join("sample-requests", test.sampleRequestsSubDir))
-		if assert.NoError(t, err, "Test case %s. Error reading files from directory %s \n", test.description, test.sampleRequestsSubDir) {
+	for _, tc := range testSuites {
+		testCaseFiles, err := getTestFiles(filepath.Join("sample-requests", tc.sampleRequestsSubDir))
+		if assert.NoError(t, err, "Test case %s. Error reading files from directory %s \n", tc.description, tc.sampleRequestsSubDir) {
 			for _, testFile := range testCaseFiles {
 				fileData, err := ioutil.ReadFile(testFile)
-				if assert.NoError(t, err, "Test case %s. Error reading file %s \n", test.description, testFile) {
+				if assert.NoError(t, err, "Test case %s. Error reading file %s \n", tc.description, testFile) {
 					// Retrieve values from JSON file
 					test, err := parseTestFile(fileData, testFile)
 					if !assert.NoError(t, err) {
@@ -115,15 +115,15 @@ func TestJsonSampleRequests(t *testing.T) {
 					}
 
 					// Build endpoint for testing. If no error, run test case
-					auctionEndpointHandler, appNexusServer, openXServer, rubiconServer, mockCurrencyRatesServer, err := buildTestEndpoint(test, paramsValidator)
+					auctionEndpointHandler, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, paramsValidator)
 					if assert.NoError(t, err) {
 						runTestCase(t, auctionEndpointHandler, test, fileData, testFile)
 					}
 
 					// Close servers regardless if the test case was run or not
-					appNexusServer.Close()
-					openXServer.Close()
-					rubiconServer.Close()
+					for _, mockBidServer := range mockBidServers {
+						mockBidServer.Close()
+					}
 					mockCurrencyRatesServer.Close()
 				}
 			}

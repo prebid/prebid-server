@@ -6,10 +6,13 @@
         "MXN": 2.00
       }
     },
-    "mockBidder": {
-      "currency": "USD",
-	  "price": 1.00
-    }
+    "mockBidders": [
+      {
+        "bidderName": "appnexus",
+        "currency": "USD",
+        "price": 1.00
+      }
+    ]
   },
   "mockBidRequest": {
     "id": "some-request-id",

@@ -11,13 +11,16 @@ import (
 	"reflect"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/analytics"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/gdpr"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
@@ -44,18 +47,53 @@ func TestGoodAmpRequests(t *testing.T) {
 		"6d718149": json.RawMessage(`[{"bid": [{"id": "bid_id", "ext": {"prebid": {"targeting": { "hb_pb": "1.20", "hb_cat": "IAB-20", "hb_cache_id": "some_id"}}}}],"seat": "appnexus"}]`),
 	}
 
+	met := &metricsConfig.NilMetricsEngine{}
+	mockFetcher := empty_fetcher.EmptyFetcher{}
+	testConfig := &testConfigValues{}
+	bidderInfos := getBidderInfos(testConfig.getAdaptersConfigMap(), openrtb_ext.CoreBidderNames())
+	bidderMap := exchange.GetActiveBidders(bidderInfos)
+	disabledBidders := exchange.GetDisabledBiddersErrorMessages(bidderInfos)
+	adapterMap := make(map[openrtb_ext.BidderName]exchange.AdaptedBidder, 0)
+	mockBidServersArray := make([]*httptest.Server, 0, 3)
+
+	mockBidder := mockBidderHandler{BidderName: "appnexus", Currency: "USD", Price: 0.00}
+	bidServer := httptest.NewServer(http.HandlerFunc(mockBidder.bid))
+	bidderAdapter := mockAdapter{mockServerURL: bidServer.URL}
+	bidderName := openrtb_ext.BidderName(mockBidder.BidderName)
+
+	adapterMap[bidderName] = exchange.AdaptBidder(bidderAdapter, bidServer.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, bidderName, nil)
+	mockBidServersArray = append(mockBidServersArray, bidServer)
+	cfg := &config.Configuration{MaxRequestSize: maxSize}
+	mockCurrencyConversionService := mockCurrencyRatesClient{
+		currencyInfo{},
+	}
+	mockCurrencyRatesServer := httptest.NewServer(http.HandlerFunc(mockCurrencyConversionService.handle))
+	mockCurrencyConverter := currency.NewRateConverter(mockCurrencyRatesServer.Client(), mockCurrencyRatesServer.URL, time.Second)
+	mockCurrencyConverter.Run()
+
+	ex := exchange.NewExchange(adapterMap,
+		&wellBehavedCache{},
+		cfg,
+		nil,
+		met,
+		bidderInfos,
+		gdpr.NewVendorListFetcher(context.Background(), config.GDPR{}, &http.Client{}, gdpr.VendorListURLMaker),
+		mockCurrencyConverter,
+		mockFetcher)
+
 	endpoint, _ := NewAmpEndpoint(
 		fakeUUIDGenerator{},
-		&mockAmpExchange{},
+		ex,
+		//&mockAmpExchange{},
 		newParamsValidator(t),
 		&mockAmpStoredReqFetcher{goodRequests},
-		empty_fetcher.EmptyFetcher{},
-		&config.Configuration{MaxRequestSize: maxSize},
-		&metricsConfig.NilMetricsEngine{},
+		mockFetcher,
+		cfg,
+		met,
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
-		map[string]string{},
+		disabledBidders,
 		[]byte{},
-		openrtb_ext.BuildBidderMap(),
+		bidderMap,
 		&mockAmpStoredResponseFetcher{goodStoredResponses},
 	)
 
