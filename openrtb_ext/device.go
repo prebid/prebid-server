@@ -15,6 +15,8 @@ const PrebidExtKey = "prebid"
 // PrebidExtBidderKey represents the field name within request.imp.ext.prebid reserved for bidder params.
 const PrebidExtBidderKey = "bidder"
 
+const OriginalBidCpmKey = "origbidcpm"
+
 // ExtDevice defines the contract for bidrequest.device.ext
 type ExtDevice struct {
 	// Attribute:

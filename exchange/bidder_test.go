@@ -138,6 +138,11 @@ func TestSingleBidder(t *testing.T) {
 		if len(seatBid.httpCalls) != test.httpCallsLen {
 			t.Errorf("The bidder shouldn't log HttpCalls when request.test == 0. Found %d", len(seatBid.httpCalls))
 		}
+		for index, bid := range seatBid.bids {
+			if mockBidderResponse.Bids[index].Bid.Price == bid.originalBidCpm {
+				t.Errorf("The bid price was adjusted, so the originally bid CPM should be different")
+			}
+		}
 	}
 }
 
