@@ -116,10 +116,12 @@ func newSocketServer(cfg *config.Configuration, handler http.Handler) *http.Serv
 	}
 }
 
-func runServer(server *http.Server, name string, listener net.Listener) {
+func runServer(server *http.Server, name string, listener net.Listener) (err error) {
 	glog.Infof("%s server starting on: %s", name, server.Addr)
-	err := server.Serve(listener)
-	glog.Errorf("%s server quit with error: %v", name, err)
+	if err = server.Serve(listener); err != nil {
+		glog.Errorf("%s server quit with error: %v", name, err)
+	}
+	return
 }
 
 func newTCPListener(address string, metrics metrics.MetricsEngine) (net.Listener, error) {

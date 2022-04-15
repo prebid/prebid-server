@@ -180,3 +180,11 @@ func Test_newAdminServer(t *testing.T) {
 		ret.Close()
 	}
 }
+
+func Test_runServer(t *testing.T) {
+	const mock_server_name = "mock_server_name"
+
+	if err := runServer(nil, mock_server_name, nil); err == nil {
+		t.Error("[Test_runServer] runServer(nil, 'mock_server_name', nil) : didn't trigger any error.")
+	}
+}
