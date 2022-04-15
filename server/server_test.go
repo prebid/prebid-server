@@ -86,7 +86,7 @@ func forwardSignal(t *testing.T, outbound chan<- struct{}, inbound <-chan os.Sig
 
 func Test_newSocketServer(t *testing.T) {
 	cfg := new(config.Configuration)
-	cfg.Socket = "mock_socket_addr"
+	cfg.Socket = "chose_your_socket_addr:chose_your_socket_port"
 
 	mock_server := &http.Server{
 		Addr:         cfg.Socket,
@@ -112,7 +112,7 @@ func Test_newSocketServer(t *testing.T) {
 
 func Test_newMainServer(t *testing.T) {
 	cfg := new(config.Configuration)
-	cfg.Socket = "mock_socket_addr"
+	cfg.Socket = "chose_your_socket_addr:chose_your_socket_port"
 
 	mock_server := &http.Server{
 		Addr:         cfg.Socket,
@@ -137,7 +137,7 @@ func Test_newMainServer(t *testing.T) {
 }
 
 func Test_newTCPListener(t *testing.T) {
-	const mock_address_value = "chose_your_value:chose_your_port"
+	const mock_address_value = "chose_your_address:chose_your_port"
 
 	if ret, err := newTCPListener(mock_address_value, nil); err != nil {
 		t.Error("[Test_newTCPListener] err_ :", err)
@@ -147,9 +147,9 @@ func Test_newTCPListener(t *testing.T) {
 }
 
 func Test_newUnixListener(t *testing.T) {
-	const mock_address_value = "chose_your_value"
+	const mock_file_referer = "chose_your_file_referer"
 
-	if ret, err := newUnixListener(mock_address_value, nil); err != nil {
+	if ret, err := newUnixListener(mock_file_referer, nil); err != nil {
 		t.Error("[Test_newUnixListener] err_ :", err)
 	} else {
 		ret.Close()
@@ -158,8 +158,8 @@ func Test_newUnixListener(t *testing.T) {
 
 func Test_newAdminServer(t *testing.T) {
 	const (
-		mock_host_value       = "chose_your_value"
-		mock_admin_port_value = 42
+		mock_host_value       = "chose_your_host_value"
+		mock_admin_port_value = 42 //chose your admin_port_value
 	)
 	cfg := new(config.Configuration)
 	cfg.Host = mock_host_value
