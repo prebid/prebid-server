@@ -7,7 +7,6 @@ import (
 // ExtImpTapjoy defines the contract for bidrequest.imp[i].ext.tapjoy
 type ExtImpTapjoy struct {
 	App        TJApp        `json:"app"`
-	Imp        TJImp        `json:"imp"`
 	Device     TJDevice     `json:"device"`
 	Request    TJRequest    `json:"request"`
 	Extensions TJExtensions `json:"extensions"`
@@ -21,10 +20,6 @@ type ExtImpTapjoy struct {
 
 type TJApp struct {
 	ID string `json:"id"`
-}
-
-type TJImp struct {
-	BidFloor float64 `json:"bidfloor"`
 }
 
 type TJDevice struct {
