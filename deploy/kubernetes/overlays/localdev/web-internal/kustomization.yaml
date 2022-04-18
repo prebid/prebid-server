@@ -120,6 +120,10 @@ configMapGenerator:
       - PBS_ADAPTERS_RUBICONMRAID_XAPI_ENDPOINT_EU="http://tpe-prebid-service-mocks.default.svc.cluster.local/rubiconmraid_givemeads"
       - PBS_ADAPTERS_RUBICONMRAID_XAPI_ENDPOINT_APAC="http://tpe-prebid-service-mocks.default.svc.cluster.local/rubiconmraid_givemeads"
 
+      # spotad values
+      - PBS_ADAPTERS_SPOTAD_DISABLED="false"
+      - PBS_ADAPTERS_SPOTAD_XAPI_ENDPOINT_US_EAST="http://tpe-prebid-service-mocks.default.svc.cluster.local/spotad_givemeads"
+
       # tapjoy values
       - PBS_ADAPTERS_TAPJOY_DISABLED="false"
       - PBS_ADAPTERS_TAPJOY_ENDPOINT="http://tpe-prebid-service-mocks.default.svc.cluster.local/tapjoy_givemeads"
