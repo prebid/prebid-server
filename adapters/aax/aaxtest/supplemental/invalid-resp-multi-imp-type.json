@@ -8,6 +8,19 @@
                     "w": 300,
                     "h": 250
                 },
+                "video": {
+                    "mimes": [
+                        "video/mp4"
+                    ],
+                    "w": 640,
+                    "h": 480,
+                    "minduration": 120,
+                    "maxduration": 150
+                },
+                "native": {
+                    "ver": "1.1",
+                    "request": "{\"adunit\":2,\"assets\":[{\"id\":3,\"img\":{\"h\":120,\"hmin\":0,\"type\":3,\"w\":180,\"wmin\":0},\"required\":1},{\"id\":0,\"required\":1,\"title\":{\"len\":25}},{\"data\":{\"len\":25,\"type\":1},\"id\":4,\"required\":1},{\"data\":{\"len\":140,\"type\":2},\"id\":6,\"required\":1}],\"context\":1,\"layout\":1,\"contextsubtype\":11,\"plcmtcnt\":1,\"plcmttype\":2,\"ver\":\"1.1\",\"ext\":{\"banner\":{\"w\":320,\"h\":50}}}"
+                },
                 "ext": {
                     "bidder": {
                         "cid": "TCID",
@@ -54,6 +67,19 @@
                                 "w": 300,
                                 "h": 250
                             },
+                            "video": {
+                                "mimes": [
+                                    "video/mp4"
+                                ],
+                                "w": 640,
+                                "h": 480,
+                                "minduration": 120,
+                                "maxduration": 150
+                            },
+                            "native": {
+                                "ver": "1.1",
+                                "request": "{\"adunit\":2,\"assets\":[{\"id\":3,\"img\":{\"h\":120,\"hmin\":0,\"type\":3,\"w\":180,\"wmin\":0},\"required\":1},{\"id\":0,\"required\":1,\"title\":{\"len\":25}},{\"data\":{\"len\":25,\"type\":1},\"id\":4,\"required\":1},{\"data\":{\"len\":140,\"type\":2},\"id\":6,\"required\":1}],\"context\":1,\"layout\":1,\"contextsubtype\":11,\"plcmtcnt\":1,\"plcmttype\":2,\"ver\":\"1.1\",\"ext\":{\"banner\":{\"w\":320,\"h\":50}}}"
+                            },
                             "ext": {
                                 "bidder": {
                                     "cid": "TCID",
@@ -98,7 +124,7 @@
                             "bid": [
                                 {
                                     "id": "randomid",
-                                    "impid": "some-other-imp-id",
+                                    "impid": "test-imp-id",
                                     "price": 0.500000,
                                     "adid": "12345678",
                                     "adm": "some-test-ad",
@@ -118,7 +144,7 @@
     "expectedBidResponses": [],
     "expectedMakeBidsErrors": [
         {
-            "value": "unable to fetch mediaType in multi-format: some-other-imp-id",
+            "value": "unable to fetch mediaType in multi-format: test-imp-id",
             "comparison": "literal"
         }
     ]
