@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"strconv"
@@ -116,11 +117,12 @@ func Test_newSocketServer(t *testing.T) {
 }
 
 func Test_newMainServer(t *testing.T) {
+	const chose_your_socket = "8000" //:chose_your_socket_port
 	cfg := new(config.Configuration)
-	cfg.Socket = ":8000" //:chose_your_socket_port
+	cfg.Socket = chose_your_socket
 
 	mock_server := &http.Server{
-		Addr:         cfg.Socket,
+		Addr:         fmt.Sprintf(":%s", chose_your_socket),
 		Handler:      nil,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
