@@ -48,10 +48,13 @@ func initProvider(cfg config.OpenTelemetry) (DoneCallback, error) {
 	if err != nil {
 		return func() {}, err
 	}
+	// Not using ratio based sampler for now. Composite tries parent and defaults to 0.
+	ratioBasedSampler := sdktrace.TraceIDRatioBased(0.0)
+	compositeBasedSampler := sdktrace.ParentBased(ratioBasedSampler)
 
 	bsp := sdktrace.NewBatchSpanProcessor(exp)
 	tracerProvider := sdktrace.NewTracerProvider(
-		sdktrace.WithSampler(sdktrace.TraceIDRatioBased(cfg.SampleRate)),
+		sdktrace.WithSampler(compositeBasedSampler),
 		sdktrace.WithResource(res),
 		sdktrace.WithSpanProcessor(bsp),
 	)
