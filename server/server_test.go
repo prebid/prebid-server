@@ -118,15 +118,15 @@ func Test_newSocketServer(t *testing.T) {
 
 func Test_newMainServer(t *testing.T) {
 	const (
-		chose_your_socket_port    = "8000"                      //chose_your_socket_port
+		chose_your_socket_port    = 8000                        //chose_your_socket_port
 		chose_your_socket_address = "chose_your_socket_address" //chose_your_socket_address
 	)
 	cfg := new(config.Configuration)
-	cfg.Socket = chose_your_socket_port
+	cfg.Port = chose_your_socket_port
 	cfg.Host = chose_your_socket_address
 
 	mock_server := &http.Server{
-		Addr:         fmt.Sprintf("%s:%s", chose_your_socket_address, chose_your_socket_port),
+		Addr:         fmt.Sprintf("%s:%d", chose_your_socket_address, chose_your_socket_port),
 		Handler:      nil,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
