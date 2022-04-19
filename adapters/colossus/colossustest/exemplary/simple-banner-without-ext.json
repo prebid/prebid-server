@@ -4,8 +4,17 @@
     "imp": [
         {
             "id": "test-imp-id",
-            "native": {
-              "request": ""
+            "banner": {
+                "format": [
+                    {
+                        "w": 300,
+                        "h": 250
+                    },
+                    {
+                        "w": 300,
+                        "h": 600
+                    }
+                ]
             },
             "tagid": "61317",
             "ext": {
@@ -34,8 +43,17 @@
           "imp": [
               {
                   "id": "test-imp-id",
-                  "native": {
-                    "request": ""
+                  "banner": {
+                      "format": [
+                          {
+                              "w": 300,
+                              "h": 250
+                          },
+                          {
+                              "w": 300,
+                              "h": 600
+                          }
+                      ]
                   },
                   "tagid": "61317",
                   "ext": {
@@ -66,15 +84,12 @@
                           "id": "test_bid_id",
                           "impid": "test-imp-id",
                           "price": 0.27543,
-                          "adm": "<iframe id=\"adm-native-16\" width=\"300\" height=\"250\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"https://colossusssp.com/?c=o&m=adm&k=882b2510ed6d6c94fa69c99aa522a708\"></iframe>",
+                          "adm": "<iframe id=\"adm-banner-16\" width=\"300\" height=\"250\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"https://colossusssp.com/?c=o&m=adm&k=882b2510ed6d6c94fa69c99aa522a708\"></iframe>",
                           "cid": "test_cid",
                           "crid": "test_crid",
                           "dealid": "test_dealid",
                           "w": 300,
-                          "h": 250,
-                          "ext": {
-                            "mediaType": "native"
-                          }
+                          "h": 250
                       }
                   ]
               }
@@ -92,17 +107,14 @@
             "id": "test_bid_id",
             "impid": "test-imp-id",
             "price": 0.27543,
-            "adm": "<iframe id=\"adm-native-16\" width=\"300\" height=\"250\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"https://colossusssp.com/?c=o&m=adm&k=882b2510ed6d6c94fa69c99aa522a708\"></iframe>",
+            "adm": "<iframe id=\"adm-banner-16\" width=\"300\" height=\"250\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"https://colossusssp.com/?c=o&m=adm&k=882b2510ed6d6c94fa69c99aa522a708\"></iframe>",
             "cid": "test_cid",
             "crid": "test_crid",
             "dealid": "test_dealid",
             "w": 300,
-            "h": 250,
-            "ext": {
-              "mediaType": "native"
-            }
+            "h": 250
           },
-          "type": "native"
+          "type": "banner"
         }
       ]
     }

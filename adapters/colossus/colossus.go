@@ -17,6 +17,10 @@ type ColossusAdapter struct {
 	URI string
 }
 
+type ColossusResponseBidExt struct {
+	MediaType string `json:"mediaType"`
+}
+
 // Builder builds a new instance of the Colossus adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	bidder := &ColossusAdapter{
@@ -102,7 +106,7 @@ func (a *ColossusAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
-			bidType, err := getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp)
+			bidType, err := getMediaTypeForImp(sb.Bid[i], internalRequest.Imp)
 			if err != nil {
 				errs = append(errs, err)
 			} else {
@@ -117,9 +121,22 @@ func (a *ColossusAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 	return bidResponse, errs
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
+func getMediaTypeForImp(bid openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
+	var bidExt ColossusResponseBidExt
+	err := json.Unmarshal(bid.Ext, &bidExt)
+	if err == nil {
+		switch bidExt.MediaType {
+		case "banner":
+			return openrtb_ext.BidTypeBanner, nil
+		case "native":
+			return openrtb_ext.BidTypeNative, nil
+		case "video":
+			return openrtb_ext.BidTypeVideo, nil
+		}
+	}
+
 	for _, imp := range imps {
-		if imp.ID == impID {
+		if imp.ID == bid.ImpID {
 			if imp.Banner != nil {
 				return openrtb_ext.BidTypeBanner, nil
 			}
@@ -134,6 +151,6 @@ func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType,
 
 	// This shouldnt happen. Lets handle it just incase by returning an error.
 	return "", &errortypes.BadInput{
-		Message: fmt.Sprintf("Failed to find impression \"%s\"", impID),
+		Message: fmt.Sprintf("Failed to find impression \"%s\"", bid.ImpID),
 	}
 }
