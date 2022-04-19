@@ -232,7 +232,7 @@ func TestMakeBids(t *testing.T) {
 		}
 
 		assert.Len(t, bids.Bids, 1)
-		assert.Equal(t, bids.Bids[0].BidType, test.bidType)
+		assert.Equal(t, test.bidType, bids.Bids[0].BidType)
 	}
 
 }
