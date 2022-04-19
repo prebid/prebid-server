@@ -95,24 +95,29 @@ func Test_newSocketServer(t *testing.T) {
 		WriteTimeout: 15 * time.Second,
 	}
 
-	ret := newSocketServer(cfg, nil)
-	switch {
-	case ret.Addr != mock_server.Addr:
-		t.Errorf("[Test_newSocketServer] Addr invalide: %v != %v\n",
-			ret.Addr, mock_server.Addr)
-	case ret.ReadTimeout != mock_server.ReadTimeout:
-		t.Errorf("[Test_newSocketServer] ReadTimeout invalide: %v != %v\n",
-			ret.ReadTimeout, mock_server.ReadTimeout)
-	case ret.WriteTimeout != mock_server.WriteTimeout:
-		t.Errorf("[Test_newSocketServer] WriteTimeout invalide: %v != %v\n",
-			ret.WriteTimeout, mock_server.WriteTimeout)
+	if ret := newSocketServer(cfg, nil); ret != nil {
+		switch {
+		case ret.Addr != mock_server.Addr:
+			t.Errorf("[Test_newSocketServer] Addr invalide: %v != %v\n",
+				ret.Addr, mock_server.Addr)
+			fallthrough
+		case ret.ReadTimeout != mock_server.ReadTimeout:
+			t.Errorf("[Test_newSocketServer] ReadTimeout invalide: %v != %v\n",
+				ret.ReadTimeout, mock_server.ReadTimeout)
+			fallthrough
+		case ret.WriteTimeout != mock_server.WriteTimeout:
+			t.Errorf("[Test_newSocketServer] WriteTimeout invalide: %v != %v\n",
+				ret.WriteTimeout, mock_server.WriteTimeout)
+		}
+		ret.Close()
+	} else {
+		t.Errorf("[Test_newSocketServer] ret is Nil")
 	}
-	ret.Close()
 }
 
 func Test_newMainServer(t *testing.T) {
 	cfg := new(config.Configuration)
-	cfg.Socket = "chose_your_socket_addr:chose_your_socket_port"
+	cfg.Socket = ":8000" //:chose_your_socket_port
 
 	mock_server := &http.Server{
 		Addr:         cfg.Socket,
@@ -121,23 +126,28 @@ func Test_newMainServer(t *testing.T) {
 		WriteTimeout: 15 * time.Second,
 	}
 
-	ret := newMainServer(cfg, nil)
-	switch {
-	case ret.Addr != mock_server.Addr:
-		t.Errorf("[Test_newMainServer] Addr invalide: %v != %v\n",
-			ret.Addr, mock_server.Addr)
-	case ret.ReadTimeout != mock_server.ReadTimeout:
-		t.Errorf("[Test_newMainServer] ReadTimeout invalide: %v != %v\n",
-			ret.ReadTimeout, mock_server.ReadTimeout)
-	case ret.WriteTimeout != mock_server.WriteTimeout:
-		t.Errorf("[Test_newMainServer] WriteTimeout invalide: %v != %v\n",
-			ret.WriteTimeout, mock_server.WriteTimeout)
+	if ret := newMainServer(cfg, nil); ret != nil {
+		switch {
+		case ret.Addr != mock_server.Addr:
+			t.Errorf("[Test_newMainServer] Addr invalide: %v != %v\n",
+				ret.Addr, mock_server.Addr)
+			fallthrough
+		case ret.ReadTimeout != mock_server.ReadTimeout:
+			t.Errorf("[Test_newMainServer] ReadTimeout invalide: %v != %v\n",
+				ret.ReadTimeout, mock_server.ReadTimeout)
+			fallthrough
+		case ret.WriteTimeout != mock_server.WriteTimeout:
+			t.Errorf("[Test_newMainServer] WriteTimeout invalide: %v != %v\n",
+				ret.WriteTimeout, mock_server.WriteTimeout)
+		}
+		ret.Close()
+	} else {
+		t.Errorf("[Test_newSocketServer] ret is Nil")
 	}
-	ret.Close()
 }
 
 func Test_newTCPListener(t *testing.T) {
-	const mock_address_value = "chose_your_address:chose_your_port"
+	const mock_address_value = ":8000" //:chose_your_socket_port
 
 	if ret, err := newTCPListener(mock_address_value, nil); err != nil {
 		t.Error("[Test_newTCPListener] err_ :", err)
@@ -186,5 +196,10 @@ func Test_runServer(t *testing.T) {
 
 	if err := runServer(nil, mock_server_name, nil); err == nil {
 		t.Error("[Test_runServer] runServer(nil, 'mock_server_name', nil) : didn't trigger any error.")
+	}
+
+	s := http.Server{}
+	if err := runServer(&s, mock_server_name, nil); err == nil {
+		t.Error("[Test_runServer] runServer(not_nil, 'mock_server_name', nil) : didn't trigger any error.")
 	}
 }
