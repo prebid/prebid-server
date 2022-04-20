@@ -17,6 +17,10 @@ type adapter struct {
 	endpoint string
 }
 
+type aaxResponseBidExt struct {
+	AdCodeType string `json:"adCodeType"`
+}
+
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 
@@ -66,7 +70,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 
 	for _, seatBid := range bidResp.SeatBid {
 		for i := range seatBid.Bid {
-			bidType, err := getMediaTypeForImp(seatBid.Bid[i].ImpID, internalRequest.Imp)
+			bidType, err := getMediaTypeForImp(seatBid.Bid[i], internalRequest.Imp)
 			if err != nil {
 				errs = append(errs, err)
 			} else {
@@ -89,11 +93,24 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	}, nil
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
-	mediaType := openrtb_ext.BidTypeBanner
-	typeCnt := 0
+func getMediaTypeForImp(bid openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
+	var bidExt aaxResponseBidExt
+	err := json.Unmarshal(bid.Ext, &bidExt)
+	if err == nil {
+		switch bidExt.AdCodeType {
+		case "banner":
+			return openrtb_ext.BidTypeBanner, nil
+		case "native":
+			return openrtb_ext.BidTypeNative, nil
+		case "video":
+			return openrtb_ext.BidTypeVideo, nil
+		}
+	}
+
+	var mediaType openrtb_ext.BidType
+	var typeCnt = 0
 	for _, imp := range imps {
-		if imp.ID == impID {
+		if imp.ID == bid.ImpID {
 			if imp.Banner != nil {
 				typeCnt += 1
 				mediaType = openrtb_ext.BidTypeBanner
@@ -108,12 +125,10 @@ func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType,
 			}
 		}
 	}
-
 	if typeCnt == 1 {
 		return mediaType, nil
 	}
-
-	return mediaType, fmt.Errorf("unable to fetch mediaType in multi-format: %s", impID)
+	return mediaType, fmt.Errorf("unable to fetch mediaType in multi-format: %s", bid.ImpID)
 }
 
 func buildEndpoint(aaxUrl, hostUrl string) string {
