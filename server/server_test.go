@@ -86,8 +86,12 @@ func forwardSignal(t *testing.T, outbound chan<- struct{}, inbound <-chan os.Sig
 }
 
 func TestNewSocketServer(t *testing.T) {
+	const (
+		func_name   = "TestNewSocketServer"
+		mock_socket = "socket_addr:socket_port"
+	)
 	cfg := new(config.Configuration)
-	cfg.Socket = "socket_addr:socket_port"
+	cfg.Socket = mock_socket
 
 	mock_server := &http.Server{
 		Addr:         cfg.Socket,
@@ -99,34 +103,35 @@ func TestNewSocketServer(t *testing.T) {
 	if ret := newSocketServer(cfg, nil); ret != nil {
 		switch {
 		case ret.Addr != mock_server.Addr:
-			t.Errorf("[Test_newSocketServer] Addr invalide: %v != %v\n",
-				ret.Addr, mock_server.Addr)
+			t.Errorf("[%s] Addr invalide: %v != %v\n",
+				func_name, ret.Addr, mock_server.Addr)
 			fallthrough
 		case ret.ReadTimeout != mock_server.ReadTimeout:
-			t.Errorf("[Test_newSocketServer] ReadTimeout invalide: %v != %v\n",
-				ret.ReadTimeout, mock_server.ReadTimeout)
+			t.Errorf("[%s] ReadTimeout invalide: %v != %v\n",
+				func_name, ret.ReadTimeout, mock_server.ReadTimeout)
 			fallthrough
 		case ret.WriteTimeout != mock_server.WriteTimeout:
-			t.Errorf("[Test_newSocketServer] WriteTimeout invalide: %v != %v\n",
-				ret.WriteTimeout, mock_server.WriteTimeout)
+			t.Errorf("[%s] WriteTimeout invalide: %v != %v\n",
+				func_name, ret.WriteTimeout, mock_server.WriteTimeout)
 		}
 		ret.Close()
 	} else {
-		t.Errorf("[Test_newSocketServer] ret is Nil")
+		t.Errorf("[%s] ret is Nil", func_name)
 	}
 }
 
 func TestNewMainServer_(t *testing.T) {
 	const (
-		socket_port    = 8000         // chose your socket_port
-		socket_address = "prebid.com" // chose your socket_address
+		func_name    = "TestNewMainServer_"
+		mock_port    = 8000         // chose your socket_port
+		mock_address = "prebid.com" // chose your socket_address
 	)
 	cfg := new(config.Configuration)
-	cfg.Port = socket_port
-	cfg.Host = socket_address
+	cfg.Port = mock_port
+	cfg.Host = mock_address
 
 	mock_server := &http.Server{
-		Addr:         fmt.Sprintf("%s:%d", socket_address, socket_port),
+		Addr:         fmt.Sprintf("%s:%d", mock_address, mock_port),
 		Handler:      nil,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
@@ -135,38 +140,42 @@ func TestNewMainServer_(t *testing.T) {
 	if ret := newMainServer(cfg, nil); ret != nil {
 		switch {
 		case ret.Addr != mock_server.Addr:
-			t.Errorf("[Test_newMainServer] Addr invalide: %v != %v\n",
-				ret.Addr, mock_server.Addr)
-			fallthrough
+			t.Errorf("[%s] Addr invalide: %v != %v\n",
+				func_name, ret.Addr, mock_server.Addr)
 		case ret.ReadTimeout != mock_server.ReadTimeout:
-			t.Errorf("[Test_newMainServer] ReadTimeout invalide: %v != %v\n",
-				ret.ReadTimeout, mock_server.ReadTimeout)
-			fallthrough
+			t.Errorf("[%s] ReadTimeout invalide: %v != %v\n",
+				func_name, ret.ReadTimeout, mock_server.ReadTimeout)
 		case ret.WriteTimeout != mock_server.WriteTimeout:
-			t.Errorf("[Test_newMainServer] WriteTimeout invalide: %v != %v\n",
-				ret.WriteTimeout, mock_server.WriteTimeout)
+			t.Errorf("[%s] WriteTimeout invalide: %v != %v\n",
+				func_name, ret.WriteTimeout, mock_server.WriteTimeout)
 		}
 		ret.Close()
 	} else {
-		t.Errorf("[Test_newSocketServer] ret is Nil")
+		t.Errorf("[%s] ret is Nil", func_name)
 	}
 }
 
 func TestNewTCPListener(t *testing.T) {
-	const mock_address = ":8000" //:chose your socket_port
+	const (
+		func_name    = "TestNewTCPListener"
+		mock_address = ":8000" //:chose your socket_port
+	)
 
 	if ret, err := newTCPListener(mock_address, nil); err != nil {
-		t.Error("[Test_newTCPListener] err_ :", err)
+		t.Errorf("[%s] err_ : %s", func_name, err)
 	} else {
 		ret.Close()
 	}
 }
 
 func TestNewUnixListener(t *testing.T) {
-	const mock_file = "file_referer" // chose your file_referer
+	const (
+		func_name = "TestNewUnixListener"
+		mock_file = "file_referer" // chose your file_referer
+	)
 
 	if ret, err := newUnixListener(mock_file, nil); err != nil {
-		t.Error("[Test_newUnixListener] err_ :", err)
+		t.Errorf("[%s] err_ : %s", func_name, err.Error())
 	} else {
 		ret.Close()
 	}
@@ -174,6 +183,7 @@ func TestNewUnixListener(t *testing.T) {
 
 func TestNewAdminServer_(t *testing.T) {
 	const (
+		func_name  = "TestNewAdminServer_"
 		mock_host  = "prebid.com" // chose your host
 		mock_admin = 6060         // chose your admin_port
 	)
@@ -187,25 +197,28 @@ func TestNewAdminServer_(t *testing.T) {
 	}
 
 	if ret := newAdminServer(cfg, nil); ret == nil {
-		t.Error("[Test_newAdminServer] ret : isNil()")
+		t.Errorf("[%s] ret : isNil()", func_name)
 	} else {
 		if ret.Addr != mock_server.Addr {
-			t.Errorf("[Test_newAdminServer] Addr invalide: %v != %v\n",
-				ret.Addr, mock_server.Addr)
+			t.Errorf("[%s] Addr invalide: %v != %v\n",
+				func_name, ret.Addr, mock_server.Addr)
 		}
 		ret.Close()
 	}
 }
 
 func TestRunServer(t *testing.T) {
-	const mock_server = "mock_server_name"
+	const (
+		func_name = "TestRunServer"
+		mock_name = "mock_server_name"
+	)
 
-	if err := runServer(nil, mock_server, nil); err == nil {
-		t.Error("[Test_runServer] runServer(nil, 'mock_server_name', nil) : didn't trigger any error.")
+	if err := runServer(nil, mock_name, nil); err == nil {
+		t.Errorf("[%s] runServer(nil, 'mock_name', nil) : didn't trigger any error.", func_name)
 	}
 
 	s := http.Server{}
-	if err := runServer(&s, mock_server, nil); err == nil {
-		t.Error("[Test_runServer] runServer(not_nil, 'mock_server_name', nil) : didn't trigger any error.")
+	if err := runServer(&s, mock_name, nil); err == nil {
+		t.Errorf("[%s] runServer(not_nil, 'mock_name', nil) : didn't trigger any error.", func_name)
 	}
 }
