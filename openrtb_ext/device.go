@@ -17,6 +17,8 @@ const PrebidExtBidderKey = "bidder"
 
 const OriginalBidCpmKey = "origbidcpm"
 
+const OriginalBidCurKey = "origbidcur"
+
 // ExtDevice defines the contract for bidrequest.device.ext
 type ExtDevice struct {
 	// Attribute:

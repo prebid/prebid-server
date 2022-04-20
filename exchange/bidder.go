@@ -74,7 +74,8 @@ type pbsOrtbBid struct {
 	dealPriority      int
 	dealTierSatisfied bool
 	generatedBidID    string
-	originalBidCpm    float64
+	originalBidCPM    float64
+	originalBidCur    string
 }
 
 // pbsOrtbSeatBid is a SeatBid returned by an adaptedBidder.
@@ -246,8 +247,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb2.B
 				if err == nil {
 					// Conversion rate found, using it for conversion
 					for i := 0; i < len(bidResponse.Bids); i++ {
-						var originalBidCpm float64
-						originalBidCpm = 0.0
+						originalBidCpm := 0.0
 						if bidResponse.Bids[i].Bid != nil {
 							originalBidCpm = bidResponse.Bids[i].Bid.Price
 							bidResponse.Bids[i].Bid.Price = bidResponse.Bids[i].Bid.Price * bidAdjustment * conversionRate
@@ -258,7 +258,8 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb2.B
 							bidType:        bidResponse.Bids[i].BidType,
 							bidVideo:       bidResponse.Bids[i].BidVideo,
 							dealPriority:   bidResponse.Bids[i].DealPriority,
-							originalBidCpm: originalBidCpm,
+							originalBidCPM: originalBidCpm,
+							originalBidCur: bidResponse.Currency,
 						})
 					}
 				} else {
