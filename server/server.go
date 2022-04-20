@@ -117,12 +117,11 @@ func newSocketServer(cfg *config.Configuration, handler http.Handler) *http.Serv
 }
 
 func runServer(server *http.Server, name string, listener net.Listener) (err error) {
-	switch {
-	case server == nil:
+	if server == nil {
 		err = fmt.Errorf(">> Server is a nil_ptr.")
 		glog.Errorf("%s server quit with error: %v", name, err)
 		return
-	case listener == nil:
+	} else if listener == nil {
 		err = fmt.Errorf(">> Listener is a nil.")
 		glog.Errorf("%s server quit with error: %v", name, err)
 		return

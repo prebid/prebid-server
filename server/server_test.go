@@ -85,9 +85,9 @@ func forwardSignal(t *testing.T, outbound chan<- struct{}, inbound <-chan os.Sig
 	outbound <- s
 }
 
-func Test_newSocketServer(t *testing.T) {
+func TestNewSocketServer(t *testing.T) {
 	cfg := new(config.Configuration)
-	cfg.Socket = "chose_your_socket_addr:chose_your_socket_port"
+	cfg.Socket = "socket_addr:socket_port"
 
 	mock_server := &http.Server{
 		Addr:         cfg.Socket,
@@ -116,17 +116,17 @@ func Test_newSocketServer(t *testing.T) {
 	}
 }
 
-func Test_newMainServer(t *testing.T) {
+func TestNewMainServer_(t *testing.T) {
 	const (
-		chose_your_socket_port    = 8000                        //chose_your_socket_port
-		chose_your_socket_address = "chose_your_socket_address" //chose_your_socket_address
+		socket_port    = 8000         // chose your socket_port
+		socket_address = "prebid.com" // chose your socket_address
 	)
 	cfg := new(config.Configuration)
-	cfg.Port = chose_your_socket_port
-	cfg.Host = chose_your_socket_address
+	cfg.Port = socket_port
+	cfg.Host = socket_address
 
 	mock_server := &http.Server{
-		Addr:         fmt.Sprintf("%s:%d", chose_your_socket_address, chose_your_socket_port),
+		Addr:         fmt.Sprintf("%s:%d", socket_address, socket_port),
 		Handler:      nil,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
@@ -152,34 +152,34 @@ func Test_newMainServer(t *testing.T) {
 	}
 }
 
-func Test_newTCPListener(t *testing.T) {
-	const mock_address_value = ":8000" //:chose_your_socket_port
+func TestNewTCPListener(t *testing.T) {
+	const mock_address = ":8000" //:chose your socket_port
 
-	if ret, err := newTCPListener(mock_address_value, nil); err != nil {
+	if ret, err := newTCPListener(mock_address, nil); err != nil {
 		t.Error("[Test_newTCPListener] err_ :", err)
 	} else {
 		ret.Close()
 	}
 }
 
-func Test_newUnixListener(t *testing.T) {
-	const mock_file_referer = "chose_your_file_referer"
+func TestNewUnixListener(t *testing.T) {
+	const mock_file = "file_referer" // chose your file_referer
 
-	if ret, err := newUnixListener(mock_file_referer, nil); err != nil {
+	if ret, err := newUnixListener(mock_file, nil); err != nil {
 		t.Error("[Test_newUnixListener] err_ :", err)
 	} else {
 		ret.Close()
 	}
 }
 
-func Test_newAdminServer(t *testing.T) {
+func TestNewAdminServer_(t *testing.T) {
 	const (
-		mock_host_value       = "chose_your_host_value"
-		mock_admin_port_value = 42 //chose your admin_port_value
+		mock_host  = "prebid.com" // chose your host
+		mock_admin = 6060         // chose your admin_port
 	)
 	cfg := new(config.Configuration)
-	cfg.Host = mock_host_value
-	cfg.AdminPort = mock_admin_port_value
+	cfg.Host = mock_host
+	cfg.AdminPort = mock_admin
 
 	mock_server := &http.Server{
 		Addr:    cfg.Host + ":" + strconv.Itoa(cfg.AdminPort),
@@ -197,15 +197,15 @@ func Test_newAdminServer(t *testing.T) {
 	}
 }
 
-func Test_runServer(t *testing.T) {
-	const mock_server_name = "mock_server_name"
+func TestRunServer(t *testing.T) {
+	const mock_server = "mock_server_name"
 
-	if err := runServer(nil, mock_server_name, nil); err == nil {
+	if err := runServer(nil, mock_server, nil); err == nil {
 		t.Error("[Test_runServer] runServer(nil, 'mock_server_name', nil) : didn't trigger any error.")
 	}
 
 	s := http.Server{}
-	if err := runServer(&s, mock_server_name, nil); err == nil {
+	if err := runServer(&s, mock_server, nil); err == nil {
 		t.Error("[Test_runServer] runServer(not_nil, 'mock_server_name', nil) : didn't trigger any error.")
 	}
 }
