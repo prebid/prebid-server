@@ -484,19 +484,13 @@ func resolveApp(fpdConfig *openrtb_ext.ORTB2, bidRequestApp *openrtb2.App, globa
 			newApp.Ext = extData
 		}
 	}
-	if openRtbGlobalFPD != nil && len(openRtbGlobalFPD[appContentDataKey]) > 0 {
-		if newApp.Content != nil {
-			contentCopy := *newApp.Content
-			contentCopy.Data = openRtbGlobalFPD[appContentDataKey]
-			newApp.Content = &contentCopy
-		} else {
-			newApp.Content = &openrtb2.Content{Data: openRtbGlobalFPD[appContentDataKey]}
-		}
-	}
-
+	_, bidderFpdAppContentPresent := fpdConfigApp[contentKey]
 	if fpdConfigApp != nil {
 		//apply bidder specific fpd if present
 		newApp, err = mergeApps(&newApp, fpdConfigApp)
+	}
+	if !bidderFpdAppContentPresent && openRtbGlobalFPD != nil && len(openRtbGlobalFPD[appContentDataKey]) > 0 {
+		newApp.Content = &openrtb2.Content{Data: openRtbGlobalFPD[appContentDataKey]}
 	}
 
 	return &newApp, err
@@ -569,6 +563,13 @@ func mergeApps(originalApp *openrtb2.App, fpdConfigApp map[string]json.RawMessag
 			return newApp, err
 		}
 		delete(fpdConfigApp, keywordsKey)
+	}
+	if appContent, present := fpdConfigApp[contentKey]; present {
+		newApp.Content, err = unmarshalJSONToContent(appContent)
+		if err != nil {
+			return newApp, err
+		}
+		delete(fpdConfigApp, contentKey)
 	}
 
 	if len(fpdConfigApp) > 0 {

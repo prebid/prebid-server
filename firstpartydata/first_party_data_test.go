@@ -1205,8 +1205,6 @@ func TestResolveApp(t *testing.T) {
 		Name:     "bidRequestAppName",
 		Bundle:   "bidRequestAppBundle",
 		Content: &openrtb2.Content{
-			ID:      "bidRequestAppContentId",
-			Episode: 4,
 			Data: []openrtb2.Data{
 				{ID: "openRtbGlobalFPDAppContentDataId1", Name: "openRtbGlobalFPDAppContentDataName1"},
 				{ID: "openRtbGlobalFPDAppContentDataId2", Name: "openRtbGlobalFPDAppContentDataName2"},
