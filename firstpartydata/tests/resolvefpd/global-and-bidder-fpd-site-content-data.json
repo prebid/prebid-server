@@ -83,8 +83,8 @@
     "site": {
       "id": "reqSiteId",
       "name": "apnSiteName",
-      "page": "http://www.foobar.com/1234.html",
       "domain": "apnSiteDomain",
+      "page": "http://www.foobar.com/1234.html",
       "cat": [
         "books",
         "novels"
@@ -94,39 +94,22 @@
         "id": "1"
       },
       "content": {
-        "episode": 6,
-        "title": "episodeName",
-        "series": "TvName",
-        "season": "season3",
-        "len": 900,
+        "episode": 7,
+        "title": "apnEpisodeName",
+        "len": 600,
         "data": [
           {
-            "id": "siteData1",
-            "name": "siteName1"
-          },
-          {
-            "id": "siteData2",
-            "name": "siteName2"
+            "id": "siteData3",
+            "name": "siteName3"
           }
         ]
       },
       "ext": {
         "data": {
           "id": "apnSiteId",
-          "content": {
-            "episode": 7,
-            "title": "apnEpisodeName",
-            "len": 600,
-            "data": [
-              {
-                "id": "siteData3",
-                "name": "siteName3"
-              }
-            ]
-          },
           "morefpdData": "morefpddata",
           "siteFpddata": "siteFpddata",
-          "testSiteFpd": "testSite",
+          "testSiteFpd":"testSite",
           "moreFpd": {
             "fpd": 123
           }

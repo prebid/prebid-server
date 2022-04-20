@@ -36,6 +36,7 @@ const (
 	bundleKey     = "bundle"
 	storeUrlKey   = "storeurl"
 	verKey        = "ver"
+	contentKey    = "content"
 )
 
 type ResolvedFirstPartyData struct {
@@ -243,6 +244,12 @@ func unmarshalJSONToStringArray(input json.RawMessage) ([]string, error) {
 	return result, err
 }
 
+func unmarshalJSONToContent(input json.RawMessage) (*openrtb2.Content, error) {
+	var result openrtb2.Content
+	err := json.Unmarshal(input, &result)
+	return &result, err
+}
+
 //resolveExtension inserts remaining {site/app/user} attributes back to {site/app/user}.ext.data
 func resolveExtension(fpdConfig map[string]json.RawMessage, originalExt json.RawMessage) ([]byte, error) {
 	resExt := originalExt
@@ -344,18 +351,13 @@ func resolveSite(fpdConfig *openrtb_ext.ORTB2, bidRequestSite *openrtb2.Site, gl
 			newSite.Ext = extData
 		}
 	}
-	if openRtbGlobalFPD != nil && len(openRtbGlobalFPD[siteContentDataKey]) > 0 {
-		if newSite.Content != nil {
-			contentCopy := *newSite.Content
-			contentCopy.Data = openRtbGlobalFPD[siteContentDataKey]
-			newSite.Content = &contentCopy
-		} else {
-			newSite.Content = &openrtb2.Content{Data: openRtbGlobalFPD[siteContentDataKey]}
-		}
-	}
-
+	_, bidderFpdSiteContentPresent := fpdConfigSite[contentKey]
 	if fpdConfigSite != nil {
 		newSite, err = mergeSites(&newSite, fpdConfigSite, bidderName)
+	}
+	if !bidderFpdSiteContentPresent && openRtbGlobalFPD != nil && len(openRtbGlobalFPD[siteContentDataKey]) > 0 {
+		//bidder specific fpd site.content takes precedence over global site.content.data
+		newSite.Content = &openrtb2.Content{Data: openRtbGlobalFPD[siteContentDataKey]}
 	}
 	return &newSite, err
 
@@ -436,6 +438,13 @@ func mergeSites(originalSite *openrtb2.Site, fpdConfigSite map[string]json.RawMe
 			return newSite, err
 		}
 		delete(fpdConfigSite, refKey)
+	}
+	if siteContent, present := fpdConfigSite[contentKey]; present {
+		newSite.Content, err = unmarshalJSONToContent(siteContent)
+		if err != nil {
+			return newSite, err
+		}
+		delete(fpdConfigSite, contentKey)
 	}
 
 	if len(fpdConfigSite) > 0 {

@@ -985,8 +985,6 @@ func TestResolveSite(t *testing.T) {
 		Name:     "bidRequestSiteName",
 		Page:     "bidRequestSitePage",
 		Content: &openrtb2.Content{
-			ID:      "bidRequestSiteContentId",
-			Episode: 4,
 			Data: []openrtb2.Data{
 				{ID: "openRtbGlobalFPDSiteContentDataId1", Name: "openRtbGlobalFPDSiteContentDataName1"},
 				{ID: "openRtbGlobalFPDSiteContentDataId2", Name: "openRtbGlobalFPDSiteContentDataName2"},
