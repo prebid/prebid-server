@@ -2,14 +2,14 @@ package pubstack
 
 import (
 	"encoding/json"
-	"github.com/docker/go-units"
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/docker/go-units"
 )
 
 func fetchConfig(client *http.Client, endpoint *url.URL) (*Configuration, error) {
-
 	res, err := client.Get(endpoint.String())
 	if err != nil {
 		return nil, err
