@@ -227,7 +227,7 @@ func TestRunServer(t *testing.T) {
 	var l net.Listener
 	l, _ = net.Listen("error", ":8000")
 	if err := runServer(&s, mock_name, l); err == nil {
-		t.Errorf("[%s] runServer('error', 'mock_name', not_nil) : trigger an error.", func_name)
+		t.Errorf("[%s] Listen('error', ':8000') : didn't trigger any error.", func_name)
 	}
 }
 
@@ -248,7 +248,13 @@ func TestListen(t *testing.T) {
 		}
 	)
 
-	if e := Listen(cfg, handler, admin_handler, metrics); e != nil {
+	const mock_err = "Error listening for TCP connections on prebid.com:8000: listen tcp 185.53.177.10:8000: bind: cannot assign requested address"
+	if e := Listen(cfg, handler, admin_handler, metrics); e != nil && e.Error() != mock_err {
 		t.Errorf("[%s] err_ : %s", name, e.Error())
+	} else if e != nil {
+		t.Errorf("[%s] e : %s\n", name, e.Error())
+		t.Errorf("mock_err : %s", mock_err)
+	} else {
+		t.Errorf("[%s] e isNil", name)
 	}
 }
