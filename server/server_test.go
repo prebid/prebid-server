@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"strconv"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/config"
+	metricsconfig "github.com/prebid/prebid-server/metrics/config"
 )
 
 func TestNewAdminServer(t *testing.T) {
@@ -220,5 +222,31 @@ func TestRunServer(t *testing.T) {
 	s := http.Server{}
 	if err := runServer(&s, mock_name, nil); err == nil {
 		t.Errorf("[%s] runServer(not_nil, 'mock_name', nil) : didn't trigger any error.", func_name)
+	}
+
+	var l net.Listener
+	if err := runServer(&s, mock_name, l); err != nil {
+		t.Errorf("[%s] runServer(not_nil, 'mock_name', not_nil) : trigger an error.", func_name)
+	}
+}
+
+func TestListen(t *testing.T) {
+	const name = "TestListen"
+	var (
+		handler       http.Handler
+		admin_handler http.Handler
+
+		metrics = new(metricsconfig.DetailedMetricsEngine)
+		cfg     = &config.Configuration{
+			Host:         "prebid.com",
+			AdminPort:    6060,
+			Port:         8000,
+			EnableSocket: false,
+			Socket:       "prebid_socket",
+		}
+	)
+
+	if e := Listen(cfg, handler, admin_handler, metrics); e != nil {
+		t.Errorf("[%s] err_ : %s", name, e.Error())
 	}
 }

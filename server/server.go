@@ -19,7 +19,7 @@ import (
 )
 
 // Listen blocks forever, serving PBS requests on the given port. This will block forever, until the process is shut down.
-func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.Handler, metrics *metricsconfig.DetailedMetricsEngine) {
+func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.Handler, metrics *metricsconfig.DetailedMetricsEngine) (err error) {
 	stopSignals := make(chan os.Signal)
 	signal.Notify(stopSignals, syscall.SIGTERM, syscall.SIGINT)
 
@@ -33,50 +33,53 @@ func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.H
 	go shutdownAfterSignals(adminServer, stopAdmin, done)
 
 	if cfg.EnableSocket && len(cfg.Socket) > 0 { // start the unix_socket server if config enable-it.
-		mainServer := newSocketServer(cfg, handler)
+		var (
+			socketListener net.Listener
+			mainServer     = newSocketServer(cfg, handler)
+		)
 		go shutdownAfterSignals(mainServer, stopMain, done)
-
-		socketListener, err := newUnixListener(mainServer.Addr, metrics)
-		if err != nil {
+		if socketListener, err = newUnixListener(mainServer.Addr, metrics); err != nil {
 			glog.Errorf("Error listening for Unix-Socket connections on path %s: %v for socket server", mainServer.Addr, err)
 			return
 		}
-
 		go runServer(mainServer, "Socket", socketListener)
 	} else { // start the TCP server
-		mainServer := newMainServer(cfg, handler)
+		var (
+			mainListener net.Listener
+			mainServer   = newMainServer(cfg, handler)
+		)
 		go shutdownAfterSignals(mainServer, stopMain, done)
-
-		mainListener, err := newTCPListener(mainServer.Addr, metrics)
-		if err != nil {
+		if mainListener, err = newTCPListener(mainServer.Addr, metrics); err != nil {
 			glog.Errorf("Error listening for TCP connections on %s: %v for main server", mainServer.Addr, err)
 			return
 		}
-
 		go runServer(mainServer, "Main", mainListener)
 	}
 
-	adminListener, err := newTCPListener(adminServer.Addr, nil)
-	if err != nil {
+	var adminListener net.Listener
+	if adminListener, err = newTCPListener(adminServer.Addr, nil); err != nil {
 		glog.Errorf("Error listening for TCP connections on %s: %v for admin server", adminServer.Addr, err)
 		return
 	}
 	go runServer(adminServer, "Admin", adminListener)
 
 	if cfg.Metrics.Prometheus.Port != 0 {
-		prometheusServer := newPrometheusServer(cfg, metrics)
+		var (
+			prometheusListener net.Listener
+			prometheusServer   = newPrometheusServer(cfg, metrics)
+		)
 		go shutdownAfterSignals(prometheusServer, stopPrometheus, done)
-		prometheusListener, err := newTCPListener(prometheusServer.Addr, nil)
-		if err != nil {
+		if prometheusListener, err = newTCPListener(prometheusServer.Addr, nil); err != nil {
 			glog.Errorf("Error listening for TCP connections on %s: %v for prometheus server", adminServer.Addr, err)
 			return
 		}
-		go runServer(prometheusServer, "Prometheus", prometheusListener)
 
+		go runServer(prometheusServer, "Prometheus", prometheusListener)
 		wait(stopSignals, done, stopMain, stopAdmin, stopPrometheus)
 	} else {
 		wait(stopSignals, done, stopMain, stopAdmin)
 	}
+
 	return
 }
 
