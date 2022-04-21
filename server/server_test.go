@@ -248,13 +248,7 @@ func TestListen(t *testing.T) {
 		}
 	)
 
-	const mock_err = "Error listening for TCP connections on prebid.com:8000: listen tcp 185.53.177.10:8000: bind: cannot assign requested address"
-	if e := Listen(cfg, handler, admin_handler, metrics); e != nil && e.Error() != mock_err {
-		t.Errorf("[%s] err_ : %s", name, e.Error())
-	} else if e != nil {
-		t.Errorf("[%s] e : %s\n", name, e.Error())
-		t.Errorf("mock_err : %s", mock_err)
-	} else {
+	if e := Listen(cfg, handler, admin_handler, metrics); e == nil {
 		t.Errorf("[%s] e isNil", name)
 	}
 }
