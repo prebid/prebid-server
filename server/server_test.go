@@ -93,10 +93,10 @@ func TestNewSocketServer(t *testing.T) {
 		mock_socket = "socket_addr:socket_port"
 	)
 	cfg := new(config.Configuration)
-	cfg.Socket = mock_socket
+	cfg.UnixSocketName = mock_socket
 
 	mock_server := &http.Server{
-		Addr:         cfg.Socket,
+		Addr:         cfg.UnixSocketName,
 		Handler:      nil,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
@@ -239,12 +239,12 @@ func TestListen(t *testing.T) {
 
 		metrics = new(metricsconfig.DetailedMetricsEngine)
 		cfg     = &config.Configuration{
-			Host:         "prebid.com",
-			AdminPort:    6060,
-			Port:         8000,
-			EnableSocket: false,
-			Socket:       "prebid_socket",
-			EnableGzip:   false,
+			Host:             "prebid.com",
+			AdminPort:        6060,
+			Port:             8000,
+			UnixSocketEnable: false,
+			UnixSocketName:   "prebid_socket",
+			EnableGzip:       false,
 		}
 	)
 

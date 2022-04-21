@@ -32,7 +32,7 @@ func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.H
 	adminServer := newAdminServer(cfg, adminHandler)
 	go shutdownAfterSignals(adminServer, stopAdmin, done)
 
-	if cfg.EnableSocket && len(cfg.Socket) > 0 { // start the unix_socket server if config enable-it.
+	if cfg.UnixSocketEnable && len(cfg.UnixSocketName) > 0 { // start the unix_socket server if config enable-it.
 		var (
 			socketListener net.Listener
 			mainServer     = newSocketServer(cfg, handler)
@@ -42,7 +42,7 @@ func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.H
 			glog.Errorf("Error listening for Unix-Socket connections on path %s: %v for socket server", mainServer.Addr, err)
 			return
 		}
-		go runServer(mainServer, "Socket", socketListener)
+		go runServer(mainServer, "UnixSocket", socketListener)
 	} else { // start the TCP server
 		var (
 			mainListener net.Listener
@@ -112,7 +112,7 @@ func newSocketServer(cfg *config.Configuration, handler http.Handler) *http.Serv
 	}
 
 	return &http.Server{
-		Addr:         cfg.Socket,
+		Addr:         cfg.UnixSocketName,
 		Handler:      serverHandler,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
