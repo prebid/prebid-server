@@ -225,9 +225,9 @@ func TestRunServer(t *testing.T) {
 	}
 
 	var l net.Listener
-	l, _ = net.Listen("tcp", ":8000")
-	if err := runServer(&s, mock_name, l); err != nil {
-		t.Errorf("[%s] runServer(not_nil, 'mock_name', not_nil) : trigger an error.", func_name)
+	l, _ = net.Listen("error", ":8000")
+	if err := runServer(&s, mock_name, l); err == nil {
+		t.Errorf("[%s] runServer('error', 'mock_name', not_nil) : trigger an error.", func_name)
 	}
 }
 
