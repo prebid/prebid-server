@@ -17,7 +17,7 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/firstpartydata"
+	"github.com/prebid/go-gdpr/vendorlist"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
@@ -66,7 +66,8 @@ func TestNewExchange(t *testing.T) {
 	}
 
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
-	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdpr.AlwaysAllow{}, currencyConverter, nilCategoryFetcher{}).(*exchange)
+	vendorListFetcher := func(ctx context.Context, id uint16) (vendorlist.VendorList, error) { return nil, nil }
+	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, vendorListFetcher, currencyConverter, nilCategoryFetcher{}).(*exchange)
 	for _, bidderName := range knownAdapters {
 		if _, ok := e.adapterMap[bidderName]; !ok {
 			t.Errorf("NewExchange produced an Exchange without bidder %s", bidderName)
@@ -114,7 +115,8 @@ func TestCharacterEscape(t *testing.T) {
 	}
 
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
-	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdpr.AlwaysAllow{}, currencyConverter, nilCategoryFetcher{}).(*exchange)
+	vendorListFetcher := func(ctx context.Context, id uint16) (vendorlist.VendorList, error) { return nil, nil }
+	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, vendorListFetcher, currencyConverter, nilCategoryFetcher{}).(*exchange)
 
 	// 	3) Build all the parameters e.buildBidResponse(ctx.Background(), liveA... ) needs
 	//liveAdapters []openrtb_ext.BidderName,
@@ -309,7 +311,7 @@ func TestDebugBehaviour(t *testing.T) {
 
 	e.cache = &wellBehavedCache{}
 	e.me = &metricsConf.NilMetricsEngine{}
-	e.gDPR = gdpr.AlwaysAllow{}
+	e.vendorListFetcher = gdpr.NewVendorListFetcher(context.Background(), config.GDPR{}, &http.Client{}, gdpr.VendorListURLMaker)
 	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	e.categoriesFetcher = categoriesFetcher
 
@@ -331,10 +333,12 @@ func TestDebugBehaviour(t *testing.T) {
 		}
 
 		auctionRequest := AuctionRequest{
-			BidRequest: bidRequest,
-			Account:    config.Account{DebugAllow: test.debugData.accountLevelDebugAllowed},
-			UserSyncs:  &emptyUsersync{},
-			StartTime:  time.Now(),
+			BidRequestWrapper:      &openrtb_ext.RequestWrapper{BidRequest: bidRequest},
+			Account:                config.Account{DebugAllow: test.debugData.accountLevelDebugAllowed},
+			UserSyncs:              &emptyUsersync{},
+			StartTime:              time.Now(),
+			GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
+			TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
 		}
 		if test.generateWarnings {
 			var errL []error
@@ -377,7 +381,9 @@ func TestDebugBehaviour(t *testing.T) {
 
 			// If not nil, assert bid extension
 			if test.in.debug {
-				assert.JSONEq(t, string(bidRequest.Ext), string(actualExt.Debug.ResolvedRequest.Ext), test.desc)
+				actualResolvedReqExt, _, _, err := jsonparser.Get(actualExt.Debug.ResolvedRequest, "ext")
+				assert.NoError(t, err, "Resolved request should have the correct format")
+				assert.JSONEq(t, string(bidRequest.Ext), string(actualResolvedReqExt), test.desc)
 			}
 		} else if !test.debugData.bidderLevelDebugAllowed && test.debugData.accountLevelDebugAllowed {
 			assert.Equal(t, len(actualExt.Debug.HttpCalls), 0, "%s. ext.debug.httpcalls array should not be empty", "With bidder level debug disable option http calls should be empty")
@@ -464,7 +470,7 @@ func TestTwoBiddersDebugDisabledAndEnabled(t *testing.T) {
 	e := new(exchange)
 	e.cache = &wellBehavedCache{}
 	e.me = &metricsConf.NilMetricsEngine{}
-	e.gDPR = gdpr.AlwaysAllow{}
+	e.vendorListFetcher = gdpr.NewVendorListFetcher(context.Background(), config.GDPR{}, &http.Client{}, gdpr.VendorListURLMaker)
 	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	e.categoriesFetcher = categoriesFetcher
 
@@ -487,10 +493,12 @@ func TestTwoBiddersDebugDisabledAndEnabled(t *testing.T) {
 		bidRequest.Ext = json.RawMessage(`{"prebid":{"debug":true}}`)
 
 		auctionRequest := AuctionRequest{
-			BidRequest: bidRequest,
-			Account:    config.Account{DebugAllow: true},
-			UserSyncs:  &emptyUsersync{},
-			StartTime:  time.Now(),
+			BidRequestWrapper:      &openrtb_ext.RequestWrapper{BidRequest: bidRequest},
+			Account:                config.Account{DebugAllow: true},
+			UserSyncs:              &emptyUsersync{},
+			StartTime:              time.Now(),
+			GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
+			TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
 		}
 
 		e.adapterMap = map[openrtb_ext.BidderName]adaptedBidder{
@@ -620,7 +628,7 @@ func TestOverrideWithCustomCurrency(t *testing.T) {
 	e := new(exchange)
 	e.cache = &wellBehavedCache{}
 	e.me = &metricsConf.NilMetricsEngine{}
-	e.gDPR = gdpr.AlwaysAllow{}
+	e.vendorListFetcher = gdpr.NewVendorListFetcher(context.Background(), config.GDPR{}, &http.Client{}, gdpr.VendorListURLMaker)
 	e.currencyConverter = mockCurrencyConverter
 	e.categoriesFetcher = categoriesFetcher
 	e.bidIDGenerator = &mockBidIDGenerator{false, false}
@@ -659,9 +667,11 @@ func TestOverrideWithCustomCurrency(t *testing.T) {
 		mockBidRequest.Cur = []string{test.in.bidRequestCurrency}
 
 		auctionRequest := AuctionRequest{
-			BidRequest: mockBidRequest,
-			Account:    config.Account{},
-			UserSyncs:  &emptyUsersync{},
+			BidRequestWrapper:      &openrtb_ext.RequestWrapper{BidRequest: mockBidRequest},
+			Account:                config.Account{},
+			UserSyncs:              &emptyUsersync{},
+			GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
+			TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
 		}
 
 		// Run test
@@ -710,11 +720,13 @@ func TestAdapterCurrency(t *testing.T) {
 	mockBidder := &mockBidder{}
 	mockBidder.On("MakeRequests", mock.Anything, mock.Anything).Return([]*adapters.RequestData(nil), []error(nil))
 
+	vendorListFetcher := gdpr.NewVendorListFetcher(context.Background(), config.GDPR{}, &http.Client{}, gdpr.VendorListURLMaker)
+
 	// Initialize Real Exchange
 	e := exchange{
 		cache:             &wellBehavedCache{},
 		me:                &metricsConf.NilMetricsEngine{},
-		gDPR:              gdpr.AlwaysAllow{},
+		vendorListFetcher: vendorListFetcher,
 		currencyConverter: currencyConverter,
 		categoriesFetcher: nilCategoryFetcher{},
 		bidIDGenerator:    &mockBidIDGenerator{false, false},
@@ -741,9 +753,11 @@ func TestAdapterCurrency(t *testing.T) {
 
 	// Run Auction
 	auctionRequest := AuctionRequest{
-		BidRequest: request,
-		Account:    config.Account{},
-		UserSyncs:  &emptyUsersync{},
+		BidRequestWrapper:      &openrtb_ext.RequestWrapper{BidRequest: request},
+		Account:                config.Account{},
+		UserSyncs:              &emptyUsersync{},
+		GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
+		TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
 	}
 	response, err := e.HoldAuction(context.Background(), auctionRequest, &DebugLog{})
 	assert.NoError(t, err)
@@ -1104,7 +1118,7 @@ func TestReturnCreativeEndToEnd(t *testing.T) {
 	}
 	e.cache = &wellBehavedCache{}
 	e.me = &metricsConf.NilMetricsEngine{}
-	e.gDPR = gdpr.AlwaysAllow{}
+	e.vendorListFetcher = gdpr.NewVendorListFetcher(context.Background(), config.GDPR{}, &http.Client{}, gdpr.VendorListURLMaker)
 	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	e.categoriesFetcher = categoriesFetcher
 	e.bidIDGenerator = &mockBidIDGenerator{false, false}
@@ -1126,9 +1140,11 @@ func TestReturnCreativeEndToEnd(t *testing.T) {
 			mockBidRequest.Ext = test.inExt
 
 			auctionRequest := AuctionRequest{
-				BidRequest: mockBidRequest,
-				Account:    config.Account{},
-				UserSyncs:  &emptyUsersync{},
+				BidRequestWrapper:      &openrtb_ext.RequestWrapper{BidRequest: mockBidRequest},
+				Account:                config.Account{},
+				UserSyncs:              &emptyUsersync{},
+				GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
+				TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
 			}
 
 			// Run test
@@ -1202,7 +1218,8 @@ func TestGetBidCacheInfoEndToEnd(t *testing.T) {
 	}
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 	pbc := pbc.NewClient(&http.Client{}, &cfg.CacheURL, &cfg.ExtCacheURL, testEngine)
-	e := NewExchange(adapters, pbc, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdpr.AlwaysAllow{}, currencyConverter, nilCategoryFetcher{}).(*exchange)
+	vendorListFetcher := gdpr.NewVendorListFetcher(context.Background(), config.GDPR{}, &http.Client{}, gdpr.VendorListURLMaker)
+	e := NewExchange(adapters, pbc, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, vendorListFetcher, currencyConverter, nilCategoryFetcher{}).(*exchange)
 	// 	3) Build all the parameters e.buildBidResponse(ctx.Background(), liveA... ) needs
 	liveAdapters := []openrtb_ext.BidderName{bidderName}
 
@@ -1394,7 +1411,7 @@ func TestBidReturnsCreative(t *testing.T) {
 	}
 	e.cache = &wellBehavedCache{}
 	e.me = &metricsConf.NilMetricsEngine{}
-	e.gDPR = gdpr.AlwaysAllow{}
+	e.vendorListFetcher = gdpr.NewVendorListFetcher(context.Background(), config.GDPR{}, &http.Client{}, gdpr.VendorListURLMaker)
 	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 
 	//Run tests
@@ -1556,7 +1573,8 @@ func TestBidResponseCurrency(t *testing.T) {
 	}
 
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
-	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdpr.AlwaysAllow{}, currencyConverter, nilCategoryFetcher{}).(*exchange)
+	vendorListFetcher := gdpr.NewVendorListFetcher(context.Background(), config.GDPR{}, &http.Client{}, gdpr.VendorListURLMaker)
+	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, vendorListFetcher, currencyConverter, nilCategoryFetcher{}).(*exchange)
 
 	liveAdapters := make([]openrtb_ext.BidderName, 1)
 	liveAdapters[0] = "appnexus"
@@ -1695,7 +1713,8 @@ func TestBidResponseImpExtInfo(t *testing.T) {
 	cfg := &config.Configuration{Adapters: make(map[string]config.Adapter, 1)}
 	cfg.Adapters["appnexus"] = config.Adapter{Endpoint: "http://ib.adnxs.com"}
 
-	e := NewExchange(nil, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, nil, gdpr.AlwaysAllow{}, nil, nilCategoryFetcher{}).(*exchange)
+	vendorListFetcher := gdpr.NewVendorListFetcher(context.Background(), config.GDPR{}, &http.Client{}, gdpr.VendorListURLMaker)
+	e := NewExchange(nil, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, nil, vendorListFetcher, nil, nilCategoryFetcher{}).(*exchange)
 
 	liveAdapters := make([]openrtb_ext.BidderName, 1)
 	liveAdapters[0] = "appnexus"
@@ -1788,13 +1807,16 @@ func TestRaceIntegration(t *testing.T) {
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 
 	auctionRequest := AuctionRequest{
-		BidRequest: getTestBuildRequest(t),
-		Account:    config.Account{},
-		UserSyncs:  &emptyUsersync{},
+		BidRequestWrapper:      &openrtb_ext.RequestWrapper{BidRequest: getTestBuildRequest(t)},
+		Account:                config.Account{},
+		UserSyncs:              &emptyUsersync{},
+		GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
+		TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
 	}
 
 	debugLog := DebugLog{}
-	ex := NewExchange(adapters, &wellBehavedCache{}, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdpr.AlwaysAllow{}, currencyConverter, &nilCategoryFetcher{}).(*exchange)
+	vendorListFetcher := gdpr.NewVendorListFetcher(context.Background(), config.GDPR{}, &http.Client{}, gdpr.VendorListURLMaker)
+	ex := NewExchange(adapters, &wellBehavedCache{}, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, vendorListFetcher, currencyConverter, &nilCategoryFetcher{}).(*exchange)
 	_, err = ex.HoldAuction(context.Background(), auctionRequest, &debugLog)
 	if err != nil {
 		t.Errorf("HoldAuction returned unexpected error: %v", err)
@@ -1886,7 +1908,8 @@ func TestPanicRecovery(t *testing.T) {
 	}
 
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
-	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdpr.AlwaysAllow{}, currencyConverter, nilCategoryFetcher{}).(*exchange)
+	vendorListFetcher := gdpr.NewVendorListFetcher(context.Background(), config.GDPR{}, &http.Client{}, gdpr.VendorListURLMaker)
+	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, vendorListFetcher, currencyConverter, nilCategoryFetcher{}).(*exchange)
 
 	chBids := make(chan *bidResponseWrapper, 1)
 	panicker := func(bidderRequest BidderRequest, conversions currency.Conversions) {
@@ -1959,7 +1982,8 @@ func TestPanicRecoveryHighLevel(t *testing.T) {
 		t.Errorf("Failed to create a category Fetcher: %v", error)
 	}
 
-	e := NewExchange(adapters, &mockCache{}, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdpr.AlwaysAllow{}, currencyConverter, categoriesFetcher).(*exchange)
+	vendorListFetcher := gdpr.NewVendorListFetcher(context.Background(), config.GDPR{}, &http.Client{}, gdpr.VendorListURLMaker)
+	e := NewExchange(adapters, &mockCache{}, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, vendorListFetcher, currencyConverter, categoriesFetcher).(*exchange)
 
 	e.adapterMap[openrtb_ext.BidderBeachfront] = panicingAdapter{}
 	e.adapterMap[openrtb_ext.BidderAppnexus] = panicingAdapter{}
@@ -1993,9 +2017,11 @@ func TestPanicRecoveryHighLevel(t *testing.T) {
 	}
 
 	auctionRequest := AuctionRequest{
-		BidRequest: request,
-		Account:    config.Account{},
-		UserSyncs:  &emptyUsersync{},
+		BidRequestWrapper:      &openrtb_ext.RequestWrapper{BidRequest: request},
+		Account:                config.Account{},
+		UserSyncs:              &emptyUsersync{},
+		GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
+		TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
 	}
 	debugLog := DebugLog{}
 	_, err = e.HoldAuction(context.Background(), auctionRequest, &debugLog)
@@ -2083,6 +2109,9 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 			Enabled:         spec.GDPREnabled,
 			DefaultValue:    gdprDefaultValue,
 			EEACountriesMap: eeac,
+			TCF2: config.TCF2{
+				Enabled: spec.GDPREnabled,
+			},
 		},
 	}
 	bidIdGenerator := &mockBidIDGenerator{}
@@ -2098,20 +2127,31 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 	}
 
 	auctionRequest := AuctionRequest{
-		BidRequest: &spec.IncomingRequest.OrtbRequest,
+		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: &spec.IncomingRequest.OrtbRequest},
 		Account: config.Account{
 			ID:            "testaccount",
 			EventsEnabled: spec.EventsEnabled,
 			DebugAllow:    true,
 		},
-		UserSyncs: mockIdFetcher(spec.IncomingRequest.Usersyncs),
+		UserSyncs:              mockIdFetcher(spec.IncomingRequest.Usersyncs),
+		GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
+		TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
 	}
 	if spec.StartTime > 0 {
 		auctionRequest.StartTime = time.Unix(0, spec.StartTime*1e+6)
 	}
+	if spec.RequestType != nil {
+		auctionRequest.RequestType = *spec.RequestType
+	}
 	ctx := context.Background()
 
 	bid, err := ex.HoldAuction(ctx, auctionRequest, debugLog)
+	if len(spec.Response.Error) > 0 && spec.Response.Bids == nil {
+		if err.Error() != spec.Response.Error {
+			t.Errorf("%s: Exchange returned different errors. Expected %s, got %s", filename, spec.Response.Error, err.Error())
+		}
+		return
+	}
 	responseTimes := extractResponseTimes(t, filename, bid)
 	for _, bidderName := range biddersInAuction {
 		if _, ok := responseTimes[bidderName]; !ok {
@@ -2222,6 +2262,8 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 		t.Fatalf("Failed to create a category Fetcher: %v", error)
 	}
 
+	vendorListFetcher := gdpr.NewVendorListFetcher(context.Background(), config.GDPR{}, &http.Client{}, gdpr.VendorListURLMaker)
+
 	bidderToSyncerKey := map[string]string{}
 	for _, bidderName := range openrtb_ext.CoreBidderNames() {
 		bidderToSyncerKey[string(bidderName)] = string(bidderName)
@@ -2237,7 +2279,7 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 		me:                metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.CoreBidderNames(), nil),
 		cache:             &wellBehavedCache{},
 		cacheTime:         0,
-		gDPR:              &permissionsMock{allowAllBidders: true},
+		vendorListFetcher: vendorListFetcher,
 		currencyConverter: currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
 		gdprDefaultValue:  gdprDefaultValue,
 		privacyConfig:     privacyConfig,
@@ -3613,60 +3655,6 @@ func TestMakeBidExtJSON(t *testing.T) {
 	}
 }
 
-func TestFPD(t *testing.T) {
-
-	bidRequest := &openrtb2.BidRequest{
-		ID: "some-request-id",
-		Imp: []openrtb2.Imp{{
-			ID:    "some-impression-id",
-			Video: &openrtb2.Video{W: 100, H: 50},
-			Ext:   json.RawMessage(`{"appnexus": {"placementId": 1}}`),
-		}},
-		Site: &openrtb2.Site{ID: "Req site id", Page: "prebid.org", Ext: json.RawMessage(`{"amp":0}`)},
-		AT:   1,
-		TMax: 500,
-	}
-
-	fpd := make(map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData)
-
-	apnFpd := firstpartydata.ResolvedFirstPartyData{
-		Site: &openrtb2.Site{ID: "fpdSite"},
-		App:  &openrtb2.App{ID: "fpdApp"},
-		User: &openrtb2.User{ID: "fpdUser"},
-	}
-	fpd[openrtb_ext.BidderName("appnexus")] = &apnFpd
-
-	e := new(exchange)
-	e.adapterMap = map[openrtb_ext.BidderName]adaptedBidder{
-		openrtb_ext.BidderAppnexus: &capturingRequestBidder{},
-	}
-	e.me = &metricsConf.NilMetricsEngine{}
-	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
-
-	ctx := context.Background()
-
-	auctionRequest := AuctionRequest{
-		BidRequest:     bidRequest,
-		UserSyncs:      &emptyUsersync{},
-		FirstPartyData: fpd,
-	}
-
-	debugLog := &DebugLog{DebugOverride: true, DebugEnabledOrOverridden: true}
-
-	outBidResponse, err := e.HoldAuction(ctx, auctionRequest, debugLog)
-
-	assert.NotNilf(t, outBidResponse, "outBidResponse should not be nil")
-	assert.Nil(t, err, "Error should be nil")
-
-	request := e.adapterMap[openrtb_ext.BidderAppnexus].(*capturingRequestBidder).req
-
-	assert.NotNil(t, request, "Bidder request should not be nil")
-	assert.Equal(t, apnFpd.Site, request.Site, "Site is incorrect")
-	assert.Equal(t, apnFpd.App, request.App, "App is incorrect")
-	assert.Equal(t, apnFpd.User, request.User, "User is incorrect")
-
-}
-
 func TestStoredAuctionResponses(t *testing.T) {
 	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
 	if error != nil {
@@ -3676,7 +3664,7 @@ func TestStoredAuctionResponses(t *testing.T) {
 	e := new(exchange)
 	e.cache = &wellBehavedCache{}
 	e.me = &metricsConf.NilMetricsEngine{}
-	e.gDPR = gdpr.AlwaysAllow{}
+	e.vendorListFetcher = gdpr.NewVendorListFetcher(context.Background(), config.GDPR{}, &http.Client{}, gdpr.VendorListURLMaker)
 	e.categoriesFetcher = categoriesFetcher
 	e.bidIDGenerator = &mockBidIDGenerator{false, false}
 	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
@@ -3726,10 +3714,12 @@ func TestStoredAuctionResponses(t *testing.T) {
 	for _, test := range testCases {
 
 		auctionRequest := AuctionRequest{
-			BidRequest:             mockBidRequest,
+			BidRequestWrapper:      &openrtb_ext.RequestWrapper{BidRequest: mockBidRequest},
 			Account:                config.Account{},
 			UserSyncs:              &emptyUsersync{},
 			StoredAuctionResponses: test.storedAuctionResp,
+			GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
+			TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
 		}
 
 		// Run test
@@ -3897,6 +3887,47 @@ func TestBuildStoredAuctionResponses(t *testing.T) {
 	}
 }
 
+func TestAuctionDebugEnabled(t *testing.T) {
+	categoriesFetcher, err := newCategoryFetcher("./test/category-mapping")
+	assert.NoError(t, err, "error should be nil")
+	e := new(exchange)
+	e.cache = &wellBehavedCache{}
+	e.me = &metricsConf.NilMetricsEngine{}
+	e.vendorListFetcher = gdpr.NewVendorListFetcher(context.Background(), config.GDPR{}, &http.Client{}, gdpr.VendorListURLMaker)
+	e.categoriesFetcher = categoriesFetcher
+	e.bidIDGenerator = &mockBidIDGenerator{false, false}
+	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+
+	ctx := context.Background()
+
+	bidRequest := &openrtb2.BidRequest{
+		ID:   "some-request-id",
+		Test: 1,
+	}
+
+	auctionRequest := AuctionRequest{
+		BidRequestWrapper:      &openrtb_ext.RequestWrapper{BidRequest: bidRequest},
+		Account:                config.Account{DebugAllow: false},
+		UserSyncs:              &emptyUsersync{},
+		StartTime:              time.Now(),
+		RequestType:            metrics.ReqTypeORTB2Web,
+		GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
+		TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
+	}
+
+	debugLog := &DebugLog{DebugOverride: true, DebugEnabledOrOverridden: true}
+	resp, err := e.HoldAuction(ctx, auctionRequest, debugLog)
+
+	assert.NoError(t, err, "error should be nil")
+
+	expectedResolvedRequest := `{"id":"some-request-id","imp":null,"test":1}`
+	actualResolvedRequest, _, _, err := jsonparser.Get(resp.Ext, "debug", "resolvedrequest")
+	assert.NoError(t, err, "error should be nil")
+	assert.NotNil(t, actualResolvedRequest, "actualResolvedRequest should not be nil")
+	assert.JSONEq(t, expectedResolvedRequest, string(actualResolvedRequest), "Resolved request is incorrect")
+
+}
+
 type exchangeSpec struct {
 	GDPREnabled       bool                   `json:"gdpr_enabled"`
 	IncomingRequest   exchangeRequest        `json:"incomingRequest"`
@@ -3909,6 +3940,7 @@ type exchangeSpec struct {
 	EventsEnabled     bool                   `json:"events_enabled,omitempty"`
 	StartTime         int64                  `json:"start_time_ms,omitempty"`
 	BidIDGenerator    *mockBidIDGenerator    `json:"bidIDGenerator,omitempty"`
+	RequestType       *metrics.RequestType   `json:"requestType,omitempty"`
 }
 
 type exchangeRequest struct {
@@ -4173,4 +4205,14 @@ func (m *mockBidder) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapter
 func (m *mockBidder) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	args := m.Called(internalRequest, externalRequest, response)
 	return args.Get(0).(*adapters.BidderResponse), args.Get(1).([]error)
+}
+
+func mockGDPRPermissionsBuilder(cfg config.GDPR, tcf2Config gdpr.TCF2ConfigReader, vendorIDs map[openrtb_ext.BidderName]uint16, fetcher gdpr.VendorListFetcher) gdpr.Permissions {
+	return &permissionsMock{allowAllBidders: true}
+}
+
+func mockTCF2ConfigBuilder(hostConfig config.TCF2, accountConfig config.AccountGDPR) gdpr.TCF2ConfigReader {
+	return &config.TCF2{
+		Enabled: hostConfig.Enabled,
+	}
 }

@@ -2,6 +2,7 @@ package endpoints
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -34,6 +36,7 @@ func TestNewCookieSyncEndpoint(t *testing.T) {
 		configCCPAEnforce = true
 		metrics           = metrics.MetricsEngineMock{}
 		analytics         = MockAnalytics{}
+		fetcher           = FakeAccountsFetcher{}
 		bidders           = map[string]openrtb_ext.BidderName{"bidderA": openrtb_ext.BidderName("bidderA"), "bidderB": openrtb_ext.BidderName("bidderB")}
 	)
 
@@ -48,21 +51,27 @@ func TestNewCookieSyncEndpoint(t *testing.T) {
 		&gdprPerms,
 		&metrics,
 		&analytics,
+		&fetcher,
 		bidders,
 	)
 
 	expected := &cookieSyncEndpoint{
-		chooser:          usersync.NewChooser(syncersByBidder),
-		config:           configUserSync,
-		hostCookieConfig: &configHostCookie,
+		chooser: usersync.NewChooser(syncersByBidder),
+		config: &config.Configuration{
+			UserSync:   configUserSync,
+			HostCookie: configHostCookie,
+			GDPR:       configGDPR,
+			CCPA:       config.CCPA{Enforce: configCCPAEnforce},
+		},
 		privacyConfig: usersyncPrivacyConfig{
 			gdprConfig:      configGDPR,
 			gdprPermissions: &gdprPerms,
 			ccpaEnforce:     configCCPAEnforce,
 			bidderHashSet:   map[string]struct{}{"bidderA": {}, "bidderB": {}},
 		},
-		metrics:      &metrics,
-		pbsAnalytics: &analytics,
+		metrics:         &metrics,
+		pbsAnalytics:    &analytics,
+		accountsFetcher: &fetcher,
 	}
 
 	assert.Equal(t, expected, endpoint)
@@ -238,8 +247,8 @@ func TestCookieSyncHandle(t *testing.T) {
 		writer := httptest.NewRecorder()
 
 		endpoint := cookieSyncEndpoint{
-			chooser:          FakeChooser{Result: test.givenChooserResult},
-			hostCookieConfig: &config.HostCookie{},
+			chooser: FakeChooser{Result: test.givenChooserResult},
+			config:  &config.Configuration{},
 			privacyConfig: usersyncPrivacyConfig{
 				gdprConfig: config.GDPR{
 					Enabled:      true,
@@ -263,14 +272,15 @@ func TestCookieSyncParseRequest(t *testing.T) {
 	expectedCCPAParsedPolicy, _ := ccpa.Policy{Consent: "1NYN"}.Parse(map[string]struct{}{})
 
 	testCases := []struct {
-		description      string
-		givenConfig      config.UserSync
-		givenBody        io.Reader
-		givenGDPRConfig  config.GDPR
-		givenCCPAEnabled bool
-		expectedError    string
-		expectedPrivacy  privacy.Policies
-		expectedRequest  usersync.Request
+		description          string
+		givenConfig          config.UserSync
+		givenBody            io.Reader
+		givenGDPRConfig      config.GDPR
+		givenCCPAEnabled     bool
+		givenAccountRequired bool
+		expectedError        string
+		expectedPrivacy      privacy.Policies
+		expectedRequest      usersync.Request
 	}{
 		{
 			description: "Complete Request",
@@ -647,18 +657,121 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			givenCCPAEnabled: true,
 			expectedError:    "Failed to read request body",
 		},
+		{
+			description: "Account Defaults - Max Limit + Default Coop",
+			givenBody: strings.NewReader(`{` +
+				`"bidders":["a", "b"],` +
+				`"limit":42,` +
+				`"account":"TestAccount"` +
+				`}`),
+			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
+			givenCCPAEnabled: true,
+			givenConfig: config.UserSync{
+				Cooperative: config.UserSyncCooperative{
+					PriorityGroups: [][]string{{"a", "b", "c"}},
+				},
+			},
+			expectedPrivacy: privacy.Policies{},
+			expectedRequest: usersync.Request{
+				Bidders: []string{"a", "b"},
+				Cooperative: usersync.Cooperative{
+					Enabled:        true,
+					PriorityGroups: [][]string{{"a", "b", "c"}},
+				},
+				Limit: 30,
+				Privacy: usersyncPrivacy{
+					gdprSignal: gdpr.SignalAmbiguous,
+				},
+				SyncTypeFilter: usersync.SyncTypeFilter{
+					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+					Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+				},
+			},
+		},
+		{
+			description: "Account Defaults - DefaultLimit",
+			givenBody: strings.NewReader(`{` +
+				`"bidders":["a", "b"],` +
+				`"account":"TestAccount"` +
+				`}`),
+			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
+			givenCCPAEnabled: true,
+			givenConfig: config.UserSync{
+				Cooperative: config.UserSyncCooperative{
+					EnabledByDefault: false,
+					PriorityGroups:   [][]string{{"a", "b", "c"}},
+				},
+			},
+			expectedPrivacy: privacy.Policies{},
+			expectedRequest: usersync.Request{
+				Bidders: []string{"a", "b"},
+				Cooperative: usersync.Cooperative{
+					Enabled:        true,
+					PriorityGroups: [][]string{{"a", "b", "c"}},
+				},
+				Limit: 20,
+				Privacy: usersyncPrivacy{
+					gdprSignal: gdpr.SignalAmbiguous,
+				},
+				SyncTypeFilter: usersync.SyncTypeFilter{
+					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+					Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+				},
+			},
+		},
+		{
+			description: "Account Defaults - Error",
+			givenBody: strings.NewReader(`{` +
+				`"bidders":["a", "b"],` +
+				`"account":"DisabledAccount"` +
+				`}`),
+			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
+			givenCCPAEnabled: true,
+			givenConfig: config.UserSync{
+				Cooperative: config.UserSyncCooperative{
+					EnabledByDefault: false,
+					PriorityGroups:   [][]string{{"a", "b", "c"}},
+				},
+			},
+			expectedPrivacy: privacy.Policies{},
+			expectedRequest: usersync.Request{
+				Bidders: []string{"a", "b"},
+				Cooperative: usersync.Cooperative{
+					Enabled:        true,
+					PriorityGroups: [][]string{{"a", "b", "c"}},
+				},
+				Limit: 20,
+				Privacy: usersyncPrivacy{
+					gdprSignal: gdpr.SignalAmbiguous,
+				},
+				SyncTypeFilter: usersync.SyncTypeFilter{
+					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+					Redirect: usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
+				},
+			},
+			expectedError:        errCookieSyncAccountBlocked.Error(),
+			givenAccountRequired: true,
+		},
 	}
 
 	for _, test := range testCases {
 		httpRequest := httptest.NewRequest("POST", "/cookiesync", test.givenBody)
 
 		endpoint := cookieSyncEndpoint{
-			config: test.givenConfig,
+			config: &config.Configuration{
+				UserSync:        test.givenConfig,
+				AccountRequired: test.givenAccountRequired,
+			},
 			privacyConfig: usersyncPrivacyConfig{
 				gdprConfig:  test.givenGDPRConfig,
 				ccpaEnforce: test.givenCCPAEnabled,
 			},
+			accountsFetcher: FakeAccountsFetcher{AccountData: map[string]json.RawMessage{
+				"TestAccount":     json.RawMessage(`{"cookie_sync": {"default_limit": 20, "max_limit": 30, "default_coop_sync": true}}`),
+				"DisabledAccount": json.RawMessage(`{"disabled":true}`),
+			}},
 		}
+		assert.NoError(t, endpoint.config.MarshalAccountDefaults())
 		request, privacyPolicies, err := endpoint.parseRequest(httpRequest)
 
 		if test.expectedError == "" {
@@ -670,6 +783,185 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			assert.Empty(t, request, test.description+":request")
 			assert.Empty(t, privacyPolicies, test.description+":privacy")
 		}
+	}
+}
+
+func TestSetLimit(t *testing.T) {
+	coopSync := true
+
+	testCases := []struct {
+		description     string
+		givenRequest    cookieSyncRequest
+		givenConfig     config.UserSync
+		expectedError   string
+		expectedRequest cookieSyncRequest
+	}{
+		{
+			description: "Test that Max Limit and Default Coop Sync are Applied",
+			givenRequest: cookieSyncRequest{
+				Account: "TestAccount",
+				Limit:   42,
+			},
+			givenConfig: config.UserSync{
+				Cooperative: config.UserSyncCooperative{
+					PriorityGroups: [][]string{{"a", "b", "c"}},
+				},
+			},
+			expectedRequest: cookieSyncRequest{
+				Account:         "TestAccount",
+				Limit:           30,
+				CooperativeSync: &coopSync,
+			},
+			expectedError: "",
+		},
+		{
+			description: "Test that Default Limit is Applied",
+			givenRequest: cookieSyncRequest{
+				Account: "TestAccount",
+			},
+			givenConfig: config.UserSync{
+				Cooperative: config.UserSyncCooperative{
+					PriorityGroups: [][]string{{"a", "b", "c"}},
+				},
+			},
+			expectedRequest: cookieSyncRequest{
+				Account:         "TestAccount",
+				Limit:           20,
+				CooperativeSync: &coopSync,
+			},
+			expectedError: "",
+		},
+		{
+			description: "Test that max limit is applied when given limit is zero",
+			givenRequest: cookieSyncRequest{
+				Account: "ZeroLimitAccount",
+			},
+			givenConfig: config.UserSync{
+				Cooperative: config.UserSyncCooperative{
+					PriorityGroups: [][]string{{"a", "b", "c"}},
+				},
+			},
+			expectedRequest: cookieSyncRequest{
+				Account:         "ZeroLimitAccount",
+				Limit:           30,
+				CooperativeSync: &coopSync,
+			},
+			expectedError: "",
+		},
+		{
+			description: "Negative Value Check",
+			givenRequest: cookieSyncRequest{
+				Account: "NegativeLimitAccount",
+			},
+			givenConfig: config.UserSync{
+				Cooperative: config.UserSyncCooperative{
+					PriorityGroups: [][]string{{"a", "b", "c"}},
+				},
+			},
+			expectedRequest: cookieSyncRequest{
+				Account:         "NegativeLimitAccount",
+				Limit:           0,
+				CooperativeSync: &coopSync,
+			},
+			expectedError: "",
+		},
+		{
+			description: "Error Handler",
+			givenRequest: cookieSyncRequest{
+				Account: "DisabledAccount",
+			},
+			givenConfig: config.UserSync{
+				Cooperative: config.UserSyncCooperative{
+					PriorityGroups: [][]string{{"a", "b", "c"}},
+				},
+			},
+			expectedRequest: cookieSyncRequest{
+				Account: "DisabledAccount",
+			},
+			expectedError: errCookieSyncAccountBlocked.Error(),
+		},
+	}
+
+	for _, test := range testCases {
+		endpoint := cookieSyncEndpoint{
+			config: &config.Configuration{
+				UserSync: test.givenConfig,
+			},
+			accountsFetcher: FakeAccountsFetcher{AccountData: map[string]json.RawMessage{
+				"TestAccount":          json.RawMessage(`{"cookie_sync": {"default_limit": 20, "max_limit": 30, "default_coop_sync": true}}`),
+				"DisabledAccount":      json.RawMessage(`{"disabled":true}`),
+				"ZeroLimitAccount":     json.RawMessage(`{"cookie_sync": {"default_limit": 0, "max_limit": 30, "default_coop_sync": true}}`),
+				"NegativeLimitAccount": json.RawMessage(`{"cookie_sync": {"default_limit": -1, "max_limit": -1, "default_coop_sync": true}}`),
+			}},
+		}
+		assert.NoError(t, endpoint.config.MarshalAccountDefaults())
+		request, err := endpoint.setLimit(test.givenRequest)
+
+		if test.expectedError == "" {
+			assert.NoError(t, err, test.description)
+			assert.Equal(t, test.expectedRequest, request, test.description)
+		} else {
+			assert.EqualError(t, err, test.expectedError, test.description)
+		}
+	}
+}
+
+func TestWriteParseRequestErrorMetrics(t *testing.T) {
+	err := errors.New("anyError")
+
+	mockAnalytics := MockAnalytics{}
+	mockAnalytics.On("LogCookieSyncObject", mock.Anything)
+	writer := httptest.NewRecorder()
+
+	endpoint := cookieSyncEndpoint{pbsAnalytics: &mockAnalytics}
+	endpoint.handleError(writer, err, 418)
+
+	assert.Equal(t, writer.Code, 418)
+	assert.Equal(t, writer.Body.String(), "anyError\n")
+	mockAnalytics.AssertCalled(t, "LogCookieSyncObject", &analytics.CookieSyncObject{
+		Status:       418,
+		Errors:       []error{err},
+		BidderStatus: []*analytics.CookieSyncBidder{},
+	})
+}
+
+func TestCookieSyncWriteParseRequestErrorMetrics(t *testing.T) {
+	testCases := []struct {
+		description     string
+		err             error
+		setExpectations func(*metrics.MetricsEngineMock)
+	}{
+		{
+			description: "Account Blocked",
+			err:         errCookieSyncAccountBlocked,
+			setExpectations: func(m *metrics.MetricsEngineMock) {
+				m.On("RecordCookieSync", metrics.CookieSyncAccountBlocked).Once()
+			},
+		},
+		{
+			description: "Account Invalid",
+			err:         errCookieSyncAccountInvalid,
+			setExpectations: func(m *metrics.MetricsEngineMock) {
+				m.On("RecordCookieSync", metrics.CookieSyncAccountInvalid).Once()
+			},
+		},
+		{
+			description: "No Special Case",
+			err:         errors.New("any error"),
+			setExpectations: func(m *metrics.MetricsEngineMock) {
+				m.On("RecordCookieSync", metrics.CookieSyncBadRequest).Once()
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		mockMetrics := metrics.MetricsEngineMock{}
+		test.setExpectations(&mockMetrics)
+
+		endpoint := &cookieSyncEndpoint{metrics: &mockMetrics}
+		endpoint.writeParseRequestErrorMetrics(test.err)
+
+		mockMetrics.AssertExpectations(t)
 	}
 }
 
@@ -1242,6 +1534,50 @@ func TestUsersyncPrivacyCCPAAllowsBidderSync(t *testing.T) {
 	}
 }
 
+func TestCombineErrors(t *testing.T) {
+	testCases := []struct {
+		description    string
+		givenErrorList []error
+		expectedError  error
+	}{
+		{
+			description:    "No errors given",
+			givenErrorList: []error{},
+			expectedError:  errors.New(""),
+		},
+		{
+			description:    "One error given",
+			givenErrorList: []error{errors.New("Error #1")},
+			expectedError:  errors.New("Error #1"),
+		},
+		{
+			description:    "Multiple errors given",
+			givenErrorList: []error{errors.New("Error #1"), errors.New("Error #2")},
+			expectedError:  errors.New("Error #1 Error #2"),
+		},
+		{
+			description:    "Special Case: blocked (rejected via block list)",
+			givenErrorList: []error{&errortypes.BlacklistedAcct{}},
+			expectedError:  errCookieSyncAccountBlocked,
+		},
+		{
+			description:    "Special Case: invalid (rejected via allow list)",
+			givenErrorList: []error{&errortypes.AcctRequired{}},
+			expectedError:  errCookieSyncAccountInvalid,
+		},
+		{
+			description:    "Special Case: multiple special cases, first one wins",
+			givenErrorList: []error{&errortypes.BlacklistedAcct{}, &errortypes.AcctRequired{}},
+			expectedError:  errCookieSyncAccountBlocked,
+		},
+	}
+
+	for _, test := range testCases {
+		combinedErrors := combineErrors(test.givenErrorList)
+		assert.Equal(t, test.expectedError, combinedErrors, test.description)
+	}
+}
+
 type FakeChooser struct {
 	Result usersync.Result
 }
@@ -1316,9 +1652,20 @@ func (m *MockGDPRPerms) BidderSyncAllowed(ctx context.Context, bidder openrtb_ex
 	return args.Bool(0), args.Error(1)
 }
 
-func (m *MockGDPRPerms) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string, weakVendorEnforcement bool, aliasGVLIDs map[string]uint16) (allowBidReq bool, passGeo bool, passID bool, err error) {
-	args := m.Called(ctx, bidderCoreName, bidder, PublisherID, gdprSignal, consent, weakVendorEnforcement, aliasGVLIDs)
+func (m *MockGDPRPerms) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string, aliasGVLIDs map[string]uint16) (allowBidReq bool, passGeo bool, passID bool, err error) {
+	args := m.Called(ctx, bidderCoreName, bidder, PublisherID, gdprSignal, consent, aliasGVLIDs)
 	return args.Bool(0), args.Bool(1), args.Bool(2), args.Error(3)
+}
+
+type FakeAccountsFetcher struct {
+	AccountData map[string]json.RawMessage
+}
+
+func (f FakeAccountsFetcher) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {
+	if account, ok := f.AccountData[accountID]; ok {
+		return account, nil
+	}
+	return nil, []error{errors.New("Account not found")}
 }
 
 // ErrReader returns an io.Reader that returns 0, err from all Read calls. This is added in

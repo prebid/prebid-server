@@ -200,19 +200,19 @@
         "gender": "F",
         "yob": 2000,
         "keywords": "apnFpdUserKeyword",
+        "data": [
+          {
+            "id": "apnFpdUserContentDataId1",
+            "name": "apnFpdUserContentDataName1"
+          },
+          {
+            "id": "apnFpdUserContentDataId2",
+            "name": "apnFpdUserContentDataName2"
+          }
+        ],
         "ext": {
           "data": {
-            "id": "apnUserId",
-            "data": [
-              {
-                "id": "apnFpdUserContentDataId1",
-                "name": "apnFpdUserContentDataName1"
-              },
-              {
-                "id": "apnFpdUserContentDataId2",
-                "name": "apnFpdUserContentDataName2"
-              }
-            ]
+            "id": "apnUserId"
           }
         }
       }
