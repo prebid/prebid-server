@@ -3,7 +3,6 @@ package amx
 import (
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"testing"
 
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
@@ -174,42 +173,66 @@ func TestMakeRequestsPublisherId(t *testing.T) {
 	}
 }
 
-var vastImpressionRXP = regexp.MustCompile(`<Impression><!\[CDATA\[[^\]]*\]\]></Impression>`)
+func TestMakeBids(t *testing.T) {
+	bidder, buildErr := Builder(openrtb_ext.BidderAMX, config.Adapter{
+		Endpoint: amxTestEndpoint})
 
-func countImpressionPixels(vast string) int {
-	matches := vastImpressionRXP.FindAllIndex([]byte(vast), -1)
-	return len(matches)
-}
+	if buildErr != nil {
+		t.Fatalf("Failed to build bidder: %v", buildErr)
+	}
 
-func TestVideoImpInsertion(t *testing.T) {
-	markup := interpolateImpressions(openrtb2.Bid{
-		AdM:  sampleVastADM,
-		NURL: "https://example2.com/nurl",
-	}, amxBidExt{Himp: []string{"https://example.com/pixel.png"}})
-	assert.Contains(t, markup, "example2.com/nurl")
-	assert.Contains(t, markup, "example.com/pixel.png")
-	assert.Equal(t, 3, countImpressionPixels(markup), "should have 3 Impression pixels")
+	type testCase struct {
+		bidType openrtb_ext.BidType
+		adm     string
+		extRaw  string
+		valid   bool
+	}
 
-	// make sure that a blank NURL won't result in a blank impression tag
-	markup = interpolateImpressions(openrtb2.Bid{
-		AdM:  sampleVastADM,
-		NURL: "",
-	}, amxBidExt{})
-	assert.Equal(t, 1, countImpressionPixels(markup), "should have 1 impression pixels")
+	tests := []testCase{
+		{openrtb_ext.BidTypeNative, `{"assets":[]}`, `{"ct":10}`, true},
+		{openrtb_ext.BidTypeBanner, sampleDisplayADM, `{"ct": 1}`, true},
+		{openrtb_ext.BidTypeBanner, sampleDisplayADM, `{"ct": "invalid"}`, false},
+		{openrtb_ext.BidTypeBanner, sampleDisplayADM, `{}`, true},
+		{openrtb_ext.BidTypeVideo, sampleVastADM, `{"startdelay": 1}`, true},
+		{openrtb_ext.BidTypeBanner, sampleVastADM, `{"ct": 1}`, true}, // the server shouldn't do this
+	}
 
-	// we should also ignore blank ext.Himp pixels
-	markup = interpolateImpressions(openrtb2.Bid{
-		AdM:  sampleVastADM,
-		NURL: "https://example-nurl.com/nurl",
-	}, amxBidExt{Himp: []string{"", "", ""}})
-	assert.Equal(t, 2, countImpressionPixels(markup), "should have 2 impression pixels")
-}
+	for _, test := range tests {
+		bid := openrtb2.Bid{
+			AdM:   test.adm,
+			Price: 1,
+			Ext:   json.RawMessage(test.extRaw),
+		}
 
-func TestNoDisplayImpInsertion(t *testing.T) {
-	data := interpolateImpressions(openrtb2.Bid{
-		AdM:  sampleDisplayADM,
-		NURL: "https://example2.com/nurl",
-	}, amxBidExt{Himp: []string{"https://example.com/pixel.png"}})
-	assert.NotContains(t, data, "example2.com/nurl")
-	assert.NotContains(t, data, "example.com/pixel.png")
+		sb := openrtb2.SeatBid{
+			Bid: []openrtb2.Bid{bid},
+		}
+
+		resp := openrtb2.BidResponse{
+			SeatBid: []openrtb2.SeatBid{sb},
+		}
+
+		respJson, jsonErr := json.Marshal(resp)
+		if jsonErr != nil {
+			t.Fatalf("Failed to serialize test bid %v: %v", test, jsonErr)
+		}
+
+		bids, errs := bidder.MakeBids(nil, nil, &adapters.ResponseData{
+			StatusCode: 200,
+			Body:       respJson,
+		})
+
+		if !test.valid {
+			assert.Len(t, errs, 1)
+			continue
+		}
+
+		if len(errs) > 0 {
+			t.Fatalf("Failed to make bids: %v", errs)
+		}
+
+		assert.Len(t, bids.Bids, 1)
+		assert.Equal(t, test.bidType, bids.Bids[0].BidType)
+	}
+
 }
