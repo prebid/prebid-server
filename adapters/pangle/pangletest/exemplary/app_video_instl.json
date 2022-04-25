@@ -27,10 +27,7 @@
         "instl": 1,
         "ext": {
           "bidder": {
-            "token": "123",
-            "reward": 0,
-            "mraid_supported": false,
-            "skadn_supported": false
+            "token": "123"
           }
         }
       }

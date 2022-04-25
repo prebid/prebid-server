@@ -1,5 +1,6 @@
 [![Build Status](https://travis-ci.org/DATA-DOG/go-sqlmock.svg)](https://travis-ci.org/DATA-DOG/go-sqlmock)
 [![GoDoc](https://godoc.org/github.com/DATA-DOG/go-sqlmock?status.svg)](https://godoc.org/github.com/DATA-DOG/go-sqlmock)
+[![Go Report Card](https://goreportcard.com/badge/github.com/DATA-DOG/go-sqlmock)](https://goreportcard.com/report/github.com/DATA-DOG/go-sqlmock)
 [![codecov.io](https://codecov.io/github/DATA-DOG/go-sqlmock/branch/master/graph/badge.svg)](https://codecov.io/github/DATA-DOG/go-sqlmock)
 
 # Sql driver mock for Golang
@@ -20,9 +21,14 @@ maintain correct **TDD** workflow.
 interface, you will need to switch it to a pointer struct type. Also, **sqlmock.Rows** were used to implement **driver.Rows**
 interface, which was not required or useful for mocking and was removed. Hope it will not cause issues.
 
+## Looking for maintainers
+
+I do not have much spare time for this library and willing to transfer the repository ownership
+to person or an organization motivated to maintain it. Open up a conversation if you are interested. See #230.
+
 ## Install
 
-    go get gopkg.in/DATA-DOG/go-sqlmock.v1
+    go get github.com/DATA-DOG/go-sqlmock
 
 ## Documentation and Examples
 
@@ -36,15 +42,19 @@ See implementation examples:
 - [blog API server](https://github.com/DATA-DOG/go-sqlmock/tree/master/examples/blog)
 - [the same orders example](https://github.com/DATA-DOG/go-sqlmock/tree/master/examples/orders)
 
-### Something you may want to test
+### Something you may want to test, assuming you use the [go-mysql-driver](https://github.com/go-sql-driver/mysql)
 
 ``` go
 package main
 
-import "database/sql"
+import (
+	"database/sql"
+
+	_ "github.com/go-sql-driver/mysql"
+)
 
 func recordStats(db *sql.DB, userID, productID int64) (err error) {
-	tx, err := db.Begin()
+	tx, err = db.Begin()
 	if err != nil {
 		return
 	}
@@ -90,7 +100,7 @@ import (
 	"fmt"
 	"testing"
 
-	"gopkg.in/DATA-DOG/go-sqlmock.v1"
+	"github.com/DATA-DOG/go-sqlmock"
 )
 
 // a successful case
@@ -113,7 +123,7 @@ func TestShouldUpdateStats(t *testing.T) {
 
 	// we make sure that all expectations were met
 	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expections: %s", err)
+		t.Errorf("there were unfulfilled expectations: %s", err)
 	}
 }
 
@@ -139,10 +149,32 @@ func TestShouldRollbackStatUpdatesOnFailure(t *testing.T) {
 
 	// we make sure that all expectations were met
 	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expections: %s", err)
+		t.Errorf("there were unfulfilled expectations: %s", err)
 	}
 }
 ```
+
+## Customize SQL query matching
+
+There were plenty of requests from users regarding SQL query string validation or different matching option.
+We have now implemented the `QueryMatcher` interface, which can be passed through an option when calling
+`sqlmock.New` or `sqlmock.NewWithDSN`.
+
+This now allows to include some library, which would allow for example to parse and validate `mysql` SQL AST.
+And create a custom QueryMatcher in order to validate SQL in sophisticated ways.
+
+By default, **sqlmock** is preserving backward compatibility and default query matcher is `sqlmock.QueryMatcherRegexp`
+which uses expected SQL string as a regular expression to match incoming query string. There is an equality matcher:
+`QueryMatcherEqual` which will do a full case sensitive match.
+
+In order to customize the QueryMatcher, use the following:
+
+``` go
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+```
+
+The query matcher can be fully customized based on user needs. **sqlmock** will not
+provide a standard sql parsing matchers, since various drivers may not follow the same SQL standard.
 
 ## Matching arguments like time.Time
 
@@ -177,7 +209,7 @@ func TestAnyTimeArgument(t *testing.T) {
 	}
 
 	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expections: %s", err)
+		t.Errorf("there were unfulfilled expectations: %s", err)
 	}
 }
 ```
@@ -190,6 +222,10 @@ It only asserts that argument is of `time.Time` type.
 
 ## Change Log
 
+- **2019-04-06** - added functionality to mock a sql MetaData request
+- **2019-02-13** - added `go.mod` removed the references and suggestions using `gopkg.in`.
+- **2018-12-11** - added expectation of Rows to be closed, while mocking expected query.
+- **2018-12-11** - introduced an option to provide **QueryMatcher** in order to customize SQL query matching.
 - **2017-09-01** - it is now possible to expect that prepared statement will be closed,
   using **ExpectedPrepare.WillBeClosed**.
 - **2017-02-09** - implemented support for **go1.8** features. **Rows** interface was changed to struct

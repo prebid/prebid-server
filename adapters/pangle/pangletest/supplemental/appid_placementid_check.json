@@ -31,8 +31,7 @@
           "bidder": {
             "token": "123",
             "appid": "123456",
-            "placementid": "78910",
-            "reward": 1
+            "placementid": "78910"
           }
         }
       }
@@ -77,7 +76,12 @@
               },
               "ext": {
                 "adtype": 7,
-                "prebid": null,
+                "prebid": {
+                  "bidder": null,
+                  "is_rewarded_inventory": 1,
+                  "skadn": {},
+                  "storedrequest": null
+                },
                 "is_prebid": true,
                 "networkids": {
                   "appid": "123456",

@@ -16,6 +16,10 @@
 			"type": "string",
 			"description": "Comma separated zone id. Used im deal targeting & site section targeting. e.g drama,sport"
 		},
+		"kadfloor": {
+			"type": "string",
+			"description": "bid floor value set to imp.bidfloor"
+		},
 		"dctr": {
 			"type": "string",
 			"description": "Deals Custom Targeting, pipe separated key-value pairs e.g key1=V1,V2,V3|key2=v1|key3=v3,v5"

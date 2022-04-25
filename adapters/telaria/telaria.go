@@ -182,41 +182,35 @@ func (a *TelariaAdapter) MakeRequests(requestIn *openrtb2.BidRequest, reqInfo *a
 	var seatCode string
 	originalPublisherID := a.FetchOriginalPublisherID(&request)
 
-	var errors []error
 	var telariaImpExt *openrtb_ext.ExtImpTelaria
 	var err error
-	for i, imp := range request.Imp {
-		// fetch adCode & seatCode from Imp[i].Ext
-		telariaImpExt, err = a.FetchTelariaExtImpParams(&imp)
-		if err != nil {
-			errors = append(errors, err)
-			break
-		}
 
-		seatCode = telariaImpExt.SeatCode
-
-		// move the original tagId and the original publisher.id into the Imp[i].Ext object
-		request.Imp[i].Ext, err = json.Marshal(&ImpressionExtOut{request.Imp[i].TagID, originalPublisherID})
-		if err != nil {
-			errors = append(errors, err)
-			break
-		}
-
-		// Swap the tagID with adCode
-		request.Imp[i].TagID = telariaImpExt.AdCode
+	var imp = request.Imp[0]
+	// fetch adCode & seatCode from Imp[i].Ext
+	telariaImpExt, err = a.FetchTelariaExtImpParams(&imp)
+	if err != nil {
+		return nil, []error{err}
 	}
+
+	seatCode = telariaImpExt.SeatCode
+
+	// move the original tagId and the original publisher.id into the Imp[i].Ext object
+	imp.Ext, err = json.Marshal(&ImpressionExtOut{imp.TagID, originalPublisherID})
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	// Swap the tagID with adCode
+	imp.TagID = telariaImpExt.AdCode
 
 	// Add the Extra from Imp to the top level Ext
 	if telariaImpExt != nil && telariaImpExt.Extra != nil {
 		request.Ext, err = json.Marshal(&telariaBidExt{Extra: telariaImpExt.Extra})
 		if err != nil {
-			errors = append(errors, err)
+			return nil, []error{err}
 		}
 	}
-
-	if len(errors) > 0 {
-		return nil, errors
-	}
+	request.Imp = []openrtb2.Imp{imp}
 
 	// Add seatCode to <Site/App>.Publisher.ID
 	siteObject, appObject := a.PopulatePublisherId(&request, seatCode)
@@ -282,7 +276,12 @@ func (a *TelariaAdapter) MakeBids(internalRequest *openrtb2.BidRequest, external
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
 	sb := bidResp.SeatBid[0]
 
-	for _, bid := range sb.Bid {
+	for i := range sb.Bid {
+		bid := sb.Bid[i]
+		if i >= len(internalRequest.Imp) {
+			break
+		}
+		bid.ImpID = internalRequest.Imp[i].ID
 		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 			Bid:     &bid,
 			BidType: openrtb_ext.BidTypeVideo,

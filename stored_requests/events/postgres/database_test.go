@@ -33,14 +33,16 @@ func fakeQueryRegex() string {
 
 func TestFetchAllSuccess(t *testing.T) {
 	tests := []struct {
-		description         string
-		giveFakeTime        time.Time
-		giveMockRows        *sqlmock.Rows
-		wantLastUpdate      time.Time
-		wantSavedReqs       map[string]json.RawMessage
-		wantSavedImps       map[string]json.RawMessage
-		wantInvalidatedReqs []string
-		wantInvalidatedImps []string
+		description          string
+		giveFakeTime         time.Time
+		giveMockRows         *sqlmock.Rows
+		wantLastUpdate       time.Time
+		wantSavedReqs        map[string]json.RawMessage
+		wantSavedImps        map[string]json.RawMessage
+		wantSavedResps       map[string]json.RawMessage
+		wantInvalidatedReqs  []string
+		wantInvalidatedImps  []string
+		wantInvalidatedResps []string
 	}{
 		{
 			description:    "saved reqs = 0, saved imps = 0, invalidated reqs = 0, invalidated imps = 0",
@@ -49,44 +51,64 @@ func TestFetchAllSuccess(t *testing.T) {
 			wantLastUpdate: time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
 		},
 		{
-			description:    "saved reqs > 0, saved imps = 0, invalidated reqs = 0, invalidated imps = 0",
+			description:    "saved reqs > 0, saved imps = 0, saved resps = 0, invalidated reqs = 0, invalidated imps = 0, invalidated resps = 0",
 			giveFakeTime:   time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
 			giveMockRows:   sqlmock.NewRows([]string{"id", "data", "dataType"}).AddRow("req-1", "true", "request"),
 			wantLastUpdate: time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
 			wantSavedReqs:  map[string]json.RawMessage{"req-1": json.RawMessage(`true`)},
 			wantSavedImps:  map[string]json.RawMessage{},
+			wantSavedResps: map[string]json.RawMessage{},
 		},
 		{
-			description:    "saved reqs = 0, saved imps > 0, invalidated reqs = 0, invalidated imps = 0",
+			description:    "saved reqs = 0, saved imps > 0, saved resps = 0, invalidated reqs = 0, invalidated imps = 0, invalidated resps = 0",
 			giveFakeTime:   time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
 			giveMockRows:   sqlmock.NewRows([]string{"id", "data", "dataType"}).AddRow("imp-1", "true", "imp"),
 			wantLastUpdate: time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
 			wantSavedReqs:  map[string]json.RawMessage{},
 			wantSavedImps:  map[string]json.RawMessage{"imp-1": json.RawMessage(`true`)},
+			wantSavedResps: map[string]json.RawMessage{},
 		},
 		{
-			description:    "saved reqs = 0, saved imps = 0, invalidated reqs > 0, invalidated imps = 0",
+			description:    "saved reqs = 0, saved imps = 0, saved responses > 0, invalidated reqs = 0, invalidated imps = 0, invalidated responses = 0",
+			giveFakeTime:   time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
+			giveMockRows:   sqlmock.NewRows([]string{"id", "data", "dataType"}).AddRow("resp-1", "true", "response"),
+			wantLastUpdate: time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
+			wantSavedReqs:  map[string]json.RawMessage{},
+			wantSavedImps:  map[string]json.RawMessage{},
+			wantSavedResps: map[string]json.RawMessage{"resp-1": json.RawMessage(`true`)},
+		},
+		{
+			description:    "saved reqs = 0, saved imps = 0, saved responses = 0, invalidated reqs > 0, invalidated imps = 0, invalidated responses = 0",
 			giveFakeTime:   time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
 			giveMockRows:   sqlmock.NewRows([]string{"id", "data", "dataType"}).AddRow("req-1", "", "request"),
 			wantLastUpdate: time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
 		},
 		{
-			description:    "saved reqs = 0, saved imps = 0, invalidated reqs = 0, invalidated imps > 0",
+			description:    "saved reqs = 0, saved imps = 0, saved responses = 0, invalidated reqs = 0, invalidated imps > 0, invalidated responses = 0",
 			giveFakeTime:   time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
 			giveMockRows:   sqlmock.NewRows([]string{"id", "data", "dataType"}).AddRow("imp-1", "", "imp"),
 			wantLastUpdate: time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
 		},
 		{
-			description:  "saved reqs > 0, saved imps > 0, invalidated reqs > 0, invalidated imps > 0",
+			description:    "saved reqs = 0, saved imps = 0, saved responses = 0, invalidated reqs = 0, invalidated imps = 0, invalidated responses > 0",
+			giveFakeTime:   time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
+			giveMockRows:   sqlmock.NewRows([]string{"id", "data", "dataType"}).AddRow("resp-1", "", "response"),
+			wantLastUpdate: time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
+		},
+		{
+			description:  "saved reqs > 0, saved imps > 0, saved responses > 0, invalidated reqs > 0, invalidated imps > 0, invalidated responses > 0",
 			giveFakeTime: time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
 			giveMockRows: sqlmock.NewRows([]string{"id", "data", "dataType"}).
 				AddRow("req-1", "true", "request").
 				AddRow("imp-1", "true", "imp").
 				AddRow("req-2", "", "request").
-				AddRow("imp-2", "", "imp"),
+				AddRow("imp-2", "", "imp").
+				AddRow("resp-1", "true", "response").
+				AddRow("resp-2", "", "response"),
 			wantLastUpdate: time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
 			wantSavedReqs:  map[string]json.RawMessage{"req-1": json.RawMessage(`true`)},
 			wantSavedImps:  map[string]json.RawMessage{"imp-1": json.RawMessage(`true`)},
+			wantSavedResps: map[string]json.RawMessage{"resp-1": json.RawMessage(`true`)},
 		},
 	}
 
@@ -128,8 +150,10 @@ func TestFetchAllSuccess(t *testing.T) {
 
 		assert.Equal(t, tt.wantSavedReqs, saves.Requests, tt.description)
 		assert.Equal(t, tt.wantSavedImps, saves.Imps, tt.description)
+		assert.Equal(t, tt.wantSavedResps, saves.Responses, tt.description)
 		assert.Equal(t, tt.wantInvalidatedReqs, invalidations.Requests, tt.description)
 		assert.Equal(t, tt.wantInvalidatedImps, invalidations.Imps, tt.description)
+		assert.Equal(t, tt.wantInvalidatedResps, invalidations.Responses, tt.description)
 
 		metricsMock.AssertExpectations(t)
 	}
@@ -217,8 +241,10 @@ func TestFetchAllErrors(t *testing.T) {
 
 		assert.Nil(t, saves.Requests, tt.description)
 		assert.Nil(t, saves.Imps, tt.description)
+		assert.Nil(t, saves.Responses, tt.description)
 		assert.Nil(t, invalidations.Requests, tt.description)
-		assert.Nil(t, invalidations.Requests, tt.description)
+		assert.Nil(t, invalidations.Imps, tt.description)
+		assert.Nil(t, invalidations.Responses, tt.description)
 
 		metricsMock.AssertExpectations(t)
 	}
@@ -226,80 +252,99 @@ func TestFetchAllErrors(t *testing.T) {
 
 func TestFetchDeltaSuccess(t *testing.T) {
 	tests := []struct {
-		description         string
-		giveFakeTime        time.Time
-		giveMockRows        *sqlmock.Rows
-		wantLastUpdate      time.Time
-		wantSavedReqs       map[string]json.RawMessage
-		wantSavedImps       map[string]json.RawMessage
-		wantInvalidatedReqs []string
-		wantInvalidatedImps []string
+		description          string
+		giveFakeTime         time.Time
+		giveMockRows         *sqlmock.Rows
+		wantLastUpdate       time.Time
+		wantSavedReqs        map[string]json.RawMessage
+		wantSavedImps        map[string]json.RawMessage
+		wantSavedResps       map[string]json.RawMessage
+		wantInvalidatedReqs  []string
+		wantInvalidatedImps  []string
+		wantInvalidatedResps []string
 	}{
 		{
-			description:    "saved reqs = 0, saved imps = 0, invalidated reqs = 0, invalidated imps = 0",
+			description:    "saved reqs = 0, saved imps = 0, saved resps = 0, invalidated reqs = 0, invalidated imps = 0, invalidated resps = 0",
 			giveFakeTime:   time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
 			giveMockRows:   sqlmock.NewRows([]string{"id", "data", "dataType"}),
 			wantLastUpdate: time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
 		},
 		{
-			description:    "saved reqs > 0, saved imps = 0, invalidated reqs = 0, invalidated imps = 0",
+			description:    "saved reqs > 0, saved imps = 0, saved resps = 0, invalidated reqs = 0, invalidated imps = 0, invalidated resps = 0",
 			giveFakeTime:   time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
 			giveMockRows:   sqlmock.NewRows([]string{"id", "data", "dataType"}).AddRow("req-1", "true", "request"),
 			wantLastUpdate: time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
 			wantSavedReqs:  map[string]json.RawMessage{"req-1": json.RawMessage(`true`)},
 			wantSavedImps:  map[string]json.RawMessage{},
+			wantSavedResps: map[string]json.RawMessage{},
 		},
 		{
-			description:    "saved reqs = 0, saved imps > 0, invalidated reqs = 0, invalidated imps = 0",
+			description:    "saved reqs = 0, saved imps > 0, saved resps = 0, invalidated reqs = 0, invalidated imps = 0, invalidated resps = 0",
 			giveFakeTime:   time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
 			giveMockRows:   sqlmock.NewRows([]string{"id", "data", "dataType"}).AddRow("imp-1", "true", "imp"),
 			wantLastUpdate: time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
 			wantSavedReqs:  map[string]json.RawMessage{},
 			wantSavedImps:  map[string]json.RawMessage{"imp-1": json.RawMessage(`true`)},
+			wantSavedResps: map[string]json.RawMessage{},
 		},
 		{
-			description:         "saved reqs = 0, saved imps = 0, invalidated reqs > 0, invalidated imps = 0, empty data",
-			giveFakeTime:        time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
-			giveMockRows:        sqlmock.NewRows([]string{"id", "data", "dataType"}).AddRow("req-1", "", "request"),
-			wantLastUpdate:      time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
-			wantInvalidatedReqs: []string{"req-1"},
-			wantInvalidatedImps: nil,
+			description:    "saved reqs = 0, saved imps = 0, saved resps > 0, invalidated reqs = 0, invalidated imps = 0, invalidated resps = 0",
+			giveFakeTime:   time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
+			giveMockRows:   sqlmock.NewRows([]string{"id", "data", "dataType"}).AddRow("resp-1", "true", "response"),
+			wantLastUpdate: time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
+			wantSavedReqs:  map[string]json.RawMessage{},
+			wantSavedImps:  map[string]json.RawMessage{},
+			wantSavedResps: map[string]json.RawMessage{"resp-1": json.RawMessage(`true`)},
 		},
 		{
-			description:         "saved reqs = 0, saved imps = 0, invalidated reqs > 0, invalidated imps = 0, null data",
-			giveFakeTime:        time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
-			giveMockRows:        sqlmock.NewRows([]string{"id", "data", "dataType"}).AddRow("req-1", "null", "request"),
-			wantLastUpdate:      time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
-			wantInvalidatedReqs: []string{"req-1"},
-			wantInvalidatedImps: nil,
+			description:          "saved reqs = 0, saved imps = 0, saved resps = 0, invalidated reqs > 0, invalidated imps = 0, invalidated resps = 0, empty data",
+			giveFakeTime:         time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
+			giveMockRows:         sqlmock.NewRows([]string{"id", "data", "dataType"}).AddRow("req-1", "", "request"),
+			wantLastUpdate:       time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
+			wantInvalidatedReqs:  []string{"req-1"},
+			wantInvalidatedImps:  nil,
+			wantInvalidatedResps: nil,
 		},
 		{
-			description:         "saved reqs = 0, saved imps = 0, invalidated reqs = 0, invalidated imps > 0, empty data",
+			description:          "saved reqs = 0, saved imps = 0, saved resps = 0, invalidated reqs = 0, invalidated imps = 0, invalidated resps > 0, null data",
+			giveFakeTime:         time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
+			giveMockRows:         sqlmock.NewRows([]string{"id", "data", "dataType"}).AddRow("resp-1", "null", "response"),
+			wantLastUpdate:       time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
+			wantInvalidatedReqs:  nil,
+			wantInvalidatedImps:  nil,
+			wantInvalidatedResps: []string{"resp-1"},
+		},
+		{
+			description:         "saved reqs = 0, saved imps = 0, saved resps = 0, invalidated reqs = 0, invalidated imps > 0, invalidated resps = 0, empty data",
 			giveFakeTime:        time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
 			giveMockRows:        sqlmock.NewRows([]string{"id", "data", "dataType"}).AddRow("imp-1", "", "imp"),
 			wantLastUpdate:      time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
 			wantInvalidatedImps: []string{"imp-1"},
 		},
 		{
-			description:         "saved reqs = 0, saved imps = 0, invalidated reqs = 0, invalidated imps > 0, null data",
+			description:         "saved reqs = 0, saved imps = 0, saved resps = 0, invalidated reqs = 0, invalidated imps > 0, invalidated resps = 0, null data",
 			giveFakeTime:        time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
 			giveMockRows:        sqlmock.NewRows([]string{"id", "data", "dataType"}).AddRow("imp-1", "null", "imp"),
 			wantLastUpdate:      time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
 			wantInvalidatedImps: []string{"imp-1"},
 		},
 		{
-			description:  "saved reqs > 0, saved imps > 0, invalidated reqs > 0, invalidated imps > 0",
+			description:  "saved reqs > 0, saved imps > 0, saved resps > 0, invalidated reqs > 0, invalidated imps > 0, invalidated resps > 0",
 			giveFakeTime: time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
 			giveMockRows: sqlmock.NewRows([]string{"id", "data", "dataType"}).
 				AddRow("req-1", "true", "request").
 				AddRow("imp-1", "true", "imp").
+				AddRow("resps-1", "true", "response").
 				AddRow("req-2", "", "request").
-				AddRow("imp-2", "", "imp"),
-			wantLastUpdate:      time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
-			wantSavedReqs:       map[string]json.RawMessage{"req-1": json.RawMessage(`true`)},
-			wantSavedImps:       map[string]json.RawMessage{"imp-1": json.RawMessage(`true`)},
-			wantInvalidatedReqs: []string{"req-2"},
-			wantInvalidatedImps: []string{"imp-2"},
+				AddRow("imp-2", "", "imp").
+				AddRow("resps-2", "", "response"),
+			wantLastUpdate:       time.Date(2020, time.July, 1, 12, 30, 0, 0, time.UTC),
+			wantSavedReqs:        map[string]json.RawMessage{"req-1": json.RawMessage(`true`)},
+			wantSavedImps:        map[string]json.RawMessage{"imp-1": json.RawMessage(`true`)},
+			wantSavedResps:       map[string]json.RawMessage{"resps-1": json.RawMessage(`true`)},
+			wantInvalidatedReqs:  []string{"req-2"},
+			wantInvalidatedImps:  []string{"imp-2"},
+			wantInvalidatedResps: []string{"resps-2"},
 		},
 	}
 
@@ -342,8 +387,10 @@ func TestFetchDeltaSuccess(t *testing.T) {
 
 		assert.Equal(t, tt.wantSavedReqs, saves.Requests, tt.description)
 		assert.Equal(t, tt.wantSavedImps, saves.Imps, tt.description)
+		assert.Equal(t, tt.wantSavedResps, saves.Responses, tt.description)
 		assert.Equal(t, tt.wantInvalidatedReqs, invalidations.Requests, tt.description)
 		assert.Equal(t, tt.wantInvalidatedImps, invalidations.Imps, tt.description)
+		assert.Equal(t, tt.wantInvalidatedResps, invalidations.Responses, tt.description)
 
 		metricsMock.AssertExpectations(t)
 	}
@@ -436,8 +483,10 @@ func TestFetchDeltaErrors(t *testing.T) {
 
 		assert.Nil(t, saves.Requests, tt.description)
 		assert.Nil(t, saves.Imps, tt.description)
+		assert.Nil(t, saves.Responses, tt.description)
 		assert.Nil(t, invalidations.Requests, tt.description)
-		assert.Nil(t, invalidations.Requests, tt.description)
+		assert.Nil(t, invalidations.Imps, tt.description)
+		assert.Nil(t, invalidations.Responses, tt.description)
 
 		metricsMock.AssertExpectations(t)
 	}

@@ -31,12 +31,11 @@ func parsePubRestriction(metadata ConsentMetadata, startbit uint) (*pubRestricti
 		}
 		currentOffset = currentOffset + 12
 		vendors := make([]rangeConsent, numEntries)
-		for i := uint16(0); i < numEntries; i++ {
-			thisConsent, bitsConsumed, err := parseRangeConsent(data, currentOffset, assumedMaxVendorID)
+		for i := range vendors {
+			bitsConsumed, err := parseRangeConsent(&vendors[i], data, currentOffset, assumedMaxVendorID)
 			if err != nil {
 				return nil, 0, err
 			}
-			vendors[i] = thisConsent
 			currentOffset = currentOffset + bitsConsumed
 		}
 		restrictions[restrictData] = pubRestriction{

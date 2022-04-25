@@ -40,20 +40,30 @@ func ParseEagerly(data []byte) (api.VendorList, error) {
 
 func parseVendor(contract vendorListVendorContract) parsedVendor {
 	parsed := parsedVendor{
-		purposes:            mapify(contract.Purposes),
-		legitimateInterests: mapify(contract.LegitimateInterests),
-		flexiblePurposes:    mapify(contract.FlexiblePurposes),
-		specialPurposes:     mapify(contract.SpecialPurposes),
+		purposes:            mapifyPurpose(contract.Purposes),
+		legitimateInterests: mapifyPurpose(contract.LegitimateInterests),
+		flexiblePurposes:    mapifyPurpose(contract.FlexiblePurposes),
+		specialPurposes:     mapifyPurpose(contract.SpecialPurposes),
+		specialFeatures:     mapifySpecialFeature(contract.SpecialFeatures),
 	}
 
 	return parsed
 }
 
-func mapify(input []uint8) map[consentconstants.Purpose]struct{} {
+func mapifyPurpose(input []uint8) map[consentconstants.Purpose]struct{} {
 	m := make(map[consentconstants.Purpose]struct{}, len(input))
 	var s struct{}
 	for _, value := range input {
 		m[consentconstants.Purpose(value)] = s
+	}
+	return m
+}
+
+func mapifySpecialFeature(input []uint8) map[consentconstants.SpecialFeature]struct{} {
+	m := make(map[consentconstants.SpecialFeature]struct{}, len(input))
+	var s struct{}
+	for _, value := range input {
+		m[consentconstants.SpecialFeature(value)] = s
 	}
 	return m
 }
@@ -80,6 +90,7 @@ type parsedVendor struct {
 	legitimateInterests map[consentconstants.Purpose]struct{}
 	flexiblePurposes    map[consentconstants.Purpose]struct{}
 	specialPurposes     map[consentconstants.Purpose]struct{}
+	specialFeatures     map[consentconstants.SpecialFeature]struct{}
 }
 
 func (l parsedVendor) Purpose(purposeID consentconstants.Purpose) (hasPurpose bool) {
@@ -120,6 +131,12 @@ func (l parsedVendor) SpecialPurpose(purposeID consentconstants.Purpose) (hasSpe
 	return
 }
 
+// SpecialFeature returns true if this vendor claims a need for the given special feature
+func (l parsedVendor) SpecialFeature(featureID consentconstants.SpecialFeature) (hasSpecialFeature bool) {
+	_, hasSpecialFeature = l.specialFeatures[featureID]
+	return
+}
+
 type vendorListContract struct {
 	Version uint16                              `json:"vendorListVersion"`
 	Vendors map[string]vendorListVendorContract `json:"vendors"`
@@ -131,4 +148,5 @@ type vendorListVendorContract struct {
 	LegitimateInterests []uint8 `json:"legIntPurposes"`
 	FlexiblePurposes    []uint8 `json:"flexiblePurposes"`
 	SpecialPurposes     []uint8 `json:"specialPurposes"`
+	SpecialFeatures     []uint8 `json:"specialFeatures"`
 }

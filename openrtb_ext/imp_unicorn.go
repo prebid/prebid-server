@@ -6,10 +6,4 @@ type ExtImpUnicorn struct {
 	PublisherID int    `json:"publisherId,omitempty"`
 	MediaID     string `json:"mediaId"`
 	AccountID   int    `json:"accountId"`
-
-	Reward         int      `json:"reward,omitempty"`
-	Region         string   `json:"region,omitempty"`
-	SKADNSupported bool     `json:"skadn_supported,omitempty"`
-	MRAIDSupported bool     `json:"mraid_supported,omitempty"`
-	BidFloor       *float64 `json:"bid_floor,omitempty"`
 }

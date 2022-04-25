@@ -16,7 +16,7 @@ import (
 )
 
 type ZeroClickFraudAdapter struct {
-	EndpointTemplate template.Template
+	EndpointTemplate *template.Template
 }
 
 func (a *ZeroClickFraudAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -185,7 +185,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	}
 
 	bidder := &ZeroClickFraudAdapter{
-		EndpointTemplate: *template,
+		EndpointTemplate: template,
 	}
 	return bidder, nil
 }

@@ -2,6 +2,7 @@ package gdpr
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/prebid/go-gdpr/api"
@@ -9,43 +10,30 @@ import (
 	tcf2ConsentConstants "github.com/prebid/go-gdpr/consentconstants/tcf2"
 	"github.com/prebid/go-gdpr/vendorconsent"
 	tcf2 "github.com/prebid/go-gdpr/vendorconsent/tcf2"
-	"github.com/prebid/go-gdpr/vendorlist"
-	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-// This file implements GDPR permissions for the app.
-// For more info, see https://github.com/prebid/prebid-server/issues/501
-//
-// Nothing in this file is exported. Public APIs can be found in gdpr.go
-
-type Signal int
-
-const (
-	SignalAmbiguous Signal = -1
-	SignalNo        Signal = 0
-	SignalYes       Signal = 1
-)
-
 type permissionsImpl struct {
-	cfg              config.GDPR
-	gdprDefaultValue Signal
-	vendorIDs        map[openrtb_ext.BidderName]uint16
-	fetchVendorList  map[uint8]func(ctx context.Context, id uint16) (vendorlist.VendorList, error)
+	fetchVendorList       VendorListFetcher
+	gdprDefaultValue      string
+	hostVendorID          int
+	nonStandardPublishers map[string]struct{}
+	cfg                   TCF2ConfigReader
+	vendorIDs             map[openrtb_ext.BidderName]uint16
 }
 
 func (p *permissionsImpl) HostCookiesAllowed(ctx context.Context, gdprSignal Signal, consent string) (bool, error) {
-	gdprSignal = p.normalizeGDPR(gdprSignal)
+	gdprSignal = SignalNormalize(gdprSignal, p.gdprDefaultValue)
 
 	if gdprSignal == SignalNo {
 		return true, nil
 	}
 
-	return p.allowSync(ctx, uint16(p.cfg.HostVendorID), consent)
+	return p.allowSync(ctx, uint16(p.hostVendorID), consent, false)
 }
 
 func (p *permissionsImpl) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, gdprSignal Signal, consent string) (bool, error) {
-	gdprSignal = p.normalizeGDPR(gdprSignal)
+	gdprSignal = SignalNormalize(gdprSignal, p.gdprDefaultValue)
 
 	if gdprSignal == SignalNo {
 		return true, nil
@@ -53,23 +41,19 @@ func (p *permissionsImpl) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 
 	id, ok := p.vendorIDs[bidder]
 	if ok {
-		return p.allowSync(ctx, id, consent)
+		vendorException := p.cfg.PurposeVendorException(consentconstants.Purpose(1), bidder)
+		return p.allowSync(ctx, id, consent, vendorException)
 	}
 
 	return false, nil
 }
 
-func (p *permissionsImpl) AuctionActivitiesAllowed(ctx context.Context,
-	bidder openrtb_ext.BidderName,
-	PublisherID string,
-	gdprSignal Signal,
-	consent string,
-	weakVendorEnforcement bool) (allowBidRequest bool, passGeo bool, passID bool, err error) {
-	if _, ok := p.cfg.NonStandardPublisherMap[PublisherID]; ok {
+func (p *permissionsImpl) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string, aliasGVLIDs map[string]uint16) (allowBidReq bool, passGeo bool, passID bool, err error) {
+	if _, ok := p.nonStandardPublishers[PublisherID]; ok {
 		return true, true, true, nil
 	}
 
-	gdprSignal = p.normalizeGDPR(gdprSignal)
+	gdprSignal = SignalNormalize(gdprSignal, p.gdprDefaultValue)
 
 	if gdprSignal == SignalNo {
 		return true, true, true, nil
@@ -85,35 +69,32 @@ func (p *permissionsImpl) AuctionActivitiesAllowed(ctx context.Context,
 	return true, false, false, nil
 
 	// commenting this part out to use when we start supporting TCF 2.0
-	/*
-		if id, ok := p.vendorIDs[bidder]; ok {
-			return p.allowActivities(ctx, id, consent, weakVendorEnforcement)
-		} else if weakVendorEnforcement {
-			return p.allowActivities(ctx, 0, consent, weakVendorEnforcement)
-		}
+	//weakVendorEnforcement := p.cfg.BasicEnforcementVendor(bidder)
 
-		return p.defaultVendorPermissions()
-	*/
+	//if id, ok := p.resolveVendorId(bidderCoreName, bidder, aliasGVLIDs); ok {
+	//	return p.allowActivities(ctx, id, bidderCoreName, consent, weakVendorEnforcement)
+	//} else if weakVendorEnforcement {
+	//	return p.allowActivities(ctx, 0, bidderCoreName, consent, weakVendorEnforcement)
+	//}
+
+	//return p.defaultVendorPermissions()
 }
 
 func (p *permissionsImpl) defaultVendorPermissions() (allowBidRequest bool, passGeo bool, passID bool, err error) {
 	return false, false, false, nil
 }
 
-func (p *permissionsImpl) normalizeGDPR(gdprSignal Signal) Signal {
-	if gdprSignal != SignalAmbiguous {
-		return gdprSignal
+func (p *permissionsImpl) resolveVendorId(bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName, aliasGVLIDs map[string]uint16) (id uint16, ok bool) {
+	if id, ok = aliasGVLIDs[string(bidder)]; ok {
+		return id, ok
 	}
 
-	if p.gdprDefaultValue == SignalNo {
-		return SignalNo
-	}
+	id, ok = p.vendorIDs[bidderCoreName]
 
-	return SignalYes
+	return id, ok
 }
 
-func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consent string) (bool, error) {
-
+func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consent string, vendorException bool) (bool, error) {
 	if consent == "" {
 		return false, nil
 	}
@@ -127,18 +108,24 @@ func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consen
 		return false, nil
 	}
 
-	if !p.cfg.TCF2.Purpose1.Enabled {
+	if !p.cfg.PurposeEnforced(consentconstants.Purpose(1)) {
 		return true, nil
 	}
 	consentMeta, ok := parsedConsent.(tcf2.ConsentMetadata)
 	if !ok {
-		err := fmt.Errorf("Unable to access TCF2 parsed consent")
+		err := errors.New("Unable to access TCF2 parsed consent")
 		return false, err
 	}
-	return p.checkPurpose(consentMeta, vendor, vendorID, tcf2ConsentConstants.InfoStorageAccess, false), nil
+
+	if p.cfg.PurposeOneTreatmentEnabled() && consentMeta.PurposeOneTreatment() {
+		return p.cfg.PurposeOneTreatmentAccessAllowed(), nil
+	}
+
+	enforceVendors := p.cfg.PurposeEnforcingVendors(tcf2ConsentConstants.InfoStorageAccess)
+	return p.checkPurpose(consentMeta, vendor, vendorID, tcf2ConsentConstants.InfoStorageAccess, enforceVendors, vendorException, false), nil
 }
 
-func (p *permissionsImpl) allowActivities(ctx context.Context, vendorID uint16, consent string, weakVendorEnforcement bool) (allowBidRequest bool, passGeo bool, passID bool, err error) {
+func (p *permissionsImpl) allowActivities(ctx context.Context, vendorID uint16, bidder openrtb_ext.BidderName, consent string, weakVendorEnforcement bool) (allowBidRequest bool, passGeo bool, passID bool, err error) {
 	parsedConsent, vendor, err := p.parseVendor(ctx, vendorID, consent)
 	if err != nil {
 		return false, false, false, err
@@ -153,7 +140,7 @@ func (p *permissionsImpl) allowActivities(ctx context.Context, vendorID uint16, 
 		}
 	}
 
-	if !p.cfg.TCF2.Enabled {
+	if !p.cfg.IsEnabled() {
 		return true, false, false, nil
 	}
 
@@ -163,18 +150,23 @@ func (p *permissionsImpl) allowActivities(ctx context.Context, vendorID uint16, 
 		return
 	}
 
-	if p.cfg.TCF2.SpecialPurpose1.Enabled {
-		passGeo = consentMeta.SpecialFeatureOptIn(1) && (vendor.SpecialPurpose(1) || weakVendorEnforcement)
+	if p.cfg.FeatureOneEnforced() {
+		vendorException := p.cfg.FeatureOneVendorException(bidder)
+		passGeo = vendorException || (consentMeta.SpecialFeatureOptIn(1) && (vendor.SpecialFeature(1) || weakVendorEnforcement))
 	} else {
 		passGeo = true
 	}
-	if p.cfg.TCF2.Purpose2.Enabled {
-		allowBidRequest = p.checkPurpose(consentMeta, vendor, vendorID, consentconstants.Purpose(2), weakVendorEnforcement)
+	if p.cfg.PurposeEnforced(consentconstants.Purpose(2)) {
+		enforceVendors := p.cfg.PurposeEnforcingVendors(consentconstants.Purpose(2))
+		vendorException := p.cfg.PurposeVendorException(consentconstants.Purpose(2), bidder)
+		allowBidRequest = p.checkPurpose(consentMeta, vendor, vendorID, consentconstants.Purpose(2), enforceVendors, vendorException, weakVendorEnforcement)
 	} else {
 		allowBidRequest = true
 	}
 	for i := 2; i <= 10; i++ {
-		if p.checkPurpose(consentMeta, vendor, vendorID, consentconstants.Purpose(i), weakVendorEnforcement) {
+		enforceVendors := p.cfg.PurposeEnforcingVendors(consentconstants.Purpose(i))
+		vendorException := p.cfg.PurposeVendorException(consentconstants.Purpose(i), bidder)
+		if p.checkPurpose(consentMeta, vendor, vendorID, consentconstants.Purpose(i), enforceVendors, vendorException, weakVendorEnforcement) {
 			passID = true
 			break
 		}
@@ -187,16 +179,17 @@ const pubRestrictNotAllowed = 0
 const pubRestrictRequireConsent = 1
 const pubRestrictRequireLegitInterest = 2
 
-func (p *permissionsImpl) checkPurpose(consent tcf2.ConsentMetadata, vendor api.Vendor, vendorID uint16, purpose consentconstants.Purpose, weakVendorEnforcement bool) bool {
-	if purpose == tcf2ConsentConstants.InfoStorageAccess && p.cfg.TCF2.PurposeOneTreatment.Enabled && consent.PurposeOneTreatment() {
-		return p.cfg.TCF2.PurposeOneTreatment.AccessAllowed
-	}
+func (p *permissionsImpl) checkPurpose(consent tcf2.ConsentMetadata, vendor api.Vendor, vendorID uint16, purpose consentconstants.Purpose, enforceVendors, vendorException, weakVendorEnforcement bool) bool {
 	if consent.CheckPubRestriction(uint8(purpose), pubRestrictNotAllowed, vendorID) {
 		return false
 	}
 
-	purposeAllowed := consent.PurposeAllowed(purpose) && (weakVendorEnforcement || (vendor.Purpose(purpose) && consent.VendorConsent(vendorID)))
-	legitInterest := consent.PurposeLITransparency(purpose) && (weakVendorEnforcement || (vendor.LegitimateInterest(purpose) && consent.VendorLegitInterest(vendorID)))
+	if vendorException {
+		return true
+	}
+
+	purposeAllowed := p.consentEstablished(consent, vendor, vendorID, purpose, enforceVendors, weakVendorEnforcement)
+	legitInterest := p.legitInterestEstablished(consent, vendor, vendorID, purpose, enforceVendors, weakVendorEnforcement)
 
 	if consent.CheckPubRestriction(uint8(purpose), pubRestrictRequireConsent, vendorID) {
 		return purposeAllowed
@@ -209,12 +202,44 @@ func (p *permissionsImpl) checkPurpose(consent tcf2.ConsentMetadata, vendor api.
 	return purposeAllowed || legitInterest
 }
 
+func (p *permissionsImpl) consentEstablished(consent tcf2.ConsentMetadata, vendor api.Vendor, vendorID uint16, purpose consentconstants.Purpose, enforceVendors, weakVendorEnforcement bool) bool {
+	if !consent.PurposeAllowed(purpose) {
+		return false
+	}
+	if weakVendorEnforcement {
+		return true
+	}
+	if !enforceVendors {
+		return true
+	}
+	if vendor.Purpose(purpose) && consent.VendorConsent(vendorID) {
+		return true
+	}
+	return false
+}
+
+func (p *permissionsImpl) legitInterestEstablished(consent tcf2.ConsentMetadata, vendor api.Vendor, vendorID uint16, purpose consentconstants.Purpose, enforceVendors, weakVendorEnforcement bool) bool {
+	if !consent.PurposeLITransparency(purpose) {
+		return false
+	}
+	if weakVendorEnforcement {
+		return true
+	}
+	if !enforceVendors {
+		return true
+	}
+	if vendor.LegitimateInterest(purpose) && consent.VendorLegitInterest(vendorID) {
+		return true
+	}
+	return false
+}
+
 func (p *permissionsImpl) parseVendor(ctx context.Context, vendorID uint16, consent string) (parsedConsent api.VendorConsents, vendor api.Vendor, err error) {
 	parsedConsent, err = vendorconsent.ParseString(consent)
 	if err != nil {
 		err = &ErrorMalformedConsent{
-			consent: consent,
-			cause:   err,
+			Consent: consent,
+			Cause:   err,
 		}
 		return
 	}
@@ -224,7 +249,7 @@ func (p *permissionsImpl) parseVendor(ctx context.Context, vendorID uint16, cons
 		return
 	}
 
-	vendorList, err := p.fetchVendorList[version](ctx, parsedConsent.VendorListVersion())
+	vendorList, err := p.fetchVendorList(ctx, parsedConsent.VendorListVersion())
 	if err != nil {
 		return
 	}
@@ -254,7 +279,7 @@ func (a AlwaysAllow) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.B
 	return true, nil
 }
 
-func (a AlwaysAllow) AuctionActivitiesAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string, weakVendorEnforcement bool) (allowBidRequest bool, passGeo bool, passID bool, err error) {
+func (a AlwaysAllow) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string, aliasGVLIDs map[string]uint16) (allowBidReq bool, passGeo bool, passID bool, err error) {
 	return true, true, true, nil
 }
 
@@ -271,6 +296,9 @@ func (v vendorTrue) LegitimateInterest(purposeID consentconstants.Purpose) bool 
 	return true
 }
 func (v vendorTrue) LegitimateInterestStrict(purposeID consentconstants.Purpose) bool {
+	return true
+}
+func (v vendorTrue) SpecialFeature(featureID consentconstants.SpecialFeature) (hasSpecialFeature bool) {
 	return true
 }
 func (v vendorTrue) SpecialPurpose(purposeID consentconstants.Purpose) (hasSpecialPurpose bool) {

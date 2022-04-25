@@ -1,0 +1,29 @@
+{
+  "mockBidRequest": {
+    "id": "unsupported-audio-request",
+    "imp": [
+      {
+        "id": "unsupported-audio-imp",
+        "audio": {
+          "mimes": ["video/mp4"]
+        },
+        "ext": {
+          "bidder": {
+          	"adSlot": "AdTag_Div1@300x250",
+						"publisherId": "1234"			
+	      	}
+        }
+      }
+    ], 
+    "site": {
+			"id": "siteID"
+		}
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Invalid MediaType. PubMatic only supports Banner and Video. Ignoring ImpID=unsupported-audio-imp",
+      "comparison": "literal"
+    }
+  ]
+}

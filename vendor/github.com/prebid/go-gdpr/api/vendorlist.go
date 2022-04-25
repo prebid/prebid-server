@@ -34,4 +34,6 @@ type Vendor interface {
 	LegitimateInterestStrict(purposeID consentconstants.Purpose) (hasLegitimateInterest bool)
 	// SpecialPurpose returns true if this vendor claims a need for the given special purpose
 	SpecialPurpose(purposeID consentconstants.Purpose) (hasSpecialPurpose bool)
+	// SpecialFeature returns true if this vendor claims a need for the given special feature
+	SpecialFeature(featureID consentconstants.SpecialFeature) (hasSpecialFeature bool)
 }

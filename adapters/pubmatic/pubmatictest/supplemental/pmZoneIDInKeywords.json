@@ -36,8 +36,7 @@
             "wrapper": {
               "version": 1,
               "profile": 5123
-            },
-            "mraid_supported": true
+            }
           }
         }
       }

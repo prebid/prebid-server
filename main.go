@@ -4,11 +4,11 @@ import (
 	"flag"
 	"math/rand"
 	"net/http"
+	"runtime"
 	"time"
 
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
-	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/router"
 	"github.com/prebid/prebid-server/server"
 	"github.com/prebid/prebid-server/util/task"
@@ -17,14 +17,6 @@ import (
 	"github.com/golang/glog"
 	"github.com/spf13/viper"
 )
-
-// Rev holds binary revision string
-// Set manually at build time using:
-//    go build -ldflags "-X main.Rev=`git rev-parse --short HEAD`"
-// Populated automatically at build / releases
-//   `gox -os="linux" -arch="386" -output="{{.Dir}}_{{.OS}}_{{.Arch}}" -ldflags "-X main.Rev=`git rev-parse --short HEAD`" -verbose ./...;`
-// See issue #559
-var Rev string
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
@@ -38,6 +30,14 @@ func main() {
 		glog.Exitf("Configuration could not be loaded or did not pass validation: %v", err)
 	}
 
+	// Create a soft memory limit on the total amount of memory that PBS uses to tune the behavior
+	// of the Go garbage collector. In summary, `cfg.GarbageCollectorThreshold` serves as a fixed cost
+	// of memory that is going to be held garbage before a garbage collection cycle is triggered.
+	// This amount of virtual memory won’t translate into physical memory allocation unless we attempt
+	// to read or write to the slice below, which PBS will not do.
+	garbageCollectionThreshold := make([]byte, cfg.GarbageCollectorThreshold)
+	defer runtime.KeepAlive(garbageCollectionThreshold)
+
 	// write PID to file for deploy management
 	if cfg.DeployPIDEnabled {
 		pid, err := handleDeployPID(cfg.DeployPIDPath, cfg.DeployPIDMode)
@@ -46,7 +46,7 @@ func main() {
 		}
 	}
 
-	err = serve(Rev, cfg)
+	err = serve(cfg)
 	if err != nil {
 		glog.Exitf("prebid-server failed: %v", err)
 	}
@@ -60,7 +60,7 @@ func loadConfig() (*config.Configuration, error) {
 	return config.New(v)
 }
 
-func serve(revision string, cfg *config.Configuration) error {
+func serve(cfg *config.Configuration) error {
 	fetchingInterval := time.Duration(cfg.CurrencyConverter.FetchIntervalSeconds) * time.Second
 	staleRatesThreshold := time.Duration(cfg.CurrencyConverter.StaleRatesSeconds) * time.Second
 	currencyConverter := currency.NewRateConverter(&http.Client{}, cfg.CurrencyConverter.FetchURL, staleRatesThreshold)
@@ -79,8 +79,6 @@ func serve(revision string, cfg *config.Configuration) error {
 		return err
 	}
 
-	pbc.InitPrebidCache(cfg.CacheURL.GetBaseURL())
-
 	corsRouter := router.SupportCORS(r)
 	// wrap corsRouter in otel handler
 	otelHandler := otelhttp.NewHandler(corsRouter, "prebid/openrtb",
@@ -92,8 +90,7 @@ func serve(revision string, cfg *config.Configuration) error {
 			return false
 		}),
 	)
-
-	server.Listen(cfg, router.NoCache{Handler: otelHandler}, router.Admin(revision, currencyConverter, fetchingInterval), r.MetricsEngine)
+	server.Listen(cfg, router.NoCache{Handler: otelHandler}, router.Admin(currencyConverter, fetchingInterval), r.MetricsEngine)
 
 	doneCB()
 	r.Shutdown()

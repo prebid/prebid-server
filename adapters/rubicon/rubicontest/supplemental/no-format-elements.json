@@ -13,8 +13,7 @@
           "bidder": {
             "accountId": 1001,
             "siteId":113932,
-            "zoneId":535510,
-            "mraid_supported":true
+            "zoneId":535510
           }
         }
       }
@@ -22,6 +21,9 @@
   },
 
   "expectedMakeRequestsErrors": [
-    
+    {
+      "value": "rubicon imps must have at least one imp.format element",
+      "comparison": "literal"
+    }
   ]
 }

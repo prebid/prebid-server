@@ -32,7 +32,7 @@ func TestAccountFetcher(t *testing.T) {
 	assertErrorCount(t, 0, errs)
 	assert.JSONEq(t, `{"disabled":false, "id":"valid"}`, string(account))
 
-	account, errs = fetcher.FetchAccount(context.Background(), "nonexistent")
+	_, errs = fetcher.FetchAccount(context.Background(), "nonexistent")
 	assertErrorCount(t, 1, errs)
 	assert.Error(t, errs[0])
 	assert.Equal(t, stored_requests.NotFoundError{"nonexistent", "Account"}, errs[0])

@@ -10,4 +10,8 @@ capabilities:
     mediaTypes:
     - banner
     - video
-   
+userSync:
+  iframe:
+    url: "https://rtb.ninthdecimal.com/xp/user-sync?acctid={aid}&&redirect={{.RedirectURL}}"
+    userMacro: "$UID"
+

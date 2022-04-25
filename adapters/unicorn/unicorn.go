@@ -13,37 +13,18 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-// Region ...
-type Region string
-
-const (
-	JP Region = "jp"
-)
-
-// SKAN IDs must be lower case
-var unicornExtSKADNetIDs = map[string]bool{
-	"578prtvx9j.skadnetwork": true,
-}
-
 type adapter struct {
-	endpoint         string
-	SupportedRegions map[Region]string
+	endpoint string
 }
 
 // unicornImpExt is imp ext for UNICORN
 type unicornImpExt struct {
 	Context *unicornImpExtContext     `json:"context,omitempty"`
 	Bidder  openrtb_ext.ExtImpUnicorn `json:"bidder"`
-	SKADN   *openrtb_ext.SKADN        `json:"skadn,omitempty"`
 }
 
 type unicornImpExtContext struct {
 	Data interface{} `json:"data,omitempty"`
-}
-
-type unicornBannerExt struct {
-	Rewarded                int  `json:"rewarded"`
-	AllowsCustomCloseButton bool `json:"allowscustomclosebutton"`
 }
 
 // unicornExt is ext for UNICORN
@@ -52,17 +33,10 @@ type unicornExt struct {
 	AccountID int64                     `json:"accountId,omitempty"`
 }
 
-type unicornVideoExt struct {
-	Rewarded int `json:"rewarded"`
-}
-
 // Builder builds a new instance of the UNICORN adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,
-		SupportedRegions: map[Region]string{
-			JP: config.XAPI.EndpointJP,
-		},
 	}
 	return bidder, nil
 }
@@ -90,175 +64,38 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		}
 	}
 
-	numRequests := len(request.Imp)
-
-	requestData := make([]*adapters.RequestData, 0, numRequests)
-
-	headers := http.Header{}
-	headers.Add("Content-Type", "application/json;charset=utf-8")
-	headers.Add("Accept", "application/json")
-	headers.Add("User-Agent", "prebid-server/1.0")
-
-	errs := make([]error, 0, numRequests)
-
-	// clone the request imp array
-	requestImpCopy := request.Imp
-
-	var err error
-
-	for i := 0; i < numRequests; i++ {
-		skanSent := false
-
-		// clone current imp
-		thisImp := requestImpCopy[i]
-
-		// extract bidder extension
-		var bidderExt adapters.ExtImpBidder
-		if err = json.Unmarshal(thisImp.Ext, &bidderExt); err != nil {
-			errs = append(errs, &errortypes.BadInput{
-				Message: fmt.Sprintf("Error while decoding imp[%d].ext: %s", i, err),
-			})
-			continue
-		}
-
-		// unmarshal bidder extension to unicorn extension
-		var unicornExt openrtb_ext.ExtImpUnicorn
-		if err = json.Unmarshal(bidderExt.Bidder, &unicornExt); err != nil {
-			errs = append(errs, &errortypes.BadInput{
-				Message: err.Error(),
-			})
-			continue
-		}
-
-		if thisImp.Banner != nil {
-			if unicornExt.MRAIDSupported {
-				bannerCopy := *thisImp.Banner
-
-				bannerExt := unicornBannerExt{
-					Rewarded:                unicornExt.Reward,
-					AllowsCustomCloseButton: false,
-				}
-				bannerCopy.Ext, err = json.Marshal(&bannerExt)
-				if err != nil {
-					errs = append(errs, err)
-					continue
-				}
-
-				thisImp.Banner = &bannerCopy
-			} else {
-				thisImp.Banner = nil
-			}
-		}
-
-		if thisImp.Video != nil {
-			videoCopy := *thisImp.Video
-
-			videoExt := unicornVideoExt{
-				Rewarded: unicornExt.Reward,
-			}
-
-			videoCopy.Ext, err = json.Marshal(&videoExt)
-			if err != nil {
-				errs = append(errs, err)
-				continue
-			}
-
-			thisImp.Video = &videoCopy
-		}
-
-		// Overwrite BidFloor if present
-		if unicornExt.BidFloor != nil {
-			thisImp.BidFloor = *unicornExt.BidFloor
-		}
-
-		impExt := unicornImpExt{}
-
-		if unicornExt.SKADNSupported {
-			skadn := adapters.FilterPrebidSKADNExt(bidderExt.Prebid, unicornExtSKADNetIDs)
-			// only add if present
-			if len(skadn.SKADNetIDs) > 0 {
-				impExt.SKADN = &skadn
-				skanSent = true
-			}
-		}
-
-		impExt.Bidder = openrtb_ext.ExtImpUnicorn{
-			PlacementID: unicornExt.PlacementID,
-			PublisherID: unicornExt.PublisherID,
-			MediaID:     unicornExt.MediaID,
-			AccountID:   unicornExt.AccountID,
-		}
-
-		thisImp.Ext, err = json.Marshal(&impExt)
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-
-		// reinit the values in the request object
-		request.Imp = []openrtb2.Imp{thisImp}
-
-		var modifiableSource openrtb2.Source
-		if request.Source != nil {
-			modifiableSource = *request.Source
-		} else {
-			modifiableSource = openrtb2.Source{}
-		}
-		modifiableSource.Ext = setSourceExt()
-		request.Source = &modifiableSource
-
-		request.Ext, err = setExt(request)
-		if err != nil {
-			return nil, []error{err}
-		}
-
-		// json marshal the request
-		reqJSON, err := json.Marshal(request)
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-
-		// assign the default uri
-		uri := a.endpoint
-
-		// assign a region based uri if it exists
-		if endpoint, ok := a.SupportedRegions[Region(unicornExt.Region)]; ok {
-			uri = endpoint
-		}
-
-		// Tapjoy Record placement type
-		placementType := adapters.Interstitial
-		if unicornExt.Reward == 1 {
-			placementType = adapters.Rewarded
-		}
-
-		// build request data object
-		reqData := &adapters.RequestData{
-			Method:  "POST",
-			Uri:     uri,
-			Body:    reqJSON,
-			Headers: headers,
-
-			TapjoyData: adapters.TapjoyData{
-				Bidder:        "unicorn",
-				PlacementType: placementType,
-				Region:        unicornExt.Region,
-				SKAN: adapters.SKAN{
-					Supported: unicornExt.SKADNSupported,
-					Sent:      skanSent,
-				},
-				MRAID: adapters.MRAID{
-					Supported: unicornExt.MRAIDSupported,
-				},
-			},
-		}
-
-		// append to request data array
-		requestData = append(requestData, reqData)
+	err := modifyImps(request)
+	if err != nil {
+		return nil, []error{err}
 	}
 
-	return requestData, errs
+	var modifiableSource openrtb2.Source
+	if request.Source != nil {
+		modifiableSource = *request.Source
+	} else {
+		modifiableSource = openrtb2.Source{}
+	}
+	modifiableSource.Ext = setSourceExt()
+	request.Source = &modifiableSource
+
+	request.Ext, err = setExt(request)
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	requestJSON, err := json.Marshal(request)
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	requestData := &adapters.RequestData{
+		Method:  "POST",
+		Uri:     a.endpoint,
+		Body:    requestJSON,
+		Headers: getHeaders(request),
+	}
+
+	return []*adapters.RequestData{requestData}, nil
 }
 
 func getHeaders(request *openrtb2.BidRequest) http.Header {
