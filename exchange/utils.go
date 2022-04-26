@@ -55,7 +55,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 
 	allowedBidderRequests = make([]BidderRequest, 0, 0)
 
-	storedBidResp := stored_responses.InitStoredBidResponses(req.BidRequest, auctionReq.StoredBidResponses)
+	bidderImpWithBidResp := stored_responses.InitStoredBidResponses(req.BidRequest, auctionReq.StoredBidResponses)
 
 	impsByBidder, err := splitImps(req.BidRequest.Imp)
 	if err != nil {
@@ -71,7 +71,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 	var allBidderRequests []BidderRequest
 	allBidderRequests, errs = getAuctionBidderRequests(auctionReq, requestExt, bidderToSyncerKey, impsByBidder, aliases)
 
-	bidderNameToBidderReq := buildBidResponseRequest(req.BidRequest, storedBidResp.BidderToImpToResponses, aliases)
+	bidderNameToBidderReq := buildBidResponseRequest(req.BidRequest, bidderImpWithBidResp, aliases)
 	//this function should be executed after getAuctionBidderRequests
 	allBidderRequests = mergeBidderRequests(allBidderRequests, bidderNameToBidderReq)
 

@@ -18,45 +18,39 @@ type BidderImpsWithBidResponses map[openrtb_ext.BidderName]map[string]json.RawMe
 type ImpsWithBidResponses map[string]json.RawMessage
 type ImpBidderStoredResp map[string]map[string]json.RawMessage
 
-type StoredBidResponses struct {
-	StoredBidResponses     ImpBidderStoredResp
-	BidderToImpToResponses BidderImpsWithBidResponses
-}
-
-func InitStoredBidResponses(req *openrtb2.BidRequest, storedBidResponses ImpBidderStoredResp) StoredBidResponses {
-	storedResponses := StoredBidResponses{StoredBidResponses: storedBidResponses}
-	storedResponses.removeImpsWithStoredResponses(req)
-	storedResponses.buildStoredResp()
-	return storedResponses
+func InitStoredBidResponses(req *openrtb2.BidRequest, storedBidResponses ImpBidderStoredResp) BidderImpsWithBidResponses {
+	removeImpsWithStoredResponses(req, storedBidResponses)
+	return buildStoredResp(storedBidResponses)
 }
 
 // removeImpsWithStoredResponses deletes imps with stored bid resp
-func (sr *StoredBidResponses) removeImpsWithStoredResponses(req *openrtb2.BidRequest) {
+func removeImpsWithStoredResponses(req *openrtb2.BidRequest, storedBidResponses ImpBidderStoredResp) {
 	imps := req.Imp
 	req.Imp = nil //to indicate this bidder doesn't have real requests
 	for _, imp := range imps {
-		if _, ok := sr.StoredBidResponses[imp.ID]; !ok {
+		if _, ok := storedBidResponses[imp.ID]; !ok {
 			//add real imp back to request
 			req.Imp = append(req.Imp, imp)
 		}
 	}
 }
 
-func (sr *StoredBidResponses) buildStoredResp() {
+func buildStoredResp(storedBidResponses ImpBidderStoredResp) BidderImpsWithBidResponses {
 	// bidder -> imp id -> stored bid resp
-	sr.BidderToImpToResponses = BidderImpsWithBidResponses{}
-	for impID, storedData := range sr.StoredBidResponses {
+	bidderToImpToResponses := BidderImpsWithBidResponses{}
+	for impID, storedData := range storedBidResponses {
 		for bidderName, storedResp := range storedData {
-			if _, ok := sr.BidderToImpToResponses[openrtb_ext.BidderName(bidderName)]; !ok {
+			if _, ok := bidderToImpToResponses[openrtb_ext.BidderName(bidderName)]; !ok {
 				//new bidder with stored bid responses
 				impToStoredResp := ImpsWithBidResponses{}
 				impToStoredResp[impID] = storedResp
-				sr.BidderToImpToResponses[openrtb_ext.BidderName(bidderName)] = impToStoredResp
+				bidderToImpToResponses[openrtb_ext.BidderName(bidderName)] = impToStoredResp
 			} else {
-				sr.BidderToImpToResponses[openrtb_ext.BidderName(bidderName)][impID] = storedResp
+				bidderToImpToResponses[openrtb_ext.BidderName(bidderName)][impID] = storedResp
 			}
 		}
 	}
+	return bidderToImpToResponses
 }
 
 func extractStoredResponsesIds(impInfo []ImpExtPrebidData,

@@ -71,8 +71,7 @@ func TestRemoveImpsWithStoredResponses(t *testing.T) {
 	}
 	for _, testCase := range testCases {
 		request := testCase.reqIn
-		sr := StoredBidResponses{StoredBidResponses: testCase.storedBidResponses}
-		sr.removeImpsWithStoredResponses(request)
+		removeImpsWithStoredResponses(request, testCase.storedBidResponses)
 		assert.Equal(t, testCase.expectedImps, request.Imp, "incorrect Impressions for testCase %s", testCase.description)
 	}
 }
@@ -155,10 +154,9 @@ func TestBuildStoredBidResponses(t *testing.T) {
 
 	for _, testCase := range testCases {
 
-		sr := StoredBidResponses{StoredBidResponses: testCase.storedBidResponses}
-		sr.buildStoredResp()
+		bidderToImpToResponses := buildStoredResp(testCase.storedBidResponses)
 		for expectedBidderName := range testCase.expectedResult {
-			assert.Equal(t, testCase.expectedResult[expectedBidderName], sr.BidderToImpToResponses[expectedBidderName], "incorrect stored responses for testCase %s", testCase.description)
+			assert.Equal(t, testCase.expectedResult[expectedBidderName], bidderToImpToResponses[expectedBidderName], "incorrect stored responses for testCase %s", testCase.description)
 		}
 	}
 }
