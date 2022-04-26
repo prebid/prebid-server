@@ -21,7 +21,7 @@ func TestNewAdminServer(t *testing.T) {
 	}
 	server := newAdminServer(cfg, http.HandlerFunc(handler))
 	if server.Addr != "prebid.com:6060" {
-		t.Errorf("Admin server address should be %s. Got %s", "prebid.com:6060\n", server.Addr)
+		t.Errorf("Admin server address should be %s. Got %s", "prebid.com:6060", server.Addr)
 	}
 }
 
@@ -33,7 +33,7 @@ func TestNewMainServer(t *testing.T) {
 	}
 	server := newMainServer(cfg, http.HandlerFunc(handler))
 	if server.Addr != "prebid.com:8000" {
-		t.Errorf("Admin server address should be %s. Got %s", "prebid.com:8000\n", server.Addr)
+		t.Errorf("Admin server address should be %s. Got %s", "prebid.com:8000", server.Addr)
 	}
 }
 
@@ -82,7 +82,7 @@ func forwardSignal(t *testing.T, outbound chan<- struct{}, inbound <-chan os.Sig
 	var s struct{}
 	sig := <-inbound
 	if sig != os.Interrupt {
-		t.Errorf("Unexpected signal: %s\n", sig.String())
+		t.Errorf("Unexpected signal: %s", sig.String())
 	}
 	outbound <- s
 }
@@ -105,15 +105,15 @@ func TestNewSocketServer(t *testing.T) {
 	if ret := newSocketServer(cfg, nil); ret != nil {
 		switch {
 		case ret.Addr != mock_server.Addr:
-			t.Errorf("[%s] Addr invalide: %v != %v\n",
+			t.Errorf("[%s] Addr invalide: %v != %v",
 				func_name, ret.Addr, mock_server.Addr)
 			fallthrough
 		case ret.ReadTimeout != mock_server.ReadTimeout:
-			t.Errorf("[%s] ReadTimeout invalide: %v != %v\n",
+			t.Errorf("[%s] ReadTimeout invalide: %v != %v",
 				func_name, ret.ReadTimeout, mock_server.ReadTimeout)
 			fallthrough
 		case ret.WriteTimeout != mock_server.WriteTimeout:
-			t.Errorf("[%s] WriteTimeout invalide: %v != %v\n",
+			t.Errorf("[%s] WriteTimeout invalide: %v != %v",
 				func_name, ret.WriteTimeout, mock_server.WriteTimeout)
 		}
 		ret.Close()
@@ -142,13 +142,13 @@ func TestNewMainServer_(t *testing.T) {
 	if ret := newMainServer(cfg, nil); ret != nil {
 		switch {
 		case ret.Addr != mock_server.Addr:
-			t.Errorf("[%s] Addr invalide: %v != %v\n",
+			t.Errorf("[%s] Addr invalide: %v != %v",
 				func_name, ret.Addr, mock_server.Addr)
 		case ret.ReadTimeout != mock_server.ReadTimeout:
-			t.Errorf("[%s] ReadTimeout invalide: %v != %v\n",
+			t.Errorf("[%s] ReadTimeout invalide: %v != %v",
 				func_name, ret.ReadTimeout, mock_server.ReadTimeout)
 		case ret.WriteTimeout != mock_server.WriteTimeout:
-			t.Errorf("[%s] WriteTimeout invalide: %v != %v\n",
+			t.Errorf("[%s] WriteTimeout invalide: %v != %v",
 				func_name, ret.WriteTimeout, mock_server.WriteTimeout)
 		}
 		ret.Close()
@@ -202,7 +202,7 @@ func TestNewAdminServer_(t *testing.T) {
 		t.Errorf("[%s] ret : isNil()", func_name)
 	} else {
 		if ret.Addr != mock_server.Addr {
-			t.Errorf("[%s] Addr invalide: %v != %v\n",
+			t.Errorf("[%s] Addr invalide: %v != %v",
 				func_name, ret.Addr, mock_server.Addr)
 		}
 		ret.Close()
