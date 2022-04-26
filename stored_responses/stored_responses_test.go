@@ -15,7 +15,7 @@ func TestRemoveImpsWithStoredResponses(t *testing.T) {
 	testCases := []struct {
 		description        string
 		reqIn              *openrtb2.BidRequest
-		storedBidResponses map[string]map[string]json.RawMessage
+		storedBidResponses ImpBidderStoredResp
 		expectedImps       []openrtb2.Imp
 	}{
 		{
@@ -23,7 +23,7 @@ func TestRemoveImpsWithStoredResponses(t *testing.T) {
 			reqIn: &openrtb2.BidRequest{Imp: []openrtb2.Imp{
 				{ID: "imp-id1"},
 			}},
-			storedBidResponses: map[string]map[string]json.RawMessage{
+			storedBidResponses: ImpBidderStoredResp{
 				"imp-id1": {"appnexus": bidRespId1},
 			},
 			expectedImps: nil,
@@ -34,7 +34,7 @@ func TestRemoveImpsWithStoredResponses(t *testing.T) {
 				{ID: "imp-id1"},
 				{ID: "imp-id2"},
 			}},
-			storedBidResponses: map[string]map[string]json.RawMessage{
+			storedBidResponses: ImpBidderStoredResp{
 				"imp-id1": {"appnexus": bidRespId1},
 			},
 			expectedImps: []openrtb2.Imp{
@@ -49,7 +49,7 @@ func TestRemoveImpsWithStoredResponses(t *testing.T) {
 				{ID: "imp-id1"},
 				{ID: "imp-id2"},
 			}},
-			storedBidResponses: map[string]map[string]json.RawMessage{
+			storedBidResponses: ImpBidderStoredResp{
 				"imp-id1": {"appnexus": bidRespId1},
 				"imp-id2": {"appnexus": bidRespId1},
 			},
@@ -83,16 +83,12 @@ func TestBuildStoredBidResponses(t *testing.T) {
 	bidRespId3 := json.RawMessage(`{"id": "resp_id3"}`)
 	testCases := []struct {
 		description        string
-		reqIn              *openrtb2.BidRequest
-		storedBidResponses map[string]map[string]json.RawMessage
+		storedBidResponses ImpBidderStoredResp
 		expectedResult     BidderImpsWithBidResponses
 	}{
 		{
-			description: "request with one imp and stored response for this imp with one bidder",
-			reqIn: &openrtb2.BidRequest{Imp: []openrtb2.Imp{
-				{ID: "imp-id1"},
-			}},
-			storedBidResponses: map[string]map[string]json.RawMessage{
+			description: "one imp and stored response for this imp with one bidder",
+			storedBidResponses: ImpBidderStoredResp{
 				"imp-id1": {"bidderA": bidRespId1},
 			},
 			expectedResult: BidderImpsWithBidResponses{
@@ -102,11 +98,8 @@ func TestBuildStoredBidResponses(t *testing.T) {
 			},
 		},
 		{
-			description: "request with one imp and stored response for this imp with two bidders",
-			reqIn: &openrtb2.BidRequest{Imp: []openrtb2.Imp{
-				{ID: "imp-id1"},
-			}},
-			storedBidResponses: map[string]map[string]json.RawMessage{
+			description: "one imp and stored response for this imp with two bidders",
+			storedBidResponses: ImpBidderStoredResp{
 				"imp-id1": {"bidderA": bidRespId1, "bidderB": bidRespId2},
 			},
 
@@ -120,12 +113,8 @@ func TestBuildStoredBidResponses(t *testing.T) {
 			},
 		},
 		{
-			description: "request with two imps and stored response for this imp with two bidders",
-			reqIn: &openrtb2.BidRequest{Imp: []openrtb2.Imp{
-				{ID: "imp-id1"},
-				{ID: "imp-id2"},
-			}},
-			storedBidResponses: map[string]map[string]json.RawMessage{
+			description: "two imps and stored response for this imp with two bidders",
+			storedBidResponses: ImpBidderStoredResp{
 				"imp-id1": {"bidderA": bidRespId1},
 				"imp-id2": {"bidderB": bidRespId2},
 			},
@@ -139,15 +128,9 @@ func TestBuildStoredBidResponses(t *testing.T) {
 				},
 			},
 		},
-
 		{
-			description: "request with three imps and stored response for these imps with two bidders",
-			reqIn: &openrtb2.BidRequest{Imp: []openrtb2.Imp{
-				{ID: "imp-id1"},
-				{ID: "imp-id2"},
-				{ID: "imp-id3"},
-			}},
-			storedBidResponses: map[string]map[string]json.RawMessage{
+			description: "three imps and stored response for these imps with two bidders",
+			storedBidResponses: ImpBidderStoredResp{
 				"imp-id1": {"bidderA": bidRespId1},
 				"imp-id2": {"bidderB": bidRespId2},
 				"imp-id3": {"bidderA": bidRespId3},
@@ -162,6 +145,11 @@ func TestBuildStoredBidResponses(t *testing.T) {
 					"imp-id2": bidRespId2,
 				},
 			},
+		},
+		{
+			description:        "empty stored responses",
+			storedBidResponses: ImpBidderStoredResp{},
+			expectedResult:     BidderImpsWithBidResponses{},
 		},
 	}
 
@@ -319,8 +307,8 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
 	testCases := []struct {
 		description                    string
 		requestJson                    []byte
-		expectedStoredAuctionResponses map[string]json.RawMessage
-		expectedStoredBidResponses     map[string]map[string]json.RawMessage
+		expectedStoredAuctionResponses ImpsWithBidResponses
+		expectedStoredBidResponses     ImpBidderStoredResp
 	}{
 		{
 			description: "No stored responses",
@@ -354,10 +342,10 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
             		}
     			  }
     			]}`),
-			expectedStoredAuctionResponses: map[string]json.RawMessage{
+			expectedStoredAuctionResponses: ImpsWithBidResponses{
 				"imp-id1": bidStoredResp1,
 			},
-			expectedStoredBidResponses: map[string]map[string]json.RawMessage{},
+			expectedStoredBidResponses: ImpBidderStoredResp{},
 		},
 		{
 			description: "Stored bid response one imp",
@@ -376,8 +364,8 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
             		}
     			  }
     			]}`),
-			expectedStoredAuctionResponses: map[string]json.RawMessage{},
-			expectedStoredBidResponses: map[string]map[string]json.RawMessage{
+			expectedStoredAuctionResponses: ImpsWithBidResponses{},
+			expectedStoredBidResponses: ImpBidderStoredResp{
 				"imp-id1": {"bidderA": bidStoredResp1},
 			},
 		},
@@ -399,8 +387,8 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
             		}
     			  }
     			]}`),
-			expectedStoredAuctionResponses: map[string]json.RawMessage{},
-			expectedStoredBidResponses: map[string]map[string]json.RawMessage{
+			expectedStoredAuctionResponses: ImpsWithBidResponses{},
+			expectedStoredBidResponses: ImpBidderStoredResp{
 				"imp-id1": {"bidderA": bidStoredResp1, "bidderB": bidStoredResp2},
 			},
 		},
@@ -426,10 +414,10 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
             		}
     			  }
     			]}`),
-			expectedStoredAuctionResponses: map[string]json.RawMessage{
+			expectedStoredAuctionResponses: ImpsWithBidResponses{
 				"imp-id1": bidStoredResp1,
 			},
-			expectedStoredBidResponses: map[string]map[string]json.RawMessage{
+			expectedStoredBidResponses: ImpBidderStoredResp{
 				"imp-id1": {"bidderA": bidStoredResp1, "bidderB": bidStoredResp2},
 			},
 		},
@@ -476,12 +464,12 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
             		}
     			  }
     			]}`),
-			expectedStoredAuctionResponses: map[string]json.RawMessage{
+			expectedStoredAuctionResponses: ImpsWithBidResponses{
 				"imp-id1": bidStoredResp1,
 				"imp-id2": bidStoredResp2,
 				"imp-id3": bidStoredResp3,
 			},
-			expectedStoredBidResponses: map[string]map[string]json.RawMessage{},
+			expectedStoredBidResponses: ImpBidderStoredResp{},
 		},
 		{
 			description: "Stored auction response three imps duplicated stored auction response",
@@ -526,12 +514,12 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
             		}
     			  }
     			]}`),
-			expectedStoredAuctionResponses: map[string]json.RawMessage{
+			expectedStoredAuctionResponses: ImpsWithBidResponses{
 				"imp-id1": bidStoredResp1,
 				"imp-id2": bidStoredResp2,
 				"imp-id3": bidStoredResp2,
 			},
-			expectedStoredBidResponses: map[string]map[string]json.RawMessage{},
+			expectedStoredBidResponses: ImpBidderStoredResp{},
 		},
 		{
 			description: "Stored bid responses two bidders two imp",
@@ -565,8 +553,8 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
             		}
     			  }
     			]}`),
-			expectedStoredAuctionResponses: map[string]json.RawMessage{},
-			expectedStoredBidResponses: map[string]map[string]json.RawMessage{
+			expectedStoredAuctionResponses: ImpsWithBidResponses{},
+			expectedStoredBidResponses: ImpBidderStoredResp{
 				"imp-id1": {"bidderA": bidStoredResp1, "bidderB": bidStoredResp2},
 				"imp-id2": {"bidderA": bidStoredResp3, "bidderB": bidStoredResp2},
 			},

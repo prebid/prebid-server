@@ -13,6 +13,7 @@ import (
 type ImpsWithAuctionResponseIDs map[string]string
 type ImpBiddersWithBidResponseIDs map[string]map[string]string
 type StoredResponseIDs []string
+type StoredResponseIdToStoredResponse map[string]json.RawMessage
 type BidderImpsWithBidResponses map[openrtb_ext.BidderName]map[string]json.RawMessage
 type ImpsWithBidResponses map[string]json.RawMessage
 type ImpBidderStoredResp map[string]map[string]json.RawMessage
@@ -43,12 +44,12 @@ func (sr *StoredBidResponses) removeImpsWithStoredResponses(req *openrtb2.BidReq
 
 func (sr *StoredBidResponses) buildStoredResp() {
 	// bidder -> imp id -> stored bid resp
-	sr.BidderToImpToResponses = make(map[openrtb_ext.BidderName]map[string]json.RawMessage)
+	sr.BidderToImpToResponses = BidderImpsWithBidResponses{}
 	for impID, storedData := range sr.StoredBidResponses {
 		for bidderName, storedResp := range storedData {
 			if _, ok := sr.BidderToImpToResponses[openrtb_ext.BidderName(bidderName)]; !ok {
 				//new bidder with stored bid responses
-				impToStoredResp := make(map[string]json.RawMessage)
+				impToStoredResp := ImpsWithBidResponses{}
 				impToStoredResp[impID] = storedResp
 				sr.BidderToImpToResponses[openrtb_ext.BidderName(bidderName)] = impToStoredResp
 			} else {
@@ -64,13 +65,13 @@ func extractStoredResponsesIds(impInfo []ImpExtPrebidData,
 	ImpBiddersWithBidResponseIDs,
 	ImpsWithAuctionResponseIDs, error,
 ) {
-
+	// extractStoredResponsesIds returns:
 	// 1) all stored responses ids from all imps
-	allStoredResponseIDs := make([]string, 0, 0)
+	allStoredResponseIDs := StoredResponseIDs{}
 	// 2) stored bid responses: imp id to bidder to stored response id
-	impBiddersWithBidResponseIDs := make(map[string]map[string]string)
+	impBiddersWithBidResponseIDs := ImpBiddersWithBidResponseIDs{}
 	// 3) imp id to stored resp id
-	impAuctionResponseIDs := make(map[string]string)
+	impAuctionResponseIDs := ImpsWithAuctionResponseIDs{}
 
 	for index, impData := range impInfo {
 		impId, err := jsonparser.GetString(impData.Imp, "id")
@@ -111,12 +112,12 @@ func extractStoredResponsesIds(impInfo []ImpExtPrebidData,
 }
 
 // ProcessStoredResponses takes the incoming request as JSON with any
-// stored requests/imps already merged into it, scans it to find any stored auction response ids
-// in the request/imps and produces a map of imp IDs to stored auction responses.
+// stored requests/imps already merged into it, scans it to find any stored auction response ids and stored bid response ids
+// in the request/imps and produces a map of imp IDs to stored auction responses and map of imp to bidder to stored response.
 // Note that processStoredResponses must be called after processStoredRequests
-// because stored imps and stored requests can contain stored auction responses
+// because stored imps and stored requests can contain stored auction responses and stored bid responses
 // so the stored requests/imps have to be merged into the incoming request prior to processing stored auction responses.
-func ProcessStoredResponses(ctx context.Context, requestJson []byte, storedRespFetcher stored_requests.Fetcher, bidderMap map[string]openrtb_ext.BidderName) (map[string]json.RawMessage, map[string]map[string]json.RawMessage, []error) {
+func ProcessStoredResponses(ctx context.Context, requestJson []byte, storedRespFetcher stored_requests.Fetcher, bidderMap map[string]openrtb_ext.BidderName) (ImpsWithBidResponses, ImpBidderStoredResp, []error) {
 	impInfo, errs := parseImpInfo(requestJson)
 	if len(errs) > 0 {
 		return nil, nil, errs
@@ -138,18 +139,18 @@ func ProcessStoredResponses(ctx context.Context, requestJson []byte, storedRespF
 	return nil, nil, nil
 }
 
-func buildStoredResponsesMaps(storedResponses map[string]json.RawMessage, impBidderToStoredBidResponseId map[string]map[string]string, impIdToRespId map[string]string) (map[string]json.RawMessage, map[string]map[string]json.RawMessage) {
+func buildStoredResponsesMaps(storedResponses StoredResponseIdToStoredResponse, impBidderToStoredBidResponseId ImpBiddersWithBidResponseIDs, impIdToRespId ImpsWithAuctionResponseIDs) (ImpsWithBidResponses, ImpBidderStoredResp) {
 	//imp id to stored resp body
-	impIdToStoredResp := make(map[string]json.RawMessage)
+	impIdToStoredResp := ImpsWithBidResponses{}
 	//stored bid responses: imp id to bidder to stored response body
-	impBidderToStoredBidResponse := make(map[string]map[string]json.RawMessage)
+	impBidderToStoredBidResponse := ImpBidderStoredResp{}
 
 	for impId, respId := range impIdToRespId {
 		impIdToStoredResp[impId] = storedResponses[respId]
 	}
 
 	for impId, bidderStoredResp := range impBidderToStoredBidResponseId {
-		bidderStoredResponses := make(map[string]json.RawMessage)
+		bidderStoredResponses := StoredResponseIdToStoredResponse{}
 		for bidderName, id := range bidderStoredResp {
 			bidderStoredResponses[bidderName] = storedResponses[id]
 		}
@@ -158,7 +159,7 @@ func buildStoredResponsesMaps(storedResponses map[string]json.RawMessage, impBid
 	return impIdToStoredResp, impBidderToStoredBidResponse
 }
 
-// parseImpInfo parses the request JSON and returns impression and unmarshalled imp.ext.prebid
+// parseImpInfo parses the request JSON and returns the impressions with their unmarshalled imp.ext.prebid
 // copied from exchange to isolate stored responses code from auction dependencies
 func parseImpInfo(requestJson []byte) (impData []ImpExtPrebidData, errs []error) {
 

@@ -24,6 +24,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/stored_responses"
 	"github.com/prebid/prebid-server/usersync"
 	"github.com/prebid/prebid-server/util/maputil"
 
@@ -166,11 +167,11 @@ type AuctionRequest struct {
 	LegacyLabels   metrics.Labels
 	FirstPartyData map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData
 	// map of imp id to stored response
-	StoredAuctionResponses map[string]json.RawMessage
+	StoredAuctionResponses stored_responses.ImpsWithBidResponses
 	TCF2ConfigBuilder      gdpr.TCF2ConfigBuilder
 	GDPRPermissionsBuilder gdpr.PermissionsBuilder
 	// map of imp id to bidder to stored response
-	StoredBidResponses map[string]map[string]json.RawMessage
+	StoredBidResponses stored_responses.ImpBidderStoredResp
 }
 
 // BidderRequest holds the bidder specific request and all other

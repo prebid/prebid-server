@@ -26,6 +26,7 @@ import (
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
+	"github.com/prebid/prebid-server/stored_responses"
 	"github.com/prebid/prebid-server/util/iputil"
 
 	"github.com/buger/jsonparser"
@@ -4702,7 +4703,7 @@ func TestParseRequestStoredResponses(t *testing.T) {
 	tests := []struct {
 		name                    string
 		givenRequestBody        string
-		expectedStoredResponses map[string]json.RawMessage
+		expectedStoredResponses stored_responses.ImpsWithBidResponses
 		expectedErrorCount      int
 		expectedError           string
 	}{
@@ -4790,7 +4791,7 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 	tests := []struct {
 		name                       string
 		givenRequestBody           string
-		expectedStoredBidResponses map[string]map[string]json.RawMessage
+		expectedStoredBidResponses stored_responses.ImpBidderStoredResp
 		expectedErrorCount         int
 		expectedError              string
 	}{

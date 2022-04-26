@@ -1401,6 +1401,7 @@ func TestRequestBidsStoredBidResponses(t *testing.T) {
 			true,
 		)
 
+		assert.Len(t, seatBids.bids, len(tc.expectedBidIds), "Incorrect bids number for test case ", tc.description)
 		for index, bid := range seatBids.bids {
 			assert.Equal(t, tc.expectedBidIds[index], bid.bid.ID, tc.description)
 			assert.Equal(t, tc.expectedImpIds[index], bid.bid.ImpID, tc.description)
