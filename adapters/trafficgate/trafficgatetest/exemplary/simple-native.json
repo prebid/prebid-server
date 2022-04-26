@@ -11,7 +11,7 @@
             "ext": {
                 "bidder": {
                   "placementId": "5",
-                  "host": "example.com"
+                  "host": "example"
                 }
             }
         }
@@ -29,7 +29,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://example.com/?c=o&m=rtb",
+        "uri": "http://example.bc-plugin.com/?c=o&m=rtb",
         "body": {
           "id": "test-request-id",
           "imp": [
@@ -42,7 +42,7 @@
               "ext": {
                 "bidder": {
                   "placementId": "5",
-                  "host": "example.com"
+                  "host": "example"
                 }
               }
             }

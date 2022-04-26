@@ -19,7 +19,7 @@
         "ext": {
           "trafficgate": {
             "placementId": "1",
-            "host": "example.com"
+            "host": "example"
           }
         }
       }

@@ -14,7 +14,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type TrafficGateAdapter struct {
+type adapter struct {
 	EndpointTemplate *template.Template
 }
 
@@ -24,7 +24,7 @@ type BidResponseExt struct {
 	}
 }
 
-func (a *TrafficGateAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
 	errs := make([]error, 0, len(request.Imp))
 	headers := http.Header{
@@ -73,7 +73,7 @@ func (a *TrafficGateAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo 
 /*
 internal original request in OpenRTB, external = result of us having converted it (what comes out of MakeRequests)
 */
-func (a *TrafficGateAdapter) MakeBids(
+func (a *adapter) MakeBids(
 	internalRequest *openrtb2.BidRequest,
 	externalRequest *adapters.RequestData,
 	response *adapters.ResponseData,
@@ -192,7 +192,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 
-	bidder := &TrafficGateAdapter{
+	bidder := &adapter{
 		EndpointTemplate: template,
 	}
 	return bidder, nil
