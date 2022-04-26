@@ -4,22 +4,10 @@
     "imp": [
         {
             "id": "test-imp-id",
-            "banner": {
-                "format": [
-                    {
-                        "w": 300,
-                        "h": 250
-                    },
-                    {
-                        "w": 300,
-                        "h": 600
-                    }
-                ]
-            },
-            "tagid": "61317",
+            "banner": {},
             "ext": {
                 "bidder": {
-                    "TagID": "61317"
+                    "groupId": "123"
                 }
             }
         }
@@ -43,22 +31,10 @@
           "imp": [
               {
                   "id": "test-imp-id",
-                  "banner": {
-                      "format": [
-                          {
-                              "w": 300,
-                              "h": 250
-                          },
-                          {
-                              "w": 300,
-                              "h": 600
-                          }
-                      ]
-                  },
-                  "tagid": "61317",
+                  "banner": {},
                   "ext": {
                       "bidder": {
-                          "TagID": "61317"
+                          "groupId": "123"
                       }
                   }
               }
@@ -91,8 +67,8 @@
                           "w": 300,
                           "h": 250,
                           "ext": {
-                            "mediaType": "banner"
-                        }
+                              "mediaType": "banner"
+                          }
                       }
                   ]
               }
@@ -118,7 +94,7 @@
             "h": 250,
             "ext": {
               "mediaType": "banner"
-          }
+            }
           },
           "type": "banner"
         }
