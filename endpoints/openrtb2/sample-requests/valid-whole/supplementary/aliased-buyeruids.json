@@ -65,6 +65,14 @@
         "hb_cache_path_appnex": "/pbcache/endpoint",
         "hb_pb":                "0.00",
         "hb_pb_appnexus":       "0.00"
+      },
+      "warnings": {
+          "general": [
+            {
+                "code":10002,
+                "message":"debug turned off for account"
+            }
+          ]
       }
   },
   "expectedReturnCode": 200
