@@ -36,7 +36,7 @@ func TestGoodAmpRequests(t *testing.T) {
 		{"3", "imp-with-stored-resp.json"},
 		{"5", "gdpr-no-consentstring.json"},
 		{"6", "gdpr.json"},
-		{"7", "site.json"},
+		{"7", "site-stored-response.json"},
 		{"9", "user.json"},
 	}
 
