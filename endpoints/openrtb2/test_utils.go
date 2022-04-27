@@ -19,6 +19,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/analytics"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
@@ -32,6 +33,7 @@ import (
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/util/iputil"
+	"github.com/prebid/prebid-server/util/uuidutil"
 )
 
 // In this file we define:
@@ -1143,42 +1145,29 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration, paramValidator 
 		storedResponseFetcher = empty_fetcher.EmptyFetcher{}
 	}
 
-	// Instantiate endpoint
-	var endpoint httprouter.Handle
-	var err error
+	var endpointBuilder func(uuidutil.UUIDGenerator, exchange.Exchange, openrtb_ext.BidderParamValidator, stored_requests.Fetcher, stored_requests.AccountFetcher, *config.Configuration, metrics.MetricsEngine, analytics.PBSAnalyticsModule, map[string]string, []byte, map[string]openrtb_ext.BidderName, stored_requests.Fetcher) (httprouter.Handle, error)
+
 	switch test.endpointType {
 	case AMP_ENDPOINT:
-		endpoint, err = NewAmpEndpoint(
-			fakeUUIDGenerator{},
-			ex,
-			paramValidator,
-			storedRequestFetcher,
-			mockFetcher,
-			cfg,
-			met,
-			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
-			disabledBidders,
-			[]byte{},
-			bidderMap,
-			storedResponseFetcher,
-		)
-	default:
-		//OPENRTB_ENDPOINT
-		endpoint, err = NewEndpoint(
-			fakeUUIDGenerator{},
-			ex,
-			paramValidator,
-			storedRequestFetcher,
-			mockFetcher,
-			cfg,
-			met,
-			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
-			disabledBidders,
-			[]byte(test.Config.AliasJSON),
-			bidderMap,
-			storedResponseFetcher,
-		)
+		endpointBuilder = NewAmpEndpoint
+	default: //case OPENRTB_ENDPOINT:
+		endpointBuilder = NewEndpoint
 	}
+
+	endpoint, err := endpointBuilder(
+		fakeUUIDGenerator{},
+		ex,
+		paramValidator,
+		storedRequestFetcher,
+		mockFetcher,
+		cfg,
+		met,
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		disabledBidders,
+		[]byte(test.Config.AliasJSON),
+		bidderMap,
+		storedResponseFetcher,
+	)
 
 	return endpoint, mockBidServersArray, mockCurrencyRatesServer, err
 }
