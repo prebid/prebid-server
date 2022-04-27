@@ -17,6 +17,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
+	aggregatedGDPR "github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/privacy"
@@ -200,6 +201,8 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		StartTime:                  start,
 		LegacyLabels:               labels,
 		GlobalPrivacyControlHeader: secGPC,
+		TCF2ConfigBuilder:          aggregatedGDPR.NewTCF2Config,
+		GDPRPermissionsBuilder:     aggregatedGDPR.NewPermissions,
 		StoredAuctionResponses:     storedAuctionResponses,
 	}
 
