@@ -28,8 +28,8 @@ import (
 // TestGoodRequests makes sure that the auction runs properly-formatted stored bids correctly.
 func TestGoodAmpRequests(t *testing.T) {
 	testCases := []struct {
-		storedRequestID string
-		filename        string
+		storedReqID string
+		filename    string
 	}{
 		{"1", "aliased-buyeruids.json"},
 		{"2", "aliases.json"},
@@ -51,7 +51,7 @@ func TestGoodAmpRequests(t *testing.T) {
 		if !assert.NoError(t, json.Unmarshal(fileJsonData, &test), "Failed to unmarshal data from file: %s. Error: %v", tc.filename, err) {
 			continue
 		}
-		test.storedRequest = map[string]json.RawMessage{tc.storedRequestID: test.BidRequest}
+		test.storedRequest = map[string]json.RawMessage{tc.storedReqID: test.BidRequest}
 		test.endpointType = AMP_ENDPOINT
 
 		cfg := &config.Configuration{
@@ -69,7 +69,7 @@ func TestGoodAmpRequests(t *testing.T) {
 			continue
 		}
 
-		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s", tc.storedRequestID), nil)
+		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s", tc.storedReqID), nil)
 		recorder := httptest.NewRecorder()
 
 		// runTestCase
