@@ -151,10 +151,6 @@ func BenchmarkValidWholeExemplary(b *testing.B) {
 			}
 
 			auctionEndpointHandler, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg, paramsValidator)
-			for _, mockBidServer := range mockBidServers {
-				mockBidServer.Close()
-			}
-			defer mockCurrencyRatesServer.Close()
 			if err != nil {
 				b.Fatal(err.Error())
 			}
@@ -168,6 +164,10 @@ func BenchmarkValidWholeExemplary(b *testing.B) {
 				auctionEndpointHandler(recorder, request, nil) //Request comes from the unmarshalled mockBidRequest
 				b.StopTimer()
 			}
+			for _, mockBidServer := range mockBidServers {
+				mockBidServer.Close()
+			}
+			mockCurrencyRatesServer.Close()
 		})
 	}
 }

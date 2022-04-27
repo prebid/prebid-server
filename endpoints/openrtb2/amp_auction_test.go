@@ -85,7 +85,7 @@ func TestGoodAmpRequests(t *testing.T) {
 				assert.Equal(t, test.ExpectedErrorMessage, recorder.Body.String(), tc.filename)
 			}
 		}
-		// Close servers regardless if the test case was run or not
+		// Close servers
 		for _, mockBidServer := range mockBidServers {
 			mockBidServer.Close()
 		}
