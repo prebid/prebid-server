@@ -1,5 +1,5 @@
 {
-  "description": "Well formed amp request with impression with stored response",
+  "description": "Well formed amp request with valid Site field",
   "config": {
     "mockBidders": [
       {"bidderName": "appnexus", "currency": "USD", "price": 1.00}
@@ -9,7 +9,7 @@
     "6d718149": "[{\"bid\": [{\"id\": \"bid_id\", \"ext\": {\"prebid\": {\"targeting\": { \"hb_pb\": \"1.20\", \"hb_cat\": \"IAB-20\", \"hb_cache_id\": \"some_id\"}}}}],\"seat\": \"appnexus\"}]"
   },
   "mockBidRequest": {
-    "id": "request-with-stored-resp",
+    "id": "some-request-id",
     "site": {
       "page": "test.somepage.com"
     },
@@ -24,20 +24,34 @@
             }
           ]
         },
+        "pmp": {
+          "deals": [
+            {
+              "id": "some-deal-id"
+            }
+          ]
+        },
         "ext": {
+          "prebid": {
+              "storedauctionresponse": {
+                  "id": "6d718149"
+              }
+          },
           "appnexus": {
             "placementId": 12883451
-          },
-          "prebid": {
-            "storedauctionresponse": {
-              "id": "6d718149"
-            }
           }
         }
       }
     ],
-    "user": {
-      "yob": 1989
+    "ext": {
+      "prebid": {
+        "targeting": {
+          "pricegranularity": "low"
+        },
+        "cache": {
+          "bids": {}
+        }
+      }
     }
   },
   "expectedAmpResponse": {

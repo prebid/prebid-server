@@ -1,5 +1,13 @@
 {
   "description": "Well formed amp request with GDPR value but missing consent string",
+  "config": {
+    "mockBidders": [
+      {"bidderName": "appnexus", "currency": "USD", "price": 1.00}
+    ]
+  },
+  "mockAmpStoredResponse": {
+    "6d718149": "[{\"bid\": [{\"id\": \"bid_id\", \"ext\": {\"prebid\": {\"targeting\": { \"hb_pb\": \"1.20\", \"hb_cat\": \"IAB-20\", \"hb_cache_id\": \"some_id\"}}}}],\"seat\": \"appnexus\"}]"
+  },
   "mockBidRequest": {
     "id": "b9c97a4b-cbc4-483d-b2c4-58a19ed5cfc5",
     "site": {
@@ -16,6 +24,11 @@
       {
         "id": "/19968336/header-bid-tag-0",
         "ext": {
+          "prebid": {
+              "storedauctionresponse": {
+                  "id": "6d718149"
+              }
+          },
           "appnexus": {
             "placementId": 12883451
           }
@@ -43,10 +56,27 @@
       "ext": {}
     }
   },
-  "expectedBidResponse": {
-      "id":"b9c97a4b-cbc4-483d-b2c4-58a19ed5cfc5",
-      "bidid":"test bid id",
-      "nbr":0
+  "expectedAmpResponse": {
+      "targeting": {
+        "hb_bidder":            "appnexus",
+        "hb_bidder_appnexus":   "appnexus",
+        "hb_cache_host":        "www.pbcserver.com",
+        "hb_cache_host_appnex": "www.pbcserver.com",
+        "hb_cache_id":          "0",
+        "hb_cache_id_appnexus": "0",
+        "hb_cache_path":        "/pbcache/endpoint",
+        "hb_cache_path_appnex": "/pbcache/endpoint",
+        "hb_pb":                "0.00",
+        "hb_pb_appnexus":       "0.00"
+      },
+      "warnings": {
+          "general": [
+            {
+                "code":10002,
+                "message":"debug turned off for account"
+            }
+          ]
+      }
   },
   "expectedReturnCode": 200
 }

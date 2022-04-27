@@ -108,14 +108,23 @@ func TestJsonSampleRequests(t *testing.T) {
 			for _, testFile := range testCaseFiles {
 				fileData, err := ioutil.ReadFile(testFile)
 				if assert.NoError(t, err, "Test case %s. Error reading file %s \n", tc.description, testFile) {
-					// Retrieve values from JSON file
+					// Retrieve test case input and expected output from JSON file
 					test, err := parseTestFile(fileData, testFile)
 					if !assert.NoError(t, err) {
 						continue
 					}
 
 					// Build endpoint for testing. If no error, run test case
-					auctionEndpointHandler, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, paramsValidator)
+					cfg := &config.Configuration{
+						MaxRequestSize:     maxSize,
+						BlacklistedApps:    test.Config.BlacklistedApps,
+						BlacklistedAppMap:  test.Config.getBlacklistedAppMap(),
+						BlacklistedAccts:   test.Config.BlacklistedAccounts,
+						BlacklistedAcctMap: test.Config.getBlackListedAccountMap(),
+						AccountRequired:    test.Config.AccountRequired,
+					}
+					test.endpointType = OPENRTB_ENDPOINT
+					auctionEndpointHandler, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg, paramsValidator)
 					if assert.NoError(t, err) {
 						runTestCase(t, auctionEndpointHandler, test, fileData, testFile)
 					}
@@ -137,7 +146,7 @@ func runTestCase(t *testing.T, auctionEndpointHandler httprouter.Handle, test te
 	// Hit the auction endpoint with the test case configuration and mockBidRequest
 	request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(test.BidRequest))
 	recorder := httptest.NewRecorder()
-	auctionEndpointHandler(recorder, request, nil) //Request comes from the unmarshalled mockBidRequest
+	auctionEndpointHandler(recorder, request, nil)
 
 	// Assertions
 	actualCode := recorder.Code

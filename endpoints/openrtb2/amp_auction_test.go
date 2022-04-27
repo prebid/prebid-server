@@ -11,16 +11,13 @@ import (
 	"reflect"
 	"strconv"
 	"testing"
-	"time"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/analytics"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/exchange"
-	"github.com/prebid/prebid-server/gdpr"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
@@ -28,104 +25,71 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// From auction_test.go
-// const maxSize = 1024 * 256
-
 // TestGoodRequests makes sure that the auction runs properly-formatted stored bids correctly.
 func TestGoodAmpRequests(t *testing.T) {
-	goodRequests := map[string]json.RawMessage{
-		"1": json.RawMessage(validRequest(t, "aliased-buyeruids.json")),
-		"2": json.RawMessage(validRequest(t, "aliases.json")),
-		"3": json.RawMessage(validRequest(t, "imp-with-stored-resp.json")),
-		"5": json.RawMessage(validRequest(t, "gdpr-no-consentstring.json")),
-		"6": json.RawMessage(validRequest(t, "gdpr.json")),
-		"7": json.RawMessage(validRequest(t, "site.json")),
-		"9": json.RawMessage(validRequest(t, "user.json")),
+	testCases := []struct {
+		storedRequestID string
+		filename        string
+	}{
+		{"1", "aliased-buyeruids.json"},
+		{"2", "aliases.json"},
+		{"3", "imp-with-stored-resp.json"},
+		{"5", "gdpr-no-consentstring.json"},
+		{"6", "gdpr.json"},
+		{"7", "site-stored-response.json"},
+		{"9", "user.json"},
 	}
 
-	goodStoredResponses := map[string]json.RawMessage{
-		"6d718149": json.RawMessage(`[{"bid": [{"id": "bid_id", "ext": {"prebid": {"targeting": { "hb_pb": "1.20", "hb_cat": "IAB-20", "hb_cache_id": "some_id"}}}}],"seat": "appnexus"}]`),
-	}
+	for _, tc := range testCases {
+		// Read test case and unmarshal
+		fileJsonData, err := ioutil.ReadFile("sample-requests/valid-whole/supplementary/" + tc.filename)
+		if !assert.NoError(t, err, "Failed to fetch a valid request: %v. Test file: %s", err, tc.filename) {
+			continue
+		}
 
-	met := &metricsConfig.NilMetricsEngine{}
-	mockFetcher := empty_fetcher.EmptyFetcher{}
-	testConfig := &testConfigValues{}
-	bidderInfos := getBidderInfos(testConfig.getAdaptersConfigMap(), openrtb_ext.CoreBidderNames())
-	bidderMap := exchange.GetActiveBidders(bidderInfos)
-	disabledBidders := exchange.GetDisabledBiddersErrorMessages(bidderInfos)
-	adapterMap := make(map[openrtb_ext.BidderName]exchange.AdaptedBidder, 0)
-	mockBidServersArray := make([]*httptest.Server, 0, 3)
+		test := testCase{}
+		if !assert.NoError(t, json.Unmarshal(fileJsonData, &test), "Failed to unmarshal data from file: %s. Error: %v", tc.filename, err) {
+			continue
+		}
+		test.storedRequest = map[string]json.RawMessage{tc.storedRequestID: test.BidRequest}
+		test.endpointType = AMP_ENDPOINT
 
-	mockBidder := mockBidderHandler{BidderName: "appnexus", Currency: "USD", Price: 0.00}
-	bidServer := httptest.NewServer(http.HandlerFunc(mockBidder.bid))
-	bidderAdapter := mockAdapter{mockServerURL: bidServer.URL}
-	bidderName := openrtb_ext.BidderName(mockBidder.BidderName)
+		cfg := &config.Configuration{
+			MaxRequestSize:     maxSize,
+			BlacklistedApps:    test.Config.BlacklistedApps,
+			BlacklistedAppMap:  test.Config.getBlacklistedAppMap(),
+			BlacklistedAccts:   test.Config.BlacklistedAccounts,
+			BlacklistedAcctMap: test.Config.getBlackListedAccountMap(),
+			AccountRequired:    test.Config.AccountRequired,
+		}
 
-	adapterMap[bidderName] = exchange.AdaptBidder(bidderAdapter, bidServer.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, bidderName, nil)
-	mockBidServersArray = append(mockBidServersArray, bidServer)
-	cfg := &config.Configuration{MaxRequestSize: maxSize}
-	mockCurrencyConversionService := mockCurrencyRatesClient{
-		currencyInfo{},
-	}
-	mockCurrencyRatesServer := httptest.NewServer(http.HandlerFunc(mockCurrencyConversionService.handle))
-	mockCurrencyConverter := currency.NewRateConverter(mockCurrencyRatesServer.Client(), mockCurrencyRatesServer.URL, time.Second)
-	mockCurrencyConverter.Run()
+		// Set test up
+		ampEndpoint, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg, newParamsValidator(t))
+		if !assert.NoError(t, err) {
+			continue
+		}
 
-	ex := exchange.NewExchange(adapterMap,
-		&wellBehavedCache{},
-		cfg,
-		nil,
-		met,
-		bidderInfos,
-		gdpr.NewVendorListFetcher(context.Background(), config.GDPR{}, &http.Client{}, gdpr.VendorListURLMaker),
-		mockCurrencyConverter,
-		mockFetcher)
-
-	endpoint, _ := NewAmpEndpoint(
-		fakeUUIDGenerator{},
-		ex,
-		//&mockAmpExchange{},
-		newParamsValidator(t),
-		&mockAmpStoredReqFetcher{goodRequests},
-		mockFetcher,
-		cfg,
-		met,
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
-		disabledBidders,
-		[]byte{},
-		bidderMap,
-		&mockAmpStoredResponseFetcher{goodStoredResponses},
-	)
-
-	for requestID := range goodRequests {
-		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s", requestID), nil)
+		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s", tc.storedRequestID), nil)
 		recorder := httptest.NewRecorder()
-		endpoint(recorder, request, nil)
 
-		if recorder.Code != http.StatusOK {
-			t.Errorf("Expected status %d. Got %d. Request config ID was %s", http.StatusOK, recorder.Code, requestID)
-			t.Errorf("Response body was: %s", recorder.Body)
-			t.Errorf("Request was: %s", string(goodRequests[requestID]))
-		}
+		// runTestCase
+		ampEndpoint(recorder, request, nil)
 
-		var response AmpResponse
-		if err := json.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
-			t.Errorf("AMP response was: %s", recorder.Body.Bytes())
-			t.Fatalf("Error unmarshalling response: %s", err.Error())
+		// Assertions
+		if assert.Equal(t, test.ExpectedReturnCode, recorder.Code, "Expected status %d. Got %d. Amp test file: %s", http.StatusOK, recorder.Code, tc.filename) {
+			if test.ExpectedReturnCode == http.StatusOK {
+				var ampResponse AmpResponse
+				assert.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &ampResponse), "Error unmarshalling ampResponse: %v", err)
+				assert.Equal(t, test.ExpectedAmpResponse, ampResponse, "Test file: %s", tc.filename)
+			} else {
+				assert.Equal(t, test.ExpectedErrorMessage, recorder.Body.String(), tc.filename)
+			}
 		}
-
-		if response.Targeting == nil || len(response.Targeting) == 0 {
-			t.Errorf("Bad response, no targeting data.\n Response was: %v", recorder.Body)
+		// Close servers regardless if the test case was run or not
+		for _, mockBidServer := range mockBidServers {
+			mockBidServer.Close()
 		}
-		if len(response.Targeting) != 3 {
-			t.Errorf("Bad targeting data. Expected 3 keys, got %d.", len(response.Targeting))
-		}
-
-		if response.Debug != nil {
-			t.Errorf("Debug present but not requested")
-		}
-
-		assert.Equal(t, expectedErrorsFromHoldAuction, response.Errors, "errors")
+		mockCurrencyRatesServer.Close()
 	}
 }
 
@@ -995,30 +959,6 @@ func (s formatOverrideSpec) execute(t *testing.T) {
 			t.Errorf("format[%d].H were not equal. Expected %d, got %d", i, s.expect[i].H, formats[i].H)
 		}
 	}
-}
-
-type mockAmpStoredReqFetcher struct {
-	data map[string]json.RawMessage
-}
-
-func (cf *mockAmpStoredReqFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
-	return cf.data, nil, nil
-}
-
-func (cf *mockAmpStoredReqFetcher) FetchResponses(ctx context.Context, ids []string) (data map[string]json.RawMessage, errs []error) {
-	return nil, nil
-}
-
-type mockAmpStoredResponseFetcher struct {
-	data map[string]json.RawMessage
-}
-
-func (cf *mockAmpStoredResponseFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
-	return nil, nil, nil
-}
-
-func (cf *mockAmpStoredResponseFetcher) FetchResponses(ctx context.Context, ids []string) (data map[string]json.RawMessage, errs []error) {
-	return cf.data, nil
 }
 
 type mockAmpExchange struct {
