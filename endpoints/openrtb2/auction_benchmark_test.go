@@ -127,7 +127,7 @@ func BenchmarkValidWholeExemplary(b *testing.B) {
 		b.Run(fmt.Sprintf("input_file_%s", testFile), func(b *testing.B) {
 			b.StopTimer()
 			// Set up
-			paramValidator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
+			paramsValidator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
 			if err != nil {
 				b.Fatal("unable to build params validator")
 			}
@@ -139,8 +139,18 @@ func BenchmarkValidWholeExemplary(b *testing.B) {
 			if err != nil {
 				b.Fatal(err.Error())
 			}
+			test.endpointType = OPENRTB_ENDPOINT
 
-			auctionEndpointHandler, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, paramValidator)
+			cfg := &config.Configuration{
+				MaxRequestSize:     maxSize,
+				BlacklistedApps:    test.Config.BlacklistedApps,
+				BlacklistedAppMap:  test.Config.getBlacklistedAppMap(),
+				BlacklistedAccts:   test.Config.BlacklistedAccounts,
+				BlacklistedAcctMap: test.Config.getBlackListedAccountMap(),
+				AccountRequired:    test.Config.AccountRequired,
+			}
+
+			auctionEndpointHandler, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg, paramsValidator)
 			for _, mockBidServer := range mockBidServers {
 				mockBidServer.Close()
 			}

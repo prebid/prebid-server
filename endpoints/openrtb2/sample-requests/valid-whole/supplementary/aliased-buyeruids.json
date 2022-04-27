@@ -8,7 +8,7 @@
   "mockAmpStoredResponse": {
     "6d718149": "[{\"bid\": [{\"id\": \"bid_id\", \"ext\": {\"prebid\": {\"targeting\": { \"hb_pb\": \"1.20\", \"hb_cat\": \"IAB-20\", \"hb_cache_id\": \"some_id\"}}}}],\"seat\": \"appnexus\"}]"
   },
-  "mockAmpStoredRequest": {
+  "mockBidRequest": {
     "id": "request-with-user-ext-obj",
     "site": {
       "page": "test.somepage.com"

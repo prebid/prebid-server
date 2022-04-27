@@ -25,9 +25,11 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/gdpr"
+	"github.com/prebid/prebid-server/metrics"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
+	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/util/iputil"
 )
@@ -44,12 +46,28 @@ import (
 // ----------------------
 const maxSize = 1024 * 256
 
+const (
+	AMP_ENDPOINT = iota
+	OPENRTB_ENDPOINT
+	VIDEO_ENDPOINT
+)
+
 type testCase struct {
-	BidRequest           json.RawMessage   `json:"mockBidRequest"`
+	// Common
+	endpointType         int
+	Description          string            `json:"description"`
 	Config               *testConfigValues `json:"config"`
+	BidRequest           json.RawMessage   `json:"mockBidRequest"`
 	ExpectedReturnCode   int               `json:"expectedReturnCode,omitempty"`
 	ExpectedErrorMessage string            `json:"expectedErrorMessage"`
-	ExpectedBidResponse  json.RawMessage   `json:"expectedBidResponse"`
+
+	// "/openrtb2/auction" endpoint JSON test info
+	ExpectedBidResponse json.RawMessage `json:"expectedBidResponse"`
+
+	// "/openrtb2/amp" endpoint JSON test info
+	storedRequest       map[string]json.RawMessage `json:"mockAmpStoredRequest"`
+	StoredResponse      map[string]json.RawMessage `json:"mockAmpStoredResponse"`
+	ExpectedAmpResponse AmpResponse                `json:"expectedAmpResponse"`
 }
 
 type testConfigValues struct {
@@ -1060,21 +1078,12 @@ func (tc *testConfigValues) getAdaptersConfigMap() map[string]config.Adapter {
 	return adaptersConfig
 }
 
-// buildTestAuctionEndpoint instantiates an openrtb2 Auction endpoint designed to test endpoints/openrtb2/auction.go
-
-func buildTestEndpoint(test testCase, paramValidator openrtb_ext.BidderParamValidator) (httprouter.Handle, []*httptest.Server, *httptest.Server, error) {
-	bidderInfos := getBidderInfos(test.Config.getAdaptersConfigMap(), openrtb_ext.CoreBidderNames())
-	bidderMap := exchange.GetActiveBidders(bidderInfos)
-	disabledBidders := exchange.GetDisabledBiddersErrorMessages(bidderInfos)
-
-	// Adapter map with mock adapters needed to run JSON test cases
-	adapterMap := make(map[openrtb_ext.BidderName]exchange.AdaptedBidder, 0)
-	mockBidServersArray := make([]*httptest.Server, 0, 3)
-
-	if len(test.Config.MockBidders) == 0 {
-		test.Config.MockBidders = append(test.Config.MockBidders, mockBidderHandler{BidderName: "appnexus", Currency: "USD", Price: 0.00})
+// buildTestExchange(test testCase, bidderInfos config.BidderInfos, cfg *config.Configuration, met metrics.MetricsEngine, mockFetcher stored_requests.CategoryFetcher)
+func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.BidderName]exchange.AdaptedBidder, mockBidServersArray []*httptest.Server, mockCurrencyRatesServer *httptest.Server, bidderInfos config.BidderInfos, cfg *config.Configuration, met metrics.MetricsEngine, mockFetcher stored_requests.CategoryFetcher) exchange.Exchange {
+	if len(testCfg.MockBidders) == 0 {
+		testCfg.MockBidders = append(testCfg.MockBidders, mockBidderHandler{BidderName: "appnexus", Currency: "USD", Price: 0.00})
 	}
-	for _, mockBidder := range test.Config.MockBidders {
+	for _, mockBidder := range testCfg.MockBidders {
 		bidServer := httptest.NewServer(http.HandlerFunc(mockBidder.bid))
 		bidderAdapter := mockAdapter{mockServerURL: bidServer.URL}
 		bidderName := openrtb_ext.BidderName(mockBidder.BidderName)
@@ -1083,29 +1092,10 @@ func buildTestEndpoint(test testCase, paramValidator openrtb_ext.BidderParamVali
 		mockBidServersArray = append(mockBidServersArray, bidServer)
 	}
 
-	// Mock prebid Server's currency converter, instantiate and start
-	mockCurrencyConversionService := mockCurrencyRatesClient{
-		currencyInfo{
-			Conversions: test.Config.CurrencyRates,
-		},
-	}
-	mockCurrencyRatesServer := httptest.NewServer(http.HandlerFunc(mockCurrencyConversionService.handle))
 	mockCurrencyConverter := currency.NewRateConverter(mockCurrencyRatesServer.Client(), mockCurrencyRatesServer.URL, time.Second)
 	mockCurrencyConverter.Run()
 
-	cfg := &config.Configuration{
-		MaxRequestSize:     maxSize,
-		BlacklistedApps:    test.Config.BlacklistedApps,
-		BlacklistedAppMap:  test.Config.getBlacklistedAppMap(),
-		BlacklistedAccts:   test.Config.BlacklistedAccounts,
-		BlacklistedAcctMap: test.Config.getBlackListedAccountMap(),
-		AccountRequired:    test.Config.AccountRequired,
-	}
-
-	met := &metricsConfig.NilMetricsEngine{}
-	mockFetcher := empty_fetcher.EmptyFetcher{}
-
-	ex := exchange.NewExchange(adapterMap,
+	return exchange.NewExchange(adapterMap,
 		&wellBehavedCache{},
 		cfg,
 		nil,
@@ -1113,24 +1103,116 @@ func buildTestEndpoint(test testCase, paramValidator openrtb_ext.BidderParamVali
 		bidderInfos,
 		gdpr.NewVendorListFetcher(context.Background(), config.GDPR{}, &http.Client{}, gdpr.VendorListURLMaker),
 		mockCurrencyConverter,
-		mockFetcher)
-
-	// Instantiate auction endpoint
-	endpoint, err := NewEndpoint(
-		fakeUUIDGenerator{},
-		ex,
-		paramValidator,
-		&mockStoredReqFetcher{},
 		mockFetcher,
-		cfg,
-		met,
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
-		disabledBidders,
-		[]byte(test.Config.AliasJSON),
-		bidderMap,
-		empty_fetcher.EmptyFetcher{})
+	)
+}
+
+// buildTestEndpoint instantiates an openrtb2 Auction endpoint designed to test endpoints/openrtb2/auction.go
+func buildTestEndpoint(test testCase, cfg *config.Configuration, paramValidator openrtb_ext.BidderParamValidator) (httprouter.Handle, []*httptest.Server, *httptest.Server, error) {
+	bidderInfos := getBidderInfos(test.Config.getAdaptersConfigMap(), openrtb_ext.CoreBidderNames())
+	bidderMap := exchange.GetActiveBidders(bidderInfos)
+	disabledBidders := exchange.GetDisabledBiddersErrorMessages(bidderInfos)
+	met := &metricsConfig.NilMetricsEngine{}
+	mockFetcher := empty_fetcher.EmptyFetcher{}
+
+	// Adapter map with mock adapters needed to run JSON test cases
+	adapterMap := make(map[openrtb_ext.BidderName]exchange.AdaptedBidder, 0)
+	mockBidServersArray := make([]*httptest.Server, 0, 3)
+
+	// Mock prebid Server's currency converter, instantiate and start
+	mockCurrencyConversionService := mockCurrencyRatesClient{
+		currencyInfo{
+			Conversions: test.Config.CurrencyRates,
+		},
+	}
+	mockCurrencyRatesServer := httptest.NewServer(http.HandlerFunc(mockCurrencyConversionService.handle))
+
+	ex := buildTestExchange(test.Config, adapterMap, mockBidServersArray, mockCurrencyRatesServer, bidderInfos, cfg, met, mockFetcher)
+
+	var storedRequestFetcher stored_requests.Fetcher
+	if len(test.storedRequest) > 0 {
+		storedRequestFetcher = &mockAmpStoredReqFetcher{test.storedRequest}
+	} else {
+		storedRequestFetcher = &mockStoredReqFetcher{}
+	}
+
+	var storedResponseFetcher stored_requests.Fetcher
+	if len(test.StoredResponse) > 0 {
+		storedResponseFetcher = &mockAmpStoredResponseFetcher{test.StoredResponse}
+	} else {
+		storedResponseFetcher = empty_fetcher.EmptyFetcher{}
+	}
+
+	// Instantiate endpoint
+	var endpoint httprouter.Handle
+	var err error
+	switch test.endpointType {
+	case AMP_ENDPOINT:
+		endpoint, err = NewAmpEndpoint(
+			fakeUUIDGenerator{},
+			ex,
+			paramValidator,
+			storedRequestFetcher,
+			mockFetcher,
+			cfg,
+			met,
+			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+			disabledBidders,
+			[]byte{},
+			bidderMap,
+			storedResponseFetcher,
+		)
+	default:
+		//OPENRTB_ENDPOINT
+		endpoint, err = NewEndpoint(
+			fakeUUIDGenerator{},
+			ex,
+			paramValidator,
+			storedRequestFetcher,
+			mockFetcher,
+			cfg,
+			met,
+			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+			disabledBidders,
+			[]byte(test.Config.AliasJSON),
+			bidderMap,
+			storedResponseFetcher,
+		)
+	}
 
 	return endpoint, mockBidServersArray, mockCurrencyRatesServer, err
+}
+
+type mockAmpStoredReqFetcher struct {
+	data map[string]json.RawMessage
+}
+
+func (cf *mockAmpStoredReqFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
+	return cf.data, nil, nil
+}
+
+func (cf *mockAmpStoredReqFetcher) FetchResponses(ctx context.Context, ids []string) (data map[string]json.RawMessage, errs []error) {
+	return nil, nil
+}
+
+type mockAmpStoredResponseFetcher struct {
+	data map[string]json.RawMessage
+}
+
+func (cf *mockAmpStoredResponseFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
+	return nil, nil, nil
+}
+
+func (cf *mockAmpStoredResponseFetcher) FetchResponses(ctx context.Context, ids []string) (data map[string]json.RawMessage, errs []error) {
+	for k, val := range cf.data {
+		s, err := strconv.Unquote(string(val))
+		if err != nil {
+			return nil, append([]error{}, err)
+		}
+		data = map[string]json.RawMessage{k: json.RawMessage(s)}
+		break
+	}
+	return data, errs
 }
 
 type wellBehavedCache struct{}

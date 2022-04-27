@@ -1,5 +1,13 @@
 {
   "description": "Well formed amp request with aliases that should run properly",
+  "config": {
+    "mockBidders": [
+      {"bidderName": "appnexus", "currency": "USD", "price": 1.00}
+    ]
+  },
+  "mockAmpStoredResponse": {
+    "6d718149": "[{\"bid\": [{\"id\": \"bid_id\", \"ext\": {\"prebid\": {\"targeting\": { \"hb_pb\": \"1.20\", \"hb_cat\": \"IAB-20\", \"hb_cache_id\": \"some_id\"}}}}],\"seat\": \"appnexus\"}]"
+  },
   "mockBidRequest": {
     "id": "some-request-id",
     "site": {
@@ -14,6 +22,11 @@
           ]
         },
         "ext": {
+          "prebid": {
+              "storedauctionresponse": {
+                  "id": "6d718149"
+              }
+          },
           "unknown": {
             "placementId": 12883451
           }
@@ -28,10 +41,27 @@
       }
     }
   },
-  "expectedBidResponse": {
-      "id":"some-request-id",
-      "bidid":"test bid id",
-      "nbr":0
+  "expectedAmpResponse": {
+      "targeting": {
+        "hb_bidder":            "appnexus",
+        "hb_bidder_appnexus":   "appnexus",
+        "hb_cache_host":        "www.pbcserver.com",
+        "hb_cache_host_appnex": "www.pbcserver.com",
+        "hb_cache_id":          "0",
+        "hb_cache_id_appnexus": "0",
+        "hb_cache_path":        "/pbcache/endpoint",
+        "hb_cache_path_appnex": "/pbcache/endpoint",
+        "hb_pb":                "0.00",
+        "hb_pb_appnexus":       "0.00"
+      },
+      "warnings": {
+          "general": [
+            {
+                "code":10002,
+                "message":"debug turned off for account"
+            }
+          ]
+      }
   },
   "expectedReturnCode": 200
 }

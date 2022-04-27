@@ -115,7 +115,16 @@ func TestJsonSampleRequests(t *testing.T) {
 					}
 
 					// Build endpoint for testing. If no error, run test case
-					auctionEndpointHandler, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, paramsValidator)
+					cfg := &config.Configuration{
+						MaxRequestSize:     maxSize,
+						BlacklistedApps:    test.Config.BlacklistedApps,
+						BlacklistedAppMap:  test.Config.getBlacklistedAppMap(),
+						BlacklistedAccts:   test.Config.BlacklistedAccounts,
+						BlacklistedAcctMap: test.Config.getBlackListedAccountMap(),
+						AccountRequired:    test.Config.AccountRequired,
+					}
+					test.endpointType = OPENRTB_ENDPOINT
+					auctionEndpointHandler, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg, paramsValidator)
 					if assert.NoError(t, err) {
 						runTestCase(t, auctionEndpointHandler, test, fileData, testFile)
 					}
