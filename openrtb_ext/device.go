@@ -9,16 +9,6 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 )
 
-// PrebidExtKey represents the prebid extension key used in requests
-const PrebidExtKey = "prebid"
-
-// PrebidExtBidderKey represents the field name within request.imp.ext.prebid reserved for bidder params.
-const PrebidExtBidderKey = "bidder"
-
-const OriginalBidCpmKey = "origbidcpm"
-
-const OriginalBidCurKey = "origbidcur"
-
 // ExtDevice defines the contract for bidrequest.device.ext
 type ExtDevice struct {
 	// Attribute:

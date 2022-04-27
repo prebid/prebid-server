@@ -1605,7 +1605,7 @@ func TestBidResponseCurrency(t *testing.T) {
 		H:     250,
 		Ext:   nil,
 	}
-	aPbsOrtbBidArr := []*pbsOrtbBid{{bid: sampleBid, bidType: openrtb_ext.BidTypeBanner}}
+	aPbsOrtbBidArr := []*pbsOrtbBid{{bid: sampleBid, bidType: openrtb_ext.BidTypeBanner, originalBidCPM: 9.517803}}
 	sampleSeatBid := []openrtb2.SeatBid{
 		{
 			Seat: "appnexus",
@@ -1615,7 +1615,7 @@ func TestBidResponseCurrency(t *testing.T) {
 					Price: 9.517803,
 					W:     300,
 					H:     250,
-					Ext:   json.RawMessage(`{"prebid":{"type":"banner"}}`),
+					Ext:   json.RawMessage(`{"origbidcpm":9.517803,"prebid":{"type":"banner"}}`),
 				},
 			},
 		},
@@ -1750,7 +1750,7 @@ func TestBidResponseImpExtInfo(t *testing.T) {
 		true,
 		[]byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`)}
 
-	expectedBidResponseExt := `{"prebid":{"type":"video"},"storedrequestattributes":{"h":480,"mimes":["video/mp4"]}}`
+	expectedBidResponseExt := `{"origbidcpm":0,"prebid":{"type":"video"},"storedrequestattributes":{"h":480,"mimes":["video/mp4"]}}`
 
 	actualBidResp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, nil, nil, nil, true, impExtInfo, errList)
 	assert.NoError(t, err, fmt.Sprintf("imp ext info was not passed through correctly: %s", err))
@@ -3513,7 +3513,8 @@ func TestMakeBidExtJSON(t *testing.T) {
 			ext:                nil,
 			extBidPrebid:       openrtb_ext.ExtBidPrebid{Type: openrtb_ext.BidType("video")},
 			impExtInfo:         map[string]ImpExtInfo{"test_imp_id": {true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`)}},
-			expectedBidExt:     `{"prebid":{"type":"video"},"storedrequestattributes":{"h":480,"mimes":["video/mp4"]}}`,
+			origbidcpm:         0,
+			expectedBidExt:     `{"origbidcpm": 0,"prebid":{"type":"video"},"storedrequestattributes":{"h":480,"mimes":["video/mp4"]}}`,
 			expectedErrMessage: "",
 		},
 		{
@@ -3583,7 +3584,7 @@ func TestMakeBidExtJSON(t *testing.T) {
 			impExtInfo:         map[string]ImpExtInfo{},
 			origbidcpm:         0,
 			origbidcur:         "USD",
-			expectedBidExt:     `{"prebid":{"meta":{"brandName":"foo"},"type":"banner"}, "origbidcur": "USD"}`,
+			expectedBidExt:     `{"origbidcpm": 0,"prebid":{"meta":{"brandName":"foo"},"type":"banner"}, "origbidcur": "USD"}`,
 			expectedErrMessage: "",
 		},
 		{
@@ -3593,7 +3594,7 @@ func TestMakeBidExtJSON(t *testing.T) {
 			impExtInfo:         nil,
 			origbidcpm:         0,
 			origbidcur:         "USD",
-			expectedBidExt:     `{"prebid":{"meta":{"brandName":"foo"},"type":"banner"}, "origbidcur": "USD"}`,
+			expectedBidExt:     `{"origbidcpm": 0,"prebid":{"meta":{"brandName":"foo"},"type":"banner"}, "origbidcur": "USD"}`,
 			expectedErrMessage: "",
 		},
 		{
@@ -3633,7 +3634,7 @@ func TestMakeBidExtJSON(t *testing.T) {
 			impExtInfo:         nil,
 			origbidcpm:         0,
 			origbidcur:         "USD",
-			expectedBidExt:     `{"prebid":{"type":"banner"}, "origbidcur": "USD"}`,
+			expectedBidExt:     `{"origbidcpm": 0,"prebid":{"type":"banner"}, "origbidcur": "USD"}`,
 			expectedErrMessage: "",
 		},
 		//Error cases
@@ -3759,7 +3760,7 @@ func TestStoredAuctionResponses(t *testing.T) {
 		SeatBid: []openrtb2.SeatBid{
 			{
 				Bid: []openrtb2.Bid{
-					{ID: "bid_id", ImpID: "impression-id", Ext: json.RawMessage(`{"prebid":{"type":""}}`)},
+					{ID: "bid_id", ImpID: "impression-id", Ext: json.RawMessage(`{"origbidcpm":0,"prebid":{"type":""}}`)},
 				},
 				Seat: "appnexus",
 			},

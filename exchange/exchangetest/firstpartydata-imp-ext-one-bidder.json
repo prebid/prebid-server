@@ -98,6 +98,7 @@
                     "h": 500,
                     "crid": "creative-1",
                     "ext": {
+                        "origbidcpm": 0,
                         "prebid": {
                             "type": "banner"
                         }
