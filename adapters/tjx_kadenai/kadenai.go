@@ -71,18 +71,27 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 	errs := make([]error, 0, len(request.Imp))
 	var err error
 
+	// copy the bidder request
+	kadenaiRequest := *request
+
 	// Updating app extension
-	if request.App != nil {
-		appExt := kadenaiAppExt{
-			AppStoreID: request.App.Bundle,
-		}
-		request.App.Ext, err = json.Marshal(&appExt)
+	if kadenaiRequest.App != nil {
+
+		// *kadenaiRequest.App creates a copy of the object in appCopy -> correct way.
+		// if we do kadenaiRequest.App just copies the reference -> Not the correct way because
+		// if any of the nested property is changed it change others references to and leads to
+		// change in other DSPs bidder requests as well.
+		appCopy := *kadenaiRequest.App
+		appCopy.Ext, err = json.Marshal(kadenaiAppExt{
+			AppStoreID: kadenaiRequest.App.Bundle,
+		})
 		if err != nil {
 			errs = append(errs, err)
 		}
+		kadenaiRequest.App = &appCopy
 	}
 
-	requestImpCopy := request.Imp
+	requestImpCopy := kadenaiRequest.Imp
 
 	for i := 0; i < numRequests; i++ {
 		skanSent := false
@@ -177,11 +186,11 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 			continue
 		}
 
-		request.Imp = []openrtb.Imp{thisImp}
-		request.Cur = nil
-		request.Ext = nil
+		kadenaiRequest.Imp = []openrtb.Imp{thisImp}
+		kadenaiRequest.Cur = nil
+		kadenaiRequest.Ext = nil
 
-		reqJSON, err := json.Marshal(request)
+		reqJSON, err := json.Marshal(kadenaiRequest)
 		if err != nil {
 			errs = append(errs, err)
 			continue

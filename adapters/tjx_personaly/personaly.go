@@ -75,18 +75,27 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 	errs := make([]error, 0, len(request.Imp))
 	var err error
 
+	// copy the bidder request
+	personalyRequest := *request
+
 	// Updating app extension
-	if request.App != nil {
-		appExt := personalyAppExt{
-			AppStoreID: request.App.Bundle,
-		}
-		request.App.Ext, err = json.Marshal(&appExt)
+	if personalyRequest.App != nil {
+
+		// *personalyRequest.App creates a copy of the object in appCopy -> correct way.
+		// if we do personalyRequest.App just copies the reference -> Not the correct way because
+		// if any of the nested property is changed it change others references to and leads to
+		// change in other DSPs bidder requests as well.
+		appCopy := *personalyRequest.App
+		appCopy.Ext, err = json.Marshal(personalyAppExt{
+			AppStoreID: personalyRequest.App.Bundle,
+		})
 		if err != nil {
 			errs = append(errs, err)
 		}
+		personalyRequest.App = &appCopy
 	}
 
-	requestImpCopy := request.Imp
+	requestImpCopy := personalyRequest.Imp
 
 	for i := 0; i < numRequests; i++ {
 		skanSent := false
@@ -181,11 +190,11 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 			continue
 		}
 
-		request.Imp = []openrtb.Imp{thisImp}
-		request.Cur = nil
-		request.Ext = nil
+		personalyRequest.Imp = []openrtb.Imp{thisImp}
+		personalyRequest.Cur = nil
+		personalyRequest.Ext = nil
 
-		reqJSON, err := json.Marshal(request)
+		reqJSON, err := json.Marshal(personalyRequest)
 		if err != nil {
 			errs = append(errs, err)
 			continue

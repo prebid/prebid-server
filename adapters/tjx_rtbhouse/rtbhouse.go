@@ -92,7 +92,10 @@ func (adapter *RTBHouseAdapter) MakeRequests(
 	errs := make([]error, 0, len(openRTBRequest.Imp))
 	var err error
 
-	requestImpCopy := openRTBRequest.Imp
+	// copy the bidder request
+	rthhouseRequest := *openRTBRequest
+
+	requestImpCopy := rthhouseRequest.Imp
 
 	for i := 0; i < numRequests; i++ {
 		skanSent := false
@@ -116,14 +119,14 @@ func (adapter *RTBHouseAdapter) MakeRequests(
 		}
 
 		// Updating required publisher id field
-		if openRTBRequest.App != nil {
-			if openRTBRequest.App.Publisher != nil {
-				openRTBRequest.App.Publisher.ID = rtbHouseExt.PublisherID
+		if rthhouseRequest.App != nil {
+			if rthhouseRequest.App.Publisher != nil {
+				rthhouseRequest.App.Publisher.ID = rtbHouseExt.PublisherID
 			} else {
 				publisher := openrtb2.Publisher{
 					ID: rtbHouseExt.PublisherID,
 				}
-				openRTBRequest.App.Publisher = &publisher
+				rthhouseRequest.App.Publisher = &publisher
 			}
 		}
 
@@ -200,11 +203,11 @@ func (adapter *RTBHouseAdapter) MakeRequests(
 			continue
 		}
 
-		openRTBRequest.Imp = []openrtb2.Imp{thisImp}
-		openRTBRequest.Cur = nil
-		openRTBRequest.Ext = nil
+		rthhouseRequest.Imp = []openrtb2.Imp{thisImp}
+		rthhouseRequest.Cur = nil
+		rthhouseRequest.Ext = nil
 
-		reqJSON, err := json.Marshal(openRTBRequest)
+		reqJSON, err := json.Marshal(rthhouseRequest)
 		if err != nil {
 			errs = append(errs, err)
 			continue

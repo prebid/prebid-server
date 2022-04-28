@@ -71,8 +71,11 @@ func (adapter *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.Ex
 
 	errs := make([]error, 0, numRequests)
 
+	// copy the bidder request
+	aarkiRequest := *request
+
 	// clone the request imp array
-	requestImpCopy := request.Imp
+	requestImpCopy := aarkiRequest.Imp
 
 	var err error
 
@@ -167,10 +170,11 @@ func (adapter *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.Ex
 		}
 
 		// reinit the values in the request object
-		request.Imp = []openrtb.Imp{thisImp}
+		aarkiRequest.Imp = []openrtb.Imp{thisImp}
+		aarkiRequest.Ext = nil
 
 		// json marshal the request
-		reqJSON, err := json.Marshal(request)
+		reqJSON, err := json.Marshal(aarkiRequest)
 		if err != nil {
 			errs = append(errs, err)
 			continue

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
@@ -44,12 +43,6 @@ type unicornImpExtContext struct {
 type unicornBannerExt struct {
 	Rewarded                int  `json:"rewarded"`
 	AllowsCustomCloseButton bool `json:"allowscustomclosebutton"`
-}
-
-// unicornExt is ext for UNICORN
-type unicornExt struct {
-	Prebid    *openrtb_ext.ExtImpPrebid `json:"prebid,omitempty"`
-	AccountID int64                     `json:"accountId,omitempty"`
 }
 
 type unicornVideoExt struct {
@@ -101,8 +94,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 
 	errs := make([]error, 0, numRequests)
 
+	// copy the bidder request
+	unicornRequest := *request
+
 	// clone the request imp array
-	requestImpCopy := request.Imp
+	requestImpCopy := unicornRequest.Imp
 
 	var err error
 
@@ -196,24 +192,20 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 		}
 
 		// reinit the values in the request object
-		request.Imp = []openrtb2.Imp{thisImp}
+		unicornRequest.Imp = []openrtb2.Imp{thisImp}
 
 		var modifiableSource openrtb2.Source
-		if request.Source != nil {
-			modifiableSource = *request.Source
+		if unicornRequest.Source != nil {
+			modifiableSource = *unicornRequest.Source
 		} else {
 			modifiableSource = openrtb2.Source{}
 		}
 		modifiableSource.Ext = setSourceExt()
-		request.Source = &modifiableSource
-
-		request.Ext, err = setExt(request)
-		if err != nil {
-			return nil, []error{err}
-		}
+		unicornRequest.Source = &modifiableSource
+		unicornRequest.Ext = nil
 
 		// json marshal the request
-		reqJSON, err := json.Marshal(request)
+		reqJSON, err := json.Marshal(unicornRequest)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -263,29 +255,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 
 func setSourceExt() json.RawMessage {
 	return json.RawMessage(`{"stype": "prebid_server_uncn", "bidder": "unicorn"}`)
-}
-
-func setExt(request *openrtb2.BidRequest) (json.RawMessage, error) {
-	accountID, err := jsonparser.GetInt(request.Imp[0].Ext, "bidder", "accountId")
-	if err != nil {
-		accountID = 0
-	}
-	var decodedExt *unicornExt
-	err = json.Unmarshal(request.Ext, &decodedExt)
-	if err != nil {
-		decodedExt = &unicornExt{
-			Prebid: nil,
-		}
-	}
-	decodedExt.AccountID = accountID
-
-	ext, err := json.Marshal(decodedExt)
-	if err != nil {
-		return nil, &errortypes.BadInput{
-			Message: fmt.Sprintf("Error while encoding ext, err: %s", err),
-		}
-	}
-	return ext, nil
 }
 
 // MakeBids unpacks the server's response into Bids.

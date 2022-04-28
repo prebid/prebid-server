@@ -433,7 +433,9 @@ func (a *RubiconMRAIDAdapter) MakeRequests(request *openrtb2.BidRequest, _ *adap
 
 	requestImpCopy := request.Imp
 
+	// copy the bidder request
 	rubiconRequest := *request
+
 	for i := 0; i < numRequests; i++ {
 		skanSent := false
 		placementType := adapters.Interstitial

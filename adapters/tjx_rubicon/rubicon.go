@@ -442,7 +442,9 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.
 
 	requestImpCopy := request.Imp
 
+	// copy the bidder request
 	rubiconRequest := *request
+
 	for i := 0; i < numRequests; i++ {
 		skanSent := false
 		placementType := adapters.Interstitial
@@ -612,21 +614,23 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.
 			videoExt := rubiconVideoExt{Skip: rubiconExt.Video.Skip, SkipDelay: rubiconExt.Video.SkipDelay, VideoType: videoType, RP: rubiconVideoExtRP{SizeID: videoSizeId}}
 			videoCopy.Ext, err = json.Marshal(&videoExt)
 
-			for i, companionAd := range videoCopy.CompanionAd {
-				companionAdExt := rubiconVideoCompanionAdExt{
+			var companionAds []openrtb2.Banner
+
+			for _, companionAd := range videoCopy.CompanionAd {
+				companionAd.Ext, err = json.Marshal(rubiconVideoCompanionAdExt{
 					RP: rubiconVideoCompanionAdExtRP{
 						SizeID:     rubiconExt.Video.CompanionAd.SizeID,
 						AltSizeIDs: rubiconExt.Video.CompanionAd.AltSizeIDs,
 					},
-				}
-
-				companionAd.Ext, err = json.Marshal(&companionAdExt)
+				})
 				if err != nil {
 					continue
 				}
 
-				videoCopy.CompanionAd[i] = companionAd
+				companionAds = append(companionAds, companionAd)
 			}
+
+			videoCopy.CompanionAd = companionAds
 
 			thisImp.Video = &videoCopy
 			thisImp.Banner = nil
