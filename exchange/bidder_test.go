@@ -1837,7 +1837,7 @@ func TestParseDebugInfoIsNil(t *testing.T) {
 
 func TestPrepareStoredResponse(t *testing.T) {
 	result := prepareStoredResponse("imp_id1", json.RawMessage(`{"id": "resp_id1"}`))
-	assert.Equal(t, []byte("imp_id1"), result.request.Body, "incorrect request body")
+	assert.Equal(t, []byte(ImpIdReqBody+"imp_id1"), result.request.Body, "incorrect request body")
 	assert.Equal(t, []byte(`{"id": "resp_id1"}`), result.response.Body, "incorrect response body")
 }
 

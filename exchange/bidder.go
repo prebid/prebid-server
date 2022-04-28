@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptrace"
+	"regexp"
 	"time"
 
 	"github.com/golang/glog"
@@ -52,6 +53,8 @@ type adaptedBidder interface {
 	// Error messages should help publishers understand what might account for "bad" bids.
 	requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool) (*pbsOrtbSeatBid, []error)
 }
+
+const ImpIdReqBody = "Stored bid response for impression id: "
 
 // pbsOrtbBid is a Bid returned by an adaptedBidder.
 //
@@ -267,7 +270,10 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 					//set imp ids back to response for bids with stored responses
 					for i := 0; i < len(bidResponse.Bids); i++ {
 						if httpInfo.request.Uri == "" {
-							bidResponse.Bids[i].Bid.ImpID = string(httpInfo.request.Body)
+							reqBody := string(httpInfo.request.Body)
+							re := regexp.MustCompile(ImpIdReqBody)
+							reqBodySplit := re.Split(reqBody, -1)
+							bidResponse.Bids[i].Bid.ImpID = reqBodySplit[1]
 						}
 					}
 				}
@@ -569,10 +575,11 @@ func (bidder *bidderAdapter) addClientTrace(ctx context.Context) context.Context
 
 func prepareStoredResponse(impId string, bidResp json.RawMessage) *httpCallInfo {
 	//always one element in reqData because stored response is mapped to single imp
+	body := fmt.Sprintf("%s%s", ImpIdReqBody, impId)
 	reqDataForStoredResp := adapters.RequestData{
 		Method: "POST",
 		Uri:    "",
-		Body:   []byte(impId), //use it to pass imp id for stored resp
+		Body:   []byte(body), //use it to pass imp id for stored resp
 	}
 	respData := &httpCallInfo{
 		request: &reqDataForStoredResp,
