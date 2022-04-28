@@ -132,7 +132,7 @@ func TestNewUnixListener(t *testing.T) {
 	const mockFile = "file_referer" // chose your file_referer
 
 	ret, err := newUnixListener(mockFile, nil)
-	assert.Equal(t, nil, err, "err_ : NOT Nil")
+	assert.NotEqual(t, nil, err, "err_ : isNil()")
 	assert.NotEqual(t, nil, ret, "ret : isNil()")
 
 	if ret != nil {
@@ -168,16 +168,16 @@ func TestRunServer(t *testing.T) {
 	const mockName = "mockServer_name"
 
 	err := runServer(nil, mockName, nil)
-	assert.Equal(t, nil, err, "runServer(nil, 'mockName', nil) : didn't trigger any error.")
+	assert.NotEqual(t, nil, err, "runServer(nil, 'mockName', nil) : didn't trigger any error.")
 
 	s := http.Server{}
 	err = runServer(&s, mockName, nil)
-	assert.Equal(t, nil, err, "runServer(not_nil, 'mockName', nil) : didn't trigger any error.")
+	assert.NotEqual(t, nil, err, "runServer(not_nil, 'mockName', nil) : didn't trigger any error.")
 
 	var l net.Listener
 	l, _ = net.Listen("error", ":8000")
 	err = runServer(&s, mockName, l)
-	assert.Equal(t, nil, err, "Listen('error', ':8000') : didn't trigger any error.")
+	assert.NotEqual(t, nil, err, "Listen('error', ':8000') : didn't trigger any error.")
 }
 
 func TestListen(t *testing.T) {
