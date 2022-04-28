@@ -327,7 +327,7 @@ func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openr
 	if len(storedAuctionResponses) > 0 {
 		hasStoredResponses = true
 	}
-	e = deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: req}, true, hasStoredResponses)
+	e = deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: req}, true, hasStoredResponses, storedBidResponses)
 	errs = append(errs, e...)
 	return
 }
