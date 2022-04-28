@@ -121,7 +121,7 @@ func TestNewTCPListener(t *testing.T) {
 
 	ret, err := newTCPListener(mockAddress, nil)
 	assert.NotEqual(t, nil, err, fmt.Sprintf("err_ : %s", err))
-	assert.NotEqual(t, nil, ret, "ret : isNil()")
+	assert.Equal(t, nil, ret, "ret : NOT Nil()")
 
 	if ret != nil {
 		ret.Close()
@@ -132,7 +132,7 @@ func TestNewUnixListener(t *testing.T) {
 	const mockFile = "file_referer" // chose your file_referer
 
 	ret, err := newUnixListener(mockFile, nil)
-	assert.Equal(t, nil, err, fmt.Sprintf("err_ : %s", err.Error()))
+	assert.Equal(t, nil, err, "err_ : NOT Nil")
 	assert.NotEqual(t, nil, ret, "ret : isNil()")
 
 	if ret != nil {
