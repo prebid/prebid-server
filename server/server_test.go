@@ -133,7 +133,7 @@ func TestNewUnixListener(t *testing.T) {
 
 	ret, err := newUnixListener(mockFile, nil)
 	assert.NotEqual(t, nil, err, "err_ : isNil()")
-	assert.NotEqual(t, nil, ret, "ret : isNil()")
+	assert.Equal(t, nil, ret, "ret : NOT Nil()")
 
 	if ret != nil {
 		ret.Close()
