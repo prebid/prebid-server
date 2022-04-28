@@ -4054,8 +4054,9 @@ func (b *validatingBidder) requestBid(ctx context.Context, request *openrtb2.Bid
 			bids := make([]*pbsOrtbBid, len(mockResponse.SeatBid.Bids))
 			for i := 0; i < len(bids); i++ {
 				bids[i] = &pbsOrtbBid{
-					bid:     mockResponse.SeatBid.Bids[i].Bid,
-					bidType: openrtb_ext.BidType(mockResponse.SeatBid.Bids[i].Type),
+					originalBidCPM: mockResponse.SeatBid.Bids[i].Bid.Price,
+					bid:            mockResponse.SeatBid.Bids[i].Bid,
+					bidType:        openrtb_ext.BidType(mockResponse.SeatBid.Bids[i].Type),
 				}
 			}
 
