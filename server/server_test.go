@@ -11,31 +11,8 @@ import (
 
 	"github.com/prebid/prebid-server/config"
 	metricsconfig "github.com/prebid/prebid-server/metrics/config"
+	"github.com/stretchr/testify/assert"
 )
-
-func TestNewAdminServer(t *testing.T) {
-	cfg := &config.Configuration{
-		Host:      "prebid.com",
-		AdminPort: 6060,
-		Port:      8000,
-	}
-	server := newAdminServer(cfg, http.HandlerFunc(handler))
-	if server.Addr != "prebid.com:6060" {
-		t.Errorf("Admin server address should be %s. Got %s", "prebid.com:6060", server.Addr)
-	}
-}
-
-func TestNewMainServer(t *testing.T) {
-	cfg := &config.Configuration{
-		Host:      "prebid.com",
-		AdminPort: 6060,
-		Port:      8000,
-	}
-	server := newMainServer(cfg, http.HandlerFunc(handler))
-	if server.Addr != "prebid.com:8000" {
-		t.Errorf("Admin server address should be %s. Got %s", "prebid.com:8000", server.Addr)
-	}
-}
 
 func TestServerShutdown(t *testing.T) {
 	server := &http.Server{}
@@ -72,10 +49,6 @@ func TestWait(t *testing.T) {
 	// If this doesn't hang, then wait() is sending and receiving messages as expected.
 }
 
-func handler(w http.ResponseWriter, req *http.Request) {
-
-}
-
 // forwardSignal is basically a working mock for shutdownAfterSignals().
 // It is used to test wait() effectively
 func forwardSignal(t *testing.T, outbound chan<- struct{}, inbound <-chan os.Signal) {
@@ -88,154 +61,129 @@ func forwardSignal(t *testing.T, outbound chan<- struct{}, inbound <-chan os.Sig
 }
 
 func TestNewSocketServer(t *testing.T) {
-	const (
-		func_name   = "TestNewSocketServer"
-		mock_socket = "socket_addr:socket_port"
-	)
+	const mockSocket = "socket_addr:socket_port"
 	cfg := new(config.Configuration)
-	cfg.UnixSocketName = mock_socket
+	cfg.UnixSocketName = mockSocket
 
-	mock_server := &http.Server{
+	mockServer := &http.Server{
 		Addr:         cfg.UnixSocketName,
 		Handler:      nil,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 	}
 
-	if ret := newSocketServer(cfg, nil); ret != nil {
-		switch {
-		case ret.Addr != mock_server.Addr:
-			t.Errorf("[%s] Addr invalide: %v != %v",
-				func_name, ret.Addr, mock_server.Addr)
-			fallthrough
-		case ret.ReadTimeout != mock_server.ReadTimeout:
-			t.Errorf("[%s] ReadTimeout invalide: %v != %v",
-				func_name, ret.ReadTimeout, mock_server.ReadTimeout)
-			fallthrough
-		case ret.WriteTimeout != mock_server.WriteTimeout:
-			t.Errorf("[%s] WriteTimeout invalide: %v != %v",
-				func_name, ret.WriteTimeout, mock_server.WriteTimeout)
-		}
+	ret := newSocketServer(cfg, nil)
+	assert.NotEqual(t, nil, ret, "ret : isNil()")
+	assert.Equal(t, mockServer.Addr, ret.Addr, fmt.Sprintf("Addr invalide: %v != %v",
+		ret.Addr, mockServer.Addr))
+	assert.Equal(t, mockServer.ReadTimeout, ret.ReadTimeout, fmt.Sprintf("ReadTimeout invalide: %v != %v",
+		ret.ReadTimeout, mockServer.ReadTimeout))
+	assert.Equal(t, mockServer.WriteTimeout, ret.WriteTimeout, fmt.Sprintf("WriteTimeout invalide: %v != %v",
+		ret.WriteTimeout, mockServer.WriteTimeout))
+
+	if ret != nil {
 		ret.Close()
-	} else {
-		t.Errorf("[%s] ret is Nil", func_name)
 	}
 }
 
-func TestNewMainServer_(t *testing.T) {
+func TestNewMainServer(t *testing.T) {
 	const (
-		func_name    = "TestNewMainServer_"
-		mock_port    = 8000         // chose your socket_port
-		mock_address = "prebid.com" // chose your socket_address
+		mockPort    = 8000         // chose your socket_port
+		mockAddress = "prebid.com" // chose your socket_address
 	)
 	cfg := new(config.Configuration)
-	cfg.Port = mock_port
-	cfg.Host = mock_address
+	cfg.Port = mockPort
+	cfg.Host = mockAddress
 
-	mock_server := &http.Server{
-		Addr:         fmt.Sprintf("%s:%d", mock_address, mock_port),
+	mockServer := &http.Server{
+		Addr:         fmt.Sprintf("%s:%d", mockAddress, mockPort),
 		Handler:      nil,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 	}
 
-	if ret := newMainServer(cfg, nil); ret != nil {
-		switch {
-		case ret.Addr != mock_server.Addr:
-			t.Errorf("[%s] Addr invalide: %v != %v",
-				func_name, ret.Addr, mock_server.Addr)
-		case ret.ReadTimeout != mock_server.ReadTimeout:
-			t.Errorf("[%s] ReadTimeout invalide: %v != %v",
-				func_name, ret.ReadTimeout, mock_server.ReadTimeout)
-		case ret.WriteTimeout != mock_server.WriteTimeout:
-			t.Errorf("[%s] WriteTimeout invalide: %v != %v",
-				func_name, ret.WriteTimeout, mock_server.WriteTimeout)
-		}
+	ret := newMainServer(cfg, nil)
+	assert.NotEqual(t, nil, ret, "ret : isNil()")
+	assert.Equal(t, ret.Addr, mockServer.Addr, fmt.Sprintf("Addr invalide: %v != %v",
+		ret.Addr, mockServer.Addr))
+	assert.Equal(t, ret.ReadTimeout, mockServer.ReadTimeout,
+		fmt.Sprintf("ReadTimeout invalide: %v != %v", ret.ReadTimeout, mockServer.ReadTimeout))
+	assert.Equal(t, ret.WriteTimeout, mockServer.WriteTimeout,
+		fmt.Sprintf("WriteTimeout invalide: %v != %v", ret.WriteTimeout, mockServer.WriteTimeout))
+
+	if ret != nil {
 		ret.Close()
-	} else {
-		t.Errorf("[%s] ret is Nil", func_name)
 	}
 }
 
 func TestNewTCPListener(t *testing.T) {
-	const (
-		func_name    = "TestNewTCPListener"
-		mock_address = ":8000" //:chose your socket_port
-	)
+	const mockAddress = ":8000" //:chose your socket_port
 
-	if ret, err := newTCPListener(mock_address, nil); err != nil {
-		t.Errorf("[%s] err_ : %s", func_name, err)
-	} else {
+	ret, err := newTCPListener(mockAddress, nil)
+	assert.NotEqual(t, nil, err, fmt.Sprintf("err_ : %s", err))
+	assert.NotEqual(t, nil, ret, "ret : isNil()")
+
+	if ret != nil {
 		ret.Close()
 	}
 }
 
 func TestNewUnixListener(t *testing.T) {
-	const (
-		func_name = "TestNewUnixListener"
-		mock_file = "file_referer" // chose your file_referer
-	)
+	const mockFile = "file_referer" // chose your file_referer
 
-	if ret, err := newUnixListener(mock_file, nil); err != nil {
-		t.Errorf("[%s] err_ : %s", func_name, err.Error())
-	} else {
+	ret, err := newUnixListener(mockFile, nil)
+	assert.Equal(t, nil, err, fmt.Sprintf("err_ : %s", err.Error()))
+	assert.NotEqual(t, nil, ret, "ret : isNil()")
+
+	if ret != nil {
 		ret.Close()
 	}
 }
 
-func TestNewAdminServer_(t *testing.T) {
+func TestNewAdminServer(t *testing.T) {
 	const (
-		func_name  = "TestNewAdminServer_"
-		mock_host  = "prebid.com" // chose your host
-		mock_admin = 6060         // chose your admin_port
+		mockHost  = "prebid.com" // chose your host
+		mockAdmin = 6060         // chose your admin_port
 	)
 	cfg := new(config.Configuration)
-	cfg.Host = mock_host
-	cfg.AdminPort = mock_admin
+	cfg.Host = mockHost
+	cfg.AdminPort = mockAdmin
 
-	mock_server := &http.Server{
+	mockServer := &http.Server{
 		Addr:    cfg.Host + ":" + strconv.Itoa(cfg.AdminPort),
 		Handler: nil,
 	}
 
-	if ret := newAdminServer(cfg, nil); ret == nil {
-		t.Errorf("[%s] ret : isNil()", func_name)
-	} else {
-		if ret.Addr != mock_server.Addr {
-			t.Errorf("[%s] Addr invalide: %v != %v",
-				func_name, ret.Addr, mock_server.Addr)
-		}
+	ret := newAdminServer(cfg, nil)
+	assert.NotEqual(t, nil, ret, "ret : isNil()")
+	assert.Equal(t, mockServer.Addr, ret.Addr, fmt.Sprintf("Addr invalide: %v != %v",
+		ret.Addr, mockServer.Addr))
+
+	if ret != nil {
 		ret.Close()
 	}
 }
 
 func TestRunServer(t *testing.T) {
-	const (
-		func_name = "TestRunServer"
-		mock_name = "mock_server_name"
-	)
+	const mockName = "mockServer_name"
 
-	if err := runServer(nil, mock_name, nil); err == nil {
-		t.Errorf("[%s] runServer(nil, 'mock_name', nil) : didn't trigger any error.", func_name)
-	}
+	err := runServer(nil, mockName, nil)
+	assert.Equal(t, nil, err, "runServer(nil, 'mockName', nil) : didn't trigger any error.")
 
 	s := http.Server{}
-	if err := runServer(&s, mock_name, nil); err == nil {
-		t.Errorf("[%s] runServer(not_nil, 'mock_name', nil) : didn't trigger any error.", func_name)
-	}
+	err = runServer(&s, mockName, nil)
+	assert.Equal(t, nil, err, "runServer(not_nil, 'mockName', nil) : didn't trigger any error.")
 
 	var l net.Listener
 	l, _ = net.Listen("error", ":8000")
-	if err := runServer(&s, mock_name, l); err == nil {
-		t.Errorf("[%s] Listen('error', ':8000') : didn't trigger any error.", func_name)
-	}
+	err = runServer(&s, mockName, l)
+	assert.Equal(t, nil, err, "Listen('error', ':8000') : didn't trigger any error.")
 }
 
 func TestListen(t *testing.T) {
 	const name = "TestListen"
 	var (
-		handler       http.Handler
-		admin_handler http.Handler
+		handler, adminHandler http.Handler
 
 		metrics = new(metricsconfig.DetailedMetricsEngine)
 		cfg     = &config.Configuration{
@@ -248,7 +196,6 @@ func TestListen(t *testing.T) {
 		}
 	)
 
-	if e := Listen(cfg, handler, admin_handler, metrics); e == nil {
-		t.Errorf("[%s] e isNil", name)
-	}
+	err := Listen(cfg, handler, adminHandler, metrics)
+	assert.NotEqual(t, nil, err, "err : isNil()")
 }
