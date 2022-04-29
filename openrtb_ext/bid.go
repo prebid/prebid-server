@@ -172,8 +172,4 @@ const (
 	StoredRequestAttributes = "storedrequestattributes"
 	OriginalBidCpmKey       = "origbidcpm"
 	OriginalBidCurKey       = "origbidcur"
-	// PrebidExtKey represents the prebid extension key used in requests
-	PrebidExtKey = "prebid"
-	// PrebidExtBidderKey represents the field name within request.imp.ext.prebid reserved for bidder params.
-	PrebidExtBidderKey = "bidder"
 )
