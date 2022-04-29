@@ -120,8 +120,8 @@ func TestNewTCPListener(t *testing.T) {
 	const mockAddress = ":8000" //:chose your socket_port
 
 	ret, err := newTCPListener(mockAddress, nil)
-	assert.NotEqual(t, nil, err, fmt.Sprintf("err_ : %s", err))
-	assert.Equal(t, nil, ret, "ret : NOT Nil()")
+	assert.Equal(t, nil, err, fmt.Sprintf("err_ : %v", err))
+	assert.NotEqual(t, nil, ret, "ret : isNil()")
 
 	if ret != nil {
 		ret.Close()
@@ -132,8 +132,8 @@ func TestNewUnixListener(t *testing.T) {
 	const mockFile = "file_referer" // chose your file_referer
 
 	ret, err := newUnixListener(mockFile, nil)
-	assert.NotEqual(t, nil, err, "err_ : isNil()")
-	assert.Equal(t, nil, ret, "ret : NOT Nil()")
+	assert.Equal(t, nil, err, "err_ : NOT-Nil()")
+	assert.NotEqual(t, nil, ret, "ret : isNil()")
 
 	if ret != nil {
 		ret.Close()
