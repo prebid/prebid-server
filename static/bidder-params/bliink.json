@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Bliink Adapter Params",
+  "description": "A schema which validates params accepted by the Bliink adapter",
+  "type": "object",
+
+  "properties": {
+    "consent": {
+      "type": "string",
+      "description": "Consent string of the user"
+    }
+  },
+
+  "required": ["consent"]
+}
