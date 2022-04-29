@@ -16,4 +16,4 @@ capabilities:
 userSync:
   redirect:
     url: https://c.aaxads.com/aacxc.php?fv=1&wbsh=psa&ryvlg=setstatuscode&bidder=aax&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
-    userMacro: ${UUID}
+    userMacro: <vsid>
