@@ -94,6 +94,7 @@
             "crid": "creative-1",
             "cat": ["IAB1-1"],
             "ext": {
+              "origbidcpm": 12.00,
               "prebid": {
                 "type": "",
                 "targeting": {
