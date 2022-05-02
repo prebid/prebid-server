@@ -72,14 +72,17 @@ func (adapter *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.Ex
 	// errors
 	errs := make([]error, 0, numRequests)
 
+	// copy the bidder request
+	dv360Request := *request
+
 	// clone the request imp array
-	requestImpCopy := request.Imp
+	requestImpCopy := dv360Request.Imp
 
 	// clone the request device
 	var requestDeviceCopy openrtb.Device
 
-	if request.Device != nil {
-		requestDeviceCopy = *request.Device
+	if dv360Request.Device != nil {
+		requestDeviceCopy = *dv360Request.Device
 	} else {
 		requestDeviceCopy = openrtb.Device{}
 	}
@@ -145,7 +148,7 @@ func (adapter *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.Ex
 			errs = append(errs, err)
 		}
 
-		request.Device = &requestDeviceCopy
+		dv360Request.Device = &requestDeviceCopy
 
 		rewarded := 0
 		if dv360Ext.Reward == 1 {
@@ -204,10 +207,11 @@ func (adapter *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.Ex
 
 		// apply the copied impression object as an array
 		// to the request object
-		request.Imp = []openrtb.Imp{impCopy}
+		dv360Request.Imp = []openrtb.Imp{impCopy}
+		dv360Request.Ext = nil
 
 		// json marshal the request
-		body, err := json.Marshal(request)
+		body, err := json.Marshal(dv360Request)
 		if err != nil {
 			errs = append(errs, err)
 			continue

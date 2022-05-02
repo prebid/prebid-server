@@ -74,8 +74,11 @@ func (adapter *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.Ex
 
 	errs := make([]error, 0, numRequests)
 
+	// copy the bidder request
+	molocoRequest := *request
+
 	// clone the request imp array
-	requestImpCopy := request.Imp
+	requestImpCopy := molocoRequest.Imp
 
 	var err error
 
@@ -177,12 +180,12 @@ func (adapter *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.Ex
 		}
 
 		// reinit the values in the request object
-		request.Imp = []openrtb.Imp{thisImp}
-		request.Cur = nil
-		request.Ext = nil
+		molocoRequest.Imp = []openrtb.Imp{thisImp}
+		molocoRequest.Cur = nil
+		molocoRequest.Ext = nil
 
 		// json marshal the request
-		reqJSON, err := json.Marshal(request)
+		reqJSON, err := json.Marshal(molocoRequest)
 		if err != nil {
 			errs = append(errs, err)
 			continue

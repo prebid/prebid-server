@@ -97,7 +97,10 @@ func (a *OperaAdsAdapter) MakeRequests(
 		return nil, errs
 	}
 
-	for _, imp := range request.Imp {
+	// copy the bidder request
+	operaadsRequest := *request
+
+	for _, imp := range operaadsRequest.Imp {
 		skanSent := false
 
 		var bidderExt adapters.ExtImpBidder
@@ -208,11 +211,11 @@ func (a *OperaAdsAdapter) MakeRequests(
 			continue
 		}
 
-		request.Imp = []openrtb2.Imp{imp}
-		request.Cur = nil
-		request.Ext = nil
+		operaadsRequest.Imp = []openrtb2.Imp{imp}
+		operaadsRequest.Cur = nil
+		operaadsRequest.Ext = nil
 
-		reqJSON, err := json.Marshal(request)
+		reqJSON, err := json.Marshal(operaadsRequest)
 		if err != nil {
 			errs = append(errs, err)
 			continue

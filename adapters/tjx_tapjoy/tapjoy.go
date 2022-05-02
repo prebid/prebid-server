@@ -30,6 +30,8 @@ func Builder(_ openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, 
 }
 
 func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+
+	// copy the bidder request
 	requestCopy := *request
 
 	numRequests := len(requestCopy.Imp)

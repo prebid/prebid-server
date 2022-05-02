@@ -113,18 +113,6 @@
             "pxratio": 2,
             "w": 320
           },
-          "ext": {
-            "prebid": {
-              "bidder": null,
-              "is_rewarded_inventory": 0,
-              "skadn": {
-              },
-              "storedrequest": {
-                "id": "test"
-              }
-            },
-            "accountId": 199578
-          },
           "id": "CFD24FB1-916F-467D-8825-34892B315DB7",
           "imp": [
             {

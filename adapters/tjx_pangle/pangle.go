@@ -108,8 +108,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 	var requests []*adapters.RequestData
 	var errs []error
 
-	requestCopy := *request
-	for _, imp := range request.Imp {
+	// copy the bidder request
+	pangleRequest := *request
+	for _, imp := range pangleRequest.Imp {
 		skanSent := false
 
 		var impExt wrappedExtImpBidder
@@ -186,8 +187,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 			continue
 		}
 
-		requestCopy.Imp = []openrtb2.Imp{imp}
-		requestJSON, err := json.Marshal(requestCopy)
+		pangleRequest.Imp = []openrtb2.Imp{imp}
+		pangleRequest.Ext = nil
+
+		requestJSON, err := json.Marshal(pangleRequest)
 		if err != nil {
 			errs = append(errs, err)
 			continue

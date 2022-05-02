@@ -82,18 +82,28 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 	errs := make([]error, 0, len(request.Imp))
 	var err error
 
+	// copy the bidder request
+	spotadRequest := *request
+
 	// Updating app extension
-	if request.App != nil {
+	if spotadRequest.App != nil {
+
+		// *spotadRequest.App creates a copy of the object in appCopy -> correct way.
+		// if we do spotadRequest.App just copies the reference -> Not the correct way because
+		// if any of the nested property is changed it change others references to and leads to
+		// change in other DSPs bidder requests as well.
+		appCopy := *spotadRequest.App
 		appExt := spotadAppExt{
-			AppStoreID: request.App.Bundle,
+			AppStoreID: spotadRequest.App.Bundle,
 		}
-		request.App.Ext, err = json.Marshal(&appExt)
+		appCopy.Ext, err = json.Marshal(&appExt)
 		if err != nil {
 			errs = append(errs, err)
 		}
+		spotadRequest.App = &appCopy
 	}
 
-	requestImpCopy := request.Imp
+	requestImpCopy := spotadRequest.Imp
 
 	for i := 0; i < numRequests; i++ {
 		skanSent := false
@@ -189,11 +199,11 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 			continue
 		}
 
-		request.Imp = []openrtb.Imp{thisImp}
-		request.Cur = nil
-		request.Ext = nil
+		spotadRequest.Imp = []openrtb.Imp{thisImp}
+		spotadRequest.Cur = nil
+		spotadRequest.Ext = nil
 
-		reqJSON, err := json.Marshal(request)
+		reqJSON, err := json.Marshal(spotadRequest)
 		if err != nil {
 			errs = append(errs, err)
 			continue

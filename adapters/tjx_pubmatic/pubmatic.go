@@ -68,35 +68,38 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters
 	wrapExt := ""
 	pubID := ""
 
+	// copy the bidder request
+	pubmaticRequest := *request
+
 	var impData pubmaticImpData
-	for i := 0; i < len(request.Imp); i++ {
-		impData, err = parseImpressionObject(&request.Imp[i], &wrapExt, &pubID)
+	for i := 0; i < len(pubmaticRequest.Imp); i++ {
+		impData, err = parseImpressionObject(&pubmaticRequest.Imp[i], &wrapExt, &pubID)
 
 		// If the parsing is failed, remove imp and add the error.
 		if err != nil {
 			errs = append(errs, err)
-			request.Imp = append(request.Imp[:i], request.Imp[i+1:]...)
+			pubmaticRequest.Imp = append(pubmaticRequest.Imp[:i], pubmaticRequest.Imp[i+1:]...)
 			i--
 		}
 	}
 
 	// If all the requests are invalid, Call to adaptor is skipped
-	if len(request.Imp) == 0 {
+	if len(pubmaticRequest.Imp) == 0 {
 		return nil, errs
 	}
 
 	// Overwrite BidFloor if present
 	if impData.pubmatic.BidFloor != nil {
-		request.Imp[0].BidFloor = *impData.pubmatic.BidFloor
+		pubmaticRequest.Imp[0].BidFloor = *impData.pubmatic.BidFloor
 	}
 
 	if wrapExt != "" {
 		rawExt := fmt.Sprintf("{\"wrapper\": %s}", wrapExt)
-		request.Ext = json.RawMessage(rawExt)
+		pubmaticRequest.Ext = json.RawMessage(rawExt)
 	}
 
-	if request.Site != nil {
-		siteCopy := *request.Site
+	if pubmaticRequest.Site != nil {
+		siteCopy := *pubmaticRequest.Site
 		if siteCopy.Publisher != nil {
 			publisherCopy := *siteCopy.Publisher
 			publisherCopy.ID = pubID
@@ -104,9 +107,9 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters
 		} else {
 			siteCopy.Publisher = &openrtb2.Publisher{ID: pubID}
 		}
-		request.Site = &siteCopy
-	} else if request.App != nil {
-		appCopy := *request.App
+		pubmaticRequest.Site = &siteCopy
+	} else if pubmaticRequest.App != nil {
+		appCopy := *pubmaticRequest.App
 		if appCopy.Publisher != nil {
 			publisherCopy := *appCopy.Publisher
 			publisherCopy.ID = pubID
@@ -119,7 +122,7 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters
 			appCopy.ID = strconv.Itoa(impData.pubmatic.SiteID)
 		}
 
-		request.App = &appCopy
+		pubmaticRequest.App = &appCopy
 	}
 
 	thisURI := a.URI
@@ -129,11 +132,13 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters
 	}
 
 	// If all the requests are invalid, Call to adaptor is skipped
-	if len(request.Imp) == 0 {
+	if len(pubmaticRequest.Imp) == 0 {
 		return nil, errs
 	}
 
-	reqJSON, err := json.Marshal(request)
+	pubmaticRequest.Ext = nil
+
+	reqJSON, err := json.Marshal(pubmaticRequest)
 	if err != nil {
 		errs = append(errs, err)
 		return nil, errs

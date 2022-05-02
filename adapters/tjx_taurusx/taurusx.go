@@ -66,8 +66,11 @@ func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.E
 
 	errs := make([]error, 0, numRequests)
 
+	// copy the bidder request
+	taurusxRequest := *request
+
 	// clone the request imp array
-	requestImpCopy := request.Imp
+	requestImpCopy := taurusxRequest.Imp
 
 	var err error
 
@@ -155,10 +158,11 @@ func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.E
 		}
 
 		// reinit the values in the request object
-		request.Imp = []openrtb2.Imp{thisImp}
+		taurusxRequest.Imp = []openrtb2.Imp{thisImp}
+		taurusxRequest.Ext = nil
 
 		// json marshal the request
-		reqJSON, err := json.Marshal(request)
+		reqJSON, err := json.Marshal(taurusxRequest)
 		if err != nil {
 			errs = append(errs, err)
 			continue

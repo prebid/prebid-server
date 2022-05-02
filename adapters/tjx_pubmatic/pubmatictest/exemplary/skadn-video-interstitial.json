@@ -136,12 +136,6 @@
                         "publisher": {
                             "id": "999"
                         }
-                    },
-                    "ext": {
-                        "wrapper": {
-                            "profile": 5123,
-                            "version": 1
-                        }
                     }
                 }
             },
