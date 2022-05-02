@@ -17,7 +17,7 @@ import (
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/version"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/semconv"
+	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 	"go.opentelemetry.io/otel/trace"
 
 	nativeRequests "github.com/mxmCherry/openrtb/v15/native1/request"
@@ -437,7 +437,7 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 	span.SetAttributes(semconv.HTTPClientAttributesFromHTTPRequest(httpReq)...)
 
 	// Only print verbose debug logs if calling service added value in span context
-	if span.SpanContext().TraceState().Get(debugStateKey).AsString() == debugVerboseState {
+	if span.SpanContext().TraceState().Get(string(debugStateKey)) == debugVerboseState {
 		// read and close body
 		bodyBytes, _ := ioutil.ReadAll(httpReq.Body)
 		httpReq.Body.Close()
@@ -489,7 +489,7 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 	defer httpResp.Body.Close()
 
 	// Only print verbose response logs if calling service added value in span context
-	if span.SpanContext().TraceState().Get(debugStateKey).AsString() == debugVerboseState {
+	if span.SpanContext().TraceState().Get(string(debugStateKey)) == debugVerboseState {
 		respAttrs := append(attrs, debugRespBodyKey.String(string(respBody)))
 		span.AddEvent(fmt.Sprintf("%s.%s", debugVerboseState, debugRespBodyKey), trace.WithAttributes(
 			respAttrs...,

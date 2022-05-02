@@ -6,12 +6,12 @@ import (
 
 	"github.com/prebid/prebid-server/config"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/otlp"
-	"go.opentelemetry.io/otel/exporters/otlp/otlpgrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
+	otlpgrpc "go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/semconv"
+	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 )
 
 type DoneCallback func()
@@ -29,12 +29,12 @@ func initProvider(cfg config.OpenTelemetry) (DoneCallback, error) {
 	// microk8s), it should be accessible through the NodePort service at the
 	// `localhost:30080` endpoint. Otherwise, replace `localhost` with the
 	// endpoint of `otelcol-gateway.observability-system`
-	driver := otlpgrpc.NewDriver(
+	driver := otlpgrpc.NewClient(
 		otlpgrpc.WithInsecure(),
 		otlpgrpc.WithEndpoint(cfg.Endpoint),
 	)
 
-	exp, err := otlp.NewExporter(ctx, driver)
+	exp, err := otlptrace.New(ctx, driver)
 	if err != nil {
 		return func() {}, err
 	}
