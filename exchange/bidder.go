@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptrace"
+	"regexp"
 	"time"
 
 	"github.com/golang/glog"
@@ -50,8 +51,10 @@ type adaptedBidder interface {
 	//
 	// Any errors will be user-facing in the API.
 	// Error messages should help publishers understand what might account for "bad" bids.
-	requestBid(ctx context.Context, request *openrtb2.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool) (*pbsOrtbSeatBid, []error)
+	requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool) (*pbsOrtbSeatBid, []error)
 }
+
+const ImpIdReqBody = "Stored bid response for impression id: "
 
 // pbsOrtbBid is a Bid returned by an adaptedBidder.
 //
@@ -131,53 +134,74 @@ type bidderAdapterConfig struct {
 	DebugInfo          config.DebugInfo
 }
 
-func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb2.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool) (*pbsOrtbSeatBid, []error) {
-	reqData, errs := bidder.Bidder.MakeRequests(request, reqInfo)
+func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool) (*pbsOrtbSeatBid, []error) {
 
-	if len(reqData) == 0 {
-		// If the adapter failed to generate both requests and errors, this is an error.
-		if len(errs) == 0 {
-			errs = append(errs, &errortypes.FailedToRequestBids{Message: "The adapter failed to generate any bid requests, but also failed to generate an error explaining why"})
+	var reqData []*adapters.RequestData
+	var errs []error
+	var responseChannel chan *httpCallInfo
+
+	//check if real request exists for this bidder or it only has stored responses
+	dataLen := 0
+	if len(bidderRequest.BidRequest.Imp) > 0 {
+		reqData, errs = bidder.Bidder.MakeRequests(bidderRequest.BidRequest, reqInfo)
+
+		if len(reqData) == 0 {
+			// If the adapter failed to generate both requests and errors, this is an error.
+			if len(errs) == 0 {
+				errs = append(errs, &errortypes.FailedToRequestBids{Message: "The adapter failed to generate any bid requests, but also failed to generate an error explaining why"})
+			}
+			return nil, errs
 		}
-		return nil, errs
-	}
-	xPrebidHeader := version.BuildXPrebidHeaderForRequest(request, version.Ver)
+		xPrebidHeader := version.BuildXPrebidHeaderForRequest(bidderRequest.BidRequest, version.Ver)
 
-	for i := 0; i < len(reqData); i++ {
-		if reqData[i].Headers != nil {
-			reqData[i].Headers = reqData[i].Headers.Clone()
+		for i := 0; i < len(reqData); i++ {
+			if reqData[i].Headers != nil {
+				reqData[i].Headers = reqData[i].Headers.Clone()
+			} else {
+				reqData[i].Headers = http.Header{}
+			}
+			reqData[i].Headers.Add("X-Prebid", xPrebidHeader)
+			if reqInfo.GlobalPrivacyControlHeader == "1" {
+				reqData[i].Headers.Add("Sec-GPC", reqInfo.GlobalPrivacyControlHeader)
+			}
+		}
+		// Make any HTTP requests in parallel.
+		// If the bidder only needs to make one, save some cycles by just using the current one.
+		dataLen = len(reqData) + len(bidderRequest.BidderStoredResponses)
+		responseChannel = make(chan *httpCallInfo, dataLen)
+		if len(reqData) == 1 {
+			responseChannel <- bidder.doRequest(ctx, reqData[0])
 		} else {
-			reqData[i].Headers = http.Header{}
-		}
-		reqData[i].Headers.Add("X-Prebid", xPrebidHeader)
-		if reqInfo.GlobalPrivacyControlHeader == "1" {
-			reqData[i].Headers.Add("Sec-GPC", reqInfo.GlobalPrivacyControlHeader)
+			for _, oneReqData := range reqData {
+				go func(data *adapters.RequestData) {
+					responseChannel <- bidder.doRequest(ctx, data)
+				}(oneReqData) // Method arg avoids a race condition on oneReqData
+			}
 		}
 	}
-
-	// Make any HTTP requests in parallel.
-	// If the bidder only needs to make one, save some cycles by just using the current one.
-	responseChannel := make(chan *httpCallInfo, len(reqData))
-	if len(reqData) == 1 {
-		responseChannel <- bidder.doRequest(ctx, reqData[0])
-	} else {
-		for _, oneReqData := range reqData {
-			go func(data *adapters.RequestData) {
-				responseChannel <- bidder.doRequest(ctx, data)
-			}(oneReqData) // Method arg avoids a race condition on oneReqData
+	if len(bidderRequest.BidderStoredResponses) > 0 {
+		//if stored bid responses are present - replace impIds and add them as is to responseChannel <- stored responses
+		if responseChannel == nil {
+			dataLen = dataLen + len(bidderRequest.BidderStoredResponses)
+			responseChannel = make(chan *httpCallInfo, dataLen)
+		}
+		for impId, bidResp := range bidderRequest.BidderStoredResponses {
+			go func(id string, resp json.RawMessage) {
+				responseChannel <- prepareStoredResponse(id, resp)
+			}(impId, bidResp)
 		}
 	}
 
 	defaultCurrency := "USD"
 	seatBid := &pbsOrtbSeatBid{
-		bids:      make([]*pbsOrtbBid, 0, len(reqData)),
+		bids:      make([]*pbsOrtbBid, 0, dataLen),
 		currency:  defaultCurrency,
-		httpCalls: make([]*openrtb_ext.ExtHttpCall, 0, len(reqData)),
+		httpCalls: make([]*openrtb_ext.ExtHttpCall, 0, dataLen),
 	}
 
 	// If the bidder made multiple requests, we still want them to enter as many bids as possible...
 	// even if the timeout occurs sometime halfway through.
-	for i := 0; i < len(reqData); i++ {
+	for i := 0; i < dataLen; i++ {
 		httpInfo := <-responseChannel
 		// If this is a test bid, capture debugging info from the requests.
 		// Write debug data to ext in case if:
@@ -201,7 +225,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb2.B
 		}
 
 		if httpInfo.err == nil {
-			bidResponse, moreErrs := bidder.Bidder.MakeBids(request, httpInfo.request, httpInfo.response)
+			bidResponse, moreErrs := bidder.Bidder.MakeBids(bidderRequest.BidRequest, httpInfo.request, httpInfo.response)
 			errs = append(errs, moreErrs...)
 
 			if bidResponse != nil {
@@ -209,8 +233,8 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb2.B
 				if bidResponse.Currency == "" {
 					bidResponse.Currency = defaultCurrency
 				}
-				if len(request.Cur) == 0 {
-					request.Cur = []string{defaultCurrency}
+				if len(bidderRequest.BidRequest.Cur) == 0 {
+					bidderRequest.BidRequest.Cur = []string{defaultCurrency}
 				}
 
 				// Try to get a conversion rate
@@ -218,7 +242,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb2.B
 				// and use it as currency
 				var conversionRate float64
 				var err error
-				for _, bidReqCur := range request.Cur {
+				for _, bidReqCur := range bidderRequest.BidRequest.Cur {
 					if conversionRate, err = conversions.GetRate(bidResponse.Currency, bidReqCur); err == nil {
 						seatBid.currency = bidReqCur
 						break
@@ -226,10 +250,10 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb2.B
 				}
 
 				// Only do this for request from mobile app
-				if request.App != nil {
+				if bidderRequest.BidRequest.App != nil {
 					for i := 0; i < len(bidResponse.Bids); i++ {
 						if bidResponse.Bids[i].BidType == openrtb_ext.BidTypeNative {
-							nativeMarkup, moreErrs := addNativeTypes(bidResponse.Bids[i].Bid, request)
+							nativeMarkup, moreErrs := addNativeTypes(bidResponse.Bids[i].Bid, bidderRequest.BidRequest)
 							errs = append(errs, moreErrs...)
 
 							if nativeMarkup != nil {
@@ -240,6 +264,18 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb2.B
 									bidResponse.Bids[i].Bid.AdM = string(markup)
 								}
 							}
+						}
+					}
+				}
+
+				if len(bidderRequest.BidderStoredResponses) > 0 {
+					//set imp ids back to response for bids with stored responses
+					for i := 0; i < len(bidResponse.Bids); i++ {
+						if httpInfo.request.Uri == "" {
+							reqBody := string(httpInfo.request.Body)
+							re := regexp.MustCompile(ImpIdReqBody)
+							reqBodySplit := re.Split(reqBody, -1)
+							bidResponse.Bids[i].Bid.ImpID = reqBodySplit[1]
 						}
 					}
 				}
@@ -271,7 +307,6 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb2.B
 			errs = append(errs, httpInfo.err)
 		}
 	}
-
 	return seatBid, errs
 }
 
@@ -542,4 +577,23 @@ func (bidder *bidderAdapter) addClientTrace(ctx context.Context) context.Context
 		},
 	}
 	return httptrace.WithClientTrace(ctx, trace)
+}
+
+func prepareStoredResponse(impId string, bidResp json.RawMessage) *httpCallInfo {
+	//always one element in reqData because stored response is mapped to single imp
+	body := fmt.Sprintf("%s%s", ImpIdReqBody, impId)
+	reqDataForStoredResp := adapters.RequestData{
+		Method: "POST",
+		Uri:    "",
+		Body:   []byte(body), //use it to pass imp id for stored resp
+	}
+	respData := &httpCallInfo{
+		request: &reqDataForStoredResp,
+		response: &adapters.ResponseData{
+			StatusCode: 200,
+			Body:       bidResp,
+		},
+		err: nil,
+	}
+	return respData
 }

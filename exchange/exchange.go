@@ -24,6 +24,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/stored_responses"
 	"github.com/prebid/prebid-server/usersync"
 	"github.com/prebid/prebid-server/util/maputil"
 
@@ -166,18 +167,21 @@ type AuctionRequest struct {
 	LegacyLabels   metrics.Labels
 	FirstPartyData map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData
 	// map of imp id to stored response
-	StoredAuctionResponses map[string]json.RawMessage
+	StoredAuctionResponses stored_responses.ImpsWithBidResponses
 	TCF2ConfigBuilder      gdpr.TCF2ConfigBuilder
 	GDPRPermissionsBuilder gdpr.PermissionsBuilder
+	// map of imp id to bidder to stored response
+	StoredBidResponses stored_responses.ImpBidderStoredResp
 }
 
 // BidderRequest holds the bidder specific request and all other
 // information needed to process that bidder request.
 type BidderRequest struct {
-	BidRequest     *openrtb2.BidRequest
-	BidderName     openrtb_ext.BidderName
-	BidderCoreName openrtb_ext.BidderName
-	BidderLabels   metrics.AdapterLabels
+	BidRequest            *openrtb2.BidRequest
+	BidderName            openrtb_ext.BidderName
+	BidderCoreName        openrtb_ext.BidderName
+	BidderLabels          metrics.AdapterLabels
+	BidderStoredResponses map[string]json.RawMessage
 }
 
 func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *DebugLog) (*openrtb2.BidResponse, error) {
@@ -511,7 +515,7 @@ func (e *exchange) getAllBids(
 			reqInfo.PbsEntryPoint = bidderRequest.BidderLabels.RType
 			reqInfo.GlobalPrivacyControlHeader = globalPrivacyControlHeader
 
-			bids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest.BidRequest, bidderRequest.BidderName, adjustmentFactor, conversions, &reqInfo, accountDebugAllowed, headerDebugAllowed)
+			bids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest, adjustmentFactor, conversions, &reqInfo, accountDebugAllowed, headerDebugAllowed)
 
 			// Add in time reporting
 			elapsed := time.Since(start)
