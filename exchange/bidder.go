@@ -74,6 +74,8 @@ type pbsOrtbBid struct {
 	dealPriority      int
 	dealTierSatisfied bool
 	generatedBidID    string
+	originalBidCPM    float64
+	originalBidCur    string
 }
 
 // pbsOrtbSeatBid is a SeatBid returned by an adaptedBidder.
@@ -130,7 +132,6 @@ type bidderAdapterConfig struct {
 }
 
 func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb2.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool) (*pbsOrtbSeatBid, []error) {
-
 	reqData, errs := bidder.Bidder.MakeRequests(request, reqInfo)
 
 	if len(reqData) == 0 {
@@ -246,15 +247,19 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb2.B
 				if err == nil {
 					// Conversion rate found, using it for conversion
 					for i := 0; i < len(bidResponse.Bids); i++ {
+						originalBidCpm := 0.0
 						if bidResponse.Bids[i].Bid != nil {
+							originalBidCpm = bidResponse.Bids[i].Bid.Price
 							bidResponse.Bids[i].Bid.Price = bidResponse.Bids[i].Bid.Price * bidAdjustment * conversionRate
 						}
 						seatBid.bids = append(seatBid.bids, &pbsOrtbBid{
-							bid:          bidResponse.Bids[i].Bid,
-							bidMeta:      bidResponse.Bids[i].BidMeta,
-							bidType:      bidResponse.Bids[i].BidType,
-							bidVideo:     bidResponse.Bids[i].BidVideo,
-							dealPriority: bidResponse.Bids[i].DealPriority,
+							bid:            bidResponse.Bids[i].Bid,
+							bidMeta:        bidResponse.Bids[i].BidMeta,
+							bidType:        bidResponse.Bids[i].BidType,
+							bidVideo:       bidResponse.Bids[i].BidVideo,
+							dealPriority:   bidResponse.Bids[i].DealPriority,
+							originalBidCPM: originalBidCpm,
+							originalBidCur: bidResponse.Currency,
 						})
 					}
 				} else {
