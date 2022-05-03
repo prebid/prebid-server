@@ -142,6 +142,9 @@ func TestSingleBidder(t *testing.T) {
 		if len(seatBid.httpCalls) != test.httpCallsLen {
 			t.Errorf("The bidder shouldn't log HttpCalls when request.test == 0. Found %d", len(seatBid.httpCalls))
 		}
+		for index, bid := range seatBid.bids {
+			assert.NotEqual(t, mockBidderResponse.Bids[index].Bid.Price, bid.originalBidCPM, "The bid price was adjusted, so the originally bid CPM should be different")
+		}
 	}
 }
 
@@ -424,8 +427,9 @@ func TestConnectionClose(t *testing.T) {
 }
 
 type bid struct {
-	currency string
-	price    float64
+	currency       string
+	price          float64
+	originalBidCur string
 }
 
 // TestMultiCurrencies rate converter is set / active.
@@ -459,9 +463,9 @@ func TestMultiCurrencies(t *testing.T) {
 				},
 			},
 			expectedBids: []bid{
-				{currency: "USD", price: 1.1},
-				{currency: "USD", price: 1.2},
-				{currency: "USD", price: 1.3},
+				{currency: "USD", price: 1.1, originalBidCur: "USD"},
+				{currency: "USD", price: 1.2, originalBidCur: "USD"},
+				{currency: "USD", price: 1.3, originalBidCur: "USD"},
 			},
 			expectedBadCurrencyErrors: []error{},
 			description:               "Case 1 - Bidder respond with the same currency (default one) on all HTTP responses",
@@ -483,9 +487,9 @@ func TestMultiCurrencies(t *testing.T) {
 				},
 			},
 			expectedBids: []bid{
-				{currency: "USD", price: 1.1},
-				{currency: "USD", price: 1.2},
-				{currency: "USD", price: 1.3},
+				{currency: "USD", price: 1.1, originalBidCur: "USD"},
+				{currency: "USD", price: 1.2, originalBidCur: "USD"},
+				{currency: "USD", price: 1.3, originalBidCur: "USD"},
 			},
 			expectedBadCurrencyErrors: []error{},
 			description:               "Case 2 - Bidder respond with no currency on all HTTP responses",
@@ -507,9 +511,9 @@ func TestMultiCurrencies(t *testing.T) {
 				},
 			},
 			expectedBids: []bid{
-				{currency: "USD", price: 1.1 * 1.1435678764},
-				{currency: "USD", price: 1.2 * 1.1435678764},
-				{currency: "USD", price: 1.3 * 1.1435678764},
+				{currency: "USD", price: 1.1 * 1.1435678764, originalBidCur: "EUR"},
+				{currency: "USD", price: 1.2 * 1.1435678764, originalBidCur: "EUR"},
+				{currency: "USD", price: 1.3 * 1.1435678764, originalBidCur: "EUR"},
 			},
 			expectedBadCurrencyErrors: []error{},
 			description:               "Case 3 - Bidder respond with the same non default currency on all HTTP responses",
@@ -531,9 +535,9 @@ func TestMultiCurrencies(t *testing.T) {
 				},
 			},
 			expectedBids: []bid{
-				{currency: "USD", price: 1.1},
-				{currency: "USD", price: 1.2 * 1.1435678764},
-				{currency: "USD", price: 1.3 * 1.3050530256},
+				{currency: "USD", price: 1.1, originalBidCur: "USD"},
+				{currency: "USD", price: 1.2 * 1.1435678764, originalBidCur: "EUR"},
+				{currency: "USD", price: 1.3 * 1.3050530256, originalBidCur: "GBP"},
 			},
 			expectedBadCurrencyErrors: []error{},
 			description:               "Case 4 - Bidder respond with a mix of currencies on all HTTP responses",
@@ -555,9 +559,9 @@ func TestMultiCurrencies(t *testing.T) {
 				},
 			},
 			expectedBids: []bid{
-				{currency: "USD", price: 1.1},
-				{currency: "USD", price: 1.2 * 1.1435678764},
-				{currency: "USD", price: 1.3 * 1.3050530256},
+				{currency: "USD", price: 1.1, originalBidCur: "USD"},
+				{currency: "USD", price: 1.2 * 1.1435678764, originalBidCur: "EUR"},
+				{currency: "USD", price: 1.3 * 1.3050530256, originalBidCur: "GBP"},
 			},
 			expectedBadCurrencyErrors: []error{},
 			description:               "Case 5 - Bidder respond with a mix of currencies and no currency on all HTTP responses",
@@ -579,8 +583,8 @@ func TestMultiCurrencies(t *testing.T) {
 				},
 			},
 			expectedBids: []bid{
-				{currency: "USD", price: 1.2 * 1.1435678764},
-				{currency: "USD", price: 1.3 * 1.3050530256},
+				{currency: "USD", price: 1.2 * 1.1435678764, originalBidCur: "EUR"},
+				{currency: "USD", price: 1.3 * 1.3050530256, originalBidCur: "GBP"},
 			},
 			expectedBadCurrencyErrors: []error{
 				currency.ConversionNotFoundError{FromCur: "JPY", ToCur: "USD"},
@@ -708,8 +712,9 @@ func TestMultiCurrencies(t *testing.T) {
 		resultLightBids := make([]bid, len(seatBid.bids))
 		for i, b := range seatBid.bids {
 			resultLightBids[i] = bid{
-				price:    b.bid.Price,
-				currency: seatBid.currency,
+				price:          b.bid.Price,
+				currency:       seatBid.currency,
+				originalBidCur: b.originalBidCur,
 			}
 		}
 		assert.ElementsMatch(t, tc.expectedBids, resultLightBids, tc.description)

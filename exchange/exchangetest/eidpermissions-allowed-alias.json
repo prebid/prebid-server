@@ -112,6 +112,7 @@
                     "h": 250,
                     "crid": "creative-1",
                     "ext": {
+                        "origbidcpm": 0.3,
                         "prebid": {
                             "type": "video"
                         }

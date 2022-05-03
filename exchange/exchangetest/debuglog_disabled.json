@@ -120,6 +120,7 @@
                 "IAB1-1"
               ],
               "ext": {
+                "origbidcpm": 0.3,
                 "prebid": {
                   "type": "video",
                   "targeting": {
@@ -145,6 +146,7 @@
               ],
               "crid": "creative-3",
               "ext": {
+                "origbidcpm": 0.6,
                 "prebid": {
                   "targeting": {
                     "hb_bidder": "appnexus",
