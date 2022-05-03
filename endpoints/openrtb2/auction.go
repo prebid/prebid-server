@@ -1916,7 +1916,7 @@ func checkIfAppRequest(request []byte) (bool, error) {
 func validateStoredBidRespAndImpExtBidders(bidderExts map[string]json.RawMessage, storedBidResp stored_responses.ImpBidderStoredResp, impId string) []error {
 	if bidResponses, ok := storedBidResp[impId]; ok {
 		storedBidRespValidationError := []error{fmt.Errorf("request validation failed. Stored bid responses are specified for imp %s. Bidders specified in imp.ext should match with bidders specified in imp.ext.prebid.storedbidresponse", impId)}
-		if len(bidResponses) != len(bidderExts)-1 { // do not count "prebid" part of imp.ext. It is always present in imp.ext if stored bid responses are specified
+		if len(bidResponses) < len(bidderExts)-1 { // do not count "prebid" part of imp.ext. It is always present in imp.ext if stored bid responses are specified. There are can be other properties except of bidders and "prebid"
 			return storedBidRespValidationError
 		}
 		for bidderName := range bidResponses {
