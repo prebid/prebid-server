@@ -1,24 +1,17 @@
 {
-  "description": "Well formed amp request with aliases that should run properly",
-  "config": {
-    "mockBidders": [
-      {"bidderName": "appnexus", "currency": "USD", "price": 1.00}
-    ]
-  },
+  "description": "Amp request, impression with stored response ID, directed to an alias that should be properly recognized",
   "mockAmpStoredResponse": {
-    "6d718149": "[{\"bid\": [{\"id\": \"bid_id\", \"ext\": {\"prebid\": {\"targeting\": { \"hb_pb\": \"1.20\", \"hb_cat\": \"IAB-20\", \"hb_cache_id\": \"some_id\"}}}}],\"seat\": \"appnexus\"}]"
+    "6d718149": "[{\"bid\": [{\"id\": \"bid_id\", \"price\": 2.00, \"ext\": {\"prebid\": {\"targeting\": { \"hb_pb\": \"1.20\", \"hb_cat\": \"IAB-20\", \"hb_cache_id\": \"some_id\"}}}}],\"seat\": \"appnexus\"}]"
   },
   "mockBidRequest": {
     "id": "some-request-id",
-    "site": {
-      "page": "test.somepage.com"
-    },
+    "site": {"page": "test.somepage.com"},
     "imp": [
       {
         "id": "my-imp-id",
-        "video": {
-          "mimes": [
-            "video/mp4"
+        "banner": {
+          "format": [
+            {"w": 300, "h": 600}
           ]
         },
         "ext": {
@@ -51,8 +44,8 @@
         "hb_cache_id_appnexus": "0",
         "hb_cache_path":        "/pbcache/endpoint",
         "hb_cache_path_appnex": "/pbcache/endpoint",
-        "hb_pb":                "0.00",
-        "hb_pb_appnexus":       "0.00"
+        "hb_pb":                "2.00",
+        "hb_pb_appnexus":       "2.00"
       },
       "warnings": {
           "general": [

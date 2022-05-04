@@ -89,9 +89,8 @@ func (e *brokenExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequ
 }
 
 // Stored Requests
-// first below is valid JSON
-// second below is identical to first but with extra '}' for invalid JSON
 var testStoredRequestData = map[string]json.RawMessage{
+	// Valid JSON
 	"1": json.RawMessage(`{"id": "{{UUID}}"}`),
 	"2": json.RawMessage(`{
 		"id": "{{uuid}}",
@@ -104,6 +103,7 @@ var testStoredRequestData = map[string]json.RawMessage{
 			}
 		}
 	}`),
+	// Invalid JSON because it comes with an extra closing curly brace '}'
 	"3": json.RawMessage(`{
 		"tmax": 500,
 				"ext": {
@@ -114,14 +114,13 @@ var testStoredRequestData = map[string]json.RawMessage{
 						}
 				}}
 		}`),
+	// Valid JSON
 	"4": json.RawMessage(`{"id": "ThisID", "cur": ["USD"]}`),
 }
 
 // Stored Imp Requests
-// first below has valid JSON but doesn't match schema
-// second below has invalid JSON (missing comma after rubicon accountId entry) but otherwise matches schema
-// third below has valid JSON and matches schema
 var testStoredImpData = map[string]json.RawMessage{
+	// Has valid JSON and matches schema
 	"1": json.RawMessage(`{
 			"id": "adUnit1",
 			"ext": {
@@ -139,6 +138,7 @@ var testStoredImpData = map[string]json.RawMessage{
 				"h":300
 			}
 		}`),
+	// Has valid JSON, matches schema but is missing video object
 	"2": json.RawMessage(`{
 			"id": "adUnit1",
 			"ext": {
@@ -152,6 +152,7 @@ var testStoredImpData = map[string]json.RawMessage{
 				}
 			}
 		}`),
+	// Invalid JSON, is missing a coma after the rubicon's "accountId" field
 	"7": json.RawMessage(`{
 			"id": "adUnit1",
 			"ext": {
@@ -167,8 +168,9 @@ var testStoredImpData = map[string]json.RawMessage{
 				}
 			}
 		}`),
+	// Valid JSON. Missing video object
 	"9": json.RawMessage(`{
-"id": "adUnit1",
+			"id": "adUnit1",
 			"ext": {
 				"appnexus": {
 					"placementId": 12345678,
@@ -182,6 +184,7 @@ var testStoredImpData = map[string]json.RawMessage{
 				}
 			}
 		}`),
+	// Valid JSON. Missing video object
 	"10": json.RawMessage(`{
 			"ext": {
 				"appnexus": {
@@ -1080,7 +1083,7 @@ func (tc *testConfigValues) getAdaptersConfigMap() map[string]config.Adapter {
 	return adaptersConfig
 }
 
-// buildTestExchange(test testCase, bidderInfos config.BidderInfos, cfg *config.Configuration, met metrics.MetricsEngine, mockFetcher stored_requests.CategoryFetcher)
+// buildTestExchange returns an exchange with mock bidder servers and mock currency convertion server
 func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.BidderName]exchange.AdaptedBidder, mockBidServersArray []*httptest.Server, mockCurrencyRatesServer *httptest.Server, bidderInfos config.BidderInfos, cfg *config.Configuration, met metrics.MetricsEngine, mockFetcher stored_requests.CategoryFetcher) exchange.Exchange {
 	if len(testCfg.MockBidders) == 0 {
 		testCfg.MockBidders = append(testCfg.MockBidders, mockBidderHandler{BidderName: "appnexus", Currency: "USD", Price: 0.00})
@@ -1111,6 +1114,9 @@ func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.Bid
 
 // buildTestEndpoint instantiates an openrtb2 Auction endpoint designed to test endpoints/openrtb2/auction.go
 func buildTestEndpoint(test testCase, cfg *config.Configuration, paramValidator openrtb_ext.BidderParamValidator) (httprouter.Handle, []*httptest.Server, *httptest.Server, error) {
+	if test.Config == nil {
+		test.Config = &testConfigValues{}
+	}
 	bidderInfos := getBidderInfos(test.Config.getAdaptersConfigMap(), openrtb_ext.CoreBidderNames())
 	bidderMap := exchange.GetActiveBidders(bidderInfos)
 	disabledBidders := exchange.GetDisabledBiddersErrorMessages(bidderInfos)
@@ -1193,15 +1199,18 @@ func (cf *mockAmpStoredResponseFetcher) FetchRequests(ctx context.Context, reque
 }
 
 func (cf *mockAmpStoredResponseFetcher) FetchResponses(ctx context.Context, ids []string) (data map[string]json.RawMessage, errs []error) {
-	for k, val := range cf.data {
-		s, err := strconv.Unquote(string(val))
-		if err != nil {
-			return nil, append([]error{}, err)
+	for _, storedResponseID := range ids {
+		if storedResponse, exists := cf.data[storedResponseID]; exists {
+			// Found. Unescape string before returning
+			response, err := strconv.Unquote(string(storedResponse))
+			if err != nil {
+				return nil, append([]error{}, err)
+			}
+			cf.data[storedResponseID] = json.RawMessage(response)
+			return cf.data, nil
 		}
-		data = map[string]json.RawMessage{k: json.RawMessage(s)}
-		break
 	}
-	return data, errs
+	return nil, nil
 }
 
 type wellBehavedCache struct{}

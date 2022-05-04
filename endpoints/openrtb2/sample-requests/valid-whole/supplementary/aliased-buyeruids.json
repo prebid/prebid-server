@@ -1,27 +1,17 @@
 {
-  "description": "Well formed amp request that comes with user field and buyeruids values",
-  "config": {
-    "mockBidders": [
-      {"bidderName": "appnexus", "currency": "USD", "price": 1.00}
-    ]
-  },
+  "description": "Amp request, impression with stored response ID, user field with buyeruids names alias",
   "mockAmpStoredResponse": {
     "6d718149": "[{\"bid\": [{\"id\": \"bid_id\", \"price\": 2.00, \"ext\": {\"prebid\": {\"targeting\": { \"hb_pb\": \"1.20\", \"hb_cat\": \"IAB-20\", \"hb_cache_id\": \"some_id\"}}}}],\"seat\": \"appnexus\"}]"
   },
   "mockBidRequest": {
     "id": "request-with-user-ext-obj",
-    "site": {
-      "page": "test.somepage.com"
-    },
+    "site": {"page": "test.somepage.com"},
     "imp": [
       {
         "id": "my-imp-id",
         "banner": {
           "format": [
-            {
-              "w": 300,
-              "h": 600
-            }
+            {"w": 300, "h": 600}
           ]
         },
         "ext": {
@@ -39,17 +29,13 @@
     "user": {
       "ext": {
         "prebid": {
-          "buyeruids": {
-            "unknown": "123"
-          }
+          "buyeruids": {"unknown": "123"}
         }
       }
     },
     "ext": {
       "prebid": {
-        "aliases": {
-          "unknown": "appnexus"
-        }
+        "aliases": {"unknown": "appnexus"}
       }
     }
   },

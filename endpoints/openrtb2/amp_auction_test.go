@@ -36,8 +36,6 @@ func TestGoodAmpRequests(t *testing.T) {
 		{"3", "imp-with-stored-resp.json"},
 		{"5", "gdpr-no-consentstring.json"},
 		{"6", "gdpr.json"},
-		{"7", "site-stored-response.json"},
-		{"9", "user.json"},
 	}
 
 	for _, tc := range testCases {
@@ -54,13 +52,13 @@ func TestGoodAmpRequests(t *testing.T) {
 		test.storedRequest = map[string]json.RawMessage{tc.storedReqID: test.BidRequest}
 		test.endpointType = AMP_ENDPOINT
 
-		cfg := &config.Configuration{
-			MaxRequestSize:     maxSize,
-			BlacklistedApps:    test.Config.BlacklistedApps,
-			BlacklistedAppMap:  test.Config.getBlacklistedAppMap(),
-			BlacklistedAccts:   test.Config.BlacklistedAccounts,
-			BlacklistedAcctMap: test.Config.getBlackListedAccountMap(),
-			AccountRequired:    test.Config.AccountRequired,
+		cfg := &config.Configuration{MaxRequestSize: maxSize}
+		if test.Config != nil {
+			cfg.BlacklistedApps = test.Config.BlacklistedApps
+			cfg.BlacklistedAppMap = test.Config.getBlacklistedAppMap()
+			cfg.BlacklistedAccts = test.Config.BlacklistedAccounts
+			cfg.BlacklistedAcctMap = test.Config.getBlackListedAccountMap()
+			cfg.AccountRequired = test.Config.AccountRequired
 		}
 
 		// Set test up
