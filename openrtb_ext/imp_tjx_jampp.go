@@ -1,7 +1,7 @@
 package openrtb_ext
 
 // ExtImpJampp defines the contract for bidrequest.imp[i].ext.jampp
-type ExtImpJampp struct {
+type ExtImpTJXJampp struct {
 	Video          jamppVideoParams `json:"video"`
 	Region         string           `json:"region"`
 	SKADNSupported bool             `json:"skadn_supported"`
