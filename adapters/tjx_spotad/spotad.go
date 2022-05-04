@@ -93,10 +93,9 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 		// if any of the nested property is changed it change others references to and leads to
 		// change in other DSPs bidder requests as well.
 		appCopy := *spotadRequest.App
-		appExt := spotadAppExt{
+		appCopy.Ext, err = json.Marshal(spotadAppExt{
 			AppStoreID: spotadRequest.App.Bundle,
-		}
-		appCopy.Ext, err = json.Marshal(&appExt)
+		})
 		if err != nil {
 			errs = append(errs, err)
 		}

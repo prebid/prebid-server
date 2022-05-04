@@ -1,8 +1,6 @@
 package jampp
 
 import (
-	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -13,7 +11,6 @@ import (
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbs"
 )
 
 // Region ...
@@ -37,17 +34,8 @@ var jamppSKADNetIDs = map[string]bool{
 }
 
 type adapter struct {
-	http             *adapters.HTTPAdapter
 	endpoint         string
 	SupportedRegions map[Region]string
-}
-
-func (a *adapter) Name() string {
-	return "jampp"
-}
-
-func (a *adapter) SkipNoCookies() bool {
-	return false
 }
 
 type jamppVideoExt struct {
@@ -71,15 +59,6 @@ type jamppAppExt struct {
 	AppStoreID string `json:"appstoreid"`
 }
 
-type callOneObject struct {
-	requestJson bytes.Buffer
-	mediaType   pbs.MediaType
-}
-
-func (a *adapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
-	return pbs.PBSBidSlice{}, nil
-}
-
 func Builder(_ openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,
@@ -88,20 +67,6 @@ func Builder(_ openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, 
 		},
 	}
 	return bidder, nil
-}
-
-func NewJamppLegacyAdapter(config *adapters.HTTPAdapterConfig, uri string, useast string) *adapter {
-	return NewJamppBidder(adapters.NewHTTPAdapter(config).Client, uri, useast)
-}
-
-func NewJamppBidder(client *http.Client, uri string, useast string) *adapter {
-	return &adapter{
-		http:     &adapters.HTTPAdapter{Client: client},
-		endpoint: uri,
-		SupportedRegions: map[Region]string{
-			USEast: useast,
-		},
-	}
 }
 
 // MakeRequests ...
@@ -117,18 +82,27 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.Ex
 	errs := make([]error, 0, len(request.Imp))
 	var err error
 
+	// copy the bidder request
+	jamppRequest := *request
+
 	// Updating app extension
-	if request.App != nil {
-		appExt := jamppAppExt{
-			AppStoreID: request.App.Bundle,
-		}
-		request.App.Ext, err = json.Marshal(&appExt)
+	if jamppRequest.App != nil {
+
+		// *jamppRequest.App creates a copy of the object in appCopy -> correct way.
+		// if we do spotadRequest.App just copies the reference -> Not the correct way because
+		// if any of the nested property is changed it change others references to and leads to
+		// change in other DSPs bidder requests as well.
+		appCopy := *jamppRequest.App
+		appCopy.Ext, err = json.Marshal(jamppAppExt{
+			AppStoreID: jamppRequest.App.Bundle,
+		})
 		if err != nil {
 			errs = append(errs, err)
 		}
+		jamppRequest.App = &appCopy
 	}
 
-	requestImpCopy := request.Imp
+	requestImpCopy := jamppRequest.Imp
 
 	for i := 0; i < numRequests; i++ {
 		skanSent := false
@@ -143,7 +117,7 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.Ex
 			continue
 		}
 
-		var jamppExt openrtb_ext.ExtImpJampp
+		var jamppExt openrtb_ext.ExtImpTJXJampp
 		if err = json.Unmarshal(bidderExt.Bidder, &jamppExt); err != nil {
 			errs = append(errs, &errortypes.BadInput{
 				Message: err.Error(),
@@ -223,11 +197,11 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.Ex
 			continue
 		}
 
-		request.Imp = []openrtb.Imp{thisImp}
-		request.Cur = nil
-		request.Ext = nil
+		jamppRequest.Imp = []openrtb.Imp{thisImp}
+		jamppRequest.Cur = nil
+		jamppRequest.Ext = nil
 
-		reqJSON, err := json.Marshal(request)
+		reqJSON, err := json.Marshal(jamppRequest)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -246,7 +220,7 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.Ex
 			Headers: headers,
 
 			TapjoyData: adapters.TapjoyData{
-				Bidder:        a.Name(),
+				Bidder:        "jampp",
 				PlacementType: placementType,
 				Region:        jamppExt.Region,
 				SKAN: adapters.SKAN{
