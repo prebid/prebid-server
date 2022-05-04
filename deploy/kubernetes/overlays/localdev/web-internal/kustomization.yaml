@@ -43,12 +43,6 @@ configMapGenerator:
       - PBS_MONITORING_OPENTELEMETRY_ENABLED="true"
       - PBS_MONITORING_OPENTELEMETRY_SAMPLE_RATE="1.0"
       - PBS_MONITORING_OPENTELEMETRY_ENDPOINT="otelcol-gateway.observability-system:4139"
-      
-      # operaads values
-      - PBS_ADAPTERS_OPERAADS_DISABLED="false"
-      - PBS_ADAPTERS_OPERAADS_XAPI_ENDPOINT_US_EAST="http://tpe-prebid-service-mocks.default.svc.cluster.local/operaads_givemeads"
-      - PBS_ADAPTERS_OPERAADS_XAPI_ENDPOINT_EU="http://tpe-prebid-service-mocks.default.svc.cluster.local/operaads_givemeads"
-      - PBS_ADAPTERS_OPERAADS_XAPI_ENDPOINT_APAC="http://tpe-prebid-service-mocks.default.svc.cluster.local/operaads_givemeads"
 
       # aarki values
       - PBS_ADAPTERS_AARKI_DISABLED="false"
@@ -64,6 +58,12 @@ configMapGenerator:
       # dv360 values
       - PBS_ADAPTERS_DV360_DISABLED="false"
       - PBS_ADAPTERS_DV360_ENDPOINT="http://tpe-prebid-service-mocks.default.svc.cluster.local/dv360_givemeads"
+
+      # jampp values
+      - PBS_ADAPTERS_JAMPP_DISABLED="false"
+      - PBS_ADAPTERS_JAMPP_XAPI_ENDPOINT_US_EAST="http://tpe-prebid-service-mocks.default.svc.cluster.local/jampp_givemeads"
+      - PBS_ADAPTERS_JAMPP_XAPI_ENDPOINT_EU="http://tpe-prebid-service-mocks.default.svc.cluster.local/jampp_givemeads"
+      - PBS_ADAPTERS_JAMPP_XAPI_ENDPOINT_APAC="http://tpe-prebid-service-mocks.default.svc.cluster.local/jampp_givemeads"
 
       # kaden.ai values
       - PBS_ADAPTERS_KADENAI_DISABLED="false"
@@ -81,6 +81,12 @@ configMapGenerator:
       - PBS_ADAPTERS_MOLOCO_XAPI_ENDPOINT_EU="http://tpe-prebid-service-mocks.default.svc.cluster.local/moloco_givemeads"
       - PBS_ADAPTERS_MOLOCO_XAPI_ENDPOINT_APAC="http://tpe-prebid-service-mocks.default.svc.cluster.local/moloco_givemeads"
 
+      # operaads values
+      - PBS_ADAPTERS_OPERAADS_DISABLED="false"
+      - PBS_ADAPTERS_OPERAADS_XAPI_ENDPOINT_US_EAST="http://tpe-prebid-service-mocks.default.svc.cluster.local/operaads_givemeads"
+      - PBS_ADAPTERS_OPERAADS_XAPI_ENDPOINT_EU="http://tpe-prebid-service-mocks.default.svc.cluster.local/operaads_givemeads"
+      - PBS_ADAPTERS_OPERAADS_XAPI_ENDPOINT_APAC="http://tpe-prebid-service-mocks.default.svc.cluster.local/operaads_givemeads"
+      
       # pangle values
       - PBS_ADAPTERS_PANGLE_DISABLED="false"
       - PBS_ADAPTERS_PANGLE_XAPI_ENDPOINT_US_EAST="http://tpe-prebid-service-mocks.default.svc.cluster.local/pangle_givemeads"

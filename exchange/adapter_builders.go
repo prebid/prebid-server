@@ -71,6 +71,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/invibes"
 	"github.com/prebid/prebid-server/adapters/iqzone"
 	"github.com/prebid/prebid-server/adapters/ix"
+	"github.com/prebid/prebid-server/adapters/jampp"
 	"github.com/prebid/prebid-server/adapters/jixie"
 	"github.com/prebid/prebid-server/adapters/kayzen"
 	"github.com/prebid/prebid-server/adapters/kidoz"
@@ -92,9 +93,11 @@ import (
 	"github.com/prebid/prebid-server/adapters/onetag"
 	"github.com/prebid/prebid-server/adapters/openweb"
 	"github.com/prebid/prebid-server/adapters/openx"
+
 	// "github.com/prebid/prebid-server/adapters/operaads"
 	"github.com/prebid/prebid-server/adapters/orbidder"
 	"github.com/prebid/prebid-server/adapters/outbrain"
+
 	// "github.com/prebid/prebid-server/adapters/pangle"
 	// "github.com/prebid/prebid-server/adapters/pubmatic"
 	"github.com/prebid/prebid-server/adapters/pubnative"
@@ -102,6 +105,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/revcontent"
 	"github.com/prebid/prebid-server/adapters/rhythmone"
 	"github.com/prebid/prebid-server/adapters/richaudience"
+
 	// "github.com/prebid/prebid-server/adapters/rtbhouse"
 	// "github.com/prebid/prebid-server/adapters/rubicon"
 	salunamedia "github.com/prebid/prebid-server/adapters/sa_lunamedia"
@@ -121,6 +125,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/triplelift"
 	"github.com/prebid/prebid-server/adapters/triplelift_native"
 	"github.com/prebid/prebid-server/adapters/ucfunnel"
+
 	// "github.com/prebid/prebid-server/adapters/unicorn"
 	"github.com/prebid/prebid-server/adapters/unruly"
 	"github.com/prebid/prebid-server/adapters/videobyte"
@@ -135,23 +140,23 @@ import (
 	"github.com/prebid/prebid-server/adapters/zeroclickfraud"
 	"github.com/prebid/prebid-server/openrtb_ext"
 
-	"github.com/prebid/prebid-server/adapters/tjx_aarki"
-	"github.com/prebid/prebid-server/adapters/tjx_appier"
-	"github.com/prebid/prebid-server/adapters/tjx_dv360"
-	"github.com/prebid/prebid-server/adapters/tjx_kadenai"
-	"github.com/prebid/prebid-server/adapters/tjx_liftoff"
-	"github.com/prebid/prebid-server/adapters/tjx_moloco"
-	"github.com/prebid/prebid-server/adapters/tjx_operaads"
-	"github.com/prebid/prebid-server/adapters/tjx_pangle"
-	"github.com/prebid/prebid-server/adapters/tjx_personaly"
-	"github.com/prebid/prebid-server/adapters/tjx_pubmatic"
-	"github.com/prebid/prebid-server/adapters/tjx_rtbhouse"
-	"github.com/prebid/prebid-server/adapters/tjx_rubicon"
-	"github.com/prebid/prebid-server/adapters/tjx_rubiconmraid"
-	"github.com/prebid/prebid-server/adapters/tjx_spotad"
-	"github.com/prebid/prebid-server/adapters/tjx_tapjoy"
-	"github.com/prebid/prebid-server/adapters/tjx_taurusx"
-	"github.com/prebid/prebid-server/adapters/tjx_unicorn"
+	aarki "github.com/prebid/prebid-server/adapters/tjx_aarki"
+	appier "github.com/prebid/prebid-server/adapters/tjx_appier"
+	dv360 "github.com/prebid/prebid-server/adapters/tjx_dv360"
+	kadenai "github.com/prebid/prebid-server/adapters/tjx_kadenai"
+	liftoff "github.com/prebid/prebid-server/adapters/tjx_liftoff"
+	moloco "github.com/prebid/prebid-server/adapters/tjx_moloco"
+	operaads "github.com/prebid/prebid-server/adapters/tjx_operaads"
+	pangle "github.com/prebid/prebid-server/adapters/tjx_pangle"
+	personaly "github.com/prebid/prebid-server/adapters/tjx_personaly"
+	pubmatic "github.com/prebid/prebid-server/adapters/tjx_pubmatic"
+	rtbhouse "github.com/prebid/prebid-server/adapters/tjx_rtbhouse"
+	rubicon "github.com/prebid/prebid-server/adapters/tjx_rubicon"
+	rubiconmraid "github.com/prebid/prebid-server/adapters/tjx_rubiconmraid"
+	spotad "github.com/prebid/prebid-server/adapters/tjx_spotad"
+	tapjoy "github.com/prebid/prebid-server/adapters/tjx_tapjoy"
+	taurusx "github.com/prebid/prebid-server/adapters/tjx_taurusx"
+	unicorn "github.com/prebid/prebid-server/adapters/tjx_unicorn"
 )
 
 // Adapter registration is kept in this separate file for ease of use and to aid
@@ -233,6 +238,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderInvibes:           invibes.Builder,
 		openrtb_ext.BidderIQZone:            iqzone.Builder,
 		openrtb_ext.BidderIx:                ix.Builder,
+		openrtb_ext.BidderJampp:             jampp.Builder,
 		openrtb_ext.BidderJANet:             adtelligent.Builder,
 		openrtb_ext.BidderJixie:             jixie.Builder,
 		openrtb_ext.BidderKadenAI:           kadenai.Builder,
