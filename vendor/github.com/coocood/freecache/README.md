@@ -32,6 +32,7 @@ FreeCache should be many times faster than single lock protected built-in map.
 ## Example Usage
 
 ```go
+// In bytes, where 1024 * 1024 represents a single Megabyte, and 100 * 1024*1024 represents 100 Megabytes.
 cacheSize := 100 * 1024 * 1024
 cache := freecache.NewCache(cacheSize)
 debug.SetGCPercent(20)
@@ -43,7 +44,7 @@ got, err := cache.Get(key)
 if err != nil {
     fmt.Println(err)
 } else {
-    fmt.Println(string(got))
+    fmt.Printf("%s\n", got)
 }
 affected := cache.Del(key)
 fmt.Println("deleted key ", affected)

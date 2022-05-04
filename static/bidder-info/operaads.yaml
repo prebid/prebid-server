@@ -1,11 +1,18 @@
 maintainer:
-  email: "prebid@operaads.com"
-gvlVendorID: 16
+  email: adtech-prebid-group@opera.com
+modifyingVastXmlAllowed: true
 capabilities:
   app:
     mediaTypes:
-      - video
       - banner
+      - video
+      - native
   site:
     mediaTypes:
       - banner
+      - video
+      - native
+userSync:
+  redirect:
+    url: "https://t.adx.opera.com/pbs/sync?gdpr={{.GDPR}}&us_privacy={{.USPrivacy}}&gdpr_consent={{.GDPRConsent}}&r={{.RedirectURL}}"
+    userMacro: "${UID}"

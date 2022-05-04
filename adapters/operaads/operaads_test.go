@@ -1,6 +1,3 @@
-//go:build !integration
-// +build !integration
-
 package operaads
 
 import (
@@ -11,26 +8,13 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const testsDir = "operaadstest"
-
-const testsBidderEndpoint = "http://operaads.com/givemeads"
-const testsBidderEndpointUSEast = "http://operaads.com/givemeads_useast"
-const testsBidderEndpointAPAC = "http://operaads.com/givemeads_apac"
-const testsBidderEndpointEU = "http://operaads.com/givemeads_eu"
-
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderOperaAds, config.Adapter{
-		Endpoint: testsBidderEndpoint,
-		XAPI: config.AdapterXAPI{
-			EndpointUSEast: testsBidderEndpointUSEast,
-			EndpointAPAC:   testsBidderEndpointAPAC,
-			EndpointEU:     testsBidderEndpointEU,
-		},
-	})
+	bidder, buildErr := Builder(openrtb_ext.BidderOperaads, config.Adapter{
+		Endpoint: "http://example.com/operaads/ortb/v2/{{.PublisherID}}?ep={{.AccountID}}"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	adapterstest.RunJSONBidderTest(t, testsDir, bidder)
+	adapterstest.RunJSONBidderTest(t, "operaadstest", bidder)
 }

@@ -1,0 +1,59 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "region": "apac",
+            "video": {
+              "skip": 1,
+              "skipdelay": 5,
+              "width": 320,
+              "height": 480
+            }
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://rtbhouse.com/givemeads_apac",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "ext": {
+                "rewarded": 0
+              }
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 418,
+        "body": {}
+      }
+    }
+  ],
+
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 418. Run with request.debug = 1 for more info",
+      "comparison": "literal"
+    }
+  ]
+}

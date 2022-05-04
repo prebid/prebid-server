@@ -70,6 +70,11 @@ func (l lazyVendor) SpecialPurpose(purposeID consentconstants.Purpose) (hasSpeci
 	return idExists(l, int(purposeID), "specialPurposes")
 }
 
+// SpecialFeature returns true if this vendor claims a need for the given special feature
+func (l lazyVendor) SpecialFeature(featureID consentconstants.SpecialFeature) (hasSpecialFeature bool) {
+	return idExists(l, int(featureID), "specialFeatures")
+}
+
 // Returns false unless "id" exists in an array located at "data.key".
 func idExists(data []byte, id int, key string) bool {
 	hasID := false

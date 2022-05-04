@@ -16,8 +16,8 @@ type Version struct {
 func ParseVersion(v string) (Version, error) {
 	parts := strings.Split(v, ".")
 
-	if len(parts) != 2 {
-		return Version{}, errors.New("expected major.minor format")
+	if len(parts) < 2 || len(parts) > 3 {
+		return Version{}, errors.New("expected either major.minor or major.minor.patch format")
 	}
 
 	major, err := strconv.Atoi(parts[0])
@@ -35,6 +35,15 @@ func ParseVersion(v string) (Version, error) {
 		Minor: minor,
 	}
 	return version, nil
+}
+
+// Equal returns true if the iOS device version is equal to the desired major and minor version, using semantic versioning.
+func (v Version) Equal(major, minor int) bool {
+	if v.Major == major {
+		return v.Minor == minor
+	}
+
+	return false
 }
 
 // EqualOrGreater returns true if the iOS device version is equal or greater to the desired version, using semantic versioning.
@@ -59,20 +68,17 @@ const (
 
 // DetectVersionClassification detects the iOS version classification.
 func DetectVersionClassification(v string) VersionClassification {
-	// exact comparisons first. no parsing required.
-	if v == "14.0" {
-		return Version140
-	}
-	if v == "14.1" {
-		return Version141
-	}
-
 	// semantic versioning comparison second. parsing required.
 	if iosVersion, err := ParseVersion(v); err == nil {
+		if iosVersion.Equal(14, 0) {
+			return Version140
+		}
+		if iosVersion.Equal(14, 1) {
+			return Version141
+		}
 		if iosVersion.EqualOrGreater(14, 2) {
 			return Version142OrGreater
 		}
 	}
-
 	return VersionUnknown
 }

@@ -37,20 +37,9 @@
         },
         "ext": {
           "bidder": {
-            "region": "us_east",
-            "placementId": {
-              "banner": "b00000",
-              "native": "n00000",
-              "video": "v00000"
-            },
+            "placementId": "s00000",
             "endpointId": "ep00000",
-            "publisherId": "pub00000",
-            "video": {
-              "skip": 1,
-              "skipdelay": 5,
-              "width": 320,
-              "height": 480
-            }
+            "publisherId": "pub00000"
           }
         }
       }
@@ -69,13 +58,13 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://operaads.com/givemeads_useast",
+        "uri": "http://example.com/operaads/ortb/v2/pub00000?ep=ep00000",
         "body": {
           "id": "test-video-request",
           "imp": [
             {
               "id": "test-video-imp:opa:video",
-              "tagid": "v00000",
+              "tagid": "s00000",
               "video": {
                 "w": 640,
                 "h": 480,
@@ -102,19 +91,17 @@
                   13,
                   14
                 ],
-                "ext": {
-                  "orientation": "v",
-                  "placementtype": "interstitial",
-                  "skip": 1,
-                  "skipdelay": 5
-                },
                 "linearity": 1,
                 "placement": 2,
                 "minbitrate": 10,
                 "maxbitrate": 10
               },
               "ext": {
-                "rewarded": 0
+                "bidder": {
+                  "placementId": "s00000",
+                  "endpointId": "ep00000",
+                  "publisherId": "pub00000"
+                }
               }
             }
           ],

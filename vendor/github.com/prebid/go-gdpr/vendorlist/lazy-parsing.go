@@ -63,8 +63,13 @@ func (l lazyVendor) LegitimateInterestStrict(purposeID consentconstants.Purpose)
 	return idExists(l, int(purposeID), "legIntPurposeIds")
 }
 
-// V1 vedndor list does not support special purposes.
+// V1 vendor list does not support special purposes.
 func (l lazyVendor) SpecialPurpose(purposeID consentconstants.Purpose) bool {
+	return false
+}
+
+// V1 vendor list does not support special features.
+func (l lazyVendor) SpecialFeature(featureID consentconstants.SpecialFeature) bool {
 	return false
 }
 

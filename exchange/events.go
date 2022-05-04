@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/evanphx/json-patch"
+	jsonpatch "gopkg.in/evanphx/json-patch.v4"
+
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/endpoints/events"
-	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -18,7 +18,7 @@ type eventTracking struct {
 	enabledForAccount  bool
 	enabledForRequest  bool
 	auctionTimestampMs int64
-	integration        metrics.DemandSource // web app amp
+	integrationType    string
 	bidderInfos        config.BidderInfos
 	externalURL        string
 }
@@ -30,7 +30,7 @@ func getEventTracking(requestExtPrebid *openrtb_ext.ExtRequestPrebid, ts time.Ti
 		enabledForAccount:  account.EventsEnabled,
 		enabledForRequest:  requestExtPrebid != nil && requestExtPrebid.Events != nil,
 		auctionTimestampMs: ts.UnixNano() / 1e+6,
-		integration:        "", // TODO: add integration support, see #1428
+		integrationType:    requestExtPrebid.Integration,
 		bidderInfos:        bidderInfos,
 		externalURL:        externalURL,
 	}
@@ -66,7 +66,7 @@ func (ev *eventTracking) modifyBidVAST(pbsBid *pbsOrtbBid, bidderName openrtb_ex
 	if len(pbsBid.generatedBidID) > 0 {
 		bidID = pbsBid.generatedBidID
 	}
-	if newVastXML, ok := events.ModifyVastXmlString(ev.externalURL, vastXML, bidID, bidderName.String(), ev.accountID, ev.auctionTimestampMs); ok {
+	if newVastXML, ok := events.ModifyVastXmlString(ev.externalURL, vastXML, bidID, bidderName.String(), ev.accountID, ev.auctionTimestampMs, ev.integrationType); ok {
 		bid.AdM = newVastXML
 	}
 }
@@ -113,10 +113,11 @@ func (ev *eventTracking) makeEventURL(evType analytics.EventType, pbsBid *pbsOrt
 	}
 	return events.EventRequestToUrl(ev.externalURL,
 		&analytics.EventRequest{
-			Type:      evType,
-			BidID:     bidId,
-			Bidder:    string(bidderName),
-			AccountID: ev.accountID,
-			Timestamp: ev.auctionTimestampMs,
+			Type:        evType,
+			BidID:       bidId,
+			Bidder:      string(bidderName),
+			AccountID:   ev.accountID,
+			Timestamp:   ev.auctionTimestampMs,
+			Integration: ev.integrationType,
 		})
 }

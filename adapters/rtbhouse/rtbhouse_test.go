@@ -1,6 +1,3 @@
-//go:build !integration
-// +build !integration
-
 package rtbhouse
 
 import (
@@ -12,20 +9,11 @@ import (
 )
 
 const testsDir = "rtbhousetest"
-const testsBidderEndpoint = "http://rtbhouse.com/givemeads"
-const testsBidderEndpointUSEast = "http://rtbhouse.com/givemeads_useast"
-const testsBidderEndpointAPAC = "http://rtbhouse.com/givemeads_apac"
-const testsBidderEndpointEU = "http://rtbhouse.com/givemeads_eu"
+const testsBidderEndpoint = "http://localhost/prebid_server"
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderRTBHouse, config.Adapter{
-		Endpoint: testsBidderEndpoint,
-		XAPI: config.AdapterXAPI{
-			EndpointUSEast: testsBidderEndpointUSEast,
-			EndpointAPAC:   testsBidderEndpointAPAC,
-			EndpointEU:     testsBidderEndpointEU,
-		},
-	})
+		Endpoint: testsBidderEndpoint})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)

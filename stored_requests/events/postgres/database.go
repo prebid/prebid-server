@@ -170,9 +170,11 @@ func (e *PostgresEventProducer) recordError(errorType metrics.StoredDataError) {
 func (e *PostgresEventProducer) sendEvents(rows *sql.Rows) (err error) {
 	storedRequestData := make(map[string]json.RawMessage)
 	storedImpData := make(map[string]json.RawMessage)
+	storedRespData := make(map[string]json.RawMessage)
 
 	var requestInvalidations []string
 	var impInvalidations []string
+	var respInvalidations []string
 
 	for rows.Next() {
 		var id string
@@ -197,6 +199,12 @@ func (e *PostgresEventProducer) sendEvents(rows *sql.Rows) (err error) {
 			} else {
 				storedImpData[id] = data
 			}
+		case "response":
+			if len(data) == 0 || bytes.Equal(data, bytesNull()) {
+				respInvalidations = append(respInvalidations, id)
+			} else {
+				storedRespData[id] = data
+			}
 		default:
 			glog.Warningf("Stored Data with id=%s has invalid type: %s. This will be ignored.", id, dataType)
 		}
@@ -207,17 +215,19 @@ func (e *PostgresEventProducer) sendEvents(rows *sql.Rows) (err error) {
 		return rows.Err()
 	}
 
-	if len(storedRequestData) > 0 || len(storedImpData) > 0 {
+	if len(storedRequestData) > 0 || len(storedImpData) > 0 || len(storedRespData) > 0 {
 		e.saves <- events.Save{
-			Requests: storedRequestData,
-			Imps:     storedImpData,
+			Requests:  storedRequestData,
+			Imps:      storedImpData,
+			Responses: storedRespData,
 		}
 	}
 
-	if (len(requestInvalidations) > 0 || len(impInvalidations) > 0) && !e.lastUpdate.IsZero() {
+	if (len(requestInvalidations) > 0 || len(impInvalidations) > 0 || len(respInvalidations) > 0) && !e.lastUpdate.IsZero() {
 		e.invalidations <- events.Invalidation{
-			Requests: requestInvalidations,
-			Imps:     impInvalidations,
+			Requests:  requestInvalidations,
+			Imps:      impInvalidations,
+			Responses: respInvalidations,
 		}
 	}
 

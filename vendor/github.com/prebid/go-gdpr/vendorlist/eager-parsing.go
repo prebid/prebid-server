@@ -106,8 +106,13 @@ func (l parsedVendor) LegitimateInterestStrict(purposeID consentconstants.Purpos
 	return
 }
 
-// V1 vedndor list does not support special purposes.
+// V1 vendor list does not support special purposes.
 func (l parsedVendor) SpecialPurpose(purposeID consentconstants.Purpose) bool {
+	return false
+}
+
+// V1 vendor list does not support special features.
+func (l parsedVendor) SpecialFeature(featureID consentconstants.SpecialFeature) bool {
 	return false
 }
 

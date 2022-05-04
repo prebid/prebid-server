@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -155,7 +156,8 @@ func TestReadFromRequest(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		result, err := ReadFromRequest(test.request)
+		reqWrapper := &openrtb_ext.RequestWrapper{BidRequest: test.request}
+		result, err := ReadFromRequestWrapper(reqWrapper)
 		assertError(t, test.expectedError, err, test.description)
 		assert.Equal(t, test.expectedPolicy, result, test.description)
 	}
@@ -209,9 +211,20 @@ func TestWrite(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		err := test.policy.Write(test.request)
+		reqWrapper := &openrtb_ext.RequestWrapper{BidRequest: test.request}
+		var err error
+		_, err = reqWrapper.GetRegExt()
+		if err == nil {
+			_, err = reqWrapper.GetRequestExt()
+			if err == nil {
+				err = test.policy.Write(reqWrapper)
+				if err == nil && reqWrapper.BidRequest != nil {
+					err = reqWrapper.RebuildRequest()
+				}
+			}
+		}
 		assertError(t, test.expectedError, err, test.description)
-		assert.Equal(t, test.expected, test.request, test.description)
+		assert.Equal(t, test.expected, reqWrapper.BidRequest, test.description)
 	}
 }
 
@@ -237,6 +250,9 @@ func TestBuildRegs(t *testing.T) {
 			regs: &openrtb2.Regs{
 				Ext: json.RawMessage(`malformed`),
 			},
+			expected: &openrtb2.Regs{
+				Ext: json.RawMessage(`malformed`),
+			},
 			expectedError: true,
 		},
 		{
@@ -253,14 +269,22 @@ func TestBuildRegs(t *testing.T) {
 			regs: &openrtb2.Regs{
 				Ext: json.RawMessage(`malformed`),
 			},
+			expected: &openrtb2.Regs{
+				Ext: json.RawMessage(`malformed`),
+			},
 			expectedError: true,
 		},
 	}
 
 	for _, test := range testCases {
-		result, err := buildRegs(test.consent, test.regs)
+		request := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Regs: test.regs}}
+		regsExt, err := request.GetRegExt()
+		if err == nil {
+			regsExt.SetUSPrivacy(test.consent)
+			request.RebuildRequest()
+		}
 		assertError(t, test.expectedError, err, test.description)
-		assert.Equal(t, test.expected, result, test.description)
+		assert.Equal(t, test.expected, request.Regs, test.description)
 	}
 }
 
@@ -274,7 +298,7 @@ func TestBuildRegsClear(t *testing.T) {
 		{
 			description: "Nil Regs",
 			regs:        nil,
-			expected:    nil,
+			expected:    &openrtb2.Regs{Ext: nil},
 		},
 		{
 			description: "Nil Regs.Ext",
@@ -297,21 +321,28 @@ func TestBuildRegsClear(t *testing.T) {
 			expected:    &openrtb2.Regs{Ext: json.RawMessage(`{"other":"any"}`)},
 		},
 		{
-			description: "Invalid Regs.Ext Type - Still Cleared",
-			regs:        &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":123}`)},
-			expected:    &openrtb2.Regs{},
+			description:   "Invalid Regs.Ext Type - Returns Error, doesn't clear",
+			regs:          &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":123}`)},
+			expected:      &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":123}`)},
+			expectedError: true,
 		},
 		{
 			description:   "Malformed Regs.Ext",
 			regs:          &openrtb2.Regs{Ext: json.RawMessage(`malformed`)},
+			expected:      &openrtb2.Regs{Ext: json.RawMessage(`malformed`)},
 			expectedError: true,
 		},
 	}
 
 	for _, test := range testCases {
-		result, err := buildRegsClear(test.regs)
+		request := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Regs: test.regs}}
+		regsExt, err := request.GetRegExt()
+		if err == nil {
+			regsExt.SetUSPrivacy("")
+			request.RebuildRequest()
+		}
 		assertError(t, test.expectedError, err, test.description)
-		assert.Equal(t, test.expected, result, test.description)
+		assert.Equal(t, test.expected, request.Regs, test.description)
 	}
 }
 
@@ -354,23 +385,30 @@ func TestBuildRegsWrite(t *testing.T) {
 			expected:    &openrtb2.Regs{Ext: json.RawMessage(`{"other":"any","us_privacy":"anyConsent"}`)},
 		},
 		{
-			description: "Invalid Regs.Ext Type - Still Overwrites",
-			consent:     "anyConsent",
-			regs:        &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":123}`)},
-			expected:    &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":"anyConsent"}`)},
+			description:   "Invalid Regs.Ext Type - Doesn't Overwrite",
+			consent:       "anyConsent",
+			regs:          &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":123}`)},
+			expected:      &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":123}`)},
+			expectedError: true,
 		},
 		{
 			description:   "Malformed Regs.Ext",
 			consent:       "anyConsent",
 			regs:          &openrtb2.Regs{Ext: json.RawMessage(`malformed`)},
+			expected:      &openrtb2.Regs{Ext: json.RawMessage(`malformed`)},
 			expectedError: true,
 		},
 	}
 
 	for _, test := range testCases {
-		result, err := buildRegsWrite(test.consent, test.regs)
+		request := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Regs: test.regs}}
+		regsExt, err := request.GetRegExt()
+		if err == nil {
+			regsExt.SetUSPrivacy(test.consent)
+			request.RebuildRequest()
+		}
 		assertError(t, test.expectedError, err, test.description)
-		assert.Equal(t, test.expected, result, test.description)
+		assert.Equal(t, test.expected, request.Regs, test.description)
 	}
 }
 
@@ -415,7 +453,14 @@ func TestBuildExt(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		result, err := buildExt(test.noSaleBidders, test.ext)
+		request := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: test.ext}}
+		reqExt, err := request.GetRequestExt()
+		var result json.RawMessage
+		if err == nil {
+			setPrebidNoSale(test.noSaleBidders, reqExt)
+			err = request.RebuildRequest()
+			result = request.Ext
+		}
 		assertError(t, test.expectedError, err, test.description)
 		assert.Equal(t, test.expected, result, test.description)
 	}
@@ -460,13 +505,13 @@ func TestBuildExtClear(t *testing.T) {
 		},
 		{
 			description: "Leaves Other Ext.Prebid Values",
-			ext:         json.RawMessage(`{"prebid":{"nosale":["a","b"],"other":"any"}}`),
-			expected:    json.RawMessage(`{"prebid":{"other":"any"}}`),
+			ext:         json.RawMessage(`{"prebid":{"nosale":["a","b"],"aliases":{"a":"b"}}}`),
+			expected:    json.RawMessage(`{"prebid":{"aliases":{"a":"b"}}}`),
 		},
 		{
 			description: "Leaves All Other Values",
-			ext:         json.RawMessage(`{"other":"ABC","prebid":{"nosale":["a","b"],"other":"123"}}`),
-			expected:    json.RawMessage(`{"other":"ABC","prebid":{"other":"123"}}`),
+			ext:         json.RawMessage(`{"other":"ABC","prebid":{"nosale":["a","b"],"supportdeals":true}}`),
+			expected:    json.RawMessage(`{"other":"ABC","prebid":{"supportdeals":true}}`),
 		},
 		{
 			description:   "Malformed Ext",
@@ -486,7 +531,14 @@ func TestBuildExtClear(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		result, err := buildExtClear(test.ext)
+		request := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: test.ext}}
+		reqExt, err := request.GetRequestExt()
+		var result json.RawMessage
+		if err == nil {
+			setPrebidNoSaleClear(reqExt)
+			err = request.RebuildRequest()
+			result = request.Ext
+		}
 		assertError(t, test.expectedError, err, test.description)
 		assert.Equal(t, test.expected, result, test.description)
 	}
@@ -539,43 +591,56 @@ func TestBuildExtWrite(t *testing.T) {
 		{
 			description:   "Leaves Other Ext.Prebid Values",
 			noSaleBidders: []string{"a", "b"},
-			ext:           json.RawMessage(`{"prebid":{"other":"any"}}`),
-			expected:      json.RawMessage(`{"prebid":{"nosale":["a","b"],"other":"any"}}`),
+			ext:           json.RawMessage(`{"prebid":{"supportdeals":true}}`),
+			expected:      json.RawMessage(`{"prebid":{"supportdeals":true,"nosale":["a","b"]}}`),
 		},
 		{
 			description:   "Leaves All Other Values",
 			noSaleBidders: []string{"a", "b"},
-			ext:           json.RawMessage(`{"other":"ABC","prebid":{"other":"123"}}`),
-			expected:      json.RawMessage(`{"other":"ABC","prebid":{"nosale":["a","b"],"other":"123"}}`),
+			ext:           json.RawMessage(`{"other":"ABC","prebid":{"aliases":{"a":"b"}}}`),
+			expected:      json.RawMessage(`{"other":"ABC","prebid":{"aliases":{"a":"b"},"nosale":["a","b"]}}`),
 		},
 		{
 			description:   "Invalid Ext.Prebid No Sale Type - Still Overrides",
 			noSaleBidders: []string{"a", "b"},
 			ext:           json.RawMessage(`{"prebid":{"nosale":123}}`),
-			expected:      json.RawMessage(`{"prebid":{"nosale":["a","b"]}}`),
+			expected:      json.RawMessage(`{"prebid":{"nosale":123}}`),
+			expectedError: true,
 		},
 		{
 			description:   "Invalid Ext.Prebid Type ",
 			noSaleBidders: []string{"a", "b"},
 			ext:           json.RawMessage(`{"prebid":"wrongtype"}`),
+			expected:      json.RawMessage(`{"prebid":"wrongtype"}`),
 			expectedError: true,
 		},
 		{
 			description:   "Malformed Ext",
 			noSaleBidders: []string{"a", "b"},
 			ext:           json.RawMessage(`{malformed`),
+			expected:      json.RawMessage(`{malformed`),
 			expectedError: true,
 		},
 		{
 			description:   "Malformed Ext.Prebid",
 			noSaleBidders: []string{"a", "b"},
 			ext:           json.RawMessage(`{"prebid":malformed}`),
+			expected:      json.RawMessage(`{"prebid":malformed}`),
 			expectedError: true,
 		},
 	}
 
 	for _, test := range testCases {
-		result, err := buildExtWrite(test.noSaleBidders, test.ext)
+		request := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: test.ext}}
+		reqExt, err := request.GetRequestExt()
+		var result json.RawMessage
+		if err == nil {
+			setPrebidNoSaleWrite(test.noSaleBidders, reqExt)
+			err = request.RebuildRequest()
+			result = request.Ext
+		} else {
+			result = test.ext
+		}
 		assertError(t, test.expectedError, err, test.description)
 		assert.Equal(t, test.expected, result, test.description)
 	}
