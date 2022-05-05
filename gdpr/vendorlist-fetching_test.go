@@ -83,7 +83,7 @@ func TestFetcherThrottling(t *testing.T) {
 	})))
 	defer server.Close()
 
-	fetcher := newVendorListFetcher(context.Background(), testConfig(), server.Client(), testURLMaker(server))
+	fetcher := NewVendorListFetcher(context.Background(), testConfig(), server.Client(), testURLMaker(server))
 
 	// Dynamically Load List 2 Successfully
 	_, errList1 := fetcher(context.Background(), 2)
@@ -104,7 +104,7 @@ func TestMalformedVendorlist(t *testing.T) {
 	})))
 	defer server.Close()
 
-	fetcher := newVendorListFetcher(context.Background(), testConfig(), server.Client(), testURLMaker(server))
+	fetcher := NewVendorListFetcher(context.Background(), testConfig(), server.Client(), testURLMaker(server))
 	_, err := fetcher(context.Background(), 1)
 
 	// Fetching should fail since vendor list could not be unmarshalled.
@@ -117,7 +117,7 @@ func TestServerUrlInvalid(t *testing.T) {
 
 	invalidURLGenerator := func(uint16) string { return " http://invalid-url-has-leading-whitespace" }
 
-	fetcher := newVendorListFetcher(context.Background(), testConfig(), server.Client(), invalidURLGenerator)
+	fetcher := NewVendorListFetcher(context.Background(), testConfig(), server.Client(), invalidURLGenerator)
 	_, err := fetcher(context.Background(), 1)
 
 	assert.EqualError(t, err, "gdpr vendor list version 1 does not exist, or has not been loaded yet. Try again in a few minutes")
@@ -127,7 +127,7 @@ func TestServerUnavailable(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 	server.Close()
 
-	fetcher := newVendorListFetcher(context.Background(), testConfig(), server.Client(), testURLMaker(server))
+	fetcher := NewVendorListFetcher(context.Background(), testConfig(), server.Client(), testURLMaker(server))
 	_, err := fetcher(context.Background(), 1)
 
 	assert.EqualError(t, err, "gdpr vendor list version 1 does not exist, or has not been loaded yet. Try again in a few minutes")
@@ -152,7 +152,7 @@ func TestVendorListURLMaker(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		result := vendorListURLMaker(test.vendorListVersion)
+		result := VendorListURLMaker(test.vendorListVersion)
 		assert.Equal(t, test.expectedURL, result)
 	}
 }
@@ -254,7 +254,7 @@ type testExpected struct {
 
 func runTest(t *testing.T, test test, server *httptest.Server) {
 	config := testConfig()
-	fetcher := newVendorListFetcher(context.Background(), config, server.Client(), testURLMaker(server))
+	fetcher := NewVendorListFetcher(context.Background(), config, server.Client(), testURLMaker(server))
 	vendorList, err := fetcher(context.Background(), test.setup.vendorListVersion)
 
 	if test.expected.errorMessage != "" {

@@ -117,14 +117,15 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 				}}
 			}
 
-			if openrtb_ext.BidTypeBanner != mediaTypeId {
-				//only banner is supported, anything else is ignored
+			if openrtb_ext.BidTypeBanner != mediaTypeId &&
+				openrtb_ext.BidTypeVideo != mediaTypeId {
+				//only banner and video are mediaTypeId, anything else is ignored
 				continue
 			}
 
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &bid,
-				BidType: openrtb_ext.BidTypeBanner,
+				BidType: mediaTypeId,
 			})
 		}
 	}
@@ -140,6 +141,8 @@ func getImpInfo(impId string, imps []openrtb2.Imp) (bool, openrtb_ext.BidType) {
 			exists = true
 			if imp.Banner != nil {
 				mediaType = openrtb_ext.BidTypeBanner
+			} else if imp.Video != nil {
+				mediaType = openrtb_ext.BidTypeVideo
 			}
 			break
 		}
@@ -156,13 +159,20 @@ func changeRequestForBidService(request *openrtb2.BidRequest, extension *openrtb
 		request.App.ID = extension.Dcn
 	}
 
-	if request.Imp[0].Banner == nil {
-		return nil
+	if request.Imp[0].Banner != nil {
+		banner := *request.Imp[0].Banner
+		request.Imp[0].Banner = &banner
+
+		err := validateBanner(&banner)
+		if err != nil {
+			return err
+		}
 	}
 
-	banner := *request.Imp[0].Banner
-	request.Imp[0].Banner = &banner
+	return nil
+}
 
+func validateBanner(banner *openrtb2.Banner) error {
 	if banner.W != nil && banner.H != nil {
 		if *banner.W == 0 || *banner.H == 0 {
 			return fmt.Errorf("Invalid sizes provided for Banner %dx%d", *banner.W, *banner.H)

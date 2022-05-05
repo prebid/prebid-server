@@ -8,17 +8,21 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
+	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/privacy/ccpa"
 	gdprPrivacy "github.com/prebid/prebid-server/privacy/gdpr"
+	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/usersync"
 )
 
@@ -28,6 +32,8 @@ var (
 	errCookieSyncGDPRConsentMissing                = errors.New("gdpr_consent is required if gdpr=1")
 	errCookieSyncGDPRConsentMissingSignalAmbiguous = errors.New("gdpr_consent is required. gdpr is not specified and is assumed to be 1 by the server. set gdpr=0 to exempt this request")
 	errCookieSyncInvalidBiddersType                = errors.New("invalid bidders type. must either be a string '*' or a string array of bidders")
+	errCookieSyncAccountBlocked                    = errors.New("account is disabled, please reach out to the prebid server host")
+	errCookieSyncAccountInvalid                    = errors.New("account must be valid if provided, please reach out to the prebid server host")
 )
 
 var cookieSyncBidderFilterAllowAll = usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude)
@@ -38,6 +44,7 @@ func NewCookieSyncEndpoint(
 	gdprPermissions gdpr.Permissions,
 	metrics metrics.MetricsEngine,
 	pbsAnalytics analytics.PBSAnalyticsModule,
+	accountsFetcher stored_requests.AccountFetcher,
 	bidders map[string]openrtb_ext.BidderName) HTTPRouterHandler {
 
 	bidderHashSet := make(map[string]struct{}, len(bidders))
@@ -46,38 +53,38 @@ func NewCookieSyncEndpoint(
 	}
 
 	return &cookieSyncEndpoint{
-		chooser:          usersync.NewChooser(syncersByBidder),
-		config:           config.UserSync,
-		hostCookieConfig: &config.HostCookie,
+		chooser: usersync.NewChooser(syncersByBidder),
+		config:  config,
 		privacyConfig: usersyncPrivacyConfig{
 			gdprConfig:      config.GDPR,
 			gdprPermissions: gdprPermissions,
 			ccpaEnforce:     config.CCPA.Enforce,
 			bidderHashSet:   bidderHashSet,
 		},
-		metrics:      metrics,
-		pbsAnalytics: pbsAnalytics,
+		metrics:         metrics,
+		pbsAnalytics:    pbsAnalytics,
+		accountsFetcher: accountsFetcher,
 	}
 }
 
 type cookieSyncEndpoint struct {
-	chooser          usersync.Chooser
-	config           config.UserSync
-	hostCookieConfig *config.HostCookie
-	privacyConfig    usersyncPrivacyConfig
-	metrics          metrics.MetricsEngine
-	pbsAnalytics     analytics.PBSAnalyticsModule
+	chooser         usersync.Chooser
+	config          *config.Configuration
+	privacyConfig   usersyncPrivacyConfig
+	metrics         metrics.MetricsEngine
+	pbsAnalytics    analytics.PBSAnalyticsModule
+	accountsFetcher stored_requests.AccountFetcher
 }
 
 func (c *cookieSyncEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	request, privacyPolicies, err := c.parseRequest(r)
 	if err != nil {
-		c.metrics.RecordCookieSync(metrics.CookieSyncBadRequest)
+		c.writeParseRequestErrorMetrics(err)
 		c.handleError(w, err, http.StatusBadRequest)
 		return
 	}
 
-	cookie := usersync.ParseCookieFromRequest(r, c.hostCookieConfig)
+	cookie := usersync.ParseCookieFromRequest(r, &c.config.HostCookie)
 
 	result := c.chooser.Choose(request, cookie)
 	switch result.Status {
@@ -120,9 +127,14 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 			return usersync.Request{}, privacy.Policies{}, errCookieSyncGDPRConsentMissing
 		}
 
-		if gdprSignal == gdpr.SignalAmbiguous && gdpr.SignalNormalize(gdprSignal, c.privacyConfig.gdprConfig) == gdpr.SignalYes {
+		if gdprSignal == gdpr.SignalAmbiguous && gdpr.SignalNormalize(gdprSignal, c.privacyConfig.gdprConfig.DefaultValue) == gdpr.SignalYes {
 			return usersync.Request{}, privacy.Policies{}, errCookieSyncGDPRConsentMissingSignalAmbiguous
 		}
+	}
+
+	request, err = c.setLimit(request)
+	if err != nil {
+		return usersync.Request{}, privacy.Policies{}, err
 	}
 
 	privacyPolicies := privacy.Policies{
@@ -154,8 +166,8 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 	rx := usersync.Request{
 		Bidders: request.Bidders,
 		Cooperative: usersync.Cooperative{
-			Enabled:        (request.CooperativeSync != nil && *request.CooperativeSync) || (request.CooperativeSync == nil && c.config.Cooperative.EnabledByDefault),
-			PriorityGroups: c.config.Cooperative.PriorityGroups,
+			Enabled:        (request.CooperativeSync != nil && *request.CooperativeSync) || (request.CooperativeSync == nil && c.config.UserSync.Cooperative.EnabledByDefault),
+			PriorityGroups: c.config.UserSync.Cooperative.PriorityGroups,
 		},
 		Limit: request.Limit,
 		Privacy: usersyncPrivacy{
@@ -167,6 +179,39 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 		SyncTypeFilter: syncTypeFilter,
 	}
 	return rx, privacyPolicies, nil
+}
+
+func (c *cookieSyncEndpoint) writeParseRequestErrorMetrics(err error) {
+	switch err {
+	case errCookieSyncAccountBlocked:
+		c.metrics.RecordCookieSync(metrics.CookieSyncAccountBlocked)
+	case errCookieSyncAccountInvalid:
+		c.metrics.RecordCookieSync(metrics.CookieSyncAccountInvalid)
+	default:
+		c.metrics.RecordCookieSync(metrics.CookieSyncBadRequest)
+	}
+}
+
+func (c *cookieSyncEndpoint) setLimit(request cookieSyncRequest) (cookieSyncRequest, error) {
+	if request.Account != "" {
+		accountInfo, errs := accountService.GetAccount(context.Background(), c.config, c.accountsFetcher, request.Account)
+		if len(errs) > 0 {
+			return request, combineErrors(errs)
+		}
+		if request.Limit <= 0 {
+			request.Limit = accountInfo.CookieSync.DefaultLimit
+		}
+		if request.Limit <= 0 || request.Limit > accountInfo.CookieSync.MaxLimit {
+			request.Limit = accountInfo.CookieSync.MaxLimit
+		}
+		if request.Limit < 0 {
+			request.Limit = 0
+		}
+		if request.CooperativeSync == nil {
+			request.CooperativeSync = &accountInfo.CookieSync.DefaultCoopSync
+		}
+	}
+	return request, nil
 }
 
 func parseTypeFilter(request *cookieSyncRequestFilterSettings) (usersync.SyncTypeFilter, error) {
@@ -235,6 +280,23 @@ func (c *cookieSyncEndpoint) handleError(w http.ResponseWriter, err error, httpS
 		Errors:       []error{err},
 		BidderStatus: []*analytics.CookieSyncBidder{},
 	})
+}
+
+func combineErrors(errs []error) error {
+	var errorStrings []string
+	for _, err := range errs {
+		// preserve knowledge of special account errors
+		switch errortypes.ReadCode(err) {
+		case errortypes.BlacklistedAcctErrorCode:
+			return errCookieSyncAccountBlocked
+		case errortypes.AcctRequiredErrorCode:
+			return errCookieSyncAccountInvalid
+		}
+
+		errorStrings = append(errorStrings, err.Error())
+	}
+	combinedErrors := strings.Join(errorStrings, " ")
+	return errors.New(combinedErrors)
 }
 
 func (c *cookieSyncEndpoint) writeBidderMetrics(biddersEvaluated []usersync.BidderEvaluation) {
@@ -319,6 +381,7 @@ type cookieSyncRequest struct {
 	Limit           int                              `json:"limit"`
 	CooperativeSync *bool                            `json:"coopSync"`
 	FilterSettings  *cookieSyncRequestFilterSettings `json:"filterSettings"`
+	Account         string                           `json:"account"`
 }
 
 type cookieSyncRequestFilterSettings struct {

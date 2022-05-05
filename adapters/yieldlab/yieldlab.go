@@ -76,8 +76,10 @@ func (a *YieldlabAdapter) makeEndpointURL(req *openrtb2.BidRequest, params *open
 	if err != nil {
 		return "", err
 	}
-	if gdpr != "" && consent != "" {
+	if gdpr != "" {
 		q.Set("gdpr", gdpr)
+	}
+	if consent != "" {
 		q.Set("consent", consent)
 	}
 
@@ -87,17 +89,6 @@ func (a *YieldlabAdapter) makeEndpointURL(req *openrtb2.BidRequest, params *open
 }
 
 func (a *YieldlabAdapter) getGDPR(request *openrtb2.BidRequest) (string, string, error) {
-	gdpr := ""
-	var extRegs openrtb_ext.ExtRegs
-	if request.Regs != nil {
-		if err := json.Unmarshal(request.Regs.Ext, &extRegs); err != nil {
-			return "", "", fmt.Errorf("failed to parse ExtRegs in Yieldlab GDPR check: %v", err)
-		}
-		if extRegs.GDPR != nil && (*extRegs.GDPR == 0 || *extRegs.GDPR == 1) {
-			gdpr = strconv.Itoa(int(*extRegs.GDPR))
-		}
-	}
-
 	consent := ""
 	if request.User != nil && request.User.Ext != nil {
 		var extUser openrtb_ext.ExtUser
@@ -105,6 +96,16 @@ func (a *YieldlabAdapter) getGDPR(request *openrtb2.BidRequest) (string, string,
 			return "", "", fmt.Errorf("failed to parse ExtUser in Yieldlab GDPR check: %v", err)
 		}
 		consent = extUser.Consent
+	}
+
+	gdpr := ""
+	var extRegs openrtb_ext.ExtRegs
+	if request.Regs != nil {
+		if err := json.Unmarshal(request.Regs.Ext, &extRegs); err == nil {
+			if extRegs.GDPR != nil && (*extRegs.GDPR == 0 || *extRegs.GDPR == 1) {
+				gdpr = strconv.Itoa(int(*extRegs.GDPR))
+			}
+		}
 	}
 
 	return gdpr, consent, nil
