@@ -54,6 +54,7 @@
                             "crid": "creative-1",
                             "ext": {
                                 "someField": "someValue",
+                                "origbidcpm": 0.3,
                                 "prebid": {
                                     "willBeOverwritten": "by core logic"
                                 }
@@ -79,6 +80,7 @@
                     "crid": "creative-1",
                     "ext": {
                         "someField": "someValue",
+                        "origbidcpm": 0.3,
                         "prebid": {
                             "type": "video"
                         }

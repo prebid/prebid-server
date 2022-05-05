@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 
-	jsonpatch "gopkg.in/evanphx/json-patch.v4"
-
+	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/metrics"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/stored_requests"
+	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 )
 
 // GetAccount looks up the config.Account object referenced by the given accountID, with access rules applied
@@ -59,6 +60,9 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 		if len(account.ID) == 0 {
 			account.ID = accountID
 		}
+
+		// Set derived fields
+		setDerivedConfig(account)
 	}
 	if account.Disabled {
 		errs = append(errs, &errortypes.BlacklistedAcct{
@@ -67,4 +71,52 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 		return nil, errs
 	}
 	return account, nil
+}
+
+// setDerivedConfig modifies an account object by setting fields derived from other fields set in the account configuration
+func setDerivedConfig(account *config.Account) {
+	account.GDPR.PurposeConfigs = map[consentconstants.Purpose]*config.AccountGDPRPurpose{
+		1:  &account.GDPR.Purpose1,
+		2:  &account.GDPR.Purpose2,
+		3:  &account.GDPR.Purpose3,
+		4:  &account.GDPR.Purpose4,
+		5:  &account.GDPR.Purpose5,
+		6:  &account.GDPR.Purpose6,
+		7:  &account.GDPR.Purpose7,
+		8:  &account.GDPR.Purpose8,
+		9:  &account.GDPR.Purpose9,
+		10: &account.GDPR.Purpose10,
+	}
+
+	// To look for a purpose's vendor exceptions in O(1) time, for each purpose we fill this hash table with bidders
+	// located in the VendorExceptions field of the GDPR.PurposeX struct
+	for _, pc := range account.GDPR.PurposeConfigs {
+		if pc.VendorExceptions == nil {
+			continue
+		}
+		pc.VendorExceptionMap = make(map[openrtb_ext.BidderName]struct{})
+		for _, v := range pc.VendorExceptions {
+			pc.VendorExceptionMap[v] = struct{}{}
+		}
+	}
+
+	// To look for special feature 1's vendor exceptions in O(1) time, we fill this hash table with bidders
+	// located in the VendorExceptions field
+	if account.GDPR.SpecialFeature1.VendorExceptions != nil {
+		account.GDPR.SpecialFeature1.VendorExceptionMap = make(map[openrtb_ext.BidderName]struct{})
+
+		for _, v := range account.GDPR.SpecialFeature1.VendorExceptions {
+			account.GDPR.SpecialFeature1.VendorExceptionMap[v] = struct{}{}
+		}
+	}
+
+	// To look for basic enforcement vendors in O(1) time, we fill this hash table with bidders
+	// located in the BasicEnforcementVendors field
+	if account.GDPR.BasicEnforcementVendors != nil {
+		account.GDPR.BasicEnforcementVendorsMap = make(map[string]struct{})
+
+		for _, v := range account.GDPR.BasicEnforcementVendors {
+			account.GDPR.BasicEnforcementVendorsMap[v] = struct{}{}
+		}
+	}
 }
