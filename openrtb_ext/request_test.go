@@ -46,6 +46,20 @@ func TestExtRequestTargeting(t *testing.T) {
 			t.Errorf("ext3 expected Price granularity \"medium\", found \"%v\"", extRequest.Prebid.Targeting.PriceGranularity)
 		}
 	}
+
+	extRequest = &ExtRequest{}
+	err = json.Unmarshal([]byte(ext4), extRequest)
+	if err != nil {
+		t.Errorf("ext4 Unmarshall failure: %s", err.Error())
+	}
+	if extRequest.Prebid.Targeting == nil {
+		t.Error("ext4 Targeting is nil")
+	} else {
+		pgOWCTVMed := PriceGranularityFromString("ow-ctv-med")
+		if !reflect.DeepEqual(extRequest.Prebid.Targeting.PriceGranularity, pgOWCTVMed) {
+			t.Errorf("ext4 expected Price granularity \"ow-ctv-med\", found \"%v\"", extRequest.Prebid.Targeting.PriceGranularity)
+		}
+	}
 }
 
 const ext1 = `{
@@ -66,6 +80,14 @@ const ext2 = `{
 const ext3 = `{
 	"prebid": {
 		"targeting": { }
+	}
+}`
+
+const ext4 = `{
+	"prebid": {
+		"targeting": {
+			"pricegranularity": "ow-ctv-med"
+		}
 	}
 }`
 
