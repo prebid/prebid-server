@@ -47,7 +47,6 @@
 			"id": "test-request-id",
 			"ext": {
 				"appnexus": {
-				 "adpod_id": "5577006791947779410",
 				  "hb_source": 6
 				},
 				"prebid": {}

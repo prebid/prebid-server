@@ -2,7 +2,6 @@ package router
 
 import (
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -12,27 +11,20 @@ import (
 	"time"
 
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
+
+	"github.com/prebid/prebid-server/usersync"
+
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
-	"github.com/prebid/prebid-server/endpoints"
-	"github.com/prebid/prebid-server/endpoints/events"
-	infoEndpoints "github.com/prebid/prebid-server/endpoints/info"
-	"github.com/prebid/prebid-server/endpoints/openrtb2"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/gdpr"
-	"github.com/prebid/prebid-server/metrics"
 	metricsConf "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbs"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
-	"github.com/prebid/prebid-server/router/aspects"
 	"github.com/prebid/prebid-server/server/ssl"
 	storedRequestsConf "github.com/prebid/prebid-server/stored_requests/config"
-	"github.com/prebid/prebid-server/usersync"
 	"github.com/prebid/prebid-server/util/sliceutil"
-	"github.com/prebid/prebid-server/util/uuidutil"
-	"github.com/prebid/prebid-server/version"
 
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
@@ -111,9 +103,10 @@ type Router struct {
 	Shutdown        func()
 }
 
+var schemaDirectory = "/home/http/GO_SERVER/dmhbserver/static/bidder-params"
+var infoDirectory = "/home/http/GO_SERVER/dmhbserver/static/bidder-info"
+
 func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *Router, err error) {
-	const schemaDirectory = "./static/bidder-params"
-	const infoDirectory = "./static/bidder-info"
 
 	r = &Router{
 		Router: httprouter.New(),
@@ -128,15 +121,32 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		glog.Infof("Could not read certificates file: %s \n", readCertErr.Error())
 	}
 
+	g_transport = getTransport(cfg, certPool)
 	generalHttpClient := &http.Client{
-		Transport: &http.Transport{
-			MaxConnsPerHost:     cfg.Client.MaxConnsPerHost,
-			MaxIdleConns:        cfg.Client.MaxIdleConns,
-			MaxIdleConnsPerHost: cfg.Client.MaxIdleConnsPerHost,
-			IdleConnTimeout:     time.Duration(cfg.Client.IdleConnTimeout) * time.Second,
-			TLSClientConfig:     &tls.Config{RootCAs: certPool},
-		},
+		Transport: g_transport,
 	}
+
+	/*
+		* Add Dialer:
+		* Add TLSHandshakeTimeout:
+		* MaxConnsPerHost: Max value should be QPS
+		* MaxIdleConnsPerHost:
+		* ResponseHeaderTimeout: Max Timeout from OW End
+		* No Need for MaxIdleConns:
+		*
+
+		Transport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			Dial: (&net.Dialer{
+				Timeout:   100 * time.Millisecond,
+				KeepAlive: 30 * time.Second,
+			}).Dial,
+			TLSHandshakeTimeout:   10 * time.Second,
+			MaxIdleConnsPerHost:   (maxIdleConnsPerHost / size), // ideal needs to be defined diff?
+			MaxConnsPerHost:       (maxConnPerHost / size),
+			ResponseHeaderTimeout: responseHdrTimeout,
+		}
+	*/
 
 	cacheHttpClient := &http.Client{
 		Transport: &http.Transport{
@@ -161,6 +171,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		return nil, err
 	}
 
+	var errs []error
 	syncersByBidder, errs := usersync.BuildSyncers(cfg, bidderInfos)
 	if len(errs) > 0 {
 		return nil, errortypes.NewAggregateError("user sync", errs)
@@ -177,9 +188,9 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 
 	// Metrics engine
 	r.MetricsEngine = metricsConf.NewMetricsEngine(cfg, openrtb_ext.CoreBidderNames(), syncerKeys)
-	shutdown, fetcher, ampFetcher, accounts, categoriesFetcher, videoFetcher, storedRespFetcher := storedRequestsConf.NewStoredRequests(cfg, r.MetricsEngine, generalHttpClient, r.Router)
+	_, fetcher, _, accounts, categoriesFetcher, videoFetcher, storedRespFetcher := storedRequestsConf.NewStoredRequests(cfg, r.MetricsEngine, generalHttpClient, r.Router)
 	// todo(zachbadgett): better shutdown
-	r.Shutdown = shutdown
+	// r.Shutdown = shutdown
 
 	pbsAnalytics := analyticsConf.NewPBSAnalytics(&cfg.Analytics)
 
@@ -199,6 +210,14 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	gvlVendorIDs := bidderInfos.ToGVLVendorIDMap()
 	gdprPerms := gdpr.NewPermissions(context.Background(), cfg.GDPR, gvlVendorIDs, generalHttpClient)
 
+	if cfg.VendorListScheduler.Enabled {
+		vendorListScheduler, err := gdpr.GetVendorListScheduler(cfg.VendorListScheduler.Interval, cfg.VendorListScheduler.Timeout, generalHttpClient)
+		if err != nil {
+			glog.Fatal(err)
+		}
+		vendorListScheduler.Start()
+	}
+
 	cacheClient := pbc.NewClient(cacheHttpClient, &cfg.CacheURL, &cfg.ExtCacheURL, r.MetricsEngine)
 
 	adapters, adaptersErrs := exchange.BuildAdapters(generalHttpClient, cfg, bidderInfos, r.MetricsEngine)
@@ -208,7 +227,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	}
 
 	theExchange := exchange.NewExchange(adapters, cacheClient, cfg, syncersByBidder, r.MetricsEngine, bidderInfos, gdprPerms, rateConvertor, categoriesFetcher)
-	var uuidGenerator uuidutil.UUIDRandomGenerator
+	/*var uuidGenerator uuidutil.UUIDRandomGenerator
 	openrtbEndpoint, err := openrtb2.NewEndpoint(uuidGenerator, theExchange, paramsValidator, fetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBidders, storedRespFetcher)
 	if err != nil {
 		glog.Fatalf("Failed to create the openrtb2 endpoint handler. %v", err)
@@ -260,7 +279,24 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	r.GET("/setuid", endpoints.NewSetUIDEndpoint(cfg.HostCookie, syncersByBidder, gdprPerms, pbsAnalytics, r.MetricsEngine))
 	r.GET("/getuids", endpoints.NewGetUIDsEndpoint(cfg.HostCookie))
 	r.POST("/optout", userSyncDeps.OptOut)
-	r.GET("/optout", userSyncDeps.OptOut)
+	r.GET("/optout", userSyncDeps.OptOut)*/
+
+	g_syncers = syncersByBidder
+	g_metrics = r.MetricsEngine
+	g_cfg = cfg
+	g_storedReqFetcher = &fetcher
+	g_accounts = &accounts
+	g_categoriesFetcher = &categoriesFetcher
+	g_videoFetcher = &videoFetcher
+	g_storedRespFetcher = &storedRespFetcher
+	g_analytics = &pbsAnalytics
+	g_paramsValidator = &paramsValidator
+	g_activeBidders = activeBidders
+	g_disabledBidders = disabledBidders
+	g_defReqJSON = defReqJSON
+	g_gdprPerms = &gdprPerms
+	g_cacheClient = &cacheClient
+	g_ex = &theExchange
 
 	return r, nil
 }
