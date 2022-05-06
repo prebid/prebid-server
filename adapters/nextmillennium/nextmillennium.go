@@ -99,12 +99,22 @@ func (adapter *adapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidReques
 }
 
 func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ImpExtNextMillennium) *NextMillenniumBidRequest {
+	placementID := params.PlacementID
 	bidRequest := NextMillenniumBidRequest{
 		ID:   prebidBidRequest.ID,
 		Test: uint8(prebidBidRequest.Test),
 	}
-	bidRequest.Ext.Prebid.StoredRequest.ID = params.PlacementID
 
+	if params.GroupID != nil {
+		placementID = fmt.Sprintf(
+			"g%s;%dx%d;%s", *params.GroupID,
+			*prebidBidRequest.Imp[0].Banner.W,
+			*prebidBidRequest.Imp[0].Banner.H,
+			prebidBidRequest.Site.Domain,
+		)
+	}
+
+	bidRequest.Ext.Prebid.StoredRequest.ID = placementID
 	return &bidRequest
 }
 
