@@ -30,7 +30,6 @@ type Metrics struct {
 	StoredImpCacheMeter            map[CacheResult]metrics.Meter
 	AccountCacheMeter              map[CacheResult]metrics.Meter
 	DNSLookupTimer                 metrics.Timer
-	TLSHandshakeTimer              metrics.Timer
 
 	// Metrics for OpenRTB requests specifically. So we can track what % of RequestsMeter are OpenRTB
 	// and know when legacy requests have been abandoned.
@@ -60,6 +59,20 @@ type Metrics struct {
 	PrivacyLMTRequest        metrics.Meter
 	PrivacyTCFRequestVersion map[TCFVersionValue]metrics.Meter
 
+	// Ad Pod Metrics
+
+	// podImpGenTimer indicates time taken by impression generator
+	// algorithm to generate impressions for given ad pod request
+	podImpGenTimer metrics.Timer
+
+	// podImpGenTimer indicates time taken by combination generator
+	// algorithm to generate combination based on bid response and ad pod request
+	podCombGenTimer metrics.Timer
+
+	// podCompExclTimer indicates time taken by compititve exclusion
+	// algorithm to generate final pod response based on bid response and ad pod request
+	podCompExclTimer metrics.Timer
+
 	AdapterMetrics map[openrtb_ext.BidderName]*AdapterMetrics
 	// Don't export accountMetrics because we need helper functions here to insure its properly populated dynamically
 	accountMetrics        map[string]*accountMetrics
@@ -85,6 +98,7 @@ type AdapterMetrics struct {
 	ConnReused         metrics.Counter
 	ConnWaitTime       metrics.Timer
 	GDPRRequestBlocked metrics.Meter
+	TLSHandshakeTimer  metrics.Timer
 }
 
 type MarkupDeliveryMetrics struct {
@@ -122,7 +136,6 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		NoCookieMeter:                  blankMeter,
 		RequestTimer:                   blankTimer,
 		DNSLookupTimer:                 blankTimer,
-		TLSHandshakeTimer:              blankTimer,
 		RequestsQueueTimer:             make(map[RequestType]map[bool]metrics.Timer),
 		PrebidCacheRequestTimerSuccess: blankTimer,
 		PrebidCacheRequestTimerError:   blankTimer,
@@ -221,7 +234,6 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 	newMetrics.AppRequestMeter = metrics.GetOrRegisterMeter("app_requests", registry)
 	newMetrics.RequestTimer = metrics.GetOrRegisterTimer("request_time", registry)
 	newMetrics.DNSLookupTimer = metrics.GetOrRegisterTimer("dns_lookup_time", registry)
-	newMetrics.TLSHandshakeTimer = metrics.GetOrRegisterTimer("tls_handshake_time", registry)
 	newMetrics.PrebidCacheRequestTimerSuccess = metrics.GetOrRegisterTimer("prebid_cache_request_time.ok", registry)
 	newMetrics.PrebidCacheRequestTimerError = metrics.GetOrRegisterTimer("prebid_cache_request_time.err", registry)
 
@@ -311,6 +323,7 @@ func makeBlankAdapterMetrics(disabledMetrics config.DisabledMetrics) *AdapterMet
 		newAdapter.ConnCreated = metrics.NilCounter{}
 		newAdapter.ConnReused = metrics.NilCounter{}
 		newAdapter.ConnWaitTime = &metrics.NilTimer{}
+		newAdapter.TLSHandshakeTimer = &metrics.NilTimer{}
 	}
 	if !disabledMetrics.AdapterGDPRRequestBlocked {
 		newAdapter.GDPRRequestBlocked = blankMeter
@@ -352,6 +365,7 @@ func registerAdapterMetrics(registry metrics.Registry, adapterOrAccount string, 
 	am.ConnCreated = metrics.GetOrRegisterCounter(fmt.Sprintf("%[1]s.%[2]s.connections_created", adapterOrAccount, exchange), registry)
 	am.ConnReused = metrics.GetOrRegisterCounter(fmt.Sprintf("%[1]s.%[2]s.connections_reused", adapterOrAccount, exchange), registry)
 	am.ConnWaitTime = metrics.GetOrRegisterTimer(fmt.Sprintf("%[1]s.%[2]s.connection_wait_time", adapterOrAccount, exchange), registry)
+	am.TLSHandshakeTimer = metrics.GetOrRegisterTimer(fmt.Sprintf("%[1]s.%[2]s.tls_handshake_time", adapterOrAccount, exchange), registry)
 	for err := range am.ErrorMeters {
 		am.ErrorMeters[err] = metrics.GetOrRegisterMeter(fmt.Sprintf("%s.%s.requests.%s", adapterOrAccount, exchange, err), registry)
 	}
@@ -551,8 +565,18 @@ func (me *Metrics) RecordDNSTime(dnsLookupTime time.Duration) {
 	me.DNSLookupTimer.Update(dnsLookupTime)
 }
 
-func (me *Metrics) RecordTLSHandshakeTime(tlsHandshakeTime time.Duration) {
-	me.TLSHandshakeTimer.Update(tlsHandshakeTime)
+func (me *Metrics) RecordTLSHandshakeTime(adapterName openrtb_ext.BidderName, tlsHandshakeTime time.Duration) {
+	if me.MetricsDisabled.AdapterConnectionMetrics {
+		return
+	}
+
+	am, ok := me.AdapterMetrics[adapterName]
+	if !ok {
+		glog.Errorf("Trying to log adapter TLS Handshake metrics for %s: adapter not found", string(adapterName))
+		return
+	}
+
+	am.TLSHandshakeTimer.Update(tlsHandshakeTime)
 }
 
 // RecordAdapterBidReceived implements a part of the MetricsEngine interface.
@@ -726,4 +750,28 @@ func (me *Metrics) RecordAdapterGDPRRequestBlocked(adapterName openrtb_ext.Bidde
 	}
 
 	am.GDPRRequestBlocked.Mark(1)
+}
+
+// RecordAdapterDuplicateBidID as noop
+func (me *Metrics) RecordAdapterDuplicateBidID(adaptor string, collisions int) {
+}
+
+// RecordRequestHavingDuplicateBidID as noop
+func (me *Metrics) RecordRequestHavingDuplicateBidID() {
+}
+
+// RecordPodImpGenTime as a noop
+func (me *Metrics) RecordPodImpGenTime(labels PodLabels, startTime time.Time) {
+}
+
+// RecordPodCombGenTime as a noop
+func (me *Metrics) RecordPodCombGenTime(labels PodLabels, elapsedTime time.Duration) {
+}
+
+// RecordPodCompititveExclusionTime as a noop
+func (me *Metrics) RecordPodCompititveExclusionTime(labels PodLabels, elapsedTime time.Duration) {
+}
+
+// RecordAdapterVideoBidDuration as a noop
+func (me *Metrics) RecordAdapterVideoBidDuration(labels AdapterLabels, videoBidDuration int) {
 }

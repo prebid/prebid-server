@@ -11,8 +11,8 @@ import "encoding/json"
 type ExtImpPubmatic struct {
 	PublisherId string                  `json:"publisherId"`
 	AdSlot      string                  `json:"adSlot"`
-	Dctr        string                  `json:"dctr"`
-	PmZoneID    string                  `json:"pmzoneid"`
+	Dctr        string                  `json:"dctr,omitempty"`
+	PmZoneID    string                  `json:"pmzoneid,omitempty"`
 	WrapExt     json.RawMessage         `json:"wrapper,omitempty"`
 	Keywords    []*ExtImpPubmaticKeyVal `json:"keywords,omitempty"`
 }
