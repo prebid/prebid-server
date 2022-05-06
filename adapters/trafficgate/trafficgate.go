@@ -125,7 +125,7 @@ func (a *adapter) MakeBids(
 
 func splitImpressions(imps []openrtb2.Imp) (map[openrtb_ext.ExtImpTrafficGate][]openrtb2.Imp, error) {
 
-	var m = make(map[openrtb_ext.ExtImpTrafficGate][]openrtb2.Imp)
+	var multipleImps = make(map[openrtb_ext.ExtImpTrafficGate][]openrtb2.Imp)
 
 	for _, imp := range imps {
 		bidderParams, err := getBidderParams(&imp)
@@ -133,15 +133,15 @@ func splitImpressions(imps []openrtb2.Imp) (map[openrtb_ext.ExtImpTrafficGate][]
 			return nil, err
 		}
 
-		v, ok := m[*bidderParams]
+		arrImps, ok := multipleImps[*bidderParams]
 		if ok {
-			m[*bidderParams] = append(v, imp)
+			multipleImps[*bidderParams] = append(arrImps, imp)
 		} else {
-			m[*bidderParams] = []openrtb2.Imp{imp}
+			multipleImps[*bidderParams] = []openrtb2.Imp{imp}
 		}
 	}
 
-	return m, nil
+	return multipleImps, nil
 }
 
 func getBidderParams(imp *openrtb2.Imp) (*openrtb_ext.ExtImpTrafficGate, error) {
