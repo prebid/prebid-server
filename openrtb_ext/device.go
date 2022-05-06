@@ -34,6 +34,14 @@ type ExtDevice struct {
 	// Description:
 	//   Prebid extensions for the Device object.
 	Prebid ExtDevicePrebid `json:"prebid"`
+
+	// Attribute:
+	//	 ifa_type
+	// Type:
+	//	 string; optional
+	// Description:
+	//   Contains source who generated ifa value
+	IFAType string `json:"ifa_type,omitempty"`
 }
 
 // IOSAppTrackingStatus describes the values for iOS app tracking authorization status.

@@ -19,7 +19,7 @@
             "dctr": "key1=V1,V2,V3|key2=v1|key3=v3,v5",
             "keywords": [
               {
-                "key": "pmZoneID",
+                "key": "pmzoneid",
                 "value": [
                   "Zone1",
                   "Zone2"
