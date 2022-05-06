@@ -328,10 +328,16 @@ func (c *cookieSyncEndpoint) handleResponse(w http.ResponseWriter, tf usersync.S
 	}
 
 	for _, syncerChoice := range s {
-		syncTypes := tf.ForBidder(syncerChoice.Bidder)
+		//added hack to support to old wrapper versions having indexExchange as partner
+		//TODO: Remove when a stable version is released
+		bidderName := syncerChoice.Bidder
+		if bidderName == "indexExchange" {
+			bidderName = "ix"
+		}
+		syncTypes := tf.ForBidder(bidderName)
 		sync, err := syncerChoice.Syncer.GetSync(syncTypes, p)
 		if err != nil {
-			glog.Errorf("Failed to get usersync info for %s: %v", syncerChoice.Bidder, err)
+			glog.Errorf("Failed to get usersync info for %s: %v", bidderName, err)
 			continue
 		}
 
@@ -372,6 +378,9 @@ func mapBidderStatusToAnalytics(from []cookieSyncResponseBidder) []*analytics.Co
 	}
 	return to
 }
+
+type CookieSyncReq cookieSyncRequest
+type CookieSyncResp cookieSyncResponse
 
 type cookieSyncRequest struct {
 	Bidders         []string                         `json:"bidders"`

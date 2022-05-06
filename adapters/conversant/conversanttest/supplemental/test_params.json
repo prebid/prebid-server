@@ -107,7 +107,7 @@
             "bidfloor": 7,
             "secure": 1,
             "tagid": "mytag",
-            "displaymanager": "prebid-s2s",
+            "displaymanager": "pubmatic-openwrap",
             "displaymanagerver": "2.0.0",
             "video": {
               "api": [1,2],
@@ -126,7 +126,7 @@
             "bidfloor": 1,
             "secure": 1,
             "tagid": "mytag",
-            "displaymanager": "prebid-s2s",
+            "displaymanager": "pubmatic-openwrap",
             "displaymanagerver": "2.0.0",
             "video": {
               "api": [1,2],
@@ -154,7 +154,7 @@
             "bidfloor": 7,
             "secure": 1,
             "tagid": "mytag",
-            "displaymanager": "prebid-s2s",
+            "displaymanager": "pubmatic-openwrap",
             "displaymanagerver": "2.0.0",
             "video": {
               "api": [1,2],
@@ -182,7 +182,7 @@
             "bidfloor": -3,
             "secure": 1,
             "tagid": "mytag",
-            "displaymanager": "prebid-s2s",
+            "displaymanager": "pubmatic-openwrap",
             "displaymanagerver": "2.0.0",
             "video": {
               "api": [1,2],
