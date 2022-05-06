@@ -182,3 +182,73 @@ func (err *Warning) Code() int {
 func (err *Warning) Severity() Severity {
 	return SeverityWarning
 }
+
+// BidderFailedSchemaValidation is used at the request validation step,
+// when the bidder parameters fail the schema validation, we want to
+// continue processing the request and still return an error message.
+type BidderFailedSchemaValidation struct {
+	Message string
+}
+
+func (err *BidderFailedSchemaValidation) Error() string {
+	return err.Message
+}
+
+func (err *BidderFailedSchemaValidation) Code() int {
+	return BidderFailedSchemaValidationErrorCode
+}
+
+func (err *BidderFailedSchemaValidation) Severity() Severity {
+	return SeverityWarning
+}
+
+// NoBidPrice should be used when vast response doesn't contain any price value
+type NoBidPrice struct {
+	Message string
+}
+
+func (err *NoBidPrice) Error() string {
+	return err.Message
+}
+
+func (err *NoBidPrice) Code() int {
+	return NoBidPriceErrorCode
+}
+
+func (err *NoBidPrice) Severity() Severity {
+	return SeverityWarning
+}
+
+// AdpodPrefiltering should be used when ctv impression algorithm not able to generate impressions
+type AdpodPrefiltering struct {
+	Message string
+}
+
+func (err *AdpodPrefiltering) Error() string {
+	return err.Message
+}
+
+func (err *AdpodPrefiltering) Code() int {
+	return AdpodPrefilteringErrorCode
+}
+
+func (err *AdpodPrefiltering) Severity() Severity {
+	return SeverityFatal
+}
+
+// AdpodPostFiltering should be used when vast response doesn't contain any price value
+type AdpodPostFiltering struct {
+	Message string
+}
+
+func (err *AdpodPostFiltering) Error() string {
+	return err.Message
+}
+
+func (err *AdpodPostFiltering) Code() int {
+	return AdpodPostFilteringWarningCode
+}
+
+func (err *AdpodPostFiltering) Severity() Severity {
+	return SeverityWarning
+}

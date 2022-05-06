@@ -12,6 +12,9 @@ const (
 	BlacklistedAcctErrorCode
 	AcctRequiredErrorCode
 	NoConversionRateErrorCode
+	NoBidPriceErrorCode
+	BidderFailedSchemaValidationErrorCode
+	AdpodPrefilteringErrorCode
 )
 
 // Defines numeric codes for well-known warnings.
@@ -21,6 +24,7 @@ const (
 	AccountLevelDebugDisabledWarningCode
 	BidderLevelDebugDisabledWarningCode
 	DisabledCurrencyConversionWarningCode
+	AdpodPostFilteringWarningCode
 )
 
 // Coder provides an error or warning code with severity.
