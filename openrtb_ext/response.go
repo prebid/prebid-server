@@ -59,6 +59,7 @@ type ExtHttpCall struct {
 	RequestHeaders map[string][]string `json:"requestheaders"`
 	ResponseBody   string              `json:"responsebody"`
 	Status         int                 `json:"status"`
+	Params         map[string]int      `json:"params,omitempty"`
 }
 
 // CookieStatus describes the allowed values for bidresponse.ext.usersync.{bidder}.status

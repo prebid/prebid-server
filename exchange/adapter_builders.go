@@ -115,6 +115,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/smilewanted"
 	"github.com/prebid/prebid-server/adapters/sonobi"
 	"github.com/prebid/prebid-server/adapters/sovrn"
+	"github.com/prebid/prebid-server/adapters/spotx"
 	"github.com/prebid/prebid-server/adapters/synacormedia"
 	"github.com/prebid/prebid-server/adapters/tappx"
 	"github.com/prebid/prebid-server/adapters/telaria"
@@ -123,6 +124,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/ucfunnel"
 	"github.com/prebid/prebid-server/adapters/unicorn"
 	"github.com/prebid/prebid-server/adapters/unruly"
+	"github.com/prebid/prebid-server/adapters/vastbidder"
 	"github.com/prebid/prebid-server/adapters/videobyte"
 	"github.com/prebid/prebid-server/adapters/vidoomy"
 	"github.com/prebid/prebid-server/adapters/visx"
@@ -259,6 +261,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderSmileWanted:       smilewanted.Builder,
 		openrtb_ext.BidderSonobi:            sonobi.Builder,
 		openrtb_ext.BidderSovrn:             sovrn.Builder,
+		openrtb_ext.BidderSpotX:             spotx.Builder,
 		openrtb_ext.BidderStreamkey:         adtelligent.Builder,
 		openrtb_ext.BidderSynacormedia:      synacormedia.Builder,
 		openrtb_ext.BidderTappx:             tappx.Builder,
@@ -269,6 +272,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderUcfunnel:          ucfunnel.Builder,
 		openrtb_ext.BidderUnicorn:           unicorn.Builder,
 		openrtb_ext.BidderUnruly:            unruly.Builder,
+		openrtb_ext.BidderVASTBidder:        vastbidder.Builder,
 		openrtb_ext.BidderValueImpression:   apacdex.Builder,
 		openrtb_ext.BidderVerizonMedia:      yahoossp.Builder,
 		openrtb_ext.BidderVideoByte:         videobyte.Builder,
