@@ -18,6 +18,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/experiment/adscert"
 	"github.com/prebid/prebid-server/firstpartydata"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
@@ -65,6 +66,7 @@ type exchange struct {
 	categoriesFetcher stored_requests.CategoryFetcher
 	bidIDGenerator    BidIDGenerator
 	gvlVendorIDs      map[openrtb_ext.BidderName]uint16
+	adCertSigner      adscert.Signer
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -111,7 +113,7 @@ func (randomDeduplicateBidBooleanGenerator) Generate() bool {
 	return rand.Intn(100) < 50
 }
 
-func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, metricsEngine metrics.MetricsEngine, infos config.BidderInfos, vendorListFetcher gdpr.VendorListFetcher, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher) Exchange {
+func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, metricsEngine metrics.MetricsEngine, infos config.BidderInfos, vendorListFetcher gdpr.VendorListFetcher, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher, adCertSigner adscert.Signer) Exchange {
 	bidderToSyncerKey := map[string]string{}
 	for bidder, syncer := range syncersByBidder {
 		bidderToSyncerKey[bidder] = syncer.Key()
@@ -141,6 +143,7 @@ func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid
 		},
 		bidIDGenerator: &bidIDGenerator{cfg.GenerateBidID},
 		gvlVendorIDs:   infos.ToGVLVendorIDMap(),
+		adCertSigner:   adCertSigner,
 	}
 }
 
@@ -515,7 +518,7 @@ func (e *exchange) getAllBids(
 			reqInfo.PbsEntryPoint = bidderRequest.BidderLabels.RType
 			reqInfo.GlobalPrivacyControlHeader = globalPrivacyControlHeader
 
-			bids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest, adjustmentFactor, conversions, &reqInfo, accountDebugAllowed, headerDebugAllowed)
+			bids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest, adjustmentFactor, conversions, &reqInfo, accountDebugAllowed, headerDebugAllowed, e.adCertSigner)
 
 			// Add in time reporting
 			elapsed := time.Since(start)

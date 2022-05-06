@@ -85,6 +85,7 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 		func(ctx context.Context, id uint16) (vendorlist.VendorList, error) { return nil, nil },
 		currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
 		empty_fetcher.EmptyFetcher{},
+		nil,
 	)
 
 	endpoint, _ := NewEndpoint(

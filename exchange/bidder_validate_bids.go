@@ -9,6 +9,7 @@ import (
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/currency"
+	"github.com/prebid/prebid-server/experiment/adscert"
 	goCurrency "golang.org/x/text/currency"
 )
 
@@ -27,8 +28,8 @@ type validatedBidder struct {
 	bidder adaptedBidder
 }
 
-func (v *validatedBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool) (*pbsOrtbSeatBid, []error) {
-	seatBid, errs := v.bidder.requestBid(ctx, bidderRequest, bidAdjustment, conversions, reqInfo, accountDebugAllowed, headerDebugAllowed)
+func (v *validatedBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool, adCertSigner adscert.Signer) (*pbsOrtbSeatBid, []error) {
+	seatBid, errs := v.bidder.requestBid(ctx, bidderRequest, bidAdjustment, conversions, reqInfo, accountDebugAllowed, headerDebugAllowed, adCertSigner)
 	if validationErrors := removeInvalidBids(bidderRequest.BidRequest, seatBid); len(validationErrors) > 0 {
 		errs = append(errs, validationErrors...)
 	}

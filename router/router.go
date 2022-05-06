@@ -20,6 +20,7 @@ import (
 	"github.com/prebid/prebid-server/endpoints/openrtb2"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/experiment/adscert"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
 	metricsConf "github.com/prebid/prebid-server/metrics/config"
@@ -207,8 +208,9 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		errs := errortypes.NewAggregateError("Failed to initialize adapters", adaptersErrs)
 		return nil, errs
 	}
+	adCertSigner := adscert.NewAdCertsSigner(cfg.Experiment.AdCerts)
 
-	theExchange := exchange.NewExchange(adapters, cacheClient, cfg, syncersByBidder, r.MetricsEngine, bidderInfos, vendorListFetcher, rateConvertor, categoriesFetcher)
+	theExchange := exchange.NewExchange(adapters, cacheClient, cfg, syncersByBidder, r.MetricsEngine, bidderInfos, vendorListFetcher, rateConvertor, categoriesFetcher, adCertSigner)
 	var uuidGenerator uuidutil.UUIDRandomGenerator
 	openrtbEndpoint, err := openrtb2.NewEndpoint(uuidGenerator, theExchange, paramsValidator, fetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBidders, storedRespFetcher)
 	if err != nil {
