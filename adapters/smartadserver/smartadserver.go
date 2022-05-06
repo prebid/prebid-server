@@ -164,7 +164,7 @@ func (a *SmartAdserverAdapter) BuildEndpointURL(params *openrtb_ext.ExtImpSmarta
 	}
 
 	uri.Path = path.Join(uri.Path, "api/bid")
-	uri.RawQuery = "callerId=5"
+	uri.RawQuery = "callerId=50"
 
 	return uri.String(), nil
 }

@@ -12,5 +12,5 @@ capabilities:
       - video
 userSync:
   redirect:
-    url: "https://ssbsync-global.smartadserver.com/api/sync?callerId=5&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirectUri={{.RedirectURL}}"
+    url: "https://ssbsync-global.smartadserver.com/api/sync?callerId=50&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirectUri={{.RedirectURL}}"
     userMacro: "[ssb_sync_pid]"
