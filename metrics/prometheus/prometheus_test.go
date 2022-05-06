@@ -2,6 +2,7 @@ package prometheusmetrics
 
 import (
 	"fmt"
+	"strconv"
 	"testing"
 	"time"
 
@@ -1261,35 +1262,57 @@ func TestRecordDNSTime(t *testing.T) {
 }
 
 func TestRecordTLSHandshakeTime(t *testing.T) {
-	testCases := []struct {
-		description          string
+	type testIn struct {
+		adapterName          openrtb_ext.BidderName
 		tLSHandshakeDuration time.Duration
-		expectedDuration     float64
-		expectedCount        uint64
+	}
+
+	type testOut struct {
+		expectedDuration float64
+		expectedCount    uint64
+	}
+
+	testCases := []struct {
+		description string
+		in          testIn
+		out         testOut
 	}{
 		{
-			description:          "Five second DNS lookup time",
-			tLSHandshakeDuration: time.Second * 5,
-			expectedDuration:     5,
-			expectedCount:        1,
+			description: "Five second DNS lookup time",
+			in: testIn{
+				adapterName:          openrtb_ext.BidderAppnexus,
+				tLSHandshakeDuration: time.Second * 5,
+			},
+			out: testOut{
+				expectedDuration: 5,
+				expectedCount:    1,
+			},
 		},
 		{
-			description:          "Zero DNS lookup time",
-			tLSHandshakeDuration: 0,
-			expectedDuration:     0,
-			expectedCount:        1,
+			description: "Zero DNS lookup time",
+			in: testIn{
+				adapterName:          openrtb_ext.BidderAppnexus,
+				tLSHandshakeDuration: 0,
+			},
+			out: testOut{
+				expectedDuration: 0,
+				expectedCount:    1,
+			},
 		},
 	}
 	for i, test := range testCases {
 		pm := createMetricsForTesting()
-		pm.RecordTLSHandshakeTime(test.tLSHandshakeDuration)
+		assertDesciptions := []string{
+			fmt.Sprintf("[%d] Incorrect number of histogram entries. Desc: %s", i+1, test.description),
+			fmt.Sprintf("[%d] Incorrect number of histogram cumulative values. Desc: %s", i+1, test.description),
+		}
 
-		m := dto.Metric{}
-		pm.tlsHandhakeTimer.Write(&m)
-		histogram := *m.GetHistogram()
+		pm.RecordTLSHandshakeTime(test.in.adapterName, test.in.tLSHandshakeDuration)
 
-		assert.Equal(t, test.expectedCount, histogram.GetSampleCount(), "[%d] Incorrect number of histogram entries. Desc: %s\n", i, test.description)
-		assert.Equal(t, test.expectedDuration, histogram.GetSampleSum(), "[%d] Incorrect number of histogram cumulative values. Desc: %s\n", i, test.description)
+		// Assert TLS Handshake time
+		histogram := getHistogramFromHistogramVec(pm.tlsHandhakeTimer, adapterLabel, string(test.in.adapterName))
+		assert.Equal(t, test.out.expectedCount, histogram.GetSampleCount(), assertDesciptions[0])
+		assert.Equal(t, test.out.expectedDuration, histogram.GetSampleSum(), assertDesciptions[1])
 	}
 }
 
@@ -1419,6 +1442,7 @@ func TestDisabledMetrics(t *testing.T) {
 	assert.Nil(t, prometheusMetrics.adapterReusedConnections, "Counter Vector adapterReusedConnections should be nil")
 	assert.Nil(t, prometheusMetrics.adapterCreatedConnections, "Counter Vector adapterCreatedConnections should be nil")
 	assert.Nil(t, prometheusMetrics.adapterConnectionWaitTime, "Counter Vector adapterConnectionWaitTime should be nil")
+	assert.Nil(t, prometheusMetrics.tlsHandhakeTimer, "Counter Vector tlsHandhakeTimer should be nil")
 	assert.Nil(t, prometheusMetrics.adapterGDPRBlockedRequests, "Counter Vector adapterGDPRBlockedRequests should be nil")
 }
 
@@ -1498,6 +1522,187 @@ func TestRecordRequestPrivacy(t *testing.T) {
 			sourceLabel:  sourceRequest,
 			versionLabel: "v2",
 		})
+}
+
+// TestRecordRequestDuplicateBidID checks RecordRequestDuplicateBidID
+func TestRecordRequestDuplicateBidID(t *testing.T) {
+	m := createMetricsForTesting()
+	m.RecordRequestHavingDuplicateBidID()
+	// verify total no of requests which detected collision
+	assertCounterValue(t, "request cnt having duplicate bid.id", "request cnt having duplicate bid.id", m.requestsDuplicateBidIDCounter, float64(1))
+}
+
+// TestRecordAdapterDuplicateBidID checks RecordAdapterDuplicateBidID
+func TestRecordAdapterDuplicateBidID(t *testing.T) {
+	type collisions struct {
+		simulate int // no of bids to be simulate with same bid.id
+		expect   int // no of collisions expected to be recorded by metrics engine for given bidder
+	}
+	type bidderCollisions = map[string]collisions
+	testCases := []struct {
+		scenario         string
+		bidderCollisions bidderCollisions // represents no of collisions detected for bid.id at bidder level for given request
+		expectCollisions int
+	}{
+		{scenario: "invalid collision value", bidderCollisions: map[string]collisions{"bidder-1": {simulate: -1, expect: 0}}},
+		{scenario: "no collision", bidderCollisions: map[string]collisions{"bidder-1": {simulate: 0, expect: 0}}},
+		{scenario: "one collision", bidderCollisions: map[string]collisions{"bidder-1": {simulate: 1, expect: 1}}},
+		{scenario: "multiple collisions", bidderCollisions: map[string]collisions{"bidder-1": {simulate: 2, expect: 2}}},
+		{scenario: "multiple bidders", bidderCollisions: map[string]collisions{"bidder-1": {simulate: 2, expect: 2}, "bidder-2": {simulate: 4, expect: 4}}},
+		{scenario: "multiple bidders with bidder-1 no collision", bidderCollisions: map[string]collisions{"bidder-1": {simulate: 0, expect: 0},
+			"bidder-2": {simulate: 4, expect: 4}}},
+	}
+
+	for _, testcase := range testCases {
+		m := createMetricsForTesting()
+		for bidder, collisions := range testcase.bidderCollisions {
+			for collision := 1; collision <= collisions.simulate; collision++ {
+				m.RecordAdapterDuplicateBidID(bidder, 1)
+			}
+			assertCounterVecValue(t, testcase.scenario, testcase.scenario, m.adapterDuplicateBidIDCounter, float64(collisions.expect), prometheus.Labels{
+				adapterLabel: bidder,
+			})
+		}
+	}
+}
+
+func TestRecordPodImpGenTime(t *testing.T) {
+	impressions := 4
+	testAlgorithmMetrics(t, impressions, func(m *Metrics) dto.Histogram {
+		m.RecordPodImpGenTime(metrics.PodLabels{AlgorithmName: "sample_imp_algo", NoOfImpressions: &impressions}, time.Now())
+		return getHistogramFromHistogramVec(m.podImpGenTimer, podNoOfImpressions, strconv.Itoa(impressions))
+	})
+}
+
+func TestRecordPodCombGenTime(t *testing.T) {
+	combinations := 5
+	testAlgorithmMetrics(t, combinations, func(m *Metrics) dto.Histogram {
+		m.RecordPodCombGenTime(metrics.PodLabels{AlgorithmName: "sample_comb_algo", NoOfCombinations: &combinations}, time.Since(time.Now()))
+		return getHistogramFromHistogramVec(m.podCombGenTimer, podTotalCombinations, strconv.Itoa(combinations))
+	})
+}
+
+func TestRecordPodCompetitiveExclusionTime(t *testing.T) {
+	totalBids := 8
+	testAlgorithmMetrics(t, totalBids, func(m *Metrics) dto.Histogram {
+		m.RecordPodCompititveExclusionTime(metrics.PodLabels{AlgorithmName: "sample_comt_excl_algo", NoOfResponseBids: &totalBids}, time.Since(time.Now()))
+		return getHistogramFromHistogramVec(m.podCompExclTimer, podNoOfResponseBids, strconv.Itoa(totalBids))
+	})
+}
+
+func TestRecordAdapterVideoBidDuration(t *testing.T) {
+
+	testCases := []struct {
+		description       string
+		bidderAdDurations map[string][]int
+		expectedSum       map[string]int
+		expectedCount     map[string]int
+		expectedBuckets   map[string]map[int]int // cumulative
+	}{
+		{
+			description: "single bidder multiple ad durations",
+			bidderAdDurations: map[string][]int{
+				"bidder_1": {5, 10, 11, 32},
+			},
+			expectedSum:   map[string]int{"bidder_1": 58},
+			expectedCount: map[string]int{"bidder_1": 4},
+			expectedBuckets: map[string]map[int]int{
+				"bidder_1": {5: 1, 10: 2, 15: 3, 35: 4}, // Upper bound : cumulative number
+			},
+		},
+		{
+			description: "multiple bidders multiple ad durations",
+			bidderAdDurations: map[string][]int{
+				"bidder_1": {5, 10, 11, 32, 39},
+				"bidder_2": {25, 30},
+			},
+			expectedSum:   map[string]int{"bidder_1": 97, "bidder_2": 55},
+			expectedCount: map[string]int{"bidder_1": 5, "bidder_2": 2},
+			expectedBuckets: map[string]map[int]int{
+				"bidder_1": {5: 1, 10: 2, 15: 3, 35: 4, 40: 5},
+				"bidder_2": {25: 1, 30: 2},
+			},
+		},
+		{
+			description: "bidder with 0 ad durations",
+			bidderAdDurations: map[string][]int{
+				"bidder_1": {5, 0, 0, 27},
+			},
+			expectedSum:   map[string]int{"bidder_1": 32},
+			expectedCount: map[string]int{"bidder_1": 2}, // must exclude 2 observations having 0 durations
+			expectedBuckets: map[string]map[int]int{
+				"bidder_1": {5: 1, 30: 2},
+			},
+		},
+		{
+			description: "bidder with similar durations",
+			bidderAdDurations: map[string][]int{
+				"bidder_1": {23, 23, 23},
+			},
+			expectedSum:   map[string]int{"bidder_1": 69},
+			expectedCount: map[string]int{"bidder_1": 3}, //
+			expectedBuckets: map[string]map[int]int{
+				"bidder_1": {25: 3},
+			},
+		},
+		{
+			description: "bidder with ad durations >= 60",
+			bidderAdDurations: map[string][]int{
+				"bidder_1": {33, 60, 93, 90, 90, 120},
+			},
+			expectedSum:   map[string]int{"bidder_1": 486},
+			expectedCount: map[string]int{"bidder_1": 6}, //
+			expectedBuckets: map[string]map[int]int{
+				"bidder_1": {35: 1, 60: 2, 120: 6},
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.description, func(t *testing.T) {
+			m := createMetricsForTesting()
+			for adapterName, adDurations := range test.bidderAdDurations {
+				for _, adDuration := range adDurations {
+					m.RecordAdapterVideoBidDuration(metrics.AdapterLabels{
+						Adapter: openrtb_ext.BidderName(adapterName),
+					}, adDuration)
+				}
+				result := getHistogramFromHistogramVec(m.adapterVideoBidDuration, adapterLabel, adapterName)
+				for bucketDuration, durationCnt := range test.expectedBuckets[adapterName] {
+					validBucket := false
+					for _, bucket := range result.GetBucket() {
+						if int(bucket.GetUpperBound()) == bucketDuration {
+							validBucket = true
+							assert.Equal(t, uint64(durationCnt), bucket.GetCumulativeCount())
+							break
+						}
+					}
+					if !validBucket {
+						assert.Fail(t, "Invalid expected bucket = "+strconv.Itoa(bucketDuration))
+					}
+				}
+				expectedCount := test.expectedCount[adapterName]
+				expectedSum := test.expectedSum[adapterName]
+				assertHistogram(t, "adapter_vidbid_dur", result, uint64(expectedCount), float64(expectedSum))
+			}
+		})
+	}
+}
+
+func testAlgorithmMetrics(t *testing.T, input int, f func(m *Metrics) dto.Histogram) {
+	// test input
+	adRequests := 2
+	m := createMetricsForTesting()
+	var result dto.Histogram
+	for req := 1; req <= adRequests; req++ {
+		result = f(m)
+	}
+
+	// assert observations
+	assert.Equal(t, uint64(adRequests), result.GetSampleCount(), "ad requests : count")
+	for _, bucket := range result.Bucket {
+		assert.Equal(t, uint64(adRequests), bucket.GetCumulativeCount(), "total observations")
+	}
 }
 
 func assertCounterValue(t *testing.T, description, name string, counter prometheus.Counter, expected float64) {
