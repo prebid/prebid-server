@@ -3,6 +3,7 @@ package gdpr
 import (
 	"context"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -173,4 +174,21 @@ func Benchmark_vendorListScheduler_runLoadCache(b *testing.B) {
 		scheduler.runLoadCache()
 	}
 
+}
+
+func Test_vendorListScheduler_cacheFuncs(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(mockServer(serverSettings{
+		vendorListLatestVersion: 1,
+		vendorLists: map[int]string{
+			1: vendorList1,
+			2: vendorList2,
+		},
+	})))
+	defer server.Close()
+	config := testConfig()
+
+	_ = NewVendorListFetcher(context.Background(), config, server.Client(), testURLMaker(server))
+
+	assert.NotNil(t, cacheSave, "Error gdpr.cacheSave nil")
+	assert.NotNil(t, cacheLoad, "Error gdpr.cacheLoad nil")
 }

@@ -31,7 +31,7 @@ var cacheLoad func(vendorListVersion uint16) api.VendorList
 // Nothing in this file is exported. Public APIs can be found in gdpr.go
 
 func NewVendorListFetcher(initCtx context.Context, cfg config.GDPR, client *http.Client, urlMaker func(uint16) string) VendorListFetcher {
-	cacheSave, cacheLoad := newVendorListCache()
+	cacheSave, cacheLoad = newVendorListCache()
 
 	preloadContext, cancel := context.WithTimeout(initCtx, cfg.Timeouts.InitTimeout())
 	defer cancel()
