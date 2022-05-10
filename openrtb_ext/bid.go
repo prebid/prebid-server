@@ -170,4 +170,6 @@ func (key TargetingKey) TruncateKey(maxLength int) string {
 
 const (
 	StoredRequestAttributes = "storedrequestattributes"
+	OriginalBidCpmKey       = "origbidcpm"
+	OriginalBidCurKey       = "origbidcur"
 )

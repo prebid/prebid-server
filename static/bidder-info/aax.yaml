@@ -1,0 +1,19 @@
+maintainer:
+  email: product@aax.media
+gvlVendorID: 720
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  redirect:
+    url: https://c.aaxads.com/aacxc.php?fv=1&wbsh=psa&ryvlg=setstatuscode&bidder=aax&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
+    userMacro: <vsid>

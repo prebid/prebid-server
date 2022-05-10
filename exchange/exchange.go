@@ -24,6 +24,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/stored_responses"
 	"github.com/prebid/prebid-server/usersync"
 	"github.com/prebid/prebid-server/util/maputil"
 
@@ -166,18 +167,21 @@ type AuctionRequest struct {
 	LegacyLabels   metrics.Labels
 	FirstPartyData map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData
 	// map of imp id to stored response
-	StoredAuctionResponses map[string]json.RawMessage
+	StoredAuctionResponses stored_responses.ImpsWithBidResponses
 	TCF2ConfigBuilder      gdpr.TCF2ConfigBuilder
 	GDPRPermissionsBuilder gdpr.PermissionsBuilder
+	// map of imp id to bidder to stored response
+	StoredBidResponses stored_responses.ImpBidderStoredResp
 }
 
 // BidderRequest holds the bidder specific request and all other
 // information needed to process that bidder request.
 type BidderRequest struct {
-	BidRequest     *openrtb2.BidRequest
-	BidderName     openrtb_ext.BidderName
-	BidderCoreName openrtb_ext.BidderName
-	BidderLabels   metrics.AdapterLabels
+	BidRequest            *openrtb2.BidRequest
+	BidderName            openrtb_ext.BidderName
+	BidderCoreName        openrtb_ext.BidderName
+	BidderLabels          metrics.AdapterLabels
+	BidderStoredResponses map[string]json.RawMessage
 }
 
 func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *DebugLog) (*openrtb2.BidResponse, error) {
@@ -511,7 +515,7 @@ func (e *exchange) getAllBids(
 			reqInfo.PbsEntryPoint = bidderRequest.BidderLabels.RType
 			reqInfo.GlobalPrivacyControlHeader = globalPrivacyControlHeader
 
-			bids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest.BidRequest, bidderRequest.BidderName, adjustmentFactor, conversions, &reqInfo, accountDebugAllowed, headerDebugAllowed)
+			bids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest, adjustmentFactor, conversions, &reqInfo, accountDebugAllowed, headerDebugAllowed)
 
 			// Add in time reporting
 			elapsed := time.Since(start)
@@ -995,7 +999,7 @@ func (e *exchange) makeBid(bids []*pbsOrtbBid, auc *auction, returnCreative bool
 			}
 		}
 
-		if bidExtJSON, err := makeBidExtJSON(bid.bid.Ext, bidExtPrebid, impExtInfoMap, bid.bid.ImpID); err != nil {
+		if bidExtJSON, err := makeBidExtJSON(bid.bid.Ext, bidExtPrebid, impExtInfoMap, bid.bid.ImpID, bid.originalBidCPM, bid.originalBidCur); err != nil {
 			errs = append(errs, err)
 		} else {
 			result = append(result, *bid.bid)
@@ -1009,7 +1013,7 @@ func (e *exchange) makeBid(bids []*pbsOrtbBid, auc *auction, returnCreative bool
 	return result, errs
 }
 
-func makeBidExtJSON(ext json.RawMessage, prebid *openrtb_ext.ExtBidPrebid, impExtInfoMap map[string]ImpExtInfo, impId string) (json.RawMessage, error) {
+func makeBidExtJSON(ext json.RawMessage, prebid *openrtb_ext.ExtBidPrebid, impExtInfoMap map[string]ImpExtInfo, impId string, originalBidCpm float64, originalBidCur string) (json.RawMessage, error) {
 	var extMap map[string]interface{}
 
 	if len(ext) != 0 {
@@ -1018,6 +1022,16 @@ func makeBidExtJSON(ext json.RawMessage, prebid *openrtb_ext.ExtBidPrebid, impEx
 		}
 	} else {
 		extMap = make(map[string]interface{})
+	}
+
+	//ext.origbidcpm
+	if originalBidCpm >= 0 {
+		extMap[openrtb_ext.OriginalBidCpmKey] = originalBidCpm
+	}
+
+	//ext.origbidcur
+	if originalBidCur != "" {
+		extMap[openrtb_ext.OriginalBidCurKey] = originalBidCur
 	}
 
 	// ext.prebid

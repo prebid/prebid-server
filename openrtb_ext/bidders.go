@@ -77,6 +77,7 @@ func IsBidderNameReserved(name string) bool {
 // Please keep this list alphabetized to minimize merge conflicts.
 const (
 	Bidder33Across          BidderName = "33across"
+	BidderAax               BidderName = "aax"
 	BidderAceex             BidderName = "aceex"
 	BidderAcuityAds         BidderName = "acuityads"
 	BidderAdf               BidderName = "adf"
@@ -226,6 +227,7 @@ const (
 func CoreBidderNames() []BidderName {
 	return []BidderName{
 		Bidder33Across,
+		BidderAax,
 		BidderAceex,
 		BidderAcuityAds,
 		BidderAdf,

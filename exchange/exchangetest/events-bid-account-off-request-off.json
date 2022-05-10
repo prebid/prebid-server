@@ -71,6 +71,7 @@
               "h": 250,
               "crid": "creative-1",
               "ext": {
+                "origbidcpm": 0.71,
                 "prebid": {
                   "type": "banner"
                 }
@@ -84,6 +85,7 @@
               "h": 250,
               "crid": "creative-2",
               "ext": {
+                "origbidcpm": 0.21,
                 "prebid": {
                   "type": "banner"
                 }

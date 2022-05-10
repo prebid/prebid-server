@@ -53,6 +53,7 @@
                             "h": 250,
                             "crid": "creative-1",
                             "ext": {
+                                "origbidcpm": 0.3,
                                 "someField": "someValue"
                             }
                         },
@@ -75,6 +76,7 @@
                     "h": 250,
                     "crid": "creative-1",
                     "ext": {
+                        "origbidcpm": 0.3,
                         "someField": "someValue",
                         "prebid": {
                             "type": "video"
