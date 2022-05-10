@@ -1,10 +1,8 @@
 package pubstack
 
 import (
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"sync"
 	"testing"
 	"time"
 
@@ -40,7 +38,7 @@ func TestPubstackModuleErrors(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		_, err := NewPubstackModule(&http.Client{}, "scope", "http://example.com", tt.refreshDelay, 100, tt.maxByteSize, tt.maxTime)
+		_, err := NewModule(&http.Client{}, "scope", "http://example.com", tt.refreshDelay, 100, tt.maxByteSize, tt.maxTime)
 		assert.Error(t, err, tt.description)
 	}
 }
@@ -89,50 +87,24 @@ func TestPubstackModuleSuccess(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		// original config is loaded when the module is created
-		// the feature is disabled so no events should be sent
+		// original config with the feature disabled so no events should be sent
 		origConfig := &Configuration{
 			Features: map[string]bool{
 				tt.feature: false,
 			},
 		}
 
-		// updated config is hot-reloaded after some time passes
-		// the feature is enabled so events should be sent
+		// updated config with the feature enabled so events should be sent
 		updatedConfig := &Configuration{
 			Features: map[string]bool{
 				tt.feature: true,
 			},
 		}
 
-		// create server with root endpoint that returns the current config
-		// add an intake endpoint that PBS hits when events are sent
-		var isFirstQuery bool = true
-		var isFirstQueryMutex sync.Mutex
+		// create server with an intake endpoint that PBS hits when events are sent
 		mux := http.NewServeMux()
-		mux.HandleFunc("/", func(res http.ResponseWriter, req *http.Request) {
-			isFirstQueryMutex.Lock()
-			defer isFirstQueryMutex.Unlock()
 
-			defer req.Body.Close()
-
-			if isFirstQuery {
-				isFirstQuery = false
-				if data, err := json.Marshal(origConfig); err != nil {
-					res.WriteHeader(http.StatusBadRequest)
-				} else {
-					res.Write(data)
-				}
-			} else {
-				if data, err := json.Marshal(updatedConfig); err != nil {
-					res.WriteHeader(http.StatusBadRequest)
-				} else {
-					res.Write(data)
-				}
-			}
-		})
-
-		intakeChannel := make(chan int) // using a channel rather than examining the count directly to avoid race
+		intakeChannel := make(chan int)
 		mux.HandleFunc("/intake/"+tt.feature+"/", func(res http.ResponseWriter, req *http.Request) {
 			intakeChannel <- 1
 		})
@@ -143,20 +115,27 @@ func TestPubstackModuleSuccess(t *testing.T) {
 		origConfig.Endpoint = server.URL
 		updatedConfig.Endpoint = server.URL
 
-		// instantiate module with 15ms config refresh rate
-		module, err := NewPubstackModule(client, "scope", server.URL, "15ms", 100, "1B", "10ms")
+		// instantiate module with manual config update task
+		configTask := fakeConfigUpdateTask{}
+		module, err := NewModuleWithConfigTask(client, "scope", server.URL, 100, "1B", "5ms", &configTask)
 		assert.NoError(t, err, tt.description)
+
+		pubstack, _ := module.(*PubstackModule)
+
+		// push original config
+		configTask.Push(origConfig)
 
 		// allow time for the module to load the original config
 		time.Sleep(10 * time.Millisecond)
-
-		pubstack, _ := module.(*PubstackModule)
 
 		// attempt to log but no event channel was created because the feature is disabled in the original config
 		tt.logObject(pubstack)
 
 		// verify no event was received over a 10ms period
-		assertChanNone(t, intakeChannel, tt.description)
+		assertChanNone(t, intakeChannel, 10*time.Millisecond, tt.description)
+
+		// push updated config
+		configTask.Push(updatedConfig)
 
 		// allow time for the server to start serving the updated config
 		time.Sleep(10 * time.Millisecond)
@@ -165,26 +144,39 @@ func TestPubstackModuleSuccess(t *testing.T) {
 		tt.logObject(pubstack)
 
 		// verify an event was received within 10ms
-		assertChanOne(t, intakeChannel, tt.description)
+		assertChanOne(t, intakeChannel, 10*time.Millisecond, tt.description)
 	}
 }
 
-func assertChanNone(t *testing.T, c <-chan int, msgAndArgs ...interface{}) bool {
+func assertChanNone(t *testing.T, c <-chan int, waitDuration time.Duration, msgAndArgs ...interface{}) bool {
 	t.Helper()
 	select {
 	case <-c:
 		return assert.Fail(t, "Should NOT receive an event, but did", msgAndArgs...)
-	case <-time.After(10 * time.Millisecond):
+	case <-time.After(waitDuration):
 		return true
 	}
 }
 
-func assertChanOne(t *testing.T, c <-chan int, msgAndArgs ...interface{}) bool {
+func assertChanOne(t *testing.T, c <-chan int, waitDuration time.Duration, msgAndArgs ...interface{}) bool {
 	t.Helper()
 	select {
 	case <-c:
 		return true
-	case <-time.After(10 * time.Millisecond):
+	case <-time.After(waitDuration):
 		return assert.Fail(t, "Should receive an event, but did NOT", msgAndArgs...)
 	}
+}
+
+type fakeConfigUpdateTask struct {
+	configChan chan *Configuration
+}
+
+func (f *fakeConfigUpdateTask) Start(stop <-chan struct{}) <-chan *Configuration {
+	f.configChan = make(chan *Configuration)
+	return f.configChan
+}
+
+func (f *fakeConfigUpdateTask) Push(c *Configuration) {
+	f.configChan <- c
 }

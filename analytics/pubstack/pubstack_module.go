@@ -48,7 +48,20 @@ type PubstackModule struct {
 	muxConfig     sync.RWMutex
 }
 
-func NewPubstackModule(client *http.Client, scope, endpoint string, maxEventCount int, maxByteSize, maxTime string, configTask ConfigUpdateTask) (analytics.PBSAnalyticsModule, error) {
+func NewModule(client *http.Client, scope, endpoint, configRefreshDelay string, maxEventCount int, maxByteSize, maxTime string) (analytics.PBSAnalyticsModule, error) {
+	configUpdateTask, err := NewConfigUpdateHttpTask(
+		client,
+		scope,
+		endpoint,
+		configRefreshDelay)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewModuleWithConfigTask(client, scope, endpoint, maxEventCount, maxByteSize, maxTime, configUpdateTask)
+}
+
+func NewModuleWithConfigTask(client *http.Client, scope, endpoint string, maxEventCount int, maxByteSize, maxTime string, configTask ConfigUpdateTask) (analytics.PBSAnalyticsModule, error) {
 	glog.Infof("[pubstack] Initializing module scope=%s endpoint=%s\n", scope, endpoint)
 
 	// parse args
