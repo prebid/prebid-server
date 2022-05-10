@@ -158,18 +158,6 @@ func getBidderParams(imp *openrtb2.Imp) (*openrtb_ext.ExtImpTrafficGate, error) 
 		}
 	}
 
-	if len(TrafficGateExt.PlacementID) < 1 {
-		return nil, &errortypes.BadInput{
-			Message: "Invalid/Missing PlacementID",
-		}
-	}
-
-	if len(TrafficGateExt.Host) < 1 {
-		return nil, &errortypes.BadInput{
-			Message: "Invalid/Missing Host",
-		}
-	}
-
 	return &TrafficGateExt, nil
 }
 

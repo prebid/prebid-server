@@ -26,7 +26,7 @@
         }
       },
       {
-        "id": "test-imp-id",
+        "id": "test-imp-id2",
         "video": {
           "mimes": ["video/mp4"],
           "protocols": [2, 5],
@@ -74,7 +74,7 @@
               }
             },
             {
-              "id": "test-imp-id",
+              "id": "test-imp-id2",
               "video": {
                 "mimes": ["video/mp4"],
                 "protocols": [2, 5],

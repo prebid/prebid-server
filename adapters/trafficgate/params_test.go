@@ -15,7 +15,7 @@ func TestValidParams(t *testing.T) {
 	}
 
 	for _, validParam := range validParams {
-		if err := validator.Validate(openrtb_ext.BidderBidsCube, json.RawMessage(validParam)); err != nil {
+		if err := validator.Validate(openrtb_ext.BidderTrafficGate, json.RawMessage(validParam)); err != nil {
 			t.Errorf("Schema rejected trafficgate params: %s", validParam)
 		}
 	}
