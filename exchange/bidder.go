@@ -155,10 +155,6 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 		}
 		xPrebidHeader := version.BuildXPrebidHeaderForRequest(bidderRequest.BidRequest, version.Ver)
 
-		if adCertSigner != nil {
-			adCertSigner.Sign()
-		}
-
 		for i := 0; i < len(reqData); i++ {
 			if reqData[i].Headers != nil {
 				reqData[i].Headers = reqData[i].Headers.Clone()
@@ -169,6 +165,13 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 			if reqInfo.GlobalPrivacyControlHeader == "1" {
 				reqData[i].Headers.Add("Sec-GPC", reqInfo.GlobalPrivacyControlHeader)
 			}
+			if adCertSigner != nil {
+				signatureMessage, err := adCertSigner.Sign(reqData[i].Uri, reqData[i].Body)
+				if err == nil {
+					reqData[i].Headers.Add(adscert.SignHeader, signatureMessage)
+				}
+			}
+
 		}
 		// Make any HTTP requests in parallel.
 		// If the bidder only needs to make one, save some cycles by just using the current one.
