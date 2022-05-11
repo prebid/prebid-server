@@ -48,6 +48,14 @@ const (
 	Vertical   Orientation = "v"
 )
 
+// DeviceType ...
+type DeviceType string
+
+const (
+	Phone  DeviceType = "phone"
+	Tablet DeviceType = "tablet"
+)
+
 // SKAN IDs must be lower case
 var operaAdsSKADNetIDs = map[string]bool{
 	"a2p9lx4jpn.skadnetwork": true,
@@ -168,6 +176,11 @@ func (a *OperaAdsAdapter) MakeRequests(
 		if imp.Banner != nil {
 			if operaadsExt.MRAIDSupported {
 				bannerCopy := *imp.Banner
+
+				// custom override for banner sizes
+				tempW, tempH := bannerSize(bannerCopy, request.Device)
+				bannerCopy.W = &tempW
+				bannerCopy.H = &tempH
 
 				bannerExt := operaAdsBannerExt{
 					PlacementType:           string(placementType),
@@ -308,4 +321,35 @@ func parseOriginImpId(impId string) (originId string, bidType openrtb_ext.BidTyp
 		return impId, ""
 	}
 	return strings.Join(items[:len(items)-2], ":"), openrtb_ext.BidType(items[len(items)-1])
+}
+
+func bannerSize(banner openrtb2.Banner, device *openrtb2.Device) (int64, int64) {
+	orientation := Horizontal
+	if banner.W != nil && banner.H != nil && *banner.W < *banner.H {
+		orientation = Vertical
+	}
+
+	// request.Device.DeviceType is either DeviceTypeTablet or DeviceTypePhone
+	// https://github.com/Tapjoy/go-prebid/blob/e9c29cf39d683cf7a4beae55eb922d9a4a5a57d6/prebid/request.go#L563
+	deviceType := Phone
+	if device != nil && device.DeviceType == openrtb2.DeviceTypeTablet {
+		deviceType = Tablet
+	}
+
+	switch {
+	case orientation == Horizontal && deviceType == Phone:
+		return 480, 320
+
+	case orientation == Vertical && deviceType == Phone:
+		return 320, 480
+
+	case orientation == Horizontal && deviceType == Tablet:
+		return 1024, 768
+
+	case orientation == Vertical && deviceType == Tablet:
+		return 768, 1024
+
+	}
+
+	return 0, 0
 }
