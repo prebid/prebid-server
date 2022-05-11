@@ -1,7 +1,9 @@
 {
-  "description": "Amp request, impression with stored response ID, user field with buyeruids names alias",
-  "mockAmpStoredResponse": {
-    "6d718149": "[{\"bid\": [{\"id\": \"bid_id\", \"price\": 2.00, \"ext\": {\"prebid\": {\"targeting\": { \"hb_pb\": \"1.20\", \"hb_cat\": \"IAB-20\", \"hb_cache_id\": \"some_id\"}}}}],\"seat\": \"appnexus\"}]"
+  "description": "Amp request where root.user.ext.prebid.buyeruids field recognizes alias defined in root.ext.prebid.aliases",
+  "config": {
+    "mockBidders": [
+      {"bidderName": "appnexus", "currency": "USD", "price": 2}
+    ]
   },
   "mockBidRequest": {
     "id": "request-with-user-ext-obj",
@@ -15,11 +17,6 @@
           ]
         },
         "ext": {
-          "prebid": {
-              "storedauctionresponse": {
-                  "id": "6d718149"
-              }
-          },
           "appnexus": {
             "placementId": 12883451
           }
@@ -29,37 +26,38 @@
     "user": {
       "ext": {
         "prebid": {
-          "buyeruids": {"unknown": "123"}
+          "buyeruids": {
+            "unknown": "123"
+          }
         }
       }
     },
     "ext": {
       "prebid": {
-        "aliases": {"unknown": "appnexus"}
+        "aliases": {
+          "unknown": "appnexus"
+        }
       }
     }
   },
   "expectedAmpResponse": {
-      "targeting": {
-        "hb_bidder":            "appnexus",
-        "hb_bidder_appnexus":   "appnexus",
-        "hb_cache_host":        "www.pbcserver.com",
-        "hb_cache_host_appnex": "www.pbcserver.com",
-        "hb_cache_id":          "0",
-        "hb_cache_id_appnexus": "0",
-        "hb_cache_path":        "/pbcache/endpoint",
-        "hb_cache_path_appnex": "/pbcache/endpoint",
-        "hb_pb":                "2.00",
-        "hb_pb_appnexus":       "2.00"
-      },
-      "warnings": {
-          "general": [
-            {
-                "code":10002,
-                "message":"debug turned off for account"
-            }
-          ]
-      }
+    "targeting": {
+      "hb_bidder": "appnexus",
+      "hb_bidder_appnexus": "appnexus",
+      "hb_cache_host": "www.pbcserver.com",
+      "hb_cache_host_appnex": "www.pbcserver.com",
+      "hb_cache_id": "0",
+      "hb_cache_id_appnexus": "0",
+      "hb_cache_path": "/pbcache/endpoint",
+      "hb_cache_path_appnex": "/pbcache/endpoint",
+      "hb_pb": "2.00",
+      "hb_pb_appnexus": "2.00"
+    },
+    "warnings": {
+      "general": [
+        {"code": 10002, "message": "debug turned off for account"}
+      ]
+    }
   },
   "expectedReturnCode": 200
 }

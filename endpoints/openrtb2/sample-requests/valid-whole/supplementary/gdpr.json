@@ -1,8 +1,8 @@
 {
-  "description": "Amp request, impression with no stored response ID will make a call to the bid server, regs with GDPR value and user field with a consent string. Bid server bid prevails.",
+  "description": "Amp request comes with a root.regs.ext.gdpr and a GDPR consent string found in root.user.ext.consent",
   "config": {
     "mockBidders": [
-      {"bidderName": "appnexus", "currency": "USD", "price": 15.00}
+      {"bidderName": "appnexus", "currency": "USD", "price": 15}
     ]
   },
   "mockBidRequest": {
@@ -13,7 +13,10 @@
         "id": "/19968336/header-bid-tag-0",
         "banner": {
           "format": [
-            {"w": 300, "h": 600}
+            {
+              "w": 300,
+              "h": 600
+            }
           ]
         },
         "ext": {
@@ -31,26 +34,23 @@
     }
   },
   "expectedAmpResponse": {
-      "targeting": {
-        "hb_bidder":            "appnexus",
-        "hb_bidder_appnexus":   "appnexus",
-        "hb_cache_host":        "www.pbcserver.com",
-        "hb_cache_host_appnex": "www.pbcserver.com",
-        "hb_cache_id":          "0",
-        "hb_cache_id_appnexus": "0",
-        "hb_cache_path":        "/pbcache/endpoint",
-        "hb_cache_path_appnex": "/pbcache/endpoint",
-        "hb_pb":                "15.00",
-        "hb_pb_appnexus":       "15.00"
-      },
-      "warnings": {
-          "general": [
-            {
-                "code":10002,
-                "message":"debug turned off for account"
-            }
-          ]
-      }
+    "targeting": {
+      "hb_bidder": "appnexus",
+      "hb_bidder_appnexus": "appnexus",
+      "hb_cache_host": "www.pbcserver.com",
+      "hb_cache_host_appnex": "www.pbcserver.com",
+      "hb_cache_id": "0",
+      "hb_cache_id_appnexus": "0",
+      "hb_cache_path": "/pbcache/endpoint",
+      "hb_cache_path_appnex": "/pbcache/endpoint",
+      "hb_pb": "15.00",
+      "hb_pb_appnexus": "15.00"
+    },
+    "warnings": {
+      "general": [
+        {"code": 10002, "message": "debug turned off for account"}
+      ]
+    }
   },
   "expectedReturnCode": 200
 }

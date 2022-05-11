@@ -1,7 +1,9 @@
 {
-  "description": "Amp request, impression with stored response ID, directed to an alias that should be properly recognized",
-  "mockAmpStoredResponse": {
-    "6d718149": "[{\"bid\": [{\"id\": \"bid_id\", \"price\": 2.00, \"ext\": {\"prebid\": {\"targeting\": { \"hb_pb\": \"1.20\", \"hb_cat\": \"IAB-20\", \"hb_cache_id\": \"some_id\"}}}}],\"seat\": \"appnexus\"}]"
+  "description": "Amp request impression requests a bid from a bidder alias defined in root.ext.prebid.aliases",
+  "config": {
+    "mockBidders": [
+      {"bidderName": "appnexus", "currency": "USD", "price": 2}
+    ]
   },
   "mockBidRequest": {
     "id": "some-request-id",
@@ -15,11 +17,6 @@
           ]
         },
         "ext": {
-          "prebid": {
-              "storedauctionresponse": {
-                  "id": "6d718149"
-              }
-          },
           "unknown": {
             "placementId": 12883451
           }
@@ -35,26 +32,23 @@
     }
   },
   "expectedAmpResponse": {
-      "targeting": {
-        "hb_bidder":            "appnexus",
-        "hb_bidder_appnexus":   "appnexus",
-        "hb_cache_host":        "www.pbcserver.com",
-        "hb_cache_host_appnex": "www.pbcserver.com",
-        "hb_cache_id":          "0",
-        "hb_cache_id_appnexus": "0",
-        "hb_cache_path":        "/pbcache/endpoint",
-        "hb_cache_path_appnex": "/pbcache/endpoint",
-        "hb_pb":                "2.00",
-        "hb_pb_appnexus":       "2.00"
-      },
-      "warnings": {
-          "general": [
-            {
-                "code":10002,
-                "message":"debug turned off for account"
-            }
-          ]
-      }
+    "targeting": {
+      "hb_bidder": "unknown",
+      "hb_bidder_unknown": "unknown",
+      "hb_cache_host": "www.pbcserver.com",
+      "hb_cache_host_unknow": "www.pbcserver.com",
+      "hb_cache_id": "0",
+      "hb_cache_id_unknown": "0",
+      "hb_cache_path": "/pbcache/endpoint",
+      "hb_cache_path_unknow": "/pbcache/endpoint",
+      "hb_pb": "2.00",
+      "hb_pb_unknown": "2.00"
+    },
+    "warnings": {
+      "general": [
+        {"code": 10002, "message": "debug turned off for account"}
+      ]
+    }
   },
   "expectedReturnCode": 200
 }
