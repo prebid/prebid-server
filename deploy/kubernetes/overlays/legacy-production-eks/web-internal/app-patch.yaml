@@ -27,13 +27,19 @@ spec:
             - chamber exec devops/aws/production/tpe_prebid_service-web_internal/env --
               env PBS_MONITORING_OPENTELEMETRY_ENDPOINT=$$(printenv MY_NODE_IP):4139
               ./tpe_prebid_service
+          # App is very high throughput (~30k QPS), which results in high pod count & churn at lower CPU requests, which
+          # makes monitoring in NR/SFX difficult due to timeseries cardinality. Make pods relatively large to allow
+          # each instance to do more work.
           resources:
             requests:
-              cpu: 500m # Total guess
-              memory: 150Mi # Total guess
+              # 2022/05/10: 500m CPU request was observed to result in ~2.4k RPM (40 QPS) per pod, w/ ~667 pods. 10x
+              # should result in ~24k RPM (400 QPS) and ~67 pods.
+              cpu: "5"
+              memory: 150Mi # 2022/05/10: EC2 at full throughput shows ~50Mi usage in New Relic
+            # 2022/05/10: Leave plenty of overhead, and we can tighten it up later
             limits:
-              cpu: 6000m # Total guess
-              memory: 2000Mi # Total guess
+              cpu: "20"
+              memory: 2000Mi
           volumeMounts:
             - name: tapjoy-tooling
               mountPath: /tapjoy/tooling

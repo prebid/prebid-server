@@ -21,5 +21,18 @@ spec:
         target:
           type: Utilization
           averageUtilization: 60
-  minReplicas: 5
+  minReplicas: 5 # TODO Update to 22 and wait for all pods to come up before cutting back over to EKS
   maxReplicas: 300
+  # TODO Uncomment settings below before cutting back over to EKS
+  # Throughput is very spiky and we are seeing pods living only ~10-15 minutes. Scale down less aggressively by lowering
+  # the max terminated pods per scale-down and also increasing the shortest interval between possible scale down events.
+  ## https://v1-21.docs.kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/#support-for-configurable-scaling-behavior
+  # behavior:
+  #   scaleDown:
+  #     # selectPolicy: Disabled # Uncomment to temporarily disable scale-down (e.g. during upstream outages)
+  #     stabilizationWindowSeconds: 300 # Default 300
+  #     policies:
+  #       # Translation: Scale down at most 15% of pods once every 5 minutes
+  #       - type: Percent
+  #         value: 15 # Default 100
+  #         periodSeconds: 300 # Default 15
