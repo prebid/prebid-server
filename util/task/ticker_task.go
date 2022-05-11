@@ -8,25 +8,10 @@ type Runner interface {
 	Run() error
 }
 
-// runner func
-type funcRunner struct {
-	run func() error
-}
-
-func (r funcRunner) Run() error {
-	return r.run()
-}
-
-// end runner func
-
 type TickerTask struct {
 	interval time.Duration
 	runner   Runner
 	done     chan struct{}
-}
-
-func NewTickerTaskFromFunc(interval time.Duration, runner func() error) *TickerTask {
-	return NewTickerTask(interval, funcRunner{run: runner})
 }
 
 func NewTickerTask(interval time.Duration, runner Runner) *TickerTask {
