@@ -66,7 +66,7 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ad
 	extractWrapperExtFromImp := true
 	extractPubIDFromImp := true
 
-	wrapperExt, err := extractPubmaticWrapperExtFromRequest(request)
+	wrapperExt, acat, err := extractPubmaticExtFromRequest(request)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -114,9 +114,14 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ad
 		return nil, errs
 	}
 
+	reqExt := make(map[string]interface{})
+	if len(acat) > 0 {
+		reqExt["acat"] = acat
+	}
 	if wrapperExt != nil {
-		reqExt := make(map[string]interface{})
 		reqExt["wrapper"] = wrapperExt
+	}
+	if len(reqExt) > 0 {
 		rawExt, err := json.Marshal(reqExt)
 		if err != nil {
 			return nil, []error{err}
@@ -310,23 +315,32 @@ func parseImpressionObject(imp *openrtb2.Imp, extractWrapperExtFromImp, extractP
 	return wrapExt, pubID, nil
 }
 
-// extractPubmaticWrapperExtFromRequest parse the imp to get it ready to send to pubmatic
-func extractPubmaticWrapperExtFromRequest(request *openrtb2.BidRequest) (*pubmaticWrapperExt, error) {
-	var wrpExt pubmaticWrapperExt
+// extractPubmaticExtFromRequest parse the req.ext to fetch wrapper and acat params
+func extractPubmaticExtFromRequest(request *openrtb2.BidRequest) (*pubmaticWrapperExt, []string, error) {
+	var acat []string
+	var wrpExt *pubmaticWrapperExt
 	reqExtBidderParams, err := adapters.ExtractReqExtBidderParamsMap(request)
 	if err != nil {
-		return nil, err
+		return nil, acat, err
 	}
 
 	//get request ext bidder params
 	if wrapperObj, present := reqExtBidderParams["wrapper"]; present && len(wrapperObj) != 0 {
-		err = json.Unmarshal(wrapperObj, &wrpExt)
+		wrpExt = &pubmaticWrapperExt{}
+		err = json.Unmarshal(wrapperObj, wrpExt)
 		if err != nil {
-			return nil, err
+			return nil, acat, err
 		}
-		return &wrpExt, nil
 	}
-	return nil, nil
+
+	if acatBytes, ok := reqExtBidderParams["acat"]; ok {
+		err = json.Unmarshal(acatBytes, &acat)
+		for i := 0; i < len(acat); i++ {
+			acat[i] = strings.TrimSpace(acat[i])
+		}
+	}
+
+	return wrpExt, acat, err
 }
 
 func addKeywordsToExt(keywords []*openrtb_ext.ExtImpPubmaticKeyVal, extMap map[string]interface{}) {

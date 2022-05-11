@@ -24,6 +24,13 @@
 			"type": "string",
 			"description": "Deals Custom Targeting, pipe separated key-value pairs e.g key1=V1,V2,V3|key2=v1|key3=v3,v5"
 		},
+		"acat": {
+			"type": "array",
+			"description": "List of allowed categories for a given auction to be sent in request.ext",
+			"items": {
+				"type": "string"
+			}
+		},
 		"wrapper": {
 			"type": "object",
 			"description": "Specifies pubmatic openwrap configuration for a publisher",
