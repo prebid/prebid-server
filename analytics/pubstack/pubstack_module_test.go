@@ -3,6 +3,7 @@ package pubstack
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
@@ -10,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPubstackModuleErrors(t *testing.T) {
+func TestNewModuleErrors(t *testing.T) {
 	tests := []struct {
 		description  string
 		refreshDelay string
@@ -43,7 +44,7 @@ func TestPubstackModuleErrors(t *testing.T) {
 	}
 }
 
-func TestPubstackModuleSuccess(t *testing.T) {
+func TestNewModuleSuccess(t *testing.T) {
 	tests := []struct {
 		description string
 		feature     string
@@ -103,7 +104,6 @@ func TestPubstackModuleSuccess(t *testing.T) {
 
 		// create server with an intake endpoint that PBS hits when events are sent
 		mux := http.NewServeMux()
-
 		intakeChannel := make(chan int)
 		mux.HandleFunc("/intake/"+tt.feature+"/", func(res http.ResponseWriter, req *http.Request) {
 			intakeChannel <- 1
@@ -111,59 +111,59 @@ func TestPubstackModuleSuccess(t *testing.T) {
 		server := httptest.NewServer(mux)
 		client := server.Client()
 
-		// set the server url on each of the configs
+		// set the event server url on each of the configs
 		origConfig.Endpoint = server.URL
 		updatedConfig.Endpoint = server.URL
 
-		// instantiate module with manual config update task
+		// instantiate module with a manual config update task
 		configTask := fakeConfigUpdateTask{}
 		module, err := NewModuleWithConfigTask(client, "scope", server.URL, 100, "1B", "5ms", &configTask)
 		assert.NoError(t, err, tt.description)
 
 		pubstack, _ := module.(*PubstackModule)
 
-		// push original config
+		// original config
 		configTask.Push(origConfig)
+		time.Sleep(10 * time.Millisecond)                            // allow time for the module to load the original config
+		tt.logObject(pubstack)                                       // attempt to log; no event channel created because feature is disabled in original config
+		assertChanNone(t, intakeChannel, tt.description+":original") // verify no event was received over a 10ms period
 
-		// allow time for the module to load the original config
-		time.Sleep(10 * time.Millisecond)
-
-		// attempt to log but no event channel was created because the feature is disabled in the original config
-		tt.logObject(pubstack)
-
-		// verify no event was received over a 10ms period
-		assertChanNone(t, intakeChannel, 10*time.Millisecond, tt.description)
-
-		// push updated config
+		// updated config
 		configTask.Push(updatedConfig)
+		time.Sleep(10 * time.Millisecond)                          // allow time for the server to start serving the updated config
+		tt.logObject(pubstack)                                     // attempt to log; event channel should be created because feature is enabled in updated config
+		assertChanOne(t, intakeChannel, tt.description+":updated") // verify an event was received within 10ms
 
-		// allow time for the server to start serving the updated config
-		time.Sleep(10 * time.Millisecond)
+		// no config change
+		configTask.Push(updatedConfig)
+		time.Sleep(10 * time.Millisecond)                            // allow time for the server to determine no config change
+		tt.logObject(pubstack)                                       // attempt to log; event channel should still be created from loading updated config
+		assertChanOne(t, intakeChannel, tt.description+":no_change") // verify an event was received within 10ms
 
-		// attempt to log; the event channel should have been created because the feature is enabled in updated config
-		tt.logObject(pubstack)
-
-		// verify an event was received within 10ms
-		assertChanOne(t, intakeChannel, 10*time.Millisecond, tt.description)
+		// shutdown
+		pubstack.sigTermCh <- os.Kill                                // simulate os shutdown signal
+		time.Sleep(10 * time.Millisecond)                            // allow time for the server to switch to shutdown generated config
+		tt.logObject(pubstack)                                       // attempt to log; event channel should be closed from the os kill signal
+		assertChanNone(t, intakeChannel, tt.description+":shutdown") // verify no event was received over a 10ms period
 	}
 }
 
-func assertChanNone(t *testing.T, c <-chan int, waitDuration time.Duration, msgAndArgs ...interface{}) bool {
+func assertChanNone(t *testing.T, c <-chan int, msgAndArgs ...interface{}) bool {
 	t.Helper()
 	select {
 	case <-c:
 		return assert.Fail(t, "Should NOT receive an event, but did", msgAndArgs...)
-	case <-time.After(waitDuration):
+	case <-time.After(10 * time.Millisecond):
 		return true
 	}
 }
 
-func assertChanOne(t *testing.T, c <-chan int, waitDuration time.Duration, msgAndArgs ...interface{}) bool {
+func assertChanOne(t *testing.T, c <-chan int, msgAndArgs ...interface{}) bool {
 	t.Helper()
 	select {
 	case <-c:
 		return true
-	case <-time.After(waitDuration):
+	case <-time.After(10 * time.Millisecond):
 		return assert.Fail(t, "Should receive an event, but did NOT", msgAndArgs...)
 	}
 }

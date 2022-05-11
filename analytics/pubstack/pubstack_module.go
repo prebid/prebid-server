@@ -177,7 +177,6 @@ func (p *PubstackModule) LogCookieSyncObject(cso *analytics.CookieSyncObject) {
 	}
 
 	p.eventChannels[cookieSync].Push(payload)
-
 }
 
 func (p *PubstackModule) LogAmpObject(ao *analytics.AmpObject) {
@@ -196,7 +195,6 @@ func (p *PubstackModule) LogAmpObject(ao *analytics.AmpObject) {
 	}
 
 	p.eventChannels[amp].Push(payload)
-
 }
 
 func (p *PubstackModule) start(c <-chan *Configuration) {
@@ -204,7 +202,8 @@ func (p *PubstackModule) start(c <-chan *Configuration) {
 		select {
 		case <-p.sigTermCh:
 			close(p.stopCh)
-			p.closeAllEventChannels()
+			cfg := p.cfg.clone().disableAllFeatures()
+			p.updateConfig(cfg)
 			return
 		case config := <-c:
 			p.updateConfig(config)

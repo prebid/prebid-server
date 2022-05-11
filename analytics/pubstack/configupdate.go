@@ -6,7 +6,6 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/util/task"
 )
 
@@ -25,12 +24,11 @@ type ConfigUpdateHttpTask struct {
 func NewConfigUpdateHttpTask(httpClient *http.Client, scope, endpoint, refreshInterval string) (*ConfigUpdateHttpTask, error) {
 	refreshDuration, err := time.ParseDuration(refreshInterval)
 	if err != nil {
-		return nil, fmt.Errorf("fail to parse the module args, arg=analytics.pubstack.configuration_refresh_delay, :%v", err)
+		return nil, fmt.Errorf("fail to parse the module args, arg=analytics.pubstack.configuration_refresh_delay: %v", err)
 	}
 
 	endpointUrl, err := url.Parse(endpoint + "/bootstrap?scopeId=" + scope)
 	if err != nil {
-		glog.Error(err)
 		return nil, err
 	}
 
@@ -39,9 +37,7 @@ func NewConfigUpdateHttpTask(httpClient *http.Client, scope, endpoint, refreshIn
 	tr := task.NewTickerTaskFromFunc(refreshDuration, func() error {
 		config, err := fetchConfig(httpClient, endpointUrl)
 		if err != nil {
-			err := fmt.Errorf("[pubstack] Fail to fetch remote configuration: %v", err)
-			glog.Error(err)
-			return err
+			return fmt.Errorf("[pubstack] Fail to fetch remote configuration: %v", err)
 		}
 		configChan <- config
 		return nil
@@ -54,7 +50,7 @@ func NewConfigUpdateHttpTask(httpClient *http.Client, scope, endpoint, refreshIn
 }
 
 func (t *ConfigUpdateHttpTask) Start(stop <-chan struct{}) <-chan *Configuration {
-	t.task.Start()
+	go t.task.Start()
 
 	go func() {
 		<-stop

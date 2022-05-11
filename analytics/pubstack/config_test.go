@@ -98,3 +98,53 @@ func TestIsSameAs(t *testing.T) {
 	b.Features["auction"] = false
 	assert.False(t, a.isSameAs(b))
 }
+
+func TestClone(t *testing.T) {
+	config := &Configuration{
+		ScopeID:  "scopeId",
+		Endpoint: "endpoint",
+		Features: map[string]bool{
+			"auction":    true,
+			"cookiesync": true,
+			"amp":        true,
+			"setuid":     false,
+			"video":      false,
+		},
+	}
+
+	clone := config.clone()
+
+	assert.Equal(t, config, clone)
+	assert.NotSame(t, config, clone)
+}
+
+func TestDisableAllFeatures(t *testing.T) {
+	config := &Configuration{
+		ScopeID:  "scopeId",
+		Endpoint: "endpoint",
+		Features: map[string]bool{
+			"auction":    true,
+			"cookiesync": true,
+			"amp":        true,
+			"setuid":     false,
+			"video":      false,
+		},
+	}
+
+	expected := &Configuration{
+		ScopeID:  "scopeId",
+		Endpoint: "endpoint",
+		Features: map[string]bool{
+			"auction":    false,
+			"cookiesync": false,
+			"amp":        false,
+			"setuid":     false,
+			"video":      false,
+		},
+	}
+
+	disabled := config.disableAllFeatures()
+
+	assert.Equal(t, expected, disabled)
+	assert.Same(t, config, disabled)
+}

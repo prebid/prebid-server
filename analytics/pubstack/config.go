@@ -49,3 +49,24 @@ func (a *Configuration) isSameAs(b *Configuration) bool {
 	}
 	return sameFeature && sameEndpoint && sameScopeID
 }
+
+func (a *Configuration) clone() *Configuration {
+	c := &Configuration{
+		ScopeID:  a.ScopeID,
+		Endpoint: a.Endpoint,
+		Features: make(map[string]bool, len(a.Features)),
+	}
+
+	for k, v := range a.Features {
+		c.Features[k] = v
+	}
+
+	return c
+}
+
+func (a *Configuration) disableAllFeatures() *Configuration {
+	for k := range a.Features {
+		a.Features[k] = false
+	}
+	return a
+}
