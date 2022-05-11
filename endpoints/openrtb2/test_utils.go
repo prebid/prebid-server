@@ -80,6 +80,7 @@ type testConfigValues struct {
 	DisabledAdapters    []string                      `json:"disabledAdapters"`
 	CurrencyRates       map[string]map[string]float64 `json:"currencyRates"`
 	MockBidders         []mockBidderHandler           `json:"mockBidders"`
+	RealParamsValidator bool                          `json:"realParamsValidator"`
 }
 
 type brokenExchange struct{}
@@ -1084,7 +1085,7 @@ func (tc *testConfigValues) getAdaptersConfigMap() map[string]config.Adapter {
 }
 
 // buildTestExchange returns an exchange with mock bidder servers and mock currency convertion server
-func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.BidderName]exchange.AdaptedBidder, mockBidServersArray []*httptest.Server, mockCurrencyRatesServer *httptest.Server, bidderInfos config.BidderInfos, cfg *config.Configuration, met metrics.MetricsEngine, mockFetcher stored_requests.CategoryFetcher) exchange.Exchange {
+func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.BidderName]exchange.AdaptedBidder, mockBidServersArray []*httptest.Server, mockCurrencyRatesServer *httptest.Server, bidderInfos config.BidderInfos, cfg *config.Configuration, met metrics.MetricsEngine, mockFetcher stored_requests.CategoryFetcher) (exchange.Exchange, []*httptest.Server) {
 	if len(testCfg.MockBidders) == 0 {
 		testCfg.MockBidders = append(testCfg.MockBidders, mockBidderHandler{BidderName: "appnexus", Currency: "USD", Price: 0.00})
 	}
@@ -1109,14 +1110,26 @@ func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.Bid
 		gdpr.NewVendorListFetcher(context.Background(), config.GDPR{}, &http.Client{}, gdpr.VendorListURLMaker),
 		mockCurrencyConverter,
 		mockFetcher,
-	)
+	), mockBidServersArray
 }
 
 // buildTestEndpoint instantiates an openrtb2 Auction endpoint designed to test endpoints/openrtb2/auction.go
-func buildTestEndpoint(test testCase, cfg *config.Configuration, paramValidator openrtb_ext.BidderParamValidator) (httprouter.Handle, []*httptest.Server, *httptest.Server, error) {
+func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Handle, []*httptest.Server, *httptest.Server, error) {
 	if test.Config == nil {
 		test.Config = &testConfigValues{}
 	}
+
+	var paramValidator openrtb_ext.BidderParamValidator
+	if test.Config.RealParamsValidator {
+		var err error
+		paramValidator, err = openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
+		if err != nil {
+			return nil, nil, nil, err
+		}
+	} else {
+		paramValidator = mockBidderParamValidator{}
+	}
+
 	bidderInfos := getBidderInfos(test.Config.getAdaptersConfigMap(), openrtb_ext.CoreBidderNames())
 	bidderMap := exchange.GetActiveBidders(bidderInfos)
 	disabledBidders := exchange.GetDisabledBiddersErrorMessages(bidderInfos)
@@ -1135,7 +1148,7 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration, paramValidator 
 	}
 	mockCurrencyRatesServer := httptest.NewServer(http.HandlerFunc(mockCurrencyConversionService.handle))
 
-	ex := buildTestExchange(test.Config, adapterMap, mockBidServersArray, mockCurrencyRatesServer, bidderInfos, cfg, met, mockFetcher)
+	ex, mockBidServersArray := buildTestExchange(test.Config, adapterMap, mockBidServersArray, mockCurrencyRatesServer, bidderInfos, cfg, met, mockFetcher)
 
 	var storedRequestFetcher stored_requests.Fetcher
 	if len(test.storedRequest) > 0 {
@@ -1177,6 +1190,13 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration, paramValidator 
 
 	return endpoint, mockBidServersArray, mockCurrencyRatesServer, err
 }
+
+type mockBidderParamValidator struct{}
+
+func (v mockBidderParamValidator) Validate(name openrtb_ext.BidderName, ext json.RawMessage) error {
+	return nil
+}
+func (v mockBidderParamValidator) Schema(name openrtb_ext.BidderName) string { return "" }
 
 type mockAmpStoredReqFetcher struct {
 	data map[string]json.RawMessage

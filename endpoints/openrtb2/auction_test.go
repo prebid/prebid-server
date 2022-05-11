@@ -101,8 +101,6 @@ func TestJsonSampleRequests(t *testing.T) {
 		},
 	}
 
-	paramsValidator := newParamsValidator(t)
-
 	for _, tc := range testSuites {
 		testCaseFiles, err := getTestFiles(filepath.Join("sample-requests", tc.sampleRequestsSubDir))
 		if assert.NoError(t, err, "Test case %s. Error reading files from directory %s \n", tc.description, tc.sampleRequestsSubDir) {
@@ -125,7 +123,8 @@ func TestJsonSampleRequests(t *testing.T) {
 						cfg.AccountRequired = test.Config.AccountRequired
 					}
 					test.endpointType = OPENRTB_ENDPOINT
-					auctionEndpointHandler, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg, paramsValidator)
+
+					auctionEndpointHandler, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
 					if assert.NoError(t, err) {
 						runTestCase(t, auctionEndpointHandler, test, fileData, testFile)
 					}
@@ -366,7 +365,7 @@ func TestExplicitUserId(t *testing.T) {
 	endpoint, _ := NewEndpoint(
 		fakeUUIDGenerator{},
 		ex,
-		newParamsValidator(t),
+		mockBidderParamValidator{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		cfg,
@@ -422,7 +421,7 @@ func doBadAliasRequest(t *testing.T, filename string, expectMsg string) {
 	endpoint, _ := NewEndpoint(
 		fakeUUIDGenerator{},
 		&nobidExchange{},
-		newParamsValidator(t),
+		mockBidderParamValidator{},
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
@@ -474,7 +473,7 @@ func TestNilExchange(t *testing.T) {
 	_, err := NewEndpoint(
 		fakeUUIDGenerator{},
 		nil,
-		newParamsValidator(t),
+		mockBidderParamValidator{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
@@ -519,7 +518,7 @@ func TestExchangeError(t *testing.T) {
 	endpoint, _ := NewEndpoint(
 		fakeUUIDGenerator{},
 		&brokenExchange{},
-		newParamsValidator(t),
+		mockBidderParamValidator{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
@@ -643,7 +642,7 @@ func TestImplicitIPsEndToEnd(t *testing.T) {
 		endpoint, _ := NewEndpoint(
 			fakeUUIDGenerator{},
 			exchange,
-			newParamsValidator(t),
+			mockBidderParamValidator{},
 			&mockStoredReqFetcher{},
 			empty_fetcher.EmptyFetcher{},
 			cfg,
@@ -839,7 +838,7 @@ func TestImplicitDNTEndToEnd(t *testing.T) {
 		endpoint, _ := NewEndpoint(
 			fakeUUIDGenerator{},
 			exchange,
-			newParamsValidator(t),
+			mockBidderParamValidator{},
 			&mockStoredReqFetcher{},
 			empty_fetcher.EmptyFetcher{},
 			&config.Configuration{MaxRequestSize: maxSize},
@@ -994,7 +993,7 @@ func TestStoredRequests(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&nobidExchange{},
-		newParamsValidator(t),
+		mockBidderParamValidator{},
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -1337,7 +1336,7 @@ func TestValidateRequest(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&nobidExchange{},
-		newParamsValidator(t),
+		mockBidderParamValidator{},
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -1640,7 +1639,7 @@ func TestSetIntegrationType(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&nobidExchange{},
-		newParamsValidator(t),
+		mockBidderParamValidator{},
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -1705,7 +1704,7 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{id: "foo", err: nil},
 		&nobidExchange{},
-		newParamsValidator(t),
+		mockBidderParamValidator{},
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -1805,7 +1804,7 @@ func TestOversizedRequest(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&nobidExchange{},
-		newParamsValidator(t),
+		mockBidderParamValidator{},
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -1842,7 +1841,7 @@ func TestRequestSizeEdgeCase(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&nobidExchange{},
-		newParamsValidator(t),
+		mockBidderParamValidator{},
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -1878,7 +1877,7 @@ func TestNoEncoding(t *testing.T) {
 	endpoint, _ := NewEndpoint(
 		fakeUUIDGenerator{},
 		&mockExchange{},
-		newParamsValidator(t),
+		mockBidderParamValidator{},
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
@@ -1955,7 +1954,7 @@ func TestContentType(t *testing.T) {
 	endpoint, _ := NewEndpoint(
 		fakeUUIDGenerator{},
 		&mockExchange{},
-		newParamsValidator(t),
+		mockBidderParamValidator{},
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
@@ -2169,7 +2168,7 @@ func TestValidateImpExt(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&nobidExchange{},
-		newParamsValidator(t),
+		mockBidderParamValidator{},
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -2217,7 +2216,7 @@ func TestCurrencyTrunc(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&nobidExchange{},
-		newParamsValidator(t),
+		mockBidderParamValidator{},
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -2263,7 +2262,7 @@ func TestCCPAInvalid(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&nobidExchange{},
-		newParamsValidator(t),
+		mockBidderParamValidator{},
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -2313,7 +2312,7 @@ func TestNoSaleInvalid(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&nobidExchange{},
-		newParamsValidator(t),
+		mockBidderParamValidator{},
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -2366,7 +2365,7 @@ func TestValidateSourceTID(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&nobidExchange{},
-		newParamsValidator(t),
+		mockBidderParamValidator{},
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -2409,7 +2408,7 @@ func TestSChainInvalid(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&nobidExchange{},
-		newParamsValidator(t),
+		mockBidderParamValidator{},
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -2758,7 +2757,7 @@ func TestEidPermissionsInvalid(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&nobidExchange{},
-		newParamsValidator(t),
+		mockBidderParamValidator{},
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -3011,7 +3010,7 @@ func TestIOS14EndToEnd(t *testing.T) {
 	endpoint, _ := NewEndpoint(
 		fakeUUIDGenerator{},
 		exchange,
-		newParamsValidator(t),
+		mockBidderParamValidator{},
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
@@ -3040,7 +3039,7 @@ func TestAuctionWarnings(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&warningsCheckExchange{},
-		newParamsValidator(t),
+		mockBidderParamValidator{},
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -3081,7 +3080,7 @@ func TestParseRequestParseImpInfoError(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&warningsCheckExchange{},
-		newParamsValidator(t),
+		mockBidderParamValidator{},
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -3557,7 +3556,7 @@ func TestAuctionResponseHeaders(t *testing.T) {
 	endpoint, _ := NewEndpoint(
 		fakeUUIDGenerator{},
 		exchange,
-		newParamsValidator(t),
+		mockBidderParamValidator{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
@@ -3654,7 +3653,7 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 			deps := &endpointDeps{
 				fakeUUIDGenerator{},
 				&warningsCheckExchange{},
-				newParamsValidator(t),
+				mockBidderParamValidator{},
 				&mockStoredReqFetcher{},
 				empty_fetcher.EmptyFetcher{},
 				empty_fetcher.EmptyFetcher{},
@@ -3754,7 +3753,7 @@ func TestParseRequestStoredResponses(t *testing.T) {
 			deps := &endpointDeps{
 				fakeUUIDGenerator{},
 				&warningsCheckExchange{},
-				newParamsValidator(t),
+				mockBidderParamValidator{},
 				&mockStoredReqFetcher{},
 				empty_fetcher.EmptyFetcher{},
 				empty_fetcher.EmptyFetcher{},
@@ -3841,7 +3840,7 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 			deps := &endpointDeps{
 				fakeUUIDGenerator{},
 				&warningsCheckExchange{},
-				newParamsValidator(t),
+				mockBidderParamValidator{},
 				&mockStoredReqFetcher{},
 				empty_fetcher.EmptyFetcher{},
 				empty_fetcher.EmptyFetcher{},
@@ -3874,7 +3873,7 @@ func TestValidateStoredResp(t *testing.T) {
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		&nobidExchange{},
-		newParamsValidator(t),
+		mockBidderParamValidator{},
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},

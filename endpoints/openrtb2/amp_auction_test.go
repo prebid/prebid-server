@@ -62,7 +62,7 @@ func TestGoodAmpRequests(t *testing.T) {
 		}
 
 		// Set test up
-		ampEndpoint, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg, newParamsValidator(t))
+		ampEndpoint, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
 		if !assert.NoError(t, err) {
 			continue
 		}
@@ -72,6 +72,12 @@ func TestGoodAmpRequests(t *testing.T) {
 
 		// runTestCase
 		ampEndpoint(recorder, request, nil)
+
+		// Close servers
+		for _, mockBidServer := range mockBidServers {
+			mockBidServer.Close()
+		}
+		mockCurrencyRatesServer.Close()
 
 		// Assertions
 		if assert.Equal(t, test.ExpectedReturnCode, recorder.Code, "Expected status %d. Got %d. Amp test file: %s", http.StatusOK, recorder.Code, tc.filename) {
@@ -83,11 +89,6 @@ func TestGoodAmpRequests(t *testing.T) {
 				assert.Equal(t, test.ExpectedErrorMessage, recorder.Body.String(), tc.filename)
 			}
 		}
-		// Close servers
-		for _, mockBidServer := range mockBidServers {
-			mockBidServer.Close()
-		}
-		mockCurrencyRatesServer.Close()
 	}
 }
 
