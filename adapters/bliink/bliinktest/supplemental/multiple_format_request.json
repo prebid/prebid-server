@@ -24,6 +24,16 @@
         },
         "ext": {
         }
+      },
+      {
+        "id": "some-impression-id",
+        "tagid": "TAGID",
+        "native": {
+          "request": "{test json string}",
+          "ver": "1.2"
+        },
+        "ext": {
+        }
       }
     ]
   },
@@ -58,6 +68,16 @@
               "tagid": "TAGID",
               "ext": {
               }
+            },
+            {
+              "id": "some-impression-id",
+              "tagid": "TAGID",
+              "native": {
+                "request": "{test json string}",
+                "ver": "1.2"
+              },
+              "ext": {
+              }
             }
           ],
           "site": {
@@ -90,9 +110,7 @@
                   "w": 320,
                   "h": 50
                 }
-              ],
-              "type": "banner",
-              "seat": "bliink"
+              ]
             }
           ],
           "cur": "EUR"
@@ -100,25 +118,10 @@
       }
     }
   ],
-  "expectedBidResponses": [
+  "expectedMakeBidsErrors": [
     {
-      "bids": [
-        {
-          "bid": {
-            "id": "a3ae1b4e2fc24a4fb45540082e98e161",
-            "impid": "some-impression-id",
-            "price": 0.9,
-            "adm": "awesome-markup",
-            "adomain": [
-              "awesome.com"
-            ],
-            "crid": "20",
-            "w": 320,
-            "h": 50
-          },
-          "type": "banner"
-        }
-      ]
+      "value": "unable to fetch mediaType in multi-format: some-impression-id",
+      "comparison": "literal"
     }
   ]
 }
