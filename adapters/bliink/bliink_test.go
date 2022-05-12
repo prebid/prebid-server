@@ -9,7 +9,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderBliink, config.Adapter{
-		Endpoint: "http://whatever.url/bid"})
+		Endpoint: "http://biddertest.url/bid"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
