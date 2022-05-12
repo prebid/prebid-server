@@ -500,7 +500,7 @@ func (e *exchange) getAllBids(
 		bidderRunner := e.recoverSafely(bidderRequests, func(ctx context.Context, txn *newrelic.Transaction, bidderRequest BidderRequest, conversions currency.Conversions) {
 
 			ctx = newrelic.NewContext(ctx, txn)
-			ctx, span := trace.SpanFromContext(ctx).Tracer().Start(ctx, string(bidderRequest.BidderName))
+			ctx, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("").Start(ctx, string(bidderRequest.BidderName))
 			defer span.End()
 
 			skanidlist.Update(ctx, e.adapterMap[bidderRequest.BidderCoreName].client(), bidderRequest.BidderCoreName)

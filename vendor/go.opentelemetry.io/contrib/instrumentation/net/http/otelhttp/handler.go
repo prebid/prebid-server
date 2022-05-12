@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package otelhttp
+package otelhttp // import "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
 import (
 	"io"
@@ -24,8 +24,10 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/instrument/syncfloat64"
+	"go.opentelemetry.io/otel/metric/instrument/syncint64"
 	"go.opentelemetry.io/otel/propagation"
-	"go.opentelemetry.io/otel/semconv"
+	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -42,13 +44,13 @@ type Handler struct {
 	tracer            trace.Tracer
 	meter             metric.Meter
 	propagators       propagation.TextMapPropagator
-	spanStartOptions  []trace.SpanOption
+	spanStartOptions  []trace.SpanStartOption
 	readEvent         bool
 	writeEvent        bool
 	filters           []Filter
 	spanNameFormatter func(string, *http.Request) string
-	counters          map[string]metric.Int64Counter
-	valueRecorders    map[string]metric.Int64ValueRecorder
+	counters          map[string]syncint64.Counter
+	valueRecorders    map[string]syncfloat64.Histogram
 }
 
 func defaultHandlerFormatter(operation string, _ *http.Request) string {
@@ -93,16 +95,16 @@ func handleErr(err error) {
 }
 
 func (h *Handler) createMeasures() {
-	h.counters = make(map[string]metric.Int64Counter)
-	h.valueRecorders = make(map[string]metric.Int64ValueRecorder)
+	h.counters = make(map[string]syncint64.Counter)
+	h.valueRecorders = make(map[string]syncfloat64.Histogram)
 
-	requestBytesCounter, err := h.meter.NewInt64Counter(RequestContentLength)
+	requestBytesCounter, err := h.meter.SyncInt64().Counter(RequestContentLength)
 	handleErr(err)
 
-	responseBytesCounter, err := h.meter.NewInt64Counter(ResponseContentLength)
+	responseBytesCounter, err := h.meter.SyncInt64().Counter(ResponseContentLength)
 	handleErr(err)
 
-	serverLatencyMeasure, err := h.meter.NewInt64ValueRecorder(ServerLatency)
+	serverLatencyMeasure, err := h.meter.SyncFloat64().Histogram(ServerLatency)
 	handleErr(err)
 
 	h.counters[RequestContentLength] = requestBytesCounter
@@ -121,14 +123,24 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	opts := append([]trace.SpanOption{
+	opts := append([]trace.SpanStartOption{
 		trace.WithAttributes(semconv.NetAttributesFromHTTPRequest("tcp", r)...),
 		trace.WithAttributes(semconv.EndUserAttributesFromHTTPRequest(r)...),
 		trace.WithAttributes(semconv.HTTPServerAttributesFromHTTPRequest(h.operation, "", r)...),
 	}, h.spanStartOptions...) // start with the configured options
 
+	tracer := h.tracer
+
+	if tracer == nil {
+		if span := trace.SpanFromContext(r.Context()); span.SpanContext().IsValid() {
+			tracer = newTracer(span.TracerProvider())
+		} else {
+			tracer = newTracer(otel.GetTracerProvider())
+		}
+	}
+
 	ctx := h.propagators.Extract(r.Context(), propagation.HeaderCarrier(r.Header))
-	ctx, span := h.tracer.Start(ctx, h.spanNameFormatter(h.operation, r), opts...)
+	ctx, span := tracer.Start(ctx, h.spanNameFormatter(h.operation, r), opts...)
 	defer span.End()
 
 	readRecordFunc := func(int64) {}
@@ -185,7 +197,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.counters[RequestContentLength].Add(ctx, bw.read, attributes...)
 	h.counters[ResponseContentLength].Add(ctx, rww.written, attributes...)
 
-	elapsedTime := time.Since(requestStartTime).Microseconds()
+	// Use floating point division here for higher precision (instead of Millisecond method).
+	elapsedTime := float64(time.Since(requestStartTime)) / float64(time.Millisecond)
 
 	h.valueRecorders[ServerLatency].Record(ctx, elapsedTime, attributes...)
 }
