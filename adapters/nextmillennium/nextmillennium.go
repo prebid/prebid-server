@@ -107,18 +107,17 @@ func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext
 
 	if params.GroupID != nil {
 		domain := ""
+		size := ""
 		if prebidBidRequest.Site != nil && prebidBidRequest.Site.Domain != "" {
 			domain = prebidBidRequest.Site.Domain
 		}
 		if prebidBidRequest.App != nil && prebidBidRequest.App.Domain != "" {
 			domain = prebidBidRequest.App.Domain
 		}
-		placementID = fmt.Sprintf(
-			"g%s;%dx%d;%s", *params.GroupID,
-			*prebidBidRequest.Imp[0].Banner.W,
-			*prebidBidRequest.Imp[0].Banner.H,
-			domain,
-		)
+		if prebidBidRequest.Imp[0].Banner != nil {
+			size = fmt.Sprintf("%dx%d", *prebidBidRequest.Imp[0].Banner.W, *prebidBidRequest.Imp[0].Banner.H)
+		}
+		placementID = fmt.Sprintf("g%s;%s;%s", *params.GroupID, size, domain)
 	}
 
 	bidRequest.Ext.Prebid.StoredRequest.ID = placementID
