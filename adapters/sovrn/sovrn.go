@@ -187,7 +187,7 @@ func getImpIdx(impId string, request *openrtb2.BidRequest) (int, error) {
 	}
 
 	return -1, &errortypes.BadInput{
-		Message: fmt.Sprintf("Could not find imp ID '%s' in bid, dropping bid", impId),
+		Message: fmt.Sprintf("Imp ID %s in bid didn't match with any imp in the original request", impId),
 	}
 }
 
