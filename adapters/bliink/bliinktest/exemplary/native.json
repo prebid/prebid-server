@@ -23,7 +23,6 @@
           "ver": "1.2"
         },
         "ext": {
-          "consent": "testConsentStringUser"
         }
       }
     ]
@@ -42,7 +41,7 @@
             "2.5"
           ]
         },
-        "uri": "http://whatever.url/bid",
+        "uri": "http://biddertest.url/bid",
         "body": {
           "id": "some-request-id",
           "device": {
@@ -58,7 +57,6 @@
               },
               "tagid": "TAGID",
               "ext": {
-                "consent": "testConsentStringUser"
               }
             }
           ],
