@@ -1654,11 +1654,7 @@ func (m *MockGDPRPerms) BidderSyncAllowed(ctx context.Context, bidder openrtb_ex
 
 func (m *MockGDPRPerms) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string, aliasGVLIDs map[string]uint16) (permissions gdpr.AuctionPermissions, err error) {
 	args := m.Called(ctx, bidderCoreName, bidder, PublisherID, gdprSignal, consent, aliasGVLIDs)
-	return gdpr.AuctionPermissions{
-		AllowBidRequest: args.Bool(0),
-		PassGeo:         args.Bool(1),
-		PassID:          args.Bool(2),
-	}, args.Error(3)
+	return args.Get(0).(gdpr.AuctionPermissions), args.Error(1)
 }
 
 type FakeAccountsFetcher struct {
