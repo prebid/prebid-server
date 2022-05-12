@@ -119,7 +119,7 @@ func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consen
 	return p.checkPurpose(consentMeta, vendor, vendorID, tcf2ConsentConstants.InfoStorageAccess, enforceVendors, vendorException, false), nil
 }
 
-func (p *permissionsImpl) allowActivities(ctx context.Context, vendorID uint16, bidder openrtb_ext.BidderName, consent string, weakVendorEnforcement bool) (permissions AuctionPermissions, err error) {
+func (p *permissionsImpl) allowActivities(ctx context.Context, vendorID uint16, bidder openrtb_ext.BidderName, consent string, weakVendorEnforcement bool) (AuctionPermissions, error) {
 	parsedConsent, vendor, err := p.parseVendor(ctx, vendorID, consent)
 	if err != nil {
 		return DenyAll, err
@@ -141,10 +141,10 @@ func (p *permissionsImpl) allowActivities(ctx context.Context, vendorID uint16, 
 	consentMeta, ok := parsedConsent.(tcf2.ConsentMetadata)
 	if !ok {
 		err = fmt.Errorf("Unable to access TCF2 parsed consent")
-		return
+		return DenyAll, err
 	}
 
-	permissions = AuctionPermissions{}
+	permissions := AuctionPermissions{}
 	if p.cfg.FeatureOneEnforced() {
 		vendorException := p.cfg.FeatureOneVendorException(bidder)
 		permissions.PassGeo = vendorException || (consentMeta.SpecialFeatureOptIn(1) && (vendor.SpecialFeature(1) || weakVendorEnforcement))
@@ -167,7 +167,7 @@ func (p *permissionsImpl) allowActivities(ctx context.Context, vendorID uint16, 
 		}
 	}
 
-	return
+	return permissions, nil
 }
 
 const pubRestrictNotAllowed = 0
