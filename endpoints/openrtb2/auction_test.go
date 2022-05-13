@@ -3702,7 +3702,7 @@ type warningsCheckExchange struct {
 	auctionRequest exchange.AuctionRequest
 }
 
-func (e *warningsCheckExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+func (e *warningsCheckExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog, labels *metrics.Labels) (*openrtb2.BidResponse, error) {
 	e.auctionRequest = r
 	return nil, nil
 }
@@ -3712,7 +3712,7 @@ type nobidExchange struct {
 	gotRequest *openrtb2.BidRequest
 }
 
-func (e *nobidExchange) HoldAuction(ctx context.Context, auctionRequest exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+func (e *nobidExchange) HoldAuction(ctx context.Context, auctionRequest exchange.AuctionRequest, debugLog *exchange.DebugLog, labels *metrics.Labels) (*openrtb2.BidResponse, error) {
 	r := auctionRequest.BidRequestWrapper
 	e.gotRequest = r.BidRequest
 	return &openrtb2.BidResponse{
@@ -3770,7 +3770,7 @@ func (e *mockBidExchange) getAuctionCurrencyRates(customRates *openrtb_ext.ExtRe
 
 // mockBidExchange is a well-behaved exchange that lists the bidders found in every bidRequest.Imp[i].Ext
 // into the bidResponse.Ext to assert the bidder adapters that were not filtered out in the validation process
-func (e *mockBidExchange) HoldAuction(ctx context.Context, auctionRequest exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+func (e *mockBidExchange) HoldAuction(ctx context.Context, auctionRequest exchange.AuctionRequest, debugLog *exchange.DebugLog, labels *metrics.Labels) (*openrtb2.BidResponse, error) {
 	r := auctionRequest.BidRequestWrapper
 	bidResponse := &openrtb2.BidResponse{
 		ID:    r.BidRequest.ID,
@@ -3874,7 +3874,7 @@ func (bidder mockBidExchangeBidder) getBidId(bidderNameOrAlias string) string {
 
 type brokenExchange struct{}
 
-func (e *brokenExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+func (e *brokenExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog, labels *metrics.Labels) (*openrtb2.BidResponse, error) {
 	return nil, errors.New("Critical, unrecoverable error.")
 }
 
@@ -4534,7 +4534,7 @@ type mockExchange struct {
 	lastRequest *openrtb2.BidRequest
 }
 
-func (m *mockExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+func (m *mockExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog, labels *metrics.Labels) (*openrtb2.BidResponse, error) {
 	m.lastRequest = r.BidRequestWrapper.BidRequest
 	return &openrtb2.BidResponse{
 		SeatBid: []openrtb2.SeatBid{{

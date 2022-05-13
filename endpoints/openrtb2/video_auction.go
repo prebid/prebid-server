@@ -299,7 +299,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		GlobalPrivacyControlHeader: secGPC,
 	}
 
-	response, err := deps.ex.HoldAuction(ctx, auctionRequest, &debugLog)
+	response, err := deps.ex.HoldAuction(ctx, auctionRequest, &debugLog, &labels)
 	vo.Request = bidReq
 	vo.Response = response
 	if err != nil {

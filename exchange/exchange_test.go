@@ -351,8 +351,9 @@ func TestDebugBehaviour(t *testing.T) {
 		if test.debugData.headerOverrideDebugAllowed {
 			debugLog = &DebugLog{DebugOverride: true, DebugEnabledOrOverridden: true}
 		}
+		labels := &metrics.Labels{}
 		// Run test
-		outBidResponse, err := e.HoldAuction(ctx, auctionRequest, debugLog)
+		outBidResponse, err := e.HoldAuction(ctx, auctionRequest, debugLog, labels)
 
 		// Assert no HoldAuction error
 		assert.NoErrorf(t, err, "%s. ex.HoldAuction returned an error: %v \n", test.desc, err)
@@ -505,8 +506,9 @@ func TestTwoBiddersDebugDisabledAndEnabled(t *testing.T) {
 			openrtb_ext.BidderAppnexus: adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, &config.DebugInfo{Allow: testCase.bidder1DebugEnabled}),
 			openrtb_ext.BidderTelaria:  adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, &config.DebugInfo{Allow: testCase.bidder2DebugEnabled}),
 		}
+		labels := &metrics.Labels{}
 		// Run test
-		outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, &debugLog)
+		outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, &debugLog, labels)
 		// Assert no HoldAuction err
 		assert.NoErrorf(t, err, "ex.HoldAuction returned an err")
 		assert.NotNilf(t, outBidResponse.Ext, "outBidResponse.Ext should not be nil")
@@ -673,9 +675,10 @@ func TestOverrideWithCustomCurrency(t *testing.T) {
 			GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
 			TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
 		}
+		labels := &metrics.Labels{}
 
 		// Run test
-		outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, &DebugLog{})
+		outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, &DebugLog{}, labels)
 
 		// Assertions
 		assert.NoErrorf(t, err, "%s. HoldAuction error: %v \n", test.desc, err)
@@ -759,7 +762,8 @@ func TestAdapterCurrency(t *testing.T) {
 		GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
 		TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
 	}
-	response, err := e.HoldAuction(context.Background(), auctionRequest, &DebugLog{})
+	labels := &metrics.Labels{}
+	response, err := e.HoldAuction(context.Background(), auctionRequest, &DebugLog{}, labels)
 	assert.NoError(t, err)
 	assert.Equal(t, "some-request-id", response.ID, "Response ID")
 	assert.Empty(t, response.SeatBid, "Response Bids")
@@ -1149,7 +1153,8 @@ func TestReturnCreativeEndToEnd(t *testing.T) {
 
 			// Run test
 			debugLog := DebugLog{}
-			outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, &debugLog)
+			labels := &metrics.Labels{}
+			outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, &debugLog, labels)
 
 			// Assert return error, if any
 			if testGroup.expectError {
@@ -1817,7 +1822,8 @@ func TestRaceIntegration(t *testing.T) {
 	debugLog := DebugLog{}
 	vendorListFetcher := gdpr.NewVendorListFetcher(context.Background(), config.GDPR{}, &http.Client{}, gdpr.VendorListURLMaker)
 	ex := NewExchange(adapters, &wellBehavedCache{}, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, vendorListFetcher, currencyConverter, &nilCategoryFetcher{}).(*exchange)
-	_, err = ex.HoldAuction(context.Background(), auctionRequest, &debugLog)
+	labels := &metrics.Labels{}
+	_, err = ex.HoldAuction(context.Background(), auctionRequest, &debugLog, labels)
 	if err != nil {
 		t.Errorf("HoldAuction returned unexpected error: %v", err)
 	}
@@ -2024,7 +2030,8 @@ func TestPanicRecoveryHighLevel(t *testing.T) {
 		TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
 	}
 	debugLog := DebugLog{}
-	_, err = e.HoldAuction(context.Background(), auctionRequest, &debugLog)
+	labels := &metrics.Labels{}
+	_, err = e.HoldAuction(context.Background(), auctionRequest, &debugLog, labels)
 	if err != nil {
 		t.Errorf("HoldAuction returned unexpected error: %v", err)
 	}
@@ -2145,7 +2152,8 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 	}
 	ctx := context.Background()
 
-	bid, err := ex.HoldAuction(ctx, auctionRequest, debugLog)
+	labels := &metrics.Labels{}
+	bid, err := ex.HoldAuction(ctx, auctionRequest, debugLog, labels)
 	if len(spec.Response.Error) > 0 && spec.Response.Bids == nil {
 		if err.Error() != spec.Response.Error {
 			t.Errorf("%s: Exchange returned different errors. Expected %s, got %s", filename, spec.Response.Error, err.Error())
@@ -3721,9 +3729,9 @@ func TestStoredAuctionResponses(t *testing.T) {
 			GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
 			TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
 		}
-
+		labels := &metrics.Labels{}
 		// Run test
-		outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, &DebugLog{})
+		outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, &DebugLog{}, labels)
 		if test.errorExpected {
 			assert.Error(t, err, "Error should be returned")
 		} else {
@@ -3916,7 +3924,8 @@ func TestAuctionDebugEnabled(t *testing.T) {
 	}
 
 	debugLog := &DebugLog{DebugOverride: true, DebugEnabledOrOverridden: true}
-	resp, err := e.HoldAuction(ctx, auctionRequest, debugLog)
+	labels := &metrics.Labels{}
+	resp, err := e.HoldAuction(ctx, auctionRequest, debugLog, labels)
 
 	assert.NoError(t, err, "error should be nil")
 

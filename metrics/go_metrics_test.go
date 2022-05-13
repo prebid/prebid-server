@@ -16,6 +16,7 @@ func TestNewMetrics(t *testing.T) {
 	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{}, syncerKeys)
 
 	ensureContains(t, registry, "app_requests", m.AppRequestMeter)
+	ensureContains(t, registry, "requests_debug", m.DebugRequestMeter)
 	ensureContains(t, registry, "no_cookie_requests", m.NoCookieMeter)
 	ensureContains(t, registry, "request_time", m.RequestTimer)
 	ensureContains(t, registry, "amp_no_cookie_requests", m.AmpNoCookieMeter)
@@ -178,6 +179,62 @@ func TestRecordBidTypeDisabledConfig(t *testing.T) {
 		} else {
 			assert.NotEqual(t, 0, len(m.accountMetrics[test.PubID].adapterMetrics), "Test failed. Account metrics that contain adapter information are disabled, therefore we expect no entries in m.accountMetrics[accountId].adapterMetrics, we have %d \n", len(m.accountMetrics[test.PubID].adapterMetrics))
 		}
+	}
+}
+
+func TestRecordRequest(t *testing.T) {
+	requestType := ReqTypeORTB2Web
+	requestStatus := RequestStatusBlacklisted
+
+	testCases := []struct {
+		description               string
+		givenDisabledMetrics      config.DisabledMetrics
+		givenLabels               Labels
+		expectedAccountDebugCount int64
+		expectedDebugCount        int64
+	}{
+		{
+			description: "Boolean flags should result in both metrics being updated",
+			givenDisabledMetrics: config.DisabledMetrics{
+				AccountAdapterDetails: true,
+				AccountDebug:          false,
+			},
+			givenLabels: Labels{
+				RType:            requestType,
+				RequestStatus:    requestStatus,
+				DebugFlag:        true,
+				AccountDebugFlag: true,
+				PubID:            "acct-id",
+			},
+			expectedAccountDebugCount: 1,
+			expectedDebugCount:        1,
+		},
+		{
+			description: "Boolean flags should result in niether metrics being updated",
+			givenDisabledMetrics: config.DisabledMetrics{
+				AccountAdapterDetails: true,
+				AccountDebug:          true,
+			},
+			givenLabels: Labels{
+				RType:            requestType,
+				RequestStatus:    requestStatus,
+				DebugFlag:        false,
+				AccountDebugFlag: false,
+				PubID:            "acct-id",
+			},
+			expectedAccountDebugCount: 0,
+			expectedDebugCount:        0,
+		},
+	}
+	for _, test := range testCases {
+		registry := metrics.NewRegistry()
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, test.givenDisabledMetrics, nil)
+
+		m.RecordRequest(test.givenLabels)
+		am := m.getAccountMetrics(test.givenLabels.PubID)
+
+		assert.Equal(t, test.expectedDebugCount, m.DebugRequestMeter.Count())
+		assert.Equal(t, test.expectedAccountDebugCount, am.debugRequestMeter.Count())
 	}
 }
 

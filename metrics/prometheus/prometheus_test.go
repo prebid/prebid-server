@@ -138,22 +138,50 @@ func TestConnectionMetrics(t *testing.T) {
 }
 
 func TestRequestMetric(t *testing.T) {
-	m := createMetricsForTesting()
 	requestType := metrics.ReqTypeORTB2Web
 	requestStatus := metrics.RequestStatusBlacklisted
 
-	m.RecordRequest(metrics.Labels{
-		RType:         requestType,
-		RequestStatus: requestStatus,
-	})
+	testCases := []struct {
+		description                      string
+		givenDebugFlag                   bool
+		givenAccountDebugFlag            bool
+		givenAccountDebugMetricsDisabled bool
+		expectedAccountDebugCount        float64
+		expectedDebugCount               float64
+	}{
+		{
+			description:                      "Boolean flags should result in both metrics being updated",
+			givenDebugFlag:                   true,
+			givenAccountDebugFlag:            true,
+			givenAccountDebugMetricsDisabled: false,
+			expectedDebugCount:               1,
+			expectedAccountDebugCount:        1,
+		},
+		{
+			description:                      "Boolean flags should result in niether metrics being updated",
+			givenDebugFlag:                   false,
+			givenAccountDebugFlag:            true,
+			givenAccountDebugMetricsDisabled: true,
+			expectedDebugCount:               0,
+			expectedAccountDebugCount:        0,
+		},
+	}
 
-	expectedCount := float64(1)
-	assertCounterVecValue(t, "", "requests", m.requests,
-		expectedCount,
-		prometheus.Labels{
-			requestTypeLabel:   string(requestType),
-			requestStatusLabel: string(requestStatus),
+	for _, test := range testCases {
+		m := createMetricsForTesting()
+		m.metricsDisabled.AccountDebug = test.givenAccountDebugMetricsDisabled
+		m.RecordRequest(metrics.Labels{
+			RType:            requestType,
+			RequestStatus:    requestStatus,
+			DebugFlag:        test.givenDebugFlag,
+			AccountDebugFlag: test.givenAccountDebugFlag,
+			PubID:            "acct-id",
 		})
+
+		assertCounterVecValue(t, "", "account debug", m.accountDebugRequests, test.expectedAccountDebugCount, prometheus.Labels{accountLabel: "acct-id"})
+		assertCounterVecValue(t, "", "debug requests", m.requestsDebug, test.expectedDebugCount, prometheus.Labels{requestTypeLabel: string(requestType), requestStatusLabel: string(requestStatus)})
+		assertCounterVecValue(t, "", "requests", m.requests, float64(1), prometheus.Labels{requestTypeLabel: string(requestType), requestStatusLabel: string(requestStatus)})
+	}
 }
 
 func TestRequestMetricWithoutCookie(t *testing.T) {

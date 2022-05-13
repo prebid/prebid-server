@@ -27,6 +27,7 @@ type Metrics struct {
 	impressionsLegacy            prometheus.Counter
 	prebidCacheWriteTimer        *prometheus.HistogramVec
 	requests                     *prometheus.CounterVec
+	requestsDebug                *prometheus.CounterVec
 	requestsTimer                *prometheus.HistogramVec
 	requestsQueueTimer           *prometheus.HistogramVec
 	requestsWithoutCookie        *prometheus.CounterVec
@@ -68,7 +69,8 @@ type Metrics struct {
 	syncerSets     *prometheus.CounterVec
 
 	// Account Metrics
-	accountRequests *prometheus.CounterVec
+	accountRequests      *prometheus.CounterVec
+	accountDebugRequests *prometheus.CounterVec
 
 	metricsDisabled config.DisabledMetrics
 }
@@ -180,6 +182,11 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 	metrics.requests = newCounter(cfg, reg,
 		"requests",
 		"Count of total requests to Prebid Server labeled by type and status.",
+		[]string{requestTypeLabel, requestStatusLabel})
+
+	metrics.requestsDebug = newCounter(cfg, reg,
+		"requests_debug",
+		"Count of total requests to Prebid Server that have debug enabled labled by type, status.",
 		[]string{requestTypeLabel, requestStatusLabel})
 
 	metrics.requestsTimer = newHistogramVec(cfg, reg,
@@ -370,6 +377,11 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"Count of total requests to Prebid Server labeled by account.",
 		[]string{accountLabel})
 
+	metrics.accountDebugRequests = newCounter(cfg, reg,
+		"account_requests_debug",
+		"Count of total requests to Prebid Server where the account has debug enabled labeled by account.",
+		[]string{accountLabel})
+
 	metrics.requestsQueueTimer = newHistogramVec(cfg, reg,
 		"request_queue_time",
 		"Seconds request was waiting in queue",
@@ -473,6 +485,18 @@ func (m *Metrics) RecordRequest(labels metrics.Labels) {
 	if labels.PubID != metrics.PublisherUnknown {
 		m.accountRequests.With(prometheus.Labels{
 			accountLabel: labels.PubID,
+		}).Inc()
+		if !m.metricsDisabled.AccountDebug && labels.AccountDebugFlag {
+			m.accountDebugRequests.With(prometheus.Labels{
+				accountLabel: labels.PubID,
+			}).Inc()
+		}
+	}
+
+	if labels.DebugFlag {
+		m.requestsDebug.With(prometheus.Labels{
+			requestTypeLabel:   string(labels.RType),
+			requestStatusLabel: string(labels.RequestStatus),
 		}).Inc()
 	}
 }

@@ -206,7 +206,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		StoredAuctionResponses:     storedAuctionResponses,
 	}
 
-	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
+	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil, &labels)
 	ao.AuctionResponse = response
 
 	if err != nil {

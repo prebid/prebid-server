@@ -12,6 +12,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/gdpr"
+	"github.com/prebid/prebid-server/metrics"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 
@@ -116,7 +117,8 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 	}
 
 	debugLog := DebugLog{}
-	bidResp, err := ex.HoldAuction(context.Background(), auctionRequest, &debugLog)
+	labels := metrics.Labels{}
+	bidResp, err := ex.HoldAuction(context.Background(), auctionRequest, &debugLog, &labels)
 
 	if err != nil {
 		t.Fatalf("Unexpected errors running auction: %v", err)

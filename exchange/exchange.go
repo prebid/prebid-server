@@ -40,7 +40,7 @@ type extCacheInstructions struct {
 // Exchange runs Auctions. Implementations must be threadsafe, and will be shared across many goroutines.
 type Exchange interface {
 	// HoldAuction executes an OpenRTB v2.5 Auction.
-	HoldAuction(ctx context.Context, r AuctionRequest, debugLog *DebugLog) (*openrtb2.BidResponse, error)
+	HoldAuction(ctx context.Context, r AuctionRequest, debugLog *DebugLog, labels *metrics.Labels) (*openrtb2.BidResponse, error)
 }
 
 // IdFetcher can find the user's ID for a specific Bidder.
@@ -180,7 +180,7 @@ type BidderRequest struct {
 	BidderLabels   metrics.AdapterLabels
 }
 
-func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *DebugLog) (*openrtb2.BidResponse, error) {
+func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *DebugLog, labels *metrics.Labels) (*openrtb2.BidResponse, error) {
 	var errs []error
 	// rebuild/resync the request in the request wrapper.
 	if err := r.BidRequestWrapper.RebuildRequest(); err != nil {
@@ -205,6 +205,8 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		}
 		r.ResolvedBidRequest = resolvedBidReq
 	}
+	labels.DebugFlag = responseDebugAllow
+	labels.AccountDebugFlag = accountDebugAllow
 
 	if r.RequestType == metrics.ReqTypeORTB2Web || r.RequestType == metrics.ReqTypeORTB2App {
 		//Extract First party data for auction endpoint only
