@@ -108,11 +108,17 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 	}
 
 	auctionRequest := AuctionRequest{
-		BidRequestWrapper:      &openrtb_ext.RequestWrapper{BidRequest: req},
-		Account:                config.Account{},
-		UserSyncs:              &emptyUsersync{},
-		GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
-		TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
+		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
+		Account:           config.Account{},
+		UserSyncs:         &emptyUsersync{},
+		GDPRPermissionsBuilder: fakePermissionsBuilder{
+			permissions: &permissionsMock{
+				allowAllBidders: true,
+			},
+		}.Builder,
+		TCF2ConfigBuilder: fakeTCF2ConfigBuilder{
+			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
+		}.Builder,
 	}
 
 	debugLog := DebugLog{}
