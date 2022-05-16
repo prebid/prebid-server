@@ -16,10 +16,10 @@
             }
           ]
         },
+        "bidfloor": 1.69,
         "ext": {
           "bidder": {
-            "tagid": "123456",
-            "bidfloor": 4.2
+            "tagid": "123456"
           }
         }
       }
@@ -60,11 +60,10 @@
                 ]
               },
               "tagid": "123456",
-              "bidfloor": 4.2,
+              "bidfloor": 1.69,
               "ext": {
                 "bidder": {
-                  "tagid": "123456",
-                  "bidfloor": 4.2
+                  "tagid": "123456"
                 }
               }
             }
