@@ -1180,7 +1180,7 @@ func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *m
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		ex,
-		newParamsValidator(t),
+		mockBidderParamValidator{},
 		&mockVideoStoredReqFetcher{},
 		&mockVideoStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -1224,7 +1224,7 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 	return &endpointDeps{
 		fakeUUIDGenerator{},
 		ex,
-		newParamsValidator(t),
+		mockBidderParamValidator{},
 		&mockVideoStoredReqFetcher{},
 		&mockVideoStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -1246,7 +1246,7 @@ func mockDepsAppendBidderNames(t *testing.T, ex *mockExchangeAppendBidderNames) 
 	deps := &endpointDeps{
 		fakeUUIDGenerator{},
 		ex,
-		newParamsValidator(t),
+		mockBidderParamValidator{},
 		&mockVideoStoredReqFetcher{},
 		&mockVideoStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
@@ -1270,7 +1270,7 @@ func mockDepsNoBids(t *testing.T, ex *mockExchangeVideoNoBids) *endpointDeps {
 	edep := &endpointDeps{
 		fakeUUIDGenerator{},
 		ex,
-		newParamsValidator(t),
+		mockBidderParamValidator{},
 		&mockVideoStoredReqFetcher{},
 		&mockVideoStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},

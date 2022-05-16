@@ -1,5 +1,8 @@
 {
   "description": "Bid request's sole imp element has invalid ext value",
+  "config": {
+    "realParamsValidator": true
+  },
   "mockBidRequest": {
     "id": "req-id",
     "imp": [
@@ -8,7 +11,7 @@
         "audio": {
           "mimes": [
             "video/mp4"
-            ]
+          ]
         },
         "ext": {
           "appnexus": "invalidParams"
