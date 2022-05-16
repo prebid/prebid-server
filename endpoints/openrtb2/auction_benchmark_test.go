@@ -127,10 +127,6 @@ func BenchmarkValidWholeExemplary(b *testing.B) {
 		b.Run(fmt.Sprintf("input_file_%s", testFile), func(b *testing.B) {
 			b.StopTimer()
 			// Set up
-			//paramsValidator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
-			//if err != nil {
-			//	b.Fatal("unable to build params validator")
-			//}
 			fileData, err := ioutil.ReadFile(testFile)
 			if err != nil {
 				b.Fatalf("unable to read file %s", testFile)

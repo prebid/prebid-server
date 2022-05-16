@@ -1,5 +1,5 @@
 {
-  "description": "Amp request where root.user.ext.prebid.buyeruids field recognizes alias defined in root.ext.prebid.aliases",
+  "description": "Amp request where root.user.ext.prebid.buyeruids field makes use of alias defined in root.ext.prebid.aliases",
   "config": {
     "mockBidders": [
       {"bidderName": "appnexus", "currency": "USD", "price": 2}
