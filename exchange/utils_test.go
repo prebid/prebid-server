@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/go-gdpr/vendorlist"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/firstpartydata"
@@ -53,6 +54,22 @@ func (p *permissionsMock) AuctionActivitiesAllowed(ctx context.Context, bidderCo
 	}
 
 	return permissions, p.activitiesError
+}
+
+type fakePermissionsBuilder struct {
+	permissions gdpr.Permissions
+}
+
+func (fpb fakePermissionsBuilder) Builder(config.GDPR, gdpr.TCF2ConfigReader, map[openrtb_ext.BidderName]uint16, gdpr.VendorListFetcher) gdpr.Permissions {
+	return fpb.permissions
+}
+
+type fakeTCF2ConfigBuilder struct {
+	cfg gdpr.TCF2ConfigReader
+}
+
+func (fcr fakeTCF2ConfigBuilder) Builder(hostConfig config.TCF2, accountConfig config.AccountGDPR) gdpr.TCF2ConfigReader {
+	return fcr.cfg
 }
 
 func assertReq(t *testing.T, bidderRequests []BidderRequest,
@@ -495,9 +512,14 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 	}
 
 	for _, test := range testCases {
+
 		metricsMock := metrics.MetricsEngineMock{}
 		bidderToSyncerKey := map[string]string{}
-		bidderRequests, _, err := cleanOpenRTBRequests(context.Background(), test.req, nil, bidderToSyncerKey, &metricsMock, gdpr.SignalNo, gdpr.AlwaysAllow{}, privacyConfig, &config.TCF2{})
+		fakeVendorListFetcher := func(ctx context.Context, id uint16) (vendorlist.VendorList, error) { return nil, nil }
+		gvlVendorIDs := map[openrtb_ext.BidderName]uint16{}
+		test.req.GDPRPermissionsBuilder = mockGDPRPermissionsBuilder
+		test.req.TCF2ConfigBuilder = mockTCF2ConfigBuilder
+		bidderRequests, _, err := cleanOpenRTBRequests(context.Background(), test.req, nil, bidderToSyncerKey, &metricsMock, gdpr.SignalNo, privacyConfig, gvlVendorIDs, fakeVendorListFetcher)
 		if test.hasError {
 			assert.NotNil(t, err, "Error shouldn't be nil")
 		} else {
@@ -554,7 +576,11 @@ func TestCleanOpenRTBRequestsWithFPD(t *testing.T) {
 	for _, test := range testCases {
 		metricsMock := metrics.MetricsEngineMock{}
 		bidderToSyncerKey := map[string]string{}
-		bidderRequests, _, err := cleanOpenRTBRequests(context.Background(), test.req, nil, bidderToSyncerKey, &metricsMock, gdpr.SignalNo, gdpr.AlwaysAllow{}, config.Privacy{}, &config.TCF2{})
+		fakeVendorListFetcher := func(ctx context.Context, id uint16) (vendorlist.VendorList, error) { return nil, nil }
+		gvlVendorIDs := map[openrtb_ext.BidderName]uint16{}
+		test.req.GDPRPermissionsBuilder = mockGDPRPermissionsBuilder
+		test.req.TCF2ConfigBuilder = mockTCF2ConfigBuilder
+		bidderRequests, _, err := cleanOpenRTBRequests(context.Background(), test.req, nil, bidderToSyncerKey, &metricsMock, gdpr.SignalNo, config.Privacy{}, gvlVendorIDs, fakeVendorListFetcher)
 		assert.Empty(t, err, "No errors should be returned")
 		for _, bidderRequest := range bidderRequests {
 			bidderName := bidderRequest.BidderName
@@ -807,10 +833,14 @@ func TestCleanOpenRTBRequestsWithBidResponses(t *testing.T) {
 		metricsMock := metrics.MetricsEngineMock{}
 		bidderToSyncerKey := map[string]string{}
 		auctionReq := AuctionRequest{
-			BidRequestWrapper:  &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Imp: test.imps}},
-			UserSyncs:          &emptyUsersync{},
-			StoredBidResponses: test.storedBidResponses,
+			BidRequestWrapper:      &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Imp: test.imps}},
+			UserSyncs:              &emptyUsersync{},
+			StoredBidResponses:     test.storedBidResponses,
+			GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
+			TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
 		}
+		fakeVendorListFetcher := func(ctx context.Context, id uint16) (vendorlist.VendorList, error) { return nil, nil }
+		gvlVendorIDs := map[openrtb_ext.BidderName]uint16{}
 		actualBidderRequests, _, err := cleanOpenRTBRequests(
 			context.Background(),
 			auctionReq,
@@ -818,9 +848,9 @@ func TestCleanOpenRTBRequestsWithBidResponses(t *testing.T) {
 			bidderToSyncerKey,
 			&metricsMock,
 			gdpr.SignalNo,
-			gdpr.AlwaysAllow{},
 			config.Privacy{},
-			&config.TCF2{})
+			gvlVendorIDs,
+			fakeVendorListFetcher)
 		assert.Empty(t, err, "No errors should be returned")
 		assert.Len(t, actualBidderRequests, len(test.expectedBidderRequests), "result len doesn't match for testCase %s", test.description)
 		for _, actualBidderRequest := range actualBidderRequests {
@@ -967,12 +997,16 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 		}
 
 		auctionReq := AuctionRequest{
-			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
-			UserSyncs:         &emptyUsersync{},
-			Account:           accountConfig,
+			BidRequestWrapper:      &openrtb_ext.RequestWrapper{BidRequest: req},
+			UserSyncs:              &emptyUsersync{},
+			Account:                accountConfig,
+			GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
+			TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
 		}
 
 		bidderToSyncerKey := map[string]string{}
+		fakeVendorListFetcher := func(ctx context.Context, id uint16) (vendorlist.VendorList, error) { return nil, nil }
+		gvlVendorIDs := map[openrtb_ext.BidderName]uint16{}
 		bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(
 			context.Background(),
 			auctionReq,
@@ -980,9 +1014,9 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 			bidderToSyncerKey,
 			&metrics.MetricsEngineMock{},
 			gdpr.SignalNo,
-			gdpr.AlwaysAllow{},
 			privacyConfig,
-			&config.TCF2{})
+			gvlVendorIDs,
+			fakeVendorListFetcher)
 		result := bidderRequests[0]
 
 		assert.Nil(t, errs)
@@ -1031,8 +1065,10 @@ func TestCleanOpenRTBRequestsCCPAErrors(t *testing.T) {
 		assert.NoError(t, err, test.description+":marshal_ext")
 
 		auctionReq := AuctionRequest{
-			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
-			UserSyncs:         &emptyUsersync{},
+			BidRequestWrapper:      &openrtb_ext.RequestWrapper{BidRequest: req},
+			UserSyncs:              &emptyUsersync{},
+			GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
+			TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
 		}
 
 		privacyConfig := config.Privacy{
@@ -1042,7 +1078,9 @@ func TestCleanOpenRTBRequestsCCPAErrors(t *testing.T) {
 		}
 		bidderToSyncerKey := map[string]string{}
 		metrics := metrics.MetricsEngineMock{}
-		_, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, &reqExtStruct, bidderToSyncerKey, &metrics, gdpr.SignalNo, gdpr.AlwaysAllow{}, privacyConfig, &config.TCF2{})
+		fakeVendorListFetcher := func(ctx context.Context, id uint16) (vendorlist.VendorList, error) { return nil, nil }
+		gvlVendorIDs := map[openrtb_ext.BidderName]uint16{}
+		_, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, &reqExtStruct, bidderToSyncerKey, &metrics, gdpr.SignalNo, privacyConfig, gvlVendorIDs, fakeVendorListFetcher)
 
 		assert.ElementsMatch(t, []error{test.expectError}, errs, test.description)
 	}
@@ -1078,13 +1116,17 @@ func TestCleanOpenRTBRequestsCOPPA(t *testing.T) {
 		req.Regs = &openrtb2.Regs{COPPA: test.coppa}
 
 		auctionReq := AuctionRequest{
-			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
-			UserSyncs:         &emptyUsersync{},
+			BidRequestWrapper:      &openrtb_ext.RequestWrapper{BidRequest: req},
+			UserSyncs:              &emptyUsersync{},
+			GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
+			TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
 		}
 
 		bidderToSyncerKey := map[string]string{}
 		metrics := metrics.MetricsEngineMock{}
-		bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), auctionReq, nil, bidderToSyncerKey, &metrics, gdpr.SignalNo, &gdpr.AlwaysAllow{}, config.Privacy{}, &config.TCF2{})
+		fakeVendorListFetcher := func(ctx context.Context, id uint16) (vendorlist.VendorList, error) { return nil, nil }
+		gvlVendorIDs := map[openrtb_ext.BidderName]uint16{}
+		bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), auctionReq, nil, bidderToSyncerKey, &metrics, gdpr.SignalNo, config.Privacy{}, gvlVendorIDs, fakeVendorListFetcher)
 		result := bidderRequests[0]
 
 		assert.Nil(t, errs)
@@ -1164,13 +1206,17 @@ func TestCleanOpenRTBRequestsSChain(t *testing.T) {
 		}
 
 		auctionReq := AuctionRequest{
-			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
-			UserSyncs:         &emptyUsersync{},
+			BidRequestWrapper:      &openrtb_ext.RequestWrapper{BidRequest: req},
+			UserSyncs:              &emptyUsersync{},
+			GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
+			TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
 		}
 
 		bidderToSyncerKey := map[string]string{}
 		metrics := metrics.MetricsEngineMock{}
-		bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, bidderToSyncerKey, &metrics, gdpr.SignalNo, gdpr.AlwaysAllow{}, config.Privacy{}, &config.TCF2{})
+		fakeVendorListFetcher := func(ctx context.Context, id uint16) (vendorlist.VendorList, error) { return nil, nil }
+		gvlVendorIDs := map[openrtb_ext.BidderName]uint16{}
+		bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, bidderToSyncerKey, &metrics, gdpr.SignalNo, config.Privacy{}, gvlVendorIDs, fakeVendorListFetcher)
 		if test.hasError == true {
 			assert.NotNil(t, errs)
 			assert.Len(t, bidderRequests, 0)
@@ -1221,13 +1267,17 @@ func TestCleanOpenRTBRequestsBidderParams(t *testing.T) {
 		}
 
 		auctionReq := AuctionRequest{
-			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
-			UserSyncs:         &emptyUsersync{},
+			BidRequestWrapper:      &openrtb_ext.RequestWrapper{BidRequest: req},
+			UserSyncs:              &emptyUsersync{},
+			GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
+			TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
 		}
 
 		bidderToSyncerKey := map[string]string{}
 		metrics := metrics.MetricsEngineMock{}
-		bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, bidderToSyncerKey, &metrics, gdpr.SignalNo, gdpr.AlwaysAllow{}, config.Privacy{}, &config.TCF2{})
+		fakeVendorListFetcher := func(ctx context.Context, id uint16) (vendorlist.VendorList, error) { return nil, nil }
+		gvlVendorIDs := map[openrtb_ext.BidderName]uint16{}
+		bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, bidderToSyncerKey, &metrics, gdpr.SignalNo, config.Privacy{}, gvlVendorIDs, fakeVendorListFetcher)
 		if test.hasError == true {
 			assert.NotNil(t, errs)
 			assert.Len(t, bidderRequests, 0)
@@ -1896,8 +1946,10 @@ func TestCleanOpenRTBRequestsLMT(t *testing.T) {
 		req.Device.Lmt = test.lmt
 
 		auctionReq := AuctionRequest{
-			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
-			UserSyncs:         &emptyUsersync{},
+			BidRequestWrapper:      &openrtb_ext.RequestWrapper{BidRequest: req},
+			UserSyncs:              &emptyUsersync{},
+			GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
+			TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
 		}
 
 		privacyConfig := config.Privacy{
@@ -1908,7 +1960,9 @@ func TestCleanOpenRTBRequestsLMT(t *testing.T) {
 
 		bidderToSyncerKey := map[string]string{}
 		metrics := metrics.MetricsEngineMock{}
-		results, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), auctionReq, nil, bidderToSyncerKey, &metrics, gdpr.SignalNo, &gdpr.AlwaysAllow{}, privacyConfig, &config.TCF2{})
+		fakeVendorListFetcher := func(ctx context.Context, id uint16) (vendorlist.VendorList, error) { return nil, nil }
+		gvlVendorIDs := map[openrtb_ext.BidderName]uint16{}
+		results, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), auctionReq, nil, bidderToSyncerKey, &metrics, gdpr.SignalNo, privacyConfig, gvlVendorIDs, fakeVendorListFetcher)
 		result := results[0]
 
 		assert.Nil(t, errs)
@@ -2108,10 +2162,28 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			},
 		}
 
+		mockGDPRPermissionsBuilder := fakePermissionsBuilder{
+			permissions: &permissionsMock{
+				allowAllBidders: true,
+				passGeo:         !test.gdprScrub,
+				passID:          !test.gdprScrub,
+				activitiesError: test.permissionsError,
+			},
+		}.Builder
+
+		mockTCF2ConfigBuilder := fakeTCF2ConfigBuilder{
+			cfg: gdpr.NewTCF2Config(
+				privacyConfig.GDPR.TCF2,
+				accountConfig.GDPR,
+			),
+		}.Builder
+
 		auctionReq := AuctionRequest{
-			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
-			UserSyncs:         &emptyUsersync{},
-			Account:           accountConfig,
+			BidRequestWrapper:      &openrtb_ext.RequestWrapper{BidRequest: req},
+			UserSyncs:              &emptyUsersync{},
+			Account:                accountConfig,
+			GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
+			TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
 		}
 
 		bidderToSyncerKey := map[string]string{}
@@ -2120,6 +2192,8 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 		if test.gdprDefaultValue == "0" {
 			gdprDefaultValue = gdpr.SignalNo
 		}
+		fakeVendorListFetcher := func(ctx context.Context, id uint16) (vendorlist.VendorList, error) { return nil, nil }
+		gvlVendorIDs := map[openrtb_ext.BidderName]uint16{}
 
 		results, privacyLabels, errs := cleanOpenRTBRequests(
 			context.Background(),
@@ -2128,9 +2202,9 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			bidderToSyncerKey,
 			&metrics.MetricsEngineMock{},
 			gdprDefaultValue,
-			&permissionsMock{allowAllBidders: true, passGeo: !test.gdprScrub, passID: !test.gdprScrub, activitiesError: test.permissionsError},
 			privacyConfig,
-			gdpr.NewTCF2Config(privacyConfig.GDPR.TCF2, accountConfig.GDPR))
+			gvlVendorIDs,
+			fakeVendorListFetcher)
 		result := results[0]
 
 		if test.expectError {
@@ -2203,16 +2277,29 @@ func TestCleanOpenRTBRequestsGDPRBlockBidRequest(t *testing.T) {
 			},
 		}
 
+		mockGDPRPermissionsBuilder := fakePermissionsBuilder{
+			permissions: &permissionsMock{
+				allowedBidders:  test.gdprAllowedBidders,
+				passGeo:         true,
+				passID:          true,
+				activitiesError: nil,
+			},
+		}.Builder
+
 		auctionReq := AuctionRequest{
-			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
-			UserSyncs:         &emptyUsersync{},
-			Account:           accountConfig,
+			BidRequestWrapper:      &openrtb_ext.RequestWrapper{BidRequest: req},
+			UserSyncs:              &emptyUsersync{},
+			Account:                accountConfig,
+			GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
+			TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
 		}
 
 		metricsMock := metrics.MetricsEngineMock{}
 		metricsMock.Mock.On("RecordAdapterGDPRRequestBlocked", mock.Anything).Return()
 
 		bidderToSyncerKey := map[string]string{}
+		fakeVendorListFetcher := func(ctx context.Context, id uint16) (vendorlist.VendorList, error) { return nil, nil }
+		gvlVendorIDs := map[openrtb_ext.BidderName]uint16{}
 		results, _, errs := cleanOpenRTBRequests(
 			context.Background(),
 			auctionReq,
@@ -2220,9 +2307,10 @@ func TestCleanOpenRTBRequestsGDPRBlockBidRequest(t *testing.T) {
 			bidderToSyncerKey,
 			&metricsMock,
 			gdpr.SignalNo,
-			&permissionsMock{allowedBidders: test.gdprAllowedBidders, passGeo: true, passID: true, activitiesError: nil},
 			privacyConfig,
-			&privacyConfig.GDPR.TCF2)
+			gvlVendorIDs,
+			fakeVendorListFetcher,
+		)
 
 		// extract bidder name from each request in the results
 		bidders := []openrtb_ext.BidderName{}
@@ -2787,13 +2875,26 @@ func TestCleanOpenRTBRequestsSChainMultipleBidders(t *testing.T) {
 	assert.NoErrorf(t, err, "Error unmarshaling inExt")
 	extRequest := unmarshaledExt
 
+	mockGDPRPermissionsBuilder := fakePermissionsBuilder{
+		permissions: &permissionsMock{
+			allowAllBidders: true,
+			passGeo:         true,
+			passID:          true,
+			activitiesError: nil,
+		},
+	}.Builder
+
 	auctionReq := AuctionRequest{
-		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
-		UserSyncs:         &emptyUsersync{},
+		BidRequestWrapper:      &openrtb_ext.RequestWrapper{BidRequest: req},
+		UserSyncs:              &emptyUsersync{},
+		GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
+		TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
 	}
 	bidderToSyncerKey := map[string]string{}
 	metrics := metrics.MetricsEngineMock{}
-	bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, bidderToSyncerKey, &metrics, gdpr.SignalNo, gdpr.AlwaysAllow{}, config.Privacy{}, &config.TCF2{})
+	fakeVendorListFetcher := func(ctx context.Context, id uint16) (vendorlist.VendorList, error) { return nil, nil }
+	gvlVendorIDs := map[openrtb_ext.BidderName]uint16{}
+	bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, bidderToSyncerKey, &metrics, gdpr.SignalNo, config.Privacy{}, gvlVendorIDs, fakeVendorListFetcher)
 
 	assert.Nil(t, errs)
 	assert.Len(t, bidderRequests, 2, "Bid request count is not 2")

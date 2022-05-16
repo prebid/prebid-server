@@ -42,9 +42,9 @@ func cleanOpenRTBRequests(ctx context.Context,
 	bidderToSyncerKey map[string]string,
 	metricsEngine metrics.MetricsEngine,
 	gdprDefaultValue gdpr.Signal,
-	gdprPerms gdpr.Permissions,
 	privacyConfig config.Privacy,
-	tcf2Cfg gdpr.TCF2ConfigReader,
+	gvlVendorIDs map[openrtb_ext.BidderName]uint16,
+	vendorListFetcher gdpr.VendorListFetcher,
 ) (allowedBidderRequests []BidderRequest, privacyLabels metrics.PrivacyLabels, errs []error) {
 
 	req := auctionReq.BidRequestWrapper
@@ -103,6 +103,8 @@ func cleanOpenRTBRequests(ctx context.Context,
 	privacyLabels.COPPAEnforced = privacyEnforcement.COPPA
 	privacyLabels.LMTEnforced = lmtEnforcer.ShouldEnforce(unknownBidder)
 
+	tcf2Cfg := auctionReq.TCF2ConfigBuilder(privacyConfig.GDPR.TCF2, auctionReq.Account.GDPR)
+
 	var gdprEnforced bool
 	if gdprApplies {
 		gdprEnforced = tcf2Cfg.IntegrationEnabled(integrationTypeMap[auctionReq.LegacyLabels.RType])
@@ -127,6 +129,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 		// GDPR
 		if gdprEnforced {
 			var publisherID = auctionReq.LegacyLabels.PubID
+			gdprPerms := auctionReq.GDPRPermissionsBuilder(privacyConfig.GDPR, tcf2Cfg, gvlVendorIDs, vendorListFetcher)
 			auctionPermissions, err := gdprPerms.AuctionActivitiesAllowed(ctx, bidderRequest.BidderCoreName, bidderRequest.BidderName, publisherID, gdprSignal, consent, aliasesGVLIDs)
 			bidRequestAllowed = auctionPermissions.AllowBidRequest
 
