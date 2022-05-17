@@ -6,7 +6,10 @@
       "ip": "123.123.123.123"
     },
     "user": {
-      "buyeruid": "awesome-user"
+      "buyeruid": "awesome-user",
+      "ext": {
+        "consent": "gdprConsentString"
+      }
     },
     "site": {
       "page": "test.com",
@@ -21,8 +24,6 @@
         "banner": {
           "w": 320,
           "h": 50
-        },
-        "ext": {
         }
       },
       {
@@ -31,8 +32,6 @@
         "native": {
           "request": "{test json string}",
           "ver": "1.2"
-        },
-        "ext": {
         }
       }
     ]
@@ -65,9 +64,7 @@
                 "w": 320,
                 "h": 50
               },
-              "tagid": "TAGID",
-              "ext": {
-              }
+              "tagid": "TAGID"
             },
             {
               "id": "some-impression-id",
@@ -75,8 +72,6 @@
               "native": {
                 "request": "{test json string}",
                 "ver": "1.2"
-              },
-              "ext": {
               }
             }
           ],
@@ -87,7 +82,10 @@
             }
           },
           "user": {
-            "buyeruid": "awesome-user"
+            "buyeruid": "awesome-user",
+            "ext": {
+              "consent": "gdprConsentString"
+            }
           }
         }
       },
