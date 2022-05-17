@@ -32,6 +32,7 @@ type DebugLog struct {
 	DebugOverride bool
 	//little optimization, it stores value of debugLog.Enabled || debugLog.DebugOverride
 	DebugEnabledOrOverridden bool
+	DebugFlag                bool
 }
 
 type DebugData struct {

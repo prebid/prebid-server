@@ -8,13 +8,12 @@ import (
 
 // Labels defines the labels that can be attached to the metrics.
 type Labels struct {
-	Source           DemandSource
-	RType            RequestType
-	PubID            string // exchange specific ID, so we cannot compile in values
-	CookieFlag       CookieFlag
-	RequestStatus    RequestStatus
-	DebugFlag        bool
-	AccountDebugFlag bool
+	Source        DemandSource
+	RType         RequestType
+	PubID         string // exchange specific ID, so we cannot compile in values
+	CookieFlag    CookieFlag
+	RequestStatus RequestStatus
+	DebugEnabled  bool
 }
 
 // AdapterLabels defines the labels that can be attached to the adapter metrics.

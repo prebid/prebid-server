@@ -27,7 +27,7 @@ type Metrics struct {
 	impressionsLegacy            prometheus.Counter
 	prebidCacheWriteTimer        *prometheus.HistogramVec
 	requests                     *prometheus.CounterVec
-	requestsDebug                *prometheus.CounterVec
+	requestsDebug                prometheus.Counter
 	requestsTimer                *prometheus.HistogramVec
 	requestsQueueTimer           *prometheus.HistogramVec
 	requestsWithoutCookie        *prometheus.CounterVec
@@ -184,10 +184,9 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"Count of total requests to Prebid Server labeled by type and status.",
 		[]string{requestTypeLabel, requestStatusLabel})
 
-	metrics.requestsDebug = newCounter(cfg, reg,
+	metrics.requestsDebug = newCounterWithoutLabels(cfg, reg,
 		"requests_debug",
-		"Count of total requests to Prebid Server that have debug enabled labled by type, status.",
-		[]string{requestTypeLabel, requestStatusLabel})
+		"Count of total requests to Prebid Server that have debug enabled labled by type, status.")
 
 	metrics.requestsTimer = newHistogramVec(cfg, reg,
 		"request_time_seconds",
@@ -486,18 +485,15 @@ func (m *Metrics) RecordRequest(labels metrics.Labels) {
 		m.accountRequests.With(prometheus.Labels{
 			accountLabel: labels.PubID,
 		}).Inc()
-		if !m.metricsDisabled.AccountDebug && labels.AccountDebugFlag {
+		if !m.metricsDisabled.AccountDebug && labels.DebugEnabled {
 			m.accountDebugRequests.With(prometheus.Labels{
 				accountLabel: labels.PubID,
 			}).Inc()
 		}
 	}
 
-	if labels.DebugFlag {
-		m.requestsDebug.With(prometheus.Labels{
-			requestTypeLabel:   string(labels.RType),
-			requestStatusLabel: string(labels.RequestStatus),
-		}).Inc()
+	if labels.DebugEnabled {
+		m.requestsDebug.Inc()
 	}
 }
 

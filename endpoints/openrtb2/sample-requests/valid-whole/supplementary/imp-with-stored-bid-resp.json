@@ -1,13 +1,13 @@
 {
-  "description": "Well formed amp request with valid User field",
+  "description": "request with impression with stored bid response",
   "mockBidRequest": {
-    "id": "request-without-user-ext-obj",
+    "id": "request-with-stored-resp",
     "site": {
       "page": "test.somepage.com"
     },
     "imp": [
       {
-        "id": "my-imp-id",
+        "id": "imp-id1",
         "banner": {
           "format": [
             {
@@ -16,16 +16,14 @@
             }
           ]
         },
-        "pmp": {
-          "deals": [
-            {
-              "id": "some-deal-id"
-            }
-          ]
-        },
         "ext": {
           "appnexus": {
             "placementId": 12883451
+          },
+          "prebid": {
+            "storedbidresponse": [
+              {"bidder":"testBidder1", "id": "bidResponseId1"}
+            ]
           }
         }
       }
@@ -33,11 +31,6 @@
     "user": {
       "yob": 1989
     }
-  },
-  "expectedBidResponse": {
-      "id":"request-without-user-ext-obj",
-      "bidid":"test bid id",
-      "nbr":0
   },
   "expectedReturnCode": 200
 }
