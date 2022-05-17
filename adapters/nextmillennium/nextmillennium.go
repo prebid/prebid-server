@@ -119,7 +119,7 @@ func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext
 		if banner := prebidBidRequest.Imp[0].Banner; banner != nil {
 			if len(banner.Format) > 0 {
 				size = fmt.Sprintf("%dx%d", banner.Format[0].W, banner.Format[0].H)
-			} else if banner.W != nil || banner.H != nil {
+			} else if banner.W != nil && banner.H != nil {
 				size = fmt.Sprintf("%dx%d", *banner.W, *banner.H)
 			}
 		}
