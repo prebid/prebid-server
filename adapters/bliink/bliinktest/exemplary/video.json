@@ -6,7 +6,10 @@
       "ip": "123.123.123.123"
     },
     "user": {
-      "buyeruid": "awesome-user"
+      "buyeruid": "awesome-user",
+      "ext": {
+        "consent": "gdprConsentString"
+      }
     },
     "site": {
       "page": "test.com",
@@ -26,9 +29,6 @@
           "h": 300,
           "minduration": 120,
           "maxduration": 150
-        },
-        "ext": {
-          "consent": "testConsentStringUser"
         }
       }
     ]
@@ -47,7 +47,7 @@
             "2.5"
           ]
         },
-        "uri": "http://whatever.url/bid",
+        "uri": "http://biddertest.url/bid",
         "body": {
           "id": "some-request-id",
           "device": {
@@ -66,10 +66,7 @@
                 "minduration": 120,
                 "maxduration": 150
               },
-              "tagid": "TAGID",
-              "ext": {
-                "consent": "testConsentStringUser"
-              }
+              "tagid": "TAGID"
             }
           ],
           "site": {
@@ -79,7 +76,10 @@
             }
           },
           "user": {
-            "buyeruid": "awesome-user"
+            "buyeruid": "awesome-user",
+            "ext": {
+              "consent": "gdprConsentString"
+            }
           }
         }
       },

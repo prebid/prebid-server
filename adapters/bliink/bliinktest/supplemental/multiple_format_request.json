@@ -25,6 +25,14 @@
           "w": 320,
           "h": 50
         }
+      },
+      {
+        "id": "some-impression-id",
+        "tagid": "TAGID",
+        "native": {
+          "request": "{test json string}",
+          "ver": "1.2"
+        }
       }
     ]
   },
@@ -57,6 +65,14 @@
                 "h": 50
               },
               "tagid": "TAGID"
+            },
+            {
+              "id": "some-impression-id",
+              "tagid": "TAGID",
+              "native": {
+                "request": "{test json string}",
+                "ver": "1.2"
+              }
             }
           ],
           "site": {
@@ -74,23 +90,35 @@
         }
       },
       "mockResponse": {
-        "status": 400,
+        "status": 200,
         "body": {
-          "error": {
-            "message": "Validation failed",
-            "details": [
-              {
-                "message": "invalid consent"
-              }
-            ]
-          }
+          "id": "awesome-resp-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "a3ae1b4e2fc24a4fb45540082e98e161",
+                  "impid": "some-impression-id",
+                  "price": 0.9,
+                  "adm": "awesome-markup",
+                  "adomain": [
+                    "awesome.com"
+                  ],
+                  "crid": "20",
+                  "w": 320,
+                  "h": 50
+                }
+              ]
+            }
+          ],
+          "cur": "EUR"
         }
       }
     }
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "Unexpected status code: 400. Bad request from publisher. Run with request.debug = 1 for more info.",
+      "value": "unable to fetch mediaType in multi-format: some-impression-id",
       "comparison": "literal"
     }
   ]

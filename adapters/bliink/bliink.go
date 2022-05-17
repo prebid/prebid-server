@@ -78,27 +78,43 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(response.SeatBid[0].Bid))
 	bidResponse.Currency = response.Cur
 	seatBid := response.SeatBid[0]
+	var errs []error
 	for i, bid := range seatBid.Bid {
-		b := &adapters.TypedBid{
-			Bid:     &seatBid.Bid[i],
-			BidType: getMediaTypeForImp(bid.ImpID, request.Imp),
+		mediaType, err := getMediaTypeForImp(bid.ImpID, request.Imp)
+		if err != nil {
+			errs = append(errs, err)
+		} else {
+			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+				Bid:     &seatBid.Bid[i],
+				BidType: mediaType,
+			})
 		}
-		bidResponse.Bids = append(bidResponse.Bids, b)
 	}
-	return bidResponse, nil
+
+	return bidResponse, errs
 }
 
-func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
-	mediaType := openrtb_ext.BidTypeBanner
+func getMediaTypeForImp(impId string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
+	var mediaType openrtb_ext.BidType
+	var typeCnt = 0
 	for _, imp := range imps {
 		if imp.ID == impId {
-			if imp.Video != nil {
-				mediaType = openrtb_ext.BidTypeVideo
-			} else if imp.Native != nil {
+			if imp.Banner != nil {
+				typeCnt += 1
+				mediaType = openrtb_ext.BidTypeBanner
+			}
+			if imp.Native != nil {
+				typeCnt += 1
 				mediaType = openrtb_ext.BidTypeNative
 			}
-			return mediaType
+			if imp.Video != nil {
+				typeCnt += 1
+				mediaType = openrtb_ext.BidTypeVideo
+			}
 		}
 	}
-	return mediaType
+	if typeCnt == 1 {
+		return mediaType, nil
+	}
+	return mediaType, fmt.Errorf("unable to fetch mediaType in multi-format: %s", impId)
 }
