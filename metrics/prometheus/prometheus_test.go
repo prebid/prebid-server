@@ -144,7 +144,6 @@ func TestRequestMetric(t *testing.T) {
 	testCases := []struct {
 		description                      string
 		givenDebugEnabledFlag            bool
-		givenAccountDebugFlag            bool
 		givenAccountDebugMetricsDisabled bool
 		expectedAccountDebugCount        float64
 		expectedDebugCount               float64
