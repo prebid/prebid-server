@@ -202,7 +202,7 @@ func TestRecordRequest(t *testing.T) {
 			givenLabels: Labels{
 				RType:         requestType,
 				RequestStatus: requestStatus,
-				DebugEnabled:  false,
+				DebugEnabled:  true,
 				PubID:         "acct-id",
 			},
 			expectedAccountDebugCount: 1,

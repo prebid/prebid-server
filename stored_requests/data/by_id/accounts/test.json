@@ -1,7 +1,7 @@
 {
     "id": "test",
     "name": "test account",
-    "disabled": false,
+    "disabled": true,
     "cache_ttl": {
         "banner": 600,
         "video": 3600,
@@ -15,6 +15,5 @@
         "default_limt": 20,
         "max_limit": 50,
         "default_coop_sync": true
-    },
-    "debug_allow": true
+    }
 }
