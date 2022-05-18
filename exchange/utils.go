@@ -127,12 +127,12 @@ func cleanOpenRTBRequests(ctx context.Context,
 		// GDPR
 		if gdprEnforced {
 			var publisherID = auctionReq.LegacyLabels.PubID
-			bidReq, geo, id, err := gdprPerms.AuctionActivitiesAllowed(ctx, bidderRequest.BidderCoreName, bidderRequest.BidderName, publisherID, gdprSignal, consent, aliasesGVLIDs)
-			bidRequestAllowed = bidReq
+			auctionPermissions, err := gdprPerms.AuctionActivitiesAllowed(ctx, bidderRequest.BidderCoreName, bidderRequest.BidderName, publisherID, gdprSignal, consent, aliasesGVLIDs)
+			bidRequestAllowed = auctionPermissions.AllowBidRequest
 
 			if err == nil {
-				privacyEnforcement.GDPRGeo = !geo
-				privacyEnforcement.GDPRID = !id
+				privacyEnforcement.GDPRGeo = !auctionPermissions.PassGeo
+				privacyEnforcement.GDPRID = !auctionPermissions.PassID
 			} else {
 				privacyEnforcement.GDPRGeo = true
 				privacyEnforcement.GDPRID = true

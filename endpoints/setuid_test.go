@@ -573,8 +573,12 @@ func (g *mockPermsSetUID) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 	return false, nil
 }
 
-func (g *mockPermsSetUID) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string, aliasGVLIDs map[string]uint16) (allowBidReq bool, passGeo bool, passID bool, err error) {
-	return g.personalInfoAllowed, g.personalInfoAllowed, g.personalInfoAllowed, nil
+func (g *mockPermsSetUID) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string, aliasGVLIDs map[string]uint16) (permissions gdpr.AuctionPermissions, err error) {
+	return gdpr.AuctionPermissions{
+		AllowBidRequest: g.personalInfoAllowed,
+		PassGeo:         g.personalInfoAllowed,
+		PassID:          g.personalInfoAllowed,
+	}, nil
 }
 
 type fakeSyncer struct {
