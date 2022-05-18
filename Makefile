@@ -305,11 +305,13 @@ artifact-preflight:
 			for facet in ${FACETS}; do \
 				&>/dev/null pushd ${KUSTOMIZE_OVERLAY_DIR}/$${infra}/$${facet} &&\
 				kustomize edit set image app=${IMAGE_NAME}:${PRODUCTION_IMAGE_TAG} &&\
+				1>/dev/null git commit . --amend --no-edit &&\
 				&>/dev/null popd ;\
 			done ;\
-		done &&\
-		1>/dev/null git commit -a --amend --no-edit ;\
+		done ;\
 	fi
+
+	@test -z "$$(git show --name-only --format=tformat: | grep -v kustomization.yaml)" || { echo "Non-tooling changes detected in tooling commit. Tooling commits should only contain tooling-related changes. This usually happens when a developer amends a commit while hotfixing a branch they're trying to deploy."; exit 1; }
 endif
 
 .PHONY: artifact-publish
