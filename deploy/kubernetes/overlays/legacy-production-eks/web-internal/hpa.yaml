@@ -21,7 +21,7 @@ spec:
         target:
           type: Utilization
           averageUtilization: 60
-  minReplicas: 5 # TODO Update to 22 and wait for all pods to come up before cutting back over to EKS
+  minReplicas: 1 # TODO Update to 22 and wait for all pods to come up before cutting back over to EKS
   maxReplicas: 300
   # TODO Uncomment settings below before cutting back over to EKS
   # Throughput is very spiky and we are seeing pods living only ~10-15 minutes. Scale down less aggressively by lowering
