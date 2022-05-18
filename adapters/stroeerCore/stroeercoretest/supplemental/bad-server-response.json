@@ -22,7 +22,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://localhost:8361/s2sdsh",
+        "uri": "http://localhost/s2sdsh",
         "body": {
           "id": "id",
           "imp": [

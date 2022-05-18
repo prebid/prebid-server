@@ -46,11 +46,11 @@
       "osv": "8.1"
     },
     "app": {
-      "id": "a422f9bf94df0c59389d5beff67f8821",
-      "name": "Candy Crush",
-      "bundle": "553834731",
-      "domain": "candycrush.publisher.com",
-      "storeurl": "https://itunes.apple.com/us/app/candy-crush-saga/id553834731?mt=8",
+      "id": "test-app-id",
+      "name": "test-app-name",
+      "bundle": "test-app-bundle",
+      "domain": "test-app-domain",
+      "storeurl": "test-app-storeurl",
       "cat": [
         "IAB9-30",
         "IAB9-5"
@@ -76,7 +76,7 @@
           "Accept": ["application/json"],
           "Content-Type": ["application/json;charset=utf-8"]
         },
-        "uri": "http://localhost:8361/s2sdsh",
+        "uri": "http://localhost/s2sdsh",
         "body": {
           "id": "auction-id",
           "cur": ["EUR"],
@@ -125,11 +125,11 @@
             "osv": "8.1"
           },
           "app": {
-            "id": "a422f9bf94df0c59389d5beff67f8821",
-            "name": "Candy Crush",
-            "bundle": "553834731",
-            "domain": "candycrush.publisher.com",
-            "storeurl": "https://itunes.apple.com/us/app/candy-crush-saga/id553834731?mt=8",
+            "id": "test-app-id",
+            "name": "test-app-name",
+            "bundle": "test-app-bundle",
+            "domain": "test-app-domain",
+            "storeurl": "test-app-storeurl",
             "cat": [
               "IAB9-30",
               "IAB9-5"

@@ -13,4 +13,3 @@ userSync:
     url: "https://js.adscale.de/pbsync.html?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&redirect={{.RedirectURL}}"
   redirect:
     url: "https://ih.adscale.de/uu?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&cburl={{.RedirectURL}}"
-  default: "iframe"

@@ -1,5 +1,5 @@
 package openrtb_ext
 
-type ExtImpStroeercore struct {
+type ExtImpStroeerCore struct {
 	Sid string `json:"sid,omitempty"`
 }

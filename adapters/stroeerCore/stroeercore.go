@@ -11,35 +11,35 @@ import (
 	"net/http"
 )
 
-type StroeerCoreAdapter struct {
-	Url string `json:"url"`
+type adapter struct {
+	URL string `json:"url"`
 }
 
-type StroeerRootResponse struct {
-	Bids []StroeerBidResponse `json:"bids"`
+type response struct {
+	Bids []bidResponse `json:"bids"`
 }
 
-type StroeerBidResponse struct {
-	Id     string  `json:"id"`
-	BidId  string  `json:"bidId"`
-	Cpm    float64 `json:"cpm"`
+type bidResponse struct {
+	ID     string  `json:"id"`
+	BidID  string  `json:"bidId"`
+	CPM    float64 `json:"cpm"`
 	Width  int64   `json:"width"`
 	Height int64   `json:"height"`
 	Ad     string  `json:"ad"`
-	CrId   string  `json:"crid"`
+	CrID   string  `json:"crid"`
 }
 
-func (a *StroeerCoreAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if response.StatusCode != http.StatusOK {
+func (a *adapter) MakeBids(bidRequest *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	if responseData.StatusCode != http.StatusOK {
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected http status code: %d.", response.StatusCode),
+			Message: fmt.Sprintf("Unexpected http status code: %d.", responseData.StatusCode),
 		}}
 	}
 
 	var errors []error
-	stroeerResponse := StroeerRootResponse{}
+	stroeerResponse := response{}
 
-	if err := json.Unmarshal(response.Body, &stroeerResponse); err != nil {
+	if err := json.Unmarshal(responseData.Body, &stroeerResponse); err != nil {
 		errors = append(errors, err)
 		return nil, errors
 	}
@@ -49,13 +49,13 @@ func (a *StroeerCoreAdapter) MakeBids(internalRequest *openrtb2.BidRequest, exte
 
 	for _, bid := range stroeerResponse.Bids {
 		openRtbBid := openrtb2.Bid{
-			ID:    bid.Id,
-			ImpID: bid.BidId,
+			ID:    bid.ID,
+			ImpID: bid.BidID,
 			W:     bid.Width,
 			H:     bid.Height,
-			Price: bid.Cpm,
+			Price: bid.CPM,
 			AdM:   bid.Ad,
-			CrID:  bid.CrId,
+			CrID:  bid.CrID,
 		}
 
 		bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
@@ -67,18 +67,18 @@ func (a *StroeerCoreAdapter) MakeBids(internalRequest *openrtb2.BidRequest, exte
 	return bidderResponse, errors
 }
 
-func (a *StroeerCoreAdapter) MakeRequests(internalRequest *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	errors := make([]error, 0, len(internalRequest.Imp))
+func (a *adapter) MakeRequests(bidRequest *openrtb2.BidRequest, extraRequestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	var errors []error
 
-	for idx := range internalRequest.Imp {
-		imp := &internalRequest.Imp[idx]
+	for idx := range bidRequest.Imp {
+		imp := &bidRequest.Imp[idx]
 		var bidderExt adapters.ExtImpBidder
 		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			errors = append(errors, err)
 			continue
 		}
 
-		var stroeerExt openrtb_ext.ExtImpStroeercore
+		var stroeerExt openrtb_ext.ExtImpStroeerCore
 		if err := json.Unmarshal(bidderExt.Bidder, &stroeerExt); err != nil {
 			errors = append(errors, err)
 			continue
@@ -87,7 +87,7 @@ func (a *StroeerCoreAdapter) MakeRequests(internalRequest *openrtb2.BidRequest, 
 		imp.TagID = stroeerExt.Sid
 	}
 
-	reqJSON, err := json.Marshal(internalRequest)
+	reqJSON, err := json.Marshal(bidRequest)
 	if err != nil {
 		errors = append(errors, err)
 		return nil, errors
@@ -99,7 +99,7 @@ func (a *StroeerCoreAdapter) MakeRequests(internalRequest *openrtb2.BidRequest, 
 
 	return []*adapters.RequestData{{
 		Method:  "POST",
-		Uri:     a.Url,
+		Uri:     a.URL,
 		Body:    reqJSON,
 		Headers: headers,
 	}}, errors
@@ -107,8 +107,8 @@ func (a *StroeerCoreAdapter) MakeRequests(internalRequest *openrtb2.BidRequest, 
 
 // Builder builds a new instance of the StroeerCore adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &StroeerCoreAdapter{
-		Url: config.Endpoint,
+	bidder := &adapter{
+		URL: config.Endpoint,
 	}
 	return bidder, nil
 }

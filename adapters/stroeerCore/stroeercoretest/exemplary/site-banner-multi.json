@@ -19,9 +19,7 @@
         },
         "ext": {
           "bidder": {
-            "sid": "123456",
-            "debugtoken": "jskslroi2jsdms.dksu^kdsksd"
-
+            "sid": "123456"
           }
         }
       },
@@ -37,8 +35,7 @@
         },
         "ext": {
           "bidder": {
-            "sid": "85310",
-            "debugtoken": "k0disdosdlmds.csijsd!#4hee"
+            "sid": "85310"
           }
         }
       }
@@ -67,7 +64,7 @@
           "Accept": ["application/json"],
           "Content-Type": ["application/json;charset=utf-8"]
         },
-        "uri": "http://localhost:8361/s2sdsh",
+        "uri": "http://localhost/s2sdsh",
         "body": {
           "id": "auction-id",
           "cur": ["EUR"],
@@ -89,8 +86,7 @@
               },
               "ext": {
                 "bidder": {
-                  "sid": "123456",
-                  "debugtoken": "jskslroi2jsdms.dksu^kdsksd"
+                  "sid": "123456"
                 }
               }
             },
@@ -107,8 +103,7 @@
               },
               "ext": {
                 "bidder": {
-                  "sid": "85310",
-                  "debugtoken": "k0disdosdlmds.csijsd!#4hee"
+                  "sid": "85310"
                 }
               }
             }
