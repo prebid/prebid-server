@@ -792,19 +792,33 @@ func TestSetLimit(t *testing.T) {
 	testCases := []struct {
 		description     string
 		givenRequest    cookieSyncRequest
-		givenConfig     config.UserSync
-		expectedError   string
+		giveAccount     *config.Account
 		expectedRequest cookieSyncRequest
 	}{
+		{
+			description: "Account is nil",
+			givenRequest: cookieSyncRequest{
+				Account: "TestAccount",
+				Limit:   42,
+			},
+			giveAccount: nil,
+			expectedRequest: cookieSyncRequest{
+				Account: "TestAccount",
+				Limit:   42,
+			},
+		},
 		{
 			description: "Test that Max Limit and Default Coop Sync are Applied",
 			givenRequest: cookieSyncRequest{
 				Account: "TestAccount",
 				Limit:   42,
 			},
-			givenConfig: config.UserSync{
-				Cooperative: config.UserSyncCooperative{
-					PriorityGroups: [][]string{{"a", "b", "c"}},
+			giveAccount: &config.Account{
+				ID: "TestAccount",
+				CookieSync: config.CookieSync{
+					DefaultLimit:    20,
+					MaxLimit:        30,
+					DefaultCoopSync: true,
 				},
 			},
 			expectedRequest: cookieSyncRequest{
@@ -812,16 +826,18 @@ func TestSetLimit(t *testing.T) {
 				Limit:           30,
 				CooperativeSync: &coopSync,
 			},
-			expectedError: "",
 		},
 		{
 			description: "Test that Default Limit is Applied",
 			givenRequest: cookieSyncRequest{
 				Account: "TestAccount",
 			},
-			givenConfig: config.UserSync{
-				Cooperative: config.UserSyncCooperative{
-					PriorityGroups: [][]string{{"a", "b", "c"}},
+			giveAccount: &config.Account{
+				ID: "TestAccount",
+				CookieSync: config.CookieSync{
+					DefaultLimit:    20,
+					MaxLimit:        30,
+					DefaultCoopSync: true,
 				},
 			},
 			expectedRequest: cookieSyncRequest{
@@ -829,16 +845,18 @@ func TestSetLimit(t *testing.T) {
 				Limit:           20,
 				CooperativeSync: &coopSync,
 			},
-			expectedError: "",
 		},
 		{
 			description: "Test that max limit is applied when given limit is zero",
 			givenRequest: cookieSyncRequest{
 				Account: "ZeroLimitAccount",
 			},
-			givenConfig: config.UserSync{
-				Cooperative: config.UserSyncCooperative{
-					PriorityGroups: [][]string{{"a", "b", "c"}},
+			giveAccount: &config.Account{
+				ID: "ZeroLimitAccount",
+				CookieSync: config.CookieSync{
+					DefaultLimit:    0,
+					MaxLimit:        30,
+					DefaultCoopSync: true,
 				},
 			},
 			expectedRequest: cookieSyncRequest{
@@ -846,16 +864,18 @@ func TestSetLimit(t *testing.T) {
 				Limit:           30,
 				CooperativeSync: &coopSync,
 			},
-			expectedError: "",
 		},
 		{
 			description: "Negative Value Check",
 			givenRequest: cookieSyncRequest{
 				Account: "NegativeLimitAccount",
 			},
-			givenConfig: config.UserSync{
-				Cooperative: config.UserSyncCooperative{
-					PriorityGroups: [][]string{{"a", "b", "c"}},
+			giveAccount: &config.Account{
+				ID: "NegativeLimitAccount",
+				CookieSync: config.CookieSync{
+					DefaultLimit:    -1,
+					MaxLimit:        -1,
+					DefaultCoopSync: true,
 				},
 			},
 			expectedRequest: cookieSyncRequest{
@@ -863,46 +883,13 @@ func TestSetLimit(t *testing.T) {
 				Limit:           0,
 				CooperativeSync: &coopSync,
 			},
-			expectedError: "",
-		},
-		{
-			description: "Error Handler",
-			givenRequest: cookieSyncRequest{
-				Account: "DisabledAccount",
-			},
-			givenConfig: config.UserSync{
-				Cooperative: config.UserSyncCooperative{
-					PriorityGroups: [][]string{{"a", "b", "c"}},
-				},
-			},
-			expectedRequest: cookieSyncRequest{
-				Account: "DisabledAccount",
-			},
-			expectedError: errCookieSyncAccountBlocked.Error(),
 		},
 	}
 
 	for _, test := range testCases {
-		endpoint := cookieSyncEndpoint{
-			config: &config.Configuration{
-				UserSync: test.givenConfig,
-			},
-			accountsFetcher: FakeAccountsFetcher{AccountData: map[string]json.RawMessage{
-				"TestAccount":          json.RawMessage(`{"cookie_sync": {"default_limit": 20, "max_limit": 30, "default_coop_sync": true}}`),
-				"DisabledAccount":      json.RawMessage(`{"disabled":true}`),
-				"ZeroLimitAccount":     json.RawMessage(`{"cookie_sync": {"default_limit": 0, "max_limit": 30, "default_coop_sync": true}}`),
-				"NegativeLimitAccount": json.RawMessage(`{"cookie_sync": {"default_limit": -1, "max_limit": -1, "default_coop_sync": true}}`),
-			}},
-		}
-		assert.NoError(t, endpoint.config.MarshalAccountDefaults())
-		request, err := endpoint.setLimit(test.givenRequest)
-
-		if test.expectedError == "" {
-			assert.NoError(t, err, test.description)
-			assert.Equal(t, test.expectedRequest, request, test.description)
-		} else {
-			assert.EqualError(t, err, test.expectedError, test.description)
-		}
+		endpoint := cookieSyncEndpoint{}
+		request := endpoint.setLimit(test.givenRequest, test.giveAccount)
+		assert.Equal(t, test.expectedRequest, request, test.description)
 	}
 }
 
