@@ -128,10 +128,10 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 	return buildBidMap(bidResp.SeatBid, len(mockBids))
 }
 
-func buildAdapterMap(bids map[openrtb_ext.BidderName][]*openrtb2.Bid, mockServerURL string, client *http.Client) map[openrtb_ext.BidderName]adaptedBidder {
-	adapterMap := make(map[openrtb_ext.BidderName]adaptedBidder, len(bids))
+func buildAdapterMap(bids map[openrtb_ext.BidderName][]*openrtb2.Bid, mockServerURL string, client *http.Client) map[openrtb_ext.BidderName]AdaptedBidder {
+	adapterMap := make(map[openrtb_ext.BidderName]AdaptedBidder, len(bids))
 	for bidder, bids := range bids {
-		adapterMap[bidder] = adaptBidder(&mockTargetingBidder{
+		adapterMap[bidder] = AdaptBidder(&mockTargetingBidder{
 			mockServerURL: mockServerURL,
 			bids:          bids,
 		}, client, &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil)

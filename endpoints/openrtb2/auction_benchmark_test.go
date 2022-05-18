@@ -1,7 +1,10 @@
 package openrtb2
 
 import (
+	"bytes"
 	"context"
+	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -61,7 +64,7 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 	server := httptest.NewServer(http.HandlerFunc(benchmarkTestServer))
 	defer server.Close()
 
-	var infos config.BidderInfos
+	var infos = make(config.BidderInfos, 0)
 	infos["appnexus"] = config.BidderInfo{Capabilities: &config.CapabilitiesInfo{Site: &config.PlatformInfo{MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner}}}}
 	paramValidator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
 	if err != nil {
@@ -105,5 +108,62 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		endpoint(httptest.NewRecorder(), benchmarkBuildTestRequest(), nil)
+	}
+}
+
+// BenchmarkValidWholeExemplary benchmarks the process that results of hitting the `openrtb2/auction` with
+// the different JSON bid requests found in the `sample-requests/valid-whole/exemplary/` directory. As
+// especified in said file, we expect this bid request to succeed with a 200 status code.
+func BenchmarkValidWholeExemplary(b *testing.B) {
+	var benchInput = []string{
+		"sample-requests/valid-whole/exemplary/all-ext.json",
+		"sample-requests/valid-whole/exemplary/interstitial-no-size.json",
+		"sample-requests/valid-whole/exemplary/prebid-test-ad.json",
+		"sample-requests/valid-whole/exemplary/simple.json",
+		"sample-requests/valid-whole/exemplary/skadn.json",
+	}
+
+	for _, testFile := range benchInput {
+		b.Run(fmt.Sprintf("input_file_%s", testFile), func(b *testing.B) {
+			b.StopTimer()
+			// Set up
+			fileData, err := ioutil.ReadFile(testFile)
+			if err != nil {
+				b.Fatalf("unable to read file %s", testFile)
+			}
+			test, err := parseTestFile(fileData, testFile)
+			if err != nil {
+				b.Fatal(err.Error())
+			}
+			test.endpointType = OPENRTB_ENDPOINT
+
+			cfg := &config.Configuration{
+				MaxRequestSize:     maxSize,
+				BlacklistedApps:    test.Config.BlacklistedApps,
+				BlacklistedAppMap:  test.Config.getBlacklistedAppMap(),
+				BlacklistedAccts:   test.Config.BlacklistedAccounts,
+				BlacklistedAcctMap: test.Config.getBlackListedAccountMap(),
+				AccountRequired:    test.Config.AccountRequired,
+			}
+
+			auctionEndpointHandler, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
+			if err != nil {
+				b.Fatal(err.Error())
+			}
+			request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(test.BidRequest))
+			recorder := httptest.NewRecorder()
+
+			// Run benchmark
+			b.ResetTimer()
+			for n := 0; n < b.N; n++ {
+				b.StartTimer()
+				auctionEndpointHandler(recorder, request, nil) //Request comes from the unmarshalled mockBidRequest
+				b.StopTimer()
+			}
+			for _, mockBidServer := range mockBidServers {
+				mockBidServer.Close()
+			}
+			mockCurrencyRatesServer.Close()
+		})
 	}
 }

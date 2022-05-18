@@ -26,32 +26,32 @@ func TestBuildAdapters(t *testing.T) {
 
 	appnexusBidder, _ := appnexus.Builder(openrtb_ext.BidderAppnexus, config.Adapter{})
 	appnexusBidderWithInfo := adapters.BuildInfoAwareBidder(appnexusBidder, infoEnabled)
-	appnexusBidderAdapted := adaptBidder(appnexusBidderWithInfo, client, &config.Configuration{}, metricEngine, openrtb_ext.BidderAppnexus, nil)
+	appnexusBidderAdapted := AdaptBidder(appnexusBidderWithInfo, client, &config.Configuration{}, metricEngine, openrtb_ext.BidderAppnexus, nil)
 	appnexusValidated := addValidatedBidderMiddleware(appnexusBidderAdapted)
 
 	rubiconBidder, _ := rubicon.Builder(openrtb_ext.BidderRubicon, config.Adapter{})
 	rubiconBidderWithInfo := adapters.BuildInfoAwareBidder(rubiconBidder, infoEnabled)
-	rubiconBidderAdapted := adaptBidder(rubiconBidderWithInfo, client, &config.Configuration{}, metricEngine, openrtb_ext.BidderRubicon, nil)
+	rubiconBidderAdapted := AdaptBidder(rubiconBidderWithInfo, client, &config.Configuration{}, metricEngine, openrtb_ext.BidderRubicon, nil)
 	rubiconbidderValidated := addValidatedBidderMiddleware(rubiconBidderAdapted)
 
 	testCases := []struct {
 		description     string
 		adapterConfig   map[string]config.Adapter
 		bidderInfos     map[string]config.BidderInfo
-		expectedBidders map[openrtb_ext.BidderName]adaptedBidder
+		expectedBidders map[openrtb_ext.BidderName]AdaptedBidder
 		expectedErrors  []error
 	}{
 		{
 			description:     "No Bidders",
 			adapterConfig:   map[string]config.Adapter{},
 			bidderInfos:     map[string]config.BidderInfo{},
-			expectedBidders: map[openrtb_ext.BidderName]adaptedBidder{},
+			expectedBidders: map[openrtb_ext.BidderName]AdaptedBidder{},
 		},
 		{
 			description:   "One Bidder",
 			adapterConfig: map[string]config.Adapter{"appnexus": {}},
 			bidderInfos:   map[string]config.BidderInfo{"appnexus": infoEnabled},
-			expectedBidders: map[openrtb_ext.BidderName]adaptedBidder{
+			expectedBidders: map[openrtb_ext.BidderName]AdaptedBidder{
 				openrtb_ext.BidderAppnexus: appnexusValidated,
 			},
 		},
@@ -59,7 +59,7 @@ func TestBuildAdapters(t *testing.T) {
 			description:   "Many Bidders",
 			adapterConfig: map[string]config.Adapter{"appnexus": {}, "rubicon": {}},
 			bidderInfos:   map[string]config.BidderInfo{"appnexus": infoEnabled, "rubicon": infoEnabled},
-			expectedBidders: map[openrtb_ext.BidderName]adaptedBidder{
+			expectedBidders: map[openrtb_ext.BidderName]AdaptedBidder{
 				openrtb_ext.BidderAppnexus: appnexusValidated,
 				openrtb_ext.BidderRubicon:  rubiconbidderValidated,
 			},

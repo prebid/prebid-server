@@ -1,40 +1,50 @@
 {
-  "description": "Well formed amp request with impression with stored response",
+  "description": "Amp request where impression makes reference to a valid stored response with a $5.00 bid",
+  "mockAmpStoredResponse": {
+    "6d718149": "[{\"bid\": [{\"id\": \"bid_id\", \"price\": 5.00, \"ext\": {\"prebid\": {\"targeting\": { \"hb_pb\": \"1.20\", \"hb_cat\": \"IAB-20\", \"hb_cache_id\": \"some_id\"}}}}],\"seat\": \"appnexus\"}]"
+  },
   "mockBidRequest": {
     "id": "request-with-stored-resp",
-    "site": {
-      "page": "test.somepage.com"
-    },
+    "site": {"page": "test.somepage.com"},
     "imp": [
       {
         "id": "my-imp-id",
         "banner": {
           "format": [
-            {
-              "w": 300,
-              "h": 600
-            }
+            {"w": 300, "h": 600}
           ]
         },
         "ext": {
-          "appnexus": {
-            "placementId": 12883451
-          },
           "prebid": {
             "storedauctionresponse": {
               "id": "6d718149"
             }
+          },
+          "appnexus": {
+            "placementId": 12883451
           }
         }
       }
-    ],
-    "user": {
-      "yob": 1989
-    }
+    ]
   },
-  "expectedBidResponse": {
-      "id":"request-with-stored-resp",
-      "bidid":"bid_id"
+  "expectedAmpResponse": {
+    "targeting": {
+      "hb_bidder": "appnexus",
+      "hb_bidder_appnexus": "appnexus",
+      "hb_cache_host": "www.pbcserver.com",
+      "hb_cache_host_appnex": "www.pbcserver.com",
+      "hb_cache_id": "0",
+      "hb_cache_id_appnexus": "0",
+      "hb_cache_path": "/pbcache/endpoint",
+      "hb_cache_path_appnex": "/pbcache/endpoint",
+      "hb_pb": "5.00",
+      "hb_pb_appnexus": "5.00"
+    },
+    "warnings": {
+      "general": [
+        {"code": 10002, "message": "debug turned off for account"}
+      ]
+    }
   },
   "expectedReturnCode": 200
 }
