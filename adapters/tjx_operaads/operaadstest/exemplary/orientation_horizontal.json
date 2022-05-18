@@ -106,7 +106,8 @@
                   "orientation": "h",
                   "placementtype": "interstitial",
                   "skip": 1,
-                  "skipdelay": 5
+                  "skipdelay": 5,
+                  "rewarded": 0
                 },
                 "linearity": 1,
                 "placement": 2,
