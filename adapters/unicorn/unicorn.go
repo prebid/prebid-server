@@ -64,6 +64,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		}
 	}
 
+	// Support Cur "JPY" only
+	request.Cur = []string{"JPY"}
+
 	err := modifyImps(request)
 	if err != nil {
 		return nil, []error{err}
