@@ -71,3 +71,7 @@ func (ln tcpKeepAliveListener) Accept() (net.Conn, error) {
 	tc.SetKeepAlivePeriod(3 * time.Minute)
 	return tc, nil
 }
+
+type unixListener struct{ *net.UnixListener }
+
+func (ln unixListener) Accept() (net.Conn, error) { return ln.AcceptUnix() }

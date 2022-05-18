@@ -3,7 +3,6 @@ package gdpr
 import (
 	"strconv"
 
-	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 )
 
@@ -33,12 +32,12 @@ func SignalParse(rawSignal string) (Signal, error) {
 }
 
 // SignalNormalize normalizes a GDPR signal to ensure it's always either SignalYes or SignalNo.
-func SignalNormalize(signal Signal, config config.GDPR) Signal {
+func SignalNormalize(signal Signal, gdprDefaultValue string) Signal {
 	if signal != SignalAmbiguous {
 		return signal
 	}
 
-	if config.DefaultValue == "0" {
+	if gdprDefaultValue == "0" {
 		return SignalNo
 	}
 

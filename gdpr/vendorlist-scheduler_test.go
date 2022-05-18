@@ -2,11 +2,13 @@ package gdpr
 
 import (
 	"context"
-	"github.com/prebid/go-gdpr/api"
-	"github.com/stretchr/testify/assert"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/prebid/go-gdpr/api"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetVendorListScheduler(t *testing.T) {
@@ -146,7 +148,7 @@ func Test_vendorListScheduler_runLoadCache(t *testing.T) {
 			tt.fields.scheduler.timeout = 2 * time.Minute
 
 			mockCacheSave := func(uint16, api.VendorList) {}
-			latestVersion := saveOne(context.Background(), http.DefaultClient, vendorListURLMaker(0), mockCacheSave)
+			latestVersion := saveOne(context.Background(), http.DefaultClient, VendorListURLMaker(0), mockCacheSave)
 
 			cacheSave, cacheLoad = newVendorListCache()
 			tt.fields.scheduler.runLoadCache()
@@ -172,4 +174,21 @@ func Benchmark_vendorListScheduler_runLoadCache(b *testing.B) {
 		scheduler.runLoadCache()
 	}
 
+}
+
+func Test_vendorListScheduler_cacheFuncs(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(mockServer(serverSettings{
+		vendorListLatestVersion: 1,
+		vendorLists: map[int]string{
+			1: vendorList1,
+			2: vendorList2,
+		},
+	})))
+	defer server.Close()
+	config := testConfig()
+
+	_ = NewVendorListFetcher(context.Background(), config, server.Client(), testURLMaker(server))
+
+	assert.NotNil(t, cacheSave, "Error gdpr.cacheSave nil")
+	assert.NotNil(t, cacheLoad, "Error gdpr.cacheLoad nil")
 }

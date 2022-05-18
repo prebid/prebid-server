@@ -44,8 +44,7 @@ func TestLoadBidderInfoFromDisk(t *testing.T) {
 				},
 			},
 			Syncer: &Syncer{
-				Key:     "foo",
-				Default: "iframe",
+				Key: "foo",
 				IFrame: &SyncerEndpoint{
 					URL:         "https://foo.com/sync?mode=iframe&r={{.RedirectURL}}",
 					RedirectURL: "{{.ExternalURL}}/setuid/iframe",
@@ -209,12 +208,6 @@ func TestSyncerOverride(t *testing.T) {
 			expected:      &Syncer{Key: "override"},
 		},
 		{
-			description:   "Override Default",
-			givenOriginal: &Syncer{Default: "original"},
-			givenOverride: &Syncer{Default: "override"},
-			expected:      &Syncer{Default: "override"},
-		},
-		{
 			description:   "Override IFrame",
 			givenOriginal: &Syncer{IFrame: &SyncerEndpoint{URL: "original"}},
 			givenOverride: &Syncer{IFrame: &SyncerEndpoint{URL: "override"}},
@@ -240,9 +233,9 @@ func TestSyncerOverride(t *testing.T) {
 		},
 		{
 			description:   "Override Partial - Other Fields Untouched",
-			givenOriginal: &Syncer{Key: "originalKey", Default: "originalDefault"},
-			givenOverride: &Syncer{Default: "overrideDefault"},
-			expected:      &Syncer{Key: "originalKey", Default: "overrideDefault"},
+			givenOriginal: &Syncer{Key: "originalKey", ExternalURL: "originalExternalURL"},
+			givenOverride: &Syncer{ExternalURL: "overrideExternalURL"},
+			expected:      &Syncer{Key: "originalKey", ExternalURL: "overrideExternalURL"},
 		},
 	}
 

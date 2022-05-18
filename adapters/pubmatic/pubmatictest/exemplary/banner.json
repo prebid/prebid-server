@@ -22,6 +22,7 @@
                          "value": ["sports", "movies"]
                       }
                     ],
+                    "kadfloor": "0.12",
                     "wrapper": {
                         "version": 1,
                         "profile": 5123
@@ -32,19 +33,20 @@
         "device":{
             "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36"
         },
+        "ext": {
+          "prebid": {
+            "bidderparams": {
+              "acat": ["drg","dlu","ssr"],
+              "wiid": "dwzafakjflan-tygannnvlla-mlljvj"
+            }
+          }
+        },
         "site": {
 		      	"id": "siteID",
 		    	  "publisher": {
 			        	"id": "1234"
 		      	}
-          },
-        "ext":{
-          "prebid" :{
-            "bidderparams": {
-              "wiid": "dwzafakjflan-tygannnvlla-mlljvj"
-            }
           }
-        }
      },
   
     "httpCalls": [
@@ -63,10 +65,11 @@
                       "w": 300,
                       "h": 250
                     }
-                ],
-                "h": 250,
-                "w": 300
-            },
+                  ],
+                  "h": 250,
+                  "w": 300
+                },
+                "bidfloor": 0.12,
                 "ext": {
                     "pmZoneId": "Zone1,Zone2",
                     "preference": "sports,movies"
@@ -87,7 +90,8 @@
                     "profile": 5123,
                     "version":1,
                     "wiid" : "dwzafakjflan-tygannnvlla-mlljvj"
-                }
+                },
+                "acat": ["drg","dlu","ssr"]
             }
           }
         },

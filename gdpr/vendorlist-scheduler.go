@@ -3,10 +3,11 @@ package gdpr
 import (
 	"context"
 	"errors"
-	"github.com/golang/glog"
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/golang/glog"
 )
 
 type vendorListScheduler struct {
@@ -103,7 +104,7 @@ func (scheduler *vendorListScheduler) runLoadCache() {
 	preloadContext, cancel := context.WithTimeout(context.Background(), scheduler.timeout)
 	defer cancel()
 
-	latestVersion := saveOne(preloadContext, scheduler.httpClient, vendorListURLMaker(0), cacheSave)
+	latestVersion := saveOne(preloadContext, scheduler.httpClient, VendorListURLMaker(0), cacheSave)
 
 	// The GVL for TCF2 has no vendors defined in its first version. It's very unlikely to be used, so don't preload it.
 	firstVersionToLoad := uint16(2)
@@ -113,7 +114,7 @@ func (scheduler *vendorListScheduler) runLoadCache() {
 		if list := cacheLoad(i); list != nil {
 			continue
 		}
-		glog.Infof("Downloading: " + vendorListURLMaker(i))
-		saveOne(preloadContext, scheduler.httpClient, vendorListURLMaker(i), cacheSave)
+		glog.Infof("Downloading: " + VendorListURLMaker(i))
+		saveOne(preloadContext, scheduler.httpClient, VendorListURLMaker(i), cacheSave)
 	}
 }

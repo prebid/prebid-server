@@ -118,7 +118,7 @@ func SetUIDSWrapper(w http.ResponseWriter, r *http.Request) {
 
 //CookieSync Openwrap wrapper method for calling /cookie_sync endpoint
 func CookieSync(w http.ResponseWriter, r *http.Request) {
-	cookiesync := endpoints.NewCookieSyncEndpoint(g_syncers, g_cfg, *g_gdprPerms, g_metrics, *g_analytics, g_activeBidders)
+	cookiesync := endpoints.NewCookieSyncEndpoint(g_syncers, g_cfg, *g_gdprPerms, g_metrics, *g_analytics, *g_accounts, g_activeBidders)
 	cookiesync.Handle(w, r, nil)
 }
 

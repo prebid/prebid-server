@@ -309,6 +309,8 @@ const (
 	CookieSyncBadRequest            CookieSyncStatus = "bad_request"
 	CookieSyncOptOut                CookieSyncStatus = "opt_out"
 	CookieSyncGDPRHostCookieBlocked CookieSyncStatus = "gdpr_blocked_host_cookie"
+	CookieSyncAccountBlocked        CookieSyncStatus = "acct_blocked"
+	CookieSyncAccountInvalid        CookieSyncStatus = "acct_invalid"
 )
 
 // CookieSyncStatuses returns possible cookie sync statuses.
@@ -413,7 +415,7 @@ type MetricsEngine interface {
 	RecordStoredDataError(labels StoredDataLabels)
 	RecordPrebidCacheRequestTime(success bool, length time.Duration)
 	RecordRequestQueueTime(success bool, requestType RequestType, length time.Duration)
-	RecordTimeoutNotice(sucess bool)
+	RecordTimeoutNotice(success bool)
 	RecordRequestPrivacy(privacy PrivacyLabels)
 	RecordAdapterGDPRRequestBlocked(adapterName openrtb_ext.BidderName)
 
