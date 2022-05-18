@@ -28,6 +28,7 @@ type operaAdsVideoExt struct {
 	Orientation   string `json:"orientation"`
 	Skip          int    `json:"skip"`
 	SkipDelay     int    `json:"skipdelay"`
+	Rewarded      int    `json:"rewarded"`
 }
 
 type operaAdsBannerExt struct {
@@ -163,6 +164,7 @@ func (a *OperaAdsAdapter) MakeRequests(
 				Orientation:   string(orientation),
 				Skip:          operaadsExt.Video.Skip,
 				SkipDelay:     operaadsExt.Video.SkipDelay,
+				Rewarded:      rewarded,
 			}
 			videoCopy.Ext, err = json.Marshal(&videoExt)
 			if err != nil {
