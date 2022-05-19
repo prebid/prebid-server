@@ -7,13 +7,11 @@ capabilities:
     mediaTypes:
       - banner
       - video
-      - audio
       - native
   site:
     mediaTypes:
       - banner
       - video
-      - audio
       - native
 userSync:
   redirect:
