@@ -239,6 +239,8 @@ func TestCookieSyncHandle(t *testing.T) {
 		mockAnalytics := MockAnalytics{}
 		test.setAnalyticsExpectations(&mockAnalytics)
 
+		fakeAccountFetcher := FakeAccountsFetcher{}
+
 		request := httptest.NewRequest("POST", "/cookiesync", test.givenBody)
 		if test.givenCookie != nil {
 			request.AddCookie(test.givenCookie.ToHTTPCookie(24 * time.Hour))
@@ -256,8 +258,9 @@ func TestCookieSyncHandle(t *testing.T) {
 				},
 				ccpaEnforce: true,
 			},
-			metrics:      &mockMetrics,
-			pbsAnalytics: &mockAnalytics,
+			metrics:         &mockMetrics,
+			pbsAnalytics:    &mockAnalytics,
+			accountsFetcher: &fakeAccountFetcher,
 		}
 		endpoint.Handle(writer, request, nil)
 
@@ -787,8 +790,6 @@ func TestCookieSyncParseRequest(t *testing.T) {
 }
 
 func TestSetLimit(t *testing.T) {
-	coopSync := true
-
 	testCases := []struct {
 		description     string
 		givenRequest    cookieSyncRequest
@@ -796,99 +797,213 @@ func TestSetLimit(t *testing.T) {
 		expectedRequest cookieSyncRequest
 	}{
 		{
-			description: "Account is nil",
+			description: "Default Limit is Applied (request limit = 0)",
 			givenRequest: cookieSyncRequest{
-				Account: "TestAccount",
-				Limit:   42,
-			},
-			giveAccount: nil,
-			expectedRequest: cookieSyncRequest{
-				Account: "TestAccount",
-				Limit:   42,
-			},
-		},
-		{
-			description: "Test that Max Limit and Default Coop Sync are Applied",
-			givenRequest: cookieSyncRequest{
-				Account: "TestAccount",
-				Limit:   42,
+				Limit: 0,
 			},
 			giveAccount: &config.Account{
-				ID: "TestAccount",
 				CookieSync: config.CookieSync{
-					DefaultLimit:    20,
-					MaxLimit:        30,
-					DefaultCoopSync: true,
+					DefaultLimit: &[]int{20}[0],
 				},
 			},
 			expectedRequest: cookieSyncRequest{
-				Account:         "TestAccount",
-				Limit:           30,
-				CooperativeSync: &coopSync,
+				Limit: 20,
 			},
 		},
 		{
-			description: "Test that Default Limit is Applied",
+			description: "Default Limit is Not Applied (default limit not set)",
 			givenRequest: cookieSyncRequest{
-				Account: "TestAccount",
+				Limit: 0,
 			},
 			giveAccount: &config.Account{
-				ID: "TestAccount",
 				CookieSync: config.CookieSync{
-					DefaultLimit:    20,
-					MaxLimit:        30,
-					DefaultCoopSync: true,
+					DefaultLimit: nil,
 				},
 			},
 			expectedRequest: cookieSyncRequest{
-				Account:         "TestAccount",
-				Limit:           20,
-				CooperativeSync: &coopSync,
+				Limit: 0,
 			},
 		},
 		{
-			description: "Test that max limit is applied when given limit is zero",
+			description: "Default Limit is Not Applied (request limit > 0)",
 			givenRequest: cookieSyncRequest{
-				Account: "ZeroLimitAccount",
+				Limit: 10,
 			},
 			giveAccount: &config.Account{
-				ID: "ZeroLimitAccount",
 				CookieSync: config.CookieSync{
-					DefaultLimit:    0,
-					MaxLimit:        30,
-					DefaultCoopSync: true,
+					DefaultLimit: &[]int{20}[0],
 				},
 			},
 			expectedRequest: cookieSyncRequest{
-				Account:         "ZeroLimitAccount",
-				Limit:           30,
-				CooperativeSync: &coopSync,
+				Limit: 10,
+			},
+		},
+		{
+			description: "Max Limit is Applied (request limit <= 0)",
+			givenRequest: cookieSyncRequest{
+				Limit: 0,
+			},
+			giveAccount: &config.Account{
+				CookieSync: config.CookieSync{
+					MaxLimit: &[]int{30}[0],
+				},
+			},
+			expectedRequest: cookieSyncRequest{
+				Limit: 30,
+			},
+		},
+		{
+			description: "Max Limit is Applied (0 < max < limit)",
+			givenRequest: cookieSyncRequest{
+				Limit: 40,
+			},
+			giveAccount: &config.Account{
+				CookieSync: config.CookieSync{
+					MaxLimit: &[]int{30}[0],
+				},
+			},
+			expectedRequest: cookieSyncRequest{
+				Limit: 30,
+			},
+		},
+		{
+			description: "Max Limit is Not Applied (max not set)",
+			givenRequest: cookieSyncRequest{
+				Limit: 10,
+			},
+			giveAccount: &config.Account{
+				CookieSync: config.CookieSync{
+					MaxLimit: nil,
+				},
+			},
+			expectedRequest: cookieSyncRequest{
+				Limit: 10,
+			},
+		},
+		{
+			description: "Max Limit is Not Applied (0 < limit < max)",
+			givenRequest: cookieSyncRequest{
+				Limit: 10,
+			},
+			giveAccount: &config.Account{
+				CookieSync: config.CookieSync{
+					MaxLimit: &[]int{30}[0],
+				},
+			},
+			expectedRequest: cookieSyncRequest{
+				Limit: 10,
+			},
+		},
+		{
+			description: "Max Limit is Applied After applying the default",
+			givenRequest: cookieSyncRequest{
+				Limit: 0,
+			},
+			giveAccount: &config.Account{
+				CookieSync: config.CookieSync{
+					DefaultLimit: &[]int{40}[0],
+					MaxLimit:     &[]int{30}[0],
+				},
+			},
+			expectedRequest: cookieSyncRequest{
+				Limit: 30,
 			},
 		},
 		{
 			description: "Negative Value Check",
 			givenRequest: cookieSyncRequest{
-				Account: "NegativeLimitAccount",
+				Limit: 0,
 			},
 			giveAccount: &config.Account{
-				ID: "NegativeLimitAccount",
 				CookieSync: config.CookieSync{
-					DefaultLimit:    -1,
-					MaxLimit:        -1,
-					DefaultCoopSync: true,
+					DefaultLimit: &[]int{-1}[0],
+					MaxLimit:     &[]int{-1}[0],
 				},
 			},
 			expectedRequest: cookieSyncRequest{
-				Account:         "NegativeLimitAccount",
-				Limit:           0,
-				CooperativeSync: &coopSync,
+				Limit: 0,
 			},
 		},
 	}
 
 	for _, test := range testCases {
 		endpoint := cookieSyncEndpoint{}
-		request := endpoint.setLimit(test.givenRequest, test.giveAccount)
+		request := endpoint.setLimit(test.givenRequest, test.giveAccount.CookieSync)
+		assert.Equal(t, test.expectedRequest, request, test.description)
+	}
+}
+
+func TestSetCooperativeSync(t *testing.T) {
+	coopSyncFalse := false
+	coopSyncTrue := true
+
+	testCases := []struct {
+		description     string
+		givenRequest    cookieSyncRequest
+		givenAccount    *config.Account
+		expectedRequest cookieSyncRequest
+	}{
+		{
+			description: "Request coop sync unmodified - request sync nil & default sync nil",
+			givenRequest: cookieSyncRequest{
+				CooperativeSync: nil,
+			},
+			givenAccount: &config.Account{
+				CookieSync: config.CookieSync{
+					DefaultCoopSync: nil,
+				},
+			},
+			expectedRequest: cookieSyncRequest{
+				CooperativeSync: nil,
+			},
+		},
+		{
+			description: "Request coop sync set to default - request sync nil & default sync not nil",
+			givenRequest: cookieSyncRequest{
+				CooperativeSync: nil,
+			},
+			givenAccount: &config.Account{
+				CookieSync: config.CookieSync{
+					DefaultCoopSync: &coopSyncTrue,
+				},
+			},
+			expectedRequest: cookieSyncRequest{
+				CooperativeSync: &coopSyncTrue,
+			},
+		},
+		{
+			description: "Request coop sync unmodified - request sync not nil & default sync nil",
+			givenRequest: cookieSyncRequest{
+				CooperativeSync: &coopSyncTrue,
+			},
+			givenAccount: &config.Account{
+				CookieSync: config.CookieSync{
+					DefaultCoopSync: nil,
+				},
+			},
+			expectedRequest: cookieSyncRequest{
+				CooperativeSync: &coopSyncTrue,
+			},
+		},
+		{
+			description: "Request coop sync unmodified - request sync not nil & default sync not nil",
+			givenRequest: cookieSyncRequest{
+				CooperativeSync: &coopSyncFalse,
+			},
+			givenAccount: &config.Account{
+				CookieSync: config.CookieSync{
+					DefaultCoopSync: &coopSyncTrue,
+				},
+			},
+			expectedRequest: cookieSyncRequest{
+				CooperativeSync: &coopSyncFalse,
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		endpoint := cookieSyncEndpoint{}
+		request := endpoint.setCooperativeSync(test.givenRequest, test.givenAccount.CookieSync)
 		assert.Equal(t, test.expectedRequest, request, test.description)
 	}
 }
