@@ -793,7 +793,7 @@ func TestSetLimit(t *testing.T) {
 	testCases := []struct {
 		description     string
 		givenRequest    cookieSyncRequest
-		giveAccount     *config.Account
+		givenAccount    *config.Account
 		expectedRequest cookieSyncRequest
 	}{
 		{
@@ -801,7 +801,7 @@ func TestSetLimit(t *testing.T) {
 			givenRequest: cookieSyncRequest{
 				Limit: 0,
 			},
-			giveAccount: &config.Account{
+			givenAccount: &config.Account{
 				CookieSync: config.CookieSync{
 					DefaultLimit: &[]int{20}[0],
 				},
@@ -815,7 +815,7 @@ func TestSetLimit(t *testing.T) {
 			givenRequest: cookieSyncRequest{
 				Limit: 0,
 			},
-			giveAccount: &config.Account{
+			givenAccount: &config.Account{
 				CookieSync: config.CookieSync{
 					DefaultLimit: nil,
 				},
@@ -829,7 +829,7 @@ func TestSetLimit(t *testing.T) {
 			givenRequest: cookieSyncRequest{
 				Limit: 10,
 			},
-			giveAccount: &config.Account{
+			givenAccount: &config.Account{
 				CookieSync: config.CookieSync{
 					DefaultLimit: &[]int{20}[0],
 				},
@@ -843,7 +843,7 @@ func TestSetLimit(t *testing.T) {
 			givenRequest: cookieSyncRequest{
 				Limit: 0,
 			},
-			giveAccount: &config.Account{
+			givenAccount: &config.Account{
 				CookieSync: config.CookieSync{
 					MaxLimit: &[]int{30}[0],
 				},
@@ -857,7 +857,7 @@ func TestSetLimit(t *testing.T) {
 			givenRequest: cookieSyncRequest{
 				Limit: 40,
 			},
-			giveAccount: &config.Account{
+			givenAccount: &config.Account{
 				CookieSync: config.CookieSync{
 					MaxLimit: &[]int{30}[0],
 				},
@@ -871,7 +871,7 @@ func TestSetLimit(t *testing.T) {
 			givenRequest: cookieSyncRequest{
 				Limit: 10,
 			},
-			giveAccount: &config.Account{
+			givenAccount: &config.Account{
 				CookieSync: config.CookieSync{
 					MaxLimit: nil,
 				},
@@ -885,7 +885,7 @@ func TestSetLimit(t *testing.T) {
 			givenRequest: cookieSyncRequest{
 				Limit: 10,
 			},
-			giveAccount: &config.Account{
+			givenAccount: &config.Account{
 				CookieSync: config.CookieSync{
 					MaxLimit: &[]int{30}[0],
 				},
@@ -899,7 +899,7 @@ func TestSetLimit(t *testing.T) {
 			givenRequest: cookieSyncRequest{
 				Limit: 0,
 			},
-			giveAccount: &config.Account{
+			givenAccount: &config.Account{
 				CookieSync: config.CookieSync{
 					DefaultLimit: &[]int{40}[0],
 					MaxLimit:     &[]int{30}[0],
@@ -914,7 +914,7 @@ func TestSetLimit(t *testing.T) {
 			givenRequest: cookieSyncRequest{
 				Limit: 0,
 			},
-			giveAccount: &config.Account{
+			givenAccount: &config.Account{
 				CookieSync: config.CookieSync{
 					DefaultLimit: &[]int{-1}[0],
 					MaxLimit:     &[]int{-1}[0],
@@ -928,7 +928,7 @@ func TestSetLimit(t *testing.T) {
 
 	for _, test := range testCases {
 		endpoint := cookieSyncEndpoint{}
-		request := endpoint.setLimit(test.givenRequest, test.giveAccount.CookieSync)
+		request := endpoint.setLimit(test.givenRequest, test.givenAccount.CookieSync)
 		assert.Equal(t, test.expectedRequest, request, test.description)
 	}
 }
