@@ -215,9 +215,9 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		StoredBidResponses:         storedBidResponses,
 		TCF2ConfigBuilder:          gdpr.NewTCF2Config,
 		GDPRPermissionsBuilder:     gdpr.NewPermissions,
+		PubID:                      labels.PubID,
 	}
-	debugLog := &exchange.DebugLog{}
-	response, err := deps.ex.HoldAuction(ctx, auctionRequest, debugLog)
+	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
 	ao.Request = req.BidRequest
 	ao.Response = response
 	ao.Account = account
@@ -234,7 +234,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		ao.Errors = append(ao.Errors, err)
 		return
 	}
-	labels.DebugEnabled = debugLog.DebugFlag
 
 	// Fixes #231
 	enc := json.NewEncoder(w)

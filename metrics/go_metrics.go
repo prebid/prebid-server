@@ -428,15 +428,19 @@ func (me *Metrics) RecordRequest(labels Labels) {
 			me.NoCookieMeter.Mark(1)
 		}
 	}
-	if labels.DebugEnabled {
-		me.DebugRequestMeter.Mark(1)
-	}
 
 	// Handle the account metrics now.
 	am := me.getAccountMetrics(labels.PubID)
 	am.requestMeter.Mark(1)
+}
 
-	if !me.MetricsDisabled.AccountDebug && labels.DebugEnabled {
+func (me *Metrics) RecordDebugRequest(debugEnabled bool, pubID string) {
+	if debugEnabled {
+		me.DebugRequestMeter.Mark(1)
+	}
+
+	am := me.getAccountMetrics(pubID)
+	if !me.MetricsDisabled.AccountDebug && debugEnabled {
 		am.debugRequestMeter.Mark(1)
 	}
 }

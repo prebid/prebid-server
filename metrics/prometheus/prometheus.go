@@ -485,15 +485,17 @@ func (m *Metrics) RecordRequest(labels metrics.Labels) {
 		m.accountRequests.With(prometheus.Labels{
 			accountLabel: labels.PubID,
 		}).Inc()
-		if !m.metricsDisabled.AccountDebug && labels.DebugEnabled {
+	}
+}
+
+func (m *Metrics) RecordDebugRequest(debugEnabled bool, pubID string) {
+	if debugEnabled {
+		m.requestsDebug.Inc()
+		if !m.metricsDisabled.AccountDebug && pubID != metrics.PublisherUnknown {
 			m.accountDebugRequests.With(prometheus.Labels{
-				accountLabel: labels.PubID,
+				accountLabel: pubID,
 			}).Inc()
 		}
-	}
-
-	if labels.DebugEnabled {
-		m.requestsDebug.Inc()
 	}
 }
 

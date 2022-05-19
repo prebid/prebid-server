@@ -206,10 +206,10 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		GDPRPermissionsBuilder:     aggregatedGDPR.NewPermissions,
 		StoredAuctionResponses:     storedAuctionResponses,
 		StoredBidResponses:         storedBidResponses,
+		PubID:                      labels.PubID,
 	}
 
-	debugLog := &exchange.DebugLog{}
-	response, err := deps.ex.HoldAuction(ctx, auctionRequest, debugLog)
+	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
 	ao.AuctionResponse = response
 
 	if err != nil {
@@ -220,7 +220,6 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		ao.Errors = append(ao.Errors, err)
 		return
 	}
-	labels.DebugEnabled = debugLog.DebugFlag
 
 	// Need to extract the targeting parameters from the response, as those are all that
 	// go in the AMP response

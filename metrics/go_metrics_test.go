@@ -182,14 +182,12 @@ func TestRecordBidTypeDisabledConfig(t *testing.T) {
 	}
 }
 
-func TestRecordRequest(t *testing.T) {
-	requestType := ReqTypeORTB2Web
-	requestStatus := RequestStatusBlacklisted
-
+func TestRecordDebugRequest(t *testing.T) {
 	testCases := []struct {
 		description               string
 		givenDisabledMetrics      config.DisabledMetrics
-		givenLabels               Labels
+		givenDebugEnabledFlag     bool
+		givenPubID                string
 		expectedAccountDebugCount int64
 		expectedDebugCount        int64
 	}{
@@ -199,12 +197,8 @@ func TestRecordRequest(t *testing.T) {
 				AccountAdapterDetails: true,
 				AccountDebug:          false,
 			},
-			givenLabels: Labels{
-				RType:         requestType,
-				RequestStatus: requestStatus,
-				DebugEnabled:  true,
-				PubID:         "acct-id",
-			},
+			givenDebugEnabledFlag:     true,
+			givenPubID:                "acct-id",
 			expectedAccountDebugCount: 1,
 			expectedDebugCount:        1,
 		},
@@ -214,12 +208,8 @@ func TestRecordRequest(t *testing.T) {
 				AccountAdapterDetails: true,
 				AccountDebug:          true,
 			},
-			givenLabels: Labels{
-				RType:         requestType,
-				RequestStatus: requestStatus,
-				DebugEnabled:  false,
-				PubID:         "acct-id",
-			},
+			givenDebugEnabledFlag:     false,
+			givenPubID:                "acct-id",
 			expectedAccountDebugCount: 0,
 			expectedDebugCount:        0,
 		},
@@ -228,8 +218,8 @@ func TestRecordRequest(t *testing.T) {
 		registry := metrics.NewRegistry()
 		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, test.givenDisabledMetrics, nil)
 
-		m.RecordRequest(test.givenLabels)
-		am := m.getAccountMetrics(test.givenLabels.PubID)
+		m.RecordDebugRequest(test.givenDebugEnabledFlag, test.givenPubID)
+		am := m.getAccountMetrics(test.givenPubID)
 
 		assert.Equal(t, test.expectedDebugCount, m.DebugRequestMeter.Count())
 		assert.Equal(t, test.expectedAccountDebugCount, am.debugRequestMeter.Count())

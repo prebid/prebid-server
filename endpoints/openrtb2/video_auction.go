@@ -307,7 +307,6 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		handleError(&labels, w, errL, &vo, &debugLog)
 		return
 	}
-	labels.DebugEnabled = debugLog.DebugFlag
 
 	//build simplified response
 	bidResp, err := buildVideoResponse(response, podErrors)
