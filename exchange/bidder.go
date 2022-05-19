@@ -79,6 +79,7 @@ type pbsOrtbBid struct {
 	generatedBidID    string
 	originalBidCPM    float64
 	originalBidCur    string
+	targetBidderCode  string
 }
 
 // pbsOrtbSeatBid is a SeatBid returned by an adaptedBidder.

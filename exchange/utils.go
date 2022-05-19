@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/stored_responses"
 	"math/rand"
+
+	"github.com/prebid/prebid-server/stored_responses"
 
 	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
@@ -235,7 +236,7 @@ func getAuctionBidderRequests(auctionRequest AuctionRequest,
 			requestExt.Prebid.BidderParams = params
 		}
 
-		reqExt, err := getExtJson(req.BidRequest, requestExt)
+		reqExt, err := getExtJson(req, requestExt)
 		if err != nil {
 			return nil, []error{err}
 		}
@@ -284,13 +285,20 @@ func getBidderParamsForBidder(bidderParamsInReqExt map[string]map[string]json.Ra
 	return params, nil
 }
 
-func getExtJson(req *openrtb2.BidRequest, unpackedExt *openrtb_ext.ExtRequest) (json.RawMessage, error) {
+func getExtJson(reqWrapper *openrtb_ext.RequestWrapper, unpackedExt *openrtb_ext.ExtRequest) (json.RawMessage, error) {
+	req := reqWrapper.BidRequest
 	if len(req.Ext) == 0 || unpackedExt == nil {
 		return json.RawMessage(``), nil
 	}
 
 	extCopy := *unpackedExt
 	extCopy.Prebid.SChains = nil
+
+	// if extCopy.Prebid.Multibid != nil &&  {
+	// 	if reqWrapper.Prebid.Multibid != nil &&  {
+	// 		extCopy.Prebid.Multibid = nil
+	// }
+
 	return json.Marshal(extCopy)
 }
 
@@ -781,4 +789,17 @@ func mergeBidderRequests(allBidderRequests []BidderRequest, bidderNameToBidderRe
 		}
 	}
 	return allBidderRequests
+}
+
+func getExtMultiBidData(requestExt *openrtb_ext.ExtRequest) (multiBidMap ExtMultiBidMap) {
+	if requestExt == nil {
+		return
+	}
+
+	multiBidMap = make(ExtMultiBidMap)
+	for _, multiBid := range requestExt.Prebid.Multibid {
+		multiBidMap.Add(multiBid)
+	}
+
+	return
 }

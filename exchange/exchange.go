@@ -195,6 +195,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		return nil, err
 	}
 
+	multiBid := getExtMultiBidData(requestExt)
 	cacheInstructions := getExtCacheInstructions(requestExt)
 	targData := getExtTargetData(requestExt, &cacheInstructions)
 	if targData != nil {
@@ -310,6 +311,8 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		evTracking := getEventTracking(&requestExt.Prebid, r.StartTime, &r.Account, e.bidderInfo, e.externalURL)
 		adapterBids = evTracking.modifyBidsForEvents(adapterBids)
 
+		adapterBids = sortLimitMultiBid(adapterBids, multiBid, targData != nil && targData.preferDeals)
+
 		if targData != nil {
 			// A non-nil auction is only needed if targeting is active. (It is used below this block to extract cache keys)
 			auc = newAuction(adapterBids, len(r.BidRequestWrapper.BidRequest.Imp), targData.preferDeals)
@@ -335,7 +338,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 				errs = append(errs, cacheErrs...)
 			}
 
-			targData.setTargeting(auc, r.BidRequestWrapper.BidRequest.App != nil, bidCategory, r.Account.TruncateTargetAttribute)
+			targData.setTargeting(auc, r.BidRequestWrapper.BidRequest.App != nil, bidCategory, r.Account.TruncateTargetAttribute, adapterBids, multiBid)
 
 		}
 		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, responseDebugAllow, errs)
@@ -987,6 +990,7 @@ func (e *exchange) makeBid(bids []*pbsOrtbBid, auc *auction, returnCreative bool
 			DealTierSatisfied: bid.dealTierSatisfied,
 			Events:            bid.bidEvents,
 			Targeting:         bid.bidTargets,
+			Targetbiddercode:  bid.targetBidderCode,
 			Type:              bid.bidType,
 			Meta:              bid.bidMeta,
 			Video:             bid.bidVideo,
