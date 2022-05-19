@@ -2641,7 +2641,7 @@ func TestGetDebugInfo(t *testing.T) {
 					testOut{
 						responseDebugAllow: true,
 						accountDebugAllow:  true,
-						debugLog:           &DebugLog{DebugEnabledOrOverridden: true, Enabled: true, DebugFlag: true},
+						debugLog:           &DebugLog{DebugEnabledOrOverridden: true, Enabled: true},
 					},
 				},
 			},
@@ -2655,7 +2655,7 @@ func TestGetDebugInfo(t *testing.T) {
 					testOut{
 						responseDebugAllow: false,
 						accountDebugAllow:  false,
-						debugLog:           &DebugLog{Enabled: false, DebugFlag: true},
+						debugLog:           &DebugLog{Enabled: false},
 					},
 				},
 				{
@@ -2663,7 +2663,7 @@ func TestGetDebugInfo(t *testing.T) {
 					testOut{
 						responseDebugAllow: true,
 						accountDebugAllow:  true,
-						debugLog:           &DebugLog{Enabled: true, DebugFlag: true},
+						debugLog:           &DebugLog{Enabled: true},
 					},
 				},
 				{
@@ -2671,7 +2671,7 @@ func TestGetDebugInfo(t *testing.T) {
 					testOut{
 						responseDebugAllow: true,
 						accountDebugAllow:  false,
-						debugLog:           &DebugLog{DebugEnabledOrOverridden: true, Enabled: true, DebugFlag: true},
+						debugLog:           &DebugLog{DebugEnabledOrOverridden: true, Enabled: true},
 					},
 				},
 				{
@@ -2679,7 +2679,7 @@ func TestGetDebugInfo(t *testing.T) {
 					testOut{
 						responseDebugAllow: true,
 						accountDebugAllow:  true,
-						debugLog:           &DebugLog{DebugEnabledOrOverridden: true, Enabled: true, DebugFlag: true},
+						debugLog:           &DebugLog{DebugEnabledOrOverridden: true, Enabled: true},
 					},
 				},
 			},

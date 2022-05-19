@@ -698,8 +698,6 @@ func getDebugInfo(bidRequest *openrtb2.BidRequest, requestExt *openrtb_ext.ExtRe
 	responseDebugAllow := (requestDebugAllow && accountDebugFlag) || debugLog.DebugEnabledOrOverridden
 	accountDebugAllow := (requestDebugAllow && accountDebugFlag) || (debugLog.DebugEnabledOrOverridden && accountDebugFlag)
 
-	debugLog.DebugFlag = requestDebugAllow || accountDebugAllow
-
 	return responseDebugAllow, accountDebugAllow, debugLog
 }
 
