@@ -3,6 +3,7 @@ package firstpartydata
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/buger/jsonparser"
 
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
@@ -353,7 +354,7 @@ func resolveSite(fpdConfig *openrtb_ext.ORTB2, bidRequestSite *openrtb2.Site, gl
 	}
 	_, bidderFpdSiteContentPresent := fpdConfigSite[contentKey]
 	if fpdConfigSite != nil {
-		newSite, err = mergeSites(&newSite, fpdConfigSite, bidderName)
+		newSite, err = mergeSites(&newSite, fpdConfigSite, bidderName, openRtbGlobalFPD)
 	}
 	if !bidderFpdSiteContentPresent && openRtbGlobalFPD != nil && len(openRtbGlobalFPD[siteContentDataKey]) > 0 {
 		//bidder specific fpd site.content takes precedence over global site.content.data
@@ -362,7 +363,7 @@ func resolveSite(fpdConfig *openrtb_ext.ORTB2, bidRequestSite *openrtb2.Site, gl
 	return &newSite, err
 
 }
-func mergeSites(originalSite *openrtb2.Site, fpdConfigSite map[string]json.RawMessage, bidderName string) (openrtb2.Site, error) {
+func mergeSites(originalSite *openrtb2.Site, fpdConfigSite map[string]json.RawMessage, bidderName string, openRtbGlobalFPD map[string][]openrtb2.Data) (openrtb2.Site, error) {
 
 	var err error
 	newSite := *originalSite
@@ -440,7 +441,7 @@ func mergeSites(originalSite *openrtb2.Site, fpdConfigSite map[string]json.RawMe
 		delete(fpdConfigSite, refKey)
 	}
 	if siteContent, present := fpdConfigSite[contentKey]; present {
-		newSite.Content, err = unmarshalJSONToContent(siteContent)
+		newSite.Content, err = mergeContents(originalSite.Content, siteContent, openRtbGlobalFPD[siteContentDataKey])
 		if err != nil {
 			return newSite, err
 		}
@@ -487,7 +488,7 @@ func resolveApp(fpdConfig *openrtb_ext.ORTB2, bidRequestApp *openrtb2.App, globa
 	_, bidderFpdAppContentPresent := fpdConfigApp[contentKey]
 	if fpdConfigApp != nil {
 		//apply bidder specific fpd if present
-		newApp, err = mergeApps(&newApp, fpdConfigApp)
+		newApp, err = mergeApps(&newApp, fpdConfigApp, openRtbGlobalFPD)
 	}
 	if !bidderFpdAppContentPresent && openRtbGlobalFPD != nil && len(openRtbGlobalFPD[appContentDataKey]) > 0 {
 		newApp.Content = &openrtb2.Content{Data: openRtbGlobalFPD[appContentDataKey]}
@@ -496,7 +497,7 @@ func resolveApp(fpdConfig *openrtb_ext.ORTB2, bidRequestApp *openrtb2.App, globa
 	return &newApp, err
 }
 
-func mergeApps(originalApp *openrtb2.App, fpdConfigApp map[string]json.RawMessage) (openrtb2.App, error) {
+func mergeApps(originalApp *openrtb2.App, fpdConfigApp map[string]json.RawMessage, openRtbGlobalFPD map[string][]openrtb2.Data) (openrtb2.App, error) {
 
 	var err error
 	newApp := *originalApp
@@ -565,7 +566,7 @@ func mergeApps(originalApp *openrtb2.App, fpdConfigApp map[string]json.RawMessag
 		delete(fpdConfigApp, keywordsKey)
 	}
 	if appContent, present := fpdConfigApp[contentKey]; present {
-		newApp.Content, err = unmarshalJSONToContent(appContent)
+		newApp.Content, err = mergeContents(originalApp.Content, appContent, openRtbGlobalFPD[appContentDataKey])
 		if err != nil {
 			return newApp, err
 		}
@@ -665,4 +666,38 @@ func ExtractFPDForBidders(req *openrtb_ext.RequestWrapper) (map[openrtb_ext.Bidd
 
 	return ResolveFPD(req.BidRequest, fbdBidderConfigData, globalFpd, openRtbGlobalFPD, biddersWithGlobalFPD)
 
+}
+
+func mergeContents(originalContent *openrtb2.Content, newContent json.RawMessage, globalContentData []openrtb2.Data) (*openrtb2.Content, error) {
+	if originalContent == nil {
+		return unmarshalJSONToContent(newContent)
+	}
+	newContentDataJson, _, _, err := jsonparser.Get(newContent, dataKey)
+	if err != nil && err != jsonparser.KeyPathNotFoundError {
+		return nil, err
+	}
+	var newContentData []openrtb2.Data
+	if !(err != nil && err == jsonparser.KeyPathNotFoundError) {
+		newContentData, err = unmarshalJSONToData(newContentDataJson)
+		if err != nil {
+			return nil, err
+		}
+	}
+	originalContentBytes, err := json.Marshal(originalContent)
+	if err != nil {
+		return nil, err
+	}
+	newFinalContentBytes, err := jsonpatch.MergePatch(originalContentBytes, newContent)
+	if err != nil {
+		return nil, err
+	}
+	newFinalContent, err := unmarshalJSONToContent(newFinalContentBytes)
+	if err != nil {
+		return nil, err
+	}
+	newFinalContentData := append(globalContentData, newContentData...)
+	if len(newFinalContentData) > 0 {
+		newFinalContent.Data = newFinalContentData
+	}
+	return newFinalContent, nil
 }

@@ -18,13 +18,7 @@
         "title": "episodeName",
         "series": "TvName",
         "season": "season3",
-        "len": 900,
-        "data": [
-          {
-            "id": "reqSiteData",
-            "name": "reqSiteName"
-          }
-        ]
+        "len": 900
       }
     },
     "device": {
@@ -96,8 +90,18 @@
       "content": {
         "episode": 7,
         "title": "apnEpisodeName",
+        "series": "TvName",
+        "season": "season3",
         "len": 600,
         "data": [
+          {
+            "id": "siteData1",
+            "name": "siteName1"
+          },
+          {
+            "id": "siteData2",
+            "name": "siteName2"
+          },
           {
             "id": "siteData3",
             "name": "siteName3"

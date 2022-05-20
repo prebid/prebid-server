@@ -91,7 +91,17 @@
         "title": "episodeName8",
         "series": "TvName",
         "season": "season4",
-        "len": 900
+        "len": 900,
+        "data": [
+          {
+            "id": "siteData1",
+            "name": "siteName1"
+          },
+          {
+            "id": "siteData2",
+            "name": "siteName2"
+          }
+        ]
       },
       "ext": {
         "testSiteExt": 123,

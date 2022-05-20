@@ -2,6 +2,7 @@ package firstpartydata
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -647,6 +648,7 @@ func TestExtractFPDForBidders(t *testing.T) {
 	if specFiles, err := ioutil.ReadDir("./tests/extractfpdforbidders"); err == nil {
 		for _, specFile := range specFiles {
 			fileName := "./tests/extractfpdforbidders/" + specFile.Name()
+			fmt.Println(fileName)
 			fpdFile, err := loadFpdFile(fileName)
 
 			if err != nil {
@@ -1128,7 +1130,7 @@ func TestMergeSites(t *testing.T) {
 	fpdConfigSite[dataKey] = []byte(`[{"id":"SiteDataId1", "name":"SiteDataName1"}, {"id":"SiteDataId2", "name":"SiteDataName2"}]`)
 	fpdConfigSite["ext"] = []byte(`{"data":{"fpdConfigSiteExt": 123}}`)
 
-	resultSite, err := mergeSites(originalSite, fpdConfigSite, "appnexus")
+	resultSite, err := mergeSites(originalSite, fpdConfigSite, "appnexus", nil)
 	assert.NoError(t, err, "No error should be returned")
 
 	expectedSiteExt := `{"bidRequestSiteExt":1234,
@@ -1348,7 +1350,7 @@ func TestMergeApps(t *testing.T) {
 	fpdConfigApp[dataKey] = []byte(`[{"id":"AppDataId1", "name":"AppDataName1"}, {"id":"AppDataId2", "name":"AppDataName2"}]`)
 	fpdConfigApp["ext"] = []byte(`{"data":{"fpdConfigAppExt": 123}}`)
 
-	resultApp, err := mergeApps(originalApp, fpdConfigApp)
+	resultApp, err := mergeApps(originalApp, fpdConfigApp, nil)
 	assert.NoError(t, err, "No error should be returned")
 
 	expectedAppExt := `{"bidRequestAppExt":1234,
