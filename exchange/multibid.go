@@ -134,8 +134,8 @@ func getBidsByImpId(pbsBids []*pbsOrtbBid) (impIdToBidMap map[string][]*pbsOrtbB
 									pubmatic -> [bid7, bid8]
 									appnexus -> [bid10, bid11]
 
-								winningBidsByBidder -> [bid1, bid2, bid3, bid4, bid5, bid7, bid8, bid10, bid11]
-								winningBids -> [bid1, bid7] -> (bid7 is max in [bid7, bid8, bid10, bid11])
+								winningBidsByBidder -> [bid1, bid2, bid4, bid5, bid7, bid8, bid10, bid11]
+								winningBids -> [bid1, bid10] -> (bid10 is max in [bid7, bid8, bid10, bid11])
 				forEach bidderResponseToReducedBidInfos
 					0.
 						bidderResponseInfo - bidderResponseToReducedBidInfos[0].Key - {pubmatic, [bid1, bid2, bid3, bid7, bid8, bid9]}
@@ -146,18 +146,24 @@ func getBidsByImpId(pbsBids []*pbsOrtbBid) (impIdToBidMap map[string][]*pbsOrtbB
 							toBidInfoWithTargeting()
 								bidderBidInfos -> impIdToBidInfos ->	imp1	-> 	bid1, bid2
 																		imp2	->	bid7, bid8
-								// forEach impIdToBidInfos.values() -> [bid1, bid2, bid7, bid8] -> CHECK THIS WITH AMOL
-									injectTargeting()
-										bidderImpIdBidInfos: [bid1, bid2, bid7, bid8]
-										forEach bidderImpIdBidInfos
-											0.
-												bidderCode = pubmatic
-											1.
-												bidderCode = pm2
-											2.
-												bidderCode = pm3
-											3.
-												bidderCode = pm4
+								// forEach impIdToBidInfos.values() -> [bid1, bid2] -> CHECK THIS WITH AMOL
+									0.
+										injectTargeting()
+											bidderImpIdBidInfos: [bid1, bid2]
+											forEach bidderImpIdBidInfos
+												0.
+													bidderCode = pubmatic
+												1.
+													bidderCode = pm2
+									1.
+										injectTargeting()
+											bidderImpIdBidInfos: [bid7, bid8]
+											forEach bidderImpIdBidInfos
+												0.
+													bidderCode = pubmatic
+												1.
+													bidderCode = pm2
+
 								bidInfosWithTargeting = [bid1, bid2, bid7, bid8]
 
 					1.
@@ -169,8 +175,29 @@ func getBidsByImpId(pbsBids []*pbsOrtbBid) (impIdToBidMap map[string][]*pbsOrtbB
 							toBidInfoWithTargeting()
 								impIdToBidInfos ->	imp1	-> 	bid4, bid5
 													imp2	->	bid10, bid11
-								forEach impIdToBidInfos.values()
+								// forEach impIdToBidInfos.values()
 									injectTargeting(impIdToBidInfos[i])
+									0.
+										injectTargeting()
+											bidderImpIdBidInfos: [bid4, bid5]
+											forEach bidderImpIdBidInfos
+												0.
+													bidderCode = appnexus
+												1.
+													bidderCode = appnexus // no targeting
+									1.
+										injectTargeting()
+											bidderImpIdBidInfos: [bid10, bid11]
+											forEach bidderImpIdBidInfos
+												0.
+													bidderCode = appnexus
+												1.
+													bidderCode = appnexus // no targeting
 
-
+								bidInfosWithTargeting =[bid4, bid5, bid10, bid11]
+		bidderResponseInfos
+			[
+				SeatBid{pubmatic, [bid1, bid2, bid7, bid8]}
+				SeatBid{appnexus, [bid4, bid5, bid10, bid11]}
+			]
 */
