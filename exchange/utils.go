@@ -285,20 +285,13 @@ func getBidderParamsForBidder(bidderParamsInReqExt map[string]map[string]json.Ra
 	return params, nil
 }
 
-func getExtJson(reqWrapper *openrtb_ext.RequestWrapper, unpackedExt *openrtb_ext.ExtRequest) (json.RawMessage, error) {
-	req := reqWrapper.BidRequest
+func getExtJson(req *openrtb2.BidRequest, unpackedExt *openrtb_ext.ExtRequest) (json.RawMessage, error) {
 	if len(req.Ext) == 0 || unpackedExt == nil {
 		return json.RawMessage(``), nil
 	}
 
 	extCopy := *unpackedExt
 	extCopy.Prebid.SChains = nil
-
-	// if extCopy.Prebid.Multibid != nil &&  {
-	// 	if reqWrapper.Prebid.Multibid != nil &&  {
-	// 		extCopy.Prebid.Multibid = nil
-	// }
-
 	return json.Marshal(extCopy)
 }
 
