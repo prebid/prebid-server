@@ -79,6 +79,7 @@ func sortLimitMultiBid(seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid,
 
 		// Update the final bid list of this bidder
 		// i.e. All the bids sorted and capped by impId
+		// discards non selected bids, do we ever need them???
 		seatBid.bids = finalBids
 
 	}

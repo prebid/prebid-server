@@ -107,10 +107,13 @@ func (d *DebugLog) PutDebugLogError(cache prebid_cache_client.Client, timeout in
 func newAuction(seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, numImps int, preferDeals bool) *auction {
 	winningBids := make(map[string]*pbsOrtbBid, numImps)
 	winningBidsByBidder := make(map[string]map[openrtb_ext.BidderName]*pbsOrtbBid, numImps)
+	allWinningBidsByBidder := make(map[*pbsOrtbBid]struct{})
 
 	for bidderName, seatBid := range seatBids {
 		if seatBid != nil {
 			for _, bid := range seatBid.bids {
+				allWinningBidsByBidder[bid] = struct{}{}
+
 				cpm := bid.bid.Price
 				wbid, ok := winningBids[bid.bid.ImpID]
 				if !ok || isNewWinningBid(bid.bid, wbid.bid, preferDeals) {
@@ -130,8 +133,9 @@ func newAuction(seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, numImps int
 	}
 
 	return &auction{
-		winningBids:         winningBids,
-		winningBidsByBidder: winningBidsByBidder,
+		winningBids:            winningBids,
+		winningBidsByBidder:    winningBidsByBidder,
+		allWinningBidsByBidder: allWinningBidsByBidder,
 	}
 }
 
@@ -356,6 +360,8 @@ type auction struct {
 	winningBids map[string]*pbsOrtbBid
 	// winningBidsByBidder stores the highest bid on each imp by each bidder.
 	winningBidsByBidder map[string]map[openrtb_ext.BidderName]*pbsOrtbBid
+	// allWinningBidsByBidder stores the all selected bids
+	allWinningBidsByBidder map[*pbsOrtbBid]struct{}
 	// roundedPrices stores the price strings rounded for each bid according to the price granularity.
 	roundedPrices map[*pbsOrtbBid]string
 	// cacheIds stores the UUIDs from Prebid Cache for fetching the full bid JSON.

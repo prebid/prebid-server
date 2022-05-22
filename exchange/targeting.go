@@ -37,11 +37,6 @@ type targetData struct {
 // it's ok if those stay in the auction. For now, this method implements a very naive cache strategy.
 // In the future, we should implement a more clever retry & backoff strategy to balance the success rate & performance.
 func (targData *targetData) setTargeting(auc *auction, isApp bool, categoryMapping map[string]string, truncateTargetAttr *int, adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, multiBidMap ExtMultiBidMap) {
-	// for impId, topBidsPerImp := range auc.winningBidsByBidder {
-	// 	overallWinner := auc.winningBids[impId]
-	// 	for bidderName, topBidPerBidder := range topBidsPerImp {
-	// 		isOverallWinner := overallWinner == topBidPerBidder
-
 	for originalBidderName, seatBid := range adapterBids {
 		impIdToBidMap := getBidsByImpId(seatBid.bids)
 
@@ -60,33 +55,36 @@ func (targData *targetData) setTargeting(auc *auction, isApp bool, categoryMappi
 			targetingBidderCode := originalBidderName
 			for i, bid := range impBids {
 				isOverallWinner := overallWinner == bid
+				if _, ok := auc.allWinningBidsByBidder[bid]; !ok {
+					// not a winning bid for bidder
+					continue
+				}
 
 				if i > 0 {
 					if bidderCodePrefix == "" {
-						break
+						// no targeting for bids w/o bidderCodePrefix
+						continue
 					}
 					targetingBidderCode = openrtb_ext.BidderName(fmt.Sprintf("%s%d", bidderCodePrefix, i+1))
 				}
 				bidderName := targetingBidderCode
 
-				topBidPerBidder := bid //TODO TEMP
-
 				targets := make(map[string]string, 10)
-				if cpm, ok := auc.roundedPrices[topBidPerBidder]; ok {
+				if cpm, ok := auc.roundedPrices[bid]; ok {
 					targData.addKeys(targets, openrtb_ext.HbpbConstantKey, cpm, bidderName, isOverallWinner, truncateTargetAttr)
 				}
 				targData.addKeys(targets, openrtb_ext.HbBidderConstantKey, string(bidderName), bidderName, isOverallWinner, truncateTargetAttr)
-				if hbSize := makeHbSize(topBidPerBidder.bid); hbSize != "" {
+				if hbSize := makeHbSize(bid.bid); hbSize != "" {
 					targData.addKeys(targets, openrtb_ext.HbSizeConstantKey, hbSize, bidderName, isOverallWinner, truncateTargetAttr)
 				}
-				if cacheID, ok := auc.cacheIds[topBidPerBidder.bid]; ok {
+				if cacheID, ok := auc.cacheIds[bid.bid]; ok {
 					targData.addKeys(targets, openrtb_ext.HbCacheKey, cacheID, bidderName, isOverallWinner, truncateTargetAttr)
 				}
-				if vastID, ok := auc.vastCacheIds[topBidPerBidder.bid]; ok {
+				if vastID, ok := auc.vastCacheIds[bid.bid]; ok {
 					targData.addKeys(targets, openrtb_ext.HbVastCacheKey, vastID, bidderName, isOverallWinner, truncateTargetAttr)
 				}
 				if targData.includeFormat {
-					targData.addKeys(targets, openrtb_ext.HbFormatKey, string(topBidPerBidder.bidType), bidderName, isOverallWinner, truncateTargetAttr)
+					targData.addKeys(targets, openrtb_ext.HbFormatKey, string(bid.bidType), bidderName, isOverallWinner, truncateTargetAttr)
 				}
 
 				if targData.cacheHost != "" {
@@ -96,7 +94,7 @@ func (targData *targetData) setTargeting(auc *auction, isApp bool, categoryMappi
 					targData.addKeys(targets, openrtb_ext.HbConstantCachePathKey, targData.cachePath, bidderName, isOverallWinner, truncateTargetAttr)
 				}
 
-				if deal := topBidPerBidder.bid.DealID; len(deal) > 0 {
+				if deal := bid.bid.DealID; len(deal) > 0 {
 					targData.addKeys(targets, openrtb_ext.HbDealIDConstantKey, deal, bidderName, isOverallWinner, truncateTargetAttr)
 				}
 
@@ -104,20 +102,15 @@ func (targData *targetData) setTargeting(auc *auction, isApp bool, categoryMappi
 					targData.addKeys(targets, openrtb_ext.HbEnvKey, openrtb_ext.HbEnvKeyApp, bidderName, isOverallWinner, truncateTargetAttr)
 				}
 				if len(categoryMapping) > 0 {
-					targData.addKeys(targets, openrtb_ext.HbCategoryDurationKey, categoryMapping[topBidPerBidder.bid.ID], bidderName, isOverallWinner, truncateTargetAttr)
+					targData.addKeys(targets, openrtb_ext.HbCategoryDurationKey, categoryMapping[bid.bid.ID], bidderName, isOverallWinner, truncateTargetAttr)
 				}
-
-				// if auc.winningBidsByBidder[impId][originalBidderName] == bid {
-				// }
 
 				bid.bidTargets = targets
 				if maxBids > 1 {
+					// update targeting key only if multibid is set for bidder
 					bid.targetBidderCode = bidderName.String()
 				}
 			}
-		}
-		if bidderCodePrefix == "" {
-			break
 		}
 	}
 }
