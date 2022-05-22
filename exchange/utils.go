@@ -236,7 +236,7 @@ func getAuctionBidderRequests(auctionRequest AuctionRequest,
 			requestExt.Prebid.BidderParams = params
 		}
 
-		reqExt, err := getExtJson(req, requestExt)
+		reqExt, err := getExtJson(req.BidRequest, requestExt)
 		if err != nil {
 			return nil, []error{err}
 		}
