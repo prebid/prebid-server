@@ -747,7 +747,7 @@ func TestAdapterCurrency(t *testing.T) {
 			Page: "prebid.org",
 			Ext:  json.RawMessage(`{"amp":0}`),
 		},
-		Cur: []string{"USD", ""},
+		Cur: []string{"USD"},
 		Ext: json.RawMessage(`{"prebid": {"currency": {"rates": {"USD": {"MXN": 20.00}}}}}`),
 	}
 
