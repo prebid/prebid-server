@@ -348,9 +348,8 @@ type ExtRequestPrebidDataEidPermission struct {
 }
 
 type ExtMultiBid struct {
-	Bidder  string   `json:"bidder,omitempty"`
-	Bidders []string `json:"bidders,omitempty"`
-	MaxBids int      `json:"maxbids,omitempty"`
-	//TargetBidderCodePrefix If the multibid config doesn't define a targetbiddercodepattern, no ad targeting should be generated for the extra bids. Just send them as additional seatbid.bid entries under the appropriate imp.
-	TargetBidderCodePrefix string `json:"targetbiddercodeprefix,omitempty"`
+	Bidder                 string   `json:"bidder,omitempty"`
+	Bidders                []string `json:"bidders,omitempty"`
+	MaxBids                int      `json:"maxbids,omitempty"`
+	TargetBidderCodePrefix string   `json:"targetbiddercodeprefix,omitempty"`
 }
