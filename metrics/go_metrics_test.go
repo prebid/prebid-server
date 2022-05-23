@@ -213,6 +213,17 @@ func TestRecordDebugRequest(t *testing.T) {
 			expectedAccountDebugCount: 0,
 			expectedDebugCount:        0,
 		},
+		{
+			description: "Boolean flags should result in both metrics being updated, but unknown PubID leads to account debug being 0",
+			givenDisabledMetrics: config.DisabledMetrics{
+				AccountAdapterDetails: true,
+				AccountDebug:          false,
+			},
+			givenDebugEnabledFlag:     true,
+			givenPubID:                PublisherUnknown,
+			expectedAccountDebugCount: 0,
+			expectedDebugCount:        1,
+		},
 	}
 	for _, test := range testCases {
 		registry := metrics.NewRegistry()

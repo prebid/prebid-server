@@ -437,11 +437,12 @@ func (me *Metrics) RecordRequest(labels Labels) {
 func (me *Metrics) RecordDebugRequest(debugEnabled bool, pubID string) {
 	if debugEnabled {
 		me.DebugRequestMeter.Mark(1)
-	}
-
-	am := me.getAccountMetrics(pubID)
-	if !me.MetricsDisabled.AccountDebug && debugEnabled {
-		am.debugRequestMeter.Mark(1)
+		if pubID != PublisherUnknown {
+			am := me.getAccountMetrics(pubID)
+			if !me.MetricsDisabled.AccountDebug {
+				am.debugRequestMeter.Mark(1)
+			}
+		}
 	}
 }
 
