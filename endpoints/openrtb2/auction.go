@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/gdpr"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -212,8 +211,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		ImpExtInfoMap:              impExtInfoMap,
 		StoredAuctionResponses:     storedAuctionResponses,
 		StoredBidResponses:         storedBidResponses,
-		TCF2ConfigBuilder:          gdpr.NewTCF2Config,
-		GDPRPermissionsBuilder:     gdpr.NewPermissions,
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
