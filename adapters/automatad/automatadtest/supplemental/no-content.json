@@ -1,0 +1,62 @@
+{
+	"mockBidRequest": {
+	  "id": "test-request-id",
+	  "imp": [
+		{
+		  "id": "test-banner-imp-id",
+		  "banner": {
+			"format": [
+			  {
+				"w": 200,
+				"h": 250
+			  }
+			]
+		  },
+		  "ext": {
+			"bidder": {
+			  "siteId": "123"
+			}
+		  }
+		}
+	  ],
+	  "site": {
+		"id": "123"
+	  }
+	},
+	"httpCalls": [
+	  {
+		"expectedRequest": {
+		  "uri": "http://whatever.url",
+		  "body": {
+			"id": "test-request-id",
+			"imp": [
+			  {
+				"id": "test-banner-imp-id",
+				"banner": {
+				  "format": [
+					{
+					  "h": 250,
+					  "w": 200
+					}
+				  ]
+				},
+				"ext": {
+				  "bidder": {
+					"siteId": "123"
+				  }
+				}
+			  }
+			],
+			"site": {
+			  "id": "123"
+			}
+		  }
+		},
+		"mockResponse": {
+		  "status": 204,
+		  "body": ""
+		}
+	  }
+	],
+	"expectedMakeBidsErrors": []
+}
