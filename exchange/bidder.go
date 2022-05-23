@@ -52,7 +52,7 @@ type adaptedBidder interface {
 	//
 	// Any errors will be user-facing in the API.
 	// Error messages should help publishers understand what might account for "bad" bids.
-	requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool, adCertSigner adscert.Signer) (*pbsOrtbSeatBid, []error)
+	requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool, adCertSigner adscert.Signer, addCallSignHeader bool) (*pbsOrtbSeatBid, []error)
 }
 
 const ImpIdReqBody = "Stored bid response for impression id: "
@@ -135,7 +135,7 @@ type bidderAdapterConfig struct {
 	DebugInfo          config.DebugInfo
 }
 
-func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool, adCertSigner adscert.Signer) (*pbsOrtbSeatBid, []error) {
+func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool, adCertSigner adscert.Signer, addCallSignHeader bool) (*pbsOrtbSeatBid, []error) {
 
 	var reqData []*adapters.RequestData
 	var errs []error
@@ -165,7 +165,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 			if reqInfo.GlobalPrivacyControlHeader == "1" {
 				reqData[i].Headers.Add("Sec-GPC", reqInfo.GlobalPrivacyControlHeader)
 			}
-			if adCertSigner != nil {
+			if adCertSigner != nil && addCallSignHeader {
 				signatureMessage, err := adCertSigner.Sign(reqData[i].Uri, reqData[i].Body)
 				if err == nil {
 					reqData[i].Headers.Add(adscert.SignHeader, signatureMessage)

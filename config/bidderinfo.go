@@ -21,6 +21,7 @@ type BidderInfo struct {
 	Debug                   *DebugInfo        `yaml:"debug"`
 	GVLVendorID             uint16            `yaml:"gvlVendorID"`
 	Syncer                  *Syncer           `yaml:"userSync"`
+	AdsCertDisable          bool              `yaml:"adsCertDisable"` //default false
 }
 
 // MaintainerInfo specifies the support email address for a bidder.

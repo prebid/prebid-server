@@ -52,6 +52,15 @@ type ExtRequestPrebid struct {
 
 	CurrencyConversions *ExtRequestCurrency `json:"currency,omitempty"`
 	BidderConfigs       []BidderConfig      `json:"bidderconfig,omitempty"`
+	Experiment          *Experiment         `json:"experiment,omitempty"`
+}
+
+type Experiment struct {
+	AdsCert *AdsCert `json:"adscert,omitempty"`
+}
+
+type AdsCert struct {
+	Enabled bool `json:"enabled,omitempty"`
 }
 
 type BidderConfig struct {

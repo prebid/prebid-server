@@ -278,7 +278,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	} else {
 		// List of bidders we have requests for.
 		liveAdapters = listBiddersWithRequests(bidderRequests)
-		adapterBids, adapterExtra, anyBidsReturned = e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, accountDebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride)
+		adapterBids, adapterExtra, anyBidsReturned = e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, accountDebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride, requestExt.Prebid.Experiment)
 	}
 
 	var auc *auction
@@ -485,7 +485,8 @@ func (e *exchange) getAllBids(
 	conversions currency.Conversions,
 	accountDebugAllowed bool,
 	globalPrivacyControlHeader string,
-	headerDebugAllowed bool) (
+	headerDebugAllowed bool,
+	experiment *openrtb_ext.Experiment) (
 	map[openrtb_ext.BidderName]*pbsOrtbSeatBid,
 	map[openrtb_ext.BidderName]*seatResponseExtra, bool) {
 	// Set up pointers to the bid results
@@ -518,7 +519,10 @@ func (e *exchange) getAllBids(
 			reqInfo.PbsEntryPoint = bidderRequest.BidderLabels.RType
 			reqInfo.GlobalPrivacyControlHeader = globalPrivacyControlHeader
 
-			bids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest, adjustmentFactor, conversions, &reqInfo, accountDebugAllowed, headerDebugAllowed, e.adCertSigner)
+			//add call sign header for bidders where AdsCertDisable is not disables and request.ext.prebid.experiment.adscert.enabled is set to true
+			addCallSignHeader := experiment != nil && experiment.AdsCert != nil && experiment.AdsCert.Enabled && !e.bidderInfo[string(bidderRequest.BidderName)].AdsCertDisable
+
+			bids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest, adjustmentFactor, conversions, &reqInfo, accountDebugAllowed, headerDebugAllowed, e.adCertSigner, addCallSignHeader)
 
 			// Add in time reporting
 			elapsed := time.Since(start)
