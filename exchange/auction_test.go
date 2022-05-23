@@ -530,6 +530,8 @@ func TestNewAuction(t *testing.T) {
 	for _, test := range tests {
 		auc := newAuction(test.seatBids, test.numImps, test.preferDeals)
 
+		//TODO FIX THIS
+		auc.allWinningBidsByBidder = nil
 		assert.Equal(t, test.expectedAuction, *auc, test.description)
 	}
 

@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"testing"
@@ -4135,6 +4136,10 @@ func mapifySeatBids(t *testing.T, context string, seatBids []openrtb2.SeatBid) m
 		if _, ok := seatMap[seatName]; ok {
 			t.Fatalf("%s: Contains duplicate Seat: %s", context, seatName)
 		} else {
+			sort.Slice(seatBids[i].Bid, func(x, y int) bool {
+				return isNewWinningBid(&seatBids[i].Bid[x], &seatBids[i].Bid[y], true)
+			})
+
 			seatMap[seatName] = &seatBids[i]
 		}
 	}
