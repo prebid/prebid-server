@@ -114,9 +114,7 @@
                 "minbitrate": 10,
                 "maxbitrate": 10
               },
-              "ext": {
-                "rewarded": 0
-              }
+              "ext": {}
             }
           ],
           "device": {

@@ -125,9 +125,7 @@
                   "rewarded": 0
                 }
               },
-              "ext": {
-                "rewarded": 0
-              }
+              "ext": {}
             }
           ],
           "device": {

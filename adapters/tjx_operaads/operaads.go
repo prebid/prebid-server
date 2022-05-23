@@ -37,8 +37,7 @@ type operaAdsBannerExt struct {
 }
 
 type operaAdsImpExt struct {
-	Rewarded int                `json:"rewarded"`
-	SKADN    *openrtb_ext.SKADN `json:"skadn,omitempty"`
+	SKADN *openrtb_ext.SKADN `json:"skadn,omitempty"`
 }
 
 // Orientation ...
@@ -205,9 +204,7 @@ func (a *OperaAdsAdapter) MakeRequests(
 			imp.BidFloor = *operaadsExt.BidFloor
 		}
 
-		impExt := operaAdsImpExt{
-			Rewarded: rewarded,
-		}
+		impExt := operaAdsImpExt{}
 
 		// Add SKADN if supported and present
 		if operaadsExt.SKADNSupported {
