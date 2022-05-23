@@ -801,7 +801,7 @@ func getHuaweiAdsReqGeoInfo(request *huaweiAdsRequest, openRTBRequest *openrtb2.
 }
 
 // getHuaweiAdsReqGeoInfo: get GDPR consent
-func getHuaweiAdsReqConsentInfo(request *huaweiAdsRequest, openRTBRequest *openrtb2.BidRequest) {	
+func getHuaweiAdsReqConsentInfo(request *huaweiAdsRequest, openRTBRequest *openrtb2.BidRequest) {
 	if openRTBRequest.User != nil && openRTBRequest.User.Ext != nil {
 		var extUser openrtb_ext.ExtUser
 		if err := json.Unmarshal(openRTBRequest.User.Ext, &extUser); err != nil {
