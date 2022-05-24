@@ -802,14 +802,22 @@ func getHuaweiAdsReqGeoInfo(request *huaweiAdsRequest, openRTBRequest *openrtb2.
 
 // getHuaweiAdsReqGeoInfo: get GDPR consent
 func getHuaweiAdsReqConsentInfo(request *huaweiAdsRequest, openRTBRequest *openrtb2.BidRequest) {
-	if openRTBRequest.User != nil && openRTBRequest.User.Ext != nil {
-		var extUser openrtb_ext.ExtUser
-		if err := json.Unmarshal(openRTBRequest.User.Ext, &extUser); err != nil {
-			fmt.Errorf("failed to parse ExtUser in HuaweiAds GDPR check: %v", err)
-			return
-		}
-		request.Consent = extUser.Consent
+	if openRTBRequest.User == nil {
+		errors.New("getDeviceID: openRTBRequest.User is nil.")
+		return
 	}
+	if openRTBRequest.User.Ext == nil {
+		errors.New("getDeviceID: openRTBRequest.User.Ext is nil.")
+		return
+	}
+
+	var extUserDataHuaweiAds openrtb_ext.ExtUserDataHuaweiAds
+	if err := json.Unmarshal(openRTBRequest.User.Ext, &extUserDataHuaweiAds); err != nil {
+		errors.New("Unmarshal: openRTBRequest.User.Ext -> extUserDataHuaweiAds failed")
+		return
+	}
+
+	request.Consent = extUserDataHuaweiAds.Consent
 }
 
 func unmarshalExtImpHuaweiAds(openRTBImp *openrtb2.Imp) (*openrtb_ext.ExtImpHuaweiAds, error) {
