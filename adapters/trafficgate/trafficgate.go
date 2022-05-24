@@ -26,7 +26,6 @@ type BidResponseExt struct {
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
-	errs := make([]error, 0, len(request.Imp))
 	headers := http.Header{
 		"Content-Type": {"application/json"},
 		"Accept":       {"application/json"},
@@ -34,13 +33,13 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 	// Pull the host and source ID info from the bidder params.
 	reqImps, err := splitImpressions(request.Imp)
-
 	if err != nil {
-		errs = append(errs, err)
+		return nil, []error{err}
 	}
 
 	requests := []*adapters.RequestData{}
 
+	var errs []error
 	for reqExt, reqImp := range reqImps {
 		request.Imp = reqImp
 		reqJson, err := json.Marshal(request)
@@ -133,12 +132,7 @@ func splitImpressions(imps []openrtb2.Imp) (map[openrtb_ext.ExtImpTrafficGate][]
 			return nil, err
 		}
 
-		arrImps, ok := multipleImps[*bidderParams]
-		if ok {
-			multipleImps[*bidderParams] = append(arrImps, imp)
-		} else {
-			multipleImps[*bidderParams] = []openrtb2.Imp{imp}
-		}
+		multipleImps[*bidderParams] = append(multipleImps[*bidderParams], imp)
 	}
 
 	return multipleImps, nil
