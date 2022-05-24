@@ -27,7 +27,7 @@ type Metrics struct {
 	impressionsLegacy            prometheus.Counter
 	prebidCacheWriteTimer        *prometheus.HistogramVec
 	requests                     *prometheus.CounterVec
-	requestsDebug                prometheus.Counter
+	debugRequests                prometheus.Counter
 	requestsTimer                *prometheus.HistogramVec
 	requestsQueueTimer           *prometheus.HistogramVec
 	requestsWithoutCookie        *prometheus.CounterVec
@@ -184,9 +184,9 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"Count of total requests to Prebid Server labeled by type and status.",
 		[]string{requestTypeLabel, requestStatusLabel})
 
-	metrics.requestsDebug = newCounterWithoutLabels(cfg, reg,
-		"requests_debug",
-		"Count of total requests to Prebid Server that have debug enabled labled by type, status.")
+	metrics.debugRequests = newCounterWithoutLabels(cfg, reg,
+		"debug_requests",
+		"Count of total requests to Prebid Server that have debug enabled")
 
 	metrics.requestsTimer = newHistogramVec(cfg, reg,
 		"request_time_seconds",
@@ -377,8 +377,8 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		[]string{accountLabel})
 
 	metrics.accountDebugRequests = newCounter(cfg, reg,
-		"account_requests_debug",
-		"Count of total requests to Prebid Server where the account has debug enabled labeled by account.",
+		"account_debug_requests",
+		"Count of total requests to Prebid Server that have debug enabled labled by account",
 		[]string{accountLabel})
 
 	metrics.requestsQueueTimer = newHistogramVec(cfg, reg,
@@ -490,7 +490,7 @@ func (m *Metrics) RecordRequest(labels metrics.Labels) {
 
 func (m *Metrics) RecordDebugRequest(debugEnabled bool, pubID string) {
 	if debugEnabled {
-		m.requestsDebug.Inc()
+		m.debugRequests.Inc()
 		if !m.metricsDisabled.AccountDebug && pubID != metrics.PublisherUnknown {
 			m.accountDebugRequests.With(prometheus.Labels{
 				accountLabel: pubID,

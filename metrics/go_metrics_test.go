@@ -16,7 +16,7 @@ func TestNewMetrics(t *testing.T) {
 	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{}, syncerKeys)
 
 	ensureContains(t, registry, "app_requests", m.AppRequestMeter)
-	ensureContains(t, registry, "requests_debug", m.DebugRequestMeter)
+	ensureContains(t, registry, "debug_requests", m.DebugRequestMeter)
 	ensureContains(t, registry, "no_cookie_requests", m.NoCookieMeter)
 	ensureContains(t, registry, "request_time", m.RequestTimer)
 	ensureContains(t, registry, "amp_no_cookie_requests", m.AmpNoCookieMeter)
@@ -223,6 +223,17 @@ func TestRecordDebugRequest(t *testing.T) {
 			givenPubID:                PublisherUnknown,
 			expectedAccountDebugCount: 0,
 			expectedDebugCount:        1,
+		},
+		{
+			description: "Account debug is enabled, but debug flag is false",
+			givenDisabledMetrics: config.DisabledMetrics{
+				AccountAdapterDetails: true,
+				AccountDebug:          false,
+			},
+			givenDebugEnabledFlag:     false,
+			givenPubID:                "acct-id",
+			expectedAccountDebugCount: 0,
+			expectedDebugCount:        0,
 		},
 	}
 	for _, test := range testCases {

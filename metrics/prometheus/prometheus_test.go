@@ -178,6 +178,20 @@ func TestDebugRequestMetric(t *testing.T) {
 			expectedDebugCount:               0,
 			expectedAccountDebugCount:        0,
 		},
+		{
+			description:                      "Debug is enabled but account debug is disabled, only non-account debug count should increment",
+			givenDebugEnabledFlag:            true,
+			givenAccountDebugMetricsDisabled: true,
+			expectedDebugCount:               1,
+			expectedAccountDebugCount:        0,
+		},
+		{
+			description:                      "Debug is disabled and account debug is enabled, niether metrics should increment",
+			givenDebugEnabledFlag:            false,
+			givenAccountDebugMetricsDisabled: false,
+			expectedDebugCount:               0,
+			expectedAccountDebugCount:        0,
+		},
 	}
 
 	for _, test := range testCases {
@@ -185,8 +199,8 @@ func TestDebugRequestMetric(t *testing.T) {
 		m.metricsDisabled.AccountDebug = test.givenAccountDebugMetricsDisabled
 		m.RecordDebugRequest(test.givenDebugEnabledFlag, "acct-id")
 
-		assertCounterVecValue(t, "", "account debug", m.accountDebugRequests, test.expectedAccountDebugCount, prometheus.Labels{accountLabel: "acct-id"})
-		assertCounterValue(t, "", "debug requests", m.requestsDebug, test.expectedDebugCount)
+		assertCounterVecValue(t, "", "account debug requests", m.accountDebugRequests, test.expectedAccountDebugCount, prometheus.Labels{accountLabel: "acct-id"})
+		assertCounterValue(t, "", "debug requests", m.debugRequests, test.expectedDebugCount)
 	}
 }
 

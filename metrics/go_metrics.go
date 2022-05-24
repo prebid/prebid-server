@@ -121,6 +121,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		ConnectionCloseErrorMeter:      blankMeter,
 		ImpMeter:                       blankMeter,
 		AppRequestMeter:                blankMeter,
+		DebugRequestMeter:              blankMeter,
 		NoCookieMeter:                  blankMeter,
 		RequestTimer:                   blankTimer,
 		DNSLookupTimer:                 blankTimer,
@@ -221,7 +222,7 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 
 	newMetrics.NoCookieMeter = metrics.GetOrRegisterMeter("no_cookie_requests", registry)
 	newMetrics.AppRequestMeter = metrics.GetOrRegisterMeter("app_requests", registry)
-	newMetrics.DebugRequestMeter = metrics.GetOrRegisterMeter("requests_debug", registry)
+	newMetrics.DebugRequestMeter = metrics.GetOrRegisterMeter("debug_requests", registry)
 	newMetrics.RequestTimer = metrics.GetOrRegisterTimer("request_time", registry)
 	newMetrics.DNSLookupTimer = metrics.GetOrRegisterTimer("dns_lookup_time", registry)
 	newMetrics.TLSHandshakeTimer = metrics.GetOrRegisterTimer("tls_handshake_time", registry)
@@ -397,7 +398,7 @@ func (me *Metrics) getAccountMetrics(id string) *accountMetrics {
 	}
 	am = &accountMetrics{}
 	am.requestMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.requests", id), me.MetricsRegistry)
-	am.debugRequestMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.requests_debug", id), me.MetricsRegistry)
+	am.debugRequestMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.debug_requests", id), me.MetricsRegistry)
 	am.bidsReceivedMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.bids_received", id), me.MetricsRegistry)
 	am.priceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("account.%s.prices", id), me.MetricsRegistry, metrics.NewExpDecaySample(1028, 0.015))
 	am.adapterMetrics = make(map[openrtb_ext.BidderName]*AdapterMetrics, len(me.exchanges))
