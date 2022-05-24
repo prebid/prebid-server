@@ -24,7 +24,7 @@ spec:
     type: RollingUpdate
     rollingUpdate:
       # TODO Set back to 33% before cutting back over to EKS
-      maxSurge: "1"
+      maxSurge: 1
       # TODO Set back to 15% before cutting back over to EKS
       maxUnavailable: "100%" # We must *always* be at/above HPA-determined capacity so we will roll out by *first* scaling up
   template:
