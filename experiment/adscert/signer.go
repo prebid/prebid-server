@@ -2,8 +2,6 @@ package adscert
 
 import (
 	crypto_rand "crypto/rand"
-	"encoding/base64"
-	"encoding/pem"
 	"fmt"
 	"github.com/IABTechLab/adscert/pkg/adscert/api"
 	"github.com/IABTechLab/adscert/pkg/adscert/discovery"
@@ -27,10 +25,6 @@ func NewAdCertsSigner(experimentAdCertsConfig config.ExperimentAdCerts) Signer {
 		//for initial implementation support in-process signer only
 		return newInProcessSigner(experimentAdCertsConfig.InProcess)
 	}
-	if len(experimentAdCertsConfig.Remote.Url) > 0 {
-		return newRemoteSigner(experimentAdCertsConfig.Remote)
-	}
-
 	return nil
 }
 
@@ -69,40 +63,8 @@ func newInProcessSigner(inProcessSignerConfig config.InProcess) *inProcessSigner
 	}
 }
 
-type remoteSigner struct {
-	//stub
-}
-
-func (rs *remoteSigner) Sign(destinationURL string, body []byte) (string, error) {
-	//stub
-	return "", nil
-}
-
-func newRemoteSigner(remoteSignerConfig config.Remote) *remoteSigner {
-	//stub
-	return &remoteSigner{}
-}
-
 func createRequestInfo(destinationURL string, body []byte) *api.RequestInfo {
 	reqInfo := &api.RequestInfo{}
 	signatory.SetRequestInfo(reqInfo, destinationURL, body)
 	return reqInfo
-}
-
-//decodeKey omits algorythm related data from key and returns base64 encoded result
-//inputKey format example: -----BEGIN PRIVATE KEY-----
-//MC4CAQAwBQYDK2VuBCIEIOBY0UbGUgGCuk09FVM9p2VeoglOj76NWJ66aJSSszpl
-//-----END PRIVATE KEY-----
-func decodeKey(inputKey string) string {
-	block, _ := pem.Decode([]byte(inputKey))
-	key := block.Bytes[len(block.Bytes)-32:]             //32 bytes key
-	swEnc := base64.RawStdEncoding.EncodeToString((key)) //should be URL-safe
-
-	///--------To check key can be decoded-----
-	//decodedKeyBytes, err := base64.RawURLEncoding.DecodeString(swEnc)
-	//fmt.Println("error ", err)
-	//fmt.Println("publicKeyBytes", string(decodedKeyBytes))
-	///--------
-
-	return swEnc
 }
