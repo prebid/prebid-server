@@ -790,6 +790,11 @@ func TestCookieSyncParseRequest(t *testing.T) {
 }
 
 func TestSetLimit(t *testing.T) {
+	intNegative1 := -1
+	int20 := 20
+	int30 := 30
+	int40 := 40
+
 	testCases := []struct {
 		description     string
 		givenRequest    cookieSyncRequest
@@ -803,7 +808,7 @@ func TestSetLimit(t *testing.T) {
 			},
 			givenAccount: &config.Account{
 				CookieSync: config.CookieSync{
-					DefaultLimit: &[]int{20}[0],
+					DefaultLimit: &int20,
 				},
 			},
 			expectedRequest: cookieSyncRequest{
@@ -831,7 +836,7 @@ func TestSetLimit(t *testing.T) {
 			},
 			givenAccount: &config.Account{
 				CookieSync: config.CookieSync{
-					DefaultLimit: &[]int{20}[0],
+					DefaultLimit: &int20,
 				},
 			},
 			expectedRequest: cookieSyncRequest{
@@ -845,7 +850,7 @@ func TestSetLimit(t *testing.T) {
 			},
 			givenAccount: &config.Account{
 				CookieSync: config.CookieSync{
-					MaxLimit: &[]int{30}[0],
+					MaxLimit: &int30,
 				},
 			},
 			expectedRequest: cookieSyncRequest{
@@ -859,7 +864,7 @@ func TestSetLimit(t *testing.T) {
 			},
 			givenAccount: &config.Account{
 				CookieSync: config.CookieSync{
-					MaxLimit: &[]int{30}[0],
+					MaxLimit: &int30,
 				},
 			},
 			expectedRequest: cookieSyncRequest{
@@ -887,7 +892,7 @@ func TestSetLimit(t *testing.T) {
 			},
 			givenAccount: &config.Account{
 				CookieSync: config.CookieSync{
-					MaxLimit: &[]int{30}[0],
+					MaxLimit: &int30,
 				},
 			},
 			expectedRequest: cookieSyncRequest{
@@ -901,8 +906,8 @@ func TestSetLimit(t *testing.T) {
 			},
 			givenAccount: &config.Account{
 				CookieSync: config.CookieSync{
-					DefaultLimit: &[]int{40}[0],
-					MaxLimit:     &[]int{30}[0],
+					DefaultLimit: &int40,
+					MaxLimit:     &int30,
 				},
 			},
 			expectedRequest: cookieSyncRequest{
@@ -916,8 +921,8 @@ func TestSetLimit(t *testing.T) {
 			},
 			givenAccount: &config.Account{
 				CookieSync: config.CookieSync{
-					DefaultLimit: &[]int{-1}[0],
-					MaxLimit:     &[]int{-1}[0],
+					DefaultLimit: &intNegative1,
+					MaxLimit:     &intNegative1,
 				},
 			},
 			expectedRequest: cookieSyncRequest{
