@@ -19,7 +19,9 @@
         }
       ],
       "ext": {
-        "prebid": {}
+        "prebid": {
+          "integration" : "testIntegrationType"
+        }
       }
     }
   },
@@ -70,11 +72,12 @@
               "h": 250,
               "crid": "creative-1",
               "ext": {
+                "origbidcpm": 0.71,
                 "prebid": {
                   "type": "banner",
                   "events": {
-                    "imp": "http://localhost/event?t=imp&b=winning-bid&a=testaccount&bidder=appnexus&ts=1234567890",
-                    "win": "http://localhost/event?t=win&b=winning-bid&a=testaccount&bidder=appnexus&ts=1234567890"
+                    "imp": "http://localhost/event?t=imp&b=winning-bid&a=testaccount&bidder=appnexus&int=testIntegrationType&ts=1234567890",
+                    "win": "http://localhost/event?t=win&b=winning-bid&a=testaccount&bidder=appnexus&int=testIntegrationType&ts=1234567890"
                   }
                 }
               }
@@ -87,11 +90,12 @@
               "h": 250,
               "crid": "creative-2",
               "ext": {
+                "origbidcpm": 0.21,
                 "prebid": {
                   "type": "banner",
                   "events": {
-                    "imp": "http://localhost/event?t=imp&b=losing-bid&a=testaccount&bidder=appnexus&ts=1234567890",
-                    "win": "http://localhost/event?t=win&b=losing-bid&a=testaccount&bidder=appnexus&ts=1234567890"
+                    "imp": "http://localhost/event?t=imp&b=losing-bid&a=testaccount&bidder=appnexus&int=testIntegrationType&ts=1234567890",
+                    "win": "http://localhost/event?t=win&b=losing-bid&a=testaccount&bidder=appnexus&int=testIntegrationType&ts=1234567890"
                   }
                 }
               }

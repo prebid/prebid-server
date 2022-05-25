@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/influxdata/influxdb/pkg/testing/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestAggregateError(t *testing.T) {

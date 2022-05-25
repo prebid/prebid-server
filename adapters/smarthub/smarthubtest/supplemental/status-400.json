@@ -1,0 +1,108 @@
+{
+  "mockBidRequest": {
+    "id": "id",
+    "imp": [
+      {
+        "id": "id",
+        "secure": 1,
+        "bidfloor": 0.01,
+        "bidfloorcur": "USD",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "partnerName": "partnertest",
+            "seat": "9Q20EdGxzgWdfPYShScl",
+            "token": "zpl5iB5Ugpe9ofVTzi44WzfjZZYq1yer"
+          }
+        }
+      }
+    ],
+    "device": {
+      "ua": "UA",
+      "ip": "123.3.4.123"
+    },
+    "regs": {
+      "ext": {
+        "gdpr": 0
+      }
+    },
+    "user": {
+      "id": "userid"
+    },
+    "site": {
+      "id": "id",
+      "domain": "test,com",
+      "cat": [
+        "IAB12"
+      ],
+      "publisher": {
+        "id": "pubid"
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://partnertest-prebid.smart-hub.io/?seat=9Q20EdGxzgWdfPYShScl&token=zpl5iB5Ugpe9ofVTzi44WzfjZZYq1yer",
+        "body": {
+          "id": "id",
+          "imp": [
+            {
+              "id": "id",
+              "secure": 1,
+              "bidfloor": 0.01,
+              "bidfloorcur": "USD",
+              "banner": {
+                "w": 300,
+                "h": 250
+              },
+              "ext": {
+                "bidder": {
+                  "partnerName": "partnertest",
+                  "seat": "9Q20EdGxzgWdfPYShScl",
+                  "token": "zpl5iB5Ugpe9ofVTzi44WzfjZZYq1yer"
+                }
+              }
+            }
+          ],
+          "device": {
+            "ua": "UA",
+            "ip": "123.3.4.123"
+          },
+          "regs": {
+            "ext": {
+              "gdpr": 0
+            }
+          },
+          "user": {
+            "id": "userid"
+          },
+          "site": {
+            "id": "id",
+            "domain": "test,com",
+            "cat": [
+              "IAB12"
+            ],
+            "publisher": {
+              "id": "pubid"
+            }
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 400,
+        "body": "The Key has a different ad format"
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Bad Request. \"The Key has a different ad format\"",
+      "comparison": "literal"
+    }
+  ],
+  "expectedBidResponses": []
+}

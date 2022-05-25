@@ -7,9 +7,10 @@ import (
 
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/endpoints"
+	"github.com/prebid/prebid-server/version"
 )
 
-func Admin(revision string, rateConverter *currency.RateConverter, rateConverterFetchingInterval time.Duration) *http.ServeMux {
+func Admin(rateConverter *currency.RateConverter, rateConverterFetchingInterval time.Duration) *http.ServeMux {
 	// Add endpoints to the admin server
 	// Making sure to add pprof routes
 	mux := http.NewServeMux()
@@ -21,6 +22,6 @@ func Admin(revision string, rateConverter *currency.RateConverter, rateConverter
 	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
 	// Register prebid-server defined admin handlers
 	mux.HandleFunc("/currency/rates", endpoints.NewCurrencyRatesEndpoint(rateConverter, rateConverterFetchingInterval))
-	mux.HandleFunc("/version", endpoints.NewVersionEndpoint(revision))
+	mux.HandleFunc("/version", endpoints.NewVersionEndpoint(version.Ver, version.Rev))
 	return mux
 }

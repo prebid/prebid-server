@@ -1,0 +1,45 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "bidfloor": 1.00,
+        "bidfloorcur": "JPY",
+        "ext":{
+          "bidder": {
+            "appId": "impactify.io",
+            "format": "screen",
+            "style": "impact"
+          }
+        }
+      }
+    ],
+    "ext": {
+      "prebid": {
+        "currency": {
+          "rates": {
+            "MXN": {
+              "USD": 0.05
+            }
+          },
+          "usepbsrates": false
+        }
+      }
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Currency conversion rate not found: 'JPY' => 'USD'",
+      "comparison": "literal"
+    }
+  ]
+}

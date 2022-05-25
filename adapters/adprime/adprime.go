@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
-	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
@@ -30,21 +30,62 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 func (a *AdprimeAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var err error
-	var tagID string
 
 	var adapterRequests []*adapters.RequestData
+
+	var bidderExt adapters.ExtImpBidder
+	var adprimeExt openrtb_ext.ExtImpAdprime
 
 	reqCopy := *request
 	for _, imp := range request.Imp {
 		reqCopy.Imp = []openrtb2.Imp{imp}
 
-		tagID, err = jsonparser.GetString(reqCopy.Imp[0].Ext, "bidder", "TagID")
+		err = json.Unmarshal(reqCopy.Imp[0].Ext, &bidderExt)
 		if err != nil {
 			errs = append(errs, err)
-			continue
+			return nil, errs
 		}
 
+		err = json.Unmarshal(bidderExt.Bidder, &adprimeExt)
+		if err != nil {
+			errs = append(errs, err)
+			return nil, errs
+		}
+
+		// tagId
+		tagID := adprimeExt.TagID
 		reqCopy.Imp[0].TagID = tagID
+
+		// placementId
+		newExt, err := json.Marshal(
+			map[string]interface{}{
+				"bidder": map[string]interface{}{
+					"TagID":       tagID,
+					"placementId": tagID,
+				},
+			})
+		if err != nil {
+			errs = append(errs, err)
+			return nil, errs
+		}
+		reqCopy.Imp[0].Ext = newExt
+
+		// keywords
+		if reqCopy.Site != nil && len(adprimeExt.Keywords) > 0 {
+			siteCopy := *reqCopy.Site
+			siteCopy.Keywords = strings.Join(adprimeExt.Keywords, ",")
+			reqCopy.Site = &siteCopy
+		}
+
+		// audiences
+		if reqCopy.Site != nil && len(adprimeExt.Audiences) > 0 {
+			if reqCopy.User == nil {
+				reqCopy.User = &openrtb2.User{}
+			}
+			userCopy := *reqCopy.User
+			userCopy.CustomData = strings.Join(adprimeExt.Audiences, ",")
+			reqCopy.User = &userCopy
+		}
 
 		adapterReq, errors := a.makeRequest(&reqCopy)
 		if adapterReq != nil {
@@ -123,18 +164,21 @@ func (a *AdprimeAdapter) MakeBids(internalRequest *openrtb2.BidRequest, external
 }
 
 func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
-	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impID {
-			if imp.Banner == nil && imp.Video != nil {
-				mediaType = openrtb_ext.BidTypeVideo
+			if imp.Banner != nil {
+				return openrtb_ext.BidTypeBanner, nil
 			}
-			return mediaType, nil
+			if imp.Video != nil {
+				return openrtb_ext.BidTypeVideo, nil
+			}
+			if imp.Native != nil {
+				return openrtb_ext.BidTypeNative, nil
+			}
 		}
 	}
 
-	// This shouldnt happen. Lets handle it just incase by returning an error.
 	return "", &errortypes.BadInput{
-		Message: fmt.Sprintf("Failed to find impression \"%s\" ", impID),
+		Message: fmt.Sprintf("Failed to find impression \"%s\"", impID),
 	}
 }

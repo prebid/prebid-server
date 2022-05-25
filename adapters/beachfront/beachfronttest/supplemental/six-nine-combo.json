@@ -200,7 +200,7 @@
           "dnt": 0,
           "user": {},
           "adapterName": "BF_PREBID_S2S",
-          "adapterVersion": "0.9.2",
+          "adapterVersion": "1.0.0",
           "ip": "255.255.255.255",
           "requestId": "six-nine-combo",
           "schain": {
@@ -258,6 +258,7 @@
               "id": "ADMVideoWithBannerImp1",
               "secure": 0,
               "bidfloor": 1.01,
+              "bidfloorcur": "USD",
               "video": {
                 "mimes": [
                   "video/mp4"
@@ -290,6 +291,7 @@
                 {
                   "id": "crid_7",
                   "impid": "ADMVideoWithBannerImp1",
+                  "cat":["IAB2"],
                   "price": 0.8,
                   "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
                   "w": 300,
@@ -316,6 +318,7 @@
               "id": "ADMVideoWithBannerImp2",
               "secure": 0,
               "bidfloor": 1.01,
+              "bidfloorcur": "USD",
               "video": {
                 "mimes": [
                   "video/mp4"
@@ -349,6 +352,7 @@
                   "id": "crid_7",
                   "impid": "ADMVideoWithBannerImp2",
                   "price": 0.8,
+                  "cat":["IAB2"],
                   "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
                   "w": 300,
                   "h": 400,
@@ -373,6 +377,7 @@
             {
               "id": "ADMVideoImp6",
               "bidfloor": 1.01,
+              "bidfloorcur": "USD",
               "secure": 0,
               "video": {
                 "mimes": [
@@ -407,6 +412,7 @@
                   "id": "crid_8",
                   "impid": "ADMVideoImp6",
                   "price": 0.8,
+                  "cat":["IAB2"],
                   "adm": "<VAST version=\"2.0\"><Ad><Wrapper>http://example.com/vast.xml</Wrapper></Ad></VAST>",
                   "w": 100,
                   "h": 150,
@@ -432,6 +438,7 @@
             {
               "id": "NURLVideoImp3",
               "bidfloor": 1.01,
+              "bidfloorcur": "USD",
               "video": {
                 "mimes": [
                   "video/mp4"

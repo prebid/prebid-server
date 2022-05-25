@@ -22,6 +22,7 @@
                             "value": ["sports", "movies"]
                         }
                     ],
+                    "kadfloor": "0.12",
                     "wrapper": {
                         "version": 1,
                         "profile": 5123
@@ -56,10 +57,11 @@
                       "w": 300,
                       "h": 250
                     }
-                ],
-                "h": 250,
-                "w": 300
-            },
+                  ],
+                  "h": 250,
+                  "w": 300
+                },
+                "bidfloor": 0.12,
                 "ext": {
                     "pmZoneId": "Zone1,Zone2",
                     "preference": "sports,movies"

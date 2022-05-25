@@ -23,7 +23,7 @@ func TestJsonSamples(t *testing.T) {
 	adapterstest.RunJSONBidderTest(t, "adgenerationtest", bidder)
 }
 
-func TestgetRequestUri(t *testing.T) {
+func TestGetRequestUri(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAdgeneration, config.Adapter{
 		Endpoint: "https://d.socdm.com/adsv/v1"})
 
