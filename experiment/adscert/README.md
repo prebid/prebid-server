@@ -40,6 +40,8 @@ If everything configured correctly then `X-Ads-Cert-Auth` header will be sent to
 ###Prebid Server set up
 Current Prebid Server implementation supports in-process signing approach. 
 
+Workaround for bidders that don't have Call Signs support yet: in configs modify bidder URL to `http://adscertdelivery.com/openrtb2?prebid_disabled=1`. In this case this bidder will not return bids, because this endpoint doesn't exist, but it will imitate support of Call Signs. Bidder parameters still should be valid.
+
 To enable AdsCerts next configurations should be specified: 
 
 1.Host config, can be set using env variables or yaml config, use proper format: 
@@ -57,8 +59,8 @@ To enable AdsCerts next configurations should be specified:
   }
 ```
 
-2.Every bidder by default supports AdsCert. In case bidders cannot handle unsupported headers properly in {bidder}.yaml file disable this feature:
-`adsCertDisable: true`. With this config bidder will not receive `X-Ads-Cert-Auth` header even if this is not the only bidder in request. 
+2.Every bidder by default doesn't support AdsCert. Some bidders cannot handle unsupported headers properly. To enable this feature add next config to {bidder}.yaml file:
+`experiment.adscert.enable: true`. With this config bidder will receive `X-Ads-Cert-Auth` header even if this is not the only bidder in request. 
 
 3.Request extension should have `request.ext.prebid.experiment.adscert.enabled: true`
 

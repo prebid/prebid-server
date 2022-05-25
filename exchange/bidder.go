@@ -52,7 +52,12 @@ type adaptedBidder interface {
 	//
 	// Any errors will be user-facing in the API.
 	// Error messages should help publishers understand what might account for "bad" bids.
-	requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool, adCertSigner adscert.Signer, addCallSignHeader bool) (*pbsOrtbSeatBid, []error)
+	requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adCertSigner adscert.Signer, bidRequestMetadata BidRequestMetadata) (*pbsOrtbSeatBid, []error)
+}
+
+//BidRequestMetadata holds metadata for bid request execution to maintain clean code and reasonable number of parameters
+type BidRequestMetadata struct {
+	accountDebugAllowed, headerDebugAllowed, addCallSignHeader bool
 }
 
 const ImpIdReqBody = "Stored bid response for impression id: "
@@ -135,7 +140,7 @@ type bidderAdapterConfig struct {
 	DebugInfo          config.DebugInfo
 }
 
-func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool, adCertSigner adscert.Signer, addCallSignHeader bool) (*pbsOrtbSeatBid, []error) {
+func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adCertSigner adscert.Signer, bidRequestMetadata BidRequestMetadata) (*pbsOrtbSeatBid, []error) {
 
 	var reqData []*adapters.RequestData
 	var errs []error
@@ -165,9 +170,9 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 			if reqInfo.GlobalPrivacyControlHeader == "1" {
 				reqData[i].Headers.Add("Sec-GPC", reqInfo.GlobalPrivacyControlHeader)
 			}
-			if adCertSigner != nil && addCallSignHeader {
+			if bidRequestMetadata.addCallSignHeader {
 				signatureMessage, err := adCertSigner.Sign(reqData[i].Uri, reqData[i].Body)
-				if err == nil {
+				if err == nil && len(signatureMessage) > 0 {
 					reqData[i].Headers.Add(adscert.SignHeader, signatureMessage)
 				}
 			}
@@ -216,10 +221,10 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 		// - headerDebugAllowed (debug override header specified correct) - it overrides all other debug restrictions
 		// - account debug is allowed
 		// - bidder debug is allowed
-		if headerDebugAllowed {
+		if bidRequestMetadata.headerDebugAllowed {
 			seatBid.httpCalls = append(seatBid.httpCalls, makeExt(httpInfo))
 		} else {
-			if accountDebugAllowed {
+			if bidRequestMetadata.accountDebugAllowed {
 				if bidder.config.DebugInfo.Allow {
 					seatBid.httpCalls = append(seatBid.httpCalls, makeExt(httpInfo))
 				} else {

@@ -21,7 +21,16 @@ type BidderInfo struct {
 	Debug                   *DebugInfo        `yaml:"debug"`
 	GVLVendorID             uint16            `yaml:"gvlVendorID"`
 	Syncer                  *Syncer           `yaml:"userSync"`
-	AdsCertDisable          bool              `yaml:"adsCertDisable"` //default false
+	Experimental            Experimental      `yaml:"experiment"`
+}
+
+// Experimental instead of Experiment to avoid conflicts with existing structure
+type Experimental struct {
+	AdsCert AdsCert `yaml:"adscert"`
+}
+
+type AdsCert struct {
+	Enable bool `yaml:"enable"`
 }
 
 // MaintainerInfo specifies the support email address for a bidder.

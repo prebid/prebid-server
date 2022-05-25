@@ -519,10 +519,12 @@ func (e *exchange) getAllBids(
 			reqInfo.PbsEntryPoint = bidderRequest.BidderLabels.RType
 			reqInfo.GlobalPrivacyControlHeader = globalPrivacyControlHeader
 
-			//add call sign header for bidders where AdsCertDisable is not disables and request.ext.prebid.experiment.adscert.enabled is set to true
-			addCallSignHeader := experiment != nil && experiment.AdsCert != nil && experiment.AdsCert.Enabled && !e.bidderInfo[string(bidderRequest.BidderName)].AdsCertDisable
+			//add call sign header for bidders where AdsCertDisable is enabled and request.ext.prebid.experiment.adscert.enabled is set to true
+			requestAdsCertEnabled := experiment != nil && experiment.AdsCert != nil && experiment.AdsCert.Enabled
+			bidderAdsCertEnabled := e.bidderInfo[string(bidderRequest.BidderName)].Experimental.AdsCert.Enable
+			addCallSignHeader := requestAdsCertEnabled && bidderAdsCertEnabled
 
-			bids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest, adjustmentFactor, conversions, &reqInfo, accountDebugAllowed, headerDebugAllowed, e.adCertSigner, addCallSignHeader)
+			bids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest, adjustmentFactor, conversions, &reqInfo, e.adCertSigner, BidRequestMetadata{accountDebugAllowed, headerDebugAllowed, addCallSignHeader})
 
 			// Add in time reporting
 			elapsed := time.Since(start)
