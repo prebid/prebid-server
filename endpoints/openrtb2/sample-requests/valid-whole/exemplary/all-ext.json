@@ -1,5 +1,11 @@
 {
   "description": "This demonstrates all of the OpenRTB extensions supported by Prebid Server. Very few requests will need all of these at once.",
+  "config": {
+    "mockBidders": [
+      {"bidderName": "appnexus", "currency": "USD", "price": 1.00},
+      {"bidderName": "rubicon", "currency": "USD", "price": 1.00}
+    ]
+  },
   "mockBidRequest": {
     "id": "some-request-id",
     "site": {
@@ -91,31 +97,31 @@
           "bid": [
             {
               "id": "appnexus-bid",
-              "impid": "",
-              "price": 0
+              "impid": "some-impression-id",
+              "price": 1.01
             }
           ],
-          "seat": "appnexus-bids"
+          "seat": "appnexus"
         },
         {
           "bid": [
             {
-              "id": "districtm-bid",
-              "impid": "",
-              "price": 0
+              "id": "appnexus-bid",
+              "impid": "some-impression-id",
+              "price": 0.98
             }
           ],
-          "seat": "districtm-bids"
+          "seat": "districtm"
         },
         {
           "bid": [
             {
               "id": "rubicon-bid",
-              "impid": "",
-              "price": 0
+              "impid": "some-impression-id",
+              "price": 0.99
             }
           ],
-          "seat": "rubicon-bids"
+          "seat": "rubicon"
         }
       ],
       "bidid":"test bid id",

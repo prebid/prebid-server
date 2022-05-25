@@ -52,7 +52,7 @@ type IdFetcher interface {
 }
 
 type exchange struct {
-	adapterMap        map[openrtb_ext.BidderName]adaptedBidder
+	adapterMap        map[openrtb_ext.BidderName]AdaptedBidder
 	bidderInfo        config.BidderInfos
 	bidderToSyncerKey map[string]string
 	me                metrics.MetricsEngine

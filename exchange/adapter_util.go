@@ -10,16 +10,16 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-func BuildAdapters(client *http.Client, cfg *config.Configuration, infos config.BidderInfos, me metrics.MetricsEngine) (map[openrtb_ext.BidderName]adaptedBidder, []error) {
+func BuildAdapters(client *http.Client, cfg *config.Configuration, infos config.BidderInfos, me metrics.MetricsEngine) (map[openrtb_ext.BidderName]AdaptedBidder, []error) {
 	bidders, errs := buildBidders(cfg.Adapters, infos, newAdapterBuilders())
 	if len(errs) > 0 {
 		return nil, errs
 	}
 
-	exchangeBidders := make(map[openrtb_ext.BidderName]adaptedBidder, len(bidders))
+	exchangeBidders := make(map[openrtb_ext.BidderName]AdaptedBidder, len(bidders))
 	for bidderName, bidder := range bidders {
 		info := infos[string(bidderName)]
-		exchangeBidder := adaptBidder(bidder, client, cfg, me, bidderName, info.Debug)
+		exchangeBidder := AdaptBidder(bidder, client, cfg, me, bidderName, info.Debug)
 		exchangeBidder = addValidatedBidderMiddleware(exchangeBidder)
 		exchangeBidders[bidderName] = exchangeBidder
 	}

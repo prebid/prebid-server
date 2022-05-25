@@ -321,8 +321,8 @@ func TestDebugBehaviour(t *testing.T) {
 	// Run tests
 	for _, test := range testCases {
 
-		e.adapterMap = map[openrtb_ext.BidderName]adaptedBidder{
-			openrtb_ext.BidderAppnexus: adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, &config.DebugInfo{Allow: test.debugData.bidderLevelDebugAllowed}),
+		e.adapterMap = map[openrtb_ext.BidderName]AdaptedBidder{
+			openrtb_ext.BidderAppnexus: AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, &config.DebugInfo{Allow: test.debugData.bidderLevelDebugAllowed}),
 		}
 
 		bidRequest.Test = test.in.test
@@ -502,9 +502,9 @@ func TestTwoBiddersDebugDisabledAndEnabled(t *testing.T) {
 			TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
 		}
 
-		e.adapterMap = map[openrtb_ext.BidderName]adaptedBidder{
-			openrtb_ext.BidderAppnexus: adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, &config.DebugInfo{Allow: testCase.bidder1DebugEnabled}),
-			openrtb_ext.BidderTelaria:  adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, &config.DebugInfo{Allow: testCase.bidder2DebugEnabled}),
+		e.adapterMap = map[openrtb_ext.BidderName]AdaptedBidder{
+			openrtb_ext.BidderAppnexus: AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, &config.DebugInfo{Allow: testCase.bidder1DebugEnabled}),
+			openrtb_ext.BidderTelaria:  AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, &config.DebugInfo{Allow: testCase.bidder2DebugEnabled}),
 		}
 		// Run test
 		outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, &debugLog)
@@ -657,8 +657,8 @@ func TestOverrideWithCustomCurrency(t *testing.T) {
 			Currency: "USD",
 		}
 
-		e.adapterMap = map[openrtb_ext.BidderName]adaptedBidder{
-			openrtb_ext.BidderAppnexus: adaptBidder(oneDollarBidBidder, mockAppnexusBidService.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil),
+		e.adapterMap = map[openrtb_ext.BidderName]AdaptedBidder{
+			openrtb_ext.BidderAppnexus: AdaptBidder(oneDollarBidBidder, mockAppnexusBidService.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil),
 		}
 
 		// Set custom rates in extension
@@ -731,8 +731,8 @@ func TestAdapterCurrency(t *testing.T) {
 		currencyConverter: currencyConverter,
 		categoriesFetcher: nilCategoryFetcher{},
 		bidIDGenerator:    &mockBidIDGenerator{false, false},
-		adapterMap: map[openrtb_ext.BidderName]adaptedBidder{
-			openrtb_ext.BidderName("foo"): adaptBidder(mockBidder, nil, &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderName("foo"), nil),
+		adapterMap: map[openrtb_ext.BidderName]AdaptedBidder{
+			openrtb_ext.BidderName("foo"): AdaptBidder(mockBidder, nil, &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderName("foo"), nil),
 		},
 	}
 
@@ -1114,8 +1114,8 @@ func TestReturnCreativeEndToEnd(t *testing.T) {
 	}
 
 	e := new(exchange)
-	e.adapterMap = map[openrtb_ext.BidderName]adaptedBidder{
-		openrtb_ext.BidderAppnexus: adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil),
+	e.adapterMap = map[openrtb_ext.BidderName]AdaptedBidder{
+		openrtb_ext.BidderAppnexus: AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil),
 	}
 	e.cache = &wellBehavedCache{}
 	e.me = &metricsConf.NilMetricsEngine{}
@@ -1407,8 +1407,8 @@ func TestBidReturnsCreative(t *testing.T) {
 		bidResponse: &adapters.BidderResponse{},
 	}
 	e := new(exchange)
-	e.adapterMap = map[openrtb_ext.BidderName]adaptedBidder{
-		openrtb_ext.BidderAppnexus: adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil),
+	e.adapterMap = map[openrtb_ext.BidderName]AdaptedBidder{
+		openrtb_ext.BidderAppnexus: AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil),
 	}
 	e.cache = &wellBehavedCache{}
 	e.me = &metricsConf.NilMetricsEngine{}
@@ -2226,7 +2226,7 @@ func extractResponseTimes(t *testing.T, context string, bid *openrtb2.BidRespons
 }
 
 func newExchangeForTests(t *testing.T, filename string, expectations map[string]*bidderSpec, aliases map[string]string, privacyConfig config.Privacy, bidIDGenerator BidIDGenerator) Exchange {
-	bidderAdapters := make(map[openrtb_ext.BidderName]adaptedBidder, len(expectations))
+	bidderAdapters := make(map[openrtb_ext.BidderName]AdaptedBidder, len(expectations))
 	bidderInfos := make(config.BidderInfos, len(expectations))
 	for _, bidderName := range openrtb_ext.CoreBidderNames() {
 		if spec, ok := expectations[string(bidderName)]; ok {

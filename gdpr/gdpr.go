@@ -21,7 +21,7 @@ type Permissions interface {
 	// Determines whether or not to send PI information to a bidder, or mask it out.
 	//
 	// If the consent string was nonsensical, the returned error will be an ErrorMalformedConsent.
-	AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string, aliasGVLIDs map[string]uint16) (allowBidReq bool, passGeo bool, passID bool, err error)
+	AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string, aliasGVLIDs map[string]uint16) (permissions AuctionPermissions, err error)
 }
 
 type PermissionsBuilder func(config.GDPR, TCF2ConfigReader, map[openrtb_ext.BidderName]uint16, VendorListFetcher) Permissions
