@@ -113,7 +113,7 @@ func (randomDeduplicateBidBooleanGenerator) Generate() bool {
 	return rand.Intn(100) < 50
 }
 
-func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, metricsEngine metrics.MetricsEngine, infos config.BidderInfos, vendorListFetcher gdpr.VendorListFetcher, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher, adCertSigner adscert.Signer) Exchange {
+func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, metricsEngine metrics.MetricsEngine, infos config.BidderInfos, vendorListFetcher gdpr.VendorListFetcher, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher, adCertSigner adscert.Signer) Exchange {
 	bidderToSyncerKey := map[string]string{}
 	for bidder, syncer := range syncersByBidder {
 		bidderToSyncerKey[bidder] = syncer.Key()
