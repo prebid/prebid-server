@@ -172,6 +172,7 @@ type AuctionRequest struct {
 	GDPRPermissionsBuilder gdpr.PermissionsBuilder
 	// map of imp id to bidder to stored response
 	StoredBidResponses stored_responses.ImpBidderStoredResp
+	PubID              string
 }
 
 // BidderRequest holds the bidder specific request and all other
@@ -209,6 +210,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		}
 		r.ResolvedBidRequest = resolvedBidReq
 	}
+	e.me.RecordDebugRequest(responseDebugAllow || accountDebugAllow, r.PubID)
 
 	if r.RequestType == metrics.ReqTypeORTB2Web || r.RequestType == metrics.ReqTypeORTB2App {
 		//Extract First party data for auction endpoint only

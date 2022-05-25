@@ -3752,7 +3752,6 @@ func TestStoredAuctionResponses(t *testing.T) {
 			GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
 			TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
 		}
-
 		// Run test
 		outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, &DebugLog{})
 		if test.errorExpected {
