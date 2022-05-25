@@ -8,6 +8,10 @@
       "position": {
         "type": "string",
         "description": "Position field"
+      },
+      "placementId": {
+        "type": "string",
+        "description": "Placement field"
       }
     },
     "required": []
