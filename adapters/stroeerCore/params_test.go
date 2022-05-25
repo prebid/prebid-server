@@ -45,4 +45,5 @@ var invalidParams = []string{
 	`[]`,
 	`{}`,
 	`{"something":"else"}`,
+	`{"sid":false}`,
 }
