@@ -1032,6 +1032,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.synacormedia.endpoint", "http://{{.Host}}.technoratimedia.com/openrtb/bids/{{.Host}}")
 	v.SetDefault("adapters.tappx.endpoint", "http://{{.Host}}")
 	v.SetDefault("adapters.telaria.endpoint", "https://ads.tremorhub.com/ad/rtb/prebid")
+	v.SetDefault("adapters.trafficgate.endpoint", "http://{{.Host}}.bc-plugin.com/?c=o&m=rtb")
 	v.SetDefault("adapters.triplelift_native.disabled", true)
 	v.SetDefault("adapters.triplelift_native.extra_info", "{\"publisher_whitelist\":[]}")
 	v.SetDefault("adapters.triplelift.endpoint", "https://tlx.3lift.com/s2s/auction?sra=1&supplier_id=20")
