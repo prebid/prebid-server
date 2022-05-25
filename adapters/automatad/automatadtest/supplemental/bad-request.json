@@ -14,7 +14,8 @@
 		  },
 		  "ext": {
 			"bidder": {
-			  "siteId": "123"
+			  "position": "123",
+			  "placementId":"a34gh6d"
 			}
 		  }
 		}
@@ -26,7 +27,7 @@
 	"httpCalls": [
 	  {
 		"expectedRequest": {
-		  "uri": "http://whatever.url",
+		  "uri": "http://www.biddertest.com",
 		  "body": {
 			"id": "test-request-id",
 			"imp": [
@@ -42,7 +43,8 @@
 				},
 				"ext": {
 				  "bidder": {
-					"siteId": "123"
+					"position": "123",
+					"placementId":"a34gh6d"
 				  }
 				}
 			  }
