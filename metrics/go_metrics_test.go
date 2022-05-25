@@ -192,7 +192,7 @@ func TestRecordDebugRequest(t *testing.T) {
 		expectedDebugCount        int64
 	}{
 		{
-			description: "Boolean flags should result in both metrics being updated",
+			description: "Debug is enabled and account debug is enabled, both metrics should be updated",
 			givenDisabledMetrics: config.DisabledMetrics{
 				AccountAdapterDetails: true,
 				AccountDebug:          false,
@@ -203,7 +203,7 @@ func TestRecordDebugRequest(t *testing.T) {
 			expectedDebugCount:        1,
 		},
 		{
-			description: "Boolean flags should result in niether metrics being updated",
+			description: "Debug and account debug are disabled, niether metrics should be updated",
 			givenDisabledMetrics: config.DisabledMetrics{
 				AccountAdapterDetails: true,
 				AccountDebug:          true,
@@ -214,7 +214,7 @@ func TestRecordDebugRequest(t *testing.T) {
 			expectedDebugCount:        0,
 		},
 		{
-			description: "Boolean flags should result in both metrics being updated, but unknown PubID leads to account debug being 0",
+			description: "Debug is enabled and account debug is enabled, but unknown PubID leads to account debug being 0",
 			givenDisabledMetrics: config.DisabledMetrics{
 				AccountAdapterDetails: true,
 				AccountDebug:          false,
@@ -225,7 +225,7 @@ func TestRecordDebugRequest(t *testing.T) {
 			expectedDebugCount:        1,
 		},
 		{
-			description: "Account debug is enabled, but debug flag is false",
+			description: "Debug is disabled, account debug is enabled, niether metric should update",
 			givenDisabledMetrics: config.DisabledMetrics{
 				AccountAdapterDetails: true,
 				AccountDebug:          false,

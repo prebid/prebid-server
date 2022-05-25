@@ -340,6 +340,7 @@ metrics:
     metric_send_interval: 30
   disabled_metrics:
     account_adapter_details: true
+    account_debug: false
     adapter_connections_metrics: true
     adapter_gdpr_request_blocked: true
 adapters:
@@ -612,7 +613,7 @@ func TestFullConfig(t *testing.T) {
 	cmpBools(t, "account_required", cfg.AccountRequired, true)
 	cmpBools(t, "auto_gen_source_tid", cfg.AutoGenSourceTID, false)
 	cmpBools(t, "account_adapter_details", cfg.Metrics.Disabled.AccountAdapterDetails, true)
-	cmpBools(t, "account_debug", cfg.Metrics.Disabled.AccountDebug, true)
+	cmpBools(t, "account_debug", cfg.Metrics.Disabled.AccountDebug, false)
 	cmpBools(t, "adapter_connections_metrics", cfg.Metrics.Disabled.AdapterConnectionMetrics, true)
 	cmpBools(t, "adapter_gdpr_request_blocked", cfg.Metrics.Disabled.AdapterGDPRRequestBlocked, true)
 	cmpStrings(t, "certificates_file", cfg.PemCertsFile, "/etc/ssl/cert.pem")

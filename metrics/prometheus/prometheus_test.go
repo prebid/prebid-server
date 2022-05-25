@@ -165,14 +165,14 @@ func TestDebugRequestMetric(t *testing.T) {
 		expectedDebugCount               float64
 	}{
 		{
-			description:                      "Boolean flags should result in both metrics being updated",
+			description:                      "Debug is enabled and account debug is enabled, both metrics should be updated",
 			givenDebugEnabledFlag:            true,
 			givenAccountDebugMetricsDisabled: false,
 			expectedDebugCount:               1,
 			expectedAccountDebugCount:        1,
 		},
 		{
-			description:                      "Boolean flags should result in niether metrics being updated",
+			description:                      "Debug and account debug are disabled, niether metrics should be updated",
 			givenDebugEnabledFlag:            false,
 			givenAccountDebugMetricsDisabled: true,
 			expectedDebugCount:               0,
