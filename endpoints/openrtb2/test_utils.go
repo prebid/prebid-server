@@ -1267,7 +1267,7 @@ type fakePermissionsBuilder struct {
 	permissions gdpr.Permissions
 }
 
-func (fpb fakePermissionsBuilder) Builder(gdpr.TCF2ConfigReader) gdpr.Permissions {
+func (fpb fakePermissionsBuilder) Builder(gdpr.TCF2ConfigReader, gdpr.RequestInfo) gdpr.Permissions {
 	return fpb.permissions
 }
 
@@ -1282,15 +1282,15 @@ func (fcr fakeTCF2ConfigBuilder) Builder(hostConfig config.TCF2, accountConfig c
 type fakePermissions struct {
 }
 
-func (p *fakePermissions) HostCookiesAllowed(ctx context.Context, gdpr gdpr.Signal, consent string) (bool, error) {
+func (p *fakePermissions) HostCookiesAllowed(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
-func (p *fakePermissions) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, gdpr gdpr.Signal, consent string) (bool, error) {
+func (p *fakePermissions) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName) (bool, error) {
 	return true, nil
 }
 
-func (p *fakePermissions) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string, aliasGVLIDs map[string]uint16) (permissions gdpr.AuctionPermissions, err error) {
+func (p *fakePermissions) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (permissions gdpr.AuctionPermissions, err error) {
 	return gdpr.AuctionPermissions{
 		AllowBidRequest: true,
 	}, nil

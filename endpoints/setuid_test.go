@@ -541,12 +541,22 @@ func doRequest(req *http.Request, metrics metrics.MetricsEngine, syncersBidderNa
 	cfg := config.Configuration{}
 	cfg.MarshalAccountDefaults()
 
-	perms := &mockPermsSetUID{
+	query := req.URL.Query()
+
+	perms := &fakePermsSetUID{
 		allowHost:           gdprAllowsHostCookies,
+		consent:             query.Get("gdpr_consent"),
 		errorHost:           gdprReturnsError,
 		errorMalformed:      gdprReturnsMalformedError,
 		personalInfoAllowed: true,
 	}
+	gdprPermsBuilder := fakePermissionsBuilder{
+		permissions: perms,
+	}.Builder
+	tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
+		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
+	}.Builder
+
 	analytics := analyticsConf.NewPBSAnalytics(&cfg.Analytics)
 	syncersByBidder := make(map[string]usersync.Syncer)
 	for bidderName, syncerKey := range syncersBidderNameToKey {
@@ -558,7 +568,7 @@ func doRequest(req *http.Request, metrics metrics.MetricsEngine, syncersBidderNa
 		"disabled_acct": json.RawMessage(`{"disabled":true}`),
 	}}
 
-	endpoint := NewSetUIDEndpoint(&cfg, syncersByBidder, perms, analytics, fakeAccountsFetcher, metrics)
+	endpoint := NewSetUIDEndpoint(&cfg, syncersByBidder, gdprPermsBuilder, tcf2ConfigBuilder, analytics, fakeAccountsFetcher, metrics)
 	response := httptest.NewRecorder()
 	endpoint(response, req, nil)
 	return response
@@ -580,16 +590,33 @@ func parseCookieString(t *testing.T, response *httptest.ResponseRecorder) *users
 	return usersync.ParseCookie(&httpCookie)
 }
 
-type mockPermsSetUID struct {
+type fakePermissionsBuilder struct {
+	permissions gdpr.Permissions
+}
+
+func (fpb fakePermissionsBuilder) Builder(gdpr.TCF2ConfigReader, gdpr.RequestInfo) gdpr.Permissions {
+	return fpb.permissions
+}
+
+type fakeTCF2ConfigBuilder struct {
+	cfg gdpr.TCF2ConfigReader
+}
+
+func (fcr fakeTCF2ConfigBuilder) Builder(hostConfig config.TCF2, accountConfig config.AccountGDPR) gdpr.TCF2ConfigReader {
+	return fcr.cfg
+}
+
+type fakePermsSetUID struct {
 	allowHost           bool
+	consent             string
 	errorHost           bool
 	errorMalformed      bool
 	personalInfoAllowed bool
 }
 
-func (g *mockPermsSetUID) HostCookiesAllowed(ctx context.Context, gdprSignal gdpr.Signal, consent string) (bool, error) {
+func (g *fakePermsSetUID) HostCookiesAllowed(ctx context.Context) (bool, error) {
 	if g.errorMalformed {
-		return g.allowHost, &gdpr.ErrorMalformedConsent{Consent: consent, Cause: errors.New("some error")}
+		return g.allowHost, &gdpr.ErrorMalformedConsent{Consent: g.consent, Cause: errors.New("some error")}
 	}
 	if g.errorHost {
 		return g.allowHost, errors.New("something went wrong")
@@ -597,11 +624,11 @@ func (g *mockPermsSetUID) HostCookiesAllowed(ctx context.Context, gdprSignal gdp
 	return g.allowHost, nil
 }
 
-func (g *mockPermsSetUID) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, gdprSignal gdpr.Signal, consent string) (bool, error) {
+func (g *fakePermsSetUID) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName) (bool, error) {
 	return false, nil
 }
 
-func (g *mockPermsSetUID) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string, aliasGVLIDs map[string]uint16) (permissions gdpr.AuctionPermissions, err error) {
+func (g *fakePermsSetUID) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (permissions gdpr.AuctionPermissions, err error) {
 	return gdpr.AuctionPermissions{
 		AllowBidRequest: g.personalInfoAllowed,
 		PassGeo:         g.personalInfoAllowed,

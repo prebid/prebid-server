@@ -28,7 +28,7 @@ const (
 	chromeiOSStrLen = len(chromeiOSStr)
 )
 
-func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, perms gdpr.Permissions, pbsanalytics analytics.PBSAnalyticsModule, accountsFetcher stored_requests.AccountFetcher, metricsEngine metrics.MetricsEngine) httprouter.Handle {
+func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, gdprPermsBuilder gdpr.PermissionsBuilder, tcf2CfgBuilder gdpr.TCF2ConfigBuilder, pbsanalytics analytics.PBSAnalyticsModule, accountsFetcher stored_requests.AccountFetcher, metricsEngine metrics.MetricsEngine) httprouter.Handle {
 	cookieTTL := time.Duration(cfg.HostCookie.TTL) * 24 * time.Hour
 
 	// convert map of syncers by bidder to map of syncers by key
@@ -79,8 +79,7 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 		if accountID == "" {
 			accountID = metrics.PublisherUnknown
 		}
-		// the fetched account is not currently used. It'll be used to get account-specific GDPR config in a future PR.
-		_, fetchErrs := accountService.GetAccount(context.Background(), cfg, accountsFetcher, accountID)
+		account, fetchErrs := accountService.GetAccount(context.Background(), cfg, accountsFetcher, accountID)
 		if len(fetchErrs) > 0 {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(combineErrors(fetchErrs).Error()))
@@ -89,7 +88,9 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 			return
 		}
 
-		if shouldReturn, status, body := preventSyncsGDPR(query.Get("gdpr"), query.Get("gdpr_consent"), perms); shouldReturn {
+		tcf2Cfg := tcf2CfgBuilder(cfg.GDPR.TCF2, account.GDPR)
+
+		if shouldReturn, status, body := preventSyncsGDPR(query.Get("gdpr"), query.Get("gdpr_consent"), gdprPermsBuilder, tcf2Cfg); shouldReturn {
 			w.WriteHeader(status)
 			w.Write([]byte(body))
 			switch status {
@@ -201,7 +202,7 @@ func checkChromeBrowserVersion(ua string, index int, chromeStrLength int) bool {
 	return result
 }
 
-func preventSyncsGDPR(gdprEnabled string, gdprConsent string, perms gdpr.Permissions) (shouldReturn bool, status int, body string) {
+func preventSyncsGDPR(gdprEnabled string, gdprConsent string, permsBuilder gdpr.PermissionsBuilder, tcf2Cfg gdpr.TCF2ConfigReader) (shouldReturn bool, status int, body string) {
 	if gdprEnabled != "" && gdprEnabled != "0" && gdprEnabled != "1" {
 		return true, http.StatusBadRequest, "the gdpr query param must be either 0 or 1. You gave " + gdprEnabled
 	}
@@ -216,7 +217,14 @@ func preventSyncsGDPR(gdprEnabled string, gdprConsent string, perms gdpr.Permiss
 		gdprSignal = gdpr.Signal(i)
 	}
 
-	allowed, err := perms.HostCookiesAllowed(context.Background(), gdprSignal, gdprConsent)
+	gdprRequestInfo := gdpr.RequestInfo{
+		Consent:    gdprConsent,
+		GDPRSignal: gdprSignal,
+	}
+
+	perms := permsBuilder(tcf2Cfg, gdprRequestInfo)
+
+	allowed, err := perms.HostCookiesAllowed(context.Background())
 	if err != nil {
 		if _, ok := err.(*gdpr.ErrorMalformedConsent); ok {
 			return true, http.StatusBadRequest, "gdpr_consent was invalid. " + err.Error()
