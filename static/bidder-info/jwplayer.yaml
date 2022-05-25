@@ -1,0 +1,9 @@
+maintainer:
+  email: boost-engineering@jwplayer.com
+capabilities:
+  app:
+    mediaTypes:
+      - video
+  site:
+    mediaTypes:
+      - video
