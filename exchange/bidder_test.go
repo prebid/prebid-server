@@ -1846,6 +1846,50 @@ func TestPrepareStoredResponse(t *testing.T) {
 	assert.Equal(t, []byte(`{"id": "resp_id1"}`), result.response.Body, "incorrect response body")
 }
 
+func TestRequestBidsWithAdsCertsSigner(t *testing.T) {
+	respStatus := 200
+	respBody := "{\"bid\":false}"
+	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
+	defer server.Close()
+
+	requestHeaders := http.Header{}
+	requestHeaders.Add("Content-Type", "application/json")
+
+	bidderImpl := &goodSingleBidder{
+		httpRequest: &adapters.RequestData{
+			Method:  "POST",
+			Uri:     server.URL,
+			Body:    []byte("{\"key\":\"val\"}"),
+			Headers: http.Header{},
+		},
+		bidResponse: nil,
+	}
+	bidderImpl.bidResponse = &adapters.BidderResponse{
+		Bids: []*adapters.TypedBid{
+			{
+				Bid: &openrtb2.Bid{
+					ID: "bidId",
+				},
+				BidType:      openrtb_ext.BidTypeBanner,
+				DealPriority: 4,
+			},
+		},
+	}
+
+	bidder := AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, &config.DebugInfo{Allow: false})
+	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+
+	bidderReq := BidderRequest{
+		BidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "impId"}}},
+		BidderName: "test",
+	}
+	ctx := context.Background()
+	bidAdjustment := 2.0
+	_, errs := bidder.requestBid(ctx, bidderReq, bidAdjustment, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, &MockInProcessSigner{}, bidRequestOptions{accountDebugAllowed: false, headerDebugAllowed: false, addCallSignHeader: true})
+
+	assert.Len(t, errs, 0, "no errors should be returned")
+}
+
 func wrapWithBidderInfo(bidder adapters.Bidder) adapters.Bidder {
 	bidderInfo := config.BidderInfo{
 		Enabled: true,
@@ -1972,4 +2016,11 @@ func (bidder *notifyingBidder) MakeBids(internalRequest *openrtb2.BidRequest, ex
 
 func (bidder *notifyingBidder) MakeTimeoutNotification(req *adapters.RequestData) (*adapters.RequestData, []error) {
 	return &bidder.notifyRequest, nil
+}
+
+type MockInProcessSigner struct {
+}
+
+func (mips *MockInProcessSigner) Sign(destinationURL string, body []byte) (string, error) {
+	return "mock data", nil
 }

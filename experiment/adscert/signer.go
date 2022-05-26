@@ -30,14 +30,14 @@ func NewAdCertsSigner(experimentAdCertsConfig config.ExperimentAdCerts) Signer {
 }
 
 type inProcessSigner struct {
-	localSignatory signatory.LocalAuthenticatedConnectionsSignatory
+	signatory signatory.AuthenticatedConnectionsSignatory
 }
 
 func (ips *inProcessSigner) Sign(destinationURL string, body []byte) (string, error) {
 	req := &api.AuthenticatedConnectionSignatureRequest{
 		RequestInfo: createRequestInfo(destinationURL, body),
 	}
-	resp, err := ips.localSignatory.SignAuthenticatedConnection(req)
+	resp, err := ips.signatory.SignAuthenticatedConnection(req)
 	if err != nil {
 		return "", err
 	}
@@ -45,12 +45,12 @@ func (ips *inProcessSigner) Sign(destinationURL string, body []byte) (string, er
 		signatureMessage := resp.RequestInfo.SignatureInfo[0].SignatureMessage
 		return signatureMessage, nil
 	}
-	return "", fmt.Errorf("Error signing request: %s", resp.GetSignatureOperationStatus())
+	return "", fmt.Errorf("error signing request: %s", resp.GetSignatureOperationStatus())
 }
 
 func newInProcessSigner(inProcessSignerConfig config.InProcess) *inProcessSigner {
 	return &inProcessSigner{
-		localSignatory: *signatory.NewLocalAuthenticatedConnectionsSignatory(
+		signatory: signatory.NewLocalAuthenticatedConnectionsSignatory(
 			inProcessSignerConfig.Origin,
 			rand.Reader,
 			clock.New(),
