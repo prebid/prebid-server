@@ -133,7 +133,7 @@ func (a *OperaAdsAdapter) MakeRequests(
 			uri = endpoint
 		}
 
-		imp.TagID = operaadsExt.PlacementId.Video
+		imp.TagID = ""
 
 		if err != nil {
 			errs = append(errs, &errortypes.BadInput{
