@@ -1111,7 +1111,7 @@ func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.Bid
 		gdpr.NewVendorListFetcher(context.Background(), config.GDPR{}, &http.Client{}, gdpr.VendorListURLMaker),
 		mockCurrencyConverter,
 		mockFetcher,
-		&adscert.NullSigner{},
+		&adscert.NilSigner{},
 	), mockBidServersArray
 }
 

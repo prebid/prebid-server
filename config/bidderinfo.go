@@ -14,21 +14,22 @@ type BidderInfos map[string]BidderInfo
 
 // BidderInfo specifies all configuration for a bidder except for enabled status, endpoint, and extra information.
 type BidderInfo struct {
-	Enabled                 bool              // copied from adapter config for convenience. to be refactored.
-	Maintainer              *MaintainerInfo   `yaml:"maintainer"`
-	Capabilities            *CapabilitiesInfo `yaml:"capabilities"`
-	ModifyingVastXmlAllowed bool              `yaml:"modifyingVastXmlAllowed"`
-	Debug                   *DebugInfo        `yaml:"debug"`
-	GVLVendorID             uint16            `yaml:"gvlVendorID"`
-	Syncer                  *Syncer           `yaml:"userSync"`
-	Experimental            Experimental      `yaml:"experiment"`
+	Enabled                 bool                 // copied from adapter config for convenience. to be refactored.
+	Maintainer              *MaintainerInfo      `yaml:"maintainer"`
+	Capabilities            *CapabilitiesInfo    `yaml:"capabilities"`
+	ModifyingVastXmlAllowed bool                 `yaml:"modifyingVastXmlAllowed"`
+	Debug                   *DebugInfo           `yaml:"debug"`
+	GVLVendorID             uint16               `yaml:"gvlVendorID"`
+	Syncer                  *Syncer              `yaml:"userSync"`
+	Experimental            BidderInfoExperiment `yaml:"experiment"`
 }
 
-// Experimental instead of Experiment to avoid conflicts with existing structure
-type Experimental struct {
+// BidderInfoExperiment defines if experimental features for bidder are available
+type BidderInfoExperiment struct {
 	AdsCert AdsCert `yaml:"adscert"`
 }
 
+// AdsCert enables Call Sign feature for bidder
 type AdsCert struct {
 	Enable bool `yaml:"enable"`
 }

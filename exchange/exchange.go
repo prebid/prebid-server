@@ -524,7 +524,7 @@ func (e *exchange) getAllBids(
 			bidderAdsCertEnabled := e.bidderInfo[string(bidderRequest.BidderName)].Experimental.AdsCert.Enable
 			addCallSignHeader := requestAdsCertEnabled && bidderAdsCertEnabled
 
-			bids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest, adjustmentFactor, conversions, &reqInfo, e.adCertSigner, BidRequestMetadata{accountDebugAllowed, headerDebugAllowed, addCallSignHeader})
+			bids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest, adjustmentFactor, conversions, &reqInfo, e.adCertSigner, bidRequestOptions{accountDebugAllowed: accountDebugAllowed, headerDebugAllowed: headerDebugAllowed, addCallSignHeader: addCallSignHeader})
 
 			// Add in time reporting
 			elapsed := time.Since(start)

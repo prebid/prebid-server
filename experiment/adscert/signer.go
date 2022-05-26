@@ -1,7 +1,7 @@
 package adscert
 
 import (
-	crypto_rand "crypto/rand"
+	"crypto/rand"
 	"fmt"
 	"github.com/IABTechLab/adscert/pkg/adscert/api"
 	"github.com/IABTechLab/adscert/pkg/adscert/discovery"
@@ -20,13 +20,13 @@ type Signer interface {
 
 func NewAdCertsSigner(experimentAdCertsConfig config.ExperimentAdCerts) Signer {
 	if !experimentAdCertsConfig.Enabled {
-		return nil
+		return &NilSigner{}
 	}
 	if len(experimentAdCertsConfig.InProcess.Origin) > 0 {
 		//for initial implementation support in-process signer only
 		return newInProcessSigner(experimentAdCertsConfig.InProcess)
 	}
-	return &NullSigner{}
+	return &NilSigner{}
 }
 
 type inProcessSigner struct {
@@ -45,14 +45,14 @@ func (ips *inProcessSigner) Sign(destinationURL string, body []byte) (string, er
 		signatureMessage := resp.RequestInfo.SignatureInfo[0].SignatureMessage
 		return signatureMessage, nil
 	}
-	return "", fmt.Errorf("Error signing request: %s", resp.GetSignatureOperationStatus().String())
+	return "", fmt.Errorf("Error signing request: %s", resp.GetSignatureOperationStatus())
 }
 
 func newInProcessSigner(inProcessSignerConfig config.InProcess) *inProcessSigner {
 	return &inProcessSigner{
 		localSignatory: *signatory.NewLocalAuthenticatedConnectionsSignatory(
 			inProcessSignerConfig.Origin,
-			crypto_rand.Reader,
+			rand.Reader,
 			clock.New(),
 			discovery.NewDefaultDnsResolver(),
 			discovery.NewDefaultDomainStore(),
@@ -68,9 +68,9 @@ func createRequestInfo(destinationURL string, body []byte) *api.RequestInfo {
 	return reqInfo
 }
 
-type NullSigner struct {
+type NilSigner struct {
 }
 
-func (ns *NullSigner) Sign(destinationURL string, body []byte) (string, error) {
+func (ns *NilSigner) Sign(destinationURL string, body []byte) (string, error) {
 	return "", nil
 }
