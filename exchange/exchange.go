@@ -521,7 +521,7 @@ func (e *exchange) getAllBids(
 
 			//add call sign header for bidders where AdsCertDisable is enabled and request.ext.prebid.experiment.adscert.enabled is set to true
 			requestAdsCertEnabled := experiment != nil && experiment.AdsCert != nil && experiment.AdsCert.Enabled
-			bidderAdsCertEnabled := e.bidderInfo[string(bidderRequest.BidderName)].Experimental.AdsCert.Enable
+			bidderAdsCertEnabled := e.bidderInfo[string(bidderRequest.BidderName)].Experiment.AdsCert.Enable
 			addCallSignHeader := requestAdsCertEnabled && bidderAdsCertEnabled
 
 			bids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest, adjustmentFactor, conversions, &reqInfo, e.adCertSigner, bidRequestOptions{accountDebugAllowed: accountDebugAllowed, headerDebugAllowed: headerDebugAllowed, addCallSignHeader: addCallSignHeader})

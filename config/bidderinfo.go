@@ -21,7 +21,7 @@ type BidderInfo struct {
 	Debug                   *DebugInfo           `yaml:"debug"`
 	GVLVendorID             uint16               `yaml:"gvlVendorID"`
 	Syncer                  *Syncer              `yaml:"userSync"`
-	Experimental            BidderInfoExperiment `yaml:"experiment"`
+	Experiment              BidderInfoExperiment `yaml:"experiment"`
 }
 
 // BidderInfoExperiment defines if experimental features for bidder are available
