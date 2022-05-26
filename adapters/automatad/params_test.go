@@ -13,9 +13,9 @@ func TestValidParams(t *testing.T) {
 		t.Fatalf("Failed to fetch the json schema. %v", err)
 	}
 
-	for _, p := range validParams {
-		if err := validator.Validate(openrtb_ext.BidderAutomatad, json.RawMessage(p)); err != nil {
-			t.Errorf("Schema rejected valid params: %s", p)
+	for _, validParam := range validParams {
+		if err := validator.Validate(openrtb_ext.BidderAutomatad, json.RawMessage(validParam)); err != nil {
+			t.Errorf("Schema rejected valid params: %s", validParam)
 		}
 	}
 }
@@ -26,9 +26,9 @@ func TestInvalidParams(t *testing.T) {
 		t.Fatalf("Failed to fetch the json schema. %v", err)
 	}
 
-	for _, p := range invalidParams {
-		if err := validator.Validate(openrtb_ext.BidderAutomatad, json.RawMessage(p)); err == nil {
-			t.Errorf("Schema allowed invalid params: %s", p)
+	for _, invalidParam := range invalidParams {
+		if err := validator.Validate(openrtb_ext.BidderAutomatad, json.RawMessage(invalidParam)); err == nil {
+			t.Errorf("Schema allowed invalid params: %s", invalidParam)
 		}
 	}
 }
