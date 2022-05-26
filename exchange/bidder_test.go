@@ -98,7 +98,9 @@ func TestSingleBidder(t *testing.T) {
 			BidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "impId"}}},
 			BidderName: "test",
 		}
-		seatBid, errs := bidder.requestBid(ctx, bidderReq, bidAdjustment, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, true, false)
+		seatBids, errs := bidder.requestBid(ctx, bidderReq, bidAdjustment, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, true, false)
+		assert.Len(t, seatBids, 1)
+		seatBid := seatBids[0]
 
 		// Make sure the goodSingleBidder was called with the expected arguments.
 		if bidderImpl.httpResponse == nil {
@@ -184,7 +186,7 @@ func TestRequestBidRemovesSensitiveHeaders(t *testing.T) {
 		BidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "impId"}}},
 		BidderName: "test",
 	}
-	seatBid, errs := bidder.requestBid(ctx, bidderReq, 1, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, true, false)
+	seatBids, errs := bidder.requestBid(ctx, bidderReq, 1, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, true, false)
 
 	expectedHttpCalls := []*openrtb_ext.ExtHttpCall{
 		{
@@ -197,7 +199,8 @@ func TestRequestBidRemovesSensitiveHeaders(t *testing.T) {
 	}
 
 	assert.Empty(t, errs)
-	assert.ElementsMatch(t, seatBid.httpCalls, expectedHttpCalls)
+	assert.Len(t, seatBids, 1)
+	assert.ElementsMatch(t, seatBids[0].httpCalls, expectedHttpCalls)
 }
 
 func TestSetGPCHeader(t *testing.T) {
@@ -228,7 +231,7 @@ func TestSetGPCHeader(t *testing.T) {
 		BidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "impId"}}},
 		BidderName: "test",
 	}
-	seatBid, errs := bidder.requestBid(ctx, bidderReq, 1, currencyConverter.Rates(), &adapters.ExtraRequestInfo{GlobalPrivacyControlHeader: "1"}, true, false)
+	seatBids, errs := bidder.requestBid(ctx, bidderReq, 1, currencyConverter.Rates(), &adapters.ExtraRequestInfo{GlobalPrivacyControlHeader: "1"}, true, false)
 
 	expectedHttpCall := []*openrtb_ext.ExtHttpCall{
 		{
@@ -241,7 +244,8 @@ func TestSetGPCHeader(t *testing.T) {
 	}
 
 	assert.Empty(t, errs)
-	assert.ElementsMatch(t, seatBid.httpCalls, expectedHttpCall)
+	assert.Len(t, seatBids, 1)
+	assert.ElementsMatch(t, seatBids[0].httpCalls, expectedHttpCall)
 }
 
 func TestSetGPCHeaderNil(t *testing.T) {
@@ -270,7 +274,7 @@ func TestSetGPCHeaderNil(t *testing.T) {
 		BidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "impId"}}},
 		BidderName: "test",
 	}
-	seatBid, errs := bidder.requestBid(ctx, bidderReq, 1, currencyConverter.Rates(), &adapters.ExtraRequestInfo{GlobalPrivacyControlHeader: "1"}, true, false)
+	seatBids, errs := bidder.requestBid(ctx, bidderReq, 1, currencyConverter.Rates(), &adapters.ExtraRequestInfo{GlobalPrivacyControlHeader: "1"}, true, false)
 
 	expectedHttpCall := []*openrtb_ext.ExtHttpCall{
 		{
@@ -283,7 +287,8 @@ func TestSetGPCHeaderNil(t *testing.T) {
 	}
 
 	assert.Empty(t, errs)
-	assert.ElementsMatch(t, seatBid.httpCalls, expectedHttpCall)
+	assert.Len(t, seatBids, 1)
+	assert.ElementsMatch(t, seatBids[0].httpCalls, expectedHttpCall)
 }
 
 // TestMultiBidder makes sure all the requests get sent, and the responses processed.
@@ -332,17 +337,17 @@ func TestMultiBidder(t *testing.T) {
 		BidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "impId"}}},
 		BidderName: "test",
 	}
-	seatBid, errs := bidder.requestBid(context.Background(), bidderReq, 1.0, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, true, true)
+	seatBids, errs := bidder.requestBid(context.Background(), bidderReq, 1.0, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, true, true)
 
-	if seatBid == nil {
+	if len(seatBids) != 1 {
 		t.Fatalf("SeatBid should exist, because bids exist.")
 	}
 
 	if len(errs) != 1+len(bidderImpl.httpRequests) {
 		t.Errorf("Expected %d errors. Got %d", 1+len(bidderImpl.httpRequests), len(errs))
 	}
-	if len(seatBid.bids) != len(bidderImpl.httpResponses)*len(mockBidderResponse.Bids) {
-		t.Errorf("Expected %d bids. Got %d", len(bidderImpl.httpResponses)*len(mockBidderResponse.Bids), len(seatBid.bids))
+	if len(seatBids[0].bids) != len(bidderImpl.httpResponses)*len(mockBidderResponse.Bids) {
+		t.Errorf("Expected %d bids. Got %d", len(bidderImpl.httpResponses)*len(mockBidderResponse.Bids), len(seatBids[0].bids))
 	}
 
 }
@@ -698,7 +703,7 @@ func TestMultiCurrencies(t *testing.T) {
 			BidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "impId"}}},
 			BidderName: openrtb_ext.BidderAppnexus,
 		}
-		seatBid, errs := bidder.requestBid(
+		seatBids, errs := bidder.requestBid(
 			context.Background(),
 			bidderReq,
 			1,
@@ -707,6 +712,8 @@ func TestMultiCurrencies(t *testing.T) {
 			true,
 			true,
 		)
+		assert.Len(t, seatBids, 1)
+		seatBid := seatBids[0]
 
 		// Verify:
 		resultLightBids := make([]bid, len(seatBid.bids))
@@ -848,7 +855,7 @@ func TestMultiCurrencies_RateConverterNotSet(t *testing.T) {
 			BidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "impId"}}},
 			BidderName: "test",
 		}
-		seatBid, errs := bidder.requestBid(
+		seatBids, errs := bidder.requestBid(
 			context.Background(),
 			bidderReq,
 			1,
@@ -857,6 +864,8 @@ func TestMultiCurrencies_RateConverterNotSet(t *testing.T) {
 			true,
 			true,
 		)
+		assert.Len(t, seatBids, 1)
+		seatBid := seatBids[0]
 
 		// Verify:
 		assert.Equal(t, false, (seatBid == nil && tc.expectedBidsCount != 0), tc.description)
@@ -1017,7 +1026,7 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			BidRequest: &openrtb2.BidRequest{Cur: tc.bidRequestCurrencies, Imp: []openrtb2.Imp{{ID: "impId"}}},
 			BidderName: "test",
 		}
-		seatBid, errs := bidder.requestBid(
+		seatBids, errs := bidder.requestBid(
 			context.Background(),
 			bidderReq,
 			1,
@@ -1026,6 +1035,8 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			true,
 			false,
 		)
+		assert.Len(t, seatBids, 1)
+		seatBid := seatBids[0]
 
 		// Verify:
 		if tc.expectedError {
@@ -1334,9 +1345,10 @@ func TestMobileNativeTypes(t *testing.T) {
 			true,
 			true,
 		)
+		assert.Len(t, seatBids, 1)
 
 		var actualValue string
-		for _, bid := range seatBids.bids {
+		for _, bid := range seatBids[0].bids {
 			actualValue = bid.bid.AdM
 			assert.JSONEq(t, tc.expectedValue, actualValue, tc.description)
 		}
@@ -1405,9 +1417,10 @@ func TestRequestBidsStoredBidResponses(t *testing.T) {
 			true,
 			true,
 		)
+		assert.Len(t, seatBids, 1)
 
-		assert.Len(t, seatBids.bids, len(tc.expectedBidIds), "Incorrect bids number for test case ", tc.description)
-		for index, bid := range seatBids.bids {
+		assert.Len(t, seatBids[0].bids, len(tc.expectedBidIds), "Incorrect bids number for test case ", tc.description)
+		for index, bid := range seatBids[0].bids {
 			assert.Equal(t, tc.expectedBidIds[index], bid.bid.ID, tc.description)
 			assert.Equal(t, tc.expectedImpIds[index], bid.bid.ImpID, tc.description)
 		}

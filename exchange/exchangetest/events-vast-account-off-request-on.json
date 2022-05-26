@@ -68,7 +68,8 @@
               "bidType": "video"
             }
           ]
-        }
+        },
+        "seat": "appnexus"
       }
     },
     "audienceNetwork": {
@@ -89,7 +90,8 @@
               "bidType": "video"
             }
           ]
-        }
+        },
+        "seat": "audienceNetwork"
       }
     }
   },

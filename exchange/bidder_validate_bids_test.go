@@ -13,7 +13,7 @@ import (
 
 func TestAllValidBids(t *testing.T) {
 	var bidder AdaptedBidder = addValidatedBidderMiddleware(&mockAdaptedBidder{
-		bidResponse: &pbsOrtbSeatBid{
+		bidResponse: []*pbsOrtbSeatBid{{
 			bids: []*pbsOrtbBid{
 				{
 					bid: &openrtb2.Bid{
@@ -50,19 +50,20 @@ func TestAllValidBids(t *testing.T) {
 				},
 			},
 		},
-	})
+		}})
 	bidderReq := BidderRequest{
 		BidRequest: &openrtb2.BidRequest{},
 		BidderName: openrtb_ext.BidderAppnexus,
 	}
-	seatBid, errs := bidder.requestBid(context.Background(), bidderReq, 1.0, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, true, false)
-	assert.Len(t, seatBid.bids, 4)
+	seatBids, errs := bidder.requestBid(context.Background(), bidderReq, 1.0, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, true, false)
+	assert.Len(t, seatBids, 1)
+	assert.Len(t, seatBids[0].bids, 4)
 	assert.Len(t, errs, 0)
 }
 
 func TestAllBadBids(t *testing.T) {
 	bidder := addValidatedBidderMiddleware(&mockAdaptedBidder{
-		bidResponse: &pbsOrtbSeatBid{
+		bidResponse: []*pbsOrtbSeatBid{{
 			bids: []*pbsOrtbBid{
 				{
 					bid: &openrtb2.Bid{
@@ -112,19 +113,20 @@ func TestAllBadBids(t *testing.T) {
 				{},
 			},
 		},
-	})
+		}})
 	bidderReq := BidderRequest{
 		BidRequest: &openrtb2.BidRequest{},
 		BidderName: openrtb_ext.BidderAppnexus,
 	}
-	seatBid, errs := bidder.requestBid(context.Background(), bidderReq, 1.0, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, true, false)
-	assert.Len(t, seatBid.bids, 0)
+	seatBids, errs := bidder.requestBid(context.Background(), bidderReq, 1.0, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, true, false)
+	assert.Len(t, seatBids, 1)
+	assert.Len(t, seatBids[0].bids, 0)
 	assert.Len(t, errs, 7)
 }
 
 func TestMixedBids(t *testing.T) {
 	bidder := addValidatedBidderMiddleware(&mockAdaptedBidder{
-		bidResponse: &pbsOrtbSeatBid{
+		bidResponse: []*pbsOrtbSeatBid{{
 			bids: []*pbsOrtbBid{
 				{
 					bid: &openrtb2.Bid{
@@ -185,13 +187,14 @@ func TestMixedBids(t *testing.T) {
 				{},
 			},
 		},
-	})
+		}})
 	bidderReq := BidderRequest{
 		BidRequest: &openrtb2.BidRequest{},
 		BidderName: openrtb_ext.BidderAppnexus,
 	}
-	seatBid, errs := bidder.requestBid(context.Background(), bidderReq, 1.0, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, true, false)
-	assert.Len(t, seatBid.bids, 3)
+	seatBids, errs := bidder.requestBid(context.Background(), bidderReq, 1.0, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, true, false)
+	assert.Len(t, seatBids, 1)
+	assert.Len(t, seatBids[0].bids, 3)
 	assert.Len(t, errs, 5)
 }
 
@@ -291,11 +294,11 @@ func TestCurrencyBids(t *testing.T) {
 			},
 		}
 		bidder := addValidatedBidderMiddleware(&mockAdaptedBidder{
-			bidResponse: &pbsOrtbSeatBid{
+			bidResponse: []*pbsOrtbSeatBid{{
 				currency: tc.brpCur,
 				bids:     bids,
 			},
-		})
+			}})
 
 		expectedValidBids := len(bids)
 		expectedErrs := 0
@@ -311,17 +314,18 @@ func TestCurrencyBids(t *testing.T) {
 		}
 		bidderRequest := BidderRequest{BidRequest: request, BidderName: openrtb_ext.BidderAppnexus}
 
-		seatBid, errs := bidder.requestBid(context.Background(), bidderRequest, 1.0, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, true, false)
-		assert.Len(t, seatBid.bids, expectedValidBids)
+		seatBids, errs := bidder.requestBid(context.Background(), bidderRequest, 1.0, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, true, false)
+		assert.Len(t, seatBids, 1)
+		assert.Len(t, seatBids[0].bids, expectedValidBids)
 		assert.Len(t, errs, expectedErrs)
 	}
 }
 
 type mockAdaptedBidder struct {
-	bidResponse   *pbsOrtbSeatBid
+	bidResponse   []*pbsOrtbSeatBid
 	errorResponse []error
 }
 
-func (b *mockAdaptedBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool) (*pbsOrtbSeatBid, []error) {
+func (b *mockAdaptedBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool) ([]*pbsOrtbSeatBid, []error) {
 	return b.bidResponse, b.errorResponse
 }

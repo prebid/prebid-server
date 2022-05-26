@@ -53,7 +53,8 @@
               "bidType": "banner"
             }
           ]
-        }
+        },
+        "seat": "appnexus"
       }
     }
   },

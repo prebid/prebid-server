@@ -73,7 +73,8 @@
               "bidType": "video"
             }
           ]
-        }
+        },
+        "seat": "appnexus"
       }
     },
     "rubicon": {
@@ -92,7 +93,8 @@
               "bidType": "video"
             }
           ]
-        }
+        },
+        "seat": "rubicon"
       }
     }
   },

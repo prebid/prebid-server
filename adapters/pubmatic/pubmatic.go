@@ -391,17 +391,15 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 				bid.Cat = bid.Cat[0:1]
 			}
 
+			seat := ""
 			var bidExt *pubmaticBidExt
 			bidType := openrtb_ext.BidTypeBanner
 			if err := json.Unmarshal(bid.Ext, &bidExt); err == nil && bidExt != nil {
+				seat = bidExt.Marketplace
 				if bidExt.VideoCreativeInfo != nil && bidExt.VideoCreativeInfo.Duration != nil {
 					impVideo.Duration = *bidExt.VideoCreativeInfo.Duration
 				}
 				bidType = getBidType(bidExt)
-			}
-			seat := ""
-			if bidExt.Marketplace != "" {
-				seat = bidExt.Marketplace
 			}
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:      &bid,

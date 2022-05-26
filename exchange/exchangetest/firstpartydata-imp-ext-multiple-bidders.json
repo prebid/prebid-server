@@ -87,7 +87,8 @@
                         },
                         "bidType": "banner"
                     }]
-                }
+                },
+                "seat": "appnexus"
             }
         },
         "rubicon": {
@@ -140,7 +141,8 @@
                         },
                         "bidType": "banner"
                     }]
-                }
+                },
+                "seat": "rubicon"
             }
         }
     },

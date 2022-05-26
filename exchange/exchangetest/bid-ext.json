@@ -59,7 +59,8 @@
                         },
                         "bidType": "video"
                     }]
-                }
+                },
+                "seat": "appnexus"
             }
         }
     },

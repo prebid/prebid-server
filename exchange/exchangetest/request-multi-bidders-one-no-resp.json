@@ -69,7 +69,8 @@
               }
             }
           ]
-        }
+        },
+        "seat": "appnexus"
       }
     },
     "audienceNetwork": {

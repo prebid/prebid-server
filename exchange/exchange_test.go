@@ -3999,6 +3999,7 @@ type bidderResponse struct {
 	SeatBid   *bidderSeatBid             `json:"pbsSeatBid,omitempty"`
 	Errors    []string                   `json:"errors,omitempty"`
 	HttpCalls []*openrtb_ext.ExtHttpCall `json:"httpCalls,omitempty"`
+	Seat      string                     `json:"seat"`
 }
 
 // bidderSeatBid is basically a subset of pbsOrtbSeatBid from exchange/bidder.go.
@@ -4036,7 +4037,7 @@ type validatingBidder struct {
 	mockResponses map[string]bidderResponse
 }
 
-func (b *validatingBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool) (seatBid *pbsOrtbSeatBid, errs []error) {
+func (b *validatingBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool) (seatBid []*pbsOrtbSeatBid, errs []error) {
 	if expectedRequest, ok := b.expectations[string(bidderRequest.BidderName)]; ok {
 		if expectedRequest != nil {
 			if expectedRequest.BidAdjustment != bidAdjustment {
@@ -4059,15 +4060,17 @@ func (b *validatingBidder) requestBid(ctx context.Context, bidderRequest BidderR
 				}
 			}
 
-			seatBid = &pbsOrtbSeatBid{
+			seatBid = []*pbsOrtbSeatBid{{
 				bids:      bids,
 				httpCalls: mockResponse.HttpCalls,
-			}
+				seat:      mockResponse.Seat,
+			}}
 		} else {
-			seatBid = &pbsOrtbSeatBid{
+			seatBid = []*pbsOrtbSeatBid{{
 				bids:      nil,
 				httpCalls: mockResponse.HttpCalls,
-			}
+				seat:      string(bidderRequest.BidderName),
+			}}
 		}
 
 		for _, err := range mockResponse.Errors {
@@ -4084,9 +4087,9 @@ type capturingRequestBidder struct {
 	req *openrtb2.BidRequest
 }
 
-func (b *capturingRequestBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool) (seatBid *pbsOrtbSeatBid, errs []error) {
+func (b *capturingRequestBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool) (seatBid []*pbsOrtbSeatBid, errs []error) {
 	b.req = bidderRequest.BidRequest
-	return &pbsOrtbSeatBid{}, nil
+	return []*pbsOrtbSeatBid{{}}, nil
 }
 
 func diffOrtbRequests(t *testing.T, description string, expected *openrtb2.BidRequest, actual *openrtb2.BidRequest) {
@@ -4186,7 +4189,7 @@ func (e *emptyUsersync) HasAnyLiveSyncs() bool {
 
 type panicingAdapter struct{}
 
-func (panicingAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool) (posb *pbsOrtbSeatBid, errs []error) {
+func (panicingAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool) (posb []*pbsOrtbSeatBid, errs []error) {
 	panic("Panic! Panic! The world is ending!")
 }
 
