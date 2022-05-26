@@ -92,7 +92,7 @@ type Configuration struct {
 	GenerateBidID bool `mapstructure:"generate_bid_id"`
 	// GenerateRequestID overrides the bidrequest.id in an AMP Request or an App Stored Request with a generated UUID if set to true. The default is false.
 	GenerateRequestID bool `mapstructure:"generate_request_id"`
-	// Experiment configures Ads Cert Authenticated connections.
+	// Experiment defines if experimental features are available for the host
 	Experiment Experiment `mapstructure:"experiment"`
 }
 
@@ -1183,7 +1183,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	// Defaults for account_defaults.events.default_url
 	v.SetDefault("account_defaults.events.default_url", "https://PBS_HOST/event?t=##PBS-EVENTTYPE##&vtype=##PBS-VASTEVENT##&b=##PBS-BIDID##&f=i&a=##PBS-ACCOUNTID##&ts=##PBS-TIMESTAMP##&bidder=##PBS-BIDDER##&int=##PBS-INTEGRATION##&mt=##PBS-MEDIATYPE##&ch=##PBS-CHANNEL##&aid=##PBS-AUCTIONID##&l=##PBS-LINEID##")
 
-	// Experiment configures Ads Cert Authenticated connections.
+	// Experiment defines if experimental features are available for the host
 	v.SetDefault("experiment.adscert.enabled", false)
 	v.SetDefault("experiment.adscert.in-process.origin", "")
 	v.SetDefault("experiment.adscert.in-process.key", "")

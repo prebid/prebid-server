@@ -7,12 +7,11 @@ type Experiment struct {
 
 //ExperimentAdCerts configures and enables functionality to generate and send Ads Cert Auth header to bidders
 type ExperimentAdCerts struct {
-	Enabled bool `mapstructure:"enabled"`
-	// InProcess configures data to sign requests using ads certs library in core PBS logic
+	Enabled   bool      `mapstructure:"enabled"`
 	InProcess InProcess `mapstructure:"in-process"`
 }
 
-//InProcess signer uses in-process library to sign requests as a part of PBS core functionality.
+//InProcess configures data to sign requests using ads certs library in core PBS logic
 type InProcess struct {
 	//Origin is ads.cert hostname for the originating party
 	Origin string `mapstructure:"origin"`
