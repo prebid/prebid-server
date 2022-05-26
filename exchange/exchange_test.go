@@ -3996,10 +3996,9 @@ type bidderRequest struct {
 }
 
 type bidderResponse struct {
-	SeatBid   *bidderSeatBid             `json:"pbsSeatBid,omitempty"`
+	SeatBids  []*bidderSeatBid           `json:"pbsSeatBids,omitempty"`
 	Errors    []string                   `json:"errors,omitempty"`
 	HttpCalls []*openrtb_ext.ExtHttpCall `json:"httpCalls,omitempty"`
-	Seat      string                     `json:"seat"`
 }
 
 // bidderSeatBid is basically a subset of pbsOrtbSeatBid from exchange/bidder.go.
@@ -4007,6 +4006,7 @@ type bidderResponse struct {
 // JSON property tags on those types are contracts in prod.
 type bidderSeatBid struct {
 	Bids []bidderBid `json:"pbsBids,omitempty"`
+	Seat string      `json:"seat"`
 }
 
 // bidderBid is basically a subset of pbsOrtbBid from exchange/bidder.go.
@@ -4037,7 +4037,7 @@ type validatingBidder struct {
 	mockResponses map[string]bidderResponse
 }
 
-func (b *validatingBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool) (seatBid []*pbsOrtbSeatBid, errs []error) {
+func (b *validatingBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool) (seatBids []*pbsOrtbSeatBid, errs []error) {
 	if expectedRequest, ok := b.expectations[string(bidderRequest.BidderName)]; ok {
 		if expectedRequest != nil {
 			if expectedRequest.BidAdjustment != bidAdjustment {
@@ -4050,23 +4050,29 @@ func (b *validatingBidder) requestBid(ctx context.Context, bidderRequest BidderR
 	}
 
 	if mockResponse, ok := b.mockResponses[string(bidderRequest.BidderName)]; ok {
-		if mockResponse.SeatBid != nil {
-			bids := make([]*pbsOrtbBid, len(mockResponse.SeatBid.Bids))
-			for i := 0; i < len(bids); i++ {
-				bids[i] = &pbsOrtbBid{
-					originalBidCPM: mockResponse.SeatBid.Bids[i].Bid.Price,
-					bid:            mockResponse.SeatBid.Bids[i].Bid,
-					bidType:        openrtb_ext.BidType(mockResponse.SeatBid.Bids[i].Type),
-				}
-			}
+		if len(mockResponse.SeatBids) != 0 {
+			for _, mockSeatBid := range mockResponse.SeatBids {
+				var bids []*pbsOrtbBid
 
-			seatBid = []*pbsOrtbSeatBid{{
-				bids:      bids,
-				httpCalls: mockResponse.HttpCalls,
-				seat:      mockResponse.Seat,
-			}}
+				if len(mockSeatBid.Bids) != 0 {
+					bids = make([]*pbsOrtbBid, len(mockSeatBid.Bids))
+					for i := 0; i < len(bids); i++ {
+						bids[i] = &pbsOrtbBid{
+							originalBidCPM: mockSeatBid.Bids[i].Bid.Price,
+							bid:            mockSeatBid.Bids[i].Bid,
+							bidType:        openrtb_ext.BidType(mockSeatBid.Bids[i].Type),
+						}
+					}
+				}
+
+				seatBids = append(seatBids, &pbsOrtbSeatBid{
+					bids:      bids,
+					httpCalls: mockResponse.HttpCalls,
+					seat:      mockSeatBid.Seat,
+				})
+			}
 		} else {
-			seatBid = []*pbsOrtbSeatBid{{
+			seatBids = []*pbsOrtbSeatBid{{
 				bids:      nil,
 				httpCalls: mockResponse.HttpCalls,
 				seat:      string(bidderRequest.BidderName),

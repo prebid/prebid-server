@@ -79,7 +79,7 @@
                 "bidAdjustment": 1.0
             },
             "mockResponse": {
-                "pbsSeatBid": {
+                "pbsSeatBids": [{
                     "pbsBids": [{
                         "ortbBid": {
                             "id": "apn-bid",
@@ -90,9 +90,9 @@
                             "crid": "creative-1"
                         },
                         "bidType": "banner"
-                    }]
-                },
-                "seat": "appnexus"
+                    }],
+"seat": "appnexus"
+                }]
             }
         },
         "rubicon": {
@@ -133,7 +133,7 @@
                 "bidAdjustment": 1.0
             },
             "mockResponse": {
-                "pbsSeatBid": {
+                "pbsSeatBids": [{
                     "pbsBids": [{
                         "ortbBid": {
                             "id": "rubi-bid",
@@ -144,9 +144,9 @@
                             "crid": "creative-2"
                         },
                         "bidType": "banner"
-                    }]
-                },
-                "seat": "rubicon"
+                    }],
+                    "seat": "rubicon"
+                }]
             }
         }
     },
