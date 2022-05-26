@@ -20,6 +20,7 @@ type Metrics struct {
 	ImpMeter                       metrics.Meter
 	AppRequestMeter                metrics.Meter
 	NoCookieMeter                  metrics.Meter
+	DebugRequestMeter              metrics.Meter
 	RequestTimer                   metrics.Timer
 	RequestsQueueTimer             map[RequestType]map[bool]metrics.Timer
 	PrebidCacheRequestTimerSuccess metrics.Timer
@@ -94,6 +95,7 @@ type MarkupDeliveryMetrics struct {
 
 type accountMetrics struct {
 	requestMeter      metrics.Meter
+	debugRequestMeter metrics.Meter
 	bidsReceivedMeter metrics.Meter
 	priceHistogram    metrics.Histogram
 	// store account by adapter metrics. Type is map[PBSBidder.BidderCode]
@@ -119,6 +121,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		ConnectionCloseErrorMeter:      blankMeter,
 		ImpMeter:                       blankMeter,
 		AppRequestMeter:                blankMeter,
+		DebugRequestMeter:              blankMeter,
 		NoCookieMeter:                  blankMeter,
 		RequestTimer:                   blankTimer,
 		DNSLookupTimer:                 blankTimer,
@@ -219,6 +222,7 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 
 	newMetrics.NoCookieMeter = metrics.GetOrRegisterMeter("no_cookie_requests", registry)
 	newMetrics.AppRequestMeter = metrics.GetOrRegisterMeter("app_requests", registry)
+	newMetrics.DebugRequestMeter = metrics.GetOrRegisterMeter("debug_requests", registry)
 	newMetrics.RequestTimer = metrics.GetOrRegisterTimer("request_time", registry)
 	newMetrics.DNSLookupTimer = metrics.GetOrRegisterTimer("dns_lookup_time", registry)
 	newMetrics.TLSHandshakeTimer = metrics.GetOrRegisterTimer("tls_handshake_time", registry)
@@ -394,6 +398,7 @@ func (me *Metrics) getAccountMetrics(id string) *accountMetrics {
 	}
 	am = &accountMetrics{}
 	am.requestMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.requests", id), me.MetricsRegistry)
+	am.debugRequestMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.debug_requests", id), me.MetricsRegistry)
 	am.bidsReceivedMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.bids_received", id), me.MetricsRegistry)
 	am.priceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("account.%s.prices", id), me.MetricsRegistry, metrics.NewExpDecaySample(1028, 0.015))
 	am.adapterMetrics = make(map[openrtb_ext.BidderName]*AdapterMetrics, len(me.exchanges))
@@ -428,6 +433,18 @@ func (me *Metrics) RecordRequest(labels Labels) {
 	// Handle the account metrics now.
 	am := me.getAccountMetrics(labels.PubID)
 	am.requestMeter.Mark(1)
+}
+
+func (me *Metrics) RecordDebugRequest(debugEnabled bool, pubID string) {
+	if debugEnabled {
+		me.DebugRequestMeter.Mark(1)
+		if pubID != PublisherUnknown {
+			am := me.getAccountMetrics(pubID)
+			if !me.MetricsDisabled.AccountDebug {
+				am.debugRequestMeter.Mark(1)
+			}
+		}
+	}
 }
 
 func (me *Metrics) RecordImps(labels ImpLabels) {

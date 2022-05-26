@@ -16,6 +16,7 @@ func TestNewMetrics(t *testing.T) {
 	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{}, syncerKeys)
 
 	ensureContains(t, registry, "app_requests", m.AppRequestMeter)
+	ensureContains(t, registry, "debug_requests", m.DebugRequestMeter)
 	ensureContains(t, registry, "no_cookie_requests", m.NoCookieMeter)
 	ensureContains(t, registry, "request_time", m.RequestTimer)
 	ensureContains(t, registry, "amp_no_cookie_requests", m.AmpNoCookieMeter)
@@ -178,6 +179,72 @@ func TestRecordBidTypeDisabledConfig(t *testing.T) {
 		} else {
 			assert.NotEqual(t, 0, len(m.accountMetrics[test.PubID].adapterMetrics), "Test failed. Account metrics that contain adapter information are disabled, therefore we expect no entries in m.accountMetrics[accountId].adapterMetrics, we have %d \n", len(m.accountMetrics[test.PubID].adapterMetrics))
 		}
+	}
+}
+
+func TestRecordDebugRequest(t *testing.T) {
+	testCases := []struct {
+		description               string
+		givenDisabledMetrics      config.DisabledMetrics
+		givenDebugEnabledFlag     bool
+		givenPubID                string
+		expectedAccountDebugCount int64
+		expectedDebugCount        int64
+	}{
+		{
+			description: "Debug is enabled and account debug is enabled, both metrics should be updated",
+			givenDisabledMetrics: config.DisabledMetrics{
+				AccountAdapterDetails: true,
+				AccountDebug:          false,
+			},
+			givenDebugEnabledFlag:     true,
+			givenPubID:                "acct-id",
+			expectedAccountDebugCount: 1,
+			expectedDebugCount:        1,
+		},
+		{
+			description: "Debug and account debug are disabled, niether metrics should be updated",
+			givenDisabledMetrics: config.DisabledMetrics{
+				AccountAdapterDetails: true,
+				AccountDebug:          true,
+			},
+			givenDebugEnabledFlag:     false,
+			givenPubID:                "acct-id",
+			expectedAccountDebugCount: 0,
+			expectedDebugCount:        0,
+		},
+		{
+			description: "Debug is enabled and account debug is enabled, but unknown PubID leads to account debug being 0",
+			givenDisabledMetrics: config.DisabledMetrics{
+				AccountAdapterDetails: true,
+				AccountDebug:          false,
+			},
+			givenDebugEnabledFlag:     true,
+			givenPubID:                PublisherUnknown,
+			expectedAccountDebugCount: 0,
+			expectedDebugCount:        1,
+		},
+		{
+			description: "Debug is disabled, account debug is enabled, niether metric should update",
+			givenDisabledMetrics: config.DisabledMetrics{
+				AccountAdapterDetails: true,
+				AccountDebug:          false,
+			},
+			givenDebugEnabledFlag:     false,
+			givenPubID:                "acct-id",
+			expectedAccountDebugCount: 0,
+			expectedDebugCount:        0,
+		},
+	}
+	for _, test := range testCases {
+		registry := metrics.NewRegistry()
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, test.givenDisabledMetrics, nil)
+
+		m.RecordDebugRequest(test.givenDebugEnabledFlag, test.givenPubID)
+		am := m.getAccountMetrics(test.givenPubID)
+
+		assert.Equal(t, test.expectedDebugCount, m.DebugRequestMeter.Count())
+		assert.Equal(t, test.expectedAccountDebugCount, am.debugRequestMeter.Count())
 	}
 }
 

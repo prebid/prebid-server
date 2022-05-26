@@ -113,6 +113,11 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 		return usersync.Request{}, privacy.Policies{}, fmt.Errorf("JSON parsing failed: %s", err.Error())
 	}
 
+	account, fetchErrs := accountService.GetAccount(context.Background(), c.config, c.accountsFetcher, request.Account)
+	if len(fetchErrs) > 0 {
+		return usersync.Request{}, privacy.Policies{}, combineErrors(fetchErrs)
+	}
+
 	var gdprString string
 	if request.GDPR != nil {
 		gdprString = strconv.Itoa(*request.GDPR)
@@ -132,10 +137,8 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 		}
 	}
 
-	request, err = c.setLimit(request)
-	if err != nil {
-		return usersync.Request{}, privacy.Policies{}, err
-	}
+	request = c.setLimit(request, account.CookieSync)
+	request = c.setCooperativeSync(request, account.CookieSync)
 
 	privacyPolicies := privacy.Policies{
 		GDPR: gdprPrivacy.Policy{
@@ -192,26 +195,26 @@ func (c *cookieSyncEndpoint) writeParseRequestErrorMetrics(err error) {
 	}
 }
 
-func (c *cookieSyncEndpoint) setLimit(request cookieSyncRequest) (cookieSyncRequest, error) {
-	if request.Account != "" {
-		accountInfo, errs := accountService.GetAccount(context.Background(), c.config, c.accountsFetcher, request.Account)
-		if len(errs) > 0 {
-			return request, combineErrors(errs)
-		}
-		if request.Limit <= 0 {
-			request.Limit = accountInfo.CookieSync.DefaultLimit
-		}
-		if request.Limit <= 0 || request.Limit > accountInfo.CookieSync.MaxLimit {
-			request.Limit = accountInfo.CookieSync.MaxLimit
-		}
-		if request.Limit < 0 {
-			request.Limit = 0
-		}
-		if request.CooperativeSync == nil {
-			request.CooperativeSync = &accountInfo.CookieSync.DefaultCoopSync
-		}
+func (c *cookieSyncEndpoint) setLimit(request cookieSyncRequest, cookieSyncConfig config.CookieSync) cookieSyncRequest {
+	if request.Limit <= 0 && cookieSyncConfig.DefaultLimit != nil {
+		request.Limit = *cookieSyncConfig.DefaultLimit
 	}
-	return request, nil
+	if cookieSyncConfig.MaxLimit != nil && (request.Limit <= 0 || request.Limit > *cookieSyncConfig.MaxLimit) {
+		request.Limit = *cookieSyncConfig.MaxLimit
+	}
+	if request.Limit < 0 {
+		request.Limit = 0
+	}
+
+	return request
+}
+
+func (c *cookieSyncEndpoint) setCooperativeSync(request cookieSyncRequest, cookieSyncConfig config.CookieSync) cookieSyncRequest {
+	if request.CooperativeSync == nil && cookieSyncConfig.DefaultCoopSync != nil {
+		request.CooperativeSync = cookieSyncConfig.DefaultCoopSync
+	}
+
+	return request
 }
 
 func parseTypeFilter(request *cookieSyncRequestFilterSettings) (usersync.SyncTypeFilter, error) {

@@ -297,6 +297,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		TCF2ConfigBuilder:          gdpr.NewTCF2Config,
 		GDPRPermissionsBuilder:     gdpr.NewPermissions,
 		GlobalPrivacyControlHeader: secGPC,
+		PubID:                      labels.PubID,
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, &debugLog)
