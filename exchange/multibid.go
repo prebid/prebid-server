@@ -7,25 +7,32 @@ import (
 )
 
 const DefaultBidLimit = 1
+const MaxBidLimit = 9
 
 type ExtMultiBidMap map[string]*openrtb_ext.ExtMultiBid
 
 // Validate and add multiBid value
 func (mb *ExtMultiBidMap) Add(multiBid *openrtb_ext.ExtMultiBid) {
+	// If maxbids is not specified, ignore whole block and add warning when in debug mode
+	if multiBid.MaxBids == nil {
+		return
+	}
+
 	// Min and default is 1
-	if multiBid.MaxBids < 1 {
-		multiBid.MaxBids = 1
+	if *multiBid.MaxBids < DefaultBidLimit {
+		*multiBid.MaxBids = DefaultBidLimit
 	}
 
 	// Max 9
-	if multiBid.MaxBids > 9 {
-		multiBid.MaxBids = 9
+	if *multiBid.MaxBids > MaxBidLimit {
+		*multiBid.MaxBids = MaxBidLimit
 	}
 
 	// Prefer Bidder over []Bidders
 	if multiBid.Bidder != "" {
-		if _, ok := (*mb)[multiBid.Bidder]; ok || multiBid.MaxBids == 0 {
-			//specified multiple times, use the first bidder. TODO add warning when in debug mode
+		if _, ok := (*mb)[multiBid.Bidder]; ok {
+			// specified multiple times, use the first instance, ignore all the following mentions.
+			// TODO add warning when in debug mode
 			//ignore whole block if maxbid not specified. TODO add debug warning
 			return
 		}
@@ -46,7 +53,7 @@ func (mb *ExtMultiBidMap) Add(multiBid *openrtb_ext.ExtMultiBid) {
 // Get multi-bid limit for this bidder
 func (mb *ExtMultiBidMap) GetMaxBids(bidder string) int {
 	if maxBid, ok := (*mb)[bidder]; ok {
-		return maxBid.MaxBids
+		return *maxBid.MaxBids
 	}
 	return DefaultBidLimit
 }

@@ -45,7 +45,7 @@ func (targData *targetData) setTargeting(auc *auction, isApp bool, categoryMappi
 		multiBid, ok := multiBidMap[originalBidderName.String()]
 		if ok {
 			bidderCodePrefix = multiBid.TargetBidderCodePrefix
-			maxBids = multiBid.MaxBids
+			maxBids = *multiBid.MaxBids
 		}
 
 		for impId, impBids := range impIdToBidMap {
