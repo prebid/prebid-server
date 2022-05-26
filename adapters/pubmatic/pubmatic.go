@@ -24,6 +24,7 @@ type PubmaticAdapter struct {
 type pubmaticBidExt struct {
 	BidType           *int                 `json:"BidType,omitempty"`
 	VideoCreativeInfo *pubmaticBidExtVideo `json:"video,omitempty"`
+	Marketplace       string               `json:"marketplace,omitempty"`
 }
 
 type pubmaticWrapperExt struct {
@@ -398,10 +399,15 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 				}
 				bidType = getBidType(bidExt)
 			}
+			seat := ""
+			if bidExt.Marketplace != "" {
+				seat = bidExt.Marketplace
+			}
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:      &bid,
 				BidType:  bidType,
 				BidVideo: impVideo,
+				Seat:     openrtb_ext.BidderName(seat),
 			})
 
 		}
