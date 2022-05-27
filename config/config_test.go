@@ -374,6 +374,14 @@ request_validation:
     ipv4_private_networks: ["1.1.1.0/24"]
     ipv6_private_networks: ["1111::/16", "2222::/16"]
 generate_bid_id: true
+experiment:
+    adscert:
+        enabled: true
+        in-process:
+            origin: "test.com"
+            key: "ABC123"
+            domain_check_interval_seconds: 40
+            domain_renewal_interval_seconds : 60
 `)
 
 var adapterExtraInfoConfig = []byte(`
@@ -619,6 +627,11 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "request_validation.ipv6_private_networks", cfg.RequestValidation.IPv6PrivateNetworks[1], "2222::/16")
 	cmpBools(t, "generate_bid_id", cfg.GenerateBidID, true)
 	cmpStrings(t, "debug.override_token", cfg.Debug.OverrideToken, "")
+	cmpBools(t, "experiment.adscert.enabled", cfg.Experiment.AdCerts.Enabled, true)
+	cmpStrings(t, "experiment.adscert.in-process.origin", cfg.Experiment.AdCerts.InProcess.Origin, "test.com")
+	cmpStrings(t, "experiment.adscert.in-process.key", cfg.Experiment.AdCerts.InProcess.PrivateKey, "ABC123")
+	cmpInts(t, "experiment.adscert.in-process.domain_check_interval_seconds", cfg.Experiment.AdCerts.InProcess.DNSCheckIntervalInSeconds, 40)
+	cmpInts(t, "experiment.adscert.in-process.domain_renewal_interval_seconds", cfg.Experiment.AdCerts.InProcess.DNSRenewalIntervalInSeconds, 60)
 }
 
 func TestUnmarshalAdapterExtraInfo(t *testing.T) {
