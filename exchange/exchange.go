@@ -606,11 +606,12 @@ func (e *exchange) recoverSafely(bidderRequests []BidderRequest,
 }
 
 func bidsToMetric(seatBids []*pbsOrtbSeatBid) metrics.AdapterBid {
-
-	if len(seatBids) == 0 || seatBids[0] == nil || len(seatBids[0].bids) == 0 {
-		return metrics.AdapterBidNone
+	for _, seatBid := range seatBids {
+		if seatBid != nil && len(seatBid.bids) != 0 {
+			return metrics.AdapterBidPresent
+		}
 	}
-	return metrics.AdapterBidPresent
+	return metrics.AdapterBidNone
 }
 
 func errorsToMetric(errs []error) map[metrics.AdapterError]struct{} {
