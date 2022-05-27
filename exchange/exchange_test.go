@@ -4012,8 +4012,9 @@ type bidderSeatBid struct {
 // bidderBid is basically a subset of pbsOrtbBid from exchange/bidder.go.
 // See the comment on bidderSeatBid for more info.
 type bidderBid struct {
-	Bid  *openrtb2.Bid `json:"ortbBid,omitempty"`
-	Type string        `json:"bidType,omitempty"`
+	Bid  *openrtb2.Bid                 `json:"ortbBid,omitempty"`
+	Type string                        `json:"bidType,omitempty"`
+	Meta *openrtb_ext.ExtBidPrebidMeta `json:"bidMeta,omitempty"`
 }
 
 type mockIdFetcher map[string]string
@@ -4061,6 +4062,7 @@ func (b *validatingBidder) requestBid(ctx context.Context, bidderRequest BidderR
 							originalBidCPM: mockSeatBid.Bids[i].Bid.Price,
 							bid:            mockSeatBid.Bids[i].Bid,
 							bidType:        openrtb_ext.BidType(mockSeatBid.Bids[i].Type),
+							bidMeta:        mockSeatBid.Bids[i].Meta,
 						}
 					}
 				}
