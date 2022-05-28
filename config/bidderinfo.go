@@ -24,7 +24,7 @@ type BidderInfo struct {
 	Experiment              BidderInfoExperiment `yaml:"experiment"`
 }
 
-// BidderInfoExperiment defines if experimental features for bidder are available
+// BidderInfoExperiment specified non-production ready features.
 type BidderInfoExperiment struct {
 	AdsCert AdsCert `yaml:"adscert"`
 }
