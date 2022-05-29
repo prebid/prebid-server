@@ -208,7 +208,10 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		errs := errortypes.NewAggregateError("Failed to initialize adapters", adaptersErrs)
 		return nil, errs
 	}
-	adCertSigner := adscert.NewAdCertsSigner(cfg.Experiment.AdCerts)
+	adCertSigner, err := adscert.NewAdCertsSigner(cfg.Experiment.AdCerts)
+	if err != nil {
+		glog.Fatalf("Failed to create ads cert signer: %v", err)
+	}
 
 	theExchange := exchange.NewExchange(adapters, cacheClient, cfg, syncersByBidder, r.MetricsEngine, bidderInfos, vendorListFetcher, rateConvertor, categoriesFetcher, adCertSigner)
 	var uuidGenerator uuidutil.UUIDRandomGenerator

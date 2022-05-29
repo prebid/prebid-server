@@ -1188,6 +1188,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("experiment.adscert.in-process.key", "")
 	v.SetDefault("experiment.adscert.in-process.domain_check_interval_seconds", 30)
 	v.SetDefault("experiment.adscert.in-process.domain_renewal_interval_seconds", 30)
+	v.SetDefault("experiment.adscert.remote.url", "")
+	v.SetDefault("experiment.adscert.remote.signing_timeout", 5)
 }
 
 func migrateConfig(v *viper.Viper) {

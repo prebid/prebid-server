@@ -24,6 +24,9 @@ For testing purposes please use this test domain (subscribtion will expire in Ma
 `adscertdelivery.com`. To check data it returns use any online tool ([like this](https://mxtoolbox.com/SuperTool.aspx), select TXT lookup) to read TXT records: 
 `_delivery._adscert.adscertdelivery.com` and `_adscert.adscertdelivery.com`
 
+Or just run cli command:
+```dig txt _delivery._adscert.adscertdelivery.com``` 
+
 Public key returned in `_delivery._adscert.adscertdelivery.com` was generated using [OSS repository](https://github.com/IABTechLab/adscert).
 From the project root compile sources and run `go run . basicinsecurekeygen`. This will return randomly generated private and public keys and the entire value for `_delivery._adscert.adscertdelivery.com` record.
 
@@ -38,13 +41,12 @@ DNS TXT Entry: "v=adcrtd k=x25519 h=sha256 p=HweE1-dFJPjHO4C34QXq6myhtMuyi4X0T2r
 If everything configured correctly then `X-Ads-Cert-Auth` header will be sent to bidder. Detailed information about content of the header value can be found in Ads Cert Authenticated Connections protocol specification.
 
 ###Prebid Server set up
-Current Prebid Server implementation supports in-process signing approach. 
+Current Prebid Server implementation supports in-process and remote signing approach.
 
-Workaround for bidders that don't have Call Signs support yet: in configs modify bidder URL to `http://adscertdelivery.com/openrtb2?prebid_disabled=1`. In this case this bidder will not return bids, because this endpoint doesn't exist, but it will imitate support of Call Signs. Bidder parameters still should be valid.
-
+####In-Process signer
 To enable AdsCerts next configurations should be specified: 
 
-1.Host config, can be set using env variables or yaml config, use proper format: 
+Host config, can be set using env variables or yaml config, use proper format: 
 ```json
 "experiment": {
     "adscert": {
@@ -58,11 +60,30 @@ To enable AdsCerts next configurations should be specified:
     }
   }
 ```
+####Remote signer
+To use this approach stanalone GRPC server should be available.
+One way to do this is to run in locally. For this checkout [AdsCert OSS](https://github.com/IABTechLab/adscert) and navigate to https://github.com/IABTechLab/adscert/blob/main/cmd/server/main.go file.
+Modify L17, set "origin" to `adscertdelivery.com`, make sure ports 3000 and 3001 are available and run main function.
+In Prebid Server configs set parameters for this server: 
+```json
+"experiment": {
+    "adscert": {
+      "enabled": true,
+      "remote": {
+        "url": "localhost:3000",
+        "signing_timeout": 5
+      }
+    }
+  }
+```
 
-2.Every bidder by default doesn't support AdsCert. Some bidders cannot handle unsupported headers properly. To enable this feature add next config to {bidder}.yaml file:
+####General Prebid Server set up
+Workaround for bidders that don't have Call Signs support yet: in configs modify bidder URL to `http://adscertdelivery.com/openrtb2?prebid_disabled=1`. In this case this bidder will not return bids, because this endpoint doesn't exist, but it will imitate support of Call Signs. Bidder parameters still should be valid.
+
+Every bidder by default doesn't support AdsCert. Some bidders cannot handle unsupported headers properly. To enable this feature add next config to {bidder}.yaml file:
 `experiment.adscert.enable: true`. With this config bidder will receive `X-Ads-Cert-Auth` header even if this is not the only bidder in request. 
 
-3.Request extension should have `request.ext.prebid.experiment.adscert.enabled: true`
+Request extension should have `request.ext.prebid.experiment.adscert.enabled: true`
 
 ###Issue to fix:
 - After server start up the very first request doesn't have `X-Ads-Cert-Auth` header. But it works every time after the first request.

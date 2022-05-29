@@ -382,6 +382,9 @@ experiment:
             key: "ABC123"
             domain_check_interval_seconds: 40
             domain_renewal_interval_seconds : 60
+        remote:
+            url: "test.com"
+            signing_timeout: 10
 `)
 
 var adapterExtraInfoConfig = []byte(`
@@ -632,6 +635,8 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "experiment.adscert.in-process.key", cfg.Experiment.AdCerts.InProcess.PrivateKey, "ABC123")
 	cmpInts(t, "experiment.adscert.in-process.domain_check_interval_seconds", cfg.Experiment.AdCerts.InProcess.DNSCheckIntervalInSeconds, 40)
 	cmpInts(t, "experiment.adscert.in-process.domain_renewal_interval_seconds", cfg.Experiment.AdCerts.InProcess.DNSRenewalIntervalInSeconds, 60)
+	cmpStrings(t, "experiment.adscert.remote.url", cfg.Experiment.AdCerts.Remote.Url, "test.com")
+	cmpInts(t, "experiment.adscert.remote.signing_timeout", cfg.Experiment.AdCerts.Remote.SigningTimeoutMs, 10)
 }
 
 func TestUnmarshalAdapterExtraInfo(t *testing.T) {
