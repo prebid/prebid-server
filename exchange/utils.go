@@ -106,6 +106,8 @@ func cleanOpenRTBRequests(ctx context.Context,
 	tcf2Cfg := tcf2ConfigBuilder(privacyConfig.GDPR.TCF2, auctionReq.Account.GDPR)
 
 	var gdprEnforced bool
+	var gdprPerms gdpr.Permissions = &gdpr.AlwaysAllow{}
+
 	if gdprApplies {
 		gdprEnforced = tcf2Cfg.IntegrationEnabled(integrationTypeMap[auctionReq.LegacyLabels.RType])
 	}
@@ -117,6 +119,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 			version := int(parsedConsent.Version())
 			privacyLabels.GDPRTCFVersion = metrics.TCFVersionToValue(version)
 		}
+		gdprPerms = gdprPermsBuilder(tcf2Cfg)
 	}
 
 	// bidder level privacy policies
@@ -129,7 +132,6 @@ func cleanOpenRTBRequests(ctx context.Context,
 		// GDPR
 		if gdprEnforced {
 			var publisherID = auctionReq.LegacyLabels.PubID
-			gdprPerms := gdprPermsBuilder(tcf2Cfg)
 			auctionPermissions, err := gdprPerms.AuctionActivitiesAllowed(ctx, bidderRequest.BidderCoreName, bidderRequest.BidderName, publisherID, gdprSignal, consent, aliasesGVLIDs)
 			bidRequestAllowed = auctionPermissions.AllowBidRequest
 
