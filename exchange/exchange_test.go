@@ -3850,7 +3850,6 @@ func TestStoredAuctionResponses(t *testing.T) {
 			UserSyncs:              &emptyUsersync{},
 			StoredAuctionResponses: test.storedAuctionResp,
 		}
-
 		// Run test
 		outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, &DebugLog{})
 		if test.errorExpected {

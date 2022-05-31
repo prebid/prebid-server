@@ -487,6 +487,9 @@ type DisabledMetrics struct {
 	// True if we want to stop collecting account-to-adapter metrics
 	AccountAdapterDetails bool `mapstructure:"account_adapter_details"`
 
+	// True if we want to stop collecting account debug request metrics
+	AccountDebug bool `mapstructure:"account_debug"`
+
 	// True if we don't want to collect metrics about the connections prebid
 	// server establishes with bidder servers such as the number of connections
 	// that were created or reused.
@@ -780,6 +783,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("http_client_cache.idle_connection_timeout_seconds", 60)
 	// no metrics configured by default (metrics{host|database|username|password})
 	v.SetDefault("metrics.disabled_metrics.account_adapter_details", false)
+	v.SetDefault("metrics.disabled_metrics.account_debug", true)
 	v.SetDefault("metrics.disabled_metrics.adapter_connections_metrics", true)
 	v.SetDefault("metrics.disabled_metrics.adapter_gdpr_request_blocked", false)
 	v.SetDefault("metrics.influxdb.host", "")
@@ -942,6 +946,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.bidmyadz.endpoint", "http://endpoint.bidmyadz.com/c0f68227d14ed938c6c49f3967cbe9bc")
 	v.SetDefault("adapters.bidscube.endpoint", "http://supply.bidscube.com/?c=o&m=rtb")
 	v.SetDefault("adapters.bizzclick.endpoint", "http://us-e-node1.bizzclick.com/bid?rtb_seat_id={{.SourceId}}&secret_key={{.AccountID}}")
+	v.SetDefault("adapters.bliink.endpoint", "http://engine.bliink.io/bid")
 	v.SetDefault("adapters.bmtm.endpoint", "https://one.elitebidder.com/api/pbs")
 	v.SetDefault("adapters.brightroll.endpoint", "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
 	v.SetDefault("adapters.coinzilla.endpoint", "http://request-global.czilladx.com/serve/prebid-server.php")
@@ -1031,6 +1036,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.synacormedia.endpoint", "http://{{.Host}}.technoratimedia.com/openrtb/bids/{{.Host}}")
 	v.SetDefault("adapters.tappx.endpoint", "http://{{.Host}}")
 	v.SetDefault("adapters.telaria.endpoint", "https://ads.tremorhub.com/ad/rtb/prebid")
+	v.SetDefault("adapters.trafficgate.endpoint", "http://{{.Host}}.bc-plugin.com/?c=o&m=rtb")
 	v.SetDefault("adapters.triplelift_native.disabled", true)
 	v.SetDefault("adapters.triplelift_native.extra_info", "{\"publisher_whitelist\":[]}")
 	v.SetDefault("adapters.triplelift.endpoint", "https://tlx.3lift.com/s2s/auction?sra=1&supplier_id=20")

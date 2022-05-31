@@ -203,6 +203,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		GlobalPrivacyControlHeader: secGPC,
 		StoredAuctionResponses:     storedAuctionResponses,
 		StoredBidResponses:         storedBidResponses,
+		PubID:                      labels.PubID,
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
