@@ -75,7 +75,6 @@
           "imp": [
             {
               "id": "test-video-imp:opa:video",
-              "tagid": "v00000",
               "video": {
                 "w": 1020,
                 "h": 780,
