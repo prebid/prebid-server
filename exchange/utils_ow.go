@@ -1,9 +1,19 @@
 package exchange
 
 import (
+	"encoding/json"
+
+	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
+
+func JLogf(msg string, obj interface{}) {
+	if glog.V(3) {
+		data, _ := json.Marshal(obj)
+		glog.Infof("[OPENWRAP] %v:%v", msg, string(data))
+	}
+}
 
 // updateContentObjectForBidder updates the content object for each bidder based on content transparency rules
 func updateContentObjectForBidder(allBidderRequests []BidderRequest, requestExt *openrtb_ext.ExtRequest) {

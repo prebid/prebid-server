@@ -95,6 +95,14 @@ type Configuration struct {
 
 	TrackerURL          string              `mapstructure:"tracker_url"`
 	VendorListScheduler VendorListScheduler `mapstructure:"vendor_list_scheduler"`
+	PriceFloors         PriceFloors         `mapstructure:"price_floors"`
+}
+
+type PriceFloors struct {
+	Enabled           bool `mapstructure:"enabled"`
+	UseDynamicData    bool `mapstructure:"use_dynamic_data"`
+	EnforceFloorsRate int  `mapstructure:"enforce_floors_rate"`
+	EnforceDealFloors bool `mapstructure:"enforce_deal_floors"`
 }
 
 type VendorListScheduler struct {
@@ -139,6 +147,9 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 	}
 	if cfg.AccountDefaults.Events.Enabled {
 		glog.Warning(`account_defaults.events will currently not do anything as the feature is still under development. Please follow https://github.com/prebid/prebid-server/issues/1725 for more updates`)
+	}
+	if cfg.PriceFloors.Enabled {
+		glog.Warning(`PriceFloors.Enabled will enforce floor feature which is still under development.`)
 	}
 	return errs
 }
@@ -1201,6 +1212,10 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("gdpr.tcf2.purpose_one_treatment.access_allowed", true)
 	v.SetDefault("gdpr.tcf2.special_feature1.enforce", true)
 	v.SetDefault("gdpr.tcf2.special_feature1.vendor_exceptions", []openrtb_ext.BidderName{})
+	v.SetDefault("price_floors.enabled", false)
+	v.SetDefault("price_floors.use_dynamic_data", false)
+	v.SetDefault("price_floors.enforce_floors_rate", 100)
+	v.SetDefault("price_floors.enforce_deal_floors", false)
 
 	// Defaults for account_defaults.events.default_url
 	v.SetDefault("account_defaults.events.default_url", "https://PBS_HOST/event?t=##PBS-EVENTTYPE##&vtype=##PBS-VASTEVENT##&b=##PBS-BIDID##&f=i&a=##PBS-ACCOUNTID##&ts=##PBS-TIMESTAMP##&bidder=##PBS-BIDDER##&int=##PBS-INTEGRATION##&mt=##PBS-MEDIATYPE##&ch=##PBS-CHANNEL##&aid=##PBS-AUCTIONID##&l=##PBS-LINEID##")

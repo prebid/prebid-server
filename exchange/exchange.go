@@ -19,6 +19,7 @@ import (
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/firstpartydata"
+	"github.com/prebid/prebid-server/floors"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -65,6 +66,7 @@ type exchange struct {
 	categoriesFetcher stored_requests.CategoryFetcher
 	bidIDGenerator    BidIDGenerator
 	gvlVendorIDs      map[openrtb_ext.BidderName]uint16
+	floor             floors.Floor
 	trakerURL         string
 }
 
@@ -142,6 +144,7 @@ func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid
 		},
 		bidIDGenerator: &bidIDGenerator{cfg.GenerateBidID},
 		gvlVendorIDs:   infos.ToGVLVendorIDMap(),
+		floor:          floors.NewFloorConfig(cfg.PriceFloors),
 		trakerURL:      cfg.TrackerURL,
 	}
 }
@@ -156,6 +159,7 @@ type ImpExtInfo struct {
 type AuctionRequest struct {
 	BidRequestWrapper          *openrtb_ext.RequestWrapper
 	ResolvedBidRequest         json.RawMessage
+	UpdatedBidRequest          json.RawMessage
 	Account                    config.Account
 	UserSyncs                  IdFetcher
 	RequestType                metrics.RequestType
@@ -240,6 +244,27 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 
 	bidAdjustmentFactors := getExtBidAdjustmentFactors(requestExt)
 
+	// Get currency rates conversions for the auction
+	conversions := e.getAuctionCurrencyRates(requestExt.Prebid.CurrencyConversions)
+
+	// If floors feature is enabled at server and request level, Update floors values in impression object
+	if e.floor != nil && e.floor.Enabled() && floors.IsRequestEnabledWithFloor(requestExt.Prebid.Floors) {
+		errs = floors.UpdateImpsWithFloors(requestExt.Prebid.Floors, r.BidRequestWrapper.BidRequest, conversions)
+		r.BidRequestWrapper.BidRequest.Ext, err = json.Marshal(requestExt)
+		if err != nil {
+			errs = append(errs, err)
+		}
+		JLogf("Updated Floor Request after parsing floors", r.BidRequestWrapper.BidRequest)
+		if responseDebugAllow {
+			//save updated request after floors signalling
+			updatedBidReq, err := json.Marshal(r.BidRequestWrapper.BidRequest)
+			if err != nil {
+				return nil, err
+			}
+			r.UpdatedBidRequest = updatedBidReq
+		}
+	}
+
 	recordImpMetrics(r.BidRequestWrapper.BidRequest, e.me)
 
 	// Make our best guess if GDPR applies
@@ -256,9 +281,6 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	// We should reduce the amount of time the bidders have, to compensate.
 	auctionCtx, cancel := e.makeAuctionContext(ctx, cacheInstructions.cacheBids)
 	defer cancel()
-
-	// Get currency rates conversions for the auction
-	conversions := e.getAuctionCurrencyRates(requestExt.Prebid.CurrencyConversions)
 
 	var adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid
 	var adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra
@@ -285,12 +307,25 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	var bidResponseExt *openrtb_ext.ExtBidResponse
 	if anyBidsReturned {
 
+		//If floor enforcement config enabled then filter bids
+		if e.floor != nil && e.floor.Enabled() && floors.IsRequestEnabledWithFloor(requestExt.Prebid.Floors) && floors.ShouldEnforceFloors(requestExt.Prebid.Floors, e.floor.GetEnforceRate(), rand.Intn) {
+			var rejections []string
+			var enforceDealFloors bool
+			if requestExt.Prebid.Floors.Enforcement != nil {
+				enforceDealFloors = requestExt.Prebid.Floors.Enforcement.FloorDeals && e.floor.EnforceDealFloor()
+			}
+			adapterBids, rejections = EnforceFloorToBids(r.BidRequestWrapper.BidRequest, adapterBids, conversions, enforceDealFloors)
+			for _, message := range rejections {
+				errs = append(errs, errors.New(message))
+			}
+		}
+
 		adapterBids, rejections := applyAdvertiserBlocking(r.BidRequestWrapper.BidRequest, adapterBids)
+
 		// add advertiser blocking specific errors
 		for _, message := range rejections {
 			errs = append(errs, errors.New(message))
 		}
-
 		var bidCategory map[string]string
 		//If includebrandcategory is present in ext then CE feature is on.
 		if requestExt.Prebid.Targeting != nil && requestExt.Prebid.Targeting.IncludeBrandCategory != nil {
@@ -308,6 +343,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 			for _, seatBid := range adapterBids {
 				for _, pbsBid := range seatBid.bids {
 					pbsBid.generatedBidID, err = e.bidIDGenerator.New()
+					glog.Infof("Original BidID = %s Generated BidID = %s", pbsBid.bid.ID, pbsBid.generatedBidID)
 					if err != nil {
 						errs = append(errs, errors.New("Error generating bid.ext.prebid.bidid"))
 					}
@@ -977,6 +1013,7 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pb
 		bidResponseExt.Debug = &openrtb_ext.ExtResponseDebug{
 			HttpCalls:       make(map[openrtb_ext.BidderName][]*openrtb_ext.ExtHttpCall),
 			ResolvedRequest: r.ResolvedBidRequest,
+			UpdatedRequest:  r.UpdatedBidRequest,
 		}
 	}
 	if !r.StartTime.IsZero() {

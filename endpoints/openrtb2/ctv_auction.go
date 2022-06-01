@@ -735,8 +735,10 @@ func (deps *ctvEndpointDeps) getBids(resp *openrtb2.BidResponse) {
 					result[originalImpID] = impBids
 				}
 
-				//making unique bid.id's per impression
-				bid.ID = util.GetUniqueBidID(bid.ID, len(impBids.Bids)+1)
+				if deps.cfg.GenerateBidID == false {
+					//making unique bid.id's per impression
+					bid.ID = util.GetUniqueBidID(bid.ID, len(impBids.Bids)+1)
+				}
 
 				//get duration of creative
 				duration, status := getBidDuration(bid, deps.reqExt, deps.impData[index].Config,
@@ -744,6 +746,7 @@ func (deps *ctvEndpointDeps) getBids(resp *openrtb2.BidResponse) {
 
 				impBids.Bids = append(impBids.Bids, &types.Bid{
 					Bid:               bid,
+					ExtBid:            ext,
 					Status:            status,
 					Duration:          int(duration),
 					DealTierSatisfied: util.GetDealTierSatisfied(&ext),
@@ -957,13 +960,13 @@ func (deps *ctvEndpointDeps) getAdPodBid(adpod *types.AdPodBid) *types.Bid {
 	bid.Price = adpod.Price
 	bid.ADomain = adpod.ADomain[:]
 	bid.Cat = adpod.Cat[:]
-	bid.AdM = *getAdPodBidCreative(deps.request.Imp[deps.impIndices[adpod.OriginalImpID]].Video, adpod)
+	bid.AdM = *getAdPodBidCreative(deps.request.Imp[deps.impIndices[adpod.OriginalImpID]].Video, adpod, deps.cfg.GenerateBidID)
 	bid.Ext = getAdPodBidExtension(adpod)
 	return &bid
 }
 
 //getAdPodBidCreative get commulative adpod bid details
-func getAdPodBidCreative(video *openrtb2.Video, adpod *types.AdPodBid) *string {
+func getAdPodBidCreative(video *openrtb2.Video, adpod *types.AdPodBid, generatedBidID bool) *string {
 	doc := etree.NewDocument()
 	vast := doc.CreateElement(constant.VASTElement)
 	sequenceNumber := 1
@@ -983,13 +986,15 @@ func getAdPodBidCreative(video *openrtb2.Video, adpod *types.AdPodBid) *string {
 				continue
 			}
 
-			// adjust bidid in video event trackers and update
-			adjustBidIDInVideoEventTrackers(adDoc, bid.Bid)
-			adm, err := adDoc.WriteToString()
-			if nil != err {
-				util.JLogf("ERROR, %v", err.Error())
-			} else {
-				bid.AdM = adm
+			if generatedBidID == false {
+				// adjust bidid in video event trackers and update
+				adjustBidIDInVideoEventTrackers(adDoc, bid.Bid)
+				adm, err := adDoc.WriteToString()
+				if nil != err {
+					util.JLogf("ERROR, %v", err.Error())
+				} else {
+					bid.AdM = adm
+				}
 			}
 
 			vastTag := adDoc.SelectElement(constant.VASTElement)
@@ -1040,8 +1045,14 @@ func getAdPodBidExtension(adpod *types.AdPodBid) json.RawMessage {
 	}
 
 	for i, bid := range adpod.Bids {
+		//get unique bid id
+		bidID := bid.ID
+		if bid.ExtBid.Prebid != nil && bid.ExtBid.Prebid.BidId != "" {
+			bidID = bid.ExtBid.Prebid.BidId
+		}
+
 		//adding bid id in adpod.refbids
-		bidExt.AdPod.RefBids[i] = bid.ID
+		bidExt.AdPod.RefBids[i] = bidID
 
 		//updating exact duration of adpod creative
 		bidExt.Prebid.Video.Duration += int(bid.Duration)

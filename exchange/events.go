@@ -71,7 +71,7 @@ func (ev *eventTracking) modifyBidVAST(pbsBid *pbsOrtbBid, bidderName openrtb_ex
 	}
 
 	// always inject event  trackers without checkign isModifyingVASTXMLAllowed
-	if newVastXML, injected, _ := events.InjectVideoEventTrackers(trackerURL, vastXML, bid, bidderName.String(), bidderCoreName.String(), ev.accountID, ev.auctionTimestampMs, req); injected {
+	if newVastXML, injected, _ := events.InjectVideoEventTrackers(trackerURL, vastXML, bid, bidID, bidderName.String(), bidderCoreName.String(), ev.accountID, ev.auctionTimestampMs, req); injected {
 		bid.AdM = string(newVastXML)
 	}
 }

@@ -57,6 +57,7 @@ type ExtRequestPrebid struct {
 	CurrencyConversions *ExtRequestCurrency `json:"currency,omitempty"`
 	BidderConfigs       []BidderConfig      `json:"bidderconfig,omitempty"`
 	Transparency        *TransparencyExt    `json:"transparency,omitempty"`
+	Floors              *PriceFloorRules    `json:"floors,omitempty"`
 }
 
 type TransparencyRule struct {

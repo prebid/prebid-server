@@ -145,6 +145,12 @@ func TestDefaults(t *testing.T) {
 	cmpBools(t, "auto_gen_source_tid", cfg.AutoGenSourceTID, true)
 	cmpBools(t, "generate_bid_id", cfg.GenerateBidID, false)
 
+	//Assert the price floor default values
+	cmpBools(t, "price_floors.enabled", cfg.PriceFloors.Enabled, false)
+	cmpBools(t, "price_floors.use_dynamic_data", cfg.PriceFloors.UseDynamicData, false)
+	cmpInts(t, "price_floors.enforce_floors_rate", cfg.PriceFloors.EnforceFloorsRate, 100)
+	cmpBools(t, "price_floors.enforce_deal_floors", cfg.PriceFloors.EnforceDealFloors, false)
+
 	//Assert purpose VendorExceptionMap hash tables were built correctly
 	expectedTCF2 := TCF2{
 		Enabled: true,
@@ -374,6 +380,11 @@ request_validation:
     ipv4_private_networks: ["1.1.1.0/24"]
     ipv6_private_networks: ["1111::/16", "2222::/16"]
 generate_bid_id: true
+price_floors:
+   enabled: true
+   use_dynamic_data: false
+   enforce_floors_rate: 100
+   enforce_deal_floors: true
 `)
 
 var adapterExtraInfoConfig = []byte(`
@@ -461,6 +472,12 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "http_client_cache.idle_connection_timeout_seconds", cfg.CacheClient.IdleConnTimeout, 3)
 	cmpInts(t, "gdpr.host_vendor_id", cfg.GDPR.HostVendorID, 15)
 	cmpStrings(t, "gdpr.default_value", cfg.GDPR.DefaultValue, "1")
+
+	//Assert the price floor values
+	cmpBools(t, "price_floors.enabled", cfg.PriceFloors.Enabled, true)
+	cmpBools(t, "price_floors.use_dynamic_data", cfg.PriceFloors.UseDynamicData, false)
+	cmpInts(t, "price_floors.enforce_floors_rate", cfg.PriceFloors.EnforceFloorsRate, 100)
+	cmpBools(t, "price_floors.enforce_deal_floors", cfg.PriceFloors.EnforceDealFloors, true)
 
 	//Assert the NonStandardPublishers was correctly unmarshalled
 	assert.Equal(t, []string{"pub1", "pub2"}, cfg.GDPR.NonStandardPublishers, "gdpr.non_standard_publishers")

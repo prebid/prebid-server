@@ -28,6 +28,8 @@ type ExtResponseDebug struct {
 	HttpCalls map[BidderName][]*ExtHttpCall `json:"httpcalls,omitempty"`
 	// Request after resolution of stored requests and debug overrides
 	ResolvedRequest json.RawMessage `json:"resolvedrequest,omitempty"`
+	// Request after flors signalling
+	UpdatedRequest json.RawMessage `json:"updatedrequest,omitempty"`
 }
 
 // ExtResponseSyncData defines the contract for bidresponse.ext.usersync.{bidder}
