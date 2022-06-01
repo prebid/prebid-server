@@ -113,6 +113,9 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 		return usersync.Request{}, privacy.Policies{}, fmt.Errorf("JSON parsing failed: %s", err.Error())
 	}
 
+	if request.Account == "" {
+		request.Account = metrics.PublisherUnknown
+	}
 	account, fetchErrs := accountService.GetAccount(context.Background(), c.config, c.accountsFetcher, request.Account)
 	if len(fetchErrs) > 0 {
 		return usersync.Request{}, privacy.Policies{}, combineErrors(fetchErrs)
