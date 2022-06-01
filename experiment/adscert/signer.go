@@ -1,7 +1,6 @@
 package adscert
 
 import (
-	"context"
 	"crypto/rand"
 	"errors"
 	"fmt"
@@ -12,7 +11,6 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/health/grpc_health_v1"
 	"time"
 )
 
@@ -116,13 +114,6 @@ func newRemoteSigner(remoteSignerConfig config.Remote) (*remoteSigner, error) {
 	}
 	//defer conn.Close() -- where this should be?
 
-	// Optional: performs a health check against the server before actually
-	// trying to invoke the signatory service.
-	err = performOptionalHealthCheckRPC(conn)
-	if err != nil {
-		return nil, fmt.Errorf("failed to perform a health check of remote signer: %v", err)
-	}
-
 	clientOpts := &signatory.AuthenticatedConnectionsSignatoryClientOptions{
 		Timeout: time.Duration(remoteSignerConfig.SigningTimeoutMs) * time.Millisecond}
 	signatoryClient := signatory.NewAuthenticatedConnectionsSignatoryClient(conn, clientOpts)
@@ -135,18 +126,4 @@ type NilSigner struct {
 
 func (ns *NilSigner) Sign(destinationURL string, body []byte) (string, error) {
 	return "", nil
-}
-
-func performOptionalHealthCheckRPC(conn *grpc.ClientConn) error {
-	hctx, hcancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
-	defer hcancel()
-	healthClient := grpc_health_v1.NewHealthClient(conn)
-	healthCheckResponse, err := healthClient.Check(hctx, &grpc_health_v1.HealthCheckRequest{})
-	if err != nil {
-		return fmt.Errorf("failed to pass heath check of remote signer: %v", err)
-	}
-	if healthCheckResponse.Status != grpc_health_v1.HealthCheckResponse_SERVING {
-		return fmt.Errorf("failed to pass heath status of remote signer: %v", healthCheckResponse.Status)
-	}
-	return nil
 }
