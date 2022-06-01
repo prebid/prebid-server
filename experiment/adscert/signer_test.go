@@ -3,6 +3,7 @@ package adscert
 import (
 	"errors"
 	"github.com/IABTechLab/adscert/pkg/adscert/api"
+	config2 "github.com/prebid/prebid-server/config"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -49,6 +50,32 @@ func TestInProcessSigner(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestNilSigner(t *testing.T) {
+	config := config2.ExperimentAdCerts{Enabled: true, InProcess: config2.InProcess{Origin: ""}, Remote: config2.Remote{Url: ""}}
+	signer, err := NewAdCertsSigner(config)
+	assert.NoError(t, err, "error should not be returned")
+	message, err := signer.Sign("test.com", nil)
+	assert.NoError(t, err, "error should not be returned")
+	assert.Equal(t, "", message, "message should be empty")
+}
+
+func TestNilSignerForAdsCertDisabled(t *testing.T) {
+	config := config2.ExperimentAdCerts{Enabled: false, InProcess: config2.InProcess{Origin: ""}, Remote: config2.Remote{Url: ""}}
+	signer, err := NewAdCertsSigner(config)
+	assert.NoError(t, err, "error should not be returned")
+	message, err := signer.Sign("test.com", nil)
+	assert.NoError(t, err, "error should not be returned")
+	assert.Equal(t, "", message, "message should be empty")
+}
+
+func TestInPrecessAndRemoteSignersDefined(t *testing.T) {
+	config := config2.ExperimentAdCerts{Enabled: true, InProcess: config2.InProcess{Origin: "test.com"}, Remote: config2.Remote{Url: "test.com"}}
+	signer, err := NewAdCertsSigner(config)
+	assert.Nil(t, signer, "no signer should be returned")
+	assert.Error(t, err, "error should be returned")
+
 }
 
 type MockLocalAuthenticatedConnectionsSignatory struct {
