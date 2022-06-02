@@ -70,10 +70,29 @@ func (a *KargoAdapter) MakeBids(request *openrtb2.BidRequest, requestData *adapt
 	for _, seatBid := range response.SeatBid {
 		for i, bid := range seatBid.Bid {
 			b := &adapters.TypedBid{
-				Bid: &seatBid.Bid[i],
+				Bid:     &seatBid.Bid[i],
+				BidType: getMediaTypeForImp(bid.ImpID, request.Imp),
 			}
 			bidResponse.Bids = append(bidResponse.Bids, b)
 		}
 	}
 	return bidResponse, nil
+}
+
+// getMediaTypeForImp checks the media type on the request Impression.
+func getMediaTypeForImp(impID string, reqImps []openrtb2.Imp) openrtb_ext.BidType {
+	for _, imp := range reqImps {
+		if imp.ID == impID {
+			switch {
+			case imp.Banner != nil:
+				return openrtb_ext.BidTypeBanner
+			case imp.Native != nil:
+				return openrtb_ext.BidTypeNative
+			case imp.Video != nil:
+				return openrtb_ext.BidTypeVideo
+			}
+		}
+	}
+
+	return openrtb_ext.BidTypeBanner
 }

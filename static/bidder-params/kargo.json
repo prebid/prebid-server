@@ -6,8 +6,7 @@
   
     "properties": {
         "placementId": {
-          "type": "integer",
-          "minimum": 1,
+          "type": "string",
           "description": "Placement ID"
         }
       },
