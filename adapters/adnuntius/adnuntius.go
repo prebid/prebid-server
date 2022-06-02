@@ -233,7 +233,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *adapte
 func getGDPR(request *openrtb2.BidRequest) (string, string, error) {
 	gdpr := ""
 	var extRegs openrtb_ext.ExtRegs
-	if request.Regs != nil {
+	if request.Regs != nil && request.Regs.Ext != nil {
 		if err := json.Unmarshal(request.Regs.Ext, &extRegs); err != nil {
 			return "", "", fmt.Errorf("failed to parse ExtRegs in Adnuntius GDPR check: %v", err)
 		}
