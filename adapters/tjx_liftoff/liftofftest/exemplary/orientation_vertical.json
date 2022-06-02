@@ -82,6 +82,9 @@
                   3,
                   4
                 ],
+                "companiontype": [
+                  2
+                ],
                 "ext": {
                   "orientation": "v",
                   "placementtype": "interstitial",

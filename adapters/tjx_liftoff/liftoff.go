@@ -149,9 +149,7 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 
 			videoCopy := *thisImp.Video
 
-			if liftoffExt.EndcardHTMLSupported {
-				videoCopy.CompanionType = append(videoCopy.CompanionType, openrtb.CompanionTypeHTML)
-			}
+			videoCopy.CompanionType = append(videoCopy.CompanionType, openrtb.CompanionTypeHTML)
 
 			videoExt := liftoffVideoExt{
 				PlacementType: string(placementType),
@@ -242,7 +240,6 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 				MRAID: adapters.MRAID{
 					Supported: liftoffExt.MRAIDSupported,
 				},
-				HTMLCompanionSent: liftoffExt.EndcardHTMLSupported,
 			},
 		}
 
