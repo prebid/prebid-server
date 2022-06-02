@@ -1034,6 +1034,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.sonobi.endpoint", "https://apex.go.sonobi.com/prebid?partnerid=71d9d3d8af")
 	v.SetDefault("adapters.sovrn.endpoint", "http://ap.lijit.com/rtb/bid?src=prebid_server")
 	v.SetDefault("adapters.streamkey.endpoint", "http://ghb.hb.streamkey.net/pbs/ortb")
+	v.SetDefault("adapters.stroeercore.disabled", true)
+	v.SetDefault("adapters.stroeercore.endpoint", "http://mhb.adscale.de/s2sdsh")
 	v.SetDefault("adapters.synacormedia.endpoint", "http://{{.Host}}.technoratimedia.com/openrtb/bids/{{.Host}}")
 	v.SetDefault("adapters.tappx.endpoint", "http://{{.Host}}")
 	v.SetDefault("adapters.telaria.endpoint", "https://ads.tremorhub.com/ad/rtb/prebid")
