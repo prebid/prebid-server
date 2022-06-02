@@ -93,6 +93,5 @@ func getMediaTypeForImp(impID string, reqImps []openrtb2.Imp) openrtb_ext.BidTyp
 			}
 		}
 	}
-
 	return openrtb_ext.BidTypeBanner
 }
