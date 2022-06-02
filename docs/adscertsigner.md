@@ -71,7 +71,7 @@ In Prebid Server configs set parameters for this server:
       "enabled": true,
       "remote": {
         "url": "localhost:3000",
-        "signing_timeout": 5
+        "signing_timeout_ms": 5
       }
     }
   }

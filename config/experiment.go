@@ -29,5 +29,5 @@ type Remote struct {
 	//Url - address of grpc server
 	Url string `mapstructure:"url"`
 	//SigningTimeoutMs specifies how long this client will wait for signing to finish before abandoning
-	SigningTimeoutMs int `mapstructure:"signing_timeout"`
+	SigningTimeoutMs int `mapstructure:"signing_timeout_ms"`
 }
