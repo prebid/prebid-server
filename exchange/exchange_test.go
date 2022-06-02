@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"testing"
@@ -4145,6 +4146,11 @@ func mapifySeatBids(t *testing.T, context string, seatBids []openrtb2.SeatBid) m
 		if _, ok := seatMap[seatName]; ok {
 			t.Fatalf("%s: Contains duplicate Seat: %s", context, seatName)
 		} else {
+			// The sequence of extra bids for same seat from different bidder is not guaranteed as we randomize the list of adapters
+			// This is w.r.t changes at exchange.go#561 (club bids from different bidders for same extra-bid)
+			sort.Slice(seatBids[i].Bid, func(x, y int) bool {
+				return seatBids[i].Bid[x].Price > seatBids[i].Bid[y].Price
+			})
 			seatMap[seatName] = &seatBids[i]
 		}
 	}

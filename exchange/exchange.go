@@ -557,10 +557,11 @@ func (e *exchange) getAllBids(
 		//if bidder returned no bids back - remove bidder from further processing
 		for _, seatBid := range brw.adapterSeatBids {
 			if seatBid != nil && len(seatBid.bids) != 0 {
-				// Do we need to address duplicate names here?. What if different BidderNames have exta bids with same seat value.
-				// Ex. 'pubmatic' adapter has extra bids under new 'groupm' seat and 'appnexus' also comes with additional bids under seat 'groupm'
-				// Above example might be more relatable with 'allowUnknownBidderCodes'
-				adapterBids[openrtb_ext.BidderName(seatBid.seat)] = seatBid
+				if _, ok := adapterBids[openrtb_ext.BidderName(seatBid.seat)]; ok {
+					adapterBids[openrtb_ext.BidderName(seatBid.seat)].bids = append(adapterBids[openrtb_ext.BidderName(seatBid.seat)].bids, seatBid.bids...)
+				} else {
+					adapterBids[openrtb_ext.BidderName(seatBid.seat)] = seatBid
+				}
 			}
 		}
 		//but we need to add all bidders data to adapterExtra to have metrics and other metadata
