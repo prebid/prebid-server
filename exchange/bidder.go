@@ -51,7 +51,7 @@ type AdaptedBidder interface {
 	//
 	// Any errors will be user-facing in the API.
 	// Error messages should help publishers understand what might account for "bad" bids.
-	requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool) ([]*pbsOrtbSeatBid, []error)
+	requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool, alternateBidderCodes config.AlternateBidderCodes) ([]*pbsOrtbSeatBid, []error)
 }
 
 const ImpIdReqBody = "Stored bid response for impression id: "
@@ -136,7 +136,7 @@ type bidderAdapterConfig struct {
 	DebugInfo          config.DebugInfo
 }
 
-func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool) ([]*pbsOrtbSeatBid, []error) {
+func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool, alternateBidderCodes config.AlternateBidderCodes) ([]*pbsOrtbSeatBid, []error) {
 
 	var reqData []*adapters.RequestData
 	var errs []error
@@ -302,19 +302,27 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 						bidderName := bidderRequest.BidderName
 						if bidResponse.Bids[i].Seat != "" {
 							bidderName = bidResponse.Bids[i].Seat
+						}
 
-							if _, ok := seatBidMap[bidderName]; !ok {
-								// Initalize seatBidMap entry as this is first extra bid with seat bidderName
-								// seatBidMap[bidderName] =
-								seatBidMap[bidderName] = &pbsOrtbSeatBid{
-									bids:     make([]*pbsOrtbBid, 0, dataLen),
-									currency: defaultCurrency,
-									// Do we need to fill httpCalls for this?. Can we refer one from adaptercode for debugging?
-									httpCalls: seatBidMap[bidderRequest.BidderName].httpCalls,
-									seat:      bidderName.String(),
-								}
+						if valid, err := alternateBidderCodes.IsValidBidderCode(bidderRequest.BidderName, bidderName); !valid {
+							if err != nil {
+								errs = append(errs, err)
+							}
+							continue
+						}
+
+						if _, ok := seatBidMap[bidderName]; !ok {
+							// Initalize seatBidMap entry as this is first extra bid with seat bidderName
+							// seatBidMap[bidderName] =
+							seatBidMap[bidderName] = &pbsOrtbSeatBid{
+								bids:     make([]*pbsOrtbBid, 0, dataLen),
+								currency: defaultCurrency,
+								// Do we need to fill httpCalls for this?. Can we refer one from adaptercode for debugging?
+								httpCalls: seatBidMap[bidderRequest.BidderName].httpCalls,
+								seat:      bidderName.String(),
 							}
 						}
+
 						seatBidMap[bidderName].bids = append(seatBidMap[bidderName].bids, &pbsOrtbBid{
 							bid:            bidResponse.Bids[i].Bid,
 							bidMeta:        bidResponse.Bids[i].BidMeta,
