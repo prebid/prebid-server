@@ -21,9 +21,10 @@ import (
 )
 
 const (
-	AccountParameter   = "a"
-	ImpressionCloseTag = "</Impression>"
-	ImpressionOpenTag  = "<Impression>"
+	AccountParameter     = "a"
+	IntegrationParameter = "int"
+	ImpressionCloseTag   = "</Impression>"
+	ImpressionOpenTag    = "<Impression>"
 )
 
 type vtrackEndpoint struct {
@@ -69,6 +70,14 @@ func (v *vtrackEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httpro
 		return
 	}
 
+	// get integration value from request parameter
+	integrationType, err := getIntegrationType(r)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(fmt.Sprintf("Invalid integration type: %s\n", err.Error())))
+		return
+	}
+
 	// parse puts request from request body
 	req, err := ParseVTrackRequest(r, v.Cfg.MaxRequestSize+1)
 
@@ -96,7 +105,7 @@ func (v *vtrackEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httpro
 
 	// insert impression tracking if account allows events and bidder allows VAST modification
 	if v.Cache != nil {
-		cachingResponse, errs := v.handleVTrackRequest(ctx, req, account)
+		cachingResponse, errs := v.handleVTrackRequest(ctx, req, account, integrationType)
 
 		if len(errs) > 0 {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -128,15 +137,16 @@ func (v *vtrackEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httpro
 }
 
 // GetVastUrlTracking creates a vast url tracking
-func GetVastUrlTracking(externalUrl string, bidid string, bidder string, accountId string, timestamp int64) string {
+func GetVastUrlTracking(externalUrl string, bidid string, bidder string, accountId string, timestamp int64, integration string) string {
 
 	eventReq := &analytics.EventRequest{
-		Type:      analytics.Imp,
-		BidID:     bidid,
-		AccountID: accountId,
-		Bidder:    bidder,
-		Timestamp: timestamp,
-		Format:    analytics.Blank,
+		Type:        analytics.Imp,
+		BidID:       bidid,
+		AccountID:   accountId,
+		Bidder:      bidder,
+		Timestamp:   timestamp,
+		Format:      analytics.Blank,
+		Integration: integration,
 	}
 
 	return EventRequestToUrl(externalUrl, eventReq)
@@ -190,10 +200,10 @@ func ParseVTrackRequest(httpRequest *http.Request, maxRequestSize int64) (req *B
 }
 
 // handleVTrackRequest handles a VTrack request
-func (v *vtrackEndpoint) handleVTrackRequest(ctx context.Context, req *BidCacheRequest, account *config.Account) (*BidCacheResponse, []error) {
+func (v *vtrackEndpoint) handleVTrackRequest(ctx context.Context, req *BidCacheRequest, account *config.Account, integration string) (*BidCacheResponse, []error) {
 	biddersAllowingVastUpdate := getBiddersAllowingVastUpdate(req, &v.BidderInfos, v.Cfg.VTrack.AllowUnknownBidder)
 	// cache data
-	r, errs := v.cachePutObjects(ctx, req, biddersAllowingVastUpdate, account.ID)
+	r, errs := v.cachePutObjects(ctx, req, biddersAllowingVastUpdate, account.ID, integration)
 
 	// handle pbs caching errors
 	if len(errs) != 0 {
@@ -216,7 +226,7 @@ func (v *vtrackEndpoint) handleVTrackRequest(ctx context.Context, req *BidCacheR
 }
 
 // cachePutObjects caches BidCacheRequest data
-func (v *vtrackEndpoint) cachePutObjects(ctx context.Context, req *BidCacheRequest, biddersAllowingVastUpdate map[string]struct{}, accountId string) ([]string, []error) {
+func (v *vtrackEndpoint) cachePutObjects(ctx context.Context, req *BidCacheRequest, biddersAllowingVastUpdate map[string]struct{}, accountId string, integration string) ([]string, []error) {
 	var cacheables []prebid_cache_client.Cacheable
 
 	for _, c := range req.Puts {
@@ -229,7 +239,7 @@ func (v *vtrackEndpoint) cachePutObjects(ctx context.Context, req *BidCacheReque
 		}
 
 		if _, ok := biddersAllowingVastUpdate[c.Bidder]; ok && nc.Data != nil {
-			nc.Data = ModifyVastXmlJSON(v.Cfg.ExternalURL, nc.Data, c.BidID, c.Bidder, accountId, c.Timestamp)
+			nc.Data = ModifyVastXmlJSON(v.Cfg.ExternalURL, nc.Data, c.BidID, c.Bidder, accountId, c.Timestamp, integration)
 		}
 
 		cacheables = append(cacheables, *nc)
@@ -268,8 +278,17 @@ func getAccountId(httpRequest *http.Request) string {
 	return httpRequest.URL.Query().Get(AccountParameter)
 }
 
+func getIntegrationType(httpRequest *http.Request) (string, error) {
+	integrationType := httpRequest.URL.Query().Get(IntegrationParameter)
+	err := validateIntegrationType(integrationType)
+	if err != nil {
+		return "", err
+	}
+	return integrationType, nil
+}
+
 // ModifyVastXmlString rewrites and returns the string vastXML and a flag indicating if it was modified
-func ModifyVastXmlString(externalUrl, vast, bidid, bidder, accountID string, timestamp int64) (string, bool) {
+func ModifyVastXmlString(externalUrl, vast, bidid, bidder, accountID string, timestamp int64, integrationType string) (string, bool) {
 	ci := strings.Index(vast, ImpressionCloseTag)
 
 	// no impression tag - pass it as it is
@@ -277,7 +296,7 @@ func ModifyVastXmlString(externalUrl, vast, bidid, bidder, accountID string, tim
 		return vast, false
 	}
 
-	vastUrlTracking := GetVastUrlTracking(externalUrl, bidid, bidder, accountID, timestamp)
+	vastUrlTracking := GetVastUrlTracking(externalUrl, bidid, bidder, accountID, timestamp, integrationType)
 	impressionUrl := "<![CDATA[" + vastUrlTracking + "]]>"
 	oi := strings.Index(vast, ImpressionOpenTag)
 
@@ -289,13 +308,13 @@ func ModifyVastXmlString(externalUrl, vast, bidid, bidder, accountID string, tim
 }
 
 // ModifyVastXmlJSON modifies BidCacheRequest element Vast XML data
-func ModifyVastXmlJSON(externalUrl string, data json.RawMessage, bidid, bidder, accountId string, timestamp int64) json.RawMessage {
+func ModifyVastXmlJSON(externalUrl string, data json.RawMessage, bidid, bidder, accountId string, timestamp int64, integrationType string) json.RawMessage {
 	var vast string
 	if err := json.Unmarshal(data, &vast); err != nil {
 		// failed to decode json, fall back to string
 		vast = string(data)
 	}
-	vast, ok := ModifyVastXmlString(externalUrl, vast, bidid, bidder, accountId, timestamp)
+	vast, ok := ModifyVastXmlString(externalUrl, vast, bidid, bidder, accountId, timestamp, integrationType)
 	if !ok {
 		return data
 	}

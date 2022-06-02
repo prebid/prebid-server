@@ -1,10 +1,8 @@
 package http_fetcher
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -166,42 +164,6 @@ func TestErrResponse(t *testing.T) {
 	assertMapKeys(t, reqData)
 	assertMapKeys(t, impData)
 	assert.Len(t, errs, 1)
-}
-
-func assertSameContents(t *testing.T, expected map[string]json.RawMessage, actual map[string]json.RawMessage) {
-	if len(expected) != len(actual) {
-		t.Errorf("Wrong counts. Expected %d, actual %d", len(expected), len(actual))
-		return
-	}
-	for expectedKey, expectedVal := range expected {
-		if actualVal, ok := actual[expectedKey]; ok {
-			if !bytes.Equal(expectedVal, actualVal) {
-				t.Errorf("actual[%s] value %s does not match expected: %s", expectedKey, string(actualVal), string(actualVal))
-			}
-		} else {
-			t.Errorf("actual map missing expected key %s", expectedKey)
-		}
-	}
-}
-
-func assertSameErrMsgs(t *testing.T, expected []string, actual []error) {
-	if len(expected) != len(actual) {
-		t.Errorf("Wrong error counts. Expected %d, actual %d", len(expected), len(actual))
-		return
-	}
-	for i, expectedErr := range expected {
-		if actual[i].Error() != expectedErr {
-			t.Errorf("Wrong error[%d]. Expected %s, got %s", i, expectedErr, actual[i].Error())
-		}
-	}
-}
-
-type closeWrapper struct {
-	io.Reader
-}
-
-func (w closeWrapper) Close() error {
-	return nil
 }
 
 func newFetcherBrokenBackend() (fetcher *HttpFetcher, closer func()) {

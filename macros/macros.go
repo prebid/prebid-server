@@ -23,7 +23,7 @@ type UserSyncTemplateParams struct {
 }
 
 // ResolveMacros resolves macros in the given template with the provided params
-func ResolveMacros(aTemplate template.Template, params interface{}) (string, error) {
+func ResolveMacros(aTemplate *template.Template, params interface{}) (string, error) {
 	strBuf := bytes.Buffer{}
 
 	err := aTemplate.Execute(&strBuf, params)

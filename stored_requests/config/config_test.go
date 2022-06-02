@@ -2,6 +2,7 @@ package config
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -41,12 +42,79 @@ func isMemoryCacheType(cache stored_requests.CacheJSON) bool {
 }
 
 func TestNewEmptyFetcher(t *testing.T) {
-	fetcher := newFetcher(&config.StoredRequests{}, nil, nil)
-	if fetcher == nil {
-		t.Errorf("The fetcher should be non-nil, even with an empty config.")
+
+	type testCase struct {
+		config       *config.StoredRequests
+		emptyFetcher bool
+		description  string
 	}
-	if _, ok := fetcher.(empty_fetcher.EmptyFetcher); !ok {
-		t.Errorf("If the config is empty, and EmptyFetcher should be returned")
+	testCases := []testCase{
+		{
+			config:       &config.StoredRequests{},
+			emptyFetcher: true,
+			description:  "If the config is empty, an EmptyFetcher should be returned",
+		},
+		{
+			config: &config.StoredRequests{
+				Postgres: config.PostgresConfig{
+					CacheInitialization: config.PostgresCacheInitializer{
+						Query: "test query",
+					},
+					PollUpdates: config.PostgresUpdatePolling{
+						Query: "test poll query",
+					},
+					FetcherQueries: config.PostgresFetcherQueries{
+						QueryTemplate: "",
+					},
+				},
+			},
+			emptyFetcher: true,
+			description:  "If Postgres fetcher query is not defined, but Postgres Cache init query and Postgres update polling query are defined EmptyFetcher should be returned",
+		},
+		{
+			config: &config.StoredRequests{
+				Postgres: config.PostgresConfig{
+					CacheInitialization: config.PostgresCacheInitializer{
+						Query: "",
+					},
+					PollUpdates: config.PostgresUpdatePolling{
+						Query: "",
+					},
+					FetcherQueries: config.PostgresFetcherQueries{
+						QueryTemplate: "test fetcher query",
+					},
+				},
+			},
+			emptyFetcher: false,
+			description:  "If Postgres fetcher query is  defined, but Postgres Cache init query and Postgres update polling query are not defined not EmptyFetcher (DBFetcher) should be returned",
+		},
+		{
+			config: &config.StoredRequests{
+				Postgres: config.PostgresConfig{
+					CacheInitialization: config.PostgresCacheInitializer{
+						Query: "test cache query",
+					},
+					PollUpdates: config.PostgresUpdatePolling{
+						Query: "test poll query",
+					},
+					FetcherQueries: config.PostgresFetcherQueries{
+						QueryTemplate: "test fetcher query",
+					},
+				},
+			},
+			emptyFetcher: false,
+			description:  "If Postgres fetcher query is  defined and Postgres Cache init query and Postgres update polling query are  defined not EmptyFetcher (DBFetcher) should be returned",
+		},
+	}
+
+	for _, test := range testCases {
+		fetcher := newFetcher(test.config, nil, &sql.DB{})
+		assert.NotNil(t, fetcher, "The fetcher should be non-nil.")
+		if test.emptyFetcher {
+			assert.Equal(t, empty_fetcher.EmptyFetcher{}, fetcher, "Empty fetcher should be returned")
+		} else {
+			assert.NotEqual(t, empty_fetcher.EmptyFetcher{}, fetcher)
+		}
 	}
 }
 
@@ -90,6 +158,7 @@ func TestNewEmptyCache(t *testing.T) {
 	cache := newCache(&config.StoredRequests{InMemoryCache: config.InMemoryCache{Type: "none"}})
 	assert.True(t, isEmptyCacheType(cache.Requests), "The newCache method should return an empty Request cache")
 	assert.True(t, isEmptyCacheType(cache.Imps), "The newCache method should return an empty Imp cache")
+	assert.True(t, isEmptyCacheType(cache.Responses), "The newCache method should return an empty Responses cache")
 	assert.True(t, isEmptyCacheType(cache.Accounts), "The newCache method should return an empty Account cache")
 }
 
@@ -99,10 +168,12 @@ func TestNewInMemoryCache(t *testing.T) {
 			TTL:              60,
 			RequestCacheSize: 100,
 			ImpCacheSize:     100,
+			RespCacheSize:    100,
 		},
 	})
 	assert.True(t, isMemoryCacheType(cache.Requests), "The newCache method should return an in-memory Request cache for StoredRequests config")
 	assert.True(t, isMemoryCacheType(cache.Imps), "The newCache method should return an in-memory Imp cache for StoredRequests config")
+	assert.True(t, isMemoryCacheType(cache.Responses), "The newCache method should return an in-memory Responses cache for StoredResponses config")
 	assert.True(t, isEmptyCacheType(cache.Accounts), "The newCache method should return an empty Account cache for StoredRequests config")
 }
 
@@ -116,6 +187,7 @@ func TestNewInMemoryAccountCache(t *testing.T) {
 	assert.True(t, isMemoryCacheType(cache.Accounts), "The newCache method should return an in-memory Account cache for Accounts config")
 	assert.True(t, isEmptyCacheType(cache.Requests), "The newCache method should return an empty Request cache for Accounts config")
 	assert.True(t, isEmptyCacheType(cache.Imps), "The newCache method should return an empty Imp cache for Accounts config")
+	assert.True(t, isEmptyCacheType(cache.Responses), "The newCache method should return an empty Responses cache for Accounts config")
 }
 
 func TestNewPostgresEventProducers(t *testing.T) {

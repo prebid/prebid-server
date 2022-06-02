@@ -26,6 +26,7 @@ import (
 	"github.com/prebid/prebid-server/metrics"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/version"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -68,7 +69,6 @@ func TestSingleBidder(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	ctx = context.WithValue(ctx, DebugContextKey, true)
 
 	for _, test := range testCases {
 		mockBidderResponse := &adapters.BidderResponse{
@@ -91,10 +91,14 @@ func TestSingleBidder(t *testing.T) {
 		}
 		bidderImpl.bidResponse = mockBidderResponse
 
-		bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, test.debugInfo)
+		bidder := AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, test.debugInfo)
 		currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 
-		seatBid, errs := bidder.requestBid(ctx, &openrtb2.BidRequest{}, "test", bidAdjustment, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, true, false)
+		bidderReq := BidderRequest{
+			BidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "impId"}}},
+			BidderName: "test",
+		}
+		seatBid, errs := bidder.requestBid(ctx, bidderReq, bidAdjustment, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, true, false)
 
 		// Make sure the goodSingleBidder was called with the expected arguments.
 		if bidderImpl.httpResponse == nil {
@@ -138,12 +142,21 @@ func TestSingleBidder(t *testing.T) {
 		if len(seatBid.httpCalls) != test.httpCallsLen {
 			t.Errorf("The bidder shouldn't log HttpCalls when request.test == 0. Found %d", len(seatBid.httpCalls))
 		}
+		for index, bid := range seatBid.bids {
+			assert.NotEqual(t, mockBidderResponse.Bids[index].Bid.Price, bid.originalBidCPM, "The bid price was adjusted, so the originally bid CPM should be different")
+		}
 	}
 }
 
 func TestRequestBidRemovesSensitiveHeaders(t *testing.T) {
 	server := httptest.NewServer(mockHandler(200, "getBody", "responseJson"))
 	defer server.Close()
+
+	oldVer := version.Ver
+	version.Ver = "test-version"
+	defer func() {
+		version.Ver = oldVer
+	}()
 
 	requestHeaders := http.Header{}
 	requestHeaders.Add("Content-Type", "application/json")
@@ -163,17 +176,21 @@ func TestRequestBidRemovesSensitiveHeaders(t *testing.T) {
 
 	debugInfo := &config.DebugInfo{Allow: true}
 	ctx := context.Background()
-	ctx = context.WithValue(ctx, DebugContextKey, true)
 
-	bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, debugInfo)
+	bidder := AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, debugInfo)
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
-	seatBid, errs := bidder.requestBid(ctx, &openrtb2.BidRequest{}, "test", 1, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, true, false)
+
+	bidderReq := BidderRequest{
+		BidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "impId"}}},
+		BidderName: "test",
+	}
+	seatBid, errs := bidder.requestBid(ctx, bidderReq, 1, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, true, false)
 
 	expectedHttpCalls := []*openrtb_ext.ExtHttpCall{
 		{
 			Uri:            server.URL,
 			RequestBody:    "requestJson",
-			RequestHeaders: map[string][]string{"Content-Type": {"application/json"}},
+			RequestHeaders: map[string][]string{"Content-Type": {"application/json"}, "X-Prebid": {"pbs-go/test-version"}},
 			ResponseBody:   "responseJson",
 			Status:         200,
 		},
@@ -204,17 +221,20 @@ func TestSetGPCHeader(t *testing.T) {
 
 	debugInfo := &config.DebugInfo{Allow: true}
 	ctx := context.Background()
-	ctx = context.WithValue(ctx, DebugContextKey, true)
 
-	bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, debugInfo)
+	bidder := AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, debugInfo)
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
-	seatBid, errs := bidder.requestBid(ctx, &openrtb2.BidRequest{}, "test", 1, currencyConverter.Rates(), &adapters.ExtraRequestInfo{GlobalPrivacyControlHeader: "1"}, true, false)
+	bidderReq := BidderRequest{
+		BidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "impId"}}},
+		BidderName: "test",
+	}
+	seatBid, errs := bidder.requestBid(ctx, bidderReq, 1, currencyConverter.Rates(), &adapters.ExtraRequestInfo{GlobalPrivacyControlHeader: "1"}, true, false)
 
 	expectedHttpCall := []*openrtb_ext.ExtHttpCall{
 		{
 			Uri:            server.URL,
 			RequestBody:    "requestJson",
-			RequestHeaders: map[string][]string{"Content-Type": {"application/json"}, "Sec-Gpc": {"1"}},
+			RequestHeaders: map[string][]string{"Content-Type": {"application/json"}, "X-Prebid": {"pbs-go/unknown"}, "Sec-Gpc": {"1"}},
 			ResponseBody:   "responseJson",
 			Status:         200,
 		},
@@ -242,17 +262,21 @@ func TestSetGPCHeaderNil(t *testing.T) {
 
 	debugInfo := &config.DebugInfo{Allow: true}
 	ctx := context.Background()
-	ctx = context.WithValue(ctx, DebugContextKey, true)
 
-	bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, debugInfo)
+	bidder := AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, debugInfo)
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
-	seatBid, errs := bidder.requestBid(ctx, &openrtb2.BidRequest{}, "test", 1, currencyConverter.Rates(), &adapters.ExtraRequestInfo{GlobalPrivacyControlHeader: "1"}, true, false)
+
+	bidderReq := BidderRequest{
+		BidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "impId"}}},
+		BidderName: "test",
+	}
+	seatBid, errs := bidder.requestBid(ctx, bidderReq, 1, currencyConverter.Rates(), &adapters.ExtraRequestInfo{GlobalPrivacyControlHeader: "1"}, true, false)
 
 	expectedHttpCall := []*openrtb_ext.ExtHttpCall{
 		{
 			Uri:            server.URL,
 			RequestBody:    "requestJson",
-			RequestHeaders: map[string][]string{"Sec-Gpc": {"1"}},
+			RequestHeaders: map[string][]string{"X-Prebid": {"pbs-go/unknown"}, "Sec-Gpc": {"1"}},
 			ResponseBody:   "responseJson",
 			Status:         200,
 		},
@@ -302,9 +326,13 @@ func TestMultiBidder(t *testing.T) {
 			}},
 		bidResponse: mockBidderResponse,
 	}
-	bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, nil)
+	bidder := AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil)
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
-	seatBid, errs := bidder.requestBid(context.Background(), &openrtb2.BidRequest{}, "test", 1.0, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, true, true)
+	bidderReq := BidderRequest{
+		BidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "impId"}}},
+		BidderName: "test",
+	}
+	seatBid, errs := bidder.requestBid(context.Background(), bidderReq, 1.0, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, true, true)
 
 	if seatBid == nil {
 		t.Fatalf("SeatBid should exist, because bids exist.")
@@ -343,7 +371,7 @@ func TestBidderTimeout(t *testing.T) {
 		Bidder:     &mixedMultiBidder{},
 		BidderName: openrtb_ext.BidderAppnexus,
 		Client:     server.Client(),
-		me:         &metricsConfig.DummyMetricsEngine{},
+		me:         &metricsConfig.NilMetricsEngine{},
 	}
 
 	callInfo := bidder.doRequest(ctx, &adapters.RequestData{
@@ -386,7 +414,7 @@ func TestConnectionClose(t *testing.T) {
 		Bidder:     &mixedMultiBidder{},
 		Client:     server.Client(),
 		BidderName: openrtb_ext.BidderAppnexus,
-		me:         &metricsConfig.DummyMetricsEngine{},
+		me:         &metricsConfig.NilMetricsEngine{},
 	}
 
 	callInfo := bidder.doRequest(context.Background(), &adapters.RequestData{
@@ -399,8 +427,9 @@ func TestConnectionClose(t *testing.T) {
 }
 
 type bid struct {
-	currency string
-	price    float64
+	currency       string
+	price          float64
+	originalBidCur string
 }
 
 // TestMultiCurrencies rate converter is set / active.
@@ -424,7 +453,6 @@ func TestMultiCurrencies(t *testing.T) {
 				{currency: "USD", price: 1.3},
 			},
 			rates: currency.Rates{
-				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"GBP": {
 						"USD": 1.3050530256,
@@ -435,9 +463,9 @@ func TestMultiCurrencies(t *testing.T) {
 				},
 			},
 			expectedBids: []bid{
-				{currency: "USD", price: 1.1},
-				{currency: "USD", price: 1.2},
-				{currency: "USD", price: 1.3},
+				{currency: "USD", price: 1.1, originalBidCur: "USD"},
+				{currency: "USD", price: 1.2, originalBidCur: "USD"},
+				{currency: "USD", price: 1.3, originalBidCur: "USD"},
 			},
 			expectedBadCurrencyErrors: []error{},
 			description:               "Case 1 - Bidder respond with the same currency (default one) on all HTTP responses",
@@ -449,7 +477,6 @@ func TestMultiCurrencies(t *testing.T) {
 				{currency: "", price: 1.3},
 			},
 			rates: currency.Rates{
-				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"GBP": {
 						"USD": 1.3050530256,
@@ -460,9 +487,9 @@ func TestMultiCurrencies(t *testing.T) {
 				},
 			},
 			expectedBids: []bid{
-				{currency: "USD", price: 1.1},
-				{currency: "USD", price: 1.2},
-				{currency: "USD", price: 1.3},
+				{currency: "USD", price: 1.1, originalBidCur: "USD"},
+				{currency: "USD", price: 1.2, originalBidCur: "USD"},
+				{currency: "USD", price: 1.3, originalBidCur: "USD"},
 			},
 			expectedBadCurrencyErrors: []error{},
 			description:               "Case 2 - Bidder respond with no currency on all HTTP responses",
@@ -474,7 +501,6 @@ func TestMultiCurrencies(t *testing.T) {
 				{currency: "EUR", price: 1.3},
 			},
 			rates: currency.Rates{
-				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"GBP": {
 						"USD": 1.3050530256,
@@ -485,9 +511,9 @@ func TestMultiCurrencies(t *testing.T) {
 				},
 			},
 			expectedBids: []bid{
-				{currency: "USD", price: 1.1 * 1.1435678764},
-				{currency: "USD", price: 1.2 * 1.1435678764},
-				{currency: "USD", price: 1.3 * 1.1435678764},
+				{currency: "USD", price: 1.1 * 1.1435678764, originalBidCur: "EUR"},
+				{currency: "USD", price: 1.2 * 1.1435678764, originalBidCur: "EUR"},
+				{currency: "USD", price: 1.3 * 1.1435678764, originalBidCur: "EUR"},
 			},
 			expectedBadCurrencyErrors: []error{},
 			description:               "Case 3 - Bidder respond with the same non default currency on all HTTP responses",
@@ -499,7 +525,6 @@ func TestMultiCurrencies(t *testing.T) {
 				{currency: "GBP", price: 1.3},
 			},
 			rates: currency.Rates{
-				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"GBP": {
 						"USD": 1.3050530256,
@@ -510,9 +535,9 @@ func TestMultiCurrencies(t *testing.T) {
 				},
 			},
 			expectedBids: []bid{
-				{currency: "USD", price: 1.1},
-				{currency: "USD", price: 1.2 * 1.1435678764},
-				{currency: "USD", price: 1.3 * 1.3050530256},
+				{currency: "USD", price: 1.1, originalBidCur: "USD"},
+				{currency: "USD", price: 1.2 * 1.1435678764, originalBidCur: "EUR"},
+				{currency: "USD", price: 1.3 * 1.3050530256, originalBidCur: "GBP"},
 			},
 			expectedBadCurrencyErrors: []error{},
 			description:               "Case 4 - Bidder respond with a mix of currencies on all HTTP responses",
@@ -524,7 +549,6 @@ func TestMultiCurrencies(t *testing.T) {
 				{currency: "GBP", price: 1.3},
 			},
 			rates: currency.Rates{
-				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"GBP": {
 						"USD": 1.3050530256,
@@ -535,9 +559,9 @@ func TestMultiCurrencies(t *testing.T) {
 				},
 			},
 			expectedBids: []bid{
-				{currency: "USD", price: 1.1},
-				{currency: "USD", price: 1.2 * 1.1435678764},
-				{currency: "USD", price: 1.3 * 1.3050530256},
+				{currency: "USD", price: 1.1, originalBidCur: "USD"},
+				{currency: "USD", price: 1.2 * 1.1435678764, originalBidCur: "EUR"},
+				{currency: "USD", price: 1.3 * 1.3050530256, originalBidCur: "GBP"},
 			},
 			expectedBadCurrencyErrors: []error{},
 			description:               "Case 5 - Bidder respond with a mix of currencies and no currency on all HTTP responses",
@@ -549,7 +573,6 @@ func TestMultiCurrencies(t *testing.T) {
 				{currency: "GBP", price: 1.3},
 			},
 			rates: currency.Rates{
-				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"GBP": {
 						"USD": 1.3050530256,
@@ -560,8 +583,8 @@ func TestMultiCurrencies(t *testing.T) {
 				},
 			},
 			expectedBids: []bid{
-				{currency: "USD", price: 1.2 * 1.1435678764},
-				{currency: "USD", price: 1.3 * 1.3050530256},
+				{currency: "USD", price: 1.2 * 1.1435678764, originalBidCur: "EUR"},
+				{currency: "USD", price: 1.3 * 1.3050530256, originalBidCur: "GBP"},
 			},
 			expectedBadCurrencyErrors: []error{
 				currency.ConversionNotFoundError{FromCur: "JPY", ToCur: "USD"},
@@ -575,7 +598,6 @@ func TestMultiCurrencies(t *testing.T) {
 				{currency: "DKK", price: 1.3},
 			},
 			rates: currency.Rates{
-				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"GBP": {
 						"USD": 1.3050530256,
@@ -600,7 +622,6 @@ func TestMultiCurrencies(t *testing.T) {
 				{currency: "CCC", price: 1.3},
 			},
 			rates: currency.Rates{
-				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"GBP": {
 						"USD": 1.3050530256,
@@ -664,7 +685,7 @@ func TestMultiCurrencies(t *testing.T) {
 		)
 
 		// Execute:
-		bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, nil)
+		bidder := AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil)
 		currencyConverter := currency.NewRateConverter(
 			&http.Client{},
 			mockedHTTPServer.URL,
@@ -673,10 +694,13 @@ func TestMultiCurrencies(t *testing.T) {
 		time.Sleep(time.Duration(500) * time.Millisecond)
 		currencyConverter.Run()
 
+		bidderReq := BidderRequest{
+			BidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "impId"}}},
+			BidderName: openrtb_ext.BidderAppnexus,
+		}
 		seatBid, errs := bidder.requestBid(
 			context.Background(),
-			&openrtb2.BidRequest{},
-			"test",
+			bidderReq,
 			1,
 			currencyConverter.Rates(),
 			&adapters.ExtraRequestInfo{},
@@ -688,8 +712,9 @@ func TestMultiCurrencies(t *testing.T) {
 		resultLightBids := make([]bid, len(seatBid.bids))
 		for i, b := range seatBid.bids {
 			resultLightBids[i] = bid{
-				price:    b.bid.Price,
-				currency: seatBid.currency,
+				price:          b.bid.Price,
+				currency:       seatBid.currency,
+				originalBidCur: b.originalBidCur,
 			}
 		}
 		assert.ElementsMatch(t, tc.expectedBids, resultLightBids, tc.description)
@@ -817,12 +842,15 @@ func TestMultiCurrencies_RateConverterNotSet(t *testing.T) {
 		}
 
 		// Execute:
-		bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, nil)
+		bidder := AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil)
 		currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+		bidderReq := BidderRequest{
+			BidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "impId"}}},
+			BidderName: "test",
+		}
 		seatBid, errs := bidder.requestBid(
 			context.Background(),
-			&openrtb2.BidRequest{},
-			"test",
+			bidderReq,
 			1,
 			currencyConverter.Rates(),
 			&adapters.ExtraRequestInfo{},
@@ -858,7 +886,6 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			expectedPickedCurrency: "EUR",
 			expectedError:          false,
 			rates: currency.Rates{
-				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"JPY": {
 						"USD": 0.0089,
@@ -879,7 +906,6 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			expectedPickedCurrency: "JPY",
 			expectedError:          false,
 			rates: currency.Rates{
-				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"JPY": {
 						"USD": 0.0089,
@@ -894,7 +920,6 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			expectedPickedCurrency: "USD",
 			expectedError:          false,
 			rates: currency.Rates{
-				DataAsOf: time.Now(),
 				Conversions: map[string]map[string]float64{
 					"JPY": {
 						"USD": 0.0089,
@@ -915,7 +940,6 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			expectedPickedCurrency: "",
 			expectedError:          true,
 			rates: currency.Rates{
-				DataAsOf:    time.Now(),
 				Conversions: map[string]map[string]float64{},
 			},
 			description: "Case 4 - None allowed currencies in bid request are known, an error is returned",
@@ -926,7 +950,6 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			expectedPickedCurrency: "USD",
 			expectedError:          false,
 			rates: currency.Rates{
-				DataAsOf:    time.Now(),
 				Conversions: map[string]map[string]float64{},
 			},
 			description: "Case 5 - None allowed currencies in bid request are known but the default one (`USD`), no rates are set but default currency will be picked",
@@ -937,7 +960,6 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			expectedPickedCurrency: "USD",
 			expectedError:          false,
 			rates: currency.Rates{
-				DataAsOf:    time.Now(),
 				Conversions: map[string]map[string]float64{},
 			},
 			description: "Case 6 - No allowed currencies specified in bid request, default one is picked: `USD`",
@@ -985,18 +1007,19 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 		}
 
 		// Execute:
-		bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, nil)
+		bidder := AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil)
 		currencyConverter := currency.NewRateConverter(
 			&http.Client{},
 			mockedHTTPServer.URL,
 			time.Duration(24)*time.Hour,
 		)
+		bidderReq := BidderRequest{
+			BidRequest: &openrtb2.BidRequest{Cur: tc.bidRequestCurrencies, Imp: []openrtb2.Imp{{ID: "impId"}}},
+			BidderName: "test",
+		}
 		seatBid, errs := bidder.requestBid(
 			context.Background(),
-			&openrtb2.BidRequest{
-				Cur: tc.bidRequestCurrencies,
-			},
-			"test",
+			bidderReq,
 			1,
 			currencyConverter.Rates(),
 			&adapters.ExtraRequestInfo{},
@@ -1295,13 +1318,16 @@ func TestMobileNativeTypes(t *testing.T) {
 			},
 			bidResponse: tc.mockBidderResponse,
 		}
-		bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, nil)
+		bidder := AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil)
 		currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 
+		bidderReq := BidderRequest{
+			BidRequest: tc.mockBidderRequest,
+			BidderName: "test",
+		}
 		seatBids, _ := bidder.requestBid(
 			context.Background(),
-			tc.mockBidderRequest,
-			"test",
+			bidderReq,
 			1.0,
 			currencyConverter.Rates(),
 			&adapters.ExtraRequestInfo{},
@@ -1312,15 +1338,91 @@ func TestMobileNativeTypes(t *testing.T) {
 		var actualValue string
 		for _, bid := range seatBids.bids {
 			actualValue = bid.bid.AdM
-			diffJson(t, tc.description, []byte(actualValue), []byte(tc.expectedValue))
+			assert.JSONEq(t, tc.expectedValue, actualValue, tc.description)
 		}
 	}
 }
 
+func TestRequestBidsStoredBidResponses(t *testing.T) {
+	respBody := "{\"bid\":false}"
+	respStatus := 200
+	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
+	defer server.Close()
+
+	bidRespId1 := json.RawMessage(`{"id": "resp_id1", "seatbid": [{"bid": [{"id": "bid_id1"}], "seat": "testBidder1"}], "bidid": "123", "cur": "USD"}`)
+	bidRespId2 := json.RawMessage(`{"id": "resp_id2", "seatbid": [{"bid": [{"id": "bid_id2_1"},{"id": "bid_id2_2"}], "seat": "testBidder2"}], "bidid": "124", "cur": "USD"}`)
+
+	testCases := []struct {
+		description           string
+		mockBidderRequest     *openrtb2.BidRequest
+		bidderStoredResponses map[string]json.RawMessage
+		expectedBidIds        []string
+		expectedImpIds        []string
+	}{
+		{
+			description: "Single imp with stored bid response",
+			mockBidderRequest: &openrtb2.BidRequest{
+				Imp: nil,
+				App: &openrtb2.App{},
+			},
+			bidderStoredResponses: map[string]json.RawMessage{
+				"bidResponseId1": bidRespId1,
+			},
+			expectedBidIds: []string{"bid_id1"},
+			expectedImpIds: []string{"bidResponseId1"},
+		},
+		{
+			description: "Single imp with multiple stored bid responses",
+			mockBidderRequest: &openrtb2.BidRequest{
+				Imp: nil,
+				App: &openrtb2.App{},
+			},
+			bidderStoredResponses: map[string]json.RawMessage{
+				"bidResponseId2": bidRespId2,
+			},
+			expectedBidIds: []string{"bid_id2_1", "bid_id2_2"},
+			expectedImpIds: []string{"bidResponseId2", "bidResponseId2"},
+		},
+	}
+
+	for _, tc := range testCases {
+
+		bidderImpl := &goodSingleBidderWithStoredBidResp{}
+		bidder := AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil)
+		currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+
+		bidderReq := BidderRequest{
+			BidRequest:            tc.mockBidderRequest,
+			BidderName:            openrtb_ext.BidderAppnexus,
+			BidderStoredResponses: tc.bidderStoredResponses,
+		}
+		seatBids, _ := bidder.requestBid(
+			context.Background(),
+			bidderReq,
+			1.0,
+			currencyConverter.Rates(),
+			&adapters.ExtraRequestInfo{},
+			true,
+			true,
+		)
+
+		assert.Len(t, seatBids.bids, len(tc.expectedBidIds), "Incorrect bids number for test case ", tc.description)
+		for index, bid := range seatBids.bids {
+			assert.Equal(t, tc.expectedBidIds[index], bid.bid.ID, tc.description)
+			assert.Equal(t, tc.expectedImpIds[index], bid.bid.ImpID, tc.description)
+		}
+	}
+
+}
+
 func TestErrorReporting(t *testing.T) {
-	bidder := adaptBidder(&bidRejector{}, nil, &config.Configuration{}, &metricsConfig.DummyMetricsEngine{}, openrtb_ext.BidderAppnexus, nil)
+	bidder := AdaptBidder(&bidRejector{}, nil, &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil)
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
-	bids, errs := bidder.requestBid(context.Background(), &openrtb2.BidRequest{}, "test", 1.0, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, true, false)
+	bidderReq := BidderRequest{
+		BidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "impId"}}},
+		BidderName: "test",
+	}
+	bids, errs := bidder.requestBid(context.Background(), bidderReq, 1.0, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, true, false)
 	if bids != nil {
 		t.Errorf("There should be no seatbid if no http requests are returned.")
 	}
@@ -1539,9 +1641,14 @@ func TestCallRecordAdapterConnections(t *testing.T) {
 	metrics.On("RecordAdapterConnections", expectedAdapterName, false, mock.MatchedBy(compareConnWaitTime)).Once()
 
 	// Run requestBid using an http.Client with a mock handler
-	bidder := adaptBidder(bidderImpl, server.Client(), &config.Configuration{}, metrics, openrtb_ext.BidderAppnexus, nil)
+	bidder := AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, metrics, openrtb_ext.BidderAppnexus, nil)
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
-	_, errs := bidder.requestBid(context.Background(), &openrtb2.BidRequest{}, "test", bidAdjustment, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, true, true)
+
+	bidderReq := BidderRequest{
+		BidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "impId"}}},
+		BidderName: openrtb_ext.BidderAppnexus,
+	}
+	_, errs := bidder.requestBid(context.Background(), bidderReq, bidAdjustment, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, true, true)
 
 	// Assert no errors
 	assert.Equal(t, 0, len(errs), "bidder.requestBid returned errors %v \n", errs)
@@ -1642,7 +1749,7 @@ func TestTimeoutNotificationOff(t *testing.T) {
 		Bidder: bidderImpl,
 		Client: server.Client(),
 		config: bidderAdapterConfig{Debug: config.Debug{}},
-		me:     &metricsConfig.DummyMetricsEngine{},
+		me:     &metricsConfig.NilMetricsEngine{},
 	}
 	if tb, ok := bidder.Bidder.(adapters.TimeoutBidder); !ok {
 		t.Error("Failed to cast bidder to a TimeoutBidder")
@@ -1683,7 +1790,7 @@ func TestTimeoutNotificationOn(t *testing.T) {
 				},
 			},
 		},
-		me: &metricsConfig.DummyMetricsEngine{},
+		me: &metricsConfig.NilMetricsEngine{},
 	}
 
 	// Unwrap To Mimic exchange.go Casting Code
@@ -1733,6 +1840,12 @@ func TestParseDebugInfoIsNil(t *testing.T) {
 	assert.True(t, resDebugInfo, "Debug Allow value should be true")
 }
 
+func TestPrepareStoredResponse(t *testing.T) {
+	result := prepareStoredResponse("imp_id1", json.RawMessage(`{"id": "resp_id1"}`))
+	assert.Equal(t, []byte(ImpIdReqBody+"imp_id1"), result.request.Body, "incorrect request body")
+	assert.Equal(t, []byte(`{"id": "resp_id1"}`), result.response.Body, "incorrect response body")
+}
+
 func wrapWithBidderInfo(bidder adapters.Bidder) adapters.Bidder {
 	bidderInfo := config.BidderInfo{
 		Enabled: true,
@@ -1746,10 +1859,11 @@ func wrapWithBidderInfo(bidder adapters.Bidder) adapters.Bidder {
 }
 
 type goodSingleBidder struct {
-	bidRequest   *openrtb2.BidRequest
-	httpRequest  *adapters.RequestData
-	httpResponse *adapters.ResponseData
-	bidResponse  *adapters.BidderResponse
+	bidRequest            *openrtb2.BidRequest
+	httpRequest           *adapters.RequestData
+	httpResponse          *adapters.ResponseData
+	bidResponse           *adapters.BidderResponse
+	hasStoredBidResponses bool
 }
 
 func (bidder *goodSingleBidder) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -1760,6 +1874,31 @@ func (bidder *goodSingleBidder) MakeRequests(request *openrtb2.BidRequest, reqIn
 func (bidder *goodSingleBidder) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	bidder.httpResponse = response
 	return bidder.bidResponse, nil
+}
+
+type goodSingleBidderWithStoredBidResp struct {
+}
+
+func (bidder *goodSingleBidderWithStoredBidResp) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	return nil, nil
+}
+
+func (bidder *goodSingleBidderWithStoredBidResp) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	var bidResp openrtb2.BidResponse
+	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+		return nil, []error{err}
+	}
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
+
+	for _, sb := range bidResp.SeatBid {
+		for i := range sb.Bid {
+			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+				Bid:     &sb.Bid[i],
+				BidType: openrtb_ext.BidTypeVideo,
+			})
+		}
+	}
+	return bidResponse, nil
 }
 
 type goodMultiHTTPCallsBidder struct {
@@ -1806,7 +1945,6 @@ func (bidder *mixedMultiBidder) MakeBids(internalRequest *openrtb2.BidRequest, e
 }
 
 type bidRejector struct {
-	httpRequest  *adapters.RequestData
 	httpResponse *adapters.ResponseData
 }
 
