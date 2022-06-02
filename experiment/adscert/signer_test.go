@@ -38,7 +38,51 @@ func TestInProcessSigner(t *testing.T) {
 			operationStatusOk: test.operationStatusOk,
 		}
 		signer := &inProcessSigner{signatory: signatory}
-		signatureMessage, err := signer.Sign("test.com", []byte{})
+		signatureMessage, err := signer.Sign("http://test.com", []byte{})
+		if test.generateError {
+			assert.EqualError(t, err, "Test error", "incorrect error")
+		} else {
+			if test.operationStatusOk {
+				assert.NoError(t, err, "error should not be returned")
+				assert.Equal(t, "Success", signatureMessage, "incorrect message returned")
+			} else {
+				assert.EqualError(t, err, "error signing request: SIGNATURE_OPERATION_STATUS_UNDEFINED", "incorrect error")
+			}
+		}
+	}
+}
+
+func TestRemoteSigner(t *testing.T) {
+	type aTest struct {
+		desc              string
+		generateError     bool
+		operationStatusOk bool
+	}
+	testCases := []aTest{
+		{
+			desc:              "generate signer error",
+			generateError:     true,
+			operationStatusOk: false,
+		},
+		{
+			desc:              "generate valid response without signature operation error",
+			generateError:     false,
+			operationStatusOk: true,
+		},
+		{
+			desc:              "generate valid response with signature operation error",
+			generateError:     false,
+			operationStatusOk: false,
+		},
+	}
+
+	for _, test := range testCases {
+		signatory := &MockLocalAuthenticatedConnectionsSignatory{
+			returnError:       test.generateError,
+			operationStatusOk: test.operationStatusOk,
+		}
+		signer := &remoteSigner{signatory: signatory}
+		signatureMessage, err := signer.Sign("http://test.com", []byte{})
 		if test.generateError {
 			assert.EqualError(t, err, "Test error", "incorrect error")
 		} else {

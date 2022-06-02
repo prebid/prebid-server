@@ -100,7 +100,7 @@ func (rs *remoteSigner) Sign(destinationURL string, body []byte) (string, error)
 		signatureMessage := signatureResponse.RequestInfo.SignatureInfo[0].SignatureMessage
 		return signatureMessage, err
 	}
-	return "", nil
+	return "", fmt.Errorf("error signing request: %s", signatureResponse.GetSignatureOperationStatus())
 }
 
 func newRemoteSigner(remoteSignerConfig config.Remote) (*remoteSigner, error) {
