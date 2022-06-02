@@ -46,7 +46,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 	if responseData.StatusCode == http.StatusBadRequest {
 		err := &errortypes.BadInput{
-			Message: "Unexpected status code: 400. Malformed request syntax received.Bad request from publisher.",
+			Message: "Unexpected status code: 400. Malformed request syntax received.",
 		}
 		return nil, []error{err}
 	}
