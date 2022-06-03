@@ -1,0 +1,247 @@
+{
+    "mockBidRequest": {
+      "at": 1,
+      "id": "108074d0-0b2b-4294",
+      "imp": [
+        {
+          "id": "b9ec7177-a4cd-4960",
+          "bidfloor": 0.1,
+          "banner": {
+            "w": 320,
+            "h": 50,
+            "format": [
+              {
+                "w": 320,
+                "h": 50
+              },
+              {
+                "w": 320,
+                "h": 150
+              }
+            ],
+            "pos": 1,
+            "expdir": [
+              1
+            ]
+          },
+          "pmp": {
+            "private_auction": 0,
+            "deals": []
+          },
+          "instl": 0,
+          "tagid": "2222",
+          "exp": 0,
+          "secure": 1,
+          "iframebuster": [
+            "ALL"
+          ],
+          "ext": {
+            "multiresponse": true,
+            "tpid": null,
+            "transcoding": true
+          }
+        }
+      ],
+      "site": {
+        "id": "340",
+        "domain": "www.lifeandstylemag.com",
+        "page": "https://www.lifeandstylemag.com/",
+        "ref": "",
+        "mobile": 1,
+        "publisher": null
+      },
+      "device": {
+        "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 11_0 like Mac OS X) AppleWebKit/604.1.38 (KHTML, like Gecko) Version/11.0 Mobile/15A372 Safari/604.1",
+        "geo": {
+          "ipservice": 4,
+          "country": "US",
+          "region": "NY",
+          "metro": "501",
+          "city": "Manhattan",
+          "zip": "11372"
+        },
+        "ip": "127.0.0.1",
+        "devicetype": 4,
+        "make": "Apple",
+        "model": "iPhone",
+        "os": "iOS",
+        "osv": "11_0",
+        "carrier": "none",
+        "language": "en",
+        "connectiontype": 2,
+        "dnt": 0,
+        "lmt": 0
+      },
+      "user": {
+        "id": "e5ba0ca6-9b37-4d54",
+        "ext": {
+          "mt": []
+        },
+        "buyeruid": "",
+        "gender": "F",
+        "yob": 1977
+      },
+      "allimps": 0,
+      "test": 0,
+      "tmax": 125,
+      "source": {
+        "fd": 1
+      }
+    },
+    "httpCalls": [
+      {
+        "expectedRequest": {
+          "uri": "http://example.com/bid",
+          "body": {
+            "at": 1,
+            "id": "108074d0-0b2b-4294",
+            "imp": [
+              {
+                "id": "b9ec7177-a4cd-4960",
+                "bidfloor": 0.1,
+                "banner": {
+                  "w": 320,
+                  "h": 50,
+                  "format": [
+                    {
+                      "w": 320,
+                      "h": 50
+                    },
+                    {
+                      "w": 320,
+                      "h": 150
+                    }
+                  ],
+                  "pos": 1,
+                  "expdir": [
+                    1
+                  ]
+                },
+                "pmp": {
+                  "private_auction": 0,
+                  "deals": []
+                },
+                "instl": 0,
+                "tagid": "2222",
+                "exp": 0,
+                "secure": 1,
+                "iframebuster": [
+                  "ALL"
+                ],
+                "ext": {
+                  "multiresponse": true,
+                  "tpid": null,
+                  "transcoding": true
+                }
+              }
+            ],
+            "site": {
+              "id": "340",
+              "domain": "www.lifeandstylemag.com",
+              "page": "https://www.lifeandstylemag.com/",
+              "ref": "",
+              "mobile": 1,
+              "publisher": null
+            },
+            "device": {
+              "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 11_0 like Mac OS X) AppleWebKit/604.1.38 (KHTML, like Gecko) Version/11.0 Mobile/15A372 Safari/604.1",
+              "geo": {
+                "ipservice": 4,
+                "country": "US",
+                "region": "NY",
+                "metro": "501",
+                "city": "Manhattan",
+                "zip": "11372"
+              },
+              "ip": "127.0.0.1",
+              "devicetype": 4,
+              "make": "Apple",
+              "model": "iPhone",
+              "os": "iOS",
+              "osv": "11_0",
+              "carrier": "none",
+              "language": "en",
+              "connectiontype": 2,
+              "dnt": 0,
+              "lmt": 0
+            },
+            "user": {
+              "id": "e5ba0ca6-9b37-4d54",
+              "ext": {
+                "mt": []
+              },
+              "buyeruid": "",
+              "gender": "F",
+              "yob": 1977
+            },
+            "allimps": 0,
+            "test": 0,
+            "tmax": 125,
+            "source": {
+              "fd": 1
+            }
+          }
+        },
+        "mockResponse": {
+          "status": 200,
+          "body": {
+            "id": "108074d0-0b2b-4294",
+            "seatbid": [
+              {
+                "bid": [
+                  {
+                    "id": "test-request-id",
+                    "impid": "test-imp-id",
+                    "price": 10,
+                    "nurl": "http://example.com/win/10",
+                    "adm": "<div>ad</div>",
+                    "adomain": [
+                      "example.com"
+                    ],
+                    "cid": "test-cid",
+                    "crid": "test-crid",
+                    "cat": [
+                      "IAB13"
+                    ],
+                    "w": 300,
+                    "h": 300
+                  }
+                ],
+                "seat": "_b345"
+              }
+            ],
+            "bidid": "345",
+            "cur": "USD"
+          }
+        }
+      }
+    ],
+    "expectedBidResponses": [
+      {
+        "currency": "USD",
+        "bids": [
+          {
+            "bid": {
+              "id": "test-request-id",
+              "impid": "test-imp-id",
+              "price": 10,
+              "nurl": "http://example.com/win/10",
+              "adm": "<div>ad</div>",
+              "adomain": [
+                "example.com"
+              ],
+              "cid": "test-cid",
+              "crid": "test-crid",
+              "cat": [
+                "IAB13"
+              ],
+              "w": 300,
+              "h": 300
+            },
+            "type": "banner"
+          }
+        ]
+      }
+    ]
+  }
+  
