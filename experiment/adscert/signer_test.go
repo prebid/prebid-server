@@ -3,122 +3,34 @@ package adscert
 import (
 	"errors"
 	"github.com/IABTechLab/adscert/pkg/adscert/api"
-	config2 "github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/config"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-func TestInProcessSigner(t *testing.T) {
-	type aTest struct {
-		desc              string
-		generateError     bool
-		operationStatusOk bool
-	}
-	testCases := []aTest{
-		{
-			desc:              "generate signer error",
-			generateError:     true,
-			operationStatusOk: false,
-		},
-		{
-			desc:              "generate valid response without signature operation error",
-			generateError:     false,
-			operationStatusOk: true,
-		},
-		{
-			desc:              "generate valid response with signature operation error",
-			generateError:     false,
-			operationStatusOk: false,
-		},
-	}
-
-	for _, test := range testCases {
-		signatory := &MockLocalAuthenticatedConnectionsSignatory{
-			returnError:       test.generateError,
-			operationStatusOk: test.operationStatusOk,
-		}
-		signer := &inProcessSigner{signatory: signatory}
-		signatureMessage, err := signer.Sign("http://test.com", []byte{})
-		if test.generateError {
-			assert.EqualError(t, err, "Test error", "incorrect error")
-		} else {
-			if test.operationStatusOk {
-				assert.NoError(t, err, "error should not be returned")
-				assert.Equal(t, "Success", signatureMessage, "incorrect message returned")
-			} else {
-				assert.EqualError(t, err, "error signing request: SIGNATURE_OPERATION_STATUS_UNDEFINED", "incorrect error")
-			}
-		}
-	}
-}
-
-func TestRemoteSigner(t *testing.T) {
-	type aTest struct {
-		desc              string
-		generateError     bool
-		operationStatusOk bool
-	}
-	testCases := []aTest{
-		{
-			desc:              "generate signer error",
-			generateError:     true,
-			operationStatusOk: false,
-		},
-		{
-			desc:              "generate valid response without signature operation error",
-			generateError:     false,
-			operationStatusOk: true,
-		},
-		{
-			desc:              "generate valid response with signature operation error",
-			generateError:     false,
-			operationStatusOk: false,
-		},
-	}
-
-	for _, test := range testCases {
-		signatory := &MockLocalAuthenticatedConnectionsSignatory{
-			returnError:       test.generateError,
-			operationStatusOk: test.operationStatusOk,
-		}
-		signer := &remoteSigner{signatory: signatory}
-		signatureMessage, err := signer.Sign("http://test.com", []byte{})
-		if test.generateError {
-			assert.EqualError(t, err, "Test error", "incorrect error")
-		} else {
-			if test.operationStatusOk {
-				assert.NoError(t, err, "error should not be returned")
-				assert.Equal(t, "Success", signatureMessage, "incorrect message returned")
-			} else {
-				assert.EqualError(t, err, "error signing request: SIGNATURE_OPERATION_STATUS_UNDEFINED", "incorrect error")
-			}
-		}
-	}
-}
-
 func TestNilSigner(t *testing.T) {
-	config := config2.ExperimentAdCerts{Enabled: true, InProcess: config2.InProcess{Origin: ""}, Remote: config2.Remote{Url: ""}}
+	config := config.ExperimentAdsCert{Enabled: true, InProcess: config.InProcess{Origin: ""}, Remote: config.Remote{Url: ""}}
 	signer, err := NewAdCertsSigner(config)
-	assert.NoError(t, err, "error should not be returned")
+	assert.NoError(t, err, "error should not be returned if not in-process nor remote signer defined, NilSigner should be returned instead")
 	message, err := signer.Sign("test.com", nil)
-	assert.NoError(t, err, "error should not be returned")
-	assert.Equal(t, "", message, "message should be empty")
+	assert.NoError(t, err, "NilSigner should not return an error")
+	assert.Equal(t, "", message, "incorrect message returned NilSigner")
 }
 
 func TestNilSignerForAdsCertDisabled(t *testing.T) {
-	config := config2.ExperimentAdCerts{Enabled: false, InProcess: config2.InProcess{Origin: ""}, Remote: config2.Remote{Url: ""}}
+	config := config.ExperimentAdsCert{Enabled: false, InProcess: config.InProcess{Origin: ""}, Remote: config.Remote{Url: ""}}
 	signer, err := NewAdCertsSigner(config)
-	assert.NoError(t, err, "error should not be returned")
+	assert.NoError(t, err, "error should not be returned if AdsCerts feature is disabled")
 	message, err := signer.Sign("test.com", nil)
-	assert.NoError(t, err, "error should not be returned")
-	assert.Equal(t, "", message, "message should be empty")
+	assert.NoError(t, err, "NilSigner should not return an error")
+	assert.Equal(t, "", message, "incorrect message returned NilSigner")
 }
 
 func TestInPrecessAndRemoteSignersDefined(t *testing.T) {
-	config := config2.ExperimentAdCerts{Enabled: true, InProcess: config2.InProcess{Origin: "test.com"}, Remote: config2.Remote{Url: "test.com"}}
+	config := config.ExperimentAdsCert{Enabled: true, InProcess: config.InProcess{Origin: "test.com"}, Remote: config.Remote{Url: "test.com"}}
 	signer, err := NewAdCertsSigner(config)
-	assert.Nil(t, signer, "no signer should be returned")
-	assert.Error(t, err, "error should be returned")
+	assert.Nil(t, signer, "no signer should be returned if both in-process and remote signers are defined")
+	assert.Error(t, err, "error should be returned if both in-process and remote signers are defined")
 
 }
 

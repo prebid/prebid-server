@@ -2,11 +2,11 @@ package config
 
 //Experiment defines if experimental features are available
 type Experiment struct {
-	AdCerts ExperimentAdCerts `mapstructure:"adscert"`
+	AdCerts ExperimentAdsCert `mapstructure:"adscert"`
 }
 
 //ExperimentAdCerts configures and enables functionality to generate and send Ads Cert Auth header to bidders
-type ExperimentAdCerts struct {
+type ExperimentAdsCert struct {
 	Enabled   bool      `mapstructure:"enabled"`
 	InProcess InProcess `mapstructure:"in-process"`
 	Remote    Remote    `mapstructure:"remote"`

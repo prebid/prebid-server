@@ -520,11 +520,14 @@ func (e *exchange) getAllBids(
 			reqInfo.GlobalPrivacyControlHeader = globalPrivacyControlHeader
 
 			//add call sign header for bidders where AdsCertDisable is enabled and request.ext.prebid.experiment.adscert.enabled is set to true
-			requestAdsCertEnabled := experiment != nil && experiment.AdsCert != nil && experiment.AdsCert.Enabled
-			bidderAdsCertEnabled := e.bidderInfo[string(bidderRequest.BidderName)].Experiment.AdsCert.Enable
-			addCallSignHeader := requestAdsCertEnabled && bidderAdsCertEnabled
+			addCallSignHeader := callSignHeader(experiment, e.bidderInfo[string(bidderRequest.BidderName)])
 
-			bids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest, adjustmentFactor, conversions, &reqInfo, e.adCertSigner, bidRequestOptions{accountDebugAllowed: accountDebugAllowed, headerDebugAllowed: headerDebugAllowed, addCallSignHeader: addCallSignHeader})
+			bidReqOptions := bidRequestOptions{
+				accountDebugAllowed: accountDebugAllowed,
+				headerDebugAllowed:  headerDebugAllowed,
+				addCallSignHeader:   addCallSignHeader,
+			}
+			bids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest, adjustmentFactor, conversions, &reqInfo, e.adCertSigner, bidReqOptions)
 
 			// Add in time reporting
 			elapsed := time.Since(start)
@@ -1195,4 +1198,10 @@ func buildStoredAuctionResponse(storedAuctionResponses map[string]json.RawMessag
 	}
 
 	return adapterBids, liveAdapters, nil
+}
+
+func callSignHeader(experiment *openrtb_ext.Experiment, info config.BidderInfo) bool {
+	requestAdsCertEnabled := experiment != nil && experiment.AdsCert != nil && experiment.AdsCert.Enabled
+	bidderAdsCertEnabled := info.Experiment.AdsCert.Enable
+	return requestAdsCertEnabled && bidderAdsCertEnabled
 }
