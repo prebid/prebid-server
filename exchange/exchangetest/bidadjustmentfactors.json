@@ -111,7 +111,8 @@
         "bidAdjustments": {
           "appnexus": 2.5,
           "districtm": 0.3
-        }      },
+        }
+      },
       "mockResponse": {
         "errors": ["districtm-error"]
       }
