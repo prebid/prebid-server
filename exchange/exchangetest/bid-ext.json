@@ -39,8 +39,7 @@
                             }
                         }
                     }]
-                },
-                "bidAdjustment": 1.0
+                }
             },
             "mockResponse": {
                 "pbsSeatBids": [{

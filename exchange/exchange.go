@@ -510,15 +510,11 @@ func (e *exchange) getAllBids(
 			}()
 			start := time.Now()
 
-			adjustmentFactor := 1.0
-			if givenAdjustment, ok := bidAdjustments[string(bidderRequest.BidderName)]; ok {
-				adjustmentFactor = givenAdjustment
-			}
 			reqInfo := adapters.NewExtraRequestInfo(conversions)
 			reqInfo.PbsEntryPoint = bidderRequest.BidderLabels.RType
 			reqInfo.GlobalPrivacyControlHeader = globalPrivacyControlHeader
 
-			seatBids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest, adjustmentFactor, conversions, &reqInfo, accountDebugAllowed, headerDebugAllowed, alternateBidderCodes)
+			seatBids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest, bidAdjustments, conversions, &reqInfo, accountDebugAllowed, headerDebugAllowed, alternateBidderCodes)
 
 			// Add in time reporting
 			elapsed := time.Since(start)

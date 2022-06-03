@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"regexp"
 	"sort"
 	"strconv"
@@ -3992,8 +3993,8 @@ type bidderSpec struct {
 }
 
 type bidderRequest struct {
-	OrtbRequest   openrtb2.BidRequest `json:"ortbRequest"`
-	BidAdjustment float64             `json:"bidAdjustment"`
+	OrtbRequest    openrtb2.BidRequest `json:"ortbRequest"`
+	BidAdjustments map[string]float64  `json:"bidAdjustments"`
 }
 
 type bidderResponse struct {
@@ -4039,11 +4040,11 @@ type validatingBidder struct {
 	mockResponses map[string]bidderResponse
 }
 
-func (b *validatingBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool, alternateBidderCodes config.AlternateBidderCodes) (seatBids []*pbsOrtbSeatBid, errs []error) {
+func (b *validatingBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustments map[string]float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool, alternateBidderCodes config.AlternateBidderCodes) (seatBids []*pbsOrtbSeatBid, errs []error) {
 	if expectedRequest, ok := b.expectations[string(bidderRequest.BidderName)]; ok {
 		if expectedRequest != nil {
-			if expectedRequest.BidAdjustment != bidAdjustment {
-				b.t.Errorf("%s: Bidder %s got wrong bid adjustment. Expected %f, got %f", b.fileName, bidderRequest.BidderName, expectedRequest.BidAdjustment, bidAdjustment)
+			if !reflect.DeepEqual(expectedRequest.BidAdjustments, bidAdjustments) {
+				b.t.Errorf("%s: Bidder %s got wrong bid adjustment. Expected %v, got %v", b.fileName, bidderRequest.BidderName, expectedRequest.BidAdjustments, bidAdjustments)
 			}
 			diffOrtbRequests(b.t, fmt.Sprintf("Request to %s in %s", string(bidderRequest.BidderName), b.fileName), &expectedRequest.OrtbRequest, bidderRequest.BidRequest)
 		}
@@ -4096,7 +4097,7 @@ type capturingRequestBidder struct {
 	req *openrtb2.BidRequest
 }
 
-func (b *capturingRequestBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool, alternateBidderCodes config.AlternateBidderCodes) (seatBid []*pbsOrtbSeatBid, errs []error) {
+func (b *capturingRequestBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustments map[string]float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool, alternateBidderCodes config.AlternateBidderCodes) (seatBid []*pbsOrtbSeatBid, errs []error) {
 	b.req = bidderRequest.BidRequest
 	return []*pbsOrtbSeatBid{{}}, nil
 }
@@ -4203,7 +4204,7 @@ func (e *emptyUsersync) HasAnyLiveSyncs() bool {
 
 type panicingAdapter struct{}
 
-func (panicingAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool, alternateBidderCodes config.AlternateBidderCodes) (posb []*pbsOrtbSeatBid, errs []error) {
+func (panicingAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustments map[string]float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool, alternateBidderCodes config.AlternateBidderCodes) (posb []*pbsOrtbSeatBid, errs []error) {
 	panic("Panic! Panic! The world is ending!")
 }
 

@@ -75,8 +75,7 @@
                             }
                         }
                     }]
-                },
-                "bidAdjustment": 1.0
+                }
             },
             "mockResponse": {
                 "pbsSeatBids": [{
@@ -129,8 +128,7 @@
                             }
                         }
                     }]
-                },
-                "bidAdjustment": 1.0
+                }
             },
             "mockResponse": {
                 "pbsSeatBids": [{

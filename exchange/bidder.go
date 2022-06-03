@@ -51,7 +51,7 @@ type AdaptedBidder interface {
 	//
 	// Any errors will be user-facing in the API.
 	// Error messages should help publishers understand what might account for "bad" bids.
-	requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool, alternateBidderCodes config.AlternateBidderCodes) ([]*pbsOrtbSeatBid, []error)
+	requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustments map[string]float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool, alternateBidderCodes config.AlternateBidderCodes) ([]*pbsOrtbSeatBid, []error)
 }
 
 const ImpIdReqBody = "Stored bid response for impression id: "
@@ -136,7 +136,7 @@ type bidderAdapterConfig struct {
 	DebugInfo          config.DebugInfo
 }
 
-func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool, alternateBidderCodes config.AlternateBidderCodes) ([]*pbsOrtbSeatBid, []error) {
+func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustments map[string]float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool, alternateBidderCodes config.AlternateBidderCodes) ([]*pbsOrtbSeatBid, []error) {
 
 	var reqData []*adapters.RequestData
 	var errs []error
@@ -288,12 +288,6 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 				if err == nil {
 					// Conversion rate found, using it for conversion
 					for i := 0; i < len(bidResponse.Bids); i++ {
-						originalBidCpm := 0.0
-						if bidResponse.Bids[i].Bid != nil {
-							originalBidCpm = bidResponse.Bids[i].Bid.Price
-							bidResponse.Bids[i].Bid.Price = bidResponse.Bids[i].Bid.Price * bidAdjustment * conversionRate
-						}
-
 						if bidResponse.Bids[i].BidMeta == nil {
 							bidResponse.Bids[i].BidMeta = &openrtb_ext.ExtBidPrebidMeta{}
 						}
@@ -309,6 +303,19 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 								errs = append(errs, err)
 							}
 							continue
+						}
+
+						adjustmentFactor := 1.0
+						if givenAdjustment, ok := bidAdjustments[bidderName.String()]; ok {
+							adjustmentFactor = givenAdjustment
+						} else if givenAdjustment, ok := bidAdjustments[bidderRequest.BidderName.String()]; ok {
+							adjustmentFactor = givenAdjustment
+						}
+
+						originalBidCpm := 0.0
+						if bidResponse.Bids[i].Bid != nil {
+							originalBidCpm = bidResponse.Bids[i].Bid.Price
+							bidResponse.Bids[i].Bid.Price = bidResponse.Bids[i].Bid.Price * adjustmentFactor * conversionRate
 						}
 
 						if _, ok := seatBidMap[bidderName]; !ok {

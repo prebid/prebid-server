@@ -28,8 +28,8 @@ type validatedBidder struct {
 	bidder AdaptedBidder
 }
 
-func (v *validatedBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool, alternateBidderCodes config.AlternateBidderCodes) ([]*pbsOrtbSeatBid, []error) {
-	seatBids, errs := v.bidder.requestBid(ctx, bidderRequest, bidAdjustment, conversions, reqInfo, accountDebugAllowed, headerDebugAllowed, alternateBidderCodes)
+func (v *validatedBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustments map[string]float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool, alternateBidderCodes config.AlternateBidderCodes) ([]*pbsOrtbSeatBid, []error) {
+	seatBids, errs := v.bidder.requestBid(ctx, bidderRequest, bidAdjustments, conversions, reqInfo, accountDebugAllowed, headerDebugAllowed, alternateBidderCodes)
 	for _, seatBid := range seatBids {
 		if validationErrors := removeInvalidBids(bidderRequest.BidRequest, seatBid); len(validationErrors) > 0 {
 			errs = append(errs, validationErrors...)
