@@ -712,11 +712,11 @@ func TestBasicEnforcementVendor(t *testing.T) {
 func TestAlternateBidderCodes_IsValidBidderCode(t *testing.T) {
 	type fields struct {
 		Enabled  bool
-		Adapters map[openrtb_ext.BidderName]AdapterAlternateBidderCodes
+		Adapters map[string]AdapterAlternateBidderCodes
 	}
 	type args struct {
-		bidder          openrtb_ext.BidderName
-		alternateBidder openrtb_ext.BidderName
+		bidder          string
+		alternateBidder string
 	}
 	tests := []struct {
 		name        string
@@ -732,108 +732,71 @@ func TestAlternateBidderCodes_IsValidBidderCode(t *testing.T) {
 		{
 			name: "alternateBidder, bidder are same",
 			args: args{
-				bidder:          openrtb_ext.BidderPubmatic,
-				alternateBidder: openrtb_ext.BidderPubmatic,
+				bidder:          "pubmatic",
+				alternateBidder: "pubmatic",
 			},
 			wantIsValid: true,
 		},
 		{
-			name:        "adapter config is not nil",
-			wantIsValid: true,
-		},
-		{
-			name: "alternateBidder disabled at account level",
+			name: "alternateBidder disabled at account level or alternateBidder config is not available",
 			args: args{
-				bidder:          openrtb_ext.BidderPubmatic,
+				bidder:          "pubmatic",
 				alternateBidder: "groupm",
 			},
 			wantIsValid: false,
 		},
 		{
-			name: "alternateBidder disabled at account level, adapter config is not available",
-			args: args{
-				bidder:          openrtb_ext.BidderPubmatic,
-				alternateBidder: "groupm",
-			},
-			wantIsValid: false,
-		},
-		{
-			name: "alternateBidder disabled at account level, adapter config present, has alternateBidder disabled",
-			args: args{
-				bidder:          openrtb_ext.BidderPubmatic,
-				alternateBidder: "groupm",
-			},
-			fields: fields{
-				Enabled: false,
-				Adapters: map[openrtb_ext.BidderName]AdapterAlternateBidderCodes{
-					openrtb_ext.BidderPubmatic: {Enabled: false},
-				},
-			},
-			wantIsValid: false,
-		},
-		{
-			name: "alternateBidder disabled at account level, adapter config present, has alternateBidder enabled",
-			args: args{
-				bidder:          openrtb_ext.BidderPubmatic,
-				alternateBidder: "groupm",
-			},
-			fields: fields{
-				Enabled: true,
-				Adapters: map[openrtb_ext.BidderName]AdapterAlternateBidderCodes{
-					openrtb_ext.BidderPubmatic: {Enabled: true},
-				},
-			},
-			wantIsValid: true,
-		},
-		{
-			// This case also asserts len(allowedBidderCodes)=0
 			name: "alternateBidder enabled at account level, adapter config is not available",
 			args: args{
-				bidder:          openrtb_ext.BidderPubmatic,
+				bidder:          "pubmatic",
 				alternateBidder: "groupm",
 			},
 			fields:      fields{Enabled: true},
-			wantIsValid: true,
-		},
-		{
-			name: "alternateBidder enabled at account level, adapter config present, has alternateBidder disabled",
-			args: args{
-				bidder:          openrtb_ext.BidderPubmatic,
-				alternateBidder: "groupm",
-			},
-			fields: fields{
-				Enabled: false,
-				Adapters: map[openrtb_ext.BidderName]AdapterAlternateBidderCodes{
-					openrtb_ext.BidderPubmatic: {Enabled: false},
-				},
-			},
 			wantIsValid: false,
+			wantErr:     errors.New(`alternateBidderCodes not defined for adapter "pubmatic", rejecting bids for "groupm"`),
 		},
 		{
-			name: "alternateBidder enabled at account level, adapter config present, has alternateBidder enabled",
+			name: "alternateBidder enabled at account level, adapter config present, has alternateBidder disabled, or len(allowedBidderCodes)=0",
 			args: args{
-				bidder:          openrtb_ext.BidderPubmatic,
+				bidder:          "pubmatic",
 				alternateBidder: "groupm",
 			},
 			fields: fields{
 				Enabled: true,
-				Adapters: map[openrtb_ext.BidderName]AdapterAlternateBidderCodes{
-					openrtb_ext.BidderPubmatic: {Enabled: true},
+				Adapters: map[string]AdapterAlternateBidderCodes{
+					"pubmatic": {Enabled: false},
 				},
 			},
-			wantIsValid: true,
+			wantIsValid: false,
+			wantErr:     errors.New(`alternateBidderCodes disabled for "pubmatic", rejecting bids for "groupm"`),
+		},
+		{
+			name: "alternateBidder enabled at account level, adapter config present, has alternateBidder enabled, allowedBidderCodes empty or not available",
+			args: args{
+				bidder:          "pubmatic",
+				alternateBidder: "groupm",
+			},
+			fields: fields{
+				Enabled: true,
+				Adapters: map[string]AdapterAlternateBidderCodes{
+					"pubmatic": {Enabled: true},
+				},
+			},
+			wantIsValid: false,
+			wantErr:     errors.New(`alternateBidderCodes disabled for "pubmatic", rejecting bids for "groupm"`),
 		},
 		{
 			name: "allowedBidderCodes is *",
 			args: args{
-				bidder:          openrtb_ext.BidderPubmatic,
+				bidder:          "pubmatic",
 				alternateBidder: "groupm",
 			},
 			fields: fields{
-				Adapters: map[openrtb_ext.BidderName]AdapterAlternateBidderCodes{
-					openrtb_ext.BidderPubmatic: {
+				Enabled: true,
+				Adapters: map[string]AdapterAlternateBidderCodes{
+					"pubmatic": {
 						Enabled:            true,
-						AllowedBidderCodes: []openrtb_ext.BidderName{"*"},
+						AllowedBidderCodes: []string{"*"},
 					},
 				},
 			},
@@ -842,14 +805,15 @@ func TestAlternateBidderCodes_IsValidBidderCode(t *testing.T) {
 		{
 			name: "allowedBidderCodes is in the list",
 			args: args{
-				bidder:          openrtb_ext.BidderPubmatic,
+				bidder:          "pubmatic",
 				alternateBidder: "groupm",
 			},
 			fields: fields{
-				Adapters: map[openrtb_ext.BidderName]AdapterAlternateBidderCodes{
-					openrtb_ext.BidderPubmatic: {
+				Enabled: true,
+				Adapters: map[string]AdapterAlternateBidderCodes{
+					"pubmatic": {
 						Enabled:            true,
-						AllowedBidderCodes: []openrtb_ext.BidderName{"groupm"},
+						AllowedBidderCodes: []string{"groupm"},
 					},
 				},
 			},
@@ -858,19 +822,20 @@ func TestAlternateBidderCodes_IsValidBidderCode(t *testing.T) {
 		{
 			name: "allowedBidderCodes is not in the list",
 			args: args{
-				bidder:          openrtb_ext.BidderPubmatic,
+				bidder:          "pubmatic",
 				alternateBidder: "groupm",
 			},
 			fields: fields{
-				Adapters: map[openrtb_ext.BidderName]AdapterAlternateBidderCodes{
-					openrtb_ext.BidderPubmatic: {
+				Enabled: true,
+				Adapters: map[string]AdapterAlternateBidderCodes{
+					"pubmatic": {
 						Enabled:            true,
-						AllowedBidderCodes: []openrtb_ext.BidderName{"xyz"},
+						AllowedBidderCodes: []string{"xyz"},
 					},
 				},
 			},
 			wantIsValid: false,
-			wantErr:     errors.New("invalid biddercode groupm sent by adapter pubmatic"),
+			wantErr:     errors.New(`invalid biddercode "groupm" sent by adapter "pubmatic"`),
 		},
 	}
 	for _, tt := range tests {

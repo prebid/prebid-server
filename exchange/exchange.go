@@ -628,6 +628,8 @@ func errorsToMetric(errs []error) map[metrics.AdapterError]struct{} {
 			ret[metrics.AdapterErrorBadServerResponse] = s
 		case errortypes.FailedToRequestBidsErrorCode:
 			ret[metrics.AdapterErrorFailedToRequestBids] = s
+		case errortypes.AlternateBidderCodeWarningCode:
+			ret[metrics.AdapterErrorValidation] = s
 		default:
 			ret[metrics.AdapterErrorUnknown] = s
 		}

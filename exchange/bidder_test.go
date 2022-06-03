@@ -2076,7 +2076,16 @@ func TestExtraBid(t *testing.T) {
 		BidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "impId"}}},
 		BidderName: openrtb_ext.BidderPubmatic,
 	}
-	seatBids, errs := bidder.requestBid(context.Background(), bidderReq, map[string]float64{}, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, false, false, config.AlternateBidderCodes{Enabled: true})
+	seatBids, errs := bidder.requestBid(context.Background(), bidderReq, map[string]float64{}, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, false, false,
+		config.AlternateBidderCodes{
+			Enabled: true,
+			Adapters: map[string]config.AdapterAlternateBidderCodes{
+				string(openrtb_ext.BidderPubmatic): {
+					Enabled:            true,
+					AllowedBidderCodes: []string{"groupm"},
+				},
+			},
+		})
 	assert.Nil(t, errs)
 	assert.Len(t, seatBids, 2)
 	sort.Slice(seatBids, func(i, j int) bool {
@@ -2158,7 +2167,10 @@ func TestExtraBidWithAlternateBidderCodeDisabled(t *testing.T) {
 		},
 	}
 	wantErrs := []error{
-		errors.New("invalid biddercode groupm-rejected sent by adapter pubmatic"),
+		&errortypes.Warning{
+			WarningCode: errortypes.AlternateBidderCodeWarningCode,
+			Message:     `invalid biddercode "groupm-rejected" sent by adapter "pubmatic"`,
+		},
 	}
 
 	bidder := AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, &config.DebugInfo{})
@@ -2171,10 +2183,10 @@ func TestExtraBidWithAlternateBidderCodeDisabled(t *testing.T) {
 	seatBids, errs := bidder.requestBid(context.Background(), bidderReq, map[string]float64{}, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, false, false,
 		config.AlternateBidderCodes{
 			Enabled: true,
-			Adapters: map[openrtb_ext.BidderName]config.AdapterAlternateBidderCodes{
-				openrtb_ext.BidderPubmatic: {
+			Adapters: map[string]config.AdapterAlternateBidderCodes{
+				string(openrtb_ext.BidderPubmatic): {
 					Enabled:            true,
-					AllowedBidderCodes: []openrtb_ext.BidderName{"groupm-allowed"},
+					AllowedBidderCodes: []string{"groupm-allowed"},
 				},
 			},
 		})
@@ -2269,7 +2281,16 @@ func TestExtraBidWithBidAdjustments(t *testing.T) {
 		string(openrtb_ext.BidderPubmatic): 2,
 		string(openrtb_ext.BidderGroupm):   3,
 	}
-	seatBids, errs := bidder.requestBid(context.Background(), bidderReq, bidAdjustments, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, false, false, config.AlternateBidderCodes{Enabled: true})
+	seatBids, errs := bidder.requestBid(context.Background(), bidderReq, bidAdjustments, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, false, false,
+		config.AlternateBidderCodes{
+			Enabled: true,
+			Adapters: map[string]config.AdapterAlternateBidderCodes{
+				string(openrtb_ext.BidderPubmatic): {
+					Enabled:            true,
+					AllowedBidderCodes: []string{"groupm"},
+				},
+			},
+		})
 	assert.Nil(t, errs)
 	assert.Len(t, seatBids, 2)
 	sort.Slice(seatBids, func(i, j int) bool {
@@ -2363,7 +2384,16 @@ func TestExtraBidWithBidAdjustmentsUsingAdapterCode(t *testing.T) {
 	bidAdjustments := map[string]float64{
 		string(openrtb_ext.BidderPubmatic): 2,
 	}
-	seatBids, errs := bidder.requestBid(context.Background(), bidderReq, bidAdjustments, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, false, false, config.AlternateBidderCodes{Enabled: true})
+	seatBids, errs := bidder.requestBid(context.Background(), bidderReq, bidAdjustments, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, false, false,
+		config.AlternateBidderCodes{
+			Enabled: true,
+			Adapters: map[string]config.AdapterAlternateBidderCodes{
+				string(openrtb_ext.BidderPubmatic): {
+					Enabled:            true,
+					AllowedBidderCodes: []string{"groupm"},
+				},
+			},
+		})
 	assert.Nil(t, errs)
 	assert.Len(t, seatBids, 2)
 	sort.Slice(seatBids, func(i, j int) bool {

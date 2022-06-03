@@ -227,30 +227,40 @@ func (a *AccountIntegration) GetByIntegrationType(integrationType IntegrationTyp
 }
 
 type AlternateBidderCodes struct {
-	Enabled  bool                                                   `mapstructure:"enabled" json:"enabled"`
-	Adapters map[openrtb_ext.BidderName]AdapterAlternateBidderCodes `mapstructure:"adapters" json:"adapters"`
+	Enabled  bool                                   `mapstructure:"enabled" json:"enabled"`
+	Adapters map[string]AdapterAlternateBidderCodes `mapstructure:"adapters" json:"adapters"`
 }
 
 type AdapterAlternateBidderCodes struct {
-	Enabled            bool                     `mapstructure:"enabled" json:"enabled"`
-	AllowedBidderCodes []openrtb_ext.BidderName `mapstructure:"allowedbiddercodes" json:"allowedbiddercodes"`
+	Enabled            bool     `mapstructure:"enabled" json:"enabled"`
+	AllowedBidderCodes []string `mapstructure:"allowedbiddercodes" json:"allowedbiddercodes"`
 }
 
-func (account *AlternateBidderCodes) IsValidBidderCode(bidder, alternateBidder openrtb_ext.BidderName) (bool, error) {
+func (account *AlternateBidderCodes) IsValidBidderCode(bidder, alternateBidder string) (bool, error) {
+	const ErrAlternateBidderNotDefined = "alternateBidderCodes not defined for adapter %q, rejecting bids for %q"
+
 	if alternateBidder == "" || bidder == alternateBidder {
 		return true, nil
 	}
 
-	if account.Adapters == nil {
-		return account.Enabled, nil
-	}
-
-	adapterCfg, ok := account.Adapters[bidder]
-	if !((ok && adapterCfg.Enabled) || (!ok && account.Enabled)) {
+	if !account.Enabled {
 		return false, nil
 	}
 
-	if len(adapterCfg.AllowedBidderCodes) == 0 || adapterCfg.AllowedBidderCodes[0] == "*" {
+	if account.Adapters == nil {
+		return false, fmt.Errorf(ErrAlternateBidderNotDefined, bidder, alternateBidder)
+	}
+
+	adapterCfg, ok := account.Adapters[bidder]
+	if !ok {
+		return false, fmt.Errorf(ErrAlternateBidderNotDefined, bidder, alternateBidder)
+	}
+
+	if !adapterCfg.Enabled || len(adapterCfg.AllowedBidderCodes) == 0 {
+		return false, fmt.Errorf("alternateBidderCodes disabled for %q, rejecting bids for %q", bidder, alternateBidder)
+	}
+
+	if adapterCfg.AllowedBidderCodes[0] == "*" {
 		return true, nil
 	}
 
@@ -260,5 +270,5 @@ func (account *AlternateBidderCodes) IsValidBidderCode(bidder, alternateBidder o
 		}
 	}
 
-	return false, fmt.Errorf("invalid biddercode %s sent by adapter %s", alternateBidder, bidder)
+	return false, fmt.Errorf("invalid biddercode %q sent by adapter %q", alternateBidder, bidder)
 }
