@@ -79,6 +79,7 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 		if accountID == "" {
 			accountID = metrics.PublisherUnknown
 		}
+		// the fetched account is not currently used. It'll be used to get account-specific GDPR config in a future PR.
 		_, fetchErrs := accountService.GetAccount(context.Background(), cfg, accountsFetcher, accountID)
 		if len(fetchErrs) > 0 {
 			w.WriteHeader(http.StatusBadRequest)
