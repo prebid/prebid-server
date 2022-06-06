@@ -13,8 +13,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/prebid/prebid-server/gdpr"
-
 	"github.com/buger/jsonparser"
 	"github.com/gofrs/uuid"
 	"github.com/golang/glog"
@@ -213,8 +211,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		ImpExtInfoMap:              impExtInfoMap,
 		StoredAuctionResponses:     storedAuctionResponses,
 		StoredBidResponses:         storedBidResponses,
-		TCF2ConfigBuilder:          gdpr.NewTCF2Config,
-		GDPRPermissionsBuilder:     gdpr.NewPermissions,
 		PubID:                      labels.PubID,
 	}
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)

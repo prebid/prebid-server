@@ -83,12 +83,22 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 		t.Errorf("Failed to create a category Fetcher: %v", error)
 	}
 
+	gdprPermsBuilder := fakePermissionsBuilder{
+		permissions: &permissionsMock{
+			allowAllBidders: true,
+		},
+	}.Builder
+	tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
+		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
+	}.Builder
+
 	ex := &exchange{
 		adapterMap:        buildAdapterMap(mockBids, server.URL, server.Client()),
 		me:                &metricsConfig.NilMetricsEngine{},
 		cache:             &wellBehavedCache{},
 		cacheTime:         time.Duration(0),
-		vendorListFetcher: gdpr.NewVendorListFetcher(context.Background(), config.GDPR{}, &http.Client{}, gdpr.VendorListURLMaker),
+		gdprPermsBuilder:  gdprPermsBuilder,
+		tcf2ConfigBuilder: tcf2ConfigBuilder,
 		currencyConverter: currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
 		gdprDefaultValue:  gdpr.SignalYes,
 		categoriesFetcher: categoriesFetcher,
@@ -108,11 +118,9 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 	}
 
 	auctionRequest := AuctionRequest{
-		BidRequestWrapper:      &openrtb_ext.RequestWrapper{BidRequest: req},
-		Account:                config.Account{},
-		UserSyncs:              &emptyUsersync{},
-		GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
-		TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
+		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
+		Account:           config.Account{},
+		UserSyncs:         &emptyUsersync{},
 	}
 
 	debugLog := DebugLog{}
