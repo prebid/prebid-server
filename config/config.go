@@ -936,6 +936,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.appnexus.platform_id", "5")
 	v.SetDefault("adapters.audiencenetwork.disabled", true)
 	v.SetDefault("adapters.audiencenetwork.endpoint", "https://an.facebook.com/placementbid.ortb")
+	v.SetDefault("adapters.automatad.endpoint", "https://s2s.atmtd.com")
 	v.SetDefault("adapters.avocet.disabled", true)
 	v.SetDefault("adapters.axonix.endpoint", "https://openrtb-us-east-1.axonix.com/supply/prebid-server/{{.AccountID}}")
 	v.SetDefault("adapters.beachfront.endpoint", "https://display.bfmio.com/prebid_display")
