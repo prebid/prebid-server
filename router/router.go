@@ -130,6 +130,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 
 	generalHttpClient := &http.Client{
 		Transport: &http.Transport{
+			Proxy:               http.ProxyFromEnvironment,
 			MaxConnsPerHost:     cfg.Client.MaxConnsPerHost,
 			MaxIdleConns:        cfg.Client.MaxIdleConns,
 			MaxIdleConnsPerHost: cfg.Client.MaxIdleConnsPerHost,
@@ -140,6 +141,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 
 	cacheHttpClient := &http.Client{
 		Transport: &http.Transport{
+			Proxy:               http.ProxyFromEnvironment,
 			MaxConnsPerHost:     cfg.CacheClient.MaxConnsPerHost,
 			MaxIdleConns:        cfg.CacheClient.MaxIdleConns,
 			MaxIdleConnsPerHost: cfg.CacheClient.MaxIdleConnsPerHost,
