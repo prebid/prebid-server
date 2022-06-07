@@ -1,6 +1,8 @@
 package config
 
 import (
+	"fmt"
+
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -18,17 +20,18 @@ const (
 
 // Account represents a publisher account configuration
 type Account struct {
-	ID                      string      `mapstructure:"id" json:"id"`
-	Disabled                bool        `mapstructure:"disabled" json:"disabled"`
-	CacheTTL                DefaultTTLs `mapstructure:"cache_ttl" json:"cache_ttl"`
-	EventsEnabled           bool        `mapstructure:"events_enabled" json:"events_enabled"`
-	CCPA                    AccountCCPA `mapstructure:"ccpa" json:"ccpa"`
-	GDPR                    AccountGDPR `mapstructure:"gdpr" json:"gdpr"`
-	DebugAllow              bool        `mapstructure:"debug_allow" json:"debug_allow"`
-	DefaultIntegration      string      `mapstructure:"default_integration" json:"default_integration"`
-	CookieSync              CookieSync  `mapstructure:"cookie_sync" json:"cookie_sync"`
-	Events                  Events      `mapstructure:"events" json:"events"` // Don't enable this feature. It is still under developmment - https://github.com/prebid/prebid-server/issues/1725
-	TruncateTargetAttribute *int        `mapstructure:"truncate_target_attr" json:"truncate_target_attr"`
+	ID                      string               `mapstructure:"id" json:"id"`
+	Disabled                bool                 `mapstructure:"disabled" json:"disabled"`
+	CacheTTL                DefaultTTLs          `mapstructure:"cache_ttl" json:"cache_ttl"`
+	EventsEnabled           bool                 `mapstructure:"events_enabled" json:"events_enabled"`
+	CCPA                    AccountCCPA          `mapstructure:"ccpa" json:"ccpa"`
+	GDPR                    AccountGDPR          `mapstructure:"gdpr" json:"gdpr"`
+	DebugAllow              bool                 `mapstructure:"debug_allow" json:"debug_allow"`
+	DefaultIntegration      string               `mapstructure:"default_integration" json:"default_integration"`
+	CookieSync              CookieSync           `mapstructure:"cookie_sync" json:"cookie_sync"`
+	Events                  Events               `mapstructure:"events" json:"events"` // Don't enable this feature. It is still under developmment - https://github.com/prebid/prebid-server/issues/1725
+	TruncateTargetAttribute *int                 `mapstructure:"truncate_target_attr" json:"truncate_target_attr"`
+	AlternateBidderCodes    AlternateBidderCodes `mapstructure:"alternatebiddercodes" json:"alternatebiddercodes"`
 }
 
 // CookieSync represents the account-level defaults for the cookie sync endpoint.
@@ -221,4 +224,51 @@ func (a *AccountIntegration) GetByIntegrationType(integrationType IntegrationTyp
 	}
 
 	return integrationEnabled
+}
+
+type AlternateBidderCodes struct {
+	Enabled  bool                                   `mapstructure:"enabled" json:"enabled"`
+	Adapters map[string]AdapterAlternateBidderCodes `mapstructure:"adapters" json:"adapters"`
+}
+
+type AdapterAlternateBidderCodes struct {
+	Enabled            bool     `mapstructure:"enabled" json:"enabled"`
+	AllowedBidderCodes []string `mapstructure:"allowedbiddercodes" json:"allowedbiddercodes"`
+}
+
+func (account *AlternateBidderCodes) IsValidBidderCode(bidder, alternateBidder string) (bool, error) {
+	const ErrAlternateBidderNotDefined = "alternateBidderCodes not defined for adapter %q, rejecting bids for %q"
+
+	if alternateBidder == "" || bidder == alternateBidder {
+		return true, nil
+	}
+
+	if !account.Enabled {
+		return false, nil
+	}
+
+	if account.Adapters == nil {
+		return false, fmt.Errorf(ErrAlternateBidderNotDefined, bidder, alternateBidder)
+	}
+
+	adapterCfg, ok := account.Adapters[bidder]
+	if !ok {
+		return false, fmt.Errorf(ErrAlternateBidderNotDefined, bidder, alternateBidder)
+	}
+
+	if !adapterCfg.Enabled || len(adapterCfg.AllowedBidderCodes) == 0 {
+		return false, fmt.Errorf("alternateBidderCodes disabled for %q, rejecting bids for %q", bidder, alternateBidder)
+	}
+
+	if adapterCfg.AllowedBidderCodes[0] == "*" {
+		return true, nil
+	}
+
+	for _, code := range adapterCfg.AllowedBidderCodes {
+		if alternateBidder == code {
+			return true, nil
+		}
+	}
+
+	return false, fmt.Errorf("invalid biddercode %q sent by adapter %q", alternateBidder, bidder)
 }
