@@ -2,13 +2,13 @@ package kadenai
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/prebid/prebid-server/config"
 
 	openrtb "github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/adapters/tjx_base"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -223,62 +223,6 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 }
 
 // MakeBids ...
-func (a *adapter) MakeBids(_ *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if response.StatusCode == http.StatusNoContent {
-		return nil, nil
-	}
-
-	if response.StatusCode == http.StatusBadRequest {
-		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
-		}}
-	}
-
-	if response.StatusCode != http.StatusOK {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
-		}}
-	}
-
-	var bidResp openrtb.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: err.Error(),
-		}}
-	}
-
-	if len(bidResp.SeatBid) == 0 {
-		return nil, nil
-	}
-
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
-
-	var bidReq openrtb.BidRequest
-	if err := json.Unmarshal(externalRequest.Body, &bidReq); err != nil {
-		return nil, []error{err}
-	}
-
-	bidType := openrtb_ext.BidTypeBanner
-
-	if bidReq.Imp[0].Video != nil {
-		bidType = openrtb_ext.BidTypeVideo
-	}
-
-	for _, sb := range bidResp.SeatBid {
-		for _, b := range sb.Bid {
-			if b.Price != 0 {
-				// copy response.bidid to openrtb_response.seatbid.bid.bidid
-				if b.ID == "0" {
-					b.ID = bidResp.BidID
-				}
-
-				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-					Bid:     &b,
-					BidType: bidType,
-				})
-			}
-		}
-	}
-
-	return bidResponse, nil
+func (a *adapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	return tjx_base.MakeBids(internalRequest, externalRequest, response)
 }

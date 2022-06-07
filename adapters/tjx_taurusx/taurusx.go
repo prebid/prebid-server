@@ -2,13 +2,13 @@ package taurusx
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/prebid/prebid-server/config"
 
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/adapters/tjx_base"
 	"github.com/prebid/prebid-server/cache/skanidlist"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -211,57 +211,6 @@ func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.E
 }
 
 // MakeBids ...
-func (adapter *adapter) MakeBids(_ *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if response.StatusCode == http.StatusNoContent {
-		return nil, nil
-	}
-
-	if response.StatusCode == http.StatusBadRequest {
-		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
-		}}
-	}
-
-	if response.StatusCode != http.StatusOK {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
-		}}
-	}
-
-	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: err.Error(),
-		}}
-	}
-
-	if len(bidResp.SeatBid) == 0 {
-		return nil, nil
-	}
-
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
-
-	var bidReq openrtb2.BidRequest
-	if err := json.Unmarshal(externalRequest.Body, &bidReq); err != nil {
-		return nil, []error{err}
-	}
-
-	bidType := openrtb_ext.BidTypeBanner
-
-	if bidReq.Imp[0].Video != nil {
-		bidType = openrtb_ext.BidTypeVideo
-	}
-
-	for _, sb := range bidResp.SeatBid {
-		for _, b := range sb.Bid {
-			if b.Price != 0 {
-				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-					Bid:     &b,
-					BidType: bidType,
-				})
-			}
-		}
-	}
-
-	return bidResponse, nil
+func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	return tjx_base.MakeBids(internalRequest, externalRequest, response)
 }
