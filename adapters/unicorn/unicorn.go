@@ -64,8 +64,14 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		}
 	}
 
-	// Support Cur "JPY" only
-	request.Cur = []string{"JPY"}
+	if isOtherThanJPYSpecified(request.Cur) {
+		return nil, []error{&errortypes.BadInput{
+			Message: "Only JPY is supported",
+		}}
+	}
+	if len(request.Cur) == 0 {
+		request.Cur = []string{"JPY"}
+	}
 
 	err := modifyImps(request)
 	if err != nil {
@@ -99,6 +105,15 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	}
 
 	return []*adapters.RequestData{requestData}, nil
+}
+
+func isOtherThanJPYSpecified(cur []string) bool {
+	for _, c := range cur {
+		if c != "JPY" {
+			return true
+		}
+	}
+	return false
 }
 
 func getHeaders(request *openrtb2.BidRequest) http.Header {
