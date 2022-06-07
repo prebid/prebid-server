@@ -5,10 +5,9 @@
       "imp": [
           {
               "id": "8b1bdcca",
-              "bidfloor": 0,
               "banner": {
                   "w": 300,
-                  "h": 250,
+                  "h": 300,
                   "format": [
                       {
                           "w": 300,
@@ -19,6 +18,7 @@
                   "expdir": [1,2,3,4,5]
               },
               "video": {
+                 "mimes": null, 
                   "skip":0,
                   "playbackmethod":[2]
               },
@@ -26,13 +26,10 @@
                   "request" : "{\"plcmttype\":2,\"privacy\":0,\"assets\":[{\"id\":5,\"required\":0,\"title\":{\"len\":90}},{\"id\":6,\"required\":0,\"img\":{\"wmin\":620,\"hmin\":300,\"type\":3}},{\"id\":10,\"required\":0,\"data\":{\"len\":90,\"type\":1}},{\"id\":8,\"required\":0,\"data\":{\"len\":14,\"type\":12}},{\"id\":7,\"required\":0,\"img\":{\"wmin\":80,\"hmin\":80,\"type\":1}},{\"id\":11,\"required\":0,\"data\":{\"len\":140,\"type\":2}}]}"
               },
               "pmp": {
-                  "private_auction": 0,
+
                   "deals": [
                       {
                           "id": "TTD",
-                          "bidfloor": 0,
-                          "at": 0,
-                          "wseat": null,
                           "ext": {
                               "kargo" : {
                                   "isMainPG": false
@@ -41,7 +38,6 @@
                       }
                   ]
               },
-              "instl": 0,
               "tagid": "73",
               "secure": 1,
               "iframebuster": [
@@ -60,11 +56,11 @@
           }
       ],
       "site": {
-          "id": "",
+          "id": "123",
           "domain": "www.dailymail.co.uk",
           "cat": ["IAB7"],
           "page": "https://www.dailymail.co.uk/",
-          "ref": "",
+          "ref": "https://www.dailymail.co.uk/",
           "mobile": 1,
           "publisher": {
               "id": "1"
@@ -101,16 +97,13 @@
                   }
               }
           },
-          "buyeruid": ""
+          "buyeruid": "345"
       },
       "regs": {
           "ext": {
               "us_privacy": "1"
           }
       },
-      "wseat": null,
-      "allimps": 0,
-      "test": 0,
       "tmax": 200,
       "ext": {
           "kargo": {
@@ -137,10 +130,9 @@
             "imp": [
                 {
                     "id": "8b1bdcca",
-                    "bidfloor": 0,
                     "banner": {
                         "w": 300,
-                        "h": 250,
+                        "h": 300,
                         "format": [
                             {
                                 "w": 300,
@@ -151,6 +143,7 @@
                         "expdir": [1,2,3,4,5]
                     },
                     "video": {
+                       "mimes": null,
                         "skip":0,
                         "playbackmethod":[2]
                     },
@@ -158,13 +151,9 @@
                         "request" : "{\"plcmttype\":2,\"privacy\":0,\"assets\":[{\"id\":5,\"required\":0,\"title\":{\"len\":90}},{\"id\":6,\"required\":0,\"img\":{\"wmin\":620,\"hmin\":300,\"type\":3}},{\"id\":10,\"required\":0,\"data\":{\"len\":90,\"type\":1}},{\"id\":8,\"required\":0,\"data\":{\"len\":14,\"type\":12}},{\"id\":7,\"required\":0,\"img\":{\"wmin\":80,\"hmin\":80,\"type\":1}},{\"id\":11,\"required\":0,\"data\":{\"len\":140,\"type\":2}}]}"
                     },
                     "pmp": {
-                        "private_auction": 0,
                         "deals": [
                             {
                                 "id": "TTD",
-                                "bidfloor": 0,
-                                "at": 0,
-                                "wseat": null,
                                 "ext": {
                                     "kargo" : {
                                         "isMainPG": false
@@ -173,7 +162,6 @@
                             }
                         ]
                     },
-                    "instl": 0,
                     "tagid": "73",
                     "secure": 1,
                     "iframebuster": [
@@ -192,11 +180,11 @@
                 }
             ],
             "site": {
-                "id": "",
+                "id": "123",
                 "domain": "www.dailymail.co.uk",
                 "cat": ["IAB7"],
                 "page": "https://www.dailymail.co.uk/",
-                "ref": "",
+                "ref": "https://www.dailymail.co.uk/",
                 "mobile": 1,
                 "publisher": {
                     "id": "1"
@@ -233,16 +221,13 @@
                         }
                     }
                 },
-                "buyeruid": ""
+                "buyeruid": "345"
             },
             "regs": {
                 "ext": {
                     "us_privacy": "1"
                 }
             },
-            "wseat": null,
-            "allimps": 0,
-            "test": 0,
             "tmax": 200,
             "ext": {
                 "kargo": {
