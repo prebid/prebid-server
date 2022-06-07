@@ -1,247 +1,298 @@
 {
-    "mockBidRequest": {
-      "at": 1,
-      "id": "108074d0-0b2b-4294",
-      "imp": [
-        {
-          "id": "b9ec7177-a4cd-4960",
-          "bidfloor": 0.1,
-          "banner": {
-            "w": 320,
-            "h": 50,
-            "format": [
-              {
-                "w": 320,
-                "h": 50
-              },
-              {
-                "w": 320,
-                "h": 150
-              }
-            ],
-            "pos": 1,
-            "expdir": [
-              1
-            ]
-          },
-          "pmp": {
-            "private_auction": 0,
-            "deals": []
-          },
-          "instl": 0,
-          "tagid": "2222",
-          "exp": 0,
-          "secure": 1,
-          "iframebuster": [
-            "ALL"
-          ],
-          "ext": {
-            "multiresponse": true,
-            "tpid": null,
-            "transcoding": true
-          }
-        }
-      ],
-      "site": {
-        "id": "340",
-        "domain": "www.lifeandstylemag.com",
-        "page": "https://www.lifeandstylemag.com/",
-        "ref": "",
-        "mobile": 1,
-        "publisher": null
-      },
-      "device": {
-        "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 11_0 like Mac OS X) AppleWebKit/604.1.38 (KHTML, like Gecko) Version/11.0 Mobile/15A372 Safari/604.1",
-        "geo": {
-          "ipservice": 4,
-          "country": "US",
-          "region": "NY",
-          "metro": "501",
-          "city": "Manhattan",
-          "zip": "11372"
-        },
-        "ip": "127.0.0.1",
-        "devicetype": 4,
-        "make": "Apple",
-        "model": "iPhone",
-        "os": "iOS",
-        "osv": "11_0",
-        "carrier": "none",
-        "language": "en",
-        "connectiontype": 2,
-        "dnt": 0,
-        "lmt": 0
-      },
-      "user": {
-        "id": "e5ba0ca6-9b37-4d54",
-        "ext": {
-          "mt": []
-        },
-        "buyeruid": "",
-        "gender": "F",
-        "yob": 1977
-      },
-      "allimps": 0,
-      "test": 0,
-      "tmax": 125,
-      "source": {
-        "fd": 1
-      }
-    },
-    "httpCalls": [
+  "mockBidRequest": {
+    "id": "5f4d1e01",
+    "at": 1,
+    "imp": [
       {
-        "expectedRequest": {
-          "uri": "http://example.com/bid",
-          "body": {
-            "at": 1,
-            "id": "108074d0-0b2b-4294",
-            "imp": [
-              {
-                "id": "b9ec7177-a4cd-4960",
-                "bidfloor": 0.1,
-                "banner": {
-                  "w": 320,
-                  "h": 50,
-                  "format": [
-                    {
-                      "w": 320,
-                      "h": 50
-                    },
-                    {
-                      "w": 320,
-                      "h": 150
-                    }
-                  ],
-                  "pos": 1,
-                  "expdir": [
-                    1
-                  ]
-                },
-                "pmp": {
-                  "private_auction": 0,
-                  "deals": []
-                },
-                "instl": 0,
-                "tagid": "2222",
-                "exp": 0,
-                "secure": 1,
-                "iframebuster": [
-                  "ALL"
-                ],
-                "ext": {
-                  "multiresponse": true,
-                  "tpid": null,
-                  "transcoding": true
+        "id": "8b1bdcca",
+        "bidfloor": 0,
+        "banner": {
+          "w": 300,
+          "h": 250,
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ],
+          "pos": 0,
+          "expdir": [1, 2, 3, 4, 5]
+        },
+        "video": {},
+        "native": {},
+        "pmp": {
+          "private_auction": 0,
+          "deals": [
+            {
+              "id": "TTD",
+              "bidfloor": 0,
+              "at": 0,
+              "wseat": null,
+              "ext": {
+                "kargo": {
+                  "isMainPG": false
                 }
               }
-            ],
-            "site": {
-              "id": "340",
-              "domain": "www.lifeandstylemag.com",
-              "page": "https://www.lifeandstylemag.com/",
-              "ref": "",
-              "mobile": 1,
-              "publisher": null
-            },
-            "device": {
-              "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 11_0 like Mac OS X) AppleWebKit/604.1.38 (KHTML, like Gecko) Version/11.0 Mobile/15A372 Safari/604.1",
-              "geo": {
-                "ipservice": 4,
-                "country": "US",
-                "region": "NY",
-                "metro": "501",
-                "city": "Manhattan",
-                "zip": "11372"
-              },
-              "ip": "127.0.0.1",
-              "devicetype": 4,
-              "make": "Apple",
-              "model": "iPhone",
-              "os": "iOS",
-              "osv": "11_0",
-              "carrier": "none",
-              "language": "en",
-              "connectiontype": 2,
-              "dnt": 0,
-              "lmt": 0
-            },
-            "user": {
-              "id": "e5ba0ca6-9b37-4d54",
-              "ext": {
-                "mt": []
-              },
-              "buyeruid": "",
-              "gender": "F",
-              "yob": 1977
-            },
-            "allimps": 0,
-            "test": 0,
-            "tmax": 125,
-            "source": {
-              "fd": 1
             }
-          }
+          ]
         },
-        "mockResponse": {
-          "status": 200,
-          "body": {
-            "id": "108074d0-0b2b-4294",
-            "seatbid": [
-              {
-                "bid": [
-                  {
-                    "id": "test-request-id",
-                    "impid": "test-imp-id",
-                    "price": 10,
-                    "nurl": "http://example.com/win/10",
-                    "adm": "<div>ad</div>",
-                    "adomain": [
-                      "example.com"
-                    ],
-                    "cid": "test-cid",
-                    "crid": "test-crid",
-                    "cat": [
-                      "IAB13"
-                    ],
-                    "w": 300,
-                    "h": 300
-                  }
-                ],
-                "seat": "_b345"
-              }
-            ],
-            "bidid": "345",
-            "cur": "USD"
+        "instl": 0,
+        "tagid": "73",
+        "secure": 1,
+        "iframebuster": ["ALL"],
+        "ext": {
+          "kargo": {
+            "multiresponse": true,
+            "openAdID": "TDID",
+            "transcodingEnabled": true,
+            "whiteopsPredictionID": "123",
+            "auctionType": 1,
+            "adTagVersion": "v1"
           }
         }
       }
     ],
-    "expectedBidResponses": [
-      {
-        "currency": "USD",
-        "bids": [
-          {
-            "bid": {
-              "id": "test-request-id",
-              "impid": "test-imp-id",
-              "price": 10,
-              "nurl": "http://example.com/win/10",
-              "adm": "<div>ad</div>",
-              "adomain": [
-                "example.com"
-              ],
-              "cid": "test-cid",
-              "crid": "test-crid",
-              "cat": [
-                "IAB13"
-              ],
-              "w": 300,
-              "h": 300
-            },
-            "type": "banner"
-          }
-        ]
+    "site": {
+      "id": "",
+      "domain": "www.dailymail.co.uk",
+      "cat": ["IAB7"],
+      "page": "https://www.dailymail.co.uk/",
+      "ref": "",
+      "mobile": 1,
+      "publisher": {
+        "id": "1"
       }
-    ]
-  }
-  
+    },
+    "device": {
+      "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.1 Safari/537",
+      "geo": {
+        "ipservice": 4,
+        "country": "US",
+        "region": "CO",
+        "metro": "751",
+        "city": "SomeCityInCo",
+        "zip": "11223"
+      },
+      "ip": "127.0.0.1",
+      "devicetype": 2,
+      "make": "Apple",
+      "model": "iPhone",
+      "os": "Windows",
+      "osv": "10.0",
+      "carrier": "none",
+      "language": "en",
+      "connectiontype": 2,
+      "dnt": 0
+    },
+    "user": {
+      "id": "07fb48ed",
+      "ext": {
+        "consent": "consent opt-out",
+        "kargo": {
+          "cerberusIDs": {
+            "86": "82fa2555"
+          }
+        }
+      },
+      "buyeruid": ""
+    },
+    "regs": {
+      "ext": {
+        "us_privacy": "1"
+      }
+    },
+    "wseat": null,
+    "allimps": 0,
+    "test": 0,
+    "tmax": 200,
+    "ext": {
+      "kargo": {
+        "handler": "amazon",
+        "adaptor": "none",
+        "adSlotID": "_foobar",
+        "browser": "Chrome1",
+        "openBannerEnabled": true,
+        "openVideoEnabled": false,
+        "pmpBannerEnabled": false,
+        "pmpNativeEnabled": true
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://example.com/bid",
+        "body": {
+          "id": "5f4d1e01",
+          "at": 1,
+          "imp": [
+            {
+              "id": "8b1bdcca",
+              "bidfloor": 0,
+              "banner": {
+                "w": 300,
+                "h": 250,
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ],
+                "pos": 0,
+                "expdir": [1, 2, 3, 4, 5]
+              },
+              "video": {},
+              "native": {},
+              "pmp": {
+                "private_auction": 0,
+                "deals": [
+                  {
+                    "id": "TTD",
+                    "bidfloor": 0,
+                    "at": 0,
+                    "wseat": null,
+                    "ext": {
+                      "kargo": {
+                        "isMainPG": false
+                      }
+                    }
+                  }
+                ]
+              },
+              "instl": 0,
+              "tagid": "73",
+              "secure": 1,
+              "iframebuster": ["ALL"],
+              "ext": {
+                "kargo": {
+                  "multiresponse": true,
+                  "openAdID": "TDID",
+                  "transcodingEnabled": true,
+                  "whiteopsPredictionID": "123",
+                  "auctionType": 1,
+                  "adTagVersion": "v1"
+                }
+              }
+            }
+          ],
+          "site": {
+            "id": "",
+            "domain": "www.dailymail.co.uk",
+            "cat": ["IAB7"],
+            "page": "https://www.dailymail.co.uk/",
+            "ref": "",
+            "mobile": 1,
+            "publisher": {
+              "id": "1"
+            }
+          },
+          "device": {
+            "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.1 Safari/537",
+            "geo": {
+              "ipservice": 4,
+              "country": "US",
+              "region": "CO",
+              "metro": "751",
+              "city": "SomeCityInCo",
+              "zip": "11223"
+            },
+            "ip": "127.0.0.1",
+            "devicetype": 2,
+            "make": "Apple",
+            "model": "iPhone",
+            "os": "Windows",
+            "osv": "10.0",
+            "carrier": "none",
+            "language": "en",
+            "connectiontype": 2,
+            "dnt": 0
+          },
+          "user": {
+            "id": "07fb48ed",
+            "ext": {
+              "consent": "consent opt-out",
+              "kargo": {
+                "cerberusIDs": {
+                  "86": "82fa2555"
+                }
+              }
+            },
+            "buyeruid": ""
+          },
+          "regs": {
+            "ext": {
+              "us_privacy": "1"
+            }
+          },
+          "wseat": null,
+          "allimps": 0,
+          "test": 0,
+          "tmax": 200,
+          "ext": {
+            "kargo": {
+              "handler": "amazon",
+              "adaptor": "none",
+              "adSlotID": "_foobar",
+              "browser": "Chrome1",
+              "openBannerEnabled": true,
+              "openVideoEnabled": false,
+              "pmpBannerEnabled": false,
+              "pmpNativeEnabled": true
+            }
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "5f4d1e01",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "8b1bdcca",
+                  "impid": "5f4d1e01",
+                  "price": 10,
+                  "nurl": "http://example.com/win/10",
+                  "adm": "<div>ad</div>",
+                  "adomain": ["example.com"],
+                  "cid": "test-cid",
+                  "crid": "test-crid",
+                  "cat": ["IAB13"],
+                  "w": 300,
+                  "h": 300
+                }
+              ],
+              "seat": "_b345"
+            }
+          ],
+          "bidid": "8b1bdcca",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "8b1bdcca",
+            "impid": "5f4d1e01",
+            "price": 10,
+            "nurl": "http://example.com/win/10",
+            "adm": "<div>ad</div>",
+            "adomain": ["example.com"],
+            "cid": "test-cid",
+            "crid": "test-crid",
+            "cat": ["IAB13"],
+            "w": 300,
+            "h": 300
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
