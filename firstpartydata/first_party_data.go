@@ -353,9 +353,9 @@ func resolveSite(fpdConfig *openrtb_ext.ORTB2, bidRequestSite *openrtb2.Site, gl
 		}
 	}
 	_, bidderFpdSiteContentPresent := fpdConfigSite[contentKey]
-	if fpdConfigSite != nil {
-		newSite, err = mergeSites(&newSite, fpdConfigSite, bidderName, openRtbGlobalFPD)
-	}
+
+	newSite, err = mergeSites(&newSite, fpdConfigSite, bidderName, openRtbGlobalFPD)
+
 	if !bidderFpdSiteContentPresent && openRtbGlobalFPD != nil && len(openRtbGlobalFPD[siteContentDataKey]) > 0 {
 		//bidder specific fpd site.content takes precedence over global site.content.data
 		newSite.Content = &openrtb2.Content{Data: openRtbGlobalFPD[siteContentDataKey]}
@@ -368,6 +368,11 @@ func mergeSites(originalSite *openrtb2.Site, fpdConfigSite map[string]json.RawMe
 	var err error
 	newSite := *originalSite
 
+	if fpdConfigSite == nil {
+		return newSite, err
+	}
+
+	//apply bidder specific fpd if present
 	if page, present := fpdConfigSite[pageKey]; present {
 		sitePage, err := unmarshalJSONToString(page)
 		if err != nil {
@@ -486,10 +491,9 @@ func resolveApp(fpdConfig *openrtb_ext.ORTB2, bidRequestApp *openrtb2.App, globa
 		}
 	}
 	_, bidderFpdAppContentPresent := fpdConfigApp[contentKey]
-	if fpdConfigApp != nil {
-		//apply bidder specific fpd if present
-		newApp, err = mergeApps(&newApp, fpdConfigApp, openRtbGlobalFPD)
-	}
+
+	newApp, err = mergeApps(&newApp, fpdConfigApp, openRtbGlobalFPD)
+
 	if !bidderFpdAppContentPresent && openRtbGlobalFPD != nil && len(openRtbGlobalFPD[appContentDataKey]) > 0 {
 		newApp.Content = &openrtb2.Content{Data: openRtbGlobalFPD[appContentDataKey]}
 	}
@@ -502,6 +506,10 @@ func mergeApps(originalApp *openrtb2.App, fpdConfigApp map[string]json.RawMessag
 	var err error
 	newApp := *originalApp
 
+	if fpdConfigApp == nil {
+		return newApp, err
+	}
+	//apply bidder specific fpd if present
 	if name, present := fpdConfigApp[nameKey]; present {
 		newApp.Name, err = unmarshalJSONToString(name)
 		if err != nil {
@@ -668,16 +676,16 @@ func ExtractFPDForBidders(req *openrtb_ext.RequestWrapper) (map[openrtb_ext.Bidd
 
 }
 
-func mergeContents(originalContent *openrtb2.Content, newContent json.RawMessage, globalContentData []openrtb2.Data) (*openrtb2.Content, error) {
+func mergeContents(originalContent *openrtb2.Content, fpdBidderConfigContent json.RawMessage, globalContentData []openrtb2.Data) (*openrtb2.Content, error) {
 	if originalContent == nil {
-		return unmarshalJSONToContent(newContent)
+		return unmarshalJSONToContent(fpdBidderConfigContent)
 	}
-	newContentDataJson, _, _, err := jsonparser.Get(newContent, dataKey)
+	newContentDataJson, _, _, err := jsonparser.Get(fpdBidderConfigContent, dataKey)
 	if err != nil && err != jsonparser.KeyPathNotFoundError {
 		return nil, err
 	}
 	var newContentData []openrtb2.Data
-	if !(err != nil && err == jsonparser.KeyPathNotFoundError) {
+	if err == nil {
 		newContentData, err = unmarshalJSONToData(newContentDataJson)
 		if err != nil {
 			return nil, err
@@ -687,7 +695,7 @@ func mergeContents(originalContent *openrtb2.Content, newContent json.RawMessage
 	if err != nil {
 		return nil, err
 	}
-	newFinalContentBytes, err := jsonpatch.MergePatch(originalContentBytes, newContent)
+	newFinalContentBytes, err := jsonpatch.MergePatch(originalContentBytes, fpdBidderConfigContent)
 	if err != nil {
 		return nil, err
 	}
