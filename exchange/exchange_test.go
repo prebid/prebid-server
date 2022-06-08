@@ -4064,44 +4064,41 @@ func TestAuctionDebugEnabled(t *testing.T) {
 
 func TestExperimentConfigs(t *testing.T) {
 	//This test just pass experiment ads cert configs to HoldAction
-	bidderImpl := &goodSingleBidder{
-		httpRequest: &adapters.RequestData{
-			Method:  "POST",
-			Uri:     "test.com",
-			Body:    []byte("{\"key\":\"val\"}"),
-			Headers: http.Header{},
-		},
-		bidResponse: &adapters.BidderResponse{
-			Bids: []*adapters.TypedBid{
-				{
-					Bid: &openrtb2.Bid{ID: "testBidId"},
-				},
-			},
-		},
-	}
+
 	noBidServer := func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(204) }
 	server := httptest.NewServer(http.HandlerFunc(noBidServer))
 	defer server.Close()
 
-	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
-	if error != nil {
-		t.Errorf("Failed to create a category Fetcher: %v", error)
+	cfg := &config.Configuration{
+		Adapters: make(map[string]config.Adapter, 1),
+	}
+	cfg.Adapters["appnexus"] = config.Adapter{
+		Endpoint: "test.com", //Note the '&' character in there
+	}
+	biddersInfo, err := config.LoadBidderInfoFromDisk("../static/bidder-info", cfg.Adapters, openrtb_ext.BuildBidderStringSlice())
+	if err != nil {
+		t.Fatal(err)
+	}
+	signer := MockSigner{}
+
+	adapters, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.NilMetricsEngine{})
+	if adaptersErr != nil {
+		t.Fatalf("Error intializing adapters: %v", adaptersErr)
 	}
 
-	signer := MockSigner{}
-	e := new(exchange)
-	e.adapterMap = map[openrtb_ext.BidderName]AdaptedBidder{
-		openrtb_ext.BidderAppnexus: AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil),
-	}
-	e.cache = &wellBehavedCache{}
-	e.me = &metricsConf.NilMetricsEngine{}
-	e.vendorListFetcher = gdpr.NewVendorListFetcher(context.Background(), config.GDPR{}, &http.Client{}, gdpr.VendorListURLMaker)
-	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
-	e.categoriesFetcher = categoriesFetcher
-	e.bidIDGenerator = &mockBidIDGenerator{false, false}
-	e.adCertSigner = &signer
-	e.bidderInfo = config.BidderInfos{}
-	e.bidderInfo["appnexus"] = config.BidderInfo{Experiment: config.BidderInfoExperiment{AdsCert: config.AdsCert{Enable: true}}}
+	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+
+	gdprPermsBuilder := fakePermissionsBuilder{
+		permissions: &permissionsMock{
+			allowAllBidders: true,
+		},
+	}.Builder
+	tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
+		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
+	}.Builder
+
+	biddersInfo["appnexus"] = config.BidderInfo{Experiment: config.BidderInfoExperiment{AdsCert: config.AdsCert{Enable: true}}}
+	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, tcf2ConfigBuilder, currencyConverter, nilCategoryFetcher{}, &signer).(*exchange)
 
 	// Define mock incoming bid requeset
 	mockBidRequest := &openrtb2.BidRequest{
@@ -4116,15 +4113,13 @@ func TestExperimentConfigs(t *testing.T) {
 	}
 
 	auctionRequest := AuctionRequest{
-		BidRequestWrapper:      &openrtb_ext.RequestWrapper{BidRequest: mockBidRequest},
-		Account:                config.Account{},
-		UserSyncs:              &emptyUsersync{},
-		GDPRPermissionsBuilder: mockGDPRPermissionsBuilder,
-		TCF2ConfigBuilder:      mockTCF2ConfigBuilder,
+		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: mockBidRequest},
+		Account:           config.Account{},
+		UserSyncs:         &emptyUsersync{},
 	}
 
 	debugLog := DebugLog{}
-	_, err := e.HoldAuction(context.Background(), auctionRequest, &debugLog)
+	_, err = e.HoldAuction(context.Background(), auctionRequest, &debugLog)
 
 	assert.NoError(t, err, "unexpected error occured")
 	assert.Equal(t, "test.com", signer.data, "incorrect signer data")
