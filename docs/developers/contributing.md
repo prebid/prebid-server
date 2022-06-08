@@ -2,7 +2,7 @@
 
 ## Create an issue
 
-[Create an issue](https://github.com/prebid/prebid-server/issues/new) describing the motivation for your changes.
+[Create an issue](https://github.com/PubMatic-OpenWrap/prebid-server/issues/new) describing the motivation for your changes.
 Are you fixing a bug? Improving documentation? Optimizing some slow code?
 
 Pull Requests without associated Issues may still be accepted, if the motivation is obvious.
@@ -38,7 +38,7 @@ those updates must be submitted in the same Pull Request as the code changes.
 ## Open a Pull Request
 
 When you're ready, [submit a Pull Request](https://help.github.com/articles/creating-a-pull-request/)
-against the `master` branch of [our GitHub repository](https://github.com/prebid/prebid-server/compare).
+against the `master` branch of [our GitHub repository](https://github.com/PubMatic-OpenWrap/prebid-server/compare).
 
 Pull Requests will be vetted through GitHub Actions.
 To reproduce these same tests locally, do:
@@ -49,5 +49,5 @@ To reproduce these same tests locally, do:
 
 If the tests pass locally, but fail on your PR, [update your fork](https://help.github.com/articles/syncing-a-fork/) with the latest code from `master`.
 
-**Note**: We also have some [known intermittent failures](https://github.com/prebid/prebid-server/issues/103).
+**Note**: We also have some [known intermittent failures](https://github.com/PubMatic-OpenWrap/prebid-server/issues/103).
           If the tests still fail after pulling `master`, don't worry about it. We'll re-run them when we review your PR.
