@@ -161,6 +161,7 @@ func TestExtractPubmaticExtFromRequest(t *testing.T) {
 		args               args
 		expectedWrapperExt *pubmaticWrapperExt
 		expectedAcat       []string
+		expectedCookie     []string
 		wantErr            bool
 	}{
 		{
@@ -220,10 +221,11 @@ func TestExtractPubmaticExtFromRequest(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotWrapperExt, gotAcat, err := extractPubmaticExtFromRequest(tt.args.request)
+			gotWrapperExt, gotAcat, gotCookie, err := extractPubmaticExtFromRequest(tt.args.request)
 			assert.Equal(t, tt.wantErr, err != nil)
 			assert.Equal(t, tt.expectedWrapperExt, gotWrapperExt)
 			assert.Equal(t, tt.expectedAcat, gotAcat)
+			assert.Equal(t, tt.expectedCookie, gotCookie)
 		})
 	}
 }

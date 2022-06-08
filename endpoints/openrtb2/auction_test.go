@@ -2280,6 +2280,39 @@ func TestValidateImpExt(t *testing.T) {
 				},
 			},
 		},
+		{
+			"Invalid bidder params tests",
+			[]testCase{
+				{
+					description:    "Impression dropped for bidder with invalid bidder params",
+					impExt:         json.RawMessage(`{"appnexus":{"placement_id":"A"}}`),
+					expectedImpExt: `{}`,
+					expectedErrs: []error{&errortypes.BidderFailedSchemaValidation{Message: "request.imp[0].ext.appnexus failed validation.\nplacement_id: Invalid type. Expected: integer, given: string"},
+						fmt.Errorf("request.imp[%d].ext must contain at least one bidder", 0)},
+				},
+				{
+					description:    "Valid Bidder params + Invalid bidder params",
+					impExt:         json.RawMessage(`{"appnexus":{"placement_id":"A"},"pubmatic":{"publisherId":"156209"}}`),
+					expectedImpExt: `{"pubmatic":{"publisherId":"156209"}}`,
+					expectedErrs:   []error{&errortypes.BidderFailedSchemaValidation{Message: "request.imp[0].ext.appnexus failed validation.\nplacement_id: Invalid type. Expected: integer, given: string"}},
+				},
+				{
+					description:    "Valid Bidder + Disabled Bidder + Invalid bidder params",
+					impExt:         json.RawMessage(`{"pubmatic":{"publisherId":156209},"appnexus":{"placement_id":555},"disabledbidder":{"foo":"bar"}}`),
+					expectedImpExt: `{"appnexus":{"placement_id":555}}`,
+					expectedErrs: []error{&errortypes.BidderTemporarilyDisabled{Message: "The bidder 'disabledbidder' has been disabled."},
+						&errortypes.BidderFailedSchemaValidation{Message: "request.imp[0].ext.pubmatic failed validation.\npublisherId: Invalid type. Expected: string, given: integer"}},
+				},
+				{
+					description:    "Valid Bidder + Disabled Bidder + Invalid bidder params",
+					impExt:         json.RawMessage(`{"pubmatic":{"publisherId":156209},"disabledbidder":{"foo":"bar"}}`),
+					expectedImpExt: `{}`,
+					expectedErrs: []error{&errortypes.BidderFailedSchemaValidation{Message: "request.imp[0].ext.pubmatic failed validation.\npublisherId: Invalid type. Expected: string, given: integer"},
+						&errortypes.BidderTemporarilyDisabled{Message: "The bidder 'disabledbidder' has been disabled."},
+						fmt.Errorf("request.imp[%d].ext must contain at least one bidder", 0)},
+				},
+			},
+		},
 	}
 
 	deps := &endpointDeps{
@@ -2313,7 +2346,7 @@ func TestValidateImpExt(t *testing.T) {
 			} else {
 				assert.Empty(t, imp.Ext, "imp.ext expected to be empty but was: %s. Test: %s. %s\n", string(imp.Ext), group.description, test.description)
 			}
-			assert.Equal(t, test.expectedErrs, errs, "errs slice does not match expected. Test: %s. %s\n", group.description, test.description)
+			assert.ElementsMatch(t, test.expectedErrs, errs, "errs slice does not match expected. Test: %s. %s\n", group.description, test.description)
 		}
 	}
 }
