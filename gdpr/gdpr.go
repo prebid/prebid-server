@@ -24,9 +24,17 @@ type Permissions interface {
 	AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string, aliasGVLIDs map[string]uint16) (permissions AuctionPermissions, err error)
 }
 
-type PermissionsBuilder func(config.GDPR, TCF2ConfigReader, map[openrtb_ext.BidderName]uint16, VendorListFetcher) Permissions
+type PermissionsBuilder func(TCF2ConfigReader) Permissions
 
-// NewPermissions gets an instance of the Permissions for use elsewhere in the project.
+// NewPermissionsBuilder is of type PermissionsBuilderMaker
+// It takes host config data used to configure the builder function it returns
+func NewPermissionsBuilder(cfg config.GDPR, gvlVendorIDs map[openrtb_ext.BidderName]uint16, vendorListFetcher VendorListFetcher) PermissionsBuilder {
+	return func(tcf2Cfg TCF2ConfigReader) Permissions {
+		return NewPermissions(cfg, tcf2Cfg, gvlVendorIDs, vendorListFetcher)
+	}
+}
+
+// NewPermissions gets a per-request Permissions object that can then be used to check GDPR permissions for a given bidder.
 func NewPermissions(cfg config.GDPR, tcf2Config TCF2ConfigReader, vendorIDs map[openrtb_ext.BidderName]uint16, fetcher VendorListFetcher) Permissions {
 	if !cfg.Enabled {
 		return &AlwaysAllow{}

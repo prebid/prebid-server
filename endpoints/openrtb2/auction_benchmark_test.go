@@ -2,7 +2,6 @@ package openrtb2
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"github.com/prebid/prebid-server/experiment/adscert"
 	"io/ioutil"
@@ -12,11 +11,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/go-gdpr/vendorlist"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/gdpr"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
@@ -79,6 +78,13 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 		b.Fatal("unable to build adapters")
 	}
 
+	gdprPermsBuilder := fakePermissionsBuilder{
+		permissions: &fakePermissions{},
+	}.Builder
+	tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
+		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
+	}.Builder
+
 	exchange := exchange.NewExchange(
 		adapters,
 		nil,
@@ -86,7 +92,8 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 		map[string]usersync.Syncer{},
 		nilMetrics,
 		infos,
-		func(ctx context.Context, id uint16) (vendorlist.VendorList, error) { return nil, nil },
+		gdprPermsBuilder,
+		tcf2ConfigBuilder,
 		currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
 		empty_fetcher.EmptyFetcher{},
 		&adscert.NilSigner{},

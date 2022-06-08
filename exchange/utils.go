@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/stored_responses"
 	"math/rand"
+
+	"github.com/prebid/prebid-server/stored_responses"
 
 	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
@@ -42,9 +43,9 @@ func cleanOpenRTBRequests(ctx context.Context,
 	bidderToSyncerKey map[string]string,
 	metricsEngine metrics.MetricsEngine,
 	gdprDefaultValue gdpr.Signal,
-	gdprPerms gdpr.Permissions,
 	privacyConfig config.Privacy,
-	tcf2Cfg gdpr.TCF2ConfigReader,
+	gdprPermsBuilder gdpr.PermissionsBuilder,
+	tcf2ConfigBuilder gdpr.TCF2ConfigBuilder,
 ) (allowedBidderRequests []BidderRequest, privacyLabels metrics.PrivacyLabels, errs []error) {
 
 	req := auctionReq.BidRequestWrapper
@@ -103,7 +104,11 @@ func cleanOpenRTBRequests(ctx context.Context,
 	privacyLabels.COPPAEnforced = privacyEnforcement.COPPA
 	privacyLabels.LMTEnforced = lmtEnforcer.ShouldEnforce(unknownBidder)
 
+	tcf2Cfg := tcf2ConfigBuilder(privacyConfig.GDPR.TCF2, auctionReq.Account.GDPR)
+
 	var gdprEnforced bool
+	var gdprPerms gdpr.Permissions = &gdpr.AlwaysAllow{}
+
 	if gdprApplies {
 		gdprEnforced = tcf2Cfg.IntegrationEnabled(integrationTypeMap[auctionReq.LegacyLabels.RType])
 	}
@@ -115,6 +120,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 			version := int(parsedConsent.Version())
 			privacyLabels.GDPRTCFVersion = metrics.TCFVersionToValue(version)
 		}
+		gdprPerms = gdprPermsBuilder(tcf2Cfg)
 	}
 
 	// bidder level privacy policies
