@@ -3,7 +3,6 @@ package currency
 import (
 	"errors"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -11,14 +10,14 @@ import (
 func TestGroupedGetRate(t *testing.T) {
 
 	// Setup:
-	customRates := NewRates(time.Now(), map[string]map[string]float64{
+	customRates := NewRates(map[string]map[string]float64{
 		"USD": {
 			"GBP": 3.00,
 			"EUR": 2.00,
 		},
 	})
 
-	pbsRates := NewRates(time.Now(), map[string]map[string]float64{
+	pbsRates := NewRates(map[string]map[string]float64{
 		"USD": {
 			"GBP": 4.00,
 			"MXN": 10.00,

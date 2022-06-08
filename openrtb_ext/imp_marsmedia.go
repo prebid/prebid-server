@@ -1,6 +1,8 @@
 package openrtb_ext
 
+import "encoding/json"
+
 // ExtImpMarsmedia defines the contract for bidrequest.imp[i].ext.marsmedia
 type ExtImpMarsmedia struct {
-	ZoneID string `json:"zone"`
+	ZoneID json.Number `json:"zoneId"`
 }

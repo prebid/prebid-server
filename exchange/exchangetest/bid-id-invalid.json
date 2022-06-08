@@ -88,6 +88,7 @@
                 "IAB1-1"
               ],
               "ext": {
+                "origbidcpm": 0.3,
                 "prebid": {
                   "type": "video",
                   "targeting": {

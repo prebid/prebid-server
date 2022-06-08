@@ -86,13 +86,13 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	for i := 0; i < len(bidResponse.Slots); i++ {
 		bidderResponse.Bids[i] = &adapters.TypedBid{
 			Bid: &openrtb2.Bid{
-				ID:    bidResponse.Slots[i].ID,
+				ID:    bidResponse.Slots[i].ArbitrageID,
 				ImpID: bidResponse.Slots[i].ImpID,
 				Price: bidResponse.Slots[i].CPM,
 				AdM:   bidResponse.Slots[i].Creative,
 				W:     bidResponse.Slots[i].Width,
 				H:     bidResponse.Slots[i].Height,
-				CrID:  bidResponse.Slots[i].CreativeID,
+				CrID:  bidResponse.Slots[i].CreativeCode,
 			},
 			BidType: openrtb_ext.BidTypeBanner,
 		}

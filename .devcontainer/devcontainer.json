@@ -9,11 +9,12 @@
 			"VARIANT": "1.16",
 			// Options
 			"INSTALL_NODE": "false",
-			"NODE_VERSION": "lts/*",
+			"NODE_VERSION": "lts/*"
 		}
 	},
 	"containerEnv": {
 		"GOPRIVATE": "${localEnv:GOPRIVATE}",
+		"PBS_GDPR_DEFAULT_VALUE": "0"
 	},
 	"runArgs": [ "--cap-add=SYS_PTRACE", "--security-opt", "seccomp=unconfined" ],
 

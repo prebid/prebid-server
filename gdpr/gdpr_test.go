@@ -2,12 +2,11 @@ package gdpr
 
 import (
 	"context"
-	"net/http"
 	"testing"
 
+	"github.com/prebid/go-gdpr/vendorlist"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
-
 	"github.com/stretchr/testify/assert"
 )
 
@@ -42,61 +41,12 @@ func TestNewPermissions(t *testing.T) {
 			HostVendorID: tt.hostVendorID,
 		}
 		vendorIDs := map[openrtb_ext.BidderName]uint16{}
+		vendorListFetcher := func(ctx context.Context, id uint16) (vendorlist.VendorList, error) {
+			return nil, nil
+		}
 
-		perms := NewPermissions(context.Background(), config, vendorIDs, &http.Client{})
+		perms := NewPermissions(config, &tcf2Config{}, vendorIDs, vendorListFetcher)
 
 		assert.IsType(t, tt.wantType, perms, tt.description)
-	}
-}
-
-func TestSignalParse(t *testing.T) {
-	tests := []struct {
-		description string
-		rawSignal   string
-		wantSignal  Signal
-		wantError   bool
-	}{
-		{
-			description: "valid raw signal is 0",
-			rawSignal:   "0",
-			wantSignal:  SignalNo,
-			wantError:   false,
-		},
-		{
-			description: "Valid signal - raw signal is 1",
-			rawSignal:   "1",
-			wantSignal:  SignalYes,
-			wantError:   false,
-		},
-		{
-			description: "Valid signal - raw signal is empty",
-			rawSignal:   "",
-			wantSignal:  SignalAmbiguous,
-			wantError:   false,
-		},
-		{
-			description: "Invalid signal - raw signal is -1",
-			rawSignal:   "-1",
-			wantSignal:  SignalAmbiguous,
-			wantError:   true,
-		},
-		{
-			description: "Invalid signal - raw signal is abc",
-			rawSignal:   "abc",
-			wantSignal:  SignalAmbiguous,
-			wantError:   true,
-		},
-	}
-
-	for _, tt := range tests {
-		signal, err := SignalParse(tt.rawSignal)
-
-		assert.Equal(t, tt.wantSignal, signal, tt.description)
-
-		if tt.wantError {
-			assert.NotNil(t, err, tt.description)
-		} else {
-			assert.Nil(t, err, tt.description)
-		}
 	}
 }

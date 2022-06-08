@@ -1,4 +1,5 @@
 {
+    "requestType": "openrtb2-web",
     "incomingRequest": {
         "ortbRequest": {
             "id": "some-request-id",
@@ -98,6 +99,7 @@
                     "h": 500,
                     "crid": "creative-1",
                     "ext": {
+                        "origbidcpm": 0.3,
                         "prebid": {
                             "type": "banner"
                         }
