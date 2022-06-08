@@ -21,6 +21,9 @@ import (
 type saveVendors func(uint16, api.VendorList)
 type VendorListFetcher func(ctx context.Context, id uint16) (vendorlist.VendorList, error)
 
+var cacheSave func(vendorListVersion uint16, list api.VendorList)
+var cacheLoad func(vendorListVersion uint16) api.VendorList
+
 // This file provides the vendorlist-fetching function for Prebid Server.
 //
 // For more info, see https://github.com/prebid/prebid-server/issues/504
@@ -28,7 +31,7 @@ type VendorListFetcher func(ctx context.Context, id uint16) (vendorlist.VendorLi
 // Nothing in this file is exported. Public APIs can be found in gdpr.go
 
 func NewVendorListFetcher(initCtx context.Context, cfg config.GDPR, client *http.Client, urlMaker func(uint16) string) VendorListFetcher {
-	cacheSave, cacheLoad := newVendorListCache()
+	cacheSave, cacheLoad = newVendorListCache()
 
 	preloadContext, cancel := context.WithTimeout(initCtx, cfg.Timeouts.InitTimeout())
 	defer cancel()
