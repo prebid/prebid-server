@@ -150,7 +150,13 @@ func cleanOpenRTBRequests(ctx context.Context,
 		}
 
 		if auctionReq.FirstPartyData != nil && auctionReq.FirstPartyData[bidderRequest.BidderName] != nil {
-			applyFPD(auctionReq.FirstPartyData[bidderRequest.BidderName], bidderRequest.BidRequest)
+			bidderFpd := auctionReq.FirstPartyData[bidderRequest.BidderName]
+			//BuyerUID is a value obtained between fpd extraction and fpd application.
+			//BuyerUID needs to be set back to fpd before applying this fpd to final bidder request
+			if bidderFpd.User != nil && bidderRequest.BidRequest.User != nil && len(bidderRequest.BidRequest.User.BuyerUID) > 0 {
+				bidderFpd.User.BuyerUID = bidderRequest.BidRequest.User.BuyerUID
+			}
+			applyFPD(bidderFpd, bidderRequest.BidRequest)
 		}
 
 		if bidRequestAllowed {

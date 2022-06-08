@@ -599,6 +599,7 @@ func TestCleanOpenRTBRequestsWithFPD(t *testing.T) {
 				assert.Equal(t, fpd[bidderName].Site.Name, bidderRequest.BidRequest.Site.Name, "Incorrect FPD site name")
 				assert.Equal(t, fpd[bidderName].App.Name, bidderRequest.BidRequest.App.Name, "Incorrect FPD app name")
 				assert.Equal(t, fpd[bidderName].User.Keywords, bidderRequest.BidRequest.User.Keywords, "Incorrect FPD user keywords")
+				assert.Equal(t, fpd[bidderName].User.BuyerUID, bidderRequest.BidRequest.User.BuyerUID, "Incorrect FPD user buyerUID")
 			} else {
 				assert.Equal(t, "", bidderRequest.BidRequest.Site.Name, "Incorrect FPD site name")
 				assert.Equal(t, "", bidderRequest.BidRequest.User.Keywords, "Incorrect FPD user keywords")
