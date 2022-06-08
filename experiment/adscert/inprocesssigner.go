@@ -30,7 +30,7 @@ func (ips *inProcessSigner) Sign(destinationURL string, body []byte) (string, er
 	return "", fmt.Errorf("error signing request: %s", resp.GetSignatureOperationStatus())
 }
 
-func newInProcessSigner(inProcessSignerConfig config.InProcess) *inProcessSigner {
+func newInProcessSigner(inProcessSignerConfig config.AdsCertInProcess) *inProcessSigner {
 	return &inProcessSigner{
 		signatory: signatory.NewLocalAuthenticatedConnectionsSignatory(
 			inProcessSignerConfig.Origin,

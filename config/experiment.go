@@ -7,13 +7,13 @@ type Experiment struct {
 
 //ExperimentAdCerts configures and enables functionality to generate and send Ads Cert Auth header to bidders
 type ExperimentAdsCert struct {
-	Enabled   bool      `mapstructure:"enabled"`
-	InProcess InProcess `mapstructure:"in-process"`
-	Remote    Remote    `mapstructure:"remote"`
+	Enabled   bool             `mapstructure:"enabled"`
+	InProcess AdsCertInProcess `mapstructure:"in-process"`
+	Remote    AdsCertRemote    `mapstructure:"remote"`
 }
 
-//InProcess configures data to sign requests using ads certs library in core PBS logic
-type InProcess struct {
+//AdsCertInProcess configures data to sign requests using ads certs library in core PBS logic
+type AdsCertInProcess struct {
 	//Origin is ads.cert hostname for the originating party
 	Origin string `mapstructure:"origin"`
 	//PrivateKey is a base-64 encoded private key.
@@ -24,8 +24,8 @@ type InProcess struct {
 	DNSRenewalIntervalInSeconds int `mapstructure:"domain_renewal_interval_seconds"`
 }
 
-// Remote configures data to sign requests using remote signatory service
-type Remote struct {
+// AdsCertRemote configures data to sign requests using remote signatory service
+type AdsCertRemote struct {
 	//Url - address of grpc server
 	Url string `mapstructure:"url"`
 	//SigningTimeoutMs specifies how long this client will wait for signing to finish before abandoning

@@ -36,7 +36,7 @@ func (rs *remoteSigner) Sign(destinationURL string, body []byte) (string, error)
 	return "", fmt.Errorf("error signing request: %s", signatureResponse.GetSignatureOperationStatus())
 }
 
-func newRemoteSigner(remoteSignerConfig config.Remote) (*remoteSigner, error) {
+func newRemoteSigner(remoteSignerConfig config.AdsCertRemote) (*remoteSigner, error) {
 	// Establish the gRPC connection that the client will use to connect to the
 	// signatory server.  This basic example uses unauthenticated connections
 	// which should not be used in a production environment.

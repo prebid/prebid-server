@@ -4028,6 +4028,60 @@ func TestExperimentConfigs(t *testing.T) {
 	assert.Equal(t, "test.com", signer.data, "incorrect signer data")
 }
 
+func TestCallSignHeader(t *testing.T) {
+	type aTest struct {
+		description    string
+		experiment     openrtb_ext.Experiment
+		bidderInfo     config.BidderInfo
+		expectedResult bool
+	}
+	var nilExperiment openrtb_ext.Experiment
+
+	testCases := []aTest{
+		{
+			description:    "both experiment.adsCert enabled for request and for bidder ",
+			experiment:     openrtb_ext.Experiment{AdsCert: &openrtb_ext.AdsCert{Enabled: true}},
+			bidderInfo:     config.BidderInfo{Experiment: config.BidderInfoExperiment{AdsCert: config.AdsCert{Enable: true}}},
+			expectedResult: true,
+		},
+		{
+			description:    "experiment is not defined in request, bidder config adsCert enabled",
+			experiment:     nilExperiment,
+			bidderInfo:     config.BidderInfo{Experiment: config.BidderInfoExperiment{AdsCert: config.AdsCert{Enable: true}}},
+			expectedResult: false,
+		},
+		{
+			description:    "experiment.adsCert is not defined in request, bidder config adsCert enabled",
+			experiment:     openrtb_ext.Experiment{AdsCert: nil},
+			bidderInfo:     config.BidderInfo{Experiment: config.BidderInfoExperiment{AdsCert: config.AdsCert{Enable: true}}},
+			expectedResult: false,
+		},
+		{
+			description:    "experiment.adsCert is disabled in request, bidder config adsCert enabled",
+			experiment:     openrtb_ext.Experiment{AdsCert: &openrtb_ext.AdsCert{Enabled: false}},
+			bidderInfo:     config.BidderInfo{Experiment: config.BidderInfoExperiment{AdsCert: config.AdsCert{Enable: true}}},
+			expectedResult: false,
+		},
+		{
+			description:    "experiment.adsCert is enabled in request, bidder config adsCert disabled",
+			experiment:     openrtb_ext.Experiment{AdsCert: &openrtb_ext.AdsCert{Enabled: true}},
+			bidderInfo:     config.BidderInfo{Experiment: config.BidderInfoExperiment{AdsCert: config.AdsCert{Enable: false}}},
+			expectedResult: false,
+		},
+		{
+			description:    "experiment.adsCert is disabled in request, bidder config adsCert disabled",
+			experiment:     openrtb_ext.Experiment{AdsCert: &openrtb_ext.AdsCert{Enabled: false}},
+			bidderInfo:     config.BidderInfo{Experiment: config.BidderInfoExperiment{AdsCert: config.AdsCert{Enable: false}}},
+			expectedResult: false,
+		},
+	}
+	for _, test := range testCases {
+		result := callSignHeader(&test.experiment, test.bidderInfo)
+		assert.Equal(t, test.expectedResult, result, "incorrect result returned")
+	}
+
+}
+
 type MockSigner struct {
 	data string
 }

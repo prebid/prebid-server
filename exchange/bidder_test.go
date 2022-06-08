@@ -1948,7 +1948,7 @@ func TestRequestBidsWithAdsCertsSigner(t *testing.T) {
 	}
 	_, errs := bidder.requestBid(ctx, bidderReq, bidAdjustment, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, &MockSigner{}, bidReqOptions)
 
-	assert.Len(t, errs, 0, "no errors should be returned")
+	assert.Empty(t, errs, "no errors should be returned")
 }
 
 func wrapWithBidderInfo(bidder adapters.Bidder) adapters.Bidder {

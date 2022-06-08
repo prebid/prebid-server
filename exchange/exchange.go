@@ -519,13 +519,10 @@ func (e *exchange) getAllBids(
 			reqInfo.PbsEntryPoint = bidderRequest.BidderLabels.RType
 			reqInfo.GlobalPrivacyControlHeader = globalPrivacyControlHeader
 
-			//add call sign header for bidders where AdsCertDisable is enabled and request.ext.prebid.experiment.adscert.enabled is set to true
-			addCallSignHeader := callSignHeader(experiment, e.bidderInfo[string(bidderRequest.BidderName)])
-
 			bidReqOptions := bidRequestOptions{
 				accountDebugAllowed: accountDebugAllowed,
 				headerDebugAllowed:  headerDebugAllowed,
-				addCallSignHeader:   addCallSignHeader,
+				addCallSignHeader:   callSignHeader(experiment, e.bidderInfo[string(bidderRequest.BidderName)]),
 			}
 			bids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest, adjustmentFactor, conversions, &reqInfo, e.adCertSigner, bidReqOptions)
 
