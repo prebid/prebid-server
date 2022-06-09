@@ -64,7 +64,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		}
 	}
 
-	if isOtherThanJPYSpecified(request.Cur) {
+	if isOtherThanJPY(request.Cur) {
 		return nil, []error{&errortypes.BadInput{
 			Message: "Only JPY is supported",
 		}}
@@ -107,7 +107,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	return []*adapters.RequestData{requestData}, nil
 }
 
-func isOtherThanJPYSpecified(cur []string) bool {
+func isOtherThanJPY(cur []string) bool {
 	for _, c := range cur {
 		if c != "JPY" {
 			return true
