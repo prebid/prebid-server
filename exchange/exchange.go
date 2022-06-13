@@ -171,6 +171,7 @@ type AuctionRequest struct {
 	// map of imp id to bidder to stored response
 	StoredBidResponses stored_responses.ImpBidderStoredResp
 	PubID              string
+	HostSChainNode     *openrtb_ext.ExtRequestPrebidSChainSChainNode
 }
 
 // BidderRequest holds the bidder specific request and all other

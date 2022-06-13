@@ -204,6 +204,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		StoredAuctionResponses:     storedAuctionResponses,
 		StoredBidResponses:         storedBidResponses,
 		PubID:                      labels.PubID,
+		HostSChainNode:             deps.cfg.SChainNode,
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)

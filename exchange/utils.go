@@ -227,7 +227,7 @@ func getAuctionBidderRequests(auctionRequest AuctionRequest,
 		reqCopy := *req.BidRequest
 		reqCopy.Imp = imps
 
-		sChainWriter.Write(&reqCopy, bidder)
+		sChainWriter.Write(&reqCopy, bidder, auctionRequest.HostSChainNode)
 
 		if len(bidderParamsInReqExt) != 0 {
 
