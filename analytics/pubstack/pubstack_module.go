@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/benbjohnson/clock"
 	"github.com/golang/glog"
 
 	"github.com/prebid/prebid-server/analytics"
@@ -46,9 +47,10 @@ type PubstackModule struct {
 	cfg           *Configuration
 	buffsCfg      *bufferConfig
 	muxConfig     sync.RWMutex
+	clock         clock.Clock
 }
 
-func NewModule(client *http.Client, scope, endpoint, configRefreshDelay string, maxEventCount int, maxByteSize, maxTime string) (analytics.PBSAnalyticsModule, error) {
+func NewModule(client *http.Client, scope, endpoint, configRefreshDelay string, maxEventCount int, maxByteSize, maxTime string, clock clock.Clock) (analytics.PBSAnalyticsModule, error) {
 	configUpdateTask, err := NewConfigUpdateHttpTask(
 		client,
 		scope,
@@ -58,10 +60,10 @@ func NewModule(client *http.Client, scope, endpoint, configRefreshDelay string, 
 		return nil, err
 	}
 
-	return NewModuleWithConfigTask(client, scope, endpoint, maxEventCount, maxByteSize, maxTime, configUpdateTask)
+	return NewModuleWithConfigTask(client, scope, endpoint, maxEventCount, maxByteSize, maxTime, configUpdateTask, clock)
 }
 
-func NewModuleWithConfigTask(client *http.Client, scope, endpoint string, maxEventCount int, maxByteSize, maxTime string, configTask ConfigUpdateTask) (analytics.PBSAnalyticsModule, error) {
+func NewModuleWithConfigTask(client *http.Client, scope, endpoint string, maxEventCount int, maxByteSize, maxTime string, configTask ConfigUpdateTask, clock clock.Clock) (analytics.PBSAnalyticsModule, error) {
 	glog.Infof("[pubstack] Initializing module scope=%s endpoint=%s\n", scope, endpoint)
 
 	// parse args
@@ -93,6 +95,7 @@ func NewModuleWithConfigTask(client *http.Client, scope, endpoint string, maxEve
 		stopCh:        make(chan struct{}),
 		eventChannels: make(map[string]*eventchannel.EventChannel),
 		muxConfig:     sync.RWMutex{},
+		clock:         clock,
 	}
 
 	signal.Notify(pb.sigTermCh, os.Interrupt, syscall.SIGTERM)
@@ -223,20 +226,22 @@ func (p *PubstackModule) updateConfig(config *Configuration) {
 	p.cfg = config
 	p.closeAllEventChannels()
 
-	if p.isFeatureEnable(amp) {
-		p.eventChannels[amp] = eventchannel.NewEventChannel(eventchannel.BuildEndpointSender(p.httpClient, p.cfg.Endpoint, amp), p.buffsCfg.size, p.buffsCfg.count, p.buffsCfg.timeout)
-	}
-	if p.isFeatureEnable(auction) {
-		p.eventChannels[auction] = eventchannel.NewEventChannel(eventchannel.BuildEndpointSender(p.httpClient, p.cfg.Endpoint, auction), p.buffsCfg.size, p.buffsCfg.count, p.buffsCfg.timeout)
-	}
-	if p.isFeatureEnable(cookieSync) {
-		p.eventChannels[cookieSync] = eventchannel.NewEventChannel(eventchannel.BuildEndpointSender(p.httpClient, p.cfg.Endpoint, cookieSync), p.buffsCfg.size, p.buffsCfg.count, p.buffsCfg.timeout)
-	}
-	if p.isFeatureEnable(video) {
-		p.eventChannels[video] = eventchannel.NewEventChannel(eventchannel.BuildEndpointSender(p.httpClient, p.cfg.Endpoint, video), p.buffsCfg.size, p.buffsCfg.count, p.buffsCfg.timeout)
-	}
-	if p.isFeatureEnable(setUID) {
-		p.eventChannels[setUID] = eventchannel.NewEventChannel(eventchannel.BuildEndpointSender(p.httpClient, p.cfg.Endpoint, setUID), p.buffsCfg.size, p.buffsCfg.count, p.buffsCfg.timeout)
+	p.registerChannel(amp)
+	p.registerChannel(auction)
+	p.registerChannel(cookieSync)
+	p.registerChannel(video)
+	p.registerChannel(setUID)
+}
+
+func (p *PubstackModule) isFeatureEnable(feature string) bool {
+	val, ok := p.cfg.Features[feature]
+	return ok && val
+}
+
+func (p *PubstackModule) registerChannel(feature string) {
+	if p.isFeatureEnable(feature) {
+		sender := eventchannel.BuildEndpointSender(p.httpClient, p.cfg.Endpoint, feature)
+		p.eventChannels[feature] = eventchannel.NewEventChannel(sender, p.clock, p.buffsCfg.size, p.buffsCfg.count, p.buffsCfg.timeout)
 	}
 }
 
@@ -245,9 +250,4 @@ func (p *PubstackModule) closeAllEventChannels() {
 		ch.Close()
 		delete(p.eventChannels, key)
 	}
-}
-
-func (p *PubstackModule) isFeatureEnable(feature string) bool {
-	val, ok := p.cfg.Features[feature]
-	return ok && val
 }
