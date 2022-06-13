@@ -11,7 +11,6 @@ type ExtImpHuaweiAds struct {
 
 type ExtUserDataHuaweiAds struct {
 	Data 	ExtUserDataDeviceIdHuaweiAds `json:"data,omitempty"`
-	Consent string                       `json:"consent,omitempty"`
 }
 
 type ExtUserDataDeviceIdHuaweiAds struct {
