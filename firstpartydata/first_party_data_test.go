@@ -2,7 +2,6 @@ package firstpartydata
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -648,7 +647,7 @@ func TestExtractFPDForBidders(t *testing.T) {
 	if specFiles, err := ioutil.ReadDir("./tests/extractfpdforbidders"); err == nil {
 		for _, specFile := range specFiles {
 			fileName := "./tests/extractfpdforbidders/" + specFile.Name()
-			fmt.Println(fileName)
+
 			fpdFile, err := loadFpdFile(fileName)
 
 			if err != nil {
@@ -987,6 +986,8 @@ func TestResolveSite(t *testing.T) {
 		Name:     "bidRequestSiteName",
 		Page:     "bidRequestSitePage",
 		Content: &openrtb2.Content{
+			ID:      "bidRequestSiteContentId",
+			Episode: 4,
 			Data: []openrtb2.Data{
 				{ID: "openRtbGlobalFPDSiteContentDataId1", Name: "openRtbGlobalFPDSiteContentDataName1"},
 				{ID: "openRtbGlobalFPDSiteContentDataId2", Name: "openRtbGlobalFPDSiteContentDataName2"},
@@ -1207,6 +1208,8 @@ func TestResolveApp(t *testing.T) {
 		Name:     "bidRequestAppName",
 		Bundle:   "bidRequestAppBundle",
 		Content: &openrtb2.Content{
+			ID:      "bidRequestAppContentId",
+			Episode: 4,
 			Data: []openrtb2.Data{
 				{ID: "openRtbGlobalFPDAppContentDataId1", Name: "openRtbGlobalFPDAppContentDataName1"},
 				{ID: "openRtbGlobalFPDAppContentDataId2", Name: "openRtbGlobalFPDAppContentDataName2"},

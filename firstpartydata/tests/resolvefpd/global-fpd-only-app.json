@@ -70,6 +70,11 @@
         "id": "1"
       },
       "content": {
+        "episode": 6,
+        "title": "episodeName",
+        "series": "TvName",
+        "season": "season3",
+        "len": 900,
         "data": [
           {
             "id": "appData1",

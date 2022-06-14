@@ -66,6 +66,9 @@
           "phone"
         ],
         "content": {
+          "len": 900,
+          "title": "reqContentTitle",
+          "season": "reqContentSeason",
           "data": [
             {
               "id": "reqContentDataId1",
