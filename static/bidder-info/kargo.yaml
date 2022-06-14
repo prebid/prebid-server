@@ -11,3 +11,4 @@ capabilities:
 userSync:
   supports:
     - redirect
+    
