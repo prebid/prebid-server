@@ -10,7 +10,7 @@ type ExtImpHuaweiAds struct {
 }
 
 type ExtUserDataHuaweiAds struct {
-	Data 	ExtUserDataDeviceIdHuaweiAds `json:"data,omitempty"`
+	Data ExtUserDataDeviceIdHuaweiAds `json:"data,omitempty"`
 }
 
 type ExtUserDataDeviceIdHuaweiAds struct {
