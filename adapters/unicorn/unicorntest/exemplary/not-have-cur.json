@@ -23,12 +23,18 @@
           "bidder": {
             "accountId": 199578,
             "publisherId": 123456,
-            "mediaId": "test_media"
+            "mediaId": "test_media",
+            "placementId": "test_placement"
+          },
+          "context": {
+            "data": {
+              "firstPartyData1": ["firstPartyData1"],
+              "uuid": ["xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"]
+            }
           }
         }
       }
     ],
-    "cur": ["JPY"],
     "app": {
       "publisher": {
         "id": "test"
@@ -138,10 +144,16 @@
                   "accountId": 199578,
                   "publisherId": 123456,
                   "mediaId": "test_media",
-                  "placementId": "test_unicorn"
+                  "placementId": "test_placement"
+                },
+                "context": {
+                  "data": {
+                    "firstPartyData1": ["firstPartyData1"],
+                    "uuid": ["xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"]
+                  }
                 }
               },
-              "tagid": "test_unicorn",
+              "tagid": "test_placement",
               "id": "29D2F33E-F865-40DA-9320-16EF77935254",
               "secure": 1
             }
@@ -168,7 +180,7 @@
         },
         "body": {
           "bidid": "f1248280-24ec-4fbc-bdf5-6a866e7dcea4",
-          "cur": "USD",
+          "cur": "JPY",
           "ext": {},
           "id": "CFD24FB1-916F-467D-8825-34892B315DB7",
           "seatbid": [
@@ -187,7 +199,7 @@
                   "id": "1",
                   "impid": "29D2F33E-F865-40DA-9320-16EF77935254",
                   "iurl": "https://example.com/banner.png",
-                  "price": 0.783,
+                  "price": 73.283,
                   "w": 300
                 }
               ],
@@ -202,13 +214,13 @@
   ],
   "expectedBidResponses": [
     {
-      "Currency": "USD",
+      "Currency": "JPY",
       "bids": [
         {
           "Bid": {
             "id": "1",
             "impid": "29D2F33E-F865-40DA-9320-16EF77935254",
-            "price": 0.783,
+            "price": 73.283,
             "adm": "awesome domain",
             "adid": "uoNYbq1L_-123456",
             "adomain": ["example.com"],
