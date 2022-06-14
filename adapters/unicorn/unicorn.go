@@ -64,13 +64,12 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		}
 	}
 
-	if isOtherThanJPY(request.Cur) {
+	if len(request.Cur) == 0 {
+		request.Cur = []string{"JPY"}
+	} else if isOtherThanJPY(request.Cur) {
 		return nil, []error{&errortypes.BadInput{
 			Message: "Only JPY is supported",
 		}}
-	}
-	if len(request.Cur) == 0 {
-		request.Cur = []string{"JPY"}
 	}
 
 	err := modifyImps(request)
