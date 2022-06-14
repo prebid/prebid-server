@@ -6,6 +6,7 @@ import (
 	"math/bits"
 	"regexp"
 	"sort"
+	"strings"
 
 	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
@@ -312,7 +313,7 @@ func prepareRuleCombinations(keys []string, numSchemaFields int, delimiter strin
 
 	segNum := 1 << numSchemaFields
 	for i := 0; i < numSchemaFields; i++ {
-		subset = append(subset, keys[i])
+		subset = append(subset, strings.ToLower(keys[i]))
 		comb = append(comb, i)
 	}
 	desiredkeys = append(desiredkeys, subset)

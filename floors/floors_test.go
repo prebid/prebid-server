@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/currency"
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -579,6 +579,113 @@ func TestUpdateImpsWithInvalidModelGroups(t *testing.T) {
 
 			if !reflect.DeepEqual(ErrList[0].Error(), tc.Err) {
 				t.Errorf("Incorrect Error: \nreturn:\t%v\nwant:\t%v", ErrList[0].Error(), tc.Err)
+			}
+
+		})
+	}
+}
+
+func TestUpdateImpsWithFloorsCurrecnyConversion(t *testing.T) {
+	rates := map[string]map[string]float64{
+		"USD": {
+			"INR": 70,
+			"EUR": 0.9,
+			"JPY": 5.09,
+		},
+	}
+
+	floorExt := &openrtb_ext.PriceFloorRules{FloorMin: 80, FloorMinCur: "INR", Data: &openrtb_ext.PriceFloorData{ModelGroups: []openrtb_ext.PriceFloorModelGroup{{Schema: openrtb_ext.PriceFloorSchema{Fields: []string{"mediaType", "size", "domain"}},
+		Values: map[string]float64{
+			"banner|300x250|www.website.com": 1.00,
+			"banner|300x250|*":               2.01,
+			"*|*|*":                          16.01,
+		}, Default: 0.01}}}}
+	floorExt2 := &openrtb_ext.PriceFloorRules{FloorMin: 1, FloorMinCur: "USD", Data: &openrtb_ext.PriceFloorData{Currency: "INR", ModelGroups: []openrtb_ext.PriceFloorModelGroup{{Schema: openrtb_ext.PriceFloorSchema{Fields: []string{"mediaType", "size", "domain"}},
+		Values: map[string]float64{
+			"banner|300x250|www.website.com": 65.00,
+			"banner|300x250|*":               110.00,
+		}, Default: 50.00}}}}
+	floorExt3 := &openrtb_ext.PriceFloorRules{FloorMin: 1, FloorMinCur: "USD", Data: &openrtb_ext.PriceFloorData{ModelGroups: []openrtb_ext.PriceFloorModelGroup{{Schema: openrtb_ext.PriceFloorSchema{Fields: []string{"mediaType", "size", "domain"}},
+		Values: map[string]float64{
+			"banner|300x250|www.website.com": 2.00,
+			"banner|300x250|*":               2.01,
+			"*|*|*":                          16.01,
+		}, Default: 0.01}}}}
+	floorExt4 := &openrtb_ext.PriceFloorRules{FloorMin: 3, FloorMinCur: "USD", Data: &openrtb_ext.PriceFloorData{ModelGroups: []openrtb_ext.PriceFloorModelGroup{{Schema: openrtb_ext.PriceFloorSchema{Fields: []string{"mediaType", "size", "domain"}},
+		Values: map[string]float64{
+			"banner|300x250|www.website.com": 1.00,
+			"banner|300x250|*":               2.01,
+			"*|*|*":                          16.01,
+		}, Default: 0.01}}}}
+	tt := []struct {
+		name     string
+		floorExt *openrtb_ext.PriceFloorRules
+		request  *openrtb2.BidRequest
+		floorVal float64
+		floorCur string
+		Skipped  bool
+	}{
+		{
+			name: "BidFloor(USD) Less than MinBidFloor(INR) with different currency",
+			request: &openrtb2.BidRequest{
+				Site: &openrtb2.Site{
+					Publisher: &openrtb2.Publisher{Domain: "www.website.com"},
+				},
+				Imp: []openrtb2.Imp{{ID: "1234", Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}}}},
+				Ext: json.RawMessage(`{"prebid": { "floors": {"data": {"currency": "USD","skipRate": 0,"schema": {"fields": [ "mediaType", "size", "domain" ] },"values": {  "banner|300x250|www.website.com": 1.01, "banner|300x250|*": 2.01, "banner|300x600|www.website.com": 3.01,  "banner|300x600|*": 4.01, "banner|728x90|www.website.com": 5.01, "banner|728x90|*": 6.01, "banner|*|www.website.com": 7.01, "banner|*|*": 8.01, "*|300x250|www.website.com": 9.01, "*|300x250|*": 10.01, "*|300x600|www.website.com": 11.01,  "*|300x600|*": 12.01,  "*|728x90|www.website.com": 13.01, "*|728x90|*": 14.01,  "*|*|www.website.com": 15.01, "*|*|*": 16.01  }, "default": 1}}}}`),
+			},
+			floorExt: floorExt,
+			floorVal: 1.1429,
+			floorCur: "USD",
+		},
+		{
+			name: "BidFloor(INR) Less than MinBidFloor(USD) with different currency",
+			request: &openrtb2.BidRequest{
+				Site: &openrtb2.Site{
+					Publisher: &openrtb2.Publisher{Domain: "www.website.com"},
+				},
+				Imp: []openrtb2.Imp{{ID: "1234", Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}}}},
+				Ext: json.RawMessage(`{"prebid": { "floors": {"data": {"currency": "USD","skipRate": 0,"schema": {"fields": [ "mediaType", "size", "domain" ] },"values": {  "banner|300x250|www.website.com": 1.01, "banner|300x250|*": 2.01, "banner|300x600|www.website.com": 3.01,  "banner|300x600|*": 4.01, "banner|728x90|www.website.com": 5.01, "banner|728x90|*": 6.01, "banner|*|www.website.com": 7.01, "banner|*|*": 8.01, "*|300x250|www.website.com": 9.01, "*|300x250|*": 10.01, "*|300x600|www.website.com": 11.01,  "*|300x600|*": 12.01,  "*|728x90|www.website.com": 13.01, "*|728x90|*": 14.01,  "*|*|www.website.com": 15.01, "*|*|*": 16.01  }, "default": 1}}}}`),
+			},
+			floorExt: floorExt2,
+			floorVal: 70,
+			floorCur: "INR",
+		},
+		{
+			name: "MinBidFloor Less than BidFloor with same currency",
+			request: &openrtb2.BidRequest{
+				Site: &openrtb2.Site{
+					Publisher: &openrtb2.Publisher{Domain: "www.website.com"},
+				},
+				Imp: []openrtb2.Imp{{ID: "1234", Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}}}},
+				Ext: json.RawMessage(`{"prebid": { "floors": {"data": {"currency": "USD","skipRate": 0,"schema": {"fields": [ "mediaType", "size", "domain" ] },"values": {  "banner|300x250|www.website.com": 1.01, "banner|300x250|*": 2.01, "banner|300x600|www.website.com": 3.01,  "banner|300x600|*": 4.01, "banner|728x90|www.website.com": 5.01, "banner|728x90|*": 6.01, "banner|*|www.website.com": 7.01, "banner|*|*": 8.01, "*|300x250|www.website.com": 9.01, "*|300x250|*": 10.01, "*|300x600|www.website.com": 11.01,  "*|300x600|*": 12.01,  "*|728x90|www.website.com": 13.01, "*|728x90|*": 14.01,  "*|*|www.website.com": 15.01, "*|*|*": 16.01  }, "default": 1}}}}`),
+			},
+			floorExt: floorExt3,
+			floorVal: 2,
+			floorCur: "USD",
+		},
+		{
+			name: "BidFloor Less than MinBidFloor with same currency",
+			request: &openrtb2.BidRequest{
+				Site: &openrtb2.Site{
+					Publisher: &openrtb2.Publisher{Domain: "www.website.com"},
+				},
+				Imp: []openrtb2.Imp{{ID: "1234", Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}}}},
+				Ext: json.RawMessage(`{"prebid": { "floors": {"data": {"currency": "USD","skipRate": 0,"schema": {"fields": [ "mediaType", "size", "domain" ] },"values": {  "banner|300x250|www.website.com": 1.01, "banner|300x250|*": 2.01, "banner|300x600|www.website.com": 3.01,  "banner|300x600|*": 4.01, "banner|728x90|www.website.com": 5.01, "banner|728x90|*": 6.01, "banner|*|www.website.com": 7.01, "banner|*|*": 8.01, "*|300x250|www.website.com": 9.01, "*|300x250|*": 10.01, "*|300x600|www.website.com": 11.01,  "*|300x600|*": 12.01,  "*|728x90|www.website.com": 13.01, "*|728x90|*": 14.01,  "*|*|www.website.com": 15.01, "*|*|*": 16.01  }, "default": 1}}}}`),
+			},
+			floorExt: floorExt4,
+			floorVal: 3,
+			floorCur: "USD",
+		},
+	}
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			_ = UpdateImpsWithFloors(tc.floorExt, tc.request, getCurrencyRates(rates))
+			if !reflect.DeepEqual(tc.request.Imp[0].BidFloor, tc.floorVal) {
+				t.Errorf("Floor Value error: \nreturn:\t%v\nwant:\t%v", tc.request.Imp[0].BidFloor, tc.floorVal)
+			}
+			if !reflect.DeepEqual(tc.request.Imp[0].BidFloorCur, tc.floorCur) {
+				t.Errorf("Floor Currency error: \nreturn:\t%v\nwant:\t%v", tc.request.Imp[0].BidFloor, tc.floorCur)
 			}
 
 		})

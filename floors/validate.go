@@ -9,14 +9,16 @@ import (
 
 func validateFloorRules(Schema openrtb_ext.PriceFloorSchema, delimiter string, RuleValues map[string]float64) []error {
 	var errs []error
-
-	for key := range RuleValues {
+	for key, val := range RuleValues {
 		parsedKey := strings.Split(key, delimiter)
 		if len(parsedKey) != len(Schema.Fields) {
 			// Number of fields in rule and number of schema fields are not matching
 			errs = append(errs, fmt.Errorf("Invalid Floor Rule = '%s' for Schema Fields = '%v'", key, Schema.Fields))
 			delete(RuleValues, key)
 		}
+		delete(RuleValues, key)
+		newKey := strings.ToLower(key)
+		RuleValues[newKey] = val
 	}
 	return errs
 }

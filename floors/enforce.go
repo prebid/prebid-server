@@ -1,28 +1,37 @@
 package floors
 
 import (
+	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-func ShouldEnforceFloors(requestExt *openrtb_ext.PriceFloorRules, configEnforceRate int, f func(int) int) bool {
+func ShouldEnforceFloors(bidRequest *openrtb2.BidRequest, floorExt *openrtb_ext.PriceFloorRules, configEnforceRate int, f func(int) int) bool {
 
-	if requestExt != nil && requestExt.Skipped != nil && *requestExt.Skipped {
-		return false
+	if floorExt != nil && floorExt.Skipped != nil && *floorExt.Skipped {
+		var floorInRequest bool
+		for i := range bidRequest.Imp {
+			if bidRequest.Imp[i].BidFloor > 0 {
+				floorInRequest = true
+				break
+			}
+		}
+		if !floorInRequest {
+			return floorInRequest
+		}
 	}
 
-	if requestExt.Enforcement != nil && !requestExt.Enforcement.EnforcePBS {
-		return requestExt.Enforcement.EnforcePBS
+	if floorExt.Enforcement != nil && floorExt.Enforcement.EnforcePBS != nil && !*floorExt.Enforcement.EnforcePBS {
+		return *floorExt.Enforcement.EnforcePBS
 	}
 
-	if requestExt.Enforcement != nil && requestExt.Enforcement.EnforceRate > 0 {
-		configEnforceRate = requestExt.Enforcement.EnforceRate
+	if floorExt.Enforcement != nil && floorExt.Enforcement.EnforceRate > 0 {
+		configEnforceRate = floorExt.Enforcement.EnforceRate
 	}
 
 	shouldEnforce := configEnforceRate > f(ENFORCE_RATE_MAX+1)
-	if requestExt.Enforcement == nil {
-		requestExt.Enforcement = new(openrtb_ext.PriceFloorEnforcement)
+	if floorExt.Enforcement == nil {
+		floorExt.Enforcement = new(openrtb_ext.PriceFloorEnforcement)
 	}
-	requestExt.Enforcement.EnforcePBS = shouldEnforce
-
+	floorExt.Enforcement.EnforcePBS = &shouldEnforce
 	return shouldEnforce
 }

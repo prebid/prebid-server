@@ -59,7 +59,15 @@ type Floor interface {
 
 // IsRequestEnabledWithFloor will check if floors is enabled in request
 func IsRequestEnabledWithFloor(Floors *openrtb_ext.PriceFloorRules) bool {
-	return Floors != nil && Floors.Enabled != nil && *Floors.Enabled
+	if Floors == nil {
+		return false
+	}
+
+	if Floors.Enabled != nil && !*Floors.Enabled {
+		return *Floors.Enabled
+	}
+
+	return true
 }
 
 // UpdateImpsWithFloors will validate floor rules, based on request and rules prepares various combinations
@@ -111,7 +119,7 @@ func UpdateImpsWithFloors(floorExt *openrtb_ext.PriceFloorRules, request *openrt
 					request.Imp[i].BidFloorCur = floorCur
 					updateImpExtWithFloorDetails(matchedRule, &request.Imp[i], floorVal)
 				} else {
-					floorModelErrList = append(floorModelErrList, fmt.Errorf("Error in Currency Conversion  = '%v'", err.Error()))
+					floorModelErrList = append(floorModelErrList, fmt.Errorf("error in Currency Conversion  = '%v'", err.Error()))
 				}
 			}
 		}

@@ -196,12 +196,15 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ad
 					newEid.Uids = uidArr
 					eidArr = append(eidArr, *newEid)
 				}
-				request.User.Eids = eidArr
+
+				user := *request.User
+				user.Eids = eidArr
 				userExt.Eids = nil
 				updatedUserExt, err1 := json.Marshal(userExt)
 				if err1 == nil {
-					request.User.Ext = updatedUserExt
+					user.Ext = updatedUserExt
 				}
+				request.User = &user
 			}
 		}
 	}
