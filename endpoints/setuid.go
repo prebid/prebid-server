@@ -10,10 +10,12 @@ import (
 	"time"
 
 	"github.com/julienschmidt/httprouter"
+	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
+	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/usersync"
 	"github.com/prebid/prebid-server/util/httputil"
 )
@@ -26,8 +28,8 @@ const (
 	chromeiOSStrLen = len(chromeiOSStr)
 )
 
-func NewSetUIDEndpoint(cfg config.HostCookie, syncersByBidder map[string]usersync.Syncer, perms gdpr.Permissions, pbsanalytics analytics.PBSAnalyticsModule, metricsEngine metrics.MetricsEngine) httprouter.Handle {
-	cookieTTL := time.Duration(cfg.TTL) * 24 * time.Hour
+func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, perms gdpr.Permissions, pbsanalytics analytics.PBSAnalyticsModule, accountsFetcher stored_requests.AccountFetcher, metricsEngine metrics.MetricsEngine) httprouter.Handle {
+	cookieTTL := time.Duration(cfg.HostCookie.TTL) * 24 * time.Hour
 
 	// convert map of syncers by bidder to map of syncers by key
 	// - its safe to assume that if multiple bidders map to the same key, the syncers are interchangeable.
@@ -44,7 +46,7 @@ func NewSetUIDEndpoint(cfg config.HostCookie, syncersByBidder map[string]usersyn
 
 		defer pbsanalytics.LogSetUIDObject(&so)
 
-		pc := usersync.ParseCookieFromRequest(r, &cfg)
+		pc := usersync.ParseCookieFromRequest(r, &cfg.HostCookie)
 		if !pc.AllowSyncs() {
 			w.WriteHeader(http.StatusUnauthorized)
 			metricsEngine.RecordSetUid(metrics.SetUidOptOut)
@@ -68,6 +70,20 @@ func NewSetUIDEndpoint(cfg config.HostCookie, syncersByBidder map[string]usersyn
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(err.Error()))
+			metricsEngine.RecordSetUid(metrics.SetUidBadRequest)
+			so.Status = http.StatusBadRequest
+			return
+		}
+
+		accountID := query.Get("account")
+		if accountID == "" {
+			accountID = metrics.PublisherUnknown
+		}
+		// the fetched account is not currently used. It'll be used to get account-specific GDPR config in a future PR.
+		_, fetchErrs := accountService.GetAccount(context.Background(), cfg, accountsFetcher, accountID)
+		if len(fetchErrs) > 0 {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(combineErrors(fetchErrs).Error()))
 			metricsEngine.RecordSetUid(metrics.SetUidBadRequest)
 			so.Status = http.StatusBadRequest
 			return
@@ -101,7 +117,7 @@ func NewSetUIDEndpoint(cfg config.HostCookie, syncersByBidder map[string]usersyn
 		}
 
 		setSiteCookie := siteCookieCheck(r.UserAgent())
-		pc.SetCookieOnResponse(w, setSiteCookie, &cfg, cookieTTL)
+		pc.SetCookieOnResponse(w, setSiteCookie, &cfg.HostCookie, cookieTTL)
 
 		switch responseFormat {
 		case "i":
