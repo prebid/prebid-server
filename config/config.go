@@ -91,8 +91,8 @@ type Configuration struct {
 	//When true, new bid id will be generated in seatbid[].bid[].ext.prebid.bidid and used in event urls instead
 	GenerateBidID bool `mapstructure:"generate_bid_id"`
 	// GenerateRequestID overrides the bidrequest.id in an AMP Request or an App Stored Request with a generated UUID if set to true. The default is false.
-	GenerateRequestID bool                                          `mapstructure:"generate_request_id"`
-	SChainNode        *openrtb_ext.ExtRequestPrebidSChainSChainNode `mapstructure:"schain_node"`
+	GenerateRequestID bool   `mapstructure:"generate_request_id"`
+	HostSChainNode    string `mapstructure:"host_schain_node"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
@@ -1191,7 +1191,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("account_defaults.events.default_url", "https://PBS_HOST/event?t=##PBS-EVENTTYPE##&vtype=##PBS-VASTEVENT##&b=##PBS-BIDID##&f=i&a=##PBS-ACCOUNTID##&ts=##PBS-TIMESTAMP##&bidder=##PBS-BIDDER##&int=##PBS-INTEGRATION##&mt=##PBS-MEDIATYPE##&ch=##PBS-CHANNEL##&aid=##PBS-AUCTIONID##&l=##PBS-LINEID##")
 
 	// Where host can define an schain node
-	v.SetDefault("schain_node", nil)
+	v.SetDefault("host_schain_node", "")
 }
 
 func migrateConfig(v *viper.Viper) {

@@ -17,21 +17,21 @@ func TestSChainWriter(t *testing.T) {
 	const sellerWildCardSChain string = `"schain":{"complete":1,"nodes":[{"asi":"wildcard1.com","sid":"wildcard1","rid":"WildcardReq1","hp":1}],"ver":"1.0"}`
 
 	tests := []struct {
-		description        string
-		giveRequest        openrtb2.BidRequest
-		giveBidder         string
-		giveHostSChainNode *openrtb_ext.ExtRequestPrebidSChainSChainNode
-		wantRequest        openrtb2.BidRequest
-		wantError          bool
+		description    string
+		giveRequest    openrtb2.BidRequest
+		giveBidder     string
+		giveHostSChain string
+		wantRequest    openrtb2.BidRequest
+		wantError      bool
 	}{
 		{
-			description: "nil source, nil ext.prebid.schains and nil host schain",
+			description: "nil source, nil ext.prebid.schains and empty host schain",
 			giveRequest: openrtb2.BidRequest{
 				Ext:    nil,
 				Source: nil,
 			},
-			giveBidder:         "appnexus",
-			giveHostSChainNode: nil,
+			giveBidder:     "appnexus",
+			giveHostSChain: "",
 			wantRequest: openrtb2.BidRequest{
 				Ext:    nil,
 				Source: nil,
@@ -160,10 +160,8 @@ func TestSChainWriter(t *testing.T) {
 				Ext:    json.RawMessage(`{"prebid":{"schains":[{"bidders":["testbidder"],"schain":{"complete":1,"nodes":[{"asi":"appnexus.com","sid":"1792","rid":"6a586290-ae54-44e9-8985-d60821f7bb07","hp":1}],"ver":"1.0"}}]}}`),
 				Source: nil,
 			},
-			giveBidder: "testbidder",
-			giveHostSChainNode: &openrtb_ext.ExtRequestPrebidSChainSChainNode{
-				ASI: "pbshostcompany.com", SID: "00001", RID: "BidRequest", HP: 1,
-			},
+			giveBidder:     "testbidder",
+			giveHostSChain: `{"asi":"pbshostcompany.com", "sid":"00001", "rid":"BidRequest", "hp":1}`,
 			wantRequest: openrtb2.BidRequest{
 				Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["testbidder"],"schain":{"complete":1,"nodes":[{"asi":"appnexus.com","sid":"1792","rid":"6a586290-ae54-44e9-8985-d60821f7bb07","hp":1}],"ver":"1.0"}}]}}`),
 				Source: &openrtb2.Source{
@@ -177,10 +175,8 @@ func TestSChainWriter(t *testing.T) {
 				Ext:    nil,
 				Source: nil,
 			},
-			giveBidder: "testbidder",
-			giveHostSChainNode: &openrtb_ext.ExtRequestPrebidSChainSChainNode{
-				ASI: "pbshostcompany.com", SID: "00001", RID: "BidRequest", HP: 1,
-			},
+			giveBidder:     "testbidder",
+			giveHostSChain: `{"asi":"pbshostcompany.com", "sid":"00001", "rid":"BidRequest", "hp":1}`,
 			wantRequest: openrtb2.BidRequest{
 				Ext: nil,
 				Source: &openrtb2.Source{
@@ -210,7 +206,7 @@ func TestSChainWriter(t *testing.T) {
 			assert.Nil(t, err)
 			assert.NotNil(t, writer)
 
-			writer.Write(&tt.giveRequest, tt.giveBidder, tt.giveHostSChainNode)
+			writer.Write(&tt.giveRequest, tt.giveBidder, tt.giveHostSChain)
 
 			assert.Equal(t, tt.wantRequest, tt.giveRequest, tt.description)
 		}
