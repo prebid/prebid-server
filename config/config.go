@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/spf13/viper"
@@ -17,13 +18,15 @@ import (
 
 // Configuration specifies the static application config.
 type Configuration struct {
-	ExternalURL string     `mapstructure:"external_url"`
-	Host        string     `mapstructure:"host"`
-	Port        int        `mapstructure:"port"`
-	Client      HTTPClient `mapstructure:"http_client"`
-	CacheClient HTTPClient `mapstructure:"http_client_cache"`
-	AdminPort   int        `mapstructure:"admin_port"`
-	EnableGzip  bool       `mapstructure:"enable_gzip"`
+	ExternalURL      string     `mapstructure:"external_url"`
+	Host             string     `mapstructure:"host"`
+	Port             int        `mapstructure:"port"`
+	UnixSocketEnable bool       `mapstructure:"unix_socket_enable"`
+	UnixSocketName   string     `mapstructure:"unix_socket_name"`
+	Client           HTTPClient `mapstructure:"http_client"`
+	CacheClient      HTTPClient `mapstructure:"http_client_cache"`
+	AdminPort        int        `mapstructure:"admin_port"`
+	EnableGzip       bool       `mapstructure:"enable_gzip"`
 	// GarbageCollectorThreshold allocates virtual memory (in bytes) which is not used by PBS but
 	// serves as a hack to trigger the garbage collector only when the heap reaches at least this size.
 	// More info: https://github.com/golang/go/issues/48409
@@ -280,19 +283,100 @@ const (
 
 // TCF2 defines the TCF2 specific configurations for GDPR
 type TCF2 struct {
-	Enabled             bool                    `mapstructure:"enabled"`
-	Purpose1            TCF2Purpose             `mapstructure:"purpose1"`
-	Purpose2            TCF2Purpose             `mapstructure:"purpose2"`
-	Purpose3            TCF2Purpose             `mapstructure:"purpose3"`
-	Purpose4            TCF2Purpose             `mapstructure:"purpose4"`
-	Purpose5            TCF2Purpose             `mapstructure:"purpose5"`
-	Purpose6            TCF2Purpose             `mapstructure:"purpose6"`
-	Purpose7            TCF2Purpose             `mapstructure:"purpose7"`
-	Purpose8            TCF2Purpose             `mapstructure:"purpose8"`
-	Purpose9            TCF2Purpose             `mapstructure:"purpose9"`
-	Purpose10           TCF2Purpose             `mapstructure:"purpose10"`
+	Enabled   bool        `mapstructure:"enabled"`
+	Purpose1  TCF2Purpose `mapstructure:"purpose1"`
+	Purpose2  TCF2Purpose `mapstructure:"purpose2"`
+	Purpose3  TCF2Purpose `mapstructure:"purpose3"`
+	Purpose4  TCF2Purpose `mapstructure:"purpose4"`
+	Purpose5  TCF2Purpose `mapstructure:"purpose5"`
+	Purpose6  TCF2Purpose `mapstructure:"purpose6"`
+	Purpose7  TCF2Purpose `mapstructure:"purpose7"`
+	Purpose8  TCF2Purpose `mapstructure:"purpose8"`
+	Purpose9  TCF2Purpose `mapstructure:"purpose9"`
+	Purpose10 TCF2Purpose `mapstructure:"purpose10"`
+	// Map of purpose configs for easy purpose lookup
+	PurposeConfigs      map[consentconstants.Purpose]*TCF2Purpose
 	SpecialFeature1     TCF2SpecialFeature      `mapstructure:"special_feature1"`
 	PurposeOneTreatment TCF2PurposeOneTreatment `mapstructure:"purpose_one_treatment"`
+}
+
+// BasicEnforcementVendor checks if the given bidder is considered a basic enforcement vendor which indicates whether
+// weak vendor enforcement applies to that bidder. If set, the legal basis calculation for the bidder only considers
+// consent to the purpose, not the vendor. The idea is that the publisher trusts this vendor to enforce the
+// appropriate rules on their own. This only comes into play when enforceVendors is true as it lists those vendors that
+// are exempt for vendor enforcement.
+func (t *TCF2) BasicEnforcementVendor(openrtb_ext.BidderName) bool {
+	return false
+}
+
+// IntegrationEnabled checks if a given integration type is enabled. All integration types are considered either
+// enabled or disabled based on the Enabled flag.
+func (t *TCF2) IntegrationEnabled(integrationType IntegrationType) bool {
+	return t.Enabled
+}
+
+// IsEnabled indicates if TCF2 is enabled
+func (t *TCF2) IsEnabled() bool {
+	return t.Enabled
+}
+
+// PurposeEnforced checks if full enforcement is turned on for a given purpose. With full enforcement enabled, the
+// GDPR full enforcement algorithm will execute for that purpose determining legal basis; otherwise it's skipped.
+func (t *TCF2) PurposeEnforced(purpose consentconstants.Purpose) (value bool) {
+	if t.PurposeConfigs[purpose] == nil {
+		return false
+	}
+	if t.PurposeConfigs[purpose].EnforcePurpose == TCF2FullEnforcement {
+		return true
+	}
+	return false
+}
+
+// PurposeEnforcingVendors checks if enforcing vendors is turned on for a given purpose. With enforcing vendors
+// enabled, the GDPR full enforcement algorithm considers the GVL when determining legal basis; otherwise it's skipped.
+func (t *TCF2) PurposeEnforcingVendors(purpose consentconstants.Purpose) (value bool) {
+	if t.PurposeConfigs[purpose] == nil {
+		return false
+	}
+	return t.PurposeConfigs[purpose].EnforceVendors
+}
+
+// PurposeVendorException checks if the specified bidder is considered a vendor exception for a given purpose. If a
+// bidder is a vendor exception, the GDPR full enforcement algorithm will bypass the legal basis calculation assuming
+// the request is valid and there isn't a "deny all" publisher restriction
+func (t *TCF2) PurposeVendorException(purpose consentconstants.Purpose, bidder openrtb_ext.BidderName) (value bool) {
+	if t.PurposeConfigs[purpose] == nil {
+		return false
+	}
+	if _, ok := t.PurposeConfigs[purpose].VendorExceptionMap[bidder]; ok {
+		return true
+	}
+	return false
+}
+
+// FeatureOneEnforced checks if special feature one is enforced. If it is enforced, PBS will determine whether geo
+// information may be passed through in the bid request.
+func (t *TCF2) FeatureOneEnforced() (value bool) {
+	return t.SpecialFeature1.Enforce
+}
+
+// FeatureOneVendorException checks if the specified bidder is considered a vendor exception for special feature one.
+// If a bidder is a vendor exception, PBS will bypass the pass geo calculation passing the geo information in the bid request.
+func (t *TCF2) FeatureOneVendorException(bidder openrtb_ext.BidderName) (value bool) {
+	if _, ok := t.SpecialFeature1.VendorExceptionMap[bidder]; ok {
+		return true
+	}
+	return false
+}
+
+// PurposeOneTreatmentEnabled checks if purpose one treatment is enabled.
+func (t *TCF2) PurposeOneTreatmentEnabled() (value bool) {
+	return t.PurposeOneTreatment.Enabled
+}
+
+// PurposeOneTreatmentAccessAllowed checks if purpose one treatment access is allowed.
+func (t *TCF2) PurposeOneTreatmentAccessAllowed() (value bool) {
+	return t.PurposeOneTreatment.AccessAllowed
 }
 
 // Making a purpose struct so purpose specific details can be added later.
@@ -402,6 +486,9 @@ type Metrics struct {
 type DisabledMetrics struct {
 	// True if we want to stop collecting account-to-adapter metrics
 	AccountAdapterDetails bool `mapstructure:"account_adapter_details"`
+
+	// True if we want to stop collecting account debug request metrics
+	AccountDebug bool `mapstructure:"account_debug"`
 
 	// True if we don't want to collect metrics about the connections prebid
 	// server establishes with bidder servers such as the number of connections
@@ -556,26 +643,27 @@ func New(v *viper.Viper) (*Configuration, error) {
 		c.GDPR.EEACountriesMap[v] = s
 	}
 
-	// To look for a purpose's vendor exceptions in O(1) time, for each purpose we fill this hash table located in the
-	// VendorExceptions field of the GDPR.TCF2.PurposeX struct defined in this file
-	purposeConfigs := []*TCF2Purpose{
-		&c.GDPR.TCF2.Purpose1,
-		&c.GDPR.TCF2.Purpose2,
-		&c.GDPR.TCF2.Purpose3,
-		&c.GDPR.TCF2.Purpose4,
-		&c.GDPR.TCF2.Purpose5,
-		&c.GDPR.TCF2.Purpose6,
-		&c.GDPR.TCF2.Purpose7,
-		&c.GDPR.TCF2.Purpose8,
-		&c.GDPR.TCF2.Purpose9,
-		&c.GDPR.TCF2.Purpose10,
+	// for each purpose we capture a reference to the purpose config in a map for easy purpose config lookup
+	c.GDPR.TCF2.PurposeConfigs = map[consentconstants.Purpose]*TCF2Purpose{
+		1:  &c.GDPR.TCF2.Purpose1,
+		2:  &c.GDPR.TCF2.Purpose2,
+		3:  &c.GDPR.TCF2.Purpose3,
+		4:  &c.GDPR.TCF2.Purpose4,
+		5:  &c.GDPR.TCF2.Purpose5,
+		6:  &c.GDPR.TCF2.Purpose6,
+		7:  &c.GDPR.TCF2.Purpose7,
+		8:  &c.GDPR.TCF2.Purpose8,
+		9:  &c.GDPR.TCF2.Purpose9,
+		10: &c.GDPR.TCF2.Purpose10,
 	}
-	for c := 0; c < len(purposeConfigs); c++ {
-		purposeConfigs[c].VendorExceptionMap = make(map[openrtb_ext.BidderName]struct{})
 
-		for v := 0; v < len(purposeConfigs[c].VendorExceptions); v++ {
-			bidderName := purposeConfigs[c].VendorExceptions[v]
-			purposeConfigs[c].VendorExceptionMap[bidderName] = struct{}{}
+	// To look for a purpose's vendor exceptions in O(1) time, for each purpose we fill this hash table with bidders
+	// located in the VendorExceptions field of the GDPR.TCF2.PurposeX struct defined in this file
+	for _, pc := range c.GDPR.TCF2.PurposeConfigs {
+		pc.VendorExceptionMap = make(map[openrtb_ext.BidderName]struct{})
+		for v := 0; v < len(pc.VendorExceptions); v++ {
+			bidderName := pc.VendorExceptions[v]
+			pc.VendorExceptionMap[bidderName] = struct{}{}
 		}
 	}
 
@@ -656,6 +744,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("external_url", "http://localhost:8000")
 	v.SetDefault("host", "")
 	v.SetDefault("port", 8000)
+	v.SetDefault("unix_socket_enable", false)              // boolean which decide if the socket-server will be started.
+	v.SetDefault("unix_socket_name", "prebid-server.sock") // path of the socket's file which must be listened.
 	v.SetDefault("admin_port", 6060)
 	v.SetDefault("enable_gzip", false)
 	v.SetDefault("garbage_collector_threshold", 0)
@@ -693,6 +783,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("http_client_cache.idle_connection_timeout_seconds", 60)
 	// no metrics configured by default (metrics{host|database|username|password})
 	v.SetDefault("metrics.disabled_metrics.account_adapter_details", false)
+	v.SetDefault("metrics.disabled_metrics.account_debug", true)
 	v.SetDefault("metrics.disabled_metrics.adapter_connections_metrics", true)
 	v.SetDefault("metrics.disabled_metrics.adapter_gdpr_request_blocked", false)
 	v.SetDefault("metrics.influxdb.host", "")
@@ -812,6 +903,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	// for them and specify all the parameters they need for them to work correctly.
 	v.SetDefault("adapters.33across.endpoint", "https://ssc.33across.com/api/v1/s2s")
 	v.SetDefault("adapters.33across.partner_id", "")
+	v.SetDefault("adapters.aax.endpoint", "https://prebid.aaxads.com/rtb/pb/aax-prebid")
+	v.SetDefault("adapters.aax.extra_info", "https://aax.golang.pbs.com")
 	v.SetDefault("adapters.aceex.endpoint", "http://bl-us.aceex.io/?uqhash={{.AccountID}}")
 	v.SetDefault("adapters.acuityads.endpoint", "http://{{.Host}}.admanmedia.com/bid?token={{.AccountID}}")
 	v.SetDefault("adapters.adf.endpoint", "https://adx.adform.net/adx/openrtb")
@@ -819,7 +912,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.adgeneration.endpoint", "https://d.socdm.com/adsv/v1")
 	v.SetDefault("adapters.adhese.endpoint", "https://ads-{{.AccountID}}.adhese.com/json")
 	v.SetDefault("adapters.adkernel.endpoint", "https://pbs.adksrv.com/hb?zone={{.ZoneID}}")
-	v.SetDefault("adapters.adkerneladn.endpoint", "http://{{.Host}}/rtbpub?account={{.PublisherID}}")
+	v.SetDefault("adapters.adkerneladn.endpoint", "https://pbs2.adksrv.com/rtbpub?account={{.PublisherID}}")
 	v.SetDefault("adapters.adman.endpoint", "http://pub.admanmedia.com/?c=o&m=ortb")
 	v.SetDefault("adapters.admixer.endpoint", "http://inv-nets.admixer.net/pbs.aspx")
 	v.SetDefault("adapters.adocean.endpoint", "https://{{.Host}}")
@@ -843,6 +936,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.appnexus.platform_id", "5")
 	v.SetDefault("adapters.audiencenetwork.disabled", true)
 	v.SetDefault("adapters.audiencenetwork.endpoint", "https://an.facebook.com/placementbid.ortb")
+	v.SetDefault("adapters.automatad.endpoint", "https://s2s.atmtd.com")
 	v.SetDefault("adapters.avocet.disabled", true)
 	v.SetDefault("adapters.axonix.endpoint", "https://openrtb-us-east-1.axonix.com/supply/prebid-server/{{.AccountID}}")
 	v.SetDefault("adapters.beachfront.endpoint", "https://display.bfmio.com/prebid_display")
@@ -853,6 +947,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.bidmyadz.endpoint", "http://endpoint.bidmyadz.com/c0f68227d14ed938c6c49f3967cbe9bc")
 	v.SetDefault("adapters.bidscube.endpoint", "http://supply.bidscube.com/?c=o&m=rtb")
 	v.SetDefault("adapters.bizzclick.endpoint", "http://us-e-node1.bizzclick.com/bid?rtb_seat_id={{.SourceId}}&secret_key={{.AccountID}}")
+	v.SetDefault("adapters.bliink.endpoint", "http://engine.bliink.io/bid")
 	v.SetDefault("adapters.bmtm.endpoint", "https://one.elitebidder.com/api/pbs")
 	v.SetDefault("adapters.brightroll.endpoint", "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
 	v.SetDefault("adapters.coinzilla.endpoint", "http://request-global.czilladx.com/serve/prebid-server.php")
@@ -916,6 +1011,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.orbidder.endpoint", "https://orbidder.otto.de/openrtb2")
 	v.SetDefault("adapters.outbrain.endpoint", "https://prebidtest.zemanta.com/api/bidder/prebidtest/bid/")
 	v.SetDefault("adapters.pangle.disabled", true)
+	v.SetDefault("adapters.pgam.endpoint", "http://ghb.pgamssp.com/pbs/ortb")
 	v.SetDefault("adapters.pubmatic.endpoint", "https://hbopenbid.pubmatic.com/translator?source=prebid-server")
 	v.SetDefault("adapters.pubnative.endpoint", "http://dsp.pubnative.net/bid/v1/request")
 	v.SetDefault("adapters.pulsepoint.endpoint", "http://bid.contextweb.com/header/s/ortb/prebid-s2s")
@@ -938,9 +1034,12 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.sonobi.endpoint", "https://apex.go.sonobi.com/prebid?partnerid=71d9d3d8af")
 	v.SetDefault("adapters.sovrn.endpoint", "http://ap.lijit.com/rtb/bid?src=prebid_server")
 	v.SetDefault("adapters.streamkey.endpoint", "http://ghb.hb.streamkey.net/pbs/ortb")
+	v.SetDefault("adapters.stroeercore.disabled", true)
+	v.SetDefault("adapters.stroeercore.endpoint", "http://mhb.adscale.de/s2sdsh")
 	v.SetDefault("adapters.synacormedia.endpoint", "http://{{.Host}}.technoratimedia.com/openrtb/bids/{{.Host}}")
 	v.SetDefault("adapters.tappx.endpoint", "http://{{.Host}}")
 	v.SetDefault("adapters.telaria.endpoint", "https://ads.tremorhub.com/ad/rtb/prebid")
+	v.SetDefault("adapters.trafficgate.endpoint", "http://{{.Host}}.bc-plugin.com/?c=o&m=rtb")
 	v.SetDefault("adapters.triplelift_native.disabled", true)
 	v.SetDefault("adapters.triplelift_native.extra_info", "{\"publisher_whitelist\":[]}")
 	v.SetDefault("adapters.triplelift.endpoint", "https://tlx.3lift.com/s2s/auction?sra=1&supplier_id=20")
@@ -955,7 +1054,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.viewdeos.endpoint", "http://ghb.sync.viewdeos.com/pbs/ortb")
 	v.SetDefault("adapters.visx.endpoint", "https://t.visx.net/s2s_bid?wrapperType=s2s_prebid_standard:0.1.0")
 	v.SetDefault("adapters.vrtcal.endpoint", "http://rtb.vrtcal.com/bidder_prebid.vap?ssp=1804")
-	v.SetDefault("adapters.yahoossp.disabled", true)
+	v.SetDefault("adapters.yahoossp.endpoint", "https://s2shb.ssp.yahoo.com/admax/bid/partners/PBS")
 	v.SetDefault("adapters.yeahmobi.endpoint", "https://{{.Host}}/prebid/bid")
 	v.SetDefault("adapters.yieldlab.endpoint", "https://ad.yieldlab.net/yp/")
 	v.SetDefault("adapters.yieldmo.endpoint", "https://ads.yieldmo.com/exchange/prebid-server")

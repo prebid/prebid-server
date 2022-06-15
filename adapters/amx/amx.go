@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
 
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
@@ -14,10 +13,8 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const vastImpressionFormat = "<Impression><![CDATA[%s]]></Impression>"
-const vastSearchPoint = "</Impression>"
 const nbrHeaderName = "x-nbr"
-const adapterVersion = "pbs1.1"
+const adapterVersion = "pbs1.2"
 
 // AMXAdapter is the AMX bid adapter
 type AMXAdapter struct {
@@ -114,8 +111,8 @@ func (adapter *AMXAdapter) MakeRequests(request *openrtb2.BidRequest, req *adapt
 }
 
 type amxBidExt struct {
-	Himp       []string `json:"himp,omitempty"`
-	StartDelay *int     `json:"startdelay,omitempty"`
+	StartDelay   *int `json:"startdelay,omitempty"`
+	CreativeType *int `json:"ct,omitempty"`
 }
 
 // MakeBids will parse the bids from the AMX server
@@ -161,11 +158,6 @@ func (adapter *AMXAdapter) MakeBids(request *openrtb2.BidRequest, externalReques
 				Bid:     &bid,
 				BidType: bidType,
 			}
-			if b.BidType == openrtb_ext.BidTypeVideo {
-				b.Bid.AdM = interpolateImpressions(bid, bidExt)
-				// remove the NURL so a client/player doesn't fire it twice
-				b.Bid.NURL = ""
-			}
 
 			bidResponse.Bids = append(bidResponse.Bids, b)
 		}
@@ -189,25 +181,9 @@ func getMediaTypeForBid(bidExt amxBidExt) openrtb_ext.BidType {
 		return openrtb_ext.BidTypeVideo
 	}
 
+	if bidExt.CreativeType != nil && *bidExt.CreativeType == 10 {
+		return openrtb_ext.BidTypeNative
+	}
+
 	return openrtb_ext.BidTypeBanner
-}
-
-func pixelToImpression(pixel string) string {
-	return fmt.Sprintf(vastImpressionFormat, pixel)
-}
-
-func interpolateImpressions(bid openrtb2.Bid, ext amxBidExt) string {
-	var buffer strings.Builder
-	if bid.NURL != "" {
-		buffer.WriteString(pixelToImpression(bid.NURL))
-	}
-
-	for _, impPixel := range ext.Himp {
-		if impPixel != "" {
-			buffer.WriteString(pixelToImpression(impPixel))
-		}
-	}
-
-	results := strings.Replace(bid.AdM, vastSearchPoint, vastSearchPoint+buffer.String(), 1)
-	return results
 }

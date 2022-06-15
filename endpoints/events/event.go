@@ -23,6 +23,7 @@ const (
 	// Required
 	TemplateUrl        = "%v/event?t=%v&b=%v&a=%v"
 	TypeParameter      = "t"
+	VTypeParameter     = "vtype"
 	BidIdParameter     = "b"
 	AccountIdParameter = "a"
 
@@ -144,6 +145,16 @@ func ParseEventRequest(r *http.Request) (*analytics.EventRequest, []error) {
 		errs = append(errs, err)
 	}
 
+	if event.Type == analytics.Vast {
+		if err := readVType(event, r); err != nil {
+			errs = append(errs, err)
+		}
+	} else {
+		if t := r.URL.Query().Get(VTypeParameter); t != "" {
+			errs = append(errs, &errortypes.BadInput{Message: "parameter 'vtype' is only required for t=vast"})
+		}
+	}
+
 	// validate bidid
 	if bidid, err := checkRequiredParameter(r, BidIdParameter); err != nil {
 		errs = append(errs, err)
@@ -261,9 +272,38 @@ func readType(er *analytics.EventRequest, httpRequest *http.Request) error {
 	case string(analytics.Win):
 		er.Type = analytics.Win
 		return nil
+	case string(analytics.Vast):
+		er.Type = analytics.Vast
+		return nil
 	default:
 		return &errortypes.BadInput{Message: fmt.Sprintf("unknown type: '%s'", t)}
 	}
+}
+
+// readVType validates analytics.EventRequest vtype
+func readVType(er *analytics.EventRequest, httpRequest *http.Request) error {
+	vtype, err := checkRequiredParameter(httpRequest, VTypeParameter)
+
+	if err != nil {
+		return err
+	}
+
+	switch vtype {
+	case string(analytics.Start):
+		er.VType = analytics.Start
+	case string(analytics.FirstQuartile):
+		er.VType = analytics.FirstQuartile
+	case string(analytics.MidPoint):
+		er.VType = analytics.MidPoint
+	case string(analytics.ThirdQuartile):
+		er.VType = analytics.ThirdQuartile
+	case string(analytics.Complete):
+		er.VType = analytics.Complete
+	default:
+		return &errortypes.BadInput{Message: fmt.Sprintf("unknown vtype: '%s'", vtype)}
+	}
+
+	return nil
 }
 
 // readFormat validates analytics.EventRequest format attribute

@@ -12,7 +12,7 @@ import (
 )
 
 func TestAllValidBids(t *testing.T) {
-	var bidder adaptedBidder = addValidatedBidderMiddleware(&mockAdaptedBidder{
+	var bidder AdaptedBidder = addValidatedBidderMiddleware(&mockAdaptedBidder{
 		bidResponse: &pbsOrtbSeatBid{
 			bids: []*pbsOrtbBid{
 				{
@@ -51,7 +51,11 @@ func TestAllValidBids(t *testing.T) {
 			},
 		},
 	})
-	seatBid, errs := bidder.requestBid(context.Background(), &openrtb2.BidRequest{}, openrtb_ext.BidderAppnexus, 1.0, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, true, false)
+	bidderReq := BidderRequest{
+		BidRequest: &openrtb2.BidRequest{},
+		BidderName: openrtb_ext.BidderAppnexus,
+	}
+	seatBid, errs := bidder.requestBid(context.Background(), bidderReq, 1.0, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, true, false)
 	assert.Len(t, seatBid.bids, 4)
 	assert.Len(t, errs, 0)
 }
@@ -109,7 +113,11 @@ func TestAllBadBids(t *testing.T) {
 			},
 		},
 	})
-	seatBid, errs := bidder.requestBid(context.Background(), &openrtb2.BidRequest{}, openrtb_ext.BidderAppnexus, 1.0, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, true, false)
+	bidderReq := BidderRequest{
+		BidRequest: &openrtb2.BidRequest{},
+		BidderName: openrtb_ext.BidderAppnexus,
+	}
+	seatBid, errs := bidder.requestBid(context.Background(), bidderReq, 1.0, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, true, false)
 	assert.Len(t, seatBid.bids, 0)
 	assert.Len(t, errs, 7)
 }
@@ -178,7 +186,11 @@ func TestMixedBids(t *testing.T) {
 			},
 		},
 	})
-	seatBid, errs := bidder.requestBid(context.Background(), &openrtb2.BidRequest{}, openrtb_ext.BidderAppnexus, 1.0, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, true, false)
+	bidderReq := BidderRequest{
+		BidRequest: &openrtb2.BidRequest{},
+		BidderName: openrtb_ext.BidderAppnexus,
+	}
+	seatBid, errs := bidder.requestBid(context.Background(), bidderReq, 1.0, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, true, false)
 	assert.Len(t, seatBid.bids, 3)
 	assert.Len(t, errs, 5)
 }
@@ -297,8 +309,9 @@ func TestCurrencyBids(t *testing.T) {
 		request := &openrtb2.BidRequest{
 			Cur: tc.brqCur,
 		}
+		bidderRequest := BidderRequest{BidRequest: request, BidderName: openrtb_ext.BidderAppnexus}
 
-		seatBid, errs := bidder.requestBid(context.Background(), request, openrtb_ext.BidderAppnexus, 1.0, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, true, false)
+		seatBid, errs := bidder.requestBid(context.Background(), bidderRequest, 1.0, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, true, false)
 		assert.Len(t, seatBid.bids, expectedValidBids)
 		assert.Len(t, errs, expectedErrs)
 	}
@@ -309,6 +322,6 @@ type mockAdaptedBidder struct {
 	errorResponse []error
 }
 
-func (b *mockAdaptedBidder) requestBid(ctx context.Context, request *openrtb2.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool) (*pbsOrtbSeatBid, []error) {
+func (b *mockAdaptedBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool) (*pbsOrtbSeatBid, []error) {
 	return b.bidResponse, b.errorResponse
 }

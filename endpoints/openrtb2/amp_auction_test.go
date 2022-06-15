@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -24,69 +25,70 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// From auction_test.go
-// const maxSize = 1024 * 256
-
 // TestGoodRequests makes sure that the auction runs properly-formatted stored bids correctly.
 func TestGoodAmpRequests(t *testing.T) {
-	goodRequests := map[string]json.RawMessage{
-		"1": json.RawMessage(validRequest(t, "aliased-buyeruids.json")),
-		"2": json.RawMessage(validRequest(t, "aliases.json")),
-		"3": json.RawMessage(validRequest(t, "imp-with-stored-resp.json")),
-		"5": json.RawMessage(validRequest(t, "gdpr-no-consentstring.json")),
-		"6": json.RawMessage(validRequest(t, "gdpr.json")),
-		"7": json.RawMessage(validRequest(t, "site.json")),
-		"9": json.RawMessage(validRequest(t, "user.json")),
+	testCases := []struct {
+		storedReqID string
+		filename    string
+	}{
+		{"1", "aliased-buyeruids.json"},
+		{"2", "aliases.json"},
+		{"3", "imp-with-stored-resp.json"},
+		{"5", "gdpr-no-consentstring.json"},
+		{"6", "gdpr.json"},
 	}
 
-	goodStoredResponses := map[string]json.RawMessage{
-		"6d718149": json.RawMessage(`[{"bid": [{"id": "bid_id", "ext": {"prebid": {"targeting": { "hb_pb": "1.20", "hb_cat": "IAB-20", "hb_cache_id": "some_id"}}}}],"seat": "appnexus"}]`),
-	}
+	for _, tc := range testCases {
+		// Read test case and unmarshal
+		fileJsonData, err := ioutil.ReadFile("sample-requests/valid-whole/supplementary/" + tc.filename)
+		if !assert.NoError(t, err, "Failed to fetch a valid request: %v. Test file: %s", err, tc.filename) {
+			continue
+		}
 
-	endpoint, _ := NewAmpEndpoint(
-		fakeUUIDGenerator{},
-		&mockAmpExchange{},
-		newParamsValidator(t),
-		&mockAmpStoredReqFetcher{goodRequests},
-		empty_fetcher.EmptyFetcher{},
-		&config.Configuration{MaxRequestSize: maxSize},
-		&metricsConfig.NilMetricsEngine{},
-		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
-		map[string]string{},
-		[]byte{},
-		openrtb_ext.BuildBidderMap(),
-		&mockAmpStoredResponseFetcher{goodStoredResponses},
-	)
+		test := testCase{}
+		if !assert.NoError(t, json.Unmarshal(fileJsonData, &test), "Failed to unmarshal data from file: %s. Error: %v", tc.filename, err) {
+			continue
+		}
+		test.storedRequest = map[string]json.RawMessage{tc.storedReqID: test.BidRequest}
+		test.endpointType = AMP_ENDPOINT
 
-	for requestID := range goodRequests {
-		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s", requestID), nil)
+		cfg := &config.Configuration{MaxRequestSize: maxSize}
+		if test.Config != nil {
+			cfg.BlacklistedApps = test.Config.BlacklistedApps
+			cfg.BlacklistedAppMap = test.Config.getBlacklistedAppMap()
+			cfg.BlacklistedAccts = test.Config.BlacklistedAccounts
+			cfg.BlacklistedAcctMap = test.Config.getBlackListedAccountMap()
+			cfg.AccountRequired = test.Config.AccountRequired
+		}
+
+		// Set test up
+		ampEndpoint, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
+		if !assert.NoError(t, err) {
+			continue
+		}
+
+		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s", tc.storedReqID), nil)
 		recorder := httptest.NewRecorder()
-		endpoint(recorder, request, nil)
 
-		if recorder.Code != http.StatusOK {
-			t.Errorf("Expected status %d. Got %d. Request config ID was %s", http.StatusOK, recorder.Code, requestID)
-			t.Errorf("Response body was: %s", recorder.Body)
-			t.Errorf("Request was: %s", string(goodRequests[requestID]))
-		}
+		// runTestCase
+		ampEndpoint(recorder, request, nil)
 
-		var response AmpResponse
-		if err := json.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
-			t.Errorf("AMP response was: %s", recorder.Body.Bytes())
-			t.Fatalf("Error unmarshalling response: %s", err.Error())
+		// Close servers
+		for _, mockBidServer := range mockBidServers {
+			mockBidServer.Close()
 		}
+		mockCurrencyRatesServer.Close()
 
-		if response.Targeting == nil || len(response.Targeting) == 0 {
-			t.Errorf("Bad response, no targeting data.\n Response was: %v", recorder.Body)
+		// Assertions
+		if assert.Equal(t, test.ExpectedReturnCode, recorder.Code, "Expected status %d. Got %d. Amp test file: %s", http.StatusOK, recorder.Code, tc.filename) {
+			if test.ExpectedReturnCode == http.StatusOK {
+				var ampResponse AmpResponse
+				assert.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &ampResponse), "Error unmarshalling ampResponse: %v", err)
+				assert.Equal(t, test.ExpectedAmpResponse, ampResponse, "Test file: %s", tc.filename)
+			} else {
+				assert.Equal(t, test.ExpectedErrorMessage, recorder.Body.String(), tc.filename)
+			}
 		}
-		if len(response.Targeting) != 3 {
-			t.Errorf("Bad targeting data. Expected 3 keys, got %d.", len(response.Targeting))
-		}
-
-		if response.Debug != nil {
-			t.Errorf("Debug present but not requested")
-		}
-
-		assert.Equal(t, expectedErrorsFromHoldAuction, response.Errors, "errors")
 	}
 }
 
@@ -642,7 +644,10 @@ func TestAMPSiteExt(t *testing.T) {
 
 // TestBadRequests makes sure we return 400's on bad requests.
 func TestAmpBadRequests(t *testing.T) {
-	files := fetchFiles(t, "sample-requests/invalid-whole")
+	dir := "sample-requests/invalid-whole"
+	files, err := ioutil.ReadDir(dir)
+	assert.NoError(t, err, "Failed to read folder: %s", dir)
+
 	badRequests := make(map[string]json.RawMessage, len(files))
 	for index, file := range files {
 		badRequests[strconv.Itoa(100+index)] = readFile(t, "sample-requests/invalid-whole/"+file.Name())
@@ -790,7 +795,9 @@ func TestQueryParamOverrides(t *testing.T) {
 		t.Fatalf("Error unmarshalling response: %s", err.Error())
 	}
 
-	resolvedRequest := response.Debug.ResolvedRequest
+	var resolvedRequest openrtb2.BidRequest
+	err := json.Unmarshal(response.Debug.ResolvedRequest, &resolvedRequest)
+	assert.NoError(t, err, "resolved request should have a correct format")
 	if resolvedRequest.TMax != timeout {
 		t.Errorf("Expected TMax to equal timeout (%d), got: %d", timeout, resolvedRequest.TMax)
 	}
@@ -936,8 +943,10 @@ func (s formatOverrideSpec) execute(t *testing.T) {
 	if err := json.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
 		t.Fatalf("Error unmarshalling response: %s", err.Error())
 	}
-
-	formats := response.Debug.ResolvedRequest.Imp[0].Banner.Format
+	var resolvedRequest openrtb2.BidRequest
+	err := json.Unmarshal(response.Debug.ResolvedRequest, &resolvedRequest)
+	assert.NoError(t, err, "resolved request should have the correct format")
+	formats := resolvedRequest.Imp[0].Banner.Format
 	if len(formats) != len(s.expect) {
 		t.Fatalf("Bad formats length. Expected %v, got %v", s.expect, formats)
 	}
@@ -949,30 +958,6 @@ func (s formatOverrideSpec) execute(t *testing.T) {
 			t.Errorf("format[%d].H were not equal. Expected %d, got %d", i, s.expect[i].H, formats[i].H)
 		}
 	}
-}
-
-type mockAmpStoredReqFetcher struct {
-	data map[string]json.RawMessage
-}
-
-func (cf *mockAmpStoredReqFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
-	return cf.data, nil, nil
-}
-
-func (cf *mockAmpStoredReqFetcher) FetchResponses(ctx context.Context, ids []string) (data map[string]json.RawMessage, errs []error) {
-	return nil, nil
-}
-
-type mockAmpStoredResponseFetcher struct {
-	data map[string]json.RawMessage
-}
-
-func (cf *mockAmpStoredResponseFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
-	return nil, nil, nil
-}
-
-func (cf *mockAmpStoredResponseFetcher) FetchResponses(ctx context.Context, ids []string) (data map[string]json.RawMessage, errs []error) {
-	return cf.data, nil
 }
 
 type mockAmpExchange struct {
@@ -988,7 +973,8 @@ var expectedErrorsFromHoldAuction map[openrtb_ext.BidderName][]openrtb_ext.ExtBi
 	},
 }
 
-func (m *mockAmpExchange) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+func (m *mockAmpExchange) HoldAuction(ctx context.Context, auctionRequest exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+	r := auctionRequest.BidRequestWrapper
 	m.lastRequest = r.BidRequest
 
 	response := &openrtb2.BidResponse{
@@ -1000,10 +986,10 @@ func (m *mockAmpExchange) HoldAuction(ctx context.Context, r exchange.AuctionReq
 		}},
 		Ext: json.RawMessage(`{ "errors": {"openx":[ { "code": 1, "message": "The request exceeded the timeout allocated" } ] } }`),
 	}
-	if len(r.StoredAuctionResponses) > 0 {
+	if len(auctionRequest.StoredAuctionResponses) > 0 {
 		var seatBids []openrtb2.SeatBid
 
-		if err := json.Unmarshal(r.StoredAuctionResponses[r.BidRequest.Imp[0].ID], &seatBids); err != nil {
+		if err := json.Unmarshal(auctionRequest.StoredAuctionResponses[r.BidRequest.Imp[0].ID], &seatBids); err != nil {
 			return nil, err
 		}
 		response.SeatBid = seatBids
