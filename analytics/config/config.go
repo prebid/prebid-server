@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/benbjohnson/clock"
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/analytics/clients"
@@ -28,7 +29,8 @@ func NewPBSAnalytics(analytics *config.Analytics) analytics.PBSAnalyticsModule {
 			analytics.Pubstack.ConfRefresh,
 			analytics.Pubstack.Buffers.EventCount,
 			analytics.Pubstack.Buffers.BufferSize,
-			analytics.Pubstack.Buffers.Timeout)
+			analytics.Pubstack.Buffers.Timeout,
+			clock.New())
 		if err == nil {
 			modules = append(modules, pubstackModule)
 		} else {
