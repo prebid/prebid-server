@@ -43,17 +43,17 @@ func TestNewConfigUpdateHttpTask(t *testing.T) {
 
 	// read initial config
 	expectedConfig1 := &Configuration{ScopeID: "scope1", Endpoint: "https://pubstack.io", Features: map[string]bool{"auction": true, "cookiesync": true}}
-	assertConfigChanOne(t, configChan, expectedConfig1, 10*time.Millisecond, "config 1")
+	assertConfigChanOne(t, configChan, expectedConfig1, "config 1")
 
 	// read updated config
 	expectedConfig2 := &Configuration{ScopeID: "scope2", Endpoint: "https://pubstack.io", Features: map[string]bool{"auction": false, "cookiesync": false}}
-	assertConfigChanOne(t, configChan, expectedConfig2, 10*time.Millisecond, "config 2")
+	assertConfigChanOne(t, configChan, expectedConfig2, "config 2")
 
 	// stop task
 	close(stopChan)
 
 	// no further updates
-	assertConfigChanNone(t, configChan, 20*time.Millisecond)
+	assertConfigChanNone(t, configChan)
 }
 
 func TestNewConfigUpdateHttpTaskErrors(t *testing.T) {
@@ -84,22 +84,22 @@ func TestNewConfigUpdateHttpTaskErrors(t *testing.T) {
 	}
 }
 
-func assertConfigChanNone(t *testing.T, c <-chan *Configuration, waitDuration time.Duration) bool {
+func assertConfigChanNone(t *testing.T, c <-chan *Configuration) bool {
 	t.Helper()
 	select {
 	case <-c:
 		return assert.Fail(t, "received a unexpected configuration channel event")
-	case <-time.After(waitDuration):
+	case <-time.After(200 * time.Millisecond):
 		return true
 	}
 }
 
-func assertConfigChanOne(t *testing.T, c <-chan *Configuration, expectedConfig *Configuration, waitDuration time.Duration, msgAndArgs ...interface{}) bool {
+func assertConfigChanOne(t *testing.T, c <-chan *Configuration, expectedConfig *Configuration, msgAndArgs ...interface{}) bool {
 	t.Helper()
 	select {
 	case v := <-c:
 		return assert.Equal(t, expectedConfig, v, msgAndArgs...)
-	case <-time.After(waitDuration):
+	case <-time.After(200 * time.Millisecond):
 		return assert.Fail(t, "Should receive an event, but did NOT", msgAndArgs...)
 	}
 }

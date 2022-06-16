@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/benbjohnson/clock"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/stretchr/testify/assert"
 )
@@ -39,7 +40,7 @@ func TestNewModuleErrors(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		_, err := NewModule(&http.Client{}, "scope", "http://example.com", tt.refreshDelay, 100, tt.maxByteSize, tt.maxTime)
+		_, err := NewModule(&http.Client{}, "scope", "http://example.com", tt.refreshDelay, 100, tt.maxByteSize, tt.maxTime, clock.NewMock())
 		assert.Error(t, err, tt.description)
 	}
 }
@@ -116,8 +117,9 @@ func TestNewModuleSuccess(t *testing.T) {
 		updatedConfig.Endpoint = server.URL
 
 		// instantiate module with a manual config update task
+		clockMock := clock.NewMock()
 		configTask := fakeConfigUpdateTask{}
-		module, err := NewModuleWithConfigTask(client, "scope", server.URL, 100, "1B", "5ms", &configTask)
+		module, err := NewModuleWithConfigTask(client, "scope", server.URL, 100, "1B", "1s", &configTask, clockMock)
 		assert.NoError(t, err, tt.description)
 
 		pubstack, _ := module.(*PubstackModule)
@@ -126,25 +128,29 @@ func TestNewModuleSuccess(t *testing.T) {
 		configTask.Push(origConfig)
 		time.Sleep(10 * time.Millisecond)                            // allow time for the module to load the original config
 		tt.logObject(pubstack)                                       // attempt to log; no event channel created because feature is disabled in original config
-		assertChanNone(t, intakeChannel, tt.description+":original") // verify no event was received over a 10ms period
+		clockMock.Add(1 * time.Second)                               // trigger event channel sending
+		assertChanNone(t, intakeChannel, tt.description+":original") // verify no event was received
 
 		// updated config
 		configTask.Push(updatedConfig)
 		time.Sleep(10 * time.Millisecond)                          // allow time for the server to start serving the updated config
 		tt.logObject(pubstack)                                     // attempt to log; event channel should be created because feature is enabled in updated config
-		assertChanOne(t, intakeChannel, tt.description+":updated") // verify an event was received within 10ms
+		clockMock.Add(1 * time.Second)                             // trigger event channel sending
+		assertChanOne(t, intakeChannel, tt.description+":updated") // verify an event was received
 
 		// no config change
 		configTask.Push(updatedConfig)
 		time.Sleep(10 * time.Millisecond)                            // allow time for the server to determine no config change
 		tt.logObject(pubstack)                                       // attempt to log; event channel should still be created from loading updated config
-		assertChanOne(t, intakeChannel, tt.description+":no_change") // verify an event was received within 10ms
+		clockMock.Add(1 * time.Second)                               // trigger event channel sending
+		assertChanOne(t, intakeChannel, tt.description+":no_change") // verify an event was received
 
 		// shutdown
 		pubstack.sigTermCh <- os.Kill                                // simulate os shutdown signal
 		time.Sleep(10 * time.Millisecond)                            // allow time for the server to switch to shutdown generated config
 		tt.logObject(pubstack)                                       // attempt to log; event channel should be closed from the os kill signal
-		assertChanNone(t, intakeChannel, tt.description+":shutdown") // verify no event was received over a 10ms period
+		clockMock.Add(1 * time.Second)                               // trigger event channel sending
+		assertChanNone(t, intakeChannel, tt.description+":shutdown") // verify no event was received
 	}
 }
 
@@ -153,7 +159,7 @@ func assertChanNone(t *testing.T, c <-chan int, msgAndArgs ...interface{}) bool 
 	select {
 	case <-c:
 		return assert.Fail(t, "Should NOT receive an event, but did", msgAndArgs...)
-	case <-time.After(10 * time.Millisecond):
+	case <-time.After(100 * time.Millisecond):
 		return true
 	}
 }
@@ -163,7 +169,7 @@ func assertChanOne(t *testing.T, c <-chan int, msgAndArgs ...interface{}) bool {
 	select {
 	case <-c:
 		return true
-	case <-time.After(10 * time.Millisecond):
+	case <-time.After(200 * time.Millisecond):
 		return assert.Fail(t, "Should receive an event, but did NOT", msgAndArgs...)
 	}
 }
