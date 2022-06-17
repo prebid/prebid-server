@@ -21,21 +21,14 @@
             }
           },
           "bidder": {
-            "accountId": 199578,
             "publisherId": 123456,
             "mediaId": "test_media",
             "placementId": "test_placement"
-          },
-          "context": {
-            "data": {
-              "firstPartyData1": ["firstPartyData1"],
-              "uuid": ["xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"]
-            }
           }
         }
       }
     ],
-    "cur": ["USD"],
+    "cur": ["JPY"],
     "app": {
       "publisher": {
         "id": "test"
@@ -70,21 +63,12 @@
     },
     "user": {
       "gender": "O"
-    },
-    "ext": {
-      "prebid": {
-        "targeting": {},
-        "cache": {
-          "bids": {}
-        },
-        "storedrequest": {
-          "id": "test"
-        }
-      }
     }
   },
-  "expectedMakeRequestsErrors" : [{
-    "value": "Only JPY is supported",
-    "comparison": "literal"
-  }]
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "accountId must be set to non-zero",
+      "comparison": "literal"
+    }
+  ]
 }
