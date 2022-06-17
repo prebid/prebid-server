@@ -62,7 +62,8 @@
           "clientTime": [
             "2018-11-02 16:34:07.981+1300"
           ]
-        }
+        },
+        "consent": "CPaYLJBPaYLJBIPAAAENCSCgAPAAAAAAAAAAGsQAQGsAAAAA.YAAAAAAAAAA"
       }
     },
     "regs": {
@@ -138,6 +139,7 @@
           "regs": {
             "coppa": 1
           },
+          "consent": "CPaYLJBPaYLJBIPAAAENCSCgAPAAAAAAAAAAGsQAQGsAAAAA.YAAAAAAAAAA",
           "version": "3.4"
         }
       },
