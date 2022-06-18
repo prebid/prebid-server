@@ -12,7 +12,6 @@ const (
 	BlacklistedAcctErrorCode
 	AcctRequiredErrorCode
 	NoConversionRateErrorCode
-	AlternateBidderCodeErrorCode
 )
 
 // Defines numeric codes for well-known warnings.

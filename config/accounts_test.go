@@ -837,6 +837,21 @@ func TestAlternateBidderCodes_IsValidBidderCode(t *testing.T) {
 			wantIsValid: false,
 			wantErr:     errors.New(`invalid biddercode "groupm" sent by adapter "pubmatic"`),
 		},
+		{
+			name: "alternateBidder enabled at account level, adapter config present but bidder is not defined in it",
+			args: args{
+				bidder:          "pubmatic",
+				alternateBidder: "groupm",
+			},
+			fields: fields{
+				Enabled: true,
+				Adapters: map[string]AdapterAlternateBidderCodes{
+					"appnexus": {Enabled: false},
+				},
+			},
+			wantIsValid: false,
+			wantErr:     errors.New(`alternateBidderCodes not defined for adapter "pubmatic", rejecting bids for "groupm"`),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

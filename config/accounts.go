@@ -236,22 +236,22 @@ type AdapterAlternateBidderCodes struct {
 	AllowedBidderCodes []string `mapstructure:"allowedbiddercodes" json:"allowedbiddercodes"`
 }
 
-func (account *AlternateBidderCodes) IsValidBidderCode(bidder, alternateBidder string) (bool, error) {
+func (bidderCodes *AlternateBidderCodes) IsValidBidderCode(bidder, alternateBidder string) (bool, error) {
 	const ErrAlternateBidderNotDefined = "alternateBidderCodes not defined for adapter %q, rejecting bids for %q"
 
 	if alternateBidder == "" || bidder == alternateBidder {
 		return true, nil
 	}
 
-	if !account.Enabled {
+	if !bidderCodes.Enabled {
 		return false, nil
 	}
 
-	if account.Adapters == nil {
+	if bidderCodes.Adapters == nil {
 		return false, fmt.Errorf(ErrAlternateBidderNotDefined, bidder, alternateBidder)
 	}
 
-	adapterCfg, ok := account.Adapters[bidder]
+	adapterCfg, ok := bidderCodes.Adapters[bidder]
 	if !ok {
 		return false, fmt.Errorf(ErrAlternateBidderNotDefined, bidder, alternateBidder)
 	}

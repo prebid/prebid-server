@@ -324,7 +324,6 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 
 						if _, ok := seatBidMap[bidderName]; !ok {
 							// Initalize seatBidMap entry as this is first extra bid with seat bidderName
-							// seatBidMap[bidderName] =
 							seatBidMap[bidderName] = &pbsOrtbSeatBid{
 								bids:     make([]*pbsOrtbBid, 0, dataLen),
 								currency: defaultCurrency,
