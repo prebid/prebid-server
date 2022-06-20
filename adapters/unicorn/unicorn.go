@@ -173,11 +173,9 @@ func setSourceExt() json.RawMessage {
 
 func setExt(request *openrtb2.BidRequest) (json.RawMessage, error) {
 	accountID, err := jsonparser.GetInt(request.Imp[0].Ext, "bidder", "accountId")
+	fmt.Printf("accountID: %d, err: %s\n", accountID, err)
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse accountId: %s", err)
-	}
-	if accountID == 0 {
-		return nil, fmt.Errorf("accountId must be set to non-zero")
 	}
 
 	var decodedExt *unicornExt
