@@ -45,10 +45,16 @@ func (w SChainWriter) Write(req *openrtb2.BidRequest, bidder string, hostSChainI
 		return nil
 	}
 
+	selectedSChain = &openrtb_ext.ExtRequestPrebidSChainSChain{}
+
 	if bidderSChain != nil {
 		selectedSChain = bidderSChain
-	} else {
+	} else if wildCardSChain != nil {
 		selectedSChain = wildCardSChain
+	}
+
+	schain := openrtb_ext.ExtRequestPrebidSChain{
+		SChain: *selectedSChain,
 	}
 
 	if req.Source == nil {
@@ -58,18 +64,15 @@ func (w SChainWriter) Write(req *openrtb2.BidRequest, bidder string, hostSChainI
 		req.Source = &sourceCopy
 	}
 
-	schain := openrtb_ext.ExtRequestPrebidSChain{}
-
-	if selectedSChain != nil {
-		schain.SChain = *selectedSChain
-	}
-
 	if hostSChainInfo != "" {
 		var hostSChainNode *openrtb_ext.ExtRequestPrebidSChainSChainNode
 		if err := json.Unmarshal([]byte(hostSChainInfo), &hostSChainNode); err != nil {
 			return err
 		}
 		schain.SChain.Nodes = append(schain.SChain.Nodes, hostSChainNode)
+		if len(schain.SChain.Nodes) == 1 {
+			schain.SChain.Ver = "1.0"
+		}
 	}
 
 	sourceExt, err := json.Marshal(schain)

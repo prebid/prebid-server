@@ -774,6 +774,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("host_cookie.value", "")
 	v.SetDefault("host_cookie.ttl_days", 90)
 	v.SetDefault("host_cookie.max_cookie_size_bytes", 0)
+	v.SetDefault("host_schain_node", "")
 	v.SetDefault("http_client.max_connections_per_host", 0) // unlimited
 	v.SetDefault("http_client.max_idle_connections", 400)
 	v.SetDefault("http_client.max_idle_connections_per_host", 10)
@@ -1189,9 +1190,6 @@ func SetupViper(v *viper.Viper, filename string) {
 
 	// Defaults for account_defaults.events.default_url
 	v.SetDefault("account_defaults.events.default_url", "https://PBS_HOST/event?t=##PBS-EVENTTYPE##&vtype=##PBS-VASTEVENT##&b=##PBS-BIDID##&f=i&a=##PBS-ACCOUNTID##&ts=##PBS-TIMESTAMP##&bidder=##PBS-BIDDER##&int=##PBS-INTEGRATION##&mt=##PBS-MEDIATYPE##&ch=##PBS-CHANNEL##&aid=##PBS-AUCTIONID##&l=##PBS-LINEID##")
-
-	// Where host can define an schain node
-	v.SetDefault("host_schain_node", "")
 }
 
 func migrateConfig(v *viper.Viper) {

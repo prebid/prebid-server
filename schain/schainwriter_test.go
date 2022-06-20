@@ -180,7 +180,7 @@ func TestSChainWriter(t *testing.T) {
 			wantRequest: openrtb2.BidRequest{
 				Ext: nil,
 				Source: &openrtb2.Source{
-					Ext: json.RawMessage(`{"schain":{"complete":0,"nodes":[{"asi":"pbshostcompany.com","sid":"00001","rid":"BidRequest","hp":1}],"ver":""}}`),
+					Ext: json.RawMessage(`{"schain":{"complete":0,"nodes":[{"asi":"pbshostcompany.com","sid":"00001","rid":"BidRequest","hp":1}],"ver":"1.0"}}`),
 				},
 			},
 		},
