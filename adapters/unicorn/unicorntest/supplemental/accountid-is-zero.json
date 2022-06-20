@@ -21,7 +21,8 @@
             }
           },
           "bidder": {
-            "publisherId": 0,
+            "accountId": 0,
+            "publisherId": 123456,
             "mediaId": "test_media",
             "placementId": "test_placement"
           }
