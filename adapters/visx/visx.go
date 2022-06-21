@@ -69,7 +69,7 @@ func (a *VisxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapte
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 
-		if request.Device != nil {
+	if request.Device != nil {
 		if request.Device.IP != "" {
 			headers.Add("X-Forwarded-For", request.Device.IP)
 		}
