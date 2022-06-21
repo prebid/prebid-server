@@ -14,7 +14,8 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 
 	"github.com/buger/jsonparser"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/adcom1"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 )
 
 const badvLimitSize = 50
@@ -327,7 +328,7 @@ func parseRubiconSizes(sizes []openrtb2.Format) (primary int, alt []int, err err
 	return
 }
 
-func resolveVideoSizeId(placement openrtb2.VideoPlacementType, instl int8, impId string) (sizeID int, err error) {
+func resolveVideoSizeId(placement adcom1.VideoPlacementSubtype, instl int8, impId string) (sizeID int, err error) {
 	if placement != 0 {
 		if placement == 1 {
 			return 201, nil

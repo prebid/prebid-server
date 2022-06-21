@@ -8,7 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/adcom1"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -331,7 +332,7 @@ func getBannerRequest(request *openrtb2.BidRequest, reqInfo *adapters.ExtraReque
 
 	var t = fallBackDeviceType(request)
 
-	if t == openrtb2.DeviceTypeMobileTablet {
+	if t == adcom1.DeviceMobile {
 		bfr.Page = request.App.Bundle
 		if request.App.Domain == "" {
 			bfr.Domain = getDomain(request.App.Domain)
@@ -340,7 +341,7 @@ func getBannerRequest(request *openrtb2.BidRequest, reqInfo *adapters.ExtraReque
 		}
 
 		bfr.IsMobile = 1
-	} else if t == openrtb2.DeviceTypePersonalComputer {
+	} else if t == adcom1.DevicePC {
 		bfr.Page = request.Site.Page
 		if request.Site.Domain == "" {
 			bfr.Domain = getDomain(request.Site.Page)
@@ -384,12 +385,12 @@ func getBannerRequest(request *openrtb2.BidRequest, reqInfo *adapters.ExtraReque
 	return bfr, errs
 }
 
-func fallBackDeviceType(request *openrtb2.BidRequest) openrtb2.DeviceType {
+func fallBackDeviceType(request *openrtb2.BidRequest) adcom1.DeviceType {
 	if request.Site != nil {
-		return openrtb2.DeviceTypePersonalComputer
+		return adcom1.DevicePC
 	}
 
-	return openrtb2.DeviceTypeMobileTablet
+	return adcom1.DeviceMobile
 }
 
 func getVideoRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]beachfrontVideoRequest, []error) {

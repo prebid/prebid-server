@@ -14,7 +14,8 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 
 	"github.com/buger/jsonparser"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/adcom1"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -256,7 +257,7 @@ func TestAppendTracker(t *testing.T) {
 
 func TestResolveVideoSizeId(t *testing.T) {
 	testScenarios := []struct {
-		placement   openrtb2.VideoPlacementType
+		placement   adcom1.VideoPlacementSubtype
 		instl       int8
 		impId       string
 		expected    int
@@ -882,10 +883,10 @@ func TestOpenRTBRequestWithVideoImpEvenIfImpHasBannerButAllRequiredVideoFields(t
 				W:           640,
 				H:           360,
 				MIMEs:       []string{"video/mp4"},
-				Protocols:   []openrtb2.Protocol{openrtb2.ProtocolVAST10},
+				Protocols:   []adcom1.MediaCreativeSubtype{adcom1.CreativeVAST10},
 				MaxDuration: 30,
 				Linearity:   1,
-				API:         []openrtb2.APIFramework{},
+				API:         []adcom1.APIFramework{},
 			},
 			Ext: json.RawMessage(`{"bidder": {
 				"zoneId": 8394,
@@ -932,10 +933,10 @@ func TestOpenRTBRequestWithVideoImpAndEnabledRewardedInventoryFlag(t *testing.T)
 				W:           640,
 				H:           360,
 				MIMEs:       []string{"video/mp4"},
-				Protocols:   []openrtb2.Protocol{openrtb2.ProtocolVAST10},
+				Protocols:   []adcom1.MediaCreativeSubtype{adcom1.CreativeVAST10},
 				MaxDuration: 30,
 				Linearity:   1,
-				API:         []openrtb2.APIFramework{},
+				API:         []adcom1.APIFramework{},
 			},
 			Ext: json.RawMessage(`{
 			"prebid":{

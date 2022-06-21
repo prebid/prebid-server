@@ -9,7 +9,7 @@ import (
 	"github.com/prebid/prebid-server/stored_responses"
 
 	"github.com/buger/jsonparser"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/go-gdpr/vendorconsent"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
