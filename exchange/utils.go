@@ -46,7 +46,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 	privacyConfig config.Privacy,
 	gdprPermsBuilder gdpr.PermissionsBuilder,
 	tcf2ConfigBuilder gdpr.TCF2ConfigBuilder,
-	hostSChainNode string,
+	hostSChainNode *openrtb_ext.ExtRequestPrebidSChainSChainNode,
 ) (allowedBidderRequests []BidderRequest, privacyLabels metrics.PrivacyLabels, errs []error) {
 
 	req := auctionReq.BidRequestWrapper
@@ -203,7 +203,7 @@ func getAuctionBidderRequests(auctionRequest AuctionRequest,
 	bidderToSyncerKey map[string]string,
 	impsByBidder map[string][]openrtb2.Imp,
 	aliases map[string]string,
-	hostSChainNode string) ([]BidderRequest, []error) {
+	hostSChainNode *openrtb_ext.ExtRequestPrebidSChainSChainNode) ([]BidderRequest, []error) {
 
 	bidderRequests := make([]BidderRequest, 0, len(impsByBidder))
 	req := auctionRequest.BidRequestWrapper

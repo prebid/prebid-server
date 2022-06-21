@@ -20,7 +20,7 @@ func TestSChainWriter(t *testing.T) {
 		description    string
 		giveRequest    openrtb2.BidRequest
 		giveBidder     string
-		giveHostSChain string
+		giveHostSChain *openrtb_ext.ExtRequestPrebidSChainSChainNode
 		wantRequest    openrtb2.BidRequest
 		wantError      bool
 	}{
@@ -31,7 +31,7 @@ func TestSChainWriter(t *testing.T) {
 				Source: nil,
 			},
 			giveBidder:     "appnexus",
-			giveHostSChain: "",
+			giveHostSChain: nil,
 			wantRequest: openrtb2.BidRequest{
 				Ext:    nil,
 				Source: nil,
@@ -160,8 +160,10 @@ func TestSChainWriter(t *testing.T) {
 				Ext:    json.RawMessage(`{"prebid":{"schains":[{"bidders":["testbidder"],"schain":{"complete":1,"nodes":[{"asi":"appnexus.com","sid":"1792","rid":"6a586290-ae54-44e9-8985-d60821f7bb07","hp":1}],"ver":"1.0"}}]}}`),
 				Source: nil,
 			},
-			giveBidder:     "testbidder",
-			giveHostSChain: `{"asi":"pbshostcompany.com", "sid":"00001", "rid":"BidRequest", "hp":1}`,
+			giveBidder: "testbidder",
+			giveHostSChain: &openrtb_ext.ExtRequestPrebidSChainSChainNode{
+				ASI: "pbshostcompany.com", SID: "00001", RID: "BidRequest", HP: 1,
+			},
 			wantRequest: openrtb2.BidRequest{
 				Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["testbidder"],"schain":{"complete":1,"nodes":[{"asi":"appnexus.com","sid":"1792","rid":"6a586290-ae54-44e9-8985-d60821f7bb07","hp":1}],"ver":"1.0"}}]}}`),
 				Source: &openrtb2.Source{
@@ -175,8 +177,10 @@ func TestSChainWriter(t *testing.T) {
 				Ext:    nil,
 				Source: nil,
 			},
-			giveBidder:     "testbidder",
-			giveHostSChain: `{"asi":"pbshostcompany.com", "sid":"00001", "rid":"BidRequest", "hp":1}`,
+			giveBidder: "testbidder",
+			giveHostSChain: &openrtb_ext.ExtRequestPrebidSChainSChainNode{
+				ASI: "pbshostcompany.com", SID: "00001", RID: "BidRequest", HP: 1,
+			},
 			wantRequest: openrtb2.BidRequest{
 				Ext: nil,
 				Source: &openrtb2.Source{

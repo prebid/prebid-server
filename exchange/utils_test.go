@@ -524,7 +524,7 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 		}.Builder
 
-		bidderRequests, _, err := cleanOpenRTBRequests(context.Background(), test.req, nil, bidderToSyncerKey, &metricsMock, gdpr.SignalNo, privacyConfig, gdprPermsBuilder, tcf2ConfigBuilder, "")
+		bidderRequests, _, err := cleanOpenRTBRequests(context.Background(), test.req, nil, bidderToSyncerKey, &metricsMock, gdpr.SignalNo, privacyConfig, gdprPermsBuilder, tcf2ConfigBuilder, nil)
 		if test.hasError {
 			assert.NotNil(t, err, "Error shouldn't be nil")
 		} else {
@@ -591,7 +591,7 @@ func TestCleanOpenRTBRequestsWithFPD(t *testing.T) {
 			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 		}.Builder
 
-		bidderRequests, _, err := cleanOpenRTBRequests(context.Background(), test.req, nil, bidderToSyncerKey, &metricsMock, gdpr.SignalNo, config.Privacy{}, gdprPermissionsBuilder, tcf2ConfigBuilder, "")
+		bidderRequests, _, err := cleanOpenRTBRequests(context.Background(), test.req, nil, bidderToSyncerKey, &metricsMock, gdpr.SignalNo, config.Privacy{}, gdprPermissionsBuilder, tcf2ConfigBuilder, nil)
 		assert.Empty(t, err, "No errors should be returned")
 		for _, bidderRequest := range bidderRequests {
 			bidderName := bidderRequest.BidderName
@@ -869,7 +869,7 @@ func TestCleanOpenRTBRequestsWithBidResponses(t *testing.T) {
 			config.Privacy{},
 			gdprPermissionsBuilder,
 			tcf2ConfigBuilder,
-			"")
+			nil)
 		assert.Empty(t, err, "No errors should be returned")
 		assert.Len(t, actualBidderRequests, len(test.expectedBidderRequests), "result len doesn't match for testCase %s", test.description)
 		for _, actualBidderRequest := range actualBidderRequests {
@@ -1041,7 +1041,7 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 			privacyConfig,
 			gdprPermissionsBuilder,
 			tcf2ConfigBuilder,
-			"")
+			nil)
 		result := bidderRequests[0]
 
 		assert.Nil(t, errs)
@@ -1111,7 +1111,7 @@ func TestCleanOpenRTBRequestsCCPAErrors(t *testing.T) {
 		bidderToSyncerKey := map[string]string{}
 		metrics := metrics.MetricsEngineMock{}
 
-		_, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, &reqExtStruct, bidderToSyncerKey, &metrics, gdpr.SignalNo, privacyConfig, gdprPermissionsBuilder, tcf2ConfigBuilder, "")
+		_, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, &reqExtStruct, bidderToSyncerKey, &metrics, gdpr.SignalNo, privacyConfig, gdprPermissionsBuilder, tcf2ConfigBuilder, nil)
 
 		assert.ElementsMatch(t, []error{test.expectError}, errs, test.description)
 	}
@@ -1163,7 +1163,7 @@ func TestCleanOpenRTBRequestsCOPPA(t *testing.T) {
 		bidderToSyncerKey := map[string]string{}
 		metrics := metrics.MetricsEngineMock{}
 
-		bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), auctionReq, nil, bidderToSyncerKey, &metrics, gdpr.SignalNo, config.Privacy{}, gdprPermissionsBuilder, tcf2ConfigBuilder, "")
+		bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), auctionReq, nil, bidderToSyncerKey, &metrics, gdpr.SignalNo, config.Privacy{}, gdprPermissionsBuilder, tcf2ConfigBuilder, nil)
 		result := bidderRequests[0]
 
 		assert.Nil(t, errs)
@@ -1258,7 +1258,7 @@ func TestCleanOpenRTBRequestsSChain(t *testing.T) {
 
 		bidderToSyncerKey := map[string]string{}
 		metrics := metrics.MetricsEngineMock{}
-		bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, bidderToSyncerKey, &metrics, gdpr.SignalNo, config.Privacy{}, gdprPermissionsBuilder, tcf2ConfigBuilder, "")
+		bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, bidderToSyncerKey, &metrics, gdpr.SignalNo, config.Privacy{}, gdprPermissionsBuilder, tcf2ConfigBuilder, nil)
 		if test.hasError == true {
 			assert.NotNil(t, errs)
 			assert.Len(t, bidderRequests, 0)
@@ -1325,7 +1325,7 @@ func TestCleanOpenRTBRequestsBidderParams(t *testing.T) {
 		bidderToSyncerKey := map[string]string{}
 		metrics := metrics.MetricsEngineMock{}
 
-		bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, bidderToSyncerKey, &metrics, gdpr.SignalNo, config.Privacy{}, gdprPermissionsBuilder, tcf2ConfigBuilder, "")
+		bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, bidderToSyncerKey, &metrics, gdpr.SignalNo, config.Privacy{}, gdprPermissionsBuilder, tcf2ConfigBuilder, nil)
 		if test.hasError == true {
 			assert.NotNil(t, errs)
 			assert.Len(t, bidderRequests, 0)
@@ -2015,7 +2015,7 @@ func TestCleanOpenRTBRequestsLMT(t *testing.T) {
 
 		bidderToSyncerKey := map[string]string{}
 		metrics := metrics.MetricsEngineMock{}
-		results, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), auctionReq, nil, bidderToSyncerKey, &metrics, gdpr.SignalNo, privacyConfig, gdprPermissionsBuilder, tcf2ConfigBuilder, "")
+		results, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), auctionReq, nil, bidderToSyncerKey, &metrics, gdpr.SignalNo, privacyConfig, gdprPermissionsBuilder, tcf2ConfigBuilder, nil)
 		result := results[0]
 
 		assert.Nil(t, errs)
@@ -2253,7 +2253,7 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			privacyConfig,
 			gdprPermissionsBuilder,
 			tcf2ConfigBuilder,
-			"")
+			nil)
 		result := results[0]
 
 		if test.expectError {
@@ -2358,7 +2358,7 @@ func TestCleanOpenRTBRequestsGDPRBlockBidRequest(t *testing.T) {
 			privacyConfig,
 			gdprPermissionsBuilder,
 			tcf2ConfigBuilder,
-			"",
+			nil,
 		)
 
 		// extract bidder name from each request in the results
@@ -2943,7 +2943,7 @@ func TestCleanOpenRTBRequestsSChainMultipleBidders(t *testing.T) {
 
 	bidderToSyncerKey := map[string]string{}
 	metrics := metrics.MetricsEngineMock{}
-	bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, bidderToSyncerKey, &metrics, gdpr.SignalNo, config.Privacy{}, gdprPermissionsBuilder, tcf2ConfigBuilder, "")
+	bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, bidderToSyncerKey, &metrics, gdpr.SignalNo, config.Privacy{}, gdprPermissionsBuilder, tcf2ConfigBuilder, nil)
 
 	assert.Nil(t, errs)
 	assert.Len(t, bidderRequests, 2, "Bid request count is not 2")

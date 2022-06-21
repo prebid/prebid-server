@@ -65,7 +65,7 @@ type exchange struct {
 	privacyConfig     config.Privacy
 	categoriesFetcher stored_requests.CategoryFetcher
 	bidIDGenerator    BidIDGenerator
-	hostSChainNode    string
+	hostSChainNode    *openrtb_ext.ExtRequestPrebidSChainSChainNode
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
