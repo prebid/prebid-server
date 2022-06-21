@@ -12,20 +12,20 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type KargoAdapter struct {
+type adapter struct {
 	URI string
 }
 
 // Builder builds a new instance of the Kargo adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &KargoAdapter{
+	bidder := &adapter{
 		URI: config.Endpoint, // base url of bidding server
 	}
 	return bidder, nil
 }
 
 // MakeRequests creates outgoing requests to the Kargo bidding server.
-func (a *KargoAdapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	requestJSON, err := json.Marshal(request)
 	if err != nil {
 		return nil, []error{err}
@@ -41,7 +41,7 @@ func (a *KargoAdapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *a
 }
 
 // MakeBids receives a bid response from the Kargo bidding server and creates bids for the publishers auction.
-func (a *KargoAdapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if responseData.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
