@@ -359,8 +359,7 @@ func resolveSite(fpdConfig *openrtb_ext.ORTB2, bidRequestSite *openrtb2.Site, gl
 	if !bidderFpdSiteContentPresent && openRtbGlobalFPD != nil && len(openRtbGlobalFPD[siteContentDataKey]) > 0 {
 		//bidder specific fpd site.content takes precedence over global site.content.data
 		if newSite.Content != nil {
-			siteContent := newSite.Content //creating new copy of shallow site.content
-			newSiteContent := *siteContent
+			newSiteContent := *newSite.Content //creating new copy of shallow site.content
 			newSiteContent.Data = openRtbGlobalFPD[siteContentDataKey]
 			newSite.Content = &newSiteContent
 		} else {
@@ -504,8 +503,7 @@ func resolveApp(fpdConfig *openrtb_ext.ORTB2, bidRequestApp *openrtb2.App, globa
 	if !bidderFpdAppContentPresent && openRtbGlobalFPD != nil && len(openRtbGlobalFPD[appContentDataKey]) > 0 {
 		//bidder specific fpd app.content takes precedence over global app.content.data
 		if newApp.Content != nil {
-			appContent := newApp.Content //creating new copy of shallow app.content
-			newAppContent := *appContent
+			newAppContent := *newApp.Content //creating new copy of shallow app.content
 			newAppContent.Data = openRtbGlobalFPD[appContentDataKey]
 			newApp.Content = &newAppContent
 		} else {
