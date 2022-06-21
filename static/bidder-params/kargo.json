@@ -5,11 +5,11 @@
     "type": "object",
   
     "properties": {
-        "placementId": {
+        "tagid": {
           "type": "string",
-          "description": "Placement ID"
+          "description": "An ID which identifies the adslot placement. Equivalent to the id of target inventory, ad unit code, or placement id"
         }
       },
     
-    "required": ["placementId"]
+    "required": ["tagid"]
   }
