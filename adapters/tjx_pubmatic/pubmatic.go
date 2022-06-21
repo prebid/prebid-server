@@ -20,8 +20,7 @@ import (
 type Region string
 
 const (
-	MatureIOS     Region = "mature_ios"
-	MatureAndroid Region = "mature_android"
+	USEast Region = "us_east"
 )
 
 type PubmaticAdapter struct {
@@ -129,6 +128,10 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters
 
 	if endpoint, ok := a.SupportedRegions[Region(impData.pubmatic.Region)]; ok {
 		thisURI = endpoint
+	}
+
+	if impData.pubmatic.SiteID > 0 {
+		thisURI = thisURI + "&siteId=" + strconv.Itoa(impData.pubmatic.SiteID)
 	}
 
 	// If all the requests are invalid, Call to adaptor is skipped
@@ -430,8 +433,7 @@ func Builder(_ openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, 
 	bidder := &PubmaticAdapter{
 		URI: config.Endpoint,
 		SupportedRegions: map[Region]string{
-			MatureIOS:     config.XAPI.EndpointMatureIOS,
-			MatureAndroid: config.XAPI.EndpointMatureAndroid,
+			USEast: config.Endpoint,
 		},
 	}
 	return bidder, nil

@@ -52,7 +52,8 @@
                             "version": 1,
                             "profile": 5123
                         },
-                        "reward": 1
+                        "reward": 1,
+                        "site_id": 123456
                     }
                 }
             }
@@ -70,7 +71,7 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "https://hbopenbid.pubmatic.com/translator?source=prebid-server",
+                "uri": "https://hbopenbid.pubmatic.com/translator?source=prebid-server&siteId=123456",
                 "body": {
                     "id": "test-video-request",
                     "imp": [

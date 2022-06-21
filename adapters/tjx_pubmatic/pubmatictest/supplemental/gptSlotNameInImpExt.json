@@ -36,7 +36,8 @@
               "version": 1,
               "profile": 5123
             },
-            "mraid_supported": true
+            "mraid_supported": true,
+            "site_id": 123456
           },
           "data": {
             "adserver": {
@@ -61,7 +62,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://hbopenbid.pubmatic.com/translator?source=prebid-server",
+        "uri": "https://hbopenbid.pubmatic.com/translator?source=prebid-server&siteId=123456",
         "body": {
           "id": "test-request-id",
           "imp": [
