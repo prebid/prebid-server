@@ -112,9 +112,7 @@
                     "pmp": {
                         "deals": [
                             {
-                                "id": "TTD",
-                                "ext": {
-                                }
+                                "id": "TTD"
                             }
                         ]
                     },
@@ -223,7 +221,7 @@
                 "w": 300,
                 "h": 300
               },
-              "type": "banner"
+              "type": "native"
             }
           ]
         }
