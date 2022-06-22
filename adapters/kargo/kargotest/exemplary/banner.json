@@ -17,20 +17,11 @@
           "pos": 0,
           "expdir": [1, 2, 3, 4, 5]
         },
-        "video": {
-           "mimes": null
-        },
-        "native": {
-          "request": ""
-        },
         "pmp": {
           "deals": [
             {
               "id": "TTD",
               "ext": {
-                "kargo": {
-                  "isMainPG": false
-                }
               }
             }
           ]
@@ -39,14 +30,6 @@
         "secure": 1,
         "iframebuster": ["ALL"],
         "ext": {
-          "kargo": {
-            "multiresponse": true,
-            "openAdID": "TDID",
-            "transcodingEnabled": true,
-            "whiteopsPredictionID": "123",
-            "auctionType": 1,
-            "adTagVersion": "v1"
-          }
         }
       }
     ],
@@ -85,12 +68,6 @@
     "user": {
       "id": "07fb48ed",
       "ext": {
-        "consent": "consent opt-out",
-        "kargo": {
-          "cerberusIDs": {
-            "86": "82fa2555"
-          }
-        }
       },
       "buyeruid": "345"
     },
@@ -101,16 +78,6 @@
     },
     "tmax": 200,
     "ext": {
-      "kargo": {
-        "handler": "amazon",
-        "adaptor": "none",
-        "adSlotID": "_foobar",
-        "browser": "Chrome1",
-        "openBannerEnabled": true,
-        "openVideoEnabled": false,
-        "pmpBannerEnabled": false,
-        "pmpNativeEnabled": true
-      }
     }
   },
   "httpCalls": [
@@ -135,20 +102,11 @@
                 "pos": 0,
                 "expdir": [1, 2, 3, 4, 5]
               },
-              "video": {
-                "mimes": null
-              },
-              "native": {
-                "request": ""
-              },
               "pmp": {
                 "deals": [
                   {
                     "id": "TTD",
                     "ext": {
-                      "kargo": {
-                        "isMainPG": false
-                      }
                     }
                   }
                 ]
@@ -157,14 +115,6 @@
               "secure": 1,
               "iframebuster": ["ALL"],
               "ext": {
-                "kargo": {
-                  "multiresponse": true,
-                  "openAdID": "TDID",
-                  "transcodingEnabled": true,
-                  "whiteopsPredictionID": "123",
-                  "auctionType": 1,
-                  "adTagVersion": "v1"
-                }
               }
             }
           ],
@@ -203,12 +153,6 @@
           "user": {
             "id": "07fb48ed",
             "ext": {
-              "consent": "consent opt-out",
-              "kargo": {
-                "cerberusIDs": {
-                  "86": "82fa2555"
-                }
-              }
             },
             "buyeruid": "345"
           },
@@ -219,16 +163,6 @@
           },
           "tmax": 200,
           "ext": {
-            "kargo": {
-              "handler": "amazon",
-              "adaptor": "none",
-              "adSlotID": "_foobar",
-              "browser": "Chrome1",
-              "openBannerEnabled": true,
-              "openVideoEnabled": false,
-              "pmpBannerEnabled": false,
-              "pmpNativeEnabled": true
-            }
           }
         }
       },
@@ -241,7 +175,7 @@
               "bid": [
                 {
                   "id": "8b1bdcca",
-                  "impid": "5f4d1e01",
+                  "impid": "8b1bdcca",
                   "price": 10,
                   "nurl": "http://example.com/win/10",
                   "adm": "<div>ad</div>",
@@ -268,7 +202,7 @@
         {
           "bid": {
             "id": "8b1bdcca",
-            "impid": "5f4d1e01",
+            "impid": "8b1bdcca",
             "price": 10,
             "nurl": "http://example.com/win/10",
             "adm": "<div>ad</div>",
