@@ -120,7 +120,14 @@ func cleanOpenRTBRequests(ctx context.Context,
 			version := int(parsedConsent.Version())
 			privacyLabels.GDPRTCFVersion = metrics.TCFVersionToValue(version)
 		}
-		gdprPerms = gdprPermsBuilder(tcf2Cfg)
+
+		gdprRequestInfo := gdpr.RequestInfo{
+			AliasGVLIDs: aliasesGVLIDs,
+			Consent:     consent,
+			GDPRSignal:  gdprSignal,
+			PublisherID: auctionReq.LegacyLabels.PubID,
+		}
+		gdprPerms = gdprPermsBuilder(tcf2Cfg, gdprRequestInfo)
 	}
 
 	// bidder level privacy policies
@@ -132,8 +139,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 
 		// GDPR
 		if gdprEnforced {
-			var publisherID = auctionReq.LegacyLabels.PubID
-			auctionPermissions, err := gdprPerms.AuctionActivitiesAllowed(ctx, bidderRequest.BidderCoreName, bidderRequest.BidderName, publisherID, gdprSignal, consent, aliasesGVLIDs)
+			auctionPermissions, err := gdprPerms.AuctionActivitiesAllowed(ctx, bidderRequest.BidderCoreName, bidderRequest.BidderName)
 			bidRequestAllowed = auctionPermissions.AllowBidRequest
 
 			if err == nil {
@@ -155,7 +161,6 @@ func cleanOpenRTBRequests(ctx context.Context,
 
 		if bidRequestAllowed {
 			privacyEnforcement.Apply(bidderRequest.BidRequest)
-
 			allowedBidderRequests = append(allowedBidderRequests, bidderRequest)
 		}
 	}
@@ -737,6 +742,11 @@ func applyFPD(fpd *firstpartydata.ResolvedFirstPartyData, bidReq *openrtb2.BidRe
 		bidReq.App = fpd.App
 	}
 	if fpd.User != nil {
+		//BuyerUID is a value obtained between fpd extraction and fpd application.
+		//BuyerUID needs to be set back to fpd before applying this fpd to final bidder request
+		if bidReq.User != nil && len(bidReq.User.BuyerUID) > 0 {
+			fpd.User.BuyerUID = bidReq.User.BuyerUID
+		}
 		bidReq.User = fpd.User
 	}
 }
