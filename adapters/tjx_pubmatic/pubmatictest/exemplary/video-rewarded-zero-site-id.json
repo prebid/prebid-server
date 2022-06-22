@@ -52,8 +52,8 @@
                             "version": 1,
                             "profile": 5123
                         },
-                        "reward": 0,
-                        "site_id": 123456
+                        "reward": 1,
+                        "site_id": 0
                     }
                 }
             }
@@ -71,7 +71,7 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "https://hbopenbid.pubmatic.com/translator?source=prebid-server&siteId=123456",
+                "uri": "https://hbopenbid.pubmatic.com/translator?source=prebid-server",
                 "body": {
                     "id": "test-video-request",
                     "imp": [
@@ -110,7 +110,8 @@
                                 "maxbitrate": 10
                             },
                             "ext": {
-                                "pmZoneId": "Zone1,Zone2"
+                                "pmZoneId": "Zone1,Zone2",
+                                "reward": 1
                             }
                         }
                     ],

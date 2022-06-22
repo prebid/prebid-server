@@ -98,9 +98,7 @@ configMapGenerator:
 
       # pubmatic values
       - PBS_ADAPTERS_PUBMATIC_DISABLED="false"
-      - PBS_ADAPTERS_PUBMATIC_ENDPOINT="http://tpe-prebid-service-mocks.default.svc.cluster.local/pubmatic_givemeads"
-      - PBS_ADAPTERS_PUBMATIC_XAPI_ENDPOINT_MATURE_IOS="http://tpe-prebid-service-mocks.default.svc.cluster.local/pubmatic_givemeads2"
-      - PBS_ADAPTERS_PUBMATIC_XAPI_ENDPOINT_MATURE_ANDROID="http://tpe-prebid-service-mocks.default.svc.cluster.local/pubmatic_givemeads3"
+      - PBS_ADAPTERS_PUBMATIC_ENDPOINT="http://tpe-prebid-service-mocks.default.svc.cluster.local/pubmatic_givemeads?pubId=160565"
 
       # rtbhouse values
       - PBS_ADAPTERS_RTBHOUSE_DISABLED="false"
