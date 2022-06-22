@@ -46,13 +46,6 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		return nil, nil
 	}
 
-	if responseData.StatusCode == http.StatusBadRequest {
-		err := &errortypes.BadInput{
-			Message: "Unexpected status code: 400. Bad request from publisher. Run with request.debug = 1 for more info.",
-		}
-		return nil, []error{err}
-	}
-
 	if responseData.StatusCode != http.StatusOK {
 		err := &errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info.", responseData.StatusCode),
@@ -80,9 +73,9 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 }
 
 // getMediaTypeForImp checks the media type on the request Impression.
-func getMediaTypeForImp(impID string, reqImps []openrtb2.Imp) openrtb_ext.BidType {
+func getMediaTypeForImp(bidImpID string, reqImps []openrtb2.Imp) openrtb_ext.BidType {
 	for _, imp := range reqImps {
-		if imp.ID == impID {
+		if imp.ID == bidImpID {
 			switch {
 			case imp.Banner != nil:
 				return openrtb_ext.BidTypeBanner
