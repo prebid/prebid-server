@@ -28,7 +28,7 @@
         }
       }
     ],
-    "cur": ["USD"],
+    "cur": ["JPY"],
     "app": {
       "publisher": {
         "id": "test"
@@ -96,7 +96,7 @@
             "ver": "1.9.0"
           },
           "at": 1,
-          "cur": ["USD"],
+          "cur": ["JPY"],
           "device": {
             "connectiontype": 1,
             "ext": {

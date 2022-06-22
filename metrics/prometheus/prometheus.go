@@ -27,6 +27,7 @@ type Metrics struct {
 	impressionsLegacy            prometheus.Counter
 	prebidCacheWriteTimer        *prometheus.HistogramVec
 	requests                     *prometheus.CounterVec
+	debugRequests                prometheus.Counter
 	requestsTimer                *prometheus.HistogramVec
 	requestsQueueTimer           *prometheus.HistogramVec
 	requestsWithoutCookie        *prometheus.CounterVec
@@ -68,7 +69,8 @@ type Metrics struct {
 	syncerSets     *prometheus.CounterVec
 
 	// Account Metrics
-	accountRequests *prometheus.CounterVec
+	accountRequests      *prometheus.CounterVec
+	accountDebugRequests *prometheus.CounterVec
 
 	metricsDisabled config.DisabledMetrics
 }
@@ -181,6 +183,10 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"requests",
 		"Count of total requests to Prebid Server labeled by type and status.",
 		[]string{requestTypeLabel, requestStatusLabel})
+
+	metrics.debugRequests = newCounterWithoutLabels(cfg, reg,
+		"debug_requests",
+		"Count of total requests to Prebid Server that have debug enabled")
 
 	metrics.requestsTimer = newHistogramVec(cfg, reg,
 		"request_time_seconds",
@@ -370,6 +376,11 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"Count of total requests to Prebid Server labeled by account.",
 		[]string{accountLabel})
 
+	metrics.accountDebugRequests = newCounter(cfg, reg,
+		"account_debug_requests",
+		"Count of total requests to Prebid Server that have debug enabled labled by account",
+		[]string{accountLabel})
+
 	metrics.requestsQueueTimer = newHistogramVec(cfg, reg,
 		"request_queue_time",
 		"Seconds request was waiting in queue",
@@ -474,6 +485,17 @@ func (m *Metrics) RecordRequest(labels metrics.Labels) {
 		m.accountRequests.With(prometheus.Labels{
 			accountLabel: labels.PubID,
 		}).Inc()
+	}
+}
+
+func (m *Metrics) RecordDebugRequest(debugEnabled bool, pubID string) {
+	if debugEnabled {
+		m.debugRequests.Inc()
+		if !m.metricsDisabled.AccountDebug && pubID != metrics.PublisherUnknown {
+			m.accountDebugRequests.With(prometheus.Labels{
+				accountLabel: pubID,
+			}).Inc()
+		}
 	}
 }
 

@@ -107,6 +107,7 @@ const (
 	BidderApplogy           BidderName = "applogy"
 	BidderAppnexus          BidderName = "appnexus"
 	BidderAudienceNetwork   BidderName = "audienceNetwork"
+	BidderAutomatad         BidderName = "automatad"
 	BidderAvocet            BidderName = "avocet"
 	BidderAxonix            BidderName = "axonix"
 	BidderBeachfront        BidderName = "beachfront"
@@ -116,6 +117,7 @@ const (
 	BidderBidmyadz          BidderName = "bidmyadz"
 	BidderBidsCube          BidderName = "bidscube"
 	BidderBizzclick         BidderName = "bizzclick"
+	BidderBliink            BidderName = "bliink"
 	BidderBmtm              BidderName = "bmtm"
 	BidderBrightroll        BidderName = "brightroll"
 	BidderCoinzilla         BidderName = "coinzilla"
@@ -197,9 +199,11 @@ const (
 	BidderSonobi            BidderName = "sonobi"
 	BidderSovrn             BidderName = "sovrn"
 	BidderStreamkey         BidderName = "streamkey"
+	BidderStroeerCore       BidderName = "stroeerCore"
 	BidderSynacormedia      BidderName = "synacormedia"
 	BidderTappx             BidderName = "tappx"
 	BidderTelaria           BidderName = "telaria"
+	BidderTrafficGate       BidderName = "trafficgate"
 	BidderTriplelift        BidderName = "triplelift"
 	BidderTripleliftNative  BidderName = "triplelift_native"
 	BidderTrustX            BidderName = "trustx"
@@ -256,6 +260,7 @@ func CoreBidderNames() []BidderName {
 		BidderApplogy,
 		BidderAppnexus,
 		BidderAudienceNetwork,
+		BidderAutomatad,
 		BidderAvocet,
 		BidderAxonix,
 		BidderBeachfront,
@@ -265,6 +270,7 @@ func CoreBidderNames() []BidderName {
 		BidderBidmyadz,
 		BidderBidsCube,
 		BidderBizzclick,
+		BidderBliink,
 		BidderBmtm,
 		BidderBrightroll,
 		BidderCoinzilla,
@@ -346,9 +352,11 @@ func CoreBidderNames() []BidderName {
 		BidderSonobi,
 		BidderSovrn,
 		BidderStreamkey,
+		BidderStroeerCore,
 		BidderSynacormedia,
 		BidderTappx,
 		BidderTelaria,
+		BidderTrafficGate,
 		BidderTriplelift,
 		BidderTripleliftNative,
 		BidderTrustX,

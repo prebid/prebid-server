@@ -409,4 +409,5 @@ type MetricsEngine interface {
 	RecordTimeoutNotice(success bool)
 	RecordRequestPrivacy(privacy PrivacyLabels)
 	RecordAdapterGDPRRequestBlocked(adapterName openrtb_ext.BidderName)
+	RecordDebugRequest(debugEnabled bool, pubId string)
 }
