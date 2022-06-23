@@ -5,7 +5,7 @@ type Experiment struct {
 	AdCerts ExperimentAdsCert `mapstructure:"adscert"`
 }
 
-//ExperimentAdCerts configures and enables functionality to generate and send Ads Cert Auth header to bidders
+//ExperimentAdsCert configures and enables functionality to generate and send Ads Cert Auth header to bidders
 type ExperimentAdsCert struct {
 	Enabled   bool             `mapstructure:"enabled"`
 	InProcess AdsCertInProcess `mapstructure:"inprocess"`
