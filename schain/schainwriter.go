@@ -8,9 +8,9 @@ import (
 )
 
 // NewSChainWriter creates an ORTB 2.5 schain writer instance
-func NewSChainWriter(reqExt *openrtb_ext.ExtRequest) (*SChainWriter, error) {
+func NewSChainWriter(reqExt *openrtb_ext.ExtRequest, hostSChainNode *openrtb_ext.ExtRequestPrebidSChainSChainNode) (*SChainWriter, error) {
 	if !extPrebidSChainExists(reqExt) {
-		return &SChainWriter{}, nil
+		return &SChainWriter{hostSChainNode: hostSChainNode}, nil
 	}
 
 	sChainsByBidder, err := BidderToPrebidSChains(reqExt.Prebid.SChains)
@@ -20,6 +20,7 @@ func NewSChainWriter(reqExt *openrtb_ext.ExtRequest) (*SChainWriter, error) {
 
 	writer := SChainWriter{
 		sChainsByBidder: sChainsByBidder,
+		hostSChainNode:  hostSChainNode,
 	}
 	return &writer, nil
 }
@@ -28,12 +29,13 @@ func NewSChainWriter(reqExt *openrtb_ext.ExtRequest) (*SChainWriter, error) {
 // location (req.ext.prebid.schain) to the ORTB 2.5 location (req.source.ext)
 type SChainWriter struct {
 	sChainsByBidder map[string]*openrtb_ext.ExtRequestPrebidSChainSChain
+	hostSChainNode  *openrtb_ext.ExtRequestPrebidSChainSChainNode
 }
 
 // Write selects an schain from the multi-schain ORTB 2.5 location (req.ext.prebid.schains) for the specified bidder
 // and copies it to the ORTB 2.5 location (req.source.ext). If no schain exists for the bidder in the multi-schain
 // location and no wildcard schain exists, the request is not modified.
-func (w SChainWriter) Write(req *openrtb2.BidRequest, bidder string, hostSChainNode *openrtb_ext.ExtRequestPrebidSChainSChainNode) error {
+func (w SChainWriter) Write(req *openrtb2.BidRequest, bidder string) {
 	const sChainWildCard = "*"
 	var selectedSChain *openrtb_ext.ExtRequestPrebidSChainSChain
 
@@ -41,11 +43,11 @@ func (w SChainWriter) Write(req *openrtb2.BidRequest, bidder string, hostSChainN
 	bidderSChain := w.sChainsByBidder[bidder]
 
 	// source should not be modified
-	if bidderSChain == nil && wildCardSChain == nil && hostSChainNode == nil {
-		return nil
+	if bidderSChain == nil && wildCardSChain == nil && w.hostSChainNode == nil {
+		return
 	}
 
-	selectedSChain = &openrtb_ext.ExtRequestPrebidSChainSChain{}
+	selectedSChain = &openrtb_ext.ExtRequestPrebidSChainSChain{Ver: "1.0"}
 
 	if bidderSChain != nil {
 		selectedSChain = bidderSChain
@@ -64,18 +66,15 @@ func (w SChainWriter) Write(req *openrtb2.BidRequest, bidder string, hostSChainN
 		req.Source = &sourceCopy
 	}
 
-	if hostSChainNode != nil {
-		schain.SChain.Nodes = append(schain.SChain.Nodes, hostSChainNode)
-		if len(schain.SChain.Nodes) == 1 {
-			schain.SChain.Ver = "1.0"
-		}
+	if w.hostSChainNode != nil {
+		schain.SChain.Nodes = append(schain.SChain.Nodes, w.hostSChainNode)
 	}
 
 	sourceExt, err := json.Marshal(schain)
 	if err == nil {
 		req.Source.Ext = sourceExt
 	}
-	return nil
+
 }
 
 // extPrebidSChainExists checks if an schain exists in the ORTB 2.5 req.ext.prebid.schain location

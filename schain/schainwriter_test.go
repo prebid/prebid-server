@@ -201,7 +201,7 @@ func TestSChainWriter(t *testing.T) {
 			}
 		}
 
-		writer, err := NewSChainWriter(reqExt)
+		writer, err := NewSChainWriter(reqExt, tt.giveHostSChain)
 
 		if tt.wantError {
 			assert.NotNil(t, err)
@@ -210,7 +210,7 @@ func TestSChainWriter(t *testing.T) {
 			assert.Nil(t, err)
 			assert.NotNil(t, writer)
 
-			writer.Write(&tt.giveRequest, tt.giveBidder, tt.giveHostSChain)
+			writer.Write(&tt.giveRequest, tt.giveBidder)
 
 			assert.Equal(t, tt.wantRequest, tt.giveRequest, tt.description)
 		}

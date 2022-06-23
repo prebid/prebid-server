@@ -145,6 +145,7 @@ func TestDefaults(t *testing.T) {
 	cmpStrings(t, "stored_requests.filesystem.directorypath", "./stored_requests/data/by_id", cfg.StoredRequests.Files.Path)
 	cmpBools(t, "auto_gen_source_tid", cfg.AutoGenSourceTID, true)
 	cmpBools(t, "generate_bid_id", cfg.GenerateBidID, false)
+	cmpNils(t, "host_schain_node", cfg.HostSChainNode)
 
 	//Assert purpose VendorExceptionMap hash tables were built correctly
 	expectedTCF2 := TCF2{
@@ -376,6 +377,11 @@ request_validation:
     ipv4_private_networks: ["1.1.1.0/24"]
     ipv6_private_networks: ["1111::/16", "2222::/16"]
 generate_bid_id: true
+host_schain_node:
+    asi: "pbshostcompany.com"
+    sid: "00001"
+    rid: "BidRequest"
+    hp: 1
 `)
 
 var adapterExtraInfoConfig = []byte(`
@@ -463,6 +469,10 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "http_client_cache.idle_connection_timeout_seconds", cfg.CacheClient.IdleConnTimeout, 3)
 	cmpInts(t, "gdpr.host_vendor_id", cfg.GDPR.HostVendorID, 15)
 	cmpStrings(t, "gdpr.default_value", cfg.GDPR.DefaultValue, "1")
+	cmpStrings(t, "host_schain_node", cfg.HostSChainNode.ASI, "pbshostcompany.com")
+	cmpStrings(t, "host_schain_node", cfg.HostSChainNode.SID, "00001")
+	cmpStrings(t, "host_schain_node", cfg.HostSChainNode.RID, "BidRequest")
+	cmpInts(t, "host_schain_node", cfg.HostSChainNode.HP, 1)
 
 	//Assert the NonStandardPublishers was correctly unmarshalled
 	assert.Equal(t, []string{"pub1", "pub2"}, cfg.GDPR.NonStandardPublishers, "gdpr.non_standard_publishers")

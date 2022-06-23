@@ -217,7 +217,7 @@ func getAuctionBidderRequests(auctionRequest AuctionRequest,
 		return nil, []error{err}
 	}
 
-	sChainWriter, err := schain.NewSChainWriter(requestExt)
+	sChainWriter, err := schain.NewSChainWriter(requestExt, hostSChainNode)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -229,10 +229,7 @@ func getAuctionBidderRequests(auctionRequest AuctionRequest,
 		reqCopy := *req.BidRequest
 		reqCopy.Imp = imps
 
-		err := sChainWriter.Write(&reqCopy, bidder, hostSChainNode)
-		if err != nil {
-			return nil, []error{err}
-		}
+		sChainWriter.Write(&reqCopy, bidder)
 
 		if len(bidderParamsInReqExt) != 0 {
 
