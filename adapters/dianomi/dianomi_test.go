@@ -3,15 +3,14 @@ package dianomi
 import (
 	"testing"
 
+	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
-
-	"github.com/prebid/prebid-server/adapters/adapterstest"
 )
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderDianomi, config.Adapter{
-		Endpoint: "https://dev-prebid.dianomi.net/cgi-bin/smartads_prebid.pl"})
+		Endpoint: "https://prebid-server-aws.dianomi.net/openrtb2/auction"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)

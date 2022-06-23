@@ -1,5 +1,10 @@
 package openrtb_ext
 
-type ImpExtDianomi struct {
-	SmartadID int `json:"smartadID"`
+import (
+	"encoding/json"
+)
+
+type ExtImpDianomi struct {
+	SmartadId json.Number `json:"smartadId,omitempty"`
+	PriceType string      `json:"priceType,omitempty"`
 }
