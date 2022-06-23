@@ -41,7 +41,8 @@ var cookieSyncBidderFilterAllowAll = usersync.NewUniformBidderFilter(usersync.Bi
 func NewCookieSyncEndpoint(
 	syncersByBidder map[string]usersync.Syncer,
 	config *config.Configuration,
-	gdprPermissions gdpr.Permissions,
+	gdprPermsBuilder gdpr.PermissionsBuilder,
+	tcf2CfgBuilder gdpr.TCF2ConfigBuilder,
 	metrics metrics.MetricsEngine,
 	pbsAnalytics analytics.PBSAnalyticsModule,
 	accountsFetcher stored_requests.AccountFetcher,
@@ -56,10 +57,11 @@ func NewCookieSyncEndpoint(
 		chooser: usersync.NewChooser(syncersByBidder),
 		config:  config,
 		privacyConfig: usersyncPrivacyConfig{
-			gdprConfig:      config.GDPR,
-			gdprPermissions: gdprPermissions,
-			ccpaEnforce:     config.CCPA.Enforce,
-			bidderHashSet:   bidderHashSet,
+			gdprConfig:             config.GDPR,
+			gdprPermissionsBuilder: gdprPermsBuilder,
+			tcf2ConfigBuilder:      tcf2CfgBuilder,
+			ccpaEnforce:            config.CCPA.Enforce,
+			bidderHashSet:          bidderHashSet,
 		},
 		metrics:         metrics,
 		pbsAnalytics:    pbsAnalytics,
@@ -169,6 +171,14 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 		return usersync.Request{}, privacy.Policies{}, err
 	}
 
+	gdprRequestInfo := gdpr.RequestInfo{
+		Consent:    request.GDPRConsent,
+		GDPRSignal: gdprSignal,
+	}
+
+	tcf2Cfg := c.privacyConfig.tcf2ConfigBuilder(c.privacyConfig.gdprConfig.TCF2, account.GDPR)
+	gdprPerms := c.privacyConfig.gdprPermissionsBuilder(tcf2Cfg, gdprRequestInfo)
+
 	rx := usersync.Request{
 		Bidders: request.Bidders,
 		Cooperative: usersync.Cooperative{
@@ -177,9 +187,7 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 		},
 		Limit: request.Limit,
 		Privacy: usersyncPrivacy{
-			gdprPermissions:  c.privacyConfig.gdprPermissions,
-			gdprSignal:       gdprSignal,
-			gdprConsent:      request.GDPRConsent,
+			gdprPermissions:  gdprPerms,
 			ccpaParsedPolicy: ccpaParsedPolicy,
 		},
 		SyncTypeFilter: syncTypeFilter,
@@ -418,26 +426,25 @@ type cookieSyncResponseSync struct {
 }
 
 type usersyncPrivacyConfig struct {
-	gdprConfig      config.GDPR
-	gdprPermissions gdpr.Permissions
-	ccpaEnforce     bool
-	bidderHashSet   map[string]struct{}
+	gdprConfig             config.GDPR
+	gdprPermissionsBuilder gdpr.PermissionsBuilder
+	tcf2ConfigBuilder      gdpr.TCF2ConfigBuilder
+	ccpaEnforce            bool
+	bidderHashSet          map[string]struct{}
 }
 
 type usersyncPrivacy struct {
 	gdprPermissions  gdpr.Permissions
-	gdprSignal       gdpr.Signal
-	gdprConsent      string
 	ccpaParsedPolicy ccpa.ParsedPolicy
 }
 
 func (p usersyncPrivacy) GDPRAllowsHostCookie() bool {
-	allowCookie, err := p.gdprPermissions.HostCookiesAllowed(context.Background(), p.gdprSignal, p.gdprConsent)
+	allowCookie, err := p.gdprPermissions.HostCookiesAllowed(context.Background())
 	return err == nil && allowCookie
 }
 
 func (p usersyncPrivacy) GDPRAllowsBidderSync(bidder string) bool {
-	allowSync, err := p.gdprPermissions.BidderSyncAllowed(context.Background(), openrtb_ext.BidderName(bidder), p.gdprSignal, p.gdprConsent)
+	allowSync, err := p.gdprPermissions.BidderSyncAllowed(context.Background(), openrtb_ext.BidderName(bidder))
 	return err == nil && allowSync
 }
 
