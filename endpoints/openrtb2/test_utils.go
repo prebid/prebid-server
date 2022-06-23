@@ -1101,13 +1101,21 @@ func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.Bid
 	mockCurrencyConverter := currency.NewRateConverter(mockCurrencyRatesServer.Client(), mockCurrencyRatesServer.URL, time.Second)
 	mockCurrencyConverter.Run()
 
+	gdprPermsBuilder := fakePermissionsBuilder{
+		permissions: &fakePermissions{},
+	}.Builder
+	tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
+		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
+	}.Builder
+
 	return exchange.NewExchange(adapterMap,
 		&wellBehavedCache{},
 		cfg,
 		nil,
 		met,
 		bidderInfos,
-		gdpr.NewVendorListFetcher(context.Background(), config.GDPR{}, &http.Client{}, gdpr.VendorListURLMaker),
+		gdprPermsBuilder,
+		tcf2ConfigBuilder,
 		mockCurrencyConverter,
 		mockFetcher,
 	), mockBidServersArray
@@ -1253,4 +1261,37 @@ func readFile(t *testing.T, filename string) []byte {
 		t.Fatalf("Failed to read file %s: %v", filename, err)
 	}
 	return data
+}
+
+type fakePermissionsBuilder struct {
+	permissions gdpr.Permissions
+}
+
+func (fpb fakePermissionsBuilder) Builder(gdpr.TCF2ConfigReader, gdpr.RequestInfo) gdpr.Permissions {
+	return fpb.permissions
+}
+
+type fakeTCF2ConfigBuilder struct {
+	cfg gdpr.TCF2ConfigReader
+}
+
+func (fcr fakeTCF2ConfigBuilder) Builder(hostConfig config.TCF2, accountConfig config.AccountGDPR) gdpr.TCF2ConfigReader {
+	return fcr.cfg
+}
+
+type fakePermissions struct {
+}
+
+func (p *fakePermissions) HostCookiesAllowed(ctx context.Context) (bool, error) {
+	return true, nil
+}
+
+func (p *fakePermissions) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName) (bool, error) {
+	return true, nil
+}
+
+func (p *fakePermissions) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (permissions gdpr.AuctionPermissions, err error) {
+	return gdpr.AuctionPermissions{
+		AllowBidRequest: true,
+	}, nil
 }

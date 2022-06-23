@@ -156,6 +156,54 @@ func TestRequestMetric(t *testing.T) {
 		})
 }
 
+func TestDebugRequestMetric(t *testing.T) {
+	testCases := []struct {
+		description                      string
+		givenDebugEnabledFlag            bool
+		givenAccountDebugMetricsDisabled bool
+		expectedAccountDebugCount        float64
+		expectedDebugCount               float64
+	}{
+		{
+			description:                      "Debug is enabled and account debug is enabled, both metrics should be updated",
+			givenDebugEnabledFlag:            true,
+			givenAccountDebugMetricsDisabled: false,
+			expectedDebugCount:               1,
+			expectedAccountDebugCount:        1,
+		},
+		{
+			description:                      "Debug and account debug are disabled, niether metrics should be updated",
+			givenDebugEnabledFlag:            false,
+			givenAccountDebugMetricsDisabled: true,
+			expectedDebugCount:               0,
+			expectedAccountDebugCount:        0,
+		},
+		{
+			description:                      "Debug is enabled but account debug is disabled, only non-account debug count should increment",
+			givenDebugEnabledFlag:            true,
+			givenAccountDebugMetricsDisabled: true,
+			expectedDebugCount:               1,
+			expectedAccountDebugCount:        0,
+		},
+		{
+			description:                      "Debug is disabled and account debug is enabled, niether metrics should increment",
+			givenDebugEnabledFlag:            false,
+			givenAccountDebugMetricsDisabled: false,
+			expectedDebugCount:               0,
+			expectedAccountDebugCount:        0,
+		},
+	}
+
+	for _, test := range testCases {
+		m := createMetricsForTesting()
+		m.metricsDisabled.AccountDebug = test.givenAccountDebugMetricsDisabled
+		m.RecordDebugRequest(test.givenDebugEnabledFlag, "acct-id")
+
+		assertCounterVecValue(t, "", "account debug requests", m.accountDebugRequests, test.expectedAccountDebugCount, prometheus.Labels{accountLabel: "acct-id"})
+		assertCounterValue(t, "", "debug requests", m.debugRequests, test.expectedDebugCount)
+	}
+}
+
 func TestRequestMetricWithoutCookie(t *testing.T) {
 	requestType := metrics.ReqTypeORTB2Web
 	performTest := func(m *Metrics, cookieFlag metrics.CookieFlag) {
