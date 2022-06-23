@@ -2366,6 +2366,17 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 		gdprDefaultValue = gdpr.SignalNo
 	}
 
+	schainFilename := strings.Contains(filename, "schain")
+	hostSChainNode := &openrtb_ext.ExtRequestPrebidSChainSChainNode{}
+
+	if schainFilename {
+		hostSChainNode = &openrtb_ext.ExtRequestPrebidSChainSChainNode{
+			ASI: "pbshostcompany.com", SID: "00001", RID: "BidRequest", HP: 1,
+		}
+	} else {
+		hostSChainNode = nil
+	}
+
 	return &exchange{
 		adapterMap:        bidderAdapters,
 		me:                metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.CoreBidderNames(), nil),
@@ -2381,6 +2392,7 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 		bidderToSyncerKey: bidderToSyncerKey,
 		externalURL:       "http://localhost",
 		bidIDGenerator:    bidIDGenerator,
+		hostSChainNode:    hostSChainNode,
 	}
 }
 
