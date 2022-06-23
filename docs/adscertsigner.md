@@ -51,7 +51,7 @@ Host config, can be set using env variables or yaml config, use proper format:
 "experiment": {
     "adscert": {
       "enabled": true,
-      "in-process": {
+      "inprocess": {
         "origin": "http://adscertdelivery.com",
         "key": "U6KBGSEQ5kuMn3s_ohxYbmdmG7Xoos9hR3fJ_dDOi6Q",
         "domain_check_interval_seconds": 30,

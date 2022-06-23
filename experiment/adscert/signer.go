@@ -24,7 +24,7 @@ func NewAdCertsSigner(experimentAdCertsConfig config.ExperimentAdsCert) (Signer,
 		return &NilSigner{}, nil
 	}
 	if len(experimentAdCertsConfig.InProcess.Origin) > 0 && len(experimentAdCertsConfig.Remote.Url) > 0 {
-		return nil, errors.New("both in-process and remote signers are specified. Please use just one signer")
+		return nil, errors.New("both inprocess and remote signers are specified. Please use just one signer")
 	}
 	if len(experimentAdCertsConfig.InProcess.Origin) > 0 {
 		return newInProcessSigner(experimentAdCertsConfig.InProcess), nil

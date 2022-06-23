@@ -1192,10 +1192,10 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("account_defaults.events.default_url", "https://PBS_HOST/event?t=##PBS-EVENTTYPE##&vtype=##PBS-VASTEVENT##&b=##PBS-BIDID##&f=i&a=##PBS-ACCOUNTID##&ts=##PBS-TIMESTAMP##&bidder=##PBS-BIDDER##&int=##PBS-INTEGRATION##&mt=##PBS-MEDIATYPE##&ch=##PBS-CHANNEL##&aid=##PBS-AUCTIONID##&l=##PBS-LINEID##")
 
 	v.SetDefault("experiment.adscert.enabled", false)
-	v.SetDefault("experiment.adscert.in-process.origin", "")
-	v.SetDefault("experiment.adscert.in-process.key", "")
-	v.SetDefault("experiment.adscert.in-process.domain_check_interval_seconds", 30)
-	v.SetDefault("experiment.adscert.in-process.domain_renewal_interval_seconds", 30)
+	v.SetDefault("experiment.adscert.inprocess.origin", "")
+	v.SetDefault("experiment.adscert.inprocess.key", "")
+	v.SetDefault("experiment.adscert.inprocess.domain_check_interval_seconds", 30)
+	v.SetDefault("experiment.adscert.inprocess.domain_renewal_interval_seconds", 30)
 	v.SetDefault("experiment.adscert.remote.url", "")
 	v.SetDefault("experiment.adscert.remote.signing_timeout_ms", 5)
 }

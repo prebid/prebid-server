@@ -11,7 +11,7 @@ import (
 func TestNilSigner(t *testing.T) {
 	config := config.ExperimentAdsCert{Enabled: true, InProcess: config.AdsCertInProcess{Origin: ""}, Remote: config.AdsCertRemote{Url: ""}}
 	signer, err := NewAdCertsSigner(config)
-	assert.NoError(t, err, "error should not be returned if not in-process nor remote signer defined, NilSigner should be returned instead")
+	assert.NoError(t, err, "error should not be returned if not inprocess nor remote signer defined, NilSigner should be returned instead")
 	message, err := signer.Sign("test.com", nil)
 	assert.NoError(t, err, "NilSigner should not return an error")
 	assert.Equal(t, "", message, "incorrect message returned NilSigner")
@@ -29,8 +29,8 @@ func TestNilSignerForAdsCertDisabled(t *testing.T) {
 func TestInPrecessAndRemoteSignersDefined(t *testing.T) {
 	config := config.ExperimentAdsCert{Enabled: true, InProcess: config.AdsCertInProcess{Origin: "test.com"}, Remote: config.AdsCertRemote{Url: "test.com"}}
 	signer, err := NewAdCertsSigner(config)
-	assert.Nil(t, signer, "no signer should be returned if both in-process and remote signers are defined")
-	assert.Error(t, err, "error should be returned if both in-process and remote signers are defined")
+	assert.Nil(t, signer, "no signer should be returned if both inprocess and remote signers are defined")
+	assert.Error(t, err, "error should be returned if both inprocess and remote signers are defined")
 
 }
 
