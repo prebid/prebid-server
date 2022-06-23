@@ -49,14 +49,25 @@ const (
 	videoWithPicturesText  int32 = 11
 )
 
+// interaction type
+const (
+	appPromotion int32 = 3
+	appDownload  int32 = 2
+)
+
 // ads type
 const (
-	banner       int32 = 8
-	native       int32 = 3
-	roll         int32 = 60
-	rewarded     int32 = 7
-	splash       int32 = 1
-	interstitial int32 = 12
+	banner            int32 = 8
+	native            int32 = 3
+	roll              int32 = 60
+	interstitial      int32 = 12
+	rewarded          int32 = 7
+	splash            int32 = 1
+	magazinelock      int32 = 2
+	cloudFolder       int32 = 5
+	appIcon           int32 = 9
+	audio             int32 = 17
+	smartScreenSplash int32 = 18
 )
 
 type huaweiAdsRequest struct {
@@ -447,47 +458,69 @@ func getHuaweiAdsReqJson(request *huaweiAdsRequest, openRTBRequest *openrtb2.Bid
 
 func getHuaweiAdsReqAdslot30(huaweiAdsImpExt *openrtb_ext.ExtImpHuaweiAds,
 	openRTBImp *openrtb2.Imp, openRTBRequest *openrtb2.BidRequest) (adslot30, error) {
-	adtypeLower := strings.ToLower(huaweiAdsImpExt.Adtype)
+	adtype := convertAdtypeString2Integer(strings.ToLower(huaweiAdsImpExt.Adtype))
 	var adslot30 = adslot30{
 		Slotid: huaweiAdsImpExt.SlotId,
-		Adtype: convertAdtypeString2Integer(adtypeLower),
+		Adtype: adtype,
 		Test:   int32(openRTBRequest.Test),
 	}
-
-	if openRTBImp.Banner != nil {
-		if openRTBImp.Banner.W != nil && openRTBImp.Banner.H != nil {
-			adslot30.W = *openRTBImp.Banner.W
-			adslot30.H = *openRTBImp.Banner.H
-		}
-		if len(openRTBImp.Banner.Format) != 0 {
-			var formats = make([]format, 0, len(openRTBImp.Banner.Format))
-			for _, f := range openRTBImp.Banner.Format {
-				if f.H != 0 && f.W != 0 {
-					formats = append(formats, format{f.W, f.H})
-				}
-			}
-			adslot30.Format = formats
-		}
-	} else if openRTBImp.Native != nil {
-		if err := getNativeFormat(&adslot30, openRTBImp); err != nil {
-			return adslot30, err
-		}
-	}
-
-	// Currently does not support roll type ads, roll ad need TotalDuration
-	if adtypeLower == "roll" {
-		if openRTBImp.Video != nil && openRTBImp.Video.MaxDuration >= 0 {
-			adslot30.TotalDuration = int32(openRTBImp.Video.MaxDuration)
-		} else {
-			return adslot30, errors.New("GetHuaweiAdsReqAdslot30: MaxDuration is empty when adtype is roll.")
-		}
+	if err := checkAndExtractOpenrtbFormat(&adslot30, adtype, huaweiAdsImpExt.Adtype, openRTBImp); err != nil {
+		return adslot30, err
 	}
 	return adslot30, nil
 }
 
+// opentrb :  huawei adtype
+// banner <-> banner, interstitial
+// native <-> native
+// video <->  banner, roll, interstitial, rewarded
+func checkAndExtractOpenrtbFormat(adslot30 *adslot30, adtype int32, yourAdtype string, openRTBImp *openrtb2.Imp) error {
+	if openRTBImp.Banner != nil {
+		if adtype != banner && adtype != interstitial {
+			return errors.New("checkAndExtractOpenrtbFormat: request has banner, doesn't correspond to huawei adtype " + yourAdtype)
+		}
+		getBannerFormat(adslot30, openRTBImp)
+	} else if openRTBImp.Native != nil {
+		if adtype != native {
+			return errors.New("checkAndExtractOpenrtbFormat: request has native, doesn't correspond to huawei adtype " + yourAdtype)
+		}
+		if err := getNativeFormat(adslot30, openRTBImp); err != nil {
+			return err
+		}
+	} else if openRTBImp.Video != nil {
+		if adtype != banner && adtype != interstitial && adtype != rewarded && adtype != roll {
+			return errors.New("checkAndExtractOpenrtbFormat: request has video, doesn't correspond to huawei adtype " + yourAdtype)
+		}
+		if err := getVideoFormat(adslot30, adtype, openRTBImp); err != nil {
+			return err
+		}
+	} else if openRTBImp.Audio != nil {
+		return errors.New("checkAndExtractOpenrtbFormat: request has audio, not currently supported")
+	} else {
+		return errors.New("checkAndExtractOpenrtbFormat: bad openrtb request")
+	}
+	return nil
+}
+
+func getBannerFormat(adslot30 *adslot30, openRTBImp *openrtb2.Imp) {
+	if openRTBImp.Banner.W != nil && openRTBImp.Banner.H != nil {
+		adslot30.W = *openRTBImp.Banner.W
+		adslot30.H = *openRTBImp.Banner.H
+	}
+	if len(openRTBImp.Banner.Format) != 0 {
+		var formats = make([]format, 0, len(openRTBImp.Banner.Format))
+		for _, f := range openRTBImp.Banner.Format {
+			if f.H != 0 && f.W != 0 {
+				formats = append(formats, format{f.W, f.H})
+			}
+		}
+		adslot30.Format = formats
+	}
+}
+
 func getNativeFormat(adslot30 *adslot30, openRTBImp *openrtb2.Imp) error {
 	if openRTBImp.Native.Request == "" {
-		return errors.New("extractAdmNative: imp.Native.Request is empty")
+		return errors.New("getNativeFormat: imp.Native.Request is empty")
 	}
 
 	var nativePayload nativeRequests.Request
@@ -495,24 +528,30 @@ func getNativeFormat(adslot30 *adslot30, openRTBImp *openrtb2.Imp) error {
 		return err
 	}
 
-	var numImage = 0
+	// only compute the main image number, type = native1.ImageAssetTypeMain
+	var numMainImage = 0
 	var numVideo = 0
 	var width int64
 	var height int64
 	for _, asset := range nativePayload.Assets {
+		// Only one of the {title,img,video,data} objects should be present in each object.
 		if asset.Video != nil {
 			numVideo++
+			continue
 		}
 		// every image has the same W, H.
 		if asset.Img != nil {
-			numImage++
-			if asset.Img.H != 0 && asset.Img.W != 0 {
-				width = asset.Img.W
-				height = asset.Img.H
-			} else if asset.Img.WMin != 0 && asset.Img.HMin != 0 {
-				width = asset.Img.WMin
-				height = asset.Img.HMin
+			if asset.Img.Type == native1.ImageAssetTypeMain {
+				numMainImage++
+				if asset.Img.H != 0 && asset.Img.W != 0 {
+					width = asset.Img.W
+					height = asset.Img.H
+				} else if asset.Img.WMin != 0 && asset.Img.HMin != 0 {
+					width = asset.Img.WMin
+					height = asset.Img.HMin
+				}
 			}
+			continue
 		}
 	}
 	adslot30.W = width
@@ -521,14 +560,28 @@ func getNativeFormat(adslot30 *adslot30, openRTBImp *openrtb2.Imp) error {
 	var detailedCreativeTypeList = make([]string, 0, 2)
 	if numVideo >= 1 {
 		detailedCreativeTypeList = append(detailedCreativeTypeList, "903")
-	} else if numImage > 1 {
+	} else if numMainImage > 1 {
 		detailedCreativeTypeList = append(detailedCreativeTypeList, "904")
-	} else if numImage == 1 {
-		detailedCreativeTypeList = append(detailedCreativeTypeList, "909")
+	} else if numMainImage == 1 {
+		detailedCreativeTypeList = append(detailedCreativeTypeList, "901")
 	} else {
 		detailedCreativeTypeList = append(detailedCreativeTypeList, "913", "914")
 	}
 	adslot30.DetailedCreativeTypeList = detailedCreativeTypeList
+	return nil
+}
+
+// roll ad need TotalDuration
+func getVideoFormat(adslot30 *adslot30, adtype int32, openRTBImp *openrtb2.Imp) error {
+	adslot30.W = openRTBImp.Video.W
+	adslot30.H = openRTBImp.Video.H
+
+	if adtype == roll {
+		if openRTBImp.Video.MaxDuration == 0 {
+			return errors.New("GetHuaweiAdsReqAdslot30: MaxDuration is empty when adtype is roll.")
+		}
+		adslot30.TotalDuration = int32(openRTBImp.Video.MaxDuration)
+	}
 	return nil
 }
 
@@ -540,12 +593,22 @@ func convertAdtypeString2Integer(adtypeLower string) int32 {
 		return native
 	case "rewarded":
 		return rewarded
-	case "splash":
-		return splash
 	case "interstitial":
 		return interstitial
 	case "roll":
 		return roll
+	case "splash":
+		return splash
+	case "magazinelock":
+		return magazinelock
+	case "cloudFolder":
+		return cloudFolder
+	case "appIcon":
+		return appIcon
+	case "audio":
+		return audio
+	case "smartScreenSplash":
+		return smartScreenSplash
 	default:
 		return banner
 	}
@@ -946,7 +1009,6 @@ func getNurl(content content) string {
 // handleHuaweiAdsContent: get field Adm, Width, Height
 func (a *adapter) handleHuaweiAdsContent(adType int32, content *content, bidType openrtb_ext.BidType, imp openrtb2.Imp) (
 	adm string, adWidth int64, adHeight int64, err error) {
-	// v1: only support banner, native
 	switch bidType {
 	case openrtb_ext.BidTypeBanner:
 		adm, adWidth, adHeight, err = a.extractAdmBanner(adType, content, bidType, imp)
@@ -967,8 +1029,9 @@ func (a *adapter) handleHuaweiAdsContent(adType int32, content *content, bidType
 // extractAdmBanner: banner ad
 func (a *adapter) extractAdmBanner(adType int32, content *content, bidType openrtb_ext.BidType, imp openrtb2.Imp) (adm string,
 	adWidth int64, adHeight int64, err error) {
-	if adType != banner {
-		return "", 0, 0, errors.New("extractAdmBanner: huaweiads response is not a banner ad")
+	// support openrtb: banner  <=> huawei adtype: banner, interstitial
+	if adType != banner && adType != interstitial {
+		return "", 0, 0, errors.New("extractAdmBanner: huaweiads response adtype doesn't match")
 	}
 	var creativeType = content.Creativetype
 	if content.Creativetype > 100 {
@@ -1005,10 +1068,9 @@ func (a *adapter) extractAdmNative(adType int32, content *content, bidType openr
 
 	var nativeResult nativeResponse.Response
 	var linkObject nativeResponse.Link
-	if content.MetaData.ClickUrl != "" {
-		linkObject.URL = content.MetaData.ClickUrl
-	} else if content.MetaData.Intent != "" {
-		linkObject.URL = getDecodeValue(content.MetaData.Intent)
+	linkObject.URL, err = a.getClickUrl(content)
+	if err != nil {
+		return "", 0, 0, err
 	}
 
 	nativeResult.Assets = make([]nativeResponse.Asset, 0, len(nativePayload.Assets))
@@ -1120,10 +1182,9 @@ func (a *adapter) extractAdmPicture(content *content) (adm string, adWidth int64
 	}
 
 	var clickUrl = ""
-	if content.MetaData.ClickUrl != "" {
-		clickUrl = content.MetaData.ClickUrl
-	} else if content.MetaData.Intent != "" {
-		clickUrl = getDecodeValue(content.MetaData.Intent)
+	clickUrl, err = a.getClickUrl(content)
+	if err != nil {
+		return "", 0, 0, err
 	}
 
 	var imageInfoUrl string
@@ -1177,6 +1238,31 @@ func (a *adapter) extractAdmPicture(content *content) (adm string, adWidth int64
 	return adm, adWidth, adHeight, nil
 }
 
+func (a *adapter) getClickUrl(content *content) (clickUrl string, err error) {
+	if content.Interactiontype == appPromotion {
+		if content.MetaData.Intent != "" {
+			clickUrl = getDecodeValue(content.MetaData.Intent)
+		} else {
+			return "", errors.New("getClickUrl: content.MetaData.Intent is empty when interactiontype is appPromotion")
+		}
+	} else if content.Interactiontype == appDownload {
+		if content.MetaData.ApkInfo.Url != "" {
+			clickUrl = content.MetaData.ApkInfo.Url
+		} else if content.MetaData.ApkInfo.SecondUrl != "" {
+			clickUrl = content.MetaData.ApkInfo.SecondUrl
+		} else {
+			return "", errors.New("getClickUrl: content.MetaData.ApkInfo.Url/SecondUrl are all empty when interactiontype is appDownload")
+		}
+	} else {
+		if content.MetaData.ClickUrl != "" {
+			clickUrl = content.MetaData.ClickUrl
+		} else if content.MetaData.Intent != "" {
+			clickUrl = getDecodeValue(content.MetaData.Intent)
+		}
+	}
+	return clickUrl, nil
+}
+
 func getDspImpClickTrackings(content *content) (dspImpTrackings []string, dspClickTrackings string) {
 	for _, monitor := range content.Monitor {
 		if len(monitor.Url) != 0 {
@@ -1220,10 +1306,9 @@ func (a *adapter) extractAdmVideo(adType int32, content *content, bidType openrt
 	}
 
 	var clickUrl = ""
-	if content.MetaData.ClickUrl != "" {
-		clickUrl = content.MetaData.ClickUrl
-	} else if content.MetaData.Intent != "" {
-		clickUrl = getDecodeValue(content.MetaData.Intent)
+	clickUrl, err = a.getClickUrl(content)
+	if err != nil {
+		return "", 0, 0, err
 	}
 
 	var mime = "video/mp4"

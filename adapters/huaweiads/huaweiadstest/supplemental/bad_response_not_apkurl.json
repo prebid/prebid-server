@@ -4,14 +4,20 @@
     "imp": [
       {
         "id": "test-imp-id",
-        "native": {
-          "request": "{\"context\":2,\"contextsubtype\":20,\"plcmttype\":1,\"plcmtcnt\":1,\"seq\":0,\"aurlsupport\":0,\"durlsupport\":0,\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]}],\"privacy\":0,\"assets\":[{\"id\":100,\"title\":{\"len\":90},\"required\":1},{\"id\":101,\"img\":{\"type\":3,\"wmin\":200,\"hmin\":200},\"required\":1},{\"id\":107,\"video\":{\"mimes\":[\"mp4\"],\"minduration\":100,\"maxduration\":100,\"protocols\":[1,2]},\"required\":1},{\"id\":105,\"data\":{\"type\":2,\"len\":90},\"required\":1}],\"ver\":\"1.2\"}",
-          "ver": "1.2"
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ],
+          "w": 300,
+          "h": 250
         },
         "ext": {
           "bidder": {
-            "slotid": "m8x9x3rzff",
-            "adtype": "native",
+            "slotid": "testslotid",
+            "adtype": "banner",
             "publisherid": "123",
             "signkey": "signkey",
             "keyid": "41",
@@ -21,15 +27,17 @@
       }
     ],
     "app": {
-      "bundle": "com.wavehk.android",
+      "bundle": "com.example.p1",
       "name": "Huawei Browser",
-      "ver": "9.1.0.301"
+      "ver": "9.1.0.301",
+      "content": {
+        "language": "zh"
+      }
     },
     "device": {
       "ua": "useragent",
       "h": 1920,
       "language": "zh",
-      "geoCountry": "CH",
       "model": "COL-TEST",
       "os": "android",
       "osv": "10.0.0",
@@ -39,7 +47,7 @@
       "ip": "ip",
       "pxratio": 23.01,
       "geo": {
-        "country": ""
+        "country": "CHN"
       }
     },
     "user": {
@@ -57,13 +65,16 @@
         }
       }
     },
+    "regs": {
+      "coppa": 1
+    },
     "ext": {
     }
   },
   "httpcalls": [
     {
       "expectedRequest": {
-        "uri": "https://adx-dra.op.hicloud.com/ppsadx/getResult",
+        "uri": "https://acd.op.hicloud.com/ppsadx/getResult",
         "headers": {
           "Accept": [
             "application/json"
@@ -80,22 +91,25 @@
         },
         "body": {
           "app": {
-            "lang": "en",
-            "country": "ZA",
+            "lang": "zh",
+            "country": "CN",
             "name": "Huawei Browser",
-            "pkgname": "com.wavehk.android",
+            "pkgname": "com.example.pkgname1",
             "version": "9.1.0.301"
           },
           "multislot": [
             {
-              "adtype": 3,
-              "slotid": "m8x9x3rzff",
+              "adtype": 8,
+              "slotid": "testslotid",
               "test": 0,
-              "detailedCreativeTypeList": [
-                "903"
+              "format": [
+                {
+                  "w": 300,
+                  "h": 250
+                }
               ],
-              "h": 200,
-              "w": 200
+              "w": 300,
+              "h": 250
             }
           ],
           "device": {
@@ -105,7 +119,7 @@
             "os": "android",
             "type": 4,
             "ip": "ip",
-            "localeCountry": "ZA",
+            "localeCountry": "CN",
             "pxratio": 23.01,
             "width": 1080,
             "clientTime": "2018-11-02 16:34:07.981+1300",
@@ -114,7 +128,7 @@
             "version": "10.0.0",
             "maker": "huawei",
             "model": "COL-TEST",
-            "belongCountry": "ZA"
+            "belongCountry": "CN"
           },
           "geo": {
           },
@@ -122,6 +136,7 @@
             "type": 0
           },
           "regs": {
+            "coppa": 1
           },
           "version": "3.4"
         }
@@ -129,41 +144,45 @@
       "mockResponse": {
         "status": 200,
         "body": {
-          "ctrlSwitchs": "0",
-          "dsp1cost": 61,
-          "dspcost": 108,
           "multiad": [
             {
               "adtype": 8,
-              "brsetting": "Y",
               "content": [
                 {
-                  "clickActionList": [
-                    1
-                  ],
                   "contentid": "58025103",
                   "creativetype": 2,
-                  "ctrlSwitchs": "001011001001010112",
                   "endtime": 1621428898335,
-                  "filterList": [
-                    3
-                  ],
-                  "interactiontype": 1,
+                  "interactiontype": 2,
                   "landingTitle": 1,
                   "metaData": {
                     "adSign": "2",
                     "appPromotionChannel": "401721412",
-                    "clickUrl": "https://task/clickurl",
+                    "clickUrl": "https://ads.huawei.com/usermgtportal/home/index.html#/",
                     "imageInfo": [
                       {
                         "checkSha256Flag": 1,
                         "height": 300,
                         "imageType": "img",
                         "sha256": "f5d8487cddaecec45b73fc078649478c80ec646bfec8ed7da4ff931f90eab232",
-                        "url": "https://test/1.png",
+                        "url": "https://ads.huawei.com/usermgtportal/home/img/huawei_logo_black.aaec817d.svg",
                         "width": 250
                       }
                     ],
+                    "apkInfo": {
+                      "appIcon": "https://pps-icon.png",
+                      "appName": "%E6%89%8B%E6%9C%BA%E6%B7%98%E5%AE%9D",
+                      "fileSize": 118902470,
+                      "packageName": "com.demo.package",
+                      "permPromptForCard": "0",
+                      "popNotify": 1,
+                      "popUpAfterInstallNew": 1,
+                      "priorInstallWay": "2",
+                      "sha256": "sha256",
+                      "url": "",
+                      "secondUrl": "",
+                      "versionCode": "284",
+                      "versionName": "9.6.1.9"
+                    },
                     "label": "Banner_API",
                     "landingPageType": "3"
                   },
@@ -171,38 +190,26 @@
                     {
                       "eventType": "click",
                       "url": [
-                        "http://test/click"
+                        "http://test/click1"
                       ]
                     },
                     {
                       "eventType": "imp",
                       "url": [
-                        "http://test/imp"
-                      ]
-                    },
-                    {
-                      "eventType": "userclose",
-                      "url": [
-                        "http://test/userclose"
+                        "http://test/imp1"
                       ]
                     }
                   ],
-                  "paramfromserver": {
-                    "a": "1||test",
-                    "sig": "",
-                    "t": "99990101235959"
-                  },
                   "price": 2.8,
                   "starttime": 1621267200000,
                   "taskid": "48017658"
                 }
               ],
               "retcode30": 200,
-              "slotid": "m8x9x3rzff"
+              "slotid": "testslotid"
             }
           ],
-          "retcode": 200,
-          "totalCacheSize": 300
+          "retcode": 200
         }
       }
     }
@@ -212,7 +219,7 @@
   "expectedMakeRequestsErrors": [],
   "expectedMakeBidsErrors": [
     {
-      "value": "getAdmFromHuaweiAdsContent failed: extractAdmNative: response is not a native ad",
+      "value": "getAdmFromHuaweiAdsContent failed: getClickUrl: content.MetaData.ApkInfo.Url/SecondUrl are all empty when interactiontype is appDownload",
       "comparison": "literal"
     }
   ]

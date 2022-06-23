@@ -91,7 +91,7 @@
               "adtype": 3,
               "slotid": "u42ohmaufh",
               "detailedCreativeTypeList": [
-                "909"
+                "901"
               ],
               "h": 200,
               "test": 0,
@@ -143,7 +143,7 @@
                   "creativetype": 106,
                   "ctrlSwitchs": "001011101001010212",
                   "endtime": 1621344684645,
-                  "interactiontype": 2,
+                  "interactiontype": 1,
                   "landingTitle": 1,
                   "metaData": {
                     "adSign": "2",
