@@ -61,7 +61,7 @@ Host config, can be set using env variables or yaml config, use proper format:
   }
 ```
 ####Remote signer
-To use this approach stanalone GRPC server should be available.
+To use this approach standalone GRPC server should be available.
 One way to do this is to run in locally. For this checkout [AdsCert OSS](https://github.com/IABTechLab/adscert) and navigate to https://github.com/IABTechLab/adscert/blob/main/cmd/server/main.go file.
 Modify L17, set "origin" to `adscertdelivery.com`, make sure ports 3000 and 3001 are available and run main function.
 In Prebid Server configs set parameters for this server: 

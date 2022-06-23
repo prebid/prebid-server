@@ -52,7 +52,7 @@ type AdaptedBidder interface {
 	//
 	// Any errors will be user-facing in the API.
 	// Error messages should help publishers understand what might account for "bad" bids.
-	requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adCertSigner adscert.Signer, bidRequestMetadata bidRequestOptions) (*pbsOrtbSeatBid, []error)
+	requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestMetadata bidRequestOptions) (*pbsOrtbSeatBid, []error)
 }
 
 //bidRequestOptions holds additional options for bid request execution to maintain clean code and reasonable number of parameters
@@ -142,7 +142,7 @@ type bidderAdapterConfig struct {
 	DebugInfo          config.DebugInfo
 }
 
-func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adCertSigner adscert.Signer, bidRequestMetadata bidRequestOptions) (*pbsOrtbSeatBid, []error) {
+func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestMetadata bidRequestOptions) (*pbsOrtbSeatBid, []error) {
 
 	var reqData []*adapters.RequestData
 	var errs []error
@@ -173,7 +173,10 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 				reqData[i].Headers.Add("Sec-GPC", reqInfo.GlobalPrivacyControlHeader)
 			}
 			if bidRequestMetadata.addCallSignHeader {
-				signatureMessage, err := adCertSigner.Sign(reqData[i].Uri, reqData[i].Body)
+				signatureMessage, err := adsCertSigner.Sign(reqData[i].Uri, reqData[i].Body)
+				if err != nil {
+					//add metrics here
+				}
 				if err == nil && len(signatureMessage) > 0 {
 					reqData[i].Headers.Add(adscert.SignHeader, signatureMessage)
 				}

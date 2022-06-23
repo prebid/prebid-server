@@ -10,10 +10,12 @@ import (
 	"time"
 )
 
+// remoteSigner - holds the signatory to add adsCert header to requests using remote signing server
 type remoteSigner struct {
 	signatory signatory.AuthenticatedConnectionsSignatory
 }
 
+// Sign - adds adsCert header to requests using remote signing server
 func (rs *remoteSigner) Sign(destinationURL string, body []byte) (string, error) {
 	// The RequestInfo proto contains details about the individual ad request
 	// being signed.  A SetRequestInfo helper function derives a hash of the
@@ -29,7 +31,7 @@ func (rs *remoteSigner) Sign(destinationURL string, body []byte) (string, error)
 	if err != nil {
 		return "", err
 	}
-	if signatureResponse != nil && signatureResponse.SignatureOperationStatus == api.SignatureOperationStatus_SIGNATURE_OPERATION_STATUS_OK {
+	if signatureResponse.GetSignatureOperationStatus() == api.SignatureOperationStatus_SIGNATURE_OPERATION_STATUS_OK {
 		signatureMessage := signatureResponse.RequestInfo.SignatureInfo[0].SignatureMessage
 		return signatureMessage, err
 	}

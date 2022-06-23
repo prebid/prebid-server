@@ -11,10 +11,12 @@ import (
 	"time"
 )
 
+// inProcessSigner - holds the signatory to add adsCert header to requests using in process go library
 type inProcessSigner struct {
 	signatory signatory.AuthenticatedConnectionsSignatory
 }
 
+// Sign - adds adsCert header to requests using in process go library
 func (ips *inProcessSigner) Sign(destinationURL string, body []byte) (string, error) {
 	req := &api.AuthenticatedConnectionSignatureRequest{
 		RequestInfo: createRequestInfo(destinationURL, body),

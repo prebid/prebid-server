@@ -26,7 +26,7 @@ type AdsCertInProcess struct {
 
 // AdsCertRemote configures data to sign requests using remote signatory service
 type AdsCertRemote struct {
-	//Url - address of grpc server
+	//Url - address of gRPC server that will create a call signature
 	Url string `mapstructure:"url"`
 	//SigningTimeoutMs specifies how long this client will wait for signing to finish before abandoning
 	SigningTimeoutMs int `mapstructure:"signing_timeout_ms"`

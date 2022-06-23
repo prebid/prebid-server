@@ -66,7 +66,7 @@ type exchange struct {
 	privacyConfig     config.Privacy
 	categoriesFetcher stored_requests.CategoryFetcher
 	bidIDGenerator    BidIDGenerator
-	adCertSigner      adscert.Signer
+	adsCertSigner     adscert.Signer
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -113,7 +113,7 @@ func (randomDeduplicateBidBooleanGenerator) Generate() bool {
 	return rand.Intn(100) < 50
 }
 
-func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, metricsEngine metrics.MetricsEngine, infos config.BidderInfos, gdprPermsBuilder gdpr.PermissionsBuilder, tcf2CfgBuilder gdpr.TCF2ConfigBuilder, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher, adCertSigner adscert.Signer) Exchange {
+func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, metricsEngine metrics.MetricsEngine, infos config.BidderInfos, gdprPermsBuilder gdpr.PermissionsBuilder, tcf2CfgBuilder gdpr.TCF2ConfigBuilder, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher, adsCertSigner adscert.Signer) Exchange {
 	bidderToSyncerKey := map[string]string{}
 	for bidder, syncer := range syncersByBidder {
 		bidderToSyncerKey[bidder] = syncer.Key()
@@ -143,7 +143,7 @@ func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid
 			LMT:  cfg.LMT,
 		},
 		bidIDGenerator: &bidIDGenerator{cfg.GenerateBidID},
-		adCertSigner:   adCertSigner,
+		adsCertSigner:  adsCertSigner,
 	}
 }
 
@@ -520,9 +520,9 @@ func (e *exchange) getAllBids(
 			bidReqOptions := bidRequestOptions{
 				accountDebugAllowed: accountDebugAllowed,
 				headerDebugAllowed:  headerDebugAllowed,
-				addCallSignHeader:   callSignHeader(experiment, e.bidderInfo[string(bidderRequest.BidderName)]),
+				addCallSignHeader:   isAdsCertEnabled(experiment, e.bidderInfo[string(bidderRequest.BidderName)]),
 			}
-			bids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest, adjustmentFactor, conversions, &reqInfo, e.adCertSigner, bidReqOptions)
+			bids, err := e.adapterMap[bidderRequest.BidderCoreName].requestBid(ctx, bidderRequest, adjustmentFactor, conversions, &reqInfo, e.adsCertSigner, bidReqOptions)
 
 			// Add in time reporting
 			elapsed := time.Since(start)
@@ -1195,7 +1195,7 @@ func buildStoredAuctionResponse(storedAuctionResponses map[string]json.RawMessag
 	return adapterBids, liveAdapters, nil
 }
 
-func callSignHeader(experiment *openrtb_ext.Experiment, info config.BidderInfo) bool {
+func isAdsCertEnabled(experiment *openrtb_ext.Experiment, info config.BidderInfo) bool {
 	requestAdsCertEnabled := experiment != nil && experiment.AdsCert != nil && experiment.AdsCert.Enabled
 	bidderAdsCertEnabled := info.Experiment.AdsCert.Enable
 	return requestAdsCertEnabled && bidderAdsCertEnabled
