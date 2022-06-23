@@ -6,15 +6,13 @@ import (
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderInfyTV, config.Adapter{
-		Endpoint: "https://nxs.infy.tv/pbs/openrtb"})
+	bidder, buildErr := Builder(openrtb_ext.BidderEVolution, config.Adapter{
+		Endpoint: "https://test.infy.tv/pbs/openrtb"})
 
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
-
+	assert.NoError(t, buildErr)
 	adapterstest.RunJSONBidderTest(t, "infytvtest", bidder)
 }
