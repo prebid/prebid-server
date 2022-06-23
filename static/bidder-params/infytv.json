@@ -3,7 +3,6 @@
   "title": "InfyTV Adapter Params",
   "description": "A schema which validates params accepted by the InfyTV adapter",
   "type": "object",
-
   "properties": {
     "publisherId": {
       "type": "string",
@@ -14,6 +13,7 @@
       "description": "Placement ID"
     }
   },
-
-  "required": ["publisherId"]
+  "required": [
+    "publisherId"
+  ]
 }
