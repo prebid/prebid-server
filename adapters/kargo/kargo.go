@@ -81,8 +81,6 @@ func getMediaTypeForImp(bidImpID string, reqImps []openrtb2.Imp) openrtb_ext.Bid
 				return openrtb_ext.BidTypeVideo
 			case imp.Native != nil:
 				return openrtb_ext.BidTypeNative
-			case imp.Banner != nil:
-				return openrtb_ext.BidTypeBanner
 			}
 		}
 	}
