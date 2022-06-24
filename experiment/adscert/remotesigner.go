@@ -19,25 +19,15 @@ type remoteSigner struct {
 
 // Sign - adds adsCert header to requests using remote signing server
 func (rs *remoteSigner) Sign(destinationURL string, body []byte) (string, error) {
-	// The RequestInfo proto contains details about the individual ad request
-	// being signed.  A SetRequestInfo helper function derives a hash of the
-	// destination URL and body, setting these value on the RequestInfo message.
-	reqInfo := &api.RequestInfo{}
-	signatory.SetRequestInfo(reqInfo, destinationURL, []byte(body))
-
 	// Request the signature.
 	signatureResponse, err := rs.signatory.SignAuthenticatedConnection(
 		&api.AuthenticatedConnectionSignatureRequest{
-			RequestInfo: reqInfo,
+			RequestInfo: createRequestInfo(destinationURL, []byte(body)),
 		})
 	if err != nil {
 		return "", err
 	}
-	if signatureResponse.GetSignatureOperationStatus() == api.SignatureOperationStatus_SIGNATURE_OPERATION_STATUS_OK {
-		signatureMessage := signatureResponse.RequestInfo.SignatureInfo[0].SignatureMessage
-		return signatureMessage, err
-	}
-	return "", fmt.Errorf("error signing request: %s", signatureResponse.GetSignatureOperationStatus())
+	return getSignatureMessage(signatureResponse)
 }
 
 func newRemoteSigner(remoteSignerConfig config.AdsCertRemote) (*remoteSigner, error) {

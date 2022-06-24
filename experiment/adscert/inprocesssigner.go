@@ -3,7 +3,6 @@ package adscert
 import (
 	"crypto/rand"
 	"errors"
-	"fmt"
 	"github.com/IABTechLab/adscert/pkg/adscert/api"
 	"github.com/IABTechLab/adscert/pkg/adscert/discovery"
 	"github.com/IABTechLab/adscert/pkg/adscert/signatory"
@@ -23,15 +22,11 @@ func (ips *inProcessSigner) Sign(destinationURL string, body []byte) (string, er
 	req := &api.AuthenticatedConnectionSignatureRequest{
 		RequestInfo: createRequestInfo(destinationURL, body),
 	}
-	resp, err := ips.signatory.SignAuthenticatedConnection(req)
+	signatureResponse, err := ips.signatory.SignAuthenticatedConnection(req)
 	if err != nil {
 		return "", err
 	}
-	if resp.GetSignatureOperationStatus() == api.SignatureOperationStatus_SIGNATURE_OPERATION_STATUS_OK {
-		signatureMessage := resp.RequestInfo.SignatureInfo[0].SignatureMessage
-		return signatureMessage, nil
-	}
-	return "", fmt.Errorf("error signing request: %s", resp.GetSignatureOperationStatus())
+	return getSignatureMessage(signatureResponse)
 }
 
 func newInProcessSigner(inProcessSignerConfig config.AdsCertInProcess) (*inProcessSigner, error) {
@@ -66,10 +61,4 @@ func validateInProcessSignerConfig(inProcessSignerConfig config.AdsCertInProcess
 		return errors.New("invalid dns check interval for inprocess signer")
 	}
 	return nil
-}
-
-func createRequestInfo(destinationURL string, body []byte) *api.RequestInfo {
-	reqInfo := &api.RequestInfo{}
-	signatory.SetRequestInfo(reqInfo, destinationURL, body)
-	return reqInfo
 }
