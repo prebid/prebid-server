@@ -103,8 +103,9 @@ func TestSingleBidder(t *testing.T) {
 			accountDebugAllowed: true,
 			headerDebugAllowed:  false,
 			addCallSignHeader:   false,
+			bidAdjustment:       bidAdjustment,
 		}
-		seatBid, errs := bidder.requestBid(ctx, bidderReq, bidAdjustment, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions)
+		seatBid, errs := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions)
 
 		// Make sure the goodSingleBidder was called with the expected arguments.
 		if bidderImpl.httpResponse == nil {
@@ -194,8 +195,9 @@ func TestRequestBidRemovesSensitiveHeaders(t *testing.T) {
 		accountDebugAllowed: true,
 		headerDebugAllowed:  false,
 		addCallSignHeader:   false,
+		bidAdjustment:       1,
 	}
-	seatBid, errs := bidder.requestBid(ctx, bidderReq, 1, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions)
+	seatBid, errs := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions)
 
 	expectedHttpCalls := []*openrtb_ext.ExtHttpCall{
 		{
@@ -243,8 +245,9 @@ func TestSetGPCHeader(t *testing.T) {
 		accountDebugAllowed: true,
 		headerDebugAllowed:  false,
 		addCallSignHeader:   false,
+		bidAdjustment:       1,
 	}
-	seatBid, errs := bidder.requestBid(ctx, bidderReq, 1, currencyConverter.Rates(), &adapters.ExtraRequestInfo{GlobalPrivacyControlHeader: "1"}, &adscert.NilSigner{}, bidReqOptions)
+	seatBid, errs := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), &adapters.ExtraRequestInfo{GlobalPrivacyControlHeader: "1"}, &adscert.NilSigner{}, bidReqOptions)
 
 	expectedHttpCall := []*openrtb_ext.ExtHttpCall{
 		{
@@ -290,8 +293,9 @@ func TestSetGPCHeaderNil(t *testing.T) {
 		accountDebugAllowed: true,
 		headerDebugAllowed:  false,
 		addCallSignHeader:   false,
+		bidAdjustment:       1,
 	}
-	seatBid, errs := bidder.requestBid(ctx, bidderReq, 1, currencyConverter.Rates(), &adapters.ExtraRequestInfo{GlobalPrivacyControlHeader: "1"}, &adscert.NilSigner{}, bidReqOptions)
+	seatBid, errs := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), &adapters.ExtraRequestInfo{GlobalPrivacyControlHeader: "1"}, &adscert.NilSigner{}, bidReqOptions)
 
 	expectedHttpCall := []*openrtb_ext.ExtHttpCall{
 		{
@@ -357,8 +361,9 @@ func TestMultiBidder(t *testing.T) {
 		accountDebugAllowed: true,
 		headerDebugAllowed:  true,
 		addCallSignHeader:   false,
+		bidAdjustment:       1.0,
 	}
-	seatBid, errs := bidder.requestBid(context.Background(), bidderReq, 1.0, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions)
+	seatBid, errs := bidder.requestBid(context.Background(), bidderReq, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions)
 
 	if seatBid == nil {
 		t.Fatalf("SeatBid should exist, because bids exist.")
@@ -727,7 +732,6 @@ func TestMultiCurrencies(t *testing.T) {
 		seatBid, errs := bidder.requestBid(
 			context.Background(),
 			bidderReq,
-			1,
 			currencyConverter.Rates(),
 			&adapters.ExtraRequestInfo{},
 			&adscert.NilSigner{},
@@ -735,6 +739,7 @@ func TestMultiCurrencies(t *testing.T) {
 				accountDebugAllowed: true,
 				headerDebugAllowed:  true,
 				addCallSignHeader:   false,
+				bidAdjustment:       1,
 			},
 		)
 
@@ -881,7 +886,6 @@ func TestMultiCurrencies_RateConverterNotSet(t *testing.T) {
 		seatBid, errs := bidder.requestBid(
 			context.Background(),
 			bidderReq,
-			1,
 			currencyConverter.Rates(),
 			&adapters.ExtraRequestInfo{},
 			&adscert.NilSigner{},
@@ -889,6 +893,7 @@ func TestMultiCurrencies_RateConverterNotSet(t *testing.T) {
 				accountDebugAllowed: true,
 				headerDebugAllowed:  true,
 				addCallSignHeader:   false,
+				bidAdjustment:       1,
 			},
 		)
 
@@ -1054,7 +1059,6 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 		seatBid, errs := bidder.requestBid(
 			context.Background(),
 			bidderReq,
-			1,
 			currencyConverter.Rates(),
 			&adapters.ExtraRequestInfo{},
 			&adscert.NilSigner{},
@@ -1062,6 +1066,7 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 				accountDebugAllowed: true,
 				headerDebugAllowed:  false,
 				addCallSignHeader:   false,
+				bidAdjustment:       1,
 			},
 		)
 
@@ -1366,7 +1371,6 @@ func TestMobileNativeTypes(t *testing.T) {
 		seatBids, _ := bidder.requestBid(
 			context.Background(),
 			bidderReq,
-			1.0,
 			currencyConverter.Rates(),
 			&adapters.ExtraRequestInfo{},
 			&adscert.NilSigner{},
@@ -1374,6 +1378,7 @@ func TestMobileNativeTypes(t *testing.T) {
 				accountDebugAllowed: true,
 				headerDebugAllowed:  true,
 				addCallSignHeader:   false,
+				bidAdjustment:       1.0,
 			},
 		)
 
@@ -1441,7 +1446,6 @@ func TestRequestBidsStoredBidResponses(t *testing.T) {
 		seatBids, _ := bidder.requestBid(
 			context.Background(),
 			bidderReq,
-			1.0,
 			currencyConverter.Rates(),
 			&adapters.ExtraRequestInfo{},
 			&adscert.NilSigner{},
@@ -1449,6 +1453,7 @@ func TestRequestBidsStoredBidResponses(t *testing.T) {
 				accountDebugAllowed: true,
 				headerDebugAllowed:  true,
 				addCallSignHeader:   false,
+				bidAdjustment:       1.0,
 			},
 		)
 
@@ -1472,8 +1477,9 @@ func TestErrorReporting(t *testing.T) {
 		accountDebugAllowed: true,
 		headerDebugAllowed:  false,
 		addCallSignHeader:   false,
+		bidAdjustment:       1.0,
 	}
-	bids, errs := bidder.requestBid(context.Background(), bidderReq, 1.0, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions)
+	bids, errs := bidder.requestBid(context.Background(), bidderReq, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions)
 	if bids != nil {
 		t.Errorf("There should be no seatbid if no http requests are returned.")
 	}
@@ -1703,8 +1709,9 @@ func TestCallRecordAdapterConnections(t *testing.T) {
 		accountDebugAllowed: true,
 		headerDebugAllowed:  true,
 		addCallSignHeader:   false,
+		bidAdjustment:       bidAdjustment,
 	}
-	_, errs := bidder.requestBid(context.Background(), bidderReq, bidAdjustment, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions)
+	_, errs := bidder.requestBid(context.Background(), bidderReq, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions)
 
 	// Assert no errors
 	assert.Equal(t, 0, len(errs), "bidder.requestBid returned errors %v \n", errs)
@@ -1945,8 +1952,9 @@ func TestRequestBidsWithAdsCertsSigner(t *testing.T) {
 		accountDebugAllowed: false,
 		headerDebugAllowed:  false,
 		addCallSignHeader:   true,
+		bidAdjustment:       bidAdjustment,
 	}
-	_, errs := bidder.requestBid(ctx, bidderReq, bidAdjustment, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, &MockSigner{}, bidReqOptions)
+	_, errs := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, &MockSigner{}, bidReqOptions)
 
 	assert.Empty(t, errs, "no errors should be returned")
 }
