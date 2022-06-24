@@ -1197,6 +1197,6 @@ func buildStoredAuctionResponse(storedAuctionResponses map[string]json.RawMessag
 
 func isAdsCertEnabled(experiment *openrtb_ext.Experiment, info config.BidderInfo) bool {
 	requestAdsCertEnabled := experiment != nil && experiment.AdsCert != nil && experiment.AdsCert.Enabled
-	bidderAdsCertEnabled := info.Experiment.AdsCert.Enable
+	bidderAdsCertEnabled := info.Experiment.AdsCert.Enabled
 	return requestAdsCertEnabled && bidderAdsCertEnabled
 }

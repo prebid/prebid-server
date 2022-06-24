@@ -1,6 +1,7 @@
 package adscert
 
 import (
+	"github.com/prebid/prebid-server/config"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -47,4 +48,40 @@ func TestRemoteSigner(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestInvalidRemoteSignerConfig(t *testing.T) {
+	type aTest struct {
+		desc               string
+		remoteSignerConfig config.AdsCertRemote
+		expectedError      string
+	}
+	testCases := []aTest{
+		{
+			desc:               "empty remote url passed to config",
+			remoteSignerConfig: config.AdsCertRemote{Url: "", SigningTimeoutMs: 5},
+			expectedError:      "invalid url for remote signer",
+		},
+		{
+			desc:               "invaild remote url passed to config",
+			remoteSignerConfig: config.AdsCertRemote{Url: "test@com", SigningTimeoutMs: 5},
+			expectedError:      "invalid url for remote signer",
+		},
+		{
+			desc:               "empty private key passed to config",
+			remoteSignerConfig: config.AdsCertRemote{Url: "http://test.com", SigningTimeoutMs: 0},
+			expectedError:      "invalid signing timeout for remote signer",
+		},
+	}
+
+	for _, test := range testCases {
+		err := validateRemoteSignerConfig(test.remoteSignerConfig)
+		assert.EqualError(t, err, test.expectedError, "error message should match for test: %s", test.desc)
+	}
+}
+
+func TestValidRemoteSignerConfig(t *testing.T) {
+	conf := config.AdsCertRemote{Url: "http://test.com", SigningTimeoutMs: 5}
+	err := validateRemoteSignerConfig(conf)
+	assert.NoError(t, err, "error message should not be returned")
 }

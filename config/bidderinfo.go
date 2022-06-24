@@ -31,7 +31,7 @@ type BidderInfoExperiment struct {
 
 // AdsCert enables Call Sign feature for bidder
 type AdsCert struct {
-	Enable bool `yaml:"enable"`
+	Enabled bool `yaml:"enabled"`
 }
 
 // MaintainerInfo specifies the support email address for a bidder.

@@ -1,12 +1,14 @@
 package adscert
 
 import (
+	"errors"
 	"fmt"
 	"github.com/IABTechLab/adscert/pkg/adscert/api"
 	"github.com/IABTechLab/adscert/pkg/adscert/signatory"
 	"github.com/prebid/prebid-server/config"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"net/url"
 	"time"
 )
 
@@ -39,6 +41,9 @@ func (rs *remoteSigner) Sign(destinationURL string, body []byte) (string, error)
 }
 
 func newRemoteSigner(remoteSignerConfig config.AdsCertRemote) (*remoteSigner, error) {
+	if err := validateRemoteSignerConfig(remoteSignerConfig); err != nil {
+		return nil, err
+	}
 	// Establish the gRPC connection that the client will use to connect to the
 	// signatory server.  This basic example uses unauthenticated connections
 	// which should not be used in a production environment.
@@ -53,4 +58,15 @@ func newRemoteSigner(remoteSignerConfig config.AdsCertRemote) (*remoteSigner, er
 	signatoryClient := signatory.NewAuthenticatedConnectionsSignatoryClient(conn, clientOpts)
 	return &remoteSigner{signatory: signatoryClient}, nil
 
+}
+
+func validateRemoteSignerConfig(remoteSignerConfig config.AdsCertRemote) error {
+	_, err := url.ParseRequestURI(remoteSignerConfig.Url)
+	if err != nil {
+		return errors.New("invalid url for remote signer")
+	}
+	if remoteSignerConfig.SigningTimeoutMs <= 0 {
+		return errors.New("invalid signing timeout for remote signer")
+	}
+	return nil
 }

@@ -4097,7 +4097,7 @@ func TestExperimentConfigs(t *testing.T) {
 		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 	}.Builder
 
-	biddersInfo["appnexus"] = config.BidderInfo{Experiment: config.BidderInfoExperiment{AdsCert: config.AdsCert{Enable: true}}}
+	biddersInfo["appnexus"] = config.BidderInfo{Experiment: config.BidderInfoExperiment{AdsCert: config.AdsCert{Enabled: true}}}
 	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, tcf2ConfigBuilder, currencyConverter, nilCategoryFetcher{}, &signer).(*exchange)
 
 	// Define mock incoming bid requeset
@@ -4138,37 +4138,37 @@ func TestCallSignHeader(t *testing.T) {
 		{
 			description:    "both experiment.adsCert enabled for request and for bidder ",
 			experiment:     openrtb_ext.Experiment{AdsCert: &openrtb_ext.AdsCert{Enabled: true}},
-			bidderInfo:     config.BidderInfo{Experiment: config.BidderInfoExperiment{AdsCert: config.AdsCert{Enable: true}}},
+			bidderInfo:     config.BidderInfo{Experiment: config.BidderInfoExperiment{AdsCert: config.AdsCert{Enabled: true}}},
 			expectedResult: true,
 		},
 		{
 			description:    "experiment is not defined in request, bidder config adsCert enabled",
 			experiment:     nilExperiment,
-			bidderInfo:     config.BidderInfo{Experiment: config.BidderInfoExperiment{AdsCert: config.AdsCert{Enable: true}}},
+			bidderInfo:     config.BidderInfo{Experiment: config.BidderInfoExperiment{AdsCert: config.AdsCert{Enabled: true}}},
 			expectedResult: false,
 		},
 		{
 			description:    "experiment.adsCert is not defined in request, bidder config adsCert enabled",
 			experiment:     openrtb_ext.Experiment{AdsCert: nil},
-			bidderInfo:     config.BidderInfo{Experiment: config.BidderInfoExperiment{AdsCert: config.AdsCert{Enable: true}}},
+			bidderInfo:     config.BidderInfo{Experiment: config.BidderInfoExperiment{AdsCert: config.AdsCert{Enabled: true}}},
 			expectedResult: false,
 		},
 		{
 			description:    "experiment.adsCert is disabled in request, bidder config adsCert enabled",
 			experiment:     openrtb_ext.Experiment{AdsCert: &openrtb_ext.AdsCert{Enabled: false}},
-			bidderInfo:     config.BidderInfo{Experiment: config.BidderInfoExperiment{AdsCert: config.AdsCert{Enable: true}}},
+			bidderInfo:     config.BidderInfo{Experiment: config.BidderInfoExperiment{AdsCert: config.AdsCert{Enabled: true}}},
 			expectedResult: false,
 		},
 		{
 			description:    "experiment.adsCert is enabled in request, bidder config adsCert disabled",
 			experiment:     openrtb_ext.Experiment{AdsCert: &openrtb_ext.AdsCert{Enabled: true}},
-			bidderInfo:     config.BidderInfo{Experiment: config.BidderInfoExperiment{AdsCert: config.AdsCert{Enable: false}}},
+			bidderInfo:     config.BidderInfo{Experiment: config.BidderInfoExperiment{AdsCert: config.AdsCert{Enabled: false}}},
 			expectedResult: false,
 		},
 		{
 			description:    "experiment.adsCert is disabled in request, bidder config adsCert disabled",
 			experiment:     openrtb_ext.Experiment{AdsCert: &openrtb_ext.AdsCert{Enabled: false}},
-			bidderInfo:     config.BidderInfo{Experiment: config.BidderInfoExperiment{AdsCert: config.AdsCert{Enable: false}}},
+			bidderInfo:     config.BidderInfo{Experiment: config.BidderInfoExperiment{AdsCert: config.AdsCert{Enabled: false}}},
 			expectedResult: false,
 		},
 	}
