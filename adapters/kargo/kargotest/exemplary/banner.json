@@ -17,19 +17,11 @@
           "pos": 0,
           "expdir": [1, 2, 3, 4, 5]
         },
-        "pmp": {
-          "deals": [
-            {
-              "id": "TTD",
-              "ext": {
-              }
-            }
-          ]
-        },
         "tagid": "73",
         "secure": 1,
         "iframebuster": ["ALL"],
         "ext": {
+          "adSlotID": "11523"
         }
       }
     ],
@@ -102,19 +94,11 @@
                 "pos": 0,
                 "expdir": [1, 2, 3, 4, 5]
               },
-              "pmp": {
-                "deals": [
-                  {
-                    "id": "TTD",
-                    "ext": {
-                    }
-                  }
-                ]
-              },
               "tagid": "73",
               "secure": 1,
               "iframebuster": ["ALL"],
               "ext": {
+                "adSlotID": "11523"
               }
             }
           ],
@@ -174,7 +158,7 @@
             {
               "bid": [
                 {
-                  "id": "8b1bdcca",
+                  "id": "67sadsac",
                   "impid": "8b1bdcca",
                   "price": 10,
                   "nurl": "http://example.com/win/10",
@@ -184,13 +168,14 @@
                   "crid": "test-crid",
                   "cat": ["IAB13"],
                   "w": 300,
-                  "h": 300
+                  "h": 300,
+                  "ext": {"mediaType": "banner"}
                 }
               ],
               "seat": "_b345"
             }
           ],
-          "bidid": "8b1bdcca",
+          "bidid": "67sadsac",
           "cur": "USD"
         }
       }
@@ -201,7 +186,7 @@
       "bids": [
         {
           "bid": {
-            "id": "8b1bdcca",
+            "id": "67sadsac",
             "impid": "8b1bdcca",
             "price": 10,
             "nurl": "http://example.com/win/10",
@@ -211,7 +196,8 @@
             "crid": "test-crid",
             "cat": ["IAB13"],
             "w": 300,
-            "h": 300
+            "h": 300,
+            "ext": {"mediaType": "banner"}
           },
           "type": "banner"
         }

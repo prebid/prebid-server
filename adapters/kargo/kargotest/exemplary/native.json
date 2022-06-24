@@ -20,19 +20,13 @@
               "native": {
                   "request" : "{\"plcmttype\":2,\"privacy\":0,\"assets\":[{\"id\":5,\"required\":0,\"title\":{\"len\":90}},{\"id\":6,\"required\":0,\"img\":{\"wmin\":620,\"hmin\":300,\"type\":3}},{\"id\":10,\"required\":0,\"data\":{\"len\":90,\"type\":1}},{\"id\":8,\"required\":0,\"data\":{\"len\":14,\"type\":12}},{\"id\":7,\"required\":0,\"img\":{\"wmin\":80,\"hmin\":80,\"type\":1}},{\"id\":11,\"required\":0,\"data\":{\"len\":140,\"type\":2}}]}"
               },
-              "pmp": {
-                  "deals": [
-                      {
-                          "id": "TTD"
-                      }
-                  ]
-              },
               "tagid": "73",
               "secure": 1,
               "iframebuster": [
                   "ALL"
               ],
               "ext": {
+                "adSlotID": "11523"
               }
           }
       ],
@@ -109,19 +103,13 @@
                     "native": {
                         "request" : "{\"plcmttype\":2,\"privacy\":0,\"assets\":[{\"id\":5,\"required\":0,\"title\":{\"len\":90}},{\"id\":6,\"required\":0,\"img\":{\"wmin\":620,\"hmin\":300,\"type\":3}},{\"id\":10,\"required\":0,\"data\":{\"len\":90,\"type\":1}},{\"id\":8,\"required\":0,\"data\":{\"len\":14,\"type\":12}},{\"id\":7,\"required\":0,\"img\":{\"wmin\":80,\"hmin\":80,\"type\":1}},{\"id\":11,\"required\":0,\"data\":{\"len\":140,\"type\":2}}]}"
                     },
-                    "pmp": {
-                        "deals": [
-                            {
-                                "id": "TTD"
-                            }
-                        ]
-                    },
                     "tagid": "73",
                     "secure": 1,
                     "iframebuster": [
                         "ALL"
                     ],
                     "ext": {
+                      "adSlotID": "11523"
                     }
                 }
             ],
@@ -181,7 +169,7 @@
                 {
                   "bid": [
                     {
-                      "id": "8b1bdcca",
+                      "id": "67sadsac",
                       "impid": "8b1bdcca",
                       "price": 10,
                       "nurl": "http://example.com/win/10",
@@ -191,13 +179,14 @@
                       "crid": "test-crid",
                       "cat": ["IAB13"],
                       "w": 300,
-                      "h": 300
+                      "h": 300,
+                      "ext": {"mediaType": "native"}
                     }
                   ],
                   "seat": "_b345"
                 }
               ],
-              "bidid": "8b1bdcca",
+              "bidid": "67sadsac",
               "cur": "USD"
             }
           }
@@ -209,7 +198,7 @@
           "bids": [
             {
               "bid": {
-                "id": "8b1bdcca",
+                "id": "67sadsac",
                 "impid": "8b1bdcca",
                 "price": 10,
                 "nurl": "http://example.com/win/10",
@@ -219,7 +208,8 @@
                 "crid": "test-crid",
                 "cat": ["IAB13"],
                 "w": 300,
-                "h": 300
+                "h": 300,
+                "ext": {"mediaType": "native"}
               },
               "type": "native"
             }

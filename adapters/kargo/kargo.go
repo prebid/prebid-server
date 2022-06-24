@@ -15,6 +15,9 @@ import (
 type adapter struct {
 	URI string
 }
+type kargoExt struct {
+	MediaType string `json:"mediaType"`
+}
 
 // Builder builds a new instance of the Kargo adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
@@ -61,10 +64,10 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
 	bidResponse.Currency = response.Cur
 	for _, seatBid := range response.SeatBid {
-		for i, bid := range seatBid.Bid {
+		for _, bid := range seatBid.Bid {
 			b := &adapters.TypedBid{
-				Bid:     &seatBid.Bid[i],
-				BidType: getMediaTypeForImp(bid.ImpID, request.Imp),
+				Bid:     &bid,
+				BidType: getMediaTypeForBid(bid.Ext),
 			}
 			bidResponse.Bids = append(bidResponse.Bids, b)
 		}
@@ -72,16 +75,15 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	return bidResponse, nil
 }
 
-// getMediaTypeForImp checks the media type on the request Impression.
-func getMediaTypeForImp(bidImpID string, reqImps []openrtb2.Imp) openrtb_ext.BidType {
-	for _, imp := range reqImps {
-		if imp.ID == bidImpID {
-			switch {
-			case imp.Video != nil:
-				return openrtb_ext.BidTypeVideo
-			case imp.Native != nil:
-				return openrtb_ext.BidTypeNative
-			}
+// getMediaTypeForBid checks the media type of the bid.
+func getMediaTypeForBid(ext json.RawMessage) openrtb_ext.BidType {
+	var impExt kargoExt
+	if err := json.Unmarshal(ext, &impExt); err == nil {
+		switch impExt.MediaType {
+		case string(openrtb_ext.BidTypeVideo):
+			return openrtb_ext.BidTypeVideo
+		case string(openrtb_ext.BidTypeNative):
+			return openrtb_ext.BidTypeNative
 		}
 	}
 	return openrtb_ext.BidTypeBanner
