@@ -5,7 +5,7 @@
     "type": "object",
   
     "properties": {
-        "AdSlotID": {
+        "adSlotID": {
           "type": "string",
           "description": "An ID which identifies the adslot placement. Equivalent to the id of target inventory, ad unit code, or placement id"
         }
