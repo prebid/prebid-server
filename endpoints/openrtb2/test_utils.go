@@ -802,11 +802,10 @@ type nobidExchange struct {
 func (e *nobidExchange) HoldAuction(ctx context.Context, auctionRequest exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
 	r := auctionRequest.BidRequestWrapper
 	e.gotRequest = r.BidRequest
-	unknown := openrtb3.NoBidUnknownError
 	return &openrtb2.BidResponse{
 		ID:    r.BidRequest.ID,
 		BidID: "test bid id",
-		NBR:   &unknown,
+		NBR:   openrtb3.NoBidUnknownError.Ptr(),
 	}, nil
 }
 

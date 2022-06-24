@@ -101,7 +101,7 @@ func parseCnvrParams(imp *openrtb2.Imp, cnvrExt openrtb_ext.ExtImpConversant) {
 	} else if imp.Video != nil {
 		tmpVideo := *imp.Video
 		imp.Video = &tmpVideo
-		imp.Video.Pos = *position
+		imp.Video.Pos = position
 
 		if len(cnvrExt.API) > 0 {
 			imp.Video.API = make([]adcom1.APIFramework, 0, len(cnvrExt.API))

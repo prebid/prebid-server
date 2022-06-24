@@ -21,7 +21,7 @@ import (
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 
-	"github.com/mxmCherry/openrtb/adcom1"
+	"github.com/mxmCherry/openrtb/v16/adcom1"
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	gometrics "github.com/rcrowley/go-metrics"
 	"github.com/stretchr/testify/assert"
@@ -995,21 +995,21 @@ func TestCreateImpressionTemplate(t *testing.T) {
 	imp.Video.MIMEs = []string{"video/mp4"}
 	imp.Video.H = 200
 	imp.Video.W = 400
-	imp.Video.PlaybackMethod = []openrtb2.PlaybackMethod{5, 6}
+	imp.Video.PlaybackMethod = []adcom1.PlaybackMethod{5, 6}
 
 	video := openrtb2.Video{}
 	video.Protocols = []adcom1.MediaCreativeSubtype{3, 4}
 	video.MIMEs = []string{"video/flv"}
 	video.H = 300
 	video.W = 0
-	video.PlaybackMethod = []openrtb2.PlaybackMethod{7, 8}
+	video.PlaybackMethod = []adcom1.PlaybackMethod{7, 8}
 
 	res := createImpressionTemplate(imp, &video)
 	assert.Equal(t, res.Video.Protocols, []adcom1.MediaCreativeSubtype{3, 4}, "Incorrect video protocols")
 	assert.Equal(t, res.Video.MIMEs, []string{"video/flv"}, "Incorrect video MIMEs")
 	assert.Equal(t, int(res.Video.H), 300, "Incorrect video height")
 	assert.Equal(t, int(res.Video.W), 0, "Incorrect video width")
-	assert.Equal(t, res.Video.PlaybackMethod, []openrtb2.PlaybackMethod{7, 8}, "Incorrect video playback method")
+	assert.Equal(t, res.Video.PlaybackMethod, []adcom1.PlaybackMethod{7, 8}, "Incorrect video playback method")
 }
 
 func TestCCPA(t *testing.T) {

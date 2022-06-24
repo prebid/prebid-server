@@ -111,7 +111,7 @@ func getBidType(bid openrtb2.Bid, ext avocetBidExt) openrtb_ext.BidType {
 		return openrtb_ext.BidTypeVideo
 	}
 	switch bid.API {
-	case adcom1.APIMRAID10, adcom1.APIMRAID20:
+	case adcom1.APIVPAID10, adcom1.APIVPAID20:
 		return openrtb_ext.BidTypeVideo
 	default:
 		return openrtb_ext.BidTypeBanner

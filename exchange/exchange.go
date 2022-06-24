@@ -658,8 +658,7 @@ func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_
 	bidResponse.ID = bidRequest.ID
 	if len(liveAdapters) == 0 {
 		// signal "Invalid Request" if no valid bidders.
-		invalidReason := openrtb3.NoBidInvalidRequest
-		bidResponse.NBR = &invalidReason
+		bidResponse.NBR = openrtb3.NoBidInvalidRequest.Ptr()
 	}
 
 	// Create the SeatBids. We use a zero sized slice so that we can append non-zero seat bids, and not include seatBid
