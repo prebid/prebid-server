@@ -10,7 +10,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderDianomi, config.Adapter{
-		Endpoint: "https://prebid-server-aws.dianomi.net/openrtb2/auction"})
+		Endpoint: "https://prebid-server-aws.dianomi.com/openrtb2/auction"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
