@@ -64,8 +64,7 @@
                     "user": {
                         "buyeruid": "some-buyer-id"
                     }
-                },
-                "bidAdjustment": 1.0
+                }
             },
             "mockResponse": {
                 "errors": ["appnexus-error"]
