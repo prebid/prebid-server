@@ -3,8 +3,6 @@ package firstpartydata
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/buger/jsonparser"
-
 	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
@@ -693,17 +691,6 @@ func mergeContents(originalContent *openrtb2.Content, fpdBidderConfigContent jso
 	if originalContent == nil {
 		return unmarshalJSONToContent(fpdBidderConfigContent)
 	}
-	newContentDataJson, _, _, err := jsonparser.Get(fpdBidderConfigContent, dataKey)
-	if err != nil && err != jsonparser.KeyPathNotFoundError {
-		return nil, err
-	}
-	var newContentData []openrtb2.Data
-	if err == nil {
-		newContentData, err = unmarshalJSONToData(newContentDataJson)
-		if err != nil {
-			return nil, err
-		}
-	}
 	originalContentBytes, err := json.Marshal(originalContent)
 	if err != nil {
 		return nil, err
@@ -715,10 +702,6 @@ func mergeContents(originalContent *openrtb2.Content, fpdBidderConfigContent jso
 	newFinalContent, err := unmarshalJSONToContent(newFinalContentBytes)
 	if err != nil {
 		return nil, err
-	}
-	newFinalContentData := append(globalContentData, newContentData...)
-	if len(newFinalContentData) > 0 {
-		newFinalContent.Data = newFinalContentData
 	}
 	return newFinalContent, nil
 }
