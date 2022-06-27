@@ -141,3 +141,10 @@ configMapGenerator:
       # unicorn values
       - PBS_ADAPTERS_UNICORN_DISABLED="false"
       - PBS_ADAPTERS_UNICORN_XAPI_ENDPOINT_JP="http://tpe-prebid-service-mocks.default.svc.cluster.local/unicorn_givemeads"
+
+      # youappi values
+      - PBS_ADAPTERS_YOUAPPI_DISABLED="false"
+      - PBS_ADAPTERS_YOUAPPI_ENDPOINT="http://tpe-prebid-service-mocks.default.svc.cluster.local/youappi_givemeads"
+      - PBS_ADAPTERS_YOUAPPI_XAPI_ENDPOINT_US_EAST="http://tpe-prebid-service-mocks.default.svc.cluster.local/youappi_givemeads"
+      - PBS_ADAPTERS_YOUAPPI_XAPI_ENDPOINT_EU="http://tpe-prebid-service-mocks.default.svc.cluster.local/youappi_givemeads"
+      - PBS_ADAPTERS_YOUAPPI_XAPI_ENDPOINT_APAC="http://tpe-prebid-service-mocks.default.svc.cluster.local/youappi_givemeads"

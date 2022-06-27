@@ -87,7 +87,7 @@ type Configuration struct {
 	RequestValidation RequestValidation `mapstructure:"request_validation"`
 	// When true, PBS will assign a randomly generated UUID to req.Source.TID if it is empty
 	AutoGenSourceTID bool `mapstructure:"auto_gen_source_tid"`
-	//When true, new bid id will be generated in seatbid[].bid[].ext.prebid.bidid and used in event urls instead
+	// When true, new bid id will be generated in seatbid[].bid[].ext.prebid.bidid and used in event urls instead
 	GenerateBidID bool `mapstructure:"generate_bid_id"`
 	// GenerateRequestID overrides the bidrequest.id in an AMP Request or an App Stored Request with a generated UUID if set to true. The default is false.
 	GenerateRequestID bool `mapstructure:"generate_request_id"`
@@ -739,7 +739,7 @@ func (cfg *Configuration) AccountDefaultsJSON() json.RawMessage {
 	return cfg.accountDefaultsJSON
 }
 
-//Allows for protocol relative URL if scheme is empty
+// Allows for protocol relative URL if scheme is empty
 func (cfg *Cache) GetBaseURL() string {
 	cfg.Scheme = strings.ToLower(cfg.Scheme)
 	if strings.Contains(cfg.Scheme, "https") {
@@ -1115,6 +1115,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.taurusx.endpoint", "https://tapjoy.rtb.rtblab.net/tapjoy/bid")
 	v.SetDefault("adapters.unicorn.disabled", true)
 	v.SetDefault("adapters.unicorn.endpoint", "https://ds-staging.uncn.jp/tj/0/bid.json")
+	v.SetDefault("adapters.youappi.disabled", true)
+	v.SetDefault("adapters.youappi.endpoint", "https://bidder.dsp.youappi.com/tapjoy")
 	// tjx adapters end
 
 	v.SetDefault("max_request_size", 1024*256)

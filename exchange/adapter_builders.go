@@ -157,6 +157,7 @@ import (
 	tapjoy "github.com/prebid/prebid-server/adapters/tjx_tapjoy"
 	taurusx "github.com/prebid/prebid-server/adapters/tjx_taurusx"
 	unicorn "github.com/prebid/prebid-server/adapters/tjx_unicorn"
+	youappi "github.com/prebid/prebid-server/adapters/tjx_youappi"
 )
 
 // Adapter registration is kept in this separate file for ease of use and to aid
@@ -317,6 +318,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderYieldlab:          yieldlab.Builder,
 		openrtb_ext.BidderYieldmo:           yieldmo.Builder,
 		openrtb_ext.BidderYieldone:          yieldone.Builder,
+		openrtb_ext.BidderYouAppi:           youappi.Builder,
 		openrtb_ext.BidderYSSP:              yahoossp.Builder,
 		openrtb_ext.BidderZeroClickFraud:    zeroclickfraud.Builder,
 	}

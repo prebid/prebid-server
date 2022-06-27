@@ -56,11 +56,11 @@ func TestNewJsonDirectoryServer(t *testing.T) {
 	for _, adapterFile := range adapterFiles {
 		name := adapterFile.Name()
 
-		if strings.Index(name, "tjx_") == 0 {
+		if strings.Index(name, "tjx_") == 0 && name != "tjx_base" {
 			name = strings.Replace(name, "tjx_", "", 1)
 		}
 
-		if adapterFile.IsDir() && name != "adapterstest" {
+		if adapterFile.IsDir() && name != "adapterstest" && name != "tjx_base" {
 			ensureHasKey(t, data, name)
 		}
 	}
