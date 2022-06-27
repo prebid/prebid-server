@@ -12,12 +12,12 @@ import (
 )
 
 type criteoRequest struct {
-	ID          string                   `json:"id,omitempty"`
-	Publisher   criteoPublisher          `json:"publisher,omitempty"`
-	User        criteoUser               `json:"user,omitempty"`
-	GdprConsent criteoGdprConsent        `json:"gdprconsent,omitempty"`
-	Slots       []criteoRequestSlot      `json:"slots,omitempty"`
-	Eids        []openrtb_ext.ExtUserEid `json:"eids,omitempty"`
+	ID          string              `json:"id,omitempty"`
+	Publisher   criteoPublisher     `json:"publisher,omitempty"`
+	User        criteoUser          `json:"user,omitempty"`
+	GdprConsent criteoGdprConsent   `json:"gdprconsent,omitempty"`
+	Slots       []criteoRequestSlot `json:"slots,omitempty"`
+	Eids        []openrtb2.EID      `json:"eids,omitempty"`
 }
 
 func newCriteoRequest(slotIDGenerator slotIDGenerator, request *openrtb2.BidRequest) (criteoRequest, []error) {

@@ -27,8 +27,8 @@ type richaudienceUser struct {
 }
 
 type richaudienceUserExt struct {
-	Eids    []openrtb_ext.ExtUserEid `json:"eids,omitempty"`
-	Consent string                   `json:"consent,omitempty"`
+	Eids    []openrtb2.EID `json:"eids,omitempty"`
+	Consent string         `json:"consent,omitempty"`
 }
 
 type richaudienceDevice struct {

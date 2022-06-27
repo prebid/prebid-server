@@ -486,7 +486,7 @@ func TestOpenRTBRequest(t *testing.T) {
 			Ext: json.RawMessage(`{
 				"eids": [{
                     "source": "pubcid",
-                    "id": "2402fc76-7b39-4f0e-bfc2-060ef7693648"
+					"uids": [{"id": "2402fc76-7b39-4f0e-bfc2-060ef7693648"}]
 				}]
             }`),
 		},
@@ -559,7 +559,7 @@ func TestOpenRTBRequest(t *testing.T) {
 
 		assert.NotNil(t, userExt.Eids)
 		assert.Equal(t, 1, len(userExt.Eids), "Eids values are not as expected!")
-		assert.Contains(t, userExt.Eids, openrtb_ext.ExtUserEid{Source: "pubcid", ID: "2402fc76-7b39-4f0e-bfc2-060ef7693648"})
+		assert.Contains(t, userExt.Eids, openrtb2.EID{Source: "pubcid", UIDs: []openrtb2.UID{{ID: "2402fc76-7b39-4f0e-bfc2-060ef7693648"}}})
 	}
 }
 
@@ -793,7 +793,9 @@ func TestOpenRTBRequestWithSpecificExtUserEids(t *testing.T) {
 			Ext: json.RawMessage(`{"eids": [
 			{
 				"source": "pubcid",
-				"id": "2402fc76-7b39-4f0e-bfc2-060ef7693648"
+				"uids": [{
+					"id": "2402fc76-7b39-4f0e-bfc2-060ef7693648"
+				}]
 			},
 			{
 				"source": "adserver.org",

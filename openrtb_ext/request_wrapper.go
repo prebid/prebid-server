@@ -255,7 +255,7 @@ type UserExt struct {
 	consentDirty bool
 	prebid       *ExtUserPrebid
 	prebidDirty  bool
-	eids         *[]ExtUserEid
+	eids         *[]openrtb2.EID
 	eidsDirty    bool
 }
 
@@ -289,7 +289,7 @@ func (ue *UserExt) unmarshal(extJson json.RawMessage) error {
 
 	eidsJson, hasEids := ue.ext["eids"]
 	if hasEids {
-		ue.eids = &[]ExtUserEid{}
+		ue.eids = &[]openrtb2.EID{}
 		if err := json.Unmarshal(eidsJson, ue.eids); err != nil {
 			return err
 		}
@@ -389,7 +389,7 @@ func (ue *UserExt) SetPrebid(prebid *ExtUserPrebid) {
 	ue.prebidDirty = true
 }
 
-func (ue *UserExt) GetEid() *[]ExtUserEid {
+func (ue *UserExt) GetEid() *[]openrtb2.EID {
 	if ue.eids == nil {
 		return nil
 	}
@@ -397,7 +397,7 @@ func (ue *UserExt) GetEid() *[]ExtUserEid {
 	return &eids
 }
 
-func (ue *UserExt) SetEid(eid *[]ExtUserEid) {
+func (ue *UserExt) SetEid(eid *[]openrtb2.EID) {
 	ue.eids = eid
 	ue.eidsDirty = true
 }
