@@ -1,5 +1,5 @@
 maintainer:
-  email: "prebid-maintainer@dianomi.com"
+  email: 'eng@dianomi.com'
 gvlVendorID: 885
 capabilities:
   app:
@@ -14,13 +14,9 @@ capabilities:
       - video
 userSync:
   iframe:
-    url: "https://data.dianomi.com/frontend/iframe/sync?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
-    userMacro: "$UID"
-  redirect:
-    url: "https://data.dianomi.com/frontend/sync?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
-    userMacro: "$UID"
-  # foo supports user syncing, but requires configuration by the host. contact this
+    url: 'https://www-prebid.dianomi.net/prebid/usersync/index.html?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}'
+    userMacro: '$UID'
+  # Dianomi supports user syncing, but requires configuration by the host. contact this
   # bidder directly at the email address in this file to ask about enabling user sync.
   supports:
     - iframe
-    - redirect
