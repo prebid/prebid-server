@@ -34,7 +34,8 @@
         "exp": 3600,
         "ext": {
           "bidder": {
-            "key": "test_video"
+            "publisherId": "IY1014",
+            "placementId": "1999"
           }
         }
       }
@@ -140,7 +141,8 @@
               "exp": 3600,
               "ext": {
                 "bidder": {
-                  "key": "test_video"
+                  "publisherId": "IY1014",
+                  "placementId": "1999"
                 }
               }
             }
