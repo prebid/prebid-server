@@ -64,14 +64,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		}
 	}
 
-	if len(request.Cur) == 0 {
-		request.Cur = []string{"JPY"}
-	} else if isOtherThanJPY(request.Cur) {
-		return nil, []error{&errortypes.BadInput{
-			Message: "Only JPY is supported",
-		}}
-	}
-
 	err := modifyImps(request)
 	if err != nil {
 		return nil, []error{err}
@@ -104,15 +96,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	}
 
 	return []*adapters.RequestData{requestData}, nil
-}
-
-func isOtherThanJPY(cur []string) bool {
-	for _, c := range cur {
-		if c != "JPY" {
-			return true
-		}
-	}
-	return false
 }
 
 func getHeaders(request *openrtb2.BidRequest) http.Header {
@@ -191,8 +174,9 @@ func setSourceExt() json.RawMessage {
 func setExt(request *openrtb2.BidRequest) (json.RawMessage, error) {
 	accountID, err := jsonparser.GetInt(request.Imp[0].Ext, "bidder", "accountId")
 	if err != nil {
-		accountID = 0
+		return nil, fmt.Errorf("accountId field is required")
 	}
+
 	var decodedExt *unicornExt
 	err = json.Unmarshal(request.Ext, &decodedExt)
 	if err != nil {
