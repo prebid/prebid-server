@@ -15,6 +15,8 @@ func TestSChainWriter(t *testing.T) {
 	const seller2SChain string = `"schain":{"complete":2,"nodes":[{"asi":"directseller2.com","sid":"00002","rid":"BidRequest2","hp":2}],"ver":"2.0"}`
 	const seller3SChain string = `"schain":{"complete":3,"nodes":[{"asi":"directseller3.com","sid":"00003","rid":"BidRequest3","hp":3}],"ver":"3.0"}`
 	const sellerWildCardSChain string = `"schain":{"complete":1,"nodes":[{"asi":"wildcard1.com","sid":"wildcard1","rid":"WildcardReq1","hp":1}],"ver":"1.0"}`
+	const hostNode string = `{"asi":"pbshostcompany.com","sid":"00001","rid":"BidRequest","hp":1}`
+	const seller1Node string = `{"asi":"directseller1.com","sid":"00001","rid":"BidRequest1","hp":1}`
 
 	tests := []struct {
 		description    string
@@ -157,7 +159,7 @@ func TestSChainWriter(t *testing.T) {
 		{
 			description: "Schain in request, host schain defined, source.ext for bidder request should update with appended host schain",
 			giveRequest: openrtb2.BidRequest{
-				Ext:    json.RawMessage(`{"prebid":{"schains":[{"bidders":["testbidder"],"schain":{"complete":1,"nodes":[{"asi":"appnexus.com","sid":"1792","rid":"6a586290-ae54-44e9-8985-d60821f7bb07","hp":1}],"ver":"1.0"}}]}}`),
+				Ext:    json.RawMessage(`{"prebid":{"schains":[{"bidders":["testbidder"],"schain":{"complete":1,"nodes":[` + seller1Node + `],"ver":"1.0"}}]}}`),
 				Source: nil,
 			},
 			giveBidder: "testbidder",
@@ -165,9 +167,9 @@ func TestSChainWriter(t *testing.T) {
 				ASI: "pbshostcompany.com", SID: "00001", RID: "BidRequest", HP: 1,
 			},
 			wantRequest: openrtb2.BidRequest{
-				Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["testbidder"],"schain":{"complete":1,"nodes":[{"asi":"appnexus.com","sid":"1792","rid":"6a586290-ae54-44e9-8985-d60821f7bb07","hp":1}],"ver":"1.0"}}]}}`),
+				Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["testbidder"],"schain":{"complete":1,"nodes":[` + seller1Node + `],"ver":"1.0"}}]}}`),
 				Source: &openrtb2.Source{
-					Ext: json.RawMessage(`{"schain":{"complete":1,"nodes":[{"asi":"appnexus.com","sid":"1792","rid":"6a586290-ae54-44e9-8985-d60821f7bb07","hp":1},{"asi":"pbshostcompany.com","sid":"00001","rid":"BidRequest","hp":1}],"ver":"1.0"}}`),
+					Ext: json.RawMessage(`{"schain":{"complete":1,"nodes":[` + seller1Node + `,` + hostNode + `],"ver":"1.0"}}`),
 				},
 			},
 		},
@@ -184,7 +186,7 @@ func TestSChainWriter(t *testing.T) {
 			wantRequest: openrtb2.BidRequest{
 				Ext: nil,
 				Source: &openrtb2.Source{
-					Ext: json.RawMessage(`{"schain":{"complete":0,"nodes":[{"asi":"pbshostcompany.com","sid":"00001","rid":"BidRequest","hp":1}],"ver":"1.0"}}`),
+					Ext: json.RawMessage(`{"schain":{"complete":0,"nodes":[` + hostNode + `],"ver":"1.0"}}`),
 				},
 			},
 		},
