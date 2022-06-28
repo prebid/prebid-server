@@ -42,12 +42,12 @@ func TestNewConfigUpdateHttpTask(t *testing.T) {
 	configChan := task.Start(stopChan)
 
 	// read initial config
-	expectedConfig1 := &Configuration{ScopeID: "scope1", Endpoint: "https://pubstack.io", Features: map[string]bool{"auction": true, "cookiesync": true}}
-	assertConfigChanOne(t, configChan, expectedConfig1, "config 1")
+	expectedInitialConfig := &Configuration{ScopeID: "scope1", Endpoint: "https://pubstack.io", Features: map[string]bool{"auction": true, "cookiesync": true}}
+	assertConfigChanOne(t, configChan, expectedInitialConfig, "initial config")
 
 	// read updated config
-	expectedConfig2 := &Configuration{ScopeID: "scope2", Endpoint: "https://pubstack.io", Features: map[string]bool{"auction": false, "cookiesync": false}}
-	assertConfigChanOne(t, configChan, expectedConfig2, "config 2")
+	expectedUpdatedConfig := &Configuration{ScopeID: "scope2", Endpoint: "https://pubstack.io", Features: map[string]bool{"auction": false, "cookiesync": false}}
+	assertConfigChanOne(t, configChan, expectedUpdatedConfig, "updated config")
 
 	// stop task
 	close(stopChan)
