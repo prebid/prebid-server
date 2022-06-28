@@ -12,19 +12,19 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type Adapter struct {
+type adapter struct {
 	endpoint string
 }
 
 // Builder builds a new instance of the InfyTV adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &Adapter{
+	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}
 	return bidder, nil
 }
 
-func (a *Adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	requestJSON, err := json.Marshal(request)
 	if err != nil {
 		return nil, []error{err}
@@ -39,7 +39,7 @@ func (a *Adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	return []*adapters.RequestData{requestData}, nil
 }
 
-func (a *Adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	if responseData.StatusCode == http.StatusNoContent {
 		return nil, nil
