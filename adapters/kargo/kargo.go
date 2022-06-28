@@ -64,9 +64,9 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
 	bidResponse.Currency = response.Cur
 	for _, seatBid := range response.SeatBid {
-		for _, bid := range seatBid.Bid {
+		for i, bid := range seatBid.Bid {
 			b := &adapters.TypedBid{
-				Bid:     &bid,
+				Bid:     &seatBid.Bid[i],
 				BidType: getMediaTypeForBid(bid.Ext),
 			}
 			bidResponse.Bids = append(bidResponse.Bids, b)
@@ -75,7 +75,6 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	return bidResponse, nil
 }
 
-// getMediaTypeForBid checks the media type of the bid.
 func getMediaTypeForBid(ext json.RawMessage) openrtb_ext.BidType {
 	var impExt kargoExt
 	if err := json.Unmarshal(ext, &impExt); err == nil {
