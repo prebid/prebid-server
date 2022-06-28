@@ -354,6 +354,7 @@ func TestCreateSanitizedImpExt(t *testing.T) {
 				"context":   json.RawMessage(`"anyContext"`),
 				"skadn":     json.RawMessage(`"anySKAdNetwork"`),
 				"gpid":      json.RawMessage(`"anyGPID"`),
+				"tid":       json.RawMessage(`"anyTID"`),
 			},
 			givenImpExtPrebid: map[string]json.RawMessage{
 				"bidder":    json.RawMessage(`"anyBidder"`),
@@ -365,6 +366,7 @@ func TestCreateSanitizedImpExt(t *testing.T) {
 				"context": json.RawMessage(`"anyContext"`),
 				"skadn":   json.RawMessage(`"anySKAdNetwork"`),
 				"gpid":    json.RawMessage(`"anyGPID"`),
+				"tid":     json.RawMessage(`"anyTID"`),
 			},
 			expectedError: "",
 		},
@@ -465,6 +467,12 @@ func TestExtractBidderExts(t *testing.T) {
 		{
 			description:              "Mixed - Overwrites - imp.ext.BIDDER + imp.ext.prebid.bidder.BIDDER",
 			givenImpExt:              map[string]json.RawMessage{"bidderA": json.RawMessage(`{"shouldBe":"Ignored"}}`)},
+			givenImpExtPrebidBidders: map[string]json.RawMessage{"bidderA": bidderAJSON},
+			expected:                 map[string]json.RawMessage{"bidderA": bidderAJSON},
+		},
+		{
+			description:              "imp.ext.tid",
+			givenImpExt:              map[string]json.RawMessage{"bidderA": json.RawMessage(`{"shouldBe":"Ignored"}}`), "tid": json.RawMessage(`{`)},
 			givenImpExtPrebidBidders: map[string]json.RawMessage{"bidderA": bidderAJSON},
 			expected:                 map[string]json.RawMessage{"bidderA": bidderAJSON},
 		},
