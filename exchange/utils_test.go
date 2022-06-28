@@ -436,7 +436,7 @@ func TestExtractBidderExts(t *testing.T) {
 		},
 		{
 			description:              "Special Names Ignored - imp.ext.BIDDER",
-			givenImpExt:              map[string]json.RawMessage{"prebid": json.RawMessage(`{"prebid":"value1"}}`), "context": json.RawMessage(`{"firstPartyData":"value2"}}`), "skadn": json.RawMessage(`{"skAdNetwork":"value3"}}`), "gpid": json.RawMessage(`{"gpid":"value4"}}`)},
+			givenImpExt:              map[string]json.RawMessage{"prebid": json.RawMessage(`{"prebid":"value1"}}`), "context": json.RawMessage(`{"firstPartyData":"value2"}}`), "skadn": json.RawMessage(`{"skAdNetwork":"value3"}}`), "gpid": json.RawMessage(`{"gpid":"value4"}}`), "tid": json.RawMessage("6e927474-4c83-40ac-8180-16858314b7c5")},
 			givenImpExtPrebidBidders: map[string]json.RawMessage{},
 			expected:                 map[string]json.RawMessage{},
 		},
@@ -467,12 +467,6 @@ func TestExtractBidderExts(t *testing.T) {
 		{
 			description:              "Mixed - Overwrites - imp.ext.BIDDER + imp.ext.prebid.bidder.BIDDER",
 			givenImpExt:              map[string]json.RawMessage{"bidderA": json.RawMessage(`{"shouldBe":"Ignored"}}`)},
-			givenImpExtPrebidBidders: map[string]json.RawMessage{"bidderA": bidderAJSON},
-			expected:                 map[string]json.RawMessage{"bidderA": bidderAJSON},
-		},
-		{
-			description:              "imp.ext.tid",
-			givenImpExt:              map[string]json.RawMessage{"bidderA": json.RawMessage(`{"shouldBe":"Ignored"}}`), "tid": json.RawMessage(`{`)},
 			givenImpExtPrebidBidders: map[string]json.RawMessage{"bidderA": bidderAJSON},
 			expected:                 map[string]json.RawMessage{"bidderA": bidderAJSON},
 		},

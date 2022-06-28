@@ -421,8 +421,8 @@ func createSanitizedImpExt(impExt, impExtPrebid map[string]json.RawMessage) (map
 		sanitizedImpExt[openrtb_ext.GPIDKey] = v
 	}
 
-	if v, exists := impExt[string(openrtb_ext.TID)]; exists {
-		sanitizedImpExt[openrtb_ext.TID] = v
+	if v, exists := impExt[string(openrtb_ext.TIDKey)]; exists {
+		sanitizedImpExt[openrtb_ext.TIDKey] = v
 	}
 
 	return sanitizedImpExt, nil
@@ -455,7 +455,8 @@ func isSpecialField(bidder string) bool {
 		bidder == openrtb_ext.FirstPartyDataExtKey ||
 		bidder == openrtb_ext.SKAdNExtKey ||
 		bidder == openrtb_ext.GPIDKey ||
-		bidder == openrtb_ext.PrebidExtKey || bidder == openrtb_ext.TID
+		bidder == openrtb_ext.PrebidExtKey ||
+		bidder == openrtb_ext.TIDKey
 }
 
 // prepareUser changes req.User so that it's ready for the given bidder.

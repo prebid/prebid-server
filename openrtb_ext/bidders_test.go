@@ -113,8 +113,11 @@ func TestIsBidderNameReserved(t *testing.T) {
 		{"skadn", true},
 		{"skADN", true},
 		{"SKADN", true},
-		{"notreserved", false},
 		{"tid", true},
+		{"TId", true},
+		{"Tid", true},
+		{"TiD", true},
+		{"notreserved", false},
 	}
 
 	for _, test := range testCases {
