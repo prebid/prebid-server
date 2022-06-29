@@ -23,17 +23,32 @@ func validateFloorRules(Schema openrtb_ext.PriceFloorSchema, delimiter string, R
 	return errs
 }
 
+func validateFloorSkipRates(floorExt *openrtb_ext.PriceFloorRules) []error {
+	var errs []error
+
+	if floorExt.Data != nil && (floorExt.Data.SkipRate < SKIP_RATE_MIN || floorExt.Data.SkipRate > SKIP_RATE_MAX) {
+		errs = append(errs, fmt.Errorf("Invalid SkipRate at data level = '%v'", floorExt.Data.SkipRate))
+		return errs
+	}
+
+	if floorExt.SkipRate < SKIP_RATE_MIN || floorExt.SkipRate > SKIP_RATE_MAX {
+		errs = append(errs, fmt.Errorf("Invalid SkipRate at root level = '%v'", floorExt.SkipRate))
+	}
+
+	return errs
+}
+
 func validateFloorModelGroups(modelGroups []openrtb_ext.PriceFloorModelGroup) ([]openrtb_ext.PriceFloorModelGroup, []error) {
 	var errs []error
 	var validModelGroups []openrtb_ext.PriceFloorModelGroup
 	for _, modelGroup := range modelGroups {
 		if modelGroup.SkipRate < SKIP_RATE_MIN || modelGroup.SkipRate > SKIP_RATE_MAX {
-			errs = append(errs, fmt.Errorf("invalid Floor Model = '%v' due to SkipRate = '%v'", modelGroup.ModelVersion, modelGroup.SkipRate))
+			errs = append(errs, fmt.Errorf("Invalid Floor Model = '%v' due to SkipRate = '%v'", modelGroup.ModelVersion, modelGroup.SkipRate))
 			continue
 		}
 
 		if modelGroup.ModelWeight < MODEL_WEIGHT_MIN_VALUE || modelGroup.ModelWeight > MODEL_WEIGHT_MAX_VALUE {
-			errs = append(errs, fmt.Errorf("invalid Floor Model = '%v' due to ModelWeight = '%v'", modelGroup.ModelVersion, modelGroup.ModelWeight))
+			errs = append(errs, fmt.Errorf("Invalid Floor Model = '%v' due to ModelWeight = '%v'", modelGroup.ModelVersion, modelGroup.ModelWeight))
 			continue
 		}
 

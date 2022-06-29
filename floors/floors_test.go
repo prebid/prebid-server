@@ -22,7 +22,7 @@ func TestIsRequestEnabledWithFloor(t *testing.T) {
 		{
 			name: "Request With Nil Floors",
 			in:   &openrtb_ext.ExtRequest{},
-			out:  false,
+			out:  true,
 		},
 		{
 			name: "Request With Floors Disabled",
@@ -563,7 +563,7 @@ func TestUpdateImpsWithInvalidModelGroups(t *testing.T) {
 			floorExt: floorExt,
 			floorVal: 0.0,
 			floorCur: "",
-			Err:      "invalid Floor Model = 'Version 1' due to SkipRate = '110'",
+			Err:      "Invalid Floor Model = 'Version 1' due to SkipRate = '110'",
 		},
 	}
 	for _, tc := range tt {

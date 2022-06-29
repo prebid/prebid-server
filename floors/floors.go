@@ -59,11 +59,8 @@ type Floor interface {
 
 // IsRequestEnabledWithFloor will check if floors is enabled in request
 func IsRequestEnabledWithFloor(Floors *openrtb_ext.PriceFloorRules) bool {
-	if Floors == nil {
-		return false
-	}
 
-	if Floors.Enabled != nil && !*Floors.Enabled {
+	if Floors != nil && Floors.Enabled != nil && !*Floors.Enabled {
 		return *Floors.Enabled
 	}
 
@@ -79,6 +76,14 @@ func UpdateImpsWithFloors(floorExt *openrtb_ext.PriceFloorRules, request *openrt
 		floorVal          float64
 	)
 	floorData := floorExt.Data
+	if floorData == nil {
+		return floorModelErrList
+	}
+
+	floorModelErrList = validateFloorSkipRates(floorExt)
+	if len(floorModelErrList) > 0 {
+		return floorModelErrList
+	}
 
 	floorData.ModelGroups, floorModelErrList = validateFloorModelGroups(floorData.ModelGroups)
 	if len(floorData.ModelGroups) == 0 {
@@ -109,19 +114,19 @@ func UpdateImpsWithFloors(floorExt *openrtb_ext.PriceFloorRules, request *openrt
 				floorVal = floorData.ModelGroups[0].Values[matchedRule]
 			}
 
-			if floorVal > 0.0 {
-				request.Imp[i].BidFloor = math.Round(floorVal*10000) / 10000
-				floorMinVal, floorCur, err := getMinFloorValue(floorExt, conversions)
-				if err == nil {
-					if floorMinVal > 0.0 && floorVal < floorMinVal {
-						request.Imp[i].BidFloor = math.Round(floorMinVal*10000) / 10000
-					}
-					request.Imp[i].BidFloorCur = floorCur
-					updateImpExtWithFloorDetails(matchedRule, &request.Imp[i], floorVal)
+			floorMinVal, floorCur, err := getMinFloorValue(floorExt, conversions)
+			if err == nil {
+				if floorMinVal > 0.0 && floorVal < floorMinVal {
+					request.Imp[i].BidFloor = math.Round(floorMinVal*10000) / 10000
 				} else {
-					floorModelErrList = append(floorModelErrList, fmt.Errorf("error in Currency Conversion  = '%v'", err.Error()))
+					request.Imp[i].BidFloor = math.Round(floorVal*10000) / 10000
 				}
+				request.Imp[i].BidFloorCur = floorCur
+				updateImpExtWithFloorDetails(matchedRule, &request.Imp[i], floorVal)
+			} else {
+				floorModelErrList = append(floorModelErrList, fmt.Errorf("Error in getting FloorMin value : '%v'", err.Error()))
 			}
+
 		}
 	}
 	floorModelErrList = append(floorModelErrList, floorErrList...)

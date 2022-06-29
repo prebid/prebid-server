@@ -145,7 +145,7 @@ func TestEnforceFloorToBids(t *testing.T) {
 					currency: "USD",
 				},
 			},
-			want1: []string{"bid rejected [bid ID: some-bid-11] reason: bid price value 0.500000 is less than bidFloor value 1.010000 for impression id some-impression-id-1 bidder appnexus", "bid rejected [bid ID: some-bid-2] reason: bid price value 1.500000 is less than bidFloor value 2.010000 for impression id some-impression-id-2 bidder pubmatic"},
+			want1: []string{"bid rejected [bid ID: some-bid-11] reason: bid price value 0.5000 USD is less than bidFloor value 1.0100 USD for impression id some-impression-id-1 bidder appnexus", "bid rejected [bid ID: some-bid-2] reason: bid price value 1.5000 USD is less than bidFloor value 2.0100 USD for impression id some-impression-id-2 bidder pubmatic"},
 		},
 		{
 			name: "Bids with different currency",
@@ -248,7 +248,7 @@ func TestEnforceFloorToBids(t *testing.T) {
 					currency: "USD",
 				},
 			},
-			want1: []string{"bid rejected [bid ID: some-bid-11] reason: bid price value 38.795000 is less than bidFloor value 60.000000 for impression id some-impression-id-1 bidder appnexus"},
+			want1: []string{"bid rejected [bid ID: some-bid-11] reason: bid price value 38.7950 INR is less than bidFloor value 60.0000 INR for impression id some-impression-id-1 bidder appnexus"},
 		},
 		{
 			name: "Bids with different currency with enforceDealFloor false",
@@ -351,7 +351,7 @@ func TestEnforceFloorToBids(t *testing.T) {
 					currency: "USD",
 				},
 			},
-			want1: []string{"bid rejected [bid ID: some-bid-11] reason: bid price value 38.795000 is less than bidFloor value 60.000000 for impression id some-impression-id-1 bidder appnexus"},
+			want1: []string{"bid rejected [bid ID: some-bid-11] reason: bid price value 38.7950 INR is less than bidFloor value 60.0000 INR for impression id some-impression-id-1 bidder appnexus"},
 		},
 		{
 			name: "Dealid not empty, enforceDealFloors is true",
@@ -461,7 +461,7 @@ func TestEnforceFloorToBids(t *testing.T) {
 					currency: "USD",
 				},
 			},
-			want1: []string{"bid rejected [bid ID: some-bid-11] reason: bid price value 38.795000 is less than bidFloor value 60.000000 for impression id some-impression-id-1 bidder appnexus"},
+			want1: []string{"bid rejected [bid ID: some-bid-11] reason: bid price value 38.7950 INR is less than bidFloor value 60.0000 INR for impression id some-impression-id-1 bidder appnexus"},
 		},
 		{
 			name: "Dealid not empty, enforceDealFloors is false",
@@ -673,7 +673,7 @@ func TestEnforceFloorToBids(t *testing.T) {
 					currency: "USD",
 				},
 			},
-			want1: []string{"bid rejected [bid ID: some-bid-11] reason: bid price value 0.500000 is less than bidFloor value 1.010000 for impression id some-impression-id-1 bidder appnexus", "bid rejected [bid ID: some-bid-2] reason: bid price value 1.500000 is less than bidFloor value 2.010000 for impression id some-impression-id-2 bidder pubmatic"},
+			want1: []string{"bid rejected [bid ID: some-bid-11] reason: bid price value 0.5000 USD is less than bidFloor value 1.0100 USD for impression id some-impression-id-1 bidder appnexus", "bid rejected [bid ID: some-bid-2] reason: bid price value 1.5000 USD is less than bidFloor value 2.0100 USD for impression id some-impression-id-2 bidder pubmatic"},
 		},
 		{
 			name: "Impression map does not have imp id",
@@ -774,7 +774,7 @@ func TestEnforceFloorToBids(t *testing.T) {
 					currency: "USD",
 				},
 			},
-			want1: []string{"bid rejected [bid ID: some-bid-11] reason: bid price value 0.500000 is less than bidFloor value 1.010000 for impression id some-impression-id-1 bidder appnexus", "bid rejected [bid ID: some-bid-2] reason: bid price value 1.500000 is less than bidFloor value 2.010000 for impression id some-impression-id-2 bidder pubmatic"},
+			want1: []string{"bid rejected [bid ID: some-bid-11] reason: bid price value 0.5000 USD is less than bidFloor value 1.0100 USD for impression id some-impression-id-1 bidder appnexus", "bid rejected [bid ID: some-bid-2] reason: bid price value 1.5000 USD is less than bidFloor value 2.0100 USD for impression id some-impression-id-2 bidder pubmatic"},
 		},
 	}
 	for _, tt := range tests {
@@ -857,7 +857,7 @@ func TestEnforceFloorToBidsConversion(t *testing.T) {
 					currency: "EUR",
 				},
 			},
-			want1: nil,
+			want1: []string{"Error in rate conversion from = EUR to USD with bidder pubmatic for impression id some-impression-id-1 and bid id some-bid-1", "Error in rate conversion from = EUR to USD with bidder pubmatic for impression id some-impression-id-2 and bid id some-bid-2"},
 		},
 	}
 
@@ -988,7 +988,7 @@ func TestEnforceFloors(t *testing.T) {
 					currency: "USD",
 				},
 			},
-			want1: []string{"bid rejected [bid ID: some-bid-11] reason: bid price value 0.500000 is less than bidFloor value 20.010000 for impression id some-impression-id-1 bidder appnexus", "bid rejected [bid ID: some-bid-1] reason: bid price value 1.200000 is less than bidFloor value 20.010000 for impression id some-impression-id-1 bidder pubmatic"},
+			want1: []string{"bid rejected [bid ID: some-bid-11] reason: bid price value 0.5000 USD is less than bidFloor value 20.0100 USD for impression id some-impression-id-1 bidder appnexus", "bid rejected [bid ID: some-bid-1] reason: bid price value 1.2000 USD is less than bidFloor value 20.0100 USD for impression id some-impression-id-1 bidder pubmatic"},
 		},
 	}
 	for _, tt := range tests {

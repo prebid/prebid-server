@@ -249,7 +249,6 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 
 	// If floors feature is enabled at server and request level, Update floors values in impression object
 	floorErrs := SignalFloors(&r, e.floor, conversions, responseDebugAllow)
-	errs = append(errs, floorErrs...)
 
 	recordImpMetrics(r.BidRequestWrapper.BidRequest, e.me)
 
@@ -260,7 +259,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	tcf2Cfg := r.TCF2ConfigBuilder(e.privacyConfig.GDPR.TCF2, r.Account.GDPR)
 	gdprPerms := r.GDPRPermissionsBuilder(e.privacyConfig.GDPR, tcf2Cfg, e.gvlVendorIDs, e.vendorListFetcher)
 	bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(ctx, r, requestExt, e.bidderToSyncerKey, e.me, gdprDefaultValue, gdprPerms, e.privacyConfig, tcf2Cfg)
-
+	errs = append(errs, floorErrs...)
 	e.me.RecordRequestPrivacy(privacyLabels)
 
 	// If we need to cache bids, then it will take some time to call prebid cache.
@@ -723,7 +722,6 @@ func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_
 	}
 
 	bidResponse.SeatBid = seatBids
-
 	bidResponse.Ext, err = encodeBidResponseExt(bidResponseExt)
 
 	return bidResponse, err

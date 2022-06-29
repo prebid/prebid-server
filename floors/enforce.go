@@ -20,18 +20,26 @@ func ShouldEnforceFloors(bidRequest *openrtb2.BidRequest, floorExt *openrtb_ext.
 		}
 	}
 
-	if floorExt.Enforcement != nil && floorExt.Enforcement.EnforcePBS != nil && !*floorExt.Enforcement.EnforcePBS {
+	if floorExt != nil && floorExt.Enforcement != nil && floorExt.Enforcement.EnforcePBS != nil && !*floorExt.Enforcement.EnforcePBS {
 		return *floorExt.Enforcement.EnforcePBS
 	}
 
-	if floorExt.Enforcement != nil && floorExt.Enforcement.EnforceRate > 0 {
+	if floorExt != nil && floorExt.Enforcement != nil && floorExt.Enforcement.EnforceRate > 0 {
 		configEnforceRate = floorExt.Enforcement.EnforceRate
 	}
 
 	shouldEnforce := configEnforceRate > f(ENFORCE_RATE_MAX+1)
+	if floorExt == nil {
+		floorExt = new(openrtb_ext.PriceFloorRules)
+	}
+
 	if floorExt.Enforcement == nil {
 		floorExt.Enforcement = new(openrtb_ext.PriceFloorEnforcement)
 	}
-	floorExt.Enforcement.EnforcePBS = &shouldEnforce
+
+	if floorExt.Enforcement.EnforcePBS == nil {
+		floorExt.Enforcement.EnforcePBS = new(bool)
+	}
+	*floorExt.Enforcement.EnforcePBS = shouldEnforce
 	return shouldEnforce
 }
