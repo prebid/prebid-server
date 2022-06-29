@@ -113,6 +113,10 @@ func TestIsBidderNameReserved(t *testing.T) {
 		{"skadn", true},
 		{"skADN", true},
 		{"SKADN", true},
+		{"tid", true},
+		{"TId", true},
+		{"Tid", true},
+		{"TiD", true},
 		{"notreserved", false},
 	}
 
