@@ -24,7 +24,6 @@
           "request": ""
         },
         "pmp": {
-          "deals": []
         },
         "tagid": "73",
         "secure": 1,
@@ -46,12 +45,7 @@
     "user": {
       "id": "07fb48ed",
       "ext": {
-        "consent": "consent opt-out",
-        "kargo": {
-          "cerberusIDs": {
-            "86": "82fa2555"
-          }
-        }
+        "consent": "consent opt-out"
       },
       "buyeruid": "345"
     },
@@ -92,7 +86,6 @@
                 "request": ""
               },
               "pmp": {
-                "deals": []
               },
               "tagid": "73",
               "secure": 1,
@@ -114,12 +107,7 @@
           "user": {
             "id": "07fb48ed",
             "ext": {
-              "consent": "consent opt-out",
-              "kargo": {
-                "cerberusIDs": {
-                  "86": "82fa2555"
-                }
-              }
+              "consent": "consent opt-out"
             },
             "buyeruid": "345"
           },
