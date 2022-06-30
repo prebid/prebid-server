@@ -81,7 +81,13 @@
             "publisher_blocks_enforcement": 2,
             "is_default": 1
           },
-          "auction_environment": 0
+          "auction_environment": 0,
+          "bidder": {
+            "siteId": 1,
+            "pageId": 2,
+            "formatId": 3,
+            "networkId": 73
+          }
         }
       }
     ]
@@ -189,7 +195,13 @@
                   "publisher_blocks_enforcement": 2,
                   "is_default": 1
                 },
-                "auction_environment": 0
+                "auction_environment": 0,
+                "bidder": {
+                  "siteId": 1,
+                  "pageId": 2,
+                  "formatId": 3,
+                  "networkId": 73
+                }
               }
             }
           ]
