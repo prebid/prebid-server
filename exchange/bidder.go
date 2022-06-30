@@ -52,7 +52,7 @@ type AdaptedBidder interface {
 	//
 	// Any errors will be user-facing in the API.
 	// Error messages should help publishers understand what might account for "bad" bids.
-	requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes config.AlternateBidderCodes) (*pbsOrtbSeatBid, []error)
+	requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes config.AlternateBidderCodes) ([]*pbsOrtbSeatBid, []error)
 }
 
 //bidRequestOptions holds additional options for bid request execution to maintain clean code and reasonable number of parameters
@@ -60,7 +60,7 @@ type bidRequestOptions struct {
 	accountDebugAllowed bool
 	headerDebugAllowed  bool
 	addCallSignHeader   bool
-	bidAdjustment       map[string]float64
+	bidAdjustments      map[string]float64
 }
 
 const ImpIdReqBody = "Stored bid response for impression id: "
@@ -145,7 +145,7 @@ type bidderAdapterConfig struct {
 	DebugInfo          config.DebugInfo
 }
 
-func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes config.AlternateBidderCodes) (*pbsOrtbSeatBid, []error) {
+func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes config.AlternateBidderCodes) ([]*pbsOrtbSeatBid, []error) {
 
 	var reqData []*adapters.RequestData
 	var errs []error
@@ -232,10 +232,10 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 		// - headerDebugAllowed (debug override header specified correct) - it overrides all other debug restrictions
 		// - account debug is allowed
 		// - bidder debug is allowed
-		if headerDebugAllowed {
+		if bidRequestOptions.headerDebugAllowed {
 			seatBidMap[bidderRequest.BidderName].httpCalls = append(seatBidMap[bidderRequest.BidderName].httpCalls, makeExt(httpInfo))
 		} else {
-			if accountDebugAllowed {
+			if bidRequestOptions.accountDebugAllowed {
 				if bidder.config.DebugInfo.Allow {
 					seatBidMap[bidderRequest.BidderName].httpCalls = append(seatBidMap[bidderRequest.BidderName].httpCalls, makeExt(httpInfo))
 				} else {
@@ -329,9 +329,9 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 						}
 
 						adjustmentFactor := 1.0
-						if givenAdjustment, ok := bidAdjustments[bidderName.String()]; ok {
+						if givenAdjustment, ok := bidRequestOptions.bidAdjustments[bidderName.String()]; ok {
 							adjustmentFactor = givenAdjustment
-						} else if givenAdjustment, ok := bidAdjustments[bidderRequest.BidderName.String()]; ok {
+						} else if givenAdjustment, ok := bidRequestOptions.bidAdjustments[bidderRequest.BidderName.String()]; ok {
 							adjustmentFactor = givenAdjustment
 						}
 

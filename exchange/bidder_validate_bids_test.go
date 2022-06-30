@@ -62,10 +62,11 @@ func TestAllValidBids(t *testing.T) {
 		accountDebugAllowed: true,
 		headerDebugAllowed:  false,
 		addCallSignHeader:   false,
-		bidAdjustment:       bidAdjustments,
+		bidAdjustments:      bidAdjustments,
 	}
-	seatBid, errs := bidder.requestBid(context.Background(), bidderReq, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions, config.AlternateBidderCodes{})
-	assert.Len(t, seatBid.bids, 4)
+	seatBids, errs := bidder.requestBid(context.Background(), bidderReq, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions, config.AlternateBidderCodes{})
+	assert.Len(t, seatBids, 1)
+	assert.Len(t, seatBids[0].bids, 4)
 	assert.Len(t, errs, 0)
 }
 
@@ -131,10 +132,11 @@ func TestAllBadBids(t *testing.T) {
 		accountDebugAllowed: true,
 		headerDebugAllowed:  false,
 		addCallSignHeader:   false,
-		bidAdjustment:       bidAdjustments,
+		bidAdjustments:      bidAdjustments,
 	}
-	seatBid, errs := bidder.requestBid(context.Background(), bidderReq, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions, config.AlternateBidderCodes{})
-	assert.Len(t, seatBid.bids, 0)
+	seatBids, errs := bidder.requestBid(context.Background(), bidderReq, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions, config.AlternateBidderCodes{})
+	assert.Len(t, seatBids, 1)
+	assert.Len(t, seatBids[0].bids, 0)
 	assert.Len(t, errs, 7)
 }
 
@@ -211,10 +213,11 @@ func TestMixedBids(t *testing.T) {
 		accountDebugAllowed: true,
 		headerDebugAllowed:  false,
 		addCallSignHeader:   false,
-		bidAdjustment:       bidAdjustments,
+		bidAdjustments:      bidAdjustments,
 	}
-	seatBid, errs := bidder.requestBid(context.Background(), bidderReq, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions, config.AlternateBidderCodes{})
-	assert.Len(t, seatBid.bids, 3)
+	seatBids, errs := bidder.requestBid(context.Background(), bidderReq, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions, config.AlternateBidderCodes{})
+	assert.Len(t, seatBids, 1)
+	assert.Len(t, seatBids[0].bids, 3)
 	assert.Len(t, errs, 5)
 }
 
@@ -339,7 +342,7 @@ func TestCurrencyBids(t *testing.T) {
 			accountDebugAllowed: true,
 			headerDebugAllowed:  false,
 			addCallSignHeader:   false,
-			bidAdjustment:       bidAdjustments,
+			bidAdjustments:      bidAdjustments,
 		}
 		seatBids, errs := bidder.requestBid(context.Background(), bidderRequest, currency.NewConstantRates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions, config.AlternateBidderCodes{})
 		assert.Len(t, seatBids, 1)
@@ -353,6 +356,6 @@ type mockAdaptedBidder struct {
 	errorResponse []error
 }
 
-func (b *mockAdaptedBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestMetadata bidRequestOptions, alternateBidderCodes config.AlternateBidderCodes) (*pbsOrtbSeatBid, []error) {
+func (b *mockAdaptedBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestMetadata bidRequestOptions, alternateBidderCodes config.AlternateBidderCodes) ([]*pbsOrtbSeatBid, []error) {
 	return b.bidResponse, b.errorResponse
 }
