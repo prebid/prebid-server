@@ -114,7 +114,7 @@
                   "ext": {
                     "dspid": 6,
                     "deal_channel": 1,
-                    "dealpriority": 1
+                    "prebiddealpriority": 1
                   }
                 }]
               }
@@ -145,7 +145,7 @@
               "ext": {
                 "dspid": 6,
                 "deal_channel": 1,
-                "dealpriority": 1
+                "prebiddealpriority": 1
               }
             },
             "type": "banner"

@@ -24,10 +24,10 @@ type PubmaticAdapter struct {
 }
 
 type pubmaticBidExt struct {
-	BidType           *int                 `json:"BidType,omitempty"`
-	VideoCreativeInfo *pubmaticBidExtVideo `json:"video,omitempty"`
-	Marketplace       string               `json:"marketplace,omitempty"`
-	DealPriority      int                  `json:"dealpriority,omitempty"`
+	BidType            *int                 `json:"BidType,omitempty"`
+	VideoCreativeInfo  *pubmaticBidExtVideo `json:"video,omitempty"`
+	Marketplace        string               `json:"marketplace,omitempty"`
+	PrebidDealPriority int                  `json:"prebiddealpriority,omitempty"`
 }
 
 type pubmaticWrapperExt struct {
@@ -406,7 +406,7 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 			} else if bidExt != nil {
 				typedBid.Seat = openrtb_ext.BidderName(bidExt.Marketplace)
 				typedBid.BidType = getBidType(bidExt)
-				typedBid.DealPriority = bidExt.DealPriority
+				typedBid.DealPriority = bidExt.PrebidDealPriority
 
 				if bidExt.VideoCreativeInfo != nil && bidExt.VideoCreativeInfo.Duration != nil {
 					typedBid.BidVideo.Duration = *bidExt.VideoCreativeInfo.Duration
