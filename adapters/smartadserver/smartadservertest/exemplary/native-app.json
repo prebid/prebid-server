@@ -112,7 +112,7 @@
             "123.123.123.123"
           ]
         },
-        "uri": "http://us.example.com/bid?uqhash=hash",
+        "uri": "https://ssb.smartadserver.com/api/bid?callerId=5",
         "body": {
           "id": "some-request-id",
           "device": {
