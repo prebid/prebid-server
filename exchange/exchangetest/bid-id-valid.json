@@ -45,7 +45,7 @@
   "outgoingRequests": {
     "appnexus": {
       "mockResponse": {
-        "pbsSeatBid": {
+        "pbsSeatBids": [{
           "pbsBids": [
             {
               "ortbBid": {
@@ -65,8 +65,9 @@
                 "PrimaryCategory": ""
               }
             }
-          ]
-        }
+          ],
+          "seat": "appnexus"
+        }]
       }
     }
   },

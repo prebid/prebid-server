@@ -1,0 +1,13 @@
+maintainer:
+  email: "kraken@kargo.com"
+gvlVendorID: 972
+modifyingVastXmlAllowed: true
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  supports:
+    - redirect

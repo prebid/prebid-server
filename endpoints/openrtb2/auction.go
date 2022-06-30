@@ -1259,6 +1259,8 @@ func isBidderToValidate(bidder string) bool {
 		return false
 	case openrtb_ext.BidderReservedSKAdN:
 		return false
+	case openrtb_ext.BidderReservedTID:
+		return false
 	default:
 		return true
 	}
