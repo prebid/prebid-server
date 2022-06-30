@@ -15,6 +15,11 @@
       "pxratio": 2.625
     },
     "tmax": 1000,
+    "site": {
+      "publisher": {
+        "id": "73"
+      }
+    },
     "user": {
       "buyeruid": "awesome-user"
     },
@@ -135,7 +140,6 @@
             "content": {
               "url": "https://play.google.com/store/apps/details?id\u003djp.gocro.smartnews.android",
               "userrating": "4.2",
-              "livestream": 0,
               "language": "en"
             },
             "storeurl": "https://play.google.com/store/apps/details?id\u003djp.gocro.smartnews.android",
