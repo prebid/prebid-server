@@ -651,6 +651,13 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			expectedError:    "gdpr_consent is required. gdpr is not specified and is assumed to be 1 by the server. set gdpr=0 to exempt this request",
 		},
 		{
+			description:      "Explicit GDPR Signal 0 - Default Value 1",
+			givenBody:        strings.NewReader(`{"gdpr": 0}`),
+			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "1"},
+			givenCCPAEnabled: true,
+			expectedError:    "gdpr_consent is required. gdpr exemption disabled by host",
+		},
+		{
 			description:      "HTTP Read Error",
 			givenBody:        ErrReader(errors.New("anyError")),
 			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
