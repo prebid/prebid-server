@@ -10,13 +10,16 @@ import (
 // TCF2ConfigReader is an interface to access TCF2 configurations
 type TCF2ConfigReader interface {
 	BasicEnforcementVendor(openrtb_ext.BidderName) bool
+	BasicEnforcementVendors() map[string]struct{}
 	FeatureOneEnforced() bool
 	FeatureOneVendorException(openrtb_ext.BidderName) bool
 	IntegrationEnabled(config.IntegrationType) bool
 	IsEnabled() bool
 	PurposeEnforced(consentconstants.Purpose) bool
+	PurposeEnforcementType(consentconstants.Purpose) string
 	PurposeEnforcingVendors(consentconstants.Purpose) bool
 	PurposeVendorException(consentconstants.Purpose, openrtb_ext.BidderName) bool
+	PurposeVendorExceptions(consentconstants.Purpose) map[openrtb_ext.BidderName]struct{}
 	PurposeOneTreatmentEnabled() bool
 	PurposeOneTreatmentAccessAllowed() bool
 }
@@ -62,6 +65,16 @@ func (tc *tcf2Config) PurposeEnforced(purpose consentconstants.Purpose) bool {
 	return value
 }
 
+// PurposeEnforcementType checks if the purpose enforcement type is turned on for a given purpose by first
+// looking at the account settings, and if not set there, defaulting to the host configuration.
+func (tc *tcf2Config) PurposeEnforcementType(purpose consentconstants.Purpose) string {
+	if value, exists := tc.AccountConfig.PurposeEnforcementType(purpose); exists {
+		return value
+	}
+
+	return tc.HostConfig.PurposeEnforcementType(purpose)
+}
+
 // PurposeEnforcingVendors checks if enforcing vendors is turned on for a given purpose by first looking at the
 // account settings, and if not set there, defaulting to the host configuration. With enforcing vendors enabled,
 // the GDPR full enforcement algorithm considers the GVL when determining legal basis; otherwise it's skipped.
@@ -84,6 +97,16 @@ func (tc *tcf2Config) PurposeVendorException(purpose consentconstants.Purpose, b
 	}
 	value := tc.HostConfig.PurposeVendorException(purpose, bidder)
 	return value
+}
+
+// PurposeVendorExceptions returns the vendor exception map for the specified purpose if it exists for the account;
+// otherwise it returns a nil map
+func (tc *tcf2Config) PurposeVendorExceptions(purpose consentconstants.Purpose) map[openrtb_ext.BidderName]struct{} {
+	if value, exists := tc.AccountConfig.PurposeVendorExceptions(purpose); exists {
+		return value
+	}
+
+	return tc.HostConfig.PurposeVendorExceptions(purpose)
 }
 
 // FeatureOneEnforced checks if special feature one is enforced by first looking at the account settings, and if not
@@ -138,4 +161,13 @@ func (tc *tcf2Config) BasicEnforcementVendor(bidder openrtb_ext.BidderName) bool
 		return value
 	}
 	return false
+}
+
+// BasicEnforcementVendors returns the basic enforcement map if it exists for the account; otherwise it returns
+// an empty map.
+func (tc *tcf2Config) BasicEnforcementVendors() map[string]struct{} {
+	if tc.AccountConfig.BasicEnforcementVendorsMap != nil {
+		return tc.AccountConfig.BasicEnforcementVendorsMap
+	}
+	return make(map[string]struct{}, 0)
 }

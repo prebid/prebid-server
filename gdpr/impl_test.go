@@ -859,7 +859,7 @@ func TestAllowActivitiesBidRequests(t *testing.T) {
 			passGeo:                false,
 			passID:                 true,
 		},
-		{
+		{ // FAILS
 			description:            "Bid allowed - p2 disabled, user consents to p2 but not vendor, vendor consents to p2",
 			purpose2EnforcePurpose: false,
 			purpose2EnforceVendors: true,

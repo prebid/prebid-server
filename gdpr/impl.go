@@ -14,18 +14,26 @@ import (
 )
 
 type permissionsImpl struct {
+	// global
 	fetchVendorList       VendorListFetcher
 	gdprDefaultValue      string
 	hostVendorID          int
 	nonStandardPublishers map[string]struct{}
-	cfg                   TCF2ConfigReader
 	vendorIDs             map[openrtb_ext.BidderName]uint16
-	consent               string
-	gdprSignal            Signal
-	publisherID           string
-	aliasGVLIDs           map[string]uint16
+	// request-specific
+	aliasGVLIDs map[string]uint16
+	cfg         TCF2ConfigReader
+	consent     string
+	gdprSignal  Signal
+	publisherID string
+	// cached enforcers
+	// purposeEnforcers      map[consentconstants.Purpose]map[TCF2Enforcement]PurposeEnforcer
 }
 
+// called from /cookie_sync & /setuid
+// vendor exception should not apply -- should we allow a host to specify themselves as a vendor exception for purpose 1?
+// if yes, should we validate at startup and throw a warning?
+// if no, should we add validation logic that fails hard? That seems like the right place to do it rather than ignoring the value in the GDPR logic
 func (p *permissionsImpl) HostCookiesAllowed(ctx context.Context) (bool, error) {
 	if p.gdprSignal != SignalYes {
 		return true, nil
@@ -34,6 +42,8 @@ func (p *permissionsImpl) HostCookiesAllowed(ctx context.Context) (bool, error) 
 	return p.allowSync(ctx, uint16(p.hostVendorID), false)
 }
 
+// called from /cookie_sync
+// yes vendor exception applies
 func (p *permissionsImpl) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName) (bool, error) {
 	if p.gdprSignal != SignalYes {
 		return true, nil
@@ -48,6 +58,8 @@ func (p *permissionsImpl) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 	return false, nil
 }
 
+// AuctionActivitiesAllowed implements the Permissions interface
+// It determines whether auction activities are allowed for a given bidder
 func (p *permissionsImpl) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (permissions AuctionPermissions, err error) {
 	if _, ok := p.nonStandardPublishers[p.publisherID]; ok {
 		return AllowAll, nil
@@ -61,15 +73,48 @@ func (p *permissionsImpl) AuctionActivitiesAllowed(ctx context.Context, bidderCo
 		return DenyAll, nil
 	}
 
+	// note the bidder here is guaranteed to be enabled
+	vendorID, vendorFound := p.resolveVendorId(bidderCoreName, bidder)
 	weakVendorEnforcement := p.cfg.BasicEnforcementVendor(bidder)
 
-	if id, ok := p.resolveVendorId(bidderCoreName, bidder); ok {
-		return p.allowActivities(ctx, id, bidderCoreName, weakVendorEnforcement)
-	} else if weakVendorEnforcement {
-		return p.allowActivities(ctx, 0, bidderCoreName, weakVendorEnforcement)
+	if !vendorFound && !weakVendorEnforcement {
+		return DenyAll, nil
 	}
 
-	return DenyAll, nil
+	parsedConsent, vendor, err := p.parseVendor(ctx, vendorID, p.consent)
+	if err != nil {
+		return DenyAll, err
+	}
+
+	// vendor will be nil if not a valid TCF2 consent string
+	// if vendor == nil && parsedConsent.Version() != 2 {
+	// 	return DenyAll, nil
+	// }
+	if vendor == nil {
+		if weakVendorEnforcement && parsedConsent.Version() == 2 {
+			vendor = vendorTrue{}
+		} else {
+			return DenyAll, nil
+		}
+	}
+
+	if !p.cfg.IsEnabled() {
+		return AllowBidRequestOnly, nil
+	}
+
+	consentMeta, ok := parsedConsent.(tcf2.ConsentMetadata)
+	if !ok {
+		err = fmt.Errorf("Unable to access TCF2 parsed consent")
+		return DenyAll, err
+	}
+
+	vendorInfo := VendorInfo{vendorID: vendorID, vendor: vendor}
+	permissions = AuctionPermissions{}
+	permissions.AllowBidRequest = p.allowBidRequest(bidderCoreName, consentMeta, vendorInfo)
+	permissions.PassGeo = p.allowGeo(bidderCoreName, consentMeta, vendor)
+	permissions.PassID = p.allowID(bidderCoreName, consentMeta, vendorInfo)
+
+	return permissions, nil
 }
 
 func (p *permissionsImpl) resolveVendorId(bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (id uint16, ok bool) {
@@ -111,57 +156,90 @@ func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, vendor
 
 	enforceVendors := p.cfg.PurposeEnforcingVendors(tcf2ConsentConstants.InfoStorageAccess)
 	return p.checkPurpose(consentMeta, vendor, vendorID, tcf2ConsentConstants.InfoStorageAccess, enforceVendors, vendorException, false), nil
+	// purpose := consentconstants.Purpose(1)
+	// enforcer := p.getPurposeEnforcer(purpose, bidder, true)
+
+	// vendorInfo := VendorInfo{vendorID: vendorID, vendor: vendor}
+	// if enforcer.LegalBasis(vendorInfo, BidderInfo{bidder: bidder}, consentMeta) {
+	// 	return true, nil
+	// }
+	// return false, nil
 }
 
-func (p *permissionsImpl) allowActivities(ctx context.Context, vendorID uint16, bidder openrtb_ext.BidderName, weakVendorEnforcement bool) (AuctionPermissions, error) {
-	parsedConsent, vendor, err := p.parseVendor(ctx, vendorID, p.consent)
-	if err != nil {
-		return DenyAll, err
+func (p *permissionsImpl) allowBidRequest(bidder openrtb_ext.BidderName, consentMeta tcf2.ConsentMetadata, vendorInfo VendorInfo) bool {
+	purpose := consentconstants.Purpose(2)
+	enforcer := p.getPurposeEnforcer(purpose, bidder, true) //TODO: true
+
+	// this function will return true if purpose 2 is NOT enforced
+	if enforcer.LegalBasis(vendorInfo, BidderInfo{bidder: bidder}, consentMeta) {
+		return true
+	}
+	return false
+}
+
+func (p *permissionsImpl) allowGeo(bidder openrtb_ext.BidderName, consentMeta tcf2.ConsentMetadata, vendor api.Vendor) bool {
+	if !p.cfg.FeatureOneEnforced() {
+		return true
+	}
+	if p.cfg.FeatureOneVendorException(bidder) {
+		return true
 	}
 
-	// vendor will be nil if not a valid TCF2 consent string
-	if vendor == nil {
-		if weakVendorEnforcement && parsedConsent.Version() == 2 {
-			vendor = vendorTrue{}
-		} else {
-			return DenyAll, nil
-		}
-	}
+	weakVendorEnforcement := p.cfg.BasicEnforcementVendor(bidder)
+	return consentMeta.SpecialFeatureOptIn(1) && (vendor.SpecialFeature(1) || weakVendorEnforcement)
+}
 
-	if !p.cfg.IsEnabled() {
-		return AllowBidRequestOnly, nil
-	}
-
-	consentMeta, ok := parsedConsent.(tcf2.ConsentMetadata)
-	if !ok {
-		err = fmt.Errorf("Unable to access TCF2 parsed consent")
-		return DenyAll, err
-	}
-
-	permissions := AuctionPermissions{}
-	if p.cfg.FeatureOneEnforced() {
-		vendorException := p.cfg.FeatureOneVendorException(bidder)
-		permissions.PassGeo = vendorException || (consentMeta.SpecialFeatureOptIn(1) && (vendor.SpecialFeature(1) || weakVendorEnforcement))
-	} else {
-		permissions.PassGeo = true
-	}
-	if p.cfg.PurposeEnforced(consentconstants.Purpose(2)) {
-		enforceVendors := p.cfg.PurposeEnforcingVendors(consentconstants.Purpose(2))
-		vendorException := p.cfg.PurposeVendorException(consentconstants.Purpose(2), bidder)
-		permissions.AllowBidRequest = p.checkPurpose(consentMeta, vendor, vendorID, consentconstants.Purpose(2), enforceVendors, vendorException, weakVendorEnforcement)
-	} else {
-		permissions.AllowBidRequest = true
-	}
+func (p *permissionsImpl) allowID(bidder openrtb_ext.BidderName, consentMeta tcf2.ConsentMetadata, vendorInfo VendorInfo) bool {
 	for i := 2; i <= 10; i++ {
-		enforceVendors := p.cfg.PurposeEnforcingVendors(consentconstants.Purpose(i))
-		vendorException := p.cfg.PurposeVendorException(consentconstants.Purpose(i), bidder)
-		if p.checkPurpose(consentMeta, vendor, vendorID, consentconstants.Purpose(i), enforceVendors, vendorException, weakVendorEnforcement) {
-			permissions.PassID = true
-			break
+		purpose := consentconstants.Purpose(i)
+		enforcer := p.getPurposeEnforcer(purpose, bidder, true) //TODO: true value should be set based on the value of p.VendorList
+
+		if enforcer.PurposeEnforced() && enforcer.LegalBasis(vendorInfo, BidderInfo{bidder: bidder}, consentMeta) {
+			return true
 		}
 	}
 
-	return permissions, nil
+	return false
+}
+
+func (p *permissionsImpl) getPurposeEnforcer(purpose consentconstants.Purpose, bidder openrtb_ext.BidderName, haveGVL bool) PurposeEnforcer {
+	// use cached enforcer if already exists
+	// if enforcer, ok := ts.purposeEnforcers[purpose]; ok { //TODO: need to consider when both enforcers are needed for a purpose because some vendors require basic enforcement
+	// 	return enforcer
+	// }
+
+	cfg := purposeConfig{
+		PurposeID:                  purpose,
+		EnforcePurpose:             p.cfg.PurposeEnforcementType(purpose),
+		EnforceVendors:             p.cfg.PurposeEnforcingVendors(purpose),
+		VendorExceptionMap:         p.cfg.PurposeVendorExceptions(purpose),
+		BasicEnforcementVendorsMap: p.cfg.BasicEnforcementVendors(),
+	}
+
+	downgraded := p.isDowngraded(cfg.EnforcePurpose, p.cfg.BasicEnforcementVendor(bidder), haveGVL)
+	enforcer := NewPurposeEnforcer(cfg, downgraded)
+
+	//cache the enforcer
+	//TODO: uncomment
+	// ts.purposeEnforcers[purpose] := enforcer
+
+	return enforcer
+}
+
+func (p *permissionsImpl) isDowngraded(enforcePurpose string, basicEnforcementVendor bool, haveGVL bool) bool {
+	if enforcePurpose == TCF2FullEnforcement && basicEnforcementVendor {
+		return true
+	}
+	if enforcePurpose == TCF2FullEnforcement && !haveGVL {
+		return true
+	}
+	// When no enforcement algorithm has been specified, we are not enforcing the purpose which resorts to using the full algorithm by default
+	// resulting in publisher restriction checks and possible vendor checks if we are enforcing vendors for the purpose. If the GVL is not
+	// available though, we need to drop down to basic
+	if enforcePurpose == TCF2NoEnforcement && !haveGVL {
+		return true
+	}
+	return false
 }
 
 const pubRestrictNotAllowed = 0

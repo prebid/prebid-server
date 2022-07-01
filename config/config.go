@@ -315,6 +315,15 @@ func (t *TCF2) BasicEnforcementVendor(openrtb_ext.BidderName) bool {
 	return false
 }
 
+func (t *TCF2) BasicEnforcementVendors() map[string]struct{} {
+	return make(map[string]struct{})
+}
+
+// BasiceEnforcementVendors returns a nil map because basic enforcement vendors cannot be defined at the host level
+func (t *TCF2) BasiceEnforcementVendors() map[string]struct{} {
+	return nil
+}
+
 // IntegrationEnabled checks if a given integration type is enabled. All integration types are considered either
 // enabled or disabled based on the Enabled flag.
 func (t *TCF2) IntegrationEnabled(integrationType IntegrationType) bool {
@@ -331,6 +340,14 @@ func (t *TCF2) IsEnabled() bool {
 func (t *TCF2) PurposeEnforced(purpose consentconstants.Purpose) (value bool) {
 	if t.PurposeConfigs[purpose] == nil {
 		return false
+	}
+	return t.PurposeConfigs[purpose].EnforcePurpose
+}
+
+// PurposeEnforcementType
+func (t *TCF2) PurposeEnforcementType(purpose consentconstants.Purpose) (value string) {
+	if t.PurposeConfigs[purpose] == nil {
+		return TCF2FullEnforcement
 	}
 	return t.PurposeConfigs[purpose].EnforcePurpose
 }
@@ -355,6 +372,17 @@ func (t *TCF2) PurposeVendorException(purpose consentconstants.Purpose, bidder o
 		return true
 	}
 	return false
+}
+
+// PurposeVendorExceptions
+func (t *TCF2) PurposeVendorExceptions(purpose consentconstants.Purpose) (value map[openrtb_ext.BidderName]struct{}) {
+	if t.PurposeConfigs[purpose] == nil {
+		return nil
+	}
+	if t.PurposeConfigs[purpose].VendorExceptionMap == nil {
+		return make(map[openrtb_ext.BidderName]struct{}, 0)
+	}
+	return t.PurposeConfigs[purpose].VendorExceptionMap
 }
 
 // FeatureOneEnforced checks if special feature one is enforced. If it is enforced, PBS will determine whether geo
