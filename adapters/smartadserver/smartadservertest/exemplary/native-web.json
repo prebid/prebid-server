@@ -112,7 +112,7 @@
             "2607:fb90:f27:4512:d800:cb23:a603:e245"
           ]
         },
-        "uri": "http://us.example.com/bid?uqhash=hash",
+        "uri": "https://ssb.smartadserver.com/api/bid?callerId=5",
         "body": {
           "id": "some-request-id",
           "device": {
@@ -266,10 +266,6 @@
               "colruyt.be"
             ],
             "crid": "431321529",
-            "w": 0,
-            "h": 0,
-            "exp": 0,
-            "qagmediarating": 0,
             "ext": {
               "event_notification_token": {
                 "payload": "3305.295938731865870037.1656056869251"
