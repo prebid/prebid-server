@@ -338,7 +338,7 @@ func TestPubmaticAdapter_MakeBids(t *testing.T) {
 							H:       250,
 							W:       300,
 							DealID:  "testdeal",
-							Ext:     json.RawMessage(`{"dspid": 6, "deal_channel": 1}`),
+							Ext:     json.RawMessage(`{"dspid": 6, "deal_channel": 1, "prebiddealpriority": -1}`),
 						},
 						BidType:  openrtb_ext.BidTypeBanner,
 						BidVideo: &openrtb_ext.ExtBidPrebidVideo{},
