@@ -315,6 +315,38 @@ func TestPubmaticAdapter_MakeBids(t *testing.T) {
 				Currency: "USD",
 			},
 		},
+		{
+			name: "ignore invalid prebiddealpriority",
+			args: args{
+				response: &adapters.ResponseData{
+					StatusCode: http.StatusOK,
+					Body:       []byte(`{"id": "test-request-id", "seatbid":[{"seat": "958", "bid":[{"id": "7706636740145184841", "impid": "test-imp-id", "price": 0.500000, "adid": "29681110", "adm": "some-test-ad", "adomain":["pubmatic.com"], "crid": "29681110", "h": 250, "w": 300, "dealid": "testdeal", "ext":{"dspid": 6, "deal_channel": 1, "prebiddealpriority": -1}}]}], "bidid": "5778926625248726496", "cur": "USD"}`),
+				},
+			},
+			wantErr: nil,
+			wantResp: &adapters.BidderResponse{
+				Bids: []*adapters.TypedBid{
+					{
+						Bid: &openrtb2.Bid{
+							ID:      "7706636740145184841",
+							ImpID:   "test-imp-id",
+							Price:   0.500000,
+							AdID:    "29681110",
+							AdM:     "some-test-ad",
+							ADomain: []string{"pubmatic.com"},
+							CrID:    "29681110",
+							H:       250,
+							W:       300,
+							DealID:  "testdeal",
+							Ext:     json.RawMessage(`{"dspid": 6, "deal_channel": 1}`),
+						},
+						BidType:  openrtb_ext.BidTypeBanner,
+						BidVideo: &openrtb_ext.ExtBidPrebidVideo{},
+					},
+				},
+				Currency: "USD",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

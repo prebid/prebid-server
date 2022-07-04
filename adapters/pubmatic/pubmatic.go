@@ -406,7 +406,9 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 			} else if bidExt != nil {
 				typedBid.Seat = openrtb_ext.BidderName(bidExt.Marketplace)
 				typedBid.BidType = getBidType(bidExt)
-				typedBid.DealPriority = bidExt.PrebidDealPriority
+				if bidExt.PrebidDealPriority > 0 {
+					typedBid.DealPriority = bidExt.PrebidDealPriority
+				}
 
 				if bidExt.VideoCreativeInfo != nil && bidExt.VideoCreativeInfo.Duration != nil {
 					typedBid.BidVideo.Duration = *bidExt.VideoCreativeInfo.Duration
