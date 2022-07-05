@@ -32,7 +32,7 @@
   "outgoingRequests": {
     "appnexus": {
       "mockResponse": {
-        "pbsSeatBid": {
+        "pbsSeatBids": [{
           "pbsBids": [
             {
               "ortbBid": {
@@ -45,8 +45,9 @@
               },
               "bidType": "banner"
             }
-          ]
-        }
+          ],
+          "seat": "appnexus"
+        }]
       }
     }
   },

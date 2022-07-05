@@ -46,6 +46,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 	privacyConfig config.Privacy,
 	gdprPermsBuilder gdpr.PermissionsBuilder,
 	tcf2ConfigBuilder gdpr.TCF2ConfigBuilder,
+	hostSChainNode *openrtb_ext.ExtRequestPrebidSChainSChainNode,
 ) (allowedBidderRequests []BidderRequest, privacyLabels metrics.PrivacyLabels, errs []error) {
 
 	req := auctionReq.BidRequestWrapper
@@ -70,7 +71,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 	}
 
 	var allBidderRequests []BidderRequest
-	allBidderRequests, errs = getAuctionBidderRequests(auctionReq, requestExt, bidderToSyncerKey, impsByBidder, aliases)
+	allBidderRequests, errs = getAuctionBidderRequests(auctionReq, requestExt, bidderToSyncerKey, impsByBidder, aliases, hostSChainNode)
 
 	bidderNameToBidderReq := buildBidResponseRequest(req.BidRequest, bidderImpWithBidResp, aliases)
 	//this function should be executed after getAuctionBidderRequests
@@ -206,7 +207,8 @@ func getAuctionBidderRequests(auctionRequest AuctionRequest,
 	requestExt *openrtb_ext.ExtRequest,
 	bidderToSyncerKey map[string]string,
 	impsByBidder map[string][]openrtb2.Imp,
-	aliases map[string]string) ([]BidderRequest, []error) {
+	aliases map[string]string,
+	hostSChainNode *openrtb_ext.ExtRequestPrebidSChainSChainNode) ([]BidderRequest, []error) {
 
 	bidderRequests := make([]BidderRequest, 0, len(impsByBidder))
 	req := auctionRequest.BidRequestWrapper
@@ -220,7 +222,7 @@ func getAuctionBidderRequests(auctionRequest AuctionRequest,
 		return nil, []error{err}
 	}
 
-	sChainWriter, err := schain.NewSChainWriter(requestExt)
+	sChainWriter, err := schain.NewSChainWriter(requestExt, hostSChainNode)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -421,6 +423,10 @@ func createSanitizedImpExt(impExt, impExtPrebid map[string]json.RawMessage) (map
 		sanitizedImpExt[openrtb_ext.GPIDKey] = v
 	}
 
+	if v, exists := impExt[string(openrtb_ext.TIDKey)]; exists {
+		sanitizedImpExt[openrtb_ext.TIDKey] = v
+	}
+
 	return sanitizedImpExt, nil
 }
 
@@ -451,7 +457,8 @@ func isSpecialField(bidder string) bool {
 		bidder == openrtb_ext.FirstPartyDataExtKey ||
 		bidder == openrtb_ext.SKAdNExtKey ||
 		bidder == openrtb_ext.GPIDKey ||
-		bidder == openrtb_ext.PrebidExtKey
+		bidder == openrtb_ext.PrebidExtKey ||
+		bidder == openrtb_ext.TIDKey
 }
 
 // prepareUser changes req.User so that it's ready for the given bidder.

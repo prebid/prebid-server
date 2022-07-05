@@ -20,11 +20,12 @@ func processInterstitials(req *openrtb_ext.RequestWrapper) error {
 					return nil
 				}
 				deviceExt, err := req.GetDeviceExt()
+
 				if err != nil {
 					return err
 				}
 				prebid = deviceExt.GetPrebid()
-				if prebid.Interstitial == nil {
+				if prebid == nil || prebid.Interstitial == nil {
 					// No special interstitial support requested, so bail as there is nothing to do
 					return nil
 				}

@@ -70,11 +70,10 @@
                             }
                         }
                     }]
-                },
-                "bidAdjustment": 1.0
+                }
             },
             "mockResponse": {
-                "pbsSeatBid": {
+                "pbsSeatBids": [{
                     "pbsBids": [{
                         "ortbBid": {
                             "id": "apn-bid",
@@ -85,8 +84,9 @@
                             "crid": "creative-1"
                         },
                         "bidType": "banner"
-                    }]
-                }
+                    }],
+                    "seat": "appnexus"
+                }]
             }
         }
     },

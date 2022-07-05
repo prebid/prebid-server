@@ -69,12 +69,14 @@ import (
 	"github.com/prebid/prebid-server/adapters/huaweiads"
 	"github.com/prebid/prebid-server/adapters/impactify"
 	"github.com/prebid/prebid-server/adapters/improvedigital"
+	"github.com/prebid/prebid-server/adapters/infytv"
 	"github.com/prebid/prebid-server/adapters/inmobi"
 	"github.com/prebid/prebid-server/adapters/interactiveoffers"
 	"github.com/prebid/prebid-server/adapters/invibes"
 	"github.com/prebid/prebid-server/adapters/iqzone"
 	"github.com/prebid/prebid-server/adapters/ix"
 	"github.com/prebid/prebid-server/adapters/jixie"
+	"github.com/prebid/prebid-server/adapters/kargo"
 	"github.com/prebid/prebid-server/adapters/kayzen"
 	"github.com/prebid/prebid-server/adapters/kidoz"
 	"github.com/prebid/prebid-server/adapters/krushmedia"
@@ -222,6 +224,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderIx:                ix.Builder,
 		openrtb_ext.BidderJANet:             adtelligent.Builder,
 		openrtb_ext.BidderJixie:             jixie.Builder,
+		openrtb_ext.BidderKargo:             kargo.Builder,
 		openrtb_ext.BidderKayzen:            kayzen.Builder,
 		openrtb_ext.BidderKidoz:             kidoz.Builder,
 		openrtb_ext.BidderKrushmedia:        krushmedia.Builder,
@@ -232,7 +235,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderSaLunaMedia:       salunamedia.Builder,
 		openrtb_ext.BidderMadvertise:        madvertise.Builder,
 		openrtb_ext.BidderMarsmedia:         marsmedia.Builder,
-		openrtb_ext.BidderMediafuse:         adtelligent.Builder,
+		openrtb_ext.BidderMediafuse:         appnexus.Builder,
 		openrtb_ext.BidderMedianet:          medianet.Builder,
 		openrtb_ext.BidderMgid:              mgid.Builder,
 		openrtb_ext.BidderMobfoxpb:          mobfoxpb.Builder,
@@ -294,5 +297,6 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderYieldone:          yieldone.Builder,
 		openrtb_ext.BidderYSSP:              yahoossp.Builder,
 		openrtb_ext.BidderZeroClickFraud:    zeroclickfraud.Builder,
+		openrtb_ext.BidderInfyTV:            infytv.Builder,
 	}
 }

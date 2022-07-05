@@ -207,6 +207,7 @@ type expectedBidResponse struct {
 type expectedBid struct {
 	Bid  json.RawMessage `json:"bid"`
 	Type string          `json:"type"`
+	Seat string          `json:"seat"`
 }
 
 // ---------------------------------------
@@ -314,6 +315,7 @@ func diffBids(t *testing.T, description string, actual *adapters.TypedBid, expec
 		return
 	}
 
+	assert.Equal(t, string(expected.Seat), string(actual.Seat), fmt.Sprintf(`%s.seat "%s" does not match expected "%s."`, description, string(actual.Seat), string(expected.Seat)))
 	assert.Equal(t, string(expected.Type), string(actual.BidType), fmt.Sprintf(`%s.type "%s" does not match expected "%s."`, description, string(actual.BidType), string(expected.Type)))
 	assert.NoError(t, diffOrtbBids(fmt.Sprintf("%s.bid", description), actual.Bid, expected.Bid))
 }
