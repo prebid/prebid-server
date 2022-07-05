@@ -42,16 +42,16 @@
                 ]
               },
 
-	      "ext": {
-		  "bidder": {
-		    "Just_an_unused_vrtcal_param": "unused_data_for_this"
-		  }
-	     }
+              "ext": {
+                 "bidder": {
+                    "Just_an_unused_vrtcal_param": "unused_data_for_this"
+                 }
+              }
             }
           ],
           "site": {
             "id": "fake-site-id",
-	    "page": "http://www.vrtcal.com"
+            "page": "http://www.vrtcal.com"
           }
         }
       },

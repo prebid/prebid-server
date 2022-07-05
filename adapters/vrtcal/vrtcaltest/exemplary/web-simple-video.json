@@ -9,7 +9,7 @@
                 "protocols": [2, 5],
                 "w": 300,
                 "h": 250
-	},
+        },
         "ext": {
           "bidder": {
             "Just_an_unused_vrtcal_param": "unused_data_for_this"
@@ -31,23 +31,23 @@
           "imp": [
             {
               "id": "test-imp-id",
-	      "video": {
-		"mimes": ["video/mp4"],
-		"protocols": [2, 5],
-		"w": 300,
-		"h": 250
-	      },
+              "video": {
+                "mimes": ["video/mp4"],
+                "protocols": [2, 5],
+                "w": 300,
+                "h": 250
+              },
 
-	      "ext": {
-		  "bidder": {
-		    "Just_an_unused_vrtcal_param": "unused_data_for_this"
-		  }
-	     }
+              "ext": {
+                  "bidder": {
+                    "Just_an_unused_vrtcal_param": "unused_data_for_this"
+                  }
+              }
             }
           ],
           "site": {
             "id": "fake-site-id",
-	    "page": "http://www.vrtcal.com"
+            "page": "http://www.vrtcal.com"
           }
         }
       },
