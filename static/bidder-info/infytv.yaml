@@ -1,0 +1,9 @@
+maintainer:
+  email: "tech+hb@infy.tv"
+capabilities:
+  app:
+    mediaTypes:
+      - video
+  site:
+    mediaTypes:
+      - video

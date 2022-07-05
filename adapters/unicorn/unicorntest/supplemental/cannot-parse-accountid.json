@@ -21,21 +21,15 @@
             }
           },
           "bidder": {
-            "accountId": 199578,
+            "accountId": "hogeohge",
             "publisherId": 123456,
             "mediaId": "test_media",
             "placementId": "test_placement"
-          },
-          "context": {
-            "data": {
-              "firstPartyData1": ["firstPartyData1"],
-              "uuid": ["xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"]
-            }
           }
         }
       }
     ],
-    "cur": ["USD"],
+    "cur": ["JPY"],
     "app": {
       "publisher": {
         "id": "test"
@@ -70,21 +64,12 @@
     },
     "user": {
       "gender": "O"
-    },
-    "ext": {
-      "prebid": {
-        "targeting": {},
-        "cache": {
-          "bids": {}
-        },
-        "storedrequest": {
-          "id": "test"
-        }
-      }
     }
   },
-  "expectedMakeRequestsErrors" : [{
-    "value": "Only JPY is supported",
-    "comparison": "literal"
-  }]
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Error while decoding imp[0].ext: json: cannot unmarshal string into Go struct field ExtImpUnicorn.bidder.accountId of type int",
+      "comparison": "literal"
+    }
+  ]
 }
