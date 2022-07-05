@@ -61,24 +61,24 @@ type beachfrontVideoRequest struct {
 //              Banner
 // ---------------------------------------------------
 type beachfrontBannerRequest struct {
-	Slots          []beachfrontSlot                         `json:"slots"`
-	Domain         string                                   `json:"domain"`
-	Page           string                                   `json:"page"`
-	Referrer       string                                   `json:"referrer"`
-	Search         string                                   `json:"search"`
-	Secure         int8                                     `json:"secure"`
-	DeviceOs       string                                   `json:"deviceOs"`
-	DeviceModel    string                                   `json:"deviceModel"`
-	IsMobile       int8                                     `json:"isMobile"`
-	UA             string                                   `json:"ua"`
-	Dnt            int8                                     `json:"dnt"`
-	User           openrtb2.User                            `json:"user"`
-	AdapterName    string                                   `json:"adapterName"`
-	AdapterVersion string                                   `json:"adapterVersion"`
-	IP             string                                   `json:"ip"`
-	RequestID      string                                   `json:"requestId"`
-	Real204        bool                                     `json:"real204"`
-	SChain         openrtb_ext.ExtRequestPrebidSChainSChain `json:"schain,omitempty"`
+	Slots          []beachfrontSlot     `json:"slots"`
+	Domain         string               `json:"domain"`
+	Page           string               `json:"page"`
+	Referrer       string               `json:"referrer"`
+	Search         string               `json:"search"`
+	Secure         int8                 `json:"secure"`
+	DeviceOs       string               `json:"deviceOs"`
+	DeviceModel    string               `json:"deviceModel"`
+	IsMobile       int8                 `json:"isMobile"`
+	UA             string               `json:"ua"`
+	Dnt            int8                 `json:"dnt"`
+	User           openrtb2.User        `json:"user"`
+	AdapterName    string               `json:"adapterName"`
+	AdapterVersion string               `json:"adapterVersion"`
+	IP             string               `json:"ip"`
+	RequestID      string               `json:"requestId"`
+	Real204        bool                 `json:"real204"`
+	SChain         openrtb2.SupplyChain `json:"schain,omitempty"`
 }
 
 type beachfrontSlot struct {

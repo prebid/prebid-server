@@ -411,7 +411,7 @@ type RequestExt struct {
 	extDirty    bool
 	prebid      *ExtRequestPrebid
 	prebidDirty bool
-	schain      *ExtRequestPrebidSChainSChain // ORTB 2.4 location
+	schain      *openrtb2.SupplyChain // ORTB 2.4 location
 	schainDirty bool
 }
 
@@ -434,7 +434,7 @@ func (re *RequestExt) unmarshal(extJson json.RawMessage) error {
 	}
 	schainJson, hasSChain := re.ext["schain"]
 	if hasSChain {
-		re.schain = &ExtRequestPrebidSChainSChain{}
+		re.schain = &openrtb2.SupplyChain{}
 		err = json.Unmarshal(schainJson, re.schain)
 	}
 
@@ -511,7 +511,7 @@ func (re *RequestExt) SetPrebid(prebid *ExtRequestPrebid) {
 // These schain methods on the request.ext are only for ORTB 2.4 backwards compatibility and
 // should not be used for any other purposes. To access ORTB 2.5 schains, see source.ext.schain
 // or request.ext.prebid.schains.
-func (re *RequestExt) GetSChain() *ExtRequestPrebidSChainSChain {
+func (re *RequestExt) GetSChain() *openrtb2.SupplyChain {
 	if re.schain == nil {
 		return nil
 	}
@@ -519,7 +519,7 @@ func (re *RequestExt) GetSChain() *ExtRequestPrebidSChainSChain {
 	return &schain
 }
 
-func (re *RequestExt) SetSChain(schain *ExtRequestPrebidSChainSChain) {
+func (re *RequestExt) SetSChain(schain *openrtb2.SupplyChain) {
 	re.schain = schain
 	re.schainDirty = true
 }
@@ -861,7 +861,7 @@ func (se *SiteExt) SetUSPrivacy(amp int8) {
 type SourceExt struct {
 	ext         map[string]json.RawMessage
 	extDirty    bool
-	schain      *ExtRequestPrebidSChainSChain
+	schain      *openrtb2.SupplyChain
 	schainDirty bool
 }
 
@@ -923,7 +923,7 @@ func (se *SourceExt) SetExt(ext map[string]json.RawMessage) {
 	se.extDirty = true
 }
 
-func (se *SourceExt) GetSChain() *ExtRequestPrebidSChainSChain {
+func (se *SourceExt) GetSChain() *openrtb2.SupplyChain {
 	if se.schain == nil {
 		return nil
 	}
@@ -931,7 +931,7 @@ func (se *SourceExt) GetSChain() *ExtRequestPrebidSChainSChain {
 	return &schain
 }
 
-func (se *SourceExt) SetSChain(schain *ExtRequestPrebidSChainSChain) {
+func (se *SourceExt) SetSChain(schain *openrtb2.SupplyChain) {
 	se.schain = schain
 	se.schainDirty = true
 }
