@@ -502,6 +502,11 @@ func TestRecordStoredDataFetchTime(t *testing.T) {
 			dataType:    metrics.VideoDataType,
 			fetchType:   metrics.FetchDelta,
 		},
+		{
+			description: "Update stored responses histogram with delta label",
+			dataType:    metrics.ResponseDataType,
+			fetchType:   metrics.FetchDelta,
+		},
 	}
 
 	for _, tt := range tests {
@@ -525,6 +530,8 @@ func TestRecordStoredDataFetchTime(t *testing.T) {
 			metricsTimer = m.storedRequestFetchTimer
 		case metrics.VideoDataType:
 			metricsTimer = m.storedVideoFetchTimer
+		case metrics.ResponseDataType:
+			metricsTimer = m.storedResponsesFetchTimer
 		}
 
 		result := getHistogramFromHistogramVec(
@@ -602,6 +609,12 @@ func TestRecordStoredDataError(t *testing.T) {
 			errorType:   metrics.StoredDataErrorUndefined,
 			metricName:  "stored_video_errors",
 		},
+		{
+			description: "Update stored_response_errors counter with network label",
+			dataType:    metrics.ResponseDataType,
+			errorType:   metrics.StoredDataErrorNetwork,
+			metricName:  "stored_response_errors",
+		},
 	}
 
 	for _, tt := range tests {
@@ -623,6 +636,8 @@ func TestRecordStoredDataError(t *testing.T) {
 			metricsCounter = m.storedRequestErrors
 		case metrics.VideoDataType:
 			metricsCounter = m.storedVideoErrors
+		case metrics.ResponseDataType:
+			metricsCounter = m.storedResponsesErrors
 		}
 
 		assertCounterVecValue(t, tt.description, tt.metricName, metricsCounter,
@@ -1625,4 +1640,35 @@ func TestRecordAdapterGDPRRequestBlocked(t *testing.T) {
 		prometheus.Labels{
 			adapterLabel: string(openrtb_ext.BidderAppnexus),
 		})
+}
+
+func TestStoredResponsesMetric(t *testing.T) {
+	testCases := []struct {
+		description                         string
+		publisherId                         string
+		expectedAccountStoredResponsesCount float64
+		expectedStoredResponsesCount        float64
+	}{
+
+		{
+			description:                         "Publisher id is given, expected both account stored responses and stored responses counter to have a record",
+			publisherId:                         "acct-id",
+			expectedAccountStoredResponsesCount: 1,
+			expectedStoredResponsesCount:        1,
+		},
+		{
+			description:                         "Publisher id is unknown, expected stored responses counter only to have a record",
+			publisherId:                         metrics.PublisherUnknown,
+			expectedAccountStoredResponsesCount: 0,
+			expectedStoredResponsesCount:        1,
+		},
+	}
+
+	for _, test := range testCases {
+		m := createMetricsForTesting()
+		m.RecordStoredResponse(test.publisherId)
+
+		assertCounterVecValue(t, "", "account stored responses", m.accountStoredResponses, test.expectedAccountStoredResponsesCount, prometheus.Labels{accountLabel: "acct-id"})
+		assertCounterValue(t, "", "stored responses", m.storedResponses, test.expectedStoredResponsesCount)
+	}
 }
