@@ -91,7 +91,8 @@ type Configuration struct {
 	//When true, new bid id will be generated in seatbid[].bid[].ext.prebid.bidid and used in event urls instead
 	GenerateBidID bool `mapstructure:"generate_bid_id"`
 	// GenerateRequestID overrides the bidrequest.id in an AMP Request or an App Stored Request with a generated UUID if set to true. The default is false.
-	GenerateRequestID bool `mapstructure:"generate_request_id"`
+	GenerateRequestID bool                                          `mapstructure:"generate_request_id"`
+	HostSChainNode    *openrtb_ext.ExtRequestPrebidSChainSChainNode `mapstructure:"host_schain_node"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
@@ -773,6 +774,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("host_cookie.value", "")
 	v.SetDefault("host_cookie.ttl_days", 90)
 	v.SetDefault("host_cookie.max_cookie_size_bytes", 0)
+	v.SetDefault("host_schain_node", nil)
 	v.SetDefault("http_client.max_connections_per_host", 0) // unlimited
 	v.SetDefault("http_client.max_idle_connections", 400)
 	v.SetDefault("http_client.max_idle_connections_per_host", 10)
