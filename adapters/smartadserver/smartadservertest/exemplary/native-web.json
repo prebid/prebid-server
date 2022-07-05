@@ -101,15 +101,6 @@
           ],
           "Accept": [
             "application/json"
-          ],
-          "X-Openrtb-Version": [
-            "2.5"
-          ],
-          "User-Agent": [
-            "test-user-agent"
-          ],
-          "X-Forwarded-For": [
-            "2607:fb90:f27:4512:d800:cb23:a603:e245"
           ]
         },
         "uri": "https://ssb.smartadserver.com/api/bid?callerId=5",
