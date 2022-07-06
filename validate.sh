@@ -61,3 +61,5 @@ if $VET; then
   echo "Running: $COMMAND"
   `$COMMAND`
 fi
+
+read -p "Press [Enter] key to exit..."

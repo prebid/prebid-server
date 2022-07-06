@@ -27,7 +27,6 @@
         }
       },
       "content": {
-        "livestream": 0,
         "language": "nl"
       },
       "mobile": 1,
@@ -126,13 +125,12 @@
           "site": {
             "page": "https://www.redactie24.be/shopping/colruyt-moet-ingrijpen-3-producten-onmiddellijk-uit-de-rekken-gehaald-140289",
             "publisher": {
-              "id": "pub-9936969251765866",
+              "id": "73",
               "ext": {
                 "country": "NL"
               }
             },
             "content": {
-              "livestream": 0,
               "language": "nl"
             },
             "mobile": 1,
