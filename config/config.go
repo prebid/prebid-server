@@ -892,6 +892,9 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("accounts.filesystem.directorypath", "./stored_requests/data/by_id")
 	v.SetDefault("accounts.in_memory_cache.type", "none")
 
+	v.BindEnv("user_sync.external_url")
+	v.BindEnv("user_sync.coop_sync.default")
+
 	// some adapters append the user id to the end of the redirect url instead of using
 	// macro substitution. it is important for the uid to be the last query parameter.
 	v.SetDefault("user_sync.redirect_url", "{{.ExternalURL}}/setuid?bidder={{.SyncerKey}}&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&f={{.SyncType}}&uid={{.UserMacro}}")
