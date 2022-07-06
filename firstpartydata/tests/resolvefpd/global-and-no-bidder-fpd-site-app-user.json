@@ -1,30 +1,14 @@
 {
-  "description": "Global and bidder FPD defined for site. Global FPD has site.content.data",
+  "description": "Global and bidder FPD defined for site and user. Global FPD has site.content.data",
   "inputRequestData": {
     "site": {
       "id": "reqSiteId",
-      "name": "reqSiteName",
-      "domain": "reqSiteDomain",
-      "cat": [
-        "books",
-        "novels"
-      ],
-      "search": "book search",
+      "page": "http://www.foobar.com/1234.html",
       "publisher": {
         "id": "1"
       },
-      "content": {
-        "episode": 6,
-        "title": "episodeName",
-        "series": "TvName",
-        "season": "season3",
-        "len": 900,
-        "data": [
-          {
-            "id": "reqSiteData",
-            "name": "reqSiteName"
-          }
-        ]
+      "ext": {
+        "testSiteExt": 123
       }
     },
     "device": {
@@ -32,25 +16,25 @@
       "ip": "123.145.167.10",
       "devicetype": 1,
       "ifa": "123"
+    },
+    "user": {
+      "id": "reqUserID",
+      "yob": 1982,
+      "gender": "M"
     }
   },
   "bidderConfigFPD": {
     "appnexus": {
       "site": {
         "id": "apnSiteId",
-        "name": "apnSiteName",
-        "domain": "apnSiteDomain",
         "page": "http://www.foobar.com/1234.html",
+        "ref": "fpdRef",
         "content": {
-          "episode": 7,
-          "title": "apnEpisodeName",
-          "len": 600,
-          "data": [
-            {
-              "id": "siteData3",
-              "name": "siteName3"
-            }
-          ]
+          "episode": 8,
+          "title": "episodeName8",
+          "series": "TvName",
+          "season": "season4",
+          "len": 900
         },
         "ext": {
           "data": {
@@ -66,7 +50,15 @@
   },
   "globalFPD": {
     "site": {
-      "testSiteFpd": "testSite"
+      "siteFpd": 123
+    },
+    "app": {
+      "appFpd": {
+        "testValue": true
+      }
+    },
+    "user": {
+      "testUserFpd": "testuser"
     },
     "siteContentData": [
       {
@@ -82,22 +74,16 @@
   "outputRequestData": {
     "site": {
       "id": "reqSiteId",
-      "name": "apnSiteName",
       "page": "http://www.foobar.com/1234.html",
-      "domain": "apnSiteDomain",
-      "cat": [
-        "books",
-        "novels"
-      ],
-      "search": "book search",
+      "ref": "fpdRef",
       "publisher": {
         "id": "1"
       },
       "content": {
-        "episode": 6,
-        "title": "episodeName",
+        "title": "episodeName8",
         "series": "TvName",
-        "season": "season3",
+        "season": "season4",
+        "episode": 8,
         "len": 900,
         "data": [
           {
@@ -111,25 +97,15 @@
         ]
       },
       "ext": {
+        "testSiteExt": 123,
         "data": {
           "id": "apnSiteId",
-          "content": {
-            "episode": 7,
-            "title": "apnEpisodeName",
-            "len": 600,
-            "data": [
-              {
-                "id": "siteData3",
-                "name": "siteName3"
-              }
-            ]
-          },
-          "morefpdData": "morefpddata",
-          "siteFpddata": "siteFpddata",
-          "testSiteFpd": "testSite",
           "moreFpd": {
             "fpd": 123
-          }
+          },
+          "morefpdData": "morefpddata",
+          "siteFpd": 123,
+          "siteFpddata": "siteFpddata"
         }
       }
     },
@@ -138,6 +114,16 @@
       "ip": "123.145.167.10",
       "devicetype": 1,
       "ifa": "123"
+    },
+    "user": {
+      "id": "reqUserID",
+      "yob": 1982,
+      "gender": "M",
+      "ext": {
+        "data": {
+          "testUserFpd": "testuser"
+        }
+      }
     }
   }
 }
