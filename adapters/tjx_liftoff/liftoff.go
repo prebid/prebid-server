@@ -149,8 +149,6 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 
 			videoCopy := *thisImp.Video
 
-			videoCopy.CompanionType = append(videoCopy.CompanionType, openrtb.CompanionTypeHTML)
-
 			videoExt := liftoffVideoExt{
 				PlacementType: string(placementType),
 				Orientation:   string(orientation),
