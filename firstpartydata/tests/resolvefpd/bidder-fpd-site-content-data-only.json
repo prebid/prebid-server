@@ -1,5 +1,5 @@
 {
-  "description": "Global and bidder FPD defined for site. Global FPD has site.content.data",
+  "description": "Global and bidder FPD defined for site. Bidder FPD has site.content.data",
   "inputRequestData": {
     "site": {
       "id": "reqSiteId",

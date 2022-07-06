@@ -1131,7 +1131,7 @@ func TestMergeSites(t *testing.T) {
 	fpdConfigSite[dataKey] = []byte(`[{"id":"SiteDataId1", "name":"SiteDataName1"}, {"id":"SiteDataId2", "name":"SiteDataName2"}]`)
 	fpdConfigSite["ext"] = []byte(`{"data":{"fpdConfigSiteExt": 123}}`)
 
-	resultSite, err := mergeSites(originalSite, fpdConfigSite, "appnexus", nil)
+	resultSite, err := mergeSites(originalSite, fpdConfigSite, "appnexus")
 	assert.NoError(t, err, "No error should be returned")
 
 	expectedSiteExt := `{"bidRequestSiteExt":1234,
@@ -1353,7 +1353,7 @@ func TestMergeApps(t *testing.T) {
 	fpdConfigApp[dataKey] = []byte(`[{"id":"AppDataId1", "name":"AppDataName1"}, {"id":"AppDataId2", "name":"AppDataName2"}]`)
 	fpdConfigApp["ext"] = []byte(`{"data":{"fpdConfigAppExt": 123}}`)
 
-	resultApp, err := mergeApps(originalApp, fpdConfigApp, nil)
+	resultApp, err := mergeApps(originalApp, fpdConfigApp)
 	assert.NoError(t, err, "No error should be returned")
 
 	expectedAppExt := `{"bidRequestAppExt":1234,
