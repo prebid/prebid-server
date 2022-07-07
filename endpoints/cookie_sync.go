@@ -31,6 +31,7 @@ var (
 	errCookieSyncBody                              = errors.New("Failed to read request body")
 	errCookieSyncGDPRConsentMissing                = errors.New("gdpr_consent is required if gdpr=1")
 	errCookieSyncGDPRConsentMissingSignalAmbiguous = errors.New("gdpr_consent is required. gdpr is not specified and is assumed to be 1 by the server. set gdpr=0 to exempt this request")
+	errCookieSyncGDPRMandatoryByHost               = errors.New("gdpr_consent is required. gdpr exemption disabled by host")
 	errCookieSyncInvalidBiddersType                = errors.New("invalid bidders type. must either be a string '*' or a string array of bidders")
 	errCookieSyncAccountBlocked                    = errors.New("account is disabled, please reach out to the prebid server host")
 	errCookieSyncAccountInvalid                    = errors.New("account must be valid if provided, please reach out to the prebid server host")
@@ -120,6 +121,11 @@ func (c *cookieSyncEndpoint) parseRequest(r *http.Request) (usersync.Request, pr
 	gdprSignal, err := gdpr.SignalParse(gdprString)
 	if err != nil {
 		return usersync.Request{}, privacy.Policies{}, err
+	}
+
+	//OpenWrap: do not allow publishers to bypass GDPR
+	if c.privacyConfig.gdprConfig.DefaultValue == "1" && gdprSignal == gdpr.SignalNo {
+		return usersync.Request{}, privacy.Policies{}, errCookieSyncGDPRMandatoryByHost
 	}
 
 	if request.GDPRConsent == "" {
