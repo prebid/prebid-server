@@ -453,6 +453,44 @@ func (deps *endpointDeps) overrideWithParams(ampParams amp.Params, req *openrtb2
 		req.TMax = int64(*ampParams.Timeout) - deps.cfg.AMPTimeoutAdjustment
 	}
 
+	if len(ampParams.Targeting) > 0 {
+		err := setTargeting(req, ampParams.Targeting)
+		if err != nil {
+			return []error{err}
+		}
+	}
+
+	return nil
+}
+
+func setTargeting(req *openrtb2.BidRequest, targeting string) error {
+	var targetingData map[string]interface{}
+	if err := json.Unmarshal([]byte(targeting), &targetingData); err != nil {
+		return fmt.Errorf("unable to unmarshal targeting data: %s", err.Error())
+	}
+	_, _, offset, err := jsonparser.Get(req.Imp[0].Ext, "data")
+	if err != nil && err != jsonparser.KeyPathNotFoundError {
+		return errors.New("error parsing imp ext")
+	}
+	if offset != -1 {
+		return errors.New("field 'data' already present in imp ext")
+	}
+
+	var impExt map[string]interface{}
+	if len(req.Imp[0].Ext) > 0 {
+		if err := json.Unmarshal(req.Imp[0].Ext, &impExt); err != nil {
+			return fmt.Errorf("unable to unmarshal imp.ext: %s", err.Error())
+		}
+	} else {
+		impExt = make(map[string]interface{})
+	}
+
+	impExt["data"] = targetingData
+	newImpExt, err := json.Marshal(impExt)
+	if err != nil {
+		return fmt.Errorf("unable to marshal imp.ext: %s", err.Error())
+	}
+	req.Imp[0].Ext = newImpExt
 	return nil
 }
 
