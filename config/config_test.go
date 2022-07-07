@@ -424,7 +424,7 @@ func cmpInts(t *testing.T, key string, a int, b int) {
 	assert.Equal(t, a, b, "%s: %d != %d", key, a, b)
 }
 
-func cmpUInt8s(t *testing.T, key string, a *int8, b *int8) {
+func cmpInt8s(t *testing.T, key string, a *int8, b *int8) {
 	t.Helper()
 	assert.Equal(t, a, b, "%s: %d != %d", key, a, b)
 }
@@ -479,7 +479,7 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "host_schain_node.asi", cfg.HostSChainNode.ASI, "pbshostcompany.com")
 	cmpStrings(t, "host_schain_node.sid", cfg.HostSChainNode.SID, "00001")
 	cmpStrings(t, "host_schain_node.rid", cfg.HostSChainNode.RID, "BidRequest")
-	cmpUInt8s(t, "host_schain_node.hp", cfg.HostSChainNode.HP, &int8One)
+	cmpInt8s(t, "host_schain_node.hp", cfg.HostSChainNode.HP, &int8One)
 
 	//Assert the NonStandardPublishers was correctly unmarshalled
 	assert.Equal(t, []string{"pub1", "pub2"}, cfg.GDPR.NonStandardPublishers, "gdpr.non_standard_publishers")

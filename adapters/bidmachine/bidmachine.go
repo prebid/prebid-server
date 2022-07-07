@@ -104,7 +104,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 
 func hasRewardedBattr(attr []adcom1.CreativeAttribute) bool {
 	for i := 0; i < len(attr); i++ {
-		if attr[i] == adcom1.CreativeAttribute(16) {
+		if attr[i] == adcom1.AttrHasSkipButton {
 			return true
 		}
 	}
@@ -203,7 +203,7 @@ func (a *adapter) buildEndpointURL(params openrtb_ext.ExtImpBidmachine) (string,
 func copyBAttrWithRewardedInventory(src []adcom1.CreativeAttribute) []adcom1.CreativeAttribute {
 	dst := make([]adcom1.CreativeAttribute, len(src))
 	copy(dst, src)
-	dst = append(dst, adcom1.CreativeAttribute(16))
+	dst = append(dst, adcom1.AttrHasSkipButton)
 	return dst
 }
 
