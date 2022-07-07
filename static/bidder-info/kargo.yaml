@@ -9,5 +9,6 @@ capabilities:
       - video
       - native
 userSync:
-  supports:
-    - redirect
+  redirect:
+    url: "https://crb.kargo.com/api/v1/dsync/PrebidServer?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&r={{.RedirectURL}}"
+    userMacro: "$UID"
