@@ -1,0 +1,9 @@
+maintainer:
+  email: "info@adtarget.me"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner
