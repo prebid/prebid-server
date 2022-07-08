@@ -1,7 +1,11 @@
 {
   "description": "Imp extension comes with a valid bidder name and valid bidder aliases as defined in the config.aliases list. Given that 'alias1' refers to the 'appnexus' bidder, we only bid appnexus once.",
   "config": {
-      "aliases": "{\"ext\":{\"prebid\":{\"aliases\":{\"alias1\":\"appnexus\",\"alias2\":\"rubicon\"}}}}"
+    "aliases": "{\"ext\":{\"prebid\":{\"aliases\":{\"alias1\":\"appnexus\",\"alias2\":\"rubicon\"}}}}",
+    "mockBidders": [
+      {"bidderName": "appnexus", "currency": "USD", "price": 0.00},
+      {"bidderName": "rubicon", "currency": "USD", "price": 0.00}
+    ]
   },
   "mockBidRequest": {
     "id": "some-request-id",
@@ -58,32 +62,32 @@
       {
         "bid": [
           {
-            "id": "alias1-bid",
-            "impid": "",
+            "id": "appnexus-bid",
+            "impid": "my-imp-id",
             "price": 0
           }
         ],
-        "seat": "alias1-bids"
+        "seat": "alias1"
       },
       {
         "bid": [
           {
-            "id": "alias2-bid",
-            "impid": "",
+            "id": "rubicon-bid",
+            "impid": "my-imp-id",
             "price": 0
           }
         ],
-        "seat": "alias2-bids"
+        "seat": "alias2"
       },
       {
         "bid": [
           {
             "id": "appnexus-bid",
-            "impid": "",
+            "impid": "my-imp-id",
             "price": 0
           }
         ],
-        "seat": "appnexus-bids"
+        "seat": "appnexus"
       }
     ],
     "bidid": "test bid id",

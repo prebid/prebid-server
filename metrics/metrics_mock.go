@@ -145,3 +145,8 @@ func (me *MetricsEngineMock) RecordRequestPrivacy(privacy PrivacyLabels) {
 func (me *MetricsEngineMock) RecordAdapterGDPRRequestBlocked(adapterName openrtb_ext.BidderName) {
 	me.Called(adapterName)
 }
+
+// RecordDebugRequest mock
+func (me *MetricsEngineMock) RecordDebugRequest(debugEnabled bool, pubId string) {
+	me.Called(debugEnabled, pubId)
+}

@@ -73,11 +73,10 @@
                             }
                         }
                     }]
-                },
-                "bidAdjustment": 1.0
+                }
             },
             "mockResponse": {
-                "pbsSeatBid": {
+                "pbsSeatBids": [{
                     "pbsBids": [{
                         "ortbBid": {
                             "id": "apn-bid",
@@ -88,8 +87,9 @@
                             "crid": "creative-1"
                         },
                         "bidType": "video"
-                    }]
-                }
+                    }],
+                    "seat": "appnexus"
+                }]
             }
         }
     },
@@ -106,6 +106,7 @@
                     "h": 250,
                     "crid": "creative-1",
                     "ext": {
+                        "origbidcpm": 0.3,
                         "prebid": {
                             "type": "video"
                         }

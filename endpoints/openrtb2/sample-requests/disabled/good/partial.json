@@ -1,7 +1,12 @@
 {
   "description": "Request comes with some imps directed toward disabled adapters, but there's one non-disabled adapter and we expect a successful response",
   "config": {
-    "disabledAdapters": ["appnexus", "rubicon"]
+    "disabledAdapters": ["appnexus", "rubicon"],
+    "mockBidders": [
+      {"bidderName": "appnexus", "currency": "USD", "price": 1.00},
+      {"bidderName": "rubicon", "currency": "USD", "price": 1.00},
+      {"bidderName": "openx", "currency": "USD", "price": 1.00}
+    ]
   },
   "mockBidRequest": {
     "id": "some-request-id",
@@ -65,11 +70,11 @@
           "bid": [
             {
               "id": "openx-bid",
-              "impid": "",
-              "price": 0
+              "impid": "my-imp-id",
+              "price": 1
             }
           ],
-          "seat": "openx-bids"
+          "seat": "openx"
         }
       ]
   },

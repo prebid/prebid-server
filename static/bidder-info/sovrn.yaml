@@ -1,13 +1,16 @@
 maintainer:
   email: "sovrnoss@sovrn.com"
 gvlVendorID: 13
+modifyingVastXmlAllowed: true
 capabilities:
   app:
     mediaTypes:
       - banner
+      - video
   site:
     mediaTypes:
       - banner
+      - video
 userSync:
   redirect:
     url: "https://ap.lijit.com/pixel?redir={{.RedirectURL}}"
