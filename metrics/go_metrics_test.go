@@ -754,7 +754,7 @@ func TestStoredResponses(t *testing.T) {
 			expectedStoredResponsesCount:        1,
 		},
 		{
-			description:                         "Publisher id is given, both metrics should be updated",
+			description:                         "Publisher id is unknown, only expectedStoredResponsesCount metric should be updated",
 			givenPubID:                          PublisherUnknown,
 			expectedAccountStoredResponsesCount: 0,
 			expectedStoredResponsesCount:        1,
