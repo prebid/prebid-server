@@ -12,14 +12,18 @@ import (
 	"time"
 )
 
-// remoteSigner - holds the signatory to add adsCert header to requests using remote signing server
+var (
+	errInvalidRemoteSignerURL            = errors.New("invalid url for remote signer")
+	errInvalidRemoteSignerSigningTimeout = errors.New("invalid signing timeout for remote signer")
+)
+
+// remoteSigner holds the signatory to add adsCert header to requests using remote signing server
 type remoteSigner struct {
 	signatory signatory.AuthenticatedConnectionsSignatory
 }
 
-// Sign - adds adsCert header to requests using remote signing server
+// Sign adds adsCert header to requests using remote signing server
 func (rs *remoteSigner) Sign(destinationURL string, body []byte) (string, error) {
-	// Request the signature.
 	signatureResponse, err := rs.signatory.SignAuthenticatedConnection(
 		&api.AuthenticatedConnectionSignatureRequest{
 			RequestInfo: createRequestInfo(destinationURL, []byte(body)),
@@ -35,8 +39,7 @@ func newRemoteSigner(remoteSignerConfig config.AdsCertRemote) (*remoteSigner, er
 		return nil, err
 	}
 	// Establish the gRPC connection that the client will use to connect to the
-	// signatory server.  This basic example uses unauthenticated connections
-	// which should not be used in a production environment.
+	// signatory server.  Authenticated connections are not implemented at this time
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	conn, err := grpc.Dial(remoteSignerConfig.Url, opts...)
 	if err != nil {
@@ -53,10 +56,10 @@ func newRemoteSigner(remoteSignerConfig config.AdsCertRemote) (*remoteSigner, er
 func validateRemoteSignerConfig(remoteSignerConfig config.AdsCertRemote) error {
 	_, err := url.ParseRequestURI(remoteSignerConfig.Url)
 	if err != nil {
-		return errors.New("invalid url for remote signer")
+		return errInvalidRemoteSignerURL
 	}
 	if remoteSignerConfig.SigningTimeoutMs <= 0 {
-		return errors.New("invalid signing timeout for remote signer")
+		return errInvalidRemoteSignerSigningTimeout
 	}
 	return nil
 }

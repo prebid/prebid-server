@@ -1941,7 +1941,7 @@ func TestPrepareStoredResponse(t *testing.T) {
 
 func TestRequestBidsWithAdsCertsSigner(t *testing.T) {
 	respStatus := 200
-	respBody := "{\"bid\":false}"
+	respBody := `{"bid":false}`
 	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
 	defer server.Close()
 

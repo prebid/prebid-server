@@ -12,12 +12,19 @@ import (
 	"time"
 )
 
-// inProcessSigner - holds the signatory to add adsCert header to requests using in process go library
+var (
+	errInProcessSignerInvalidURL                = errors.New("invalid url for inprocess signer")
+	errInProcessSignerInvalidPrivateKey         = errors.New("invalid private key for inprocess signer")
+	errInProcessSignerInvalidDNSRenewalInterval = errors.New("invalid dns renewal interval for inprocess signer")
+	errInProcessSignerInvalidDNSCheckInterval   = errors.New("invalid dns check interval for inprocess signer")
+)
+
+// inProcessSigner holds the signatory to add adsCert header to requests using in process go library
 type inProcessSigner struct {
 	signatory signatory.AuthenticatedConnectionsSignatory
 }
 
-// Sign - adds adsCert header to requests using in process go library
+// Sign adds adsCert header to requests using in process go library
 func (ips *inProcessSigner) Sign(destinationURL string, body []byte) (string, error) {
 	req := &api.AuthenticatedConnectionSignatureRequest{
 		RequestInfo: createRequestInfo(destinationURL, body),
@@ -49,16 +56,16 @@ func newInProcessSigner(inProcessSignerConfig config.AdsCertInProcess) (*inProce
 func validateInProcessSignerConfig(inProcessSignerConfig config.AdsCertInProcess) error {
 	_, err := url.ParseRequestURI(inProcessSignerConfig.Origin)
 	if err != nil {
-		return errors.New("invalid url for inprocess signer")
+		return errInProcessSignerInvalidURL
 	}
 	if len(inProcessSignerConfig.PrivateKey) == 0 {
-		return errors.New("invalid private key for inprocess signer")
+		return errInProcessSignerInvalidPrivateKey
 	}
 	if inProcessSignerConfig.DNSRenewalIntervalInSeconds <= 0 {
-		return errors.New("invalid dns renewal interval for inprocess signer")
+		return errInProcessSignerInvalidDNSRenewalInterval
 	}
 	if inProcessSignerConfig.DNSCheckIntervalInSeconds <= 0 {
-		return errors.New("invalid dns check interval for inprocess signer")
+		return errInProcessSignerInvalidDNSCheckInterval
 	}
 	return nil
 }

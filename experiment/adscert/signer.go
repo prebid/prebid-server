@@ -10,6 +10,10 @@ import (
 
 const SignHeader = "X-Ads-Cert-Auth"
 
+var (
+	errBothSignersSpecified = errors.New("both inprocess and remote signers are specified. Please use just one signer")
+)
+
 //Signer represents interface to access request Ads Cert signing functionality
 type Signer interface {
 	Sign(destinationURL string, body []byte) (string, error)
@@ -27,7 +31,7 @@ func NewAdCertsSigner(experimentAdCertsConfig config.ExperimentAdsCert) (Signer,
 		return &NilSigner{}, nil
 	}
 	if len(experimentAdCertsConfig.InProcess.Origin) > 0 && len(experimentAdCertsConfig.Remote.Url) > 0 {
-		return nil, errors.New("both inprocess and remote signers are specified. Please use just one signer")
+		return nil, errBothSignersSpecified
 	}
 	if len(experimentAdCertsConfig.InProcess.Origin) > 0 {
 		return newInProcessSigner(experimentAdCertsConfig.InProcess)

@@ -26,11 +26,11 @@ type BidderInfo struct {
 
 // BidderInfoExperiment specifies non-production ready feature config for a bidder
 type BidderInfoExperiment struct {
-	AdsCert AdsCert `yaml:"adsCert"`
+	AdsCert BidderAdsCert `yaml:"adsCert"`
 }
 
-// AdsCert enables Call Sign feature for bidder
-type AdsCert struct {
+// BidderAdsCert enables Call Sign feature for bidder
+type BidderAdsCert struct {
 	Enabled bool `yaml:"enabled"`
 }
 
