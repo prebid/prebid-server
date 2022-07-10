@@ -176,33 +176,8 @@
                     "cta": "%e5%ae%89%e8%a3%85",
                     "duration": 6038,
                     "icon": [
-                      {
-                        "checkSha256Flag": 1,
-                        "fileSize": 10797,
-                        "height": 160,
-                        "imageType": "img",
-                        "sha256": "042479eccbda9a8d7d3aa3da73c42486854407835623a30ffff875cb578242d0",
-                        "url": "https://appimg.dbankcdn.com/application/icon144/678727f6687b4382ade1fa4cfc77e165.png",
-                        "width": 160
-                      }
                     ],
                     "imageInfo": [
-                      {
-                        "checkSha256Flag": 0,
-                        "height": 350,
-                        "imageType": "img",
-                        "sha256": "8baa56fdb2702b9fb044d95b328936160cd245764375cdb25a4ab504f4ae2e19",
-                        "url": "http://image1.jpg",
-                        "width": 400
-                      },
-                      {
-                        "checkSha256Flag": 0,
-                        "height": 300,
-                        "imageType": "img",
-                        "sha256": "8baa56fdb2702b9fb044d95b328936160cd245764375cdb25a4ab504f4ae2e19",
-                        "url": "http://image2.jpg",
-                        "width": 400
-                      }
                     ],
                     "label": "%E6%89%8B%E6%9C%BA%E6%B7%98%E5%AE%9D",
                     "landingPageType": "3",
@@ -304,7 +279,7 @@
       "bids": [
         {
           "bid": {
-            "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><VAST version=\"3.0\"><Ad id=\"58001445\"><InLine><AdSystem>HuaweiAds</AdSystem><AdTitle>/test/</AdTitle><Error><![CDATA[http://test/vastError&et=[ERRORCODE]]]></Error><Impression><![CDATA[http://test/imp]]></Impression><Impression><![CDATA[http://test/dspimp]]></Impression><Creatives><Creative adId=\"58001445\" id=\"58001445\"><Linear><Duration>00:00:06.038</Duration><TrackingEvents><Tracking event=\"skip\"><![CDATA[http://test/userclose]]></Tracking><Tracking event=\"closeLinear\"><![CDATA[http://test/userclose]]></Tracking><Tracking event=\"start\"><![CDATA[http://test/playStart]]></Tracking><Tracking event=\"complete\"><![CDATA[http://test/playEnd1]]></Tracking><Tracking event=\"resume\"><![CDATA[http://test/playResume]]></Tracking><Tracking event=\"pause\"><![CDATA[http://test/playPause]]></Tracking></TrackingEvents><VideoClicks><ClickThrough><![CDATA[https://ads.huawei.com/usermgtportal/home/index.html#/]]></ClickThrough><ClickTracking><![CDATA[http://test/click]]></ClickTracking><ClickTracking><![CDATA[http://test/dspclick]]></ClickTracking></VideoClicks><MediaFiles><MediaFile delivery=\"progressive\" type=\"video/mp4\" width=\"600\" height=\"500\" scalable=\"true\" maintainAspectRatio=\"true\"> <![CDATA[https://consumer.huawei.com/content/dam/huawei-cbg-site/ecommerce/ae/2022/may/watch-gt-3-pro/subscribe-phase/video/update/MKT_Odin_Frigga_PV_EN_30s%20Horizontal%20SHM.mp4]]></MediaFile></MediaFiles></Linear></Creative><Creative adId=\"58001445\" id=\"58001445\"><CompanionAds><Companion width=\"160\" height=\"160\"><StaticResource creativeType=\"image/png\"><![CDATA[https://appimg.dbankcdn.com/application/icon144/678727f6687b4382ade1fa4cfc77e165.png]]></StaticResource><CompanionClickThrough><![CDATA[https://ads.huawei.com/usermgtportal/home/index.html#/]]></CompanionClickThrough></Companion></CompanionAds></Creative></Creatives></InLine></Ad></VAST>",
+            "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><VAST version=\"3.0\"><Ad id=\"58001445\"><InLine><AdSystem>HuaweiAds</AdSystem><AdTitle>/test/</AdTitle><Error><![CDATA[http://test/vastError&et=[ERRORCODE]]]></Error><Impression><![CDATA[http://test/imp]]></Impression><Impression><![CDATA[http://test/dspimp]]></Impression><Creatives><Creative adId=\"58001445\" id=\"58001445\"><Linear><Duration>00:00:06.038</Duration><TrackingEvents><Tracking event=\"skip\"><![CDATA[http://test/userclose]]></Tracking><Tracking event=\"closeLinear\"><![CDATA[http://test/userclose]]></Tracking><Tracking event=\"start\"><![CDATA[http://test/playStart]]></Tracking><Tracking event=\"complete\"><![CDATA[http://test/playEnd1]]></Tracking><Tracking event=\"resume\"><![CDATA[http://test/playResume]]></Tracking><Tracking event=\"pause\"><![CDATA[http://test/playPause]]></Tracking></TrackingEvents><VideoClicks><ClickThrough><![CDATA[https://ads.huawei.com/usermgtportal/home/index.html#/]]></ClickThrough><ClickTracking><![CDATA[http://test/click]]></ClickTracking><ClickTracking><![CDATA[http://test/dspclick]]></ClickTracking></VideoClicks><MediaFiles><MediaFile delivery=\"progressive\" type=\"video/mp4\" width=\"600\" height=\"500\" scalable=\"true\" maintainAspectRatio=\"true\"> <![CDATA[https://consumer.huawei.com/content/dam/huawei-cbg-site/ecommerce/ae/2022/may/watch-gt-3-pro/subscribe-phase/video/update/MKT_Odin_Frigga_PV_EN_30s%20Horizontal%20SHM.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
             "adomain": [
               "huaweiads"
             ],

@@ -70,7 +70,7 @@
   ],
   "expectedMakeRequestsErrors": [
     {
-      "value": "getDeviceID: Imei ,Oaid, Gaid are all empty.",
+      "value": "getGaidFromDeviceIFA failed, getDeviceIDFromUserExt failed: Imei ,Oaid, Gaid are all empty.",
       "comparison": "literal"
     }
   ]

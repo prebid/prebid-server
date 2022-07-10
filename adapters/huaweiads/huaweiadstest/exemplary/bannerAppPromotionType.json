@@ -40,6 +40,7 @@
       "language": "zh",
       "model": "COL-TEST",
       "os": "android",
+      "ifa": "gaid",
       "osv": "10.0.0",
       "devicetype": 4,
       "make": "huawei",
@@ -54,7 +55,6 @@
       "ext": {
         "data": {
           "gaid": [
-            "gaid"
           ],
           "oaid": [
             "oaid"

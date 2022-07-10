@@ -293,7 +293,7 @@ func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest,
 	}
 	request.Multislot = multislot
 
-	countryCode, err := getHuaweiAdsReqJson(&request, openRTBRequest, huaweiAdsImpExt, a.extraInfo)
+	countryCode, err := getHuaweiAdsReqJson(&request, openRTBRequest, a.extraInfo)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -442,13 +442,12 @@ func getHeaders(huaweiAdsImpExt *openrtb_ext.ExtImpHuaweiAds, request *openrtb2.
 }
 
 // getHuaweiAdsReqJson: get body json for HuaweiAds request
-func getHuaweiAdsReqJson(request *huaweiAdsRequest, openRTBRequest *openrtb2.BidRequest,
-	huaweiAdsImpExt *openrtb_ext.ExtImpHuaweiAds, extraInfo ExtraInfo) (countryCode string, err error) {
+func getHuaweiAdsReqJson(request *huaweiAdsRequest, openRTBRequest *openrtb2.BidRequest, extraInfo ExtraInfo) (countryCode string, err error) {
 	request.Version = huaweiAdxApiVersion
 	if countryCode, err = getHuaweiAdsReqAppInfo(request, openRTBRequest, extraInfo); err != nil {
 		return "", err
 	}
-	if err = getHuaweiAdsReqDeviceInfo(request, openRTBRequest, huaweiAdsImpExt); err != nil {
+	if err = getHuaweiAdsReqDeviceInfo(request, openRTBRequest); err != nil {
 		return "", err
 	}
 	getHuaweiAdsReqNetWorkInfo(request, openRTBRequest)
@@ -685,6 +684,7 @@ func getFinalPkgName(bundleName string, extraInfo ExtraInfo) string {
 }
 
 // getClientTime: get field clientTime, format: 2006-01-02 15:04:05.000+0200
+// If this parameter is not passed, the server time is used
 func getClientTime(clientTime string) (newClientTime string) {
 	var zone = defaultTimeZone
 	t := time.Now().Local().Format(time.RFC822Z)
@@ -705,8 +705,9 @@ func getClientTime(clientTime string) (newClientTime string) {
 }
 
 // getHuaweiAdsReqDeviceInfo: get device information for HuaweiAds request
-func getHuaweiAdsReqDeviceInfo(request *huaweiAdsRequest, openRTBRequest *openrtb2.BidRequest, huaweiAdsImpExt *openrtb_ext.ExtImpHuaweiAds) (err error) {
+func getHuaweiAdsReqDeviceInfo(request *huaweiAdsRequest, openRTBRequest *openrtb2.BidRequest) (err error) {
 	var device device
+	var isGetGaidSuccess = false
 	if openRTBRequest.Device != nil {
 		device.Type = int32(openRTBRequest.Device.DeviceType)
 		device.Useragent = openRTBRequest.Device.UA
@@ -724,14 +725,42 @@ func getHuaweiAdsReqDeviceInfo(request *huaweiAdsRequest, openRTBRequest *openrt
 		var country = getCountryCode(openRTBRequest)
 		device.BelongCountry = country
 		device.LocaleCountry = country
+		device.Gaid, isGetGaidSuccess = getGaidFromDeviceIFA(openRTBRequest.Device.OS, openRTBRequest.Device.IFA)
 		device.Ip = openRTBRequest.Device.IP
 	}
+
 	// get oaid gaid imei in openRTBRequest.User.Ext.Data
-	if err = getDeviceID(&device, openRTBRequest); err != nil {
+	if err = getDeviceIDFromUserExt(&device, isGetGaidSuccess, openRTBRequest); err != nil {
 		return err
 	}
+
+	// IsTrackingEnabled = 1 - DNT
+	if openRTBRequest.Device != nil && openRTBRequest.Device.DNT != nil {
+		if device.Oaid != "" {
+			device.IsTrackingEnabled = strconv.Itoa(1 - int(*openRTBRequest.Device.DNT))
+		}
+		if device.Gaid != "" {
+			device.GaidTrackingEnabled = strconv.Itoa(1 - int(*openRTBRequest.Device.DNT))
+		}
+	}
+
 	request.Device = device
 	return nil
+}
+
+// getGaidFromDeviceIFA: get gaid from IFA if os is android
+// gaid example: e4fe9bde-caa0-47b6-908d-ffba3fa184f2
+func getGaidFromDeviceIFA(os string, ifa string) (gaid string, isGetGaidSuccess bool) {
+	if !strings.Contains(strings.ToLower(os), "android") {
+		return "", false
+	}
+
+	gaid = strings.ToLower(ifa)
+	if gaid == "" {
+		return "", false
+	}
+
+	return gaid, true
 }
 
 func getCountryCode(openRTBRequest *openrtb2.BidRequest) string {
@@ -767,25 +796,31 @@ func convertCountryCode(country string) (out string) {
 }
 
 // getDeviceID include oaid gaid imei. In prebid mobile, use TargetingParams.addUserData("imei", "imei-test");
-func getDeviceID(device *device, openRTBRequest *openrtb2.BidRequest) (err error) {
-	if openRTBRequest.User == nil {
-		return errors.New("getDeviceID: openRTBRequest.User is nil.")
-	}
-	if openRTBRequest.User.Ext == nil {
-		return errors.New("getDeviceID: openRTBRequest.User.Ext is nil.")
+// When ifa: gaid exists, other device id can be passed by TargetingParams.addUserData("oaid", "oaid-test");
+// When getGaidFromDeviceIFA success, getDeviceIDFromUserExt failed, no error will be reported.
+func getDeviceIDFromUserExt(device *device, isGetGaidSuccess bool, openRTBRequest *openrtb2.BidRequest) (err error) {
+	if openRTBRequest.User == nil || openRTBRequest.User.Ext == nil {
+		if isGetGaidSuccess {
+			return nil
+		}
+		return errors.New("getGaidFromDeviceIFA failed, getDeviceIDFromUserExt failed: openRTBRequest.User.Ext is nil.")
 	}
 	var extUserDataHuaweiAds openrtb_ext.ExtUserDataHuaweiAds
 	if err := json.Unmarshal(openRTBRequest.User.Ext, &extUserDataHuaweiAds); err != nil {
-		return errors.New("Unmarshal: openRTBRequest.User.Ext -> extUserDataHuaweiAds failed")
+		if isGetGaidSuccess {
+			return nil
+		}
+		return errors.New("getGaidFromDeviceIFA failed, getDeviceIDFromUserExt failed: Unmarshal: openRTBRequest.User.Ext -> extUserDataHuaweiAds failed.")
 	}
 	var deviceId = extUserDataHuaweiAds.Data
-	if len(deviceId.Imei) == 0 && len(deviceId.Gaid) == 0 && len(deviceId.Oaid) == 0 {
-		return errors.New("getDeviceID: Imei ,Oaid, Gaid are all empty.")
+	if !isGetGaidSuccess && len(deviceId.Imei) == 0 && len(deviceId.Gaid) == 0 && len(deviceId.Oaid) == 0 {
+		return errors.New("getGaidFromDeviceIFA failed, getDeviceIDFromUserExt failed: Imei ,Oaid, Gaid are all empty.")
 	}
 	if len(deviceId.Oaid) > 0 {
 		device.Oaid = deviceId.Oaid[0]
 	}
-	if len(deviceId.Gaid) > 0 {
+	// when getGaidFromDeviceIFA failed
+	if len(deviceId.Gaid) > 0 && !isGetGaidSuccess {
 		device.Gaid = deviceId.Gaid[0]
 	}
 	if len(deviceId.Imei) > 0 {
@@ -793,15 +828,6 @@ func getDeviceID(device *device, openRTBRequest *openrtb2.BidRequest) (err error
 	}
 	if len(deviceId.ClientTime) > 0 {
 		device.ClientTime = getClientTime(deviceId.ClientTime[0])
-	}
-	// IsTrackingEnabled = 1 - DNT
-	if openRTBRequest.Device != nil && openRTBRequest.Device.DNT != nil {
-		if device.Oaid != "" {
-			device.IsTrackingEnabled = strconv.Itoa(1 - int(*openRTBRequest.Device.DNT))
-		}
-		if device.Gaid != "" {
-			device.GaidTrackingEnabled = strconv.Itoa(1 - int(*openRTBRequest.Device.DNT))
-		}
 	}
 	return nil
 }
@@ -1405,6 +1431,47 @@ func (a *adapter) extractAdmVideo(adType int32, content *content, bidType openrt
 		}
 	}
 
+	// Only for rewarded video
+	var rewardedVideoPart = ""
+	var isAddRewardedVideoPart = true
+	if adType == rewarded {
+		var staticImageUrl = ""
+		var staticImageHeight = ""
+		var staticImageWidth = ""
+		var staticImageType = "image/png"
+		if len(content.MetaData.Icon) > 0 && content.MetaData.Icon[0].Url != "" {
+			staticImageUrl = content.MetaData.Icon[0].Url
+			if content.MetaData.Icon[0].Height > 0 && content.MetaData.Icon[0].Width > 0 {
+				staticImageHeight = strconv.Itoa(int(content.MetaData.Icon[0].Height))
+				staticImageWidth = strconv.Itoa(int(content.MetaData.Icon[0].Width))
+			} else {
+				staticImageHeight = strconv.Itoa(int(adHeight))
+				staticImageWidth = strconv.Itoa(int(adWidth))
+			}
+		} else if len(content.MetaData.ImageInfo) > 0 && content.MetaData.ImageInfo[0].Url != "" {
+			staticImageUrl = content.MetaData.ImageInfo[0].Url
+			if content.MetaData.ImageInfo[0].Height > 0 && content.MetaData.ImageInfo[0].Width > 0 {
+				staticImageHeight = strconv.Itoa(int(content.MetaData.ImageInfo[0].Height))
+				staticImageWidth = strconv.Itoa(int(content.MetaData.ImageInfo[0].Width))
+			} else {
+				staticImageHeight = strconv.Itoa(int(adHeight))
+				staticImageWidth = strconv.Itoa(int(adWidth))
+			}
+		} else {
+			isAddRewardedVideoPart = false
+		}
+		if isAddRewardedVideoPart {
+			rewardedVideoPart = `<Creative adId="` + adId + `" id="` + creativeId + `">` +
+				"<CompanionAds>" +
+				`<Companion width="` + staticImageWidth + `" height="` + staticImageHeight + `">` +
+				`<StaticResource creativeType="` + staticImageType + `"><![CDATA[` + staticImageUrl + `]]></StaticResource>` +
+				"<CompanionClickThrough><![CDATA[" + clickUrl + "]]></CompanionClickThrough>" +
+				"</Companion>" +
+				"</CompanionAds>" +
+				"</Creative>"
+		}
+	}
+
 	adm = `<?xml version="1.0" encoding="UTF-8"?>` +
 		`<VAST version="3.0">` +
 		`<Ad id="` + adId + `"><InLine>` +
@@ -1427,7 +1494,7 @@ func (a *adapter) extractAdmVideo(adType int32, content *content, bidType openrt
 		"</MediaFile>" +
 		"</MediaFiles>" +
 		"</Linear>" +
-		"</Creative>" +
+		"</Creative>" + rewardedVideoPart +
 		"</Creatives>" +
 		"</InLine>" +
 		"</Ad>" +
