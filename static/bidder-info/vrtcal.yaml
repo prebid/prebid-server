@@ -1,7 +1,12 @@
 maintainer:
   email: "support@vrtcal.com"
+gvlVendorID: 706 
 capabilities:
   app:
+    mediaTypes:
+      - banner
+      - video
+  site:
     mediaTypes:
       - banner
       - video
