@@ -9,7 +9,9 @@ import (
 	"strconv"
 	"text/template"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/adcom1"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
+
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -100,9 +102,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 	return result, errs
 }
 
-func hasRewardedBattr(attr []openrtb2.CreativeAttribute) bool {
+func hasRewardedBattr(attr []adcom1.CreativeAttribute) bool {
 	for i := 0; i < len(attr); i++ {
-		if attr[i] == openrtb2.CreativeAttribute(16) {
+		if attr[i] == adcom1.AttrHasSkipButton {
 			return true
 		}
 	}
@@ -198,10 +200,10 @@ func (a *adapter) buildEndpointURL(params openrtb_ext.ExtImpBidmachine) (string,
 	return uri.String(), nil
 }
 
-func copyBAttrWithRewardedInventory(src []openrtb2.CreativeAttribute) []openrtb2.CreativeAttribute {
-	dst := make([]openrtb2.CreativeAttribute, len(src))
+func copyBAttrWithRewardedInventory(src []adcom1.CreativeAttribute) []adcom1.CreativeAttribute {
+	dst := make([]adcom1.CreativeAttribute, len(src))
 	copy(dst, src)
-	dst = append(dst, openrtb2.CreativeAttribute(16))
+	dst = append(dst, adcom1.AttrHasSkipButton)
 	return dst
 }
 

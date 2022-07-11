@@ -9,7 +9,7 @@ import (
 	"github.com/prebid/prebid-server/stored_responses"
 
 	"github.com/buger/jsonparser"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/go-gdpr/vendorconsent"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
@@ -46,7 +46,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 	privacyConfig config.Privacy,
 	gdprPermsBuilder gdpr.PermissionsBuilder,
 	tcf2ConfigBuilder gdpr.TCF2ConfigBuilder,
-	hostSChainNode *openrtb_ext.ExtRequestPrebidSChainSChainNode,
+	hostSChainNode *openrtb2.SupplyChainNode,
 ) (allowedBidderRequests []BidderRequest, privacyLabels metrics.PrivacyLabels, errs []error) {
 
 	req := auctionReq.BidRequestWrapper
@@ -208,7 +208,7 @@ func getAuctionBidderRequests(auctionRequest AuctionRequest,
 	bidderToSyncerKey map[string]string,
 	impsByBidder map[string][]openrtb2.Imp,
 	aliases map[string]string,
-	hostSChainNode *openrtb_ext.ExtRequestPrebidSChainSChainNode) ([]BidderRequest, []error) {
+	hostSChainNode *openrtb2.SupplyChainNode) ([]BidderRequest, []error) {
 
 	bidderRequests := make([]BidderRequest, 0, len(impsByBidder))
 	req := auctionRequest.BidRequestWrapper
@@ -517,7 +517,7 @@ func removeUnpermissionedEids(request *openrtb2.BidRequest, bidder string, reque
 		return nil
 	}
 
-	var eids []openrtb_ext.ExtUserEid
+	var eids []openrtb2.EID
 	if err := json.Unmarshal(eidsJSON, &eids); err != nil {
 		return err
 	}
@@ -533,7 +533,7 @@ func removeUnpermissionedEids(request *openrtb2.BidRequest, bidder string, reque
 		eidRules[p.Source] = p.Bidders
 	}
 
-	eidsAllowed := make([]openrtb_ext.ExtUserEid, 0, len(eids))
+	eidsAllowed := make([]openrtb2.EID, 0, len(eids))
 	for _, eid := range eids {
 		allowed := false
 		if rule, hasRule := eidRules[eid.Source]; hasRule {

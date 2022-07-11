@@ -17,9 +17,9 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
-	"github.com/mxmCherry/openrtb/v15/native1"
-	nativeRequests "github.com/mxmCherry/openrtb/v15/native1/request"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/native1"
+	nativeRequests "github.com/mxmCherry/openrtb/v16/native1/request"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"golang.org/x/net/publicsuffix"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
@@ -1382,17 +1382,13 @@ func (deps *endpointDeps) validateUser(req *openrtb_ext.RequestWrapper, aliases 
 			}
 			uniqueSources[eid.Source] = struct{}{}
 
-			if eid.ID == "" && eid.Uids == nil {
-				return fmt.Errorf("request.user.ext.eids[%d] must contain either \"id\" or \"uids\" field", eidIndex)
+			if len(eid.UIDs) == 0 {
+				return fmt.Errorf("request.user.ext.eids[%d].uids must contain at least one element or be undefined", eidIndex)
 			}
-			if eid.ID == "" {
-				if len(eid.Uids) == 0 {
-					return fmt.Errorf("request.user.ext.eids[%d].uids must contain at least one element or be undefined", eidIndex)
-				}
-				for uidIndex, uid := range eid.Uids {
-					if uid.ID == "" {
-						return fmt.Errorf("request.user.ext.eids[%d].uids[%d] missing required field: \"id\"", eidIndex, uidIndex)
-					}
+
+			for uidIndex, uid := range eid.UIDs {
+				if uid.ID == "" {
+					return fmt.Errorf("request.user.ext.eids[%d].uids[%d] missing required field: \"id\"", eidIndex, uidIndex)
 				}
 			}
 		}

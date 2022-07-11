@@ -424,6 +424,11 @@ func cmpInts(t *testing.T, key string, a int, b int) {
 	assert.Equal(t, a, b, "%s: %d != %d", key, a, b)
 }
 
+func cmpInt8s(t *testing.T, key string, a *int8, b *int8) {
+	t.Helper()
+	assert.Equal(t, a, b, "%s: %d != %d", key, a, b)
+}
+
 func cmpBools(t *testing.T, key string, a bool, b bool) {
 	t.Helper()
 	assert.Equal(t, a, b, "%s: %t != %t", key, a, b)
@@ -435,6 +440,8 @@ func cmpNils(t *testing.T, key string, a interface{}) {
 }
 
 func TestFullConfig(t *testing.T) {
+	int8One := int8(1)
+
 	v := viper.New()
 	SetupViper(v, "")
 	v.SetConfigType("yaml")
@@ -469,10 +476,10 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "http_client_cache.idle_connection_timeout_seconds", cfg.CacheClient.IdleConnTimeout, 3)
 	cmpInts(t, "gdpr.host_vendor_id", cfg.GDPR.HostVendorID, 15)
 	cmpStrings(t, "gdpr.default_value", cfg.GDPR.DefaultValue, "1")
-	cmpStrings(t, "host_schain_node", cfg.HostSChainNode.ASI, "pbshostcompany.com")
-	cmpStrings(t, "host_schain_node", cfg.HostSChainNode.SID, "00001")
-	cmpStrings(t, "host_schain_node", cfg.HostSChainNode.RID, "BidRequest")
-	cmpInts(t, "host_schain_node", cfg.HostSChainNode.HP, 1)
+	cmpStrings(t, "host_schain_node.asi", cfg.HostSChainNode.ASI, "pbshostcompany.com")
+	cmpStrings(t, "host_schain_node.sid", cfg.HostSChainNode.SID, "00001")
+	cmpStrings(t, "host_schain_node.rid", cfg.HostSChainNode.RID, "BidRequest")
+	cmpInt8s(t, "host_schain_node.hp", cfg.HostSChainNode.HP, &int8One)
 
 	//Assert the NonStandardPublishers was correctly unmarshalled
 	assert.Equal(t, []string{"pub1", "pub2"}, cfg.GDPR.NonStandardPublishers, "gdpr.non_standard_publishers")
