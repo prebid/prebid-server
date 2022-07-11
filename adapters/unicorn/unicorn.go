@@ -178,7 +178,7 @@ func setSourceExt() json.RawMessage {
 
 func modifyApp(request *openrtb2.BidRequest) error {
 	if request.App == nil {
-		return fmt.Errorf("bidrequest app is required")
+		return fmt.Errorf("Request app is required")
 	}
 
   modifiableApp := *request.App

@@ -3,6 +3,6 @@ package openrtb_ext
 type ExtImpUnicorn struct {
 	PlacementID string `json:"placementId,omitempty"`
 	PublisherID string `json:"publisherId,omitempty"`
-	MediaID     string `json:"mediaId"`
+	MediaID     string `json:"mediaId,omitempty"`
 	AccountID   int    `json:"accountId,omitempty"`
 }
