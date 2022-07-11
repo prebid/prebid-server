@@ -1,4 +1,4 @@
 package openrtb_ext
 
-// ExtImpAdtargetme defines the contract for bidrequest.imp[i].ext.adtargetme
-type ExtImpAdtargetme struct{}
+// ExtImpAdserverAdtarget defines the contract for bidrequest.imp[i].ext.adserver_adtarget
+type ExtImpAdserverAdtarget struct{}

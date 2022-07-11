@@ -1,4 +1,4 @@
-package adtargetme
+package adserver_adtarget
 
 import (
 	"testing"
@@ -9,12 +9,12 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderAdtargetme, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderAdserverAdtarget, config.Adapter{
 		Endpoint: "http://localhost:8077/ssp"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	adapterstest.RunJSONBidderTest(t, "adtargetmetest", bidder)
+	adapterstest.RunJSONBidderTest(t, "adserver_adtarget_test", bidder)
 }

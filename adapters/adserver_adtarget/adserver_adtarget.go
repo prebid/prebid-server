@@ -1,11 +1,11 @@
-package adtargetme
+package adserver_adtarget
 
 import (
 	"encoding/json"
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
@@ -17,7 +17,7 @@ type adapter struct {
 	endpoint string
 }
 
-// Builder builds a new instance of the Adtargetme adapter for the given bidder with the given config.
+// Builder builds a new instance of the AdserverAdtarget adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,

@@ -100,7 +100,7 @@ const (
 	BidderAdpone            BidderName = "adpone"
 	BidderAdprime           BidderName = "adprime"
 	BidderAdtarget          BidderName = "adtarget"
-	BidderAdtargetme        BidderName = "adtargetme"
+	BidderAdserverAdtarget  BidderName = "adserver_adtarget"
 	BidderAdtelligent       BidderName = "adtelligent"
 	BidderAdvangelists      BidderName = "advangelists"
 	BidderAdView            BidderName = "adview"
@@ -256,7 +256,7 @@ func CoreBidderNames() []BidderName {
 		BidderAdpone,
 		BidderAdprime,
 		BidderAdtarget,
-		BidderAdtargetme,
+		BidderAdserverAdtarget,
 		BidderAdtelligent,
 		BidderAdvangelists,
 		BidderAdView,
