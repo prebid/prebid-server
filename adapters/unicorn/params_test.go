@@ -68,7 +68,7 @@ var invalidParams = []string{
    }`,
 	`{
       "accountId": 12345,
-      "publisherId": 5519932053813783,
+      "publisherId": 12341234123412341234,
       "mediaId": "test_media",
       "placementId": "test_placement"
    }`,
