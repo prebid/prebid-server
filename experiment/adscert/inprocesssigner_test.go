@@ -1,7 +1,6 @@
 package adscert
 
 import (
-	"github.com/prebid/prebid-server/config"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -48,50 +47,4 @@ func TestInProcessSigner(t *testing.T) {
 			}
 		}
 	}
-}
-
-func TestInvalidInProcessSignerConfig(t *testing.T) {
-	type aTest struct {
-		desc                  string
-		inProcessSignerConfig config.AdsCertInProcess
-		expectedError         string
-	}
-	testCases := []aTest{
-		{
-			desc:                  "empty origin url passed to config",
-			inProcessSignerConfig: config.AdsCertInProcess{Origin: "", PrivateKey: "pk", DNSCheckIntervalInSeconds: 10, DNSRenewalIntervalInSeconds: 10},
-			expectedError:         "invalid url for inprocess signer",
-		},
-		{
-			desc:                  "invaild origin url passed to config",
-			inProcessSignerConfig: config.AdsCertInProcess{Origin: "test@com", PrivateKey: "pk", DNSCheckIntervalInSeconds: 10, DNSRenewalIntervalInSeconds: 10},
-			expectedError:         "invalid url for inprocess signer",
-		},
-		{
-			desc:                  "empty private key passed to config",
-			inProcessSignerConfig: config.AdsCertInProcess{Origin: "http://test.com", PrivateKey: "", DNSCheckIntervalInSeconds: 10, DNSRenewalIntervalInSeconds: 10},
-			expectedError:         "invalid private key for inprocess signer",
-		},
-		{
-			desc:                  "negative dns check interval passed to config",
-			inProcessSignerConfig: config.AdsCertInProcess{Origin: "http://test.com", PrivateKey: "pk", DNSCheckIntervalInSeconds: -10, DNSRenewalIntervalInSeconds: 10},
-			expectedError:         "invalid dns check interval for inprocess signer",
-		},
-		{
-			desc:                  "zero dns renewal interval passed to config",
-			inProcessSignerConfig: config.AdsCertInProcess{Origin: "http://test.com", PrivateKey: "pk", DNSCheckIntervalInSeconds: 10, DNSRenewalIntervalInSeconds: 0},
-			expectedError:         "invalid dns renewal interval for inprocess signer",
-		},
-	}
-
-	for _, test := range testCases {
-		err := validateInProcessSignerConfig(test.inProcessSignerConfig)
-		assert.EqualError(t, err, test.expectedError, "error message should match for test: %s", test.desc)
-	}
-}
-
-func TestValidInProcessSignerConfig(t *testing.T) {
-	conf := config.AdsCertInProcess{Origin: "http://test.com", PrivateKey: "pk", DNSCheckIntervalInSeconds: 10, DNSRenewalIntervalInSeconds: 10}
-	err := validateInProcessSignerConfig(conf)
-	assert.NoError(t, err, "error message should not be returned")
 }

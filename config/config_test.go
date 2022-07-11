@@ -393,12 +393,12 @@ experiment:
     adscert:
         enabled: true
         inprocess:
-            origin: "test.com"
+            origin: "http://test.com"
             key: "ABC123"
             domain_check_interval_seconds: 40
             domain_renewal_interval_seconds : 60
         remote:
-            url: "test.com"
+            url: ""
             signing_timeout_ms: 10
 `)
 
@@ -658,11 +658,11 @@ func TestFullConfig(t *testing.T) {
 	cmpBools(t, "generate_bid_id", cfg.GenerateBidID, true)
 	cmpStrings(t, "debug.override_token", cfg.Debug.OverrideToken, "")
 	cmpBools(t, "experiment.adscert.enabled", cfg.Experiment.AdCerts.Enabled, true)
-	cmpStrings(t, "experiment.adscert.inprocess.origin", cfg.Experiment.AdCerts.InProcess.Origin, "test.com")
+	cmpStrings(t, "experiment.adscert.inprocess.origin", cfg.Experiment.AdCerts.InProcess.Origin, "http://test.com")
 	cmpStrings(t, "experiment.adscert.inprocess.key", cfg.Experiment.AdCerts.InProcess.PrivateKey, "ABC123")
 	cmpInts(t, "experiment.adscert.inprocess.domain_check_interval_seconds", cfg.Experiment.AdCerts.InProcess.DNSCheckIntervalInSeconds, 40)
 	cmpInts(t, "experiment.adscert.inprocess.domain_renewal_interval_seconds", cfg.Experiment.AdCerts.InProcess.DNSRenewalIntervalInSeconds, 60)
-	cmpStrings(t, "experiment.adscert.remote.url", cfg.Experiment.AdCerts.Remote.Url, "test.com")
+	cmpStrings(t, "experiment.adscert.remote.url", cfg.Experiment.AdCerts.Remote.Url, "")
 	cmpInts(t, "experiment.adscert.remote.signing_timeout_ms", cfg.Experiment.AdCerts.Remote.SigningTimeoutMs, 10)
 }
 
@@ -1752,5 +1752,135 @@ func TestTCF2FeatureOneVendorException(t *testing.T) {
 		value := tcf2.FeatureOneVendorException(tt.giveBidder)
 
 		assert.Equal(t, tt.wantIsVendorException, value, tt.description)
+	}
+}
+
+func TestExperimentValidate(t *testing.T) {
+	testCases := []struct {
+		desc           string
+		data           Experiment
+		expectErrors   bool
+		expectedErrors []error
+	}{
+		{
+			desc: "Remote signer config: invalid remote url passed to config",
+			data: Experiment{
+				AdCerts: ExperimentAdsCert{Enabled: true, Remote: AdsCertRemote{Url: "test@com", SigningTimeoutMs: 5}},
+			},
+			expectErrors:   true,
+			expectedErrors: []error{ErrInvalidRemoteSignerURL},
+		},
+		{
+			desc: "Remote signer config: invalid SigningTimeoutMs passed to config",
+			data: Experiment{
+				AdCerts: ExperimentAdsCert{Enabled: true, Remote: AdsCertRemote{Url: "http://test.com", SigningTimeoutMs: 0}},
+			},
+			expectErrors:   true,
+			expectedErrors: []error{ErrInvalidRemoteSignerSigningTimeout},
+		},
+		{
+			desc: "Remote signer config: invalid URL and SigningTimeoutMs passed to config",
+			data: Experiment{
+				AdCerts: ExperimentAdsCert{Enabled: true, Remote: AdsCertRemote{Url: "test@com", SigningTimeoutMs: 0}},
+			},
+			expectErrors:   true,
+			expectedErrors: []error{ErrInvalidRemoteSignerURL, ErrInvalidRemoteSignerSigningTimeout},
+		},
+		{
+			desc: "Remote signer config: valid URL and SigningTimeoutMs passed to config",
+			data: Experiment{
+				AdCerts: ExperimentAdsCert{Enabled: true, Remote: AdsCertRemote{Url: "http://test.com", SigningTimeoutMs: 5}},
+			},
+			expectErrors:   false,
+			expectedErrors: []error{},
+		},
+		{
+			desc: "Experiment config: experiment config is disabled",
+			data: Experiment{
+				AdCerts: ExperimentAdsCert{Enabled: false},
+			},
+			expectErrors:   false,
+			expectedErrors: []error{},
+		},
+		{
+			desc: "Experiment config: experiment config is enabled and no signers are specified",
+			data: Experiment{
+				AdCerts: ExperimentAdsCert{Enabled: true},
+			},
+			expectErrors:   true,
+			expectedErrors: []error{ErrNoSignersSpecified},
+		},
+		{
+			desc: "Experiment config: experiment config is enabled and both signers are specified",
+			data: Experiment{
+				AdCerts: ExperimentAdsCert{
+					Enabled:   true,
+					Remote:    AdsCertRemote{Url: "http://test1.com"},
+					InProcess: AdsCertInProcess{Origin: "http://test2.com"},
+				},
+			},
+			expectErrors:   true,
+			expectedErrors: []error{ErrBothSignersSpecified},
+		},
+		{
+			desc: "Inprocess signer config: valid config",
+			data: Experiment{
+				AdCerts: ExperimentAdsCert{Enabled: true, InProcess: AdsCertInProcess{Origin: "http://test.com", PrivateKey: "pk", DNSCheckIntervalInSeconds: 10, DNSRenewalIntervalInSeconds: 10}},
+			},
+			expectErrors:   false,
+			expectedErrors: []error{},
+		},
+		{
+			desc: "Inprocess signer config: invaild origin url passed to config",
+			data: Experiment{
+				AdCerts: ExperimentAdsCert{Enabled: true, InProcess: AdsCertInProcess{Origin: "test@com", PrivateKey: "pk", DNSCheckIntervalInSeconds: 10, DNSRenewalIntervalInSeconds: 10}},
+			},
+			expectErrors:   true,
+			expectedErrors: []error{ErrInProcessSignerInvalidURL},
+		},
+		{
+			desc: "Inprocess signer config: empty PK passed to config",
+			data: Experiment{
+				AdCerts: ExperimentAdsCert{Enabled: true, InProcess: AdsCertInProcess{Origin: "http://test.com", PrivateKey: "", DNSCheckIntervalInSeconds: 10, DNSRenewalIntervalInSeconds: 10}},
+			},
+			expectErrors:   true,
+			expectedErrors: []error{ErrInProcessSignerInvalidPrivateKey},
+		},
+		{
+			desc: "Inprocess signer config: negative dns check interval passed to config",
+			data: Experiment{
+				AdCerts: ExperimentAdsCert{Enabled: true, InProcess: AdsCertInProcess{Origin: "http://test.com", PrivateKey: "pk", DNSCheckIntervalInSeconds: -10, DNSRenewalIntervalInSeconds: 10}},
+			},
+			expectErrors:   true,
+			expectedErrors: []error{ErrInProcessSignerInvalidDNSCheckInterval},
+		},
+		{
+			desc: "Inprocess signer config: zero dns check interval passed to config",
+			data: Experiment{
+				AdCerts: ExperimentAdsCert{Enabled: true, InProcess: AdsCertInProcess{Origin: "http://test.com", PrivateKey: "pk", DNSCheckIntervalInSeconds: 10, DNSRenewalIntervalInSeconds: 0}},
+			},
+			expectErrors:   true,
+			expectedErrors: []error{ErrInProcessSignerInvalidDNSRenewalInterval},
+		},
+		{
+			desc: "Inprocess signer config: all config parameters are invalid",
+			data: Experiment{
+				AdCerts: ExperimentAdsCert{Enabled: true, InProcess: AdsCertInProcess{Origin: "test@com", PrivateKey: "", DNSCheckIntervalInSeconds: -10, DNSRenewalIntervalInSeconds: 0}},
+			},
+			expectErrors: true,
+			expectedErrors: []error{
+				ErrInProcessSignerInvalidURL,
+				ErrInProcessSignerInvalidPrivateKey,
+				ErrInProcessSignerInvalidDNSCheckInterval,
+				ErrInProcessSignerInvalidDNSRenewalInterval},
+		},
+	}
+	for _, test := range testCases {
+		errs := test.data.validate([]error{})
+		if test.expectErrors {
+			assert.ElementsMatch(t, test.expectedErrors, errs, "Test case threw unexpected errors. Desc: %s  \n", test.desc)
+		} else {
+			assert.Empty(t, test.expectedErrors, "Test case should not return errors. Desc: %s  \n", test.desc)
+		}
 	}
 }

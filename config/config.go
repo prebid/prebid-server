@@ -18,6 +18,17 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
+var (
+	ErrBothSignersSpecified                     = errors.New("both inprocess and remote signers are specified. Please use just one signer")
+	ErrNoSignersSpecified                       = errors.New("not inprocess neither remote signers are specified. Please init one signer")
+	ErrInProcessSignerInvalidURL                = errors.New("invalid url for inprocess signer")
+	ErrInProcessSignerInvalidPrivateKey         = errors.New("invalid private key for inprocess signer")
+	ErrInProcessSignerInvalidDNSRenewalInterval = errors.New("invalid dns renewal interval for inprocess signer")
+	ErrInProcessSignerInvalidDNSCheckInterval   = errors.New("invalid dns check interval for inprocess signer")
+	ErrInvalidRemoteSignerURL                   = errors.New("invalid url for remote signer")
+	ErrInvalidRemoteSignerSigningTimeout        = errors.New("invalid signing timeout for remote signer")
+)
+
 // Configuration specifies the static application config.
 type Configuration struct {
 	ExternalURL      string     `mapstructure:"external_url"`
@@ -131,6 +142,7 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 	if cfg.AccountDefaults.Events.Enabled {
 		glog.Warning(`account_defaults.events will currently not do anything as the feature is still under development. Please follow https://github.com/prebid/prebid-server/issues/1725 for more updates`)
 	}
+	errs = cfg.Experiment.validate(errs)
 	return errs
 }
 
@@ -139,6 +151,42 @@ type AuctionTimeouts struct {
 	Default uint64 `mapstructure:"default"`
 	// The max timeout is used as an absolute cap, to prevent excessively long ones. Use 0 for no cap
 	Max uint64 `mapstructure:"max"`
+}
+
+func (cfg *Experiment) validate(errs []error) []error {
+	if !cfg.AdCerts.Enabled {
+		return errs
+	}
+	if len(cfg.AdCerts.InProcess.Origin) > 0 && len(cfg.AdCerts.Remote.Url) > 0 {
+		return append(errs, ErrBothSignersSpecified)
+	}
+	if len(cfg.AdCerts.InProcess.Origin) == 0 && len(cfg.AdCerts.Remote.Url) == 0 {
+		return append(errs, ErrNoSignersSpecified)
+	}
+	if len(cfg.AdCerts.InProcess.Origin) > 0 {
+		_, err := url.ParseRequestURI(cfg.AdCerts.InProcess.Origin)
+		if err != nil {
+			errs = append(errs, ErrInProcessSignerInvalidURL)
+		}
+		if len(cfg.AdCerts.InProcess.PrivateKey) == 0 {
+			errs = append(errs, ErrInProcessSignerInvalidPrivateKey)
+		}
+		if cfg.AdCerts.InProcess.DNSRenewalIntervalInSeconds <= 0 {
+			errs = append(errs, ErrInProcessSignerInvalidDNSRenewalInterval)
+		}
+		if cfg.AdCerts.InProcess.DNSCheckIntervalInSeconds <= 0 {
+			errs = append(errs, ErrInProcessSignerInvalidDNSCheckInterval)
+		}
+	} else if len(cfg.AdCerts.Remote.Url) > 0 {
+		_, err := url.ParseRequestURI(cfg.AdCerts.Remote.Url)
+		if err != nil {
+			errs = append(errs, ErrInvalidRemoteSignerURL)
+		}
+		if cfg.AdCerts.Remote.SigningTimeoutMs <= 0 {
+			errs = append(errs, ErrInvalidRemoteSignerSigningTimeout)
+		}
+	}
+	return errs
 }
 
 func (cfg *AuctionTimeouts) validate(errs []error) []error {

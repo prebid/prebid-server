@@ -2,21 +2,12 @@ package adscert
 
 import (
 	"crypto/rand"
-	"errors"
 	"github.com/IABTechLab/adscert/pkg/adscert/api"
 	"github.com/IABTechLab/adscert/pkg/adscert/discovery"
 	"github.com/IABTechLab/adscert/pkg/adscert/signatory"
 	"github.com/benbjohnson/clock"
 	"github.com/prebid/prebid-server/config"
-	"net/url"
 	"time"
-)
-
-var (
-	errInProcessSignerInvalidURL                = errors.New("invalid url for inprocess signer")
-	errInProcessSignerInvalidPrivateKey         = errors.New("invalid private key for inprocess signer")
-	errInProcessSignerInvalidDNSRenewalInterval = errors.New("invalid dns renewal interval for inprocess signer")
-	errInProcessSignerInvalidDNSCheckInterval   = errors.New("invalid dns check interval for inprocess signer")
 )
 
 // inProcessSigner holds the signatory to add adsCert header to requests using in process go library
@@ -37,9 +28,6 @@ func (ips *inProcessSigner) Sign(destinationURL string, body []byte) (string, er
 }
 
 func newInProcessSigner(inProcessSignerConfig config.AdsCertInProcess) (*inProcessSigner, error) {
-	if err := validateInProcessSignerConfig(inProcessSignerConfig); err != nil {
-		return nil, err
-	}
 	return &inProcessSigner{
 		signatory: signatory.NewLocalAuthenticatedConnectionsSignatory(
 			inProcessSignerConfig.Origin,
@@ -51,21 +39,4 @@ func newInProcessSigner(inProcessSignerConfig config.AdsCertInProcess) (*inProce
 			time.Duration(inProcessSignerConfig.DNSRenewalIntervalInSeconds)*time.Second,
 			[]string{inProcessSignerConfig.PrivateKey}),
 	}, nil
-}
-
-func validateInProcessSignerConfig(inProcessSignerConfig config.AdsCertInProcess) error {
-	_, err := url.ParseRequestURI(inProcessSignerConfig.Origin)
-	if err != nil {
-		return errInProcessSignerInvalidURL
-	}
-	if len(inProcessSignerConfig.PrivateKey) == 0 {
-		return errInProcessSignerInvalidPrivateKey
-	}
-	if inProcessSignerConfig.DNSRenewalIntervalInSeconds <= 0 {
-		return errInProcessSignerInvalidDNSRenewalInterval
-	}
-	if inProcessSignerConfig.DNSCheckIntervalInSeconds <= 0 {
-		return errInProcessSignerInvalidDNSCheckInterval
-	}
-	return nil
 }

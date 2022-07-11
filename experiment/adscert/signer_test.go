@@ -26,14 +26,6 @@ func TestNilSignerForAdsCertDisabled(t *testing.T) {
 	assert.Equal(t, "", message, "incorrect message returned NilSigner")
 }
 
-func TestInPrecessAndRemoteSignersDefined(t *testing.T) {
-	config := config.ExperimentAdsCert{Enabled: true, InProcess: config.AdsCertInProcess{Origin: "test.com"}, Remote: config.AdsCertRemote{Url: "test.com"}}
-	signer, err := NewAdCertsSigner(config)
-	assert.Nil(t, signer, "no signer should be returned if both inprocess and remote signers are defined")
-	assert.Error(t, err, "error should be returned if both inprocess and remote signers are defined")
-
-}
-
 type MockLocalAuthenticatedConnectionsSignatory struct {
 	returnError       bool
 	operationStatusOk bool
