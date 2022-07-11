@@ -1519,9 +1519,17 @@ func TestSetTargeting(t *testing.T) {
 			description:    "imp ext has data, valid targeting data",
 			bidRequest:     openrtb2.BidRequest{Imp: []openrtb2.Imp{{Ext: []byte(`{"data":{"placementId":123}}`)}}},
 			targeting:      `{"gam-key1":"val1", "gam-key2":"val2"}`,
-			expectedImpExt: ``,
-			wantError:      true,
-			errorMessage:   "field 'data' already present in imp ext",
+			expectedImpExt: `{"data": {"gam-key1":"val1", "gam-key2":"val2", "placementId":123}}`,
+			wantError:      false,
+			errorMessage:   "",
+		},
+		{
+			description:    "imp ext has data and other fields, valid targeting data",
+			bidRequest:     openrtb2.BidRequest{Imp: []openrtb2.Imp{{Ext: []byte(`{"data":{"placementId":123}, "prebid": 123}`)}}},
+			targeting:      `{"gam-key1":"val1", "gam-key2":"val2"}`,
+			expectedImpExt: `{"data": {"gam-key1":"val1", "gam-key2":"val2", "placementId":123}, "prebid":123}`,
+			wantError:      false,
+			errorMessage:   "",
 		},
 		{
 			description:    "imp ext has invalid format, valid targeting data",
@@ -1529,7 +1537,7 @@ func TestSetTargeting(t *testing.T) {
 			targeting:      `{"gam-key1":"val1", "gam-key2":"val2"}`,
 			expectedImpExt: ``,
 			wantError:      true,
-			errorMessage:   "unable to unmarshal imp.ext: invalid character '1' looking for beginning of object key string",
+			errorMessage:   "unable to merge imp.ext with targeting data, check targeting data is correct: Invalid JSON Document",
 		},
 		{
 			description:    "valid imp ext, invalid targeting data",
@@ -1537,7 +1545,7 @@ func TestSetTargeting(t *testing.T) {
 			targeting:      `{123,}`,
 			expectedImpExt: ``,
 			wantError:      true,
-			errorMessage:   "unable to unmarshal targeting data: invalid character '1' looking for beginning of object key string",
+			errorMessage:   "unable to merge imp.ext with targeting data, check targeting data is correct: Invalid JSON Patch",
 		},
 	}
 
