@@ -42,6 +42,12 @@ var validParams = []string{
    }`,
 	`{
       "accountId": 12345,
+      "publisherId": "123456-pub",
+      "mediaId": "test_media",
+      "placementId": "test_placement"
+   }`,
+	`{
+      "accountId": 12345,
       "publisherId": "5519932053813783",
       "mediaId": "test_media",
       "placementId": "test_placement"
