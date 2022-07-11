@@ -56,6 +56,9 @@ var validParams = []string{
       "accountId": 12345,
       "mediaId": "test_media"
    }`,
+	`{
+      "accountId": 12345
+   }`,
 }
 
 var invalidParams = []string{
