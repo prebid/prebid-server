@@ -35,13 +35,19 @@ func TestInvalidParams(t *testing.T) {
 
 var validParams = []string{
 	`{
-      "accountId": 199578,
-      "publisherId": 123456,
+      "accountId": 12345,
+      "publisherId": "123456",
       "mediaId": "test_media",
       "placementId": "test_placement"
    }`,
 	`{
-      "accountId": 199578,
+      "accountId": 12345,
+      "publisherId": "5519932053813783",
+      "mediaId": "test_media",
+      "placementId": "test_placement"
+   }`,
+	`{
+      "accountId": 12345,
       "mediaId": "test_media"
    }`,
 }
@@ -49,10 +55,16 @@ var validParams = []string{
 var invalidParams = []string{
 	`{}`,
 	`{
-      "accountId": "199578",
+      "accountId": "12345",
       "publisherId": "123456",
       "mediaId": 12345,
       "placementId": 12345
+   }`,
+	`{
+      "accountId": 12345,
+      "publisherId": 5519932053813783,
+      "mediaId": "test_media",
+      "placementId": "test_placement"
    }`,
 	`{
       "publisherId": 123456,

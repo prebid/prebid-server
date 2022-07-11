@@ -9,7 +9,7 @@
       "description": "In Application, if placementId is empty, prebid server configuration id will be used as placementId."
     },
     "publisherId": {
-      "type": "integer",
+      "type": "string",
       "description": "Account specific publisher id"
     },
     "mediaId": {
