@@ -806,7 +806,7 @@ func mergeBidderRequests(allBidderRequests []BidderRequest, bidderNameToBidderRe
 	return allBidderRequests
 }
 
-func BuildExtData(data []byte) []byte {
+func WrapJSONInData(data []byte) []byte {
 	res := make([]byte, 0, len(data))
 	res = append(res, []byte(`{"data":`)...)
 	res = append(res, data...)

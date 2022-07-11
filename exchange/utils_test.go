@@ -3117,7 +3117,7 @@ func TestBuildExtData(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		actualRes := BuildExtData(test.input)
+		actualRes := WrapJSONInData(test.input)
 		assert.JSONEq(t, test.expectedRes, string(actualRes), "Incorrect result data")
 	}
 }

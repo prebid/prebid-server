@@ -467,7 +467,7 @@ func setTargeting(req *openrtb2.BidRequest, targeting string) error {
 		return nil
 	}
 
-	targetingData := exchange.BuildExtData([]byte(targeting))
+	targetingData := exchange.WrapJSONInData([]byte(targeting))
 
 	if len(req.Imp[0].Ext) > 0 {
 		newImpExt, err := jsonpatch.MergePatch(req.Imp[0].Ext, targetingData)
