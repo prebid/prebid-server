@@ -67,7 +67,7 @@ type exchange struct {
 	privacyConfig     config.Privacy
 	categoriesFetcher stored_requests.CategoryFetcher
 	bidIDGenerator    BidIDGenerator
-	hostSChainNode    *openrtb_ext.ExtRequestPrebidSChainSChainNode
+	hostSChainNode    *openrtb2.SupplyChainNode
 	adsCertSigner     adscert.Signer
 }
 
