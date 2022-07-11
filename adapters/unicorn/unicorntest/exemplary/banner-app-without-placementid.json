@@ -22,7 +22,7 @@
           },
           "bidder": {
             "accountId": 12345,
-            "publisherId": "5519932053813783",
+            "publisherId": "12341234123412341234",
             "mediaId": "test_media"
           }
         }
@@ -92,7 +92,7 @@
             },
             "id": "test_media",
             "publisher": {
-              "id": "5519932053813783"
+              "id": "12341234123412341234"
             },
             "ver": "1.9.0"
           },
@@ -137,7 +137,7 @@
               "ext": {
                 "bidder": {
                   "accountId": 12345,
-                  "publisherId": "5519932053813783",
+                  "publisherId": "12341234123412341234",
                   "mediaId": "test_media",
                   "placementId": "test_unicorn"
                 }
