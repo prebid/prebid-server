@@ -8,7 +8,8 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/adcom1"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -48,7 +49,7 @@ type dmxParams struct {
 	Bidfloor    float64 `json:"bidfloor,omitempty"`
 }
 
-var protocols = []openrtb2.Protocol{2, 3, 5, 6, 7, 8}
+var protocols = []adcom1.MediaCreativeSubtype{2, 3, 5, 6, 7, 8}
 
 func UserSellerOrPubId(str1, str2 string) string {
 	if str1 != "" {
@@ -351,7 +352,7 @@ func getIdfa(request *openrtb2.BidRequest) (string, bool) {
 	}
 	return "", false
 }
-func checkProtocols(imp *openrtb2.Video) []openrtb2.Protocol {
+func checkProtocols(imp *openrtb2.Video) []adcom1.MediaCreativeSubtype {
 	if len(imp.Protocols) > 0 {
 		return imp.Protocols
 	}

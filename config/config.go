@@ -10,10 +10,12 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/spf13/viper"
+
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/spf13/viper"
 )
 
 // Configuration specifies the static application config.
@@ -91,8 +93,8 @@ type Configuration struct {
 	//When true, new bid id will be generated in seatbid[].bid[].ext.prebid.bidid and used in event urls instead
 	GenerateBidID bool `mapstructure:"generate_bid_id"`
 	// GenerateRequestID overrides the bidrequest.id in an AMP Request or an App Stored Request with a generated UUID if set to true. The default is false.
-	GenerateRequestID bool                                          `mapstructure:"generate_request_id"`
-	HostSChainNode    *openrtb_ext.ExtRequestPrebidSChainSChainNode `mapstructure:"host_schain_node"`
+	GenerateRequestID bool                      `mapstructure:"generate_request_id"`
+	HostSChainNode    *openrtb2.SupplyChainNode `mapstructure:"host_schain_node"`
 	// Experiment configures non-production ready features.
 	Experiment Experiment `mapstructure:"experiment"`
 }
@@ -893,6 +895,9 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("accounts.filesystem.enabled", false)
 	v.SetDefault("accounts.filesystem.directorypath", "./stored_requests/data/by_id")
 	v.SetDefault("accounts.in_memory_cache.type", "none")
+
+	v.BindEnv("user_sync.external_url")
+	v.BindEnv("user_sync.coop_sync.default")
 
 	// some adapters append the user id to the end of the redirect url instead of using
 	// macro substitution. it is important for the uid to be the last query parameter.
