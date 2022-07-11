@@ -5,5 +5,5 @@ type ExtImpUnicorn struct {
 	PlacementID string `json:"placementId,omitempty"`
 	PublisherID int    `json:"publisherId,omitempty"`
 	MediaID     string `json:"mediaId"`
-	AccountID   int    `json:"accountId"`
+	AccountID   int    `json:"accountId,omitempty"`
 }

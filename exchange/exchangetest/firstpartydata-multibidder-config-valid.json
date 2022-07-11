@@ -111,8 +111,7 @@
               }
             }
           }
-        },
-        "bidAdjustment": 1.0
+        }
       }
     },
     "rubicon": {
@@ -154,8 +153,7 @@
               }
             }
           }
-        },
-        "bidAdjustment": 1.0
+        }
       }
     }
   }

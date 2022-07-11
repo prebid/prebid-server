@@ -647,6 +647,7 @@ func TestExtractFPDForBidders(t *testing.T) {
 	if specFiles, err := ioutil.ReadDir("./tests/extractfpdforbidders"); err == nil {
 		for _, specFile := range specFiles {
 			fileName := "./tests/extractfpdforbidders/" + specFile.Name()
+
 			fpdFile, err := loadFpdFile(fileName)
 
 			if err != nil {
