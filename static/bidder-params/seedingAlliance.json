@@ -1,0 +1,12 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Seeding Alliance Adapter Params",
+    "description": "A schema which validates params accepted by the Seeding Alliance adapter",
+    "type": "object",
+    "properties": {
+        "tagId": {
+            "type": "string",
+            "description": "Tag ID"
+        }
+    }
+}
