@@ -181,7 +181,7 @@ func modifyApp(request *openrtb2.BidRequest) error {
 		return fmt.Errorf("Request app is required")
 	}
 
-  modifiableApp := *request.App
+	modifiableApp := *request.App
 
 	mediaId, err := jsonparser.GetString(request.Imp[0].Ext, "bidder", "mediaId")
 	if err != nil {
@@ -190,7 +190,7 @@ func modifyApp(request *openrtb2.BidRequest) error {
 
 	modifiableApp.ID = mediaId
 
-  publisherId, err := jsonparser.GetString(request.Imp[0].Ext, "bidder", "publisherId")
+	publisherId, err := jsonparser.GetString(request.Imp[0].Ext, "bidder", "publisherId")
 	if err == nil {
 		var publisher openrtb2.Publisher
 		if modifiableApp.Publisher != nil {
