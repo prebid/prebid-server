@@ -1500,6 +1500,14 @@ func TestSetTargeting(t *testing.T) {
 			errorMessage:   "",
 		},
 		{
+			description:    "valid imp ext, empty targeting data",
+			bidRequest:     openrtb2.BidRequest{Imp: []openrtb2.Imp{{Ext: []byte(`{"appnexus":{"placementId":123}}`)}}},
+			targeting:      ``,
+			expectedImpExt: `{"appnexus":{"placementId":123}}`,
+			wantError:      false,
+			errorMessage:   "",
+		},
+		{
 			description:    "empty imp ext, valid targeting data",
 			bidRequest:     openrtb2.BidRequest{Imp: []openrtb2.Imp{{Ext: []byte(`{}`)}}},
 			targeting:      `{"gam-key1":"val1", "gam-key2":"val2"}`,

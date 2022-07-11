@@ -463,6 +463,9 @@ func (deps *endpointDeps) overrideWithParams(ampParams amp.Params, req *openrtb2
 
 // setTargeting merges "targeting" to imp[0].ext.data
 func setTargeting(req *openrtb2.BidRequest, targeting string) error {
+	if len(targeting) == 0 {
+		return nil
+	}
 
 	targetingData := exchange.BuildExtData([]byte(targeting))
 
