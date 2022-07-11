@@ -91,9 +91,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 	requestData := &adapters.RequestData{
-		Method: "POST",
-		Uri:    a.endpoint,
-		Body:   requestJSON,
+		Method:  "POST",
+		Uri:     a.endpoint,
+		Body:    requestJSON,
 		Headers: headers,
 	}
 
