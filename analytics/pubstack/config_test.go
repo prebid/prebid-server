@@ -1,11 +1,12 @@
 package pubstack
 
 import (
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestFetchConfig(t *testing.T) {
@@ -24,7 +25,6 @@ func TestFetchConfig(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		defer req.Body.Close()
 		res.Write([]byte(configResponse))
-		res.WriteHeader(200)
 	}))
 
 	defer server.Close()
@@ -32,13 +32,13 @@ func TestFetchConfig(t *testing.T) {
 	endpoint, _ := url.Parse(server.URL)
 	cfg, _ := fetchConfig(server.Client(), endpoint)
 
-	assert.Equal(t, cfg.ScopeID, "scopeId")
-	assert.Equal(t, cfg.Endpoint, "https://pubstack.io")
-	assert.Equal(t, cfg.Features[auction], true)
-	assert.Equal(t, cfg.Features[cookieSync], true)
-	assert.Equal(t, cfg.Features[amp], true)
-	assert.Equal(t, cfg.Features[setUID], false)
-	assert.Equal(t, cfg.Features[video], false)
+	assert.Equal(t, "scopeId", cfg.ScopeID)
+	assert.Equal(t, "https://pubstack.io", cfg.Endpoint)
+	assert.Equal(t, true, cfg.Features[auction])
+	assert.Equal(t, true, cfg.Features[cookieSync])
+	assert.Equal(t, true, cfg.Features[amp])
+	assert.Equal(t, false, cfg.Features[setUID])
+	assert.Equal(t, false, cfg.Features[video])
 }
 
 func TestFetchConfig_Error(t *testing.T) {
@@ -49,7 +49,6 @@ func TestFetchConfig_Error(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		defer req.Body.Close()
 		res.Write([]byte(configResponse))
-		res.WriteHeader(200)
 	}))
 
 	defer server.Close()
@@ -58,7 +57,7 @@ func TestFetchConfig_Error(t *testing.T) {
 	cfg, err := fetchConfig(server.Client(), endpoint)
 
 	assert.Nil(t, cfg)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestIsSameAs(t *testing.T) {
@@ -98,5 +97,54 @@ func TestIsSameAs(t *testing.T) {
 	assert.True(t, a.isSameAs(b))
 	b.Features["auction"] = false
 	assert.False(t, a.isSameAs(b))
+}
 
+func TestClone(t *testing.T) {
+	config := &Configuration{
+		ScopeID:  "scopeId",
+		Endpoint: "endpoint",
+		Features: map[string]bool{
+			"auction":    true,
+			"cookiesync": true,
+			"amp":        true,
+			"setuid":     false,
+			"video":      false,
+		},
+	}
+
+	clone := config.clone()
+
+	assert.Equal(t, config, clone)
+	assert.NotSame(t, config, clone)
+}
+
+func TestDisableAllFeatures(t *testing.T) {
+	config := &Configuration{
+		ScopeID:  "scopeId",
+		Endpoint: "endpoint",
+		Features: map[string]bool{
+			"auction":    true,
+			"cookiesync": true,
+			"amp":        true,
+			"setuid":     false,
+			"video":      false,
+		},
+	}
+
+	expected := &Configuration{
+		ScopeID:  "scopeId",
+		Endpoint: "endpoint",
+		Features: map[string]bool{
+			"auction":    false,
+			"cookiesync": false,
+			"amp":        false,
+			"setuid":     false,
+			"video":      false,
+		},
+	}
+
+	disabled := config.disableAllFeatures()
+
+	assert.Equal(t, expected, disabled)
+	assert.Same(t, config, disabled)
 }
