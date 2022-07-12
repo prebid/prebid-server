@@ -29,6 +29,14 @@
   "httpCalls": [{
     "expectedRequest": {
       "uri": "https://prebid-server-aws.dianomi.com/openrtb2/auction",
+      "headers": {
+        "Content-Type": [
+          "application/json;charset=utf-8"
+        ],
+        "Accept": [
+          "application/json"
+        ]
+      },
       "body": {
         "id": "test-request-id",
         "imp": [{
