@@ -21,7 +21,8 @@ import (
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/adcom1"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	gometrics "github.com/rcrowley/go-metrics"
 	"github.com/stretchr/testify/assert"
 )
@@ -335,9 +336,7 @@ func TestVideoEndpointValidationsPositive(t *testing.T) {
 	mimes = append(mimes, "mp4")
 	mimes = append(mimes, "")
 
-	videoProtocols := make([]openrtb2.Protocol, 0)
-	videoProtocols = append(videoProtocols, 15)
-	videoProtocols = append(videoProtocols, 30)
+	videoProtocols := []adcom1.MediaCreativeSubtype{15, 30}
 
 	req := openrtb_ext.BidRequestVideo{
 		StoredRequestId: "123",
@@ -378,7 +377,7 @@ func TestVideoEndpointValidationsCritical(t *testing.T) {
 	mimes = append(mimes, "")
 	mimes = append(mimes, "")
 
-	videoProtocols := make([]openrtb2.Protocol, 0)
+	videoProtocols := []adcom1.MediaCreativeSubtype{}
 
 	req := openrtb_ext.BidRequestVideo{
 		StoredRequestId: "",
@@ -447,9 +446,7 @@ func TestVideoEndpointValidationsPodErrors(t *testing.T) {
 	mimes = append(mimes, "mp4")
 	mimes = append(mimes, "")
 
-	videoProtocols := make([]openrtb2.Protocol, 0)
-	videoProtocols = append(videoProtocols, 15)
-	videoProtocols = append(videoProtocols, 30)
+	videoProtocols := []adcom1.MediaCreativeSubtype{15, 30}
 
 	req := openrtb_ext.BidRequestVideo{
 		StoredRequestId: "123",
@@ -517,9 +514,7 @@ func TestVideoEndpointValidationsSiteAndApp(t *testing.T) {
 	mimes = append(mimes, "mp4")
 	mimes = append(mimes, "")
 
-	videoProtocols := make([]openrtb2.Protocol, 0)
-	videoProtocols = append(videoProtocols, 15)
-	videoProtocols = append(videoProtocols, 30)
+	videoProtocols := []adcom1.MediaCreativeSubtype{15, 30}
 
 	req := openrtb_ext.BidRequestVideo{
 		StoredRequestId: "123",
@@ -575,9 +570,7 @@ func TestVideoEndpointValidationsSiteMissingRequiredField(t *testing.T) {
 	mimes = append(mimes, "mp4")
 	mimes = append(mimes, "")
 
-	videoProtocols := make([]openrtb2.Protocol, 0)
-	videoProtocols = append(videoProtocols, 15)
-	videoProtocols = append(videoProtocols, 30)
+	videoProtocols := []adcom1.MediaCreativeSubtype{15, 30}
 
 	req := openrtb_ext.BidRequestVideo{
 		StoredRequestId: "123",
@@ -998,25 +991,25 @@ func TestCreateImpressionTemplate(t *testing.T) {
 
 	imp := openrtb2.Imp{}
 	imp.Video = &openrtb2.Video{}
-	imp.Video.Protocols = []openrtb2.Protocol{1, 2}
+	imp.Video.Protocols = []adcom1.MediaCreativeSubtype{1, 2}
 	imp.Video.MIMEs = []string{"video/mp4"}
 	imp.Video.H = 200
 	imp.Video.W = 400
-	imp.Video.PlaybackMethod = []openrtb2.PlaybackMethod{5, 6}
+	imp.Video.PlaybackMethod = []adcom1.PlaybackMethod{5, 6}
 
 	video := openrtb2.Video{}
-	video.Protocols = []openrtb2.Protocol{3, 4}
+	video.Protocols = []adcom1.MediaCreativeSubtype{3, 4}
 	video.MIMEs = []string{"video/flv"}
 	video.H = 300
 	video.W = 0
-	video.PlaybackMethod = []openrtb2.PlaybackMethod{7, 8}
+	video.PlaybackMethod = []adcom1.PlaybackMethod{7, 8}
 
 	res := createImpressionTemplate(imp, &video)
-	assert.Equal(t, res.Video.Protocols, []openrtb2.Protocol{3, 4}, "Incorrect video protocols")
+	assert.Equal(t, res.Video.Protocols, []adcom1.MediaCreativeSubtype{3, 4}, "Incorrect video protocols")
 	assert.Equal(t, res.Video.MIMEs, []string{"video/flv"}, "Incorrect video MIMEs")
 	assert.Equal(t, int(res.Video.H), 300, "Incorrect video height")
 	assert.Equal(t, int(res.Video.W), 0, "Incorrect video width")
-	assert.Equal(t, res.Video.PlaybackMethod, []openrtb2.PlaybackMethod{7, 8}, "Incorrect video playback method")
+	assert.Equal(t, res.Video.PlaybackMethod, []adcom1.PlaybackMethod{7, 8}, "Incorrect video playback method")
 }
 
 func TestCCPA(t *testing.T) {

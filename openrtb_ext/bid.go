@@ -53,6 +53,7 @@ type ExtBidPrebidMeta struct {
 	NetworkName          string          `json:"networkName,omitempty"`
 	PrimaryCategoryID    string          `json:"primaryCatId,omitempty"`
 	SecondaryCategoryIDs []string        `json:"secondaryCatIds,omitempty"`
+	AdapterCode          string          `json:"adaptercode,omitempty"`
 }
 
 // ExtBidPrebidVideo defines the contract for bidresponse.seatbid.bid[i].ext.prebid.video

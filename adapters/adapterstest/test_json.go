@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/mitchellh/copystructure"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -207,6 +207,7 @@ type expectedBidResponse struct {
 type expectedBid struct {
 	Bid  json.RawMessage `json:"bid"`
 	Type string          `json:"type"`
+	Seat string          `json:"seat"`
 }
 
 // ---------------------------------------
@@ -314,6 +315,7 @@ func diffBids(t *testing.T, description string, actual *adapters.TypedBid, expec
 		return
 	}
 
+	assert.Equal(t, string(expected.Seat), string(actual.Seat), fmt.Sprintf(`%s.seat "%s" does not match expected "%s."`, description, string(actual.Seat), string(expected.Seat)))
 	assert.Equal(t, string(expected.Type), string(actual.BidType), fmt.Sprintf(`%s.type "%s" does not match expected "%s."`, description, string(actual.BidType), string(expected.Type)))
 	assert.NoError(t, diffOrtbBids(fmt.Sprintf("%s.bid", description), actual.Bid, expected.Bid))
 }

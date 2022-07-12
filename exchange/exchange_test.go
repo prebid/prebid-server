@@ -9,14 +9,16 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/buger/jsonparser"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
@@ -2205,7 +2207,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 	if spec.BidIDGenerator != nil {
 		*bidIdGenerator = *spec.BidIDGenerator
 	}
-	ex := newExchangeForTests(t, filename, spec.OutgoingRequests, aliases, privacyConfig, bidIdGenerator)
+	ex := newExchangeForTests(t, filename, spec.OutgoingRequests, aliases, privacyConfig, bidIdGenerator, spec.HostSChainFlag)
 	biddersInAuction := findBiddersInAuction(t, filename, &spec.IncomingRequest.OrtbRequest)
 	debugLog := &DebugLog{}
 	if spec.DebugLog != nil {
@@ -2309,7 +2311,7 @@ func extractResponseTimes(t *testing.T, context string, bid *openrtb2.BidRespons
 	}
 }
 
-func newExchangeForTests(t *testing.T, filename string, expectations map[string]*bidderSpec, aliases map[string]string, privacyConfig config.Privacy, bidIDGenerator BidIDGenerator) Exchange {
+func newExchangeForTests(t *testing.T, filename string, expectations map[string]*bidderSpec, aliases map[string]string, privacyConfig config.Privacy, bidIDGenerator BidIDGenerator, hostSChainFlag bool) Exchange {
 	bidderAdapters := make(map[openrtb_ext.BidderName]AdaptedBidder, len(expectations))
 	bidderInfos := make(config.BidderInfos, len(expectations))
 	for _, bidderName := range openrtb_ext.CoreBidderNames() {
@@ -2366,6 +2368,15 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 		gdprDefaultValue = gdpr.SignalNo
 	}
 
+	hostSChainNode := &openrtb2.SupplyChainNode{}
+	if hostSChainFlag {
+		hostSChainNode = &openrtb2.SupplyChainNode{
+			ASI: "pbshostcompany.com", SID: "00001", RID: "BidRequest", HP: openrtb2.Int8Ptr(1),
+		}
+	} else {
+		hostSChainNode = nil
+	}
+
 	return &exchange{
 		adapterMap:        bidderAdapters,
 		me:                metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.CoreBidderNames(), nil),
@@ -2381,6 +2392,7 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 		bidderToSyncerKey: bidderToSyncerKey,
 		externalURL:       "http://localhost",
 		bidIDGenerator:    bidIDGenerator,
+		hostSChainNode:    hostSChainNode,
 	}
 }
 
@@ -4074,6 +4086,7 @@ type exchangeSpec struct {
 	StartTime         int64                  `json:"start_time_ms,omitempty"`
 	BidIDGenerator    *mockBidIDGenerator    `json:"bidIDGenerator,omitempty"`
 	RequestType       *metrics.RequestType   `json:"requestType,omitempty"`
+	HostSChainFlag    bool                   `json:"host_schain_flag,omitempty"`
 }
 
 type exchangeRequest struct {
@@ -4094,12 +4107,12 @@ type bidderSpec struct {
 }
 
 type bidderRequest struct {
-	OrtbRequest   openrtb2.BidRequest `json:"ortbRequest"`
-	BidAdjustment float64             `json:"bidAdjustment"`
+	OrtbRequest    openrtb2.BidRequest `json:"ortbRequest"`
+	BidAdjustments map[string]float64  `json:"bidAdjustments"`
 }
 
 type bidderResponse struct {
-	SeatBid   *bidderSeatBid             `json:"pbsSeatBid,omitempty"`
+	SeatBids  []*bidderSeatBid           `json:"pbsSeatBids,omitempty"`
 	Errors    []string                   `json:"errors,omitempty"`
 	HttpCalls []*openrtb_ext.ExtHttpCall `json:"httpCalls,omitempty"`
 }
@@ -4109,13 +4122,15 @@ type bidderResponse struct {
 // JSON property tags on those types are contracts in prod.
 type bidderSeatBid struct {
 	Bids []bidderBid `json:"pbsBids,omitempty"`
+	Seat string      `json:"seat"`
 }
 
 // bidderBid is basically a subset of pbsOrtbBid from exchange/bidder.go.
 // See the comment on bidderSeatBid for more info.
 type bidderBid struct {
-	Bid  *openrtb2.Bid `json:"ortbBid,omitempty"`
-	Type string        `json:"bidType,omitempty"`
+	Bid  *openrtb2.Bid                 `json:"ortbBid,omitempty"`
+	Type string                        `json:"bidType,omitempty"`
+	Meta *openrtb_ext.ExtBidPrebidMeta `json:"bidMeta,omitempty"`
 }
 
 type mockIdFetcher map[string]string
@@ -4139,11 +4154,11 @@ type validatingBidder struct {
 	mockResponses map[string]bidderResponse
 }
 
-func (b *validatingBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool) (seatBid *pbsOrtbSeatBid, errs []error) {
+func (b *validatingBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustments map[string]float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool, alternateBidderCodes config.AlternateBidderCodes) (seatBids []*pbsOrtbSeatBid, errs []error) {
 	if expectedRequest, ok := b.expectations[string(bidderRequest.BidderName)]; ok {
 		if expectedRequest != nil {
-			if expectedRequest.BidAdjustment != bidAdjustment {
-				b.t.Errorf("%s: Bidder %s got wrong bid adjustment. Expected %f, got %f", b.fileName, bidderRequest.BidderName, expectedRequest.BidAdjustment, bidAdjustment)
+			if !reflect.DeepEqual(expectedRequest.BidAdjustments, bidAdjustments) {
+				b.t.Errorf("%s: Bidder %s got wrong bid adjustment. Expected %v, got %v", b.fileName, bidderRequest.BidderName, expectedRequest.BidAdjustments, bidAdjustments)
 			}
 			diffOrtbRequests(b.t, fmt.Sprintf("Request to %s in %s", string(bidderRequest.BidderName), b.fileName), &expectedRequest.OrtbRequest, bidderRequest.BidRequest)
 		}
@@ -4152,25 +4167,34 @@ func (b *validatingBidder) requestBid(ctx context.Context, bidderRequest BidderR
 	}
 
 	if mockResponse, ok := b.mockResponses[string(bidderRequest.BidderName)]; ok {
-		if mockResponse.SeatBid != nil {
-			bids := make([]*pbsOrtbBid, len(mockResponse.SeatBid.Bids))
-			for i := 0; i < len(bids); i++ {
-				bids[i] = &pbsOrtbBid{
-					originalBidCPM: mockResponse.SeatBid.Bids[i].Bid.Price,
-					bid:            mockResponse.SeatBid.Bids[i].Bid,
-					bidType:        openrtb_ext.BidType(mockResponse.SeatBid.Bids[i].Type),
-				}
-			}
+		if len(mockResponse.SeatBids) != 0 {
+			for _, mockSeatBid := range mockResponse.SeatBids {
+				var bids []*pbsOrtbBid
 
-			seatBid = &pbsOrtbSeatBid{
-				bids:      bids,
-				httpCalls: mockResponse.HttpCalls,
+				if len(mockSeatBid.Bids) != 0 {
+					bids = make([]*pbsOrtbBid, len(mockSeatBid.Bids))
+					for i := 0; i < len(bids); i++ {
+						bids[i] = &pbsOrtbBid{
+							originalBidCPM: mockSeatBid.Bids[i].Bid.Price,
+							bid:            mockSeatBid.Bids[i].Bid,
+							bidType:        openrtb_ext.BidType(mockSeatBid.Bids[i].Type),
+							bidMeta:        mockSeatBid.Bids[i].Meta,
+						}
+					}
+				}
+
+				seatBids = append(seatBids, &pbsOrtbSeatBid{
+					bids:      bids,
+					httpCalls: mockResponse.HttpCalls,
+					seat:      mockSeatBid.Seat,
+				})
 			}
 		} else {
-			seatBid = &pbsOrtbSeatBid{
+			seatBids = []*pbsOrtbSeatBid{{
 				bids:      nil,
 				httpCalls: mockResponse.HttpCalls,
-			}
+				seat:      string(bidderRequest.BidderName),
+			}}
 		}
 
 		for _, err := range mockResponse.Errors {
@@ -4187,9 +4211,9 @@ type capturingRequestBidder struct {
 	req *openrtb2.BidRequest
 }
 
-func (b *capturingRequestBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool) (seatBid *pbsOrtbSeatBid, errs []error) {
+func (b *capturingRequestBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustments map[string]float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool, alternateBidderCodes config.AlternateBidderCodes) (seatBid []*pbsOrtbSeatBid, errs []error) {
 	b.req = bidderRequest.BidRequest
-	return &pbsOrtbSeatBid{}, nil
+	return []*pbsOrtbSeatBid{{}}, nil
 }
 
 func diffOrtbRequests(t *testing.T, description string, expected *openrtb2.BidRequest, actual *openrtb2.BidRequest) {
@@ -4237,6 +4261,11 @@ func mapifySeatBids(t *testing.T, context string, seatBids []openrtb2.SeatBid) m
 		if _, ok := seatMap[seatName]; ok {
 			t.Fatalf("%s: Contains duplicate Seat: %s", context, seatName)
 		} else {
+			// The sequence of extra bids for same seat from different bidder is not guaranteed as we randomize the list of adapters
+			// This is w.r.t changes at exchange.go#561 (club bids from different bidders for same extra-bid)
+			sort.Slice(seatBids[i].Bid, func(x, y int) bool {
+				return seatBids[i].Bid[x].Price > seatBids[i].Bid[y].Price
+			})
 			seatMap[seatName] = &seatBids[i]
 		}
 	}
@@ -4289,7 +4318,7 @@ func (e *emptyUsersync) HasAnyLiveSyncs() bool {
 
 type panicingAdapter struct{}
 
-func (panicingAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool) (posb *pbsOrtbSeatBid, errs []error) {
+func (panicingAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustments map[string]float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool, alternateBidderCodes config.AlternateBidderCodes) (posb []*pbsOrtbSeatBid, errs []error) {
 	panic("Panic! Panic! The world is ending!")
 }
 
