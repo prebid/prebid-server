@@ -75,15 +75,16 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 		}}
 	}
 
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(response.SeatBid[0].Bid))
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
 	bidResponse.Currency = response.Cur
-	seatBid := response.SeatBid[0]
 	var errs []error
-	for i, bid := range seatBid.Bid {
-		mediaType, err := getMediaTypeForImp(bid.ImpID, request.Imp)
-		if err != nil {
-			errs = append(errs, err)
-		} else {
+	for _, seatBid := range response.SeatBid {
+		for i, bid := range seatBid.Bid {
+			mediaType, err := getMediaTypeForImp(bid.ImpID, request.Imp)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &seatBid.Bid[i],
 				BidType: mediaType,
