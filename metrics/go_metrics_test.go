@@ -742,27 +742,44 @@ func TestRecordSyncerSet(t *testing.T) {
 
 func TestStoredResponses(t *testing.T) {
 	testCases := []struct {
-		description                         string
-		givenPubID                          string
-		expectedAccountStoredResponsesCount int64
-		expectedStoredResponsesCount        int64
+		description                           string
+		givenPubID                            string
+		accountStoredResponsesMetricsDisabled bool
+		expectedAccountStoredResponsesCount   int64
+		expectedStoredResponsesCount          int64
 	}{
 		{
-			description:                         "Publisher id is given, both metrics should be updated",
-			givenPubID:                          "acct-id",
-			expectedAccountStoredResponsesCount: 1,
-			expectedStoredResponsesCount:        1,
+			description:                           "Publisher id is given, account stored responses disabled, both metrics should be updated",
+			givenPubID:                            "acct-id",
+			accountStoredResponsesMetricsDisabled: true,
+			expectedAccountStoredResponsesCount:   0,
+			expectedStoredResponsesCount:          1,
 		},
 		{
-			description:                         "Publisher id is unknown, only expectedStoredResponsesCount metric should be updated",
-			givenPubID:                          PublisherUnknown,
-			expectedAccountStoredResponsesCount: 0,
-			expectedStoredResponsesCount:        1,
+			description:                           "Publisher id is given, account stored responses enabled, both metrics should be updated",
+			givenPubID:                            "acct-id",
+			accountStoredResponsesMetricsDisabled: false,
+			expectedAccountStoredResponsesCount:   1,
+			expectedStoredResponsesCount:          1,
+		},
+		{
+			description:                           "Publisher id is unknown, account stored responses enabled, only expectedStoredResponsesCount metric should be updated",
+			givenPubID:                            PublisherUnknown,
+			accountStoredResponsesMetricsDisabled: false,
+			expectedAccountStoredResponsesCount:   0,
+			expectedStoredResponsesCount:          1,
+		},
+		{
+			description:                           "Publisher id is unknown, account stored responses disabled, only expectedStoredResponsesCount metric should be updated",
+			givenPubID:                            PublisherUnknown,
+			accountStoredResponsesMetricsDisabled: true,
+			expectedAccountStoredResponsesCount:   0,
+			expectedStoredResponsesCount:          1,
 		},
 	}
 	for _, test := range testCases {
 		registry := metrics.NewRegistry()
-		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{}, nil)
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountStoredResponses: test.accountStoredResponsesMetricsDisabled}, nil)
 
 		m.RecordStoredResponse(test.givenPubID)
 		am := m.getAccountMetrics(test.givenPubID)

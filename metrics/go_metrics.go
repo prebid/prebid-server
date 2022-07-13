@@ -454,7 +454,7 @@ func (me *Metrics) RecordDebugRequest(debugEnabled bool, pubID string) {
 
 func (me *Metrics) RecordStoredResponse(pubId string) {
 	me.StoredResponsesMeter.Mark(1)
-	if pubId != PublisherUnknown {
+	if pubId != PublisherUnknown && !me.MetricsDisabled.AccountStoredResponses {
 		me.getAccountMetrics(pubId).storedResponsesMeter.Mark(1)
 	}
 }

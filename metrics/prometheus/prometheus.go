@@ -525,7 +525,7 @@ func (m *Metrics) RecordDebugRequest(debugEnabled bool, pubID string) {
 
 func (m *Metrics) RecordStoredResponse(pubId string) {
 	m.storedResponses.Inc()
-	if pubId != metrics.PublisherUnknown {
+	if !m.metricsDisabled.AccountStoredResponses && pubId != metrics.PublisherUnknown {
 		m.accountStoredResponses.With(prometheus.Labels{
 			accountLabel: pubId,
 		}).Inc()

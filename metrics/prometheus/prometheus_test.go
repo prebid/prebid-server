@@ -1644,28 +1644,46 @@ func TestRecordAdapterGDPRRequestBlocked(t *testing.T) {
 
 func TestStoredResponsesMetric(t *testing.T) {
 	testCases := []struct {
-		description                         string
-		publisherId                         string
-		expectedAccountStoredResponsesCount float64
-		expectedStoredResponsesCount        float64
+		description                           string
+		publisherId                           string
+		accountStoredResponsesMetricsDisabled bool
+		expectedAccountStoredResponsesCount   float64
+		expectedStoredResponsesCount          float64
 	}{
 
 		{
-			description:                         "Publisher id is given, expected both account stored responses and stored responses counter to have a record",
-			publisherId:                         "acct-id",
-			expectedAccountStoredResponsesCount: 1,
-			expectedStoredResponsesCount:        1,
+			description:                           "Publisher id is given, account stored responses enabled, expected both account stored responses and stored responses counter to have a record",
+			publisherId:                           "acct-id",
+			accountStoredResponsesMetricsDisabled: false,
+			expectedAccountStoredResponsesCount:   1,
+			expectedStoredResponsesCount:          1,
 		},
 		{
-			description:                         "Publisher id is unknown, expected stored responses counter only to have a record",
-			publisherId:                         metrics.PublisherUnknown,
-			expectedAccountStoredResponsesCount: 0,
-			expectedStoredResponsesCount:        1,
+			description:                           "Publisher id is given, account stored responses disabled, expected stored responses counter only to have a record",
+			publisherId:                           "acct-id",
+			accountStoredResponsesMetricsDisabled: true,
+			expectedAccountStoredResponsesCount:   0,
+			expectedStoredResponsesCount:          1,
+		},
+		{
+			description:                           "Publisher id is unknown, account stored responses enabled, expected stored responses counter only to have a record",
+			publisherId:                           metrics.PublisherUnknown,
+			accountStoredResponsesMetricsDisabled: true,
+			expectedAccountStoredResponsesCount:   0,
+			expectedStoredResponsesCount:          1,
+		},
+		{
+			description:                           "Publisher id is unknown, account stored responses disabled, expected stored responses counter only to have a record",
+			publisherId:                           metrics.PublisherUnknown,
+			accountStoredResponsesMetricsDisabled: false,
+			expectedAccountStoredResponsesCount:   0,
+			expectedStoredResponsesCount:          1,
 		},
 	}
 
 	for _, test := range testCases {
 		m := createMetricsForTesting()
+		m.metricsDisabled.AccountStoredResponses = test.accountStoredResponsesMetricsDisabled
 		m.RecordStoredResponse(test.publisherId)
 
 		assertCounterVecValue(t, "", "account stored responses", m.accountStoredResponses, test.expectedAccountStoredResponsesCount, prometheus.Labels{accountLabel: "acct-id"})
