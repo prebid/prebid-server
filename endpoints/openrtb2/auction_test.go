@@ -897,6 +897,28 @@ func TestRefererParsing(t *testing.T) {
 	}
 }
 
+func TestSitePageParsing(t *testing.T) {
+	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
+	bidReq := &openrtb2.BidRequest{
+		Site: &openrtb2.Site{
+			Page: "https://test.somepage.com",
+		},
+	}
+
+	setSiteImplicitly(httpReq, bidReq)
+
+	if bidReq.Site == nil {
+		t.Fatalf("bidrequest.site should not be nil.")
+	}
+
+	if bidReq.Site.Domain != "somepage.com" {
+		t.Errorf("Bad bidrequest.site.domain. Expected somepage.com, got %s", bidReq.Site.Domain)
+	}
+	if bidReq.Site.Page != "https://test.somepage.com" {
+		t.Errorf("Bad bidrequest.site.page. Expected somepage.com, got %s", bidReq.Site.Page)
+	}
+}
+
 func TestParseImpInfoSingleImpression(t *testing.T) {
 
 	expectedRes := []ImpExtPrebidData{
