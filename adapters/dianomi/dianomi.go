@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -87,10 +87,14 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		return nil, errors
 	}
 
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
 	requestData := &adapters.RequestData{
-		Method: "POST",
-		Uri:    a.endpoint,
-		Body:   requestJSON,
+		Method:  "POST",
+		Uri:     a.endpoint,
+		Body:    requestJSON,
+		Headers: headers,
 	}
 
 	return []*adapters.RequestData{requestData}, errors

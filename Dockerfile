@@ -38,4 +38,4 @@ USER prebid_user
 EXPOSE 8000
 EXPOSE 6060
 ENTRYPOINT ["/usr/local/bin/prebid-server"]
-CMD ["-v", "10", "-logtostderr"]
+CMD ["-v", "1", "-logtostderr"]
