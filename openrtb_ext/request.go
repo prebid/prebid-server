@@ -3,6 +3,8 @@ package openrtb_ext
 import (
 	"encoding/json"
 	"errors"
+
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 )
 
 // FirstPartyDataExtKey defines a field name within request.ext and request.imp.ext reserved for first party data.
@@ -27,8 +29,8 @@ const MaxDecimalFigures int = 15
 
 // ExtRequest defines the contract for bidrequest.ext
 type ExtRequest struct {
-	Prebid ExtRequestPrebid              `json:"prebid"`
-	SChain *ExtRequestPrebidSChainSChain `json:"schain,omitempty"`
+	Prebid ExtRequestPrebid      `json:"prebid"`
+	SChain *openrtb2.SupplyChain `json:"schain,omitempty"`
 }
 
 // ExtRequestPrebid defines the contract for bidrequest.ext.prebid
@@ -79,27 +81,8 @@ type ExtRequestCurrency struct {
 
 // ExtRequestPrebid defines the contract for bidrequest.ext.prebid.schains
 type ExtRequestPrebidSChain struct {
-	Bidders []string                     `json:"bidders,omitempty"`
-	SChain  ExtRequestPrebidSChainSChain `json:"schain"`
-}
-
-// ExtRequestPrebidSChainSChain defines the contract for bidrequest.ext.prebid.schains[i].schain
-type ExtRequestPrebidSChainSChain struct {
-	Complete int                                 `json:"complete"`
-	Nodes    []*ExtRequestPrebidSChainSChainNode `json:"nodes"`
-	Ver      string                              `json:"ver"`
-	Ext      json.RawMessage                     `json:"ext,omitempty"`
-}
-
-// ExtRequestPrebidSChainSChainNode defines the contract for bidrequest.ext.prebid.schains[i].schain[i].nodes
-type ExtRequestPrebidSChainSChainNode struct {
-	ASI    string          `json:"asi"`
-	SID    string          `json:"sid"`
-	RID    string          `json:"rid,omitempty"`
-	Name   string          `json:"name,omitempty"`
-	Domain string          `json:"domain,omitempty"`
-	HP     int             `json:"hp"`
-	Ext    json.RawMessage `json:"ext,omitempty"`
+	Bidders []string             `json:"bidders,omitempty"`
+	SChain  openrtb2.SupplyChain `json:"schain"`
 }
 
 // ExtRequestPrebidChannel defines the contract for bidrequest.ext.prebid.channel

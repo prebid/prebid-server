@@ -17,7 +17,8 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/julienschmidt/httprouter"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/openrtb3"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/analytics"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
@@ -804,7 +805,7 @@ func (e *nobidExchange) HoldAuction(ctx context.Context, auctionRequest exchange
 	return &openrtb2.BidResponse{
 		ID:    r.BidRequest.ID,
 		BidID: "test bid id",
-		NBR:   openrtb2.NoBidReasonCodeUnknownError.Ptr(),
+		NBR:   openrtb3.NoBidUnknownError.Ptr(),
 	}, nil
 }
 

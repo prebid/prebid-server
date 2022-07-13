@@ -16,7 +16,8 @@ require (
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/lib/pq v1.10.4
 	github.com/mitchellh/copystructure v1.2.0
-	github.com/mxmCherry/openrtb/v15 v15.0.1
+	github.com/mxmCherry/openrtb v13.0.0+incompatible
+	github.com/mxmCherry/openrtb/v16 v16.0.0-alpha.2
 	github.com/prebid/go-gdpr v1.11.0
 	github.com/prometheus/client_golang v1.12.1
 	github.com/prometheus/client_model v0.2.0

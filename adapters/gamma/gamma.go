@@ -7,7 +7,8 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/openrtb3"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -30,13 +31,13 @@ type gammaSeatBid struct {
 	Ext   json.RawMessage `json:"ext,omitempty"`
 }
 type gammaBidResponse struct {
-	ID         string                    `json:"id"`
-	SeatBid    []gammaSeatBid            `json:"seatbid,omitempty"`
-	BidID      string                    `json:"bidid,omitempty"`
-	Cur        string                    `json:"cur,omitempty"`
-	CustomData string                    `json:"customdata,omitempty"`
-	NBR        *openrtb2.NoBidReasonCode `json:"nbr,omitempty"`
-	Ext        json.RawMessage           `json:"ext,omitempty"`
+	ID         string                `json:"id"`
+	SeatBid    []gammaSeatBid        `json:"seatbid,omitempty"`
+	BidID      string                `json:"bidid,omitempty"`
+	Cur        string                `json:"cur,omitempty"`
+	CustomData string                `json:"customdata,omitempty"`
+	NBR        *openrtb3.NoBidReason `json:"nbr,omitempty"`
+	Ext        json.RawMessage       `json:"ext,omitempty"`
 }
 
 func checkParams(gammaExt openrtb_ext.ExtImpGamma) error {
