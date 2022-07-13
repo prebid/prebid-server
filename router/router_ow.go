@@ -45,6 +45,7 @@ var (
 
 func getTransport(cfg *config.Configuration, certPool *x509.CertPool) *http.Transport {
 	transport := &http.Transport{
+		Proxy:           http.ProxyFromEnvironment,
 		MaxConnsPerHost: cfg.Client.MaxConnsPerHost,
 		IdleConnTimeout: time.Duration(cfg.Client.IdleConnTimeout) * time.Second,
 		TLSClientConfig: &tls.Config{RootCAs: certPool},

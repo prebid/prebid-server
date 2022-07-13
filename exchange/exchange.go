@@ -52,20 +52,20 @@ type IdFetcher interface {
 }
 
 type exchange struct {
-	adapterMap        map[openrtb_ext.BidderName]adaptedBidder
+	adapterMap        map[openrtb_ext.BidderName]AdaptedBidder
 	bidderInfo        config.BidderInfos
 	bidderToSyncerKey map[string]string
 	me                metrics.MetricsEngine
 	cache             prebid_cache_client.Client
 	cacheTime         time.Duration
-	vendorListFetcher gdpr.VendorListFetcher
+	gdprPermsBuilder  gdpr.PermissionsBuilder
+	tcf2ConfigBuilder gdpr.TCF2ConfigBuilder
 	currencyConverter *currency.RateConverter
 	externalURL       string
 	gdprDefaultValue  gdpr.Signal
 	privacyConfig     config.Privacy
 	categoriesFetcher stored_requests.CategoryFetcher
 	bidIDGenerator    BidIDGenerator
-	gvlVendorIDs      map[openrtb_ext.BidderName]uint16
 	floor             floors.Floor
 	trakerURL         string
 }
@@ -114,7 +114,7 @@ func (randomDeduplicateBidBooleanGenerator) Generate() bool {
 	return rand.Intn(100) < 50
 }
 
-func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, metricsEngine metrics.MetricsEngine, infos config.BidderInfos, vendorListFetcher gdpr.VendorListFetcher, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher) Exchange {
+func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, metricsEngine metrics.MetricsEngine, infos config.BidderInfos, gdprPermsBuilder gdpr.PermissionsBuilder, tcf2CfgBuilder gdpr.TCF2ConfigBuilder, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher) Exchange {
 	bidderToSyncerKey := map[string]string{}
 	for bidder, syncer := range syncersByBidder {
 		bidderToSyncerKey[bidder] = syncer.Key()
@@ -134,7 +134,8 @@ func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid
 		categoriesFetcher: categoriesFetcher,
 		currencyConverter: currencyConverter,
 		externalURL:       cfg.ExternalURL,
-		vendorListFetcher: vendorListFetcher,
+		gdprPermsBuilder:  gdprPermsBuilder,
+		tcf2ConfigBuilder: tcf2CfgBuilder,
 		me:                metricsEngine,
 		gdprDefaultValue:  gdprDefaultValue,
 		privacyConfig: config.Privacy{
@@ -143,7 +144,6 @@ func NewExchange(adapters map[openrtb_ext.BidderName]adaptedBidder, cache prebid
 			LMT:  cfg.LMT,
 		},
 		bidIDGenerator: &bidIDGenerator{cfg.GenerateBidID},
-		gvlVendorIDs:   infos.ToGVLVendorIDMap(),
 		floor:          floors.NewFloorConfig(cfg.PriceFloors),
 		trakerURL:      cfg.TrackerURL,
 	}
@@ -174,10 +174,9 @@ type AuctionRequest struct {
 	FirstPartyData map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData
 	// map of imp id to stored response
 	StoredAuctionResponses stored_responses.ImpsWithBidResponses
-	TCF2ConfigBuilder      gdpr.TCF2ConfigBuilder
-	GDPRPermissionsBuilder gdpr.PermissionsBuilder
 	// map of imp id to bidder to stored response
 	StoredBidResponses stored_responses.ImpBidderStoredResp
+	PubID              string
 }
 
 // BidderRequest holds the bidder specific request and all other
@@ -215,6 +214,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		}
 		r.ResolvedBidRequest = resolvedBidReq
 	}
+	e.me.RecordDebugRequest(responseDebugAllow || accountDebugAllow, r.PubID)
 
 	if r.RequestType == metrics.ReqTypeORTB2Web || r.RequestType == metrics.ReqTypeORTB2App {
 		//Extract First party data for auction endpoint only
@@ -256,10 +256,9 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	gdprDefaultValue := e.parseGDPRDefaultValue(r.BidRequestWrapper.BidRequest)
 
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
-	tcf2Cfg := r.TCF2ConfigBuilder(e.privacyConfig.GDPR.TCF2, r.Account.GDPR)
-	gdprPerms := r.GDPRPermissionsBuilder(e.privacyConfig.GDPR, tcf2Cfg, e.gvlVendorIDs, e.vendorListFetcher)
-	bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(ctx, r, requestExt, e.bidderToSyncerKey, e.me, gdprDefaultValue, gdprPerms, e.privacyConfig, tcf2Cfg)
+	bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(ctx, r, requestExt, e.bidderToSyncerKey, e.me, gdprDefaultValue, e.privacyConfig, e.gdprPermsBuilder, e.tcf2ConfigBuilder)
 	errs = append(errs, floorErrs...)
+
 	e.me.RecordRequestPrivacy(privacyLabels)
 
 	// If we need to cache bids, then it will take some time to call prebid cache.

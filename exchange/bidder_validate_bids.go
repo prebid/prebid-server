@@ -17,14 +17,14 @@ import (
 //
 // The goal here is to make sure that the response contains Bids which are valid given the initial Request,
 // so that Publishers can trust the Bids they get from Prebid Server.
-func addValidatedBidderMiddleware(bidder adaptedBidder) adaptedBidder {
+func addValidatedBidderMiddleware(bidder AdaptedBidder) AdaptedBidder {
 	return &validatedBidder{
 		bidder: bidder,
 	}
 }
 
 type validatedBidder struct {
-	bidder adaptedBidder
+	bidder AdaptedBidder
 }
 
 func (v *validatedBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustment float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool) (*pbsOrtbSeatBid, []error) {
