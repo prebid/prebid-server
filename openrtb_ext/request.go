@@ -199,6 +199,7 @@ func (ert *ExtRequestTargeting) UnmarshalJSON(b []byte) error {
 
 // PriceGranularity defines the allowed values for bidrequest.ext.prebid.targeting.pricegranularity
 type PriceGranularity struct {
+	Test      bool               `json:"-"`
 	Precision int                `json:"precision,omitempty"`
 	Ranges    []GranularityRange `json:"ranges,omitempty"`
 }
@@ -280,6 +281,8 @@ func PriceGranularityFromString(gran string) PriceGranularity {
 		return priceGranularityDense
 	case "ow-ctv-med":
 		return priceGranularityOWCTVMed
+	case "testpg":
+		return priceGranularityTestPG
 	}
 	// Return empty if not matched
 	return PriceGranularity{}
@@ -357,6 +360,15 @@ var priceGranularityOWCTVMed = PriceGranularity{
 		Min:       0,
 		Max:       100,
 		Increment: 0.5}},
+}
+
+var priceGranularityTestPG = PriceGranularity{
+	Test:      true,
+	Precision: 2,
+	Ranges: []GranularityRange{{
+		Min:       0,
+		Max:       50,
+		Increment: 50}},
 }
 
 // ExtRequestPrebidData defines Prebid's First Party Data (FPD) and related bid request options.

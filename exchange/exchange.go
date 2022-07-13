@@ -846,7 +846,7 @@ func applyCategoryMapping(ctx context.Context, bidRequest *openrtb2.BidRequest, 
 						break
 					}
 				}
-			} else if newDur == 0 {
+			} else if targData.priceGranularity.Test || newDur == 0 {
 				if imp, ok := impMap[bid.bid.ImpID]; ok {
 					if nil != imp.Video && imp.Video.MaxDuration > 0 {
 						newDur = int(imp.Video.MaxDuration)
