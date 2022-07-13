@@ -18,7 +18,8 @@ const (
 )
 
 type youappiImpExt struct {
-	SKADN *openrtb_ext.SKADN `json:"skadn,omitempty"`
+	Rewarded int                `json:"rewarded"`
+	SKADN    *openrtb_ext.SKADN `json:"skadn,omitempty"`
 }
 
 type adapter struct {
@@ -86,7 +87,9 @@ func (adapter *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.Ex
 			thisImp.BidFloor = *youappiExt.BidFloor
 		}
 
-		impExt := youappiImpExt{}
+		impExt := youappiImpExt{
+			Rewarded: youappiExt.Reward,
+		}
 
 		skanSent := false
 

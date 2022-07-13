@@ -50,6 +50,7 @@
           "imp": [
             {
               "ext": {
+                "rewarded": 0
               },
               "id": "test-imp-id",
               "video": {
