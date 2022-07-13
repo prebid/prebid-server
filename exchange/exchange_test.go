@@ -4074,9 +4074,7 @@ func TestAuctionDebugEnabled(t *testing.T) {
 
 }
 
-func TestExperimentConfigs(t *testing.T) {
-	//This test just pass experiment ads cert configs to HoldAuction
-
+func TestPassExperimentConfigsToHoldAuction(t *testing.T) {
 	noBidServer := func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(204) }
 	server := httptest.NewServer(http.HandlerFunc(noBidServer))
 	defer server.Close()
@@ -4085,7 +4083,7 @@ func TestExperimentConfigs(t *testing.T) {
 		Adapters: make(map[string]config.Adapter, 1),
 	}
 	cfg.Adapters["appnexus"] = config.Adapter{
-		Endpoint: "test.com", //Note the '&' character in there
+		Endpoint: "test.com",
 	}
 	biddersInfo, err := config.LoadBidderInfoFromDisk("../static/bidder-info", cfg.Adapters, openrtb_ext.BuildBidderStringSlice())
 	if err != nil {

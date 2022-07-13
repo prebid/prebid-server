@@ -9,7 +9,7 @@ import (
 
 const SignHeader = "X-Ads-Cert-Auth"
 
-//Signer represents interface to access request Ads Cert signing functionality
+// Signer represents interface to access request Ads Cert signing functionality
 type Signer interface {
 	Sign(destinationURL string, body []byte) (string, error)
 }
