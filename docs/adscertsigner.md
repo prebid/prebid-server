@@ -20,7 +20,7 @@ In case origin URL is **bidder.com** then two subdomains has to be configured to
 `_delivery._adscert.bidder.com` - returns record that looks like this:
 `v=adcrtd k=x25519 h=sha256 p=w8f3160kEklY-nKuxogvn5PsZQLfkWWE0gUq_4JfFm8`
 
-For testing purposes please use this test domain (subscribtion will expire in May 2023):
+For testing purposes please use this test domain (subscription will expire in May 2023):
 `adscertdelivery.com`. To check data it returns use any online tool ([like this](https://mxtoolbox.com/SuperTool.aspx), select TXT lookup) to read TXT records: 
 `_delivery._adscert.adscertdelivery.com` and `_adscert.adscertdelivery.com`
 
@@ -50,7 +50,7 @@ Host config, can be set using env variables or yaml config, use proper format:
 ```json
 "experiment": {
     "adscert": {
-      "enabled": true,
+      "mode": "inprocess",
       "inprocess": {
         "origin": "http://adscertdelivery.com",
         "key": "U6KBGSEQ5kuMn3s_ohxYbmdmG7Xoos9hR3fJ_dDOi6Q",
@@ -68,7 +68,7 @@ In Prebid Server configs set parameters for this server:
 ```json
 "experiment": {
     "adscert": {
-      "enabled": true,
+      "mode": "remote",
       "remote": {
         "url": "localhost:3000",
         "signing_timeout_ms": 5

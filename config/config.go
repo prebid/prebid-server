@@ -19,14 +19,17 @@ import (
 )
 
 var (
-	ErrBothSignersSpecified                     = errors.New("both inprocess and remote signers are specified. Please use just one signer")
-	ErrNoSignersSpecified                       = errors.New("not inprocess neither remote signers are specified. Please init one signer")
+	ErrSignerModeIncorrect                      = errors.New("signer mode is not specified, specify 'off', 'inprocess' or 'remote'")
 	ErrInProcessSignerInvalidURL                = errors.New("invalid url for inprocess signer")
 	ErrInProcessSignerInvalidPrivateKey         = errors.New("invalid private key for inprocess signer")
 	ErrInProcessSignerInvalidDNSRenewalInterval = errors.New("invalid dns renewal interval for inprocess signer")
 	ErrInProcessSignerInvalidDNSCheckInterval   = errors.New("invalid dns check interval for inprocess signer")
 	ErrInvalidRemoteSignerURL                   = errors.New("invalid url for remote signer")
 	ErrInvalidRemoteSignerSigningTimeout        = errors.New("invalid signing timeout for remote signer")
+
+	AdCertsSignerModeOff       = "off"
+	AdCertsSignerModeInprocess = "inprocess"
+	AdCertsSignerModeRemote    = "remote"
 )
 
 // Configuration specifies the static application config.
@@ -154,16 +157,15 @@ type AuctionTimeouts struct {
 }
 
 func (cfg *Experiment) validate(errs []error) []error {
-	if !cfg.AdCerts.Enabled {
+	if len(cfg.AdCerts.Mode) == 0 {
 		return errs
 	}
-	if len(cfg.AdCerts.InProcess.Origin) > 0 && len(cfg.AdCerts.Remote.Url) > 0 {
-		return append(errs, ErrBothSignersSpecified)
+	if !(cfg.AdCerts.Mode == AdCertsSignerModeOff ||
+		cfg.AdCerts.Mode == AdCertsSignerModeInprocess ||
+		cfg.AdCerts.Mode == AdCertsSignerModeRemote) {
+		return append(errs, ErrSignerModeIncorrect)
 	}
-	if len(cfg.AdCerts.InProcess.Origin) == 0 && len(cfg.AdCerts.Remote.Url) == 0 {
-		return append(errs, ErrNoSignersSpecified)
-	}
-	if len(cfg.AdCerts.InProcess.Origin) > 0 {
+	if cfg.AdCerts.Mode == AdCertsSignerModeInprocess {
 		_, err := url.ParseRequestURI(cfg.AdCerts.InProcess.Origin)
 		if err != nil {
 			errs = append(errs, ErrInProcessSignerInvalidURL)
@@ -177,7 +179,7 @@ func (cfg *Experiment) validate(errs []error) []error {
 		if cfg.AdCerts.InProcess.DNSCheckIntervalInSeconds <= 0 {
 			errs = append(errs, ErrInProcessSignerInvalidDNSCheckInterval)
 		}
-	} else if len(cfg.AdCerts.Remote.Url) > 0 {
+	} else if cfg.AdCerts.Mode == AdCertsSignerModeRemote {
 		_, err := url.ParseRequestURI(cfg.AdCerts.Remote.Url)
 		if err != nil {
 			errs = append(errs, ErrInvalidRemoteSignerURL)
@@ -1248,7 +1250,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	// Defaults for account_defaults.events.default_url
 	v.SetDefault("account_defaults.events.default_url", "https://PBS_HOST/event?t=##PBS-EVENTTYPE##&vtype=##PBS-VASTEVENT##&b=##PBS-BIDID##&f=i&a=##PBS-ACCOUNTID##&ts=##PBS-TIMESTAMP##&bidder=##PBS-BIDDER##&int=##PBS-INTEGRATION##&mt=##PBS-MEDIATYPE##&ch=##PBS-CHANNEL##&aid=##PBS-AUCTIONID##&l=##PBS-LINEID##")
 
-	v.SetDefault("experiment.adscert.enabled", false)
+	v.SetDefault("experiment.adscert.mode", "off")
 	v.SetDefault("experiment.adscert.inprocess.origin", "")
 	v.SetDefault("experiment.adscert.inprocess.key", "")
 	v.SetDefault("experiment.adscert.inprocess.domain_check_interval_seconds", 30)

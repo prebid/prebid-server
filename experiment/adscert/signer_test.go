@@ -9,7 +9,7 @@ import (
 )
 
 func TestNilSigner(t *testing.T) {
-	config := config.ExperimentAdsCert{Enabled: true, InProcess: config.AdsCertInProcess{Origin: ""}, Remote: config.AdsCertRemote{Url: ""}}
+	config := config.ExperimentAdsCert{Mode: "off", InProcess: config.AdsCertInProcess{Origin: ""}, Remote: config.AdsCertRemote{Url: ""}}
 	signer, err := NewAdCertsSigner(config)
 	assert.NoError(t, err, "error should not be returned if not inprocess nor remote signer defined, NilSigner should be returned instead")
 	message, err := signer.Sign("test.com", nil)
@@ -18,7 +18,7 @@ func TestNilSigner(t *testing.T) {
 }
 
 func TestNilSignerForAdsCertDisabled(t *testing.T) {
-	config := config.ExperimentAdsCert{Enabled: false, InProcess: config.AdsCertInProcess{Origin: ""}, Remote: config.AdsCertRemote{Url: ""}}
+	config := config.ExperimentAdsCert{Mode: "off", InProcess: config.AdsCertInProcess{Origin: ""}, Remote: config.AdsCertRemote{Url: ""}}
 	signer, err := NewAdCertsSigner(config)
 	assert.NoError(t, err, "error should not be returned if AdsCerts feature is disabled")
 	message, err := signer.Sign("test.com", nil)

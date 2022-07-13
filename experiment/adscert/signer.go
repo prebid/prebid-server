@@ -22,10 +22,10 @@ func (ns *NilSigner) Sign(destinationURL string, body []byte) (string, error) {
 }
 
 func NewAdCertsSigner(experimentAdCertsConfig config.ExperimentAdsCert) (Signer, error) {
-	if len(experimentAdCertsConfig.InProcess.Origin) > 0 {
+	if experimentAdCertsConfig.Mode == config.AdCertsSignerModeInprocess {
 		return newInProcessSigner(experimentAdCertsConfig.InProcess)
 	}
-	if len(experimentAdCertsConfig.Remote.Url) > 0 {
+	if experimentAdCertsConfig.Mode == config.AdCertsSignerModeRemote {
 		return newRemoteSigner(experimentAdCertsConfig.Remote)
 	}
 	return &NilSigner{}, nil
