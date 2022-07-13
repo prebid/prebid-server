@@ -1469,7 +1469,14 @@ func TestRequestWithTargeting(t *testing.T) {
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
 	)
-	request, err := http.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1&targeting=%7B%22gam-key1%22%3A%20%22val1%22%2C%22gam-key2%22%3A%20%22val2%22%7D", nil)
+	url, err := url.Parse("/openrtb2/auction/amp")
+	assert.NoError(t, err, "unexpected error received while parsing url")
+	values := url.Query()
+	values.Add("targeting", `{"gam-key1":"val1", "gam-key2":"val2"}`)
+	values.Add("tag_id", "1")
+	url.RawQuery = values.Encode()
+
+	request, err := http.NewRequest("GET", url.String(), nil)
 	if !assert.NoError(t, err) {
 		return
 	}
