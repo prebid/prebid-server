@@ -20,7 +20,7 @@
     },
     "imp": [
       {
-        "id": "test-imp-id",
+        "id": "test-unsupported-imp-id",
         "tagid": "test-adtarget-tag-id",
         "video": {
           "mimes": [
@@ -65,7 +65,7 @@
           },
           "imp": [
             {
-              "id": "test-imp-id",
+              "id": "test-unsupported-imp-id",
               "tagid": "test-adtarget-tag-id",
               "video": {
                 "mimes": [
@@ -94,13 +94,13 @@
       "mockResponse": {
         "status": 200,
         "body": {
-          "id": "test-resp-idresp-id",
+          "id": "test-resp-id",
           "seatbid": [
             {
               "bid": [
                 {
-                  "id": "test-bid-resp-id",
-                  "impid": "test-imp-id",
+                  "id": "test-imp-id",
+                  "impid": "test-not-found-imp-id",
                   "price": 3.5,
                   "adm": "test-imp-mrkp",
                   "adomain": [
@@ -119,25 +119,10 @@
       }
     }
   ],
-  "expectedBidResponses": [
+  "expectedMakeBidsErrors": [
     {
-      "bids": [
-        {
-          "bid": {
-            "id": "test-bid-resp-id",
-            "impid": "test-imp-id",
-            "price": 3.5,
-            "adm": "test-imp-mrkp",
-            "adomain": [
-              "mock-site.com"
-            ],
-            "crid": "20",
-            "w": 1280,
-            "h": 720
-          },
-          "type":"video"
-        }
-      ]
+      "value": "Failed to find impression: \"test-not-found-imp-id\"",
+      "comparison": "literal"
     }
   ]
 }

@@ -3,13 +3,13 @@
     "id": "test-req-id",
     "device": {
       "ua": "test-user-agent",
-      "ipv6": "::1",
+      "ip": "123.123.123.123",
       "language": "en",
       "dnt": 0
     },
     "tmax": 1000,
     "user": {
-      "buyeruid": "test-buyer-id"
+      "buyeruid": "test-user-id"
     },
     "site": {
       "id": "123456789",
@@ -20,11 +20,16 @@
     },
     "imp": [
       {
-        "id": "test-imp-id",
+        "id": "test-unsupported-imp-id",
         "tagid": "test-adtarget-tag-id",
-        "native": {
-          "ver": "1.1",
-          "request": "{\"adunit\":2,\"assets\":[{\"id\":3,\"img\":{\"h\":120,\"hmin\":0,\"type\":3,\"w\":180,\"wmin\":0},\"required\":1},{\"id\":0,\"required\":1,\"title\":{\"len\":25}},{\"data\":{\"len\":25,\"type\":1},\"id\":4,\"required\":1},{\"data\":{\"len\":140,\"type\":2},\"id\":6,\"required\":1}],\"context\":1,\"layout\":1,\"contextsubtype\":11,\"plcmtcnt\":1,\"plcmttype\":2,\"ver\":\"1.1\",\"ext\":{\"banner\":{\"w\":320,\"h\":50}}}"
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 640,
+          "h": 480,
+          "minduration": 120,
+          "maxduration": 150
         }
       }
     ]
@@ -46,7 +51,7 @@
             "test-user-agent"
           ],
           "X-Forwarded-For": [
-            "::1"
+            "123.123.123.123"
           ]
         },
         "uri": "http://localhost:8077/ssp?s=123456789&prebid",
@@ -54,17 +59,22 @@
           "id": "test-req-id",
           "device": {
             "ua": "test-user-agent",
-            "ipv6": "::1",
+            "ip": "123.123.123.123",
             "language": "en",
             "dnt": 0
           },
           "imp": [
             {
-              "id": "test-imp-id",
+              "id": "test-unsupported-imp-id",
               "tagid": "test-adtarget-tag-id",
-              "native": {
-                "ver": "1.1",
-                "request": "{\"adunit\":2,\"assets\":[{\"id\":3,\"img\":{\"h\":120,\"hmin\":0,\"type\":3,\"w\":180,\"wmin\":0},\"required\":1},{\"id\":0,\"required\":1,\"title\":{\"len\":25}},{\"data\":{\"len\":25,\"type\":1},\"id\":4,\"required\":1},{\"data\":{\"len\":140,\"type\":2},\"id\":6,\"required\":1}],\"context\":1,\"layout\":1,\"contextsubtype\":11,\"plcmtcnt\":1,\"plcmttype\":2,\"ver\":\"1.1\",\"ext\":{\"banner\":{\"w\":320,\"h\":50}}}"
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "minduration": 120,
+                "maxduration": 150,
+                "w": 640,
+                "h": 480
               }
             }
           ],
@@ -76,7 +86,7 @@
             }
           },
           "user": {
-            "buyeruid": "test-buyer-id"
+            "buyeruid": "test-user-id"
           },
           "tmax": 1000
         }
@@ -84,22 +94,24 @@
       "mockResponse": {
         "status": 200,
         "body": {
-          "id": "test-resp-idresp-id",
+          "id": "test-resp-id",
           "seatbid": [
             {
               "bid": [
                 {
-                  "id": "test-bid-resp-id",
-                  "impid": "test-imp-id",
+                  "id": "test-imp-id",
+                  "impid": "test-unsupported-imp-id",
                   "price": 3.5,
                   "adm": "test-imp-mrkp",
                   "adomain": [
                     "mock-site.com"
                   ],
-                  "crid": "20"
+                  "crid": "20",
+                  "w": 1280,
+                  "h": 720
                 }
               ],
-              "seat": "adtarget-seat"
+              "seat": "aceex"
             }
           ],
           "cur": "USD"
@@ -107,23 +119,10 @@
       }
     }
   ],
-  "expectedBidResponses": [
+  "expectedMakeBidsErrors": [
     {
-      "bids": [
-        {
-          "bid": {
-            "id": "test-bid-resp-id",
-            "impid": "test-imp-id",
-            "price": 3.5,
-            "adm": "test-imp-mrkp",
-            "crid": "20",
-            "adomain": [
-              "mock-site.com"
-            ]
-          },
-          "type": "native"
-        }
-      ]
+      "value": "Unsupported bidtype for bid: \"test-unsupported-imp-id\"",
+      "comparison": "literal"
     }
   ]
 }

@@ -164,9 +164,14 @@ func (v *adapter) MakeBids(
 	bidResponse.Currency = response.Cur
 	for _, seatBid := range response.SeatBid {
 		for i, bid := range seatBid.Bid {
+			bidType, err := getMediaTypeForImp(bid.ImpID, openRTBRequest.Imp)
+			if err != nil {
+				return nil, []error{err}
+			}
+
 			b := &adapters.TypedBid{
 				Bid:     &seatBid.Bid[i],
-				BidType: getMediaTypeForImp(bid.ImpID, openRTBRequest.Imp),
+				BidType: bidType,
 			}
 			bidResponse.Bids = append(bidResponse.Bids, b)
 		}
@@ -174,17 +179,19 @@ func (v *adapter) MakeBids(
 	return bidResponse, nil
 }
 
-func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
-	mediaType := openrtb_ext.BidTypeBanner
+func getMediaTypeForImp(impId string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
 	for _, imp := range imps {
 		if imp.ID == impId {
-			if imp.Video != nil {
-				mediaType = openrtb_ext.BidTypeVideo
-			} else if imp.Native != nil {
-				mediaType = openrtb_ext.BidTypeNative
+			if imp.Banner != nil {
+				return openrtb_ext.BidTypeBanner, nil
+			} else {
+				return "", &errortypes.BadInput{
+					Message: fmt.Sprintf("Unsupported bidtype for bid: \"%s\"", impId),
+				}
 			}
-			return mediaType
 		}
 	}
-	return mediaType
+	return "", &errortypes.BadInput{
+		Message: fmt.Sprintf("Failed to find impression: \"%s\"", impId),
+	}
 }
