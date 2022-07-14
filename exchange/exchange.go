@@ -147,6 +147,7 @@ func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid
 type ImpExtInfo struct {
 	EchoVideoAttrs bool
 	StoredImp      []byte
+	Passthrough    json.RawMessage
 }
 
 // AuctionRequest holds the bid request for the auction
@@ -318,7 +319,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 				errs = append(errs, dealErrs...)
 			}
 
-			bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, responseDebugAllow, errs)
+			bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, responseDebugAllow, &requestExt.Prebid, errs)
 			if debugLog.DebugEnabledOrOverridden {
 				if bidRespExtBytes, err := json.Marshal(bidResponseExt); err == nil {
 					debugLog.Data.Response = string(bidRespExtBytes)
@@ -336,9 +337,9 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 			targData.setTargeting(auc, r.BidRequestWrapper.BidRequest.App != nil, bidCategory, r.Account.TruncateTargetAttribute)
 
 		}
-		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, responseDebugAllow, errs)
+		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, responseDebugAllow, &requestExt.Prebid, errs)
 	} else {
-		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, responseDebugAllow, errs)
+		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, responseDebugAllow, &requestExt.Prebid, errs)
 
 		if debugLog.DebugEnabledOrOverridden {
 
@@ -924,8 +925,7 @@ func getPrimaryAdServer(adServerId int) (string, error) {
 }
 
 // Extract all the data from the SeatBids and build the ExtBidResponse
-func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, r AuctionRequest, debugInfo bool, errList []error) *openrtb_ext.ExtBidResponse {
-
+func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, r AuctionRequest, debugInfo bool, requestExtPrebid *openrtb_ext.ExtRequestPrebid, errList []error) *openrtb_ext.ExtBidResponse {
 	bidResponseExt := &openrtb_ext.ExtBidResponse{
 		Errors:               make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage, len(adapterBids)),
 		Warnings:             make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage, len(adapterBids)),
@@ -942,6 +942,18 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pb
 		// auctiontimestamp is the only response.ext.prebid attribute we may emit
 		bidResponseExt.Prebid = &openrtb_ext.ExtResponsePrebid{
 			AuctionTimestamp: r.StartTime.UnixNano() / 1e+6,
+		}
+	}
+
+	if requestExtPrebid != nil {
+		if requestExtPrebid.Passthrough != nil {
+			if bidResponseExt.Prebid != nil {
+				bidResponseExt.Prebid.Passthrough = requestExtPrebid.Passthrough
+			} else {
+				bidResponseExt.Prebid = &openrtb_ext.ExtResponsePrebid{
+					Passthrough: requestExtPrebid.Passthrough,
+				}
+			}
 		}
 	}
 
@@ -998,6 +1010,7 @@ func (e *exchange) makeBid(bids []*pbsOrtbBid, auc *auction, returnCreative bool
 			Meta:              bid.bidMeta,
 			Video:             bid.bidVideo,
 			BidId:             bid.generatedBidID,
+			Passthrough:       nil,
 		}
 
 		if cacheInfo, found := e.getBidCacheInfo(bid, auc); found {
@@ -1053,20 +1066,22 @@ func makeBidExtJSON(ext json.RawMessage, prebid *openrtb_ext.ExtBidPrebid, impEx
 		}
 		prebid.Meta = &metaContainer.Prebid.Meta
 	}
-	extMap[openrtb_ext.PrebidExtKey] = prebid
 
-	// ext.storedrequestattributes
-	if impExtInfo, ok := impExtInfoMap[impId]; ok && impExtInfo.EchoVideoAttrs {
-		videoData, _, _, err := jsonparser.Get(impExtInfo.StoredImp, "video")
-		if err != nil && err != jsonparser.KeyPathNotFoundError {
-			return nil, err
-		}
-		//handler for case where EchoVideoAttrs is true, but video data is not found
-		if len(videoData) > 0 {
-			extMap[openrtb_ext.StoredRequestAttributes] = json.RawMessage(videoData)
+	// ext.prebid.storedrequestattributes and ext.prebid.passthrough
+	if impExtInfo, ok := impExtInfoMap[impId]; ok {
+		prebid.Passthrough = impExtInfoMap[impId].Passthrough
+		if impExtInfo.EchoVideoAttrs {
+			videoData, _, _, err := jsonparser.Get(impExtInfo.StoredImp, "video")
+			if err != nil && err != jsonparser.KeyPathNotFoundError {
+				return nil, err
+			}
+			//handler for case where EchoVideoAttrs is true, but video data is not found
+			if len(videoData) > 0 {
+				extMap[openrtb_ext.StoredRequestAttributes] = json.RawMessage(videoData)
+			}
 		}
 	}
-
+	extMap[openrtb_ext.PrebidExtKey] = prebid
 	return json.Marshal(extMap)
 }
 

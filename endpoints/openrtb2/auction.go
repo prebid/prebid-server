@@ -1684,22 +1684,17 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 				return nil, nil, []error{err}
 			}
 			resolvedImps = append(resolvedImps, resolvedImp)
-
-			impId, err := jsonparser.GetString(resolvedImp, "id")
+			err = setImpExtInfoMap(resolvedImp, impData, impExtInfoMap)
 			if err != nil {
 				return nil, nil, []error{err}
 			}
-
-			echoVideoAttributes := false
-			if impData.ImpExtPrebid.Options != nil {
-				echoVideoAttributes = impData.ImpExtPrebid.Options.EchoVideoAttrs
-			}
-			impExtInfoMap[impId] = exchange.ImpExtInfo{EchoVideoAttrs: echoVideoAttributes, StoredImp: storedImps[impData.ImpExtPrebid.StoredRequest.ID]}
-
 		} else {
 			resolvedImps = append(resolvedImps, impData.Imp)
+			err = setImpExtInfoMap(impData.Imp, impData, impExtInfoMap)
+			if err != nil {
+				return nil, nil, []error{err}
+			}
 		}
-
 	}
 	if len(resolvedImps) > 0 {
 		newImpJson, err := json.Marshal(resolvedImps)
@@ -1713,6 +1708,19 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 	}
 
 	return resolvedRequest, impExtInfoMap, nil
+}
+
+func setImpExtInfoMap(imp json.RawMessage, impData ImpExtPrebidData, impExtInfoMap map[string]exchange.ImpExtInfo) error {
+	impId, err := jsonparser.GetString(imp, "id")
+	if err != nil {
+		return err
+	}
+	echoVideoAttributes := false
+	if impData.ImpExtPrebid.Options != nil {
+		echoVideoAttributes = impData.ImpExtPrebid.Options.EchoVideoAttrs
+	}
+	impExtInfoMap[impId] = exchange.ImpExtInfo{EchoVideoAttrs: echoVideoAttributes, Passthrough: impData.ImpExtPrebid.Passthrough}
+	return nil
 }
 
 // parseImpInfo parses the request JSON and returns impression and unmarshalled imp.ext.prebid
