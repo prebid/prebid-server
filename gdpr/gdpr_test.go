@@ -45,7 +45,7 @@ func TestNewPermissions(t *testing.T) {
 			return nil, nil
 		}
 
-		perms := NewPermissions(config, &tcf2Config{}, vendorIDs, vendorListFetcher)
+		perms := NewPermissions(config, &tcf2Config{}, vendorIDs, vendorListFetcher, RequestInfo{})
 
 		assert.IsType(t, tt.wantType, perms, tt.description)
 	}

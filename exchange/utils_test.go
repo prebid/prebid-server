@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/firstpartydata"
@@ -27,15 +27,15 @@ type permissionsMock struct {
 	activitiesError error
 }
 
-func (p *permissionsMock) HostCookiesAllowed(ctx context.Context, gdpr gdpr.Signal, consent string) (bool, error) {
+func (p *permissionsMock) HostCookiesAllowed(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
-func (p *permissionsMock) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, gdpr gdpr.Signal, consent string) (bool, error) {
+func (p *permissionsMock) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName) (bool, error) {
 	return true, nil
 }
 
-func (p *permissionsMock) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string, aliasGVLIDs map[string]uint16) (permissions gdpr.AuctionPermissions, err error) {
+func (p *permissionsMock) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (permissions gdpr.AuctionPermissions, err error) {
 	permissions = gdpr.AuctionPermissions{
 		PassGeo: p.passGeo,
 		PassID:  p.passID,
@@ -53,6 +53,22 @@ func (p *permissionsMock) AuctionActivitiesAllowed(ctx context.Context, bidderCo
 	}
 
 	return permissions, p.activitiesError
+}
+
+type fakePermissionsBuilder struct {
+	permissions gdpr.Permissions
+}
+
+func (fpb fakePermissionsBuilder) Builder(gdpr.TCF2ConfigReader, gdpr.RequestInfo) gdpr.Permissions {
+	return fpb.permissions
+}
+
+type fakeTCF2ConfigBuilder struct {
+	cfg gdpr.TCF2ConfigReader
+}
+
+func (fcr fakeTCF2ConfigBuilder) Builder(hostConfig config.TCF2, accountConfig config.AccountGDPR) gdpr.TCF2ConfigReader {
+	return fcr.cfg
 }
 
 func assertReq(t *testing.T, bidderRequests []BidderRequest,
@@ -338,6 +354,7 @@ func TestCreateSanitizedImpExt(t *testing.T) {
 				"context":   json.RawMessage(`"anyContext"`),
 				"skadn":     json.RawMessage(`"anySKAdNetwork"`),
 				"gpid":      json.RawMessage(`"anyGPID"`),
+				"tid":       json.RawMessage(`"anyTID"`),
 			},
 			givenImpExtPrebid: map[string]json.RawMessage{
 				"bidder":    json.RawMessage(`"anyBidder"`),
@@ -349,6 +366,7 @@ func TestCreateSanitizedImpExt(t *testing.T) {
 				"context": json.RawMessage(`"anyContext"`),
 				"skadn":   json.RawMessage(`"anySKAdNetwork"`),
 				"gpid":    json.RawMessage(`"anyGPID"`),
+				"tid":     json.RawMessage(`"anyTID"`),
 			},
 			expectedError: "",
 		},
@@ -418,7 +436,7 @@ func TestExtractBidderExts(t *testing.T) {
 		},
 		{
 			description:              "Special Names Ignored - imp.ext.BIDDER",
-			givenImpExt:              map[string]json.RawMessage{"prebid": json.RawMessage(`{"prebid":"value1"}}`), "context": json.RawMessage(`{"firstPartyData":"value2"}}`), "skadn": json.RawMessage(`{"skAdNetwork":"value3"}}`), "gpid": json.RawMessage(`{"gpid":"value4"}}`)},
+			givenImpExt:              map[string]json.RawMessage{"prebid": json.RawMessage(`{"prebid":"value1"}}`), "context": json.RawMessage(`{"firstPartyData":"value2"}}`), "skadn": json.RawMessage(`{"skAdNetwork":"value3"}}`), "gpid": json.RawMessage(`{"gpid":"value4"}}`), "tid": json.RawMessage("6e927474-4c83-40ac-8180-16858314b7c5")},
 			givenImpExtPrebidBidders: map[string]json.RawMessage{},
 			expected:                 map[string]json.RawMessage{},
 		},
@@ -495,9 +513,20 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 	}
 
 	for _, test := range testCases {
+
 		metricsMock := metrics.MetricsEngineMock{}
 		bidderToSyncerKey := map[string]string{}
-		bidderRequests, _, err := cleanOpenRTBRequests(context.Background(), test.req, nil, bidderToSyncerKey, &metricsMock, gdpr.SignalNo, gdpr.AlwaysAllow{}, privacyConfig, &config.TCF2{})
+
+		gdprPermsBuilder := fakePermissionsBuilder{
+			permissions: &permissionsMock{
+				allowAllBidders: true,
+			},
+		}.Builder
+		tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
+			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
+		}.Builder
+
+		bidderRequests, _, err := cleanOpenRTBRequests(context.Background(), test.req, nil, bidderToSyncerKey, &metricsMock, gdpr.SignalNo, privacyConfig, gdprPermsBuilder, tcf2ConfigBuilder, nil)
 		if test.hasError {
 			assert.NotNil(t, err, "Error shouldn't be nil")
 		} else {
@@ -554,7 +583,17 @@ func TestCleanOpenRTBRequestsWithFPD(t *testing.T) {
 	for _, test := range testCases {
 		metricsMock := metrics.MetricsEngineMock{}
 		bidderToSyncerKey := map[string]string{}
-		bidderRequests, _, err := cleanOpenRTBRequests(context.Background(), test.req, nil, bidderToSyncerKey, &metricsMock, gdpr.SignalNo, gdpr.AlwaysAllow{}, config.Privacy{}, &config.TCF2{})
+
+		gdprPermissionsBuilder := fakePermissionsBuilder{
+			permissions: &permissionsMock{
+				allowAllBidders: true,
+			},
+		}.Builder
+		tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
+			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
+		}.Builder
+
+		bidderRequests, _, err := cleanOpenRTBRequests(context.Background(), test.req, nil, bidderToSyncerKey, &metricsMock, gdpr.SignalNo, config.Privacy{}, gdprPermissionsBuilder, tcf2ConfigBuilder, nil)
 		assert.Empty(t, err, "No errors should be returned")
 		for _, bidderRequest := range bidderRequests {
 			bidderName := bidderRequest.BidderName
@@ -562,6 +601,7 @@ func TestCleanOpenRTBRequestsWithFPD(t *testing.T) {
 				assert.Equal(t, fpd[bidderName].Site.Name, bidderRequest.BidRequest.Site.Name, "Incorrect FPD site name")
 				assert.Equal(t, fpd[bidderName].App.Name, bidderRequest.BidRequest.App.Name, "Incorrect FPD app name")
 				assert.Equal(t, fpd[bidderName].User.Keywords, bidderRequest.BidRequest.User.Keywords, "Incorrect FPD user keywords")
+				assert.Equal(t, test.req.BidRequestWrapper.User.BuyerUID, bidderRequest.BidRequest.User.BuyerUID, "Incorrect FPD user buyerUID")
 			} else {
 				assert.Equal(t, "", bidderRequest.BidRequest.Site.Name, "Incorrect FPD site name")
 				assert.Equal(t, "", bidderRequest.BidRequest.User.Keywords, "Incorrect FPD user keywords")
@@ -806,11 +846,22 @@ func TestCleanOpenRTBRequestsWithBidResponses(t *testing.T) {
 	for _, test := range testCases {
 		metricsMock := metrics.MetricsEngineMock{}
 		bidderToSyncerKey := map[string]string{}
+
+		gdprPermissionsBuilder := fakePermissionsBuilder{
+			permissions: &permissionsMock{
+				allowAllBidders: true,
+			},
+		}.Builder
+		tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
+			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
+		}.Builder
+
 		auctionReq := AuctionRequest{
 			BidRequestWrapper:  &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Imp: test.imps}},
 			UserSyncs:          &emptyUsersync{},
 			StoredBidResponses: test.storedBidResponses,
 		}
+
 		actualBidderRequests, _, err := cleanOpenRTBRequests(
 			context.Background(),
 			auctionReq,
@@ -818,9 +869,10 @@ func TestCleanOpenRTBRequestsWithBidResponses(t *testing.T) {
 			bidderToSyncerKey,
 			&metricsMock,
 			gdpr.SignalNo,
-			gdpr.AlwaysAllow{},
 			config.Privacy{},
-			&config.TCF2{})
+			gdprPermissionsBuilder,
+			tcf2ConfigBuilder,
+			nil)
 		assert.Empty(t, err, "No errors should be returned")
 		assert.Len(t, actualBidderRequests, len(test.expectedBidderRequests), "result len doesn't match for testCase %s", test.description)
 		for _, actualBidderRequest := range actualBidderRequests {
@@ -972,6 +1024,15 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 			Account:           accountConfig,
 		}
 
+		gdprPermissionsBuilder := fakePermissionsBuilder{
+			permissions: &permissionsMock{
+				allowAllBidders: true,
+			},
+		}.Builder
+		tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
+			cfg: gdpr.NewTCF2Config(config.TCF2{}, accountConfig.GDPR),
+		}.Builder
+
 		bidderToSyncerKey := map[string]string{}
 		bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(
 			context.Background(),
@@ -980,9 +1041,10 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 			bidderToSyncerKey,
 			&metrics.MetricsEngineMock{},
 			gdpr.SignalNo,
-			gdpr.AlwaysAllow{},
 			privacyConfig,
-			&config.TCF2{})
+			gdprPermissionsBuilder,
+			tcf2ConfigBuilder,
+			nil)
 		result := bidderRequests[0]
 
 		assert.Nil(t, errs)
@@ -1035,6 +1097,15 @@ func TestCleanOpenRTBRequestsCCPAErrors(t *testing.T) {
 			UserSyncs:         &emptyUsersync{},
 		}
 
+		gdprPermissionsBuilder := fakePermissionsBuilder{
+			permissions: &permissionsMock{
+				allowAllBidders: true,
+			},
+		}.Builder
+		tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
+			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
+		}.Builder
+
 		privacyConfig := config.Privacy{
 			CCPA: config.CCPA{
 				Enforce: true,
@@ -1042,7 +1113,8 @@ func TestCleanOpenRTBRequestsCCPAErrors(t *testing.T) {
 		}
 		bidderToSyncerKey := map[string]string{}
 		metrics := metrics.MetricsEngineMock{}
-		_, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, &reqExtStruct, bidderToSyncerKey, &metrics, gdpr.SignalNo, gdpr.AlwaysAllow{}, privacyConfig, &config.TCF2{})
+
+		_, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, &reqExtStruct, bidderToSyncerKey, &metrics, gdpr.SignalNo, privacyConfig, gdprPermissionsBuilder, tcf2ConfigBuilder, nil)
 
 		assert.ElementsMatch(t, []error{test.expectError}, errs, test.description)
 	}
@@ -1082,9 +1154,19 @@ func TestCleanOpenRTBRequestsCOPPA(t *testing.T) {
 			UserSyncs:         &emptyUsersync{},
 		}
 
+		gdprPermissionsBuilder := fakePermissionsBuilder{
+			permissions: &permissionsMock{
+				allowAllBidders: true,
+			},
+		}.Builder
+		tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
+			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
+		}.Builder
+
 		bidderToSyncerKey := map[string]string{}
 		metrics := metrics.MetricsEngineMock{}
-		bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), auctionReq, nil, bidderToSyncerKey, &metrics, gdpr.SignalNo, &gdpr.AlwaysAllow{}, config.Privacy{}, &config.TCF2{})
+
+		bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), auctionReq, nil, bidderToSyncerKey, &metrics, gdpr.SignalNo, config.Privacy{}, gdprPermissionsBuilder, tcf2ConfigBuilder, nil)
 		result := bidderRequests[0]
 
 		assert.Nil(t, errs)
@@ -1168,9 +1250,18 @@ func TestCleanOpenRTBRequestsSChain(t *testing.T) {
 			UserSyncs:         &emptyUsersync{},
 		}
 
+		gdprPermissionsBuilder := fakePermissionsBuilder{
+			permissions: &permissionsMock{
+				allowAllBidders: true,
+			},
+		}.Builder
+		tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
+			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
+		}.Builder
+
 		bidderToSyncerKey := map[string]string{}
 		metrics := metrics.MetricsEngineMock{}
-		bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, bidderToSyncerKey, &metrics, gdpr.SignalNo, gdpr.AlwaysAllow{}, config.Privacy{}, &config.TCF2{})
+		bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, bidderToSyncerKey, &metrics, gdpr.SignalNo, config.Privacy{}, gdprPermissionsBuilder, tcf2ConfigBuilder, nil)
 		if test.hasError == true {
 			assert.NotNil(t, errs)
 			assert.Len(t, bidderRequests, 0)
@@ -1225,9 +1316,19 @@ func TestCleanOpenRTBRequestsBidderParams(t *testing.T) {
 			UserSyncs:         &emptyUsersync{},
 		}
 
+		gdprPermissionsBuilder := fakePermissionsBuilder{
+			permissions: &permissionsMock{
+				allowAllBidders: true,
+			},
+		}.Builder
+		tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
+			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
+		}.Builder
+
 		bidderToSyncerKey := map[string]string{}
 		metrics := metrics.MetricsEngineMock{}
-		bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, bidderToSyncerKey, &metrics, gdpr.SignalNo, gdpr.AlwaysAllow{}, config.Privacy{}, &config.TCF2{})
+
+		bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, bidderToSyncerKey, &metrics, gdpr.SignalNo, config.Privacy{}, gdprPermissionsBuilder, tcf2ConfigBuilder, nil)
 		if test.hasError == true {
 			assert.NotNil(t, errs)
 			assert.Len(t, bidderRequests, 0)
@@ -1900,6 +2001,15 @@ func TestCleanOpenRTBRequestsLMT(t *testing.T) {
 			UserSyncs:         &emptyUsersync{},
 		}
 
+		gdprPermissionsBuilder := fakePermissionsBuilder{
+			permissions: &permissionsMock{
+				allowAllBidders: true,
+			},
+		}.Builder
+		tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
+			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
+		}.Builder
+
 		privacyConfig := config.Privacy{
 			LMT: config.LMT{
 				Enforce: test.enforceLMT,
@@ -1908,7 +2018,7 @@ func TestCleanOpenRTBRequestsLMT(t *testing.T) {
 
 		bidderToSyncerKey := map[string]string{}
 		metrics := metrics.MetricsEngineMock{}
-		results, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), auctionReq, nil, bidderToSyncerKey, &metrics, gdpr.SignalNo, &gdpr.AlwaysAllow{}, privacyConfig, &config.TCF2{})
+		results, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), auctionReq, nil, bidderToSyncerKey, &metrics, gdpr.SignalNo, privacyConfig, gdprPermissionsBuilder, tcf2ConfigBuilder, nil)
 		result := results[0]
 
 		assert.Nil(t, errs)
@@ -2114,6 +2224,21 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			Account:           accountConfig,
 		}
 
+		gdprPermissionsBuilder := fakePermissionsBuilder{
+			permissions: &permissionsMock{
+				allowAllBidders: true,
+				passGeo:         !test.gdprScrub,
+				passID:          !test.gdprScrub,
+				activitiesError: test.permissionsError,
+			},
+		}.Builder
+		tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
+			cfg: gdpr.NewTCF2Config(
+				privacyConfig.GDPR.TCF2,
+				accountConfig.GDPR,
+			),
+		}.Builder
+
 		bidderToSyncerKey := map[string]string{}
 
 		gdprDefaultValue := gdpr.SignalYes
@@ -2128,9 +2253,10 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			bidderToSyncerKey,
 			&metrics.MetricsEngineMock{},
 			gdprDefaultValue,
-			&permissionsMock{allowAllBidders: true, passGeo: !test.gdprScrub, passID: !test.gdprScrub, activitiesError: test.permissionsError},
 			privacyConfig,
-			gdpr.NewTCF2Config(privacyConfig.GDPR.TCF2, accountConfig.GDPR))
+			gdprPermissionsBuilder,
+			tcf2ConfigBuilder,
+			nil)
 		result := results[0]
 
 		if test.expectError {
@@ -2209,6 +2335,18 @@ func TestCleanOpenRTBRequestsGDPRBlockBidRequest(t *testing.T) {
 			Account:           accountConfig,
 		}
 
+		gdprPermissionsBuilder := fakePermissionsBuilder{
+			permissions: &permissionsMock{
+				allowedBidders:  test.gdprAllowedBidders,
+				passGeo:         true,
+				passID:          true,
+				activitiesError: nil,
+			},
+		}.Builder
+		tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
+			cfg: gdpr.NewTCF2Config(privacyConfig.GDPR.TCF2, accountConfig.GDPR),
+		}.Builder
+
 		metricsMock := metrics.MetricsEngineMock{}
 		metricsMock.Mock.On("RecordAdapterGDPRRequestBlocked", mock.Anything).Return()
 
@@ -2220,9 +2358,11 @@ func TestCleanOpenRTBRequestsGDPRBlockBidRequest(t *testing.T) {
 			bidderToSyncerKey,
 			&metricsMock,
 			gdpr.SignalNo,
-			&permissionsMock{allowedBidders: test.gdprAllowedBidders, passGeo: true, passID: true, activitiesError: nil},
 			privacyConfig,
-			&privacyConfig.GDPR.TCF2)
+			gdprPermissionsBuilder,
+			tcf2ConfigBuilder,
+			nil,
+		)
 
 		// extract bidder name from each request in the results
 		bidders := []openrtb_ext.BidderName{}
@@ -2459,51 +2599,51 @@ func TestRemoveUnpermissionedEids(t *testing.T) {
 		},
 		{
 			description:     "Allowed By Nil Permissions",
-			userExt:         json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+			userExt:         json.RawMessage(`{"eids":[{"source":"source1","uids":[{"id":"anyID"}]}]}`),
 			eidPermissions:  nil,
-			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","uids":[{"id":"anyID"}]}]}`),
 		},
 		{
 			description:     "Allowed By Empty Permissions",
-			userExt:         json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+			userExt:         json.RawMessage(`{"eids":[{"source":"source1","uids":[{"id":"anyID"}]}]}`),
 			eidPermissions:  []openrtb_ext.ExtRequestPrebidDataEidPermission{},
-			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","uids":[{"id":"anyID"}]}]}`),
 		},
 		{
 			description: "Allowed By Specific Bidder",
-			userExt:     json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+			userExt:     json.RawMessage(`{"eids":[{"source":"source1","uids":[{"id":"anyID"}]}]}`),
 			eidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "source1", Bidders: []string{"bidderA"}},
 			},
-			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","uids":[{"id":"anyID"}]}]}`),
 		},
 		{
 			description: "Allowed By All Bidders",
-			userExt:     json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+			userExt:     json.RawMessage(`{"eids":[{"source":"source1","uids":[{"id":"anyID"}]}]}`),
 			eidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "source1", Bidders: []string{"*"}},
 			},
-			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","uids":[{"id":"anyID"}]}]}`),
 		},
 		{
 			description: "Allowed By Lack Of Matching Source",
-			userExt:     json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+			userExt:     json.RawMessage(`{"eids":[{"source":"source1","uids":[{"id":"anyID"}]}]}`),
 			eidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "source2", Bidders: []string{"otherBidder"}},
 			},
-			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","uids":[{"id":"anyID"}]}]}`),
 		},
 		{
 			description: "Allowed - Keep Other Data",
-			userExt:     json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}],"other":42}`),
+			userExt:     json.RawMessage(`{"eids":[{"source":"source1","uids":[{"id":"anyID"}]}],"other":42}`),
 			eidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "source1", Bidders: []string{"bidderA"}},
 			},
-			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}],"other":42}`),
+			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","uids":[{"id":"anyID"}]}],"other":42}`),
 		},
 		{
 			description: "Denied",
-			userExt:     json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+			userExt:     json.RawMessage(`{"eids":[{"source":"source1","uids":[{"id":"anyID"}]}]}`),
 			eidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "source1", Bidders: []string{"otherBidder"}},
 			},
@@ -2511,7 +2651,7 @@ func TestRemoveUnpermissionedEids(t *testing.T) {
 		},
 		{
 			description: "Denied - Keep Other Data",
-			userExt:     json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}],"otherdata":42}`),
+			userExt:     json.RawMessage(`{"eids":[{"source":"source1","uids":[{"id":"anyID"}]}],"otherdata":42}`),
 			eidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "source1", Bidders: []string{"otherBidder"}},
 			},
@@ -2519,12 +2659,12 @@ func TestRemoveUnpermissionedEids(t *testing.T) {
 		},
 		{
 			description: "Mix Of Allowed By Specific Bidder, Allowed By Lack Of Matching Source, Denied, Keep Other Data",
-			userExt:     json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"},{"source":"source2","id":"anyID"},{"source":"source3","id":"anyID"}],"other":42}`),
+			userExt:     json.RawMessage(`{"eids":[{"source":"source1","uids":[{"id":"anyID1"}]},{"source":"source2","uids":[{"id":"anyID2"}]},{"source":"source3","uids":[{"id":"anyID3"}]}],"other":42}`),
 			eidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "source1", Bidders: []string{"bidderA"}},
 				{Source: "source3", Bidders: []string{"otherBidder"}},
 			},
-			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"},{"source":"source2","id":"anyID"}],"other":42}`),
+			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","uids":[{"id":"anyID1"}]},{"source":"source2","uids":[{"id":"anyID2"}]}],"other":42}`),
 		},
 	}
 
@@ -2565,12 +2705,12 @@ func TestRemoveUnpermissionedEidsUnmarshalErrors(t *testing.T) {
 		{
 			description: "Malformed Eid Array Type",
 			userExt:     json.RawMessage(`{"eids":[42]}`),
-			expectedErr: "json: cannot unmarshal number into Go value of type openrtb_ext.ExtUserEid",
+			expectedErr: "json: cannot unmarshal number into Go value of type openrtb2.EID",
 		},
 		{
 			description: "Malformed Eid Item Type",
 			userExt:     json.RawMessage(`{"eids":[{"source":42,"id":"anyID"}]}`),
-			expectedErr: "json: cannot unmarshal number into Go struct field ExtUserEid.source of type string",
+			expectedErr: "json: cannot unmarshal number into Go struct field EID.source of type string",
 		},
 	}
 
@@ -2791,9 +2931,22 @@ func TestCleanOpenRTBRequestsSChainMultipleBidders(t *testing.T) {
 		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
 		UserSyncs:         &emptyUsersync{},
 	}
+
+	gdprPermissionsBuilder := fakePermissionsBuilder{
+		permissions: &permissionsMock{
+			allowAllBidders: true,
+			passGeo:         true,
+			passID:          true,
+			activitiesError: nil,
+		},
+	}.Builder
+	tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
+		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
+	}.Builder
+
 	bidderToSyncerKey := map[string]string{}
 	metrics := metrics.MetricsEngineMock{}
-	bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, bidderToSyncerKey, &metrics, gdpr.SignalNo, gdpr.AlwaysAllow{}, config.Privacy{}, &config.TCF2{})
+	bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, bidderToSyncerKey, &metrics, gdpr.SignalNo, config.Privacy{}, gdprPermissionsBuilder, tcf2ConfigBuilder, nil)
 
 	assert.Nil(t, errs)
 	assert.Len(t, bidderRequests, 2, "Bid request count is not 2")
@@ -2810,58 +2963,60 @@ func TestCleanOpenRTBRequestsSChainMultipleBidders(t *testing.T) {
 }
 
 func TestApplyFPD(t *testing.T) {
-	fpdBidderTest := map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData{}
-	bidderTest := openrtb_ext.BidderName("test")
-	fpdBidderTest[bidderTest] = &firstpartydata.ResolvedFirstPartyData{Site: nil, App: nil, User: nil}
-
-	fpdBidderNotNilFPD := map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData{}
-	bidderNotNilFPD := openrtb_ext.BidderName("notNilFPD")
-	fpdBidderNotNilFPD[bidderNotNilFPD] = &firstpartydata.ResolvedFirstPartyData{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}, User: &openrtb2.User{ID: "UserId"}}
-
-	fpdBidderApp := map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData{}
-	bidderApp := openrtb_ext.BidderName("AppFPD")
-	fpdBidderApp[bidderApp] = &firstpartydata.ResolvedFirstPartyData{App: &openrtb2.App{ID: "AppId"}}
 
 	testCases := []struct {
 		description     string
-		inputFpd        map[openrtb_ext.BidderName]*firstpartydata.ResolvedFirstPartyData
-		bidderName      openrtb_ext.BidderName
+		inputFpd        firstpartydata.ResolvedFirstPartyData
 		inputRequest    openrtb2.BidRequest
 		expectedRequest openrtb2.BidRequest
 	}{
 		{
 			description:     "req.Site defined; bidderFPD.Site not defined; expect request.Site remains the same",
-			inputFpd:        fpdBidderTest,
-			bidderName:      bidderTest,
+			inputFpd:        firstpartydata.ResolvedFirstPartyData{Site: nil, App: nil, User: nil},
 			inputRequest:    openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}},
 			expectedRequest: openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}},
 		},
 		{
 			description: "req.Site, req.App, req.User are not defined; bidderFPD.App, bidderFPD.Site and bidderFPD.User defined; " +
 				"expect req.Site, req.App, req.User to be overriden by bidderFPD.App, bidderFPD.Site and bidderFPD.User",
-			inputFpd:        fpdBidderNotNilFPD,
-			bidderName:      bidderNotNilFPD,
+			inputFpd:        firstpartydata.ResolvedFirstPartyData{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}, User: &openrtb2.User{ID: "UserId"}},
 			inputRequest:    openrtb2.BidRequest{},
 			expectedRequest: openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}, User: &openrtb2.User{ID: "UserId"}},
 		},
 		{
 			description:     "req.Site, defined; bidderFPD.App defined; expect request.App to be overriden by bidderFPD.App; expect req.Site remains the same",
-			inputFpd:        fpdBidderApp,
-			bidderName:      bidderApp,
+			inputFpd:        firstpartydata.ResolvedFirstPartyData{App: &openrtb2.App{ID: "AppId"}},
 			inputRequest:    openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}},
 			expectedRequest: openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}},
 		},
 		{
 			description:     "req.Site, req.App defined; bidderFPD.App defined; expect request.App to be overriden by bidderFPD.App",
-			inputFpd:        fpdBidderApp,
-			bidderName:      bidderApp,
+			inputFpd:        firstpartydata.ResolvedFirstPartyData{App: &openrtb2.App{ID: "AppId"}},
 			inputRequest:    openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "TestAppId"}},
 			expectedRequest: openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}},
+		},
+		{
+			description:     "req.User is defined; bidderFPD.User defined; req.User has BuyerUID. Expect to see user.BuyerUID in result request",
+			inputFpd:        firstpartydata.ResolvedFirstPartyData{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}, User: &openrtb2.User{ID: "UserId"}},
+			inputRequest:    openrtb2.BidRequest{User: &openrtb2.User{ID: "UserIdIn", BuyerUID: "12345"}},
+			expectedRequest: openrtb2.BidRequest{User: &openrtb2.User{ID: "UserId", BuyerUID: "12345"}, Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}},
+		},
+		{
+			description:     "req.User is defined; bidderFPD.User defined; req.User has BuyerUID with zero length. Expect to see empty user.BuyerUID in result request",
+			inputFpd:        firstpartydata.ResolvedFirstPartyData{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}, User: &openrtb2.User{ID: "UserId"}},
+			inputRequest:    openrtb2.BidRequest{User: &openrtb2.User{ID: "UserIdIn", BuyerUID: ""}},
+			expectedRequest: openrtb2.BidRequest{User: &openrtb2.User{ID: "UserId"}, Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}},
+		},
+		{
+			description:     "req.User is not defined; bidderFPD.User defined and has BuyerUID. Expect to see user.BuyerUID in result request",
+			inputFpd:        firstpartydata.ResolvedFirstPartyData{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}, User: &openrtb2.User{ID: "UserId", BuyerUID: "FPDBuyerUID"}},
+			inputRequest:    openrtb2.BidRequest{},
+			expectedRequest: openrtb2.BidRequest{Site: &openrtb2.Site{ID: "SiteId"}, App: &openrtb2.App{ID: "AppId"}, User: &openrtb2.User{ID: "UserId", BuyerUID: "FPDBuyerUID"}},
 		},
 	}
 
 	for _, testCase := range testCases {
-		applyFPD(testCase.inputFpd[testCase.bidderName], &testCase.inputRequest)
+		applyFPD(&testCase.inputFpd, &testCase.inputRequest)
 		assert.Equal(t, testCase.expectedRequest, testCase.inputRequest, fmt.Sprintf("incorrect request after applying fpd, testcase %s", testCase.description))
 	}
 }

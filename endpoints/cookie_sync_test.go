@@ -28,8 +28,13 @@ import (
 
 func TestNewCookieSyncEndpoint(t *testing.T) {
 	var (
-		syncersByBidder   = map[string]usersync.Syncer{"a": &MockSyncer{}}
-		gdprPerms         = MockGDPRPerms{}
+		syncersByBidder  = map[string]usersync.Syncer{"a": &MockSyncer{}}
+		gdprPermsBuilder = fakePermissionsBuilder{
+			permissions: &fakePermissions{},
+		}.Builder
+		tcf2ConfigBuilder = fakeTCF2ConfigBuilder{
+			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
+		}.Builder
 		configUserSync    = config.UserSync{Cooperative: config.UserSyncCooperative{EnabledByDefault: true}}
 		configHostCookie  = config.HostCookie{Family: "foo"}
 		configGDPR        = config.GDPR{HostVendorID: 42}
@@ -48,12 +53,14 @@ func TestNewCookieSyncEndpoint(t *testing.T) {
 			GDPR:       configGDPR,
 			CCPA:       config.CCPA{Enforce: configCCPAEnforce},
 		},
-		&gdprPerms,
+		gdprPermsBuilder,
+		tcf2ConfigBuilder,
 		&metrics,
 		&analytics,
 		&fetcher,
 		bidders,
 	)
+	result := endpoint.(*cookieSyncEndpoint)
 
 	expected := &cookieSyncEndpoint{
 		chooser: usersync.NewChooser(syncersByBidder),
@@ -64,17 +71,28 @@ func TestNewCookieSyncEndpoint(t *testing.T) {
 			CCPA:       config.CCPA{Enforce: configCCPAEnforce},
 		},
 		privacyConfig: usersyncPrivacyConfig{
-			gdprConfig:      configGDPR,
-			gdprPermissions: &gdprPerms,
-			ccpaEnforce:     configCCPAEnforce,
-			bidderHashSet:   map[string]struct{}{"bidderA": {}, "bidderB": {}},
+			gdprConfig:             configGDPR,
+			gdprPermissionsBuilder: gdprPermsBuilder,
+			tcf2ConfigBuilder:      tcf2ConfigBuilder,
+			ccpaEnforce:            configCCPAEnforce,
+			bidderHashSet:          map[string]struct{}{"bidderA": {}, "bidderB": {}},
 		},
 		metrics:         &metrics,
 		pbsAnalytics:    &analytics,
 		accountsFetcher: &fetcher,
 	}
 
-	assert.Equal(t, expected, endpoint)
+	assert.IsType(t, &cookieSyncEndpoint{}, endpoint)
+
+	assert.Equal(t, expected.config, result.config)
+	assert.Equal(t, expected.chooser, result.chooser)
+	assert.Equal(t, expected.metrics, result.metrics)
+	assert.Equal(t, expected.pbsAnalytics, result.pbsAnalytics)
+	assert.Equal(t, expected.accountsFetcher, result.accountsFetcher)
+
+	assert.Equal(t, expected.privacyConfig.gdprConfig, result.privacyConfig.gdprConfig)
+	assert.Equal(t, expected.privacyConfig.ccpaEnforce, result.privacyConfig.ccpaEnforce)
+	assert.Equal(t, expected.privacyConfig.bidderHashSet, result.privacyConfig.bidderHashSet)
 }
 
 // usersyncPrivacy
@@ -241,6 +259,13 @@ func TestCookieSyncHandle(t *testing.T) {
 
 		fakeAccountFetcher := FakeAccountsFetcher{}
 
+		gdprPermsBuilder := fakePermissionsBuilder{
+			permissions: &fakePermissions{},
+		}.Builder
+		tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
+			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
+		}.Builder
+
 		request := httptest.NewRequest("POST", "/cookiesync", test.givenBody)
 		if test.givenCookie != nil {
 			request.AddCookie(test.givenCookie.ToHTTPCookie(24 * time.Hour))
@@ -250,18 +275,24 @@ func TestCookieSyncHandle(t *testing.T) {
 
 		endpoint := cookieSyncEndpoint{
 			chooser: FakeChooser{Result: test.givenChooserResult},
-			config:  &config.Configuration{},
+			config: &config.Configuration{
+				AccountDefaults: config.Account{Disabled: false},
+			},
 			privacyConfig: usersyncPrivacyConfig{
 				gdprConfig: config.GDPR{
 					Enabled:      true,
 					DefaultValue: "0",
 				},
-				ccpaEnforce: true,
+				gdprPermissionsBuilder: gdprPermsBuilder,
+				tcf2ConfigBuilder:      tcf2ConfigBuilder,
+				ccpaEnforce:            true,
 			},
 			metrics:         &mockMetrics,
 			pbsAnalytics:    &mockAnalytics,
 			accountsFetcher: &fakeAccountFetcher,
 		}
+		assert.NoError(t, endpoint.config.MarshalAccountDefaults())
+
 		endpoint.Handle(writer, request, nil)
 
 		assert.Equal(t, test.expectedStatusCode, writer.Code, test.description+":status_code")
@@ -321,8 +352,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 				},
 				Limit: 42,
 				Privacy: usersyncPrivacy{
-					gdprSignal:       gdpr.SignalYes,
-					gdprConsent:      "anyGDPRConsent",
+					gdprPermissions:  &fakePermissions{},
 					ccpaParsedPolicy: expectedCCPAParsedPolicy,
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
@@ -365,8 +395,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 				},
 				Limit: 42,
 				Privacy: usersyncPrivacy{
-					gdprSignal:       gdpr.SignalYes,
-					gdprConsent:      "anyGDPRConsent",
+					gdprPermissions:  &fakePermissions{},
 					ccpaParsedPolicy: expectedCCPAParsedPolicy,
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
@@ -383,7 +412,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			expectedPrivacy:  privacy.Policies{},
 			expectedRequest: usersync.Request{
 				Privacy: usersyncPrivacy{
-					gdprSignal: gdpr.SignalAmbiguous,
+					gdprPermissions: &fakePermissions{},
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
 					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
@@ -409,7 +438,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 					PriorityGroups: [][]string{{"a", "b", "c"}},
 				},
 				Privacy: usersyncPrivacy{
-					gdprSignal: gdpr.SignalAmbiguous,
+					gdprPermissions: &fakePermissions{},
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
 					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
@@ -435,7 +464,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 					PriorityGroups: [][]string{{"a", "b", "c"}},
 				},
 				Privacy: usersyncPrivacy{
-					gdprSignal: gdpr.SignalAmbiguous,
+					gdprPermissions: &fakePermissions{},
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
 					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
@@ -461,7 +490,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 					PriorityGroups: [][]string{{"a", "b", "c"}},
 				},
 				Privacy: usersyncPrivacy{
-					gdprSignal: gdpr.SignalAmbiguous,
+					gdprPermissions: &fakePermissions{},
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
 					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
@@ -487,7 +516,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 					PriorityGroups: [][]string{{"a", "b", "c"}},
 				},
 				Privacy: usersyncPrivacy{
-					gdprSignal: gdpr.SignalAmbiguous,
+					gdprPermissions: &fakePermissions{},
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
 					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
@@ -513,7 +542,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 					PriorityGroups: [][]string{{"a", "b", "c"}},
 				},
 				Privacy: usersyncPrivacy{
-					gdprSignal: gdpr.SignalAmbiguous,
+					gdprPermissions: &fakePermissions{},
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
 					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
@@ -539,7 +568,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 					PriorityGroups: [][]string{{"a", "b", "c"}},
 				},
 				Privacy: usersyncPrivacy{
-					gdprSignal: gdpr.SignalAmbiguous,
+					gdprPermissions: &fakePermissions{},
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
 					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
@@ -555,7 +584,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			expectedPrivacy:  privacy.Policies{},
 			expectedRequest: usersync.Request{
 				Privacy: usersyncPrivacy{
-					gdprSignal: gdpr.SignalAmbiguous,
+					gdprPermissions: &fakePermissions{},
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
 					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
@@ -574,7 +603,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			},
 			expectedRequest: usersync.Request{
 				Privacy: usersyncPrivacy{
-					gdprSignal: gdpr.SignalAmbiguous,
+					gdprPermissions: &fakePermissions{},
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
 					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
@@ -613,7 +642,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			},
 			expectedRequest: usersync.Request{
 				Privacy: usersyncPrivacy{
-					gdprSignal: gdpr.SignalNo,
+					gdprPermissions: &fakePermissions{},
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
 					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
@@ -638,7 +667,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			},
 			expectedRequest: usersync.Request{
 				Privacy: usersyncPrivacy{
-					gdprSignal: gdpr.SignalAmbiguous,
+					gdprPermissions: &fakePermissions{},
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
 					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
@@ -683,7 +712,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 				},
 				Limit: 30,
 				Privacy: usersyncPrivacy{
-					gdprSignal: gdpr.SignalAmbiguous,
+					gdprPermissions: &fakePermissions{},
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
 					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
@@ -714,7 +743,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 				},
 				Limit: 20,
 				Privacy: usersyncPrivacy{
-					gdprSignal: gdpr.SignalAmbiguous,
+					gdprPermissions: &fakePermissions{},
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
 					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
@@ -745,7 +774,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 				},
 				Limit: 20,
 				Privacy: usersyncPrivacy{
-					gdprSignal: gdpr.SignalAmbiguous,
+					gdprPermissions: &fakePermissions{},
 				},
 				SyncTypeFilter: usersync.SyncTypeFilter{
 					IFrame:   usersync.NewUniformBidderFilter(usersync.BidderFilterModeInclude),
@@ -760,14 +789,23 @@ func TestCookieSyncParseRequest(t *testing.T) {
 	for _, test := range testCases {
 		httpRequest := httptest.NewRequest("POST", "/cookiesync", test.givenBody)
 
+		gdprPermsBuilder := fakePermissionsBuilder{
+			permissions: &fakePermissions{},
+		}.Builder
+		tcf2ConfigBuilder := fakeTCF2ConfigBuilder{
+			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
+		}.Builder
+
 		endpoint := cookieSyncEndpoint{
 			config: &config.Configuration{
 				UserSync:        test.givenConfig,
 				AccountRequired: test.givenAccountRequired,
 			},
 			privacyConfig: usersyncPrivacyConfig{
-				gdprConfig:  test.givenGDPRConfig,
-				ccpaEnforce: test.givenCCPAEnabled,
+				gdprConfig:             test.givenGDPRConfig,
+				gdprPermissionsBuilder: gdprPermsBuilder,
+				tcf2ConfigBuilder:      tcf2ConfigBuilder,
+				ccpaEnforce:            test.givenCCPAEnabled,
 			},
 			accountsFetcher: FakeAccountsFetcher{AccountData: map[string]json.RawMessage{
 				"TestAccount":     json.RawMessage(`{"cookie_sync": {"default_limit": 20, "max_limit": 30, "default_coop_sync": true}}`),
@@ -1545,12 +1583,10 @@ func TestUsersyncPrivacyGDPRAllowsHostCookie(t *testing.T) {
 
 	for _, test := range testCases {
 		mockPerms := MockGDPRPerms{}
-		mockPerms.On("HostCookiesAllowed", mock.Anything, gdpr.SignalYes, "anyConsent").Return(test.givenResponse, test.givenError)
+		mockPerms.On("HostCookiesAllowed", mock.Anything).Return(test.givenResponse, test.givenError)
 
 		privacy := usersyncPrivacy{
 			gdprPermissions: &mockPerms,
-			gdprSignal:      gdpr.SignalYes,
-			gdprConsent:     "anyConsent",
 		}
 
 		result := privacy.GDPRAllowsHostCookie()
@@ -1593,12 +1629,10 @@ func TestUsersyncPrivacyGDPRAllowsBidderSync(t *testing.T) {
 
 	for _, test := range testCases {
 		mockPerms := MockGDPRPerms{}
-		mockPerms.On("BidderSyncAllowed", mock.Anything, openrtb_ext.BidderName("foo"), gdpr.SignalYes, "anyConsent").Return(test.givenResponse, test.givenError)
+		mockPerms.On("BidderSyncAllowed", mock.Anything, openrtb_ext.BidderName("foo")).Return(test.givenResponse, test.givenError)
 
 		privacy := usersyncPrivacy{
 			gdprPermissions: &mockPerms,
-			gdprSignal:      gdpr.SignalYes,
-			gdprConsent:     "anyConsent",
 		}
 
 		result := privacy.GDPRAllowsBidderSync("foo")
@@ -1749,18 +1783,18 @@ type MockGDPRPerms struct {
 	mock.Mock
 }
 
-func (m *MockGDPRPerms) HostCookiesAllowed(ctx context.Context, gdprSignal gdpr.Signal, consent string) (bool, error) {
-	args := m.Called(ctx, gdprSignal, consent)
+func (m *MockGDPRPerms) HostCookiesAllowed(ctx context.Context) (bool, error) {
+	args := m.Called(ctx)
 	return args.Bool(0), args.Error(1)
 }
 
-func (m *MockGDPRPerms) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, gdprSignal gdpr.Signal, consent string) (bool, error) {
-	args := m.Called(ctx, bidder, gdprSignal, consent)
+func (m *MockGDPRPerms) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName) (bool, error) {
+	args := m.Called(ctx, bidder)
 	return args.Bool(0), args.Error(1)
 }
 
-func (m *MockGDPRPerms) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal gdpr.Signal, consent string, aliasGVLIDs map[string]uint16) (permissions gdpr.AuctionPermissions, err error) {
-	args := m.Called(ctx, bidderCoreName, bidder, PublisherID, gdprSignal, consent, aliasGVLIDs)
+func (m *MockGDPRPerms) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (permissions gdpr.AuctionPermissions, err error) {
+	args := m.Called(ctx, bidderCoreName, bidder)
 	return args.Get(0).(gdpr.AuctionPermissions), args.Error(1)
 }
 
@@ -1769,6 +1803,11 @@ type FakeAccountsFetcher struct {
 }
 
 func (f FakeAccountsFetcher) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {
+	defaultAccountJSON := json.RawMessage(`{"disabled":false}`)
+
+	if accountID == metrics.PublisherUnknown {
+		return defaultAccountJSON, nil
+	}
 	if account, ok := f.AccountData[accountID]; ok {
 		return account, nil
 	}
@@ -1787,4 +1826,21 @@ type errReader struct {
 
 func (r *errReader) Read(p []byte) (int, error) {
 	return 0, r.err
+}
+
+type fakePermissions struct {
+}
+
+func (p *fakePermissions) HostCookiesAllowed(ctx context.Context) (bool, error) {
+	return true, nil
+}
+
+func (p *fakePermissions) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName) (bool, error) {
+	return true, nil
+}
+
+func (p *fakePermissions) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (permissions gdpr.AuctionPermissions, err error) {
+	return gdpr.AuctionPermissions{
+		AllowBidRequest: true,
+	}, nil
 }

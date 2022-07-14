@@ -50,8 +50,7 @@
                     },
                     "user": {
                     }
-                },
-                "bidAdjustment": 1.0
+                }
             },
             "mockResponse": {
                 "errors": ["appnexus-error"]

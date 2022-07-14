@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/config"
@@ -27,8 +27,8 @@ type richaudienceUser struct {
 }
 
 type richaudienceUserExt struct {
-	Eids    []openrtb_ext.ExtUserEid `json:"eids,omitempty"`
-	Consent string                   `json:"consent,omitempty"`
+	Eids    []openrtb2.EID `json:"eids,omitempty"`
+	Consent string         `json:"consent,omitempty"`
 }
 
 type richaudienceDevice struct {
