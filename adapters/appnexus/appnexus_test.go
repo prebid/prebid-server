@@ -1,17 +1,11 @@
 package appnexus
 
 import (
-	"encoding/json"
-	"regexp"
 	"testing"
 
-	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
-
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestJsonSamples(t *testing.T) {
@@ -45,7 +39,8 @@ func TestMemberQueryParam(t *testing.T) {
 	}
 }
 
-func TestVideoSinglePod(t *testing.T) {
+// Commenting out the test cases around populating adpod_id in the Appnexus request (ref: https://inside.pubmatic.com:9443/jira/browse/UOE-6196)
+/*func TestVideoSinglePod(t *testing.T) {
 	var a adapter
 	a.URI = "http://test.com/openrtb2"
 	a.hbSource = 5
@@ -269,3 +264,4 @@ func TestVideoTwoPodsManyImps(t *testing.T) {
 
 	assert.Len(t, podIds, 2, "Incorrect number of unique pod ids")
 }
+*/
