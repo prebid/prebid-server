@@ -76,7 +76,7 @@ func (targData *targetData) setTargeting(auc *auction, isApp bool, categoryMappi
 			if len(categoryMapping) > 0 {
 				targData.addKeys(targets, openrtb_ext.HbCategoryDurationKey, categoryMapping[topBidPerBidder.bid.ID], bidderName, isOverallWinner, truncateTargetAttr)
 			}
-
+			targData.addBidderKeys(targets, topBidPerBidder.bidTargets)
 			topBidPerBidder.bidTargets = targets
 		}
 	}
@@ -105,4 +105,12 @@ func makeHbSize(bid *openrtb2.Bid) string {
 		return strconv.FormatInt(bid.W, 10) + "x" + strconv.FormatInt(bid.H, 10)
 	}
 	return ""
+}
+
+func (targData *targetData) addBidderKeys(keys map[string]string, bidderKeys map[string]string) {
+	if targData.includeBidderKeys {
+		for index, element := range bidderKeys {
+			keys[index] = element
+		}
+	}
 }

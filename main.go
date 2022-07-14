@@ -1,30 +1,25 @@
-package main
+package prebidServer
 
 import (
-	"flag"
 	"math/rand"
 	"net/http"
 	"runtime"
 	"time"
 
+	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/usersync"
+
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/router"
-	"github.com/prebid/prebid-server/server"
 	"github.com/prebid/prebid-server/util/task"
 
-	"github.com/golang/glog"
 	"github.com/spf13/viper"
 )
 
-func init() {
+func InitPrebidServer(configFile string) {
 	rand.Seed(time.Now().UnixNano())
-}
-
-func main() {
-	flag.Parse() // required for glog flags and testing package flags
-
-	cfg, err := loadConfig()
+	cfg, err := loadConfig(configFile)
 	if err != nil {
 		glog.Exitf("Configuration could not be loaded or did not pass validation: %v", err)
 	}
@@ -43,11 +38,11 @@ func main() {
 	}
 }
 
-const configFileName = "pbs"
-
-func loadConfig() (*config.Configuration, error) {
+func loadConfig(configFileName string) (*config.Configuration, error) {
 	v := viper.New()
 	config.SetupViper(v, configFileName)
+	v.SetConfigFile(configFileName)
+	v.ReadInConfig()
 	return config.New(v)
 }
 
@@ -59,14 +54,34 @@ func serve(cfg *config.Configuration) error {
 	currencyConverterTickerTask := task.NewTickerTask(fetchingInterval, currencyConverter)
 	currencyConverterTickerTask.Start()
 
-	r, err := router.New(cfg, currencyConverter)
+	_, err := router.New(cfg, currencyConverter)
 	if err != nil {
 		return err
 	}
 
-	corsRouter := router.SupportCORS(r)
-	server.Listen(cfg, router.NoCache{Handler: corsRouter}, router.Admin(currencyConverter, fetchingInterval), r.MetricsEngine)
-
-	r.Shutdown()
 	return nil
+}
+
+func OrtbAuction(w http.ResponseWriter, r *http.Request) error {
+	return router.OrtbAuctionEndpointWrapper(w, r)
+}
+
+var VideoAuction = func(w http.ResponseWriter, r *http.Request) error {
+	return router.VideoAuctionEndpointWrapper(w, r)
+}
+
+func GetUIDS(w http.ResponseWriter, r *http.Request) {
+	router.GetUIDSWrapper(w, r)
+}
+
+func SetUIDS(w http.ResponseWriter, r *http.Request) {
+	router.SetUIDSWrapper(w, r)
+}
+
+func CookieSync(w http.ResponseWriter, r *http.Request) {
+	router.CookieSync(w, r)
+}
+
+func SyncerMap() map[string]usersync.Syncer {
+	return router.SyncerMap()
 }
