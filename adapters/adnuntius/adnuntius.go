@@ -22,8 +22,9 @@ type adapter struct {
 	endpoint string
 }
 type adnAdunit struct {
-	AuId     string `json:"auId"`
-	TargetId string `json:"targetId"`
+	AuId       string    `json:"auId"`
+	TargetId   string    `json:"targetId"`
+	Dimensions [][]int64 `json:"dimensions,omitempty"`
 }
 
 type AdnResponse struct {
@@ -116,6 +117,29 @@ func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter) (string, []err
 	return url, nil
 }
 
+func getImpSizes(imp openrtb2.Imp) [][]int64 {
+	if imp.Banner == nil {
+		return nil
+	}
+
+	if len(imp.Banner.Format) > 0 {
+		sizes := make([][]int64, len(imp.Banner.Format))
+		for i, format := range imp.Banner.Format {
+			sizes[i] = []int64{format.W, format.H}
+		}
+
+		return sizes
+	}
+
+	if imp.Banner.W != nil && imp.Banner.H != nil {
+		size := make([][]int64, 1)
+		size[0] = []int64{*imp.Banner.W, *imp.Banner.H}
+		return size
+	}
+
+	return nil
+}
+
 /*
 	Generate the requests to Adnuntius to reduce the amount of requests going out.
 */
@@ -159,8 +183,9 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 		networkAdunitMap[network] = append(
 			networkAdunitMap[network],
 			adnAdunit{
-				AuId:     adnuntiusExt.Auid,
-				TargetId: fmt.Sprintf("%s-%s", adnuntiusExt.Auid, imp.ID),
+				AuId:       adnuntiusExt.Auid,
+				TargetId:   fmt.Sprintf("%s-%s", adnuntiusExt.Auid, imp.ID),
+				Dimensions: getImpSizes(imp),
 			})
 	}
 
