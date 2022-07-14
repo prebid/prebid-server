@@ -17,7 +17,6 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
-	aggregatedGDPR "github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/privacy"
@@ -33,7 +32,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/util/uuidutil"
 )
 
@@ -202,10 +201,9 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		StartTime:                  start,
 		LegacyLabels:               labels,
 		GlobalPrivacyControlHeader: secGPC,
-		TCF2ConfigBuilder:          aggregatedGDPR.NewTCF2Config,
-		GDPRPermissionsBuilder:     aggregatedGDPR.NewPermissions,
 		StoredAuctionResponses:     storedAuctionResponses,
 		StoredBidResponses:         storedBidResponses,
+		PubID:                      labels.PubID,
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)

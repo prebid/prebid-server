@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/stored_responses"
 	"math/rand"
 
+	"github.com/prebid/prebid-server/stored_responses"
+
 	"github.com/buger/jsonparser"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/go-gdpr/vendorconsent"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
@@ -42,9 +43,10 @@ func cleanOpenRTBRequests(ctx context.Context,
 	bidderToSyncerKey map[string]string,
 	metricsEngine metrics.MetricsEngine,
 	gdprDefaultValue gdpr.Signal,
-	gdprPerms gdpr.Permissions,
 	privacyConfig config.Privacy,
-	tcf2Cfg gdpr.TCF2ConfigReader,
+	gdprPermsBuilder gdpr.PermissionsBuilder,
+	tcf2ConfigBuilder gdpr.TCF2ConfigBuilder,
+	hostSChainNode *openrtb2.SupplyChainNode,
 ) (allowedBidderRequests []BidderRequest, privacyLabels metrics.PrivacyLabels, errs []error) {
 
 	req := auctionReq.BidRequestWrapper
@@ -69,7 +71,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 	}
 
 	var allBidderRequests []BidderRequest
-	allBidderRequests, errs = getAuctionBidderRequests(auctionReq, requestExt, bidderToSyncerKey, impsByBidder, aliases)
+	allBidderRequests, errs = getAuctionBidderRequests(auctionReq, requestExt, bidderToSyncerKey, impsByBidder, aliases, hostSChainNode)
 
 	bidderNameToBidderReq := buildBidResponseRequest(req.BidRequest, bidderImpWithBidResp, aliases)
 	//this function should be executed after getAuctionBidderRequests
@@ -103,7 +105,11 @@ func cleanOpenRTBRequests(ctx context.Context,
 	privacyLabels.COPPAEnforced = privacyEnforcement.COPPA
 	privacyLabels.LMTEnforced = lmtEnforcer.ShouldEnforce(unknownBidder)
 
+	tcf2Cfg := tcf2ConfigBuilder(privacyConfig.GDPR.TCF2, auctionReq.Account.GDPR)
+
 	var gdprEnforced bool
+	var gdprPerms gdpr.Permissions = &gdpr.AlwaysAllow{}
+
 	if gdprApplies {
 		gdprEnforced = tcf2Cfg.IntegrationEnabled(integrationTypeMap[auctionReq.LegacyLabels.RType])
 	}
@@ -115,6 +121,14 @@ func cleanOpenRTBRequests(ctx context.Context,
 			version := int(parsedConsent.Version())
 			privacyLabels.GDPRTCFVersion = metrics.TCFVersionToValue(version)
 		}
+
+		gdprRequestInfo := gdpr.RequestInfo{
+			AliasGVLIDs: aliasesGVLIDs,
+			Consent:     consent,
+			GDPRSignal:  gdprSignal,
+			PublisherID: auctionReq.LegacyLabels.PubID,
+		}
+		gdprPerms = gdprPermsBuilder(tcf2Cfg, gdprRequestInfo)
 	}
 
 	// bidder level privacy policies
@@ -126,13 +140,12 @@ func cleanOpenRTBRequests(ctx context.Context,
 
 		// GDPR
 		if gdprEnforced {
-			var publisherID = auctionReq.LegacyLabels.PubID
-			bidReq, geo, id, err := gdprPerms.AuctionActivitiesAllowed(ctx, bidderRequest.BidderCoreName, bidderRequest.BidderName, publisherID, gdprSignal, consent, aliasesGVLIDs)
-			bidRequestAllowed = bidReq
+			auctionPermissions, err := gdprPerms.AuctionActivitiesAllowed(ctx, bidderRequest.BidderCoreName, bidderRequest.BidderName)
+			bidRequestAllowed = auctionPermissions.AllowBidRequest
 
 			if err == nil {
-				privacyEnforcement.GDPRGeo = !geo
-				privacyEnforcement.GDPRID = !id
+				privacyEnforcement.GDPRGeo = !auctionPermissions.PassGeo
+				privacyEnforcement.GDPRID = !auctionPermissions.PassID
 			} else {
 				privacyEnforcement.GDPRGeo = true
 				privacyEnforcement.GDPRID = true
@@ -149,7 +162,6 @@ func cleanOpenRTBRequests(ctx context.Context,
 
 		if bidRequestAllowed {
 			privacyEnforcement.Apply(bidderRequest.BidRequest)
-
 			allowedBidderRequests = append(allowedBidderRequests, bidderRequest)
 		}
 	}
@@ -195,7 +207,8 @@ func getAuctionBidderRequests(auctionRequest AuctionRequest,
 	requestExt *openrtb_ext.ExtRequest,
 	bidderToSyncerKey map[string]string,
 	impsByBidder map[string][]openrtb2.Imp,
-	aliases map[string]string) ([]BidderRequest, []error) {
+	aliases map[string]string,
+	hostSChainNode *openrtb2.SupplyChainNode) ([]BidderRequest, []error) {
 
 	bidderRequests := make([]BidderRequest, 0, len(impsByBidder))
 	req := auctionRequest.BidRequestWrapper
@@ -209,7 +222,7 @@ func getAuctionBidderRequests(auctionRequest AuctionRequest,
 		return nil, []error{err}
 	}
 
-	sChainWriter, err := schain.NewSChainWriter(requestExt)
+	sChainWriter, err := schain.NewSChainWriter(requestExt, hostSChainNode)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -410,6 +423,10 @@ func createSanitizedImpExt(impExt, impExtPrebid map[string]json.RawMessage) (map
 		sanitizedImpExt[openrtb_ext.GPIDKey] = v
 	}
 
+	if v, exists := impExt[string(openrtb_ext.TIDKey)]; exists {
+		sanitizedImpExt[openrtb_ext.TIDKey] = v
+	}
+
 	return sanitizedImpExt, nil
 }
 
@@ -440,7 +457,8 @@ func isSpecialField(bidder string) bool {
 		bidder == openrtb_ext.FirstPartyDataExtKey ||
 		bidder == openrtb_ext.SKAdNExtKey ||
 		bidder == openrtb_ext.GPIDKey ||
-		bidder == openrtb_ext.PrebidExtKey
+		bidder == openrtb_ext.PrebidExtKey ||
+		bidder == openrtb_ext.TIDKey
 }
 
 // prepareUser changes req.User so that it's ready for the given bidder.
@@ -499,7 +517,7 @@ func removeUnpermissionedEids(request *openrtb2.BidRequest, bidder string, reque
 		return nil
 	}
 
-	var eids []openrtb_ext.ExtUserEid
+	var eids []openrtb2.EID
 	if err := json.Unmarshal(eidsJSON, &eids); err != nil {
 		return err
 	}
@@ -515,7 +533,7 @@ func removeUnpermissionedEids(request *openrtb2.BidRequest, bidder string, reque
 		eidRules[p.Source] = p.Bidders
 	}
 
-	eidsAllowed := make([]openrtb_ext.ExtUserEid, 0, len(eids))
+	eidsAllowed := make([]openrtb2.EID, 0, len(eids))
 	for _, eid := range eids {
 		allowed := false
 		if rule, hasRule := eidRules[eid.Source]; hasRule {
@@ -731,6 +749,11 @@ func applyFPD(fpd *firstpartydata.ResolvedFirstPartyData, bidReq *openrtb2.BidRe
 		bidReq.App = fpd.App
 	}
 	if fpd.User != nil {
+		//BuyerUID is a value obtained between fpd extraction and fpd application.
+		//BuyerUID needs to be set back to fpd before applying this fpd to final bidder request
+		if bidReq.User != nil && len(bidReq.User.BuyerUID) > 0 {
+			fpd.User.BuyerUID = bidReq.User.BuyerUID
+		}
 		bidReq.User = fpd.User
 	}
 }

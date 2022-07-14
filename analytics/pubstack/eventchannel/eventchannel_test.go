@@ -4,178 +4,144 @@ import (
 	"bytes"
 	"compress/gzip"
 	"io/ioutil"
+	"math"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/benbjohnson/clock"
 	"github.com/stretchr/testify/assert"
 )
 
-var maxByteSize = int64(15)
-var maxEventCount = int64(3)
+var largeBufferSize = int64(math.MaxInt64)
+var largeEventCount = int64(math.MaxInt64)
 var maxTime = 2 * time.Hour
 
-func readGz(encoded bytes.Buffer) string {
-	gr, _ := gzip.NewReader(bytes.NewBuffer(encoded.Bytes()))
+func readGz(encoded []byte) string {
+	gr, _ := gzip.NewReader(bytes.NewReader(encoded))
 	defer gr.Close()
 
 	decoded, _ := ioutil.ReadAll(gr)
 	return string(decoded)
 }
 
-func newSender(data *[]byte) Sender {
+func newSender(dataSent chan []byte) Sender {
 	mux := &sync.Mutex{}
 	return func(payload []byte) error {
 		mux.Lock()
 		defer mux.Unlock()
-		event := bytes.Buffer{}
-		event.Write(payload)
-		*data = append(*data, readGz(event)...)
+		dataSent <- payload
 		return nil
 	}
 }
 
-func TestEventChannel_isBufferFull(t *testing.T) {
+func readChanOrTimeout(t *testing.T, c <-chan []byte, msgAndArgs ...interface{}) ([]byte, bool) {
+	t.Helper()
+	select {
+	case actual := <-c:
+		return actual, false
+	case <-time.After(200 * time.Millisecond):
+		return nil, assert.Fail(t, "Should receive an event, but did NOT", msgAndArgs...)
+	}
+}
 
-	send := func(_ []byte) error { return nil }
+func TestEventChannelIsBufferFull(t *testing.T) {
+	send := func([]byte) error { return nil }
+	clockMock := clock.NewMock()
 
-	eventChannel := NewEventChannel(send, maxByteSize, maxEventCount, maxTime)
+	maxBufferSize := int64(15)
+	maxEventCount := int64(3)
+
+	eventChannel := NewEventChannel(send, clockMock, maxBufferSize, maxEventCount, maxTime)
 	defer eventChannel.Close()
 
 	eventChannel.buffer([]byte("one"))
 	eventChannel.buffer([]byte("two"))
 
-	assert.Equal(t, eventChannel.isBufferFull(), false)
+	assert.False(t, eventChannel.isBufferFull()) // not yet full by either max buffer size or max event count
 
 	eventChannel.buffer([]byte("three"))
 
-	assert.Equal(t, eventChannel.isBufferFull(), true)
+	assert.True(t, eventChannel.isBufferFull()) // full by event count (3)
 
 	eventChannel.reset()
 
-	assert.Equal(t, eventChannel.isBufferFull(), false)
+	assert.False(t, eventChannel.isBufferFull()) // was just reset, should not be full
 
-	eventChannel.buffer([]byte("big-event-abcdefghijklmnopqrstuvwxyz"))
+	eventChannel.buffer([]byte("larger-than-15-characters"))
 
-	assert.Equal(t, eventChannel.isBufferFull(), true)
-
+	assert.True(t, eventChannel.isBufferFull()) // full by max buffer size
 }
 
-func TestEventChannel_reset(t *testing.T) {
-	send := func(_ []byte) error { return nil }
+func TestEventChannelReset(t *testing.T) {
+	send := func([]byte) error { return nil }
+	clockMock := clock.NewMock()
 
-	eventChannel := NewEventChannel(send, maxByteSize, maxEventCount, maxTime)
+	eventChannel := NewEventChannel(send, clockMock, largeBufferSize, largeEventCount, maxTime)
 	defer eventChannel.Close()
 
-	assert.Equal(t, eventChannel.metrics.eventCount, int64(0))
-	assert.Equal(t, eventChannel.metrics.bufferSize, int64(0))
+	assert.Zero(t, eventChannel.metrics.eventCount)
+	assert.Zero(t, eventChannel.metrics.bufferSize)
 
 	eventChannel.buffer([]byte("one"))
-	eventChannel.buffer([]byte("two"))
 
-	assert.NotEqual(t, eventChannel.metrics.eventCount, int64(0))
-	assert.NotEqual(t, eventChannel.metrics.bufferSize, int64(0))
+	assert.NotZero(t, eventChannel.metrics.eventCount)
+	assert.NotZero(t, eventChannel.metrics.bufferSize)
 
 	eventChannel.reset()
 
-	assert.Equal(t, eventChannel.buff.Len(), 0)
-	assert.Equal(t, eventChannel.metrics.eventCount, int64(0))
-	assert.Equal(t, eventChannel.metrics.bufferSize, int64(0))
+	assert.Zero(t, eventChannel.buff.Len())
+	assert.Zero(t, eventChannel.metrics.eventCount)
+	assert.Zero(t, eventChannel.metrics.bufferSize)
 }
 
-func TestEventChannel_flush(t *testing.T) {
-	data := make([]byte, 0)
-	send := newSender(&data)
+func TestEventChannelFlush(t *testing.T) {
+	dataSent := make(chan []byte)
+	send := newSender(dataSent)
+	clockMock := clock.NewMock()
 
-	eventChannel := NewEventChannel(send, maxByteSize, maxEventCount, maxTime)
+	eventChannel := NewEventChannel(send, clockMock, largeBufferSize, largeEventCount, maxTime)
 	defer eventChannel.Close()
 
 	eventChannel.buffer([]byte("one"))
 	eventChannel.buffer([]byte("two"))
 	eventChannel.buffer([]byte("three"))
 	eventChannel.flush()
-	time.Sleep(10 * time.Millisecond)
 
-	assert.Equal(t, string(data), "onetwothree")
+	data, _ := readChanOrTimeout(t, dataSent)
+	assert.Equal(t, "onetwothree", readGz(data))
 }
 
-func TestEventChannel_close(t *testing.T) {
-	data := make([]byte, 0)
-	send := newSender(&data)
+func TestEventChannelClose(t *testing.T) {
+	dataSent := make(chan []byte)
+	send := newSender(dataSent)
+	clockMock := clock.NewMock()
 
-	eventChannel := NewEventChannel(send, 15000, 15000, 2*time.Hour)
+	eventChannel := NewEventChannel(send, clockMock, largeBufferSize, largeEventCount, maxTime)
 
 	eventChannel.buffer([]byte("one"))
 	eventChannel.buffer([]byte("two"))
 	eventChannel.buffer([]byte("three"))
 	eventChannel.Close()
 
-	time.Sleep(10 * time.Millisecond)
-
-	assert.Equal(t, string(data), "onetwothree")
+	data, _ := readChanOrTimeout(t, dataSent)
+	assert.Equal(t, "onetwothree", readGz(data))
 }
 
-func TestEventChannel_Push(t *testing.T) {
-	data := make([]byte, 0)
-	send := newSender(&data)
+func TestEventChannelPush(t *testing.T) {
+	dataSent := make(chan []byte)
+	send := newSender(dataSent)
+	clockMock := clock.NewMock()
 
-	eventChannel := NewEventChannel(send, 15000, 5, 5*time.Millisecond)
+	eventChannel := NewEventChannel(send, clockMock, largeBufferSize, largeEventCount, 1*time.Second)
 	defer eventChannel.Close()
 
-	eventChannel.Push([]byte("one"))
-	eventChannel.Push([]byte("two"))
-	eventChannel.Push([]byte("three"))
-	eventChannel.Push([]byte("four"))
-	eventChannel.Push([]byte("five"))
-	eventChannel.Push([]byte("six"))
-	eventChannel.Push([]byte("seven"))
+	eventChannel.Push([]byte("1"))
+	eventChannel.Push([]byte("2"))
+	eventChannel.Push([]byte("3"))
 
-	time.Sleep(10 * time.Millisecond)
+	clockMock.Add(1 * time.Second) // trigger event timer
 
-	assert.Equal(t, string(data), "onetwothreefourfivesixseven")
-
-}
-
-func TestEventChannel_OutputFormat(t *testing.T) {
-
-	toGzip := func(payload string) []byte {
-		var buf bytes.Buffer
-		zw := gzip.NewWriter(&buf)
-
-		if _, err := zw.Write([]byte(payload)); err != nil {
-			assert.Fail(t, err.Error())
-		}
-
-		if err := zw.Close(); err != nil {
-			assert.Fail(t, err.Error())
-		}
-		return buf.Bytes()
-	}
-
-	data := make([]byte, 0)
-	send := func(payload []byte) error {
-		data = append(data, payload...)
-		return nil
-	}
-
-	eventChannel := NewEventChannel(send, 15000, 10, 2*time.Minute)
-
-	eventChannel.Push([]byte("one"))
-	time.Sleep(1 * time.Millisecond)
-
-	eventChannel.flush()
-
-	eventChannel.Push([]byte("two"))
-	time.Sleep(1 * time.Millisecond)
-
-	eventChannel.Push([]byte("three"))
-	time.Sleep(1 * time.Millisecond)
-
-	eventChannel.Close()
-
-	time.Sleep(1 * time.Millisecond)
-
-	expected := append(toGzip("one"), toGzip("twothree")...)
-
-	assert.Equal(t, expected, data)
+	data, _ := readChanOrTimeout(t, dataSent)
+	assert.ElementsMatch(t, []byte{'1', '2', '3'}, []byte(readGz(data)))
 }

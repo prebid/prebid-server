@@ -70,7 +70,7 @@
             "status": 200
           }
         ],
-        "pbsSeatBid": {
+        "pbsSeatBids": [{
           "pbsBids": [
             {
               "ortbBid": {
@@ -85,8 +85,9 @@
                 ]
               }
             }
-          ]
-        }
+          ],
+          "seat": "appnexus"
+        }]
       }
     },
     "audienceNetwork": {

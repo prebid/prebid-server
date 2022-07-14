@@ -8,20 +8,21 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/mxmCherry/openrtb/v15/native1"
-	nativeRequests "github.com/mxmCherry/openrtb/v15/native1/request"
-	nativeResponse "github.com/mxmCherry/openrtb/v15/native1/response"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/mxmCherry/openrtb/v16/native1"
+	nativeRequests "github.com/mxmCherry/openrtb/v16/native1/request"
+	nativeResponse "github.com/mxmCherry/openrtb/v16/native1/response"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 const huaweiAdxApiVersion = "3.4"
@@ -67,6 +68,7 @@ type huaweiAdsRequest struct {
 	Network   network    `json:"network,omitempty"`
 	Regs      regs       `json:"regs,omitempty"`
 	Geo       geo        `json:"geo,omitempty"`
+	Consent   string     `json:"consent,omitempty"`
 }
 
 type adslot30 struct {
@@ -442,6 +444,7 @@ func getHuaweiAdsReqJson(request *huaweiAdsRequest, openRTBRequest *openrtb2.Bid
 	getHuaweiAdsReqNetWorkInfo(request, openRTBRequest)
 	getHuaweiAdsReqRegsInfo(request, openRTBRequest)
 	getHuaweiAdsReqGeoInfo(request, openRTBRequest)
+	getHuaweiAdsReqConsentInfo(request, openRTBRequest)
 	return countryCode, nil
 }
 
@@ -795,6 +798,18 @@ func getHuaweiAdsReqGeoInfo(request *huaweiAdsRequest, openRTBRequest *openrtb2.
 		geo.Accuracy = int32(openRTBRequest.Device.Geo.Accuracy)
 		geo.Lastfix = int32(openRTBRequest.Device.Geo.LastFix)
 		request.Geo = geo
+	}
+}
+
+// getHuaweiAdsReqGeoInfo: get GDPR consent
+func getHuaweiAdsReqConsentInfo(request *huaweiAdsRequest, openRTBRequest *openrtb2.BidRequest) {
+	if openRTBRequest.User != nil && openRTBRequest.User.Ext != nil {
+		var extUser openrtb_ext.ExtUser
+		if err := json.Unmarshal(openRTBRequest.User.Ext, &extUser); err != nil {
+			fmt.Errorf("failed to parse ExtUser in HuaweiAds GDPR check: %v", err)
+			return
+		}
+		request.Consent = extUser.Consent
 	}
 }
 

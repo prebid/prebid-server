@@ -6,10 +6,9 @@
         "MXN": 5.09
       }
     },
-    "mockBidder": {
-      "currency": "USD",
-	  "price": 1.00
-    }
+    "mockBidders": [
+      {"bidderName": "appnexus", "currency": "USD", "price": 1.00}
+    ]
   },
   "mockBidRequest": {
     "id": "some-request-id",
@@ -48,6 +47,32 @@
       }
     }
   },
-  "expectedReturnCode": 500,
-  "expectedErrorMessage": "Critical error while running the auction: Can't produce bid with no valid currency to use or currency conversion to convert to."
+  "expectedBidResponse": {
+    "id": "some-request-id",
+    "ext": {
+      "errors": {
+        "appnexus": [
+          {
+            "code": 999,
+            "message": "Currency conversion rate not found: 'USD' => 'MXN'"
+          }
+        ]
+      },
+      "warnings": {
+        "general": [
+          {
+            "code": 10002,
+            "message": "debug turned off for account"
+          }
+        ]
+      },
+      "responsetimemillis": {
+        "appnexus": 0
+      },
+      "prebid": {
+        "auctiontimestamp": 1643437745503
+      }
+    }
+  },
+  "expectedReturnCode": 200
 }
