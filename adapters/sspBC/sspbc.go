@@ -143,12 +143,6 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		return nil, []error{err}
 	}
 
-	// unmarshall original request - we will need it to recover imp.Id
-	var requestBody openrtb2.BidRequest
-	if err := json.Unmarshal(externalRequest.Body, &requestBody); err != nil {
-		return nil, []error{err}
-	}
-
 	var response openrtb2.BidResponse
 	if err := json.Unmarshal(externalResponse.Body, &response); err != nil {
 		return nil, []error{err}
@@ -160,7 +154,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	var errors []error
 	for _, seatBid := range response.SeatBid {
 		for _, bid := range seatBid.Bid {
-			if err := a.impToBid(internalRequest, requestBody, seatBid, bid, bidResponse); err != nil {
+			if err := a.impToBid(internalRequest, seatBid, bid, bidResponse); err != nil {
 				errors = append(errors, err)
 			}
 		}
@@ -169,7 +163,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	return bidResponse, errors
 }
 
-func (a *adapter) impToBid(internalRequest *openrtb2.BidRequest, requestBody openrtb2.BidRequest, seatBid openrtb2.SeatBid, bid openrtb2.Bid,
+func (a *adapter) impToBid(internalRequest *openrtb2.BidRequest, seatBid openrtb2.SeatBid, bid openrtb2.Bid,
 	bidResponse *adapters.BidderResponse) error {
 	var bidType openrtb_ext.BidType
 
@@ -187,7 +181,7 @@ func (a *adapter) impToBid(internalRequest *openrtb2.BidRequest, requestBody ope
 	  Recover original ImpID
 	  (stored on request in TagID)
 	*/
-	impID, err := getOriginalImpID(bid.ImpID, requestBody.Imp)
+	impID, err := getOriginalImpID(bid.ImpID, internalRequest.Imp)
 	if err != nil {
 		return err
 	}
