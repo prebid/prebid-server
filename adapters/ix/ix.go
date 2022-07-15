@@ -12,9 +12,9 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 
-	"github.com/mxmCherry/openrtb/v15/native1"
-	native1response "github.com/mxmCherry/openrtb/v15/native1/response"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/native1"
+	native1response "github.com/mxmCherry/openrtb/v16/native1/response"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 )
 
 type IxAdapter struct {

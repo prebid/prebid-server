@@ -22,8 +22,8 @@ func TestBuildEndpointSender(t *testing.T) {
 	sender := BuildEndpointSender(server.Client(), server.URL, "module")
 	err := sender([]byte("message"))
 
-	assert.Equal(t, requestBody, []byte("message"))
-	assert.Nil(t, err)
+	assert.Equal(t, []byte("message"), requestBody)
+	assert.NoError(t, err)
 }
 
 func TestBuildEndpointSender_Error(t *testing.T) {
@@ -36,5 +36,5 @@ func TestBuildEndpointSender_Error(t *testing.T) {
 	sender := BuildEndpointSender(server.Client(), server.URL, "module")
 	err := sender([]byte("message"))
 
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }

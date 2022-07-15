@@ -9,7 +9,8 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/adcom1"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 )
 
 const endpoint string = "http://host/endpoint"
@@ -35,7 +36,7 @@ func TestIxMakeBidsWithCategoryDuration(t *testing.T) {
 				H:           360,
 				MIMEs:       []string{"video/mp4"},
 				MaxDuration: 60,
-				Protocols:   []openrtb2.Protocol{2, 3, 5, 6},
+				Protocols:   []adcom1.MediaCreativeSubtype{2, 3, 5, 6},
 			},
 			Ext: json.RawMessage(
 				`{
