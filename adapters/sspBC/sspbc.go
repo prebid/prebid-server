@@ -19,11 +19,12 @@ import (
 )
 
 const (
-	version             = "5.6"
-	impFallbackSize     = "1x1"
-	requestTypeStandard = 1
-	requestTypeOneCode  = 2
-	requestTypeTest     = 3
+	adapterVersion              = "5.6"
+	impFallbackSize             = "1x1"
+	requestTypeStandard         = 1
+	requestTypeOneCode          = 2
+	requestTypeTest             = 3
+	prebidServerIntegrationType = "4"
 )
 
 var (
@@ -118,8 +119,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	// add query parameters to request
 	queryParams := requestURL.Query()
-	queryParams.Add("bdver", version) // adapter version
-	queryParams.Add("inver", "0")     // integration version (adapter, tag, ...)
+	queryParams.Add("bdver", adapterVersion)
+	queryParams.Add("inver", prebidServerIntegrationType)
 	requestURL.RawQuery = queryParams.Encode()
 
 	requestData := &adapters.RequestData{
