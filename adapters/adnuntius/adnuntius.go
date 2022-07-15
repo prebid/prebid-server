@@ -27,6 +27,10 @@ type adnAdunit struct {
 	Dimensions [][]int64 `json:"dimensions,omitempty"`
 }
 
+type extDeviceAdnuntius struct {
+	NoCookies bool `json:"noCookies,omitempty"`
+}
+
 type AdnResponse struct {
 	AdUnits []struct {
 		AuId       string
@@ -102,6 +106,13 @@ func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter) (string, []err
 		return "", []error{fmt.Errorf("failed to parse Adnuntius endpoint: %v", err)}
 	}
 
+	var deviceExt extDeviceAdnuntius
+	if ortbRequest.Device != nil && ortbRequest.Device.Ext != nil {
+		if err := json.Unmarshal(ortbRequest.Device.Ext, &deviceExt); err != nil {
+			return "", []error{fmt.Errorf("failed to parse Adnuntius endpoint: %v", err)}
+		}
+	}
+
 	_, offset := a.time.Now().Zone()
 	tzo := -offset / minutesInHour
 
@@ -110,6 +121,11 @@ func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter) (string, []err
 		q.Set("gdpr", gdpr)
 		q.Set("consentString", consent)
 	}
+
+	if deviceExt.NoCookies {
+		q.Set("noCookies", "true")
+	}
+
 	q.Set("tzo", fmt.Sprint(tzo))
 	q.Set("format", "json")
 
