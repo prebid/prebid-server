@@ -1449,3 +1449,130 @@ func TestAmpAuctionResponseHeaders(t *testing.T) {
 		assert.Equal(t, expectedHeaders, recorder.Result().Header, test.description+":statuscode")
 	}
 }
+
+func TestRequestWithTargeting(t *testing.T) {
+	stored := map[string]json.RawMessage{
+		"1": json.RawMessage(validRequest(t, "site.json")),
+	}
+	exchange := &mockAmpExchange{}
+	endpoint, _ := NewAmpEndpoint(
+		fakeUUIDGenerator{},
+		exchange,
+		newParamsValidator(t),
+		&mockAmpStoredReqFetcher{stored},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: maxSize},
+		&metricsConfig.NilMetricsEngine{},
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		nil,
+		nil,
+		openrtb_ext.BuildBidderMap(),
+		empty_fetcher.EmptyFetcher{},
+	)
+	url, err := url.Parse("/openrtb2/auction/amp")
+	assert.NoError(t, err, "unexpected error received while parsing url")
+	values := url.Query()
+	values.Add("targeting", `{"gam-key1":"val1", "gam-key2":"val2"}`)
+	values.Add("tag_id", "1")
+	url.RawQuery = values.Encode()
+
+	request, err := http.NewRequest("GET", url.String(), nil)
+	if !assert.NoError(t, err) {
+		return
+	}
+	recorder := httptest.NewRecorder()
+	endpoint(recorder, request, nil)
+
+	if !assert.NotNil(t, exchange.lastRequest, "Endpoint responded with %d: %s", recorder.Code, recorder.Body.String()) {
+		return
+	}
+	assert.JSONEq(t, `{"appnexus":{"placementId":12883451}, "data":{"gam-key1":"val1", "gam-key2":"val2"}}`, string(exchange.lastRequest.Imp[0].Ext))
+}
+
+func TestSetTargeting(t *testing.T) {
+	tests := []struct {
+		description    string
+		bidRequest     openrtb2.BidRequest
+		targeting      string
+		expectedImpExt string
+		wantError      bool
+		errorMessage   string
+	}{
+		{
+			description:    "valid imp ext, valid targeting data",
+			bidRequest:     openrtb2.BidRequest{Imp: []openrtb2.Imp{{Ext: []byte(`{"appnexus":{"placementId":123}}`)}}},
+			targeting:      `{"gam-key1":"val1", "gam-key2":"val2"}`,
+			expectedImpExt: `{"appnexus":{"placementId":123}, "data": {"gam-key1":"val1", "gam-key2":"val2"}}`,
+			wantError:      false,
+			errorMessage:   "",
+		},
+		{
+			description:    "valid imp ext, empty targeting data",
+			bidRequest:     openrtb2.BidRequest{Imp: []openrtb2.Imp{{Ext: []byte(`{"appnexus":{"placementId":123}}`)}}},
+			targeting:      ``,
+			expectedImpExt: `{"appnexus":{"placementId":123}}`,
+			wantError:      false,
+			errorMessage:   "",
+		},
+		{
+			description:    "empty imp ext, valid targeting data",
+			bidRequest:     openrtb2.BidRequest{Imp: []openrtb2.Imp{{Ext: []byte(`{}`)}}},
+			targeting:      `{"gam-key1":"val1", "gam-key2":"val2"}`,
+			expectedImpExt: `{"data": {"gam-key1":"val1", "gam-key2":"val2"}}`,
+			wantError:      false,
+			errorMessage:   "",
+		},
+		{
+			description:    "nil imp ext, valid targeting data",
+			bidRequest:     openrtb2.BidRequest{Imp: []openrtb2.Imp{{Ext: nil}}},
+			targeting:      `{"gam-key1":"val1", "gam-key2":"val2"}`,
+			expectedImpExt: `{"data": {"gam-key1":"val1", "gam-key2":"val2"}}`,
+			wantError:      false,
+			errorMessage:   "",
+		},
+		{
+			description:    "imp ext has data, valid targeting data",
+			bidRequest:     openrtb2.BidRequest{Imp: []openrtb2.Imp{{Ext: []byte(`{"data":{"placementId":123}}`)}}},
+			targeting:      `{"gam-key1":"val1", "gam-key2":"val2"}`,
+			expectedImpExt: `{"data": {"gam-key1":"val1", "gam-key2":"val2", "placementId":123}}`,
+			wantError:      false,
+			errorMessage:   "",
+		},
+		{
+			description:    "imp ext has data and other fields, valid targeting data",
+			bidRequest:     openrtb2.BidRequest{Imp: []openrtb2.Imp{{Ext: []byte(`{"data":{"placementId":123}, "prebid": 123}`)}}},
+			targeting:      `{"gam-key1":"val1", "gam-key2":"val2"}`,
+			expectedImpExt: `{"data": {"gam-key1":"val1", "gam-key2":"val2", "placementId":123}, "prebid":123}`,
+			wantError:      false,
+			errorMessage:   "",
+		},
+		{
+			description:    "imp ext has invalid format, valid targeting data",
+			bidRequest:     openrtb2.BidRequest{Imp: []openrtb2.Imp{{Ext: []byte(`{123:{}`)}}},
+			targeting:      `{"gam-key1":"val1", "gam-key2":"val2"}`,
+			expectedImpExt: ``,
+			wantError:      true,
+			errorMessage:   "unable to merge imp.ext with targeting data, check targeting data is correct: Invalid JSON Document",
+		},
+		{
+			description:    "valid imp ext, invalid targeting data",
+			bidRequest:     openrtb2.BidRequest{Imp: []openrtb2.Imp{{Ext: []byte(`{"appnexus":{"placementId":123}}`)}}},
+			targeting:      `{123,}`,
+			expectedImpExt: ``,
+			wantError:      true,
+			errorMessage:   "unable to merge imp.ext with targeting data, check targeting data is correct: Invalid JSON Patch",
+		},
+	}
+
+	for _, test := range tests {
+		req := &test.bidRequest
+		err := setTargeting(req, test.targeting)
+		if test.wantError {
+			assert.EqualErrorf(t, err, test.errorMessage, "error is incorrect for test case: %s", test.description)
+		} else {
+			assert.NoError(t, err, "error should be nil for test case: %s", test.description)
+			assert.JSONEq(t, test.expectedImpExt, string(req.Imp[0].Ext), "incorrect impression extension returned for test %s", test.description)
+		}
+
+	}
+}
