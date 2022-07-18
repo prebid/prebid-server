@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 	"net/http"
 	"net/url"
 	"strings"
@@ -453,6 +454,31 @@ func (deps *endpointDeps) overrideWithParams(ampParams amp.Params, req *openrtb2
 		req.TMax = int64(*ampParams.Timeout) - deps.cfg.AMPTimeoutAdjustment
 	}
 
+	if err := setTargeting(req, ampParams.Targeting); err != nil {
+		return []error{err}
+	}
+
+	return nil
+}
+
+// setTargeting merges "targeting" to imp[0].ext.data
+func setTargeting(req *openrtb2.BidRequest, targeting string) error {
+	if len(targeting) == 0 {
+		return nil
+	}
+
+	targetingData := exchange.WrapJSONInData([]byte(targeting))
+
+	if len(req.Imp[0].Ext) > 0 {
+		newImpExt, err := jsonpatch.MergePatch(req.Imp[0].Ext, targetingData)
+		if err != nil {
+			return fmt.Errorf("unable to merge imp.ext with targeting data, check targeting data is correct: %s", err.Error())
+		}
+		req.Imp[0].Ext = newImpExt
+		return nil
+	}
+
+	req.Imp[0].Ext = targetingData
 	return nil
 }
 

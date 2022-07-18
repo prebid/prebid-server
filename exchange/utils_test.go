@@ -3082,3 +3082,42 @@ func Test_parseAliasesGVLIDs(t *testing.T) {
 		})
 	}
 }
+
+func TestBuildExtData(t *testing.T) {
+	testCases := []struct {
+		description string
+		input       []byte
+		expectedRes string
+	}{
+		{
+			description: "Input object with int value",
+			input:       []byte(`{"someData": 123}`),
+			expectedRes: `{"data": {"someData": 123}}`,
+		},
+		{
+			description: "Input object with bool value",
+			input:       []byte(`{"someData": true}`),
+			expectedRes: `{"data": {"someData": true}}`,
+		},
+		{
+			description: "Input object with string value",
+			input:       []byte(`{"someData": "true"}`),
+			expectedRes: `{"data": {"someData": "true"}}`,
+		},
+		{
+			description: "No input object",
+			input:       []byte(`{}`),
+			expectedRes: `{"data": {}}`,
+		},
+		{
+			description: "Input object with object value",
+			input:       []byte(`{"someData": {"moreFpdData": "fpddata"}}`),
+			expectedRes: `{"data": {"someData": {"moreFpdData": "fpddata"}}}`,
+		},
+	}
+
+	for _, test := range testCases {
+		actualRes := WrapJSONInData(test.input)
+		assert.JSONEq(t, test.expectedRes, string(actualRes), "Incorrect result data")
+	}
+}
