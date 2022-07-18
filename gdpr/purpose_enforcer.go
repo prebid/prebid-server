@@ -8,7 +8,7 @@ import (
 )
 
 type PurposeEnforcer interface {
-	LegalBasis(vendorInfo VendorInfo, bidderInfo BidderInfo, consent tcf2.ConsentMetadata) bool
+	LegalBasis(vendorInfo VendorInfo, bidder openrtb_ext.BidderName, consent tcf2.ConsentMetadata) bool
 	PurposeEnforced() bool
 }
 
@@ -40,15 +40,36 @@ type purposeConfig struct {
 	BasicEnforcementVendorsMap map[string]struct{} // currently map[string]struct{} in agg cfg, only needed for BASIC enforcement
 }
 
+func (pc *purposeConfig) BasicEnforcementVendor(bidder openrtb_ext.BidderName) bool {
+	if pc.BasicEnforcementVendorsMap == nil {
+		return false
+	}
+	if _, found := pc.BasicEnforcementVendorsMap[string(bidder)]; found {
+		return true
+	}
+	return false
+}
+
+func (pc *purposeConfig) vendorException(bidder openrtb_ext.BidderName) bool {
+	if pc.VendorExceptionMap == nil {
+		return false
+	}
+	if _, found := pc.VendorExceptionMap[bidder]; found {
+		return true
+	}
+	return false
+}
+
 // called from the TCF2Service and might be injected into the service as a builder to improve testability
 func NewPurposeEnforcer(cfg purposeConfig, downgraded bool) PurposeEnforcer {
 	if cfg.EnforcePurpose == TCF2FullEnforcement && !downgraded {
 		return NewFullEnforcement(cfg)
-		// } else if cfg.EnforcePurpose == TCF2BasicEnforcement {
-		// 	return NewBasicEnforcement(cfg)
-		// } else if downgraded {
-		// 	return NewBasicEnforcement(cfg)
+	} else if cfg.EnforcePurpose == TCF2BasicEnforcement {
+		return NewBasicEnforcement(cfg)
+	} else if downgraded {
+		return NewBasicEnforcement(cfg)
 	}
 
-	return NewNoEnforcement(cfg)
+	// return NewNoEnforcement(cfg)
+	return NewFullEnforcement(cfg)
 }

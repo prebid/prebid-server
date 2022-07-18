@@ -2,6 +2,7 @@ package gdpr
 
 import (
 	tcf2 "github.com/prebid/go-gdpr/vendorconsent/tcf2"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 type NoEnforcementBuilder func()
@@ -18,7 +19,7 @@ func NewNoEnforcement(cfg purposeConfig) *NoEnforcement {
 	}
 }
 
-func (ne *NoEnforcement) LegalBasis(vendorInfo VendorInfo, bidderInfo BidderInfo, consent tcf2.ConsentMetadata) bool {
+func (ne *NoEnforcement) LegalBasis(vendorInfo VendorInfo, bidder openrtb_ext.BidderName, consent tcf2.ConsentMetadata) bool {
 	return true
 }
 

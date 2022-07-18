@@ -4,11 +4,14 @@ import (
 	"github.com/prebid/go-gdpr/api"
 	"github.com/prebid/go-gdpr/consentconstants"
 	tcf2 "github.com/prebid/go-gdpr/vendorconsent/tcf2"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-// const pubRestrictNotAllowed = 0
-// const pubRestrictRequireConsent = 1
-// const pubRestrictRequireLegitInterest = 2
+const (
+	pubRestrictNotAllowed           = 0
+	pubRestrictRequireConsent       = 1
+	pubRestrictRequireLegitInterest = 2
+)
 
 type FullEnforcementBuilder func()
 
@@ -24,19 +27,19 @@ func NewFullEnforcement(cfg purposeConfig) *FullEnforcement {
 	}
 }
 
-func (fe *FullEnforcement) LegalBasis(vendorInfo VendorInfo, bidderInfo BidderInfo, consent tcf2.ConsentMetadata) bool {
+func (fe *FullEnforcement) LegalBasis(vendorInfo VendorInfo, bidder openrtb_ext.BidderName, consent tcf2.ConsentMetadata) bool {
 	if consent.CheckPubRestriction(uint8(fe.purposeCfg.PurposeID), pubRestrictNotAllowed, vendorInfo.vendorID) {
 		return false
 	}
 
 	//TODO: is this new if statement correct?
 	//If so, add comment as to why this is here in the full enforcement module
-	if fe.purposeCfg.EnforcePurpose == TCF2NoEnforcement {
+	if !fe.PurposeEnforced() && !fe.purposeCfg.EnforceVendors {
 		return true
 	}
 
 	if fe.purposeCfg.VendorExceptionMap != nil {
-		if _, found := fe.purposeCfg.VendorExceptionMap[bidderInfo.bidder]; found {
+		if _, found := fe.purposeCfg.VendorExceptionMap[bidder]; found {
 			return true
 		}
 	}
@@ -62,17 +65,10 @@ func (fe *FullEnforcement) PurposeEnforced() bool {
 	return false
 }
 
-// func (fe *FullEnforcement) LegalBasisForHostCookies(vendorInfo VendorInfo, bidderInfo BidderInfo) (bool, error) {
-
-// }
-
 func (fe *FullEnforcement) consentEstablished(consent tcf2.ConsentMetadata, vendor api.Vendor, vendorID uint16, purpose consentconstants.Purpose, enforceVendors /*, weakVendorEnforcement*/ bool) bool {
-	if !consent.PurposeAllowed(purpose) {
+	if fe.PurposeEnforced() && !consent.PurposeAllowed(purpose) {
 		return false
 	}
-	/*if weakVendorEnforcement {
-		return true
-	}*/
 	if !enforceVendors {
 		return true
 	}
@@ -83,12 +79,9 @@ func (fe *FullEnforcement) consentEstablished(consent tcf2.ConsentMetadata, vend
 }
 
 func (fe *FullEnforcement) legitInterestEstablished(consent tcf2.ConsentMetadata, vendor api.Vendor, vendorID uint16, purpose consentconstants.Purpose, enforceVendors /*, weakVendorEnforcement*/ bool) bool {
-	if !consent.PurposeLITransparency(purpose) {
+	if fe.PurposeEnforced() && !consent.PurposeLITransparency(purpose) {
 		return false
 	}
-	/*if weakVendorEnforcement {
-		return true
-	}*/
 	if !enforceVendors {
 		return true
 	}

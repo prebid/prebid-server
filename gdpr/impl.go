@@ -7,11 +7,12 @@ import (
 
 	"github.com/prebid/go-gdpr/api"
 	"github.com/prebid/go-gdpr/consentconstants"
-	tcf2ConsentConstants "github.com/prebid/go-gdpr/consentconstants/tcf2"
 	"github.com/prebid/go-gdpr/vendorconsent"
 	tcf2 "github.com/prebid/go-gdpr/vendorconsent/tcf2"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
+
+const noBidder = ""
 
 type permissionsImpl struct {
 	// global
@@ -39,7 +40,7 @@ func (p *permissionsImpl) HostCookiesAllowed(ctx context.Context) (bool, error) 
 		return true, nil
 	}
 
-	return p.allowSync(ctx, uint16(p.hostVendorID), false)
+	return p.allowSync(ctx, uint16(p.hostVendorID), noBidder, false)
 }
 
 // called from /cookie_sync
@@ -52,7 +53,7 @@ func (p *permissionsImpl) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 	id, ok := p.vendorIDs[bidder]
 	if ok {
 		vendorException := p.cfg.PurposeVendorException(consentconstants.Purpose(1), bidder)
-		return p.allowSync(ctx, id, vendorException)
+		return p.allowSync(ctx, id, bidder, vendorException)
 	}
 
 	return false, nil
@@ -127,7 +128,7 @@ func (p *permissionsImpl) resolveVendorId(bidderCoreName openrtb_ext.BidderName,
 	return id, ok
 }
 
-func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, vendorException bool) (bool, error) {
+func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, bidder openrtb_ext.BidderName, vendorException bool) (bool, error) {
 	if p.consent == "" {
 		return false, nil
 	}
@@ -154,16 +155,14 @@ func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, vendor
 		return p.cfg.PurposeOneTreatmentAccessAllowed(), nil
 	}
 
-	enforceVendors := p.cfg.PurposeEnforcingVendors(tcf2ConsentConstants.InfoStorageAccess)
-	return p.checkPurpose(consentMeta, vendor, vendorID, tcf2ConsentConstants.InfoStorageAccess, enforceVendors, vendorException, false), nil
-	// purpose := consentconstants.Purpose(1)
-	// enforcer := p.getPurposeEnforcer(purpose, bidder, true)
+	purpose := consentconstants.Purpose(1)
+	enforcer := p.getPurposeEnforcer(purpose, bidder, true) //TODO: true
 
-	// vendorInfo := VendorInfo{vendorID: vendorID, vendor: vendor}
-	// if enforcer.LegalBasis(vendorInfo, BidderInfo{bidder: bidder}, consentMeta) {
-	// 	return true, nil
-	// }
-	// return false, nil
+	vendorInfo := VendorInfo{vendorID: vendorID, vendor: vendor}
+	if enforcer.LegalBasis(vendorInfo, bidder, consentMeta) { //-->pass vendorexception? or dont care
+		return true, nil
+	}
+	return false, nil
 }
 
 func (p *permissionsImpl) allowBidRequest(bidder openrtb_ext.BidderName, consentMeta tcf2.ConsentMetadata, vendorInfo VendorInfo) bool {
@@ -171,7 +170,7 @@ func (p *permissionsImpl) allowBidRequest(bidder openrtb_ext.BidderName, consent
 	enforcer := p.getPurposeEnforcer(purpose, bidder, true) //TODO: true
 
 	// this function will return true if purpose 2 is NOT enforced
-	if enforcer.LegalBasis(vendorInfo, BidderInfo{bidder: bidder}, consentMeta) {
+	if enforcer.LegalBasis(vendorInfo, bidder, consentMeta) {
 		return true
 	}
 	return false
@@ -194,7 +193,7 @@ func (p *permissionsImpl) allowID(bidder openrtb_ext.BidderName, consentMeta tcf
 		purpose := consentconstants.Purpose(i)
 		enforcer := p.getPurposeEnforcer(purpose, bidder, true) //TODO: true value should be set based on the value of p.VendorList
 
-		if enforcer.PurposeEnforced() && enforcer.LegalBasis(vendorInfo, BidderInfo{bidder: bidder}, consentMeta) {
+		if enforcer.PurposeEnforced() && enforcer.LegalBasis(vendorInfo, bidder, consentMeta) {
 			return true
 		}
 	}
@@ -216,7 +215,12 @@ func (p *permissionsImpl) getPurposeEnforcer(purpose consentconstants.Purpose, b
 		BasicEnforcementVendorsMap: p.cfg.BasicEnforcementVendors(),
 	}
 
-	downgraded := p.isDowngraded(cfg.EnforcePurpose, p.cfg.BasicEnforcementVendor(bidder), haveGVL)
+	basicEnforcementVendor := p.cfg.BasicEnforcementVendor(bidder)
+	if purpose == consentconstants.Purpose(1) {
+		basicEnforcementVendor = false
+	}
+
+	downgraded := p.isDowngraded(cfg.EnforcePurpose, basicEnforcementVendor, haveGVL)
 	enforcer := NewPurposeEnforcer(cfg, downgraded)
 
 	//cache the enforcer
@@ -237,65 +241,6 @@ func (p *permissionsImpl) isDowngraded(enforcePurpose string, basicEnforcementVe
 	// resulting in publisher restriction checks and possible vendor checks if we are enforcing vendors for the purpose. If the GVL is not
 	// available though, we need to drop down to basic
 	if enforcePurpose == TCF2NoEnforcement && !haveGVL {
-		return true
-	}
-	return false
-}
-
-const pubRestrictNotAllowed = 0
-const pubRestrictRequireConsent = 1
-const pubRestrictRequireLegitInterest = 2
-
-func (p *permissionsImpl) checkPurpose(consent tcf2.ConsentMetadata, vendor api.Vendor, vendorID uint16, purpose consentconstants.Purpose, enforceVendors, vendorException, weakVendorEnforcement bool) bool {
-	if consent.CheckPubRestriction(uint8(purpose), pubRestrictNotAllowed, vendorID) {
-		return false
-	}
-
-	if vendorException {
-		return true
-	}
-
-	purposeAllowed := p.consentEstablished(consent, vendor, vendorID, purpose, enforceVendors, weakVendorEnforcement)
-	legitInterest := p.legitInterestEstablished(consent, vendor, vendorID, purpose, enforceVendors, weakVendorEnforcement)
-
-	if consent.CheckPubRestriction(uint8(purpose), pubRestrictRequireConsent, vendorID) {
-		return purposeAllowed
-	}
-	if consent.CheckPubRestriction(uint8(purpose), pubRestrictRequireLegitInterest, vendorID) {
-		// Need LITransparency here
-		return legitInterest
-	}
-
-	return purposeAllowed || legitInterest
-}
-
-func (p *permissionsImpl) consentEstablished(consent tcf2.ConsentMetadata, vendor api.Vendor, vendorID uint16, purpose consentconstants.Purpose, enforceVendors, weakVendorEnforcement bool) bool {
-	if !consent.PurposeAllowed(purpose) {
-		return false
-	}
-	if weakVendorEnforcement {
-		return true
-	}
-	if !enforceVendors {
-		return true
-	}
-	if vendor.Purpose(purpose) && consent.VendorConsent(vendorID) {
-		return true
-	}
-	return false
-}
-
-func (p *permissionsImpl) legitInterestEstablished(consent tcf2.ConsentMetadata, vendor api.Vendor, vendorID uint16, purpose consentconstants.Purpose, enforceVendors, weakVendorEnforcement bool) bool {
-	if !consent.PurposeLITransparency(purpose) {
-		return false
-	}
-	if weakVendorEnforcement {
-		return true
-	}
-	if !enforceVendors {
-		return true
-	}
-	if vendor.LegitimateInterest(purpose) && consent.VendorLegitInterest(vendorID) {
 		return true
 	}
 	return false
