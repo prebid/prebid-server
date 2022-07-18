@@ -143,7 +143,12 @@
                     "awesome.com"
                   ],
                   "crid": "20"
-                },
+                }
+              ],
+              "seat": "bliink"
+            },
+            {
+              "bid": [
                 {
                   "id": "a3ae1b4e2fc24a4fb45540082e98e161",
                   "impid": "test-video-id",
@@ -157,7 +162,7 @@
                   "h": 50
                 }
               ],
-              "seat": "bliink"
+              "seat": "bliink2"
             }
           ],
           "cur": "EUR"
