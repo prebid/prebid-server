@@ -20,6 +20,10 @@ type Params struct {
 	Slot            string
 	StoredRequestID string
 	Timeout         *uint64
+
+	ConsentType  int64
+	GdprApplies  *bool
+	AddtlConsent string
 }
 
 // Size defines size information of an AMP request.
@@ -31,6 +35,13 @@ type Size struct {
 	Width          int64
 }
 
+// GDPR consent types
+const (
+	TCF1 = iota
+	TCF2
+	CCPA
+)
+
 // ParseParams parses the AMP parameters from a HTTP request.
 func ParseParams(httpRequest *http.Request) (Params, error) {
 	query := httpRequest.URL.Query()
@@ -40,6 +51,15 @@ func ParseParams(httpRequest *http.Request) (Params, error) {
 		return Params{}, errors.New("AMP requests require an AMP tag_id")
 	}
 
+	// 1) If consent_type is provided, it will be an enum containing the following values:
+	// 	    1.1. The contents of gdpr_consent can be treated as TCF V1. We no longer support TCFv1, so ignore any consent_string provided on the request.
+	// 	    1.2. The contents of gdpr_consent can be treated as TCF V2. If the consent_string isn't a valid TCF2 string, assume there's no user consent for any purpose as if no gdpr_consent were provided.
+	// 	    1.3. The contents of gdpr_consent can be treated as a US Privacy String. If the consent_string isn't a valid USP string, assume for the purposes of opt-out-of-sale enforcement that no gdpr_consent was provided.
+	// 	    1.4. Anything else: ignore, log a warning, and assume no gdpr_consent was provided
+	// 2) If gdpr_applies is supplied, use its value to set regs.ext.gdpr: gdpr_applies=true means regs.ext.gdpr:1, gdpr_applies=false means regs.ext.gdpr:0, any other value means regs.ext.gdpr is not set.
+	// 3) If consent_type="2", and gdpr_consent is not empty, then copy gdpr_consent to user.ext.consent
+	// 4) If consent_type="3", and gdpr_consent is not empty, then copy gdpr_consent to regs.ext.us_privacy
+	// 5) If addtl_consent is supplied, copy its value to user.ext.ConsentedProvidersSettings.consented_providers
 	params := Params{
 		Account:      query.Get("account"),
 		CanonicalURL: query.Get("curl"),
@@ -56,6 +76,9 @@ func ParseParams(httpRequest *http.Request) (Params, error) {
 		Slot:            query.Get("slot"),
 		StoredRequestID: tagID,
 		Timeout:         parseIntPtr(query.Get("timeout")),
+		ConsentType:     parseInt(query.Get("consent_type")),
+		GdprApplies:     parseBoolPtr(query.Get("gdpr_applies")),
+		AddtlConsent:    query.Get("addtl_consent"),
 	}
 	return params, nil
 }
@@ -72,6 +95,18 @@ func parseInt(value string) int64 {
 		return parsed
 	}
 	return 0
+}
+
+func parseBoolPtr(value string) *bool {
+	var rv bool = false
+	switch value {
+	case "true":
+		rv = true
+		return &rv
+	case "false":
+		return &rv
+	}
+	return nil
 }
 
 func parseMultisize(multisize string) []openrtb2.Format {
