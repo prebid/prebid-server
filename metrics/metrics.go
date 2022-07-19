@@ -202,12 +202,13 @@ func CookieTypes() []CookieFlag {
 
 // Request/return status
 const (
-	RequestStatusOK           RequestStatus = "ok"
-	RequestStatusBadInput     RequestStatus = "badinput"
-	RequestStatusErr          RequestStatus = "err"
-	RequestStatusNetworkErr   RequestStatus = "networkerr"
-	RequestStatusBlacklisted  RequestStatus = "blacklistedacctorapp"
-	RequestStatusQueueTimeout RequestStatus = "queuetimeout"
+	RequestStatusOK               RequestStatus = "ok"
+	RequestStatusBadInput         RequestStatus = "badinput"
+	RequestStatusErr              RequestStatus = "err"
+	RequestStatusNetworkErr       RequestStatus = "networkerr"
+	RequestStatusBlacklisted      RequestStatus = "blacklistedacctorapp"
+	RequestStatusQueueTimeout     RequestStatus = "queuetimeout"
+	RequestStatusAccountConfigErr RequestStatus = "acctconfigerr"
 )
 
 func RequestStatuses() []RequestStatus {
@@ -218,6 +219,7 @@ func RequestStatuses() []RequestStatus {
 		RequestStatusNetworkErr,
 		RequestStatusBlacklisted,
 		RequestStatusQueueTimeout,
+		RequestStatusAccountConfigErr,
 	}
 }
 

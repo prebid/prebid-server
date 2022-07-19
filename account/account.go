@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	// "github.com/golang/glog"
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -49,13 +50,28 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 		// accountID resolved to a valid account, merge with AccountDefaults for a complete config
 		account = &config.Account{}
 		completeJSON, err := jsonpatch.MergePatch(cfg.AccountDefaultsJSON(), accountJSON)
+		// glog.Warning("Here1")
 		if err == nil {
+			// glog.Warning("Here2")
+			// glog.Warning("%s\n", string(completeJSON[:]))
 			err = json.Unmarshal(completeJSON, account)
+			if _, ok := err.(*json.UnmarshalTypeError); ok {
+				// if v, ok := err.(*json.UnmarshalTypeError); ok {
+				// glog.Warning("v.Field: %s\n", v.Field)
+				// glog.Warning("v.Type: %s\n", v.Type)
+				// glog.Warning("v.Struct: %s\n", v.Struct)
+				// glog.Warning("v.Value: %s\n", v.Value)
+			}
+			// glog.Warning("%+v\n", *account)
+			// glog.Warning("Here3")
 		}
 		if err != nil {
+			// glog.Warning("Here4")
+			// glog.Warning("%s\n", err.Error())
 			errs = append(errs, err)
 			return nil, errs
 		}
+		// glog.Warning("Here5")
 		// Fill in ID if needed, so it can be left out of account definition
 		if len(account.ID) == 0 {
 			account.ID = accountID

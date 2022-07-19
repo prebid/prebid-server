@@ -182,6 +182,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	// Look up account now that we have resolved the pubID value
 	account, acctIDErrs := accountService.GetAccount(ctx, deps.cfg, deps.accounts, labels.PubID)
+	// TODO ADD COMMENT ON PR ASKING IF THE ACCOUNT CONFIG ERROR SHOULD JUST BE A WARNING METRIC THAT DOESN'T KILL THE AUCTION
 	if len(acctIDErrs) > 0 {
 		errL = append(errL, acctIDErrs...)
 		writeError(errL, w, &labels)
