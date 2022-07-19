@@ -174,6 +174,8 @@ func getMediaTypeForImp(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
 		if imp.ID == impID {
 			if imp.Video != nil {
 				return openrtb_ext.BidTypeVideo
+			} else if imp.Native != nil {
+				return openrtb_ext.BidTypeNative
 			}
 			return openrtb_ext.BidTypeBanner
 		}
