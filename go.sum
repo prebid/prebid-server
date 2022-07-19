@@ -337,8 +337,10 @@ github.com/modern-go/reflect2 v1.0.1/go.mod h1:bx2lNnkwVCuqBIxFjflWJWanXIb3Rllmb
 github.com/modern-go/reflect2 v1.0.2/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjYzDa0/r8luk=
 github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
 github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
-github.com/mxmCherry/openrtb/v15 v15.0.1 h1:RnMj/n8Sv0wqaiWQCbmUwzeO6T4Bk3d9RokKvla1CDc=
-github.com/mxmCherry/openrtb/v15 v15.0.1/go.mod h1:TVgncsz6MOzbL7lhun1lNuUBzVBlVDbxf9Fyy1TyhZA=
+github.com/mxmCherry/openrtb v13.0.0+incompatible h1:KEnUHAJFovM54lcicyjiJgZZ4mWKNw+h0GOJXWOoJ4A=
+github.com/mxmCherry/openrtb v13.0.0+incompatible/go.mod h1:zpnz6Au3bzTGplpRU0kvFPNT6g4ROAKx/GkrslFDwZk=
+github.com/mxmCherry/openrtb/v16 v16.0.0-alpha.2 h1:Iwp8+KHfzDIhaKFynJ4xVstU1LTVLzG+Unur5d0CeWo=
+github.com/mxmCherry/openrtb/v16 v16.0.0-alpha.2/go.mod h1:k+21QiTXLLjjXCroputuQNIDJC2GtrzFcHbJbDz4RcE=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
 github.com/nxadm/tail v1.4.8 h1:nPr65rt6Y5JFSKQO7qToXr7pePgD6Gwiw05lkbyAQTE=
 github.com/nxadm/tail v1.4.8/go.mod h1:+ncqLTQzXmGhMZNUePPaPqPvBxHAIsmXswZKocGu+AU=

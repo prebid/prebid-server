@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
@@ -2368,10 +2368,10 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 		gdprDefaultValue = gdpr.SignalNo
 	}
 
-	hostSChainNode := &openrtb_ext.ExtRequestPrebidSChainSChainNode{}
+	hostSChainNode := &openrtb2.SupplyChainNode{}
 	if hostSChainFlag {
-		hostSChainNode = &openrtb_ext.ExtRequestPrebidSChainSChainNode{
-			ASI: "pbshostcompany.com", SID: "00001", RID: "BidRequest", HP: 1,
+		hostSChainNode = &openrtb2.SupplyChainNode{
+			ASI: "pbshostcompany.com", SID: "00001", RID: "BidRequest", HP: openrtb2.Int8Ptr(1),
 		}
 	} else {
 		hostSChainNode = nil

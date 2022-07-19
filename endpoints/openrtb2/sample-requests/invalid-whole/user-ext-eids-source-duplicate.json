@@ -1,5 +1,5 @@
 {
-  "description": "Bid request with empty eids array in user.ext",
+  "description": "Bid request where more than one request.user.ext.eids array elements share the same source field value",
   "mockBidRequest": {
     "id": "anyRequestID",
     "site": {
@@ -30,10 +30,20 @@
     "tmax": 1000,
     "user": {
       "ext": {
-        "eids": []
+        "eids": [{
+          "source": "source1",
+          "uids": [{
+            "id": "A"
+          }]
+        }, {
+          "source": "source1",
+          "uids": [{
+            "id": "B"
+          }]
+        }]
       }
     }
   },
   "expectedReturnCode": 400,
-  "expectedErrorMessage": "Invalid request: request.user.ext.eids must contain at least one element or be undefined\n"
+  "expectedErrorMessage": "Invalid request: request.user.ext.eids must contain unique sources\n"
 }
