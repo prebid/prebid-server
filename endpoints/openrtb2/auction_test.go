@@ -897,6 +897,7 @@ func TestRefererParsing(t *testing.T) {
 	}
 }
 
+// TestSitePageParsing makes sure that the site.page is parsed if http referer is unavailable.
 func TestSitePageParsing(t *testing.T) {
 	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	bidReq := &openrtb2.BidRequest{
@@ -915,7 +916,57 @@ func TestSitePageParsing(t *testing.T) {
 		t.Errorf("Bad bidrequest.site.domain. Expected somepage.com, got %s", bidReq.Site.Domain)
 	}
 	if bidReq.Site.Page != "https://test.somepage.com" {
-		t.Errorf("Bad bidrequest.site.page. Expected somepage.com, got %s", bidReq.Site.Page)
+		t.Errorf("Bad bidrequest.site.page. Expected https://test.somepage.com, got %s", bidReq.Site.Page)
+	}
+}
+
+// TestRefererPriorityParsing makes sure that the http referer has higher priority over site.page for site.domain parsing.
+func TestRefererPriorityParsing(t *testing.T) {
+	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
+	httpReq.Header.Set("Referer", "http://test.com")
+	bidReq := &openrtb2.BidRequest{
+		Site: &openrtb2.Site{
+			Page: "https://test.somepage.com",
+		},
+	}
+
+	setSiteImplicitly(httpReq, bidReq)
+
+	if bidReq.Site == nil {
+		t.Fatalf("bidrequest.site should not be nil.")
+	}
+
+	if bidReq.Site.Domain != "test.com" {
+		t.Errorf("Bad bidrequest.site.domain. Expected test.com, got %s", bidReq.Site.Domain)
+	}
+	// site.page is not overwritten by http referer and passed 'as is'
+	if bidReq.Site.Page != "https://test.somepage.com" {
+		t.Errorf("Bad bidrequest.site.page. Expected https://test.somepage.com, got %s", bidReq.Site.Page)
+	}
+}
+
+// TestSiteDomainPriorityParsing makes sure that the site.domain has higher priority over site.page and http referer.
+func TestSiteDomainPriorityParsing(t *testing.T) {
+	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
+	httpReq.Header.Set("Referer", "https://test.somepage.com")
+	bidReq := &openrtb2.BidRequest{
+		Site: &openrtb2.Site{
+			Page:   "https://test.somepage.com",
+			Domain: "test.somepage.com", // emulate 'somepage.com' as public suffix
+		},
+	}
+
+	setSiteImplicitly(httpReq, bidReq)
+
+	if bidReq.Site == nil {
+		t.Fatalf("bidrequest.site should not be nil.")
+	}
+
+	if bidReq.Site.Domain != "test.somepage.com" {
+		t.Errorf("Bad bidrequest.site.domain. Expected test.somepage.com, got %s", bidReq.Site.Domain)
+	}
+	if bidReq.Site.Page != "https://test.somepage.com" {
+		t.Errorf("Bad bidrequest.site.page. Expected https://test.somepage.com, got %s", bidReq.Site.Page)
 	}
 }
 
