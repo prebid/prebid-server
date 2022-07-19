@@ -179,6 +179,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 				signatureMessage, err := adsCertSigner.Sign(reqData[i].Uri, reqData[i].Body)
 				if err != nil {
 					//add metrics here
+					errs = append(errs, &errortypes.Warning{Message: fmt.Sprintf("AdsCert signer is enabled but cannot sign the request: %s", err.Error())})
 				}
 				if err == nil && len(signatureMessage) > 0 {
 					reqData[i].Headers.Add(adscert.SignHeader, signatureMessage)

@@ -18,20 +18,6 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-var (
-	ErrSignerModeIncorrect                      = errors.New("signer mode is not specified, specify 'off', 'inprocess' or 'remote'")
-	ErrInProcessSignerInvalidURL                = errors.New("invalid url for inprocess signer")
-	ErrInProcessSignerInvalidPrivateKey         = errors.New("invalid private key for inprocess signer")
-	ErrInProcessSignerInvalidDNSRenewalInterval = errors.New("invalid dns renewal interval for inprocess signer")
-	ErrInProcessSignerInvalidDNSCheckInterval   = errors.New("invalid dns check interval for inprocess signer")
-	ErrInvalidRemoteSignerURL                   = errors.New("invalid url for remote signer")
-	ErrInvalidRemoteSignerSigningTimeout        = errors.New("invalid signing timeout for remote signer")
-
-	AdCertsSignerModeOff       = "off"
-	AdCertsSignerModeInprocess = "inprocess"
-	AdCertsSignerModeRemote    = "remote"
-)
-
 // Configuration specifies the static application config.
 type Configuration struct {
 	ExternalURL      string     `mapstructure:"external_url"`
@@ -154,41 +140,6 @@ type AuctionTimeouts struct {
 	Default uint64 `mapstructure:"default"`
 	// The max timeout is used as an absolute cap, to prevent excessively long ones. Use 0 for no cap
 	Max uint64 `mapstructure:"max"`
-}
-
-func (cfg *Experiment) validate(errs []error) []error {
-	if len(cfg.AdCerts.Mode) == 0 {
-		return errs
-	}
-	if !(cfg.AdCerts.Mode == AdCertsSignerModeOff ||
-		cfg.AdCerts.Mode == AdCertsSignerModeInprocess ||
-		cfg.AdCerts.Mode == AdCertsSignerModeRemote) {
-		return append(errs, ErrSignerModeIncorrect)
-	}
-	if cfg.AdCerts.Mode == AdCertsSignerModeInprocess {
-		_, err := url.ParseRequestURI(cfg.AdCerts.InProcess.Origin)
-		if err != nil {
-			errs = append(errs, ErrInProcessSignerInvalidURL)
-		}
-		if len(cfg.AdCerts.InProcess.PrivateKey) == 0 {
-			errs = append(errs, ErrInProcessSignerInvalidPrivateKey)
-		}
-		if cfg.AdCerts.InProcess.DNSRenewalIntervalInSeconds <= 0 {
-			errs = append(errs, ErrInProcessSignerInvalidDNSRenewalInterval)
-		}
-		if cfg.AdCerts.InProcess.DNSCheckIntervalInSeconds <= 0 {
-			errs = append(errs, ErrInProcessSignerInvalidDNSCheckInterval)
-		}
-	} else if cfg.AdCerts.Mode == AdCertsSignerModeRemote {
-		_, err := url.ParseRequestURI(cfg.AdCerts.Remote.Url)
-		if err != nil {
-			errs = append(errs, ErrInvalidRemoteSignerURL)
-		}
-		if cfg.AdCerts.Remote.SigningTimeoutMs <= 0 {
-			errs = append(errs, ErrInvalidRemoteSignerSigningTimeout)
-		}
-	}
-	return errs
 }
 
 func (cfg *AuctionTimeouts) validate(errs []error) []error {
