@@ -199,7 +199,7 @@ func (ert *ExtRequestTargeting) UnmarshalJSON(b []byte) error {
 
 // PriceGranularity defines the allowed values for bidrequest.ext.prebid.targeting.pricegranularity
 type PriceGranularity struct {
-	Test      bool               `json:"-"`
+	Test      bool               `json:"test,omitempty"`
 	Precision int                `json:"precision,omitempty"`
 	Ranges    []GranularityRange `json:"ranges,omitempty"`
 }
