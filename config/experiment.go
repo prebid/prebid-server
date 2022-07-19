@@ -13,7 +13,9 @@ var (
 	ErrInProcessSignerInvalidDNSCheckInterval   = errors.New("invalid dns check interval for inprocess signer")
 	ErrInvalidRemoteSignerURL                   = errors.New("invalid url for remote signer")
 	ErrInvalidRemoteSignerSigningTimeout        = errors.New("invalid signing timeout for remote signer")
+)
 
+const (
 	AdCertsSignerModeOff       = "off"
 	AdCertsSignerModeInprocess = "inprocess"
 	AdCertsSignerModeRemote    = "remote"
