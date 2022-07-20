@@ -77,7 +77,7 @@ type adapter struct {
 
 // ---------------ADAPTER INTERFACE------------------
 // Builder builds a new instance of the sspBC adapter
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(_ openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	// HTML template used to create banner ads
 	const bannerHTML = `<html><head><title></title><meta charset="UTF-8"><meta name="viewport" content="` +
 		`width=device-width, initial-scale=1.0"><style> body { background-color: transparent; margin: 0;` +
@@ -102,7 +102,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	formattedRequest, err := formatSspBcRequest(a, request)
+	formattedRequest, err := formatSspBcRequest(request)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -325,7 +325,7 @@ func getRequestType(request *openrtb2.BidRequest) int {
 	return requestTypeStandard
 }
 
-func formatSspBcRequest(a *adapter, request *openrtb2.BidRequest) (*openrtb2.BidRequest, error) {
+func formatSspBcRequest(request *openrtb2.BidRequest) (*openrtb2.BidRequest, error) {
 	if request.Site == nil {
 		return nil, errSiteNill
 	}
