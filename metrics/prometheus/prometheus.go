@@ -530,7 +530,6 @@ func (m *Metrics) RecordStoredResponse(pubId string) {
 			accountLabel: pubId,
 		}).Inc()
 	}
-
 }
 
 func (m *Metrics) RecordImps(labels metrics.ImpLabels) {
