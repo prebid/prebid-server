@@ -2,17 +2,19 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"net/url"
 )
 
 var (
-	ErrSignerModeIncorrect                      = errors.New("signer mode is not specified, specify 'off', 'inprocess' or 'remote'")
-	ErrInProcessSignerInvalidURL                = errors.New("invalid url for inprocess signer")
-	ErrInProcessSignerInvalidPrivateKey         = errors.New("invalid private key for inprocess signer")
-	ErrInProcessSignerInvalidDNSRenewalInterval = errors.New("invalid dns renewal interval for inprocess signer")
-	ErrInProcessSignerInvalidDNSCheckInterval   = errors.New("invalid dns check interval for inprocess signer")
-	ErrInvalidRemoteSignerURL                   = errors.New("invalid url for remote signer")
-	ErrInvalidRemoteSignerSigningTimeout        = errors.New("invalid signing timeout for remote signer")
+	ErrSignerModeIncorrect              = errors.New("signer mode is not specified, specify 'off', 'inprocess' or 'remote'")
+	ErrInProcessSignerInvalidPrivateKey = errors.New("private key for inprocess signer cannot be empty")
+
+	ErrMsgInProcessSignerInvalidURL                = "invalid url for inprocess signer"
+	ErrMsgInProcessSignerInvalidDNSRenewalInterval = "invalid dns renewal interval for inprocess signer"
+	ErrMsgInProcessSignerInvalidDNSCheckInterval   = "invalid dns check interval for inprocess signer"
+	ErrMsgInvalidRemoteSignerURL                   = "invalid url for remote signer"
+	ErrMsgInvalidRemoteSignerSigningTimeout        = "invalid signing timeout for remote signer"
 )
 
 const (
@@ -65,24 +67,24 @@ func (cfg *Experiment) validate(errs []error) []error {
 	if cfg.AdCerts.Mode == AdCertsSignerModeInprocess {
 		_, err := url.ParseRequestURI(cfg.AdCerts.InProcess.Origin)
 		if err != nil {
-			errs = append(errs, ErrInProcessSignerInvalidURL)
+			errs = append(errs, fmt.Errorf("%s: %s", ErrMsgInProcessSignerInvalidURL, cfg.AdCerts.InProcess.Origin))
 		}
 		if len(cfg.AdCerts.InProcess.PrivateKey) == 0 {
 			errs = append(errs, ErrInProcessSignerInvalidPrivateKey)
 		}
 		if cfg.AdCerts.InProcess.DNSRenewalIntervalInSeconds <= 0 {
-			errs = append(errs, ErrInProcessSignerInvalidDNSRenewalInterval)
+			errs = append(errs, fmt.Errorf("%s: %d", ErrMsgInProcessSignerInvalidDNSRenewalInterval, cfg.AdCerts.InProcess.DNSRenewalIntervalInSeconds))
 		}
 		if cfg.AdCerts.InProcess.DNSCheckIntervalInSeconds <= 0 {
-			errs = append(errs, ErrInProcessSignerInvalidDNSCheckInterval)
+			errs = append(errs, fmt.Errorf("%s: %d", ErrMsgInProcessSignerInvalidDNSCheckInterval, cfg.AdCerts.InProcess.DNSCheckIntervalInSeconds))
 		}
 	} else if cfg.AdCerts.Mode == AdCertsSignerModeRemote {
 		_, err := url.ParseRequestURI(cfg.AdCerts.Remote.Url)
 		if err != nil {
-			errs = append(errs, ErrInvalidRemoteSignerURL)
+			errs = append(errs, fmt.Errorf("%s: %s", ErrMsgInvalidRemoteSignerURL, cfg.AdCerts.Remote.Url))
 		}
 		if cfg.AdCerts.Remote.SigningTimeoutMs <= 0 {
-			errs = append(errs, ErrInvalidRemoteSignerSigningTimeout)
+			errs = append(errs, fmt.Errorf("%s: %d", ErrMsgInvalidRemoteSignerSigningTimeout, cfg.AdCerts.Remote.SigningTimeoutMs))
 		}
 	}
 	return errs
