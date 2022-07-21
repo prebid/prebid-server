@@ -150,16 +150,21 @@ func (rw *RequestWrapper) RebuildRequest() error {
 }
 
 func (rw *RequestWrapper) rebuildUserExt() error {
-	if rw.BidRequest.User == nil && rw.userExt != nil && rw.userExt.Dirty() {
-		rw.User = &openrtb2.User{}
+	if rw.userExt == nil || !rw.userExt.Dirty() {
+		return nil
 	}
-	if rw.userExt != nil && rw.userExt.Dirty() {
-		userJson, err := rw.userExt.marshal()
-		if err != nil {
-			return err
-		}
+
+	userJson, err := rw.userExt.marshal()
+	if err != nil {
+		return err
+	}
+
+	if userJson != nil && rw.User == nil {
+		rw.User = &openrtb2.User{Ext: userJson}
+	} else if rw.User != nil {
 		rw.User.Ext = userJson
 	}
+
 	return nil
 }
 
@@ -305,11 +310,11 @@ func (ue *UserExt) unmarshal(extJson json.RawMessage) error {
 
 func (ue *UserExt) marshal() (json.RawMessage, error) {
 	if ue.consentDirty {
-		consentJson, err := json.Marshal(ue.consent)
-		if err != nil {
-			return nil, err
-		}
-		if len(consentJson) > 2 {
+		if ue.consent != nil {
+			consentJson, err := json.Marshal(ue.consent)
+			if err != nil {
+				return nil, err
+			}
 			ue.ext["consent"] = json.RawMessage(consentJson)
 		} else {
 			delete(ue.ext, "consent")
@@ -331,7 +336,7 @@ func (ue *UserExt) marshal() (json.RawMessage, error) {
 	}
 
 	if ue.eidsDirty {
-		if len(*ue.eids) > 0 {
+		if ue.eids != nil && len(*ue.eids) > 0 {
 			eidsJson, err := json.Marshal(ue.eids)
 			if err != nil {
 				return nil, err
@@ -348,7 +353,6 @@ func (ue *UserExt) marshal() (json.RawMessage, error) {
 		return nil, nil
 	}
 	return json.Marshal(ue.ext)
-
 }
 
 func (ue *UserExt) Dirty() bool {

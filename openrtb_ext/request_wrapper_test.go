@@ -44,6 +44,88 @@ func TestUserExt(t *testing.T) {
 	assert.Equal(t, false, userExt.Dirty(), "UserExt should not be dirty after marshalling")
 }
 
+func TestRebuildUserExt(t *testing.T) {
+	strA := "a"
+	strB := "b"
+
+	testCases := []struct {
+		description           string
+		request               openrtb2.BidRequest
+		requestUserExtWrapper UserExt
+		expectedRequest       openrtb2.BidRequest
+	}{
+		{
+			description:           "Nil - Not Dirty",
+			request:               openrtb2.BidRequest{},
+			requestUserExtWrapper: UserExt{},
+			expectedRequest:       openrtb2.BidRequest{},
+		},
+		{
+			description:           "Nil - Dirty",
+			request:               openrtb2.BidRequest{},
+			requestUserExtWrapper: UserExt{consent: &strB, consentDirty: true},
+			expectedRequest:       openrtb2.BidRequest{User: &openrtb2.User{Ext: json.RawMessage(`{"consent":"b"}`)}},
+		},
+		{
+			description:           "Nil - Dirty - No Change",
+			request:               openrtb2.BidRequest{},
+			requestUserExtWrapper: UserExt{consent: nil, consentDirty: true},
+			expectedRequest:       openrtb2.BidRequest{},
+		},
+		{
+			description:           "Empty - Not Dirty",
+			request:               openrtb2.BidRequest{User: &openrtb2.User{}},
+			requestUserExtWrapper: UserExt{},
+			expectedRequest:       openrtb2.BidRequest{User: &openrtb2.User{}},
+		},
+		{
+			description:           "Empty - Dirty",
+			request:               openrtb2.BidRequest{User: &openrtb2.User{}},
+			requestUserExtWrapper: UserExt{consent: &strB, consentDirty: true},
+			expectedRequest:       openrtb2.BidRequest{User: &openrtb2.User{Ext: json.RawMessage(`{"consent":"b"}`)}},
+		},
+		{
+			description:           "Empty - Dirty - No Change",
+			request:               openrtb2.BidRequest{User: &openrtb2.User{}},
+			requestUserExtWrapper: UserExt{consent: nil, consentDirty: true},
+			expectedRequest:       openrtb2.BidRequest{User: &openrtb2.User{}},
+		},
+		{
+			description:           "Populated - Not Dirty",
+			request:               openrtb2.BidRequest{User: &openrtb2.User{Ext: json.RawMessage(`{"consent":"a"}`)}},
+			requestUserExtWrapper: UserExt{},
+			expectedRequest:       openrtb2.BidRequest{User: &openrtb2.User{Ext: json.RawMessage(`{"consent":"a"}`)}},
+		},
+		{
+			description:           "Populated - Dirty",
+			request:               openrtb2.BidRequest{User: &openrtb2.User{Ext: json.RawMessage(`{"consent":"a"}`)}},
+			requestUserExtWrapper: UserExt{consent: &strB, consentDirty: true},
+			expectedRequest:       openrtb2.BidRequest{User: &openrtb2.User{Ext: json.RawMessage(`{"consent":"b"}`)}},
+		},
+		{
+			description:           "Populated - Dirty - No Change",
+			request:               openrtb2.BidRequest{User: &openrtb2.User{Ext: json.RawMessage(`{"consent":"a"}`)}},
+			requestUserExtWrapper: UserExt{consent: &strA, consentDirty: true},
+			expectedRequest:       openrtb2.BidRequest{User: &openrtb2.User{Ext: json.RawMessage(`{"consent":"a"}`)}},
+		},
+		{
+			description:           "Populated - Dirty - Cleared",
+			request:               openrtb2.BidRequest{User: &openrtb2.User{Ext: json.RawMessage(`{"consent":"a"}`)}},
+			requestUserExtWrapper: UserExt{consent: nil, consentDirty: true},
+			expectedRequest:       openrtb2.BidRequest{User: &openrtb2.User{}},
+		},
+	}
+
+	for _, test := range testCases {
+		// create required filed in the test loop to keep test declaration easier to read
+		test.requestUserExtWrapper.ext = make(map[string]json.RawMessage)
+
+		w := RequestWrapper{BidRequest: &test.request, userExt: &test.requestUserExtWrapper}
+		w.RebuildRequest()
+		assert.Equal(t, test.expectedRequest, *w.BidRequest, test.description)
+	}
+}
+
 func TestRebuildRegExt(t *testing.T) {
 	testCases := []struct {
 		description          string
