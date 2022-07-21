@@ -203,16 +203,21 @@ func (rw *RequestWrapper) rebuildAppExt() error {
 }
 
 func (rw *RequestWrapper) rebuildRegExt() error {
-	if rw.Regs == nil && rw.regExt != nil && rw.regExt.Dirty() {
-		rw.Regs = &openrtb2.Regs{}
+	if rw.regExt == nil || !rw.regExt.Dirty() {
+		return nil
 	}
-	if rw.regExt != nil && rw.regExt.Dirty() {
-		regsJson, err := rw.regExt.marshal()
-		if err != nil {
-			return err
-		}
+
+	regsJson, err := rw.regExt.marshal()
+	if err != nil {
+		return err
+	}
+
+	if regsJson != nil && rw.Regs == nil {
+		rw.Regs = &openrtb2.Regs{Ext: regsJson}
+	} else if rw.Regs != nil {
 		rw.Regs.Ext = regsJson
 	}
+
 	return nil
 }
 
