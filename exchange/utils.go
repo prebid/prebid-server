@@ -73,7 +73,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 	var allBidderRequests []BidderRequest
 	allBidderRequests, errs = getAuctionBidderRequests(auctionReq, requestExt, bidderToSyncerKey, impsByBidder, aliases, hostSChainNode)
 
-	bidderNameToBidderReq := buildBidResponseRequest(req.BidRequest, bidderImpWithBidResp, aliases)
+	bidderNameToBidderReq := buildBidResponseRequest(req.BidRequest, bidderImpWithBidResp, aliases, auctionReq.BidderImpReplaceImp)
 	//this function should be executed after getAuctionBidderRequests
 	allBidderRequests = mergeBidderRequests(allBidderRequests, bidderNameToBidderReq)
 
@@ -760,7 +760,8 @@ func applyFPD(fpd *firstpartydata.ResolvedFirstPartyData, bidReq *openrtb2.BidRe
 
 func buildBidResponseRequest(req *openrtb2.BidRequest,
 	bidderImpResponses stored_responses.BidderImpsWithBidResponses,
-	aliases map[string]string) map[openrtb_ext.BidderName]BidderRequest {
+	aliases map[string]string,
+	bidderImpReplaceImpId stored_responses.BidderImpReplaceImpId) map[openrtb_ext.BidderName]BidderRequest {
 	bidderToBidderResponse := make(map[openrtb_ext.BidderName]BidderRequest)
 	for bidderName, impResps := range bidderImpResponses {
 		resolvedBidder := resolveBidder(string(bidderName), aliases)
@@ -769,6 +770,7 @@ func buildBidResponseRequest(req *openrtb2.BidRequest,
 			BidderCoreName:        resolvedBidder,
 			BidderName:            bidderName,
 			BidderStoredResponses: impResps,
+			ImpReplaceImpId:       bidderImpReplaceImpId[string(resolvedBidder)],
 			BidderLabels:          metrics.AdapterLabels{Adapter: resolvedBidder},
 		}
 	}
