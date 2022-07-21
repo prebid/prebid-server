@@ -169,16 +169,21 @@ func (rw *RequestWrapper) rebuildUserExt() error {
 }
 
 func (rw *RequestWrapper) rebuildDeviceExt() error {
-	if rw.Device == nil && rw.deviceExt != nil && rw.deviceExt.Dirty() {
-		rw.Device = &openrtb2.Device{}
+	if rw.deviceExt == nil || !rw.deviceExt.Dirty() {
+		return nil
 	}
-	if rw.deviceExt != nil && rw.deviceExt.Dirty() {
-		deviceJson, err := rw.deviceExt.marshal()
-		if err != nil {
-			return err
-		}
+
+	deviceJson, err := rw.deviceExt.marshal()
+	if err != nil {
+		return err
+	}
+
+	if deviceJson != nil && rw.Device == nil {
+		rw.Device = &openrtb2.Device{Ext: deviceJson}
+	} else if rw.Device != nil {
 		rw.Device.Ext = deviceJson
 	}
+
 	return nil
 }
 
@@ -310,7 +315,7 @@ func (ue *UserExt) unmarshal(extJson json.RawMessage) error {
 
 func (ue *UserExt) marshal() (json.RawMessage, error) {
 	if ue.consentDirty {
-		if ue.consent != nil {
+		if ue.consent != nil && len(*ue.consent) > 0 {
 			consentJson, err := json.Marshal(ue.consent)
 			if err != nil {
 				return nil, err
@@ -323,12 +328,16 @@ func (ue *UserExt) marshal() (json.RawMessage, error) {
 	}
 
 	if ue.prebidDirty {
-		prebidJson, err := json.Marshal(ue.prebid)
-		if err != nil {
-			return nil, err
-		}
-		if len(prebidJson) > 2 {
-			ue.ext["prebid"] = json.RawMessage(prebidJson)
+		if ue.prebid != nil {
+			prebidJson, err := json.Marshal(ue.prebid)
+			if err != nil {
+				return nil, err
+			}
+			if len(prebidJson) > 2 {
+				ue.ext["prebid"] = json.RawMessage(prebidJson)
+			} else {
+				delete(ue.ext, "prebid")
+			}
 		} else {
 			delete(ue.ext, "prebid")
 		}
@@ -571,12 +580,16 @@ func (de *DeviceExt) unmarshal(extJson json.RawMessage) error {
 
 func (de *DeviceExt) marshal() (json.RawMessage, error) {
 	if de.prebidDirty {
-		prebidJson, err := json.Marshal(de.prebid)
-		if err != nil {
-			return nil, err
-		}
-		if len(prebidJson) > 2 {
-			de.ext["prebid"] = json.RawMessage(prebidJson)
+		if de.prebid != nil {
+			prebidJson, err := json.Marshal(de.prebid)
+			if err != nil {
+				return nil, err
+			}
+			if len(prebidJson) > 2 {
+				de.ext["prebid"] = json.RawMessage(prebidJson)
+			} else {
+				delete(de.ext, "prebid")
+			}
 		} else {
 			delete(de.ext, "prebid")
 		}

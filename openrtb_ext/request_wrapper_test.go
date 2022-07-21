@@ -126,6 +126,88 @@ func TestRebuildUserExt(t *testing.T) {
 	}
 }
 
+func TestRebuildDeviceExt(t *testing.T) {
+	prebidContent1 := ExtDevicePrebid{Interstitial: &ExtDeviceInt{MinWidthPerc: 1}}
+	prebidContent2 := ExtDevicePrebid{Interstitial: &ExtDeviceInt{MinWidthPerc: 2}}
+
+	testCases := []struct {
+		description             string
+		request                 openrtb2.BidRequest
+		requestDeviceExtWrapper DeviceExt
+		expectedRequest         openrtb2.BidRequest
+	}{
+		{
+			description:             "Nil - Not Dirty",
+			request:                 openrtb2.BidRequest{},
+			requestDeviceExtWrapper: DeviceExt{},
+			expectedRequest:         openrtb2.BidRequest{},
+		},
+		{
+			description:             "Nil - Dirty",
+			request:                 openrtb2.BidRequest{},
+			requestDeviceExtWrapper: DeviceExt{prebid: &prebidContent1, prebidDirty: true},
+			expectedRequest:         openrtb2.BidRequest{Device: &openrtb2.Device{Ext: json.RawMessage(`{"prebid":{"interstitial":{"minwidthperc":1,"minheightperc":0}}}`)}},
+		},
+		{
+			description:             "Nil - Dirty - No Change",
+			request:                 openrtb2.BidRequest{},
+			requestDeviceExtWrapper: DeviceExt{prebid: nil, prebidDirty: true},
+			expectedRequest:         openrtb2.BidRequest{},
+		},
+		{
+			description:             "Empty - Not Dirty",
+			request:                 openrtb2.BidRequest{Device: &openrtb2.Device{}},
+			requestDeviceExtWrapper: DeviceExt{},
+			expectedRequest:         openrtb2.BidRequest{Device: &openrtb2.Device{}},
+		},
+		{
+			description:             "Empty - Dirty",
+			request:                 openrtb2.BidRequest{Device: &openrtb2.Device{}},
+			requestDeviceExtWrapper: DeviceExt{prebid: &prebidContent1, prebidDirty: true},
+			expectedRequest:         openrtb2.BidRequest{Device: &openrtb2.Device{Ext: json.RawMessage(`{"prebid":{"interstitial":{"minwidthperc":1,"minheightperc":0}}}`)}},
+		},
+		{
+			description:             "Empty - Dirty - No Change",
+			request:                 openrtb2.BidRequest{Device: &openrtb2.Device{}},
+			requestDeviceExtWrapper: DeviceExt{prebid: nil, prebidDirty: true},
+			expectedRequest:         openrtb2.BidRequest{Device: &openrtb2.Device{}},
+		},
+		{
+			description:             "Populated - Not Dirty",
+			request:                 openrtb2.BidRequest{Device: &openrtb2.Device{Ext: json.RawMessage(`{"prebid":{"interstitial":{"minwidthperc":1,"minheightperc":0}}}`)}},
+			requestDeviceExtWrapper: DeviceExt{},
+			expectedRequest:         openrtb2.BidRequest{Device: &openrtb2.Device{Ext: json.RawMessage(`{"prebid":{"interstitial":{"minwidthperc":1,"minheightperc":0}}}`)}},
+		},
+		{
+			description:             "Populated - Dirty",
+			request:                 openrtb2.BidRequest{Device: &openrtb2.Device{Ext: json.RawMessage(`{"prebid":{"interstitial":{"minwidthperc":1,"minheightperc":0}}}`)}},
+			requestDeviceExtWrapper: DeviceExt{prebid: &prebidContent2, prebidDirty: true},
+			expectedRequest:         openrtb2.BidRequest{Device: &openrtb2.Device{Ext: json.RawMessage(`{"prebid":{"interstitial":{"minwidthperc":2,"minheightperc":0}}}`)}},
+		},
+		{
+			description:             "Populated - Dirty - No Change",
+			request:                 openrtb2.BidRequest{Device: &openrtb2.Device{Ext: json.RawMessage(`{"prebid":{"interstitial":{"minwidthperc":1,"minheightperc":0}}}`)}},
+			requestDeviceExtWrapper: DeviceExt{prebid: &prebidContent1, prebidDirty: true},
+			expectedRequest:         openrtb2.BidRequest{Device: &openrtb2.Device{Ext: json.RawMessage(`{"prebid":{"interstitial":{"minwidthperc":1,"minheightperc":0}}}`)}},
+		},
+		{
+			description:             "Populated - Dirty - Cleared",
+			request:                 openrtb2.BidRequest{Device: &openrtb2.Device{Ext: json.RawMessage(`{"prebid":{"interstitial":{"minwidthperc":1,"minheightperc":0}}}`)}},
+			requestDeviceExtWrapper: DeviceExt{prebid: nil, prebidDirty: true},
+			expectedRequest:         openrtb2.BidRequest{Device: &openrtb2.Device{}},
+		},
+	}
+
+	for _, test := range testCases {
+		// create required filed in the test loop to keep test declaration easier to read
+		test.requestDeviceExtWrapper.ext = make(map[string]json.RawMessage)
+
+		w := RequestWrapper{BidRequest: &test.request, deviceExt: &test.requestDeviceExtWrapper}
+		w.RebuildRequest()
+		assert.Equal(t, test.expectedRequest, *w.BidRequest, test.description)
+	}
+}
+
 func TestRebuildRegExt(t *testing.T) {
 	testCases := []struct {
 		description          string
