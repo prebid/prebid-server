@@ -1,0 +1,13 @@
+maintainer:
+  email: "celsooliveira@getblue.io"
+gvlVendorID: 620
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner
+userSync:
+  supports:
+    - redirect
