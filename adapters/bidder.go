@@ -125,12 +125,15 @@ type RequestData struct {
 
 type TapjoyData struct {
 	Bidder        string        `json:"bidder"`
+	ContentType   string        `json:"content_type"`
+	ReqNum        string        `json:"request_number"`
 	PlacementType PlacementType `json:"placement"`
 	Region        string        `json:"region"`
 
 	SKAN              SKAN
 	MRAID             MRAID
-	HTMLCompanionSent bool
+	HTMLCompanionSent bool `json:"html_companion_sent"`
+	MultiBidEnabled   bool `json:"multi_bid_enabled"`
 }
 
 type SKAN struct {

@@ -24,7 +24,8 @@ jobs:
           ignore-unfixed: true
           format: 'sarif'
           output: 'trivy-results.sarif'
-          severity: 'CRITICAL,HIGH'
+          severity: 'CRITICAL'
+          skip-dirs: 'vendor'
           
       - name: Upload Results To GitHub Security Tab
         uses: github/codeql-action/upload-sarif@v1
