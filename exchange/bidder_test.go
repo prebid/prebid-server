@@ -1382,6 +1382,7 @@ func TestRequestBidsStoredBidResponses(t *testing.T) {
 		description           string
 		mockBidderRequest     *openrtb2.BidRequest
 		bidderStoredResponses map[string]json.RawMessage
+		impReplaceImpId       map[string]bool
 		expectedBidIds        []string
 		expectedImpIds        []string
 	}{
@@ -1394,6 +1395,9 @@ func TestRequestBidsStoredBidResponses(t *testing.T) {
 			bidderStoredResponses: map[string]json.RawMessage{
 				"bidResponseId1": bidRespId1,
 			},
+			impReplaceImpId: map[string]bool{
+				"bidResponseId1": true,
+			},
 			expectedBidIds: []string{"bid_id1"},
 			expectedImpIds: []string{"bidResponseId1"},
 		},
@@ -1405,6 +1409,10 @@ func TestRequestBidsStoredBidResponses(t *testing.T) {
 			},
 			bidderStoredResponses: map[string]json.RawMessage{
 				"bidResponseId2": bidRespId2,
+			},
+			impReplaceImpId: map[string]bool{
+				"bidResponseId1": true,
+				"bidResponseId2": true,
 			},
 			expectedBidIds: []string{"bid_id2_1", "bid_id2_2"},
 			expectedImpIds: []string{"bidResponseId2", "bidResponseId2"},
@@ -1421,6 +1429,7 @@ func TestRequestBidsStoredBidResponses(t *testing.T) {
 			BidRequest:            tc.mockBidderRequest,
 			BidderName:            openrtb_ext.BidderAppnexus,
 			BidderStoredResponses: tc.bidderStoredResponses,
+			ImpReplaceImpId:       tc.impReplaceImpId,
 		}
 		bidAdjustments := map[string]float64{string(openrtb_ext.BidderAppnexus): 1.0}
 		seatBids, _ := bidder.requestBid(

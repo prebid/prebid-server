@@ -285,7 +285,7 @@ func TestProcessStoredAuctionAndBidResponsesErrors(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		_, _, errorList := ProcessStoredResponses(nil, test.requestJson, nil, bidderMap)
+		_, _, _, errorList := ProcessStoredResponses(nil, test.requestJson, nil, bidderMap)
 		assert.Equalf(t, test.expectedErrorList, errorList, "Error doesn't match: %s\n", test.description)
 	}
 
@@ -561,7 +561,7 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		storedAuctionResponses, storedBidResponses, errorList := ProcessStoredResponses(nil, test.requestJson, fetcher, bidderMap)
+		storedAuctionResponses, storedBidResponses, _, errorList := ProcessStoredResponses(nil, test.requestJson, fetcher, bidderMap)
 		assert.Equal(t, test.expectedStoredAuctionResponses, storedAuctionResponses, "storedAuctionResponses doesn't match: %s\n", test.description)
 		assert.Equalf(t, test.expectedStoredBidResponses, storedBidResponses, "storedBidResponses doesn't match: %s\n", test.description)
 		assert.Nil(t, errorList, "Error should be nil")
