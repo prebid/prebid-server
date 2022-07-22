@@ -27,66 +27,95 @@ import (
 
 // TestGoodRequests makes sure that the auction runs properly-formatted stored bids correctly.
 func TestGoodAmpRequests(t *testing.T) {
-	testCases := []struct {
-		storedReqID string
-		filename    string
+	testGroups := []struct {
+		desc      string
+		dir       string
+		testFiles []string
 	}{
-		{"1", "aliased-buyeruids.json"},
-		{"2", "aliases.json"},
-		{"3", "imp-with-stored-resp.json"},
-		{"5", "gdpr-no-consentstring.json"},
-		{"6", "gdpr.json"},
+		{
+			desc: "Valid whole, tag_id param only",
+			dir:  "sample-requests/valid-whole/supplementary/",
+			testFiles: []string{
+				"aliased-buyeruids.json",
+				"aliases.json",
+				"imp-with-stored-resp.json",
+				"gdpr-no-consentstring.json",
+				"gdpr.json",
+			},
+		},
+		{
+			desc: "Valid, consent handling in query",
+			dir:  "sample-requests/",
+			testFiles: []string{
+				"aliased-buyeruids.json",
+				"aliases.json",
+				"imp-with-stored-resp.json",
+				"gdpr-no-consentstring.json",
+				"gdpr.json",
+			},
+		},
 	}
 
-	for _, tc := range testCases {
-		// Read test case and unmarshal
-		fileJsonData, err := ioutil.ReadFile("sample-requests/valid-whole/supplementary/" + tc.filename)
-		if !assert.NoError(t, err, "Failed to fetch a valid request: %v. Test file: %s", err, tc.filename) {
-			continue
-		}
+	for _, tgroup := range testGroups {
+		for _, filename := range tgroup.testFiles {
+			// Read test case and unmarshal
+			fileJsonData, err := ioutil.ReadFile(tgroup.dir + filename)
+			if !assert.NoError(t, err, "Failed to fetch a valid request: %v. Test file: %s", err, filename) {
+				continue
+			}
 
-		test := testCase{}
-		if !assert.NoError(t, json.Unmarshal(fileJsonData, &test), "Failed to unmarshal data from file: %s. Error: %v", tc.filename, err) {
-			continue
-		}
-		test.storedRequest = map[string]json.RawMessage{tc.storedReqID: test.BidRequest}
-		test.endpointType = AMP_ENDPOINT
+			test := testCase{}
+			if !assert.NoError(t, json.Unmarshal(fileJsonData, &test), "Failed to unmarshal data from file: %s. Error: %v", filename, err) {
+				continue
+			}
 
-		cfg := &config.Configuration{MaxRequestSize: maxSize}
-		if test.Config != nil {
-			cfg.BlacklistedApps = test.Config.BlacklistedApps
-			cfg.BlacklistedAppMap = test.Config.getBlacklistedAppMap()
-			cfg.BlacklistedAccts = test.Config.BlacklistedAccounts
-			cfg.BlacklistedAcctMap = test.Config.getBlackListedAccountMap()
-			cfg.AccountRequired = test.Config.AccountRequired
-		}
+			// build http request
+			request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?%s", test.Query), nil)
+			recorder := httptest.NewRecorder()
 
-		// Set test up
-		ampEndpoint, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
-		if !assert.NoError(t, err) {
-			continue
-		}
+			// build the stored requests and configure endpoint conf
+			query := request.URL.Query()
+			tagID := query.Get("tag_id")
+			if !assert.Greater(t, len(tagID), 0, "AMP test %s file is missing tag_id field", filename) {
+				continue
+			}
 
-		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s", tc.storedReqID), nil)
-		recorder := httptest.NewRecorder()
+			test.storedRequest = map[string]json.RawMessage{tagID: test.BidRequest}
+			test.endpointType = AMP_ENDPOINT
 
-		// runTestCase
-		ampEndpoint(recorder, request, nil)
+			cfg := &config.Configuration{MaxRequestSize: maxSize}
+			if test.Config != nil {
+				cfg.BlacklistedApps = test.Config.BlacklistedApps
+				cfg.BlacklistedAppMap = test.Config.getBlacklistedAppMap()
+				cfg.BlacklistedAccts = test.Config.BlacklistedAccounts
+				cfg.BlacklistedAcctMap = test.Config.getBlackListedAccountMap()
+				cfg.AccountRequired = test.Config.AccountRequired
+			}
 
-		// Close servers
-		for _, mockBidServer := range mockBidServers {
-			mockBidServer.Close()
-		}
-		mockCurrencyRatesServer.Close()
+			// Set test up
+			ampEndpoint, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
+			if !assert.NoError(t, err) {
+				continue
+			}
 
-		// Assertions
-		if assert.Equal(t, test.ExpectedReturnCode, recorder.Code, "Expected status %d. Got %d. Amp test file: %s", http.StatusOK, recorder.Code, tc.filename) {
-			if test.ExpectedReturnCode == http.StatusOK {
-				var ampResponse AmpResponse
-				assert.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &ampResponse), "Error unmarshalling ampResponse: %v", err)
-				assert.Equal(t, test.ExpectedAmpResponse, ampResponse, "Test file: %s", tc.filename)
-			} else {
-				assert.Equal(t, test.ExpectedErrorMessage, recorder.Body.String(), tc.filename)
+			// runTestCase
+			ampEndpoint(recorder, request, nil)
+
+			// Close servers
+			for _, mockBidServer := range mockBidServers {
+				mockBidServer.Close()
+			}
+			mockCurrencyRatesServer.Close()
+
+			// Assertions
+			if assert.Equal(t, test.ExpectedReturnCode, recorder.Code, "Expected status %d. Got %d. Amp test file: %s", http.StatusOK, recorder.Code, filename) {
+				if test.ExpectedReturnCode == http.StatusOK {
+					var ampResponse AmpResponse
+					assert.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &ampResponse), "Error unmarshalling ampResponse: %v", err)
+					assert.Equal(t, test.ExpectedAmpResponse, ampResponse, "Test file: %s", filename)
+				} else {
+					assert.Equal(t, test.ExpectedErrorMessage, recorder.Body.String(), filename)
+				}
 			}
 		}
 	}

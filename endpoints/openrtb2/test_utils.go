@@ -63,6 +63,7 @@ type testCase struct {
 	BidRequest           json.RawMessage   `json:"mockBidRequest"`
 	ExpectedReturnCode   int               `json:"expectedReturnCode,omitempty"`
 	ExpectedErrorMessage string            `json:"expectedErrorMessage"`
+	Query                string            `json:"query"`
 
 	// "/openrtb2/auction" endpoint JSON test info
 	ExpectedBidResponse json.RawMessage `json:"expectedBidResponse"`
