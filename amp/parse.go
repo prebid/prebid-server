@@ -24,6 +24,7 @@ type Params struct {
 	ConsentType  int64
 	GdprApplies  *bool
 	AddtlConsent string
+	Targeting    string
 }
 
 // Size defines size information of an AMP request.
@@ -79,6 +80,7 @@ func ParseParams(httpRequest *http.Request) (Params, error) {
 		ConsentType:     parseInt(query.Get("consent_type")),
 		GdprApplies:     parseBoolPtr(query.Get("gdpr_applies")),
 		AddtlConsent:    query.Get("addtl_consent"),
+		Targeting:       query.Get("targeting"),
 	}
 	return params, nil
 }
