@@ -65,7 +65,7 @@
     }
   },
   "expectedMakeRequestsErrors" : [{
-    "value": "Request app is required",
+    "value": "request app is required",
     "comparison": "literal"
   }]
 }

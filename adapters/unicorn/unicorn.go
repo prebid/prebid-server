@@ -2,6 +2,7 @@ package unicorn
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -69,8 +70,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		return nil, []error{err}
 	}
 
-	err = modifyApp(request)
-	if err != nil {
+	if err := modifyApp(request); err != nil {
 		return nil, []error{err}
 	}
 
@@ -178,7 +178,7 @@ func setSourceExt() json.RawMessage {
 
 func modifyApp(request *openrtb2.BidRequest) error {
 	if request.App == nil {
-		return fmt.Errorf("Request app is required")
+		return errors.New("request app is required")
 	}
 
 	modifiableApp := *request.App
