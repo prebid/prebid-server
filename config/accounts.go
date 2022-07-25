@@ -227,8 +227,8 @@ func (a *AccountIntegration) GetByIntegrationType(integrationType IntegrationTyp
 }
 
 type AlternateBidderCodes struct {
-	Enabled  bool                                   `mapstructure:"enabled" json:"enabled"`
-	Adapters map[string]AdapterAlternateBidderCodes `mapstructure:"adapters" json:"adapters"`
+	Enabled bool                                   `mapstructure:"enabled" json:"enabled"`
+	Bidders map[string]AdapterAlternateBidderCodes `mapstructure:"bidders" json:"bidders"`
 }
 
 type AdapterAlternateBidderCodes struct {
@@ -246,11 +246,11 @@ func (bidderCodes *AlternateBidderCodes) IsValidBidderCode(bidder, alternateBidd
 		return false, nil
 	}
 
-	if bidderCodes.Adapters == nil {
+	if bidderCodes.Bidders == nil {
 		return false, fmt.Errorf(ErrAlternateBidderNotDefined, bidder, alternateBidder)
 	}
 
-	adapterCfg, ok := bidderCodes.Adapters[bidder]
+	adapterCfg, ok := bidderCodes.Bidders[bidder]
 	if !ok {
 		return false, fmt.Errorf(ErrAlternateBidderNotDefined, bidder, alternateBidder)
 	}
