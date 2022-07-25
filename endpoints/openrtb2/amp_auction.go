@@ -464,7 +464,7 @@ func (deps *endpointDeps) overrideWithParams(ampParams amp.Params, req *openrtb2
 		req.TMax = int64(*ampParams.Timeout) - deps.cfg.AMPTimeoutAdjustment
 	}
 
-	setRegsExt(req.Regs, "1")
+	//setRegsExt(req.Regs, "1")
 
 	if err := setTargeting(req, ampParams.Targeting); err != nil {
 		return []error{err}
@@ -506,40 +506,40 @@ func setPolicy(ampParams amp.Params, req *openrtb2.BidRequest) {
 // 3) If consent_type="2", and gdpr_consent is not empty, then copy gdpr_consent to user.ext.consent
 // 4) If consent_type="3", and gdpr_consent is not empty, then copy gdpr_consent to regs.ext.us_privacy
 // 5) If addtl_consent is supplied, copy its value to user.ext.ConsentedProvidersSettings.consented_providers
-func setRegsExt(regs *openrtb2.Regs, ampParams amp.Params) {
-	if len(site.Ext) > 0 {
-		if _, dataType, _, _ := jsonparser.Get(site.Ext, "amp"); dataType == jsonparser.NotExist {
-			if val, err := jsonparser.Set(site.Ext, []byte(value), "amp"); err == nil {
-				site.Ext = val
-			}
-		}
-	} else {
-		site.Ext = json.RawMessage(`{"amp":` + value + `}`)
-	}
-
-	if ampParams.GdprApplies == nil {
-		//regs.Ext.GDPR = nil
-		return
-	}
-
-	var gdprValue int = 0
-	if ampParams.GdprApplies {
-		gdprValue = 1
-	}
-	regs.GDPR = &gdprValue
-
-}
+//func setRegsExt(regs *openrtb2.Regs, ampParams amp.Params) {
+//	if len(site.Ext) > 0 {
+//		if _, dataType, _, _ := jsonparser.Get(site.Ext, "amp"); dataType == jsonparser.NotExist {
+//			if val, err := jsonparser.Set(site.Ext, []byte(value), "amp"); err == nil {
+//				site.Ext = val
+//			}
+//		}
+//	} else {
+//		site.Ext = json.RawMessage(`{"amp":` + value + `}`)
+//	}
+//
+//	if ampParams.GdprApplies == nil {
+//		//regs.Ext.GDPR = nil
+//		return
+//	}
+//
+//	var gdprValue int = 0
+//	if ampParams.GdprApplies {
+//		gdprValue = 1
+//	}
+//	regs.GDPR = &gdprValue
+//
+//}
 
 // 	    1.1. The contents of gdpr_consent can be treated as TCF V1. We no longer support TCFv1, so ignore any consent_string provided on the request.
 // 	    1.2. The contents of gdpr_consent can be treated as TCF V2. If the consent_string isn't a valid TCF2 string, assume there's no user consent for any purpose as if no gdpr_consent were provided.
 // 	    1.3. The contents of gdpr_consent can be treated as a US Privacy String. If the consent_string isn't a valid USP string, assume for the purposes of opt-out-of-sale enforcement that no gdpr_consent was provided.
 // 	    1.4. Anything else: ignore, log a warning, and assume no gdpr_consent was provided
 //COPPA: req.BidRequest.Regs != nil && req.BidRequest.Regs.COPPA == 1,
-func setUserExt(regs *openrtb2.Regs, ampParams amp.Params) {
-	writer := ConsentWriter{consent}
-
-	err := writer.Write(test.request)
-}
+//func setUserExt(regs *openrtb2.Regs, ampParams amp.Params) {
+//	writer := ConsentWriter{consent}
+//
+//	err := writer.Write(test.request)
+//}
 
 func makeFormatReplacement(size amp.Size) []openrtb2.Format {
 	var formats []openrtb2.Format

@@ -1,5 +1,6 @@
 {
   "description": "Amp request comes with a root.regs.ext.gdpr value but is missing GDPR consent string",
+  "query": "tag_id=101",
   "config": {
     "mockBidders": [
       {"bidderName": "appnexus", "currency": "USD", "price": 3}
