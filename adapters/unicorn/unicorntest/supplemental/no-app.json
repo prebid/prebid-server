@@ -21,6 +21,7 @@
             }
           },
           "bidder": {
+            "accountId": 12345,
             "publisherId": "123456",
             "mediaId": "test_media",
             "placementId": "test_placement"
@@ -29,19 +30,6 @@
       }
     ],
     "cur": ["JPY"],
-    "app": {
-      "publisher": {
-        "id": "test"
-      },
-      "ext": {
-        "prebid": {
-          "source": "prebid-mobile",
-          "version": "1.9.0"
-        }
-      },
-      "bundle": "net.ada.test",
-      "ver": "1.9.0"
-    },
     "id": "CFD24FB1-916F-467D-8825-34892B315DB7",
     "source": {
       "tid": "A4B3EA9F-FF57-4716-AC85-6CBF6A46CFBD"
@@ -63,12 +51,21 @@
     },
     "user": {
       "gender": "O"
+    },
+    "ext": {
+      "prebid": {
+        "targeting": {},
+        "cache": {
+          "bids": {}
+        },
+        "storedrequest": {
+          "id": "test"
+        }
+      }
     }
   },
-  "expectedMakeRequestsErrors": [
-    {
-      "value": "accountId field is required",
-      "comparison": "literal"
-    }
-  ]
+  "expectedMakeRequestsErrors" : [{
+    "value": "request app is required",
+    "comparison": "literal"
+  }]
 }
