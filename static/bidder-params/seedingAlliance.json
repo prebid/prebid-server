@@ -4,9 +4,9 @@
     "description": "A schema which validates params accepted by the Seeding Alliance adapter",
     "type": "object",
     "properties": {
-        "tagId": {
+        "adUnitId": {
             "type": "string",
-            "description": "Tag ID"
+            "description": "Ad Unit ID"
         }
     }
 }

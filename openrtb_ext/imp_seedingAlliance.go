@@ -1,5 +1,5 @@
 package openrtb_ext
 
 type ImpExtSeedingAlliance struct {
-	TagID string `json:"tagID"`
+	AdUnitID string `json:"adUnitID"`
 }

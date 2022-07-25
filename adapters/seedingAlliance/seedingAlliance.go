@@ -136,7 +136,7 @@ func addTagID(imp *openrtb2.Imp) error {
 		}
 	}
 
-	imp.TagID = extSA.TagID
+	imp.TagID = extSA.AdUnitID
 
 	return nil
 }

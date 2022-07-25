@@ -91,7 +91,7 @@ func TestAddTagID(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		extSA, err := json.Marshal(openrtb_ext.ImpExtSeedingAlliance{TagID: test.data})
+		extSA, err := json.Marshal(openrtb_ext.ImpExtSeedingAlliance{AdUnitID: test.data})
 		if err != nil {
 			t.Fatalf("unexpected error %v", err)
 		}
