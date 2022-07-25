@@ -34,7 +34,7 @@ const defaultModelName = "HUAWEI"
 const chineseSiteEndPoint = "https://acd.op.hicloud.com/ppsadx/getResult"
 const europeanSiteEndPoint = "https://adx-dre.op.hicloud.com/ppsadx/getResult"
 const asianSiteEndPoint = "https://adx-dra.op.hicloud.com/ppsadx/getResult"
-const russianSiteEndPoint = "https://adx-drru.op.dbankcloud.ru/ppsadx/getResult"
+const russianSiteEndPoint = "https://adx-drru.op.hicloud.com/ppsadx/getResult"
 
 // creative type
 const (
@@ -1281,20 +1281,13 @@ func (a *adapter) extractAdmPicture(content *content) (adm string, adWidth int64
 	return adm, adWidth, adHeight, nil
 }
 
+// for Interactiontype == appPromotion，clickUrl is intent
 func (a *adapter) getClickUrl(content *content) (clickUrl string, err error) {
 	if content.Interactiontype == appPromotion {
 		if content.MetaData.Intent != "" {
 			clickUrl = getDecodeValue(content.MetaData.Intent)
 		} else {
 			return "", errors.New("getClickUrl: content.MetaData.Intent is empty when interactiontype is appPromotion")
-		}
-	} else if content.Interactiontype == appDownload {
-		if content.MetaData.ApkInfo.Url != "" {
-			clickUrl = content.MetaData.ApkInfo.Url
-		} else if content.MetaData.ApkInfo.SecondUrl != "" {
-			clickUrl = content.MetaData.ApkInfo.SecondUrl
-		} else {
-			return "", errors.New("getClickUrl: content.MetaData.ApkInfo.Url/SecondUrl are all empty when interactiontype is appDownload")
 		}
 	} else {
 		if content.MetaData.ClickUrl != "" {
