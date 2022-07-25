@@ -711,8 +711,8 @@ func TestBasicEnforcementVendor(t *testing.T) {
 
 func TestAlternateBidderCodes_IsValidBidderCode(t *testing.T) {
 	type fields struct {
-		Enabled  bool
-		Adapters map[string]AdapterAlternateBidderCodes
+		Enabled bool
+		Bidders map[string]AdapterAlternateBidderCodes
 	}
 	type args struct {
 		bidder          string
@@ -763,7 +763,7 @@ func TestAlternateBidderCodes_IsValidBidderCode(t *testing.T) {
 			},
 			fields: fields{
 				Enabled: true,
-				Adapters: map[string]AdapterAlternateBidderCodes{
+				Bidders: map[string]AdapterAlternateBidderCodes{
 					"appnexus": {},
 				},
 			},
@@ -778,7 +778,7 @@ func TestAlternateBidderCodes_IsValidBidderCode(t *testing.T) {
 			},
 			fields: fields{
 				Enabled: true,
-				Adapters: map[string]AdapterAlternateBidderCodes{
+				Bidders: map[string]AdapterAlternateBidderCodes{
 					"pubmatic": {},
 				},
 			},
@@ -793,7 +793,7 @@ func TestAlternateBidderCodes_IsValidBidderCode(t *testing.T) {
 			},
 			fields: fields{
 				Enabled: true,
-				Adapters: map[string]AdapterAlternateBidderCodes{
+				Bidders: map[string]AdapterAlternateBidderCodes{
 					"pubmatic": {
 						AllowedBidderCodes: []string{"*"},
 					},
@@ -809,7 +809,7 @@ func TestAlternateBidderCodes_IsValidBidderCode(t *testing.T) {
 			},
 			fields: fields{
 				Enabled: true,
-				Adapters: map[string]AdapterAlternateBidderCodes{
+				Bidders: map[string]AdapterAlternateBidderCodes{
 					"pubmatic": {
 						AllowedBidderCodes: []string{"groupm"},
 					},
@@ -825,7 +825,7 @@ func TestAlternateBidderCodes_IsValidBidderCode(t *testing.T) {
 			},
 			fields: fields{
 				Enabled: true,
-				Adapters: map[string]AdapterAlternateBidderCodes{
+				Bidders: map[string]AdapterAlternateBidderCodes{
 					"pubmatic": {
 						AllowedBidderCodes: []string{"xyz"},
 					},
@@ -838,8 +838,8 @@ func TestAlternateBidderCodes_IsValidBidderCode(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &AlternateBidderCodes{
-				Enabled:  tt.fields.Enabled,
-				Adapters: tt.fields.Adapters,
+				Enabled: tt.fields.Enabled,
+				Bidders: tt.fields.Bidders,
 			}
 			gotIsValid, gotErr := a.IsValidBidderCode(tt.args.bidder, tt.args.alternateBidder)
 			assert.Equal(t, tt.wantIsValid, gotIsValid)
