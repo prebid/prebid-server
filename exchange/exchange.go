@@ -251,6 +251,10 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 
 	e.me.RecordRequestPrivacy(privacyLabels)
 
+	if len(r.StoredAuctionResponses) > 0 || len(r.StoredBidResponses) > 0 {
+		e.me.RecordStoredResponse(r.PubID)
+	}
+
 	// If we need to cache bids, then it will take some time to call prebid cache.
 	// We should reduce the amount of time the bidders have, to compensate.
 	auctionCtx, cancel := e.makeAuctionContext(ctx, cacheInstructions.cacheBids)

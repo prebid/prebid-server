@@ -138,6 +138,7 @@ func TestDefaults(t *testing.T) {
 	cmpInts(t, "metrics.influxdb.collection_rate_seconds", cfg.Metrics.Influxdb.MetricSendInterval, 20)
 	cmpBools(t, "account_adapter_details", cfg.Metrics.Disabled.AccountAdapterDetails, false)
 	cmpBools(t, "account_debug", cfg.Metrics.Disabled.AccountDebug, true)
+	cmpBools(t, "account_stored_responses", cfg.Metrics.Disabled.AccountStoredResponses, true)
 	cmpBools(t, "adapter_connections_metrics", cfg.Metrics.Disabled.AdapterConnectionMetrics, true)
 	cmpBools(t, "adapter_gdpr_request_blocked", cfg.Metrics.Disabled.AdapterGDPRRequestBlocked, false)
 	cmpStrings(t, "certificates_file", cfg.PemCertsFile, "")
@@ -342,6 +343,7 @@ metrics:
   disabled_metrics:
     account_adapter_details: true
     account_debug: false
+    account_stored_responses: false
     adapter_connections_metrics: true
     adapter_gdpr_request_blocked: true
 adapters:
@@ -631,6 +633,7 @@ func TestFullConfig(t *testing.T) {
 	cmpBools(t, "auto_gen_source_tid", cfg.AutoGenSourceTID, false)
 	cmpBools(t, "account_adapter_details", cfg.Metrics.Disabled.AccountAdapterDetails, true)
 	cmpBools(t, "account_debug", cfg.Metrics.Disabled.AccountDebug, false)
+	cmpBools(t, "account_stored_responses", cfg.Metrics.Disabled.AccountStoredResponses, false)
 	cmpBools(t, "adapter_connections_metrics", cfg.Metrics.Disabled.AdapterConnectionMetrics, true)
 	cmpBools(t, "adapter_gdpr_request_blocked", cfg.Metrics.Disabled.AdapterGDPRRequestBlocked, true)
 	cmpStrings(t, "certificates_file", cfg.PemCertsFile, "/etc/ssl/cert.pem")

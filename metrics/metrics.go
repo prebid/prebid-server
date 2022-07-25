@@ -57,6 +57,7 @@ const (
 	CategoryDataType StoredDataType = "category"
 	RequestDataType  StoredDataType = "request"
 	VideoDataType    StoredDataType = "video"
+	ResponseDataType StoredDataType = "response"
 )
 
 func StoredDataTypes() []StoredDataType {
@@ -66,6 +67,7 @@ func StoredDataTypes() []StoredDataType {
 		CategoryDataType,
 		RequestDataType,
 		VideoDataType,
+		ResponseDataType,
 	}
 }
 
@@ -412,4 +414,5 @@ type MetricsEngine interface {
 	RecordRequestPrivacy(privacy PrivacyLabels)
 	RecordAdapterGDPRRequestBlocked(adapterName openrtb_ext.BidderName)
 	RecordDebugRequest(debugEnabled bool, pubId string)
+	RecordStoredResponse(pubId string)
 }
