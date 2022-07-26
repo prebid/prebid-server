@@ -41,6 +41,8 @@ type RequestWrapper struct {
 	sourceExt  *SourceExt
 }
 
+const jsonEmptyObjectLength = 2
+
 func (rw *RequestWrapper) GetUserExt() (*UserExt, error) {
 	if rw.userExt != nil {
 		return rw.userExt, nil
@@ -188,13 +190,17 @@ func (rw *RequestWrapper) rebuildDeviceExt() error {
 }
 
 func (rw *RequestWrapper) rebuildRequestExt() error {
-	if rw.requestExt != nil && rw.requestExt.Dirty() {
-		requestJson, err := rw.requestExt.marshal()
-		if err != nil {
-			return err
-		}
-		rw.Ext = requestJson
+	if rw.requestExt == nil || !rw.requestExt.Dirty() {
+		return nil
 	}
+
+	requestJson, err := rw.requestExt.marshal()
+	if err != nil {
+		return err
+	}
+
+	rw.Ext = requestJson
+
 	return nil
 }
 
@@ -333,7 +339,7 @@ func (ue *UserExt) marshal() (json.RawMessage, error) {
 			if err != nil {
 				return nil, err
 			}
-			if len(prebidJson) > 2 {
+			if len(prebidJson) > jsonEmptyObjectLength {
 				ue.ext["prebid"] = json.RawMessage(prebidJson)
 			} else {
 				delete(ue.ext, "prebid")
@@ -461,12 +467,16 @@ func (re *RequestExt) unmarshal(extJson json.RawMessage) error {
 
 func (re *RequestExt) marshal() (json.RawMessage, error) {
 	if re.prebidDirty {
-		prebidJson, err := json.Marshal(re.prebid)
-		if err != nil {
-			return nil, err
-		}
-		if len(prebidJson) > 2 {
-			re.ext["prebid"] = json.RawMessage(prebidJson)
+		if re.prebid != nil {
+			prebidJson, err := json.Marshal(re.prebid)
+			if err != nil {
+				return nil, err
+			}
+			if len(prebidJson) > jsonEmptyObjectLength {
+				re.ext["prebid"] = json.RawMessage(prebidJson)
+			} else {
+				delete(re.ext, "prebid")
+			}
 		} else {
 			delete(re.ext, "prebid")
 		}
@@ -474,15 +484,16 @@ func (re *RequestExt) marshal() (json.RawMessage, error) {
 	}
 
 	if re.schainDirty {
-		if re.schain == nil {
-		}
-
-		schainJson, err := json.Marshal(re.schain)
-		if err != nil {
-			return nil, err
-		}
-		if len(schainJson) > 2 && re.schain != nil {
-			re.ext["schain"] = json.RawMessage(schainJson)
+		if re.schain != nil {
+			schainJson, err := json.Marshal(re.schain)
+			if err != nil {
+				return nil, err
+			}
+			if len(schainJson) > jsonEmptyObjectLength {
+				re.ext["schain"] = json.RawMessage(schainJson)
+			} else {
+				delete(re.ext, "schain")
+			}
 		} else {
 			delete(re.ext, "schain")
 		}
@@ -585,7 +596,7 @@ func (de *DeviceExt) marshal() (json.RawMessage, error) {
 			if err != nil {
 				return nil, err
 			}
-			if len(prebidJson) > 2 {
+			if len(prebidJson) > jsonEmptyObjectLength {
 				de.ext["prebid"] = json.RawMessage(prebidJson)
 			} else {
 				delete(de.ext, "prebid")
@@ -671,7 +682,7 @@ func (ae *AppExt) marshal() (json.RawMessage, error) {
 		if err != nil {
 			return nil, err
 		}
-		if len(prebidJson) > 2 {
+		if len(prebidJson) > jsonEmptyObjectLength {
 			ae.ext["prebid"] = json.RawMessage(prebidJson)
 		} else {
 			delete(ae.ext, "prebid")
@@ -835,7 +846,7 @@ func (se *SiteExt) marshal() (json.RawMessage, error) {
 		if err != nil {
 			return nil, err
 		}
-		if len(ampJson) > 2 {
+		if len(ampJson) > jsonEmptyObjectLength {
 			se.ext["amp"] = json.RawMessage(ampJson)
 		} else {
 			delete(se.ext, "amp")
@@ -913,7 +924,7 @@ func (se *SourceExt) marshal() (json.RawMessage, error) {
 		if err != nil {
 			return nil, err
 		}
-		if len(schainJson) > 2 {
+		if len(schainJson) > jsonEmptyObjectLength {
 			se.ext["schain"] = json.RawMessage(schainJson)
 		} else {
 			delete(se.ext, "schain")

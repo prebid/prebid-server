@@ -208,80 +208,65 @@ func TestRebuildDeviceExt(t *testing.T) {
 	}
 }
 
-func TestRebuildRegExt(t *testing.T) {
+func TestRebuildRequestExt(t *testing.T) {
+	prebidContent1 := ExtRequestPrebid{Integration: "1"}
+	prebidContent2 := ExtRequestPrebid{Integration: "2"}
+
 	testCases := []struct {
-		description          string
-		request              openrtb2.BidRequest
-		requestRegExtWrapper RegExt
-		expectedRequest      openrtb2.BidRequest
+		description              string
+		request                  openrtb2.BidRequest
+		requestRequestExtWrapper RequestExt
+		expectedRequest          openrtb2.BidRequest
 	}{
 		{
-			description:          "Nil - Not Dirty",
-			request:              openrtb2.BidRequest{},
-			requestRegExtWrapper: RegExt{},
-			expectedRequest:      openrtb2.BidRequest{},
+			description:              "Empty - Not Dirty",
+			request:                  openrtb2.BidRequest{},
+			requestRequestExtWrapper: RequestExt{},
+			expectedRequest:          openrtb2.BidRequest{},
 		},
 		{
-			description:          "Nil - Dirty",
-			request:              openrtb2.BidRequest{},
-			requestRegExtWrapper: RegExt{usPrivacy: "b", usPrivacyDirty: true},
-			expectedRequest:      openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":"b"}`)}},
+			description:              "Empty - Dirty",
+			request:                  openrtb2.BidRequest{},
+			requestRequestExtWrapper: RequestExt{prebid: &prebidContent1, prebidDirty: true},
+			expectedRequest:          openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"integration":"1"}}`)},
 		},
 		{
-			description:          "Nil - Dirty - No Change",
-			request:              openrtb2.BidRequest{},
-			requestRegExtWrapper: RegExt{usPrivacy: "", usPrivacyDirty: true},
-			expectedRequest:      openrtb2.BidRequest{},
+			description:              "Empty - Dirty - No Change",
+			request:                  openrtb2.BidRequest{},
+			requestRequestExtWrapper: RequestExt{prebid: nil, prebidDirty: true},
+			expectedRequest:          openrtb2.BidRequest{},
 		},
 		{
-			description:          "Empty - Not Dirty",
-			request:              openrtb2.BidRequest{Regs: &openrtb2.Regs{}},
-			requestRegExtWrapper: RegExt{},
-			expectedRequest:      openrtb2.BidRequest{Regs: &openrtb2.Regs{}},
+			description:              "Populated - Not Dirty",
+			request:                  openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"integration":"1"}}`)},
+			requestRequestExtWrapper: RequestExt{},
+			expectedRequest:          openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"integration":"1"}}`)},
 		},
 		{
-			description:          "Empty - Dirty",
-			request:              openrtb2.BidRequest{Regs: &openrtb2.Regs{}},
-			requestRegExtWrapper: RegExt{usPrivacy: "b", usPrivacyDirty: true},
-			expectedRequest:      openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":"b"}`)}},
+			description:              "Populated - Dirty",
+			request:                  openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"integration":"1"}}`)},
+			requestRequestExtWrapper: RequestExt{prebid: &prebidContent2, prebidDirty: true},
+			expectedRequest:          openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"integration":"2"}}`)},
 		},
 		{
-			description:          "Empty - Dirty - No Change",
-			request:              openrtb2.BidRequest{Regs: &openrtb2.Regs{}},
-			requestRegExtWrapper: RegExt{usPrivacy: "", usPrivacyDirty: true},
-			expectedRequest:      openrtb2.BidRequest{Regs: &openrtb2.Regs{}},
+			description:              "Populated - Dirty - No Change",
+			request:                  openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"integration":"1"}}`)},
+			requestRequestExtWrapper: RequestExt{prebid: &prebidContent1, prebidDirty: true},
+			expectedRequest:          openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"integration":"1"}}`)},
 		},
 		{
-			description:          "Populated - Not Dirty",
-			request:              openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":"a"}`)}},
-			requestRegExtWrapper: RegExt{},
-			expectedRequest:      openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":"a"}`)}},
-		},
-		{
-			description:          "Populated - Dirty",
-			request:              openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":"a"}`)}},
-			requestRegExtWrapper: RegExt{usPrivacy: "b", usPrivacyDirty: true},
-			expectedRequest:      openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":"b"}`)}},
-		},
-		{
-			description:          "Populated - Dirty - No Change",
-			request:              openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":"a"}`)}},
-			requestRegExtWrapper: RegExt{usPrivacy: "a", usPrivacyDirty: true},
-			expectedRequest:      openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":"a"}`)}},
-		},
-		{
-			description:          "Populated - Dirty - Cleared",
-			request:              openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"us_privacy":"a"}`)}},
-			requestRegExtWrapper: RegExt{usPrivacy: "", usPrivacyDirty: true},
-			expectedRequest:      openrtb2.BidRequest{Regs: &openrtb2.Regs{}},
+			description:              "Populated - Dirty - Cleared",
+			request:                  openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"integration":"1"}}`)},
+			requestRequestExtWrapper: RequestExt{prebid: nil, prebidDirty: true},
+			expectedRequest:          openrtb2.BidRequest{},
 		},
 	}
 
 	for _, test := range testCases {
 		// create required filed in the test loop to keep test declaration easier to read
-		test.requestRegExtWrapper.ext = make(map[string]json.RawMessage)
+		test.requestRequestExtWrapper.ext = make(map[string]json.RawMessage)
 
-		w := RequestWrapper{BidRequest: &test.request, regExt: &test.requestRegExtWrapper}
+		w := RequestWrapper{BidRequest: &test.request, requestExt: &test.requestRequestExtWrapper}
 		w.RebuildRequest()
 		assert.Equal(t, test.expectedRequest, *w.BidRequest, test.description)
 	}
