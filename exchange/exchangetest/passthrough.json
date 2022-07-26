@@ -17,14 +17,14 @@
                     },
                     "prebid": {
                         "passthrough": {
-                            "passthrough_val": 20
+                            "imp_passthrough_val": 20
                         }
                     }
                 }
             }],
             "ext": {
                 "prebid": {
-                    "passthrough": {"passthrough_val":20}
+                    "passthrough": {"bid_response_passthrough":20}
                 }
             }
         }
@@ -48,14 +48,14 @@
                             },
                             "prebid": {
                                 "passthrough": {
-                                    "passthrough_val": 20
+                                    "imp_passthrough_val": 20
                                 }
                             }
                         }
                     }],
                     "ext": {
                         "prebid": {
-                            "passthrough": {"passthrough_val":20}
+                            "passthrough": {"bid_response_passthrough":20}
                         }
                     }
                 }
@@ -76,7 +76,7 @@
                                 "prebid": {
                                     "willBeOverwritten": "by core logic",
                                     "passthrough": {
-                                        "passthrough_val": 20
+                                        "imp_passthrough_val": 20
                                     }
                                 }
                             }
@@ -106,7 +106,7 @@
                         "prebid": {
                             "type": "video",
                             "passthrough": {
-                                "passthrough_val": 20
+                                "imp_passthrough_val": 20
                             }
                         }
                     }
@@ -115,7 +115,7 @@
         },
         "ext": {
             "prebid": {
-                "passthrough": {"passthrough_val":20}
+                "passthrough": {"bid_response_passthrough":20}
             }
         }
     }

@@ -1709,6 +1709,9 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 func setImpExtInfoMap(imp json.RawMessage, impData ImpExtPrebidData, impExtInfoMap map[string]exchange.ImpExtInfo) error {
 	impId, err := jsonparser.GetString(imp, "id")
 	if err != nil {
+		if err.Error() == "Key path not found" {
+			return errors.New("request.imp[0] missing required field: \"id\"\n")
+		}
 		return err
 	}
 	echoVideoAttributes := false
@@ -1721,7 +1724,6 @@ func setImpExtInfoMap(imp json.RawMessage, impData ImpExtPrebidData, impExtInfoM
 
 // parseImpInfo parses the request JSON and returns impression and unmarshalled imp.ext.prebid
 func parseImpInfo(requestJson []byte) (impData []ImpExtPrebidData, errs []error) {
-
 	if impArray, dataType, _, err := jsonparser.Get(requestJson, "imp"); err == nil && dataType == jsonparser.Array {
 		_, err = jsonparser.ArrayEach(impArray, func(imp []byte, _ jsonparser.ValueType, _ int, err error) {
 			impExtData, _, _, err := jsonparser.Get(imp, "ext", "prebid")

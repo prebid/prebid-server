@@ -2217,17 +2217,13 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 	}
 
 	// Passthrough JSON Testing
-	var passthrough json.RawMessage
-	var err error
 	impExtInfoMap := make(map[string]ImpExtInfo)
 	if spec.PassthroughFlag {
-		passthrough, err = getPassthrough(&openrtb_ext.RequestWrapper{BidRequest: &spec.IncomingRequest.OrtbRequest})
+		impPassthrough, impID, err := getInfoFromImp(&openrtb_ext.RequestWrapper{BidRequest: &spec.IncomingRequest.OrtbRequest})
 		if err != nil {
 			t.Errorf("%s: Exchange returned an unexpected error. Got %s", filename, err.Error())
 		}
-		impExtInfoMap["my-imp-id"] = ImpExtInfo{Passthrough: passthrough}
-	} else {
-		passthrough = nil
+		impExtInfoMap[impID] = ImpExtInfo{Passthrough: impPassthrough}
 	}
 
 	auctionRequest := AuctionRequest{
@@ -2289,12 +2285,19 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		//compare debug info
 		assert.JSONEq(t, string(bid.Ext), string(spec.Response.Ext), "Debug info modified")
 	}
+
 	if spec.PassthroughFlag {
 		var actualBidRespExt openrtb_ext.ExtBidResponse
-		if err := json.Unmarshal(bid.Ext, &actualBidRespExt); err != nil {
-			assert.NoError(t, err, fmt.Sprintf("Error when unmarshalling: %s", err))
+		var expectedBidRespExt openrtb_ext.ExtBidResponse
+		if bid.Ext != nil && spec.Response.Ext != nil {
+			if err := json.Unmarshal(bid.Ext, &actualBidRespExt); err != nil {
+				assert.NoError(t, err, fmt.Sprintf("Error when unmarshalling: %s", err))
+			}
+			if err := json.Unmarshal(spec.Response.Ext, &expectedBidRespExt); err != nil {
+				assert.NoError(t, err, fmt.Sprintf("Error when unmarshalling: %s", err))
+			}
 		}
-		assert.Equalf(t, passthrough, actualBidRespExt.Prebid.Passthrough, "Expected bid response extension is incorrect")
+		assert.Equalf(t, expectedBidRespExt.Prebid, actualBidRespExt.Prebid, "Expected bid response extension is incorrect")
 	}
 }
 
@@ -4275,7 +4278,6 @@ func diffOrtbResponses(t *testing.T, description string, expected *openrtb2.BidR
 	if err != nil {
 		t.Fatalf("%s failed to marshal expected BidResponse into JSON. %v", description, err)
 	}
-
 	assert.JSONEq(t, string(expectedJSON), string(actualJSON), description)
 }
 
@@ -4395,17 +4397,19 @@ func (m *mockBidder) MakeBids(internalRequest *openrtb2.BidRequest, externalRequ
 	return args.Get(0).(*adapters.BidderResponse), args.Get(1).([]error)
 }
 
-func getPassthrough(req *openrtb_ext.RequestWrapper) (json.RawMessage, error) {
-	reqExt, err := req.GetRequestExt()
-	if err != nil {
-		return nil, err
+func getInfoFromImp(req *openrtb_ext.RequestWrapper) (json.RawMessage, string, error) {
+	bidRequest := req.BidRequest
+	imp := bidRequest.Imp[0]
+	impID := imp.ID
+
+	var bidderExts map[string]json.RawMessage
+	if err := json.Unmarshal(imp.Ext, &bidderExts); err != nil {
+		return nil, "", err
 	}
-	if reqExt == nil {
-		return nil, nil
+
+	var extPrebid openrtb_ext.ExtImpPrebid
+	if err := json.Unmarshal(bidderExts[openrtb_ext.PrebidExtKey], &extPrebid); err != nil {
+		return nil, "", err
 	}
-	reqPrebid := reqExt.GetPrebid()
-	if reqPrebid == nil {
-		return nil, nil
-	}
-	return reqPrebid.Passthrough, nil
+	return extPrebid.Passthrough, impID, nil
 }
