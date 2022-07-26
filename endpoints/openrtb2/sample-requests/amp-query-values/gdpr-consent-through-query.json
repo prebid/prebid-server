@@ -26,13 +26,7 @@
           }
         }
       }
-    ],
-    "regs": {
-      "ext": {"gdpr": 1}
-    },
-    "user": {
-      "ext": {"consent": "some-consent-string"}
-    }
+    ]
   },
   "expectedAmpResponse": {
     "targeting": {

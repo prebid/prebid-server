@@ -43,17 +43,17 @@ func TestGoodAmpRequests(t *testing.T) {
 				"gdpr.json",
 			},
 		},
-		//{
-		//	desc: "Valid, consent handling in query",
-		//	dir:  "sample-requests/",
-		//	testFiles: []string{
-		//		"aliased-buyeruids.json",
-		//		"aliases.json",
-		//		"imp-with-stored-resp.json",
-		//		"gdpr-no-consentstring.json",
-		//		"gdpr.json",
-		//	},
-		//},
+		{
+			desc: "Valid, consent handling in query",
+			dir:  "sample-requests/amp-query-values/",
+			testFiles: []string{
+				"gdpr-consent-through-query.json",
+				//"aliases.json",
+				//"imp-with-stored-resp.json",
+				//"gdpr-no-consentstring.json",
+				//"gdpr.json",
+			},
+		},
 	}
 
 	for _, tgroup := range testGroups {
