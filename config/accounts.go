@@ -238,7 +238,6 @@ type AdapterAlternateBidderCodes struct {
 
 func (bidderCodes *AlternateBidderCodes) IsValidBidderCode(bidder, alternateBidder string) (bool, error) {
 	const ErrAlternateBidderNotDefined = "alternateBidderCodes not defined for adapter %q, rejecting bids for %q"
-	const ErrAlternateBidderNotEnabled = "alternateBidderCodes not enabled for adapter %q, rejecting bids for %q"
 
 	if alternateBidder == "" || bidder == alternateBidder {
 		return true, nil
@@ -259,7 +258,7 @@ func (bidderCodes *AlternateBidderCodes) IsValidBidderCode(bidder, alternateBidd
 
 	if !adapterCfg.Enabled {
 		// config has bidder entry but is not enabled, report it
-		return false, fmt.Errorf(ErrAlternateBidderNotEnabled, bidder, alternateBidder)
+		return false, fmt.Errorf("alternateBidderCodes disabled for %q, rejecting bids for %q", bidder, alternateBidder)
 	}
 
 	if len(adapterCfg.AllowedBidderCodes) == 0 || adapterCfg.AllowedBidderCodes[0] == "*" {
