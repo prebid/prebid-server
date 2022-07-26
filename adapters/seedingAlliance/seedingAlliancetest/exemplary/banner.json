@@ -26,7 +26,7 @@
                     "prebid": {
                         "bidder": {
                             "seedingAlliance": {
-                                "tagID": "example-tag-id"
+                                "adUnitId": "example-tag-id"
                             }
                         }
                     }
@@ -63,7 +63,7 @@
                                 "prebid": {
                                     "bidder": {
                                         "seedingAlliance": {
-                                            "tagID": "example-tag-id"
+                                            "adUnitId": "example-tag-id"
                                         }
                                     }
                                 }
