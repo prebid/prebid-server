@@ -63,8 +63,8 @@ func TestRebuildUserExt(t *testing.T) {
 		{
 			description:           "Nil - Dirty",
 			request:               openrtb2.BidRequest{},
-			requestUserExtWrapper: UserExt{consent: &strB, consentDirty: true},
-			expectedRequest:       openrtb2.BidRequest{User: &openrtb2.User{Ext: json.RawMessage(`{"consent":"b"}`)}},
+			requestUserExtWrapper: UserExt{consent: &strA, consentDirty: true},
+			expectedRequest:       openrtb2.BidRequest{User: &openrtb2.User{Ext: json.RawMessage(`{"consent":"a"}`)}},
 		},
 		{
 			description:           "Nil - Dirty - No Change",
@@ -267,6 +267,88 @@ func TestRebuildRequestExt(t *testing.T) {
 		test.requestRequestExtWrapper.ext = make(map[string]json.RawMessage)
 
 		w := RequestWrapper{BidRequest: &test.request, requestExt: &test.requestRequestExtWrapper}
+		w.RebuildRequest()
+		assert.Equal(t, test.expectedRequest, *w.BidRequest, test.description)
+	}
+}
+
+func TestRebuildAppExt(t *testing.T) {
+	prebidContent1 := ExtAppPrebid{Source: "1"}
+	prebidContent2 := ExtAppPrebid{Source: "2"}
+
+	testCases := []struct {
+		description          string
+		request              openrtb2.BidRequest
+		requestAppExtWrapper AppExt
+		expectedRequest      openrtb2.BidRequest
+	}{
+		{
+			description:          "Nil - Not Dirty",
+			request:              openrtb2.BidRequest{},
+			requestAppExtWrapper: AppExt{},
+			expectedRequest:      openrtb2.BidRequest{},
+		},
+		{
+			description:          "Nil - Dirty",
+			request:              openrtb2.BidRequest{},
+			requestAppExtWrapper: AppExt{prebid: &prebidContent1, prebidDirty: true},
+			expectedRequest:      openrtb2.BidRequest{App: &openrtb2.App{Ext: json.RawMessage(`{"prebid":{"source":"1"}}`)}},
+		},
+		{
+			description:          "Nil - Dirty - No Change",
+			request:              openrtb2.BidRequest{},
+			requestAppExtWrapper: AppExt{prebid: nil, prebidDirty: true},
+			expectedRequest:      openrtb2.BidRequest{},
+		},
+		{
+			description:          "Empty - Not Dirty",
+			request:              openrtb2.BidRequest{App: &openrtb2.App{}},
+			requestAppExtWrapper: AppExt{},
+			expectedRequest:      openrtb2.BidRequest{App: &openrtb2.App{}},
+		},
+		{
+			description:          "Empty - Dirty",
+			request:              openrtb2.BidRequest{App: &openrtb2.App{}},
+			requestAppExtWrapper: AppExt{prebid: &prebidContent1, prebidDirty: true},
+			expectedRequest:      openrtb2.BidRequest{App: &openrtb2.App{Ext: json.RawMessage(`{"prebid":{"source":"1"}}`)}},
+		},
+		{
+			description:          "Empty - Dirty - No Change",
+			request:              openrtb2.BidRequest{App: &openrtb2.App{}},
+			requestAppExtWrapper: AppExt{prebid: nil, prebidDirty: true},
+			expectedRequest:      openrtb2.BidRequest{App: &openrtb2.App{}},
+		},
+		{
+			description:          "Populated - Not Dirty",
+			request:              openrtb2.BidRequest{App: &openrtb2.App{Ext: json.RawMessage(`{"prebid":{"source":"1"}}`)}},
+			requestAppExtWrapper: AppExt{},
+			expectedRequest:      openrtb2.BidRequest{App: &openrtb2.App{Ext: json.RawMessage(`{"prebid":{"source":"1"}}`)}},
+		},
+		{
+			description:          "Populated - Dirty",
+			request:              openrtb2.BidRequest{App: &openrtb2.App{Ext: json.RawMessage(`{"prebid":{"source":"1"}}`)}},
+			requestAppExtWrapper: AppExt{prebid: &prebidContent2, prebidDirty: true},
+			expectedRequest:      openrtb2.BidRequest{App: &openrtb2.App{Ext: json.RawMessage(`{"prebid":{"source":"2"}}`)}},
+		},
+		{
+			description:          "Populated - Dirty - No Change",
+			request:              openrtb2.BidRequest{App: &openrtb2.App{Ext: json.RawMessage(`{"prebid":{"source":"1"}}`)}},
+			requestAppExtWrapper: AppExt{prebid: &prebidContent1, prebidDirty: true},
+			expectedRequest:      openrtb2.BidRequest{App: &openrtb2.App{Ext: json.RawMessage(`{"prebid":{"source":"1"}}`)}},
+		},
+		{
+			description:          "Populated - Dirty - Cleared",
+			request:              openrtb2.BidRequest{App: &openrtb2.App{Ext: json.RawMessage(`{"prebid":{"source":"1"}}`)}},
+			requestAppExtWrapper: AppExt{prebid: nil, prebidDirty: true},
+			expectedRequest:      openrtb2.BidRequest{App: &openrtb2.App{}},
+		},
+	}
+
+	for _, test := range testCases {
+		// create required filed in the test loop to keep test declaration easier to read
+		test.requestAppExtWrapper.ext = make(map[string]json.RawMessage)
+
+		w := RequestWrapper{BidRequest: &test.request, appExt: &test.requestAppExtWrapper}
 		w.RebuildRequest()
 		assert.Equal(t, test.expectedRequest, *w.BidRequest, test.description)
 	}

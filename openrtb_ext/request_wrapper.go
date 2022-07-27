@@ -205,16 +205,21 @@ func (rw *RequestWrapper) rebuildRequestExt() error {
 }
 
 func (rw *RequestWrapper) rebuildAppExt() error {
-	if rw.App == nil && rw.appExt != nil && rw.appExt.Dirty() {
-		rw.App = &openrtb2.App{}
+	if rw.appExt == nil || !rw.appExt.Dirty() {
+		return nil
 	}
-	if rw.appExt != nil && rw.appExt.Dirty() {
-		appJson, err := rw.appExt.marshal()
-		if err != nil {
-			return err
-		}
+
+	appJson, err := rw.appExt.marshal()
+	if err != nil {
+		return err
+	}
+
+	if appJson != nil && rw.App == nil {
+		rw.App = &openrtb2.App{Ext: appJson}
+	} else if rw.App != nil {
 		rw.App.Ext = appJson
 	}
+
 	return nil
 }
 
@@ -678,12 +683,16 @@ func (ae *AppExt) unmarshal(extJson json.RawMessage) error {
 
 func (ae *AppExt) marshal() (json.RawMessage, error) {
 	if ae.prebidDirty {
-		prebidJson, err := json.Marshal(ae.prebid)
-		if err != nil {
-			return nil, err
-		}
-		if len(prebidJson) > jsonEmptyObjectLength {
-			ae.ext["prebid"] = json.RawMessage(prebidJson)
+		if ae.prebid != nil {
+			prebidJson, err := json.Marshal(ae.prebid)
+			if err != nil {
+				return nil, err
+			}
+			if len(prebidJson) > jsonEmptyObjectLength {
+				ae.ext["prebid"] = json.RawMessage(prebidJson)
+			} else {
+				delete(ae.ext, "prebid")
+			}
 		} else {
 			delete(ae.ext, "prebid")
 		}
