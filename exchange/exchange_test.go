@@ -2289,10 +2289,12 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 	if spec.PassthroughFlag {
 		var actualBidRespExt openrtb_ext.ExtBidResponse
 		var expectedBidRespExt openrtb_ext.ExtBidResponse
-		if bid.Ext != nil && spec.Response.Ext != nil {
+		if bid.Ext != nil {
 			if err := json.Unmarshal(bid.Ext, &actualBidRespExt); err != nil {
 				assert.NoError(t, err, fmt.Sprintf("Error when unmarshalling: %s", err))
 			}
+		}
+		if spec.Response.Ext != nil {
 			if err := json.Unmarshal(spec.Response.Ext, &expectedBidRespExt); err != nil {
 				assert.NoError(t, err, fmt.Sprintf("Error when unmarshalling: %s", err))
 			}

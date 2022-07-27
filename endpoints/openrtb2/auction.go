@@ -1680,16 +1680,27 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 				return nil, nil, []error{err}
 			}
 			resolvedImps = append(resolvedImps, resolvedImp)
-			err = setImpExtInfoMap(resolvedImp, impData, impExtInfoMap)
+			impId, err := jsonparser.GetString(resolvedImp, "id")
 			if err != nil {
 				return nil, nil, []error{err}
 			}
+
+			echoVideoAttributes := false
+			if impData.ImpExtPrebid.Options != nil {
+				echoVideoAttributes = impData.ImpExtPrebid.Options.EchoVideoAttrs
+			}
+
+			impExtInfoMap[impId] = exchange.ImpExtInfo{EchoVideoAttrs: echoVideoAttributes, StoredImp: storedImps[impData.ImpExtPrebid.StoredRequest.ID]}
 		} else {
 			resolvedImps = append(resolvedImps, impData.Imp)
-			err = setImpExtInfoMap(impData.Imp, impData, impExtInfoMap)
+			impId, err := jsonparser.GetString(impData.Imp, "id")
 			if err != nil {
+				if err == jsonparser.KeyPathNotFoundError {
+					err = fmt.Errorf("request.imp[%d] missing required field: \"id\"\n", i)
+				}
 				return nil, nil, []error{err}
 			}
+			impExtInfoMap[impId] = exchange.ImpExtInfo{Passthrough: impData.ImpExtPrebid.Passthrough}
 		}
 	}
 	if len(resolvedImps) > 0 {
@@ -1704,22 +1715,6 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 	}
 
 	return resolvedRequest, impExtInfoMap, nil
-}
-
-func setImpExtInfoMap(imp json.RawMessage, impData ImpExtPrebidData, impExtInfoMap map[string]exchange.ImpExtInfo) error {
-	impId, err := jsonparser.GetString(imp, "id")
-	if err != nil {
-		if err.Error() == "Key path not found" {
-			return errors.New("request.imp[0] missing required field: \"id\"\n")
-		}
-		return err
-	}
-	echoVideoAttributes := false
-	if impData.ImpExtPrebid.Options != nil {
-		echoVideoAttributes = impData.ImpExtPrebid.Options.EchoVideoAttrs
-	}
-	impExtInfoMap[impId] = exchange.ImpExtInfo{EchoVideoAttrs: echoVideoAttributes, Passthrough: impData.ImpExtPrebid.Passthrough}
-	return nil
 }
 
 // parseImpInfo parses the request JSON and returns impression and unmarshalled imp.ext.prebid
