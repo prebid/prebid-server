@@ -262,16 +262,21 @@ func (rw *RequestWrapper) rebuildSiteExt() error {
 }
 
 func (rw *RequestWrapper) rebuildSourceExt() error {
-	if rw.Source == nil && rw.sourceExt != nil && rw.sourceExt.Dirty() {
-		rw.Source = &openrtb2.Source{}
+	if rw.sourceExt == nil || !rw.sourceExt.Dirty() {
+		return nil
 	}
-	if rw.sourceExt != nil && rw.sourceExt.Dirty() {
-		sourceJson, err := rw.sourceExt.marshal()
-		if err != nil {
-			return err
-		}
+
+	sourceJson, err := rw.sourceExt.marshal()
+	if err != nil {
+		return err
+	}
+
+	if sourceJson != nil && rw.Source == nil {
+		rw.Source = &openrtb2.Source{Ext: sourceJson}
+	} else if rw.Source != nil {
 		rw.Source.Ext = sourceJson
 	}
+
 	return nil
 }
 
@@ -934,12 +939,16 @@ func (se *SourceExt) unmarshal(extJson json.RawMessage) error {
 
 func (se *SourceExt) marshal() (json.RawMessage, error) {
 	if se.schainDirty {
-		schainJson, err := json.Marshal(se.schain)
-		if err != nil {
-			return nil, err
-		}
-		if len(schainJson) > jsonEmptyObjectLength {
-			se.ext["schain"] = json.RawMessage(schainJson)
+		if se.schain != nil {
+			schainJson, err := json.Marshal(se.schain)
+			if err != nil {
+				return nil, err
+			}
+			if len(schainJson) > jsonEmptyObjectLength {
+				se.ext["schain"] = json.RawMessage(schainJson)
+			} else {
+				delete(se.ext, "schain")
+			}
 		} else {
 			delete(se.ext, "schain")
 		}

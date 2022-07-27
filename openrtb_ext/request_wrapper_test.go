@@ -435,3 +435,85 @@ func TestRebuildSiteExt(t *testing.T) {
 		assert.Equal(t, test.expectedRequest, *w.BidRequest, test.description)
 	}
 }
+
+func TestRebuildSourceExt(t *testing.T) {
+	schainContent1 := openrtb2.SupplyChain{Ver: "1"}
+	schainContent2 := openrtb2.SupplyChain{Ver: "2"}
+
+	testCases := []struct {
+		description             string
+		request                 openrtb2.BidRequest
+		requestSourceExtWrapper SourceExt
+		expectedRequest         openrtb2.BidRequest
+	}{
+		{
+			description:             "Nil - Not Dirty",
+			request:                 openrtb2.BidRequest{},
+			requestSourceExtWrapper: SourceExt{},
+			expectedRequest:         openrtb2.BidRequest{},
+		},
+		{
+			description:             "Nil - Dirty",
+			request:                 openrtb2.BidRequest{},
+			requestSourceExtWrapper: SourceExt{schain: &schainContent1, schainDirty: true},
+			expectedRequest:         openrtb2.BidRequest{Source: &openrtb2.Source{Ext: json.RawMessage(`{"schain":{"complete":0,"nodes":null,"ver":"1"}}`)}},
+		},
+		{
+			description:             "Nil - Dirty - No Change",
+			request:                 openrtb2.BidRequest{},
+			requestSourceExtWrapper: SourceExt{schain: nil, schainDirty: true},
+			expectedRequest:         openrtb2.BidRequest{},
+		},
+		{
+			description:             "Empty - Not Dirty",
+			request:                 openrtb2.BidRequest{Source: &openrtb2.Source{}},
+			requestSourceExtWrapper: SourceExt{},
+			expectedRequest:         openrtb2.BidRequest{Source: &openrtb2.Source{}},
+		},
+		{
+			description:             "Empty - Dirty",
+			request:                 openrtb2.BidRequest{Source: &openrtb2.Source{}},
+			requestSourceExtWrapper: SourceExt{schain: &schainContent1, schainDirty: true},
+			expectedRequest:         openrtb2.BidRequest{Source: &openrtb2.Source{Ext: json.RawMessage(`{"schain":{"complete":0,"nodes":null,"ver":"1"}}`)}},
+		},
+		{
+			description:             "Empty - Dirty - No Change",
+			request:                 openrtb2.BidRequest{Source: &openrtb2.Source{}},
+			requestSourceExtWrapper: SourceExt{schain: nil, schainDirty: true},
+			expectedRequest:         openrtb2.BidRequest{Source: &openrtb2.Source{}},
+		},
+		{
+			description:             "Populated - Not Dirty",
+			request:                 openrtb2.BidRequest{Source: &openrtb2.Source{Ext: json.RawMessage(`{"schain":{"complete":0,"nodes":null,"ver":"1"}}`)}},
+			requestSourceExtWrapper: SourceExt{},
+			expectedRequest:         openrtb2.BidRequest{Source: &openrtb2.Source{Ext: json.RawMessage(`{"schain":{"complete":0,"nodes":null,"ver":"1"}}`)}},
+		},
+		{
+			description:             "Populated - Dirty",
+			request:                 openrtb2.BidRequest{Source: &openrtb2.Source{Ext: json.RawMessage(`{"schain":{"complete":0,"nodes":null,"ver":"1"}}`)}},
+			requestSourceExtWrapper: SourceExt{schain: &schainContent2, schainDirty: true},
+			expectedRequest:         openrtb2.BidRequest{Source: &openrtb2.Source{Ext: json.RawMessage(`{"schain":{"complete":0,"nodes":null,"ver":"2"}}`)}},
+		},
+		{
+			description:             "Populated - Dirty - No Change",
+			request:                 openrtb2.BidRequest{Source: &openrtb2.Source{Ext: json.RawMessage(`{"schain":{"complete":0,"nodes":null,"ver":"1"}}`)}},
+			requestSourceExtWrapper: SourceExt{schain: &schainContent1, schainDirty: true},
+			expectedRequest:         openrtb2.BidRequest{Source: &openrtb2.Source{Ext: json.RawMessage(`{"schain":{"complete":0,"nodes":null,"ver":"1"}}`)}},
+		},
+		{
+			description:             "Populated - Dirty - Cleared",
+			request:                 openrtb2.BidRequest{Source: &openrtb2.Source{Ext: json.RawMessage(`{"schain":{"complete":0,"nodes":null,"ver":"1"}}`)}},
+			requestSourceExtWrapper: SourceExt{schain: nil, schainDirty: true},
+			expectedRequest:         openrtb2.BidRequest{Source: &openrtb2.Source{}},
+		},
+	}
+
+	for _, test := range testCases {
+		// create required filed in the test loop to keep test declaration easier to read
+		test.requestSourceExtWrapper.ext = make(map[string]json.RawMessage)
+
+		w := RequestWrapper{BidRequest: &test.request, sourceExt: &test.requestSourceExtWrapper}
+		w.RebuildRequest()
+		assert.Equal(t, test.expectedRequest, *w.BidRequest, test.description)
+	}
+}
