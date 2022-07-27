@@ -32,7 +32,15 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, extraRequestInfo *a
 		}
 	}
 
-	request.Cur = append(request.Cur, "EUR")
+	eurExists := false
+	for _, cur := range request.Cur {
+		if cur == "EUR" {
+			eurExists = true
+		}
+	}
+	if !eurExists {
+		request.Cur = append(request.Cur, "EUR")
+	}
 
 	requestJSON, err := json.Marshal(request)
 	if err != nil {

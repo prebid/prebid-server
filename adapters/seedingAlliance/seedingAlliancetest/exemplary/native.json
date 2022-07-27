@@ -7,6 +7,9 @@
                 "name": "foo"
             }
         },
+        "cur": [
+            "EUR"
+        ],
         "imp": [
             {
                 "id": "test-imp-id",
