@@ -109,7 +109,7 @@ func TestExperimentValidate(t *testing.T) {
 				AdCerts: ExperimentAdsCert{Mode: AdCertsSignerModeInprocess, InProcess: AdsCertInProcess{Origin: "http://test.com", PrivateKey: "pk", DNSCheckIntervalInSeconds: 10, DNSRenewalIntervalInSeconds: 0}},
 			},
 			expectErrors:   true,
-			expectedErrors: []error{fmt.Errorf("invalid dns renewal interval for inprocess signer: 0")},
+			expectedErrors: []error{errors.New("invalid dns renewal interval for inprocess signer: 0")},
 		},
 		{
 			desc: "Inprocess signer config: all config parameters are invalid",
@@ -120,8 +120,8 @@ func TestExperimentValidate(t *testing.T) {
 			expectedErrors: []error{
 				errors.New("invalid url for inprocess signer: test@com"),
 				ErrInProcessSignerInvalidPrivateKey,
-				fmt.Errorf("invalid dns check interval for inprocess signer: -10"),
-				fmt.Errorf("invalid dns renewal interval for inprocess signer: 0")},
+				errors.New("invalid dns check interval for inprocess signer: -10"),
+				errors.New("invalid dns renewal interval for inprocess signer: 0")},
 		},
 	}
 	for _, test := range testCases {
