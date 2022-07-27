@@ -247,8 +247,7 @@ func getMediaTypeForBid(bid openrtb2.Bid, impMediaTypeReq map[string]openrtb_ext
 		}
 	}
 
-	bidType, ok := impMediaTypeReq[bid.ImpID]
-	if ok {
+	if bidType, ok := impMediaTypeReq[bid.ImpID]; ok {
 		return bidType, nil
 	} else {
 		return "", fmt.Errorf("unmatched impression id: %s", bid.ImpID)
