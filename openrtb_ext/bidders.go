@@ -123,6 +123,7 @@ const (
 	BidderBidsCube          BidderName = "bidscube"
 	BidderBizzclick         BidderName = "bizzclick"
 	BidderBliink            BidderName = "bliink"
+	BidderBlue              BidderName = "blue"
 	BidderBmtm              BidderName = "bmtm"
 	BidderBrightroll        BidderName = "brightroll"
 	BidderCoinzilla         BidderName = "coinzilla"
@@ -279,6 +280,7 @@ func CoreBidderNames() []BidderName {
 		BidderBidsCube,
 		BidderBizzclick,
 		BidderBliink,
+		BidderBlue,
 		BidderBmtm,
 		BidderBrightroll,
 		BidderCoinzilla,
