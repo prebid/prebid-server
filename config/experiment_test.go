@@ -2,7 +2,6 @@ package config
 
 import (
 	"errors"
-	"fmt"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -101,7 +100,7 @@ func TestExperimentValidate(t *testing.T) {
 				AdCerts: ExperimentAdsCert{Mode: AdCertsSignerModeInprocess, InProcess: AdsCertInProcess{Origin: "http://test.com", PrivateKey: "pk", DNSCheckIntervalInSeconds: -10, DNSRenewalIntervalInSeconds: 10}},
 			},
 			expectErrors:   true,
-			expectedErrors: []error{fmt.Errorf("invalid dns check interval for inprocess signer: -10")},
+			expectedErrors: []error{errors.New("invalid dns check interval for inprocess signer: -10")},
 		},
 		{
 			desc: "Inprocess signer config: zero dns check interval passed to config",
