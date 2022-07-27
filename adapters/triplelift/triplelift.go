@@ -26,7 +26,7 @@ type TripleliftRespExt struct {
 
 func getBidType(ext TripleliftRespExt) openrtb_ext.BidType {
 	t := ext.Triplelift.Format
-	if t == 11 {
+	if t == 11 || t == 12 || t == 17 {
 		return openrtb_ext.BidTypeVideo
 	}
 	return openrtb_ext.BidTypeBanner
