@@ -353,3 +353,85 @@ func TestRebuildAppExt(t *testing.T) {
 		assert.Equal(t, test.expectedRequest, *w.BidRequest, test.description)
 	}
 }
+
+func TestRebuildSiteExt(t *testing.T) {
+	int1 := int8(1)
+	int2 := int8(2)
+
+	testCases := []struct {
+		description           string
+		request               openrtb2.BidRequest
+		requestSiteExtWrapper SiteExt
+		expectedRequest       openrtb2.BidRequest
+	}{
+		{
+			description:           "Nil - Not Dirty",
+			request:               openrtb2.BidRequest{},
+			requestSiteExtWrapper: SiteExt{},
+			expectedRequest:       openrtb2.BidRequest{},
+		},
+		{
+			description:           "Nil - Dirty",
+			request:               openrtb2.BidRequest{},
+			requestSiteExtWrapper: SiteExt{amp: &int1, ampDirty: true},
+			expectedRequest:       openrtb2.BidRequest{Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)}},
+		},
+		{
+			description:           "Nil - Dirty - No Change",
+			request:               openrtb2.BidRequest{},
+			requestSiteExtWrapper: SiteExt{amp: nil, ampDirty: true},
+			expectedRequest:       openrtb2.BidRequest{},
+		},
+		{
+			description:           "Empty - Not Dirty",
+			request:               openrtb2.BidRequest{Site: &openrtb2.Site{}},
+			requestSiteExtWrapper: SiteExt{},
+			expectedRequest:       openrtb2.BidRequest{Site: &openrtb2.Site{}},
+		},
+		{
+			description:           "Empty - Dirty",
+			request:               openrtb2.BidRequest{Site: &openrtb2.Site{}},
+			requestSiteExtWrapper: SiteExt{amp: &int1, ampDirty: true},
+			expectedRequest:       openrtb2.BidRequest{Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)}},
+		},
+		{
+			description:           "Empty - Dirty - No Change",
+			request:               openrtb2.BidRequest{Site: &openrtb2.Site{}},
+			requestSiteExtWrapper: SiteExt{amp: nil, ampDirty: true},
+			expectedRequest:       openrtb2.BidRequest{Site: &openrtb2.Site{}},
+		},
+		{
+			description:           "Populated - Not Dirty",
+			request:               openrtb2.BidRequest{Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)}},
+			requestSiteExtWrapper: SiteExt{},
+			expectedRequest:       openrtb2.BidRequest{Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)}},
+		},
+		{
+			description:           "Populated - Dirty",
+			request:               openrtb2.BidRequest{Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)}},
+			requestSiteExtWrapper: SiteExt{amp: &int2, ampDirty: true},
+			expectedRequest:       openrtb2.BidRequest{Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":2}`)}},
+		},
+		{
+			description:           "Populated - Dirty - No Change",
+			request:               openrtb2.BidRequest{Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)}},
+			requestSiteExtWrapper: SiteExt{amp: &int1, ampDirty: true},
+			expectedRequest:       openrtb2.BidRequest{Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)}},
+		},
+		{
+			description:           "Populated - Dirty - Cleared",
+			request:               openrtb2.BidRequest{Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)}},
+			requestSiteExtWrapper: SiteExt{amp: nil, ampDirty: true},
+			expectedRequest:       openrtb2.BidRequest{Site: &openrtb2.Site{}},
+		},
+	}
+
+	for _, test := range testCases {
+		// create required filed in the test loop to keep test declaration easier to read
+		test.requestSiteExtWrapper.ext = make(map[string]json.RawMessage)
+
+		w := RequestWrapper{BidRequest: &test.request, siteExt: &test.requestSiteExtWrapper}
+		w.RebuildRequest()
+		assert.Equal(t, test.expectedRequest, *w.BidRequest, test.description)
+	}
+}

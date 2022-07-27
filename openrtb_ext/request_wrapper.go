@@ -243,16 +243,21 @@ func (rw *RequestWrapper) rebuildRegExt() error {
 }
 
 func (rw *RequestWrapper) rebuildSiteExt() error {
-	if rw.Site == nil && rw.siteExt != nil && rw.siteExt.Dirty() {
-		rw.Site = &openrtb2.Site{}
+	if rw.siteExt == nil || !rw.siteExt.Dirty() {
+		return nil
 	}
-	if rw.siteExt != nil && rw.siteExt.Dirty() {
-		siteJson, err := rw.siteExt.marshal()
-		if err != nil {
-			return err
-		}
+
+	siteJson, err := rw.siteExt.marshal()
+	if err != nil {
+		return err
+	}
+
+	if siteJson != nil && rw.Site == nil {
+		rw.Site = &openrtb2.Site{Ext: siteJson}
+	} else if rw.Site != nil {
 		rw.Site.Ext = siteJson
 	}
+
 	return nil
 }
 
@@ -822,7 +827,7 @@ func (re *RegExt) SetUSPrivacy(uSPrivacy string) {
 type SiteExt struct {
 	ext      map[string]json.RawMessage
 	extDirty bool
-	amp      int8
+	amp      *int8
 	ampDirty bool
 }
 
@@ -851,11 +856,11 @@ func (se *SiteExt) unmarshal(extJson json.RawMessage) error {
 
 func (se *SiteExt) marshal() (json.RawMessage, error) {
 	if se.ampDirty {
-		ampJson, err := json.Marshal(se.amp)
-		if err != nil {
-			return nil, err
-		}
-		if len(ampJson) > jsonEmptyObjectLength {
+		if se.amp != nil {
+			ampJson, err := json.Marshal(se.amp)
+			if err != nil {
+				return nil, err
+			}
 			se.ext["amp"] = json.RawMessage(ampJson)
 		} else {
 			delete(se.ext, "amp")
@@ -887,11 +892,11 @@ func (se *SiteExt) SetExt(ext map[string]json.RawMessage) {
 	se.extDirty = true
 }
 
-func (se *SiteExt) GetAmp() int8 {
+func (se *SiteExt) GetAmp() *int8 {
 	return se.amp
 }
 
-func (se *SiteExt) SetUSPrivacy(amp int8) {
+func (se *SiteExt) SetAmp(amp *int8) {
 	se.amp = amp
 	se.ampDirty = true
 }
