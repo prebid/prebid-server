@@ -123,6 +123,7 @@ const (
 	BidderBidsCube          BidderName = "bidscube"
 	BidderBizzclick         BidderName = "bizzclick"
 	BidderBliink            BidderName = "bliink"
+	BidderBlue              BidderName = "blue"
 	BidderBmtm              BidderName = "bmtm"
 	BidderBrightroll        BidderName = "brightroll"
 	BidderCoinzilla         BidderName = "coinzilla"
@@ -134,9 +135,9 @@ const (
 	BidderCpmstar           BidderName = "cpmstar"
 	BidderCriteo            BidderName = "criteo"
 	BidderDatablocks        BidderName = "datablocks"
-	BidderDmx               BidderName = "dmx"
 	BidderDecenterAds       BidderName = "decenterads"
 	BidderDeepintent        BidderName = "deepintent"
+	BidderDmx               BidderName = "dmx"
 	BidderEmxDigital        BidderName = "emx_digital"
 	BidderEngageBDR         BidderName = "engagebdr"
 	BidderEPlanning         BidderName = "eplanning"
@@ -150,6 +151,7 @@ const (
 	BidderHuaweiAds         BidderName = "huaweiads"
 	BidderImpactify         BidderName = "impactify"
 	BidderImprovedigital    BidderName = "improvedigital"
+	BidderInfyTV            BidderName = "infytv"
 	BidderInMobi            BidderName = "inmobi"
 	BidderInteractiveoffers BidderName = "interactiveoffers"
 	BidderInvibes           BidderName = "invibes"
@@ -165,14 +167,13 @@ const (
 	BidderLockerDome        BidderName = "lockerdome"
 	BidderLogicad           BidderName = "logicad"
 	BidderLunaMedia         BidderName = "lunamedia"
-	BidderSaLunaMedia       BidderName = "sa_lunamedia"
 	BidderMadvertise        BidderName = "madvertise"
 	BidderMarsmedia         BidderName = "marsmedia"
 	BidderMediafuse         BidderName = "mediafuse"
+	BidderMedianet          BidderName = "medianet"
 	BidderMgid              BidderName = "mgid"
 	BidderMobfoxpb          BidderName = "mobfoxpb"
 	BidderMobileFuse        BidderName = "mobilefuse"
-	BidderMedianet          BidderName = "medianet"
 	BidderNanoInteractive   BidderName = "nanointeractive"
 	BidderNextMillennium    BidderName = "nextmillennium"
 	BidderNinthDecimal      BidderName = "ninthdecimal"
@@ -195,6 +196,7 @@ const (
 	BidderRTBHouse          BidderName = "rtbhouse"
 	BidderRubicon           BidderName = "rubicon"
 	BidderSeedingAlliance   BidderName = "seedingAlliance"
+	BidderSaLunaMedia       BidderName = "sa_lunamedia"
 	BidderSharethrough      BidderName = "sharethrough"
 	BidderSilverMob         BidderName = "silvermob"
 	BidderSmaato            BidderName = "smaato"
@@ -205,6 +207,7 @@ const (
 	BidderSmileWanted       BidderName = "smilewanted"
 	BidderSonobi            BidderName = "sonobi"
 	BidderSovrn             BidderName = "sovrn"
+	BidderSspBC             BidderName = "sspBC"
 	BidderStreamkey         BidderName = "streamkey"
 	BidderStroeerCore       BidderName = "stroeerCore"
 	BidderSynacormedia      BidderName = "synacormedia"
@@ -221,8 +224,8 @@ const (
 	BidderVerizonMedia      BidderName = "verizonmedia"
 	BidderVideoByte         BidderName = "videobyte"
 	BidderVidoomy           BidderName = "vidoomy"
-	BidderVisx              BidderName = "visx"
 	BidderViewdeos          BidderName = "viewdeos"
+	BidderVisx              BidderName = "visx"
 	BidderVrtcal            BidderName = "vrtcal"
 	BidderYahooSSP          BidderName = "yahoossp"
 	BidderYeahmobi          BidderName = "yeahmobi"
@@ -231,7 +234,6 @@ const (
 	BidderYieldone          BidderName = "yieldone"
 	BidderYSSP              BidderName = "yssp"
 	BidderZeroClickFraud    BidderName = "zeroclickfraud"
-	BidderInfyTV            BidderName = "infytv"
 )
 
 // CoreBidderNames returns a slice of all core bidders.
@@ -279,6 +281,7 @@ func CoreBidderNames() []BidderName {
 		BidderBidsCube,
 		BidderBizzclick,
 		BidderBliink,
+		BidderBlue,
 		BidderBmtm,
 		BidderBrightroll,
 		BidderCoinzilla,
@@ -306,6 +309,7 @@ func CoreBidderNames() []BidderName {
 		BidderHuaweiAds,
 		BidderImpactify,
 		BidderImprovedigital,
+		BidderInfyTV,
 		BidderInMobi,
 		BidderInteractiveoffers,
 		BidderInvibes,
@@ -321,7 +325,6 @@ func CoreBidderNames() []BidderName {
 		BidderLockerDome,
 		BidderLogicad,
 		BidderLunaMedia,
-		BidderSaLunaMedia,
 		BidderMadvertise,
 		BidderMarsmedia,
 		BidderMediafuse,
@@ -339,8 +342,8 @@ func CoreBidderNames() []BidderName {
 		BidderOperaads,
 		BidderOrbidder,
 		BidderOutbrain,
-		BidderPGAM,
 		BidderPangle,
+		BidderPGAM,
 		BidderPubmatic,
 		BidderPubnative,
 		BidderPulsepoint,
@@ -351,6 +354,7 @@ func CoreBidderNames() []BidderName {
 		BidderRTBHouse,
 		BidderRubicon,
 		BidderSeedingAlliance,
+		BidderSaLunaMedia,
 		BidderSharethrough,
 		BidderSilverMob,
 		BidderSmaato,
@@ -361,6 +365,7 @@ func CoreBidderNames() []BidderName {
 		BidderSmileWanted,
 		BidderSonobi,
 		BidderSovrn,
+		BidderSspBC,
 		BidderStreamkey,
 		BidderStroeerCore,
 		BidderSynacormedia,
@@ -387,7 +392,6 @@ func CoreBidderNames() []BidderName {
 		BidderYieldone,
 		BidderYSSP,
 		BidderZeroClickFraud,
-		BidderInfyTV,
 	}
 }
 

@@ -15,7 +15,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/buger/jsonparser"
 	"github.com/julienschmidt/httprouter"
+	"github.com/mxmCherry/openrtb/v16/native1"
+	nativeRequests "github.com/mxmCherry/openrtb/v16/native1/request"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/stretchr/testify/assert"
+
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -26,12 +32,6 @@ import (
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/stored_responses"
 	"github.com/prebid/prebid-server/util/iputil"
-
-	"github.com/buger/jsonparser"
-	"github.com/mxmCherry/openrtb/v15/native1"
-	nativeRequests "github.com/mxmCherry/openrtb/v15/native1/request"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestJsonSampleRequests(t *testing.T) {
@@ -2454,13 +2454,13 @@ func TestMapSChains(t *testing.T) {
 	const seller1SChain string = `"schain":{"complete":1,"nodes":[{"asi":"directseller1.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}`
 	const seller2SChain string = `"schain":{"complete":2,"nodes":[{"asi":"directseller2.com","sid":"00002","rid":"BidRequest2","hp":2}],"ver":"2.0"}`
 
-	seller1SChainUnpacked := openrtb_ext.ExtRequestPrebidSChainSChain{
+	seller1SChainUnpacked := openrtb2.SupplyChain{
 		Complete: 1,
-		Nodes: []*openrtb_ext.ExtRequestPrebidSChainSChainNode{{
+		Nodes: []openrtb2.SupplyChainNode{{
 			ASI: "directseller1.com",
 			SID: "00001",
 			RID: "BidRequest1",
-			HP:  1,
+			HP:  openrtb2.Int8Ptr(1),
 		}},
 		Ver: "1.0",
 	}
@@ -2468,8 +2468,8 @@ func TestMapSChains(t *testing.T) {
 	tests := []struct {
 		description         string
 		bidRequest          openrtb2.BidRequest
-		wantReqExtSChain    *openrtb_ext.ExtRequestPrebidSChainSChain
-		wantSourceExtSChain *openrtb_ext.ExtRequestPrebidSChainSChain
+		wantReqExtSChain    *openrtb2.SupplyChain
+		wantSourceExtSChain *openrtb2.SupplyChain
 		wantError           bool
 	}{
 		{

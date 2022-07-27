@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
@@ -22,7 +22,7 @@ func TestSChainWriter(t *testing.T) {
 		description    string
 		giveRequest    openrtb2.BidRequest
 		giveBidder     string
-		giveHostSChain *openrtb_ext.ExtRequestPrebidSChainSChainNode
+		giveHostSChain *openrtb2.SupplyChainNode
 		wantRequest    openrtb2.BidRequest
 		wantError      bool
 	}{
@@ -163,8 +163,8 @@ func TestSChainWriter(t *testing.T) {
 				Source: nil,
 			},
 			giveBidder: "testbidder",
-			giveHostSChain: &openrtb_ext.ExtRequestPrebidSChainSChainNode{
-				ASI: "pbshostcompany.com", SID: "00001", RID: "BidRequest", HP: 1,
+			giveHostSChain: &openrtb2.SupplyChainNode{
+				ASI: "pbshostcompany.com", SID: "00001", RID: "BidRequest", HP: openrtb2.Int8Ptr(1),
 			},
 			wantRequest: openrtb2.BidRequest{
 				Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["testbidder"],"schain":{"complete":1,"nodes":[` + seller1Node + `],"ver":"1.0"}}]}}`),
@@ -180,8 +180,8 @@ func TestSChainWriter(t *testing.T) {
 				Source: nil,
 			},
 			giveBidder: "testbidder",
-			giveHostSChain: &openrtb_ext.ExtRequestPrebidSChainSChainNode{
-				ASI: "pbshostcompany.com", SID: "00001", RID: "BidRequest", HP: 1,
+			giveHostSChain: &openrtb2.SupplyChainNode{
+				ASI: "pbshostcompany.com", SID: "00001", RID: "BidRequest", HP: openrtb2.Int8Ptr(1),
 			},
 			wantRequest: openrtb2.BidRequest{
 				Ext: nil,

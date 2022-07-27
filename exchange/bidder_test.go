@@ -17,9 +17,9 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	nativeRequests "github.com/mxmCherry/openrtb/v15/native1/request"
-	nativeResponse "github.com/mxmCherry/openrtb/v15/native1/response"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	nativeRequests "github.com/mxmCherry/openrtb/v16/native1/request"
+	nativeResponse "github.com/mxmCherry/openrtb/v16/native1/response"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
@@ -2079,7 +2079,7 @@ func TestExtraBid(t *testing.T) {
 	seatBids, errs := bidder.requestBid(context.Background(), bidderReq, map[string]float64{}, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, false, false,
 		config.AlternateBidderCodes{
 			Enabled: true,
-			Adapters: map[string]config.AdapterAlternateBidderCodes{
+			Bidders: map[string]config.AdapterAlternateBidderCodes{
 				string(openrtb_ext.BidderPubmatic): {
 					AllowedBidderCodes: []string{"groupm"},
 				},
@@ -2182,7 +2182,7 @@ func TestExtraBidWithAlternateBidderCodeDisabled(t *testing.T) {
 	seatBids, errs := bidder.requestBid(context.Background(), bidderReq, map[string]float64{}, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, false, false,
 		config.AlternateBidderCodes{
 			Enabled: true,
-			Adapters: map[string]config.AdapterAlternateBidderCodes{
+			Bidders: map[string]config.AdapterAlternateBidderCodes{
 				string(openrtb_ext.BidderPubmatic): {
 					AllowedBidderCodes: []string{"groupm-allowed"},
 				},
@@ -2282,7 +2282,7 @@ func TestExtraBidWithBidAdjustments(t *testing.T) {
 	seatBids, errs := bidder.requestBid(context.Background(), bidderReq, bidAdjustments, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, false, false,
 		config.AlternateBidderCodes{
 			Enabled: true,
-			Adapters: map[string]config.AdapterAlternateBidderCodes{
+			Bidders: map[string]config.AdapterAlternateBidderCodes{
 				string(openrtb_ext.BidderPubmatic): {
 					AllowedBidderCodes: []string{"groupm"},
 				},
@@ -2384,7 +2384,7 @@ func TestExtraBidWithBidAdjustmentsUsingAdapterCode(t *testing.T) {
 	seatBids, errs := bidder.requestBid(context.Background(), bidderReq, bidAdjustments, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, false, false,
 		config.AlternateBidderCodes{
 			Enabled: true,
-			Adapters: map[string]config.AdapterAlternateBidderCodes{
+			Bidders: map[string]config.AdapterAlternateBidderCodes{
 				string(openrtb_ext.BidderPubmatic): {
 					AllowedBidderCodes: []string{"groupm"},
 				},
