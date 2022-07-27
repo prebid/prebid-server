@@ -48,7 +48,7 @@
   "outgoingRequests": {
     "appnexus": {
       "mockResponse": {
-        "pbsSeatBid": {
+        "pbsSeatBids": [{
           "pbsBids": [
             {
               "ortbBid": {
@@ -72,13 +72,14 @@
               },
               "bidType": "video"
             }
-          ]
-        }
+          ],
+          "seat": "appnexus"
+        }]
       }
     },
     "rubicon": {
       "mockResponse": {
-        "pbsSeatBid": {
+        "pbsSeatBids": [{
           "pbsBids": [
             {
               "ortbBid": {
@@ -91,8 +92,9 @@
               },
               "bidType": "video"
             }
-          ]
-        }
+          ],
+          "seat": "rubicon"
+        }]
       }
     }
   },

@@ -91,7 +91,8 @@ type Configuration struct {
 	//When true, new bid id will be generated in seatbid[].bid[].ext.prebid.bidid and used in event urls instead
 	GenerateBidID bool `mapstructure:"generate_bid_id"`
 	// GenerateRequestID overrides the bidrequest.id in an AMP Request or an App Stored Request with a generated UUID if set to true. The default is false.
-	GenerateRequestID bool `mapstructure:"generate_request_id"`
+	GenerateRequestID bool                                          `mapstructure:"generate_request_id"`
+	HostSChainNode    *openrtb_ext.ExtRequestPrebidSChainSChainNode `mapstructure:"host_schain_node"`
 
 	TrackerURL          string              `mapstructure:"tracker_url"`
 	VendorListScheduler VendorListScheduler `mapstructure:"vendor_list_scheduler"`
@@ -512,6 +513,9 @@ type DisabledMetrics struct {
 	// True if we want to stop collecting account-to-adapter metrics
 	AccountAdapterDetails bool `mapstructure:"account_adapter_details"`
 
+	// True if we want to stop collecting account debug request metrics
+	AccountDebug bool `mapstructure:"account_debug"`
+
 	// True if we don't want to collect metrics about the connections prebid
 	// server establishes with bidder servers such as the number of connections
 	// that were created or reused.
@@ -795,6 +799,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("host_cookie.value", "")
 	v.SetDefault("host_cookie.ttl_days", 90)
 	v.SetDefault("host_cookie.max_cookie_size_bytes", 0)
+	v.SetDefault("host_schain_node", nil)
 	v.SetDefault("http_client.max_connections_per_host", 0) // unlimited
 	v.SetDefault("http_client.max_idle_connections", 400)
 	v.SetDefault("http_client.max_idle_connections_per_host", 10)
@@ -809,6 +814,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("http_client.dial_keepalive", 0)          //no restriction
 	// no metrics configured by default (metrics{host|database|username|password})
 	v.SetDefault("metrics.disabled_metrics.account_adapter_details", false)
+	v.SetDefault("metrics.disabled_metrics.account_debug", true)
 	v.SetDefault("metrics.disabled_metrics.adapter_connections_metrics", true)
 	v.SetDefault("metrics.disabled_metrics.adapter_gdpr_request_blocked", false)
 	v.SetDefault("metrics.influxdb.host", "")
@@ -915,6 +921,9 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("accounts.filesystem.directorypath", "./stored_requests/data/by_id")
 	v.SetDefault("accounts.in_memory_cache.type", "none")
 
+	v.BindEnv("user_sync.external_url")
+	v.BindEnv("user_sync.coop_sync.default")
+
 	// some adapters append the user id to the end of the redirect url instead of using
 	// macro substitution. it is important for the uid to be the last query parameter.
 	v.SetDefault("user_sync.redirect_url", "{{.ExternalURL}}/setuid?bidder={{.SyncerKey}}&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&f={{.SyncType}}&uid={{.UserMacro}}")
@@ -961,6 +970,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.appnexus.platform_id", "5")
 	v.SetDefault("adapters.audiencenetwork.disabled", true)
 	v.SetDefault("adapters.audiencenetwork.endpoint", "https://an.facebook.com/placementbid.ortb")
+	v.SetDefault("adapters.automatad.endpoint", "https://s2s.atmtd.com")
 	v.SetDefault("adapters.avocet.disabled", true)
 	v.SetDefault("adapters.axonix.endpoint", "https://openrtb-us-east-1.axonix.com/supply/prebid-server/{{.AccountID}}")
 	v.SetDefault("adapters.beachfront.endpoint", "https://display.bfmio.com/prebid_display")
@@ -971,6 +981,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.bidmyadz.endpoint", "http://endpoint.bidmyadz.com/c0f68227d14ed938c6c49f3967cbe9bc")
 	v.SetDefault("adapters.bidscube.endpoint", "http://supply.bidscube.com/?c=o&m=rtb")
 	v.SetDefault("adapters.bizzclick.endpoint", "http://us-e-node1.bizzclick.com/bid?rtb_seat_id={{.SourceId}}&secret_key={{.AccountID}}")
+	v.SetDefault("adapters.bliink.endpoint", "http://engine.bliink.io/bid")
 	v.SetDefault("adapters.bmtm.endpoint", "https://one.elitebidder.com/api/pbs")
 	v.SetDefault("adapters.brightroll.endpoint", "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
 	v.SetDefault("adapters.coinzilla.endpoint", "http://request-global.czilladx.com/serve/prebid-server.php")
@@ -1006,6 +1017,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.ix.endpoint", "http://exchange.indexww.com/pbs?p=192919")
 	v.SetDefault("adapters.janet.endpoint", "http://ghb.bidder.jmgads.com/pbs/ortb")
 	v.SetDefault("adapters.jixie.endpoint", "https://hb.jixie.io/v2/hbsvrpost")
+	v.SetDefault("adapters.kargo.endpoint", "https://krk.kargo.com/api/v1/openrtb")
 	v.SetDefault("adapters.kayzen.endpoint", "https://bids-{{.ZoneID}}.bidder.kayzen.io/?exchange={{.AccountID}}")
 	v.SetDefault("adapters.krushmedia.endpoint", "http://ads4.krushmedia.com/?c=rtb&m=req&key={{.AccountID}}")
 	v.SetDefault("adapters.invibes.endpoint", "https://{{.ZoneID}}.videostep.com/bid/ServerBidAdContent")
@@ -1018,7 +1030,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.sa_lunamedia.endpoint", "http://balancer.lmgssp.com/pserver")
 	v.SetDefault("adapters.madvertise.endpoint", "https://mobile.mng-ads.com/bidrequest{{.ZoneID}}")
 	v.SetDefault("adapters.marsmedia.endpoint", "https://bid306.rtbsrv.com/bidder/?bid=f3xtet")
-	v.SetDefault("adapters.mediafuse.endpoint", "http://ghb.hbmp.mediafuse.com/pbs/ortb")
+	v.SetDefault("adapters.mediafuse.endpoint", "http://ib.adnxs.com/openrtb2")
 	v.SetDefault("adapters.medianet.endpoint", "https://prebid-adapter.media.net/rtb/pb/prebids2s")
 	v.SetDefault("adapters.medianet.extra_info", "https://medianet.golang.pbs.com")
 	v.SetDefault("adapters.mgid.endpoint", "https://prebid.mgid.com/prebid/")
@@ -1060,9 +1072,12 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.sovrn.endpoint", "http://ap.lijit.com/rtb/bid?src=prebid_server")
 	v.SetDefault("adapters.spotx.endpoint", "https://search.spotxchange.com/openrtb/2.3/dados")
 	v.SetDefault("adapters.streamkey.endpoint", "http://ghb.hb.streamkey.net/pbs/ortb")
+	v.SetDefault("adapters.stroeercore.disabled", true)
+	v.SetDefault("adapters.stroeercore.endpoint", "http://mhb.adscale.de/s2sdsh")
 	v.SetDefault("adapters.synacormedia.endpoint", "http://{{.Host}}.technoratimedia.com/openrtb/bids/{{.Host}}")
 	v.SetDefault("adapters.tappx.endpoint", "http://{{.Host}}")
 	v.SetDefault("adapters.telaria.endpoint", "https://ads.tremorhub.com/ad/rtb/prebid")
+	v.SetDefault("adapters.trafficgate.endpoint", "http://{{.Host}}.bc-plugin.com/?c=o&m=rtb")
 	v.SetDefault("adapters.triplelift_native.disabled", true)
 	v.SetDefault("adapters.triplelift_native.extra_info", "{\"publisher_whitelist\":[]}")
 	v.SetDefault("adapters.triplelift.endpoint", "https://tlx.3lift.com/s2s/auction?sra=1&supplier_id=20")
@@ -1076,7 +1091,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.videobyte.endpoint", "https://x.videobyte.com/ortbhb")
 	v.SetDefault("adapters.vidoomy.endpoint", "https://p.vidoomy.com/api/rtbserver/pbs")
 	v.SetDefault("adapters.viewdeos.endpoint", "http://ghb.sync.viewdeos.com/pbs/ortb")
-	v.SetDefault("adapters.visx.endpoint", "https://t.visx.net/s2s_bid?wrapperType=s2s_prebid_standard:0.1.0")
+	v.SetDefault("adapters.visx.endpoint", "https://t.visx.net/s2s_bid?wrapperType=s2s_prebid_standard:0.1.1")
 	v.SetDefault("adapters.vrtcal.endpoint", "http://rtb.vrtcal.com/bidder_prebid.vap?ssp=1812")
 	v.SetDefault("adapters.yahoossp.disabled", true)
 	v.SetDefault("adapters.yahoossp.endpoint", "https://s2shb.ssp.yahoo.com/admax/bid/partners/PBS")
@@ -1086,6 +1101,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.yieldone.endpoint", "https://y.one.impact-ad.jp/hbs_imp")
 	v.SetDefault("adapters.yssp.disabled", true)
 	v.SetDefault("adapters.zeroclickfraud.endpoint", "http://{{.Host}}/openrtb2?sid={{.SourceId}}")
+	v.SetDefault("adapters.infytv.endpoint", "https://nxs.infy.tv/pbs/openrtb")
 
 	v.SetDefault("max_request_size", 1024*256)
 	v.SetDefault("analytics.file.filename", "")

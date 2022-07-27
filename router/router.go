@@ -150,6 +150,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 
 	cacheHttpClient := &http.Client{
 		Transport: &http.Transport{
+			Proxy:               http.ProxyFromEnvironment,
 			MaxConnsPerHost:     cfg.CacheClient.MaxConnsPerHost,
 			MaxIdleConns:        cfg.CacheClient.MaxIdleConns,
 			MaxIdleConnsPerHost: cfg.CacheClient.MaxIdleConnsPerHost,
@@ -209,7 +210,8 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 
 	gvlVendorIDs := bidderInfos.ToGVLVendorIDMap()
 	vendorListFetcher := gdpr.NewVendorListFetcher(context.Background(), cfg.GDPR, generalHttpClient, gdpr.VendorListURLMaker)
-	gdprPerms := gdpr.NewPermissions(cfg.GDPR, &cfg.GDPR.TCF2, gvlVendorIDs, vendorListFetcher)
+	gdprPermsBuilder := gdpr.NewPermissionsBuilder(cfg.GDPR, gvlVendorIDs, vendorListFetcher)
+	tcf2CfgBuilder := gdpr.NewTCF2Config
 
 	if cfg.VendorListScheduler.Enabled {
 		vendorListScheduler, err := gdpr.GetVendorListScheduler(cfg.VendorListScheduler.Interval, cfg.VendorListScheduler.Timeout, generalHttpClient)
@@ -227,7 +229,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		return nil, errs
 	}
 
-	theExchange := exchange.NewExchange(adapters, cacheClient, cfg, syncersByBidder, r.MetricsEngine, bidderInfos, vendorListFetcher, rateConvertor, categoriesFetcher)
+	theExchange := exchange.NewExchange(adapters, cacheClient, cfg, syncersByBidder, r.MetricsEngine, bidderInfos, gdprPermsBuilder, tcf2CfgBuilder, rateConvertor, categoriesFetcher)
 	/*var uuidGenerator uuidutil.UUIDRandomGenerator
 	openrtbEndpoint, err := openrtb2.NewEndpoint(uuidGenerator, theExchange, paramsValidator, fetcher, accounts, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBidders, storedRespFetcher)
 	if err != nil {
@@ -255,7 +257,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	r.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint(bidderInfos, defaultAliases))
 	r.GET("/info/bidders/:bidderName", infoEndpoints.NewBiddersDetailEndpoint(bidderInfos, cfg.Adapters, defaultAliases))
 	r.GET("/bidders/params", NewJsonDirectoryServer(schemaDirectory, paramsValidator, defaultAliases))
-	r.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncersByBidder, cfg, gdprPerms, r.MetricsEngine, pbsAnalytics, accounts, activeBidders).Handle)
+	r.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncersByBidder, cfg, gdprPermsBuilder, tcf2CfgBuilder, r.MetricsEngine, pbsAnalytics, accounts, activeBidders).Handle)
 	r.GET("/status", endpoints.NewStatusEndpoint(cfg.StatusResponse))
 	r.GET("/", serveIndex)
 	r.Handler("GET", "/version", endpoints.NewVersionEndpoint(version.Ver, version.Rev))
@@ -277,7 +279,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		RecaptchaSecret:  cfg.RecaptchaSecret,
 	}
 
-	r.GET("/setuid", endpoints.NewSetUIDEndpoint(cfg.HostCookie, syncersByBidder, gdprPerms, pbsAnalytics, r.MetricsEngine))
+	r.GET("/setuid", endpoints.NewSetUIDEndpoint(cfg, syncersByBidder, gdprPermsBuilder, tcf2CfgBuilder, pbsAnalytics, accounts, r.MetricsEngine))
 	r.GET("/getuids", endpoints.NewGetUIDsEndpoint(cfg.HostCookie))
 	r.POST("/optout", userSyncDeps.OptOut)
 	r.GET("/optout", userSyncDeps.OptOut)*/
@@ -287,7 +289,6 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	g_cfg = cfg
 	g_storedReqFetcher = &fetcher
 	g_accounts = &accounts
-	g_categoriesFetcher = &categoriesFetcher
 	g_videoFetcher = &videoFetcher
 	g_storedRespFetcher = &storedRespFetcher
 	g_analytics = &pbsAnalytics
@@ -295,9 +296,10 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	g_activeBidders = activeBidders
 	g_disabledBidders = disabledBidders
 	g_defReqJSON = defReqJSON
-	g_gdprPerms = &gdprPerms
 	g_cacheClient = &cacheClient
 	g_ex = &theExchange
+	g_gdprPermsBuilder = gdprPermsBuilder
+	g_tcf2CfgBuilder = tcf2CfgBuilder
 
 	return r, nil
 }

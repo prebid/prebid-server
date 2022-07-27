@@ -21,28 +21,6 @@ type SovrnAdapter struct {
 }
 
 func (s *SovrnAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	errs := make([]error, 0, len(request.Imp))
-
-	for i := 0; i < len(request.Imp); i++ {
-		_, err := preprocess(&request.Imp[i])
-		if err != nil {
-			errs = append(errs, err)
-			request.Imp = append(request.Imp[:i], request.Imp[i+1:]...)
-			i--
-		}
-	}
-
-	// If all the requests were malformed, don't bother making a server call with no impressions.
-	if len(request.Imp) == 0 {
-		return nil, errs
-	}
-
-	reqJSON, err := json.Marshal(request)
-	if err != nil {
-		errs = append(errs, err)
-		return nil, errs
-	}
-
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json")
 	if request.Device != nil {
@@ -61,6 +39,70 @@ func (s *SovrnAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 		}
 	}
 
+	errs := make([]error, 0, len(request.Imp))
+	var err error
+	validImps := make([]openrtb2.Imp, 0, len(request.Imp))
+
+	for _, imp := range request.Imp {
+		var bidderExt adapters.ExtImpBidder
+		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+			errs = append(errs, &errortypes.BadInput{
+				Message: err.Error(),
+			})
+			continue
+		}
+
+		var sovrnExt openrtb_ext.ExtImpSovrn
+		if err := json.Unmarshal(bidderExt.Bidder, &sovrnExt); err != nil {
+			errs = append(errs, &errortypes.BadInput{
+				Message: err.Error(),
+			})
+			continue
+		}
+
+		tagId := getTagId(sovrnExt)
+		if tagId == "" {
+			errs = append(errs, &errortypes.BadInput{
+				Message: "Missing required parameter 'tagid'",
+			})
+			continue
+		}
+
+		imp.TagID = tagId
+
+		if imp.BidFloor == 0 && sovrnExt.BidFloor > 0 {
+			imp.BidFloor = sovrnExt.BidFloor
+		}
+
+		// Validate video params if appropriate
+		video := imp.Video
+		if video != nil {
+			if video.MIMEs == nil ||
+				video.MinDuration == 0 ||
+				video.MaxDuration == 0 ||
+				video.Protocols == nil {
+				errs = append(errs, &errortypes.BadInput{
+					Message: "Missing required video parameter",
+				})
+				continue
+			}
+		}
+
+		validImps = append(validImps, imp)
+	}
+
+	if len(validImps) == 0 {
+		return nil, errs
+	}
+
+	request.Imp = validImps
+
+	reqJSON, err := json.Marshal(request)
+	if err != nil {
+		errs = append(errs, err)
+		return nil, errs
+	}
+
 	return []*adapters.RequestData{{
 		Method:  "POST",
 		Uri:     s.URI,
@@ -75,78 +117,77 @@ func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue str
 	}
 }
 
-func (s *SovrnAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if response.StatusCode == http.StatusNoContent {
+func (s *SovrnAdapter) MakeBids(request *openrtb2.BidRequest, bidderRequest *adapters.RequestData, bidderResponse *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	if bidderResponse.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
 
-	if response.StatusCode == http.StatusBadRequest {
+	if bidderResponse.StatusCode == http.StatusBadRequest {
 		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", bidderResponse.StatusCode),
 		}}
 	}
 
-	if response.StatusCode != http.StatusOK {
+	if bidderResponse.StatusCode != http.StatusOK {
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", bidderResponse.StatusCode),
 		}}
 	}
 
-	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	var bidResponse openrtb2.BidResponse
+	if err := json.Unmarshal(bidderResponse.Body, &bidResponse); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: err.Error(),
 		}}
 	}
 
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
+	response := adapters.NewBidderResponseWithBidsCapacity(5)
+	errs := make([]error, 0)
 
-	for _, sb := range bidResp.SeatBid {
-		for i := 0; i < len(sb.Bid); i++ {
-			bid := sb.Bid[i]
+	for _, sb := range bidResponse.SeatBid {
+		for _, bid := range sb.Bid {
 			adm, err := url.QueryUnescape(bid.AdM)
 			if err == nil {
 				bid.AdM = adm
-				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+
+				bidType := openrtb_ext.BidTypeBanner
+
+				impIdx, impIdErr := getImpIdx(bid.ImpID, request)
+				if impIdErr != nil {
+					errs = append(errs, impIdErr)
+					continue
+				} else if request.Imp[impIdx].Video != nil {
+					bidType = openrtb_ext.BidTypeVideo
+				}
+
+				response.Bids = append(response.Bids, &adapters.TypedBid{
 					Bid:     &bid,
-					BidType: openrtb_ext.BidTypeBanner,
+					BidType: bidType,
 				})
 			}
 		}
 	}
 
-	return bidResponse, nil
+	return response, errs
 }
 
-func preprocess(imp *openrtb2.Imp) (string, error) {
-	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return "", &errortypes.BadInput{
-			Message: err.Error(),
-		}
-	}
-
-	var sovrnExt openrtb_ext.ExtImpSovrn
-	if err := json.Unmarshal(bidderExt.Bidder, &sovrnExt); err != nil {
-		return "", &errortypes.BadInput{
-			Message: err.Error(),
-		}
-	}
-
-	imp.TagID = getTagid(sovrnExt)
-
-	if imp.BidFloor == 0 && sovrnExt.BidFloor > 0 {
-		imp.BidFloor = sovrnExt.BidFloor
-	}
-
-	return imp.TagID, nil
-}
-
-func getTagid(sovrnExt openrtb_ext.ExtImpSovrn) string {
+func getTagId(sovrnExt openrtb_ext.ExtImpSovrn) string {
 	if len(sovrnExt.Tagid) > 0 {
 		return sovrnExt.Tagid
 	} else {
 		return sovrnExt.TagId
+	}
+}
+
+func getImpIdx(impId string, request *openrtb2.BidRequest) (int, error) {
+	for idx, imp := range request.Imp {
+		if imp.ID == impId {
+			return idx, nil
+		}
+	}
+
+	return -1, &errortypes.BadInput{
+		Message: fmt.Sprintf("Imp ID %s in bid didn't match with any imp in the original request", impId),
 	}
 }
 

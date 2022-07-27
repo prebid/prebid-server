@@ -247,6 +247,7 @@ const (
 	AdapterErrorBadServerResponse   AdapterError = "badserverresponse"
 	AdapterErrorTimeout             AdapterError = "timeout"
 	AdapterErrorFailedToRequestBids AdapterError = "failedtorequestbid"
+	AdapterErrorValidation          AdapterError = "validation"
 	AdapterErrorUnknown             AdapterError = "unknown_error"
 )
 
@@ -256,6 +257,7 @@ func AdapterErrors() []AdapterError {
 		AdapterErrorBadServerResponse,
 		AdapterErrorTimeout,
 		AdapterErrorFailedToRequestBids,
+		AdapterErrorValidation,
 		AdapterErrorUnknown,
 	}
 }
@@ -418,6 +420,7 @@ type MetricsEngine interface {
 	RecordTimeoutNotice(success bool)
 	RecordRequestPrivacy(privacy PrivacyLabels)
 	RecordAdapterGDPRRequestBlocked(adapterName openrtb_ext.BidderName)
+	RecordDebugRequest(debugEnabled bool, pubId string)
 
 	// RecordAdapterDuplicateBidID captures the  bid.ID collisions when adaptor
 	// gives the bid response with multiple bids containing  same bid.ID

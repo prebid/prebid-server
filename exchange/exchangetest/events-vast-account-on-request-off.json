@@ -36,7 +36,7 @@
     "appnexus": {
       "modifyingVastXmlAllowed": true,
       "mockResponse": {
-        "pbsSeatBid": {
+        "pbsSeatBids": [{
           "pbsBids": [
             {
               "ortbBid": {
@@ -62,14 +62,15 @@
               },
               "bidType": "video"
             }
-          ]
-        }
+          ],
+          "seat": "appnexus"
+        }]
       }
     },
     "audienceNetwork": {
       "modifyingVastXmlAllowed": false,
       "mockResponse": {
-        "pbsSeatBid": {
+        "pbsSeatBids": [{
           "pbsBids": [
             {
               "ortbBid": {
@@ -83,8 +84,9 @@
               },
               "bidType": "video"
             }
-          ]
-        }
+          ],
+          "seat": "audienceNetwork"
+        }]
       }
     }
   },

@@ -31,20 +31,21 @@ var (
 	g_paramsValidator   *openrtb_ext.BidderParamValidator
 	g_storedReqFetcher  *stored_requests.Fetcher
 	g_storedRespFetcher *stored_requests.Fetcher
-	g_gdprPerms         *gdpr.Permissions
 	g_metrics           metrics.MetricsEngine
 	g_analytics         *analytics.PBSAnalyticsModule
 	g_disabledBidders   map[string]string
-	g_categoriesFetcher *stored_requests.CategoryFetcher
 	g_videoFetcher      *stored_requests.Fetcher
 	g_activeBidders     map[string]openrtb_ext.BidderName
 	g_defReqJSON        []byte
 	g_cacheClient       *pbc.Client
 	g_transport         *http.Transport
+	g_gdprPermsBuilder  gdpr.PermissionsBuilder
+	g_tcf2CfgBuilder    gdpr.TCF2ConfigBuilder
 )
 
 func getTransport(cfg *config.Configuration, certPool *x509.CertPool) *http.Transport {
 	transport := &http.Transport{
+		Proxy:           http.ProxyFromEnvironment,
 		MaxConnsPerHost: cfg.Client.MaxConnsPerHost,
 		IdleConnTimeout: time.Duration(cfg.Client.IdleConnTimeout) * time.Second,
 		TLSClientConfig: &tls.Config{RootCAs: certPool},
@@ -112,13 +113,13 @@ func GetUIDSWrapper(w http.ResponseWriter, r *http.Request) {
 
 //SetUIDSWrapper Openwrap wrapper method for calling /setuid endpoint
 func SetUIDSWrapper(w http.ResponseWriter, r *http.Request) {
-	setUID := endpoints.NewSetUIDEndpoint(g_cfg.HostCookie, g_syncers, *g_gdprPerms, *g_analytics, g_metrics)
+	setUID := endpoints.NewSetUIDEndpoint(g_cfg, g_syncers, g_gdprPermsBuilder, g_tcf2CfgBuilder, *g_analytics, *g_accounts, g_metrics)
 	setUID(w, r, nil)
 }
 
 //CookieSync Openwrap wrapper method for calling /cookie_sync endpoint
 func CookieSync(w http.ResponseWriter, r *http.Request) {
-	cookiesync := endpoints.NewCookieSyncEndpoint(g_syncers, g_cfg, *g_gdprPerms, g_metrics, *g_analytics, *g_accounts, g_activeBidders)
+	cookiesync := endpoints.NewCookieSyncEndpoint(g_syncers, g_cfg, g_gdprPermsBuilder, g_tcf2CfgBuilder, g_metrics, *g_analytics, *g_accounts, g_activeBidders)
 	cookiesync.Handle(w, r, nil)
 }
 
