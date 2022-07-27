@@ -14,13 +14,24 @@ type BidderInfos map[string]BidderInfo
 
 // BidderInfo specifies all configuration for a bidder except for enabled status, endpoint, and extra information.
 type BidderInfo struct {
-	Enabled                 bool              // copied from adapter config for convenience. to be refactored.
-	Maintainer              *MaintainerInfo   `yaml:"maintainer"`
-	Capabilities            *CapabilitiesInfo `yaml:"capabilities"`
-	ModifyingVastXmlAllowed bool              `yaml:"modifyingVastXmlAllowed"`
-	Debug                   *DebugInfo        `yaml:"debug"`
-	GVLVendorID             uint16            `yaml:"gvlVendorID"`
-	Syncer                  *Syncer           `yaml:"userSync"`
+	Enabled                 bool                 // copied from adapter config for convenience. to be refactored.
+	Maintainer              *MaintainerInfo      `yaml:"maintainer"`
+	Capabilities            *CapabilitiesInfo    `yaml:"capabilities"`
+	ModifyingVastXmlAllowed bool                 `yaml:"modifyingVastXmlAllowed"`
+	Debug                   *DebugInfo           `yaml:"debug"`
+	GVLVendorID             uint16               `yaml:"gvlVendorID"`
+	Syncer                  *Syncer              `yaml:"userSync"`
+	Experiment              BidderInfoExperiment `yaml:"experiment"`
+}
+
+// BidderInfoExperiment specifies non-production ready feature config for a bidder
+type BidderInfoExperiment struct {
+	AdsCert BidderAdsCert `yaml:"adsCert"`
+}
+
+// BidderAdsCert enables Call Sign feature for bidder
+type BidderAdsCert struct {
+	Enabled bool `yaml:"enabled"`
 }
 
 // MaintainerInfo specifies the support email address for a bidder.
