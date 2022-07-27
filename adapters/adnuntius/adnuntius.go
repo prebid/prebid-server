@@ -172,11 +172,7 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 	}
 
 	for _, imp := range ortbRequest.Imp {
-		if imp.Banner == nil {
-			return nil, []error{&errortypes.BadInput{
-				Message: fmt.Sprintf("ignoring imp id=%s, Adnuntius supports only Banner", imp.ID),
-			}}
-		}
+		
 		var bidderExt adapters.ExtImpBidder
 		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			return nil, []error{&errortypes.BadInput{
