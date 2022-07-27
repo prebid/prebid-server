@@ -8,5 +8,8 @@
             "type": "string",
             "description": "Ad Unit ID"
         }
-    }
+    },
+    "required": [
+        "adUnitId"
+    ]
 }

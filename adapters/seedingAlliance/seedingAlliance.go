@@ -7,25 +7,25 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type SeedingAllianceAdapter struct {
+type adapter struct {
 	endpoint string
 }
 
 func Builder(_ openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &SeedingAllianceAdapter{
+	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}
 	return bidder, nil
 }
 
-func (a *SeedingAllianceAdapter) MakeRequests(request *openrtb2.BidRequest, extraRequestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, extraRequestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	for i := range request.Imp {
 		if err := addTagID(&request.Imp[i]); err != nil {
 			return nil, []error{err}
@@ -48,7 +48,7 @@ func (a *SeedingAllianceAdapter) MakeRequests(request *openrtb2.BidRequest, extr
 	return []*adapters.RequestData{requestData}, nil
 }
 
-func (a *SeedingAllianceAdapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if responseData.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -129,10 +129,8 @@ func addTagID(imp *openrtb2.Imp) error {
 	}
 
 	if err := json.Unmarshal(ext.Bidder, &extSA); err != nil {
-		if v, ok := ext.Prebid.Bidder["seedingAlliance"]; ok {
-			if err := json.Unmarshal(v, &extSA); err != nil {
-				return fmt.Errorf("could not unmarshal openrtb_ext.ImpExtSeedingAlliance: %w", err)
-			}
+		if err := json.Unmarshal(ext.Prebid.Bidder["seedingAlliance"], &extSA); err != nil {
+			return fmt.Errorf("could not unmarshal openrtb_ext.ImpExtSeedingAlliance: %w", err)
 		}
 	}
 
