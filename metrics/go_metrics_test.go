@@ -33,6 +33,7 @@ func TestNewMetrics(t *testing.T) {
 	ensureContains(t, registry, "setuid_requests.opt_out", m.SetUidStatusMeter[SetUidOptOut])
 	ensureContains(t, registry, "setuid_requests.gdpr_blocked_host_cookie", m.SetUidStatusMeter[SetUidGDPRHostCookieBlocked])
 	ensureContains(t, registry, "setuid_requests.syncer_unknown", m.SetUidStatusMeter[SetUidSyncerUnknown])
+	ensureContains(t, registry, "stored_responses", m.StoredResponsesMeter)
 
 	ensureContains(t, registry, "prebid_cache_request_time.ok", m.PrebidCacheRequestTimerSuccess)
 	ensureContains(t, registry, "prebid_cache_request_time.err", m.PrebidCacheRequestTimerError)
@@ -737,6 +738,55 @@ func TestRecordSyncerSet(t *testing.T) {
 
 	assert.Equal(t, m.SyncerSetsMeter["foo"][SyncerSetUidOK].Count(), int64(0))
 	assert.Equal(t, m.SyncerSetsMeter["foo"][SyncerSetUidCleared].Count(), int64(1))
+}
+
+func TestStoredResponses(t *testing.T) {
+	testCases := []struct {
+		description                           string
+		givenPubID                            string
+		accountStoredResponsesMetricsDisabled bool
+		expectedAccountStoredResponsesCount   int64
+		expectedStoredResponsesCount          int64
+	}{
+		{
+			description:                           "Publisher id is given, account stored responses disabled, both metrics should be updated",
+			givenPubID:                            "acct-id",
+			accountStoredResponsesMetricsDisabled: true,
+			expectedAccountStoredResponsesCount:   0,
+			expectedStoredResponsesCount:          1,
+		},
+		{
+			description:                           "Publisher id is given, account stored responses enabled, both metrics should be updated",
+			givenPubID:                            "acct-id",
+			accountStoredResponsesMetricsDisabled: false,
+			expectedAccountStoredResponsesCount:   1,
+			expectedStoredResponsesCount:          1,
+		},
+		{
+			description:                           "Publisher id is unknown, account stored responses enabled, only expectedStoredResponsesCount metric should be updated",
+			givenPubID:                            PublisherUnknown,
+			accountStoredResponsesMetricsDisabled: false,
+			expectedAccountStoredResponsesCount:   0,
+			expectedStoredResponsesCount:          1,
+		},
+		{
+			description:                           "Publisher id is unknown, account stored responses disabled, only expectedStoredResponsesCount metric should be updated",
+			givenPubID:                            PublisherUnknown,
+			accountStoredResponsesMetricsDisabled: true,
+			expectedAccountStoredResponsesCount:   0,
+			expectedStoredResponsesCount:          1,
+		},
+	}
+	for _, test := range testCases {
+		registry := metrics.NewRegistry()
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountStoredResponses: test.accountStoredResponsesMetricsDisabled}, nil)
+
+		m.RecordStoredResponse(test.givenPubID)
+		am := m.getAccountMetrics(test.givenPubID)
+
+		assert.Equal(t, test.expectedStoredResponsesCount, m.StoredResponsesMeter.Count())
+		assert.Equal(t, test.expectedAccountStoredResponsesCount, am.storedResponsesMeter.Count())
+	}
 }
 
 func ensureContainsBidTypeMetrics(t *testing.T, registry metrics.Registry, prefix string, mdm map[openrtb_ext.BidType]*MarkupDeliveryMetrics) {

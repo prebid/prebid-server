@@ -95,6 +95,8 @@ type Configuration struct {
 	// GenerateRequestID overrides the bidrequest.id in an AMP Request or an App Stored Request with a generated UUID if set to true. The default is false.
 	GenerateRequestID bool                      `mapstructure:"generate_request_id"`
 	HostSChainNode    *openrtb2.SupplyChainNode `mapstructure:"host_schain_node"`
+	// Experiment configures non-production ready features.
+	Experiment Experiment `mapstructure:"experiment"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
@@ -129,6 +131,7 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 	if cfg.AccountDefaults.Events.Enabled {
 		glog.Warning(`account_defaults.events will currently not do anything as the feature is still under development. Please follow https://github.com/prebid/prebid-server/issues/1725 for more updates`)
 	}
+	errs = cfg.Experiment.validate(errs)
 	return errs
 }
 
@@ -493,6 +496,9 @@ type DisabledMetrics struct {
 	// True if we want to stop collecting account debug request metrics
 	AccountDebug bool `mapstructure:"account_debug"`
 
+	// True if we want to stop collecting account stored respponses metrics
+	AccountStoredResponses bool `mapstructure:"account_stored_responses"`
+
 	// True if we don't want to collect metrics about the connections prebid
 	// server establishes with bidder servers such as the number of connections
 	// that were created or reused.
@@ -788,6 +794,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	// no metrics configured by default (metrics{host|database|username|password})
 	v.SetDefault("metrics.disabled_metrics.account_adapter_details", false)
 	v.SetDefault("metrics.disabled_metrics.account_debug", true)
+	v.SetDefault("metrics.disabled_metrics.account_stored_responses", true)
 	v.SetDefault("metrics.disabled_metrics.adapter_connections_metrics", true)
 	v.SetDefault("metrics.disabled_metrics.adapter_gdpr_request_blocked", false)
 	v.SetDefault("metrics.influxdb.host", "")
@@ -955,6 +962,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.bidscube.endpoint", "http://supply.bidscube.com/?c=o&m=rtb")
 	v.SetDefault("adapters.bizzclick.endpoint", "http://us-e-node1.bizzclick.com/bid?rtb_seat_id={{.SourceId}}&secret_key={{.AccountID}}")
 	v.SetDefault("adapters.bliink.endpoint", "http://engine.bliink.io/bid")
+	v.SetDefault("adapters.blue.endpoint", "https://prebid-us-east-1.getblue.io/?src=prebid")
 	v.SetDefault("adapters.bmtm.endpoint", "https://one.elitebidder.com/api/pbs")
 	v.SetDefault("adapters.brightroll.endpoint", "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
 	v.SetDefault("adapters.coinzilla.endpoint", "http://request-global.czilladx.com/serve/prebid-server.php")
@@ -968,6 +976,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.datablocks.endpoint", "http://{{.Host}}/openrtb2?sid={{.SourceId}}")
 	v.SetDefault("adapters.decenterads.endpoint", "http://supply.decenterads.com/?c=o&m=rtb")
 	v.SetDefault("adapters.deepintent.endpoint", "https://prebid.deepintent.com/prebid")
+	v.SetDefault("adapters.dianomi.endpoint", "https://www-prebid.dianomi.com/cgi-bin/smartads_prebid.pl")
+	v.SetDefault("adapters.dianomi.disabled", true)
 	v.SetDefault("adapters.dmx.endpoint", "https://dmx-direct.districtm.io/b/v2")
 	v.SetDefault("adapters.e_volution.endpoint", "http://service.e-volution.ai/pbserver")
 	v.SetDefault("adapters.emx_digital.endpoint", "https://hb.emxdgt.com")
@@ -1041,7 +1051,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.smartyads.endpoint", "http://{{.Host}}.smartyads.com/bid?rtb_seat_id={{.SourceId}}&secret_key={{.AccountID}}")
 	v.SetDefault("adapters.smilewanted.endpoint", "http://prebid-server.smilewanted.com")
 	v.SetDefault("adapters.sonobi.endpoint", "https://apex.go.sonobi.com/prebid?partnerid=71d9d3d8af")
-	v.SetDefault("adapters.sovrn.endpoint", "http://ap.lijit.com/rtb/bid?src=prebid_server")
+	v.SetDefault("adapters.sovrn.endpoint", "http://pbs.lijit.com/rtb/bid?src=prebid_server")
+	v.SetDefault("adapters.sspbc.endpoint", "https://ssp.wp.pl/bidder/")
 	v.SetDefault("adapters.streamkey.endpoint", "http://ghb.hb.streamkey.net/pbs/ortb")
 	v.SetDefault("adapters.stroeercore.disabled", true)
 	v.SetDefault("adapters.stroeercore.endpoint", "http://mhb.adscale.de/s2sdsh")
@@ -1197,6 +1208,14 @@ func SetupViper(v *viper.Viper, filename string) {
 
 	// Defaults for account_defaults.events.default_url
 	v.SetDefault("account_defaults.events.default_url", "https://PBS_HOST/event?t=##PBS-EVENTTYPE##&vtype=##PBS-VASTEVENT##&b=##PBS-BIDID##&f=i&a=##PBS-ACCOUNTID##&ts=##PBS-TIMESTAMP##&bidder=##PBS-BIDDER##&int=##PBS-INTEGRATION##&mt=##PBS-MEDIATYPE##&ch=##PBS-CHANNEL##&aid=##PBS-AUCTIONID##&l=##PBS-LINEID##")
+
+	v.SetDefault("experiment.adscert.mode", "off")
+	v.SetDefault("experiment.adscert.inprocess.origin", "")
+	v.SetDefault("experiment.adscert.inprocess.key", "")
+	v.SetDefault("experiment.adscert.inprocess.domain_check_interval_seconds", 30)
+	v.SetDefault("experiment.adscert.inprocess.domain_renewal_interval_seconds", 30)
+	v.SetDefault("experiment.adscert.remote.url", "")
+	v.SetDefault("experiment.adscert.remote.signing_timeout_ms", 5)
 }
 
 func migrateConfig(v *viper.Viper) {
