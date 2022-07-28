@@ -39,6 +39,9 @@ var (
 	skanSentKey       = attribute.Key("app.bidder.skan.sent")
 	mraidSupportedKey = attribute.Key("app.bidder.mraid.supported")
 	endcardHTMLKey    = attribute.Key("app.bidder.html_companion")
+	multiBidEnabled   = attribute.Key("app.bidder.multi_bid_enabled")
+	contentType       = attribute.Key("app.bidder.content_type")
+	requestNumber     = attribute.Key("app.bidder.request_number")
 
 	debugVerboseState = "verbose"
 	debugStateKey     = attribute.Key("debug_state")
@@ -432,7 +435,16 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 		mraidSupportedKey.Bool(tjData.MRAID.Supported),
 		placementTypeKey.String(string(tjData.PlacementType)),
 		endcardHTMLKey.Bool(tjData.HTMLCompanionSent),
+		multiBidEnabled.Bool(tjData.MultiBidEnabled),
+		contentType.String(tjData.ContentType),
+		requestNumber.String(tjData.ReqNum),
 	}
+
+	if tjData.MultiBidEnabled {
+		ctx, span = trace.SpanFromContext(ctx).TracerProvider().Tracer("").Start(ctx, string(tjData.ContentType))
+		defer span.End()
+	}
+
 	span.SetAttributes(attrs...)
 	span.SetAttributes(semconv.HTTPClientAttributesFromHTTPRequest(httpReq)...)
 
