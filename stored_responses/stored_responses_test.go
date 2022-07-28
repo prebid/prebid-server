@@ -308,7 +308,7 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
 		requestJson                    []byte
 		expectedStoredAuctionResponses ImpsWithBidResponses
 		expectedStoredBidResponses     ImpBidderStoredResp
-		bidderImpReplaceImpId          BidderImpReplaceImpId
+		expectedBidderImpReplaceImpID  BidderImpReplaceImpID
 	}{
 		{
 			description: "No stored responses",
@@ -324,7 +324,7 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
     			]}`),
 			expectedStoredAuctionResponses: nil,
 			expectedStoredBidResponses:     nil,
-			bidderImpReplaceImpId:          nil,
+			expectedBidderImpReplaceImpID:  nil,
 		},
 		{
 			description: "Stored auction response one imp",
@@ -346,8 +346,8 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
 			expectedStoredAuctionResponses: ImpsWithBidResponses{
 				"imp-id1": bidStoredResp1,
 			},
-			expectedStoredBidResponses: ImpBidderStoredResp{},
-			bidderImpReplaceImpId:      BidderImpReplaceImpId{},
+			expectedStoredBidResponses:    ImpBidderStoredResp{},
+			expectedBidderImpReplaceImpID: BidderImpReplaceImpID{},
 		},
 		{
 			description: "Stored bid response one imp",
@@ -370,7 +370,7 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
 			expectedStoredBidResponses: ImpBidderStoredResp{
 				"imp-id1": {"bidderA": bidStoredResp1},
 			},
-			bidderImpReplaceImpId: BidderImpReplaceImpId{
+			expectedBidderImpReplaceImpID: BidderImpReplaceImpID{
 				"bidderA": map[string]bool{"imp-id1": true},
 			},
 		},
@@ -396,7 +396,7 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
 			expectedStoredBidResponses: ImpBidderStoredResp{
 				"imp-id1": {"bidderA": bidStoredResp1, "bidderB": bidStoredResp2},
 			},
-			bidderImpReplaceImpId: BidderImpReplaceImpId{
+			expectedBidderImpReplaceImpID: BidderImpReplaceImpID{
 				"bidderA": map[string]bool{"imp-id1": true},
 				"bidderB": map[string]bool{"imp-id1": false},
 			},
@@ -429,7 +429,7 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
 			expectedStoredBidResponses: ImpBidderStoredResp{
 				"imp-id1": {"bidderA": bidStoredResp1, "bidderB": bidStoredResp2},
 			},
-			bidderImpReplaceImpId: BidderImpReplaceImpId{
+			expectedBidderImpReplaceImpID: BidderImpReplaceImpID{
 				"bidderA": map[string]bool{"imp-id1": true},
 				"bidderB": map[string]bool{"imp-id1": true},
 			},
@@ -482,8 +482,8 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
 				"imp-id2": bidStoredResp2,
 				"imp-id3": bidStoredResp3,
 			},
-			expectedStoredBidResponses: ImpBidderStoredResp{},
-			bidderImpReplaceImpId:      BidderImpReplaceImpId{},
+			expectedStoredBidResponses:    ImpBidderStoredResp{},
+			expectedBidderImpReplaceImpID: BidderImpReplaceImpID{},
 		},
 		{
 			description: "Stored auction response three imps duplicated stored auction response",
@@ -533,8 +533,8 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
 				"imp-id2": bidStoredResp2,
 				"imp-id3": bidStoredResp2,
 			},
-			expectedStoredBidResponses: ImpBidderStoredResp{},
-			bidderImpReplaceImpId:      BidderImpReplaceImpId{},
+			expectedStoredBidResponses:    ImpBidderStoredResp{},
+			expectedBidderImpReplaceImpID: BidderImpReplaceImpID{},
 		},
 		{
 			description: "Stored bid responses two bidders two imp",
@@ -573,7 +573,7 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
 				"imp-id1": {"bidderA": bidStoredResp1, "bidderB": bidStoredResp2},
 				"imp-id2": {"bidderA": bidStoredResp3, "bidderB": bidStoredResp2},
 			},
-			bidderImpReplaceImpId: BidderImpReplaceImpId{
+			expectedBidderImpReplaceImpID: BidderImpReplaceImpID{
 				"bidderA": map[string]bool{"imp-id1": false, "imp-id2": true},
 				"bidderB": map[string]bool{"imp-id1": true, "imp-id2": false},
 			},
@@ -584,7 +584,7 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
 		storedAuctionResponses, storedBidResponses, bidderImpReplaceImpId, errorList := ProcessStoredResponses(nil, test.requestJson, fetcher, bidderMap)
 		assert.Equal(t, test.expectedStoredAuctionResponses, storedAuctionResponses, "storedAuctionResponses doesn't match: %s\n", test.description)
 		assert.Equalf(t, test.expectedStoredBidResponses, storedBidResponses, "storedBidResponses doesn't match: %s\n", test.description)
-		assert.Equal(t, test.bidderImpReplaceImpId, bidderImpReplaceImpId, "bidderImpReplaceImpId doesn't match: %s\n", test.description)
+		assert.Equal(t, test.expectedBidderImpReplaceImpID, bidderImpReplaceImpId, "bidderImpReplaceImpId doesn't match: %s\n", test.description)
 		assert.Nil(t, errorList, "Error should be nil")
 	}
 

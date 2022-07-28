@@ -1387,7 +1387,7 @@ func TestRequestBidsStoredBidResponses(t *testing.T) {
 		expectedImpIds        []string
 	}{
 		{
-			description: "Single imp with stored bid response, , replace impid is true",
+			description: "Single imp with stored bid response, replace impid is true",
 			mockBidderRequest: &openrtb2.BidRequest{
 				Imp: nil,
 				App: &openrtb2.App{},

@@ -204,7 +204,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		GlobalPrivacyControlHeader: secGPC,
 		StoredAuctionResponses:     storedAuctionResponses,
 		StoredBidResponses:         storedBidResponses,
-		BidderImpReplaceImp:        bidderImpReplaceImp,
+		BidderImpReplaceImpID:      bidderImpReplaceImp,
 		PubID:                      labels.PubID,
 	}
 
@@ -306,7 +306,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 // possible, it will return errors with messages that suggest improvements.
 //
 // If the errors list has at least one element, then no guarantees are made about the returned request.
-func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openrtb2.BidRequest, storedAuctionResponses stored_responses.ImpsWithBidResponses, storedBidResponses stored_responses.ImpBidderStoredResp, bidderImpReplaceImp stored_responses.BidderImpReplaceImpId, errs []error) {
+func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openrtb2.BidRequest, storedAuctionResponses stored_responses.ImpsWithBidResponses, storedBidResponses stored_responses.ImpBidderStoredResp, bidderImpReplaceImp stored_responses.BidderImpReplaceImpID, errs []error) {
 	// Load the stored request for the AMP ID.
 	req, storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, e := deps.loadRequestJSONForAmp(httpRequest)
 	if errs = append(errs, e...); errortypes.ContainsFatalError(errs) {
@@ -333,7 +333,7 @@ func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openr
 }
 
 // Load the stored OpenRTB request for an incoming AMP request, or return the errors found.
-func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req *openrtb2.BidRequest, storedAuctionResponses stored_responses.ImpsWithBidResponses, storedBidResponses stored_responses.ImpBidderStoredResp, bidderImpReplaceImp stored_responses.BidderImpReplaceImpId, errs []error) {
+func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req *openrtb2.BidRequest, storedAuctionResponses stored_responses.ImpsWithBidResponses, storedBidResponses stored_responses.ImpBidderStoredResp, bidderImpReplaceImp stored_responses.BidderImpReplaceImpID, errs []error) {
 	req = &openrtb2.BidRequest{}
 	errs = nil
 

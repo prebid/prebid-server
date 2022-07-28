@@ -172,9 +172,9 @@ type AuctionRequest struct {
 	// map of imp id to stored response
 	StoredAuctionResponses stored_responses.ImpsWithBidResponses
 	// map of imp id to bidder to stored response
-	StoredBidResponses  stored_responses.ImpBidderStoredResp
-	BidderImpReplaceImp stored_responses.BidderImpReplaceImpId
-	PubID               string
+	StoredBidResponses    stored_responses.ImpBidderStoredResp
+	BidderImpReplaceImpID stored_responses.BidderImpReplaceImpID
+	PubID                 string
 }
 
 // BidderRequest holds the bidder specific request and all other

@@ -17,8 +17,8 @@ type StoredResponseIdToStoredResponse map[string]json.RawMessage
 type BidderImpsWithBidResponses map[openrtb_ext.BidderName]map[string]json.RawMessage
 type ImpsWithBidResponses map[string]json.RawMessage
 type ImpBidderStoredResp map[string]map[string]json.RawMessage
-type ImpBidderReplaceImpId map[string]map[string]bool
-type BidderImpReplaceImpId map[string]map[string]bool
+type ImpBidderReplaceImpID map[string]map[string]bool
+type BidderImpReplaceImpID map[string]map[string]bool
 
 func InitStoredBidResponses(req *openrtb2.BidRequest, storedBidResponses ImpBidderStoredResp) BidderImpsWithBidResponses {
 	removeImpsWithStoredResponses(req, storedBidResponses)
@@ -60,7 +60,8 @@ func extractStoredResponsesIds(impInfo []ImpExtPrebidData,
 	StoredResponseIDs,
 	ImpBiddersWithBidResponseIDs,
 	ImpsWithAuctionResponseIDs,
-	ImpBidderReplaceImpId, error,
+	ImpBidderReplaceImpID,
+	error,
 ) {
 	// extractStoredResponsesIds returns:
 	// 1) all stored responses ids from all imps
@@ -70,7 +71,7 @@ func extractStoredResponsesIds(impInfo []ImpExtPrebidData,
 	// 3) imp id to stored resp id
 	impAuctionResponseIDs := ImpsWithAuctionResponseIDs{}
 	// 4) imp id to bidder to bool replace imp in response
-	impBidderReplaceImp := ImpBidderReplaceImpId{}
+	impBidderReplaceImp := ImpBidderReplaceImpID{}
 
 	for index, impData := range impInfo {
 		impId, err := jsonparser.GetString(impData.Imp, "id")
@@ -127,7 +128,7 @@ func extractStoredResponsesIds(impInfo []ImpExtPrebidData,
 // Note that processStoredResponses must be called after processStoredRequests
 // because stored imps and stored requests can contain stored auction responses and stored bid responses
 // so the stored requests/imps have to be merged into the incoming request prior to processing stored auction responses.
-func ProcessStoredResponses(ctx context.Context, requestJson []byte, storedRespFetcher stored_requests.Fetcher, bidderMap map[string]openrtb_ext.BidderName) (ImpsWithBidResponses, ImpBidderStoredResp, BidderImpReplaceImpId, []error) {
+func ProcessStoredResponses(ctx context.Context, requestJson []byte, storedRespFetcher stored_requests.Fetcher, bidderMap map[string]openrtb_ext.BidderName) (ImpsWithBidResponses, ImpBidderStoredResp, BidderImpReplaceImpID, []error) {
 	impInfo, errs := parseImpInfo(requestJson)
 	if len(errs) > 0 {
 		return nil, nil, nil, errs
@@ -151,8 +152,8 @@ func ProcessStoredResponses(ctx context.Context, requestJson []byte, storedRespF
 }
 
 // flipMap takes map[impID][bidderName]replaceImpId and modifies it to map[bidderName][impId]replaceImpId
-func flipMap(impBidderReplaceImpId ImpBidderReplaceImpId) BidderImpReplaceImpId {
-	flippedMap := BidderImpReplaceImpId{}
+func flipMap(impBidderReplaceImpId ImpBidderReplaceImpID) BidderImpReplaceImpID {
+	flippedMap := BidderImpReplaceImpID{}
 	for impId, impData := range impBidderReplaceImpId {
 		for bidder, replaceImpId := range impData {
 			if _, ok := flippedMap[bidder]; !ok {
