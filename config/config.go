@@ -263,8 +263,8 @@ func (cfg *GDPR) validatePurposes(errs []error) []error {
 		enforceAlgoValue := purposeConfigs[i].EnforceAlgo
 		enforceAlgoField := fmt.Sprintf("gdpr.tcf2.purpose%d.enforce_algo", (i + 1))
 
-		if enforceAlgoValue != TCF2NoEnforcement && enforceAlgoValue != TCF2FullEnforcement {
-			errs = append(errs, fmt.Errorf("%s must be \"no\" or \"full\". Got %s", enforceAlgoField, enforceAlgoValue))
+		if enforceAlgoValue != TCF2OffEnforcement && enforceAlgoValue != TCF2FullEnforcement {
+			errs = append(errs, fmt.Errorf("%s must be \"off\" or \"full\". Got %s", enforceAlgoField, enforceAlgoValue))
 		}
 	}
 	return errs
@@ -286,6 +286,7 @@ func (t *GDPRTimeouts) ActiveTimeout() time.Duration {
 const (
 	TCF2FullEnforcement = "full"
 	TCF2NoEnforcement   = "no"
+	TCF2OffEnforcement  = "off"
 )
 
 // TCF2 defines the TCF2 specific configurations for GDPR
@@ -1288,7 +1289,7 @@ func migrateConfigTCF2EnforcePurposeFlags(v *viper.Viper) {
 			newAlgoFieldValue := TCF2FullEnforcement
 
 			if v.GetString(purposeField) == TCF2NoEnforcement {
-				newAlgoFieldValue = TCF2NoEnforcement
+				newAlgoFieldValue = TCF2OffEnforcement
 			}
 
 			v.Set(algoField, newAlgoFieldValue)
