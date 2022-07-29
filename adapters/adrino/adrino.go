@@ -25,8 +25,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		return nil, errs
 	}
 
-	// fmt.Println(string(reqJson))
-
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 
