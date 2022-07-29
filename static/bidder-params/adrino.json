@@ -1,0 +1,16 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Adrino Adapter Params",
+    "description": "A schema which validates params accepted by the Adrino adapter",
+    "type": "object",
+    "properties": {
+        "hash": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The placement id provided by Adrino."
+        }
+    },
+    "required": [
+        "hash"
+    ]
+}

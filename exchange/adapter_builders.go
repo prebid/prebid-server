@@ -19,6 +19,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/adot"
 	"github.com/prebid/prebid-server/adapters/adpone"
 	"github.com/prebid/prebid-server/adapters/adprime"
+	"github.com/prebid/prebid-server/adapters/adrino"
 	"github.com/prebid/prebid-server/adapters/adtarget"
 	"github.com/prebid/prebid-server/adapters/adtelligent"
 	"github.com/prebid/prebid-server/adapters/advangelists"
@@ -169,6 +170,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAdot:              adot.Builder,
 		openrtb_ext.BidderAdpone:            adpone.Builder,
 		openrtb_ext.BidderAdprime:           adprime.Builder,
+		openrtb_ext.BidderAdrino:            adrino.Builder,
 		openrtb_ext.BidderAdtarget:          adtarget.Builder,
 		openrtb_ext.BidderAdtelligent:       adtelligent.Builder,
 		openrtb_ext.BidderAdvangelists:      advangelists.Builder,
