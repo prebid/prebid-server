@@ -1278,10 +1278,10 @@ func migrateConfigTCF2EnforcePurposeFlags(v *viper.Viper) {
 		purposeField := fmt.Sprintf("gdpr.tcf2.purpose%d.enforce_purpose", i)
 
 		if !v.IsSet(purposeField) {
-			return
+			continue
 		}
 		if _, ok := v.Get(purposeField).(string); !ok {
-			return
+			continue
 		}
 		if v.IsSet(algoField) {
 			glog.Warningf("using %s and ignoring deprecated %s string type", algoField, purposeField)
