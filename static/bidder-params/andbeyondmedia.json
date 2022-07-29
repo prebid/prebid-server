@@ -1,6 +1,6 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "title": "Compass Adapter Params",
+    "title": "AndBeyond.Media Adapter Params",
     "description": "A schema which validates params accepted by the Compass adapter",
     "type": "object",
   
