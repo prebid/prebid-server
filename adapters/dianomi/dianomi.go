@@ -23,6 +23,8 @@ type dianomiRequestExt struct {
 
 // Builder builds a new instance of the Dianomi adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	fmt.Printf("%v\n", "hello")
+
 	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}
@@ -82,6 +84,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	request.Imp = validImps
 
 	requestJSON, err := json.Marshal(request)
+	fmt.Printf("%v\n", string(requestJSON))
 	if err != nil {
 		errors = append(errors, err)
 		return nil, errors
