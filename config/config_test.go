@@ -1296,36 +1296,36 @@ func TestMigrateConfigTCF2EnforcePurposeFlags(t *testing.T) {
               gdpr:
                 tcf2:
                   purpose1:
-                    enforce_purpose: "basic"
+                    enforce_purpose: "full"
                   purpose2:
                     enforce_purpose: "no"
                   purpose3:
-                    enforce_purpose: "basic"
+                    enforce_purpose: "full"
                   purpose4:
                     enforce_purpose: "no"
                   purpose5:
-                    enforce_purpose: "basic"
+                    enforce_purpose: "full"
                   purpose6:
                     enforce_purpose: "no"
                   purpose7:
-                    enforce_purpose: "basic"
+                    enforce_purpose: "full"
                   purpose8:
                     enforce_purpose: "no"
                   purpose9:
-                    enforce_purpose: "basic"
+                    enforce_purpose: "full"
                   purpose10:
                     enforce_purpose: "no"
             `),
 			wantEnforceAlgosSet:         true,
-			wantPurpose1EnforceAlgo:     TCF2BasicEnforcement,
+			wantPurpose1EnforceAlgo:     TCF2FullEnforcement,
 			wantPurpose2EnforceAlgo:     TCF2NoEnforcement,
-			wantPurpose3EnforceAlgo:     TCF2BasicEnforcement,
+			wantPurpose3EnforceAlgo:     TCF2FullEnforcement,
 			wantPurpose4EnforceAlgo:     TCF2NoEnforcement,
-			wantPurpose5EnforceAlgo:     TCF2BasicEnforcement,
+			wantPurpose5EnforceAlgo:     TCF2FullEnforcement,
 			wantPurpose6EnforceAlgo:     TCF2NoEnforcement,
-			wantPurpose7EnforceAlgo:     TCF2BasicEnforcement,
+			wantPurpose7EnforceAlgo:     TCF2FullEnforcement,
 			wantPurpose8EnforceAlgo:     TCF2NoEnforcement,
-			wantPurpose9EnforceAlgo:     TCF2BasicEnforcement,
+			wantPurpose9EnforceAlgo:     TCF2FullEnforcement,
 			wantPurpose10EnforceAlgo:    TCF2NoEnforcement,
 			wantEnforcePurposesSet:      true,
 			wantPurpose1EnforcePurpose:  trueStr,
@@ -1384,36 +1384,36 @@ func TestMigrateConfigTCF2EnforcePurposeFlags(t *testing.T) {
               gdpr:
                 tcf2:
                   purpose1:
-                    enforce_algo: "basic"
+                    enforce_algo: "full"
                   purpose2:
                     enforce_algo: "no"
                   purpose3:
-                    enforce_algo: "basic"
+                    enforce_algo: "full"
                   purpose4:
                     enforce_algo: "no"
                   purpose5:
-                    enforce_algo: "basic"
+                    enforce_algo: "full"
                   purpose6:
                     enforce_algo: "no"
                   purpose7:
-                    enforce_algo: "basic"
+                    enforce_algo: "full"
                   purpose8:
                     enforce_algo: "no"
                   purpose9:
-                    enforce_algo: "basic"
+                    enforce_algo: "full"
                   purpose10:
                     enforce_algo: "no"
             `),
 			wantEnforceAlgosSet:      true,
-			wantPurpose1EnforceAlgo:  TCF2BasicEnforcement,
+			wantPurpose1EnforceAlgo:  TCF2FullEnforcement,
 			wantPurpose2EnforceAlgo:  TCF2NoEnforcement,
-			wantPurpose3EnforceAlgo:  TCF2BasicEnforcement,
+			wantPurpose3EnforceAlgo:  TCF2FullEnforcement,
 			wantPurpose4EnforceAlgo:  TCF2NoEnforcement,
-			wantPurpose5EnforceAlgo:  TCF2BasicEnforcement,
+			wantPurpose5EnforceAlgo:  TCF2FullEnforcement,
 			wantPurpose6EnforceAlgo:  TCF2NoEnforcement,
-			wantPurpose7EnforceAlgo:  TCF2BasicEnforcement,
+			wantPurpose7EnforceAlgo:  TCF2FullEnforcement,
 			wantPurpose8EnforceAlgo:  TCF2NoEnforcement,
-			wantPurpose9EnforceAlgo:  TCF2BasicEnforcement,
+			wantPurpose9EnforceAlgo:  TCF2FullEnforcement,
 			wantPurpose10EnforceAlgo: TCF2NoEnforcement,
 			wantEnforcePurposesSet:   false,
 		},
@@ -1424,31 +1424,31 @@ func TestMigrateConfigTCF2EnforcePurposeFlags(t *testing.T) {
                 tcf2:
                   purpose1:
                     enforce_algo: "full"
-                    enforce_purpose: "basic"
+                    enforce_purpose: "no"
                   purpose2:
                     enforce_algo: "full"
                     enforce_purpose: "no"
                   purpose3:
                     enforce_algo: "full"
-                    enforce_purpose: "basic"
+                    enforce_purpose: "no"
                   purpose4:
                     enforce_algo: "full"
                     enforce_purpose: "no"
                   purpose5:
                     enforce_algo: "full"
-                    enforce_purpose: "basic"
+                    enforce_purpose: "no"
                   purpose6:
                     enforce_algo: "full"
                     enforce_purpose: "no"
                   purpose7:
                     enforce_algo: "full"
-                    enforce_purpose: "basic"
+                    enforce_purpose: "no"
                   purpose8:
                     enforce_algo: "full"
                     enforce_purpose: "no"
                   purpose9:
                     enforce_algo: "full"
-                    enforce_purpose: "basic"
+                    enforce_purpose: "no"
                   purpose10:
                     enforce_algo: "full"
                     enforce_purpose: "no"
@@ -1465,15 +1465,15 @@ func TestMigrateConfigTCF2EnforcePurposeFlags(t *testing.T) {
 			wantPurpose9EnforceAlgo:     TCF2FullEnforcement,
 			wantPurpose10EnforceAlgo:    TCF2FullEnforcement,
 			wantEnforcePurposesSet:      true,
-			wantPurpose1EnforcePurpose:  trueStr,
+			wantPurpose1EnforcePurpose:  falseStr,
 			wantPurpose2EnforcePurpose:  falseStr,
-			wantPurpose3EnforcePurpose:  trueStr,
+			wantPurpose3EnforcePurpose:  falseStr,
 			wantPurpose4EnforcePurpose:  falseStr,
-			wantPurpose5EnforcePurpose:  trueStr,
+			wantPurpose5EnforcePurpose:  falseStr,
 			wantPurpose6EnforcePurpose:  falseStr,
-			wantPurpose7EnforcePurpose:  trueStr,
+			wantPurpose7EnforcePurpose:  falseStr,
 			wantPurpose8EnforcePurpose:  falseStr,
-			wantPurpose9EnforcePurpose:  trueStr,
+			wantPurpose9EnforcePurpose:  falseStr,
 			wantPurpose10EnforcePurpose: falseStr,
 		},
 	}
@@ -1625,10 +1625,10 @@ func TestInvalidEnforcePurpose(t *testing.T) {
 	errs := cfg.validate(v)
 
 	expectedErrs := []error{
-		errors.New("gdpr.tcf2.purpose1.enforce_algo must be \"no\", \"basic\" or \"full\". Got "),
-		errors.New("gdpr.tcf2.purpose5.enforce_algo must be \"no\", \"basic\" or \"full\". Got invalid1"),
-		errors.New("gdpr.tcf2.purpose6.enforce_algo must be \"no\", \"basic\" or \"full\". Got invalid2"),
-		errors.New("gdpr.tcf2.purpose10.enforce_algo must be \"no\", \"basic\" or \"full\". Got invalid3"),
+		errors.New("gdpr.tcf2.purpose1.enforce_algo must be \"no\" or \"full\". Got "),
+		errors.New("gdpr.tcf2.purpose5.enforce_algo must be \"no\" or \"full\". Got invalid1"),
+		errors.New("gdpr.tcf2.purpose6.enforce_algo must be \"no\" or \"full\". Got invalid2"),
+		errors.New("gdpr.tcf2.purpose10.enforce_algo must be \"no\" or \"full\". Got invalid3"),
 	}
 	assert.ElementsMatch(t, errs, expectedErrs, "gdpr.tcf2.purposeX.enforce_algo should prevent invalid values but it doesn't")
 }

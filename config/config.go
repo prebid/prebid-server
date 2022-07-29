@@ -263,8 +263,8 @@ func (cfg *GDPR) validatePurposes(errs []error) []error {
 		enforceAlgoValue := purposeConfigs[i].EnforceAlgo
 		enforceAlgoField := fmt.Sprintf("gdpr.tcf2.purpose%d.enforce_algo", (i + 1))
 
-		if enforceAlgoValue != TCF2NoEnforcement && enforceAlgoValue != TCF2BasicEnforcement && enforceAlgoValue != TCF2FullEnforcement {
-			errs = append(errs, fmt.Errorf("%s must be \"no\", \"basic\" or \"full\". Got %s", enforceAlgoField, enforceAlgoValue))
+		if enforceAlgoValue != TCF2NoEnforcement && enforceAlgoValue != TCF2FullEnforcement {
+			errs = append(errs, fmt.Errorf("%s must be \"no\" or \"full\". Got %s", enforceAlgoField, enforceAlgoValue))
 		}
 	}
 	return errs
@@ -284,9 +284,8 @@ func (t *GDPRTimeouts) ActiveTimeout() time.Duration {
 }
 
 const (
-	TCF2FullEnforcement  = "full"
-	TCF2BasicEnforcement = "basic"
-	TCF2NoEnforcement    = "no"
+	TCF2FullEnforcement = "full"
+	TCF2NoEnforcement   = "no"
 )
 
 // TCF2 defines the TCF2 specific configurations for GDPR
@@ -386,11 +385,10 @@ func (t *TCF2) PurposeOneTreatmentAccessAllowed() (value bool) {
 
 // Making a purpose struct so purpose specific details can be added later.
 type TCF2Purpose struct {
-	EnforceAlgo string `mapstructure:"enforce_algo"`
-	Enabled     bool   `mapstructure:"enabled"` // Deprecated: Use enforce_purpose instead
-	// Enforce        bool   `mapstructure:"enforce"`
-	EnforcePurpose bool `mapstructure:"enforce_purpose"`
-	EnforceVendors bool `mapstructure:"enforce_vendors"`
+	Enabled        bool   `mapstructure:"enabled"` // Deprecated: Use enforce_purpose instead
+	EnforceAlgo    string `mapstructure:"enforce_algo"`
+	EnforcePurpose bool   `mapstructure:"enforce_purpose"`
+	EnforceVendors bool   `mapstructure:"enforce_vendors"`
 	// Array of vendor exceptions that is used to create the hash table VendorExceptionMap so vendor names can be instantly accessed
 	VendorExceptions   []openrtb_ext.BidderName `mapstructure:"vendor_exceptions"`
 	VendorExceptionMap map[openrtb_ext.BidderName]struct{}
@@ -1273,63 +1271,6 @@ func migrateConfigTCF2PurposeFlags(v *viper.Viper) {
 	migrateConfigTCF2PurposeEnabledFlags(v)
 }
 
-//XX if enforce_algo is set:
-//XX		algo = enforce_algo
-//XX else if enforce_purpose is set and is string:
-//XX		algo = enforce_purpose
-
-// if enforce_purpose is set and is bool:
-//		enforce_purpose = enforce_purpose
-// else if enforce_purpose is set and is string:
-//		if enforce_purpose is "full" or "basic":
-//			enforce_purpose = true
-//		else:
-//			enforce_purpose = false
-// else if enabled is set:
-//		enforce_purpose = enabled
-
-//XX if enforce_algo is set and enforce_purpose is set and is a string:
-//XX		warning = using enforce_algo and ignoring deprecated enforce_purpose string
-// if enforce_purpose is set and enabled is set:
-//		warning = using enforce_purpose and ignoring deprecated enabled
-// if enforce_purpose is set as a string:
-//		warning = converting enforce_purpose from string "%s" to bool "%t"; string type is deprecated
-// if enabled is set and enforce_purpose is not set:
-//		warning = enabled is deprecated and should be changed to enforce_purpose
-//XX if enforce_algo is not set and enforce_purpose is set as a string:
-//XX		warning = setting enforce_algo to "%s" based on deprecated enforce_purpose string type "%s"
-
-// func migrateConfigTCF2EnforcePurposeFlags(v *viper.Viper) {
-// 	for i := 1; i <= 10; i++ {
-// 		algoField    := fmt.Sprintf("gdpr.tcf2.purpose%d.enforce_algo", i)
-// 		purposeField := fmt.Sprintf("gdpr.tcf2.purpose%d.enforce_purpose", i)
-
-// 		purposeFieldType := ""
-// 		if v.IsSet(purposeField) {
-// 			if _, ok := v.Get(purposeField).(string); ok {
-// 				purposeFieldType = "string"
-// 			}
-// 		}
-
-// 		if v.IsSet(algoField) && purposeFieldType == "string" {
-// 			glog.Warningf("using %s and ignoring deprecated %s string type", algoField, purposeField)
-// 		} else if !v.IsSet(algoField) && purposeFieldType == "string" {
-
-// 			newAlgoFieldValue := TCF2FullEnforcement
-
-// 			if v.GetString(purposeField) == TCF2BasicEnforcement {
-// 				newAlgoFieldValue = TCF2BasicEnforcement
-// 			}
-// 			if v.GetString(purposeField) == TCF2NoEnforcement {
-// 				newAlgoFieldValue = TCF2NoEnforcement//"off"
-// 			}
-
-// 			v.Set(algoField, newAlgoFieldValue)
-
-// 			glog.Warningf("setting %s to \"%s\" based on deprecated %s string type \"%s\"", algoField, newAlgoFieldValue, purposeField, v.GetString(purposeField))
-// 		}
-// 	}
-// }
 func migrateConfigTCF2EnforcePurposeFlags(v *viper.Viper) {
 	for i := 1; i <= 10; i++ {
 		algoField := fmt.Sprintf("gdpr.tcf2.purpose%d.enforce_algo", i)
@@ -1346,11 +1287,8 @@ func migrateConfigTCF2EnforcePurposeFlags(v *viper.Viper) {
 		} else {
 			newAlgoFieldValue := TCF2FullEnforcement
 
-			if v.GetString(purposeField) == TCF2BasicEnforcement {
-				newAlgoFieldValue = TCF2BasicEnforcement
-			}
 			if v.GetString(purposeField) == TCF2NoEnforcement {
-				newAlgoFieldValue = TCF2NoEnforcement //"off"
+				newAlgoFieldValue = TCF2NoEnforcement
 			}
 
 			v.Set(algoField, newAlgoFieldValue)
@@ -1360,7 +1298,7 @@ func migrateConfigTCF2EnforcePurposeFlags(v *viper.Viper) {
 
 		oldPurposeFieldValue := v.GetString(purposeField)
 		newPurposeFieldValue := "false"
-		if oldPurposeFieldValue == TCF2FullEnforcement || oldPurposeFieldValue == TCF2BasicEnforcement {
+		if oldPurposeFieldValue == TCF2FullEnforcement {
 			newPurposeFieldValue = "true"
 		}
 
@@ -1385,22 +1323,6 @@ func migrateConfigTCF2PurposeEnabledFlags(v *viper.Viper) {
 		}
 
 		if v.IsSet(newField) {
-			// var newConfigConverted string
-
-			// if _, ok := v.Get(newField).(string); ok {
-			// 	newConfig := v.GetString(newField)
-			// 	if newConfig == TCF2FullEnforcement || newConfig == TCF2BasicEnforcement {
-			// 		newConfigConverted = "true"
-			// 	} else {
-			// 		newConfigConverted = "false"
-			// 	}
-
-			// 	glog.Warningf("converting %s from string \"%s\" to bool \"%t\"; string type is deprecated", newField, newConfig, newConfigConverted)
-			// } else {
-			// 	newConfigConverted = strconv.FormatBool(v.GetBool(newField))
-			// }
-
-			// v.Set(oldField, newConfigConverted)
 			v.Set(oldField, strconv.FormatBool(v.GetBool(newField)))
 		}
 	}
