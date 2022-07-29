@@ -4,7 +4,10 @@
 		"user": {
 			"id": "1kjh3429kjh295jkl"
 		},
-		"regs": {
+		"device":{
+			"ext":{
+				"noCookies" : true
+			}
 		},
 		"imp": [
 			{
@@ -32,7 +35,7 @@
 	"httpCalls": [
 		{
 			"expectedRequest": {
-				"uri": "http://whatever.url?format=json&tzo=0",
+				"uri": "http://whatever.url?format=json&noCookies=true&tzo=0",
 				"body": {
 					"adUnits": [
 						{

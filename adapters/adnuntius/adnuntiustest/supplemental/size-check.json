@@ -4,23 +4,19 @@
 		"user": {
 			"id": "1kjh3429kjh295jkl"
 		},
-		"regs": {
+		"device":{
+			"ext":{
+				"noCookies" : true
+			}
 		},
 		"imp": [
 			{
 				"id": "test-imp-id",
-				"banner": {
-					"format": [
-						{
-							"w": 300,
-							"h": 250
-						},
-						{
-							"w": 300,
-							"h": 600
-						}
-					]
-				},
+				"banner":{
+						"w": 300,
+						"h": 600
+					}
+				,
 				"ext": {
 					"bidder": {
 						"auId": "123"
@@ -32,13 +28,13 @@
 	"httpCalls": [
 		{
 			"expectedRequest": {
-				"uri": "http://whatever.url?format=json&tzo=0",
+				"uri": "http://whatever.url?format=json&noCookies=true&tzo=0",
 				"body": {
 					"adUnits": [
 						{
 							"auId": "123",
 							"targetId": "123-test-imp-id",
-							"dimensions": [[300,250],[300,600]]
+							"dimensions": [[300,600]]
 						}
 					],
 					"metaData": {
