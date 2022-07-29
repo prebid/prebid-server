@@ -23,12 +23,8 @@
                     ]
                 },
                 "ext": {
-                    "prebid": {
-                        "bidder": {
-                            "seedingAlliance": {
-                                "adUnitId": "example-tag-id"
-                            }
-                        }
+                    "bidder": {
+                        "adUnitId": "example-tag-id"
                     }
                 }
             }
@@ -60,12 +56,8 @@
                             },
                             "tagid": "example-tag-id",
                             "ext": {
-                                "prebid": {
-                                    "bidder": {
-                                        "seedingAlliance": {
-                                            "adUnitId": "example-tag-id"
-                                        }
-                                    }
+                                "bidder": {
+                                    "adUnitId": "example-tag-id"
                                 }
                             }
                         }

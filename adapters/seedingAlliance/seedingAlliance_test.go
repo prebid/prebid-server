@@ -119,3 +119,20 @@ func TestAddTagID(t *testing.T) {
 		}
 	}
 }
+
+func TestCurExists(t *testing.T) {
+	tests := []struct {
+		name string
+		cur  string
+		data []string
+		want bool
+	}{
+		{"no eur", "EUR", []string{"USD"}, false},
+		{"eur exists", "EUR", []string{"USD", "EUR"}, true},
+	}
+
+	for _, test := range tests {
+		got := curExists(test.data, test.cur)
+		assert.Equal(t, test.want, got)
+	}
+}

@@ -32,13 +32,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, extraRequestInfo *a
 		}
 	}
 
-	eurExists := false
-	for _, cur := range request.Cur {
-		if cur == "EUR" {
-			eurExists = true
-		}
-	}
-	if !eurExists {
+	if !curExists(request.Cur, "EUR") {
 		request.Cur = append(request.Cur, "EUR")
 	}
 
@@ -128,6 +122,15 @@ func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 	return UnknownBidType
 }
 
+func curExists(cc []string, c string) bool {
+	for i := range cc {
+		if cc[i] == c {
+			return true
+		}
+	}
+	return false
+}
+
 func addTagID(imp *openrtb2.Imp) error {
 	var ext adapters.ExtImpBidder
 	var extSA openrtb_ext.ImpExtSeedingAlliance
@@ -137,9 +140,7 @@ func addTagID(imp *openrtb2.Imp) error {
 	}
 
 	if err := json.Unmarshal(ext.Bidder, &extSA); err != nil {
-		if err := json.Unmarshal(ext.Prebid.Bidder["seedingAlliance"], &extSA); err != nil {
-			return fmt.Errorf("could not unmarshal openrtb_ext.ImpExtSeedingAlliance: %w", err)
-		}
+		return fmt.Errorf("could not unmarshal openrtb_ext.ImpExtSeedingAlliance: %w", err)
 	}
 
 	imp.TagID = extSA.AdUnitID
