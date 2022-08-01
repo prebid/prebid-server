@@ -590,6 +590,61 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
 
 }
 
+func TestFlipMap(t *testing.T) {
+	testCases := []struct {
+		description              string
+		inImpBidderReplaceImpID  ImpBidderReplaceImpID
+		outBidderImpReplaceImpID BidderImpReplaceImpID
+	}{
+		{
+			description:              "Empty ImpBidderReplaceImpID",
+			inImpBidderReplaceImpID:  ImpBidderReplaceImpID{},
+			outBidderImpReplaceImpID: BidderImpReplaceImpID{},
+		},
+		{
+			description:              "Nil ImpBidderReplaceImpID",
+			inImpBidderReplaceImpID:  nil,
+			outBidderImpReplaceImpID: BidderImpReplaceImpID{},
+		},
+		{
+			description:              "ImpBidderReplaceImpID has a one element map with single element",
+			inImpBidderReplaceImpID:  ImpBidderReplaceImpID{"imp-id": {"bidderA": true}},
+			outBidderImpReplaceImpID: BidderImpReplaceImpID{"bidderA": {"imp-id": true}},
+		},
+		{
+			description:              "ImpBidderReplaceImpID has a one element map with multiple elements",
+			inImpBidderReplaceImpID:  ImpBidderReplaceImpID{"imp-id": {"bidderA": true, "bidderB": false}},
+			outBidderImpReplaceImpID: BidderImpReplaceImpID{"bidderA": {"imp-id": true}, "bidderB": {"imp-id": false}},
+		},
+		{
+			description: "ImpBidderReplaceImpID has multiple elements map with single element",
+			inImpBidderReplaceImpID: ImpBidderReplaceImpID{
+				"imp-id1": {"bidderA": true},
+				"imp-id2": {"bidderB": false}},
+			outBidderImpReplaceImpID: BidderImpReplaceImpID{
+				"bidderA": {"imp-id1": true},
+				"bidderB": {"imp-id2": false}},
+		},
+		{
+			description: "ImpBidderReplaceImpID has multiple elements map with multiple elements",
+			inImpBidderReplaceImpID: ImpBidderReplaceImpID{
+				"imp-id1": {"bidderA": true, "bidderB": false, "bidderC": false, "bidderD": true},
+				"imp-id2": {"bidderA": false, "bidderB": false, "bidderC": true, "bidderD": true},
+				"imp-id3": {"bidderA": false, "bidderB": true, "bidderC": true, "bidderD": false}},
+			outBidderImpReplaceImpID: BidderImpReplaceImpID{
+				"bidderA": {"imp-id1": true, "imp-id2": false, "imp-id3": false},
+				"bidderB": {"imp-id1": false, "imp-id2": false, "imp-id3": true},
+				"bidderC": {"imp-id1": false, "imp-id2": true, "imp-id3": true},
+				"bidderD": {"imp-id1": true, "imp-id2": true, "imp-id3": false}},
+		},
+	}
+
+	for _, test := range testCases {
+		actualResult := flipMap(test.inImpBidderReplaceImpID)
+		assert.Equal(t, test.outBidderImpReplaceImpID, actualResult, "Incorrect flipped map for test case %s\n", test.description)
+	}
+}
+
 type mockStoredBidResponseFetcher struct {
 	data map[string]json.RawMessage
 }

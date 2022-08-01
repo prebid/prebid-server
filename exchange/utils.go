@@ -762,7 +762,9 @@ func buildBidResponseRequest(req *openrtb2.BidRequest,
 	bidderImpResponses stored_responses.BidderImpsWithBidResponses,
 	aliases map[string]string,
 	bidderImpReplaceImpID stored_responses.BidderImpReplaceImpID) map[openrtb_ext.BidderName]BidderRequest {
+
 	bidderToBidderResponse := make(map[openrtb_ext.BidderName]BidderRequest)
+
 	for bidderName, impResps := range bidderImpResponses {
 		resolvedBidder := resolveBidder(string(bidderName), aliases)
 		bidderToBidderResponse[bidderName] = BidderRequest{
