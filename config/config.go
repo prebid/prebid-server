@@ -1022,6 +1022,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.nextmillennium.endpoint", "https://pbs.nextmillmedia.com/openrtb2/auction")
 	v.SetDefault("adapters.ninthdecimal.endpoint", "http://rtb.ninthdecimal.com/xp/get?pubid={{.PublisherID}}")
 	v.SetDefault("adapters.nobid.endpoint", "https://ads.servenobid.com/ortb_adreq?tek=pbs&ver=1")
+	v.SetDefault("adapters.oftmedia.endpoint", "http://ghb.ortb.152media.info/pbs/ortb")
 	v.SetDefault("adapters.onetag.endpoint", "https://prebid-server.onetag-sys.com/prebid-server/{{.PublisherID}}")
 	v.SetDefault("adapters.openweb.endpoint", "http://ghb.spotim.market/pbs/ortb")
 	v.SetDefault("adapters.openx.endpoint", "http://rtb.openx.net/prebid")
