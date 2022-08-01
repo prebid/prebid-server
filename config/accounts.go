@@ -261,7 +261,7 @@ func (bidderCodes *AlternateBidderCodes) IsValidBidderCode(bidder, alternateBidd
 		return false, fmt.Errorf("alternateBidderCodes disabled for %q, rejecting bids for %q", bidder, alternateBidder)
 	}
 
-	if len(adapterCfg.AllowedBidderCodes) == 0 || adapterCfg.AllowedBidderCodes[0] == "*" {
+	if adapterCfg.AllowedBidderCodes == nil || (len(adapterCfg.AllowedBidderCodes) == 1 && adapterCfg.AllowedBidderCodes[0] == "*") {
 		return true, nil
 	}
 
