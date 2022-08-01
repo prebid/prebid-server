@@ -175,8 +175,9 @@ type AuctionRequest struct {
 	// map of imp id to stored response
 	StoredAuctionResponses stored_responses.ImpsWithBidResponses
 	// map of imp id to bidder to stored response
-	StoredBidResponses stored_responses.ImpBidderStoredResp
-	PubID              string
+	StoredBidResponses    stored_responses.ImpBidderStoredResp
+	BidderImpReplaceImpID stored_responses.BidderImpReplaceImpID
+	PubID                 string
 }
 
 // BidderRequest holds the bidder specific request and all other
@@ -187,6 +188,7 @@ type BidderRequest struct {
 	BidderCoreName        openrtb_ext.BidderName
 	BidderLabels          metrics.AdapterLabels
 	BidderStoredResponses map[string]json.RawMessage
+	ImpReplaceImpId       map[string]bool
 }
 
 func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *DebugLog) (*openrtb2.BidResponse, error) {

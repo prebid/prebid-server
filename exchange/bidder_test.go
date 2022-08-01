@@ -1423,17 +1423,18 @@ func TestRequestBidsStoredBidResponses(t *testing.T) {
 	defer server.Close()
 
 	bidRespId1 := json.RawMessage(`{"id": "resp_id1", "seatbid": [{"bid": [{"id": "bid_id1"}], "seat": "testBidder1"}], "bidid": "123", "cur": "USD"}`)
-	bidRespId2 := json.RawMessage(`{"id": "resp_id2", "seatbid": [{"bid": [{"id": "bid_id2_1"},{"id": "bid_id2_2"}], "seat": "testBidder2"}], "bidid": "124", "cur": "USD"}`)
+	bidRespId2 := json.RawMessage(`{"id": "resp_id2", "seatbid": [{"bid": [{"id": "bid_id2_1", "impid": "bid1impid1"},{"id": "bid_id2_2", "impid": "bid2impid2"}], "seat": "testBidder2"}], "bidid": "124", "cur": "USD"}`)
 
 	testCases := []struct {
 		description           string
 		mockBidderRequest     *openrtb2.BidRequest
 		bidderStoredResponses map[string]json.RawMessage
+		impReplaceImpId       map[string]bool
 		expectedBidIds        []string
 		expectedImpIds        []string
 	}{
 		{
-			description: "Single imp with stored bid response",
+			description: "Single imp with stored bid response, replace impid is true",
 			mockBidderRequest: &openrtb2.BidRequest{
 				Imp: nil,
 				App: &openrtb2.App{},
@@ -1441,11 +1442,14 @@ func TestRequestBidsStoredBidResponses(t *testing.T) {
 			bidderStoredResponses: map[string]json.RawMessage{
 				"bidResponseId1": bidRespId1,
 			},
+			impReplaceImpId: map[string]bool{
+				"bidResponseId1": true,
+			},
 			expectedBidIds: []string{"bid_id1"},
 			expectedImpIds: []string{"bidResponseId1"},
 		},
 		{
-			description: "Single imp with multiple stored bid responses",
+			description: "Single imp with multiple stored bid responses, replace impid is true",
 			mockBidderRequest: &openrtb2.BidRequest{
 				Imp: nil,
 				App: &openrtb2.App{},
@@ -1453,8 +1457,43 @@ func TestRequestBidsStoredBidResponses(t *testing.T) {
 			bidderStoredResponses: map[string]json.RawMessage{
 				"bidResponseId2": bidRespId2,
 			},
+			impReplaceImpId: map[string]bool{
+				"bidResponseId2": true,
+			},
 			expectedBidIds: []string{"bid_id2_1", "bid_id2_2"},
 			expectedImpIds: []string{"bidResponseId2", "bidResponseId2"},
+		},
+		{
+			description: "Single imp with multiple stored bid responses, replace impid is false",
+			mockBidderRequest: &openrtb2.BidRequest{
+				Imp: nil,
+				App: &openrtb2.App{},
+			},
+			bidderStoredResponses: map[string]json.RawMessage{
+				"bidResponseId2": bidRespId2,
+			},
+			impReplaceImpId: map[string]bool{
+				"bidResponseId2": false,
+			},
+			expectedBidIds: []string{"bid_id2_1", "bid_id2_2"},
+			expectedImpIds: []string{"bid1impid1", "bid2impid2"},
+		},
+		{
+			description: "Two imp with multiple stored bid responses, replace impid is true and false",
+			mockBidderRequest: &openrtb2.BidRequest{
+				Imp: nil,
+				App: &openrtb2.App{},
+			},
+			bidderStoredResponses: map[string]json.RawMessage{
+				"bidResponseId1": bidRespId1,
+				"bidResponseId2": bidRespId2,
+			},
+			impReplaceImpId: map[string]bool{
+				"bidResponseId1": true,
+				"bidResponseId2": false,
+			},
+			expectedBidIds: []string{"bid_id2_1", "bid_id2_2", "bid_id1"},
+			expectedImpIds: []string{"bid1impid1", "bid2impid2", "bidResponseId1"},
 		},
 	}
 
@@ -1468,6 +1507,7 @@ func TestRequestBidsStoredBidResponses(t *testing.T) {
 			BidRequest:            tc.mockBidderRequest,
 			BidderName:            openrtb_ext.BidderAppnexus,
 			BidderStoredResponses: tc.bidderStoredResponses,
+			ImpReplaceImpId:       tc.impReplaceImpId,
 		}
 		bidAdjustments := map[string]float64{string(openrtb_ext.BidderAppnexus): 1.0}
 		seatBids, _ := bidder.requestBid(
