@@ -2,6 +2,7 @@ package exchange
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -101,16 +102,20 @@ type pbsOrtbSeatBid struct {
 //
 // The name refers to the "Adapter" architecture pattern, and should not be confused with a Prebid "Adapter"
 // (which is being phased out and replaced by Bidder for OpenRTB auctions)
-func AdaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Configuration, me metrics.MetricsEngine, name openrtb_ext.BidderName, debugInfo *config.DebugInfo) AdaptedBidder {
+func AdaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Configuration, me metrics.MetricsEngine, name openrtb_ext.BidderName, debugInfo *config.DebugInfo, compressionType *config.CompressionType) AdaptedBidder {
+	if compressionType == nil {
+		compressionType = &config.CompressionType{EndpointCompression: ""}
+	}
 	return &bidderAdapter{
 		Bidder:     bidder,
 		BidderName: name,
 		Client:     client,
 		me:         me,
 		config: bidderAdapterConfig{
-			Debug:              cfg.Debug,
-			DisableConnMetrics: cfg.Metrics.Disabled.AdapterConnectionMetrics,
-			DebugInfo:          config.DebugInfo{Allow: parseDebugInfo(debugInfo)},
+			Debug:               cfg.Debug,
+			DisableConnMetrics:  cfg.Metrics.Disabled.AdapterConnectionMetrics,
+			DebugInfo:           config.DebugInfo{Allow: parseDebugInfo(debugInfo)},
+			EndpointCompression: compressionType.EndpointCompression,
 		},
 	}
 }
@@ -131,9 +136,10 @@ type bidderAdapter struct {
 }
 
 type bidderAdapterConfig struct {
-	Debug              config.Debug
-	DisableConnMetrics bool
-	DebugInfo          config.DebugInfo
+	Debug               config.Debug
+	DisableConnMetrics  bool
+	DebugInfo           config.DebugInfo
+	EndpointCompression string
 }
 
 func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, bidAdjustments map[string]float64, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, accountDebugAllowed, headerDebugAllowed bool, alternateBidderCodes config.AlternateBidderCodes) ([]*pbsOrtbSeatBid, []error) {
@@ -477,7 +483,20 @@ func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.Reques
 }
 
 func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.RequestData, logger util.LogMsg) *httpCallInfo {
-	httpReq, err := http.NewRequest(req.Method, req.Uri, bytes.NewBuffer(req.Body))
+	var requestBody []byte
+
+	switch bidder.config.EndpointCompression {
+	case "GZIP":
+		var b bytes.Buffer
+		w := gzip.NewWriter(&b)
+		w.Write([]byte(req.Body))
+		w.Close()
+		requestBody = b.Bytes()
+		req.Headers.Set("Content-Encoding", "gzip")
+	default:
+		requestBody = req.Body
+	}
+	httpReq, err := http.NewRequest(req.Method, req.Uri, bytes.NewBuffer(requestBody))
 	if err != nil {
 		return &httpCallInfo{
 			request: req,

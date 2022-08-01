@@ -21,6 +21,11 @@ type BidderInfo struct {
 	Debug                   *DebugInfo        `yaml:"debug"`
 	GVLVendorID             uint16            `yaml:"gvlVendorID"`
 	Syncer                  *Syncer           `yaml:"userSync"`
+	CompressionType         *CompressionType  `yaml:"compressionType"`
+}
+
+type CompressionType struct {
+	EndpointCompression string `yaml:"endpointCompression"`
 }
 
 // MaintainerInfo specifies the support email address for a bidder.
