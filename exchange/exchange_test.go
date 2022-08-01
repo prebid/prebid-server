@@ -4240,7 +4240,7 @@ type exchangeSpec struct {
 	StartTime         int64                  `json:"start_time_ms,omitempty"`
 	BidIDGenerator    *mockBidIDGenerator    `json:"bidIDGenerator,omitempty"`
 	RequestType       *metrics.RequestType   `json:"requestType,omitempty"`
-	PassthroughFlag   bool                   `json:"passthrough_ext_flag,omitempty"`
+	PassthroughFlag   bool                   `json:"passthrough_flag,omitempty"`
 	HostSChainFlag    bool                   `json:"host_schain_flag,omitempty"`
 }
 
@@ -4535,8 +4535,10 @@ func getInfoFromImp(req *openrtb_ext.RequestWrapper) (json.RawMessage, string, e
 	}
 
 	var extPrebid openrtb_ext.ExtImpPrebid
-	if err := json.Unmarshal(bidderExts[openrtb_ext.PrebidExtKey], &extPrebid); err != nil {
-		return nil, "", err
+	if bidderExts[openrtb_ext.PrebidExtKey] != nil {
+		if err := json.Unmarshal(bidderExts[openrtb_ext.PrebidExtKey], &extPrebid); err != nil {
+			return nil, "", err
+		}
 	}
 	return extPrebid.Passthrough, impID, nil
 }
