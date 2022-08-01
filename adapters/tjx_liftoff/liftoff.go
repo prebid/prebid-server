@@ -143,7 +143,7 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 			},
 			{
 				ReqNumber:   "2",
-				BidFloor:    &bf[0],
+				BidFloor:    &bf[1],
 				ContentType: CONTENT_TYPE_MRAID_ONLY,
 			},
 			{
