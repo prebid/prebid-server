@@ -1527,9 +1527,9 @@ func TestRequestBidsStoredBidResponses(t *testing.T) {
 		assert.Len(t, seatBids, 1)
 
 		assert.Len(t, seatBids[0].bids, len(tc.expectedBidIds), "Incorrect bids number for test case ", tc.description)
-		for index, bid := range seatBids[0].bids {
-			assert.Equal(t, tc.expectedBidIds[index], bid.bid.ID, tc.description)
-			assert.Equal(t, tc.expectedImpIds[index], bid.bid.ImpID, tc.description)
+		for _, bid := range seatBids[0].bids {
+			assert.Contains(t, tc.expectedBidIds, bid.bid.ID, tc.description)
+			assert.Contains(t, tc.expectedImpIds, bid.bid.ImpID, tc.description)
 		}
 	}
 
