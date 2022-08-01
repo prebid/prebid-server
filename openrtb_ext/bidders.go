@@ -123,6 +123,7 @@ const (
 	BidderBidsCube          BidderName = "bidscube"
 	BidderBizzclick         BidderName = "bizzclick"
 	BidderBliink            BidderName = "bliink"
+	BidderBlue              BidderName = "blue"
 	BidderBmtm              BidderName = "bmtm"
 	BidderBrightroll        BidderName = "brightroll"
 	BidderCoinzilla         BidderName = "coinzilla"
@@ -136,6 +137,7 @@ const (
 	BidderDatablocks        BidderName = "datablocks"
 	BidderDecenterAds       BidderName = "decenterads"
 	BidderDeepintent        BidderName = "deepintent"
+	BidderDianomi           BidderName = "dianomi"
 	BidderDmx               BidderName = "dmx"
 	BidderEmxDigital        BidderName = "emx_digital"
 	BidderEngageBDR         BidderName = "engagebdr"
@@ -205,6 +207,7 @@ const (
 	BidderSmileWanted       BidderName = "smilewanted"
 	BidderSonobi            BidderName = "sonobi"
 	BidderSovrn             BidderName = "sovrn"
+	BidderSspBC             BidderName = "sspBC"
 	BidderStreamkey         BidderName = "streamkey"
 	BidderStroeerCore       BidderName = "stroeerCore"
 	BidderSynacormedia      BidderName = "synacormedia"
@@ -278,6 +281,7 @@ func CoreBidderNames() []BidderName {
 		BidderBidsCube,
 		BidderBizzclick,
 		BidderBliink,
+		BidderBlue,
 		BidderBmtm,
 		BidderBrightroll,
 		BidderCoinzilla,
@@ -291,6 +295,7 @@ func CoreBidderNames() []BidderName {
 		BidderDatablocks,
 		BidderDecenterAds,
 		BidderDeepintent,
+		BidderDianomi,
 		BidderDmx,
 		BidderEmxDigital,
 		BidderEngageBDR,
@@ -360,6 +365,7 @@ func CoreBidderNames() []BidderName {
 		BidderSmileWanted,
 		BidderSonobi,
 		BidderSovrn,
+		BidderSspBC,
 		BidderStreamkey,
 		BidderStroeerCore,
 		BidderSynacormedia,

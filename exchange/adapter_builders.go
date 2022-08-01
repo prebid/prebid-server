@@ -43,6 +43,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/bidscube"
 	"github.com/prebid/prebid-server/adapters/bizzclick"
 	"github.com/prebid/prebid-server/adapters/bliink"
+	"github.com/prebid/prebid-server/adapters/blue"
 	"github.com/prebid/prebid-server/adapters/bmtm"
 	"github.com/prebid/prebid-server/adapters/brightroll"
 	"github.com/prebid/prebid-server/adapters/coinzilla"
@@ -56,6 +57,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/datablocks"
 	"github.com/prebid/prebid-server/adapters/decenterads"
 	"github.com/prebid/prebid-server/adapters/deepintent"
+	"github.com/prebid/prebid-server/adapters/dianomi"
 	"github.com/prebid/prebid-server/adapters/dmx"
 	evolution "github.com/prebid/prebid-server/adapters/e_volution"
 	"github.com/prebid/prebid-server/adapters/emx_digital"
@@ -120,6 +122,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/smilewanted"
 	"github.com/prebid/prebid-server/adapters/sonobi"
 	"github.com/prebid/prebid-server/adapters/sovrn"
+	"github.com/prebid/prebid-server/adapters/sspBC"
 	"github.com/prebid/prebid-server/adapters/stroeerCore"
 	"github.com/prebid/prebid-server/adapters/synacormedia"
 	"github.com/prebid/prebid-server/adapters/tappx"
@@ -190,6 +193,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderBidsCube:          bidscube.Builder,
 		openrtb_ext.BidderBizzclick:         bizzclick.Builder,
 		openrtb_ext.BidderBliink:            bliink.Builder,
+		openrtb_ext.BidderBlue:              blue.Builder,
 		openrtb_ext.BidderBmtm:              bmtm.Builder,
 		openrtb_ext.BidderBrightroll:        brightroll.Builder,
 		openrtb_ext.BidderCoinzilla:         coinzilla.Builder,
@@ -203,6 +207,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderDatablocks:        datablocks.Builder,
 		openrtb_ext.BidderDecenterAds:       decenterads.Builder,
 		openrtb_ext.BidderDeepintent:        deepintent.Builder,
+		openrtb_ext.BidderDianomi:           dianomi.Builder,
 		openrtb_ext.BidderDmx:               dmx.Builder,
 		openrtb_ext.BidderEmxDigital:        emx_digital.Builder,
 		openrtb_ext.BidderEngageBDR:         engagebdr.Builder,
@@ -272,6 +277,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderSmileWanted:       smilewanted.Builder,
 		openrtb_ext.BidderSonobi:            sonobi.Builder,
 		openrtb_ext.BidderSovrn:             sovrn.Builder,
+		openrtb_ext.BidderSspBC:             sspBC.Builder,
 		openrtb_ext.BidderStreamkey:         adtelligent.Builder,
 		openrtb_ext.BidderStroeerCore:       stroeerCore.Builder,
 		openrtb_ext.BidderSynacormedia:      synacormedia.Builder,
