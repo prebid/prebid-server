@@ -464,7 +464,7 @@ func (deps *endpointDeps) overrideWithParams(ampParams amp.Params, req *openrtb2
 		req.TMax = int64(*ampParams.Timeout) - deps.cfg.AMPTimeoutAdjustment
 	}
 
-	//setRegsExt(req.Regs, "1")
+	setRegsExt(&req.Regs, ampParams.GdprApplies)
 
 	if err := setTargeting(req, ampParams.Targeting); err != nil {
 		return []error{err}
@@ -506,29 +506,32 @@ func setPolicy(ampParams amp.Params, req *openrtb2.BidRequest) {
 // 3) If consent_type="2", and gdpr_consent is not empty, then copy gdpr_consent to user.ext.consent
 // 4) If consent_type="3", and gdpr_consent is not empty, then copy gdpr_consent to regs.ext.us_privacy
 // 5) If addtl_consent is supplied, copy its value to user.ext.ConsentedProvidersSettings.consented_providers
-//func setRegsExt(regs *openrtb2.Regs, ampParams amp.Params) {
-//	if len(site.Ext) > 0 {
-//		if _, dataType, _, _ := jsonparser.Get(site.Ext, "amp"); dataType == jsonparser.NotExist {
-//			if val, err := jsonparser.Set(site.Ext, []byte(value), "amp"); err == nil {
-//				site.Ext = val
-//			}
-//		}
-//	} else {
-//		site.Ext = json.RawMessage(`{"amp":` + value + `}`)
-//	}
-//
-//	if ampParams.GdprApplies == nil {
-//		//regs.Ext.GDPR = nil
-//		return
-//	}
-//
-//	var gdprValue int = 0
-//	if ampParams.GdprApplies {
-//		gdprValue = 1
-//	}
-//	regs.GDPR = &gdprValue
-//
-//}
+func setRegsExt(regs **openrtb2.Regs, gdprApplies *bool) {
+	if gdprApplies == nil {
+		return
+	}
+
+	var gdprValue byte = '0'
+	if *gdprApplies {
+		gdprValue = '1'
+	}
+
+	if *regs == nil {
+		*regs = &openrtb2.Regs{}
+	}
+
+	regsExt := (**regs).Ext
+	if len(regsExt) > 0 {
+		if val, err := jsonparser.Set(regsExt, []byte{gdprValue}, "gdpr"); err == nil {
+			regsExt = val
+		}
+	} else {
+		regsExt = json.RawMessage(`{"gdpr":`)
+		regsExt = append(regsExt, gdprValue, '}')
+	}
+
+	(*regs).Ext = regsExt
+}
 
 // 	    1.1. The contents of gdpr_consent can be treated as TCF V1. We no longer support TCFv1, so ignore any consent_string provided on the request.
 // 	    1.2. The contents of gdpr_consent can be treated as TCF V2. If the consent_string isn't a valid TCF2 string, assume there's no user consent for any purpose as if no gdpr_consent were provided.

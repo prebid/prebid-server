@@ -38,7 +38,8 @@ type Size struct {
 
 // GDPR consent types
 const (
-	TCF1 = iota
+	NO_CONSENT = iota
+	TCF1
 	TCF2
 	CCPA
 )
@@ -101,6 +102,7 @@ func parseInt(value string) int64 {
 
 func parseBoolPtr(value string) *bool {
 	var rv bool = false
+
 	switch value {
 	case "true":
 		rv = true
@@ -108,6 +110,7 @@ func parseBoolPtr(value string) *bool {
 	case "false":
 		return &rv
 	}
+
 	return nil
 }
 

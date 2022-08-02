@@ -94,6 +94,44 @@ func TestParseParams(t *testing.T) {
 	}
 }
 
+func TestFunc(t *testing.T) {
+	boolTrue := true
+	boolFalse := false
+
+	testCases := []struct {
+		desc     string
+		in       string
+		expected *bool
+	}{
+		{
+			"Input is an empty string",
+			"",
+			nil,
+		},
+		{
+			"Input is neither true nor false, expect a nil pointer",
+			"other",
+			nil,
+		},
+		{
+			"Input is the word 'false', expect a reference pointing to false value",
+			"false",
+			&boolFalse,
+		},
+		{
+			"Input is the word 'true', expect a reference pointing to true value",
+			"true",
+			&boolTrue,
+		},
+	}
+	for _, tc := range testCases {
+		actual := parseBoolPtr(tc.in)
+
+		// assertions
+		assert.Equal(t, tc.expected, actual, tc.desc)
+	}
+}
+
 func TestParseMultisize(t *testing.T) {
 	testCases := []struct {
 		description     string

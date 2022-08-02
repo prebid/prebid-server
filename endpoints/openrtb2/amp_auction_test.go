@@ -32,26 +32,25 @@ func TestGoodAmpRequests(t *testing.T) {
 		dir       string
 		testFiles []string
 	}{
-		{
-			desc: "Valid whole, tag_id param only",
-			dir:  "sample-requests/valid-whole/supplementary/",
-			testFiles: []string{
-				"aliased-buyeruids.json",
-				"aliases.json",
-				"imp-with-stored-resp.json",
-				"gdpr-no-consentstring.json",
-				"gdpr.json",
-			},
-		},
+		//{
+		//	desc: "Valid whole, tag_id param only",
+		//	dir:  "sample-requests/valid-whole/supplementary/",
+		//	testFiles: []string{
+		//		"aliased-buyeruids.json",
+		//		"aliases.json",
+		//		"imp-with-stored-resp.json",
+		//		"gdpr-no-consentstring.json",
+		//		"gdpr.json",
+		//	},
+		//},
 		{
 			desc: "Valid, consent handling in query",
 			dir:  "sample-requests/amp-query-values/",
 			testFiles: []string{
-				"gdpr-consent-through-query.json",
-				//"aliases.json",
-				//"imp-with-stored-resp.json",
-				//"gdpr-no-consentstring.json",
-				//"gdpr.json",
+				"gdpr-tcf1-consent-through-query.json",
+				//"gdpr-tcf2-consent-through-query.json",
+				//"gdpr-legacy-tcf2-consent-through-query.json",
+				//"gdpr-ccpa-through-query.json",
 			},
 		},
 	}
@@ -93,7 +92,7 @@ func TestGoodAmpRequests(t *testing.T) {
 			}
 
 			// Set test up
-			ampEndpoint, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
+			ampEndpoint, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(t, test, cfg)
 			if !assert.NoError(t, err) {
 				continue
 			}
