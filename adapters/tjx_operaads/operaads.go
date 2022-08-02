@@ -59,6 +59,11 @@ const (
 // SKAN IDs must be lower case
 var operaAdsSKADNetIDs = map[string]bool{
 	"a2p9lx4jpn.skadnetwork": true,
+	"22mmun2rn5.skadnetwork": true,
+	"e5fvkxwrpn.skadnetwork": true,
+	"8s468mfl3y.skadnetwork": true,
+	"7ug5zh24hu.skadnetwork": true,
+	"zq492l623r.skadnetwork": true,
 }
 
 var (
