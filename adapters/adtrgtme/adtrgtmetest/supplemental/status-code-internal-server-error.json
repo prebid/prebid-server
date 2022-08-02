@@ -5,17 +5,12 @@
     "user": {
       "buyeruid": "test-user"
     },
-    "app": {
+    "site": {
+      "id": "123456789",
+      "page": "mock-site.com",
       "publisher": {
         "id": "123456789"
-      },
-      "cat": [
-        "IAB22-1"
-      ],
-      "bundle": "com.app.test",
-      "name": "test-app",
-      "domain": "test-app.com",
-      "id": "123456789"
+      }
     },
     "imp": [
       {
@@ -42,6 +37,7 @@
           "imp": [
             {
               "id": "test-imp-id",
+              "tagid": "test-adtarget-tag-id",
               "video": {
                 "mimes": [
                   "video/mp4"
@@ -50,21 +46,15 @@
                 "maxduration": 150,
                 "w": 640,
                 "h": 480
-              },
-              "tagid": "test-adtarget-tag-id"
+              }
             }
           ],
-          "app": {
+          "site": {
+            "id": "123456789",
+            "page": "mock-site.com",
             "publisher": {
               "id": "123456789"
-            },
-            "cat": [
-              "IAB22-1"
-            ],
-            "bundle": "com.app.test",
-            "name": "test-app",
-            "domain": "test-app.com",
-            "id": "123456789"
+            }
           },
           "user": {
             "buyeruid": "test-user"
@@ -73,14 +63,14 @@
         }
       },
       "mockResponse": {
-        "status": 400
+        "status": 500
       }
     }
   ],
   "expectedBidResponses": [],
   "expectedMakeBidsErrors": [
     {
-      "value": "Unexpected status code: [ 400 ]",
+      "value": "Unexpected status code: [ 500 ]. Run with request.debug = 1 for more info",
       "comparison": "literal"
     }
   ]

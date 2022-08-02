@@ -31,7 +31,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://localhost:8077/ssp?s=123456789&prebid",
+        "uri": "http://localhost/ssp?s=123456789&prebid",
         "body": {
           "id": "test-req-id",
           "imp": [

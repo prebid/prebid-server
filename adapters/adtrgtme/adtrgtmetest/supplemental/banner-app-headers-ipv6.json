@@ -29,7 +29,7 @@
     },
     "device": {
       "ua": "test-device-user-agent",
-      "ip": "123.123.123.123",
+      "ipv6": "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
       "geo": {
         "country": "TST"
       },
@@ -58,7 +58,7 @@
             "test-device-user-agent"
           ],
           "X-Forwarded-For": [
-            "123.123.123.123"
+            "2001:0db8:85a3:0000:0000:8a2e:0370:7334"
           ]
         },
         "body": {
@@ -91,7 +91,7 @@
           },
           "device": {
             "ua": "test-device-user-agent",
-            "ip": "123.123.123.123",
+            "ipv6": "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
             "geo": {
               "country": "TST"
             },

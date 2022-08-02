@@ -15,21 +15,19 @@
         "secure": 1
       }
     ],
-    "app": {
-      "publisher": {
-        "id": "test-site-publisher-id"
-      },
+    "site": {
+      "id": "123456789",
       "cat": [
         "test-cat"
       ],
-      "bundle": "com.app.test",
-      "name": "Test App",
-      "domain": "testapp.com",
-      "id": "123456789"
+      "page": "test-page-site",
+      "publisher": {
+        "id": "test-site-publisher-id"
+      }
     },
     "device": {
       "ua": "test-device-user-agent",
-      "ip": "123.123.123.123",
+      "ipv6": "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
       "geo": {
         "country": "TST"
       },
@@ -58,7 +56,7 @@
             "test-device-user-agent"
           ],
           "X-Forwarded-For": [
-            "123.123.123.123"
+            "2001:0db8:85a3:0000:0000:8a2e:0370:7334"
           ]
         },
         "body": {
@@ -77,21 +75,19 @@
               "secure": 1
             }
           ],
-          "app": {
-            "publisher": {
-              "id": "test-site-publisher-id"
-            },
+          "site": {
+            "id": "123456789",
             "cat": [
               "test-cat"
             ],
-            "bundle": "com.app.test",
-            "name": "Test App",
-            "domain": "testapp.com",
-            "id": "123456789"
+            "page": "test-page-site",
+            "publisher": {
+              "id": "test-site-publisher-id"
+            }
           },
           "device": {
             "ua": "test-device-user-agent",
-            "ip": "123.123.123.123",
+            "ipv6": "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
             "geo": {
               "country": "TST"
             },

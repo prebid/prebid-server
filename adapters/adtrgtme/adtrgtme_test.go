@@ -10,7 +10,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAdtrgtme, config.Adapter{
-		Endpoint: "http://localhost:8077/ssp"})
+		Endpoint: "http://localhost/ssp"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
