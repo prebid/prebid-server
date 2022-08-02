@@ -786,7 +786,7 @@ func TestAlternateBidderCodes_IsValidBidderCode(t *testing.T) {
 			wantErr:     errors.New(`alternateBidderCodes disabled for "pubmatic", rejecting bids for "groupm"`),
 		},
 		{
-			name: "account.alternatebiddercodes and adapter config enabled but adapter config has allowedBidderCodes list empty or not defined",
+			name: "account.alternatebiddercodes and adapter config enabled but adapter config does not have allowedBidderCodes defined",
 			args: args{
 				bidder:          "pubmatic",
 				alternateBidder: "groupm",
