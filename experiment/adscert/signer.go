@@ -3,6 +3,7 @@ package adscert
 import (
 	"fmt"
 	"github.com/IABTechLab/adscert/pkg/adscert/api"
+	"github.com/IABTechLab/adscert/pkg/adscert/logger"
 	"github.com/IABTechLab/adscert/pkg/adscert/signatory"
 	"github.com/prebid/prebid-server/config"
 )
@@ -22,6 +23,7 @@ func (ns *NilSigner) Sign(destinationURL string, body []byte) (string, error) {
 }
 
 func NewAdCertsSigner(experimentAdCertsConfig config.ExperimentAdsCert) (Signer, error) {
+	logger.SetLoggerImpl(&SignerLogger{})
 	if experimentAdCertsConfig.Mode == config.AdCertsSignerModeInprocess {
 		return newInProcessSigner(experimentAdCertsConfig.InProcess)
 	}
