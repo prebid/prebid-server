@@ -16,8 +16,8 @@ RUN apt-get update && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 ENV CGO_ENABLED 0
 COPY ./ ./
-RUN go mod vendor
 RUN go mod tidy
+RUN go mod vendor
 ARG TEST="true"
 RUN if [ "$TEST" != "false" ]; then ./validate.sh ; fi
 RUN go build -mod=vendor -ldflags "-X github.com/prebid/prebid-server/version.Ver=`git describe --tags | sed 's/^v//'` -X github.com/prebid/prebid-server/version.Rev=`git rev-parse HEAD`" .
