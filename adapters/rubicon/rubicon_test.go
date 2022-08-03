@@ -1165,10 +1165,11 @@ func TestOpenRTBResponseSettingOfNetworkId(t *testing.T) {
 		} else {
 			givenBidExt = nil
 		}
+
 		givenBidResponse := rubiconBidResponse{
 			SeatBid: []rubiconSeatBid{{Buyer: scenario.buyer,
-				SeatBid: openrtb2.SeatBid{
-					Bid: []openrtb2.Bid{{Price: 123.2, ImpID: "test-imp-id", Ext: givenBidExt}}}}},
+				Bid: []rubiconBid{{
+					Bid: openrtb2.Bid{Price: 123.2, ImpID: "test-imp-id", Ext: givenBidExt}}}}},
 		}
 		body, _ := json.Marshal(&givenBidResponse)
 		httpResp := &adapters.ResponseData{

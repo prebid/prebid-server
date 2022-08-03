@@ -160,7 +160,13 @@ type rubiconBidResponse struct {
 
 type rubiconSeatBid struct {
 	openrtb2.SeatBid
-	Buyer string `json:"buyer,omitempty"`
+	Buyer string       `json:"buyer,omitempty"`
+	Bid   []rubiconBid `json:"bid"`
+}
+
+type rubiconBid struct {
+	openrtb2.Bid
+	Admobject json.RawMessage `json:"admobject,omitempty"`
 }
 
 type extPrebid struct {
@@ -515,6 +521,8 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 		}
 
 		isVideo := isVideo(imp)
+		impType := openrtb_ext.BidTypeVideo
+		requestNative := make(map[string]interface{})
 		if isVideo {
 			videoCopy := *imp.Video
 
@@ -537,7 +545,8 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			videoCopy.Ext, err = json.Marshal(&videoExt)
 			imp.Video = &videoCopy
 			imp.Banner = nil
-		} else {
+			imp.Native = nil
+		} else if imp.Banner != nil {
 			primarySizeID, altSizeIDs, err := parseRubiconSizes(imp.Banner.Format)
 			if err != nil {
 				errs = append(errs, err)
@@ -552,6 +561,19 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			}
 			imp.Banner = &bannerCopy
 			imp.Video = nil
+			imp.Native = nil
+			impType = openrtb_ext.BidTypeBanner
+		} else {
+			native, err := resolveNativeObject(imp.Native, requestNative)
+			if err != nil {
+				if native == nil {
+					errs = append(errs, err)
+					continue
+				}
+			}
+			imp.Native = native
+			imp.Video = nil
+			impType = openrtb_ext.BidTypeNative
 		}
 
 		accountId, err := rubiconExt.AccountId.Int64()
@@ -607,6 +629,15 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 		rubiconRequest.Ext = nil
 
 		reqJSON, err := json.Marshal(rubiconRequest)
+		if impType == openrtb_ext.BidTypeNative {
+			jsonStr, err := json.Marshal(requestNative)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+			reqJSON, err = modifyImpCustom(reqJSON, jsonStr)
+		}
+
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -1021,6 +1052,46 @@ func isFullyPopulatedVideo(video *openrtb2.Video) bool {
 	return video.MIMEs != nil && video.Protocols != nil && video.MaxDuration != 0 && video.Linearity != 0 && video.API != nil
 }
 
+func resolveNativeObject(native *openrtb2.Native, target map[string]interface{}) (*openrtb2.Native, error) {
+	if native == nil {
+		return nil, fmt.Errorf("Native object is not present for request")
+	}
+	ver := native.Ver
+	if ver == "1.0" || ver == "1.1" {
+		return native, nil
+	}
+
+	err := json.Unmarshal([]byte(native.Request), &target)
+	if err != nil {
+		return nil, err
+	}
+
+	if _, ok := target["eventtrackers"].([]interface{}); !ok {
+		return nil, fmt.Errorf("Eventtrackers are not present or not of array type")
+	}
+
+	if _, ok := target["context"].(float64); !ok {
+		return nil, fmt.Errorf("Context is not present or not of int type")
+	}
+
+	if _, ok := target["plcmttype"].(float64); !ok {
+		return nil, fmt.Errorf("Plcmttype is not present or not of int type")
+	}
+
+	return native, nil
+}
+
+func modifyImpCustom(json []byte, requestNative []byte) ([]byte, error) {
+
+	var err error
+	json, err = jsonparser.Set(json, requestNative, "imp", "[0]", "native", "request_native")
+	if err != nil {
+		return json, err
+	}
+
+	return json, nil
+}
+
 func (a *RubiconAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -1052,11 +1123,13 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb2.BidRequest, external
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
 
-	bidType := openrtb_ext.BidTypeBanner
+	bidType := openrtb_ext.BidTypeNative
 
 	isVideo := isVideo(bidReq.Imp[0])
 	if isVideo {
 		bidType = openrtb_ext.BidTypeVideo
+	} else if bidReq.Imp[0].Banner != nil {
+		bidType = openrtb_ext.BidTypeBanner
 	}
 
 	impToCpmOverride := mapImpIdToCpmOverride(internalRequest.Imp)
@@ -1089,8 +1162,24 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb2.BidRequest, external
 				if bid.ID == "0" {
 					bid.ID = bidResp.BidID
 				}
+
+				resolvedAdm := resolveAdm(bid)
+				if len(resolvedAdm) > 0 {
+					bid.AdM = resolvedAdm
+				}
+
+				var ortbBid openrtb2.Bid // `targetStruct` can be anything of your choice
+
+				rubiconBidAsBytes, _ := json.Marshal(bid)
+				if len(rubiconBidAsBytes) > 0 {
+					err = json.Unmarshal(rubiconBidAsBytes, &ortbBid)
+					if err != nil {
+						return nil, []error{err}
+					}
+				}
+
 				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-					Bid:     &bid,
+					Bid:     &ortbBid,
 					BidType: bidType,
 				})
 			}
@@ -1118,6 +1207,21 @@ func mapImpIdToCpmOverride(imps []openrtb2.Imp) map[string]float64 {
 	return impIdToCmpOverride
 }
 
+func resolveAdm(bid rubiconBid) string {
+	var bidAdm = bid.AdM
+	if len(bidAdm) > 0 {
+		return bidAdm
+	}
+
+	admObject := bid.Admobject
+	admObjectAsBytes, err := json.Marshal(&admObject)
+	if err != nil {
+		return ""
+	}
+
+	return string(admObjectAsBytes)
+}
+
 func cmpOverrideFromBidRequest(bidRequest *openrtb2.BidRequest) float64 {
 	var bidRequestExt bidRequestExt
 	if err := json.Unmarshal(bidRequest.Ext, &bidRequestExt); err != nil {
@@ -1127,7 +1231,7 @@ func cmpOverrideFromBidRequest(bidRequest *openrtb2.BidRequest) float64 {
 	return bidRequestExt.Prebid.Bidders.Rubicon.Debug.CpmOverride
 }
 
-func updateBidExtWithMetaNetworkId(bid openrtb2.Bid, buyer int) json.RawMessage {
+func updateBidExtWithMetaNetworkId(bid rubiconBid, buyer int) json.RawMessage {
 	if buyer <= 0 {
 		return nil
 	}
