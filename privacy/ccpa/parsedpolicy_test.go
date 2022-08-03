@@ -35,7 +35,7 @@ func TestValidateConsent(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		result := ValidateConsent(test.consent)
+		result := CCPAConsentValidator{}.ValidateConsent(test.consent)
 		assert.Equal(t, test.expected, result, test.description)
 	}
 }
