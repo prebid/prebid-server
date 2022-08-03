@@ -3,6 +3,7 @@ package openrtb2
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -14,12 +15,17 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/prebid-server/amp"
 	"github.com/prebid/prebid-server/analytics"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/privacy"
+	"github.com/prebid/prebid-server/privacy/ccpa"
+	"github.com/prebid/prebid-server/privacy/gdpr"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 
 	"github.com/stretchr/testify/assert"
@@ -116,6 +122,218 @@ func TestGoodAmpRequests(t *testing.T) {
 					assert.Equal(t, test.ExpectedErrorMessage, recorder.Body.String(), filename)
 				}
 			}
+		}
+	}
+}
+
+func TestSetRegExtGDPR(t *testing.T) {
+	gdprAppliesFalse := false
+	gdprAppliesTrue := true
+	type testInput struct {
+		gdprApplies *bool
+		req         *openrtb2.BidRequest
+	}
+	testCases := []struct {
+		desc            string
+		in              testInput
+		expectedErrMsg  string
+		expectedRegsExt json.RawMessage
+	}{
+		{
+			desc: "gdprApplies was not set and defaulted to nil. This isn't cause for an error",
+			in: testInput{
+				gdprApplies: nil,
+			},
+		},
+		{
+			desc: "gdprApplies isn't nil but the bidRequest is, expect RequestWrapper error",
+			in: testInput{
+				gdprApplies: &gdprAppliesFalse,
+				req:         nil,
+			},
+			expectedErrMsg: "Requestwrapper Sync called on a nil BidRequest",
+		},
+		{
+			desc: "gdprApplies was set but current req.regs.ext is malformed, expect error",
+			in: testInput{
+				gdprApplies: &gdprAppliesFalse,
+				req:         &openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`malformed`)}},
+			},
+			expectedErrMsg: "invalid character 'm' looking for beginning of value",
+		},
+		{
+			desc: "gdprApplies equals false, expect req.Regs.Ext.GDPR to be 0",
+			in: testInput{
+				gdprApplies: &gdprAppliesFalse,
+				req:         &openrtb2.BidRequest{},
+			},
+			expectedRegsExt: json.RawMessage(`{"gdpr":0}`),
+		},
+		{
+			desc: "gdprApplies equals true, expect req.Regs.Ext.GDPR to be 1",
+			in: testInput{
+				gdprApplies: &gdprAppliesTrue,
+				req:         &openrtb2.BidRequest{},
+			},
+			expectedRegsExt: json.RawMessage(`{"gdpr":1}`),
+		},
+	}
+	for _, tc := range testCases {
+		err := setRegExtGDPR(tc.in.gdprApplies, tc.in.req)
+
+		if len(tc.expectedErrMsg) > 0 {
+			assert.Error(t, err, tc.desc)
+			assert.Equal(t, tc.expectedErrMsg, err.Error(), tc.desc)
+		} else {
+			assert.NoError(t, err, tc.desc)
+		}
+
+		if len(tc.expectedRegsExt) > 0 {
+			assert.JSONEq(t, string(tc.expectedRegsExt), string(tc.in.req.Regs.Ext), tc.desc)
+		}
+	}
+}
+
+func TestPolicyReader(t *testing.T) {
+	gdprApplies := false
+	type testInput struct {
+		policyReader policyReader
+		ampParams    amp.Params
+	}
+	type expectedResults struct {
+		policyWriter privacy.PolicyWriter
+		err          error
+	}
+	type testCase struct {
+		desc     string
+		in       testInput
+		expected expectedResults
+	}
+	testGroups := []struct {
+		desc  string
+		tests []testCase
+	}{
+		{
+			"error scenarios",
+			[]testCase{
+				{
+					"setRegExtGDPR returns an error, expect nil policy writer and valid error",
+					testInput{
+						policyReader: policyReader{},
+						ampParams:    amp.Params{GdprApplies: &gdprApplies},
+					},
+					expectedResults{
+						policyWriter: privacy.NilPolicyWriter{},
+						err:          errors.New("Requestwrapper Sync called on a nil BidRequest"),
+					},
+				},
+				{
+					"consent string is empty, expect nil policy writer. No error is returned",
+					testInput{
+						policyReader: policyReader{},
+						ampParams:    amp.Params{},
+					},
+					expectedResults{
+						policyWriter: privacy.NilPolicyWriter{},
+						err:          nil,
+					},
+				},
+				{
+					"consent string is not recognized as neither CCPA nor GDPR TCF. Expect nil policy writer and a warning-type error",
+					testInput{
+						policyReader: policyReader{
+							gdpr: privacy.MockConsentValidator{false},
+							ccpa: privacy.MockConsentValidator{false},
+						},
+						ampParams: amp.Params{Consent: "INVALID_IN_BOTH_CCPA_GDPR"},
+					},
+					expectedResults{
+						policyWriter: privacy.NilPolicyWriter{},
+						err: &errortypes.Warning{
+							Message:     "Consent 'INVALID_IN_BOTH_CCPA_GDPR' is not recognized as either CCPA or GDPR TCF.",
+							WarningCode: errortypes.InvalidPrivacyConsentWarningCode,
+						},
+					},
+				},
+			},
+		},
+		{
+			"Scenarios where a valid GDPR writer is returned",
+			[]testCase{
+				{
+					"GDPR consent string is invalid, but consent type is TCF2: return a valid GDPR writer even if the GDPR string is invalid",
+					testInput{
+						policyReader: policyReader{
+							gdpr: privacy.MockConsentValidator{false},
+						},
+						ampParams: amp.Params{
+							Consent:     "INVALID_GDPR",
+							ConsentType: amp.TCF2,
+						},
+					},
+					expectedResults{
+						policyWriter: gdpr.ConsentWriter{"INVALID_GDPR"},
+						err:          nil,
+					},
+				},
+				{
+					"Valid GDPR consent string, return a valid GDPR writer",
+					testInput{
+						policyReader: policyReader{
+							gdpr: privacy.MockConsentValidator{true},
+						},
+						ampParams: amp.Params{Consent: "GDPR_VALID"},
+					},
+					expectedResults{
+						policyWriter: gdpr.ConsentWriter{"GDPR_VALID"},
+						err:          nil,
+					},
+				},
+			},
+		},
+		{
+			"Scenarios where a valid CCPA writer is returned",
+			[]testCase{
+				{
+					"CCPA consent string is invalid, but consent type is CCPA: return a valid CCPA writer even if the CCPA string itself is not",
+					testInput{
+						policyReader: policyReader{
+							gdpr: privacy.MockConsentValidator{false},
+							ccpa: privacy.MockConsentValidator{false},
+						},
+						ampParams: amp.Params{
+							Consent:     "INVALID_CCPA",
+							ConsentType: amp.CCPA,
+						},
+					},
+					expectedResults{
+						policyWriter: ccpa.ConsentWriter{"INVALID_CCPA"},
+						err:          nil,
+					},
+				},
+				{
+					"Valid CCPA consent string, return a valid CCPA writer",
+					testInput{
+						policyReader: policyReader{
+							gdpr: privacy.MockConsentValidator{false},
+							ccpa: privacy.MockConsentValidator{true},
+						},
+						ampParams: amp.Params{Consent: "CCPA_VALID"},
+					},
+					expectedResults{
+						policyWriter: ccpa.ConsentWriter{"CCPA_VALID"},
+						err:          nil,
+					},
+				},
+			},
+		},
+	}
+	for _, group := range testGroups {
+		for _, tc := range group.tests {
+			actualPolicyWriter, actualErr := tc.in.policyReader.readPolicy(tc.in.ampParams, nil)
+
+			assert.Equal(t, tc.expected.policyWriter, actualPolicyWriter, tc.desc)
+			assert.Equal(t, tc.expected.err, actualErr, tc.desc)
 		}
 	}
 }

@@ -23,8 +23,10 @@ const (
 
 const allBiddersMarker = "*"
 
+type CCPAConsentValidator struct{}
+
 // ValidateConsent returns true if the consent string is empty or valid per the IAB CCPA spec.
-func ValidateConsent(consent string) bool {
+func (CCPAConsentValidator) ValidateConsent(consent string) bool {
 	_, err := parseConsent(consent)
 	return err == nil
 }

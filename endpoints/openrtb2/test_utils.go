@@ -1111,38 +1111,6 @@ func (te *exchangeTestWrapper) HoldAuction(ctx context.Context, r exchange.Aucti
 	return te.ex.HoldAuction(ctx, r, debugLog)
 }
 
-// // diffJson compares two JSON byte arrays for structural equality. It will produce an error if either
-// // byte array is not actually JSON.
-// func diffJson(description string, actual []byte, expected []byte) error {
-// 	if len(actual) == 0 && len(expected) == 0 {
-// 		return nil
-// 	}
-// 	if len(actual) == 0 || len(expected) == 0 {
-// 		return fmt.Errorf("%s json diff failed. Expected %d bytes in body, but got %d.", description, len(expected), len(actual))
-// 	}
-// 	diff, err := gojsondiff.New().Compare(actual, expected)
-// 	if err != nil {
-// 		return fmt.Errorf("%s json diff failed. %v", description, err)
-// 	}
-//
-// 	if diff.Modified() {
-// 		var left interface{}
-// 		if err := json.Unmarshal(actual, &left); err != nil {
-// 			return fmt.Errorf("%s json did not match, but unmarshalling failed. %v", description, err)
-// 		}
-// 		printer := formatter.NewAsciiFormatter(left, formatter.AsciiFormatterConfig{
-// 			ShowArrayIndex: true,
-// 		})
-// 		output, err := printer.Format(diff)
-// 		if err != nil {
-// 			return fmt.Errorf("%s did not match, but diff formatting failed. %v", description, err)
-// 		} else {
-// 			return fmt.Errorf("%s json did not match expected.\n\n%s", description, output)
-// 		}
-// 	}
-// 	return nil
-// }
-
 // buildTestExchange returns an exchange with mock bidder servers and mock currency convertion server
 func buildTestExchange(t *testing.T, test testCase, adapterMap map[openrtb_ext.BidderName]exchange.AdaptedBidder, mockBidServersArray []*httptest.Server, mockCurrencyRatesServer *httptest.Server, bidderInfos config.BidderInfos, cfg *config.Configuration, met metrics.MetricsEngine, mockFetcher stored_requests.CategoryFetcher) (exchange.Exchange, []*httptest.Server) {
 

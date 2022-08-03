@@ -94,7 +94,7 @@ func TestParseParams(t *testing.T) {
 	}
 }
 
-func TestFunc(t *testing.T) {
+func TestParseBoolPtr(t *testing.T) {
 	boolTrue := true
 	boolFalse := false
 

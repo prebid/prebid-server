@@ -10,8 +10,10 @@ type Policy struct {
 	Consent string
 }
 
+type GDPRConsentValidator struct{}
+
 // ValidateConsent returns true if the consent string is empty or valid per the IAB TCF spec.
-func ValidateConsent(consent string) bool {
+func (GDPRConsentValidator) ValidateConsent(consent string) bool {
 	_, err := vendorconsent.ParseString(consent)
 	return err == nil
 }

@@ -38,10 +38,10 @@ type Size struct {
 
 // Policy consent types
 const (
-	NO_CONSENT = iota
-	TCF1
-	TCF2
-	CCPA
+	NO_CONSENT = 0
+	TCF1       = 1
+	TCF2       = 2
+	CCPA       = 3
 )
 
 // ParseParams parses the AMP parameters from a HTTP request.
@@ -53,15 +53,6 @@ func ParseParams(httpRequest *http.Request) (Params, error) {
 		return Params{}, errors.New("AMP requests require an AMP tag_id")
 	}
 
-	// 1) If consent_type is provided, it will be an enum containing the following values:
-	// 	    1.1. The contents of gdpr_consent can be treated as TCF V1. We no longer support TCFv1, so ignore any consent_string provided on the request.
-	// 	    1.2. The contents of gdpr_consent can be treated as TCF V2. If the consent_string isn't a valid TCF2 string, assume there's no user consent for any purpose as if no gdpr_consent were provided.
-	// 	    1.3. The contents of gdpr_consent can be treated as a US Privacy String. If the consent_string isn't a valid USP string, assume for the purposes of opt-out-of-sale enforcement that no gdpr_consent was provided.
-	// 	    1.4. Anything else: ignore, log a warning, and assume no gdpr_consent was provided
-	// 2) If gdpr_applies is supplied, use its value to set regs.ext.gdpr: gdpr_applies=true means regs.ext.gdpr:1, gdpr_applies=false means regs.ext.gdpr:0, any other value means regs.ext.gdpr is not set.
-	// 3) If consent_type="2", and gdpr_consent is not empty, then copy gdpr_consent to user.ext.consent
-	// 4) If consent_type="3", and gdpr_consent is not empty, then copy gdpr_consent to regs.ext.us_privacy
-	// 5) If addtl_consent is supplied, copy its value to user.ext.ConsentedProvidersSettings.consented_providers
 	params := Params{
 		Account:      query.Get("account"),
 		CanonicalURL: query.Get("curl"),

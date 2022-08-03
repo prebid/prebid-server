@@ -407,15 +407,6 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 	return
 }
 
-// 1) If consent_type is provided, it will be an enum containing the following values:
-// 	    1.1. The contents of gdpr_consent can be treated as TCF V1. We no longer support TCFv1, so ignore any consent_string provided on the request.
-// 	    1.2. The contents of gdpr_consent can be treated as TCF V2. If the consent_string isn't a valid TCF2 string, assume there's no user consent for any purpose as if no gdpr_consent were provided.
-// 	    1.3. The contents of gdpr_consent can be treated as a US Privacy String. If the consent_string isn't a valid USP string, assume for the purposes of opt-out-of-sale enforcement that no gdpr_consent was provided.
-// 	    1.4. Anything else: ignore, log a warning, and assume no gdpr_consent was provided
-// 2) If gdpr_applies is supplied, use its value to set regs.ext.gdpr: gdpr_applies=true means regs.ext.gdpr:1, gdpr_applies=false means regs.ext.gdpr:0, any other value means regs.ext.gdpr is not set.
-// 3) If consent_type="2", and gdpr_consent is not empty, then copy gdpr_consent to user.ext.consent
-// 4) If consent_type="3", and gdpr_consent is not empty, then copy gdpr_consent to regs.ext.us_privacy
-// 5) If addtl_consent is supplied, copy its value to user.ext.ConsentedProvidersSettings.consented_providers
 func (deps *endpointDeps) overrideWithParams(ampParams amp.Params, req *openrtb2.BidRequest) []error {
 	if req.Site == nil {
 		req.Site = &openrtb2.Site{}
@@ -452,7 +443,11 @@ func (deps *endpointDeps) overrideWithParams(ampParams amp.Params, req *openrtb2
 		req.Imp[0].TagID = ampParams.Slot
 	}
 
-	policyWriter, policyWriterErr := readPolicy(ampParams, req)
+	policy := policyReader{
+		gdpr: gdpr.GDPRConsentValidator{},
+		ccpa: ccpa.CCPAConsentValidator{},
+	}
+	policyWriter, policyWriterErr := policy.readPolicy(ampParams, req)
 	if policyWriterErr != nil {
 		return []error{policyWriterErr}
 	}
@@ -469,6 +464,11 @@ func (deps *endpointDeps) overrideWithParams(ampParams amp.Params, req *openrtb2
 	}
 
 	return nil
+}
+
+type policyReader struct {
+	gdpr privacy.ConsentValidator
+	ccpa privacy.ConsentValidator
 }
 
 // setTargeting merges "targeting" to imp[0].ext.data
@@ -587,35 +587,41 @@ func setAmpExt(site *openrtb2.Site, value string) {
 	}
 }
 
-func readPolicy(ampParams amp.Params, req *openrtb2.BidRequest) (privacy.PolicyWriter, error) {
+// setRegExtGDPR sets regs.ext.gdpr to either 0 or 1 only if it was set in the request query
+func setRegExtGDPR(gdprApplies *bool, req *openrtb2.BidRequest) error {
+	if gdprApplies == nil {
+		return nil
+	}
 
-	// Set regs.ext.gdpr to either 0 or 1 only if it was set in the request query
-	if ampParams.GdprApplies != nil {
-		gdpr := int8(0)
-		if *ampParams.GdprApplies {
-			gdpr++
-		}
+	gdpr := int8(0)
+	if *gdprApplies {
+		gdpr++
+	}
 
-		reqWrap := &openrtb_ext.RequestWrapper{BidRequest: req}
-		if regsExt, err := reqWrap.GetRegExt(); err == nil {
-			regsExt.SetGDPR(&gdpr)
-		} else {
-			return nil, err
-		}
-		if err := reqWrap.RebuildRequest(); err != nil {
-			return nil, err
-		}
+	reqWrap := &openrtb_ext.RequestWrapper{BidRequest: req}
+	if regsExt, err := reqWrap.GetRegExt(); err == nil {
+		regsExt.SetGDPR(&gdpr)
+	} else {
+		return err
+	}
+	return reqWrap.RebuildRequest()
+}
+
+func (pr policyReader) readPolicy(ampParams amp.Params, req *openrtb2.BidRequest) (privacy.PolicyWriter, error) {
+
+	if err := setRegExtGDPR(ampParams.GdprApplies, req); err != nil {
+		return privacy.NilPolicyWriter{}, err
 	}
 
 	if len(ampParams.Consent) == 0 {
 		return privacy.NilPolicyWriter{}, nil
 	}
 
-	if gdpr.ValidateConsent(ampParams.Consent) || ampParams.ConsentType == amp.TCF2 {
+	if pr.gdpr.ValidateConsent(ampParams.Consent) || ampParams.ConsentType == amp.TCF2 {
 		return gdpr.ConsentWriter{ampParams.Consent}, nil
 	}
 
-	if ccpa.ValidateConsent(ampParams.Consent) || ampParams.ConsentType == amp.CCPA {
+	if pr.ccpa.ValidateConsent(ampParams.Consent) || ampParams.ConsentType == amp.CCPA {
 		return ccpa.ConsentWriter{ampParams.Consent}, nil
 	}
 
