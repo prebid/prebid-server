@@ -598,11 +598,13 @@ func readPolicy(ampParams amp.Params, req *openrtb2.BidRequest) (privacy.PolicyW
 
 		reqWrap := &openrtb_ext.RequestWrapper{BidRequest: req}
 		if regsExt, err := reqWrap.GetRegExt(); err == nil {
-			regsExt.SetGDPR(gdpr)
+			regsExt.SetGDPR(&gdpr)
 		} else {
 			return nil, err
 		}
-		reqWrap.RebuildRequest()
+		if err := reqWrap.RebuildRequest(); err != nil {
+			return nil, err
+		}
 	}
 
 	if len(ampParams.Consent) == 0 {
