@@ -36,7 +36,7 @@ type Size struct {
 	Width          int64
 }
 
-// GDPR consent types
+// Policy consent types
 const (
 	NO_CONSENT = iota
 	TCF1

@@ -47,9 +47,9 @@ func TestGoodAmpRequests(t *testing.T) {
 			desc: "Valid, consent handling in query",
 			dir:  "sample-requests/amp-query-values/",
 			testFiles: []string{
-				"gdpr-tcf1-consent-through-query.json",
+				//"gdpr-tcf1-consent-through-query.json",
 				//"gdpr-tcf2-consent-through-query.json",
-				//"gdpr-legacy-tcf2-consent-through-query.json",
+				"gdpr-legacy-tcf2-consent-through-query.json",
 				//"gdpr-ccpa-through-query.json",
 			},
 		},

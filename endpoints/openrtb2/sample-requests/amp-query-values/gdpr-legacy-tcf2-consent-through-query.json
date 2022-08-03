@@ -1,7 +1,6 @@
 {
   "description": "TCF2 consent type, valid consent string passed through legacy gdpr_consent field, gdpr_applies set to true: expect regs.ext.gdpr to be set to 1 and user.ext.consent equal to the consent_string",
   "query": "tag_id=101&consent_type=2&gdpr_applies=true&gdpr_consent=CPdECS0PdECS0ACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA",
-  "query": "tag_id=101&consent_type=3&consent_string=1YYY", // expect regs.ext.gdpr=0 and regs.ext.us_privacy = "1YYY"'},
   "config": {
     "mockBidders": [
       {"bidderName": "appnexus", "currency": "USD", "price": 15}
@@ -61,10 +60,10 @@
       }
     ],
     "regs": {
-      "ext": {"gdpr":0}
+      "ext": {"gdpr":1}
     },
     "user": {
-      "ext": {"us_privacy":"1YYY"}
+      "ext": {"consent":"CPdECS0PdECS0ACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA"}
     },
     "ext": {"prebid":{"cache":{"bids":{"returnCreative":null},"vastxml":null},"channel":{"name":"amp","version":""},"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"includewinners":true,"includebidderkeys":true,"includebrandcategory":null,"includeformat":false,"durationrangesec":null,"preferdeals":false}}}
   },

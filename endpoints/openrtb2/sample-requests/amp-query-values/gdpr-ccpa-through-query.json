@@ -60,9 +60,6 @@
       }
     ],
     "regs": {
-      "ext": {"gdpr":0}
-    },
-    "user": {
       "ext": {"us_privacy":"1YYY"}
     },
     "ext": {"prebid":{"cache":{"bids":{"returnCreative":null},"vastxml":null},"channel":{"name":"amp","version":""},"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"includewinners":true,"includebidderkeys":true,"includebrandcategory":null,"includeformat":false,"durationrangesec":null,"preferdeals":false}}}
