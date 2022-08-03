@@ -110,6 +110,7 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 			case http.StatusUnavailableForLegalReasons:
 				metricsEngine.RecordSetUid(metrics.SetUidGDPRHostCookieBlocked)
 			}
+			so.Errors = []error{errors.New(body)}
 			so.Status = status
 			return
 		}
