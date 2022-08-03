@@ -298,7 +298,7 @@ func TestBuildRegsClear(t *testing.T) {
 		{
 			description: "Nil Regs",
 			regs:        nil,
-			expected:    &openrtb2.Regs{Ext: nil},
+			expected:    nil,
 		},
 		{
 			description: "Nil Regs.Ext",
