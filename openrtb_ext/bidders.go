@@ -99,6 +99,7 @@ const (
 	BidderAdot              BidderName = "adot"
 	BidderAdpone            BidderName = "adpone"
 	BidderAdprime           BidderName = "adprime"
+	BidderAdrino            BidderName = "adrino"
 	BidderAdtarget          BidderName = "adtarget"
 	BidderAdtelligent       BidderName = "adtelligent"
 	BidderAdvangelists      BidderName = "advangelists"
@@ -258,6 +259,7 @@ func CoreBidderNames() []BidderName {
 		BidderAdot,
 		BidderAdpone,
 		BidderAdprime,
+		BidderAdrino,
 		BidderAdtarget,
 		BidderAdtelligent,
 		BidderAdvangelists,
