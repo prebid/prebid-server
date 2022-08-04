@@ -40,6 +40,15 @@
           "targeting": {
             "includewinners": true,
             "includebidderkeys": true
+          },
+          "alternatebiddercodes": {
+            "enabled": true,
+            "bidders": {
+              "pubmatic": {
+                "enabled": true,
+                "allowedbiddercodes": ["groupm"]
+              }
+            }
           }
         }
       }

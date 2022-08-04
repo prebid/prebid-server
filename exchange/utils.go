@@ -284,14 +284,28 @@ func buildRequestExtForBidder(bidder string, requestExt json.RawMessage, request
 		bidderParams = bidderParamsInReqExt[bidder]
 	}
 
+	// Resolve alternatebiddercode for current bidder
+	var alternateBidderCodes *openrtb_ext.ExtAlternateBidderCodes
+	if requestExtParsed.Prebid.AlternateBidderCodes != nil && len(requestExtParsed.Prebid.AlternateBidderCodes.Bidders) != 0 {
+		if bidderCodes, ok := requestExtParsed.Prebid.AlternateBidderCodes.Bidders[bidder]; ok {
+			alternateBidderCodes = &openrtb_ext.ExtAlternateBidderCodes{
+				Enabled: requestExtParsed.Prebid.AlternateBidderCodes.Enabled,
+				Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+					bidder: bidderCodes,
+				},
+			}
+		}
+	}
+
 	// Copy Allowed Fields
 	// Per: https://docs.prebid.org/prebid-server/endpoints/openrtb2/pbs-endpoint-auction.html#prebid-server-ortb2-extension-summary
 	prebid := openrtb_ext.ExtRequestPrebid{
-		Integration:         requestExtParsed.Prebid.Integration,
-		Channel:             requestExtParsed.Prebid.Channel,
-		Debug:               requestExtParsed.Prebid.Debug,
-		CurrencyConversions: requestExtParsed.Prebid.CurrencyConversions,
-		BidderParams:        bidderParams,
+		Integration:          requestExtParsed.Prebid.Integration,
+		Channel:              requestExtParsed.Prebid.Channel,
+		Debug:                requestExtParsed.Prebid.Debug,
+		CurrencyConversions:  requestExtParsed.Prebid.CurrencyConversions,
+		BidderParams:         bidderParams,
+		AlternateBidderCodes: alternateBidderCodes,
 	}
 
 	// Marshal New Prebid Object
@@ -830,4 +844,16 @@ func WrapJSONInData(data []byte) []byte {
 	res = append(res, data...)
 	res = append(res, []byte(`}`)...)
 	return res
+}
+
+// getExtAlternateBidderCodes map config.account.alternatebiddercodes to ext.prebid.alternatebiddercodes
+func setExtAlternateBidderCodes(requestExt *openrtb_ext.ExtRequest, cfgABC *config.AlternateBidderCodes) {
+	if requestExt == nil || requestExt.Prebid.AlternateBidderCodes != nil {
+		return
+	}
+
+	if cfgABC != nil {
+		alternateBidderCodes := openrtb_ext.ExtAlternateBidderCodes(*cfgABC)
+		requestExt.Prebid.AlternateBidderCodes = &alternateBidderCodes
+	}
 }
