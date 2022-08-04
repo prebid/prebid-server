@@ -47,6 +47,7 @@ type ExtRequestPrebid struct {
 	Debug                bool                      `json:"debug,omitempty"`
 	Events               json.RawMessage           `json:"events,omitempty"`
 	Experiment           *Experiment               `json:"experiment,omitempty"`
+	Floors               *PriceFloorRules          `json:"floors,omitempty"`
 	Integration          string                    `json:"integration,omitempty"`
 	Passthrough          json.RawMessage           `json:"passthrough,omitempty"`
 	SChains              []*ExtRequestPrebidSChain `json:"schains,omitempty"`

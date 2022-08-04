@@ -97,6 +97,15 @@ type Configuration struct {
 	HostSChainNode    *openrtb2.SupplyChainNode `mapstructure:"host_schain_node"`
 	// Experiment configures non-production ready features.
 	Experiment Experiment `mapstructure:"experiment"`
+	// Floors feature configuration
+	PriceFloors PriceFloors `mapstructure:"price_floors"`
+}
+
+type PriceFloors struct {
+	Enabled           bool `mapstructure:"enabled"`
+	UseDynamicData    bool `mapstructure:"use_dynamic_data"`
+	EnforceFloorsRate int  `mapstructure:"enforce_floors_rate"`
+	EnforceDealFloors bool `mapstructure:"enforce_deal_floors"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
@@ -130,6 +139,9 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 	}
 	if cfg.AccountDefaults.Events.Enabled {
 		glog.Warning(`account_defaults.events will currently not do anything as the feature is still under development. Please follow https://github.com/prebid/prebid-server/issues/1725 for more updates`)
+	}
+	if cfg.PriceFloors.Enabled {
+		glog.Warning(`PriceFloors.Enabled will enforce floor feature which is still under development.`)
 	}
 	errs = cfg.Experiment.validate(errs)
 	return errs
@@ -1222,6 +1234,11 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("experiment.adscert.inprocess.domain_renewal_interval_seconds", 30)
 	v.SetDefault("experiment.adscert.remote.url", "")
 	v.SetDefault("experiment.adscert.remote.signing_timeout_ms", 5)
+
+	v.SetDefault("price_floors.enabled", false)
+	v.SetDefault("price_floors.use_dynamic_data", false)
+	v.SetDefault("price_floors.enforce_floors_rate", 100)
+	v.SetDefault("price_floors.enforce_deal_floors", false)
 }
 
 func migrateConfig(v *viper.Viper) {

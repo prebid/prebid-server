@@ -20,6 +20,7 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/experiment/adscert"
 	"github.com/prebid/prebid-server/firstpartydata"
+	"github.com/prebid/prebid-server/floors"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -69,6 +70,7 @@ type exchange struct {
 	bidIDGenerator    BidIDGenerator
 	hostSChainNode    *openrtb2.SupplyChainNode
 	adsCertSigner     adscert.Signer
+	floor             floors.Floor
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -147,6 +149,7 @@ func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid
 		bidIDGenerator: &bidIDGenerator{cfg.GenerateBidID},
 		hostSChainNode: cfg.HostSChainNode,
 		adsCertSigner:  adsCertSigner,
+		floor:          floors.NewFloorConfig(cfg.PriceFloors),
 	}
 }
 
@@ -161,6 +164,7 @@ type ImpExtInfo struct {
 type AuctionRequest struct {
 	BidRequestWrapper          *openrtb_ext.RequestWrapper
 	ResolvedBidRequest         json.RawMessage
+	UpdatedBidRequest          json.RawMessage
 	Account                    config.Account
 	UserSyncs                  IdFetcher
 	RequestType                metrics.RequestType
@@ -247,6 +251,13 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 
 	bidAdjustmentFactors := getExtBidAdjustmentFactors(requestExt)
 
+	// Get currency rates conversions for the auction
+	conversions := e.getAuctionCurrencyRates(requestExt.Prebid.CurrencyConversions)
+
+	// If floors feature is enabled at server and request level, Update floors values in impression object
+	floorErrs := SignalFloors(&r, e.floor, conversions, responseDebugAllow)
+	errs = append(errs, floorErrs...)
+
 	recordImpMetrics(r.BidRequestWrapper.BidRequest, e.me)
 
 	// Make our best guess if GDPR applies
@@ -265,9 +276,6 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	// We should reduce the amount of time the bidders have, to compensate.
 	auctionCtx, cancel := e.makeAuctionContext(ctx, cacheInstructions.cacheBids)
 	defer cancel()
-
-	// Get currency rates conversions for the auction
-	conversions := e.getAuctionCurrencyRates(requestExt.Prebid.CurrencyConversions)
 
 	var adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid
 	var adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra
@@ -293,6 +301,12 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	var cacheErrs []error
 	var bidResponseExt *openrtb_ext.ExtBidResponse
 	if anyBidsReturned {
+
+		//If floor enforcement config enabled then filter bids
+		adapterBids, bidRejections := EnforceFloors(&r, adapterBids, e.floor, conversions, responseDebugAllow)
+		for _, message := range bidRejections {
+			errs = append(errs, errors.New(message))
+		}
 
 		var bidCategory map[string]string
 		//If includebrandcategory is present in ext then CE feature is on.
@@ -955,6 +969,7 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pb
 		bidResponseExt.Debug = &openrtb_ext.ExtResponseDebug{
 			HttpCalls:       make(map[openrtb_ext.BidderName][]*openrtb_ext.ExtHttpCall),
 			ResolvedRequest: r.ResolvedBidRequest,
+			UpdatedRequest:  r.UpdatedBidRequest,
 		}
 	}
 	if !r.StartTime.IsZero() {
