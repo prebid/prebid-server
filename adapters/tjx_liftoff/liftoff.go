@@ -131,31 +131,83 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 	errs := make([]error, 0, len(request.Imp))
 	var errReqData []error
 	if srcExt != nil && srcExt.HeaderBidding == 1 && reqExt.MultiBidEnabled {
-		// Diffrent bid floors for each request
-		bf := []float64{0.01, 1, 0.01, 1}
 
-		//Data to be modified for each request
-		modifiedParams := []modifiedReqParams{
-			{
-				ReqNumber:   "1",
-				BidFloor:    &bf[0],
-				ContentType: CONTENT_TYPE_MRAID_ONLY,
-			},
-			{
-				ReqNumber:   "2",
-				BidFloor:    &bf[1],
-				ContentType: CONTENT_TYPE_MRAID_ONLY,
-			},
-			{
-				ReqNumber:   "3",
-				BidFloor:    &bf[2],
-				ContentType: CONTENT_TYPE_VIDEO_ONLY,
-			},
-			{
-				ReqNumber:   "4",
-				BidFloor:    &bf[3],
-				ContentType: CONTENT_TYPE_VIDEO_ONLY,
-			},
+		// to check if the request is rewarded or skippable
+		var liftoffExt openrtb_ext.ExtImpTJXLiftoff
+		if request.Imp != nil {
+			var bidderExt adapters.ExtImpBidder
+			if err := json.Unmarshal(request.Imp[0].Ext, &bidderExt); err != nil {
+				return nil, []error{&errortypes.BadInput{
+					Message: err.Error(),
+				}}
+			}
+
+			if err := json.Unmarshal(bidderExt.Bidder, &liftoffExt); err != nil {
+				return nil, []error{&errortypes.BadInput{
+					Message: err.Error(),
+				}}
+			}
+		}
+
+		// Diffrent bid floors for each request
+		bfRewardedVastLow := 3.00
+		bfRewardedVastHigh := 14.00
+		bfRewardedMraidLow := 3.00
+		bfRewardedMraidHigh := 14.00
+
+		bfSkippableVastLow := 2.00
+		bfSkippableVastHigh := 7.00
+		bfSkippableMraidLow := 2.00
+		bfSkippableMraidHigh := 7.00
+
+		var modifiedParams []modifiedReqParams
+		if liftoffExt.Video.Skip == 0 {
+			//Data to be modified for each request
+			modifiedParams = []modifiedReqParams{
+				{
+					ReqNumber:   "1",
+					BidFloor:    &bfRewardedVastLow,
+					ContentType: CONTENT_TYPE_VIDEO_ONLY,
+				},
+				{
+					ReqNumber:   "2",
+					BidFloor:    &bfRewardedVastHigh,
+					ContentType: CONTENT_TYPE_VIDEO_ONLY,
+				},
+				{
+					ReqNumber:   "3",
+					BidFloor:    &bfRewardedMraidLow,
+					ContentType: CONTENT_TYPE_MRAID_ONLY,
+				},
+				{
+					ReqNumber:   "4",
+					BidFloor:    &bfRewardedMraidHigh,
+					ContentType: CONTENT_TYPE_MRAID_ONLY,
+				},
+			}
+		} else {
+			modifiedParams = []modifiedReqParams{
+				{
+					ReqNumber:   "1",
+					BidFloor:    &bfSkippableVastLow,
+					ContentType: CONTENT_TYPE_VIDEO_ONLY,
+				},
+				{
+					ReqNumber:   "2",
+					BidFloor:    &bfSkippableVastHigh,
+					ContentType: CONTENT_TYPE_VIDEO_ONLY,
+				},
+				{
+					ReqNumber:   "3",
+					BidFloor:    &bfSkippableMraidLow,
+					ContentType: CONTENT_TYPE_MRAID_ONLY,
+				},
+				{
+					ReqNumber:   "4",
+					BidFloor:    &bfSkippableMraidHigh,
+					ContentType: CONTENT_TYPE_MRAID_ONLY,
+				},
+			}
 		}
 
 		for _, param := range modifiedParams {
@@ -358,6 +410,7 @@ func (a *adapter) makeRequestData(liftoffRequest *openrtb.BidRequest, numRequest
 		impExt := liftoffImpExt{
 			Rewarded: rewarded,
 		}
+
 		// Add SKADN if supported and present
 		if liftoffExt.SKADNSupported {
 			skadn := adapters.FilterPrebidSKADNExt(bidderExt.Prebid, liftoffSKADNetIDs)
