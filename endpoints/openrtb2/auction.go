@@ -1690,7 +1690,17 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 				echoVideoAttributes = impData.ImpExtPrebid.Options.EchoVideoAttrs
 			}
 
-			impExtInfoMap[impId] = exchange.ImpExtInfo{EchoVideoAttrs: echoVideoAttributes, StoredImp: storedImps[impData.ImpExtPrebid.StoredRequest.ID]}
+			// Extract Passthrough from Merged Imp
+			passthrough, _, _, err := jsonparser.Get(resolvedImp, "ext", "prebid", "passthrough")
+			if err != nil {
+				if err == jsonparser.KeyPathNotFoundError {
+					passthrough = nil
+				} else {
+					return nil, nil, []error{err}
+				}
+			}
+			impExtInfoMap[impId] = exchange.ImpExtInfo{EchoVideoAttrs: echoVideoAttributes, StoredImp: storedImps[impData.ImpExtPrebid.StoredRequest.ID], Passthrough: passthrough}
+
 		} else {
 			resolvedImps = append(resolvedImps, impData.Imp)
 			impId, err := jsonparser.GetString(impData.Imp, "id")
