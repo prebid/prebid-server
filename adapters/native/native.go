@@ -55,6 +55,22 @@ type rp struct {
 type impExt struct {
 	Rp rp `json:"rp"`
 }
+type node struct {
+	Asi string `json:"asi"`
+	Sid string `json:"sid"`
+	Hp  int8   `json:"hp"`
+	Rid string `json:"rid"`
+}
+
+type schain struct {
+	Ver      string `json:"ver"`
+	Complete int8   `json:"complete"`
+	Nodes    []node `json:"nodes"`
+}
+
+type sourceExt struct {
+	Schain schain `json:"schain"`
+}
 
 type impOutbound struct {
 	openrtb2.Imp
@@ -63,7 +79,7 @@ type impOutbound struct {
 	Bidfloor float64        `json:"bidfloor"`
 }
 
-type native1point0BidRequest struct {
+type rubiconBidRequest struct {
 	openrtb2.BidRequest
 	Imp []impOutbound `json:"imp"`
 }
@@ -78,31 +94,6 @@ type siteExt struct {
 	Data siteExtData `json:"data"`
 }
 
-func makeNativeOnePointZeroImpression(imp openrtb2.Imp, siteExt siteExt, nativeImpExt openrtb_ext.ExtImpNative, errors []error) (nativeOutbound, []error) {
-	var nativeRequest nativeRequests.Request
-	if err := json.Unmarshal([]byte(imp.Native.Request), &nativeRequest); err != nil {
-		errors = append(errors, &errortypes.BadInput{
-			Message: err.Error(),
-		})
-	}
-
-	nativeRequest.Layout = 3
-	nativeRequest.EventTrackers = nil
-	nativeRequest.Ver = "1.0"
-	api := make([]int, 0, 6)
-	api = append(api, 1, 2, 3, 4, 5, 6, 7)
-
-	imp.TagID = nativeImpExt.ZoneId.String()
-	native := nativeOutbound{
-		RequestObj: nativeRequest,
-		Ver:        "1.0",
-		Api:        api,
-	}
-
-	return native, errors
-
-}
-
 // Builder builds a new instance of the Native adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	bidder := &adapter{
@@ -115,10 +106,10 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errors []error
-	var onePointTwoImps = make([]openrtb2.Imp, 0, len(request.Imp))
+	var onePointTwoImps = make([]impOutbound, 0, len(request.Imp))
 	var onePointZeroImps = make([]impOutbound, 0, len(request.Imp))
 
-	// get site.ext
+	// site ext is used in all requests
 	var siteExt siteExt
 	if err := json.Unmarshal(request.Site.Ext, &siteExt); err != nil {
 		errors = append(errors, &errortypes.BadInput{
@@ -143,8 +134,18 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			continue
 		}
 
-		var nativeRequest nativeRequests.Request
-		if err := json.Unmarshal([]byte(imp.Native.Request), &nativeRequest); err != nil {
+		// get a 1.2 native object here (default as recieved)
+		var onePointTwoNativeRequest nativeRequests.Request
+		if err := json.Unmarshal([]byte(imp.Native.Request), &onePointTwoNativeRequest); err != nil {
+			errors = append(errors, &errortypes.BadInput{
+				Message: err.Error(),
+			})
+			continue
+
+		}
+		// get another native object, currently 1.2 but transform it to 1.0 below
+		var onePointZeroNativeRequest nativeRequests.Request
+		if err := json.Unmarshal([]byte(imp.Native.Request), &onePointZeroNativeRequest); err != nil {
 			errors = append(errors, &errortypes.BadInput{
 				Message: err.Error(),
 			})
@@ -160,55 +161,99 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 				ZoneId: nativeImpExt.ZoneId,
 			},
 		}
-
+		// convert 1.2 native to 1.0 here
 		// hardcoded values for now, add dynamicism later
-
-		nativeRequest.Layout = 3
-		nativeRequest.EventTrackers = nil
-		nativeRequest.Ver = "1.0"
+		onePointZeroNativeRequest.Layout = 3
+		onePointZeroNativeRequest.EventTrackers = nil
+		onePointZeroNativeRequest.Ver = "1.0"
 		api := make([]int, 0, 6)
 		api = append(api, 1, 2, 3, 4, 5, 6, 7)
 
 		imp.TagID = nativeImpExt.ZoneId.String()
-		native := nativeOutbound{
-			RequestObj: nativeRequest,
+		// convert the default request to something that rubicon likes:
+		nativeOnePointZero := nativeOutbound{
+			RequestObj: onePointZeroNativeRequest,
 			Ver:        "1.0",
 			Api:        api,
 		}
-
 		onePointZeroImp := impOutbound{
 			imp,
-			native,
+			nativeOnePointZero,
+			impExt,
+			0.01,
+		}
+
+		// rebuild native 1.2 impression
+		nativeOnePointTwo := nativeOutbound{
+			RequestObj: onePointTwoNativeRequest,
+			Ver:        "1.2",
+			Api:        api,
+		}
+		onePointTwoImp := impOutbound{
+			imp,
+			nativeOnePointTwo,
 			impExt,
 			0.01,
 		}
 
 		onePointZeroImps = append(onePointZeroImps, onePointZeroImp)
-		onePointTwoImps = append(onePointTwoImps, imp)
+		onePointTwoImps = append(onePointTwoImps, onePointTwoImp)
 
 	}
-
-	onePointZeroRequest := native1point0BidRequest{
+	// turn the 1.0 imps into a rubicon happy request
+	onePointZeroRequest := rubiconBidRequest{
 		*request,
 		onePointZeroImps,
 	}
-	onePointZeroRequest.Device.IP = "161.149.146.201"
-	onePointZeroRequest.Device.Lmt = new(int8)
+	// turn the 1.2 imps into a rubicon happy request
+	onePointTwoRequest := rubiconBidRequest{
+		*request,
+		onePointTwoImps,
+	}
+	// for my dev testing, remove when going live
+	if onePointZeroRequest.Device.IP == "" {
+		onePointZeroRequest.Device.IP = "75.54.23.3"
+	}
+	if onePointZeroRequest.User.BuyerUID == "" {
+		onePointZeroRequest.User.BuyerUID = "L5QJF35F-1O-MBBY"
+	}
+	// not sure if we need this or not, without getting responses it's very hard
 	onePointZeroRequest.Ext = nil
-	onePointZeroRequest.User.BuyerUID = "L1P293UM-27-4FAD"
+
 	onePointZeroRequest.AT = 0
-	// printJson((onePointZeroRequest.Source.Ext))
-	onePointZeroRequestJSON, err := json.MarshalIndent(onePointZeroRequest, "", "  ")
+
+	var sourceExt sourceExt
+
+	if err := json.Unmarshal(request.Source.Ext, &sourceExt); err != nil {
+		errors = append(errors, &errortypes.BadInput{
+			Message: err.Error(),
+		})
+	}
+
+	// make sure request id is in the schain
+	for index := range sourceExt.Schain.Nodes {
+		if sourceExt.Schain.Nodes[index].Rid == "" {
+			sourceExt.Schain.Nodes[index].Rid = request.ID
+		}
+	}
+	// add source.ext to both 1.0 and 1.2 requests
+	sourceExtJSON, err := json.Marshal(sourceExt)
+	if err != nil {
+		errors = append(errors, err)
+		return nil, errors
+	}
+	onePointZeroRequest.Source.Ext = sourceExtJSON
+	onePointTwoRequest.Source.Ext = sourceExtJSON
+
+	// make the json body for 1.0
+	onePointZeroRequestJSON, err := json.Marshal(onePointZeroRequest)
 	if err != nil {
 		errors = append(errors, err)
 		return nil, errors
 	}
 
-	// printJson(onePointZeroRequest)
-
-	request.Imp = onePointTwoImps
-
-	requestJSON, err := json.MarshalIndent(request, "", "  ")
+	// make the json body for 1.2
+	onePointTwoRequestJSON, err := json.Marshal(onePointTwoRequest)
 	if err != nil {
 		errors = append(errors, err)
 		return nil, errors
@@ -222,7 +267,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	requestData := &adapters.RequestData{
 		Method:  "POST",
 		Uri:     a.endpoint,
-		Body:    requestJSON,
+		Body:    onePointTwoRequestJSON,
 		Headers: headers,
 	}
 
@@ -239,7 +284,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	return reqData, errors
 }
 
-type rubiconNative struct {
+type rubiconNativeResponse struct {
 	Native nativeResponse.Response `json:"native"`
 }
 type rubiconBidExtRp struct {
@@ -255,8 +300,8 @@ type rubiconBidExt struct {
 
 type rubiconBid struct {
 	openrtb2.Bid
-	Admobject rubiconNative `json:"admobject,omitempty"`
-	Ext       rubiconBidExt `json:"ext"`
+	Admobject rubiconNativeResponse `json:"admobject,omitempty"`
+	Ext       rubiconBidExt         `json:"ext"`
 }
 
 type rubiconSeatBid struct {
@@ -272,7 +317,6 @@ type rubiconBidResponse struct {
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
-	printJson((responseData))
 	if responseData.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -306,44 +350,27 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 				errors = append(errors, err)
 				return nil, errors
 			}
-			var newBid openrtb2.Bid
-			newBid.AdM = string(admString)
-			newBid.ID = bid.ID
-			newBid.ImpID = bid.ImpID
-			newBid.Price = bid.Price
-			newBid.NURL = bid.NURL
-			newBid.BURL = bid.BURL
-			newBid.LURL = bid.LURL
-			newBid.AdID = bid.AdID
-			newBid.ADomain = bid.ADomain
-			newBid.Bundle = bid.Bundle
-			newBid.IURL = bid.IURL
-			newBid.CID = bid.CID
-			newBid.CrID = bid.CrID
-			newBid.Tactic = bid.Tactic
-			newBid.CatTax = bid.CatTax
-			newBid.Cat = bid.Cat
-			newBid.Attr = bid.Attr
-			newBid.API = bid.API
-			newBid.Protocol = bid.Protocol
-			newBid.QAGMediaRating = bid.QAGMediaRating
-			newBid.Language = bid.Language
-			newBid.LangB = bid.LangB
-			newBid.DealID = bid.DealID
-			newBid.W = bid.W
-			newBid.H = bid.H
-			newBid.WRatio = bid.WRatio
-			newBid.Exp = bid.Exp
-			newBid.Dur = bid.Dur
-			newBid.MType = bid.MType
-			newBid.SlotInPod = bid.SlotInPod
+
+			// use json.Marshal and json.Unmarshal to convert my
+			// rubicon struct back into a ortb2 struct
+			// and put the new admObject as admString on it in the adm position
+			bidString, err := json.Marshal(bid)
+			if err != nil {
+				errors = append(errors, err)
+			}
+
+			var newBid2 openrtb2.Bid
+			if err := json.Unmarshal(bidString, &newBid2); err != nil {
+				errors = append(errors, err)
+			}
+			newBid2.AdM = string(admString)
 
 			bidExt, err := json.MarshalIndent(bid.Ext, "", "  ")
 			if err != nil {
 				errors = append(errors, err)
 				return nil, errors
 			}
-			newBid.Ext = bidExt
+			newBid2.Ext = bidExt
 
 			bid.AdM = string(admString)
 
@@ -352,10 +379,8 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 				errors = append(errors, err)
 				continue
 			}
-
-			printJson(newBid)
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     &newBid,
+				Bid:     &newBid2,
 				BidType: bidType,
 			})
 		}
