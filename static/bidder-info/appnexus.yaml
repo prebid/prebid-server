@@ -17,3 +17,6 @@ userSync:
   redirect:
     url: "https://ib.adnxs.com/getuid?{{.RedirectURL}}"
     userMacro: "$UID"
+experiment:
+  adsCert:
+    enabled: true

@@ -154,3 +154,7 @@ func (me *MetricsEngineMock) RecordDebugRequest(debugEnabled bool, pubId string)
 func (me *MetricsEngineMock) RecordStoredResponse(pubId string) {
 	me.Called(pubId)
 }
+
+func (me *MetricsEngineMock) RecordAdsCertMetrics() {
+	me.Called()
+}

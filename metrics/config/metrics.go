@@ -267,6 +267,12 @@ func (me *MultiMetricsEngine) RecordStoredResponse(pubId string) {
 	}
 }
 
+func (me *MultiMetricsEngine) RecordAdsCertMetrics() {
+	for _, thisME := range *me {
+		thisME.RecordAdsCertMetrics()
+	}
+}
+
 // NilMetricsEngine implements the MetricsEngine interface where no metrics are actually captured. This is
 // used if no metric backend is configured and also for tests.
 type NilMetricsEngine struct{}
@@ -385,3 +391,5 @@ func (me *NilMetricsEngine) RecordDebugRequest(debugEnabled bool, pubId string) 
 
 func (me *NilMetricsEngine) RecordStoredResponse(pubId string) {
 }
+
+func (me *NilMetricsEngine) RecordAdsCertMetrics() {}

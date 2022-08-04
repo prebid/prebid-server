@@ -2,6 +2,7 @@ package prometheusmetrics
 
 import (
 	"fmt"
+	adscertmetrics "github.com/IABTechLab/adscert/pkg/adscert/metrics"
 	"strconv"
 	"time"
 
@@ -77,6 +78,12 @@ type Metrics struct {
 	accountStoredResponses *prometheus.CounterVec
 
 	metricsDisabled config.DisabledMetrics
+
+	//!!! AdsCert metrics
+	adsCertDNSLookup     *prometheus.CounterVec
+	adsCertDNSLookupTime prometheus.Histogram
+	adsCertSign          *prometheus.CounterVec
+	adsCertSignTime      prometheus.Histogram
 }
 
 const (
@@ -102,6 +109,7 @@ const (
 	successLabel         = "success"
 	syncerLabel          = "syncer"
 	versionLabel         = "version"
+	adsCertLabel         = "ads_cert"
 )
 
 const (
@@ -140,6 +148,8 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 	cacheWriteTimeBuckets := []float64{0.001, 0.002, 0.005, 0.01, 0.025, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 1}
 	priceBuckets := []float64{250, 500, 750, 1000, 1500, 2000, 2500, 3000, 3500, 4000}
 	queuedRequestTimeBuckets := []float64{0, 1, 5, 30, 60, 120, 180, 240, 300}
+	standardMillisecondBuckets := []float64{1, 2, 5, 10, 25, 50, 100, 250, 500, 1000}
+	standardMicrosecondBuckets := []float64{10, 25, 50, 100, 250, 500, 1000, 2000, 5000, 10000}
 
 	metrics := Metrics{}
 	reg := prometheus.NewRegistry()
@@ -410,6 +420,26 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"account_stored_responses",
 		"Count of total requests to Prebid Server that have stored responses labled by account",
 		[]string{accountLabel})
+
+	metrics.adsCertDNSLookup = newCounter(cfg, reg,
+		"dns_lookup_count",
+		"The total number of DNS requests",
+		[]string{adsCertLabel})
+
+	metrics.adsCertDNSLookupTime = newHistogram(cfg, reg,
+		"dns_lookup_ms",
+		"Milliseconds to lookup DNS",
+		standardMillisecondBuckets)
+
+	metrics.adsCertSign = newCounter(cfg, reg,
+		"sign_count",
+		"The total number of requests signed",
+		[]string{adsCertLabel})
+
+	metrics.adsCertSignTime = newHistogram(cfg, reg,
+		"sign_time_us",
+		"Microseconds to sign a request",
+		standardMicrosecondBuckets)
 
 	metrics.Gatherer = reg
 
@@ -793,4 +823,44 @@ func (m *Metrics) RecordAdapterGDPRRequestBlocked(adapterName openrtb_ext.Bidder
 	m.adapterGDPRBlockedRequests.With(prometheus.Labels{
 		adapterLabel: string(adapterName),
 	}).Inc()
+}
+
+func (m *Metrics) RecordAdsCertMetrics() {
+	// 1. What is the way to get data from metrics. We don't need all metrics, just some of them
+	// and it will not work with Influx so redirecting Registry is not an option.
+	// 2. When to take metrics?
+	// 3. How to check if metrics were updated and take only updated part or everything?
+	// 4. If we want to use existing metrics, we cannot measure DNS lookup time and req sign time
+	metr := adscertmetrics.GetAdscertMetricsRegistry()
+	metr.Unregister(adscertmetrics.VerifyCounter)
+	metr.Unregister(adscertmetrics.VerifyOutcomeCounter)
+	metr.Unregister(adscertmetrics.VerifyTimeHistogram)
+	//metr.Register(adscertmetrics.DNSLookupCounter)
+	g, err := metr.Gather()
+	if err != nil {
+		return
+	}
+	for _, mm := range g {
+		if mm.GetName() == "adscert_sign_count" {
+			mm.GetMetric()
+
+			/*if success {
+				m.adsCertDNSLookup.With(prometheus.Labels{
+					successLabel: requestSuccessful,
+				}).Inc()
+			} else {
+				m.adsCertDNSLookup.With(prometheus.Labels{
+					successLabel: requestFailed,
+				}).Inc()
+			}*/
+
+		}
+		if mm.GetName() == "adscert_sign_time_us" {
+			/*met := mm.GetMetric()
+			for _, d := range met {
+				m.adsCertSignTime = d.Histogram
+			}*/
+			//m.adsCertSignTime.Observe(float64(observeTime.Microseconds()))
+		}
+	}
 }

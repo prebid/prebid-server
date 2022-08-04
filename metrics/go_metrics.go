@@ -756,3 +756,5 @@ func (me *Metrics) RecordAdapterGDPRRequestBlocked(adapterName openrtb_ext.Bidde
 
 	am.GDPRRequestBlocked.Mark(1)
 }
+
+func (me *Metrics) RecordAdsCertMetrics() {}
