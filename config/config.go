@@ -937,6 +937,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.adprime.endpoint", "http://delta.adprime.com/pserver")
 	v.SetDefault("adapters.adrino.endpoint", "https://prd-prebid-bidder.adrino.io/openrtb/bid")
 	v.SetDefault("adapters.adtarget.endpoint", "http://ghb.console.adtarget.com.tr/pbs/ortb")
+	v.SetDefault("adapters.adtrgtme.endpoint", "https://z.cdn.adtarget.market/ssp")
 	v.SetDefault("adapters.adtelligent.endpoint", "http://ghb.adtelligent.com/pbs/ortb")
 	v.SetDefault("adapters.advangelists.endpoint", "http://nep.advangelists.com/xp/get?pubid={{.PublisherID}}")
 	v.SetDefault("adapters.adview.endpoint", "https://bid.adview.com/agent/thirdAdxService/{{.AccountID}}")
