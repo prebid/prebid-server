@@ -67,7 +67,10 @@
             }
           }
         },
-        "bidAdjustment": 2.5
+        "bidAdjustments": {
+          "appnexus": 2.5,
+          "districtm": 0.3
+        }
       },
       "mockResponse": {
         "errors": ["appnexus-error"]
@@ -105,7 +108,10 @@
             }
           }
         },
-        "bidAdjustment": 0.3
+        "bidAdjustments": {
+          "appnexus": 2.5,
+          "districtm": 0.3
+        }
       },
       "mockResponse": {
         "errors": ["districtm-error"]

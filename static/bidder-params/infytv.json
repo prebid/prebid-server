@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "InfyTV Adapter Params",
+  "description": "A schema which validates params accepted by the InfyTV adapter",
+  "type": "object",
+  "properties": {
+    "publisherId": {
+      "type": "string",
+      "description": "publisher ID"
+    },
+    "placementId": {
+      "type": "string",
+      "description": "Placement ID"
+    }
+  },
+  "required": [
+    "publisherId"
+  ]
+}

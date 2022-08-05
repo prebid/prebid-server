@@ -57,6 +57,7 @@ const (
 	CategoryDataType StoredDataType = "category"
 	RequestDataType  StoredDataType = "request"
 	VideoDataType    StoredDataType = "video"
+	ResponseDataType StoredDataType = "response"
 )
 
 func StoredDataTypes() []StoredDataType {
@@ -66,6 +67,7 @@ func StoredDataTypes() []StoredDataType {
 		CategoryDataType,
 		RequestDataType,
 		VideoDataType,
+		ResponseDataType,
 	}
 }
 
@@ -238,6 +240,7 @@ const (
 	AdapterErrorBadServerResponse   AdapterError = "badserverresponse"
 	AdapterErrorTimeout             AdapterError = "timeout"
 	AdapterErrorFailedToRequestBids AdapterError = "failedtorequestbid"
+	AdapterErrorValidation          AdapterError = "validation"
 	AdapterErrorUnknown             AdapterError = "unknown_error"
 )
 
@@ -247,6 +250,7 @@ func AdapterErrors() []AdapterError {
 		AdapterErrorBadServerResponse,
 		AdapterErrorTimeout,
 		AdapterErrorFailedToRequestBids,
+		AdapterErrorValidation,
 		AdapterErrorUnknown,
 	}
 }
@@ -300,6 +304,8 @@ const (
 	CookieSyncBadRequest            CookieSyncStatus = "bad_request"
 	CookieSyncOptOut                CookieSyncStatus = "opt_out"
 	CookieSyncGDPRHostCookieBlocked CookieSyncStatus = "gdpr_blocked_host_cookie"
+	CookieSyncAccountBlocked        CookieSyncStatus = "acct_blocked"
+	CookieSyncAccountInvalid        CookieSyncStatus = "acct_invalid"
 )
 
 // CookieSyncStatuses returns possible cookie sync statuses.
@@ -404,7 +410,9 @@ type MetricsEngine interface {
 	RecordStoredDataError(labels StoredDataLabels)
 	RecordPrebidCacheRequestTime(success bool, length time.Duration)
 	RecordRequestQueueTime(success bool, requestType RequestType, length time.Duration)
-	RecordTimeoutNotice(sucess bool)
+	RecordTimeoutNotice(success bool)
 	RecordRequestPrivacy(privacy PrivacyLabels)
 	RecordAdapterGDPRRequestBlocked(adapterName openrtb_ext.BidderName)
+	RecordDebugRequest(debugEnabled bool, pubId string)
+	RecordStoredResponse(pubId string)
 }

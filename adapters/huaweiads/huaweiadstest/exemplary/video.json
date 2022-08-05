@@ -39,8 +39,7 @@
     "device": {
       "ua": "useragent",
       "h": 1920,
-      "language": "zh",
-      "geoCountry": "CH",
+      "language": "en",
       "model": "COL-TEST",
       "os": "android",
       "osv": "10.0.0",
@@ -50,7 +49,7 @@
       "ip": "ip",
       "pxratio": 23.01,
       "geo": {
-        "country": ""
+        "country": "ATA"
       }
     },
     "user": {
@@ -74,7 +73,7 @@
   "httpcalls": [
     {
       "expectedRequest": {
-        "uri": "https://huaweiads.com/adxtest/",
+        "uri": "https://adx-dre.op.hicloud.com/ppsadx/getResult",
         "headers": {
           "Accept": [
             "application/json"
@@ -92,7 +91,7 @@
         "body": {
           "app": {
             "lang": "en",
-            "country": "ZA",
+            "country": "AT",
             "name": "Huawei Browser",
             "pkgname": "com.wavehk.android",
             "version": "9.1.0.301"
@@ -106,12 +105,12 @@
           ],
           "device": {
             "height": 1920,
-            "language": "zh",
+            "language": "en",
             "oaid": "oaid",
             "os": "android",
             "type": 4,
             "ip": "ip",
-            "localeCountry": "ZA",
+            "localeCountry": "AT",
             "pxratio": 23.01,
             "width": 1080,
             "model": "COL-TEST",
@@ -120,7 +119,7 @@
             "useragent": "useragent",
             "version": "10.0.0",
             "maker": "huawei",
-            "belongCountry": "ZA"
+            "belongCountry": "AT"
           },
           "geo": {
           },

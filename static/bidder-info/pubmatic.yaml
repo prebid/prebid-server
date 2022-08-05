@@ -15,3 +15,6 @@ userSync:
     url: "https://ads.pubmatic.com/AdServer/js/user_sync.html?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&predirect={{.RedirectURL}}"
     userMacro: ""
     # pubmatic appends the user id to end of the redirect url and does not utilize a macro
+  redirect:
+    url: "https://image8.pubmatic.com/AdServer/ImgSync?p=159706&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&pu={{.RedirectURL}}"
+    userMacro: "#PMUID"

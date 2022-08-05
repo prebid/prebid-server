@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/adcom1"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -110,7 +111,7 @@ func getBidType(bid openrtb2.Bid, ext avocetBidExt) openrtb_ext.BidType {
 		return openrtb_ext.BidTypeVideo
 	}
 	switch bid.API {
-	case openrtb2.APIFrameworkVPAID10, openrtb2.APIFrameworkVPAID20:
+	case adcom1.APIVPAID10, adcom1.APIVPAID20:
 		return openrtb_ext.BidTypeVideo
 	default:
 		return openrtb_ext.BidTypeBanner

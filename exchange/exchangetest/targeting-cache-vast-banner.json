@@ -32,7 +32,7 @@
   "outgoingRequests": {
     "appnexus": {
       "mockResponse": {
-        "pbsSeatBid": {
+        "pbsSeatBids": [{
           "pbsBids": [
             {
               "ortbBid": {
@@ -45,8 +45,9 @@
               },
               "bidType": "banner"
             }
-          ]
-        }
+          ],
+          "seat": "appnexus"
+        }]
       }
     }
   },
@@ -64,6 +65,7 @@
             "h": 250,
             "crid": "creative-1",
             "ext": {
+              "origbidcpm": 0.01,
               "prebid": {
                 "type": "banner",
                 "targeting": {

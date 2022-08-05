@@ -60,9 +60,8 @@ const (
 
 var ErrSyncerEndpointRequired = errors.New("at least one endpoint (iframe and/or redirect) is required")
 var ErrSyncerKeyRequired = errors.New("key is required")
-var ErrSyncerDefaultSyncTypeRequired = errors.New("default sync type is required when more then one sync endpoint is configured")
 
-// NewSyncer creates a new Syncer from the provided configuration, or an error if macro substition
+// NewSyncer creates a new Syncer from the provided configuration, or return an error if macro substition
 // fails or an endpoint url is invalid.
 func NewSyncer(hostConfig config.UserSync, syncerConfig config.Syncer) (Syncer, error) {
 	if syncerConfig.Key == "" {
@@ -74,14 +73,9 @@ func NewSyncer(hostConfig config.UserSync, syncerConfig config.Syncer) (Syncer, 
 	}
 
 	syncer := standardSyncer{
-		key:         syncerConfig.Key,
-		supportCORS: syncerConfig.SupportCORS != nil && *syncerConfig.SupportCORS,
-	}
-
-	if defaultSyncType, err := resolveDefaultSyncType(syncerConfig); err != nil {
-		return nil, err
-	} else {
-		syncer.defaultSyncType = defaultSyncType
+		key:             syncerConfig.Key,
+		defaultSyncType: resolveDefaultSyncType(syncerConfig),
+		supportCORS:     syncerConfig.SupportCORS != nil && *syncerConfig.SupportCORS,
 	}
 
 	if syncerConfig.IFrame != nil {
@@ -109,32 +103,11 @@ func NewSyncer(hostConfig config.UserSync, syncerConfig config.Syncer) (Syncer, 
 	return syncer, nil
 }
 
-func resolveDefaultSyncType(syncerConfig config.Syncer) (SyncType, error) {
-	if syncerConfig.Default == "" {
-		if syncerConfig.IFrame != nil && syncerConfig.Redirect != nil {
-			return SyncTypeUnknown, ErrSyncerDefaultSyncTypeRequired
-		} else if syncerConfig.IFrame != nil {
-			return SyncTypeIFrame, nil
-		} else {
-			return SyncTypeRedirect, nil
-		}
+func resolveDefaultSyncType(syncerConfig config.Syncer) SyncType {
+	if syncerConfig.IFrame != nil {
+		return SyncTypeIFrame
 	}
-
-	if syncType, err := SyncTypeParse(syncerConfig.Default); err == nil {
-		switch syncType {
-		case SyncTypeIFrame:
-			if syncerConfig.IFrame == nil {
-				return SyncTypeUnknown, errDefaultTypeMissingIFrame
-			}
-		case SyncTypeRedirect:
-			if syncerConfig.Redirect == nil {
-				return SyncTypeUnknown, errDefaultTypeMissingRedirect
-			}
-		}
-		return syncType, nil
-	}
-
-	return SyncTypeUnknown, fmt.Errorf("invalid default sync type '%s'", syncerConfig.Default)
+	return SyncTypeRedirect
 }
 
 // macro substitution regex

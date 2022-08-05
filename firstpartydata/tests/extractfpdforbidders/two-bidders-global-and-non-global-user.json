@@ -158,16 +158,16 @@
         },
         "content": {
           "len": 900,
-          "title": "reqContentTitle",
-          "season": "reqContentSeason",
+          "season": "apnFpdSiteIdContentSeason",
+          "title": "apnFpdSiteIdContentTitle",
           "data": [
             {
-              "id": "reqContentDataId1",
-              "name": "reqContentDataName1"
+              "id": "apnFpdSiteIdContentDataId1",
+              "name": "apnFpdSiteIdContentDataName1"
             },
             {
-              "id": "reqContentDataId2",
-              "name": "reqContentDataName2"
+              "id": "apnFpdSiteIdContentDataId2",
+              "name": "apnFpdSiteIdContentDataName2"
             }
           ]
         },
@@ -176,21 +176,6 @@
             "id": "apnFpdSiteId",
             "publisher": {
               "id": "1"
-            },
-            "content": {
-              "len": 900,
-              "title": "apnFpdSiteIdContentTitle",
-              "season": "apnFpdSiteIdContentSeason",
-              "data": [
-                {
-                  "id": "apnFpdSiteIdContentDataId1",
-                  "name": "apnFpdSiteIdContentDataName1"
-                },
-                {
-                  "id": "apnFpdSiteIdContentDataId2",
-                  "name": "apnFpdSiteIdContentDataName2"
-                }
-              ]
             }
           }
         }
@@ -200,19 +185,19 @@
         "gender": "F",
         "yob": 2000,
         "keywords": "apnFpdUserKeyword",
+        "data": [
+          {
+            "id": "apnFpdUserContentDataId1",
+            "name": "apnFpdUserContentDataName1"
+          },
+          {
+            "id": "apnFpdUserContentDataId2",
+            "name": "apnFpdUserContentDataName2"
+          }
+        ],
         "ext": {
           "data": {
-            "id": "apnUserId",
-            "data": [
-              {
-                "id": "apnFpdUserContentDataId1",
-                "name": "apnFpdUserContentDataName1"
-              },
-              {
-                "id": "apnFpdUserContentDataId2",
-                "name": "apnFpdUserContentDataName2"
-              }
-            ]
+            "id": "apnUserId"
           }
         }
       }

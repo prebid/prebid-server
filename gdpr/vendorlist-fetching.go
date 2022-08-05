@@ -19,6 +19,7 @@ import (
 )
 
 type saveVendors func(uint16, api.VendorList)
+type VendorListFetcher func(ctx context.Context, id uint16) (vendorlist.VendorList, error)
 
 // This file provides the vendorlist-fetching function for Prebid Server.
 //
@@ -26,7 +27,7 @@ type saveVendors func(uint16, api.VendorList)
 //
 // Nothing in this file is exported. Public APIs can be found in gdpr.go
 
-func newVendorListFetcher(initCtx context.Context, cfg config.GDPR, client *http.Client, urlMaker func(uint16) string) func(ctx context.Context, id uint16) (vendorlist.VendorList, error) {
+func NewVendorListFetcher(initCtx context.Context, cfg config.GDPR, client *http.Client, urlMaker func(uint16) string) VendorListFetcher {
 	cacheSave, cacheLoad := newVendorListCache()
 
 	preloadContext, cancel := context.WithTimeout(initCtx, cfg.Timeouts.InitTimeout())
@@ -73,7 +74,7 @@ func preloadCache(ctx context.Context, client *http.Client, urlMaker func(uint16
 
 // Make a URL which can be used to fetch a given version of the Global Vendor List. If the version is 0,
 // this will fetch the latest version.
-func vendorListURLMaker(vendorListVersion uint16) string {
+func VendorListURLMaker(vendorListVersion uint16) string {
 	if vendorListVersion == 0 {
 		return "https://vendor-list.consensu.org/v2/vendor-list.json"
 	}

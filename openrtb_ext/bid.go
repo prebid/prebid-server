@@ -53,6 +53,7 @@ type ExtBidPrebidMeta struct {
 	NetworkName          string          `json:"networkName,omitempty"`
 	PrimaryCategoryID    string          `json:"primaryCatId,omitempty"`
 	SecondaryCategoryIDs []string        `json:"secondaryCatIds,omitempty"`
+	AdapterCode          string          `json:"adaptercode,omitempty"`
 }
 
 // ExtBidPrebidVideo defines the contract for bidresponse.seatbid.bid[i].ext.prebid.video
@@ -161,6 +162,15 @@ func min(x, y int) int {
 	return y
 }
 
+func (key TargetingKey) TruncateKey(maxLength int) string {
+	if maxLength > 0 {
+		return string(key)[:min(len(string(key)), maxLength)]
+	}
+	return string(key)
+}
+
 const (
 	StoredRequestAttributes = "storedrequestattributes"
+	OriginalBidCpmKey       = "origbidcpm"
+	OriginalBidCurKey       = "origbidcur"
 )

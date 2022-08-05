@@ -27,6 +27,7 @@ type Metrics struct {
 	impressionsLegacy            prometheus.Counter
 	prebidCacheWriteTimer        *prometheus.HistogramVec
 	requests                     *prometheus.CounterVec
+	debugRequests                prometheus.Counter
 	requestsTimer                *prometheus.HistogramVec
 	requestsQueueTimer           *prometheus.HistogramVec
 	requestsWithoutCookie        *prometheus.CounterVec
@@ -50,6 +51,9 @@ type Metrics struct {
 	privacyCOPPA                 *prometheus.CounterVec
 	privacyLMT                   *prometheus.CounterVec
 	privacyTCF                   *prometheus.CounterVec
+	storedResponses              prometheus.Counter
+	storedResponsesFetchTimer    *prometheus.HistogramVec
+	storedResponsesErrors        *prometheus.CounterVec
 
 	// Adapter Metrics
 	adapterBids                *prometheus.CounterVec
@@ -68,7 +72,9 @@ type Metrics struct {
 	syncerSets     *prometheus.CounterVec
 
 	// Account Metrics
-	accountRequests *prometheus.CounterVec
+	accountRequests        *prometheus.CounterVec
+	accountDebugRequests   *prometheus.CounterVec
+	accountStoredResponses *prometheus.CounterVec
 
 	metricsDisabled config.DisabledMetrics
 }
@@ -181,6 +187,10 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"requests",
 		"Count of total requests to Prebid Server labeled by type and status.",
 		[]string{requestTypeLabel, requestStatusLabel})
+
+	metrics.debugRequests = newCounterWithoutLabels(cfg, reg,
+		"debug_requests",
+		"Count of total requests to Prebid Server that have debug enabled")
 
 	metrics.requestsTimer = newHistogramVec(cfg, reg,
 		"request_time_seconds",
@@ -305,6 +315,21 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 			[]string{adapterLabel})
 	}
 
+	metrics.storedResponsesFetchTimer = newHistogramVec(cfg, reg,
+		"stored_response_fetch_time_seconds",
+		"Seconds to fetch stored responses labeled by fetch type",
+		[]string{storedDataFetchTypeLabel},
+		standardTimeBuckets)
+
+	metrics.storedResponsesErrors = newCounter(cfg, reg,
+		"stored_response_errors",
+		"Count of stored video errors by error type",
+		[]string{storedDataErrorLabel})
+
+	metrics.storedResponses = newCounterWithoutLabels(cfg, reg,
+		"stored_responses",
+		"Count of total requests to Prebid Server that have stored responses")
+
 	metrics.adapterBids = newCounter(cfg, reg,
 		"adapter_bids",
 		"Count of bids labeled by adapter and markup delivery type (adm or nurl).",
@@ -370,11 +395,21 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"Count of total requests to Prebid Server labeled by account.",
 		[]string{accountLabel})
 
+	metrics.accountDebugRequests = newCounter(cfg, reg,
+		"account_debug_requests",
+		"Count of total requests to Prebid Server that have debug enabled labled by account",
+		[]string{accountLabel})
+
 	metrics.requestsQueueTimer = newHistogramVec(cfg, reg,
 		"request_queue_time",
 		"Seconds request was waiting in queue",
 		[]string{requestTypeLabel, requestStatusLabel},
 		queuedRequestTimeBuckets)
+
+	metrics.accountStoredResponses = newCounter(cfg, reg,
+		"account_stored_responses",
+		"Count of total requests to Prebid Server that have stored responses labled by account",
+		[]string{accountLabel})
 
 	metrics.Gatherer = reg
 
@@ -477,6 +512,26 @@ func (m *Metrics) RecordRequest(labels metrics.Labels) {
 	}
 }
 
+func (m *Metrics) RecordDebugRequest(debugEnabled bool, pubID string) {
+	if debugEnabled {
+		m.debugRequests.Inc()
+		if !m.metricsDisabled.AccountDebug && pubID != metrics.PublisherUnknown {
+			m.accountDebugRequests.With(prometheus.Labels{
+				accountLabel: pubID,
+			}).Inc()
+		}
+	}
+}
+
+func (m *Metrics) RecordStoredResponse(pubId string) {
+	m.storedResponses.Inc()
+	if !m.metricsDisabled.AccountStoredResponses && pubId != metrics.PublisherUnknown {
+		m.accountStoredResponses.With(prometheus.Labels{
+			accountLabel: pubId,
+		}).Inc()
+	}
+}
+
 func (m *Metrics) RecordImps(labels metrics.ImpLabels) {
 	m.impressions.With(prometheus.Labels{
 		isBannerLabel: strconv.FormatBool(labels.BannerImps),
@@ -516,6 +571,10 @@ func (m *Metrics) RecordStoredDataFetchTime(labels metrics.StoredDataLabels, len
 		m.storedVideoFetchTimer.With(prometheus.Labels{
 			storedDataFetchTypeLabel: string(labels.DataFetchType),
 		}).Observe(length.Seconds())
+	case metrics.ResponseDataType:
+		m.storedResponsesFetchTimer.With(prometheus.Labels{
+			storedDataFetchTypeLabel: string(labels.DataFetchType),
+		}).Observe(length.Seconds())
 	}
 }
 
@@ -539,6 +598,10 @@ func (m *Metrics) RecordStoredDataError(labels metrics.StoredDataLabels) {
 		}).Inc()
 	case metrics.VideoDataType:
 		m.storedVideoErrors.With(prometheus.Labels{
+			storedDataErrorLabel: string(labels.Error),
+		}).Inc()
+	case metrics.ResponseDataType:
+		m.storedResponsesErrors.With(prometheus.Labels{
 			storedDataErrorLabel: string(labels.Error),
 		}).Inc()
 	}

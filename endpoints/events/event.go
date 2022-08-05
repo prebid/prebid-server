@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strconv"
 	"time"
+	"unicode"
 
 	"github.com/julienschmidt/httprouter"
 	accountService "github.com/prebid/prebid-server/account"
@@ -22,15 +23,19 @@ const (
 	// Required
 	TemplateUrl        = "%v/event?t=%v&b=%v&a=%v"
 	TypeParameter      = "t"
+	VTypeParameter     = "vtype"
 	BidIdParameter     = "b"
 	AccountIdParameter = "a"
 
 	// Optional
-	BidderParameter    = "bidder"
-	TimestampParameter = "ts"
-	FormatParameter    = "f"
-	AnalyticsParameter = "x"
+	BidderParameter          = "bidder"
+	TimestampParameter       = "ts"
+	FormatParameter          = "f"
+	AnalyticsParameter       = "x"
+	IntegrationTypeParameter = "int"
 )
+
+const integrationParamMaxLength = 64
 
 type eventEndpoint struct {
 	Accounts      stored_requests.AccountFetcher
@@ -140,6 +145,16 @@ func ParseEventRequest(r *http.Request) (*analytics.EventRequest, []error) {
 		errs = append(errs, err)
 	}
 
+	if event.Type == analytics.Vast {
+		if err := readVType(event, r); err != nil {
+			errs = append(errs, err)
+		}
+	} else {
+		if t := r.URL.Query().Get(VTypeParameter); t != "" {
+			errs = append(errs, &errortypes.BadInput{Message: "parameter 'vtype' is only required for t=vast"})
+		}
+	}
+
 	// validate bidid
 	if bidid, err := checkRequiredParameter(r, BidIdParameter); err != nil {
 		errs = append(errs, err)
@@ -159,6 +174,10 @@ func ParseEventRequest(r *http.Request) (*analytics.EventRequest, []error) {
 
 	// validate analytics (optional)
 	if err := readAnalytics(event, r); err != nil {
+		errs = append(errs, err)
+	}
+
+	if err := readIntegrationType(event, r); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -225,6 +244,10 @@ func optionalParameters(request *analytics.EventRequest) string {
 		r.Add(AnalyticsParameter, string(analytics.Disabled))
 	}
 
+	if request.Integration != "" {
+		r.Add(IntegrationTypeParameter, request.Integration)
+	}
+
 	opt := r.Encode()
 
 	if opt != "" {
@@ -249,9 +272,38 @@ func readType(er *analytics.EventRequest, httpRequest *http.Request) error {
 	case string(analytics.Win):
 		er.Type = analytics.Win
 		return nil
+	case string(analytics.Vast):
+		er.Type = analytics.Vast
+		return nil
 	default:
 		return &errortypes.BadInput{Message: fmt.Sprintf("unknown type: '%s'", t)}
 	}
+}
+
+// readVType validates analytics.EventRequest vtype
+func readVType(er *analytics.EventRequest, httpRequest *http.Request) error {
+	vtype, err := checkRequiredParameter(httpRequest, VTypeParameter)
+
+	if err != nil {
+		return err
+	}
+
+	switch vtype {
+	case string(analytics.Start):
+		er.VType = analytics.Start
+	case string(analytics.FirstQuartile):
+		er.VType = analytics.FirstQuartile
+	case string(analytics.MidPoint):
+		er.VType = analytics.MidPoint
+	case string(analytics.ThirdQuartile):
+		er.VType = analytics.ThirdQuartile
+	case string(analytics.Complete):
+		er.VType = analytics.Complete
+	default:
+		return &errortypes.BadInput{Message: fmt.Sprintf("unknown vtype: '%s'", vtype)}
+	}
+
+	return nil
 }
 
 // readFormat validates analytics.EventRequest format attribute
@@ -322,4 +374,26 @@ func checkRequiredParameter(httpRequest *http.Request, parameter string) (string
 	}
 
 	return t, nil
+}
+
+func readIntegrationType(er *analytics.EventRequest, httpRequest *http.Request) error {
+	integrationType := httpRequest.URL.Query().Get(IntegrationParameter)
+	err := validateIntegrationType(integrationType)
+	if err != nil {
+		return err
+	}
+	er.Integration = integrationType
+	return nil
+}
+
+func validateIntegrationType(integrationType string) error {
+	if len(integrationType) > integrationParamMaxLength {
+		return errors.New("integration type length is too long")
+	}
+	for _, char := range integrationType {
+		if !unicode.IsDigit(char) && !unicode.IsLetter(char) && char != '-' && char != '_' {
+			return errors.New("integration type can only contain numbers, letters and these characters '-', '_'")
+		}
+	}
+	return nil
 }

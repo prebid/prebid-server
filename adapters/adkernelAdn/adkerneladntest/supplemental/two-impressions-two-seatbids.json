@@ -37,7 +37,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://tag.test.com/rtbpub?account=101",
+        "uri": "https://pbs2.adksrv.com/rtbpub?account=101",
         "body": {
             "app": {
             "bundle": "com.rovia.angrybirds",

@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 // BidderInfos contains a mapping of bidder name to bidder info.
@@ -14,13 +14,24 @@ type BidderInfos map[string]BidderInfo
 
 // BidderInfo specifies all configuration for a bidder except for enabled status, endpoint, and extra information.
 type BidderInfo struct {
-	Enabled                 bool              // copied from adapter config for convenience. to be refactored.
-	Maintainer              *MaintainerInfo   `yaml:"maintainer"`
-	Capabilities            *CapabilitiesInfo `yaml:"capabilities"`
-	ModifyingVastXmlAllowed bool              `yaml:"modifyingVastXmlAllowed"`
-	Debug                   *DebugInfo        `yaml:"debug"`
-	GVLVendorID             uint16            `yaml:"gvlVendorID"`
-	Syncer                  *Syncer           `yaml:"userSync"`
+	Enabled                 bool                 // copied from adapter config for convenience. to be refactored.
+	Maintainer              *MaintainerInfo      `yaml:"maintainer"`
+	Capabilities            *CapabilitiesInfo    `yaml:"capabilities"`
+	ModifyingVastXmlAllowed bool                 `yaml:"modifyingVastXmlAllowed"`
+	Debug                   *DebugInfo           `yaml:"debug"`
+	GVLVendorID             uint16               `yaml:"gvlVendorID"`
+	Syncer                  *Syncer              `yaml:"userSync"`
+	Experiment              BidderInfoExperiment `yaml:"experiment"`
+}
+
+// BidderInfoExperiment specifies non-production ready feature config for a bidder
+type BidderInfoExperiment struct {
+	AdsCert BidderAdsCert `yaml:"adsCert"`
+}
+
+// BidderAdsCert enables Call Sign feature for bidder
+type BidderAdsCert struct {
+	Enabled bool `yaml:"enabled"`
 }
 
 // MaintainerInfo specifies the support email address for a bidder.
@@ -50,11 +61,6 @@ type Syncer struct {
 	// Key is used as the record key for the user sync cookie. We recommend using the bidder name
 	// as the key for consistency, but that is not enforced as a requirement.
 	Key string `yaml:"key" mapstructure:"key"`
-
-	// Default identifies which endpoint is preferred if both are allowed by the publisher. This is
-	// only required if there is more than one endpoint configured for the bidder. Valid values are
-	// `iframe` and `redirect`.
-	Default string `yaml:"default" mapstructure:"default"`
 
 	// Supports allows bidders to specify which user sync endpoints they support but which don't have
 	// good defaults. Host companies should contact the bidder for the endpoint configuration. Hosts
@@ -94,10 +100,6 @@ func (s *Syncer) Override(original *Syncer) *Syncer {
 
 	if s.Key != "" {
 		copy.Key = s.Key
-	}
-
-	if s.Default != "" {
-		copy.Default = s.Default
 	}
 
 	if original == nil {

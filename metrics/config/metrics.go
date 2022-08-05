@@ -24,14 +24,17 @@ func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.Bidde
 		// Currently use go-metrics as the metrics piece for influx
 		returnEngine.GoMetrics = metrics.NewMetrics(gometrics.NewPrefixedRegistry("prebidserver."), adapterList, cfg.Metrics.Disabled, syncerKeys)
 		engineList = append(engineList, returnEngine.GoMetrics)
+
 		// Set up the Influx logger
 		go influxdb.InfluxDB(
 			returnEngine.GoMetrics.MetricsRegistry,                             // metrics registry
 			time.Second*time.Duration(cfg.Metrics.Influxdb.MetricSendInterval), // Configurable interval
 			cfg.Metrics.Influxdb.Host,                                          // the InfluxDB url
 			cfg.Metrics.Influxdb.Database,                                      // your InfluxDB database
+			cfg.Metrics.Influxdb.Measurement,                                   // your measurement
 			cfg.Metrics.Influxdb.Username,                                      // your InfluxDB user
-			cfg.Metrics.Influxdb.Password,                                      // your InfluxDB password
+			cfg.Metrics.Influxdb.Password,                                      // your InfluxDB password,
+			cfg.Metrics.Influxdb.AlignTimestamps,                               // align timestamps
 		)
 		// Influx is not added to the engine list as goMetrics takes care of it already.
 	}
@@ -251,6 +254,19 @@ func (me *MultiMetricsEngine) RecordAdapterGDPRRequestBlocked(adapter openrtb_ex
 	}
 }
 
+// RecordDebugRequest across all engines
+func (me *MultiMetricsEngine) RecordDebugRequest(debugEnabled bool, pubId string) {
+	for _, thisME := range *me {
+		thisME.RecordDebugRequest(debugEnabled, pubId)
+	}
+}
+
+func (me *MultiMetricsEngine) RecordStoredResponse(pubId string) {
+	for _, thisME := range *me {
+		thisME.RecordStoredResponse(pubId)
+	}
+}
+
 // NilMetricsEngine implements the MetricsEngine interface where no metrics are actually captured. This is
 // used if no metric backend is configured and also for tests.
 type NilMetricsEngine struct{}
@@ -361,4 +377,11 @@ func (me *NilMetricsEngine) RecordRequestPrivacy(privacy metrics.PrivacyLabels) 
 
 // RecordAdapterGDPRRequestBlocked as a noop
 func (me *NilMetricsEngine) RecordAdapterGDPRRequestBlocked(adapter openrtb_ext.BidderName) {
+}
+
+// RecordDebugRequest as a noop
+func (me *NilMetricsEngine) RecordDebugRequest(debugEnabled bool, pubId string) {
+}
+
+func (me *NilMetricsEngine) RecordStoredResponse(pubId string) {
 }
