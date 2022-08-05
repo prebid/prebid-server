@@ -566,10 +566,8 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 		} else {
 			native, err := resolveNativeObject(imp.Native, requestNative)
 			if err != nil {
-				if native == nil {
-					errs = append(errs, err)
-					continue
-				}
+				errs = append(errs, err)
+				continue
 			}
 			imp.Native = native
 			imp.Video = nil
@@ -635,7 +633,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 				errs = append(errs, err)
 				continue
 			}
-			reqJSON, err = modifyImpCustom(reqJSON, jsonStr)
+			reqJSON, err = setImpNative(reqJSON, jsonStr)
 		}
 
 		if err != nil {
@@ -1081,8 +1079,7 @@ func resolveNativeObject(native *openrtb2.Native, target map[string]interface{})
 	return native, nil
 }
 
-func modifyImpCustom(json []byte, requestNative []byte) ([]byte, error) {
-
+func setImpNative(json []byte, requestNative []byte) ([]byte, error) {
 	var err error
 	json, err = jsonparser.Set(json, requestNative, "imp", "[0]", "native", "request_native")
 	if err != nil {
