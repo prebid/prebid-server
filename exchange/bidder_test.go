@@ -2243,6 +2243,7 @@ func TestExtraBid(t *testing.T) {
 			Enabled: true,
 			Bidders: map[string]config.AdapterAlternateBidderCodes{
 				string(openrtb_ext.BidderPubmatic): {
+					Enabled:            true,
 					AllowedBidderCodes: []string{"groupm"},
 				},
 			},
@@ -2354,6 +2355,7 @@ func TestExtraBidWithAlternateBidderCodeDisabled(t *testing.T) {
 			Enabled: true,
 			Bidders: map[string]config.AdapterAlternateBidderCodes{
 				string(openrtb_ext.BidderPubmatic): {
+					Enabled:            true,
 					AllowedBidderCodes: []string{"groupm-allowed"},
 				},
 			},
@@ -2462,6 +2464,7 @@ func TestExtraBidWithBidAdjustments(t *testing.T) {
 			Enabled: true,
 			Bidders: map[string]config.AdapterAlternateBidderCodes{
 				string(openrtb_ext.BidderPubmatic): {
+					Enabled:            true,
 					AllowedBidderCodes: []string{"groupm"},
 				},
 			},
@@ -2572,6 +2575,7 @@ func TestExtraBidWithBidAdjustmentsUsingAdapterCode(t *testing.T) {
 			Enabled: true,
 			Bidders: map[string]config.AdapterAlternateBidderCodes{
 				string(openrtb_ext.BidderPubmatic): {
+					Enabled:            true,
 					AllowedBidderCodes: []string{"groupm"},
 				},
 			},
