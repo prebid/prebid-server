@@ -285,7 +285,7 @@ func TestProcessStoredAuctionAndBidResponsesErrors(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		_, _, errorList := ProcessStoredResponses(nil, test.requestJson, nil, bidderMap)
+		_, _, _, errorList := ProcessStoredResponses(nil, test.requestJson, nil, bidderMap)
 		assert.Equalf(t, test.expectedErrorList, errorList, "Error doesn't match: %s\n", test.description)
 	}
 
@@ -308,6 +308,7 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
 		requestJson                    []byte
 		expectedStoredAuctionResponses ImpsWithBidResponses
 		expectedStoredBidResponses     ImpBidderStoredResp
+		expectedBidderImpReplaceImpID  BidderImpReplaceImpID
 	}{
 		{
 			description: "No stored responses",
@@ -323,6 +324,7 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
     			]}`),
 			expectedStoredAuctionResponses: nil,
 			expectedStoredBidResponses:     nil,
+			expectedBidderImpReplaceImpID:  nil,
 		},
 		{
 			description: "Stored auction response one imp",
@@ -344,7 +346,8 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
 			expectedStoredAuctionResponses: ImpsWithBidResponses{
 				"imp-id1": bidStoredResp1,
 			},
-			expectedStoredBidResponses: ImpBidderStoredResp{},
+			expectedStoredBidResponses:    ImpBidderStoredResp{},
+			expectedBidderImpReplaceImpID: BidderImpReplaceImpID{},
 		},
 		{
 			description: "Stored bid response one imp",
@@ -367,6 +370,9 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
 			expectedStoredBidResponses: ImpBidderStoredResp{
 				"imp-id1": {"bidderA": bidStoredResp1},
 			},
+			expectedBidderImpReplaceImpID: BidderImpReplaceImpID{
+				"bidderA": map[string]bool{"imp-id1": true},
+			},
 		},
 		{
 			description: "Stored bid responses two bidders one imp",
@@ -379,8 +385,8 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
                 		},
                 		"prebid": {
                     		"storedbidresponse": [
-                        		{"bidder":"bidderA", "id": "1"},
-                        		{"bidder":"bidderB", "id": "2"}
+                        		{"bidder":"bidderA", "id": "1", "replaceimpid": true},
+                        		{"bidder":"bidderB", "id": "2", "replaceimpid": false}
                     		]
                 		}
             		}
@@ -389,6 +395,10 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
 			expectedStoredAuctionResponses: ImpsWithBidResponses{},
 			expectedStoredBidResponses: ImpBidderStoredResp{
 				"imp-id1": {"bidderA": bidStoredResp1, "bidderB": bidStoredResp2},
+			},
+			expectedBidderImpReplaceImpID: BidderImpReplaceImpID{
+				"bidderA": map[string]bool{"imp-id1": true},
+				"bidderB": map[string]bool{"imp-id1": false},
 			},
 		},
 		{
@@ -418,6 +428,10 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
 			},
 			expectedStoredBidResponses: ImpBidderStoredResp{
 				"imp-id1": {"bidderA": bidStoredResp1, "bidderB": bidStoredResp2},
+			},
+			expectedBidderImpReplaceImpID: BidderImpReplaceImpID{
+				"bidderA": map[string]bool{"imp-id1": true},
+				"bidderB": map[string]bool{"imp-id1": true},
 			},
 		},
 		{
@@ -468,7 +482,8 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
 				"imp-id2": bidStoredResp2,
 				"imp-id3": bidStoredResp3,
 			},
-			expectedStoredBidResponses: ImpBidderStoredResp{},
+			expectedStoredBidResponses:    ImpBidderStoredResp{},
+			expectedBidderImpReplaceImpID: BidderImpReplaceImpID{},
 		},
 		{
 			description: "Stored auction response three imps duplicated stored auction response",
@@ -518,7 +533,8 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
 				"imp-id2": bidStoredResp2,
 				"imp-id3": bidStoredResp2,
 			},
-			expectedStoredBidResponses: ImpBidderStoredResp{},
+			expectedStoredBidResponses:    ImpBidderStoredResp{},
+			expectedBidderImpReplaceImpID: BidderImpReplaceImpID{},
 		},
 		{
 			description: "Stored bid responses two bidders two imp",
@@ -531,7 +547,7 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
                 		},
                 		"prebid": {
                     		"storedbidresponse": [
-                        		{"bidder":"bidderA", "id": "1"},
+                        		{"bidder":"bidderA", "id": "1", "replaceimpid": false},
                         		{"bidder":"bidderB", "id": "2"}
                     		]
                 		}
@@ -546,7 +562,7 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
                 		"prebid": {
                     		"storedbidresponse": [
                         		{"bidder":"bidderA", "id": "3"},
-                        		{"bidder":"bidderB", "id": "2"}
+                        		{"bidder":"bidderB", "id": "2", "replaceimpid": false}
                     		]
                 		}
             		}
@@ -557,16 +573,76 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
 				"imp-id1": {"bidderA": bidStoredResp1, "bidderB": bidStoredResp2},
 				"imp-id2": {"bidderA": bidStoredResp3, "bidderB": bidStoredResp2},
 			},
+			expectedBidderImpReplaceImpID: BidderImpReplaceImpID{
+				"bidderA": map[string]bool{"imp-id1": false, "imp-id2": true},
+				"bidderB": map[string]bool{"imp-id1": true, "imp-id2": false},
+			},
 		},
 	}
 
 	for _, test := range testCases {
-		storedAuctionResponses, storedBidResponses, errorList := ProcessStoredResponses(nil, test.requestJson, fetcher, bidderMap)
+		storedAuctionResponses, storedBidResponses, bidderImpReplaceImpId, errorList := ProcessStoredResponses(nil, test.requestJson, fetcher, bidderMap)
 		assert.Equal(t, test.expectedStoredAuctionResponses, storedAuctionResponses, "storedAuctionResponses doesn't match: %s\n", test.description)
 		assert.Equalf(t, test.expectedStoredBidResponses, storedBidResponses, "storedBidResponses doesn't match: %s\n", test.description)
+		assert.Equal(t, test.expectedBidderImpReplaceImpID, bidderImpReplaceImpId, "bidderImpReplaceImpId doesn't match: %s\n", test.description)
 		assert.Nil(t, errorList, "Error should be nil")
 	}
 
+}
+
+func TestFlipMap(t *testing.T) {
+	testCases := []struct {
+		description              string
+		inImpBidderReplaceImpID  ImpBidderReplaceImpID
+		outBidderImpReplaceImpID BidderImpReplaceImpID
+	}{
+		{
+			description:              "Empty ImpBidderReplaceImpID",
+			inImpBidderReplaceImpID:  ImpBidderReplaceImpID{},
+			outBidderImpReplaceImpID: BidderImpReplaceImpID{},
+		},
+		{
+			description:              "Nil ImpBidderReplaceImpID",
+			inImpBidderReplaceImpID:  nil,
+			outBidderImpReplaceImpID: BidderImpReplaceImpID{},
+		},
+		{
+			description:              "ImpBidderReplaceImpID has a one element map with single element",
+			inImpBidderReplaceImpID:  ImpBidderReplaceImpID{"imp-id": {"bidderA": true}},
+			outBidderImpReplaceImpID: BidderImpReplaceImpID{"bidderA": {"imp-id": true}},
+		},
+		{
+			description:              "ImpBidderReplaceImpID has a one element map with multiple elements",
+			inImpBidderReplaceImpID:  ImpBidderReplaceImpID{"imp-id": {"bidderA": true, "bidderB": false}},
+			outBidderImpReplaceImpID: BidderImpReplaceImpID{"bidderA": {"imp-id": true}, "bidderB": {"imp-id": false}},
+		},
+		{
+			description: "ImpBidderReplaceImpID has multiple elements map with single element",
+			inImpBidderReplaceImpID: ImpBidderReplaceImpID{
+				"imp-id1": {"bidderA": true},
+				"imp-id2": {"bidderB": false}},
+			outBidderImpReplaceImpID: BidderImpReplaceImpID{
+				"bidderA": {"imp-id1": true},
+				"bidderB": {"imp-id2": false}},
+		},
+		{
+			description: "ImpBidderReplaceImpID has multiple elements map with multiple elements",
+			inImpBidderReplaceImpID: ImpBidderReplaceImpID{
+				"imp-id1": {"bidderA": true, "bidderB": false, "bidderC": false, "bidderD": true},
+				"imp-id2": {"bidderA": false, "bidderB": false, "bidderC": true, "bidderD": true},
+				"imp-id3": {"bidderA": false, "bidderB": true, "bidderC": true, "bidderD": false}},
+			outBidderImpReplaceImpID: BidderImpReplaceImpID{
+				"bidderA": {"imp-id1": true, "imp-id2": false, "imp-id3": false},
+				"bidderB": {"imp-id1": false, "imp-id2": false, "imp-id3": true},
+				"bidderC": {"imp-id1": false, "imp-id2": true, "imp-id3": true},
+				"bidderD": {"imp-id1": true, "imp-id2": true, "imp-id3": false}},
+		},
+	}
+
+	for _, test := range testCases {
+		actualResult := flipMap(test.inImpBidderReplaceImpID)
+		assert.Equal(t, test.outBidderImpReplaceImpID, actualResult, "Incorrect flipped map for test case %s\n", test.description)
+	}
 }
 
 type mockStoredBidResponseFetcher struct {

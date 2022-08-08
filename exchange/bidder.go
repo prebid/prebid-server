@@ -300,7 +300,11 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 							reqBody := string(httpInfo.request.Body)
 							re := regexp.MustCompile(ImpIdReqBody)
 							reqBodySplit := re.Split(reqBody, -1)
-							bidResponse.Bids[i].Bid.ImpID = reqBodySplit[1]
+							reqImpId := reqBodySplit[1]
+							// replace impId if "replaceimpid" is true or not specified
+							if bidderRequest.ImpReplaceImpId[reqImpId] {
+								bidResponse.Bids[i].Bid.ImpID = reqImpId
+							}
 						}
 					}
 				}
