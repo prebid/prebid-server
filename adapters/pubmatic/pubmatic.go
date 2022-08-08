@@ -395,7 +395,10 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 			seat := ""
 			var bidExt *pubmaticBidExt
 			bidType := openrtb_ext.BidTypeBanner
-			if err := json.Unmarshal(bid.Ext, &bidExt); err == nil && bidExt != nil {
+			err := json.Unmarshal(bid.Ext, &bidExt)
+			if err != nil {
+				errs = append(errs, err)
+			} else if bidExt != nil {
 				seat = bidExt.Marketplace
 				if bidExt.VideoCreativeInfo != nil && bidExt.VideoCreativeInfo.Duration != nil {
 					impVideo.Duration = *bidExt.VideoCreativeInfo.Duration
