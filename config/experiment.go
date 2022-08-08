@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+
+	"github.com/golang/glog"
 )
 
 var (
@@ -26,6 +28,15 @@ const (
 // Experiment defines if experimental features are available
 type Experiment struct {
 	AdCerts ExperimentAdsCert `mapstructure:"adscert"`
+	// Floors feature configuration
+	PriceFloors PriceFloors `mapstructure:"price_floors"`
+}
+
+type PriceFloors struct {
+	Enabled           bool `mapstructure:"enabled"`
+	UseDynamicData    bool `mapstructure:"use_dynamic_data"`
+	EnforceFloorsRate int  `mapstructure:"enforce_floors_rate"`
+	EnforceDealFloors bool `mapstructure:"enforce_deal_floors"`
 }
 
 // ExperimentAdsCert configures and enables functionality to generate and send Ads Cert Auth header to bidders
@@ -86,6 +97,10 @@ func (cfg *Experiment) validate(errs []error) []error {
 		if cfg.AdCerts.Remote.SigningTimeoutMs <= 0 {
 			errs = append(errs, fmt.Errorf("%s: %d", ErrMsgInvalidRemoteSignerSigningTimeout, cfg.AdCerts.Remote.SigningTimeoutMs))
 		}
+	}
+
+	if cfg.PriceFloors.Enabled {
+		glog.Warning(`PriceFloors.Enabled will enforce floor feature which is still under development.`)
 	}
 	return errs
 }

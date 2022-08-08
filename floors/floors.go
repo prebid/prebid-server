@@ -22,54 +22,44 @@ const (
 	ENFORCE_RATE_MAX       int    = 100
 )
 
-type FloorConfig struct {
-	FloorEnabled      bool
+type Config struct {
+	Enabled           bool
 	EnforceRate       int
 	EnforceDealFloors bool
 }
 
-func NewFloorConfig(priceFloor config.PriceFloors) *FloorConfig {
+func NewConfig(priceFloor config.PriceFloors) *Config {
 
-	floorConfig := FloorConfig{
-		FloorEnabled:      priceFloor.Enabled,
+	config := Config{
+		Enabled:           priceFloor.Enabled,
 		EnforceRate:       priceFloor.EnforceFloorsRate,
 		EnforceDealFloors: priceFloor.EnforceDealFloors,
 	}
 
-	return &floorConfig
+	return &config
 }
 
-func (fc *FloorConfig) Enabled() bool {
-	return fc.FloorEnabled
+func (fc *Config) IsFloorEnabled() bool {
+	return fc.Enabled
 }
 
-func (fc *FloorConfig) GetEnforceRate() int {
+func (fc *Config) GetEnforceRate() int {
 	return fc.EnforceRate
 }
 
-func (fc *FloorConfig) EnforceDealFloor() bool {
+func (fc *Config) EnforceDealFloor() bool {
 	return fc.EnforceDealFloors
 }
 
 type Floor interface {
-	Enabled() bool
+	IsFloorEnabled() bool
 	GetEnforceRate() int
 	EnforceDealFloor() bool
 }
 
-// IsRequestEnabledWithFloor will check if floors is enabled in request
-func IsRequestEnabledWithFloor(Floors *openrtb_ext.PriceFloorRules) bool {
-
-	if Floors != nil && Floors.Enabled != nil && !*Floors.Enabled {
-		return *Floors.Enabled
-	}
-
-	return true
-}
-
-// UpdateImpsWithFloors will validate floor rules, based on request and rules prepares various combinations
+// ModifyImpsWithFloors will validate floor rules, based on request and rules prepares various combinations
 // to match with floor rules and selects appripariate floor rule and update imp.bidfloor and imp.bidfloorcur
-func UpdateImpsWithFloors(floorExt *openrtb_ext.PriceFloorRules, request *openrtb2.BidRequest, conversions currency.Conversions) []error {
+func ModifyImpsWithFloors(floorExt *openrtb_ext.PriceFloorRules, request *openrtb2.BidRequest, conversions currency.Conversions) []error {
 	var (
 		floorErrList      []error
 		floorModelErrList []error
@@ -77,7 +67,7 @@ func UpdateImpsWithFloors(floorExt *openrtb_ext.PriceFloorRules, request *openrt
 	)
 	floorData := floorExt.Data
 	if floorData == nil {
-		return floorModelErrList
+		return nil
 	}
 
 	floorModelErrList = validateFloorSkipRates(floorExt)
@@ -107,10 +97,10 @@ func UpdateImpsWithFloors(floorExt *openrtb_ext.PriceFloorRules, request *openrt
 	if len(floorData.ModelGroups[0].Values) > 0 {
 		for i := 0; i < len(request.Imp); i++ {
 			desiredRuleKey := createRuleKey(floorData.ModelGroups[0].Schema, request, request.Imp[i])
-			matchedRule := findRule(floorData.ModelGroups[0].Values, floorData.ModelGroups[0].Schema.Delimiter, desiredRuleKey, len(floorData.ModelGroups[0].Schema.Fields))
+			matchedRule, isRuleMatched := findRule(floorData.ModelGroups[0].Values, floorData.ModelGroups[0].Schema.Delimiter, desiredRuleKey, len(floorData.ModelGroups[0].Schema.Fields))
 
 			floorVal = floorData.ModelGroups[0].Default
-			if matchedRule != "" {
+			if isRuleMatched {
 				floorVal = floorData.ModelGroups[0].Values[matchedRule]
 			}
 
@@ -130,6 +120,5 @@ func UpdateImpsWithFloors(floorExt *openrtb_ext.PriceFloorRules, request *openrt
 		}
 	}
 	floorModelErrList = append(floorModelErrList, floorErrList...)
-
 	return floorModelErrList
 }

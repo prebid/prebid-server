@@ -4,6 +4,7 @@ type PriceFloorSchema struct {
 	Fields    []string `json:"fields,omitempty"`
 	Delimiter string   `json:"delimiter,omitempty"`
 }
+
 type PriceFloorModelGroup struct {
 	Currency     string             `json:"currency,omitempty"`
 	ModelWeight  int                `json:"modelweight,omitempty"`
@@ -14,6 +15,7 @@ type PriceFloorModelGroup struct {
 	Values       map[string]float64 `json:"values,omitempty"`
 	Default      float64            `json:"default,omitempty"`
 }
+
 type PriceFloorData struct {
 	Currency            string                 `json:"currency,omitempty"`
 	SkipRate            int                    `json:"skiprate,omitempty"`
@@ -33,6 +35,7 @@ type PriceFloorEndpoint struct {
 	URL string `json:"url,omitempty"`
 }
 
+// PriceFloorRules defines the contract for bidrequest.ext.prebid.floors
 type PriceFloorRules struct {
 	FloorMin    float64                `json:"floormin,omitempty"`
 	FloorMinCur string                 `json:"floormincur,omitempty"`
@@ -42,4 +45,12 @@ type PriceFloorRules struct {
 	Enforcement *PriceFloorEnforcement `json:"enforcement,omitempty"`
 	Enabled     *bool                  `json:"enabled,omitempty"`
 	Skipped     *bool                  `json:"skipped,omitempty"`
+}
+
+// GetEnabled will check if floors is enabled in request
+func (Floors *PriceFloorRules) GetEnabled() bool {
+	if Floors != nil && Floors.Enabled != nil && !*Floors.Enabled {
+		return *Floors.Enabled
+	}
+	return true
 }

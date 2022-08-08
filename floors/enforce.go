@@ -5,7 +5,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-func ShouldEnforceFloors(bidRequest *openrtb2.BidRequest, floorExt *openrtb_ext.PriceFloorRules, configEnforceRate int, f func(int) int) bool {
+func ShouldEnforce(bidRequest *openrtb2.BidRequest, floorExt *openrtb_ext.PriceFloorRules, configEnforceRate int, f func(int) int) bool {
 
 	if floorExt != nil && floorExt.Skipped != nil && *floorExt.Skipped {
 		var floorInRequest bool

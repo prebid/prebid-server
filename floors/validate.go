@@ -34,7 +34,6 @@ func validateFloorSkipRates(floorExt *openrtb_ext.PriceFloorRules) []error {
 	if floorExt.SkipRate < SKIP_RATE_MIN || floorExt.SkipRate > SKIP_RATE_MAX {
 		errs = append(errs, fmt.Errorf("Invalid SkipRate at root level = '%v'", floorExt.SkipRate))
 	}
-
 	return errs
 }
 

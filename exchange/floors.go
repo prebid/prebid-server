@@ -13,21 +13,23 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-func EnforceFloorToBids(bidRequest *openrtb2.BidRequest, seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, conversions currency.Conversions, enforceDealFloors bool) (map[openrtb_ext.BidderName]*pbsOrtbSeatBid, []string) {
+// enforceFloorToBids function does floors enforcement for each bid.
+//  The bids returned by each partner below bid floor price are rejected and remaining eligible bids are considered for further processing
+func enforceFloorToBids(bidRequest *openrtb2.BidRequest, seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, conversions currency.Conversions, enforceDealFloors bool) (map[openrtb_ext.BidderName]*pbsOrtbSeatBid, []string) {
 
 	type bidFloor struct {
 		bidFloorCur string
 		bidFloor    float64
 	}
 	var rejections []string
-	impMap := make(map[string]bidFloor)
+	impMap := make(map[string]bidFloor, len(bidRequest.Imp))
 
 	//Maintaining BidRequest Impression Map
 	for i := range bidRequest.Imp {
 		var bidfloor bidFloor
 		bidfloor.bidFloorCur = bidRequest.Imp[i].BidFloorCur
-		if bidfloor.bidFloorCur == "" {
-			bidfloor.bidFloorCur = "USD"
+		if bidRequest.Imp[i].BidFloorCur == "" {
+			bidfloor.bidFloorCur = bidRequest.Cur[0]
 		}
 		bidfloor.bidFloor = bidRequest.Imp[i].BidFloor
 		impMap[bidRequest.Imp[i].ID] = bidfloor
@@ -62,16 +64,16 @@ func EnforceFloorToBids(bidRequest *openrtb2.BidRequest, seatBids map[openrtb_ex
 				continue
 			}
 			eligibleBids = append(eligibleBids, bid)
-
 		}
 		seatBids[bidderName].bids = eligibleBids
-
 	}
-
 	return seatBids, rejections
 }
 
-func SignalFloors(r *AuctionRequest, floor floors.Floor, conversions currency.Conversions, responseDebugAllow bool) []error {
+// signalFloors function does singanlling of floors,
+// Internally validation of floors parameters and validation of rules is done,
+// Based on number of modelGroups and modelWeight, one model is selected and imp.bidfloor and imp.bidfloorcur is updated
+func signalFloors(r *AuctionRequest, floor floors.Floor, conversions currency.Conversions, responseDebugAllow bool) []error {
 
 	var errs []error
 	requestExt, err := r.BidRequestWrapper.GetRequestExt()
@@ -80,24 +82,25 @@ func SignalFloors(r *AuctionRequest, floor floors.Floor, conversions currency.Co
 		return errs
 	}
 	prebidExt := requestExt.GetPrebid()
-	if floor != nil && floor.Enabled() && floors.IsRequestEnabledWithFloor(prebidExt.Floors) && prebidExt.Floors != nil {
-		errs = floors.UpdateImpsWithFloors(prebidExt.Floors, r.BidRequestWrapper.BidRequest, conversions)
+	if floor != nil && floor.IsFloorEnabled() && prebidExt.Floors.GetEnabled() && prebidExt.Floors != nil {
+		errs = floors.ModifyImpsWithFloors(prebidExt.Floors, r.BidRequestWrapper.BidRequest, conversions)
 		requestExt.SetPrebid(prebidExt)
 		err := r.BidRequestWrapper.RebuildRequest()
 		if err != nil {
 			errs = append(errs, err)
 		}
-		updatedBidReq, _ := json.Marshal(r.BidRequestWrapper.BidRequest)
+
 		if responseDebugAllow {
+			updatedBidReq, _ := json.Marshal(r.BidRequestWrapper.BidRequest)
 			//save updated request after floors signalling
 			r.UpdatedBidRequest = updatedBidReq
 		}
 	}
-
 	return errs
 }
 
-func EnforceFloors(r *AuctionRequest, seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, floor floors.Floor, conversions currency.Conversions, responseDebugAllow bool) (map[openrtb_ext.BidderName]*pbsOrtbSeatBid, []string) {
+// enforceFloors function does floors enforcement
+func enforceFloors(r *AuctionRequest, seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, floor floors.Floor, conversions currency.Conversions, responseDebugAllow bool) (map[openrtb_ext.BidderName]*pbsOrtbSeatBid, []string) {
 
 	var rejections []string
 	requestExt, err := r.BidRequestWrapper.GetRequestExt()
@@ -106,13 +109,13 @@ func EnforceFloors(r *AuctionRequest, seatBids map[openrtb_ext.BidderName]*pbsOr
 		return seatBids, rejections
 	}
 	prebidExt := requestExt.GetPrebid()
-	if floor != nil && floor.Enabled() && floors.IsRequestEnabledWithFloor(prebidExt.Floors) {
-		if floors.ShouldEnforceFloors(r.BidRequestWrapper.BidRequest, prebidExt.Floors, floor.GetEnforceRate(), rand.Intn) {
+	if floor != nil && floor.IsFloorEnabled() && prebidExt.Floors.GetEnabled() {
+		if floors.ShouldEnforce(r.BidRequestWrapper.BidRequest, prebidExt.Floors, floor.GetEnforceRate(), rand.Intn) {
 			var enforceDealFloors bool
 			if prebidExt != nil && prebidExt.Floors != nil && prebidExt.Floors.Enforcement != nil && prebidExt.Floors.Enforcement.FloorDeals != nil {
 				enforceDealFloors = *prebidExt.Floors.Enforcement.FloorDeals && floor.EnforceDealFloor()
 			}
-			seatBids, rejections = EnforceFloorToBids(r.BidRequestWrapper.BidRequest, seatBids, conversions, enforceDealFloors)
+			seatBids, rejections = enforceFloorToBids(r.BidRequestWrapper.BidRequest, seatBids, conversions, enforceDealFloors)
 		}
 		requestExt.SetPrebid(prebidExt)
 		err = r.BidRequestWrapper.RebuildRequest()
@@ -120,12 +123,12 @@ func EnforceFloors(r *AuctionRequest, seatBids map[openrtb_ext.BidderName]*pbsOr
 			rejections = append(rejections, err.Error())
 			return seatBids, rejections
 		}
-		updatedBidReq, _ := json.Marshal(r.BidRequestWrapper.BidRequest)
+
 		if responseDebugAllow {
+			updatedBidReq, _ := json.Marshal(r.BidRequestWrapper.BidRequest)
 			//save updated request after floors enforcement
 			r.UpdatedBidRequest = updatedBidReq
 		}
 	}
-
 	return seatBids, rejections
 }

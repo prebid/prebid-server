@@ -585,7 +585,8 @@ func TestEnforceFloorToBids(t *testing.T) {
 			name: "Impression does not have currency defined",
 			args: args{
 				bidRequest: &openrtb2.BidRequest{
-					ID: "some-request-id",
+					ID:  "some-request-id",
+					Cur: []string{"USD"},
 					Imp: []openrtb2.Imp{
 						{
 							ID:       "some-impression-id-1",
@@ -679,7 +680,8 @@ func TestEnforceFloorToBids(t *testing.T) {
 			name: "Impression map does not have imp id",
 			args: args{
 				bidRequest: &openrtb2.BidRequest{
-					ID: "some-request-id",
+					ID:  "some-request-id",
+					Cur: []string{"USD"},
 					Imp: []openrtb2.Imp{
 						{
 							ID:       "some-impression-id-1",
@@ -779,9 +781,9 @@ func TestEnforceFloorToBids(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1 := EnforceFloorToBids(tt.args.bidRequest, tt.args.seatBids, tt.args.conversions, tt.args.enforceDealFloors)
+			got, got1 := enforceFloorToBids(tt.args.bidRequest, tt.args.seatBids, tt.args.conversions, tt.args.enforceDealFloors)
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("EnforceFloorToBids() got = %v, want %v", got, tt.want)
+				t.Errorf("enforceFloorToBids() got = %v, want %v", got, tt.want)
 			}
 			sort.Strings(got1)
 			assert.Equal(t, tt.want1, got1)
@@ -808,7 +810,8 @@ func TestEnforceFloorToBidsConversion(t *testing.T) {
 			name: "Error in currency conversion",
 			args: args{
 				bidRequest: &openrtb2.BidRequest{
-					ID: "some-request-id",
+					ID:  "some-request-id",
+					Cur: []string{"USD"},
 					Imp: []openrtb2.Imp{
 						{
 							ID:       "some-impression-id-1",
@@ -863,7 +866,7 @@ func TestEnforceFloorToBidsConversion(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1 := EnforceFloorToBids(tt.args.bidRequest, tt.args.seatBids, tt.args.conversions, tt.args.enforceDealFloors)
+			got, got1 := enforceFloorToBids(tt.args.bidRequest, tt.args.seatBids, tt.args.conversions, tt.args.enforceDealFloors)
 			assert.Equal(t, tt.want, got)
 			assert.Equal(t, tt.want1, got1)
 		})
@@ -872,7 +875,7 @@ func TestEnforceFloorToBidsConversion(t *testing.T) {
 
 type floorStruct struct{}
 
-func (f floorStruct) Enabled() bool {
+func (f floorStruct) IsFloorEnabled() bool {
 	return true
 }
 
@@ -915,8 +918,8 @@ func TestSignalFloors(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := SignalFloors(tt.args.r, tt.args.floor, tt.args.conversions, tt.args.responseDebugAllow); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("SignalFloors() = %v, want %v", got, tt.want)
+			if got := signalFloors(tt.args.r, tt.args.floor, tt.args.conversions, tt.args.responseDebugAllow); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("signalFloors() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -993,9 +996,9 @@ func TestEnforceFloors(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1 := EnforceFloors(tt.args.r, tt.args.seatBids, tt.args.floor, tt.args.conversions, tt.args.responseDebugAllow)
+			got, got1 := enforceFloors(tt.args.r, tt.args.seatBids, tt.args.floor, tt.args.conversions, tt.args.responseDebugAllow)
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("EnforceFloors() got = %v, want %v", got, tt.want)
+				t.Errorf("enforceFloors() got = %v, want %v", got, tt.want)
 			}
 			sort.Strings(got1)
 			assert.Equal(t, tt.want1, got1)
