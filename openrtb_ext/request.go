@@ -57,6 +57,7 @@ type ExtRequestPrebid struct {
 
 	CurrencyConversions *ExtRequestCurrency `json:"currency,omitempty"`
 	BidderConfigs       []BidderConfig      `json:"bidderconfig,omitempty"`
+	Passthrough         json.RawMessage     `json:"passthrough,omitempty"`
 	Experiment          *Experiment         `json:"experiment,omitempty"`
 }
 

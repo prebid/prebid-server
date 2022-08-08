@@ -119,6 +119,17 @@ var testStoredRequestData = map[string]json.RawMessage{
 		}`),
 	// Valid JSON
 	"4": json.RawMessage(`{"id": "ThisID", "cur": ["USD"]}`),
+
+	// Stored Request with Root Ext Passthrough
+	"5": json.RawMessage(`{
+		"ext": {
+			"prebid": {
+				"passthrough": {
+					"root_ext_passthrough": 20
+				}
+			}
+		}
+	}`),
 }
 
 // Stored Imp Requests
@@ -197,6 +208,17 @@ var testStoredImpData = map[string]json.RawMessage{
 				}
 			}
 		}`),
+	// Stored Imp with Passthrough
+	"6": json.RawMessage(`{
+		"id": "my-imp-id",
+		"ext": {
+			"prebid": {
+				"passthrough": {
+					"imp_passthrough": 30
+				}
+			}
+		}
+	}`),
 }
 
 // Incoming requests with stored request IDs
@@ -323,6 +345,32 @@ var testStoredRequests = []string{
 			}
 		}
 	}`,
+	`{
+		"id": "ThisID",
+		"imp": [
+			{
+				"id": "my-imp-id",
+				"video":{
+					"h":300,
+					"w":200
+				},
+				"ext": {
+					"prebid": {
+						"storedrequest": {
+							"id": "6"
+						}
+					}
+				}
+			}
+		],
+		"ext": {
+			"prebid": {
+				"storedrequest": {
+					"id": "5"
+				}
+			}
+		}
+	}`,
 }
 
 // The expected requests after stored request processing
@@ -438,8 +486,7 @@ var testFinalRequests = []string{
   		  }
   		],
   		"tmax": 500
-	}
-`,
+	}`,
 	`{
 	"id": "ThisID",
 	"imp": [
@@ -490,10 +537,42 @@ var testFinalRequests = []string{
 		}
 	}
 }`,
+	`{
+	"id": "ThisID",
+	"imp": [
+		{
+			"ext":{
+			   "prebid":{
+				  "passthrough":{
+					 "imp_passthrough":30
+				  },
+				  "storedrequest":{
+					 "id":"6"
+				  }
+			   }
+			},
+			"id":"my-imp-id",
+			"video":{
+			   "h":300,
+			   "w":200
+			}
+		 }
+	],
+	"ext":{
+		"prebid":{
+		   "passthrough":{
+			  "root_ext_passthrough":20
+		   },
+		   "storedrequest":{
+			  "id":"5"
+		   }
+		}
+	 }
+}`,
 }
 
 var testStoredImpIds = []string{
-	"adUnit1", "adUnit2", "adUnit1", "some-static-imp",
+	"adUnit1", "adUnit2", "adUnit1", "some-static-imp", "my-imp-id",
 }
 
 var testStoredImps = []string{
@@ -545,6 +624,16 @@ var testStoredImps = []string{
 			}
 		}`,
 	``,
+	`{
+		"id": "my-imp-id",
+		"ext": {
+			"prebid": {
+				"passthrough": {
+					"imp_passthrough": 30
+				}
+			}
+		}
+	}`,
 }
 
 var testBidRequests = []string{
