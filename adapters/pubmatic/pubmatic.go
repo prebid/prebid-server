@@ -407,8 +407,9 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 			}
 
 			if bidType == openrtb_ext.BidTypeNative {
-				if value, _, _, err := jsonparser.Get([]byte(bid.AdM), string(openrtb_ext.BidTypeNative)); err == nil {
-					bid.AdM = string(value)
+				bid.AdM, err = getNativeAdm(bid.AdM)
+				if err != nil {
+					errs = append(errs, err)
 				}
 			}
 
@@ -422,6 +423,27 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 		}
 	}
 	return bidResponse, errs
+}
+
+func getNativeAdm(adm string) (string, error) {
+	var err error
+	nativeAdm := make(map[string]interface{})
+	err = json.Unmarshal([]byte(adm), &nativeAdm)
+	if err != nil {
+		return adm, err
+	}
+
+	// move bid.adm.native to bid.adm
+	if _, ok := nativeAdm["native"]; ok {
+		//using jsonparser to avoid marshaling, encode escape, etc.
+		value, _, _, err := jsonparser.Get([]byte(adm), string(openrtb_ext.BidTypeNative))
+		if err != nil {
+			return adm, err
+		}
+		adm = string(value)
+	}
+
+	return adm, nil
 }
 
 // getBidType returns the bid type specified in the response bid.ext
