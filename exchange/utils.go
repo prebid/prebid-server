@@ -399,8 +399,8 @@ func splitImps(imps []openrtb2.Imp) (map[string][]openrtb2.Imp, error) {
 }
 
 func createSanitizedImpExt(impExt, impExtPrebid map[string]json.RawMessage) (map[string]json.RawMessage, error) {
-	sanitizedImpExt := make(map[string]json.RawMessage, 8)
-	sanitizedImpPrebidExt := make(map[string]json.RawMessage, 8)
+	sanitizedImpExt := make(map[string]json.RawMessage, 6)
+	sanitizedImpPrebidExt := make(map[string]json.RawMessage, 2)
 
 	// copy allowed imp[].ext.prebid fields
 	if v, exists := impExtPrebid["is_rewarded_inventory"]; exists {
@@ -420,7 +420,7 @@ func createSanitizedImpExt(impExt, impExtPrebid map[string]json.RawMessage) (map
 		}
 	}
 
-	// copy reserved imp[].ext fields known to bot be bidder names
+	// copy reserved imp[].ext fields known to not be bidder names
 	if v, exists := impExt[openrtb_ext.FirstPartyDataExtKey]; exists {
 		sanitizedImpExt[openrtb_ext.FirstPartyDataExtKey] = v
 	}
