@@ -3,6 +3,7 @@ package rubicon
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/prebid/prebid-server/util/maputil"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -627,13 +628,8 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 		rubiconRequest.Ext = nil
 
 		reqJSON, err := json.Marshal(rubiconRequest)
-		if impType == openrtb_ext.BidTypeNative {
-			jsonStr, err := json.Marshal(requestNative)
-			if err != nil {
-				errs = append(errs, err)
-				continue
-			}
-			reqJSON, err = setImpNative(reqJSON, jsonStr)
+		if impType == openrtb_ext.BidTypeNative && len(requestNative) > 0 {
+			reqJSON, err = setImpNative(reqJSON, requestNative)
 		}
 
 		if err != nil {
@@ -1079,14 +1075,33 @@ func resolveNativeObject(native *openrtb2.Native, target map[string]interface{})
 	return native, nil
 }
 
-func setImpNative(json []byte, requestNative []byte) ([]byte, error) {
-	var err error
-	json, err = jsonparser.Set(json, requestNative, "imp", "[0]", "native", "request_native")
-	if err != nil {
-		return json, err
+func setImpNative(jsonData []byte, requestNative map[string]interface{}) ([]byte, error) {
+	var jsonMap map[string]interface{}
+	if err := json.Unmarshal(jsonData, &jsonMap); err != nil {
+		return jsonData, err
 	}
 
-	return json, nil
+	var impMap map[string]interface{}
+	if impSlice, ok := maputil.ReadEmbeddedSlice(jsonMap, "imp"); !ok {
+		return jsonData, fmt.Errorf("unable to find imp in json data")
+	} else if len(impSlice) == 0 {
+		return jsonData, fmt.Errorf("unable to find imp[0] in json data")
+	} else if impMap, ok = impSlice[0].(map[string]interface{}); !ok {
+		return jsonData, fmt.Errorf("unexpected type for imp[0] found in json data")
+	}
+
+	nativeMap, ok := maputil.ReadEmbeddedMap(impMap, "native")
+	if !ok {
+		return jsonData, fmt.Errorf("unable to find imp[0].native in json data")
+	}
+
+	nativeMap["request_native"] = requestNative
+
+	if jsonReEncoded, err := json.Marshal(jsonMap); err == nil {
+		return jsonReEncoded, nil
+	} else {
+		return nil, fmt.Errorf("unable to encode json data (%v)", err)
+	}
 }
 
 func (a *RubiconAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
