@@ -2,6 +2,7 @@ package unicorn
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -66,6 +67,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	err := modifyImps(request)
 	if err != nil {
+		return nil, []error{err}
+	}
+
+	if err := modifyApp(request); err != nil {
 		return nil, []error{err}
 	}
 
@@ -169,6 +174,36 @@ func getStoredRequestImpID(imp *openrtb2.Imp) (string, error) {
 
 func setSourceExt() json.RawMessage {
 	return json.RawMessage(`{"stype": "prebid_server_uncn", "bidder": "unicorn"}`)
+}
+
+func modifyApp(request *openrtb2.BidRequest) error {
+	if request.App == nil {
+		return errors.New("request app is required")
+	}
+
+	modifiableApp := *request.App
+
+	mediaId, err := jsonparser.GetString(request.Imp[0].Ext, "bidder", "mediaId")
+	if err == nil {
+		modifiableApp.ID = mediaId
+	}
+
+	publisherId, err := jsonparser.GetString(request.Imp[0].Ext, "bidder", "publisherId")
+	if err == nil {
+		var publisher openrtb2.Publisher
+		if modifiableApp.Publisher != nil {
+			publisher = *modifiableApp.Publisher
+		} else {
+			publisher = openrtb2.Publisher{}
+		}
+
+		publisher.ID = publisherId
+
+		modifiableApp.Publisher = &publisher
+	}
+
+	request.App = &modifiableApp
+	return nil
 }
 
 func setExt(request *openrtb2.BidRequest) (json.RawMessage, error) {

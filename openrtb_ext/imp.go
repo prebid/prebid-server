@@ -22,6 +22,8 @@ type ExtImpPrebid struct {
 	Bidder map[string]json.RawMessage `json:"bidder"`
 
 	Options *Options `json:"options,omitempty"`
+
+	Passthrough json.RawMessage `json:"passthrough,omitempty"`
 }
 
 // ExtStoredRequest defines the contract for bidrequest.imp[i].ext.prebid.storedrequest
@@ -36,8 +38,9 @@ type ExtStoredAuctionResponse struct {
 
 // ExtStoredBidResponse defines the contract for bidrequest.imp[i].ext.prebid.storedbidresponse
 type ExtStoredBidResponse struct {
-	ID     string `json:"id"`
-	Bidder string `json:"bidder"`
+	ID           string `json:"id"`
+	Bidder       string `json:"bidder"`
+	ReplaceImpId *bool  `json:"replaceimpid"`
 }
 
 type Options struct {

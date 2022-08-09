@@ -17,6 +17,8 @@ type StoredResponseIdToStoredResponse map[string]json.RawMessage
 type BidderImpsWithBidResponses map[openrtb_ext.BidderName]map[string]json.RawMessage
 type ImpsWithBidResponses map[string]json.RawMessage
 type ImpBidderStoredResp map[string]map[string]json.RawMessage
+type ImpBidderReplaceImpID map[string]map[string]bool
+type BidderImpReplaceImpID map[string]map[string]bool
 
 func InitStoredBidResponses(req *openrtb2.BidRequest, storedBidResponses ImpBidderStoredResp) BidderImpsWithBidResponses {
 	removeImpsWithStoredResponses(req, storedBidResponses)
@@ -57,7 +59,9 @@ func extractStoredResponsesIds(impInfo []ImpExtPrebidData,
 	bidderMap map[string]openrtb_ext.BidderName) (
 	StoredResponseIDs,
 	ImpBiddersWithBidResponseIDs,
-	ImpsWithAuctionResponseIDs, error,
+	ImpsWithAuctionResponseIDs,
+	ImpBidderReplaceImpID,
+	error,
 ) {
 	// extractStoredResponsesIds returns:
 	// 1) all stored responses ids from all imps
@@ -66,16 +70,18 @@ func extractStoredResponsesIds(impInfo []ImpExtPrebidData,
 	impBiddersWithBidResponseIDs := ImpBiddersWithBidResponseIDs{}
 	// 3) imp id to stored resp id
 	impAuctionResponseIDs := ImpsWithAuctionResponseIDs{}
+	// 4) imp id to bidder to bool replace imp in response
+	impBidderReplaceImp := ImpBidderReplaceImpID{}
 
 	for index, impData := range impInfo {
 		impId, err := jsonparser.GetString(impData.Imp, "id")
 		if err != nil {
-			return nil, nil, nil, fmt.Errorf("request.imp[%d] missing required field: \"id\"", index)
+			return nil, nil, nil, nil, fmt.Errorf("request.imp[%d] missing required field: \"id\"", index)
 		}
 
 		if impData.ImpExtPrebid.StoredAuctionResponse != nil {
 			if len(impData.ImpExtPrebid.StoredAuctionResponse.ID) == 0 {
-				return nil, nil, nil, fmt.Errorf("request.imp[%d] has ext.prebid.storedauctionresponse specified, but \"id\" field is missing ", index)
+				return nil, nil, nil, nil, fmt.Errorf("request.imp[%d] has ext.prebid.storedauctionresponse specified, but \"id\" field is missing ", index)
 			}
 			allStoredResponseIDs = append(allStoredResponseIDs, impData.ImpExtPrebid.StoredAuctionResponse.ID)
 
@@ -85,24 +91,35 @@ func extractStoredResponsesIds(impInfo []ImpExtPrebidData,
 		if len(impData.ImpExtPrebid.StoredBidResponse) > 0 {
 
 			bidderStoredRespId := make(map[string]string)
+			bidderReplaceImpId := make(map[string]bool)
 			for _, bidderResp := range impData.ImpExtPrebid.StoredBidResponse {
 				if len(bidderResp.ID) == 0 || len(bidderResp.Bidder) == 0 {
-					return nil, nil, nil, fmt.Errorf("request.imp[%d] has ext.prebid.storedbidresponse specified, but \"id\" or/and \"bidder\" fields are missing ", index)
+					return nil, nil, nil, nil, fmt.Errorf("request.imp[%d] has ext.prebid.storedbidresponse specified, but \"id\" or/and \"bidder\" fields are missing ", index)
 				}
 				//check if bidder is valid/exists
 				if _, isValid := bidderMap[bidderResp.Bidder]; !isValid {
-					return nil, nil, nil, fmt.Errorf("request.imp[impId: %s].ext contains unknown bidder: %s. Did you forget an alias in request.ext.prebid.aliases?", impId, bidderResp.Bidder)
+					return nil, nil, nil, nil, fmt.Errorf("request.imp[impId: %s].ext contains unknown bidder: %s. Did you forget an alias in request.ext.prebid.aliases?", impId, bidderResp.Bidder)
 				}
 				// bidder is unique per one bid stored response
 				// if more than one bidder specified the last defined bidder id will take precedence
 				bidderStoredRespId[bidderResp.Bidder] = bidderResp.ID
 				impBiddersWithBidResponseIDs[impId] = bidderStoredRespId
+
+				// stored response config can specify if imp id should be replaced with imp id from request
+				replaceImpId := true
+				if bidderResp.ReplaceImpId != nil {
+					// replaceimpid is true if not specified
+					replaceImpId = *bidderResp.ReplaceImpId
+				}
+				bidderReplaceImpId[bidderResp.Bidder] = replaceImpId
+				impBidderReplaceImp[impId] = bidderReplaceImpId
+
 				//storedAuctionResponseIds are not unique, but fetch will return single data for repeated ids
 				allStoredResponseIDs = append(allStoredResponseIDs, bidderResp.ID)
 			}
 		}
 	}
-	return allStoredResponseIDs, impBiddersWithBidResponseIDs, impAuctionResponseIDs, nil
+	return allStoredResponseIDs, impBiddersWithBidResponseIDs, impAuctionResponseIDs, impBidderReplaceImp, nil
 }
 
 // ProcessStoredResponses takes the incoming request as JSON with any
@@ -111,26 +128,41 @@ func extractStoredResponsesIds(impInfo []ImpExtPrebidData,
 // Note that processStoredResponses must be called after processStoredRequests
 // because stored imps and stored requests can contain stored auction responses and stored bid responses
 // so the stored requests/imps have to be merged into the incoming request prior to processing stored auction responses.
-func ProcessStoredResponses(ctx context.Context, requestJson []byte, storedRespFetcher stored_requests.Fetcher, bidderMap map[string]openrtb_ext.BidderName) (ImpsWithBidResponses, ImpBidderStoredResp, []error) {
+func ProcessStoredResponses(ctx context.Context, requestJson []byte, storedRespFetcher stored_requests.Fetcher, bidderMap map[string]openrtb_ext.BidderName) (ImpsWithBidResponses, ImpBidderStoredResp, BidderImpReplaceImpID, []error) {
 	impInfo, errs := parseImpInfo(requestJson)
 	if len(errs) > 0 {
-		return nil, nil, errs
+		return nil, nil, nil, errs
 	}
-	storedResponsesIds, impBidderToStoredBidResponseId, impIdToRespId, err := extractStoredResponsesIds(impInfo, bidderMap)
+	storedResponsesIds, impBidderToStoredBidResponseId, impIdToRespId, impBidderReplaceImp, err := extractStoredResponsesIds(impInfo, bidderMap)
 	if err != nil {
-		return nil, nil, append(errs, err)
+		return nil, nil, nil, append(errs, err)
 	}
 
 	if len(storedResponsesIds) > 0 {
 		storedResponses, errs := storedRespFetcher.FetchResponses(ctx, storedResponsesIds)
 		if len(errs) > 0 {
-			return nil, nil, errs
+			return nil, nil, nil, errs
 		}
+		bidderImpIdReplaceImp := flipMap(impBidderReplaceImp)
 
 		impIdToStoredResp, impBidderToStoredBidResponse := buildStoredResponsesMaps(storedResponses, impBidderToStoredBidResponseId, impIdToRespId)
-		return impIdToStoredResp, impBidderToStoredBidResponse, nil
+		return impIdToStoredResp, impBidderToStoredBidResponse, bidderImpIdReplaceImp, nil
 	}
-	return nil, nil, nil
+	return nil, nil, nil, nil
+}
+
+// flipMap takes map[impID][bidderName]replaceImpId and modifies it to map[bidderName][impId]replaceImpId
+func flipMap(impBidderReplaceImpId ImpBidderReplaceImpID) BidderImpReplaceImpID {
+	flippedMap := BidderImpReplaceImpID{}
+	for impId, impData := range impBidderReplaceImpId {
+		for bidder, replaceImpId := range impData {
+			if _, ok := flippedMap[bidder]; !ok {
+				flippedMap[bidder] = make(map[string]bool)
+			}
+			flippedMap[bidder][impId] = replaceImpId
+		}
+	}
+	return flippedMap
 }
 
 func buildStoredResponsesMaps(storedResponses StoredResponseIdToStoredResponse, impBidderToStoredBidResponseId ImpBiddersWithBidResponseIDs, impIdToRespId ImpsWithAuctionResponseIDs) (ImpsWithBidResponses, ImpBidderStoredResp) {
