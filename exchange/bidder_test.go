@@ -100,7 +100,13 @@ func TestSingleBidder(t *testing.T) {
 			BidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "impId"}}},
 			BidderName: "test",
 		}
-		seatBids, errs := bidder.requestBid(ctx, bidderReq, bidAdjustments, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, true, false, config.AlternateBidderCodes{})
+		bidReqOptions := bidRequestOptions{
+			accountDebugAllowed: true,
+			headerDebugAllowed:  false,
+			addCallSignHeader:   false,
+			bidAdjustments:      bidAdjustments,
+		}
+		seatBids, errs := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions, config.AlternateBidderCodes{})
 		assert.Len(t, seatBids, 1)
 		seatBid := seatBids[0]
 
@@ -2125,7 +2131,7 @@ func TestRequestBidsWithAdsCertsSigner(t *testing.T) {
 		},
 	}
 
-	bidder := AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, &config.DebugInfo{Allow: false})
+	bidder := AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, &config.DebugInfo{Allow: false}, nil)
 	currencyConverter := currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
 
 	bidderReq := BidderRequest{
