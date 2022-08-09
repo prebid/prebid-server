@@ -4,10 +4,6 @@
     "imp": [
       {
         "id": "test-imp-id",
-        "native": {
-          "request": "{\"context\":2,\"contextsubtype\":20,\"plcmttype\":1,\"plcmtcnt\":1,\"seq\":0,\"aurlsupport\":0,\"durlsupport\":0,\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]}],\"privacy\":0,\"assets\":[{\"id\":100,\"title\":{\"len\":90},\"required\":1},{\"id\":103,\"img\":{\"type\":3,\"wmin\":200,\"hmin\":200},\"required\":1},{\"id\":105,\"data\":{\"type\":2,\"len\":90},\"required\":1}],\"ver\":\"1.2\"}",
-          "ver": "1.2"
-        },
         "ext": {
           "bidder": {
             "slotid": "testslotid",
@@ -71,7 +67,7 @@
   ],
   "expectedMakeRequestsErrors": [
     {
-      "value": "checkAndExtractOpenrtbFormat: request has native, doesn't correspond to huawei adtype banner",
+      "value": "check openrtb format: please choose one of our supported type banner, native, or video",
       "comparison": "literal"
     }
   ]

@@ -53,22 +53,18 @@ const (
 // interaction type
 const (
 	appPromotion int32 = 3
-	appDownload  int32 = 2
 )
 
 // ads type
 const (
-	banner            int32 = 8
-	native            int32 = 3
-	roll              int32 = 60
-	interstitial      int32 = 12
-	rewarded          int32 = 7
-	splash            int32 = 1
-	magazinelock      int32 = 2
-	cloudFolder       int32 = 5
-	appIcon           int32 = 9
-	audio             int32 = 17
-	smartScreenSplash int32 = 18
+	banner       int32 = 8
+	native       int32 = 3
+	roll         int32 = 60
+	interstitial int32 = 12
+	rewarded     int32 = 7
+	splash       int32 = 1
+	magazinelock int32 = 2
+	audio        int32 = 17
 )
 
 type huaweiAdsRequest struct {
@@ -477,31 +473,31 @@ func getHuaweiAdsReqAdslot30(huaweiAdsImpExt *openrtb_ext.ExtImpHuaweiAds,
 // opentrb :  huawei adtype
 // banner <-> banner, interstitial
 // native <-> native
-// video <->  banner, roll, interstitial, rewarded
+// video  <->  banner, roll, interstitial, rewarded
 func checkAndExtractOpenrtbFormat(adslot30 *adslot30, adtype int32, yourAdtype string, openRTBImp *openrtb2.Imp) error {
 	if openRTBImp.Banner != nil {
 		if adtype != banner && adtype != interstitial {
-			return errors.New("checkAndExtractOpenrtbFormat: request has banner, doesn't correspond to huawei adtype " + yourAdtype)
+			return errors.New("check openrtb format: request has banner, doesn't correspond to huawei adtype " + yourAdtype)
 		}
 		getBannerFormat(adslot30, openRTBImp)
 	} else if openRTBImp.Native != nil {
 		if adtype != native {
-			return errors.New("checkAndExtractOpenrtbFormat: request has native, doesn't correspond to huawei adtype " + yourAdtype)
+			return errors.New("check openrtb format: request has native, doesn't correspond to huawei adtype " + yourAdtype)
 		}
 		if err := getNativeFormat(adslot30, openRTBImp); err != nil {
 			return err
 		}
 	} else if openRTBImp.Video != nil {
 		if adtype != banner && adtype != interstitial && adtype != rewarded && adtype != roll {
-			return errors.New("checkAndExtractOpenrtbFormat: request has video, doesn't correspond to huawei adtype " + yourAdtype)
+			return errors.New("check openrtb format: request has video, doesn't correspond to huawei adtype " + yourAdtype)
 		}
 		if err := getVideoFormat(adslot30, adtype, openRTBImp); err != nil {
 			return err
 		}
 	} else if openRTBImp.Audio != nil {
-		return errors.New("checkAndExtractOpenrtbFormat: request has audio, not currently supported")
+		return errors.New("check openrtb format: request has audio, not currently supported")
 	} else {
-		return errors.New("checkAndExtractOpenrtbFormat: bad openrtb request")
+		return errors.New("check openrtb format: please choose one of our supported type banner, native, or video")
 	}
 	return nil
 }
@@ -605,14 +601,8 @@ func convertAdtypeString2Integer(adtypeLower string) int32 {
 		return splash
 	case "magazinelock":
 		return magazinelock
-	case "cloudFolder":
-		return cloudFolder
-	case "appIcon":
-		return appIcon
 	case "audio":
 		return audio
-	case "smartScreenSplash":
-		return smartScreenSplash
 	default:
 		return banner
 	}

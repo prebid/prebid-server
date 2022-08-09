@@ -4,12 +4,25 @@
     "imp": [
       {
         "id": "test-imp-id",
-        "audio": {
+        "video": {
+          "mimes": [
+            "video\/mp4"
+          ],
+          "playbackmethod": [
+            2
+          ],
+          "protocols": [
+            2
+          ],
+          "w": 300,
+          "h": 250,
+          "placement": 2,
+          "linearity": 1
         },
         "ext": {
           "bidder": {
             "slotid": "testslotid",
-            "adtype": "banner",
+            "adtype": "native",
             "publisherid": "123",
             "signkey": "signkey",
             "keyid": "41",
@@ -69,7 +82,7 @@
   ],
   "expectedMakeRequestsErrors": [
     {
-      "value": "checkAndExtractOpenrtbFormat: request has audio, not currently supported",
+      "value": "check openrtb format: request has video, doesn't correspond to huawei adtype native",
       "comparison": "literal"
     }
   ]
