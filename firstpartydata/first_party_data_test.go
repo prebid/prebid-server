@@ -852,17 +852,6 @@ func TestResolveUserNilValues(t *testing.T) {
 	assert.Nil(t, resultUser, "Result user should be nil")
 }
 
-func TestResolveUserBadInput(t *testing.T) {
-	fpdConfigUser := make(map[string]json.RawMessage, 0)
-	fpdConfigUser["id"] = []byte(`"fpdConfigUserId"`)
-	fpdConfig := &openrtb_ext.ORTB2{User: fpdConfigUser}
-
-	resultUser, err := resolveUser(fpdConfig, nil, nil, nil, "appnexus")
-	assert.Error(t, err, "Error should be returned")
-	assert.Equal(t, "incorrect First Party Data for bidder appnexus: User object is not defined in request, but defined in FPD config", err.Error(), "Incorrect error message")
-	assert.Nil(t, resultUser, "Result user should be nil")
-}
-
 func TestMergeUsers(t *testing.T) {
 
 	originalUser := &openrtb2.User{
