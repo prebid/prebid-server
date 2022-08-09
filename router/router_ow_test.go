@@ -46,16 +46,16 @@ func TestNew(t *testing.T) {
 				g_paramsValidator = nil
 				g_storedReqFetcher = nil
 				g_storedRespFetcher = nil
-				g_gdprPerms = nil
 				g_metrics = nil
 				g_analytics = nil
 				g_disabledBidders = nil
-				g_categoriesFetcher = nil
 				g_videoFetcher = nil
 				g_activeBidders = nil
 				g_defReqJSON = nil
 				g_cacheClient = nil
 				g_transport = nil
+				g_gdprPermsBuilder = nil
+				g_tcf2CfgBuilder = nil
 			},
 		},
 	}
@@ -72,16 +72,16 @@ func TestNew(t *testing.T) {
 			assert.NotNil(t, g_paramsValidator)
 			assert.NotNil(t, g_storedReqFetcher)
 			assert.NotNil(t, g_storedRespFetcher)
-			assert.NotNil(t, g_gdprPerms)
 			assert.NotNil(t, g_metrics)
 			assert.NotNil(t, g_analytics)
 			assert.NotNil(t, g_disabledBidders)
-			assert.NotNil(t, g_categoriesFetcher)
 			assert.NotNil(t, g_videoFetcher)
 			assert.NotNil(t, g_activeBidders)
 			assert.NotNil(t, g_defReqJSON)
 			assert.NotNil(t, g_cacheClient)
 			assert.NotNil(t, g_transport)
+			assert.NotNil(t, g_gdprPermsBuilder)
+			assert.NotNil(t, g_tcf2CfgBuilder)
 		})
 	}
 }

@@ -64,7 +64,7 @@
   "outgoingRequests": {
     "appnexus": {
       "mockResponse": {
-        "pbsSeatBid": {}
+        "pbsSeatBids": [{}]
       }
     }
   },

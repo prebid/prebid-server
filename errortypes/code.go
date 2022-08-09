@@ -24,6 +24,7 @@ const (
 	AccountLevelDebugDisabledWarningCode
 	BidderLevelDebugDisabledWarningCode
 	DisabledCurrencyConversionWarningCode
+	AlternateBidderCodeWarningCode
 	AdpodPostFilteringWarningCode
 )
 

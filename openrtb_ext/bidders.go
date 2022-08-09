@@ -35,6 +35,7 @@ const (
 	BidderReservedGPID    BidderName = "gpid"    // Reserved for Global Placement ID (GPID).
 	BidderReservedPrebid  BidderName = "prebid"  // Reserved for Prebid Server configuration.
 	BidderReservedSKAdN   BidderName = "skadn"   // Reserved for Apple's SKAdNetwork OpenRTB extension.
+	BidderReservedTID     BidderName = "tid"     // Reserved for Per-Impression Transactions IDs for Multi-Impression Bid Requests.
 )
 
 // IsBidderNameReserved returns true if the specified name is a case insensitive match for a reserved bidder name.
@@ -64,6 +65,10 @@ func IsBidderNameReserved(name string) bool {
 	}
 
 	if strings.EqualFold(name, string(BidderReservedPrebid)) {
+		return true
+	}
+
+	if strings.EqualFold(name, string(BidderReservedTID)) {
 		return true
 	}
 
@@ -107,6 +112,7 @@ const (
 	BidderApplogy           BidderName = "applogy"
 	BidderAppnexus          BidderName = "appnexus"
 	BidderAudienceNetwork   BidderName = "audienceNetwork"
+	BidderAutomatad         BidderName = "automatad"
 	BidderAvocet            BidderName = "avocet"
 	BidderAxonix            BidderName = "axonix"
 	BidderBeachfront        BidderName = "beachfront"
@@ -116,6 +122,7 @@ const (
 	BidderBidmyadz          BidderName = "bidmyadz"
 	BidderBidsCube          BidderName = "bidscube"
 	BidderBizzclick         BidderName = "bizzclick"
+	BidderBliink            BidderName = "bliink"
 	BidderBmtm              BidderName = "bmtm"
 	BidderBrightroll        BidderName = "brightroll"
 	BidderCoinzilla         BidderName = "coinzilla"
@@ -150,6 +157,7 @@ const (
 	BidderIx                BidderName = "ix"
 	BidderJANet             BidderName = "janet"
 	BidderJixie             BidderName = "jixie"
+	BidderKargo             BidderName = "kargo"
 	BidderKayzen            BidderName = "kayzen"
 	BidderKidoz             BidderName = "kidoz"
 	BidderKrushmedia        BidderName = "krushmedia"
@@ -198,9 +206,11 @@ const (
 	BidderSovrn             BidderName = "sovrn"
 	BidderSpotX             BidderName = "spotx"
 	BidderStreamkey         BidderName = "streamkey"
+	BidderStroeerCore       BidderName = "stroeerCore"
 	BidderSynacormedia      BidderName = "synacormedia"
 	BidderTappx             BidderName = "tappx"
 	BidderTelaria           BidderName = "telaria"
+	BidderTrafficGate       BidderName = "trafficgate"
 	BidderTriplelift        BidderName = "triplelift"
 	BidderTripleliftNative  BidderName = "triplelift_native"
 	BidderTrustX            BidderName = "trustx"
@@ -222,6 +232,7 @@ const (
 	BidderYieldone          BidderName = "yieldone"
 	BidderYSSP              BidderName = "yssp"
 	BidderZeroClickFraud    BidderName = "zeroclickfraud"
+	BidderInfyTV            BidderName = "infytv"
 )
 
 // CoreBidderNames returns a slice of all core bidders.
@@ -258,6 +269,7 @@ func CoreBidderNames() []BidderName {
 		BidderApplogy,
 		BidderAppnexus,
 		BidderAudienceNetwork,
+		BidderAutomatad,
 		BidderAvocet,
 		BidderAxonix,
 		BidderBeachfront,
@@ -267,6 +279,7 @@ func CoreBidderNames() []BidderName {
 		BidderBidmyadz,
 		BidderBidsCube,
 		BidderBizzclick,
+		BidderBliink,
 		BidderBmtm,
 		BidderBrightroll,
 		BidderCoinzilla,
@@ -301,6 +314,7 @@ func CoreBidderNames() []BidderName {
 		BidderIx,
 		BidderJANet,
 		BidderJixie,
+		BidderKargo,
 		BidderKayzen,
 		BidderKidoz,
 		BidderKrushmedia,
@@ -349,9 +363,11 @@ func CoreBidderNames() []BidderName {
 		BidderSovrn,
 		BidderSpotX,
 		BidderStreamkey,
+		BidderStroeerCore,
 		BidderSynacormedia,
 		BidderTappx,
 		BidderTelaria,
+		BidderTrafficGate,
 		BidderTriplelift,
 		BidderTripleliftNative,
 		BidderTrustX,
@@ -373,6 +389,7 @@ func CoreBidderNames() []BidderName {
 		BidderYieldone,
 		BidderYSSP,
 		BidderZeroClickFraud,
+		BidderInfyTV,
 	}
 }
 

@@ -2,8 +2,8 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "title": "Sovrn Adapter Params",
   "description": "A schema which validates params accepted by the Sovrn adapter",
-
   "type": "object",
+
   "properties": {
     "tagid": {
       "type": "string",

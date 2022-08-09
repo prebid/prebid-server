@@ -174,8 +174,9 @@ func setSourceExt() json.RawMessage {
 func setExt(request *openrtb2.BidRequest) (json.RawMessage, error) {
 	accountID, err := jsonparser.GetInt(request.Imp[0].Ext, "bidder", "accountId")
 	if err != nil {
-		accountID = 0
+		return nil, fmt.Errorf("accountId field is required")
 	}
+
 	var decodedExt *unicornExt
 	err = json.Unmarshal(request.Ext, &decodedExt)
 	if err != nil {

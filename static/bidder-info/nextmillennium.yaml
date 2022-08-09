@@ -7,3 +7,7 @@ capabilities:
   site:
     mediaTypes:
       - banner
+userSync:
+  iframe:
+    url: "https://cookies.nextmillmedia.com/sync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
+    userMacro: "[NMUID]"

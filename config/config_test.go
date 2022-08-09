@@ -137,6 +137,7 @@ func TestDefaults(t *testing.T) {
 	cmpBools(t, "account_required", cfg.AccountRequired, false)
 	cmpInts(t, "metrics.influxdb.collection_rate_seconds", cfg.Metrics.Influxdb.MetricSendInterval, 20)
 	cmpBools(t, "account_adapter_details", cfg.Metrics.Disabled.AccountAdapterDetails, false)
+	cmpBools(t, "account_debug", cfg.Metrics.Disabled.AccountDebug, true)
 	cmpBools(t, "adapter_connections_metrics", cfg.Metrics.Disabled.AdapterConnectionMetrics, true)
 	cmpBools(t, "adapter_gdpr_request_blocked", cfg.Metrics.Disabled.AdapterGDPRRequestBlocked, false)
 	cmpStrings(t, "certificates_file", cfg.PemCertsFile, "")
@@ -144,6 +145,7 @@ func TestDefaults(t *testing.T) {
 	cmpStrings(t, "stored_requests.filesystem.directorypath", "./stored_requests/data/by_id", cfg.StoredRequests.Files.Path)
 	cmpBools(t, "auto_gen_source_tid", cfg.AutoGenSourceTID, true)
 	cmpBools(t, "generate_bid_id", cfg.GenerateBidID, false)
+	cmpNils(t, "host_schain_node", cfg.HostSChainNode)
 
 	//Assert the price floor default values
 	cmpBools(t, "price_floors.enabled", cfg.PriceFloors.Enabled, false)
@@ -345,6 +347,7 @@ metrics:
     metric_send_interval: 30
   disabled_metrics:
     account_adapter_details: true
+    account_debug: false
     adapter_connections_metrics: true
     adapter_gdpr_request_blocked: true
 adapters:
@@ -380,6 +383,11 @@ request_validation:
     ipv4_private_networks: ["1.1.1.0/24"]
     ipv6_private_networks: ["1111::/16", "2222::/16"]
 generate_bid_id: true
+host_schain_node:
+    asi: "pbshostcompany.com"
+    sid: "00001"
+    rid: "BidRequest"
+    hp: 1
 price_floors:
    enabled: true
    use_dynamic_data: false
@@ -472,6 +480,10 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "http_client_cache.idle_connection_timeout_seconds", cfg.CacheClient.IdleConnTimeout, 3)
 	cmpInts(t, "gdpr.host_vendor_id", cfg.GDPR.HostVendorID, 15)
 	cmpStrings(t, "gdpr.default_value", cfg.GDPR.DefaultValue, "1")
+	cmpStrings(t, "host_schain_node", cfg.HostSChainNode.ASI, "pbshostcompany.com")
+	cmpStrings(t, "host_schain_node", cfg.HostSChainNode.SID, "00001")
+	cmpStrings(t, "host_schain_node", cfg.HostSChainNode.RID, "BidRequest")
+	cmpInts(t, "host_schain_node", cfg.HostSChainNode.HP, 1)
 
 	//Assert the price floor values
 	cmpBools(t, "price_floors.enabled", cfg.PriceFloors.Enabled, true)
@@ -628,6 +640,7 @@ func TestFullConfig(t *testing.T) {
 	cmpBools(t, "account_required", cfg.AccountRequired, true)
 	cmpBools(t, "auto_gen_source_tid", cfg.AutoGenSourceTID, false)
 	cmpBools(t, "account_adapter_details", cfg.Metrics.Disabled.AccountAdapterDetails, true)
+	cmpBools(t, "account_debug", cfg.Metrics.Disabled.AccountDebug, false)
 	cmpBools(t, "adapter_connections_metrics", cfg.Metrics.Disabled.AdapterConnectionMetrics, true)
 	cmpBools(t, "adapter_gdpr_request_blocked", cfg.Metrics.Disabled.AdapterGDPRRequestBlocked, true)
 	cmpStrings(t, "certificates_file", cfg.PemCertsFile, "/etc/ssl/cert.pem")

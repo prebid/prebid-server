@@ -31,7 +31,6 @@ import (
 	"github.com/prebid/prebid-server/endpoints/openrtb2/ctv/util"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
-	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/stored_requests"
@@ -265,14 +264,12 @@ func (deps *ctvEndpointDeps) holdAuction(request *openrtb2.BidRequest, usersyncs
 	}
 
 	auctionRequest := exchange.AuctionRequest{
-		BidRequestWrapper:      &openrtb_ext.RequestWrapper{BidRequest: request},
-		Account:                *account,
-		UserSyncs:              usersyncs,
-		RequestType:            deps.labels.RType,
-		StartTime:              startTime,
-		LegacyLabels:           deps.labels,
-		TCF2ConfigBuilder:      gdpr.NewTCF2Config,
-		GDPRPermissionsBuilder: gdpr.NewPermissions,
+		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: request},
+		Account:           *account,
+		UserSyncs:         usersyncs,
+		RequestType:       deps.labels.RType,
+		StartTime:         startTime,
+		LegacyLabels:      deps.labels,
 	}
 
 	return deps.ex.HoldAuction(deps.ctx, auctionRequest, nil)

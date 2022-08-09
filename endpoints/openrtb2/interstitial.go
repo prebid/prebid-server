@@ -20,6 +20,7 @@ func processInterstitials(req *openrtb_ext.RequestWrapper) error {
 					return nil
 				}
 				deviceExt, err := req.GetDeviceExt()
+
 				if err != nil {
 					return err
 				}

@@ -17,6 +17,9 @@ const SKAdNExtKey = "skadn"
 // GPIDKey defines the field name within request.ext reserved for the Global Placement ID (GPID),
 const GPIDKey = "gpid"
 
+// TIDKey reserved for Per-Impression Transactions IDs for Multi-Impression Bid Requests.
+const TIDKey = "tid"
+
 // NativeExchangeSpecificLowerBound defines the lower threshold of exchange specific types for native ads. There is no upper bound.
 const NativeExchangeSpecificLowerBound = 500
 
@@ -199,6 +202,7 @@ func (ert *ExtRequestTargeting) UnmarshalJSON(b []byte) error {
 
 // PriceGranularity defines the allowed values for bidrequest.ext.prebid.targeting.pricegranularity
 type PriceGranularity struct {
+	Test      bool               `json:"test,omitempty"`
 	Precision int                `json:"precision,omitempty"`
 	Ranges    []GranularityRange `json:"ranges,omitempty"`
 }
@@ -280,6 +284,8 @@ func PriceGranularityFromString(gran string) PriceGranularity {
 		return priceGranularityDense
 	case "ow-ctv-med":
 		return priceGranularityOWCTVMed
+	case "testpg":
+		return priceGranularityTestPG
 	}
 	// Return empty if not matched
 	return PriceGranularity{}
@@ -357,6 +363,15 @@ var priceGranularityOWCTVMed = PriceGranularity{
 		Min:       0,
 		Max:       100,
 		Increment: 0.5}},
+}
+
+var priceGranularityTestPG = PriceGranularity{
+	Test:      true,
+	Precision: 2,
+	Ranges: []GranularityRange{{
+		Min:       0,
+		Max:       50,
+		Increment: 50}},
 }
 
 // ExtRequestPrebidData defines Prebid's First Party Data (FPD) and related bid request options.

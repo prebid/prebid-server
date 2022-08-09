@@ -436,7 +436,7 @@ func TestApplyAdvertiserBlocking(t *testing.T) {
 			}
 			seatBids := make(map[openrtb_ext.BidderName]*pbsOrtbSeatBid)
 			tagBidders := make(map[openrtb_ext.BidderName]adapters.Bidder)
-			adapterMap := make(map[openrtb_ext.BidderName]adaptedBidder, 0)
+			adapterMap := make(map[openrtb_ext.BidderName]AdaptedBidder, 0)
 			for adaptor, sbids := range tt.args.adaptorSeatBids {
 				adapterMap[adaptor.BidderName] = adaptor
 				if tagBidder, ok := adaptor.Bidder.(*vastbidder.TagBidder); ok {

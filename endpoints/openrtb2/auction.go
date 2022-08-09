@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/gdpr"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -212,10 +211,8 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		ImpExtInfoMap:              impExtInfoMap,
 		StoredAuctionResponses:     storedAuctionResponses,
 		StoredBidResponses:         storedBidResponses,
-		TCF2ConfigBuilder:          gdpr.NewTCF2Config,
-		GDPRPermissionsBuilder:     gdpr.NewPermissions,
+		PubID:                      labels.PubID,
 	}
-
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
 	ao.Request = req.BidRequest
 	ao.Response = response
@@ -1275,6 +1272,8 @@ func isBidderToValidate(bidder string) bool {
 	case openrtb_ext.BidderReservedPrebid:
 		return false
 	case openrtb_ext.BidderReservedSKAdN:
+		return false
+	case openrtb_ext.BidderReservedTID:
 		return false
 	default:
 		return true
