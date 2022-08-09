@@ -3,6 +3,7 @@ package openrtb2
 import (
 	"bytes"
 	"fmt"
+	"github.com/prebid/prebid-server/experiment/adscert"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -95,6 +96,7 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 		tcf2ConfigBuilder,
 		currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
 		empty_fetcher.EmptyFetcher{},
+		&adscert.NilSigner{},
 	)
 
 	endpoint, _ := NewEndpoint(

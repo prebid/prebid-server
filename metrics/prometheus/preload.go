@@ -77,6 +77,10 @@ func preloadLabelValues(m *Metrics, syncerKeys []string) {
 		storedDataFetchTypeLabel: storedDataFetchTypeValues,
 	})
 
+	preloadLabelValuesForHistogram(m.storedResponsesFetchTimer, map[string][]string{
+		storedDataFetchTypeLabel: storedDataFetchTypeValues,
+	})
+
 	preloadLabelValuesForCounter(m.storedAccountErrors, map[string][]string{
 		storedDataErrorLabel: storedDataErrorValues,
 	})
@@ -94,6 +98,10 @@ func preloadLabelValues(m *Metrics, syncerKeys []string) {
 	})
 
 	preloadLabelValuesForCounter(m.storedVideoErrors, map[string][]string{
+		storedDataErrorLabel: storedDataErrorValues,
+	})
+
+	preloadLabelValuesForCounter(m.storedResponsesErrors, map[string][]string{
 		storedDataErrorLabel: storedDataErrorValues,
 	})
 

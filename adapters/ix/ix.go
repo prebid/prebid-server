@@ -148,18 +148,18 @@ func (a *IxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReque
 		}}
 	}
 
-	// Until the time we support multi-format ad units, we'll use a bid request impression media type
-	// as a bid response bid type. They are linked by the impression id.
-	impMediaType := map[string]openrtb_ext.BidType{}
+	// Store media type per impression in a map for later use to set in bid.ext.prebid.type
+	// Won't work for multiple bid case with a multi-format ad unit. We expect to get type from exchange on such case.
+	impMediaTypeReq := map[string]openrtb_ext.BidType{}
 	for _, imp := range internalRequest.Imp {
 		if imp.Banner != nil {
-			impMediaType[imp.ID] = openrtb_ext.BidTypeBanner
+			impMediaTypeReq[imp.ID] = openrtb_ext.BidTypeBanner
 		} else if imp.Video != nil {
-			impMediaType[imp.ID] = openrtb_ext.BidTypeVideo
+			impMediaTypeReq[imp.ID] = openrtb_ext.BidTypeVideo
 		} else if imp.Native != nil {
-			impMediaType[imp.ID] = openrtb_ext.BidTypeNative
+			impMediaTypeReq[imp.ID] = openrtb_ext.BidTypeNative
 		} else if imp.Audio != nil {
-			impMediaType[imp.ID] = openrtb_ext.BidTypeAudio
+			impMediaTypeReq[imp.ID] = openrtb_ext.BidTypeAudio
 		}
 	}
 
@@ -170,9 +170,11 @@ func (a *IxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReque
 
 	for _, seatBid := range bidResponse.SeatBid {
 		for _, bid := range seatBid.Bid {
-			bidType, ok := impMediaType[bid.ImpID]
-			if !ok {
-				errs = append(errs, fmt.Errorf("unmatched impression id: %s", bid.ImpID))
+
+			bidType, err := getMediaTypeForBid(bid, impMediaTypeReq)
+			if err != nil {
+				errs = append(errs, err)
+				continue
 			}
 
 			var bidExtVideo *openrtb_ext.ExtBidPrebidVideo
@@ -220,6 +222,36 @@ func (a *IxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReque
 	}
 
 	return bidderResponse, errs
+}
+
+func getMediaTypeForBid(bid openrtb2.Bid, impMediaTypeReq map[string]openrtb_ext.BidType) (openrtb_ext.BidType, error) {
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	case openrtb2.MarkupAudio:
+		return openrtb_ext.BidTypeAudio, nil
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative, nil
+	}
+
+	if bid.Ext != nil {
+		var bidExt openrtb_ext.ExtBid
+		err := json.Unmarshal(bid.Ext, &bidExt)
+		if err == nil && bidExt.Prebid != nil {
+			prebidType := string(bidExt.Prebid.Type)
+			if prebidType != "" {
+				return openrtb_ext.ParseBidType(prebidType)
+			}
+		}
+	}
+
+	if bidType, ok := impMediaTypeReq[bid.ImpID]; ok {
+		return bidType, nil
+	} else {
+		return "", fmt.Errorf("unmatched impression id: %s", bid.ImpID)
+	}
 }
 
 // Builder builds a new instance of the Ix adapter for the given bidder with the given config.
