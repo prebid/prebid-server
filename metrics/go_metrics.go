@@ -32,6 +32,7 @@ type Metrics struct {
 	AccountCacheMeter              map[CacheResult]metrics.Meter
 	DNSLookupTimer                 metrics.Timer
 	TLSHandshakeTimer              metrics.Timer
+	StoredResponsesMeter           metrics.Meter
 
 	// Metrics for OpenRTB requests specifically. So we can track what % of RequestsMeter are OpenRTB
 	// and know when legacy requests have been abandoned.
@@ -99,7 +100,8 @@ type accountMetrics struct {
 	bidsReceivedMeter metrics.Meter
 	priceHistogram    metrics.Histogram
 	// store account by adapter metrics. Type is map[PBSBidder.BidderCode]
-	adapterMetrics map[openrtb_ext.BidderName]*AdapterMetrics
+	adapterMetrics       map[openrtb_ext.BidderName]*AdapterMetrics
+	storedResponsesMeter metrics.Meter
 }
 
 // NewBlankMetrics creates a new Metrics object with all blank metrics object. This may also be useful for
@@ -141,6 +143,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		SetUidMeter:                    blankMeter,
 		SetUidStatusMeter:              make(map[SetUidStatus]metrics.Meter),
 		SyncerSetsMeter:                make(map[string]map[SyncerSetUidStatus]metrics.Meter),
+		StoredResponsesMeter:           blankMeter,
 
 		ImpsTypeBanner: blankMeter,
 		ImpsTypeVideo:  blankMeter,
@@ -228,6 +231,7 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 	newMetrics.TLSHandshakeTimer = metrics.GetOrRegisterTimer("tls_handshake_time", registry)
 	newMetrics.PrebidCacheRequestTimerSuccess = metrics.GetOrRegisterTimer("prebid_cache_request_time.ok", registry)
 	newMetrics.PrebidCacheRequestTimerError = metrics.GetOrRegisterTimer("prebid_cache_request_time.err", registry)
+	newMetrics.StoredResponsesMeter = metrics.GetOrRegisterMeter("stored_responses", registry)
 
 	for _, dt := range StoredDataTypes() {
 		for _, ft := range StoredDataFetchTypes() {
@@ -402,6 +406,7 @@ func (me *Metrics) getAccountMetrics(id string) *accountMetrics {
 	am.bidsReceivedMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.bids_received", id), me.MetricsRegistry)
 	am.priceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("account.%s.prices", id), me.MetricsRegistry, metrics.NewExpDecaySample(1028, 0.015))
 	am.adapterMetrics = make(map[openrtb_ext.BidderName]*AdapterMetrics, len(me.exchanges))
+	am.storedResponsesMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.stored_responses", id), me.MetricsRegistry)
 	if !me.MetricsDisabled.AccountAdapterDetails {
 		for _, a := range me.exchanges {
 			am.adapterMetrics[a] = makeBlankAdapterMetrics(me.MetricsDisabled)
@@ -444,6 +449,13 @@ func (me *Metrics) RecordDebugRequest(debugEnabled bool, pubID string) {
 				am.debugRequestMeter.Mark(1)
 			}
 		}
+	}
+}
+
+func (me *Metrics) RecordStoredResponse(pubId string) {
+	me.StoredResponsesMeter.Mark(1)
+	if pubId != PublisherUnknown && !me.MetricsDisabled.AccountStoredResponses {
+		me.getAccountMetrics(pubId).storedResponsesMeter.Mark(1)
 	}
 }
 
