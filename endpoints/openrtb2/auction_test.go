@@ -878,22 +878,65 @@ func TestImplicitSecure(t *testing.T) {
 	}
 }
 
-func TestRefererParsing(t *testing.T) {
-	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
-	httpReq.Header.Set("Referer", "http://test.mysite.com")
-	bidReq := &openrtb2.BidRequest{}
-
-	setSiteImplicitly(httpReq, bidReq)
-
-	if bidReq.Site == nil {
-		t.Fatalf("bidrequest.site should not be nil.")
+func TestReferer(t *testing.T) {
+	testCases := []struct {
+		description     string
+		givenSitePage   string
+		givenSiteDomain string
+		givenReferer    string
+		expectedDomain  string
+		expectedPage    string
+	}{
+		{
+			description:    "site.page/domain are unchanged when site.page/domain and http referer are not set",
+			expectedDomain: "",
+			expectedPage:   "",
+		},
+		{
+			description:    "site.page/domain are derived from referer when neither is set and http referer is set",
+			givenReferer:   "https://test.somepage.com",
+			expectedDomain: "somepage.com",
+			expectedPage:   "https://test.somepage.com",
+		},
+		{
+			description:    "site.domain is derived from site.page when site.page is set and http referer is not set",
+			givenSitePage:  "https://test.somepage.com",
+			expectedDomain: "somepage.com",
+			expectedPage:   "https://test.somepage.com",
+		},
+		{
+			description:    "site.domain is derived from http referer when site.page and http referer are set",
+			givenSitePage:  "https://test.somepage.com",
+			givenReferer:   "http://test.com",
+			expectedDomain: "test.com",
+			expectedPage:   "https://test.somepage.com",
+		},
+		{
+			description:     "site.page/domain are unchanged when site.page/domain and http referer are set",
+			givenSitePage:   "https://test.somepage.com",
+			givenSiteDomain: "some.domain.com",
+			givenReferer:    "http://test.com",
+			expectedDomain:  "some.domain.com",
+			expectedPage:    "https://test.somepage.com",
+		},
 	}
 
-	if bidReq.Site.Domain != "mysite.com" {
-		t.Errorf("Bad bidrequest.site.domain. Expected mysite.com, got %s", bidReq.Site.Domain)
-	}
-	if bidReq.Site.Page != "http://test.mysite.com" {
-		t.Errorf("Bad bidrequest.site.page. Expected mysite.com, got %s", bidReq.Site.Page)
+	for _, test := range testCases {
+		httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
+		httpReq.Header.Set("Referer", test.givenReferer)
+
+		bidReq := &openrtb2.BidRequest{
+			Site: &openrtb2.Site{
+				Domain: test.givenSiteDomain,
+				Page:   test.givenSitePage,
+			},
+		}
+
+		setSiteImplicitly(httpReq, bidReq)
+
+		assert.NotNil(t, bidReq.Site, test.description)
+		assert.Equal(t, test.expectedDomain, bidReq.Site.Domain, test.description)
+		assert.Equal(t, test.expectedPage, bidReq.Site.Page, test.description)
 	}
 }
 
