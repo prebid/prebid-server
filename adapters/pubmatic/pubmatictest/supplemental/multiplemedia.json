@@ -53,6 +53,11 @@
                   "publisher": {
                       "id": "999"
                   }
+              },
+              "ext" : {
+                "marketplace": {
+                  "allowedbidders": ["pubmatic"]
+                }
               }
             }
           },

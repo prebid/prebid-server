@@ -125,13 +125,18 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ad
 	if wrapperExt != nil {
 		reqExt["wrapper"] = wrapperExt
 	}
-	if len(reqExt) > 0 {
-		rawExt, err := json.Marshal(reqExt)
-		if err != nil {
-			return nil, []error{err}
-		}
-		request.Ext = rawExt
+
+	allowedBidders, err := getAlternateBidderCodesFromRequest(request)
+	if err != nil {
+		errs = append(errs, err)
 	}
+	reqExt["marketplace"] = map[string]interface{}{"allowedbidders": allowedBidders}
+
+	rawExt, err := json.Marshal(reqExt)
+	if err != nil {
+		return nil, []error{err}
+	}
+	request.Ext = rawExt
 
 	if request.Site != nil {
 		siteCopy := *request.Site
@@ -317,6 +322,30 @@ func parseImpressionObject(imp *openrtb2.Imp, extractWrapperExtFromImp, extractP
 	}
 
 	return wrapExt, pubID, nil
+}
+
+func getAlternateBidderCodesFromRequest(bidRequest *openrtb2.BidRequest) ([]string, error) {
+	allowedBidders := []string{"pubmatic"}
+
+	if bidRequest == nil || len(bidRequest.Ext) == 0 {
+		return allowedBidders, nil
+	}
+
+	reqExt := &openrtb_ext.ExtRequest{}
+	err := json.Unmarshal(bidRequest.Ext, &reqExt)
+	if err != nil {
+		return allowedBidders, fmt.Errorf("error decoding Request.ext : %s", err.Error())
+	}
+
+	if reqExt.Prebid.AlternateBidderCodes != nil && reqExt.Prebid.AlternateBidderCodes.Enabled {
+		if pmABC, ok := reqExt.Prebid.AlternateBidderCodes.Bidders["pubmatic"]; ok && pmABC.Enabled {
+			if pmABC.AllowedBidderCodes == nil || (len(pmABC.AllowedBidderCodes) == 1 && pmABC.AllowedBidderCodes[0] == "*") {
+				return []string{"all"}, nil
+			}
+			return append(allowedBidders, pmABC.AllowedBidderCodes...), nil
+		}
+	}
+	return allowedBidders, nil
 }
 
 // extractPubmaticExtFromRequest parse the req.ext to fetch wrapper and acat params

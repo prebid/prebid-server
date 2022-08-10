@@ -99,6 +99,9 @@
             "wrapper": {
               "profile": 1234,
               "version": 2
+            },
+            "marketplace": {
+              "allowedbidders": ["pubmatic"]
             }
           }
         }

@@ -3,6 +3,7 @@ package pubmatic
 import (
 	"encoding/json"
 	"net/http"
+	"reflect"
 	"testing"
 
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
@@ -356,6 +357,92 @@ func TestPubmaticAdapter_MakeBids(t *testing.T) {
 			gotResp, gotErr := a.MakeBids(tt.args.internalRequest, tt.args.externalRequest, tt.args.response)
 			assert.Equal(t, tt.wantErr, gotErr, gotErr)
 			assert.Equal(t, tt.wantResp, gotResp)
+		})
+	}
+}
+
+func Test_getAlternateBidderCodesFromRequest(t *testing.T) {
+	type args struct {
+		bidRequest *openrtb2.BidRequest
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []string
+		wantErr bool
+	}{
+		{
+			name: "request nil",
+			want: []string{"pubmatic"},
+		},
+		{
+			name: "request.ext nil",
+			args: args{
+				bidRequest: &openrtb2.BidRequest{Ext: nil},
+			},
+			want: []string{"pubmatic"},
+		},
+		{
+			name: "request.ext invalid json",
+			args: args{
+				bidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid": `)},
+			},
+			want:    []string{"pubmatic"},
+			wantErr: true,
+		},
+		{
+			name: "request.ext valid and alternatebiddercodes feature disabled",
+			args: args{
+				bidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":false,"bidders":{"pubmatic":{"enabled":true,"allowedbiddercodes":["groupm"]}}}}}`)},
+			},
+			want: []string{"pubmatic"},
+		},
+		{
+			name: "request.ext valid and alternatebiddercodes disabled at bidder level",
+			args: args{
+				bidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":{"pubmatic":{"enabled":false,"allowedbiddercodes":["groupm"]}}}}}`)},
+			},
+			want: []string{"pubmatic"},
+		},
+		{
+			name: "request.ext.valid with bidder code list not defined",
+			args: args{
+				bidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":{"pubmatic":{"enabled":true}}}}}`)},
+			},
+			want: []string{"all"},
+		},
+		{
+			name: "request.ext valid and wildcard bidder code",
+			args: args{
+				bidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":{"pubmatic":{"enabled":true,"allowedbiddercodes":["*"]}}}}}`)},
+			},
+			want: []string{"all"},
+		},
+		{
+			name: "request.ext.valid with empty bidder code list",
+			args: args{
+				bidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":{"pubmatic":{"enabled":true,"allowedbiddercodes":[]}}}}}`)},
+			},
+			want: []string{"pubmatic"},
+		},
+		{
+			name: "request.ext valid and groupm bidder allowed",
+			args: args{
+				bidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":{"pubmatic":{"enabled":true,"allowedbiddercodes":["groupm"]}}}}}`)},
+			},
+			want: []string{"pubmatic", "groupm"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := getAlternateBidderCodesFromRequest(tt.args.bidRequest)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getAlternateBidderCodesFromRequest() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getAlternateBidderCodesFromRequest() = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }
