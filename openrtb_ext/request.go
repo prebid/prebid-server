@@ -38,27 +38,26 @@ type ExtRequestPrebid struct {
 	Aliases              map[string]string         `json:"aliases,omitempty"`
 	AliasGVLIDs          map[string]uint16         `json:"aliasgvlids,omitempty"`
 	BidAdjustmentFactors map[string]float64        `json:"bidadjustmentfactors,omitempty"`
+	BidderConfigs        []BidderConfig            `json:"bidderconfig,omitempty"`
+	BidderParams         json.RawMessage           `json:"bidderparams,omitempty"`
 	Cache                *ExtRequestPrebidCache    `json:"cache,omitempty"`
 	Channel              *ExtRequestPrebidChannel  `json:"channel,omitempty"`
+	CurrencyConversions  *ExtRequestCurrency       `json:"currency,omitempty"`
 	Data                 *ExtRequestPrebidData     `json:"data,omitempty"`
 	Debug                bool                      `json:"debug,omitempty"`
-	Integration          string                    `json:"integration,omitempty"`
 	Events               json.RawMessage           `json:"events,omitempty"`
+	Experiment           *Experiment               `json:"experiment,omitempty"`
+	Integration          string                    `json:"integration,omitempty"`
+	Passthrough          json.RawMessage           `json:"passthrough,omitempty"`
 	SChains              []*ExtRequestPrebidSChain `json:"schains,omitempty"`
 	StoredRequest        *ExtStoredRequest         `json:"storedrequest,omitempty"`
 	SupportDeals         bool                      `json:"supportdeals,omitempty"`
 	Targeting            *ExtRequestTargeting      `json:"targeting,omitempty"`
-	BidderParams         json.RawMessage           `json:"bidderparams,omitempty"`
 
 	// NoSale specifies bidders with whom the publisher has a legal relationship where the
 	// passing of personally identifiable information doesn't constitute a sale per CCPA law.
 	// The array may contain a single sstar ('*') entry to represent all bidders.
 	NoSale []string `json:"nosale,omitempty"`
-
-	CurrencyConversions *ExtRequestCurrency `json:"currency,omitempty"`
-	BidderConfigs       []BidderConfig      `json:"bidderconfig,omitempty"`
-	Passthrough         json.RawMessage     `json:"passthrough,omitempty"`
-	Experiment          *Experiment         `json:"experiment,omitempty"`
 }
 
 // Experiment defines if experimental features are available for the request

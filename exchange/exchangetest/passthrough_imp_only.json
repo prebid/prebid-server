@@ -51,11 +51,6 @@
                         "ext": {
                             "bidder": {
                                 "placementId": 1
-                            },
-                            "prebid": {
-                                "passthrough": {
-                                    "imp_passthrough_val": 20
-                                }
                             }
                         }
                     },
