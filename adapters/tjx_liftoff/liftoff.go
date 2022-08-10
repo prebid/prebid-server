@@ -150,63 +150,222 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 		}
 
 		// Diffrent bid floors for each request
-		bfRewardedVastLow := 3.00
-		bfRewardedVastHigh := 14.00
-		bfRewardedMraidLow := 3.00
-		bfRewardedMraidHigh := 14.00
+		//iOS Requests Bid Floors
+		bfIOSRewardedVastA := 3.00
+		bfIOSRewardedVastB := 7.00
+		bfIOSRewardedVastC := 10.00
+		bfIOSRewardedVastD := 14.00
+		bfIOSRewardedMraidA := 3.00
+		bfIOSRewardedMraidB := 7.00
+		bfIOSRewardedMraidC := 10.00
+		bfIOSRewardedMraidD := 14.00
 
-		bfSkippableVastLow := 2.00
-		bfSkippableVastHigh := 7.00
-		bfSkippableMraidLow := 2.00
-		bfSkippableMraidHigh := 7.00
+		bfIOSSkippableVastA := 2.00
+		bfIOSSkippableVastB := 3.00
+		bfIOSSkippableVastC := 5.00
+		bfIOSSkippableVastD := 7.00
+		bfIOSSkippableMraidA := 2.00
+		bfIOSSkippableMraidB := 3.00
+		bfIOSSkippableMraidC := 5.00
+		bfIOSSkippableMraidD := 7.00
+
+		//Android Request Bid Floors
+		bfAndroidRewardedVastA := 1.50
+		bfAndroidRewardedVastB := 3.50
+		bfAndroidRewardedVastC := 5.00
+		bfAndroidRewardedVastD := 7.00
+		bfAndroidRewardedMraidA := 1.50
+		bfAndroidRewardedMraidB := 3.50
+		bfAndroidRewardedMraidC := 5.00
+		bfAndroidRewardedMraidD := 7.00
+
+		bfAndroidSkippableVastA := 1.00
+		bfAndroidSkippableVastB := 1.50
+		bfAndroidSkippableVastC := 2.50
+		bfAndroidSkippableVastD := 3.50
+		bfAndroidSkippableMraidA := 1.00
+		bfAndroidSkippableMraidB := 1.50
+		bfAndroidSkippableMraidC := 2.50
+		bfAndroidSkippableMraidD := 3.50
 
 		var modifiedParams []modifiedReqParams
-		if liftoffExt.Video.Skip == 0 {
-			//Data to be modified for each request
-			modifiedParams = []modifiedReqParams{
-				{
-					ReqNumber:   "1",
-					BidFloor:    &bfRewardedVastLow,
-					ContentType: CONTENT_TYPE_VIDEO_ONLY,
-				},
-				{
-					ReqNumber:   "2",
-					BidFloor:    &bfRewardedVastHigh,
-					ContentType: CONTENT_TYPE_VIDEO_ONLY,
-				},
-				{
-					ReqNumber:   "3",
-					BidFloor:    &bfRewardedMraidLow,
-					ContentType: CONTENT_TYPE_MRAID_ONLY,
-				},
-				{
-					ReqNumber:   "4",
-					BidFloor:    &bfRewardedMraidHigh,
-					ContentType: CONTENT_TYPE_MRAID_ONLY,
-				},
+		if strings.ToLower(request.Device.OS) == "ios" {
+			if liftoffExt.Video.Skip == 0 {
+				//Data to be modified for each request
+				modifiedParams = []modifiedReqParams{
+					{
+						ReqNumber:   "1",
+						BidFloor:    &bfIOSRewardedVastA,
+						ContentType: CONTENT_TYPE_VIDEO_ONLY,
+					},
+					{
+						ReqNumber:   "2",
+						BidFloor:    &bfIOSRewardedVastB,
+						ContentType: CONTENT_TYPE_VIDEO_ONLY,
+					},
+					{
+						ReqNumber:   "3",
+						BidFloor:    &bfIOSRewardedVastC,
+						ContentType: CONTENT_TYPE_VIDEO_ONLY,
+					},
+					{
+						ReqNumber:   "4",
+						BidFloor:    &bfIOSRewardedVastD,
+						ContentType: CONTENT_TYPE_VIDEO_ONLY,
+					},
+					{
+						ReqNumber:   "5",
+						BidFloor:    &bfIOSRewardedMraidA,
+						ContentType: CONTENT_TYPE_MRAID_ONLY,
+					},
+					{
+						ReqNumber:   "6",
+						BidFloor:    &bfIOSRewardedMraidB,
+						ContentType: CONTENT_TYPE_MRAID_ONLY,
+					},
+					{
+						ReqNumber:   "7",
+						BidFloor:    &bfIOSRewardedMraidC,
+						ContentType: CONTENT_TYPE_MRAID_ONLY,
+					},
+					{
+						ReqNumber:   "8",
+						BidFloor:    &bfIOSRewardedMraidD,
+						ContentType: CONTENT_TYPE_MRAID_ONLY,
+					},
+				}
+			} else {
+				modifiedParams = []modifiedReqParams{
+					{
+						ReqNumber:   "1",
+						BidFloor:    &bfIOSSkippableVastA,
+						ContentType: CONTENT_TYPE_VIDEO_ONLY,
+					},
+					{
+						ReqNumber:   "2",
+						BidFloor:    &bfIOSSkippableVastB,
+						ContentType: CONTENT_TYPE_VIDEO_ONLY,
+					},
+					{
+						ReqNumber:   "3",
+						BidFloor:    &bfIOSSkippableVastC,
+						ContentType: CONTENT_TYPE_VIDEO_ONLY,
+					},
+					{
+						ReqNumber:   "4",
+						BidFloor:    &bfIOSSkippableVastD,
+						ContentType: CONTENT_TYPE_VIDEO_ONLY,
+					},
+					{
+						ReqNumber:   "5",
+						BidFloor:    &bfIOSSkippableMraidA,
+						ContentType: CONTENT_TYPE_MRAID_ONLY,
+					},
+					{
+						ReqNumber:   "6",
+						BidFloor:    &bfIOSSkippableMraidB,
+						ContentType: CONTENT_TYPE_MRAID_ONLY,
+					},
+					{
+						ReqNumber:   "7",
+						BidFloor:    &bfIOSSkippableMraidC,
+						ContentType: CONTENT_TYPE_MRAID_ONLY,
+					},
+					{
+						ReqNumber:   "8",
+						BidFloor:    &bfIOSSkippableMraidD,
+						ContentType: CONTENT_TYPE_MRAID_ONLY,
+					},
+				}
 			}
 		} else {
-			modifiedParams = []modifiedReqParams{
-				{
-					ReqNumber:   "1",
-					BidFloor:    &bfSkippableVastLow,
-					ContentType: CONTENT_TYPE_VIDEO_ONLY,
-				},
-				{
-					ReqNumber:   "2",
-					BidFloor:    &bfSkippableVastHigh,
-					ContentType: CONTENT_TYPE_VIDEO_ONLY,
-				},
-				{
-					ReqNumber:   "3",
-					BidFloor:    &bfSkippableMraidLow,
-					ContentType: CONTENT_TYPE_MRAID_ONLY,
-				},
-				{
-					ReqNumber:   "4",
-					BidFloor:    &bfSkippableMraidHigh,
-					ContentType: CONTENT_TYPE_MRAID_ONLY,
-				},
+			if liftoffExt.Video.Skip == 0 {
+				//Data to be modified for each request
+				modifiedParams = []modifiedReqParams{
+					{
+						ReqNumber:   "1",
+						BidFloor:    &bfAndroidRewardedVastA,
+						ContentType: CONTENT_TYPE_VIDEO_ONLY,
+					},
+					{
+						ReqNumber:   "2",
+						BidFloor:    &bfAndroidRewardedVastB,
+						ContentType: CONTENT_TYPE_VIDEO_ONLY,
+					},
+					{
+						ReqNumber:   "3",
+						BidFloor:    &bfAndroidRewardedVastC,
+						ContentType: CONTENT_TYPE_VIDEO_ONLY,
+					},
+					{
+						ReqNumber:   "4",
+						BidFloor:    &bfAndroidRewardedVastD,
+						ContentType: CONTENT_TYPE_VIDEO_ONLY,
+					},
+					{
+						ReqNumber:   "5",
+						BidFloor:    &bfAndroidRewardedMraidA,
+						ContentType: CONTENT_TYPE_MRAID_ONLY,
+					},
+					{
+						ReqNumber:   "6",
+						BidFloor:    &bfAndroidRewardedMraidB,
+						ContentType: CONTENT_TYPE_MRAID_ONLY,
+					},
+					{
+						ReqNumber:   "7",
+						BidFloor:    &bfAndroidRewardedMraidC,
+						ContentType: CONTENT_TYPE_MRAID_ONLY,
+					},
+					{
+						ReqNumber:   "8",
+						BidFloor:    &bfAndroidRewardedMraidD,
+						ContentType: CONTENT_TYPE_MRAID_ONLY,
+					},
+				}
+			} else {
+				modifiedParams = []modifiedReqParams{
+					{
+						ReqNumber:   "1",
+						BidFloor:    &bfAndroidSkippableVastA,
+						ContentType: CONTENT_TYPE_VIDEO_ONLY,
+					},
+					{
+						ReqNumber:   "2",
+						BidFloor:    &bfAndroidSkippableVastB,
+						ContentType: CONTENT_TYPE_VIDEO_ONLY,
+					},
+					{
+						ReqNumber:   "3",
+						BidFloor:    &bfAndroidSkippableVastC,
+						ContentType: CONTENT_TYPE_VIDEO_ONLY,
+					},
+					{
+						ReqNumber:   "4",
+						BidFloor:    &bfAndroidSkippableVastD,
+						ContentType: CONTENT_TYPE_VIDEO_ONLY,
+					},
+					{
+						ReqNumber:   "5",
+						BidFloor:    &bfAndroidSkippableMraidA,
+						ContentType: CONTENT_TYPE_MRAID_ONLY,
+					},
+					{
+						ReqNumber:   "6",
+						BidFloor:    &bfAndroidSkippableMraidB,
+						ContentType: CONTENT_TYPE_MRAID_ONLY,
+					},
+					{
+						ReqNumber:   "7",
+						BidFloor:    &bfAndroidSkippableMraidC,
+						ContentType: CONTENT_TYPE_MRAID_ONLY,
+					},
+					{
+						ReqNumber:   "8",
+						BidFloor:    &bfAndroidSkippableMraidD,
+						ContentType: CONTENT_TYPE_MRAID_ONLY,
+					},
+				}
 			}
 		}
 
