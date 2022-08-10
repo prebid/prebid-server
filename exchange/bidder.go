@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/newrelic/go-agent/v3/newrelic"
 	"github.com/prebid/prebid-server/config/util"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/version"
@@ -183,10 +184,15 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb2.B
 	if len(reqData) == 1 {
 		responseChannel <- bidder.doRequest(ctx, reqData[0])
 	} else {
+
 		for _, oneReqData := range reqData {
-			go func(data *adapters.RequestData) {
+			// get transaction for new relic
+			txn := newrelic.FromContext(ctx)
+			go func(data *adapters.RequestData, txnGoroutine *newrelic.Transaction) {
+				// add transaction to ctx to report multiple requests individually
+				ctx = newrelic.NewContext(ctx, txnGoroutine)
 				responseChannel <- bidder.doRequest(ctx, data)
-			}(oneReqData) // Method arg avoids a race condition on oneReqData
+			}(oneReqData, txn.NewGoroutine()) // Method arg avoids a race condition on oneReqData
 		}
 	}
 
