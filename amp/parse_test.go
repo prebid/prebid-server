@@ -5,6 +5,10 @@ import (
 	"testing"
 
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/privacy"
+	"github.com/prebid/prebid-server/privacy/ccpa"
+	"github.com/prebid/prebid-server/privacy/gdpr"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -100,35 +104,176 @@ func TestParseBoolPtr(t *testing.T) {
 
 	testCases := []struct {
 		desc     string
-		in       string
+		input    string
 		expected *bool
 	}{
 		{
-			"Input is an empty string",
-			"",
-			nil,
+			desc:     "Input is an empty string",
+			input:    "",
+			expected: nil,
 		},
 		{
-			"Input is neither true nor false, expect a nil pointer",
-			"other",
-			nil,
+			desc:     "Input is neither true nor false, expect a nil pointer",
+			input:    "other",
+			expected: nil,
 		},
 		{
-			"Input is the word 'false', expect a reference pointing to false value",
-			"false",
-			&boolFalse,
+			desc:     "Input is the word 'false', expect a reference pointing to false value",
+			input:    "false",
+			expected: &boolFalse,
 		},
 		{
-			"Input is the word 'true', expect a reference pointing to true value",
-			"true",
-			&boolTrue,
+			desc:     "Input is the word 'true', expect a reference pointing to true value",
+			input:    "true",
+			expected: &boolTrue,
 		},
 	}
 	for _, tc := range testCases {
-		actual := parseBoolPtr(tc.in)
+		actual := parseBoolPtr(tc.input)
 
-		// assertions
 		assert.Equal(t, tc.expected, actual, tc.desc)
+	}
+}
+
+// TestPrivacyReader asserts the ReadPolicy scenarios
+func TestPrivacyReader(t *testing.T) {
+
+	type testInput struct {
+		policyReader PrivacyReader
+		ampParams    Params
+	}
+	type expectedResults struct {
+		policyWriter privacy.PolicyWriter
+		warning      error
+	}
+	type testCase struct {
+		desc     string
+		in       testInput
+		expected expectedResults
+	}
+
+	testGroups := []struct {
+		groupDesc string
+		tests     []testCase
+	}{
+		{
+			groupDesc: "No consent string",
+			tests: []testCase{
+				{
+					desc:     "Params comes with an empty consent string, expect nil policy writer. No warning returned",
+					in:       testInput{policyReader: PrivacyReader{}, ampParams: Params{}},
+					expected: expectedResults{policyWriter: privacy.NilPolicyWriter{}, warning: nil},
+				},
+			},
+		},
+		{
+			groupDesc: "Consent type denied, unrecognized or TCF1, which is deprecated",
+			tests: []testCase{
+				{
+					desc: "Consent type denied: expect nil policy writer. Warning is returned",
+					in: testInput{
+						policyReader: PrivacyReader{},
+						ampParams:    Params{Consent: "NOT_CCPA_NOR_GDPR_TCF2", ConsentType: ConsentDenied},
+					},
+					expected: expectedResults{
+						policyWriter: privacy.NilPolicyWriter{},
+						warning:      &errortypes.Warning{Message: "Consent denied. Consent string ignored.", WarningCode: errortypes.InvalidPrivacyConsentWarningCode},
+					},
+				},
+				{
+					desc: "Consent type TCF1: expect nil policy writer. Warning is returned",
+					in: testInput{
+						policyReader: PrivacyReader{},
+						ampParams:    Params{Consent: "NOT_CCPA_NOR_GDPR_TCF2", ConsentType: ConsentTCF1},
+					},
+					expected: expectedResults{
+						policyWriter: privacy.NilPolicyWriter{},
+						warning:      &errortypes.Warning{Message: "TCF1 consent is deprecated and no longer supported.", WarningCode: errortypes.InvalidPrivacyConsentWarningCode},
+					},
+				},
+				{
+					desc: "Consent type unknown: expect nil policy writer. Warning is returned",
+					in: testInput{
+						policyReader: PrivacyReader{},
+						ampParams:    Params{Consent: "NOT_CCPA_NOR_GDPR_TCF2", ConsentType: 101},
+					},
+					expected: expectedResults{
+						policyWriter: privacy.NilPolicyWriter{},
+						warning:      &errortypes.Warning{Message: "Consent '101' is not recognized as either CCPA or GDPR TCF2.", WarningCode: errortypes.InvalidPrivacyConsentWarningCode},
+					},
+				},
+			},
+		},
+		{
+			groupDesc: "consent type TCF2",
+			tests: []testCase{
+				{
+					desc: "GDPR consent string is invalid, but consent type is TCF2: return a valid GDPR writer even and warn about the GDPR string being invalid",
+					in: testInput{
+						policyReader: PrivacyReader{
+							GDPR: privacy.MockConsentValidator{false},
+						},
+						ampParams: Params{Consent: "INVALID_GDPR", ConsentType: ConsentTCF2},
+					},
+					expected: expectedResults{
+						policyWriter: gdpr.ConsentWriter{"INVALID_GDPR"},
+						warning:      &errortypes.Warning{Message: "Consent string 'INVALID_GDPR' is not a valid TCF2 consent string.", WarningCode: errortypes.InvalidPrivacyConsentWarningCode},
+					},
+				},
+				{
+					desc: "Valid GDPR consent string, return a valid GDPR writer and no warning",
+					in: testInput{
+						policyReader: PrivacyReader{
+							GDPR: privacy.MockConsentValidator{true},
+						},
+						ampParams: Params{Consent: "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA", ConsentType: ConsentTCF2},
+					},
+					expected: expectedResults{
+						policyWriter: gdpr.ConsentWriter{"CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA"},
+						warning:      nil,
+					},
+				},
+			},
+		},
+		{
+			groupDesc: "consent type CCPA",
+			tests: []testCase{
+				{
+					desc: "CCPA consent string is invalid, but consent type is CCPA: return a nil writer a warning",
+					in: testInput{
+						policyReader: PrivacyReader{
+							CCPA: privacy.MockConsentValidator{false},
+						},
+						ampParams: Params{Consent: "XXXX", ConsentType: ConsentUSPrivacy},
+					},
+					expected: expectedResults{
+						policyWriter: privacy.NilPolicyWriter{},
+						warning:      &errortypes.Warning{Message: "Consent string 'XXXX' is not a valid CCPA consent string.", WarningCode: errortypes.InvalidPrivacyConsentWarningCode},
+					},
+				},
+				{
+					desc: "Valid CCPA consent string, return a valid GDPR writer and no warning",
+					in: testInput{
+						policyReader: PrivacyReader{
+							CCPA: privacy.MockConsentValidator{true},
+						},
+						ampParams: Params{Consent: "1YYY", ConsentType: ConsentUSPrivacy},
+					},
+					expected: expectedResults{
+						policyWriter: ccpa.ConsentWriter{"1YYY"},
+						warning:      nil,
+					},
+				},
+			},
+		},
+	}
+	for _, group := range testGroups {
+		for _, tc := range group.tests {
+			actualPolicyWriter, actualErr := tc.in.policyReader.ReadPolicy(tc.in.ampParams, nil, true)
+
+			assert.Equal(t, tc.expected.policyWriter, actualPolicyWriter, tc.desc)
+			assert.Equal(t, tc.expected.warning, actualErr, tc.desc)
+		}
 	}
 }
 

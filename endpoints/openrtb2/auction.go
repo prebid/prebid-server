@@ -25,6 +25,7 @@ import (
 
 	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/amp"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
@@ -98,7 +99,8 @@ func NewEndpoint(
 		nil,
 		nil,
 		ipValidator,
-		storedRespFetcher}).Auction), nil
+		storedRespFetcher,
+		nil}).Auction), nil
 }
 
 type endpointDeps struct {
@@ -119,6 +121,7 @@ type endpointDeps struct {
 	debugLogRegexp            *regexp.Regexp
 	privateNetworkIPValidator iputil.IPValidator
 	storedRespFetcher         stored_requests.Fetcher
+	ampPrivacy                *amp.PrivacyReader
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {

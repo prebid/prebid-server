@@ -2,11 +2,18 @@ package amp
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 
+	tcf2 "github.com/prebid/go-gdpr/vendorconsent/tcf2"
+
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/privacy"
+	"github.com/prebid/prebid-server/privacy/ccpa"
+	"github.com/prebid/prebid-server/privacy/gdpr"
 )
 
 // Params defines the parameters of an AMP request.
@@ -14,17 +21,15 @@ type Params struct {
 	Account         string
 	CanonicalURL    string
 	Consent         string
+	ConsentType     int64
 	Debug           bool
+	GdprApplies     *bool
 	Origin          string
 	Size            Size
 	Slot            string
 	StoredRequestID string
+	Targeting       string
 	Timeout         *uint64
-
-	ConsentType  int64
-	GdprApplies  *bool
-	AddtlConsent string
-	Targeting    string
 }
 
 // Size defines size information of an AMP request.
@@ -38,11 +43,66 @@ type Size struct {
 
 // Policy consent types
 const (
-	NO_CONSENT = 0
-	TCF1       = 1
-	TCF2       = 2
-	CCPA       = 3
+	ConsentDenied = iota
+	ConsentTCF1
+	ConsentTCF2
+	ConsentUSPrivacy
 )
+
+// PrivacyReader for values passed through query fields in the amp endpoint
+type PrivacyReader struct {
+	GDPR privacy.ConsentValidator
+	CCPA privacy.ConsentValidator
+}
+
+// ReadPolicy
+func (pr *PrivacyReader) ReadPolicy(ampParams Params, req *openrtb2.BidRequest, pbsConfigGDPREnabled bool) (privacy.PolicyWriter, error) {
+
+	if len(ampParams.Consent) == 0 {
+		return privacy.NilPolicyWriter{}, nil
+	}
+
+	var rv privacy.PolicyWriter = privacy.NilPolicyWriter{}
+	var warning error
+	var errMsg string
+
+	switch ampParams.ConsentType {
+	case ConsentTCF2:
+		if pbsConfigGDPREnabled {
+			// Even if consent is invalid, we write the consent string to req.user.ext.consent
+			rv = gdpr.ConsentWriter{ampParams.Consent}
+
+			if tcf2.IsConsentV2(ampParams.Consent) {
+				if _, err := tcf2.ParseString(ampParams.Consent); err != nil {
+					errMsg = err.Error()
+				}
+			} else {
+				errMsg = fmt.Sprintf("Consent string '%s' is not a valid TCF2 consent string.", ampParams.Consent)
+			}
+		}
+	case ConsentUSPrivacy:
+		if pr.CCPA.ValidateConsent(ampParams.Consent) {
+			rv = ccpa.ConsentWriter{ampParams.Consent}
+		} else {
+			errMsg = fmt.Sprintf("Consent string '%s' is not a valid CCPA consent string.", ampParams.Consent)
+		}
+	case ConsentDenied:
+		errMsg = "Consent denied. Consent string ignored."
+	case ConsentTCF1:
+		errMsg = "TCF1 consent is deprecated and no longer supported."
+	default:
+		errMsg = fmt.Sprintf("Consent '%d' is not recognized as either CCPA or GDPR TCF2.", ampParams.ConsentType)
+	}
+
+	if len(errMsg) > 0 {
+		warning = &errortypes.Warning{
+			Message:     errMsg,
+			WarningCode: errortypes.InvalidPrivacyConsentWarningCode,
+		}
+	}
+
+	return rv, warning
+}
 
 // ParseParams parses the AMP parameters from a HTTP request.
 func ParseParams(httpRequest *http.Request) (Params, error) {
@@ -57,7 +117,9 @@ func ParseParams(httpRequest *http.Request) (Params, error) {
 		Account:      query.Get("account"),
 		CanonicalURL: query.Get("curl"),
 		Consent:      chooseConsent(query.Get("consent_string"), query.Get("gdpr_consent")),
+		ConsentType:  parseInt(query.Get("consent_type")),
 		Debug:        query.Get("debug") == "1",
+		GdprApplies:  parseBoolPtr(query.Get("gdpr_applies")),
 		Origin:       query.Get("__amp_source_origin"),
 		Size: Size{
 			Height:         parseInt(query.Get("h")),
@@ -68,11 +130,8 @@ func ParseParams(httpRequest *http.Request) (Params, error) {
 		},
 		Slot:            query.Get("slot"),
 		StoredRequestID: tagID,
-		Timeout:         parseIntPtr(query.Get("timeout")),
-		ConsentType:     parseInt(query.Get("consent_type")),
-		GdprApplies:     parseBoolPtr(query.Get("gdpr_applies")),
-		AddtlConsent:    query.Get("addtl_consent"),
 		Targeting:       query.Get("targeting"),
+		Timeout:         parseIntPtr(query.Get("timeout")),
 	}
 	return params, nil
 }
@@ -92,17 +151,11 @@ func parseInt(value string) int64 {
 }
 
 func parseBoolPtr(value string) *bool {
-	var rv bool = false
-
-	switch value {
-	case "true":
-		rv = true
-		return &rv
-	case "false":
-		return &rv
+	rv, err := strconv.ParseBool(value)
+	if err != nil {
+		return nil
 	}
-
-	return nil
+	return &rv
 }
 
 func parseMultisize(multisize string) []openrtb2.Format {

@@ -21,7 +21,6 @@ import (
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/privacy/ccpa"
 	"github.com/prebid/prebid-server/privacy/gdpr"
 	"github.com/prebid/prebid-server/stored_requests"
@@ -75,6 +74,11 @@ func NewAmpEndpoint(
 		IPv6PrivateNetworks: cfg.RequestValidation.IPv6PrivateNetworksParsed,
 	}
 
+	ampPrivacy := &amp.PrivacyReader{
+		GDPR: gdpr.GDPRConsentValidator{},
+		CCPA: ccpa.CCPAConsentValidator{},
+	}
+
 	return httprouter.Handle((&endpointDeps{
 		uuidGenerator,
 		ex,
@@ -92,7 +96,8 @@ func NewAmpEndpoint(
 		nil,
 		nil,
 		ipValidator,
-		storedRespFetcher}).AmpAuction), nil
+		storedRespFetcher,
+		ampPrivacy}).AmpAuction), nil
 
 }
 
@@ -444,11 +449,11 @@ func (deps *endpointDeps) overrideWithParams(ampParams amp.Params, req *openrtb2
 		req.Imp[0].TagID = ampParams.Slot
 	}
 
-	policy := policyReader{
-		gdpr: gdpr.GDPRConsentValidator{},
-		ccpa: ccpa.CCPAConsentValidator{},
+	if err := setRegExtGDPR(ampParams.GdprApplies, req); err != nil {
+		return []error{err}
 	}
-	policyWriter, policyWriterErr := policy.readPolicy(ampParams, req)
+
+	policyWriter, policyWriterErr := deps.ampPrivacy.ReadPolicy(ampParams, req, deps.cfg.GDPR.Enabled)
 	if policyWriterErr != nil {
 		return []error{policyWriterErr}
 	}
@@ -465,11 +470,6 @@ func (deps *endpointDeps) overrideWithParams(ampParams amp.Params, req *openrtb2
 	}
 
 	return nil
-}
-
-type policyReader struct {
-	gdpr privacy.ConsentValidator
-	ccpa privacy.ConsentValidator
 }
 
 // setTargeting merges "targeting" to imp[0].ext.data
@@ -606,30 +606,6 @@ func setRegExtGDPR(gdprApplies *bool, req *openrtb2.BidRequest) error {
 		return err
 	}
 	return reqWrap.RebuildRequest()
-}
-
-func (pr policyReader) readPolicy(ampParams amp.Params, req *openrtb2.BidRequest) (privacy.PolicyWriter, error) {
-
-	if err := setRegExtGDPR(ampParams.GdprApplies, req); err != nil {
-		return privacy.NilPolicyWriter{}, err
-	}
-
-	if len(ampParams.Consent) == 0 {
-		return privacy.NilPolicyWriter{}, nil
-	}
-
-	if pr.gdpr.ValidateConsent(ampParams.Consent) || ampParams.ConsentType == amp.TCF2 {
-		return gdpr.ConsentWriter{ampParams.Consent}, nil
-	}
-
-	if pr.ccpa.ValidateConsent(ampParams.Consent) || ampParams.ConsentType == amp.CCPA {
-		return ccpa.ConsentWriter{ampParams.Consent}, nil
-	}
-
-	return privacy.NilPolicyWriter{}, &errortypes.Warning{
-		Message:     fmt.Sprintf("Consent '%s' is not recognized as either CCPA or GDPR TCF.", ampParams.Consent),
-		WarningCode: errortypes.InvalidPrivacyConsentWarningCode,
-	}
 }
 
 // Sets the effective publisher ID for amp request
