@@ -194,6 +194,7 @@ const (
 	BidderRTBHouse          BidderName = "rtbhouse"
 	BidderRubicon           BidderName = "rubicon"
 	BidderRubiconMRAID      BidderName = "rubiconmraid"
+	BidderScaleMonk         BidderName = "scalemonk"
 	BidderSharethrough      BidderName = "sharethrough"
 	BidderSilverMob         BidderName = "silvermob"
 	BidderSmaato            BidderName = "smaato"
@@ -356,6 +357,7 @@ func CoreBidderNames() []BidderName {
 		BidderRubicon,
 		BidderRubiconMRAID,
 		BidderSharethrough,
+		BidderScaleMonk,
 		BidderSilverMob,
 		BidderSmaato,
 		BidderSmartAdserver,

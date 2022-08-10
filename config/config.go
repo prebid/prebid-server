@@ -1107,6 +1107,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.rubicon.endpoint", "http://exapi-us-east.rubiconproject.com/a/api/exchange.json")
 	v.SetDefault("adapters.rubiconmraid.disabled", true)
 	v.SetDefault("adapters.rubiconmraid.endpoint", "http://exapi-us-east.rubiconproject.com/a/api/exchange.json")
+	v.SetDefault("adapters.scalemonk.disabled", true)
+	v.SetDefault("adapters.scalemonk.endpoint", "https://bidtapjoy.newadserver.com/rtb?src=tapjoy")
 	v.SetDefault("adapters.spotad.disabled", true)
 	v.SetDefault("adapters.spotad.endpoint", "https://bidder-useast-tapjoy.spotad.co:17111/rtbserver")
 	v.SetDefault("adapters.tapjoy.disabled", true)
