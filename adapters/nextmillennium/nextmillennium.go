@@ -16,18 +16,6 @@ type adapter struct {
 	endpoint string
 }
 
-type NextMillenniumBidRequest struct {
-	ID   string `json:"id"`
-	Test uint8  `json:"test,omitempty"`
-	Ext  struct {
-		Prebid struct {
-			StoredRequest struct {
-				ID string `json:"id"`
-			} `json:"storedrequest"`
-		} `json:"prebid"`
-	} `json:"ext"`
-}
-
 //MakeRequests prepares request information for prebid-server core
 func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	resImps, err := getImpressionsInfo(request.Imp)
@@ -98,12 +86,8 @@ func (adapter *adapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidReques
 		Headers: headers}, nil
 }
 
-func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ImpExtNextMillennium) *NextMillenniumBidRequest {
+func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ImpExtNextMillennium) *openrtb2.BidRequest {
 	placementID := params.PlacementID
-	bidRequest := NextMillenniumBidRequest{
-		ID:   prebidBidRequest.ID,
-		Test: uint8(prebidBidRequest.Test),
-	}
 
 	if params.GroupID != "" {
 		domain := ""
@@ -127,7 +111,11 @@ func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext
 		placementID = fmt.Sprintf("g%s;%s;%s", params.GroupID, size, domain)
 	}
 
-	bidRequest.Ext.Prebid.StoredRequest.ID = placementID
+	jsonExt := json.RawMessage(`{"prebid":{"storedrequest":{"id":"` + placementID + `"}}}`)
+
+	bidRequest := *prebidBidRequest
+	bidRequest.Ext = jsonExt
+	bidRequest.Imp[0].Ext = jsonExt
 	return &bidRequest
 }
 
