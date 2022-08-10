@@ -719,8 +719,8 @@ func getCountryCodeFromMCC(MCC string) (out string) {
 // getDeviceID include oaid gaid imei. In prebid mobile, use TargetingParams.addUserData("imei", "imei-test");
 func getDeviceID(device *device, openRTBRequest *openrtb2.BidRequest) (err error) {
 	var userObjExist = true
-	
-	if openRTBRequest.User == nil || openRTBRequest.User.Ext == nil{
+
+	if openRTBRequest.User == nil || openRTBRequest.User.Ext == nil {
 		userObjExist = false
 	}
 
