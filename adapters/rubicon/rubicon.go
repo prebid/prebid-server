@@ -1086,6 +1086,8 @@ func setImpNative(jsonData []byte, requestNative map[string]interface{}) ([]byte
 		return jsonData, fmt.Errorf("unable to find imp in json data")
 	} else if len(impSlice) == 0 {
 		return jsonData, fmt.Errorf("unable to find imp[0] in json data")
+	} else if impMap, ok = impSlice[0].(map[string]interface{}); !ok {
+		return jsonData, fmt.Errorf("unexpected type for imp[0] found in json data")
 	}
 
 	nativeMap, ok := maputil.ReadEmbeddedMap(impMap, "native")
