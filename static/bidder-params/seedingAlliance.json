@@ -6,7 +6,8 @@
     "properties": {
         "adUnitId": {
             "type": "string",
-            "description": "Ad Unit ID"
+            "description": "Ad Unit ID",
+            "minLength": 1
         }
     },
     "required": [
