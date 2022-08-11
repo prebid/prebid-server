@@ -99,7 +99,6 @@ func resolvePriceMacro(bid *openrtb2.Bid) {
 }
 
 func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
-	var UnsupportedBidType openrtb_ext.BidType = "unsupported"
 	var UnknownBidType openrtb_ext.BidType = "unknown"
 
 	for _, imp := range imps {
@@ -109,12 +108,6 @@ func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 				return openrtb_ext.BidTypeNative
 			case imp.Banner != nil:
 				return openrtb_ext.BidTypeBanner
-			case imp.Video != nil:
-				return UnsupportedBidType
-			case imp.Audio != nil:
-				return UnsupportedBidType
-			default:
-				return UnknownBidType
 			}
 		}
 	}

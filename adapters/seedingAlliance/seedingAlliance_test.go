@@ -59,8 +59,8 @@ func TestGetMediaTypeForImp(t *testing.T) {
 	}{
 		{"native", openrtb_ext.BidTypeNative, openrtb2.Imp{ID: impID, Native: &openrtb2.Native{}}},
 		{"banner", openrtb_ext.BidTypeBanner, openrtb2.Imp{ID: impID, Banner: &openrtb2.Banner{}}},
-		{"video", "unsupported", openrtb2.Imp{ID: impID, Video: &openrtb2.Video{}}},
-		{"audio", "unsupported", openrtb2.Imp{ID: impID, Audio: &openrtb2.Audio{}}},
+		{"video", "unknown", openrtb2.Imp{ID: impID, Video: &openrtb2.Video{}}},
+		{"audio", "unknown", openrtb2.Imp{ID: impID, Audio: &openrtb2.Audio{}}},
 		{"unknown", "unknown", openrtb2.Imp{ID: impID}},
 		{"no imp", "unknown", openrtb2.Imp{}},
 	}
