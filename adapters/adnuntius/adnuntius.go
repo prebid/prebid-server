@@ -22,8 +22,13 @@ type adapter struct {
 	endpoint string
 }
 type adnAdunit struct {
-	AuId     string `json:"auId"`
-	TargetId string `json:"targetId"`
+	AuId       string    `json:"auId"`
+	TargetId   string    `json:"targetId"`
+	Dimensions [][]int64 `json:"dimensions,omitempty"`
+}
+
+type extDeviceAdnuntius struct {
+	NoCookies bool `json:"noCookies,omitempty"`
 }
 
 type AdnResponse struct {
@@ -101,6 +106,13 @@ func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter) (string, []err
 		return "", []error{fmt.Errorf("failed to parse Adnuntius endpoint: %v", err)}
 	}
 
+	var deviceExt extDeviceAdnuntius
+	if ortbRequest.Device != nil && ortbRequest.Device.Ext != nil {
+		if err := json.Unmarshal(ortbRequest.Device.Ext, &deviceExt); err != nil {
+			return "", []error{fmt.Errorf("failed to parse Adnuntius endpoint: %v", err)}
+		}
+	}
+
 	_, offset := a.time.Now().Zone()
 	tzo := -offset / minutesInHour
 
@@ -109,11 +121,36 @@ func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter) (string, []err
 		q.Set("gdpr", gdpr)
 		q.Set("consentString", consent)
 	}
+
+	if deviceExt.NoCookies {
+		q.Set("noCookies", "true")
+	}
+
 	q.Set("tzo", fmt.Sprint(tzo))
 	q.Set("format", "json")
 
 	url := a.endpoint + "?" + q.Encode()
 	return url, nil
+}
+
+func getImpSizes(imp openrtb2.Imp) [][]int64 {
+
+	if len(imp.Banner.Format) > 0 {
+		sizes := make([][]int64, len(imp.Banner.Format))
+		for i, format := range imp.Banner.Format {
+			sizes[i] = []int64{format.W, format.H}
+		}
+
+		return sizes
+	}
+
+	if imp.Banner.W != nil && imp.Banner.H != nil {
+		size := make([][]int64, 1)
+		size[0] = []int64{*imp.Banner.W, *imp.Banner.H}
+		return size
+	}
+
+	return nil
 }
 
 /*
@@ -159,8 +196,9 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 		networkAdunitMap[network] = append(
 			networkAdunitMap[network],
 			adnAdunit{
-				AuId:     adnuntiusExt.Auid,
-				TargetId: fmt.Sprintf("%s-%s", adnuntiusExt.Auid, imp.ID),
+				AuId:       adnuntiusExt.Auid,
+				TargetId:   fmt.Sprintf("%s-%s", adnuntiusExt.Auid, imp.ID),
+				Dimensions: getImpSizes(imp),
 			})
 	}
 

@@ -134,5 +134,11 @@
           }
         ]
       }
+    ],
+    "expectedMakeBidsErrors": [
+      {
+        "value": "unexpected end of JSON input",
+        "comparison": "literal"
+      }
     ]
   }

@@ -232,6 +232,7 @@ type AlternateBidderCodes struct {
 }
 
 type AdapterAlternateBidderCodes struct {
+	Enabled            bool     `mapstructure:"enabled" json:"enabled"`
 	AllowedBidderCodes []string `mapstructure:"allowedbiddercodes" json:"allowedbiddercodes"`
 }
 
@@ -255,11 +256,12 @@ func (bidderCodes *AlternateBidderCodes) IsValidBidderCode(bidder, alternateBidd
 		return false, fmt.Errorf(ErrAlternateBidderNotDefined, bidder, alternateBidder)
 	}
 
-	if len(adapterCfg.AllowedBidderCodes) == 0 {
+	if !adapterCfg.Enabled {
+		// config has bidder entry but is not enabled, report it
 		return false, fmt.Errorf("alternateBidderCodes disabled for %q, rejecting bids for %q", bidder, alternateBidder)
 	}
 
-	if adapterCfg.AllowedBidderCodes[0] == "*" {
+	if adapterCfg.AllowedBidderCodes == nil || (len(adapterCfg.AllowedBidderCodes) == 1 && adapterCfg.AllowedBidderCodes[0] == "*") {
 		return true, nil
 	}
 
