@@ -1818,9 +1818,10 @@ func TestBidResponseImpExtInfo(t *testing.T) {
 	impExtInfo := make(map[string]ImpExtInfo, 1)
 	impExtInfo["some-impression-id"] = ImpExtInfo{
 		true,
-		[]byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`)}
+		[]byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`),
+		json.RawMessage(`{"imp_passthrough_val": 1}`)}
 
-	expectedBidResponseExt := `{"origbidcpm":0,"prebid":{"type":"video"},"storedrequestattributes":{"h":480,"mimes":["video/mp4"]}}`
+	expectedBidResponseExt := `{"origbidcpm":0,"prebid":{"type":"video","passthrough":{"imp_passthrough_val":1}},"storedrequestattributes":{"h":480,"mimes":["video/mp4"]}}`
 
 	actualBidResp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, nil, nil, nil, true, impExtInfo, errList)
 	assert.NoError(t, err, fmt.Sprintf("imp ext info was not passed through correctly: %s", err))
@@ -2216,6 +2217,16 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		debugLog.Regexp = regexp.MustCompile(`[<>]`)
 	}
 
+	// Passthrough JSON Testing
+	impExtInfoMap := make(map[string]ImpExtInfo)
+	if spec.PassthroughFlag {
+		impPassthrough, impID, err := getInfoFromImp(&openrtb_ext.RequestWrapper{BidRequest: &spec.IncomingRequest.OrtbRequest})
+		if err != nil {
+			t.Errorf("%s: Exchange returned an unexpected error. Got %s", filename, err.Error())
+		}
+		impExtInfoMap[impID] = ImpExtInfo{Passthrough: impPassthrough}
+	}
+
 	auctionRequest := AuctionRequest{
 		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: &spec.IncomingRequest.OrtbRequest},
 		Account: config.Account{
@@ -2223,8 +2234,10 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 			EventsEnabled: spec.EventsEnabled,
 			DebugAllow:    true,
 		},
-		UserSyncs: mockIdFetcher(spec.IncomingRequest.Usersyncs),
+		UserSyncs:     mockIdFetcher(spec.IncomingRequest.Usersyncs),
+		ImpExtInfoMap: impExtInfoMap,
 	}
+
 	if spec.StartTime > 0 {
 		auctionRequest.StartTime = time.Unix(0, spec.StartTime*1e+6)
 	}
@@ -2272,6 +2285,22 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 	if spec.IncomingRequest.OrtbRequest.Test == 1 {
 		//compare debug info
 		assert.JSONEq(t, string(bid.Ext), string(spec.Response.Ext), "Debug info modified")
+	}
+
+	if spec.PassthroughFlag {
+		var actualBidRespExt openrtb_ext.ExtBidResponse
+		var expectedBidRespExt openrtb_ext.ExtBidResponse
+		if bid.Ext != nil {
+			if err := json.Unmarshal(bid.Ext, &actualBidRespExt); err != nil {
+				assert.NoError(t, err, fmt.Sprintf("Error when unmarshalling: %s", err))
+			}
+		}
+		if spec.Response.Ext != nil {
+			if err := json.Unmarshal(spec.Response.Ext, &expectedBidRespExt); err != nil {
+				assert.NoError(t, err, fmt.Sprintf("Error when unmarshalling: %s", err))
+			}
+		}
+		assert.Equalf(t, expectedBidRespExt.Prebid, actualBidRespExt.Prebid, "Expected bid response extension is incorrect")
 	}
 }
 
@@ -3607,18 +3636,18 @@ func TestMakeBidExtJSON(t *testing.T) {
 		{
 			description:        "Valid extension, non empty extBidPrebid, valid imp ext info, meta from adapter",
 			ext:                json.RawMessage(`{"video":{"h":100}}`),
-			extBidPrebid:       openrtb_ext.ExtBidPrebid{Type: openrtb_ext.BidType("video"), Meta: &openrtb_ext.ExtBidPrebidMeta{BrandName: "foo"}},
-			impExtInfo:         map[string]ImpExtInfo{"test_imp_id": {true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`)}},
+			extBidPrebid:       openrtb_ext.ExtBidPrebid{Type: openrtb_ext.BidType("video"), Meta: &openrtb_ext.ExtBidPrebidMeta{BrandName: "foo"}, Passthrough: nil},
+			impExtInfo:         map[string]ImpExtInfo{"test_imp_id": {true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`), json.RawMessage(`{"imp_passthrough_val": 1}`)}},
 			origbidcpm:         10.0000,
 			origbidcur:         "USD",
-			expectedBidExt:     `{"prebid":{"meta": {"brandName": "foo"}, "type":"video"},"storedrequestattributes":{"h":480,"mimes":["video/mp4"]},"video":{"h":100}, "origbidcpm": 10, "origbidcur": "USD"}`,
+			expectedBidExt:     `{"prebid":{"meta": {"brandName": "foo"}, "passthrough":{"imp_passthrough_val":1}, "type":"video"}, "storedrequestattributes":{"h":480,"mimes":["video/mp4"]},"video":{"h":100}, "origbidcpm": 10, "origbidcur": "USD"}`,
 			expectedErrMessage: "",
 		},
 		{
-			description:        "Valid extension, non empty extBidPrebid, valid imp ext info, meta from response",
+			description:        "Valid extension, non empty extBidPrebid, valid imp ext info, meta from response, imp passthrough is nil",
 			ext:                json.RawMessage(`{"video":{"h":100},"prebid":{"meta": {"brandName": "foo"}}}`),
 			extBidPrebid:       openrtb_ext.ExtBidPrebid{Type: openrtb_ext.BidType("video")},
-			impExtInfo:         map[string]ImpExtInfo{"test_imp_id": {true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`)}},
+			impExtInfo:         map[string]ImpExtInfo{"test_imp_id": {true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`), nil}},
 			origbidcpm:         10.0000,
 			origbidcur:         "USD",
 			expectedBidExt:     `{"prebid":{"meta": {"brandName": "foo"}, "type":"video"},"storedrequestattributes":{"h":480,"mimes":["video/mp4"]},"video":{"h":100}, "origbidcpm": 10, "origbidcur": "USD"}`,
@@ -3628,16 +3657,16 @@ func TestMakeBidExtJSON(t *testing.T) {
 			description:        "Empty extension, non empty extBidPrebid and valid imp ext info",
 			ext:                nil,
 			extBidPrebid:       openrtb_ext.ExtBidPrebid{Type: openrtb_ext.BidType("video")},
-			impExtInfo:         map[string]ImpExtInfo{"test_imp_id": {true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`)}},
+			impExtInfo:         map[string]ImpExtInfo{"test_imp_id": {true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`), json.RawMessage(`{"imp_passthrough_val": 1}`)}},
 			origbidcpm:         0,
-			expectedBidExt:     `{"origbidcpm": 0,"prebid":{"type":"video"},"storedrequestattributes":{"h":480,"mimes":["video/mp4"]}}`,
+			expectedBidExt:     `{"origbidcpm": 0,"prebid":{"passthrough":{"imp_passthrough_val":1}, "type":"video"},"storedrequestattributes":{"h":480,"mimes":["video/mp4"]}}`,
 			expectedErrMessage: "",
 		},
 		{
 			description:        "Valid extension, non empty extBidPrebid and imp ext info not found",
 			ext:                json.RawMessage(`{"video":{"h":100}}`),
 			extBidPrebid:       openrtb_ext.ExtBidPrebid{Type: openrtb_ext.BidType("video")},
-			impExtInfo:         map[string]ImpExtInfo{"another_imp_id": {true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`)}},
+			impExtInfo:         map[string]ImpExtInfo{"another_imp_id": {true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`), json.RawMessage(`{"imp_passthrough_val": 1}`)}},
 			origbidcpm:         10.0000,
 			origbidcur:         "USD",
 			expectedBidExt:     `{"prebid":{"type":"video"},"video":{"h":100}, "origbidcpm": 10, "origbidcur": "USD"}`,
@@ -3649,8 +3678,8 @@ func TestMakeBidExtJSON(t *testing.T) {
 			extBidPrebid:       openrtb_ext.ExtBidPrebid{},
 			origbidcpm:         10.0000,
 			origbidcur:         "USD",
-			impExtInfo:         map[string]ImpExtInfo{"test_imp_id": {true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`)}},
-			expectedBidExt:     `{"prebid":{"type":""},"storedrequestattributes":{"h":480,"mimes":["video/mp4"]},"video":{"h":100}, "origbidcpm": 10, "origbidcur": "USD"}`,
+			impExtInfo:         map[string]ImpExtInfo{"test_imp_id": {true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`), json.RawMessage(`{"imp_passthrough_val": 1}`)}},
+			expectedBidExt:     `{"prebid":{"passthrough":{"imp_passthrough_val":1}, "type":""},"storedrequestattributes":{"h":480,"mimes":["video/mp4"]},"video":{"h":100}, "origbidcpm": 10, "origbidcur": "USD"}`,
 			expectedErrMessage: "",
 		},
 		{
@@ -3669,8 +3698,8 @@ func TestMakeBidExtJSON(t *testing.T) {
 			extBidPrebid:       openrtb_ext.ExtBidPrebid{Type: openrtb_ext.BidType("video")},
 			origbidcpm:         10.0000,
 			origbidcur:         "USD",
-			impExtInfo:         map[string]ImpExtInfo{"test_imp_id": {true, []byte(`{"banner":{"h":480}}`)}},
-			expectedBidExt:     `{"prebid":{"type":"video"},"video":{"h":100}, "origbidcpm": 10, "origbidcur": "USD"}`,
+			impExtInfo:         map[string]ImpExtInfo{"test_imp_id": {true, []byte(`{"banner":{"h":480}}`), json.RawMessage(`{"imp_passthrough_val": 1}`)}},
+			expectedBidExt:     `{"prebid":{"passthrough":{"imp_passthrough_val":1}, "type":"video"},"video":{"h":100}, "origbidcpm": 10, "origbidcur": "USD"}`,
 			expectedErrMessage: "",
 		},
 		{
@@ -3679,8 +3708,8 @@ func TestMakeBidExtJSON(t *testing.T) {
 			extBidPrebid:       openrtb_ext.ExtBidPrebid{Type: openrtb_ext.BidType("video")},
 			origbidcpm:         10.0000,
 			origbidcur:         "USD",
-			impExtInfo:         map[string]ImpExtInfo{"test_imp_id": {true, []byte(`{"banner":{"h":480}}`)}},
-			expectedBidExt:     `{"prebid":{"type":"video"}, "origbidcpm": 10, "origbidcur": "USD"}`,
+			impExtInfo:         map[string]ImpExtInfo{"test_imp_id": {true, []byte(`{"banner":{"h":480}}`), json.RawMessage(`{"imp_passthrough_val": 1}`)}},
+			expectedBidExt:     `{"prebid":{"passthrough":{"imp_passthrough_val":1}, "type":"video"}, "origbidcpm": 10, "origbidcur": "USD"}`,
 			expectedErrMessage: "",
 		},
 		{
@@ -3689,8 +3718,8 @@ func TestMakeBidExtJSON(t *testing.T) {
 			extBidPrebid:       openrtb_ext.ExtBidPrebid{Type: openrtb_ext.BidType("video")},
 			origbidcpm:         10.0000,
 			origbidcur:         "USD",
-			impExtInfo:         map[string]ImpExtInfo{"test_imp_id": {true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`)}},
-			expectedBidExt:     `{"prebid":{"type":"video"}, "storedrequestattributes":{"h":480,"mimes":["video/mp4"]}, "origbidcpm": 10, "origbidcur": "USD"}`,
+			impExtInfo:         map[string]ImpExtInfo{"test_imp_id": {true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`), json.RawMessage(`{"imp_passthrough_val": 1}`)}},
+			expectedBidExt:     `{"prebid":{"passthrough":{"imp_passthrough_val":1}, "type":"video"}, "storedrequestattributes":{"h":480,"mimes":["video/mp4"]}, "origbidcpm": 10, "origbidcur": "USD"}`,
 			expectedErrMessage: "",
 		},
 		{
@@ -3758,7 +3787,7 @@ func TestMakeBidExtJSON(t *testing.T) {
 			description:        "Invalid extension, valid extBidPrebid and valid imp ext info",
 			ext:                json.RawMessage(`{invalid json}`),
 			extBidPrebid:       openrtb_ext.ExtBidPrebid{Type: openrtb_ext.BidType("video")},
-			impExtInfo:         map[string]ImpExtInfo{"test_imp_id": {true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`)}},
+			impExtInfo:         map[string]ImpExtInfo{"test_imp_id": {true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`), json.RawMessage(`"prebid": {"passthrough": {"imp_passthrough_val": some_val}}"`)}},
 			expectedBidExt:     ``,
 			expectedErrMessage: "invalid character",
 		},
@@ -3766,7 +3795,7 @@ func TestMakeBidExtJSON(t *testing.T) {
 			description:        "Valid extension, empty extBidPrebid and invalid imp ext info",
 			ext:                json.RawMessage(`{"video":{"h":100}}`),
 			extBidPrebid:       openrtb_ext.ExtBidPrebid{},
-			impExtInfo:         map[string]ImpExtInfo{"test_imp_id": {true, []byte(`{"video":{!}}`)}},
+			impExtInfo:         map[string]ImpExtInfo{"test_imp_id": {true, []byte(`{"video":{!}}`), nil}},
 			expectedBidExt:     ``,
 			expectedErrMessage: "invalid character",
 		},
@@ -4211,6 +4240,7 @@ type exchangeSpec struct {
 	StartTime         int64                  `json:"start_time_ms,omitempty"`
 	BidIDGenerator    *mockBidIDGenerator    `json:"bidIDGenerator,omitempty"`
 	RequestType       *metrics.RequestType   `json:"requestType,omitempty"`
+	PassthroughFlag   bool                   `json:"passthrough_flag,omitempty"`
 	HostSChainFlag    bool                   `json:"host_schain_flag,omitempty"`
 }
 
@@ -4375,7 +4405,6 @@ func diffOrtbResponses(t *testing.T, description string, expected *openrtb2.BidR
 	if err != nil {
 		t.Fatalf("%s failed to marshal expected BidResponse into JSON. %v", description, err)
 	}
-
 	assert.JSONEq(t, string(expectedJSON), string(actualJSON), description)
 }
 
@@ -4493,4 +4522,23 @@ func (m *mockBidder) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapter
 func (m *mockBidder) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	args := m.Called(internalRequest, externalRequest, response)
 	return args.Get(0).(*adapters.BidderResponse), args.Get(1).([]error)
+}
+
+func getInfoFromImp(req *openrtb_ext.RequestWrapper) (json.RawMessage, string, error) {
+	bidRequest := req.BidRequest
+	imp := bidRequest.Imp[0]
+	impID := imp.ID
+
+	var bidderExts map[string]json.RawMessage
+	if err := json.Unmarshal(imp.Ext, &bidderExts); err != nil {
+		return nil, "", err
+	}
+
+	var extPrebid openrtb_ext.ExtImpPrebid
+	if bidderExts[openrtb_ext.PrebidExtKey] != nil {
+		if err := json.Unmarshal(bidderExts[openrtb_ext.PrebidExtKey], &extPrebid); err != nil {
+			return nil, "", err
+		}
+	}
+	return extPrebid.Passthrough, impID, nil
 }

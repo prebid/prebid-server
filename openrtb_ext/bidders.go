@@ -99,7 +99,9 @@ const (
 	BidderAdot              BidderName = "adot"
 	BidderAdpone            BidderName = "adpone"
 	BidderAdprime           BidderName = "adprime"
+	BidderAdrino            BidderName = "adrino"
 	BidderAdtarget          BidderName = "adtarget"
+	BidderAdtrgtme          BidderName = "adtrgtme"
 	BidderAdtelligent       BidderName = "adtelligent"
 	BidderAdvangelists      BidderName = "advangelists"
 	BidderAdView            BidderName = "adview"
@@ -179,6 +181,7 @@ const (
 	BidderNextMillennium    BidderName = "nextmillennium"
 	BidderNinthDecimal      BidderName = "ninthdecimal"
 	BidderNoBid             BidderName = "nobid"
+	BidderOFTMedia          BidderName = "oftmedia"
 	BidderOneTag            BidderName = "onetag"
 	BidderOpenWeb           BidderName = "openweb"
 	BidderOpenx             BidderName = "openx"
@@ -258,7 +261,9 @@ func CoreBidderNames() []BidderName {
 		BidderAdot,
 		BidderAdpone,
 		BidderAdprime,
+		BidderAdrino,
 		BidderAdtarget,
+		BidderAdtrgtme,
 		BidderAdtelligent,
 		BidderAdvangelists,
 		BidderAdView,
@@ -338,6 +343,7 @@ func CoreBidderNames() []BidderName {
 		BidderNextMillennium,
 		BidderNinthDecimal,
 		BidderNoBid,
+		BidderOFTMedia,
 		BidderOneTag,
 		BidderOpenWeb,
 		BidderOpenx,
