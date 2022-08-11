@@ -1,5 +1,5 @@
 {
-  "description": "req.user.ext.data is present but req.ext.prebid.data.bidders is empty; expect req.user.ext.data to not be included in any of the resolved bidders FPD and to have been extracted from the original request",
+  "description": "req.user is not present but req.ext.prebid.bidderconfig contains user for bidder; expect req.user to present in the resolved bidders FPD",
   "inputRequestData": {
     "id": "bid_id",
     "test": 1,
