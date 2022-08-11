@@ -366,14 +366,14 @@ func extractPubmaticExtFromRequest(request *openrtb2.BidRequest) (extRequestAdSe
 		pmReqExt.Acat = acat
 	}
 
-	if allowedBidders := getAlternateBidderCodesFromRequest(reqExt); allowedBidders != nil {
+	if allowedBidders := getAlternateBidderCodesFromRequestExt(reqExt); allowedBidders != nil {
 		pmReqExt.Marketplace = &marketplaceReqExt{AllowedBidders: allowedBidders}
 	}
 
 	return pmReqExt, nil
 }
 
-func getAlternateBidderCodesFromRequest(reqExt *openrtb_ext.ExtRequest) []string {
+func getAlternateBidderCodesFromRequestExt(reqExt *openrtb_ext.ExtRequest) []string {
 	if reqExt == nil || reqExt.Prebid.AlternateBidderCodes == nil {
 		return nil
 	}
@@ -384,23 +384,22 @@ func getAlternateBidderCodesFromRequest(reqExt *openrtb_ext.ExtRequest) []string
 			if pmABC.AllowedBidderCodes == nil || (len(pmABC.AllowedBidderCodes) == 1 && pmABC.AllowedBidderCodes[0] == "*") {
 				return []string{"all"}
 			}
-			return append(allowedBidders, assertBidderCodes(pmABC.AllowedBidderCodes)...)
+			// keeping this off for now. Makes more sense to move this to PBS-Core
+			// return append(allowedBidders, assertBidderCodes(pmABC.AllowedBidderCodes)...)
+			return append(allowedBidders, pmABC.AllowedBidderCodes...)
 		}
 	}
 
 	return allowedBidders
 }
 
+// assertBidderCodes typical string assertions: remove duplicates, remove whitespaces, all lowercase case biddercode
 func assertBidderCodes(bidders []string) []string {
 	// nil not expected as it is a special case to allow all bidders
 	if bidders == nil {
 		return nil
 	}
 
-	// Typical string assertions:
-	// remove duplicates
-	// remove whitespaces
-	// all lowercase case biddercode
 	checkedBidders := map[string]bool{"pubmatic": true}
 	newBiddersList := []string{}
 	for _, bidder := range bidders {

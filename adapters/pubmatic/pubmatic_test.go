@@ -413,6 +413,13 @@ func Test_getAlternateBidderCodesFromRequest(t *testing.T) {
 			want: nil,
 		},
 		{
+			name: "alternatebiddercodes not present in request.ext",
+			args: args{
+				bidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{}}`)},
+			},
+			want: nil,
+		},
+		{
 			name: "alternatebiddercodes feature disabled",
 			args: args{
 				bidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":false,"bidders":{"pubmatic":{"enabled":true,"allowedbiddercodes":["groupm"]}}}}}`)},
@@ -465,7 +472,7 @@ func Test_getAlternateBidderCodesFromRequest(t *testing.T) {
 				}
 			}
 
-			got := getAlternateBidderCodesFromRequest(reqExt)
+			got := getAlternateBidderCodesFromRequestExt(reqExt)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("getAlternateBidderCodesFromRequest() = %v, want %v", got, tt.want)
 			}
