@@ -86,6 +86,14 @@ func (adapter *adapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidReques
 		Headers: headers}, nil
 }
 
+type nextMillJsonExt struct {
+	Prebid struct {
+		Storedrequest struct {
+			ID string `json:"id"`
+		} `json:"storedrequest"`
+	} `json:"prebid"`
+}
+
 func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ImpExtNextMillennium) *openrtb2.BidRequest {
 	placementID := params.PlacementID
 
@@ -110,9 +118,9 @@ func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext
 
 		placementID = fmt.Sprintf("g%s;%s;%s", params.GroupID, size, domain)
 	}
-
-	jsonExt := json.RawMessage(`{"prebid":{"storedrequest":{"id":"` + placementID + `"}}}`)
-
+	ext := nextMillJsonExt{}
+	ext.Prebid.Storedrequest.ID = placementID
+	jsonExt, _ := json.Marshal(ext)
 	bidRequest := *prebidBidRequest
 	bidRequest.Ext = jsonExt
 	bidRequest.Imp[0].Ext = jsonExt
