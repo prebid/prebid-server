@@ -159,21 +159,37 @@ func TestExtractPubmaticExtFromRequest(t *testing.T) {
 		request *openrtb2.BidRequest
 	}
 	tests := []struct {
-		name               string
-		args               args
-		expectedWrapperExt *pubmaticWrapperExt
-		expectedAcat       []string
-		wantErr            bool
+		name           string
+		args           args
+		expectedReqExt extRequestAdServer
+		wantErr        bool
 	}{
 		{
-			name:    "Empty bidder param",
-			wantErr: true,
+			name: "nil request",
+			args: args{
+				request: nil,
+			},
+			wantErr: false,
 		},
 		{
-			name: "Pubmatic wrapper ext missing/empty",
+			name: "nil req.ext",
+			args: args{
+				request: &openrtb2.BidRequest{Ext: nil},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Pubmatic wrapper ext missing/empty (empty bidderparms)",
 			args: args{
 				request: &openrtb2.BidRequest{
 					Ext: json.RawMessage(`{"prebid":{"bidderparams":{}}}`),
+				},
+			},
+			expectedReqExt: extRequestAdServer{
+				ExtRequest: openrtb_ext.ExtRequest{
+					Prebid: openrtb_ext.ExtRequestPrebid{
+						BidderParams: json.RawMessage("{}"),
+					},
 				},
 			},
 			wantErr: false,
@@ -185,14 +201,21 @@ func TestExtractPubmaticExtFromRequest(t *testing.T) {
 					Ext: json.RawMessage(`{"prebid":{"bidderparams":{"wrapper":{"profile":123,"version":456}}}}`),
 				},
 			},
-			expectedWrapperExt: &pubmaticWrapperExt{ProfileID: 123, VersionID: 456},
-			wantErr:            false,
+			expectedReqExt: extRequestAdServer{
+				Wrapper: &pubmaticWrapperExt{ProfileID: 123, VersionID: 456},
+				ExtRequest: openrtb_ext.ExtRequest{
+					Prebid: openrtb_ext.ExtRequestPrebid{
+						BidderParams: json.RawMessage(`{"wrapper":{"profile":123,"version":456}}`),
+					},
+				},
+			},
+			wantErr: false,
 		},
 		{
 			name: "Invalid Pubmatic wrapper ext",
 			args: args{
 				request: &openrtb2.BidRequest{
-					Ext: json.RawMessage(`{"prebid":{"bidderparams":{"wrapper":{"profile":"123","version":456}}}}`),
+					Ext: json.RawMessage(`{"prebid":{"bidderparams":"}}}`),
 				},
 			},
 			wantErr: true,
@@ -204,28 +227,40 @@ func TestExtractPubmaticExtFromRequest(t *testing.T) {
 					Ext: json.RawMessage(`{"prebid":{"bidderparams":{"acat":[" drg \t","dlu","ssr"],"wrapper":{"profile":123,"version":456}}}}`),
 				},
 			},
-			expectedWrapperExt: &pubmaticWrapperExt{ProfileID: 123, VersionID: 456},
-			expectedAcat:       []string{"drg", "dlu", "ssr"},
-			wantErr:            false,
+			expectedReqExt: extRequestAdServer{
+				Wrapper: &pubmaticWrapperExt{ProfileID: 123, VersionID: 456},
+				Acat:    []string{"drg", "dlu", "ssr"},
+				ExtRequest: openrtb_ext.ExtRequest{
+					Prebid: openrtb_ext.ExtRequestPrebid{
+						BidderParams: json.RawMessage(`{"acat":[" drg \t","dlu","ssr"],"wrapper":{"profile":123,"version":456}}`),
+					},
+				},
+			},
+			wantErr: false,
 		},
 		{
-			name: "Invalid Pubmatic acat ext. We are ok with acat being non nil in this case as we are returning unmarshal error",
+			name: "Invalid Pubmatic acat ext",
 			args: args{
 				request: &openrtb2.BidRequest{
 					Ext: json.RawMessage(`{"prebid":{"bidderparams":{"acat":[1,3,4],"wrapper":{"profile":123,"version":456}}}}`),
 				},
 			},
-			expectedWrapperExt: &pubmaticWrapperExt{ProfileID: 123, VersionID: 456},
-			expectedAcat:       []string{"", "", ""},
-			wantErr:            true,
+			expectedReqExt: extRequestAdServer{
+				Wrapper: &pubmaticWrapperExt{ProfileID: 123, VersionID: 456},
+				ExtRequest: openrtb_ext.ExtRequest{
+					Prebid: openrtb_ext.ExtRequestPrebid{
+						BidderParams: json.RawMessage(`{"acat":[1,3,4],"wrapper":{"profile":123,"version":456}}`),
+					},
+				},
+			},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotWrapperExt, gotAcat, err := extractPubmaticExtFromRequest(tt.args.request)
+			gotReqExt, err := extractPubmaticExtFromRequest(tt.args.request)
 			assert.Equal(t, tt.wantErr, err != nil)
-			assert.Equal(t, tt.expectedWrapperExt, gotWrapperExt)
-			assert.Equal(t, tt.expectedAcat, gotAcat)
+			assert.Equal(t, tt.expectedReqExt, gotReqExt)
 		})
 	}
 }
@@ -366,67 +401,54 @@ func Test_getAlternateBidderCodesFromRequest(t *testing.T) {
 		bidRequest *openrtb2.BidRequest
 	}
 	tests := []struct {
-		name    string
-		args    args
-		want    []string
-		wantErr bool
+		name string
+		args args
+		want []string
 	}{
-		{
-			name: "request nil",
-			want: []string{"pubmatic"},
-		},
 		{
 			name: "request.ext nil",
 			args: args{
 				bidRequest: &openrtb2.BidRequest{Ext: nil},
 			},
-			want: []string{"pubmatic"},
+			want: nil,
 		},
 		{
-			name: "request.ext invalid json",
-			args: args{
-				bidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid": `)},
-			},
-			want:    []string{"pubmatic"},
-			wantErr: true,
-		},
-		{
-			name: "request.ext valid and alternatebiddercodes feature disabled",
+			name: "alternatebiddercodes feature disabled",
 			args: args{
 				bidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":false,"bidders":{"pubmatic":{"enabled":true,"allowedbiddercodes":["groupm"]}}}}}`)},
 			},
 			want: []string{"pubmatic"},
 		},
 		{
-			name: "request.ext valid and alternatebiddercodes disabled at bidder level",
+			name: "alternatebiddercodes disabled at bidder level",
 			args: args{
 				bidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":{"pubmatic":{"enabled":false,"allowedbiddercodes":["groupm"]}}}}}`)},
 			},
 			want: []string{"pubmatic"},
 		},
 		{
-			name: "request.ext.valid with bidder code list not defined",
+			name: "alternatebiddercodes list not defined",
 			args: args{
 				bidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":{"pubmatic":{"enabled":true}}}}}`)},
 			},
 			want: []string{"all"},
 		},
 		{
-			name: "request.ext valid and wildcard bidder code",
+			name: "wildcard in alternatebiddercodes list",
 			args: args{
 				bidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":{"pubmatic":{"enabled":true,"allowedbiddercodes":["*"]}}}}}`)},
 			},
 			want: []string{"all"},
 		},
 		{
-			name: "request.ext.valid with empty bidder code list",
+			name: "empty alternatebiddercodes list",
 			args: args{
 				bidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":{"pubmatic":{"enabled":true,"allowedbiddercodes":[]}}}}}`)},
 			},
 			want: []string{"pubmatic"},
 		},
 		{
-			name: "request.ext valid and groupm bidder allowed",
+			name: "only groupm in alternatebiddercodes allowed",
 			args: args{
 				bidRequest: &openrtb2.BidRequest{Ext: json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":{"pubmatic":{"enabled":true,"allowedbiddercodes":["groupm"]}}}}}`)},
 			},
@@ -435,13 +457,50 @@ func Test_getAlternateBidderCodesFromRequest(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := getAlternateBidderCodesFromRequest(tt.args.bidRequest)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("getAlternateBidderCodesFromRequest() error = %v, wantErr %v", err, tt.wantErr)
-				return
+			var reqExt *openrtb_ext.ExtRequest
+			if len(tt.args.bidRequest.Ext) > 0 {
+				err := json.Unmarshal(tt.args.bidRequest.Ext, &reqExt)
+				if err != nil {
+					t.Errorf("getAlternateBidderCodesFromRequest() = %v", err)
+				}
 			}
+
+			got := getAlternateBidderCodesFromRequest(reqExt)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("getAlternateBidderCodesFromRequest() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_assertBidderCodes(t *testing.T) {
+	type args struct {
+		bidders []string
+	}
+	tests := []struct {
+		name string
+		args args
+		want []string
+	}{
+		{
+			name: "nil input",
+			args: args{
+				bidders: nil,
+			},
+			want: nil,
+		},
+		{
+			name: "input with duplicate, uppercase and whitespace entries",
+			args: args{
+				bidders: []string{"Pubmatic", "Groupm", "groupm", " ", "", " appnexus "},
+			},
+			want: []string{"groupm", "appnexus"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := assertBidderCodes(tt.args.bidders); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("assertBidderCodes() = %v, want %v", got, tt.want)
 			}
 		})
 	}

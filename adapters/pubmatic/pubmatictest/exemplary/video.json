@@ -101,8 +101,10 @@
                     "version":1
                 },
                 "acat": ["drg","dlu","ssr"],
-                "marketplace": {
-                  "allowedbidders": ["pubmatic"]
+                "prebid": {
+                  "bidderparams": {
+                    "acat": ["drg","dlu","ssr"]
+                  }
                 }
             }
           }

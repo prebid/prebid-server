@@ -55,9 +55,7 @@
                   }
               },
               "ext" : {
-                "marketplace": {
-                  "allowedbidders": ["pubmatic"]
-                }
+                "prebid": {}
               }
             }
           },
