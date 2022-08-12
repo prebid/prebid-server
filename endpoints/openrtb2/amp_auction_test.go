@@ -82,7 +82,10 @@ func TestGoodAmpRequests(t *testing.T) {
 			test.storedRequest = map[string]json.RawMessage{tagID: test.BidRequest}
 			test.endpointType = AMP_ENDPOINT
 
-			cfg := &config.Configuration{MaxRequestSize: maxSize}
+			cfg := &config.Configuration{
+				MaxRequestSize: maxSize,
+				GDPR:           config.GDPR{Enabled: true},
+			}
 			if test.Config != nil {
 				cfg.BlacklistedApps = test.Config.BlacklistedApps
 				cfg.BlacklistedAppMap = test.Config.getBlacklistedAppMap()
@@ -225,7 +228,7 @@ func TestAMPPageInfo(t *testing.T) {
 }
 
 func TestGDPRConsent(t *testing.T) {
-	consent := "BOu5On0Ou5On0ADACHENAO7pqzAAppY"
+	consent := "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA"
 	existingConsent := "BONV8oqONXwgmADACHENAO7pqzAAppY"
 
 	testCases := []struct {
@@ -301,7 +304,10 @@ func TestGDPRConsent(t *testing.T) {
 			newParamsValidator(t),
 			&mockAmpStoredReqFetcher{stored},
 			empty_fetcher.EmptyFetcher{},
-			&config.Configuration{MaxRequestSize: maxSize},
+			&config.Configuration{
+				MaxRequestSize: maxSize,
+				GDPR:           config.GDPR{Enabled: true},
+			},
 			&metricsConfig.NilMetricsEngine{},
 			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 			map[string]string{},
@@ -311,7 +317,7 @@ func TestGDPRConsent(t *testing.T) {
 		)
 
 		// Invoke Endpoint
-		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&consent_string=%s", test.consent), nil)
+		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&consent_type=2&consent_string=%s", test.consent), nil)
 		responseRecorder := httptest.NewRecorder()
 		endpoint(responseRecorder, request, nil)
 
@@ -342,7 +348,7 @@ func TestGDPRConsent(t *testing.T) {
 		assert.Empty(t, response.Warnings, test.description+":warnings")
 
 		// Invoke Endpoint With Legacy Param
-		requestLegacy := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&gdpr_consent=%s", test.consent), nil)
+		requestLegacy := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&consent_type=2&gdpr_consent=%s", test.consent), nil)
 		responseRecorderLegacy := httptest.NewRecorder()
 		endpoint(responseRecorderLegacy, requestLegacy, nil)
 
@@ -465,7 +471,7 @@ func TestCCPAConsent(t *testing.T) {
 		)
 
 		// Invoke Endpoint
-		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&consent_string=%s", test.consent), nil)
+		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&consent_type=3&consent_string=%s", test.consent), nil)
 		responseRecorder := httptest.NewRecorder()
 		endpoint(responseRecorder, request, nil)
 
@@ -511,7 +517,7 @@ func TestConsentWarnings(t *testing.T) {
 	}
 	invalidCCPAWarning := openrtb_ext.ExtBidderMessage{
 		Code:    10001,
-		Message: "Consent '" + invalidConsent + "' is not recognized as either CCPA or GDPR TCF.",
+		Message: "Consent string '" + invalidConsent + "' is not a valid CCPA consent string.",
 	}
 	invalidConsentWarning := openrtb_ext.ExtBidderMessage{
 		Code:    10001,
@@ -580,7 +586,7 @@ func TestConsentWarnings(t *testing.T) {
 		var request *http.Request
 
 		if testCase.invalidConsentURL {
-			request = httptest.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1&consent_string="+invalidConsent, nil)
+			request = httptest.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1&consent_type=3&consent_string="+invalidConsent, nil)
 
 		} else {
 			request = httptest.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1", nil)
@@ -615,8 +621,8 @@ func TestConsentWarnings(t *testing.T) {
 }
 
 func TestNewAndLegacyConsentBothProvided(t *testing.T) {
-	validConsentGDPR1 := "BOu5On0Ou5On0ADACHENAO7pqzAAppY"
-	validConsentGDPR2 := "BONV8oqONXwgmADACHENAO7pqzAAppY"
+	validConsentGDPR1 := "COwGVJOOwGVJOADACHENAOCAAO6as_-AAAhoAFNLAAoAAAA"
+	validConsentGDPR2 := "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA"
 
 	testCases := []struct {
 		description     string
@@ -661,7 +667,10 @@ func TestNewAndLegacyConsentBothProvided(t *testing.T) {
 			newParamsValidator(t),
 			&mockAmpStoredReqFetcher{stored},
 			empty_fetcher.EmptyFetcher{},
-			&config.Configuration{MaxRequestSize: maxSize},
+			&config.Configuration{
+				MaxRequestSize: maxSize,
+				GDPR:           config.GDPR{Enabled: true},
+			},
 			&metricsConfig.NilMetricsEngine{},
 			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 			map[string]string{},
@@ -671,7 +680,7 @@ func TestNewAndLegacyConsentBothProvided(t *testing.T) {
 		)
 
 		// Invoke Endpoint
-		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&consent_string=%s&gdpr_consent=%s", test.consent, test.consentLegacy), nil)
+		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&consent_type=2&consent_string=%s&gdpr_consent=%s", test.consent, test.consentLegacy), nil)
 		responseRecorder := httptest.NewRecorder()
 		endpoint(responseRecorder, request, nil)
 
