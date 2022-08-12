@@ -64,10 +64,10 @@ func TestUpdateImpsWithFloorsVariousRuleKeys(t *testing.T) {
 			"native|pbadslot123|bundle1": 0.01,
 		}, Default: 0.01}}}}
 
-	floorExt4 := &openrtb_ext.PriceFloorRules{FloorMin: 1.00, Data: &openrtb_ext.PriceFloorData{ModelGroups: []openrtb_ext.PriceFloorModelGroup{{Schema: openrtb_ext.PriceFloorSchema{Fields: []string{"mediaType", "pbAdSlot", "bundle"}},
+	floorExt4 := &openrtb_ext.PriceFloorRules{FloorMin: 1.00, Data: &openrtb_ext.PriceFloorData{ModelGroups: []openrtb_ext.PriceFloorModelGroup{{Schema: openrtb_ext.PriceFloorSchema{Fields: []string{"mediaType", "adUnitCode", "bundle"}},
 		Values: map[string]float64{
-			"native|pbadslot123|bundle1": 0.01,
-		}, Default: 0.01}}}}
+			"native|tag123|bundle1": 1.5,
+		}, Default: 1.0}}}}
 	tt := []struct {
 		name     string
 		floorExt *openrtb_ext.PriceFloorRules
@@ -83,7 +83,7 @@ func TestUpdateImpsWithFloorsVariousRuleKeys(t *testing.T) {
 				},
 				Device: &openrtb2.Device{Geo: &openrtb2.Geo{Country: "USA"}, UA: "Phone"},
 				Imp:    []openrtb2.Imp{{ID: "1234", Audio: &openrtb2.Audio{MaxDuration: 10}}},
-				Ext:    json.RawMessage(`{"prebid": {"floors": {"data": {"currency": "USD","skipRate": 0, "schema": {"fields": ["channel","size","domain"]},"values": {"chName|USA|tablet": 1.01, "*|*|*": 16.01},"default": 1},"channel": {"name": "chName","version": "ver1"}}}}`),
+				Ext:    json.RawMessage(`{"data":{"modelgroups":[{"schema":{"fields":["mediaType","country","deviceType"]},"values":{"audio|USA|phone":1.01},"default":0.01}]}}`),
 			},
 			floorExt: floorExt,
 			floorVal: 1.01,
@@ -138,11 +138,11 @@ func TestUpdateImpsWithFloorsVariousRuleKeys(t *testing.T) {
 					Publisher: &openrtb2.Publisher{Domain: "www.website.com"},
 				},
 				Device: &openrtb2.Device{Geo: &openrtb2.Geo{Country: "USA"}, UA: "tablet"},
-				Imp:    []openrtb2.Imp{{ID: "1234", Native: &openrtb2.Native{}, Ext: json.RawMessage(`{"data": {"adserver": {"name": "gam","adslot": "adslot123"}, "pbadslot": "pbadslot123"}}`)}},
+				Imp:    []openrtb2.Imp{{ID: "1234", TagID: "tag123", Native: &openrtb2.Native{}, Ext: json.RawMessage(`{"data": {"adserver": {"name": "gam","adslot": "adslot123"}, "pbadslot": "pbadslot123"}}`)}},
 				Ext:    json.RawMessage(`{"prebid": { "floors": {"data": {"currency": "USD","skipRate": 0,"schema": {"fields": [ "mediaType", "size", "domain" ] },"values": {  "banner|300x250|www.website.com": 1.01, "banner|300x250|*": 2.01, "banner|300x600|www.website.com": 3.01,  "banner|300x600|*": 4.01, "banner|728x90|www.website.com": 5.01, "banner|728x90|*": 6.01, "banner|*|www.website.com": 7.01, "banner|*|*": 8.01, "*|300x250|www.website.com": 9.01, "*|300x250|*": 10.01, "*|300x600|www.website.com": 11.01,  "*|300x600|*": 12.01,  "*|728x90|www.website.com": 13.01, "*|728x90|*": 14.01,  "*|*|www.website.com": 15.01, "*|*|*": 16.01  }, "default": 1}}}}`),
 			},
 			floorExt: floorExt4,
-			floorVal: 1.00,
+			floorVal: 1.5,
 			floorCur: "USD",
 		},
 		{
