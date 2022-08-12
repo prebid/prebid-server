@@ -11,6 +11,8 @@ type ExtUser struct {
 	Prebid *ExtUserPrebid `json:"prebid,omitempty"`
 
 	Eids []ExtUserEid `json:"eids,omitempty"`
+
+	Data json.RawMessage `json:"data,omitempty"`
 }
 
 // ExtUserPrebid defines the contract for bidrequest.user.ext.prebid
