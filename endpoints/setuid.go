@@ -61,6 +61,7 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(err.Error()))
 			metricsEngine.RecordSetUid(metrics.SetUidSyncerUnknown)
+			so.Errors = []error{err}
 			so.Status = http.StatusBadRequest
 			return
 		}
@@ -71,6 +72,7 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(err.Error()))
 			metricsEngine.RecordSetUid(metrics.SetUidBadRequest)
+			so.Errors = []error{err}
 			so.Status = http.StatusBadRequest
 			return
 		}
@@ -82,8 +84,17 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 		account, fetchErrs := accountService.GetAccount(context.Background(), cfg, accountsFetcher, accountID)
 		if len(fetchErrs) > 0 {
 			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(combineErrors(fetchErrs).Error()))
-			metricsEngine.RecordSetUid(metrics.SetUidBadRequest)
+			err := combineErrors(fetchErrs)
+			w.Write([]byte(err.Error()))
+			switch err {
+			case errCookieSyncAccountBlocked:
+				metricsEngine.RecordSetUid(metrics.SetUidAccountBlocked)
+			case errCookieSyncAccountInvalid:
+				metricsEngine.RecordSetUid(metrics.SetUidAccountInvalid)
+			default:
+				metricsEngine.RecordSetUid(metrics.SetUidBadRequest)
+			}
+			so.Errors = []error{err}
 			so.Status = http.StatusBadRequest
 			return
 		}
@@ -99,6 +110,7 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 			case http.StatusUnavailableForLegalReasons:
 				metricsEngine.RecordSetUid(metrics.SetUidGDPRHostCookieBlocked)
 			}
+			so.Errors = []error{errors.New(body)}
 			so.Status = status
 			return
 		}

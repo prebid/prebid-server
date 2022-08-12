@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
@@ -235,8 +236,8 @@ func parseImpressionObject(imp *openrtb2.Imp, extractWrapperExtFromImp, extractP
 	var pubID string
 
 	// PubMatic supports banner and video impressions.
-	if imp.Banner == nil && imp.Video == nil {
-		return wrapExt, pubID, fmt.Errorf("Invalid MediaType. PubMatic only supports Banner and Video. Ignoring ImpID=%s", imp.ID)
+	if imp.Banner == nil && imp.Video == nil && imp.Native == nil {
+		return wrapExt, pubID, fmt.Errorf("invalid MediaType. PubMatic only supports Banner, Video and Native. Ignoring ImpID=%s", imp.ID)
 	}
 
 	if imp.Audio != nil {
@@ -394,13 +395,23 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 			seat := ""
 			var bidExt *pubmaticBidExt
 			bidType := openrtb_ext.BidTypeBanner
-			if err := json.Unmarshal(bid.Ext, &bidExt); err == nil && bidExt != nil {
+			err := json.Unmarshal(bid.Ext, &bidExt)
+			if err != nil {
+				errs = append(errs, err)
+			} else if bidExt != nil {
 				seat = bidExt.Marketplace
 				if bidExt.VideoCreativeInfo != nil && bidExt.VideoCreativeInfo.Duration != nil {
 					impVideo.Duration = *bidExt.VideoCreativeInfo.Duration
 				}
 				bidType = getBidType(bidExt)
 			}
+
+			if bidType == openrtb_ext.BidTypeNative {
+				if value, _, _, err := jsonparser.Get([]byte(bid.AdM), string(openrtb_ext.BidTypeNative)); err == nil {
+					bid.AdM = string(value)
+				}
+			}
+
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:      &bid,
 				BidType:  bidType,
