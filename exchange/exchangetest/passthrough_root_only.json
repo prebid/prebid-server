@@ -44,9 +44,7 @@
                         }
                     }],
                     "ext": {
-                        "prebid": {
-                            "passthrough": {"bid_response_passthrough":20}
-                        }
+                        "prebid": {}
                     }
                 }
             },
