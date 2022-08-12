@@ -23,7 +23,6 @@ type reqBodyExt struct {
 type reqBodyExtBidder struct {
 	Type        string `json:"type"`
 	PlacementID string `json:"placementId,omitempty"`
-	EndpointID  string `json:"endpointId,omitempty"`
 }
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
@@ -52,14 +51,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		}
 
 		temp := reqBodyExt{AndBeyondMediaBidderExt: reqBodyExtBidder{}}
-
-		if andBeyondMediaExt.PlacementID != "" {
-			temp.AndBeyondMediaBidderExt.PlacementID = andBeyondMediaExt.PlacementID
-			temp.AndBeyondMediaBidderExt.Type = "publisher"
-		} else if andBeyondMediaExt.EndpointID != "" {
-			temp.AndBeyondMediaBidderExt.EndpointID = andBeyondMediaExt.EndpointID
-			temp.AndBeyondMediaBidderExt.Type = "network"
-		}
+		temp.AndBeyondMediaBidderExt.PlacementID = andBeyondMediaExt.PlacementID
+		temp.AndBeyondMediaBidderExt.Type = "publisher"
 
 		finalyImpExt, err := json.Marshal(temp)
 		if err != nil {

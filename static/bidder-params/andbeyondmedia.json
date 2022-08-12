@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "title": "AndBeyond.Media Adapter Params",
-    "description": "A schema which validates params accepted by the Compass adapter",
+    "description": "A schema which validates params accepted by the AndBeyond.Media adapter",
     "type": "object",
   
     "properties": {
@@ -9,15 +9,7 @@
         "type": "string",
         "minLength": 1,
         "description": "Placement ID"
-      },
-      "endpointId": {
-        "type": "string",
-        "minLength": 1,
-        "description": "Endpoint ID"
       }
     },
-    "oneOf": [
-      { "required": ["placementId"] },
-      { "required": ["endpointId"] }
-    ]
+    "required": ["placementId"]
   }
