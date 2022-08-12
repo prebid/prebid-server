@@ -213,7 +213,7 @@
   "expectedMakeRequestsErrors": [],
   "expectedMakeBidsErrors": [
     {
-      "value": "getAdmFromHuaweiAdsContent failed: extractAdmNative: response is not a native ad",
+      "value": "generate Adm field from HuaweiAds response failed: extract Adm for Native ad: huaweiads response is not a native ad",
       "comparison": "literal"
     }
   ]

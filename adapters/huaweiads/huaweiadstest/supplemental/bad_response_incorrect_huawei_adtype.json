@@ -220,7 +220,7 @@
   "expectedMakeRequestsErrors": [],
   "expectedMakeBidsErrors": [
     {
-      "value": "getAdmFromHuaweiAdsContent failed: extractAdmBanner: huaweiads response adtype doesn't match",
+      "value": "generate Adm field from HuaweiAds response failed: openrtb banner should correspond to huaweiads adtype: banner or interstitial",
       "comparison": "literal"
     }
   ]
