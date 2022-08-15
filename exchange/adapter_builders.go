@@ -153,6 +153,7 @@ import (
 	rtbhouse "github.com/prebid/prebid-server/adapters/tjx_rtbhouse"
 	rubicon "github.com/prebid/prebid-server/adapters/tjx_rubicon"
 	rubiconmraid "github.com/prebid/prebid-server/adapters/tjx_rubiconmraid"
+	scalemonk "github.com/prebid/prebid-server/adapters/tjx_scalemonk"
 	spotad "github.com/prebid/prebid-server/adapters/tjx_spotad"
 	tapjoy "github.com/prebid/prebid-server/adapters/tjx_tapjoy"
 	taurusx "github.com/prebid/prebid-server/adapters/tjx_taurusx"
@@ -283,6 +284,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderRTBHouse:          rtbhouse.Builder,
 		openrtb_ext.BidderRubicon:           rubicon.Builder,
 		openrtb_ext.BidderRubiconMRAID:      rubiconmraid.Builder,
+		openrtb_ext.BidderScaleMonk:         scalemonk.Builder,
 		openrtb_ext.BidderSharethrough:      sharethrough.Builder,
 		openrtb_ext.BidderSilverMob:         silvermob.Builder,
 		openrtb_ext.BidderSmaato:            smaato.Builder,
