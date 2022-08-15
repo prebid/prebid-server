@@ -15,8 +15,9 @@ import (
 )
 
 var mockAccountData = map[string]json.RawMessage{
-	"valid_acct":    json.RawMessage(`{"disabled":false}`),
-	"disabled_acct": json.RawMessage(`{"disabled":true}`),
+	"valid_acct":     json.RawMessage(`{"disabled":false}`),
+	"disabled_acct":  json.RawMessage(`{"disabled":true}`),
+	"malformed_acct": json.RawMessage(`{"disabled":"invalid type"}`),
 }
 
 type mockAccountFetcher struct {
@@ -66,6 +67,12 @@ func TestGetAccount(t *testing.T) {
 		{accountID: "disabled_acct", required: true, disabled: false, err: &errortypes.BlacklistedAcct{}},
 		{accountID: "disabled_acct", required: false, disabled: true, err: &errortypes.BlacklistedAcct{}},
 		{accountID: "disabled_acct", required: true, disabled: true, err: &errortypes.BlacklistedAcct{}},
+
+		// pubID given and matches a host account explicitly disabled (Disabled: true on account json)
+		{accountID: "malformed_acct", required: false, disabled: false, err: &errortypes.MalformedAcct{}},
+		{accountID: "malformed_acct", required: true, disabled: false, err: &errortypes.MalformedAcct{}},
+		{accountID: "malformed_acct", required: false, disabled: true, err: &errortypes.MalformedAcct{}},
+		{accountID: "malformed_acct", required: true, disabled: true, err: &errortypes.MalformedAcct{}},
 
 		// account not provided (does not exist)
 		{accountID: "", required: false, disabled: false, err: nil},
