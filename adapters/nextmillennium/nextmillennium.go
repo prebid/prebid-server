@@ -86,12 +86,14 @@ func (adapter *adapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidReques
 		Headers: headers}, nil
 }
 
+type nmExtPrebidStoredRequest struct {
+	ID string `json:"id"`
+}
+type nmExtPrebid struct {
+	Storedrequest nmExtPrebidStoredRequest `json:"storedrequest"`
+}
 type nextMillJsonExt struct {
-	Prebid struct {
-		Storedrequest struct {
-			ID string `json:"id"`
-		} `json:"storedrequest"`
-	} `json:"prebid"`
+	Prebid nmExtPrebid `json:"prebid"`
 }
 
 func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ImpExtNextMillennium) *openrtb2.BidRequest {
