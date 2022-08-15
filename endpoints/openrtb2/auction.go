@@ -1318,7 +1318,7 @@ func (deps *endpointDeps) validateSite(req *openrtb_ext.RequestWrapper) error {
 		return err
 	}
 	siteAmp := siteExt.GetAmp()
-	if siteAmp < 0 || siteAmp > 1 {
+	if siteAmp != nil && (*siteAmp < 0 || *siteAmp > 1) {
 		return errors.New(`request.site.ext.amp must be either 1, 0, or undefined`)
 	}
 
@@ -1526,6 +1526,10 @@ func setAuctionTypeImplicitly(bidReq *openrtb2.BidRequest) {
 func setSiteImplicitly(httpReq *http.Request, bidReq *openrtb2.BidRequest) {
 	if bidReq.Site == nil || bidReq.Site.Page == "" || bidReq.Site.Domain == "" {
 		referrerCandidate := httpReq.Referer()
+		// If http referer is disabled and thus has empty value - use site.page instead
+		if referrerCandidate == "" && bidReq.Site != nil && bidReq.Site.Page != "" {
+			referrerCandidate = bidReq.Site.Page
+		}
 		if parsedUrl, err := url.Parse(referrerCandidate); err == nil {
 			if domain, err := publicsuffix.EffectiveTLDPlusOne(parsedUrl.Host); err == nil {
 				if bidReq.Site == nil {
@@ -1681,7 +1685,6 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 				return nil, nil, []error{err}
 			}
 			resolvedImps = append(resolvedImps, resolvedImp)
-
 			impId, err := jsonparser.GetString(resolvedImp, "id")
 			if err != nil {
 				return nil, nil, []error{err}
@@ -1691,12 +1694,25 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 			if impData.ImpExtPrebid.Options != nil {
 				echoVideoAttributes = impData.ImpExtPrebid.Options.EchoVideoAttrs
 			}
-			impExtInfoMap[impId] = exchange.ImpExtInfo{EchoVideoAttrs: echoVideoAttributes, StoredImp: storedImps[impData.ImpExtPrebid.StoredRequest.ID]}
+
+			// Extract Passthrough from Merged Imp
+			passthrough, _, _, err := jsonparser.Get(resolvedImp, "ext", "prebid", "passthrough")
+			if err != nil && err != jsonparser.KeyPathNotFoundError {
+				return nil, nil, []error{err}
+			}
+			impExtInfoMap[impId] = exchange.ImpExtInfo{EchoVideoAttrs: echoVideoAttributes, StoredImp: storedImps[impData.ImpExtPrebid.StoredRequest.ID], Passthrough: passthrough}
 
 		} else {
 			resolvedImps = append(resolvedImps, impData.Imp)
+			impId, err := jsonparser.GetString(impData.Imp, "id")
+			if err != nil {
+				if err == jsonparser.KeyPathNotFoundError {
+					err = fmt.Errorf("request.imp[%d] missing required field: \"id\"\n", i)
+				}
+				return nil, nil, []error{err}
+			}
+			impExtInfoMap[impId] = exchange.ImpExtInfo{Passthrough: impData.ImpExtPrebid.Passthrough}
 		}
-
 	}
 	if len(resolvedImps) > 0 {
 		newImpJson, err := json.Marshal(resolvedImps)
@@ -1714,7 +1730,6 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 
 // parseImpInfo parses the request JSON and returns impression and unmarshalled imp.ext.prebid
 func parseImpInfo(requestJson []byte) (impData []ImpExtPrebidData, errs []error) {
-
 	if impArray, dataType, _, err := jsonparser.Get(requestJson, "imp"); err == nil && dataType == jsonparser.Array {
 		_, err = jsonparser.ArrayEach(impArray, func(imp []byte, _ jsonparser.ValueType, _ int, err error) {
 			impExtData, _, _, err := jsonparser.Get(imp, "ext", "prebid")

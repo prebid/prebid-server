@@ -41,6 +41,8 @@ type RequestWrapper struct {
 	sourceExt  *SourceExt
 }
 
+const jsonEmptyObjectLength = 2
+
 func (rw *RequestWrapper) GetUserExt() (*UserExt, error) {
 	if rw.userExt != nil {
 		return rw.userExt, nil
@@ -150,97 +152,131 @@ func (rw *RequestWrapper) RebuildRequest() error {
 }
 
 func (rw *RequestWrapper) rebuildUserExt() error {
-	if rw.BidRequest.User == nil && rw.userExt != nil && rw.userExt.Dirty() {
-		rw.User = &openrtb2.User{}
+	if rw.userExt == nil || !rw.userExt.Dirty() {
+		return nil
 	}
-	if rw.userExt != nil && rw.userExt.Dirty() {
-		userJson, err := rw.userExt.marshal()
-		if err != nil {
-			return err
-		}
+
+	userJson, err := rw.userExt.marshal()
+	if err != nil {
+		return err
+	}
+
+	if userJson != nil && rw.User == nil {
+		rw.User = &openrtb2.User{Ext: userJson}
+	} else if rw.User != nil {
 		rw.User.Ext = userJson
 	}
+
 	return nil
 }
 
 func (rw *RequestWrapper) rebuildDeviceExt() error {
-	if rw.Device == nil && rw.deviceExt != nil && rw.deviceExt.Dirty() {
-		rw.Device = &openrtb2.Device{}
+	if rw.deviceExt == nil || !rw.deviceExt.Dirty() {
+		return nil
 	}
-	if rw.deviceExt != nil && rw.deviceExt.Dirty() {
-		deviceJson, err := rw.deviceExt.marshal()
-		if err != nil {
-			return err
-		}
+
+	deviceJson, err := rw.deviceExt.marshal()
+	if err != nil {
+		return err
+	}
+
+	if deviceJson != nil && rw.Device == nil {
+		rw.Device = &openrtb2.Device{Ext: deviceJson}
+	} else if rw.Device != nil {
 		rw.Device.Ext = deviceJson
 	}
+
 	return nil
 }
 
 func (rw *RequestWrapper) rebuildRequestExt() error {
-	if rw.requestExt != nil && rw.requestExt.Dirty() {
-		requestJson, err := rw.requestExt.marshal()
-		if err != nil {
-			return err
-		}
-		rw.Ext = requestJson
+	if rw.requestExt == nil || !rw.requestExt.Dirty() {
+		return nil
 	}
+
+	requestJson, err := rw.requestExt.marshal()
+	if err != nil {
+		return err
+	}
+
+	rw.Ext = requestJson
+
 	return nil
 }
 
 func (rw *RequestWrapper) rebuildAppExt() error {
-	if rw.App == nil && rw.appExt != nil && rw.appExt.Dirty() {
-		rw.App = &openrtb2.App{}
+	if rw.appExt == nil || !rw.appExt.Dirty() {
+		return nil
 	}
-	if rw.appExt != nil && rw.appExt.Dirty() {
-		appJson, err := rw.appExt.marshal()
-		if err != nil {
-			return err
-		}
+
+	appJson, err := rw.appExt.marshal()
+	if err != nil {
+		return err
+	}
+
+	if appJson != nil && rw.App == nil {
+		rw.App = &openrtb2.App{Ext: appJson}
+	} else if rw.App != nil {
 		rw.App.Ext = appJson
 	}
+
 	return nil
 }
 
 func (rw *RequestWrapper) rebuildRegExt() error {
-	if rw.Regs == nil && rw.regExt != nil && rw.regExt.Dirty() {
-		rw.Regs = &openrtb2.Regs{}
+	if rw.regExt == nil || !rw.regExt.Dirty() {
+		return nil
 	}
-	if rw.regExt != nil && rw.regExt.Dirty() {
-		regsJson, err := rw.regExt.marshal()
-		if err != nil {
-			return err
-		}
+
+	regsJson, err := rw.regExt.marshal()
+	if err != nil {
+		return err
+	}
+
+	if regsJson != nil && rw.Regs == nil {
+		rw.Regs = &openrtb2.Regs{Ext: regsJson}
+	} else if rw.Regs != nil {
 		rw.Regs.Ext = regsJson
 	}
+
 	return nil
 }
 
 func (rw *RequestWrapper) rebuildSiteExt() error {
-	if rw.Site == nil && rw.siteExt != nil && rw.siteExt.Dirty() {
-		rw.Site = &openrtb2.Site{}
+	if rw.siteExt == nil || !rw.siteExt.Dirty() {
+		return nil
 	}
-	if rw.siteExt != nil && rw.siteExt.Dirty() {
-		siteJson, err := rw.siteExt.marshal()
-		if err != nil {
-			return err
-		}
+
+	siteJson, err := rw.siteExt.marshal()
+	if err != nil {
+		return err
+	}
+
+	if siteJson != nil && rw.Site == nil {
+		rw.Site = &openrtb2.Site{Ext: siteJson}
+	} else if rw.Site != nil {
 		rw.Site.Ext = siteJson
 	}
+
 	return nil
 }
 
 func (rw *RequestWrapper) rebuildSourceExt() error {
-	if rw.Source == nil && rw.sourceExt != nil && rw.sourceExt.Dirty() {
-		rw.Source = &openrtb2.Source{}
+	if rw.sourceExt == nil || !rw.sourceExt.Dirty() {
+		return nil
 	}
-	if rw.sourceExt != nil && rw.sourceExt.Dirty() {
-		sourceJson, err := rw.sourceExt.marshal()
-		if err != nil {
-			return err
-		}
+
+	sourceJson, err := rw.sourceExt.marshal()
+	if err != nil {
+		return err
+	}
+
+	if sourceJson != nil && rw.Source == nil {
+		rw.Source = &openrtb2.Source{Ext: sourceJson}
+	} else if rw.Source != nil {
 		rw.Source.Ext = sourceJson
 	}
+
 	return nil
 }
 
@@ -300,11 +336,11 @@ func (ue *UserExt) unmarshal(extJson json.RawMessage) error {
 
 func (ue *UserExt) marshal() (json.RawMessage, error) {
 	if ue.consentDirty {
-		consentJson, err := json.Marshal(ue.consent)
-		if err != nil {
-			return nil, err
-		}
-		if len(consentJson) > 2 {
+		if ue.consent != nil && len(*ue.consent) > 0 {
+			consentJson, err := json.Marshal(ue.consent)
+			if err != nil {
+				return nil, err
+			}
 			ue.ext["consent"] = json.RawMessage(consentJson)
 		} else {
 			delete(ue.ext, "consent")
@@ -313,12 +349,16 @@ func (ue *UserExt) marshal() (json.RawMessage, error) {
 	}
 
 	if ue.prebidDirty {
-		prebidJson, err := json.Marshal(ue.prebid)
-		if err != nil {
-			return nil, err
-		}
-		if len(prebidJson) > 2 {
-			ue.ext["prebid"] = json.RawMessage(prebidJson)
+		if ue.prebid != nil {
+			prebidJson, err := json.Marshal(ue.prebid)
+			if err != nil {
+				return nil, err
+			}
+			if len(prebidJson) > jsonEmptyObjectLength {
+				ue.ext["prebid"] = json.RawMessage(prebidJson)
+			} else {
+				delete(ue.ext, "prebid")
+			}
 		} else {
 			delete(ue.ext, "prebid")
 		}
@@ -326,7 +366,7 @@ func (ue *UserExt) marshal() (json.RawMessage, error) {
 	}
 
 	if ue.eidsDirty {
-		if len(*ue.eids) > 0 {
+		if ue.eids != nil && len(*ue.eids) > 0 {
 			eidsJson, err := json.Marshal(ue.eids)
 			if err != nil {
 				return nil, err
@@ -343,7 +383,6 @@ func (ue *UserExt) marshal() (json.RawMessage, error) {
 		return nil, nil
 	}
 	return json.Marshal(ue.ext)
-
 }
 
 func (ue *UserExt) Dirty() bool {
@@ -443,12 +482,16 @@ func (re *RequestExt) unmarshal(extJson json.RawMessage) error {
 
 func (re *RequestExt) marshal() (json.RawMessage, error) {
 	if re.prebidDirty {
-		prebidJson, err := json.Marshal(re.prebid)
-		if err != nil {
-			return nil, err
-		}
-		if len(prebidJson) > 2 {
-			re.ext["prebid"] = json.RawMessage(prebidJson)
+		if re.prebid != nil {
+			prebidJson, err := json.Marshal(re.prebid)
+			if err != nil {
+				return nil, err
+			}
+			if len(prebidJson) > jsonEmptyObjectLength {
+				re.ext["prebid"] = json.RawMessage(prebidJson)
+			} else {
+				delete(re.ext, "prebid")
+			}
 		} else {
 			delete(re.ext, "prebid")
 		}
@@ -456,15 +499,16 @@ func (re *RequestExt) marshal() (json.RawMessage, error) {
 	}
 
 	if re.schainDirty {
-		if re.schain == nil {
-		}
-
-		schainJson, err := json.Marshal(re.schain)
-		if err != nil {
-			return nil, err
-		}
-		if len(schainJson) > 2 && re.schain != nil {
-			re.ext["schain"] = json.RawMessage(schainJson)
+		if re.schain != nil {
+			schainJson, err := json.Marshal(re.schain)
+			if err != nil {
+				return nil, err
+			}
+			if len(schainJson) > jsonEmptyObjectLength {
+				re.ext["schain"] = json.RawMessage(schainJson)
+			} else {
+				delete(re.ext, "schain")
+			}
 		} else {
 			delete(re.ext, "schain")
 		}
@@ -562,12 +606,16 @@ func (de *DeviceExt) unmarshal(extJson json.RawMessage) error {
 
 func (de *DeviceExt) marshal() (json.RawMessage, error) {
 	if de.prebidDirty {
-		prebidJson, err := json.Marshal(de.prebid)
-		if err != nil {
-			return nil, err
-		}
-		if len(prebidJson) > 2 {
-			de.ext["prebid"] = json.RawMessage(prebidJson)
+		if de.prebid != nil {
+			prebidJson, err := json.Marshal(de.prebid)
+			if err != nil {
+				return nil, err
+			}
+			if len(prebidJson) > jsonEmptyObjectLength {
+				de.ext["prebid"] = json.RawMessage(prebidJson)
+			} else {
+				delete(de.ext, "prebid")
+			}
 		} else {
 			delete(de.ext, "prebid")
 		}
@@ -645,12 +693,16 @@ func (ae *AppExt) unmarshal(extJson json.RawMessage) error {
 
 func (ae *AppExt) marshal() (json.RawMessage, error) {
 	if ae.prebidDirty {
-		prebidJson, err := json.Marshal(ae.prebid)
-		if err != nil {
-			return nil, err
-		}
-		if len(prebidJson) > 2 {
-			ae.ext["prebid"] = json.RawMessage(prebidJson)
+		if ae.prebid != nil {
+			prebidJson, err := json.Marshal(ae.prebid)
+			if err != nil {
+				return nil, err
+			}
+			if len(prebidJson) > jsonEmptyObjectLength {
+				ae.ext["prebid"] = json.RawMessage(prebidJson)
+			} else {
+				delete(ae.ext, "prebid")
+			}
 		} else {
 			delete(ae.ext, "prebid")
 		}
@@ -780,7 +832,7 @@ func (re *RegExt) SetUSPrivacy(uSPrivacy string) {
 type SiteExt struct {
 	ext      map[string]json.RawMessage
 	extDirty bool
-	amp      int8
+	amp      *int8
 	ampDirty bool
 }
 
@@ -809,11 +861,11 @@ func (se *SiteExt) unmarshal(extJson json.RawMessage) error {
 
 func (se *SiteExt) marshal() (json.RawMessage, error) {
 	if se.ampDirty {
-		ampJson, err := json.Marshal(se.amp)
-		if err != nil {
-			return nil, err
-		}
-		if len(ampJson) > 2 {
+		if se.amp != nil {
+			ampJson, err := json.Marshal(se.amp)
+			if err != nil {
+				return nil, err
+			}
 			se.ext["amp"] = json.RawMessage(ampJson)
 		} else {
 			delete(se.ext, "amp")
@@ -845,11 +897,11 @@ func (se *SiteExt) SetExt(ext map[string]json.RawMessage) {
 	se.extDirty = true
 }
 
-func (se *SiteExt) GetAmp() int8 {
+func (se *SiteExt) GetAmp() *int8 {
 	return se.amp
 }
 
-func (se *SiteExt) SetUSPrivacy(amp int8) {
+func (se *SiteExt) SetAmp(amp *int8) {
 	se.amp = amp
 	se.ampDirty = true
 }
@@ -887,12 +939,16 @@ func (se *SourceExt) unmarshal(extJson json.RawMessage) error {
 
 func (se *SourceExt) marshal() (json.RawMessage, error) {
 	if se.schainDirty {
-		schainJson, err := json.Marshal(se.schain)
-		if err != nil {
-			return nil, err
-		}
-		if len(schainJson) > 2 {
-			se.ext["schain"] = json.RawMessage(schainJson)
+		if se.schain != nil {
+			schainJson, err := json.Marshal(se.schain)
+			if err != nil {
+				return nil, err
+			}
+			if len(schainJson) > jsonEmptyObjectLength {
+				se.ext["schain"] = json.RawMessage(schainJson)
+			} else {
+				delete(se.ext, "schain")
+			}
 		} else {
 			delete(se.ext, "schain")
 		}

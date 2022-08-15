@@ -48,7 +48,7 @@ type bidExt struct {
 }
 
 type bidTtxExt struct {
-	MediaType string `json:mediaType,omitempty`
+	MediaType string `json:"mediaType,omitempty"`
 }
 
 // MakeRequests create the object for TTX Reqeust.

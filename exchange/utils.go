@@ -3,14 +3,14 @@ package exchange
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/rand"
-
-	"github.com/prebid/prebid-server/stored_responses"
 
 	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/go-gdpr/vendorconsent"
+
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/firstpartydata"
@@ -21,6 +21,7 @@ import (
 	"github.com/prebid/prebid-server/privacy/ccpa"
 	"github.com/prebid/prebid-server/privacy/lmt"
 	"github.com/prebid/prebid-server/schain"
+	"github.com/prebid/prebid-server/stored_responses"
 )
 
 var integrationTypeMap = map[metrics.RequestType]config.IntegrationType{
@@ -55,7 +56,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 		return
 	}
 
-	allowedBidderRequests = make([]BidderRequest, 0, 0)
+	allowedBidderRequests = make([]BidderRequest, 0)
 
 	bidderImpWithBidResp := stored_responses.InitStoredBidResponses(req.BidRequest, auctionReq.StoredBidResponses)
 
@@ -217,7 +218,7 @@ func getAuctionBidderRequests(auctionRequest AuctionRequest,
 		return nil, []error{err}
 	}
 
-	bidderParamsInReqExt, err := adapters.ExtractReqExtBidderParamsEmbeddedMap(req.BidRequest)
+	bidderParamsInReqExt, err := adapters.ExtractReqExtBidderParamsMap(req.BidRequest)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -236,23 +237,10 @@ func getAuctionBidderRequests(auctionRequest AuctionRequest,
 
 		sChainWriter.Write(&reqCopy, bidder)
 
-		if len(bidderParamsInReqExt) != 0 {
-
-			// Update bidder-params(requestExt.Prebid.BidderParams) for the bidder to only contain bidder-params for
-			// this bidder only and remove bidder-params for all other bidders from requestExt.Prebid.BidderParams
-			params, err := getBidderParamsForBidder(bidderParamsInReqExt, bidder)
-			if err != nil {
-				return nil, []error{err}
-			}
-
-			requestExt.Prebid.BidderParams = params
-		}
-
-		reqExt, err := getExtJson(req.BidRequest, requestExt)
+		reqCopy.Ext, err = buildRequestExtForBidder(bidder, req.BidRequest.Ext, requestExt, bidderParamsInReqExt)
 		if err != nil {
 			return nil, []error{err}
 		}
-		reqCopy.Ext = reqExt
 
 		if err := removeUnpermissionedEids(&reqCopy, bidder, requestExt); err != nil {
 			errs = append(errs, fmt.Errorf("unable to enforce request.ext.prebid.data.eidpermissions because %v", err))
@@ -285,26 +273,41 @@ func getAuctionBidderRequests(auctionRequest AuctionRequest,
 	return bidderRequests, errs
 }
 
-func getBidderParamsForBidder(bidderParamsInReqExt map[string]map[string]json.RawMessage, bidder string) (json.RawMessage, error) {
-	var params json.RawMessage
-	if bidderParams, ok := bidderParamsInReqExt[bidder]; ok {
-		var err error
-		params, err = json.Marshal(bidderParams)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return params, nil
-}
-
-func getExtJson(req *openrtb2.BidRequest, unpackedExt *openrtb_ext.ExtRequest) (json.RawMessage, error) {
-	if len(req.Ext) == 0 || unpackedExt == nil {
+func buildRequestExtForBidder(bidder string, requestExt json.RawMessage, requestExtParsed *openrtb_ext.ExtRequest, bidderParamsInReqExt map[string]json.RawMessage) (json.RawMessage, error) {
+	if len(requestExt) == 0 || requestExtParsed == nil {
 		return json.RawMessage(``), nil
 	}
 
-	extCopy := *unpackedExt
-	extCopy.Prebid.SChains = nil
-	return json.Marshal(extCopy)
+	// Resolve Bidder Params
+	var bidderParams json.RawMessage
+	if bidderParamsInReqExt != nil {
+		bidderParams = bidderParamsInReqExt[bidder]
+	}
+
+	// Copy Allowed Fields
+	// Per: https://docs.prebid.org/prebid-server/endpoints/openrtb2/pbs-endpoint-auction.html#prebid-server-ortb2-extension-summary
+	prebid := openrtb_ext.ExtRequestPrebid{
+		Integration:         requestExtParsed.Prebid.Integration,
+		Channel:             requestExtParsed.Prebid.Channel,
+		Debug:               requestExtParsed.Prebid.Debug,
+		CurrencyConversions: requestExtParsed.Prebid.CurrencyConversions,
+		BidderParams:        bidderParams,
+	}
+
+	// Marshal New Prebid Object
+	prebidJson, err := json.Marshal(prebid)
+	if err != nil {
+		return nil, err
+	}
+
+	// Update Ext With Prebid Json
+	extMap := make(map[string]json.RawMessage)
+	if err := json.Unmarshal(requestExt, &extMap); err != nil {
+		return nil, err
+	}
+	extMap["prebid"] = prebidJson
+
+	return json.Marshal(extMap)
 }
 
 // extractBuyerUIDs parses the values from user.ext.prebid.buyeruids, and then deletes those values from the ext.
@@ -396,17 +399,28 @@ func splitImps(imps []openrtb2.Imp) (map[string][]openrtb2.Imp, error) {
 }
 
 func createSanitizedImpExt(impExt, impExtPrebid map[string]json.RawMessage) (map[string]json.RawMessage, error) {
-	sanitizedImpExt := make(map[string]json.RawMessage, 3)
+	sanitizedImpExt := make(map[string]json.RawMessage, 6)
+	sanitizedImpPrebidExt := make(map[string]json.RawMessage, 2)
 
-	delete(impExtPrebid, openrtb_ext.PrebidExtBidderKey)
-	if len(impExtPrebid) > 0 {
-		if impExtPrebidJSON, err := json.Marshal(impExtPrebid); err == nil {
+	// copy allowed imp[].ext.prebid fields
+	if v, exists := impExtPrebid["is_rewarded_inventory"]; exists {
+		sanitizedImpPrebidExt["is_rewarded_inventory"] = v
+	}
+
+	if v, exists := impExtPrebid["options"]; exists {
+		sanitizedImpPrebidExt["options"] = v
+	}
+
+	// marshal sanitized imp[].ext.prebid
+	if len(sanitizedImpPrebidExt) > 0 {
+		if impExtPrebidJSON, err := json.Marshal(sanitizedImpPrebidExt); err == nil {
 			sanitizedImpExt[openrtb_ext.PrebidExtKey] = impExtPrebidJSON
 		} else {
 			return nil, fmt.Errorf("cannot marshal ext.prebid: %v", err)
 		}
 	}
 
+	// copy reserved imp[].ext fields known to not be bidder names
 	if v, exists := impExt[openrtb_ext.FirstPartyDataExtKey]; exists {
 		sanitizedImpExt[openrtb_ext.FirstPartyDataExtKey] = v
 	}
@@ -647,7 +661,7 @@ func extractBidRequestExt(bidRequest *openrtb2.BidRequest) (*openrtb_ext.ExtRequ
 	requestExt := &openrtb_ext.ExtRequest{}
 
 	if bidRequest == nil {
-		return requestExt, fmt.Errorf("Error bidRequest should not be nil")
+		return requestExt, errors.New("Error bidRequest should not be nil")
 	}
 
 	if len(bidRequest.Ext) > 0 {
