@@ -759,13 +759,6 @@ type RegExt struct {
 	usPrivacyDirty bool
 }
 
-// regExt := regsExt.GetExt()
-// gdprJSON, hasGDPR := regExt["gdpr"]
-// if hasGDPR && (string(gdprJSON) != "0" && string(gdprJSON) != "1") {
-// 	return errors.New("request.regs.ext.gdpr must be either 0 or 1.")
-// }
-// return nil
-
 func (re *RegExt) unmarshal(extJson json.RawMessage) error {
 	if len(re.ext) != 0 || re.Dirty() {
 		return nil

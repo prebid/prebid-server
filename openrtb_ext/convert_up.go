@@ -2,25 +2,33 @@ package openrtb_ext
 
 import (
 	"fmt"
-
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
 )
 
-func normalizeTo26(r *RequestWrapper) error {
-	if err := migrateEnsureExt(r); err != nil {
+func ConvertUpTo26(r *RequestWrapper) error {
+	if err := convertUpEnsureExt(r); err != nil {
 		return err
 	}
 
-	migrateSupplyChainFrom24To25(r)
-	migrateSupplyChainFrom25To26(r)
+	// schain
+	moveSupplyChainFrom24To25(r)
+	moveSupplyChainFrom25To26(r)
 
-	migrateGDPRFrom25To26(r)
+	// gdpr
+	moveGDPRFrom25To26(r)
+	moveConsentFrom25To26(r)
+
+	// ccpa
+	moveUSPrivacyFrom25To26(r)
+
+	// eid
+	moveEIDFrom25To26(r)
 
 	return nil
 }
 
-// migrateEnsureExt gets all extension objects required for migration to verify there are no access errors.
-func migrateEnsureExt(r *RequestWrapper) error {
+// convertUpEnsureExt gets all extension objects required for migration to verify there
+// are no access errors.
+func convertUpEnsureExt(r *RequestWrapper) error {
 	if _, err := r.GetRequestExt(); err != nil {
 		return fmt.Errorf("req.ext is invalid: %v", err)
 	}
@@ -33,46 +41,48 @@ func migrateEnsureExt(r *RequestWrapper) error {
 		return fmt.Errorf("req.regs.ext is invalid: %v", err)
 	}
 
+	if _, err := r.GetUserExt(); err != nil {
+		return fmt.Errorf("req.user.ext is invalid: %v", err)
+	}
+
 	return nil
 }
 
-// migrateSupplyChainFrom24To25 modifies the request to move the OpenRTB 2.4 supply chain object (req.ext.schain)
-// to the OpenRTB 2.5 location (req.source.ext.schain). If the OpenRTB 2.5 location is already present, the
-// OpenRTB 2.4 supply chain object is dropped.
-func migrateSupplyChainFrom24To25(r *RequestWrapper) {
+// moveSupplyChainFrom24To25 modifies the request to move the OpenRTB 2.4 supply chain
+// object (req.ext.schain) to the OpenRTB 2.5 location (req.source.ext.schain). If the
+// OpenRTB 2.5 location is already present the OpenRTB 2.4 supply chain object is dropped.
+func moveSupplyChainFrom24To25(r *RequestWrapper) {
 	// read and clear 2.4 location
 	reqExt, _ := r.GetRequestExt()
 	schain24 := reqExt.GetSChain()
 	reqExt.SetSChain(nil)
 
-	// move to 2.5 location, if not already present
+	// move to 2.5 location if not already present
 	sourceExt, _ := r.GetSourceExt()
 	if sourceExt.GetSChain() == nil {
 		sourceExt.SetSChain(schain24)
 	}
 }
 
-// migrateSupplyChainFrom25To26 modifies the request to move the OpenRTB 2.5 supply chain object (req.source.ext.schain)
-// to the OpenRTB 2.6 location (r.source.schain). If the OpenRTB 2.6 location is already present, the OpenRTB 2.5 supply
-// chain object is dropped.
-func migrateSupplyChainFrom25To26(r *RequestWrapper) {
+// moveSupplyChainFrom25To26 modifies the request to move the OpenRTB 2.5 supply chain
+// object (req.source.ext.schain) to the OpenRTB 2.6 location (r.source.schain). If the
+// OpenRTB 2.6 location is already present the OpenRTB 2.5 supply chain object is dropped.
+func moveSupplyChainFrom25To26(r *RequestWrapper) {
 	// read and clear 2.5 location
 	sourceExt, _ := r.GetSourceExt()
 	schain25 := sourceExt.GetSChain()
 	sourceExt.SetSChain(nil)
 
-	// move to 2.6 location, if not already present
-	if schain25 != nil {
-		if r.Source == nil {
-			r.Source = &openrtb2.Source{}
-		}
-		if r.Source.SChain == nil {
-			r.Source.SChain = schain25
-		}
+	// move to 2.6 location if not already present
+	if schain25 != nil && r.Source.SChain == nil {
+		r.Source.SChain = schain25
 	}
 }
 
-func migrateGDPRFrom25To26(r *RequestWrapper) {
+// moveGDPRFrom25To26 modifies the request to move the OpenRTB 2.5 GDPR signal field
+// (r.regs.ext.gdpr) to the OpenRTB 2.6 location (r.regs.gdpr). If the OpenRTB 2.6 location
+// is already present the OpenRTB 2.5 GDPR signal is dropped.
+func moveGDPRFrom25To26(r *RequestWrapper) {
 	// read and clear 2.5 location
 	regsExt, _ := r.GetRegExt()
 	gdpr25 := regsExt.GetGDPR()
@@ -84,7 +94,47 @@ func migrateGDPRFrom25To26(r *RequestWrapper) {
 	}
 }
 
-// New field: $.regs.us_privacy. This data currently comes in on .regs.ext.us_privacy.
-// New field: $.user.consent. This data currently comes in on .user.ext.consent.
-// New object: $.user.eids. Contains the new ortb2 objects EIDs and UIDs. This data currently comes in on .user.ext.eids. It appears to be a lift-and-shift.
-// New field: $.imp[].rwdd. This replaces the extension imp.ext.prebid.is_rewarded_inventory?
+// moveConsentFrom25To26 modifies the request to move the OpenRTB 2.5 GDPR consent field
+// (r.user.ext.consent) to the OpenRTB 2.6 location (r.user.consent). If the OpenRTB 2.6
+// location is already present the OpenRTB 2.5 GDPR consent is dropped.
+func moveConsentFrom25To26(r *RequestWrapper) {
+	// read and clear 2.5 location
+	userExt, _ := r.GetUserExt()
+	consent25 := userExt.GetConsent()
+	userExt.SetConsent(nil)
+
+	// move to 2.6 location
+	if consent25 != nil && r.User.Consent == "" {
+		r.User.Consent = *consent25
+	}
+}
+
+// moveUSPrivacyFrom25To26 modifies the request to move the OpenRTB 2.5 US Privacy (CCPA)
+// consent string (r.regs.ext.usprivacy) to the OpenRTB 2.6 location (r.regs.usprivacy). If
+// the OpenRTB 2.6 location is already present the OpenRTB 2.5 consent string is dropped.
+func moveUSPrivacyFrom25To26(r *RequestWrapper) {
+	// read and clear 2.5 location
+	regsExt, _ := r.GetRegExt()
+	usPrivacy25 := regsExt.GetUSPrivacy()
+	regsExt.SetUSPrivacy("")
+
+	// move to 2.6 location
+	if usPrivacy25 != "" && r.Regs.USPrivacy == "" {
+		r.Regs.USPrivacy = usPrivacy25
+	}
+}
+
+// moveEIDFrom25To26 modifies the request to move the OpenRTB 2.5 external identifiers
+// (r.user.ext.eids) to the OpenRTB 2.6 location (r.user.eids). If the OpenRTB 2.6 location
+// is already present the OpenRTB 2.5 external identifiers is dropped.
+func moveEIDFrom25To26(r *RequestWrapper) {
+	// read and clear 2.5 location
+	userExt, _ := r.GetUserExt()
+	eid25 := userExt.GetEid()
+	userExt.SetEid(nil)
+
+	// move to 2.6 location
+	if eid25 != nil && r.User.EIDs == nil {
+		r.User.EIDs = *eid25
+	}
+}
