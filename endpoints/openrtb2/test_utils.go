@@ -1202,7 +1202,6 @@ func (te *exchangeTestWrapper) HoldAuction(ctx context.Context, r exchange.Aucti
 
 // buildTestExchange returns an exchange with mock bidder servers and mock currency convertion server
 func buildTestExchange(t *testing.T, test testCase, adapterMap map[openrtb_ext.BidderName]exchange.AdaptedBidder, mockBidServersArray []*httptest.Server, mockCurrencyRatesServer *httptest.Server, bidderInfos config.BidderInfos, cfg *config.Configuration, met metrics.MetricsEngine, mockFetcher stored_requests.CategoryFetcher) (exchange.Exchange, []*httptest.Server) {
-
 	if len(test.Config.MockBidders) == 0 {
 		test.Config.MockBidders = append(test.Config.MockBidders, mockBidderHandler{BidderName: "appnexus", Currency: "USD", Price: 0.00})
 	}

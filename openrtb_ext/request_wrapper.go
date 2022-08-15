@@ -755,8 +755,8 @@ type RegExt struct {
 	extDirty       bool
 	usPrivacy      string
 	usPrivacyDirty bool
-	GDPR           *int8
-	GDPRDirty      bool
+	gdpr           *int8
+	gdprDirty      bool
 }
 
 func (re *RegExt) unmarshal(extJson json.RawMessage) error {
@@ -777,7 +777,7 @@ func (re *RegExt) unmarshal(extJson json.RawMessage) error {
 	}
 	gdprJson, hasGdpr := re.ext["gdpr"]
 	if hasGdpr {
-		err = json.Unmarshal(gdprJson, &re.GDPR)
+		err = json.Unmarshal(gdprJson, &re.gdpr)
 	}
 
 	return err
@@ -797,17 +797,21 @@ func (re *RegExt) marshal() (json.RawMessage, error) {
 		re.usPrivacyDirty = false
 	}
 
-	if re.GDPRDirty {
-		gdprJson, err := json.Marshal(*re.GDPR)
-		if err != nil {
-			return nil, err
-		}
-		if len(gdprJson) > 0 {
-			re.ext["gdpr"] = json.RawMessage(gdprJson)
+	if re.gdprDirty {
+		if re.gdpr != nil {
+			gdprJson, err := json.Marshal(*re.gdpr)
+			if err != nil {
+				return nil, err
+			}
+			if len(gdprJson) > 0 {
+				re.ext["gdpr"] = json.RawMessage(gdprJson)
+			} else {
+				delete(re.ext, "gdpr")
+			}
 		} else {
 			delete(re.ext, "gdpr")
 		}
-		re.GDPRDirty = false
+		re.gdprDirty = false
 	}
 
 	re.extDirty = false
@@ -818,7 +822,7 @@ func (re *RegExt) marshal() (json.RawMessage, error) {
 }
 
 func (re *RegExt) Dirty() bool {
-	return re.extDirty || re.usPrivacyDirty || re.GDPRDirty
+	return re.extDirty || re.usPrivacyDirty || re.gdprDirty
 }
 
 func (re *RegExt) GetExt() map[string]json.RawMessage {
@@ -845,12 +849,12 @@ func (re *RegExt) SetUSPrivacy(usPrivacy string) {
 }
 
 func (re *RegExt) GetGDPR() *int8 {
-	return re.GDPR
+	return re.gdpr
 }
 
 func (re *RegExt) SetGDPR(gdpr *int8) {
-	re.GDPR = gdpr
-	re.GDPRDirty = true
+	re.gdpr = gdpr
+	re.gdprDirty = true
 }
 
 // ---------------------------------------------------------------
