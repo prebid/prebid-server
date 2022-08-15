@@ -16,7 +16,7 @@
         },
         "ext": {
           "bidder": {
-            "slotid": "m8x9x3rzff",
+            "slotid": "testslotid",
             "adtype": "banner",
             "publisherid": "123",
             "signkey": "signkey",
@@ -27,8 +27,8 @@
       }
     ],
     "app": {
-      "bundle": "com.example1.p",
-      "name": "Huawei name",
+      "bundle": "com.example.p1",
+      "name": "Huawei Browser",
       "ver": "9.1.0.301",
       "content": {
         "language": "zh"
@@ -37,9 +37,10 @@
     "device": {
       "ua": "useragent",
       "h": 1920,
-      "language": "en",
+      "language": "zh",
       "model": "COL-TEST",
       "os": "android",
+      "ifa": "gaid",
       "osv": "10.0.0",
       "devicetype": 4,
       "make": "huawei",
@@ -47,14 +48,13 @@
       "ip": "ip",
       "pxratio": 23.01,
       "geo": {
-        "country": "PRT"
+        "country": "CHN"
       }
     },
     "user": {
       "ext": {
         "data": {
           "gaid": [
-            "gaid"
           ],
           "oaid": [
             "oaid"
@@ -74,7 +74,7 @@
   "httpcalls": [
     {
       "expectedRequest": {
-        "uri": "https://adx-dre.op.hicloud.com/ppsadx/getResult",
+        "uri": "https://acd.op.hicloud.com/ppsadx/getResult",
         "headers": {
           "Accept": [
             "application/json"
@@ -92,15 +92,15 @@
         "body": {
           "app": {
             "lang": "zh",
-            "country": "PT",
-            "name": "Huawei name",
+            "country": "CN",
+            "name": "Huawei Browser",
             "pkgname": "com.example.pkgname1",
             "version": "9.1.0.301"
           },
           "multislot": [
             {
               "adtype": 8,
-              "slotid": "m8x9x3rzff",
+              "slotid": "testslotid",
               "test": 0,
               "format": [
                 {
@@ -114,12 +114,12 @@
           ],
           "device": {
             "height": 1920,
-            "language": "en",
+            "language": "zh",
             "oaid": "oaid",
             "os": "android",
             "type": 4,
             "ip": "ip",
-            "localeCountry": "PT",
+            "localeCountry": "CN",
             "pxratio": 23.01,
             "width": 1080,
             "clientTime": "2018-11-02 16:34:07.981+1300",
@@ -128,7 +128,7 @@
             "version": "10.0.0",
             "maker": "huawei",
             "model": "COL-TEST",
-            "belongCountry": "PT"
+            "belongCountry": "CN"
           },
           "geo": {
           },
@@ -145,31 +145,22 @@
       "mockResponse": {
         "status": 200,
         "body": {
-          "ctrlSwitchs": "0",
-          "dsp1cost": 61,
-          "dspcost": 108,
           "multiad": [
             {
               "adtype": 8,
-              "brsetting": "Y",
               "content": [
                 {
-                  "clickActionList": [
-                    1
-                  ],
                   "contentid": "58025103",
                   "creativetype": 2,
                   "ctrlSwitchs": "001011001001010112",
                   "endtime": 1621428898335,
-                  "filterList": [
-                    3
-                  ],
-                  "interactiontype": 1,
+                  "interactiontype": 2,
                   "landingTitle": 1,
                   "metaData": {
                     "adSign": "2",
                     "appPromotionChannel": "401721412",
-                    "clickUrl": "https://ads.huawei.com/usermgtportal/home/index.html#/",
+                    "clickUrl": "",
+                    "intent": "https%3A%2F%2Fads.huawei.com%2Fusermgtportal%2Fhome%2Findex.html",
                     "imageInfo": [
                       {
                         "checkSha256Flag": 1,
@@ -187,44 +178,26 @@
                     {
                       "eventType": "click",
                       "url": [
-                        "http://test/click1",
-                        "http://test/click2",
-                        "http://test/click3"
+                        "http://test/click1"
                       ]
                     },
                     {
                       "eventType": "imp",
                       "url": [
-                        "http://test/imp1",
-                        "http://test/imp2",
-                        "http://test/imp3"
+                        "http://test/imp1"
                       ]
                     }
                   ],
-                  "paramfromserver": {
-                    "a": "1||test",
-                    "sig": "",
-                    "t": "99990101235959"
-                  },
                   "price": 2.8,
                   "starttime": 1621267200000,
                   "taskid": "48017658"
                 }
               ],
               "retcode30": 200,
-              "slotid": "m8x9x3rzff"
+              "slotid": "testslotid"
             }
           ],
-          "noReportAdTypeEventList": [
-            {
-              "adType": 8,
-              "eventTypeList": [
-                "exception_6"
-              ]
-            }
-          ],
-          "retcode": 200,
-          "totalCacheSize": 300
+          "retcode": 200
         }
       }
     }
@@ -235,7 +208,7 @@
       "bids": [
         {
           "bid": {
-            "adm": "<style> html, body  { margin: 0; padding: 0; width: 100%; height: 100%; vertical-align: middle; }  html  { display: table; }  body { display: table-cell; vertical-align: middle; text-align: center; -webkit-text-size-adjust: none; }  </style> <span class=\"title-link advertiser_label\"></span> <a href='https://ads.huawei.com/usermgtportal/home/index.html#/' style=\"text-decoration:none\" onclick=sendGetReq()> <img src='https://ads.huawei.com/usermgtportal/home/img/huawei_logo_black.aaec817d.svg' width='250' height='300'/> </a> <img height=\"1\" width=\"1\" src='http://test/imp1' >  <img height=\"1\" width=\"1\" src='http://test/imp2' >  <img height=\"1\" width=\"1\" src='http://test/imp3' >  <script type=\"text/javascript\">var dspClickTrackings = [\"http://test/click1\",\"http://test/click2\",\"http://test/click3\"];function sendGetReq() {sendSomeGetReq(dspClickTrackings)}function sendOneGetReq(url) {var req = new XMLHttpRequest();req.open('GET', url, true);req.send(null);}function sendSomeGetReq(urls) {for (var i = 0; i < urls.length; i++) {sendOneGetReq(urls[i]);}}</script>",
+            "adm": "<style> html, body  { margin: 0; padding: 0; width: 100%; height: 100%; vertical-align: middle; }  html  { display: table; }  body { display: table-cell; vertical-align: middle; text-align: center; -webkit-text-size-adjust: none; }  </style> <span class=\"title-link advertiser_label\"></span> <a href='https://ads.huawei.com/usermgtportal/home/index.html' style=\"text-decoration:none\" onclick=sendGetReq()> <img src='https://ads.huawei.com/usermgtportal/home/img/huawei_logo_black.aaec817d.svg' width='250' height='300'/> </a> <img height=\"1\" width=\"1\" src='http://test/imp1' >  <script type=\"text/javascript\">var dspClickTrackings = [\"http://test/click1\"];function sendGetReq() {sendSomeGetReq(dspClickTrackings)}function sendOneGetReq(url) {var req = new XMLHttpRequest();req.open('GET', url, true);req.send(null);}function sendSomeGetReq(urls) {for (var i = 0; i < urls.length; i++) {sendOneGetReq(urls[i]);}}</script>",
             "adomain": [
               "huaweiads"
             ],

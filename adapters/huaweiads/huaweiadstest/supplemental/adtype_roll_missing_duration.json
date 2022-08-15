@@ -4,6 +4,8 @@
     "imp": [
       {
         "id": "test-imp-id",
+        "video": {
+        },
         "ext": {
           "bidder": {
             "slotid": "m8x9x3rzff",
@@ -61,7 +63,7 @@
   ],
   "expectedMakeRequestsErrors": [
     {
-      "value": "GetHuaweiAdsReqAdslot30: MaxDuration is empty when adtype is roll.",
+      "value": "extract openrtb video failed: MaxDuration is empty when huaweiads adtype is roll.",
       "comparison": "literal"
     }
   ]

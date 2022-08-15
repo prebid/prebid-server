@@ -4,14 +4,20 @@
     "imp": [
       {
         "id": "test-imp-id",
-        "native": {
-          "request": "",
-          "ver": "1.2"
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ],
+          "w": 300,
+          "h": 250
         },
         "ext": {
           "bidder": {
-            "slotid": "u42ohmaufh",
-            "adtype": "native",
+            "slotid": "m8x9x3rzff",
+            "adtype": "banner",
             "publisherid": "123",
             "signkey": "signkey",
             "keyid": "41",
@@ -21,7 +27,7 @@
       }
     ],
     "app": {
-      "bundle": "com.huawei.browser",
+      "bundle": "com.wavehk.android",
       "name": "Huawei Browser",
       "ver": "9.1.0.301"
     },
@@ -31,27 +37,24 @@
       "language": "zh",
       "geoCountry": "CH",
       "model": "COL-TEST",
-      "os": "android",
+      "os": "ios",
+      "ifa": "test-ifa",
       "osv": "10.0.0",
       "devicetype": 4,
       "make": "huawei",
       "w": 1080,
-      "ip": "152.193.6.74",
+      "ip": "ip",
       "pxratio": 23.01,
       "geo": {
         "country": ""
       }
     },
     "user": {
-      "id": "db089de9-a62e-4861-a881-0ff15e052516",
-      "buyeruid": "v4_bidder_token",
       "ext": {
         "data": {
           "gaid": [
-            "gaid"
           ],
           "oaid": [
-            "oaid"
           ],
           "clientTime": [
             "2018-11-02 16:34:07.981+1300"
@@ -66,8 +69,10 @@
   ],
   "expectedBidResponses": [
   ],
-  "expectedMakeRequestsErrors": [{
-    "value": "extract openrtb native failed: imp.Native.Request is empty",
-    "comparison": "literal"
-  }]
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "get gaid from openrtb Device.IFA failed, and get device id failed: Imei ,Oaid, Gaid are all empty.",
+      "comparison": "literal"
+    }
+  ]
 }

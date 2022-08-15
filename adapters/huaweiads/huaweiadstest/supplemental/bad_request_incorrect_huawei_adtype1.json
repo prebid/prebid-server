@@ -4,13 +4,19 @@
     "imp": [
       {
         "id": "test-imp-id",
-        "native": {
-          "request": "",
-          "ver": "1.2"
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ],
+          "w": 300,
+          "h": 250
         },
         "ext": {
           "bidder": {
-            "slotid": "u42ohmaufh",
+            "slotid": "testslotid",
             "adtype": "native",
             "publisherid": "123",
             "signkey": "signkey",
@@ -21,30 +27,30 @@
       }
     ],
     "app": {
-      "bundle": "com.huawei.browser",
+      "bundle": "com.example.p1",
       "name": "Huawei Browser",
-      "ver": "9.1.0.301"
+      "ver": "9.1.0.301",
+      "content": {
+        "language": "zh"
+      }
     },
     "device": {
       "ua": "useragent",
       "h": 1920,
       "language": "zh",
-      "geoCountry": "CH",
       "model": "COL-TEST",
       "os": "android",
       "osv": "10.0.0",
       "devicetype": 4,
       "make": "huawei",
       "w": 1080,
-      "ip": "152.193.6.74",
+      "ip": "ip",
       "pxratio": 23.01,
       "geo": {
-        "country": ""
+        "country": "CHN"
       }
     },
     "user": {
-      "id": "db089de9-a62e-4861-a881-0ff15e052516",
-      "buyeruid": "v4_bidder_token",
       "ext": {
         "data": {
           "gaid": [
@@ -59,6 +65,9 @@
         }
       }
     },
+    "regs": {
+      "coppa": 1
+    },
     "ext": {
     }
   },
@@ -66,8 +75,10 @@
   ],
   "expectedBidResponses": [
   ],
-  "expectedMakeRequestsErrors": [{
-    "value": "extract openrtb native failed: imp.Native.Request is empty",
-    "comparison": "literal"
-  }]
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "check openrtb format: request has banner, doesn't correspond to huawei adtype native",
+      "comparison": "literal"
+    }
+  ]
 }
