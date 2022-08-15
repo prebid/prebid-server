@@ -1055,7 +1055,6 @@ func TestStoredRequests(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		nil,
 	}
 
 	testStoreVideoAttr := []bool{true, true, false, false, false}
@@ -1398,7 +1397,6 @@ func TestValidateRequest(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		nil,
 	}
 
 	testCases := []struct {
@@ -1702,7 +1700,6 @@ func TestSetIntegrationType(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		nil,
 	}
 
 	testCases := []struct {
@@ -1768,7 +1765,6 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		nil,
 	}
 
 	req := &openrtb2.BidRequest{}
@@ -1869,7 +1865,6 @@ func TestOversizedRequest(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		nil,
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -1907,7 +1902,6 @@ func TestRequestSizeEdgeCase(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		nil,
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -2235,7 +2229,6 @@ func TestValidateImpExt(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		nil,
 	}
 
 	for _, group := range testGroups {
@@ -2284,7 +2277,6 @@ func TestCurrencyTrunc(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		nil,
 	}
 
 	ui := int64(1)
@@ -2331,7 +2323,6 @@ func TestCCPAInvalid(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		nil,
 	}
 
 	ui := int64(1)
@@ -2382,7 +2373,6 @@ func TestNoSaleInvalid(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		nil,
 	}
 
 	ui := int64(1)
@@ -2436,7 +2426,6 @@ func TestValidateSourceTID(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		nil,
 	}
 
 	ui := int64(1)
@@ -2480,7 +2469,6 @@ func TestSChainInvalid(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		nil,
 	}
 
 	ui := int64(1)
@@ -2830,7 +2818,6 @@ func TestEidPermissionsInvalid(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		nil,
 	}
 
 	ui := int64(1)
@@ -3113,7 +3100,6 @@ func TestAuctionWarnings(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		nil,
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -3155,7 +3141,6 @@ func TestParseRequestParseImpInfoError(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		nil,
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -3729,7 +3714,6 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 				nil,
 				hardcodedResponseIPValidator{response: true},
 				empty_fetcher.EmptyFetcher{},
-				nil,
 			}
 
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
@@ -3830,7 +3814,6 @@ func TestParseRequestStoredResponses(t *testing.T) {
 				nil,
 				hardcodedResponseIPValidator{response: true},
 				&mockStoredResponseFetcher{mockStoredResponses},
-				nil,
 			}
 
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
@@ -3918,7 +3901,6 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 				nil,
 				hardcodedResponseIPValidator{response: true},
 				&mockStoredResponseFetcher{mockStoredBidResponses},
-				nil,
 			}
 
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
@@ -3952,7 +3934,6 @@ func TestValidateStoredResp(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		&mockStoredResponseFetcher{},
-		nil,
 	}
 
 	testCases := []struct {

@@ -85,8 +85,7 @@ func NewVideoEndpoint(
 		cache,
 		videoEndpointRegexp,
 		ipValidator,
-		empty_fetcher.EmptyFetcher{},
-		nil}).VideoAuctionEndpoint), nil
+		empty_fetcher.EmptyFetcher{}}).VideoAuctionEndpoint), nil
 }
 
 /*

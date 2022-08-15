@@ -139,8 +139,7 @@ func TestParseBoolPtr(t *testing.T) {
 func TestPrivacyReader(t *testing.T) {
 
 	type testInput struct {
-		policyReader PrivacyReader
-		ampParams    Params
+		ampParams Params
 	}
 	type expectedResults struct {
 		policyWriter privacy.PolicyWriter
@@ -161,7 +160,6 @@ func TestPrivacyReader(t *testing.T) {
 			tests: []testCase{
 				{
 					desc:     "Params comes with an empty consent string, expect nil policy writer. No warning returned",
-					in:       testInput{policyReader: PrivacyReader{}, ampParams: Params{}},
 					expected: expectedResults{policyWriter: privacy.NilPolicyWriter{}, warning: nil},
 				},
 			},
@@ -172,8 +170,7 @@ func TestPrivacyReader(t *testing.T) {
 				{
 					desc: "Consent type denied: expect nil policy writer. Warning is returned",
 					in: testInput{
-						policyReader: PrivacyReader{},
-						ampParams:    Params{Consent: "NOT_CCPA_NOR_GDPR_TCF2", ConsentType: ConsentDenied},
+						ampParams: Params{Consent: "NOT_CCPA_NOR_GDPR_TCF2", ConsentType: ConsentDenied},
 					},
 					expected: expectedResults{
 						policyWriter: privacy.NilPolicyWriter{},
@@ -183,8 +180,7 @@ func TestPrivacyReader(t *testing.T) {
 				{
 					desc: "Consent type TCF1: expect nil policy writer. Warning is returned",
 					in: testInput{
-						policyReader: PrivacyReader{},
-						ampParams:    Params{Consent: "NOT_CCPA_NOR_GDPR_TCF2", ConsentType: ConsentTCF1},
+						ampParams: Params{Consent: "NOT_CCPA_NOR_GDPR_TCF2", ConsentType: ConsentTCF1},
 					},
 					expected: expectedResults{
 						policyWriter: privacy.NilPolicyWriter{},
@@ -194,8 +190,7 @@ func TestPrivacyReader(t *testing.T) {
 				{
 					desc: "Consent type unknown: expect nil policy writer. Warning is returned",
 					in: testInput{
-						policyReader: PrivacyReader{},
-						ampParams:    Params{Consent: "NOT_CCPA_NOR_GDPR_TCF2", ConsentType: 101},
+						ampParams: Params{Consent: "NOT_CCPA_NOR_GDPR_TCF2", ConsentType: 101},
 					},
 					expected: expectedResults{
 						policyWriter: privacy.NilPolicyWriter{},
@@ -210,9 +205,6 @@ func TestPrivacyReader(t *testing.T) {
 				{
 					desc: "GDPR consent string is invalid, but consent type is TCF2: return a valid GDPR writer even and warn about the GDPR string being invalid",
 					in: testInput{
-						policyReader: PrivacyReader{
-							GDPR: privacy.MockConsentValidator{false},
-						},
 						ampParams: Params{Consent: "INVALID_GDPR", ConsentType: ConsentTCF2},
 					},
 					expected: expectedResults{
@@ -223,9 +215,6 @@ func TestPrivacyReader(t *testing.T) {
 				{
 					desc: "Valid GDPR consent string, return a valid GDPR writer and no warning",
 					in: testInput{
-						policyReader: PrivacyReader{
-							GDPR: privacy.MockConsentValidator{true},
-						},
 						ampParams: Params{Consent: "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA", ConsentType: ConsentTCF2},
 					},
 					expected: expectedResults{
@@ -241,9 +230,6 @@ func TestPrivacyReader(t *testing.T) {
 				{
 					desc: "CCPA consent string is invalid, but consent type is CCPA: return a nil writer a warning",
 					in: testInput{
-						policyReader: PrivacyReader{
-							CCPA: privacy.MockConsentValidator{false},
-						},
 						ampParams: Params{Consent: "XXXX", ConsentType: ConsentUSPrivacy},
 					},
 					expected: expectedResults{
@@ -254,9 +240,6 @@ func TestPrivacyReader(t *testing.T) {
 				{
 					desc: "Valid CCPA consent string, return a valid GDPR writer and no warning",
 					in: testInput{
-						policyReader: PrivacyReader{
-							CCPA: privacy.MockConsentValidator{true},
-						},
 						ampParams: Params{Consent: "1YYY", ConsentType: ConsentUSPrivacy},
 					},
 					expected: expectedResults{
@@ -269,7 +252,7 @@ func TestPrivacyReader(t *testing.T) {
 	}
 	for _, group := range testGroups {
 		for _, tc := range group.tests {
-			actualPolicyWriter, actualErr := tc.in.policyReader.ReadPolicy(tc.in.ampParams, nil, true)
+			actualPolicyWriter, actualErr := ReadPolicy(tc.in.ampParams, nil, true)
 
 			assert.Equal(t, tc.expected.policyWriter, actualPolicyWriter, tc.desc)
 			assert.Equal(t, tc.expected.warning, actualErr, tc.desc)

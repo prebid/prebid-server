@@ -49,14 +49,8 @@ const (
 	ConsentUSPrivacy
 )
 
-// PrivacyReader for values passed through query fields in the amp endpoint
-type PrivacyReader struct {
-	GDPR privacy.ConsentValidator
-	CCPA privacy.ConsentValidator
-}
-
 // ReadPolicy
-func (pr *PrivacyReader) ReadPolicy(ampParams Params, req *openrtb2.BidRequest, pbsConfigGDPREnabled bool) (privacy.PolicyWriter, error) {
+func ReadPolicy(ampParams Params, req *openrtb2.BidRequest, pbsConfigGDPREnabled bool) (privacy.PolicyWriter, error) {
 
 	if len(ampParams.Consent) == 0 {
 		return privacy.NilPolicyWriter{}, nil
@@ -81,7 +75,7 @@ func (pr *PrivacyReader) ReadPolicy(ampParams Params, req *openrtb2.BidRequest, 
 			}
 		}
 	case ConsentUSPrivacy:
-		if pr.CCPA.ValidateConsent(ampParams.Consent) {
+		if ccpa.ValidateConsent(ampParams.Consent) {
 			rv = ccpa.ConsentWriter{ampParams.Consent}
 		} else {
 			errMsg = fmt.Sprintf("Consent string '%s' is not a valid CCPA consent string.", ampParams.Consent)

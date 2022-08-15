@@ -21,8 +21,6 @@ import (
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/privacy/ccpa"
-	"github.com/prebid/prebid-server/privacy/gdpr"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/stored_responses"
@@ -74,11 +72,6 @@ func NewAmpEndpoint(
 		IPv6PrivateNetworks: cfg.RequestValidation.IPv6PrivateNetworksParsed,
 	}
 
-	ampPrivacy := &amp.PrivacyReader{
-		GDPR: gdpr.GDPRConsentValidator{},
-		CCPA: ccpa.CCPAConsentValidator{},
-	}
-
 	return httprouter.Handle((&endpointDeps{
 		uuidGenerator,
 		ex,
@@ -96,8 +89,7 @@ func NewAmpEndpoint(
 		nil,
 		nil,
 		ipValidator,
-		storedRespFetcher,
-		ampPrivacy}).AmpAuction), nil
+		storedRespFetcher}).AmpAuction), nil
 
 }
 
@@ -453,7 +445,7 @@ func (deps *endpointDeps) overrideWithParams(ampParams amp.Params, req *openrtb2
 		return []error{err}
 	}
 
-	policyWriter, policyWriterErr := deps.ampPrivacy.ReadPolicy(ampParams, req, deps.cfg.GDPR.Enabled)
+	policyWriter, policyWriterErr := amp.ReadPolicy(ampParams, req, deps.cfg.GDPR.Enabled)
 	if policyWriterErr != nil {
 		return []error{policyWriterErr}
 	}
