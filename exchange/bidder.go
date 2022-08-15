@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/http/httptrace"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/golang/glog"
@@ -106,6 +107,11 @@ type pbsOrtbSeatBid struct {
 	// seat defines whom these extra bids belong to.
 	seat string
 }
+
+// Possible values of compression types Prebid Server can support for bidder compression
+const (
+	Gzip string = "GZIP"
+)
 
 // AdaptBidder converts an adapters.Bidder into an exchange.AdaptedBidder.
 //
@@ -509,13 +515,9 @@ func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.Reques
 func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.RequestData, logger util.LogMsg) *httpCallInfo {
 	var requestBody []byte
 
-	switch bidder.config.EndpointCompression {
-	case "GZIP":
-		var b bytes.Buffer
-		w := gzip.NewWriter(&b)
-		w.Write([]byte(req.Body))
-		w.Close()
-		requestBody = b.Bytes()
+	switch strings.ToUpper(bidder.config.EndpointCompression) {
+	case Gzip:
+		requestBody = compressToGZIP(req.Body)
 		req.Headers.Set("Content-Encoding", "gzip")
 	default:
 		requestBody = req.Body
@@ -690,4 +692,12 @@ func prepareStoredResponse(impId string, bidResp json.RawMessage) *httpCallInfo 
 		err: nil,
 	}
 	return respData
+}
+
+func compressToGZIP(requestBody []byte) []byte {
+	var b bytes.Buffer
+	w := gzip.NewWriter(&b)
+	w.Write([]byte(requestBody))
+	w.Close()
+	return b.Bytes()
 }

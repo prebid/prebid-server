@@ -186,7 +186,7 @@ func TestSingleBidderGzip(t *testing.T) {
 		httpRequest: &adapters.RequestData{
 			Method:  "POST",
 			Uri:     server.URL,
-			Body:    []byte("{\"key\":\"val\"}"),
+			Body:    []byte(`{"key":"val"}`),
 			Headers: http.Header{},
 		},
 		bidResponse: nil,
