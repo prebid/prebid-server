@@ -296,9 +296,8 @@ func getAdUnitCode(imp openrtb2.Imp) string {
 		return gpId
 	}
 
-	tagID := imp.TagID
-	if tagID != "" {
-		return tagID
+	if imp.TagID != "" {
+		return imp.TagID
 	}
 
 	pbAdSlot, err := jsonparser.GetString(imp.Ext, "data", "pbadslot")
