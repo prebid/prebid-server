@@ -275,6 +275,10 @@ func TestSingleBidderGzip(t *testing.T) {
 		if len(seatBid.httpCalls) != test.httpCallsLen {
 			t.Errorf("The bidder shouldn't log HttpCalls when request.test == 0. Found %d", len(seatBid.httpCalls))
 		}
+		if test.debugInfo.Allow && len(seatBid.httpCalls) > 0 {
+			assert.Equalf(t, "gzip", seatBid.httpCalls[0].RequestHeaders["Content-Encoding"][0], "Mismatched headers")
+			assert.Equalf(t, "{\"key\":\"val\"}", seatBid.httpCalls[0].RequestBody, "Mismatched request bodies")
+		}
 		for index, bid := range seatBid.bids {
 			assert.NotEqual(t, mockBidderResponse.Bids[index].Bid.Price, bid.originalBidCPM, "The bid price was adjusted, so the originally bid CPM should be different")
 		}
