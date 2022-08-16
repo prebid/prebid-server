@@ -123,6 +123,74 @@ func TestGoodAmpRequests(t *testing.T) {
 	}
 }
 
+func TestSetRegExtGDPR(t *testing.T) {
+	gdprAppliesFalse := false
+	gdprAppliesTrue := true
+	type testInput struct {
+		gdprApplies *bool
+		req         *openrtb2.BidRequest
+	}
+	testCases := []struct {
+		desc            string
+		in              testInput
+		expectedErrMsg  string
+		expectedRegsExt json.RawMessage
+	}{
+		{
+			desc: "gdprApplies was not set and defaulted to nil. This isn't cause for an error",
+			in: testInput{
+				gdprApplies: nil,
+			},
+		},
+		{
+			desc: "gdprApplies isn't nil but the bidRequest is, expect RequestWrapper error",
+			in: testInput{
+				gdprApplies: &gdprAppliesFalse,
+				req:         nil,
+			},
+			expectedErrMsg: "Requestwrapper Sync called on a nil BidRequest",
+		},
+		{
+			desc: "gdprApplies was set but current req.regs.ext is malformed, expect error",
+			in: testInput{
+				gdprApplies: &gdprAppliesFalse,
+				req:         &openrtb2.BidRequest{Regs: &openrtb2.Regs{Ext: json.RawMessage(`malformed`)}},
+			},
+			expectedErrMsg: "invalid character 'm' looking for beginning of value",
+		},
+		{
+			desc: "gdprApplies equals false, expect req.Regs.Ext.GDPR to be 0",
+			in: testInput{
+				gdprApplies: &gdprAppliesFalse,
+				req:         &openrtb2.BidRequest{},
+			},
+			expectedRegsExt: json.RawMessage(`{"gdpr":0}`),
+		},
+		{
+			desc: "gdprApplies equals true, expect req.Regs.Ext.GDPR to be 1",
+			in: testInput{
+				gdprApplies: &gdprAppliesTrue,
+				req:         &openrtb2.BidRequest{},
+			},
+			expectedRegsExt: json.RawMessage(`{"gdpr":1}`),
+		},
+	}
+	for _, tc := range testCases {
+		err := setRegExtGDPR(tc.in.gdprApplies, tc.in.req)
+
+		if len(tc.expectedErrMsg) > 0 {
+			assert.Error(t, err, tc.desc)
+			assert.Equal(t, tc.expectedErrMsg, err.Error(), tc.desc)
+		} else {
+			assert.NoError(t, err, tc.desc)
+		}
+
+		if len(tc.expectedRegsExt) > 0 {
+			assert.JSONEq(t, string(tc.expectedRegsExt), string(tc.in.req.Regs.Ext), tc.desc)
+		}
+	}
+}
+
 // Prevents #683
 func TestAMPPageInfo(t *testing.T) {
 	const page = "http://test.somepage.co.uk:1234?myquery=1&other=2"

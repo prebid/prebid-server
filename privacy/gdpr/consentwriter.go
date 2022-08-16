@@ -9,16 +9,11 @@ import (
 
 // ConsentWriter implements the PolicyWriter interface for GDPR TCF.
 type ConsentWriter struct {
-	Consent     string
-	GDPRApplies *bool
+	Consent string
 }
 
 // Write mutates an OpenRTB bid request with the GDPR TCF consent.
 func (c ConsentWriter) Write(req *openrtb2.BidRequest) error {
-	if err := setRegExtGDPR(c.GDPRApplies, req); err != nil {
-		return err
-	}
-
 	if c.Consent == "" {
 		return nil
 	}
@@ -46,27 +41,4 @@ func (c ConsentWriter) Write(req *openrtb2.BidRequest) error {
 	}
 
 	return err
-}
-
-// setRegExtGDPR sets regs.ext.gdpr to either 0 or 1 only if it was set in the request query
-func setRegExtGDPR(gdprApplies *bool, req *openrtb2.BidRequest) error {
-	if gdprApplies == nil {
-		return nil
-	}
-
-	gdpr := int8(0)
-	if *gdprApplies {
-		gdpr++
-	}
-
-	reqWrap := &openrtb_ext.RequestWrapper{BidRequest: req}
-
-	regsExt, err := reqWrap.GetRegExt()
-	if err != nil {
-		return err
-	}
-
-	regsExt.SetGDPR(&gdpr)
-
-	return reqWrap.RebuildRequest()
 }

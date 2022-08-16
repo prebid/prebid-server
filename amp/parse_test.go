@@ -138,7 +138,6 @@ func TestParseBoolPtr(t *testing.T) {
 // TestPrivacyReader asserts the ReadPolicy scenarios
 func TestPrivacyReader(t *testing.T) {
 
-	boolTrue := true
 	type testInput struct {
 		ampParams Params
 	}
@@ -206,20 +205,20 @@ func TestPrivacyReader(t *testing.T) {
 				{
 					desc: "GDPR consent string is invalid, but consent type is TCF2: return a valid GDPR writer even and warn about the GDPR string being invalid",
 					in: testInput{
-						ampParams: Params{Consent: "INVALID_GDPR", ConsentType: ConsentTCF2, GdprApplies: &boolTrue},
+						ampParams: Params{Consent: "INVALID_GDPR", ConsentType: ConsentTCF2},
 					},
 					expected: expectedResults{
-						policyWriter: gdpr.ConsentWriter{"INVALID_GDPR", &boolTrue},
+						policyWriter: gdpr.ConsentWriter{"INVALID_GDPR"},
 						warning:      &errortypes.Warning{Message: "Consent string 'INVALID_GDPR' is not a valid TCF2 consent string.", WarningCode: errortypes.InvalidPrivacyConsentWarningCode},
 					},
 				},
 				{
 					desc: "Valid GDPR consent string, return a valid GDPR writer and no warning",
 					in: testInput{
-						ampParams: Params{Consent: "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA", ConsentType: ConsentTCF2, GdprApplies: &boolTrue},
+						ampParams: Params{Consent: "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA", ConsentType: ConsentTCF2},
 					},
 					expected: expectedResults{
-						policyWriter: gdpr.ConsentWriter{"CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA", &boolTrue},
+						policyWriter: gdpr.ConsentWriter{"CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA"},
 						warning:      nil,
 					},
 				},
