@@ -151,42 +151,42 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 
 		// Diffrent bid floors for each request
 		//iOS Requests Bid Floors
-		bfIOSRewardedVastA := 3.00
-		bfIOSRewardedVastB := 7.00
-		bfIOSRewardedVastC := 10.00
-		bfIOSRewardedVastD := 14.00
+		bfIOSRewardedVastA := 2.00
+		bfIOSRewardedVastB := 3.00
+		bfIOSRewardedVastC := 5.00
+		bfIOSRewardedVastD := 10.00
 		bfIOSRewardedMraidA := 3.00
-		bfIOSRewardedMraidB := 7.00
-		bfIOSRewardedMraidC := 10.00
-		bfIOSRewardedMraidD := 14.00
+		bfIOSRewardedMraidB := 5.00
+		bfIOSRewardedMraidC := 7.00
+		bfIOSRewardedMraidD := 10.00
 
-		bfIOSSkippableVastA := 2.00
-		bfIOSSkippableVastB := 3.00
-		bfIOSSkippableVastC := 5.00
-		bfIOSSkippableVastD := 7.00
-		bfIOSSkippableMraidA := 2.00
-		bfIOSSkippableMraidB := 3.00
-		bfIOSSkippableMraidC := 5.00
-		bfIOSSkippableMraidD := 7.00
+		bfIOSSkippableVastA := 5.00
+		bfIOSSkippableVastB := 7.00
+		bfIOSSkippableVastC := 10.00
+		bfIOSSkippableVastD := 14.00
+		bfIOSSkippableMraidA := 5.00
+		bfIOSSkippableMraidB := 7.00
+		bfIOSSkippableMraidC := 10.00
+		bfIOSSkippableMraidD := 14.00
 
 		//Android Request Bid Floors
-		bfAndroidRewardedVastA := 1.50
-		bfAndroidRewardedVastB := 3.50
-		bfAndroidRewardedVastC := 5.00
-		bfAndroidRewardedVastD := 7.00
+		bfAndroidRewardedVastA := 2.00
+		bfAndroidRewardedVastB := 5.00
+		bfAndroidRewardedVastC := 7.00
+		bfAndroidRewardedVastD := 10.00
 		bfAndroidRewardedMraidA := 1.50
-		bfAndroidRewardedMraidB := 3.50
-		bfAndroidRewardedMraidC := 5.00
-		bfAndroidRewardedMraidD := 7.00
+		bfAndroidRewardedMraidB := 2.50
+		bfAndroidRewardedMraidC := 3.50
+		bfAndroidRewardedMraidD := 5.00
 
 		bfAndroidSkippableVastA := 1.00
 		bfAndroidSkippableVastB := 1.50
 		bfAndroidSkippableVastC := 2.50
-		bfAndroidSkippableVastD := 3.50
-		bfAndroidSkippableMraidA := 1.00
-		bfAndroidSkippableMraidB := 1.50
-		bfAndroidSkippableMraidC := 2.50
-		bfAndroidSkippableMraidD := 3.50
+		bfAndroidSkippableVastD := 10.00
+		bfAndroidSkippableMraidA := 2.00
+		bfAndroidSkippableMraidB := 3.00
+		bfAndroidSkippableMraidC := 5.00
+		bfAndroidSkippableMraidD := 10.00
 
 		var modifiedParams []modifiedReqParams
 		if strings.ToLower(request.Device.OS) == "ios" {
