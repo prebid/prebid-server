@@ -166,7 +166,7 @@ func TestPrivacyReader(t *testing.T) {
 			},
 		},
 		{
-			groupDesc: "Consent type denied, unrecognized or TCF1, which is deprecated",
+			groupDesc: "Consent type either unespecified, unrecognized, or TCF1. Expect nil policy writer and a warning",
 			tests: []testCase{
 				{
 					desc: "Consent type denied: expect nil policy writer. Warning is returned",
@@ -201,7 +201,7 @@ func TestPrivacyReader(t *testing.T) {
 			},
 		},
 		{
-			groupDesc: "consent type TCF2",
+			groupDesc: "consent type TCF2. Return a valid GDPR consent writer in all scenarios.",
 			tests: []testCase{
 				{
 					desc: "GDPR consent string is invalid, but consent type is TCF2: return a valid GDPR writer even and warn about the GDPR string being invalid",
@@ -226,7 +226,7 @@ func TestPrivacyReader(t *testing.T) {
 			},
 		},
 		{
-			groupDesc: "consent type CCPA",
+			groupDesc: "consent type CCPA. Return valid CCPA consent writer only if consent string is valid.",
 			tests: []testCase{
 				{
 					desc: "CCPA consent string is invalid, but consent type is CCPA: return a nil writer a warning",
