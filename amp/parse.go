@@ -63,7 +63,7 @@ func ReadPolicy(ampParams Params, req *openrtb2.BidRequest, pbsConfigGDPREnabled
 	case ConsentTCF2:
 		if pbsConfigGDPREnabled {
 			// Even if consent is invalid, we write the consent string to req.user.ext.consent
-			rv = gdpr.ConsentWriter{ampParams.Consent, ampParams.GdprApplies}
+			rv = gdpr.ConsentWriter{ampParams.Consent}
 
 			if tcf2.IsConsentV2(ampParams.Consent) {
 				if _, err := tcf2.ParseString(ampParams.Consent); err != nil {
