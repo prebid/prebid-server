@@ -1372,11 +1372,11 @@ func TestValidateAccountsConfigRestrictions(t *testing.T) {
 	cfg, v := newDefaultConfig(t)
 	cfg.Accounts.Files.Enabled = true
 	cfg.Accounts.HTTP.Endpoint = "http://localhost"
-	cfg.Accounts.Postgres.ConnectionInfo.Database = "accounts"
+	cfg.Accounts.Database.ConnectionInfo.Database = "accounts"
 
 	errs := cfg.validate(v)
 	assert.Len(t, errs, 1)
-	assert.Contains(t, errs, errors.New("accounts.postgres: retrieving accounts via postgres not available, use accounts.files"))
+	assert.Contains(t, errs, errors.New("accounts.database: retrieving accounts via database not available, use accounts.files"))
 }
 
 func TestUserSyncFromEnv(t *testing.T) {

@@ -194,12 +194,15 @@ with different [configuration options](configuration.md). For example:
 
 ```yaml
 stored_requests:
-  postgres:
-    host: localhost
-    port: 5432
-    user: db-username
-    dbname: database-name
-    query: SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in %REQUEST_ID_LIST% UNION ALL SELECT id, impData, 'imp' as type FROM stored_imps WHERE id in %IMP_ID_LIST%;
+  database:
+    connection:
+      driver: postgres
+      host: localhost
+      port: 5432
+      user: db-username
+      dbname: database-name
+    fetcher:
+      query: SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in %REQUEST_ID_LIST% UNION ALL SELECT id, impData, 'imp' as type FROM stored_imps WHERE id in %IMP_ID_LIST%;
 ```
 
 ```yaml
@@ -234,17 +237,20 @@ Any concrete Fetcher in the project will be composed with any Cache(s) to create
 EventProducer events are used to Save or Invalidate values from the Cache(s).
 Saves and invalidates will propagate to all Cache layers.
 
-Here is an example `pbs.yaml` file which looks for Stored Requests first from Postgres, and then from an HTTP endpoint.
+Here is an example `pbs.yaml` file which looks for Stored Requests first from Database (i.e. Postgres), and then from an HTTP endpoint.
 It will use an in-memory LRU cache to store data locally, and poll another HTTP endpoint to listen for updates.
 
 ```yaml
 stored_requests:
-  postgres:
-    host: localhost
-    port: 5432
-    user: db-username
-    dbname: database-name
-    query: SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in %REQUEST_ID_LIST% UNION ALL SELECT id, impData, 'imp' as type FROM stored_imps WHERE id in %IMP_ID_LIST%;
+  database:
+    connection:
+      driver: postgres
+      host: localhost
+      port: 5432
+      user: db-username
+      dbname: database-name
+    fetcher:
+      query: SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in %REQUEST_ID_LIST% UNION ALL SELECT id, impData, 'imp' as type FROM stored_imps WHERE id in %IMP_ID_LIST%;
   http:
     endpoint: http://stored-requests.prebid.com
     amp_endpoint: http://stored-requests.prebid.com?amp=true

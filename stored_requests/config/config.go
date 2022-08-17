@@ -20,8 +20,8 @@ import (
 	"github.com/prebid/prebid-server/stored_requests/caches/nil_cache"
 	"github.com/prebid/prebid-server/stored_requests/events"
 	apiEvents "github.com/prebid/prebid-server/stored_requests/events/api"
+	databaseEvents "github.com/prebid/prebid-server/stored_requests/events/database"
 	httpEvents "github.com/prebid/prebid-server/stored_requests/events/http"
-	postgresEvents "github.com/prebid/prebid-server/stored_requests/events/postgres"
 	"github.com/prebid/prebid-server/util/task"
 )
 
@@ -44,17 +44,18 @@ type dbConnection struct {
 // In the future we should look for ways to simplify this so that it's not doing two things.
 func CreateStoredRequests(cfg *config.StoredRequests, metricsEngine metrics.MetricsEngine, client *http.Client, router *httprouter.Router, dbc *dbConnection) (fetcher stored_requests.AllFetcher, shutdown func()) {
 	// Create database connection if given options for one
-	if cfg.Postgres.ConnectionInfo.Database != "" {
-		conn := cfg.Postgres.ConnectionInfo.ConnString()
+	if cfg.Database.ConnectionInfo.Database != "" {
+		conn := cfg.Database.ConnectionInfo.ConnString()
 
 		if dbc.conn == "" {
-			glog.Infof("Connecting to Postgres for Stored %s. DB=%s, host=%s, port=%d, user=%s",
+			glog.Infof("Connecting to Database for Stored %s. Driver=%s, DB=%s, host=%s, port=%d, user=%s",
 				cfg.DataType(),
-				cfg.Postgres.ConnectionInfo.Database,
-				cfg.Postgres.ConnectionInfo.Host,
-				cfg.Postgres.ConnectionInfo.Port,
-				cfg.Postgres.ConnectionInfo.Username)
-			db := newPostgresDB(cfg.DataType(), cfg.Postgres.ConnectionInfo)
+				cfg.Database.ConnectionInfo.Driver,
+				cfg.Database.ConnectionInfo.Database,
+				cfg.Database.ConnectionInfo.Host,
+				cfg.Database.ConnectionInfo.Port,
+				cfg.Database.ConnectionInfo.Username)
+			db := newDatabase(cfg.DataType(), cfg.Database.ConnectionInfo)
 			dbc.conn = conn
 			dbc.db = db
 		}
@@ -166,10 +167,11 @@ func newFetcher(cfg *config.StoredRequests, client *http.Client, db *sql.DB) (fe
 		fFetcher := newFilesystem(cfg.DataType(), cfg.Files.Path)
 		idList = append(idList, fFetcher)
 	}
-	if cfg.Postgres.FetcherQueries.QueryTemplate != "" {
-		glog.Infof("Loading Stored %s data via Postgres.\nQuery: %s", cfg.DataType(), cfg.Postgres.FetcherQueries.QueryTemplate)
-		idList = append(idList, db_fetcher.NewFetcher(db, cfg.Postgres.FetcherQueries.MakeQuery, cfg.Postgres.FetcherQueries.MakeQueryResponses))
-	} else if cfg.Postgres.CacheInitialization.Query != "" && cfg.Postgres.PollUpdates.Query != "" {
+	if cfg.Database.FetcherQueries.QueryTemplate != "" {
+		glog.Infof("Loading Stored %s data via Database.\nQuery: %s", cfg.DataType(), cfg.Database.FetcherQueries.QueryTemplate)
+		idList = append(idList, db_fetcher.NewFetcher(db,
+			cfg.Database.FetcherQueries.MakeQuery, cfg.Database.FetcherQueries.MakeQueryResponses, cfg.Database.ConnectionInfo.IdListMaker()))
+	} else if cfg.Database.CacheInitialization.Query != "" && cfg.Database.PollUpdates.Query != "" {
 		//in this case data will be loaded to cache via poll for updates event
 		idList = append(idList, empty_fetcher.EmptyFetcher{})
 	}
@@ -209,21 +211,21 @@ func newEventProducers(cfg *config.StoredRequests, client *http.Client, db *sql.
 	if cfg.HTTPEvents.RefreshRate != 0 && cfg.HTTPEvents.Endpoint != "" {
 		eventProducers = append(eventProducers, newHttpEvents(client, cfg.HTTPEvents.TimeoutDuration(), cfg.HTTPEvents.RefreshRateDuration(), cfg.HTTPEvents.Endpoint))
 	}
-	if cfg.Postgres.CacheInitialization.Query != "" {
-		pgEventCfg := postgresEvents.PostgresEventProducerConfig{
+	if cfg.Database.CacheInitialization.Query != "" {
+		dbEventCfg := databaseEvents.DatabaseEventProducerConfig{
 			DB:                 db,
 			RequestType:        cfg.DataType(),
-			CacheInitQuery:     cfg.Postgres.CacheInitialization.Query,
-			CacheInitTimeout:   time.Duration(cfg.Postgres.CacheInitialization.Timeout) * time.Millisecond,
-			CacheUpdateQuery:   cfg.Postgres.PollUpdates.Query,
-			CacheUpdateTimeout: time.Duration(cfg.Postgres.PollUpdates.Timeout) * time.Millisecond,
+			CacheInitQuery:     cfg.Database.CacheInitialization.Query,
+			CacheInitTimeout:   time.Duration(cfg.Database.CacheInitialization.Timeout) * time.Millisecond,
+			CacheUpdateQuery:   cfg.Database.PollUpdates.Query,
+			CacheUpdateTimeout: time.Duration(cfg.Database.PollUpdates.Timeout) * time.Millisecond,
 			MetricsEngine:      metricsEngine,
 		}
-		pgEventProducer := postgresEvents.NewPostgresEventProducer(pgEventCfg)
-		fetchInterval := time.Duration(cfg.Postgres.PollUpdates.RefreshRate) * time.Second
-		pgEventTickerTask := task.NewTickerTask(fetchInterval, pgEventProducer)
-		pgEventTickerTask.Start()
-		eventProducers = append(eventProducers, pgEventProducer)
+		dbEventProducer := databaseEvents.NewDatabaseEventProducer(dbEventCfg)
+		fetchInterval := time.Duration(cfg.Database.PollUpdates.RefreshRate) * time.Second
+		dbEventTickerTask := task.NewTickerTask(fetchInterval, dbEventProducer)
+		dbEventTickerTask.Start()
+		eventProducers = append(eventProducers, dbEventProducer)
 	}
 	return
 }
@@ -251,14 +253,14 @@ func newFilesystem(dataType config.DataType, configPath string) stored_requests.
 	return fetcher
 }
 
-func newPostgresDB(dataType config.DataType, cfg config.PostgresConnection) *sql.DB {
-	db, err := sql.Open("postgres", cfg.ConnString())
+func newDatabase(dataType config.DataType, cfg config.DatabaseConnection) *sql.DB {
+	db, err := sql.Open(cfg.Driver, cfg.ConnString())
 	if err != nil {
-		glog.Fatalf("Failed to open %s postgres connection: %v", dataType, err)
+		glog.Fatalf("Failed to open %s database connection: %v", dataType, err)
 	}
 
 	if err := db.Ping(); err != nil {
-		glog.Fatalf("Failed to ping %s postgres: %v", dataType, err)
+		glog.Fatalf("Failed to ping %s database: %v", dataType, err)
 	}
 
 	return db

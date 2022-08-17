@@ -10,28 +10,37 @@ import (
 	"github.com/prebid/prebid-server/stored_requests"
 )
 
-func NewFetcher(db *sql.DB, queryMaker func(int, int) string, responseQueryMaker func(int) string) stored_requests.AllFetcher {
+func NewFetcher(db *sql.DB,
+	queryMaker func(int, int, func(numSoFar int, numArgs int) string) string,
+	responseQueryMaker func(int, func(numSoFar int, numArgs int) string) string,
+	idListMaker func(numSoFar int, numArgs int) string) stored_requests.AllFetcher {
+
 	if db == nil {
-		glog.Fatalf("The Postgres Stored Request Fetcher requires a database connection. Please report this as a bug.")
+		glog.Fatalf("The Database Stored Request Fetcher requires a database connection. Please report this as a bug.")
 	}
 	if queryMaker == nil {
-		glog.Fatalf("The Postgres Stored Request Fetcher requires a queryMaker function. Please report this as a bug.")
+		glog.Fatalf("The Database Stored Request Fetcher requires a queryMaker function. Please report this as a bug.")
 	}
 	if responseQueryMaker == nil {
-		glog.Fatalf("The Postgres Stored Response Fetcher requires a responseQueryMaker function. Please report this as a bug.")
+		glog.Fatalf("The Database Stored Response Fetcher requires a responseQueryMaker function. Please report this as a bug.")
+	}
+	if idListMaker == nil {
+		glog.Fatalf("The Database Stored Response Fetcher requires an idListMaker function. Please report this as a bug.")
 	}
 	return &dbFetcher{
 		db:                 db,
 		queryMaker:         queryMaker,
 		responseQueryMaker: responseQueryMaker,
+		idListMaker:        idListMaker,
 	}
 }
 
 // dbFetcher fetches Stored Requests from a database. This should be instantiated through the NewFetcher() function.
 type dbFetcher struct {
 	db                 *sql.DB
-	queryMaker         func(numReqs int, numImps int) (query string)
-	responseQueryMaker func(numIds int) (query string)
+	queryMaker         func(numReqs int, numImps int, idListMaker func(numSoFar int, numArgs int) string) (query string)
+	responseQueryMaker func(numIds int, idListMaker func(numSoFar int, numArgs int) string) (query string)
+	idListMaker        func(numSoFar int, numArgs int) (idList string)
 }
 
 func (fetcher *dbFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (map[string]json.RawMessage, map[string]json.RawMessage, []error) {
@@ -39,7 +48,7 @@ func (fetcher *dbFetcher) FetchRequests(ctx context.Context, requestIDs []string
 		return nil, nil, nil
 	}
 
-	query := fetcher.queryMaker(len(requestIDs), len(impIDs))
+	query := fetcher.queryMaker(len(requestIDs), len(impIDs), fetcher.idListMaker)
 	idInterfaces := make([]interface{}, len(requestIDs)+len(impIDs))
 	for i := 0; i < len(requestIDs); i++ {
 		idInterfaces[i] = requestIDs[i]
@@ -82,7 +91,7 @@ func (fetcher *dbFetcher) FetchRequests(ctx context.Context, requestIDs []string
 		case "imp":
 			storedImpData[id] = data
 		default:
-			glog.Errorf("Postgres result set with id=%s has invalid type: %s. This will be ignored.", id, dataType)
+			glog.Errorf("Database result set with id=%s has invalid type: %s. This will be ignored.", id, dataType)
 		}
 	}
 
@@ -102,7 +111,7 @@ func (fetcher *dbFetcher) FetchResponses(ctx context.Context, ids []string) (dat
 		return nil, nil
 	}
 
-	query := fetcher.responseQueryMaker(len(ids))
+	query := fetcher.responseQueryMaker(len(ids), fetcher.idListMaker)
 	idInterfaces := make([]interface{}, len(ids))
 	for i := 0; i < len(ids); i++ {
 		idInterfaces[i] = ids[i]

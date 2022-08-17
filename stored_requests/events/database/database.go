@@ -1,4 +1,4 @@
-package postgres
+package database
 
 import (
 	"bytes"
@@ -28,7 +28,7 @@ var storedDataTypeMetricMap = map[config.DataType]metrics.StoredDataType{
 	config.ResponseDataType:   metrics.ResponseDataType,
 }
 
-type PostgresEventProducerConfig struct {
+type DatabaseEventProducerConfig struct {
 	DB                 *sql.DB
 	RequestType        config.DataType
 	CacheInitQuery     string
@@ -38,20 +38,20 @@ type PostgresEventProducerConfig struct {
 	MetricsEngine      metrics.MetricsEngine
 }
 
-type PostgresEventProducer struct {
-	cfg           PostgresEventProducerConfig
+type DatabaseEventProducer struct {
+	cfg           DatabaseEventProducerConfig
 	lastUpdate    time.Time
 	invalidations chan events.Invalidation
 	saves         chan events.Save
 	time          timeutil.Time
 }
 
-func NewPostgresEventProducer(cfg PostgresEventProducerConfig) (eventProducer *PostgresEventProducer) {
+func NewDatabaseEventProducer(cfg DatabaseEventProducerConfig) (eventProducer *DatabaseEventProducer) {
 	if cfg.DB == nil {
-		glog.Fatalf("The Postgres Stored %s Loader needs a database connection to work.", cfg.RequestType)
+		glog.Fatalf("The Database Stored %s Loader needs a database connection to work.", cfg.RequestType)
 	}
 
-	return &PostgresEventProducer{
+	return &DatabaseEventProducer{
 		cfg:           cfg,
 		lastUpdate:    time.Time{},
 		saves:         make(chan events.Save, 1),
@@ -60,7 +60,7 @@ func NewPostgresEventProducer(cfg PostgresEventProducerConfig) (eventProducer *P
 	}
 }
 
-func (e *PostgresEventProducer) Run() error {
+func (e *DatabaseEventProducer) Run() error {
 	if e.lastUpdate.IsZero() {
 		return e.fetchAll()
 	}
@@ -68,15 +68,15 @@ func (e *PostgresEventProducer) Run() error {
 	return e.fetchDelta()
 }
 
-func (e *PostgresEventProducer) Saves() <-chan events.Save {
+func (e *DatabaseEventProducer) Saves() <-chan events.Save {
 	return e.saves
 }
 
-func (e *PostgresEventProducer) Invalidations() <-chan events.Invalidation {
+func (e *DatabaseEventProducer) Invalidations() <-chan events.Invalidation {
 	return e.invalidations
 }
 
-func (e *PostgresEventProducer) fetchAll() (fetchErr error) {
+func (e *DatabaseEventProducer) fetchAll() (fetchErr error) {
 	timeout := e.cfg.CacheInitTimeout * time.Millisecond
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
@@ -113,7 +113,7 @@ func (e *PostgresEventProducer) fetchAll() (fetchErr error) {
 	return nil
 }
 
-func (e *PostgresEventProducer) fetchDelta() (fetchErr error) {
+func (e *DatabaseEventProducer) fetchDelta() (fetchErr error) {
 	timeout := e.cfg.CacheUpdateTimeout * time.Millisecond
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
@@ -150,7 +150,7 @@ func (e *PostgresEventProducer) fetchDelta() (fetchErr error) {
 	return nil
 }
 
-func (e *PostgresEventProducer) recordFetchTime(elapsedTime time.Duration, fetchType metrics.StoredDataFetchType) {
+func (e *DatabaseEventProducer) recordFetchTime(elapsedTime time.Duration, fetchType metrics.StoredDataFetchType) {
 	e.cfg.MetricsEngine.RecordStoredDataFetchTime(
 		metrics.StoredDataLabels{
 			DataType:      storedDataTypeMetricMap[e.cfg.RequestType],
@@ -158,7 +158,7 @@ func (e *PostgresEventProducer) recordFetchTime(elapsedTime time.Duration, fetch
 		}, elapsedTime)
 }
 
-func (e *PostgresEventProducer) recordError(errorType metrics.StoredDataError) {
+func (e *DatabaseEventProducer) recordError(errorType metrics.StoredDataError) {
 	e.cfg.MetricsEngine.RecordStoredDataError(
 		metrics.StoredDataLabels{
 			DataType: storedDataTypeMetricMap[e.cfg.RequestType],
@@ -168,7 +168,7 @@ func (e *PostgresEventProducer) recordError(errorType metrics.StoredDataError) {
 
 // sendEvents reads the rows and sends notifications into the channel for any updates.
 // If it returns an error, then callers can be certain that no events were sent to the channels.
-func (e *PostgresEventProducer) sendEvents(rows *sql.Rows) (err error) {
+func (e *DatabaseEventProducer) sendEvents(rows *sql.Rows) (err error) {
 	storedRequestData := make(map[string]json.RawMessage)
 	storedImpData := make(map[string]json.RawMessage)
 	storedRespData := make(map[string]json.RawMessage)

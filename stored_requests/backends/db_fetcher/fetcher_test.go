@@ -318,14 +318,14 @@ func assertErrorCount(t *testing.T, num int, errs []error) {
 	}
 }
 
-func successfulQueryMaker(response string) func(int, int) string {
-	return func(numReqs int, numImps int) string {
+func successfulQueryMaker(response string) func(int, int, func(numSoFar int, numArgs int) string) string {
+	return func(numReqs int, numImps int, idListMaker func(numSoFar int, numArgs int) string) string {
 		return response
 	}
 }
 
-func successfulResponseQueryMaker(response string) func(int) string {
-	return func(numIds int) string {
+func successfulResponseQueryMaker(response string) func(int, func(numSoFar int, numArgs int) string) string {
+	return func(numIds int, idListMaker func(numSoFar int, numArgs int) string) string {
 		return response
 	}
 }

@@ -1,4 +1,4 @@
-package postgres
+package database
 
 import (
 	"encoding/json"
@@ -122,7 +122,7 @@ func TestFetchAllSuccess(t *testing.T) {
 			DataFetchType: metrics.FetchAll,
 		}, mock.Anything).Return()
 
-		eventProducer := NewPostgresEventProducer(PostgresEventProducerConfig{
+		eventProducer := NewDatabaseEventProducer(DatabaseEventProducerConfig{
 			DB:               db,
 			RequestType:      config.RequestDataType,
 			CacheInitTimeout: 100 * time.Millisecond,
@@ -213,7 +213,7 @@ func TestFetchAllErrors(t *testing.T) {
 			Error:    tt.wantRecordedError,
 		}).Return()
 
-		eventProducer := NewPostgresEventProducer(PostgresEventProducerConfig{
+		eventProducer := NewDatabaseEventProducer(DatabaseEventProducerConfig{
 			DB:               db,
 			RequestType:      config.RequestDataType,
 			CacheInitTimeout: time.Duration(tt.giveTimeoutMS) * time.Millisecond,
@@ -358,7 +358,7 @@ func TestFetchDeltaSuccess(t *testing.T) {
 			DataFetchType: metrics.FetchDelta,
 		}, mock.Anything).Return()
 
-		eventProducer := NewPostgresEventProducer(PostgresEventProducerConfig{
+		eventProducer := NewDatabaseEventProducer(DatabaseEventProducerConfig{
 			DB:                 db,
 			RequestType:        config.RequestDataType,
 			CacheUpdateTimeout: 100 * time.Millisecond,
@@ -454,7 +454,7 @@ func TestFetchDeltaErrors(t *testing.T) {
 			Error:    tt.wantRecordedError,
 		}).Return()
 
-		eventProducer := NewPostgresEventProducer(PostgresEventProducerConfig{
+		eventProducer := NewDatabaseEventProducer(DatabaseEventProducerConfig{
 			DB:                 db,
 			RequestType:        config.RequestDataType,
 			CacheUpdateTimeout: time.Duration(tt.giveTimeoutMS) * time.Millisecond,
