@@ -95,7 +95,7 @@ func setHeaders(ortbRequest openrtb2.BidRequest) http.Header {
 	return headers
 }
 
-func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter) (string, []error) {
+func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter, noCookies bool) (string, []error) {
 	uri, err := url.Parse(a.endpoint)
 	if err != nil {
 		return "", []error{fmt.Errorf("failed to parse Adnuntius endpoint: %v", err)}
@@ -122,7 +122,7 @@ func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter) (string, []err
 		q.Set("consentString", consent)
 	}
 
-	if deviceExt.NoCookies {
+	if deviceExt.NoCookies || noCookies {
 		q.Set("noCookies", "true")
 	}
 
@@ -160,13 +160,7 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 	var requestData []*adapters.RequestData
 	networkAdunitMap := make(map[string][]adnAdunit)
 	headers := setHeaders(ortbRequest)
-
-	endpoint, err := makeEndpointUrl(ortbRequest, a)
-	if err != nil {
-		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("failed to parse URL: %s", err),
-		}}
-	}
+	var noCookies bool = false
 
 	for _, imp := range ortbRequest.Imp {
 		if imp.Banner == nil {
@@ -188,6 +182,10 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 			}}
 		}
 
+		if adnuntiusExt.NoCookies == true {
+			noCookies = true
+		}
+
 		network := defaultNetwork
 		if adnuntiusExt.Network != "" {
 			network = adnuntiusExt.Network
@@ -200,6 +198,13 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 				TargetId:   fmt.Sprintf("%s-%s", adnuntiusExt.Auid, imp.ID),
 				Dimensions: getImpSizes(imp),
 			})
+	}
+
+	endpoint, err := makeEndpointUrl(ortbRequest, a, noCookies)
+	if err != nil {
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("failed to parse URL: %s", err),
+		}}
 	}
 
 	site := defaultSite
