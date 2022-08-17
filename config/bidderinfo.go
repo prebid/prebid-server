@@ -22,12 +22,7 @@ type BidderInfo struct {
 	GVLVendorID             uint16               `yaml:"gvlVendorID"`
 	Syncer                  *Syncer              `yaml:"userSync"`
 	Experiment              BidderInfoExperiment `yaml:"experiment"`
-	CompressionType         *CompressionType     `yaml:"compressionType"`
-}
-
-// CompressionType determines, if set, the type of compression the bid request will undergo before being sent to the corresponding bid server
-type CompressionType struct {
-	EndpointCompression string `yaml:"endpointCompression"`
+	EndpointCompression     string               `yaml:"endpoint-compression"` // EndpointCompression determines, if set, the type of compression the bid request will undergo before being sent to the corresponding bid server
 }
 
 // BidderInfoExperiment specifies non-production ready feature config for a bidder

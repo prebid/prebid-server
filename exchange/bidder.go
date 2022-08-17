@@ -57,7 +57,7 @@ type AdaptedBidder interface {
 	requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes config.AlternateBidderCodes) ([]*pbsOrtbSeatBid, []error)
 }
 
-//bidRequestOptions holds additional options for bid request execution to maintain clean code and reasonable number of parameters
+// bidRequestOptions holds additional options for bid request execution to maintain clean code and reasonable number of parameters
 type bidRequestOptions struct {
 	accountDebugAllowed bool
 	headerDebugAllowed  bool
@@ -117,10 +117,7 @@ const (
 //
 // The name refers to the "Adapter" architecture pattern, and should not be confused with a Prebid "Adapter"
 // (which is being phased out and replaced by Bidder for OpenRTB auctions)
-func AdaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Configuration, me metrics.MetricsEngine, name openrtb_ext.BidderName, debugInfo *config.DebugInfo, compressionType *config.CompressionType) AdaptedBidder {
-	if compressionType == nil {
-		compressionType = &config.CompressionType{EndpointCompression: ""}
-	}
+func AdaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Configuration, me metrics.MetricsEngine, name openrtb_ext.BidderName, debugInfo *config.DebugInfo, endpointCompression string) AdaptedBidder {
 	return &bidderAdapter{
 		Bidder:     bidder,
 		BidderName: name,
@@ -130,7 +127,7 @@ func AdaptBidder(bidder adapters.Bidder, client *http.Client, cfg *config.Config
 			Debug:               cfg.Debug,
 			DisableConnMetrics:  cfg.Metrics.Disabled.AdapterConnectionMetrics,
 			DebugInfo:           config.DebugInfo{Allow: parseDebugInfo(debugInfo)},
-			EndpointCompression: compressionType.EndpointCompression,
+			EndpointCompression: endpointCompression,
 		},
 	}
 }

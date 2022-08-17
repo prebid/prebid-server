@@ -49,8 +49,7 @@ userSync:
 experiment:
   adsCert:
     enabled: true
-compressionType:
-    endpointCompression: "GZIP"
+endpoint-compression: "GZIP"
 `
 
 func TestLoadBidderInfoFromDisk(t *testing.T) {
@@ -420,8 +419,8 @@ func TestReadFullYamlBidderConfig(t *testing.T) {
 				SupportCORS: &trueValue,
 				ExternalURL: "oneMoreUrl",
 			},
-			Experiment:      BidderInfoExperiment{AdsCert: BidderAdsCert{Enabled: true}},
-			CompressionType: &CompressionType{EndpointCompression: "GZIP"},
+			Experiment:          BidderInfoExperiment{AdsCert: BidderAdsCert{Enabled: true}},
+			EndpointCompression: "GZIP",
 		},
 	}
 	assert.Equalf(t, expectedBidderInfo, actualBidderInfo, "Bidder info objects aren't matching")
