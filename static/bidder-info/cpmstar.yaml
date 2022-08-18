@@ -13,3 +13,5 @@ userSync:
   redirect:
     url: "https://server.cpmstar.com/usersync.aspx?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
     userMacro: "$UID"
+#-----New config----
+endpoint: "https://server.cpmstar.com/openrtbbidrq.aspx"

@@ -9,3 +9,5 @@ capabilities:
     mediaTypes:
       - banner
       - video
+#-----New config----
+endpoint: "http://{{.AccountID}}.trustedmarketplace.io/ads/processHeaderBid/{{.AdUnit}}"

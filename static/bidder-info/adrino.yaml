@@ -5,3 +5,5 @@ capabilities:
   site:
     mediaTypes:
       - native
+#-----New config----
+endpoint: "https://prd-prebid-bidder.adrino.io/openrtb/bid"

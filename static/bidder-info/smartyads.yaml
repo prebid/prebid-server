@@ -15,4 +15,6 @@ userSync:
   redirect:
     url: "https://as.ck-ie.com/prebid.gif?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir={{.RedirectURL}}"
     userMacro: "[UID]"
+#-----New config----
+endpoint: "http://{{.Host}}.smartyads.com/bid?rtb_seat_id={{.SourceId}}&secret_key={{.AccountID}}"
 

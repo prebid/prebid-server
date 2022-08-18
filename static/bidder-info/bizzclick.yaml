@@ -11,3 +11,5 @@ capabilities:
       - banner
       - video
       - native
+#-----New config----
+endpoint: "http://us-e-node1.bizzclick.com/bid?rtb_seat_id={{.SourceId}}&secret_key={{.AccountID}}"

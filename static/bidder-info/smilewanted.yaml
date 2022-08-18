@@ -14,3 +14,5 @@ userSync:
   redirect:
     url: "https://csync.smilewanted.com/getuid?source=prebid-server&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
     userMacro: "$UID"
+#-----New config----
+endpoint: "http://prebid-server.smilewanted.com"

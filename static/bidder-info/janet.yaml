@@ -14,3 +14,5 @@ userSync:
   # bidder directly at the email address in this file to ask about enabling user sync.
   supports:
     - iframe
+#-----New config----
+endpoint: "http://ghb.bidder.jmgads.com/pbs/ortb"

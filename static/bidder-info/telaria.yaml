@@ -12,3 +12,5 @@ userSync:
   redirect:
     url: "https://pbs.publishers.tremorhub.com/pubsync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&redir={{.RedirectURL}}"
     userMacro: "[tvid]"
+#-----New config----
+endpoint: "https://ads.tremorhub.com/ad/rtb/prebid"

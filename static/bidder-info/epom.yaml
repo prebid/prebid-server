@@ -13,3 +13,6 @@ capabilities:
       - banner
       - video
       - native
+#-----New config----
+disabled: true
+endpoint: "https://an.epom.com/ortb"

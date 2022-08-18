@@ -13,3 +13,5 @@ capabilities:
       - native
 userSync:
   key: "adnxs"
+#-----New config----
+endpoint: "http://ib.adnxs.com/openrtb2"

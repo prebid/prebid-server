@@ -8,3 +8,6 @@ capabilities:
       - banner
       - native
       - video
+#-----New config----
+disabled: true
+endpoint: "https://acd.op.hicloud.com/ppsadx/getResult"

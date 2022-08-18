@@ -10,3 +10,5 @@ userSync:
   iframe:
     url: https://ssp.wp.pl/bidder/usersync?tcf=2&redirect={{.RedirectURL}}
     userMacro: $UID
+#-----New config----
+endpoint: "https://ssp.wp.pl/bidder/"

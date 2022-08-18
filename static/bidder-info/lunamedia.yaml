@@ -14,4 +14,6 @@ userSync:
   iframe:
     url: "https://api.lunamedia.io/xp/user-sync?redirect={{.RedirectURL}}"
     userMacro: "$UID"
+#-----New config----
+endpoint: "http://api.lunamedia.io/xp/get?pubid={{.PublisherID}}"
 

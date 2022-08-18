@@ -10,3 +10,6 @@ userSync:
   # facebook's audience network supports user syncing, but requires configuration by the host.
   supports:
     - redirect
+#-----New config----
+disabled: true
+endpoint: "https://an.facebook.com/placementbid.ortb"

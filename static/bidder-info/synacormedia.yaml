@@ -13,3 +13,5 @@ userSync:
   iframe:
     url: "https://ad-cdn.technoratimedia.com/html/usersync.html?cb={{.RedirectURL}}"
     userMacro: "[USER_ID]"
+#-----New config----
+endpoint: "http://{{.Host}}.technoratimedia.com/openrtb/bids/{{.Host}}"

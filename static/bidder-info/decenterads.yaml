@@ -12,3 +12,5 @@ capabilities:
       - banner
       - video
       - native
+#-----New config----
+endpoint: "http://supply.decenterads.com/?c=o&m=rtb"

@@ -12,4 +12,6 @@ capabilities:
     - banner
     - video
     - native
-   
+#-----New config----
+endpoint: "http://smartssp-us-east.iqzone.com/pserver"
+

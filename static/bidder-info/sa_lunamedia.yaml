@@ -16,3 +16,5 @@ userSync:
   redirect:
     url: "https://cookie.lmgssp.com/pserver?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}&redirect={{.RedirectURL}}"
     userMacro: "[UID]"
+#-----New config----
+endpoint: "http://balancer.lmgssp.com/pserver"

@@ -14,3 +14,5 @@ userSync:
   redirect:
     url: "https://dmp.rtbsrv.com/dmp/profiles/cm?p_id=179&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
     userMacro: "${UUID}"
+#-----New config----
+endpoint: "https://bid306.rtbsrv.com/bidder/?bid=f3xtet"

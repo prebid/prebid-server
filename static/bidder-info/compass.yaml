@@ -17,3 +17,5 @@ userSync:
   redirect:
     url: "https://sa-cs.deliverimp.com/pserver?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir={{.RedirectURL}}"
     userMacro: "[UID]"
+#-----New config----
+endpoint: "http://sa-lb.deliverimp.com/pserver"

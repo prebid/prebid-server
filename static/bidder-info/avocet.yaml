@@ -14,3 +14,5 @@ userSync:
   redirect:
     url: "https://ads.avct.cloud/getuid?&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&url={{.RedirectURL}}"
     userMacro: "{{UUID}}"
+#-----New config----
+disabled: true

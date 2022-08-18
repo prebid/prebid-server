@@ -7,3 +7,5 @@ capabilities:
       - banner
       - native
       - video
+#-----New config----
+endpoint: "https://bid.adview.com/agent/thirdAdxService/{{.AccountID}}"

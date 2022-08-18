@@ -17,3 +17,5 @@ userSync:
   redirect:
     url: "https://sync.quantumdex.io/getuid?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&r={{.RedirectURL}}"
     userMacro: "[UID]"
+#-----New config----
+endpoint: "http://useast.quantumdex.io/auction/pbs"

@@ -14,4 +14,6 @@ userSync:
   iframe:
     url: "https://nep.advangelists.com/xp/user-sync?acctid={aid}&&redirect={{.RedirectURL}}"
     userMacro: "$UID"
+#-----New config----
+endpoint: "http://nep.advangelists.com/xp/get?pubid={{.PublisherID}}"
 

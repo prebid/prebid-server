@@ -6,3 +6,5 @@ capabilities:
     mediaTypes:
       - banner
       - video
+#-----New config----
+endpoint: "http://mfx.mobilefuse.com/openrtb?pub_id={{.PublisherID}}"

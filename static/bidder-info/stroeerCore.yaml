@@ -16,3 +16,6 @@ userSync:
   redirect:
     url: "https://ih.adscale.de/uu?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&cburl={{.RedirectURL}}"
     userMacro: ""
+#-----New config----
+disabled: true
+endpoint: "http://mhb.adscale.de/s2sdsh"

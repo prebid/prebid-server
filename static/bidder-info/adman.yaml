@@ -14,3 +14,6 @@ userSync:
   redirect:
     url: "https://sync.admanmedia.com/pbs.gif?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir={{.RedirectURL}}"
     userMacro: "[UID]"
+#-----New config----
+endpoint: "http://pub.admanmedia.com/?c=o&m=ortb"
+

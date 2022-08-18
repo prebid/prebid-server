@@ -16,3 +16,5 @@ userSync:
   redirect:
     url: "https://cm.adform.net/cookie?redirect_url={{.RedirectURL}}"
     userMacro: "$UID"
+#-----New config----
+endpoint: "https://adx.adform.net/adx/openrtb"

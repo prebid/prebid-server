@@ -13,3 +13,5 @@ capabilities:
       - banner
       - video
       - native
+#-----New config----
+endpoint: "https://openrtb-us-east-1.axonix.com/supply/prebid-server/{{.AccountID}}"

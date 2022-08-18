@@ -11,4 +11,6 @@ userSync:
   redirect:
     url: "https://cr-p31.ladsp.jp/cookiesender/31?r=true&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ru={{.RedirectURL}}"
     userMacro: "$UID"
+#-----New config----
+endpoint: "https://pbs.ladsp.com/adrequest/prebidserver"
 

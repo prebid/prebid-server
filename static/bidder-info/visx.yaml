@@ -14,3 +14,5 @@ userSync:
   redirect:
     url: "https://t.visx.net/s2s_sync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir={{.RedirectURL}}"
     userMacro: "${UUID}"
+#-----New config----
+endpoint: "https://t.visx.net/s2s_bid?wrapperType=s2s_prebid_standard:0.1.1"

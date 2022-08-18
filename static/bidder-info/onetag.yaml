@@ -16,3 +16,5 @@ userSync:
   iframe:
     url: "https://onetag-sys.com/usync/?redir={{.RedirectURL}}"
     userMacro: "${USER_TOKEN}"
+#-----New config----
+endpoint: "https://prebid-server.onetag-sys.com/prebid-server/{{.PublisherID}}"

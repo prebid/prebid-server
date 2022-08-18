@@ -14,3 +14,5 @@ userSync:
   iframe:
     url: "https://ssp.api.tappx.com/cs/usersync.php?gdpr_optin={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&type=iframe&ruid={{.RedirectURL}}"
     userMacro: "{{TPPXUID}}"
+#-----New config----
+endpoint: "http://{{.Host}}"

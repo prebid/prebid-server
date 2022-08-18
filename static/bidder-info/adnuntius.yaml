@@ -8,3 +8,5 @@ capabilities:
   site:
     mediaTypes:
       - banner
+#-----New config----
+endpoint: "https://ads.adnuntius.delivery/i"

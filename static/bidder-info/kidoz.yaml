@@ -9,3 +9,5 @@ capabilities:
     mediaTypes:
       - banner
       - video
+#-----New config----
+endpoint: "http://prebid-adapter.kidoz.net/openrtb2/auction?src=prebid-server"

@@ -6,3 +6,5 @@ capabilities:
       - banner
       - video
       - native
+#-----New config----
+endpoint: "https://{{.Host}}/prebid/bid"

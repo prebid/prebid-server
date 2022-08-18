@@ -16,3 +16,5 @@ userSync:
   redirect:
     url: "https://t.adx.opera.com/pbs/sync?gdpr={{.GDPR}}&us_privacy={{.USPrivacy}}&gdpr_consent={{.GDPRConsent}}&r={{.RedirectURL}}"
     userMacro: "${UID}"
+#-----New config----
+endpoint: "https://s.adx.opera.com/ortb/v2/{{.PublisherID}}?ep={{.AccountID}}"

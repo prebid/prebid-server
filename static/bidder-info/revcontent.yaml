@@ -10,3 +10,6 @@ capabilities:
     mediaTypes:
       - banner
       - native
+#-----New config----
+disabled: true
+endpoint: "https://trends.revcontent.com/rtb"

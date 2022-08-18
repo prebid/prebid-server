@@ -20,3 +20,6 @@ userSync:
   # bidder directly at the email address in this file to ask about enabling user sync.
   supports:
     - iframe
+#-----New config----
+endpoint: "https://www-prebid.dianomi.com/cgi-bin/smartads_prebid.pl"
+disabled: true

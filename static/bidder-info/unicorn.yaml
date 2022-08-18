@@ -4,3 +4,5 @@ capabilities:
   app:
     mediaTypes:
       - banner
+#-----New config----
+endpoint: "https://ds.uncn.jp/pb/0/bid.json"

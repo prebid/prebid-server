@@ -11,3 +11,5 @@ capabilities:
     mediaTypes:
       - banner
       - video
+#-----New config----
+endpoint: "https://ads-{{.AccountID}}.adhese.com/json"

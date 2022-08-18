@@ -26,3 +26,5 @@ userSync:
   #          userMacro: "{{uid}}"
   supports:
     - redirect
+#-----New config----
+endpoint: "https://lockerdome.com/ladbid/prebidserver/openrtb2"

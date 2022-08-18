@@ -13,3 +13,6 @@ userSync:
   redirect:
     url: "https://tag.adkernel.com/syncr?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&r={{.RedirectURL}}"
     userMacro: "{UID}"
+#-----New config----
+endpoint: "https://pbs2.adksrv.com/rtbpub?account={{.PublisherID}}"
+

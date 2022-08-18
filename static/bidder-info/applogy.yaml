@@ -11,3 +11,5 @@ capabilities:
       - banner
       - video
       - native
+#-----New config----
+endpoint: "http://rtb.applogy.com/v1/prebid"

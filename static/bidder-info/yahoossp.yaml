@@ -15,3 +15,5 @@ userSync:
   # bidder directly at the email address in this file to ask about enabling user sync.
   supports:
     - redirect
+#-----New config----
+endpoint: "https://s2shb.ssp.yahoo.com/admax/bid/partners/PBS"

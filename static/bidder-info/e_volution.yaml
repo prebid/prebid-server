@@ -16,3 +16,6 @@ userSync:
   redirect:
     url: "https://sync.e-volution.ai/pbserver?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}&redirect={{.RedirectURL}}"
     userMacro: "[UID]"
+#-----New config----
+endpoint: "http://service.e-volution.ai/pbserver"
+

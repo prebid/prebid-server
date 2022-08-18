@@ -7,3 +7,5 @@ capabilities:
       - banner
       - video
       - native
+#-----New config----
+disabled: true

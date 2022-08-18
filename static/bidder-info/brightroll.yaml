@@ -14,3 +14,5 @@ userSync:
   redirect:
     url: "https://pr-bh.ybp.yahoo.com/sync/appnexusprebidserver/?gdpr={{.GDPR}}&euconsent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&url={{.RedirectURL}}"
     userMacro: "$UID"
+#-----New config----
+endpoint: "http://east-bid.ybp.yahoo.com/bid/appnexuspbs"

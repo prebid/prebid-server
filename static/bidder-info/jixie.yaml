@@ -10,3 +10,5 @@ userSync:
   redirect:
     url: "https://id.jixie.io/api/sync?pid=&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
     userMacro: "%%JXUID%%"
+#-----New config----
+endpoint: "https://hb.jixie.io/v2/hbsvrpost"

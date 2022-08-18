@@ -7,4 +7,5 @@ capabilities:
   site:
     mediaTypes:
       - banner
-
+#-----New config----
+endpoint: "https://d.socdm.com/adsv/v1"

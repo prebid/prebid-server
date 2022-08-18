@@ -18,3 +18,5 @@ userSync:
   redirect:
     url: "https://bh.contextweb.com/rtset?pid=561205&ev=1&rurl={{.RedirectURL}}"
     userMacro: "%%VGUID%%"
+#-----New config----
+endpoint: "http://bid.contextweb.com/header/s/ortb/prebid-s2s"

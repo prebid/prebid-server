@@ -17,3 +17,5 @@ userSync:
   redirect:
     url: "https://cookiesync.api.bliink.io/getuid?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&url={{.RedirectURL}}"
     userMacro: "$UID"
+#-----New config----
+endpoint: "http://engine.bliink.io/bid"

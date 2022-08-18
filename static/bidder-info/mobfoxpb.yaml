@@ -9,3 +9,5 @@ capabilities:
     mediaTypes:
       - banner
       - video
+#-----New config----
+endpoint: "http://bes.mobfox.com/?c=__route__&m=__method__&key=__key__"

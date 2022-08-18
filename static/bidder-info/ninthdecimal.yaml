@@ -14,4 +14,6 @@ userSync:
   iframe:
     url: "https://rtb.ninthdecimal.com/xp/user-sync?acctid={aid}&&redirect={{.RedirectURL}}"
     userMacro: "$UID"
+#-----New config----
+endpoint: "http://rtb.ninthdecimal.com/xp/get?pubid={{.PublisherID}}"
 

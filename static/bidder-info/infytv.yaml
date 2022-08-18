@@ -7,3 +7,5 @@ capabilities:
   site:
     mediaTypes:
       - video
+#-----New config----
+endpoint: "https://nxs.infy.tv/pbs/openrtb"

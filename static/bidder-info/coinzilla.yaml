@@ -7,4 +7,6 @@ capabilities:
   site:
     mediaTypes:
       - banner
+#-----New config----
+endpoint: "http://request-global.czilladx.com/serve/prebid-server.php"
 

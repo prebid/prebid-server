@@ -9,4 +9,6 @@ capabilities:
     mediaTypes:
       - banner
       - video
+#-----New config----
+endpoint: "https://kssp.kbntx.ch/prebid"
 

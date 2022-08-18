@@ -14,3 +14,5 @@ userSync:
   redirect:
     url: "https://ads.yieldmo.com/pbsync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirectUri={{.RedirectURL}}"
     userMacro: "$UID"
+#-----New config----
+endpoint: "https://ads.yieldmo.com/exchange/prebid-server"
