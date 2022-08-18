@@ -72,7 +72,7 @@
                           "bid": [
                               {
                                 "id": "test-native-invalid-adm-json",
-                                  "impid": "test-native-imp",
+                                  "impid": "test-native-imp-invalid-adm",
                                   "price": 0.500000,
                                   "adid": "some-test-id",
                                   "adm": "{",
@@ -81,18 +81,6 @@
                                       "deal_channel": 1,
                                       "bidtype": 2
                                   }
-                              },
-                              {
-                                "id": "test-native-invalid-adm-native-json",
-                                "impid": "test-native-imp",
-                                "price": 0.500000,
-                                "adid": "some-test-id",
-                                "adm": "{\"native\":\"assets\":[{\"id\":2,\"img\":{\"h\":90,\"url\":\"//ads.pubmatic.com/AdTag/native/728x90.png\",\"w\":728}},{\"data\":{\"value\":\"Sponsored By PubMatic\"},\"id\":4},{\"id\":3,\"img\":{\"h\":90,\"url\":\"//ads.pubmatic.com/AdTag/native/728x90.png\",\"w\":728}},{\"id\":1,\"title\":{\"text\":\"Native Test Title\"}},{\"data\":{\"value\":\"Sponsored By PubMatic\"},\"id\":5}],\"imptrackers\":[\"http://clicktracker.com/AdTag/9bde02d0-6017-11e4-9df7-005056967c35\"],\"jstracker\":\"<script src='\\\/\\\/ads.pubmatic.com\\\/AdTag\\\/native\\\/tempReseponse.js'><script src='\\\/\\\/ads.pubmatic.com\\\/AdTag\\\/native\\\/tempReseponse.js'>\",\"link\":{\"clicktrackers\":[\"http://clicktracker.com/AdTag/9bde02d0-6017-11e4-9df7-005056967c35\"],\"fallback\":\"http://www.pubmatic.com\",\"url\":\"//www.pubmatic.com\"}}}",
-                                "crid": "29681110",
-                                "ext": {
-                                    "deal_channel": 1,
-                                    "bidtype": 2
-                                }
                               }
                           ]
                       }
@@ -108,27 +96,12 @@
           "currency": "USD",
           "bids": [
               {
-                  "bid": {
-                      "id": "test-native-invalid-adm-json",
-                      "impid": "test-native-imp",
-                      "price": 0.5,
-                      "adid": "some-test-id",
-                      "adm": "{",
-                      "crid": "29681110",
-                      "ext": {
-                          "deal_channel": 1,
-                          "bidtype": 2
-                      }
-                  },
-                  "type": "native"
-              },
-              {
                 "bid": {
-                    "id": "test-native-invalid-adm-native-json",
-                    "impid": "test-native-imp",
+                    "id": "test-native-invalid-adm-json",
+                    "impid": "test-native-imp-invalid-adm",
                     "price": 0.5,
                     "adid": "some-test-id",
-                    "adm": "{\"native\":\"assets\":[{\"id\":2,\"img\":{\"h\":90,\"url\":\"//ads.pubmatic.com/AdTag/native/728x90.png\",\"w\":728}},{\"data\":{\"value\":\"Sponsored By PubMatic\"},\"id\":4},{\"id\":3,\"img\":{\"h\":90,\"url\":\"//ads.pubmatic.com/AdTag/native/728x90.png\",\"w\":728}},{\"id\":1,\"title\":{\"text\":\"Native Test Title\"}},{\"data\":{\"value\":\"Sponsored By PubMatic\"},\"id\":5}],\"imptrackers\":[\"http://clicktracker.com/AdTag/9bde02d0-6017-11e4-9df7-005056967c35\"],\"jstracker\":\"<script src='\\\/\\\/ads.pubmatic.com\\\/AdTag\\\/native\\\/tempReseponse.js'><script src='\\\/\\\/ads.pubmatic.com\\\/AdTag\\\/native\\\/tempReseponse.js'>\",\"link\":{\"clicktrackers\":[\"http://clicktracker.com/AdTag/9bde02d0-6017-11e4-9df7-005056967c35\"],\"fallback\":\"http://www.pubmatic.com\",\"url\":\"//www.pubmatic.com\"}}}",
+                    "adm": "{",
                     "crid": "29681110",
                     "ext": {
                         "deal_channel": 1,
@@ -142,11 +115,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "unexpected end of JSON input",
-      "comparison": "literal"
-    },
-    {
-      "value": "invalid character ':' after object key:value pair",
+      "value": "unable to unmarshal native adm",
       "comparison": "literal"
     }
   ]

@@ -2,6 +2,7 @@ package pubmatic
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -430,7 +431,7 @@ func getNativeAdm(adm string) (string, error) {
 	nativeAdm := make(map[string]interface{})
 	err = json.Unmarshal([]byte(adm), &nativeAdm)
 	if err != nil {
-		return adm, err
+		return adm, errors.New("unable to unmarshal native adm")
 	}
 
 	// move bid.adm.native to bid.adm
@@ -438,7 +439,7 @@ func getNativeAdm(adm string) (string, error) {
 		//using jsonparser to avoid marshaling, encode escape, etc.
 		value, _, _, err := jsonparser.Get([]byte(adm), string(openrtb_ext.BidTypeNative))
 		if err != nil {
-			return adm, err
+			return adm, errors.New("unable to get native adm")
 		}
 		adm = string(value)
 	}
