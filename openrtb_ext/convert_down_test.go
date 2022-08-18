@@ -31,7 +31,7 @@ func TestConvertDownTo25(t *testing.T) {
 			},
 		},
 		{
-			description: "2.5 -> 2.6 + Other Ext Fields",
+			description: "2.6 -> 2.5 + Other Ext Fields",
 			givenRequest: openrtb2.BidRequest{
 				ID:     "anyID",
 				Ext:    json.RawMessage(`{"other":"otherExt"}`),
