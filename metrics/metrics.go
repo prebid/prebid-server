@@ -421,4 +421,6 @@ type MetricsEngine interface {
 	RecordAdapterGDPRRequestBlocked(adapterName openrtb_ext.BidderName)
 	RecordDebugRequest(debugEnabled bool, pubId string)
 	RecordStoredResponse(pubId string)
+	RecordAdsCertReq(success bool)
+	RecordAdsCertSignTime(adsCertSignTime time.Duration)
 }

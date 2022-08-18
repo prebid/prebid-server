@@ -54,6 +54,8 @@ type Metrics struct {
 	storedResponses              prometheus.Counter
 	storedResponsesFetchTimer    *prometheus.HistogramVec
 	storedResponsesErrors        *prometheus.CounterVec
+	adsCertRequests              *prometheus.CounterVec
+	adsCertSignTimer             prometheus.Histogram
 
 	// Adapter Metrics
 	adapterBids                *prometheus.CounterVec
@@ -410,6 +412,16 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"account_stored_responses",
 		"Count of total requests to Prebid Server that have stored responses labled by account",
 		[]string{accountLabel})
+
+	metrics.adsCertSignTimer = newHistogram(cfg, reg,
+		"ads_cert_sign_time",
+		"Seconds to generate an AdsCert header",
+		standardTimeBuckets)
+
+	metrics.adsCertRequests = newCounter(cfg, reg,
+		"ads_cert_requests",
+		"Count of AdsCert request, and if they were successfully sent.",
+		[]string{successLabel})
 
 	metrics.Gatherer = reg
 
@@ -793,4 +805,19 @@ func (m *Metrics) RecordAdapterGDPRRequestBlocked(adapterName openrtb_ext.Bidder
 	m.adapterGDPRBlockedRequests.With(prometheus.Labels{
 		adapterLabel: string(adapterName),
 	}).Inc()
+}
+
+func (m *Metrics) RecordAdsCertReq(success bool) {
+	if success {
+		m.adsCertRequests.With(prometheus.Labels{
+			successLabel: requestSuccessful,
+		}).Inc()
+	} else {
+		m.adsCertRequests.With(prometheus.Labels{
+			successLabel: requestFailed,
+		}).Inc()
+	}
+}
+func (m *Metrics) RecordAdsCertSignTime(adsCertSignTime time.Duration) {
+	m.adsCertSignTimer.Observe(adsCertSignTime.Seconds())
 }
