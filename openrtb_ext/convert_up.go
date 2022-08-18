@@ -2,6 +2,8 @@ package openrtb_ext
 
 import (
 	"fmt"
+
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 )
 
 func ConvertUpTo26(r *RequestWrapper) error {
@@ -65,7 +67,7 @@ func moveSupplyChainFrom24To25(r *RequestWrapper) {
 }
 
 // moveSupplyChainFrom25To26 modifies the request to move the OpenRTB 2.5 supply chain
-// object (req.source.ext.schain) to the OpenRTB 2.6 location (r.source.schain). If the
+// object (req.source.ext.schain) to the OpenRTB 2.6 location (req.source.schain). If the
 // OpenRTB 2.6 location is already present the OpenRTB 2.5 supply chain object is dropped.
 func moveSupplyChainFrom25To26(r *RequestWrapper) {
 	// read and clear 2.5 location
@@ -74,14 +76,22 @@ func moveSupplyChainFrom25To26(r *RequestWrapper) {
 	sourceExt.SetSChain(nil)
 
 	// move to 2.6 location if not already present
-	if schain25 != nil && r.Source.SChain == nil {
-		r.Source.SChain = schain25
+	if schain25 != nil {
+		// source may be nil if moved indirectly from an OpenRTB 2.4 location, since the ext
+		// is not defined on the source object.
+		if r.Source == nil {
+			r.Source = &openrtb2.Source{}
+		}
+
+		if r.Source.SChain == nil {
+			r.Source.SChain = schain25
+		}
 	}
 }
 
 // moveGDPRFrom25To26 modifies the request to move the OpenRTB 2.5 GDPR signal field
-// (r.regs.ext.gdpr) to the OpenRTB 2.6 location (r.regs.gdpr). If the OpenRTB 2.6 location
-// is already present the OpenRTB 2.5 GDPR signal is dropped.
+// (req.regs.ext.gdpr) to the OpenRTB 2.6 location (req.regs.gdpr). If the OpenRTB 2.6
+// location is already present the OpenRTB 2.5 GDPR signal is dropped.
 func moveGDPRFrom25To26(r *RequestWrapper) {
 	// read and clear 2.5 location
 	regsExt, _ := r.GetRegExt()
@@ -95,7 +105,7 @@ func moveGDPRFrom25To26(r *RequestWrapper) {
 }
 
 // moveConsentFrom25To26 modifies the request to move the OpenRTB 2.5 GDPR consent field
-// (r.user.ext.consent) to the OpenRTB 2.6 location (r.user.consent). If the OpenRTB 2.6
+// (req.user.ext.consent) to the OpenRTB 2.6 location (req.user.consent). If the OpenRTB 2.6
 // location is already present the OpenRTB 2.5 GDPR consent is dropped.
 func moveConsentFrom25To26(r *RequestWrapper) {
 	// read and clear 2.5 location
@@ -110,8 +120,8 @@ func moveConsentFrom25To26(r *RequestWrapper) {
 }
 
 // moveUSPrivacyFrom25To26 modifies the request to move the OpenRTB 2.5 US Privacy (CCPA)
-// consent string (r.regs.ext.usprivacy) to the OpenRTB 2.6 location (r.regs.usprivacy). If
-// the OpenRTB 2.6 location is already present the OpenRTB 2.5 consent string is dropped.
+// consent string (req.regs.ext.usprivacy) to the OpenRTB 2.6 location (req.regs.usprivacy).
+// If the OpenRTB 2.6 location is already present the OpenRTB 2.5 consent string is dropped.
 func moveUSPrivacyFrom25To26(r *RequestWrapper) {
 	// read and clear 2.5 location
 	regsExt, _ := r.GetRegExt()
@@ -125,8 +135,8 @@ func moveUSPrivacyFrom25To26(r *RequestWrapper) {
 }
 
 // moveEIDFrom25To26 modifies the request to move the OpenRTB 2.5 external identifiers
-// (r.user.ext.eids) to the OpenRTB 2.6 location (r.user.eids). If the OpenRTB 2.6 location
-// is already present the OpenRTB 2.5 external identifiers is dropped.
+// (req.user.ext.eids) to the OpenRTB 2.6 location (req.user.eids). If the OpenRTB 2.6
+// location is already present the OpenRTB 2.5 external identifiers is dropped.
 func moveEIDFrom25To26(r *RequestWrapper) {
 	// read and clear 2.5 location
 	userExt, _ := r.GetUserExt()
