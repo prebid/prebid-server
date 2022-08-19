@@ -67,7 +67,7 @@
   "expectedBidResponses": [
   ],
   "expectedMakeRequestsErrors": [{
-    "value": "extractAdmNative: imp.Native.Request is empty",
+    "value": "extract openrtb native failed: imp.Native.Request is empty",
     "comparison": "literal"
   }]
 }

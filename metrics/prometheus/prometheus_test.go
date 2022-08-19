@@ -1690,3 +1690,87 @@ func TestStoredResponsesMetric(t *testing.T) {
 		assertCounterValue(t, "", "stored responses", m.storedResponses, test.expectedStoredResponsesCount)
 	}
 }
+
+func TestRecordAdsCertReqMetric(t *testing.T) {
+	testCases := []struct {
+		description                  string
+		requestSuccess               bool
+		expectedSuccessRequestsCount float64
+		expectedFailedRequestsCount  float64
+	}{
+		{
+			description:                  "Record failed request, expected success request count is 0 and failed request count is 1",
+			requestSuccess:               false,
+			expectedSuccessRequestsCount: 0,
+			expectedFailedRequestsCount:  1,
+		},
+		{
+			description:                  "Record successful request, expected success request count is 1 and failed request count is 0",
+			requestSuccess:               true,
+			expectedSuccessRequestsCount: 1,
+			expectedFailedRequestsCount:  0,
+		},
+	}
+
+	for _, test := range testCases {
+		m := createMetricsForTesting()
+		m.RecordAdsCertReq(test.requestSuccess)
+		assertCounterVecValue(t, test.description, "successfully signed requests", m.adsCertRequests, test.expectedSuccessRequestsCount, prometheus.Labels{successLabel: requestSuccessful})
+		assertCounterVecValue(t, test.description, "unsuccessfully signed requests", m.adsCertRequests, test.expectedFailedRequestsCount, prometheus.Labels{successLabel: requestFailed})
+	}
+}
+
+func TestRecordAdsCertSignTime(t *testing.T) {
+	type testIn struct {
+		adsCertSignDuration time.Duration
+	}
+	type testOut struct {
+		expDuration float64
+		expCount    uint64
+	}
+	testCases := []struct {
+		description string
+		in          testIn
+		out         testOut
+	}{
+		{
+			description: "Five second AdsCert sign time",
+			in: testIn{
+				adsCertSignDuration: time.Second * 5,
+			},
+			out: testOut{
+				expDuration: 5,
+				expCount:    1,
+			},
+		},
+		{
+			description: "Five millisecond AdsCert sign time",
+			in: testIn{
+				adsCertSignDuration: time.Millisecond * 5,
+			},
+			out: testOut{
+				expDuration: 0.005,
+				expCount:    1,
+			},
+		},
+		{
+			description: "Zero AdsCert sign time",
+			in:          testIn{},
+			out: testOut{
+				expDuration: 0,
+				expCount:    1,
+			},
+		},
+	}
+	for i, test := range testCases {
+		pm := createMetricsForTesting()
+		pm.RecordAdsCertSignTime(test.in.adsCertSignDuration)
+
+		m := dto.Metric{}
+		pm.adsCertSignTimer.Write(&m)
+		histogram := *m.GetHistogram()
+
+		assert.Equal(t, test.out.expCount, histogram.GetSampleCount(), "[%d] Incorrect number of histogram entries. Desc: %s\n", i, test.description)
+		assert.Equal(t, test.out.expDuration, histogram.GetSampleSum(), "[%d] Incorrect number of histogram cumulative values. Desc: %s\n", i, test.description)
+	}
+}
