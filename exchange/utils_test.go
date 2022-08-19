@@ -585,7 +585,7 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 		}.Builder
 
-		bidderRequests, _, err := cleanOpenRTBRequests(context.Background(), test.req, nil, bidderToSyncerKey, &metricsMock, gdpr.SignalNo, privacyConfig, gdprPermsBuilder, tcf2ConfigBuilder, nil)
+		bidderRequests, _, err := cleanOpenRTBRequests(context.Background(), test.req, nil, bidderToSyncerKey, &metricsMock, gdpr.SignalNo, privacyConfig, gdprPermsBuilder, tcf2ConfigBuilder, nil, config.AlternateBidderCodes{})
 		if test.hasError {
 			assert.NotNil(t, err, "Error shouldn't be nil")
 		} else {
@@ -652,7 +652,7 @@ func TestCleanOpenRTBRequestsWithFPD(t *testing.T) {
 			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 		}.Builder
 
-		bidderRequests, _, err := cleanOpenRTBRequests(context.Background(), test.req, nil, bidderToSyncerKey, &metricsMock, gdpr.SignalNo, config.Privacy{}, gdprPermissionsBuilder, tcf2ConfigBuilder, nil)
+		bidderRequests, _, err := cleanOpenRTBRequests(context.Background(), test.req, nil, bidderToSyncerKey, &metricsMock, gdpr.SignalNo, config.Privacy{}, gdprPermissionsBuilder, tcf2ConfigBuilder, nil, config.AlternateBidderCodes{})
 		assert.Empty(t, err, "No errors should be returned")
 		for _, bidderRequest := range bidderRequests {
 			bidderName := bidderRequest.BidderName
@@ -931,7 +931,8 @@ func TestCleanOpenRTBRequestsWithBidResponses(t *testing.T) {
 			config.Privacy{},
 			gdprPermissionsBuilder,
 			tcf2ConfigBuilder,
-			nil)
+			nil,
+			config.AlternateBidderCodes{})
 		assert.Empty(t, err, "No errors should be returned")
 		assert.Len(t, actualBidderRequests, len(test.expectedBidderRequests), "result len doesn't match for testCase %s", test.description)
 		for _, actualBidderRequest := range actualBidderRequests {
@@ -1103,7 +1104,8 @@ func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
 			privacyConfig,
 			gdprPermissionsBuilder,
 			tcf2ConfigBuilder,
-			nil)
+			nil,
+			config.AlternateBidderCodes{})
 		result := bidderRequests[0]
 
 		assert.Nil(t, errs)
@@ -1173,7 +1175,7 @@ func TestCleanOpenRTBRequestsCCPAErrors(t *testing.T) {
 		bidderToSyncerKey := map[string]string{}
 		metrics := metrics.MetricsEngineMock{}
 
-		_, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, &reqExtStruct, bidderToSyncerKey, &metrics, gdpr.SignalNo, privacyConfig, gdprPermissionsBuilder, tcf2ConfigBuilder, nil)
+		_, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, &reqExtStruct, bidderToSyncerKey, &metrics, gdpr.SignalNo, privacyConfig, gdprPermissionsBuilder, tcf2ConfigBuilder, nil, config.AlternateBidderCodes{})
 
 		assert.ElementsMatch(t, []error{test.expectError}, errs, test.description)
 	}
@@ -1225,7 +1227,7 @@ func TestCleanOpenRTBRequestsCOPPA(t *testing.T) {
 		bidderToSyncerKey := map[string]string{}
 		metrics := metrics.MetricsEngineMock{}
 
-		bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), auctionReq, nil, bidderToSyncerKey, &metrics, gdpr.SignalNo, config.Privacy{}, gdprPermissionsBuilder, tcf2ConfigBuilder, nil)
+		bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), auctionReq, nil, bidderToSyncerKey, &metrics, gdpr.SignalNo, config.Privacy{}, gdprPermissionsBuilder, tcf2ConfigBuilder, nil, config.AlternateBidderCodes{})
 		result := bidderRequests[0]
 
 		assert.Nil(t, errs)
@@ -1320,7 +1322,7 @@ func TestCleanOpenRTBRequestsSChain(t *testing.T) {
 
 		bidderToSyncerKey := map[string]string{}
 		metrics := metrics.MetricsEngineMock{}
-		bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, bidderToSyncerKey, &metrics, gdpr.SignalNo, config.Privacy{}, gdprPermissionsBuilder, tcf2ConfigBuilder, nil)
+		bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, bidderToSyncerKey, &metrics, gdpr.SignalNo, config.Privacy{}, gdprPermissionsBuilder, tcf2ConfigBuilder, nil, config.AlternateBidderCodes{})
 		if test.hasError == true {
 			assert.NotNil(t, errs)
 			assert.Len(t, bidderRequests, 0)
@@ -1387,7 +1389,7 @@ func TestCleanOpenRTBRequestsBidderParams(t *testing.T) {
 		bidderToSyncerKey := map[string]string{}
 		metrics := metrics.MetricsEngineMock{}
 
-		bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, bidderToSyncerKey, &metrics, gdpr.SignalNo, config.Privacy{}, gdprPermissionsBuilder, tcf2ConfigBuilder, nil)
+		bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, bidderToSyncerKey, &metrics, gdpr.SignalNo, config.Privacy{}, gdprPermissionsBuilder, tcf2ConfigBuilder, nil, config.AlternateBidderCodes{})
 		if test.hasError == true {
 			assert.NotNil(t, errs)
 			assert.Len(t, bidderRequests, 0)
@@ -2077,7 +2079,7 @@ func TestCleanOpenRTBRequestsLMT(t *testing.T) {
 
 		bidderToSyncerKey := map[string]string{}
 		metrics := metrics.MetricsEngineMock{}
-		results, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), auctionReq, nil, bidderToSyncerKey, &metrics, gdpr.SignalNo, privacyConfig, gdprPermissionsBuilder, tcf2ConfigBuilder, nil)
+		results, privacyLabels, errs := cleanOpenRTBRequests(context.Background(), auctionReq, nil, bidderToSyncerKey, &metrics, gdpr.SignalNo, privacyConfig, gdprPermissionsBuilder, tcf2ConfigBuilder, nil, config.AlternateBidderCodes{})
 		result := results[0]
 
 		assert.Nil(t, errs)
@@ -2315,7 +2317,8 @@ func TestCleanOpenRTBRequestsGDPR(t *testing.T) {
 			privacyConfig,
 			gdprPermissionsBuilder,
 			tcf2ConfigBuilder,
-			nil)
+			nil,
+			config.AlternateBidderCodes{})
 		result := results[0]
 
 		if test.expectError {
@@ -2421,6 +2424,7 @@ func TestCleanOpenRTBRequestsGDPRBlockBidRequest(t *testing.T) {
 			gdprPermissionsBuilder,
 			tcf2ConfigBuilder,
 			nil,
+			config.AlternateBidderCodes{},
 		)
 
 		// extract bidder name from each request in the results
@@ -2504,7 +2508,7 @@ func TestBuildRequestExtForBidder(t *testing.T) {
 			}
 		}
 
-		actualJson, actualErr := buildRequestExtForBidder(bidder, test.requestExt, requestExtParsed, test.bidderParams)
+		actualJson, actualErr := buildRequestExtForBidder(bidder, test.requestExt, requestExtParsed, test.bidderParams, config.AlternateBidderCodes{})
 		if len(test.expectedJson) > 0 {
 			assert.JSONEq(t, string(test.expectedJson), string(actualJson), test.description+":json")
 		} else {
@@ -2522,7 +2526,7 @@ func TestBuildRequestExtForBidder_RequestExtParsedNil(t *testing.T) {
 		bidderParams     map[string]json.RawMessage
 	)
 
-	actualJson, actualErr := buildRequestExtForBidder(bidder, requestExt, requestExtParsed, bidderParams)
+	actualJson, actualErr := buildRequestExtForBidder(bidder, requestExt, requestExtParsed, bidderParams, config.AlternateBidderCodes{})
 	assert.Equal(t, json.RawMessage(``), actualJson)
 	assert.NoError(t, actualErr)
 }
@@ -2535,7 +2539,7 @@ func TestBuildRequestExtForBidder_RequestExtMalformed(t *testing.T) {
 		bidderParams     map[string]json.RawMessage
 	)
 
-	actualJson, actualErr := buildRequestExtForBidder(bidder, requestExt, requestExtParsed, bidderParams)
+	actualJson, actualErr := buildRequestExtForBidder(bidder, requestExt, requestExtParsed, bidderParams, config.AlternateBidderCodes{})
 	assert.Equal(t, json.RawMessage(nil), actualJson)
 	assert.EqualError(t, actualErr, "invalid character 'm' looking for beginning of value")
 }
@@ -3104,7 +3108,7 @@ func TestCleanOpenRTBRequestsSChainMultipleBidders(t *testing.T) {
 
 	bidderToSyncerKey := map[string]string{}
 	metrics := metrics.MetricsEngineMock{}
-	bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, bidderToSyncerKey, &metrics, gdpr.SignalNo, config.Privacy{}, gdprPermissionsBuilder, tcf2ConfigBuilder, nil)
+	bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, bidderToSyncerKey, &metrics, gdpr.SignalNo, config.Privacy{}, gdprPermissionsBuilder, tcf2ConfigBuilder, nil, config.AlternateBidderCodes{})
 
 	assert.Nil(t, errs)
 	assert.Len(t, bidderRequests, 2, "Bid request count is not 2")
@@ -3284,27 +3288,94 @@ func TestCleanOpenRTBRequestsFilterBidderRequestExt(t *testing.T) {
 	testCases := []struct {
 		desc      string
 		inExt     json.RawMessage
+		inCfgABC  config.AlternateBidderCodes
 		wantExt   []json.RawMessage
 		wantError bool
 	}{
 		{
-			desc:      "Nil request ext",
-			inExt:     nil,
-			wantExt:   []json.RawMessage{json.RawMessage(""), json.RawMessage("")},
+			desc:     "Nil request ext, default account alternatebiddercodes config",
+			inExt:    nil,
+			inCfgABC: config.AlternateBidderCodes{Enabled: false},
+			wantExt: []json.RawMessage{
+				json.RawMessage(""),
+				json.RawMessage(""),
+			},
 			wantError: false,
 		},
 		{
-			desc:  "request ext having alternatebiddercodes for only one bidder",
-			inExt: json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":{"pubmatic":{"enabled":true,"allowedbiddercodes":["groupm"]}}}}}`),
+			desc:  "Nil request ext, account alternatebiddercodes config disabled with biddercodes defined",
+			inExt: nil,
+			inCfgABC: config.AlternateBidderCodes{
+				Enabled: false,
+				Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+					"pubmatic": {Enabled: true},
+				},
+			},
+			wantExt: []json.RawMessage{
+				json.RawMessage(""),
+				json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":false,"bidders":{"pubmatic":{"enabled":true,"allowedbiddercodes":null}}}}}`),
+			},
+			wantError: false,
+		},
+		{
+			desc:  "Nil request ext, account alternatebiddercodes config disabled with biddercodes defined (not participant bidder)",
+			inExt: nil,
+			inCfgABC: config.AlternateBidderCodes{
+				Enabled: false,
+				Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+					"ix": {Enabled: true},
+				},
+			},
+			wantExt: []json.RawMessage{
+				json.RawMessage(""),
+				json.RawMessage(""),
+			},
+			wantError: false,
+		},
+		{
+			desc:     "Nil request ext, alternatebiddercodes config enabled but bidder not present",
+			inExt:    nil,
+			inCfgABC: config.AlternateBidderCodes{Enabled: true},
+			wantExt: []json.RawMessage{
+				json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":null}}}`),
+				json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":null}}}`),
+			},
+			wantError: false,
+		},
+		{
+			desc:     "request ext with default alternatebiddercodes values",
+			inExt:    json.RawMessage(`{"prebid":{}}`),
+			inCfgABC: config.AlternateBidderCodes{Enabled: false},
 			wantExt: []json.RawMessage{
 				json.RawMessage(`{"prebid":{}}`),
+				json.RawMessage(`{"prebid":{}}`),
+			},
+			wantError: false,
+		},
+		{
+			desc:     "request ext w/o alternatebiddercodes",
+			inExt:    json.RawMessage(`{"prebid":{}}`),
+			inCfgABC: config.AlternateBidderCodes{},
+			wantExt: []json.RawMessage{
+				json.RawMessage(`{"prebid":{}}`),
+				json.RawMessage(`{"prebid":{}}`),
+			},
+			wantError: false,
+		},
+		{
+			desc:     "request ext having alternatebiddercodes for only one bidder",
+			inExt:    json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":{"pubmatic":{"enabled":true,"allowedbiddercodes":["groupm"]}}}}}`),
+			inCfgABC: config.AlternateBidderCodes{Enabled: false},
+			wantExt: []json.RawMessage{
+				json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":{"appnexus":{"enabled":false,"allowedbiddercodes":null}}}}}`),
 				json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":{"pubmatic":{"enabled":true,"allowedbiddercodes":["groupm"]}}}}}`),
 			},
 			wantError: false,
 		},
 		{
-			desc:  "request ext having alternatebiddercodes for multiple bidder",
-			inExt: json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":{"pubmatic":{"enabled":true,"allowedbiddercodes":["groupm"]},"appnexus":{"enabled":true,"allowedbiddercodes":["ix"]}}}}}`),
+			desc:     "request ext having alternatebiddercodes for multiple bidder",
+			inExt:    json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":{"pubmatic":{"enabled":true,"allowedbiddercodes":["groupm"]},"appnexus":{"enabled":true,"allowedbiddercodes":["ix"]}}}}}`),
+			inCfgABC: config.AlternateBidderCodes{Enabled: false},
 			wantExt: []json.RawMessage{
 				json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":{"appnexus":{"enabled":true,"allowedbiddercodes":["ix"]}}}}}`),
 				json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":{"pubmatic":{"enabled":true,"allowedbiddercodes":["groupm"]}}}}}`),
@@ -3339,7 +3410,7 @@ func TestCleanOpenRTBRequestsFilterBidderRequestExt(t *testing.T) {
 		bidderToSyncerKey := map[string]string{}
 		metrics := metrics.MetricsEngineMock{}
 
-		bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, bidderToSyncerKey, &metrics, gdpr.SignalNo, config.Privacy{}, gdprPermissionsBuilder, tcf2ConfigBuilder, nil)
+		bidderRequests, _, errs := cleanOpenRTBRequests(context.Background(), auctionReq, extRequest, bidderToSyncerKey, &metrics, gdpr.SignalNo, config.Privacy{}, gdprPermissionsBuilder, tcf2ConfigBuilder, nil, test.inCfgABC)
 		assert.Equal(t, test.wantError, len(errs) != 0, test.desc)
 		sort.Slice(bidderRequests, func(i, j int) bool {
 			return bidderRequests[i].BidderCoreName < bidderRequests[j].BidderCoreName
@@ -3347,67 +3418,5 @@ func TestCleanOpenRTBRequestsFilterBidderRequestExt(t *testing.T) {
 		for i, wantBidderRequest := range test.wantExt {
 			assert.Equal(t, wantBidderRequest, bidderRequests[i].BidRequest.Ext, test.desc+" : "+string(bidderRequests[i].BidderCoreName)+"\n\t\tGotRequestExt : "+string(bidderRequests[i].BidRequest.Ext))
 		}
-	}
-}
-
-func Test_setExtAlternateBidderCodes(t *testing.T) {
-	type args struct {
-		requestExt *openrtb_ext.ExtRequest
-		cfgABC     config.AlternateBidderCodes
-	}
-	tests := []struct {
-		name                     string
-		args                     args
-		wantAlternateBidderCodes *openrtb_ext.ExtAlternateBidderCodes
-	}{
-		{
-			name:                     "AlternateBidderCodes nil/absent in both config and request : No change",
-			args:                     args{},
-			wantAlternateBidderCodes: nil,
-		},
-		{
-			name: "AlternateBidderCodes present config but requestExt nil : requestExt nil, do nothing",
-			args: args{
-				cfgABC: config.AlternateBidderCodes{Enabled: true, Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{"pubmatic": {Enabled: true, AllowedBidderCodes: []string{"groupm"}}}},
-			},
-			wantAlternateBidderCodes: nil,
-		},
-		{
-			name: "AlternateBidderCodes present only in config : fill request with data from config",
-			args: args{
-				requestExt: &openrtb_ext.ExtRequest{},
-				cfgABC:     config.AlternateBidderCodes{Enabled: true, Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{"pubmatic": {Enabled: true, AllowedBidderCodes: []string{"groupm"}}}},
-			},
-			wantAlternateBidderCodes: &openrtb_ext.ExtAlternateBidderCodes{Enabled: true, Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{"pubmatic": {Enabled: true, AllowedBidderCodes: []string{"groupm"}}}},
-		},
-		{
-			name: "AlternateBidderCodes present only in request : do nothing",
-			args: args{
-				requestExt: &openrtb_ext.ExtRequest{
-					Prebid: openrtb_ext.ExtRequestPrebid{AlternateBidderCodes: &openrtb_ext.ExtAlternateBidderCodes{Enabled: true, Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{"pubmatic": {Enabled: true, AllowedBidderCodes: []string{"appnexus"}}}}},
-				},
-			},
-			wantAlternateBidderCodes: &openrtb_ext.ExtAlternateBidderCodes{Enabled: true, Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{"pubmatic": {Enabled: true, AllowedBidderCodes: []string{"appnexus"}}}},
-		},
-		{
-			name: "AlternateBidderCodes present in both config and request : do nothing, request data has priority",
-			args: args{
-				requestExt: &openrtb_ext.ExtRequest{
-					Prebid: openrtb_ext.ExtRequestPrebid{AlternateBidderCodes: &openrtb_ext.ExtAlternateBidderCodes{Enabled: true, Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{"pubmatic": {Enabled: true, AllowedBidderCodes: []string{"appnexus"}}}}},
-				},
-				cfgABC: config.AlternateBidderCodes{Enabled: true, Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{"pubmatic": {Enabled: true, AllowedBidderCodes: []string{"groupm"}}}},
-			},
-			wantAlternateBidderCodes: &openrtb_ext.ExtAlternateBidderCodes{Enabled: true, Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{"pubmatic": {Enabled: true, AllowedBidderCodes: []string{"appnexus"}}}},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			setExtAlternateBidderCodes(tt.args.requestExt, tt.args.cfgABC)
-			if tt.args.requestExt != nil {
-				assert.Equal(t, tt.wantAlternateBidderCodes, tt.args.requestExt.Prebid.AlternateBidderCodes)
-			} else {
-				assert.Nil(t, tt.args.requestExt)
-			}
-		})
 	}
 }

@@ -245,8 +245,6 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		}
 	}
 
-	setExtAlternateBidderCodes(requestExt, r.Account.AlternateBidderCodes)
-
 	bidAdjustmentFactors := getExtBidAdjustmentFactors(requestExt)
 
 	recordImpMetrics(r.BidRequestWrapper.BidRequest, e.me)
@@ -255,7 +253,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	gdprDefaultValue := e.parseGDPRDefaultValue(r.BidRequestWrapper.BidRequest)
 
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
-	bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(ctx, r, requestExt, e.bidderToSyncerKey, e.me, gdprDefaultValue, e.privacyConfig, e.gdprPermsBuilder, e.tcf2ConfigBuilder, e.hostSChainNode)
+	bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(ctx, r, requestExt, e.bidderToSyncerKey, e.me, gdprDefaultValue, e.privacyConfig, e.gdprPermsBuilder, e.tcf2ConfigBuilder, e.hostSChainNode, r.Account.AlternateBidderCodes)
 
 	e.me.RecordRequestPrivacy(privacyLabels)
 
@@ -288,7 +286,14 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	} else {
 		// List of bidders we have requests for.
 		liveAdapters = listBiddersWithRequests(bidderRequests)
-		adapterBids, adapterExtra, anyBidsReturned = e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, accountDebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride, *requestExt.Prebid.AlternateBidderCodes, requestExt.Prebid.Experiment)
+
+		//This will be used validate bids
+		alternateBidderCodes := openrtb_ext.ExtAlternateBidderCodes(r.Account.AlternateBidderCodes)
+		if requestExt != nil && requestExt.Prebid.AlternateBidderCodes != nil {
+			alternateBidderCodes = *requestExt.Prebid.AlternateBidderCodes
+		}
+
+		adapterBids, adapterExtra, anyBidsReturned = e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, accountDebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride, alternateBidderCodes, requestExt.Prebid.Experiment)
 	}
 
 	var auc *auction

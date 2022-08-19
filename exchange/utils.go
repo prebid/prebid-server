@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"reflect"
 
 	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
@@ -48,6 +49,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 	gdprPermsBuilder gdpr.PermissionsBuilder,
 	tcf2ConfigBuilder gdpr.TCF2ConfigBuilder,
 	hostSChainNode *openrtb2.SupplyChainNode,
+	cfgABC config.AlternateBidderCodes,
 ) (allowedBidderRequests []BidderRequest, privacyLabels metrics.PrivacyLabels, errs []error) {
 
 	req := auctionReq.BidRequestWrapper
@@ -72,7 +74,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 	}
 
 	var allBidderRequests []BidderRequest
-	allBidderRequests, errs = getAuctionBidderRequests(auctionReq, requestExt, bidderToSyncerKey, impsByBidder, aliases, hostSChainNode)
+	allBidderRequests, errs = getAuctionBidderRequests(auctionReq, requestExt, bidderToSyncerKey, impsByBidder, aliases, hostSChainNode, cfgABC)
 
 	bidderNameToBidderReq := buildBidResponseRequest(req.BidRequest, bidderImpWithBidResp, aliases, auctionReq.BidderImpReplaceImpID)
 	//this function should be executed after getAuctionBidderRequests
@@ -209,7 +211,8 @@ func getAuctionBidderRequests(auctionRequest AuctionRequest,
 	bidderToSyncerKey map[string]string,
 	impsByBidder map[string][]openrtb2.Imp,
 	aliases map[string]string,
-	hostSChainNode *openrtb2.SupplyChainNode) ([]BidderRequest, []error) {
+	hostSChainNode *openrtb2.SupplyChainNode,
+	cfgABC config.AlternateBidderCodes) ([]BidderRequest, []error) {
 
 	bidderRequests := make([]BidderRequest, 0, len(impsByBidder))
 	req := auctionRequest.BidRequestWrapper
@@ -237,7 +240,7 @@ func getAuctionBidderRequests(auctionRequest AuctionRequest,
 
 		sChainWriter.Write(&reqCopy, bidder)
 
-		reqCopy.Ext, err = buildRequestExtForBidder(bidder, req.BidRequest.Ext, requestExt, bidderParamsInReqExt)
+		reqCopy.Ext, err = buildRequestExtForBidder(bidder, req.BidRequest.Ext, requestExt, bidderParamsInReqExt, cfgABC)
 		if err != nil {
 			return nil, []error{err}
 		}
@@ -273,9 +276,36 @@ func getAuctionBidderRequests(auctionRequest AuctionRequest,
 	return bidderRequests, errs
 }
 
-func buildRequestExtForBidder(bidder string, requestExt json.RawMessage, requestExtParsed *openrtb_ext.ExtRequest, bidderParamsInReqExt map[string]json.RawMessage) (json.RawMessage, error) {
-	if len(requestExt) == 0 || requestExtParsed == nil {
-		return json.RawMessage(``), nil
+func buildRequestExtForBidder(bidder string, requestExt json.RawMessage, requestExtParsed *openrtb_ext.ExtRequest, bidderParamsInReqExt map[string]json.RawMessage, cfgABC config.AlternateBidderCodes) (json.RawMessage, error) {
+	// Resolve alternatebiddercode for current bidder
+	var alternateBidderCodes *openrtb_ext.ExtAlternateBidderCodes
+	if len(requestExt) == 0 || requestExtParsed == nil || requestExtParsed.Prebid.AlternateBidderCodes == nil {
+		alternateBidderCodes = &openrtb_ext.ExtAlternateBidderCodes{
+			Enabled: cfgABC.Enabled,
+		}
+		if bidderCodes, ok := cfgABC.Bidders[bidder]; ok {
+			alternateBidderCodes = &openrtb_ext.ExtAlternateBidderCodes{
+				Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+					bidder: bidderCodes,
+				},
+			}
+		}
+
+		// default case where alternatebiddercode is either not defined in account config or defined with default values,
+		// do not fill alternatebiddercode in such scenario to keep the request payload as is (regression)
+		if reflect.DeepEqual(openrtb_ext.ExtAlternateBidderCodes{}, *alternateBidderCodes) {
+			if len(requestExt) == 0 || requestExtParsed == nil {
+				return json.RawMessage(``), nil
+			}
+			alternateBidderCodes = nil
+		}
+	} else {
+		alternateBidderCodes = &openrtb_ext.ExtAlternateBidderCodes{
+			Enabled: requestExtParsed.Prebid.AlternateBidderCodes.Enabled,
+			Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+				bidder: requestExtParsed.Prebid.AlternateBidderCodes.Bidders[bidder],
+			},
+		}
 	}
 
 	// Resolve Bidder Params
@@ -284,28 +314,18 @@ func buildRequestExtForBidder(bidder string, requestExt json.RawMessage, request
 		bidderParams = bidderParamsInReqExt[bidder]
 	}
 
-	// Resolve alternatebiddercode for current bidder
-	var alternateBidderCodes *openrtb_ext.ExtAlternateBidderCodes
-	if requestExtParsed.Prebid.AlternateBidderCodes != nil && len(requestExtParsed.Prebid.AlternateBidderCodes.Bidders) != 0 {
-		if bidderCodes, ok := requestExtParsed.Prebid.AlternateBidderCodes.Bidders[bidder]; ok {
-			alternateBidderCodes = &openrtb_ext.ExtAlternateBidderCodes{
-				Enabled: requestExtParsed.Prebid.AlternateBidderCodes.Enabled,
-				Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
-					bidder: bidderCodes,
-				},
-			}
-		}
-	}
-
 	// Copy Allowed Fields
 	// Per: https://docs.prebid.org/prebid-server/endpoints/openrtb2/pbs-endpoint-auction.html#prebid-server-ortb2-extension-summary
 	prebid := openrtb_ext.ExtRequestPrebid{
-		Integration:          requestExtParsed.Prebid.Integration,
-		Channel:              requestExtParsed.Prebid.Channel,
-		Debug:                requestExtParsed.Prebid.Debug,
-		CurrencyConversions:  requestExtParsed.Prebid.CurrencyConversions,
 		BidderParams:         bidderParams,
 		AlternateBidderCodes: alternateBidderCodes,
+	}
+
+	if requestExtParsed != nil {
+		prebid.CurrencyConversions = requestExtParsed.Prebid.CurrencyConversions
+		prebid.Integration = requestExtParsed.Prebid.Integration
+		prebid.Channel = requestExtParsed.Prebid.Channel
+		prebid.Debug = requestExtParsed.Prebid.Debug
 	}
 
 	// Marshal New Prebid Object
@@ -316,8 +336,10 @@ func buildRequestExtForBidder(bidder string, requestExt json.RawMessage, request
 
 	// Update Ext With Prebid Json
 	extMap := make(map[string]json.RawMessage)
-	if err := json.Unmarshal(requestExt, &extMap); err != nil {
-		return nil, err
+	if len(requestExt) != 0 {
+		if err := json.Unmarshal(requestExt, &extMap); err != nil {
+			return nil, err
+		}
 	}
 	extMap["prebid"] = prebidJson
 
@@ -844,18 +866,4 @@ func WrapJSONInData(data []byte) []byte {
 	res = append(res, data...)
 	res = append(res, []byte(`}`)...)
 	return res
-}
-
-// setExtAlternateBidderCodes map config.account.alternatebiddercodes to ext.prebid.alternatebiddercodes
-func setExtAlternateBidderCodes(requestExt *openrtb_ext.ExtRequest, cfgABC config.AlternateBidderCodes) {
-	if requestExt != nil && requestExt.Prebid.AlternateBidderCodes != nil {
-		return
-	}
-
-	if requestExt == nil {
-		requestExt = &openrtb_ext.ExtRequest{}
-	}
-
-	alternateBidderCodes := openrtb_ext.ExtAlternateBidderCodes(cfgABC)
-	requestExt.Prebid.AlternateBidderCodes = &alternateBidderCodes
 }
