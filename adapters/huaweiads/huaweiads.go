@@ -463,7 +463,7 @@ func getHuaweiAdsReqJson(request *huaweiAdsRequest, openRTBRequest *openrtb2.Bid
 func getHuaweiAdsReqAdslot30(huaweiAdsImpExt *openrtb_ext.ExtImpHuaweiAds,
 	openRTBImp *openrtb2.Imp, openRTBRequest *openrtb2.BidRequest) (adslot30, error) {
 	adtype := convertAdtypeString2Integer(strings.ToLower(huaweiAdsImpExt.Adtype))
-  testStatus := 0
+	testStatus := 0
 	if huaweiAdsImpExt != nil && huaweiAdsImpExt.IsTestAuthorization == "true" {
 		testStatus = 1
 	} else {
@@ -472,13 +472,13 @@ func getHuaweiAdsReqAdslot30(huaweiAdsImpExt *openrtb_ext.ExtImpHuaweiAds,
 	var adslot30 = adslot30{
 		Slotid: huaweiAdsImpExt.SlotId,
 		Adtype: adtype,
-		Test: int32(testStatus),
+		Test:   int32(testStatus),
 	}
 	if err := checkAndExtractOpenrtbFormat(&adslot30, adtype, huaweiAdsImpExt.Adtype, openRTBImp); err != nil {
 		return adslot30, err
 	}
 	return adslot30, nil
-	}
+}
 
 // opentrb :  huawei adtype
 // banner <-> banner, interstitial
@@ -513,19 +513,19 @@ func checkAndExtractOpenrtbFormat(adslot30 *adslot30, adtype int32, yourAdtype s
 }
 
 func getBannerFormat(adslot30 *adslot30, openRTBImp *openrtb2.Imp) {
-		if openRTBImp.Banner.W != nil && openRTBImp.Banner.H != nil {
-			adslot30.W = *openRTBImp.Banner.W
-			adslot30.H = *openRTBImp.Banner.H
-		}
-		if len(openRTBImp.Banner.Format) != 0 {
-			var formats = make([]format, 0, len(openRTBImp.Banner.Format))
-			for _, f := range openRTBImp.Banner.Format {
-				if f.H != 0 && f.W != 0 {
-					formats = append(formats, format{f.W, f.H})
-				}
+	if openRTBImp.Banner.W != nil && openRTBImp.Banner.H != nil {
+		adslot30.W = *openRTBImp.Banner.W
+		adslot30.H = *openRTBImp.Banner.H
+	}
+	if len(openRTBImp.Banner.Format) != 0 {
+		var formats = make([]format, 0, len(openRTBImp.Banner.Format))
+		for _, f := range openRTBImp.Banner.Format {
+			if f.H != 0 && f.W != 0 {
+				formats = append(formats, format{f.W, f.H})
 			}
-			adslot30.Format = formats
 		}
+		adslot30.Format = formats
+	}
 }
 
 func getNativeFormat(adslot30 *adslot30, openRTBImp *openrtb2.Imp) error {
@@ -553,14 +553,14 @@ func getNativeFormat(adslot30 *adslot30, openRTBImp *openrtb2.Imp) error {
 		if asset.Img != nil {
 			if asset.Img.Type == native1.ImageAssetTypeMain {
 				numMainImage++
-			if asset.Img.H != 0 && asset.Img.W != 0 {
-				width = asset.Img.W
-				height = asset.Img.H
-			} else if asset.Img.WMin != 0 && asset.Img.HMin != 0 {
-				width = asset.Img.WMin
-				height = asset.Img.HMin
+				if asset.Img.H != 0 && asset.Img.W != 0 {
+					width = asset.Img.W
+					height = asset.Img.H
+				} else if asset.Img.WMin != 0 && asset.Img.HMin != 0 {
+					width = asset.Img.WMin
+					height = asset.Img.HMin
+				}
 			}
-		}
 			continue
 		}
 	}
