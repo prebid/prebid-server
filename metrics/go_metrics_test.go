@@ -50,13 +50,6 @@ func TestNewMetrics(t *testing.T) {
 	ensureContains(t, registry, "requests.badinput.amp", m.RequestStatuses[ReqTypeAMP][RequestStatusBadInput])
 	ensureContains(t, registry, "requests.err.amp", m.RequestStatuses[ReqTypeAMP][RequestStatusErr])
 	ensureContains(t, registry, "requests.networkerr.amp", m.RequestStatuses[ReqTypeAMP][RequestStatusNetworkErr])
-	ensureContains(t, registry, "requests.ok.video", m.RequestStatuses[ReqTypeVideo][RequestStatusOK])
-	ensureContains(t, registry, "requests.badinput.video", m.RequestStatuses[ReqTypeVideo][RequestStatusBadInput])
-	ensureContains(t, registry, "requests.err.video", m.RequestStatuses[ReqTypeVideo][RequestStatusErr])
-	ensureContains(t, registry, "requests.networkerr.video", m.RequestStatuses[ReqTypeVideo][RequestStatusNetworkErr])
-
-	ensureContains(t, registry, "queued_requests.video.rejected", m.RequestsQueueTimer[ReqTypeVideo][false])
-	ensureContains(t, registry, "queued_requests.video.accepted", m.RequestsQueueTimer[ReqTypeVideo][true])
 
 	ensureContains(t, registry, "timeout_notification.ok", m.TimeoutNotificationSuccess)
 	ensureContains(t, registry, "timeout_notification.failed", m.TimeoutNotificationFailure)
@@ -464,11 +457,6 @@ func TestRecordStoredDataFetchTime(t *testing.T) {
 			fetchType:   FetchAll,
 		},
 		{
-			description: "Update stored_video_fetch_time.all timer",
-			dataType:    VideoDataType,
-			fetchType:   FetchAll,
-		},
-		{
 			description: "Update stored_account_fetch_time.delta timer",
 			dataType:    AccountDataType,
 			fetchType:   FetchDelta,
@@ -486,11 +474,6 @@ func TestRecordStoredDataFetchTime(t *testing.T) {
 		{
 			description: "Update stored_request_fetch_time.delta timer",
 			dataType:    RequestDataType,
-			fetchType:   FetchDelta,
-		},
-		{
-			description: "Update stored_video_fetch_time.delta timer",
-			dataType:    VideoDataType,
 			fetchType:   FetchDelta,
 		},
 	}
@@ -538,11 +521,6 @@ func TestRecordStoredDataError(t *testing.T) {
 			errorType:   StoredDataErrorNetwork,
 		},
 		{
-			description: "Increment stored_video_error.network meter",
-			dataType:    VideoDataType,
-			errorType:   StoredDataErrorNetwork,
-		},
-		{
 			description: "Increment stored_account_error.undefined meter",
 			dataType:    AccountDataType,
 			errorType:   StoredDataErrorUndefined,
@@ -560,11 +538,6 @@ func TestRecordStoredDataError(t *testing.T) {
 		{
 			description: "Increment stored_request_error.undefined meter",
 			dataType:    RequestDataType,
-			errorType:   StoredDataErrorUndefined,
-		},
-		{
-			description: "Increment stored_video_error.undefined meter",
-			dataType:    VideoDataType,
 			errorType:   StoredDataErrorUndefined,
 		},
 	}

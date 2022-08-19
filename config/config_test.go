@@ -722,12 +722,6 @@ func TestValidateConfig(t *testing.T) {
 				Type: "none",
 			},
 		},
-		StoredVideo: StoredRequests{
-			Files: FileFetcherConfig{Enabled: true},
-			InMemoryCache: InMemoryCache{
-				Type: "none",
-			},
-		},
 		CategoryMapping: StoredRequests{
 			Files: FileFetcherConfig{Enabled: true},
 		},

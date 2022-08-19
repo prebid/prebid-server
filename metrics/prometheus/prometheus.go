@@ -42,8 +42,6 @@ type Metrics struct {
 	storedCategoryErrors         *prometheus.CounterVec
 	storedRequestFetchTimer      *prometheus.HistogramVec
 	storedRequestErrors          *prometheus.CounterVec
-	storedVideoFetchTimer        *prometheus.HistogramVec
-	storedVideoErrors            *prometheus.CounterVec
 	timeoutNotifications         *prometheus.CounterVec
 	dnsLookupTimer               prometheus.Histogram
 	tlsHandhakeTimer             prometheus.Histogram
@@ -260,17 +258,6 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 	metrics.storedRequestErrors = newCounter(cfg, reg,
 		"stored_request_errors",
 		"Count of stored request errors by error type",
-		[]string{storedDataErrorLabel})
-
-	metrics.storedVideoFetchTimer = newHistogramVec(cfg, reg,
-		"stored_video_fetch_time_seconds",
-		"Seconds to fetch stored video labeled by fetch type",
-		[]string{storedDataFetchTypeLabel},
-		standardTimeBuckets)
-
-	metrics.storedVideoErrors = newCounter(cfg, reg,
-		"stored_video_errors",
-		"Count of stored video errors by error type",
 		[]string{storedDataErrorLabel})
 
 	metrics.timeoutNotifications = newCounter(cfg, reg,
@@ -567,10 +554,6 @@ func (m *Metrics) RecordStoredDataFetchTime(labels metrics.StoredDataLabels, len
 		m.storedRequestFetchTimer.With(prometheus.Labels{
 			storedDataFetchTypeLabel: string(labels.DataFetchType),
 		}).Observe(length.Seconds())
-	case metrics.VideoDataType:
-		m.storedVideoFetchTimer.With(prometheus.Labels{
-			storedDataFetchTypeLabel: string(labels.DataFetchType),
-		}).Observe(length.Seconds())
 	case metrics.ResponseDataType:
 		m.storedResponsesFetchTimer.With(prometheus.Labels{
 			storedDataFetchTypeLabel: string(labels.DataFetchType),
@@ -594,10 +577,6 @@ func (m *Metrics) RecordStoredDataError(labels metrics.StoredDataLabels) {
 		}).Inc()
 	case metrics.RequestDataType:
 		m.storedRequestErrors.With(prometheus.Labels{
-			storedDataErrorLabel: string(labels.Error),
-		}).Inc()
-	case metrics.VideoDataType:
-		m.storedVideoErrors.With(prometheus.Labels{
 			storedDataErrorLabel: string(labels.Error),
 		}).Inc()
 	case metrics.ResponseDataType:

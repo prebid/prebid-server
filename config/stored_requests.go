@@ -16,7 +16,6 @@ type DataType string
 const (
 	RequestDataType    DataType = "Request"
 	CategoryDataType   DataType = "Category"
-	VideoDataType      DataType = "Video"
 	AMPRequestDataType DataType = "AMP Request"
 	AccountDataType    DataType = "Account"
 	ResponseDataType   DataType = "Response"
@@ -27,7 +26,6 @@ func (dataType DataType) Section() string {
 	return map[DataType]string{
 		RequestDataType:    "stored_requests",
 		CategoryDataType:   "categories",
-		VideoDataType:      "stored_video_req",
 		AMPRequestDataType: "stored_amp_req",
 		AccountDataType:    "accounts",
 		ResponseDataType:   "stored_responses",
@@ -132,7 +130,6 @@ func resolvedStoredRequestsConfig(cfg *Configuration) {
 	// Set data types for each section
 	cfg.StoredRequests.dataType = RequestDataType
 	cfg.StoredRequestsAMP.dataType = AMPRequestDataType
-	cfg.StoredVideo.dataType = VideoDataType
 	cfg.CategoryMapping.dataType = CategoryDataType
 	cfg.Accounts.dataType = AccountDataType
 	cfg.StoredResponses.dataType = ResponseDataType

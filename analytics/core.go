@@ -5,7 +5,6 @@ import (
 
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 /*
@@ -18,7 +17,6 @@ import (
 
 type PBSAnalyticsModule interface {
 	LogAuctionObject(*AuctionObject)
-	LogVideoObject(*VideoObject)
 	LogCookieSyncObject(*CookieSyncObject)
 	LogSetUIDObject(*SetUIDObject)
 	LogAmpObject(*AmpObject)
@@ -44,17 +42,6 @@ type AmpObject struct {
 	AmpTargetingValues map[string]string
 	Origin             string
 	StartTime          time.Time
-}
-
-//Loggable object of a transaction at /openrtb2/video endpoint
-type VideoObject struct {
-	Status        int
-	Errors        []error
-	Request       *openrtb2.BidRequest
-	Response      *openrtb2.BidResponse
-	VideoRequest  *openrtb_ext.BidRequestVideo
-	VideoResponse *openrtb_ext.BidResponseVideo
-	StartTime     time.Time
 }
 
 //Loggable object of a transaction at /setuid

@@ -704,10 +704,7 @@ func (me *Metrics) RecordPrebidCacheRequestTime(success bool, length time.Durati
 }
 
 func (me *Metrics) RecordRequestQueueTime(success bool, requestType RequestType, length time.Duration) {
-	if requestType == ReqTypeVideo { //remove this check when other request types are supported
-		me.RequestsQueueTimer[requestType][success].Update(length)
-	}
-
+	me.RequestsQueueTimer[requestType][success].Update(length)
 }
 
 func (me *Metrics) RecordTimeoutNotice(success bool) {

@@ -55,16 +55,15 @@ import (
 //   }
 //
 func RunJSONBidderTest(t *testing.T, rootDir string, bidder adapters.Bidder) {
-	runTests(t, fmt.Sprintf("%s/exemplary", rootDir), bidder, false, false, false)
-	runTests(t, fmt.Sprintf("%s/supplemental", rootDir), bidder, true, false, false)
-	runTests(t, fmt.Sprintf("%s/amp", rootDir), bidder, true, true, false)
-	runTests(t, fmt.Sprintf("%s/video", rootDir), bidder, false, false, true)
-	runTests(t, fmt.Sprintf("%s/videosupplemental", rootDir), bidder, true, false, true)
+	runTests(t, fmt.Sprintf("%s/exemplary", rootDir), bidder, false, false)
+	runTests(t, fmt.Sprintf("%s/supplemental", rootDir), bidder, true, false)
+	runTests(t, fmt.Sprintf("%s/amp", rootDir), bidder, true, true)
+	runTests(t, fmt.Sprintf("%s/videosupplemental", rootDir), bidder, true, false)
 }
 
 // runTests runs all the *.json files in a directory. If allowErrors is false, and one of the test files
 // expects errors from the bidder, then the test will fail.
-func runTests(t *testing.T, directory string, bidder adapters.Bidder, allowErrors, isAmpTest, isVideoTest bool) {
+func runTests(t *testing.T, directory string, bidder adapters.Bidder, allowErrors, isAmpTest bool) {
 	if specFiles, err := ioutil.ReadDir(directory); err == nil {
 		for _, specFile := range specFiles {
 			fileName := fmt.Sprintf("%s/%s", directory, specFile.Name())
@@ -76,7 +75,7 @@ func runTests(t *testing.T, directory string, bidder adapters.Bidder, allowError
 			if !allowErrors && specData.expectsErrors() {
 				t.Fatalf("Exemplary spec %s must not expect errors.", fileName)
 			}
-			runSpec(t, fileName, specData, bidder, isAmpTest, isVideoTest)
+			runSpec(t, fileName, specData, bidder, isAmpTest)
 		}
 	}
 }
@@ -104,15 +103,15 @@ func loadFile(filename string) (*testSpec, error) {
 //   - That the Bidder's errors match the spec's expectations
 //
 // More assertions will almost certainly be added in the future, as bugs come up.
-func runSpec(t *testing.T, filename string, spec *testSpec, bidder adapters.Bidder, isAmpTest, isVideoTest bool) {
-	reqInfo := getTestExtraRequestInfo(t, filename, spec, isAmpTest, isVideoTest)
+func runSpec(t *testing.T, filename string, spec *testSpec, bidder adapters.Bidder, isAmpTest bool) {
+	reqInfo := getTestExtraRequestInfo(t, filename, spec, isAmpTest)
 	requests := testMakeRequestsImpl(t, filename, spec, bidder, reqInfo)
 
 	testMakeBidsImpl(t, filename, spec, bidder, requests)
 }
 
 // getTestExtraRequestInfo builds the ExtraRequestInfo object that will be passed to testMakeRequestsImpl
-func getTestExtraRequestInfo(t *testing.T, filename string, spec *testSpec, isAmpTest, isVideoTest bool) *adapters.ExtraRequestInfo {
+func getTestExtraRequestInfo(t *testing.T, filename string, spec *testSpec, isAmpTest bool) *adapters.ExtraRequestInfo {
 	t.Helper()
 
 	var reqInfo adapters.ExtraRequestInfo
@@ -142,8 +141,6 @@ func getTestExtraRequestInfo(t *testing.T, filename string, spec *testSpec, isAm
 	if isAmpTest {
 		// simulates AMP entry point
 		reqInfo.PbsEntryPoint = "amp"
-	} else if isVideoTest {
-		reqInfo.PbsEntryPoint = "video"
 	}
 
 	return &reqInfo

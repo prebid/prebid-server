@@ -2,10 +2,8 @@ package appnexus
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
-	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
@@ -99,18 +97,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			defaultDisplayManagerVer = fmt.Sprintf("%s-%s", source, version)
 		}
 	}
-	var adPodId *bool
 
 	for i := 0; i < len(request.Imp); i++ {
-		memberId, impAdPodId, err := preprocess(&request.Imp[i], defaultDisplayManagerVer)
+		memberId, err := preprocess(&request.Imp[i], defaultDisplayManagerVer)
 		if memberId != "" {
 			memberIds[memberId] = true
-		}
-		if adPodId == nil {
-			adPodId = &impAdPodId
-		} else if *adPodId != impAdPodId {
-			errs = append(errs, errors.New("generate ad pod option should be same for all pods in request"))
-			return nil, errs
 		}
 
 		// If the preprocessing failed, the server won't be able to bid on this Imp. Delete it, and note the error.
@@ -142,11 +133,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	}
 
 	// Add Appnexus request level extension
-	var isAMP, isVIDEO int
+	var isAMP int
 	if reqInfo.PbsEntryPoint == metrics.ReqTypeAMP {
 		isAMP = 1
-	} else if reqInfo.PbsEntryPoint == metrics.ReqTypeVideo {
-		isVIDEO = 1
 	}
 
 	var reqExt appnexusReqExt
@@ -165,46 +154,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		reqExt.Appnexus.IncludeBrandCategory = &includeBrandCategory
 	}
 	reqExt.Appnexus.IsAMP = isAMP
-	reqExt.Appnexus.HeaderBiddingSource = a.hbSource + isVIDEO
+	reqExt.Appnexus.HeaderBiddingSource = a.hbSource
 
 	imps := request.Imp
-
-	// For long form requests if adpodId feature enabled, adpod_id must be sent downstream.
-	// Adpod id is a unique identifier for pod
-	// All impressions in the same pod must have the same pod id in request extension
-	// For this all impressions in  request should belong to the same pod
-	// If impressions number per pod is more than maxImpsPerReq - divide those imps to several requests but keep pod id the same
-	// If  adpodId feature disabled and impressions number per pod is more than maxImpsPerReq  - divide those imps to several requests but do not include ad pod id
-	if isVIDEO == 1 && *adPodId {
-		podImps := groupByPods(imps)
-
-		requests := make([]*adapters.RequestData, 0, len(podImps))
-		for _, podImps := range podImps {
-			reqExt.Appnexus.AdPodId = generatePodID()
-
-			reqs, errors := splitRequests(podImps, request, reqExt, thisURI, errs)
-			requests = append(requests, reqs...)
-			errs = append(errs, errors...)
-		}
-		return requests, errs
-	}
-
 	return splitRequests(imps, request, reqExt, thisURI, errs)
-}
-
-func generatePodID() string {
-	val := rand.Int63()
-	return fmt.Sprint(val)
-}
-
-func groupByPods(imps []openrtb2.Imp) map[string]([]openrtb2.Imp) {
-	// find number of pods in response
-	podImps := make(map[string][]openrtb2.Imp)
-	for _, imp := range imps {
-		pod := strings.Split(imp.ID, "_")[0]
-		podImps[pod] = append(podImps[pod], imp)
-	}
-	return podImps
 }
 
 func marshalAndSetRequestExt(request *openrtb2.BidRequest, requestExtension appnexusReqExt, errs []error) {
@@ -271,15 +224,15 @@ func keys(m map[string]bool) []string {
 // preprocess mutates the imp to get it ready to send to appnexus.
 //
 // It returns the member param, if it exists, and an error if anything went wrong during the preprocessing.
-func preprocess(imp *openrtb2.Imp, defaultDisplayManagerVer string) (string, bool, error) {
+func preprocess(imp *openrtb2.Imp, defaultDisplayManagerVer string) (string, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return "", false, err
+		return "", err
 	}
 
 	var appnexusExt openrtb_ext.ExtImpAppnexus
 	if err := json.Unmarshal(bidderExt.Bidder, &appnexusExt); err != nil {
-		return "", false, err
+		return "", err
 	}
 
 	// Accept legacy Appnexus parameters if we don't have modern ones
@@ -295,7 +248,7 @@ func preprocess(imp *openrtb2.Imp, defaultDisplayManagerVer string) (string, boo
 	}
 
 	if appnexusExt.PlacementId == 0 && (appnexusExt.InvCode == "" || appnexusExt.Member == "") {
-		return "", false, &errortypes.BadInput{
+		return "", &errortypes.BadInput{
 			Message: "No placement or member+invcode provided",
 		}
 	}
@@ -337,10 +290,10 @@ func preprocess(imp *openrtb2.Imp, defaultDisplayManagerVer string) (string, boo
 	}}
 	var err error
 	if imp.Ext, err = json.Marshal(&impExt); err != nil {
-		return appnexusExt.Member, appnexusExt.AdPodId, err
+		return appnexusExt.Member, err
 	}
 
-	return appnexusExt.Member, appnexusExt.AdPodId, nil
+	return appnexusExt.Member, nil
 }
 
 func makeKeywordStr(keywords []*openrtb_ext.ExtImpAppnexusKeyVal) string {

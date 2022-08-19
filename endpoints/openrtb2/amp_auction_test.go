@@ -1177,9 +1177,6 @@ func newMockLogger(ao *analytics.AmpObject) analytics.PBSAnalyticsModule {
 func (logger mockLogger) LogAuctionObject(ao *analytics.AuctionObject) {
 	return
 }
-func (logger mockLogger) LogVideoObject(vo *analytics.VideoObject) {
-	return
-}
 func (logger mockLogger) LogCookieSyncObject(cookieObject *analytics.CookieSyncObject) {
 	return
 }

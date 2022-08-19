@@ -10,6 +10,13 @@ import (
 	"github.com/prebid/prebid-server/metrics"
 )
 
+// QueuedRequestTimeout adds extra functionality to the endpoint.
+// Usage example:
+
+// QueuedRequestTimeout requestTimeoutHeaders := config.RequestTimeoutHeaders{}
+// if cfg.RequestTimeoutHeaders != requestTimeoutHeaders {
+//      openrtbEndpoint = aspects.QueuedRequestTimeout(openrtbEndpoint, cfg.RequestTimeoutHeaders, r.MetricsEngine, metrics.ReqTypeORTB2Web)
+// }
 func QueuedRequestTimeout(f httprouter.Handle, reqTimeoutHeaders config.RequestTimeoutHeaders, metricsEngine metrics.MetricsEngine, requestType metrics.RequestType) httprouter.Handle {
 
 	return func(w http.ResponseWriter, r *http.Request, params httprouter.Params) {

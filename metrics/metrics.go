@@ -56,7 +56,6 @@ const (
 	AMPDataType      StoredDataType = "amp"
 	CategoryDataType StoredDataType = "category"
 	RequestDataType  StoredDataType = "request"
-	VideoDataType    StoredDataType = "video"
 	ResponseDataType StoredDataType = "response"
 )
 
@@ -66,7 +65,6 @@ func StoredDataTypes() []StoredDataType {
 		AMPDataType,
 		CategoryDataType,
 		RequestDataType,
-		VideoDataType,
 		ResponseDataType,
 	}
 }
@@ -155,12 +153,12 @@ const (
 	ReqTypeORTB2Web RequestType = "openrtb2-web"
 	ReqTypeORTB2App RequestType = "openrtb2-app"
 	ReqTypeAMP      RequestType = "amp"
-	ReqTypeVideo    RequestType = "video"
 )
 
 // The media types described in the "imp" json objects
 const (
 	ImpTypeBanner ImpMediaType = "banner"
+	///!!!
 	ImpTypeVideo  ImpMediaType = "video"
 	ImpTypeAudio  ImpMediaType = "audio"
 	ImpTypeNative ImpMediaType = "native"
@@ -172,7 +170,6 @@ func RequestTypes() []RequestType {
 		ReqTypeORTB2Web,
 		ReqTypeORTB2App,
 		ReqTypeAMP,
-		ReqTypeVideo,
 	}
 }
 

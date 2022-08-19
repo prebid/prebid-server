@@ -192,23 +192,6 @@ func TestAccountIntegrationGetByIntegrationType(t *testing.T) {
 			wantEnabled:         &trueValue,
 		},
 		{
-			description:         "Video integration setting unspecified, returns nil",
-			giveIntegrationType: IntegrationTypeVideo,
-			wantEnabled:         nil,
-		},
-		{
-			description:         "Video integration disabled, returns false",
-			giveVideoEnabled:    &falseValue,
-			giveIntegrationType: IntegrationTypeVideo,
-			wantEnabled:         &falseValue,
-		},
-		{
-			description:         "Video integration enabled, returns true",
-			giveVideoEnabled:    &trueValue,
-			giveIntegrationType: IntegrationTypeVideo,
-			wantEnabled:         &trueValue,
-		},
-		{
 			description:         "Web integration setting unspecified, returns nil",
 			giveIntegrationType: IntegrationTypeWeb,
 			wantEnabled:         nil,
@@ -229,10 +212,9 @@ func TestAccountIntegrationGetByIntegrationType(t *testing.T) {
 
 	for _, tt := range tests {
 		accountIntegration := AccountIntegration{
-			AMP:   tt.giveAMPEnabled,
-			App:   tt.giveAppEnabled,
-			Video: tt.giveVideoEnabled,
-			Web:   tt.giveWebEnabled,
+			AMP: tt.giveAMPEnabled,
+			App: tt.giveAppEnabled,
+			Web: tt.giveWebEnabled,
 		}
 
 		result := accountIntegration.GetByIntegrationType(tt.giveIntegrationType)

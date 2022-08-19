@@ -22,7 +22,6 @@ func bytesNull() []byte {
 var storedDataTypeMetricMap = map[config.DataType]metrics.StoredDataType{
 	config.RequestDataType:    metrics.RequestDataType,
 	config.CategoryDataType:   metrics.CategoryDataType,
-	config.VideoDataType:      metrics.VideoDataType,
 	config.AMPRequestDataType: metrics.AMPDataType,
 	config.AccountDataType:    metrics.AccountDataType,
 	config.ResponseDataType:   metrics.ResponseDataType,

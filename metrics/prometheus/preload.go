@@ -73,10 +73,6 @@ func preloadLabelValues(m *Metrics, syncerKeys []string) {
 		storedDataFetchTypeLabel: storedDataFetchTypeValues,
 	})
 
-	preloadLabelValuesForHistogram(m.storedVideoFetchTimer, map[string][]string{
-		storedDataFetchTypeLabel: storedDataFetchTypeValues,
-	})
-
 	preloadLabelValuesForHistogram(m.storedResponsesFetchTimer, map[string][]string{
 		storedDataFetchTypeLabel: storedDataFetchTypeValues,
 	})
@@ -94,10 +90,6 @@ func preloadLabelValues(m *Metrics, syncerKeys []string) {
 	})
 
 	preloadLabelValuesForCounter(m.storedRequestErrors, map[string][]string{
-		storedDataErrorLabel: storedDataErrorValues,
-	})
-
-	preloadLabelValuesForCounter(m.storedVideoErrors, map[string][]string{
 		storedDataErrorLabel: storedDataErrorValues,
 	})
 
@@ -176,7 +168,7 @@ func preloadLabelValues(m *Metrics, syncerKeys []string) {
 	//to minimize memory usage, queuedTimeout metric is now supported for video endpoint only
 	//boolean value represents 2 general request statuses: accepted and rejected
 	preloadLabelValuesForHistogram(m.requestsQueueTimer, map[string][]string{
-		requestTypeLabel:   {string(metrics.ReqTypeVideo)},
+		requestTypeLabel:   {string(metrics.ReqTypeORTB2Web), string(metrics.ReqTypeORTB2App), string(metrics.ReqTypeAMP)},
 		requestStatusLabel: {requestSuccessLabel, requestRejectLabel},
 	})
 

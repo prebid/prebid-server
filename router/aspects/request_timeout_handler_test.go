@@ -76,7 +76,7 @@ func TestAny(t *testing.T) {
 
 	for _, test := range testCases {
 		reqTimeFloat, _ := strconv.ParseFloat(test.reqTimeInQueue, 64)
-		result := ExecuteAspectRequest(t, test.reqTimeInQueue, test.reqTimeOut, test.setHeaders, metrics.ReqTypeVideo, test.requestStatusMetrics, reqTimeFloat)
+		result := ExecuteAspectRequest(t, test.reqTimeInQueue, test.reqTimeOut, test.setHeaders, metrics.ReqTypeORTB2Web, test.requestStatusMetrics, reqTimeFloat)
 		assert.Equal(t, test.expectedRespCode, result.Code, test.expectedRespCodeMessage)
 		assert.Equal(t, test.expectedRespBody, string(result.Body.Bytes()), test.expectedRespBodyMessage)
 	}

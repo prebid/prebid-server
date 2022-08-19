@@ -27,7 +27,6 @@ import (
 var integrationTypeMap = map[metrics.RequestType]config.IntegrationType{
 	metrics.ReqTypeAMP:      config.IntegrationTypeAMP,
 	metrics.ReqTypeORTB2App: config.IntegrationTypeApp,
-	metrics.ReqTypeVideo:    config.IntegrationTypeVideo,
 	metrics.ReqTypeORTB2Web: config.IntegrationTypeWeb,
 }
 

@@ -473,11 +473,6 @@ func TestRecordStoredDataFetchTime(t *testing.T) {
 			fetchType:   metrics.FetchAll,
 		},
 		{
-			description: "Update stored video histogram with all label",
-			dataType:    metrics.VideoDataType,
-			fetchType:   metrics.FetchAll,
-		},
-		{
 			description: "Update stored account histogram with delta label",
 			dataType:    metrics.AccountDataType,
 			fetchType:   metrics.FetchDelta,
@@ -495,11 +490,6 @@ func TestRecordStoredDataFetchTime(t *testing.T) {
 		{
 			description: "Update stored request histogram with delta label",
 			dataType:    metrics.RequestDataType,
-			fetchType:   metrics.FetchDelta,
-		},
-		{
-			description: "Update stored video histogram with delta label",
-			dataType:    metrics.VideoDataType,
 			fetchType:   metrics.FetchDelta,
 		},
 		{
@@ -528,8 +518,6 @@ func TestRecordStoredDataFetchTime(t *testing.T) {
 			metricsTimer = m.storedCategoryFetchTimer
 		case metrics.RequestDataType:
 			metricsTimer = m.storedRequestFetchTimer
-		case metrics.VideoDataType:
-			metricsTimer = m.storedVideoFetchTimer
 		case metrics.ResponseDataType:
 			metricsTimer = m.storedResponsesFetchTimer
 		}
@@ -574,12 +562,6 @@ func TestRecordStoredDataError(t *testing.T) {
 			metricName:  "stored_request_errors",
 		},
 		{
-			description: "Update stored_video_errors counter with network label",
-			dataType:    metrics.VideoDataType,
-			errorType:   metrics.StoredDataErrorNetwork,
-			metricName:  "stored_video_errors",
-		},
-		{
 			description: "Update stored_account_errors counter with undefined label",
 			dataType:    metrics.AccountDataType,
 			errorType:   metrics.StoredDataErrorUndefined,
@@ -602,12 +584,6 @@ func TestRecordStoredDataError(t *testing.T) {
 			dataType:    metrics.RequestDataType,
 			errorType:   metrics.StoredDataErrorUndefined,
 			metricName:  "stored_request_errors",
-		},
-		{
-			description: "Update stored_video_errors counter with undefined label",
-			dataType:    metrics.VideoDataType,
-			errorType:   metrics.StoredDataErrorUndefined,
-			metricName:  "stored_video_errors",
 		},
 		{
 			description: "Update stored_response_errors counter with network label",
@@ -634,8 +610,6 @@ func TestRecordStoredDataError(t *testing.T) {
 			metricsCounter = m.storedCategoryErrors
 		case metrics.RequestDataType:
 			metricsCounter = m.storedRequestErrors
-		case metrics.VideoDataType:
-			metricsCounter = m.storedVideoErrors
 		case metrics.ResponseDataType:
 			metricsCounter = m.storedResponsesErrors
 		}
@@ -1231,7 +1205,7 @@ func TestRecordRequestQueueTimeMetric(t *testing.T) {
 			description: "Success",
 			status:      requestSuccessLabel,
 			testCase: func(m *Metrics) {
-				performTest(m, true, metrics.ReqTypeVideo, 2)
+				performTest(m, true, metrics.ReqTypeORTB2Web, 2)
 			},
 			expectedCount: 1,
 			expectedSum:   2,
@@ -1240,7 +1214,7 @@ func TestRecordRequestQueueTimeMetric(t *testing.T) {
 			description: "TimeoutError",
 			status:      requestRejectLabel,
 			testCase: func(m *Metrics) {
-				performTest(m, false, metrics.ReqTypeVideo, 50)
+				performTest(m, false, metrics.ReqTypeORTB2Web, 50)
 			},
 			expectedCount: 1,
 			expectedSum:   50,
@@ -1252,7 +1226,7 @@ func TestRecordRequestQueueTimeMetric(t *testing.T) {
 
 		test.testCase(m)
 
-		result := getHistogramFromHistogramVecByTwoKeys(m.requestsQueueTimer, requestTypeLabel, "video", requestStatusLabel, test.status)
+		result := getHistogramFromHistogramVecByTwoKeys(m.requestsQueueTimer, requestTypeLabel, "openrtb2-web", requestStatusLabel, test.status)
 		assertHistogram(t, test.description, result, test.expectedCount, test.expectedSum)
 	}
 }

@@ -23,22 +23,6 @@ func JsonifyAuctionObject(ao *analytics.AuctionObject, scope string) ([]byte, er
 	return nil, fmt.Errorf("auction object badly formed %v", err)
 }
 
-func JsonifyVideoObject(vo *analytics.VideoObject, scope string) ([]byte, error) {
-	b, err := json.Marshal(&struct {
-		Scope string `json:"scope"`
-		*analytics.VideoObject
-	}{
-		Scope:       scope,
-		VideoObject: vo,
-	})
-
-	if err == nil {
-		b = append(b, byte('\n'))
-		return b, nil
-	}
-	return nil, fmt.Errorf("video object badly formed %v", err)
-}
-
 func JsonifyCookieSync(cso *analytics.CookieSyncObject, scope string) ([]byte, error) {
 	b, err := json.Marshal(&struct {
 		Scope string `json:"scope"`

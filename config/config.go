@@ -49,9 +49,7 @@ type Configuration struct {
 	Event             Event           `mapstructure:"event"`
 	Accounts          StoredRequests  `mapstructure:"accounts"`
 	UserSync          UserSync        `mapstructure:"user_sync"`
-	// Note that StoredVideo refers to stored video requests, and has nothing to do with caching video creatives.
-	StoredVideo     StoredRequests `mapstructure:"stored_video_req"`
-	StoredResponses StoredRequests `mapstructure:"stored_responses"`
+	StoredResponses   StoredRequests  `mapstructure:"stored_responses"`
 
 	// Adapters should have a key for every openrtb_ext.BidderName, converted to lower-case.
 	// Se also: https://github.com/spf13/viper/issues/371#issuecomment-335388559
@@ -64,8 +62,6 @@ type Configuration struct {
 	LMT                  LMT                `mapstructure:"lmt"`
 	CurrencyConverter    CurrencyConverter  `mapstructure:"currency_converter"`
 	DefReqConfig         DefReqConfig       `mapstructure:"default_request"`
-
-	VideoStoredRequestRequired bool `mapstructure:"video_stored_request_required"`
 
 	// Array of blacklisted apps that is used to create the hash table BlacklistedAppMap so App.ID's can be instantly accessed.
 	BlacklistedApps   []string `mapstructure:"blacklisted_apps,flow"`
@@ -115,7 +111,6 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 	errs = cfg.StoredRequestsAMP.validate(errs)
 	errs = cfg.Accounts.validate(errs)
 	errs = cfg.CategoryMapping.validate(errs)
-	errs = cfg.StoredVideo.validate(errs)
 	errs = cfg.Metrics.validate(errs)
 	if cfg.MaxRequestSize < 0 {
 		errs = append(errs, fmt.Errorf("cfg.max_request_size must be >= 0. Got %d", cfg.MaxRequestSize))
@@ -840,32 +835,6 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("stored_requests.http_events.amp_endpoint", "")
 	v.SetDefault("stored_requests.http_events.refresh_rate_seconds", 0)
 	v.SetDefault("stored_requests.http_events.timeout_ms", 0)
-	// stored_video is short for stored_video_requests.
-	// PBS is not in the business of storing video content beyond the normal prebid cache system.
-	v.SetDefault("stored_video_req.filesystem.enabled", false)
-	v.SetDefault("stored_video_req.filesystem.directorypath", "")
-	v.SetDefault("stored_video_req.postgres.connection.dbname", "")
-	v.SetDefault("stored_video_req.postgres.connection.host", "")
-	v.SetDefault("stored_video_req.postgres.connection.port", 0)
-	v.SetDefault("stored_video_req.postgres.connection.user", "")
-	v.SetDefault("stored_video_req.postgres.connection.password", "")
-	v.SetDefault("stored_video_req.postgres.fetcher.query", "")
-	v.SetDefault("stored_video_req.postgres.initialize_caches.timeout_ms", 0)
-	v.SetDefault("stored_video_req.postgres.initialize_caches.query", "")
-	v.SetDefault("stored_video_req.postgres.poll_for_updates.refresh_rate_seconds", 0)
-	v.SetDefault("stored_video_req.postgres.poll_for_updates.timeout_ms", 0)
-	v.SetDefault("stored_video_req.postgres.poll_for_updates.query", "")
-	v.SetDefault("stored_video_req.http.endpoint", "")
-	v.SetDefault("stored_video_req.in_memory_cache.type", "none")
-	v.SetDefault("stored_video_req.in_memory_cache.ttl_seconds", 0)
-	v.SetDefault("stored_video_req.in_memory_cache.request_cache_size_bytes", 0)
-	v.SetDefault("stored_video_req.in_memory_cache.imp_cache_size_bytes", 0)
-	v.SetDefault("stored_video_req.in_memory_cache.resp_cache_size_bytes", 0)
-	v.SetDefault("stored_video_req.cache_events.enabled", false)
-	v.SetDefault("stored_video_req.cache_events.endpoint", "")
-	v.SetDefault("stored_video_req.http_events.endpoint", "")
-	v.SetDefault("stored_video_req.http_events.refresh_rate_seconds", 0)
-	v.SetDefault("stored_video_req.http_events.timeout_ms", 0)
 	v.SetDefault("stored_responses.filesystem.enabled", false)
 	v.SetDefault("stored_responses.filesystem.directorypath", "")
 	v.SetDefault("stored_responses.postgres.connection.dbname", "")

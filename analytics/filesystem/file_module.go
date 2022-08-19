@@ -14,7 +14,6 @@ type RequestType string
 const (
 	COOKIE_SYNC        RequestType = "/cookie_sync"
 	AUCTION            RequestType = "/openrtb2/auction"
-	VIDEO              RequestType = "/openrtb2/video"
 	SETUID             RequestType = "/set_uid"
 	AMP                RequestType = "/openrtb2/amp"
 	NOTIFICATION_EVENT RequestType = "/event"
@@ -30,15 +29,6 @@ func (f *FileLogger) LogAuctionObject(ao *analytics.AuctionObject) {
 	//Code to parse the object and log in a way required
 	var b bytes.Buffer
 	b.WriteString(jsonifyAuctionObject(ao))
-	f.Logger.Debug(b.String())
-	f.Logger.Flush()
-}
-
-//Writes VideoObject to file
-func (f *FileLogger) LogVideoObject(vo *analytics.VideoObject) {
-	//Code to parse the object and log in a way required
-	var b bytes.Buffer
-	b.WriteString(jsonifyVideoObject(vo))
 	f.Logger.Debug(b.String())
 	f.Logger.Flush()
 }
@@ -116,23 +106,6 @@ func jsonifyAuctionObject(ao *analytics.AuctionObject) string {
 		return string(b)
 	} else {
 		return fmt.Sprintf("Transactional Logs Error: Auction object badly formed %v", err)
-	}
-}
-
-func jsonifyVideoObject(vo *analytics.VideoObject) string {
-	type alias analytics.VideoObject
-	b, err := json.Marshal(&struct {
-		Type RequestType `json:"type"`
-		*alias
-	}{
-		Type:  VIDEO,
-		alias: (*alias)(vo),
-	})
-
-	if err == nil {
-		return string(b)
-	} else {
-		return fmt.Sprintf("Transactional Logs Error: Video object badly formed %v", err)
 	}
 }
 

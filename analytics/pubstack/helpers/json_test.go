@@ -18,15 +18,6 @@ func TestJsonifyAuctionObject(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestJsonifyVideoObject(t *testing.T) {
-	vo := &analytics.VideoObject{
-		Status: http.StatusOK,
-	}
-
-	_, err := JsonifyVideoObject(vo, "scopeId")
-	assert.NoError(t, err)
-}
-
 func TestJsonifyCookieSync(t *testing.T) {
 	cso := &analytics.CookieSyncObject{
 		Status:       http.StatusOK,

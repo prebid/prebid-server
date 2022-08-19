@@ -17,8 +17,7 @@ func TestFetchConfig(t *testing.T) {
 			"auction":    true,
 			"cookiesync": true,
 			"amp":        true,
-			"setuid":     false,
-			"video":      false
+			"setuid":     false
 		}
 	}`
 
@@ -38,7 +37,6 @@ func TestFetchConfig(t *testing.T) {
 	assert.Equal(t, true, cfg.Features[cookieSync])
 	assert.Equal(t, true, cfg.Features[amp])
 	assert.Equal(t, false, cfg.Features[setUID])
-	assert.Equal(t, false, cfg.Features[video])
 }
 
 func TestFetchConfig_Error(t *testing.T) {

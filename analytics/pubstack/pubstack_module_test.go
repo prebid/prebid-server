@@ -66,13 +66,6 @@ func TestNewModuleSuccess(t *testing.T) {
 			},
 		},
 		{
-			description: "video events are only published when logging a video object with video feature on",
-			feature:     video,
-			logObject: func(module analytics.PBSAnalyticsModule) {
-				module.LogVideoObject(&analytics.VideoObject{Status: http.StatusOK})
-			},
-		},
-		{
 			description: "cookie events are only published when logging a cookie object with cookie feature on",
 			feature:     cookieSync,
 			logObject: func(module analytics.PBSAnalyticsModule) {

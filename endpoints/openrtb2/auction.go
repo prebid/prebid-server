@@ -37,7 +37,6 @@ import (
 	"github.com/prebid/prebid-server/privacy/lmt"
 	"github.com/prebid/prebid-server/schain"
 	"github.com/prebid/prebid-server/stored_requests"
-	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/stored_responses"
 	"github.com/prebid/prebid-server/usersync"
 	"github.com/prebid/prebid-server/util/httputil"
@@ -86,7 +85,6 @@ func NewEndpoint(
 		ex,
 		validator,
 		requestsById,
-		empty_fetcher.EmptyFetcher{},
 		accounts,
 		cfg,
 		met,
@@ -106,7 +104,6 @@ type endpointDeps struct {
 	ex                        exchange.Exchange
 	paramsValidator           openrtb_ext.BidderParamValidator
 	storedReqFetcher          stored_requests.Fetcher
-	videoFetcher              stored_requests.Fetcher
 	accounts                  stored_requests.AccountFetcher
 	cfg                       *config.Configuration
 	metricsEngine             metrics.MetricsEngine

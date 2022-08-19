@@ -1759,10 +1759,6 @@ func (m *MockAnalytics) LogAuctionObject(obj *analytics.AuctionObject) {
 	m.Called(obj)
 }
 
-func (m *MockAnalytics) LogVideoObject(obj *analytics.VideoObject) {
-	m.Called(obj)
-}
-
 func (m *MockAnalytics) LogCookieSyncObject(obj *analytics.CookieSyncObject) {
 	m.Called(obj)
 }

@@ -24,7 +24,6 @@ import (
 	"github.com/prebid/prebid-server/privacy/ccpa"
 	"github.com/prebid/prebid-server/privacy/gdpr"
 	"github.com/prebid/prebid-server/stored_requests"
-	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/stored_responses"
 	"github.com/prebid/prebid-server/usersync"
 	"github.com/prebid/prebid-server/util/iputil"
@@ -79,7 +78,6 @@ func NewAmpEndpoint(
 		ex,
 		validator,
 		requestsById,
-		empty_fetcher.EmptyFetcher{},
 		accounts,
 		cfg,
 		met,

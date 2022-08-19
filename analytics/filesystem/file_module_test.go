@@ -35,15 +35,6 @@ func TestAuctionObject_ToJson(t *testing.T) {
 	}
 }
 
-func TestVideoObject_ToJson(t *testing.T) {
-	vo := &analytics.VideoObject{
-		Status: http.StatusOK,
-	}
-	if voJson := jsonifyVideoObject(vo); strings.Contains(voJson, "Transactional Logs Error") {
-		t.Fatalf("AuctionObject failed to convert to json")
-	}
-}
-
 func TestSetUIDObject_ToJson(t *testing.T) {
 	so := &analytics.SetUIDObject{
 		Status: http.StatusOK,
@@ -88,7 +79,6 @@ func TestFileLogger_LogObjects(t *testing.T) {
 	defer os.RemoveAll(TEST_DIR)
 	if fl, err := NewFileLogger(TEST_DIR + "//test"); err == nil {
 		fl.LogAuctionObject(&analytics.AuctionObject{})
-		fl.LogVideoObject(&analytics.VideoObject{})
 		fl.LogAmpObject(&analytics.AmpObject{})
 		fl.LogSetUIDObject(&analytics.SetUIDObject{})
 		fl.LogCookieSyncObject(&analytics.CookieSyncObject{})

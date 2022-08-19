@@ -95,12 +95,12 @@ func CreateStoredRequests(cfg *config.StoredRequests, metricsEngine metrics.Metr
 
 // NewStoredRequests returns:
 //
-// 1. A function which should be called on shutdown for graceful cleanups.
-// 2. A Fetcher which can be used to get Stored Requests for /openrtb2/auction
-// 3. A Fetcher which can be used to get Stored Requests for /openrtb2/amp
+// A function which should be called on shutdown for graceful cleanups.
+// 1. A Fetcher which can be used to get Stored Requests for /openrtb2/auction
+// 2. A Fetcher which can be used to get Stored Requests for /openrtb2/amp
+// 3. A Fetcher which can be used to get Category Mapping data
 // 4. A Fetcher which can be used to get Account data
-// 5. A Fetcher which can be used to get Category Mapping data
-// 6. A Fetcher which can be used to get Stored Requests for /openrtb2/video
+// 5. A Fetcher which can be used to get Stored Responses data
 //
 // If any errors occur, the program will exit with an error message.
 // It probably means you have a bad config or networking issue.
@@ -112,7 +112,6 @@ func NewStoredRequests(cfg *config.Configuration, metricsEngine metrics.MetricsE
 	ampFetcher stored_requests.Fetcher,
 	accountsFetcher stored_requests.AccountFetcher,
 	categoriesFetcher stored_requests.CategoryFetcher,
-	videoFetcher stored_requests.Fetcher,
 	storedRespFetcher stored_requests.Fetcher) {
 
 	var dbc dbConnection
@@ -120,16 +119,14 @@ func NewStoredRequests(cfg *config.Configuration, metricsEngine metrics.MetricsE
 	fetcher1, shutdown1 := CreateStoredRequests(&cfg.StoredRequests, metricsEngine, client, router, &dbc)
 	fetcher2, shutdown2 := CreateStoredRequests(&cfg.StoredRequestsAMP, metricsEngine, client, router, &dbc)
 	fetcher3, shutdown3 := CreateStoredRequests(&cfg.CategoryMapping, metricsEngine, client, router, &dbc)
-	fetcher4, shutdown4 := CreateStoredRequests(&cfg.StoredVideo, metricsEngine, client, router, &dbc)
-	fetcher5, shutdown5 := CreateStoredRequests(&cfg.Accounts, metricsEngine, client, router, &dbc)
-	fetcher6, shutdown6 := CreateStoredRequests(&cfg.StoredResponses, metricsEngine, client, router, &dbc)
+	fetcher4, shutdown4 := CreateStoredRequests(&cfg.Accounts, metricsEngine, client, router, &dbc)
+	fetcher5, shutdown5 := CreateStoredRequests(&cfg.StoredResponses, metricsEngine, client, router, &dbc)
 
 	fetcher = fetcher1.(stored_requests.Fetcher)
 	ampFetcher = fetcher2.(stored_requests.Fetcher)
 	categoriesFetcher = fetcher3.(stored_requests.CategoryFetcher)
-	videoFetcher = fetcher4.(stored_requests.Fetcher)
-	accountsFetcher = fetcher5.(stored_requests.AccountFetcher)
-	storedRespFetcher = fetcher6.(stored_requests.Fetcher)
+	accountsFetcher = fetcher4.(stored_requests.AccountFetcher)
+	storedRespFetcher = fetcher5.(stored_requests.Fetcher)
 
 	shutdown = func() {
 		shutdown1()
@@ -137,7 +134,6 @@ func NewStoredRequests(cfg *config.Configuration, metricsEngine metrics.MetricsE
 		shutdown3()
 		shutdown4()
 		shutdown5()
-		shutdown6()
 	}
 
 	return

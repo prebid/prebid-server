@@ -29,7 +29,6 @@ const (
 	cookieSync = "cookiesync"
 	amp        = "amp"
 	setUID     = "setuid"
-	video      = "video"
 )
 
 type bufferConfig struct {
@@ -74,7 +73,6 @@ func NewModuleWithConfigTask(client *http.Client, scope, endpoint string, maxEve
 
 	defaultFeatures := map[string]bool{
 		auction:    false,
-		video:      false,
 		amp:        false,
 		cookieSync: false,
 		setUID:     false,
@@ -126,24 +124,6 @@ func (p *PubstackModule) LogAuctionObject(ao *analytics.AuctionObject) {
 }
 
 func (p *PubstackModule) LogNotificationEventObject(ne *analytics.NotificationEvent) {
-}
-
-func (p *PubstackModule) LogVideoObject(vo *analytics.VideoObject) {
-	p.muxConfig.RLock()
-	defer p.muxConfig.RUnlock()
-
-	if !p.isFeatureEnable(video) {
-		return
-	}
-
-	// serialize event
-	payload, err := helpers.JsonifyVideoObject(vo, p.scope)
-	if err != nil {
-		glog.Warning("[pubstack] Cannot serialize video")
-		return
-	}
-
-	p.eventChannels[video].Push(payload)
 }
 
 func (p *PubstackModule) LogSetUIDObject(so *analytics.SetUIDObject) {
@@ -229,7 +209,6 @@ func (p *PubstackModule) updateConfig(config *Configuration) {
 	p.registerChannel(amp)
 	p.registerChannel(auction)
 	p.registerChannel(cookieSync)
-	p.registerChannel(video)
 	p.registerChannel(setUID)
 }
 

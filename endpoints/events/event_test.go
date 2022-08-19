@@ -33,13 +33,6 @@ func (e *eventsMockAnalyticsModule) LogAuctionObject(ao *analytics.AuctionObject
 	return
 }
 
-func (e *eventsMockAnalyticsModule) LogVideoObject(vo *analytics.VideoObject) {
-	if e.Fail {
-		panic(e.Error)
-	}
-	return
-}
-
 func (e *eventsMockAnalyticsModule) LogCookieSyncObject(cso *analytics.CookieSyncObject) {
 	if e.Fail {
 		panic(e.Error)

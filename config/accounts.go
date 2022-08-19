@@ -12,10 +12,9 @@ type IntegrationType string
 
 // Possible values of integration types Prebid Server can configure for an account
 const (
-	IntegrationTypeAMP   IntegrationType = "amp"
-	IntegrationTypeApp   IntegrationType = "app"
-	IntegrationTypeVideo IntegrationType = "video"
-	IntegrationTypeWeb   IntegrationType = "web"
+	IntegrationTypeAMP IntegrationType = "amp"
+	IntegrationTypeApp IntegrationType = "app"
+	IntegrationTypeWeb IntegrationType = "web"
 )
 
 // Account represents a publisher account configuration
@@ -202,10 +201,9 @@ type AccountGDPRPurposeOneTreatment struct {
 
 // AccountIntegration indicates whether a particular privacy policy (GDPR, CCPA) is enabled for each integration type
 type AccountIntegration struct {
-	AMP   *bool `mapstructure:"amp" json:"amp,omitempty"`
-	App   *bool `mapstructure:"app" json:"app,omitempty"`
-	Video *bool `mapstructure:"video" json:"video,omitempty"`
-	Web   *bool `mapstructure:"web" json:"web,omitempty"`
+	AMP *bool `mapstructure:"amp" json:"amp,omitempty"`
+	App *bool `mapstructure:"app" json:"app,omitempty"`
+	Web *bool `mapstructure:"web" json:"web,omitempty"`
 }
 
 // GetByIntegrationType looks up the account integration enabled setting for the specified integration type
@@ -217,8 +215,6 @@ func (a *AccountIntegration) GetByIntegrationType(integrationType IntegrationTyp
 		integrationEnabled = a.AMP
 	case IntegrationTypeApp:
 		integrationEnabled = a.App
-	case IntegrationTypeVideo:
-		integrationEnabled = a.Video
 	case IntegrationTypeWeb:
 		integrationEnabled = a.Web
 	}
