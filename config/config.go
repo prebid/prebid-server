@@ -263,8 +263,8 @@ func (cfg *GDPR) validatePurposes(errs []error) []error {
 		enforceAlgoValue := purposeConfigs[i].EnforceAlgo
 		enforceAlgoField := fmt.Sprintf("gdpr.tcf2.purpose%d.enforce_algo", (i + 1))
 
-		if enforceAlgoValue != TCF2OffEnforcement && enforceAlgoValue != TCF2FullEnforcement {
-			errs = append(errs, fmt.Errorf("%s must be \"off\" or \"full\". Got %s", enforceAlgoField, enforceAlgoValue))
+		if enforceAlgoValue != TCF2FullEnforcement {
+			errs = append(errs, fmt.Errorf("%s must be \"full\". Got %s", enforceAlgoField, enforceAlgoValue))
 		}
 	}
 	return errs
@@ -286,7 +286,6 @@ func (t *GDPRTimeouts) ActiveTimeout() time.Duration {
 const (
 	TCF2FullEnforcement = "full"
 	TCF2NoEnforcement   = "no"
-	TCF2OffEnforcement  = "off"
 )
 
 // TCF2 defines the TCF2 specific configurations for GDPR
@@ -1288,15 +1287,9 @@ func migrateConfigTCF2EnforcePurposeFlags(v *viper.Viper) {
 		if v.IsSet(algoField) {
 			glog.Warningf("using %s and ignoring deprecated %s string type", algoField, purposeField)
 		} else {
-			newAlgoFieldValue := TCF2FullEnforcement
+			v.Set(algoField, TCF2FullEnforcement)
 
-			if v.GetString(purposeField) == TCF2NoEnforcement {
-				newAlgoFieldValue = TCF2OffEnforcement
-			}
-
-			v.Set(algoField, newAlgoFieldValue)
-
-			glog.Warningf("setting %s to \"%s\" based on deprecated %s string type \"%s\"", algoField, newAlgoFieldValue, purposeField, v.GetString(purposeField))
+			glog.Warningf("setting %s to \"%s\" based on deprecated %s string type \"%s\"", algoField, TCF2FullEnforcement, purposeField, v.GetString(purposeField))
 		}
 
 		oldPurposeFieldValue := v.GetString(purposeField)
