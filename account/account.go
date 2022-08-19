@@ -201,7 +201,6 @@ func ConvertGDPREnforcePurposeFields(config []byte) (newConfig []byte, err error
 	}
 
 	patchConfig, err := json.Marshal(newAccount)
-	fmt.Printf("patchConfig: %+v\n", string(patchConfig))
 	if err != nil {
 		return nil, err
 	}
