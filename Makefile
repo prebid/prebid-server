@@ -318,8 +318,8 @@ endif
 artifact-publish: artifact
 	docker push ${IMAGE_NAME}:${PRODUCTION_IMAGE_TAG}
 	@# We'll need to clean up after ourselves so long as legacy Jenkins is the builder component
-	docker rmi ${IMAGE_NAME}:${PRODUCTION_IMAGE_TAG}
-	docker rmi `docker images -q -f dangling=true`
+	docker rmi ${IMAGE_NAME}:${PRODUCTION_IMAGE_TAG} || true
+	docker rmi `docker images -q -f dangling=true` || true
 
 .PHONY: slug-builder
 slug-builder: IMAGE_TAG := $$(test -z "$$(git diff origin/master Dockerfile)" && printf baseimage || printf baseimage-${GIT_SHA})
