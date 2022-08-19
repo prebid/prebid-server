@@ -77,7 +77,28 @@ type reqSourceExt struct {
 	HeaderBidding int `json:"header_bidding,omitempty"`
 }
 type liftoffBidExt struct {
-	AuctionID string `json:"auction_id,omitempty"`
+	SKADN       RespSKADN `json:"skadn,omitempty"` // prebid shared
+	AuctionID   string    `json:"auction_id,omitempty"`
+	Imptrackers []string  `json:"imptrackers,omitempty"`
+}
+
+// RespSKADN ...
+type RespSKADN struct {
+	Version    string     `json:"version"`    // Version of SKAdNetwork desired. Must be 2.0 or above.
+	Network    string     `json:"network"`    // Ad network identifier used in signature. Should match one of the items in the skadnetids array in the request
+	Campaign   string     `json:"campaign"`   // Campaign ID compatible with Apple’s spec. As of 2.0, should be an integer between 1 and 100, expressed as a string
+	ITunesItem string     `json:"itunesitem"` // ID of advertiser’s app in Apple’s app store. Should match BidResponse.bid.bundle
+	Nonce      string     `json:"nonce"`      // An id unique to each ad response
+	SourceApp  string     `json:"sourceapp"`  // ID of publisher’s app in Apple’s app store. Should match BidRequest.imp.ext.skad.sourceapp
+	Timestamp  string     `json:"timestamp"`  // Unix time in millis string used at the time of signature
+	Signature  string     `json:"signature"`  // SKAdNetwork signature as specified by Apple
+	Fidelities []Fidelity `json:"fidelities"` // Supports multiple fidelity types introduced in SKAdNetwork v2.2
+}
+type Fidelity struct {
+	Fidelity  int    `json:"fidelity"`  // The fidelity-type of the attribution to track
+	Signature string `json:"signature"` // SKAdNetwork signature as specified by Apple
+	Nonce     string `json:"nonce"`     // An id unique to each ad response
+	Timestamp string `json:"timestamp"` // Unix time in millis string used at the time of signature
 }
 
 type reqExt struct {
