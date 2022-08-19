@@ -122,7 +122,10 @@ func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext
 	}
 	ext := nextMillJsonExt{}
 	ext.Prebid.Storedrequest.ID = placementID
-	jsonExt, _ := json.Marshal(ext)
+	jsonExt, err := json.Marshal(ext)
+	if err != nil {
+		return nil, err
+	}
 	bidRequest := *prebidBidRequest
 	bidRequest.Ext = jsonExt
 	bidRequest.Imp[0].Ext = jsonExt
