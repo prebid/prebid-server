@@ -13,16 +13,12 @@ type ExtAdapterAlternateBidderCodes struct {
 	AllowedBidderCodes []string `mapstructure:"allowedbiddercodes" json:"allowedbiddercodes"`
 }
 
-func IsValidBidderCode(bidderCodes *ExtAlternateBidderCodes, bidder, alternateBidder string) (bool, error) {
+func (bidderCodes *ExtAlternateBidderCodes) IsValidBidderCode(bidder, alternateBidder string) (bool, error) {
 	const ErrAlternateBidderNotDefined = "alternateBidderCodes not defined for adapter %q, rejecting bids for %q"
 	const ErrAlternateBidderDisabled = "alternateBidderCodes disabled for %q, rejecting bids for %q"
 
 	if alternateBidder == "" || bidder == alternateBidder {
 		return true, nil
-	}
-
-	if bidderCodes == nil {
-		return false, fmt.Errorf(ErrAlternateBidderNotDefined, bidder, alternateBidder)
 	}
 
 	if !bidderCodes.Enabled {

@@ -3353,7 +3353,7 @@ func TestCleanOpenRTBRequestsFilterBidderRequestExt(t *testing.T) {
 func Test_setExtAlternateBidderCodes(t *testing.T) {
 	type args struct {
 		requestExt *openrtb_ext.ExtRequest
-		cfgABC     *config.AlternateBidderCodes
+		cfgABC     config.AlternateBidderCodes
 	}
 	tests := []struct {
 		name                     string
@@ -3368,7 +3368,7 @@ func Test_setExtAlternateBidderCodes(t *testing.T) {
 		{
 			name: "AlternateBidderCodes present config but requestExt nil : requestExt nil, do nothing",
 			args: args{
-				cfgABC: &config.AlternateBidderCodes{Enabled: true, Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{"pubmatic": {Enabled: true, AllowedBidderCodes: []string{"groupm"}}}},
+				cfgABC: config.AlternateBidderCodes{Enabled: true, Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{"pubmatic": {Enabled: true, AllowedBidderCodes: []string{"groupm"}}}},
 			},
 			wantAlternateBidderCodes: nil,
 		},
@@ -3376,7 +3376,7 @@ func Test_setExtAlternateBidderCodes(t *testing.T) {
 			name: "AlternateBidderCodes present only in config : fill request with data from config",
 			args: args{
 				requestExt: &openrtb_ext.ExtRequest{},
-				cfgABC:     &config.AlternateBidderCodes{Enabled: true, Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{"pubmatic": {Enabled: true, AllowedBidderCodes: []string{"groupm"}}}},
+				cfgABC:     config.AlternateBidderCodes{Enabled: true, Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{"pubmatic": {Enabled: true, AllowedBidderCodes: []string{"groupm"}}}},
 			},
 			wantAlternateBidderCodes: &openrtb_ext.ExtAlternateBidderCodes{Enabled: true, Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{"pubmatic": {Enabled: true, AllowedBidderCodes: []string{"groupm"}}}},
 		},
@@ -3395,7 +3395,7 @@ func Test_setExtAlternateBidderCodes(t *testing.T) {
 				requestExt: &openrtb_ext.ExtRequest{
 					Prebid: openrtb_ext.ExtRequestPrebid{AlternateBidderCodes: &openrtb_ext.ExtAlternateBidderCodes{Enabled: true, Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{"pubmatic": {Enabled: true, AllowedBidderCodes: []string{"appnexus"}}}}},
 				},
-				cfgABC: &config.AlternateBidderCodes{Enabled: true, Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{"pubmatic": {Enabled: true, AllowedBidderCodes: []string{"groupm"}}}},
+				cfgABC: config.AlternateBidderCodes{Enabled: true, Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{"pubmatic": {Enabled: true, AllowedBidderCodes: []string{"groupm"}}}},
 			},
 			wantAlternateBidderCodes: &openrtb_ext.ExtAlternateBidderCodes{Enabled: true, Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{"pubmatic": {Enabled: true, AllowedBidderCodes: []string{"appnexus"}}}},
 		},

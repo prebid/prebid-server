@@ -846,14 +846,16 @@ func WrapJSONInData(data []byte) []byte {
 	return res
 }
 
-// getExtAlternateBidderCodes map config.account.alternatebiddercodes to ext.prebid.alternatebiddercodes
-func setExtAlternateBidderCodes(requestExt *openrtb_ext.ExtRequest, cfgABC *config.AlternateBidderCodes) {
-	if requestExt == nil || requestExt.Prebid.AlternateBidderCodes != nil {
+// setExtAlternateBidderCodes map config.account.alternatebiddercodes to ext.prebid.alternatebiddercodes
+func setExtAlternateBidderCodes(requestExt *openrtb_ext.ExtRequest, cfgABC config.AlternateBidderCodes) {
+	if requestExt != nil && requestExt.Prebid.AlternateBidderCodes != nil {
 		return
 	}
 
-	if cfgABC != nil {
-		alternateBidderCodes := openrtb_ext.ExtAlternateBidderCodes(*cfgABC)
-		requestExt.Prebid.AlternateBidderCodes = &alternateBidderCodes
+	if requestExt == nil {
+		requestExt = &openrtb_ext.ExtRequest{}
 	}
+
+	alternateBidderCodes := openrtb_ext.ExtAlternateBidderCodes(cfgABC)
+	requestExt.Prebid.AlternateBidderCodes = &alternateBidderCodes
 }

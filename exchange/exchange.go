@@ -288,7 +288,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	} else {
 		// List of bidders we have requests for.
 		liveAdapters = listBiddersWithRequests(bidderRequests)
-		adapterBids, adapterExtra, anyBidsReturned = e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, accountDebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride, requestExt.Prebid.AlternateBidderCodes, requestExt.Prebid.Experiment)
+		adapterBids, adapterExtra, anyBidsReturned = e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, accountDebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride, *requestExt.Prebid.AlternateBidderCodes, requestExt.Prebid.Experiment)
 	}
 
 	var auc *auction
@@ -496,7 +496,7 @@ func (e *exchange) getAllBids(
 	accountDebugAllowed bool,
 	globalPrivacyControlHeader string,
 	headerDebugAllowed bool,
-	alternateBidderCodes *openrtb_ext.ExtAlternateBidderCodes,
+	alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes,
 	experiment *openrtb_ext.Experiment) (
 	map[openrtb_ext.BidderName]*pbsOrtbSeatBid,
 	map[openrtb_ext.BidderName]*seatResponseExtra, bool) {
