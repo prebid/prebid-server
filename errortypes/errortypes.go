@@ -166,7 +166,6 @@ func (err *BidderTemporarilyDisabled) Severity() Severity {
 }
 
 // MalformedAcct should be used when the retrieved account config cannot be unmarshaled
-//
 // These errors will be written to http.ResponseWriter before canceling execution
 type MalformedAcct struct {
 	Message string
