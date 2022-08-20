@@ -5,9 +5,9 @@ type Adapter struct {
 	ExtraAdapterInfo string
 
 	// needed for Rubicon
-	XAPI AdapterXAPI `mapstructure:"xapi"`
+	XAPI AdapterXAPI
 
 	// needed for Facebook
-	PlatformID string `mapstructure:"platform_id"`
-	AppSecret  string `mapstructure:"app_secret"`
+	PlatformID string
+	AppSecret  string
 }
