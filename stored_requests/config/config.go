@@ -28,8 +28,9 @@ import (
 // This gets set to the connection string used when a database connection is made. We only support a single
 // database currently, so all fetchers need to share the same db connection for now.
 type dbConnection struct {
-	conn string
-	db   *sql.DB
+	conn     string
+	db       *sql.DB
+	dbDriver string
 }
 
 // CreateStoredRequests returns three things:
@@ -58,6 +59,7 @@ func CreateStoredRequests(cfg *config.StoredRequests, metricsEngine metrics.Metr
 			db := newDatabase(cfg.DataType(), cfg.Database.ConnectionInfo)
 			dbc.conn = conn
 			dbc.db = db
+			dbc.dbDriver = cfg.Database.ConnectionInfo.Driver
 		}
 
 		// Error out if config is trying to use multiple database connections for different stored requests (not supported yet)
@@ -66,7 +68,7 @@ func CreateStoredRequests(cfg *config.StoredRequests, metricsEngine metrics.Metr
 		}
 	}
 
-	eventProducers := newEventProducers(cfg, client, dbc.db, metricsEngine, router)
+	eventProducers := newEventProducers(cfg, client, dbc.db, dbc.dbDriver, metricsEngine, router)
 	fetcher = newFetcher(cfg, client, dbc.db)
 
 	var shutdown1 func()
@@ -204,7 +206,7 @@ func newCache(cfg *config.StoredRequests) stored_requests.Cache {
 	return cache
 }
 
-func newEventProducers(cfg *config.StoredRequests, client *http.Client, db *sql.DB, metricsEngine metrics.MetricsEngine, router *httprouter.Router) (eventProducers []events.EventProducer) {
+func newEventProducers(cfg *config.StoredRequests, client *http.Client, db *sql.DB, dbDriver string, metricsEngine metrics.MetricsEngine, router *httprouter.Router) (eventProducers []events.EventProducer) {
 	if cfg.CacheEvents.Enabled {
 		eventProducers = append(eventProducers, newEventsAPI(router, cfg.CacheEvents.Endpoint))
 	}
@@ -214,6 +216,7 @@ func newEventProducers(cfg *config.StoredRequests, client *http.Client, db *sql.
 	if cfg.Database.CacheInitialization.Query != "" {
 		dbEventCfg := databaseEvents.DatabaseEventProducerConfig{
 			DB:                 db,
+			DBDriver:           dbDriver,
 			RequestType:        cfg.DataType(),
 			CacheInitQuery:     cfg.Database.CacheInitialization.Query,
 			CacheInitTimeout:   time.Duration(cfg.Database.CacheInitialization.Timeout) * time.Millisecond,

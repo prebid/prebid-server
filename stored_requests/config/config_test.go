@@ -158,7 +158,7 @@ func TestNewHTTPEvents(t *testing.T) {
 
 	metricsMock := &metrics.MetricsEngineMock{}
 
-	evProducers := newEventProducers(cfg, server1.Client(), nil, metricsMock, nil)
+	evProducers := newEventProducers(cfg, server1.Client(), nil, "", metricsMock, nil)
 	assertSliceLength(t, evProducers, 1)
 	assertHttpWithURL(t, evProducers[0], server1.URL)
 }
@@ -224,7 +224,7 @@ func TestNewDatabaseEventProducers(t *testing.T) {
 	}
 	mock.ExpectQuery("^" + regexp.QuoteMeta(cfg.Database.CacheInitialization.Query) + "$").WillReturnError(errors.New("Query failed"))
 
-	evProducers := newEventProducers(cfg, client, db, metricsMock, nil)
+	evProducers := newEventProducers(cfg, client, db, "postgres", metricsMock, nil)
 	assertProducerLength(t, evProducers, 1)
 
 	assertExpectationsMet(t, mock)

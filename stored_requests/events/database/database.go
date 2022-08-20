@@ -30,6 +30,7 @@ var storedDataTypeMetricMap = map[config.DataType]metrics.StoredDataType{
 
 type DatabaseEventProducerConfig struct {
 	DB                 *sql.DB
+	DBDriver           string
 	RequestType        config.DataType
 	CacheInitQuery     string
 	CacheInitTimeout   time.Duration
@@ -119,7 +120,16 @@ func (e *DatabaseEventProducer) fetchDelta() (fetchErr error) {
 	defer cancel()
 
 	startTime := e.time.Now().UTC()
-	rows, err := e.cfg.DB.QueryContext(ctx, e.cfg.CacheUpdateQuery, e.lastUpdate)
+
+	var queryArgs []interface{}
+	if e.cfg.DBDriver == "mysql" {
+		queryArgs = append(queryArgs, e.lastUpdate, e.lastUpdate)
+	}
+	if e.cfg.DBDriver == "postgres" {
+		queryArgs = append(queryArgs, e.lastUpdate)
+	}
+
+	rows, err := e.cfg.DB.QueryContext(ctx, e.cfg.CacheUpdateQuery, queryArgs...)
 	elapsedTime := time.Since(startTime)
 	e.recordFetchTime(elapsedTime, metrics.FetchDelta)
 

@@ -184,8 +184,15 @@ func (cfg *DatabaseConfig) validate(dataType DataType, errs []error) []error {
 		return errs
 	}
 
-	errs = cfg.CacheInitialization.validate(dataType, errs)
-	errs = cfg.PollUpdates.validate(dataType, errs)
+	var wildcard string
+	if cfg.ConnectionInfo.Driver == "mysql" {
+		wildcard = "?"
+	} else {
+		wildcard = "$"
+	}
+
+	errs = cfg.CacheInitialization.validate(dataType, wildcard, errs)
+	errs = cfg.PollUpdates.validate(dataType, wildcard, errs)
 	return errs
 }
 
@@ -296,16 +303,6 @@ func (cfg *DatabaseConnection) IdListMaker() func(numSoFar int, numArgs int) str
 func idListMakerMySql(numSoFar int, numArgs int) string {
 	// Any empty list like "()" is illegal in MySql. A (NULL) is the next best thing,
 	// though, since `id IN (NULL)` is valid for all "id" column types, and evaluates to an empty set.
-	//
-	// The query plan also suggests that it's basically free:
-	//
-	// explain SELECT id, requestData FROM stored_requests WHERE id in %ID_LIST%;
-	//
-	// QUERY PLAN
-	// -------------------------------------------
-	// Result  (cost=0.00..0.00 rows=0 width=16)
-	//	 One-Time Filter: false
-	// (2 rows)
 	if numArgs == 0 {
 		return "(NULL)"
 	}
@@ -392,13 +389,13 @@ type DatabaseCacheInitializer struct {
 	//
 	// This query will be run once on startup to fetch _all_ known Stored Request data from the database.
 	//
-	// For more details on the expected format of requestData and impData, see stored_requests/events/database/polling.go
+	// For more details on the expected format of requestData and impData, see stored_requests/events/database/database.go
 	Query string `mapstructure:"query"`
 	// AmpQuery is just like Query, but for AMP Stored Requests
 	AmpQuery string `mapstructure:"amp_query"`
 }
 
-func (cfg *DatabaseCacheInitializer) validate(dataType DataType, errs []error) []error {
+func (cfg *DatabaseCacheInitializer) validate(dataType DataType, wildcard string, errs []error) []error {
 	section := dataType.Section()
 	if cfg.Query == "" {
 		return errs
@@ -406,8 +403,8 @@ func (cfg *DatabaseCacheInitializer) validate(dataType DataType, errs []error) [
 	if cfg.Timeout <= 0 {
 		errs = append(errs, fmt.Errorf("%s: database.initialize_caches.timeout_ms must be positive", section))
 	}
-	if strings.Contains(cfg.Query, "$") {
-		errs = append(errs, fmt.Errorf("%s: database.initialize_caches.query should not contain any wildcards (e.g. $1)", section))
+	if strings.Contains(cfg.Query, wildcard) {
+		errs = append(errs, fmt.Errorf("%s: database.initialize_caches.query should not contain any wildcards (e.g. %s)", section, wildcard))
 	}
 	return errs
 }
@@ -425,7 +422,7 @@ type DatabaseUpdatePolling struct {
 	//   FROM stored_requests
 	//   WHERE last_updated > $1
 	// UNION ALL
-	// SELECT id, requestData, 'imp' AS type
+	// SELECT id, impData, 'imp' AS type
 	//   FROM stored_imps
 	//   WHERE last_updated > $1
 	//
@@ -435,7 +432,7 @@ type DatabaseUpdatePolling struct {
 	AmpQuery string `mapstructure:"amp_query"`
 }
 
-func (cfg *DatabaseUpdatePolling) validate(dataType DataType, errs []error) []error {
+func (cfg *DatabaseUpdatePolling) validate(dataType DataType, wildcard string, errs []error) []error {
 	section := dataType.Section()
 	if cfg.Query == "" {
 		return errs
@@ -448,9 +445,15 @@ func (cfg *DatabaseUpdatePolling) validate(dataType DataType, errs []error) []er
 	if cfg.Timeout <= 0 {
 		errs = append(errs, fmt.Errorf("%s: database.poll_for_updates.timeout_ms must be > 0", section))
 	}
-
-	if !strings.Contains(cfg.Query, "$1") || strings.Contains(cfg.Query, "$2") {
+	if wildcard == "?" {
+		if strings.Count(cfg.Query, "?") != 2 {
+			errs = append(errs, fmt.Errorf("%s: database.poll_for_updates.query must contain exactly two wildcards", section))
+		}
+	}
+	if wildcard == "$" {
+		if !strings.Contains(cfg.Query, "$1") || strings.Contains(cfg.Query, "$3") {
 			errs = append(errs, fmt.Errorf("%s: database.poll_for_updates.query must contain exactly one wildcard", section))
+		}
 	}
 	return errs
 }
