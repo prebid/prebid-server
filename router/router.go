@@ -31,7 +31,6 @@ import (
 	"github.com/prebid/prebid-server/server/ssl"
 	storedRequestsConf "github.com/prebid/prebid-server/stored_requests/config"
 	"github.com/prebid/prebid-server/usersync"
-	"github.com/prebid/prebid-server/util/sliceutil"
 	"github.com/prebid/prebid-server/util/uuidutil"
 	"github.com/prebid/prebid-server/version"
 
@@ -151,13 +150,13 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	}
 
 	p, _ := filepath.Abs(infoDirectory)
-	bidderInfos, err := config.LoadBidderInfoFromDisk(p, cfg.Adapters, openrtb_ext.BuildBidderStringSlice())
+
+	bidderInfos, err := config.LoadBidderInfoFromDisk(p)
 	if err != nil {
 		return nil, err
 	}
-
-	if err := applyBidderInfoConfigOverrides(bidderInfos, cfg.Adapters); err != nil {
-		return nil, err
+	if errs := config.ValidateBidderInfos(bidderInfos); len(errs) > 0 {
+		return nil, errortypes.NewAggregateError("bidder infos", errs)
 	}
 
 	if err := checkSupportedUserSyncEndpoints(bidderInfos); err != nil {
@@ -242,7 +241,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	r.POST("/openrtb2/video", videoEndpoint)
 	r.GET("/openrtb2/amp", ampEndpoint)
 	r.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint(bidderInfos, defaultAliases))
-	r.GET("/info/bidders/:bidderName", infoEndpoints.NewBiddersDetailEndpoint(bidderInfos, cfg.Adapters, defaultAliases))
+	r.GET("/info/bidders/:bidderName", infoEndpoints.NewBiddersDetailEndpoint(bidderInfos, defaultAliases))
 	r.GET("/bidders/params", NewJsonDirectoryServer(schemaDirectory, paramsValidator, defaultAliases))
 	r.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncersByBidder, cfg, gdprPermsBuilder, tcf2CfgBuilder, r.MetricsEngine, pbsAnalytics, accounts, activeBidders).Handle)
 	r.GET("/status", endpoints.NewStatusEndpoint(cfg.StatusResponse))
@@ -272,64 +271,6 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	r.GET("/optout", userSyncDeps.OptOut)
 
 	return r, nil
-}
-
-func applyBidderInfoConfigOverrides(bidderInfos config.BidderInfos, adaptersCfg map[string]config.Adapter) error {
-	for bidderName, bidderInfo := range bidderInfos {
-		// bidder name from bidderInfos is case-sensitive, but bidder name from adaptersCfg
-		// is always expressed as lower case. need to adapt for the difference here.
-		if adapterCfg, exists := adaptersCfg[strings.ToLower(bidderName)]; exists {
-			bidderInfo.Syncer = adapterCfg.Syncer.Override(bidderInfo.Syncer)
-
-			// validate and try to apply the legacy usersync_url configuration in attempt to provide
-			// an easier upgrade path. be warned, this will break if the bidder adds a second syncer
-			// type and will eventually be removed after we've given hosts enough time to upgrade to
-			// the new config.
-			if adapterCfg.UserSyncURL != "" {
-				if bidderInfo.Syncer == nil {
-					return fmt.Errorf("adapters.%s.usersync_url cannot be applied, bidder does not define a user sync", strings.ToLower(bidderName))
-				}
-
-				endpointsCount := 0
-				if bidderInfo.Syncer.IFrame != nil {
-					bidderInfo.Syncer.IFrame.URL = adapterCfg.UserSyncURL
-					endpointsCount++
-				}
-				if bidderInfo.Syncer.Redirect != nil {
-					bidderInfo.Syncer.Redirect.URL = adapterCfg.UserSyncURL
-					endpointsCount++
-				}
-
-				// use Supports as a hint if there are no good defaults provided
-				if endpointsCount == 0 {
-					if sliceutil.ContainsStringIgnoreCase(bidderInfo.Syncer.Supports, "iframe") {
-						bidderInfo.Syncer.IFrame = &config.SyncerEndpoint{URL: adapterCfg.UserSyncURL}
-						endpointsCount++
-					}
-					if sliceutil.ContainsStringIgnoreCase(bidderInfo.Syncer.Supports, "redirect") {
-						bidderInfo.Syncer.Redirect = &config.SyncerEndpoint{URL: adapterCfg.UserSyncURL}
-						endpointsCount++
-					}
-				}
-
-				if endpointsCount == 0 {
-					return fmt.Errorf("adapters.%s.usersync_url cannot be applied, bidder does not define user sync endpoints and does not define supported endpoints", strings.ToLower(bidderName))
-				}
-
-				// if the bidder defines both an iframe and redirect endpoint, we can't be sure which config value to
-				// override, and  it wouldn't be both. this is a fatal configuration error.
-				if endpointsCount > 1 {
-					return fmt.Errorf("adapters.%s.usersync_url cannot be applied, bidder defines multiple user sync endpoints or supports multiple endpoints", strings.ToLower(bidderName))
-				}
-
-				// provide a warning that this compatibility layer is temporary
-				glog.Warningf("adapters.%s.usersync_url is deprecated and will be removed in a future version, please update to the latest user sync config values", strings.ToLower(bidderName))
-			}
-
-			bidderInfos[bidderName] = bidderInfo
-		}
-	}
-	return nil
 }
 
 func checkSupportedUserSyncEndpoints(bidderInfos config.BidderInfos) error {

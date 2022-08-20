@@ -53,17 +53,14 @@ type Configuration struct {
 	StoredVideo     StoredRequests `mapstructure:"stored_video_req"`
 	StoredResponses StoredRequests `mapstructure:"stored_responses"`
 
-	// Adapters should have a key for every openrtb_ext.BidderName, converted to lower-case.
-	// Se also: https://github.com/spf13/viper/issues/371#issuecomment-335388559
-	Adapters             map[string]Adapter `mapstructure:"adapters"`
-	MaxRequestSize       int64              `mapstructure:"max_request_size"`
-	Analytics            Analytics          `mapstructure:"analytics"`
-	AMPTimeoutAdjustment int64              `mapstructure:"amp_timeout_adjustment_ms"`
-	GDPR                 GDPR               `mapstructure:"gdpr"`
-	CCPA                 CCPA               `mapstructure:"ccpa"`
-	LMT                  LMT                `mapstructure:"lmt"`
-	CurrencyConverter    CurrencyConverter  `mapstructure:"currency_converter"`
-	DefReqConfig         DefReqConfig       `mapstructure:"default_request"`
+	MaxRequestSize       int64             `mapstructure:"max_request_size"`
+	Analytics            Analytics         `mapstructure:"analytics"`
+	AMPTimeoutAdjustment int64             `mapstructure:"amp_timeout_adjustment_ms"`
+	GDPR                 GDPR              `mapstructure:"gdpr"`
+	CCPA                 CCPA              `mapstructure:"ccpa"`
+	LMT                  LMT               `mapstructure:"lmt"`
+	CurrencyConverter    CurrencyConverter `mapstructure:"currency_converter"`
+	DefReqConfig         DefReqConfig      `mapstructure:"default_request"`
 
 	VideoStoredRequestRequired bool `mapstructure:"video_stored_request_required"`
 
@@ -122,7 +119,6 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 	}
 	errs = cfg.GDPR.validate(v, errs)
 	errs = cfg.CurrencyConverter.validate(errs)
-	errs = validateAdapters(cfg.Adapters, errs)
 	errs = cfg.Debug.validate(errs)
 	errs = cfg.ExtCacheURL.validate(errs)
 	if cfg.AccountDefaults.Disabled {

@@ -1076,7 +1076,7 @@ func getBidderInfos(cfg map[string]config.Adapter, biddersNames []openrtb_ext.Bi
 
 func newBidderInfo(cfg config.Adapter) config.BidderInfo {
 	return config.BidderInfo{
-		Enabled: !cfg.Disabled,
+		Disabled: false,
 	}
 }
 
@@ -1169,7 +1169,8 @@ func (tc *testConfigValues) getAdaptersConfigMap() map[string]config.Adapter {
 	if len(tc.DisabledAdapters) > 0 {
 		adaptersConfig = make(map[string]config.Adapter, len(tc.DisabledAdapters))
 		for _, adapterName := range tc.DisabledAdapters {
-			adaptersConfig[adapterName] = config.Adapter{Disabled: true}
+			//!!!
+			adaptersConfig[adapterName] = config.Adapter{}
 		}
 	}
 	return adaptersConfig

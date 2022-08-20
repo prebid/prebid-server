@@ -2,8 +2,12 @@ package config
 
 import (
 	"fmt"
+	validator "github.com/asaskevich/govalidator"
+	"github.com/prebid/prebid-server/macros"
 	"io/ioutil"
+	"log"
 	"strings"
+	"text/template"
 
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"gopkg.in/yaml.v3"
@@ -14,14 +18,29 @@ type BidderInfos map[string]BidderInfo
 
 // BidderInfo specifies all configuration for a bidder except for enabled status, endpoint, and extra information.
 type BidderInfo struct {
-	Enabled                 bool                 // copied from adapter config for convenience. to be refactored.
-	Maintainer              *MaintainerInfo      `yaml:"maintainer"`
-	Capabilities            *CapabilitiesInfo    `yaml:"capabilities"`
-	ModifyingVastXmlAllowed bool                 `yaml:"modifyingVastXmlAllowed"`
-	Debug                   *DebugInfo           `yaml:"debug"`
-	GVLVendorID             uint16               `yaml:"gvlVendorID"`
-	Syncer                  *Syncer              `yaml:"userSync"`
-	Experiment              BidderInfoExperiment `yaml:"experiment"`
+	Disabled bool `mapstructure:"disabled"`
+
+	Maintainer              *MaintainerInfo   `yaml:"maintainer"`
+	Capabilities            *CapabilitiesInfo `yaml:"capabilities"`
+	ModifyingVastXmlAllowed bool              `yaml:"modifyingVastXmlAllowed"`
+	Debug                   *DebugInfo        `yaml:"debug"`
+	GVLVendorID             uint16            `yaml:"gvlVendorID"`
+	Syncer                  *Syncer           `yaml:"userSync"`
+
+	Experiment BidderInfoExperiment `yaml:"experiment"`
+
+	Endpoint         string `mapstructure:"endpoint"`
+	ExtraAdapterInfo string `mapstructure:"extra_info"`
+
+	// needed for backwards compatibility
+	UserSyncURL string `mapstructure:"usersync_url"`
+
+	// needed for Rubicon
+	XAPI AdapterXAPI `mapstructure:"xapi"`
+
+	// needed for Facebook
+	PlatformID string `mapstructure:"platform_id"`
+	AppSecret  string `mapstructure:"app_secret"`
 }
 
 // BidderInfoExperiment specifies non-production ready feature config for a bidder
@@ -55,6 +74,12 @@ type DebugInfo struct {
 	Allow bool `yaml:"allow"`
 }
 
+type AdapterXAPI struct {
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
+	Tracker  string `mapstructure:"tracker"`
+}
+
 // Syncer specifies the user sync settings for a bidder. This struct is shared by the account config,
 // so it needs to have both yaml and mapstructure mappings.
 type Syncer struct {
@@ -79,46 +104,6 @@ type Syncer struct {
 
 	// SupportCORS identifies if CORS is supported for the user syncing endpoints.
 	SupportCORS *bool `yaml:"supportCors" mapstructure:"support_cors"`
-}
-
-// Override returns a new Syncer object where values in the original are replaced by non-empty/non-default
-// values in the override, except for the Supports field which may not be overridden. No changes are made
-// to the original or override Syncer.
-func (s *Syncer) Override(original *Syncer) *Syncer {
-	if s == nil && original == nil {
-		return nil
-	}
-
-	var copy Syncer
-	if original != nil {
-		copy = *original
-	}
-
-	if s == nil {
-		return &copy
-	}
-
-	if s.Key != "" {
-		copy.Key = s.Key
-	}
-
-	if original == nil {
-		copy.IFrame = s.IFrame.Override(nil)
-		copy.Redirect = s.Redirect.Override(nil)
-	} else {
-		copy.IFrame = s.IFrame.Override(original.IFrame)
-		copy.Redirect = s.Redirect.Override(original.Redirect)
-	}
-
-	if s.ExternalURL != "" {
-		copy.ExternalURL = s.ExternalURL
-	}
-
-	if s.SupportCORS != nil {
-		copy.SupportCORS = s.SupportCORS
-	}
-
-	return &copy
 }
 
 // SyncerEndpoint specifies the configuration of the URL returned by the /cookie_sync endpoint
@@ -176,83 +161,52 @@ type SyncerEndpoint struct {
 	UserMacro string `yaml:"userMacro" mapstructure:"user_macro"`
 }
 
-// Override returns a new SyncerEndpoint object where values in the original are replaced by non-empty/non-default
-// values in the override. No changes are made to the original or override SyncerEndpoint.
-func (s *SyncerEndpoint) Override(original *SyncerEndpoint) *SyncerEndpoint {
-	if s == nil && original == nil {
-		return nil
-	}
-
-	var copy SyncerEndpoint
-	if original != nil {
-		copy = *original
-	}
-
-	if s == nil {
-		return &copy
-	}
-
-	if s.URL != "" {
-		copy.URL = s.URL
-	}
-
-	if s.RedirectURL != "" {
-		copy.RedirectURL = s.RedirectURL
-	}
-
-	if s.ExternalURL != "" {
-		copy.ExternalURL = s.ExternalURL
-	}
-
-	if s.UserMacro != "" {
-		copy.UserMacro = s.UserMacro
-	}
-
-	return &copy
-}
-
 // LoadBidderInfoFromDisk parses all static/bidder-info/{bidder}.yaml files from the file system.
-func LoadBidderInfoFromDisk(path string, adapterConfigs map[string]Adapter, bidders []string) (BidderInfos, error) {
+func LoadBidderInfoFromDisk(path string) (BidderInfos, error) {
 	reader := infoReaderFromDisk{path}
-	return loadBidderInfo(reader, adapterConfigs, bidders)
+	return loadBidderInfo(reader, path)
 }
 
-func loadBidderInfo(r infoReader, adapterConfigs map[string]Adapter, bidders []string) (BidderInfos, error) {
+func loadBidderInfo(r infoReader, path string) (BidderInfos, error) {
+	bidderConfigs, err := ioutil.ReadDir(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	infos := BidderInfos{}
 
-	for _, bidder := range bidders {
-		data, err := r.Read(bidder)
+	for _, bidderConfig := range bidderConfigs {
+		if bidderConfig.IsDir() {
+			continue //or throw an error?
+		}
+		fileName := bidderConfig.Name()
+		data, err := r.Read(fileName)
 		if err != nil {
 			return nil, err
 		}
 
 		info := BidderInfo{}
 		if err := yaml.Unmarshal(data, &info); err != nil {
-			return nil, fmt.Errorf("error parsing yaml for bidder %s: %v", bidder, err)
+			return nil, fmt.Errorf("error parsing yaml for bidder %s: %v", fileName, err)
 		}
 
-		info.Enabled = isEnabledByConfig(adapterConfigs, bidder)
-		infos[bidder] = info
+		bidderName := strings.Split(fileName, ".yaml")
+		infos[(bidderName[0])] = info
 	}
 
 	return infos, nil
 }
 
-func isEnabledByConfig(adapterConfigs map[string]Adapter, bidderName string) bool {
-	a, ok := adapterConfigs[strings.ToLower(bidderName)]
-	return ok && !a.Disabled
-}
-
 type infoReader interface {
-	Read(bidder string) ([]byte, error)
+	Read(fileName string) ([]byte, error)
 }
 
 type infoReaderFromDisk struct {
 	path string
 }
 
-func (r infoReaderFromDisk) Read(bidder string) ([]byte, error) {
-	path := fmt.Sprintf("%v/%v.yaml", r.path, bidder)
+func (r infoReaderFromDisk) Read(fileName string) ([]byte, error) {
+	path := fmt.Sprintf("%v/%v", r.path, fileName)
 	return ioutil.ReadFile(path)
 }
 
@@ -261,9 +215,61 @@ func (r infoReaderFromDisk) Read(bidder string) ([]byte, error) {
 func (infos BidderInfos) ToGVLVendorIDMap() map[openrtb_ext.BidderName]uint16 {
 	m := make(map[openrtb_ext.BidderName]uint16, len(infos))
 	for name, info := range infos {
-		if info.Enabled && info.GVLVendorID != 0 {
+		if !info.Disabled && info.GVLVendorID != 0 {
 			m[openrtb_ext.BidderName(name)] = info.GVLVendorID
 		}
 	}
 	return m
+}
+
+// ValidateBidderInfos validates bidder endpoint and user sync URL
+func ValidateBidderInfos(bidderInfos BidderInfos) []error {
+	errs := make([]error, 0, 0)
+	for bidderName, bidder := range bidderInfos {
+		if !bidder.Disabled {
+			errs = validateAdapterEndpoint(bidder.Endpoint, bidderName, errs)
+		}
+	}
+	return errs
+}
+
+var testEndpointTemplateParams = macros.EndpointTemplateParams{
+	Host:        "anyHost",
+	PublisherID: "anyPublisherID",
+	AccountID:   "anyAccountID",
+	ZoneID:      "anyZoneID",
+	SourceId:    "anySourceID",
+	AdUnit:      "anyAdUnit",
+}
+
+// validateAdapterEndpoint makes sure that an adapter has a valid endpoint
+// associated with it
+func validateAdapterEndpoint(endpoint string, bidderName string, errs []error) []error {
+	if endpoint == "" {
+		return append(errs, fmt.Errorf("There's no default endpoint available for %s. Calls to this bidder/exchange will fail. "+
+			"Please set adapters.%s.endpoint in your app config", bidderName, bidderName))
+	}
+
+	// Create endpoint template
+	endpointTemplate, err := template.New("endpointTemplate").Parse(endpoint)
+	if err != nil {
+		return append(errs, fmt.Errorf("Invalid endpoint template: %s for adapter: %s. %v", endpoint, bidderName, err))
+	}
+	// Resolve macros (if any) in the endpoint URL
+	resolvedEndpoint, err := macros.ResolveMacros(endpointTemplate, testEndpointTemplateParams)
+	if err != nil {
+		return append(errs, fmt.Errorf("Unable to resolve endpoint: %s for adapter: %s. %v", endpoint, bidderName, err))
+	}
+	// Validate the resolved endpoint
+	//
+	// Validating using both IsURL and IsRequestURL because IsURL allows relative paths
+	// whereas IsRequestURL requires absolute path but fails to check other valid URL
+	// format constraints.
+	//
+	// For example: IsURL will allow "abcd.com" but IsRequestURL won't
+	// IsRequestURL will allow "http://http://abcd.com" but IsURL won't
+	if !validator.IsURL(resolvedEndpoint) || !validator.IsRequestURL(resolvedEndpoint) {
+		errs = append(errs, fmt.Errorf("The endpoint: %s for %s is not a valid URL", resolvedEndpoint, bidderName))
+	}
+	return errs
 }
