@@ -40,8 +40,8 @@ var (
 	skanSentKey       = attribute.Key("app.bidder.skan.sent")
 	mraidSupportedKey = attribute.Key("app.bidder.mraid.supported")
 	endcardHTMLKey    = attribute.Key("app.bidder.html_companion")
-	multiBidEnabled   = attribute.Key("app.bidder.multi_bid_enabled")
-	contentType       = attribute.Key("app.bidder.content_type")
+	multiBidSelector  = attribute.Key("app.bidder.multi_bid_selector")
+	traceName         = attribute.Key("app.bidder.trace_name")
 	requestNumber     = attribute.Key("app.bidder.request_number")
 
 	debugVerboseState = "verbose"
@@ -441,13 +441,13 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 		mraidSupportedKey.Bool(tjData.MRAID.Supported),
 		placementTypeKey.String(string(tjData.PlacementType)),
 		endcardHTMLKey.Bool(tjData.HTMLCompanionSent),
-		multiBidEnabled.Bool(tjData.MultiBidEnabled),
-		contentType.String(tjData.ContentType),
+		multiBidSelector.Int(tjData.MultiBidSelector),
+		traceName.String(tjData.TraceName),
 		requestNumber.String(tjData.ReqNum),
 	}
 
-	if tjData.MultiBidEnabled {
-		ctx, span = trace.SpanFromContext(ctx).TracerProvider().Tracer("").Start(ctx, string(tjData.ContentType))
+	if tjData.MultiBidSelector > 0 {
+		ctx, span = trace.SpanFromContext(ctx).TracerProvider().Tracer("").Start(ctx, string(tjData.TraceName))
 		defer span.End()
 	}
 

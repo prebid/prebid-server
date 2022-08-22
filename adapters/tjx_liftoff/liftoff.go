@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/prebid/prebid-server/config"
 
@@ -102,11 +103,13 @@ type Fidelity struct {
 }
 
 type reqExt struct {
-	MultiBidEnabled bool `json:"multi_bid_enabled"`
+	MultiBidSelector int `json:"multi_bid_selector"`
 }
 
 var CONTENT_TYPE_MRAID_ONLY = "MRAID"
 var CONTENT_TYPE_VIDEO_ONLY = "VIDEO"
+
+var multiBidBFSandMediatorBidFloorExperiemntStartTime = time.Date(2022, time.August, 23, 0, 0, 0, 0, time.UTC)
 
 func Builder(_ openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	bidder := &adapter{
@@ -123,6 +126,8 @@ func Builder(_ openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, 
 // MakeRequests ...
 func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	numRequests := len(request.Imp)
+
+	now := time.Now()
 
 	var srcExt *reqSourceExt
 	if request.Source != nil && request.Source.Ext != nil {
@@ -151,24 +156,29 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 
 	errs := make([]error, 0, len(request.Imp))
 	var errReqData []error
-	if srcExt != nil && srcExt.HeaderBidding == 1 && reqExt.MultiBidEnabled {
 
-		// to check if the request is rewarded or skippable
-		var liftoffExt openrtb_ext.ExtImpTJXLiftoff
-		if request.Imp != nil {
-			var bidderExt adapters.ExtImpBidder
-			if err := json.Unmarshal(request.Imp[0].Ext, &bidderExt); err != nil {
-				return nil, []error{&errortypes.BadInput{
-					Message: err.Error(),
-				}}
-			}
-
-			if err := json.Unmarshal(bidderExt.Bidder, &liftoffExt); err != nil {
-				return nil, []error{&errortypes.BadInput{
-					Message: err.Error(),
-				}}
-			}
+	// to check if the request is rewarded or skippable
+	var liftoffExt openrtb_ext.ExtImpTJXLiftoff
+	if request.Imp != nil {
+		var bidderExt adapters.ExtImpBidder
+		if err := json.Unmarshal(request.Imp[0].Ext, &bidderExt); err != nil {
+			return nil, []error{&errortypes.BadInput{
+				Message: err.Error(),
+			}}
 		}
+
+		if err := json.Unmarshal(bidderExt.Bidder, &liftoffExt); err != nil {
+			return nil, []error{&errortypes.BadInput{
+				Message: err.Error(),
+			}}
+		}
+	}
+
+	// MultiBidSelector 0 is for no experiment running
+	// MultiBidSelector 1 is for Experiment using BFS values
+	// MultiBidSelector 2 is for Experiment using mediator values
+	// Header Bidding is for identifying if the request is coming from TJX or AS
+	if srcExt != nil && srcExt.HeaderBidding == 1 && reqExt.MultiBidSelector > 0 && now.Before(multiBidBFSandMediatorBidFloorExperiemntStartTime) {
 
 		// Diffrent bid floors for each request
 		//iOS Requests Bid Floors
@@ -368,14 +378,43 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 
 		for _, param := range modifiedParams {
 			liftoffRequest := *request
-			reqData, err := a.makeRequestData(&liftoffRequest, numRequests, param, headers, errs, reqExt.MultiBidEnabled)
+			reqData, err := a.makeRequestData(&liftoffRequest, numRequests, param, headers, errs, reqExt.MultiBidSelector)
+			requestData = append(requestData, reqData)
+			errReqData = append(errReqData, err...)
+		}
+	} else if srcExt != nil && srcExt.HeaderBidding == 1 && reqExt.MultiBidSelector > 0 && now.After(multiBidBFSandMediatorBidFloorExperiemntStartTime) {
+		bidFloorA := *liftoffExt.BidFloor
+		bidFloorB := *liftoffExt.BidFloor + 1
+		bidFloorC := *liftoffExt.BidFloor + 2
+		bidFloorD := *liftoffExt.BidFloor + 3
+		modifiedParams := []modifiedReqParams{
+			{
+				ReqNumber: "1",
+				BidFloor:  &bidFloorA,
+			},
+			{
+				ReqNumber: "2",
+				BidFloor:  &bidFloorB,
+			},
+			{
+				ReqNumber: "3",
+				BidFloor:  &bidFloorC,
+			},
+			{
+				ReqNumber: "4",
+				BidFloor:  &bidFloorD,
+			},
+		}
+		for _, param := range modifiedParams {
+			liftoffRequest := *request
+			reqData, err := a.makeRequestData(&liftoffRequest, numRequests, param, headers, errs, reqExt.MultiBidSelector)
 			requestData = append(requestData, reqData)
 			errReqData = append(errReqData, err...)
 		}
 	} else {
 		liftoffRequest := *request
 		modifiedParams := modifiedReqParams{}
-		reqData, err := a.makeRequestData(&liftoffRequest, numRequests, modifiedParams, headers, errs, reqExt.MultiBidEnabled)
+		reqData, err := a.makeRequestData(&liftoffRequest, numRequests, modifiedParams, headers, errs, reqExt.MultiBidSelector)
 		requestData = append(requestData, reqData)
 		errReqData = append(errReqData, err...)
 	}
@@ -448,7 +487,7 @@ func (a *adapter) MakeBids(_ *openrtb.BidRequest, externalRequest *adapters.Requ
 	return bidResponse, nil
 }
 
-func (a *adapter) makeRequestData(liftoffRequest *openrtb.BidRequest, numRequests int, modifiedParams modifiedReqParams, headers http.Header, errs []error, multiBidEnabled bool) (*adapters.RequestData, []error) {
+func (a *adapter) makeRequestData(liftoffRequest *openrtb.BidRequest, numRequests int, modifiedParams modifiedReqParams, headers http.Header, errs []error, multiBidSelector int) (*adapters.RequestData, []error) {
 	var err error
 	var requestData *adapters.RequestData
 
@@ -598,6 +637,14 @@ func (a *adapter) makeRequestData(liftoffRequest *openrtb.BidRequest, numRequest
 			uri = endpoint
 		}
 
+		traceName := "No Experiemnt"
+		if multiBidSelector == 1 {
+			traceName = "BSF_EXP_" + modifiedParams.ReqNumber
+		}
+		if multiBidSelector == 2 {
+			traceName = "MEDIATOR_EXP_" + modifiedParams.ReqNumber
+		}
+
 		reqData := adapters.RequestData{
 			Method:  "POST",
 			Uri:     uri,
@@ -606,7 +653,7 @@ func (a *adapter) makeRequestData(liftoffRequest *openrtb.BidRequest, numRequest
 
 			TapjoyData: adapters.TapjoyData{
 				Bidder:        a.Name(),
-				ContentType:   strings.ToLower(modifiedParams.ContentType),
+				TraceName:     strings.ToLower(traceName),
 				ReqNum:        modifiedParams.ReqNumber,
 				PlacementType: placementType,
 				Region:        liftoffExt.Region,
@@ -617,7 +664,7 @@ func (a *adapter) makeRequestData(liftoffRequest *openrtb.BidRequest, numRequest
 				MRAID: adapters.MRAID{
 					Supported: liftoffExt.MRAIDSupported,
 				},
-				MultiBidEnabled: multiBidEnabled,
+				MultiBidSelector: multiBidSelector,
 			},
 		}
 		requestData = &reqData
