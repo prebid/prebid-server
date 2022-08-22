@@ -77,7 +77,28 @@ type reqSourceExt struct {
 	HeaderBidding int `json:"header_bidding,omitempty"`
 }
 type liftoffBidExt struct {
-	AuctionID string `json:"auction_id,omitempty"`
+	SKADN       RespSKADN `json:"skadn,omitempty"` // prebid shared
+	AuctionID   string    `json:"auction_id,omitempty"`
+	Imptrackers []string  `json:"imptrackers,omitempty"`
+}
+
+// RespSKADN ...
+type RespSKADN struct {
+	Version    string     `json:"version"`    // Version of SKAdNetwork desired. Must be 2.0 or above.
+	Network    string     `json:"network"`    // Ad network identifier used in signature. Should match one of the items in the skadnetids array in the request
+	Campaign   string     `json:"campaign"`   // Campaign ID compatible with Apple’s spec. As of 2.0, should be an integer between 1 and 100, expressed as a string
+	ITunesItem string     `json:"itunesitem"` // ID of advertiser’s app in Apple’s app store. Should match BidResponse.bid.bundle
+	Nonce      string     `json:"nonce"`      // An id unique to each ad response
+	SourceApp  string     `json:"sourceapp"`  // ID of publisher’s app in Apple’s app store. Should match BidRequest.imp.ext.skad.sourceapp
+	Timestamp  string     `json:"timestamp"`  // Unix time in millis string used at the time of signature
+	Signature  string     `json:"signature"`  // SKAdNetwork signature as specified by Apple
+	Fidelities []Fidelity `json:"fidelities"` // Supports multiple fidelity types introduced in SKAdNetwork v2.2
+}
+type Fidelity struct {
+	Fidelity  int    `json:"fidelity"`  // The fidelity-type of the attribution to track
+	Signature string `json:"signature"` // SKAdNetwork signature as specified by Apple
+	Nonce     string `json:"nonce"`     // An id unique to each ad response
+	Timestamp string `json:"timestamp"` // Unix time in millis string used at the time of signature
 }
 
 type reqExt struct {
@@ -151,42 +172,38 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 
 		// Diffrent bid floors for each request
 		//iOS Requests Bid Floors
-		bfIOSRewardedVastA := 2.00
-		bfIOSRewardedVastB := 3.00
-		bfIOSRewardedVastC := 5.00
-		bfIOSRewardedVastD := 10.00
 		bfIOSRewardedMraidA := 3.00
 		bfIOSRewardedMraidB := 5.00
 		bfIOSRewardedMraidC := 7.00
 		bfIOSRewardedMraidD := 10.00
 
-		bfIOSSkippableVastA := 5.00
-		bfIOSSkippableVastB := 7.00
-		bfIOSSkippableVastC := 10.00
-		bfIOSSkippableVastD := 14.00
+		bfIOSSkippableVastA := 3.00
+		bfIOSSkippableVastB := 5.00
+		bfIOSSkippableVastC := 7.00
+		bfIOSSkippableVastD := 10.00
 		bfIOSSkippableMraidA := 5.00
 		bfIOSSkippableMraidB := 7.00
 		bfIOSSkippableMraidC := 10.00
 		bfIOSSkippableMraidD := 14.00
 
 		//Android Request Bid Floors
-		bfAndroidRewardedVastA := 2.00
-		bfAndroidRewardedVastB := 5.00
-		bfAndroidRewardedVastC := 7.00
-		bfAndroidRewardedVastD := 10.00
+		bfAndroidRewardedVastA := 5.00
+		bfAndroidRewardedVastB := 7.00
+		bfAndroidRewardedVastC := 10.00
+		bfAndroidRewardedVastD := 14.00
 		bfAndroidRewardedMraidA := 1.50
-		bfAndroidRewardedMraidB := 2.50
-		bfAndroidRewardedMraidC := 3.50
-		bfAndroidRewardedMraidD := 5.00
+		bfAndroidRewardedMraidB := 4.00
+		bfAndroidRewardedMraidC := 5.00
+		bfAndroidRewardedMraidD := 7.00
 
-		bfAndroidSkippableVastA := 1.00
-		bfAndroidSkippableVastB := 1.50
-		bfAndroidSkippableVastC := 2.50
+		bfAndroidSkippableVastA := 3.00
+		bfAndroidSkippableVastB := 5.00
+		bfAndroidSkippableVastC := 7.00
 		bfAndroidSkippableVastD := 10.00
-		bfAndroidSkippableMraidA := 2.00
-		bfAndroidSkippableMraidB := 3.00
-		bfAndroidSkippableMraidC := 5.00
-		bfAndroidSkippableMraidD := 10.00
+		bfAndroidSkippableMraidA := 3.00
+		bfAndroidSkippableMraidB := 5.00
+		bfAndroidSkippableMraidC := 10.00
+		bfAndroidSkippableMraidD := 14.00
 
 		var modifiedParams []modifiedReqParams
 		if strings.ToLower(request.Device.OS) == "ios" {
@@ -195,41 +212,21 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 				modifiedParams = []modifiedReqParams{
 					{
 						ReqNumber:   "1",
-						BidFloor:    &bfIOSRewardedVastA,
-						ContentType: CONTENT_TYPE_VIDEO_ONLY,
-					},
-					{
-						ReqNumber:   "2",
-						BidFloor:    &bfIOSRewardedVastB,
-						ContentType: CONTENT_TYPE_VIDEO_ONLY,
-					},
-					{
-						ReqNumber:   "3",
-						BidFloor:    &bfIOSRewardedVastC,
-						ContentType: CONTENT_TYPE_VIDEO_ONLY,
-					},
-					{
-						ReqNumber:   "4",
-						BidFloor:    &bfIOSRewardedVastD,
-						ContentType: CONTENT_TYPE_VIDEO_ONLY,
-					},
-					{
-						ReqNumber:   "5",
 						BidFloor:    &bfIOSRewardedMraidA,
 						ContentType: CONTENT_TYPE_MRAID_ONLY,
 					},
 					{
-						ReqNumber:   "6",
+						ReqNumber:   "2",
 						BidFloor:    &bfIOSRewardedMraidB,
 						ContentType: CONTENT_TYPE_MRAID_ONLY,
 					},
 					{
-						ReqNumber:   "7",
+						ReqNumber:   "3",
 						BidFloor:    &bfIOSRewardedMraidC,
 						ContentType: CONTENT_TYPE_MRAID_ONLY,
 					},
 					{
-						ReqNumber:   "8",
+						ReqNumber:   "4",
 						BidFloor:    &bfIOSRewardedMraidD,
 						ContentType: CONTENT_TYPE_MRAID_ONLY,
 					},
