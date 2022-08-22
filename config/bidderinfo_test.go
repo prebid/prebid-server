@@ -49,7 +49,7 @@ userSync:
 experiment:
   adsCert:
     enabled: true
-endpoint-compression: "GZIP"
+endpointCompression: "GZIP"
 `
 
 func TestLoadBidderInfoFromDisk(t *testing.T) {
