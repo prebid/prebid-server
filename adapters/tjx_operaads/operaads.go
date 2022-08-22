@@ -64,6 +64,12 @@ var operaAdsSKADNetIDs = map[string]bool{
 	"8s468mfl3y.skadnetwork": true,
 	"7ug5zh24hu.skadnetwork": true,
 	"zq492l623r.skadnetwork": true,
+	"uw77j35x4d.skadnetwork": true,
+	"9t245vhmpl.skadnetwork": true,
+	"p78axxw29g.skadnetwork": true,
+	"k674qkevps.skadnetwork": true,
+	"hs6bdukanm.skadnetwork": true,
+	"kbd757ywx3.skadnetwork": true,
 }
 
 var (
