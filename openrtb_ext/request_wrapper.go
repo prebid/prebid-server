@@ -797,7 +797,7 @@ func (re *RegExt) unmarshal(extJson json.RawMessage) error {
 	gdprJson, hasGDPR := re.ext["gdpr"]
 	if hasGDPR {
 		if err := json.Unmarshal(gdprJson, &re.gdpr); err != nil {
-			return err
+			return errors.New("gdpr must be an integer")
 		}
 	}
 
