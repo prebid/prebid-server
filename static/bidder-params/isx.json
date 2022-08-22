@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "ISX Adapter Params",
+  "description": "A schema which validates params accepted by the ISX adapter",
+  "type": "object",
+  "properties": {
+    "placementtype": {
+      "type": "string",
+      "description": "A string defining the placement type from ISX"
+    },
+    "region": {
+      "type": "string",
+      "description": "A string defining region for choosing the closest ISX endpoint"
+    },
+    "mraid_supported": {
+      "type": "boolean",
+      "description": "A bool config to determine if MRAID is supported by ISX"
+    }
+  }
+}
