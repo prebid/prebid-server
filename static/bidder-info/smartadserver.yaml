@@ -1,3 +1,4 @@
+endpoint: "https://ssb-global.smartadserver.com"
 maintainer:
   email: "support@smartadserver.com"
 gvlVendorID: 45
@@ -16,5 +17,3 @@ userSync:
   redirect:
     url: "https://ssbsync-global.smartadserver.com/api/sync?callerId=5&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirectUri={{.RedirectURL}}"
     userMacro: "[ssb_sync_pid]"
-#-----New config----
-endpoint: "https://ssb-global.smartadserver.com"

@@ -1,3 +1,4 @@
+endpoint: "https://s2s.atmtd.com"
 maintainer:
   email: "tech@automatad.com"
 capabilities:
@@ -7,5 +8,3 @@ capabilities:
   site:
     mediaTypes:
       - banner
-#-----New config----
-endpoint: "https://s2s.atmtd.com"

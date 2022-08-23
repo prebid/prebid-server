@@ -1,3 +1,4 @@
+endpoint: "https://ad.yieldlab.net/yp/"
 maintainer:
   email: "solutions@yieldlab.de"
 gvlVendorID: 70
@@ -14,6 +15,3 @@ userSync:
   redirect:
     url: "https://ad.yieldlab.net/mr?t=2&pid=9140838&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r={{.RedirectURL}}"
     userMacro: "%%YL_UID%%"
-#-----New config----
-endpoint: "https://ad.yieldlab.net/yp/"
-

@@ -1,3 +1,4 @@
+endpoint: "http://prebid-adapter.kidoz.net/openrtb2/auction?src=prebid-server"
 maintainer:
   email: prebid-support@kidoz.net
 capabilities:
@@ -9,5 +10,3 @@ capabilities:
     mediaTypes:
       - banner
       - video
-#-----New config----
-endpoint: "http://prebid-adapter.kidoz.net/openrtb2/auction?src=prebid-server"

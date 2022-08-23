@@ -1,3 +1,4 @@
+endpoint: "http://rtb.e-planning.net/pbs/1"
 maintainer:
   email: "producto@e-planning.net"
 gvlVendorID: 90
@@ -12,5 +13,3 @@ userSync:
   iframe:
     url: "https://ads.us.e-planning.net/uspd/1/?du={{.RedirectURL}}"
     userMacro: "$UID"
-#-----New config----
-endpoint: "http://rtb.e-planning.net/pbs/1"

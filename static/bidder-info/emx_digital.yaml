@@ -1,3 +1,4 @@
+endpoint: "https://hb.emxdgt.com"
 maintainer:
   email: "adops@emxdigital.com"
 gvlVendorID: 183
@@ -14,5 +15,3 @@ userSync:
   iframe:
     url: "https://cs.emxdgt.com/um?ssp=pbs&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
     userMacro: "$UID"
-#-----New config----
-endpoint: "https://hb.emxdgt.com"

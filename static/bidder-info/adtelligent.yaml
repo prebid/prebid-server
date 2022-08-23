@@ -1,3 +1,4 @@
+endpoint: "http://ghb.adtelligent.com/pbs/ortb"
 maintainer:
   email: "hb@adtelligent.com"
 gvlVendorID: 410
@@ -15,5 +16,3 @@ userSync:
   # bidder directly at the email address in this file to ask about enabling user sync.
   supports:
     - iframe
-#-----New config----
-endpoint: "http://ghb.adtelligent.com/pbs/ortb"

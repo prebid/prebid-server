@@ -1,3 +1,4 @@
+endpoint: "https://bid.adview.com/agent/thirdAdxService/{{.AccountID}}"
 maintainer:
   email: "partner@adview.com"
 gvlVendorID: 1022
@@ -7,5 +8,3 @@ capabilities:
       - banner
       - native
       - video
-#-----New config----
-endpoint: "https://bid.adview.com/agent/thirdAdxService/{{.AccountID}}"

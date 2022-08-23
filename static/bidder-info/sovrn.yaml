@@ -1,3 +1,4 @@
+endpoint: "http://pbs.lijit.com/rtb/bid?src=prebid_server"
 maintainer:
   email: "sovrnoss@sovrn.com"
 gvlVendorID: 13
@@ -15,5 +16,3 @@ userSync:
   redirect:
     url: "https://ap.lijit.com/pixel?redir={{.RedirectURL}}"
     userMacro: "$UID"
-#-----New config----
-endpoint: "http://pbs.lijit.com/rtb/bid?src=prebid_server"

@@ -1,3 +1,4 @@
+endpoint: "http://request-global.czilladx.com/serve/prebid-server.php"
 maintainer:
   email: "technical@sevio.com"
 capabilities:
@@ -7,6 +8,4 @@ capabilities:
   site:
     mediaTypes:
       - banner
-#-----New config----
-endpoint: "http://request-global.czilladx.com/serve/prebid-server.php"
 

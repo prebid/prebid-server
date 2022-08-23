@@ -1,3 +1,4 @@
+endpoint: "https://p.vidoomy.com/api/rtbserver/pbs"
 maintainer:
   email: support@vidoomy.com
 gvlVendorID: 380
@@ -14,5 +15,3 @@ userSync:
     iframe:
       url: "https://vid.vidoomy.com/sync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
       userMacro: "{{VID}}"
-#-----New config----
-endpoint: "https://p.vidoomy.com/api/rtbserver/pbs"

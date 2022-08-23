@@ -1,3 +1,4 @@
+endpoint: "http://ghb.sync.viewdeos.com/pbs/ortb"
 maintainer:
   email: "contact@viewdeos.com"
 gvlVendorID: 924
@@ -15,5 +16,3 @@ userSync:
   # bidder directly at the email address in this file to ask about enabling user sync.
   supports:
     - redirect
-#-----New config----
-endpoint: "http://ghb.sync.viewdeos.com/pbs/ortb"

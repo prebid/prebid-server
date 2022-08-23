@@ -1,3 +1,5 @@
+endpoint: "http://ib.adnxs.com/openrtb2"
+platform_id: "5"
 maintainer:
   email: "prebid-server@xandr.com"
 gvlVendorID: 32
@@ -17,6 +19,3 @@ userSync:
   redirect:
     url: "https://ib.adnxs.com/getuid?{{.RedirectURL}}"
     userMacro: "$UID"
-#-----New config----
-endpoint: "http://ib.adnxs.com/openrtb2"
-platform_id: "5"

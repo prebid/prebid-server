@@ -1,3 +1,4 @@
+endpoint: "http://{{.Host}}-prebid.smart-hub.io/?seat={{.AccountID}}&token={{.SourceId}}"
 maintainer:
   email: "support@smart-hub.io"
 capabilities:
@@ -16,5 +17,3 @@ userSync:
   # bidder directly at the email address in this file to ask about enabling user sync.
   supports:
     - redirect
-#-----New config----
-endpoint: "http://{{.Host}}-prebid.smart-hub.io/?seat={{.AccountID}}&token={{.SourceId}}"

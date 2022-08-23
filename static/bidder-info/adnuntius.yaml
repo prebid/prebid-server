@@ -1,3 +1,4 @@
+endpoint: "https://ads.adnuntius.delivery/i"
 maintainer:
   email: hello@adnuntius.com
 gvlVendorID: 855
@@ -8,5 +9,3 @@ capabilities:
   site:
     mediaTypes:
       - banner
-#-----New config----
-endpoint: "https://ads.adnuntius.delivery/i"

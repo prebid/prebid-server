@@ -1,3 +1,4 @@
+endpoint: "https://pbs.adksrv.com/hb?zone={{.ZoneID}}"
 maintainer:
   email: "prebid-dev@adkernel.com"
 gvlVendorID: 14
@@ -13,5 +14,3 @@ userSync:
   redirect:
     url: "https://sync.adkernel.com/user-sync?t=image&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&r={{.RedirectURL}}"
     userMacro: "{UID}"
-#-----New config----
-endpoint: "https://pbs.adksrv.com/hb?zone={{.ZoneID}}"

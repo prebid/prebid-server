@@ -1,3 +1,4 @@
+endpoint: "https://{{.Host}}/prebid/bid"
 maintainer:
   email: "junping.zhao@yeahmobi.com"
 capabilities:
@@ -6,5 +7,3 @@ capabilities:
       - banner
       - video
       - native
-#-----New config----
-endpoint: "https://{{.Host}}/prebid/bid"

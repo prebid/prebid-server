@@ -1,3 +1,4 @@
+endpoint: "https://btlr.sharethrough.com/universal/v1?supply_id=FGMrCMMc"
 maintainer:
   email: pubgrowth.engineering@sharethrough.com
 gvlVendorID: 80
@@ -14,5 +15,3 @@ userSync:
   redirect:
     url: https://match.sharethrough.com/FGMrCMMc/v1?redirectUri={{.RedirectURL}}
     userMacro: $UID
-#-----New config----
-endpoint: "https://btlr.sharethrough.com/universal/v1?supply_id=FGMrCMMc"

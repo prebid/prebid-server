@@ -1,3 +1,4 @@
+endpoint: "https://{{.Host}}.bidmachine.io"
 maintainer:
   email: hi@bidmachine.io
 gvlVendorID: 736
@@ -6,5 +7,3 @@ capabilities:
     mediaTypes:
       - banner
       - video
-#-----New config----
-endpoint: "https://{{.Host}}.bidmachine.io"

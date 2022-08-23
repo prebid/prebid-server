@@ -1,3 +1,5 @@
+endpoint: "https://an.epom.com/ortb"
+disabled: true
 maintainer:
   email: "support@epom.com"
 modifyingVastXmlAllowed: true
@@ -13,6 +15,3 @@ capabilities:
       - banner
       - video
       - native
-#-----New config----
-disabled: true
-endpoint: "https://an.epom.com/ortb"

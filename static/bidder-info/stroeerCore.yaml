@@ -1,3 +1,5 @@
+endpoint: "http://mhb.adscale.de/s2sdsh"
+disabled: true
 maintainer:
   email: "help@cz.stroeer-labs.com"
 gvlVendorID: 136
@@ -16,6 +18,3 @@ userSync:
   redirect:
     url: "https://ih.adscale.de/uu?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&cburl={{.RedirectURL}}"
     userMacro: ""
-#-----New config----
-disabled: true
-endpoint: "http://mhb.adscale.de/s2sdsh"

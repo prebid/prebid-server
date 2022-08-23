@@ -1,3 +1,4 @@
+endpoint: "https://ad.as.amanad.adtdp.com/v1/bid/4"
 maintainer:
   email: "dev@aja-kk.co.jp"
 capabilities:
@@ -14,6 +15,4 @@ userSync:
   redirect:
     url: "https://ad.as.amanad.adtdp.com/v1/sync/ssp?ssp=4&gdpr={{.GDPR}}&us_privacy={{.USPrivacy}}&redir={{.RedirectURL}}"
     userMacro: "%s"
-#-----New config----
-endpoint: "https://ad.as.amanad.adtdp.com/v1/bid/4"
 

@@ -1,3 +1,4 @@
+endpoint: "http://ib.adnxs.com/openrtb2"
 maintainer:
   email: "support@mediafuse.com"
 capabilities:
@@ -13,5 +14,3 @@ capabilities:
       - native
 userSync:
   key: "adnxs"
-#-----New config----
-endpoint: "http://ib.adnxs.com/openrtb2"

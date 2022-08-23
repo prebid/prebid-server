@@ -1,3 +1,4 @@
+endpoint: "http://ghb.pgamssp.com/pbs/ortb"
 maintainer:
   email: "ppatel@pgammedia.com"
 capabilities:
@@ -14,5 +15,3 @@ userSync:
   # bidder directly at the email address in this file to ask about enabling user sync.
   supports:
     - iframe
-#-----New config----
-endpoint: "http://ghb.pgamssp.com/pbs/ortb"

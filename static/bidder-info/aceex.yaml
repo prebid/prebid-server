@@ -1,3 +1,4 @@
+endpoint: "http://bl-us.aceex.io/?uqhash={{.AccountID}}"
 maintainer:
   email: "tech@aceex.io"
 capabilities:
@@ -11,5 +12,3 @@ capabilities:
       - banner
       - video
       - native
-#-----New config----
-endpoint: "http://bl-us.aceex.io/?uqhash={{.AccountID}}"

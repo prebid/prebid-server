@@ -18,19 +18,19 @@ type BidderInfos map[string]BidderInfo
 
 // BidderInfo specifies all configuration for a bidder except for enabled status, endpoint, and extra information.
 type BidderInfo struct {
-	Disabled bool `mapstructure:"disabled"`
+	Disabled         bool   `mapstructure:"disabled"`
+	Endpoint         string `mapstructure:"endpoint"`
+	ExtraAdapterInfo string `mapstructure:"extra_info"`
 
 	Maintainer              *MaintainerInfo   `yaml:"maintainer"`
 	Capabilities            *CapabilitiesInfo `yaml:"capabilities"`
 	ModifyingVastXmlAllowed bool              `yaml:"modifyingVastXmlAllowed"`
 	Debug                   *DebugInfo        `yaml:"debug"`
 	GVLVendorID             uint16            `yaml:"gvlVendorID"`
-	Syncer                  *Syncer           `yaml:"userSync"`
+
+	Syncer *Syncer `yaml:"userSync"`
 
 	Experiment BidderInfoExperiment `yaml:"experiment"`
-
-	Endpoint         string `mapstructure:"endpoint"`
-	ExtraAdapterInfo string `mapstructure:"extra_info"`
 
 	// needed for backwards compatibility
 	UserSyncURL string `mapstructure:"usersync_url"`

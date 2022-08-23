@@ -1,3 +1,4 @@
+endpoint: "https://x.videobyte.com/ortbhb"
 maintainer:
   email: "prebid@videobyte.com"
 gvlVendorID: 1011
@@ -14,5 +15,3 @@ userSync:
   redirect:
     url: "https://x.videobyte.com/usync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&cb={{.RedirectURL}}"
     userMacro: "$UID"
-#-----New config----
-endpoint: "https://x.videobyte.com/ortbhb"

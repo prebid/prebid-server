@@ -1,3 +1,4 @@
+endpoint: "http://ssp.videowalldirect.com/pserver"
 maintainer:
   email: "wls_demo_box@smartyads.com"
 capabilities:
@@ -12,5 +13,3 @@ capabilities:
     - banner
     - video
     - native
-#-----New config----
-endpoint: "http://ssp.videowalldirect.com/pserver"
