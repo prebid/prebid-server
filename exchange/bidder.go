@@ -176,13 +176,16 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 				reqData[i].Headers.Add("Sec-GPC", reqInfo.GlobalPrivacyControlHeader)
 			}
 			if bidRequestOptions.addCallSignHeader {
+				startSignRequestTime := time.Now()
 				signatureMessage, err := adsCertSigner.Sign(reqData[i].Uri, reqData[i].Body)
+				bidder.me.RecordAdsCertSignTime(time.Since(startSignRequestTime))
 				if err != nil {
-					//add metrics here
+					bidder.me.RecordAdsCertReq(false)
 					errs = append(errs, &errortypes.Warning{Message: fmt.Sprintf("AdsCert signer is enabled but cannot sign the request: %s", err.Error())})
 				}
 				if err == nil && len(signatureMessage) > 0 {
 					reqData[i].Headers.Add(adscert.SignHeader, signatureMessage)
+					bidder.me.RecordAdsCertReq(true)
 				}
 			}
 
