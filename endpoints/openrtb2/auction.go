@@ -1405,7 +1405,6 @@ func validateRegs(req *openrtb_ext.RequestWrapper) error {
 	}
 
 	gdpr := regsExt.GetGDPR()
-
 	if gdpr != nil && *gdpr != 0 && *gdpr != 1 {
 		return errors.New("request.regs.ext.gdpr must be either 0 or 1")
 	}
