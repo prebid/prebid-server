@@ -904,10 +904,6 @@ func SetupViper(v *viper.Viper, filename string) {
 	// macro substitution. it is important for the uid to be the last query parameter.
 	v.SetDefault("user_sync.redirect_url", "{{.ExternalURL}}/setuid?bidder={{.SyncerKey}}&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&f={{.SyncType}}&uid={{.UserMacro}}")
 
-	for _, bidder := range openrtb_ext.CoreBidderNames() {
-		setBidderDefaults(v, strings.ToLower(string(bidder)))
-	}
-
 	v.SetDefault("max_request_size", 1024*256)
 	v.SetDefault("analytics.file.filename", "")
 	v.SetDefault("analytics.pubstack.endpoint", "https://s2s.pbstck.com/v1")
@@ -1109,32 +1105,6 @@ func migrateConfigTCF2PurposeEnabledFlags(v *viper.Viper) {
 			}
 		}
 	}
-}
-
-func setBidderDefaults(v *viper.Viper, bidder string) {
-	adapterCfgPrefix := "adapters." + bidder
-	v.SetDefault(adapterCfgPrefix+".endpoint", "")
-	v.SetDefault(adapterCfgPrefix+".usersync_url", "")
-	v.SetDefault(adapterCfgPrefix+".platform_id", "")
-	v.SetDefault(adapterCfgPrefix+".app_secret", "")
-	v.SetDefault(adapterCfgPrefix+".xapi.username", "")
-	v.SetDefault(adapterCfgPrefix+".xapi.password", "")
-	v.SetDefault(adapterCfgPrefix+".xapi.tracker", "")
-	v.SetDefault(adapterCfgPrefix+".disabled", false)
-	v.SetDefault(adapterCfgPrefix+".extra_info", "")
-
-	v.BindEnv(adapterCfgPrefix + ".usersync.key")
-	v.BindEnv(adapterCfgPrefix + ".usersync.default")
-	v.BindEnv(adapterCfgPrefix + ".usersync.iframe.url")
-	v.BindEnv(adapterCfgPrefix + ".usersync.iframe.redirect_url")
-	v.BindEnv(adapterCfgPrefix + ".usersync.iframe.external_url")
-	v.BindEnv(adapterCfgPrefix + ".usersync.iframe.user_macro")
-	v.BindEnv(adapterCfgPrefix + ".usersync.redirect.url")
-	v.BindEnv(adapterCfgPrefix + ".usersync.redirect.redirect_url")
-	v.BindEnv(adapterCfgPrefix + ".usersync.redirect.external_url")
-	v.BindEnv(adapterCfgPrefix + ".usersync.redirect.user_macro")
-	v.BindEnv(adapterCfgPrefix + ".usersync.external_url")
-	v.BindEnv(adapterCfgPrefix + ".usersync.support_cors")
 }
 
 func isValidCookieSize(maxCookieSize int) error {

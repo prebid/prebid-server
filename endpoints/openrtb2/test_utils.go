@@ -1166,19 +1166,6 @@ func (tc *testConfigValues) getBlackListedAccountMap() map[string]bool {
 	return blacklistedAccountMap
 }
 
-func (tc *testConfigValues) getAdaptersConfigMap() map[string]config.Adapter {
-	var adaptersConfig map[string]config.Adapter
-
-	if len(tc.DisabledAdapters) > 0 {
-		adaptersConfig = make(map[string]config.Adapter, len(tc.DisabledAdapters))
-		for _, adapterName := range tc.DisabledAdapters {
-
-			adaptersConfig[adapterName] = config.Adapter{}
-		}
-	}
-	return adaptersConfig
-}
-
 // buildTestExchange returns an exchange with mock bidder servers and mock currency convertion server
 func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.BidderName]exchange.AdaptedBidder, mockBidServersArray []*httptest.Server, mockCurrencyRatesServer *httptest.Server, bidderInfos config.BidderInfos, cfg *config.Configuration, met metrics.MetricsEngine, mockFetcher stored_requests.CategoryFetcher) (exchange.Exchange, []*httptest.Server) {
 	if len(testCfg.MockBidders) == 0 {

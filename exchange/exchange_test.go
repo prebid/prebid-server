@@ -1221,12 +1221,6 @@ func TestGetBidCacheInfoEndToEnd(t *testing.T) {
 	bidderName := openrtb_ext.BidderName("appnexus")
 
 	cfg := &config.Configuration{
-		//!!!
-		/*Adapters: map[string]config.Adapter{
-			string(bidderName): {
-				Endpoint: "http://ib.adnxs.com/endpoint",
-			},
-		},*/
 		CacheURL: config.Cache{
 			Host: "www.internalprebidcache.net",
 		},
@@ -1851,24 +1845,6 @@ func TestRaceIntegration(t *testing.T) {
 	defer server.Close()
 
 	cfg := &config.Configuration{}
-	//!!!
-	/*cfg := &config.Configuration{
-		Adapters: make(map[string]config.Adapter),
-	}
-	for _, bidder := range openrtb_ext.CoreBidderNames() {
-		cfg.Adapters[strings.ToLower(string(bidder))] = config.Adapter{
-			Endpoint: server.URL,
-		}
-	}
-	cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAudienceNetwork))] = config.Adapter{
-		Endpoint:   server.URL,
-		AppSecret:  "any",
-		PlatformID: "abc",
-	}
-	cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderBeachfront))] = config.Adapter{
-		Endpoint:         server.URL,
-		ExtraAdapterInfo: "{\"video_endpoint\":\"" + server.URL + "\"}",
-	}*/
 
 	biddersInfo, err := config.LoadBidderInfoFromDisk("../static/bidder-info")
 	if err != nil {
@@ -2047,15 +2023,6 @@ func TestPanicRecoveryHighLevel(t *testing.T) {
 	defer server.Close()
 
 	cfg := &config.Configuration{}
-	/*cfg := &config.Configuration{
-		Adapters: make(map[string]config.Adapter),
-	}
-	for _, bidder := range openrtb_ext.CoreBidderNames() {
-		cfg.Adapters[strings.ToLower(string(bidder))] = config.Adapter{
-			Endpoint: server.URL,
-		}
-	}
-	cfg.Adapters["audiencenetwork"] = config.Adapter{Disabled: true}*/
 
 	biddersInfo, err := config.LoadBidderInfoFromDisk("../static/bidder-info")
 	if err != nil {

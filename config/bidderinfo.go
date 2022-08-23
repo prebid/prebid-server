@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	validator "github.com/asaskevich/govalidator"
 	"github.com/prebid/prebid-server/macros"
@@ -161,13 +162,23 @@ type SyncerEndpoint struct {
 	UserMacro string `yaml:"userMacro" mapstructure:"user_macro"`
 }
 
-// LoadBidderInfoFromDisk parses all static/bidder-info/{bidder}.yaml files from the file system.
-func LoadBidderInfoFromDisk(path string) (BidderInfos, error) {
-	reader := infoReaderFromDisk{path}
-	return loadBidderInfo(reader, path)
+func ProcessBidderInfos(path string) (BidderInfos, []error) {
+	errs := make([]error, 0)
+	bidderInfos, err := LoadBidderInfoFromDisk(path)
+	if err != nil {
+		return nil, append(errs, fmt.Errorf("Unable to load bidderconfigs %v", err))
+	}
+	errs = validateBidderInfos(bidderInfos)
+
+	return bidderInfos, errs
 }
 
-func loadBidderInfo(r infoReader, path string) (BidderInfos, error) {
+// LoadBidderInfoFromDisk parses all static/bidder-info/{bidder}.yaml files from the file system.
+func LoadBidderInfoFromDisk(path string) (BidderInfos, error) {
+	return loadBidderInfo(path)
+}
+
+func loadBidderInfo(path string) (BidderInfos, error) {
 	bidderConfigs, err := ioutil.ReadDir(path)
 	if err != nil {
 		log.Fatal(err)
@@ -180,7 +191,8 @@ func loadBidderInfo(r infoReader, path string) (BidderInfos, error) {
 			continue //or throw an error?
 		}
 		fileName := bidderConfig.Name()
-		data, err := r.Read(fileName)
+		filePath := fmt.Sprintf("%v/%v", path, fileName)
+		data, err := ioutil.ReadFile(filePath)
 		if err != nil {
 			return nil, err
 		}
@@ -197,19 +209,6 @@ func loadBidderInfo(r infoReader, path string) (BidderInfos, error) {
 	return infos, nil
 }
 
-type infoReader interface {
-	Read(fileName string) ([]byte, error)
-}
-
-type infoReaderFromDisk struct {
-	path string
-}
-
-func (r infoReaderFromDisk) Read(fileName string) ([]byte, error) {
-	path := fmt.Sprintf("%v/%v", r.path, fileName)
-	return ioutil.ReadFile(path)
-}
-
 // ToGVLVendorIDMap transforms a BidderInfos object to a map of bidder names to GVL id. Disabled
 // bidders are omitted from the result.
 func (infos BidderInfos) ToGVLVendorIDMap() map[openrtb_ext.BidderName]uint16 {
@@ -222,12 +221,22 @@ func (infos BidderInfos) ToGVLVendorIDMap() map[openrtb_ext.BidderName]uint16 {
 	return m
 }
 
-// ValidateBidderInfos validates bidder endpoint and user sync URL
-func ValidateBidderInfos(bidderInfos BidderInfos) []error {
+// vlidateBidderInfos validates bidder endpoint, info and syncer data
+func validateBidderInfos(bidderInfos BidderInfos) []error {
 	errs := make([]error, 0, 0)
 	for bidderName, bidder := range bidderInfos {
 		if !bidder.Disabled {
 			errs = validateAdapterEndpoint(bidder.Endpoint, bidderName, errs)
+
+			validateInfoErr := validateInfo(bidder, bidderName)
+			if validateInfoErr != nil {
+				errs = append(errs, validateInfoErr)
+			}
+
+			validateSyncerErr := validateSyncer(bidder)
+			if validateSyncerErr != nil {
+				errs = append(errs, validateSyncerErr)
+			}
 		}
 	}
 	return errs
@@ -272,4 +281,73 @@ func validateAdapterEndpoint(endpoint string, bidderName string, errs []error) [
 		errs = append(errs, fmt.Errorf("The endpoint: %s for %s is not a valid URL", resolvedEndpoint, bidderName))
 	}
 	return errs
+}
+
+func validateInfo(info BidderInfo, bidderName string) error {
+	if err := validateMaintainer(info.Maintainer, bidderName); err != nil {
+		return err
+	}
+	if err := validateCapabilities(info.Capabilities, bidderName); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func validateMaintainer(info *MaintainerInfo, bidderName string) error {
+	if info == nil || info.Email == "" {
+		return fmt.Errorf("missing required field: maintainer.email for adapter: %s", bidderName)
+	}
+	return nil
+}
+
+func validateCapabilities(info *CapabilitiesInfo, bidderName string) error {
+	if info == nil {
+		return fmt.Errorf("missing required field: capabilities for adapter: %s", bidderName)
+	}
+
+	if info.App == nil && info.Site == nil {
+		return fmt.Errorf("at least one of capabilities.site or capabilities.app must exist for adapter: %s", bidderName)
+	}
+
+	if info.App != nil {
+		if err := validatePlatformInfo(info.App); err != nil {
+			return fmt.Errorf("capabilities.app failed validation: %v for adapter: %s", err, bidderName)
+		}
+	}
+
+	if info.Site != nil {
+		if err := validatePlatformInfo(info.Site); err != nil {
+			return fmt.Errorf("capabilities.site failed validation: %v, for adapter: %s", err, bidderName)
+		}
+	}
+	return nil
+}
+
+func validatePlatformInfo(info *PlatformInfo) error {
+	if len(info.MediaTypes) == 0 {
+		return errors.New("mediaTypes should be an array with at least one string element")
+	}
+
+	for index, mediaType := range info.MediaTypes {
+		if mediaType != "banner" && mediaType != "video" && mediaType != "native" && mediaType != "audio" {
+			return fmt.Errorf("unrecognized media type at index %d: %s", index, mediaType)
+		}
+	}
+
+	return nil
+}
+
+func validateSyncer(bidderInfo BidderInfo) error {
+	if bidderInfo.Syncer == nil {
+		return nil
+	}
+
+	for _, v := range bidderInfo.Syncer.Supports {
+		if !strings.EqualFold(v, "iframe") && !strings.EqualFold(v, "redirect") {
+			return fmt.Errorf("syncer could not be created, invalid supported endpoint: %s", v)
+		}
+	}
+
+	return nil
 }
