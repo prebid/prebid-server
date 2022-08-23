@@ -1062,21 +1062,24 @@ func (a mockAdapter) MakeBids(request *openrtb2.BidRequest, requestData *adapter
 // Auxiliary functions that don't make assertions and don't
 // take t *testing.T as parameter
 // ---------------------------------------------------------
-func getBidderInfos(cfg map[string]config.Adapter, biddersNames []openrtb_ext.BidderName) config.BidderInfos {
+func getBidderInfos(disabledAdapters []string, biddersNames []openrtb_ext.BidderName) config.BidderInfos {
 	biddersInfos := make(config.BidderInfos)
 	for _, name := range biddersNames {
-		adapterConfig, ok := cfg[string(name)]
-		if !ok {
-			adapterConfig = config.Adapter{}
+		isDisabled := false
+		for _, disabledAdapter := range disabledAdapters {
+			if string(name) == disabledAdapter {
+				isDisabled = true
+				break
+			}
 		}
-		biddersInfos[string(name)] = newBidderInfo(adapterConfig)
+		biddersInfos[string(name)] = newBidderInfo(isDisabled)
 	}
 	return biddersInfos
 }
 
-func newBidderInfo(cfg config.Adapter) config.BidderInfo {
+func newBidderInfo(isDisabled bool) config.BidderInfo {
 	return config.BidderInfo{
-		Disabled: false,
+		Disabled: isDisabled,
 	}
 }
 
@@ -1169,7 +1172,7 @@ func (tc *testConfigValues) getAdaptersConfigMap() map[string]config.Adapter {
 	if len(tc.DisabledAdapters) > 0 {
 		adaptersConfig = make(map[string]config.Adapter, len(tc.DisabledAdapters))
 		for _, adapterName := range tc.DisabledAdapters {
-			//!!!
+
 			adaptersConfig[adapterName] = config.Adapter{}
 		}
 	}
@@ -1231,7 +1234,7 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 		paramValidator = mockBidderParamValidator{}
 	}
 
-	bidderInfos := getBidderInfos(test.Config.getAdaptersConfigMap(), openrtb_ext.CoreBidderNames())
+	bidderInfos := getBidderInfos(test.Config.DisabledAdapters, openrtb_ext.CoreBidderNames())
 	bidderMap := exchange.GetActiveBidders(bidderInfos)
 	disabledBidders := exchange.GetDisabledBiddersErrorMessages(bidderInfos)
 	met := &metricsConfig.NilMetricsEngine{}

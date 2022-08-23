@@ -4,5 +4,5 @@ maintainer:
 gvlVendorID: 559
 capabilities:
   app:
-  mediaTypes:
-  - banner
+    mediaTypes:
+      - banner

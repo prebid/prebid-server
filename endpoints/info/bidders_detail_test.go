@@ -14,12 +14,10 @@ import (
 )
 
 func TestPrepareBiddersDetailResponse(t *testing.T) {
-	bidderAInfo := config.BidderInfo{Enabled: true, Maintainer: &config.MaintainerInfo{Email: "bidderA"}}
-	bidderAConfig := config.Adapter{Endpoint: "https://secureEndpoint.com"}
+	bidderAInfo := config.BidderInfo{Endpoint: "https://secureEndpoint.com", Disabled: false, Maintainer: &config.MaintainerInfo{Email: "bidderA"}}
 	bidderAResponse := []byte(`{"status":"ACTIVE","usesHttps":true,"maintainer":{"email":"bidderA"}}`)
 
-	bidderBInfo := config.BidderInfo{Enabled: true, Maintainer: &config.MaintainerInfo{Email: "bidderB"}}
-	bidderBConfig := config.Adapter{Endpoint: "http://unsecureEndpoint.com"}
+	bidderBInfo := config.BidderInfo{Endpoint: "http://unsecureEndpoint.com", Disabled: false, Maintainer: &config.MaintainerInfo{Email: "bidderB"}}
 	bidderBResponse := []byte(`{"status":"ACTIVE","usesHttps":false,"maintainer":{"email":"bidderB"}}`)
 
 	allResponseBidderA := bytes.Buffer{}
@@ -35,45 +33,40 @@ func TestPrepareBiddersDetailResponse(t *testing.T) {
 	allResponseBidderAB.WriteString(`}`)
 
 	var testCases = []struct {
-		description        string
-		givenBidders       config.BidderInfos
-		givenBiddersConfig map[string]config.Adapter
-		givenAliases       map[string]string
-		expectedResponses  map[string][]byte
-		expectedError      string
+		description       string
+		givenBidders      config.BidderInfos
+		givenAliases      map[string]string
+		expectedResponses map[string][]byte
+		expectedError     string
 	}{
 		{
-			description:        "None",
-			givenBidders:       config.BidderInfos{},
-			givenBiddersConfig: map[string]config.Adapter{},
-			givenAliases:       map[string]string{},
-			expectedResponses:  map[string][]byte{"all": []byte(`{}`)},
+			description:       "None",
+			givenBidders:      config.BidderInfos{},
+			givenAliases:      map[string]string{},
+			expectedResponses: map[string][]byte{"all": []byte(`{}`)},
 		},
 		{
-			description:        "One",
-			givenBidders:       config.BidderInfos{"a": bidderAInfo},
-			givenBiddersConfig: map[string]config.Adapter{"a": bidderAConfig},
-			givenAliases:       map[string]string{},
-			expectedResponses:  map[string][]byte{"a": bidderAResponse, "all": allResponseBidderA.Bytes()},
+			description:       "One",
+			givenBidders:      config.BidderInfos{"a": bidderAInfo},
+			givenAliases:      map[string]string{},
+			expectedResponses: map[string][]byte{"a": bidderAResponse, "all": allResponseBidderA.Bytes()},
 		},
 		{
-			description:        "Many",
-			givenBidders:       config.BidderInfos{"a": bidderAInfo, "b": bidderBInfo},
-			givenBiddersConfig: map[string]config.Adapter{"a": bidderAConfig, "b": bidderBConfig},
-			givenAliases:       map[string]string{},
-			expectedResponses:  map[string][]byte{"a": bidderAResponse, "b": bidderBResponse, "all": allResponseBidderAB.Bytes()},
+			description:       "Many",
+			givenBidders:      config.BidderInfos{"a": bidderAInfo, "b": bidderBInfo},
+			givenAliases:      map[string]string{},
+			expectedResponses: map[string][]byte{"a": bidderAResponse, "b": bidderBResponse, "all": allResponseBidderAB.Bytes()},
 		},
 		{
-			description:        "Error - Map Details", // Returns error due to invalid alias.
-			givenBidders:       config.BidderInfos{"a": bidderAInfo},
-			givenBiddersConfig: map[string]config.Adapter{"a": bidderAConfig},
-			givenAliases:       map[string]string{"zAlias": "z"},
-			expectedError:      "base adapter z for alias zAlias not found",
+			description:   "Error - Map Details", // Returns error due to invalid alias.
+			givenBidders:  config.BidderInfos{"a": bidderAInfo},
+			givenAliases:  map[string]string{"zAlias": "z"},
+			expectedError: "base adapter z for alias zAlias not found",
 		},
 	}
 
 	for _, test := range testCases {
-		responses, err := prepareBiddersDetailResponse(test.givenBidders, test.givenBiddersConfig, test.givenAliases)
+		responses, err := prepareBiddersDetailResponse(test.givenBidders, test.givenAliases)
 
 		if test.expectedError == "" {
 			assert.Equal(t, test.expectedResponses, responses, test.description+":responses")
@@ -89,77 +82,67 @@ func TestMapDetails(t *testing.T) {
 	trueValue := true
 	falseValue := false
 
-	bidderAInfo := config.BidderInfo{Enabled: true, Maintainer: &config.MaintainerInfo{Email: "bidderA"}}
-	bidderAConfig := config.Adapter{Endpoint: "https://secureEndpoint.com"}
+	bidderAInfo := config.BidderInfo{Endpoint: "https://secureEndpoint.com", Disabled: false, Maintainer: &config.MaintainerInfo{Email: "bidderA"}}
 	bidderADetail := bidderDetail{Status: "ACTIVE", UsesHTTPS: &trueValue, Maintainer: &maintainer{Email: "bidderA"}}
 	aliasADetail := bidderDetail{Status: "ACTIVE", UsesHTTPS: &trueValue, Maintainer: &maintainer{Email: "bidderA"}, AliasOf: "a"}
 
-	bidderBInfo := config.BidderInfo{Enabled: true, Maintainer: &config.MaintainerInfo{Email: "bidderB"}}
-	bidderBConfig := config.Adapter{Endpoint: "http://unsecureEndpoint.com"}
+	bidderBInfo := config.BidderInfo{Endpoint: "http://unsecureEndpoint.com", Disabled: false, Maintainer: &config.MaintainerInfo{Email: "bidderB"}}
 	bidderBDetail := bidderDetail{Status: "ACTIVE", UsesHTTPS: &falseValue, Maintainer: &maintainer{Email: "bidderB"}}
 	aliasBDetail := bidderDetail{Status: "ACTIVE", UsesHTTPS: &falseValue, Maintainer: &maintainer{Email: "bidderB"}, AliasOf: "b"}
 
 	var testCases = []struct {
-		description        string
-		givenBidders       config.BidderInfos
-		givenBiddersConfig map[string]config.Adapter
-		givenAliases       map[string]string
-		expectedDetails    map[string]bidderDetail
-		expectedError      string
+		description     string
+		givenBidders    config.BidderInfos
+		givenAliases    map[string]string
+		expectedDetails map[string]bidderDetail
+		expectedError   string
 	}{
 		{
-			description:        "None",
-			givenBidders:       config.BidderInfos{},
-			givenBiddersConfig: map[string]config.Adapter{},
-			givenAliases:       map[string]string{},
-			expectedDetails:    map[string]bidderDetail{},
+			description:     "None",
+			givenBidders:    config.BidderInfos{},
+			givenAliases:    map[string]string{},
+			expectedDetails: map[string]bidderDetail{},
 		},
 		{
-			description:        "One Core Bidder",
-			givenBidders:       config.BidderInfos{"a": bidderAInfo},
-			givenBiddersConfig: map[string]config.Adapter{"a": bidderAConfig},
-			givenAliases:       map[string]string{},
-			expectedDetails:    map[string]bidderDetail{"a": bidderADetail},
+			description:     "One Core Bidder",
+			givenBidders:    config.BidderInfos{"a": bidderAInfo},
+			givenAliases:    map[string]string{},
+			expectedDetails: map[string]bidderDetail{"a": bidderADetail},
 		},
 		{
-			description:        "Many Core Bidders",
-			givenBidders:       config.BidderInfos{"a": bidderAInfo, "b": bidderBInfo},
-			givenBiddersConfig: map[string]config.Adapter{"a": bidderAConfig, "b": bidderBConfig},
-			givenAliases:       map[string]string{},
-			expectedDetails:    map[string]bidderDetail{"a": bidderADetail, "b": bidderBDetail},
+			description:     "Many Core Bidders",
+			givenBidders:    config.BidderInfos{"a": bidderAInfo, "b": bidderBInfo},
+			givenAliases:    map[string]string{},
+			expectedDetails: map[string]bidderDetail{"a": bidderADetail, "b": bidderBDetail},
 		},
 		{
-			description:        "One Alias",
-			givenBidders:       config.BidderInfos{"a": bidderAInfo},
-			givenBiddersConfig: map[string]config.Adapter{"a": bidderAConfig},
-			givenAliases:       map[string]string{"aAlias": "a"},
-			expectedDetails:    map[string]bidderDetail{"a": bidderADetail, "aAlias": aliasADetail},
+			description:     "One Alias",
+			givenBidders:    config.BidderInfos{"a": bidderAInfo},
+			givenAliases:    map[string]string{"aAlias": "a"},
+			expectedDetails: map[string]bidderDetail{"a": bidderADetail, "aAlias": aliasADetail},
 		},
 		{
-			description:        "Many Aliases - Same Core Bidder",
-			givenBidders:       config.BidderInfos{"a": bidderAInfo},
-			givenBiddersConfig: map[string]config.Adapter{"a": bidderAConfig},
-			givenAliases:       map[string]string{"aAlias1": "a", "aAlias2": "a"},
-			expectedDetails:    map[string]bidderDetail{"a": bidderADetail, "aAlias1": aliasADetail, "aAlias2": aliasADetail},
+			description:     "Many Aliases - Same Core Bidder",
+			givenBidders:    config.BidderInfos{"a": bidderAInfo},
+			givenAliases:    map[string]string{"aAlias1": "a", "aAlias2": "a"},
+			expectedDetails: map[string]bidderDetail{"a": bidderADetail, "aAlias1": aliasADetail, "aAlias2": aliasADetail},
 		},
 		{
-			description:        "Many Aliases - Different Core Bidders",
-			givenBidders:       config.BidderInfos{"a": bidderAInfo, "b": bidderBInfo},
-			givenBiddersConfig: map[string]config.Adapter{"a": bidderAConfig, "b": bidderBConfig},
-			givenAliases:       map[string]string{"aAlias": "a", "bAlias": "b"},
-			expectedDetails:    map[string]bidderDetail{"a": bidderADetail, "b": bidderBDetail, "aAlias": aliasADetail, "bAlias": aliasBDetail},
+			description:     "Many Aliases - Different Core Bidders",
+			givenBidders:    config.BidderInfos{"a": bidderAInfo, "b": bidderBInfo},
+			givenAliases:    map[string]string{"aAlias": "a", "bAlias": "b"},
+			expectedDetails: map[string]bidderDetail{"a": bidderADetail, "b": bidderBDetail, "aAlias": aliasADetail, "bAlias": aliasBDetail},
 		},
 		{
-			description:        "Error - Alias Without Core Bidder",
-			givenBidders:       config.BidderInfos{"a": bidderAInfo},
-			givenBiddersConfig: map[string]config.Adapter{"a": bidderAConfig},
-			givenAliases:       map[string]string{"zAlias": "z"},
-			expectedError:      "base adapter z for alias zAlias not found",
+			description:   "Error - Alias Without Core Bidder",
+			givenBidders:  config.BidderInfos{"a": bidderAInfo},
+			givenAliases:  map[string]string{"zAlias": "z"},
+			expectedError: "base adapter z for alias zAlias not found",
 		},
 	}
 
 	for _, test := range testCases {
-		details, err := mapDetails(test.givenBidders, test.givenBiddersConfig, test.givenAliases)
+		details, err := mapDetails(test.givenBidders, test.givenAliases)
 
 		if test.expectedError == "" {
 			assert.Equal(t, test.expectedDetails, details, test.description+":details")
@@ -168,33 +151,6 @@ func TestMapDetails(t *testing.T) {
 			assert.Empty(t, details, test.description+":details")
 			assert.EqualError(t, err, test.expectedError, test.description+":err")
 		}
-	}
-}
-
-func TestResolveEndpoint(t *testing.T) {
-	var testCases = []struct {
-		description        string
-		givenBidder        string
-		givenBiddersConfig map[string]config.Adapter
-		expectedEndpoint   string
-	}{
-		{
-			description:        "Bidder Found - Uses Config Value",
-			givenBidder:        "a",
-			givenBiddersConfig: map[string]config.Adapter{"a": {Endpoint: "anyEndpoint"}},
-			expectedEndpoint:   "anyEndpoint",
-		},
-		{
-			description:        "Bidder Not Found - Returns Empty",
-			givenBidder:        "hasNoConfig",
-			givenBiddersConfig: map[string]config.Adapter{"a": {Endpoint: "anyEndpoint"}},
-			expectedEndpoint:   "",
-		},
-	}
-
-	for _, test := range testCases {
-		result := resolveEndpoint(test.givenBidder, test.givenBiddersConfig)
-		assert.Equal(t, test.expectedEndpoint, result, test.description)
 	}
 }
 
@@ -256,13 +212,13 @@ func TestMapDetailFromConfig(t *testing.T) {
 	var testCases = []struct {
 		description     string
 		givenBidderInfo config.BidderInfo
-		givenEndpoint   string
 		expected        bidderDetail
 	}{
 		{
 			description: "Enabled - All Values Present",
 			givenBidderInfo: config.BidderInfo{
-				Enabled: true,
+				Endpoint: "http://anyEndpoint",
+				Disabled: false,
 				Maintainer: &config.MaintainerInfo{
 					Email: "foo@bar.com",
 				},
@@ -271,7 +227,6 @@ func TestMapDetailFromConfig(t *testing.T) {
 					Site: &config.PlatformInfo{MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeVideo}},
 				},
 			},
-			givenEndpoint: "http://amyEndpoint",
 			expected: bidderDetail{
 				Status:    "ACTIVE",
 				UsesHTTPS: &falseValue,
@@ -288,7 +243,8 @@ func TestMapDetailFromConfig(t *testing.T) {
 		{
 			description: "Disabled - All Values Present",
 			givenBidderInfo: config.BidderInfo{
-				Enabled: false,
+				Endpoint: "http://anyEndpoint",
+				Disabled: true,
 				Maintainer: &config.MaintainerInfo{
 					Email: "foo@bar.com",
 				},
@@ -297,7 +253,6 @@ func TestMapDetailFromConfig(t *testing.T) {
 					Site: &config.PlatformInfo{MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeVideo}},
 				},
 			},
-			givenEndpoint: "http://amyEndpoint",
 			expected: bidderDetail{
 				Status:    "DISABLED",
 				UsesHTTPS: nil,
@@ -311,9 +266,9 @@ func TestMapDetailFromConfig(t *testing.T) {
 		{
 			description: "Enabled - No Values Present",
 			givenBidderInfo: config.BidderInfo{
-				Enabled: true,
+				Endpoint: "http://amyEndpoint",
+				Disabled: false,
 			},
-			givenEndpoint: "http://amyEndpoint",
 			expected: bidderDetail{
 				Status:    "ACTIVE",
 				UsesHTTPS: &falseValue,
@@ -322,9 +277,9 @@ func TestMapDetailFromConfig(t *testing.T) {
 		{
 			description: "Enabled - Protocol - HTTP",
 			givenBidderInfo: config.BidderInfo{
-				Enabled: true,
+				Endpoint: "http://amyEndpoint",
+				Disabled: false,
 			},
-			givenEndpoint: "http://amyEndpoint",
 			expected: bidderDetail{
 				Status:    "ACTIVE",
 				UsesHTTPS: &falseValue,
@@ -333,9 +288,9 @@ func TestMapDetailFromConfig(t *testing.T) {
 		{
 			description: "Enabled - Protocol - HTTPS",
 			givenBidderInfo: config.BidderInfo{
-				Enabled: true,
+				Endpoint: "https://amyEndpoint",
+				Disabled: false,
 			},
-			givenEndpoint: "https://amyEndpoint",
 			expected: bidderDetail{
 				Status:    "ACTIVE",
 				UsesHTTPS: &trueValue,
@@ -344,9 +299,9 @@ func TestMapDetailFromConfig(t *testing.T) {
 		{
 			description: "Enabled - Protocol - HTTPS - Case Insensitive",
 			givenBidderInfo: config.BidderInfo{
-				Enabled: true,
+				Disabled: false,
+				Endpoint: "https://amyEndpoint",
 			},
-			givenEndpoint: "https://amyEndpoint",
 			expected: bidderDetail{
 				Status:    "ACTIVE",
 				UsesHTTPS: &trueValue,
@@ -355,9 +310,9 @@ func TestMapDetailFromConfig(t *testing.T) {
 		{
 			description: "Enabled - Protocol - Unknown",
 			givenBidderInfo: config.BidderInfo{
-				Enabled: true,
+				Endpoint: "endpointWithoutProtocol",
+				Disabled: false,
 			},
-			givenEndpoint: "endpointWithoutProtocol",
 			expected: bidderDetail{
 				Status:    "ACTIVE",
 				UsesHTTPS: &falseValue,
@@ -366,7 +321,7 @@ func TestMapDetailFromConfig(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		result := mapDetailFromConfig(test.givenBidderInfo, test.givenEndpoint)
+		result := mapDetailFromConfig(test.givenBidderInfo)
 		assert.Equal(t, test.expected, result, test.description)
 	}
 }
@@ -406,13 +361,11 @@ func TestMapMediaTypes(t *testing.T) {
 }
 
 func TestBiddersDetailHandler(t *testing.T) {
-	bidderAInfo := config.BidderInfo{Enabled: true, Maintainer: &config.MaintainerInfo{Email: "bidderA"}}
-	bidderAConfig := config.Adapter{Endpoint: "https://secureEndpoint.com"}
+	bidderAInfo := config.BidderInfo{Endpoint: "https://secureEndpoint.com", Disabled: false, Maintainer: &config.MaintainerInfo{Email: "bidderA"}}
 	bidderAResponse := []byte(`{"status":"ACTIVE","usesHttps":true,"maintainer":{"email":"bidderA"}}`)
 	aliasAResponse := []byte(`{"status":"ACTIVE","usesHttps":true,"maintainer":{"email":"bidderA"},"aliasOf":"a"}`)
 
-	bidderBInfo := config.BidderInfo{Enabled: true, Maintainer: &config.MaintainerInfo{Email: "bidderB"}}
-	bidderBConfig := config.Adapter{Endpoint: "http://unsecureEndpoint.com"}
+	bidderBInfo := config.BidderInfo{Endpoint: "http://unsecureEndpoint.com", Disabled: false, Maintainer: &config.MaintainerInfo{Email: "bidderB"}}
 	bidderBResponse := []byte(`{"status":"ACTIVE","usesHttps":false,"maintainer":{"email":"bidderB"}}`)
 
 	allResponse := bytes.Buffer{}
@@ -425,10 +378,9 @@ func TestBiddersDetailHandler(t *testing.T) {
 	allResponse.WriteString(`}`)
 
 	bidders := config.BidderInfos{"a": bidderAInfo, "b": bidderBInfo}
-	biddersConfig := map[string]config.Adapter{"a": bidderAConfig, "b": bidderBConfig}
 	aliases := map[string]string{"aAlias": "a"}
 
-	handler := NewBiddersDetailEndpoint(bidders, biddersConfig, aliases)
+	handler := NewBiddersDetailEndpoint(bidders, aliases)
 
 	var testCases = []struct {
 		description      string

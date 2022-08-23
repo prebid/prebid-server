@@ -138,7 +138,7 @@ func validateSyncers(t *testing.T, bidderInfos config.BidderInfos) []error {
 
 	// enable all bidders to allow BuildSyncers to build all syncers
 	for k, v := range bidderInfos {
-		v.Enabled = true
+		v.Disabled = false
 		bidderInfos[k] = v
 	}
 
