@@ -4,7 +4,9 @@ import (
 	"errors"
 	"fmt"
 	validator "github.com/asaskevich/govalidator"
+	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/macros"
+	"github.com/prebid/prebid-server/util/sliceutil"
 	"io/ioutil"
 	"log"
 	"strings"
@@ -162,12 +164,19 @@ type SyncerEndpoint struct {
 	UserMacro string `yaml:"userMacro" mapstructure:"user_macro"`
 }
 
-func ProcessBidderInfos(path string) (BidderInfos, []error) {
+func ProcessBidderInfos(path string, confBidderInfos BidderInfos) (BidderInfos, []error) {
 	errs := make([]error, 0)
 	bidderInfos, err := LoadBidderInfoFromDisk(path)
 	if err != nil {
 		return nil, append(errs, fmt.Errorf("Unable to load bidderconfigs %v", err))
 	}
+	if len(confBidderInfos) > 0 {
+		bidderInfos, err = applyBidderInfoConfigOverrides(confBidderInfos, bidderInfos)
+		if err != nil {
+			return nil, append(errs, err)
+		}
+	}
+
 	errs = validateBidderInfos(bidderInfos)
 
 	return bidderInfos, errs
@@ -350,4 +359,171 @@ func validateSyncer(bidderInfo BidderInfo) error {
 	}
 
 	return nil
+}
+
+func applyBidderInfoConfigOverrides(configBidderInfos BidderInfos, fsBidderInfos BidderInfos) (BidderInfos, error) {
+	for bidderName, bidderInfo := range configBidderInfos {
+		// bidder name from bidderInfos is case-sensitive, but bidder name from adaptersCfg
+		// is always expressed as lower case. need to adapt for the difference here.
+		if fsBidderCfg, exists := fsBidderInfos[strings.ToLower(bidderName)]; exists {
+			bidderInfo.Syncer = fsBidderCfg.Syncer.Override(bidderInfo.Syncer)
+
+			if bidderInfo.Endpoint == "" && len(fsBidderCfg.Endpoint) > 0 {
+				bidderInfo.Endpoint = fsBidderCfg.Endpoint
+			}
+			if bidderInfo.ExtraAdapterInfo == "" && len(fsBidderCfg.ExtraAdapterInfo) > 0 {
+				bidderInfo.ExtraAdapterInfo = fsBidderCfg.ExtraAdapterInfo
+			}
+			if bidderInfo.Maintainer == nil && fsBidderCfg.Maintainer != nil {
+				bidderInfo.Maintainer = fsBidderCfg.Maintainer
+			}
+			if bidderInfo.Capabilities == nil && fsBidderCfg.Capabilities != nil {
+				bidderInfo.Capabilities = fsBidderCfg.Capabilities
+			}
+			if bidderInfo.Debug == nil && fsBidderCfg.Debug != nil {
+				bidderInfo.Debug = fsBidderCfg.Debug
+			}
+			if bidderInfo.GVLVendorID == 0 && fsBidderCfg.GVLVendorID > 0 {
+				bidderInfo.GVLVendorID = fsBidderCfg.GVLVendorID
+			}
+			if bidderInfo.XAPI.Username == "" && fsBidderCfg.XAPI.Username != "" {
+				bidderInfo.XAPI.Username = fsBidderCfg.XAPI.Username
+			}
+			if bidderInfo.XAPI.Password == "" && fsBidderCfg.XAPI.Password != "" {
+				bidderInfo.XAPI.Password = fsBidderCfg.XAPI.Password
+			}
+			if bidderInfo.XAPI.Tracker == "" && fsBidderCfg.XAPI.Tracker != "" {
+				bidderInfo.XAPI.Tracker = fsBidderCfg.XAPI.Tracker
+			}
+			if bidderInfo.PlatformID == "" && fsBidderCfg.PlatformID != "" {
+				bidderInfo.PlatformID = fsBidderCfg.PlatformID
+			}
+			if bidderInfo.AppSecret == "" && fsBidderCfg.AppSecret != "" {
+				bidderInfo.AppSecret = fsBidderCfg.AppSecret
+			}
+
+			// validate and try to apply the legacy usersync_url configuration in attempt to provide
+			// an easier upgrade path. be warned, this will break if the bidder adds a second syncer
+			// type and will eventually be removed after we've given hosts enough time to upgrade to
+			// the new config.
+			if fsBidderCfg.UserSyncURL != "" {
+				if bidderInfo.Syncer == nil {
+					return nil, fmt.Errorf("adapters.%s.usersync_url cannot be applied, bidder does not define a user sync", strings.ToLower(bidderName))
+				}
+
+				endpointsCount := 0
+				if bidderInfo.Syncer.IFrame != nil {
+					bidderInfo.Syncer.IFrame.URL = fsBidderCfg.UserSyncURL
+					endpointsCount++
+				}
+				if bidderInfo.Syncer.Redirect != nil {
+					bidderInfo.Syncer.Redirect.URL = fsBidderCfg.UserSyncURL
+					endpointsCount++
+				}
+
+				// use Supports as a hint if there are no good defaults provided
+				if endpointsCount == 0 {
+					if sliceutil.ContainsStringIgnoreCase(bidderInfo.Syncer.Supports, "iframe") {
+						bidderInfo.Syncer.IFrame = &SyncerEndpoint{URL: fsBidderCfg.UserSyncURL}
+						endpointsCount++
+					}
+					if sliceutil.ContainsStringIgnoreCase(bidderInfo.Syncer.Supports, "redirect") {
+						bidderInfo.Syncer.Redirect = &SyncerEndpoint{URL: fsBidderCfg.UserSyncURL}
+						endpointsCount++
+					}
+				}
+
+				if endpointsCount == 0 {
+					return nil, fmt.Errorf("adapters.%s.usersync_url cannot be applied, bidder does not define user sync endpoints and does not define supported endpoints", strings.ToLower(bidderName))
+				}
+
+				// if the bidder defines both an iframe and redirect endpoint, we can't be sure which config value to
+				// override, and  it wouldn't be both. this is a fatal configuration error.
+				if endpointsCount > 1 {
+					return nil, fmt.Errorf("adapters.%s.usersync_url cannot be applied, bidder defines multiple user sync endpoints or supports multiple endpoints", strings.ToLower(bidderName))
+				}
+
+				// provide a warning that this compatibility layer is temporary
+				glog.Warningf("adapters.%s.usersync_url is deprecated and will be removed in a future version, please update to the latest user sync config values", strings.ToLower(bidderName))
+			}
+
+			fsBidderInfos[bidderName] = bidderInfo
+		}
+	}
+	return fsBidderInfos, nil
+}
+
+// Override returns a new Syncer object where values in the original are replaced by non-empty/non-default
+// values in the override, except for the Supports field which may not be overridden. No changes are made
+// to the original or override Syncer.
+func (s *Syncer) Override(original *Syncer) *Syncer {
+	if s == nil && original == nil {
+		return nil
+	}
+
+	var copy Syncer
+	if original != nil {
+		copy = *original
+	}
+
+	if s == nil {
+		return &copy
+	}
+
+	if s.Key != "" {
+		copy.Key = s.Key
+	}
+
+	if original == nil {
+		copy.IFrame = s.IFrame.Override(nil)
+		copy.Redirect = s.Redirect.Override(nil)
+	} else {
+		copy.IFrame = s.IFrame.Override(original.IFrame)
+		copy.Redirect = s.Redirect.Override(original.Redirect)
+	}
+
+	if s.ExternalURL != "" {
+		copy.ExternalURL = s.ExternalURL
+	}
+
+	if s.SupportCORS != nil {
+		copy.SupportCORS = s.SupportCORS
+	}
+
+	return &copy
+}
+
+// Override returns a new SyncerEndpoint object where values in the original are replaced by non-empty/non-default
+// values in the override. No changes are made to the original or override SyncerEndpoint.
+func (s *SyncerEndpoint) Override(original *SyncerEndpoint) *SyncerEndpoint {
+	if s == nil && original == nil {
+		return nil
+	}
+
+	var copy SyncerEndpoint
+	if original != nil {
+		copy = *original
+	}
+
+	if s == nil {
+		return &copy
+	}
+
+	if s.URL != "" {
+		copy.URL = s.URL
+	}
+
+	if s.RedirectURL != "" {
+		copy.RedirectURL = s.RedirectURL
+	}
+
+	if s.ExternalURL != "" {
+		copy.ExternalURL = s.ExternalURL
+	}
+
+	if s.UserMacro != "" {
+		copy.UserMacro = s.UserMacro
+	}
+
+	return &copy
 }

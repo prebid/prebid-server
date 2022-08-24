@@ -94,6 +94,10 @@ type Configuration struct {
 	HostSChainNode    *openrtb2.SupplyChainNode `mapstructure:"host_schain_node"`
 	// Experiment configures non-production ready features.
 	Experiment Experiment `mapstructure:"experiment"`
+
+	// BidderInfos supports adapter overrides in extra configs like pbs.json, pbs.yaml, etc.
+	// Refers to main.go `configFileName` constant
+	BidderInfos BidderInfos `mapstructure:"adapters"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500

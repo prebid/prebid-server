@@ -151,7 +151,7 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 
 	p, _ := filepath.Abs(infoDirectory)
 
-	bidderInfos, errs := config.ProcessBidderInfos(p)
+	bidderInfos, errs := config.ProcessBidderInfos(p, cfg.BidderInfos)
 	if len(errs) > 0 {
 		return nil, errortypes.NewAggregateError("bidder infos", errs)
 	}

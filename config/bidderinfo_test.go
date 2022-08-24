@@ -88,7 +88,7 @@ const bidderInfoRelativePath = "../static/bidder-info"
 // TestBidderInfoFiles ensures each bidder has a valid static/bidder-info/bidder.yaml file. Validation is performed directly
 // against the file system with separate yaml unmarshalling from the LoadBidderInfoFromDisk func.
 func TestBidderInfoFiles(t *testing.T) {
-	_, errs := ProcessBidderInfos(bidderInfoRelativePath)
+	_, errs := ProcessBidderInfos(bidderInfoRelativePath, nil)
 	if len(errs) > 0 {
 		errorMsg := errortypes.NewAggregateError("bidder infos", errs)
 		assert.Fail(t, errorMsg.Message, "Errors in bidder info files")
@@ -404,6 +404,75 @@ func TestBidderInfoValidationNegative(t *testing.T) {
 			},
 			[]error{
 				errors.New("syncer could not be created, invalid supported endpoint: incorrect"),
+			},
+		},
+		{
+			"Two bidders, one with incorrect url",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "incorrect",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeVideo,
+							},
+						},
+					},
+				},
+				"bidderB": BidderInfo{
+					Endpoint: "http://bidderB.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderB.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeVideo,
+							},
+						},
+					},
+				},
+			},
+			[]error{
+				errors.New("The endpoint: incorrect for bidderA is not a valid URL"),
+			},
+		},
+		{
+			"Two bidders, both with incorrect url",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "incorrect",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeVideo,
+							},
+						},
+					},
+				},
+				"bidderB": BidderInfo{
+					Endpoint: "incorrect",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderB.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeVideo,
+							},
+						},
+					},
+				},
+			},
+			[]error{
+				errors.New("The endpoint: incorrect for bidderA is not a valid URL"),
+				errors.New("The endpoint: incorrect for bidderB is not a valid URL"),
 			},
 		},
 	}
