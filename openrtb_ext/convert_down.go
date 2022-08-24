@@ -6,7 +6,7 @@ func ConvertDownTo25(r *RequestWrapper) error {
 		return err
 	}
 
-	// gdpr signal + consent
+	// gdpr
 	if err := moveGDPRFrom26To25(r); err != nil {
 		return err
 	}
@@ -54,8 +54,8 @@ func moveSupplyChainFrom26To25(r *RequestWrapper) error {
 	return nil
 }
 
-// moveConsentFrom26To25 modifies the request to move the OpenRTB 2.6 supply chain
-// object (req.regs.gdpr) to the OpenRTB 2.5 location (req.regs.ext.gdpr). If the
+// moveGDPRFrom26To25 modifies the request to move the OpenRTB 2.6 GDPR signal
+// field (req.regs.gdpr) to the OpenRTB 2.5 location (req.regs.ext.gdpr). If the
 // OpenRTB 2.5 location is already present it may be overwritten. The OpenRTB 2.5
 // location is expected to be empty.
 func moveGDPRFrom26To25(r *RequestWrapper) error {
@@ -77,8 +77,8 @@ func moveGDPRFrom26To25(r *RequestWrapper) error {
 	return nil
 }
 
-// moveConsentFrom26To25 modifies the request to move the OpenRTB 2.6 supply chain
-// object (req.user.consent) to the OpenRTB 2.5 location (req.user.ext.consent). If
+// moveConsentFrom26To25 modifies the request to move the OpenRTB 2.6 GDPR consent
+// field (req.user.consent) to the OpenRTB 2.5 location (req.user.ext.consent). If
 // the OpenRTB 2.5 location is already present it may be overwritten. The OpenRTB 2.5
 // location is expected to be empty.
 func moveConsentFrom26To25(r *RequestWrapper) error {
@@ -100,10 +100,10 @@ func moveConsentFrom26To25(r *RequestWrapper) error {
 	return nil
 }
 
-// moveUSPrivacyFrom26To25 modifies the request to move the OpenRTB 2.6 supply chain
-// object (req.regs.us_privacy) to the OpenRTB 2.5 location (req.regs.ext.us_privacy). If the
-// OpenRTB 2.5 location is already present it may be overwritten. The OpenRTB 2.5 location
-// is expected to be empty.
+// moveUSPrivacyFrom26To25 modifies the request to move the OpenRTB 2.6 US Privacy (CCPA)
+// consent string (req.regs.us_privacy) to the OpenRTB 2.5 location (req.regs.ext.us_privacy).
+// If the OpenRTB 2.5 location is already present it may be overwritten. The OpenRTB 2.5
+// location is expected to be empty.
 func moveUSPrivacyFrom26To25(r *RequestWrapper) error {
 	if r.Regs == nil || len(r.Regs.USPrivacy) == 0 {
 		return nil
@@ -123,7 +123,7 @@ func moveUSPrivacyFrom26To25(r *RequestWrapper) error {
 	return nil
 }
 
-// moveEIDFrom26To25 modifies the request to move the OpenRTB 2.6 supply chain object
+// moveEIDFrom26To25 modifies the request to move the OpenRTB 2.6 external identifiers
 // (req.user.eids) to the OpenRTB 2.5 location (req.user.ext.eids). If the OpenRTB 2.5
 // location is already present it may be overwritten. The OpenRTB 2.5 location is
 // expected to be empty.

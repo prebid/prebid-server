@@ -160,12 +160,12 @@ func TestMoveSupplyChainFrom24To25(t *testing.T) {
 			expectedRequest: openrtb2.BidRequest{},
 		},
 		{
-			description:     "2.4 Migrated To 2.5 - Source Doesn't Exit",
+			description:     "2.4 Migrated To 2.5 - Source Doesn't Exist",
 			givenRequest:    openrtb2.BidRequest{Ext: schain1},
 			expectedRequest: openrtb2.BidRequest{Source: &openrtb2.Source{Ext: schain1}},
 		},
 		{
-			description:     "2.4 Migrated To 2.5 - Source Exits",
+			description:     "2.4 Migrated To 2.5 - Source Exists",
 			givenRequest:    openrtb2.BidRequest{Source: &openrtb2.Source{}, Ext: schain1},
 			expectedRequest: openrtb2.BidRequest{Source: &openrtb2.Source{Ext: schain1}},
 		},

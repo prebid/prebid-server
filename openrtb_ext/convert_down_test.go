@@ -112,7 +112,7 @@ func TestMoveSupplyChainFrom26To25(t *testing.T) {
 		description     string
 		givenRequest    openrtb2.BidRequest
 		expectedRequest openrtb2.BidRequest
-		expectdErr      string
+		expectedErr     string
 	}{
 		{
 			description:     "Not Present - Source",
@@ -137,7 +137,7 @@ func TestMoveSupplyChainFrom26To25(t *testing.T) {
 		{
 			description:  "Malformed",
 			givenRequest: openrtb2.BidRequest{Source: &openrtb2.Source{SChain: schain1, Ext: json.RawMessage(`malformed`)}},
-			expectdErr:   "invalid character 'm' looking for beginning of value",
+			expectedErr:  "invalid character 'm' looking for beginning of value",
 		},
 	}
 
@@ -145,8 +145,8 @@ func TestMoveSupplyChainFrom26To25(t *testing.T) {
 		w := &RequestWrapper{BidRequest: &test.givenRequest}
 		err := moveSupplyChainFrom26To25(w)
 
-		if len(test.expectdErr) > 0 {
-			assert.EqualError(t, err, test.expectdErr, test.description)
+		if len(test.expectedErr) > 0 {
+			assert.EqualError(t, err, test.expectedErr, test.description)
 		} else {
 			assert.NoError(t, w.RebuildRequest(), test.description)
 			assert.Equal(t, test.expectedRequest, *w.BidRequest, test.description)
@@ -159,7 +159,7 @@ func TestMoveGDPRFrom26To25(t *testing.T) {
 		description     string
 		givenRequest    openrtb2.BidRequest
 		expectedRequest openrtb2.BidRequest
-		expectdErr      string
+		expectedErr     string
 	}{
 		{
 			description:     "Not Present - Regs",
@@ -184,7 +184,7 @@ func TestMoveGDPRFrom26To25(t *testing.T) {
 		{
 			description:  "Malformed",
 			givenRequest: openrtb2.BidRequest{Regs: &openrtb2.Regs{GDPR: openrtb2.Int8Ptr(0), Ext: json.RawMessage(`malformed`)}},
-			expectdErr:   "invalid character 'm' looking for beginning of value",
+			expectedErr:  "invalid character 'm' looking for beginning of value",
 		},
 	}
 
@@ -192,8 +192,8 @@ func TestMoveGDPRFrom26To25(t *testing.T) {
 		w := &RequestWrapper{BidRequest: &test.givenRequest}
 		err := moveGDPRFrom26To25(w)
 
-		if len(test.expectdErr) > 0 {
-			assert.EqualError(t, err, test.expectdErr, test.description)
+		if len(test.expectedErr) > 0 {
+			assert.EqualError(t, err, test.expectedErr, test.description)
 		} else {
 			assert.NoError(t, w.RebuildRequest(), test.description)
 			assert.Equal(t, test.expectedRequest, *w.BidRequest, test.description)
@@ -206,7 +206,7 @@ func TestMoveConsentFrom26To25(t *testing.T) {
 		description     string
 		givenRequest    openrtb2.BidRequest
 		expectedRequest openrtb2.BidRequest
-		expectdErr      string
+		expectedErr     string
 	}{
 		{
 			description:     "Not Present - User",
@@ -231,7 +231,7 @@ func TestMoveConsentFrom26To25(t *testing.T) {
 		{
 			description:  "Malformed",
 			givenRequest: openrtb2.BidRequest{User: &openrtb2.User{Consent: "1", Ext: json.RawMessage(`malformed`)}},
-			expectdErr:   "invalid character 'm' looking for beginning of value",
+			expectedErr:  "invalid character 'm' looking for beginning of value",
 		},
 	}
 
@@ -239,8 +239,8 @@ func TestMoveConsentFrom26To25(t *testing.T) {
 		w := &RequestWrapper{BidRequest: &test.givenRequest}
 		err := moveConsentFrom26To25(w)
 
-		if len(test.expectdErr) > 0 {
-			assert.EqualError(t, err, test.expectdErr, test.description)
+		if len(test.expectedErr) > 0 {
+			assert.EqualError(t, err, test.expectedErr, test.description)
 		} else {
 			assert.NoError(t, w.RebuildRequest(), test.description)
 			assert.Equal(t, test.expectedRequest, *w.BidRequest, test.description)
@@ -253,7 +253,7 @@ func TestMoveUSPrivacyFrom26To25(t *testing.T) {
 		description     string
 		givenRequest    openrtb2.BidRequest
 		expectedRequest openrtb2.BidRequest
-		expectdErr      string
+		expectedErr     string
 	}{
 		{
 			description:     "Not Present - Regs",
@@ -278,7 +278,7 @@ func TestMoveUSPrivacyFrom26To25(t *testing.T) {
 		{
 			description:  "Malformed",
 			givenRequest: openrtb2.BidRequest{Regs: &openrtb2.Regs{USPrivacy: "1", Ext: json.RawMessage(`malformed`)}},
-			expectdErr:   "invalid character 'm' looking for beginning of value",
+			expectedErr:  "invalid character 'm' looking for beginning of value",
 		},
 	}
 
@@ -286,8 +286,8 @@ func TestMoveUSPrivacyFrom26To25(t *testing.T) {
 		w := &RequestWrapper{BidRequest: &test.givenRequest}
 		err := moveUSPrivacyFrom26To25(w)
 
-		if len(test.expectdErr) > 0 {
-			assert.EqualError(t, err, test.expectdErr, test.description)
+		if len(test.expectedErr) > 0 {
+			assert.EqualError(t, err, test.expectedErr, test.description)
 		} else {
 			assert.NoError(t, w.RebuildRequest(), test.description)
 			assert.Equal(t, test.expectedRequest, *w.BidRequest, test.description)
@@ -306,7 +306,7 @@ func TestMoveEIDFrom26To25(t *testing.T) {
 		description     string
 		givenRequest    openrtb2.BidRequest
 		expectedRequest openrtb2.BidRequest
-		expectdErr      string
+		expectedErr     string
 	}{
 		{
 			description:     "Not Present - User",
@@ -336,7 +336,7 @@ func TestMoveEIDFrom26To25(t *testing.T) {
 		{
 			description:  "Malformed",
 			givenRequest: openrtb2.BidRequest{User: &openrtb2.User{EIDs: eid1, Ext: json.RawMessage(`malformed`)}},
-			expectdErr:   "invalid character 'm' looking for beginning of value",
+			expectedErr:  "invalid character 'm' looking for beginning of value",
 		},
 	}
 
@@ -344,8 +344,8 @@ func TestMoveEIDFrom26To25(t *testing.T) {
 		w := &RequestWrapper{BidRequest: &test.givenRequest}
 		err := moveEIDFrom26To25(w)
 
-		if len(test.expectdErr) > 0 {
-			assert.EqualError(t, err, test.expectdErr, test.description)
+		if len(test.expectedErr) > 0 {
+			assert.EqualError(t, err, test.expectedErr, test.description)
 		} else {
 			assert.NoError(t, w.RebuildRequest(), test.description)
 			assert.Equal(t, test.expectedRequest, *w.BidRequest, test.description)
