@@ -40,16 +40,15 @@ func TestConvertUpTo26(t *testing.T) {
 		{
 			description: "2.4 -> 2.6 + Other Ext Fields",
 			givenRequest: openrtb2.BidRequest{
-				ID:     "anyID",
-				Ext:    json.RawMessage(`{"schain":{"complete":1,"nodes":[],"ver":"2"},"other":"otherExt"}`),
-				Source: &openrtb2.Source{Ext: json.RawMessage(`{"other":"otherSource","schain":{"complete":1,"nodes":[],"ver":"2"}}`)},
-				Regs:   &openrtb2.Regs{Ext: json.RawMessage(`{"gdpr":1,"other":"otherRegs","us_privacy":"3"}`)},
-				User:   &openrtb2.User{Ext: json.RawMessage(`{"consent":"1","eids":[{"source":"42"}],"other":"otherUser"}`)},
+				ID:   "anyID",
+				Ext:  json.RawMessage(`{"schain":{"complete":1,"nodes":[],"ver":"2"},"other":"otherExt"}`),
+				Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"gdpr":1,"other":"otherRegs","us_privacy":"3"}`)},
+				User: &openrtb2.User{Ext: json.RawMessage(`{"consent":"1","eids":[{"source":"42"}],"other":"otherUser"}`)},
 			},
 			expectedRequest: openrtb2.BidRequest{
 				ID:     "anyID",
 				Ext:    json.RawMessage(`{"other":"otherExt"}`),
-				Source: &openrtb2.Source{SChain: &openrtb2.SupplyChain{Complete: 1, Nodes: []openrtb2.SupplyChainNode{}, Ver: "2"}, Ext: json.RawMessage(`{"other":"otherSource"}`)},
+				Source: &openrtb2.Source{SChain: &openrtb2.SupplyChain{Complete: 1, Nodes: []openrtb2.SupplyChainNode{}, Ver: "2"}},
 				Regs:   &openrtb2.Regs{GDPR: openrtb2.Int8Ptr(1), USPrivacy: "3", Ext: json.RawMessage(`{"other":"otherRegs"}`)},
 				User:   &openrtb2.User{Consent: "1", EIDs: []openrtb2.EID{{Source: "42"}}, Ext: json.RawMessage(`{"other":"otherUser"}`)},
 			},
