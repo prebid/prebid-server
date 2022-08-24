@@ -142,7 +142,7 @@ func buildAdapterMap(bids map[openrtb_ext.BidderName][]*openrtb2.Bid, mockServer
 		adapterMap[bidder] = AdaptBidder(&mockTargetingBidder{
 			mockServerURL: mockServerURL,
 			bids:          bids,
-		}, client, &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil)
+		}, client, &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil, "")
 	}
 	return adapterMap
 }

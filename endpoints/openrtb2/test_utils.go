@@ -1185,7 +1185,7 @@ func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.Bid
 		bidderAdapter := mockAdapter{mockServerURL: bidServer.URL}
 		bidderName := openrtb_ext.BidderName(mockBidder.BidderName)
 
-		adapterMap[bidderName] = exchange.AdaptBidder(bidderAdapter, bidServer.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, bidderName, nil)
+		adapterMap[bidderName] = exchange.AdaptBidder(bidderAdapter, bidServer.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, bidderName, nil, "")
 		mockBidServersArray = append(mockBidServersArray, bidServer)
 	}
 
