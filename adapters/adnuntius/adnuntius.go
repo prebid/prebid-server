@@ -106,11 +106,18 @@ func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter, noCookies bool
 		return "", []error{fmt.Errorf("failed to parse Adnuntius endpoint: %v", err)}
 	}
 
-	var deviceExt extDeviceAdnuntius
-	if ortbRequest.Device != nil && ortbRequest.Device.Ext != nil {
-		if err := json.Unmarshal(ortbRequest.Device.Ext, &deviceExt); err != nil {
-			return "", []error{fmt.Errorf("failed to parse Adnuntius endpoint: %v", err)}
+	if !noCookies {
+		var deviceExt extDeviceAdnuntius
+		if ortbRequest.Device != nil && ortbRequest.Device.Ext != nil {
+			if err := json.Unmarshal(ortbRequest.Device.Ext, &deviceExt); err != nil {
+				return "", []error{fmt.Errorf("failed to parse Adnuntius endpoint: %v", err)}
+			}
 		}
+
+		if deviceExt.NoCookies {
+			noCookies = true
+		}
+
 	}
 
 	_, offset := a.time.Now().Zone()
@@ -122,7 +129,7 @@ func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter, noCookies bool
 		q.Set("consentString", consent)
 	}
 
-	if deviceExt.NoCookies || noCookies {
+	if noCookies {
 		q.Set("noCookies", "true")
 	}
 
@@ -200,12 +207,7 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 			})
 	}
 
-	endpoint, err := makeEndpointUrl(ortbRequest, a, noCookies)
-	if err != nil {
-		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("failed to parse URL: %s", err),
-		}}
-	}
+	endpoint, _ := makeEndpointUrl(ortbRequest, a, noCookies)
 
 	site := defaultSite
 	if ortbRequest.Site != nil && ortbRequest.Site.Page != "" {
