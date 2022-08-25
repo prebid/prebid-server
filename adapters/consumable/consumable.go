@@ -22,21 +22,23 @@ type ConsumableAdapter struct {
 }
 
 type bidRequest struct {
-	Placements         []placement `json:"placements"`
-	Time               int64       `json:"time"`
-	NetworkId          int         `json:"networkId,omitempty"`
-	SiteId             int         `json:"siteId"`
-	UnitId             int         `json:"unitId"`
-	UnitName           string      `json:"unitName,omitempty"`
-	IncludePricingData bool        `json:"includePricingData"`
-	User               user        `json:"user,omitempty"`
-	Referrer           string      `json:"referrer,omitempty"`
-	Ip                 string      `json:"ip,omitempty"`
-	Url                string      `json:"url,omitempty"`
-	EnableBotFiltering bool        `json:"enableBotFiltering,omitempty"`
-	Parallel           bool        `json:"parallel"`
-	CCPA               string      `json:"ccpa,omitempty"`
-	GDPR               *bidGdpr    `json:"gdpr,omitempty"`
+	Placements         []placement          `json:"placements"`
+	Time               int64                `json:"time"`
+	NetworkId          int                  `json:"networkId,omitempty"`
+	SiteId             int                  `json:"siteId"`
+	UnitId             int                  `json:"unitId"`
+	UnitName           string               `json:"unitName,omitempty"`
+	IncludePricingData bool                 `json:"includePricingData"`
+	User               user                 `json:"user,omitempty"`
+	Referrer           string               `json:"referrer,omitempty"`
+	Ip                 string               `json:"ip,omitempty"`
+	Url                string               `json:"url,omitempty"`
+	EnableBotFiltering bool                 `json:"enableBotFiltering,omitempty"`
+	Parallel           bool                 `json:"parallel"`
+	CCPA               string               `json:"ccpa,omitempty"`
+	GDPR               *bidGdpr             `json:"gdpr,omitempty"`
+	Coppa              bool                 `json:"coppa,omitempty"`
+	SChain             openrtb2.SupplyChain `json:"schain,omitempty"`
 }
 
 type placement struct {
@@ -163,6 +165,15 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 			body.GDPR = &gdpr
 		}
 	}
+
+	if request.Source != nil && request.Source.Ext != nil {
+		var extSChain openrtb_ext.ExtRequestPrebidSChain
+		if err := json.Unmarshal(request.Source.Ext, &extSChain); err == nil {
+			body.SChain = extSChain.SChain
+		}
+	}
+
+	body.Coppa = request.Regs != nil && request.Regs.COPPA > 0
 
 	for i, impression := range request.Imp {
 
