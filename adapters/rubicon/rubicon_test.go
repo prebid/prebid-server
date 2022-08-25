@@ -3,6 +3,7 @@ package rubicon
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"testing"
@@ -24,6 +25,12 @@ type rubiAppendTrackerUrlTestScenario struct {
 	source   string
 	tracker  string
 	expected string
+}
+
+type rubiSetImpNativeTestErrorScenario struct {
+	request       string
+	impNative     map[string]interface{}
+	expectedError error
 }
 
 type rubiPopulateFpdAttributesScenario struct {
@@ -252,6 +259,30 @@ func TestAppendTracker(t *testing.T) {
 	for _, scenario := range testScenarios {
 		res := appendTrackerToUrl(scenario.source, scenario.tracker)
 		assert.Equal(t, scenario.expected, res, "Failed to convert '%s' to '%s'", res, scenario.expected)
+	}
+}
+
+func TestSetImpNative(t *testing.T) {
+	testScenarios := []rubiSetImpNativeTestErrorScenario{
+		{
+			request:       "{}",
+			impNative:     map[string]interface{}{"somekey": "someValue"},
+			expectedError: fmt.Errorf("unable to find imp in json data"),
+		},
+		{
+			request:       "{\"imp\":[]}",
+			impNative:     map[string]interface{}{"somekey": "someValue"},
+			expectedError: fmt.Errorf("unable to find imp[0] in json data"),
+		},
+		{
+			request:       "{\"imp\":[{}]}",
+			impNative:     map[string]interface{}{"somekey": "someValue"},
+			expectedError: fmt.Errorf("unable to find imp[0].native in json data"),
+		},
+	}
+	for _, scenario := range testScenarios {
+		_, err := setImpNative([]byte(scenario.request), scenario.impNative)
+		assert.Equal(t, scenario.expectedError, err)
 	}
 }
 
