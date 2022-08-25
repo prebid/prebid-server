@@ -16,6 +16,16 @@ type adapter struct {
 	endpoint string
 }
 
+type nmExtPrebidStoredRequest struct {
+	ID string `json:"id"`
+}
+type nmExtPrebid struct {
+	StoredRequest nmExtPrebidStoredRequest `json:"storedrequest"`
+}
+type nextMillJsonExt struct {
+	Prebid nmExtPrebid `json:"prebid"`
+}
+
 //MakeRequests prepares request information for prebid-server core
 func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	resImps, err := getImpressionsInfo(request.Imp)
@@ -86,16 +96,6 @@ func (adapter *adapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidReques
 		Headers: headers}, nil
 }
 
-type nmExtPrebidStoredRequest struct {
-	ID string `json:"id"`
-}
-type nmExtPrebid struct {
-	Storedrequest nmExtPrebidStoredRequest `json:"storedrequest"`
-}
-type nextMillJsonExt struct {
-	Prebid nmExtPrebid `json:"prebid"`
-}
-
 func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ImpExtNextMillennium) *openrtb2.BidRequest {
 	placementID := params.PlacementID
 
@@ -121,7 +121,7 @@ func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext
 		placementID = fmt.Sprintf("g%s;%s;%s", params.GroupID, size, domain)
 	}
 	ext := nextMillJsonExt{}
-	ext.Prebid.Storedrequest.ID = placementID
+	ext.Prebid.StoredRequest.ID = placementID
 	jsonExt, err := json.Marshal(ext)
 	if err != nil {
 		return prebidBidRequest
