@@ -344,12 +344,12 @@ func (t *TCF2) PurposeEnforced(purpose consentconstants.Purpose) (value bool) {
 	return t.PurposeConfigs[purpose].EnforcePurpose
 }
 
-// PurposeEnforcementType
-func (t *TCF2) PurposeEnforcementType(purpose consentconstants.Purpose) (value string) {
+// PurposeEnforcementAlgo
+func (t *TCF2) PurposeEnforcementAlgo(purpose consentconstants.Purpose) (value string) {
 	if t.PurposeConfigs[purpose] == nil {
 		return TCF2FullEnforcement
 	}
-	return t.PurposeConfigs[purpose].EnforcePurpose
+	return t.PurposeConfigs[purpose].EnforceAlgo
 }
 
 // PurposeEnforcingVendors checks if enforcing vendors is turned on for a given purpose. With enforcing vendors

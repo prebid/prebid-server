@@ -193,7 +193,7 @@ func (p *permissionsImpl) allowID(bidder openrtb_ext.BidderName, consentMeta tcf
 		purpose := consentconstants.Purpose(i)
 		enforcer := p.getPurposeEnforcer(purpose, bidder, true) //TODO: true value should be set based on the value of p.VendorList
 
-		if enforcer.PurposeEnforced() && enforcer.LegalBasis(vendorInfo, bidder, consentMeta) {
+		if p.cfg.PurposeEnforced(purpose) && enforcer.LegalBasis(vendorInfo, bidder, consentMeta) {
 			return true
 		}
 	}
@@ -209,7 +209,8 @@ func (p *permissionsImpl) getPurposeEnforcer(purpose consentconstants.Purpose, b
 
 	cfg := purposeConfig{
 		PurposeID:                  purpose,
-		EnforcePurpose:             p.cfg.PurposeEnforcementType(purpose),
+		EnforceAlgo:                p.cfg.PurposeEnforcementAlgo(purpose),
+		EnforcePurpose:             p.cfg.PurposeEnforced(purpose),
 		EnforceVendors:             p.cfg.PurposeEnforcingVendors(purpose),
 		VendorExceptionMap:         p.cfg.PurposeVendorExceptions(purpose),
 		BasicEnforcementVendorsMap: p.cfg.BasicEnforcementVendors(),
@@ -220,7 +221,7 @@ func (p *permissionsImpl) getPurposeEnforcer(purpose consentconstants.Purpose, b
 		basicEnforcementVendor = false
 	}
 
-	downgraded := p.isDowngraded(cfg.EnforcePurpose, basicEnforcementVendor, haveGVL)
+	downgraded := p.isDowngraded(cfg.EnforceAlgo, basicEnforcementVendor, haveGVL)
 	enforcer := NewPurposeEnforcer(cfg, downgraded)
 
 	//cache the enforcer
@@ -230,17 +231,11 @@ func (p *permissionsImpl) getPurposeEnforcer(purpose consentconstants.Purpose, b
 	return enforcer
 }
 
-func (p *permissionsImpl) isDowngraded(enforcePurpose string, basicEnforcementVendor bool, haveGVL bool) bool {
-	if enforcePurpose == TCF2FullEnforcement && basicEnforcementVendor {
+func (p *permissionsImpl) isDowngraded(enforceAlgo string, basicEnforcementVendor bool, haveGVL bool) bool {
+	if enforceAlgo == TCF2FullEnforcement && basicEnforcementVendor {
 		return true
 	}
-	if enforcePurpose == TCF2FullEnforcement && !haveGVL {
-		return true
-	}
-	// When no enforcement algorithm has been specified, we are not enforcing the purpose which resorts to using the full algorithm by default
-	// resulting in publisher restriction checks and possible vendor checks if we are enforcing vendors for the purpose. If the GVL is not
-	// available though, we need to drop down to basic
-	if enforcePurpose == TCF2NoEnforcement && !haveGVL {
+	if enforceAlgo == TCF2FullEnforcement && !haveGVL {
 		return true
 	}
 	return false

@@ -131,19 +131,16 @@ func (a *AccountGDPR) PurposeEnforced(purpose consentconstants.Purpose) (value, 
 	return *a.PurposeConfigs[purpose].EnforcePurpose, true
 }
 
-// PurposeEnforcementType checks if the purpose enforcement type is turned on for a given purpose by first
+// PurposeEnforcementAlgo checks the purpose enforcement algo for a given purpose by first
 // looking at the account settings, and if not set there, defaulting to the host configuration.
-func (a *AccountGDPR) PurposeEnforcementType(purpose consentconstants.Purpose) (value string, exists bool) {
+func (a *AccountGDPR) PurposeEnforcementAlgo(purpose consentconstants.Purpose) (value string, exists bool) {
 	if a.PurposeConfigs[purpose] == nil {
-		return TCF2NoEnforcement, false
+		return TCF2FullEnforcement, false
 	}
-	if a.PurposeConfigs[purpose].EnforcePurpose == TCF2NoEnforcement {
-		return TCF2NoEnforcement, true
-	}
-	if a.PurposeConfigs[purpose].EnforcePurpose == TCF2FullEnforcement {
+	if a.PurposeConfigs[purpose].EnforceAlgo == TCF2FullEnforcement {
 		return TCF2FullEnforcement, true
 	}
-	return TCF2NoEnforcement, false
+	return TCF2FullEnforcement, false
 }
 
 // PurposeEnforcingVendors gets the account level enforce vendors setting for a given purpose returning the value and
