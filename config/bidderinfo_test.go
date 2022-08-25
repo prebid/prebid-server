@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"gopkg.in/yaml.v3"
 	"strings"
 	"testing"
 
@@ -12,11 +13,6 @@ import (
 
 const testInfoFilesPath = "./test/bidder-info"
 const testInvalidInfoFilesPath = "./test/bidder-info-invalid"
-const testSimpleYAML = `
-maintainer:
-  email: "some-email@domain.com"
-gvlVendorID: 42
-`
 const fullBidderYAMLConfig = `
 maintainer:
   email: "some-email@domain.com"
@@ -35,19 +31,6 @@ modifyingVastXmlAllowed: true
 debug:
   allow: true
 gvlVendorID: 42
-userSync:
-  iframe:
-    url: "someURL"
-    userMacro: "aValue"
-  redirect:
-    url: "anotherURL"
-    userMacro: "anotherValue"
-  key: "aKey"
-  supports:
-    - item
-    - item2
-  externalUrl: oneMoreUrl
-  supportCors: true
 experiment:
   adsCert:
     enabled: true
@@ -925,6 +908,18 @@ func TestApplyBidderInfoConfigOverrides(t *testing.T) {
 			givenConfigBidderInfos: BidderInfos{"a": {AppSecret: "AppSecret2", Syncer: &Syncer{Key: "override"}}},
 			expectedBidderInfos:    BidderInfos{"a": {AppSecret: "AppSecret2", Syncer: &Syncer{Key: "override"}}},
 		},
+		{
+			description:            "Don't override EndpointCompression",
+			givenFsBidderInfos:     BidderInfos{"a": {EndpointCompression: "GZIP"}},
+			givenConfigBidderInfos: BidderInfos{"a": {Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos:    BidderInfos{"a": {EndpointCompression: "GZIP", Syncer: &Syncer{Key: "override"}}},
+		},
+		{
+			description:            "Override EndpointCompression",
+			givenFsBidderInfos:     BidderInfos{"a": {EndpointCompression: "GZIP"}},
+			givenConfigBidderInfos: BidderInfos{"a": {EndpointCompression: "LZ77", Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos:    BidderInfos{"a": {EndpointCompression: "LZ77", Syncer: &Syncer{Key: "override"}}},
+		},
 	}
 	for _, test := range testCases {
 		bidderInfos, resultErr := applyBidderInfoConfigOverrides(test.givenConfigBidderInfos, test.givenFsBidderInfos)
@@ -935,14 +930,15 @@ func TestApplyBidderInfoConfigOverrides(t *testing.T) {
 
 func TestReadFullYamlBidderConfig(t *testing.T) {
 	bidder := "someBidder"
-	trueValue := true
-	r := fakeInfoReader{fullBidderYAMLConfig, nil}
-	actualBidderInfo, err := loadBidderInfo(r, map[string]Adapter{strings.ToLower(bidder): {}}, []string{bidder})
+	bidderInf := BidderInfo{}
+	err := yaml.Unmarshal([]byte(fullBidderYAMLConfig), &bidderInf)
+	actualBidderInfo, err := applyBidderInfoConfigOverrides(BidderInfos{bidder: bidderInf}, BidderInfos{bidder: {Syncer: &Syncer{Supports: []string{"iframe"}}}})
+
 	assert.NoError(t, err, "Error wasn't expected")
 
 	expectedBidderInfo := BidderInfos{
 		bidder: {
-			Enabled: true,
+			Disabled: false,
 			Maintainer: &MaintainerInfo{
 				Email: "some-email@domain.com",
 			},
@@ -958,18 +954,7 @@ func TestReadFullYamlBidderConfig(t *testing.T) {
 			Debug:                   &DebugInfo{Allow: true},
 			ModifyingVastXmlAllowed: true,
 			Syncer: &Syncer{
-				Key: "aKey",
-				IFrame: &SyncerEndpoint{
-					URL:       "someURL",
-					UserMacro: "aValue",
-				},
-				Redirect: &SyncerEndpoint{
-					URL:       "anotherURL",
-					UserMacro: "anotherValue",
-				},
-				Supports:    []string{"item", "item2"},
-				SupportCORS: &trueValue,
-				ExternalURL: "oneMoreUrl",
+				Supports: []string{"iframe"},
 			},
 			Experiment:          BidderInfoExperiment{AdsCert: BidderAdsCert{Enabled: true}},
 			EndpointCompression: "GZIP",

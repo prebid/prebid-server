@@ -42,9 +42,9 @@ type BidderInfo struct {
 	XAPI AdapterXAPI `mapstructure:"xapi"`
 
 	// needed for Facebook
-	PlatformID string `mapstructure:"platform_id"`
-	AppSecret  string `mapstructure:"app_secret"`
-	EndpointCompression     string               `yaml:"endpointCompression"` // EndpointCompression determines, if set, the type of compression the bid request will undergo before being sent to the corresponding bid server
+	PlatformID          string `mapstructure:"platform_id"`
+	AppSecret           string `mapstructure:"app_secret"`
+	EndpointCompression string `yaml:"endpointCompression"` // EndpointCompression determines, if set, the type of compression the bid request will undergo before being sent to the corresponding bid server
 
 }
 
@@ -400,6 +400,9 @@ func applyBidderInfoConfigOverrides(configBidderInfos BidderInfos, fsBidderInfos
 			}
 			if bidderInfo.AppSecret == "" && fsBidderCfg.AppSecret != "" {
 				bidderInfo.AppSecret = fsBidderCfg.AppSecret
+			}
+			if bidderInfo.EndpointCompression == "" && fsBidderCfg.EndpointCompression != "" {
+				bidderInfo.EndpointCompression = fsBidderCfg.EndpointCompression
 			}
 
 			// validate and try to apply the legacy usersync_url configuration in attempt to provide
