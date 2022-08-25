@@ -285,7 +285,6 @@ func (t *GDPRTimeouts) ActiveTimeout() time.Duration {
 
 const (
 	TCF2FullEnforcement = "full"
-	TCF2NoEnforcement   = "no"
 )
 
 // TCF2 defines the TCF2 specific configurations for GDPR
