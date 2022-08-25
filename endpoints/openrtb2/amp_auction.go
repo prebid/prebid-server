@@ -588,7 +588,7 @@ func setRegExtGDPR(gdprApplies *bool, req *openrtb2.BidRequest) error {
 
 	gdpr := int8(0)
 	if *gdprApplies {
-		gdpr++
+		gdpr = int8(1)
 	}
 
 	reqWrap := &openrtb_ext.RequestWrapper{BidRequest: req}

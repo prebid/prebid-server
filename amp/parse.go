@@ -43,14 +43,13 @@ type Size struct {
 
 // Policy consent types
 const (
-	ConsentDenied = iota
-	ConsentTCF1
-	ConsentTCF2
-	ConsentUSPrivacy
+	ConsentNone      = 0
+	ConsentTCF1      = 1
+	ConsentTCF2      = 2
+	ConsentUSPrivacy = 3
 )
 
 func ReadPolicy(ampParams Params, req *openrtb2.BidRequest, pbsConfigGDPREnabled bool) (privacy.PolicyWriter, error) {
-
 	if len(ampParams.Consent) == 0 {
 		return privacy.NilPolicyWriter{}, nil
 	}
@@ -64,14 +63,7 @@ func ReadPolicy(ampParams Params, req *openrtb2.BidRequest, pbsConfigGDPREnabled
 		if pbsConfigGDPREnabled {
 			// Even if consent is invalid, we write the consent string to req.user.ext.consent
 			rv = gdpr.ConsentWriter{ampParams.Consent}
-
-			if tcf2.IsConsentV2(ampParams.Consent) {
-				if _, err := tcf2.ParseString(ampParams.Consent); err != nil {
-					errMsg = err.Error()
-				}
-			} else {
-				errMsg = fmt.Sprintf("Consent string '%s' is not a valid TCF2 consent string.", ampParams.Consent)
-			}
+			errMsg = validateTCf2ConsentString(ampParams.Consent)
 		}
 	case ConsentUSPrivacy:
 		if ccpa.ValidateConsent(ampParams.Consent) {
@@ -79,12 +71,18 @@ func ReadPolicy(ampParams Params, req *openrtb2.BidRequest, pbsConfigGDPREnabled
 		} else {
 			errMsg = fmt.Sprintf("Consent string '%s' is not a valid CCPA consent string.", ampParams.Consent)
 		}
-	case ConsentDenied:
-		errMsg = "Consent denied. Consent string ignored."
 	case ConsentTCF1:
 		errMsg = "TCF1 consent is deprecated and no longer supported."
+	case ConsentNone:
+		fallthrough
 	default:
-		errMsg = fmt.Sprintf("Consent '%d' is not recognized as either CCPA or GDPR TCF2.", ampParams.ConsentType)
+		if ccpa.ValidateConsent(ampParams.Consent) {
+			rv = ccpa.ConsentWriter{ampParams.Consent}
+		} else if pbsConfigGDPREnabled && len(validateTCf2ConsentString(ampParams.Consent)) == 0 {
+			rv = gdpr.ConsentWriter{ampParams.Consent}
+		} else {
+			errMsg = fmt.Sprintf("Consent '%s' is not recognized as either CCPA or GDPR TCF2.", ampParams.Consent)
+		}
 	}
 
 	if len(errMsg) > 0 {
@@ -95,6 +93,18 @@ func ReadPolicy(ampParams Params, req *openrtb2.BidRequest, pbsConfigGDPREnabled
 	}
 
 	return rv, warning
+}
+
+// ParseParams parses the AMP parameters from a HTTP request.
+func validateTCf2ConsentString(consent string) string {
+	if tcf2.IsConsentV2(consent) {
+		if _, err := tcf2.ParseString(consent); err != nil {
+			return err.Error()
+		}
+	} else {
+		return fmt.Sprintf("Consent string '%s' is not a valid TCF2 consent string.", consent)
+	}
+	return ""
 }
 
 // ParseParams parses the AMP parameters from a HTTP request.
@@ -144,11 +154,10 @@ func parseInt(value string) int64 {
 }
 
 func parseBoolPtr(value string) *bool {
-	rv, err := strconv.ParseBool(value)
-	if err != nil {
-		return nil
+	if rv, err := strconv.ParseBool(value); err == nil {
+		return &rv
 	}
-	return &rv
+	return nil
 }
 
 func parseMultisize(multisize string) []openrtb2.Format {

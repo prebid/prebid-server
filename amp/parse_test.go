@@ -165,36 +165,86 @@ func TestPrivacyReader(t *testing.T) {
 			},
 		},
 		{
-			groupDesc: "Consent type either unespecified, unrecognized, or TCF1. Expect nil policy writer and a warning",
+			groupDesc: "TCF1",
 			tests: []testCase{
-				{
-					desc: "Consent type denied: expect nil policy writer. Warning is returned",
-					in: testInput{
-						ampParams: Params{Consent: "NOT_CCPA_NOR_GDPR_TCF2", ConsentType: ConsentDenied},
-					},
-					expected: expectedResults{
-						policyWriter: privacy.NilPolicyWriter{},
-						warning:      &errortypes.Warning{Message: "Consent denied. Consent string ignored.", WarningCode: errortypes.InvalidPrivacyConsentWarningCode},
-					},
-				},
 				{
 					desc: "Consent type TCF1: expect nil policy writer. Warning is returned",
 					in: testInput{
-						ampParams: Params{Consent: "NOT_CCPA_NOR_GDPR_TCF2", ConsentType: ConsentTCF1},
+						ampParams: Params{Consent: "VALID_TCF1_CONSENT", ConsentType: ConsentTCF1},
 					},
 					expected: expectedResults{
 						policyWriter: privacy.NilPolicyWriter{},
 						warning:      &errortypes.Warning{Message: "TCF1 consent is deprecated and no longer supported.", WarningCode: errortypes.InvalidPrivacyConsentWarningCode},
 					},
 				},
+			},
+		},
+		{
+			groupDesc: "ConsentNone. In order to be backwards compatible, we'll guess what consent string this is",
+			tests: []testCase{
 				{
-					desc: "Consent type unknown: expect nil policy writer. Warning is returned",
+					desc: "No consent type was specified and invalid consent string provided: expect nil policy writer and a warning",
+					in: testInput{
+						ampParams: Params{Consent: "NOT_CCPA_NOR_GDPR_TCF2"},
+					},
+					expected: expectedResults{
+						policyWriter: privacy.NilPolicyWriter{},
+						warning:      &errortypes.Warning{Message: "Consent 'NOT_CCPA_NOR_GDPR_TCF2' is not recognized as either CCPA or GDPR TCF2.", WarningCode: errortypes.InvalidPrivacyConsentWarningCode},
+					},
+				},
+				{
+					desc: "No consent type specified but query params come with a valid CCPA consent string: expect a CCPA consent writer and no error nor warning",
+					in: testInput{
+						ampParams: Params{Consent: "1YYY"},
+					},
+					expected: expectedResults{
+						policyWriter: ccpa.ConsentWriter{"1YYY"},
+						warning:      nil,
+					},
+				},
+				{
+					desc: "No consent type specified but query params come with a valid TCF2 consent string: expect a CCPA consent writer and no error nor warning",
+					in: testInput{
+						ampParams: Params{Consent: "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA"},
+					},
+					expected: expectedResults{
+						policyWriter: gdpr.ConsentWriter{"CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA"},
+						warning:      nil,
+					},
+				},
+			},
+		},
+		{
+			groupDesc: "Unrecognized consent type. In order to be backwards compatible, we'll guess what consent string type it is",
+			tests: []testCase{
+				{
+					desc: "Unrecognized consent type and invalid consent string: expect nil policy writer and a warning",
 					in: testInput{
 						ampParams: Params{Consent: "NOT_CCPA_NOR_GDPR_TCF2", ConsentType: 101},
 					},
 					expected: expectedResults{
 						policyWriter: privacy.NilPolicyWriter{},
-						warning:      &errortypes.Warning{Message: "Consent '101' is not recognized as either CCPA or GDPR TCF2.", WarningCode: errortypes.InvalidPrivacyConsentWarningCode},
+						warning:      &errortypes.Warning{Message: "Consent 'NOT_CCPA_NOR_GDPR_TCF2' is not recognized as either CCPA or GDPR TCF2.", WarningCode: errortypes.InvalidPrivacyConsentWarningCode},
+					},
+				},
+				{
+					desc: "Unrecognized consent type and a valid CCPA consent string: expect a CCPA consent writer and no error nor warning",
+					in: testInput{
+						ampParams: Params{Consent: "1YYY", ConsentType: 18},
+					},
+					expected: expectedResults{
+						policyWriter: ccpa.ConsentWriter{"1YYY"},
+						warning:      nil,
+					},
+				},
+				{
+					desc: "Unrecognized consent type and a valid TCF2 consent string: expect a CCPA consent writer and no error nor warning",
+					in: testInput{
+						ampParams: Params{Consent: "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA", ConsentType: 18},
+					},
+					expected: expectedResults{
+						policyWriter: gdpr.ConsentWriter{"CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA"},
+						warning:      nil,
 					},
 				},
 			},

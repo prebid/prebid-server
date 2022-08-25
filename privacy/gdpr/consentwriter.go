@@ -38,6 +38,7 @@ func (c ConsentWriter) Write(req *openrtb2.BidRequest) error {
 		if err == nil {
 			req.User.Ext = ext
 		}
+		// Add req.user.gdpr: 0/1 here?
 	}
 
 	return err
