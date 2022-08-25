@@ -164,14 +164,14 @@ type SyncerEndpoint struct {
 	UserMacro string `yaml:"userMacro" mapstructure:"user_macro"`
 }
 
-func ProcessBidderInfos(path string, confBidderInfos BidderInfos) (BidderInfos, []error) {
+func ProcessBidderInfos(path string, configBidderInfos BidderInfos) (BidderInfos, []error) {
 	errs := make([]error, 0)
 	bidderInfos, err := LoadBidderInfoFromDisk(path)
 	if err != nil {
 		return nil, append(errs, fmt.Errorf("Unable to load bidderconfigs %v", err))
 	}
-	if len(confBidderInfos) > 0 {
-		bidderInfos, err = applyBidderInfoConfigOverrides(confBidderInfos, bidderInfos)
+	if len(configBidderInfos) > 0 {
+		bidderInfos, err = applyBidderInfoConfigOverrides(configBidderInfos, bidderInfos)
 		if err != nil {
 			return nil, append(errs, err)
 		}
@@ -197,7 +197,7 @@ func loadBidderInfo(path string) (BidderInfos, error) {
 
 	for _, bidderConfig := range bidderConfigs {
 		if bidderConfig.IsDir() {
-			continue //or throw an error?
+			continue //ignore directories
 		}
 		fileName := bidderConfig.Name()
 		filePath := fmt.Sprintf("%v/%v", path, fileName)
@@ -218,19 +218,19 @@ func loadBidderInfo(path string) (BidderInfos, error) {
 	return infos, nil
 }
 
-// ToGVLVendorIDMap transforms a BidderInfos object to a map of bidder names to GVL id. Disabled
-// bidders are omitted from the result.
+// ToGVLVendorIDMap transforms a BidderInfos object to a map of bidder names to GVL id.
+// Disabled bidders are omitted from the result.
 func (infos BidderInfos) ToGVLVendorIDMap() map[openrtb_ext.BidderName]uint16 {
-	m := make(map[openrtb_ext.BidderName]uint16, len(infos))
+	gvlVendorIds := make(map[openrtb_ext.BidderName]uint16, len(infos))
 	for name, info := range infos {
 		if !info.Disabled && info.GVLVendorID != 0 {
-			m[openrtb_ext.BidderName(name)] = info.GVLVendorID
+			gvlVendorIds[openrtb_ext.BidderName(name)] = info.GVLVendorID
 		}
 	}
-	return m
+	return gvlVendorIds
 }
 
-// vlidateBidderInfos validates bidder endpoint, info and syncer data
+// validateBidderInfos validates bidder endpoint, info and syncer data
 func validateBidderInfos(bidderInfos BidderInfos) []error {
 	errs := make([]error, 0, 0)
 	for bidderName, bidder := range bidderInfos {
@@ -363,10 +363,8 @@ func validateSyncer(bidderInfo BidderInfo) error {
 
 func applyBidderInfoConfigOverrides(configBidderInfos BidderInfos, fsBidderInfos BidderInfos) (BidderInfos, error) {
 	for bidderName, bidderInfo := range configBidderInfos {
-		// bidder name from bidderInfos is case-sensitive, but bidder name from adaptersCfg
-		// is always expressed as lower case. need to adapt for the difference here.
-		if fsBidderCfg, exists := fsBidderInfos[strings.ToLower(bidderName)]; exists {
-			bidderInfo.Syncer = fsBidderCfg.Syncer.Override(bidderInfo.Syncer)
+		if fsBidderCfg, exists := fsBidderInfos[bidderName]; exists {
+			bidderInfo.Syncer = bidderInfo.Syncer.Override(fsBidderCfg.Syncer)
 
 			if bidderInfo.Endpoint == "" && len(fsBidderCfg.Endpoint) > 0 {
 				bidderInfo.Endpoint = fsBidderCfg.Endpoint
@@ -406,29 +404,29 @@ func applyBidderInfoConfigOverrides(configBidderInfos BidderInfos, fsBidderInfos
 			// an easier upgrade path. be warned, this will break if the bidder adds a second syncer
 			// type and will eventually be removed after we've given hosts enough time to upgrade to
 			// the new config.
-			if fsBidderCfg.UserSyncURL != "" {
-				if bidderInfo.Syncer == nil {
+			if bidderInfo.UserSyncURL != "" {
+				if fsBidderCfg.Syncer == nil {
 					return nil, fmt.Errorf("adapters.%s.usersync_url cannot be applied, bidder does not define a user sync", strings.ToLower(bidderName))
 				}
 
 				endpointsCount := 0
 				if bidderInfo.Syncer.IFrame != nil {
-					bidderInfo.Syncer.IFrame.URL = fsBidderCfg.UserSyncURL
+					bidderInfo.Syncer.IFrame.URL = bidderInfo.UserSyncURL
 					endpointsCount++
 				}
 				if bidderInfo.Syncer.Redirect != nil {
-					bidderInfo.Syncer.Redirect.URL = fsBidderCfg.UserSyncURL
+					bidderInfo.Syncer.Redirect.URL = bidderInfo.UserSyncURL
 					endpointsCount++
 				}
 
 				// use Supports as a hint if there are no good defaults provided
 				if endpointsCount == 0 {
 					if sliceutil.ContainsStringIgnoreCase(bidderInfo.Syncer.Supports, "iframe") {
-						bidderInfo.Syncer.IFrame = &SyncerEndpoint{URL: fsBidderCfg.UserSyncURL}
+						bidderInfo.Syncer.IFrame = &SyncerEndpoint{URL: bidderInfo.UserSyncURL}
 						endpointsCount++
 					}
 					if sliceutil.ContainsStringIgnoreCase(bidderInfo.Syncer.Supports, "redirect") {
-						bidderInfo.Syncer.Redirect = &SyncerEndpoint{URL: fsBidderCfg.UserSyncURL}
+						bidderInfo.Syncer.Redirect = &SyncerEndpoint{URL: bidderInfo.UserSyncURL}
 						endpointsCount++
 					}
 				}
