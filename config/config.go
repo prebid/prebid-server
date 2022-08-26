@@ -1093,6 +1093,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.kadenai.endpoint", "https://cplb.rtb-dsp.com/bid_request/94021")
 	v.SetDefault("adapters.liftoff.disabled", true)
 	v.SetDefault("adapters.liftoff.endpoint", "https://tapjoy-rtb.liftoff.io/tapjoy/bid")
+	v.SetDefault("adapters.mintegral.disabled", true)
+	v.SetDefault("adapters.mintegral.endpoint", "https://vgrtb.mobvista.com/tapjoy_request")
 	v.SetDefault("adapters.moloco.disabled", true)
 	v.SetDefault("adapters.moloco.endpoint", "https://bidfnt-us.adsmoloco.com/tapjoy")
 	v.SetDefault("adapters.operaads.disabled", true)

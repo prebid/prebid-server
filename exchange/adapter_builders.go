@@ -146,6 +146,7 @@ import (
 	jampp "github.com/prebid/prebid-server/adapters/tjx_jampp"
 	kadenai "github.com/prebid/prebid-server/adapters/tjx_kadenai"
 	liftoff "github.com/prebid/prebid-server/adapters/tjx_liftoff"
+	mintegral "github.com/prebid/prebid-server/adapters/tjx_mintegral"
 	moloco "github.com/prebid/prebid-server/adapters/tjx_moloco"
 	operaads "github.com/prebid/prebid-server/adapters/tjx_operaads"
 	pangle "github.com/prebid/prebid-server/adapters/tjx_pangle"
@@ -260,6 +261,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderMediafuse:         adtelligent.Builder,
 		openrtb_ext.BidderMedianet:          medianet.Builder,
 		openrtb_ext.BidderMgid:              mgid.Builder,
+		openrtb_ext.BidderMintegral:         mintegral.Builder,
 		openrtb_ext.BidderMobfoxpb:          mobfoxpb.Builder,
 		openrtb_ext.BidderMobileFuse:        mobilefuse.Builder,
 		openrtb_ext.BidderMoloco:            moloco.Builder,

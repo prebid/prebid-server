@@ -67,7 +67,7 @@ configMapGenerator:
 
       # isx values
       - PBS_ADAPTERS_ISX_DISABLED="false"
-      - PBS_ADAPTERS_ISX_ENDPOINT="http://tpe-prebid-service-mocks.default.svc.cluster.local/isx_givemeads"
+      - PBS_ADAPTERS_ISX_XAPI_ENDPOINT_US_EAST="http://tpe-prebid-service-mocks.default.svc.cluster.local/isx_givemeads"
 
       # kaden.ai values
       - PBS_ADAPTERS_KADENAI_DISABLED="false"
@@ -78,6 +78,10 @@ configMapGenerator:
       - PBS_ADAPTERS_LIFTOFF_XAPI_ENDPOINT_US_EAST="http://tpe-prebid-service-mocks.default.svc.cluster.local/givemeads"
       - PBS_ADAPTERS_LIFTOFF_XAPI_ENDPOINT_EU="http://tpe-prebid-service-mocks.default.svc.cluster.local/givemeads"
       - PBS_ADAPTERS_LIFTOFF_XAPI_ENDPOINT_APAC="http://tpe-prebid-service-mocks.default.svc.cluster.local/givemeads"
+
+      # mintegral values
+      - PBS_ADAPTERS_MINTEGRAL_DISABLED="false"
+      - PBS_ADAPTERS_MINTEGRAL_XAPI_ENDPOINT_SG="http://tpe-prebid-service-mocks.default.svc.cluster.local/mintegral_givemeads"
 
       # moloco values
       - PBS_ADAPTERS_MOLOCO_DISABLED="false"
