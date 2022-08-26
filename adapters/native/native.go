@@ -108,8 +108,14 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	var errors []error
 	var onePointTwoImps = make([]impOutbound, 0, len(request.Imp))
 	var onePointZeroImps = make([]impOutbound, 0, len(request.Imp))
-
+	printJson(request)
 	// site ext is used in all requests
+	if request.Site == nil {
+		errors = append(errors, &errortypes.BadInput{
+			Message: "No site details",
+		})
+		return nil, errors
+	}
 	var siteExt siteExt
 	if err := json.Unmarshal(request.Site.Ext, &siteExt); err != nil {
 		errors = append(errors, &errortypes.BadInput{
@@ -316,7 +322,6 @@ type rubiconBidResponse struct {
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-
 	if responseData.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -339,7 +344,6 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	if err := json.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
-
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
 	bidResponse.Currency = response.Cur
 	var errors []error
@@ -359,18 +363,18 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 				errors = append(errors, err)
 			}
 
-			var newBid2 openrtb2.Bid
-			if err := json.Unmarshal(bidString, &newBid2); err != nil {
+			var newBid openrtb2.Bid
+			if err := json.Unmarshal(bidString, &newBid); err != nil {
 				errors = append(errors, err)
 			}
-			newBid2.AdM = string(admString)
+			newBid.AdM = string(admString)
 
-			bidExt, err := json.MarshalIndent(bid.Ext, "", "  ")
+			bidExt, err := json.Marshal(bid.Ext)
 			if err != nil {
 				errors = append(errors, err)
 				return nil, errors
 			}
-			newBid2.Ext = bidExt
+			newBid.Ext = bidExt
 
 			bid.AdM = string(admString)
 
@@ -380,7 +384,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 				continue
 			}
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     &newBid2,
+				Bid:     &newBid,
 				BidType: bidType,
 			})
 		}

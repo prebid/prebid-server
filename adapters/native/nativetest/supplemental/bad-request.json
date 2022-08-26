@@ -13,36 +13,13 @@
         }
       }]
   },
-  "httpCalls": [
+  "expectedMakeRequestsErrors": [
     {
-      "expectedRequest": {
-        "uri": "https://adx.adform.net/adx/openrtb",
-        "body": {
-          "id": "test-request-id",
-          "imp": [{
-            "ext": {
-              "bidder": {
-                "mid": 12345
-              }
-            },
-            "id": "test-imp-id",
-            "native": {
-              "request": ""
-            },
-            "tagid": "12345"
-          }]
-        }
-      },
-      "mockResponse": {
-        "status": 400
-      }
+      "value": "No site details",
+      "comparison": "literal"
     }
   ],
+  "httpCalls": [],
   "expectedBidResponses": [],
-  "expectedMakeBidsErrors": [ 
-    {
-      "value": "Unexpected status code: 400. Bad request from publisher.",
-      "comparison": "literal" 
-    }
-  ]
+  "expectedMakeBidsErrors": []
 }

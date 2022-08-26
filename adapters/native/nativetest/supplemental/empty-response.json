@@ -8,15 +8,27 @@
         },
         "ext": {
           "bidder": {
-            "mid": 12345
+            "accountId": 14474,
+            "siteId": 396736,
+            "zoneId": 2216074
           }
         }
-      }]
+        }],
+    "site": {
+      "ext": {}
+    },
+    "device": {
+    },
+    "user": {},
+    "source": {
+      "ext": {}
+    }
   },
+
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://adx.adform.net/adx/openrtb",
+        "uri": "https://exapi-eu.rubiconproject.com/a/api/exchange.json",
         "body": {
           "id": "test-request-id",
           "imp": [{

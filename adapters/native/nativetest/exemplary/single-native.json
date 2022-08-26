@@ -1,100 +1,805 @@
 {
   "mockBidRequest": {
-    "id": "test-request-id",
-    "imp": [{
-      "id": "test-imp-id",
-      "ext": {
-        "bidder": {
-          "mid": "828782"
+    "id": "9b56bc20-9eb1-4fc8-820f-78963fcdba13",
+    "imp": [
+      {
+        "id": "2",
+        "native": {
+          "request": "{\"context\":1,\"plcmttype\":1,\"assets\":[{\"id\":0,\"img\":{\"type\":3,\"w\":360,\"h\":360}},{\"id\":1,\"required\":1,\"title\":{\"len\":1000}},{\"id\":2,\"data\":{\"type\":1}},{\"id\":3,\"data\":{\"type\":2}},{\"id\":4,\"img\":{\"type\":1,\"w\":75,\"h\":75}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1]}]}",
+          "ver": "1.2"
+        },
+        "ext": {
+          "bidder": {
+            "accountId": 14474,
+            "siteId": 396736,
+            "zoneId": 2216074
+          },
+          "data": {
+            "pbadslot": "2"
+          },
+          "tid": "9b56bc20-9eb1-4fc8-820f-78963fcdba13"
+        }
+      }
+    ],
+    "site": {
+      "name": "kitco",
+      "domain": "127.0.0.1:5500",
+      "cat": [
+        "IAB13",
+        "IAB12",
+        "IAB3"
+      ],
+      "page": "http://www.kitco.com/finance/",
+      "ref": "http://127.0.0.1:5500/testing-files/pbs.html?pbjs_debug=true",
+      "publisher": {
+        "id": "1",
+        "domain": "127.0.0.1:5500",
+        "ext": {
+          "rp": {
+            "account_id": 14474
+          }
         }
       },
-      "native": {
-        "request": "{json string}",
-        "ver": "1.2"
+      "keywords": "marketviews, retirement",
+      "ext": {
+        "rp": {
+          "site_id": 396736
+        },
+        "amp": 0
       }
-    }],
-    "site": {
-      "publisher": {
-        "id": "1"
-      },
-      "page": "some-page-url"
     },
     "device": {
-      "w": 1920,
-      "h": 800
-    }
-  },
-  "httpCalls": [{
-    "expectedRequest": {
-      "uri": "https://adx.adform.net/adx/openrtb",
-      "body": {
-        "id": "test-request-id",
-        "imp": [{
-          "id": "test-imp-id",
-          "ext": {
-            "bidder": {
-              "mid": "828782"
-            }
-          },
-          "native": {
-            "request": "{json string}",
-            "ver": "1.2"
-          },
-          "tagid": "828782"
-        }],
-        "site": {
-          "publisher": {
-            "id": "1"
-          },
-          "page": "some-page-url"
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36",
+      "ip": "75.54.23.3",
+      "h": 969,
+      "w": 948
+    },
+    "user": {
+      "buyeruid": "L5QJF35F-1O-MBBY",
+      "ext": {
+        "consent": "CO-bTt7O-bTt7AZABCENBECsAP_AAP_AACiQHKQAYAAgcoBykAGAAIHKAAA",
+        "eids": [
+          {
+            "source": "pubcid.org",
+            "uids": [
+              {
+                "id": "0330efcd-f45b-415c-86d0-d6c34b2251d2",
+                "atype": 1
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "at": 1,
+    "tmax": 1000,
+    "source": {
+      "tid": "9b56bc20-9eb1-4fc8-820f-78963fcdba13",
+      "ext": {"schain":{"ver":"1.0","complete":1,"nodes":[{"asi":"dianomi.com","sid":"443","hp":1,"rid":"9b56bc20-9eb1-4fc8-820f-78963fcdba13"}]}}
+    },
+    "regs": {
+      "ext": {
+        "gdpr": 0,
+        "us_privacy": "1---"
+      }
+    },
+    "ext": {
+      "prebid": {
+        "channel": {
+          "name": "pbjs",
+          "version": "v7.7.0-pre"
         },
-        "device": {
-          "w": 1920,
-          "h": 800
+        "debug": true,
+        "targeting": {
+          "pricegranularity": {
+            "precision": 2,
+            "ranges": [
+              {
+                "min": 0,
+                "max": 20,
+                "increment": 0.1
+              }
+            ]
+          },
+          "includewinners": true,
+          "includebidderkeys": false,
+          "includebrandcategory": null,
+          "includeformat": false,
+          "durationrangesec": null,
+          "preferdeals": false
         }
       }
+    }
+  },
+  "httpCalls": [
+    {"expectedRequest": {
+        "uri": "https://exapi-eu.rubiconproject.com/a/api/exchange.json",
+        "body": {
+          "id": "9b56bc20-9eb1-4fc8-820f-78963fcdba13",
+          "site": {
+              "name": "kitco",
+              "domain": "127.0.0.1:5500",
+              "cat": [
+                  "IAB13",
+                  "IAB12",
+                  "IAB3"
+              ],
+              "page": "http://www.kitco.com/finance/",
+              "ref": "http://127.0.0.1:5500/testing-files/pbs.html?pbjs_debug=true",
+              "publisher": {
+                  "id": "1",
+                  "domain": "127.0.0.1:5500",
+                  "ext": {
+                      "rp": {
+                          "account_id": 14474
+                      }
+                  }
+              },
+              "keywords": "marketviews, retirement",
+              "ext": {
+                  "rp": {
+                      "site_id": 396736
+                  },
+                  "amp": 0
+              }
+          },
+          "device": {
+              "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36",
+              "ip": "75.54.23.3",
+              "h": 969,
+              "w": 948
+          },
+          "user": {
+              "buyeruid": "L5QJF35F-1O-MBBY",
+              "ext": {
+                  "consent": "CO-bTt7O-bTt7AZABCENBECsAP_AAP_AACiQHKQAYAAgcoBykAGAAIHKAAA",
+                  "eids": [
+                      {
+                          "source": "pubcid.org",
+                          "uids": [
+                              {
+                                  "id": "0330efcd-f45b-415c-86d0-d6c34b2251d2",
+                                  "atype": 1
+                              }
+                          ]
+                      }
+                  ]
+              }
+          },
+          "tmax": 1000,
+          "source": {
+              "tid": "9b56bc20-9eb1-4fc8-820f-78963fcdba13",
+              "ext": {
+                  "schain": {
+                      "ver": "1.0",
+                      "complete": 1,
+                      "nodes": [
+                          {
+                              "asi": "dianomi.com",
+                              "sid": "443",
+                              "hp": 1,
+                              "rid": "9b56bc20-9eb1-4fc8-820f-78963fcdba13"
+                          }
+                      ]
+                  }
+              }
+          },
+          "regs": {
+              "ext": {
+                  "gdpr": 0,
+                  "us_privacy": "1---"
+              }
+          },
+          "imp": [
+              {
+                  "id": "2",
+                  "tagid": "2216074",
+                  "native": {
+                      "requestobj": {
+                          "ver": "1.0",
+                          "layout": 3,
+                          "context": 1,
+                          "plcmttype": 1,
+                          "assets": [
+                              {
+                                  "id": 0,
+                                  "img": {
+                                      "type": 3,
+                                      "w": 360,
+                                      "h": 360
+                                  }
+                              },
+                              {
+                                  "id": 1,
+                                  "required": 1,
+                                  "title": {
+                                      "len": 1000
+                                  }
+                              },
+                              {
+                                  "id": 2,
+                                  "data": {
+                                      "type": 1
+                                  }
+                              },
+                              {
+                                  "id": 3,
+                                  "data": {
+                                      "type": 2
+                                  }
+                              },
+                              {
+                                  "id": 4,
+                                  "img": {
+                                      "type": 1,
+                                      "w": 75,
+                                      "h": 75
+                                  }
+                              }
+                          ]
+                      },
+                      "ver": "1.0",
+                      "api": [
+                          1,
+                          2,
+                          3,
+                          4,
+                          5,
+                          6,
+                          7
+                      ]
+                  },
+                  "ext": {
+                      "rp": {
+                          "target": {
+                              "context": null,
+                              "test": null
+                          },
+                          "zone_id": 2216074
+                      }
+                  },
+                  "bidfloor": 0.01
+              }
+          ]
+      },
+        "headers": {
+            "Accept": [
+                "application/json"
+            ],
+            "Content-Type": [
+                "application/json;charset=utf-8"
+            ],
+
+            "Authorization": [
+                 "Basic Og=="
+               ],
+            "User-Agent": [
+                "prebid-server/1.0"
+            ]
+        },
+        "responsebody": "{\"id\":\"9b56bc20-9eb1-4fc8-820f-78963fcdba13\",\"seatbid\":[{\"bid\":[{\"id\":\"9b56bc20-9eb1-4fc8-820f-78963fcdba13\",\"impid\":\"2\",\"price\":0.0136,\"adomain\":[\"secturasoft.com\"],\"crid\":\"2760:393_500032_544204\",\"ext\":{\"rp\":{\"advid\":3515102,\"mime\":\"application/javascript\",\"adtype\":\"native\",\"size_id\":163}},\"admobject\":{\"native\":{\"ver\":\"1.0\",\"assets\":[{\"id\":1,\"title\":{\"text\":\"Easy-to-Use Estimating Software: SecturaSOFT\"},\"required\":1},{\"id\":3,\"data\":{\"value\":\"Stop using complex tools and outdated spreadsheets. SecturaSOFT can create quotes in a matter of minutes to help you win more business.\"}}],\"link\":{\"url\":\"https://use-gce-sc.r.bidswitch.net/click/4sAM8KIuLTU7nCPD_URRy0KDOXiGtYSbyxgeAw2uOkineWLYTapCxqQ0qWeBrrrOGwqbS_EbDc1twVBkY41vAuzsqyb3B7aMRKMWC9pnxlrHWUXfrlXENThf9HleJ5vBqDxR0P65ibgY6L9TRRoUZNugES-f72jQ_PB58W8BJq-NQvQNiUoOxcCqTmuD4CQFrVj_6yxnHpvQL6MDWUEb8-uElHpniJLvniMTo1hjpQXM8TYNC42Ax9qPDS2MQVex2_QOMpCloP2HAwCG0YocW5OuiGmFf1lUwQwkJOvGAmprbN7hRk5zm5Fpm6fp12vHHpehMg7KRwet9PsaAj5q2_6RwwIICenZP5Nl8YlvLuLkTGk75D8_QMiXcLA_2H61rftwAUe0F1Uu/?click3rd=&lp_iomeej5p=https://secturasoft.com/\",\"clicktrackers\":[\"http://beacon-nf.rubiconproject.com/beacon/v2/t/0/ea28c8d7-36ec-4f7d-973c-931a377b9181/?url=https%3A%2F%2Fuse-gce-sc.r.bidswitch.net%2Fclick%2F4sAM8KIuLTU7nCPD_URRy0KDOXiGtYSbyxgeAw2uOkineWLYTapCxqQ0qWeBrrrOGwqbS_EbDc1twVBkY41vAuzsqyb3B7aMRKMWC9pnxlrHWUXfrlXENThf9HleJ5vBqDxR0P65ibgY6L9TRRoUZNugES-f72jQ_PB58W8BJq-NQvQNiUoOxcCqTmuD4CQFrVj_6yxnHpvQL6MDWUEb8-uElHpniJLvniMTo1hjpQXM8TYNC42Ax9qPDS2MQVex2_QOMpCloP2HAwCG0YocW5OuiGmFf1lUwQwkJOvGAmprbN7hRk5zm5Fpm6fp12vHHpehMg7KRwet9PsaAj5q2_6RwwIICenZP5Nl8YlvLuLkTGk75D8_QMiXcLA_2H61rftwAUe0F1Uu%2F%3Fclick3rd%3D%26lp_iomeej5p%3Dhttps%3A%2F%2Fsecturasoft.com%2F\"]},\"imptrackers\":[\"http://beacon-iad3.rubiconproject.com/beacon/n/ea28c8d7-36ec-4f7d-973c-931a377b9181?oo=0&accountId=14474&siteId=396736&zoneId=2216074&sizeId=163&e=6A1E40E384DA563B0EBCA15F182C77F6EFB872A5FDDBACBFA7C5862B933ECCE02C1AB7C682AA1DFC7542AD6C5F78F23E59018BDF6F2F1144CCB1BCC33939EE407DAB7CA1414BBADA8D3588E1BC3014BE9827D62F902F0BCB32D1B598CD1A001C684B1966AAB7A01F74CBCD3DB07CBF4497F5CD371ADEEC554DF6E5FFD4A1F652757E1B4B5D897B32256F5C010F8DCA19D632E2BDC704F4542887B8B8AA9D1C138400A78019786CCC091BEFDC8E61EB48DD6AD0D0FA03973791C149F551718134\",\"https://ghent-gce-sc.bidswitch.net/imp/1EE856A79F8D7BA1/BSWhttp_A_B_Buse-gce-sc.r.bidswitch.net_Bimp_B4sAM8KIuLTU7nCPD__URRy0KDOXiGtYSbyxgeAw2uOkineWLYTapCxqQ0qWeBrrrOGwqbS__EbDc1twVBkY41vAuzsqyb3B7aMRKMWC9pnxlrHWUXfrlXENThf9HleJ5vBqDxR0P65ibgY6L9TRRoUZNugES-f72jQ__PB58W8BJq-NQvQNiUoOxcCqTmuD4CQFrVj__6yxnHpvQL6MDWUEb8-uElHpniJLvniMTo1hjpQXM8TYNC42Ax9qPDS2MQVex2__QOMpCloP2HAwCG0YocW5OuiGmFf1lUwQwkJOvGAmprbN7hRk5zm5Fpm6fp12vHHpehMg7KRwet9PsaAj5q2__6RwwIICenZP5Nl8YlvLuLkTGk75D8__QMiXcLA__2H61rftwAUe0F1Uu_Bd3TYkF2mdUh1Hl7__SlklfxW__E8G3HGH__Ek5aS5iyVWvYl__yQwIJgzvAQ-JSYwEGGgeT6RPoXfAeIGsTMLDFpixuX2E2P8__pvPZjFay6hHnAGanpS90-PdNN0Nw_B_I_WAUCTION__PRICE_X/erfxOHKF_qR09HBaoknLo1lB2bOs1PhrosSIGbiej-rByCHDSZ5qWLQYWY4g4Xkv3MhSM3GIRSMWr5FujX3LQy7V724MrBwUVf4DMGc9bwl7iQVBus99-Y7ij1Q_tYhe2CDe6udMtTp429pT_P3OnQuLIcls5EmaS_3q1KYoVMJI5m6we1eXZVgGeQz38UUPWNik3gyW2OZ06hR0Bd_j3S8VJ-65m7nj9qr3mzHW8rF8T9B5RXnGu8B_cKwSfAf6wfimOGNJnazekIOUMgwHc2BwbhUVXWctojLqwfSTUvpA9_c0sxmn_oLjNZ1hDy4J6S3GxQqUIMdeS4TLGrQHDYeEw5Q5Hlj6CKtIEcI2qYQQXRvdieZtiGiwb-Si06h02HArsHJVW_ZleJRZHRpTXpEtjaV6EWar9w5ovcbEL0VhJCny1HYcbwYN9Lu1pWY5LPfSi2_TQOU1iJbnbyE1aFK27719p9YiUpom82B3UoUeONtQ6NPcgDKr60VNSWSXlKAv2FepgUM9l235qDCDy16h8DJTkSrRycN93gdn83a9901K0EzASLDzTNLS1yZYcLFRwSHCIjHgFTBVNb5TYMXjqksjgIQE-m8WW0VTVb46ntPfZjN3fUkwXJGgfI1lGYPcgCRC45HL6pwhAnL1xXioBWhn5n7QTCYlqIaOjEMGRX5y6i9MxfzboX8cdl2sEO2vShH35BsLMZGdXLbZ-X_Ong6nHycwa7F9_GthuT-sqGyzduVjPQPdGEfy9sE6_bSUYMNcODx7Aw3__Sr5RJoqxnOTD3cIhfFBRU6yDU4-MXQXSa6i_uPSVD_tiUJfZAF2DDXKSn3_JST-UwUs9_ncU_XOaovaV71CMSr8_ZJUG3MvYSiYVO5cuUOM1DKLiZkt4IOOj4SHwYG4qZG541IKksJQZaKNnP3NgZdgv7H-DE8_WYj3C-a5TzroqRz3Dsl5s-QW6eJ27SV305EWN9HoHvwPoO6Y5hch3W7pXc72aFhVnZ6V-pOBmddsZxDhWmnbkfJRh0UVg_m25tjn1KespLQFr_EumyBA1Y2HJu4-f86j4YlkcrQPoa3cTtQ6TKV9WcLn3cjRwMeIES4Ckp7B8eQT2nfoxsYGvI3e4Im4aUL_VWQsEljTEOjt6-b85p6xiQ/\",\"https://us-east-sync.bidswitch.net/sync?ssp=rubicon&dsp_id=393&imp=1\",\"https://apxl.io/t?acid=b76e15ef-b59f-4f04-b936-ba22854bf518\"],\"jstracker\":\"\"}}}],\"seat\":\"2760:40232:4280:238846\",\"buyer\":\"2760\"}],\"bidid\":\"ea28c8d7-36ec-4f7d-973c-931a377b9181\",\"statuscode\":0}",
+        "status": 200
     },
     "mockResponse": {
       "status": 200,
       "body": {
-        "id": "test-request-id",
-        "seatbid": [{
-          "bid": [{
-            "id": "test-bid-id",
-            "impid": "test-imp-id",
-            "price": 10,
-            "adm": "{json response string}",
-            "adomain": [],
-            "crid": "test-creative-id",
-            "ext": {
-              "prebid": {
-                "type": "native"
-              }
+        "id": "9b56bc20-9eb1-4fc8-820f-78963fcdba13",
+        "seatbid": [
+            {
+                "bid": [
+                    {
+                        "id": "9b56bc20-9eb1-4fc8-820f-78963fcdba13",
+                        "impid": "2",
+                        "price": 0.0136,
+                        "adomain": [
+                            "secturasoft.com"
+                        ],
+                        "crid": "2760:393_500032_544204",
+                        "ext": {
+                            "rp": {
+                                "advid": 3515102,
+                                "mime": "application/javascript",
+                                "adtype": "native",
+                                "size_id": 163
+                            }
+                        },
+                        "admobject": {
+                            "native": {
+                                "ver": "1.0",
+                                "assets": [
+                                    {
+                                        "id": 1,
+                                        "title": {
+                                            "text": "Easy-to-Use Estimating Software: SecturaSOFT"
+                                        },
+                                        "required": 1
+                                    },
+                                    {
+                                        "id": 3,
+                                        "data": {
+                                            "value": "Stop using complex tools and outdated spreadsheets. SecturaSOFT can create quotes in a matter of minutes to help you win more business."
+                                        }
+                                    }
+                                ],
+                                "link": {
+                                    "url": "https://use-gce-sc.r.bidswitch.net/click/4sAM8KIuLTU7nCPD_URRy0KDOXiGtYSbyxgeAw2uOkineWLYTapCxqQ0qWeBrrrOGwqbS_EbDc1twVBkY41vAuzsqyb3B7aMRKMWC9pnxlrHWUXfrlXENThf9HleJ5vBqDxR0P65ibgY6L9TRRoUZNugES-f72jQ_PB58W8BJq-NQvQNiUoOxcCqTmuD4CQFrVj_6yxnHpvQL6MDWUEb8-uElHpniJLvniMTo1hjpQXM8TYNC42Ax9qPDS2MQVex2_QOMpCloP2HAwCG0YocW5OuiGmFf1lUwQwkJOvGAmprbN7hRk5zm5Fpm6fp12vHHpehMg7KRwet9PsaAj5q2_6RwwIICenZP5Nl8YlvLuLkTGk75D8_QMiXcLA_2H61rftwAUe0F1Uu/?click3rd=&lp_iomeej5p=https://secturasoft.com/",
+                                    "clicktrackers": [
+                                        "http://beacon-nf.rubiconproject.com/beacon/v2/t/0/ea28c8d7-36ec-4f7d-973c-931a377b9181/?url=https%3A%2F%2Fuse-gce-sc.r.bidswitch.net%2Fclick%2F4sAM8KIuLTU7nCPD_URRy0KDOXiGtYSbyxgeAw2uOkineWLYTapCxqQ0qWeBrrrOGwqbS_EbDc1twVBkY41vAuzsqyb3B7aMRKMWC9pnxlrHWUXfrlXENThf9HleJ5vBqDxR0P65ibgY6L9TRRoUZNugES-f72jQ_PB58W8BJq-NQvQNiUoOxcCqTmuD4CQFrVj_6yxnHpvQL6MDWUEb8-uElHpniJLvniMTo1hjpQXM8TYNC42Ax9qPDS2MQVex2_QOMpCloP2HAwCG0YocW5OuiGmFf1lUwQwkJOvGAmprbN7hRk5zm5Fpm6fp12vHHpehMg7KRwet9PsaAj5q2_6RwwIICenZP5Nl8YlvLuLkTGk75D8_QMiXcLA_2H61rftwAUe0F1Uu%2F%3Fclick3rd%3D%26lp_iomeej5p%3Dhttps%3A%2F%2Fsecturasoft.com%2F"
+                                    ]
+                                },
+                                "imptrackers": [
+                                    "http://beacon-iad3.rubiconproject.com/beacon/n/ea28c8d7-36ec-4f7d-973c-931a377b9181?oo=0&accountId=14474&siteId=396736&zoneId=2216074&sizeId=163&e=6A1E40E384DA563B0EBCA15F182C77F6EFB872A5FDDBACBFA7C5862B933ECCE02C1AB7C682AA1DFC7542AD6C5F78F23E59018BDF6F2F1144CCB1BCC33939EE407DAB7CA1414BBADA8D3588E1BC3014BE9827D62F902F0BCB32D1B598CD1A001C684B1966AAB7A01F74CBCD3DB07CBF4497F5CD371ADEEC554DF6E5FFD4A1F652757E1B4B5D897B32256F5C010F8DCA19D632E2BDC704F4542887B8B8AA9D1C138400A78019786CCC091BEFDC8E61EB48DD6AD0D0FA03973791C149F551718134",
+                                    "https://ghent-gce-sc.bidswitch.net/imp/1EE856A79F8D7BA1/BSWhttp_A_B_Buse-gce-sc.r.bidswitch.net_Bimp_B4sAM8KIuLTU7nCPD__URRy0KDOXiGtYSbyxgeAw2uOkineWLYTapCxqQ0qWeBrrrOGwqbS__EbDc1twVBkY41vAuzsqyb3B7aMRKMWC9pnxlrHWUXfrlXENThf9HleJ5vBqDxR0P65ibgY6L9TRRoUZNugES-f72jQ__PB58W8BJq-NQvQNiUoOxcCqTmuD4CQFrVj__6yxnHpvQL6MDWUEb8-uElHpniJLvniMTo1hjpQXM8TYNC42Ax9qPDS2MQVex2__QOMpCloP2HAwCG0YocW5OuiGmFf1lUwQwkJOvGAmprbN7hRk5zm5Fpm6fp12vHHpehMg7KRwet9PsaAj5q2__6RwwIICenZP5Nl8YlvLuLkTGk75D8__QMiXcLA__2H61rftwAUe0F1Uu_Bd3TYkF2mdUh1Hl7__SlklfxW__E8G3HGH__Ek5aS5iyVWvYl__yQwIJgzvAQ-JSYwEGGgeT6RPoXfAeIGsTMLDFpixuX2E2P8__pvPZjFay6hHnAGanpS90-PdNN0Nw_B_I_WAUCTION__PRICE_X/erfxOHKF_qR09HBaoknLo1lB2bOs1PhrosSIGbiej-rByCHDSZ5qWLQYWY4g4Xkv3MhSM3GIRSMWr5FujX3LQy7V724MrBwUVf4DMGc9bwl7iQVBus99-Y7ij1Q_tYhe2CDe6udMtTp429pT_P3OnQuLIcls5EmaS_3q1KYoVMJI5m6we1eXZVgGeQz38UUPWNik3gyW2OZ06hR0Bd_j3S8VJ-65m7nj9qr3mzHW8rF8T9B5RXnGu8B_cKwSfAf6wfimOGNJnazekIOUMgwHc2BwbhUVXWctojLqwfSTUvpA9_c0sxmn_oLjNZ1hDy4J6S3GxQqUIMdeS4TLGrQHDYeEw5Q5Hlj6CKtIEcI2qYQQXRvdieZtiGiwb-Si06h02HArsHJVW_ZleJRZHRpTXpEtjaV6EWar9w5ovcbEL0VhJCny1HYcbwYN9Lu1pWY5LPfSi2_TQOU1iJbnbyE1aFK27719p9YiUpom82B3UoUeONtQ6NPcgDKr60VNSWSXlKAv2FepgUM9l235qDCDy16h8DJTkSrRycN93gdn83a9901K0EzASLDzTNLS1yZYcLFRwSHCIjHgFTBVNb5TYMXjqksjgIQE-m8WW0VTVb46ntPfZjN3fUkwXJGgfI1lGYPcgCRC45HL6pwhAnL1xXioBWhn5n7QTCYlqIaOjEMGRX5y6i9MxfzboX8cdl2sEO2vShH35BsLMZGdXLbZ-X_Ong6nHycwa7F9_GthuT-sqGyzduVjPQPdGEfy9sE6_bSUYMNcODx7Aw3__Sr5RJoqxnOTD3cIhfFBRU6yDU4-MXQXSa6i_uPSVD_tiUJfZAF2DDXKSn3_JST-UwUs9_ncU_XOaovaV71CMSr8_ZJUG3MvYSiYVO5cuUOM1DKLiZkt4IOOj4SHwYG4qZG541IKksJQZaKNnP3NgZdgv7H-DE8_WYj3C-a5TzroqRz3Dsl5s-QW6eJ27SV305EWN9HoHvwPoO6Y5hch3W7pXc72aFhVnZ6V-pOBmddsZxDhWmnbkfJRh0UVg_m25tjn1KespLQFr_EumyBA1Y2HJu4-f86j4YlkcrQPoa3cTtQ6TKV9WcLn3cjRwMeIES4Ckp7B8eQT2nfoxsYGvI3e4Im4aUL_VWQsEljTEOjt6-b85p6xiQ/",
+                                    "https://us-east-sync.bidswitch.net/sync?ssp=rubicon&dsp_id=393&imp=1",
+                                    "https://apxl.io/t?acid=b76e15ef-b59f-4f04-b936-ba22854bf518"
+                                ],
+                                "jstracker": ""
+                            }
+                        }
+                    }
+                ],
+                "seat": "2760:40232:4280:238846",
+                "buyer": "2760"
             }
-          }]
-        }],
-        "cur": "USD"
+        ],
+        "bidid": "ea28c8d7-36ec-4f7d-973c-931a377b9181",
+        "statuscode": 0
+    }
+    }
+  },
+    {
+      "expectedRequest":{
+        "uri": "https://exapi-eu.rubiconproject.com/a/api/exchange.json",
+        "body": {
+          "id": "9b56bc20-9eb1-4fc8-820f-78963fcdba13",
+          "site": {
+              "name": "kitco",
+              "domain": "127.0.0.1:5500",
+              "cat": [
+                  "IAB13",
+                  "IAB12",
+                  "IAB3"
+              ],
+              "page": "http://www.kitco.com/finance/",
+              "ref": "http://127.0.0.1:5500/testing-files/pbs.html?pbjs_debug=true",
+              "publisher": {
+                  "id": "1",
+                  "domain": "127.0.0.1:5500",
+                  "ext": {
+                      "rp": {
+                          "account_id": 14474
+                      }
+                  }
+              },
+              "keywords": "marketviews, retirement",
+              "ext": {
+                  "rp": {
+                      "site_id": 396736
+                  },
+                  "amp": 0
+              }
+          },
+          "device": {
+              "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36",
+              "ip": "75.54.23.3",
+              "h": 969,
+              "w": 948
+          },
+          "user": {
+              "buyeruid": "L5QJF35F-1O-MBBY",
+              "ext": {
+                  "consent": "CO-bTt7O-bTt7AZABCENBECsAP_AAP_AACiQHKQAYAAgcoBykAGAAIHKAAA",
+                  "eids": [
+                      {
+                          "source": "pubcid.org",
+                          "uids": [
+                              {
+                                  "id": "0330efcd-f45b-415c-86d0-d6c34b2251d2",
+                                  "atype": 1
+                              }
+                          ]
+                      }
+                  ]
+              }
+          },
+          "at": 1,
+          "tmax": 1000,
+          "source": {
+              "tid": "9b56bc20-9eb1-4fc8-820f-78963fcdba13",
+              "ext": {
+                  "schain": {
+                      "ver": "1.0",
+                      "complete": 1,
+                      "nodes": [
+                          {
+                              "asi": "dianomi.com",
+                              "sid": "443",
+                              "hp": 1,
+                              "rid": "9b56bc20-9eb1-4fc8-820f-78963fcdba13"
+                          }
+                      ]
+                  }
+              }
+          },
+          "regs": {
+              "ext": {
+                  "gdpr": 0,
+                  "us_privacy": "1---"
+              }
+          },
+          "ext": {
+              "prebid": {
+                  "channel": {
+                      "name": "pbjs",
+                      "version": "v7.7.0-pre"
+                  },
+                  "debug": true,
+                  "targeting": {
+                      "pricegranularity": {
+                          "precision": 2,
+                          "ranges": [
+                              {
+                                  "min": 0,
+                                  "max": 20,
+                                  "increment": 0.1
+                              }
+                          ]
+                      },
+                      "includewinners": true,
+                      "includebidderkeys": false,
+                      "includebrandcategory": null,
+                      "includeformat": false,
+                      "durationrangesec": null,
+                      "preferdeals": false
+                  }
+              }
+          },
+          "imp": [
+              {
+                  "id": "2",
+                  "tagid": "2216074",
+                  "native": {
+                      "requestobj": {
+                          "context": 1,
+                          "plcmttype": 1,
+                          "assets": [
+                              {
+                                  "id": 0,
+                                  "img": {
+                                      "type": 3,
+                                      "w": 360,
+                                      "h": 360
+                                  }
+                              },
+                              {
+                                  "id": 1,
+                                  "required": 1,
+                                  "title": {
+                                      "len": 1000
+                                  }
+                              },
+                              {
+                                  "id": 2,
+                                  "data": {
+                                      "type": 1
+                                  }
+                              },
+                              {
+                                  "id": 3,
+                                  "data": {
+                                      "type": 2
+                                  }
+                              },
+                              {
+                                  "id": 4,
+                                  "img": {
+                                      "type": 1,
+                                      "w": 75,
+                                      "h": 75
+                                  }
+                              }
+                          ],
+                          "eventtrackers": [
+                              {
+                                  "event": 1,
+                                  "methods": [
+                                      1
+                                  ]
+                              }
+                          ]
+                      },
+                      "ver": "1.2",
+                      "api": [
+                          1,
+                          2,
+                          3,
+                          4,
+                          5,
+                          6,
+                          7
+                      ]
+                  },
+                  "ext": {
+                      "rp": {
+                          "target": {
+                              "context": null,
+                              "test": null
+                          },
+                          "zone_id": 2216074
+                      }
+                  },
+                  "bidfloor": 0.01
+              }
+          ]
+      },
+        "headers": {
+            "Accept": [
+                "application/json"
+            ],
+            "Content-Type": [
+                "application/json;charset=utf-8"
+            ],
+            "Authorization": [
+              "Basic Og=="
+            ],
+            "User-Agent": [
+                "prebid-server/1.0"
+            ]
+        },
+        "responsebody": "{\"id\":\"9b56bc20-9eb1-4fc8-820f-78963fcdba13\",\"seatbid\":[{\"bid\":[],\"seat\":\"2760:40232:4280:238846\",\"buyer\":\"2760\"}],\"bidid\":\"301f8626-62d9-484f-8d31-1e5d83007fb9\",\"statuscode\":0,\"nbr\":2}",
+        "status": 200
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "9b56bc20-9eb1-4fc8-820f-78963fcdba13",
+          "seatbid": [
+              {
+                  "bid": [],
+                  "seat": "2760:40232:4280:238846",
+                  "buyer": "2760"
+              }
+          ],
+          "bidid": "301f8626-62d9-484f-8d31-1e5d83007fb9",
+          "statuscode": 0,
+          "nbr": 2
+      }
       }
     }
-  }],
-  "expectedBidResponses": [{
-    "currency": "USD",
-    "bids": [
-      {
-        "bid": {
-          "id": "test-bid-id",
-          "impid": "test-imp-id",
-          "price": 10,
-          "adm": "{json response string}",
-          "crid": "test-creative-id",
-          "ext": {
-            "prebid": {
-              "type": "native"
+],
+  "expectedBidResponses": [
+    {
+      "id": "40c540ae-f998-4279-a862-8f39e0555f2c",
+      "bids": [
+        {
+          "bid": 
+            
+{
+  "id": "9b56bc20-9eb1-4fc8-820f-78963fcdba13",
+  "impid": "2",
+  "price": 0.0136,
+  "adm": "{\"ver\":\"1.0\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"text\":\"Easy-to-Use Estimating Software: SecturaSOFT\"}},{\"id\":3,\"data\":{\"value\":\"Stop using complex tools and outdated spreadsheets. SecturaSOFT can create quotes in a matter of minutes to help you win more business.\"}}],\"link\":{\"url\":\"https://use-gce-sc.r.bidswitch.net/click/4sAM8KIuLTU7nCPD_URRy0KDOXiGtYSbyxgeAw2uOkineWLYTapCxqQ0qWeBrrrOGwqbS_EbDc1twVBkY41vAuzsqyb3B7aMRKMWC9pnxlrHWUXfrlXENThf9HleJ5vBqDxR0P65ibgY6L9TRRoUZNugES-f72jQ_PB58W8BJq-NQvQNiUoOxcCqTmuD4CQFrVj_6yxnHpvQL6MDWUEb8-uElHpniJLvniMTo1hjpQXM8TYNC42Ax9qPDS2MQVex2_QOMpCloP2HAwCG0YocW5OuiGmFf1lUwQwkJOvGAmprbN7hRk5zm5Fpm6fp12vHHpehMg7KRwet9PsaAj5q2_6RwwIICenZP5Nl8YlvLuLkTGk75D8_QMiXcLA_2H61rftwAUe0F1Uu/?click3rd=\\u0026lp_iomeej5p=https://secturasoft.com/\",\"clicktrackers\":[\"http://beacon-nf.rubiconproject.com/beacon/v2/t/0/ea28c8d7-36ec-4f7d-973c-931a377b9181/?url=https%3A%2F%2Fuse-gce-sc.r.bidswitch.net%2Fclick%2F4sAM8KIuLTU7nCPD_URRy0KDOXiGtYSbyxgeAw2uOkineWLYTapCxqQ0qWeBrrrOGwqbS_EbDc1twVBkY41vAuzsqyb3B7aMRKMWC9pnxlrHWUXfrlXENThf9HleJ5vBqDxR0P65ibgY6L9TRRoUZNugES-f72jQ_PB58W8BJq-NQvQNiUoOxcCqTmuD4CQFrVj_6yxnHpvQL6MDWUEb8-uElHpniJLvniMTo1hjpQXM8TYNC42Ax9qPDS2MQVex2_QOMpCloP2HAwCG0YocW5OuiGmFf1lUwQwkJOvGAmprbN7hRk5zm5Fpm6fp12vHHpehMg7KRwet9PsaAj5q2_6RwwIICenZP5Nl8YlvLuLkTGk75D8_QMiXcLA_2H61rftwAUe0F1Uu%2F%3Fclick3rd%3D%26lp_iomeej5p%3Dhttps%3A%2F%2Fsecturasoft.com%2F\"]},\"imptrackers\":[\"http://beacon-iad3.rubiconproject.com/beacon/n/ea28c8d7-36ec-4f7d-973c-931a377b9181?oo=0\\u0026accountId=14474\\u0026siteId=396736\\u0026zoneId=2216074\\u0026sizeId=163\\u0026e=6A1E40E384DA563B0EBCA15F182C77F6EFB872A5FDDBACBFA7C5862B933ECCE02C1AB7C682AA1DFC7542AD6C5F78F23E59018BDF6F2F1144CCB1BCC33939EE407DAB7CA1414BBADA8D3588E1BC3014BE9827D62F902F0BCB32D1B598CD1A001C684B1966AAB7A01F74CBCD3DB07CBF4497F5CD371ADEEC554DF6E5FFD4A1F652757E1B4B5D897B32256F5C010F8DCA19D632E2BDC704F4542887B8B8AA9D1C138400A78019786CCC091BEFDC8E61EB48DD6AD0D0FA03973791C149F551718134\",\"https://ghent-gce-sc.bidswitch.net/imp/1EE856A79F8D7BA1/BSWhttp_A_B_Buse-gce-sc.r.bidswitch.net_Bimp_B4sAM8KIuLTU7nCPD__URRy0KDOXiGtYSbyxgeAw2uOkineWLYTapCxqQ0qWeBrrrOGwqbS__EbDc1twVBkY41vAuzsqyb3B7aMRKMWC9pnxlrHWUXfrlXENThf9HleJ5vBqDxR0P65ibgY6L9TRRoUZNugES-f72jQ__PB58W8BJq-NQvQNiUoOxcCqTmuD4CQFrVj__6yxnHpvQL6MDWUEb8-uElHpniJLvniMTo1hjpQXM8TYNC42Ax9qPDS2MQVex2__QOMpCloP2HAwCG0YocW5OuiGmFf1lUwQwkJOvGAmprbN7hRk5zm5Fpm6fp12vHHpehMg7KRwet9PsaAj5q2__6RwwIICenZP5Nl8YlvLuLkTGk75D8__QMiXcLA__2H61rftwAUe0F1Uu_Bd3TYkF2mdUh1Hl7__SlklfxW__E8G3HGH__Ek5aS5iyVWvYl__yQwIJgzvAQ-JSYwEGGgeT6RPoXfAeIGsTMLDFpixuX2E2P8__pvPZjFay6hHnAGanpS90-PdNN0Nw_B_I_WAUCTION__PRICE_X/erfxOHKF_qR09HBaoknLo1lB2bOs1PhrosSIGbiej-rByCHDSZ5qWLQYWY4g4Xkv3MhSM3GIRSMWr5FujX3LQy7V724MrBwUVf4DMGc9bwl7iQVBus99-Y7ij1Q_tYhe2CDe6udMtTp429pT_P3OnQuLIcls5EmaS_3q1KYoVMJI5m6we1eXZVgGeQz38UUPWNik3gyW2OZ06hR0Bd_j3S8VJ-65m7nj9qr3mzHW8rF8T9B5RXnGu8B_cKwSfAf6wfimOGNJnazekIOUMgwHc2BwbhUVXWctojLqwfSTUvpA9_c0sxmn_oLjNZ1hDy4J6S3GxQqUIMdeS4TLGrQHDYeEw5Q5Hlj6CKtIEcI2qYQQXRvdieZtiGiwb-Si06h02HArsHJVW_ZleJRZHRpTXpEtjaV6EWar9w5ovcbEL0VhJCny1HYcbwYN9Lu1pWY5LPfSi2_TQOU1iJbnbyE1aFK27719p9YiUpom82B3UoUeONtQ6NPcgDKr60VNSWSXlKAv2FepgUM9l235qDCDy16h8DJTkSrRycN93gdn83a9901K0EzASLDzTNLS1yZYcLFRwSHCIjHgFTBVNb5TYMXjqksjgIQE-m8WW0VTVb46ntPfZjN3fUkwXJGgfI1lGYPcgCRC45HL6pwhAnL1xXioBWhn5n7QTCYlqIaOjEMGRX5y6i9MxfzboX8cdl2sEO2vShH35BsLMZGdXLbZ-X_Ong6nHycwa7F9_GthuT-sqGyzduVjPQPdGEfy9sE6_bSUYMNcODx7Aw3__Sr5RJoqxnOTD3cIhfFBRU6yDU4-MXQXSa6i_uPSVD_tiUJfZAF2DDXKSn3_JST-UwUs9_ncU_XOaovaV71CMSr8_ZJUG3MvYSiYVO5cuUOM1DKLiZkt4IOOj4SHwYG4qZG541IKksJQZaKNnP3NgZdgv7H-DE8_WYj3C-a5TzroqRz3Dsl5s-QW6eJ27SV305EWN9HoHvwPoO6Y5hch3W7pXc72aFhVnZ6V-pOBmddsZxDhWmnbkfJRh0UVg_m25tjn1KespLQFr_EumyBA1Y2HJu4-f86j4YlkcrQPoa3cTtQ6TKV9WcLn3cjRwMeIES4Ckp7B8eQT2nfoxsYGvI3e4Im4aUL_VWQsEljTEOjt6-b85p6xiQ/\",\"https://us-east-sync.bidswitch.net/sync?ssp=rubicon\\u0026dsp_id=393\\u0026imp=1\",\"https://apxl.io/t?acid=b76e15ef-b59f-4f04-b936-ba22854bf518\"]}",
+  "adomain": [
+    "secturasoft.com"
+  ],
+  "crid": "2760:393_500032_544204",
+  "ext": {
+    "rp": {
+      "adtype": "native",
+      "advid": 3515102,
+      "mime": "application/javascript",
+      "size_id": 163
+    }
+  }
+},
+          "type": "native"
+        }
+      ],
+      "cur": "USD",
+      "ext": {
+        "debug": {
+          "httpcalls": {
+            "adform": [
+              {
+                "uri": "https://adx.adform.net/adx/openrtb",
+                "requestbody": "{\"id\":\"40c540ae-f998-4279-a862-8f39e0555f2c\",\"imp\":[{\"id\":\"2\",\"native\":{\"request\":\"{\\\"context\\\":1,\\\"plcmttype\\\":1,\\\"assets\\\":[{\\\"id\\\":0,\\\"img\\\":{\\\"type\\\":3,\\\"w\\\":360,\\\"h\\\":360}},{\\\"id\\\":1,\\\"required\\\":1,\\\"title\\\":{\\\"len\\\":1000}},{\\\"id\\\":2,\\\"data\\\":{\\\"type\\\":1}},{\\\"id\\\":3,\\\"data\\\":{\\\"type\\\":2}},{\\\"id\\\":4,\\\"img\\\":{\\\"type\\\":1,\\\"w\\\":75,\\\"h\\\":75}}],\\\"eventtrackers\\\":[{\\\"event\\\":1,\\\"methods\\\":[1]}]}\",\"ver\":\"1.2\"},\"tagid\":\"1294926\",\"ext\":{\"bidder\":{\"mid\":1294926,\"mkv\":\"category:finance,context:article,context:top\"},\"data\":{\"pbadslot\":\"2\"},\"rid\":\"9b56bc20-9eb1-4fc8-820f-78963fcdba13\"}}],\"site\":{\"name\":\"kitco\",\"domain\":\"127.0.0.1:5500\",\"cat\":[\"IAB13\",\"IAB12\",\"IAB3\"],\"page\":\"http://www.kitco.com/finance/\",\"ref\":\"http://127.0.0.1:5500/testing-files/pbs.html?pbjs_debug=true\",\"publisher\":{\"id\":\"1\",\"domain\":\"127.0.0.1:5500\",\"ext\":{\"rp\":{\"account_id\":14474}}},\"keywords\":\"marketviews, retirement\",\"ext\":{\"rp\":{\"site_id\":396736},\"amp\":0}},\"device\":{\"ua\":\"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36\",\"ip\":\"75.54.23.3\",\"h\":969,\"w\":948},\"user\":{\"ext\":{\"consent\":\"CO-bTt7O-bTt7AZABCENBECsAP_AAP_AACiQHKQAYAAgcoBykAGAAIHKAAA\",\"eids\":[{\"source\":\"pubcid.org\",\"uids\":[{\"id\":\"0330efcd-f45b-415c-86d0-d6c34b2251d2\",\"atype\":1}]}]}},\"at\":1,\"tmax\":1000,\"source\":{\"tid\":\"9b56bc20-9eb1-4fc8-820f-78963fcdba13\",\"ext\":{\"schain\":{\"ver\":\"1.0\",\"complete\":1,\"nodes\":[{\"asi\":\"dianomi.com\",\"sid\":\"443\",\"hp\":1,\"rid\":\"40c540ae-f998-4279-a862-8f39e0555f2c\"}]}}},\"regs\":{\"ext\":{\"gdpr\":0,\"us_privacy\":\"1---\"}},\"ext\":{\"prebid\":{\"aliases\":{\"adform\":\"adf\"},\"channel\":{\"name\":\"pbjs\",\"version\":\"v7.7.0-pre\"},\"debug\":true,\"targeting\":{\"pricegranularity\":{\"precision\":2,\"ranges\":[{\"min\":0,\"max\":20,\"increment\":0.1}]},\"includewinners\":true,\"includebidderkeys\":false,\"includebrandcategory\":null,\"includeformat\":false,\"durationrangesec\":null,\"preferdeals\":false}}}}",
+                "requestheaders": {
+                  "X-Prebid": [
+                    "pbs-go/unknown,pbjs/v7.7.0-pre"
+                  ]
+                },
+                "responsebody": "",
+                "status": 204
+              }
+            ],
+            "native": [
+              {
+                "uri": "https://exapi-eu.rubiconproject.com/a/api/exchange.json",
+                "requestbody": "{\"id\":\"40c540ae-f998-4279-a862-8f39e0555f2c\",\"site\":{\"name\":\"kitco\",\"domain\":\"127.0.0.1:5500\",\"cat\":[\"IAB13\",\"IAB12\",\"IAB3\"],\"page\":\"http://www.kitco.com/finance/\",\"ref\":\"http://127.0.0.1:5500/testing-files/pbs.html?pbjs_debug=true\",\"publisher\":{\"id\":\"1\",\"domain\":\"127.0.0.1:5500\",\"ext\":{\"rp\":{\"account_id\":14474}}},\"keywords\":\"marketviews, retirement\",\"ext\":{\"rp\":{\"site_id\":396736},\"amp\":0}},\"device\":{\"ua\":\"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36\",\"ip\":\"75.54.23.3\",\"h\":969,\"w\":948},\"user\":{\"buyeruid\":\"L5QJF35F-1O-MBBY\",\"ext\":{\"consent\":\"CO-bTt7O-bTt7AZABCENBECsAP_AAP_AACiQHKQAYAAgcoBykAGAAIHKAAA\",\"eids\":[{\"source\":\"pubcid.org\",\"uids\":[{\"id\":\"0330efcd-f45b-415c-86d0-d6c34b2251d2\",\"atype\":1}]}]}},\"tmax\":1000,\"source\":{\"tid\":\"3d0479fd-3d84-4005-9540-51bd38c340b5\",\"ext\":{\"schain\":{\"ver\":\"1.0\",\"complete\":1,\"nodes\":[{\"asi\":\"dianomi.com\",\"sid\":\"443\",\"hp\":1,\"rid\":\"40c540ae-f998-4279-a862-8f39e0555f2c\"}]}}},\"regs\":{\"ext\":{\"gdpr\":0,\"us_privacy\":\"1---\"}},\"imp\":[{\"id\":\"2\",\"tagid\":\"2216074\",\"native\":{\"requestobj\":{\"ver\":\"1.0\",\"layout\":3,\"context\":1,\"plcmttype\":1,\"assets\":[{\"id\":0,\"img\":{\"type\":3,\"w\":360,\"h\":360}},{\"id\":1,\"required\":1,\"title\":{\"len\":1000}},{\"id\":2,\"data\":{\"type\":1}},{\"id\":3,\"data\":{\"type\":2}},{\"id\":4,\"img\":{\"type\":1,\"w\":75,\"h\":75}}]},\"ver\":\"1.0\",\"api\":[1,2,3,4,5,6,7]},\"ext\":{\"rp\":{\"target\":{\"context\":null,\"test\":null},\"zone_id\":2216074}},\"bidfloor\":0.01}]}",
+                "requestheaders": {
+                  "Accept": [
+                    "application/json"
+                  ],
+                  "Content-Type": [
+                    "application/json;charset=utf-8"
+                  ],
+                  "User-Agent": [
+                    "prebid-server/1.0"
+                  ],
+                  "X-Prebid": [
+                    "pbs-go/unknown,pbjs/v7.7.0-pre"
+                  ]
+                },
+                "responsebody": "{\"id\":\"40c540ae-f998-4279-a862-8f39e0555f2c\",\"seatbid\":[{\"bid\":[{\"id\":\"40c540ae-f998-4279-a862-8f39e0555f2c\",\"impid\":\"2\",\"price\":0.85,\"adomain\":[\"magnacare.com\"],\"crid\":\"2238:6094284\",\"ext\":{\"rp\":{\"advid\":2,\"mime\":\"application/javascript\",\"adtype\":\"native\",\"size_id\":163}},\"admobject\":{\"native\":{\"ver\":\"1.0\",\"assets\":[{\"id\":1,\"title\":{\"text\":\"Health Plans - Simplified\"},\"required\":1},{\"id\":2,\"data\":{\"value\":\"MagnaCare\",\"type\":1},\"required\":0},{\"id\":3,\"data\":{\"value\":\"Unique benefit solutions tailored to fit your needs.\",\"type\":2},\"required\":0}],\"link\":{\"url\":\"https://clickserv.sitescout.com/clk/50299b03c53280f5/5ee307c82095f0d3/62e7e5e6854505f504110001/0\",\"clicktrackers\":[\"http://beacon-nf.rubiconproject.com/beacon/v2/t/0/871b283c-909f-49ba-89cc-12e00def0166/?url=https%3A%2F%2Fclickserv.sitescout.com%2Fclk%2F50299b03c53280f5%2F5ee307c82095f0d3%2F62e7e5e6854505f504110001%2F0\"]},\"imptrackers\":[\"http://beacon-iad3.rubiconproject.com/beacon/n/871b283c-909f-49ba-89cc-12e00def0166?oo=0&accountId=14474&siteId=396736&zoneId=2216074&sizeId=163&e=6A1E40E384DA563B2ED0539C8FE7386873C400F33D9CE6CD70BCE9AF2020270D46594728DAE88F0355E03253197B8D5FDEEE952833CFB81CBF6EF7C3F3F34BF283A7CBCE7F1165D36F9B15E2269742022D27AE5843350971744BBD676A815227D7E5B6EE2546F79EE82698771FC2DEB3176A5AA8A2FE67F5B765DBB4E74AD6CC42C37B56849B39F10E4A13E7A956D3F5D473CC775A6DD24BE540429EDB4F2D62EE652A5C3AF4856EE810A58D4A193D5B\",\"https://node-p2e-loo7fi.sitescout.com/rubicon/win/aid:62e7e5e6854505f504110001;c:581B4F16CC3C3941;cid:2159603;ts:1659364838148;d:NjA5NDI4NC1uYXRpdmU\",\"https://pixel-sync.sitescout.com/dmp/pixelSync?nid=1&wb=1&hdid=1&us_privacy=1---\"],\"jstracker\":\"\"}}}],\"seat\":\"2238:1524:2238:238846\",\"buyer\":\"2238\"}],\"bidid\":\"871b283c-909f-49ba-89cc-12e00def0166\",\"statuscode\":0}",
+                "status": 200
+              },
+              {
+                "uri": "https://exapi-eu.rubiconproject.com/a/api/exchange.json",
+                "requestbody": "{\"id\":\"40c540ae-f998-4279-a862-8f39e0555f2c\",\"site\":{\"name\":\"kitco\",\"domain\":\"127.0.0.1:5500\",\"cat\":[\"IAB13\",\"IAB12\",\"IAB3\"],\"page\":\"http://www.kitco.com/finance/\",\"ref\":\"http://127.0.0.1:5500/testing-files/pbs.html?pbjs_debug=true\",\"publisher\":{\"id\":\"1\",\"domain\":\"127.0.0.1:5500\",\"ext\":{\"rp\":{\"account_id\":14474}}},\"keywords\":\"marketviews, retirement\",\"ext\":{\"rp\":{\"site_id\":396736},\"amp\":0}},\"device\":{\"ua\":\"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36\",\"ip\":\"75.54.23.3\",\"h\":969,\"w\":948},\"user\":{\"buyeruid\":\"L5QJF35F-1O-MBBY\",\"ext\":{\"consent\":\"CO-bTt7O-bTt7AZABCENBECsAP_AAP_AACiQHKQAYAAgcoBykAGAAIHKAAA\",\"eids\":[{\"source\":\"pubcid.org\",\"uids\":[{\"id\":\"0330efcd-f45b-415c-86d0-d6c34b2251d2\",\"atype\":1}]}]}},\"at\":1,\"tmax\":1000,\"source\":{\"tid\":\"9b56bc20-9eb1-4fc8-820f-78963fcdba13\",\"ext\":{\"schain\":{\"ver\":\"1.0\",\"complete\":1,\"nodes\":[{\"asi\":\"dianomi.com\",\"sid\":\"443\",\"hp\":1,\"rid\":\"40c540ae-f998-4279-a862-8f39e0555f2c\"}]}}},\"regs\":{\"ext\":{\"gdpr\":0,\"us_privacy\":\"1---\"}},\"ext\":{\"prebid\":{\"aliases\":{\"adform\":\"adf\"},\"channel\":{\"name\":\"pbjs\",\"version\":\"v7.7.0-pre\"},\"debug\":true,\"targeting\":{\"pricegranularity\":{\"precision\":2,\"ranges\":[{\"min\":0,\"max\":20,\"increment\":0.1}]},\"includewinners\":true,\"includebidderkeys\":false,\"includebrandcategory\":null,\"includeformat\":false,\"durationrangesec\":null,\"preferdeals\":false}}},\"imp\":[{\"id\":\"2\",\"tagid\":\"2216074\",\"native\":{\"requestobj\":{\"context\":1,\"plcmttype\":1,\"assets\":[{\"id\":0,\"img\":{\"type\":3,\"w\":360,\"h\":360}},{\"id\":1,\"required\":1,\"title\":{\"len\":1000}},{\"id\":2,\"data\":{\"type\":1}},{\"id\":3,\"data\":{\"type\":2}},{\"id\":4,\"img\":{\"type\":1,\"w\":75,\"h\":75}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1]}]},\"ver\":\"1.2\",\"api\":[1,2,3,4,5,6,7]},\"ext\":{\"rp\":{\"target\":{\"context\":null,\"test\":null},\"zone_id\":2216074}},\"bidfloor\":0.01}]}",
+                "requestheaders": {
+                  "Accept": [
+                    "application/json"
+                  ],
+                  "Content-Type": [
+                    "application/json;charset=utf-8"
+                  ],
+                  "User-Agent": [
+                    "prebid-server/1.0"
+                  ],
+                  "X-Prebid": [
+                    "pbs-go/unknown,pbjs/v7.7.0-pre"
+                  ]
+                },
+                "responsebody": "{\"id\":\"40c540ae-f998-4279-a862-8f39e0555f2c\",\"seatbid\":[{\"bid\":[],\"seat\":\"2760:40232:4280:238846\",\"buyer\":\"2760\"}],\"bidid\":\"ea28c8d7-36ec-4f7d-973c-931a377b9181\",\"statuscode\":0,\"nbr\":2}",
+                "status": 200
+              }
+            ]
+          },
+          "resolvedrequest": {
+            "id": "9b56bc20-9eb1-4fc8-820f-78963fcdba13",
+            "imp": [
+              {
+                "id": "2",
+                "native": {
+                  "request": "{\"context\":1,\"plcmttype\":1,\"assets\":[{\"id\":0,\"img\":{\"type\":3,\"w\":360,\"h\":360}},{\"id\":1,\"required\":1,\"title\":{\"len\":1000}},{\"id\":2,\"data\":{\"type\":1}},{\"id\":3,\"data\":{\"type\":2}},{\"id\":4,\"img\":{\"type\":1,\"w\":75,\"h\":75}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1]}]}",
+                  "ver": "1.2"
+                },
+                "ext": {
+                  "tid": "9b56bc20-9eb1-4fc8-820f-78963fcdba13",
+                  "data": {
+                    "pbadslot": "2"
+                  },
+                  "prebid": {
+                    "bidder": {
+                      "adform": {
+                        "mid": 1294926,
+                        "mkv": "category:finance,context:article,context:top"
+                      },
+                      "native": {
+                        "accountId": 14474,
+                        "siteId": 396736,
+                        "zoneId": 2216074
+                      }
+                    }
+                  }
+                }
+              }
+            ],
+            "site": {
+              "name": "kitco",
+              "domain": "127.0.0.1:5500",
+              "cat": [
+                "IAB13",
+                "IAB12",
+                "IAB3"
+              ],
+              "page": "http://www.kitco.com/finance/",
+              "ref": "http://127.0.0.1:5500/testing-files/pbs.html?pbjs_debug=true",
+              "publisher": {
+                "id": "1",
+                "domain": "127.0.0.1:5500",
+                "ext": {
+                  "rp": {
+                    "account_id": 14474
+                  }
+                }
+              },
+              "keywords": "marketviews, retirement",
+              "ext": {
+                "rp": {
+                  "site_id": 396736
+                },
+                "amp": 0
+              }
+            },
+            "device": {
+              "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36",
+              "ip": "75.54.23.3",
+              "h": 969,
+              "w": 948
+            },
+            "user": {
+              "ext": {
+                "eids": [
+                  {
+                    "source": "pubcid.org",
+                    "uids": [
+                      {
+                        "id": "0330efcd-f45b-415c-86d0-d6c34b2251d2",
+                        "atype": 1
+                      }
+                    ]
+                  }
+                ],
+                "consent": "CO-bTt7O-bTt7AZABCENBECsAP_AAP_AACiQHKQAYAAgcoBykAGAAIHKAAA",
+                "data": {
+                  "ucat": [
+                    "test"
+                  ]
+                },
+                "prebid": {
+                  "buyeruids": {
+                    "native": "L5QJF35F-1O-MBBY"
+                  }
+                }
+              }
+            },
+            "at": 1,
+            "tmax": 1000,
+            "source": {
+              "tid": "9b56bc20-9eb1-4fc8-820f-78963fcdba13",
+              "ext": {
+                "schain": {
+                  "ver": "1.0",
+                  "complete": 1,
+                  "nodes": [
+                    {
+                      "asi": "dianomi.com",
+                      "sid": "443",
+                      "hp": 1
+                    }
+                  ]
+                }
+              }
+            },
+            "regs": {
+              "ext": {
+                "gdpr": 0,
+                "us_privacy": "1---"
+              }
+            },
+            "ext": {
+              "prebid": {
+                "auctiontimestamp": 1659696246897,
+                "targeting": {
+                  "includewinners": true,
+                  "includebidderkeys": false
+                },
+                "channel": {
+                  "name": "pbjs",
+                  "version": "v7.7.0-pre"
+                },
+                "debug": true,
+                "aliases": {
+                  "adform": "adf"
+                }
+              }
             }
           }
         },
-        "type": "native"
+        "responsetimemillis": {
+          "adform": 46,
+          "native": 48
+        },
+        "tmaxrequest": 1000,
+        "prebid": {
+          "auctiontimestamp": 1659696246932
+        }
       }
-    ]
-  }]
+    },
+    {
+      "bids": [],
+      "cur": "USD"
+    }
+  ]
 }
