@@ -65,6 +65,10 @@ configMapGenerator:
       - PBS_ADAPTERS_JAMPP_XAPI_ENDPOINT_EU="http://tpe-prebid-service-mocks.default.svc.cluster.local/jampp_givemeads"
       - PBS_ADAPTERS_JAMPP_XAPI_ENDPOINT_APAC="http://tpe-prebid-service-mocks.default.svc.cluster.local/jampp_givemeads"
 
+      # isx values
+      - PBS_ADAPTERS_ISX_DISABLED="false"
+      - PBS_ADAPTERS_ISX_ENDPOINT="http://tpe-prebid-service-mocks.default.svc.cluster.local/isx_givemeads"
+
       # kaden.ai values
       - PBS_ADAPTERS_KADENAI_DISABLED="false"
       - PBS_ADAPTERS_KADENAI_ENDPOINT="http://tpe-prebid-service-mocks.default.svc.cluster.local/kadenai_givemeads"

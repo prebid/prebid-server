@@ -142,6 +142,7 @@ import (
 	aarki "github.com/prebid/prebid-server/adapters/tjx_aarki"
 	appier "github.com/prebid/prebid-server/adapters/tjx_appier"
 	dv360 "github.com/prebid/prebid-server/adapters/tjx_dv360"
+	isx "github.com/prebid/prebid-server/adapters/tjx_isx"
 	jampp "github.com/prebid/prebid-server/adapters/tjx_jampp"
 	kadenai "github.com/prebid/prebid-server/adapters/tjx_kadenai"
 	liftoff "github.com/prebid/prebid-server/adapters/tjx_liftoff"
@@ -239,6 +240,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderInteractiveoffers: interactiveoffers.Builder,
 		openrtb_ext.BidderInvibes:           invibes.Builder,
 		openrtb_ext.BidderIQZone:            iqzone.Builder,
+		openrtb_ext.BidderISX:               isx.Builder,
 		openrtb_ext.BidderIx:                ix.Builder,
 		openrtb_ext.BidderJampp:             jampp.Builder,
 		openrtb_ext.BidderJANet:             adtelligent.Builder,

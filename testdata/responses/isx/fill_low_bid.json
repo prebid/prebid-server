@@ -1,0 +1,39 @@
+{
+  "id": "72b866b0-9508-41df-8e46-830080942b52",
+  "seatbid": [
+    {
+      "bid": [
+        {
+          "id": "72b866b0-9508-41df-8e46-830080942b52:haggler-EXCHANGE001.us-e.ec2.liftoff.io",
+          "impid": "1",
+          "price": 0.000600739,
+          "adm": "<VAST version=\"2.0\"><Ad id=\"shopee_tha_evergreenvideo1.a.kcd0od84_000\"><InLine><AdSystem version=\"2.0\"></AdSystem><AdTitle><![CDATA[shopee_tha_evergreenvideo1.a.kcd0od84_000]]></AdTitle><Impression id=\"shopee_tha_evergreenvideo1.a.kcd0od84_000\"><![CDATA[https://impression.appsflyer.com/com.shopee.th?advertising_id=24fec0b6-4f61-485b-9f1a-3d0510011405&af_ad=video&af_ad_id=shopee:a:kcd0od84_000&af_ad_type=video&af_adset=200708_ShopeeThaEvergreenvideo1_WP_Square_15sec.mp4&af_c_id=shopee_a_ua_tha&af_cost_currency=USD&af_cost_model=CPI&af_cost_value=0.7&af_siteid=com.coin.dozer.pusher&af_sub4=GjI5MTI0Njg3MC1hNzUxLTQ0N2UtYjgxZi04NjY2NDUwMzU3NGMtOTA2MV85RjI4ODI5OEIkMjRmZWMwYjYtNGY2MS00ODViLTlmMWEtM2QwNTEwMDExNDA1oAEBwAIByAIC&af_viewthrough_lookback=1d&c=TH_AND_UA_CPI&clickid=91246870-a751-447e-b81f-86664503574c-9061_9F288298&pid=moloco_int]]></Impression><Creatives><Creative><Linear><Duration>00:00:15</Duration><TrackingEvents><Tracking event=\"firstQuartile\"><![CDATA[https://tr-asia.adsmoloco.com/rtb/imp_extra?exchange=XXX&info=GjI5MTI0Njg3MC1hNzUxLTQ0N2UtYjgxZi04NjY2NDUwMzU3NGMtOTA2MV85RjI4ODI5OEIkMjRmZWMwYjYtNGY2MS00ODViLTlmMWEtM2QwNTEwMDExNDA1oAEBwAIByAIC&event_type=play_1q]]></Tracking><Tracking event=\"midpoint\"><![CDATA[https://tr-asia.adsmoloco.com/rtb/imp_extra?exchange=XXX&info=GjI5MTI0Njg3MC1hNzUxLTQ0N2UtYjgxZi04NjY2NDUwMzU3NGMtOTA2MV85RjI4ODI5OEIkMjRmZWMwYjYtNGY2MS00ODViLTlmMWEtM2QwNTEwMDExNDA1oAEBwAIByAIC&event_type=play_2q]]></Tracking><Tracking event=\"thirdQuartile\"><![CDATA[https://tr-asia.adsmoloco.com/rtb/imp_extra?exchange=XXX&info=GjI5MTI0Njg3MC1hNzUxLTQ0N2UtYjgxZi04NjY2NDUwMzU3NGMtOTA2MV85RjI4ODI5OEIkMjRmZWMwYjYtNGY2MS00ODViLTlmMWEtM2QwNTEwMDExNDA1oAEBwAIByAIC&event_type=play_3q]]></Tracking><Tracking event=\"complete\"><![CDATA[https://tr-asia.adsmoloco.com/rtb/imp_extra?exchange=XXX&info=GjI5MTI0Njg3MC1hNzUxLTQ0N2UtYjgxZi04NjY2NDUwMzU3NGMtOTA2MV85RjI4ODI5OEIkMjRmZWMwYjYtNGY2MS00ODViLTlmMWEtM2QwNTEwMDExNDA1oAEBwAIByAIC&event_type=play_4q]]></Tracking></TrackingEvents><VideoClicks><ClickThrough><![CDATA[https://tr-asia.adsmoloco.com/rtb/click?exchange=XXX&imp_id=91246870-a751-447e-b81f-86664503574c-9061_9F288298&info=GjI5MTI0Njg3MC1hNzUxLTQ0N2UtYjgxZi04NjY2NDUwMzU3NGMtOTA2MV85RjI4ODI5OEIkMjRmZWMwYjYtNGY2MS00ODViLTlmMWEtM2QwNTEwMDExNDA1oAEBwAIByAIC&campaign_name=shopee_a_ua_tha&dcr=]]></ClickThrough></VideoClicks><MediaFiles><MediaFile id=\"shopee_tha_evergreenvideo1.a.kcd0od84_000\" delivery=\"progressive\" type=\"video/mp4\" width=\"640\" height=\"640\"><![CDATA[https://cdn-f.adsmoloco.com/shopee/creative/kcd0dv6p_.8yy.mp4]]></MediaFile></MediaFiles></Linear><CreativeExtensions></CreativeExtensions></Creative><Creative><CompanionAds><Companion id=\"shopee_tha_evergreenvideo1.a.kcd0od84_000\" width=\"480\" height=\"320\" assetWidth=\"0\" assetHeight=\"0\" expandedWidth=\"0\" expandedHeight=\"0\"><CompanionClickThrough><![CDATA[https://tr-asia.adsmoloco.com/rtb/click?exchange=XXX&imp_id=91246870-a751-447e-b81f-86664503574c-9061_9F288298&info=GjI5MTI0Njg3MC1hNzUxLTQ0N2UtYjgxZi04NjY2NDUwMzU3NGMtOTA2MV85RjI4ODI5OEIkMjRmZWMwYjYtNGY2MS00ODViLTlmMWEtM2QwNTEwMDExNDA1oAEBwAIByAIC&campaign_name=shopee_a_ua_tha&dcr=]]></CompanionClickThrough><TrackingEvents><Tracking event=\"creativeView\"><![CDATA[https://tr-asia.adsmoloco.com/rtb/imp_extra?exchange=XXX&info=GjI5MTI0Njg3MC1hNzUxLTQ0N2UtYjgxZi04NjY2NDUwMzU3NGMtOTA2MV85RjI4ODI5OEIkMjRmZWMwYjYtNGY2MS00ODViLTlmMWEtM2QwNTEwMDExNDA1oAEBwAIByAIC&event_type=endcard]]></Tracking></TrackingEvents><StaticResource creativeType=\"image/jpeg\"><![CDATA[https://cdn-f.adsmoloco.com/shopee/creative/kcd0dhbs_.vdq.jpg]]></StaticResource></Companion></CompanionAds><CreativeExtensions></CreativeExtensions></Creative></Creatives><Description></Description><Survey></Survey><Extensions></Extensions></InLine></Ad></VAST>",
+          "adomain": [
+            "playstudios.com"
+          ],
+          "bundle": "com.playstudios.popslots",
+          "iurl": "https://cdn.liftoff.io/customers/8f6ad0f580/previews/3fe657a731.png",
+          "cid": "111647",
+          "crid": "114292",
+          "cat": [
+            "IAB9-30"
+          ],
+          "attr": [
+            6
+          ],
+          "lurl": "http://rtbnotify.liftoff.io/EXCHANGE?id=72b866b0-9508-41df-8e46-830080942b52&code=${AUCTION_LOSS}&cpm=${AUCTION_PRICE}",
+          "w": 320,
+          "h": 480,
+          "ext": {
+            "imptrackers": [
+              "https://lb-www2.foobar.com/ads/notify.php?auction_id=${AUCTION_ID}&winning_price=${AUCTION_PRICE}",
+              "https://lb-www2.foobar2.com/ads/notify.php?auction_id=${AUCTION_ID}&winning_price=${AUCTION_PRICE}",
+              "https://lb-www2.foobar3.com/ads/notify.php?auction_id=${AUCTION_ID}&winning_price=${AUCTION_PRICE}",
+              "https://lb-www2.foobar4.com/ads/notify.php?auction_id=${AUCTION_ID}&winning_price=${AUCTION_PRICE}"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
