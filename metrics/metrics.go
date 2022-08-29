@@ -57,6 +57,7 @@ const (
 	CategoryDataType StoredDataType = "category"
 	RequestDataType  StoredDataType = "request"
 	VideoDataType    StoredDataType = "video"
+	ResponseDataType StoredDataType = "response"
 )
 
 func StoredDataTypes() []StoredDataType {
@@ -66,6 +67,7 @@ func StoredDataTypes() []StoredDataType {
 		CategoryDataType,
 		RequestDataType,
 		VideoDataType,
+		ResponseDataType,
 	}
 }
 
@@ -238,6 +240,7 @@ const (
 	AdapterErrorBadServerResponse   AdapterError = "badserverresponse"
 	AdapterErrorTimeout             AdapterError = "timeout"
 	AdapterErrorFailedToRequestBids AdapterError = "failedtorequestbid"
+	AdapterErrorValidation          AdapterError = "validation"
 	AdapterErrorUnknown             AdapterError = "unknown_error"
 )
 
@@ -247,6 +250,7 @@ func AdapterErrors() []AdapterError {
 		AdapterErrorBadServerResponse,
 		AdapterErrorTimeout,
 		AdapterErrorFailedToRequestBids,
+		AdapterErrorValidation,
 		AdapterErrorUnknown,
 	}
 }
@@ -311,6 +315,8 @@ func CookieSyncStatuses() []CookieSyncStatus {
 		CookieSyncBadRequest,
 		CookieSyncOptOut,
 		CookieSyncGDPRHostCookieBlocked,
+		CookieSyncAccountBlocked,
+		CookieSyncAccountInvalid,
 	}
 }
 
@@ -343,6 +349,8 @@ const (
 	SetUidBadRequest            SetUidStatus = "bad_request"
 	SetUidOptOut                SetUidStatus = "opt_out"
 	SetUidGDPRHostCookieBlocked SetUidStatus = "gdpr_blocked_host_cookie"
+	SetUidAccountBlocked        SetUidStatus = "acct_blocked"
+	SetUidAccountInvalid        SetUidStatus = "acct_invalid"
 	SetUidSyncerUnknown         SetUidStatus = "syncer_unknown"
 )
 
@@ -353,6 +361,8 @@ func SetUidStatuses() []SetUidStatus {
 		SetUidBadRequest,
 		SetUidOptOut,
 		SetUidGDPRHostCookieBlocked,
+		SetUidAccountBlocked,
+		SetUidAccountInvalid,
 		SetUidSyncerUnknown,
 	}
 }
@@ -409,4 +419,8 @@ type MetricsEngine interface {
 	RecordTimeoutNotice(success bool)
 	RecordRequestPrivacy(privacy PrivacyLabels)
 	RecordAdapterGDPRRequestBlocked(adapterName openrtb_ext.BidderName)
+	RecordDebugRequest(debugEnabled bool, pubId string)
+	RecordStoredResponse(pubId string)
+	RecordAdsCertReq(success bool)
+	RecordAdsCertSignTime(adsCertSignTime time.Duration)
 }

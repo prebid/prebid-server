@@ -3,7 +3,7 @@ package openrtb2
 import (
 	"fmt"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -20,11 +20,12 @@ func processInterstitials(req *openrtb_ext.RequestWrapper) error {
 					return nil
 				}
 				deviceExt, err := req.GetDeviceExt()
+
 				if err != nil {
 					return err
 				}
 				prebid = deviceExt.GetPrebid()
-				if prebid.Interstitial == nil {
+				if prebid == nil || prebid.Interstitial == nil {
 					// No special interstitial support requested, so bail as there is nothing to do
 					return nil
 				}

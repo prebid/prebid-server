@@ -156,6 +156,54 @@ func TestRequestMetric(t *testing.T) {
 		})
 }
 
+func TestDebugRequestMetric(t *testing.T) {
+	testCases := []struct {
+		description                      string
+		givenDebugEnabledFlag            bool
+		givenAccountDebugMetricsDisabled bool
+		expectedAccountDebugCount        float64
+		expectedDebugCount               float64
+	}{
+		{
+			description:                      "Debug is enabled and account debug is enabled, both metrics should be updated",
+			givenDebugEnabledFlag:            true,
+			givenAccountDebugMetricsDisabled: false,
+			expectedDebugCount:               1,
+			expectedAccountDebugCount:        1,
+		},
+		{
+			description:                      "Debug and account debug are disabled, niether metrics should be updated",
+			givenDebugEnabledFlag:            false,
+			givenAccountDebugMetricsDisabled: true,
+			expectedDebugCount:               0,
+			expectedAccountDebugCount:        0,
+		},
+		{
+			description:                      "Debug is enabled but account debug is disabled, only non-account debug count should increment",
+			givenDebugEnabledFlag:            true,
+			givenAccountDebugMetricsDisabled: true,
+			expectedDebugCount:               1,
+			expectedAccountDebugCount:        0,
+		},
+		{
+			description:                      "Debug is disabled and account debug is enabled, niether metrics should increment",
+			givenDebugEnabledFlag:            false,
+			givenAccountDebugMetricsDisabled: false,
+			expectedDebugCount:               0,
+			expectedAccountDebugCount:        0,
+		},
+	}
+
+	for _, test := range testCases {
+		m := createMetricsForTesting()
+		m.metricsDisabled.AccountDebug = test.givenAccountDebugMetricsDisabled
+		m.RecordDebugRequest(test.givenDebugEnabledFlag, "acct-id")
+
+		assertCounterVecValue(t, "", "account debug requests", m.accountDebugRequests, test.expectedAccountDebugCount, prometheus.Labels{accountLabel: "acct-id"})
+		assertCounterValue(t, "", "debug requests", m.debugRequests, test.expectedDebugCount)
+	}
+}
+
 func TestRequestMetricWithoutCookie(t *testing.T) {
 	requestType := metrics.ReqTypeORTB2Web
 	performTest := func(m *Metrics, cookieFlag metrics.CookieFlag) {
@@ -454,6 +502,11 @@ func TestRecordStoredDataFetchTime(t *testing.T) {
 			dataType:    metrics.VideoDataType,
 			fetchType:   metrics.FetchDelta,
 		},
+		{
+			description: "Update stored responses histogram with delta label",
+			dataType:    metrics.ResponseDataType,
+			fetchType:   metrics.FetchDelta,
+		},
 	}
 
 	for _, tt := range tests {
@@ -477,6 +530,8 @@ func TestRecordStoredDataFetchTime(t *testing.T) {
 			metricsTimer = m.storedRequestFetchTimer
 		case metrics.VideoDataType:
 			metricsTimer = m.storedVideoFetchTimer
+		case metrics.ResponseDataType:
+			metricsTimer = m.storedResponsesFetchTimer
 		}
 
 		result := getHistogramFromHistogramVec(
@@ -554,6 +609,12 @@ func TestRecordStoredDataError(t *testing.T) {
 			errorType:   metrics.StoredDataErrorUndefined,
 			metricName:  "stored_video_errors",
 		},
+		{
+			description: "Update stored_response_errors counter with network label",
+			dataType:    metrics.ResponseDataType,
+			errorType:   metrics.StoredDataErrorNetwork,
+			metricName:  "stored_response_errors",
+		},
 	}
 
 	for _, tt := range tests {
@@ -575,6 +636,8 @@ func TestRecordStoredDataError(t *testing.T) {
 			metricsCounter = m.storedRequestErrors
 		case metrics.VideoDataType:
 			metricsCounter = m.storedVideoErrors
+		case metrics.ResponseDataType:
+			metricsCounter = m.storedResponsesErrors
 		}
 
 		assertCounterVecValue(t, tt.description, tt.metricName, metricsCounter,
@@ -1577,4 +1640,137 @@ func TestRecordAdapterGDPRRequestBlocked(t *testing.T) {
 		prometheus.Labels{
 			adapterLabel: string(openrtb_ext.BidderAppnexus),
 		})
+}
+
+func TestStoredResponsesMetric(t *testing.T) {
+	testCases := []struct {
+		description                           string
+		publisherId                           string
+		accountStoredResponsesMetricsDisabled bool
+		expectedAccountStoredResponsesCount   float64
+		expectedStoredResponsesCount          float64
+	}{
+
+		{
+			description:                           "Publisher id is given, account stored responses enabled, expected both account stored responses and stored responses counter to have a record",
+			publisherId:                           "acct-id",
+			accountStoredResponsesMetricsDisabled: false,
+			expectedAccountStoredResponsesCount:   1,
+			expectedStoredResponsesCount:          1,
+		},
+		{
+			description:                           "Publisher id is given, account stored responses disabled, expected stored responses counter only to have a record",
+			publisherId:                           "acct-id",
+			accountStoredResponsesMetricsDisabled: true,
+			expectedAccountStoredResponsesCount:   0,
+			expectedStoredResponsesCount:          1,
+		},
+		{
+			description:                           "Publisher id is unknown, account stored responses enabled, expected stored responses counter only to have a record",
+			publisherId:                           metrics.PublisherUnknown,
+			accountStoredResponsesMetricsDisabled: true,
+			expectedAccountStoredResponsesCount:   0,
+			expectedStoredResponsesCount:          1,
+		},
+		{
+			description:                           "Publisher id is unknown, account stored responses disabled, expected stored responses counter only to have a record",
+			publisherId:                           metrics.PublisherUnknown,
+			accountStoredResponsesMetricsDisabled: false,
+			expectedAccountStoredResponsesCount:   0,
+			expectedStoredResponsesCount:          1,
+		},
+	}
+
+	for _, test := range testCases {
+		m := createMetricsForTesting()
+		m.metricsDisabled.AccountStoredResponses = test.accountStoredResponsesMetricsDisabled
+		m.RecordStoredResponse(test.publisherId)
+
+		assertCounterVecValue(t, "", "account stored responses", m.accountStoredResponses, test.expectedAccountStoredResponsesCount, prometheus.Labels{accountLabel: "acct-id"})
+		assertCounterValue(t, "", "stored responses", m.storedResponses, test.expectedStoredResponsesCount)
+	}
+}
+
+func TestRecordAdsCertReqMetric(t *testing.T) {
+	testCases := []struct {
+		description                  string
+		requestSuccess               bool
+		expectedSuccessRequestsCount float64
+		expectedFailedRequestsCount  float64
+	}{
+		{
+			description:                  "Record failed request, expected success request count is 0 and failed request count is 1",
+			requestSuccess:               false,
+			expectedSuccessRequestsCount: 0,
+			expectedFailedRequestsCount:  1,
+		},
+		{
+			description:                  "Record successful request, expected success request count is 1 and failed request count is 0",
+			requestSuccess:               true,
+			expectedSuccessRequestsCount: 1,
+			expectedFailedRequestsCount:  0,
+		},
+	}
+
+	for _, test := range testCases {
+		m := createMetricsForTesting()
+		m.RecordAdsCertReq(test.requestSuccess)
+		assertCounterVecValue(t, test.description, "successfully signed requests", m.adsCertRequests, test.expectedSuccessRequestsCount, prometheus.Labels{successLabel: requestSuccessful})
+		assertCounterVecValue(t, test.description, "unsuccessfully signed requests", m.adsCertRequests, test.expectedFailedRequestsCount, prometheus.Labels{successLabel: requestFailed})
+	}
+}
+
+func TestRecordAdsCertSignTime(t *testing.T) {
+	type testIn struct {
+		adsCertSignDuration time.Duration
+	}
+	type testOut struct {
+		expDuration float64
+		expCount    uint64
+	}
+	testCases := []struct {
+		description string
+		in          testIn
+		out         testOut
+	}{
+		{
+			description: "Five second AdsCert sign time",
+			in: testIn{
+				adsCertSignDuration: time.Second * 5,
+			},
+			out: testOut{
+				expDuration: 5,
+				expCount:    1,
+			},
+		},
+		{
+			description: "Five millisecond AdsCert sign time",
+			in: testIn{
+				adsCertSignDuration: time.Millisecond * 5,
+			},
+			out: testOut{
+				expDuration: 0.005,
+				expCount:    1,
+			},
+		},
+		{
+			description: "Zero AdsCert sign time",
+			in:          testIn{},
+			out: testOut{
+				expDuration: 0,
+				expCount:    1,
+			},
+		},
+	}
+	for i, test := range testCases {
+		pm := createMetricsForTesting()
+		pm.RecordAdsCertSignTime(test.in.adsCertSignDuration)
+
+		m := dto.Metric{}
+		pm.adsCertSignTimer.Write(&m)
+		histogram := *m.GetHistogram()
+
+		assert.Equal(t, test.out.expCount, histogram.GetSampleCount(), "[%d] Incorrect number of histogram entries. Desc: %s\n", i, test.description)
+		assert.Equal(t, test.out.expDuration, histogram.GetSampleSum(), "[%d] Incorrect number of histogram cumulative values. Desc: %s\n", i, test.description)
+	}
 }

@@ -1,0 +1,42 @@
+{
+    "mockBidRequest": {
+        "id": "test-request",
+        "imp": [
+            {
+                "id": "slot",
+                "ext": {
+                    "bidder": {
+                        "siteId": "237503",
+                        "id": "005"
+                    }
+                },
+                "secure": 1,
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        }
+                    ]
+                }
+            }
+        ],
+        "regs": {
+            "ext": {
+                "gdpr": 1
+            }
+        },
+        "user": {
+            "ext": {
+                "consent": "test_consent"
+            },
+            "buyeruid": "test_user"
+        }
+    },
+    "expectedMakeRequestsErrors": [
+        {
+          "value": "site cannot be nill",
+          "comparison": "literal"
+        }
+      ]
+}

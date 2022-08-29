@@ -2,13 +2,15 @@ package pubmatic
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 
+	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -24,6 +26,7 @@ type PubmaticAdapter struct {
 type pubmaticBidExt struct {
 	BidType           *int                 `json:"BidType,omitempty"`
 	VideoCreativeInfo *pubmaticBidExtVideo `json:"video,omitempty"`
+	Marketplace       string               `json:"marketplace,omitempty"`
 }
 
 type pubmaticWrapperExt struct {
@@ -234,8 +237,8 @@ func parseImpressionObject(imp *openrtb2.Imp, extractWrapperExtFromImp, extractP
 	var pubID string
 
 	// PubMatic supports banner and video impressions.
-	if imp.Banner == nil && imp.Video == nil {
-		return wrapExt, pubID, fmt.Errorf("Invalid MediaType. PubMatic only supports Banner and Video. Ignoring ImpID=%s", imp.ID)
+	if imp.Banner == nil && imp.Video == nil && imp.Native == nil {
+		return wrapExt, pubID, fmt.Errorf("invalid MediaType. PubMatic only supports Banner, Video and Native. Ignoring ImpID=%s", imp.ID)
 	}
 
 	if imp.Audio != nil {
@@ -390,23 +393,58 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 				bid.Cat = bid.Cat[0:1]
 			}
 
+			seat := ""
 			var bidExt *pubmaticBidExt
 			bidType := openrtb_ext.BidTypeBanner
-			if err := json.Unmarshal(bid.Ext, &bidExt); err == nil && bidExt != nil {
+			err := json.Unmarshal(bid.Ext, &bidExt)
+			if err != nil {
+				errs = append(errs, err)
+			} else if bidExt != nil {
+				seat = bidExt.Marketplace
 				if bidExt.VideoCreativeInfo != nil && bidExt.VideoCreativeInfo.Duration != nil {
 					impVideo.Duration = *bidExt.VideoCreativeInfo.Duration
 				}
 				bidType = getBidType(bidExt)
 			}
+
+			if bidType == openrtb_ext.BidTypeNative {
+				bid.AdM, err = getNativeAdm(bid.AdM)
+				if err != nil {
+					errs = append(errs, err)
+				}
+			}
+
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:      &bid,
 				BidType:  bidType,
 				BidVideo: impVideo,
+				Seat:     openrtb_ext.BidderName(seat),
 			})
 
 		}
 	}
 	return bidResponse, errs
+}
+
+func getNativeAdm(adm string) (string, error) {
+	var err error
+	nativeAdm := make(map[string]interface{})
+	err = json.Unmarshal([]byte(adm), &nativeAdm)
+	if err != nil {
+		return adm, errors.New("unable to unmarshal native adm")
+	}
+
+	// move bid.adm.native to bid.adm
+	if _, ok := nativeAdm["native"]; ok {
+		//using jsonparser to avoid marshaling, encode escape, etc.
+		value, _, _, err := jsonparser.Get([]byte(adm), string(openrtb_ext.BidTypeNative))
+		if err != nil {
+			return adm, errors.New("unable to get native adm")
+		}
+		adm = string(value)
+	}
+
+	return adm, nil
 }
 
 // getBidType returns the bid type specified in the response bid.ext

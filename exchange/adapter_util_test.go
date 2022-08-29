@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/appnexus"
 	"github.com/prebid/prebid-server/adapters/rubicon"
@@ -26,12 +26,12 @@ func TestBuildAdapters(t *testing.T) {
 
 	appnexusBidder, _ := appnexus.Builder(openrtb_ext.BidderAppnexus, config.Adapter{})
 	appnexusBidderWithInfo := adapters.BuildInfoAwareBidder(appnexusBidder, infoEnabled)
-	appnexusBidderAdapted := AdaptBidder(appnexusBidderWithInfo, client, &config.Configuration{}, metricEngine, openrtb_ext.BidderAppnexus, nil)
+	appnexusBidderAdapted := AdaptBidder(appnexusBidderWithInfo, client, &config.Configuration{}, metricEngine, openrtb_ext.BidderAppnexus, nil, "")
 	appnexusValidated := addValidatedBidderMiddleware(appnexusBidderAdapted)
 
 	rubiconBidder, _ := rubicon.Builder(openrtb_ext.BidderRubicon, config.Adapter{})
 	rubiconBidderWithInfo := adapters.BuildInfoAwareBidder(rubiconBidder, infoEnabled)
-	rubiconBidderAdapted := AdaptBidder(rubiconBidderWithInfo, client, &config.Configuration{}, metricEngine, openrtb_ext.BidderRubicon, nil)
+	rubiconBidderAdapted := AdaptBidder(rubiconBidderWithInfo, client, &config.Configuration{}, metricEngine, openrtb_ext.BidderRubicon, nil, "")
 	rubiconbidderValidated := addValidatedBidderMiddleware(rubiconBidderAdapted)
 
 	testCases := []struct {

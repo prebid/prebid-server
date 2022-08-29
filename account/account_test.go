@@ -66,6 +66,12 @@ func TestGetAccount(t *testing.T) {
 		{accountID: "disabled_acct", required: true, disabled: false, err: &errortypes.BlacklistedAcct{}},
 		{accountID: "disabled_acct", required: false, disabled: true, err: &errortypes.BlacklistedAcct{}},
 		{accountID: "disabled_acct", required: true, disabled: true, err: &errortypes.BlacklistedAcct{}},
+
+		// account not provided (does not exist)
+		{accountID: "", required: false, disabled: false, err: nil},
+		{accountID: "", required: true, disabled: false, err: nil},
+		{accountID: "", required: false, disabled: true, err: &errortypes.BlacklistedAcct{}},
+		{accountID: "", required: true, disabled: true, err: &errortypes.AcctRequired{}},
 	}
 
 	for _, test := range testCases {

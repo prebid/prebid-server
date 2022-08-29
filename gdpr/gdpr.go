@@ -11,23 +11,38 @@ type Permissions interface {
 	// Determines whether or not the host company is allowed to read/write cookies.
 	//
 	// If the consent string was nonsensical, the returned error will be an ErrorMalformedConsent.
-	HostCookiesAllowed(ctx context.Context, gdprSignal Signal, consent string) (bool, error)
+	HostCookiesAllowed(ctx context.Context) (bool, error)
 
 	// Determines whether or not the given bidder is allowed to user personal info for ad targeting.
 	//
 	// If the consent string was nonsensical, the returned error will be an ErrorMalformedConsent.
-	BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, gdprSignal Signal, consent string) (bool, error)
+	BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName) (bool, error)
 
 	// Determines whether or not to send PI information to a bidder, or mask it out.
 	//
 	// If the consent string was nonsensical, the returned error will be an ErrorMalformedConsent.
-	AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string, aliasGVLIDs map[string]uint16) (permissions AuctionPermissions, err error)
+	AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (permissions AuctionPermissions, err error)
 }
 
-type PermissionsBuilder func(config.GDPR, TCF2ConfigReader, map[openrtb_ext.BidderName]uint16, VendorListFetcher) Permissions
+type PermissionsBuilder func(TCF2ConfigReader, RequestInfo) Permissions
 
-// NewPermissions gets an instance of the Permissions for use elsewhere in the project.
-func NewPermissions(cfg config.GDPR, tcf2Config TCF2ConfigReader, vendorIDs map[openrtb_ext.BidderName]uint16, fetcher VendorListFetcher) Permissions {
+type RequestInfo struct {
+	AliasGVLIDs map[string]uint16
+	Consent     string
+	GDPRSignal  Signal
+	PublisherID string
+}
+
+// NewPermissionsBuilder is of type PermissionsBuilderMaker
+// It takes host config data used to configure the builder function it returns
+func NewPermissionsBuilder(cfg config.GDPR, gvlVendorIDs map[openrtb_ext.BidderName]uint16, vendorListFetcher VendorListFetcher) PermissionsBuilder {
+	return func(tcf2Cfg TCF2ConfigReader, requestInfo RequestInfo) Permissions {
+		return NewPermissions(cfg, tcf2Cfg, gvlVendorIDs, vendorListFetcher, requestInfo)
+	}
+}
+
+// NewPermissions gets a per-request Permissions object that can then be used to check GDPR permissions for a given bidder.
+func NewPermissions(cfg config.GDPR, tcf2Config TCF2ConfigReader, vendorIDs map[openrtb_ext.BidderName]uint16, fetcher VendorListFetcher, requestInfo RequestInfo) Permissions {
 	if !cfg.Enabled {
 		return &AlwaysAllow{}
 	}
@@ -39,6 +54,10 @@ func NewPermissions(cfg config.GDPR, tcf2Config TCF2ConfigReader, vendorIDs map[
 		nonStandardPublishers: cfg.NonStandardPublisherMap,
 		cfg:                   tcf2Config,
 		vendorIDs:             vendorIDs,
+		publisherID:           requestInfo.PublisherID,
+		gdprSignal:            SignalNormalize(requestInfo.GDPRSignal, cfg.DefaultValue),
+		consent:               requestInfo.Consent,
+		aliasGVLIDs:           requestInfo.AliasGVLIDs,
 	}
 
 	if cfg.HostVendorID == 0 {

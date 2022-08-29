@@ -8,7 +8,7 @@ import (
 	"path"
 	"strconv"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -174,6 +174,8 @@ func getMediaTypeForImp(impID string, imps []openrtb2.Imp) openrtb_ext.BidType {
 		if imp.ID == impID {
 			if imp.Video != nil {
 				return openrtb_ext.BidTypeVideo
+			} else if imp.Native != nil {
+				return openrtb_ext.BidTypeNative
 			}
 			return openrtb_ext.BidTypeBanner
 		}

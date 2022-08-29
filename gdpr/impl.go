@@ -20,66 +20,60 @@ type permissionsImpl struct {
 	nonStandardPublishers map[string]struct{}
 	cfg                   TCF2ConfigReader
 	vendorIDs             map[openrtb_ext.BidderName]uint16
+	consent               string
+	gdprSignal            Signal
+	publisherID           string
+	aliasGVLIDs           map[string]uint16
 }
 
-func (p *permissionsImpl) HostCookiesAllowed(ctx context.Context, gdprSignal Signal, consent string) (bool, error) {
-	gdprSignal = SignalNormalize(gdprSignal, p.gdprDefaultValue)
-
-	if gdprSignal == SignalNo {
+func (p *permissionsImpl) HostCookiesAllowed(ctx context.Context) (bool, error) {
+	if p.gdprSignal != SignalYes {
 		return true, nil
 	}
 
-	return p.allowSync(ctx, uint16(p.hostVendorID), consent, false)
+	return p.allowSync(ctx, uint16(p.hostVendorID), false)
 }
 
-func (p *permissionsImpl) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, gdprSignal Signal, consent string) (bool, error) {
-	gdprSignal = SignalNormalize(gdprSignal, p.gdprDefaultValue)
-
-	if gdprSignal == SignalNo {
+func (p *permissionsImpl) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName) (bool, error) {
+	if p.gdprSignal != SignalYes {
 		return true, nil
 	}
 
 	id, ok := p.vendorIDs[bidder]
 	if ok {
 		vendorException := p.cfg.PurposeVendorException(consentconstants.Purpose(1), bidder)
-		return p.allowSync(ctx, id, consent, vendorException)
+		return p.allowSync(ctx, id, vendorException)
 	}
 
 	return false, nil
 }
 
-func (p *permissionsImpl) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string, aliasGVLIDs map[string]uint16) (permissions AuctionPermissions, err error) {
-	if _, ok := p.nonStandardPublishers[PublisherID]; ok {
+func (p *permissionsImpl) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (permissions AuctionPermissions, err error) {
+	if _, ok := p.nonStandardPublishers[p.publisherID]; ok {
 		return AllowAll, nil
 	}
 
-	gdprSignal = SignalNormalize(gdprSignal, p.gdprDefaultValue)
-
-	if gdprSignal == SignalNo {
+	if p.gdprSignal != SignalYes {
 		return AllowAll, nil
 	}
 
-	if consent == "" && gdprSignal == SignalYes {
+	if p.consent == "" {
 		return DenyAll, nil
 	}
 
 	weakVendorEnforcement := p.cfg.BasicEnforcementVendor(bidder)
 
-	if id, ok := p.resolveVendorId(bidderCoreName, bidder, aliasGVLIDs); ok {
-		return p.allowActivities(ctx, id, bidderCoreName, consent, weakVendorEnforcement)
+	if id, ok := p.resolveVendorId(bidderCoreName, bidder); ok {
+		return p.allowActivities(ctx, id, bidderCoreName, weakVendorEnforcement)
 	} else if weakVendorEnforcement {
-		return p.allowActivities(ctx, 0, bidderCoreName, consent, weakVendorEnforcement)
+		return p.allowActivities(ctx, 0, bidderCoreName, weakVendorEnforcement)
 	}
 
-	return p.defaultVendorPermissions()
-}
-
-func (p *permissionsImpl) defaultVendorPermissions() (permissions AuctionPermissions, err error) {
 	return DenyAll, nil
 }
 
-func (p *permissionsImpl) resolveVendorId(bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName, aliasGVLIDs map[string]uint16) (id uint16, ok bool) {
-	if id, ok = aliasGVLIDs[string(bidder)]; ok {
+func (p *permissionsImpl) resolveVendorId(bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (id uint16, ok bool) {
+	if id, ok = p.aliasGVLIDs[string(bidder)]; ok {
 		return id, ok
 	}
 
@@ -88,12 +82,12 @@ func (p *permissionsImpl) resolveVendorId(bidderCoreName openrtb_ext.BidderName,
 	return id, ok
 }
 
-func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consent string, vendorException bool) (bool, error) {
-	if consent == "" {
+func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, vendorException bool) (bool, error) {
+	if p.consent == "" {
 		return false, nil
 	}
 
-	parsedConsent, vendor, err := p.parseVendor(ctx, vendorID, consent)
+	parsedConsent, vendor, err := p.parseVendor(ctx, vendorID, p.consent)
 	if err != nil {
 		return false, err
 	}
@@ -119,8 +113,8 @@ func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consen
 	return p.checkPurpose(consentMeta, vendor, vendorID, tcf2ConsentConstants.InfoStorageAccess, enforceVendors, vendorException, false), nil
 }
 
-func (p *permissionsImpl) allowActivities(ctx context.Context, vendorID uint16, bidder openrtb_ext.BidderName, consent string, weakVendorEnforcement bool) (AuctionPermissions, error) {
-	parsedConsent, vendor, err := p.parseVendor(ctx, vendorID, consent)
+func (p *permissionsImpl) allowActivities(ctx context.Context, vendorID uint16, bidder openrtb_ext.BidderName, weakVendorEnforcement bool) (AuctionPermissions, error) {
+	parsedConsent, vendor, err := p.parseVendor(ctx, vendorID, p.consent)
 	if err != nil {
 		return DenyAll, err
 	}
@@ -259,22 +253,22 @@ type AllowHostCookies struct {
 }
 
 // HostCookiesAllowed always returns true
-func (p *AllowHostCookies) HostCookiesAllowed(ctx context.Context, gdprSignal Signal, consent string) (bool, error) {
+func (p *AllowHostCookies) HostCookiesAllowed(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
 // Exporting to allow for easy test setups
 type AlwaysAllow struct{}
 
-func (a AlwaysAllow) HostCookiesAllowed(ctx context.Context, gdprSignal Signal, consent string) (bool, error) {
+func (a AlwaysAllow) HostCookiesAllowed(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
-func (a AlwaysAllow) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, gdprSignal Signal, consent string) (bool, error) {
+func (a AlwaysAllow) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName) (bool, error) {
 	return true, nil
 }
 
-func (a AlwaysAllow) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName, PublisherID string, gdprSignal Signal, consent string, aliasGVLIDs map[string]uint16) (permissions AuctionPermissions, err error) {
+func (a AlwaysAllow) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (permissions AuctionPermissions, err error) {
 	return AllowAll, nil
 }
 

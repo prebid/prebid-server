@@ -1,0 +1,19 @@
+maintainer:
+  email: "support@bliink.io"
+gvlVendorID: 658
+modifyingVastXmlAllowed: true
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  redirect:
+    url: "https://cookiesync.api.bliink.io/getuid?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&url={{.RedirectURL}}"
+    userMacro: "$UID"

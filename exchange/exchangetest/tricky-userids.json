@@ -73,14 +73,9 @@
             }
           ],
           "ext": {
-            "prebid": {
-              "aliases": {
-                "districtm": "appnexus"
-              }
-            }
+            "prebid": {}
           }
-        },
-        "bidAdjustment": 1.0
+        }
       },
       "mockResponse": {
         "errors": ["appnexus-error"]
@@ -112,14 +107,9 @@
             }
           ],
           "ext": {
-            "prebid": {
-              "aliases": {
-                "districtm": "appnexus"
-              }
-            }
+            "prebid": {}
           }
-        },
-        "bidAdjustment": 1.0
+        }
       },
       "mockResponse": {
         "errors": ["appnexus-error"]
@@ -149,14 +139,9 @@
             }
           ],
           "ext": {
-            "prebid": {
-              "aliases": {
-                "districtm": "appnexus"
-              }
-            }
+            "prebid": {}
           }
-        },
-        "bidAdjustment": 1.0
+        }
       },
       "mockResponse": {
         "errors": ["districtm-error"]
