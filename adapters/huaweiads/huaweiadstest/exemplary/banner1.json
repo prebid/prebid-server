@@ -47,6 +47,7 @@
       "ip": "ip",
       "ifa": "e4fe9bde-caa0-47b6-908d-ffba3fa184f2",
       "pxratio": 23.01,
+      "mccmnc": "460",
       "geo": {
         "country": "CHN"
       }
