@@ -166,24 +166,6 @@ type SyncerEndpoint struct {
 	UserMacro string `yaml:"userMacro" mapstructure:"user_macro"`
 }
 
-func ProcessBidderInfos(path string, configBidderInfos BidderInfos) (BidderInfos, []error) {
-	errs := make([]error, 0)
-	bidderInfos, err := LoadBidderInfoFromDisk(path)
-	if err != nil {
-		return nil, append(errs, fmt.Errorf("Unable to load bidderconfigs %v", err))
-	}
-	if len(configBidderInfos) > 0 {
-		bidderInfos, err = applyBidderInfoConfigOverrides(configBidderInfos, bidderInfos)
-		if err != nil {
-			return nil, append(errs, err)
-		}
-	}
-
-	errs = validateBidderInfos(bidderInfos)
-
-	return bidderInfos, errs
-}
-
 // LoadBidderInfoFromDisk parses all static/bidder-info/{bidder}.yaml files from the file system.
 func LoadBidderInfoFromDisk(path string) (BidderInfos, error) {
 	return loadBidderInfo(path)
@@ -233,9 +215,8 @@ func (infos BidderInfos) ToGVLVendorIDMap() map[openrtb_ext.BidderName]uint16 {
 }
 
 // validateBidderInfos validates bidder endpoint, info and syncer data
-func validateBidderInfos(bidderInfos BidderInfos) []error {
-	errs := make([]error, 0, 0)
-	for bidderName, bidder := range bidderInfos {
+func (infos BidderInfos) validate(errs []error) []error {
+	for bidderName, bidder := range infos {
 		if !bidder.Disabled {
 			errs = validateAdapterEndpoint(bidder.Endpoint, bidderName, errs)
 

@@ -132,6 +132,7 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 		glog.Warning(`account_defaults.events will currently not do anything as the feature is still under development. Please follow https://github.com/prebid/prebid-server/issues/1725 for more updates`)
 	}
 	errs = cfg.Experiment.validate(errs)
+	errs = cfg.BidderInfos.validate(errs)
 	return errs
 }
 
@@ -618,7 +619,7 @@ func (cfg *TimeoutNotification) validate(errs []error) []error {
 }
 
 // New uses viper to get our server configurations.
-func New(v *viper.Viper) (*Configuration, error) {
+func New(v *viper.Viper, bidderInfos BidderInfos) (*Configuration, error) {
 	var c Configuration
 	if err := v.Unmarshal(&c); err != nil {
 		return nil, fmt.Errorf("viper failed to unmarshal app config: %v", err)
@@ -701,6 +702,12 @@ func New(v *viper.Viper) (*Configuration, error) {
 	// Migrate combo stored request config to separate stored_reqs and amp stored_reqs configs.
 	resolvedStoredRequestsConfig(&c)
 
+	mergedBidderInfos, err := applyBidderInfoConfigOverrides(c.BidderInfos, bidderInfos)
+	if err != nil {
+		return nil, err
+	}
+	c.BidderInfos = mergedBidderInfos
+
 	glog.Info("Logging the resolved configuration:")
 	logGeneral(reflect.ValueOf(c), "  \t")
 	if errs := c.validate(v); len(errs) > 0 {
@@ -741,7 +748,7 @@ func (cfg *Configuration) GetCachedAssetURL(uuid string) string {
 }
 
 // Set the default config values for the viper object we are using.
-func SetupViper(v *viper.Viper, filename string) {
+func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	if filename != "" {
 		v.SetConfigName(filename)
 		v.AddConfigPath(".")
@@ -1042,6 +1049,10 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("experiment.adscert.inprocess.domain_renewal_interval_seconds", 30)
 	v.SetDefault("experiment.adscert.remote.url", "")
 	v.SetDefault("experiment.adscert.remote.signing_timeout_ms", 5)
+
+	for bidderName, _ := range bidderInfos {
+		setBidderDefaults(v, strings.ToLower(bidderName))
+	}
 }
 
 func migrateConfig(v *viper.Viper) {
@@ -1109,6 +1120,33 @@ func migrateConfigTCF2PurposeEnabledFlags(v *viper.Viper) {
 			}
 		}
 	}
+}
+
+func setBidderDefaults(v *viper.Viper, bidder string) {
+	adapterCfgPrefix := "adapters." + bidder
+	v.BindEnv(adapterCfgPrefix+".endpoint", "")
+	v.BindEnv(adapterCfgPrefix+".usersync_url", "")
+	v.BindEnv(adapterCfgPrefix+".platform_id", "")
+	v.BindEnv(adapterCfgPrefix+".app_secret", "")
+	v.BindEnv(adapterCfgPrefix+".xapi.username", "")
+	v.BindEnv(adapterCfgPrefix+".xapi.password", "")
+	v.BindEnv(adapterCfgPrefix+".xapi.tracker", "")
+	v.BindEnv(adapterCfgPrefix + ".disabled")
+	v.BindEnv(adapterCfgPrefix+".partner_id", "")
+	v.BindEnv(adapterCfgPrefix+".extra_info", "")
+
+	v.BindEnv(adapterCfgPrefix + ".usersync.key")
+	v.BindEnv(adapterCfgPrefix + ".usersync.default")
+	v.BindEnv(adapterCfgPrefix + ".usersync.iframe.url")
+	v.BindEnv(adapterCfgPrefix + ".usersync.iframe.redirect_url")
+	v.BindEnv(adapterCfgPrefix + ".usersync.iframe.external_url")
+	v.BindEnv(adapterCfgPrefix + ".usersync.iframe.user_macro")
+	v.BindEnv(adapterCfgPrefix + ".usersync.redirect.url")
+	v.BindEnv(adapterCfgPrefix + ".usersync.redirect.redirect_url")
+	v.BindEnv(adapterCfgPrefix + ".usersync.redirect.external_url")
+	v.BindEnv(adapterCfgPrefix + ".usersync.redirect.user_macro")
+	v.BindEnv(adapterCfgPrefix + ".usersync.external_url")
+	v.BindEnv(adapterCfgPrefix + ".usersync.support_cors")
 }
 
 func isValidCookieSize(maxCookieSize int) error {
