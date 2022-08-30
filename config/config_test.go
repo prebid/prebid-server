@@ -673,8 +673,10 @@ func TestMigrateConfigFromEnv(t *testing.T) {
 		defer os.Unsetenv("PBS_STORED_REQUESTS_FILESYSTEM")
 	}
 	os.Setenv("PBS_STORED_REQUESTS_FILESYSTEM", "true")
+	os.Setenv("PBS_ADAPTERS_BIDDER1_ENDPOINT", "http://bidder1_override.com")
 	cfg, _ := newDefaultConfig(t)
 	cmpBools(t, "stored_requests.filesystem.enabled", true, cfg.StoredRequests.Files.Enabled)
+	cmpStrings(t, "adapters.bidder1.endpoint", "http://bidder1_override.com", cfg.BidderInfos["bidder1"].Endpoint)
 }
 
 func TestMigrateConfigPurposeOneTreatment(t *testing.T) {
