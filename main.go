@@ -30,7 +30,7 @@ func main() {
 		glog.Exitf("Unable to build configuration directory path: %v", err)
 	}
 
-	bidderInfos, err := config.LoadBidderInfoFromDisk(bidderInfoPath)
+	bidderInfos, err := config.LoadBidderInfo(bidderInfoPath)
 	if err != nil {
 		glog.Exitf("Unable to load bidder configurations: %v", err)
 	}

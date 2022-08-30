@@ -166,12 +166,8 @@ type SyncerEndpoint struct {
 	UserMacro string `yaml:"userMacro" mapstructure:"user_macro"`
 }
 
-// LoadBidderInfoFromDisk parses all static/bidder-info/{bidder}.yaml files from the file system.
-func LoadBidderInfoFromDisk(path string) (BidderInfos, error) {
-	return loadBidderInfo(path)
-}
-
-func loadBidderInfo(path string) (BidderInfos, error) {
+// LoadBidderInfo parses all static/bidder-info/{bidder}.yaml files from the file system.
+func LoadBidderInfo(path string) (BidderInfos, error) {
 	bidderConfigs, err := ioutil.ReadDir(path)
 	if err != nil {
 		log.Fatal(err)

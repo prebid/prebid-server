@@ -40,14 +40,14 @@ func forceEnv(t *testing.T, key string, val string) func() {
 // Test the viper setup
 func TestViperInit(t *testing.T) {
 	v := viper.New()
-	config.SetupViper(v, "")
+	config.SetupViper(v, "", nil)
 	compareStrings(t, "Viper error: external_url expected to be %s, found %s", "http://localhost:8000", v.Get("external_url").(string))
 	compareStrings(t, "Viper error: accounts.filesystem.directorypath expected to be %s, found %s", "./stored_requests/data/by_id", v.Get("accounts.filesystem.directorypath").(string))
 }
 
 func TestViperEnv(t *testing.T) {
 	v := viper.New()
-	config.SetupViper(v, "")
+	config.SetupViper(v, "", nil)
 	port := forceEnv(t, "PBS_PORT", "7777")
 	defer port()
 

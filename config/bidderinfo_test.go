@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
@@ -44,7 +43,7 @@ func TestLoadBidderInfoFromDisk(t *testing.T) {
 	adapterConfigs := make(map[string]Adapter)
 	adapterConfigs[strings.ToLower(bidder)] = Adapter{}
 
-	infos, err := LoadBidderInfoFromDisk(testInfoFilesPath)
+	infos, err := LoadBidderInfo(testInfoFilesPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,7 +86,7 @@ func TestLoadBidderInfoFromDisk(t *testing.T) {
 
 func TestLoadBidderInfoInvalid(t *testing.T) {
 	expectedError := "error parsing yaml for bidder someBidder-invalid.yaml: yaml: unmarshal errors:\n  line 3: cannot unmarshal !!str `42` into uint16"
-	_, err := loadBidderInfo(testInvalidInfoFilesPath)
+	_, err := LoadBidderInfo(testInvalidInfoFilesPath)
 	assert.EqualError(t, err, expectedError, "incorrect error message returned while loading invalid bidder config")
 }
 
@@ -110,40 +109,12 @@ func TestToGVLVendorIDMap(t *testing.T) {
 const bidderInfoRelativePath = "../static/bidder-info"
 
 // TestBidderInfoFiles ensures each bidder has a valid static/bidder-info/bidder.yaml file. Validation is performed directly
-// against the file system with separate yaml unmarshalling from the LoadBidderInfoFromDisk func.
+// against the file system with separate yaml unmarshalling from the LoadBidderInfo func.
 func TestBidderInfoFiles(t *testing.T) {
-	_, errs := ProcessBidderInfos(bidderInfoRelativePath, nil)
-	if len(errs) > 0 {
-		errorMsg := errortypes.NewAggregateError("bidder infos", errs)
-		assert.Fail(t, errorMsg.Message, "Errors in bidder info files")
+	_, err := LoadBidderInfo(bidderInfoRelativePath)
+	if err != nil {
+		assert.Fail(t, err.Error(), "Errors in bidder info files")
 	}
-}
-
-func TestBidderInfoFilesWithCorrectConfigs(t *testing.T) {
-	bidderInfos, errs := ProcessBidderInfos(bidderInfoRelativePath, BidderInfos{"appnexus": BidderInfo{
-		Endpoint: "http://override.com",
-	}})
-	if len(errs) > 0 {
-		errorMsg := errortypes.NewAggregateError("bidder infos", errs)
-		assert.Fail(t, errorMsg.Message, "Errors in bidder info files")
-	}
-	assert.Equal(t, "http://override.com", bidderInfos["appnexus"].Endpoint, "Incorrect endpoint override")
-}
-
-func TestBidderInfoFilesWithIncorrectConfigs(t *testing.T) {
-	_, errs := ProcessBidderInfos(bidderInfoRelativePath, BidderInfos{"appnexus": BidderInfo{
-		Endpoint: "incorrect",
-	}})
-	assert.Len(t, errs, 1, "Incorrect error number returned from process bidder infos with invalid enpoint")
-	assert.Equal(t, "The endpoint: incorrect for appnexus is not a valid URL", errs[0].Error(), "Incorrect error returned from process bidder infos with invalid enpoint")
-}
-
-func TestBidderInfoFilesWithIncorrectSyncerConfigs(t *testing.T) {
-	_, errs := ProcessBidderInfos(bidderInfoRelativePath, BidderInfos{"adgeneration": BidderInfo{
-		UserSyncURL: "usersyncurl",
-	}})
-	assert.Len(t, errs, 1, "Incorrect error number returned from process bidder infos with invalid enpoint")
-	assert.Equal(t, "adapters.adgeneration.usersync_url cannot be applied, bidder does not define a user sync", errs[0].Error(), "Incorrect error returned from process bidder infos with invalid enpoint")
 }
 
 func TestBidderInfoValidationPositive(t *testing.T) {
@@ -197,7 +168,7 @@ func TestBidderInfoValidationPositive(t *testing.T) {
 			},
 		},
 	}
-	errs := validateBidderInfos(bidderInfos)
+	errs := bidderInfos.validate(make([]error, 0))
 	assert.Len(t, errs, 0, "All bidder infos should be correct")
 }
 
@@ -529,7 +500,7 @@ func TestBidderInfoValidationNegative(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		errs := validateBidderInfos(test.bidderInfos)
+		errs := test.bidderInfos.validate(make([]error, 0))
 		assert.ElementsMatch(t, errs, test.expectErrors, "incorrect errors returned for test: %s", test.description)
 	}
 }

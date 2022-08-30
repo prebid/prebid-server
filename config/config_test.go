@@ -14,6 +14,18 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var bidderInfos = BidderInfos{
+	"bidder1": BidderInfo{
+		Endpoint:   "http://bidder1.com",
+		Maintainer: &MaintainerInfo{Email: "maintainer@bidder1.com"},
+		Capabilities: &CapabilitiesInfo{
+			App: &PlatformInfo{
+				MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner},
+			},
+		},
+	},
+}
+
 func TestExternalCacheURLValidate(t *testing.T) {
 	testCases := []struct {
 		desc      string
@@ -406,10 +418,10 @@ func TestFullConfig(t *testing.T) {
 	int8One := int8(1)
 
 	v := viper.New()
-	SetupViper(v, "")
+	SetupViper(v, "", bidderInfos)
 	v.SetConfigType("yaml")
 	v.ReadConfig(bytes.NewBuffer(fullConfig))
-	cfg, err := New(v)
+	cfg, err := New(v, bidderInfos)
 	assert.NoError(t, err, "Setting up config should work but it doesn't")
 	cmpStrings(t, "cookie domain", cfg.HostCookie.Domain, "cookies.prebid.org")
 	cmpStrings(t, "cookie name", cfg.HostCookie.CookieName, "userid")
@@ -643,12 +655,12 @@ func TestValidateConfig(t *testing.T) {
 
 func TestMigrateConfig(t *testing.T) {
 	v := viper.New()
-	SetupViper(v, "")
+	SetupViper(v, "", bidderInfos)
 	v.Set("gdpr.default_value", "0")
 	v.SetConfigType("yaml")
 	v.ReadConfig(bytes.NewBuffer(oldStoredRequestsConfig))
 	migrateConfig(v)
-	cfg, err := New(v)
+	cfg, err := New(v, bidderInfos)
 	assert.NoError(t, err, "Setting up config should work but it doesn't")
 	cmpBools(t, "stored_requests.filesystem.enabled", true, cfg.StoredRequests.Files.Enabled)
 	cmpStrings(t, "stored_requests.filesystem.path", "/somepath", cfg.StoredRequests.Files.Path)
@@ -1224,14 +1236,14 @@ func TestNewCallsRequestValidation(t *testing.T) {
 
 	for _, test := range testCases {
 		v := viper.New()
-		SetupViper(v, "")
+		SetupViper(v, "", bidderInfos)
 		v.Set("gdpr.default_value", "0")
 		v.SetConfigType("yaml")
 		v.ReadConfig(bytes.NewBuffer([]byte(
 			`request_validation:
     ipv4_private_networks: ` + test.privateIPNetworks)))
 
-		result, resultErr := New(v)
+		result, resultErr := New(v, bidderInfos)
 
 		if test.expectedError == "" {
 			assert.NoError(t, resultErr, test.description+":err")
@@ -1263,10 +1275,10 @@ func TestValidateAccountsConfigRestrictions(t *testing.T) {
 
 func newDefaultConfig(t *testing.T) (*Configuration, *viper.Viper) {
 	v := viper.New()
-	SetupViper(v, "")
+	SetupViper(v, "", bidderInfos)
 	v.Set("gdpr.default_value", "0")
 	v.SetConfigType("yaml")
-	cfg, err := New(v)
+	cfg, err := New(v, bidderInfos)
 	assert.NoError(t, err, "Setting up config should work but it doesn't")
 	return cfg, v
 }
@@ -1333,10 +1345,10 @@ func TestSpecialFeature1VendorExceptionMap(t *testing.T) {
 		config := append(baseConfig, tt.configVendorExceptions...)
 
 		v := viper.New()
-		SetupViper(v, "")
+		SetupViper(v, "", bidderInfos)
 		v.SetConfigType("yaml")
 		v.ReadConfig(bytes.NewBuffer(config))
-		cfg, err := New(v)
+		cfg, err := New(v, bidderInfos)
 		assert.NoError(t, err, "Setting up config error", tt.description)
 
 		assert.Equal(t, tt.wantVendorExceptions, cfg.GDPR.TCF2.SpecialFeature1.VendorExceptions, tt.description)

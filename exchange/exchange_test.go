@@ -56,7 +56,7 @@ func TestNewExchange(t *testing.T) {
 		},
 	}
 
-	biddersInfo, err := config.LoadBidderInfoFromDisk("../static/bidder-info")
+	biddersInfo, err := config.LoadBidderInfo("../static/bidder-info")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1239,7 +1239,7 @@ func TestGetBidCacheInfoEndToEnd(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(handlerNoBidServer))
 	defer server.Close()
 
-	biddersInfo, err := config.LoadBidderInfoFromDisk("../static/bidder-info")
+	biddersInfo, err := config.LoadBidderInfo("../static/bidder-info")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1602,7 +1602,7 @@ func TestBidResponseCurrency(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(handlerNoBidServer))
 	defer server.Close()
 
-	biddersInfo, err := config.LoadBidderInfoFromDisk("../static/bidder-info")
+	biddersInfo, err := config.LoadBidderInfo("../static/bidder-info")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1846,7 +1846,7 @@ func TestRaceIntegration(t *testing.T) {
 
 	cfg := &config.Configuration{}
 
-	biddersInfo, err := config.LoadBidderInfoFromDisk("../static/bidder-info")
+	biddersInfo, err := config.LoadBidderInfo("../static/bidder-info")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1955,7 +1955,7 @@ func TestPanicRecovery(t *testing.T) {
 		},
 	}
 
-	biddersInfo, err := config.LoadBidderInfoFromDisk("../static/bidder-info")
+	biddersInfo, err := config.LoadBidderInfo("../static/bidder-info")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2024,7 +2024,7 @@ func TestPanicRecoveryHighLevel(t *testing.T) {
 
 	cfg := &config.Configuration{}
 
-	biddersInfo, err := config.LoadBidderInfoFromDisk("../static/bidder-info")
+	biddersInfo, err := config.LoadBidderInfo("../static/bidder-info")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -4083,7 +4083,7 @@ func TestPassExperimentConfigsToHoldAuction(t *testing.T) {
 
 	cfg := &config.Configuration{}
 
-	biddersInfo, err := config.LoadBidderInfoFromDisk("../static/bidder-info")
+	biddersInfo, err := config.LoadBidderInfo("../static/bidder-info")
 	if err != nil {
 		t.Fatal(err)
 	}
