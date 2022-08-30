@@ -4,16 +4,17 @@
     "imp": [
       {
         "id": "test-imp-id",
-        "ext": {
-          "bidder": {
-            "adslotId": "12345",
-            "supplyId": "123456789",
-            "targeting": {
-              "key1": "value1",
-              "key2": "value2"
+        "banner": {
+          "format": [
+            {
+              "w": 728,
+              "h": 90
             },
-            "extId": "abc"
-          }
+            {
+              "w": 800,
+              "h": 300
+            }
+          ]
         },
         "video": {
           "context": "instream",
@@ -39,6 +40,17 @@
           "playbackmethod": [
             2
           ]
+        },
+        "ext": {
+          "bidder": {
+            "adslotId": "12345",
+            "supplyId": "123456789",
+            "targeting": {
+              "key1": "value1",
+              "key2": "value2"
+            },
+            "extId": "abc"
+          }
         }
       }
     ],
