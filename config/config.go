@@ -311,18 +311,18 @@ type TCF2 struct {
 // consent to the purpose, not the vendor. The idea is that the publisher trusts this vendor to enforce the
 // appropriate rules on their own. This only comes into play when enforceVendors is true as it lists those vendors that
 // are exempt for vendor enforcement.
-func (t *TCF2) BasicEnforcementVendor(openrtb_ext.BidderName) bool {
-	return false
-}
+// func (t *TCF2) BasicEnforcementVendor(openrtb_ext.BidderName) bool {
+// 	return false
+// }
 
-func (t *TCF2) BasicEnforcementVendors() map[string]struct{} {
-	return make(map[string]struct{})
-}
+// func (t *TCF2) BasicEnforcementVendors() map[string]struct{} {
+// 	return make(map[string]struct{})
+// }
 
-// BasiceEnforcementVendors returns a nil map because basic enforcement vendors cannot be defined at the host level
-func (t *TCF2) BasiceEnforcementVendors() map[string]struct{} {
-	return nil
-}
+// // BasiceEnforcementVendors returns a nil map because basic enforcement vendors cannot be defined at the host level
+// func (t *TCF2) BasiceEnforcementVendors() map[string]struct{} {
+// 	return nil
+// }
 
 // IntegrationEnabled checks if a given integration type is enabled. All integration types are considered either
 // enabled or disabled based on the Enabled flag.

@@ -16,19 +16,18 @@ const noBidder = ""
 
 type permissionsImpl struct {
 	// global
-	fetchVendorList       VendorListFetcher
-	gdprDefaultValue      string
-	hostVendorID          int
-	nonStandardPublishers map[string]struct{}
-	vendorIDs             map[openrtb_ext.BidderName]uint16
+	fetchVendorList        VendorListFetcher
+	gdprDefaultValue       string
+	hostVendorID           int
+	nonStandardPublishers  map[string]struct{}
+	purposeEnforcerBuilder PurposeEnforcerBuilder
+	vendorIDs              map[openrtb_ext.BidderName]uint16
 	// request-specific
 	aliasGVLIDs map[string]uint16
 	cfg         TCF2ConfigReader
 	consent     string
 	gdprSignal  Signal
 	publisherID string
-	// cached enforcers
-	// purposeEnforcers      map[consentconstants.Purpose]map[TCF2Enforcement]PurposeEnforcer
 }
 
 // called from /cookie_sync & /setuid
@@ -88,9 +87,6 @@ func (p *permissionsImpl) AuctionActivitiesAllowed(ctx context.Context, bidderCo
 	}
 
 	// vendor will be nil if not a valid TCF2 consent string
-	// if vendor == nil && parsedConsent.Version() != 2 {
-	// 	return DenyAll, nil
-	// }
 	if vendor == nil {
 		if weakVendorEnforcement && parsedConsent.Version() == 2 {
 			vendor = vendorTrue{}
@@ -156,7 +152,7 @@ func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, bidder
 	}
 
 	purpose := consentconstants.Purpose(1)
-	enforcer := p.getPurposeEnforcer(purpose, bidder, true) //TODO: true
+	enforcer := p.purposeEnforcerBuilder(purpose, bidder)
 
 	vendorInfo := VendorInfo{vendorID: vendorID, vendor: vendor}
 	if enforcer.LegalBasis(vendorInfo, bidder, consentMeta) { //-->pass vendorexception? or dont care
@@ -167,7 +163,7 @@ func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, bidder
 
 func (p *permissionsImpl) allowBidRequest(bidder openrtb_ext.BidderName, consentMeta tcf2.ConsentMetadata, vendorInfo VendorInfo) bool {
 	purpose := consentconstants.Purpose(2)
-	enforcer := p.getPurposeEnforcer(purpose, bidder, true) //TODO: true
+	enforcer := p.purposeEnforcerBuilder(purpose, bidder)
 
 	// this function will return true if purpose 2 is NOT enforced
 	if enforcer.LegalBasis(vendorInfo, bidder, consentMeta) {
@@ -191,53 +187,13 @@ func (p *permissionsImpl) allowGeo(bidder openrtb_ext.BidderName, consentMeta tc
 func (p *permissionsImpl) allowID(bidder openrtb_ext.BidderName, consentMeta tcf2.ConsentMetadata, vendorInfo VendorInfo) bool {
 	for i := 2; i <= 10; i++ {
 		purpose := consentconstants.Purpose(i)
-		enforcer := p.getPurposeEnforcer(purpose, bidder, true) //TODO: true value should be set based on the value of p.VendorList
+		enforcer := p.purposeEnforcerBuilder(purpose, bidder)
 
 		if p.cfg.PurposeEnforced(purpose) && enforcer.LegalBasis(vendorInfo, bidder, consentMeta) {
 			return true
 		}
 	}
 
-	return false
-}
-
-func (p *permissionsImpl) getPurposeEnforcer(purpose consentconstants.Purpose, bidder openrtb_ext.BidderName, haveGVL bool) PurposeEnforcer {
-	// use cached enforcer if already exists
-	// if enforcer, ok := ts.purposeEnforcers[purpose]; ok { //TODO: need to consider when both enforcers are needed for a purpose because some vendors require basic enforcement
-	// 	return enforcer
-	// }
-
-	cfg := purposeConfig{
-		PurposeID:                  purpose,
-		EnforceAlgo:                p.cfg.PurposeEnforcementAlgo(purpose),
-		EnforcePurpose:             p.cfg.PurposeEnforced(purpose),
-		EnforceVendors:             p.cfg.PurposeEnforcingVendors(purpose),
-		VendorExceptionMap:         p.cfg.PurposeVendorExceptions(purpose),
-		BasicEnforcementVendorsMap: p.cfg.BasicEnforcementVendors(),
-	}
-
-	basicEnforcementVendor := p.cfg.BasicEnforcementVendor(bidder)
-	if purpose == consentconstants.Purpose(1) {
-		basicEnforcementVendor = false
-	}
-
-	downgraded := p.isDowngraded(cfg.EnforceAlgo, basicEnforcementVendor, haveGVL)
-	enforcer := NewPurposeEnforcer(cfg, downgraded)
-
-	//cache the enforcer
-	//TODO: uncomment
-	// ts.purposeEnforcers[purpose] := enforcer
-
-	return enforcer
-}
-
-func (p *permissionsImpl) isDowngraded(enforceAlgo string, basicEnforcementVendor bool, haveGVL bool) bool {
-	if enforceAlgo == TCF2FullEnforcement && basicEnforcementVendor {
-		return true
-	}
-	if enforceAlgo == TCF2FullEnforcement && !haveGVL {
-		return true
-	}
 	return false
 }
 
@@ -281,11 +237,9 @@ type AlwaysAllow struct{}
 func (a AlwaysAllow) HostCookiesAllowed(ctx context.Context) (bool, error) {
 	return true, nil
 }
-
 func (a AlwaysAllow) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName) (bool, error) {
 	return true, nil
 }
-
 func (a AlwaysAllow) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (permissions AuctionPermissions, err error) {
 	return AllowAll, nil
 }
