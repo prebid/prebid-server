@@ -207,7 +207,12 @@ func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters
 			})
 	}
 
-	endpoint, _ := makeEndpointUrl(ortbRequest, a, noCookies)
+	endpoint, err := makeEndpointUrl(ortbRequest, a, noCookies)
+	if err != nil {
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("failed to parse URL: %s", err),
+		}}
+	}
 
 	site := defaultSite
 	if ortbRequest.Site != nil && ortbRequest.Site.Page != "" {
