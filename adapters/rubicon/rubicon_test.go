@@ -27,12 +27,6 @@ type rubiAppendTrackerUrlTestScenario struct {
 	expected string
 }
 
-type rubiSetImpNativeTestErrorScenario struct {
-	request       string
-	impNative     map[string]interface{}
-	expectedError error
-}
-
 type rubiPopulateFpdAttributesScenario struct {
 	source json.RawMessage
 	target map[string]interface{}
@@ -263,7 +257,11 @@ func TestAppendTracker(t *testing.T) {
 }
 
 func TestSetImpNative(t *testing.T) {
-	testScenarios := []rubiSetImpNativeTestErrorScenario{
+	testScenarios := []struct {
+		request       string
+		impNative     map[string]interface{}
+		expectedError error
+	}{
 		{
 			request:       "{}",
 			impNative:     map[string]interface{}{"somekey": "someValue"},
