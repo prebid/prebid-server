@@ -156,8 +156,8 @@ func TestDefaults(t *testing.T) {
 	cmpNils(t, "host_schain_node", cfg.HostSChainNode)
 
 	//Assert the price floor default values
-	cmpBools(t, "price_floors.enabled", cfg.Experiment.PriceFloors.Enabled, true)
-	cmpBools(t, "price_floors.use_dynamic_data", cfg.Experiment.PriceFloors.UseDynamicData, true)
+	cmpBools(t, "price_floors.enabled", cfg.Experiment.PriceFloors.Enabled, false)
+	cmpBools(t, "price_floors.use_dynamic_data", cfg.Experiment.PriceFloors.UseDynamicData, false)
 	cmpInts(t, "price_floors.enforce_floors_rate", cfg.Experiment.PriceFloors.EnforceFloorsRate, 100)
 	cmpBools(t, "price_floors.enforce_deal_floors", cfg.Experiment.PriceFloors.EnforceDealFloors, false)
 

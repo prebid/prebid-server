@@ -37,7 +37,7 @@ func validateFloorSkipRates(floorExt *openrtb_ext.PriceFloorRules) []error {
 	return errs
 }
 
-func validateFloorModelGroups(modelGroups []openrtb_ext.PriceFloorModelGroup) ([]openrtb_ext.PriceFloorModelGroup, []error) {
+func selectValidFloorModelGroups(modelGroups []openrtb_ext.PriceFloorModelGroup) ([]openrtb_ext.PriceFloorModelGroup, []error) {
 	var errs []error
 	var validModelGroups []openrtb_ext.PriceFloorModelGroup
 	for _, modelGroup := range modelGroups {

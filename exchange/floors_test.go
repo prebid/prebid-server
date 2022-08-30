@@ -37,6 +37,15 @@ func (c convert) GetRates() *map[string]map[string]float64 {
 	return &map[string]map[string]float64{}
 }
 
+func ErrToString(Err []error) []string {
+	var errString []string
+	for _, eachErr := range Err {
+		errString = append(errString, eachErr.Error())
+	}
+	sort.Strings(errString)
+	return errString
+}
+
 func TestEnforceFloorToBids(t *testing.T) {
 
 	type args struct {
@@ -785,8 +794,7 @@ func TestEnforceFloorToBids(t *testing.T) {
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("enforceFloorToBids() got = %v, want %v", got, tt.want)
 			}
-			sort.Strings(got1)
-			assert.Equal(t, tt.want1, got1)
+			assert.Equal(t, tt.want1, ErrToString(got1))
 		})
 	}
 }
@@ -868,7 +876,7 @@ func TestEnforceFloorToBidsConversion(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, got1 := enforceFloorToBids(tt.args.bidRequest, tt.args.seatBids, tt.args.conversions, tt.args.enforceDealFloors)
 			assert.Equal(t, tt.want, got)
-			assert.Equal(t, tt.want1, got1)
+			assert.Equal(t, tt.want1, ErrToString(got1))
 		})
 	}
 }
@@ -887,7 +895,7 @@ func (f floorStruct) EnforceDealFloor() bool {
 	return true
 }
 
-func TestSignalFloors(t *testing.T) {
+func TestselectFloorsAndModifyImp(t *testing.T) {
 	type args struct {
 		r                  *AuctionRequest
 		floor              floors.Floor
@@ -918,8 +926,8 @@ func TestSignalFloors(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := signalFloors(tt.args.r, tt.args.floor, tt.args.conversions, tt.args.responseDebugAllow); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("signalFloors() = %v, want %v", got, tt.want)
+			if got := selectFloorsAndModifyImp(tt.args.r, tt.args.floor, tt.args.conversions, tt.args.responseDebugAllow); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("selectFloorsAndModifyImp() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -1000,8 +1008,7 @@ func TestEnforceFloors(t *testing.T) {
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("enforceFloors() got = %v, want %v", got, tt.want)
 			}
-			sort.Strings(got1)
-			assert.Equal(t, tt.want1, got1)
+			assert.Equal(t, tt.want1, ErrToString(got1))
 		})
 	}
 }

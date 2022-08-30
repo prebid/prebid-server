@@ -33,8 +33,10 @@ type Experiment struct {
 }
 
 type PriceFloors struct {
-	Enabled           bool `mapstructure:"enabled"`
-	UseDynamicData    bool `mapstructure:"use_dynamic_data"`
+	Enabled        bool `mapstructure:"enabled"`
+	UseDynamicData bool `mapstructure:"use_dynamic_data"`
+	// Floors enforcement rate, values can be 0 to 100,
+	// value 0 means do not enforce floors values and 100 means enforce floors values for all the requests
 	EnforceFloorsRate int  `mapstructure:"enforce_floors_rate"`
 	EnforceDealFloors bool `mapstructure:"enforce_deal_floors"`
 }
@@ -101,6 +103,9 @@ func (cfg *Experiment) validate(errs []error) []error {
 
 	if cfg.PriceFloors.Enabled {
 		glog.Warning(`PriceFloors.Enabled will enforce floor feature which is still under development.`)
+		if cfg.PriceFloors.EnforceFloorsRate < 0 || cfg.PriceFloors.EnforceFloorsRate > 100 {
+			glog.Warning(`PriceFloors.EnforceFloorsRate value must be within 0 to 100.`)
+		}
 	}
 	return errs
 }

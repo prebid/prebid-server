@@ -255,7 +255,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	conversions := e.getAuctionCurrencyRates(requestExt.Prebid.CurrencyConversions)
 
 	// If floors feature is enabled at server and request level, Update floors values in impression object
-	floorErrs := signalFloors(&r, e.floor, conversions, responseDebugAllow)
+	floorErrs := selectFloorsAndModifyImp(&r, e.floor, conversions, responseDebugAllow)
 	errs = append(errs, floorErrs...)
 
 	recordImpMetrics(r.BidRequestWrapper.BidRequest, e.me)
@@ -303,10 +303,8 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	if anyBidsReturned {
 
 		//If floor enforcement config enabled then filter bids
-		adapterBids, bidRejections := enforceFloors(&r, adapterBids, e.floor, conversions, responseDebugAllow)
-		for _, message := range bidRejections {
-			errs = append(errs, errors.New(message))
-		}
+		adapterBids, enforceErrs := enforceFloors(&r, adapterBids, e.floor, conversions, responseDebugAllow)
+		errs = append(errs, enforceErrs...)
 
 		var bidCategory map[string]string
 		//If includebrandcategory is present in ext then CE feature is on.

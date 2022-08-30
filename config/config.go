@@ -1224,8 +1224,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("experiment.adscert.remote.url", "")
 	v.SetDefault("experiment.adscert.remote.signing_timeout_ms", 5)
 
-	v.SetDefault("experiment.price_floors.enabled", true)
-	v.SetDefault("experiment.price_floors.use_dynamic_data", true)
+	v.SetDefault("experiment.price_floors.enabled", false)
+	v.SetDefault("experiment.price_floors.use_dynamic_data", false)
 	v.SetDefault("experiment.price_floors.enforce_floors_rate", 100)
 	v.SetDefault("experiment.price_floors.enforce_deal_floors", false)
 }

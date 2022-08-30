@@ -65,7 +65,7 @@ func TestValidateFloorSkipRates(t *testing.T) {
 	}
 }
 
-func TestValidateFloorModelGroups(t *testing.T) {
+func TestSelectValidFloorModelGroups(t *testing.T) {
 	floorExt := &openrtb_ext.PriceFloorRules{Data: &openrtb_ext.PriceFloorData{
 		ModelGroups: []openrtb_ext.PriceFloorModelGroup{{
 			ModelWeight:  50,
@@ -185,7 +185,7 @@ func TestValidateFloorModelGroups(t *testing.T) {
 	}
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			_, ErrList := validateFloorModelGroups(tc.floorExt.Data.ModelGroups)
+			_, ErrList := selectValidFloorModelGroups(tc.floorExt.Data.ModelGroups)
 
 			if !reflect.DeepEqual(tc.floorExt.Data.ModelGroups[0].ModelVersion, tc.ModelVersion) {
 				t.Errorf("Floor Model Version mismatch error: \nreturn:\t%v\nwant:\t%v", tc.floorExt.Data.ModelGroups[0].ModelVersion, tc.ModelVersion)
