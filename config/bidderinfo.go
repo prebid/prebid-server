@@ -191,10 +191,11 @@ func LoadBidderInfo(path string) (BidderInfos, error) {
 			return nil, fmt.Errorf("error parsing yaml for bidder %s: %v", fileName, err)
 		}
 
-		bidderName := strings.Split(fileName, ".yaml")
-		infos[(bidderName[0])] = info
+		bidderName := strings.Split(fileName, ".")
+		if len(bidderName) == 2 && bidderName[1] == "yaml" {
+			infos[(bidderName[0])] = info
+		}
 	}
-
 	return infos, nil
 }
 
@@ -331,9 +332,9 @@ func validateSyncer(bidderInfo BidderInfo) error {
 		return nil
 	}
 
-	for _, v := range bidderInfo.Syncer.Supports {
-		if !strings.EqualFold(v, "iframe") && !strings.EqualFold(v, "redirect") {
-			return fmt.Errorf("syncer could not be created, invalid supported endpoint: %s", v)
+	for _, supports := range bidderInfo.Syncer.Supports {
+		if !strings.EqualFold(supports, "iframe") && !strings.EqualFold(supports, "redirect") {
+			return fmt.Errorf("syncer could not be created, invalid supported endpoint: %s", supports)
 		}
 	}
 
