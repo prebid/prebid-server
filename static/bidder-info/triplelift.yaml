@@ -20,3 +20,4 @@ userSync:
   redirect:
     url: "https://eb2.3lift.com/getuid?gdpr={{.GDPR}}&cmp_cs={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir={{.RedirectURL}}"
     userMacro: "$UID"
+endpointCompression: "GZIP"
