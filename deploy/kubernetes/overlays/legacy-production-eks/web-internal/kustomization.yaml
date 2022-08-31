@@ -27,7 +27,7 @@ configMapGenerator:
 images:
 - name: app
   newName: localhost:5000/tapjoy/tpe_prebid_service
-  newTag: d5fe566b6d91da7f89d6455e42c6d771dd96f836
+  newTag: f76f13deca58571e33f9fcb628f530ba1c55339e
 - name: nginx
   newName: localhost:5000/tapjoy/nginx
   newTag: latest

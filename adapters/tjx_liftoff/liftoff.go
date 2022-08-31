@@ -674,6 +674,20 @@ func (a *adapter) makeRequestData(liftoffRequest *openrtb.BidRequest, numRequest
 
 func injectAuctionID(bid *openrtb2.Bid, auctionID string) {
 	var bidExt liftoffBidExt
+
+	// create new ext in case liftoff response does not have one
+	if bid.Ext == nil {
+		bidExt.AuctionID = auctionID
+
+		rawBidExt, err := json.Marshal(bidExt)
+		if err != nil {
+			return
+		}
+
+		bid.Ext = rawBidExt
+		return
+	}
+
 	if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
 		return
 	}
@@ -686,5 +700,4 @@ func injectAuctionID(bid *openrtb2.Bid, auctionID string) {
 	}
 
 	bid.Ext = rawBidExt
-	return
 }
