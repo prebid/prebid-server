@@ -108,7 +108,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	var errors []error
 	var onePointTwoImps = make([]impOutbound, 0, len(request.Imp))
 	var onePointZeroImps = make([]impOutbound, 0, len(request.Imp))
-	printJson(request)
 	// site ext is used in all requests
 	if request.Site == nil {
 		errors = append(errors, &errortypes.BadInput{
@@ -118,6 +117,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	}
 	var siteExt siteExt
 	if err := json.Unmarshal(request.Site.Ext, &siteExt); err != nil {
+		printJson("error unmarshalling site ext")
 		errors = append(errors, &errortypes.BadInput{
 			Message: err.Error(),
 		})
@@ -126,6 +126,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	for _, imp := range request.Imp {
 		var bidderExt adapters.ExtImpBidder
 		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+			printJson("error unmarshalling bidder ext")
+
 			errors = append(errors, &errortypes.BadInput{
 				Message: err.Error(),
 			})
@@ -134,15 +136,25 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 		var nativeImpExt openrtb_ext.ExtImpNative
 		if err := json.Unmarshal(bidderExt.Bidder, &nativeImpExt); err != nil {
+			printJson("error unmarshalling native ext")
+
 			errors = append(errors, &errortypes.BadInput{
 				Message: err.Error(),
 			})
 			continue
 		}
-
+		if imp.Native == nil {
+			errors = append(errors, &errortypes.BadInput{
+				Message: "Invalid BidType, expected native",
+			})
+			continue
+		}
 		// get a 1.2 native object here (default as recieved)
 		var onePointTwoNativeRequest nativeRequests.Request
+
 		if err := json.Unmarshal([]byte(imp.Native.Request), &onePointTwoNativeRequest); err != nil {
+			printJson("error unmarshalling native request")
+
 			errors = append(errors, &errortypes.BadInput{
 				Message: err.Error(),
 			})
@@ -206,6 +218,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		onePointTwoImps = append(onePointTwoImps, onePointTwoImp)
 
 	}
+	if len(errors) != 0 {
+		return nil, errors
+	}
 	// turn the 1.0 imps into a rubicon happy request
 	onePointZeroRequest := rubiconBidRequest{
 		*request,
@@ -217,12 +232,12 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		onePointTwoImps,
 	}
 	// for my dev testing, remove when going live
-	if onePointZeroRequest.Device.IP == "" {
-		onePointZeroRequest.Device.IP = "75.54.23.3"
-	}
-	if onePointZeroRequest.User.BuyerUID == "" {
-		onePointZeroRequest.User.BuyerUID = "L5QJF35F-1O-MBBY"
-	}
+	// if onePointZeroRequest.Device.IP == "" {
+	// 	onePointZeroRequest.Device.IP = "75.54.23.3"
+	// }
+	// if onePointZeroRequest.User.BuyerUID == "" {
+	// 	onePointZeroRequest.User.BuyerUID = "L5QJF35F-1O-MBBY"
+	// }
 	// not sure if we need this or not, without getting responses it's very hard
 	onePointZeroRequest.Ext = nil
 

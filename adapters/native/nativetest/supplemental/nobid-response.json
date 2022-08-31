@@ -1,36 +1,238 @@
 {
   "mockBidRequest": {
     "id": "test-request-id",
-    "imp": [{
+    "imp": [
+      {
         "id": "test-imp-id",
         "native": {
-          "request": ""
+          "request": "{\"context\":1,\"plcmttype\":1,\"assets\":[{\"id\":0,\"img\":{\"type\":3,\"w\":360,\"h\":360}},{\"id\":1,\"required\":1,\"title\":{\"len\":1000}},{\"id\":2,\"data\":{\"type\":1}},{\"id\":3,\"data\":{\"type\":2}},{\"id\":4,\"img\":{\"type\":1,\"w\":75,\"h\":75}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1]}]}",
+          "ver": "1.2"
         },
         "ext": {
           "bidder": {
-            "mid": 12345
+            "accountId": 14474,
+            "siteId": 396736,
+            "zoneId": 2216074
           }
         }
-      }]
+      }
+    ],
+    "site": {
+      "ext": {}
+    },
+    "device": {"ip":"75.54.23.3"},
+    "user": {            "buyeruid": "L5QJF35F-1O-MBBY"
+  },
+    "source": {
+      "ext":{"schain":{"ver":"","complete":0,"nodes":null}}}
   },
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://adx.adform.net/adx/openrtb",
+        "uri": "https://exapi-eu.rubiconproject.com/a/api/exchange.json",
         "body": {
           "id": "test-request-id",
-          "imp": [{
+          "site": {
+            "ext": {}
+          },
+          "source": {
             "ext": {
-              "bidder": {
-                "mid": 12345
+              "schain": {
+                "ver": "",
+                "complete": 0,
+                "nodes": null
               }
-            },
-            "id": "test-imp-id",
-            "native": {
-              "request": ""
-            },
-            "tagid": "12345"
-          }]
+            }
+          },
+          "device": {
+            "ip": "75.54.23.3"
+          },
+          "user": {
+            "buyeruid": "L5QJF35F-1O-MBBY"
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "tagid": "2216074",
+              "native": {
+                "requestobj": {
+                  "context": 1,
+                  "plcmttype": 1,
+                  "assets": [
+                    {
+                      "id": 0,
+                      "img": {
+                        "type": 3,
+                        "w": 360,
+                        "h": 360
+                      }
+                    },
+                    {
+                      "id": 1,
+                      "required": 1,
+                      "title": {
+                        "len": 1000
+                      }
+                    },
+                    {
+                      "id": 2,
+                      "data": {
+                        "type": 1
+                      }
+                    },
+                    {
+                      "id": 3,
+                      "data": {
+                        "type": 2
+                      }
+                    },
+                    {
+                      "id": 4,
+                      "img": {
+                        "type": 1,
+                        "w": 75,
+                        "h": 75
+                      }
+                    }
+                  ],
+                  "eventtrackers": [
+                    {
+                      "event": 1,
+                      "methods": [
+                        1
+                      ]
+                    }
+                  ]
+                },
+                "ver": "1.2",
+                "api": [
+                  1,
+                  2,
+                  3,
+                  4,
+                  5,
+                  6,
+                  7
+                ]
+              },
+              "ext": {
+                "rp": {
+                  "target": {
+                    "context": null,
+                    "test": null
+                  },
+                  "zone_id": 2216074
+                }
+              },
+              "bidfloor": 0.01
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": null,
+          "bidid": null,
+          "cur": null
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "https://exapi-eu.rubiconproject.com/a/api/exchange.json",
+        "body": {
+          "id": "test-request-id",
+          "site": {
+            "ext": {}
+          },
+          "device": {
+            "ip": "75.54.23.3"
+          },
+          "user": {
+            "buyeruid": "L5QJF35F-1O-MBBY"
+          },
+          "source": {
+            "ext": {
+              "schain": {
+                "ver": "",
+                "complete": 0,
+                "nodes": null
+              }
+            }
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "tagid": "2216074",
+              "native": {
+                "requestobj": {
+                  "ver": "1.0",
+                  "layout": 3,
+                  "context": 1,
+                  "plcmttype": 1,
+                  "assets": [
+                    {
+                      "id": 0,
+                      "img": {
+                        "type": 3,
+                        "w": 360,
+                        "h": 360
+                      }
+                    },
+                    {
+                      "id": 1,
+                      "required": 1,
+                      "title": {
+                        "len": 1000
+                      }
+                    },
+                    {
+                      "id": 2,
+                      "data": {
+                        "type": 1
+                      }
+                    },
+                    {
+                      "id": 3,
+                      "data": {
+                        "type": 2
+                      }
+                    },
+                    {
+                      "id": 4,
+                      "img": {
+                        "type": 1,
+                        "w": 75,
+                        "h": 75
+                      }
+                    }
+                  ]
+                },
+                "ver": "1.0",
+                "api": [
+                  1,
+                  2,
+                  3,
+                  4,
+                  5,
+                  6,
+                  7
+                ]
+              },
+              "ext": {
+                "rp": {
+                  "target": {
+                    "context": null,
+                    "test": null
+                  },
+                  "zone_id": 2216074
+                }
+              },
+              "bidfloor": 0.01
+            }
+          ]
         }
       },
       "mockResponse": {
