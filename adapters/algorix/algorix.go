@@ -17,6 +17,7 @@ import (
 
 type adapter struct {
 	EndpointTemplate *template.Template
+	ServerInfo       config.Server
 }
 
 type algorixVideoExt struct {
@@ -28,13 +29,14 @@ type algorixResponseBidExt struct {
 }
 
 // Builder builds a new instance of the AlgoriX adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
 	endpoint, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 	bidder := &adapter{
 		EndpointTemplate: endpoint,
+		ServerInfo:       serverInfo,
 	}
 	return bidder, nil
 }

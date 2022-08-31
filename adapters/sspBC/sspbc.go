@@ -73,11 +73,12 @@ type responseExt struct {
 type adapter struct {
 	endpoint       string
 	bannerTemplate *template.Template
+	ServerInfo     config.Server
 }
 
 // ---------------ADAPTER INTERFACE------------------
 // Builder builds a new instance of the sspBC adapter
-func Builder(_ openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(_ openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
 	// HTML template used to create banner ads
 	const bannerHTML = `<html><head><title></title><meta charset="UTF-8"><meta name="viewport" content="` +
 		`width=device-width, initial-scale=1.0"><style> body { background-color: transparent; margin: 0;` +
@@ -96,6 +97,7 @@ func Builder(_ openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, 
 	bidder := &adapter{
 		endpoint:       config.Endpoint,
 		bannerTemplate: bannerTemplate,
+		ServerInfo:     serverInfo,
 	}
 
 	return bidder, nil

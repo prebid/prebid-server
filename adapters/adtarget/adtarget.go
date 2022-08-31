@@ -13,7 +13,8 @@ import (
 )
 
 type AdtargetAdapter struct {
-	endpoint string
+	endpoint   string
+	ServerInfo config.Server
 }
 
 type adtargetImpExt struct {
@@ -184,9 +185,10 @@ func validateImpressionAndSetExt(imp *openrtb2.Imp) (int, error) {
 }
 
 // Builder builds a new instance of the Adtarget adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
 	bidder := &AdtargetAdapter{
-		endpoint: config.Endpoint,
+		endpoint:   config.Endpoint,
+		ServerInfo: serverInfo,
 	}
 	return bidder, nil
 }

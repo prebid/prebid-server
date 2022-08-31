@@ -57,7 +57,8 @@ type ExtRequestPrebid struct {
 	// NoSale specifies bidders with whom the publisher has a legal relationship where the
 	// passing of personally identifiable information doesn't constitute a sale per CCPA law.
 	// The array may contain a single sstar ('*') entry to represent all bidders.
-	NoSale []string `json:"nosale,omitempty"`
+	NoSale []string                `json:"nosale,omitempty"`
+	Server *ExtRequestPrebidServer `json:"server,omitempty"`
 }
 
 // Experiment defines if experimental features are available for the request
@@ -106,6 +107,12 @@ type ExtRequestPrebidChannel struct {
 type ExtRequestPrebidCache struct {
 	Bids    *ExtRequestPrebidCacheBids `json:"bids"`
 	VastXML *ExtRequestPrebidCacheVAST `json:"vastxml"`
+}
+
+type ExtRequestPrebidServer struct {
+	ExternalUrl string `json:"externalurl"`
+	GdprID      string `json:"gvlid"`
+	Datacenter  string `json:"datacenter"`
 }
 
 // UnmarshalJSON prevents nil bids arguments.

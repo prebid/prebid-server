@@ -15,17 +15,19 @@ import (
 )
 
 type adapter struct {
-	endpoint *template.Template
+	endpoint   *template.Template
+	ServerInfo config.Server
 }
 
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
 	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
 	}
 
 	bidder := &adapter{
-		endpoint: template,
+		endpoint:   template,
+		ServerInfo: serverInfo,
 	}
 	return bidder, nil
 }

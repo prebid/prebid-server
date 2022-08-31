@@ -18,8 +18,9 @@ import (
 
 type QueryString map[string]string
 type adapter struct {
-	time     timeutil.Time
-	endpoint string
+	time       timeutil.Time
+	endpoint   string
+	ServerInfo config.Server
 }
 type adnAdunit struct {
 	AuId       string    `json:"auId"`
@@ -66,10 +67,11 @@ const defaultSite = "unknown"
 const minutesInHour = 60
 
 // Builder builds a new instance of the Adnuntius adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
-		time:     &timeutil.RealTime{},
-		endpoint: config.Endpoint,
+		time:       &timeutil.RealTime{},
+		endpoint:   config.Endpoint,
+		ServerInfo: serverInfo,
 	}
 
 	return bidder, nil
@@ -154,7 +156,7 @@ func getImpSizes(imp openrtb2.Imp) [][]int64 {
 }
 
 /*
-	Generate the requests to Adnuntius to reduce the amount of requests going out.
+Generate the requests to Adnuntius to reduce the amount of requests going out.
 */
 func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters.RequestData, []error) {
 	var requestData []*adapters.RequestData

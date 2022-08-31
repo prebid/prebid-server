@@ -35,6 +35,7 @@ const fakeIP = "255.255.255.255"
 type BeachfrontAdapter struct {
 	bannerEndpoint string
 	extraInfo      ExtraInfo
+	ServerInfo     config.Server
 }
 
 type ExtraInfo struct {
@@ -58,7 +59,9 @@ type beachfrontVideoRequest struct {
 }
 
 // ---------------------------------------------------
-//              Banner
+//
+//	Banner
+//
 // ---------------------------------------------------
 type beachfrontBannerRequest struct {
 	Slots          []beachfrontSlot     `json:"slots"`
@@ -747,7 +750,7 @@ func removeVideoElement(slice []beachfrontVideoRequest, s int) []beachfrontVideo
 }
 
 // Builder builds a new instance of the Beachfront adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
 	extraInfo, err := getExtraInfo(config.ExtraAdapterInfo)
 	if err != nil {
 		return nil, err
@@ -756,6 +759,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	bidder := &BeachfrontAdapter{
 		bannerEndpoint: config.Endpoint,
 		extraInfo:      extraInfo,
+		ServerInfo:     serverInfo,
 	}
 	return bidder, nil
 }

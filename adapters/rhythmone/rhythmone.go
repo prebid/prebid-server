@@ -14,7 +14,8 @@ import (
 )
 
 type RhythmoneAdapter struct {
-	endPoint string
+	endPoint   string
+	ServerInfo config.Server
 }
 
 func (a *RhythmoneAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -96,9 +97,10 @@ func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 }
 
 // Builder builds a new instance of the Rythomone adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
 	bidder := &RhythmoneAdapter{
-		endPoint: config.Endpoint,
+		endPoint:   config.Endpoint,
+		ServerInfo: serverInfo,
 	}
 	return bidder, nil
 }

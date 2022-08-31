@@ -16,7 +16,8 @@ import (
 )
 
 type GammaAdapter struct {
-	URI string
+	URI        string
+	ServerInfo config.Server
 }
 
 type gammaBid struct {
@@ -276,7 +277,7 @@ func (a *GammaAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRe
 	return bidResponse, errs
 }
 
-//Adding header fields to request header
+// Adding header fields to request header
 func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue string) {
 	if len(headerValue) > 0 {
 		headers.Add(headerName, headerValue)
@@ -298,9 +299,10 @@ func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 }
 
 // Builder builds a new instance of the Gamma adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
 	bidder := &GammaAdapter{
-		URI: config.Endpoint,
+		URI:        config.Endpoint,
+		ServerInfo: serverInfo,
 	}
 	return bidder, nil
 }

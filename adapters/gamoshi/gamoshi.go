@@ -15,7 +15,8 @@ import (
 )
 
 type GamoshiAdapter struct {
-	URI string
+	URI        string
+	ServerInfo config.Server
 }
 
 func (a *GamoshiAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -182,9 +183,10 @@ func getMediaType(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 }
 
 // Builder builds a new instance of the Gamoshi adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
 	bidder := &GamoshiAdapter{
-		URI: config.Endpoint,
+		URI:        config.Endpoint,
+		ServerInfo: serverInfo,
 	}
 	return bidder, nil
 }

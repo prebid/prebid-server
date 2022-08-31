@@ -13,7 +13,8 @@ import (
 )
 
 type TripleliftAdapter struct {
-	endpoint string
+	endpoint   string
+	ServerInfo config.Server
 }
 
 type TripleliftInnerExt struct {
@@ -143,9 +144,10 @@ func (a *TripleliftAdapter) MakeBids(internalRequest *openrtb2.BidRequest, exter
 }
 
 // Builder builds a new instance of the Triplelift adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
 	bidder := &TripleliftAdapter{
-		endpoint: config.Endpoint,
+		endpoint:   config.Endpoint,
+		ServerInfo: serverInfo,
 	}
 	return bidder, nil
 }

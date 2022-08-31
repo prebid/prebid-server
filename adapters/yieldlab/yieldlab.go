@@ -23,14 +23,16 @@ type YieldlabAdapter struct {
 	endpoint    string
 	cacheBuster cacheBuster
 	getWeek     weekGenerator
+	ServerInfo  config.Server
 }
 
 // Builder builds a new instance of the Yieldlab adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
 	bidder := &YieldlabAdapter{
 		endpoint:    config.Endpoint,
 		cacheBuster: defaultCacheBuster,
 		getWeek:     defaultWeekGenerator,
+		ServerInfo:  serverInfo,
 	}
 	return bidder, nil
 }

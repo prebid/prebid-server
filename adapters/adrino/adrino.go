@@ -13,7 +13,8 @@ import (
 )
 
 type adapter struct {
-	endpoint string
+	endpoint   string
+	ServerInfo config.Server
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -77,9 +78,10 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	return bidResponse, errs
 }
 
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
-		endpoint: config.Endpoint,
+		endpoint:   config.Endpoint,
+		ServerInfo: serverInfo,
 	}
 	return bidder, nil
 }

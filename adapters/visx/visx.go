@@ -13,7 +13,8 @@ import (
 )
 
 type VisxAdapter struct {
-	endpoint string
+	endpoint   string
+	ServerInfo config.Server
 }
 
 type visxBidExtPrebidMeta struct {
@@ -175,9 +176,10 @@ func getMediaTypeForImp(impID string, imps []openrtb2.Imp, bid visxBid) (openrtb
 }
 
 // Builder builds a new instance of the Visx adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
 	bidder := &VisxAdapter{
-		endpoint: config.Endpoint,
+		endpoint:   config.Endpoint,
+		ServerInfo: serverInfo,
 	}
 	return bidder, nil
 }

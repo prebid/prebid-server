@@ -3,17 +3,19 @@ package orbidder
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"strings"
+
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"net/http"
-	"strings"
 )
 
 type OrbidderAdapter struct {
-	endpoint string
+	endpoint   string
+	ServerInfo config.Server
 }
 
 // MakeRequests makes the HTTP requests which should be made to fetch bids from orbidder.
@@ -139,9 +141,10 @@ func (rcv OrbidderAdapter) MakeBids(_ *openrtb2.BidRequest, _ *adapters.RequestD
 }
 
 // Builder builds a new instance of the Orbidder adapter for the given bidder with the given config.
-func Builder(_ openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(_ openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
 	bidder := &OrbidderAdapter{
-		endpoint: config.Endpoint,
+		endpoint:   config.Endpoint,
+		ServerInfo: serverInfo,
 	}
 	return bidder, nil
 }

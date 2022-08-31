@@ -17,18 +17,20 @@ const displayManagerVer string = "2.0.0"
 
 // DeepintentAdapter struct
 type DeepintentAdapter struct {
-	URI string
+	URI        string
+	ServerInfo config.Server
 }
 
 // Builder builds a new instance of the Deepintent adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
 	bidder := &DeepintentAdapter{
-		URI: config.Endpoint,
+		URI:        config.Endpoint,
+		ServerInfo: serverInfo,
 	}
 	return bidder, nil
 }
 
-//MakeRequests which creates request object for Deepintent DSP
+// MakeRequests which creates request object for Deepintent DSP
 func (d *DeepintentAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var deepintentExt openrtb_ext.ExtImpDeepintent

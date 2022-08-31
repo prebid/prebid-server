@@ -242,8 +242,9 @@ type monitor struct {
 }
 
 type adapter struct {
-	endpoint  string
-	extraInfo ExtraInfo
+	endpoint   string
+	extraInfo  ExtraInfo
+	ServerInfo config.Server
 }
 
 type ExtraInfo struct {
@@ -377,15 +378,16 @@ func (a *adapter) MakeBids(openRTBRequest *openrtb2.BidRequest, requestToBidder 
 }
 
 // Builder builds a new instance of the HuaweiAds adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
 	extraInfo, err := getExtraInfo(config.ExtraAdapterInfo)
 	if err != nil {
 		return nil, err
 	}
 
 	bidder := &adapter{
-		endpoint:  config.Endpoint,
-		extraInfo: extraInfo,
+		endpoint:   config.Endpoint,
+		extraInfo:  extraInfo,
+		ServerInfo: serverInfo,
 	}
 	return bidder, nil
 }

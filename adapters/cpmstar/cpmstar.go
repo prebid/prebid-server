@@ -13,7 +13,8 @@ import (
 )
 
 type Adapter struct {
-	endpoint string
+	endpoint   string
+	ServerInfo config.Server
 }
 
 func (a *Adapter) MakeRequests(request *openrtb2.BidRequest, unused *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -156,9 +157,10 @@ func (a *Adapter) MakeBids(bidRequest *openrtb2.BidRequest, unused *adapters.Req
 }
 
 // Builder builds a new instance of the Cpmstar adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
 	bidder := &Adapter{
-		endpoint: config.Endpoint,
+		endpoint:   config.Endpoint,
+		ServerInfo: serverInfo,
 	}
 	return bidder, nil
 }

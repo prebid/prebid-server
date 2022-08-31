@@ -23,6 +23,7 @@ const TYPE_CNN = "prebid"
 
 type TappxAdapter struct {
 	endpointTemplate *template.Template
+	ServerInfo       config.Server
 }
 
 type Bidder struct {
@@ -37,7 +38,7 @@ type Ext struct {
 }
 
 // Builder builds a new instance of the Tappx adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
 	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
@@ -45,6 +46,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 
 	bidder := &TappxAdapter{
 		endpointTemplate: template,
+		ServerInfo:       serverInfo,
 	}
 	return bidder, nil
 }

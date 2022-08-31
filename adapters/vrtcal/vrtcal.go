@@ -13,7 +13,8 @@ import (
 )
 
 type VrtcalAdapter struct {
-	endpoint string
+	endpoint   string
+	ServerInfo config.Server
 }
 
 func (a *VrtcalAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -87,9 +88,10 @@ func (a *VrtcalAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 }
 
 // Builder builds a new instance of the Vrtcal adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
 	bidder := &VrtcalAdapter{
-		endpoint: config.Endpoint,
+		endpoint:   config.Endpoint,
+		ServerInfo: serverInfo,
 	}
 	return bidder, nil
 }

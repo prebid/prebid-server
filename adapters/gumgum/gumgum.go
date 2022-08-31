@@ -16,7 +16,8 @@ import (
 
 // GumGumAdapter implements Bidder interface.
 type GumGumAdapter struct {
-	URI string
+	URI        string
+	ServerInfo config.Server
 }
 
 // MakeRequests makes the HTTP requests which should be made to fetch bids.
@@ -222,9 +223,10 @@ func validateVideoParams(video *openrtb2.Video) (err error) {
 }
 
 // Builder builds a new instance of the GumGum adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
 	bidder := &GumGumAdapter{
-		URI: config.Endpoint,
+		URI:        config.Endpoint,
+		ServerInfo: serverInfo,
 	}
 	return bidder, nil
 }

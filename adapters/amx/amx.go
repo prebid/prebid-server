@@ -18,11 +18,12 @@ const adapterVersion = "pbs1.2"
 
 // AMXAdapter is the AMX bid adapter
 type AMXAdapter struct {
-	endpoint string
+	endpoint   string
+	ServerInfo config.Server
 }
 
 // Builder builds a new instance of the AMX adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
 	endpointURL, err := url.Parse(config.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("invalid endpoint: %v", err)
@@ -37,7 +38,8 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	endpointURL.RawQuery = qs.Encode()
 
 	bidder := &AMXAdapter{
-		endpoint: endpointURL.String(),
+		endpoint:   endpointURL.String(),
+		ServerInfo: serverInfo,
 	}
 	return bidder, nil
 }

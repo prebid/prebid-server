@@ -13,13 +13,15 @@ import (
 )
 
 type adapter struct {
-	endPoint string
+	endPoint   string
+	ServerInfo config.Server
 }
 
 // Builder builds a new instance of the Unruly adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
-		endPoint: config.Endpoint,
+		endPoint:   config.Endpoint,
+		ServerInfo: serverInfo,
 	}
 	return bidder, nil
 }

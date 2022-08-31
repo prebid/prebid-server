@@ -15,8 +15,9 @@ import (
 )
 
 type BrightrollAdapter struct {
-	URI       string
-	extraInfo ExtraInfo
+	URI        string
+	extraInfo  ExtraInfo
+	ServerInfo config.Server
 }
 
 type ExtraInfo struct {
@@ -208,7 +209,7 @@ func getBlockedCreativetypes(attr []int8) []adcom1.CreativeAttribute {
 	return creativeAttr
 }
 
-//Adding header fields to request header
+// Adding header fields to request header
 func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue string) {
 	if len(headerValue) > 0 {
 		headers.Add(headerName, headerValue)
@@ -230,15 +231,16 @@ func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 }
 
 // Builder builds a new instance of the Brightroll adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
 	extraInfo, err := getExtraInfo(config.ExtraAdapterInfo)
 	if err != nil {
 		return nil, err
 	}
 
 	bidder := &BrightrollAdapter{
-		URI:       config.Endpoint,
-		extraInfo: extraInfo,
+		URI:        config.Endpoint,
+		extraInfo:  extraInfo,
+		ServerInfo: serverInfo,
 	}
 	return bidder, nil
 }

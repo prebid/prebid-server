@@ -11,7 +11,7 @@ import (
 )
 
 func BuildAdapters(client *http.Client, cfg *config.Configuration, infos config.BidderInfos, me metrics.MetricsEngine) (map[openrtb_ext.BidderName]AdaptedBidder, []error) {
-	bidders, errs := buildBidders(cfg.Adapters, infos, newAdapterBuilders())
+	bidders, errs := buildBidders(cfg.Adapters, infos, newAdapterBuilders(), cfg.HostServerInfo)
 	if len(errs) > 0 {
 		return nil, errs
 	}
@@ -26,7 +26,7 @@ func BuildAdapters(client *http.Client, cfg *config.Configuration, infos config.
 	return exchangeBidders, nil
 }
 
-func buildBidders(adapterConfig map[string]config.Adapter, infos config.BidderInfos, builders map[openrtb_ext.BidderName]adapters.Builder) (map[openrtb_ext.BidderName]adapters.Bidder, []error) {
+func buildBidders(adapterConfig map[string]config.Adapter, infos config.BidderInfos, builders map[openrtb_ext.BidderName]adapters.Builder, hostInfo config.Server) (map[openrtb_ext.BidderName]adapters.Bidder, []error) {
 	bidders := make(map[openrtb_ext.BidderName]adapters.Bidder)
 	var errs []error
 
@@ -50,7 +50,7 @@ func buildBidders(adapterConfig map[string]config.Adapter, infos config.BidderIn
 		}
 
 		if info.Enabled {
-			bidderInstance, builderErr := builder(bidderName, cfg)
+			bidderInstance, builderErr := builder(bidderName, cfg, hostInfo)
 			if builderErr != nil {
 				errs = append(errs, fmt.Errorf("%v: %v", bidder, builderErr))
 				continue

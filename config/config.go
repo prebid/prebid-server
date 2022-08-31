@@ -96,7 +96,8 @@ type Configuration struct {
 	GenerateRequestID bool                      `mapstructure:"generate_request_id"`
 	HostSChainNode    *openrtb2.SupplyChainNode `mapstructure:"host_schain_node"`
 	// Experiment configures non-production ready features.
-	Experiment Experiment `mapstructure:"experiment"`
+	Experiment     Experiment `mapstructure:"experiment"`
+	HostServerInfo Server     `mapstructure:"host_server_info"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
@@ -597,6 +598,12 @@ type Debug struct {
 	OverrideToken       string              `mapstructure:"override_token"`
 }
 
+type Server struct {
+	ExternalUrl string `mapstructure:"external_url"`
+	GdprID      string `mapstructure:"gdpr_id"`
+	Datacenter  string `mapstructure:"datacenter"`
+}
+
 func (cfg *Debug) validate(errs []error) []error {
 	return cfg.TimeoutNotification.validate(errs)
 }
@@ -724,7 +731,7 @@ func (cfg *Configuration) AccountDefaultsJSON() json.RawMessage {
 	return cfg.accountDefaultsJSON
 }
 
-//Allows for protocol relative URL if scheme is empty
+// Allows for protocol relative URL if scheme is empty
 func (cfg *Cache) GetBaseURL() string {
 	cfg.Scheme = strings.ToLower(cfg.Scheme)
 	if strings.Contains(cfg.Scheme, "https") {
@@ -1222,6 +1229,11 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("experiment.adscert.inprocess.domain_renewal_interval_seconds", 30)
 	v.SetDefault("experiment.adscert.remote.url", "")
 	v.SetDefault("experiment.adscert.remote.signing_timeout_ms", 5)
+
+	// Host Company Info
+	v.SetDefault("host_server_info.external_url", "")
+	v.SetDefault("host_server_info.gdpr_id", "")
+	v.SetDefault("host_server_info.datacenter", "")
 }
 
 func migrateConfig(v *viper.Viper) {

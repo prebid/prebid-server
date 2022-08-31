@@ -17,6 +17,7 @@ import (
 // Base adapter structure.
 type SmartRTBAdapter struct {
 	EndpointTemplate *template.Template
+	ServerInfo       config.Server
 }
 
 // Bid request extension appended to downstream request.
@@ -42,7 +43,7 @@ type bidExt struct {
 }
 
 // Builder builds a new instance of the SmartRTB adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
 	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
@@ -50,6 +51,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 
 	bidder := &SmartRTBAdapter{
 		EndpointTemplate: template,
+		ServerInfo:       serverInfo,
 	}
 	return bidder, nil
 }
