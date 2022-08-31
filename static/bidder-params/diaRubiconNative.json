@@ -1,0 +1,58 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Rubicon Native Adapter Params",
+    "description": "A schema which validates params accepted by the Rubicon Native adapter",
+    "type": "object",
+    "properties": {
+      "accountId": {
+        "type": [
+          "integer",
+          "string"
+        ],
+        "pattern": "^\\d+$",
+        "minimum": 1,
+        "description": "An ID which identifies the publisher's account"
+      },
+      "siteId": {
+        "type": [
+          "integer",
+          "string"
+        ],
+        "pattern": "^\\d+$",
+        "minimum": 1,
+        "description": "An ID which identifies the site selling the impression"
+      },
+      "zoneId": {
+        "type": [
+          "integer",
+          "string"
+        ],
+        "pattern": "^\\d+$",
+        "minimum": 1,
+        "description": "An ID which identifies the sub-section of the site where the impression is located"
+      },
+      "inventory": {
+        "type": "object",
+        "description": "An object defining arbitrary targeting key/value pairs related to the page",
+        "additionalProperties": {
+          "type": "array"
+        }
+      },
+      "visitor": {
+        "type": "object",
+        "description": "An object defining arbitrary targeting key/value pairs related to the visitor",
+        "additionalProperties": {
+          "type": "array"
+        }
+      },
+      "pchain": {
+        "type": "string",
+        "description": "A payment ID chain string"
+      }
+    },
+    "required": [
+      "accountId",
+      "siteId",
+      "zoneId"
+    ]
+  }

@@ -136,6 +136,7 @@ const (
 	BidderDatablocks        BidderName = "datablocks"
 	BidderDecenterAds       BidderName = "decenterads"
 	BidderDeepintent        BidderName = "deepintent"
+	BidderDiaRubiconNative  BidderName = "diaRubiconNative"
 	BidderDianomi           BidderName = "dianomi"
 	BidderDmx               BidderName = "dmx"
 	BidderEmxDigital        BidderName = "emx_digital"
@@ -292,6 +293,7 @@ func CoreBidderNames() []BidderName {
 		BidderDatablocks,
 		BidderDecenterAds,
 		BidderDeepintent,
+		BidderDiaRubiconNative,
 		BidderDianomi,
 		BidderDmx,
 		BidderEmxDigital,
