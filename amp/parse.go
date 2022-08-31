@@ -58,17 +58,23 @@ func ReadPolicy(ampParams Params, req *openrtb2.BidRequest, pbsConfigGDPREnabled
 	var warning error
 	var errMsg string
 
+	// If consent_type was set to CCPA or GDPR TCF2, we return a valid writer even if the consent string is invalid
 	switch ampParams.ConsentType {
 	case ConsentTCF2:
 		if pbsConfigGDPREnabled {
-			// Even if consent is invalid, we write the consent string to req.user.ext.consent
-			rv = gdpr.ConsentWriter{ampParams.Consent}
+			rv = buildGdprTCF2ConsentWriter(ampParams)
+			// Log warning if GDPR consent string is invalid
 			errMsg = validateTCf2ConsentString(ampParams.Consent)
 		}
 	case ConsentUSPrivacy:
+		rv = ccpa.ConsentWriter{ampParams.Consent}
 		if ccpa.ValidateConsent(ampParams.Consent) {
-			rv = ccpa.ConsentWriter{ampParams.Consent}
+			if parseGdprApplies(ampParams.GdprApplies) == 1 {
+				// Log warning because AMP request comes with both a valid CCPA string and gdpr_applies set to true
+				errMsg = "AMP request gdpr_applies value was ignored in account of provided consent string found to be CCPA and not GDPR."
+			}
 		} else {
+			// Log warning if CCPA string is invalid
 			errMsg = fmt.Sprintf("Consent string '%s' is not a valid CCPA consent string.", ampParams.Consent)
 		}
 	case ConsentTCF1:
@@ -78,10 +84,13 @@ func ReadPolicy(ampParams Params, req *openrtb2.BidRequest, pbsConfigGDPREnabled
 	default:
 		if ccpa.ValidateConsent(ampParams.Consent) {
 			rv = ccpa.ConsentWriter{ampParams.Consent}
+			if parseGdprApplies(ampParams.GdprApplies) == 1 {
+				errMsg = "AMP request gdpr_applies value was ignored in account of provided consent string found to be CCPA and not GDPR."
+			}
 		} else if pbsConfigGDPREnabled && len(validateTCf2ConsentString(ampParams.Consent)) == 0 {
-			rv = gdpr.ConsentWriter{ampParams.Consent}
+			rv = buildGdprTCF2ConsentWriter(ampParams)
 		} else {
-			errMsg = fmt.Sprintf("Consent '%s' is not recognized as either CCPA or GDPR TCF2.", ampParams.Consent)
+			errMsg = fmt.Sprintf("Consent '%s' is not recognized as CCPA nor GDPR TCF2.", ampParams.Consent)
 		}
 	}
 
@@ -91,8 +100,38 @@ func ReadPolicy(ampParams Params, req *openrtb2.BidRequest, pbsConfigGDPREnabled
 			WarningCode: errortypes.InvalidPrivacyConsentWarningCode,
 		}
 	}
-
 	return rv, warning
+}
+
+// buildGdprTCF2ConsentWriter returns a gdpr.ConsentWriter that will set regs.ext.gdpr to the value of 1 if gdpr_applies wasn't defined. If gdpr_applies
+// was defined, sets regs.ext.gdpr to either 0 or 1
+func buildGdprTCF2ConsentWriter(ampParams Params) gdpr.ConsentWriter {
+	writer := gdpr.ConsentWriter{Consent: ampParams.Consent}
+
+	// set regs.ext.gdpr:1 if gdpr_applies is not set, else regs.ext.gdpr should hold gdpr_applies value
+	var gdprValue int8 = 1
+	if ampParams.GdprApplies == nil {
+		gdprValue = 1
+	} else {
+		gdprValue = parseGdprApplies(ampParams.GdprApplies)
+	}
+	writer.RegExtGDPR = &gdprValue
+
+	return writer
+}
+
+// parseGdprApplies returns a 0 if gdprApplies was not set or if false, and a 1 if gdprApplies was set to true
+func parseGdprApplies(gdprApplies *bool) int8 {
+	gdpr := int8(0)
+	if gdprApplies == nil {
+		return gdpr
+	}
+
+	if *gdprApplies {
+		gdpr = int8(1)
+	}
+
+	return gdpr
 }
 
 // ParseParams parses the AMP parameters from a HTTP request.

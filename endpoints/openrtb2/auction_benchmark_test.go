@@ -156,7 +156,7 @@ func BenchmarkValidWholeExemplary(b *testing.B) {
 				AccountRequired:    test.Config.AccountRequired,
 			}
 
-			auctionEndpointHandler, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(&testing.T{}, test, cfg)
+			auctionEndpointHandler, _, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
 			if err != nil {
 				b.Fatal(err.Error())
 			}

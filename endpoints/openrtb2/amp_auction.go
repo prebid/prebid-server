@@ -441,10 +441,6 @@ func (deps *endpointDeps) overrideWithParams(ampParams amp.Params, req *openrtb2
 		req.Imp[0].TagID = ampParams.Slot
 	}
 
-	if err := setRegExtGDPR(ampParams.GdprApplies, req); err != nil {
-		return []error{err}
-	}
-
 	policyWriter, policyWriterErr := amp.ReadPolicy(ampParams, req, deps.cfg.GDPR.Enabled)
 	if policyWriterErr != nil {
 		return []error{policyWriterErr}
@@ -578,26 +574,6 @@ func setAmpExt(site *openrtb2.Site, value string) {
 	} else {
 		site.Ext = json.RawMessage(`{"amp":` + value + `}`)
 	}
-}
-
-// setRegExtGDPR sets regs.ext.gdpr to either 0 or 1 only if it was set in the request query
-func setRegExtGDPR(gdprApplies *bool, req *openrtb2.BidRequest) error {
-	if gdprApplies == nil {
-		return nil
-	}
-
-	gdpr := int8(0)
-	if *gdprApplies {
-		gdpr = int8(1)
-	}
-
-	reqWrap := &openrtb_ext.RequestWrapper{BidRequest: req}
-	if regsExt, err := reqWrap.GetRegExt(); err == nil {
-		regsExt.SetGDPR(&gdpr)
-	} else {
-		return err
-	}
-	return reqWrap.RebuildRequest()
 }
 
 // Sets the effective publisher ID for amp request
