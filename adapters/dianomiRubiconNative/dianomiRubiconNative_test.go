@@ -9,7 +9,7 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderNative, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderDianomiRubiconNative, config.Adapter{
 		Endpoint: "https://exapi-eu.rubiconproject.com/a/api/exchange.json"})
 
 	if buildErr != nil {

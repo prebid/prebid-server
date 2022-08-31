@@ -19,7 +19,7 @@ func TestValidParams(t *testing.T) {
 	}
 
 	for _, validParam := range validParams {
-		if err := validator.Validate(openrtb_ext.BidderNative, json.RawMessage(validParam)); err != nil {
+		if err := validator.Validate(openrtb_ext.BidderDianomiRubiconNative, json.RawMessage(validParam)); err != nil {
 			t.Errorf("Schema rejected native params: %s", validParam)
 		}
 	}
@@ -33,7 +33,7 @@ func TestInvalidParams(t *testing.T) {
 	}
 
 	for _, invalidParam := range invalidParams {
-		if err := validator.Validate(openrtb_ext.BidderNative, json.RawMessage(invalidParam)); err == nil {
+		if err := validator.Validate(openrtb_ext.BidderDianomiRubiconNative, json.RawMessage(invalidParam)); err == nil {
 			t.Errorf("Schema allowed unexpected params: %s", invalidParam)
 		}
 	}
