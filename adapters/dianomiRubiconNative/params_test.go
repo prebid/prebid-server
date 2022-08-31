@@ -1,4 +1,4 @@
-package native
+package dianomiRubiconNative
 
 import (
 	"encoding/json"
