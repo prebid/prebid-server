@@ -239,11 +239,11 @@
   "expectedBidResponses": [],
   "expectedMakeBidsErrors": [
     {
-      "value": "json: cannot unmarshal string into Go value of type native.rubiconBidResponse",
+      "value": "json: cannot unmarshal string into Go value of type diaRubiconNative.rubiconBidResponse",
       "comparison": "literal" 
     },
     {
-      "value": "json: cannot unmarshal string into Go value of type native.rubiconBidResponse",
+      "value": "json: cannot unmarshal string into Go value of type diaRubiconNative.rubiconBidResponse",
       "comparison": "literal" 
     }
   ]
