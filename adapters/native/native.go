@@ -20,21 +20,21 @@ type adapter struct {
 	xapiPass string
 }
 
-func printJson(itemToPrint interface{}) {
-	json, err := json.MarshalIndent(itemToPrint, "", "  ")
-	if err != nil {
-		fmt.Println()
-		fmt.Println()
-		fmt.Println("Error converting to json")
-		fmt.Println()
-		fmt.Println()
-		fmt.Println(err)
-		return
-	}
-	fmt.Println()
-	fmt.Println()
-	fmt.Printf("%+v", string(json))
-}
+// func printJson(itemToPrint interface{}) {
+// 	json, err := json.MarshalIndent(itemToPrint, "", "  ")
+// 	if err != nil {
+// 		fmt.Println()
+// 		fmt.Println()
+// 		fmt.Println("Error converting to json")
+// 		fmt.Println()
+// 		fmt.Println()
+// 		fmt.Println(err)
+// 		return
+// 	}
+// 	fmt.Println()
+// 	fmt.Println()
+// 	fmt.Printf("%+v", string(json))
+// }
 
 type nativeOutbound struct {
 	RequestObj nativeRequests.Request `json:"requestobj"`
@@ -117,7 +117,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	}
 	var siteExt siteExt
 	if err := json.Unmarshal(request.Site.Ext, &siteExt); err != nil {
-		printJson("error unmarshalling site ext")
 		errors = append(errors, &errortypes.BadInput{
 			Message: err.Error(),
 		})
@@ -126,7 +125,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	for _, imp := range request.Imp {
 		var bidderExt adapters.ExtImpBidder
 		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-			printJson("error unmarshalling bidder ext")
 
 			errors = append(errors, &errortypes.BadInput{
 				Message: err.Error(),
@@ -136,7 +134,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 		var nativeImpExt openrtb_ext.ExtImpNative
 		if err := json.Unmarshal(bidderExt.Bidder, &nativeImpExt); err != nil {
-			printJson("error unmarshalling native ext")
 
 			errors = append(errors, &errortypes.BadInput{
 				Message: err.Error(),
@@ -153,7 +150,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		var onePointTwoNativeRequest nativeRequests.Request
 
 		if err := json.Unmarshal([]byte(imp.Native.Request), &onePointTwoNativeRequest); err != nil {
-			printJson("error unmarshalling native request")
 
 			errors = append(errors, &errortypes.BadInput{
 				Message: err.Error(),

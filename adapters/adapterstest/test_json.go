@@ -334,22 +334,6 @@ func diffOrtbBids(description string, actual *openrtb2.Bid, expected json.RawMes
 	return diffJson(description, actualJson, expected)
 }
 
-func printJson(itemToPrint interface{}) {
-	json, err := json.MarshalIndent(itemToPrint, "", "  ")
-	if err != nil {
-		fmt.Println()
-		fmt.Println()
-		fmt.Println("Error converting to json")
-		fmt.Println()
-		fmt.Println()
-		fmt.Println(err)
-		return
-	}
-	fmt.Println()
-	fmt.Println()
-	fmt.Printf("%+v", string(json))
-}
-
 // diffJson compares two JSON byte arrays for structural equality. It will produce an error if either
 // byte array is not actually JSON.
 func diffJson(description string, actual []byte, expected []byte) error {
@@ -376,8 +360,6 @@ func diffJson(description string, actual []byte, expected []byte) error {
 		if err != nil {
 			return fmt.Errorf("%s did not match, but diff formatting failed. %v", description, err)
 		} else {
-			fmt.Printf("expected: %s \n", expected)
-			fmt.Printf("actual: %s \n", actual)
 			return fmt.Errorf("%s json did not match expected.\n\n%s", description, output)
 		}
 	}
