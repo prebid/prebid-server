@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 )
 
-// ExtImpNative defines the contract for bidrequest.imp[i].ext.rubicon
-type ExtImpNative struct {
+// ExtImpDiaRubiconNative defines the contract for bidrequest.imp[i].ext.rubicon
+type ExtImpDiaRubiconNative struct {
 	AccountId json.Number        `json:"accountId"`
 	SiteId    json.Number        `json:"siteId"`
 	ZoneId    json.Number        `json:"zoneId"`
@@ -16,6 +16,6 @@ type ExtImpNative struct {
 }
 
 // nativeDebugParams defines the contract for bidrequest.imp[i].ext.rubicon.debug
-type impExtNativeDebug struct {
+type impExtDiaRubiconNativeDebug struct {
 	CpmOverride float64 `json:"cpmoverride,omitempty"`
 }
