@@ -13,18 +13,18 @@ import (
 )
 
 type adapter struct {
-	URI        string
-	ServerInfo config.Server
+	URI    string
+	Server config.Server
 }
 
 type bidExt struct {
 	MediaType openrtb_ext.BidType `json:"mediaType"`
 }
 
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
-		URI:        config.Endpoint,
-		ServerInfo: serverInfo,
+		URI:    config.Endpoint,
+		Server: server,
 	}
 	return bidder, nil
 }

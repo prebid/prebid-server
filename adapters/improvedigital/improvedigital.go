@@ -14,8 +14,8 @@ import (
 )
 
 type ImprovedigitalAdapter struct {
-	endpoint   string
-	ServerInfo config.Server
+	endpoint string
+	Server   config.Server
 }
 
 // MakeRequests makes the HTTP requests which should be made to fetch bids.
@@ -125,10 +125,10 @@ func (a *ImprovedigitalAdapter) MakeBids(internalRequest *openrtb2.BidRequest, e
 }
 
 // Builder builds a new instance of the Improvedigital adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &ImprovedigitalAdapter{
-		endpoint:   config.Endpoint,
-		ServerInfo: serverInfo,
+		endpoint: config.Endpoint,
+		Server:   server,
 	}
 	return bidder, nil
 }

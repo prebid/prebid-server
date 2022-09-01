@@ -15,9 +15,9 @@ import (
 )
 
 type BrightrollAdapter struct {
-	URI        string
-	extraInfo  ExtraInfo
-	ServerInfo config.Server
+	URI       string
+	extraInfo ExtraInfo
+	Server    config.Server
 }
 
 type ExtraInfo struct {
@@ -231,16 +231,16 @@ func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 }
 
 // Builder builds a new instance of the Brightroll adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	extraInfo, err := getExtraInfo(config.ExtraAdapterInfo)
 	if err != nil {
 		return nil, err
 	}
 
 	bidder := &BrightrollAdapter{
-		URI:        config.Endpoint,
-		extraInfo:  extraInfo,
-		ServerInfo: serverInfo,
+		URI:       config.Endpoint,
+		extraInfo: extraInfo,
+		Server:    server,
 	}
 	return bidder, nil
 }

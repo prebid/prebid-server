@@ -19,7 +19,7 @@ import (
 
 type adapter struct {
 	epTemplate *template.Template
-	ServerInfo config.Server
+	Server     config.Server
 }
 
 var (
@@ -28,14 +28,14 @@ var (
 )
 
 // Builder builds a new instance of the operaads adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	epTemplate, err := template.New("endpoint").Parse(config.Endpoint)
 	if err != nil {
 		return nil, err
 	}
 	bidder := &adapter{
 		epTemplate: epTemplate,
-		ServerInfo: serverInfo,
+		Server:     server,
 	}
 	return bidder, nil
 }

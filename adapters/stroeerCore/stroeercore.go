@@ -13,8 +13,8 @@ import (
 )
 
 type adapter struct {
-	URL        string `json:"url"`
-	ServerInfo config.Server
+	URL    string `json:"url"`
+	Server config.Server
 }
 
 type response struct {
@@ -108,10 +108,10 @@ func (a *adapter) MakeRequests(bidRequest *openrtb2.BidRequest, extraRequestInfo
 }
 
 // Builder builds a new instance of the StroeerCore adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
-		URL:        config.Endpoint,
-		ServerInfo: serverInfo,
+		URL:    config.Endpoint,
+		Server: server,
 	}
 	return bidder, nil
 }

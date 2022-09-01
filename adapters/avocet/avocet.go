@@ -16,8 +16,8 @@ import (
 // AvocetAdapter implements a adapters.Bidder compatible with the Avocet advertising platform.
 type AvocetAdapter struct {
 	// Endpoint is a http endpoint to use when making requests to the Avocet advertising platform.
-	Endpoint   string
-	ServerInfo config.Server
+	Endpoint string
+	Server   config.Server
 }
 
 func (a *AvocetAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -120,10 +120,10 @@ func getBidType(bid openrtb2.Bid, ext avocetBidExt) openrtb_ext.BidType {
 }
 
 // Builder builds a new instance of the Avocet adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &AvocetAdapter{
-		Endpoint:   config.Endpoint,
-		ServerInfo: serverInfo,
+		Endpoint: config.Endpoint,
+		Server:   server,
 	}
 	return bidder, nil
 }

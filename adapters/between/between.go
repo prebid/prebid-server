@@ -18,7 +18,7 @@ import (
 
 type BetweenAdapter struct {
 	EndpointTemplate *template.Template
-	ServerInfo       config.Server
+	Server           config.Server
 }
 
 func (a *BetweenAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -202,7 +202,7 @@ func (a *BetweenAdapter) MakeBids(internalRequest *openrtb2.BidRequest, external
 }
 
 // Builder builds a new instance of the Between adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
@@ -210,7 +210,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInf
 
 	bidder := BetweenAdapter{
 		EndpointTemplate: template,
-		ServerInfo:       serverInfo,
+		Server:           server,
 	}
 	return &bidder, nil
 }

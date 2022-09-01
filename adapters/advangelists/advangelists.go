@@ -16,7 +16,7 @@ import (
 
 type AdvangelistsAdapter struct {
 	EndpointTemplate *template.Template
-	ServerInfo       config.Server
+	Server           config.Server
 }
 
 // MakeRequests prepares request information for prebid-server core
@@ -241,7 +241,7 @@ func getMediaTypeForImpID(impID string, imps []openrtb2.Imp) openrtb_ext.BidType
 }
 
 // Builder builds a new instance of the Advangelists adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
@@ -249,7 +249,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInf
 
 	bidder := &AdvangelistsAdapter{
 		EndpointTemplate: template,
-		ServerInfo:       serverInfo,
+		Server:           server,
 	}
 	return bidder, nil
 }

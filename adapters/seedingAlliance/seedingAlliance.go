@@ -15,14 +15,14 @@ import (
 )
 
 type adapter struct {
-	endpoint   string
-	ServerInfo config.Server
+	endpoint string
+	Server   config.Server
 }
 
-func Builder(_ openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
+func Builder(_ openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
-		endpoint:   config.Endpoint,
-		ServerInfo: serverInfo,
+		endpoint: config.Endpoint,
+		Server:   server,
 	}
 	return bidder, nil
 }

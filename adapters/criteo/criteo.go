@@ -15,7 +15,7 @@ import (
 type adapter struct {
 	uri             string
 	slotIDGenerator slotIDGenerator
-	ServerInfo      config.Server
+	Server          config.Server
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, extraRequestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -103,14 +103,14 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 }
 
 // Builder builds a new instance of the Criteo adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
-	return builderWithGuidGenerator(bidderName, config, serverInfo, newRandomSlotIDGenerator())
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	return builderWithGuidGenerator(bidderName, config, server, newRandomSlotIDGenerator())
 }
 
-func builderWithGuidGenerator(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server, slotIDGenerator slotIDGenerator) (adapters.Bidder, error) {
+func builderWithGuidGenerator(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server, slotIDGenerator slotIDGenerator) (adapters.Bidder, error) {
 	return &adapter{
 		uri:             config.Endpoint,
 		slotIDGenerator: slotIDGenerator,
-		ServerInfo:      serverInfo,
+		Server:          server,
 	}, nil
 }

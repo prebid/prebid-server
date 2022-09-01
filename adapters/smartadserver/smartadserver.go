@@ -16,15 +16,15 @@ import (
 )
 
 type SmartAdserverAdapter struct {
-	host       string
-	ServerInfo config.Server
+	host   string
+	Server config.Server
 }
 
 // Builder builds a new instance of the SmartAdserver adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &SmartAdserverAdapter{
-		host:       config.Endpoint,
-		ServerInfo: serverInfo,
+		host:   config.Endpoint,
+		Server: server,
 	}
 	return bidder, nil
 }

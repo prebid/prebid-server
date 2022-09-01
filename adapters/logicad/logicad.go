@@ -13,8 +13,8 @@ import (
 )
 
 type LogicadAdapter struct {
-	endpoint   string
-	ServerInfo config.Server
+	endpoint string
+	Server   config.Server
 }
 
 func (adapter *LogicadAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -151,10 +151,10 @@ func (adapter *LogicadAdapter) MakeBids(internalRequest *openrtb2.BidRequest, ex
 }
 
 // Builder builds a new instance of the Logicad adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &LogicadAdapter{
-		endpoint:   config.Endpoint,
-		ServerInfo: serverInfo,
+		endpoint: config.Endpoint,
+		Server:   server,
 	}
 	return bidder, nil
 }

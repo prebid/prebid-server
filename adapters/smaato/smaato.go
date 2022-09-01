@@ -29,9 +29,9 @@ const (
 
 // adapter describes a Smaato prebid server adapter.
 type adapter struct {
-	clock      timeutil.Time
-	endpoint   string
-	ServerInfo config.Server
+	clock    timeutil.Time
+	endpoint string
+	Server   config.Server
 }
 
 // userExtData defines User.Ext.Data object for Smaato
@@ -66,11 +66,11 @@ type videoExt struct {
 }
 
 // Builder builds a new instance of the Smaato adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
-		clock:      &timeutil.RealTime{},
-		endpoint:   config.Endpoint,
-		ServerInfo: serverInfo,
+		clock:    &timeutil.RealTime{},
+		endpoint: config.Endpoint,
+		Server:   server,
 	}
 	return bidder, nil
 }

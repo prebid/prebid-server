@@ -16,8 +16,8 @@ import (
 )
 
 type GridAdapter struct {
-	endpoint   string
-	ServerInfo config.Server
+	endpoint string
+	Server   config.Server
 }
 
 type GridBid struct {
@@ -376,10 +376,10 @@ func (a *GridAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReq
 }
 
 // Builder builds a new instance of the Grid adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &GridAdapter{
-		endpoint:   config.Endpoint,
-		ServerInfo: serverInfo,
+		endpoint: config.Endpoint,
+		Server:   server,
 	}
 	return bidder, nil
 }

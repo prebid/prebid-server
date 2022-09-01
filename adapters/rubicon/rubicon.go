@@ -24,7 +24,7 @@ type RubiconAdapter struct {
 	URI          string
 	XAPIUsername string
 	XAPIPassword string
-	ServerInfo   config.Server
+	Server       config.Server
 }
 
 type rubiconContext struct {
@@ -363,14 +363,14 @@ func appendTrackerToUrl(uri string, tracker string) (res string) {
 }
 
 // Builder builds a new instance of the Rubicon adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	uri := appendTrackerToUrl(config.Endpoint, config.XAPI.Tracker)
 
 	bidder := &RubiconAdapter{
 		URI:          uri,
 		XAPIUsername: config.XAPI.Username,
 		XAPIPassword: config.XAPI.Password,
-		ServerInfo:   serverInfo,
+		Server:       server,
 	}
 	return bidder, nil
 }

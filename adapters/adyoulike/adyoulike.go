@@ -14,16 +14,16 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	return &adapter{
-		endpoint:   config.Endpoint,
-		ServerInfo: serverInfo,
+		endpoint: config.Endpoint,
+		Server:   server,
 	}, nil
 }
 
 type adapter struct {
-	endpoint   string
-	ServerInfo config.Server
+	endpoint string
+	Server   config.Server
 }
 
 func (a *adapter) MakeRequests(

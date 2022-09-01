@@ -14,8 +14,8 @@ import (
 )
 
 type ConversantAdapter struct {
-	URI        string
-	ServerInfo config.Server
+	URI    string
+	Server config.Server
 }
 
 func (c ConversantAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -182,10 +182,10 @@ func getBidType(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 }
 
 // Builder builds a new instance of the Conversant adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &ConversantAdapter{
-		URI:        config.Endpoint,
-		ServerInfo: serverInfo,
+		URI:    config.Endpoint,
+		Server: server,
 	}
 	return bidder, nil
 }

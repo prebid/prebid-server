@@ -13,8 +13,8 @@ import (
 )
 
 type adapter struct {
-	endpoint   string
-	ServerInfo config.Server
+	endpoint string
+	Server   config.Server
 }
 
 type NextMillenniumBidRequest struct {
@@ -168,9 +168,9 @@ func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 }
 
 // Builder builds a new instance of the NextMillennium adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	return &adapter{
-		endpoint:   config.Endpoint,
-		ServerInfo: serverInfo,
+		endpoint: config.Endpoint,
+		Server:   server,
 	}, nil
 }

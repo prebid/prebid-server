@@ -16,8 +16,8 @@ import (
 const Endpoint = "https://ads.tremorhub.com/ad/rtb/prebid"
 
 type TelariaAdapter struct {
-	URI        string
-	ServerInfo config.Server
+	URI    string
+	Server config.Server
 }
 
 // This will be part of Imp[i].Ext when this adapter calls out the Telaria Ad Server
@@ -292,15 +292,15 @@ func (a *TelariaAdapter) MakeBids(internalRequest *openrtb2.BidRequest, external
 }
 
 // Builder builds a new instance of the Telaria adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	endpoint := config.Endpoint
 	if endpoint == "" {
 		endpoint = Endpoint // Hardcoded default
 	}
 
 	bidder := &TelariaAdapter{
-		URI:        endpoint,
-		ServerInfo: serverInfo,
+		URI:    endpoint,
+		Server: server,
 	}
 	return bidder, nil
 }

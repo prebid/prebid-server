@@ -18,9 +18,9 @@ import (
 
 type QueryString map[string]string
 type adapter struct {
-	time       timeutil.Time
-	endpoint   string
-	ServerInfo config.Server
+	time     timeutil.Time
+	endpoint string
+	Server   config.Server
 }
 type adnAdunit struct {
 	AuId       string    `json:"auId"`
@@ -67,11 +67,11 @@ const defaultSite = "unknown"
 const minutesInHour = 60
 
 // Builder builds a new instance of the Adnuntius adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, serverInfo config.Server) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
-		time:       &timeutil.RealTime{},
-		endpoint:   config.Endpoint,
-		ServerInfo: serverInfo,
+		time:     &timeutil.RealTime{},
+		endpoint: config.Endpoint,
+		Server:   server,
 	}
 
 	return bidder, nil
