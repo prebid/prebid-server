@@ -125,16 +125,14 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	for _, imp := range request.Imp {
 		var bidderExt adapters.ExtImpBidder
 		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-
 			errors = append(errors, &errortypes.BadInput{
 				Message: err.Error(),
 			})
 			continue
 		}
 
-		var nativeImpExt openrtb_ext.ExtImpNative
+		var nativeImpExt openrtb_ext.ExtImpDiaRubiconNative
 		if err := json.Unmarshal(bidderExt.Bidder, &nativeImpExt); err != nil {
-
 			errors = append(errors, &errortypes.BadInput{
 				Message: err.Error(),
 			})
@@ -150,7 +148,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		var onePointTwoNativeRequest nativeRequests.Request
 
 		if err := json.Unmarshal([]byte(imp.Native.Request), &onePointTwoNativeRequest); err != nil {
-
 			errors = append(errors, &errortypes.BadInput{
 				Message: err.Error(),
 			})
@@ -239,28 +236,28 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 
 	onePointZeroRequest.AT = 0
 
-	var sourceExt sourceExt
-
-	if err := json.Unmarshal(request.Source.Ext, &sourceExt); err != nil {
-		errors = append(errors, &errortypes.BadInput{
-			Message: err.Error(),
-		})
-	}
-
-	// make sure request id is in the schain
-	for index := range sourceExt.Schain.Nodes {
-		if sourceExt.Schain.Nodes[index].Rid == "" {
-			sourceExt.Schain.Nodes[index].Rid = request.ID
+	if request.Source.Ext != nil {
+		var sourceExt sourceExt
+		if err := json.Unmarshal(request.Source.Ext, &sourceExt); err != nil {
+			errors = append(errors, &errortypes.BadInput{
+				Message: err.Error(),
+			})
 		}
+		// make sure request id is in the schain
+		for index := range sourceExt.Schain.Nodes {
+			if sourceExt.Schain.Nodes[index].Rid == "" {
+				sourceExt.Schain.Nodes[index].Rid = request.ID
+			}
+		}
+		// add source.ext to both 1.0 and 1.2 requests
+		sourceExtJSON, err := json.Marshal(sourceExt)
+		if err != nil {
+			errors = append(errors, err)
+			return nil, errors
+		}
+		onePointZeroRequest.Source.Ext = sourceExtJSON
+		onePointTwoRequest.Source.Ext = sourceExtJSON
 	}
-	// add source.ext to both 1.0 and 1.2 requests
-	sourceExtJSON, err := json.Marshal(sourceExt)
-	if err != nil {
-		errors = append(errors, err)
-		return nil, errors
-	}
-	onePointZeroRequest.Source.Ext = sourceExtJSON
-	onePointTwoRequest.Source.Ext = sourceExtJSON
 
 	// make the json body for 1.0
 	onePointZeroRequestJSON, err := json.Marshal(onePointZeroRequest)
