@@ -299,7 +299,9 @@ func (ue *UserExt) unmarshal(extJson json.RawMessage) error {
 	if len(ue.ext) != 0 || ue.Dirty() {
 		return nil
 	}
+
 	ue.ext = make(map[string]json.RawMessage)
+
 	if len(extJson) == 0 {
 		return nil
 	}
@@ -458,26 +460,34 @@ func (re *RequestExt) unmarshal(extJson json.RawMessage) error {
 	if len(re.ext) != 0 || re.Dirty() {
 		return nil
 	}
+
 	re.ext = make(map[string]json.RawMessage)
+
 	if len(extJson) == 0 {
 		return nil
 	}
-	err := json.Unmarshal(extJson, &re.ext)
-	if err != nil {
+
+	if err := json.Unmarshal(extJson, &re.ext); err != nil {
 		return err
 	}
+
 	prebidJson, hasPrebid := re.ext["prebid"]
 	if hasPrebid {
 		re.prebid = &ExtRequestPrebid{}
-		err = json.Unmarshal(prebidJson, re.prebid)
+		if err := json.Unmarshal(prebidJson, re.prebid); err != nil {
+			return err
+		}
 	}
+
 	schainJson, hasSChain := re.ext["schain"]
 	if hasSChain {
 		re.schain = &openrtb2.SupplyChain{}
-		err = json.Unmarshal(schainJson, re.schain)
+		if err := json.Unmarshal(schainJson, re.schain); err != nil {
+			return err
+		}
 	}
 
-	return err
+	return nil
 }
 
 func (re *RequestExt) marshal() (json.RawMessage, error) {
@@ -587,21 +597,26 @@ func (de *DeviceExt) unmarshal(extJson json.RawMessage) error {
 	if len(de.ext) != 0 || de.Dirty() {
 		return nil
 	}
+
 	de.ext = make(map[string]json.RawMessage)
+
 	if len(extJson) == 0 {
 		return nil
 	}
-	err := json.Unmarshal(extJson, &de.ext)
-	if err != nil {
+
+	if err := json.Unmarshal(extJson, &de.ext); err != nil {
 		return err
 	}
+
 	prebidJson, hasPrebid := de.ext["prebid"]
 	if hasPrebid {
 		de.prebid = &ExtDevicePrebid{}
-		err = json.Unmarshal(prebidJson, de.prebid)
+		if err := json.Unmarshal(prebidJson, de.prebid); err != nil {
+			return err
+		}
 	}
 
-	return err
+	return nil
 }
 
 func (de *DeviceExt) marshal() (json.RawMessage, error) {
@@ -674,21 +689,26 @@ func (ae *AppExt) unmarshal(extJson json.RawMessage) error {
 	if len(ae.ext) != 0 || ae.Dirty() {
 		return nil
 	}
+
 	ae.ext = make(map[string]json.RawMessage)
+
 	if len(extJson) == 0 {
 		return nil
 	}
-	err := json.Unmarshal(extJson, &ae.ext)
-	if err != nil {
+
+	if err := json.Unmarshal(extJson, &ae.ext); err != nil {
 		return err
 	}
+
 	prebidJson, hasPrebid := ae.ext["prebid"]
 	if hasPrebid {
 		ae.prebid = &ExtAppPrebid{}
-		err = json.Unmarshal(prebidJson, ae.prebid)
+		if err := json.Unmarshal(prebidJson, ae.prebid); err != nil {
+			return err
+		}
 	}
 
-	return err
+	return nil
 }
 
 func (ae *AppExt) marshal() (json.RawMessage, error) {
@@ -753,6 +773,8 @@ func (ae *AppExt) SetPrebid(prebid *ExtAppPrebid) {
 type RegExt struct {
 	ext            map[string]json.RawMessage
 	extDirty       bool
+	gdpr           *int8
+	gdprDirty      bool
 	usPrivacy      string
 	usPrivacyDirty bool
 }
@@ -761,23 +783,48 @@ func (re *RegExt) unmarshal(extJson json.RawMessage) error {
 	if len(re.ext) != 0 || re.Dirty() {
 		return nil
 	}
+
 	re.ext = make(map[string]json.RawMessage)
+
 	if len(extJson) == 0 {
 		return nil
 	}
-	err := json.Unmarshal(extJson, &re.ext)
-	if err != nil {
+
+	if err := json.Unmarshal(extJson, &re.ext); err != nil {
 		return err
 	}
-	uspJson, hasUsp := re.ext["us_privacy"]
-	if hasUsp {
-		err = json.Unmarshal(uspJson, &re.usPrivacy)
+
+	gdprJson, hasGDPR := re.ext["gdpr"]
+	if hasGDPR {
+		if err := json.Unmarshal(gdprJson, &re.gdpr); err != nil {
+			return errors.New("gdpr must be an integer")
+		}
 	}
 
-	return err
+	uspJson, hasUsp := re.ext["us_privacy"]
+	if hasUsp {
+		if err := json.Unmarshal(uspJson, &re.usPrivacy); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (re *RegExt) marshal() (json.RawMessage, error) {
+	if re.gdprDirty {
+		if re.gdpr != nil {
+			rawjson, err := json.Marshal(re.gdpr)
+			if err != nil {
+				return nil, err
+			}
+			re.ext["gdpr"] = rawjson
+		} else {
+			delete(re.ext, "gdpr")
+		}
+		re.gdprDirty = false
+	}
+
 	if re.usPrivacyDirty {
 		if len(re.usPrivacy) > 0 {
 			rawjson, err := json.Marshal(re.usPrivacy)
@@ -799,7 +846,7 @@ func (re *RegExt) marshal() (json.RawMessage, error) {
 }
 
 func (re *RegExt) Dirty() bool {
-	return re.extDirty || re.usPrivacyDirty
+	return re.extDirty || re.gdprDirty || re.usPrivacyDirty
 }
 
 func (re *RegExt) GetExt() map[string]json.RawMessage {
@@ -813,6 +860,16 @@ func (re *RegExt) GetExt() map[string]json.RawMessage {
 func (re *RegExt) SetExt(ext map[string]json.RawMessage) {
 	re.ext = ext
 	re.extDirty = true
+}
+
+func (re *RegExt) GetGDPR() *int8 {
+	gdpr := re.gdpr
+	return gdpr
+}
+
+func (re *RegExt) SetGDPR(gdpr *int8) {
+	re.gdpr = gdpr
+	re.gdprDirty = true
 }
 
 func (re *RegExt) GetUSPrivacy() string {
@@ -840,23 +897,25 @@ func (se *SiteExt) unmarshal(extJson json.RawMessage) error {
 	if len(se.ext) != 0 || se.Dirty() {
 		return nil
 	}
+
 	se.ext = make(map[string]json.RawMessage)
+
 	if len(extJson) == 0 {
 		return nil
 	}
-	err := json.Unmarshal(extJson, &se.ext)
-	if err != nil {
+
+	if err := json.Unmarshal(extJson, &se.ext); err != nil {
 		return err
 	}
-	AmpJson, hasAmp := se.ext["amp"]
+
+	ampJson, hasAmp := se.ext["amp"]
 	if hasAmp {
-		err = json.Unmarshal(AmpJson, &se.amp)
-		if err != nil {
-			err = errors.New(`request.site.ext.amp must be either 1, 0, or undefined`)
+		if err := json.Unmarshal(ampJson, &se.amp); err != nil {
+			return errors.New(`request.site.ext.amp must be either 1, 0, or undefined`)
 		}
 	}
 
-	return err
+	return nil
 }
 
 func (se *SiteExt) marshal() (json.RawMessage, error) {
@@ -921,20 +980,25 @@ func (se *SourceExt) unmarshal(extJson json.RawMessage) error {
 	if len(se.ext) != 0 || se.Dirty() {
 		return nil
 	}
+
 	se.ext = make(map[string]json.RawMessage)
+
 	if len(extJson) == 0 {
 		return nil
 	}
-	err := json.Unmarshal(extJson, &se.ext)
-	if err != nil {
+
+	if err := json.Unmarshal(extJson, &se.ext); err != nil {
 		return err
 	}
+
 	schainJson, hasSChain := se.ext["schain"]
 	if hasSChain {
-		err = json.Unmarshal(schainJson, &se.schain)
+		if err := json.Unmarshal(schainJson, &se.schain); err != nil {
+			return err
+		}
 	}
 
-	return err
+	return nil
 }
 
 func (se *SourceExt) marshal() (json.RawMessage, error) {
