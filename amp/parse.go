@@ -49,6 +49,9 @@ const (
 	ConsentUSPrivacy = 3
 )
 
+// ReadPolicy returns a privacy writer in accordance to the query values consent, consent_type and gdpr_applies.
+// Returned policy writer could either be GDPR, CCPA or a NilPolicy writer. The error this function returns at
+// most will be a warning and will not stop execution.
 func ReadPolicy(ampParams Params, req *openrtb2.BidRequest, pbsConfigGDPREnabled bool) (privacy.PolicyWriter, error) {
 	if len(ampParams.Consent) == 0 {
 		return privacy.NilPolicyWriter{}, nil
@@ -60,6 +63,8 @@ func ReadPolicy(ampParams Params, req *openrtb2.BidRequest, pbsConfigGDPREnabled
 
 	// If consent_type was set to CCPA or GDPR TCF2, we return a valid writer even if the consent string is invalid
 	switch ampParams.ConsentType {
+	case ConsentTCF1:
+		errMsg = "TCF1 consent is deprecated and no longer supported."
 	case ConsentTCF2:
 		if pbsConfigGDPREnabled {
 			rv = buildGdprTCF2ConsentWriter(ampParams)
@@ -77,8 +82,6 @@ func ReadPolicy(ampParams Params, req *openrtb2.BidRequest, pbsConfigGDPREnabled
 			// Log warning if CCPA string is invalid
 			errMsg = fmt.Sprintf("Consent string '%s' is not a valid CCPA consent string.", ampParams.Consent)
 		}
-	case ConsentTCF1:
-		errMsg = "TCF1 consent is deprecated and no longer supported."
 	case ConsentNone:
 		fallthrough
 	default:
@@ -161,7 +164,6 @@ func ParseParams(httpRequest *http.Request) (Params, error) {
 		Consent:      chooseConsent(query.Get("consent_string"), query.Get("gdpr_consent")),
 		ConsentType:  parseInt(query.Get("consent_type")),
 		Debug:        query.Get("debug") == "1",
-		GdprApplies:  parseBoolPtr(query.Get("gdpr_applies")),
 		Origin:       query.Get("__amp_source_origin"),
 		Size: Size{
 			Height:         parseInt(query.Get("h")),
@@ -173,16 +175,33 @@ func ParseParams(httpRequest *http.Request) (Params, error) {
 		Slot:            query.Get("slot"),
 		StoredRequestID: tagID,
 		Targeting:       query.Get("targeting"),
-		Timeout:         parseIntPtr(query.Get("timeout")),
 	}
+	var err error
+	urlQueryGdprApplies := query.Get("gdpr_applies")
+	if len(urlQueryGdprApplies) > 0 {
+		if params.GdprApplies, err = parseBoolPtr(urlQueryGdprApplies); err != nil {
+			return params, err
+		}
+	}
+
+	urlQueryTimeout := query.Get("timeout")
+	if len(urlQueryTimeout) > 0 {
+		if params.Timeout, err = parseIntPtr(urlQueryTimeout); err != nil {
+			return params, err
+		}
+	}
+
 	return params, nil
 }
 
-func parseIntPtr(value string) *uint64 {
-	if parsed, err := strconv.ParseUint(value, 10, 64); err == nil {
-		return &parsed
+func parseIntPtr(value string) (*uint64, error) {
+	var rv uint64
+	var err error
+
+	if rv, err = strconv.ParseUint(value, 10, 64); err != nil {
+		return nil, err
 	}
-	return nil
+	return &rv, nil
 }
 
 func parseInt(value string) int64 {
@@ -192,11 +211,14 @@ func parseInt(value string) int64 {
 	return 0
 }
 
-func parseBoolPtr(value string) *bool {
-	if rv, err := strconv.ParseBool(value); err == nil {
-		return &rv
+func parseBoolPtr(value string) (*bool, error) {
+	var rv bool
+	var err error
+
+	if rv, err = strconv.ParseBool(value); err != nil {
+		return nil, err
 	}
-	return nil
+	return &rv, nil
 }
 
 func parseMultisize(multisize string) []openrtb2.Format {

@@ -98,40 +98,121 @@ func TestParseParams(t *testing.T) {
 	}
 }
 
-func TestParseBoolPtr(t *testing.T) {
-	boolTrue := true
-	boolFalse := false
+func TestParseIntPtr(t *testing.T) {
+	var boolZero uint64 = 0
+	var boolOne uint64 = 1
+
+	type testResults struct {
+		intPtr *uint64
+		err    bool
+	}
 
 	testCases := []struct {
 		desc     string
 		input    string
-		expected *bool
+		expected testResults
 	}{
 		{
-			desc:     "Input is an empty string",
-			input:    "",
-			expected: nil,
+			desc:  "Input is an empty string: expect nil pointer and error",
+			input: "",
+			expected: testResults{
+				intPtr: nil,
+				err:    true,
+			},
 		},
 		{
-			desc:     "Input is neither true nor false, expect a nil pointer",
-			input:    "other",
-			expected: nil,
+			desc:  "Input is negative number: expect a nil pointer and error",
+			input: "-1",
+			expected: testResults{
+				intPtr: nil,
+				err:    true,
+			},
 		},
 		{
-			desc:     "Input is the word 'false', expect a reference pointing to false value",
-			input:    "false",
-			expected: &boolFalse,
+			desc:  "Input is a string depicting a zero value: expect a reference pointing to zero value, no error",
+			input: "0",
+			expected: testResults{
+				intPtr: &boolZero,
+				err:    false,
+			},
 		},
 		{
-			desc:     "Input is the word 'true', expect a reference pointing to true value",
-			input:    "true",
-			expected: &boolTrue,
+			desc:  "Input is a string depicting a value of 1: expect a reference pointing to the value of 1 and no error",
+			input: "1",
+			expected: testResults{
+				intPtr: &boolOne,
+				err:    false,
+			},
 		},
 	}
 	for _, tc := range testCases {
-		actual := parseBoolPtr(tc.input)
+		resultingIntPtr, resultingErr := parseIntPtr(tc.input)
 
-		assert.Equal(t, tc.expected, actual, tc.desc)
+		assert.Equal(t, tc.expected.intPtr, resultingIntPtr, tc.desc)
+		if tc.expected.err {
+			assert.Error(t, resultingErr, tc.desc)
+		} else {
+			assert.NoError(t, resultingErr, tc.desc)
+		}
+	}
+}
+
+func TestParseBoolPtr(t *testing.T) {
+	boolTrue := true
+	boolFalse := false
+
+	type testResults struct {
+		boolPtr *bool
+		err     bool
+	}
+
+	testCases := []struct {
+		desc     string
+		input    string
+		expected testResults
+	}{
+		{
+			desc:  "Input is an empty string: expect nil pointer and error",
+			input: "",
+			expected: testResults{
+				boolPtr: nil,
+				err:     true,
+			},
+		},
+		{
+			desc:  "Input is neither true nor false: expect a nil pointer and error",
+			input: "other",
+			expected: testResults{
+				boolPtr: nil,
+				err:     true,
+			},
+		},
+		{
+			desc:  "Input is the word 'false', expect a reference pointing to false value",
+			input: "false",
+			expected: testResults{
+				boolPtr: &boolFalse,
+				err:     false,
+			},
+		},
+		{
+			desc:  "Input is the word 'true', expect a reference pointing to true value",
+			input: "true",
+			expected: testResults{
+				boolPtr: &boolTrue,
+				err:     false,
+			},
+		},
+	}
+	for _, tc := range testCases {
+		resultingBoolPtr, resultingErr := parseBoolPtr(tc.input)
+
+		assert.Equal(t, tc.expected.boolPtr, resultingBoolPtr, tc.desc)
+		if tc.expected.err {
+			assert.Error(t, resultingErr, tc.desc)
+		} else {
+			assert.NoError(t, resultingErr, tc.desc)
+		}
 	}
 }
 

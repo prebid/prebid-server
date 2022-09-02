@@ -803,11 +803,7 @@ func (re *RegExt) marshal() (json.RawMessage, error) {
 			if err != nil {
 				return nil, err
 			}
-			if len(gdprJson) > 0 {
-				re.ext["gdpr"] = json.RawMessage(gdprJson)
-			} else {
-				delete(re.ext, "gdpr")
-			}
+			re.ext["gdpr"] = json.RawMessage(gdprJson)
 		} else {
 			delete(re.ext, "gdpr")
 		}
