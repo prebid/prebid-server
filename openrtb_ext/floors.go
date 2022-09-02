@@ -17,7 +17,7 @@ type PriceFloorModelGroup struct {
 type PriceFloorData struct {
 	Currency            string                 `json:"currency,omitempty"`
 	SkipRate            int                    `json:"skiprate,omitempty"`
-	FloorsSchemaVersion string                 `json:"floorsschemaVersion,omitempty"`
+	FloorsSchemaVersion string                 `json:"floorsschemaversion,omitempty"`
 	ModelTimestamp      int                    `json:"modeltimestamp,omitempty"`
 	ModelGroups         []PriceFloorModelGroup `json:"modelgroups,omitempty"`
 }
