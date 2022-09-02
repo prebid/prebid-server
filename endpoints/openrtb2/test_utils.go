@@ -1198,11 +1198,11 @@ func (te *exchangeTestWrapper) HoldAuction(ctx context.Context, r exchange.Aucti
 }
 
 // buildTestExchange returns an exchange with mock bidder servers and mock currency convertion server
-func buildTestExchange(test testCase, adapterMap map[openrtb_ext.BidderName]exchange.AdaptedBidder, mockBidServersArray []*httptest.Server, mockCurrencyRatesServer *httptest.Server, bidderInfos config.BidderInfos, cfg *config.Configuration, met metrics.MetricsEngine, mockFetcher stored_requests.CategoryFetcher) (exchange.Exchange, []*httptest.Server) {
-	if len(test.Config.MockBidders) == 0 {
-		test.Config.MockBidders = append(test.Config.MockBidders, mockBidderHandler{BidderName: "appnexus", Currency: "USD", Price: 0.00})
+func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.BidderName]exchange.AdaptedBidder, mockBidServersArray []*httptest.Server, mockCurrencyRatesServer *httptest.Server, bidderInfos config.BidderInfos, cfg *config.Configuration, met metrics.MetricsEngine, mockFetcher stored_requests.CategoryFetcher) (exchange.Exchange, []*httptest.Server) {
+	if len(testCfg.MockBidders) == 0 {
+		testCfg.MockBidders = append(testCfg.MockBidders, mockBidderHandler{BidderName: "appnexus", Currency: "USD", Price: 0.00})
 	}
-	for _, mockBidder := range test.Config.MockBidders {
+	for _, mockBidder := range testCfg.MockBidders {
 		bidServer := httptest.NewServer(http.HandlerFunc(mockBidder.bid))
 		bidderAdapter := mockAdapter{mockServerURL: bidServer.URL}
 		bidderName := openrtb_ext.BidderName(mockBidder.BidderName)
@@ -1276,7 +1276,7 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 	}
 	mockCurrencyRatesServer := httptest.NewServer(http.HandlerFunc(mockCurrencyConversionService.handle))
 
-	testExchange, mockBidServersArray := buildTestExchange(test, adapterMap, mockBidServersArray, mockCurrencyRatesServer, bidderInfos, cfg, met, mockFetcher)
+	testExchange, mockBidServersArray := buildTestExchange(test.Config, adapterMap, mockBidServersArray, mockCurrencyRatesServer, bidderInfos, cfg, met, mockFetcher)
 
 	var storedRequestFetcher stored_requests.Fetcher
 	if len(test.storedRequest) > 0 {

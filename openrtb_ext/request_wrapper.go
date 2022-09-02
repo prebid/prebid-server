@@ -838,19 +838,6 @@ func (re *RegExt) marshal() (json.RawMessage, error) {
 		re.usPrivacyDirty = false
 	}
 
-	if re.gdprDirty {
-		if re.gdpr != nil {
-			gdprJson, err := json.Marshal(*re.gdpr)
-			if err != nil {
-				return nil, err
-			}
-			re.ext["gdpr"] = json.RawMessage(gdprJson)
-		} else {
-			delete(re.ext, "gdpr")
-		}
-		re.gdprDirty = false
-	}
-
 	re.extDirty = false
 	if len(re.ext) == 0 {
 		return nil, nil
@@ -859,7 +846,7 @@ func (re *RegExt) marshal() (json.RawMessage, error) {
 }
 
 func (re *RegExt) Dirty() bool {
-	return re.extDirty || re.usPrivacyDirty || re.gdprDirty
+	return re.extDirty || re.gdprDirty || re.usPrivacyDirty
 }
 
 func (re *RegExt) GetExt() map[string]json.RawMessage {

@@ -564,7 +564,7 @@ func TestParseMultisize(t *testing.T) {
 	}
 }
 
-func TestSetRegExtGDPR(t *testing.T) {
+func TestParseGdprApplies(t *testing.T) {
 	gdprAppliesFalse := false
 	gdprAppliesTrue := true
 
