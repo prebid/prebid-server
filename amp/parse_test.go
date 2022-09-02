@@ -447,7 +447,7 @@ func TestPrivacyReader(t *testing.T) {
 	}
 	for _, group := range testGroups {
 		for _, tc := range group.tests {
-			actualPolicyWriter, actualErr := ReadPolicy(tc.in.ampParams, nil, true)
+			actualPolicyWriter, actualErr := ReadPolicy(tc.in.ampParams, true)
 
 			assert.Equal(t, tc.expected.policyWriter, actualPolicyWriter, tc.desc)
 			assert.Equal(t, tc.expected.warning, actualErr, tc.desc)

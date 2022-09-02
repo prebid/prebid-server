@@ -52,6 +52,5 @@ func (c ConsentWriter) Write(req *openrtb2.BidRequest) error {
 			req.User.Ext = ext
 		}
 	}
-
 	return err
 }
