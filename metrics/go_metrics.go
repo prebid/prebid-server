@@ -70,6 +70,11 @@ type Metrics struct {
 	exchanges []openrtb_ext.BidderName
 	// Will hold boolean values to help us disable metric collection if needed
 	MetricsDisabled config.DisabledMetrics
+
+	// AdsCert metrics
+	AdsCertRequestsSuccess metrics.Meter
+	AdsCertRequestsFailure metrics.Meter
+	adsCertSignTimer       metrics.Timer
 }
 
 // AdapterMetrics houses the metrics for a particular adapter
@@ -162,6 +167,10 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		AdapterMetrics:  make(map[openrtb_ext.BidderName]*AdapterMetrics, len(exchanges)),
 		accountMetrics:  make(map[string]*accountMetrics),
 		MetricsDisabled: disabledMetrics,
+
+		AdsCertRequestsSuccess: blankMeter,
+		AdsCertRequestsFailure: blankMeter,
+		adsCertSignTimer:       blankTimer,
 
 		exchanges: exchanges,
 	}
@@ -297,6 +306,10 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 	for _, version := range TCFVersions() {
 		newMetrics.PrivacyTCFRequestVersion[version] = metrics.GetOrRegisterMeter(fmt.Sprintf("privacy.request.tcf.%s", string(version)), registry)
 	}
+
+	newMetrics.AdsCertRequestsSuccess = metrics.GetOrRegisterMeter("ads_cert_requests.ok", registry)
+	newMetrics.AdsCertRequestsFailure = metrics.GetOrRegisterMeter("ads_cert_requests.failed", registry)
+	newMetrics.adsCertSignTimer = metrics.GetOrRegisterTimer("ads_cert_sign_time", registry)
 
 	return newMetrics
 }
@@ -755,4 +768,16 @@ func (me *Metrics) RecordAdapterGDPRRequestBlocked(adapterName openrtb_ext.Bidde
 	}
 
 	am.GDPRRequestBlocked.Mark(1)
+}
+
+func (me *Metrics) RecordAdsCertReq(success bool) {
+	if success {
+		me.AdsCertRequestsSuccess.Mark(1)
+	} else {
+		me.AdsCertRequestsFailure.Mark(1)
+	}
+}
+
+func (me *Metrics) RecordAdsCertSignTime(adsCertSignTime time.Duration) {
+	me.adsCertSignTimer.Update(adsCertSignTime)
 }

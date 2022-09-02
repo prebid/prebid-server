@@ -145,6 +145,10 @@ func preloadLabelValues(m *Metrics, syncerKeys []string) {
 		hasBidsLabel: boolValues,
 	})
 
+	preloadLabelValuesForCounter(m.adsCertRequests, map[string][]string{
+		successLabel: boolValues,
+	})
+
 	if !m.metricsDisabled.AdapterConnectionMetrics {
 		preloadLabelValuesForCounter(m.adapterCreatedConnections, map[string][]string{
 			adapterLabel: adapterValues,
