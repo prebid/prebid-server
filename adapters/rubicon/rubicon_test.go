@@ -1267,7 +1267,7 @@ func TestJsonSamples(t *testing.T) {
 			Username: "xuser",
 			Password: "xpass",
 			Tracker:  "pbs-test-tracker",
-		}})
+		}}, config.Server{ExternalUrl: "http://hosturl.com", GdprID: "1", Datacenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)

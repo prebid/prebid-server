@@ -13,12 +13,12 @@ import (
 // media types defined in the static/bidder-info/{bidder}.yaml file.
 //
 // It adjusts incoming requests in the following ways:
-//   1. If App or Site traffic is not supported by the info file, then requests from
-//      those sources will be rejected before the delegate is called.
-//   2. If a given MediaType is not supported for the platform, then it will be set
-//      to nil before the request is forwarded to the delegate.
-//   3. Any Imps which have no MediaTypes left will be removed.
-//   4. If there are no valid Imps left, the delegate won't be called at all.
+//  1. If App or Site traffic is not supported by the info file, then requests from
+//     those sources will be rejected before the delegate is called.
+//  2. If a given MediaType is not supported for the platform, then it will be set
+//     to nil before the request is forwarded to the delegate.
+//  3. Any Imps which have no MediaTypes left will be removed.
+//  4. If there are no valid Imps left, the delegate won't be called at all.
 type InfoAwareBidder struct {
 	Bidder
 	info parsedBidderInfo

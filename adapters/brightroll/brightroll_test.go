@@ -14,7 +14,7 @@ func TestEmptyConfig(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderBrightroll, config.Adapter{
 		Endpoint:         `http://test-bid.ybp.yahoo.com/bid/appnexuspbs`,
 		ExtraAdapterInfo: ``,
-	})
+	}, config.Server{ExternalUrl: "http://hosturl.com", GdprID: "1", Datacenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -26,6 +26,7 @@ func TestEmptyConfig(t *testing.T) {
 	expected := &BrightrollAdapter{
 		URI:       "http://test-bid.ybp.yahoo.com/bid/appnexuspbs",
 		extraInfo: ex,
+		Server:    config.Server{ExternalUrl: "http://hosturl.com", GdprID: "1", Datacenter: "2"},
 	}
 	assert.Equal(t, expected, bidder)
 }
@@ -34,7 +35,7 @@ func TestNonEmptyConfig(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderBrightroll, config.Adapter{
 		Endpoint:         `http://test-bid.ybp.yahoo.com/bid/appnexuspbs`,
 		ExtraAdapterInfo: `{"accounts": [{"id": "test","bidfloor":0.1}]}`,
-	})
+	}, config.Server{ExternalUrl: "http://hosturl.com", GdprID: "1", Datacenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -46,6 +47,7 @@ func TestNonEmptyConfig(t *testing.T) {
 	expected := &BrightrollAdapter{
 		URI:       "http://test-bid.ybp.yahoo.com/bid/appnexuspbs",
 		extraInfo: ex,
+		Server:    config.Server{ExternalUrl: "http://hosturl.com", GdprID: "1", Datacenter: "2"},
 	}
 	assert.Equal(t, expected, bidder)
 }
@@ -54,7 +56,7 @@ func TestMalformedEmpty(t *testing.T) {
 	_, buildErr := Builder(openrtb_ext.BidderBrightroll, config.Adapter{
 		Endpoint:         `http://test-bid.ybp.yahoo.com/bid/appnexuspbs`,
 		ExtraAdapterInfo: `malformed`,
-	})
+	}, config.Server{ExternalUrl: "http://hosturl.com", GdprID: "1", Datacenter: "2"})
 
 	assert.Error(t, buildErr)
 }
@@ -63,7 +65,7 @@ func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderBrightroll, config.Adapter{
 		Endpoint:         `http://test-bid.ybp.yahoo.com/bid/appnexuspbs`,
 		ExtraAdapterInfo: `{"accounts": [{"id": "adthrive","badv": [], "bcat": ["IAB8-5","IAB8-18"],"battr": [1,2,3], "bidfloor":0.0}]}`,
-	})
+	}, config.Server{ExternalUrl: "http://hosturl.com", GdprID: "1", Datacenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
