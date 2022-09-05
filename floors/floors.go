@@ -6,7 +6,6 @@ import (
 	"math/rand"
 
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
-	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -21,41 +20,6 @@ const (
 	ENFORCE_RATE_MIN       int    = 0
 	ENFORCE_RATE_MAX       int    = 100
 )
-
-type Config struct {
-	Enabled           bool
-	EnforceRate       int
-	EnforceDealFloors bool
-}
-
-func NewConfig(priceFloor config.PriceFloors) *Config {
-
-	config := Config{
-		Enabled:           priceFloor.Enabled,
-		EnforceRate:       priceFloor.EnforceFloorsRate,
-		EnforceDealFloors: priceFloor.EnforceDealFloors,
-	}
-
-	return &config
-}
-
-func (fc *Config) IsFloorEnabled() bool {
-	return fc.Enabled
-}
-
-func (fc *Config) GetEnforceRate() int {
-	return fc.EnforceRate
-}
-
-func (fc *Config) EnforceDealFloor() bool {
-	return fc.EnforceDealFloors
-}
-
-type Floor interface {
-	IsFloorEnabled() bool
-	GetEnforceRate() int
-	EnforceDealFloor() bool
-}
 
 // ModifyImpsWithFloors will validate floor rules, based on request and rules prepares various combinations
 // to match with floor rules and selects appripariate floor rule and update imp.bidfloor and imp.bidfloorcur

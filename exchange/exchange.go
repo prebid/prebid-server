@@ -20,7 +20,6 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/experiment/adscert"
 	"github.com/prebid/prebid-server/firstpartydata"
-	"github.com/prebid/prebid-server/floors"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -70,7 +69,7 @@ type exchange struct {
 	bidIDGenerator    BidIDGenerator
 	hostSChainNode    *openrtb2.SupplyChainNode
 	adsCertSigner     adscert.Signer
-	floor             floors.Floor
+	floor             config.PriceFloors
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -149,7 +148,7 @@ func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid
 		bidIDGenerator: &bidIDGenerator{cfg.GenerateBidID},
 		hostSChainNode: cfg.HostSChainNode,
 		adsCertSigner:  adsCertSigner,
-		floor:          floors.NewConfig(cfg.Experiment.PriceFloors),
+		floor:          cfg.Experiment.PriceFloors,
 	}
 }
 

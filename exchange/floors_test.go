@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
-	"github.com/prebid/prebid-server/floors"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
@@ -881,24 +881,10 @@ func TestEnforceFloorToBidsConversion(t *testing.T) {
 	}
 }
 
-type floorStruct struct{}
-
-func (f floorStruct) IsFloorEnabled() bool {
-	return true
-}
-
-func (f floorStruct) GetEnforceRate() int {
-	return 100
-}
-
-func (f floorStruct) EnforceDealFloor() bool {
-	return true
-}
-
 func TestselectFloorsAndModifyImp(t *testing.T) {
 	type args struct {
 		r                  *AuctionRequest
-		floor              floors.Floor
+		floor              config.PriceFloors
 		conversions        currency.Conversions
 		responseDebugAllow bool
 	}
@@ -917,7 +903,11 @@ func TestselectFloorsAndModifyImp(t *testing.T) {
 					ar := AuctionRequest{BidRequestWrapper: &wrapper}
 					return &ar
 				}(),
-				floor:              floorStruct{},
+				floor: config.PriceFloors{
+					Enabled:           true,
+					EnforceFloorsRate: 100,
+					EnforceDealFloors: true,
+				},
 				conversions:        convert{},
 				responseDebugAllow: true,
 			},
@@ -937,7 +927,7 @@ func TestEnforceFloors(t *testing.T) {
 	type args struct {
 		r                  *AuctionRequest
 		seatBids           map[openrtb_ext.BidderName]*pbsOrtbSeatBid
-		floor              floors.Floor
+		floor              config.PriceFloors
 		conversions        currency.Conversions
 		responseDebugAllow bool
 	}
@@ -985,7 +975,11 @@ func TestEnforceFloors(t *testing.T) {
 						currency: "USD",
 					},
 				},
-				floor:              floorStruct{},
+				floor: config.PriceFloors{
+					Enabled:           true,
+					EnforceFloorsRate: 100,
+					EnforceDealFloors: true,
+				},
 				conversions:        convert{},
 				responseDebugAllow: true,
 			},

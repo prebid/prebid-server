@@ -98,14 +98,14 @@ func shouldSkipFloors(ModelGroupsSkipRate, DataSkipRate, RootSkipRate int, f fun
 	} else {
 		skipRate = RootSkipRate
 	}
-	return skipRate > f(SKIP_RATE_MAX+1)
+	return skipRate >= f(SKIP_RATE_MAX+1)
 }
 
-func findRule(RuleValues map[string]float64, delimiter string, desiredRuleKey []string, numFields int) (string, bool) {
+func findRule(ruleValues map[string]float64, delimiter string, desiredRuleKey []string, numFields int) (string, bool) {
 
 	ruleKeys := prepareRuleCombinations(desiredRuleKey, numFields, delimiter)
 	for i := 0; i < len(ruleKeys); i++ {
-		if _, ok := RuleValues[ruleKeys[i]]; ok {
+		if _, ok := ruleValues[ruleKeys[i]]; ok {
 			return ruleKeys[i], true
 		}
 	}
