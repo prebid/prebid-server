@@ -46,7 +46,6 @@ type Metrics struct {
 	storedVideoErrors            *prometheus.CounterVec
 	timeoutNotifications         *prometheus.CounterVec
 	dnsLookupTimer               prometheus.Histogram
-	tlsHandhakeTimer             prometheus.Histogram
 	privacyCCPA                  *prometheus.CounterVec
 	privacyCOPPA                 *prometheus.CounterVec
 	privacyLMT                   *prometheus.CounterVec
@@ -56,6 +55,8 @@ type Metrics struct {
 	storedResponsesErrors        *prometheus.CounterVec
 	adsCertRequests              *prometheus.CounterVec
 	adsCertSignTimer             prometheus.Histogram
+
+	requestsDuplicateBidIDCounter prometheus.Counter // total request having duplicate bid.id for given bidder
 
 	// Adapter Metrics
 	adapterBids                *prometheus.CounterVec
@@ -69,6 +70,10 @@ type Metrics struct {
 	adapterConnectionWaitTime  *prometheus.HistogramVec
 	adapterGDPRBlockedRequests *prometheus.CounterVec
 
+	adapterDuplicateBidIDCounter *prometheus.CounterVec
+	adapterVideoBidDuration      *prometheus.HistogramVec
+	tlsHandhakeTimer             *prometheus.HistogramVec
+
 	// Syncer Metrics
 	syncerRequests *prometheus.CounterVec
 	syncerSets     *prometheus.CounterVec
@@ -77,6 +82,20 @@ type Metrics struct {
 	accountRequests        *prometheus.CounterVec
 	accountDebugRequests   *prometheus.CounterVec
 	accountStoredResponses *prometheus.CounterVec
+
+	// Ad Pod Metrics
+
+	// podImpGenTimer indicates time taken by impression generator
+	// algorithm to generate impressions for given ad pod request
+	podImpGenTimer *prometheus.HistogramVec
+
+	// podImpGenTimer indicates time taken by combination generator
+	// algorithm to generate combination based on bid response and ad pod request
+	podCombGenTimer *prometheus.HistogramVec
+
+	// podCompExclTimer indicates time taken by compititve exclusion
+	// algorithm to generate final pod response based on bid response and ad pod request
+	podCompExclTimer *prometheus.HistogramVec
 
 	metricsDisabled config.DisabledMetrics
 }
@@ -124,6 +143,14 @@ const (
 const (
 	requestSuccessful = "ok"
 	requestFailed     = "failed"
+)
+
+// pod specific constants
+const (
+	podAlgorithm         = "algorithm"
+	podNoOfImpressions   = "no_of_impressions"
+	podTotalCombinations = "total_combinations"
+	podNoOfResponseBids  = "no_of_response_bids"
 )
 
 const (
@@ -285,10 +312,10 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"Seconds to resolve DNS",
 		standardTimeBuckets)
 
-	metrics.tlsHandhakeTimer = newHistogram(cfg, reg,
-		"tls_handshake_time",
-		"Seconds to perform TLS Handshake",
-		standardTimeBuckets)
+	// metrics.tlsHandhakeTimer = newHistogram(cfg, reg,
+	// 	"tls_handshake_time",
+	// 	"Seconds to perform TLS Handshake",
+	// 	standardTimeBuckets)
 
 	metrics.privacyCCPA = newCounter(cfg, reg,
 		"privacy_ccpa",
@@ -374,6 +401,12 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 			"Seconds from when the connection was requested until it is either created or reused",
 			[]string{adapterLabel},
 			standardTimeBuckets)
+
+		metrics.tlsHandhakeTimer = newHistogramVec(cfg, reg,
+			"tls_handshake_time",
+			"Seconds to perform TLS Handshake",
+			[]string{adapterLabel},
+			standardTimeBuckets)
 	}
 
 	metrics.adapterRequestsTimer = newHistogramVec(cfg, reg,
@@ -429,6 +462,43 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 
 	metrics.Registerer = prometheus.WrapRegistererWithPrefix(metricsPrefix, reg)
 	metrics.Registerer.MustRegister(promCollector.NewGoCollector())
+
+	metrics.adapterDuplicateBidIDCounter = newCounter(cfg, reg,
+		"duplicate_bid_ids",
+		"Number of collisions observed for given adaptor",
+		[]string{adapterLabel})
+
+	metrics.requestsDuplicateBidIDCounter = newCounterWithoutLabels(cfg, reg,
+		"requests_having_duplicate_bid_ids",
+		"Count of number of request where bid collision is detected.")
+
+	// adpod specific metrics
+	metrics.podImpGenTimer = newHistogramVec(cfg, reg,
+		"impr_gen",
+		"Time taken by Ad Pod Impression Generator in seconds", []string{podAlgorithm, podNoOfImpressions},
+		// 200 µS, 250 µS, 275 µS, 300 µS
+		//[]float64{0.000200000, 0.000250000, 0.000275000, 0.000300000})
+		// 100 µS, 200 µS, 300 µS, 400 µS, 500 µS,  600 µS,
+		[]float64{0.000100000, 0.000200000, 0.000300000, 0.000400000, 0.000500000, 0.000600000})
+
+	metrics.podCombGenTimer = newHistogramVec(cfg, reg,
+		"comb_gen",
+		"Time taken by Ad Pod Combination Generator in seconds", []string{podAlgorithm, podTotalCombinations},
+		// 200 µS, 250 µS, 275 µS, 300 µS
+		//[]float64{0.000200000, 0.000250000, 0.000275000, 0.000300000})
+		[]float64{0.000100000, 0.000200000, 0.000300000, 0.000400000, 0.000500000, 0.000600000})
+
+	metrics.podCompExclTimer = newHistogramVec(cfg, reg,
+		"comp_excl",
+		"Time taken by Ad Pod Compititve Exclusion in seconds", []string{podAlgorithm, podNoOfResponseBids},
+		// 200 µS, 250 µS, 275 µS, 300 µS
+		//[]float64{0.000200000, 0.000250000, 0.000275000, 0.000300000})
+		[]float64{0.000100000, 0.000200000, 0.000300000, 0.000400000, 0.000500000, 0.000600000})
+
+	metrics.adapterVideoBidDuration = newHistogramVec(cfg, reg,
+		"adapter_vidbid_dur",
+		"Video Ad durations returned by the bidder", []string{adapterLabel},
+		[]float64{4, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 120})
 
 	preloadLabelValues(&metrics, syncerKeys)
 
@@ -660,8 +730,11 @@ func (m *Metrics) RecordDNSTime(dnsLookupTime time.Duration) {
 	m.dnsLookupTimer.Observe(dnsLookupTime.Seconds())
 }
 
-func (m *Metrics) RecordTLSHandshakeTime(tlsHandshakeTime time.Duration) {
-	m.tlsHandhakeTimer.Observe(tlsHandshakeTime.Seconds())
+func (m *Metrics) RecordTLSHandshakeTime(adapterName openrtb_ext.BidderName, tlsHandshakeTime time.Duration) {
+	// m.tlsHandhakeTimer.Observe(tlsHandshakeTime.Seconds())
+	m.tlsHandhakeTimer.With(prometheus.Labels{
+		adapterLabel: string(adapterName),
+	}).Observe(tlsHandshakeTime.Seconds())
 }
 
 func (m *Metrics) RecordAdapterPanic(labels metrics.AdapterLabels) {

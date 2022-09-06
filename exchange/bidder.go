@@ -104,6 +104,8 @@ type pbsOrtbSeatBid struct {
 	httpCalls []*openrtb_ext.ExtHttpCall
 	// seat defines whom these extra bids belong to.
 	seat string
+	// bidderCoreName represents the core bidder id.
+	bidderCoreName openrtb_ext.BidderName
 }
 
 // AdaptBidder converts an adapters.Bidder into an exchange.AdaptedBidder.
@@ -253,6 +255,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 		}
 
 		if httpInfo.err == nil {
+			httpInfo.request.BidderName = bidderRequest.BidderName
 			bidResponse, moreErrs := bidder.Bidder.MakeBids(bidderRequest.BidRequest, httpInfo.request, httpInfo.response)
 			errs = append(errs, moreErrs...)
 
@@ -368,6 +371,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 							dealPriority:   bidResponse.Bids[i].DealPriority,
 							originalBidCPM: originalBidCpm,
 							originalBidCur: bidResponse.Currency,
+							bidTargets:     bidResponse.Bids[i].BidTargets,
 						})
 					}
 				} else {
@@ -491,6 +495,12 @@ func makeExt(httpInfo *httpCallInfo) *openrtb_ext.ExtHttpCall {
 		if httpInfo.err == nil && httpInfo.response != nil {
 			ext.ResponseBody = string(httpInfo.response.Body)
 			ext.Status = httpInfo.response.StatusCode
+		}
+
+		if nil != httpInfo.request.Params {
+			ext.Params = make(map[string]int)
+			ext.Params["ImpIndex"] = httpInfo.request.Params.ImpIndex
+			ext.Params["VASTTagIndex"] = httpInfo.request.Params.VASTTagIndex
 		}
 	}
 
@@ -651,7 +661,7 @@ func (bidder *bidderAdapter) addClientTrace(ctx context.Context) context.Context
 		TLSHandshakeDone: func(tls.ConnectionState, error) {
 			tlsHandshakeTime := time.Now().Sub(tlsStart)
 
-			bidder.me.RecordTLSHandshakeTime(tlsHandshakeTime)
+			bidder.me.RecordTLSHandshakeTime(bidder.BidderName, tlsHandshakeTime)
 		},
 	}
 	return httptrace.WithClientTrace(ctx, trace)

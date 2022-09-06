@@ -78,6 +78,8 @@ func cleanOpenRTBRequests(ctx context.Context,
 	//this function should be executed after getAuctionBidderRequests
 	allBidderRequests = mergeBidderRequests(allBidderRequests, bidderNameToBidderReq)
 
+	updateContentObjectForBidder(allBidderRequests, requestExt)
+
 	gdprSignal, err := extractGDPR(req.BidRequest)
 	if err != nil {
 		errs = append(errs, err)

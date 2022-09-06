@@ -45,7 +45,7 @@
               "tagid": "mytag",
               "secure": 1,
               "bidfloor": 0.01,
-              "displaymanager": "prebid-s2s",
+              "displaymanager": "pubmatic-openwrap",
               "displaymanagerver": "2.0.0",
               "banner": {
                 "format": [{"w": 300, "h": 250}]

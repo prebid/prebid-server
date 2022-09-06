@@ -27,6 +27,10 @@
                         "version": 1,
                         "profile": 5123
                     }
+                },
+                "skadn": {
+                  "skadnetids": ["k674qkevps.skadnetwork"],
+                  "version": "2.0"
                 }
             }
         }],
@@ -64,7 +68,11 @@
                 "bidfloor": 0.12,
                 "ext": {
                     "pmZoneId": "Zone1,Zone2",
-                    "preference": "sports,movies"
+                    "preference": "sports,movies",
+                    "skadn": {
+                      "skadnetids": ["k674qkevps.skadnetwork"],
+                      "version": "2.0"
+                    }
                 }
               }
             ], 
@@ -102,7 +110,21 @@
                   "crid": "29681110",
                   "h": 250,
                   "w": 300,
-                  "dealid":"test deal"
+                  "dealid":"test deal",
+                  "ext": {
+                    "dspid": 6,
+                    "deal_channel": 1,
+                    "skadn": {
+                      "signature": "MDUCGQDreBN5/xBN547tJeUdqcMSBtBA+Lk06b8CGFkjR1V56rh/H9osF8iripkuZApeDsZ+lQ==",
+                      "campaign": "4",
+                      "network": "k674qkevps.skadnetwork",
+                      "nonce": "D0EC0F04-A4BF-445B-ADF1-E010430C29FD",
+                      "timestamp": "1596695461984",
+                      "sourceapp": "525463029",
+                      "itunesitem": "1499436635",
+                      "version": "2.0"
+                  }
+                  }
                 }]
               }
             ],
@@ -128,17 +150,25 @@
               "crid": "29681110",
               "w": 300,
               "h": 250,
-              "dealid":"test deal"
+              "dealid":"test deal",
+              "ext": {
+                "dspid": 6,
+                "deal_channel": 1,
+                "skadn": {
+                  "signature": "MDUCGQDreBN5/xBN547tJeUdqcMSBtBA+Lk06b8CGFkjR1V56rh/H9osF8iripkuZApeDsZ+lQ==",
+                  "campaign": "4",
+                  "network": "k674qkevps.skadnetwork",
+                  "nonce": "D0EC0F04-A4BF-445B-ADF1-E010430C29FD",
+                  "timestamp": "1596695461984",
+                  "sourceapp": "525463029",
+                  "itunesitem": "1499436635",
+                  "version": "2.0"
+              }
+              }
             },
             "type": "banner"
           }
         ]
-      }
-    ],
-    "expectedMakeBidsErrors": [
-      {
-        "value": "unexpected end of JSON input",
-        "comparison": "literal"
       }
     ]
   }

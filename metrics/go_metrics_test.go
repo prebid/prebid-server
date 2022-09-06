@@ -280,29 +280,51 @@ func TestRecordDNSTime(t *testing.T) {
 }
 
 func TestRecordTLSHandshakeTime(t *testing.T) {
+	type testIn struct {
+		adapterName           openrtb_ext.BidderName
+		tLSHandshakeDuration  time.Duration
+		adapterMetricsEnabled bool
+	}
+
+	type testOut struct {
+		expectedDuration time.Duration
+	}
+
 	testCases := []struct {
-		description          string
-		tLSHandshakeDuration time.Duration
-		expectedDuration     time.Duration
+		description string
+		in          testIn
+		out         testOut
 	}{
 		{
-			description:          "Five second TLS handshake time",
-			tLSHandshakeDuration: time.Second * 5,
-			expectedDuration:     time.Second * 5,
+			description: "Five second TLS handshake time",
+			in: testIn{
+				adapterName:           openrtb_ext.BidderAppnexus,
+				tLSHandshakeDuration:  time.Second * 5,
+				adapterMetricsEnabled: true,
+			},
+			out: testOut{
+				expectedDuration: time.Second * 5,
+			},
 		},
 		{
-			description:          "Zero TLS handshake time",
-			tLSHandshakeDuration: time.Duration(0),
-			expectedDuration:     time.Duration(0),
+			description: "Zero TLS handshake time",
+			in: testIn{
+				adapterName:           openrtb_ext.BidderAppnexus,
+				tLSHandshakeDuration:  time.Duration(0),
+				adapterMetricsEnabled: true,
+			},
+			out: testOut{
+				expectedDuration: time.Duration(0),
+			},
 		},
 	}
 	for _, test := range testCases {
 		registry := metrics.NewRegistry()
 		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountAdapterDetails: true}, nil)
 
-		m.RecordTLSHandshakeTime(test.tLSHandshakeDuration)
+		m.RecordTLSHandshakeTime(test.in.adapterName, test.in.tLSHandshakeDuration)
 
-		assert.Equal(t, test.expectedDuration.Nanoseconds(), m.TLSHandshakeTimer.Sum(), test.description)
+		assert.Equal(t, test.out.expectedDuration.Nanoseconds(), m.AdapterMetrics[openrtb_ext.BidderAppnexus].TLSHandshakeTimer.Sum(), test.description)
 	}
 }
 
