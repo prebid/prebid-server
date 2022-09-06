@@ -155,6 +155,12 @@ func TestDefaults(t *testing.T) {
 	cmpInts(t, "experiment.adscert.remote.signing_timeout_ms", cfg.Experiment.AdCerts.Remote.SigningTimeoutMs, 5)
 	cmpNils(t, "host_schain_node", cfg.HostSChainNode)
 
+	//Assert the price floor default values
+	cmpBools(t, "price_floors.enabled", cfg.PriceFloors.Enabled, false)
+	cmpBools(t, "price_floors.use_dynamic_data", cfg.PriceFloors.UseDynamicData, false)
+	cmpInts(t, "price_floors.enforce_floors_rate", cfg.PriceFloors.EnforceFloorsRate, 100)
+	cmpBools(t, "price_floors.enforce_deal_floors", cfg.PriceFloors.EnforceDealFloors, false)
+
 	//Assert purpose VendorExceptionMap hash tables were built correctly
 	expectedTCF2 := TCF2{
 		Enabled: true,
@@ -402,6 +408,11 @@ experiment:
         remote:
             url: ""
             signing_timeout_ms: 10
+price_floors:
+   enabled: true
+   use_dynamic_data: false
+   enforce_floors_rate: 100
+   enforce_deal_floors: true
 `)
 
 var adapterExtraInfoConfig = []byte(`
@@ -500,6 +511,12 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "host_schain_node.sid", cfg.HostSChainNode.SID, "00001")
 	cmpStrings(t, "host_schain_node.rid", cfg.HostSChainNode.RID, "BidRequest")
 	cmpInt8s(t, "host_schain_node.hp", cfg.HostSChainNode.HP, &int8One)
+
+	//Assert the price floor values
+	cmpBools(t, "price_floors.enabled", cfg.PriceFloors.Enabled, true)
+	cmpBools(t, "price_floors.use_dynamic_data", cfg.PriceFloors.UseDynamicData, false)
+	cmpInts(t, "price_floors.enforce_floors_rate", cfg.PriceFloors.EnforceFloorsRate, 100)
+	cmpBools(t, "price_floors.enforce_deal_floors", cfg.PriceFloors.EnforceDealFloors, true)
 
 	//Assert the NonStandardPublishers was correctly unmarshalled
 	assert.Equal(t, []string{"pub1", "pub2"}, cfg.GDPR.NonStandardPublishers, "gdpr.non_standard_publishers")
