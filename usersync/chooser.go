@@ -132,7 +132,11 @@ func (c standardChooser) Choose(request Request, cookie *Cookie) Result {
 }
 
 func (c standardChooser) evaluate(bidder string, syncersSeen map[string]struct{}, syncTypeFilter SyncTypeFilter, privacy Privacy, cookie *Cookie) (Syncer, BidderEvaluation) {
-	syncer, exists := c.bidderSyncerLookup[bidder]
+	bidderName := bidder
+	if bidderName == "indexExchange" {
+		bidderName = "ix"
+	}
+	syncer, exists := c.bidderSyncerLookup[bidderName]
 	if !exists {
 		return nil, BidderEvaluation{Bidder: bidder, Status: StatusUnknownBidder}
 	}
