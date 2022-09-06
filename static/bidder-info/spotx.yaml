@@ -1,0 +1,10 @@
+maintainer:
+  email: "teameighties@spotx.tv"
+gvlVendorID: 165
+capabilities:
+  app:
+    mediaTypes:
+      - video
+  site:
+    mediaTypes:
+      - video

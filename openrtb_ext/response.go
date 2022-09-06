@@ -28,6 +28,8 @@ type ExtResponseDebug struct {
 	HttpCalls map[BidderName][]*ExtHttpCall `json:"httpcalls,omitempty"`
 	// Request after resolution of stored requests and debug overrides
 	ResolvedRequest json.RawMessage `json:"resolvedrequest,omitempty"`
+	// Request after flors signalling
+	UpdatedRequest json.RawMessage `json:"updatedrequest,omitempty"`
 }
 
 // ExtResponseSyncData defines the contract for bidresponse.ext.usersync.{bidder}
@@ -61,6 +63,7 @@ type ExtHttpCall struct {
 	RequestHeaders map[string][]string `json:"requestheaders"`
 	ResponseBody   string              `json:"responsebody"`
 	Status         int                 `json:"status"`
+	Params         map[string]int      `json:"params,omitempty"`
 }
 
 // CookieStatus describes the allowed values for bidresponse.ext.usersync.{bidder}.status

@@ -67,8 +67,8 @@ func (me *MetricsEngineMock) RecordDNSTime(dnsLookupTime time.Duration) {
 	me.Called(dnsLookupTime)
 }
 
-func (me *MetricsEngineMock) RecordTLSHandshakeTime(tlsHandshakeTime time.Duration) {
-	me.Called(tlsHandshakeTime)
+func (me *MetricsEngineMock) RecordTLSHandshakeTime(bidderName openrtb_ext.BidderName, tlsHandshakeTime time.Duration) {
+	me.Called(bidderName, tlsHandshakeTime)
 }
 
 // RecordAdapterBidReceived mock

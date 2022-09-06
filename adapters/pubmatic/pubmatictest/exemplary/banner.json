@@ -36,7 +36,8 @@
         "ext": {
           "prebid": {
             "bidderparams": {
-              "acat": ["drg","dlu","ssr"]
+              "acat": ["drg","dlu","ssr"],
+              "wiid": "dwzafakjflan-tygannnvlla-mlljvj"
             }
           }
         },
@@ -45,7 +46,7 @@
 		    	  "publisher": {
 			        	"id": "1234"
 		      	}
-		      }
+          }
      },
   
     "httpCalls": [
@@ -87,7 +88,8 @@
             "ext": {
                 "wrapper": {
                     "profile": 5123,
-                    "version":1
+                    "version":1,
+                    "wiid" : "dwzafakjflan-tygannnvlla-mlljvj"
                 },
                 "acat": ["drg","dlu","ssr"]
             }

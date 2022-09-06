@@ -95,6 +95,23 @@ type Configuration struct {
 	// GenerateRequestID overrides the bidrequest.id in an AMP Request or an App Stored Request with a generated UUID if set to true. The default is false.
 	GenerateRequestID bool                      `mapstructure:"generate_request_id"`
 	HostSChainNode    *openrtb2.SupplyChainNode `mapstructure:"host_schain_node"`
+
+	TrackerURL          string              `mapstructure:"tracker_url"`
+	VendorListScheduler VendorListScheduler `mapstructure:"vendor_list_scheduler"`
+	PriceFloors         PriceFloors         `mapstructure:"price_floors"`
+}
+
+type PriceFloors struct {
+	Enabled           bool `mapstructure:"enabled"`
+	UseDynamicData    bool `mapstructure:"use_dynamic_data"`
+	EnforceFloorsRate int  `mapstructure:"enforce_floors_rate"`
+	EnforceDealFloors bool `mapstructure:"enforce_deal_floors"`
+}
+
+type VendorListScheduler struct {
+	Enabled  bool   `mapstructure:"enabled"`
+	Interval string `mapstructure:"interval"`
+	Timeout  string `mapstructure:"timeout"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
@@ -104,6 +121,11 @@ type HTTPClient struct {
 	MaxIdleConns        int `mapstructure:"max_idle_connections"`
 	MaxIdleConnsPerHost int `mapstructure:"max_idle_connections_per_host"`
 	IdleConnTimeout     int `mapstructure:"idle_connection_timeout_seconds"`
+
+	TLSHandshakeTimeout   int `mapstructure:"tls_handshake_timeout"`
+	ResponseHeaderTimeout int `mapstructure:"response_header_timeout"`
+	DialTimeout           int `mapstructure:"dial_timeout"`
+	DialKeepAlive         int `mapstructure:"dial_keepalive"`
 }
 
 func (cfg *Configuration) validate(v *viper.Viper) []error {
@@ -128,6 +150,9 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 	}
 	if cfg.AccountDefaults.Events.Enabled {
 		glog.Warning(`account_defaults.events will currently not do anything as the feature is still under development. Please follow https://github.com/prebid/prebid-server/issues/1725 for more updates`)
+	}
+	if cfg.PriceFloors.Enabled {
+		glog.Warning(`PriceFloors.Enabled will enforce floor feature which is still under development.`)
 	}
 	return errs
 }
@@ -788,6 +813,10 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("http_client_cache.max_idle_connections", 10)
 	v.SetDefault("http_client_cache.max_idle_connections_per_host", 2)
 	v.SetDefault("http_client_cache.idle_connection_timeout_seconds", 60)
+	v.SetDefault("http_client.tls_handshake_timeout", 0)   //no timeout
+	v.SetDefault("http_client.response_header_timeout", 0) //unlimited
+	v.SetDefault("http_client.dial_timeout", 0)            //no timeout
+	v.SetDefault("http_client.dial_keepalive", 0)          //no restriction
 	// no metrics configured by default (metrics{host|database|username|password})
 	v.SetDefault("metrics.disabled_metrics.account_adapter_details", false)
 	v.SetDefault("metrics.disabled_metrics.account_debug", true)
@@ -806,7 +835,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("metrics.prometheus.subsystem", "")
 	v.SetDefault("metrics.prometheus.timeout_ms", 10000)
 	v.SetDefault("category_mapping.filesystem.enabled", true)
-	v.SetDefault("category_mapping.filesystem.directorypath", "./static/category-mapping")
+	v.SetDefault("category_mapping.filesystem.directorypath", "/home/http/GO_SERVER/dmhbserver/static/category-mapping")
 	v.SetDefault("category_mapping.http.endpoint", "")
 	v.SetDefault("stored_requests.filesystem.enabled", false)
 	v.SetDefault("stored_requests.filesystem.directorypath", "./stored_requests/data/by_id")
@@ -993,7 +1022,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.interactiveoffers.endpoint", "https://prebid-server.ioadx.com/bidRequest/?partnerId={{.AccountID}}")
 	v.SetDefault("adapters.invibes.endpoint", "https://{{.ZoneID}}.videostep.com/bid/ServerBidAdContent")
 	v.SetDefault("adapters.iqzone.endpoint", "http://smartssp-us-east.iqzone.com/pserver")
-	v.SetDefault("adapters.ix.disabled", true)
+	v.SetDefault("adapters.ix.disabled", false)
+	v.SetDefault("adapters.ix.endpoint", "http://exchange.indexww.com/pbs?p=192919")
 	v.SetDefault("adapters.janet.endpoint", "http://ghb.bidder.jmgads.com/pbs/ortb")
 	v.SetDefault("adapters.jixie.endpoint", "https://hb.jixie.io/v2/hbsvrpost")
 	v.SetDefault("adapters.kargo.endpoint", "https://krk.kargo.com/api/v1/openrtb")
@@ -1047,6 +1077,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.sonobi.endpoint", "https://apex.go.sonobi.com/prebid?partnerid=71d9d3d8af")
 	v.SetDefault("adapters.sovrn.endpoint", "http://pbs.lijit.com/rtb/bid?src=prebid_server")
 	v.SetDefault("adapters.sspbc.endpoint", "https://ssp.wp.pl/bidder/")
+	v.SetDefault("adapters.spotx.endpoint", "https://search.spotxchange.com/openrtb/2.3/dados")
 	v.SetDefault("adapters.streamkey.endpoint", "http://ghb.hb.streamkey.net/pbs/ortb")
 	v.SetDefault("adapters.stroeercore.disabled", true)
 	v.SetDefault("adapters.stroeercore.endpoint", "http://mhb.adscale.de/s2sdsh")
@@ -1062,12 +1093,14 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.unicorn.endpoint", "https://ds.uncn.jp/pb/0/bid.json")
 	v.SetDefault("adapters.unruly.endpoint", "https://targeting.unrulymedia.com/unruly_prebid_server")
 	v.SetDefault("adapters.valueimpression.endpoint", "http://useast.quantumdex.io/auction/pbs")
+	v.SetDefault("adapters.vastbidder.endpoint", "https://test.com")
 	v.SetDefault("adapters.verizonmedia.disabled", true)
 	v.SetDefault("adapters.videobyte.endpoint", "https://x.videobyte.com/ortbhb")
 	v.SetDefault("adapters.vidoomy.endpoint", "https://p.vidoomy.com/api/rtbserver/pbs")
 	v.SetDefault("adapters.viewdeos.endpoint", "http://ghb.sync.viewdeos.com/pbs/ortb")
 	v.SetDefault("adapters.visx.endpoint", "https://t.visx.net/s2s_bid?wrapperType=s2s_prebid_standard:0.1.1")
 	v.SetDefault("adapters.vrtcal.endpoint", "http://rtb.vrtcal.com/bidder_prebid.vap?ssp=1804")
+	v.SetDefault("adapters.yahoossp.disabled", true)
 	v.SetDefault("adapters.yahoossp.endpoint", "https://s2shb.ssp.yahoo.com/admax/bid/partners/PBS")
 	v.SetDefault("adapters.yeahmobi.endpoint", "https://{{.Host}}/prebid/bid")
 	v.SetDefault("adapters.yieldlab.endpoint", "https://ad.yieldlab.net/yp/")
@@ -1089,6 +1122,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.BindEnv("gdpr.default_value")
 	v.SetDefault("gdpr.enabled", true)
 	v.SetDefault("gdpr.host_vendor_id", 0)
+	v.SetDefault("gdpr.default_value", "0")
+	v.SetDefault("gdpr.usersync_if_ambiguous", true)
 	v.SetDefault("gdpr.timeouts_ms.init_vendorlist_fetches", 0)
 	v.SetDefault("gdpr.timeouts_ms.active_vendorlist_fetch", 0)
 	v.SetDefault("gdpr.non_standard_publishers", []string{""})
@@ -1199,6 +1234,10 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("gdpr.tcf2.purpose_one_treatment.access_allowed", true)
 	v.SetDefault("gdpr.tcf2.special_feature1.enforce", true)
 	v.SetDefault("gdpr.tcf2.special_feature1.vendor_exceptions", []openrtb_ext.BidderName{})
+	v.SetDefault("price_floors.enabled", false)
+	v.SetDefault("price_floors.use_dynamic_data", false)
+	v.SetDefault("price_floors.enforce_floors_rate", 100)
+	v.SetDefault("price_floors.enforce_deal_floors", false)
 
 	// Defaults for account_defaults.events.default_url
 	v.SetDefault("account_defaults.events.default_url", "https://PBS_HOST/event?t=##PBS-EVENTTYPE##&vtype=##PBS-VASTEVENT##&b=##PBS-BIDID##&f=i&a=##PBS-ACCOUNTID##&ts=##PBS-TIMESTAMP##&bidder=##PBS-BIDDER##&int=##PBS-INTEGRATION##&mt=##PBS-MEDIATYPE##&ch=##PBS-CHANNEL##&aid=##PBS-AUCTIONID##&l=##PBS-LINEID##")

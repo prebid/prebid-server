@@ -7,9 +7,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	_ "github.com/lib/pq"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
-
 	"github.com/stretchr/testify/assert"
 )
 

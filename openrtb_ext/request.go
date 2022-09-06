@@ -55,8 +55,23 @@ type ExtRequestPrebid struct {
 	// The array may contain a single sstar ('*') entry to represent all bidders.
 	NoSale []string `json:"nosale,omitempty"`
 
+	// Macros specifies list of custom macros along with the values. This is used while forming
+	// the tracker URLs, where PBS will replace the Custom Macro with its value with url-encoding
+	Macros map[string]string `json:"macros,omitempty"`
+
 	CurrencyConversions *ExtRequestCurrency `json:"currency,omitempty"`
 	BidderConfigs       []BidderConfig      `json:"bidderconfig,omitempty"`
+	Transparency        *TransparencyExt    `json:"transparency,omitempty"`
+	Floors              *PriceFloorRules    `json:"floors,omitempty"`
+}
+
+type TransparencyRule struct {
+	Include bool     `json:"include,omitempty"`
+	Keys    []string `json:"keys,omitempty"`
+}
+
+type TransparencyExt struct {
+	Content map[string]TransparencyRule `json:"content,omitempty"`
 }
 
 type BidderConfig struct {
@@ -140,6 +155,7 @@ type ExtIncludeBrandCategory struct {
 	Publisher           string `json:"publisher"`
 	WithCategory        bool   `json:"withcategory"`
 	TranslateCategories *bool  `json:"translatecategories,omitempty"`
+	SkipDedup           bool   `json:"skipdedup"`
 }
 
 // Make an unmarshaller that will set a default PriceGranularity
@@ -169,6 +185,7 @@ func (ert *ExtRequestTargeting) UnmarshalJSON(b []byte) error {
 
 // PriceGranularity defines the allowed values for bidrequest.ext.prebid.targeting.pricegranularity
 type PriceGranularity struct {
+	Test      bool               `json:"test,omitempty"`
 	Precision int                `json:"precision,omitempty"`
 	Ranges    []GranularityRange `json:"ranges,omitempty"`
 }
@@ -248,6 +265,10 @@ func PriceGranularityFromString(gran string) PriceGranularity {
 		return priceGranularityAuto
 	case "dense":
 		return priceGranularityDense
+	case "ow-ctv-med":
+		return priceGranularityOWCTVMed
+	case "testpg":
+		return priceGranularityTestPG
 	}
 	// Return empty if not matched
 	return PriceGranularity{}
@@ -317,6 +338,23 @@ var priceGranularityAuto = PriceGranularity{
 			Increment: 0.5,
 		},
 	},
+}
+
+var priceGranularityOWCTVMed = PriceGranularity{
+	Precision: 2,
+	Ranges: []GranularityRange{{
+		Min:       0,
+		Max:       100,
+		Increment: 0.5}},
+}
+
+var priceGranularityTestPG = PriceGranularity{
+	Test:      true,
+	Precision: 2,
+	Ranges: []GranularityRange{{
+		Min:       0,
+		Max:       50,
+		Increment: 50}},
 }
 
 // ExtRequestPrebidData defines Prebid's First Party Data (FPD) and related bid request options.
