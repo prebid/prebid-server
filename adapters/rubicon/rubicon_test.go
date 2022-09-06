@@ -874,15 +874,6 @@ func TestOpenRTBRequestWithSpecificExtUserEids(t *testing.T) {
 	assert.NotNil(t, userExt.Eids)
 	assert.Equal(t, 4, len(userExt.Eids), "Eids values are not as expected!")
 
-	assert.NotNil(t, userExt.TpID)
-	assert.Equal(t, 2, len(userExt.TpID), "TpID values are not as expected!")
-
-	// adserver.org
-	assert.Equal(t, "tdid", userExt.TpID[0].Source, "TpID source value is not as expected!")
-
-	// liveintent.com
-	assert.Equal(t, "liveintent.com", userExt.TpID[1].Source, "TpID source value is not as expected!")
-
 	// liveramp.com
 	assert.Equal(t, "LIVERAMPID", userExt.LiverampIdl, "Liveramp_idl value is not as expected!")
 

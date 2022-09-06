@@ -89,22 +89,16 @@ type rubiconUserExtRP struct {
 	Target json.RawMessage `json:"target,omitempty"`
 }
 
-type rubiconExtUserTpID struct {
-	Source string `json:"source"`
-	UID    string `json:"uid"`
-}
-
 type rubiconDataExt struct {
 	SegTax int `json:"segtax"`
 }
 
 type rubiconUserExt struct {
-	Consent     string               `json:"consent,omitempty"`
-	Eids        []openrtb2.EID       `json:"eids,omitempty"`
-	TpID        []rubiconExtUserTpID `json:"tpid,omitempty"`
-	RP          rubiconUserExtRP     `json:"rp"`
-	LiverampIdl string               `json:"liveramp_idl,omitempty"`
-	Data        json.RawMessage      `json:"data,omitempty"`
+	Consent     string           `json:"consent,omitempty"`
+	Eids        []openrtb2.EID   `json:"eids,omitempty"`
+	RP          rubiconUserExtRP `json:"rp"`
+	LiverampIdl string           `json:"liveramp_idl,omitempty"`
+	Data        json.RawMessage  `json:"data,omitempty"`
 }
 
 type rubiconSiteExtRP struct {
@@ -280,7 +274,6 @@ type rubiconUserExtEidUidExt struct {
 }
 
 type mappedRubiconUidsParam struct {
-	tpIds       []rubiconExtUserTpID
 	segments    []string
 	liverampIdl string
 }
@@ -486,13 +479,13 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 						userBuyerUID = extractUserBuyerUID(userExt.Eids)
 					}
 
-					mappedRubiconUidsParam, errors := getTpIdsAndSegments(userExt.Eids)
+					mappedRubiconUidsParam, errors := getSegments(userExt.Eids)
 					if len(errors) > 0 {
 						errs = append(errs, errors...)
 						continue
 					}
 
-					if err := updateUserExtWithTpIdsAndSegments(&userExtRP, mappedRubiconUidsParam); err != nil {
+					if err := updateUserExtWithSegments(&userExtRP, mappedRubiconUidsParam); err != nil {
 						errs = append(errs, err)
 						continue
 					}
@@ -946,42 +939,17 @@ func extractUserBuyerUID(eids []openrtb2.EID) string {
 	return ""
 }
 
-func getTpIdsAndSegments(eids []openrtb2.EID) (mappedRubiconUidsParam, []error) {
+func getSegments(eids []openrtb2.EID) (mappedRubiconUidsParam, []error) {
 	rubiconUidsParam := mappedRubiconUidsParam{
-		tpIds:    make([]rubiconExtUserTpID, 0),
 		segments: make([]string, 0),
 	}
 	errs := make([]error, 0)
 
 	for _, eid := range eids {
 		switch eid.Source {
-		case "adserver.org":
-			uids := eid.UIDs
-			if len(uids) > 0 {
-				uid := uids[0]
-
-				if uid.Ext != nil {
-					var eidUidExt rubiconUserExtEidUidExt
-					if err := json.Unmarshal(uid.Ext, &eidUidExt); err != nil {
-						errs = append(errs, &errortypes.BadInput{
-							Message: err.Error(),
-						})
-						continue
-					}
-
-					if eidUidExt.RtiPartner == "TDID" {
-						rubiconUidsParam.tpIds = append(rubiconUidsParam.tpIds, rubiconExtUserTpID{Source: "tdid", UID: uid.ID})
-					}
-				}
-			}
 		case "liveintent.com":
 			uids := eid.UIDs
 			if len(uids) > 0 {
-				uidId := uids[0].ID
-				if uidId != "" {
-					rubiconUidsParam.tpIds = append(rubiconUidsParam.tpIds, rubiconExtUserTpID{Source: "liveintent.com", UID: uidId})
-				}
-
 				if eid.Ext != nil {
 					var eidExt rubiconUserExtEidExt
 					if err := json.Unmarshal(eid.Ext, &eidExt); err != nil {
@@ -1007,9 +975,8 @@ func getTpIdsAndSegments(eids []openrtb2.EID) (mappedRubiconUidsParam, []error) 
 	return rubiconUidsParam, errs
 }
 
-func updateUserExtWithTpIdsAndSegments(userExtRP *rubiconUserExt, rubiconUidsParam mappedRubiconUidsParam) error {
-	if len(rubiconUidsParam.tpIds) > 0 {
-		userExtRP.TpID = rubiconUidsParam.tpIds
+func updateUserExtWithSegments(userExtRP *rubiconUserExt, rubiconUidsParam mappedRubiconUidsParam) error {
+	if len(rubiconUidsParam.segments) > 0 {
 
 		if rubiconUidsParam.segments != nil {
 			userExtRPTarget := make(map[string]interface{})
