@@ -30,8 +30,8 @@ Download and prepare Prebid Server:
 
 ```bash
 cd YOUR_DIRECTORY
-git clone https://github.com/prebid/prebid-server src/github.com/prebid/prebid-server
-cd src/github.com/prebid/prebid-server
+git clone https://github.com/PubMatic-OpenWrap/prebid-server src/github.com/PubMatic-OpenWrap/prebid-server
+cd src/github.com/PubMatic-OpenWrap/prebid-server
 ```
 
 Run the automated tests:
@@ -60,11 +60,10 @@ of exported types.
 
 Want to [add an adapter](https://docs.prebid.org/prebid-server/developers/add-new-bidder-go.html)? Found a bug? Great!
 
-Report bugs, request features, and suggest improvements [on Github](https://github.com/prebid/prebid-server/issues).
-
-Or better yet, [open a pull request](https://github.com/prebid/prebid-server/compare) with the changes you'd like to see.
+Or better yet, [open a pull request](https://github.com/PubMatic-OpenWrap/prebid-server/compare) with the changes you'd like to see.
 
 ## IDE Recommendations
 
 The quickest way to start developing Prebid Server in a reproducible environment isolated from your host OS
 is by using Visual Studio Code with [Remote Container Setup](devcontainer.md).
+
