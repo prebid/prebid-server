@@ -47,7 +47,7 @@
   "outgoingRequests": {
     "appnexus": {
       "mockResponse": {
-        "pbsSeatBid": {
+        "pbsSeatBids": [{
           "pbsBids": [
             {
               "ortbBid": {
@@ -82,13 +82,14 @@
               },
               "bidType": "video"
             }
-          ]
-        }
+          ],
+          "seat": "appnexus"
+        }]
       }
     },
     "audienceNetwork": {
       "mockResponse": {
-        "pbsSeatBid": {
+        "pbsSeatBids": [{
           "pbsBids": [
             {
               "ortbBid": {
@@ -101,8 +102,9 @@
               },
               "bidType": "video"
             }
-          ]
-        }
+          ],
+          "seat": "audienceNetwork"
+        }]
       }
     }
   },
@@ -120,6 +122,7 @@
             "h": 250,
             "crid": "creative-4",
             "ext": {
+              "origbidcpm": 0.51,
               "prebid": {
                 "type": "video"
               }
@@ -136,6 +139,7 @@
             "h": 250,
             "crid": "creative-1",
             "ext": {
+              "origbidcpm": 0.71,
               "prebid": {
                 "type": "video",
                 "targeting": {
@@ -156,6 +160,7 @@
             "h": 250,
             "crid": "creative-2",
             "ext": {
+              "origbidcpm": 0.21,
               "prebid": {
                 "type": "video"
               }
@@ -169,6 +174,7 @@
             "h": 500,
             "crid": "creative-3",
             "ext": {
+              "origbidcpm": 0.61,
               "prebid": {
                 "type": "video",
                 "targeting": {

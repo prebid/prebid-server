@@ -6,10 +6,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 )
 
-// Params defines the paramters of an AMP request.
+// Params defines the parameters of an AMP request.
 type Params struct {
 	Account         string
 	CanonicalURL    string
@@ -20,6 +20,7 @@ type Params struct {
 	Slot            string
 	StoredRequestID string
 	Timeout         *uint64
+	Targeting       string
 }
 
 // Size defines size information of an AMP request.
@@ -31,7 +32,7 @@ type Size struct {
 	Width          int64
 }
 
-// ParseParams parses the AMP paramters from a HTTP request.
+// ParseParams parses the AMP parameters from a HTTP request.
 func ParseParams(httpRequest *http.Request) (Params, error) {
 	query := httpRequest.URL.Query()
 
@@ -56,6 +57,7 @@ func ParseParams(httpRequest *http.Request) (Params, error) {
 		Slot:            query.Get("slot"),
 		StoredRequestID: tagID,
 		Timeout:         parseIntPtr(query.Get("timeout")),
+		Targeting:       query.Get("targeting"),
 	}
 	return params, nil
 }
@@ -104,7 +106,7 @@ func chooseConsent(consent, gdprConsent string) string {
 		return consent
 	}
 
-	// Fallback to 'gdpr_consent' for compatability until it's no longer used. This was our original
+	// Fallback to 'gdpr_consent' for compatibility until it's no longer used. This was our original
 	// implementation before the same AMP macro was reused for CCPA.
 	return gdprConsent
 }

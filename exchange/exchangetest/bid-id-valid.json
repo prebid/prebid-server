@@ -45,7 +45,7 @@
   "outgoingRequests": {
     "appnexus": {
       "mockResponse": {
-        "pbsSeatBid": {
+        "pbsSeatBids": [{
           "pbsBids": [
             {
               "ortbBid": {
@@ -65,8 +65,9 @@
                 "PrimaryCategory": ""
               }
             }
-          ]
-        }
+          ],
+          "seat": "appnexus"
+        }]
       }
     }
   },
@@ -88,6 +89,7 @@
                 "IAB1-1"
               ],
               "ext": {
+                "origbidcpm": 0.3,
                 "prebid": {
                   "bidid": "mock_uuid",
                   "type": "video",

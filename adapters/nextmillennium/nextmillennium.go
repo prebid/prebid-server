@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -16,16 +16,14 @@ type adapter struct {
 	endpoint string
 }
 
-type NextMillenniumBidRequest struct {
-	ID   string `json:"id"`
-	Test uint8  `json:"test,omitempty"`
-	Ext  struct {
-		Prebid struct {
-			StoredRequest struct {
-				ID string `json:"id"`
-			} `json:"storedrequest"`
-		} `json:"prebid"`
-	} `json:"ext"`
+type nmExtPrebidStoredRequest struct {
+	ID string `json:"id"`
+}
+type nmExtPrebid struct {
+	StoredRequest nmExtPrebidStoredRequest `json:"storedrequest"`
+}
+type nextMillJsonExt struct {
+	Prebid nmExtPrebid `json:"prebid"`
 }
 
 //MakeRequests prepares request information for prebid-server core
@@ -98,13 +96,39 @@ func (adapter *adapter) buildAdapterRequest(prebidBidRequest *openrtb2.BidReques
 		Headers: headers}, nil
 }
 
-func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ImpExtNextMillennium) *NextMillenniumBidRequest {
-	bidRequest := NextMillenniumBidRequest{
-		ID:   prebidBidRequest.ID,
-		Test: uint8(prebidBidRequest.Test),
-	}
-	bidRequest.Ext.Prebid.StoredRequest.ID = params.PlacementID
+func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext.ImpExtNextMillennium) *openrtb2.BidRequest {
+	placementID := params.PlacementID
 
+	if params.GroupID != "" {
+		domain := ""
+		size := ""
+
+		if prebidBidRequest.Site != nil {
+			domain = prebidBidRequest.Site.Domain
+		}
+		if prebidBidRequest.App != nil {
+			domain = prebidBidRequest.App.Domain
+		}
+
+		if banner := prebidBidRequest.Imp[0].Banner; banner != nil {
+			if len(banner.Format) > 0 {
+				size = fmt.Sprintf("%dx%d", banner.Format[0].W, banner.Format[0].H)
+			} else if banner.W != nil && banner.H != nil {
+				size = fmt.Sprintf("%dx%d", *banner.W, *banner.H)
+			}
+		}
+
+		placementID = fmt.Sprintf("g%s;%s;%s", params.GroupID, size, domain)
+	}
+	ext := nextMillJsonExt{}
+	ext.Prebid.StoredRequest.ID = placementID
+	jsonExt, err := json.Marshal(ext)
+	if err != nil {
+		return prebidBidRequest
+	}
+	bidRequest := *prebidBidRequest
+	bidRequest.Ext = jsonExt
+	bidRequest.Imp[0].Ext = jsonExt
 	return &bidRequest
 }
 

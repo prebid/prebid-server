@@ -1,6 +1,7 @@
 package task_test
 
 import (
+	"sync"
 	"testing"
 	"time"
 
@@ -9,55 +10,78 @@ import (
 )
 
 type MockRunner struct {
-	RunCount int
+	ExpectationMet chan struct{}
+	actualCalls    int
+	expectedCalls  int
+	mutex          sync.Mutex
 }
 
-func (mcc *MockRunner) Run() error {
-	mcc.RunCount++
+func NewMockRunner(expectedCalls int) *MockRunner {
+	return &MockRunner{
+		ExpectationMet: make(chan struct{}),
+		expectedCalls:  expectedCalls,
+	}
+}
+
+func (m *MockRunner) Run() error {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	m.actualCalls++
+
+	if m.expectedCalls == m.actualCalls {
+		close(m.ExpectationMet)
+	}
+
 	return nil
 }
 
+func (m *MockRunner) RunCount() int {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	return m.actualCalls
+}
+
 func TestStartWithSingleRun(t *testing.T) {
-	// Setup:
-	runner := &MockRunner{RunCount: 0}
-	interval := 0 * time.Millisecond
+	// Setup Initial Run Only:
+	expectedRuns := 1
+	runner := NewMockRunner(expectedRuns)
+	interval := 0 * time.Millisecond // forces a single run
 	ticker := task.NewTickerTask(interval, runner)
 
 	// Execute:
 	ticker.Start()
-	time.Sleep(10 * time.Millisecond)
 
 	// Verify:
-	assert.Equal(t, runner.RunCount, 1, "runner should have run one time")
+	select {
+	case <-runner.ExpectationMet:
+	case <-time.After(250 * time.Millisecond):
+		assert.Failf(t, "Runner Calls", "expected %v calls, observed %v calls", expectedRuns, runner.RunCount())
+	}
+
+	// Verify No Additional Runs:
+	time.Sleep(50 * time.Millisecond)
+	assert.Equal(t, expectedRuns, runner.RunCount(), "runner should not run after Stop is called")
 }
 
 func TestStartWithPeriodicRun(t *testing.T) {
-	// Setup:
-	runner := &MockRunner{RunCount: 0}
+	// Setup Initial Run + One Periodic Run:
+	expectedRuns := 2
+	runner := NewMockRunner(expectedRuns)
 	interval := 10 * time.Millisecond
 	ticker := task.NewTickerTask(interval, runner)
 
 	// Execute:
 	ticker.Start()
-	time.Sleep(25 * time.Millisecond)
-	ticker.Stop()
 
-	// Verify:
-	assert.Equal(t, runner.RunCount, 3, "runner should have run three times")
-}
+	// Verify Expected Runs:
+	select {
+	case <-runner.ExpectationMet:
+		ticker.Stop()
+	case <-time.After(250 * time.Millisecond):
+		assert.Failf(t, "Runner Calls", "expected %v calls, observed %v calls", expectedRuns, runner.RunCount())
+	}
 
-func TestStop(t *testing.T) {
-	// Setup:
-	runner := &MockRunner{RunCount: 0}
-	interval := 10 * time.Millisecond
-	ticker := task.NewTickerTask(interval, runner)
-
-	// Execute:
-	ticker.Start()
-	time.Sleep(25 * time.Millisecond)
-	ticker.Stop()
-	time.Sleep(25 * time.Millisecond) // wait in case stop failed so additional runs can happen
-
-	// Verify:
-	assert.Equal(t, runner.RunCount, 3, "runner should have run three times")
+	// Verify No Additional Runs After Stop:
+	time.Sleep(50 * time.Millisecond)
+	assert.Equal(t, expectedRuns, runner.RunCount(), "runner should not run after Stop is called")
 }

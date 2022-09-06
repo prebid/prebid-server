@@ -15,6 +15,42 @@ maintainer:
   email: "some-email@domain.com"
 gvlVendorID: 42
 `
+const fullBidderYAMLConfig = `
+maintainer:
+  email: "some-email@domain.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+modifyingVastXmlAllowed: true
+debug:
+  allow: true
+gvlVendorID: 42
+userSync:
+  iframe:
+    url: "someURL"
+    userMacro: "aValue"
+  redirect:
+    url: "anotherURL"
+    userMacro: "anotherValue"
+  key: "aKey"
+  supports:
+    - item
+    - item2
+  externalUrl: oneMoreUrl
+  supportCors: true
+experiment:
+  adsCert:
+    enabled: true
+endpointCompression: "GZIP"
+`
 
 func TestLoadBidderInfoFromDisk(t *testing.T) {
 	bidder := "someBidder"
@@ -44,8 +80,7 @@ func TestLoadBidderInfoFromDisk(t *testing.T) {
 				},
 			},
 			Syncer: &Syncer{
-				Key:     "foo",
-				Default: "iframe",
+				Key: "foo",
 				IFrame: &SyncerEndpoint{
 					URL:         "https://foo.com/sync?mode=iframe&r={{.RedirectURL}}",
 					RedirectURL: "{{.ExternalURL}}/setuid/iframe",
@@ -209,12 +244,6 @@ func TestSyncerOverride(t *testing.T) {
 			expected:      &Syncer{Key: "override"},
 		},
 		{
-			description:   "Override Default",
-			givenOriginal: &Syncer{Default: "original"},
-			givenOverride: &Syncer{Default: "override"},
-			expected:      &Syncer{Default: "override"},
-		},
-		{
 			description:   "Override IFrame",
 			givenOriginal: &Syncer{IFrame: &SyncerEndpoint{URL: "original"}},
 			givenOverride: &Syncer{IFrame: &SyncerEndpoint{URL: "override"}},
@@ -240,9 +269,9 @@ func TestSyncerOverride(t *testing.T) {
 		},
 		{
 			description:   "Override Partial - Other Fields Untouched",
-			givenOriginal: &Syncer{Key: "originalKey", Default: "originalDefault"},
-			givenOverride: &Syncer{Default: "overrideDefault"},
-			expected:      &Syncer{Key: "originalKey", Default: "overrideDefault"},
+			givenOriginal: &Syncer{Key: "originalKey", ExternalURL: "originalExternalURL"},
+			givenOverride: &Syncer{ExternalURL: "overrideExternalURL"},
+			expected:      &Syncer{Key: "originalKey", ExternalURL: "overrideExternalURL"},
 		},
 	}
 
@@ -350,4 +379,49 @@ func TestToGVLVendorIDMap(t *testing.T) {
 
 	result := givenBidderInfos.ToGVLVendorIDMap()
 	assert.Equal(t, expectedGVLVendorIDMap, result)
+}
+
+func TestReadFullYamlBidderConfig(t *testing.T) {
+	bidder := "someBidder"
+	trueValue := true
+	r := fakeInfoReader{fullBidderYAMLConfig, nil}
+	actualBidderInfo, err := loadBidderInfo(r, map[string]Adapter{strings.ToLower(bidder): {}}, []string{bidder})
+	assert.NoError(t, err, "Error wasn't expected")
+
+	expectedBidderInfo := BidderInfos{
+		bidder: {
+			Enabled: true,
+			Maintainer: &MaintainerInfo{
+				Email: "some-email@domain.com",
+			},
+			GVLVendorID: 42,
+			Capabilities: &CapabilitiesInfo{
+				App: &PlatformInfo{
+					MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo, openrtb_ext.BidTypeNative},
+				},
+				Site: &PlatformInfo{
+					MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo, openrtb_ext.BidTypeNative},
+				},
+			},
+			Debug:                   &DebugInfo{Allow: true},
+			ModifyingVastXmlAllowed: true,
+			Syncer: &Syncer{
+				Key: "aKey",
+				IFrame: &SyncerEndpoint{
+					URL:       "someURL",
+					UserMacro: "aValue",
+				},
+				Redirect: &SyncerEndpoint{
+					URL:       "anotherURL",
+					UserMacro: "anotherValue",
+				},
+				Supports:    []string{"item", "item2"},
+				SupportCORS: &trueValue,
+				ExternalURL: "oneMoreUrl",
+			},
+			Experiment:          BidderInfoExperiment{AdsCert: BidderAdsCert{Enabled: true}},
+			EndpointCompression: "GZIP",
+		},
+	}
+	assert.Equalf(t, expectedBidderInfo, actualBidderInfo, "Bidder info objects aren't matching")
 }

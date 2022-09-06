@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 // BidderInfos contains a mapping of bidder name to bidder info.
@@ -14,13 +14,25 @@ type BidderInfos map[string]BidderInfo
 
 // BidderInfo specifies all configuration for a bidder except for enabled status, endpoint, and extra information.
 type BidderInfo struct {
-	Enabled                 bool              // copied from adapter config for convenience. to be refactored.
-	Maintainer              *MaintainerInfo   `yaml:"maintainer"`
-	Capabilities            *CapabilitiesInfo `yaml:"capabilities"`
-	ModifyingVastXmlAllowed bool              `yaml:"modifyingVastXmlAllowed"`
-	Debug                   *DebugInfo        `yaml:"debug"`
-	GVLVendorID             uint16            `yaml:"gvlVendorID"`
-	Syncer                  *Syncer           `yaml:"userSync"`
+	Enabled                 bool                 // copied from adapter config for convenience. to be refactored.
+	Maintainer              *MaintainerInfo      `yaml:"maintainer"`
+	Capabilities            *CapabilitiesInfo    `yaml:"capabilities"`
+	ModifyingVastXmlAllowed bool                 `yaml:"modifyingVastXmlAllowed"`
+	Debug                   *DebugInfo           `yaml:"debug"`
+	GVLVendorID             uint16               `yaml:"gvlVendorID"`
+	Syncer                  *Syncer              `yaml:"userSync"`
+	Experiment              BidderInfoExperiment `yaml:"experiment"`
+	EndpointCompression     string               `yaml:"endpointCompression"` // EndpointCompression determines, if set, the type of compression the bid request will undergo before being sent to the corresponding bid server
+}
+
+// BidderInfoExperiment specifies non-production ready feature config for a bidder
+type BidderInfoExperiment struct {
+	AdsCert BidderAdsCert `yaml:"adsCert"`
+}
+
+// BidderAdsCert enables Call Sign feature for bidder
+type BidderAdsCert struct {
+	Enabled bool `yaml:"enabled"`
 }
 
 // MaintainerInfo specifies the support email address for a bidder.
@@ -50,11 +62,6 @@ type Syncer struct {
 	// Key is used as the record key for the user sync cookie. We recommend using the bidder name
 	// as the key for consistency, but that is not enforced as a requirement.
 	Key string `yaml:"key" mapstructure:"key"`
-
-	// Default identifies which endpoint is preferred if both are allowed by the publisher. This is
-	// only required if there is more than one endpoint configured for the bidder. Valid values are
-	// `iframe` and `redirect`.
-	Default string `yaml:"default" mapstructure:"default"`
 
 	// Supports allows bidders to specify which user sync endpoints they support but which don't have
 	// good defaults. Host companies should contact the bidder for the endpoint configuration. Hosts
@@ -96,10 +103,6 @@ func (s *Syncer) Override(original *Syncer) *Syncer {
 		copy.Key = s.Key
 	}
 
-	if s.Default != "" {
-		copy.Default = s.Default
-	}
-
 	if original == nil {
 		copy.IFrame = s.IFrame.Override(nil)
 		copy.Redirect = s.Redirect.Override(nil)
@@ -130,8 +133,8 @@ func (s *Syncer) Override(original *Syncer) *Syncer {
 // In most cases, bidders will specify a URL with a `{{.RedirectURL}}` macro for the call back to
 // Prebid Server and a UserMacro which the bidder server will replace with the user's id. Example:
 //
-//  url: "https://sync.bidderserver.com/usersync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
-//  userMacro: "$UID"
+//	url: "https://sync.bidderserver.com/usersync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
+//	userMacro: "$UID"
 //
 // Prebid Server is configured with a default RedirectURL template matching the /setuid call. This
 // may be overridden for all bidders with the `user_sync.redirect_url` host configuration or for a

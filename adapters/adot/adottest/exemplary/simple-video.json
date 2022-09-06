@@ -9,20 +9,10 @@
           "h": 250,
           "maxduration": 60,
           "minduration": 1,
-          "api": [
-            1,
-            2,
-            5,
-            6,
-            7
-          ],
-          "mimes": [
-            "video\/mp4"
-          ],
+          "api": [1, 2, 5, 6, 7],
+          "mimes": ["video/mp4"],
           "placement": 4,
-          "protocols": [
-            2
-          ]
+          "protocols": [2]
         },
         "ext": {
           "adot": {}
@@ -44,20 +34,10 @@
                 "h": 250,
                 "maxduration": 60,
                 "minduration": 1,
-                "api": [
-                  1,
-                  2,
-                  5,
-                  6,
-                  7
-                ],
-                "mimes": [
-                  "video\/mp4"
-                ],
+                "api": [1, 2, 5, 6, 7],
+                "mimes": ["video/mp4"],
                 "placement": 4,
-                "protocols": [
-                  2
-                ]
+                "protocols": [2]
               },
               "ext": {
                 "adot": {}
@@ -73,20 +53,22 @@
           "seatbid": [
             {
               "seat": "adot",
-              "bid": [{
-                "id": "test-request-video-id",
-                "impid": "test-imp-video-id",
-                "price": 1.16346,
-                "adm": "some-test-ad imp_${AUCTION_PRICE} creativeview_${AUCTION_PRICE}",
-                "nurl": "nurl.link/win?p=${AUCTION_PRICE}",
-                "w": 300,
-                "h": 250,
-                "ext": {
-                  "adot": {
-                    "media_type": "video"
+              "bid": [
+                {
+                  "id": "test-request-video-id",
+                  "impid": "test-imp-video-id",
+                  "price": 1.16346,
+                  "adm": "some-test-ad imp_${AUCTION_PRICE} creativeview_${AUCTION_PRICE}",
+                  "nurl": "nurl.link/win?p=${AUCTION_PRICE}",
+                  "w": 300,
+                  "h": 250,
+                  "ext": {
+                    "adot": {
+                      "media_type": "video"
+                    }
                   }
                 }
-              }]
+              ]
             }
           ],
           "cur": "USD"
@@ -119,4 +101,3 @@
     }
   ]
 }
-

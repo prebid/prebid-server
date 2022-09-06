@@ -9,7 +9,7 @@
 			"VARIANT": "1.16",
 			// Options
 			"INSTALL_NODE": "false",
-			"NODE_VERSION": "lts/*",
+			"NODE_VERSION": "lts/*"
 		}
 	},
 	"containerEnv": {

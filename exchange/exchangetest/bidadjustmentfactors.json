@@ -56,18 +56,13 @@
             }
           ],
           "ext": {
-            "prebid": {
-              "aliases": {
-                "districtm": "appnexus"
-              },
-              "bidadjustmentfactors": {
-                "appnexus": 2.5,
-                "districtm": 0.3
-              }
-            }
+            "prebid": {}
           }
         },
-        "bidAdjustment": 2.5
+        "bidAdjustments": {
+          "appnexus": 2.5,
+          "districtm": 0.3
+        }
       },
       "mockResponse": {
         "errors": ["appnexus-error"]
@@ -94,18 +89,13 @@
             }
           ],
           "ext": {
-            "prebid": {
-              "aliases": {
-                "districtm": "appnexus"
-              },
-              "bidadjustmentfactors": {
-                "appnexus": 2.5,
-                "districtm": 0.3
-              }
-            }
+            "prebid": {}
           }
         },
-        "bidAdjustment": 0.3
+        "bidAdjustments": {
+          "appnexus": 2.5,
+          "districtm": 0.3
+        }
       },
       "mockResponse": {
         "errors": ["districtm-error"]

@@ -179,7 +179,7 @@ func TestBiddersHandler(t *testing.T) {
 		expectedHeaders http.Header
 	}{
 		{
-			description:     "No Query Paramters - Backwards Compatability",
+			description:     "No Query Parameters - Backwards Compatibility",
 			givenURL:        "/info/bidders",
 			expectedStatus:  http.StatusOK,
 			expectedBody:    `["a","b","x","y"]`,
