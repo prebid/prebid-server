@@ -99,6 +99,7 @@ type TypedBid struct {
 	BidMeta      *openrtb_ext.ExtBidPrebidMeta
 	BidType      openrtb_ext.BidType
 	BidVideo     *openrtb_ext.ExtBidPrebidVideo
+	BidTargets   map[string]string
 	DealPriority int
 	Seat         openrtb_ext.BidderName
 }
@@ -114,12 +115,20 @@ type ResponseData struct {
 	Headers    http.Header
 }
 
+type BidRequestParams struct {
+	ImpIndex     int
+	VASTTagIndex int
+}
+
 // RequestData packages together the fields needed to make an http.Request.
 type RequestData struct {
+	Params  *BidRequestParams
 	Method  string
 	Uri     string
 	Body    []byte
 	Headers http.Header
+
+	BidderName openrtb_ext.BidderName `json:"-"`
 }
 
 // ExtImpBidder can be used by Bidders to unmarshal any request.imp[i].ext.
