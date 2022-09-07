@@ -7,3 +7,4 @@ capabilities:
     mediaTypes:
       - banner
       - video
+endpointCompression: "GZIP"
