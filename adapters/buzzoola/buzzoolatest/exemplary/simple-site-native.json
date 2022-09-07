@@ -1,0 +1,119 @@
+{
+  "mockBidRequest": {
+    "id": "test-bid-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "native": {
+          "ver": "1.2",
+          "request": "{\"ver\":\"1.2\",\"context\":1,\"contextsubtype\":10,\"plcmttype\":11,\"plcmtcnt\":1,\"aurlsupport\":0,\"privacy\":\"http://www.myprivacyurl.com\",\"eventrackers\":[{\"event\":1,\"methods\":[1,2]},{\"event\":2,\"methods\":[1]}],\"assets\":[{\"id\":4,\"video\":{\"linearity\":1,\"minduration\":15,\"maxduration\":30,\"protocols\":[2,3],\"mimes\":[\"video/mp4\"]}},{\"id\":123,\"required\":1,\"title\":{\"len\":140}},{\"id\":128,\"required\":0,\"img\":{\"wmin\":836,\"hmin\":627,\"type\":3}},{\"id\":124,\"required\":1,\"img\":{\"wmin\":50,\"hmin\":50,\"type\":1}},{\"id\":126,\"required\":1,\"data\":{\"type\":1,\"len\":25}},{\"id\":127,\"required\":1,\"data\":{\"type\":2,\"len\":140}}],\"eventtrackers\":[{\"event\":1,\"method\":2,\"url\":\"http://www.mytracker.com/tracker.js\"},{\"event\":2,\"method\":1,\"url\":\"http://www.mytracker.com/tracker.php\"}]}"
+        },
+        "bidfloor": 5.00000,
+        "bidfloorcur": "USD",
+        "ext": {
+          "bidder": {
+            "placementId": 999999999
+          }
+        }
+      }
+    ],
+    "user": {
+      "id": "test-user-id",
+      "buyeruid": "test-user-buyeruid"
+    },
+    "device": {
+      "ua": "test-device-ua",
+      "ip": "255.255.255.255"
+    },
+    "site": {
+      "id": "test-site-id",
+      "domain": "test-site-domain"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://exchange.buzzoola.com/ssp/prebidserver-test-endpoint",
+        "body": {
+          "id": "test-bid-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "native": {
+                "ver": "1.2",
+                "request": "{\"ver\":\"1.2\",\"context\":1,\"contextsubtype\":10,\"plcmttype\":11,\"plcmtcnt\":1,\"aurlsupport\":0,\"privacy\":\"http://www.myprivacyurl.com\",\"eventrackers\":[{\"event\":1,\"methods\":[1,2]},{\"event\":2,\"methods\":[1]}],\"assets\":[{\"id\":4,\"video\":{\"linearity\":1,\"minduration\":15,\"maxduration\":30,\"protocols\":[2,3],\"mimes\":[\"video/mp4\"]}},{\"id\":123,\"required\":1,\"title\":{\"len\":140}},{\"id\":128,\"required\":0,\"img\":{\"wmin\":836,\"hmin\":627,\"type\":3}},{\"id\":124,\"required\":1,\"img\":{\"wmin\":50,\"hmin\":50,\"type\":1}},{\"id\":126,\"required\":1,\"data\":{\"type\":1,\"len\":25}},{\"id\":127,\"required\":1,\"data\":{\"type\":2,\"len\":140}}],\"eventtrackers\":[{\"event\":1,\"method\":2,\"url\":\"http://www.mytracker.com/tracker.js\"},{\"event\":2,\"method\":1,\"url\":\"http://www.mytracker.com/tracker.php\"}]}"
+              },
+              "bidfloor": 5.00000,
+              "bidfloorcur": "USD",
+              "ext": {
+                "bidder": {
+                  "placementId": 999999999
+                }
+              }
+            }
+          ],
+          "user": {
+            "id": "test-user-id",
+            "buyeruid": "test-user-buyeruid"
+          },
+          "device": {
+            "ua": "test-device-ua",
+            "ip": "255.255.255.255"
+          },
+          "site": {
+            "id": "test-site-id",
+            "domain": "test-site-domain"
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-bid-request-id",
+          "seatbid": [
+            {
+              "seat": "buzzoola",
+              "bid": [
+                {
+                  "id": "test-bid-id",
+                  "impid": "test-imp-id",
+                  "price": 10.00000,
+                  "nurl": "test-nurl",
+                  "burl": "test-burl",
+                  "adm": "test-adm",
+                  "crid": "test-crid",
+                  "ext": {
+                    "bidType": "native"
+                  }
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-bid-id",
+            "impid": "test-imp-id",
+            "price": 10.00000,
+            "nurl": "test-nurl",
+            "burl": "test-burl",
+            "adm": "test-adm",
+            "crid": "test-crid",
+            "ext": {
+              "bidType": "native"
+            }
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}

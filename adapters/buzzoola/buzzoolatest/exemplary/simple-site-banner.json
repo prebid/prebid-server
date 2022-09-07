@@ -1,0 +1,131 @@
+{
+  "mockBidRequest": {
+    "id": "test-bid-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 480,
+              "h": 320
+            }
+          ]
+        },
+        "bidfloor": 5.00000,
+        "bidfloorcur": "USD",
+        "ext": {
+          "bidder": {
+            "placementId": 999999999
+          }
+        }
+      }
+    ],
+    "user": {
+      "id": "test-user-id",
+      "buyeruid": "test-user-buyeruid"
+    },
+    "device": {
+      "ua": "test-device-ua",
+      "ip": "255.255.255.255"
+    },
+    "site": {
+      "id": "test-site-id",
+      "domain": "test-site-domain"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://exchange.buzzoola.com/ssp/prebidserver-test-endpoint",
+        "body": {
+          "id": "test-bid-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 480,
+                    "h": 320
+                  }
+                ]
+              },
+              "bidfloor": 5.00000,
+              "bidfloorcur": "USD",
+              "ext": {
+                "bidder": {
+                  "placementId": 999999999
+                }
+              }
+            }
+          ],
+          "user": {
+            "id": "test-user-id",
+            "buyeruid": "test-user-buyeruid"
+          },
+          "device": {
+            "ua": "test-device-ua",
+            "ip": "255.255.255.255"
+          },
+          "site": {
+            "id": "test-site-id",
+            "domain": "test-site-domain"
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-bid-request-id",
+          "seatbid": [
+            {
+              "seat": "buzzoola",
+              "bid": [
+                {
+                  "id": "test-bid-id",
+                  "impid": "test-imp-id",
+                  "price": 10.00000,
+                  "nurl": "test-nurl",
+                  "burl": "test-burl",
+                  "adm": "test-adm",
+                  "crid": "test-crid",
+                  "w": 480,
+                  "h": 320,
+                  "ext": {
+                    "bidType": "banner"
+                  }
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-bid-id",
+            "impid": "test-imp-id",
+            "price": 10.00000,
+            "nurl": "test-nurl",
+            "burl": "test-burl",
+            "adm": "test-adm",
+            "crid": "test-crid",
+            "w": 480,
+            "h": 320,
+            "ext": {
+              "bidType": "banner"
+            }
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
