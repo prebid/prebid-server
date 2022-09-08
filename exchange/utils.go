@@ -325,12 +325,15 @@ func buildRequestExtForBidder(bidder string, requestExt json.RawMessage, request
 
 func buildRequestExtAlternateBidderCodes(bidder string, accABC config.AlternateBidderCodes, reqABC *openrtb_ext.ExtAlternateBidderCodes) *openrtb_ext.ExtAlternateBidderCodes {
 	if reqABC != nil {
-		return &openrtb_ext.ExtAlternateBidderCodes{
+		alternateBidderCodes := &openrtb_ext.ExtAlternateBidderCodes{
 			Enabled: reqABC.Enabled,
-			Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
-				bidder: reqABC.Bidders[bidder],
-			},
 		}
+		if bidderCodes, ok := reqABC.Bidders[bidder]; ok {
+			alternateBidderCodes.Bidders = map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+				bidder: bidderCodes,
+			}
+		}
+		return alternateBidderCodes
 	}
 
 	alternateBidderCodes := &openrtb_ext.ExtAlternateBidderCodes{

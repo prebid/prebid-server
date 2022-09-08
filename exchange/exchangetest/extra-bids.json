@@ -205,12 +205,7 @@
             "prebid": {
               "alternatebiddercodes": {
                 "enabled": true,
-                "bidders": {
-                  "appnexus": {
-                    "enabled": false,
-                    "allowedbiddercodes": null
-                  }
-                }
+                "bidders": null
               }
             }
           }
