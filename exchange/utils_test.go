@@ -2505,7 +2505,7 @@ func TestBuildRequestExtForBidder(t *testing.T) {
 			bidderParams:         map[string]json.RawMessage{bidder: bidderParams},
 			alternateBidderCodes: config.AlternateBidderCodes{Enabled: true, Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{"bar": {Enabled: true, AllowedBidderCodes: []string{"*"}}}},
 			requestExt:           json.RawMessage(`{"other":"foo"}`),
-			expectedJson:         json.RawMessage(`{"other":"foo","prebid":{"alternatebiddercodes":{"enabled":true,"bidders":null},"bidderparams":"bar"}}`),
+			expectedJson:         json.RawMessage(`{"other":"foo","prebid":{"alternatebiddercodes":{"enabled":true},"bidderparams":"bar"}}`),
 		},
 		{
 			description:          "Prebid + AlternateBidderCodes in request",
@@ -2519,9 +2519,8 @@ func TestBuildRequestExtForBidder(t *testing.T) {
 			bidderParams:         map[string]json.RawMessage{bidder: bidderParams},
 			alternateBidderCodes: config.AlternateBidderCodes{},
 			requestExt:           json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"bar":{"enabled":true,"allowedbiddercodes":["ix"]}}}}}`),
-			expectedJson:         json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":null},"bidderparams":"bar"}}`),
+			expectedJson:         json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true},"bidderparams":"bar"}}`),
 		},
-
 		{
 			description:          "Prebid + AlternateBidderCodes in both pbs config and in the request",
 			bidderParams:         map[string]json.RawMessage{bidder: bidderParams},
@@ -3347,7 +3346,7 @@ func TestCleanOpenRTBRequestsFilterBidderRequestExt(t *testing.T) {
 			},
 			wantExt: []json.RawMessage{
 				json.RawMessage(""),
-				json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":false,"bidders":{"pubmatic":{"enabled":true,"allowedbiddercodes":null}}}}}`),
+				json.RawMessage(`{"prebid":{"alternatebiddercodes":{"bidders":{"pubmatic":{"enabled":true}}}}}`),
 			},
 			wantError: false,
 		},
@@ -3371,8 +3370,8 @@ func TestCleanOpenRTBRequestsFilterBidderRequestExt(t *testing.T) {
 			inExt:    nil,
 			inCfgABC: config.AlternateBidderCodes{Enabled: true},
 			wantExt: []json.RawMessage{
-				json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":null}}}`),
-				json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":null}}}`),
+				json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true}}}`),
+				json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true}}}`),
 			},
 			wantError: false,
 		},
@@ -3401,7 +3400,7 @@ func TestCleanOpenRTBRequestsFilterBidderRequestExt(t *testing.T) {
 			inExt:    json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":{"pubmatic":{"enabled":true,"allowedbiddercodes":["groupm"]}}}}}`),
 			inCfgABC: config.AlternateBidderCodes{Enabled: false},
 			wantExt: []json.RawMessage{
-				json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":null}}}`),
+				json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true}}}`),
 				json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":{"pubmatic":{"enabled":true,"allowedbiddercodes":["groupm"]}}}}}`),
 			},
 			wantError: false,
@@ -3429,7 +3428,7 @@ func TestCleanOpenRTBRequestsFilterBidderRequestExt(t *testing.T) {
 				},
 			},
 			wantExt: []json.RawMessage{
-				json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":null}}}`),
+				json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true}}}`),
 				json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":{"pubmatic":{"enabled":true,"allowedbiddercodes":["groupm"]}}}}}`),
 			},
 			wantError: false,

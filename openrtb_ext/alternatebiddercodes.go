@@ -4,13 +4,13 @@ import "fmt"
 
 // ExtAlternateBidderCodes defines list of alternate bidder codes allowed by adatpers. This overrides host level configs.
 type ExtAlternateBidderCodes struct {
-	Enabled bool                                      `mapstructure:"enabled" json:"enabled"`
-	Bidders map[string]ExtAdapterAlternateBidderCodes `mapstructure:"bidders" json:"bidders"`
+	Enabled bool                                      `mapstructure:"enabled" json:"enabled,omitempty"`
+	Bidders map[string]ExtAdapterAlternateBidderCodes `mapstructure:"bidders" json:"bidders,omitempty"`
 }
 
 type ExtAdapterAlternateBidderCodes struct {
-	Enabled            bool     `mapstructure:"enabled" json:"enabled"`
-	AllowedBidderCodes []string `mapstructure:"allowedbiddercodes" json:"allowedbiddercodes"`
+	Enabled            bool     `mapstructure:"enabled" json:"enabled,omitempty"`
+	AllowedBidderCodes []string `mapstructure:"allowedbiddercodes" json:"allowedbiddercodes,omitempty"`
 }
 
 func (bidderCodes *ExtAlternateBidderCodes) IsValidBidderCode(bidder, alternateBidder string) (bool, error) {
