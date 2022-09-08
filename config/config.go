@@ -1124,16 +1124,23 @@ func migrateConfigTCF2PurposeEnabledFlags(v *viper.Viper) {
 
 func setBidderDefaults(v *viper.Viper, bidder string) {
 	adapterCfgPrefix := "adapters." + bidder
+	v.BindEnv(adapterCfgPrefix+".disabled", "")
 	v.BindEnv(adapterCfgPrefix+".endpoint", "")
+	v.BindEnv(adapterCfgPrefix+".extra_info", "")
+	v.BindEnv(adapterCfgPrefix+".maintainer.email", "")
+	v.BindEnv(adapterCfgPrefix+".capabilities.app.mediaTypes", "")
+	v.BindEnv(adapterCfgPrefix+".capabilities.site.mediaTypes", "")
+	v.BindEnv(adapterCfgPrefix+".modifyingVastXmlAllowed", "")
+	v.BindEnv(adapterCfgPrefix+".debug.allow", "")
+	v.BindEnv(adapterCfgPrefix+".gvlVendorID", "")
 	v.BindEnv(adapterCfgPrefix+".usersync_url", "")
+	v.BindEnv(adapterCfgPrefix+".experiment.adsCert.enabled", "")
 	v.BindEnv(adapterCfgPrefix+".platform_id", "")
 	v.BindEnv(adapterCfgPrefix+".app_secret", "")
 	v.BindEnv(adapterCfgPrefix+".xapi.username", "")
 	v.BindEnv(adapterCfgPrefix+".xapi.password", "")
 	v.BindEnv(adapterCfgPrefix+".xapi.tracker", "")
-	v.BindEnv(adapterCfgPrefix + ".disabled")
-	v.BindEnv(adapterCfgPrefix+".partner_id", "")
-	v.BindEnv(adapterCfgPrefix+".extra_info", "")
+	v.BindEnv(adapterCfgPrefix+".endpointCompression", "")
 
 	v.BindEnv(adapterCfgPrefix + ".usersync.key")
 	v.BindEnv(adapterCfgPrefix + ".usersync.default")

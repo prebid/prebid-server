@@ -21,68 +21,68 @@ type BidderInfos map[string]BidderInfo
 
 // BidderInfo specifies all configuration for a bidder except for enabled status, endpoint, and extra information.
 type BidderInfo struct {
-	Disabled         bool   `mapstructure:"disabled"`
-	Endpoint         string `mapstructure:"endpoint"`
-	ExtraAdapterInfo string `mapstructure:"extra_info"`
+	Disabled         bool   `yaml:"disabled" mapstructure:"disabled"`
+	Endpoint         string `yaml:"endpoint" mapstructure:"endpoint"`
+	ExtraAdapterInfo string `yaml:"extra_info" mapstructure:"extra_info"`
 
-	Maintainer              *MaintainerInfo   `yaml:"maintainer"`
-	Capabilities            *CapabilitiesInfo `yaml:"capabilities"`
-	ModifyingVastXmlAllowed bool              `yaml:"modifyingVastXmlAllowed"`
-	Debug                   *DebugInfo        `yaml:"debug"`
-	GVLVendorID             uint16            `yaml:"gvlVendorID"`
+	Maintainer              *MaintainerInfo   `yaml:"maintainer" mapstructure:"maintainer"`
+	Capabilities            *CapabilitiesInfo `yaml:"capabilities" mapstructure:"capabilities"`
+	ModifyingVastXmlAllowed bool              `yaml:"modifyingVastXmlAllowed" mapstructure:"modifyingVastXmlAllowed"`
+	Debug                   *DebugInfo        `yaml:"debug" mapstructure:"debug"`
+	GVLVendorID             uint16            `yaml:"gvlVendorID" mapstructure:"gvlVendorID"`
 
-	Syncer *Syncer `yaml:"userSync"`
+	Syncer *Syncer `yaml:"userSync" mapstructure:"userSync"`
 
-	Experiment BidderInfoExperiment `yaml:"experiment"`
+	Experiment BidderInfoExperiment `yaml:"experiment" mapstructure:"experiment"`
 
 	// needed for backwards compatibility
-	UserSyncURL string `mapstructure:"usersync_url"`
+	UserSyncURL string `yaml:"usersync_url" mapstructure:"usersync_url"`
 
 	// needed for Rubicon
-	XAPI AdapterXAPI `mapstructure:"xapi"`
+	XAPI AdapterXAPI `yaml:"xapi" mapstructure:"xapi"`
 
 	// needed for Facebook
-	PlatformID          string `mapstructure:"platform_id"`
-	AppSecret           string `mapstructure:"app_secret"`
-	EndpointCompression string `yaml:"endpointCompression"` // EndpointCompression determines, if set, the type of compression the bid request will undergo before being sent to the corresponding bid server
-
+	PlatformID string `yaml:"platform_id" mapstructure:"platform_id"`
+	AppSecret  string `yaml:"app_secret" mapstructure:"app_secret"`
+	// EndpointCompression determines, if set, the type of compression the bid request will undergo before being sent to the corresponding bid server
+	EndpointCompression string `yaml:"endpointCompression" mapstructure:"endpointCompression"`
 }
 
 // BidderInfoExperiment specifies non-production ready feature config for a bidder
 type BidderInfoExperiment struct {
-	AdsCert BidderAdsCert `yaml:"adsCert"`
+	AdsCert BidderAdsCert `yaml:"adsCert" mapstructure:"adsCert"`
 }
 
 // BidderAdsCert enables Call Sign feature for bidder
 type BidderAdsCert struct {
-	Enabled bool `yaml:"enabled"`
+	Enabled bool `yaml:"enabled" mapstructure:"enabled"`
 }
 
 // MaintainerInfo specifies the support email address for a bidder.
 type MaintainerInfo struct {
-	Email string `yaml:"email"`
+	Email string `yaml:"email" mapstructure:"email"`
 }
 
 // CapabilitiesInfo specifies the supported platforms for a bidder.
 type CapabilitiesInfo struct {
-	App  *PlatformInfo `yaml:"app"`
-	Site *PlatformInfo `yaml:"site"`
+	App  *PlatformInfo `yaml:"app" mapstructure:"app"`
+	Site *PlatformInfo `yaml:"site" mapstructure:"site"`
 }
 
 // PlatformInfo specifies the supported media types for a bidder.
 type PlatformInfo struct {
-	MediaTypes []openrtb_ext.BidType `yaml:"mediaTypes"`
+	MediaTypes []openrtb_ext.BidType `yaml:"mediaTypes" mapstructure:"mediaTypes"`
 }
 
 // DebugInfo specifies the supported debug options for a bidder.
 type DebugInfo struct {
-	Allow bool `yaml:"allow"`
+	Allow bool `yaml:"allow" mapstructure:"allow"`
 }
 
 type AdapterXAPI struct {
-	Username string `mapstructure:"username"`
-	Password string `mapstructure:"password"`
-	Tracker  string `mapstructure:"tracker"`
+	Username string `yaml:"username" mapstructure:"username"`
+	Password string `yaml:"password" mapstructure:"password"`
+	Tracker  string `yaml:"tracker" mapstructure:"tracker"`
 }
 
 // Syncer specifies the user sync settings for a bidder. This struct is shared by the account config,
@@ -95,7 +95,7 @@ type Syncer struct {
 	// Supports allows bidders to specify which user sync endpoints they support but which don't have
 	// good defaults. Host companies should contact the bidder for the endpoint configuration. Hosts
 	// may not override this value.
-	Supports []string `yaml:"supports"`
+	Supports []string `yaml:"supports" mapstructure:"supports"`
 
 	// IFrame configures an iframe endpoint for user syncing.
 	IFrame *SyncerEndpoint `yaml:"iframe" mapstructure:"iframe"`
