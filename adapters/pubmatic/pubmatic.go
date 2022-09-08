@@ -399,7 +399,6 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 			}
 
 			var bidExt *pubmaticBidExt
-			bidType := openrtb_ext.BidTypeBanner
 			err := json.Unmarshal(bid.Ext, &bidExt)
 			if err != nil {
 				errs = append(errs, err)
@@ -415,7 +414,7 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 				}
 			}
 
-			if bidType == openrtb_ext.BidTypeNative {
+			if typedBid.BidType == openrtb_ext.BidTypeNative {
 				bid.AdM, err = getNativeAdm(bid.AdM)
 				if err != nil {
 					errs = append(errs, err)
