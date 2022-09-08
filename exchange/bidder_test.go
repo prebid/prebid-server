@@ -228,7 +228,7 @@ func TestSingleBidderGzip(t *testing.T) {
 			addCallSignHeader:   false,
 			bidAdjustments:      bidAdjustments,
 		}
-		seatBids, errs := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions, config.AlternateBidderCodes{})
+		seatBids, errs := bidder.requestBid(ctx, bidderReq, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{})
 		assert.Len(t, seatBids, 1)
 		seatBid := seatBids[0]
 

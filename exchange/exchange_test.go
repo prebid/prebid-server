@@ -4363,7 +4363,7 @@ func TestOverrideConfigAlternateBidderCodesWithRequestValues(t *testing.T) {
 	// Run tests
 	for _, test := range testCases {
 		e.adapterMap = map[openrtb_ext.BidderName]AdaptedBidder{
-			openrtb_ext.BidderPubmatic: AdaptBidder(mockBidderRequestResponse, mockPubMaticBidService.Client(), &test.in.config, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderPubmatic, nil),
+			openrtb_ext.BidderPubmatic: AdaptBidder(mockBidderRequestResponse, mockPubMaticBidService.Client(), &test.in.config, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderPubmatic, nil, ""),
 		}
 
 		mockBidRequest.Ext = test.in.requestExt
