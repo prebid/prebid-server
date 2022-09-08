@@ -3346,7 +3346,7 @@ func TestCleanOpenRTBRequestsFilterBidderRequestExt(t *testing.T) {
 			},
 			wantExt: []json.RawMessage{
 				json.RawMessage(""),
-				json.RawMessage(`{"prebid":{"alternatebiddercodes":{"bidders":{"pubmatic":{"enabled":true}}}}}`),
+				json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":false,"bidders":{"pubmatic":{"enabled":true}}}}}`),
 			},
 			wantError: false,
 		},
