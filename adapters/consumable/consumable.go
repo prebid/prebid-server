@@ -38,7 +38,7 @@ type bidRequest struct {
 	CCPA               string               `json:"ccpa,omitempty"`
 	GDPR               *bidGdpr             `json:"gdpr,omitempty"`
 	Coppa              bool                 `json:"coppa,omitempty"`
-	SChain             openrtb2.SupplyChain `json:"schain,omitempty"`
+	SChain             openrtb2.SupplyChain `json:"schain"`
 }
 
 type placement struct {
@@ -86,6 +86,8 @@ type pricing struct {
 }
 
 func (a *ConsumableAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	var errs []error
+
 	headers := http.Header{
 		"Content-Type": {"application/json"},
 		"Accept":       {"application/json"},
@@ -114,15 +116,17 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 		headers.Set("Referer", request.Site.Page)
 
 		pageUrl, err := url.Parse(request.Site.Page)
-		if err == nil {
-			origin := url.URL{
-				Scheme: pageUrl.Scheme,
-				Opaque: pageUrl.Opaque,
-				Host:   pageUrl.Host,
-			}
-
-			headers.Set("Origin", origin.String())
+		if err != nil {
+			errs = append(errs, err)
 		}
+
+		origin := url.URL{
+			Scheme: pageUrl.Scheme,
+			Opaque: pageUrl.Opaque,
+			Host:   pageUrl.Host,
+		}
+
+		headers.Set("Origin", origin.String())
 	}
 
 	body := bidRequest{
@@ -141,36 +145,41 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 	gdpr := bidGdpr{}
 
 	ccpaPolicy, err := ccpa.ReadFromRequest(request)
-	if err == nil {
-		body.CCPA = ccpaPolicy.Consent
+	if err != nil {
+		errs = append(errs, err)
 	}
+
+	body.CCPA = ccpaPolicy.Consent
 
 	// TODO: Replace with gdpr.ReadPolicy when it is available
 	if request.Regs != nil && request.Regs.Ext != nil {
 		var extRegs openrtb_ext.ExtRegs
-		if err := json.Unmarshal(request.Regs.Ext, &extRegs); err == nil {
-			if extRegs.GDPR != nil {
-				applies := *extRegs.GDPR != 0
-				gdpr.Applies = &applies
-				body.GDPR = &gdpr
-			}
+		if err := json.Unmarshal(request.Regs.Ext, &extRegs); err != nil {
+			errs = append(errs, err)
+		}
+		if extRegs.GDPR != nil {
+			applies := *extRegs.GDPR != 0
+			gdpr.Applies = &applies
+			body.GDPR = &gdpr
 		}
 	}
 
 	// TODO: Replace with gdpr.ReadPolicy when it is available
 	if request.User != nil && request.User.Ext != nil {
 		var extUser openrtb_ext.ExtUser
-		if err := json.Unmarshal(request.User.Ext, &extUser); err == nil {
-			gdpr.Consent = extUser.Consent
-			body.GDPR = &gdpr
+		if err := json.Unmarshal(request.User.Ext, &extUser); err != nil {
+			errs = append(errs, err)
 		}
+		gdpr.Consent = extUser.Consent
+		body.GDPR = &gdpr
 	}
 
 	if request.Source != nil && request.Source.Ext != nil {
 		var extSChain openrtb_ext.ExtRequestPrebidSChain
-		if err := json.Unmarshal(request.Source.Ext, &extSChain); err == nil {
-			body.SChain = extSChain.SChain
+		if err := json.Unmarshal(request.Source.Ext, &extSChain); err != nil {
+			errs = append(errs, err)
 		}
+		body.SChain = extSChain.SChain
 	}
 
 	body.Coppa = request.Regs != nil && request.Regs.COPPA > 0
@@ -215,7 +224,7 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 		},
 	}
 
-	return requests, nil
+	return requests, errs
 }
 
 /*
