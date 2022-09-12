@@ -31,7 +31,6 @@ type Metrics struct {
 	StoredImpCacheMeter            map[CacheResult]metrics.Meter
 	AccountCacheMeter              map[CacheResult]metrics.Meter
 	DNSLookupTimer                 metrics.Timer
-	TLSHandshakeTimer              metrics.Timer
 	StoredResponsesMeter           metrics.Meter
 
 	// Metrics for OpenRTB requests specifically. So we can track what % of RequestsMeter are OpenRTB
