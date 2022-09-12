@@ -23,14 +23,20 @@ func NewBasicEnforcement(cfg purposeConfig) *BasicEnforcement {
 
 // LegalBasis determines if legal basis is satisfied for a given purpose and bidder based on user consent
 // and legal basis signals.
-func (be *BasicEnforcement) LegalBasis(vendorInfo VendorInfo, bidder openrtb_ext.BidderName, consent tcf2.ConsentMetadata) bool {
+func (be *BasicEnforcement) LegalBasis(vendorInfo VendorInfo, bidder openrtb_ext.BidderName, consent tcf2.ConsentMetadata, overrides Overrides) bool {
 	if !be.cfg.EnforcePurpose && !be.cfg.EnforceVendors {
 		return true
 	}
-	if be.cfg.vendorException(bidder) {
+	if be.cfg.vendorException(bidder) && !overrides.blockVendorExceptions {
 		return true
 	}
-	if be.cfg.basicEnforcementVendor(bidder) {
+	if !be.cfg.EnforcePurpose && be.cfg.basicEnforcementVendor(bidder) {
+		return true
+	}
+	if be.cfg.EnforcePurpose && consent.PurposeAllowed(be.cfg.PurposeID) && be.cfg.basicEnforcementVendor(bidder) {
+		return true
+	}
+	if be.cfg.EnforcePurpose && consent.PurposeLITransparency(be.cfg.PurposeID) && overrides.allowLITransparency {
 		return true
 	}
 	if be.cfg.EnforcePurpose && !consent.PurposeAllowed(be.cfg.PurposeID) {
@@ -39,7 +45,7 @@ func (be *BasicEnforcement) LegalBasis(vendorInfo VendorInfo, bidder openrtb_ext
 	if !be.cfg.EnforceVendors {
 		return true
 	}
-	if vendorInfo.vendor.Purpose(be.cfg.PurposeID) && consent.VendorConsent(vendorInfo.vendorID) {
+	if consent.VendorConsent(vendorInfo.vendorID) {
 		return true
 	}
 	return false

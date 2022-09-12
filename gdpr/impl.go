@@ -12,8 +12,11 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const noBidder = ""
+const noBidder openrtb_ext.BidderName = ""
 
+// permissionsImpl contains global and request-specific GDPR config data and is used to determine
+// whether various cookie sync and auction activities are permitted for a request
+// permissionsImpl implements the Permissions interface
 type permissionsImpl struct {
 	// global
 	fetchVendorList        VendorListFetcher
@@ -30,10 +33,7 @@ type permissionsImpl struct {
 	publisherID string
 }
 
-// called from /cookie_sync & /setuid
-// vendor exception should not apply -- should we allow a host to specify themselves as a vendor exception for purpose 1?
-// if yes, should we validate at startup and throw a warning?
-// if no, should we add validation logic that fails hard? That seems like the right place to do it rather than ignoring the value in the GDPR logic
+// HostCookiesAllowed determines whether the host is allowed to set cookies on the user's device
 func (p *permissionsImpl) HostCookiesAllowed(ctx context.Context) (bool, error) {
 	if p.gdprSignal != SignalYes {
 		return true, nil
@@ -42,8 +42,7 @@ func (p *permissionsImpl) HostCookiesAllowed(ctx context.Context) (bool, error) 
 	return p.allowSync(ctx, uint16(p.hostVendorID), noBidder, false)
 }
 
-// called from /cookie_sync
-// yes vendor exception applies
+// BidderSyncAllowed determines whether a given bidder is allowed to perform a cookie sync
 func (p *permissionsImpl) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName) (bool, error) {
 	if p.gdprSignal != SignalYes {
 		return true, nil
@@ -58,8 +57,7 @@ func (p *permissionsImpl) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 	return false, nil
 }
 
-// AuctionActivitiesAllowed implements the Permissions interface
-// It determines whether auction activities are allowed for a given bidder
+// AuctionActivitiesAllowed determines whether auction activities are permitted for a given bidder
 func (p *permissionsImpl) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (permissions AuctionPermissions, err error) {
 	if _, ok := p.nonStandardPublishers[p.publisherID]; ok {
 		return AllowAll, nil
@@ -74,7 +72,7 @@ func (p *permissionsImpl) AuctionActivitiesAllowed(ctx context.Context, bidderCo
 	}
 
 	// note the bidder here is guaranteed to be enabled
-	vendorID, vendorFound := p.resolveVendorId(bidderCoreName, bidder)
+	vendorID, vendorFound := p.resolveVendorID(bidderCoreName, bidder)
 	weakVendorEnforcement := p.cfg.BasicEnforcementVendor(bidder)
 
 	if !vendorFound && !weakVendorEnforcement {
@@ -114,7 +112,9 @@ func (p *permissionsImpl) AuctionActivitiesAllowed(ctx context.Context, bidderCo
 	return permissions, nil
 }
 
-func (p *permissionsImpl) resolveVendorId(bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (id uint16, ok bool) {
+// resolveVendorID gets the vendor ID for the specified bidder from either the alias GVL IDs
+// provided in the request or from the bidder configs loaded at startup
+func (p *permissionsImpl) resolveVendorID(bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (id uint16, ok bool) {
 	if id, ok = p.aliasGVLIDs[string(bidder)]; ok {
 		return id, ok
 	}
@@ -124,6 +124,8 @@ func (p *permissionsImpl) resolveVendorId(bidderCoreName openrtb_ext.BidderName,
 	return id, ok
 }
 
+// allowSync computes cookie sync activity legal basis for a given bidder using the enforcement
+// algorithms selected by the purpose enforcer builder
 func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, bidder openrtb_ext.BidderName, vendorException bool) (bool, error) {
 	if p.consent == "" {
 		return false, nil
@@ -155,23 +157,26 @@ func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, bidder
 	enforcer := p.purposeEnforcerBuilder(purpose, bidder)
 
 	vendorInfo := VendorInfo{vendorID: vendorID, vendor: vendor}
-	if enforcer.LegalBasis(vendorInfo, bidder, consentMeta) { //-->pass vendorexception? or dont care
+	if enforcer.LegalBasis(vendorInfo, bidder, consentMeta, Overrides{blockVendorExceptions: !vendorException}) {
 		return true, nil
 	}
 	return false, nil
 }
 
+// allowBidRequest computes legal basis for a given bidder using the enforcement algorithms selected
+// by the purpose enforcer builder
 func (p *permissionsImpl) allowBidRequest(bidder openrtb_ext.BidderName, consentMeta tcf2.ConsentMetadata, vendorInfo VendorInfo) bool {
 	purpose := consentconstants.Purpose(2)
 	enforcer := p.purposeEnforcerBuilder(purpose, bidder)
 
-	// this function will return true if purpose 2 is NOT enforced
-	if enforcer.LegalBasis(vendorInfo, bidder, consentMeta) {
+	if enforcer.LegalBasis(vendorInfo, bidder, consentMeta, Overrides{}) {
 		return true
 	}
 	return false
 }
 
+// allowGeo computes legal basis for a given bidder using the configs, consent and GVL pertaining to
+// feature one
 func (p *permissionsImpl) allowGeo(bidder openrtb_ext.BidderName, consentMeta tcf2.ConsentMetadata, vendor api.Vendor) bool {
 	if !p.cfg.FeatureOneEnforced() {
 		return true
@@ -184,12 +189,14 @@ func (p *permissionsImpl) allowGeo(bidder openrtb_ext.BidderName, consentMeta tc
 	return consentMeta.SpecialFeatureOptIn(1) && (vendor.SpecialFeature(1) || weakVendorEnforcement)
 }
 
+// allowID computes legal basis for a given bidder using the enforcement algorithms selected
+// by the purpose enforcer builder
 func (p *permissionsImpl) allowID(bidder openrtb_ext.BidderName, consentMeta tcf2.ConsentMetadata, vendorInfo VendorInfo) bool {
 	for i := 2; i <= 10; i++ {
 		purpose := consentconstants.Purpose(i)
 		enforcer := p.purposeEnforcerBuilder(purpose, bidder)
 
-		if p.cfg.PurposeEnforced(purpose) && enforcer.LegalBasis(vendorInfo, bidder, consentMeta) {
+		if p.cfg.PurposeEnforced(purpose) && enforcer.LegalBasis(vendorInfo, bidder, consentMeta, Overrides{}) {
 			return true
 		}
 	}
@@ -197,6 +204,7 @@ func (p *permissionsImpl) allowID(bidder openrtb_ext.BidderName, consentMeta tcf
 	return false
 }
 
+// parseVendor parses the consent string and fetches the specified vendor's information from the GVL 
 func (p *permissionsImpl) parseVendor(ctx context.Context, vendorID uint16, consent string) (parsedConsent api.VendorConsents, vendor api.Vendor, err error) {
 	parsedConsent, err = vendorconsent.ParseString(consent)
 	if err != nil {

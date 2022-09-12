@@ -84,8 +84,9 @@ func TestAllowedSyncs(t *testing.T) {
 		fetchVendorList: listFetcher(map[uint16]vendorlist.VendorList{
 			1: parseVendorListDataV2(t, vendorListData),
 		}),
-		gdprSignal: SignalYes,
-		consent:    vendor2AndPurpose1Consent,
+		purposeEnforcerBuilder: NewPurposeEnforcerBuilder(&tcf2AggConfig),
+		gdprSignal:             SignalYes,
+		consent:                vendor2AndPurpose1Consent,
 	}
 
 	allowSync, err := perms.HostCookiesAllowed(context.Background())
@@ -129,8 +130,9 @@ func TestProhibitedPurposes(t *testing.T) {
 		fetchVendorList: listFetcher(map[uint16]vendorlist.VendorList{
 			1: parseVendorListDataV2(t, vendorListData),
 		}),
-		gdprSignal: SignalYes,
-		consent:    vendor2NoPurpose1Consent,
+		purposeEnforcerBuilder: NewPurposeEnforcerBuilder(&tcf2AggConfig),
+		gdprSignal:             SignalYes,
+		consent:                vendor2NoPurpose1Consent,
 	}
 
 	allowSync, err := perms.HostCookiesAllowed(context.Background())
@@ -175,8 +177,9 @@ func TestProhibitedVendors(t *testing.T) {
 		fetchVendorList: listFetcher(map[uint16]vendorlist.VendorList{
 			1: parseVendorListDataV2(t, vendorListData),
 		}),
-		gdprSignal: SignalYes,
-		consent:    purpose1NoVendorConsent,
+		purposeEnforcerBuilder: NewPurposeEnforcerBuilder(&tcf2AggConfig),
+		gdprSignal:             SignalYes,
+		consent:                purpose1NoVendorConsent,
 	}
 
 	allowSync, err := perms.HostCookiesAllowed(context.Background())
@@ -315,6 +318,7 @@ func TestAllowActivities(t *testing.T) {
 		fetchVendorList: listFetcher(map[uint16]vendorlist.VendorList{
 			1: parseVendorListDataV2(t, vendorListData),
 		}),
+		purposeEnforcerBuilder: NewPurposeEnforcerBuilder(&tcf2AggConfig),
 	}
 
 	for _, tt := range tests {
@@ -539,6 +543,7 @@ func TestAllowActivitiesGeoAndID(t *testing.T) {
 		perms.cfg = &tcf2AggConfig
 		perms.aliasGVLIDs = td.aliasGVLIDs
 		perms.consent = td.consent
+		perms.purposeEnforcerBuilder = NewPurposeEnforcerBuilder(&tcf2AggConfig)
 
 		permissions, err := perms.AuctionActivitiesAllowed(context.Background(), td.bidderCoreName, td.bidder)
 		assert.NoErrorf(t, err, "Error processing AuctionActivitiesAllowed for %s", td.description)
@@ -567,10 +572,11 @@ func TestAllowActivitiesWhitelist(t *testing.T) {
 		fetchVendorList: listFetcher(map[uint16]vendorlist.VendorList{
 			34: parseVendorListDataV2(t, vendorListData),
 		}),
-		aliasGVLIDs: map[string]uint16{},
-		consent:     fullConsentToPurposesAndVendorsTwoSixEight,
-		gdprSignal:  SignalYes,
-		publisherID: "appNexusAppID",
+		purposeEnforcerBuilder: NewPurposeEnforcerBuilder(&tcf2AggConfig),
+		aliasGVLIDs:            map[string]uint16{},
+		consent:                fullConsentToPurposesAndVendorsTwoSixEight,
+		gdprSignal:             SignalYes,
+		publisherID:            "appNexusAppID",
 	}
 
 	// Assert that an item that otherwise would not be allowed PI access, gets approved because it is found in the GDPR.NonStandardPublishers array
@@ -595,7 +601,8 @@ func TestAllowActivitiesPubRestrict(t *testing.T) {
 		fetchVendorList: listFetcher(map[uint16]vendorlist.VendorList{
 			15: parseVendorListDataV2(t, vendorListData),
 		}),
-		gdprSignal: SignalYes,
+		purposeEnforcerBuilder: NewPurposeEnforcerBuilder(&tcf2AggConfig),
+		gdprSignal:             SignalYes,
 	}
 
 	// COwAdDhOwAdDhN4ABAENAPCgAAQAAv___wAAAFP_AAp_4AI6ACACAA - vendors 1-10 legit interest only,
@@ -667,8 +674,9 @@ func TestAllowSync(t *testing.T) {
 		fetchVendorList: listFetcher(map[uint16]vendorlist.VendorList{
 			34: parseVendorListDataV2(t, vendorListData),
 		}),
-		gdprSignal: SignalYes,
-		consent:    fullConsentToPurposesAndVendorsTwoSixEight,
+		purposeEnforcerBuilder: NewPurposeEnforcerBuilder(&tcf2AggConfig),
+		gdprSignal:             SignalYes,
+		consent:                fullConsentToPurposesAndVendorsTwoSixEight,
 	}
 
 	allowSync, err := perms.HostCookiesAllowed(context.Background())
@@ -700,8 +708,9 @@ func TestProhibitedPurposeSync(t *testing.T) {
 		fetchVendorList: listFetcher(map[uint16]vendorlist.VendorList{
 			34: parseVendorListDataV2(t, vendorListData),
 		}),
-		gdprSignal: SignalYes,
-		consent:    fullConsentToPurposesAndVendorsTwoSixEight,
+		purposeEnforcerBuilder: NewPurposeEnforcerBuilder(&tcf2AggConfig),
+		gdprSignal:             SignalYes,
+		consent:                fullConsentToPurposesAndVendorsTwoSixEight,
 	}
 
 	allowSync, err := perms.HostCookiesAllowed(context.Background())
@@ -731,8 +740,9 @@ func TestProhibitedVendorSync(t *testing.T) {
 		fetchVendorList: listFetcher(map[uint16]vendorlist.VendorList{
 			34: parseVendorListDataV2(t, vendorListData),
 		}),
-		gdprSignal: SignalYes,
-		consent:    fullConsentToPurposesAndVendorsTwoSixEight,
+		purposeEnforcerBuilder: NewPurposeEnforcerBuilder(&tcf2AggConfig),
+		gdprSignal:             SignalYes,
+		consent:                fullConsentToPurposesAndVendorsTwoSixEight,
 	}
 
 	// COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA : full consents to purposes for vendors 2, 6, 8
@@ -964,6 +974,7 @@ func TestAllowActivitiesBidRequests(t *testing.T) {
 		tcf2AggConfig.HostConfig.PurposeConfigs[consentconstants.Purpose(2)] = p2Config
 		tcf2AggConfig.HostConfig.PurposeConfigs[consentconstants.Purpose(2)] = &tcf2AggConfig.HostConfig.Purpose2
 		perms.cfg = &tcf2AggConfig
+		perms.purposeEnforcerBuilder = NewPurposeEnforcerBuilder(&tcf2AggConfig)
 
 		permissions, err := perms.AuctionActivitiesAllowed(context.Background(), td.bidderCoreName, td.bidder)
 		assert.NoErrorf(t, err, "Error processing AuctionActivitiesAllowed for %s", td.description)
@@ -1077,6 +1088,7 @@ func TestAllowActivitiesVendorException(t *testing.T) {
 		tcf2AggConfig.HostConfig.PurposeConfigs[consentconstants.Purpose(2)] = &tcf2AggConfig.HostConfig.Purpose2
 		tcf2AggConfig.HostConfig.PurposeConfigs[consentconstants.Purpose(3)] = &tcf2AggConfig.HostConfig.Purpose3
 		perms.cfg = &tcf2AggConfig
+		perms.purposeEnforcerBuilder = NewPurposeEnforcerBuilder(&tcf2AggConfig)
 
 		permissions, err := perms.AuctionActivitiesAllowed(context.Background(), td.bidderCoreName, td.bidder)
 		assert.NoErrorf(t, err, "Error processing AuctionActivitiesAllowed for %s", td.description)
@@ -1138,6 +1150,7 @@ func TestBidderSyncAllowedVendorException(t *testing.T) {
 		tcf2AggConfig.HostConfig.Purpose1.VendorExceptionMap = td.p1VendorExceptionMap
 		tcf2AggConfig.HostConfig.PurposeConfigs[consentconstants.Purpose(1)] = &tcf2AggConfig.HostConfig.Purpose1
 		perms.cfg = &tcf2AggConfig
+		perms.purposeEnforcerBuilder = NewPurposeEnforcerBuilder(&tcf2AggConfig)
 
 		allowSync, err := perms.BidderSyncAllowed(context.Background(), td.bidder)
 		assert.NoErrorf(t, err, "Error processing BidderSyncAllowed for %s", td.description)
