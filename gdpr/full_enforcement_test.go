@@ -385,7 +385,7 @@ func TestLegalBasisWithPubRestrictionRequireConsent(t *testing.T) {
 			consent:                  P1P2P3PurposeConsentWithP1P2P3V32RestrictionRequireConsent,
 			wantConsentPurposeResult: true,
 			wantLIPurposeResult:      false,
-			wantFlexPurposeResult:    false,
+			wantFlexPurposeResult:    true,
 		},
 		{
 			description: "enforce purpose on, legit interest Y",
@@ -415,7 +415,7 @@ func TestLegalBasisWithPubRestrictionRequireConsent(t *testing.T) {
 			consent:                  V32VendorConsentWithP1P2P3V32RestrictionRequireConsent,
 			wantConsentPurposeResult: true,
 			wantLIPurposeResult:      false,
-			wantFlexPurposeResult:    false,
+			wantFlexPurposeResult:    true,
 		},
 		{
 			description: "enforce vendors on, vendor legit interest Y",
@@ -458,7 +458,7 @@ func TestLegalBasisWithPubRestrictionRequireConsent(t *testing.T) {
 			consent:                  P1P2P3PurposeConsentAndV32VendorConsentWithP1P2P3V32RestrictionRequireConsent,
 			wantConsentPurposeResult: true,
 			wantLIPurposeResult:      false,
-			wantFlexPurposeResult:    false,
+			wantFlexPurposeResult:    true,
 		},
 		{
 			description: "enforce purpose & vendors on, legit interest Y, vendor legit interest N",
@@ -608,7 +608,7 @@ func TestLegalBasisWithPubRestrictionRequireLI(t *testing.T) {
 			consent:                  P1P2P3PurposeLIWithP1P2P3V32RestrictionRequireLI,
 			wantConsentPurposeResult: false,
 			wantLIPurposeResult:      true,
-			wantFlexPurposeResult:    false,
+			wantFlexPurposeResult:    true,
 		},
 		{
 			description: "enforce vendors on, vendor consent N, vendor legit interest N",
@@ -638,7 +638,7 @@ func TestLegalBasisWithPubRestrictionRequireLI(t *testing.T) {
 			consent:                  V32VendorLIWithP1P2P3V32RestrictionRequireLI,
 			wantConsentPurposeResult: false,
 			wantLIPurposeResult:      true,
-			wantFlexPurposeResult:    false,
+			wantFlexPurposeResult:    true,
 		},
 		{
 			description: "enforce purpose & vendors on, purpose consent Y, vendor consent N",
@@ -704,7 +704,7 @@ func TestLegalBasisWithPubRestrictionRequireLI(t *testing.T) {
 			consent:                  P1P2P3PurposeLIAndV32VendorLIWithP1P2P3V32RestrictionRequireLI,
 			wantConsentPurposeResult: false,
 			wantLIPurposeResult:      true,
-			wantFlexPurposeResult:    false,
+			wantFlexPurposeResult:    true,
 		},
 		{
 			description: "enforce purpose & vendors on, bidder is a vendor exception",

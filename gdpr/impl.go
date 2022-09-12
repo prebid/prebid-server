@@ -204,7 +204,7 @@ func (p *permissionsImpl) allowID(bidder openrtb_ext.BidderName, consentMeta tcf
 	return false
 }
 
-// parseVendor parses the consent string and fetches the specified vendor's information from the GVL 
+// parseVendor parses the consent string and fetches the specified vendor's information from the GVL
 func (p *permissionsImpl) parseVendor(ctx context.Context, vendorID uint16, consent string) (parsedConsent api.VendorConsents, vendor api.Vendor, err error) {
 	parsedConsent, err = vendorconsent.ParseString(consent)
 	if err != nil {
