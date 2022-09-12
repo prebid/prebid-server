@@ -50,6 +50,7 @@ type ExtRequestPrebid struct {
 	Integration          string                    `json:"integration,omitempty"`
 	Passthrough          json.RawMessage           `json:"passthrough,omitempty"`
 	SChains              []*ExtRequestPrebidSChain `json:"schains,omitempty"`
+	Server               *ExtRequestPrebidServer   `json:"server,omitempty"`
 	StoredRequest        *ExtStoredRequest         `json:"storedrequest,omitempty"`
 	SupportDeals         bool                      `json:"supportdeals,omitempty"`
 	Targeting            *ExtRequestTargeting      `json:"targeting,omitempty"`
@@ -57,8 +58,7 @@ type ExtRequestPrebid struct {
 	// NoSale specifies bidders with whom the publisher has a legal relationship where the
 	// passing of personally identifiable information doesn't constitute a sale per CCPA law.
 	// The array may contain a single sstar ('*') entry to represent all bidders.
-	NoSale []string                `json:"nosale,omitempty"`
-	Server *ExtRequestPrebidServer `json:"server,omitempty"`
+	NoSale []string `json:"nosale,omitempty"`
 }
 
 // Experiment defines if experimental features are available for the request
