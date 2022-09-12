@@ -75,24 +75,22 @@ func ReadPolicy(ampParams Params, pbsConfigGDPREnabled bool) (privacy.PolicyWrit
 		if ccpa.ValidateConsent(ampParams.Consent) {
 			if parseGdprApplies(ampParams.GdprApplies) == 1 {
 				// Log warning because AMP request comes with both a valid CCPA string and gdpr_applies set to true
-				warningMsg = "AMP request gdpr_applies value was ignored in account of provided consent string found to be CCPA and not GDPR."
+				warningMsg = "AMP request gdpr_applies value was ignored because provided consent string is a CCPA consent string"
 			}
 		} else {
 			// Log warning if CCPA string is invalid
 			warningMsg = fmt.Sprintf("Consent string '%s' is not a valid CCPA consent string.", ampParams.Consent)
 		}
-	case ConsentNone:
-		fallthrough
 	default:
 		if ccpa.ValidateConsent(ampParams.Consent) {
 			rv = ccpa.ConsentWriter{ampParams.Consent}
 			if parseGdprApplies(ampParams.GdprApplies) == 1 {
-				warningMsg = "AMP request gdpr_applies value was ignored in account of provided consent string found to be CCPA and not GDPR."
+				warningMsg = "AMP request gdpr_applies value was ignored because provided consent string is a CCPA consent string"
 			}
 		} else if pbsConfigGDPREnabled && len(validateTCf2ConsentString(ampParams.Consent)) == 0 {
 			rv = buildGdprTCF2ConsentWriter(ampParams)
 		} else {
-			warningMsg = fmt.Sprintf("Consent '%s' is not recognized as CCPA nor GDPR TCF2.", ampParams.Consent)
+			warningMsg = fmt.Sprintf("Consent string '%s' is not recognized as one of the supported formats CCPA or TCF2.", ampParams.Consent)
 		}
 	}
 
@@ -126,11 +124,8 @@ func buildGdprTCF2ConsentWriter(ampParams Params) gdpr.ConsentWriter {
 // gdprApplies was set to true
 func parseGdprApplies(gdprApplies *bool) int8 {
 	gdpr := int8(0)
-	if gdprApplies == nil {
-		return gdpr
-	}
 
-	if *gdprApplies {
+	if gdprApplies != nil && *gdprApplies {
 		gdpr = int8(1)
 	}
 

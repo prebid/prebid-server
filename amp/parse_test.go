@@ -274,7 +274,7 @@ func TestPrivacyReader(t *testing.T) {
 					},
 					expected: expectedResults{
 						policyWriter: privacy.NilPolicyWriter{},
-						warning:      &errortypes.Warning{Message: "Consent 'NOT_CCPA_NOR_GDPR_TCF2' is not recognized as CCPA nor GDPR TCF2.", WarningCode: errortypes.InvalidPrivacyConsentWarningCode},
+						warning:      &errortypes.Warning{Message: "Consent string 'NOT_CCPA_NOR_GDPR_TCF2' is not recognized as one of the supported formats CCPA or TCF2.", WarningCode: errortypes.InvalidPrivacyConsentWarningCode},
 					},
 				},
 				{
@@ -294,11 +294,11 @@ func TestPrivacyReader(t *testing.T) {
 					},
 					expected: expectedResults{
 						policyWriter: ccpa.ConsentWriter{"1YYY"},
-						warning:      &errortypes.Warning{Message: "AMP request gdpr_applies value was ignored in account of provided consent string found to be CCPA and not GDPR.", WarningCode: errortypes.InvalidPrivacyConsentWarningCode},
+						warning:      &errortypes.Warning{Message: "AMP request gdpr_applies value was ignored because provided consent string is a CCPA consent string", WarningCode: errortypes.InvalidPrivacyConsentWarningCode},
 					},
 				},
 				{
-					desc: "No consent type specified and query params come with invalid TCF2 consent string: expect a CCPA consent writer and no error nor warning",
+					desc: "No consent type, valid GDPR consent string and gdpr_applies not set: expect a GDPR consent writer and no error nor warning",
 					in: testInput{
 						ampParams: Params{Consent: "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA"},
 					},
@@ -319,7 +319,7 @@ func TestPrivacyReader(t *testing.T) {
 					},
 					expected: expectedResults{
 						policyWriter: privacy.NilPolicyWriter{},
-						warning:      &errortypes.Warning{Message: "Consent 'NOT_CCPA_NOR_GDPR_TCF2' is not recognized as CCPA nor GDPR TCF2.", WarningCode: errortypes.InvalidPrivacyConsentWarningCode},
+						warning:      &errortypes.Warning{Message: "Consent string 'NOT_CCPA_NOR_GDPR_TCF2' is not recognized as one of the supported formats CCPA or TCF2.", WarningCode: errortypes.InvalidPrivacyConsentWarningCode},
 					},
 				},
 				{
@@ -339,11 +339,11 @@ func TestPrivacyReader(t *testing.T) {
 					},
 					expected: expectedResults{
 						policyWriter: ccpa.ConsentWriter{"1YYY"},
-						warning:      &errortypes.Warning{Message: "AMP request gdpr_applies value was ignored in account of provided consent string found to be CCPA and not GDPR.", WarningCode: errortypes.InvalidPrivacyConsentWarningCode},
+						warning:      &errortypes.Warning{Message: "AMP request gdpr_applies value was ignored because provided consent string is a CCPA consent string", WarningCode: errortypes.InvalidPrivacyConsentWarningCode},
 					},
 				},
 				{
-					desc: "Unrecognized consent type specified and query params come with invalid TCF2 consent string: expect a CCPA consent writer and no error nor warning",
+					desc: "Unrecognized consent type, valid TCF2 consent string and gdpr_applies not set: expect GDPR consent writer and no error nor warning",
 					in: testInput{
 						ampParams: Params{ConsentType: 101, Consent: "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA"},
 					},
@@ -429,7 +429,7 @@ func TestPrivacyReader(t *testing.T) {
 					},
 					expected: expectedResults{
 						policyWriter: ccpa.ConsentWriter{"1YYY"},
-						warning:      &errortypes.Warning{Message: "AMP request gdpr_applies value was ignored in account of provided consent string found to be CCPA and not GDPR.", WarningCode: errortypes.InvalidPrivacyConsentWarningCode},
+						warning:      &errortypes.Warning{Message: "AMP request gdpr_applies value was ignored because provided consent string is a CCPA consent string", WarningCode: errortypes.InvalidPrivacyConsentWarningCode},
 					},
 				},
 				{
@@ -579,12 +579,12 @@ func TestParseGdprApplies(t *testing.T) {
 			expectRegsExtGdpr: int8(0),
 		},
 		{
-			desc:              "gdprApplies isn't nil but the bidRequest is, expect RequestWrapper error",
+			desc:              "gdprApplies isn't nil and is set to false, expect a value of 0",
 			inGdprApplies:     &gdprAppliesFalse,
 			expectRegsExtGdpr: int8(0),
 		},
 		{
-			desc:              "gdprApplies isn't nil but the bidRequest is, expect RequestWrapper error",
+			desc:              "gdprApplies isn't nil and is set to true, expect a value of 1",
 			inGdprApplies:     &gdprAppliesTrue,
 			expectRegsExtGdpr: int8(1),
 		},

@@ -34,7 +34,7 @@ func TestGoodAmpRequests(t *testing.T) {
 	}{
 		{
 			desc: "Valid whole, tag_id param only",
-			dir:  "sample-requests/valid-whole/supplementary/",
+			dir:  "sample-requests/amp/valid-supplementary/",
 			testFiles: []string{
 				"aliased-buyeruids.json",
 				"aliases.json",
@@ -45,7 +45,7 @@ func TestGoodAmpRequests(t *testing.T) {
 		},
 		{
 			desc: "Valid, consent handling in query",
-			dir:  "sample-requests/amp-query-values/",
+			dir:  "sample-requests/amp/consent-through-query/",
 			testFiles: []string{
 				"gdpr-tcf1-consent-through-query.json",
 				"gdpr-tcf2-consent-through-query.json",

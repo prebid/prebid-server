@@ -1,5 +1,6 @@
 {
   "description": "Amp request impression requests a bid from a bidder alias defined in root.ext.prebid.aliases",
+  "query": "tag_id=101",
   "config": {
     "mockBidders": [
       {"bidderName": "appnexus", "currency": "USD", "price": 2}
