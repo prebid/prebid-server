@@ -14,7 +14,6 @@ import (
 
 type adapter struct {
 	endpoint string
-	Server   config.Server
 }
 
 type openwebImpExt struct {
@@ -187,7 +186,6 @@ func validateImpression(imp *openrtb2.Imp) (int, error) {
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,
-		Server:   server,
 	}
 	return bidder, nil
 }

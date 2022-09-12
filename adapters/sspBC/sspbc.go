@@ -73,7 +73,6 @@ type responseExt struct {
 type adapter struct {
 	endpoint       string
 	bannerTemplate *template.Template
-	Server         config.Server
 }
 
 // ---------------ADAPTER INTERFACE------------------
@@ -97,7 +96,6 @@ func Builder(_ openrtb_ext.BidderName, config config.Adapter, server config.Serv
 	bidder := &adapter{
 		endpoint:       config.Endpoint,
 		bannerTemplate: bannerTemplate,
-		Server:         server,
 	}
 
 	return bidder, nil

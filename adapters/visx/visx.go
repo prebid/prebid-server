@@ -14,7 +14,6 @@ import (
 
 type VisxAdapter struct {
 	endpoint string
-	Server   config.Server
 }
 
 type visxBidExtPrebidMeta struct {
@@ -179,7 +178,6 @@ func getMediaTypeForImp(impID string, imps []openrtb2.Imp, bid visxBid) (openrtb
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &VisxAdapter{
 		endpoint: config.Endpoint,
-		Server:   server,
 	}
 	return bidder, nil
 }

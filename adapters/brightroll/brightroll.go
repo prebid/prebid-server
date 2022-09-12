@@ -17,7 +17,6 @@ import (
 type BrightrollAdapter struct {
 	URI       string
 	extraInfo ExtraInfo
-	Server    config.Server
 }
 
 type ExtraInfo struct {
@@ -240,7 +239,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	bidder := &BrightrollAdapter{
 		URI:       config.Endpoint,
 		extraInfo: extraInfo,
-		Server:    server,
 	}
 	return bidder, nil
 }

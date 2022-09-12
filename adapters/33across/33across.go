@@ -15,7 +15,6 @@ import (
 
 type TtxAdapter struct {
 	endpoint string
-	Server   config.Server
 }
 
 type Ext struct {
@@ -282,7 +281,6 @@ func getBidType(ext bidExt) openrtb_ext.BidType {
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &TtxAdapter{
 		endpoint: config.Endpoint,
-		Server:   server,
 	}
 	return bidder, nil
 }

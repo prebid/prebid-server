@@ -17,15 +17,13 @@ const displayManagerVer string = "2.0.0"
 
 // DeepintentAdapter struct
 type DeepintentAdapter struct {
-	URI    string
-	Server config.Server
+	URI string
 }
 
 // Builder builds a new instance of the Deepintent adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &DeepintentAdapter{
-		URI:    config.Endpoint,
-		Server: server,
+		URI: config.Endpoint,
 	}
 	return bidder, nil
 }

@@ -19,7 +19,6 @@ import (
 
 type adapter struct {
 	epTemplate *template.Template
-	Server     config.Server
 }
 
 var (
@@ -35,7 +34,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	}
 	bidder := &adapter{
 		epTemplate: epTemplate,
-		Server:     server,
 	}
 	return bidder, nil
 }

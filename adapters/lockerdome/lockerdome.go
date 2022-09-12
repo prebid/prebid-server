@@ -17,7 +17,6 @@ const unexpectedStatusCodeMessage = "Unexpected status code: %d. Run with reques
 // Implements Bidder interface.
 type LockerDomeAdapter struct {
 	endpoint string
-	Server   config.Server
 }
 
 // MakeRequests makes the HTTP requests which should be made to fetch bids [from the bidder, in this case, LockerDome]
@@ -154,7 +153,6 @@ func (adapter *LockerDomeAdapter) MakeBids(openRTBRequest *openrtb2.BidRequest, 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &LockerDomeAdapter{
 		endpoint: config.Endpoint,
-		Server:   server,
 	}
 	return bidder, nil
 }

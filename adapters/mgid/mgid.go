@@ -15,7 +15,6 @@ import (
 
 type MgidAdapter struct {
 	endpoint string
-	Server   config.Server
 }
 
 type ReqExt struct {
@@ -173,7 +172,6 @@ func (a *MgidAdapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.Req
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &MgidAdapter{
 		endpoint: config.Endpoint,
-		Server:   server,
 	}
 	return bidder, nil
 }

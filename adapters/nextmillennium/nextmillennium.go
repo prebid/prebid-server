@@ -14,7 +14,6 @@ import (
 
 type adapter struct {
 	endpoint string
-	Server   config.Server
 }
 
 type NextMillenniumBidRequest struct {
@@ -171,6 +170,5 @@ func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	return &adapter{
 		endpoint: config.Endpoint,
-		Server:   server,
 	}, nil
 }

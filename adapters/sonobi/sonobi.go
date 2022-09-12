@@ -14,15 +14,13 @@ import (
 
 // SonobiAdapter - Sonobi SonobiAdapter definition
 type SonobiAdapter struct {
-	URI    string
-	Server config.Server
+	URI string
 }
 
 // Builder builds a new instance of the Sonobi adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &SonobiAdapter{
-		URI:    config.Endpoint,
-		Server: server,
+		URI: config.Endpoint,
 	}
 	return bidder, nil
 }

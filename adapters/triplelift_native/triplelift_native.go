@@ -15,7 +15,6 @@ import (
 type TripleliftNativeAdapter struct {
 	endpoint string
 	extInfo  TripleliftNativeExtInfo
-	Server   config.Server
 }
 
 type TripleliftInnerExt struct {
@@ -192,7 +191,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	bidder := &TripleliftNativeAdapter{
 		endpoint: config.Endpoint,
 		extInfo:  extraInfo,
-		Server:   server,
 	}
 	return bidder, nil
 }

@@ -14,7 +14,6 @@ import (
 
 type YieldmoAdapter struct {
 	endpoint string
-	Server   config.Server
 }
 
 type ExtImpBidderYieldmo struct {
@@ -153,7 +152,6 @@ func (a *YieldmoAdapter) MakeBids(internalRequest *openrtb2.BidRequest, external
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &YieldmoAdapter{
 		endpoint: config.Endpoint,
-		Server:   server,
 	}
 	return bidder, nil
 }

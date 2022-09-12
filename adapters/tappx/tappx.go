@@ -23,7 +23,6 @@ const TYPE_CNN = "prebid"
 
 type TappxAdapter struct {
 	endpointTemplate *template.Template
-	Server           config.Server
 }
 
 type Bidder struct {
@@ -46,7 +45,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 
 	bidder := &TappxAdapter{
 		endpointTemplate: template,
-		Server:           server,
 	}
 	return bidder, nil
 }

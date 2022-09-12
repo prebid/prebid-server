@@ -14,7 +14,6 @@ import (
 
 type NanoInteractiveAdapter struct {
 	endpoint string
-	Server   config.Server
 }
 
 func (a *NanoInteractiveAdapter) MakeRequests(bidRequest *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -160,7 +159,6 @@ func checkImp(imp *openrtb2.Imp) (string, error) {
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &NanoInteractiveAdapter{
 		endpoint: config.Endpoint,
-		Server:   server,
 	}
 	return bidder, nil
 }

@@ -17,7 +17,6 @@ import (
 
 type adkernelAdapter struct {
 	EndpointTemplate *template.Template
-	Server           config.Server
 }
 
 // MakeRequests prepares request information for prebid-server core
@@ -271,7 +270,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 
 	bidder := &adkernelAdapter{
 		EndpointTemplate: urlTemplate,
-		Server:           server,
 	}
 	return bidder, nil
 }

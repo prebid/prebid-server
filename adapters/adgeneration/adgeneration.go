@@ -21,7 +21,6 @@ type AdgenerationAdapter struct {
 	endpoint        string
 	version         string
 	defaultCurrency string
-	Server          config.Server
 }
 
 // Server Responses
@@ -290,7 +289,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 		config.Endpoint,
 		"1.0.3",
 		"JPY",
-		server,
 	}
 	return bidder, nil
 }

@@ -16,7 +16,6 @@ const hbconfig = "hb_pbs_1.0.0"
 
 type OpenxAdapter struct {
 	endpoint string
-	Server   config.Server
 }
 
 type openxImpExt struct {
@@ -222,7 +221,6 @@ func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &OpenxAdapter{
 		endpoint: config.Endpoint,
-		Server:   server,
 	}
 	return bidder, nil
 }

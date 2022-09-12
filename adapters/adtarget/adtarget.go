@@ -14,7 +14,6 @@ import (
 
 type AdtargetAdapter struct {
 	endpoint string
-	Server   config.Server
 }
 
 type adtargetImpExt struct {
@@ -188,7 +187,6 @@ func validateImpressionAndSetExt(imp *openrtb2.Imp) (int, error) {
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &AdtargetAdapter{
 		endpoint: config.Endpoint,
-		Server:   server,
 	}
 	return bidder, nil
 }

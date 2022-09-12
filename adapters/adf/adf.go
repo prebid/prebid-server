@@ -14,7 +14,6 @@ import (
 
 type adapter struct {
 	endpoint string
-	Server   config.Server
 }
 
 type adfRequestExt struct {
@@ -26,7 +25,6 @@ type adfRequestExt struct {
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,
-		Server:   server,
 	}
 	return bidder, nil
 }

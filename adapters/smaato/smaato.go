@@ -31,7 +31,6 @@ const (
 type adapter struct {
 	clock    timeutil.Time
 	endpoint string
-	Server   config.Server
 }
 
 // userExtData defines User.Ext.Data object for Smaato
@@ -70,7 +69,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	bidder := &adapter{
 		clock:    &timeutil.RealTime{},
 		endpoint: config.Endpoint,
-		Server:   server,
 	}
 	return bidder, nil
 }

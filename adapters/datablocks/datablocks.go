@@ -17,7 +17,6 @@ import (
 
 type DatablocksAdapter struct {
 	EndpointTemplate *template.Template
-	Server           config.Server
 }
 
 func (a *DatablocksAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -188,7 +187,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 
 	bidder := &DatablocksAdapter{
 		EndpointTemplate: template,
-		Server:           server,
 	}
 	return bidder, nil
 }

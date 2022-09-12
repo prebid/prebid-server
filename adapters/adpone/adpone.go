@@ -17,14 +17,12 @@ import (
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adponeAdapter{
 		endpoint: config.Endpoint,
-		Server:   server,
 	}
 	return bidder, nil
 }
 
 type adponeAdapter struct {
 	endpoint string
-	Server   config.Server
 }
 
 func (adapter *adponeAdapter) MakeRequests(

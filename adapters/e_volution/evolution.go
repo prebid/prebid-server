@@ -13,8 +13,7 @@ import (
 )
 
 type adapter struct {
-	URI    string
-	Server config.Server
+	URI string
 }
 
 type bidExt struct {
@@ -23,8 +22,7 @@ type bidExt struct {
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
-		URI:    config.Endpoint,
-		Server: server,
+		URI: config.Endpoint,
 	}
 	return bidder, nil
 }

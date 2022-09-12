@@ -16,7 +16,6 @@ import (
 
 type SynacorMediaAdapter struct {
 	EndpointTemplate *template.Template
-	Server           config.Server
 }
 
 type SyncEndpointTemplateParams struct {
@@ -37,7 +36,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 
 	bidder := &SynacorMediaAdapter{
 		EndpointTemplate: template,
-		Server:           server,
 	}
 	return bidder, nil
 }

@@ -14,8 +14,7 @@ import (
 )
 
 type adapter struct {
-	URI    string
-	Server config.Server
+	URI string
 }
 type kargoExt struct {
 	MediaType string `json:"mediaType"`
@@ -24,8 +23,7 @@ type kargoExt struct {
 // Builder builds a new instance of the Kargo adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
-		URI:    config.Endpoint, // base url of bidding server
-		Server: server,
+		URI: config.Endpoint, // base url of bidding server
 	}
 	return bidder, nil
 }

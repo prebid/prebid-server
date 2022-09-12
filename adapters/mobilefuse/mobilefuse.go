@@ -17,7 +17,6 @@ import (
 
 type MobileFuseAdapter struct {
 	EndpointTemplate *template.Template
-	Server           config.Server
 }
 
 // Builder builds a new instance of the MobileFuse adapter for the given bidder with the given config.
@@ -29,7 +28,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 
 	bidder := &MobileFuseAdapter{
 		EndpointTemplate: template,
-		Server:           server,
 	}
 	return bidder, nil
 }

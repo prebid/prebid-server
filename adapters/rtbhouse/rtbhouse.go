@@ -16,7 +16,6 @@ import (
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &RTBHouseAdapter{
 		endpoint: config.Endpoint,
-		Server:   server,
 	}
 	return bidder, nil
 }
@@ -24,7 +23,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 // RTBHouseAdapter implements the Bidder interface.
 type RTBHouseAdapter struct {
 	endpoint string
-	Server   config.Server
 }
 
 // MakeRequests prepares the HTTP requests which should be made to fetch bids.

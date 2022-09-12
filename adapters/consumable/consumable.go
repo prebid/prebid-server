@@ -19,7 +19,6 @@ import (
 type ConsumableAdapter struct {
 	clock    instant
 	endpoint string
-	Server   config.Server
 }
 
 type bidRequest struct {
@@ -297,7 +296,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	bidder := &ConsumableAdapter{
 		clock:    realInstant{},
 		endpoint: config.Endpoint,
-		Server:   server,
 	}
 	return bidder, nil
 }

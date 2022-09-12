@@ -34,7 +34,6 @@ type adsImpExt struct {
 
 type AdopplerAdapter struct {
 	endpoint *template.Template
-	Server   config.Server
 }
 
 // Builder builds a new instance of the Adoppler adapter for the given bidder with the given config.
@@ -46,7 +45,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 
 	bidder := &AdopplerAdapter{
 		endpoint: template,
-		Server:   server,
 	}
 	return bidder, nil
 }

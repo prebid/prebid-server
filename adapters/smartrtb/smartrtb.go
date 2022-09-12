@@ -17,7 +17,6 @@ import (
 // Base adapter structure.
 type SmartRTBAdapter struct {
 	EndpointTemplate *template.Template
-	Server           config.Server
 }
 
 // Bid request extension appended to downstream request.
@@ -51,7 +50,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 
 	bidder := &SmartRTBAdapter{
 		EndpointTemplate: template,
-		Server:           server,
 	}
 	return bidder, nil
 }

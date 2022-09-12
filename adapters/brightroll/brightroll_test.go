@@ -26,7 +26,6 @@ func TestEmptyConfig(t *testing.T) {
 	expected := &BrightrollAdapter{
 		URI:       "http://test-bid.ybp.yahoo.com/bid/appnexuspbs",
 		extraInfo: ex,
-		Server:    config.Server{ExternalUrl: "http://hosturl.com", GdprID: "1", Datacenter: "2"},
 	}
 	assert.Equal(t, expected, bidder)
 }
@@ -47,7 +46,6 @@ func TestNonEmptyConfig(t *testing.T) {
 	expected := &BrightrollAdapter{
 		URI:       "http://test-bid.ybp.yahoo.com/bid/appnexuspbs",
 		extraInfo: ex,
-		Server:    config.Server{ExternalUrl: "http://hosturl.com", GdprID: "1", Datacenter: "2"},
 	}
 	assert.Equal(t, expected, bidder)
 }

@@ -15,7 +15,6 @@ import (
 
 type ApplogyAdapter struct {
 	endpoint string
-	Server   config.Server
 }
 
 func (a *ApplogyAdapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -159,7 +158,6 @@ func (a *ApplogyAdapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.Requ
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &ApplogyAdapter{
 		endpoint: config.Endpoint,
-		Server:   server,
 	}
 	return bidder, nil
 }

@@ -13,8 +13,7 @@ import (
 )
 
 type adapter struct {
-	URI    string
-	Server config.Server
+	URI string
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -101,8 +100,7 @@ func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 // Builder builds a new instance of the SmileWanted adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
-		URI:    config.Endpoint,
-		Server: server,
+		URI: config.Endpoint,
 	}
 	return bidder, nil
 }

@@ -17,7 +17,6 @@ import (
 
 type GridAdapter struct {
 	endpoint string
-	Server   config.Server
 }
 
 type GridBid struct {
@@ -379,7 +378,6 @@ func (a *GridAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReq
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &GridAdapter{
 		endpoint: config.Endpoint,
-		Server:   server,
 	}
 	return bidder, nil
 }

@@ -20,7 +20,6 @@ import (
 type EmxDigitalAdapter struct {
 	endpoint string
 	testing  bool
-	Server   config.Server
 }
 
 func buildEndpoint(endpoint string, testing bool, timeout int64) string {
@@ -315,7 +314,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	bidder := &EmxDigitalAdapter{
 		endpoint: config.Endpoint,
 		testing:  false,
-		Server:   server,
 	}
 	return bidder, nil
 }

@@ -16,8 +16,7 @@ import (
 const Endpoint = "https://ads.tremorhub.com/ad/rtb/prebid"
 
 type TelariaAdapter struct {
-	URI    string
-	Server config.Server
+	URI string
 }
 
 // This will be part of Imp[i].Ext when this adapter calls out the Telaria Ad Server
@@ -299,8 +298,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	}
 
 	bidder := &TelariaAdapter{
-		URI:    endpoint,
-		Server: server,
+		URI: endpoint,
 	}
 	return bidder, nil
 }

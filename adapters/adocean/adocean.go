@@ -71,7 +71,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	bidder := &AdOceanAdapter{
 		endpointTemplate: endpointTemplate,
 		measurementCode:  whiteSpace.ReplaceAllString(measurementCode, " "),
-		Server:           server,
 	}
 	return bidder, nil
 }
@@ -79,7 +78,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 type AdOceanAdapter struct {
 	endpointTemplate *template.Template
 	measurementCode  string
-	Server           config.Server
 }
 
 func (a *AdOceanAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {

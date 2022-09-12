@@ -20,8 +20,7 @@ import (
 const MAX_IMPRESSIONS_PUBMATIC = 30
 
 type PubmaticAdapter struct {
-	URI    string
-	Server config.Server
+	URI string
 }
 
 type pubmaticBidExt struct {
@@ -477,8 +476,7 @@ func logf(msg string, args ...interface{}) {
 // Builder builds a new instance of the Pubmatic adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &PubmaticAdapter{
-		URI:    config.Endpoint,
-		Server: server,
+		URI: config.Endpoint,
 	}
 	return bidder, nil
 }

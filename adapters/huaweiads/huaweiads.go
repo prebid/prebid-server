@@ -244,7 +244,6 @@ type monitor struct {
 type adapter struct {
 	endpoint  string
 	extraInfo ExtraInfo
-	Server    config.Server
 }
 
 type ExtraInfo struct {
@@ -387,7 +386,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	bidder := &adapter{
 		endpoint:  config.Endpoint,
 		extraInfo: extraInfo,
-		Server:    server,
 	}
 	return bidder, nil
 }

@@ -27,7 +27,6 @@ type adapter struct {
 	URI            string
 	iabCategoryMap map[string]string
 	hbSource       int
-	Server         config.Server
 }
 
 type KeyVal struct {
@@ -459,7 +458,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 		URI:            config.Endpoint,
 		iabCategoryMap: loadCategoryMapFromFileSystem(),
 		hbSource:       resolvePlatformID(config.PlatformID),
-		Server:         server,
 	}
 	return bidder, nil
 }

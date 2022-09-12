@@ -14,7 +14,6 @@ import (
 
 type YieldoneAdapter struct {
 	endpoint string
-	Server   config.Server
 }
 
 // MakeRequests makes the HTTP requests which should be made to fetch bids.
@@ -95,7 +94,6 @@ func (a *YieldoneAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &YieldoneAdapter{
 		endpoint: config.Endpoint,
-		Server:   server,
 	}
 	return bidder, nil
 }

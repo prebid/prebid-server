@@ -21,7 +21,6 @@ import (
 
 type AdheseAdapter struct {
 	endpointTemplate *template.Template
-	Server           config.Server
 }
 
 func extractSlotParameter(parameters openrtb_ext.ExtImpAdhese) string {
@@ -278,7 +277,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 
 	bidder := &AdheseAdapter{
 		endpointTemplate: template,
-		Server:           server,
 	}
 	return bidder, nil
 }

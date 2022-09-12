@@ -15,8 +15,7 @@ import (
 )
 
 type EngageBDRAdapter struct {
-	URI    string
-	Server config.Server
+	URI string
 }
 
 func (adapter *EngageBDRAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -146,8 +145,7 @@ func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 // Builder builds a new instance of the EngageBDR adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &EngageBDRAdapter{
-		URI:    config.Endpoint,
-		Server: server,
+		URI: config.Endpoint,
 	}
 	return bidder, nil
 }

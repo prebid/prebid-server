@@ -14,7 +14,6 @@ import (
 
 type adapter struct {
 	Endpoint string
-	Server   config.Server
 }
 
 type NetworkIDs struct {
@@ -42,7 +41,6 @@ type bidExt struct {
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		Endpoint: config.Endpoint,
-		Server:   server,
 	}
 
 	return bidder, nil

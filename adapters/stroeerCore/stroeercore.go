@@ -110,8 +110,7 @@ func (a *adapter) MakeRequests(bidRequest *openrtb2.BidRequest, extraRequestInfo
 // Builder builds a new instance of the StroeerCore adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
-		URL:    config.Endpoint,
-		Server: server,
+		URL: config.Endpoint,
 	}
 	return bidder, nil
 }

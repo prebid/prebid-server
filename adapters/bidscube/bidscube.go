@@ -17,7 +17,6 @@ import (
 
 type adapter struct {
 	endpoint string
-	Server   config.Server
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -121,7 +120,6 @@ func getMediaTypeForImp(bidType string) openrtb_ext.BidType {
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,
-		Server:   server,
 	}
 	return bidder, nil
 }

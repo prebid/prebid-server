@@ -44,7 +44,6 @@ type cleanNameStep struct {
 type EPlanningAdapter struct {
 	URI     string
 	testing bool
-	Server  config.Server
 }
 
 type hbResponse struct {
@@ -351,7 +350,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	bidder := &EPlanningAdapter{
 		URI:     config.Endpoint,
 		testing: false,
-		Server:  server,
 	}
 	return bidder, nil
 }

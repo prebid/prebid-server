@@ -17,7 +17,6 @@ import (
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &KubientAdapter{
 		endpoint: config.Endpoint,
-		Server:   server,
 	}
 	return bidder, nil
 }
@@ -25,7 +24,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 // Implements Bidder interface.
 type KubientAdapter struct {
 	endpoint string
-	Server   config.Server
 }
 
 // MakeRequests prepares the HTTP requests which should be made to fetch bids.

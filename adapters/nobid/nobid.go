@@ -15,14 +15,12 @@ import (
 // NoBidAdapter - NoBid Adapter definition
 type NoBidAdapter struct {
 	endpoint string
-	Server   config.Server
 }
 
 // Builder builds a new instance of the NoBid adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &NoBidAdapter{
 		endpoint: config.Endpoint,
-		Server:   server,
 	}
 	return bidder, nil
 }

@@ -29,7 +29,6 @@ type FacebookAdapter struct {
 	URI        string
 	platformID string
 	appSecret  string
-	Server     config.Server
 }
 
 type facebookAdMarkup struct {
@@ -427,7 +426,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 		URI:        config.Endpoint,
 		platformID: config.PlatformID,
 		appSecret:  config.AppSecret,
-		Server:     server,
 	}
 	return bidder, nil
 }

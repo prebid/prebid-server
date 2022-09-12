@@ -15,8 +15,7 @@ import (
 )
 
 type PubnativeAdapter struct {
-	URI    string
-	Server config.Server
+	URI string
 }
 
 func (a *PubnativeAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -169,8 +168,7 @@ func (a *PubnativeAdapter) MakeBids(internalRequest *openrtb2.BidRequest, extern
 // Builder builds a new instance of the Pubnative adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &PubnativeAdapter{
-		URI:    config.Endpoint,
-		Server: server,
+		URI: config.Endpoint,
 	}
 	return bidder, nil
 }

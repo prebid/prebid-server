@@ -20,7 +20,6 @@ import (
 type IxAdapter struct {
 	URI         string
 	maxRequests int
-	Server      config.Server
 }
 
 func (a *IxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -260,7 +259,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	bidder := &IxAdapter{
 		URI:         config.Endpoint,
 		maxRequests: 20,
-		Server:      server,
 	}
 	return bidder, nil
 }

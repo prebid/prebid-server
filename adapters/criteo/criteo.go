@@ -15,7 +15,6 @@ import (
 type adapter struct {
 	uri             string
 	slotIDGenerator slotIDGenerator
-	Server          config.Server
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, extraRequestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -111,6 +110,5 @@ func builderWithGuidGenerator(bidderName openrtb_ext.BidderName, config config.A
 	return &adapter{
 		uri:             config.Endpoint,
 		slotIDGenerator: slotIDGenerator,
-		Server:          server,
 	}, nil
 }

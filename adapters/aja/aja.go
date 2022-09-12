@@ -14,7 +14,6 @@ import (
 
 type AJAAdapter struct {
 	endpoint string
-	Server   config.Server
 }
 
 func (a *AJAAdapter) MakeRequests(bidReq *openrtb2.BidRequest, extraInfo *adapters.ExtraRequestInfo) (adapterReqs []*adapters.RequestData, errs []error) {
@@ -132,7 +131,6 @@ func (a *AJAAdapter) MakeBids(bidReq *openrtb2.BidRequest, adapterReq *adapters.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &AJAAdapter{
 		endpoint: config.Endpoint,
-		Server:   server,
 	}
 	return bidder, nil
 }

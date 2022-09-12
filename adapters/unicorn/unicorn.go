@@ -16,7 +16,6 @@ import (
 
 type adapter struct {
 	endpoint string
-	Server   config.Server
 }
 
 // unicornImpExt is imp ext for UNICORN
@@ -39,7 +38,6 @@ type unicornExt struct {
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,
-		Server:   server,
 	}
 	return bidder, nil
 }

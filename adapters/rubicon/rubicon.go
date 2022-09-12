@@ -24,7 +24,6 @@ type RubiconAdapter struct {
 	URI          string
 	XAPIUsername string
 	XAPIPassword string
-	Server       config.Server
 }
 
 type rubiconContext struct {
@@ -370,7 +369,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 		URI:          uri,
 		XAPIUsername: config.XAPI.Username,
 		XAPIPassword: config.XAPI.Password,
-		Server:       server,
 	}
 	return bidder, nil
 }

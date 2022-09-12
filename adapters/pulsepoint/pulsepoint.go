@@ -15,15 +15,13 @@ import (
 )
 
 type PulsePointAdapter struct {
-	URI    string
-	Server config.Server
+	URI string
 }
 
 // Builds an instance of PulsePointAdapter
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &PulsePointAdapter{
-		URI:    config.Endpoint,
-		Server: server,
+		URI: config.Endpoint,
 	}
 	return bidder, nil
 }

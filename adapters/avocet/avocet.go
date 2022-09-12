@@ -17,7 +17,6 @@ import (
 type AvocetAdapter struct {
 	// Endpoint is a http endpoint to use when making requests to the Avocet advertising platform.
 	Endpoint string
-	Server   config.Server
 }
 
 func (a *AvocetAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -123,7 +122,6 @@ func getBidType(bid openrtb2.Bid, ext avocetBidExt) openrtb_ext.BidType {
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &AvocetAdapter{
 		Endpoint: config.Endpoint,
-		Server:   server,
 	}
 	return bidder, nil
 }

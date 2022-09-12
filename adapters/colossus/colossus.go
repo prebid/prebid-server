@@ -14,8 +14,7 @@ import (
 )
 
 type ColossusAdapter struct {
-	URI    string
-	Server config.Server
+	URI string
 }
 
 type ColossusResponseBidExt struct {
@@ -25,8 +24,7 @@ type ColossusResponseBidExt struct {
 // Builder builds a new instance of the Colossus adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &ColossusAdapter{
-		URI:    config.Endpoint,
-		Server: server,
+		URI: config.Endpoint,
 	}
 	return bidder, nil
 }

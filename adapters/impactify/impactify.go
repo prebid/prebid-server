@@ -15,7 +15,6 @@ import (
 
 type adapter struct {
 	endpoint string
-	Server   config.Server
 }
 
 type ImpactifyExtBidder struct {
@@ -180,7 +179,6 @@ func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType,
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,
-		Server:   server,
 	}
 	return bidder, nil
 }

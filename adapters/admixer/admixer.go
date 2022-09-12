@@ -14,14 +14,12 @@ import (
 
 type AdmixerAdapter struct {
 	endpoint string
-	Server   config.Server
 }
 
 // Builder builds a new instance of the Admixer adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &AdmixerAdapter{
 		endpoint: config.Endpoint,
-		Server:   server,
 	}
 	return bidder, nil
 }

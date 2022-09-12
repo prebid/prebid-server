@@ -15,7 +15,6 @@ import (
 
 type OrbidderAdapter struct {
 	endpoint string
-	Server   config.Server
 }
 
 // MakeRequests makes the HTTP requests which should be made to fetch bids from orbidder.
@@ -144,7 +143,6 @@ func (rcv OrbidderAdapter) MakeBids(_ *openrtb2.BidRequest, _ *adapters.RequestD
 func Builder(_ openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &OrbidderAdapter{
 		endpoint: config.Endpoint,
-		Server:   server,
 	}
 	return bidder, nil
 }

@@ -20,7 +20,6 @@ type QueryString map[string]string
 type adapter struct {
 	time     timeutil.Time
 	endpoint string
-	Server   config.Server
 }
 type adnAdunit struct {
 	AuId       string    `json:"auId"`
@@ -71,7 +70,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	bidder := &adapter{
 		time:     &timeutil.RealTime{},
 		endpoint: config.Endpoint,
-		Server:   server,
 	}
 
 	return bidder, nil

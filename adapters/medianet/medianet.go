@@ -15,7 +15,6 @@ import (
 
 type adapter struct {
 	endpoint string
-	Server   config.Server
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -87,7 +86,6 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	url := buildEndpoint(config.Endpoint, config.ExtraAdapterInfo)
 	return &adapter{
 		endpoint: url,
-		Server:   server,
 	}, nil
 }
 
