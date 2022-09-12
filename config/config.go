@@ -96,8 +96,8 @@ type Configuration struct {
 	GenerateRequestID bool                      `mapstructure:"generate_request_id"`
 	HostSChainNode    *openrtb2.SupplyChainNode `mapstructure:"host_schain_node"`
 	// Experiment configures non-production ready features.
-	Experiment     Experiment `mapstructure:"experiment"`
-	HostServerInfo Server     `mapstructure:"host_server_info"`
+	Experiment Experiment `mapstructure:"experiment"`
+	Datacenter string     `mapstructure:"datacenter"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
@@ -600,7 +600,7 @@ type Debug struct {
 
 type Server struct {
 	ExternalUrl string `mapstructure:"external_url"`
-	GdprID      string `mapstructure:"gdpr_id"`
+	GdprID      int    `mapstructure:"gdpr_id"`
 	Datacenter  string `mapstructure:"datacenter"`
 }
 
@@ -766,6 +766,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("enable_gzip", false)
 	v.SetDefault("garbage_collector_threshold", 0)
 	v.SetDefault("status_response", "")
+	v.SetDefault("datacenter", "")
 	v.SetDefault("auction_timeouts_ms.default", 0)
 	v.SetDefault("auction_timeouts_ms.max", 0)
 	v.SetDefault("cache.scheme", "")
@@ -1229,11 +1230,6 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("experiment.adscert.inprocess.domain_renewal_interval_seconds", 30)
 	v.SetDefault("experiment.adscert.remote.url", "")
 	v.SetDefault("experiment.adscert.remote.signing_timeout_ms", 5)
-
-	// Host Company Info
-	v.SetDefault("host_server_info.external_url", "")
-	v.SetDefault("host_server_info.gdpr_id", "")
-	v.SetDefault("host_server_info.datacenter", "")
 }
 
 func migrateConfig(v *viper.Viper) {

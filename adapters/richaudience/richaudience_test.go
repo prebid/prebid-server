@@ -47,7 +47,7 @@ type richaudienceSite struct {
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderRichaudience, config.Adapter{
 		Endpoint: "http://ortb.richaudience.com/ortb/?bidder=pbs",
-	}, config.Server{ExternalUrl: "http://hosturl.com", GdprID: "1", Datacenter: "2"})
+	}, config.Server{ExternalUrl: "http://hosturl.com", GdprID: 1, Datacenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -58,7 +58,7 @@ func TestJsonSamples(t *testing.T) {
 
 func TestGetBuilder(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderRichaudience, config.Adapter{
-		Endpoint: "http://ortb.richaudience.com/ortb/?bidder=pbs"}, config.Server{ExternalUrl: "http://hosturl.com", GdprID: "1", Datacenter: "2"})
+		Endpoint: "http://ortb.richaudience.com/ortb/?bidder=pbs"}, config.Server{ExternalUrl: "http://hosturl.com", GdprID: 1, Datacenter: "2"})
 
 	if buildErr != nil {
 		t.Errorf("error %s", buildErr)

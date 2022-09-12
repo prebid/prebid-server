@@ -11,14 +11,14 @@ import (
 
 func TestEndpointTemplateMalformed(t *testing.T) {
 	_, buildErr := Builder(openrtb_ext.BidderOneTag, config.Adapter{
-		Endpoint: "{{Malformed}}"}, config.Server{ExternalUrl: "http://hosturl.com", GdprID: "1", Datacenter: "2"})
+		Endpoint: "{{Malformed}}"}, config.Server{ExternalUrl: "http://hosturl.com", GdprID: 1, Datacenter: "2"})
 
 	assert.Error(t, buildErr)
 }
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderOneTag, config.Adapter{
-		Endpoint: "https://example.com/prebid-server/{{.PublisherID}}"}, config.Server{ExternalUrl: "http://hosturl.com", GdprID: "1", Datacenter: "2"})
+		Endpoint: "https://example.com/prebid-server/{{.PublisherID}}"}, config.Server{ExternalUrl: "http://hosturl.com", GdprID: 1, Datacenter: "2"})
 
 	assert.NoError(t, buildErr, "Builder returned unexpected error %v", buildErr)
 
