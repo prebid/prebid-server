@@ -205,6 +205,32 @@ func (adapter *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.Ex
 		isxRequest.Cur = nil
 		isxRequest.Ext = nil
 
+		// clone the request source
+		if isxRequest.Source != nil {
+			requestSourceCopy := *isxRequest.Source
+
+			// clear PChain
+			requestSourceCopy.PChain = ""
+
+			requestSourceExtCopy := requestSourceCopy.Ext
+
+			mapSourceExt := map[string]interface{}{}
+			json.Unmarshal([]byte(requestSourceExtCopy), &mapSourceExt)
+
+			// clear SChain
+			delete(mapSourceExt, "schain")
+
+			mapSourceExtJson, err := json.Marshal(mapSourceExt)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+
+			// put source back in the request
+			requestSourceCopy.Ext = mapSourceExtJson
+			isxRequest.Source = &requestSourceCopy
+		}
+
 		// json marshal the request
 		reqJSON, err := json.Marshal(isxRequest)
 		if err != nil {
