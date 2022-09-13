@@ -27,66 +27,100 @@ import (
 
 // TestGoodRequests makes sure that the auction runs properly-formatted stored bids correctly.
 func TestGoodAmpRequests(t *testing.T) {
-	testCases := []struct {
-		storedReqID string
-		filename    string
+	testGroups := []struct {
+		desc      string
+		dir       string
+		testFiles []string
 	}{
-		{"1", "aliased-buyeruids.json"},
-		{"2", "aliases.json"},
-		{"3", "imp-with-stored-resp.json"},
-		{"5", "gdpr-no-consentstring.json"},
-		{"6", "gdpr.json"},
+		{
+			desc: "Valid whole, tag_id param only",
+			dir:  "sample-requests/amp/valid-supplementary/",
+			testFiles: []string{
+				"aliased-buyeruids.json",
+				"aliases.json",
+				"imp-with-stored-resp.json",
+				"gdpr-no-consentstring.json",
+				"gdpr.json",
+			},
+		},
+		{
+			desc: "Valid, consent handling in query",
+			dir:  "sample-requests/amp/consent-through-query/",
+			testFiles: []string{
+				"gdpr-tcf1-consent-through-query.json",
+				"gdpr-tcf2-consent-through-query.json",
+				"gdpr-legacy-tcf2-consent-through-query.json",
+				"gdpr-ccpa-through-query.json",
+			},
+		},
 	}
 
-	for _, tc := range testCases {
-		// Read test case and unmarshal
-		fileJsonData, err := ioutil.ReadFile("sample-requests/valid-whole/supplementary/" + tc.filename)
-		if !assert.NoError(t, err, "Failed to fetch a valid request: %v. Test file: %s", err, tc.filename) {
-			continue
-		}
+	for _, tgroup := range testGroups {
+		for _, filename := range tgroup.testFiles {
+			// Read test case and unmarshal
+			fileJsonData, err := ioutil.ReadFile(tgroup.dir + filename)
+			if !assert.NoError(t, err, "Failed to fetch a valid request: %v. Test file: %s", err, filename) {
+				continue
+			}
 
-		test := testCase{}
-		if !assert.NoError(t, json.Unmarshal(fileJsonData, &test), "Failed to unmarshal data from file: %s. Error: %v", tc.filename, err) {
-			continue
-		}
-		test.storedRequest = map[string]json.RawMessage{tc.storedReqID: test.BidRequest}
-		test.endpointType = AMP_ENDPOINT
+			test := testCase{}
+			if !assert.NoError(t, json.Unmarshal(fileJsonData, &test), "Failed to unmarshal data from file: %s. Error: %v", filename, err) {
+				continue
+			}
 
-		cfg := &config.Configuration{MaxRequestSize: maxSize}
-		if test.Config != nil {
-			cfg.BlacklistedApps = test.Config.BlacklistedApps
-			cfg.BlacklistedAppMap = test.Config.getBlacklistedAppMap()
-			cfg.BlacklistedAccts = test.Config.BlacklistedAccounts
-			cfg.BlacklistedAcctMap = test.Config.getBlackListedAccountMap()
-			cfg.AccountRequired = test.Config.AccountRequired
-		}
+			// build http request
+			request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?%s", test.Query), nil)
+			recorder := httptest.NewRecorder()
 
-		// Set test up
-		ampEndpoint, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
-		if !assert.NoError(t, err) {
-			continue
-		}
+			// build the stored requests and configure endpoint conf
+			query := request.URL.Query()
+			tagID := query.Get("tag_id")
+			if !assert.Greater(t, len(tagID), 0, "AMP test %s file is missing tag_id field", filename) {
+				continue
+			}
 
-		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s", tc.storedReqID), nil)
-		recorder := httptest.NewRecorder()
+			test.storedRequest = map[string]json.RawMessage{tagID: test.BidRequest}
+			test.endpointType = AMP_ENDPOINT
 
-		// runTestCase
-		ampEndpoint(recorder, request, nil)
+			cfg := &config.Configuration{
+				MaxRequestSize: maxSize,
+				GDPR:           config.GDPR{Enabled: true},
+			}
+			if test.Config != nil {
+				cfg.BlacklistedApps = test.Config.BlacklistedApps
+				cfg.BlacklistedAppMap = test.Config.getBlacklistedAppMap()
+				cfg.BlacklistedAccts = test.Config.BlacklistedAccounts
+				cfg.BlacklistedAcctMap = test.Config.getBlackListedAccountMap()
+				cfg.AccountRequired = test.Config.AccountRequired
+			}
 
-		// Close servers
-		for _, mockBidServer := range mockBidServers {
-			mockBidServer.Close()
-		}
-		mockCurrencyRatesServer.Close()
+			// Set test up
+			ampEndpoint, ex, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
+			if !assert.NoError(t, err) {
+				continue
+			}
 
-		// Assertions
-		if assert.Equal(t, test.ExpectedReturnCode, recorder.Code, "Expected status %d. Got %d. Amp test file: %s", http.StatusOK, recorder.Code, tc.filename) {
-			if test.ExpectedReturnCode == http.StatusOK {
-				var ampResponse AmpResponse
-				assert.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &ampResponse), "Error unmarshalling ampResponse: %v", err)
-				assert.Equal(t, test.ExpectedAmpResponse, ampResponse, "Test file: %s", tc.filename)
-			} else {
-				assert.Equal(t, test.ExpectedErrorMessage, recorder.Body.String(), tc.filename)
+			// runTestCase
+			ampEndpoint(recorder, request, nil)
+
+			// Close servers
+			for _, mockBidServer := range mockBidServers {
+				mockBidServer.Close()
+			}
+			mockCurrencyRatesServer.Close()
+
+			// Assertions
+			if assert.Equal(t, test.ExpectedReturnCode, recorder.Code, "Expected status %d. Got %d. Amp test file: %s", http.StatusOK, recorder.Code, filename) {
+				if test.ExpectedReturnCode == http.StatusOK {
+					var ampResponse AmpResponse
+					assert.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &ampResponse), "Error unmarshalling ampResponse: %v", err)
+					assert.Equal(t, test.ExpectedAmpResponse, ampResponse, "Not the expected response. Test file: %s", filename)
+				} else {
+					assert.Equal(t, test.ExpectedErrorMessage, recorder.Body.String(), filename)
+				}
+			}
+			if test.ExpectedValidatedBidReq != nil {
+				assert.Equal(t, test.ExpectedValidatedBidReq, ex.actualValidatedBidReq, "Not the expected validated request. Test file: %s", filename)
 			}
 		}
 	}
@@ -129,7 +163,7 @@ func TestAMPPageInfo(t *testing.T) {
 }
 
 func TestGDPRConsent(t *testing.T) {
-	consent := "BOu5On0Ou5On0ADACHENAO7pqzAAppY"
+	consent := "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA"
 	existingConsent := "BONV8oqONXwgmADACHENAO7pqzAAppY"
 
 	testCases := []struct {
@@ -205,7 +239,10 @@ func TestGDPRConsent(t *testing.T) {
 			newParamsValidator(t),
 			&mockAmpStoredReqFetcher{stored},
 			empty_fetcher.EmptyFetcher{},
-			&config.Configuration{MaxRequestSize: maxSize},
+			&config.Configuration{
+				MaxRequestSize: maxSize,
+				GDPR:           config.GDPR{Enabled: true},
+			},
 			&metricsConfig.NilMetricsEngine{},
 			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 			map[string]string{},
@@ -215,7 +252,7 @@ func TestGDPRConsent(t *testing.T) {
 		)
 
 		// Invoke Endpoint
-		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&consent_string=%s", test.consent), nil)
+		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&consent_type=2&consent_string=%s", test.consent), nil)
 		responseRecorder := httptest.NewRecorder()
 		endpoint(responseRecorder, request, nil)
 
@@ -246,7 +283,7 @@ func TestGDPRConsent(t *testing.T) {
 		assert.Empty(t, response.Warnings, test.description+":warnings")
 
 		// Invoke Endpoint With Legacy Param
-		requestLegacy := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&gdpr_consent=%s", test.consent), nil)
+		requestLegacy := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&consent_type=2&gdpr_consent=%s", test.consent), nil)
 		responseRecorderLegacy := httptest.NewRecorder()
 		endpoint(responseRecorderLegacy, requestLegacy, nil)
 
@@ -369,7 +406,7 @@ func TestCCPAConsent(t *testing.T) {
 		)
 
 		// Invoke Endpoint
-		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&consent_string=%s", test.consent), nil)
+		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&consent_type=3&consent_string=%s", test.consent), nil)
 		responseRecorder := httptest.NewRecorder()
 		endpoint(responseRecorder, request, nil)
 
@@ -415,7 +452,7 @@ func TestConsentWarnings(t *testing.T) {
 	}
 	invalidCCPAWarning := openrtb_ext.ExtBidderMessage{
 		Code:    10001,
-		Message: "Consent '" + invalidConsent + "' is not recognized as either CCPA or GDPR TCF.",
+		Message: "Consent string '" + invalidConsent + "' is not a valid CCPA consent string.",
 	}
 	invalidConsentWarning := openrtb_ext.ExtBidderMessage{
 		Code:    10001,
@@ -484,7 +521,7 @@ func TestConsentWarnings(t *testing.T) {
 		var request *http.Request
 
 		if testCase.invalidConsentURL {
-			request = httptest.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1&consent_string="+invalidConsent, nil)
+			request = httptest.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1&consent_type=3&consent_string="+invalidConsent, nil)
 
 		} else {
 			request = httptest.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1", nil)
@@ -519,8 +556,8 @@ func TestConsentWarnings(t *testing.T) {
 }
 
 func TestNewAndLegacyConsentBothProvided(t *testing.T) {
-	validConsentGDPR1 := "BOu5On0Ou5On0ADACHENAO7pqzAAppY"
-	validConsentGDPR2 := "BONV8oqONXwgmADACHENAO7pqzAAppY"
+	validConsentGDPR1 := "COwGVJOOwGVJOADACHENAOCAAO6as_-AAAhoAFNLAAoAAAA"
+	validConsentGDPR2 := "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA"
 
 	testCases := []struct {
 		description     string
@@ -565,7 +602,10 @@ func TestNewAndLegacyConsentBothProvided(t *testing.T) {
 			newParamsValidator(t),
 			&mockAmpStoredReqFetcher{stored},
 			empty_fetcher.EmptyFetcher{},
-			&config.Configuration{MaxRequestSize: maxSize},
+			&config.Configuration{
+				MaxRequestSize: maxSize,
+				GDPR:           config.GDPR{Enabled: true},
+			},
 			&metricsConfig.NilMetricsEngine{},
 			analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 			map[string]string{},
@@ -575,7 +615,7 @@ func TestNewAndLegacyConsentBothProvided(t *testing.T) {
 		)
 
 		// Invoke Endpoint
-		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&consent_string=%s&gdpr_consent=%s", test.consent, test.consentLegacy), nil)
+		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&consent_type=2&consent_string=%s&gdpr_consent=%s", test.consent, test.consentLegacy), nil)
 		responseRecorder := httptest.NewRecorder()
 		endpoint(responseRecorder, request, nil)
 
