@@ -383,7 +383,7 @@ func mergeBidderParams(req *openrtb_ext.RequestWrapper) error {
 			return fmt.Errorf("error processing bidder parameters for imp[%d]: %s", i, err.Error())
 		}
 
-		// merges bidder parameters passed at req.ext level with imp[].ext.prebid.BIDDER level
+		// merges bidder parameters passed at req.ext level with imp[].ext.prebid.bidder.BIDDER level
 		if err := mergeBidderParamsImpExtPrebid(impExt, bidderParams); err != nil {
 			return fmt.Errorf("error processing bidder parameters for imp[%d]: %s", i, err.Error())
 		}
@@ -441,8 +441,8 @@ func mergeBidderParamsImpExt(impExt *openrtb_ext.ImpExt, reqExtParams map[string
 	return nil
 }
 
-// mergeBidderParamsImpExtPrebid merges bidder parameters in req.ext down to the imp[].ext.prebid.BIDDER
-// level, giving priority to imp[].ext.prebid.BIDDER in case of a conflict.
+// mergeBidderParamsImpExtPrebid merges bidder parameters in req.ext down to the imp[].ext.prebid.bidder.BIDDER
+// level, giving priority to imp[].ext.prebid.bidder.BIDDER in case of a conflict.
 func mergeBidderParamsImpExtPrebid(impExt *openrtb_ext.ImpExt, reqExtParams map[string]map[string]json.RawMessage) error {
 	prebid := impExt.GetPrebid()
 	prebidModified := false
@@ -475,7 +475,7 @@ func mergeBidderParamsImpExtPrebid(impExt *openrtb_ext.ImpExt, reqExtParams map[
 		if modified {
 			impExtPrebidBidderJson, err := json.Marshal(impExtPrebidBidderMap)
 			if err != nil {
-				return fmt.Errorf("error marshalling ext.prebid.BIDDER: %s", err.Error())
+				return fmt.Errorf("error marshalling ext.prebid.bidder.BIDDER: %s", err.Error())
 			}
 			prebid.Bidder[bidder] = impExtPrebidBidderJson
 			prebidModified = true
@@ -1202,7 +1202,7 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb_ext.ImpWrapper, aliases ma
 	ext := impExt.GetExt()
 	extModified := false
 
-	// promote imp[].ext.BIDDER to newer imp[].ext.prebid.BIDDER location, with the later taking precedence
+	// promote imp[].ext.BIDDER to newer imp[].ext.prebid.bidder.BIDDER location, with the later taking precedence
 	for k, v := range ext {
 		if isPossibleBidder(k) {
 			if _, exists := prebid.Bidder[k]; !exists {
