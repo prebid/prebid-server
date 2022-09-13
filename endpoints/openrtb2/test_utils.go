@@ -1168,18 +1168,6 @@ func (tc *testConfigValues) getBlackListedAccountMap() map[string]bool {
 	return blacklistedAccountMap
 }
 
-func (tc *testConfigValues) getAdaptersConfigMap() map[string]config.Adapter {
-	var adaptersConfig map[string]config.Adapter
-
-	if len(tc.DisabledAdapters) > 0 {
-		adaptersConfig = make(map[string]config.Adapter, len(tc.DisabledAdapters))
-		for _, adapterName := range tc.DisabledAdapters {
-			adaptersConfig[adapterName] = config.Adapter{Disabled: true}
-		}
-	}
-	return adaptersConfig
-}
-
 // exchangeTestWrapper is a wrapper that asserts the openrtb2 bid request just before the HoldAuction call
 type exchangeTestWrapper struct {
 	ex                    exchange.Exchange

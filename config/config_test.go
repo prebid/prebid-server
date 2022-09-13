@@ -764,12 +764,6 @@ func TestBidderInfoFromEnv(t *testing.T) {
 		defer os.Unsetenv("PBS_ADAPTERS_BIDDER1_EXTRA_INFO")
 	}
 
-	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_BIDDER1_MAINTAINER_EMAIL"); ok {
-		defer os.Setenv("PBS_ADAPTERS_BIDDER1_MAINTAINER_EMAIL", oldval)
-	} else {
-		defer os.Unsetenv("PBS_ADAPTERS_BIDDER1_MAINTAINER_EMAIL")
-	}
-
 	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_BIDDER1_DEBUG_ALLOW"); ok {
 		defer os.Setenv("PBS_ADAPTERS_BIDDER1_DEBUG_ALLOW", oldval)
 	} else {
@@ -804,7 +798,6 @@ func TestBidderInfoFromEnv(t *testing.T) {
 	os.Setenv("PBS_ADAPTERS_BIDDER1_DISABLED", "true")
 	os.Setenv("PBS_ADAPTERS_BIDDER1_ENDPOINT", "http://some.url/override")
 	os.Setenv("PBS_ADAPTERS_BIDDER1_EXTRA_INFO", `{"extrainfo": true}`)
-	os.Setenv("PBS_ADAPTERS_BIDDER1_MAINTAINER_EMAIL", "maintainer@some.url")
 	os.Setenv("PBS_ADAPTERS_BIDDER1_DEBUG_ALLOW", "true")
 	os.Setenv("PBS_ADAPTERS_BIDDER1_GVLVENDORID", "42")
 	os.Setenv("PBS_ADAPTERS_BIDDER1_EXPERIMENT_ADSCERT_ENABLED", "true")
@@ -816,8 +809,6 @@ func TestBidderInfoFromEnv(t *testing.T) {
 	assert.Equal(t, true, cfg.BidderInfos["bidder1"].Disabled)
 	assert.Equal(t, "http://some.url/override", cfg.BidderInfos["bidder1"].Endpoint)
 	assert.Equal(t, `{"extrainfo": true}`, cfg.BidderInfos["bidder1"].ExtraAdapterInfo)
-
-	assert.Equal(t, "maintainer@some.url", cfg.BidderInfos["bidder1"].Maintainer.Email)
 
 	assert.Equal(t, true, cfg.BidderInfos["bidder1"].Debug.Allow)
 	assert.Equal(t, uint16(42), cfg.BidderInfos["bidder1"].GVLVendorID)
