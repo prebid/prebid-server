@@ -58,12 +58,14 @@ const (
 
 type testCase struct {
 	// Common
-	endpointType         int
-	Description          string            `json:"description"`
-	Config               *testConfigValues `json:"config"`
-	BidRequest           json.RawMessage   `json:"mockBidRequest"`
-	ExpectedReturnCode   int               `json:"expectedReturnCode,omitempty"`
-	ExpectedErrorMessage string            `json:"expectedErrorMessage"`
+	endpointType            int
+	Description             string               `json:"description"`
+	Config                  *testConfigValues    `json:"config"`
+	BidRequest              json.RawMessage      `json:"mockBidRequest"`
+	ExpectedValidatedBidReq *openrtb2.BidRequest `json:"expectedValidatedBidRequest"`
+	ExpectedReturnCode      int                  `json:"expectedReturnCode,omitempty"`
+	ExpectedErrorMessage    string               `json:"expectedErrorMessage"`
+	Query                   string               `json:"query"`
 
 	// "/openrtb2/auction" endpoint JSON test info
 	ExpectedBidResponse json.RawMessage `json:"expectedBidResponse"`
@@ -1175,6 +1177,26 @@ func (tc *testConfigValues) getAdaptersConfigMap() map[string]config.Adapter {
 	return adaptersConfig
 }
 
+// exchangeTestWrapper is a wrapper that asserts the openrtb2 bid request just before the HoldAuction call
+type exchangeTestWrapper struct {
+	ex                    exchange.Exchange
+	actualValidatedBidReq *openrtb2.BidRequest
+}
+
+func (te *exchangeTestWrapper) HoldAuction(ctx context.Context, r exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
+
+	// rebuild/resync the request in the request wrapper.
+	if err := r.BidRequestWrapper.RebuildRequest(); err != nil {
+		return nil, err
+	}
+
+	// Save the validated bidRequest that we are about to feed HoldAuction
+	te.actualValidatedBidReq = r.BidRequestWrapper.BidRequest
+
+	// Call HoldAuction() implementation as written in the exchange package
+	return te.ex.HoldAuction(ctx, r, debugLog)
+}
+
 // buildTestExchange returns an exchange with mock bidder servers and mock currency convertion server
 func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.BidderName]exchange.AdaptedBidder, mockBidServersArray []*httptest.Server, mockCurrencyRatesServer *httptest.Server, bidderInfos config.BidderInfos, cfg *config.Configuration, met metrics.MetricsEngine, mockFetcher stored_requests.CategoryFetcher) (exchange.Exchange, []*httptest.Server) {
 	if len(testCfg.MockBidders) == 0 {
@@ -1199,7 +1221,7 @@ func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.Bid
 		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 	}.Builder
 
-	return exchange.NewExchange(adapterMap,
+	testExchange := exchange.NewExchange(adapterMap,
 		&wellBehavedCache{},
 		cfg,
 		nil,
@@ -1210,11 +1232,17 @@ func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.Bid
 		mockCurrencyConverter,
 		mockFetcher,
 		&adscert.NilSigner{},
-	), mockBidServersArray
+	)
+
+	testExchange = &exchangeTestWrapper{
+		ex: testExchange,
+	}
+
+	return testExchange, mockBidServersArray
 }
 
 // buildTestEndpoint instantiates an openrtb2 Auction endpoint designed to test endpoints/openrtb2/auction.go
-func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Handle, []*httptest.Server, *httptest.Server, error) {
+func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Handle, *exchangeTestWrapper, []*httptest.Server, *httptest.Server, error) {
 	if test.Config == nil {
 		test.Config = &testConfigValues{}
 	}
@@ -1224,7 +1252,7 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 		var err error
 		paramValidator, err = openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, nil, nil, nil, err
 		}
 	} else {
 		paramValidator = mockBidderParamValidator{}
@@ -1248,7 +1276,7 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 	}
 	mockCurrencyRatesServer := httptest.NewServer(http.HandlerFunc(mockCurrencyConversionService.handle))
 
-	ex, mockBidServersArray := buildTestExchange(test.Config, adapterMap, mockBidServersArray, mockCurrencyRatesServer, bidderInfos, cfg, met, mockFetcher)
+	testExchange, mockBidServersArray := buildTestExchange(test.Config, adapterMap, mockBidServersArray, mockCurrencyRatesServer, bidderInfos, cfg, met, mockFetcher)
 
 	var storedRequestFetcher stored_requests.Fetcher
 	if len(test.storedRequest) > 0 {
@@ -1275,7 +1303,7 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 
 	endpoint, err := endpointBuilder(
 		fakeUUIDGenerator{},
-		ex,
+		testExchange,
 		paramValidator,
 		storedRequestFetcher,
 		mockFetcher,
@@ -1288,7 +1316,7 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 		storedResponseFetcher,
 	)
 
-	return endpoint, mockBidServersArray, mockCurrencyRatesServer, err
+	return endpoint, testExchange.(*exchangeTestWrapper), mockBidServersArray, mockCurrencyRatesServer, err
 }
 
 type mockBidderParamValidator struct{}

@@ -16,3 +16,4 @@ userSync:
   redirect:
     url: "https://ad.360yield.com/server_match?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&r={{.RedirectURL}}"
     userMacro: "{PUB_USER_ID}"
+endpointCompression: "GZIP"
