@@ -3,13 +3,14 @@ package openrtb2
 import (
 	"bytes"
 	"fmt"
-	"github.com/prebid/prebid-server/experiment/adscert"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/prebid/prebid-server/experiment/adscert"
 
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
@@ -155,7 +156,7 @@ func BenchmarkValidWholeExemplary(b *testing.B) {
 				AccountRequired:    test.Config.AccountRequired,
 			}
 
-			auctionEndpointHandler, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
+			auctionEndpointHandler, _, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
 			if err != nil {
 				b.Fatal(err.Error())
 			}
