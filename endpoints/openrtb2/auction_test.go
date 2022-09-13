@@ -1608,6 +1608,75 @@ func TestValidateRequest(t *testing.T) {
 	}
 }
 
+func TestValidateRequestExt(t *testing.T) {
+	testCases := []struct {
+		description     string
+		givenRequestExt json.RawMessage
+		expectedError   string
+	}{
+		{
+			description:     "nil",
+			givenRequestExt: nil,
+		},
+		{
+			description:     "empty",
+			givenRequestExt: json.RawMessage(`{}`),
+		},
+		{
+			description:     "prebid - empty",
+			givenRequestExt: json.RawMessage(`{"prebid": {}}`),
+		},
+		{
+			description:     "prebid cache - empty",
+			givenRequestExt: json.RawMessage(`{"prebid": {"cache": {}}}`),
+			expectedError:   `request.ext is invalid: request.ext.prebid.cache requires one of the "bids" or "vastxml" properties`,
+		},
+		{
+			description:     "prebid cache - bids - null",
+			givenRequestExt: json.RawMessage(`{"prebid": {"cache": {"bids": null}}}`),
+			expectedError:   `request.ext is invalid: request.ext.prebid.cache requires one of the "bids" or "vastxml" properties`,
+		},
+		{
+			description:     "prebid cache - bids - wrong type",
+			givenRequestExt: json.RawMessage(`{"prebid": {"cache": {"bids": true}}}`),
+			expectedError:   `json: cannot unmarshal bool into Go struct field ExtRequestPrebid.cache of type openrtb_ext.ExtRequestPrebidCacheBids`,
+		},
+		{
+			description:     "prebid cache - bids - provided",
+			givenRequestExt: json.RawMessage(`{"prebid": {"cache": {"bids": {}}}}`),
+		},
+		{
+			description:     "prebid cache - vastxml - null",
+			givenRequestExt: json.RawMessage(`{"prebid": {"cache": {"vastxml": null}}}`),
+			expectedError:   `request.ext is invalid: request.ext.prebid.cache requires one of the "bids" or "vastxml" properties`,
+		},
+		{
+			description:     "prebid cache - vastxml - wrong type",
+			givenRequestExt: json.RawMessage(`{"prebid": {"cache": {"vastxml": true}}}`),
+			expectedError:   `json: cannot unmarshal bool into Go struct field ExtRequestPrebid.cache of type openrtb_ext.ExtRequestPrebidCacheVAST`,
+		},
+		{
+			description:     "prebid cache - vastxml - provided",
+			givenRequestExt: json.RawMessage(`{"prebid": {"cache": {"vastxml": {}}}}`),
+		},
+		{
+			description:     "prebid cache - bids + vastxml - provided",
+			givenRequestExt: json.RawMessage(`{"prebid": {"cache": {"bids": {}, "vastxml": {}}}}`),
+		},
+	}
+
+	for _, test := range testCases {
+		w := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: test.givenRequestExt}}
+		err := validateRequestExt(w)
+
+		if len(test.expectedError) > 0 {
+			assert.EqualError(t, err, test.expectedError, test.description)
+		} else {
+			assert.NoError(t, err, test.description)
+		}
+	}
+}
+
 func TestValidateOrFillChannel(t *testing.T) {
 	testCases := []struct {
 		description           string
@@ -1772,7 +1841,6 @@ func TestSetIntegrationType(t *testing.T) {
 		integrationTypeFromReq, err2 := getIntegrationFromRequest(test.givenRequestWrapper)
 		assert.Empty(t, err2, test.description)
 		assert.Equalf(t, test.expectedIntegrationType, integrationTypeFromReq, "Integration type information isn't correct: %s\n", test.description)
-
 	}
 }
 

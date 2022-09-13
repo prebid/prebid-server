@@ -565,7 +565,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 		return append(errL, errors.New("request.site or request.app must be defined, but not both."))
 	}
 
-	if err := deps.validateRequestExt(req); err != nil {
+	if err := validateRequestExt(req); err != nil {
 		return append(errL, err)
 	}
 
@@ -1320,7 +1320,7 @@ func (deps *endpointDeps) validateAliasesGVLIDs(aliasesGVLIDs map[string]uint16,
 	return nil
 }
 
-func (deps *endpointDeps) validateRequestExt(req *openrtb_ext.RequestWrapper) error {
+func validateRequestExt(req *openrtb_ext.RequestWrapper) error {
 	reqExt, err := req.GetRequestExt()
 	if err != nil {
 		return err
