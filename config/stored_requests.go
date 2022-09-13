@@ -451,7 +451,7 @@ func (cfg *DatabaseUpdatePolling) validate(dataType DataType, wildcard string, e
 		}
 	}
 	if wildcard == "$" {
-		if !strings.Contains(cfg.Query, "$1") || strings.Contains(cfg.Query, "$3") {
+		if !strings.Contains(cfg.Query, "$1") || strings.Contains(cfg.Query, "$2") {
 			errs = append(errs, fmt.Errorf("%s: database.poll_for_updates.query must contain exactly one wildcard", section))
 		}
 	}
