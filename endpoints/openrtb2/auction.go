@@ -607,7 +607,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 		}
 	}
 
-	impIDs := make(map[string]int, len(req.Imp))
+	impIDs := make(map[string]int, req.LenImp())
 	for i, imp := range req.GetImp() {
 		// check for unique imp id
 		if firstIndex, ok := impIDs[imp.ID]; ok {
