@@ -1175,7 +1175,7 @@ func (tc *testConfigValues) getAdaptersConfigMap() map[string]config.Adapter {
 	return adaptersConfig
 }
 
-// buildTestExchange returns an exchange with mock bidder servers and mock currency convertion server
+// buildTestExchange returns an exchange with mock bidder servers and mock currency conversion server
 func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.BidderName]exchange.AdaptedBidder, mockBidServersArray []*httptest.Server, mockCurrencyRatesServer *httptest.Server, bidderInfos config.BidderInfos, cfg *config.Configuration, met metrics.MetricsEngine, mockFetcher stored_requests.CategoryFetcher) (exchange.Exchange, []*httptest.Server) {
 	if len(testCfg.MockBidders) == 0 {
 		testCfg.MockBidders = append(testCfg.MockBidders, mockBidderHandler{BidderName: "appnexus", Currency: "USD", Price: 0.00})

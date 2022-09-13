@@ -139,7 +139,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	w.Header().Set("Access-Control-Expose-Headers", "AMP-Access-Control-Allow-Source-Origin")
 	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
 
-	req, storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, errL := deps.parseAmpRequest(r)
+	reqWrapper, storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, errL := deps.parseAmpRequest(r)
 	ao.Errors = append(ao.Errors, errL...)
 
 	if errortypes.ContainsFatalError(errL) {
@@ -151,12 +151,10 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		return
 	}
 
-	ao.Request = req
-
 	ctx := context.Background()
 	var cancel context.CancelFunc
-	if req.TMax > 0 {
-		ctx, cancel = context.WithDeadline(ctx, start.Add(time.Duration(req.TMax)*time.Millisecond))
+	if reqWrapper.TMax > 0 {
+		ctx, cancel = context.WithDeadline(ctx, start.Add(time.Duration(reqWrapper.TMax)*time.Millisecond))
 	} else {
 		ctx, cancel = context.WithDeadline(ctx, start.Add(time.Duration(defaultAmpRequestTimeoutMillis)*time.Millisecond))
 	}
@@ -168,10 +166,13 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	} else {
 		labels.CookieFlag = metrics.CookieFlagNo
 	}
-	labels.PubID = getAccountID(req.Site.Publisher)
+	labels.PubID = getAccountID(reqWrapper.Site.Publisher)
 	// Look up account now that we have resolved the pubID value
 	account, acctIDErrs := accountService.GetAccount(ctx, deps.cfg, deps.accounts, labels.PubID)
 	if len(acctIDErrs) > 0 {
+		reqWrapper.RebuildRequest()
+		ao.Request = reqWrapper.BidRequest
+
 		errL = append(errL, acctIDErrs...)
 		httpStatus := http.StatusBadRequest
 		metricsStatus := metrics.RequestStatusBadInput
@@ -195,7 +196,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	secGPC := r.Header.Get("Sec-GPC")
 
 	auctionRequest := exchange.AuctionRequest{
-		BidRequestWrapper:          &openrtb_ext.RequestWrapper{BidRequest: req},
+		BidRequestWrapper:          reqWrapper,
 		Account:                    *account,
 		UserSyncs:                  usersyncs,
 		RequestType:                labels.RType,
@@ -209,6 +210,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
+	ao.Request = reqWrapper.BidRequest
 	ao.AuctionResponse = response
 
 	if err != nil {
@@ -278,7 +280,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	ao.AmpTargetingValues = targets
 
 	// add debug information if requested
-	if req.Test == 1 && eRErr == nil {
+	if reqWrapper.Test == 1 && eRErr == nil {
 		if extResponse.Debug != nil {
 			ampResponse.Debug = extResponse.Debug
 		} else {
@@ -306,24 +308,18 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 // possible, it will return errors with messages that suggest improvements.
 //
 // If the errors list has at least one element, then no guarantees are made about the returned request.
-func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openrtb2.BidRequest, storedAuctionResponses stored_responses.ImpsWithBidResponses, storedBidResponses stored_responses.ImpBidderStoredResp, bidderImpReplaceImp stored_responses.BidderImpReplaceImpID, errs []error) {
+func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openrtb_ext.RequestWrapper, storedAuctionResponses stored_responses.ImpsWithBidResponses, storedBidResponses stored_responses.ImpBidderStoredResp, bidderImpReplaceImp stored_responses.BidderImpReplaceImpID, errs []error) {
 	// Load the stored request for the AMP ID.
-	req, storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, e := deps.loadRequestJSONForAmp(httpRequest)
+	reqNormal, storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, e := deps.loadRequestJSONForAmp(httpRequest)
 	if errs = append(errs, e...); errortypes.ContainsFatalError(errs) {
 		return
 	}
 
-	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
-	reqWrapper := &openrtb_ext.RequestWrapper{BidRequest: req}
-	deps.setFieldsImplicitly(httpRequest, reqWrapper)
+	// move to using the request wrapper
+	req = &openrtb_ext.RequestWrapper{BidRequest: reqNormal}
 
-	// rebuild request
-	err := reqWrapper.RebuildRequest()
-	if err != nil {
-		errs = append(errs, err)
-		return
-	}
-	req = reqWrapper.BidRequest
+	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
+	deps.setFieldsImplicitly(httpRequest, req)
 
 	// Need to ensure cache and targeting are turned on
 	e = defaultRequestExt(req)
@@ -332,11 +328,9 @@ func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openr
 	}
 
 	// At this point, we should have a valid request that definitely has Targeting and Cache turned on
-	var hasStoredResponses bool
-	if len(storedAuctionResponses) > 0 {
-		hasStoredResponses = true
-	}
-	e = deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: req}, true, hasStoredResponses, storedBidResponses)
+	hasStoredResponses := len(storedAuctionResponses) > 0
+
+	e = deps.validateRequest(req, true, hasStoredResponses, storedBidResponses)
 	errs = append(errs, e...)
 	return
 }
@@ -533,46 +527,44 @@ func setHeights(formats []openrtb2.Format, height int64) {
 
 // AMP won't function unless ext.prebid.targeting and ext.prebid.cache.bids are defined.
 // If the user didn't include them, default those here.
-func defaultRequestExt(req *openrtb2.BidRequest) (errs []error) {
-	errs = nil
-	extRequest := &openrtb_ext.ExtRequest{}
-	if req.Ext != nil && len(req.Ext) > 0 {
-		if err := json.Unmarshal(req.Ext, extRequest); err != nil {
-			errs = []error{err}
-			return
-		}
+func defaultRequestExt(req *openrtb_ext.RequestWrapper) []error {
+	extRequest, err := req.GetRequestExt()
+	if err != nil {
+		return []error{err}
 	}
 
-	setDefaults := false
+	prebid := extRequest.GetPrebid()
+	prebidModified := false
+
+	// create prebid object if missing from request
+	if prebid == nil {
+		prebid = &openrtb_ext.ExtRequestPrebid{}
+	}
+
 	// Ensure Targeting and caching is on
-	if extRequest.Prebid.Targeting == nil {
-		setDefaults = true
-		extRequest.Prebid.Targeting = &openrtb_ext.ExtRequestTargeting{
-			// Fixes #452
+	if prebid.Targeting == nil {
+		prebid.Targeting = &openrtb_ext.ExtRequestTargeting{
 			IncludeWinners:    true,
 			IncludeBidderKeys: true,
 			PriceGranularity:  openrtb_ext.PriceGranularityFromString("med"),
 		}
-	}
-	if extRequest.Prebid.Cache == nil {
-		setDefaults = true
-		extRequest.Prebid.Cache = &openrtb_ext.ExtRequestPrebidCache{
-			Bids: &openrtb_ext.ExtRequestPrebidCacheBids{},
-		}
-	} else if extRequest.Prebid.Cache.Bids == nil {
-		setDefaults = true
-		extRequest.Prebid.Cache.Bids = &openrtb_ext.ExtRequestPrebidCacheBids{}
-	}
-	if setDefaults {
-		newExt, err := json.Marshal(extRequest)
-		if err == nil {
-			req.Ext = newExt
-		} else {
-			errs = []error{err}
-		}
+		prebidModified = true
 	}
 
-	return
+	if prebid.Cache == nil {
+		prebid.Cache = &openrtb_ext.ExtRequestPrebidCache{
+			Bids: &openrtb_ext.ExtRequestPrebidCacheBids{},
+		}
+		prebidModified = true
+	} else if prebid.Cache.Bids == nil {
+		prebid.Cache.Bids = &openrtb_ext.ExtRequestPrebidCacheBids{}
+		prebidModified = true
+	}
+
+	if prebidModified {
+		extRequest.SetPrebid(prebid)
+	}
+	return nil
 }
 
 func setAmpExtDirect(site *openrtb2.Site, value string) {

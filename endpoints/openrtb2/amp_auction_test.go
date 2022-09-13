@@ -731,10 +731,12 @@ func TestAmpDebug(t *testing.T) {
 
 // Prevents #452
 func TestAmpTargetingDefaults(t *testing.T) {
-	req := &openrtb2.BidRequest{}
-	if errs := defaultRequestExt(req); len(errs) != 0 {
-		t.Fatalf("Unexpected error defaulting request.ext for AMP: %v", errs)
+	req := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}}
+	if err := defaultRequestExt(req); err != nil {
+		t.Fatalf("Unexpected error defaulting request.ext for AMP: %v", err)
 	}
+
+	assert.NoError(t, req.RebuildRequest())
 
 	var extRequest openrtb_ext.ExtRequest
 	if err := json.Unmarshal(req.Ext, &extRequest); err != nil {
