@@ -53,6 +53,9 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 		if err == nil {
 			err = json.Unmarshal(completeJSON, account)
 
+			// this logic exists for backwards compatibility. If the initial unmarshal fails above, we attempt to
+			// resolve it by converting the GDPR enforce purpose fields and then attempting an unmarshal again before
+			// declaring a malformed account error.
 			// unmarshal fetched account to determine if it is well-formed
 			if _, ok := err.(*json.UnmarshalTypeError); ok {
 				// attempt to convert deprecated GDPR enforce purpose fields to resolve issue
