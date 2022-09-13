@@ -6,11 +6,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/buger/jsonparser"
+	"github.com/golang/glog"
+	"github.com/julienschmidt/httprouter"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/prebid-server/util/uuidutil"
+	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
 	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/amp"
@@ -29,12 +35,6 @@ import (
 	"github.com/prebid/prebid-server/usersync"
 	"github.com/prebid/prebid-server/util/iputil"
 	"github.com/prebid/prebid-server/version"
-
-	"github.com/buger/jsonparser"
-	"github.com/golang/glog"
-	"github.com/julienschmidt/httprouter"
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
-	"github.com/prebid/prebid-server/util/uuidutil"
 )
 
 const defaultAmpRequestTimeoutMillis = 900
@@ -314,7 +314,16 @@ func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openr
 	}
 
 	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
-	deps.setFieldsImplicitly(httpRequest, req)
+	reqWrapper := &openrtb_ext.RequestWrapper{BidRequest: req}
+	deps.setFieldsImplicitly(httpRequest, reqWrapper)
+
+	// rebuild request
+	err := reqWrapper.RebuildRequest()
+	if err != nil {
+		errs = append(errs, err)
+		return
+	}
+	req = reqWrapper.BidRequest
 
 	// Need to ensure cache and targeting are turned on
 	e = defaultRequestExt(req)
@@ -435,7 +444,7 @@ func (deps *endpointDeps) overrideWithParams(ampParams amp.Params, req *openrtb2
 		}
 	}
 
-	setAmpExt(req.Site, "1")
+	setAmpExtDirect(req.Site, "1")
 
 	setEffectiveAmpPubID(req, ampParams.Account)
 
@@ -566,7 +575,7 @@ func defaultRequestExt(req *openrtb2.BidRequest) (errs []error) {
 	return
 }
 
-func setAmpExt(site *openrtb2.Site, value string) {
+func setAmpExtDirect(site *openrtb2.Site, value string) {
 	if len(site.Ext) > 0 {
 		if _, dataType, _, _ := jsonparser.Get(site.Ext, "amp"); dataType == jsonparser.NotExist {
 			if val, err := jsonparser.Set(site.Ext, []byte(value), "amp"); err == nil {

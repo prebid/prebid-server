@@ -31,7 +31,7 @@ import (
 // NOTE: The RequestWrapper methods (particularly the ones calling (un)Marshal are not thread safe)
 type RequestWrapper struct {
 	*openrtb2.BidRequest
-	imp         []ImpWrapper
+	imp         []*ImpWrapper
 	impAccessed bool
 	userExt     *UserExt
 	deviceExt   *DeviceExt
@@ -44,14 +44,22 @@ type RequestWrapper struct {
 
 const jsonEmptyObjectLength = 2
 
-func (rw *RequestWrapper) GetImp() []ImpWrapper {
+func (rw *RequestWrapper) LenImp() int {
+	if rw.imp == nil {
+		return len(rw.Imp)
+	}
+
+	return len(rw.imp)
+}
+
+func (rw *RequestWrapper) GetImp() []*ImpWrapper {
 	if rw.imp != nil {
 		return rw.imp
 	}
 
-	rw.imp = make([]ImpWrapper, len(rw.Imp))
+	rw.imp = make([]*ImpWrapper, len(rw.Imp))
 	for i := range rw.Imp {
-		rw.imp[i] = ImpWrapper{Imp: &rw.Imp[i]}
+		rw.imp[i] = &ImpWrapper{Imp: &rw.Imp[i]}
 	}
 
 	rw.impAccessed = true
@@ -59,7 +67,7 @@ func (rw *RequestWrapper) GetImp() []ImpWrapper {
 	return rw.imp
 }
 
-func (rw *RequestWrapper) SetImp(imps []ImpWrapper) {
+func (rw *RequestWrapper) SetImp(imps []*ImpWrapper) {
 	rw.imp = imps
 	rw.impAccessed = true
 }
@@ -1165,7 +1173,18 @@ func (e *ImpExt) GetPrebid() *ExtImpPrebid {
 	return &prebid
 }
 
+func (e *ImpExt) GetOrCreatePrebid() *ExtImpPrebid {
+	if e.prebid == nil {
+		e.prebid = &ExtImpPrebid{}
+	}
+	return e.GetPrebid()
+}
+
 func (e *ImpExt) SetPrebid(prebid *ExtImpPrebid) {
 	e.prebid = prebid
 	e.prebidDirty = true
+}
+
+func CreateImpExtForTesting(ext map[string]json.RawMessage, prebid *ExtImpPrebid) ImpExt {
+	return ImpExt{ext: ext, prebid: prebid}
 }

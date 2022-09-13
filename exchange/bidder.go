@@ -145,6 +145,7 @@ type bidderAdapterConfig struct {
 	DebugInfo          config.DebugInfo
 }
 
+// verify this is downstream from request wrapper (it really should be!)
 func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes config.AlternateBidderCodes) ([]*pbsOrtbSeatBid, []error) {
 
 	var reqData []*adapters.RequestData

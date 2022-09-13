@@ -246,14 +246,24 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	bidReq.Imp = imps
 	bidReq.ID = "bid_id" //TODO: look at prebid.js
 
-	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
-	deps.setFieldsImplicitly(r, bidReq) // move after merge
+	bidReqWrapper := &openrtb_ext.RequestWrapper{BidRequest: bidReq}
 
-	errL = deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: bidReq}, false, false, nil)
+	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
+	deps.setFieldsImplicitly(r, bidReqWrapper)
+
+	errL = deps.validateRequest(bidReqWrapper, false, false, nil)
 	if errortypes.ContainsFatalError(errL) {
 		handleError(&labels, w, errL, &vo, &debugLog)
 		return
 	}
+
+	// end use of wrapper. can we move this down further? TODO TODO
+	err = bidReqWrapper.RebuildRequest()
+	if err != nil {
+		handleError(&labels, w, []error{err}, &vo, &debugLog)
+		return
+	}
+	bidReq = bidReqWrapper.BidRequest
 
 	ctx := context.Background()
 	timeout := deps.cfg.AuctionTimeouts.LimitAuctionTimeout(time.Duration(bidReq.TMax) * time.Millisecond)

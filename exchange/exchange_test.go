@@ -1029,20 +1029,6 @@ func TestReturnCreativeEndToEnd(t *testing.T) {
 		expectError bool
 	}{
 		{
-			groupDesc: "Invalid or malformed bidRequest Ext, expect error in these scenarios",
-			testCases: []aTest{
-				{
-					desc:  "Malformed ext in bidRequest",
-					inExt: json.RawMessage(`malformed`),
-				},
-				{
-					desc:  "empty cache field",
-					inExt: json.RawMessage(`{"prebid":{"cache":{}}}`),
-				},
-			},
-			expectError: true,
-		},
-		{
 			groupDesc: "Valid bidRequest Ext but no returnCreative value specified, default to returning creative",
 			testCases: []aTest{
 				{

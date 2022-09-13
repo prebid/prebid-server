@@ -183,7 +183,7 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 	}
 
 	// Grab the imp TTLs
-	for _, imp := range bidRequest.Imp {
+	for _, imp := range bidRequest.Imp { // todo: are we downstream of rebuild request? if not, switch to using GetImp()
 		expByImp[imp.ID] = imp.Exp
 	}
 	for _, topBidsPerImp := range a.winningBidsByBidder {

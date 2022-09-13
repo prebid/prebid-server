@@ -69,18 +69,18 @@ const ext3 = `{
 	}
 }`
 
-func TestCacheIllegal(t *testing.T) {
-	var bids ExtRequestPrebidCache
-	if err := json.Unmarshal([]byte(`{}`), &bids); err == nil {
-		t.Error("Unmarshal should fail when cache.bids is undefined.")
-	}
-	if err := json.Unmarshal([]byte(`{"bids":null}`), &bids); err == nil {
-		t.Error("Unmarshal should fail when cache.bids is null.")
-	}
-	if err := json.Unmarshal([]byte(`{"bids":true}`), &bids); err == nil {
-		t.Error("Unmarshal should fail when cache.bids is not an object.")
-	}
-}
+// func TestCacheIllegal(t *testing.T) {
+// 	var bids ExtRequestPrebidCache
+// 	if err := json.Unmarshal([]byte(`{}`), &bids); err == nil {
+// 		t.Error("Unmarshal should fail when cache.bids is undefined.")
+// 	}
+// 	if err := json.Unmarshal([]byte(`{"bids":null}`), &bids); err == nil {
+// 		t.Error("Unmarshal should fail when cache.bids is null.")
+// 	}
+// 	if err := json.Unmarshal([]byte(`{"bids":true}`), &bids); err == nil {
+// 		t.Error("Unmarshal should fail when cache.bids is not an object.")
+// 	}
+// }
 
 func TestCacheBids(t *testing.T) {
 	var bids ExtRequestPrebidCache
@@ -96,10 +96,10 @@ func TestCacheVast(t *testing.T) {
 	assert.NotNil(t, bids.VastXML)
 }
 
-func TestCacheNothing(t *testing.T) {
-	var bids ExtRequestPrebidCache
-	assert.Error(t, json.Unmarshal([]byte(`{}`), &bids))
-}
+// func TestCacheNothing(t *testing.T) {
+// 	var bids ExtRequestPrebidCache
+// 	assert.Error(t, json.Unmarshal([]byte(`{}`), &bids))
+// }
 
 type granularityTestData struct {
 	json   []byte

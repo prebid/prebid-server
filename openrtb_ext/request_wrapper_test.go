@@ -44,14 +44,14 @@ func TestUserExt(t *testing.T) {
 
 func TestRebuildImp(t *testing.T) {
 	var (
-		prebid     = &ExtImpPrebid{IsRewardedInventory: 1}
+		prebid     = &ExtImpPrebid{IsRewardedInventory: openrtb2.Int8Ptr(1)}
 		prebidJson = json.RawMessage(`{"prebid":{"is_rewarded_inventory":1}}`)
 	)
 
 	testCases := []struct {
 		description       string
 		request           openrtb2.BidRequest
-		requestImpWrapper []ImpWrapper
+		requestImpWrapper []*ImpWrapper
 		expectedRequest   openrtb2.BidRequest
 		expectedError     string
 	}{
@@ -70,19 +70,19 @@ func TestRebuildImp(t *testing.T) {
 		{
 			description:       "One - Accessed - Dirty",
 			request:           openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "1"}}},
-			requestImpWrapper: []ImpWrapper{{Imp: &openrtb2.Imp{ID: "2"}, impExt: &ImpExt{prebid: prebid, prebidDirty: true}}},
+			requestImpWrapper: []*ImpWrapper{{Imp: &openrtb2.Imp{ID: "2"}, impExt: &ImpExt{prebid: prebid, prebidDirty: true}}},
 			expectedRequest:   openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "2", Ext: prebidJson}}},
 		},
 		{
 			description:       "One - Accessed - Error",
 			request:           openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "1"}}},
-			requestImpWrapper: []ImpWrapper{{Imp: nil, impExt: &ImpExt{}}},
+			requestImpWrapper: []*ImpWrapper{{Imp: nil, impExt: &ImpExt{}}},
 			expectedError:     "ImpWrapper RebuildImp called on a nil Imp",
 		},
 		{
 			description:       "Many - Accessed - Dirty / Not Dirty",
 			request:           openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "1"}, {ID: "2"}}},
-			requestImpWrapper: []ImpWrapper{{Imp: &openrtb2.Imp{ID: "1"}, impExt: &ImpExt{}}, {Imp: &openrtb2.Imp{ID: "2"}, impExt: &ImpExt{prebid: prebid, prebidDirty: true}}},
+			requestImpWrapper: []*ImpWrapper{{Imp: &openrtb2.Imp{ID: "1"}, impExt: &ImpExt{}}, {Imp: &openrtb2.Imp{ID: "2"}, impExt: &ImpExt{prebid: prebid, prebidDirty: true}}},
 			expectedRequest:   openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "1"}, {ID: "2", Ext: prebidJson}}},
 		},
 	}
@@ -580,6 +580,11 @@ func TestRebuildSourceExt(t *testing.T) {
 }
 
 func TestImpWrapperRebuildImp(t *testing.T) {
+	var (
+		isRewardedInventoryOne int8 = 1
+		isRewardedInventoryTwo int8 = 2
+	)
+
 	testCases := []struct {
 		description   string
 		imp           openrtb2.Imp
@@ -595,7 +600,7 @@ func TestImpWrapperRebuildImp(t *testing.T) {
 		{
 			description:   "Empty - Dirty",
 			imp:           openrtb2.Imp{},
-			impExtWrapper: ImpExt{prebid: &ExtImpPrebid{IsRewardedInventory: 1}, prebidDirty: true},
+			impExtWrapper: ImpExt{prebid: &ExtImpPrebid{IsRewardedInventory: &isRewardedInventoryOne}, prebidDirty: true},
 			expectedImp:   openrtb2.Imp{Ext: json.RawMessage(`{"prebid":{"is_rewarded_inventory":1}}`)},
 		},
 		{
@@ -613,13 +618,13 @@ func TestImpWrapperRebuildImp(t *testing.T) {
 		{
 			description:   "Populated - Dirty",
 			imp:           openrtb2.Imp{Ext: json.RawMessage(`{"prebid":{"is_rewarded_inventory":1}}`)},
-			impExtWrapper: ImpExt{prebid: &ExtImpPrebid{IsRewardedInventory: 2}, prebidDirty: true},
+			impExtWrapper: ImpExt{prebid: &ExtImpPrebid{IsRewardedInventory: &isRewardedInventoryTwo}, prebidDirty: true},
 			expectedImp:   openrtb2.Imp{Ext: json.RawMessage(`{"prebid":{"is_rewarded_inventory":2}}`)},
 		},
 		{
 			description:   "Populated - Dirty - No Change",
 			imp:           openrtb2.Imp{Ext: json.RawMessage(`{"prebid":{"is_rewarded_inventory":1}}`)},
-			impExtWrapper: ImpExt{prebid: &ExtImpPrebid{IsRewardedInventory: 1}, prebidDirty: true},
+			impExtWrapper: ImpExt{prebid: &ExtImpPrebid{IsRewardedInventory: &isRewardedInventoryOne}, prebidDirty: true},
 			expectedImp:   openrtb2.Imp{Ext: json.RawMessage(`{"prebid":{"is_rewarded_inventory":1}}`)},
 		},
 		{
@@ -631,7 +636,7 @@ func TestImpWrapperRebuildImp(t *testing.T) {
 		{
 			description:   "Populated - Dirty - Empty Prebid Object",
 			imp:           openrtb2.Imp{Ext: json.RawMessage(`{"prebid":{"is_rewarded_inventory":1}}`)},
-			impExtWrapper: ImpExt{prebid: &ExtImpPrebid{IsRewardedInventory: 0}, prebidDirty: true},
+			impExtWrapper: ImpExt{prebid: &ExtImpPrebid{IsRewardedInventory: nil}, prebidDirty: true},
 			expectedImp:   openrtb2.Imp{},
 		},
 	}
@@ -647,6 +652,8 @@ func TestImpWrapperRebuildImp(t *testing.T) {
 }
 
 func TestImpWrapperGetImpExt(t *testing.T) {
+	var isRewardedInventoryOne int8 = 1
+
 	testCases := []struct {
 		description    string
 		givenWrapper   ImpWrapper
@@ -666,7 +673,7 @@ func TestImpWrapperGetImpExt(t *testing.T) {
 					"prebid": json.RawMessage(`{"is_rewarded_inventory":1}`),
 					"other":  json.RawMessage(`42`),
 				},
-				prebid: &ExtImpPrebid{IsRewardedInventory: 1},
+				prebid: &ExtImpPrebid{IsRewardedInventory: &isRewardedInventoryOne},
 			},
 		},
 		{

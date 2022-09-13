@@ -16,7 +16,7 @@ type ExtImpPrebid struct {
 	StoredBidResponse []ExtStoredBidResponse `json:"storedbidresponse,omitempty"`
 
 	// IsRewardedInventory is a signal intended for video impressions. Must be 0 or 1.
-	IsRewardedInventory int8 `json:"is_rewarded_inventory,omitempty"`
+	IsRewardedInventory *int8 `json:"is_rewarded_inventory,omitempty"`
 
 	// Bidder is the preferred approach for providing parameters to be interpreted by the bidder's adapter.
 	Bidder map[string]json.RawMessage `json:"bidder,omitempty"`
