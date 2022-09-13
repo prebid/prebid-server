@@ -519,10 +519,9 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 	var aliases map[string]string
 	reqExt, err := req.GetRequestExt()
 	if err != nil {
-		return []error{fmt.Errorf("request.ext is invalid: %v", err)} // cache check used to first happen here XFT
+		return []error{fmt.Errorf("request.ext is invalid: %v", err)}
 	}
 
-	//" Invalid request: request.ext is invalid: request.ext.prebid.cache requires one of the "bids" or "vastxml" properties"
 	reqPrebid := reqExt.GetPrebid()
 	if err := deps.parseBidExt(req); err != nil {
 		return []error{err}
@@ -1184,7 +1183,7 @@ func validatePmp(pmp *openrtb2.PMP, impIndex int) error {
 }
 
 func (deps *endpointDeps) validateImpExt(imp *openrtb_ext.ImpWrapper, aliases map[string]string, impIndex int, hasStoredResponses bool, storedBidResp stored_responses.ImpBidderStoredResp) []error {
-	if len(imp.Ext) == 0 { // TODO: or the prebid exists and is not empty. need a util helper there. fine for now.
+	if len(imp.Ext) == 0 {
 		return []error{fmt.Errorf("request.imp[%d].ext is required", impIndex)}
 	}
 

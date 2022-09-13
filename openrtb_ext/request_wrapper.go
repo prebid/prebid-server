@@ -44,6 +44,7 @@ type RequestWrapper struct {
 
 const jsonEmptyObjectLength = 2
 
+// LenImp returns the number of impressions without causing the creation of ImpWrapper objects.
 func (rw *RequestWrapper) LenImp() int {
 	if rw.imp == nil {
 		return len(rw.Imp)

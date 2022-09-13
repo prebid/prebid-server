@@ -26,7 +26,6 @@ func InitStoredBidResponses(req *openrtb2.BidRequest, storedBidResponses ImpBidd
 	return buildStoredResp(storedBidResponses)
 }
 
-// todo: verifiy it's always downstream of rebuild request
 // removeImpsWithStoredResponses deletes imps with stored bid resp
 func removeImpsWithStoredResponses(req *openrtb2.BidRequest, storedBidResponses ImpBidderStoredResp) {
 	imps := req.Imp
