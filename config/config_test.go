@@ -788,46 +788,10 @@ func TestBidderInfoFromEnv(t *testing.T) {
 		defer os.Unsetenv("PBS_ADAPTERS_BIDDER1_EXPERIMENT_ADSCERT_ENABLED")
 	}
 
-	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_BIDDER1_CAPABILITIES_APP_MEDIATYPES"); ok {
-		defer os.Setenv("PBS_ADAPTERS_BIDDER1_CAPABILITIES_APP_MEDIATYPES", oldval)
-	} else {
-		defer os.Unsetenv("PBS_ADAPTERS_BIDDER1_CAPABILITIES_APP_MEDIATYPES")
-	}
-
 	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_BIDDER1_XAPI_USERNAME"); ok {
 		defer os.Setenv("PBS_ADAPTERS_BIDDER1_XAPI_USERNAME", oldval)
 	} else {
 		defer os.Unsetenv("PBS_ADAPTERS_BIDDER1_XAPI_USERNAME")
-	}
-
-	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_BIDDER1_XAPI_PASSWORD"); ok {
-		defer os.Setenv("PBS_ADAPTERS_BIDDER1_XAPI_PASSWORDE", oldval)
-	} else {
-		defer os.Unsetenv("PBS_ADAPTERS_BIDDER1_XAPI_PASSWORD")
-	}
-
-	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_BIDDER1_XAPI_TRACKER"); ok {
-		defer os.Setenv("PBS_ADAPTERS_BIDDER1_XAPI_TRACKER", oldval)
-	} else {
-		defer os.Unsetenv("PBS_ADAPTERS_BIDDER1_XAPI_TRACKER")
-	}
-
-	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_BIDDER1_PLATFORM_ID"); ok {
-		defer os.Setenv("PBS_ADAPTERS_BIDDER1_PLATFORM_ID", oldval)
-	} else {
-		defer os.Unsetenv("PBS_ADAPTERS_BIDDER1_PLATFORM_ID")
-	}
-
-	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_BIDDER1_APP_SECRET"); ok {
-		defer os.Setenv("PBS_ADAPTERS_BIDDER1_APP_SECRET", oldval)
-	} else {
-		defer os.Unsetenv("PBS_ADAPTERS_BIDDER1_APP_SECRET")
-	}
-
-	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_BIDDER1_ENDPOINTCOMPRESSION"); ok {
-		defer os.Setenv("PBS_ADAPTERS_BIDDER1_ENDPOINTCOMPRESSION", oldval)
-	} else {
-		defer os.Unsetenv("PBS_ADAPTERS_BIDDER1_ENDPOINTCOMPRESSION")
 	}
 
 	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_BIDDER1_USERSYNC_REDIRECT_URL"); ok {
@@ -840,22 +804,11 @@ func TestBidderInfoFromEnv(t *testing.T) {
 	os.Setenv("PBS_ADAPTERS_BIDDER1_DISABLED", "true")
 	os.Setenv("PBS_ADAPTERS_BIDDER1_ENDPOINT", "http://some.url/override")
 	os.Setenv("PBS_ADAPTERS_BIDDER1_EXTRA_INFO", `{"extrainfo": true}`)
-
 	os.Setenv("PBS_ADAPTERS_BIDDER1_MAINTAINER_EMAIL", "maintainer@some.url")
-
 	os.Setenv("PBS_ADAPTERS_BIDDER1_DEBUG_ALLOW", "true")
 	os.Setenv("PBS_ADAPTERS_BIDDER1_GVLVENDORID", "42")
-
 	os.Setenv("PBS_ADAPTERS_BIDDER1_EXPERIMENT_ADSCERT_ENABLED", "true")
-	os.Setenv("PBS_ADAPTERS_BIDDER1_CAPABILITIES_APP_MEDIATYPES", "video,native")
-
 	os.Setenv("PBS_ADAPTERS_BIDDER1_XAPI_USERNAME", "username_override")
-	os.Setenv("PBS_ADAPTERS_BIDDER1_XAPI_PASSWORD", "password_override")
-	os.Setenv("PBS_ADAPTERS_BIDDER1_XAPI_TRACKER", "tracker_override")
-	os.Setenv("PBS_ADAPTERS_BIDDER1_PLATFORM_ID", "platform_id_override")
-	os.Setenv("PBS_ADAPTERS_BIDDER1_APP_SECRET", "app_secret_override")
-	os.Setenv("PBS_ADAPTERS_BIDDER1_ENDPOINTCOMPRESSION", "GZIP")
-
 	os.Setenv("PBS_ADAPTERS_BIDDER1_USERSYNC_REDIRECT_URL", "http://some.url/sync?redirect={{.RedirectURL}}")
 
 	cfg, _ := newDefaultConfig(t)
@@ -869,16 +822,8 @@ func TestBidderInfoFromEnv(t *testing.T) {
 	assert.Equal(t, true, cfg.BidderInfos["bidder1"].Debug.Allow)
 	assert.Equal(t, uint16(42), cfg.BidderInfos["bidder1"].GVLVendorID)
 
-	assert.Equal(t, []openrtb_ext.BidType{openrtb_ext.BidTypeVideo, openrtb_ext.BidTypeNative}, cfg.BidderInfos["bidder1"].Capabilities.App.MediaTypes)
-
 	assert.Equal(t, true, cfg.BidderInfos["bidder1"].Experiment.AdsCert.Enabled)
 	assert.Equal(t, "username_override", cfg.BidderInfos["bidder1"].XAPI.Username)
-	assert.Equal(t, "password_override", cfg.BidderInfos["bidder1"].XAPI.Password)
-	assert.Equal(t, "tracker_override", cfg.BidderInfos["bidder1"].XAPI.Tracker)
-
-	assert.Equal(t, "platform_id_override", cfg.BidderInfos["bidder1"].PlatformID)
-	assert.Equal(t, "app_secret_override", cfg.BidderInfos["bidder1"].AppSecret)
-	assert.Equal(t, "GZIP", cfg.BidderInfos["bidder1"].EndpointCompression)
 }
 
 func TestMigrateConfigPurposeOneTreatment(t *testing.T) {

@@ -49,7 +49,7 @@ func buildBidders(infos config.BidderInfos, builders map[openrtb_ext.BidderName]
 			continue
 		}
 
-		if !info.Disabled {
+		if info.IsEnabled() {
 			adapterInfo := buildAdapterInfo(info)
 			bidderInstance, builderErr := builder(bidderName, adapterInfo)
 			if builderErr != nil {
@@ -78,7 +78,7 @@ func GetActiveBidders(infos config.BidderInfos) map[string]openrtb_ext.BidderNam
 	activeBidders := make(map[string]openrtb_ext.BidderName)
 
 	for name, info := range infos {
-		if !info.Disabled {
+		if info.IsEnabled() {
 			activeBidders[name] = openrtb_ext.BidderName(name)
 		}
 	}

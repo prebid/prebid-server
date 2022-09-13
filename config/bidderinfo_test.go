@@ -11,7 +11,6 @@ import (
 )
 
 const testInfoFilesPath = "./test/bidder-info"
-const testInvalidInfoFilesPath = "./test/bidder-info-invalid"
 const fullBidderYAMLConfig = `
 maintainer:
   email: "some-email@domain.com"
@@ -82,12 +81,6 @@ func TestLoadBidderInfoFromDisk(t *testing.T) {
 		},
 	}
 	assert.Equal(t, expected, infos)
-}
-
-func TestLoadBidderInfoInvalid(t *testing.T) {
-	expectedError := "error parsing yaml for bidder someBidder-invalid.yaml: yaml: unmarshal errors:\n  line 3: cannot unmarshal !!str `42` into uint16"
-	_, err := LoadBidderInfo(testInvalidInfoFilesPath)
-	assert.EqualError(t, err, expectedError, "incorrect error message returned while loading invalid bidder config")
 }
 
 func TestToGVLVendorIDMap(t *testing.T) {
@@ -352,25 +345,6 @@ func TestBidderInfoValidationNegative(t *testing.T) {
 			},
 		},
 		{
-			"One bidder empty capabilities for app",
-			BidderInfos{
-				"bidderA": BidderInfo{
-					Endpoint: "http://bidderA.com/openrtb2",
-					Maintainer: &MaintainerInfo{
-						Email: "maintainer@bidderA.com",
-					},
-					Capabilities: &CapabilitiesInfo{
-						App: &PlatformInfo{
-							MediaTypes: []openrtb_ext.BidType{},
-						},
-					},
-				},
-			},
-			[]error{
-				errors.New("capabilities.app failed validation: mediaTypes should be an array with at least one string element for adapter: bidderA"),
-			},
-		},
-		{
 			"One bidder nil capabilities",
 			BidderInfos{
 				"bidderA": BidderInfo{
@@ -383,25 +357,6 @@ func TestBidderInfoValidationNegative(t *testing.T) {
 			},
 			[]error{
 				errors.New("missing required field: capabilities for adapter: bidderA"),
-			},
-		},
-		{
-			"One bidder empty capabilities for site",
-			BidderInfos{
-				"bidderA": BidderInfo{
-					Endpoint: "http://bidderA.com/openrtb2",
-					Maintainer: &MaintainerInfo{
-						Email: "maintainer@bidderA.com",
-					},
-					Capabilities: &CapabilitiesInfo{
-						Site: &PlatformInfo{
-							MediaTypes: []openrtb_ext.BidType{},
-						},
-					},
-				},
-			},
-			[]error{
-				errors.New("capabilities.site failed validation: mediaTypes should be an array with at least one string element, for adapter: bidderA"),
 			},
 		},
 		{

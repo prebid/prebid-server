@@ -137,7 +137,7 @@ func mapDetailFromConfig(c config.BidderInfo) bidderDetail {
 		}
 	}
 
-	if !c.Disabled {
+	if c.IsEnabled() {
 		bidderDetail.Status = statusActive
 
 		usesHTTPS := strings.HasPrefix(strings.ToLower(c.Endpoint), "https://")

@@ -166,6 +166,10 @@ type SyncerEndpoint struct {
 	UserMacro string `yaml:"userMacro" mapstructure:"user_macro"`
 }
 
+func (bi BidderInfo) IsEnabled() bool {
+	return !bi.Disabled
+}
+
 // LoadBidderInfo parses all static/bidder-info/{bidder}.yaml files from the file system.
 func LoadBidderInfo(path string) (BidderInfos, error) {
 	bidderConfigs, err := ioutil.ReadDir(path)
@@ -204,7 +208,7 @@ func LoadBidderInfo(path string) (BidderInfos, error) {
 func (infos BidderInfos) ToGVLVendorIDMap() map[openrtb_ext.BidderName]uint16 {
 	gvlVendorIds := make(map[openrtb_ext.BidderName]uint16, len(infos))
 	for name, info := range infos {
-		if !info.Disabled && info.GVLVendorID != 0 {
+		if info.IsEnabled() && info.GVLVendorID != 0 {
 			gvlVendorIds[openrtb_ext.BidderName(name)] = info.GVLVendorID
 		}
 	}
@@ -214,7 +218,7 @@ func (infos BidderInfos) ToGVLVendorIDMap() map[openrtb_ext.BidderName]uint16 {
 // validateBidderInfos validates bidder endpoint, info and syncer data
 func (infos BidderInfos) validate(errs []error) []error {
 	for bidderName, bidder := range infos {
-		if !bidder.Disabled {
+		if bidder.IsEnabled() {
 			errs = validateAdapterEndpoint(bidder.Endpoint, bidderName, errs)
 
 			validateInfoErr := validateInfo(bidder, bidderName)
@@ -315,7 +319,7 @@ func validateCapabilities(info *CapabilitiesInfo, bidderName string) error {
 
 func validatePlatformInfo(info *PlatformInfo) error {
 	if len(info.MediaTypes) == 0 {
-		return errors.New("mediaTypes should be an array with at least one string element")
+		return errors.New("at least one meda type needs to be specified")
 	}
 
 	for index, mediaType := range info.MediaTypes {

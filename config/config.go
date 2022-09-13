@@ -1128,8 +1128,6 @@ func setBidderDefaults(v *viper.Viper, bidder string) {
 	v.BindEnv(adapterCfgPrefix+".endpoint", "")
 	v.BindEnv(adapterCfgPrefix+".extra_info", "")
 	v.BindEnv(adapterCfgPrefix+".maintainer.email", "")
-	v.BindEnv(adapterCfgPrefix+".capabilities.app.mediaTypes", "")
-	v.BindEnv(adapterCfgPrefix+".capabilities.site.mediaTypes", "")
 	v.BindEnv(adapterCfgPrefix+".modifyingVastXmlAllowed", "")
 	v.BindEnv(adapterCfgPrefix+".debug.allow", "")
 	v.BindEnv(adapterCfgPrefix+".gvlVendorID", "")
