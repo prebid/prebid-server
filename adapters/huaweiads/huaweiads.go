@@ -459,9 +459,9 @@ func getReqJson(request *huaweiAdsRequest, openRTBRequest *openrtb2.BidRequest, 
 func getReqAdslot30(huaweiAdsImpExt *openrtb_ext.ExtImpHuaweiAds,
 	openRTBImp *openrtb2.Imp, openRTBRequest *openrtb2.BidRequest) (adslot30, error) {
 	adtype := convertAdtypeStringToInteger(strings.ToLower(huaweiAdsImpExt.Adtype))
-	testStatus := 1
+	testStatus := 0
 	if huaweiAdsImpExt.IsTestAuthorization == "true" {
-		testStatus = 0
+		testStatus = 1
 	}
 	var adslot30 = adslot30{
 		Slotid: huaweiAdsImpExt.SlotId,
