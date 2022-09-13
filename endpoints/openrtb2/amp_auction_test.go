@@ -164,7 +164,7 @@ func TestAccountErrors(t *testing.T) {
 		}
 		cfg.MarshalAccountDefaults()
 
-		ampEndpoint, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
+		ampEndpoint, _, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
 		if !assert.NoError(t, err) {
 			continue
 		}
