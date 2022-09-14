@@ -89,47 +89,50 @@ func TestIntegrationEnabled(t *testing.T) {
 }
 
 func TestPurposeEnforced(t *testing.T) {
+	False := false
+	True := true
+
 	tests := []struct {
 		description                    string
-		givePurpose1HostEnforcement    string
-		givePurpose1AccountEnforcement string
-		givePurpose2HostEnforcement    string
-		givePurpose2AccountEnforcement string
+		givePurpose1HostEnforcement    bool
+		givePurpose1AccountEnforcement *bool
+		givePurpose2HostEnforcement    bool
+		givePurpose2AccountEnforcement *bool
 		givePurpose                    consentconstants.Purpose
 		wantEnforced                   bool
 	}{
 		{
 			description:                    "Purpose 1 set at account level - use account setting false",
-			givePurpose1HostEnforcement:    config.TCF2FullEnforcement,
-			givePurpose1AccountEnforcement: config.TCF2NoEnforcement,
+			givePurpose1HostEnforcement:    true,
+			givePurpose1AccountEnforcement: &False,
 			givePurpose:                    1,
 			wantEnforced:                   false,
 		},
 		{
 			description:                    "Purpose 1 set at account level - use account setting true",
-			givePurpose1HostEnforcement:    config.TCF2NoEnforcement,
-			givePurpose1AccountEnforcement: config.TCF2FullEnforcement,
+			givePurpose1HostEnforcement:    false,
+			givePurpose1AccountEnforcement: &True,
 			givePurpose:                    1,
 			wantEnforced:                   true,
 		},
 		{
 			description:                    "Purpose 1 not set at account level - use host setting false",
-			givePurpose1HostEnforcement:    config.TCF2NoEnforcement,
-			givePurpose1AccountEnforcement: "",
+			givePurpose1HostEnforcement:    false,
+			givePurpose1AccountEnforcement: nil,
 			givePurpose:                    1,
 			wantEnforced:                   false,
 		},
 		{
 			description:                    "Purpose 1 not set at account level - use host setting true",
-			givePurpose1HostEnforcement:    config.TCF2FullEnforcement,
-			givePurpose1AccountEnforcement: "",
+			givePurpose1HostEnforcement:    true,
+			givePurpose1AccountEnforcement: nil,
 			givePurpose:                    1,
 			wantEnforced:                   true,
 		},
 		{
 			description:                    "Some other purpose set at account level - use account setting true",
-			givePurpose2HostEnforcement:    config.TCF2NoEnforcement,
-			givePurpose2AccountEnforcement: config.TCF2FullEnforcement,
+			givePurpose2HostEnforcement:    false,
+			givePurpose2AccountEnforcement: &True,
 			givePurpose:                    2,
 			wantEnforced:                   true,
 		},

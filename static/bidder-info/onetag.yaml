@@ -16,3 +16,4 @@ userSync:
   iframe:
     url: "https://onetag-sys.com/usync/?redir={{.RedirectURL}}"
     userMacro: "${USER_TOKEN}"
+endpointCompression: "GZIP"

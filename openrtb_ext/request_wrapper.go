@@ -877,8 +877,8 @@ func (re *RegExt) GetUSPrivacy() string {
 	return uSPrivacy
 }
 
-func (re *RegExt) SetUSPrivacy(uSPrivacy string) {
-	re.usPrivacy = uSPrivacy
+func (re *RegExt) SetUSPrivacy(usPrivacy string) {
+	re.usPrivacy = usPrivacy
 	re.usPrivacyDirty = true
 }
 

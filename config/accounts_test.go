@@ -246,11 +246,14 @@ func TestAccountIntegrationGetByIntegrationType(t *testing.T) {
 }
 
 func TestPurposeEnforced(t *testing.T) {
+	True := true
+	False := false
+
 	tests := []struct {
 		description          string
 		givePurposeConfigNil bool
-		givePurpose1Enforced string
-		givePurpose2Enforced string
+		givePurpose1Enforced *bool
+		givePurpose2Enforced *bool
 		givePurpose          consentconstants.Purpose
 		wantEnforced         bool
 		wantEnforcedSet      bool
@@ -264,28 +267,28 @@ func TestPurposeEnforced(t *testing.T) {
 		},
 		{
 			description:          "Purpose 1 Enforced not set",
-			givePurpose1Enforced: "",
+			givePurpose1Enforced: nil,
 			givePurpose:          1,
 			wantEnforced:         true,
 			wantEnforcedSet:      false,
 		},
 		{
 			description:          "Purpose 1 Enforced set to full enforcement",
-			givePurpose1Enforced: TCF2FullEnforcement,
+			givePurpose1Enforced: &True,
 			givePurpose:          1,
 			wantEnforced:         true,
 			wantEnforcedSet:      true,
 		},
 		{
 			description:          "Purpose 1 Enforced set to no enforcement",
-			givePurpose1Enforced: TCF2NoEnforcement,
+			givePurpose1Enforced: &False,
 			givePurpose:          1,
 			wantEnforced:         false,
 			wantEnforcedSet:      true,
 		},
 		{
 			description:          "Purpose 2 Enforced set to full enforcement",
-			givePurpose2Enforced: TCF2FullEnforcement,
+			givePurpose2Enforced: &True,
 			givePurpose:          2,
 			wantEnforced:         true,
 			wantEnforcedSet:      true,
