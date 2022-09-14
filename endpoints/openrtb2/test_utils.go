@@ -1292,6 +1292,13 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 		storedResponseFetcher = empty_fetcher.EmptyFetcher{}
 	}
 
+	var accountFetcher stored_requests.AccountFetcher
+	accountFetcher = &mockAccountFetcher{
+		data: map[string]json.RawMessage{
+			"malformed_acct": json.RawMessage(`{"disabled":"invalid type"}`),
+		},
+	}
+
 	var endpointBuilder func(uuidutil.UUIDGenerator, exchange.Exchange, openrtb_ext.BidderParamValidator, stored_requests.Fetcher, stored_requests.AccountFetcher, *config.Configuration, metrics.MetricsEngine, analytics.PBSAnalyticsModule, map[string]string, []byte, map[string]openrtb_ext.BidderName, stored_requests.Fetcher) (httprouter.Handle, error)
 
 	switch test.endpointType {
@@ -1306,7 +1313,7 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 		testExchange,
 		paramValidator,
 		storedRequestFetcher,
-		mockFetcher,
+		accountFetcher,
 		cfg,
 		met,
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
@@ -1325,6 +1332,17 @@ func (v mockBidderParamValidator) Validate(name openrtb_ext.BidderName, ext json
 	return nil
 }
 func (v mockBidderParamValidator) Schema(name openrtb_ext.BidderName) string { return "" }
+
+type mockAccountFetcher struct {
+	data map[string]json.RawMessage
+}
+
+func (af *mockAccountFetcher) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {
+	if account, ok := af.data[accountID]; ok {
+		return account, nil
+	}
+	return nil, []error{stored_requests.NotFoundError{ID: accountID, DataType: "Account"}}
+}
 
 type mockAmpStoredReqFetcher struct {
 	data map[string]json.RawMessage
