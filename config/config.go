@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/url"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
@@ -259,11 +260,11 @@ func (cfg *GDPR) validatePurposes(errs []error) []error {
 	}
 
 	for i := 0; i < len(purposeConfigs); i++ {
-		enforcePurposeValue := purposeConfigs[i].EnforcePurpose
-		enforcePurposeField := fmt.Sprintf("gdpr.tcf2.purpose%d.enforce_purpose", (i + 1))
+		enforceAlgoValue := purposeConfigs[i].EnforceAlgo
+		enforceAlgoField := fmt.Sprintf("gdpr.tcf2.purpose%d.enforce_algo", (i + 1))
 
-		if enforcePurposeValue != TCF2NoEnforcement && enforcePurposeValue != TCF2FullEnforcement {
-			errs = append(errs, fmt.Errorf("%s must be \"no\" or \"full\". Got %s", enforcePurposeField, enforcePurposeValue))
+		if enforceAlgoValue != TCF2FullEnforcement {
+			errs = append(errs, fmt.Errorf("%s must be \"full\". Got %s", enforceAlgoField, enforceAlgoValue))
 		}
 	}
 	return errs
@@ -284,7 +285,6 @@ func (t *GDPRTimeouts) ActiveTimeout() time.Duration {
 
 const (
 	TCF2FullEnforcement = "full"
-	TCF2NoEnforcement   = "no"
 )
 
 // TCF2 defines the TCF2 specific configurations for GDPR
@@ -332,10 +332,7 @@ func (t *TCF2) PurposeEnforced(purpose consentconstants.Purpose) (value bool) {
 	if t.PurposeConfigs[purpose] == nil {
 		return false
 	}
-	if t.PurposeConfigs[purpose].EnforcePurpose == TCF2FullEnforcement {
-		return true
-	}
-	return false
+	return t.PurposeConfigs[purpose].EnforcePurpose
 }
 
 // PurposeEnforcingVendors checks if enforcing vendors is turned on for a given purpose. With enforcing vendors
@@ -388,7 +385,8 @@ func (t *TCF2) PurposeOneTreatmentAccessAllowed() (value bool) {
 // Making a purpose struct so purpose specific details can be added later.
 type TCF2Purpose struct {
 	Enabled        bool   `mapstructure:"enabled"` // Deprecated: Use enforce_purpose instead
-	EnforcePurpose string `mapstructure:"enforce_purpose"`
+	EnforceAlgo    string `mapstructure:"enforce_algo"`
+	EnforcePurpose bool   `mapstructure:"enforce_purpose"`
 	EnforceVendors bool   `mapstructure:"enforce_vendors"`
 	// Array of vendor exceptions that is used to create the hash table VendorExceptionMap so vendor names can be instantly accessed
 	VendorExceptions   []openrtb_ext.BidderName `mapstructure:"vendor_exceptions"`
@@ -1181,7 +1179,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	migrateConfig(v)
 	migrateConfigPurposeOneTreatment(v)
 	migrateConfigSpecialFeature1(v)
-	migrateConfigTCF2PurposeEnabledFlags(v)
+	migrateConfigTCF2PurposeFlags(v)
 
 	// These defaults must be set after the migrate functions because those functions look for the presence of these
 	// config fields and there isn't a way to detect presence of a config field using the viper package if a default
@@ -1196,16 +1194,26 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("gdpr.tcf2.purpose8.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose9.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose10.enabled", true)
-	v.SetDefault("gdpr.tcf2.purpose1.enforce_purpose", TCF2FullEnforcement)
-	v.SetDefault("gdpr.tcf2.purpose2.enforce_purpose", TCF2FullEnforcement)
-	v.SetDefault("gdpr.tcf2.purpose3.enforce_purpose", TCF2FullEnforcement)
-	v.SetDefault("gdpr.tcf2.purpose4.enforce_purpose", TCF2FullEnforcement)
-	v.SetDefault("gdpr.tcf2.purpose5.enforce_purpose", TCF2FullEnforcement)
-	v.SetDefault("gdpr.tcf2.purpose6.enforce_purpose", TCF2FullEnforcement)
-	v.SetDefault("gdpr.tcf2.purpose7.enforce_purpose", TCF2FullEnforcement)
-	v.SetDefault("gdpr.tcf2.purpose8.enforce_purpose", TCF2FullEnforcement)
-	v.SetDefault("gdpr.tcf2.purpose9.enforce_purpose", TCF2FullEnforcement)
-	v.SetDefault("gdpr.tcf2.purpose10.enforce_purpose", TCF2FullEnforcement)
+	v.SetDefault("gdpr.tcf2.purpose1.enforce_algo", TCF2FullEnforcement)
+	v.SetDefault("gdpr.tcf2.purpose2.enforce_algo", TCF2FullEnforcement)
+	v.SetDefault("gdpr.tcf2.purpose3.enforce_algo", TCF2FullEnforcement)
+	v.SetDefault("gdpr.tcf2.purpose4.enforce_algo", TCF2FullEnforcement)
+	v.SetDefault("gdpr.tcf2.purpose5.enforce_algo", TCF2FullEnforcement)
+	v.SetDefault("gdpr.tcf2.purpose6.enforce_algo", TCF2FullEnforcement)
+	v.SetDefault("gdpr.tcf2.purpose7.enforce_algo", TCF2FullEnforcement)
+	v.SetDefault("gdpr.tcf2.purpose8.enforce_algo", TCF2FullEnforcement)
+	v.SetDefault("gdpr.tcf2.purpose9.enforce_algo", TCF2FullEnforcement)
+	v.SetDefault("gdpr.tcf2.purpose10.enforce_algo", TCF2FullEnforcement)
+	v.SetDefault("gdpr.tcf2.purpose1.enforce_purpose", true)
+	v.SetDefault("gdpr.tcf2.purpose2.enforce_purpose", true)
+	v.SetDefault("gdpr.tcf2.purpose3.enforce_purpose", true)
+	v.SetDefault("gdpr.tcf2.purpose4.enforce_purpose", true)
+	v.SetDefault("gdpr.tcf2.purpose5.enforce_purpose", true)
+	v.SetDefault("gdpr.tcf2.purpose6.enforce_purpose", true)
+	v.SetDefault("gdpr.tcf2.purpose7.enforce_purpose", true)
+	v.SetDefault("gdpr.tcf2.purpose8.enforce_purpose", true)
+	v.SetDefault("gdpr.tcf2.purpose9.enforce_purpose", true)
+	v.SetDefault("gdpr.tcf2.purpose10.enforce_purpose", true)
 	v.SetDefault("gdpr.tcf2.purpose_one_treatment.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose_one_treatment.access_allowed", true)
 	v.SetDefault("gdpr.tcf2.special_feature1.enforce", true)
@@ -1261,6 +1269,41 @@ func migrateConfigSpecialFeature1(v *viper.Viper) {
 	}
 }
 
+func migrateConfigTCF2PurposeFlags(v *viper.Viper) {
+	migrateConfigTCF2EnforcePurposeFlags(v)
+	migrateConfigTCF2PurposeEnabledFlags(v)
+}
+
+func migrateConfigTCF2EnforcePurposeFlags(v *viper.Viper) {
+	for i := 1; i <= 10; i++ {
+		algoField := fmt.Sprintf("gdpr.tcf2.purpose%d.enforce_algo", i)
+		purposeField := fmt.Sprintf("gdpr.tcf2.purpose%d.enforce_purpose", i)
+
+		if !v.IsSet(purposeField) {
+			continue
+		}
+		if _, ok := v.Get(purposeField).(string); !ok {
+			continue
+		}
+		if v.IsSet(algoField) {
+			glog.Warningf("using %s and ignoring deprecated %s string type", algoField, purposeField)
+		} else {
+			v.Set(algoField, TCF2FullEnforcement)
+
+			glog.Warningf("setting %s to \"%s\" based on deprecated %s string type \"%s\"", algoField, TCF2FullEnforcement, purposeField, v.GetString(purposeField))
+		}
+
+		oldPurposeFieldValue := v.GetString(purposeField)
+		newPurposeFieldValue := "false"
+		if oldPurposeFieldValue == TCF2FullEnforcement {
+			newPurposeFieldValue = "true"
+		}
+
+		glog.Warningf("converting %s from string \"%s\" to bool \"%s\"; string type is deprecated", purposeField, oldPurposeFieldValue, newPurposeFieldValue)
+		v.Set(purposeField, newPurposeFieldValue)
+	}
+}
+
 func migrateConfigTCF2PurposeEnabledFlags(v *viper.Viper) {
 	for i := 1; i <= 10; i++ {
 		oldField := fmt.Sprintf("gdpr.tcf2.purpose%d.enabled", i)
@@ -1272,20 +1315,12 @@ func migrateConfigTCF2PurposeEnabledFlags(v *viper.Viper) {
 				glog.Warningf("using %s and ignoring deprecated %s", newField, oldField)
 			} else {
 				glog.Warningf("%s is deprecated and should be changed to %s", oldField, newField)
-				if oldConfig {
-					v.Set(newField, TCF2FullEnforcement)
-				} else {
-					v.Set(newField, TCF2NoEnforcement)
-				}
+				v.Set(newField, oldConfig)
 			}
 		}
 
 		if v.IsSet(newField) {
-			if v.GetString(newField) == TCF2FullEnforcement {
-				v.Set(oldField, "true")
-			} else {
-				v.Set(oldField, "false")
-			}
+			v.Set(oldField, strconv.FormatBool(v.GetBool(newField)))
 		}
 	}
 }

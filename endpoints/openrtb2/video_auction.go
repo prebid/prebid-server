@@ -374,6 +374,10 @@ func handleError(labels *metrics.Labels, w http.ResponseWriter, errL []error, vo
 			status = http.StatusBadRequest
 			labels.RequestStatus = metrics.RequestStatusBadInput
 			break
+		} else if erVal == errortypes.MalformedAcctErrorCode {
+			status = http.StatusInternalServerError
+			labels.RequestStatus = metrics.RequestStatusAccountConfigErr
+			break
 		}
 		errors = fmt.Sprintf("%s %s", errors, er.Error())
 	}
