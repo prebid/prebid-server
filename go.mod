@@ -34,7 +34,6 @@ require (
 	golang.org/x/net v0.0.0-20220520000938-2e3eb7b945c2
 	golang.org/x/text v0.3.7
 	google.golang.org/grpc v1.46.2
-	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0
 	gopkg.in/yaml.v3 v3.0.1
 )
