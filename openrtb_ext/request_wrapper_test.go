@@ -18,6 +18,8 @@ func TestUserExt(t *testing.T) {
 	assert.Nil(t, userExt.GetConsent(), "Empty UserExt should have nil consent")
 	assert.Nil(t, userExt.GetEid(), "Empty UserExt should have nil eid")
 	assert.Nil(t, userExt.GetPrebid(), "Empty UserExt should have nil prebid")
+	assert.Nil(t, userExt.GetConsentedProvidersSettings(), "Empty UserExt should have nil consentedProvidersSettings")
+	assert.Equal(t, userExt.GetConsentedProviders(), "", "Empty UserExt should have empty consentedProvidersSettings.consentedProviders")
 
 	newConsent := "NewConsent"
 	userExt.SetConsent(&newConsent)
@@ -33,12 +35,19 @@ func TestUserExt(t *testing.T) {
 	userExt.SetPrebid(&newPrebid)
 	assert.Equal(t, ExtUserPrebid{BuyerUIDs: buyerIDs}, *userExt.GetPrebid(), "UserExt prebid is incorrect")
 
+	consentedProvidersSettings := &ExtUserCPSettings{ConsentedProviders: "ConsentedProvidersString"}
+	userExt.SetConsentedProvidersSettings(consentedProvidersSettings)
+	assert.Equal(t, &ExtUserCPSettings{ConsentedProviders: "ConsentedProvidersString"}, userExt.GetConsentedProvidersSettings(), "UserExt consentedProvidersSettings is incorrect")
 	assert.Equal(t, true, userExt.Dirty(), "UserExt should be dirty after field updates")
+	assert.Equal(t, "ConsentedProvidersString", userExt.GetConsentedProviders(), "UserExt consentedProviders is incorrect")
+
+	userExt.SetConsentedProviders("DifferentConsentedProvidersString")
+	assert.Equal(t, "DifferentConsentedProvidersString", userExt.GetConsentedProviders(), "UserExt consentedProviders is incorrect")
 
 	updatedUserExt, err := userExt.marshal()
 	assert.Nil(t, err, "Marshalling UserExt after updating should not cause an error")
 
-	expectedUserExt := json.RawMessage(`{"consent":"NewConsent","prebid":{"buyeruids":{"buyer":"id"}},"eids":[{"source":"source","uids":[{"id":"id"}]}]}`)
+	expectedUserExt := json.RawMessage(`{"consent":"NewConsent","prebid":{"buyeruids":{"buyer":"id"}},"ConsentedProvidersSettings":{"consented_providers":"DifferentConsentedProvidersString"},"eids":[{"source":"source","uids":[{"id":"id"}]}]}`)
 	assert.JSONEq(t, string(expectedUserExt), string(updatedUserExt), "Marshalled UserExt is incorrect")
 
 	assert.Equal(t, false, userExt.Dirty(), "UserExt should not be dirty after marshalling")

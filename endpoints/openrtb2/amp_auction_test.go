@@ -14,6 +14,7 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/prebid-server/amp"
 	"github.com/prebid/prebid-server/analytics"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
@@ -47,6 +48,7 @@ func TestGoodAmpRequests(t *testing.T) {
 			desc: "Valid, consent handling in query",
 			dir:  "sample-requests/amp/consent-through-query/",
 			testFiles: []string{
+				"addtl-consent-through-query.json",
 				"gdpr-tcf1-consent-through-query.json",
 				"gdpr-tcf2-consent-through-query.json",
 				"gdpr-legacy-tcf2-consent-through-query.json",
@@ -312,6 +314,42 @@ func TestGDPRConsent(t *testing.T) {
 		assert.Equal(t, test.expectedUserExt, ueLegacy, test.description+":legacy")
 		assert.Equal(t, expectedErrorsFromHoldAuction, responseLegacy.Errors, test.description+":legacy:errors")
 		assert.Empty(t, responseLegacy.Warnings, test.description+":legacy:warnings")
+	}
+}
+
+func TestSetConsentedProviders(t *testing.T) {
+
+	sampleBidRequest := &openrtb2.BidRequest{}
+
+	testCases := []struct {
+		description         string
+		inAdditionalConsent string
+		inBidRequest        *openrtb2.BidRequest
+		expectedBidRequest  *openrtb2.BidRequest
+	}{
+		{
+			description:         "empty additional consent bid request unmodified",
+			inAdditionalConsent: "",
+			inBidRequest:        sampleBidRequest,
+			expectedBidRequest:  sampleBidRequest,
+		},
+		{
+			description:         "non-empty additional consent bid request will carry this value in user.ext.ConsentedProvidersSettings.consented_providers",
+			inAdditionalConsent: "ADDITIONAL_CONSENT_STRING",
+			inBidRequest:        sampleBidRequest,
+			expectedBidRequest: &openrtb2.BidRequest{
+				User: &openrtb2.User{
+					Ext: json.RawMessage(`{"ConsentedProvidersSettings":{"consented_providers":"ADDITIONAL_CONSENT_STRING"}}`),
+				},
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		err := setConsentedProviders(test.inBidRequest, amp.Params{AdditionalConsent: test.inAdditionalConsent})
+
+		assert.NoError(t, err, test.description)
+		assert.Equal(t, test.inBidRequest, test.expectedBidRequest, test.description)
 	}
 }
 

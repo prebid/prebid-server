@@ -10,6 +10,8 @@ type ExtUser struct {
 	// https://iabtechlab.com/wp-content/uploads/2018/02/OpenRTB_Advisory_GDPR_2018-02.pdf
 	Consent string `json:"consent,omitempty"`
 
+	ConsentedProvidersSettings *ExtUserCPSettings `json:"ConsentedProvidersSettings,omitempty"`
+
 	Prebid *ExtUserPrebid `json:"prebid,omitempty"`
 
 	Eids []openrtb2.EID `json:"eids,omitempty"`
@@ -18,4 +20,8 @@ type ExtUser struct {
 // ExtUserPrebid defines the contract for bidrequest.user.ext.prebid
 type ExtUserPrebid struct {
 	BuyerUIDs map[string]string `json:"buyeruids,omitempty"`
+}
+
+type ExtUserCPSettings struct {
+	ConsentedProviders string `json:"consented_providers,omitempty"`
 }

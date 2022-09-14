@@ -441,6 +441,10 @@ func (deps *endpointDeps) overrideWithParams(ampParams amp.Params, req *openrtb2
 		req.Imp[0].TagID = ampParams.Slot
 	}
 
+	if err := setConsentedProviders(req, ampParams); err != nil {
+		return []error{err}
+	}
+
 	policyWriter, policyWriterErr := amp.ReadPolicy(ampParams, deps.cfg.GDPR.Enabled)
 	if policyWriterErr != nil {
 		return []error{policyWriterErr}
@@ -457,6 +461,23 @@ func (deps *endpointDeps) overrideWithParams(ampParams amp.Params, req *openrtb2
 		return []error{err}
 	}
 
+	return nil
+}
+
+// setConsentedProviders sets, if supplied, the addtl_consent value to user.ext.ConsentedProvidersSettings.consented_providers
+func setConsentedProviders(req *openrtb2.BidRequest, ampParams amp.Params) error {
+	if len(ampParams.AdditionalConsent) > 0 {
+		reqWrap := &openrtb_ext.RequestWrapper{BidRequest: req}
+
+		if userExt, err := reqWrap.GetUserExt(); err == nil {
+			userExt.SetConsentedProviders(ampParams.AdditionalConsent)
+		} else {
+			return err
+		}
+		if err := reqWrap.RebuildRequest(); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
