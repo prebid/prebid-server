@@ -60,6 +60,10 @@ func TestJsonSampleRequests(t *testing.T) {
 			"aliased",
 		},
 		{
+			"Asserts we return 500s on requests referencing accounts with malformed configs.",
+			"account-malformed",
+		},
+		{
 			"Asserts we return 503s on requests with blacklisted accounts and apps.",
 			"blacklisted",
 		},
@@ -122,6 +126,7 @@ func TestJsonSampleRequests(t *testing.T) {
 						cfg.BlacklistedAcctMap = test.Config.getBlackListedAccountMap()
 						cfg.AccountRequired = test.Config.AccountRequired
 					}
+					cfg.MarshalAccountDefaults()
 					test.endpointType = OPENRTB_ENDPOINT
 
 					auctionEndpointHandler, _, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
