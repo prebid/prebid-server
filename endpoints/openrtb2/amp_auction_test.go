@@ -126,6 +126,63 @@ func TestGoodAmpRequests(t *testing.T) {
 	}
 }
 
+func TestAccountErrors(t *testing.T) {
+	tests := []struct {
+		description string
+		storedReqID string
+		filename    string
+	}{
+		{
+			description: "Malformed account config",
+			storedReqID: "1",
+			filename:    "account-malformed/malformed-acct.json",
+		},
+		{
+			description: "Blocked account",
+			storedReqID: "1",
+			filename:    "blacklisted/blacklisted-site-publisher.json",
+		},
+	}
+
+	for _, tt := range tests {
+		fileJsonData, err := ioutil.ReadFile("sample-requests/" + tt.filename)
+		if !assert.NoError(t, err, "Failed to fetch a valid request: %v. Test file: %s", err, tt.filename) {
+			continue
+		}
+
+		test := testCase{}
+		if !assert.NoError(t, json.Unmarshal(fileJsonData, &test), "Failed to unmarshal data from file: %s. Error: %v", tt.filename, err) {
+			continue
+		}
+		test.storedRequest = map[string]json.RawMessage{tt.storedReqID: test.BidRequest}
+		test.endpointType = AMP_ENDPOINT
+
+		cfg := &config.Configuration{
+			BlacklistedAccts:   []string{"bad_acct"},
+			BlacklistedAcctMap: map[string]bool{"bad_acct": true},
+			MaxRequestSize:     maxSize,
+		}
+		cfg.MarshalAccountDefaults()
+
+		ampEndpoint, _, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
+		if !assert.NoError(t, err) {
+			continue
+		}
+
+		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s&", tt.storedReqID), nil)
+		recorder := httptest.NewRecorder()
+		ampEndpoint(recorder, request, nil)
+
+		for _, mockBidServer := range mockBidServers {
+			mockBidServer.Close()
+		}
+		mockCurrencyRatesServer.Close()
+
+		assert.Equal(t, test.ExpectedReturnCode, recorder.Code, "%s: %s", tt.description, tt.filename)
+		assert.Equal(t, test.ExpectedErrorMessage, recorder.Body.String(), "%s: %s", tt.description, tt.filename)
+	}
+}
+
 // Prevents #683
 func TestAMPPageInfo(t *testing.T) {
 	const page = "http://test.somepage.co.uk:1234?myquery=1&other=2"

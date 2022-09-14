@@ -89,6 +89,8 @@ func NewSetUIDEndpoint(cfg *config.Configuration, syncersByBidder map[string]use
 			switch err {
 			case errCookieSyncAccountBlocked:
 				metricsEngine.RecordSetUid(metrics.SetUidAccountBlocked)
+			case errCookieSyncAccountConfigMalformed:
+				metricsEngine.RecordSetUid(metrics.SetUidAccountConfigMalformed)
 			case errCookieSyncAccountInvalid:
 				metricsEngine.RecordSetUid(metrics.SetUidAccountInvalid)
 			default:

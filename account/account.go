@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/buger/jsonparser"
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -51,7 +52,25 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 		completeJSON, err := jsonpatch.MergePatch(cfg.AccountDefaultsJSON(), accountJSON)
 		if err == nil {
 			err = json.Unmarshal(completeJSON, account)
+
+			// this logic exists for backwards compatibility. If the initial unmarshal fails above, we attempt to
+			// resolve it by converting the GDPR enforce purpose fields and then attempting an unmarshal again before
+			// declaring a malformed account error.
+			// unmarshal fetched account to determine if it is well-formed
+			if _, ok := err.(*json.UnmarshalTypeError); ok {
+				// attempt to convert deprecated GDPR enforce purpose fields to resolve issue
+				completeJSON, err = ConvertGDPREnforcePurposeFields(completeJSON)
+				// unmarshal again to check if unmarshal error still exists after GDPR field conversion
+				err = json.Unmarshal(completeJSON, account)
+
+				if _, ok := err.(*json.UnmarshalTypeError); ok {
+					return nil, []error{&errortypes.MalformedAcct{
+						Message: fmt.Sprintf("The prebid-server account config for account id \"%s\" is malformed. Please reach out to the prebid server host.", accountID),
+					}}
+				}
+			}
 		}
+
 		if err != nil {
 			errs = append(errs, err)
 			return nil, errs
@@ -119,4 +138,80 @@ func setDerivedConfig(account *config.Account) {
 			account.GDPR.BasicEnforcementVendorsMap[v] = struct{}{}
 		}
 	}
+}
+
+// PatchAccount represents the GDPR portion of a publisher account configuration that can be mutated
+// for backwards compatibility reasons
+type PatchAccount struct {
+	GDPR map[string]*PatchAccountGDPRPurpose `json:"gdpr"`
+}
+
+// PatchAccountGDPRPurpose represents account-specific GDPR purpose configuration data that can be mutated
+// for backwards compatibility reasons
+type PatchAccountGDPRPurpose struct {
+	EnforceAlgo    string `json:"enforce_algo,omitempty"`
+	EnforcePurpose *bool  `json:"enforce_purpose,omitempty"`
+}
+
+// ConvertGDPREnforcePurposeFields is responsible for ensuring account GDPR config backwards compatibility
+// given the recent type change of gdpr.purpose{1-10}.enforce_purpose from a string to a bool. This function
+// iterates over each GDPR purpose config and sets enforce_purpose and enforce_algo to the appropriate
+// bool and string values respectively if enforce_purpose is a string and enforce_algo is not set
+func ConvertGDPREnforcePurposeFields(config []byte) (newConfig []byte, err error) {
+	gdprJSON, _, _, err := jsonparser.Get(config, "gdpr")
+	if err != nil && err == jsonparser.KeyPathNotFoundError {
+		return config, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	newAccount := PatchAccount{
+		GDPR: map[string]*PatchAccountGDPRPurpose{},
+	}
+
+	for i := 1; i <= 10; i++ {
+		purposeName := fmt.Sprintf("purpose%d", i)
+
+		enforcePurpose, purposeDataType, _, err := jsonparser.Get(gdprJSON, purposeName, "enforce_purpose")
+		if err != nil && err == jsonparser.KeyPathNotFoundError {
+			continue
+		}
+		if err != nil {
+			return nil, err
+		}
+		if purposeDataType != jsonparser.String {
+			continue
+		}
+
+		_, _, _, err = jsonparser.Get(gdprJSON, purposeName, "enforce_algo")
+		if err != nil && err != jsonparser.KeyPathNotFoundError {
+			return nil, err
+		}
+		if err == nil {
+			continue
+		}
+
+		newEnforcePurpose := false
+		if string(enforcePurpose) == "full" {
+			newEnforcePurpose = true
+		}
+
+		newAccount.GDPR[purposeName] = &PatchAccountGDPRPurpose{
+			EnforceAlgo:    "full",
+			EnforcePurpose: &newEnforcePurpose,
+		}
+	}
+
+	patchConfig, err := json.Marshal(newAccount)
+	if err != nil {
+		return nil, err
+	}
+
+	newConfig, err = jsonpatch.MergePatch(config, patchConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return newConfig, nil
 }
