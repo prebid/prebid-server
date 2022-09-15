@@ -118,15 +118,14 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 		pageUrl, err := url.Parse(request.Site.Page)
 		if err != nil {
 			errs = append(errs, err)
+		} else {
+			origin := url.URL{
+				Scheme: pageUrl.Scheme,
+				Opaque: pageUrl.Opaque,
+				Host:   pageUrl.Host,
+			}
+			headers.Set("Origin", origin.String())
 		}
-
-		origin := url.URL{
-			Scheme: pageUrl.Scheme,
-			Opaque: pageUrl.Opaque,
-			Host:   pageUrl.Host,
-		}
-
-		headers.Set("Origin", origin.String())
 	}
 
 	body := bidRequest{
@@ -147,39 +146,40 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 	ccpaPolicy, err := ccpa.ReadFromRequest(request)
 	if err != nil {
 		errs = append(errs, err)
+	} else {
+		body.CCPA = ccpaPolicy.Consent
 	}
 
-	body.CCPA = ccpaPolicy.Consent
-
-	// TODO: Replace with gdpr.ReadPolicy when it is available
 	if request.Regs != nil && request.Regs.Ext != nil {
 		var extRegs openrtb_ext.ExtRegs
 		if err := json.Unmarshal(request.Regs.Ext, &extRegs); err != nil {
 			errs = append(errs, err)
-		}
-		if extRegs.GDPR != nil {
-			applies := *extRegs.GDPR != 0
-			gdpr.Applies = &applies
-			body.GDPR = &gdpr
+		} else {
+			if extRegs.GDPR != nil {
+				applies := *extRegs.GDPR != 0
+				gdpr.Applies = &applies
+				body.GDPR = &gdpr
+			}
 		}
 	}
 
-	// TODO: Replace with gdpr.ReadPolicy when it is available
 	if request.User != nil && request.User.Ext != nil {
 		var extUser openrtb_ext.ExtUser
 		if err := json.Unmarshal(request.User.Ext, &extUser); err != nil {
 			errs = append(errs, err)
+		} else {
+			gdpr.Consent = extUser.Consent
+			body.GDPR = &gdpr
 		}
-		gdpr.Consent = extUser.Consent
-		body.GDPR = &gdpr
 	}
 
 	if request.Source != nil && request.Source.Ext != nil {
 		var extSChain openrtb_ext.ExtRequestPrebidSChain
 		if err := json.Unmarshal(request.Source.Ext, &extSChain); err != nil {
 			errs = append(errs, err)
+		} else {
+			body.SChain = extSChain.SChain
 		}
-		body.SChain = extSChain.SChain
 	}
 
 	body.Coppa = request.Regs != nil && request.Regs.COPPA > 0
