@@ -26,12 +26,12 @@ func TestBuildAdapters(t *testing.T) {
 
 	appnexusBidder, _ := appnexus.Builder(openrtb_ext.BidderAppnexus, config.Adapter{})
 	appnexusBidderWithInfo := adapters.BuildInfoAwareBidder(appnexusBidder, infoEnabled)
-	appnexusBidderAdapted := AdaptBidder(appnexusBidderWithInfo, client, &config.Configuration{}, metricEngine, openrtb_ext.BidderAppnexus, nil)
+	appnexusBidderAdapted := AdaptBidder(appnexusBidderWithInfo, client, &config.Configuration{}, metricEngine, openrtb_ext.BidderAppnexus, nil, "")
 	appnexusValidated := addValidatedBidderMiddleware(appnexusBidderAdapted)
 
 	rubiconBidder, _ := rubicon.Builder(openrtb_ext.BidderRubicon, config.Adapter{})
 	rubiconBidderWithInfo := adapters.BuildInfoAwareBidder(rubiconBidder, infoEnabled)
-	rubiconBidderAdapted := AdaptBidder(rubiconBidderWithInfo, client, &config.Configuration{}, metricEngine, openrtb_ext.BidderRubicon, nil)
+	rubiconBidderAdapted := AdaptBidder(rubiconBidderWithInfo, client, &config.Configuration{}, metricEngine, openrtb_ext.BidderRubicon, nil, "")
 	rubiconbidderValidated := addValidatedBidderMiddleware(rubiconBidderAdapted)
 
 	testCases := []struct {
@@ -240,6 +240,7 @@ func TestGetDisabledBiddersErrorMessages(t *testing.T) {
 				"lifestreet":   `Bidder "lifestreet" is no longer available in Prebid Server. Please update your configuration.`,
 				"adagio":       `Bidder "adagio" is no longer available in Prebid Server. Please update your configuration.`,
 				"somoaudience": `Bidder "somoaudience" is no longer available in Prebid Server. Please update your configuration.`,
+				"yssp":         `Bidder "yssp" is no longer available in Prebid Server. If you're looking to use the Yahoo SSP adapter, please rename it to "yahoossp" in your configuration.`,
 			},
 		},
 		{
@@ -249,6 +250,7 @@ func TestGetDisabledBiddersErrorMessages(t *testing.T) {
 				"lifestreet":   `Bidder "lifestreet" is no longer available in Prebid Server. Please update your configuration.`,
 				"adagio":       `Bidder "adagio" is no longer available in Prebid Server. Please update your configuration.`,
 				"somoaudience": `Bidder "somoaudience" is no longer available in Prebid Server. Please update your configuration.`,
+				"yssp":         `Bidder "yssp" is no longer available in Prebid Server. If you're looking to use the Yahoo SSP adapter, please rename it to "yahoossp" in your configuration.`,
 			},
 		},
 		{
@@ -258,6 +260,7 @@ func TestGetDisabledBiddersErrorMessages(t *testing.T) {
 				"lifestreet":   `Bidder "lifestreet" is no longer available in Prebid Server. Please update your configuration.`,
 				"adagio":       `Bidder "adagio" is no longer available in Prebid Server. Please update your configuration.`,
 				"somoaudience": `Bidder "somoaudience" is no longer available in Prebid Server. Please update your configuration.`,
+				"yssp":         `Bidder "yssp" is no longer available in Prebid Server. If you're looking to use the Yahoo SSP adapter, please rename it to "yahoossp" in your configuration.`,
 				"appnexus":     `Bidder "appnexus" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.`,
 			},
 		},
@@ -268,6 +271,7 @@ func TestGetDisabledBiddersErrorMessages(t *testing.T) {
 				"lifestreet":   `Bidder "lifestreet" is no longer available in Prebid Server. Please update your configuration.`,
 				"adagio":       `Bidder "adagio" is no longer available in Prebid Server. Please update your configuration.`,
 				"somoaudience": `Bidder "somoaudience" is no longer available in Prebid Server. Please update your configuration.`,
+				"yssp":         `Bidder "yssp" is no longer available in Prebid Server. If you're looking to use the Yahoo SSP adapter, please rename it to "yahoossp" in your configuration.`,
 				"appnexus":     `Bidder "appnexus" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.`,
 			},
 		},

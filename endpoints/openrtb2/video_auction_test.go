@@ -14,6 +14,7 @@ import (
 	"github.com/prebid/prebid-server/analytics"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/metrics"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
@@ -810,30 +811,77 @@ func TestMergeOpenRTBToVideoRequest(t *testing.T) {
 }
 
 func TestHandleError(t *testing.T) {
-	vo := analytics.VideoObject{
-		Status: 200,
-		Errors: make([]error, 0),
+	tests := []struct {
+		description       string
+		giveErrors        []error
+		wantCode          int
+		wantMetricsStatus metrics.RequestStatus
+	}{
+		{
+			description: "Blocked account - return 503 with blocked metrics status",
+			giveErrors: []error{
+				&errortypes.BlacklistedAcct{},
+			},
+			wantCode:          503,
+			wantMetricsStatus: metrics.RequestStatusBlacklisted,
+		},
+		{
+			description: "Blocked app - return 503 with blocked metrics status",
+			giveErrors: []error{
+				&errortypes.BlacklistedApp{},
+			},
+			wantCode:          503,
+			wantMetricsStatus: metrics.RequestStatusBlacklisted,
+		},
+		{
+			description: "Account required error - return 400 with bad input metrics status",
+			giveErrors: []error{
+				&errortypes.AcctRequired{},
+			},
+			wantCode:          400,
+			wantMetricsStatus: metrics.RequestStatusBadInput,
+		},
+		{
+			description: "Malformed account config error - return 500 with account config error metrics status",
+			giveErrors: []error{
+				&errortypes.MalformedAcct{},
+			},
+			wantCode:          500,
+			wantMetricsStatus: metrics.RequestStatusAccountConfigErr,
+		},
+		{
+			description: "Multiple generic errors - return 500 with generic error metrics status",
+			giveErrors: []error{
+				errors.New("Error for testing handleError 1"),
+				errors.New("Error for testing handleError 2"),
+			},
+			wantCode:          500,
+			wantMetricsStatus: metrics.RequestStatusErr,
+		},
 	}
 
-	labels := metrics.Labels{
-		Source:        metrics.DemandUnknown,
-		RType:         metrics.ReqTypeVideo,
-		PubID:         metrics.PublisherUnknown,
-		CookieFlag:    metrics.CookieFlagUnknown,
-		RequestStatus: metrics.RequestStatusOK,
+	for _, tt := range tests {
+		vo := analytics.VideoObject{
+			Status: 200,
+			Errors: make([]error, 0),
+		}
+
+		labels := metrics.Labels{
+			Source:        metrics.DemandUnknown,
+			RType:         metrics.ReqTypeVideo,
+			PubID:         metrics.PublisherUnknown,
+			CookieFlag:    metrics.CookieFlagUnknown,
+			RequestStatus: metrics.RequestStatusOK,
+		}
+
+		recorder := httptest.NewRecorder()
+		handleError(&labels, recorder, tt.giveErrors, &vo, nil)
+
+		assert.Equal(t, tt.wantMetricsStatus, labels.RequestStatus, tt.description)
+		assert.Equal(t, tt.wantCode, recorder.Code, tt.description)
+		assert.Equal(t, tt.wantCode, vo.Status, tt.description)
+		assert.ElementsMatch(t, tt.giveErrors, vo.Errors, tt.description)
 	}
-
-	recorder := httptest.NewRecorder()
-	err1 := errors.New("Error for testing handleError 1")
-	err2 := errors.New("Error for testing handleError 2")
-	handleError(&labels, recorder, []error{err1, err2}, &vo, nil)
-
-	assert.Equal(t, metrics.RequestStatusErr, labels.RequestStatus, "labels.RequestStatus should indicate an error")
-	assert.Equal(t, 500, recorder.Code, "Error status should be written to writer")
-	assert.Equal(t, 500, vo.Status, "Analytics object should have error status")
-	assert.Equal(t, 2, len(vo.Errors), "New errors should be appended to Analytics object Errors")
-	assert.Equal(t, "Error for testing handleError 1", vo.Errors[0].Error(), "Error in Analytics object should have test error message for first error")
-	assert.Equal(t, "Error for testing handleError 2", vo.Errors[1].Error(), "Error in Analytics object should have test error message for second error")
 }
 
 func TestHandleErrorMetrics(t *testing.T) {
@@ -1176,7 +1224,7 @@ func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *m
 		mockBidderParamValidator{},
 		&mockVideoStoredReqFetcher{},
 		&mockVideoStoredReqFetcher{},
-		empty_fetcher.EmptyFetcher{},
+		&mockAccountFetcher{data: mockVideoAccountData},
 		&config.Configuration{MaxRequestSize: maxSize},
 		metrics,
 		mockModule,
@@ -1220,7 +1268,7 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 		mockBidderParamValidator{},
 		&mockVideoStoredReqFetcher{},
 		&mockVideoStoredReqFetcher{},
-		empty_fetcher.EmptyFetcher{},
+		&mockAccountFetcher{data: mockVideoAccountData},
 		&config.Configuration{MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
@@ -1391,6 +1439,12 @@ func (m *mockExchangeVideoNoBids) HoldAuction(ctx context.Context, r exchange.Au
 	return &openrtb2.BidResponse{
 		SeatBid: []openrtb2.SeatBid{{}},
 	}, nil
+}
+
+var mockVideoAccountData = map[string]json.RawMessage{
+	"valid_acct":     json.RawMessage(`{"disabled":false}`),
+	"disabled_acct":  json.RawMessage(`{"disabled":true}`),
+	"malformed_acct": json.RawMessage(`{"disabled":"invalid type"}`),
 }
 
 var testVideoStoredImpData = map[string]json.RawMessage{

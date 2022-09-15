@@ -110,6 +110,7 @@ const (
 	BidderAJA               BidderName = "aja"
 	BidderAlgorix           BidderName = "algorix"
 	BidderAMX               BidderName = "amx"
+	BidderAndBeyondMedia    BidderName = "andbeyondmedia"
 	BidderApacdex           BidderName = "apacdex"
 	BidderApplogy           BidderName = "applogy"
 	BidderAppnexus          BidderName = "appnexus"
@@ -237,7 +238,6 @@ const (
 	BidderYieldlab          BidderName = "yieldlab"
 	BidderYieldmo           BidderName = "yieldmo"
 	BidderYieldone          BidderName = "yieldone"
-	BidderYSSP              BidderName = "yssp"
 	BidderZeroClickFraud    BidderName = "zeroclickfraud"
 )
 
@@ -273,6 +273,7 @@ func CoreBidderNames() []BidderName {
 		BidderAJA,
 		BidderAlgorix,
 		BidderAMX,
+		BidderAndBeyondMedia,
 		BidderApacdex,
 		BidderApplogy,
 		BidderAppnexus,
@@ -400,7 +401,6 @@ func CoreBidderNames() []BidderName {
 		BidderYieldlab,
 		BidderYieldmo,
 		BidderYieldone,
-		BidderYSSP,
 		BidderZeroClickFraud,
 	}
 }

@@ -1403,11 +1403,12 @@ func validateRegs(req *openrtb_ext.RequestWrapper) error {
 	if err != nil {
 		return fmt.Errorf("request.regs.ext is invalid: %v", err)
 	}
-	regExt := regsExt.GetExt()
-	gdprJSON, hasGDPR := regExt["gdpr"]
-	if hasGDPR && (string(gdprJSON) != "0" && string(gdprJSON) != "1") {
-		return errors.New("request.regs.ext.gdpr must be either 0 or 1.")
+
+	gdpr := regsExt.GetGDPR()
+	if gdpr != nil && *gdpr != 0 && *gdpr != 1 {
+		return errors.New("request.regs.ext.gdpr must be either 0 or 1")
 	}
+
 	return nil
 }
 
@@ -1842,6 +1843,10 @@ func writeError(errs []error, w http.ResponseWriter, labels *metrics.Labels) boo
 			if erVal == errortypes.BlacklistedAppErrorCode || erVal == errortypes.BlacklistedAcctErrorCode {
 				httpStatus = http.StatusServiceUnavailable
 				metricsStatus = metrics.RequestStatusBlacklisted
+				break
+			} else if erVal == errortypes.MalformedAcctErrorCode {
+				httpStatus = http.StatusInternalServerError
+				metricsStatus = metrics.RequestStatusAccountConfigErr
 				break
 			}
 		}

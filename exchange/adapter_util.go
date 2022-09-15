@@ -19,7 +19,7 @@ func BuildAdapters(client *http.Client, cfg *config.Configuration, infos config.
 	exchangeBidders := make(map[openrtb_ext.BidderName]AdaptedBidder, len(bidders))
 	for bidderName, bidder := range bidders {
 		info := infos[string(bidderName)]
-		exchangeBidder := AdaptBidder(bidder, client, cfg, me, bidderName, info.Debug)
+		exchangeBidder := AdaptBidder(bidder, client, cfg, me, bidderName, info.Debug, info.EndpointCompression)
 		exchangeBidder = addValidatedBidderMiddleware(exchangeBidder)
 		exchangeBidders[bidderName] = exchangeBidder
 	}
@@ -81,6 +81,7 @@ func GetDisabledBiddersErrorMessages(infos config.BidderInfos) map[string]string
 		"lifestreet":   `Bidder "lifestreet" is no longer available in Prebid Server. Please update your configuration.`,
 		"adagio":       `Bidder "adagio" is no longer available in Prebid Server. Please update your configuration.`,
 		"somoaudience": `Bidder "somoaudience" is no longer available in Prebid Server. Please update your configuration.`,
+		"yssp":         `Bidder "yssp" is no longer available in Prebid Server. If you're looking to use the Yahoo SSP adapter, please rename it to "yahoossp" in your configuration.`,
 	}
 
 	for name, info := range infos {
