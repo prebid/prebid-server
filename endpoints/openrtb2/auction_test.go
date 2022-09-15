@@ -124,7 +124,7 @@ func TestJsonSampleRequests(t *testing.T) {
 					}
 					test.endpointType = OPENRTB_ENDPOINT
 
-					auctionEndpointHandler, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
+					auctionEndpointHandler, _, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
 					if assert.NoError(t, err) {
 						runTestCase(t, auctionEndpointHandler, test, fileData, testFile)
 					}

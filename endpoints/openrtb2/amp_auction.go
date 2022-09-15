@@ -26,9 +26,6 @@ import (
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/privacy"
-	"github.com/prebid/prebid-server/privacy/ccpa"
-	"github.com/prebid/prebid-server/privacy/gdpr"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/stored_responses"
@@ -446,7 +443,7 @@ func (deps *endpointDeps) overrideWithParams(ampParams amp.Params, req *openrtb2
 		req.Imp[0].TagID = ampParams.Slot
 	}
 
-	policyWriter, policyWriterErr := readPolicy(ampParams.Consent)
+	policyWriter, policyWriterErr := amp.ReadPolicy(ampParams, deps.cfg.GDPR.Enabled)
 	if policyWriterErr != nil {
 		return []error{policyWriterErr}
 	}
@@ -576,25 +573,6 @@ func setAmpExtDirect(site *openrtb2.Site, value string) {
 		}
 	} else {
 		site.Ext = json.RawMessage(`{"amp":` + value + `}`)
-	}
-}
-
-func readPolicy(consent string) (privacy.PolicyWriter, error) {
-	if len(consent) == 0 {
-		return privacy.NilPolicyWriter{}, nil
-	}
-
-	if gdpr.ValidateConsent(consent) {
-		return gdpr.ConsentWriter{consent}, nil
-	}
-
-	if ccpa.ValidateConsent(consent) {
-		return ccpa.ConsentWriter{consent}, nil
-	}
-
-	return privacy.NilPolicyWriter{}, &errortypes.Warning{
-		Message:     fmt.Sprintf("Consent '%s' is not recognized as either CCPA or GDPR TCF.", consent),
-		WarningCode: errortypes.InvalidPrivacyConsentWarningCode,
 	}
 }
 
