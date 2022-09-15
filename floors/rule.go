@@ -23,7 +23,7 @@ const (
 	MediaType  string = "mediaType"
 	Size       string = "size"
 	GptSlot    string = "gptSlot"
-	PbAdSlot   string = "pbAdSlot"
+	AdUnitCode string = "adUnitCode"
 	Country    string = "country"
 	DeviceType string = "deviceType"
 	Tablet     string = "tablet"
@@ -138,8 +138,8 @@ func createRuleKey(floorSchema openrtb_ext.PriceFloorSchema, request *openrtb2.B
 			value = extractChanelNameFromBidRequestExt(request)
 		case GptSlot:
 			value = getgptslot(imp)
-		case PbAdSlot:
-			value = getpbadslot(imp)
+		case AdUnitCode:
+			value = getAdUnitCode(imp)
 		}
 		ruleKeys = append(ruleKeys, value)
 	}
@@ -287,6 +287,29 @@ func getpbadslot(imp openrtb2.Imp) string {
 		value = pbAdSlot
 	}
 	return value
+}
+
+func getAdUnitCode(imp openrtb2.Imp) string {
+	adUnitCode := CATCH_ALL
+	gpId, err := jsonparser.GetString(imp.Ext, "gpid")
+	if err == nil && gpId != "" {
+		return gpId
+	}
+
+	if imp.TagID != "" {
+		return imp.TagID
+	}
+
+	pbAdSlot, err := jsonparser.GetString(imp.Ext, "data", "pbadslot")
+	if err == nil && pbAdSlot != "" {
+		return pbAdSlot
+	}
+
+	storedrequestID, err := jsonparser.GetString(imp.Ext, "prebid", "storedrequest", "id")
+	if err == nil && storedrequestID != "" {
+		return storedrequestID
+	}
+	return adUnitCode
 }
 
 func isMobileDevice(userAgent string) bool {

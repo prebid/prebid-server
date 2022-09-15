@@ -881,7 +881,7 @@ func TestEnforceFloorToBidsConversion(t *testing.T) {
 	}
 }
 
-func TestselectFloorsAndModifyImp(t *testing.T) {
+func TestSelectFloorsAndModifyImp(t *testing.T) {
 	type args struct {
 		r                  *AuctionRequest
 		floor              config.PriceFloors

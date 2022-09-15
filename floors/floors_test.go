@@ -64,10 +64,14 @@ func TestUpdateImpsWithFloorsVariousRuleKeys(t *testing.T) {
 			"native|pbadslot123|bundle1": 0.01,
 		}, Default: 0.01}}}}
 
-	floorExt4 := &openrtb_ext.PriceFloorRules{FloorMin: 1.00, Data: &openrtb_ext.PriceFloorData{ModelGroups: []openrtb_ext.PriceFloorModelGroup{{Schema: openrtb_ext.PriceFloorSchema{Fields: []string{"mediaType", "pbAdSlot", "bundle"}},
+	floorExt4 := &openrtb_ext.PriceFloorRules{FloorMin: 1.00, Data: &openrtb_ext.PriceFloorData{ModelGroups: []openrtb_ext.PriceFloorModelGroup{{Schema: openrtb_ext.PriceFloorSchema{Fields: []string{"mediaType", "adUnitCode", "bundle"}},
 		Values: map[string]float64{
-			"native|pbadslot123|bundle1": 0.01,
-		}, Default: 0.01}}}}
+			"native|tag123|bundle1":       1.5,
+			"native|pbadslot123|bundle1":  2.0,
+			"native|storedid_123|bundle1": 3.0,
+			"native|gpid_456|bundle1":     4.0,
+			"native|*|bundle1":            5.0,
+		}, Default: 1.0}}}}
 	tt := []struct {
 		name     string
 		floorExt *openrtb_ext.PriceFloorRules
@@ -131,7 +135,7 @@ func TestUpdateImpsWithFloorsVariousRuleKeys(t *testing.T) {
 			floorCur: "USD",
 		},
 		{
-			name: "native|pbAdSlot|bundle1",
+			name: "native|adUnitCode|bundle1",
 			request: &openrtb2.BidRequest{
 				App: &openrtb2.App{
 					Bundle:    "bundle1",
@@ -142,7 +146,67 @@ func TestUpdateImpsWithFloorsVariousRuleKeys(t *testing.T) {
 				Ext:    json.RawMessage(`{"prebid": { "floors": {"data": {"currency": "USD","skipRate": 0,"schema": {"fields": [ "mediaType", "size", "domain" ] },"values": {  "banner|300x250|www.website.com": 1.01, "banner|300x250|*": 2.01, "banner|300x600|www.website.com": 3.01,  "banner|300x600|*": 4.01, "banner|728x90|www.website.com": 5.01, "banner|728x90|*": 6.01, "banner|*|www.website.com": 7.01, "banner|*|*": 8.01, "*|300x250|www.website.com": 9.01, "*|300x250|*": 10.01, "*|300x600|www.website.com": 11.01,  "*|300x600|*": 12.01,  "*|728x90|www.website.com": 13.01, "*|728x90|*": 14.01,  "*|*|www.website.com": 15.01, "*|*|*": 16.01  }, "default": 1}}}}`),
 			},
 			floorExt: floorExt4,
-			floorVal: 1.00,
+			floorVal: 2.00,
+			floorCur: "USD",
+		},
+		{
+			name: "native|adUnitCode|bundle1",
+			request: &openrtb2.BidRequest{
+				App: &openrtb2.App{
+					Bundle:    "bundle1",
+					Publisher: &openrtb2.Publisher{Domain: "www.website.com"},
+				},
+				Device: &openrtb2.Device{Geo: &openrtb2.Geo{Country: "USA"}, UA: "tablet"},
+				Imp:    []openrtb2.Imp{{ID: "1234", Native: &openrtb2.Native{}, Ext: json.RawMessage(`{"prebid": {"storedrequest": {"id": "storedid_123"}}}`)}},
+				Ext:    json.RawMessage(`{"prebid": { "floors": {"data": {"currency": "USD","skipRate": 0,"schema": {"fields": [ "mediaType", "size", "domain" ] },"values": {  "banner|300x250|www.website.com": 1.01, "banner|300x250|*": 2.01, "banner|300x600|www.website.com": 3.01,  "banner|300x600|*": 4.01, "banner|728x90|www.website.com": 5.01, "banner|728x90|*": 6.01, "banner|*|www.website.com": 7.01, "banner|*|*": 8.01, "*|300x250|www.website.com": 9.01, "*|300x250|*": 10.01, "*|300x600|www.website.com": 11.01,  "*|300x600|*": 12.01,  "*|728x90|www.website.com": 13.01, "*|728x90|*": 14.01,  "*|*|www.website.com": 15.01, "*|*|*": 16.01  }, "default": 1}}}}`),
+			},
+			floorExt: floorExt4,
+			floorVal: 3.00,
+			floorCur: "USD",
+		},
+		{
+			name: "native|adUnitCode|bundle1",
+			request: &openrtb2.BidRequest{
+				App: &openrtb2.App{
+					Bundle:    "bundle1",
+					Publisher: &openrtb2.Publisher{Domain: "www.website.com"},
+				},
+				Device: &openrtb2.Device{Geo: &openrtb2.Geo{Country: "USA"}, UA: "tablet"},
+				Imp:    []openrtb2.Imp{{ID: "1234", Native: &openrtb2.Native{}, Ext: json.RawMessage(`{"gpid": "gpid_456"}`)}},
+				Ext:    json.RawMessage(`{"prebid": { "floors": {"data": {"currency": "USD","skipRate": 0,"schema": {"fields": [ "mediaType", "size", "domain" ] },"values": {  "banner|300x250|www.website.com": 1.01, "banner|300x250|*": 2.01, "banner|300x600|www.website.com": 3.01,  "banner|300x600|*": 4.01, "banner|728x90|www.website.com": 5.01, "banner|728x90|*": 6.01, "banner|*|www.website.com": 7.01, "banner|*|*": 8.01, "*|300x250|www.website.com": 9.01, "*|300x250|*": 10.01, "*|300x600|www.website.com": 11.01,  "*|300x600|*": 12.01,  "*|728x90|www.website.com": 13.01, "*|728x90|*": 14.01,  "*|*|www.website.com": 15.01, "*|*|*": 16.01  }, "default": 1}}}}`),
+			},
+			floorExt: floorExt4,
+			floorVal: 4.00,
+			floorCur: "USD",
+		},
+		{
+			name: "native|*|bundle1",
+			request: &openrtb2.BidRequest{
+				App: &openrtb2.App{
+					Bundle:    "bundle1",
+					Publisher: &openrtb2.Publisher{Domain: "www.website.com"},
+				},
+				Device: &openrtb2.Device{Geo: &openrtb2.Geo{Country: "USA"}, UA: "tablet"},
+				Imp:    []openrtb2.Imp{{ID: "1234", Native: &openrtb2.Native{}}},
+				Ext:    json.RawMessage(`{"prebid": { "floors": {"data": {"currency": "USD","skipRate": 0,"schema": {"fields": [ "mediaType", "size", "domain" ] },"values": {  "banner|300x250|www.website.com": 1.01, "banner|300x250|*": 2.01, "banner|300x600|www.website.com": 3.01,  "banner|300x600|*": 4.01, "banner|728x90|www.website.com": 5.01, "banner|728x90|*": 6.01, "banner|*|www.website.com": 7.01, "banner|*|*": 8.01, "*|300x250|www.website.com": 9.01, "*|300x250|*": 10.01, "*|300x600|www.website.com": 11.01,  "*|300x600|*": 12.01,  "*|728x90|www.website.com": 13.01, "*|728x90|*": 14.01,  "*|*|www.website.com": 15.01, "*|*|*": 16.01  }, "default": 1}}}}`),
+			},
+			floorExt: floorExt4,
+			floorVal: 5.00,
+			floorCur: "USD",
+		},
+		{
+			name: "native|adUnitCode|bundle1",
+			request: &openrtb2.BidRequest{
+				App: &openrtb2.App{
+					Bundle:    "bundle1",
+					Publisher: &openrtb2.Publisher{Domain: "www.website.com"},
+				},
+				Device: &openrtb2.Device{Geo: &openrtb2.Geo{Country: "USA"}, UA: "tablet"},
+				Imp:    []openrtb2.Imp{{ID: "1234", TagID: "tag123", Native: &openrtb2.Native{}, Ext: json.RawMessage(`{"data": {"adserver": {"name": "gam","adslot": "adslot123"}, "pbadslot": "pbadslot123"}}`)}},
+				Ext:    json.RawMessage(`{"prebid": { "floors": {"data": {"currency": "USD","skipRate": 0,"schema": {"fields": [ "mediaType", "size", "domain" ] },"values": {  "banner|300x250|www.website.com": 1.01, "banner|300x250|*": 2.01, "banner|300x600|www.website.com": 3.01,  "banner|300x600|*": 4.01, "banner|728x90|www.website.com": 5.01, "banner|728x90|*": 6.01, "banner|*|www.website.com": 7.01, "banner|*|*": 8.01, "*|300x250|www.website.com": 9.01, "*|300x250|*": 10.01, "*|300x600|www.website.com": 11.01,  "*|300x600|*": 12.01,  "*|728x90|www.website.com": 13.01, "*|728x90|*": 14.01,  "*|*|www.website.com": 15.01, "*|*|*": 16.01  }, "default": 1}}}}`),
+			},
+			floorExt: floorExt4,
+			floorVal: 1.5,
 			floorCur: "USD",
 		},
 		{
