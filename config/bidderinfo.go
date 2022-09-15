@@ -319,7 +319,7 @@ func validateCapabilities(info *CapabilitiesInfo, bidderName string) error {
 
 func validatePlatformInfo(info *PlatformInfo) error {
 	if len(info.MediaTypes) == 0 {
-		return errors.New("at least one meda type needs to be specified")
+		return errors.New("at least one media type needs to be specified")
 	}
 
 	for index, mediaType := range info.MediaTypes {
