@@ -76,6 +76,10 @@ var (
 	errDeviceOrOSMiss = errors.New("impression is missing device OS information")
 )
 
+type reqSourceExt struct {
+	HeaderBidding int `json:"header_bidding,omitempty"`
+}
+
 // Builder builds a new instance of the operaads adapter for the given bidder with the given config.
 func Builder(_ openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	bidder := &OperaAdsAdapter{
@@ -102,6 +106,7 @@ func (a *OperaAdsAdapter) MakeRequests(
 	[]error,
 ) {
 	impCount := len(request.Imp)
+
 	requestData := make([]*adapters.RequestData, 0, impCount)
 	var errs []error
 	headers := http.Header{}
@@ -118,6 +123,13 @@ func (a *OperaAdsAdapter) MakeRequests(
 
 	// copy the bidder request
 	operaadsRequest := *request
+
+	var srcExt *reqSourceExt
+	if request.Source != nil && request.Source.Ext != nil {
+		if err := json.Unmarshal(request.Source.Ext, &srcExt); err != nil {
+			errs = append(errs, err)
+		}
+	}
 
 	for _, imp := range operaadsRequest.Imp {
 		skanSent := false
@@ -137,6 +149,19 @@ func (a *OperaAdsAdapter) MakeRequests(
 				Message: err.Error(),
 			})
 			continue
+		}
+
+		// This check is for identifying if the request comes from TJX
+		if srcExt != nil && srcExt.HeaderBidding == 1 {
+			operaadsRequest.BApp = nil
+			operaadsRequest.BAdv = nil
+
+			if operaadsExt.Blocklist.BApp != nil {
+				operaadsRequest.BApp = operaadsExt.Blocklist.BApp
+			}
+			if operaadsExt.Blocklist.BAdv != nil {
+				operaadsRequest.BAdv = operaadsExt.Blocklist.BAdv
+			}
 		}
 
 		uri := a.endpoint

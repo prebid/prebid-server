@@ -8,6 +8,11 @@ type ExtImpTJXRTBHouse struct {
 	SKADNSupported bool                   `json:"skadn_supported"`
 	MRAIDSupported bool                   `json:"mraid_supported"`
 	BidFloor       *float64               `json:"bid_floor,omitempty"`
+	Blocklist      RTBHouseBlocklist      `json:"blocklist,omitempty"`
+}
+type RTBHouseBlocklist struct {
+	BApp []string `json:"bapp,omitempty"`
+	BAdv []string `json:"badv,omitempty"`
 }
 
 // rtbHouseVideoParams defines the contract for bidrequest.imp[i].ext.rtbhouse.video

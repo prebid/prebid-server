@@ -41,6 +41,10 @@ type adapter struct {
 	SupportedRegions map[Region]string
 }
 
+type reqSourceExt struct {
+	HeaderBidding int `json:"header_bidding,omitempty"`
+}
+
 func Builder(_ openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,
@@ -74,6 +78,13 @@ func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.E
 
 	var err error
 
+	var srcExt *reqSourceExt
+	if request.Source != nil && request.Source.Ext != nil {
+		if err := json.Unmarshal(request.Source.Ext, &srcExt); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
 	for i := 0; i < numRequests; i++ {
 		skanSent := false
 
@@ -96,6 +107,19 @@ func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.E
 				Message: err.Error(),
 			})
 			continue
+		}
+
+		// This check is for identifying if the request comes from TJX
+		if srcExt != nil && srcExt.HeaderBidding == 1 {
+			taurusxRequest.BApp = nil
+			taurusxRequest.BAdv = nil
+
+			if taurusxExt.Blocklist.BApp != nil {
+				taurusxRequest.BApp = taurusxExt.Blocklist.BApp
+			}
+			if taurusxExt.Blocklist.BAdv != nil {
+				taurusxRequest.BAdv = taurusxExt.Blocklist.BAdv
+			}
 		}
 
 		impVideoExt := taurusxVideoExt{

@@ -37,6 +37,9 @@ type aarkiBannerExt struct {
 	Rewarded                int  `json:"rewarded"`
 	AllowsCustomCloseButton bool `json:"allowscustomclosebutton"`
 }
+type reqSourceExt struct {
+	HeaderBidding int `json:"header_bidding,omitempty"`
+}
 
 // AarkiAdapter ...
 type adapter struct {
@@ -78,7 +81,12 @@ func (adapter *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.Ex
 	requestImpCopy := aarkiRequest.Imp
 
 	var err error
-
+	var srcExt *reqSourceExt
+	if request.Source != nil && request.Source.Ext != nil {
+		if err := json.Unmarshal(request.Source.Ext, &srcExt); err != nil {
+			errs = append(errs, err)
+		}
+	}
 	for i := 0; i < numRequests; i++ {
 		skanSent := false
 
@@ -101,6 +109,19 @@ func (adapter *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.Ex
 				Message: err.Error(),
 			})
 			continue
+		}
+
+		// This check is for identifying if the request comes from TJX
+		if srcExt != nil && srcExt.HeaderBidding == 1 {
+			aarkiRequest.BApp = nil
+			aarkiRequest.BAdv = nil
+
+			if aarkiExt.Blocklist.BApp != nil {
+				aarkiRequest.BApp = aarkiExt.Blocklist.BApp
+			}
+			if aarkiExt.Blocklist.BAdv != nil {
+				aarkiRequest.BAdv = aarkiExt.Blocklist.BAdv
+			}
 		}
 
 		placementType := adapters.Interstitial

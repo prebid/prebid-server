@@ -152,6 +152,10 @@ type rubiconDeviceExt struct {
 	RP   rubiconDeviceExtRP                `json:"rp"`
 }
 
+type reqSourceExt struct {
+	HeaderBidding int `json:"header_bidding,omitempty"`
+}
+
 type rubiSize struct {
 	w uint16
 	h uint16
@@ -423,6 +427,7 @@ func Builder(_ openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, 
 
 func (a *RubiconMRAIDAdapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	numRequests := len(request.Imp)
+
 	errs := make([]error, 0, len(request.Imp))
 	var err error
 	requestData := make([]*adapters.RequestData, 0, numRequests)
@@ -435,6 +440,13 @@ func (a *RubiconMRAIDAdapter) MakeRequests(request *openrtb2.BidRequest, _ *adap
 
 	// copy the bidder request
 	rubiconRequest := *request
+
+	var srcExt *reqSourceExt
+	if request.Source != nil && request.Source.Ext != nil {
+		if err := json.Unmarshal(request.Source.Ext, &srcExt); err != nil {
+			errs = append(errs, err)
+		}
+	}
 
 	for i := 0; i < numRequests; i++ {
 		skanSent := false
@@ -456,6 +468,19 @@ func (a *RubiconMRAIDAdapter) MakeRequests(request *openrtb2.BidRequest, _ *adap
 				Message: err.Error(),
 			})
 			continue
+		}
+
+		// This check is for identifying if the request comes from TJX
+		if srcExt != nil && srcExt.HeaderBidding == 1 {
+			rubiconRequest.BApp = nil
+			rubiconRequest.BAdv = nil
+
+			if rubiconExt.Blocklist.BApp != nil {
+				rubiconRequest.BApp = rubiconExt.Blocklist.BApp
+			}
+			if rubiconExt.Blocklist.BAdv != nil {
+				rubiconRequest.BAdv = rubiconExt.Blocklist.BAdv
+			}
 		}
 
 		target := rubiconExt.Inventory

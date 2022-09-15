@@ -8,6 +8,11 @@ type ExtImpTJXAppier struct {
 	MRAIDSupported       bool              `json:"mraid_supported"`
 	EndcardHTMLSupported bool              `json:"endcard_html_supported"`
 	BidFloor             *float64          `json:"bid_floor,omitempty"`
+	Blocklist            AppierBlocklist   `json:"blocklist,omitempty"`
+}
+type AppierBlocklist struct {
+	BApp []string `json:"bapp,omitempty"`
+	BAdv []string `json:"badv,omitempty"`
 }
 
 // appierVideoParams defines the contract for bidrequest.imp[i].ext.appier.video

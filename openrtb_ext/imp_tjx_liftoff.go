@@ -7,6 +7,11 @@ type ExtImpTJXLiftoff struct {
 	SKADNSupported bool               `json:"skadn_supported"`
 	MRAIDSupported bool               `json:"mraid_supported"`
 	BidFloor       *float64           `json:"bid_floor,omitempty"`
+	Blocklist      LiftoffBlocklist   `json:"blocklist,omitempty"`
+}
+type LiftoffBlocklist struct {
+	BApp []string `json:"bapp,omitempty"`
+	BAdv []string `json:"badv,omitempty"`
 }
 
 // liftoffVideoParams defines the contract for bidrequest.imp[i].ext.liftoff.video

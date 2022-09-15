@@ -38,6 +38,10 @@ type rtbHouseImpExt struct {
 	SKADN    *openrtb_ext.SKADN `json:"skadn,omitempty"`
 }
 
+type reqSourceExt struct {
+	HeaderBidding int `json:"header_bidding,omitempty"`
+}
+
 // Orientation ...
 type Orientation string
 
@@ -97,6 +101,13 @@ func (adapter *RTBHouseAdapter) MakeRequests(
 
 	requestImpCopy := rthhouseRequest.Imp
 
+	var srcExt *reqSourceExt
+	if openRTBRequest.Source != nil && openRTBRequest.Source.Ext != nil {
+		if err := json.Unmarshal(openRTBRequest.Source.Ext, &srcExt); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
 	for i := 0; i < numRequests; i++ {
 		skanSent := false
 
@@ -110,12 +121,25 @@ func (adapter *RTBHouseAdapter) MakeRequests(
 			continue
 		}
 
-		var rtbHouseExt openrtb_ext.ExtImpRTBHouse
+		var rtbHouseExt openrtb_ext.ExtImpTJXRTBHouse
 		if err = json.Unmarshal(bidderExt.Bidder, &rtbHouseExt); err != nil {
 			errs = append(errs, &errortypes.BadInput{
 				Message: err.Error(),
 			})
 			continue
+		}
+
+		// This check is for identifying if the request comes from TJX
+		if srcExt != nil && srcExt.HeaderBidding == 1 {
+			rthhouseRequest.BApp = nil
+			rthhouseRequest.BAdv = nil
+
+			if rtbHouseExt.Blocklist.BApp != nil {
+				rthhouseRequest.BApp = rtbHouseExt.Blocklist.BApp
+			}
+			if rtbHouseExt.Blocklist.BAdv != nil {
+				rthhouseRequest.BAdv = rtbHouseExt.Blocklist.BAdv
+			}
 		}
 
 		// Updating required publisher id field

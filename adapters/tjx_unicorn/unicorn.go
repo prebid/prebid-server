@@ -49,6 +49,10 @@ type unicornVideoExt struct {
 	Rewarded int `json:"rewarded"`
 }
 
+type reqSourceExt struct {
+	HeaderBidding int `json:"header_bidding,omitempty"`
+}
+
 // Builder builds a new instance of the UNICORN adapter for the given bidder with the given config.
 func Builder(_ openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	bidder := &adapter{
@@ -102,6 +106,13 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 
 	var err error
 
+	var srcExt *reqSourceExt
+	if request.Source != nil && request.Source.Ext != nil {
+		if err := json.Unmarshal(request.Source.Ext, &srcExt); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
 	for i := 0; i < numRequests; i++ {
 		skanSent := false
 
@@ -124,6 +135,19 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 				Message: err.Error(),
 			})
 			continue
+		}
+
+		// This check is for identifying if the request comes from TJX
+		if srcExt != nil && srcExt.HeaderBidding == 1 {
+			unicornRequest.BApp = nil
+			unicornRequest.BAdv = nil
+
+			if unicornExt.Blocklist.BApp != nil {
+				unicornRequest.BApp = unicornExt.Blocklist.BApp
+			}
+			if unicornExt.Blocklist.BAdv != nil {
+				unicornRequest.BAdv = unicornExt.Blocklist.BAdv
+			}
 		}
 
 		if thisImp.Banner != nil {

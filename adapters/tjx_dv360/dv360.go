@@ -34,6 +34,10 @@ type dv360DeviceExt struct {
 	IFAType     string `json:"ifa_type"`
 }
 
+type reqSourceExt struct {
+	HeaderBidding int `json:"header_bidding,omitempty"`
+}
+
 type adapter struct {
 	endpoint         string
 	SupportedRegions map[Region]string
@@ -89,6 +93,13 @@ func (adapter *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.Ex
 
 	var err error
 
+	var srcExt *reqSourceExt
+	if request.Source != nil && request.Source.Ext != nil {
+		if err := json.Unmarshal(request.Source.Ext, &srcExt); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
 	for i := 0; i < numRequests; i++ {
 		// clone current imp
 		impCopy := requestImpCopy[i]
@@ -109,6 +120,19 @@ func (adapter *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.Ex
 				Message: err.Error(),
 			})
 			continue
+		}
+
+		// This check is for identifying if the request comes from TJX
+		if srcExt != nil && srcExt.HeaderBidding == 1 {
+			dv360Request.BApp = nil
+			dv360Request.BAdv = nil
+
+			if dv360Ext.Blocklist.BApp != nil {
+				dv360Request.BApp = dv360Ext.Blocklist.BApp
+			}
+			if dv360Ext.Blocklist.BAdv != nil {
+				dv360Request.BAdv = dv360Ext.Blocklist.BAdv
+			}
 		}
 
 		isTruncated := 0

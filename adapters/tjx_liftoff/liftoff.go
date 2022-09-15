@@ -129,15 +129,6 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 
 	now := time.Now()
 
-	var srcExt *reqSourceExt
-	if request.Source != nil && request.Source.Ext != nil {
-		if errSrcExt := json.Unmarshal(request.Source.Ext, &srcExt); errSrcExt != nil {
-			return nil, []error{&errortypes.BadInput{
-				Message: errSrcExt.Error(),
-			}}
-		}
-	}
-
 	// Extract multi bid enabled flag from request extension
 	var reqExt reqExt
 	if request.Ext != nil {
@@ -155,7 +146,13 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 	headers.Add("User-Agent", "prebid-server/1.0")
 
 	errs := make([]error, 0, len(request.Imp))
-	var errReqData []error
+
+	var srcExt *reqSourceExt
+	if request.Source != nil && request.Source.Ext != nil {
+		if err := json.Unmarshal(request.Source.Ext, &srcExt); err != nil {
+			errs = append(errs, err)
+		}
+	}
 
 	// to check if the request is rewarded or skippable
 	var liftoffExt openrtb_ext.ExtImpTJXLiftoff
@@ -378,9 +375,9 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 
 		for _, param := range modifiedParams {
 			liftoffRequest := *request
-			reqData, err := a.makeRequestData(&liftoffRequest, numRequests, param, headers, errs, reqExt.MultiBidSelector)
+			reqData, err := a.makeRequestData(&liftoffRequest, numRequests, param, headers, errs, reqExt.MultiBidSelector, srcExt)
 			requestData = append(requestData, reqData)
-			errReqData = append(errReqData, err...)
+			errs = append(errs, err...)
 		}
 	} else if srcExt != nil && srcExt.HeaderBidding == 1 && reqExt.MultiBidSelector > 0 && now.After(multiBidBFSandMediatorBidFloorExperiemntStartTime) {
 		bidFloorA := *liftoffExt.BidFloor
@@ -407,19 +404,19 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 		}
 		for _, param := range modifiedParams {
 			liftoffRequest := *request
-			reqData, err := a.makeRequestData(&liftoffRequest, numRequests, param, headers, errs, reqExt.MultiBidSelector)
+			reqData, err := a.makeRequestData(&liftoffRequest, numRequests, param, headers, errs, reqExt.MultiBidSelector, srcExt)
 			requestData = append(requestData, reqData)
-			errReqData = append(errReqData, err...)
+			errs = append(errs, err...)
 		}
 	} else {
 		liftoffRequest := *request
 		modifiedParams := modifiedReqParams{}
-		reqData, err := a.makeRequestData(&liftoffRequest, numRequests, modifiedParams, headers, errs, reqExt.MultiBidSelector)
+		reqData, err := a.makeRequestData(&liftoffRequest, numRequests, modifiedParams, headers, errs, reqExt.MultiBidSelector, srcExt)
 		requestData = append(requestData, reqData)
-		errReqData = append(errReqData, err...)
+		errs = append(errs, err...)
 	}
 
-	return requestData, errReqData
+	return requestData, errs
 }
 
 // MakeBids ...
@@ -487,7 +484,7 @@ func (a *adapter) MakeBids(_ *openrtb.BidRequest, externalRequest *adapters.Requ
 	return bidResponse, nil
 }
 
-func (a *adapter) makeRequestData(liftoffRequest *openrtb.BidRequest, numRequests int, modifiedParams modifiedReqParams, headers http.Header, errs []error, multiBidSelector int) (*adapters.RequestData, []error) {
+func (a *adapter) makeRequestData(liftoffRequest *openrtb.BidRequest, numRequests int, modifiedParams modifiedReqParams, headers http.Header, errs []error, multiBidSelector int, srcExt *reqSourceExt) (*adapters.RequestData, []error) {
 	var err error
 	var requestData *adapters.RequestData
 
@@ -533,6 +530,19 @@ func (a *adapter) makeRequestData(liftoffRequest *openrtb.BidRequest, numRequest
 				Message: err.Error(),
 			})
 			continue
+		}
+
+		// This check is for identifying if the request comes from TJX
+		if srcExt != nil && srcExt.HeaderBidding == 1 {
+			liftoffRequest.BApp = nil
+			liftoffRequest.BAdv = nil
+
+			if liftoffExt.Blocklist.BApp != nil {
+				liftoffRequest.BApp = liftoffExt.Blocklist.BApp
+			}
+			if liftoffExt.Blocklist.BAdv != nil {
+				liftoffRequest.BAdv = liftoffExt.Blocklist.BAdv
+			}
 		}
 
 		// default is interstitial

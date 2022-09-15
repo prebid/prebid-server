@@ -11,11 +11,16 @@ type ExtImpTJXTapjoy struct {
 	Request    TJRequest    `json:"request"`
 	Extensions TJExtensions `json:"extensions"`
 
-	Region         string   `json:"region"`
-	Reward         int      `json:"reward"`
-	SKADNSupported bool     `json:"skadn_supported"`
-	MRAIDSupported bool     `json:"mraid_supported"`
-	BidFloor       *float64 `json:"bid_floor,omitempty"`
+	Region         string      `json:"region"`
+	Reward         int         `json:"reward"`
+	SKADNSupported bool        `json:"skadn_supported"`
+	MRAIDSupported bool        `json:"mraid_supported"`
+	BidFloor       *float64    `json:"bid_floor,omitempty"`
+	Blocklist      TJBlocklist `json:"blocklist,omitempty"`
+}
+type TJBlocklist struct {
+	BApp []string `json:"bapp,omitempty"`
+	BAdv []string `json:"badv,omitempty"`
 }
 
 type TJApp struct {

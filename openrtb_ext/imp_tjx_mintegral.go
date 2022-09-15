@@ -7,6 +7,11 @@ type ExtImpTJXMintegral struct {
 	SKADNSupported bool                 `json:"skadn_supported"`
 	MRAIDSupported bool                 `json:"mraid_supported"`
 	BidFloor       *float64             `json:"bid_floor,omitempty"`
+	Blocklist      MintegralBlocklist   `json:"blocklist,omitempty"`
+}
+type MintegralBlocklist struct {
+	BApp []string `json:"bapp,omitempty"`
+	BAdv []string `json:"badv,omitempty"`
 }
 
 // mintegralVideoParams defines the contract for bidrequest.imp[i].ext.mintegral.video

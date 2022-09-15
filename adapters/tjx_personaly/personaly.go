@@ -55,6 +55,10 @@ type personalyAppExt struct {
 	AppStoreID string `json:"appstoreid"`
 }
 
+type reqSourceExt struct {
+	HeaderBidding int `json:"header_bidding,omitempty"`
+}
+
 func Builder(_ openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,
@@ -97,6 +101,13 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 
 	requestImpCopy := personalyRequest.Imp
 
+	var srcExt *reqSourceExt
+	if request.Source != nil && request.Source.Ext != nil {
+		if err := json.Unmarshal(request.Source.Ext, &srcExt); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
 	for i := 0; i < numRequests; i++ {
 		skanSent := false
 
@@ -116,6 +127,18 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 				Message: err.Error(),
 			})
 			continue
+		}
+		// This check is for identifying if the request comes from TJX
+		if srcExt != nil && srcExt.HeaderBidding == 1 {
+			personalyRequest.BApp = nil
+			personalyRequest.BAdv = nil
+
+			if personalyExt.Blocklist.BApp != nil {
+				personalyRequest.BApp = personalyExt.Blocklist.BApp
+			}
+			if personalyExt.Blocklist.BAdv != nil {
+				personalyRequest.BAdv = personalyExt.Blocklist.BAdv
+			}
 		}
 
 		// default is interstitial

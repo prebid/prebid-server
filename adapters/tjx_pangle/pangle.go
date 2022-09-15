@@ -49,6 +49,10 @@ type pangleImpExtBidder struct {
 	PlacementID string `json:"placementid,omitempty"`
 }
 
+type reqSourceExt struct {
+	HeaderBidding int `json:"header_bidding,omitempty"`
+}
+
 type pangleBidExt struct {
 	Pangle *bidExt `json:"pangle,omitempty"`
 }
@@ -110,6 +114,14 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 
 	// copy the bidder request
 	pangleRequest := *request
+
+	var srcExt *reqSourceExt
+	if request.Source != nil && request.Source.Ext != nil {
+		if err := json.Unmarshal(request.Source.Ext, &srcExt); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
 	for _, imp := range pangleRequest.Imp {
 		skanSent := false
 
@@ -124,6 +136,19 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 		if err := json.Unmarshal(impExt.Bidder, &bidderImpExt); err != nil {
 			errs = append(errs, fmt.Errorf("failed unmarshalling bidder imp ext (err)%s", err.Error()))
 			continue
+		}
+
+		// This check is for identifying if the request comes from TJX
+		if srcExt != nil && srcExt.HeaderBidding == 1 {
+			pangleRequest.BApp = nil
+			pangleRequest.BAdv = nil
+
+			if bidderImpExt.Blocklist.BApp != nil {
+				pangleRequest.BApp = bidderImpExt.Blocklist.BApp
+			}
+			if bidderImpExt.Blocklist.BAdv != nil {
+				pangleRequest.BAdv = bidderImpExt.Blocklist.BAdv
+			}
 		}
 
 		if imp.Banner != nil && !bidderImpExt.MRAIDSupported {

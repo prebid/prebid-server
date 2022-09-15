@@ -55,6 +55,10 @@ type jamppImpExt struct {
 	SKADN    *openrtb_ext.SKADN `json:"skadn,omitempty"`
 }
 
+type reqSourceExt struct {
+	HeaderBidding int `json:"header_bidding,omitempty"`
+}
+
 type jamppAppExt struct {
 	AppStoreID string `json:"appstoreid"`
 }
@@ -104,6 +108,13 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.Ex
 
 	requestImpCopy := jamppRequest.Imp
 
+	var srcExt *reqSourceExt
+	if request.Source != nil && request.Source.Ext != nil {
+		if err := json.Unmarshal(request.Source.Ext, &srcExt); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
 	for i := 0; i < numRequests; i++ {
 		skanSent := false
 
@@ -124,7 +135,18 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.Ex
 			})
 			continue
 		}
+		// This check is for identifying if the request comes from TJX
+		if srcExt != nil && srcExt.HeaderBidding == 1 {
+			jamppRequest.BApp = nil
+			jamppRequest.BAdv = nil
 
+			if jamppExt.Blocklist.BApp != nil {
+				jamppRequest.BApp = jamppExt.Blocklist.BApp
+			}
+			if jamppExt.Blocklist.BAdv != nil {
+				jamppRequest.BAdv = jamppExt.Blocklist.BAdv
+			}
+		}
 		// default is interstitial
 		placementType := adapters.Interstitial
 		rewarded := 0

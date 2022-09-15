@@ -14,11 +14,16 @@ type ExtImpTJXRubicon struct {
 	Video     tjxRubiconVideoParams `json:"video"`
 	Debug     impExtTJXRubiconDebug `json:"debug,omitempty"`
 
-	Region             string   `json:"region"`
-	ViewabilityVendors []string `json:"viewabilityvendors"`
-	SKADNSupported     bool     `json:"skadn_supported"`
-	MRAIDSupported     bool     `json:"mraid_supported"`
-	BidFloor           *float64 `json:"bid_floor,omitempty"`
+	Region             string           `json:"region"`
+	ViewabilityVendors []string         `json:"viewabilityvendors"`
+	SKADNSupported     bool             `json:"skadn_supported"`
+	MRAIDSupported     bool             `json:"mraid_supported"`
+	BidFloor           *float64         `json:"bid_floor,omitempty"`
+	Blocklist          RubiconBlocklist `json:"blocklist,omitempty"`
+}
+type RubiconBlocklist struct {
+	BApp []string `json:"bapp,omitempty"`
+	BAdv []string `json:"badv,omitempty"`
 }
 
 // rubiconVideoParams defines the contract for bidrequest.imp[i].ext.rubicon.video

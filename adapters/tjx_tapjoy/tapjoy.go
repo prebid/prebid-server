@@ -21,6 +21,10 @@ type adapter struct {
 	endpoint string
 }
 
+type reqSourceExt struct {
+	HeaderBidding int `json:"header_bidding,omitempty"`
+}
+
 func Builder(_ openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,
@@ -49,6 +53,13 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 
 	requestImpCopy := requestCopy.Imp
 
+	var srcExt *reqSourceExt
+	if request.Source != nil && request.Source.Ext != nil {
+		if err := json.Unmarshal(request.Source.Ext, &srcExt); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
 	for i := 0; i < numRequests; i++ {
 		thisImp := requestImpCopy[i]
 
@@ -66,6 +77,19 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 				Message: err.Error(),
 			})
 			continue
+		}
+
+		// This check is for identifying if the request comes from TJX
+		if srcExt != nil && srcExt.HeaderBidding == 1 {
+			requestCopy.BApp = nil
+			requestCopy.BAdv = nil
+
+			if tapjoyExt.Blocklist.BApp != nil {
+				requestCopy.BApp = tapjoyExt.Blocklist.BApp
+			}
+			if tapjoyExt.Blocklist.BAdv != nil {
+				requestCopy.BAdv = tapjoyExt.Blocklist.BAdv
+			}
 		}
 
 		// this is important as its used by optsoa and ds teams

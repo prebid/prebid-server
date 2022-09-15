@@ -22,6 +22,10 @@ type youappiImpExt struct {
 	SKADN    *openrtb_ext.SKADN `json:"skadn,omitempty"`
 }
 
+type reqSourceExt struct {
+	HeaderBidding int `json:"header_bidding,omitempty"`
+}
+
 type adapter struct {
 	endpoint         string
 	supportedRegions map[tjx_base.Region]string
@@ -55,6 +59,13 @@ func (adapter *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.Ex
 
 	var err error
 
+	var srcExt *reqSourceExt
+	if request.Source != nil && request.Source.Ext != nil {
+		if err := json.Unmarshal(request.Source.Ext, &srcExt); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
 	for i := 0; i < numRequests; i++ {
 		// clone current imp
 		thisImp := requestImpCopy[i]
@@ -75,6 +86,19 @@ func (adapter *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.Ex
 				Message: err.Error(),
 			})
 			continue
+		}
+
+		// This check is for identifying if the request comes from TJX
+		if srcExt != nil && srcExt.HeaderBidding == 1 {
+			youappiRequest.BApp = nil
+			youappiRequest.BAdv = nil
+
+			if youappiExt.Blocklist.BApp != nil {
+				youappiRequest.BApp = youappiExt.Blocklist.BApp
+			}
+			if youappiExt.Blocklist.BAdv != nil {
+				youappiRequest.BAdv = youappiExt.Blocklist.BAdv
+			}
 		}
 
 		// remove banner if mraid is not supported

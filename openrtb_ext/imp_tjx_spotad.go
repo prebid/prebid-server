@@ -7,6 +7,11 @@ type ExtImpTJXSpotAd struct {
 	SKADNSupported bool              `json:"skadn_supported"`
 	MRAIDSupported bool              `json:"mraid_supported"`
 	BidFloor       *float64          `json:"bid_floor,omitempty"`
+	Blocklist      SpotAdBlocklist   `json:"blocklist,omitempty"`
+}
+type SpotAdBlocklist struct {
+	BApp []string `json:"bapp,omitempty"`
+	BAdv []string `json:"badv,omitempty"`
 }
 
 // spotadVideoParams defines the contract for bidrequest.imp[i].ext.spotad.video

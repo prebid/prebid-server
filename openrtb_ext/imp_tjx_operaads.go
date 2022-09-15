@@ -10,6 +10,11 @@ type ExtImpTJXOperaAds struct {
 	EndpointId     string               `json:"endpointId"`
 	PlacementId    operaAdsPlacementIds `json:"placementId"`
 	BidFloor       *float64             `json:"bid_floor,omitempty"`
+	Blocklist      OperaAdsBlocklist    `json:"blocklist,omitempty"`
+}
+type OperaAdsBlocklist struct {
+	BApp []string `json:"bapp,omitempty"`
+	BAdv []string `json:"badv,omitempty"`
 }
 
 // operaadsVideoParams defines the contract for bidrequest.imp[i].ext.operaads.video

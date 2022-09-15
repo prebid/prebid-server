@@ -7,6 +7,11 @@ type ExtImpTJXScaleMonk struct {
 	SKADNSupported bool                 `json:"skadn_supported"`
 	MRAIDSupported bool                 `json:"mraid_supported"`
 	BidFloor       *float64             `json:"bid_floor,omitempty"`
+	Blocklist      ScaleMonkBlocklist   `json:"blocklist,omitempty"`
+}
+type ScaleMonkBlocklist struct {
+	BApp []string `json:"bapp,omitempty"`
+	BAdv []string `json:"badv,omitempty"`
 }
 
 // scaleMonkVideoParams defines the contract for bidrequest.imp[i].ext.scalemonk.video
