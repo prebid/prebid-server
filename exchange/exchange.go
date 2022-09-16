@@ -19,7 +19,6 @@ import (
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/firstpartydata"
-	"github.com/prebid/prebid-server/floors"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -67,7 +66,7 @@ type exchange struct {
 	categoriesFetcher stored_requests.CategoryFetcher
 	bidIDGenerator    BidIDGenerator
 	hostSChainNode    *openrtb_ext.ExtRequestPrebidSChainSChainNode
-	floor             floors.Floor
+	floor             config.PriceFloors
 	trakerURL         string
 }
 
@@ -146,7 +145,7 @@ func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid
 		},
 		bidIDGenerator: &bidIDGenerator{cfg.GenerateBidID},
 		hostSChainNode: cfg.HostSChainNode,
-		floor:          floors.NewFloorConfig(cfg.PriceFloors),
+		floor:          cfg.PriceFloors,
 		trakerURL:      cfg.TrackerURL,
 	}
 }
@@ -250,7 +249,8 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	conversions := e.getAuctionCurrencyRates(requestExt.Prebid.CurrencyConversions)
 
 	// If floors feature is enabled at server and request level, Update floors values in impression object
-	floorErrs := SignalFloors(&r, e.floor, conversions, responseDebugAllow)
+	floorErrs := selectFloorsAndModifyImp(&r, e.floor, conversions, responseDebugAllow)
+	errs = append(errs, floorErrs...)
 
 	recordImpMetrics(r.BidRequestWrapper.BidRequest, e.me)
 
@@ -294,10 +294,8 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	if anyBidsReturned {
 
 		//If floor enforcement config enabled then filter bids
-		adapterBids, bidRejections := EnforceFloors(&r, adapterBids, e.floor, conversions, responseDebugAllow)
-		for _, message := range bidRejections {
-			errs = append(errs, errors.New(message))
-		}
+		adapterBids, enforceErrs := enforceFloors(&r, adapterBids, e.floor, conversions, responseDebugAllow)
+		errs = append(errs, enforceErrs...)
 
 		adapterBids, rejections := applyAdvertiserBlocking(r.BidRequestWrapper.BidRequest, adapterBids)
 

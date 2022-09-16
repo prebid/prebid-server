@@ -206,6 +206,14 @@ func TestShouldSkipFloors(t *testing.T) {
 			randomGen:           func(i int) int { return 70 },
 			out:                 false,
 		},
+		{
+			name:                "RootSkipRate=100  with with skip = true",
+			ModelGroupsSkipRate: 0,
+			DataSkipRate:        0,
+			RootSkipRate:        100,
+			randomGen:           func(i int) int { return 100 },
+			out:                 true,
+		},
 	}
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {

@@ -98,18 +98,18 @@ func shouldSkipFloors(ModelGroupsSkipRate, DataSkipRate, RootSkipRate int, f fun
 	} else {
 		skipRate = RootSkipRate
 	}
-	return skipRate > f(SKIP_RATE_MAX+1)
+	return skipRate >= f(SKIP_RATE_MAX+1)
 }
 
-func findRule(RuleValues map[string]float64, delimiter string, desiredRuleKey []string, numFields int) string {
+func findRule(ruleValues map[string]float64, delimiter string, desiredRuleKey []string, numFields int) (string, bool) {
 
 	ruleKeys := prepareRuleCombinations(desiredRuleKey, numFields, delimiter)
 	for i := 0; i < len(ruleKeys); i++ {
-		if _, ok := RuleValues[ruleKeys[i]]; ok {
-			return ruleKeys[i]
+		if _, ok := ruleValues[ruleKeys[i]]; ok {
+			return ruleKeys[i], true
 		}
 	}
-	return ""
+	return "", false
 }
 
 func createRuleKey(floorSchema openrtb_ext.PriceFloorSchema, request *openrtb2.BidRequest, imp openrtb2.Imp) []string {
@@ -155,6 +155,7 @@ func getDeviceType(request *openrtb2.BidRequest) string {
 	}
 	return value
 }
+
 func getDeviceCountry(request *openrtb2.BidRequest) string {
 	value := CATCH_ALL
 	if request.Device != nil && request.Device.Geo != nil {
@@ -258,7 +259,6 @@ func getgptslot(imp openrtb2.Imp) string {
 		value = getpbadslot(imp)
 	}
 	return value
-
 }
 
 func extractChanelNameFromBidRequestExt(bidRequest *openrtb2.BidRequest) string {
@@ -281,12 +281,12 @@ func extractChanelNameFromBidRequestExt(bidRequest *openrtb2.BidRequest) string 
 }
 
 func getpbadslot(imp openrtb2.Imp) string {
-	pbAdSlot := CATCH_ALL
-	value, err := jsonparser.GetString(imp.Ext, "data", "pbadslot")
-	if err == nil && pbAdSlot != "" {
-		pbAdSlot = value
+	value := CATCH_ALL
+	pbAdSlot, err := jsonparser.GetString(imp.Ext, "data", "pbadslot")
+	if err == nil {
+		value = pbAdSlot
 	}
-	return pbAdSlot
+	return value
 }
 
 func getAdUnitCode(imp openrtb2.Imp) string {
@@ -341,7 +341,7 @@ func prepareRuleCombinations(keys []string, numSchemaFields int, delimiter strin
 	}
 	desiredkeys = append(desiredkeys, subset)
 	for numWildCart := 1; numWildCart <= numSchemaFields; numWildCart++ {
-		newComb := GenerateCombinations(comb, numWildCart, segNum)
+		newComb := generateCombinations(comb, numWildCart, segNum)
 		for i := 0; i < len(newComb); i++ {
 			eachSet := make([]string, len(desiredkeys[0]))
 			_ = copy(eachSet, desiredkeys[0])
@@ -351,11 +351,11 @@ func prepareRuleCombinations(keys []string, numSchemaFields int, delimiter strin
 			desiredkeys = append(desiredkeys, eachSet)
 		}
 	}
-	ruleKeys = PrepareRuleKeys(desiredkeys, delimiter)
+	ruleKeys = prepareRuleKeys(desiredkeys, delimiter)
 	return ruleKeys
 }
 
-func PrepareRuleKeys(desiredkeys [][]string, delimiter string) []string {
+func prepareRuleKeys(desiredkeys [][]string, delimiter string) []string {
 	var ruleKeys []string
 	for i := 0; i < len(desiredkeys); i++ {
 		subset := desiredkeys[i][0]
@@ -367,7 +367,7 @@ func PrepareRuleKeys(desiredkeys [][]string, delimiter string) []string {
 	return ruleKeys
 }
 
-func GenerateCombinations(set []int, numWildCart int, segNum int) (comb [][]int) {
+func generateCombinations(set []int, numWildCart int, segNum int) (comb [][]int) {
 	length := uint(len(set))
 
 	if numWildCart > len(set) {
@@ -400,6 +400,5 @@ func GenerateCombinations(set []int, numWildCart int, segNum int) (comb [][]int)
 		}
 		return wt1 < wt2
 	})
-
 	return comb
 }
