@@ -578,23 +578,25 @@ func setAmpExtDirect(site *openrtb2.Site, value string) {
 
 // Sets the effective publisher ID for amp request
 func setEffectiveAmpPubID(req *openrtb2.BidRequest, account string) {
+	// ACCOUNT_ID is the unresolved macro name and should be ignored.
+	if account == "" || account == "ACCOUNT_ID" {
+		return
+	}
+
 	var pub *openrtb2.Publisher
 	if req.App != nil {
 		if req.App.Publisher == nil {
-			req.App.Publisher = new(openrtb2.Publisher)
+			req.App.Publisher = &openrtb2.Publisher{}
 		}
 		pub = req.App.Publisher
 	} else if req.Site != nil {
 		if req.Site.Publisher == nil {
-			req.Site.Publisher = new(openrtb2.Publisher)
+			req.Site.Publisher = &openrtb2.Publisher{}
 		}
 		pub = req.Site.Publisher
 	}
 
 	if pub.ID == "" {
-		// ACCOUNT_ID is the unresolved macro name and should be ignored.
-		if account != "" && account != "ACCOUNT_ID" {
-			pub.ID = account
-		}
+		pub.ID = account
 	}
 }

@@ -33,7 +33,7 @@ func TestGoodAmpRequests(t *testing.T) {
 		testFiles []string
 	}{
 		{
-			desc: "Valid whole, tag_id param only",
+			desc: "Valid supplementary, tag_id param only",
 			dir:  "sample-requests/amp/valid-supplementary/",
 			testFiles: []string{
 				"aliased-buyeruids.json",
@@ -120,7 +120,11 @@ func TestGoodAmpRequests(t *testing.T) {
 				}
 			}
 			if test.ExpectedValidatedBidReq != nil {
-				assert.Equal(t, test.ExpectedValidatedBidReq, ex.actualValidatedBidReq, "Not the expected validated request. Test file: %s", filename)
+				// compare as json to ignore whitespace and ext field ordering
+				actualJson, err := json.Marshal(ex.actualValidatedBidReq)
+				if assert.NoError(t, err, "Error converting actual bid request to json. Test file: %s", filename) {
+					assert.JSONEq(t, string(test.ExpectedValidatedBidReq), string(actualJson), "Not the expected validated request. Test file: %s", filename)
+				}
 			}
 		}
 	}
@@ -1197,11 +1201,21 @@ func TestSetEffectiveAmpPubID(t *testing.T) {
 	for _, test := range testCases {
 		setEffectiveAmpPubID(test.req, test.account)
 		if test.req.Site != nil {
-			assert.Equal(t, test.expectedPubID, test.req.Site.Publisher.ID,
-				"should return the expected Publisher ID for test case: %s", test.description)
+			if test.req.Site.Publisher == nil {
+				assert.Empty(t, test.expectedPubID,
+					"should return the expected Publisher ID for test case: %s", test.description)
+			} else {
+				assert.Equal(t, test.expectedPubID, test.req.Site.Publisher.ID,
+					"should return the expected Publisher ID for test case: %s", test.description)
+			}
 		} else {
-			assert.Equal(t, test.expectedPubID, test.req.App.Publisher.ID,
-				"should return the expected Publisher ID for test case: %s", test.description)
+			if test.req.App.Publisher == nil {
+				assert.Empty(t, test.expectedPubID,
+					"should return the expected Publisher ID for test case: %s", test.description)
+			} else {
+				assert.Equal(t, test.expectedPubID, test.req.App.Publisher.ID,
+					"should return the expected Publisher ID for test case: %s", test.description)
+			}
 		}
 	}
 }
@@ -1217,19 +1231,14 @@ func newMockLogger(ao *analytics.AmpObject) analytics.PBSAnalyticsModule {
 }
 
 func (logger mockLogger) LogAuctionObject(ao *analytics.AuctionObject) {
-	return
 }
 func (logger mockLogger) LogVideoObject(vo *analytics.VideoObject) {
-	return
 }
 func (logger mockLogger) LogCookieSyncObject(cookieObject *analytics.CookieSyncObject) {
-	return
 }
 func (logger mockLogger) LogSetUIDObject(uuidObj *analytics.SetUIDObject) {
-	return
 }
 func (logger mockLogger) LogNotificationEventObject(uuidObj *analytics.NotificationEvent) {
-	return
 }
 func (logger mockLogger) LogAmpObject(ao *analytics.AmpObject) {
 	*logger.ampObject = *ao
@@ -1282,9 +1291,8 @@ func TestBuildAmpObject(t *testing.T) {
 						IP: "192.0.2.1",
 					},
 					Site: &openrtb2.Site{
-						Page:      "prebid.org",
-						Publisher: &openrtb2.Publisher{},
-						Ext:       json.RawMessage(`{"amp":1}`),
+						Page: "prebid.org",
+						Ext:  json.RawMessage(`{"amp":1}`),
 					},
 					Imp: []openrtb2.Imp{
 						{

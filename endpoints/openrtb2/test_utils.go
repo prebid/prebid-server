@@ -59,13 +59,13 @@ const (
 type testCase struct {
 	// Common
 	endpointType            int
-	Description             string               `json:"description"`
-	Config                  *testConfigValues    `json:"config"`
-	BidRequest              json.RawMessage      `json:"mockBidRequest"`
-	ExpectedValidatedBidReq *openrtb2.BidRequest `json:"expectedValidatedBidRequest"`
-	ExpectedReturnCode      int                  `json:"expectedReturnCode,omitempty"`
-	ExpectedErrorMessage    string               `json:"expectedErrorMessage"`
-	Query                   string               `json:"query"`
+	Description             string            `json:"description"`
+	Config                  *testConfigValues `json:"config"`
+	BidRequest              json.RawMessage   `json:"mockBidRequest"`
+	ExpectedValidatedBidReq json.RawMessage   `json:"expectedValidatedBidRequest"`
+	ExpectedReturnCode      int               `json:"expectedReturnCode,omitempty"`
+	ExpectedErrorMessage    string            `json:"expectedErrorMessage"`
+	Query                   string            `json:"query"`
 
 	// "/openrtb2/auction" endpoint JSON test info
 	ExpectedBidResponse json.RawMessage `json:"expectedBidResponse"`
