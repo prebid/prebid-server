@@ -97,6 +97,7 @@ func setHeaders(ortbRequest openrtb2.BidRequest) http.Header {
 
 func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter, noCookies bool) (string, []error) {
 	uri, err := url.Parse(a.endpoint)
+	endpointUrl := a.endpoint
 	if err != nil {
 		return "", []error{fmt.Errorf("failed to parse Adnuntius endpoint: %v", err)}
 	}
@@ -124,8 +125,12 @@ func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter, noCookies bool
 	tzo := -offset / minutesInHour
 
 	q := uri.Query()
-	if gdpr != "" && consent != "" {
+	if gdpr != "" {
+		endpointUrl = "https://europe.delivery.adnuntius.com/i"
 		q.Set("gdpr", gdpr)
+	}
+
+	if consent != "" {
 		q.Set("consentString", consent)
 	}
 
@@ -136,7 +141,7 @@ func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter, noCookies bool
 	q.Set("tzo", fmt.Sprint(tzo))
 	q.Set("format", "json")
 
-	url := a.endpoint + "?" + q.Encode()
+	url := endpointUrl + "?" + q.Encode()
 	return url, nil
 }
 
@@ -281,6 +286,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *adapte
 }
 
 func getGDPR(request *openrtb2.BidRequest) (string, string, error) {
+
 	gdpr := ""
 	var extRegs openrtb_ext.ExtRegs
 	if request.Regs != nil && request.Regs.Ext != nil {
