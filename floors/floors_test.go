@@ -37,7 +37,7 @@ func TestIsRequestEnabledWithFloor(t *testing.T) {
 	}
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			out := IsRequestEnabledWithFloor(tc.in.Prebid.Floors)
+			out := tc.in.Prebid.Floors.GetEnabled()
 			if !reflect.DeepEqual(out, tc.out) {
 				t.Errorf("error: \nreturn:\t%v\nwant:\t%v", out, tc.out)
 			}
@@ -72,6 +72,7 @@ func TestUpdateImpsWithFloorsVariousRuleKeys(t *testing.T) {
 			"native|gpid_456|bundle1":     4.0,
 			"native|*|bundle1":            5.0,
 		}, Default: 1.0}}}}
+
 	tt := []struct {
 		name     string
 		floorExt *openrtb_ext.PriceFloorRules
@@ -87,7 +88,7 @@ func TestUpdateImpsWithFloorsVariousRuleKeys(t *testing.T) {
 				},
 				Device: &openrtb2.Device{Geo: &openrtb2.Geo{Country: "USA"}, UA: "Phone"},
 				Imp:    []openrtb2.Imp{{ID: "1234", Audio: &openrtb2.Audio{MaxDuration: 10}}},
-				Ext:    json.RawMessage(`{"data":{"modelgroups":[{"schema":{"fields":["mediaType","country","deviceType"]},"values":{"audio|USA|phone":1.01},"default":0.01}]}}`),
+				Ext:    json.RawMessage(`{"prebid": {"floors": {"data": {"currency": "USD","skipRate": 0, "schema": {"fields": ["channel","size","domain"]},"values": {"chName|USA|tablet": 1.01, "*|*|*": 16.01},"default": 1},"channel": {"name": "chName","version": "ver1"}}}}`),
 			},
 			floorExt: floorExt,
 			floorVal: 1.01,
@@ -228,7 +229,7 @@ func TestUpdateImpsWithFloorsVariousRuleKeys(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			_ = UpdateImpsWithFloors(tc.floorExt, tc.request, nil)
+			_ = ModifyImpsWithFloors(tc.floorExt, tc.request, nil)
 			if !reflect.DeepEqual(tc.request.Imp[0].BidFloor, tc.floorVal) {
 				t.Errorf("Floor Value error: \nreturn:\t%v\nwant:\t%v", tc.request.Imp[0].BidFloor, tc.floorVal)
 			}
@@ -457,7 +458,7 @@ func TestUpdateImpsWithFloors(t *testing.T) {
 	}
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			_ = UpdateImpsWithFloors(tc.floorExt, tc.request, getCurrencyRates(rates))
+			_ = ModifyImpsWithFloors(tc.floorExt, tc.request, getCurrencyRates(rates))
 			if !reflect.DeepEqual(tc.request.Imp[0].BidFloor, tc.floorVal) {
 				t.Errorf("Floor Value error: \nreturn:\t%v\nwant:\t%v", tc.request.Imp[0].BidFloor, tc.floorVal)
 			}
@@ -555,7 +556,7 @@ func TestUpdateImpsWithModelGroups(t *testing.T) {
 	}
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			_ = UpdateImpsWithFloors(tc.floorExt, tc.request, getCurrencyRates(rates))
+			_ = ModifyImpsWithFloors(tc.floorExt, tc.request, getCurrencyRates(rates))
 			if tc.floorExt.Skipped != nil && *tc.floorExt.Skipped != true {
 				if !reflect.DeepEqual(tc.request.Imp[0].BidFloor, tc.floorVal) {
 					t.Errorf("Floor Value error: \nreturn:\t%v\nwant:\t%v", tc.request.Imp[0].BidFloor, tc.floorVal)
@@ -632,7 +633,7 @@ func TestUpdateImpsWithInvalidModelGroups(t *testing.T) {
 	}
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			ErrList := UpdateImpsWithFloors(tc.floorExt, tc.request, getCurrencyRates(rates))
+			ErrList := ModifyImpsWithFloors(tc.floorExt, tc.request, getCurrencyRates(rates))
 
 			if !reflect.DeepEqual(tc.request.Imp[0].BidFloor, tc.floorVal) {
 				t.Errorf("Floor Value error: \nreturn:\t%v\nwant:\t%v", tc.request.Imp[0].BidFloor, tc.floorVal)
@@ -744,7 +745,7 @@ func TestUpdateImpsWithFloorsCurrecnyConversion(t *testing.T) {
 	}
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			_ = UpdateImpsWithFloors(tc.floorExt, tc.request, getCurrencyRates(rates))
+			_ = ModifyImpsWithFloors(tc.floorExt, tc.request, getCurrencyRates(rates))
 			if !reflect.DeepEqual(tc.request.Imp[0].BidFloor, tc.floorVal) {
 				t.Errorf("Floor Value error: \nreturn:\t%v\nwant:\t%v", tc.request.Imp[0].BidFloor, tc.floorVal)
 			}

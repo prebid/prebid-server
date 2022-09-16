@@ -8,8 +8,9 @@ import (
 	"testing"
 
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
+
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
-	"github.com/prebid/prebid-server/floors"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
@@ -35,6 +36,15 @@ func (c convert) GetRate(from string, to string) (float64, error) {
 
 func (c convert) GetRates() *map[string]map[string]float64 {
 	return &map[string]map[string]float64{}
+}
+
+func ErrToString(Err []error) []string {
+	var errString []string
+	for _, eachErr := range Err {
+		errString = append(errString, eachErr.Error())
+	}
+	sort.Strings(errString)
+	return errString
 }
 
 func TestEnforceFloorToBids(t *testing.T) {
@@ -585,7 +595,8 @@ func TestEnforceFloorToBids(t *testing.T) {
 			name: "Impression does not have currency defined",
 			args: args{
 				bidRequest: &openrtb2.BidRequest{
-					ID: "some-request-id",
+					ID:  "some-request-id",
+					Cur: []string{"USD"},
 					Imp: []openrtb2.Imp{
 						{
 							ID:       "some-impression-id-1",
@@ -679,7 +690,8 @@ func TestEnforceFloorToBids(t *testing.T) {
 			name: "Impression map does not have imp id",
 			args: args{
 				bidRequest: &openrtb2.BidRequest{
-					ID: "some-request-id",
+					ID:  "some-request-id",
+					Cur: []string{"USD"},
 					Imp: []openrtb2.Imp{
 						{
 							ID:       "some-impression-id-1",
@@ -779,12 +791,11 @@ func TestEnforceFloorToBids(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1 := EnforceFloorToBids(tt.args.bidRequest, tt.args.seatBids, tt.args.conversions, tt.args.enforceDealFloors)
+			got, got1 := enforceFloorToBids(tt.args.bidRequest, tt.args.seatBids, tt.args.conversions, tt.args.enforceDealFloors)
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("EnforceFloorToBids() got = %v, want %v", got, tt.want)
+				t.Errorf("enforceFloorToBids() got = %v, want %v", got, tt.want)
 			}
-			sort.Strings(got1)
-			assert.Equal(t, tt.want1, got1)
+			assert.Equal(t, tt.want1, ErrToString(got1))
 		})
 	}
 }
@@ -808,7 +819,8 @@ func TestEnforceFloorToBidsConversion(t *testing.T) {
 			name: "Error in currency conversion",
 			args: args{
 				bidRequest: &openrtb2.BidRequest{
-					ID: "some-request-id",
+					ID:  "some-request-id",
+					Cur: []string{"USD"},
 					Imp: []openrtb2.Imp{
 						{
 							ID:       "some-impression-id-1",
@@ -863,31 +875,17 @@ func TestEnforceFloorToBidsConversion(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1 := EnforceFloorToBids(tt.args.bidRequest, tt.args.seatBids, tt.args.conversions, tt.args.enforceDealFloors)
+			got, got1 := enforceFloorToBids(tt.args.bidRequest, tt.args.seatBids, tt.args.conversions, tt.args.enforceDealFloors)
 			assert.Equal(t, tt.want, got)
-			assert.Equal(t, tt.want1, got1)
+			assert.Equal(t, tt.want1, ErrToString(got1))
 		})
 	}
 }
 
-type floorStruct struct{}
-
-func (f floorStruct) Enabled() bool {
-	return true
-}
-
-func (f floorStruct) GetEnforceRate() int {
-	return 100
-}
-
-func (f floorStruct) EnforceDealFloor() bool {
-	return true
-}
-
-func TestSignalFloors(t *testing.T) {
+func TestSelectFloorsAndModifyImp(t *testing.T) {
 	type args struct {
 		r                  *AuctionRequest
-		floor              floors.Floor
+		floor              config.PriceFloors
 		conversions        currency.Conversions
 		responseDebugAllow bool
 	}
@@ -906,7 +904,11 @@ func TestSignalFloors(t *testing.T) {
 					ar := AuctionRequest{BidRequestWrapper: &wrapper}
 					return &ar
 				}(),
-				floor:              floorStruct{},
+				floor: config.PriceFloors{
+					Enabled:           true,
+					EnforceFloorsRate: 100,
+					EnforceDealFloors: true,
+				},
 				conversions:        convert{},
 				responseDebugAllow: true,
 			},
@@ -915,8 +917,8 @@ func TestSignalFloors(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := SignalFloors(tt.args.r, tt.args.floor, tt.args.conversions, tt.args.responseDebugAllow); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("SignalFloors() = %v, want %v", got, tt.want)
+			if got := selectFloorsAndModifyImp(tt.args.r, tt.args.floor, tt.args.conversions, tt.args.responseDebugAllow); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("selectFloorsAndModifyImp() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -926,7 +928,7 @@ func TestEnforceFloors(t *testing.T) {
 	type args struct {
 		r                  *AuctionRequest
 		seatBids           map[openrtb_ext.BidderName]*pbsOrtbSeatBid
-		floor              floors.Floor
+		floor              config.PriceFloors
 		conversions        currency.Conversions
 		responseDebugAllow bool
 	}
@@ -974,7 +976,11 @@ func TestEnforceFloors(t *testing.T) {
 						currency: "USD",
 					},
 				},
-				floor:              floorStruct{},
+				floor: config.PriceFloors{
+					Enabled:           true,
+					EnforceFloorsRate: 100,
+					EnforceDealFloors: true,
+				},
 				conversions:        convert{},
 				responseDebugAllow: true,
 			},
@@ -993,12 +999,11 @@ func TestEnforceFloors(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1 := EnforceFloors(tt.args.r, tt.args.seatBids, tt.args.floor, tt.args.conversions, tt.args.responseDebugAllow)
+			got, got1 := enforceFloors(tt.args.r, tt.args.seatBids, tt.args.floor, tt.args.conversions, tt.args.responseDebugAllow)
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("EnforceFloors() got = %v, want %v", got, tt.want)
+				t.Errorf("enforceFloors() got = %v, want %v", got, tt.want)
 			}
-			sort.Strings(got1)
-			assert.Equal(t, tt.want1, got1)
+			assert.Equal(t, tt.want1, ErrToString(got1))
 		})
 	}
 }

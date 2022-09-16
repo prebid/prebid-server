@@ -188,8 +188,8 @@ func TestShouldEnforceFloors(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := ShouldEnforceFloors(tt.args.bidRequest, tt.args.floorExt, tt.args.configEnforceRate, tt.args.f); got != tt.want {
-				t.Errorf("ShouldEnforceFloors() = %v, want %v", got, tt.want)
+			if got := ShouldEnforce(tt.args.bidRequest, tt.args.floorExt, tt.args.configEnforceRate, tt.args.f); got != tt.want {
+				t.Errorf("ShouldEnforce() = %v, want %v", got, tt.want)
 			}
 		})
 	}
