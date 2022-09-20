@@ -81,6 +81,8 @@ func (adapter *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.Ex
 	requestImpCopy := aarkiRequest.Imp
 
 	var err error
+
+	// this will be removed from all bidders after ad_service changes
 	var srcExt *reqSourceExt
 	if request.Source != nil && request.Source.Ext != nil {
 		if err := json.Unmarshal(request.Source.Ext, &srcExt); err != nil {
