@@ -1,3 +1,4 @@
+endpoint: "https://tlx.3lift.com/s2s/auction?sra=1&supplier_id=20"
 maintainer:
   email: "prebid@triplelift.com"
 gvlVendorID: 28

@@ -51,13 +51,12 @@ func TestNewExchange(t *testing.T) {
 		CacheURL: config.Cache{
 			ExpectedTimeMillis: 20,
 		},
-		Adapters: blankAdapterConfig(knownAdapters),
 		GDPR: config.GDPR{
 			EEACountries: []string{"FIN", "FRA", "GUF"},
 		},
 	}
 
-	biddersInfo, err := config.LoadBidderInfoFromDisk("../static/bidder-info", cfg.Adapters, openrtb_ext.BuildBidderStringSlice())
+	biddersInfo, err := config.LoadBidderInfo("../static/bidder-info")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -81,7 +80,9 @@ func TestNewExchange(t *testing.T) {
 	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, tcf2ConfigBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}).(*exchange)
 	for _, bidderName := range knownAdapters {
 		if _, ok := e.adapterMap[bidderName]; !ok {
-			t.Errorf("NewExchange produced an Exchange without bidder %s", bidderName)
+			if biddersInfo[string(bidderName)].IsEnabled() {
+				t.Errorf("NewExchange produced an Exchange without bidder %s", bidderName)
+			}
 		}
 	}
 	if e.cacheTime != time.Duration(cfg.CacheURL.ExpectedTimeMillis)*time.Millisecond {
@@ -100,25 +101,18 @@ func TestNewExchange(t *testing.T) {
 //  4. Build a BidResponse struct using exchange.buildBidResponse(ctx.Background(), liveA... )
 //  5. Assert we have no '&' characters in the response that exchange.buildBidResponse returns
 func TestCharacterEscape(t *testing.T) {
+
 	// 1) Adapter with a '& char in its endpoint property
 	//    https://github.com/prebid/prebid-server/issues/465
-	cfg := &config.Configuration{
-		Adapters: make(map[string]config.Adapter, 1),
-	}
-	cfg.Adapters["appnexus"] = config.Adapter{
-		Endpoint: "http://ib.adnxs.com/openrtb2?query1&query2", //Note the '&' character in there
-	}
+	cfg := &config.Configuration{}
+	biddersInfo := config.BidderInfos{"appnexus": config.BidderInfo{Endpoint: "http://ib.adnxs.com/openrtb2?query1&query2"}} //Note the '&' character in there
 
 	// 	2) Init new exchange with said configuration
 	//Other parameters also needed to create exchange
 	handlerNoBidServer := func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(204) }
 	server := httptest.NewServer(http.HandlerFunc(handlerNoBidServer))
-	defer server.Close()
 
-	biddersInfo, err := config.LoadBidderInfoFromDisk("../static/bidder-info", cfg.Adapters, openrtb_ext.BuildBidderStringSlice())
-	if err != nil {
-		t.Fatal(err)
-	}
+	defer server.Close()
 
 	adapters, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.NilMetricsEngine{})
 	if adaptersErr != nil {
@@ -1227,11 +1221,6 @@ func TestGetBidCacheInfoEndToEnd(t *testing.T) {
 	bidderName := openrtb_ext.BidderName("appnexus")
 
 	cfg := &config.Configuration{
-		Adapters: map[string]config.Adapter{
-			string(bidderName): {
-				Endpoint: "http://ib.adnxs.com/endpoint",
-			},
-		},
 		CacheURL: config.Cache{
 			Host: "www.internalprebidcache.net",
 		},
@@ -1250,7 +1239,7 @@ func TestGetBidCacheInfoEndToEnd(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(handlerNoBidServer))
 	defer server.Close()
 
-	biddersInfo, err := config.LoadBidderInfoFromDisk("../static/bidder-info", cfg.Adapters, openrtb_ext.BuildBidderStringSlice())
+	biddersInfo, err := config.LoadBidderInfo("../static/bidder-info")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1607,14 +1596,13 @@ func TestGetBidCacheInfo(t *testing.T) {
 
 func TestBidResponseCurrency(t *testing.T) {
 	// Init objects
-	cfg := &config.Configuration{Adapters: make(map[string]config.Adapter, 1)}
-	cfg.Adapters["appnexus"] = config.Adapter{Endpoint: "http://ib.adnxs.com"}
+	cfg := &config.Configuration{}
 
 	handlerNoBidServer := func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(204) }
 	server := httptest.NewServer(http.HandlerFunc(handlerNoBidServer))
 	defer server.Close()
 
-	biddersInfo, err := config.LoadBidderInfoFromDisk("../static/bidder-info", cfg.Adapters, openrtb_ext.BuildBidderStringSlice())
+	biddersInfo, err := config.LoadBidderInfo("../static/bidder-info")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1771,8 +1759,7 @@ func TestBidResponseCurrency(t *testing.T) {
 
 func TestBidResponseImpExtInfo(t *testing.T) {
 	// Init objects
-	cfg := &config.Configuration{Adapters: make(map[string]config.Adapter, 1)}
-	cfg.Adapters["appnexus"] = config.Adapter{Endpoint: "http://ib.adnxs.com"}
+	cfg := &config.Configuration{}
 
 	gdprPermsBuilder := fakePermissionsBuilder{
 		permissions: &permissionsMock{
@@ -1783,7 +1770,18 @@ func TestBidResponseImpExtInfo(t *testing.T) {
 		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 	}.Builder
 
-	e := NewExchange(nil, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, nil, gdprPermsBuilder, tcf2ConfigBuilder, nil, nilCategoryFetcher{}, &adscert.NilSigner{}).(*exchange)
+	noBidHandler := func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(204) }
+	server := httptest.NewServer(http.HandlerFunc(noBidHandler))
+	defer server.Close()
+
+	biddersInfo := config.BidderInfos{"appnexus": config.BidderInfo{Endpoint: "http://ib.adnxs.com"}}
+
+	adapters, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.NilMetricsEngine{})
+	if adaptersErr != nil {
+		t.Fatalf("Error intializing adapters: %v", adaptersErr)
+	}
+
+	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, nil, gdprPermsBuilder, tcf2ConfigBuilder, nil, nilCategoryFetcher{}, &adscert.NilSigner{}).(*exchange)
 
 	liveAdapters := make([]openrtb_ext.BidderName, 1)
 	liveAdapters[0] = "appnexus"
@@ -1846,25 +1844,9 @@ func TestRaceIntegration(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(noBidServer))
 	defer server.Close()
 
-	cfg := &config.Configuration{
-		Adapters: make(map[string]config.Adapter),
-	}
-	for _, bidder := range openrtb_ext.CoreBidderNames() {
-		cfg.Adapters[strings.ToLower(string(bidder))] = config.Adapter{
-			Endpoint: server.URL,
-		}
-	}
-	cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAudienceNetwork))] = config.Adapter{
-		Endpoint:   server.URL,
-		AppSecret:  "any",
-		PlatformID: "abc",
-	}
-	cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderBeachfront))] = config.Adapter{
-		Endpoint:         server.URL,
-		ExtraAdapterInfo: "{\"video_endpoint\":\"" + server.URL + "\"}",
-	}
+	cfg := &config.Configuration{}
 
-	biddersInfo, err := config.LoadBidderInfoFromDisk("../static/bidder-info", cfg.Adapters, openrtb_ext.BuildBidderStringSlice())
+	biddersInfo, err := config.LoadBidderInfo("../static/bidder-info")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1971,10 +1953,9 @@ func TestPanicRecovery(t *testing.T) {
 		CacheURL: config.Cache{
 			ExpectedTimeMillis: 20,
 		},
-		Adapters: blankAdapterConfig(openrtb_ext.CoreBidderNames()),
 	}
 
-	biddersInfo, err := config.LoadBidderInfoFromDisk("../static/bidder-info", cfg.Adapters, openrtb_ext.BuildBidderStringSlice())
+	biddersInfo, err := config.LoadBidderInfo("../static/bidder-info")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2041,17 +2022,9 @@ func TestPanicRecoveryHighLevel(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(noBidServer))
 	defer server.Close()
 
-	cfg := &config.Configuration{
-		Adapters: make(map[string]config.Adapter),
-	}
-	for _, bidder := range openrtb_ext.CoreBidderNames() {
-		cfg.Adapters[strings.ToLower(string(bidder))] = config.Adapter{
-			Endpoint: server.URL,
-		}
-	}
-	cfg.Adapters["audiencenetwork"] = config.Adapter{Disabled: true}
+	cfg := &config.Configuration{}
 
-	biddersInfo, err := config.LoadBidderInfoFromDisk("../static/bidder-info", cfg.Adapters, openrtb_ext.BuildBidderStringSlice())
+	biddersInfo, err := config.LoadBidderInfo("../static/bidder-info")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -4108,16 +4081,21 @@ func TestPassExperimentConfigsToHoldAuction(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(noBidServer))
 	defer server.Close()
 
-	cfg := &config.Configuration{
-		Adapters: make(map[string]config.Adapter, 1),
-	}
-	cfg.Adapters["appnexus"] = config.Adapter{
-		Endpoint: "test.com",
-	}
-	biddersInfo, err := config.LoadBidderInfoFromDisk("../static/bidder-info", cfg.Adapters, openrtb_ext.BuildBidderStringSlice())
+	cfg := &config.Configuration{}
+
+	biddersInfo, err := config.LoadBidderInfo("../static/bidder-info")
 	if err != nil {
 		t.Fatal(err)
 	}
+	biddersInfo["appnexus"] = config.BidderInfo{
+		Endpoint: "test.com",
+		Capabilities: &config.CapabilitiesInfo{
+			Site: &config.PlatformInfo{
+				MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo},
+			},
+		},
+		Experiment: config.BidderInfoExperiment{AdsCert: config.BidderAdsCert{Enabled: true}}}
+
 	signer := MockSigner{}
 
 	adapters, adaptersErr := BuildAdapters(server.Client(), cfg, biddersInfo, &metricsConf.NilMetricsEngine{})
@@ -4136,7 +4114,6 @@ func TestPassExperimentConfigsToHoldAuction(t *testing.T) {
 		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 	}.Builder
 
-	biddersInfo["appnexus"] = config.BidderInfo{Experiment: config.BidderInfoExperiment{AdsCert: config.BidderAdsCert{Enabled: true}}}
 	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, tcf2ConfigBuilder, currencyConverter, nilCategoryFetcher{}, &signer).(*exchange)
 
 	// Define mock incoming bid requeset

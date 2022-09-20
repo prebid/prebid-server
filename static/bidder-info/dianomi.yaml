@@ -1,3 +1,5 @@
+endpoint: "https://www-prebid.dianomi.com/cgi-bin/smartads_prebid.pl"
+disabled: true
 maintainer:
   email: 'prebid-maintainer@dianomi.com'
 gvlVendorID: 885

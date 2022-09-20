@@ -1,3 +1,4 @@
+endpoint: "https://prebid-server.onetag-sys.com/prebid-server/{{.PublisherID}}"
 maintainer:
   email: devops@onetag.com
 gvlVendorID: 241

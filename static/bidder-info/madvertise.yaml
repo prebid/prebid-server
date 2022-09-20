@@ -1,3 +1,4 @@
+endpoint: "https://mobile.mng-ads.com/bidrequest{{.ZoneID}}"
 maintainer:
   email: "support@madvertise.com"
 gvlVendorID: 153
