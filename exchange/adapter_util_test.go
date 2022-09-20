@@ -16,8 +16,8 @@ import (
 )
 
 var (
-	infoEnabled  = config.BidderInfo{Enabled: true}
-	infoDisabled = config.BidderInfo{Enabled: false}
+	infoEnabled  = config.BidderInfo{Disabled: false}
+	infoDisabled = config.BidderInfo{Disabled: true}
 )
 
 func TestBuildAdapters(t *testing.T) {
@@ -32,51 +32,46 @@ func TestBuildAdapters(t *testing.T) {
 	rubiconBidder, _ := rubicon.Builder(openrtb_ext.BidderRubicon, config.Adapter{})
 	rubiconBidderWithInfo := adapters.BuildInfoAwareBidder(rubiconBidder, infoEnabled)
 	rubiconBidderAdapted := AdaptBidder(rubiconBidderWithInfo, client, &config.Configuration{}, metricEngine, openrtb_ext.BidderRubicon, nil, "")
-	rubiconbidderValidated := addValidatedBidderMiddleware(rubiconBidderAdapted)
+	rubiconBidderValidated := addValidatedBidderMiddleware(rubiconBidderAdapted)
 
 	testCases := []struct {
 		description     string
-		adapterConfig   map[string]config.Adapter
 		bidderInfos     map[string]config.BidderInfo
 		expectedBidders map[openrtb_ext.BidderName]AdaptedBidder
 		expectedErrors  []error
 	}{
 		{
 			description:     "No Bidders",
-			adapterConfig:   map[string]config.Adapter{},
 			bidderInfos:     map[string]config.BidderInfo{},
 			expectedBidders: map[openrtb_ext.BidderName]AdaptedBidder{},
 		},
 		{
-			description:   "One Bidder",
-			adapterConfig: map[string]config.Adapter{"appnexus": {}},
-			bidderInfos:   map[string]config.BidderInfo{"appnexus": infoEnabled},
+			description: "One Bidder",
+			bidderInfos: map[string]config.BidderInfo{"appnexus": infoEnabled},
 			expectedBidders: map[openrtb_ext.BidderName]AdaptedBidder{
 				openrtb_ext.BidderAppnexus: appnexusValidated,
 			},
 		},
 		{
-			description:   "Many Bidders",
-			adapterConfig: map[string]config.Adapter{"appnexus": {}, "rubicon": {}},
-			bidderInfos:   map[string]config.BidderInfo{"appnexus": infoEnabled, "rubicon": infoEnabled},
+			description: "Many Bidders",
+			bidderInfos: map[string]config.BidderInfo{"appnexus": infoEnabled, "rubicon": infoEnabled},
 			expectedBidders: map[openrtb_ext.BidderName]AdaptedBidder{
 				openrtb_ext.BidderAppnexus: appnexusValidated,
-				openrtb_ext.BidderRubicon:  rubiconbidderValidated,
+				openrtb_ext.BidderRubicon:  rubiconBidderValidated,
 			},
 		},
 		{
-			description:   "Invalid - Builder Errors",
-			adapterConfig: map[string]config.Adapter{"appnexus": {}, "unknown": {}},
-			bidderInfos:   map[string]config.BidderInfo{},
+			description: "Invalid - Builder Errors",
+			bidderInfos: map[string]config.BidderInfo{"unknown": {}, "appNexus": {}},
 			expectedErrors: []error{
-				errors.New("appnexus: bidder info not found"),
+				errors.New("appNexus: bidder info not found"),
 				errors.New("unknown: unknown bidder"),
 			},
 		},
 	}
 
+	cfg := &config.Configuration{}
 	for _, test := range testCases {
-		cfg := &config.Configuration{Adapters: test.adapterConfig}
 		bidders, errs := BuildAdapters(client, cfg, test.bidderInfos, metricEngine)
 		assert.Equal(t, test.expectedBidders, bidders, test.description+":bidders")
 		assert.ElementsMatch(t, test.expectedErrors, errs, test.description+":errors")
@@ -93,95 +88,77 @@ func TestBuildBidders(t *testing.T) {
 
 	testCases := []struct {
 		description     string
-		adapterConfig   map[string]config.Adapter
 		bidderInfos     map[string]config.BidderInfo
 		builders        map[openrtb_ext.BidderName]adapters.Builder
 		expectedBidders map[openrtb_ext.BidderName]adapters.Bidder
 		expectedErrors  []error
 	}{
 		{
-			description:   "Invalid - Unknown Bidder",
-			adapterConfig: map[string]config.Adapter{"unknown": {}},
-			bidderInfos:   map[string]config.BidderInfo{"unknown": infoEnabled},
-			builders:      map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderAppnexus: appnexusBuilder},
+			description: "Invalid - Unknown Bidder",
+			bidderInfos: map[string]config.BidderInfo{"unknown": infoEnabled},
+			builders:    map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderAppnexus: appnexusBuilder},
 			expectedErrors: []error{
 				errors.New("unknown: unknown bidder"),
 			},
 		},
 		{
-			description:   "Invalid - No Bidder Info",
-			adapterConfig: map[string]config.Adapter{"appnexus": {}},
-			bidderInfos:   map[string]config.BidderInfo{},
-			builders:      map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderAppnexus: appnexusBuilder},
+			description: "Invalid - No Bidder Info",
+			bidderInfos: map[string]config.BidderInfo{"appNexus": {}},
+			builders:    map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderAppnexus: appnexusBuilder},
 			expectedErrors: []error{
-				errors.New("appnexus: bidder info not found"),
+				errors.New("appNexus: bidder info not found"),
 			},
 		},
 		{
-			description:   "Invalid - No Builder",
-			adapterConfig: map[string]config.Adapter{"appnexus": {}},
-			bidderInfos:   map[string]config.BidderInfo{"appnexus": infoEnabled},
-			builders:      map[openrtb_ext.BidderName]adapters.Builder{},
+			description: "Invalid - No Builder",
+			bidderInfos: map[string]config.BidderInfo{"appnexus": infoEnabled},
+			builders:    map[openrtb_ext.BidderName]adapters.Builder{},
 			expectedErrors: []error{
 				errors.New("appnexus: builder not registered"),
 			},
 		},
 		{
-			description:   "Success - Builder Error",
-			adapterConfig: map[string]config.Adapter{"appnexus": {}},
-			bidderInfos:   map[string]config.BidderInfo{"appnexus": infoEnabled},
-			builders:      map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderAppnexus: appnexusBuilderWithError},
+			description: "Success - Builder Error",
+			bidderInfos: map[string]config.BidderInfo{"appnexus": infoEnabled},
+			builders:    map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderAppnexus: appnexusBuilderWithError},
 			expectedErrors: []error{
 				errors.New("appnexus: anyError"),
 			},
 		},
 		{
-			description:   "Success - None",
-			adapterConfig: map[string]config.Adapter{},
-			bidderInfos:   map[string]config.BidderInfo{},
-			builders:      map[openrtb_ext.BidderName]adapters.Builder{},
+			description: "Success - None",
+			bidderInfos: map[string]config.BidderInfo{},
+			builders:    map[openrtb_ext.BidderName]adapters.Builder{},
 		},
 		{
-			description:   "Success - One",
-			adapterConfig: map[string]config.Adapter{"appnexus": {}},
-			bidderInfos:   map[string]config.BidderInfo{"appnexus": infoEnabled},
-			builders:      map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderAppnexus: appnexusBuilder},
+			description: "Success - One",
+			bidderInfos: map[string]config.BidderInfo{"appnexus": infoEnabled},
+			builders:    map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderAppnexus: appnexusBuilder},
 			expectedBidders: map[openrtb_ext.BidderName]adapters.Bidder{
 				openrtb_ext.BidderAppnexus: adapters.BuildInfoAwareBidder(appnexusBidder, infoEnabled),
 			},
 		},
 		{
-			description:   "Success - Many",
-			adapterConfig: map[string]config.Adapter{"appnexus": {}, "rubicon": {}},
-			bidderInfos:   map[string]config.BidderInfo{"appnexus": infoEnabled, "rubicon": infoEnabled},
-			builders:      map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderAppnexus: appnexusBuilder, openrtb_ext.BidderRubicon: rubiconBuilder},
+			description: "Success - Many",
+			bidderInfos: map[string]config.BidderInfo{"appnexus": infoEnabled, "rubicon": infoEnabled},
+			builders:    map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderAppnexus: appnexusBuilder, openrtb_ext.BidderRubicon: rubiconBuilder},
 			expectedBidders: map[openrtb_ext.BidderName]adapters.Bidder{
 				openrtb_ext.BidderAppnexus: adapters.BuildInfoAwareBidder(appnexusBidder, infoEnabled),
 				openrtb_ext.BidderRubicon:  adapters.BuildInfoAwareBidder(rubiconBidder, infoEnabled),
 			},
 		},
 		{
-			description:   "Success - Ignores Disabled",
-			adapterConfig: map[string]config.Adapter{"appnexus": {}, "rubicon": {}},
-			bidderInfos:   map[string]config.BidderInfo{"appnexus": infoDisabled, "rubicon": infoEnabled},
-			builders:      map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderAppnexus: appnexusBuilder, openrtb_ext.BidderRubicon: rubiconBuilder},
+			description: "Success - Ignores Disabled",
+			bidderInfos: map[string]config.BidderInfo{"appnexus": infoDisabled, "rubicon": infoEnabled},
+			builders:    map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderAppnexus: appnexusBuilder, openrtb_ext.BidderRubicon: rubiconBuilder},
 			expectedBidders: map[openrtb_ext.BidderName]adapters.Bidder{
 				openrtb_ext.BidderRubicon: adapters.BuildInfoAwareBidder(rubiconBidder, infoEnabled),
-			},
-		},
-		{
-			description:   "Success - Ignores Adapter Config Case",
-			adapterConfig: map[string]config.Adapter{"AppNexus": {}},
-			bidderInfos:   map[string]config.BidderInfo{"appnexus": infoEnabled},
-			builders:      map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderAppnexus: appnexusBuilder},
-			expectedBidders: map[openrtb_ext.BidderName]adapters.Bidder{
-				openrtb_ext.BidderAppnexus: adapters.BuildInfoAwareBidder(appnexusBidder, infoEnabled),
 			},
 		},
 	}
 
 	for _, test := range testCases {
-		bidders, errs := buildBidders(test.adapterConfig, test.bidderInfos, test.builders)
+		bidders, errs := buildBidders(test.bidderInfos, test.builders)
 
 		// For Test Setup Convenience
 		if test.expectedBidders == nil {

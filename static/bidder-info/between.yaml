@@ -1,3 +1,4 @@
+endpoint: "http://{{.Host}}.betweendigital.com/openrtb_bid?sspId={{.PublisherID}}"
 maintainer:
   email: "buying@betweenx.com"
 gvlVendorID: 724
@@ -12,3 +13,4 @@ userSync:
   redirect:
     url: "https://ads.betweendigital.com/match?bidder_id=pbs&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&callback_url={{.RedirectURL}}"
     userMacro: "${USER_ID}"
+

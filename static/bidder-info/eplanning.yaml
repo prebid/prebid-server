@@ -1,3 +1,4 @@
+endpoint: "http://rtb.e-planning.net/pbs/1"
 maintainer:
   email: "producto@e-planning.net"
 gvlVendorID: 90

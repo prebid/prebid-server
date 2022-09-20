@@ -2,6 +2,7 @@ package pubmatic
 
 import (
 	"encoding/json"
+	"net/http"
 	"testing"
 
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
@@ -261,6 +262,100 @@ func TestPubmaticAdapter_MakeRequests(t *testing.T) {
 			gotReqData, gotErr := a.MakeRequests(tt.args.request, tt.args.reqInfo)
 			assert.Equal(t, tt.wantErr, len(gotErr) != 0)
 			assert.Equal(t, tt.expectedReqData, gotReqData)
+		})
+	}
+}
+
+func TestPubmaticAdapter_MakeBids(t *testing.T) {
+	type fields struct {
+		URI string
+	}
+	type args struct {
+		internalRequest *openrtb2.BidRequest
+		externalRequest *adapters.RequestData
+		response        *adapters.ResponseData
+	}
+	tests := []struct {
+		name     string
+		fields   fields
+		args     args
+		wantErr  []error
+		wantResp *adapters.BidderResponse
+	}{
+		{
+			name: "happy path, valid response with all bid params",
+			args: args{
+				response: &adapters.ResponseData{
+					StatusCode: http.StatusOK,
+					Body:       []byte(`{"id": "test-request-id", "seatbid":[{"seat": "958", "bid":[{"id": "7706636740145184841", "impid": "test-imp-id", "price": 0.500000, "adid": "29681110", "adm": "some-test-ad", "adomain":["pubmatic.com"], "crid": "29681110", "h": 250, "w": 300, "dealid": "testdeal", "ext":{"dspid": 6, "deal_channel": 1, "prebiddealpriority": 1}}]}], "bidid": "5778926625248726496", "cur": "USD"}`),
+				},
+			},
+			wantErr: nil,
+			wantResp: &adapters.BidderResponse{
+				Bids: []*adapters.TypedBid{
+					{
+						Bid: &openrtb2.Bid{
+							ID:      "7706636740145184841",
+							ImpID:   "test-imp-id",
+							Price:   0.500000,
+							AdID:    "29681110",
+							AdM:     "some-test-ad",
+							ADomain: []string{"pubmatic.com"},
+							CrID:    "29681110",
+							H:       250,
+							W:       300,
+							DealID:  "testdeal",
+							Ext:     json.RawMessage(`{"dspid": 6, "deal_channel": 1, "prebiddealpriority": 1}`),
+						},
+						DealPriority: 1,
+						BidType:      openrtb_ext.BidTypeBanner,
+						BidVideo:     &openrtb_ext.ExtBidPrebidVideo{},
+					},
+				},
+				Currency: "USD",
+			},
+		},
+		{
+			name: "ignore invalid prebiddealpriority",
+			args: args{
+				response: &adapters.ResponseData{
+					StatusCode: http.StatusOK,
+					Body:       []byte(`{"id": "test-request-id", "seatbid":[{"seat": "958", "bid":[{"id": "7706636740145184841", "impid": "test-imp-id", "price": 0.500000, "adid": "29681110", "adm": "some-test-ad", "adomain":["pubmatic.com"], "crid": "29681110", "h": 250, "w": 300, "dealid": "testdeal", "ext":{"dspid": 6, "deal_channel": 1, "prebiddealpriority": -1}}]}], "bidid": "5778926625248726496", "cur": "USD"}`),
+				},
+			},
+			wantErr: nil,
+			wantResp: &adapters.BidderResponse{
+				Bids: []*adapters.TypedBid{
+					{
+						Bid: &openrtb2.Bid{
+							ID:      "7706636740145184841",
+							ImpID:   "test-imp-id",
+							Price:   0.500000,
+							AdID:    "29681110",
+							AdM:     "some-test-ad",
+							ADomain: []string{"pubmatic.com"},
+							CrID:    "29681110",
+							H:       250,
+							W:       300,
+							DealID:  "testdeal",
+							Ext:     json.RawMessage(`{"dspid": 6, "deal_channel": 1, "prebiddealpriority": -1}`),
+						},
+						BidType:  openrtb_ext.BidTypeBanner,
+						BidVideo: &openrtb_ext.ExtBidPrebidVideo{},
+					},
+				},
+				Currency: "USD",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := &PubmaticAdapter{
+				URI: tt.fields.URI,
+			}
+			gotResp, gotErr := a.MakeBids(tt.args.internalRequest, tt.args.externalRequest, tt.args.response)
+			assert.Equal(t, tt.wantErr, gotErr, gotErr)
+			assert.Equal(t, tt.wantResp, gotResp)
 		})
 	}
 }

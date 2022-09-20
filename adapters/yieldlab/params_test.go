@@ -40,22 +40,17 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	`{"adslotId": "123","supplyId":"23456","adSize":"100x100"}`,
-	`{"adslotId": "123","supplyId":"23456","adSize":"100x100","extId":"asdf"}`,
-	`{"adslotId": "123","supplyId":"23456","adSize":"100x100","extId":"asdf","targeting":{"a":"b"}}`,
-	`{"adslotId": "123","supplyId":"23456","adSize":"100x100","targeting":{"a":"b"}}`,
-	`{"adslotId": "123","supplyId":"23456","adSize":"100x100","targeting":{"a":"b"}}`,
+	`{"adslotId": "123","supplyId":"23456"}`,
+	`{"adslotId": "123","supplyId":"23456","extId":"asdf"}`,
+	`{"adslotId": "123","supplyId":"23456","extId":"asdf","targeting":{"a":"b"}}`,
+	`{"adslotId": "123","supplyId":"23456","targeting":{"a":"b"}}`,
 }
 
 var invalidParams = []string{
-	`{"supplyId":"23456","adSize":"100x100"}`,
-	`{"adslotId": "123","adSize":"100x100","extId":"asdf"}`,
-	`{"adslotId": "123","supplyId":"23456","extId":"asdf","targeting":{"a":"b"}}`,
-	`{"adslotId": "123","supplyId":"23456"}`,
-	`{"adSize":"100x100","supplyId":"23456"}`,
-	`{"adslotId": "123","adSize":"100x100"}`,
 	`{"supplyId":"23456"}`,
+	`{"adslotId": "123","extId":"asdf"}`,
 	`{"adslotId": "123"}`,
+	`{"supplyId":"23456"}`,
 	`{}`,
 	`[]`,
 	`{"a":"b"}`,

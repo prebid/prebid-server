@@ -378,11 +378,11 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastNotAllowe
 	// bidder info
 	bidderInfos := make(config.BidderInfos)
 	bidderInfos["bidder"] = config.BidderInfo{
-		Enabled:                 true,
+		Disabled:                false,
 		ModifyingVastXmlAllowed: false,
 	}
 	bidderInfos["updatable_bidder"] = config.BidderInfo{
-		Enabled:                 true,
+		Disabled:                false,
 		ModifyingVastXmlAllowed: true,
 	}
 
@@ -441,11 +441,11 @@ func TestShouldSendToCacheExpectedPutsAndUpdatableBiddersWhenBidderVastAllowed(t
 	// bidder info
 	bidderInfos := make(config.BidderInfos)
 	bidderInfos["bidder"] = config.BidderInfo{
-		Enabled:                 true,
+		Disabled:                false,
 		ModifyingVastXmlAllowed: true,
 	}
 	bidderInfos["updatable_bidder"] = config.BidderInfo{
-		Enabled:                 true,
+		Disabled:                false,
 		ModifyingVastXmlAllowed: true,
 	}
 

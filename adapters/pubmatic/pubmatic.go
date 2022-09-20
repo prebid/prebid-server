@@ -24,9 +24,10 @@ type PubmaticAdapter struct {
 }
 
 type pubmaticBidExt struct {
-	BidType           *int                 `json:"BidType,omitempty"`
-	VideoCreativeInfo *pubmaticBidExtVideo `json:"video,omitempty"`
-	Marketplace       string               `json:"marketplace,omitempty"`
+	BidType            *int                 `json:"BidType,omitempty"`
+	VideoCreativeInfo  *pubmaticBidExtVideo `json:"video,omitempty"`
+	Marketplace        string               `json:"marketplace,omitempty"`
+	PrebidDealPriority int                  `json:"prebiddealpriority,omitempty"`
 }
 
 type pubmaticWrapperExt struct {
@@ -387,40 +388,40 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 	for _, sb := range bidResp.SeatBid {
 		for i := 0; i < len(sb.Bid); i++ {
 			bid := sb.Bid[i]
-			impVideo := &openrtb_ext.ExtBidPrebidVideo{}
-
 			if len(bid.Cat) > 1 {
 				bid.Cat = bid.Cat[0:1]
 			}
 
-			seat := ""
+			typedBid := &adapters.TypedBid{
+				Bid:      &bid,
+				BidType:  openrtb_ext.BidTypeBanner,
+				BidVideo: &openrtb_ext.ExtBidPrebidVideo{},
+			}
+
 			var bidExt *pubmaticBidExt
-			bidType := openrtb_ext.BidTypeBanner
 			err := json.Unmarshal(bid.Ext, &bidExt)
 			if err != nil {
 				errs = append(errs, err)
 			} else if bidExt != nil {
-				seat = bidExt.Marketplace
-				if bidExt.VideoCreativeInfo != nil && bidExt.VideoCreativeInfo.Duration != nil {
-					impVideo.Duration = *bidExt.VideoCreativeInfo.Duration
+				typedBid.Seat = openrtb_ext.BidderName(bidExt.Marketplace)
+				typedBid.BidType = getBidType(bidExt)
+				if bidExt.PrebidDealPriority > 0 {
+					typedBid.DealPriority = bidExt.PrebidDealPriority
 				}
-				bidType = getBidType(bidExt)
+
+				if bidExt.VideoCreativeInfo != nil && bidExt.VideoCreativeInfo.Duration != nil {
+					typedBid.BidVideo.Duration = *bidExt.VideoCreativeInfo.Duration
+				}
 			}
 
-			if bidType == openrtb_ext.BidTypeNative {
+			if typedBid.BidType == openrtb_ext.BidTypeNative {
 				bid.AdM, err = getNativeAdm(bid.AdM)
 				if err != nil {
 					errs = append(errs, err)
 				}
 			}
 
-			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:      &bid,
-				BidType:  bidType,
-				BidVideo: impVideo,
-				Seat:     openrtb_ext.BidderName(seat),
-			})
-
+			bidResponse.Bids = append(bidResponse.Bids, typedBid)
 		}
 	}
 	return bidResponse, errs
