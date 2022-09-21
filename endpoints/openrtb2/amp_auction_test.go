@@ -383,12 +383,37 @@ func TestSetConsentedProviders(t *testing.T) {
 		inAdditionalConsent string
 		inBidRequest        *openrtb2.BidRequest
 		expectedBidRequest  *openrtb2.BidRequest
+		expectedError       bool
 	}{
 		{
 			description:         "empty additional consent bid request unmodified",
 			inAdditionalConsent: "",
 			inBidRequest:        sampleBidRequest,
 			expectedBidRequest:  sampleBidRequest,
+			expectedError:       false,
+		},
+		{
+			description:         "nil bid request, expect error",
+			inAdditionalConsent: "ADDITIONAL_CONSENT_STRING",
+			inBidRequest:        nil,
+			expectedBidRequest:  nil,
+			expectedError:       true,
+		},
+		{
+			description:         "malformed user.ext, expect error",
+			inAdditionalConsent: "ADDITIONAL_CONSENT_STRING",
+			inBidRequest: &openrtb2.BidRequest{
+				User: &openrtb2.User{
+					Ext: json.RawMessage(`malformed`),
+				},
+			},
+			expectedBidRequest: &openrtb2.BidRequest{
+				User: &openrtb2.User{
+					Ext: json.RawMessage(`malformed`),
+				},
+			},
+			//expectedBidRequest: nil,
+			expectedError: true,
 		},
 		{
 			description:         "non-empty additional consent bid request will carry this value in user.ext.ConsentedProvidersSettings.consented_providers",
@@ -399,14 +424,19 @@ func TestSetConsentedProviders(t *testing.T) {
 					Ext: json.RawMessage(`{"ConsentedProvidersSettings":{"consented_providers":"ADDITIONAL_CONSENT_STRING"}}`),
 				},
 			},
+			expectedError: false,
 		},
 	}
 
 	for _, test := range testCases {
 		err := setConsentedProviders(test.inBidRequest, amp.Params{AdditionalConsent: test.inAdditionalConsent})
 
-		assert.NoError(t, err, test.description)
-		assert.Equal(t, test.inBidRequest, test.expectedBidRequest, test.description)
+		if test.expectedError {
+			assert.Error(t, err, test.description)
+		} else {
+			assert.NoError(t, err, test.description)
+		}
+		assert.Equal(t, test.expectedBidRequest, test.inBidRequest, test.description)
 	}
 }
 
