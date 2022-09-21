@@ -14,7 +14,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderPubmatic, config.Adapter{
-		Endpoint: "https://hbopenbid.pubmatic.com/translator?source=prebid-server"}, config.Server{ExternalUrl: "http://hosturl.com", GdprID: 1, Datacenter: "2"})
+		Endpoint: "https://hbopenbid.pubmatic.com/translator?source=prebid-server"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, Datacenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)

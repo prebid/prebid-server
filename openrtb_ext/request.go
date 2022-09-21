@@ -111,7 +111,7 @@ type ExtRequestPrebidCache struct {
 
 type ExtRequestPrebidServer struct {
 	ExternalUrl string `json:"externalurl"`
-	GdprID      string `json:"gvlid"`
+	GvlID       int    `json:"gvlid"`
 	Datacenter  string `json:"datacenter"`
 }
 

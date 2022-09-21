@@ -600,7 +600,7 @@ type Debug struct {
 
 type Server struct {
 	ExternalUrl string `mapstructure:"external_url"`
-	GdprID      int    `mapstructure:"gdpr_id"`
+	GvlID       int    `mapstructure:"gvlid"`
 	Datacenter  string `mapstructure:"datacenter"`
 }
 
