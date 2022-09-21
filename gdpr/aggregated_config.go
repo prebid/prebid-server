@@ -104,7 +104,6 @@ func (tc *tcf2Config) PurposeVendorExceptions(purpose consentconstants.Purpose) 
 	if value, exists := tc.AccountConfig.PurposeVendorExceptions(purpose); exists {
 		return value
 	}
-
 	return tc.HostConfig.PurposeVendorExceptions(purpose)
 }
 
