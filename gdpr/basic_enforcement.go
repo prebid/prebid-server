@@ -38,8 +38,5 @@ func (be *BasicEnforcement) LegalBasis(vendorInfo VendorInfo, bidder openrtb_ext
 	if !be.cfg.EnforceVendors {
 		return true
 	}
-	if consent.VendorConsent(vendorInfo.vendorID) {
-		return true
-	}
-	return false
+	return consent.VendorConsent(vendorInfo.vendorID)
 }
