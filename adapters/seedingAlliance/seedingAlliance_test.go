@@ -42,7 +42,7 @@ func TestResolvePriceMacro(t *testing.T) {
 	}
 }
 
-func TestGetMediaTypeForImp(t *testing.T) {
+func TestGetMediaTypeForBid(t *testing.T) {
 	_, buildErr := Builder(openrtb_ext.BidderSeedingAlliance, config.Adapter{
 		Endpoint: "https://mockup.seeding-alliance.de/ssp-testing/native.html",
 	})
@@ -50,24 +50,36 @@ func TestGetMediaTypeForImp(t *testing.T) {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	impID := "some_id"
-
 	tests := []struct {
-		name string
-		want openrtb_ext.BidType
-		data openrtb2.Imp
+		name    string
+		want    openrtb_ext.BidType
+		wantErr bool
+		bidType openrtb_ext.BidType
 	}{
-		{"native", openrtb_ext.BidTypeNative, openrtb2.Imp{ID: impID, Native: &openrtb2.Native{}}},
-		{"banner", openrtb_ext.BidTypeBanner, openrtb2.Imp{ID: impID, Banner: &openrtb2.Banner{}}},
-		{"video", "unknown", openrtb2.Imp{ID: impID, Video: &openrtb2.Video{}}},
-		{"audio", "unknown", openrtb2.Imp{ID: impID, Audio: &openrtb2.Audio{}}},
-		{"unknown", "unknown", openrtb2.Imp{ID: impID}},
-		{"no imp", "unknown", openrtb2.Imp{}},
+		{"native", openrtb_ext.BidTypeNative, false, openrtb_ext.BidTypeNative},
+		{"banner", openrtb_ext.BidTypeBanner, false, openrtb_ext.BidTypeBanner},
+		{"video", openrtb_ext.BidTypeVideo, false, openrtb_ext.BidTypeVideo},
+		{"audio", openrtb_ext.BidTypeAudio, false, openrtb_ext.BidTypeAudio},
+		{"empty type", "", true, ""},
 	}
 
 	for _, test := range tests {
-		got := getMediaTypeForImp(impID, []openrtb2.Imp{test.data})
+		var bid openrtb2.SeatBid
+		var extBid openrtb_ext.ExtBid
+
+		if err := bid.Ext.UnmarshalJSON([]byte(`{"prebid": {"type":"` + string(test.bidType) + `"}}`)); err != nil {
+			t.Fatalf("unexpected error %v", err)
+		}
+
+		if err := json.Unmarshal(bid.Ext, &extBid); err != nil {
+			t.Fatalf("could not unmarshal extBid: %v", err)
+		}
+
+		got, gotErr := getMediaTypeForBid(bid.Ext)
 		assert.Equal(t, test.want, got)
+		if gotErr != nil && !test.wantErr {
+			t.Fatalf("wantErr: %v, gotErr: %v", test.wantErr, gotErr)
+		}
 	}
 }
 
