@@ -23,6 +23,21 @@
     "site": {
       "domain": "www.some.com",
       "page": "http://www.some.com/page-where-ad-will-be-shown"
+    },
+    "source": {
+      "ext": {
+        "schain": {
+          "ver": "1.0",
+          "complete": 1,
+          "nodes": [
+            {
+              "asi": "indirectseller.com",
+              "sid": "00001",
+              "hp": 1
+            }
+          ]
+        }
+      }
     }
   },
   "httpCalls": [
@@ -62,11 +77,6 @@
               "unitId": 42
             }
           ],
-          "schain": {
-            "complete": 0,
-            "nodes": null,
-            "ver": ""
-          },
           "networkId": 11,
           "siteId": 32,
           "unitId": 42,
@@ -75,7 +85,18 @@
           "includePricingData": true,
           "user":{},
           "enableBotFiltering": true,
-          "parallel": true
+          "parallel": true,
+          "schain": {
+            "complete": 1,
+            "nodes": [
+              {
+                "asi": "indirectseller.com",
+                "hp": 1,
+                "sid": "00001"
+              }
+            ],
+            "ver": "1.0"
+          }
         }
       },
       "mockResponse": {
