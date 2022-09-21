@@ -316,6 +316,74 @@ func TestPurposeEnforced(t *testing.T) {
 	}
 }
 
+func TestPurposeEnforcementAlgo(t *testing.T) {
+	tests := []struct {
+		description          string
+		givePurposeConfigNil bool
+		givePurpose1Algo     string
+		givePurpose2Algo     string
+		givePurpose          consentconstants.Purpose
+		wantAlgo             string
+		wantAlgoSet          bool
+	}{
+		{
+			description:          "Purpose config is nil",
+			givePurposeConfigNil: true,
+			givePurpose:          1,
+			wantAlgo:             TCF2FullEnforcement,
+			wantAlgoSet:          false,
+		},
+		{
+			description:      "Purpose 1 enforcement algo is empty",
+			givePurpose1Algo: "",
+			givePurpose:      1,
+			wantAlgo:         TCF2FullEnforcement,
+			wantAlgoSet:      false,
+		},
+		{
+			description:      "Purpose 1 enforcement algo set to basic",
+			givePurpose1Algo: TCF2BasicEnforcement,
+			givePurpose:      1,
+			wantAlgo:         TCF2BasicEnforcement,
+			wantAlgoSet:      true,
+		},
+		{
+			description:      "Purpose 1 enforcement algo set to full",
+			givePurpose1Algo: TCF2FullEnforcement,
+			givePurpose:      1,
+			wantAlgo:         TCF2FullEnforcement,
+			wantAlgoSet:      true,
+		},
+		{
+			description:      "Purpose 2 Enforcement algo set to basic",
+			givePurpose2Algo: TCF2BasicEnforcement,
+			givePurpose:      2,
+			wantAlgo:         TCF2BasicEnforcement,
+			wantAlgoSet:      true,
+		},
+	}
+
+	for _, tt := range tests {
+		accountGDPR := AccountGDPR{}
+
+		if !tt.givePurposeConfigNil {
+			accountGDPR.PurposeConfigs = map[consentconstants.Purpose]*AccountGDPRPurpose{
+				1: {
+					EnforceAlgo: tt.givePurpose1Algo,
+				},
+				2: {
+					EnforceAlgo: tt.givePurpose2Algo,
+				},
+			}
+		}
+
+		value, present := accountGDPR.PurposeEnforcementAlgo(tt.givePurpose)
+
+		assert.Equal(t, tt.wantAlgo, value, tt.description)
+		assert.Equal(t, tt.wantAlgoSet, present, tt.description)
+	}
+}
+
 func TestPurposeEnforcingVendors(t *testing.T) {
 	tests := []struct {
 		description           string
@@ -472,6 +540,76 @@ func TestPurposeVendorException(t *testing.T) {
 
 		assert.Equal(t, tt.wantIsVendorException, value, tt.description)
 		assert.Equal(t, tt.wantVendorExceptionSet, present, tt.description)
+	}
+}
+
+func TestPurposeVendorExceptions(t *testing.T) {
+	tests := []struct {
+		description              string
+		givePurposeConfigNil     bool
+		givePurpose1ExceptionMap map[openrtb_ext.BidderName]struct{}
+		givePurpose2ExceptionMap map[openrtb_ext.BidderName]struct{}
+		givePurpose              consentconstants.Purpose
+		wantExceptionMap         map[openrtb_ext.BidderName]struct{}
+		wantExceptionMapSet      bool
+	}{
+		{
+			description:          "Purpose config is nil",
+			givePurposeConfigNil: true,
+			givePurpose:          1,
+			// wantExceptionMap:     map[openrtb_ext.BidderName]struct{}{},
+			wantExceptionMap:    nil,
+			wantExceptionMapSet: false,
+		},
+		{
+			description: "Nil - exception map not defined for purpose",
+			givePurpose: 1,
+			// wantExceptionMap:    map[openrtb_ext.BidderName]struct{}{},
+			wantExceptionMap:    nil,
+			wantExceptionMapSet: false,
+		},
+		{
+			description:              "Empty - exception map empty for purpose",
+			givePurpose:              1,
+			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			wantExceptionMap:         map[openrtb_ext.BidderName]struct{}{},
+			wantExceptionMapSet:      true,
+		},
+		{
+			description:              "Nonempty - exception map with multiple entries for purpose",
+			givePurpose:              1,
+			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
+			wantExceptionMap:         map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
+			wantExceptionMapSet:      true,
+		},
+		{
+			description:              "Nonempty - exception map with multiple entries for different purpose",
+			givePurpose:              2,
+			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
+			givePurpose2ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "openx": {}},
+			wantExceptionMap:         map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "openx": {}},
+			wantExceptionMapSet:      true,
+		},
+	}
+
+	for _, tt := range tests {
+		accountGDPR := AccountGDPR{}
+
+		if !tt.givePurposeConfigNil {
+			accountGDPR.PurposeConfigs = map[consentconstants.Purpose]*AccountGDPRPurpose{
+				1: {
+					VendorExceptionMap: tt.givePurpose1ExceptionMap,
+				},
+				2: {
+					VendorExceptionMap: tt.givePurpose2ExceptionMap,
+				},
+			}
+		}
+
+		value, present := accountGDPR.PurposeVendorExceptions(tt.givePurpose)
+
+		assert.Equal(t, tt.wantExceptionMap, value, tt.description)
+		assert.Equal(t, tt.wantExceptionMapSet, present, tt.description)
 	}
 }
 

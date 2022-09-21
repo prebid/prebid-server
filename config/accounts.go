@@ -134,11 +134,10 @@ func (a *AccountGDPR) PurposeEnforced(purpose consentconstants.Purpose) (value, 
 // PurposeEnforcementAlgo checks the purpose enforcement algo for a given purpose by first
 // looking at the account settings, and if not set there, defaulting to the host configuration.
 func (a *AccountGDPR) PurposeEnforcementAlgo(purpose consentconstants.Purpose) (value string, exists bool) {
-	if a.PurposeConfigs[purpose] == nil {
-		return TCF2FullEnforcement, false
-	}
-	if a.PurposeConfigs[purpose].EnforceAlgo == TCF2FullEnforcement {
-		return TCF2FullEnforcement, true
+	c, exists := a.PurposeConfigs[purpose]
+
+	if exists && (c.EnforceAlgo == TCF2BasicEnforcement || c.EnforceAlgo == TCF2FullEnforcement) {
+		return c.EnforceAlgo, true
 	}
 	return TCF2FullEnforcement, false
 }
@@ -170,13 +169,12 @@ func (a *AccountGDPR) PurposeVendorException(purpose consentconstants.Purpose, b
 
 // PurposeVendorExceptions returns the vendor exception map for a given purpose.
 func (a *AccountGDPR) PurposeVendorExceptions(purpose consentconstants.Purpose) (value map[openrtb_ext.BidderName]struct{}, exists bool) {
-	if a.PurposeConfigs[purpose] == nil {
-		return nil, false
+	c, exists := a.PurposeConfigs[purpose]
+
+	if exists && c.VendorExceptionMap != nil {
+		return c.VendorExceptionMap, true
 	}
-	if a.PurposeConfigs[purpose].VendorExceptionMap == nil {
-		return nil, false
-	}
-	return a.PurposeConfigs[purpose].VendorExceptionMap, true
+	return nil, false
 }
 
 // PurposeOneTreatmentEnabled gets the account level purpose one treatment enabled setting returning the value and
