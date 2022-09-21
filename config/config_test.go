@@ -283,6 +283,7 @@ gdpr:
       enforce_vendors: false
       vendor_exceptions: ["foo2"]
     purpose3:
+      enforce_algo: "basic"
       enforce_vendors: false
       vendor_exceptions: ["foo3"]
     purpose4:
@@ -553,7 +554,7 @@ func TestFullConfig(t *testing.T) {
 		},
 		Purpose3: TCF2Purpose{
 			Enabled:            true, // true by default
-			EnforceAlgo:        TCF2FullEnforcement,
+			EnforceAlgo:        TCF2BasicEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo3")},
@@ -725,15 +726,15 @@ func TestValidateConfig(t *testing.T) {
 		GDPR: GDPR{
 			DefaultValue: "1",
 			TCF2: TCF2{
-				Purpose1:  TCF2Purpose{EnforceAlgo: TCF2FullEnforcement},
+				Purpose1:  TCF2Purpose{EnforceAlgo: TCF2BasicEnforcement},
 				Purpose2:  TCF2Purpose{EnforceAlgo: TCF2FullEnforcement},
-				Purpose3:  TCF2Purpose{EnforceAlgo: TCF2FullEnforcement},
+				Purpose3:  TCF2Purpose{EnforceAlgo: TCF2BasicEnforcement},
 				Purpose4:  TCF2Purpose{EnforceAlgo: TCF2FullEnforcement},
-				Purpose5:  TCF2Purpose{EnforceAlgo: TCF2FullEnforcement},
+				Purpose5:  TCF2Purpose{EnforceAlgo: TCF2BasicEnforcement},
 				Purpose6:  TCF2Purpose{EnforceAlgo: TCF2FullEnforcement},
-				Purpose7:  TCF2Purpose{EnforceAlgo: TCF2FullEnforcement},
+				Purpose7:  TCF2Purpose{EnforceAlgo: TCF2BasicEnforcement},
 				Purpose8:  TCF2Purpose{EnforceAlgo: TCF2FullEnforcement},
-				Purpose9:  TCF2Purpose{EnforceAlgo: TCF2FullEnforcement},
+				Purpose9:  TCF2Purpose{EnforceAlgo: TCF2BasicEnforcement},
 				Purpose10: TCF2Purpose{EnforceAlgo: TCF2FullEnforcement},
 			},
 		},
@@ -1609,26 +1610,26 @@ func TestMissingGDPRDefaultValue(t *testing.T) {
 	assertOneError(t, cfg.validate(v), "gdpr.default_value is required and must be specified")
 }
 
-func TestInvalidEnforcePurpose(t *testing.T) {
+func TestInvalidEnforceAlgo(t *testing.T) {
 	cfg, v := newDefaultConfig(t)
 	cfg.GDPR.TCF2.Purpose1.EnforceAlgo = ""
 	cfg.GDPR.TCF2.Purpose2.EnforceAlgo = TCF2FullEnforcement
-	cfg.GDPR.TCF2.Purpose3.EnforceAlgo = TCF2FullEnforcement
+	cfg.GDPR.TCF2.Purpose3.EnforceAlgo = TCF2BasicEnforcement
 	cfg.GDPR.TCF2.Purpose4.EnforceAlgo = TCF2FullEnforcement
 	cfg.GDPR.TCF2.Purpose5.EnforceAlgo = "invalid1"
 	cfg.GDPR.TCF2.Purpose6.EnforceAlgo = "invalid2"
 	cfg.GDPR.TCF2.Purpose7.EnforceAlgo = TCF2FullEnforcement
-	cfg.GDPR.TCF2.Purpose8.EnforceAlgo = TCF2FullEnforcement
+	cfg.GDPR.TCF2.Purpose8.EnforceAlgo = TCF2BasicEnforcement
 	cfg.GDPR.TCF2.Purpose9.EnforceAlgo = TCF2FullEnforcement
 	cfg.GDPR.TCF2.Purpose10.EnforceAlgo = "invalid3"
 
 	errs := cfg.validate(v)
 
 	expectedErrs := []error{
-		errors.New("gdpr.tcf2.purpose1.enforce_algo must be \"full\". Got "),
-		errors.New("gdpr.tcf2.purpose5.enforce_algo must be \"full\". Got invalid1"),
-		errors.New("gdpr.tcf2.purpose6.enforce_algo must be \"full\". Got invalid2"),
-		errors.New("gdpr.tcf2.purpose10.enforce_algo must be \"full\". Got invalid3"),
+		errors.New("gdpr.tcf2.purpose1.enforce_algo must be \"basic\" or \"full\". Got "),
+		errors.New("gdpr.tcf2.purpose5.enforce_algo must be \"basic\" or \"full\". Got invalid1"),
+		errors.New("gdpr.tcf2.purpose6.enforce_algo must be \"basic\" or \"full\". Got invalid2"),
+		errors.New("gdpr.tcf2.purpose10.enforce_algo must be \"basic\" or \"full\". Got invalid3"),
 	}
 	assert.ElementsMatch(t, errs, expectedErrs, "gdpr.tcf2.purposeX.enforce_algo should prevent invalid values but it doesn't")
 }
@@ -1934,6 +1935,61 @@ func TestTCF2PurposeEnforced(t *testing.T) {
 	}
 }
 
+func TestTCF2PurposeEnforcementAlgo(t *testing.T) {
+	tests := []struct {
+		description          string
+		givePurposeConfigNil bool
+		givePurpose1Algo     string
+		givePurpose2Algo     string
+		givePurpose          consentconstants.Purpose
+		wantAlgo             string
+	}{
+		{
+			description:          "Purpose config is nil",
+			givePurposeConfigNil: true,
+			givePurpose:          1,
+			wantAlgo:             TCF2FullEnforcement,
+		},
+		{
+			description:      "Purpose 1 enforcement algo set to basic",
+			givePurpose1Algo: TCF2BasicEnforcement,
+			givePurpose:      1,
+			wantAlgo:         TCF2BasicEnforcement,
+		},
+		{
+			description:      "Purpose 1 enforcement algo set to full",
+			givePurpose1Algo: TCF2FullEnforcement,
+			givePurpose:      1,
+			wantAlgo:         TCF2FullEnforcement,
+		},
+		{
+			description:      "Purpose 2 Enforcement algo set to basic",
+			givePurpose2Algo: TCF2BasicEnforcement,
+			givePurpose:      2,
+			wantAlgo:         TCF2BasicEnforcement,
+		},
+	}
+
+	for _, tt := range tests {
+		tcf2 := TCF2{}
+
+		if !tt.givePurposeConfigNil {
+			tcf2.PurposeConfigs = map[consentconstants.Purpose]*TCF2Purpose{
+				1: {
+					EnforceAlgo: tt.givePurpose1Algo,
+				},
+				2: {
+					EnforceAlgo: tt.givePurpose2Algo,
+				},
+			}
+		}
+
+		value := tcf2.PurposeEnforcementAlgo(tt.givePurpose)
+
+		assert.Equal(t, tt.wantAlgo, value, tt.description)
+	}
+}
+
 func TestTCF2PurposeEnforcingVendors(t *testing.T) {
 	tests := []struct {
 		description           string
@@ -2068,6 +2124,67 @@ func TestTCF2PurposeVendorException(t *testing.T) {
 		value := tcf2.PurposeVendorException(tt.givePurpose, tt.giveBidder)
 
 		assert.Equal(t, tt.wantIsVendorException, value, tt.description)
+	}
+}
+
+func TestTCF2PurposeVendorExceptions(t *testing.T) {
+	tests := []struct {
+		description              string
+		givePurposeConfigNil     bool
+		givePurpose1ExceptionMap map[openrtb_ext.BidderName]struct{}
+		givePurpose2ExceptionMap map[openrtb_ext.BidderName]struct{}
+		givePurpose              consentconstants.Purpose
+		wantExceptionMap         map[openrtb_ext.BidderName]struct{}
+	}{
+		{
+			description:          "Purpose config is nil",
+			givePurposeConfigNil: true,
+			givePurpose:          1,
+			wantExceptionMap:     map[openrtb_ext.BidderName]struct{}{},
+		},
+		{
+			description:      "Nil - exception map not defined for purpose",
+			givePurpose:      1,
+			wantExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+		},
+		{
+			description:              "Empty - exception map empty for purpose",
+			givePurpose:              1,
+			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{},
+			wantExceptionMap:         map[openrtb_ext.BidderName]struct{}{},
+		},
+		{
+			description:              "Nonempty - exception map with multiple entries for purpose",
+			givePurpose:              1,
+			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
+			wantExceptionMap:         map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
+		},
+		{
+			description:              "Nonempty - exception map with multiple entries for different purpose",
+			givePurpose:              2,
+			givePurpose1ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
+			givePurpose2ExceptionMap: map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "openx": {}},
+			wantExceptionMap:         map[openrtb_ext.BidderName]struct{}{"rubicon": {}, "appnexus": {}, "openx": {}},
+		},
+	}
+
+	for _, tt := range tests {
+		tcf2 := TCF2{}
+
+		if !tt.givePurposeConfigNil {
+			tcf2.PurposeConfigs = map[consentconstants.Purpose]*TCF2Purpose{
+				1: {
+					VendorExceptionMap: tt.givePurpose1ExceptionMap,
+				},
+				2: {
+					VendorExceptionMap: tt.givePurpose2ExceptionMap,
+				},
+			}
+		}
+
+		value := tcf2.PurposeVendorExceptions(tt.givePurpose)
+
+		assert.Equal(t, tt.wantExceptionMap, value, tt.description)
 	}
 }
 

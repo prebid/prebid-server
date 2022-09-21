@@ -263,8 +263,8 @@ func (cfg *GDPR) validatePurposes(errs []error) []error {
 		enforceAlgoValue := purposeConfigs[i].EnforceAlgo
 		enforceAlgoField := fmt.Sprintf("gdpr.tcf2.purpose%d.enforce_algo", (i + 1))
 
-		if enforceAlgoValue != TCF2FullEnforcement {
-			errs = append(errs, fmt.Errorf("%s must be \"full\". Got %s", enforceAlgoField, enforceAlgoValue))
+		if enforceAlgoValue != TCF2FullEnforcement && enforceAlgoValue != TCF2BasicEnforcement {
+			errs = append(errs, fmt.Errorf("%s must be \"basic\" or \"full\". Got %s", enforceAlgoField, enforceAlgoValue))
 		}
 	}
 	return errs
@@ -284,7 +284,8 @@ func (t *GDPRTimeouts) ActiveTimeout() time.Duration {
 }
 
 const (
-	TCF2FullEnforcement = "full"
+	TCF2BasicEnforcement = "basic"
+	TCF2FullEnforcement  = "full"
 )
 
 // TCF2 defines the TCF2 specific configurations for GDPR
@@ -326,12 +327,12 @@ func (t *TCF2) PurposeEnforced(purpose consentconstants.Purpose) (value bool) {
 	return t.PurposeConfigs[purpose].EnforcePurpose
 }
 
-// PurposeEnforcementAlgo
+// PurposeEnforcementAlgo returns the default enforcement algorithm for a given purpose
 func (t *TCF2) PurposeEnforcementAlgo(purpose consentconstants.Purpose) (value string) {
-	if t.PurposeConfigs[purpose] == nil {
-		return TCF2FullEnforcement
+	if c, exists := t.PurposeConfigs[purpose]; exists {
+		return c.EnforceAlgo
 	}
-	return t.PurposeConfigs[purpose].EnforceAlgo
+	return TCF2FullEnforcement
 }
 
 // PurposeEnforcingVendors checks if enforcing vendors is turned on for a given purpose. With enforcing vendors
@@ -356,15 +357,15 @@ func (t *TCF2) PurposeVendorException(purpose consentconstants.Purpose, bidder o
 	return false
 }
 
-// PurposeVendorExceptions
+// PurposeVendorExceptions returns the vendor exception map for a given purpose if it exists, otherwise it returns
+// an empty map of vendor exceptions
 func (t *TCF2) PurposeVendorExceptions(purpose consentconstants.Purpose) (value map[openrtb_ext.BidderName]struct{}) {
-	if t.PurposeConfigs[purpose] == nil {
-		return nil
+	c, exists := t.PurposeConfigs[purpose]
+
+	if exists && c.VendorExceptionMap != nil {
+		return c.VendorExceptionMap
 	}
-	if t.PurposeConfigs[purpose].VendorExceptionMap == nil {
-		return make(map[openrtb_ext.BidderName]struct{}, 0)
-	}
-	return t.PurposeConfigs[purpose].VendorExceptionMap
+	return make(map[openrtb_ext.BidderName]struct{}, 0)
 }
 
 // FeatureOneEnforced checks if special feature one is enforced. If it is enforced, PBS will determine whether geo
