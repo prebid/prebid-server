@@ -78,9 +78,10 @@ type reqSourceExt struct {
 	HeaderBidding int `json:"header_bidding,omitempty"`
 }
 type liftoffBidExt struct {
-	SKADN       RespSKADN `json:"skadn,omitempty"` // prebid shared
-	AuctionID   string    `json:"auction_id,omitempty"`
-	Imptrackers []string  `json:"imptrackers,omitempty"`
+	SKADN         RespSKADN `json:"skadn,omitempty"` // prebid shared
+	AuctionID     string    `json:"auction_id,omitempty"`
+	Imptrackers   []string  `json:"imptrackers,omitempty"`
+	ClickTrackers []string  `json:"clicktrackers,omitempty"`
 }
 
 // RespSKADN ...
