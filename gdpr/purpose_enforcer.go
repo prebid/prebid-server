@@ -72,7 +72,9 @@ func NewPurposeEnforcerBuilder(cfg TCF2ConfigReader) PurposeEnforcerBuilder {
 				BasicEnforcementVendorsMap: cfg.BasicEnforcementVendors(),
 			}
 
-			enforcer := NewBasicEnforcement(purposeCfg)
+			enforcer := &BasicEnforcement{
+				cfg: purposeCfg,
+			}
 			cachedEnforcers[index].Basic = enforcer
 			return enforcer
 		} else {
@@ -89,7 +91,9 @@ func NewPurposeEnforcerBuilder(cfg TCF2ConfigReader) PurposeEnforcerBuilder {
 				BasicEnforcementVendorsMap: cfg.BasicEnforcementVendors(),
 			}
 
-			enforcer := NewFullEnforcement(purposeCfg)
+			enforcer := &FullEnforcement{
+				cfg: purposeCfg,
+			}
 			cachedEnforcers[index].Full = enforcer
 			return enforcer
 		}

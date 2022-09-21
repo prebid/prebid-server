@@ -14,13 +14,6 @@ type BasicEnforcement struct {
 	cfg purposeConfig
 }
 
-// NewBasicEnforcement creates a BasicEnforcement object
-func NewBasicEnforcement(cfg purposeConfig) *BasicEnforcement {
-	return &BasicEnforcement{
-		cfg: cfg,
-	}
-}
-
 // LegalBasis determines if legal basis is satisfied for a given purpose and bidder based on user consent
 // and legal basis signals.
 func (be *BasicEnforcement) LegalBasis(vendorInfo VendorInfo, bidder openrtb_ext.BidderName, consent tcf2.ConsentMetadata, overrides Overrides) bool {

@@ -21,13 +21,6 @@ type FullEnforcement struct {
 	cfg purposeConfig
 }
 
-// NewFullEnforcement creates a FullEnforcement object
-func NewFullEnforcement(cfg purposeConfig) *FullEnforcement {
-	return &FullEnforcement{
-		cfg: cfg,
-	}
-}
-
 // LegalBasis determines if legal basis is satisfied for a given purpose and bidder based on the
 // vendor claims in the GVL, publisher restrictions and user consent.
 func (fe *FullEnforcement) LegalBasis(vendorInfo VendorInfo, bidder openrtb_ext.BidderName, consent tcf2.ConsentMetadata, overrides Overrides) bool {
