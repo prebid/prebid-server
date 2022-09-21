@@ -129,17 +129,13 @@ func (adapter *RTBHouseAdapter) MakeRequests(
 			continue
 		}
 
-		// This check is for identifying if the request comes from TJX
-		if srcExt != nil && srcExt.HeaderBidding == 1 {
-			rthhouseRequest.BApp = nil
-			rthhouseRequest.BAdv = nil
-
-			if rtbHouseExt.Blocklist.BApp != nil {
-				rthhouseRequest.BApp = rtbHouseExt.Blocklist.BApp
-			}
-			if rtbHouseExt.Blocklist.BAdv != nil {
-				rthhouseRequest.BAdv = rtbHouseExt.Blocklist.BAdv
-			}
+		rthhouseRequest.BApp = nil
+		rthhouseRequest.BAdv = nil
+		if rtbHouseExt.Blocklist.BApp != nil {
+			rthhouseRequest.BApp = rtbHouseExt.Blocklist.BApp
+		}
+		if rtbHouseExt.Blocklist.BAdv != nil {
+			rthhouseRequest.BAdv = rtbHouseExt.Blocklist.BAdv
 		}
 
 		// Updating required publisher id field
@@ -258,6 +254,10 @@ func (adapter *RTBHouseAdapter) MakeRequests(
 				},
 				MRAID: adapters.MRAID{
 					Supported: rtbHouseExt.MRAIDSupported,
+				},
+				Blocklist: adapters.DynamicBlocklist{
+					BApp: rthhouseRequest.BApp,
+					BAdv: rthhouseRequest.BAdv,
 				},
 			},
 		}

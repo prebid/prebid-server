@@ -43,6 +43,10 @@ var (
 	multiBidSelector  = attribute.Key("app.bidder.multi_bid_selector")
 	traceName         = attribute.Key("app.bidder.trace_name")
 	requestNumber     = attribute.Key("app.bidder.request_number")
+	bAppCount         = attribute.Key("app.bidder.bapp.count")
+	bAppSize          = attribute.Key("app.bidder.bapp.size")
+	bAdvCount         = attribute.Key("app.bidder.badv.count")
+	bAdvSize          = attribute.Key("app.bidder.badv.size")
 
 	debugVerboseState = "verbose"
 	debugStateKey     = attribute.Key("debug_state")
@@ -414,6 +418,13 @@ func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.Reques
 	return bidder.doRequestImpl(ctx, req, glog.Warningf)
 }
 
+func calculateSize(values []string) int {
+	size := 0
+	for _, val := range values {
+		size += len(val)
+	}
+	return size
+}
 func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.RequestData, logger util.LogMsg) *httpCallInfo {
 	httpReq, err := http.NewRequest(req.Method, req.Uri, bytes.NewBuffer(req.Body))
 	if err != nil {
@@ -433,6 +444,8 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 	// Tapjoy open telemetry
 	span := trace.SpanFromContext(ctx)
 	tjData := req.TapjoyData
+	bappSize := calculateSize(tjData.Blocklist.BApp)
+	badvSize := calculateSize(tjData.Blocklist.BAdv)
 	attrs := []attribute.KeyValue{
 		prebidDSPKey.String(tjData.Bidder),
 		regionKey.String(tjData.Region),
@@ -444,6 +457,10 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 		multiBidSelector.Int(tjData.MultiBidSelector),
 		traceName.String(tjData.TraceName),
 		requestNumber.String(tjData.ReqNum),
+		bAppCount.Int(len(tjData.Blocklist.BApp)),
+		bAdvCount.Int(len(tjData.Blocklist.BAdv)),
+		bAppSize.Int(bappSize),
+		bAdvSize.Int(badvSize),
 	}
 
 	if tjData.MultiBidSelector > 0 {

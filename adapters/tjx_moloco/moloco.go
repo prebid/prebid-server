@@ -86,13 +86,6 @@ func (adapter *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.Ex
 
 	var err error
 
-	var srcExt *reqSourceExt
-	if request.Source != nil && request.Source.Ext != nil {
-		if err := json.Unmarshal(request.Source.Ext, &srcExt); err != nil {
-			errs = append(errs, err)
-		}
-	}
-
 	for i := 0; i < numRequests; i++ {
 		skanSent := false
 
@@ -117,17 +110,13 @@ func (adapter *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.Ex
 			continue
 		}
 
-		// This check is for identifying if the request comes from TJX
-		if srcExt != nil && srcExt.HeaderBidding == 1 {
-			molocoRequest.BApp = nil
-			molocoRequest.BAdv = nil
-
-			if molocoExt.Blocklist.BApp != nil {
-				molocoRequest.BApp = molocoExt.Blocklist.BApp
-			}
-			if molocoExt.Blocklist.BAdv != nil {
-				molocoRequest.BAdv = molocoExt.Blocklist.BAdv
-			}
+		molocoRequest.BApp = nil
+		molocoRequest.BAdv = nil
+		if molocoExt.Blocklist.BApp != nil {
+			molocoRequest.BApp = molocoExt.Blocklist.BApp
+		}
+		if molocoExt.Blocklist.BAdv != nil {
+			molocoRequest.BAdv = molocoExt.Blocklist.BAdv
 		}
 
 		// placement type is either Rewarded or Interstitial, default is Interstitial
@@ -240,6 +229,10 @@ func (adapter *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.Ex
 				},
 				MRAID: adapters.MRAID{
 					Supported: molocoExt.MRAIDSupported,
+				},
+				Blocklist: adapters.DynamicBlocklist{
+					BApp: molocoRequest.BApp,
+					BAdv: molocoRequest.BAdv,
 				},
 			},
 		}

@@ -532,17 +532,13 @@ func (a *adapter) makeRequestData(liftoffRequest *openrtb.BidRequest, numRequest
 			continue
 		}
 
-		// This check is for identifying if the request comes from TJX
-		if srcExt != nil && srcExt.HeaderBidding == 1 {
-			liftoffRequest.BApp = nil
-			liftoffRequest.BAdv = nil
-
-			if liftoffExt.Blocklist.BApp != nil {
-				liftoffRequest.BApp = liftoffExt.Blocklist.BApp
-			}
-			if liftoffExt.Blocklist.BAdv != nil {
-				liftoffRequest.BAdv = liftoffExt.Blocklist.BAdv
-			}
+		liftoffRequest.BApp = nil
+		liftoffRequest.BAdv = nil
+		if liftoffExt.Blocklist.BApp != nil {
+			liftoffRequest.BApp = liftoffExt.Blocklist.BApp
+		}
+		if liftoffExt.Blocklist.BAdv != nil {
+			liftoffRequest.BAdv = liftoffExt.Blocklist.BAdv
 		}
 
 		// default is interstitial
@@ -675,6 +671,10 @@ func (a *adapter) makeRequestData(liftoffRequest *openrtb.BidRequest, numRequest
 					Supported: liftoffExt.MRAIDSupported,
 				},
 				MultiBidSelector: multiBidSelector,
+				Blocklist: adapters.DynamicBlocklist{
+					BApp: liftoffRequest.BApp,
+					BAdv: liftoffRequest.BAdv,
+				},
 			},
 		}
 		requestData = &reqData

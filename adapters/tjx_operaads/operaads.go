@@ -124,13 +124,6 @@ func (a *OperaAdsAdapter) MakeRequests(
 	// copy the bidder request
 	operaadsRequest := *request
 
-	var srcExt *reqSourceExt
-	if request.Source != nil && request.Source.Ext != nil {
-		if err := json.Unmarshal(request.Source.Ext, &srcExt); err != nil {
-			errs = append(errs, err)
-		}
-	}
-
 	for _, imp := range operaadsRequest.Imp {
 		skanSent := false
 
@@ -151,17 +144,13 @@ func (a *OperaAdsAdapter) MakeRequests(
 			continue
 		}
 
-		// This check is for identifying if the request comes from TJX
-		if srcExt != nil && srcExt.HeaderBidding == 1 {
-			operaadsRequest.BApp = nil
-			operaadsRequest.BAdv = nil
-
-			if operaadsExt.Blocklist.BApp != nil {
-				operaadsRequest.BApp = operaadsExt.Blocklist.BApp
-			}
-			if operaadsExt.Blocklist.BAdv != nil {
-				operaadsRequest.BAdv = operaadsExt.Blocklist.BAdv
-			}
+		operaadsRequest.BApp = nil
+		operaadsRequest.BAdv = nil
+		if operaadsExt.Blocklist.BApp != nil {
+			operaadsRequest.BApp = operaadsExt.Blocklist.BApp
+		}
+		if operaadsExt.Blocklist.BAdv != nil {
+			operaadsRequest.BAdv = operaadsExt.Blocklist.BAdv
 		}
 
 		uri := a.endpoint
@@ -285,6 +274,10 @@ func (a *OperaAdsAdapter) MakeRequests(
 				},
 				MRAID: adapters.MRAID{
 					Supported: operaadsExt.MRAIDSupported,
+				},
+				Blocklist: adapters.DynamicBlocklist{
+					BApp: operaadsRequest.BApp,
+					BAdv: operaadsRequest.BAdv,
 				},
 			},
 		}

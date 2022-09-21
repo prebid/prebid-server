@@ -97,13 +97,6 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 
 	requestImpCopy := kadenaiRequest.Imp
 
-	var srcExt *reqSourceExt
-	if request.Source != nil && request.Source.Ext != nil {
-		if err := json.Unmarshal(request.Source.Ext, &srcExt); err != nil {
-			errs = append(errs, err)
-		}
-	}
-
 	for i := 0; i < numRequests; i++ {
 		skanSent := false
 
@@ -125,18 +118,13 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 			continue
 		}
 
-		// This check is for identifying if the request comes from TJX
-		if srcExt != nil && srcExt.HeaderBidding == 1 {
-
-			kadenaiRequest.BApp = nil
-			kadenaiRequest.BAdv = nil
-
-			if kadenaiExt.Blocklist.BApp != nil {
-				kadenaiRequest.BApp = kadenaiExt.Blocklist.BApp
-			}
-			if kadenaiExt.Blocklist.BAdv != nil {
-				kadenaiRequest.BAdv = kadenaiExt.Blocklist.BAdv
-			}
+		kadenaiRequest.BApp = nil
+		kadenaiRequest.BAdv = nil
+		if kadenaiExt.Blocklist.BApp != nil {
+			kadenaiRequest.BApp = kadenaiExt.Blocklist.BApp
+		}
+		if kadenaiExt.Blocklist.BAdv != nil {
+			kadenaiRequest.BAdv = kadenaiExt.Blocklist.BAdv
 		}
 
 		// default is interstitial
@@ -237,6 +225,10 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 				},
 				MRAID: adapters.MRAID{
 					Supported: kadenaiExt.MRAIDSupported,
+				},
+				Blocklist: adapters.DynamicBlocklist{
+					BApp: kadenaiRequest.BApp,
+					BAdv: kadenaiRequest.BAdv,
 				},
 			},
 		}

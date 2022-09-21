@@ -106,13 +106,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 
 	var err error
 
-	var srcExt *reqSourceExt
-	if request.Source != nil && request.Source.Ext != nil {
-		if err := json.Unmarshal(request.Source.Ext, &srcExt); err != nil {
-			errs = append(errs, err)
-		}
-	}
-
 	for i := 0; i < numRequests; i++ {
 		skanSent := false
 
@@ -137,17 +130,13 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 			continue
 		}
 
-		// This check is for identifying if the request comes from TJX
-		if srcExt != nil && srcExt.HeaderBidding == 1 {
-			unicornRequest.BApp = nil
-			unicornRequest.BAdv = nil
-
-			if unicornExt.Blocklist.BApp != nil {
-				unicornRequest.BApp = unicornExt.Blocklist.BApp
-			}
-			if unicornExt.Blocklist.BAdv != nil {
-				unicornRequest.BAdv = unicornExt.Blocklist.BAdv
-			}
+		unicornRequest.BApp = nil
+		unicornRequest.BAdv = nil
+		if unicornExt.Blocklist.BApp != nil {
+			unicornRequest.BApp = unicornExt.Blocklist.BApp
+		}
+		if unicornExt.Blocklist.BAdv != nil {
+			unicornRequest.BAdv = unicornExt.Blocklist.BAdv
 		}
 
 		if thisImp.Banner != nil {
@@ -266,6 +255,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 				},
 				MRAID: adapters.MRAID{
 					Supported: unicornExt.MRAIDSupported,
+				},
+				Blocklist: adapters.DynamicBlocklist{
+					BApp: unicornRequest.BApp,
+					BAdv: unicornRequest.BAdv,
 				},
 			},
 		}

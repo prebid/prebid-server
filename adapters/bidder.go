@@ -134,6 +134,11 @@ type TapjoyData struct {
 	MRAID             MRAID
 	HTMLCompanionSent bool `json:"html_companion_sent"`
 	MultiBidSelector  int  `json:"multi_bid_selector"`
+	Blocklist         DynamicBlocklist
+}
+type DynamicBlocklist struct {
+	BApp []string `json:"bapp"`
+	BAdv []string `json:"badv"`
 }
 
 type SKAN struct {

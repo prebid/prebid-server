@@ -101,13 +101,6 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 
 	requestImpCopy := personalyRequest.Imp
 
-	var srcExt *reqSourceExt
-	if request.Source != nil && request.Source.Ext != nil {
-		if err := json.Unmarshal(request.Source.Ext, &srcExt); err != nil {
-			errs = append(errs, err)
-		}
-	}
-
 	for i := 0; i < numRequests; i++ {
 		skanSent := false
 
@@ -128,17 +121,14 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 			})
 			continue
 		}
-		// This check is for identifying if the request comes from TJX
-		if srcExt != nil && srcExt.HeaderBidding == 1 {
-			personalyRequest.BApp = nil
-			personalyRequest.BAdv = nil
 
-			if personalyExt.Blocklist.BApp != nil {
-				personalyRequest.BApp = personalyExt.Blocklist.BApp
-			}
-			if personalyExt.Blocklist.BAdv != nil {
-				personalyRequest.BAdv = personalyExt.Blocklist.BAdv
-			}
+		personalyRequest.BApp = nil
+		personalyRequest.BAdv = nil
+		if personalyExt.Blocklist.BApp != nil {
+			personalyRequest.BApp = personalyExt.Blocklist.BApp
+		}
+		if personalyExt.Blocklist.BAdv != nil {
+			personalyRequest.BAdv = personalyExt.Blocklist.BAdv
 		}
 
 		// default is interstitial
@@ -239,6 +229,10 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 				},
 				MRAID: adapters.MRAID{
 					Supported: personalyExt.MRAIDSupported,
+				},
+				Blocklist: adapters.DynamicBlocklist{
+					BApp: personalyRequest.BApp,
+					BAdv: personalyRequest.BAdv,
 				},
 			},
 		}

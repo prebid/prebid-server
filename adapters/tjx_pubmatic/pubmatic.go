@@ -76,27 +76,16 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters
 
 	var impData pubmaticImpData
 
-	var srcExt *reqSourceExt
-	if request.Source != nil && request.Source.Ext != nil {
-		if err := json.Unmarshal(request.Source.Ext, &srcExt); err != nil {
-			errs = append(errs, err)
-		}
-	}
-
 	for i := 0; i < len(pubmaticRequest.Imp); i++ {
 		impData, err = parseImpressionObject(&pubmaticRequest.Imp[i], &wrapExt, &pubID)
 
-		// This check is for identifying if the request comes from TJX
-		if srcExt != nil && srcExt.HeaderBidding == 1 {
-			pubmaticRequest.BApp = nil
-			pubmaticRequest.BAdv = nil
-
-			if impData.pubmatic.Blocklist.BApp != nil {
-				pubmaticRequest.BApp = impData.pubmatic.Blocklist.BApp
-			}
-			if impData.pubmatic.Blocklist.BAdv != nil {
-				pubmaticRequest.BAdv = impData.pubmatic.Blocklist.BAdv
-			}
+		pubmaticRequest.BApp = nil
+		pubmaticRequest.BAdv = nil
+		if impData.pubmatic.Blocklist.BApp != nil {
+			pubmaticRequest.BApp = impData.pubmatic.Blocklist.BApp
+		}
+		if impData.pubmatic.Blocklist.BAdv != nil {
+			pubmaticRequest.BAdv = impData.pubmatic.Blocklist.BAdv
 		}
 
 		// If the parsing is failed, remove imp and add the error.
@@ -203,6 +192,10 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters
 			},
 			MRAID: adapters.MRAID{
 				Supported: impData.pubmatic.MRAIDSupported,
+			},
+			Blocklist: adapters.DynamicBlocklist{
+				BApp: pubmaticRequest.BApp,
+				BAdv: pubmaticRequest.BAdv,
 			},
 		},
 	}}, errs

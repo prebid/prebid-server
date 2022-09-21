@@ -78,13 +78,6 @@ func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.E
 
 	var err error
 
-	var srcExt *reqSourceExt
-	if request.Source != nil && request.Source.Ext != nil {
-		if err := json.Unmarshal(request.Source.Ext, &srcExt); err != nil {
-			errs = append(errs, err)
-		}
-	}
-
 	for i := 0; i < numRequests; i++ {
 		skanSent := false
 
@@ -109,17 +102,13 @@ func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.E
 			continue
 		}
 
-		// This check is for identifying if the request comes from TJX
-		if srcExt != nil && srcExt.HeaderBidding == 1 {
-			taurusxRequest.BApp = nil
-			taurusxRequest.BAdv = nil
-
-			if taurusxExt.Blocklist.BApp != nil {
-				taurusxRequest.BApp = taurusxExt.Blocklist.BApp
-			}
-			if taurusxExt.Blocklist.BAdv != nil {
-				taurusxRequest.BAdv = taurusxExt.Blocklist.BAdv
-			}
+		taurusxRequest.BApp = nil
+		taurusxRequest.BAdv = nil
+		if taurusxExt.Blocklist.BApp != nil {
+			taurusxRequest.BApp = taurusxExt.Blocklist.BApp
+		}
+		if taurusxExt.Blocklist.BAdv != nil {
+			taurusxRequest.BAdv = taurusxExt.Blocklist.BAdv
 		}
 
 		impVideoExt := taurusxVideoExt{
@@ -223,6 +212,10 @@ func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.E
 				},
 				MRAID: adapters.MRAID{
 					Supported: taurusxExt.MRAIDSupported,
+				},
+				Blocklist: adapters.DynamicBlocklist{
+					BApp: taurusxRequest.BApp,
+					BAdv: taurusxRequest.BAdv,
 				},
 			},
 		}

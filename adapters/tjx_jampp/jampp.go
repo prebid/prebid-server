@@ -108,13 +108,6 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.Ex
 
 	requestImpCopy := jamppRequest.Imp
 
-	var srcExt *reqSourceExt
-	if request.Source != nil && request.Source.Ext != nil {
-		if err := json.Unmarshal(request.Source.Ext, &srcExt); err != nil {
-			errs = append(errs, err)
-		}
-	}
-
 	for i := 0; i < numRequests; i++ {
 		skanSent := false
 
@@ -135,18 +128,16 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.Ex
 			})
 			continue
 		}
-		// This check is for identifying if the request comes from TJX
-		if srcExt != nil && srcExt.HeaderBidding == 1 {
-			jamppRequest.BApp = nil
-			jamppRequest.BAdv = nil
 
-			if jamppExt.Blocklist.BApp != nil {
-				jamppRequest.BApp = jamppExt.Blocklist.BApp
-			}
-			if jamppExt.Blocklist.BAdv != nil {
-				jamppRequest.BAdv = jamppExt.Blocklist.BAdv
-			}
+		jamppRequest.BApp = nil
+		jamppRequest.BAdv = nil
+		if jamppExt.Blocklist.BApp != nil {
+			jamppRequest.BApp = jamppExt.Blocklist.BApp
 		}
+		if jamppExt.Blocklist.BAdv != nil {
+			jamppRequest.BAdv = jamppExt.Blocklist.BAdv
+		}
+
 		// default is interstitial
 		placementType := adapters.Interstitial
 		rewarded := 0
@@ -251,6 +242,10 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.Ex
 				},
 				MRAID: adapters.MRAID{
 					Supported: jamppExt.MRAIDSupported,
+				},
+				Blocklist: adapters.DynamicBlocklist{
+					BApp: jamppRequest.BApp,
+					BAdv: jamppRequest.BAdv,
 				},
 			},
 		}

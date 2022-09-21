@@ -450,13 +450,6 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.
 	// copy the bidder request
 	rubiconRequest := *request
 
-	var srcExt *reqSourceExt
-	if request.Source != nil && request.Source.Ext != nil {
-		if err := json.Unmarshal(request.Source.Ext, &srcExt); err != nil {
-			errs = append(errs, err)
-		}
-	}
-
 	for i := 0; i < numRequests; i++ {
 		skanSent := false
 		placementType := adapters.Interstitial
@@ -479,17 +472,13 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.
 			continue
 		}
 
-		// This check is for identifying if the request comes from TJX
-		if srcExt != nil && srcExt.HeaderBidding == 1 {
-			rubiconRequest.BApp = nil
-			rubiconRequest.BAdv = nil
-
-			if rubiconExt.Blocklist.BApp != nil {
-				rubiconRequest.BApp = rubiconExt.Blocklist.BApp
-			}
-			if rubiconExt.Blocklist.BAdv != nil {
-				rubiconRequest.BAdv = rubiconExt.Blocklist.BAdv
-			}
+		rubiconRequest.BApp = nil
+		rubiconRequest.BAdv = nil
+		if rubiconExt.Blocklist.BApp != nil {
+			rubiconRequest.BApp = rubiconExt.Blocklist.BApp
+		}
+		if rubiconExt.Blocklist.BAdv != nil {
+			rubiconRequest.BAdv = rubiconExt.Blocklist.BAdv
 		}
 
 		target := rubiconExt.Inventory
@@ -732,6 +721,10 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.
 				},
 				MRAID: adapters.MRAID{
 					Supported: rubiconExt.MRAIDSupported,
+				},
+				Blocklist: adapters.DynamicBlocklist{
+					BApp: rubiconRequest.BApp,
+					BAdv: rubiconRequest.BAdv,
 				},
 			},
 		}

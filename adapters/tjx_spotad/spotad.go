@@ -108,13 +108,6 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 
 	requestImpCopy := spotadRequest.Imp
 
-	var srcExt *reqSourceExt
-	if request.Source != nil && request.Source.Ext != nil {
-		if err := json.Unmarshal(request.Source.Ext, &srcExt); err != nil {
-			errs = append(errs, err)
-		}
-	}
-
 	for i := 0; i < numRequests; i++ {
 		skanSent := false
 
@@ -136,17 +129,13 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 			continue
 		}
 
-		// This check is for identifying if the request comes from TJX
-		if srcExt != nil && srcExt.HeaderBidding == 1 {
-			spotadRequest.BApp = nil
-			spotadRequest.BAdv = nil
-
-			if spotadExt.Blocklist.BApp != nil {
-				spotadRequest.BApp = spotadExt.Blocklist.BApp
-			}
-			if spotadExt.Blocklist.BAdv != nil {
-				spotadRequest.BAdv = spotadExt.Blocklist.BAdv
-			}
+		spotadRequest.BApp = nil
+		spotadRequest.BAdv = nil
+		if spotadExt.Blocklist.BApp != nil {
+			spotadRequest.BApp = spotadExt.Blocklist.BApp
+		}
+		if spotadExt.Blocklist.BAdv != nil {
+			spotadRequest.BAdv = spotadExt.Blocklist.BAdv
 		}
 
 		// default is interstitial
@@ -254,6 +243,10 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 				},
 				MRAID: adapters.MRAID{
 					Supported: spotadExt.MRAIDSupported,
+				},
+				Blocklist: adapters.DynamicBlocklist{
+					BApp: spotadRequest.BApp,
+					BAdv: spotadRequest.BAdv,
 				},
 			},
 		}

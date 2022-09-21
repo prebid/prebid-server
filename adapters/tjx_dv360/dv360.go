@@ -93,13 +93,6 @@ func (adapter *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.Ex
 
 	var err error
 
-	var srcExt *reqSourceExt
-	if request.Source != nil && request.Source.Ext != nil {
-		if err := json.Unmarshal(request.Source.Ext, &srcExt); err != nil {
-			errs = append(errs, err)
-		}
-	}
-
 	for i := 0; i < numRequests; i++ {
 		// clone current imp
 		impCopy := requestImpCopy[i]
@@ -122,17 +115,13 @@ func (adapter *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.Ex
 			continue
 		}
 
-		// This check is for identifying if the request comes from TJX
-		if srcExt != nil && srcExt.HeaderBidding == 1 {
-			dv360Request.BApp = nil
-			dv360Request.BAdv = nil
-
-			if dv360Ext.Blocklist.BApp != nil {
-				dv360Request.BApp = dv360Ext.Blocklist.BApp
-			}
-			if dv360Ext.Blocklist.BAdv != nil {
-				dv360Request.BAdv = dv360Ext.Blocklist.BAdv
-			}
+		dv360Request.BApp = nil
+		dv360Request.BAdv = nil
+		if dv360Ext.Blocklist.BApp != nil {
+			dv360Request.BApp = dv360Ext.Blocklist.BApp
+		}
+		if dv360Ext.Blocklist.BAdv != nil {
+			dv360Request.BAdv = dv360Ext.Blocklist.BAdv
 		}
 
 		isTruncated := 0
@@ -265,6 +254,10 @@ func (adapter *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.Ex
 				},
 				MRAID: adapters.MRAID{
 					Supported: dv360Ext.MRAIDSupported,
+				},
+				Blocklist: adapters.DynamicBlocklist{
+					BApp: dv360Request.BApp,
+					BAdv: dv360Request.BAdv,
 				},
 			},
 		}

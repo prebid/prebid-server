@@ -115,13 +115,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 	// copy the bidder request
 	pangleRequest := *request
 
-	var srcExt *reqSourceExt
-	if request.Source != nil && request.Source.Ext != nil {
-		if err := json.Unmarshal(request.Source.Ext, &srcExt); err != nil {
-			errs = append(errs, err)
-		}
-	}
-
 	for _, imp := range pangleRequest.Imp {
 		skanSent := false
 
@@ -138,17 +131,13 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 			continue
 		}
 
-		// This check is for identifying if the request comes from TJX
-		if srcExt != nil && srcExt.HeaderBidding == 1 {
-			pangleRequest.BApp = nil
-			pangleRequest.BAdv = nil
-
-			if bidderImpExt.Blocklist.BApp != nil {
-				pangleRequest.BApp = bidderImpExt.Blocklist.BApp
-			}
-			if bidderImpExt.Blocklist.BAdv != nil {
-				pangleRequest.BAdv = bidderImpExt.Blocklist.BAdv
-			}
+		pangleRequest.BApp = nil
+		pangleRequest.BAdv = nil
+		if bidderImpExt.Blocklist.BApp != nil {
+			pangleRequest.BApp = bidderImpExt.Blocklist.BApp
+		}
+		if bidderImpExt.Blocklist.BAdv != nil {
+			pangleRequest.BAdv = bidderImpExt.Blocklist.BAdv
 		}
 
 		if imp.Banner != nil && !bidderImpExt.MRAIDSupported {
@@ -252,6 +241,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 				},
 				MRAID: adapters.MRAID{
 					Supported: bidderImpExt.MRAIDSupported,
+				},
+				Blocklist: adapters.DynamicBlocklist{
+					BApp: pangleRequest.BApp,
+					BAdv: pangleRequest.BAdv,
 				},
 			},
 		}

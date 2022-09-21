@@ -82,13 +82,6 @@ func (adapter *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.Ex
 
 	var err error
 
-	// this will be removed from all bidders after ad_service changes
-	var srcExt *reqSourceExt
-	if request.Source != nil && request.Source.Ext != nil {
-		if err := json.Unmarshal(request.Source.Ext, &srcExt); err != nil {
-			errs = append(errs, err)
-		}
-	}
 	for i := 0; i < numRequests; i++ {
 		skanSent := false
 
@@ -113,17 +106,13 @@ func (adapter *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.Ex
 			continue
 		}
 
-		// This check is for identifying if the request comes from TJX
-		if srcExt != nil && srcExt.HeaderBidding == 1 {
-			aarkiRequest.BApp = nil
-			aarkiRequest.BAdv = nil
-
-			if aarkiExt.Blocklist.BApp != nil {
-				aarkiRequest.BApp = aarkiExt.Blocklist.BApp
-			}
-			if aarkiExt.Blocklist.BAdv != nil {
-				aarkiRequest.BAdv = aarkiExt.Blocklist.BAdv
-			}
+		aarkiRequest.BApp = nil
+		aarkiRequest.BAdv = nil
+		if aarkiExt.Blocklist.BApp != nil {
+			aarkiRequest.BApp = aarkiExt.Blocklist.BApp
+		}
+		if aarkiExt.Blocklist.BAdv != nil {
+			aarkiRequest.BAdv = aarkiExt.Blocklist.BAdv
 		}
 
 		placementType := adapters.Interstitial
@@ -228,6 +217,10 @@ func (adapter *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.Ex
 				},
 				MRAID: adapters.MRAID{
 					Supported: aarkiExt.MRAIDSupported,
+				},
+				Blocklist: adapters.DynamicBlocklist{
+					BApp: aarkiRequest.BApp,
+					BAdv: aarkiRequest.BAdv,
 				},
 			},
 		}

@@ -108,13 +108,6 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 
 	requestImpCopy := scalemonkRequest.Imp
 
-	var srcExt *reqSourceExt
-	if request.Source != nil && request.Source.Ext != nil {
-		if err := json.Unmarshal(request.Source.Ext, &srcExt); err != nil {
-			errs = append(errs, err)
-		}
-	}
-
 	for i := 0; i < numRequests; i++ {
 		skanSent := false
 
@@ -136,17 +129,13 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 			continue
 		}
 
-		// This check is for identifying if the request comes from TJX
-		if srcExt != nil && srcExt.HeaderBidding == 1 {
-			scalemonkRequest.BApp = nil
-			scalemonkRequest.BAdv = nil
-
-			if scalemonkExt.Blocklist.BApp != nil {
-				scalemonkRequest.BApp = scalemonkExt.Blocklist.BApp
-			}
-			if scalemonkExt.Blocklist.BAdv != nil {
-				scalemonkRequest.BAdv = scalemonkExt.Blocklist.BAdv
-			}
+		scalemonkRequest.BApp = nil
+		scalemonkRequest.BAdv = nil
+		if scalemonkExt.Blocklist.BApp != nil {
+			scalemonkRequest.BApp = scalemonkExt.Blocklist.BApp
+		}
+		if scalemonkExt.Blocklist.BAdv != nil {
+			scalemonkRequest.BAdv = scalemonkExt.Blocklist.BAdv
 		}
 
 		// default is interstitial
@@ -254,6 +243,10 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 				},
 				MRAID: adapters.MRAID{
 					Supported: scalemonkExt.MRAIDSupported,
+				},
+				Blocklist: adapters.DynamicBlocklist{
+					BApp: scalemonkRequest.BApp,
+					BAdv: scalemonkRequest.BAdv,
 				},
 			},
 		}
