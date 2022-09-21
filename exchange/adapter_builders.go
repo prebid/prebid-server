@@ -313,7 +313,6 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderYieldlab:          yieldlab.Builder,
 		openrtb_ext.BidderYieldmo:           yieldmo.Builder,
 		openrtb_ext.BidderYieldone:          yieldone.Builder,
-		openrtb_ext.BidderYSSP:              yahoossp.Builder,
 		openrtb_ext.BidderZeroClickFraud:    zeroclickfraud.Builder,
 	}
 }

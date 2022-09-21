@@ -12,6 +12,10 @@
         "network": {
             "type": "string",
             "description": "Network if required"
+        },
+        "noCookies": {
+            "type": "boolean",
+            "description": "Disable cookies being set by the ad server."
         }
     },
 

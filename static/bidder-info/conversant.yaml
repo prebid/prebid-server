@@ -1,3 +1,4 @@
+endpoint: "http://api.hb.ad.cpe.dotomi.com/cvx/server/hb/ortb/25"
 maintainer:
   email: "CNVR_PublisherIntegration@conversantmedia.com"
 gvlVendorID: 24

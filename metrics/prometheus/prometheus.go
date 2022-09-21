@@ -425,7 +425,13 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 
 	metrics.Gatherer = reg
 
-	metricsPrefix := fmt.Sprintf("%s_%s_", cfg.Namespace, cfg.Subsystem)
+	metricsPrefix := ""
+	if len(cfg.Namespace) > 0 {
+		metricsPrefix += fmt.Sprintf("%s_", cfg.Namespace)
+	}
+	if len(cfg.Subsystem) > 0 {
+		metricsPrefix += fmt.Sprintf("%s_", cfg.Subsystem)
+	}
 
 	metrics.Registerer = prometheus.WrapRegistererWithPrefix(metricsPrefix, reg)
 	metrics.Registerer.MustRegister(promCollector.NewGoCollector())

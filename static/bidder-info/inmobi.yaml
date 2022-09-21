@@ -1,3 +1,4 @@
+endpoint: "https://api.w.inmobi.com/showad/openrtb/bidder/prebid"
 maintainer:
   email: "technology-irv@inmobi.com"
 gvlVendorID: 333
@@ -15,3 +16,4 @@ userSync:
   redirect:
     url: "https://sync.inmobi.com/prebid?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
     userMacro: "{ID5UID}"
+

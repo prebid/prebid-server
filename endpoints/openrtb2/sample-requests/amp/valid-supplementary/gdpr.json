@@ -1,5 +1,6 @@
 {
   "description": "Amp request comes with a root.regs.ext.gdpr and a GDPR consent string found in root.user.ext.consent",
+  "query": "tag_id=101",
   "config": {
     "mockBidders": [
       {"bidderName": "appnexus", "currency": "USD", "price": 15}

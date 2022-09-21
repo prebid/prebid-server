@@ -1,3 +1,4 @@
+endpoint: "http://ghb.sync.viewdeos.com/pbs/ortb"
 maintainer:
   email: "contact@viewdeos.com"
 gvlVendorID: 924
