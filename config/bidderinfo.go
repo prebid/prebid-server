@@ -197,7 +197,8 @@ func LoadBidderInfo(path string) (BidderInfos, error) {
 
 		bidderName := strings.Split(fileName, ".")
 		if len(bidderName) == 2 && bidderName[1] == "yaml" {
-			infos[(bidderName[0])] = info
+			// store all bidder names loaded from file system in lowercase
+			infos[(strings.ToLower(bidderName[0]))] = info
 		}
 	}
 	return infos, nil

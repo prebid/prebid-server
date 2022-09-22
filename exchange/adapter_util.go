@@ -30,16 +30,10 @@ func buildBidders(infos config.BidderInfos, builders map[openrtb_ext.BidderName]
 	bidders := make(map[openrtb_ext.BidderName]adapters.Bidder)
 	var errs []error
 
-	for bidder := range infos {
+	for bidder, info := range infos {
 		bidderName, bidderNameFound := openrtb_ext.NormalizeBidderName(bidder)
 		if !bidderNameFound {
 			errs = append(errs, fmt.Errorf("%v: unknown bidder", bidder))
-			continue
-		}
-
-		info, infoFound := infos[string(bidderName)]
-		if !infoFound {
-			errs = append(errs, fmt.Errorf("%v: bidder info not found", bidder))
 			continue
 		}
 
@@ -59,7 +53,6 @@ func buildBidders(infos config.BidderInfos, builders map[openrtb_ext.BidderName]
 			bidders[bidderName] = adapters.BuildInfoAwareBidder(bidderInstance, info)
 		}
 	}
-
 	return bidders, errs
 }
 

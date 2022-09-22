@@ -64,7 +64,6 @@ func TestBuildAdapters(t *testing.T) {
 			description: "Invalid - Builder Errors",
 			bidderInfos: map[string]config.BidderInfo{"unknown": {}, "appNexus": {}},
 			expectedErrors: []error{
-				errors.New("appNexus: bidder info not found"),
 				errors.New("unknown: unknown bidder"),
 			},
 		},
@@ -99,14 +98,6 @@ func TestBuildBidders(t *testing.T) {
 			builders:    map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderAppnexus: appnexusBuilder},
 			expectedErrors: []error{
 				errors.New("unknown: unknown bidder"),
-			},
-		},
-		{
-			description: "Invalid - No Bidder Info",
-			bidderInfos: map[string]config.BidderInfo{"appNexus": {}},
-			builders:    map[openrtb_ext.BidderName]adapters.Builder{openrtb_ext.BidderAppnexus: appnexusBuilder},
-			expectedErrors: []error{
-				errors.New("appNexus: bidder info not found"),
 			},
 		},
 		{

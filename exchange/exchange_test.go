@@ -80,7 +80,7 @@ func TestNewExchange(t *testing.T) {
 	e := NewExchange(adapters, nil, cfg, map[string]usersync.Syncer{}, &metricsConf.NilMetricsEngine{}, biddersInfo, gdprPermsBuilder, tcf2ConfigBuilder, currencyConverter, nilCategoryFetcher{}, &adscert.NilSigner{}).(*exchange)
 	for _, bidderName := range knownAdapters {
 		if _, ok := e.adapterMap[bidderName]; !ok {
-			if biddersInfo[string(bidderName)].IsEnabled() {
+			if biddersInfo[strings.ToLower(string(bidderName))].IsEnabled() {
 				t.Errorf("NewExchange produced an Exchange without bidder %s", bidderName)
 			}
 		}
