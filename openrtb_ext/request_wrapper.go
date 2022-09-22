@@ -337,8 +337,7 @@ func (ue *UserExt) unmarshal(extJson json.RawMessage) error {
 		}
 	}
 
-	consentedProviderSettingsJson, hasCPSettings := ue.ext["ConsentedProvidersSettings"]
-	if hasCPSettings {
+	if consentedProviderSettingsJson, hasCPSettings := ue.ext["ConsentedProvidersSettings"]; hasCPSettings {
 		ue.consentedProvidersSettings = &ExtUserCPSettings{}
 		if err := json.Unmarshal(consentedProviderSettingsJson, ue.consentedProvidersSettings); err != nil {
 			return err

@@ -27,9 +27,5 @@ func (c ConsentWriter) Write(req *openrtb2.BidRequest) error {
 		}
 	}
 
-	if err := reqWrap.RebuildRequest(); err != nil {
-		return err
-	}
-
-	return nil
+	return reqWrap.RebuildRequest()
 }
