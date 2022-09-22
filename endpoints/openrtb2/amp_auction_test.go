@@ -412,7 +412,6 @@ func TestSetConsentedProviders(t *testing.T) {
 					Ext: json.RawMessage(`malformed`),
 				},
 			},
-			//expectedBidRequest: nil,
 			expectedError: true,
 		},
 		{
