@@ -7,7 +7,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/mxmCherry/openrtb/v16/adcom1"
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
@@ -75,22 +74,6 @@ type KeywordSegment struct {
 type KeywordsPublisherItem struct {
 	Name     string           `json:"name"`
 	Segments []KeywordSegment `json:"segments"`
-}
-
-type GridNative struct {
-	RequestNative string                     `json:"request_native"`
-	Ver           string                     `json:"ver,omitempty"`
-	API           []adcom1.APIFramework      `json:"api,omitempty"`
-	BAttr         []adcom1.CreativeAttribute `json:"battr,omitempty"`
-	Ext           json.RawMessage            `json:"ext,omitempty"`
-}
-
-type NativeImp struct {
-	Native json.RawMessage `json:"native,omitempty"`
-}
-
-type NativeGridRequest struct {
-	Imp []json.RawMessage `json:"imp"`
 }
 
 type KeywordsPublisher map[string][]KeywordsPublisherItem
@@ -359,6 +342,11 @@ func (a *GridAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapte
 	request.Imp = validImps
 
 	reqJSON, err := json.Marshal(request)
+
+	if err != nil {
+		errors = append(errors, err)
+		return nil, errors
+	}
 
 	fixedReqJSON, err := fixNative(reqJSON)
 
