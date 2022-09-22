@@ -18,7 +18,7 @@ import (
 	uuid "github.com/gofrs/uuid"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
@@ -141,7 +141,7 @@ func (deps *ctvEndpointDeps) CTVAuctionEndpoint(w http.ResponseWriter, r *http.R
 	}()
 
 	//Parse ORTB Request and do Standard Validation
-	reqWrapper, _, _, _, errL = deps.parseRequest(r)
+	reqWrapper, _, _, _, _, errL = deps.parseRequest(r)
 	if errortypes.ContainsFatalError(errL) && writeError(errL, w, &deps.labels) {
 		return
 	}

@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 )
 
 // Params defines the parameters of an AMP request.
@@ -20,6 +20,7 @@ type Params struct {
 	Slot            string
 	StoredRequestID string
 	Timeout         *uint64
+	Targeting       string
 }
 
 // Size defines size information of an AMP request.
@@ -56,6 +57,7 @@ func ParseParams(httpRequest *http.Request) (Params, error) {
 		Slot:            query.Get("slot"),
 		StoredRequestID: tagID,
 		Timeout:         parseIntPtr(query.Get("timeout")),
+		Targeting:       query.Get("targeting"),
 	}
 	return params, nil
 }

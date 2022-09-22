@@ -138,6 +138,7 @@ func TestDefaults(t *testing.T) {
 	cmpInts(t, "metrics.influxdb.collection_rate_seconds", cfg.Metrics.Influxdb.MetricSendInterval, 20)
 	cmpBools(t, "account_adapter_details", cfg.Metrics.Disabled.AccountAdapterDetails, false)
 	cmpBools(t, "account_debug", cfg.Metrics.Disabled.AccountDebug, true)
+	cmpBools(t, "account_stored_responses", cfg.Metrics.Disabled.AccountStoredResponses, true)
 	cmpBools(t, "adapter_connections_metrics", cfg.Metrics.Disabled.AdapterConnectionMetrics, true)
 	cmpBools(t, "adapter_gdpr_request_blocked", cfg.Metrics.Disabled.AdapterGDPRRequestBlocked, false)
 	cmpStrings(t, "certificates_file", cfg.PemCertsFile, "")
@@ -145,6 +146,13 @@ func TestDefaults(t *testing.T) {
 	cmpStrings(t, "stored_requests.filesystem.directorypath", "./stored_requests/data/by_id", cfg.StoredRequests.Files.Path)
 	cmpBools(t, "auto_gen_source_tid", cfg.AutoGenSourceTID, true)
 	cmpBools(t, "generate_bid_id", cfg.GenerateBidID, false)
+	cmpStrings(t, "experiment.adscert.mode", cfg.Experiment.AdCerts.Mode, "off")
+	cmpStrings(t, "experiment.adscert.inprocess.origin", cfg.Experiment.AdCerts.InProcess.Origin, "")
+	cmpStrings(t, "experiment.adscert.inprocess.key", cfg.Experiment.AdCerts.InProcess.PrivateKey, "")
+	cmpInts(t, "experiment.adscert.inprocess.domain_check_interval_seconds", cfg.Experiment.AdCerts.InProcess.DNSCheckIntervalInSeconds, 30)
+	cmpInts(t, "experiment.adscert.inprocess.domain_renewal_interval_seconds", cfg.Experiment.AdCerts.InProcess.DNSRenewalIntervalInSeconds, 30)
+	cmpStrings(t, "experiment.adscert.remote.url", cfg.Experiment.AdCerts.Remote.Url, "")
+	cmpInts(t, "experiment.adscert.remote.signing_timeout_ms", cfg.Experiment.AdCerts.Remote.SigningTimeoutMs, 5)
 	cmpNils(t, "host_schain_node", cfg.HostSChainNode)
 
 	//Assert the price floor default values
@@ -348,6 +356,7 @@ metrics:
   disabled_metrics:
     account_adapter_details: true
     account_debug: false
+    account_stored_responses: false
     adapter_connections_metrics: true
     adapter_gdpr_request_blocked: true
 adapters:
@@ -388,6 +397,17 @@ host_schain_node:
     sid: "00001"
     rid: "BidRequest"
     hp: 1
+experiment:
+    adscert:
+        mode: inprocess
+        inprocess:
+            origin: "http://test.com"
+            key: "ABC123"
+            domain_check_interval_seconds: 40
+            domain_renewal_interval_seconds : 60
+        remote:
+            url: ""
+            signing_timeout_ms: 10
 price_floors:
    enabled: true
    use_dynamic_data: false
@@ -435,6 +455,11 @@ func cmpInts(t *testing.T, key string, a int, b int) {
 	assert.Equal(t, a, b, "%s: %d != %d", key, a, b)
 }
 
+func cmpInt8s(t *testing.T, key string, a *int8, b *int8) {
+	t.Helper()
+	assert.Equal(t, a, b, "%s: %d != %d", key, a, b)
+}
+
 func cmpBools(t *testing.T, key string, a bool, b bool) {
 	t.Helper()
 	assert.Equal(t, a, b, "%s: %t != %t", key, a, b)
@@ -446,6 +471,8 @@ func cmpNils(t *testing.T, key string, a interface{}) {
 }
 
 func TestFullConfig(t *testing.T) {
+	int8One := int8(1)
+
 	v := viper.New()
 	SetupViper(v, "")
 	v.SetConfigType("yaml")
@@ -480,10 +507,10 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "http_client_cache.idle_connection_timeout_seconds", cfg.CacheClient.IdleConnTimeout, 3)
 	cmpInts(t, "gdpr.host_vendor_id", cfg.GDPR.HostVendorID, 15)
 	cmpStrings(t, "gdpr.default_value", cfg.GDPR.DefaultValue, "1")
-	cmpStrings(t, "host_schain_node", cfg.HostSChainNode.ASI, "pbshostcompany.com")
-	cmpStrings(t, "host_schain_node", cfg.HostSChainNode.SID, "00001")
-	cmpStrings(t, "host_schain_node", cfg.HostSChainNode.RID, "BidRequest")
-	cmpInts(t, "host_schain_node", cfg.HostSChainNode.HP, 1)
+	cmpStrings(t, "host_schain_node.asi", cfg.HostSChainNode.ASI, "pbshostcompany.com")
+	cmpStrings(t, "host_schain_node.sid", cfg.HostSChainNode.SID, "00001")
+	cmpStrings(t, "host_schain_node.rid", cfg.HostSChainNode.RID, "BidRequest")
+	cmpInt8s(t, "host_schain_node.hp", cfg.HostSChainNode.HP, &int8One)
 
 	//Assert the price floor values
 	cmpBools(t, "price_floors.enabled", cfg.PriceFloors.Enabled, true)
@@ -641,6 +668,7 @@ func TestFullConfig(t *testing.T) {
 	cmpBools(t, "auto_gen_source_tid", cfg.AutoGenSourceTID, false)
 	cmpBools(t, "account_adapter_details", cfg.Metrics.Disabled.AccountAdapterDetails, true)
 	cmpBools(t, "account_debug", cfg.Metrics.Disabled.AccountDebug, false)
+	cmpBools(t, "account_stored_responses", cfg.Metrics.Disabled.AccountStoredResponses, false)
 	cmpBools(t, "adapter_connections_metrics", cfg.Metrics.Disabled.AdapterConnectionMetrics, true)
 	cmpBools(t, "adapter_gdpr_request_blocked", cfg.Metrics.Disabled.AdapterGDPRRequestBlocked, true)
 	cmpStrings(t, "certificates_file", cfg.PemCertsFile, "/etc/ssl/cert.pem")
@@ -649,6 +677,13 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "request_validation.ipv6_private_networks", cfg.RequestValidation.IPv6PrivateNetworks[1], "2222::/16")
 	cmpBools(t, "generate_bid_id", cfg.GenerateBidID, true)
 	cmpStrings(t, "debug.override_token", cfg.Debug.OverrideToken, "")
+	cmpStrings(t, "experiment.adscert.mode", cfg.Experiment.AdCerts.Mode, "inprocess")
+	cmpStrings(t, "experiment.adscert.inprocess.origin", cfg.Experiment.AdCerts.InProcess.Origin, "http://test.com")
+	cmpStrings(t, "experiment.adscert.inprocess.key", cfg.Experiment.AdCerts.InProcess.PrivateKey, "ABC123")
+	cmpInts(t, "experiment.adscert.inprocess.domain_check_interval_seconds", cfg.Experiment.AdCerts.InProcess.DNSCheckIntervalInSeconds, 40)
+	cmpInts(t, "experiment.adscert.inprocess.domain_renewal_interval_seconds", cfg.Experiment.AdCerts.InProcess.DNSRenewalIntervalInSeconds, 60)
+	cmpStrings(t, "experiment.adscert.remote.url", cfg.Experiment.AdCerts.Remote.Url, "")
+	cmpInts(t, "experiment.adscert.remote.signing_timeout_ms", cfg.Experiment.AdCerts.Remote.SigningTimeoutMs, 10)
 }
 
 func TestUnmarshalAdapterExtraInfo(t *testing.T) {

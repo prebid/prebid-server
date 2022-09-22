@@ -3,6 +3,8 @@ package openrtb_ext
 import (
 	"encoding/json"
 	"errors"
+
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 )
 
 // FirstPartyDataExtKey defines a field name within request.ext and request.imp.ext reserved for first party data.
@@ -27,8 +29,8 @@ const MaxDecimalFigures int = 15
 
 // ExtRequest defines the contract for bidrequest.ext
 type ExtRequest struct {
-	Prebid ExtRequestPrebid              `json:"prebid"`
-	SChain *ExtRequestPrebidSChainSChain `json:"schain,omitempty"`
+	Prebid ExtRequestPrebid      `json:"prebid"`
+	SChain *openrtb2.SupplyChain `json:"schain,omitempty"`
 }
 
 // ExtRequestPrebid defines the contract for bidrequest.ext.prebid
@@ -36,17 +38,21 @@ type ExtRequestPrebid struct {
 	Aliases              map[string]string         `json:"aliases,omitempty"`
 	AliasGVLIDs          map[string]uint16         `json:"aliasgvlids,omitempty"`
 	BidAdjustmentFactors map[string]float64        `json:"bidadjustmentfactors,omitempty"`
+	BidderConfigs        []BidderConfig            `json:"bidderconfig,omitempty"`
+	BidderParams         json.RawMessage           `json:"bidderparams,omitempty"`
 	Cache                *ExtRequestPrebidCache    `json:"cache,omitempty"`
 	Channel              *ExtRequestPrebidChannel  `json:"channel,omitempty"`
+	CurrencyConversions  *ExtRequestCurrency       `json:"currency,omitempty"`
 	Data                 *ExtRequestPrebidData     `json:"data,omitempty"`
 	Debug                bool                      `json:"debug,omitempty"`
-	Integration          string                    `json:"integration,omitempty"`
 	Events               json.RawMessage           `json:"events,omitempty"`
+	Experiment           *Experiment               `json:"experiment,omitempty"`
+	Integration          string                    `json:"integration,omitempty"`
+	Passthrough          json.RawMessage           `json:"passthrough,omitempty"`
 	SChains              []*ExtRequestPrebidSChain `json:"schains,omitempty"`
 	StoredRequest        *ExtStoredRequest         `json:"storedrequest,omitempty"`
 	SupportDeals         bool                      `json:"supportdeals,omitempty"`
 	Targeting            *ExtRequestTargeting      `json:"targeting,omitempty"`
-	BidderParams         json.RawMessage           `json:"bidderparams,omitempty"`
 
 	// NoSale specifies bidders with whom the publisher has a legal relationship where the
 	// passing of personally identifiable information doesn't constitute a sale per CCPA law.
@@ -57,10 +63,18 @@ type ExtRequestPrebid struct {
 	// the tracker URLs, where PBS will replace the Custom Macro with its value with url-encoding
 	Macros map[string]string `json:"macros,omitempty"`
 
-	CurrencyConversions *ExtRequestCurrency `json:"currency,omitempty"`
-	BidderConfigs       []BidderConfig      `json:"bidderconfig,omitempty"`
-	Transparency        *TransparencyExt    `json:"transparency,omitempty"`
-	Floors              *PriceFloorRules    `json:"floors,omitempty"`
+	Transparency *TransparencyExt `json:"transparency,omitempty"`
+	Floors       *PriceFloorRules `json:"floors,omitempty"`
+}
+
+// Experiment defines if experimental features are available for the request
+type Experiment struct {
+	AdsCert *AdsCert `json:"adscert,omitempty"`
+}
+
+// AdsCert defines if Call Sign feature is enabled for request
+type AdsCert struct {
+	Enabled bool `json:"enabled,omitempty"`
 }
 
 type TransparencyRule struct {
@@ -94,27 +108,8 @@ type ExtRequestCurrency struct {
 
 // ExtRequestPrebid defines the contract for bidrequest.ext.prebid.schains
 type ExtRequestPrebidSChain struct {
-	Bidders []string                     `json:"bidders,omitempty"`
-	SChain  ExtRequestPrebidSChainSChain `json:"schain"`
-}
-
-// ExtRequestPrebidSChainSChain defines the contract for bidrequest.ext.prebid.schains[i].schain
-type ExtRequestPrebidSChainSChain struct {
-	Complete int                                 `json:"complete"`
-	Nodes    []*ExtRequestPrebidSChainSChainNode `json:"nodes"`
-	Ver      string                              `json:"ver"`
-	Ext      json.RawMessage                     `json:"ext,omitempty"`
-}
-
-// ExtRequestPrebidSChainSChainNode defines the contract for bidrequest.ext.prebid.schains[i].schain[i].nodes
-type ExtRequestPrebidSChainSChainNode struct {
-	ASI    string          `json:"asi"`
-	SID    string          `json:"sid"`
-	RID    string          `json:"rid,omitempty"`
-	Name   string          `json:"name,omitempty"`
-	Domain string          `json:"domain,omitempty"`
-	HP     int             `json:"hp"`
-	Ext    json.RawMessage `json:"ext,omitempty"`
+	Bidders []string             `json:"bidders,omitempty"`
+	SChain  openrtb2.SupplyChain `json:"schain"`
 }
 
 // ExtRequestPrebidChannel defines the contract for bidrequest.ext.prebid.channel

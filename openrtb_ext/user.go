@@ -1,6 +1,10 @@
 package openrtb_ext
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
+)
 
 // ExtUser defines the contract for bidrequest.user.ext
 type ExtUser struct {
@@ -10,7 +14,7 @@ type ExtUser struct {
 
 	Prebid *ExtUserPrebid `json:"prebid,omitempty"`
 
-	Eids []ExtUserEid `json:"eids,omitempty"`
+	Eids []openrtb2.EID `json:"eids,omitempty"`
 
 	Data json.RawMessage `json:"data,omitempty"`
 }
@@ -18,21 +22,4 @@ type ExtUser struct {
 // ExtUserPrebid defines the contract for bidrequest.user.ext.prebid
 type ExtUserPrebid struct {
 	BuyerUIDs map[string]string `json:"buyeruids,omitempty"`
-}
-
-// ExtUserEid defines the contract for bidrequest.user.ext.eids
-// Responsible for the Universal User ID support: establishing pseudonymous IDs for users.
-// See https://github.com/prebid/Prebid.js/issues/3900 for details.
-type ExtUserEid struct {
-	Source string          `json:"source"`
-	ID     string          `json:"id,omitempty"`
-	Uids   []ExtUserEidUid `json:"uids,omitempty"`
-	Ext    json.RawMessage `json:"ext,omitempty"`
-}
-
-// ExtUserEidUid defines the contract for bidrequest.user.ext.eids[i].uids[j]
-type ExtUserEidUid struct {
-	ID    string          `json:"id"`
-	Atype int             `json:"atype,omitempty"`
-	Ext   json.RawMessage `json:"ext,omitempty"`
 }

@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/firstpartydata"
@@ -265,13 +265,14 @@ func TestCreateSanitizedImpExt(t *testing.T) {
 			expectedError:     "",
 		},
 		{
-			description: "imp.ext.prebid - Bidders Only",
+			description: "imp.ext.prebid - Bidder Only",
 			givenImpExt: map[string]json.RawMessage{
 				"prebid":  json.RawMessage(`"ignoredInFavorOfSeparatelyUnmarshalledImpExtPrebid"`),
 				"data":    json.RawMessage(`"anyData"`),
 				"context": json.RawMessage(`"anyContext"`),
 				"skadn":   json.RawMessage(`"anySKAdNetwork"`),
 				"gpid":    json.RawMessage(`"anyGPID"`),
+				"tid":     json.RawMessage(`"anyTID"`),
 			},
 			givenImpExtPrebid: map[string]json.RawMessage{
 				"bidder": json.RawMessage(`"anyBidder"`),
@@ -281,28 +282,55 @@ func TestCreateSanitizedImpExt(t *testing.T) {
 				"context": json.RawMessage(`"anyContext"`),
 				"skadn":   json.RawMessage(`"anySKAdNetwork"`),
 				"gpid":    json.RawMessage(`"anyGPID"`),
+				"tid":     json.RawMessage(`"anyTID"`),
 			},
 			expectedError: "",
 		},
 		{
-			description: "imp.ext.prebid - Bidders + Other Values",
+			description: "imp.ext.prebid - Bidder + Other Forbidden Value",
 			givenImpExt: map[string]json.RawMessage{
 				"prebid":  json.RawMessage(`"ignoredInFavorOfSeparatelyUnmarshalledImpExtPrebid"`),
 				"data":    json.RawMessage(`"anyData"`),
 				"context": json.RawMessage(`"anyContext"`),
 				"skadn":   json.RawMessage(`"anySKAdNetwork"`),
 				"gpid":    json.RawMessage(`"anyGPID"`),
+				"tid":     json.RawMessage(`"anyTID"`),
 			},
 			givenImpExtPrebid: map[string]json.RawMessage{
 				"bidder":    json.RawMessage(`"anyBidder"`),
-				"someOther": json.RawMessage(`"value"`),
+				"forbidden": json.RawMessage(`"anyValue"`),
 			},
 			expected: map[string]json.RawMessage{
-				"prebid":  json.RawMessage(`{"someOther":"value"}`),
 				"data":    json.RawMessage(`"anyData"`),
 				"context": json.RawMessage(`"anyContext"`),
 				"skadn":   json.RawMessage(`"anySKAdNetwork"`),
 				"gpid":    json.RawMessage(`"anyGPID"`),
+				"tid":     json.RawMessage(`"anyTID"`),
+			},
+			expectedError: "",
+		},
+		{
+			description: "imp.ext.prebid - Bidder + Other Allowed Values",
+			givenImpExt: map[string]json.RawMessage{
+				"prebid":  json.RawMessage(`"ignoredInFavorOfSeparatelyUnmarshalledImpExtPrebid"`),
+				"data":    json.RawMessage(`"anyData"`),
+				"context": json.RawMessage(`"anyContext"`),
+				"skadn":   json.RawMessage(`"anySKAdNetwork"`),
+				"gpid":    json.RawMessage(`"anyGPID"`),
+				"tid":     json.RawMessage(`"anyTID"`),
+			},
+			givenImpExtPrebid: map[string]json.RawMessage{
+				"bidder":                json.RawMessage(`"anyBidder"`),
+				"is_rewarded_inventory": json.RawMessage(`"anyIsRewardedInventory"`),
+				"options":               json.RawMessage(`"anyOptions"`),
+			},
+			expected: map[string]json.RawMessage{
+				"prebid":  json.RawMessage(`{"is_rewarded_inventory":"anyIsRewardedInventory","options":"anyOptions"}`),
+				"data":    json.RawMessage(`"anyData"`),
+				"context": json.RawMessage(`"anyContext"`),
+				"skadn":   json.RawMessage(`"anySKAdNetwork"`),
+				"gpid":    json.RawMessage(`"anyGPID"`),
+				"tid":     json.RawMessage(`"anyTID"`),
 			},
 			expectedError: "",
 		},
@@ -314,6 +342,7 @@ func TestCreateSanitizedImpExt(t *testing.T) {
 				"context":   json.RawMessage(`"anyContext"`),
 				"skadn":     json.RawMessage(`"anySKAdNetwork"`),
 				"gpid":      json.RawMessage(`"anyGPID"`),
+				"tid":       json.RawMessage(`"anyTID"`),
 			},
 			givenImpExtPrebid: map[string]json.RawMessage{},
 			expected: map[string]json.RawMessage{
@@ -321,11 +350,12 @@ func TestCreateSanitizedImpExt(t *testing.T) {
 				"context": json.RawMessage(`"anyContext"`),
 				"skadn":   json.RawMessage(`"anySKAdNetwork"`),
 				"gpid":    json.RawMessage(`"anyGPID"`),
+				"tid":     json.RawMessage(`"anyTID"`),
 			},
 			expectedError: "",
 		},
 		{
-			description: "imp.ext + imp.ext.prebid - Prebid Bidders Only",
+			description: "imp.ext + imp.ext.prebid - Prebid Bidder Only",
 			givenImpExt: map[string]json.RawMessage{
 				"anyBidder": json.RawMessage(`"anyBidderValues"`),
 				"prebid":    json.RawMessage(`"ignoredInFavorOfSeparatelyUnmarshalledImpExtPrebid"`),
@@ -333,6 +363,7 @@ func TestCreateSanitizedImpExt(t *testing.T) {
 				"context":   json.RawMessage(`"anyContext"`),
 				"skadn":     json.RawMessage(`"anySKAdNetwork"`),
 				"gpid":      json.RawMessage(`"anyGPID"`),
+				"tid":       json.RawMessage(`"anyTID"`),
 			},
 			givenImpExtPrebid: map[string]json.RawMessage{
 				"bidder": json.RawMessage(`"anyBidder"`),
@@ -342,11 +373,12 @@ func TestCreateSanitizedImpExt(t *testing.T) {
 				"context": json.RawMessage(`"anyContext"`),
 				"skadn":   json.RawMessage(`"anySKAdNetwork"`),
 				"gpid":    json.RawMessage(`"anyGPID"`),
+				"tid":     json.RawMessage(`"anyTID"`),
 			},
 			expectedError: "",
 		},
 		{
-			description: "imp.ext + imp.ext.prebid - Prebid Bidders + Other Values",
+			description: "imp.ext + imp.ext.prebid - Prebid Bidder + Other Forbidden Value",
 			givenImpExt: map[string]json.RawMessage{
 				"anyBidder": json.RawMessage(`"anyBidderValues"`),
 				"prebid":    json.RawMessage(`"ignoredInFavorOfSeparatelyUnmarshalledImpExtPrebid"`),
@@ -358,10 +390,35 @@ func TestCreateSanitizedImpExt(t *testing.T) {
 			},
 			givenImpExtPrebid: map[string]json.RawMessage{
 				"bidder":    json.RawMessage(`"anyBidder"`),
-				"someOther": json.RawMessage(`"value"`),
+				"forbidden": json.RawMessage(`"anyValue"`),
 			},
 			expected: map[string]json.RawMessage{
-				"prebid":  json.RawMessage(`{"someOther":"value"}`),
+				"data":    json.RawMessage(`"anyData"`),
+				"context": json.RawMessage(`"anyContext"`),
+				"skadn":   json.RawMessage(`"anySKAdNetwork"`),
+				"gpid":    json.RawMessage(`"anyGPID"`),
+				"tid":     json.RawMessage(`"anyTID"`),
+			},
+			expectedError: "",
+		},
+		{
+			description: "imp.ext + imp.ext.prebid - Prebid Bidder + Other Allowed Values",
+			givenImpExt: map[string]json.RawMessage{
+				"anyBidder": json.RawMessage(`"anyBidderValues"`),
+				"prebid":    json.RawMessage(`"ignoredInFavorOfSeparatelyUnmarshalledImpExtPrebid"`),
+				"data":      json.RawMessage(`"anyData"`),
+				"context":   json.RawMessage(`"anyContext"`),
+				"skadn":     json.RawMessage(`"anySKAdNetwork"`),
+				"gpid":      json.RawMessage(`"anyGPID"`),
+				"tid":       json.RawMessage(`"anyTID"`),
+			},
+			givenImpExtPrebid: map[string]json.RawMessage{
+				"bidder":                json.RawMessage(`"anyBidder"`),
+				"is_rewarded_inventory": json.RawMessage(`"anyIsRewardedInventory"`),
+				"options":               json.RawMessage(`"anyOptions"`),
+			},
+			expected: map[string]json.RawMessage{
+				"prebid":  json.RawMessage(`{"is_rewarded_inventory":"anyIsRewardedInventory","options":"anyOptions"}`),
 				"data":    json.RawMessage(`"anyData"`),
 				"context": json.RawMessage(`"anyContext"`),
 				"skadn":   json.RawMessage(`"anySKAdNetwork"`),
@@ -378,12 +435,13 @@ func TestCreateSanitizedImpExt(t *testing.T) {
 				"context": json.RawMessage(`"anyContext"`),
 				"skadn":   json.RawMessage(`"anySKAdNetwork"`),
 				"gpid":    json.RawMessage(`"anyGPID"`),
+				"tid":     json.RawMessage(`"anyTID"`),
 			},
 			givenImpExtPrebid: map[string]json.RawMessage{
-				"malformed": json.RawMessage(`json`), // String value without quotes.
+				"options": json.RawMessage(`malformed`), // String value without quotes.
 			},
 			expected:      nil,
-			expectedError: "cannot marshal ext.prebid: json: error calling MarshalJSON for type json.RawMessage: invalid character 'j' looking for beginning of value",
+			expectedError: "cannot marshal ext.prebid: json: error calling MarshalJSON for type json.RawMessage: invalid character 'm' looking for beginning of value",
 		},
 	}
 
@@ -2382,6 +2440,99 @@ func TestCleanOpenRTBRequestsGDPRBlockBidRequest(t *testing.T) {
 	}
 }
 
+func TestBuildRequestExtForBidder(t *testing.T) {
+	bidder := "foo"
+	bidderParams := json.RawMessage(`"bar"`)
+
+	testCases := []struct {
+		description  string
+		requestExt   json.RawMessage
+		bidderParams map[string]json.RawMessage
+		expectedJson json.RawMessage
+	}{
+		{
+			description:  "Nil",
+			bidderParams: nil,
+			requestExt:   nil,
+			expectedJson: json.RawMessage(``),
+		},
+		{
+			description:  "Empty",
+			bidderParams: nil,
+			requestExt:   json.RawMessage(`{}`),
+			expectedJson: json.RawMessage(`{"prebid":{}}`),
+		},
+		{
+			description:  "Prebid - Allowed Fields Only",
+			bidderParams: nil,
+			requestExt:   json.RawMessage(`{"prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true}}}`),
+			expectedJson: json.RawMessage(`{"prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true}}}`),
+		},
+		{
+			description:  "Prebid - Allowed Fields + Bidder Params",
+			bidderParams: map[string]json.RawMessage{bidder: bidderParams},
+			requestExt:   json.RawMessage(`{"prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true}}}`),
+			expectedJson: json.RawMessage(`{"prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"bidderparams":"bar"}}`),
+		},
+		{
+			description:  "Other",
+			bidderParams: nil,
+			requestExt:   json.RawMessage(`{"other":"foo"}`),
+			expectedJson: json.RawMessage(`{"other":"foo","prebid":{}}`),
+		},
+		{
+			description:  "Prebid + Other + Bider Params",
+			bidderParams: map[string]json.RawMessage{bidder: bidderParams},
+			requestExt:   json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true}}}`),
+			expectedJson: json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"bidderparams":"bar"}}`),
+		},
+	}
+
+	for _, test := range testCases {
+		requestExtParsed := &openrtb_ext.ExtRequest{}
+		if test.requestExt != nil {
+			err := json.Unmarshal(test.requestExt, requestExtParsed)
+			if !assert.NoError(t, err, test.description+":parse_ext") {
+				continue
+			}
+		}
+
+		actualJson, actualErr := buildRequestExtForBidder(bidder, test.requestExt, requestExtParsed, test.bidderParams)
+		if len(test.expectedJson) > 0 {
+			assert.JSONEq(t, string(test.expectedJson), string(actualJson), test.description+":json")
+		} else {
+			assert.Equal(t, test.expectedJson, actualJson, test.description+":json")
+		}
+		assert.NoError(t, actualErr, test.description+":err")
+	}
+}
+
+func TestBuildRequestExtForBidder_RequestExtParsedNil(t *testing.T) {
+	var (
+		bidder           = "foo"
+		requestExt       = json.RawMessage(`{}`)
+		requestExtParsed *openrtb_ext.ExtRequest
+		bidderParams     map[string]json.RawMessage
+	)
+
+	actualJson, actualErr := buildRequestExtForBidder(bidder, requestExt, requestExtParsed, bidderParams)
+	assert.Equal(t, json.RawMessage(``), actualJson)
+	assert.NoError(t, actualErr)
+}
+
+func TestBuildRequestExtForBidder_RequestExtMalformed(t *testing.T) {
+	var (
+		bidder           = "foo"
+		requestExt       = json.RawMessage(`malformed`)
+		requestExtParsed = &openrtb_ext.ExtRequest{}
+		bidderParams     map[string]json.RawMessage
+	)
+
+	actualJson, actualErr := buildRequestExtForBidder(bidder, requestExt, requestExtParsed, bidderParams)
+	assert.Equal(t, json.RawMessage(nil), actualJson)
+	assert.EqualError(t, actualErr, "invalid character 'm' looking for beginning of value")
+}
+
 // newAdapterAliasBidRequest builds a BidRequest with aliases
 func newAdapterAliasBidRequest(t *testing.T) *openrtb2.BidRequest {
 	dnt := int8(1)
@@ -2599,51 +2750,51 @@ func TestRemoveUnpermissionedEids(t *testing.T) {
 		},
 		{
 			description:     "Allowed By Nil Permissions",
-			userExt:         json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+			userExt:         json.RawMessage(`{"eids":[{"source":"source1","uids":[{"id":"anyID"}]}]}`),
 			eidPermissions:  nil,
-			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","uids":[{"id":"anyID"}]}]}`),
 		},
 		{
 			description:     "Allowed By Empty Permissions",
-			userExt:         json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+			userExt:         json.RawMessage(`{"eids":[{"source":"source1","uids":[{"id":"anyID"}]}]}`),
 			eidPermissions:  []openrtb_ext.ExtRequestPrebidDataEidPermission{},
-			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","uids":[{"id":"anyID"}]}]}`),
 		},
 		{
 			description: "Allowed By Specific Bidder",
-			userExt:     json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+			userExt:     json.RawMessage(`{"eids":[{"source":"source1","uids":[{"id":"anyID"}]}]}`),
 			eidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "source1", Bidders: []string{"bidderA"}},
 			},
-			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","uids":[{"id":"anyID"}]}]}`),
 		},
 		{
 			description: "Allowed By All Bidders",
-			userExt:     json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+			userExt:     json.RawMessage(`{"eids":[{"source":"source1","uids":[{"id":"anyID"}]}]}`),
 			eidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "source1", Bidders: []string{"*"}},
 			},
-			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","uids":[{"id":"anyID"}]}]}`),
 		},
 		{
 			description: "Allowed By Lack Of Matching Source",
-			userExt:     json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+			userExt:     json.RawMessage(`{"eids":[{"source":"source1","uids":[{"id":"anyID"}]}]}`),
 			eidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "source2", Bidders: []string{"otherBidder"}},
 			},
-			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","uids":[{"id":"anyID"}]}]}`),
 		},
 		{
 			description: "Allowed - Keep Other Data",
-			userExt:     json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}],"other":42}`),
+			userExt:     json.RawMessage(`{"eids":[{"source":"source1","uids":[{"id":"anyID"}]}],"other":42}`),
 			eidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "source1", Bidders: []string{"bidderA"}},
 			},
-			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}],"other":42}`),
+			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","uids":[{"id":"anyID"}]}],"other":42}`),
 		},
 		{
 			description: "Denied",
-			userExt:     json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}]}`),
+			userExt:     json.RawMessage(`{"eids":[{"source":"source1","uids":[{"id":"anyID"}]}]}`),
 			eidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "source1", Bidders: []string{"otherBidder"}},
 			},
@@ -2651,7 +2802,7 @@ func TestRemoveUnpermissionedEids(t *testing.T) {
 		},
 		{
 			description: "Denied - Keep Other Data",
-			userExt:     json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"}],"otherdata":42}`),
+			userExt:     json.RawMessage(`{"eids":[{"source":"source1","uids":[{"id":"anyID"}]}],"otherdata":42}`),
 			eidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "source1", Bidders: []string{"otherBidder"}},
 			},
@@ -2659,12 +2810,12 @@ func TestRemoveUnpermissionedEids(t *testing.T) {
 		},
 		{
 			description: "Mix Of Allowed By Specific Bidder, Allowed By Lack Of Matching Source, Denied, Keep Other Data",
-			userExt:     json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"},{"source":"source2","id":"anyID"},{"source":"source3","id":"anyID"}],"other":42}`),
+			userExt:     json.RawMessage(`{"eids":[{"source":"source1","uids":[{"id":"anyID1"}]},{"source":"source2","uids":[{"id":"anyID2"}]},{"source":"source3","uids":[{"id":"anyID3"}]}],"other":42}`),
 			eidPermissions: []openrtb_ext.ExtRequestPrebidDataEidPermission{
 				{Source: "source1", Bidders: []string{"bidderA"}},
 				{Source: "source3", Bidders: []string{"otherBidder"}},
 			},
-			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","id":"anyID"},{"source":"source2","id":"anyID"}],"other":42}`),
+			expectedUserExt: json.RawMessage(`{"eids":[{"source":"source1","uids":[{"id":"anyID1"}]},{"source":"source2","uids":[{"id":"anyID2"}]}],"other":42}`),
 		},
 	}
 
@@ -2705,12 +2856,12 @@ func TestRemoveUnpermissionedEidsUnmarshalErrors(t *testing.T) {
 		{
 			description: "Malformed Eid Array Type",
 			userExt:     json.RawMessage(`{"eids":[42]}`),
-			expectedErr: "json: cannot unmarshal number into Go value of type openrtb_ext.ExtUserEid",
+			expectedErr: "json: cannot unmarshal number into Go value of type openrtb2.EID",
 		},
 		{
 			description: "Malformed Eid Item Type",
 			userExt:     json.RawMessage(`{"eids":[{"source":42,"id":"anyID"}]}`),
-			expectedErr: "json: cannot unmarshal number into Go struct field ExtUserEid.source of type string",
+			expectedErr: "json: cannot unmarshal number into Go struct field EID.source of type string",
 		},
 	}
 
@@ -3080,5 +3231,44 @@ func Test_parseAliasesGVLIDs(t *testing.T) {
 				t.Errorf("parseAliasesGVLIDs() expected error got nil")
 			}
 		})
+	}
+}
+
+func TestBuildExtData(t *testing.T) {
+	testCases := []struct {
+		description string
+		input       []byte
+		expectedRes string
+	}{
+		{
+			description: "Input object with int value",
+			input:       []byte(`{"someData": 123}`),
+			expectedRes: `{"data": {"someData": 123}}`,
+		},
+		{
+			description: "Input object with bool value",
+			input:       []byte(`{"someData": true}`),
+			expectedRes: `{"data": {"someData": true}}`,
+		},
+		{
+			description: "Input object with string value",
+			input:       []byte(`{"someData": "true"}`),
+			expectedRes: `{"data": {"someData": "true"}}`,
+		},
+		{
+			description: "No input object",
+			input:       []byte(`{}`),
+			expectedRes: `{"data": {}}`,
+		},
+		{
+			description: "Input object with object value",
+			input:       []byte(`{"someData": {"moreFpdData": "fpddata"}}`),
+			expectedRes: `{"data": {"someData": {"moreFpdData": "fpddata"}}}`,
+		},
+	}
+
+	for _, test := range testCases {
+		actualRes := WrapJSONInData(test.input)
+		assert.JSONEq(t, test.expectedRes, string(actualRes), "Incorrect result data")
 	}
 }

@@ -14,13 +14,25 @@ type BidderInfos map[string]BidderInfo
 
 // BidderInfo specifies all configuration for a bidder except for enabled status, endpoint, and extra information.
 type BidderInfo struct {
-	Enabled                 bool              // copied from adapter config for convenience. to be refactored.
-	Maintainer              *MaintainerInfo   `yaml:"maintainer"`
-	Capabilities            *CapabilitiesInfo `yaml:"capabilities"`
-	ModifyingVastXmlAllowed bool              `yaml:"modifyingVastXmlAllowed"`
-	Debug                   *DebugInfo        `yaml:"debug"`
-	GVLVendorID             uint16            `yaml:"gvlVendorID"`
-	Syncer                  *Syncer           `yaml:"userSync"`
+	Enabled                 bool                 // copied from adapter config for convenience. to be refactored.
+	Maintainer              *MaintainerInfo      `yaml:"maintainer"`
+	Capabilities            *CapabilitiesInfo    `yaml:"capabilities"`
+	ModifyingVastXmlAllowed bool                 `yaml:"modifyingVastXmlAllowed"`
+	Debug                   *DebugInfo           `yaml:"debug"`
+	GVLVendorID             uint16               `yaml:"gvlVendorID"`
+	Syncer                  *Syncer              `yaml:"userSync"`
+	Experiment              BidderInfoExperiment `yaml:"experiment"`
+	EndpointCompression     string               `yaml:"endpointCompression"` // EndpointCompression determines, if set, the type of compression the bid request will undergo before being sent to the corresponding bid server
+}
+
+// BidderInfoExperiment specifies non-production ready feature config for a bidder
+type BidderInfoExperiment struct {
+	AdsCert BidderAdsCert `yaml:"adsCert"`
+}
+
+// BidderAdsCert enables Call Sign feature for bidder
+type BidderAdsCert struct {
+	Enabled bool `yaml:"enabled"`
 }
 
 // MaintainerInfo specifies the support email address for a bidder.
@@ -121,8 +133,8 @@ func (s *Syncer) Override(original *Syncer) *Syncer {
 // In most cases, bidders will specify a URL with a `{{.RedirectURL}}` macro for the call back to
 // Prebid Server and a UserMacro which the bidder server will replace with the user's id. Example:
 //
-//  url: "https://sync.bidderserver.com/usersync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
-//  userMacro: "$UID"
+//	url: "https://sync.bidderserver.com/usersync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}"
+//	userMacro: "$UID"
 //
 // Prebid Server is configured with a default RedirectURL template matching the /setuid call. This
 // may be overridden for all bidders with the `user_sync.redirect_url` host configuration or for a

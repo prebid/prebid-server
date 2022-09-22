@@ -258,5 +258,5 @@ done
 
 # TODO: automate go.mod conflicts
 # go mod edit -replace github.com/prebid/prebid-server=./
-# go mod edit -replace github.com/mxmCherry/openrtb/v15=github.com/PubMatic-OpenWrap/openrtb/v15@v15.0.0
+# go mod edit -replace github.com/mxmCherry/openrtb/v16=github.com/PubMatic-OpenWrap/openrtb/v15@v15.0.0
 # go mod edit -replace github.com/beevik/etree=github.com/PubMatic-OpenWrap/etree@latest

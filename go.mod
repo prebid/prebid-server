@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
+	github.com/IABTechLab/adscert v0.34.0
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/beevik/etree v1.0.2
@@ -18,7 +19,7 @@ require (
 	github.com/lib/pq v1.10.4
 	github.com/magiconair/properties v1.8.6
 	github.com/mitchellh/copystructure v1.2.0
-	github.com/mxmCherry/openrtb/v15 v15.0.1
+	github.com/mxmCherry/openrtb/v16 v16.0.0
 	github.com/prebid/go-gdpr v1.11.0
 	github.com/prebid/prebid-server v0.0.0-00010101000000-000000000000
 	github.com/prometheus/client_golang v1.12.1
@@ -35,12 +36,13 @@ require (
 	github.com/yudai/pp v2.0.1+incompatible // indirect
 	golang.org/x/net v0.0.0-20220520000938-2e3eb7b945c2
 	golang.org/x/text v0.3.7
+	google.golang.org/grpc v1.46.2
 	gopkg.in/evanphx/json-patch.v4 v4.12.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
 replace github.com/prebid/prebid-server => ./
 
-replace github.com/mxmCherry/openrtb/v15 => github.com/PubMatic-OpenWrap/openrtb/v15 v15.0.0-20210514055459-92ccbf3eb6fe
+replace github.com/mxmCherry/openrtb/v16 => github.com/PubMatic-OpenWrap/openrtb/v16 v16.0.0-ow
 
 replace github.com/beevik/etree v1.0.2 => github.com/PubMatic-OpenWrap/etree v1.0.2-0.20210129100623-8f30cfecf9f4

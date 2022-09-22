@@ -1,0 +1,7 @@
+maintainer:
+  email: dev@adrino.pl
+gvlVendorID: 1072
+capabilities:
+  site:
+    mediaTypes:
+      - native

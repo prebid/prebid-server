@@ -19,8 +19,10 @@ import (
 	"github.com/prebid/prebid-server/adapters/adot"
 	"github.com/prebid/prebid-server/adapters/adpone"
 	"github.com/prebid/prebid-server/adapters/adprime"
+	"github.com/prebid/prebid-server/adapters/adrino"
 	"github.com/prebid/prebid-server/adapters/adtarget"
 	"github.com/prebid/prebid-server/adapters/adtelligent"
+	"github.com/prebid/prebid-server/adapters/adtrgtme"
 	"github.com/prebid/prebid-server/adapters/advangelists"
 	"github.com/prebid/prebid-server/adapters/adview"
 	"github.com/prebid/prebid-server/adapters/adxcg"
@@ -28,6 +30,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/aja"
 	"github.com/prebid/prebid-server/adapters/algorix"
 	"github.com/prebid/prebid-server/adapters/amx"
+	"github.com/prebid/prebid-server/adapters/andbeyondmedia"
 	"github.com/prebid/prebid-server/adapters/apacdex"
 	"github.com/prebid/prebid-server/adapters/applogy"
 	"github.com/prebid/prebid-server/adapters/appnexus"
@@ -43,7 +46,9 @@ import (
 	"github.com/prebid/prebid-server/adapters/bidscube"
 	"github.com/prebid/prebid-server/adapters/bizzclick"
 	"github.com/prebid/prebid-server/adapters/bliink"
+	"github.com/prebid/prebid-server/adapters/blue"
 	"github.com/prebid/prebid-server/adapters/bmtm"
+	"github.com/prebid/prebid-server/adapters/boldwin"
 	"github.com/prebid/prebid-server/adapters/brightroll"
 	"github.com/prebid/prebid-server/adapters/coinzilla"
 	"github.com/prebid/prebid-server/adapters/colossus"
@@ -56,6 +61,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/datablocks"
 	"github.com/prebid/prebid-server/adapters/decenterads"
 	"github.com/prebid/prebid-server/adapters/deepintent"
+	"github.com/prebid/prebid-server/adapters/dianomi"
 	"github.com/prebid/prebid-server/adapters/dmx"
 	evolution "github.com/prebid/prebid-server/adapters/e_volution"
 	"github.com/prebid/prebid-server/adapters/emx_digital"
@@ -110,6 +116,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/rtbhouse"
 	"github.com/prebid/prebid-server/adapters/rubicon"
 	salunamedia "github.com/prebid/prebid-server/adapters/sa_lunamedia"
+	"github.com/prebid/prebid-server/adapters/seedingAlliance"
 	"github.com/prebid/prebid-server/adapters/sharethrough"
 	"github.com/prebid/prebid-server/adapters/silvermob"
 	"github.com/prebid/prebid-server/adapters/smaato"
@@ -121,6 +128,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/sonobi"
 	"github.com/prebid/prebid-server/adapters/sovrn"
 	"github.com/prebid/prebid-server/adapters/spotx"
+	"github.com/prebid/prebid-server/adapters/sspBC"
 	"github.com/prebid/prebid-server/adapters/stroeerCore"
 	"github.com/prebid/prebid-server/adapters/synacormedia"
 	"github.com/prebid/prebid-server/adapters/tappx"
@@ -165,10 +173,12 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAdnuntius:         adnuntius.Builder,
 		openrtb_ext.BidderAdOcean:           adocean.Builder,
 		openrtb_ext.BidderAdoppler:          adoppler.Builder,
-		openrtb_ext.BidderAdpone:            adpone.Builder,
 		openrtb_ext.BidderAdot:              adot.Builder,
+		openrtb_ext.BidderAdpone:            adpone.Builder,
 		openrtb_ext.BidderAdprime:           adprime.Builder,
+		openrtb_ext.BidderAdrino:            adrino.Builder,
 		openrtb_ext.BidderAdtarget:          adtarget.Builder,
+		openrtb_ext.BidderAdtrgtme:          adtrgtme.Builder,
 		openrtb_ext.BidderAdtelligent:       adtelligent.Builder,
 		openrtb_ext.BidderAdvangelists:      advangelists.Builder,
 		openrtb_ext.BidderAdView:            adview.Builder,
@@ -177,6 +187,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAJA:               aja.Builder,
 		openrtb_ext.BidderAlgorix:           algorix.Builder,
 		openrtb_ext.BidderAMX:               amx.Builder,
+		openrtb_ext.BidderAndBeyondMedia:    andbeyondmedia.Builder,
 		openrtb_ext.BidderApacdex:           apacdex.Builder,
 		openrtb_ext.BidderApplogy:           applogy.Builder,
 		openrtb_ext.BidderAppnexus:          appnexus.Builder,
@@ -192,7 +203,9 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderBidsCube:          bidscube.Builder,
 		openrtb_ext.BidderBizzclick:         bizzclick.Builder,
 		openrtb_ext.BidderBliink:            bliink.Builder,
+		openrtb_ext.BidderBlue:              blue.Builder,
 		openrtb_ext.BidderBmtm:              bmtm.Builder,
+		openrtb_ext.BidderBoldwin:           boldwin.Builder,
 		openrtb_ext.BidderBrightroll:        brightroll.Builder,
 		openrtb_ext.BidderCoinzilla:         coinzilla.Builder,
 		openrtb_ext.BidderColossus:          colossus.Builder,
@@ -205,6 +218,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderDatablocks:        datablocks.Builder,
 		openrtb_ext.BidderDecenterAds:       decenterads.Builder,
 		openrtb_ext.BidderDeepintent:        deepintent.Builder,
+		openrtb_ext.BidderDianomi:           dianomi.Builder,
 		openrtb_ext.BidderDmx:               dmx.Builder,
 		openrtb_ext.BidderEmxDigital:        emx_digital.Builder,
 		openrtb_ext.BidderEngageBDR:         engagebdr.Builder,
@@ -219,6 +233,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderHuaweiAds:         huaweiads.Builder,
 		openrtb_ext.BidderImpactify:         impactify.Builder,
 		openrtb_ext.BidderImprovedigital:    improvedigital.Builder,
+		openrtb_ext.BidderInfyTV:            infytv.Builder,
 		openrtb_ext.BidderInMobi:            inmobi.Builder,
 		openrtb_ext.BidderInteractiveoffers: interactiveoffers.Builder,
 		openrtb_ext.BidderInvibes:           invibes.Builder,
@@ -234,7 +249,6 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderLockerDome:        lockerdome.Builder,
 		openrtb_ext.BidderLogicad:           logicad.Builder,
 		openrtb_ext.BidderLunaMedia:         lunamedia.Builder,
-		openrtb_ext.BidderSaLunaMedia:       salunamedia.Builder,
 		openrtb_ext.BidderMadvertise:        madvertise.Builder,
 		openrtb_ext.BidderMarsmedia:         marsmedia.Builder,
 		openrtb_ext.BidderMediafuse:         appnexus.Builder,
@@ -246,6 +260,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderNextMillennium:    nextmillennium.Builder,
 		openrtb_ext.BidderNinthDecimal:      ninthdecimal.Builder,
 		openrtb_ext.BidderNoBid:             nobid.Builder,
+		openrtb_ext.BidderOFTMedia:          adtelligent.Builder,
 		openrtb_ext.BidderOneTag:            onetag.Builder,
 		openrtb_ext.BidderOpenWeb:           openweb.Builder,
 		openrtb_ext.BidderOpenx:             openx.Builder,
@@ -263,6 +278,8 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderRichaudience:      richaudience.Builder,
 		openrtb_ext.BidderRTBHouse:          rtbhouse.Builder,
 		openrtb_ext.BidderRubicon:           rubicon.Builder,
+		openrtb_ext.BidderSeedingAlliance:   seedingAlliance.Builder,
+		openrtb_ext.BidderSaLunaMedia:       salunamedia.Builder,
 		openrtb_ext.BidderSharethrough:      sharethrough.Builder,
 		openrtb_ext.BidderSilverMob:         silvermob.Builder,
 		openrtb_ext.BidderSmaato:            smaato.Builder,
@@ -273,9 +290,10 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderSmileWanted:       smilewanted.Builder,
 		openrtb_ext.BidderSonobi:            sonobi.Builder,
 		openrtb_ext.BidderSovrn:             sovrn.Builder,
-		openrtb_ext.BidderStroeerCore:       stroeerCore.Builder,
+		openrtb_ext.BidderSspBC:             sspBC.Builder,
 		openrtb_ext.BidderSpotX:             spotx.Builder,
 		openrtb_ext.BidderStreamkey:         adtelligent.Builder,
+		openrtb_ext.BidderStroeerCore:       stroeerCore.Builder,
 		openrtb_ext.BidderSynacormedia:      synacormedia.Builder,
 		openrtb_ext.BidderTappx:             tappx.Builder,
 		openrtb_ext.BidderTelaria:           telaria.Builder,
@@ -301,6 +319,5 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderYieldone:          yieldone.Builder,
 		openrtb_ext.BidderYSSP:              yahoossp.Builder,
 		openrtb_ext.BidderZeroClickFraud:    zeroclickfraud.Builder,
-		openrtb_ext.BidderInfyTV:            infytv.Builder,
 	}
 }

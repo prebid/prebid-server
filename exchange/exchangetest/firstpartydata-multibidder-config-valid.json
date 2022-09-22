@@ -105,11 +105,7 @@
             "page": "fpd_appnexus_site_page"
           },
           "ext": {
-            "prebid": {
-              "data": {
-                "eidpermissions": null
-              }
-            }
+            "prebid": {}
           }
         }
       }
@@ -147,15 +143,10 @@
             "page": "fpd_rubicon_site_page"
           },
           "ext": {
-            "prebid": {
-              "data": {
-                "eidpermissions": null
-              }
-            }
+            "prebid": {}
           }
         }
       }
     }
   }
-
 }
