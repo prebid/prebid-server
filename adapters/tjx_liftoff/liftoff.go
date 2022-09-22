@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/prebid/prebid-server/config"
 
@@ -110,8 +109,6 @@ type reqExt struct {
 var CONTENT_TYPE_MRAID_ONLY = "MRAID"
 var CONTENT_TYPE_VIDEO_ONLY = "VIDEO"
 
-var multiBidBFSandMediatorBidFloorExperiemntStartTime = time.Date(2022, time.August, 23, 0, 0, 0, 0, time.UTC)
-
 func Builder(_ openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,
@@ -127,8 +124,6 @@ func Builder(_ openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, 
 // MakeRequests ...
 func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	numRequests := len(request.Imp)
-
-	now := time.Now()
 
 	// Extract multi bid enabled flag from request extension
 	var reqExt reqExt
@@ -176,211 +171,7 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 	// MultiBidSelector 1 is for Experiment using BFS values
 	// MultiBidSelector 2 is for Experiment using mediator values
 	// Header Bidding is for identifying if the request is coming from TJX or AS
-	if srcExt != nil && srcExt.HeaderBidding == 1 && reqExt.MultiBidSelector > 0 && now.Before(multiBidBFSandMediatorBidFloorExperiemntStartTime) {
-
-		// Diffrent bid floors for each request
-		//iOS Requests Bid Floors
-		bfIOSRewardedMraidA := 3.00
-		bfIOSRewardedMraidB := 5.00
-		bfIOSRewardedMraidC := 7.00
-		bfIOSRewardedMraidD := 10.00
-
-		bfIOSSkippableVastA := 3.00
-		bfIOSSkippableVastB := 5.00
-		bfIOSSkippableVastC := 7.00
-		bfIOSSkippableVastD := 10.00
-		bfIOSSkippableMraidA := 5.00
-		bfIOSSkippableMraidB := 7.00
-		bfIOSSkippableMraidC := 10.00
-		bfIOSSkippableMraidD := 14.00
-
-		//Android Request Bid Floors
-		bfAndroidRewardedVastA := 5.00
-		bfAndroidRewardedVastB := 7.00
-		bfAndroidRewardedVastC := 10.00
-		bfAndroidRewardedVastD := 14.00
-		bfAndroidRewardedMraidA := 1.50
-		bfAndroidRewardedMraidB := 4.00
-		bfAndroidRewardedMraidC := 5.00
-		bfAndroidRewardedMraidD := 7.00
-
-		bfAndroidSkippableVastA := 3.00
-		bfAndroidSkippableVastB := 5.00
-		bfAndroidSkippableVastC := 7.00
-		bfAndroidSkippableVastD := 10.00
-		bfAndroidSkippableMraidA := 3.00
-		bfAndroidSkippableMraidB := 5.00
-		bfAndroidSkippableMraidC := 10.00
-		bfAndroidSkippableMraidD := 14.00
-
-		var modifiedParams []modifiedReqParams
-		if strings.ToLower(request.Device.OS) == "ios" {
-			if liftoffExt.Video.Skip == 0 {
-				//Data to be modified for each request
-				modifiedParams = []modifiedReqParams{
-					{
-						ReqNumber:   "1",
-						BidFloor:    &bfIOSRewardedMraidA,
-						ContentType: CONTENT_TYPE_MRAID_ONLY,
-					},
-					{
-						ReqNumber:   "2",
-						BidFloor:    &bfIOSRewardedMraidB,
-						ContentType: CONTENT_TYPE_MRAID_ONLY,
-					},
-					{
-						ReqNumber:   "3",
-						BidFloor:    &bfIOSRewardedMraidC,
-						ContentType: CONTENT_TYPE_MRAID_ONLY,
-					},
-					{
-						ReqNumber:   "4",
-						BidFloor:    &bfIOSRewardedMraidD,
-						ContentType: CONTENT_TYPE_MRAID_ONLY,
-					},
-				}
-			} else {
-				modifiedParams = []modifiedReqParams{
-					{
-						ReqNumber:   "1",
-						BidFloor:    &bfIOSSkippableVastA,
-						ContentType: CONTENT_TYPE_VIDEO_ONLY,
-					},
-					{
-						ReqNumber:   "2",
-						BidFloor:    &bfIOSSkippableVastB,
-						ContentType: CONTENT_TYPE_VIDEO_ONLY,
-					},
-					{
-						ReqNumber:   "3",
-						BidFloor:    &bfIOSSkippableVastC,
-						ContentType: CONTENT_TYPE_VIDEO_ONLY,
-					},
-					{
-						ReqNumber:   "4",
-						BidFloor:    &bfIOSSkippableVastD,
-						ContentType: CONTENT_TYPE_VIDEO_ONLY,
-					},
-					{
-						ReqNumber:   "5",
-						BidFloor:    &bfIOSSkippableMraidA,
-						ContentType: CONTENT_TYPE_MRAID_ONLY,
-					},
-					{
-						ReqNumber:   "6",
-						BidFloor:    &bfIOSSkippableMraidB,
-						ContentType: CONTENT_TYPE_MRAID_ONLY,
-					},
-					{
-						ReqNumber:   "7",
-						BidFloor:    &bfIOSSkippableMraidC,
-						ContentType: CONTENT_TYPE_MRAID_ONLY,
-					},
-					{
-						ReqNumber:   "8",
-						BidFloor:    &bfIOSSkippableMraidD,
-						ContentType: CONTENT_TYPE_MRAID_ONLY,
-					},
-				}
-			}
-		} else {
-			if liftoffExt.Video.Skip == 0 {
-				//Data to be modified for each request
-				modifiedParams = []modifiedReqParams{
-					{
-						ReqNumber:   "1",
-						BidFloor:    &bfAndroidRewardedVastA,
-						ContentType: CONTENT_TYPE_VIDEO_ONLY,
-					},
-					{
-						ReqNumber:   "2",
-						BidFloor:    &bfAndroidRewardedVastB,
-						ContentType: CONTENT_TYPE_VIDEO_ONLY,
-					},
-					{
-						ReqNumber:   "3",
-						BidFloor:    &bfAndroidRewardedVastC,
-						ContentType: CONTENT_TYPE_VIDEO_ONLY,
-					},
-					{
-						ReqNumber:   "4",
-						BidFloor:    &bfAndroidRewardedVastD,
-						ContentType: CONTENT_TYPE_VIDEO_ONLY,
-					},
-					{
-						ReqNumber:   "5",
-						BidFloor:    &bfAndroidRewardedMraidA,
-						ContentType: CONTENT_TYPE_MRAID_ONLY,
-					},
-					{
-						ReqNumber:   "6",
-						BidFloor:    &bfAndroidRewardedMraidB,
-						ContentType: CONTENT_TYPE_MRAID_ONLY,
-					},
-					{
-						ReqNumber:   "7",
-						BidFloor:    &bfAndroidRewardedMraidC,
-						ContentType: CONTENT_TYPE_MRAID_ONLY,
-					},
-					{
-						ReqNumber:   "8",
-						BidFloor:    &bfAndroidRewardedMraidD,
-						ContentType: CONTENT_TYPE_MRAID_ONLY,
-					},
-				}
-			} else {
-				modifiedParams = []modifiedReqParams{
-					{
-						ReqNumber:   "1",
-						BidFloor:    &bfAndroidSkippableVastA,
-						ContentType: CONTENT_TYPE_VIDEO_ONLY,
-					},
-					{
-						ReqNumber:   "2",
-						BidFloor:    &bfAndroidSkippableVastB,
-						ContentType: CONTENT_TYPE_VIDEO_ONLY,
-					},
-					{
-						ReqNumber:   "3",
-						BidFloor:    &bfAndroidSkippableVastC,
-						ContentType: CONTENT_TYPE_VIDEO_ONLY,
-					},
-					{
-						ReqNumber:   "4",
-						BidFloor:    &bfAndroidSkippableVastD,
-						ContentType: CONTENT_TYPE_VIDEO_ONLY,
-					},
-					{
-						ReqNumber:   "5",
-						BidFloor:    &bfAndroidSkippableMraidA,
-						ContentType: CONTENT_TYPE_MRAID_ONLY,
-					},
-					{
-						ReqNumber:   "6",
-						BidFloor:    &bfAndroidSkippableMraidB,
-						ContentType: CONTENT_TYPE_MRAID_ONLY,
-					},
-					{
-						ReqNumber:   "7",
-						BidFloor:    &bfAndroidSkippableMraidC,
-						ContentType: CONTENT_TYPE_MRAID_ONLY,
-					},
-					{
-						ReqNumber:   "8",
-						BidFloor:    &bfAndroidSkippableMraidD,
-						ContentType: CONTENT_TYPE_MRAID_ONLY,
-					},
-				}
-			}
-		}
-
-		for _, param := range modifiedParams {
-			liftoffRequest := *request
-			reqData, err := a.makeRequestData(&liftoffRequest, numRequests, param, headers, errs, reqExt.MultiBidSelector, srcExt)
-			requestData = append(requestData, reqData)
-			errs = append(errs, err...)
-		}
-	} else if srcExt != nil && srcExt.HeaderBidding == 1 && reqExt.MultiBidSelector > 0 && now.After(multiBidBFSandMediatorBidFloorExperiemntStartTime) {
+	if srcExt != nil && srcExt.HeaderBidding == 1 && reqExt.MultiBidSelector > 0 {
 		bidFloorA := *liftoffExt.BidFloor
 		bidFloorB := *liftoffExt.BidFloor + 1
 		bidFloorC := *liftoffExt.BidFloor + 2
@@ -645,9 +436,6 @@ func (a *adapter) makeRequestData(liftoffRequest *openrtb.BidRequest, numRequest
 		}
 
 		traceName := "No Experiemnt"
-		if multiBidSelector == 1 {
-			traceName = "BSF_EXP_" + modifiedParams.ReqNumber
-		}
 		if multiBidSelector == 2 {
 			traceName = "MEDIATOR_EXP_" + modifiedParams.ReqNumber
 		}
