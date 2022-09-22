@@ -71,12 +71,15 @@ func ModifyImpsWithFloors(floorExt *openrtb_ext.PriceFloorRules, request *openrt
 
 			floorMinVal, floorCur, err := getMinFloorValue(floorExt, conversions)
 			if err == nil {
+				bidFloor := floorVal
 				if floorMinVal > 0.0 && floorVal < floorMinVal {
-					request.Imp[i].BidFloor = math.Round(floorMinVal*10000) / 10000
-				} else {
-					request.Imp[i].BidFloor = math.Round(floorVal*10000) / 10000
+					bidFloor = floorMinVal
 				}
-				request.Imp[i].BidFloorCur = floorCur
+
+				if bidFloor > 0.0 {
+					request.Imp[i].BidFloor = math.Round(bidFloor*10000) / 10000
+					request.Imp[i].BidFloorCur = floorCur
+				}
 				updateImpExtWithFloorDetails(matchedRule, &request.Imp[i], floorVal)
 			} else {
 				floorModelErrList = append(floorModelErrList, fmt.Errorf("Error in getting FloorMin value : '%v'", err.Error()))
