@@ -474,11 +474,12 @@ func setConsentedProviders(req *openrtb2.BidRequest, ampParams amp.Params) error
 	if len(ampParams.AdditionalConsent) > 0 {
 		reqWrap := &openrtb_ext.RequestWrapper{BidRequest: req}
 
-		if userExt, err := reqWrap.GetUserExt(); err == nil {
-			userExt.SetConsentedProviders(ampParams.AdditionalConsent)
-		} else {
+		userExt, err := reqWrap.GetUserExt()
+		if err != nil {
 			return err
 		}
+
+		userExt.SetConsentedProviders(ampParams.AdditionalConsent)
 		if err := reqWrap.RebuildRequest(); err != nil {
 			return err
 		}
