@@ -18,8 +18,9 @@ import (
 
 type QueryString map[string]string
 type adapter struct {
-	time     timeutil.Time
-	endpoint string
+	time       timeutil.Time
+	endpoint   string
+	extra_info string
 }
 type adnAdunit struct {
 	AuId       string    `json:"auId"`
@@ -126,7 +127,7 @@ func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter, noCookies bool
 
 	q := uri.Query()
 	if gdpr != "" {
-		endpointUrl = "https://europe.delivery.adnuntius.com/i"
+		endpointUrl = a.extra_info
 		q.Set("gdpr", gdpr)
 	}
 
