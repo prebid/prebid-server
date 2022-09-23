@@ -197,7 +197,10 @@ func LoadBidderInfo(path string) (BidderInfos, error) {
 
 		bidderName := strings.Split(fileName, ".")
 		if len(bidderName) == 2 && bidderName[1] == "yaml" {
-			// store all bidder names loaded from file system in lowercase
+			// all bidder names loaded from the file system should be in lowercase
+			// to match bidder names in Viper config bidder infos
+			// this will prevent from missing bidder config overrides
+			// in func applyBidderInfoConfigOverrides
 			infos[(strings.ToLower(bidderName[0]))] = info
 		}
 	}
