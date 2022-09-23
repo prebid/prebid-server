@@ -58,7 +58,13 @@
             }
           ],
           "ext": {
-            "prebid": {}
+            "prebid": {
+              "server": {
+                "datacenter": "",
+                "externalurl": "",
+                "gvlid": 0
+            }
+            }
           }
         }
       },
@@ -90,7 +96,13 @@
             }
           ],
           "ext": {
-            "prebid": {}
+            "prebid": {
+              "server": {
+                "datacenter": "",
+                "externalurl": "",
+                "gvlid": 0
+            }
+            }
           }
         }
       },

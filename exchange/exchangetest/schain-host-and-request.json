@@ -68,7 +68,12 @@
                     ],
                     "ext": {
                         "prebid": {
-                            "debug": true
+                            "debug": true,
+                            "server": {
+                                "datacenter": "",
+                                "externalurl": "",
+                                "gvlid": 0
+                            }
                         }
                     },
                     "source": {

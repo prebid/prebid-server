@@ -56,7 +56,13 @@
             }
           ],
           "ext": {
-            "prebid": {}
+            "prebid": {
+              "server": {
+                "datacenter": "",
+                "externalurl": "",
+                "gvlid": 0
+            }
+            }
           }
         },
         "bidAdjustments": {
@@ -89,7 +95,13 @@
             }
           ],
           "ext": {
-            "prebid": {}
+            "prebid": {
+              "server": {
+                "datacenter": "",
+                "externalurl": "",
+                "gvlid": 0
+            }
+            }
           }
         },
         "bidAdjustments": {

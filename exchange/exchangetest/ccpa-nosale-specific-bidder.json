@@ -61,7 +61,13 @@
                         }
                     },
                     "ext": {
-                        "prebid": {}
+                        "prebid": {
+                            "server": {
+                                "datacenter": "",
+                                "externalurl": "",
+                                "gvlid": 0
+                            }
+                        }
                     },
                     "user": {
                         "buyeruid": "some-buyer-id"
