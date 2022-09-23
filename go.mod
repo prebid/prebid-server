@@ -43,6 +43,6 @@ require (
 
 replace github.com/prebid/prebid-server => ./
 
-replace github.com/mxmCherry/openrtb/v16 => github.com/PubMatic-OpenWrap/openrtb/v16 v16.0.0-ow
+replace github.com/mxmCherry/openrtb/v16 => github.com/PubMatic-OpenWrap/openrtb/v16 v16.0.0-ow2
 
 replace github.com/beevik/etree v1.0.2 => github.com/PubMatic-OpenWrap/etree v1.0.2-0.20210129100623-8f30cfecf9f4
