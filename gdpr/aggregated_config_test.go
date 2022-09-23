@@ -708,46 +708,6 @@ func TestPurposeOneTreatmentAllowed(t *testing.T) {
 	}
 }
 
-func TestBasicEnforcementVendor(t *testing.T) {
-	tests := []struct {
-		description                          string
-		giveAccountBasicEnforcementVendorMap map[string]struct{}
-		giveBidder                           openrtb_ext.BidderName
-		wantBasicEnforcement                 bool
-	}{
-		{
-			description:                          "Basic enforcement vendor list set at account level - vendor found",
-			giveAccountBasicEnforcementVendorMap: map[string]struct{}{"appnexus": {}, "rubicon": {}},
-			giveBidder:                           "appnexus",
-			wantBasicEnforcement:                 true,
-		},
-		{
-			description:                          "Basic enforcement vendor list set at account level - vendor not found",
-			giveAccountBasicEnforcementVendorMap: map[string]struct{}{"rubicon": {}},
-			giveBidder:                           "appnexus",
-			wantBasicEnforcement:                 false,
-		},
-		{
-			description:                          "Basic enforcement vendor list not set at account level - vendor not found",
-			giveAccountBasicEnforcementVendorMap: nil,
-			giveBidder:                           "appnexus",
-			wantBasicEnforcement:                 false,
-		},
-	}
-
-	for _, tt := range tests {
-		cfg := tcf2Config{
-			AccountConfig: config.AccountGDPR{
-				BasicEnforcementVendorsMap: tt.giveAccountBasicEnforcementVendorMap,
-			},
-		}
-
-		result := cfg.BasicEnforcementVendor(tt.giveBidder)
-
-		assert.Equal(t, tt.wantBasicEnforcement, result, tt.description)
-	}
-}
-
 func TestBasicEnforcementVendors(t *testing.T) {
 	tests := []struct {
 		description               string

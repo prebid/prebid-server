@@ -50,9 +50,12 @@ func NewPurposeEnforcerBuilder(cfg TCF2ConfigReader) PurposeEnforcerBuilder {
 	return func(purpose consentconstants.Purpose, bidder openrtb_ext.BidderName) PurposeEnforcer {
 		index := purpose - 1
 
-		basicEnforcementVendor := cfg.BasicEnforcementVendor(bidder)
+		var basicEnforcementVendor bool
 		if purpose == consentconstants.Purpose(1) {
 			basicEnforcementVendor = false
+		} else {
+			basicEnforcementVendors := cfg.BasicEnforcementVendors()
+			_, basicEnforcementVendor = basicEnforcementVendors[string(bidder)]
 		}
 
 		enforceAlgo := cfg.PurposeEnforcementAlgo(purpose)

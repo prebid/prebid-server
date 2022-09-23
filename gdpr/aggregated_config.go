@@ -9,7 +9,6 @@ import (
 
 // TCF2ConfigReader is an interface to access TCF2 configurations
 type TCF2ConfigReader interface {
-	BasicEnforcementVendor(openrtb_ext.BidderName) bool
 	BasicEnforcementVendors() map[string]struct{}
 	FeatureOneEnforced() bool
 	FeatureOneVendorException(openrtb_ext.BidderName) bool
@@ -149,20 +148,11 @@ func (tc *tcf2Config) PurposeOneTreatmentAccessAllowed() bool {
 	return value
 }
 
-// BasicEnforcementVendor checks if the given bidder is considered a basic enforcement vendor by looking at the account
-// settings, and if not set there, defaulting to false. If set, the legal basis calculation for the bidder only considers
-// consent to the purpose, not the vendor. The idea is that the publisher trusts this vendor to enforce the
-// appropriate rules on their own. This only comes into play when enforceVendors is true as it lists those vendors that
-// are exempt for vendor enforcement.
-func (tc *tcf2Config) BasicEnforcementVendor(bidder openrtb_ext.BidderName) bool {
-	if value, exists := tc.AccountConfig.BasicEnforcementVendor(bidder); exists {
-		return value
-	}
-	return false
-}
-
 // BasicEnforcementVendors returns the basic enforcement map if it exists for the account; otherwise it returns
-// an empty map.
+// an empty map. If a bidder is considered a basic enforcement vendor, the legal basis calculation for the bidder
+// only considers consent to the purpose, not the vendor. The idea is that the publisher trusts this vendor to
+// enforce the appropriate rules on their own. This only comes into play when enforceVendors is true as it lists
+// those vendors that are exempt for vendor enforcement.
 func (tc *tcf2Config) BasicEnforcementVendors() map[string]struct{} {
 	if tc.AccountConfig.BasicEnforcementVendorsMap != nil {
 		return tc.AccountConfig.BasicEnforcementVendorsMap

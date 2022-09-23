@@ -79,17 +79,6 @@ type AccountGDPR struct {
 	SpecialFeature1     AccountGDPRSpecialFeature      `mapstructure:"special_feature1" json:"special_feature1"`
 }
 
-// BasicEnforcementVendor checks if the given bidder is considered a basic enforcement vendor which indicates whether
-// weak vendor enforcement applies to that bidder.
-func (a *AccountGDPR) BasicEnforcementVendor(bidder openrtb_ext.BidderName) (value, exists bool) {
-	if a.BasicEnforcementVendorsMap == nil {
-		return false, false
-	}
-	_, found := a.BasicEnforcementVendorsMap[string(bidder)]
-
-	return found, true
-}
-
 // EnabledForIntegrationType indicates whether GDPR is turned on at the account level for the specified integration type
 // by using the integration type setting if defined or the general GDPR setting if defined; otherwise it returns nil.
 func (a *AccountGDPR) EnabledForIntegrationType(integrationType IntegrationType) *bool {

@@ -202,13 +202,6 @@ type fakeTCF2ConfigReader struct {
 	basicEnforcementVendorsMap map[string]struct{}
 }
 
-func (fcr *fakeTCF2ConfigReader) BasicEnforcementVendor(bidder openrtb_ext.BidderName) bool {
-	if fcr.basicEnforcementVendorsMap == nil {
-		return false
-	}
-	_, found := fcr.basicEnforcementVendorsMap[string(bidder)]
-	return found
-}
 func (fcr *fakeTCF2ConfigReader) BasicEnforcementVendors() map[string]struct{} {
 	return fcr.basicEnforcementVendorsMap
 }

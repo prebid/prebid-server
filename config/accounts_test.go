@@ -794,62 +794,6 @@ func TestPurposeOneTreatmentAccessAllowed(t *testing.T) {
 	}
 }
 
-func TestBasicEnforcementVendor(t *testing.T) {
-	tests := []struct {
-		description        string
-		giveBasicVendorMap map[string]struct{}
-		giveBidder         openrtb_ext.BidderName
-		wantBasicVendorSet bool
-		wantIsBasicVendor  bool
-	}{
-		{
-			description:        "Nil - basic vendor map not defined",
-			giveBidder:         "appnexus",
-			wantBasicVendorSet: false,
-			wantIsBasicVendor:  false,
-		},
-		{
-			description:        "Empty - basic vendor map empty",
-			giveBasicVendorMap: map[string]struct{}{},
-			giveBidder:         "appnexus",
-			wantBasicVendorSet: true,
-			wantIsBasicVendor:  false,
-		},
-		{
-			description:        "One - bidder found in basic vendor map containing one entry",
-			giveBasicVendorMap: map[string]struct{}{"appnexus": {}},
-			giveBidder:         "appnexus",
-			wantBasicVendorSet: true,
-			wantIsBasicVendor:  true,
-		},
-		{
-			description:        "Many - bidder found in basic vendor map containing multiple entries",
-			giveBasicVendorMap: map[string]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
-			giveBidder:         "appnexus",
-			wantBasicVendorSet: true,
-			wantIsBasicVendor:  true,
-		},
-		{
-			description:        "Many - bidder not found in basic vendor map containing multiple entries",
-			giveBasicVendorMap: map[string]struct{}{"rubicon": {}, "appnexus": {}, "index": {}},
-			giveBidder:         "openx",
-			wantBasicVendorSet: true,
-			wantIsBasicVendor:  false,
-		},
-	}
-
-	for _, tt := range tests {
-		accountGDPR := AccountGDPR{
-			BasicEnforcementVendorsMap: tt.giveBasicVendorMap,
-		}
-
-		value, present := accountGDPR.BasicEnforcementVendor(tt.giveBidder)
-
-		assert.Equal(t, tt.wantIsBasicVendor, value, tt.description)
-		assert.Equal(t, tt.wantBasicVendorSet, present, tt.description)
-	}
-}
-
 func TestAlternateBidderCodes_IsValidBidderCode(t *testing.T) {
 	type fields struct {
 		Enabled bool

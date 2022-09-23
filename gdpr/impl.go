@@ -73,7 +73,8 @@ func (p *permissionsImpl) AuctionActivitiesAllowed(ctx context.Context, bidderCo
 
 	// note the bidder here is guaranteed to be enabled
 	vendorID, vendorFound := p.resolveVendorID(bidderCoreName, bidder)
-	weakVendorEnforcement := p.cfg.BasicEnforcementVendor(bidder)
+	basicEnforcementVendors := p.cfg.BasicEnforcementVendors()
+	_, weakVendorEnforcement := basicEnforcementVendors[string(bidder)]
 
 	if !vendorFound && !weakVendorEnforcement {
 		return DenyAll, nil
@@ -185,7 +186,8 @@ func (p *permissionsImpl) allowGeo(bidder openrtb_ext.BidderName, consentMeta tc
 		return true
 	}
 
-	weakVendorEnforcement := p.cfg.BasicEnforcementVendor(bidder)
+	basicEnforcementVendors := p.cfg.BasicEnforcementVendors()
+	_, weakVendorEnforcement := basicEnforcementVendors[string(bidder)]
 	return consentMeta.SpecialFeatureOptIn(1) && (vendor.SpecialFeature(1) || weakVendorEnforcement)
 }
 
