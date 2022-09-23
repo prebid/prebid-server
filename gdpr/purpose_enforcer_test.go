@@ -226,13 +226,6 @@ func (fcr *fakeTCF2ConfigReader) PurposeEnforcementAlgo(purpose consentconstants
 func (fcr *fakeTCF2ConfigReader) PurposeEnforcingVendors(purpose consentconstants.Purpose) bool {
 	return fcr.enforceVendors
 }
-func (fcr *fakeTCF2ConfigReader) PurposeVendorException(purpose consentconstants.Purpose, bidder openrtb_ext.BidderName) bool {
-	if fcr.vendorExceptionMap == nil {
-		return false
-	}
-	_, found := fcr.vendorExceptionMap[bidder]
-	return found
-}
 func (fcr *fakeTCF2ConfigReader) PurposeVendorExceptions(purpose consentconstants.Purpose) map[openrtb_ext.BidderName]struct{} {
 	return fcr.vendorExceptionMap
 }

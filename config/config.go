@@ -344,19 +344,6 @@ func (t *TCF2) PurposeEnforcingVendors(purpose consentconstants.Purpose) (value 
 	return t.PurposeConfigs[purpose].EnforceVendors
 }
 
-// PurposeVendorException checks if the specified bidder is considered a vendor exception for a given purpose. If a
-// bidder is a vendor exception, the GDPR full enforcement algorithm will bypass the legal basis calculation assuming
-// the request is valid and there isn't a "deny all" publisher restriction
-func (t *TCF2) PurposeVendorException(purpose consentconstants.Purpose, bidder openrtb_ext.BidderName) (value bool) {
-	if t.PurposeConfigs[purpose] == nil {
-		return false
-	}
-	if _, ok := t.PurposeConfigs[purpose].VendorExceptionMap[bidder]; ok {
-		return true
-	}
-	return false
-}
-
 // PurposeVendorExceptions returns the vendor exception map for a given purpose if it exists, otherwise it returns
 // an empty map of vendor exceptions
 func (t *TCF2) PurposeVendorExceptions(purpose consentconstants.Purpose) (value map[openrtb_ext.BidderName]struct{}) {

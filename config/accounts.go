@@ -143,19 +143,6 @@ func (a *AccountGDPR) PurposeEnforcingVendors(purpose consentconstants.Purpose) 
 	return *a.PurposeConfigs[purpose].EnforceVendors, true
 }
 
-// PurposeVendorException checks if the given bidder is a vendor exception for a given purpose.
-func (a *AccountGDPR) PurposeVendorException(purpose consentconstants.Purpose, bidder openrtb_ext.BidderName) (value, exists bool) {
-	if a.PurposeConfigs[purpose] == nil {
-		return false, false
-	}
-	if a.PurposeConfigs[purpose].VendorExceptionMap == nil {
-		return false, false
-	}
-	_, found := a.PurposeConfigs[purpose].VendorExceptionMap[bidder]
-
-	return found, true
-}
-
 // PurposeVendorExceptions returns the vendor exception map for a given purpose.
 func (a *AccountGDPR) PurposeVendorExceptions(purpose consentconstants.Purpose) (value map[openrtb_ext.BidderName]struct{}, exists bool) {
 	c, exists := a.PurposeConfigs[purpose]

@@ -50,7 +50,8 @@ func (p *permissionsImpl) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 
 	id, ok := p.vendorIDs[bidder]
 	if ok {
-		vendorException := p.cfg.PurposeVendorException(consentconstants.Purpose(1), bidder)
+		vendorExceptions := p.cfg.PurposeVendorExceptions(consentconstants.Purpose(1))
+		_, vendorException := vendorExceptions[bidder]
 		return p.allowSync(ctx, id, bidder, vendorException)
 	}
 
