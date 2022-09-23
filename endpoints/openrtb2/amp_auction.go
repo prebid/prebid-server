@@ -148,6 +148,8 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		return
 	}
 
+	ao.Request = reqWrapper.BidRequest
+
 	ctx := context.Background()
 	var cancel context.CancelFunc
 	if reqWrapper.TMax > 0 {
@@ -167,8 +169,9 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	// Look up account now that we have resolved the pubID value
 	account, acctIDErrs := accountService.GetAccount(ctx, deps.cfg, deps.accounts, labels.PubID)
 	if len(acctIDErrs) > 0 {
+		// best attempt to rebuild the request for analytics. we're already in an error state, so ignoring a
+		// potential error from this call
 		reqWrapper.RebuildRequest()
-		ao.Request = reqWrapper.BidRequest
 
 		errL = append(errL, acctIDErrs...)
 		httpStatus := http.StatusBadRequest
@@ -207,10 +210,20 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
-	ao.Request = reqWrapper.BidRequest
 	ao.AuctionResponse = response
 
 	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
+		glog.Errorf("/openrtb2/amp Critical error: %v", err)
+		ao.Status = http.StatusInternalServerError
+		ao.Errors = append(ao.Errors, err)
+		return
+	}
+
+	// hold auction rebuilds the request wrapper first thing, so there is likely
+	// no work to do here, but added a rebuild just in case this behavior changes.
+	if err := reqWrapper.RebuildRequest(); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
 		glog.Errorf("/openrtb2/amp Critical error: %v", err)
