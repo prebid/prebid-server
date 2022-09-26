@@ -197,11 +197,7 @@ func LoadBidderInfo(path string) (BidderInfos, error) {
 
 		bidderName := strings.Split(fileName, ".")
 		if len(bidderName) == 2 && bidderName[1] == "yaml" {
-			// all bidder names loaded from the file system should be in lowercase
-			// to match bidder names in Viper config bidder infos
-			// this will prevent from missing bidder config overrides
-			// in func applyBidderInfoConfigOverrides
-			infos[(strings.ToLower(bidderName[0]))] = info
+			infos[(bidderName[0])] = info
 		}
 	}
 	return infos, nil
@@ -351,7 +347,11 @@ func validateSyncer(bidderInfo BidderInfo) error {
 
 func applyBidderInfoConfigOverrides(configBidderInfos BidderInfos, fsBidderInfos BidderInfos) (BidderInfos, error) {
 	for bidderName, bidderInfo := range configBidderInfos {
-		if fsBidderCfg, exists := fsBidderInfos[bidderName]; exists {
+		normalizedBidderName, bidderNameExists := openrtb_ext.NormalizeBidderName(bidderName)
+		if !bidderNameExists {
+			continue
+		}
+		if fsBidderCfg, exists := fsBidderInfos[string(normalizedBidderName)]; exists {
 			bidderInfo.Syncer = bidderInfo.Syncer.Override(fsBidderCfg.Syncer)
 
 			if bidderInfo.Endpoint == "" && len(fsBidderCfg.Endpoint) > 0 {
@@ -436,7 +436,7 @@ func applyBidderInfoConfigOverrides(configBidderInfos BidderInfos, fsBidderInfos
 				glog.Warningf("adapters.%s.usersync_url is deprecated and will be removed in a future version, please update to the latest user sync config values", strings.ToLower(bidderName))
 			}
 
-			fsBidderInfos[bidderName] = bidderInfo
+			fsBidderInfos[string(normalizedBidderName)] = bidderInfo
 		}
 	}
 	return fsBidderInfos, nil
