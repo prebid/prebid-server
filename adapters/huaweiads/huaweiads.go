@@ -282,7 +282,7 @@ func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest,
 			return nil, []error{errors.New("Unmarshal ExtImpHuaweiAds failed: huaweiAdsImpExt is nil.")}
 		}
 
-		adslot30, err := getReqAdslot30(huaweiAdsImpExt, &openRTBRequest.Imp[index], openRTBRequest)
+		adslot30, err := getReqAdslot30(huaweiAdsImpExt, &openRTBRequest.Imp[index])
 		if err != nil {
 			return nil, []error{err}
 		}
@@ -457,10 +457,10 @@ func getReqJson(request *huaweiAdsRequest, openRTBRequest *openrtb2.BidRequest, 
 }
 
 func getReqAdslot30(huaweiAdsImpExt *openrtb_ext.ExtImpHuaweiAds,
-	openRTBImp *openrtb2.Imp, openRTBRequest *openrtb2.BidRequest) (adslot30, error) {
+	openRTBImp *openrtb2.Imp) (adslot30, error) {
 	adtype := convertAdtypeStringToInteger(strings.ToLower(huaweiAdsImpExt.Adtype))
 	testStatus := 0
-	if huaweiAdsImpExt != nil && huaweiAdsImpExt.IsTestAuthorization == "true" {
+	if huaweiAdsImpExt.IsTestAuthorization == "true" {
 		testStatus = 1
 	}
 	var adslot30 = adslot30{
@@ -795,7 +795,6 @@ func getCountryCodeFromMCC(MCC string) (out string) {
 
 // getDeviceID include oaid gaid imei. In prebid mobile, use TargetingParams.addUserData("imei", "imei-test");
 // When ifa: gaid exists, other device id can be passed by TargetingParams.addUserData("oaid", "oaid-test");
-// When getGaidFromDeviceIFA success, getDeviceIDFromUserExt failed, no error will be reported.
 func getDeviceIDFromUserExt(device *device, openRTBRequest *openrtb2.BidRequest) (err error) {
 	var userObjExist = true
 	if openRTBRequest.User == nil || openRTBRequest.User.Ext == nil {
@@ -806,18 +805,25 @@ func getDeviceIDFromUserExt(device *device, openRTBRequest *openrtb2.BidRequest)
 		if err := json.Unmarshal(openRTBRequest.User.Ext, &extUserDataHuaweiAds); err != nil {
 			return errors.New("get gaid from openrtb Device.IFA failed, and get device id failed: Unmarshal openRTBRequest.User.Ext -> extUserDataHuaweiAds. Error: " + err.Error())
 		}
+
 		var deviceId = extUserDataHuaweiAds.Data
-		if len(deviceId.Imei) == 0 && len(deviceId.Gaid) == 0 && len(device.Gaid) == 0 && len(deviceId.Oaid) == 0 {
-			return errors.New("getDeviceID: Imei ,Oaid, Gaid are all empty.")
-		}
+		isValidDeviceId := false
+
 		if len(deviceId.Oaid) > 0 {
 			device.Oaid = deviceId.Oaid[0]
+			isValidDeviceId = true
 		}
 		if len(deviceId.Gaid) > 0 {
 			device.Gaid = deviceId.Gaid[0]
+			isValidDeviceId = true
 		}
 		if len(deviceId.Imei) > 0 {
 			device.Imei = deviceId.Imei[0]
+			isValidDeviceId = true
+		}
+
+		if !isValidDeviceId {
+			return errors.New("getDeviceID: Imei ,Oaid, Gaid are all empty.")
 		}
 		if len(deviceId.ClientTime) > 0 {
 			device.ClientTime = getClientTime(deviceId.ClientTime[0])
