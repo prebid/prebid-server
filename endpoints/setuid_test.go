@@ -504,6 +504,28 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 			cfgAccountRequired:     true,
 			expectedResponseCode:   400,
 			expectedMetrics: func(m *metrics.MetricsEngineMock) {
+				m.On("RecordSetUid", metrics.SetUidAccountConfigMalformed).Once()
+			},
+			expectedAnalytics: func(a *MockAnalytics) {
+				expected := analytics.SetUIDObject{
+					Status:  400,
+					Bidder:  "pubmatic",
+					UID:     "",
+					Errors:  []error{errCookieSyncAccountConfigMalformed},
+					Success: false,
+				}
+				a.On("LogSetUIDObject", &expected).Once()
+			},
+		},
+		{
+			description:            "Invalid JSON account",
+			uri:                    "/setuid?bidder=pubmatic&uid=123&account=invalid_json_acct",
+			cookies:                []*usersync.Cookie{},
+			syncersBidderNameToKey: map[string]string{"pubmatic": "pubmatic"},
+			gdprAllowsHostCookies:  true,
+			cfgAccountRequired:     true,
+			expectedResponseCode:   400,
+			expectedMetrics: func(m *metrics.MetricsEngineMock) {
 				m.On("RecordSetUid", metrics.SetUidBadRequest).Once()
 			},
 			expectedAnalytics: func(a *MockAnalytics) {
@@ -511,7 +533,7 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 					Status:  400,
 					Bidder:  "pubmatic",
 					UID:     "",
-					Errors:  []error{errors.New("json: cannot unmarshal string into Go struct field Account.disabled of type bool")},
+					Errors:  []error{errors.New("Invalid JSON Patch")},
 					Success: false,
 				}
 				a.On("LogSetUIDObject", &expected).Once()
@@ -713,9 +735,10 @@ func doRequest(req *http.Request, analytics analytics.PBSAnalyticsModule, metric
 	}
 
 	fakeAccountsFetcher := FakeAccountsFetcher{AccountData: map[string]json.RawMessage{
-		"valid_acct":     json.RawMessage(`{"disabled":false}`),
-		"disabled_acct":  json.RawMessage(`{"disabled":true}`),
-		"malformed_acct": json.RawMessage(`{"disabled":"malformed"}`),
+		"valid_acct":        json.RawMessage(`{"disabled":false}`),
+		"disabled_acct":     json.RawMessage(`{"disabled":true}`),
+		"malformed_acct":    json.RawMessage(`{"disabled":"malformed"}`),
+		"invalid_json_acct": json.RawMessage(`{"}`),
 	}}
 
 	endpoint := NewSetUIDEndpoint(&cfg, syncersByBidder, gdprPermsBuilder, tcf2ConfigBuilder, analytics, fakeAccountsFetcher, metrics)

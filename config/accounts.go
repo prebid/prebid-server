@@ -125,13 +125,10 @@ func (a *AccountGDPR) PurposeEnforced(purpose consentconstants.Purpose) (value, 
 	if a.PurposeConfigs[purpose] == nil {
 		return true, false
 	}
-	if a.PurposeConfigs[purpose].EnforcePurpose == TCF2FullEnforcement {
-		return true, true
+	if a.PurposeConfigs[purpose].EnforcePurpose == nil {
+		return true, false
 	}
-	if a.PurposeConfigs[purpose].EnforcePurpose == TCF2NoEnforcement {
-		return false, true
-	}
-	return true, false
+	return *a.PurposeConfigs[purpose].EnforcePurpose, true
 }
 
 // PurposeEnforcingVendors gets the account level enforce vendors setting for a given purpose returning the value and
@@ -179,7 +176,8 @@ func (a *AccountGDPR) PurposeOneTreatmentAccessAllowed() (value, exists bool) {
 
 // AccountGDPRPurpose represents account-specific GDPR purpose configuration
 type AccountGDPRPurpose struct {
-	EnforcePurpose string `mapstructure:"enforce_purpose" json:"enforce_purpose,omitempty"`
+	EnforceAlgo    string `mapstructure:"enforce_algo" json:"enforce_algo,omitempty"`
+	EnforcePurpose *bool  `mapstructure:"enforce_purpose" json:"enforce_purpose,omitempty"`
 	EnforceVendors *bool  `mapstructure:"enforce_vendors" json:"enforce_vendors,omitempty"`
 	// Array of vendor exceptions that is used to create the hash table VendorExceptionMap so vendor names can be instantly accessed
 	VendorExceptions   []openrtb_ext.BidderName `mapstructure:"vendor_exceptions" json:"vendor_exceptions"`

@@ -2157,7 +2157,7 @@ func TestRequestBidsWithAdsCertsSigner(t *testing.T) {
 
 func wrapWithBidderInfo(bidder adapters.Bidder) adapters.Bidder {
 	bidderInfo := config.BidderInfo{
-		Enabled: true,
+		Disabled: false,
 		Capabilities: &config.CapabilitiesInfo{
 			App: &config.PlatformInfo{
 				MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner},
