@@ -1272,7 +1272,7 @@ func TestBuildAmpObject(t *testing.T) {
 		{
 			description:     "Wrong tag_id, error gets logged",
 			inTagId:         "unknown",
-			inStoredRequest: json.RawMessage(`{"id":"some-request-id","site":{"page":"prebid.org"},"imp":[{"id":"some-impression-id","banner":{"format":[{"w":300,"h":250}]},"ext":{"appnexus":{"placementId":12883451}}}],"tmax":500}`),
+			inStoredRequest: json.RawMessage(`{"id":"some-request-id","site":{"page":"prebid.org"},"imp":[{"id":"some-impression-id","banner":{"format":[{"w":300,"h":250}]},"ext":{"prebid":{"bidder":{"appnexus":{"placementId":12883451}}}}}],"tmax":500}`),
 			expectedAmpObject: &analytics.AmpObject{
 				Status: http.StatusOK,
 				Errors: []error{fmt.Errorf("unexpected end of JSON input")},
@@ -1281,7 +1281,7 @@ func TestBuildAmpObject(t *testing.T) {
 		{
 			description:     "Valid stored Amp request, correct tag_id, a valid response should be logged",
 			inTagId:         "test",
-			inStoredRequest: json.RawMessage(`{"id":"some-request-id","site":{"page":"prebid.org"},"imp":[{"id":"some-impression-id","banner":{"format":[{"w":300,"h":250}]},"ext":{"appnexus":{"placementId":12883451}}}],"tmax":500}`),
+			inStoredRequest: json.RawMessage(`{"id":"some-request-id","site":{"page":"prebid.org"},"imp":[{"id":"some-impression-id","banner":{"format":[{"w":300,"h":250}]},"ext":{"prebid":{"bidder":{"appnexus":{"placementId":12883451}}}}}],"tmax":500}`),
 			expectedAmpObject: &analytics.AmpObject{
 				Status: http.StatusOK,
 				Errors: nil,
@@ -1306,7 +1306,7 @@ func TestBuildAmpObject(t *testing.T) {
 								},
 							},
 							Secure: func(val int8) *int8 { return &val }(1), //(*int8)(1),
-							Ext:    json.RawMessage(`{"appnexus":{"placementId":12883451}}`),
+							Ext:    json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placementId":12883451}}}}`),
 						},
 					},
 					AT:   1,
@@ -1533,10 +1533,9 @@ func TestRequestWithTargeting(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	endpoint(recorder, request, nil)
 
-	if !assert.NotNil(t, exchange.lastRequest, "Endpoint responded with %d: %s", recorder.Code, recorder.Body.String()) {
-		return
+	if assert.NotNil(t, exchange.lastRequest, "Endpoint responded with %d: %s", recorder.Code, recorder.Body.String()) {
+		assert.JSONEq(t, `{"prebid":{"bidder":{"appnexus":{"placementId":12883451}}}, "data":{"gam-key1":"val1", "gam-key2":"val2"}}`, string(exchange.lastRequest.Imp[0].Ext))
 	}
-	assert.JSONEq(t, `{"appnexus":{"placementId":12883451}, "data":{"gam-key1":"val1", "gam-key2":"val2"}}`, string(exchange.lastRequest.Imp[0].Ext))
 }
 
 func TestSetTargeting(t *testing.T) {
