@@ -273,7 +273,7 @@ func getAuctionBidderRequests(auctionRequest AuctionRequest,
 	return bidderRequests, errs
 }
 
-func buildRequestExtForBidder(bidder string, requestExt json.RawMessage, requestExtParsed *openrtb_ext.ExtRequest, bidderParamsInReqExt map[string]json.RawMessage, cfgABC config.AlternateBidderCodes) (json.RawMessage, error) {
+func buildRequestExtForBidder(bidder string, requestExt json.RawMessage, requestExtParsed *openrtb_ext.ExtRequest, bidderParamsInReqExt map[string]json.RawMessage, cfgABC *config.AlternateBidderCodes) (json.RawMessage, error) {
 	// Resolve alternatebiddercode for current bidder
 	var reqABC *openrtb_ext.ExtAlternateBidderCodes
 	if len(requestExt) != 0 && requestExtParsed != nil && requestExtParsed.Prebid.AlternateBidderCodes != nil {
@@ -323,7 +323,7 @@ func buildRequestExtForBidder(bidder string, requestExt json.RawMessage, request
 	return json.Marshal(extMap)
 }
 
-func buildRequestExtAlternateBidderCodes(bidder string, accABC config.AlternateBidderCodes, reqABC *openrtb_ext.ExtAlternateBidderCodes) *openrtb_ext.ExtAlternateBidderCodes {
+func buildRequestExtAlternateBidderCodes(bidder string, accABC *config.AlternateBidderCodes, reqABC *openrtb_ext.ExtAlternateBidderCodes) *openrtb_ext.ExtAlternateBidderCodes {
 	if reqABC != nil {
 		alternateBidderCodes := &openrtb_ext.ExtAlternateBidderCodes{
 			Enabled: reqABC.Enabled,
@@ -336,20 +336,19 @@ func buildRequestExtAlternateBidderCodes(bidder string, accABC config.AlternateB
 		return alternateBidderCodes
 	}
 
-	alternateBidderCodes := &openrtb_ext.ExtAlternateBidderCodes{
-		Enabled: accABC.Enabled,
-	}
-	if bidderCodes, ok := accABC.Bidders[bidder]; ok {
-		alternateBidderCodes.Bidders = map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
-			bidder: bidderCodes,
+	if accABC != nil {
+		alternateBidderCodes := &openrtb_ext.ExtAlternateBidderCodes{
+			Enabled: accABC.Enabled,
 		}
+		if bidderCodes, ok := accABC.Bidders[bidder]; ok {
+			alternateBidderCodes.Bidders = map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+				bidder: bidderCodes,
+			}
+		}
+		return alternateBidderCodes
 	}
 
-	if !alternateBidderCodes.Enabled && alternateBidderCodes.Bidders == nil {
-		alternateBidderCodes = nil
-	}
-
-	return alternateBidderCodes
+	return nil
 }
 
 // extractBuyerUIDs parses the values from user.ext.prebid.buyeruids, and then deletes those values from the ext.

@@ -288,9 +288,11 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		liveAdapters = listBiddersWithRequests(bidderRequests)
 
 		//This will be used validate bids
-		alternateBidderCodes := openrtb_ext.ExtAlternateBidderCodes(r.Account.AlternateBidderCodes)
+		var alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes
 		if requestExt != nil && requestExt.Prebid.AlternateBidderCodes != nil {
 			alternateBidderCodes = *requestExt.Prebid.AlternateBidderCodes
+		} else if r.Account.AlternateBidderCodes != nil {
+			alternateBidderCodes = openrtb_ext.ExtAlternateBidderCodes(*r.Account.AlternateBidderCodes)
 		}
 
 		adapterBids, adapterExtra, anyBidsReturned = e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, accountDebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride, alternateBidderCodes, requestExt.Prebid.Experiment)
