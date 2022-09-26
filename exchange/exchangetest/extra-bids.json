@@ -204,7 +204,8 @@
           "ext": {
             "prebid": {
               "alternatebiddercodes": {
-                "enabled": true
+                "enabled": true,
+                "bidders": null
               }
             }
           }
