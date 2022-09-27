@@ -16,7 +16,7 @@ import (
 // Check for Floors enforcement for deals,
 // In case bid wit DealID present and enforceDealFloors = false then bid floor enforcement should be skipped
 func checkDealsForEnforcement(bid *pbsOrtbBid, enforceDealFloors bool) *pbsOrtbBid {
-	if bid.bid.DealID != "" && !enforceDealFloors {
+	if bid != nil && bid.bid != nil && bid.bid.DealID != "" && !enforceDealFloors {
 		return bid
 	}
 	return nil
@@ -83,15 +83,18 @@ func enforceFloorToBids(bidRequest *openrtb2.BidRequest, seatBids map[openrtb_ex
 // Internally validation of floors parameters and validation of rules is done,
 // Based on number of modelGroups and modelWeight, one model is selected and imp.bidfloor and imp.bidfloorcur is updated
 func selectFloorsAndModifyImp(r *AuctionRequest, floor config.PriceFloors, conversions currency.Conversions, responseDebugAllow bool) []error {
-
 	var errs []error
+	if r == nil || r.BidRequestWrapper == nil {
+		return errs
+	}
+
 	requestExt, err := r.BidRequestWrapper.GetRequestExt()
 	if err != nil {
 		errs = append(errs, err)
 		return errs
 	}
 	prebidExt := requestExt.GetPrebid()
-	if floor.Enabled && prebidExt.Floors != nil && prebidExt.Floors.GetEnabled() {
+	if floor.Enabled && prebidExt != nil && prebidExt.Floors != nil && prebidExt.Floors.GetEnabled() {
 		errs = floors.ModifyImpsWithFloors(prebidExt.Floors, r.BidRequestWrapper.BidRequest, conversions)
 		requestExt.SetPrebid(prebidExt)
 		err := r.BidRequestWrapper.RebuildRequest()
@@ -108,10 +111,23 @@ func selectFloorsAndModifyImp(r *AuctionRequest, floor config.PriceFloors, conve
 	return errs
 }
 
+// getFloorsFlagFromReqExt returns floors enabled flag,
+// if floors enabled flag is not provided in request extesion, by default treated as true
+func getFloorsFlagFromReqExt(prebidExt *openrtb_ext.ExtRequestPrebid) bool {
+	floorEnabled := true
+	if prebidExt == nil || prebidExt.Floors == nil || prebidExt.Floors.Enabled == nil {
+		return floorEnabled
+	}
+	return *prebidExt.Floors.Enabled
+}
+
 // enforceFloors function does floors enforcement
 func enforceFloors(r *AuctionRequest, seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, floor config.PriceFloors, conversions currency.Conversions, responseDebugAllow bool) (map[openrtb_ext.BidderName]*pbsOrtbSeatBid, []error) {
 
 	rejectionsErrs := []error{}
+	if r == nil || r.BidRequestWrapper == nil {
+		return seatBids, rejectionsErrs
+	}
 
 	requestExt, err := r.BidRequestWrapper.GetRequestExt()
 	if err != nil {
@@ -119,14 +135,15 @@ func enforceFloors(r *AuctionRequest, seatBids map[openrtb_ext.BidderName]*pbsOr
 		return seatBids, rejectionsErrs
 	}
 	prebidExt := requestExt.GetPrebid()
-	if floor.Enabled && prebidExt.Floors != nil && prebidExt.Floors.GetEnabled() {
-		if floors.ShouldEnforce(r.BidRequestWrapper.BidRequest, prebidExt.Floors, floor.EnforceFloorsRate, rand.Intn) {
-			var enforceDealFloors bool
-			if prebidExt != nil && prebidExt.Floors != nil && prebidExt.Floors.Enforcement != nil && prebidExt.Floors.Enforcement.FloorDeals != nil {
+	reqFloorEnable := getFloorsFlagFromReqExt(prebidExt)
+	if floor.Enabled && reqFloorEnable {
+		var enforceDealFloors bool
+		if prebidExt != nil && floors.ShouldEnforce(r.BidRequestWrapper.BidRequest, prebidExt.Floors, floor.EnforceFloorsRate, rand.Intn) {
+			if prebidExt.Floors != nil && prebidExt.Floors.Enforcement != nil && prebidExt.Floors.Enforcement.FloorDeals != nil {
 				enforceDealFloors = *prebidExt.Floors.Enforcement.FloorDeals && floor.EnforceDealFloors
 			}
-			seatBids, rejectionsErrs = enforceFloorToBids(r.BidRequestWrapper.BidRequest, seatBids, conversions, enforceDealFloors)
 		}
+		seatBids, rejectionsErrs = enforceFloorToBids(r.BidRequestWrapper.BidRequest, seatBids, conversions, enforceDealFloors)
 		requestExt.SetPrebid(prebidExt)
 		err = r.BidRequestWrapper.RebuildRequest()
 		if err != nil {
