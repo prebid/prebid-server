@@ -31,7 +31,7 @@ func ShouldEnforce(bidRequest *openrtb2.BidRequest, floorExt *openrtb_ext.PriceF
 		configEnforceRate = floorExt.Enforcement.EnforceRate
 	}
 
-	shouldEnforce := configEnforceRate > f(ENFORCE_RATE_MAX+1)
+	shouldEnforce := configEnforceRate > f(ENFORCE_RATE_MAX)
 	if floorExt == nil {
 		floorExt = new(openrtb_ext.PriceFloorRules)
 	}

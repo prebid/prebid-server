@@ -29,11 +29,12 @@ func ModifyImpsWithFloors(floorExt *openrtb_ext.PriceFloorRules, request *openrt
 		floorModelErrList []error
 		floorVal          float64
 	)
-	floorData := floorExt.Data
-	if floorData == nil {
+
+	if floorExt == nil || floorExt.Data == nil {
 		return nil
 	}
 
+	floorData := floorExt.Data
 	floorModelErrList = validateFloorSkipRates(floorExt)
 	if len(floorModelErrList) > 0 {
 		return floorModelErrList
