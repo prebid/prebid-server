@@ -86,6 +86,9 @@ func (a *YieldoneAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 			})
 		}
 	}
+	if bidResp.Cur != "" {
+		bidResponse.Currency = bidResp.Cur
+	}
 	return bidResponse, nil
 
 }

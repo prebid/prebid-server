@@ -1096,6 +1096,9 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb2.BidRequest, external
 			}
 		}
 	}
+	if bidResp.Cur != "" {
+		bidResponse.Currency = bidResp.Cur
+	}
 
 	return bidResponse, nil
 }
