@@ -171,7 +171,7 @@ func TestDefaults(t *testing.T) {
 	cmpStrings(t, "experiment.adscert.remote.url", cfg.Experiment.AdCerts.Remote.Url, "")
 	cmpInts(t, "experiment.adscert.remote.signing_timeout_ms", cfg.Experiment.AdCerts.Remote.SigningTimeoutMs, 5)
 	cmpNils(t, "host_schain_node", cfg.HostSChainNode)
-	cmpStrings(t, "datacenter", cfg.Datacenter, "")
+	cmpStrings(t, "datacenter", cfg.DataCenter, "")
 
 	//Assert purpose VendorExceptionMap hash tables were built correctly
 	expectedTCF2 := TCF2{
@@ -478,7 +478,7 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "host_schain_node.sid", cfg.HostSChainNode.SID, "00001")
 	cmpStrings(t, "host_schain_node.rid", cfg.HostSChainNode.RID, "BidRequest")
 	cmpInt8s(t, "host_schain_node.hp", cfg.HostSChainNode.HP, &int8One)
-	cmpStrings(t, "datacenter", cfg.Datacenter, "1")
+	cmpStrings(t, "datacenter", cfg.DataCenter, "1")
 
 	//Assert the NonStandardPublishers was correctly unmarshalled
 	assert.Equal(t, []string{"pub1", "pub2"}, cfg.GDPR.NonStandardPublishers, "gdpr.non_standard_publishers")

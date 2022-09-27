@@ -148,7 +148,7 @@ func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid
 		bidIDGenerator: &bidIDGenerator{cfg.GenerateBidID},
 		hostSChainNode: cfg.HostSChainNode,
 		adsCertSigner:  adsCertSigner,
-		server:         config.Server{ExternalUrl: cfg.ExternalURL, GvlID: cfg.GDPR.HostVendorID, Datacenter: cfg.Datacenter},
+		server:         config.Server{ExternalUrl: cfg.ExternalURL, GvlID: cfg.GDPR.HostVendorID, DataCenter: cfg.DataCenter},
 	}
 }
 
@@ -204,7 +204,9 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	if err != nil {
 		return nil, err
 	}
-	requestExt.Prebid.Server = &openrtb_ext.ExtRequestPrebidServer{ExternalUrl: e.server.ExternalUrl, GvlID: e.server.GvlID, Datacenter: e.server.Datacenter}
+	if requestExt.Prebid.Server.Empty() {
+		requestExt.Prebid.Server = &openrtb_ext.ExtRequestPrebidServer{ExternalUrl: e.server.ExternalUrl, GvlID: e.server.GvlID, DataCenter: e.server.DataCenter}
+	}
 
 	cacheInstructions := getExtCacheInstructions(requestExt)
 	targData := getExtTargetData(requestExt, &cacheInstructions)

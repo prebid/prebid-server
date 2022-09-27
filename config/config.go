@@ -95,7 +95,7 @@ type Configuration struct {
 	HostSChainNode    *openrtb2.SupplyChainNode `mapstructure:"host_schain_node"`
 	// Experiment configures non-production ready features.
 	Experiment Experiment `mapstructure:"experiment"`
-	Datacenter string     `mapstructure:"datacenter"`
+	DataCenter string     `mapstructure:"datacenter"`
 	// BidderInfos supports adapter overrides in extra configs like pbs.json, pbs.yaml, etc.
 	// Refers to main.go `configFileName` constant
 	BidderInfos BidderInfos `mapstructure:"adapters"`
@@ -597,9 +597,9 @@ type Debug struct {
 }
 
 type Server struct {
-	ExternalUrl string `mapstructure:"external_url"`
-	GvlID       int    `mapstructure:"gvlid"`
-	Datacenter  string `mapstructure:"datacenter"`
+	ExternalUrl string
+	GvlID       int
+	DataCenter  string
 }
 
 func (cfg *Debug) validate(errs []error) []error {
@@ -735,7 +735,7 @@ func (cfg *Configuration) AccountDefaultsJSON() json.RawMessage {
 	return cfg.accountDefaultsJSON
 }
 
-// Allows for protocol relative URL if scheme is empty
+// GetBaseURL allows for protocol relative URL if scheme is empty
 func (cfg *Cache) GetBaseURL() string {
 	cfg.Scheme = strings.ToLower(cfg.Scheme)
 	if strings.Contains(cfg.Scheme, "https") {

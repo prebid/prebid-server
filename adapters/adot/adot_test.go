@@ -16,7 +16,7 @@ const testsBidderEndpoint = "https://dsp.adotmob.com/headerbidding{PUBLISHER_PAT
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAdot, config.Adapter{
-		Endpoint: testsBidderEndpoint}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, Datacenter: "2"})
+		Endpoint: testsBidderEndpoint}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -38,7 +38,7 @@ func TestMediaTypeError(t *testing.T) {
 
 func TestBidResponseNoContent(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAdot, config.Adapter{
-		Endpoint: "https://dsp.adotmob.com/headerbidding{PUBLISHER_PATH}/bidrequest"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, Datacenter: "2"})
+		Endpoint: "https://dsp.adotmob.com/headerbidding{PUBLISHER_PATH}/bidrequest"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)

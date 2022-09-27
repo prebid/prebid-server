@@ -86,7 +86,7 @@ func TestBuildBidders(t *testing.T) {
 	rubiconBidder := fakeBidder{"b"}
 	rubiconBuilder := fakeBuilder{rubiconBidder, nil}.Builder
 
-	server := config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, Datacenter: "2"}
+	server := config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"}
 
 	testCases := []struct {
 		description     string

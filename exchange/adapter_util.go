@@ -11,7 +11,7 @@ import (
 )
 
 func BuildAdapters(client *http.Client, cfg *config.Configuration, infos config.BidderInfos, me metrics.MetricsEngine) (map[openrtb_ext.BidderName]AdaptedBidder, []error) {
-	server := config.Server{ExternalUrl: cfg.ExternalURL, GvlID: cfg.GDPR.HostVendorID, Datacenter: cfg.Datacenter}
+	server := config.Server{ExternalUrl: cfg.ExternalURL, GvlID: cfg.GDPR.HostVendorID, DataCenter: cfg.DataCenter}
 	bidders, errs := buildBidders(infos, newAdapterBuilders(), server)
 
 	if len(errs) > 0 {

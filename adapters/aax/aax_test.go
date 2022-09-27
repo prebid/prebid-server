@@ -14,7 +14,7 @@ func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAax, config.Adapter{
 		Endpoint:         "https://example.aax.media/rtb/prebid",
 		ExtraAdapterInfo: "http://localhost:8080/extrnal_url",
-	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, Datacenter: "2"})
+	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -25,7 +25,7 @@ func TestJsonSamples(t *testing.T) {
 
 func TestEndpointTemplateMalformed(t *testing.T) {
 	_, buildErr := Builder(openrtb_ext.BidderAax, config.Adapter{
-		Endpoint: "{{Malformed}}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, Datacenter: "2"})
+		Endpoint: "{{Malformed}}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	assert.Nil(t, buildErr)
 }
