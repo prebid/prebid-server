@@ -10,6 +10,7 @@ import (
 
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/router"
 	"github.com/prebid/prebid-server/server"
 	"github.com/prebid/prebid-server/util/task"
@@ -59,7 +60,7 @@ const infoDirectory = "./static/bidder-info"
 func loadConfig(bidderInfos config.BidderInfos) (*config.Configuration, error) {
 	v := viper.New()
 	config.SetupViper(v, configFileName, bidderInfos)
-	return config.New(v, bidderInfos)
+	return config.New(v, bidderInfos, openrtb_ext.NormalizeBidderName)
 }
 
 func serve(cfg *config.Configuration) error {

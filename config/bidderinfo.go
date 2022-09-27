@@ -9,6 +9,7 @@ import (
 	"github.com/prebid/prebid-server/util/sliceutil"
 	"io/ioutil"
 	"log"
+	"path/filepath"
 	"strings"
 	"text/template"
 
@@ -190,7 +191,7 @@ func (r InfoReaderFromDisk) Read() (map[string][]byte, error) {
 			continue //ignore directories
 		}
 		fileName := bidderConfig.Name()
-		filePath := fmt.Sprintf("%v/%v", r.Path, fileName)
+		filePath := filepath.Join(r.Path, fileName)
 		data, err := ioutil.ReadFile(filePath)
 		if err != nil {
 			return nil, err
@@ -206,10 +207,10 @@ func LoadBidderInfoFromDisk(path string) (BidderInfos, error) {
 }
 
 func LoadBidderInfo(reader InfoReader) (BidderInfos, error) {
-	return processBidderInfos(reader)
+	return processBidderInfos(reader, openrtb_ext.NormalizeBidderName)
 }
 
-func processBidderInfos(reader InfoReader) (BidderInfos, error) {
+func processBidderInfos(reader InfoReader, normalizeBidderName func(string) (openrtb_ext.BidderName, bool)) (BidderInfos, error) {
 	bidderConfigs, err := reader.Read()
 	if err != nil {
 		return nil, fmt.Errorf("error loading bidders data")
@@ -225,9 +226,9 @@ func processBidderInfos(reader InfoReader) (BidderInfos, error) {
 
 		bidderName := strings.Split(fileName, ".")
 		if len(bidderName) == 2 && bidderName[1] == "yaml" {
-			normalizedBidderName, bidderNameExists := openrtb_ext.NormalizeBidderName(bidderName[0])
+			normalizedBidderName, bidderNameExists := normalizeBidderName(bidderName[0])
 			if !bidderNameExists {
-				return nil, fmt.Errorf("error finding bidder %s in bidders list", fileName)
+				return nil, fmt.Errorf("error parsing config for bidder %s: unknown bidder", fileName)
 			}
 			infos[string(normalizedBidderName)] = info
 		}
@@ -377,11 +378,11 @@ func validateSyncer(bidderInfo BidderInfo) error {
 	return nil
 }
 
-func applyBidderInfoConfigOverrides(configBidderInfos BidderInfos, fsBidderInfos BidderInfos) (BidderInfos, error) {
+func applyBidderInfoConfigOverrides(configBidderInfos BidderInfos, fsBidderInfos BidderInfos, normalizeBidderName func(string) (openrtb_ext.BidderName, bool)) (BidderInfos, error) {
 	for bidderName, bidderInfo := range configBidderInfos {
-		normalizedBidderName, bidderNameExists := openrtb_ext.NormalizeBidderName(bidderName)
+		normalizedBidderName, bidderNameExists := normalizeBidderName(bidderName)
 		if !bidderNameExists {
-			return nil, fmt.Errorf("error finding bidder in bidders list by bidder name loaded in configs for bidder %s. Configs include data in environment variables and pbs.json or pbs.yaml files", bidderName)
+			return nil, fmt.Errorf("error setting configuration for bidder %s: unknown bidder", bidderName)
 		}
 		if fsBidderCfg, exists := fsBidderInfos[string(normalizedBidderName)]; exists {
 			bidderInfo.Syncer = bidderInfo.Syncer.Override(fsBidderCfg.Syncer)
@@ -470,7 +471,7 @@ func applyBidderInfoConfigOverrides(configBidderInfos BidderInfos, fsBidderInfos
 
 			fsBidderInfos[string(normalizedBidderName)] = bidderInfo
 		} else {
-			return nil, fmt.Errorf("error finding bidder in bidders list by bidder name loaded from file system for bidder %s. Configs include data in environment variables and pbs.json or pbs.yaml files", bidderName)
+			return nil, fmt.Errorf("error setting configuration for bidder %s: unknown bidder", bidderName)
 		}
 	}
 	return fsBidderInfos, nil

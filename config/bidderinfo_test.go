@@ -40,7 +40,7 @@ experiment:
 endpointCompression: "GZIP"
 `
 
-func TestValidLoadBidderInfoFromDisk(t *testing.T) {
+func TestLoadBidderInfoFromDisk(t *testing.T) {
 	// should appear in result in mixed case
 	bidder := "stroeerCore"
 	trueValue := true
@@ -99,10 +99,10 @@ func TestProcessBidderInfo(t *testing.T) {
 		{
 			description: "Valid bidder info",
 			bidderInfos: map[string][]byte{
-				"appnexus.yaml": []byte(testSimpleYAML),
+				"bidderA.yaml": []byte(testSimpleYAML),
 			},
 			expectedBidderInfos: BidderInfos{
-				"appnexus": BidderInfo{
+				"bidderA": BidderInfo{
 					Maintainer: &MaintainerInfo{
 						Email: "some-email@domain.com",
 					},
@@ -114,15 +114,15 @@ func TestProcessBidderInfo(t *testing.T) {
 		{
 			description: "Bidder doesn't exist in bidder info list",
 			bidderInfos: map[string][]byte{
-				"bidderA.yaml": []byte(testSimpleYAML),
+				"unknown.yaml": []byte(testSimpleYAML),
 			},
 			expectedBidderInfos: nil,
-			expectError:         "error finding bidder bidderA.yaml in bidders list",
+			expectError:         "error parsing config for bidder unknown.yaml",
 		},
 		{
 			description: "Invalid bidder config",
 			bidderInfos: map[string][]byte{
-				"bidderA.yaml": []byte("invalid bidder confir"),
+				"bidderA.yaml": []byte("invalid bidder config"),
 			},
 			expectedBidderInfos: nil,
 			expectError:         "error parsing config for bidder bidderA.yaml",
@@ -130,7 +130,7 @@ func TestProcessBidderInfo(t *testing.T) {
 	}
 	for _, test := range testCases {
 		reader := MockInfoReader{test.bidderInfos}
-		bidderInfos, err := processBidderInfos(reader)
+		bidderInfos, err := processBidderInfos(reader, mockNormalizeBidderName)
 		if test.expectError != "" {
 			assert.ErrorContains(t, err, test.expectError, "")
 		} else {
@@ -147,6 +147,20 @@ type MockInfoReader struct {
 
 func (r MockInfoReader) Read() (map[string][]byte, error) {
 	return r.mockBidderInfos, nil
+}
+
+var testBidderNames = map[string]openrtb_ext.BidderName{
+	"biddera": openrtb_ext.BidderName("bidderA"),
+	"bidderb": openrtb_ext.BidderName("bidderB"),
+	"bidder1": openrtb_ext.BidderName("bidder1"),
+	"bidder2": openrtb_ext.BidderName("bidder2"),
+	"a":       openrtb_ext.BidderName("a"),
+}
+
+func mockNormalizeBidderName(name string) (openrtb_ext.BidderName, bool) {
+	nameLower := strings.ToLower(name)
+	bidderName, exists := testBidderNames[nameLower]
+	return bidderName, exists
 }
 
 func TestToGVLVendorIDMap(t *testing.T) {
@@ -697,62 +711,62 @@ func TestApplyBidderInfoConfigSyncerOverrides(t *testing.T) {
 	}{
 		{
 			description:            "Syncer Override",
-			givenFsBidderInfos:     BidderInfos{"appnexus": {Syncer: &Syncer{Key: "original"}}},
-			givenConfigBidderInfos: BidderInfos{"appnexus": {Syncer: &Syncer{Key: "override"}}},
-			expectedBidderInfos:    BidderInfos{"appnexus": {Syncer: &Syncer{Key: "override"}}},
+			givenFsBidderInfos:     BidderInfos{"a": {Syncer: &Syncer{Key: "original"}}},
+			givenConfigBidderInfos: BidderInfos{"a": {Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos:    BidderInfos{"a": {Syncer: &Syncer{Key: "override"}}},
 		},
 		{
 			description:            "UserSyncURL Override IFrame",
-			givenFsBidderInfos:     BidderInfos{"appnexus": {Syncer: &Syncer{IFrame: &SyncerEndpoint{URL: "original"}}}},
-			givenConfigBidderInfos: BidderInfos{"appnexus": {UserSyncURL: "override"}},
-			expectedBidderInfos:    BidderInfos{"appnexus": {UserSyncURL: "override", Syncer: &Syncer{IFrame: &SyncerEndpoint{URL: "override"}}}},
+			givenFsBidderInfos:     BidderInfos{"a": {Syncer: &Syncer{IFrame: &SyncerEndpoint{URL: "original"}}}},
+			givenConfigBidderInfos: BidderInfos{"a": {UserSyncURL: "override"}},
+			expectedBidderInfos:    BidderInfos{"a": {UserSyncURL: "override", Syncer: &Syncer{IFrame: &SyncerEndpoint{URL: "override"}}}},
 		},
 		{
 			description:            "UserSyncURL Supports IFrame",
-			givenFsBidderInfos:     BidderInfos{"appnexus": {Syncer: &Syncer{Supports: []string{"iframe"}}}},
-			givenConfigBidderInfos: BidderInfos{"appnexus": {UserSyncURL: "override"}},
-			expectedBidderInfos:    BidderInfos{"appnexus": {UserSyncURL: "override", Syncer: &Syncer{Supports: []string{"iframe"}, IFrame: &SyncerEndpoint{URL: "override"}}}},
+			givenFsBidderInfos:     BidderInfos{"a": {Syncer: &Syncer{Supports: []string{"iframe"}}}},
+			givenConfigBidderInfos: BidderInfos{"a": {UserSyncURL: "override"}},
+			expectedBidderInfos:    BidderInfos{"a": {UserSyncURL: "override", Syncer: &Syncer{Supports: []string{"iframe"}, IFrame: &SyncerEndpoint{URL: "override"}}}},
 		},
 		{
 			description:            "UserSyncURL Override Redirect",
-			givenFsBidderInfos:     BidderInfos{"appnexus": {Syncer: &Syncer{Supports: []string{"redirect"}}}},
-			givenConfigBidderInfos: BidderInfos{"appnexus": {UserSyncURL: "override"}},
-			expectedBidderInfos:    BidderInfos{"appnexus": {UserSyncURL: "override", Syncer: &Syncer{Supports: []string{"redirect"}, Redirect: &SyncerEndpoint{URL: "override"}}}},
+			givenFsBidderInfos:     BidderInfos{"a": {Syncer: &Syncer{Supports: []string{"redirect"}}}},
+			givenConfigBidderInfos: BidderInfos{"a": {UserSyncURL: "override"}},
+			expectedBidderInfos:    BidderInfos{"a": {UserSyncURL: "override", Syncer: &Syncer{Supports: []string{"redirect"}, Redirect: &SyncerEndpoint{URL: "override"}}}},
 		},
 		{
 			description:            "UserSyncURL Supports Redirect",
-			givenFsBidderInfos:     BidderInfos{"appnexus": {Syncer: &Syncer{Redirect: &SyncerEndpoint{URL: "original"}}}},
-			givenConfigBidderInfos: BidderInfos{"appnexus": {UserSyncURL: "override"}},
-			expectedBidderInfos:    BidderInfos{"appnexus": {UserSyncURL: "override", Syncer: &Syncer{Redirect: &SyncerEndpoint{URL: "override"}}}},
+			givenFsBidderInfos:     BidderInfos{"a": {Syncer: &Syncer{Redirect: &SyncerEndpoint{URL: "original"}}}},
+			givenConfigBidderInfos: BidderInfos{"a": {UserSyncURL: "override"}},
+			expectedBidderInfos:    BidderInfos{"a": {UserSyncURL: "override", Syncer: &Syncer{Redirect: &SyncerEndpoint{URL: "override"}}}},
 		},
 		{
 			description:            "UserSyncURL Override Syncer Not Defined",
-			givenFsBidderInfos:     BidderInfos{"appnexus": {}},
-			givenConfigBidderInfos: BidderInfos{"appnexus": {UserSyncURL: "override"}},
-			expectedError:          "adapters.appnexus.usersync_url cannot be applied, bidder does not define a user sync",
+			givenFsBidderInfos:     BidderInfos{"a": {}},
+			givenConfigBidderInfos: BidderInfos{"a": {UserSyncURL: "override"}},
+			expectedError:          "adapters.a.usersync_url cannot be applied, bidder does not define a user sync",
 		},
 		{
 			description:            "UserSyncURL Override Syncer Endpoints Not Defined",
-			givenFsBidderInfos:     BidderInfos{"appnexus": {Syncer: &Syncer{}}},
-			givenConfigBidderInfos: BidderInfos{"appnexus": {UserSyncURL: "override"}},
-			expectedError:          "adapters.appnexus.usersync_url cannot be applied, bidder does not define user sync endpoints and does not define supported endpoints",
+			givenFsBidderInfos:     BidderInfos{"a": {Syncer: &Syncer{}}},
+			givenConfigBidderInfos: BidderInfos{"a": {UserSyncURL: "override"}},
+			expectedError:          "adapters.a.usersync_url cannot be applied, bidder does not define user sync endpoints and does not define supported endpoints",
 		},
 		{
 			description:            "UserSyncURL Override Ambiguous",
-			givenFsBidderInfos:     BidderInfos{"appnexus": {Syncer: &Syncer{IFrame: &SyncerEndpoint{URL: "originalIFrame"}, Redirect: &SyncerEndpoint{URL: "originalRedirect"}}}},
-			givenConfigBidderInfos: BidderInfos{"appnexus": {UserSyncURL: "override"}},
-			expectedError:          "adapters.appnexus.usersync_url cannot be applied, bidder defines multiple user sync endpoints or supports multiple endpoints",
+			givenFsBidderInfos:     BidderInfos{"a": {Syncer: &Syncer{IFrame: &SyncerEndpoint{URL: "originalIFrame"}, Redirect: &SyncerEndpoint{URL: "originalRedirect"}}}},
+			givenConfigBidderInfos: BidderInfos{"a": {UserSyncURL: "override"}},
+			expectedError:          "adapters.a.usersync_url cannot be applied, bidder defines multiple user sync endpoints or supports multiple endpoints",
 		},
 		{
 			description:            "UserSyncURL Supports Ambiguous",
-			givenFsBidderInfos:     BidderInfos{"appnexus": {Syncer: &Syncer{Supports: []string{"iframe", "redirect"}}}},
-			givenConfigBidderInfos: BidderInfos{"appnexus": {UserSyncURL: "override"}},
-			expectedError:          "adapters.appnexus.usersync_url cannot be applied, bidder defines multiple user sync endpoints or supports multiple endpoints",
+			givenFsBidderInfos:     BidderInfos{"a": {Syncer: &Syncer{Supports: []string{"iframe", "redirect"}}}},
+			givenConfigBidderInfos: BidderInfos{"a": {UserSyncURL: "override"}},
+			expectedError:          "adapters.a.usersync_url cannot be applied, bidder defines multiple user sync endpoints or supports multiple endpoints",
 		},
 	}
 
 	for _, test := range testCases {
-		bidderInfos, resultErr := applyBidderInfoConfigOverrides(test.givenConfigBidderInfos, test.givenFsBidderInfos)
+		bidderInfos, resultErr := applyBidderInfoConfigOverrides(test.givenConfigBidderInfos, test.givenFsBidderInfos, mockNormalizeBidderName)
 		if test.expectedError == "" {
 			assert.NoError(t, resultErr, test.description+":err")
 			assert.Equal(t, test.expectedBidderInfos, bidderInfos, test.description+":result")
@@ -772,149 +786,149 @@ func TestApplyBidderInfoConfigOverrides(t *testing.T) {
 	}{
 		{
 			description:            "Don't override endpoint",
-			givenFsBidderInfos:     BidderInfos{"appnexus": {Endpoint: "original"}},
-			givenConfigBidderInfos: BidderInfos{"appnexus": {Syncer: &Syncer{Key: "override"}}},
-			expectedBidderInfos:    BidderInfos{"appnexus": {Endpoint: "original", Syncer: &Syncer{Key: "override"}}},
+			givenFsBidderInfos:     BidderInfos{"a": {Endpoint: "original"}},
+			givenConfigBidderInfos: BidderInfos{"a": {Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos:    BidderInfos{"a": {Endpoint: "original", Syncer: &Syncer{Key: "override"}}},
 		},
 		{
 			description:            "Override endpoint",
-			givenFsBidderInfos:     BidderInfos{"appnexus": {Endpoint: "original"}},
-			givenConfigBidderInfos: BidderInfos{"appnexus": {Endpoint: "override", Syncer: &Syncer{Key: "override"}}},
-			expectedBidderInfos:    BidderInfos{"appnexus": {Endpoint: "override", Syncer: &Syncer{Key: "override"}}},
+			givenFsBidderInfos:     BidderInfos{"a": {Endpoint: "original"}},
+			givenConfigBidderInfos: BidderInfos{"a": {Endpoint: "override", Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos:    BidderInfos{"a": {Endpoint: "override", Syncer: &Syncer{Key: "override"}}},
 		},
 		{
 			description:            "Don't override ExtraAdapterInfo",
-			givenFsBidderInfos:     BidderInfos{"appnexus": {ExtraAdapterInfo: "original"}},
-			givenConfigBidderInfos: BidderInfos{"appnexus": {Syncer: &Syncer{Key: "override"}}},
-			expectedBidderInfos:    BidderInfos{"appnexus": {ExtraAdapterInfo: "original", Syncer: &Syncer{Key: "override"}}},
+			givenFsBidderInfos:     BidderInfos{"a": {ExtraAdapterInfo: "original"}},
+			givenConfigBidderInfos: BidderInfos{"a": {Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos:    BidderInfos{"a": {ExtraAdapterInfo: "original", Syncer: &Syncer{Key: "override"}}},
 		},
 		{
 			description:            "Override ExtraAdapterInfo",
-			givenFsBidderInfos:     BidderInfos{"appnexus": {ExtraAdapterInfo: "original"}},
-			givenConfigBidderInfos: BidderInfos{"appnexus": {ExtraAdapterInfo: "override", Syncer: &Syncer{Key: "override"}}},
-			expectedBidderInfos:    BidderInfos{"appnexus": {ExtraAdapterInfo: "override", Syncer: &Syncer{Key: "override"}}},
+			givenFsBidderInfos:     BidderInfos{"a": {ExtraAdapterInfo: "original"}},
+			givenConfigBidderInfos: BidderInfos{"a": {ExtraAdapterInfo: "override", Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos:    BidderInfos{"a": {ExtraAdapterInfo: "override", Syncer: &Syncer{Key: "override"}}},
 		},
 		{
 			description:            "Don't override Maintainer",
-			givenFsBidderInfos:     BidderInfos{"appnexus": {Maintainer: &MaintainerInfo{Email: "original"}}},
-			givenConfigBidderInfos: BidderInfos{"appnexus": {Syncer: &Syncer{Key: "override"}}},
-			expectedBidderInfos:    BidderInfos{"appnexus": {Maintainer: &MaintainerInfo{Email: "original"}, Syncer: &Syncer{Key: "override"}}},
+			givenFsBidderInfos:     BidderInfos{"a": {Maintainer: &MaintainerInfo{Email: "original"}}},
+			givenConfigBidderInfos: BidderInfos{"a": {Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos:    BidderInfos{"a": {Maintainer: &MaintainerInfo{Email: "original"}, Syncer: &Syncer{Key: "override"}}},
 		},
 		{
 			description:            "Override maintainer",
-			givenFsBidderInfos:     BidderInfos{"appnexus": {Maintainer: &MaintainerInfo{Email: "original"}}},
-			givenConfigBidderInfos: BidderInfos{"appnexus": {Maintainer: &MaintainerInfo{Email: "override"}, Syncer: &Syncer{Key: "override"}}},
-			expectedBidderInfos:    BidderInfos{"appnexus": {Maintainer: &MaintainerInfo{Email: "override"}, Syncer: &Syncer{Key: "override"}}},
+			givenFsBidderInfos:     BidderInfos{"a": {Maintainer: &MaintainerInfo{Email: "original"}}},
+			givenConfigBidderInfos: BidderInfos{"a": {Maintainer: &MaintainerInfo{Email: "override"}, Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos:    BidderInfos{"a": {Maintainer: &MaintainerInfo{Email: "override"}, Syncer: &Syncer{Key: "override"}}},
 		},
 		{
 			description: "Don't override Capabilities",
-			givenFsBidderInfos: BidderInfos{"appnexus": {
+			givenFsBidderInfos: BidderInfos{"a": {
 				Capabilities: &CapabilitiesInfo{App: &PlatformInfo{MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeVideo}}},
 			}},
-			givenConfigBidderInfos: BidderInfos{"appnexus": {Syncer: &Syncer{Key: "override"}}},
-			expectedBidderInfos: BidderInfos{"appnexus": {
+			givenConfigBidderInfos: BidderInfos{"a": {Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos: BidderInfos{"a": {
 				Syncer:       &Syncer{Key: "override"},
 				Capabilities: &CapabilitiesInfo{App: &PlatformInfo{MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeVideo}}},
 			}},
 		},
 		{
 			description: "Override Capabilities",
-			givenFsBidderInfos: BidderInfos{"appnexus": {
+			givenFsBidderInfos: BidderInfos{"a": {
 				Capabilities: &CapabilitiesInfo{App: &PlatformInfo{MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeVideo}}},
 			}},
-			givenConfigBidderInfos: BidderInfos{"appnexus": {
+			givenConfigBidderInfos: BidderInfos{"a": {
 				Syncer:       &Syncer{Key: "override"},
 				Capabilities: &CapabilitiesInfo{App: &PlatformInfo{MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner}}},
 			}},
-			expectedBidderInfos: BidderInfos{"appnexus": {
+			expectedBidderInfos: BidderInfos{"a": {
 				Syncer:       &Syncer{Key: "override"},
 				Capabilities: &CapabilitiesInfo{App: &PlatformInfo{MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner}}},
 			}},
 		},
 		{
 			description:            "Don't override Debug",
-			givenFsBidderInfos:     BidderInfos{"appnexus": {Debug: &DebugInfo{Allow: true}}},
-			givenConfigBidderInfos: BidderInfos{"appnexus": {Syncer: &Syncer{Key: "override"}}},
-			expectedBidderInfos:    BidderInfos{"appnexus": {Debug: &DebugInfo{Allow: true}, Syncer: &Syncer{Key: "override"}}},
+			givenFsBidderInfos:     BidderInfos{"a": {Debug: &DebugInfo{Allow: true}}},
+			givenConfigBidderInfos: BidderInfos{"a": {Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos:    BidderInfos{"a": {Debug: &DebugInfo{Allow: true}, Syncer: &Syncer{Key: "override"}}},
 		},
 		{
 			description:            "Override Debug",
-			givenFsBidderInfos:     BidderInfos{"appnexus": {Debug: &DebugInfo{Allow: true}}},
-			givenConfigBidderInfos: BidderInfos{"appnexus": {Debug: &DebugInfo{Allow: false}, Syncer: &Syncer{Key: "override"}}},
-			expectedBidderInfos:    BidderInfos{"appnexus": {Debug: &DebugInfo{Allow: false}, Syncer: &Syncer{Key: "override"}}},
+			givenFsBidderInfos:     BidderInfos{"a": {Debug: &DebugInfo{Allow: true}}},
+			givenConfigBidderInfos: BidderInfos{"a": {Debug: &DebugInfo{Allow: false}, Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos:    BidderInfos{"a": {Debug: &DebugInfo{Allow: false}, Syncer: &Syncer{Key: "override"}}},
 		},
 		{
 			description:            "Don't override GVLVendorID",
-			givenFsBidderInfos:     BidderInfos{"appnexus": {GVLVendorID: 5}},
-			givenConfigBidderInfos: BidderInfos{"appnexus": {Syncer: &Syncer{Key: "override"}}},
-			expectedBidderInfos:    BidderInfos{"appnexus": {GVLVendorID: 5, Syncer: &Syncer{Key: "override"}}},
+			givenFsBidderInfos:     BidderInfos{"a": {GVLVendorID: 5}},
+			givenConfigBidderInfos: BidderInfos{"a": {Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos:    BidderInfos{"a": {GVLVendorID: 5, Syncer: &Syncer{Key: "override"}}},
 		},
 		{
 			description:            "Override GVLVendorID",
-			givenFsBidderInfos:     BidderInfos{"appnexus": {}},
-			givenConfigBidderInfos: BidderInfos{"appnexus": {GVLVendorID: 5, Syncer: &Syncer{Key: "override"}}},
-			expectedBidderInfos:    BidderInfos{"appnexus": {GVLVendorID: 5, Syncer: &Syncer{Key: "override"}}},
+			givenFsBidderInfos:     BidderInfos{"a": {}},
+			givenConfigBidderInfos: BidderInfos{"a": {GVLVendorID: 5, Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos:    BidderInfos{"a": {GVLVendorID: 5, Syncer: &Syncer{Key: "override"}}},
 		},
 		{
 			description: "Don't override XAPI",
-			givenFsBidderInfos: BidderInfos{"appnexus": {
+			givenFsBidderInfos: BidderInfos{"a": {
 				XAPI: AdapterXAPI{Username: "username1", Password: "password2", Tracker: "tracker3"},
 			}},
-			givenConfigBidderInfos: BidderInfos{"appnexus": {Syncer: &Syncer{Key: "override"}}},
-			expectedBidderInfos: BidderInfos{"appnexus": {
+			givenConfigBidderInfos: BidderInfos{"a": {Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos: BidderInfos{"a": {
 				XAPI:   AdapterXAPI{Username: "username1", Password: "password2", Tracker: "tracker3"},
 				Syncer: &Syncer{Key: "override"}}},
 		},
 		{
 			description: "Override XAPI",
-			givenFsBidderInfos: BidderInfos{"appnexus": {
+			givenFsBidderInfos: BidderInfos{"a": {
 				XAPI: AdapterXAPI{Username: "username", Password: "password", Tracker: "tracker"}}},
-			givenConfigBidderInfos: BidderInfos{"appnexus": {
+			givenConfigBidderInfos: BidderInfos{"a": {
 				XAPI:   AdapterXAPI{Username: "username1", Password: "password2", Tracker: "tracker3"},
 				Syncer: &Syncer{Key: "override"}}},
-			expectedBidderInfos: BidderInfos{"appnexus": {
+			expectedBidderInfos: BidderInfos{"a": {
 				XAPI:   AdapterXAPI{Username: "username1", Password: "password2", Tracker: "tracker3"},
 				Syncer: &Syncer{Key: "override"}}},
 		},
 		{
 			description:            "Don't override PlatformID",
-			givenFsBidderInfos:     BidderInfos{"appnexus": {PlatformID: "PlatformID"}},
-			givenConfigBidderInfos: BidderInfos{"appnexus": {Syncer: &Syncer{Key: "override"}}},
-			expectedBidderInfos:    BidderInfos{"appnexus": {PlatformID: "PlatformID", Syncer: &Syncer{Key: "override"}}},
+			givenFsBidderInfos:     BidderInfos{"a": {PlatformID: "PlatformID"}},
+			givenConfigBidderInfos: BidderInfos{"a": {Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos:    BidderInfos{"a": {PlatformID: "PlatformID", Syncer: &Syncer{Key: "override"}}},
 		},
 		{
 			description:            "Override PlatformID",
-			givenFsBidderInfos:     BidderInfos{"appnexus": {PlatformID: "PlatformID1"}},
-			givenConfigBidderInfos: BidderInfos{"appnexus": {PlatformID: "PlatformID2", Syncer: &Syncer{Key: "override"}}},
-			expectedBidderInfos:    BidderInfos{"appnexus": {PlatformID: "PlatformID2", Syncer: &Syncer{Key: "override"}}},
+			givenFsBidderInfos:     BidderInfos{"a": {PlatformID: "PlatformID1"}},
+			givenConfigBidderInfos: BidderInfos{"a": {PlatformID: "PlatformID2", Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos:    BidderInfos{"a": {PlatformID: "PlatformID2", Syncer: &Syncer{Key: "override"}}},
 		},
 		{
 			description:            "Don't override AppSecret",
-			givenFsBidderInfos:     BidderInfos{"appnexus": {AppSecret: "AppSecret"}},
-			givenConfigBidderInfos: BidderInfos{"appnexus": {Syncer: &Syncer{Key: "override"}}},
-			expectedBidderInfos:    BidderInfos{"appnexus": {AppSecret: "AppSecret", Syncer: &Syncer{Key: "override"}}},
+			givenFsBidderInfos:     BidderInfos{"a": {AppSecret: "AppSecret"}},
+			givenConfigBidderInfos: BidderInfos{"a": {Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos:    BidderInfos{"a": {AppSecret: "AppSecret", Syncer: &Syncer{Key: "override"}}},
 		},
 		{
 			description:            "Override AppSecret",
-			givenFsBidderInfos:     BidderInfos{"appnexus": {AppSecret: "AppSecret1"}},
-			givenConfigBidderInfos: BidderInfos{"appnexus": {AppSecret: "AppSecret2", Syncer: &Syncer{Key: "override"}}},
-			expectedBidderInfos:    BidderInfos{"appnexus": {AppSecret: "AppSecret2", Syncer: &Syncer{Key: "override"}}},
+			givenFsBidderInfos:     BidderInfos{"a": {AppSecret: "AppSecret1"}},
+			givenConfigBidderInfos: BidderInfos{"a": {AppSecret: "AppSecret2", Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos:    BidderInfos{"a": {AppSecret: "AppSecret2", Syncer: &Syncer{Key: "override"}}},
 		},
 		{
 			description:            "Don't override EndpointCompression",
-			givenFsBidderInfos:     BidderInfos{"appnexus": {EndpointCompression: "GZIP"}},
-			givenConfigBidderInfos: BidderInfos{"appnexus": {Syncer: &Syncer{Key: "override"}}},
-			expectedBidderInfos:    BidderInfos{"appnexus": {EndpointCompression: "GZIP", Syncer: &Syncer{Key: "override"}}},
+			givenFsBidderInfos:     BidderInfos{"a": {EndpointCompression: "GZIP"}},
+			givenConfigBidderInfos: BidderInfos{"a": {Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos:    BidderInfos{"a": {EndpointCompression: "GZIP", Syncer: &Syncer{Key: "override"}}},
 		},
 		{
 			description:            "Override EndpointCompression",
-			givenFsBidderInfos:     BidderInfos{"appnexus": {EndpointCompression: "GZIP"}},
-			givenConfigBidderInfos: BidderInfos{"appnexus": {EndpointCompression: "LZ77", Syncer: &Syncer{Key: "override"}}},
-			expectedBidderInfos:    BidderInfos{"appnexus": {EndpointCompression: "LZ77", Syncer: &Syncer{Key: "override"}}},
+			givenFsBidderInfos:     BidderInfos{"a": {EndpointCompression: "GZIP"}},
+			givenConfigBidderInfos: BidderInfos{"a": {EndpointCompression: "LZ77", Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos:    BidderInfos{"a": {EndpointCompression: "LZ77", Syncer: &Syncer{Key: "override"}}},
 		},
 	}
 	for _, test := range testCases {
-		bidderInfos, resultErr := applyBidderInfoConfigOverrides(test.givenConfigBidderInfos, test.givenFsBidderInfos)
+		bidderInfos, resultErr := applyBidderInfoConfigOverrides(test.givenConfigBidderInfos, test.givenFsBidderInfos, mockNormalizeBidderName)
 		assert.NoError(t, resultErr, test.description+":err")
 		assert.Equal(t, test.expectedBidderInfos, bidderInfos, test.description+":result")
 	}
@@ -930,27 +944,27 @@ func TestApplyBidderInfoConfigOverridesInvalid(t *testing.T) {
 	}{
 		{
 			description:            "Don't override endpoint",
-			givenConfigBidderInfos: BidderInfos{"bidderA": {Syncer: &Syncer{Key: "override"}}},
-			expectedError:          "error finding bidder in bidders list by bidder name loaded in configs for bidder bidderA.",
+			givenConfigBidderInfos: BidderInfos{"unknown": {Syncer: &Syncer{Key: "override"}}},
+			expectedError:          "error setting configuration for bidder unknown: unknown bidder",
 		},
 		{
 			description:            "Don't override endpoint",
-			givenFsBidderInfos:     BidderInfos{"bidderA": {Endpoint: "original"}},
-			givenConfigBidderInfos: BidderInfos{"appnexus": {Syncer: &Syncer{Key: "override"}}},
-			expectedError:          "error finding bidder in bidders list by bidder name loaded from file system for bidder appnexus",
+			givenFsBidderInfos:     BidderInfos{"unknown": {Endpoint: "original"}},
+			givenConfigBidderInfos: BidderInfos{"bidderA": {Syncer: &Syncer{Key: "override"}}},
+			expectedError:          "error setting configuration for bidder bidderA: unknown bidder",
 		},
 	}
 	for _, test := range testCases {
-		_, err := applyBidderInfoConfigOverrides(test.givenConfigBidderInfos, test.givenFsBidderInfos)
+		_, err := applyBidderInfoConfigOverrides(test.givenConfigBidderInfos, test.givenFsBidderInfos, mockNormalizeBidderName)
 		assert.ErrorContains(t, err, test.expectedError, test.description+":err")
 	}
 }
 
 func TestReadFullYamlBidderConfig(t *testing.T) {
-	bidder := "appnexus"
+	bidder := "bidderA"
 	bidderInf := BidderInfo{}
 	err := yaml.Unmarshal([]byte(fullBidderYAMLConfig), &bidderInf)
-	actualBidderInfo, err := applyBidderInfoConfigOverrides(BidderInfos{bidder: bidderInf}, BidderInfos{bidder: {Syncer: &Syncer{Supports: []string{"iframe"}}}})
+	actualBidderInfo, err := applyBidderInfoConfigOverrides(BidderInfos{bidder: bidderInf}, BidderInfos{bidder: {Syncer: &Syncer{Supports: []string{"iframe"}}}}, mockNormalizeBidderName)
 
 	assert.NoError(t, err, "Error wasn't expected")
 
