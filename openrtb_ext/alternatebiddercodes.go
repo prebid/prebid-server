@@ -14,29 +14,26 @@ type ExtAdapterAlternateBidderCodes struct {
 }
 
 func (bidderCodes *ExtAlternateBidderCodes) IsValidBidderCode(bidder, alternateBidder string) (bool, error) {
-	const ErrAlternateBidderNotDefined = "alternateBidderCodes not defined for adapter %q, rejecting bids for %q"
-	const ErrAlternateBidderDisabled = "alternateBidderCodes disabled for %q, rejecting bids for %q"
-
 	if alternateBidder == "" || bidder == alternateBidder {
 		return true, nil
 	}
 
 	if !bidderCodes.Enabled {
-		return false, fmt.Errorf(ErrAlternateBidderDisabled, bidder, alternateBidder)
+		return false, alternateBidderDisabledError(bidder, alternateBidder)
 	}
 
 	if bidderCodes.Bidders == nil {
-		return false, fmt.Errorf(ErrAlternateBidderNotDefined, bidder, alternateBidder)
+		return false, alternateBidderNotDefinedError(bidder, alternateBidder)
 	}
 
 	adapterCfg, ok := bidderCodes.Bidders[bidder]
 	if !ok {
-		return false, fmt.Errorf(ErrAlternateBidderNotDefined, bidder, alternateBidder)
+		return false, alternateBidderNotDefinedError(bidder, alternateBidder)
 	}
 
 	if !adapterCfg.Enabled {
 		// config has bidder entry but is not enabled, report it
-		return false, fmt.Errorf(ErrAlternateBidderDisabled, bidder, alternateBidder)
+		return false, alternateBidderDisabledError(bidder, alternateBidder)
 	}
 
 	if adapterCfg.AllowedBidderCodes == nil || (len(adapterCfg.AllowedBidderCodes) == 1 && adapterCfg.AllowedBidderCodes[0] == "*") {
@@ -50,4 +47,12 @@ func (bidderCodes *ExtAlternateBidderCodes) IsValidBidderCode(bidder, alternateB
 	}
 
 	return false, fmt.Errorf("invalid biddercode %q sent by adapter %q", alternateBidder, bidder)
+}
+
+func alternateBidderDisabledError(bidder, alternateBidder string) error {
+	return fmt.Errorf("alternateBidderCodes disabled for %q, rejecting bids for %q", bidder, alternateBidder)
+}
+
+func alternateBidderNotDefinedError(bidder, alternateBidder string) error {
+	return fmt.Errorf("alternateBidderCodes not defined for adapter %q, rejecting bids for %q", bidder, alternateBidder)
 }
