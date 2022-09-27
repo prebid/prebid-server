@@ -55,6 +55,7 @@ type templatePayload struct {
 	Page    string `json:"page"`
 	Referer string `json:"referer"`
 	McAd    string `json:"mcad"`
+	Inver   string `json:"inver"`
 }
 
 // requestImpExt represents the ext field of the request imp field.
@@ -83,10 +84,10 @@ func Builder(_ openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, 
 		`width=device-width, initial-scale=1.0"><style> body { background-color: transparent; margin: 0;` +
 		` padding: 0; }</style><script> window.rekid = {{.SiteId}}; window.slot = {{.SlotId}}; window.ad` +
 		`label = '{{.AdLabel}}'; window.pubid = '{{.PubId}}'; window.wp_sn = 'sspbc_go'; window.page = '` +
-		`{{.Page}}'; window.ref = '{{.Referer}}'; window.mcad = JSON.parse(atob('{{.McAd}}')); window.in` + 
-		`ver = {{.prebidServerIntegrationType}}; </script></head><body><div id="c"></div><script async c` + 
-		`rossorigin nomodule src="//std.wpcdn.pl/wpjslib/wpjslib-inline.js" id="wpjslib"></script><scrip` + 
-		`t async crossorigin type="module" src="//std.wpcdn.pl/wpjslib6/wpjslib-inline.js" id="wpjslib6"` + 
+		`{{.Page}}'; window.ref = '{{.Referer}}'; window.mcad = JSON.parse(atob('{{.McAd}}')); window.in` +
+		`ver = '{{.Inver}}'; </script></head><body><div id="c"></div><script async c` +
+		`rossorigin nomodule src="//std.wpcdn.pl/wpjslib/wpjslib-inline.js" id="wpjslib"></script><scrip` +
+		`t async crossorigin type="module" src="//std.wpcdn.pl/wpjslib6/wpjslib-inline.js" id="wpjslib6"` +
 		`></script></body></html>`
 
 	bannerTemplate, err := template.New("banner").Parse(bannerHTML)
@@ -255,6 +256,7 @@ func (a *adapter) createBannerAd(bid openrtb2.Bid, ext responseExt, request *ope
 		Page:    request.Site.Page,
 		Referer: request.Site.Ref,
 		McAd:    base64.URLEncoding.EncodeToString(mcMarshalled),
+		Inver:   prebidServerIntegrationType,
 	}
 
 	var filledTemplate bytes.Buffer
