@@ -32,6 +32,10 @@ const (
 
 func getFloorCurrency(floorExt *openrtb_ext.PriceFloorRules) string {
 	floorCur := "USD"
+	if floorExt == nil || floorExt.Data == nil {
+		return floorCur
+	}
+
 	if floorExt.Data.Currency != "" {
 		floorCur = floorExt.Data.Currency
 	}
@@ -45,6 +49,10 @@ func getFloorCurrency(floorExt *openrtb_ext.PriceFloorRules) string {
 func getMinFloorValue(floorExt *openrtb_ext.PriceFloorRules, conversions currency.Conversions) (float64, string, error) {
 	var err error
 	var rate float64
+
+	if floorExt == nil {
+		return 0, "USD", err
+	}
 	floorMin := floorExt.FloorMin
 	floorCur := getFloorCurrency(floorExt)
 
@@ -148,6 +156,9 @@ func createRuleKey(floorSchema openrtb_ext.PriceFloorSchema, request *openrtb2.B
 
 func getDeviceType(request *openrtb2.BidRequest) string {
 	value := CATCH_ALL
+	if request.Device == nil || len(request.Device.UA) == 0 {
+		return value
+	}
 	if isMobileDevice(request.Device.UA) {
 		value = Phone
 	} else if isTabletDevice(request.Device.UA) {
@@ -206,13 +217,13 @@ func getDomain(request *openrtb2.BidRequest) string {
 	if request.Site != nil {
 		if len(request.Site.Domain) > 0 {
 			value = request.Site.Domain
-		} else {
+		} else if request.Site.Publisher != nil && len(request.Site.Publisher.Domain) > 0 {
 			value = request.Site.Publisher.Domain
 		}
-	} else {
+	} else if request.App != nil {
 		if len(request.App.Domain) > 0 {
 			value = request.App.Domain
-		} else {
+		} else if request.App.Publisher != nil && len(request.App.Publisher.Domain) > 0 {
 			value = request.App.Publisher.Domain
 		}
 	}
@@ -230,10 +241,10 @@ func getSiteDomain(request *openrtb2.BidRequest) string {
 }
 
 func getPublisherDomain(request *openrtb2.BidRequest) string {
-	var value string
-	if request.Site != nil {
+	value := CATCH_ALL
+	if request.Site != nil && request.Site.Publisher != nil && len(request.Site.Publisher.Domain) > 0 {
 		value = request.Site.Publisher.Domain
-	} else {
+	} else if request.App != nil && request.App.Publisher != nil && len(request.App.Publisher.Domain) > 0 {
 		value = request.App.Publisher.Domain
 	}
 	return value
@@ -241,14 +252,14 @@ func getPublisherDomain(request *openrtb2.BidRequest) string {
 
 func getBundle(request *openrtb2.BidRequest) string {
 	value := CATCH_ALL
-	if request.App != nil {
+	if request.App != nil && len(request.App.Bundle) > 0 {
 		value = request.App.Bundle
 	}
 	return value
 }
 
 func getgptslot(imp openrtb2.Imp) string {
-	var value string
+	value := CATCH_ALL
 	adsname, err := jsonparser.GetString(imp.Ext, "data", "adserver", "name")
 	if err == nil && adsname == "gam" {
 		gptSlot, _ := jsonparser.GetString(imp.Ext, "data", "adserver", "adslot")

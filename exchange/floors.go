@@ -16,7 +16,7 @@ import (
 // Check for Floors enforcement for deals,
 // In case bid wit DealID present and enforceDealFloors = false then bid floor enforcement should be skipped
 func checkDealsForEnforcement(bid *pbsOrtbBid, enforceDealFloors bool) *pbsOrtbBid {
-	if bid.bid.DealID != "" && !enforceDealFloors {
+	if bid != nil && bid.bid != nil && bid.bid.DealID != "" && !enforceDealFloors {
 		return bid
 	}
 	return nil
@@ -83,8 +83,11 @@ func enforceFloorToBids(bidRequest *openrtb2.BidRequest, seatBids map[openrtb_ex
 // Internally validation of floors parameters and validation of rules is done,
 // Based on number of modelGroups and modelWeight, one model is selected and imp.bidfloor and imp.bidfloorcur is updated
 func selectFloorsAndModifyImp(r *AuctionRequest, floor config.PriceFloors, conversions currency.Conversions, responseDebugAllow bool) []error {
-
 	var errs []error
+	if r == nil || r.BidRequestWrapper == nil {
+		return errs
+	}
+
 	requestExt, err := r.BidRequestWrapper.GetRequestExt()
 	if err != nil {
 		errs = append(errs, err)
@@ -122,6 +125,9 @@ func getFloorsFlagFromReqExt(prebidExt *openrtb_ext.ExtRequestPrebid) bool {
 func enforceFloors(r *AuctionRequest, seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, floor config.PriceFloors, conversions currency.Conversions, responseDebugAllow bool) (map[openrtb_ext.BidderName]*pbsOrtbSeatBid, []error) {
 
 	rejectionsErrs := []error{}
+	if r == nil || r.BidRequestWrapper == nil {
+		return seatBids, rejectionsErrs
+	}
 
 	requestExt, err := r.BidRequestWrapper.GetRequestExt()
 	if err != nil {

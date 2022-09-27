@@ -81,6 +81,8 @@ github.com/PubMatic-OpenWrap/etree v1.0.2-0.20210129100623-8f30cfecf9f4 h1:Ehiij
 github.com/PubMatic-OpenWrap/etree v1.0.2-0.20210129100623-8f30cfecf9f4/go.mod h1:5Y8qgcuDoy3XXG907UXkGnVTwihF16rXyJa4zRT7hOE=
 github.com/PubMatic-OpenWrap/openrtb/v16 v16.0.0-ow h1:nBfUxMdLBF/D8kvRrgieaASbnPnZrlPou/ZBACKOog8=
 github.com/PubMatic-OpenWrap/openrtb/v16 v16.0.0-ow/go.mod h1:wjir/n1D39qF0bj1jKjUQJ9oTpdQ53wvvVW7p3Q0qq8=
+github.com/PubMatic-OpenWrap/openrtb/v16 v16.0.0-ow2 h1:NaKQYOnNyWBEiL1S8t4Xin4e+8UM8W/88ww718a5UEI=
+github.com/PubMatic-OpenWrap/openrtb/v16 v16.0.0-ow2/go.mod h1:wjir/n1D39qF0bj1jKjUQJ9oTpdQ53wvvVW7p3Q0qq8=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 h1:JYp7IbQjafoB+tBA3gMyHYHrpOtNuDiK/uB5uXxq5wM=
 github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
