@@ -379,30 +379,30 @@ func TestSetConsentedProviders(t *testing.T) {
 	sampleBidRequest := &openrtb2.BidRequest{}
 
 	testCases := []struct {
-		description         string
-		inAdditionalConsent string
-		inBidRequest        *openrtb2.BidRequest
-		expectedBidRequest  *openrtb2.BidRequest
-		expectedError       bool
+		description            string
+		givenAdditionalConsent string
+		givenBidRequest        *openrtb2.BidRequest
+		expectedBidRequest     *openrtb2.BidRequest
+		expectedError          bool
 	}{
 		{
-			description:         "empty additional consent bid request unmodified",
-			inAdditionalConsent: "",
-			inBidRequest:        sampleBidRequest,
-			expectedBidRequest:  sampleBidRequest,
-			expectedError:       false,
+			description:            "empty additional consent bid request unmodified",
+			givenAdditionalConsent: "",
+			givenBidRequest:        sampleBidRequest,
+			expectedBidRequest:     sampleBidRequest,
+			expectedError:          false,
 		},
 		{
-			description:         "nil bid request, expect error",
-			inAdditionalConsent: "ADDITIONAL_CONSENT_STRING",
-			inBidRequest:        nil,
-			expectedBidRequest:  nil,
-			expectedError:       true,
+			description:            "nil bid request, expect error",
+			givenAdditionalConsent: "ADDITIONAL_CONSENT_STRING",
+			givenBidRequest:        nil,
+			expectedBidRequest:     nil,
+			expectedError:          true,
 		},
 		{
-			description:         "malformed user.ext, expect error",
-			inAdditionalConsent: "ADDITIONAL_CONSENT_STRING",
-			inBidRequest: &openrtb2.BidRequest{
+			description:            "malformed user.ext, expect error",
+			givenAdditionalConsent: "ADDITIONAL_CONSENT_STRING",
+			givenBidRequest: &openrtb2.BidRequest{
 				User: &openrtb2.User{
 					Ext: json.RawMessage(`malformed`),
 				},
@@ -415,9 +415,9 @@ func TestSetConsentedProviders(t *testing.T) {
 			expectedError: true,
 		},
 		{
-			description:         "non-empty additional consent bid request will carry this value in user.ext.ConsentedProvidersSettings.consented_providers",
-			inAdditionalConsent: "ADDITIONAL_CONSENT_STRING",
-			inBidRequest:        sampleBidRequest,
+			description:            "non-empty additional consent bid request will carry this value in user.ext.ConsentedProvidersSettings.consented_providers",
+			givenAdditionalConsent: "ADDITIONAL_CONSENT_STRING",
+			givenBidRequest:        sampleBidRequest,
 			expectedBidRequest: &openrtb2.BidRequest{
 				User: &openrtb2.User{
 					Ext: json.RawMessage(`{"ConsentedProvidersSettings":{"consented_providers":"ADDITIONAL_CONSENT_STRING"}}`),
@@ -428,14 +428,14 @@ func TestSetConsentedProviders(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		err := setConsentedProviders(test.inBidRequest, amp.Params{AdditionalConsent: test.inAdditionalConsent})
+		err := setConsentedProviders(test.givenBidRequest, amp.Params{AdditionalConsent: test.givenAdditionalConsent})
 
 		if test.expectedError {
 			assert.Error(t, err, test.description)
 		} else {
 			assert.NoError(t, err, test.description)
 		}
-		assert.Equal(t, test.expectedBidRequest, test.inBidRequest, test.description)
+		assert.Equal(t, test.expectedBidRequest, test.givenBidRequest, test.description)
 	}
 }
 

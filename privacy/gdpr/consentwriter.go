@@ -18,7 +18,6 @@ func (c ConsentWriter) Write(req *openrtb2.BidRequest) error {
 	}
 	reqWrap := &openrtb_ext.RequestWrapper{BidRequest: req}
 
-	// set GDPR value
 	if c.RegExtGDPR != nil {
 		if regsExt, err := reqWrap.GetRegExt(); err == nil {
 			regsExt.SetGDPR(c.RegExtGDPR)
@@ -27,7 +26,6 @@ func (c ConsentWriter) Write(req *openrtb2.BidRequest) error {
 		}
 	}
 
-	// set Consent string
 	if c.Consent != "" {
 		if userExt, err := reqWrap.GetUserExt(); err == nil {
 			userExt.SetConsent(&c.Consent)
