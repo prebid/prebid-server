@@ -2448,7 +2448,7 @@ func TestBuildRequestExtForBidder(t *testing.T) {
 		description          string
 		requestExt           json.RawMessage
 		bidderParams         map[string]json.RawMessage
-		alternateBidderCodes *config.AlternateBidderCodes
+		alternateBidderCodes *openrtb_ext.ExtAlternateBidderCodes
 		expectedJson         json.RawMessage
 	}{
 		{
@@ -2496,42 +2496,42 @@ func TestBuildRequestExtForBidder(t *testing.T) {
 		{
 			description:          "Prebid + AlternateBidderCodes in pbs config (default explicitly defined)",
 			bidderParams:         map[string]json.RawMessage{bidder: bidderParams},
-			alternateBidderCodes: &config.AlternateBidderCodes{},
+			alternateBidderCodes: &openrtb_ext.ExtAlternateBidderCodes{},
 			requestExt:           json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true}}}`),
 			expectedJson:         json.RawMessage(`{"other":"foo","prebid":{"alternatebiddercodes":{"enabled":false,"bidders":null},"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"bidderparams":"bar"}}`),
 		},
 		{
 			description:          "Prebid + AlternateBidderCodes in pbs config",
 			bidderParams:         map[string]json.RawMessage{bidder: bidderParams},
-			alternateBidderCodes: &config.AlternateBidderCodes{Enabled: true, Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{"foo": {Enabled: true, AllowedBidderCodes: []string{"*"}}}},
+			alternateBidderCodes: &openrtb_ext.ExtAlternateBidderCodes{Enabled: true, Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{"foo": {Enabled: true, AllowedBidderCodes: []string{"*"}}}},
 			requestExt:           json.RawMessage(`{"other":"foo"}`),
 			expectedJson:         json.RawMessage(`{"other":"foo","prebid":{"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["*"]}}},"bidderparams":"bar"}}`),
 		},
 		{
 			description:          "Prebid + AlternateBidderCodes in pbs config but current bidder not in AlternateBidderCodes config",
 			bidderParams:         map[string]json.RawMessage{bidder: bidderParams},
-			alternateBidderCodes: &config.AlternateBidderCodes{Enabled: true, Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{"bar": {Enabled: true, AllowedBidderCodes: []string{"*"}}}},
+			alternateBidderCodes: &openrtb_ext.ExtAlternateBidderCodes{Enabled: true, Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{"bar": {Enabled: true, AllowedBidderCodes: []string{"*"}}}},
 			requestExt:           json.RawMessage(`{"other":"foo"}`),
 			expectedJson:         json.RawMessage(`{"other":"foo","prebid":{"alternatebiddercodes":{"enabled":true,"bidders":null},"bidderparams":"bar"}}`),
 		},
 		{
 			description:          "Prebid + AlternateBidderCodes in request",
 			bidderParams:         map[string]json.RawMessage{bidder: bidderParams},
-			alternateBidderCodes: &config.AlternateBidderCodes{},
+			alternateBidderCodes: &openrtb_ext.ExtAlternateBidderCodes{},
 			requestExt:           json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["foo2"]},"bar":{"enabled":true,"allowedbiddercodes":["ix"]}}}}}`),
 			expectedJson:         json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["foo2"]}}},"bidderparams":"bar"}}`),
 		},
 		{
 			description:          "Prebid + AlternateBidderCodes in request but current bidder not in AlternateBidderCodes config",
 			bidderParams:         map[string]json.RawMessage{bidder: bidderParams},
-			alternateBidderCodes: &config.AlternateBidderCodes{},
+			alternateBidderCodes: &openrtb_ext.ExtAlternateBidderCodes{},
 			requestExt:           json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"bar":{"enabled":true,"allowedbiddercodes":["ix"]}}}}}`),
 			expectedJson:         json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":null},"bidderparams":"bar"}}`),
 		},
 		{
 			description:          "Prebid + AlternateBidderCodes in both pbs config and in the request",
 			bidderParams:         map[string]json.RawMessage{bidder: bidderParams},
-			alternateBidderCodes: &config.AlternateBidderCodes{Enabled: true, Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{"foo": {Enabled: true, AllowedBidderCodes: []string{"*"}}}},
+			alternateBidderCodes: &openrtb_ext.ExtAlternateBidderCodes{Enabled: true, Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{"foo": {Enabled: true, AllowedBidderCodes: []string{"*"}}}},
 			requestExt:           json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["foo2"]},"bar":{"enabled":true,"allowedbiddercodes":["ix"]}}}}}`),
 			expectedJson:         json.RawMessage(`{"other":"foo","prebid":{"integration":"a","channel":{"name":"b","version":"c"},"debug":true,"currency":{"rates":{"FOO":{"BAR":42}},"usepbsrates":true},"alternatebiddercodes":{"enabled":true,"bidders":{"foo":{"enabled":true,"allowedbiddercodes":["foo2"]}}},"bidderparams":"bar"}}`),
 		},
@@ -2562,7 +2562,7 @@ func TestBuildRequestExtForBidder_RequestExtParsedNil(t *testing.T) {
 		requestExt           = json.RawMessage(`{}`)
 		requestExtParsed     *openrtb_ext.ExtRequest
 		bidderParams         map[string]json.RawMessage
-		alternateBidderCodes *config.AlternateBidderCodes
+		alternateBidderCodes *openrtb_ext.ExtAlternateBidderCodes
 	)
 
 	actualJson, actualErr := buildRequestExtForBidder(bidder, requestExt, requestExtParsed, bidderParams, alternateBidderCodes)
@@ -2576,7 +2576,7 @@ func TestBuildRequestExtForBidder_RequestExtMalformed(t *testing.T) {
 		requestExt           = json.RawMessage(`malformed`)
 		requestExtParsed     = &openrtb_ext.ExtRequest{}
 		bidderParams         map[string]json.RawMessage
-		alternateBidderCodes *config.AlternateBidderCodes
+		alternateBidderCodes *openrtb_ext.ExtAlternateBidderCodes
 	)
 
 	actualJson, actualErr := buildRequestExtForBidder(bidder, requestExt, requestExtParsed, bidderParams, alternateBidderCodes)
@@ -3328,7 +3328,7 @@ func TestCleanOpenRTBRequestsFilterBidderRequestExt(t *testing.T) {
 	testCases := []struct {
 		desc      string
 		inExt     json.RawMessage
-		inCfgABC  *config.AlternateBidderCodes
+		inCfgABC  *openrtb_ext.ExtAlternateBidderCodes
 		wantExt   []json.RawMessage
 		wantError bool
 	}{
@@ -3345,7 +3345,7 @@ func TestCleanOpenRTBRequestsFilterBidderRequestExt(t *testing.T) {
 		{
 			desc:     "Nil request ext, default account alternatebiddercodes config (explicity defined)",
 			inExt:    nil,
-			inCfgABC: &config.AlternateBidderCodes{Enabled: false},
+			inCfgABC: &openrtb_ext.ExtAlternateBidderCodes{Enabled: false},
 			wantExt: []json.RawMessage{
 				json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":false,"bidders":null}}}`),
 				json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":false,"bidders":null}}}`),
@@ -3355,7 +3355,7 @@ func TestCleanOpenRTBRequestsFilterBidderRequestExt(t *testing.T) {
 		{
 			desc:     "request ext, default account alternatebiddercodes config (explicity defined)",
 			inExt:    json.RawMessage(`{"prebid":{}}`),
-			inCfgABC: &config.AlternateBidderCodes{Enabled: false},
+			inCfgABC: &openrtb_ext.ExtAlternateBidderCodes{Enabled: false},
 			wantExt: []json.RawMessage{
 				json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":false,"bidders":null}}}`),
 				json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":false,"bidders":null}}}`),
@@ -3365,7 +3365,7 @@ func TestCleanOpenRTBRequestsFilterBidderRequestExt(t *testing.T) {
 		{
 			desc:  "Nil request ext, account alternatebiddercodes config disabled with biddercodes defined",
 			inExt: nil,
-			inCfgABC: &config.AlternateBidderCodes{
+			inCfgABC: &openrtb_ext.ExtAlternateBidderCodes{
 				Enabled: false,
 				Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
 					"pubmatic": {Enabled: true},
@@ -3380,7 +3380,7 @@ func TestCleanOpenRTBRequestsFilterBidderRequestExt(t *testing.T) {
 		{
 			desc:  "Nil request ext, account alternatebiddercodes config disabled with biddercodes defined (not participant bidder)",
 			inExt: nil,
-			inCfgABC: &config.AlternateBidderCodes{
+			inCfgABC: &openrtb_ext.ExtAlternateBidderCodes{
 				Enabled: false,
 				Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
 					"ix": {Enabled: true},
@@ -3395,7 +3395,7 @@ func TestCleanOpenRTBRequestsFilterBidderRequestExt(t *testing.T) {
 		{
 			desc:     "Nil request ext, alternatebiddercodes config enabled but bidder not present",
 			inExt:    nil,
-			inCfgABC: &config.AlternateBidderCodes{Enabled: true},
+			inCfgABC: &openrtb_ext.ExtAlternateBidderCodes{Enabled: true},
 			wantExt: []json.RawMessage{
 				json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":null}}}`),
 				json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":null}}}`),
@@ -3415,7 +3415,7 @@ func TestCleanOpenRTBRequestsFilterBidderRequestExt(t *testing.T) {
 		{
 			desc:     "request ext w/o alternatebiddercodes",
 			inExt:    json.RawMessage(`{"prebid":{}}`),
-			inCfgABC: &config.AlternateBidderCodes{},
+			inCfgABC: &openrtb_ext.ExtAlternateBidderCodes{},
 			wantExt: []json.RawMessage{
 				json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":false,"bidders":null}}}`),
 				json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":false,"bidders":null}}}`),
@@ -3425,7 +3425,7 @@ func TestCleanOpenRTBRequestsFilterBidderRequestExt(t *testing.T) {
 		{
 			desc:     "request ext having alternatebiddercodes for only one bidder",
 			inExt:    json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":{"pubmatic":{"enabled":true,"allowedbiddercodes":["groupm"]}}}}}`),
-			inCfgABC: &config.AlternateBidderCodes{Enabled: false},
+			inCfgABC: &openrtb_ext.ExtAlternateBidderCodes{Enabled: false},
 			wantExt: []json.RawMessage{
 				json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":null}}}`),
 				json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":{"pubmatic":{"enabled":true,"allowedbiddercodes":["groupm"]}}}}}`),
@@ -3435,7 +3435,7 @@ func TestCleanOpenRTBRequestsFilterBidderRequestExt(t *testing.T) {
 		{
 			desc:     "request ext having alternatebiddercodes for multiple bidder",
 			inExt:    json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":{"pubmatic":{"enabled":true,"allowedbiddercodes":["groupm"]},"appnexus":{"enabled":true,"allowedbiddercodes":["ix"]}}}}}`),
-			inCfgABC: &config.AlternateBidderCodes{Enabled: false},
+			inCfgABC: &openrtb_ext.ExtAlternateBidderCodes{Enabled: false},
 			wantExt: []json.RawMessage{
 				json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":{"appnexus":{"enabled":true,"allowedbiddercodes":["ix"]}}}}}`),
 				json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":{"pubmatic":{"enabled":true,"allowedbiddercodes":["groupm"]}}}}}`),
@@ -3445,7 +3445,7 @@ func TestCleanOpenRTBRequestsFilterBidderRequestExt(t *testing.T) {
 		{
 			desc:     "request ext having alternatebiddercodes for multiple bidder (config alternatebiddercodes not defined)",
 			inExt:    json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":{"pubmatic":{"enabled":true,"allowedbiddercodes":["groupm"]},"appnexus":{"enabled":true,"allowedbiddercodes":["ix"]}}}}}`),
-			inCfgABC: &config.AlternateBidderCodes{Enabled: false},
+			inCfgABC: &openrtb_ext.ExtAlternateBidderCodes{Enabled: false},
 			wantExt: []json.RawMessage{
 				json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":{"appnexus":{"enabled":true,"allowedbiddercodes":["ix"]}}}}}`),
 				json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":{"pubmatic":{"enabled":true,"allowedbiddercodes":["groupm"]}}}}}`),
@@ -3455,7 +3455,7 @@ func TestCleanOpenRTBRequestsFilterBidderRequestExt(t *testing.T) {
 		{
 			desc:  "Nil request ext, alternatebiddercodes config enabled with bidder code for only one bidder",
 			inExt: nil,
-			inCfgABC: &config.AlternateBidderCodes{
+			inCfgABC: &openrtb_ext.ExtAlternateBidderCodes{
 				Enabled: true,
 				Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
 					"pubmatic": {

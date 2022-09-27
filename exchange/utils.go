@@ -273,7 +273,7 @@ func getAuctionBidderRequests(auctionRequest AuctionRequest,
 	return bidderRequests, errs
 }
 
-func buildRequestExtForBidder(bidder string, requestExt json.RawMessage, requestExtParsed *openrtb_ext.ExtRequest, bidderParamsInReqExt map[string]json.RawMessage, cfgABC *config.AlternateBidderCodes) (json.RawMessage, error) {
+func buildRequestExtForBidder(bidder string, requestExt json.RawMessage, requestExtParsed *openrtb_ext.ExtRequest, bidderParamsInReqExt map[string]json.RawMessage, cfgABC *openrtb_ext.ExtAlternateBidderCodes) (json.RawMessage, error) {
 	// Resolve alternatebiddercode for current bidder
 	var reqABC *openrtb_ext.ExtAlternateBidderCodes
 	if len(requestExt) != 0 && requestExtParsed != nil && requestExtParsed.Prebid.AlternateBidderCodes != nil {
@@ -323,7 +323,7 @@ func buildRequestExtForBidder(bidder string, requestExt json.RawMessage, request
 	return json.Marshal(extMap)
 }
 
-func buildRequestExtAlternateBidderCodes(bidder string, accABC *config.AlternateBidderCodes, reqABC *openrtb_ext.ExtAlternateBidderCodes) *openrtb_ext.ExtAlternateBidderCodes {
+func buildRequestExtAlternateBidderCodes(bidder string, accABC *openrtb_ext.ExtAlternateBidderCodes, reqABC *openrtb_ext.ExtAlternateBidderCodes) *openrtb_ext.ExtAlternateBidderCodes {
 	if reqABC != nil {
 		alternateBidderCodes := &openrtb_ext.ExtAlternateBidderCodes{
 			Enabled: reqABC.Enabled,

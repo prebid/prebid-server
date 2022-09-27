@@ -4232,7 +4232,7 @@ func TestOverrideConfigAlternateBidderCodesWithRequestValues(t *testing.T) {
 			in: testIn{
 				config: config.Configuration{
 					AccountDefaults: config.Account{
-						AlternateBidderCodes: &config.AlternateBidderCodes{
+						AlternateBidderCodes: &openrtb_ext.ExtAlternateBidderCodes{
 							Enabled: true,
 							Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
 								"pubmatic": {
@@ -4263,7 +4263,7 @@ func TestOverrideConfigAlternateBidderCodesWithRequestValues(t *testing.T) {
 			in: testIn{
 				config: config.Configuration{
 					AccountDefaults: config.Account{
-						AlternateBidderCodes: &config.AlternateBidderCodes{
+						AlternateBidderCodes: &openrtb_ext.ExtAlternateBidderCodes{
 							Enabled: true,
 							Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
 								"pubmatic": {
