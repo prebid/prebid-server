@@ -15,7 +15,7 @@ import (
 )
 
 var bidderInfos = BidderInfos{
-	"bidder1": BidderInfo{
+	"appnexus": BidderInfo{
 		Endpoint:   "http://bidder1.com",
 		Maintainer: &MaintainerInfo{Email: "maintainer@bidder1.com"},
 		Capabilities: &CapabilitiesInfo{
@@ -24,7 +24,7 @@ var bidderInfos = BidderInfos{
 			},
 		},
 	},
-	"bidder2": BidderInfo{
+	"rubicon": BidderInfo{
 		Endpoint:   "http://bidder2.com",
 		Maintainer: &MaintainerInfo{Email: "maintainer@bidder2.com"},
 		Capabilities: &CapabilitiesInfo{
@@ -704,138 +704,138 @@ func TestMigrateConfigFromEnv(t *testing.T) {
 		defer os.Unsetenv("PBS_STORED_REQUESTS_FILESYSTEM")
 	}
 
-	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_BIDDER1_ENDPOINT"); ok {
-		defer os.Setenv("PBS_ADAPTERS_BIDDER1_ENDPOINT", oldval)
+	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_APPNEXUS_ENDPOINT"); ok {
+		defer os.Setenv("PBS_ADAPTERS_APPNEXUS_ENDPOINT", oldval)
 	} else {
-		defer os.Unsetenv("PBS_ADAPTERS_BIDDER1_ENDPOINT")
+		defer os.Unsetenv("PBS_ADAPTERS_APPNEXUS_ENDPOINT")
 	}
 
 	os.Setenv("PBS_STORED_REQUESTS_FILESYSTEM", "true")
-	os.Setenv("PBS_ADAPTERS_BIDDER1_ENDPOINT", "http://bidder1_override.com")
+	os.Setenv("PBS_ADAPTERS_APPNEXUS_ENDPOINT", "http://bidder1_override.com")
 	cfg, _ := newDefaultConfig(t)
 	cmpBools(t, "stored_requests.filesystem.enabled", true, cfg.StoredRequests.Files.Enabled)
-	cmpStrings(t, "adapters.bidder1.endpoint", "http://bidder1_override.com", cfg.BidderInfos["bidder1"].Endpoint)
+	cmpStrings(t, "adapters.appnexus.endpoint", "http://bidder1_override.com", cfg.BidderInfos["appnexus"].Endpoint)
 }
 
 func TestUserSyncFromEnv(t *testing.T) {
 	truePtr := true
 
 	// setup env vars for testing
-	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_BIDDER1_USERSYNC_REDIRECT_URL"); ok {
-		defer os.Setenv("PBS_ADAPTERS_BIDDER1_USERSYNC_REDIRECT_URL", oldval)
+	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_APPNEXUS_USERSYNC_REDIRECT_URL"); ok {
+		defer os.Setenv("PBS_ADAPTERS_APPNEXUS_USERSYNC_REDIRECT_URL", oldval)
 	} else {
-		defer os.Unsetenv("PBS_ADAPTERS_BIDDER1_USERSYNC_REDIRECT_URL")
+		defer os.Unsetenv("PBS_ADAPTERS_APPNEXUS_USERSYNC_REDIRECT_URL")
 	}
 
-	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_BIDDER1_USERSYNC_REDIRECT_USER_MACRO"); ok {
-		defer os.Setenv("PBS_ADAPTERS_BIDDER1_USERSYNC_REDIRECT_USER_MACRO", oldval)
+	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_APPNEXUS_USERSYNC_REDIRECT_USER_MACRO"); ok {
+		defer os.Setenv("PBS_ADAPTERS_APPNEXUS_USERSYNC_REDIRECT_USER_MACRO", oldval)
 	} else {
-		defer os.Unsetenv("PBS_ADAPTERS_BIDDER1_USERSYNC_REDIRECT_USER_MACRO")
+		defer os.Unsetenv("PBS_ADAPTERS_APPNEXUS_USERSYNC_REDIRECT_USER_MACRO")
 	}
 
-	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_BIDDER1_USERSYNC_SUPPORT_CORS"); ok {
-		defer os.Setenv("PBS_ADAPTERS_BIDDER1_USERSYNC_SUPPORT_CORS", oldval)
+	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_APPNEXUS_USERSYNC_SUPPORT_CORS"); ok {
+		defer os.Setenv("PBS_ADAPTERS_APPNEXUS_USERSYNC_SUPPORT_CORS", oldval)
 	} else {
-		defer os.Unsetenv("PBS_ADAPTERS_BIDDER1_USERSYNC_SUPPORT_CORS")
+		defer os.Unsetenv("PBS_ADAPTERS_APPNEXUS_USERSYNC_SUPPORT_CORS")
 	}
 
-	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_BIDDER2_USERSYNC_IFRAME_URL"); ok {
-		defer os.Setenv("PBS_ADAPTERS_BIDDER2_USERSYNC_IFRAME_URL", oldval)
+	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_rubicon_USERSYNC_IFRAME_URL"); ok {
+		defer os.Setenv("PBS_ADAPTERS_RUBICON_USERSYNC_IFRAME_URL", oldval)
 	} else {
-		defer os.Unsetenv("PBS_ADAPTERS_BIDDER2_USERSYNC_IFRAME_URL")
+		defer os.Unsetenv("PBS_ADAPTERS_RUBICON_USERSYNC_IFRAME_URL")
 	}
 
 	// set new
-	os.Setenv("PBS_ADAPTERS_BIDDER1_USERSYNC_REDIRECT_URL", "http://some.url/sync?redirect={{.RedirectURL}}")
-	os.Setenv("PBS_ADAPTERS_BIDDER1_USERSYNC_REDIRECT_USER_MACRO", "[UID]")
-	os.Setenv("PBS_ADAPTERS_BIDDER1_USERSYNC_SUPPORT_CORS", "true")
-	os.Setenv("PBS_ADAPTERS_BIDDER2_USERSYNC_IFRAME_URL", "http://somedifferent.url/sync?redirect={{.RedirectURL}}")
+	os.Setenv("PBS_ADAPTERS_APPNEXUS_USERSYNC_REDIRECT_URL", "http://some.url/sync?redirect={{.RedirectURL}}")
+	os.Setenv("PBS_ADAPTERS_APPNEXUS_USERSYNC_REDIRECT_USER_MACRO", "[UID]")
+	os.Setenv("PBS_ADAPTERS_APPNEXUS_USERSYNC_SUPPORT_CORS", "true")
+	os.Setenv("PBS_ADAPTERS_RUBICON_USERSYNC_IFRAME_URL", "http://somedifferent.url/sync?redirect={{.RedirectURL}}")
 
 	cfg, _ := newDefaultConfig(t)
 
-	assert.Equal(t, "http://some.url/sync?redirect={{.RedirectURL}}", cfg.BidderInfos["bidder1"].Syncer.Redirect.URL)
-	assert.Equal(t, "[UID]", cfg.BidderInfos["bidder1"].Syncer.Redirect.UserMacro)
-	assert.Nil(t, cfg.BidderInfos["bidder1"].Syncer.IFrame)
-	assert.Equal(t, &truePtr, cfg.BidderInfos["bidder1"].Syncer.SupportCORS)
+	assert.Equal(t, "http://some.url/sync?redirect={{.RedirectURL}}", cfg.BidderInfos["appnexus"].Syncer.Redirect.URL)
+	assert.Equal(t, "[UID]", cfg.BidderInfos["appnexus"].Syncer.Redirect.UserMacro)
+	assert.Nil(t, cfg.BidderInfos["appnexus"].Syncer.IFrame)
+	assert.Equal(t, &truePtr, cfg.BidderInfos["appnexus"].Syncer.SupportCORS)
 
-	assert.Equal(t, "http://somedifferent.url/sync?redirect={{.RedirectURL}}", cfg.BidderInfos["bidder2"].Syncer.IFrame.URL)
-	assert.Nil(t, cfg.BidderInfos["bidder2"].Syncer.Redirect)
-	assert.Nil(t, cfg.BidderInfos["bidder2"].Syncer.SupportCORS)
+	assert.Equal(t, "http://somedifferent.url/sync?redirect={{.RedirectURL}}", cfg.BidderInfos["rubicon"].Syncer.IFrame.URL)
+	assert.Nil(t, cfg.BidderInfos["rubicon"].Syncer.Redirect)
+	assert.Nil(t, cfg.BidderInfos["rubicon"].Syncer.SupportCORS)
 
 	assert.Nil(t, cfg.BidderInfos["brightroll"].Syncer)
 }
 
 func TestBidderInfoFromEnv(t *testing.T) {
 	// setup env vars for testing
-	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_BIDDER1_DISABLED"); ok {
-		defer os.Setenv("PBS_ADAPTERS_BIDDER1_DISABLED", oldval)
+	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_APPNEXUS_DISABLED"); ok {
+		defer os.Setenv("PBS_ADAPTERS_APPNEXUS_DISABLED", oldval)
 	} else {
-		defer os.Unsetenv("PBS_ADAPTERS_BIDDER1_DISABLED")
+		defer os.Unsetenv("PBS_ADAPTERS_APPNEXUS_DISABLED")
 	}
 
-	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_BIDDER1_ENDPOINT"); ok {
-		defer os.Setenv("PBS_ADAPTERS_BIDDER1_ENDPOINT", oldval)
+	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_APPNEXUS_ENDPOINT"); ok {
+		defer os.Setenv("PBS_ADAPTERS_APPNEXUS_ENDPOINT", oldval)
 	} else {
-		defer os.Unsetenv("PBS_ADAPTERS_BIDDER1_ENDPOINT")
+		defer os.Unsetenv("PBS_ADAPTERS_APPNEXUS_ENDPOINT")
 	}
 
-	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_BIDDER1_EXTRA_INFO"); ok {
-		defer os.Setenv("PBS_ADAPTERS_BIDDER1_EXTRA_INFO", oldval)
+	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_APPNEXUS_EXTRA_INFO"); ok {
+		defer os.Setenv("PBS_ADAPTERS_APPNEXUS_EXTRA_INFO", oldval)
 	} else {
-		defer os.Unsetenv("PBS_ADAPTERS_BIDDER1_EXTRA_INFO")
+		defer os.Unsetenv("PBS_ADAPTERS_APPNEXUS_EXTRA_INFO")
 	}
 
-	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_BIDDER1_DEBUG_ALLOW"); ok {
-		defer os.Setenv("PBS_ADAPTERS_BIDDER1_DEBUG_ALLOW", oldval)
+	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_APPNEXUS_DEBUG_ALLOW"); ok {
+		defer os.Setenv("PBS_ADAPTERS_APPNEXUS_DEBUG_ALLOW", oldval)
 	} else {
-		defer os.Unsetenv("PBS_ADAPTERS_BIDDER1_DEBUG_ALLOW")
+		defer os.Unsetenv("PBS_ADAPTERS_APPNEXUS_DEBUG_ALLOW")
 	}
 
-	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_BIDDER1_GVLVENDORID"); ok {
-		defer os.Setenv("PBS_ADAPTERS_BIDDER1_GVLVENDORID", oldval)
+	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_APPNEXUS_GVLVENDORID"); ok {
+		defer os.Setenv("PBS_ADAPTERS_APPNEXUS_GVLVENDORID", oldval)
 	} else {
-		defer os.Unsetenv("PBS_ADAPTERS_BIDDER1_GVLVENDORID")
+		defer os.Unsetenv("PBS_ADAPTERS_APPNEXUS_GVLVENDORID")
 	}
 
-	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_BIDDER1_EXPERIMENT_ADSCERT_ENABLED"); ok {
-		defer os.Setenv("PBS_ADAPTERS_BIDDER1_EXPERIMENT_ADSCERT_ENABLED", oldval)
+	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_APPNEXUS_EXPERIMENT_ADSCERT_ENABLED"); ok {
+		defer os.Setenv("PBS_ADAPTERS_APPNEXUS_EXPERIMENT_ADSCERT_ENABLED", oldval)
 	} else {
-		defer os.Unsetenv("PBS_ADAPTERS_BIDDER1_EXPERIMENT_ADSCERT_ENABLED")
+		defer os.Unsetenv("PBS_ADAPTERS_APPNEXUS_EXPERIMENT_ADSCERT_ENABLED")
 	}
 
-	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_BIDDER1_XAPI_USERNAME"); ok {
-		defer os.Setenv("PBS_ADAPTERS_BIDDER1_XAPI_USERNAME", oldval)
+	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_APPNEXUS_XAPI_USERNAME"); ok {
+		defer os.Setenv("PBS_ADAPTERS_APPNEXUS_XAPI_USERNAME", oldval)
 	} else {
-		defer os.Unsetenv("PBS_ADAPTERS_BIDDER1_XAPI_USERNAME")
+		defer os.Unsetenv("PBS_ADAPTERS_APPNEXUS_XAPI_USERNAME")
 	}
 
-	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_BIDDER1_USERSYNC_REDIRECT_URL"); ok {
-		defer os.Setenv("PBS_ADAPTERS_BIDDER1_USERSYNC_REDIRECT_URL", oldval)
+	if oldval, ok := os.LookupEnv("PBS_ADAPTERS_APPNEXUS_USERSYNC_REDIRECT_URL"); ok {
+		defer os.Setenv("PBS_ADAPTERS_APPNEXUS_USERSYNC_REDIRECT_URL", oldval)
 	} else {
-		defer os.Unsetenv("PBS_ADAPTERS_BIDDER1_USERSYNC_REDIRECT_URL")
+		defer os.Unsetenv("PBS_ADAPTERS_APPNEXUS_USERSYNC_REDIRECT_URL")
 	}
 
 	// set new
-	os.Setenv("PBS_ADAPTERS_BIDDER1_DISABLED", "true")
-	os.Setenv("PBS_ADAPTERS_BIDDER1_ENDPOINT", "http://some.url/override")
-	os.Setenv("PBS_ADAPTERS_BIDDER1_EXTRA_INFO", `{"extrainfo": true}`)
-	os.Setenv("PBS_ADAPTERS_BIDDER1_DEBUG_ALLOW", "true")
-	os.Setenv("PBS_ADAPTERS_BIDDER1_GVLVENDORID", "42")
-	os.Setenv("PBS_ADAPTERS_BIDDER1_EXPERIMENT_ADSCERT_ENABLED", "true")
-	os.Setenv("PBS_ADAPTERS_BIDDER1_XAPI_USERNAME", "username_override")
-	os.Setenv("PBS_ADAPTERS_BIDDER1_USERSYNC_REDIRECT_URL", "http://some.url/sync?redirect={{.RedirectURL}}")
+	os.Setenv("PBS_ADAPTERS_APPNEXUS_DISABLED", "true")
+	os.Setenv("PBS_ADAPTERS_APPNEXUS_ENDPOINT", "http://some.url/override")
+	os.Setenv("PBS_ADAPTERS_APPNEXUS_EXTRA_INFO", `{"extrainfo": true}`)
+	os.Setenv("PBS_ADAPTERS_APPNEXUS_DEBUG_ALLOW", "true")
+	os.Setenv("PBS_ADAPTERS_APPNEXUS_GVLVENDORID", "42")
+	os.Setenv("PBS_ADAPTERS_APPNEXUS_EXPERIMENT_ADSCERT_ENABLED", "true")
+	os.Setenv("PBS_ADAPTERS_APPNEXUS_XAPI_USERNAME", "username_override")
+	os.Setenv("PBS_ADAPTERS_APPNEXUS_USERSYNC_REDIRECT_URL", "http://some.url/sync?redirect={{.RedirectURL}}")
 
 	cfg, _ := newDefaultConfig(t)
 
-	assert.Equal(t, true, cfg.BidderInfos["bidder1"].Disabled)
-	assert.Equal(t, "http://some.url/override", cfg.BidderInfos["bidder1"].Endpoint)
-	assert.Equal(t, `{"extrainfo": true}`, cfg.BidderInfos["bidder1"].ExtraAdapterInfo)
+	assert.Equal(t, true, cfg.BidderInfos["appnexus"].Disabled)
+	assert.Equal(t, "http://some.url/override", cfg.BidderInfos["appnexus"].Endpoint)
+	assert.Equal(t, `{"extrainfo": true}`, cfg.BidderInfos["appnexus"].ExtraAdapterInfo)
 
-	assert.Equal(t, true, cfg.BidderInfos["bidder1"].Debug.Allow)
-	assert.Equal(t, uint16(42), cfg.BidderInfos["bidder1"].GVLVendorID)
+	assert.Equal(t, true, cfg.BidderInfos["appnexus"].Debug.Allow)
+	assert.Equal(t, uint16(42), cfg.BidderInfos["appnexus"].GVLVendorID)
 
-	assert.Equal(t, true, cfg.BidderInfos["bidder1"].Experiment.AdsCert.Enabled)
-	assert.Equal(t, "username_override", cfg.BidderInfos["bidder1"].XAPI.Username)
+	assert.Equal(t, true, cfg.BidderInfos["appnexus"].Experiment.AdsCert.Enabled)
+	assert.Equal(t, "username_override", cfg.BidderInfos["appnexus"].XAPI.Username)
 }
 
 func TestMigrateConfigPurposeOneTreatment(t *testing.T) {
