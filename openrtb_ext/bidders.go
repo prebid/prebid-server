@@ -148,6 +148,7 @@ const (
 	BidderEPlanning         BidderName = "eplanning"
 	BidderEpom              BidderName = "epom"
 	BidderEVolution         BidderName = "e_volution"
+	BidderFreewheelSSP      BidderName = "freewheelssp"
 	BidderGamma             BidderName = "gamma"
 	BidderGamoshi           BidderName = "gamoshi"
 	BidderGrid              BidderName = "grid"
@@ -311,6 +312,7 @@ func CoreBidderNames() []BidderName {
 		BidderEPlanning,
 		BidderEpom,
 		BidderEVolution,
+		BidderFreewheelSSP,
 		BidderGamma,
 		BidderGamoshi,
 		BidderGrid,
