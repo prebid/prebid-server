@@ -471,7 +471,7 @@ func applyBidderInfoConfigOverrides(configBidderInfos BidderInfos, fsBidderInfos
 
 			fsBidderInfos[string(normalizedBidderName)] = bidderInfo
 		} else {
-			return nil, fmt.Errorf("error setting configuration for bidder %s: unknown bidder", bidderName)
+			return nil, fmt.Errorf("error finding configuration for bidder %s: unknown bidder", bidderName)
 		}
 	}
 	return fsBidderInfos, nil

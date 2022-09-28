@@ -129,7 +129,7 @@ func TestProcessBidderInfo(t *testing.T) {
 		},
 	}
 	for _, test := range testCases {
-		reader := MockInfoReader{test.bidderInfos}
+		reader := StubInfoReader{test.bidderInfos}
 		bidderInfos, err := processBidderInfos(reader, mockNormalizeBidderName)
 		if test.expectError != "" {
 			assert.ErrorContains(t, err, test.expectError, "")
@@ -141,11 +141,11 @@ func TestProcessBidderInfo(t *testing.T) {
 
 }
 
-type MockInfoReader struct {
+type StubInfoReader struct {
 	mockBidderInfos map[string][]byte
 }
 
-func (r MockInfoReader) Read() (map[string][]byte, error) {
+func (r StubInfoReader) Read() (map[string][]byte, error) {
 	return r.mockBidderInfos, nil
 }
 
@@ -951,7 +951,7 @@ func TestApplyBidderInfoConfigOverridesInvalid(t *testing.T) {
 			description:            "Don't override endpoint",
 			givenFsBidderInfos:     BidderInfos{"unknown": {Endpoint: "original"}},
 			givenConfigBidderInfos: BidderInfos{"bidderA": {Syncer: &Syncer{Key: "override"}}},
-			expectedError:          "error setting configuration for bidder bidderA: unknown bidder",
+			expectedError:          "error finding configuration for bidder bidderA: unknown bidder",
 		},
 	}
 	for _, test := range testCases {
