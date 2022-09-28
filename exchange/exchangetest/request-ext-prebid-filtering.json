@@ -88,11 +88,6 @@
                         "other": "test-other",
                         "prebid": {
                             "integration": "test-integration",
-                            "server": {
-                                "datacenter": "",
-                                "externalurl": "",
-                                "gvlid": 0
-                            },
                             "channel": {
                                 "name": "test-name",
                                 "version": "test-version"

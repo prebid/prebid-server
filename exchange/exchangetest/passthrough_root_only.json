@@ -44,13 +44,7 @@
                         }
                     }],
                     "ext": {
-                        "prebid": {
-                            "server": {
-                                "datacenter": "",
-                                "externalurl": "",
-                                "gvlid": 0
-                            }
-                        }
+                        "prebid": {}
                     }
                 }
             },
