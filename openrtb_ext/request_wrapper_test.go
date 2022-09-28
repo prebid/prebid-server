@@ -201,6 +201,12 @@ func TestRebuildUserExt(t *testing.T) {
 					requestUserExtWrapper: UserExt{consentedProvidersSettings: &ExtUserCPSettings{ConsentedProviders: "AnotherConsentedProvidersString"}, consentedProvidersSettingsDirty: true},
 					expectedRequest:       openrtb2.BidRequest{User: &openrtb2.User{Ext: json.RawMessage(`{"ConsentedProvidersSettings":{"consented_providers":"AnotherConsentedProvidersString"}}`)}},
 				},
+				{
+					description:           "Populated req.User.Ext - Dirty consentedProvider with empty consentedProviderSettings.ConsentedProviders string - ConsentedProvidersSettings are overriden",
+					request:               openrtb2.BidRequest{User: &openrtb2.User{Ext: json.RawMessage(`{"ConsentedProvidersSettings":{"consented_providers":"ConsentedProvidersString"}}`)}},
+					requestUserExtWrapper: UserExt{consentedProvidersSettings: nil, consentedProviders: "AnotherConsentedProvidersString", consentedProvidersDirty: true},
+					expectedRequest:       openrtb2.BidRequest{User: &openrtb2.User{Ext: json.RawMessage(`{"ConsentedProvidersSettings":{"consented_providers":"AnotherConsentedProvidersString"}}`)}},
+				},
 			},
 		},
 	}

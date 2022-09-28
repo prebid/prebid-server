@@ -374,6 +374,179 @@ func TestGDPRConsent(t *testing.T) {
 	}
 }
 
+func TestOverrideWithParams(t *testing.T) {
+	e := &endpointDeps{
+		cfg: &config.Configuration{
+			GDPR: config.GDPR{
+				Enabled: true,
+			},
+		},
+	}
+
+	type testInput struct {
+		ampParams  amp.Params
+		bidRequest *openrtb2.BidRequest
+	}
+	type testOutput struct {
+		bidRequest *openrtb2.BidRequest
+		errorMsgs  []string
+	}
+	testCases := []struct {
+		desc     string
+		given    testInput
+		expected testOutput
+	}{
+		{
+			desc: "bid request with no Site field - amp.Params empty - expect Site to be added",
+			given: testInput{
+				ampParams: amp.Params{},
+				bidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{{Banner: &openrtb2.Banner{Format: []openrtb2.Format{}}}},
+				},
+			},
+			expected: testOutput{
+				bidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{{Banner: &openrtb2.Banner{Format: []openrtb2.Format{}}}},
+					Site: &openrtb2.Site{
+						Publisher: &openrtb2.Publisher{},
+						Ext:       json.RawMessage(`{"amp":1}`),
+					},
+				},
+				errorMsgs: nil,
+			},
+		},
+		{
+			desc: "amp.Params with Size field - expect Site and Banner format fields to be added",
+			given: testInput{
+				ampParams: amp.Params{
+					Size: amp.Size{
+						Width:  480,
+						Height: 320,
+					},
+				},
+				bidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{{Banner: &openrtb2.Banner{Format: []openrtb2.Format{}}}},
+				},
+			},
+			expected: testOutput{
+				bidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{
+						{
+							Banner: &openrtb2.Banner{
+								Format: []openrtb2.Format{
+									{
+										W: 480,
+										H: 320,
+									},
+								},
+							},
+						},
+					},
+					Site: &openrtb2.Site{
+						Publisher: &openrtb2.Publisher{},
+						Ext:       json.RawMessage(`{"amp":1}`),
+					},
+				},
+				errorMsgs: nil,
+			},
+		},
+		{
+			desc: "amp.Params with CanonicalURL field - expect Site to be aded with Page and Domain fields",
+			given: testInput{
+				ampParams:  amp.Params{CanonicalURL: "http://www.foobar.com"},
+				bidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{Banner: &openrtb2.Banner{Format: []openrtb2.Format{}}}}},
+			},
+			expected: testOutput{
+				bidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{{Banner: &openrtb2.Banner{Format: []openrtb2.Format{}}}},
+					Site: &openrtb2.Site{
+						Page:      "http://www.foobar.com",
+						Domain:    "www.foobar.com",
+						Publisher: &openrtb2.Publisher{},
+						Ext:       json.RawMessage(`{"amp":1}`),
+					},
+				},
+				errorMsgs: nil,
+			},
+		},
+		{
+			desc: "bid request with malformed User.Ext - amp.Params with AdditionalConsent - expect error",
+			given: testInput{
+				ampParams: amp.Params{AdditionalConsent: "1~X.X.X.X"},
+				bidRequest: &openrtb2.BidRequest{
+					Imp:  []openrtb2.Imp{{Banner: &openrtb2.Banner{Format: []openrtb2.Format{}}}},
+					User: &openrtb2.User{Ext: json.RawMessage(`malformed`)},
+				},
+			},
+			expected: testOutput{
+				bidRequest: &openrtb2.BidRequest{
+					Imp:  []openrtb2.Imp{{Banner: &openrtb2.Banner{Format: []openrtb2.Format{}}}},
+					Site: &openrtb2.Site{Publisher: &openrtb2.Publisher{}, Ext: json.RawMessage(`{"amp":1}`)},
+					User: &openrtb2.User{Ext: json.RawMessage(`malformed`)},
+				},
+				errorMsgs: []string{"invalid character 'm' looking for beginning of value"},
+			},
+		},
+		{
+			desc: "bid request with valid imp[0].ext - amp.Params with malformed targeting value - expect error because imp[0].ext won't be unable to get merged with targeting values",
+			given: testInput{
+				ampParams: amp.Params{Targeting: "{123,}"},
+				bidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{
+						{
+							Banner: &openrtb2.Banner{Format: []openrtb2.Format{}},
+							Ext:    []byte(`{"appnexus":{"placementId":123}}`),
+						},
+					},
+				},
+			},
+			expected: testOutput{
+				bidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{
+						{
+							Banner: &openrtb2.Banner{Format: []openrtb2.Format{}},
+							Ext:    json.RawMessage(`{"appnexus":{"placementId":123}}`),
+						},
+					},
+					Site: &openrtb2.Site{Publisher: &openrtb2.Publisher{}, Ext: json.RawMessage(`{"amp":1}`)},
+				},
+				errorMsgs: []string{"unable to merge imp.ext with targeting data, check targeting data is correct: Invalid JSON Patch"},
+			},
+		},
+		{
+			desc: "bid request with malformed user.ext.prebid - amp.Params with GDPR consent values - expect policy writer to return error",
+			given: testInput{
+				ampParams: amp.Params{
+					ConsentType: amp.ConsentTCF2,
+					Consent:     "CPdECS0PdECS0ACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA",
+				},
+				bidRequest: &openrtb2.BidRequest{
+					Imp:  []openrtb2.Imp{{Banner: &openrtb2.Banner{Format: []openrtb2.Format{}}}},
+					User: &openrtb2.User{Ext: json.RawMessage(`{"prebid":{malformed}}`)},
+				},
+			},
+			expected: testOutput{
+				bidRequest: &openrtb2.BidRequest{
+					Imp:  []openrtb2.Imp{{Banner: &openrtb2.Banner{Format: []openrtb2.Format{}}}},
+					User: &openrtb2.User{Ext: json.RawMessage(`{"prebid":{malformed}}`)},
+					Site: &openrtb2.Site{Publisher: &openrtb2.Publisher{}, Ext: json.RawMessage(`{"amp":1}`)},
+				},
+				errorMsgs: []string{"invalid character 'm' looking for beginning of object key string"},
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		errs := e.overrideWithParams(test.given.ampParams, test.given.bidRequest)
+
+		assert.Equal(t, test.expected.bidRequest, test.given.bidRequest, test.desc)
+		assert.Len(t, errs, len(test.expected.errorMsgs), test.desc)
+		if len(test.expected.errorMsgs) > 0 {
+			assert.Equal(t, test.expected.errorMsgs[0], errs[0].Error(), test.desc)
+		}
+	}
+}
+
 func TestSetConsentedProviders(t *testing.T) {
 
 	sampleBidRequest := &openrtb2.BidRequest{}
