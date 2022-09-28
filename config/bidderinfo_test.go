@@ -943,12 +943,12 @@ func TestApplyBidderInfoConfigOverridesInvalid(t *testing.T) {
 		expectedBidderInfos    BidderInfos
 	}{
 		{
-			description:            "Don't override endpoint",
+			description:            "Bidder doesn't exists in bidder list",
 			givenConfigBidderInfos: BidderInfos{"unknown": {Syncer: &Syncer{Key: "override"}}},
 			expectedError:          "error setting configuration for bidder unknown: unknown bidder",
 		},
 		{
-			description:            "Don't override endpoint",
+			description:            "Bidder doesn't exists in file system",
 			givenFsBidderInfos:     BidderInfos{"unknown": {Endpoint: "original"}},
 			givenConfigBidderInfos: BidderInfos{"bidderA": {Syncer: &Syncer{Key: "override"}}},
 			expectedError:          "error finding configuration for bidder bidderA: unknown bidder",
