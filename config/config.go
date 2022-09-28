@@ -54,17 +54,14 @@ type Configuration struct {
 	StoredVideo     StoredRequests `mapstructure:"stored_video_req"`
 	StoredResponses StoredRequests `mapstructure:"stored_responses"`
 
-	// Adapters should have a key for every openrtb_ext.BidderName, converted to lower-case.
-	// Se also: https://github.com/spf13/viper/issues/371#issuecomment-335388559
-	Adapters             map[string]Adapter `mapstructure:"adapters"`
-	MaxRequestSize       int64              `mapstructure:"max_request_size"`
-	Analytics            Analytics          `mapstructure:"analytics"`
-	AMPTimeoutAdjustment int64              `mapstructure:"amp_timeout_adjustment_ms"`
-	GDPR                 GDPR               `mapstructure:"gdpr"`
-	CCPA                 CCPA               `mapstructure:"ccpa"`
-	LMT                  LMT                `mapstructure:"lmt"`
-	CurrencyConverter    CurrencyConverter  `mapstructure:"currency_converter"`
-	DefReqConfig         DefReqConfig       `mapstructure:"default_request"`
+	MaxRequestSize       int64             `mapstructure:"max_request_size"`
+	Analytics            Analytics         `mapstructure:"analytics"`
+	AMPTimeoutAdjustment int64             `mapstructure:"amp_timeout_adjustment_ms"`
+	GDPR                 GDPR              `mapstructure:"gdpr"`
+	CCPA                 CCPA              `mapstructure:"ccpa"`
+	LMT                  LMT               `mapstructure:"lmt"`
+	CurrencyConverter    CurrencyConverter `mapstructure:"currency_converter"`
+	DefReqConfig         DefReqConfig      `mapstructure:"default_request"`
 
 	VideoStoredRequestRequired bool `mapstructure:"video_stored_request_required"`
 
@@ -98,6 +95,10 @@ type Configuration struct {
 	HostSChainNode    *openrtb2.SupplyChainNode `mapstructure:"host_schain_node"`
 	// Experiment configures non-production ready features.
 	Experiment Experiment `mapstructure:"experiment"`
+
+	// BidderInfos supports adapter overrides in extra configs like pbs.json, pbs.yaml, etc.
+	// Refers to main.go `configFileName` constant
+	BidderInfos BidderInfos `mapstructure:"adapters"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
@@ -123,7 +124,6 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 	}
 	errs = cfg.GDPR.validate(v, errs)
 	errs = cfg.CurrencyConverter.validate(errs)
-	errs = validateAdapters(cfg.Adapters, errs)
 	errs = cfg.Debug.validate(errs)
 	errs = cfg.ExtCacheURL.validate(errs)
 	if cfg.AccountDefaults.Disabled {
@@ -133,6 +133,7 @@ func (cfg *Configuration) validate(v *viper.Viper) []error {
 		glog.Warning(`account_defaults.events will currently not do anything as the feature is still under development. Please follow https://github.com/prebid/prebid-server/issues/1725 for more updates`)
 	}
 	errs = cfg.Experiment.validate(errs)
+	errs = cfg.BidderInfos.validate(errs)
 	return errs
 }
 
@@ -616,7 +617,7 @@ func (cfg *TimeoutNotification) validate(errs []error) []error {
 }
 
 // New uses viper to get our server configurations.
-func New(v *viper.Viper) (*Configuration, error) {
+func New(v *viper.Viper, bidderInfos BidderInfos) (*Configuration, error) {
 	var c Configuration
 	if err := v.Unmarshal(&c); err != nil {
 		return nil, fmt.Errorf("viper failed to unmarshal app config: %v", err)
@@ -699,6 +700,12 @@ func New(v *viper.Viper) (*Configuration, error) {
 	// Migrate combo stored request config to separate stored_reqs and amp stored_reqs configs.
 	resolvedStoredRequestsConfig(&c)
 
+	mergedBidderInfos, err := applyBidderInfoConfigOverrides(c.BidderInfos, bidderInfos)
+	if err != nil {
+		return nil, err
+	}
+	c.BidderInfos = mergedBidderInfos
+
 	glog.Info("Logging the resolved configuration:")
 	logGeneral(reflect.ValueOf(c), "  \t")
 	if errs := c.validate(v); len(errs) > 0 {
@@ -739,7 +746,7 @@ func (cfg *Configuration) GetCachedAssetURL(uuid string) string {
 }
 
 // Set the default config values for the viper object we are using.
-func SetupViper(v *viper.Viper, filename string) {
+func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	if filename != "" {
 		v.SetConfigName(filename)
 		v.AddConfigPath(".")
@@ -906,6 +913,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	// macro substitution. it is important for the uid to be the last query parameter.
 	v.SetDefault("user_sync.redirect_url", "{{.ExternalURL}}/setuid?bidder={{.SyncerKey}}&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&f={{.SyncType}}&uid={{.UserMacro}}")
 
+<<<<<<< HEAD
 	for _, bidder := range openrtb_ext.CoreBidderNames() {
 		setBidderDefaults(v, strings.ToLower(string(bidder)))
 	}
@@ -1086,6 +1094,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.yieldone.endpoint", "https://y.one.impact-ad.jp/hbs_imp")
 	v.SetDefault("adapters.zeroclickfraud.endpoint", "http://{{.Host}}/openrtb2?sid={{.SourceId}}")
 
+=======
+>>>>>>> upstream/master
 	v.SetDefault("max_request_size", 1024*256)
 	v.SetDefault("analytics.file.filename", "")
 	v.SetDefault("analytics.pubstack.endpoint", "https://s2s.pbstck.com/v1")
@@ -1230,6 +1240,10 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("experiment.adscert.inprocess.domain_renewal_interval_seconds", 30)
 	v.SetDefault("experiment.adscert.remote.url", "")
 	v.SetDefault("experiment.adscert.remote.signing_timeout_ms", 5)
+
+	for bidderName := range bidderInfos {
+		setBidderDefaults(v, strings.ToLower(bidderName))
+	}
 }
 
 func migrateConfig(v *viper.Viper) {
@@ -1328,16 +1342,20 @@ func migrateConfigTCF2PurposeEnabledFlags(v *viper.Viper) {
 
 func setBidderDefaults(v *viper.Viper, bidder string) {
 	adapterCfgPrefix := "adapters." + bidder
-	v.SetDefault(adapterCfgPrefix+".endpoint", "")
-	v.SetDefault(adapterCfgPrefix+".usersync_url", "")
-	v.SetDefault(adapterCfgPrefix+".platform_id", "")
-	v.SetDefault(adapterCfgPrefix+".app_secret", "")
-	v.SetDefault(adapterCfgPrefix+".xapi.username", "")
-	v.SetDefault(adapterCfgPrefix+".xapi.password", "")
-	v.SetDefault(adapterCfgPrefix+".xapi.tracker", "")
-	v.SetDefault(adapterCfgPrefix+".disabled", false)
-	v.SetDefault(adapterCfgPrefix+".partner_id", "")
-	v.SetDefault(adapterCfgPrefix+".extra_info", "")
+	v.BindEnv(adapterCfgPrefix+".disabled", "")
+	v.BindEnv(adapterCfgPrefix+".endpoint", "")
+	v.BindEnv(adapterCfgPrefix+".extra_info", "")
+	v.BindEnv(adapterCfgPrefix+".modifyingVastXmlAllowed", "")
+	v.BindEnv(adapterCfgPrefix+".debug.allow", "")
+	v.BindEnv(adapterCfgPrefix+".gvlVendorID", "")
+	v.BindEnv(adapterCfgPrefix+".usersync_url", "")
+	v.BindEnv(adapterCfgPrefix+".experiment.adsCert.enabled", "")
+	v.BindEnv(adapterCfgPrefix+".platform_id", "")
+	v.BindEnv(adapterCfgPrefix+".app_secret", "")
+	v.BindEnv(adapterCfgPrefix+".xapi.username", "")
+	v.BindEnv(adapterCfgPrefix+".xapi.password", "")
+	v.BindEnv(adapterCfgPrefix+".xapi.tracker", "")
+	v.BindEnv(adapterCfgPrefix+".endpointCompression", "")
 
 	v.BindEnv(adapterCfgPrefix + ".usersync.key")
 	v.BindEnv(adapterCfgPrefix + ".usersync.default")

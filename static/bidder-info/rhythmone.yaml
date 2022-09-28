@@ -1,3 +1,4 @@
+endpoint: "http://tag.1rx.io/rmp"
 maintainer:
   email: "support@rhythmone.com"
 gvlVendorID: 36

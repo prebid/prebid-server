@@ -1,3 +1,5 @@
+endpoint: "http://ib.adnxs.com/openrtb2"
+platform_id: "5"
 maintainer:
   email: "prebid-server@xandr.com"
 gvlVendorID: 32
