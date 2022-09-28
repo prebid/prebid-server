@@ -168,8 +168,7 @@ func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, bidder
 // allowBidRequest computes legal basis for a given bidder using the enforcement algorithms selected
 // by the purpose enforcer builder
 func (p *permissionsImpl) allowBidRequest(bidder openrtb_ext.BidderName, consentMeta tcf2.ConsentMetadata, vendorInfo VendorInfo) bool {
-	purpose := consentconstants.Purpose(2)
-	enforcer := p.purposeEnforcerBuilder(purpose, bidder)
+	enforcer := p.purposeEnforcerBuilder(consentconstants.Purpose(2), bidder)
 
 	if enforcer.LegalBasis(vendorInfo, bidder, consentMeta, Overrides{}) {
 		return true
