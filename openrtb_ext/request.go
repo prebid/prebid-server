@@ -131,10 +131,6 @@ func (ert *ExtRequestPrebidCache) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-func (server *ExtRequestPrebidServer) Empty() bool {
-	return server == nil || (server.DataCenter == "" && server.ExternalUrl == "" && server.GvlID == 0)
-}
-
 // ExtRequestPrebidCacheBids defines the contract for bidrequest.ext.prebid.cache.bids
 type ExtRequestPrebidCacheBids struct {
 	ReturnCreative *bool `json:"returnCreative"`

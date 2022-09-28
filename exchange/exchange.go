@@ -204,7 +204,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	if err != nil {
 		return nil, err
 	}
-	if requestExt.Prebid.Server.Empty() {
+	if !e.server.Empty() {
 		requestExt.Prebid.Server = &openrtb_ext.ExtRequestPrebidServer{ExternalUrl: e.server.ExternalUrl, GvlID: e.server.GvlID, DataCenter: e.server.DataCenter}
 	}
 

@@ -602,6 +602,10 @@ type Server struct {
 	DataCenter  string
 }
 
+func (server *Server) Empty() bool {
+	return server == nil || (server.DataCenter == "" && server.ExternalUrl == "" && server.GvlID == 0)
+}
+
 func (cfg *Debug) validate(errs []error) []error {
 	return cfg.TimeoutNotification.validate(errs)
 }
