@@ -18,3 +18,4 @@ userSync:
   iframe:
     url: "https://ap.lijit.com/beacon/prebid-server/?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&url={{.RedirectURL}}"
     userMacro: "$UID"
+    
