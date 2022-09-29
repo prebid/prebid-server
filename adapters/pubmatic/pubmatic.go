@@ -28,6 +28,8 @@ const (
 	rewardKey           = "reward"
 	dctrKeywordName     = "dctr"
 	urlEncodedEqualChar = "%3D"
+	AdServerKey         = "adserver"
+	PBAdslotKey         = "pbadslot"
 )
 
 type PubmaticAdapter struct {
@@ -53,14 +55,8 @@ type pubmaticBidExtVideo struct {
 
 type ExtImpBidderPubmatic struct {
 	adapters.ExtImpBidder
-	Data *ExtData `json:"data,omitempty"`
-
+	Data        json.RawMessage `json:"data,omitempty"`
 	SKAdnetwork json.RawMessage `json:"skadn,omitempty"`
-}
-
-type ExtData struct {
-	AdServer *ExtAdServer `json:"adserver"`
-	PBAdSlot string       `json:"pbadslot"`
 }
 
 type ExtAdServer struct {
@@ -377,12 +373,8 @@ func parseImpressionObject(imp *openrtb2.Imp, extractWrapperExtFromImp, extractP
 		}
 	}
 
-	if bidderExt.Data != nil {
-		if bidderExt.Data.AdServer != nil && bidderExt.Data.AdServer.Name == AdServerGAM && bidderExt.Data.AdServer.AdSlot != "" {
-			extMap[ImpExtAdUnitKey] = bidderExt.Data.AdServer.AdSlot
-		} else if bidderExt.Data.PBAdSlot != "" {
-			extMap[ImpExtAdUnitKey] = bidderExt.Data.PBAdSlot
-		}
+	if len(bidderExt.Data) > 0 {
+		populateFirstPartyDataImpAttributes(bidderExt.Data, extMap)
 	}
 
 	imp.Ext = nil
