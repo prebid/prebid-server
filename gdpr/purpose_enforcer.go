@@ -4,6 +4,7 @@ import (
 	"github.com/prebid/go-gdpr/api"
 	"github.com/prebid/go-gdpr/consentconstants"
 	tcf2 "github.com/prebid/go-gdpr/vendorconsent/tcf2"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -29,11 +30,6 @@ type VendorInfo struct {
 	vendorID uint16
 	vendor   api.Vendor
 }
-
-const (
-	TCF2BasicEnforcement string = "basic"
-	TCF2FullEnforcement  string = "full"
-)
 
 // PurposeEnforcers holds the full and basic enforcers for a purpose
 type PurposeEnforcers struct {
@@ -61,7 +57,7 @@ func NewPurposeEnforcerBuilder(cfg TCF2ConfigReader) PurposeEnforcerBuilder {
 		enforceAlgo := cfg.PurposeEnforcementAlgo(purpose)
 		downgraded := isDowngraded(enforceAlgo, basicEnforcementVendor)
 
-		if enforceAlgo == TCF2BasicEnforcement || downgraded {
+		if enforceAlgo == config.TCF2BasicEnforcement || downgraded {
 			if cachedEnforcers[index].Basic != nil {
 				return cachedEnforcers[index].Basic
 			}
@@ -105,8 +101,8 @@ func NewPurposeEnforcerBuilder(cfg TCF2ConfigReader) PurposeEnforcerBuilder {
 
 // isDowngraded determines if the enforcement algorithm used to determine legal basis for a
 // purpose should be downgraded from full enforcement to basic
-func isDowngraded(enforceAlgo string, basicEnforcementVendor bool) bool {
-	if enforceAlgo == TCF2FullEnforcement && basicEnforcementVendor {
+func isDowngraded(enforceAlgo config.TCF2EnforcementAlgo, basicEnforcementVendor bool) bool {
+	if enforceAlgo == config.TCF2FullEnforcement && basicEnforcementVendor {
 		return true
 	}
 	return false

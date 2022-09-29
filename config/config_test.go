@@ -160,7 +160,8 @@ func TestDefaults(t *testing.T) {
 		Enabled: true,
 		Purpose1: TCF2Purpose{
 			Enabled:            true,
-			EnforceAlgo:        TCF2FullEnforcement,
+			EnforceAlgo:        TCF2EnforceAlgoFull,
+			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
@@ -168,7 +169,8 @@ func TestDefaults(t *testing.T) {
 		},
 		Purpose2: TCF2Purpose{
 			Enabled:            true,
-			EnforceAlgo:        TCF2FullEnforcement,
+			EnforceAlgo:        TCF2EnforceAlgoFull,
+			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
@@ -176,7 +178,8 @@ func TestDefaults(t *testing.T) {
 		},
 		Purpose3: TCF2Purpose{
 			Enabled:            true,
-			EnforceAlgo:        TCF2FullEnforcement,
+			EnforceAlgo:        TCF2EnforceAlgoFull,
+			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
@@ -184,7 +187,8 @@ func TestDefaults(t *testing.T) {
 		},
 		Purpose4: TCF2Purpose{
 			Enabled:            true,
-			EnforceAlgo:        TCF2FullEnforcement,
+			EnforceAlgo:        TCF2EnforceAlgoFull,
+			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
@@ -192,7 +196,8 @@ func TestDefaults(t *testing.T) {
 		},
 		Purpose5: TCF2Purpose{
 			Enabled:            true,
-			EnforceAlgo:        TCF2FullEnforcement,
+			EnforceAlgo:        TCF2EnforceAlgoFull,
+			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
@@ -200,7 +205,8 @@ func TestDefaults(t *testing.T) {
 		},
 		Purpose6: TCF2Purpose{
 			Enabled:            true,
-			EnforceAlgo:        TCF2FullEnforcement,
+			EnforceAlgo:        TCF2EnforceAlgoFull,
+			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
@@ -208,7 +214,8 @@ func TestDefaults(t *testing.T) {
 		},
 		Purpose7: TCF2Purpose{
 			Enabled:            true,
-			EnforceAlgo:        TCF2FullEnforcement,
+			EnforceAlgo:        TCF2EnforceAlgoFull,
+			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
@@ -216,7 +223,8 @@ func TestDefaults(t *testing.T) {
 		},
 		Purpose8: TCF2Purpose{
 			Enabled:            true,
-			EnforceAlgo:        TCF2FullEnforcement,
+			EnforceAlgo:        TCF2EnforceAlgoFull,
+			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
@@ -224,7 +232,8 @@ func TestDefaults(t *testing.T) {
 		},
 		Purpose9: TCF2Purpose{
 			Enabled:            true,
-			EnforceAlgo:        TCF2FullEnforcement,
+			EnforceAlgo:        TCF2EnforceAlgoFull,
+			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
@@ -232,7 +241,8 @@ func TestDefaults(t *testing.T) {
 		},
 		Purpose10: TCF2Purpose{
 			Enabled:            true,
-			EnforceAlgo:        TCF2FullEnforcement,
+			EnforceAlgo:        TCF2EnforceAlgoFull,
+			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     true,
 			VendorExceptions:   []openrtb_ext.BidderName{},
@@ -538,7 +548,8 @@ func TestFullConfig(t *testing.T) {
 		Enabled: true,
 		Purpose1: TCF2Purpose{
 			Enabled:            true, // true by default
-			EnforceAlgo:        TCF2FullEnforcement,
+			EnforceAlgo:        TCF2EnforceAlgoFull,
+			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo1a"), openrtb_ext.BidderName("foo1b")},
@@ -546,7 +557,8 @@ func TestFullConfig(t *testing.T) {
 		},
 		Purpose2: TCF2Purpose{
 			Enabled:            false,
-			EnforceAlgo:        TCF2FullEnforcement,
+			EnforceAlgo:        TCF2EnforceAlgoFull,
+			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     false,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo2")},
@@ -554,7 +566,8 @@ func TestFullConfig(t *testing.T) {
 		},
 		Purpose3: TCF2Purpose{
 			Enabled:            true, // true by default
-			EnforceAlgo:        TCF2BasicEnforcement,
+			EnforceAlgo:        TCF2EnforceAlgoBasic,
+			EnforceAlgoID:      TCF2BasicEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo3")},
@@ -562,7 +575,8 @@ func TestFullConfig(t *testing.T) {
 		},
 		Purpose4: TCF2Purpose{
 			Enabled:            true, // true by default
-			EnforceAlgo:        TCF2FullEnforcement,
+			EnforceAlgo:        TCF2EnforceAlgoFull,
+			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo4")},
@@ -570,7 +584,8 @@ func TestFullConfig(t *testing.T) {
 		},
 		Purpose5: TCF2Purpose{
 			Enabled:            true, // true by default
-			EnforceAlgo:        TCF2FullEnforcement,
+			EnforceAlgo:        TCF2EnforceAlgoFull,
+			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo5")},
@@ -578,7 +593,8 @@ func TestFullConfig(t *testing.T) {
 		},
 		Purpose6: TCF2Purpose{
 			Enabled:            true, // true by default
-			EnforceAlgo:        TCF2FullEnforcement,
+			EnforceAlgo:        TCF2EnforceAlgoFull,
+			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo6")},
@@ -586,7 +602,8 @@ func TestFullConfig(t *testing.T) {
 		},
 		Purpose7: TCF2Purpose{
 			Enabled:            true, // true by default
-			EnforceAlgo:        TCF2FullEnforcement,
+			EnforceAlgo:        TCF2EnforceAlgoFull,
+			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo7")},
@@ -594,7 +611,8 @@ func TestFullConfig(t *testing.T) {
 		},
 		Purpose8: TCF2Purpose{
 			Enabled:            true, // true by default
-			EnforceAlgo:        TCF2FullEnforcement,
+			EnforceAlgo:        TCF2EnforceAlgoFull,
+			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo8")},
@@ -602,7 +620,8 @@ func TestFullConfig(t *testing.T) {
 		},
 		Purpose9: TCF2Purpose{
 			Enabled:            true, // true by default
-			EnforceAlgo:        TCF2FullEnforcement,
+			EnforceAlgo:        TCF2EnforceAlgoFull,
+			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo9")},
@@ -610,7 +629,8 @@ func TestFullConfig(t *testing.T) {
 		},
 		Purpose10: TCF2Purpose{
 			Enabled:            true, // true by default
-			EnforceAlgo:        TCF2FullEnforcement,
+			EnforceAlgo:        TCF2EnforceAlgoFull,
+			EnforceAlgoID:      TCF2FullEnforcement,
 			EnforcePurpose:     true,
 			EnforceVendors:     false,
 			VendorExceptions:   []openrtb_ext.BidderName{openrtb_ext.BidderName("foo10")},
@@ -726,16 +746,16 @@ func TestValidateConfig(t *testing.T) {
 		GDPR: GDPR{
 			DefaultValue: "1",
 			TCF2: TCF2{
-				Purpose1:  TCF2Purpose{EnforceAlgo: TCF2BasicEnforcement},
-				Purpose2:  TCF2Purpose{EnforceAlgo: TCF2FullEnforcement},
-				Purpose3:  TCF2Purpose{EnforceAlgo: TCF2BasicEnforcement},
-				Purpose4:  TCF2Purpose{EnforceAlgo: TCF2FullEnforcement},
-				Purpose5:  TCF2Purpose{EnforceAlgo: TCF2BasicEnforcement},
-				Purpose6:  TCF2Purpose{EnforceAlgo: TCF2FullEnforcement},
-				Purpose7:  TCF2Purpose{EnforceAlgo: TCF2BasicEnforcement},
-				Purpose8:  TCF2Purpose{EnforceAlgo: TCF2FullEnforcement},
-				Purpose9:  TCF2Purpose{EnforceAlgo: TCF2BasicEnforcement},
-				Purpose10: TCF2Purpose{EnforceAlgo: TCF2FullEnforcement},
+				Purpose1:  TCF2Purpose{EnforceAlgo: TCF2EnforceAlgoBasic},
+				Purpose2:  TCF2Purpose{EnforceAlgo: TCF2EnforceAlgoFull},
+				Purpose3:  TCF2Purpose{EnforceAlgo: TCF2EnforceAlgoBasic},
+				Purpose4:  TCF2Purpose{EnforceAlgo: TCF2EnforceAlgoFull},
+				Purpose5:  TCF2Purpose{EnforceAlgo: TCF2EnforceAlgoBasic},
+				Purpose6:  TCF2Purpose{EnforceAlgo: TCF2EnforceAlgoFull},
+				Purpose7:  TCF2Purpose{EnforceAlgo: TCF2EnforceAlgoBasic},
+				Purpose8:  TCF2Purpose{EnforceAlgo: TCF2EnforceAlgoFull},
+				Purpose9:  TCF2Purpose{EnforceAlgo: TCF2EnforceAlgoBasic},
+				Purpose10: TCF2Purpose{EnforceAlgo: TCF2EnforceAlgoFull},
 			},
 		},
 		StoredRequests: StoredRequests{
@@ -1318,16 +1338,16 @@ func TestMigrateConfigTCF2EnforcePurposeFlags(t *testing.T) {
                     enforce_purpose: "no"
             `),
 			wantEnforceAlgosSet:         true,
-			wantPurpose1EnforceAlgo:     TCF2FullEnforcement,
-			wantPurpose2EnforceAlgo:     TCF2FullEnforcement,
-			wantPurpose3EnforceAlgo:     TCF2FullEnforcement,
-			wantPurpose4EnforceAlgo:     TCF2FullEnforcement,
-			wantPurpose5EnforceAlgo:     TCF2FullEnforcement,
-			wantPurpose6EnforceAlgo:     TCF2FullEnforcement,
-			wantPurpose7EnforceAlgo:     TCF2FullEnforcement,
-			wantPurpose8EnforceAlgo:     TCF2FullEnforcement,
-			wantPurpose9EnforceAlgo:     TCF2FullEnforcement,
-			wantPurpose10EnforceAlgo:    TCF2FullEnforcement,
+			wantPurpose1EnforceAlgo:     TCF2EnforceAlgoFull,
+			wantPurpose2EnforceAlgo:     TCF2EnforceAlgoFull,
+			wantPurpose3EnforceAlgo:     TCF2EnforceAlgoFull,
+			wantPurpose4EnforceAlgo:     TCF2EnforceAlgoFull,
+			wantPurpose5EnforceAlgo:     TCF2EnforceAlgoFull,
+			wantPurpose6EnforceAlgo:     TCF2EnforceAlgoFull,
+			wantPurpose7EnforceAlgo:     TCF2EnforceAlgoFull,
+			wantPurpose8EnforceAlgo:     TCF2EnforceAlgoFull,
+			wantPurpose9EnforceAlgo:     TCF2EnforceAlgoFull,
+			wantPurpose10EnforceAlgo:    TCF2EnforceAlgoFull,
 			wantEnforcePurposesSet:      true,
 			wantPurpose1EnforcePurpose:  trueStr,
 			wantPurpose2EnforcePurpose:  falseStr,
@@ -1406,16 +1426,16 @@ func TestMigrateConfigTCF2EnforcePurposeFlags(t *testing.T) {
                     enforce_algo: "full"
             `),
 			wantEnforceAlgosSet:      true,
-			wantPurpose1EnforceAlgo:  TCF2FullEnforcement,
-			wantPurpose2EnforceAlgo:  TCF2FullEnforcement,
-			wantPurpose3EnforceAlgo:  TCF2FullEnforcement,
-			wantPurpose4EnforceAlgo:  TCF2FullEnforcement,
-			wantPurpose5EnforceAlgo:  TCF2FullEnforcement,
-			wantPurpose6EnforceAlgo:  TCF2FullEnforcement,
-			wantPurpose7EnforceAlgo:  TCF2FullEnforcement,
-			wantPurpose8EnforceAlgo:  TCF2FullEnforcement,
-			wantPurpose9EnforceAlgo:  TCF2FullEnforcement,
-			wantPurpose10EnforceAlgo: TCF2FullEnforcement,
+			wantPurpose1EnforceAlgo:  TCF2EnforceAlgoFull,
+			wantPurpose2EnforceAlgo:  TCF2EnforceAlgoFull,
+			wantPurpose3EnforceAlgo:  TCF2EnforceAlgoFull,
+			wantPurpose4EnforceAlgo:  TCF2EnforceAlgoFull,
+			wantPurpose5EnforceAlgo:  TCF2EnforceAlgoFull,
+			wantPurpose6EnforceAlgo:  TCF2EnforceAlgoFull,
+			wantPurpose7EnforceAlgo:  TCF2EnforceAlgoFull,
+			wantPurpose8EnforceAlgo:  TCF2EnforceAlgoFull,
+			wantPurpose9EnforceAlgo:  TCF2EnforceAlgoFull,
+			wantPurpose10EnforceAlgo: TCF2EnforceAlgoFull,
 			wantEnforcePurposesSet:   false,
 		},
 		{
@@ -1455,16 +1475,16 @@ func TestMigrateConfigTCF2EnforcePurposeFlags(t *testing.T) {
                     enforce_purpose: "no"
             `),
 			wantEnforceAlgosSet:         true,
-			wantPurpose1EnforceAlgo:     TCF2FullEnforcement,
-			wantPurpose2EnforceAlgo:     TCF2FullEnforcement,
-			wantPurpose3EnforceAlgo:     TCF2FullEnforcement,
-			wantPurpose4EnforceAlgo:     TCF2FullEnforcement,
-			wantPurpose5EnforceAlgo:     TCF2FullEnforcement,
-			wantPurpose6EnforceAlgo:     TCF2FullEnforcement,
-			wantPurpose7EnforceAlgo:     TCF2FullEnforcement,
-			wantPurpose8EnforceAlgo:     TCF2FullEnforcement,
-			wantPurpose9EnforceAlgo:     TCF2FullEnforcement,
-			wantPurpose10EnforceAlgo:    TCF2FullEnforcement,
+			wantPurpose1EnforceAlgo:     TCF2EnforceAlgoFull,
+			wantPurpose2EnforceAlgo:     TCF2EnforceAlgoFull,
+			wantPurpose3EnforceAlgo:     TCF2EnforceAlgoFull,
+			wantPurpose4EnforceAlgo:     TCF2EnforceAlgoFull,
+			wantPurpose5EnforceAlgo:     TCF2EnforceAlgoFull,
+			wantPurpose6EnforceAlgo:     TCF2EnforceAlgoFull,
+			wantPurpose7EnforceAlgo:     TCF2EnforceAlgoFull,
+			wantPurpose8EnforceAlgo:     TCF2EnforceAlgoFull,
+			wantPurpose9EnforceAlgo:     TCF2EnforceAlgoFull,
+			wantPurpose10EnforceAlgo:    TCF2EnforceAlgoFull,
 			wantEnforcePurposesSet:      true,
 			wantPurpose1EnforcePurpose:  falseStr,
 			wantPurpose2EnforcePurpose:  falseStr,
@@ -1613,14 +1633,14 @@ func TestMissingGDPRDefaultValue(t *testing.T) {
 func TestInvalidEnforceAlgo(t *testing.T) {
 	cfg, v := newDefaultConfig(t)
 	cfg.GDPR.TCF2.Purpose1.EnforceAlgo = ""
-	cfg.GDPR.TCF2.Purpose2.EnforceAlgo = TCF2FullEnforcement
-	cfg.GDPR.TCF2.Purpose3.EnforceAlgo = TCF2BasicEnforcement
-	cfg.GDPR.TCF2.Purpose4.EnforceAlgo = TCF2FullEnforcement
+	cfg.GDPR.TCF2.Purpose2.EnforceAlgo = TCF2EnforceAlgoFull
+	cfg.GDPR.TCF2.Purpose3.EnforceAlgo = TCF2EnforceAlgoBasic
+	cfg.GDPR.TCF2.Purpose4.EnforceAlgo = TCF2EnforceAlgoFull
 	cfg.GDPR.TCF2.Purpose5.EnforceAlgo = "invalid1"
 	cfg.GDPR.TCF2.Purpose6.EnforceAlgo = "invalid2"
-	cfg.GDPR.TCF2.Purpose7.EnforceAlgo = TCF2FullEnforcement
-	cfg.GDPR.TCF2.Purpose8.EnforceAlgo = TCF2BasicEnforcement
-	cfg.GDPR.TCF2.Purpose9.EnforceAlgo = TCF2FullEnforcement
+	cfg.GDPR.TCF2.Purpose7.EnforceAlgo = TCF2EnforceAlgoFull
+	cfg.GDPR.TCF2.Purpose8.EnforceAlgo = TCF2EnforceAlgoBasic
+	cfg.GDPR.TCF2.Purpose9.EnforceAlgo = TCF2EnforceAlgoFull
 	cfg.GDPR.TCF2.Purpose10.EnforceAlgo = "invalid3"
 
 	errs := cfg.validate(v)
@@ -1939,10 +1959,10 @@ func TestTCF2PurposeEnforcementAlgo(t *testing.T) {
 	tests := []struct {
 		description          string
 		givePurposeConfigNil bool
-		givePurpose1Algo     string
-		givePurpose2Algo     string
+		givePurpose1Algo     TCF2EnforcementAlgo
+		givePurpose2Algo     TCF2EnforcementAlgo
 		givePurpose          consentconstants.Purpose
-		wantAlgo             string
+		wantAlgo             TCF2EnforcementAlgo
 	}{
 		{
 			description:          "Purpose config is nil",
@@ -1976,10 +1996,10 @@ func TestTCF2PurposeEnforcementAlgo(t *testing.T) {
 		if !tt.givePurposeConfigNil {
 			tcf2.PurposeConfigs = map[consentconstants.Purpose]*TCF2Purpose{
 				1: {
-					EnforceAlgo: tt.givePurpose1Algo,
+					EnforceAlgoID: tt.givePurpose1Algo,
 				},
 				2: {
-					EnforceAlgo: tt.givePurpose2Algo,
+					EnforceAlgoID: tt.givePurpose2Algo,
 				},
 			}
 		}

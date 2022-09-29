@@ -13,7 +13,7 @@ import (
 func TestNewPurposeEnforcerBuilder(t *testing.T) {
 	tests := []struct {
 		description        string
-		enforceAlgo        string
+		enforceAlgo        config.TCF2EnforcementAlgo
 		enforcePurpose     bool
 		enforceVendors     bool
 		basicVendorsMap    map[string]struct{}
@@ -24,7 +24,7 @@ func TestNewPurposeEnforcerBuilder(t *testing.T) {
 	}{
 		{
 			description:        "purpose 1 full algo -- full enforcer returned",
-			enforceAlgo:        "full",
+			enforceAlgo:        config.TCF2FullEnforcement,
 			enforcePurpose:     true,
 			enforceVendors:     true,
 			basicVendorsMap:    map[string]struct{}{},
@@ -35,7 +35,7 @@ func TestNewPurposeEnforcerBuilder(t *testing.T) {
 		},
 		{
 			description:        "purpose 1 full algo, basic enforcement vendor -- full enforcer returned",
-			enforceAlgo:        "full",
+			enforceAlgo:        config.TCF2FullEnforcement,
 			enforcePurpose:     true,
 			enforceVendors:     true,
 			basicVendorsMap:    map[string]struct{}{string(openrtb_ext.BidderAppnexus): {}},
@@ -46,7 +46,7 @@ func TestNewPurposeEnforcerBuilder(t *testing.T) {
 		},
 		{
 			description:        "purpose 1 basic algo -- basic enforcer returned",
-			enforceAlgo:        "basic",
+			enforceAlgo:        config.TCF2BasicEnforcement,
 			enforcePurpose:     true,
 			enforceVendors:     true,
 			basicVendorsMap:    map[string]struct{}{},
@@ -57,7 +57,7 @@ func TestNewPurposeEnforcerBuilder(t *testing.T) {
 		},
 		{
 			description:        "purpose 2 full algo -- full enforcer returned",
-			enforceAlgo:        "full",
+			enforceAlgo:        config.TCF2FullEnforcement,
 			enforcePurpose:     true,
 			enforceVendors:     true,
 			basicVendorsMap:    map[string]struct{}{},
@@ -68,7 +68,7 @@ func TestNewPurposeEnforcerBuilder(t *testing.T) {
 		},
 		{
 			description:        "purpose 2 full algo, basic enforcement vendor -- basic enforcer returned",
-			enforceAlgo:        "full",
+			enforceAlgo:        config.TCF2FullEnforcement,
 			enforcePurpose:     true,
 			enforceVendors:     true,
 			basicVendorsMap:    map[string]struct{}{string(openrtb_ext.BidderAppnexus): {}},
@@ -79,7 +79,7 @@ func TestNewPurposeEnforcerBuilder(t *testing.T) {
 		},
 		{
 			description:        "purpose 2 basic algo -- basic enforcer returned",
-			enforceAlgo:        "basic",
+			enforceAlgo:        config.TCF2BasicEnforcement,
 			enforcePurpose:     true,
 			enforceVendors:     true,
 			basicVendorsMap:    map[string]struct{}{},
@@ -146,7 +146,7 @@ func TestNewPurposeEnforcerBuilderCaching(t *testing.T) {
 	bidder4Enforcers := make([]PurposeEnforcer, 11)
 
 	cfg := fakeTCF2ConfigReader{
-		enforceAlgo: "full",
+		enforceAlgo: config.TCF2FullEnforcement,
 		basicEnforcementVendorsMap: map[string]struct{}{
 			string(bidder3): {},
 			string(bidder4): {},
@@ -195,7 +195,7 @@ func TestNewPurposeEnforcerBuilderCaching(t *testing.T) {
 }
 
 type fakeTCF2ConfigReader struct {
-	enforceAlgo                string
+	enforceAlgo                config.TCF2EnforcementAlgo
 	enforcePurpose             bool
 	enforceVendors             bool
 	vendorExceptionMap         map[openrtb_ext.BidderName]struct{}
@@ -220,7 +220,7 @@ func (fcr *fakeTCF2ConfigReader) IsEnabled() bool {
 func (fcr *fakeTCF2ConfigReader) PurposeEnforced(purpose consentconstants.Purpose) bool {
 	return fcr.enforcePurpose
 }
-func (fcr *fakeTCF2ConfigReader) PurposeEnforcementAlgo(purpose consentconstants.Purpose) string {
+func (fcr *fakeTCF2ConfigReader) PurposeEnforcementAlgo(purpose consentconstants.Purpose) config.TCF2EnforcementAlgo {
 	return fcr.enforceAlgo
 }
 func (fcr *fakeTCF2ConfigReader) PurposeEnforcingVendors(purpose consentconstants.Purpose) bool {

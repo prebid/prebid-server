@@ -15,7 +15,7 @@ type TCF2ConfigReader interface {
 	IntegrationEnabled(config.IntegrationType) bool
 	IsEnabled() bool
 	PurposeEnforced(consentconstants.Purpose) bool
-	PurposeEnforcementAlgo(consentconstants.Purpose) string
+	PurposeEnforcementAlgo(consentconstants.Purpose) config.TCF2EnforcementAlgo
 	PurposeEnforcingVendors(consentconstants.Purpose) bool
 	PurposeVendorExceptions(consentconstants.Purpose) map[openrtb_ext.BidderName]struct{}
 	PurposeOneTreatmentEnabled() bool
@@ -65,7 +65,7 @@ func (tc *tcf2Config) PurposeEnforced(purpose consentconstants.Purpose) bool {
 
 // PurposeEnforcementAlgo checks the purpose enforcement algo for a given purpose by first
 // looking at the account settings, and if not set there, defaulting to the host configuration.
-func (tc *tcf2Config) PurposeEnforcementAlgo(purpose consentconstants.Purpose) string {
+func (tc *tcf2Config) PurposeEnforcementAlgo(purpose consentconstants.Purpose) config.TCF2EnforcementAlgo {
 	if value, exists := tc.AccountConfig.PurposeEnforcementAlgo(purpose); exists {
 		return value
 	}

@@ -320,24 +320,24 @@ func TestPurposeEnforcementAlgo(t *testing.T) {
 	tests := []struct {
 		description          string
 		givePurposeConfigNil bool
-		givePurpose1Algo     string
-		givePurpose2Algo     string
+		givePurpose1Algo     TCF2EnforcementAlgo
+		givePurpose2Algo     TCF2EnforcementAlgo
 		givePurpose          consentconstants.Purpose
-		wantAlgo             string
+		wantAlgo             TCF2EnforcementAlgo
 		wantAlgoSet          bool
 	}{
 		{
 			description:          "Purpose config is nil",
 			givePurposeConfigNil: true,
 			givePurpose:          1,
-			wantAlgo:             TCF2FullEnforcement,
+			wantAlgo:             TCF2UndefinedEnforcement,
 			wantAlgoSet:          false,
 		},
 		{
-			description:      "Purpose 1 enforcement algo is empty",
-			givePurpose1Algo: "",
+			description:      "Purpose 1 enforcement algo is undefined",
+			givePurpose1Algo: TCF2UndefinedEnforcement,
 			givePurpose:      1,
-			wantAlgo:         TCF2FullEnforcement,
+			wantAlgo:         TCF2UndefinedEnforcement,
 			wantAlgoSet:      false,
 		},
 		{
@@ -369,10 +369,10 @@ func TestPurposeEnforcementAlgo(t *testing.T) {
 		if !tt.givePurposeConfigNil {
 			accountGDPR.PurposeConfigs = map[consentconstants.Purpose]*AccountGDPRPurpose{
 				1: {
-					EnforceAlgo: tt.givePurpose1Algo,
+					EnforceAlgoID: tt.givePurpose1Algo,
 				},
 				2: {
-					EnforceAlgo: tt.givePurpose2Algo,
+					EnforceAlgoID: tt.givePurpose2Algo,
 				},
 			}
 		}

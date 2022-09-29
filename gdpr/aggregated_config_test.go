@@ -169,47 +169,47 @@ func TestPurposeEnforcementAlgo(t *testing.T) {
 
 	tests := []struct {
 		description             string
-		givePurpose1HostAlgo    string
-		givePurpose1AccountAlgo string
-		givePurpose2HostAlgo    string
-		givePurpose2AccountAlgo string
+		givePurpose1HostAlgo    config.TCF2EnforcementAlgo
+		givePurpose1AccountAlgo config.TCF2EnforcementAlgo
+		givePurpose2HostAlgo    config.TCF2EnforcementAlgo
+		givePurpose2AccountAlgo config.TCF2EnforcementAlgo
 		givePurpose             consentconstants.Purpose
-		wantAlgo                string
+		wantAlgo                config.TCF2EnforcementAlgo
 	}{
 		{
 			description:             "Purpose 1 set at account level - use account setting basic",
-			givePurpose1HostAlgo:    TCF2FullEnforcement,
-			givePurpose1AccountAlgo: TCF2BasicEnforcement,
+			givePurpose1HostAlgo:    config.TCF2FullEnforcement,
+			givePurpose1AccountAlgo: config.TCF2BasicEnforcement,
 			givePurpose:             1,
-			wantAlgo:                TCF2BasicEnforcement,
+			wantAlgo:                config.TCF2BasicEnforcement,
 		},
 		{
 			description:             "Purpose 1 set at account level - use account setting full",
-			givePurpose1HostAlgo:    TCF2BasicEnforcement,
-			givePurpose1AccountAlgo: TCF2FullEnforcement,
+			givePurpose1HostAlgo:    config.TCF2BasicEnforcement,
+			givePurpose1AccountAlgo: config.TCF2FullEnforcement,
 			givePurpose:             1,
-			wantAlgo:                TCF2FullEnforcement,
+			wantAlgo:                config.TCF2FullEnforcement,
 		},
 		{
 			description:             "Purpose 1 not set at account level - use host setting basic",
-			givePurpose1HostAlgo:    TCF2BasicEnforcement,
-			givePurpose1AccountAlgo: "",
+			givePurpose1HostAlgo:    config.TCF2BasicEnforcement,
+			givePurpose1AccountAlgo: config.TCF2UndefinedEnforcement,
 			givePurpose:             1,
-			wantAlgo:                TCF2BasicEnforcement,
+			wantAlgo:                config.TCF2BasicEnforcement,
 		},
 		{
 			description:             "Purpose 1 not set at account level - use host setting full",
-			givePurpose1HostAlgo:    TCF2FullEnforcement,
-			givePurpose1AccountAlgo: "",
+			givePurpose1HostAlgo:    config.TCF2FullEnforcement,
+			givePurpose1AccountAlgo: config.TCF2UndefinedEnforcement,
 			givePurpose:             1,
-			wantAlgo:                TCF2FullEnforcement,
+			wantAlgo:                config.TCF2FullEnforcement,
 		},
 		{
 			description:             "Some other purpose set at account level - use account setting basic",
-			givePurpose2HostAlgo:    TCF2FullEnforcement,
-			givePurpose2AccountAlgo: TCF2BasicEnforcement,
+			givePurpose2HostAlgo:    config.TCF2FullEnforcement,
+			givePurpose2AccountAlgo: config.TCF2BasicEnforcement,
 			givePurpose:             2,
-			wantAlgo:                TCF2BasicEnforcement,
+			wantAlgo:                config.TCF2BasicEnforcement,
 		},
 	}
 
@@ -217,18 +217,18 @@ func TestPurposeEnforcementAlgo(t *testing.T) {
 		cfg := tcf2Config{
 			AccountConfig: config.AccountGDPR{
 				Purpose1: config.AccountGDPRPurpose{
-					EnforceAlgo: tt.givePurpose1AccountAlgo,
+					EnforceAlgoID: tt.givePurpose1AccountAlgo,
 				},
 				Purpose2: config.AccountGDPRPurpose{
-					EnforceAlgo: tt.givePurpose2AccountAlgo,
+					EnforceAlgoID: tt.givePurpose2AccountAlgo,
 				},
 			},
 			HostConfig: config.TCF2{
 				Purpose1: config.TCF2Purpose{
-					EnforceAlgo: tt.givePurpose1HostAlgo,
+					EnforceAlgoID: tt.givePurpose1HostAlgo,
 				},
 				Purpose2: config.TCF2Purpose{
-					EnforceAlgo: tt.givePurpose2HostAlgo,
+					EnforceAlgoID: tt.givePurpose2HostAlgo,
 				},
 			},
 		}

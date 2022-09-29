@@ -2,6 +2,7 @@ package gdpr
 
 import (
 	"github.com/prebid/go-gdpr/consentconstants"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -9,7 +10,7 @@ import (
 // a particular purpose needed to determine legal basis using one of the GDPR enforcement algorithms
 type purposeConfig struct {
 	PurposeID                  consentconstants.Purpose
-	EnforceAlgo                string
+	EnforceAlgo                config.TCF2EnforcementAlgo
 	EnforcePurpose             bool
 	EnforceVendors             bool
 	VendorExceptionMap         map[openrtb_ext.BidderName]struct{}

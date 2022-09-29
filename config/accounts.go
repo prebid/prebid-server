@@ -122,13 +122,13 @@ func (a *AccountGDPR) PurposeEnforced(purpose consentconstants.Purpose) (value, 
 
 // PurposeEnforcementAlgo checks the purpose enforcement algo for a given purpose by first
 // looking at the account settings, and if not set there, defaulting to the host configuration.
-func (a *AccountGDPR) PurposeEnforcementAlgo(purpose consentconstants.Purpose) (value string, exists bool) {
+func (a *AccountGDPR) PurposeEnforcementAlgo(purpose consentconstants.Purpose) (value TCF2EnforcementAlgo, exists bool) {
 	c, exists := a.PurposeConfigs[purpose]
 
-	if exists && (c.EnforceAlgo == TCF2BasicEnforcement || c.EnforceAlgo == TCF2FullEnforcement) {
-		return c.EnforceAlgo, true
+	if exists && (c.EnforceAlgoID == TCF2BasicEnforcement || c.EnforceAlgoID == TCF2FullEnforcement) {
+		return c.EnforceAlgoID, true
 	}
-	return TCF2FullEnforcement, false
+	return TCF2UndefinedEnforcement, false
 }
 
 // PurposeEnforcingVendors gets the account level enforce vendors setting for a given purpose returning the value and
@@ -173,9 +173,11 @@ func (a *AccountGDPR) PurposeOneTreatmentAccessAllowed() (value, exists bool) {
 
 // AccountGDPRPurpose represents account-specific GDPR purpose configuration
 type AccountGDPRPurpose struct {
-	EnforceAlgo    string `mapstructure:"enforce_algo" json:"enforce_algo,omitempty"`
-	EnforcePurpose *bool  `mapstructure:"enforce_purpose" json:"enforce_purpose,omitempty"`
-	EnforceVendors *bool  `mapstructure:"enforce_vendors" json:"enforce_vendors,omitempty"`
+	EnforceAlgo string `mapstructure:"enforce_algo" json:"enforce_algo,omitempty"`
+	// Integer representation of enforcement algo for performance improvement on compares
+	EnforceAlgoID  TCF2EnforcementAlgo
+	EnforcePurpose *bool `mapstructure:"enforce_purpose" json:"enforce_purpose,omitempty"`
+	EnforceVendors *bool `mapstructure:"enforce_vendors" json:"enforce_vendors,omitempty"`
 	// Array of vendor exceptions that is used to create the hash table VendorExceptionMap so vendor names can be instantly accessed
 	VendorExceptions   []openrtb_ext.BidderName `mapstructure:"vendor_exceptions" json:"vendor_exceptions"`
 	VendorExceptionMap map[openrtb_ext.BidderName]struct{}
