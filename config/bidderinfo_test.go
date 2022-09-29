@@ -36,7 +36,8 @@ endpointCompression: "GZIP"
 `
 
 func TestLoadBidderInfoFromDisk(t *testing.T) {
-	bidder := "someBidder"
+	// should appear in result in lowercase
+	bidder := "somebidder"
 	trueValue := true
 
 	adapterConfigs := make(map[string]Adapter)
