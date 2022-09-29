@@ -442,7 +442,7 @@ func TestFullConfig(t *testing.T) {
 	SetupViper(v, "", bidderInfos)
 	v.SetConfigType("yaml")
 	v.ReadConfig(bytes.NewBuffer(fullConfig))
-	cfg, err := New(v, bidderInfos)
+	cfg, err := New(v, bidderInfos, mockNormalizeBidderName)
 	assert.NoError(t, err, "Setting up config should work but it doesn't")
 	cmpStrings(t, "cookie domain", cfg.HostCookie.Domain, "cookies.prebid.org")
 	cmpStrings(t, "cookie name", cfg.HostCookie.CookieName, "userid")
@@ -691,7 +691,7 @@ func TestMigrateConfig(t *testing.T) {
 	v.SetConfigType("yaml")
 	v.ReadConfig(bytes.NewBuffer(oldStoredRequestsConfig))
 	migrateConfig(v)
-	cfg, err := New(v, bidderInfos)
+	cfg, err := New(v, bidderInfos, mockNormalizeBidderName)
 	assert.NoError(t, err, "Setting up config should work but it doesn't")
 	cmpBools(t, "stored_requests.filesystem.enabled", true, cfg.StoredRequests.Files.Enabled)
 	cmpStrings(t, "stored_requests.filesystem.path", "/somepath", cfg.StoredRequests.Files.Path)
@@ -1753,7 +1753,7 @@ func TestNewCallsRequestValidation(t *testing.T) {
 			`request_validation:
     ipv4_private_networks: ` + test.privateIPNetworks)))
 
-		result, resultErr := New(v, bidderInfos)
+		result, resultErr := New(v, bidderInfos, mockNormalizeBidderName)
 
 		if test.expectedError == "" {
 			assert.NoError(t, resultErr, test.description+":err")
@@ -1788,7 +1788,7 @@ func newDefaultConfig(t *testing.T) (*Configuration, *viper.Viper) {
 	SetupViper(v, "", bidderInfos)
 	v.Set("gdpr.default_value", "0")
 	v.SetConfigType("yaml")
-	cfg, err := New(v, bidderInfos)
+	cfg, err := New(v, bidderInfos, mockNormalizeBidderName)
 	assert.NoError(t, err, "Setting up config should work but it doesn't")
 	return cfg, v
 }
@@ -1858,7 +1858,7 @@ func TestSpecialFeature1VendorExceptionMap(t *testing.T) {
 		SetupViper(v, "", bidderInfos)
 		v.SetConfigType("yaml")
 		v.ReadConfig(bytes.NewBuffer(config))
-		cfg, err := New(v, bidderInfos)
+		cfg, err := New(v, bidderInfos, mockNormalizeBidderName)
 		assert.NoError(t, err, "Setting up config error", tt.description)
 
 		assert.Equal(t, tt.wantVendorExceptions, cfg.GDPR.TCF2.SpecialFeature1.VendorExceptions, tt.description)
