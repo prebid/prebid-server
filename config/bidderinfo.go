@@ -219,17 +219,17 @@ func processBidderInfos(reader InfoReader, normalizeBidderName func(string) (ope
 	infos := BidderInfos{}
 
 	for fileName, data := range bidderConfigs {
-		info := BidderInfo{}
-		if err := yaml.Unmarshal(data, &info); err != nil {
-			return nil, fmt.Errorf("error parsing config for bidder %s: %v", fileName, err)
-		}
-
 		bidderName := strings.Split(fileName, ".")
 		if len(bidderName) == 2 && bidderName[1] == "yaml" {
 			normalizedBidderName, bidderNameExists := normalizeBidderName(bidderName[0])
 			if !bidderNameExists {
 				return nil, fmt.Errorf("error parsing config for bidder %s: unknown bidder", fileName)
 			}
+			info := BidderInfo{}
+			if err := yaml.Unmarshal(data, &info); err != nil {
+				return nil, fmt.Errorf("error parsing config for bidder %s: %v", fileName, err)
+			}
+
 			infos[string(normalizedBidderName)] = info
 		}
 	}
