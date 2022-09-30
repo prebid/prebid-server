@@ -50,6 +50,11 @@ type Metrics struct {
 	privacyCOPPA                 *prometheus.CounterVec
 	privacyLMT                   *prometheus.CounterVec
 	privacyTCF                   *prometheus.CounterVec
+	storedResponses              prometheus.Counter
+	storedResponsesFetchTimer    *prometheus.HistogramVec
+	storedResponsesErrors        *prometheus.CounterVec
+	adsCertRequests              *prometheus.CounterVec
+	adsCertSignTimer             prometheus.Histogram
 
 	requestsDuplicateBidIDCounter prometheus.Counter // total request having duplicate bid.id for given bidder
 
@@ -74,8 +79,9 @@ type Metrics struct {
 	syncerSets     *prometheus.CounterVec
 
 	// Account Metrics
-	accountRequests      *prometheus.CounterVec
-	accountDebugRequests *prometheus.CounterVec
+	accountRequests        *prometheus.CounterVec
+	accountDebugRequests   *prometheus.CounterVec
+	accountStoredResponses *prometheus.CounterVec
 
 	// Ad Pod Metrics
 
@@ -338,6 +344,21 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 			[]string{adapterLabel})
 	}
 
+	metrics.storedResponsesFetchTimer = newHistogramVec(cfg, reg,
+		"stored_response_fetch_time_seconds",
+		"Seconds to fetch stored responses labeled by fetch type",
+		[]string{storedDataFetchTypeLabel},
+		standardTimeBuckets)
+
+	metrics.storedResponsesErrors = newCounter(cfg, reg,
+		"stored_response_errors",
+		"Count of stored video errors by error type",
+		[]string{storedDataErrorLabel})
+
+	metrics.storedResponses = newCounterWithoutLabels(cfg, reg,
+		"stored_responses",
+		"Count of total requests to Prebid Server that have stored responses")
+
 	metrics.adapterBids = newCounter(cfg, reg,
 		"adapter_bids",
 		"Count of bids labeled by adapter and markup delivery type (adm or nurl).",
@@ -420,9 +441,30 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		[]string{requestTypeLabel, requestStatusLabel},
 		queuedRequestTimeBuckets)
 
+	metrics.accountStoredResponses = newCounter(cfg, reg,
+		"account_stored_responses",
+		"Count of total requests to Prebid Server that have stored responses labled by account",
+		[]string{accountLabel})
+
+	metrics.adsCertSignTimer = newHistogram(cfg, reg,
+		"ads_cert_sign_time",
+		"Seconds to generate an AdsCert header",
+		standardTimeBuckets)
+
+	metrics.adsCertRequests = newCounter(cfg, reg,
+		"ads_cert_requests",
+		"Count of AdsCert request, and if they were successfully sent.",
+		[]string{successLabel})
+
 	metrics.Gatherer = reg
 
-	metricsPrefix := fmt.Sprintf("%s_%s_", cfg.Namespace, cfg.Subsystem)
+	metricsPrefix := ""
+	if len(cfg.Namespace) > 0 {
+		metricsPrefix += fmt.Sprintf("%s_", cfg.Namespace)
+	}
+	if len(cfg.Subsystem) > 0 {
+		metricsPrefix += fmt.Sprintf("%s_", cfg.Subsystem)
+	}
 
 	metrics.Registerer = prometheus.WrapRegistererWithPrefix(metricsPrefix, reg)
 	metrics.Registerer.MustRegister(promCollector.NewGoCollector())
@@ -569,6 +611,15 @@ func (m *Metrics) RecordDebugRequest(debugEnabled bool, pubID string) {
 	}
 }
 
+func (m *Metrics) RecordStoredResponse(pubId string) {
+	m.storedResponses.Inc()
+	if !m.metricsDisabled.AccountStoredResponses && pubId != metrics.PublisherUnknown {
+		m.accountStoredResponses.With(prometheus.Labels{
+			accountLabel: pubId,
+		}).Inc()
+	}
+}
+
 func (m *Metrics) RecordImps(labels metrics.ImpLabels) {
 	m.impressions.With(prometheus.Labels{
 		isBannerLabel: strconv.FormatBool(labels.BannerImps),
@@ -608,6 +659,10 @@ func (m *Metrics) RecordStoredDataFetchTime(labels metrics.StoredDataLabels, len
 		m.storedVideoFetchTimer.With(prometheus.Labels{
 			storedDataFetchTypeLabel: string(labels.DataFetchType),
 		}).Observe(length.Seconds())
+	case metrics.ResponseDataType:
+		m.storedResponsesFetchTimer.With(prometheus.Labels{
+			storedDataFetchTypeLabel: string(labels.DataFetchType),
+		}).Observe(length.Seconds())
 	}
 }
 
@@ -631,6 +686,10 @@ func (m *Metrics) RecordStoredDataError(labels metrics.StoredDataLabels) {
 		}).Inc()
 	case metrics.VideoDataType:
 		m.storedVideoErrors.With(prometheus.Labels{
+			storedDataErrorLabel: string(labels.Error),
+		}).Inc()
+	case metrics.ResponseDataType:
+		m.storedResponsesErrors.With(prometheus.Labels{
 			storedDataErrorLabel: string(labels.Error),
 		}).Inc()
 	}
@@ -827,66 +886,17 @@ func (m *Metrics) RecordAdapterGDPRRequestBlocked(adapterName openrtb_ext.Bidder
 	}).Inc()
 }
 
-// RecordAdapterDuplicateBidID captures the  bid.ID collisions when adaptor
-// gives the bid response with multiple bids containing  same bid.ID
-// ensure collisions value is greater than 1. This function will not give any error
-// if collisions = 1 is passed
-func (m *Metrics) RecordAdapterDuplicateBidID(adaptor string, collisions int) {
-	m.adapterDuplicateBidIDCounter.With(prometheus.Labels{
-		adapterLabel: adaptor,
-	}).Add(float64(collisions))
-}
-
-// RecordRequestHavingDuplicateBidID keeps count of request when duplicate bid.id is
-// detected in partner's response
-func (m *Metrics) RecordRequestHavingDuplicateBidID() {
-	m.requestsDuplicateBidIDCounter.Inc()
-}
-
-// pod specific metrics
-
-// recordAlgoTime is common method which handles algorithm time performance
-func recordAlgoTime(timer *prometheus.HistogramVec, labels metrics.PodLabels, elapsedTime time.Duration) {
-
-	pmLabels := prometheus.Labels{
-		podAlgorithm: labels.AlgorithmName,
+func (m *Metrics) RecordAdsCertReq(success bool) {
+	if success {
+		m.adsCertRequests.With(prometheus.Labels{
+			successLabel: requestSuccessful,
+		}).Inc()
+	} else {
+		m.adsCertRequests.With(prometheus.Labels{
+			successLabel: requestFailed,
+		}).Inc()
 	}
-
-	if labels.NoOfImpressions != nil {
-		pmLabels[podNoOfImpressions] = strconv.Itoa(*labels.NoOfImpressions)
-	}
-	if labels.NoOfCombinations != nil {
-		pmLabels[podTotalCombinations] = strconv.Itoa(*labels.NoOfCombinations)
-	}
-	if labels.NoOfResponseBids != nil {
-		pmLabels[podNoOfResponseBids] = strconv.Itoa(*labels.NoOfResponseBids)
-	}
-
-	timer.With(pmLabels).Observe(elapsedTime.Seconds())
 }
-
-// RecordPodImpGenTime records number of impressions generated and time taken
-// by underneath algorithm to generate them
-func (m *Metrics) RecordPodImpGenTime(labels metrics.PodLabels, start time.Time) {
-	elapsedTime := time.Since(start)
-	recordAlgoTime(m.podImpGenTimer, labels, elapsedTime)
-}
-
-// RecordPodCombGenTime records number of combinations generated and time taken
-// by underneath algorithm to generate them
-func (m *Metrics) RecordPodCombGenTime(labels metrics.PodLabels, elapsedTime time.Duration) {
-	recordAlgoTime(m.podCombGenTimer, labels, elapsedTime)
-}
-
-// RecordPodCompititveExclusionTime records number of combinations comsumed for forming
-// final ad pod response and time taken by underneath algorithm to generate them
-func (m *Metrics) RecordPodCompititveExclusionTime(labels metrics.PodLabels, elapsedTime time.Duration) {
-	recordAlgoTime(m.podCompExclTimer, labels, elapsedTime)
-}
-
-//RecordAdapterVideoBidDuration records actual ad duration (>0) returned by the bidder
-func (m *Metrics) RecordAdapterVideoBidDuration(labels metrics.AdapterLabels, videoBidDuration int) {
-	if videoBidDuration > 0 {
-		m.adapterVideoBidDuration.With(prometheus.Labels{adapterLabel: string(labels.Adapter)}).Observe(float64(videoBidDuration))
-	}
+func (m *Metrics) RecordAdsCertSignTime(adsCertSignTime time.Duration) {
+	m.adsCertSignTimer.Observe(adsCertSignTime.Seconds())
 }

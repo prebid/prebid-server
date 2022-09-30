@@ -5,7 +5,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/adcom1"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/stretchr/testify/assert"
 )
@@ -74,9 +75,9 @@ func TestSetDefaultHeaders(t *testing.T) {
 					Imp: []openrtb2.Imp{
 						{
 							Video: &openrtb2.Video{
-								Protocols: []openrtb2.Protocol{
-									openrtb2.ProtocolVAST40,
-									openrtb2.ProtocolDAAST10,
+								Protocols: []adcom1.MediaCreativeSubtype{
+									adcom1.CreativeVAST40,
+									adcom1.CreativeDAAST10,
 								},
 							},
 						},
@@ -106,9 +107,9 @@ func TestSetDefaultHeaders(t *testing.T) {
 					Imp: []openrtb2.Imp{
 						{
 							Video: &openrtb2.Video{
-								Protocols: []openrtb2.Protocol{
-									openrtb2.ProtocolVAST20,
-									openrtb2.ProtocolDAAST10,
+								Protocols: []adcom1.MediaCreativeSubtype{
+									adcom1.CreativeVAST20,
+									adcom1.CreativeDAAST10,
 								},
 							},
 						},
@@ -136,9 +137,9 @@ func TestSetDefaultHeaders(t *testing.T) {
 					Imp: []openrtb2.Imp{
 						{
 							Video: &openrtb2.Video{
-								Protocols: []openrtb2.Protocol{
-									openrtb2.ProtocolVAST40,
-									openrtb2.ProtocolVAST40Wrapper,
+								Protocols: []adcom1.MediaCreativeSubtype{
+									adcom1.CreativeVAST40,
+									adcom1.CreativeVAST40Wrapper,
 								},
 							},
 						},
@@ -169,9 +170,9 @@ func TestSetDefaultHeaders(t *testing.T) {
 					Imp: []openrtb2.Imp{
 						{
 							Video: &openrtb2.Video{
-								Protocols: []openrtb2.Protocol{
-									openrtb2.ProtocolVAST40,
-									openrtb2.ProtocolVAST20Wrapper,
+								Protocols: []adcom1.MediaCreativeSubtype{
+									adcom1.CreativeVAST40,
+									adcom1.CreativeVAST20Wrapper,
 								},
 							},
 						},
@@ -701,27 +702,27 @@ func TestBidderMacro_MacroTest(t *testing.T) {
 								MIMEs:          []string{`mp4`, `flv`},
 								MinDuration:    30,
 								MaxDuration:    60,
-								Protocols:      []openrtb2.Protocol{openrtb2.ProtocolVAST30, openrtb2.ProtocolVAST40Wrapper},
-								Protocol:       openrtb2.ProtocolVAST40Wrapper,
+								Protocols:      []adcom1.MediaCreativeSubtype{adcom1.CreativeVAST30, adcom1.CreativeVAST40Wrapper},
+								Protocol:       adcom1.CreativeVAST40Wrapper,
 								W:              640,
 								H:              480,
-								StartDelay:     new(openrtb2.StartDelay),
-								Placement:      openrtb2.VideoPlacementTypeInStream,
-								Linearity:      openrtb2.VideoLinearityLinearInStream,
+								StartDelay:     new(adcom1.StartDelay),
+								Placement:      adcom1.VideoInStream,
+								Linearity:      adcom1.LinearityLinear,
 								Skip:           new(int8),
 								SkipMin:        10,
 								SkipAfter:      5,
 								Sequence:       1,
-								BAttr:          []openrtb2.CreativeAttribute{openrtb2.CreativeAttributeAudioAdAutoPlay, openrtb2.CreativeAttributeAudioAdUserInitiated},
+								BAttr:          []adcom1.CreativeAttribute{adcom1.AttrAudioAuto, adcom1.AttrAudioUser},
 								MaxExtended:    10,
 								MinBitRate:     360,
 								MaxBitRate:     1080,
 								BoxingAllowed:  1,
-								PlaybackMethod: []openrtb2.PlaybackMethod{openrtb2.PlaybackMethodPageLoadSoundOn, openrtb2.PlaybackMethodClickSoundOn},
-								PlaybackEnd:    openrtb2.PlaybackCessationModeVideoCompletionOrTerminatedByUser,
-								Delivery:       []openrtb2.ContentDeliveryMethod{openrtb2.ContentDeliveryMethodStreaming, openrtb2.ContentDeliveryMethodDownload},
-								Pos:            new(openrtb2.AdPosition),
-								API:            []openrtb2.APIFramework{openrtb2.APIFrameworkVPAID10, openrtb2.APIFrameworkVPAID20},
+								PlaybackMethod: []adcom1.PlaybackMethod{adcom1.PlaybackPageLoadSoundOn, adcom1.PlaybackClickSoundOn},
+								PlaybackEnd:    adcom1.PlaybackCompletion,
+								Delivery:       []adcom1.DeliveryMethod{adcom1.DeliveryStreaming, adcom1.DeliveryDownload},
+								Pos:            new(adcom1.PlacementPosition),
+								API:            []adcom1.APIFramework{adcom1.APIVPAID10, adcom1.APIVPAID20},
 							},
 						},
 					},
@@ -755,12 +756,12 @@ func TestBidderMacro_MacroTest(t *testing.T) {
 							ISRC:               `site-cnt-isrc`,
 							URL:                `site-cnt-url`,
 							Cat:                []string{`site-cnt-cat1`, `site-cnt-cat2`},
-							ProdQ:              new(openrtb2.ProductionQuality),
-							VideoQuality:       new(openrtb2.ProductionQuality),
-							Context:            openrtb2.ContentContextVideo,
+							ProdQ:              new(adcom1.ProductionQuality),
+							VideoQuality:       new(adcom1.ProductionQuality),
+							Context:            adcom1.ContentVideo,
 							ContentRating:      `1.2`,
 							UserRating:         `2.2`,
-							QAGMediaRating:     openrtb2.IQGMediaRatingAll,
+							QAGMediaRating:     adcom1.MediaRatingAll,
 							Keywords:           `site-cnt-keywords`,
 							LiveStream:         1,
 							SourceRelationship: 1,
@@ -779,7 +780,7 @@ func TestBidderMacro_MacroTest(t *testing.T) {
 						Lmt:            new(int8),
 						IP:             `ipv4`,
 						IPv6:           `ipv6`,
-						DeviceType:     openrtb2.DeviceTypeConnectedTV,
+						DeviceType:     adcom1.DeviceTV,
 						Make:           `device-make`,
 						Model:          `device-model`,
 						OS:             `os`,
@@ -788,7 +789,7 @@ func TestBidderMacro_MacroTest(t *testing.T) {
 						W:              2048,
 						JS:             1,
 						Language:       `device-lang`,
-						ConnectionType: new(openrtb2.ConnectionType),
+						ConnectionType: new(adcom1.ConnectionType),
 						IFA:            `ifa`,
 						DIDSHA1:        `didsha1`,
 						DIDMD5:         `didmd5`,
@@ -1000,27 +1001,27 @@ func TestBidderMacro_MacroTest(t *testing.T) {
 								MIMEs:          []string{`mp4`, `flv`},
 								MinDuration:    30,
 								MaxDuration:    60,
-								Protocols:      []openrtb2.Protocol{openrtb2.ProtocolVAST30, openrtb2.ProtocolVAST40Wrapper},
-								Protocol:       openrtb2.ProtocolVAST40Wrapper,
+								Protocols:      []adcom1.MediaCreativeSubtype{adcom1.CreativeVAST30, adcom1.CreativeVAST40Wrapper},
+								Protocol:       adcom1.CreativeVAST40Wrapper,
 								W:              640,
 								H:              480,
-								StartDelay:     new(openrtb2.StartDelay),
-								Placement:      openrtb2.VideoPlacementTypeInStream,
-								Linearity:      openrtb2.VideoLinearityLinearInStream,
+								StartDelay:     new(adcom1.StartDelay),
+								Placement:      adcom1.VideoInStream,
+								Linearity:      adcom1.LinearityLinear,
 								Skip:           new(int8),
 								SkipMin:        10,
 								SkipAfter:      5,
 								Sequence:       1,
-								BAttr:          []openrtb2.CreativeAttribute{openrtb2.CreativeAttributeAudioAdAutoPlay, openrtb2.CreativeAttributeAudioAdUserInitiated},
+								BAttr:          []adcom1.CreativeAttribute{adcom1.AttrAudioAuto, adcom1.AttrAudioUser},
 								MaxExtended:    10,
 								MinBitRate:     360,
 								MaxBitRate:     1080,
 								BoxingAllowed:  1,
-								PlaybackMethod: []openrtb2.PlaybackMethod{openrtb2.PlaybackMethodPageLoadSoundOn, openrtb2.PlaybackMethodClickSoundOn},
-								PlaybackEnd:    openrtb2.PlaybackCessationModeVideoCompletionOrTerminatedByUser,
-								Delivery:       []openrtb2.ContentDeliveryMethod{openrtb2.ContentDeliveryMethodStreaming, openrtb2.ContentDeliveryMethodDownload},
-								Pos:            new(openrtb2.AdPosition),
-								API:            []openrtb2.APIFramework{openrtb2.APIFrameworkVPAID10, openrtb2.APIFrameworkVPAID20},
+								PlaybackMethod: []adcom1.PlaybackMethod{adcom1.PlaybackPageLoadSoundOn, adcom1.PlaybackClickSoundOn},
+								PlaybackEnd:    adcom1.PlaybackCompletion,
+								Delivery:       []adcom1.DeliveryMethod{adcom1.DeliveryStreaming, adcom1.DeliveryDownload},
+								Pos:            new(adcom1.PlacementPosition),
+								API:            []adcom1.APIFramework{adcom1.APIVPAID10, adcom1.APIVPAID20},
 							},
 						},
 					},
@@ -1054,12 +1055,12 @@ func TestBidderMacro_MacroTest(t *testing.T) {
 							ISRC:               `app-cnt-isrc`,
 							URL:                `app-cnt-url`,
 							Cat:                []string{`app-cnt-cat1`, `app-cnt-cat2`},
-							ProdQ:              new(openrtb2.ProductionQuality),
-							VideoQuality:       new(openrtb2.ProductionQuality),
-							Context:            openrtb2.ContentContextVideo,
+							ProdQ:              new(adcom1.ProductionQuality),
+							VideoQuality:       new(adcom1.ProductionQuality),
+							Context:            adcom1.ContentVideo,
 							ContentRating:      `1.2`,
 							UserRating:         `2.2`,
-							QAGMediaRating:     openrtb2.IQGMediaRatingAll,
+							QAGMediaRating:     adcom1.MediaRatingAll,
 							Keywords:           `app-cnt-keywords`,
 							LiveStream:         1,
 							SourceRelationship: 1,
@@ -1077,7 +1078,7 @@ func TestBidderMacro_MacroTest(t *testing.T) {
 						DNT:            new(int8),
 						Lmt:            new(int8),
 						IPv6:           `ipv6`,
-						DeviceType:     openrtb2.DeviceTypeConnectedTV,
+						DeviceType:     adcom1.DeviceTV,
 						Make:           `device-make`,
 						Model:          `device-model`,
 						OS:             `os`,
@@ -1086,7 +1087,7 @@ func TestBidderMacro_MacroTest(t *testing.T) {
 						W:              2048,
 						JS:             1,
 						Language:       `device-lang`,
-						ConnectionType: new(openrtb2.ConnectionType),
+						ConnectionType: new(adcom1.ConnectionType),
 						IFA:            `ifa`,
 						DIDSHA1:        `didsha1`,
 						DIDMD5:         `didmd5`,

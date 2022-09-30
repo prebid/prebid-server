@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -205,6 +205,14 @@ func TestShouldSkipFloors(t *testing.T) {
 			RootSkipRate:        60,
 			randomGen:           func(i int) int { return 70 },
 			out:                 false,
+		},
+		{
+			name:                "RootSkipRate=100  with with skip = true",
+			ModelGroupsSkipRate: 0,
+			DataSkipRate:        0,
+			RootSkipRate:        100,
+			randomGen:           func(i int) int { return 100 },
+			out:                 true,
 		},
 	}
 	for _, tc := range tt {

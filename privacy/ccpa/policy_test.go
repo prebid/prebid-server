@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
@@ -298,7 +298,7 @@ func TestBuildRegsClear(t *testing.T) {
 		{
 			description: "Nil Regs",
 			regs:        nil,
-			expected:    &openrtb2.Regs{Ext: nil},
+			expected:    nil,
 		},
 		{
 			description: "Nil Regs.Ext",

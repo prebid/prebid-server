@@ -33,6 +33,7 @@ func TestNewMetrics(t *testing.T) {
 	ensureContains(t, registry, "setuid_requests.opt_out", m.SetUidStatusMeter[SetUidOptOut])
 	ensureContains(t, registry, "setuid_requests.gdpr_blocked_host_cookie", m.SetUidStatusMeter[SetUidGDPRHostCookieBlocked])
 	ensureContains(t, registry, "setuid_requests.syncer_unknown", m.SetUidStatusMeter[SetUidSyncerUnknown])
+	ensureContains(t, registry, "stored_responses", m.StoredResponsesMeter)
 
 	ensureContains(t, registry, "prebid_cache_request_time.ok", m.PrebidCacheRequestTimerSuccess)
 	ensureContains(t, registry, "prebid_cache_request_time.err", m.PrebidCacheRequestTimerError)
@@ -73,6 +74,9 @@ func TestNewMetrics(t *testing.T) {
 	ensureContains(t, registry, "syncer.foo.request.type_not_supported", m.SyncerRequestsMeter["foo"][SyncerCookieSyncTypeNotSupported])
 	ensureContains(t, registry, "syncer.foo.set.ok", m.SyncerSetsMeter["foo"][SyncerSetUidOK])
 	ensureContains(t, registry, "syncer.foo.set.cleared", m.SyncerSetsMeter["foo"][SyncerSetUidCleared])
+
+	ensureContains(t, registry, "ads_cert_requests.ok", m.AdsCertRequestsSuccess)
+	ensureContains(t, registry, "ads_cert_requests.failed", m.AdsCertRequestsFailure)
 }
 
 func TestRecordBidType(t *testing.T) {
@@ -759,6 +763,119 @@ func TestRecordSyncerSet(t *testing.T) {
 
 	assert.Equal(t, m.SyncerSetsMeter["foo"][SyncerSetUidOK].Count(), int64(0))
 	assert.Equal(t, m.SyncerSetsMeter["foo"][SyncerSetUidCleared].Count(), int64(1))
+}
+
+func TestStoredResponses(t *testing.T) {
+	testCases := []struct {
+		description                           string
+		givenPubID                            string
+		accountStoredResponsesMetricsDisabled bool
+		expectedAccountStoredResponsesCount   int64
+		expectedStoredResponsesCount          int64
+	}{
+		{
+			description:                           "Publisher id is given, account stored responses disabled, both metrics should be updated",
+			givenPubID:                            "acct-id",
+			accountStoredResponsesMetricsDisabled: true,
+			expectedAccountStoredResponsesCount:   0,
+			expectedStoredResponsesCount:          1,
+		},
+		{
+			description:                           "Publisher id is given, account stored responses enabled, both metrics should be updated",
+			givenPubID:                            "acct-id",
+			accountStoredResponsesMetricsDisabled: false,
+			expectedAccountStoredResponsesCount:   1,
+			expectedStoredResponsesCount:          1,
+		},
+		{
+			description:                           "Publisher id is unknown, account stored responses enabled, only expectedStoredResponsesCount metric should be updated",
+			givenPubID:                            PublisherUnknown,
+			accountStoredResponsesMetricsDisabled: false,
+			expectedAccountStoredResponsesCount:   0,
+			expectedStoredResponsesCount:          1,
+		},
+		{
+			description:                           "Publisher id is unknown, account stored responses disabled, only expectedStoredResponsesCount metric should be updated",
+			givenPubID:                            PublisherUnknown,
+			accountStoredResponsesMetricsDisabled: true,
+			expectedAccountStoredResponsesCount:   0,
+			expectedStoredResponsesCount:          1,
+		},
+	}
+	for _, test := range testCases {
+		registry := metrics.NewRegistry()
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountStoredResponses: test.accountStoredResponsesMetricsDisabled}, nil)
+
+		m.RecordStoredResponse(test.givenPubID)
+		am := m.getAccountMetrics(test.givenPubID)
+
+		assert.Equal(t, test.expectedStoredResponsesCount, m.StoredResponsesMeter.Count())
+		assert.Equal(t, test.expectedAccountStoredResponsesCount, am.storedResponsesMeter.Count())
+	}
+}
+
+func TestRecordAdsCertSignTime(t *testing.T) {
+	testCases := []struct {
+		description           string
+		inAdsCertSignDuration time.Duration
+		outExpDuration        time.Duration
+	}{
+		{
+			description:           "Five second AdsCertSign time",
+			inAdsCertSignDuration: time.Second * 5,
+			outExpDuration:        time.Second * 5,
+		},
+		{
+			description:           "Five millisecond AdsCertSign time",
+			inAdsCertSignDuration: time.Millisecond * 5,
+			outExpDuration:        time.Millisecond * 5,
+		},
+		{
+			description:           "Zero AdsCertSign time",
+			inAdsCertSignDuration: time.Duration(0),
+			outExpDuration:        time.Duration(0),
+		},
+	}
+	for _, test := range testCases {
+		registry := metrics.NewRegistry()
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{}, nil)
+
+		m.RecordAdsCertSignTime(test.inAdsCertSignDuration)
+
+		assert.Equal(t, test.outExpDuration.Nanoseconds(), m.adsCertSignTimer.Sum(), test.description)
+	}
+}
+
+func TestRecordAdsCertReqMetric(t *testing.T) {
+	testCases := []struct {
+		description                  string
+		requestSuccess               bool
+		expectedSuccessRequestsCount int64
+		expectedFailedRequestsCount  int64
+	}{
+		{
+			description:                  "Record failed request, expected success request count is 0 and failed request count is 1",
+			requestSuccess:               false,
+			expectedSuccessRequestsCount: 0,
+			expectedFailedRequestsCount:  1,
+		},
+		{
+			description:                  "Record successful request, expected success request count is 1 and failed request count is 0",
+			requestSuccess:               true,
+			expectedSuccessRequestsCount: 1,
+			expectedFailedRequestsCount:  0,
+		},
+	}
+
+	for _, test := range testCases {
+		registry := metrics.NewRegistry()
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{}, nil)
+
+		m.RecordAdsCertReq(test.requestSuccess)
+
+		assert.Equal(t, test.expectedSuccessRequestsCount, m.AdsCertRequestsSuccess.Count(), test.description)
+		assert.Equal(t, test.expectedFailedRequestsCount, m.AdsCertRequestsFailure.Count(), test.description)
+	}
 }
 
 func ensureContainsBidTypeMetrics(t *testing.T, registry metrics.Registry, prefix string, mdm map[openrtb_ext.BidType]*MarkupDeliveryMetrics) {

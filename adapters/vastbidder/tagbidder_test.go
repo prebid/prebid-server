@@ -4,7 +4,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/adcom1"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
@@ -45,8 +46,8 @@ func TestMakeRequests(t *testing.T) {
 						{ // vast 2.0
 							ID: "vast_2_0_imp_req",
 							Video: &openrtb2.Video{
-								Protocols: []openrtb2.Protocol{
-									openrtb2.ProtocolVAST20,
+								Protocols: []adcom1.MediaCreativeSubtype{
+									adcom1.CreativeVAST20,
 								},
 							},
 							Ext: []byte(`{"bidder" :{}}`),
@@ -54,8 +55,8 @@ func TestMakeRequests(t *testing.T) {
 						{
 							ID: "vast_4_0_imp_req",
 							Video: &openrtb2.Video{ // vast 4.0
-								Protocols: []openrtb2.Protocol{
-									openrtb2.ProtocolVAST40,
+								Protocols: []adcom1.MediaCreativeSubtype{
+									adcom1.CreativeVAST40,
 								},
 							},
 							Ext: []byte(`{"bidder" :{}}`),
@@ -63,9 +64,9 @@ func TestMakeRequests(t *testing.T) {
 						{
 							ID: "vast_2_0_4_0_wrapper_imp_req",
 							Video: &openrtb2.Video{ // vast 2 and 4.0 wrapper
-								Protocols: []openrtb2.Protocol{
-									openrtb2.ProtocolVAST40Wrapper,
-									openrtb2.ProtocolVAST20,
+								Protocols: []adcom1.MediaCreativeSubtype{
+									adcom1.CreativeVAST40Wrapper,
+									adcom1.CreativeVAST20,
 								},
 							},
 							Ext: []byte(`{"bidder" :{}}`),
@@ -73,8 +74,8 @@ func TestMakeRequests(t *testing.T) {
 						{
 							ID: "other_non_vast_protocol",
 							Video: &openrtb2.Video{ // DAAST 1.0
-								Protocols: []openrtb2.Protocol{
-									openrtb2.ProtocolDAAST10,
+								Protocols: []adcom1.MediaCreativeSubtype{
+									adcom1.CreativeDAAST10,
 								},
 							},
 							Ext: []byte(`{"bidder" :{}}`),
@@ -83,7 +84,7 @@ func TestMakeRequests(t *testing.T) {
 
 							ID: "no_protocol_field_set",
 							Video: &openrtb2.Video{ // vast 2 and 4.0 wrapper
-								Protocols: []openrtb2.Protocol{},
+								Protocols: []adcom1.MediaCreativeSubtype{},
 							},
 							Ext: []byte(`{"bidder" :{}}`),
 						},

@@ -3,7 +3,8 @@ package firstpartydata
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
 	"github.com/prebid/prebid-server/errortypes"
@@ -186,13 +187,11 @@ func resolveUser(fpdConfig *openrtb_ext.ORTB2, bidRequestUser *openrtb2.User, gl
 		return nil, nil
 	}
 
-	if bidRequestUser == nil && fpdConfigUser != nil {
-		return nil, &errortypes.BadInput{
-			Message: fmt.Sprintf("incorrect First Party Data for bidder %s: User object is not defined in request, but defined in FPD config", bidderName),
-		}
+	newUser := openrtb2.User{}
+	if bidRequestUser != nil {
+		newUser = *bidRequestUser
 	}
 
-	newUser := *bidRequestUser
 	var err error
 
 	//apply global fpd

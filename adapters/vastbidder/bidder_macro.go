@@ -8,7 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/adcom1"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -1195,10 +1196,10 @@ func setDefaultHeaders(tag *BidderMacro) {
 	expectedVastTags := 0
 	if nil != tag.Imp && nil != tag.Imp.Video && nil != tag.Imp.Video.Protocols && len(tag.Imp.Video.Protocols) > 0 {
 		for _, protocol := range tag.Imp.Video.Protocols {
-			if protocol == openrtb2.ProtocolVAST40 || protocol == openrtb2.ProtocolVAST40Wrapper {
+			if protocol == adcom1.CreativeVAST40 || protocol == adcom1.CreativeVAST40Wrapper {
 				expectedVastTags |= 1 << 1
 			}
-			if protocol <= openrtb2.ProtocolVAST30Wrapper {
+			if protocol <= adcom1.CreativeVAST30Wrapper {
 				expectedVastTags |= 1 << 0
 			}
 		}

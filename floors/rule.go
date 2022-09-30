@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/buger/jsonparser"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -32,6 +32,10 @@ const (
 
 func getFloorCurrency(floorExt *openrtb_ext.PriceFloorRules) string {
 	floorCur := "USD"
+	if floorExt == nil || floorExt.Data == nil {
+		return floorCur
+	}
+
 	if floorExt.Data.Currency != "" {
 		floorCur = floorExt.Data.Currency
 	}
@@ -45,6 +49,10 @@ func getFloorCurrency(floorExt *openrtb_ext.PriceFloorRules) string {
 func getMinFloorValue(floorExt *openrtb_ext.PriceFloorRules, conversions currency.Conversions) (float64, string, error) {
 	var err error
 	var rate float64
+
+	if floorExt == nil {
+		return 0, "USD", err
+	}
 	floorMin := floorExt.FloorMin
 	floorCur := getFloorCurrency(floorExt)
 
@@ -98,18 +106,18 @@ func shouldSkipFloors(ModelGroupsSkipRate, DataSkipRate, RootSkipRate int, f fun
 	} else {
 		skipRate = RootSkipRate
 	}
-	return skipRate > f(SKIP_RATE_MAX+1)
+	return skipRate >= f(SKIP_RATE_MAX+1)
 }
 
-func findRule(RuleValues map[string]float64, delimiter string, desiredRuleKey []string, numFields int) string {
+func findRule(ruleValues map[string]float64, delimiter string, desiredRuleKey []string, numFields int) (string, bool) {
 
 	ruleKeys := prepareRuleCombinations(desiredRuleKey, numFields, delimiter)
 	for i := 0; i < len(ruleKeys); i++ {
-		if _, ok := RuleValues[ruleKeys[i]]; ok {
-			return ruleKeys[i]
+		if _, ok := ruleValues[ruleKeys[i]]; ok {
+			return ruleKeys[i], true
 		}
 	}
-	return ""
+	return "", false
 }
 
 func createRuleKey(floorSchema openrtb_ext.PriceFloorSchema, request *openrtb2.BidRequest, imp openrtb2.Imp) []string {
@@ -148,6 +156,9 @@ func createRuleKey(floorSchema openrtb_ext.PriceFloorSchema, request *openrtb2.B
 
 func getDeviceType(request *openrtb2.BidRequest) string {
 	value := CATCH_ALL
+	if request.Device == nil || len(request.Device.UA) == 0 {
+		return value
+	}
 	if isMobileDevice(request.Device.UA) {
 		value = Phone
 	} else if isTabletDevice(request.Device.UA) {
@@ -155,6 +166,7 @@ func getDeviceType(request *openrtb2.BidRequest) string {
 	}
 	return value
 }
+
 func getDeviceCountry(request *openrtb2.BidRequest) string {
 	value := CATCH_ALL
 	if request.Device != nil && request.Device.Geo != nil {
@@ -205,13 +217,13 @@ func getDomain(request *openrtb2.BidRequest) string {
 	if request.Site != nil {
 		if len(request.Site.Domain) > 0 {
 			value = request.Site.Domain
-		} else {
+		} else if request.Site.Publisher != nil && len(request.Site.Publisher.Domain) > 0 {
 			value = request.Site.Publisher.Domain
 		}
-	} else {
+	} else if request.App != nil {
 		if len(request.App.Domain) > 0 {
 			value = request.App.Domain
-		} else {
+		} else if request.App.Publisher != nil && len(request.App.Publisher.Domain) > 0 {
 			value = request.App.Publisher.Domain
 		}
 	}
@@ -229,10 +241,10 @@ func getSiteDomain(request *openrtb2.BidRequest) string {
 }
 
 func getPublisherDomain(request *openrtb2.BidRequest) string {
-	var value string
-	if request.Site != nil {
+	value := CATCH_ALL
+	if request.Site != nil && request.Site.Publisher != nil && len(request.Site.Publisher.Domain) > 0 {
 		value = request.Site.Publisher.Domain
-	} else {
+	} else if request.App != nil && request.App.Publisher != nil && len(request.App.Publisher.Domain) > 0 {
 		value = request.App.Publisher.Domain
 	}
 	return value
@@ -240,14 +252,14 @@ func getPublisherDomain(request *openrtb2.BidRequest) string {
 
 func getBundle(request *openrtb2.BidRequest) string {
 	value := CATCH_ALL
-	if request.App != nil {
+	if request.App != nil && len(request.App.Bundle) > 0 {
 		value = request.App.Bundle
 	}
 	return value
 }
 
 func getgptslot(imp openrtb2.Imp) string {
-	var value string
+	value := CATCH_ALL
 	adsname, err := jsonparser.GetString(imp.Ext, "data", "adserver", "name")
 	if err == nil && adsname == "gam" {
 		gptSlot, _ := jsonparser.GetString(imp.Ext, "data", "adserver", "adslot")
@@ -258,7 +270,6 @@ func getgptslot(imp openrtb2.Imp) string {
 		value = getpbadslot(imp)
 	}
 	return value
-
 }
 
 func extractChanelNameFromBidRequestExt(bidRequest *openrtb2.BidRequest) string {
@@ -281,12 +292,12 @@ func extractChanelNameFromBidRequestExt(bidRequest *openrtb2.BidRequest) string 
 }
 
 func getpbadslot(imp openrtb2.Imp) string {
-	pbAdSlot := CATCH_ALL
-	value, err := jsonparser.GetString(imp.Ext, "data", "pbadslot")
-	if err == nil && pbAdSlot != "" {
-		pbAdSlot = value
+	value := CATCH_ALL
+	pbAdSlot, err := jsonparser.GetString(imp.Ext, "data", "pbadslot")
+	if err == nil {
+		value = pbAdSlot
 	}
-	return pbAdSlot
+	return value
 }
 
 func getAdUnitCode(imp openrtb2.Imp) string {
@@ -341,7 +352,7 @@ func prepareRuleCombinations(keys []string, numSchemaFields int, delimiter strin
 	}
 	desiredkeys = append(desiredkeys, subset)
 	for numWildCart := 1; numWildCart <= numSchemaFields; numWildCart++ {
-		newComb := GenerateCombinations(comb, numWildCart, segNum)
+		newComb := generateCombinations(comb, numWildCart, segNum)
 		for i := 0; i < len(newComb); i++ {
 			eachSet := make([]string, len(desiredkeys[0]))
 			_ = copy(eachSet, desiredkeys[0])
@@ -351,11 +362,11 @@ func prepareRuleCombinations(keys []string, numSchemaFields int, delimiter strin
 			desiredkeys = append(desiredkeys, eachSet)
 		}
 	}
-	ruleKeys = PrepareRuleKeys(desiredkeys, delimiter)
+	ruleKeys = prepareRuleKeys(desiredkeys, delimiter)
 	return ruleKeys
 }
 
-func PrepareRuleKeys(desiredkeys [][]string, delimiter string) []string {
+func prepareRuleKeys(desiredkeys [][]string, delimiter string) []string {
 	var ruleKeys []string
 	for i := 0; i < len(desiredkeys); i++ {
 		subset := desiredkeys[i][0]
@@ -367,7 +378,7 @@ func PrepareRuleKeys(desiredkeys [][]string, delimiter string) []string {
 	return ruleKeys
 }
 
-func GenerateCombinations(set []int, numWildCart int, segNum int) (comb [][]int) {
+func generateCombinations(set []int, numWildCart int, segNum int) (comb [][]int) {
 	length := uint(len(set))
 
 	if numWildCart > len(set) {
@@ -400,6 +411,5 @@ func GenerateCombinations(set []int, numWildCart int, segNum int) (comb [][]int)
 		}
 		return wt1 < wt2
 	})
-
 	return comb
 }

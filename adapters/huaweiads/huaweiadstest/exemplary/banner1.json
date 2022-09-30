@@ -45,6 +45,7 @@
       "make": "huawei",
       "w": 1080,
       "ip": "ip",
+      "ifa": "e4fe9bde-caa0-47b6-908d-ffba3fa184f2",
       "pxratio": 23.01,
       "geo": {
         "country": "CHN"
@@ -124,7 +125,7 @@
             "pxratio": 23.01,
             "width": 1080,
             "clientTime": "2018-11-02 16:34:07.981+1300",
-            "gaid": "gaid",
+            "gaid": "e4fe9bde-caa0-47b6-908d-ffba3fa184f2",
             "useragent": "useragent",
             "version": "10.0.0",
             "maker": "huawei",
@@ -140,7 +141,8 @@
             "coppa": 1
           },
           "consent": "CPaYLJBPaYLJBIPAAAENCSCgAPAAAAAAAAAAGsQAQGsAAAAA.YAAAAAAAAAA",
-          "version": "3.4"
+          "version": "3.4",
+          "clientAdRequestId": "test-req-id"
         }
       },
       "mockResponse": {

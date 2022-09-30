@@ -15,7 +15,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/buger/jsonparser"
 	"github.com/julienschmidt/httprouter"
+	"github.com/mxmCherry/openrtb/v16/native1"
+	nativeRequests "github.com/mxmCherry/openrtb/v16/native1/request"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/stretchr/testify/assert"
+
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -26,12 +32,6 @@ import (
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/stored_responses"
 	"github.com/prebid/prebid-server/util/iputil"
-
-	"github.com/buger/jsonparser"
-	"github.com/mxmCherry/openrtb/v15/native1"
-	nativeRequests "github.com/mxmCherry/openrtb/v15/native1/request"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestJsonSampleRequests(t *testing.T) {
@@ -878,22 +878,65 @@ func TestImplicitSecure(t *testing.T) {
 	}
 }
 
-func TestRefererParsing(t *testing.T) {
-	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
-	httpReq.Header.Set("Referer", "http://test.mysite.com")
-	bidReq := &openrtb2.BidRequest{}
-
-	setSiteImplicitly(httpReq, bidReq)
-
-	if bidReq.Site == nil {
-		t.Fatalf("bidrequest.site should not be nil.")
+func TestReferer(t *testing.T) {
+	testCases := []struct {
+		description     string
+		givenSitePage   string
+		givenSiteDomain string
+		givenReferer    string
+		expectedDomain  string
+		expectedPage    string
+	}{
+		{
+			description:    "site.page/domain are unchanged when site.page/domain and http referer are not set",
+			expectedDomain: "",
+			expectedPage:   "",
+		},
+		{
+			description:    "site.page/domain are derived from referer when neither is set and http referer is set",
+			givenReferer:   "https://test.somepage.com",
+			expectedDomain: "somepage.com",
+			expectedPage:   "https://test.somepage.com",
+		},
+		{
+			description:    "site.domain is derived from site.page when site.page is set and http referer is not set",
+			givenSitePage:  "https://test.somepage.com",
+			expectedDomain: "somepage.com",
+			expectedPage:   "https://test.somepage.com",
+		},
+		{
+			description:    "site.domain is derived from http referer when site.page and http referer are set",
+			givenSitePage:  "https://test.somepage.com",
+			givenReferer:   "http://test.com",
+			expectedDomain: "test.com",
+			expectedPage:   "https://test.somepage.com",
+		},
+		{
+			description:     "site.page/domain are unchanged when site.page/domain and http referer are set",
+			givenSitePage:   "https://test.somepage.com",
+			givenSiteDomain: "some.domain.com",
+			givenReferer:    "http://test.com",
+			expectedDomain:  "some.domain.com",
+			expectedPage:    "https://test.somepage.com",
+		},
 	}
 
-	if bidReq.Site.Domain != "mysite.com" {
-		t.Errorf("Bad bidrequest.site.domain. Expected mysite.com, got %s", bidReq.Site.Domain)
-	}
-	if bidReq.Site.Page != "http://test.mysite.com" {
-		t.Errorf("Bad bidrequest.site.page. Expected mysite.com, got %s", bidReq.Site.Page)
+	for _, test := range testCases {
+		httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
+		httpReq.Header.Set("Referer", test.givenReferer)
+
+		bidReq := &openrtb2.BidRequest{
+			Site: &openrtb2.Site{
+				Domain: test.givenSiteDomain,
+				Page:   test.givenSitePage,
+			},
+		}
+
+		setSiteImplicitly(httpReq, bidReq)
+
+		assert.NotNil(t, bidReq.Site, test.description)
+		assert.Equal(t, test.expectedDomain, bidReq.Site.Domain, test.description)
+		assert.Equal(t, test.expectedPage, bidReq.Site.Page, test.description)
 	}
 }
 
@@ -916,6 +959,10 @@ func TestParseImpInfoSingleImpression(t *testing.T) {
 			//in this case impression doesn't have storedrequest so we don't expect any data about this imp will be returned
 			Imp:          json.RawMessage(`{"id": "some-static-imp","video":{"mimes":["video/mp4"]},"ext": {"appnexus": {"placementId": "abc","position": "below"}}}`),
 			ImpExtPrebid: openrtb_ext.ExtImpPrebid{},
+		},
+		{
+			Imp:          json.RawMessage(`{"id":"my-imp-id", "video":{"h":300, "w":200}, "ext":{"prebid":{"storedrequest": {"id": "6"}}}}`),
+			ImpExtPrebid: openrtb_ext.ExtImpPrebid{StoredRequest: &openrtb_ext.ExtStoredRequest{ID: "6"}},
 		},
 	}
 
@@ -1010,7 +1057,7 @@ func TestStoredRequests(t *testing.T) {
 		empty_fetcher.EmptyFetcher{},
 	}
 
-	testStoreVideoAttr := []bool{true, true, false, false}
+	testStoreVideoAttr := []bool{true, true, false, false, false}
 
 	for i, requestData := range testStoredRequests {
 		impInfo, errs := parseImpInfo([]byte(requestData))
@@ -1026,7 +1073,6 @@ func TestStoredRequests(t *testing.T) {
 			}
 		}
 		expectJson := json.RawMessage(testFinalRequests[i])
-
 		assert.JSONEq(t, string(expectJson), string(newRequest), "Incorrect result request %d", i)
 
 		expectedImp := testStoredImpIds[i]
@@ -2454,13 +2500,13 @@ func TestMapSChains(t *testing.T) {
 	const seller1SChain string = `"schain":{"complete":1,"nodes":[{"asi":"directseller1.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}`
 	const seller2SChain string = `"schain":{"complete":2,"nodes":[{"asi":"directseller2.com","sid":"00002","rid":"BidRequest2","hp":2}],"ver":"2.0"}`
 
-	seller1SChainUnpacked := openrtb_ext.ExtRequestPrebidSChainSChain{
+	seller1SChainUnpacked := openrtb2.SupplyChain{
 		Complete: 1,
-		Nodes: []*openrtb_ext.ExtRequestPrebidSChainSChainNode{{
+		Nodes: []openrtb2.SupplyChainNode{{
 			ASI: "directseller1.com",
 			SID: "00001",
 			RID: "BidRequest1",
-			HP:  1,
+			HP:  openrtb2.Int8Ptr(1),
 		}},
 		Ver: "1.0",
 	}
@@ -2468,8 +2514,8 @@ func TestMapSChains(t *testing.T) {
 	tests := []struct {
 		description         string
 		bidRequest          openrtb2.BidRequest
-		wantReqExtSChain    *openrtb_ext.ExtRequestPrebidSChainSChain
-		wantSourceExtSChain *openrtb_ext.ExtRequestPrebidSChainSChain
+		wantReqExtSChain    *openrtb2.SupplyChain
+		wantSourceExtSChain *openrtb2.SupplyChain
 		wantError           bool
 	}{
 		{
@@ -3099,7 +3145,7 @@ func TestParseRequestParseImpInfoError(t *testing.T) {
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
 
-	resReq, impExtInfoMap, _, _, errL := deps.parseRequest(req)
+	resReq, impExtInfoMap, _, _, _, errL := deps.parseRequest(req)
 
 	assert.Nil(t, resReq, "Result request should be nil due to incorrect imp")
 	assert.Nil(t, impExtInfoMap, "Impression info map should be nil due to incorrect imp")
@@ -3672,7 +3718,7 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
 
-			resReq, _, _, _, errL := deps.parseRequest(req)
+			resReq, _, _, _, _, errL := deps.parseRequest(req)
 
 			var expIExt, iExt map[string]interface{}
 			err := json.Unmarshal(test.expectedImpExt, &expIExt)
@@ -3772,7 +3818,7 @@ func TestParseRequestStoredResponses(t *testing.T) {
 
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
 
-			_, _, storedResponses, _, errL := deps.parseRequest(req)
+			_, _, storedResponses, _, _, errL := deps.parseRequest(req)
 
 			if test.expectedErrorCount == 0 {
 				assert.Equal(t, test.expectedStoredResponses, storedResponses, "stored responses should match")
@@ -3858,7 +3904,7 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 			}
 
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
-			_, _, _, storedBidResponses, errL := deps.parseRequest(req)
+			_, _, _, storedBidResponses, _, errL := deps.parseRequest(req)
 
 			if test.expectedErrorCount == 0 {
 				assert.Equal(t, test.expectedStoredBidResponses, storedBidResponses, "stored responses should match")

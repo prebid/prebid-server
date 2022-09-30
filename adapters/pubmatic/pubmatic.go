@@ -9,8 +9,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -177,29 +178,28 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ad
 		var userExt *openrtb_ext.ExtUser
 		if err = json.Unmarshal(request.User.Ext, &userExt); err == nil {
 			if userExt != nil && userExt.Eids != nil {
-				var eidArr []openrtb2.Eid
+				var eidArr []openrtb2.EID
 				for _, eid := range userExt.Eids {
-					//var newEid openrtb2.Eid
-					newEid := &openrtb2.Eid{
+					newEid := &openrtb2.EID{
 						ID:     eid.ID,
 						Source: eid.Source,
 						Ext:    eid.Ext,
 					}
-					var uidArr []openrtb2.Uid
-					for _, uid := range eid.Uids {
-						newUID := &openrtb2.Uid{
+					var uidArr []openrtb2.UID
+					for _, uid := range eid.UIDs {
+						newUID := &openrtb2.UID{
 							ID:    uid.ID,
-							AType: uid.Atype,
+							AType: uid.AType,
 							Ext:   uid.Ext,
 						}
 						uidArr = append(uidArr, *newUID)
 					}
-					newEid.Uids = uidArr
+					newEid.UIDs = uidArr
 					eidArr = append(eidArr, *newEid)
 				}
 
 				user := *request.User
-				user.Eids = eidArr
+				user.EIDs = eidArr
 				userExt.Eids = nil
 				updatedUserExt, err1 := json.Marshal(userExt)
 				if err1 == nil {
@@ -305,8 +305,8 @@ func parseImpressionObject(imp *openrtb2.Imp, extractWrapperExtFromImp, extractP
 	var pubID string
 
 	// PubMatic supports banner and video impressions.
-	if imp.Banner == nil && imp.Video == nil {
-		return wrapExt, pubID, fmt.Errorf("Invalid MediaType. PubMatic only supports Banner and Video. Ignoring ImpID=%s", imp.ID)
+	if imp.Banner == nil && imp.Video == nil && imp.Native == nil {
+		return wrapExt, pubID, fmt.Errorf("invalid MediaType. PubMatic only supports Banner, Video and Native. Ignoring ImpID=%s", imp.ID)
 	}
 
 	if imp.Audio != nil {
@@ -504,13 +504,24 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 			seat := ""
 			var bidExt *pubmaticBidExt
 			bidType := openrtb_ext.BidTypeBanner
-			if err := json.Unmarshal(bid.Ext, &bidExt); err == nil && bidExt != nil {
+			err := json.Unmarshal(bid.Ext, &bidExt)
+			if err != nil {
+				errs = append(errs, err)
+			} else if bidExt != nil {
 				seat = bidExt.Marketplace
 				if bidExt.VideoCreativeInfo != nil && bidExt.VideoCreativeInfo.Duration != nil {
 					impVideo.Duration = *bidExt.VideoCreativeInfo.Duration
 				}
 				bidType = getBidType(bidExt)
 			}
+
+			if bidType == openrtb_ext.BidTypeNative {
+				bid.AdM, err = getNativeAdm(bid.AdM)
+				if err != nil {
+					errs = append(errs, err)
+				}
+			}
+
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:        &bid,
 				BidType:    bidType,
@@ -522,6 +533,27 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 		}
 	}
 	return bidResponse, errs
+}
+
+func getNativeAdm(adm string) (string, error) {
+	var err error
+	nativeAdm := make(map[string]interface{})
+	err = json.Unmarshal([]byte(adm), &nativeAdm)
+	if err != nil {
+		return adm, errors.New("unable to unmarshal native adm")
+	}
+
+	// move bid.adm.native to bid.adm
+	if _, ok := nativeAdm["native"]; ok {
+		//using jsonparser to avoid marshaling, encode escape, etc.
+		value, _, _, err := jsonparser.Get([]byte(adm), string(openrtb_ext.BidTypeNative))
+		if err != nil {
+			return adm, errors.New("unable to get native adm")
+		}
+		adm = string(value)
+	}
+
+	return adm, nil
 }
 
 // getBidType returns the bid type specified in the response bid.ext
