@@ -11,7 +11,8 @@ import (
 	"strings"
 
 	"github.com/buger/jsonparser"
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
+
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -261,7 +262,7 @@ func (this *FacebookAdapter) extractPlacementAndPublisher(out *openrtb2.Imp) (st
 	return placementID, publisherID, nil
 }
 
-// modifyImpCustom modifies the impression after it's marshalled to get around mxmCherry 14.0.0 limitations.
+// modifyImpCustom modifies the impression after it's marshalled to add a non-openrtb field.
 func modifyImpCustom(jsonData []byte, imp *openrtb2.Imp) ([]byte, error) {
 	impType := resolveImpType(imp)
 
@@ -291,7 +292,7 @@ func modifyImpCustom(jsonData []byte, imp *openrtb2.Imp) ([]byte, error) {
 			return jsonData, errors.New("unable to find imp[0].video in json data")
 		}
 
-		// mxmCherry omits video.w/h if set to zero, so we need to force set those
+		// the openrtb library omits video.w/h if set to zero, so we need to force set those
 		// fields to zero post-serialization for the time being
 		videoMap["w"] = json.RawMessage("0")
 		videoMap["h"] = json.RawMessage("0")

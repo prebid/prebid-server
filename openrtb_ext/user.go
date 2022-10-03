@@ -1,7 +1,7 @@
 package openrtb_ext
 
 import (
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 )
 
 // ExtUser defines the contract for bidrequest.user.ext

@@ -17,9 +17,9 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	nativeRequests "github.com/mxmCherry/openrtb/v16/native1/request"
-	nativeResponse "github.com/mxmCherry/openrtb/v16/native1/response"
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	nativeRequests "github.com/prebid/openrtb/v17/native1/request"
+	nativeResponse "github.com/prebid/openrtb/v17/native1/response"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
