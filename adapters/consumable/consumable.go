@@ -173,7 +173,7 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 			body.GDPR = &gdpr
 
 			for i := 0; i < len(extUser.Eids); i++ {
-				if extUser.Eids[i].Source == "adserver.org" && len(extUser.Eids[i].UIDs) > 0 {
+				if len(extUser.Eids[i].UIDs) > 0 {
 					if extUser.Eids[i].UIDs[0].ID != "" {
 						body.User.Eids = extUser.Eids
 					}
