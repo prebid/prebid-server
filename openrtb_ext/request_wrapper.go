@@ -285,18 +285,16 @@ func (rw *RequestWrapper) rebuildSourceExt() error {
 // ---------------------------------------------------------------
 
 type UserExt struct {
-	ext                             map[string]json.RawMessage
-	extDirty                        bool
-	consent                         *string
-	consentDirty                    bool
-	prebid                          *ExtUserPrebid
-	prebidDirty                     bool
-	eids                            *[]openrtb2.EID
-	eidsDirty                       bool
-	consentedProvidersSettings      *ExtUserCPSettings
-	consentedProvidersSettingsDirty bool
-	consentedProviders              string
-	consentedProvidersDirty         bool
+	ext                     map[string]json.RawMessage
+	extDirty                bool
+	consent                 *string
+	consentDirty            bool
+	prebid                  *ExtUserPrebid
+	prebidDirty             bool
+	eids                    *[]openrtb2.EID
+	eidsDirty               bool
+	consentedProviders      string
+	consentedProvidersDirty bool
 }
 
 func (ue *UserExt) unmarshal(extJson json.RawMessage) error {
@@ -338,10 +336,11 @@ func (ue *UserExt) unmarshal(extJson json.RawMessage) error {
 	}
 
 	if consentedProviderSettingsJson, hasCPSettings := ue.ext["ConsentedProvidersSettings"]; hasCPSettings {
-		ue.consentedProvidersSettings = &ExtUserCPSettings{}
-		if err := json.Unmarshal(consentedProviderSettingsJson, ue.consentedProvidersSettings); err != nil {
+		consentedProvidersSettings := &ExtUserCPSettings{}
+		if err := json.Unmarshal(consentedProviderSettingsJson, consentedProvidersSettings); err != nil {
 			return err
 		}
+		ue.consentedProviders = consentedProvidersSettings.ConsentedProviders
 	}
 
 	return nil
@@ -381,29 +380,19 @@ func (ue *UserExt) marshal() (json.RawMessage, error) {
 	// if dirty, marshal consentedProvidersSettings, but start with consentedProviders because maybe
 	// this field is dirty
 	if ue.consentedProvidersDirty {
-		if ue.consentedProvidersSettings == nil {
-			ue.consentedProvidersSettings = &ExtUserCPSettings{}
-		}
-		ue.consentedProvidersSettings.ConsentedProviders = ue.consentedProviders
-		ue.consentedProvidersSettingsDirty = true
-		ue.consentedProvidersDirty = false
-	}
+		consentedProvidersSettings := &ExtUserCPSettings{}
+		consentedProvidersSettings.ConsentedProviders = ue.consentedProviders
 
-	if ue.consentedProvidersSettingsDirty {
-		if ue.consentedProvidersSettings != nil {
-			cpSettingsJson, err := json.Marshal(ue.consentedProvidersSettings)
-			if err != nil {
-				return nil, err
-			}
-			if len(cpSettingsJson) > jsonEmptyObjectLength {
-				ue.ext["ConsentedProvidersSettings"] = json.RawMessage(cpSettingsJson)
-			} else {
-				delete(ue.ext, "ConsentedProvidersSettings")
-			}
+		cpSettingsJson, err := json.Marshal(consentedProvidersSettings)
+		if err != nil {
+			return nil, err
+		}
+		if len(cpSettingsJson) > jsonEmptyObjectLength {
+			ue.ext["ConsentedProvidersSettings"] = json.RawMessage(cpSettingsJson)
 		} else {
 			delete(ue.ext, "ConsentedProvidersSettings")
 		}
-		ue.consentedProvidersSettingsDirty = false
+		ue.consentedProvidersDirty = false
 	}
 
 	if ue.eidsDirty {
@@ -427,7 +416,7 @@ func (ue *UserExt) marshal() (json.RawMessage, error) {
 }
 
 func (ue *UserExt) Dirty() bool {
-	return ue.extDirty || ue.eidsDirty || ue.prebidDirty || ue.consentDirty || ue.consentedProvidersSettingsDirty || ue.consentedProvidersDirty
+	return ue.extDirty || ue.eidsDirty || ue.prebidDirty || ue.consentDirty || ue.consentedProvidersDirty
 }
 
 func (ue *UserExt) GetExt() map[string]json.RawMessage {
@@ -456,26 +445,9 @@ func (ue *UserExt) SetConsent(consent *string) {
 	ue.consentDirty = true
 }
 
-func (ue *UserExt) GetConsentedProvidersSettings() *ExtUserCPSettings {
-	if ue.consentedProvidersSettings == nil {
-		return nil
-	}
-	consentedProvidersSettings := *ue.consentedProvidersSettings
-	return &consentedProvidersSettings
-}
-func (ue *UserExt) SetConsentedProvidersSettings(cpSettings *ExtUserCPSettings) {
-	ue.consentedProvidersSettings = cpSettings
-	ue.consentedProvidersSettingsDirty = true
-}
-
 func (ue *UserExt) GetConsentedProviders() string {
 	if len(ue.consentedProviders) > 0 {
 		return ue.consentedProviders
-	}
-	// else, let's look for this value inside ue.consentedProvidersSettings
-	consentedProvidersSettings := ue.GetConsentedProvidersSettings()
-	if consentedProvidersSettings != nil {
-		return consentedProvidersSettings.ConsentedProviders
 	}
 	return ""
 }
