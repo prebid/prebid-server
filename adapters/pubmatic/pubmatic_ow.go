@@ -1,6 +1,8 @@
 package pubmatic
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 func getTargetingKeys(bidExt json.RawMessage, bidderName string) map[string]string {
 	targets := map[string]string{}
@@ -30,15 +32,4 @@ func copySBExtToBidExt(sbExt json.RawMessage, bidExt json.RawMessage) json.RawMe
 		return json.RawMessage(byteAra)
 	}
 	return bidExt
-}
-
-func getMapFromJSON(ext json.RawMessage) map[string]interface{} {
-	if ext != nil {
-		extMap := make(map[string]interface{})
-		err := json.Unmarshal(ext, &extMap)
-		if err == nil {
-			return extMap
-		}
-	}
-	return nil
 }

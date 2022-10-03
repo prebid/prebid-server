@@ -42,22 +42,6 @@ func TestGetAdServerTargetingForPubmaticAlias(t *testing.T) {
 	}
 }
 
-func TestGetMapFromJSON(t *testing.T) {
-	ext := json.RawMessage("{\"buyid\":\"testBuyId\"}")
-	extMap := getMapFromJSON(ext)
-	if extMap == nil {
-		t.Errorf("it should be converted in extMap")
-	}
-}
-
-func TestGetMapFromJSONWithInvalidJSON(t *testing.T) {
-	ext := json.RawMessage("{\"buyid\":\"testBuyId\"}}}}")
-	extMap := getMapFromJSON(ext)
-	if extMap != nil {
-		t.Errorf("it should be converted in extMap")
-	}
-}
-
 func TestCopySBExtToBidExtWithBidExt(t *testing.T) {
 	sbext := json.RawMessage("{\"buyid\":\"testBuyId\"}")
 	bidext := json.RawMessage("{\"dspId\":\"9\"}")
