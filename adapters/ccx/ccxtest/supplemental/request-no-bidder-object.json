@@ -1,0 +1,21 @@
+{
+  "mockBidRequest": {
+    "id": "test-no-pid",
+    "imp": [
+      {
+        "id": "test-imp-id-no-pid",
+        "banner": {
+          "format": [{"w": 300, "h": 250}]
+        },
+        "ext": {
+        }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Error parsing Ext parameters",
+      "comparison": "literal"
+    }
+  ]
+}
