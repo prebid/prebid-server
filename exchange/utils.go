@@ -25,19 +25,19 @@ import (
 )
 
 var integrationTypeMap = map[metrics.RequestType]config.IntegrationType{
-	metrics.ReqTypeAMP:      config.IntegrationTypeAMP,
-	metrics.ReqTypeORTB2App: config.IntegrationTypeApp,
-	metrics.ReqTypeVideo:    config.IntegrationTypeVideo,
-	metrics.ReqTypeORTB2Web: config.IntegrationTypeWeb,
+	metrics.ReqTypeAMP:      config.ChannelAMP,
+	metrics.ReqTypeORTB2App: config.ChannelApp,
+	metrics.ReqTypeVideo:    config.ChannelVideo,
+	metrics.ReqTypeORTB2Web: config.ChannelWeb,
 }
 
 const unknownBidder string = ""
 
 // cleanOpenRTBRequests splits the input request into requests which are sanitized for each bidder. Intended behavior is:
 //
-//   1. BidRequest.Imp[].Ext will only contain the "prebid" field and a "bidder" field which has the params for the intended Bidder.
-//   2. Every BidRequest.Imp[] requested Bids from the Bidder who keys it.
-//   3. BidRequest.User.BuyerUID will be set to that Bidder's ID.
+//  1. BidRequest.Imp[].Ext will only contain the "prebid" field and a "bidder" field which has the params for the intended Bidder.
+//  2. Every BidRequest.Imp[] requested Bids from the Bidder who keys it.
+//  3. BidRequest.User.BuyerUID will be set to that Bidder's ID.
 func cleanOpenRTBRequests(ctx context.Context,
 	auctionReq AuctionRequest,
 	requestExt *openrtb_ext.ExtRequest,
@@ -112,7 +112,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 	var gdprPerms gdpr.Permissions = &gdpr.AlwaysAllow{}
 
 	if gdprApplies {
-		gdprEnforced = tcf2Cfg.IntegrationEnabled(integrationTypeMap[auctionReq.LegacyLabels.RType])
+		gdprEnforced = tcf2Cfg.ChannelEnabled(integrationTypeMap[auctionReq.LegacyLabels.RType])
 	}
 
 	if gdprEnforced {

@@ -12,10 +12,10 @@ type IntegrationType string
 
 // Possible values of integration types Prebid Server can configure for an account
 const (
-	IntegrationTypeAMP   IntegrationType = "amp"
-	IntegrationTypeApp   IntegrationType = "app"
-	IntegrationTypeVideo IntegrationType = "video"
-	IntegrationTypeWeb   IntegrationType = "web"
+	ChannelAMP   IntegrationType = "amp"
+	ChannelApp   IntegrationType = "app"
+	ChannelVideo IntegrationType = "video"
+	ChannelWeb   IntegrationType = "web"
 )
 
 // Account represents a publisher account configuration
@@ -45,6 +45,7 @@ type CookieSync struct {
 type AccountCCPA struct {
 	Enabled            *bool              `mapstructure:"enabled" json:"enabled,omitempty"`
 	IntegrationEnabled AccountIntegration `mapstructure:"integration_enabled" json:"integration_enabled"`
+	ChannelEnabled     AccountIntegration `mapstructure:"channel_enabled" json:"channel_enabled"`
 }
 
 // EnabledForIntegrationType indicates whether CCPA is turned on at the account level for the specified integration type
@@ -52,6 +53,8 @@ type AccountCCPA struct {
 func (a *AccountCCPA) EnabledForIntegrationType(integrationType IntegrationType) *bool {
 	if integrationEnabled := a.IntegrationEnabled.GetByIntegrationType(integrationType); integrationEnabled != nil {
 		return integrationEnabled
+	} else if channelEnabled := a.ChannelEnabled.GetByIntegrationType(integrationType); channelEnabled != nil {
+		return channelEnabled
 	}
 	return a.Enabled
 }
@@ -60,6 +63,7 @@ func (a *AccountCCPA) EnabledForIntegrationType(integrationType IntegrationType)
 type AccountGDPR struct {
 	Enabled            *bool              `mapstructure:"enabled" json:"enabled,omitempty"`
 	IntegrationEnabled AccountIntegration `mapstructure:"integration_enabled" json:"integration_enabled"`
+	ChannelEnabled     AccountIntegration `mapstructure:"channel_enabled" json:"channel_enabled"`
 	// Array of basic enforcement vendors that is used to create the hash table so vendor names can be instantly accessed
 	BasicEnforcementVendors    []string `mapstructure:"basic_enforcement_vendors" json:"basic_enforcement_vendors"`
 	BasicEnforcementVendorsMap map[string]struct{}
@@ -95,6 +99,8 @@ func (a *AccountGDPR) BasicEnforcementVendor(bidder openrtb_ext.BidderName) (val
 func (a *AccountGDPR) EnabledForIntegrationType(integrationType IntegrationType) *bool {
 	if integrationEnabled := a.IntegrationEnabled.GetByIntegrationType(integrationType); integrationEnabled != nil {
 		return integrationEnabled
+	} else if channelEnabled := a.ChannelEnabled.GetByIntegrationType(integrationType); channelEnabled != nil {
+		return channelEnabled
 	}
 	return a.Enabled
 }
@@ -211,13 +217,13 @@ func (a *AccountIntegration) GetByIntegrationType(integrationType IntegrationTyp
 	var integrationEnabled *bool
 
 	switch integrationType {
-	case IntegrationTypeAMP:
+	case ChannelAMP:
 		integrationEnabled = a.AMP
-	case IntegrationTypeApp:
+	case ChannelApp:
 		integrationEnabled = a.App
-	case IntegrationTypeVideo:
+	case ChannelVideo:
 		integrationEnabled = a.Video
-	case IntegrationTypeWeb:
+	case ChannelWeb:
 		integrationEnabled = a.Web
 	}
 
