@@ -107,7 +107,7 @@ func resolvePriceMacro(bid *openrtb2.Bid) {
 func getMediaTypeForBid(ext json.RawMessage) (openrtb_ext.BidType, error) {
 	var bidExt openrtb_ext.ExtBid
 
-	if err := json.Unmarshal(ext, &bidExt); err != nil {
+	if err := json.Unmarshal(ext, &bidExt); err != nil || bidExt.Prebid == nil {
 		return "", fmt.Errorf("could not unmarshal openrtb_ext.ExtBid: %w", err)
 	}
 

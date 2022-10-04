@@ -51,23 +51,83 @@ func TestGetMediaTypeForBid(t *testing.T) {
 	}
 
 	tests := []struct {
-		name    string
-		want    openrtb_ext.BidType
-		wantErr bool
-		bidType openrtb_ext.BidType
+		name           string
+		want           openrtb_ext.BidType
+		invalidJSON    bool
+		wantErr        bool
+		wantErrContain string
+		bidType        openrtb_ext.BidType
 	}{
-		{"native", openrtb_ext.BidTypeNative, false, openrtb_ext.BidTypeNative},
-		{"banner", openrtb_ext.BidTypeBanner, false, openrtb_ext.BidTypeBanner},
-		{"video", openrtb_ext.BidTypeVideo, false, openrtb_ext.BidTypeVideo},
-		{"audio", openrtb_ext.BidTypeAudio, false, openrtb_ext.BidTypeAudio},
-		{"empty type", "", true, ""},
+		{
+			name:           "native",
+			want:           openrtb_ext.BidTypeNative,
+			invalidJSON:    false,
+			wantErr:        false,
+			wantErrContain: "",
+			bidType:        "native",
+		},
+		{
+			name:           "banner",
+			want:           openrtb_ext.BidTypeBanner,
+			invalidJSON:    false,
+			wantErr:        false,
+			wantErrContain: "",
+			bidType:        "banner",
+		},
+		{
+			name:           "video",
+			want:           openrtb_ext.BidTypeVideo,
+			invalidJSON:    false,
+			wantErr:        false,
+			wantErrContain: "",
+			bidType:        "video",
+		},
+		{
+			name:           "audio",
+			want:           openrtb_ext.BidTypeAudio,
+			invalidJSON:    false,
+			wantErr:        false,
+			wantErrContain: "",
+			bidType:        "audio",
+		},
+		{
+			name:           "empty type",
+			want:           "",
+			invalidJSON:    false,
+			wantErr:        true,
+			wantErrContain: "invalid BidType",
+			bidType:        "",
+		},
+		{
+			name:           "invalid type",
+			want:           "",
+			invalidJSON:    false,
+			wantErr:        true,
+			wantErrContain: "invalid BidType",
+			bidType:        "invalid",
+		},
+		{
+			name:           "invalid json",
+			want:           "",
+			invalidJSON:    true,
+			wantErr:        true,
+			wantErrContain: "could not unmarshal",
+			bidType:        "",
+		},
 	}
 
 	for _, test := range tests {
 		var bid openrtb2.SeatBid
 		var extBid openrtb_ext.ExtBid
 
-		if err := bid.Ext.UnmarshalJSON([]byte(`{"prebid": {"type":"` + string(test.bidType) + `"}}`)); err != nil {
+		var js string
+		if test.invalidJSON {
+			js = `{"x_prebid": {"type":""}}`
+		} else {
+			js = `{"prebid": {"type":"` + string(test.bidType) + `"}}`
+		}
+
+		if err := bid.Ext.UnmarshalJSON([]byte(js)); err != nil {
 			t.Fatalf("unexpected error %v", err)
 		}
 
@@ -77,7 +137,12 @@ func TestGetMediaTypeForBid(t *testing.T) {
 
 		got, gotErr := getMediaTypeForBid(bid.Ext)
 		assert.Equal(t, test.want, got)
-		if gotErr != nil && !test.wantErr {
+
+		if gotErr != nil {
+			if test.wantErr {
+				assert.Contains(t, gotErr.Error(), test.wantErrContain)
+				continue
+			}
 			t.Fatalf("wantErr: %v, gotErr: %v", test.wantErr, gotErr)
 		}
 	}
