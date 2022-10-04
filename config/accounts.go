@@ -32,6 +32,7 @@ type Account struct {
 	Events                  Events               `mapstructure:"events" json:"events"` // Don't enable this feature. It is still under developmment - https://github.com/prebid/prebid-server/issues/1725
 	TruncateTargetAttribute *int                 `mapstructure:"truncate_target_attr" json:"truncate_target_attr"`
 	AlternateBidderCodes    AlternateBidderCodes `mapstructure:"alternatebiddercodes" json:"alternatebiddercodes"`
+	PriceFloors             AccountPriceFloors   `mapstructure:"price_floors" json:"price_floors"`
 }
 
 // CookieSync represents the account-level defaults for the cookie sync endpoint.
@@ -39,6 +40,25 @@ type CookieSync struct {
 	DefaultLimit    *int  `mapstructure:"default_limit" json:"default_limit"`
 	MaxLimit        *int  `mapstructure:"max_limit" json:"max_limit"`
 	DefaultCoopSync *bool `mapstructure:"default_coop_sync" json:"default_coop_sync"`
+}
+
+type AccountPriceFloors struct {
+	Enabled           bool              `mapstructure:"enabled" json:"enabled"`
+	EnforceFloorRate  int               `mapstructure:"enforce_floors_rate" json:"enforce_floors_rate"`
+	BidAdjustment     bool              `mapstructure:"adjust_for_bid_adjustment" json:"adjust_for_bid_adjustment"`
+	EnforceDealFloors bool              `mapstructure:"enforce_deal_floors" json:"enforce_deal_floors"`
+	UseDynamicData    bool              `mapstructure:"use_dynamic_data" json:"use_dynamic_data"`
+	Fetch             AccountFloorFetch `mapstructure:"fetch" json:"fetch"`
+}
+
+type AccountFloorFetch struct {
+	Enabled     bool   `mapstructure:"enabled" json:"enabled"`
+	URL         string `mapstructure:"url" json:"url"`
+	Timeout     int    `mapstructure:"timeout_ms" json:"timeout_ms"`
+	MaxFileSize int    `mapstructure:"max_file_size_kb" json:"max_file_size_kb"`
+	MaxRules    int    `mapstructure:"max_rules" json:"max_rules"`
+	MaxAge      int    `mapstructure:"max_age_sec" json:"max_age_sec"`
+	Period      int    `mapstructure:"period_sec" json:"period_sec"`
 }
 
 // AccountCCPA represents account-specific CCPA configuration
