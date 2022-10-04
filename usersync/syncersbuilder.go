@@ -81,7 +81,7 @@ func BuildSyncers(hostConfig *config.Configuration, bidderInfos config.BidderInf
 }
 
 func shouldCreateSyncer(cfg config.BidderInfo) bool {
-	if !cfg.Enabled {
+	if cfg.Disabled {
 		return false
 	}
 

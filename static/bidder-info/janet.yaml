@@ -1,3 +1,4 @@
+endpoint: "http://ghb.bidder.jmgads.com/pbs/ortb"
 maintainer:
   email: "info@thejmg.com"
 capabilities:

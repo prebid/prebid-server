@@ -414,9 +414,8 @@ func doBadAliasRequest(t *testing.T, filename string, expectMsg string) {
 
 	// aliasJSON lacks a comma after the "appnexus" entry so is bad JSON
 	aliasJSON := []byte(`{"ext":{"prebid":{"aliases": {"test1": "appnexus" "test2": "rubicon", "test3": "openx"}}}}`)
-	adaptersConfigs := make(map[string]config.Adapter)
 
-	bidderInfos := getBidderInfos(adaptersConfigs, openrtb_ext.CoreBidderNames())
+	bidderInfos := getBidderInfos(nil, openrtb_ext.CoreBidderNames())
 
 	bidderMap := exchange.GetActiveBidders(bidderInfos)
 	disabledBidders := exchange.GetDisabledBiddersErrorMessages(bidderInfos)
