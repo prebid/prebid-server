@@ -172,13 +172,8 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 			gdpr.Consent = extUser.Consent
 			body.GDPR = &gdpr
 
-			for i := 0; i < len(extUser.Eids); i++ {
-				if len(extUser.Eids[i].UIDs) > 0 {
-					if extUser.Eids[i].UIDs[0].ID != "" {
-						body.User.Eids = extUser.Eids
-					}
-					break
-				}
+			if hasEids(extUser.Eids) {
+				body.User.Eids = extUser.Eids
 			}
 		}
 	}
@@ -328,4 +323,13 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 		endpoint: config.Endpoint,
 	}
 	return bidder, nil
+}
+
+func hasEids(eids []openrtb2.EID) bool {
+	for i := 0; i < len(eids); i++ {
+		if len(eids[i].UIDs) > 0 && eids[i].UIDs[0].ID != "" {
+			return true
+		}
+	}
+	return false
 }
