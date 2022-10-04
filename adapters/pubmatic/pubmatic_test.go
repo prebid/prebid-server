@@ -290,7 +290,7 @@ func TestPopulateFirstPartyDataImpAttributes(t *testing.T) {
 			},
 		},
 		{
-			name: "Targeting present in imp.ext.data and adserver object",
+			name: "Targeting and adserver object present in imp.ext.data",
 			args: args{
 				data:      json.RawMessage(`{"adserver": {"name": "gam","adslot": "/1111/home"},"pbadslot": "/2222/home","sport":["rugby","cricket"]}`),
 				impExtMap: map[string]interface{}{},
@@ -301,7 +301,7 @@ func TestPopulateFirstPartyDataImpAttributes(t *testing.T) {
 			},
 		},
 		{
-			name: "Targeting present in imp.ext.data and pbadslot object",
+			name: "Targeting and pbadslot key present in imp.ext.data ",
 			args: args{
 				data:      json.RawMessage(`{"pbadslot": "/2222/home","sport":["rugby","cricket"]}`),
 				impExtMap: map[string]interface{}{},
@@ -312,7 +312,7 @@ func TestPopulateFirstPartyDataImpAttributes(t *testing.T) {
 			},
 		},
 		{
-			name: "Targeting present in imp.ext.data and Invalid Adserver object",
+			name: "Targeting and Invalid Adserver object in imp.ext.data",
 			args: args{
 				data:      json.RawMessage(`{"adserver": "invalid","sport":["rugby","cricket"]}`),
 				impExtMap: map[string]interface{}{},
@@ -370,6 +370,36 @@ func TestPopulateFirstPartyDataImpAttributes(t *testing.T) {
 				impExtMap: map[string]interface{}{},
 			},
 			expectedImpExt: map[string]interface{}{},
+		},
+		{
+			name: "string with spaces present in imp.ext.data",
+			args: args{
+				data:      json.RawMessage(`{"category": "   cinema"}`),
+				impExtMap: map[string]interface{}{},
+			},
+			expectedImpExt: map[string]interface{}{
+				"key_val": "category=cinema",
+			},
+		},
+		{
+			name: "string array with spaces present in imp.ext.data",
+			args: args{
+				data:      json.RawMessage(`{"country": ["  India", "China  "]}`),
+				impExtMap: map[string]interface{}{},
+			},
+			expectedImpExt: map[string]interface{}{
+				"key_val": "country=India,China",
+			},
+		},
+		{
+			name: "Invalid data present in imp.ext.data",
+			args: args{
+				data:      json.RawMessage(`{"country": [1, "India"],"category":"movies"}`),
+				impExtMap: map[string]interface{}{},
+			},
+			expectedImpExt: map[string]interface{}{
+				"key_val": "category=movies",
+			},
 		},
 	}
 	for _, tt := range tests {

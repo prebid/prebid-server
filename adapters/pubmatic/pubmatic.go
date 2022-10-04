@@ -610,7 +610,10 @@ func populateDctrKey(dataMap, extMap map[string]interface{}) {
 		}
 
 		switch typedValue := val.(type) {
-		case string, float64, bool:
+		case string:
+			fmt.Fprintf(&dctr, "%s=%s", key, strings.TrimSpace(typedValue))
+
+		case float64, bool:
 			fmt.Fprintf(&dctr, "%s=%v", key, typedValue)
 
 		case []interface{}:
@@ -624,7 +627,7 @@ func populateDctrKey(dataMap, extMap map[string]interface{}) {
 	}
 
 	if dctrStr := dctr.String(); dctrStr != "" {
-		extMap[dctrKeyName] = dctrStr
+		extMap[dctrKeyName] = strings.TrimSuffix(dctrStr, "|")
 	}
 }
 
@@ -647,7 +650,7 @@ func getStringArray(val interface{}) []string {
 	aString := make([]string, len(aInterface))
 	for i, v := range aInterface {
 		if str, ok := v.(string); ok {
-			aString[i] = str
+			aString[i] = strings.TrimSpace(str)
 		}
 	}
 
