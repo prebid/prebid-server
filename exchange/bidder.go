@@ -40,9 +40,6 @@ var (
 	skanSentKey       = attribute.Key("app.bidder.skan.sent")
 	mraidSupportedKey = attribute.Key("app.bidder.mraid.supported")
 	endcardHTMLKey    = attribute.Key("app.bidder.html_companion")
-	multiBidSelector  = attribute.Key("app.bidder.multi_bid_selector")
-	traceName         = attribute.Key("app.bidder.trace_name")
-	requestNumber     = attribute.Key("app.bidder.request_number")
 	bAppCount         = attribute.Key("app.bidder.bapp.count")
 	bAppSize          = attribute.Key("app.bidder.bapp.size")
 	bAdvCount         = attribute.Key("app.bidder.badv.count")
@@ -454,18 +451,10 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 		mraidSupportedKey.Bool(tjData.MRAID.Supported),
 		placementTypeKey.String(string(tjData.PlacementType)),
 		endcardHTMLKey.Bool(tjData.HTMLCompanionSent),
-		multiBidSelector.Int(tjData.MultiBidSelector),
-		traceName.String(tjData.TraceName),
-		requestNumber.String(tjData.ReqNum),
 		bAppCount.Int(len(tjData.Blocklist.BApp)),
 		bAdvCount.Int(len(tjData.Blocklist.BAdv)),
 		bAppSize.Int(bappSize),
 		bAdvSize.Int(badvSize),
-	}
-
-	if tjData.MultiBidSelector > 0 {
-		ctx, span = trace.SpanFromContext(ctx).TracerProvider().Tracer("").Start(ctx, string(tjData.TraceName))
-		defer span.End()
 	}
 
 	span.SetAttributes(attrs...)

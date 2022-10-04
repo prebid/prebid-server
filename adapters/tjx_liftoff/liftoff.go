@@ -4,11 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/prebid/prebid-server/config"
 
-	"github.com/mxmCherry/openrtb/v15/openrtb2"
 	openrtb "github.com/mxmCherry/openrtb/v15/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
@@ -67,48 +65,6 @@ type liftoffAppExt struct {
 	AppStoreID string `json:"appstoreid"`
 }
 
-type modifiedReqParams struct {
-	ReqNumber   string
-	BidFloor    *float64
-	ContentType string
-}
-
-type reqSourceExt struct {
-	HeaderBidding int `json:"header_bidding,omitempty"`
-}
-type liftoffBidExt struct {
-	SKADN         RespSKADN `json:"skadn,omitempty"` // prebid shared
-	AuctionID     string    `json:"auction_id,omitempty"`
-	Imptrackers   []string  `json:"imptrackers,omitempty"`
-	ClickTrackers []string  `json:"clicktrackers,omitempty"`
-}
-
-// RespSKADN ...
-type RespSKADN struct {
-	Version    string     `json:"version"`    // Version of SKAdNetwork desired. Must be 2.0 or above.
-	Network    string     `json:"network"`    // Ad network identifier used in signature. Should match one of the items in the skadnetids array in the request
-	Campaign   string     `json:"campaign"`   // Campaign ID compatible with Apple’s spec. As of 2.0, should be an integer between 1 and 100, expressed as a string
-	ITunesItem string     `json:"itunesitem"` // ID of advertiser’s app in Apple’s app store. Should match BidResponse.bid.bundle
-	Nonce      string     `json:"nonce"`      // An id unique to each ad response
-	SourceApp  string     `json:"sourceapp"`  // ID of publisher’s app in Apple’s app store. Should match BidRequest.imp.ext.skad.sourceapp
-	Timestamp  string     `json:"timestamp"`  // Unix time in millis string used at the time of signature
-	Signature  string     `json:"signature"`  // SKAdNetwork signature as specified by Apple
-	Fidelities []Fidelity `json:"fidelities"` // Supports multiple fidelity types introduced in SKAdNetwork v2.2
-}
-type Fidelity struct {
-	Fidelity  int    `json:"fidelity"`  // The fidelity-type of the attribution to track
-	Signature string `json:"signature"` // SKAdNetwork signature as specified by Apple
-	Nonce     string `json:"nonce"`     // An id unique to each ad response
-	Timestamp string `json:"timestamp"` // Unix time in millis string used at the time of signature
-}
-
-type reqExt struct {
-	MultiBidSelector int `json:"multi_bid_selector"`
-}
-
-var CONTENT_TYPE_MRAID_ONLY = "MRAID"
-var CONTENT_TYPE_VIDEO_ONLY = "VIDEO"
-
 func Builder(_ openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,
@@ -125,16 +81,6 @@ func Builder(_ openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, 
 func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	numRequests := len(request.Imp)
 
-	// Extract multi bid enabled flag from request extension
-	var reqExt reqExt
-	if request.Ext != nil {
-		if errReqExt := json.Unmarshal(request.Ext, &reqExt); errReqExt != nil {
-			return nil, []error{&errortypes.BadInput{
-				Message: errReqExt.Error(),
-			}}
-		}
-	}
-
 	requestData := make([]*adapters.RequestData, 0, numRequests)
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
@@ -142,147 +88,9 @@ func (a *adapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.ExtraReq
 	headers.Add("User-Agent", "prebid-server/1.0")
 
 	errs := make([]error, 0, len(request.Imp))
-
-	var srcExt *reqSourceExt
-	if request.Source != nil && request.Source.Ext != nil {
-		if err := json.Unmarshal(request.Source.Ext, &srcExt); err != nil {
-			errs = append(errs, err)
-		}
-	}
-
-	// to check if the request is rewarded or skippable
-	var liftoffExt openrtb_ext.ExtImpTJXLiftoff
-	if request.Imp != nil {
-		var bidderExt adapters.ExtImpBidder
-		if err := json.Unmarshal(request.Imp[0].Ext, &bidderExt); err != nil {
-			return nil, []error{&errortypes.BadInput{
-				Message: err.Error(),
-			}}
-		}
-
-		if err := json.Unmarshal(bidderExt.Bidder, &liftoffExt); err != nil {
-			return nil, []error{&errortypes.BadInput{
-				Message: err.Error(),
-			}}
-		}
-	}
-
-	// MultiBidSelector 0 is for no experiment running
-	// MultiBidSelector 1 is for Experiment using BFS values
-	// MultiBidSelector 2 is for Experiment using mediator values
-	// Header Bidding is for identifying if the request is coming from TJX or AS
-	if srcExt != nil && srcExt.HeaderBidding == 1 && reqExt.MultiBidSelector > 0 {
-		bidFloorA := *liftoffExt.BidFloor
-		bidFloorB := *liftoffExt.BidFloor + 1
-		bidFloorC := *liftoffExt.BidFloor + 2
-		bidFloorD := *liftoffExt.BidFloor + 3
-		modifiedParams := []modifiedReqParams{
-			{
-				ReqNumber: "1",
-				BidFloor:  &bidFloorA,
-			},
-			{
-				ReqNumber: "2",
-				BidFloor:  &bidFloorB,
-			},
-			{
-				ReqNumber: "3",
-				BidFloor:  &bidFloorC,
-			},
-			{
-				ReqNumber: "4",
-				BidFloor:  &bidFloorD,
-			},
-		}
-		for _, param := range modifiedParams {
-			liftoffRequest := *request
-			reqData, err := a.makeRequestData(&liftoffRequest, numRequests, param, headers, errs, reqExt.MultiBidSelector, srcExt)
-			requestData = append(requestData, reqData)
-			errs = append(errs, err...)
-		}
-	} else {
-		liftoffRequest := *request
-		modifiedParams := modifiedReqParams{}
-		reqData, err := a.makeRequestData(&liftoffRequest, numRequests, modifiedParams, headers, errs, reqExt.MultiBidSelector, srcExt)
-		requestData = append(requestData, reqData)
-		errs = append(errs, err...)
-	}
-
-	return requestData, errs
-}
-
-// MakeBids ...
-func (a *adapter) MakeBids(_ *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if response.StatusCode == http.StatusNoContent {
-		return nil, nil
-	}
-
-	if response.StatusCode == http.StatusBadRequest {
-		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
-		}}
-	}
-
-	if response.StatusCode != http.StatusOK {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
-		}}
-	}
-
-	var bidResp openrtb.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: err.Error(),
-		}}
-	}
-
-	if len(bidResp.SeatBid) == 0 {
-		return nil, nil
-	}
-
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
-
-	var bidReq openrtb.BidRequest
-	if err := json.Unmarshal(externalRequest.Body, &bidReq); err != nil {
-		return nil, []error{err}
-	}
-
-	bidType := openrtb_ext.BidTypeBanner
-
-	if bidReq.Imp[0].Video != nil {
-		bidType = openrtb_ext.BidTypeVideo
-	}
-
-	for _, sb := range bidResp.SeatBid {
-		for _, b := range sb.Bid {
-			if b.Price != 0 {
-				// copy response.bidid to openrtb_response.seatbid.bid.bidid
-				if b.ID == "0" {
-					b.ID = bidResp.BidID
-				}
-
-				//Fetch auction id from bid id and add to bid extensions
-				auctionID := strings.Split(b.ID, ":")[0]
-				injectAuctionID(&b, auctionID)
-
-				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-					Bid:     &b,
-					BidType: bidType,
-				})
-			}
-		}
-	}
-
-	return bidResponse, nil
-}
-
-func (a *adapter) makeRequestData(liftoffRequest *openrtb.BidRequest, numRequests int, modifiedParams modifiedReqParams, headers http.Header, errs []error, multiBidSelector int, srcExt *reqSourceExt) (*adapters.RequestData, []error) {
 	var err error
-	var requestData *adapters.RequestData
 
-	if modifiedParams.ReqNumber != "" {
-		liftoffRequest.ID = strings.Join([]string{liftoffRequest.ID, modifiedParams.ReqNumber}, "_")
-	}
+	liftoffRequest := *request
 
 	// Updating app extension
 	if liftoffRequest.App != nil {
@@ -341,14 +149,6 @@ func (a *adapter) makeRequestData(liftoffRequest *openrtb.BidRequest, numRequest
 			rewarded = 1
 		}
 
-		// Check for passing mraid oly or rv only if content type is set
-		if modifiedParams.ContentType == CONTENT_TYPE_MRAID_ONLY {
-			thisImp.Video = nil
-		}
-		if modifiedParams.ContentType == CONTENT_TYPE_VIDEO_ONLY {
-			thisImp.Banner = nil
-		}
-
 		if thisImp.Video != nil {
 			orientation := Horizontal
 			if liftoffExt.Video.Width < liftoffExt.Video.Height {
@@ -395,11 +195,6 @@ func (a *adapter) makeRequestData(liftoffRequest *openrtb.BidRequest, numRequest
 			thisImp.BidFloor = *liftoffExt.BidFloor
 		}
 
-		// Overwrite BidFloor if coming from modified params
-		if modifiedParams.BidFloor != nil {
-			thisImp.BidFloor = *modifiedParams.BidFloor
-		}
-
 		impExt := liftoffImpExt{
 			Rewarded: rewarded,
 		}
@@ -435,12 +230,7 @@ func (a *adapter) makeRequestData(liftoffRequest *openrtb.BidRequest, numRequest
 			uri = endpoint
 		}
 
-		traceName := "No Experiemnt"
-		if multiBidSelector == 2 {
-			traceName = "MEDIATOR_EXP_" + modifiedParams.ReqNumber
-		}
-
-		reqData := adapters.RequestData{
+		reqData := &adapters.RequestData{
 			Method:  "POST",
 			Uri:     uri,
 			Body:    reqJSON,
@@ -448,8 +238,6 @@ func (a *adapter) makeRequestData(liftoffRequest *openrtb.BidRequest, numRequest
 
 			TapjoyData: adapters.TapjoyData{
 				Bidder:        a.Name(),
-				TraceName:     strings.ToLower(traceName),
-				ReqNum:        modifiedParams.ReqNumber,
 				PlacementType: placementType,
 				Region:        liftoffExt.Region,
 				SKAN: adapters.SKAN{
@@ -459,44 +247,74 @@ func (a *adapter) makeRequestData(liftoffRequest *openrtb.BidRequest, numRequest
 				MRAID: adapters.MRAID{
 					Supported: liftoffExt.MRAIDSupported,
 				},
-				MultiBidSelector: multiBidSelector,
 				Blocklist: adapters.DynamicBlocklist{
 					BApp: liftoffRequest.BApp,
 					BAdv: liftoffRequest.BAdv,
 				},
 			},
 		}
-		requestData = &reqData
+		requestData = append(requestData, reqData)
 	}
 	return requestData, errs
 }
 
-func injectAuctionID(bid *openrtb2.Bid, auctionID string) {
-	var bidExt liftoffBidExt
+// MakeBids ...
+func (a *adapter) MakeBids(_ *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	if response.StatusCode == http.StatusNoContent {
+		return nil, nil
+	}
 
-	// create new ext in case liftoff response does not have one
-	if bid.Ext == nil {
-		bidExt.AuctionID = auctionID
+	if response.StatusCode == http.StatusBadRequest {
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+		}}
+	}
 
-		rawBidExt, err := json.Marshal(bidExt)
-		if err != nil {
-			return
+	if response.StatusCode != http.StatusOK {
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+		}}
+	}
+
+	var bidResp openrtb.BidResponse
+	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: err.Error(),
+		}}
+	}
+
+	if len(bidResp.SeatBid) == 0 {
+		return nil, nil
+	}
+
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
+
+	var bidReq openrtb.BidRequest
+	if err := json.Unmarshal(externalRequest.Body, &bidReq); err != nil {
+		return nil, []error{err}
+	}
+
+	bidType := openrtb_ext.BidTypeBanner
+
+	if bidReq.Imp[0].Video != nil {
+		bidType = openrtb_ext.BidTypeVideo
+	}
+
+	for _, sb := range bidResp.SeatBid {
+		for _, b := range sb.Bid {
+			if b.Price != 0 {
+				// copy response.bidid to openrtb_response.seatbid.bid.bidid
+				if b.ID == "0" {
+					b.ID = bidResp.BidID
+				}
+
+				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+					Bid:     &b,
+					BidType: bidType,
+				})
+			}
 		}
-
-		bid.Ext = rawBidExt
-		return
 	}
 
-	if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
-		return
-	}
-
-	bidExt.AuctionID = auctionID
-
-	rawBidExt, err := json.Marshal(bidExt)
-	if err != nil {
-		return
-	}
-
-	bid.Ext = rawBidExt
+	return bidResponse, nil
 }
