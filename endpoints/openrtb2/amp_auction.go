@@ -479,7 +479,15 @@ func setConsentedProviders(req *openrtb2.BidRequest, ampParams amp.Params) error
 			return err
 		}
 
-		userExt.SetConsentedProviders(ampParams.AdditionalConsent)
+		consentedProvidersSettings := userExt.GetConsentedProvidersSettings()
+		if consentedProvidersSettings == nil {
+			consentedProvidersSettings = &openrtb_ext.ExtUserCPSettings{}
+		}
+
+		consentedProvidersSettings.ConsentedProviders = ampParams.AdditionalConsent
+
+		userExt.SetConsentedProvidersSettings(consentedProvidersSettings)
+
 		if err := reqWrap.RebuildRequest(); err != nil {
 			return err
 		}

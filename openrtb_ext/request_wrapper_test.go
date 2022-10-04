@@ -11,16 +11,13 @@ import (
 // Some minimal tests to get code coverage above 30%. The real tests are when other modules use these structures.
 
 func TestUserExt(t *testing.T) {
-	userExt := &UserExt{
-		consentedProviders: "1~X.X.X.X",
-	}
+	userExt := &UserExt{}
 
 	userExt.unmarshal(nil)
 	assert.Equal(t, false, userExt.Dirty(), "New UserExt should not be dirty.")
 	assert.Nil(t, userExt.GetConsent(), "Empty UserExt should have nil consent")
 	assert.Nil(t, userExt.GetEid(), "Empty UserExt should have nil eid")
 	assert.Nil(t, userExt.GetPrebid(), "Empty UserExt should have nil prebid")
-	assert.Equal(t, userExt.GetConsentedProviders(), "1~X.X.X.X", "UserExt's consentedProviders string does not match")
 
 	newConsent := "NewConsent"
 	userExt.SetConsent(&newConsent)
@@ -36,13 +33,19 @@ func TestUserExt(t *testing.T) {
 	userExt.SetPrebid(&newPrebid)
 	assert.Equal(t, ExtUserPrebid{BuyerUIDs: buyerIDs}, *userExt.GetPrebid(), "UserExt prebid is incorrect")
 
-	userExt.SetConsentedProviders("1~1.35.41.101")
-	assert.Equal(t, "1~1.35.41.101", userExt.GetConsentedProviders(), "UserExt consentedProviders is incorrect")
+	consentedProvidersSettings := userExt.GetConsentedProvidersSettings()
+	assert.Nil(t, consentedProvidersSettings, "ConsentedProvidersSettings field should be nil")
+
+	consentedProvidersSettings = &ExtUserCPSettings{
+		ConsentedProviders: "1~1.35.41.101",
+	}
+
+	userExt.SetConsentedProvidersSettings(consentedProvidersSettings)
 
 	updatedUserExt, err := userExt.marshal()
 	assert.Nil(t, err, "Marshalling UserExt after updating should not cause an error")
 
-	expectedUserExt := json.RawMessage(`{"consent":"NewConsent","prebid":{"buyeruids":{"buyer":"id"}},"ConsentedProvidersSettings":{"consented_providers":"1~1.35.41.101"},"eids":[{"source":"source","uids":[{"id":"id"}]}]}`)
+	expectedUserExt := json.RawMessage(`{"consent":"NewConsent","prebid":{"buyeruids":{"buyer":"id"}},"eids":[{"source":"source","uids":[{"id":"id"}]}],"ConsentedProviderSettings":{"consented_providers":"1~1.35.41.101"}}`)
 	assert.JSONEq(t, string(expectedUserExt), string(updatedUserExt), "Marshalled UserExt is incorrect")
 
 	assert.Equal(t, false, userExt.Dirty(), "UserExt should not be dirty after marshalling")
@@ -135,41 +138,41 @@ func TestRebuildUserExt(t *testing.T) {
 			tests: []testCase{
 				// Nil req.User
 				{
-					description:           "Nil req.User - Dirty UserExt with nil consentedProviders - No Change",
+					description:           "Nil req.User - Dirty UserExt with nil consentedProviderSettings - No Change",
 					request:               openrtb2.BidRequest{},
 					requestUserExtWrapper: UserExt{},
 					expectedRequest:       openrtb2.BidRequest{},
 				},
 				{
-					description:           "Nil req.User - Dirty UserExt with empty consentedProviders - No Change",
+					description:           "Nil req.User - Dirty UserExt with empty consentedProviderSettings - No Change",
 					request:               openrtb2.BidRequest{},
-					requestUserExtWrapper: UserExt{consentedProviders: "", consentedProvidersDirty: true},
+					requestUserExtWrapper: UserExt{consentedProvidersSettings: &ExtUserCPSettings{}, consentedProvidersSettingsDirty: true},
 					expectedRequest:       openrtb2.BidRequest{},
 				},
 				{
-					description:           "Nil req.User - Dirty UserExt with populated consentedProviders - ConsentedProviders string is added",
+					description:           "Nil req.User - Dirty UserExt with populated consentedProviderSettings - ConsentedProvidersSettings are added",
 					request:               openrtb2.BidRequest{},
-					requestUserExtWrapper: UserExt{consentedProviders: "1~X.X.X.X", consentedProvidersDirty: true},
-					expectedRequest:       openrtb2.BidRequest{User: &openrtb2.User{Ext: json.RawMessage(`{"ConsentedProvidersSettings":{"consented_providers":"1~X.X.X.X"}}`)}},
+					requestUserExtWrapper: UserExt{consentedProvidersSettings: &ExtUserCPSettings{ConsentedProviders: "ConsentedProvidersString"}, consentedProvidersSettingsDirty: true},
+					expectedRequest:       openrtb2.BidRequest{User: &openrtb2.User{Ext: json.RawMessage(`{"ConsentedProvidersSettings":{"consented_providers":"ConsentedProvidersString"}}`)}},
 				},
 				// Nil req.User.Ext
 				{
-					description:           "Nil req.User.Ext - Dirty UserExt with nil consentedProviders - No Change",
+					description:           "Nil req.User.Ext - Dirty UserExt with nil consentedProviderSettings - No Change",
 					request:               openrtb2.BidRequest{User: &openrtb2.User{}},
-					requestUserExtWrapper: UserExt{},
+					requestUserExtWrapper: UserExt{consentedProvidersSettings: nil, consentedProvidersSettingsDirty: true},
 					expectedRequest:       openrtb2.BidRequest{User: &openrtb2.User{}},
 				},
 				{
-					description:           "Nil req.User.Ext - Dirty UserExt with empty consentedProviders - No Change",
+					description:           "Nil req.User.Ext - Dirty UserExt with empty consentedProviderSettings - No Change",
 					request:               openrtb2.BidRequest{User: &openrtb2.User{}},
-					requestUserExtWrapper: UserExt{consentedProviders: "", consentedProvidersDirty: true},
+					requestUserExtWrapper: UserExt{consentedProvidersSettings: &ExtUserCPSettings{}, consentedProvidersSettingsDirty: true},
 					expectedRequest:       openrtb2.BidRequest{User: &openrtb2.User{}},
 				},
 				{
-					description:           "Nil req.User.Ext - Dirty UserExt with populated consentedProviders - ConsentedProviders string is added",
+					description:           "Nil req.User.Ext - Dirty UserExt with populated consentedProviderSettings - ConsentedProvidersSettings are added",
 					request:               openrtb2.BidRequest{User: &openrtb2.User{}},
-					requestUserExtWrapper: UserExt{consentedProviders: "1~X.X.X.X", consentedProvidersDirty: true},
-					expectedRequest:       openrtb2.BidRequest{User: &openrtb2.User{Ext: json.RawMessage(`{"ConsentedProvidersSettings":{"consented_providers":"1~X.X.X.X"}}`)}},
+					requestUserExtWrapper: UserExt{consentedProvidersSettings: &ExtUserCPSettings{ConsentedProviders: "ConsentedProvidersString"}, consentedProvidersSettingsDirty: true},
+					expectedRequest:       openrtb2.BidRequest{User: &openrtb2.User{Ext: json.RawMessage(`{"ConsentedProvidersSettings":{"consented_providers":"ConsentedProvidersString"}}`)}},
 				},
 				// Not-nil req.User.Ext
 				{
@@ -179,21 +182,21 @@ func TestRebuildUserExt(t *testing.T) {
 					expectedRequest:       openrtb2.BidRequest{User: &openrtb2.User{Ext: json.RawMessage(`{"ConsentedProvidersSettings":{"consented_providers":"1~X.X.X.X"}}`)}},
 				},
 				{
-					description:           "Populated req.User.Ext - Dirty UserExt with nil consentedProviders - Populated req.User.Ext gets overriden with nil User.Ext",
+					description:           "Populated req.User.Ext - Dirty UserExt with nil consentedProviderSettings - Populated req.User.Ext gets overriden with nil User.Ext",
 					request:               openrtb2.BidRequest{User: &openrtb2.User{Ext: json.RawMessage(`{"ConsentedProvidersSettings":{"consented_providers":"1~X.X.X.X"}}`)}},
-					requestUserExtWrapper: UserExt{consentedProviders: "", consentedProvidersDirty: true},
+					requestUserExtWrapper: UserExt{consentedProvidersSettings: nil, consentedProvidersSettingsDirty: true},
 					expectedRequest:       openrtb2.BidRequest{User: &openrtb2.User{}},
 				},
 				{
-					description:           "Populated req.User.Ext - Dirty UserExt with empty consentedProviders - Populated req.User.Ext gets overriden with nil User.Ext",
-					request:               openrtb2.BidRequest{User: &openrtb2.User{Ext: json.RawMessage(`{"ConsentedProvidersSettings":{"consented_providers":"1~X.X.X.X"}}`)}},
-					requestUserExtWrapper: UserExt{consentedProviders: "", consentedProvidersDirty: true},
+					description:           "Populated req.User.Ext - Dirty UserExt with empty consentedProviderSettings - Populated req.User.Ext gets overriden with nil User.Ext",
+					request:               openrtb2.BidRequest{User: &openrtb2.User{Ext: json.RawMessage(`{"1~X.X.X.X":{"consented_providers":"1~X.X.X.X"}}`)}},
+					requestUserExtWrapper: UserExt{consentedProvidersSettings: &ExtUserCPSettings{}, consentedProvidersSettingsDirty: true},
 					expectedRequest:       openrtb2.BidRequest{User: &openrtb2.User{}},
 				},
 				{
-					description:           "Populated req.User.Ext - Dirty UserExt with populated consentedProviders - ConsentedProviders are overriden",
+					description:           "Populated req.User.Ext - Dirty UserExt with populated consentedProviderSettings - ConsentedProvidersSettings are overriden",
 					request:               openrtb2.BidRequest{User: &openrtb2.User{Ext: json.RawMessage(`{"ConsentedProvidersSettings":{"consented_providers":"1~X.X.X.X"}}`)}},
-					requestUserExtWrapper: UserExt{consentedProviders: "1~1.35.41.101", consentedProvidersDirty: true},
+					requestUserExtWrapper: UserExt{consentedProvidersSettings: &ExtUserCPSettings{ConsentedProviders: "1~1.35.41.101"}, consentedProvidersSettingsDirty: true},
 					expectedRequest:       openrtb2.BidRequest{User: &openrtb2.User{Ext: json.RawMessage(`{"ConsentedProvidersSettings":{"consented_providers":"1~1.35.41.101"}}`)}},
 				},
 			},
