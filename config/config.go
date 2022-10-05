@@ -627,7 +627,7 @@ func (cfg *TimeoutNotification) validate(errs []error) []error {
 }
 
 // New uses viper to get our server configurations.
-func New(v *viper.Viper, bidderInfos BidderInfos) (*Configuration, error) {
+func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName func(string) (openrtb_ext.BidderName, bool)) (*Configuration, error) {
 	var c Configuration
 	if err := v.Unmarshal(&c); err != nil {
 		return nil, fmt.Errorf("viper failed to unmarshal app config: %v", err)
@@ -710,7 +710,7 @@ func New(v *viper.Viper, bidderInfos BidderInfos) (*Configuration, error) {
 	// Migrate combo stored request config to separate stored_reqs and amp stored_reqs configs.
 	resolvedStoredRequestsConfig(&c)
 
-	mergedBidderInfos, err := applyBidderInfoConfigOverrides(c.BidderInfos, bidderInfos)
+	mergedBidderInfos, err := applyBidderInfoConfigOverrides(c.BidderInfos, bidderInfos, normalizeBidderName)
 	if err != nil {
 		return nil, err
 	}

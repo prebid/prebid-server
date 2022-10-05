@@ -14,11 +14,15 @@
             ]
           },
           "ext": {
-            "appnexus": {
-              "placementId": 1
-            },
-            "districtm": {
-              "placementId": 2
+            "prebid": {
+              "bidder": {
+                "appnexus": {
+                  "placementId": 1
+                },
+                "districtm": {
+                  "placementId": 2
+                }
+              }
             }
           }
         }

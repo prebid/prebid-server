@@ -10,11 +10,17 @@
                 {
                     "id": "my-imp-id",
                     "video": {
-                        "mimes": ["video/mp4"]
+                        "mimes": [
+                            "video/mp4"
+                        ]
                     },
                     "ext": {
-                        "appnexus": {
-                            "placementId": 1
+                        "prebid": {
+                            "bidder": {
+                                "appnexus": {
+                                    "placementId": 1
+                                }
+                            }
                         }
                     }
                 }
@@ -24,7 +30,9 @@
                     "bidadjustmentfactors": null,
                     "schains": [
                         {
-                            "bidders": ["appnexus"],
+                            "bidders": [
+                                "appnexus"
+                            ],
                             "schain": {
                                 "complete": 1,
                                 "nodes": [
@@ -40,7 +48,9 @@
                         }
                     ],
                     "debug": true,
-                    "nosale": ["appnexus"]
+                    "nosale": [
+                        "appnexus"
+                    ]
                 }
             }
         }
@@ -57,7 +67,9 @@
                         {
                             "id": "my-imp-id",
                             "video": {
-                                "mimes": ["video/mp4"]
+                                "mimes": [
+                                    "video/mp4"
+                                ]
                             },
                             "ext": {
                                 "bidder": {

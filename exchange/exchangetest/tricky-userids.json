@@ -14,16 +14,20 @@
             ]
           },
           "ext": {
-            "appnexus": {
-              "placementId": 1
-            },
-            "districtm": {
-              "placementId": 2
-            },
-            "rubicon": {
-              "accountId": 1,
-              "siteId": 2,
-              "zoneId": 3
+            "prebid": {
+              "bidder": {
+                "appnexus": {
+                  "placementId": 1
+                },
+                "districtm": {
+                  "placementId": 2
+                },
+                "rubicon": {
+                  "accountId": 1,
+                  "siteId": 2,
+                  "zoneId": 3
+                }
+              }
             }
           }
         }

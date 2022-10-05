@@ -11,8 +11,8 @@ import (
 
 func processInterstitials(req *openrtb_ext.RequestWrapper) error {
 	unmarshalled := true
-	for i := range req.Imp {
-		if req.Imp[i].Instl == 1 {
+	for _, imp := range req.GetImp() {
+		if imp.Instl == 1 {
 			var prebid *openrtb_ext.ExtDevicePrebid
 			if unmarshalled {
 				if req.Device.Ext == nil {
@@ -30,7 +30,7 @@ func processInterstitials(req *openrtb_ext.RequestWrapper) error {
 					return nil
 				}
 			}
-			err := processInterstitialsForImp(&req.Imp[i], prebid, req.Device)
+			err := processInterstitialsForImp(imp, prebid, req.Device)
 			if err != nil {
 				return err
 			}
@@ -39,7 +39,7 @@ func processInterstitials(req *openrtb_ext.RequestWrapper) error {
 	return nil
 }
 
-func processInterstitialsForImp(imp *openrtb2.Imp, devExtPrebid *openrtb_ext.ExtDevicePrebid, device *openrtb2.Device) error {
+func processInterstitialsForImp(imp *openrtb_ext.ImpWrapper, devExtPrebid *openrtb_ext.ExtDevicePrebid, device *openrtb2.Device) error {
 	var maxWidth, maxHeight, minWidth, minHeight int64
 	if imp.Banner == nil {
 		// custom interstitial support is only available for banner requests.

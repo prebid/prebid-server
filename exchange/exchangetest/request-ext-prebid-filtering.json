@@ -15,8 +15,12 @@
                         ]
                     },
                     "ext": {
-                        "appnexus": {
-                            "placementId": 1
+                        "prebid": {
+                            "bidder": {
+                                "appnexus": {
+                                    "placementId": 1
+                                }
+                            }
                         }
                     }
                 }
