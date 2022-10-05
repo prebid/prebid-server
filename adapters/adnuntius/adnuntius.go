@@ -18,8 +18,8 @@ import (
 
 type QueryString map[string]string
 type adapter struct {
-	time       timeutil.Time
-	endpoint   string
+	time      timeutil.Time
+	endpoint  string
 	extraInfo string
 }
 type adnAdunit struct {
@@ -127,7 +127,7 @@ func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter, noCookies bool
 
 	q := uri.Query()
 	if gdpr != "" {
-		endpointUrl = a.extra_info
+		endpointUrl = a.extraInfo
 		q.Set("gdpr", gdpr)
 	}
 
