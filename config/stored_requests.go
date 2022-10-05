@@ -213,7 +213,7 @@ func (cfg *DatabaseConnection) ConnString() string {
 	}
 
 	if cfg.Driver == "postgres" {
-		return cfg.connStringPosgres()
+		return cfg.connStringPostgres()
 	}
 
 	return ""
@@ -251,7 +251,7 @@ func (cfg *DatabaseConnection) connStringMySql() string {
 	return buffer.String()
 }
 
-func (cfg *DatabaseConnection) connStringPosgres() string {
+func (cfg *DatabaseConnection) connStringPostgres() string {
 	buffer := bytes.NewBuffer(nil)
 
 	if cfg.Host != "" {
