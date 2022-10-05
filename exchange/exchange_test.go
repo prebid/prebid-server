@@ -303,7 +303,7 @@ func TestDebugBehaviour(t *testing.T) {
 		Imp: []openrtb2.Imp{{
 			ID:     "some-impression-id",
 			Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}, {W: 300, H: 600}}},
-			Ext:    json.RawMessage(`{"appnexus": {"placementId": 1}}`),
+			Ext:    json.RawMessage(`{"prebid":{"bidder":{"appnexus": {"placementId": 1}}}}`),
 		}},
 		Site:   &openrtb2.Site{Page: "prebid.org", Ext: json.RawMessage(`{"amp":0}`)},
 		Device: &openrtb2.Device{UA: "curl/7.54.0", IP: "::1"},
@@ -480,7 +480,7 @@ func TestTwoBiddersDebugDisabledAndEnabled(t *testing.T) {
 		httpRequest: &adapters.RequestData{
 			Method:  "POST",
 			Uri:     server.URL,
-			Body:    []byte("{\"key\":\"val\"}"),
+			Body:    []byte(`{"key":"val"}`),
 			Headers: http.Header{},
 		},
 		bidResponse: &adapters.BidderResponse{},
@@ -508,7 +508,7 @@ func TestTwoBiddersDebugDisabledAndEnabled(t *testing.T) {
 			Imp: []openrtb2.Imp{{
 				ID:     "some-impression-id",
 				Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}, {W: 300, H: 600}}},
-				Ext:    json.RawMessage(`{"telaria": {"placementId": 1}, "appnexus": {"placementid": 2}}`),
+				Ext:    json.RawMessage(`{"prebid":{"bidder":{"telaria": {"placementId": 1}, "appnexus": {"placementid": 2}}}}`),
 			}},
 			Site:   &openrtb2.Site{Page: "prebid.org", Ext: json.RawMessage(`{"amp":0}`)},
 			Device: &openrtb2.Device{UA: "curl/7.54.0", IP: "::1"},
@@ -560,12 +560,10 @@ func TestTwoBiddersDebugDisabledAndEnabled(t *testing.T) {
 		if !testCase.bidder2DebugEnabled {
 			assert.Nil(t, actualExt.Debug.HttpCalls["telaria"], "ext.debug.resolvedrequest field is expected to be included in this outBidResponse.Ext and not be nil")
 		}
-
 		if testCase.bidder1DebugEnabled && testCase.bidder2DebugEnabled {
 			assert.Equal(t, 2, len(actualExt.Debug.HttpCalls), "With bidder level debug enable option for both bidders http calls should have 2 elements")
 		}
 	}
-
 }
 
 func TestOverrideWithCustomCurrency(t *testing.T) {
@@ -670,7 +668,7 @@ func TestOverrideWithCustomCurrency(t *testing.T) {
 		Imp: []openrtb2.Imp{{
 			ID:     "some-impression-id",
 			Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}, {W: 300, H: 600}}},
-			Ext:    json.RawMessage(`{"appnexus": {"placementId": 1}}`),
+			Ext:    json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placementId":1}}}}`),
 		}},
 		Site: &openrtb2.Site{Page: "prebid.org", Ext: json.RawMessage(`{"amp":0}`)},
 	}
@@ -775,7 +773,7 @@ func TestAdapterCurrency(t *testing.T) {
 		Imp: []openrtb2.Imp{{
 			ID:     "some-impression-id",
 			Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}, {W: 300, H: 600}}},
-			Ext:    json.RawMessage(`{"foo": {"placementId": 1}}`),
+			Ext:    json.RawMessage(`{"prebid":{"bidder":{"foo":{"placementId":1}}}}`),
 		}},
 		Site: &openrtb2.Site{
 			Page: "prebid.org",
@@ -1023,20 +1021,6 @@ func TestReturnCreativeEndToEnd(t *testing.T) {
 		expectError bool
 	}{
 		{
-			groupDesc: "Invalid or malformed bidRequest Ext, expect error in these scenarios",
-			testCases: []aTest{
-				{
-					desc:  "Malformed ext in bidRequest",
-					inExt: json.RawMessage(`malformed`),
-				},
-				{
-					desc:  "empty cache field",
-					inExt: json.RawMessage(`{"prebid":{"cache":{}}}`),
-				},
-			},
-			expectError: true,
-		},
-		{
 			groupDesc: "Valid bidRequest Ext but no returnCreative value specified, default to returning creative",
 			testCases: []aTest{
 				{
@@ -1168,7 +1152,7 @@ func TestReturnCreativeEndToEnd(t *testing.T) {
 		Imp: []openrtb2.Imp{{
 			ID:     "some-impression-id",
 			Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}, {W: 300, H: 600}}},
-			Ext:    json.RawMessage(`{"appnexus": {"placementId": 1}}`),
+			Ext:    json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placementId":1}}}}`),
 		}},
 		Site: &openrtb2.Site{Page: "prebid.org", Ext: json.RawMessage(`{"amp":0}`)},
 	}
@@ -2261,19 +2245,34 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 	}
 
 	if spec.PassthroughFlag {
-		var actualBidRespExt openrtb_ext.ExtBidResponse
-		var expectedBidRespExt openrtb_ext.ExtBidResponse
+		expectedPassthough := ""
+		actualPassthrough := ""
 		if bid.Ext != nil {
-			if err := json.Unmarshal(bid.Ext, &actualBidRespExt); err != nil {
+			actualBidRespExt := &openrtb_ext.ExtBidResponse{}
+			if err := json.Unmarshal(bid.Ext, actualBidRespExt); err != nil {
 				assert.NoError(t, err, fmt.Sprintf("Error when unmarshalling: %s", err))
+			}
+			if actualBidRespExt.Prebid != nil {
+				actualPassthrough = string(actualBidRespExt.Prebid.Passthrough)
 			}
 		}
 		if spec.Response.Ext != nil {
-			if err := json.Unmarshal(spec.Response.Ext, &expectedBidRespExt); err != nil {
+			expectedBidRespExt := &openrtb_ext.ExtBidResponse{}
+			if err := json.Unmarshal(spec.Response.Ext, expectedBidRespExt); err != nil {
 				assert.NoError(t, err, fmt.Sprintf("Error when unmarshalling: %s", err))
 			}
+			if expectedBidRespExt.Prebid != nil {
+				expectedPassthough = string(expectedBidRespExt.Prebid.Passthrough)
+			}
 		}
-		assert.Equalf(t, expectedBidRespExt.Prebid, actualBidRespExt.Prebid, "Expected bid response extension is incorrect")
+
+		// special handling since JSONEq fails if either parameters is an empty string instead of json
+		if expectedPassthough == "" || actualPassthrough == "" {
+			assert.Equal(t, expectedPassthough, actualPassthrough, "Expected bid response extension is incorrect")
+		} else {
+			assert.JSONEq(t, expectedPassthough, actualPassthrough, "Expected bid response extension is incorrect")
+		}
+
 	}
 }
 
@@ -4122,7 +4121,7 @@ func TestPassExperimentConfigsToHoldAuction(t *testing.T) {
 		Imp: []openrtb2.Imp{{
 			ID:     "some-impression-id",
 			Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}, {W: 300, H: 600}}},
-			Ext:    json.RawMessage(`{"appnexus": {"placementId": 1}}`),
+			Ext:    json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placementId":1}}}}`),
 		}},
 		Site: &openrtb2.Site{Page: "prebid.org", Ext: json.RawMessage(`{"amp":0}`)},
 		Ext:  json.RawMessage(`{"prebid":{"experiment":{"adscert":{"enabled": true}}}}`),

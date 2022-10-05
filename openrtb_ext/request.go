@@ -119,10 +119,6 @@ func (ert *ExtRequestPrebidCache) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	if proxy.Bids == nil && proxy.VastXML == nil {
-		return errors.New(`request.ext.prebid.cache requires one of the "bids" or "vastxml" properties`)
-	}
-
 	*ert = ExtRequestPrebidCache(proxy)
 	return nil
 }

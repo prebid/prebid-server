@@ -421,7 +421,7 @@ func splitImps(imps []openrtb2.Imp) (map[string][]openrtb2.Imp, error) {
 			return nil, fmt.Errorf("unable to remove other bidder fields for imp[%d]: %v", i, err)
 		}
 
-		for bidder, bidderExt := range extractBidderExts(impExt, impExtPrebidBidder) {
+		for bidder, bidderExt := range impExtPrebidBidder {
 			impCopy := imp
 
 			sanitizedImpExt[openrtb_ext.PrebidExtBidderKey] = bidderExt
@@ -483,28 +483,6 @@ func createSanitizedImpExt(impExt, impExtPrebid map[string]json.RawMessage) (map
 	}
 
 	return sanitizedImpExt, nil
-}
-
-func extractBidderExts(impExt, impExtPrebidBidders map[string]json.RawMessage) map[string]json.RawMessage {
-	bidderExts := make(map[string]json.RawMessage)
-
-	// prefer imp.ext.prebid.bidder.BIDDER
-	for bidder, bidderExt := range impExtPrebidBidders {
-		bidderExts[bidder] = bidderExt
-	}
-
-	// fallback to imp.BIDDER
-	for bidder, bidderExt := range impExt {
-		if isSpecialField(bidder) {
-			continue
-		}
-
-		if _, exists := bidderExts[bidder]; !exists {
-			bidderExts[bidder] = bidderExt
-		}
-	}
-
-	return bidderExts
 }
 
 func isSpecialField(bidder string) bool {

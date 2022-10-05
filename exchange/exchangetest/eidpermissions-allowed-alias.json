@@ -24,7 +24,9 @@
                         "eidpermissions": [
                             {
                                 "source": "source1",
-                                "bidders": ["foo"]
+                                "bidders": [
+                                    "foo"
+                                ]
                             }
                         ]
                     }
@@ -34,11 +36,17 @@
                 {
                     "id": "my-imp-id",
                     "video": {
-                        "mimes": ["video/mp4"]
+                        "mimes": [
+                            "video/mp4"
+                        ]
                     },
                     "ext": {
-                        "foo": {
-                            "placementId": 1
+                        "prebid": {
+                            "bidder": {
+                                "foo": {
+                                    "placementId": 1
+                                }
+                            }
                         }
                     }
                 }
@@ -70,7 +78,9 @@
                         {
                             "id": "my-imp-id",
                             "video": {
-                                "mimes": ["video/mp4"]
+                                "mimes": [
+                                    "video/mp4"
+                                ]
                             },
                             "ext": {
                                 "bidder": {
