@@ -294,13 +294,8 @@ func buildRequestExtForBidder(bidder string, requestExt json.RawMessage, request
 	// Copy Allowed Fields
 	// Per: https://docs.prebid.org/prebid-server/endpoints/openrtb2/pbs-endpoint-auction.html#prebid-server-ortb2-extension-summary
 	prebid := openrtb_ext.ExtRequestPrebid{
-		Integration:          requestExtParsed.Prebid.Integration,
-		Channel:              requestExtParsed.Prebid.Channel,
-		Debug:                requestExtParsed.Prebid.Debug,
-		CurrencyConversions:  requestExtParsed.Prebid.CurrencyConversions,
 		BidderParams:         bidderParams,
 		AlternateBidderCodes: alternateBidderCodes,
-		Server:               requestExtParsed.Prebid.Server,
 	}
 
 	if requestExtParsed != nil {
@@ -308,6 +303,7 @@ func buildRequestExtForBidder(bidder string, requestExt json.RawMessage, request
 		prebid.Integration = requestExtParsed.Prebid.Integration
 		prebid.Channel = requestExtParsed.Prebid.Channel
 		prebid.Debug = requestExtParsed.Prebid.Debug
+		prebid.Server = requestExtParsed.Prebid.Server
 	}
 
 	// Marshal New Prebid Object
