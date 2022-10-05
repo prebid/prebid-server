@@ -1,3 +1,5 @@
+endpoint: "https://prebid.aaxads.com/rtb/pb/aax-prebid"
+extra_info: "https://aax.golang.pbs.com"
 maintainer:
   email: product@aax.media
 gvlVendorID: 720

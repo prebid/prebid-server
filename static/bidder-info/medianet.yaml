@@ -1,3 +1,5 @@
+endpoint: "https://prebid-adapter.media.net/rtb/pb/prebids2s"
+extra_info: "https://medianet.golang.pbs.com"
 maintainer:
   email: "prebid-support@media.net"
 gvlVendorID: 142

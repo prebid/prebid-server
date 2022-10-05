@@ -66,7 +66,7 @@ func TestAllowedSyncs(t *testing.T) {
 	tcf2AggConfig := tcf2Config{
 		HostConfig: config.TCF2{
 			Purpose1: config.TCF2Purpose{
-				EnforcePurpose: config.TCF2FullEnforcement,
+				EnforcePurpose: true,
 				EnforceVendors: true,
 			},
 		},
@@ -112,7 +112,7 @@ func TestProhibitedPurposes(t *testing.T) {
 	tcf2AggConfig := tcf2Config{
 		HostConfig: config.TCF2{
 			Purpose1: config.TCF2Purpose{
-				EnforcePurpose: config.TCF2FullEnforcement,
+				EnforcePurpose: true,
 			},
 		},
 	}
@@ -157,7 +157,7 @@ func TestProhibitedVendors(t *testing.T) {
 	tcf2AggConfig := tcf2Config{
 		HostConfig: config.TCF2{
 			Purpose1: config.TCF2Purpose{
-				EnforcePurpose: config.TCF2FullEnforcement,
+				EnforcePurpose: true,
 				EnforceVendors: true,
 			},
 		},
@@ -373,16 +373,16 @@ func allPurposesEnabledTCF2Config() (TCF2AggConfig tcf2Config) {
 	TCF2AggConfig = tcf2Config{
 		HostConfig: config.TCF2{
 			Enabled:         true,
-			Purpose1:        config.TCF2Purpose{EnforcePurpose: config.TCF2FullEnforcement, EnforceVendors: true},
-			Purpose2:        config.TCF2Purpose{EnforcePurpose: config.TCF2FullEnforcement, EnforceVendors: true},
-			Purpose3:        config.TCF2Purpose{EnforcePurpose: config.TCF2FullEnforcement, EnforceVendors: true},
-			Purpose4:        config.TCF2Purpose{EnforcePurpose: config.TCF2FullEnforcement, EnforceVendors: true},
-			Purpose5:        config.TCF2Purpose{EnforcePurpose: config.TCF2FullEnforcement, EnforceVendors: true},
-			Purpose6:        config.TCF2Purpose{EnforcePurpose: config.TCF2FullEnforcement, EnforceVendors: true},
-			Purpose7:        config.TCF2Purpose{EnforcePurpose: config.TCF2FullEnforcement, EnforceVendors: true},
-			Purpose8:        config.TCF2Purpose{EnforcePurpose: config.TCF2FullEnforcement, EnforceVendors: true},
-			Purpose9:        config.TCF2Purpose{EnforcePurpose: config.TCF2FullEnforcement, EnforceVendors: true},
-			Purpose10:       config.TCF2Purpose{EnforcePurpose: config.TCF2FullEnforcement, EnforceVendors: true},
+			Purpose1:        config.TCF2Purpose{EnforcePurpose: true, EnforceVendors: true},
+			Purpose2:        config.TCF2Purpose{EnforcePurpose: true, EnforceVendors: true},
+			Purpose3:        config.TCF2Purpose{EnforcePurpose: true, EnforceVendors: true},
+			Purpose4:        config.TCF2Purpose{EnforcePurpose: true, EnforceVendors: true},
+			Purpose5:        config.TCF2Purpose{EnforcePurpose: true, EnforceVendors: true},
+			Purpose6:        config.TCF2Purpose{EnforcePurpose: true, EnforceVendors: true},
+			Purpose7:        config.TCF2Purpose{EnforcePurpose: true, EnforceVendors: true},
+			Purpose8:        config.TCF2Purpose{EnforcePurpose: true, EnforceVendors: true},
+			Purpose9:        config.TCF2Purpose{EnforcePurpose: true, EnforceVendors: true},
+			Purpose10:       config.TCF2Purpose{EnforcePurpose: true, EnforceVendors: true},
 			SpecialFeature1: config.TCF2SpecialFeature{Enforce: true},
 		},
 		AccountConfig: config.AccountGDPR{
@@ -803,7 +803,7 @@ func TestAllowActivitiesBidRequests(t *testing.T) {
 
 	testDefs := []struct {
 		description            string
-		purpose2EnforcePurpose string
+		purpose2EnforcePurpose bool
 		purpose2EnforceVendors bool
 		bidder                 openrtb_ext.BidderName
 		bidderCoreName         openrtb_ext.BidderName
@@ -815,7 +815,7 @@ func TestAllowActivitiesBidRequests(t *testing.T) {
 	}{
 		{
 			description:            "Bid blocked - p2 enabled, user consents to p2 but not vendor, vendor consents to p2",
-			purpose2EnforcePurpose: config.TCF2FullEnforcement,
+			purpose2EnforcePurpose: true,
 			purpose2EnforceVendors: true,
 			bidder:                 openrtb_ext.BidderPubmatic,
 			bidderCoreName:         openrtb_ext.BidderPubmatic,
@@ -826,7 +826,7 @@ func TestAllowActivitiesBidRequests(t *testing.T) {
 		},
 		{
 			description:            "Bid allowed - p2 enabled, user consents to p2 and vendor, alias vendor consents to p2",
-			purpose2EnforcePurpose: config.TCF2FullEnforcement,
+			purpose2EnforcePurpose: true,
 			purpose2EnforceVendors: true,
 			bidder:                 "pubmatic1",
 			bidderCoreName:         openrtb_ext.BidderPubmatic,
@@ -838,7 +838,7 @@ func TestAllowActivitiesBidRequests(t *testing.T) {
 		},
 		{
 			description:            "Bid blocked - p2 enabled, user consents to p2 and vendor, alias vendor does not consent to p2",
-			purpose2EnforcePurpose: config.TCF2FullEnforcement,
+			purpose2EnforcePurpose: true,
 			purpose2EnforceVendors: true,
 			bidder:                 "pubmatic1",
 			bidderCoreName:         openrtb_ext.BidderPubmatic,
@@ -850,7 +850,7 @@ func TestAllowActivitiesBidRequests(t *testing.T) {
 		},
 		{
 			description:            "Bid allowed - p2 enabled not enforcing vendors, user consents to p2 but not vendor, vendor consents to p2",
-			purpose2EnforcePurpose: config.TCF2FullEnforcement,
+			purpose2EnforcePurpose: true,
 			purpose2EnforceVendors: false,
 			bidder:                 openrtb_ext.BidderPubmatic,
 			bidderCoreName:         openrtb_ext.BidderPubmatic,
@@ -861,7 +861,7 @@ func TestAllowActivitiesBidRequests(t *testing.T) {
 		},
 		{
 			description:            "Bid allowed - p2 disabled, user consents to p2 but not vendor, vendor consents to p2",
-			purpose2EnforcePurpose: config.TCF2NoEnforcement,
+			purpose2EnforcePurpose: false,
 			purpose2EnforceVendors: true,
 			bidder:                 openrtb_ext.BidderPubmatic,
 			bidderCoreName:         openrtb_ext.BidderPubmatic,
@@ -872,7 +872,7 @@ func TestAllowActivitiesBidRequests(t *testing.T) {
 		},
 		{
 			description:            "Bid allowed - p2 enabled, user consents to p2 and vendor, vendor consents to p2",
-			purpose2EnforcePurpose: config.TCF2FullEnforcement,
+			purpose2EnforcePurpose: true,
 			purpose2EnforceVendors: true,
 			bidder:                 openrtb_ext.BidderPubmatic,
 			bidderCoreName:         openrtb_ext.BidderPubmatic,
@@ -883,7 +883,7 @@ func TestAllowActivitiesBidRequests(t *testing.T) {
 		},
 		{
 			description:            "Bid blocked - p2 enabled, user consents to p2 LI but not vendor, vendor consents to p2",
-			purpose2EnforcePurpose: config.TCF2FullEnforcement,
+			purpose2EnforcePurpose: true,
 			purpose2EnforceVendors: true,
 			bidder:                 openrtb_ext.BidderRubicon,
 			bidderCoreName:         openrtb_ext.BidderRubicon,
@@ -894,7 +894,7 @@ func TestAllowActivitiesBidRequests(t *testing.T) {
 		},
 		{
 			description:            "Bid allowed - p2 enabled, user consents to p2 LI and vendor, vendor consents to p2",
-			purpose2EnforcePurpose: config.TCF2FullEnforcement,
+			purpose2EnforcePurpose: true,
 			purpose2EnforceVendors: true,
 			bidder:                 openrtb_ext.BidderRubicon,
 			bidderCoreName:         openrtb_ext.BidderRubicon,
@@ -905,7 +905,7 @@ func TestAllowActivitiesBidRequests(t *testing.T) {
 		},
 		{
 			description:            "Bid allowed - p2 enabled not enforcing vendors, user consents to p2 LI but not vendor, vendor consents to p2",
-			purpose2EnforcePurpose: config.TCF2FullEnforcement,
+			purpose2EnforcePurpose: true,
 			purpose2EnforceVendors: false,
 			bidder:                 openrtb_ext.BidderPubmatic,
 			bidderCoreName:         openrtb_ext.BidderPubmatic,

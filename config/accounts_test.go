@@ -1,7 +1,6 @@
 package config
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/prebid/go-gdpr/consentconstants"
@@ -246,11 +245,14 @@ func TestAccountIntegrationGetByIntegrationType(t *testing.T) {
 }
 
 func TestPurposeEnforced(t *testing.T) {
+	True := true
+	False := false
+
 	tests := []struct {
 		description          string
 		givePurposeConfigNil bool
-		givePurpose1Enforced string
-		givePurpose2Enforced string
+		givePurpose1Enforced *bool
+		givePurpose2Enforced *bool
 		givePurpose          consentconstants.Purpose
 		wantEnforced         bool
 		wantEnforcedSet      bool
@@ -264,28 +266,28 @@ func TestPurposeEnforced(t *testing.T) {
 		},
 		{
 			description:          "Purpose 1 Enforced not set",
-			givePurpose1Enforced: "",
+			givePurpose1Enforced: nil,
 			givePurpose:          1,
 			wantEnforced:         true,
 			wantEnforcedSet:      false,
 		},
 		{
 			description:          "Purpose 1 Enforced set to full enforcement",
-			givePurpose1Enforced: TCF2FullEnforcement,
+			givePurpose1Enforced: &True,
 			givePurpose:          1,
 			wantEnforced:         true,
 			wantEnforcedSet:      true,
 		},
 		{
 			description:          "Purpose 1 Enforced set to no enforcement",
-			givePurpose1Enforced: TCF2NoEnforcement,
+			givePurpose1Enforced: &False,
 			givePurpose:          1,
 			wantEnforced:         false,
 			wantEnforcedSet:      true,
 		},
 		{
 			description:          "Purpose 2 Enforced set to full enforcement",
-			givePurpose2Enforced: TCF2FullEnforcement,
+			givePurpose2Enforced: &True,
 			givePurpose:          2,
 			wantEnforced:         true,
 			wantEnforcedSet:      true,
@@ -706,176 +708,5 @@ func TestBasicEnforcementVendor(t *testing.T) {
 
 		assert.Equal(t, tt.wantIsBasicVendor, value, tt.description)
 		assert.Equal(t, tt.wantBasicVendorSet, present, tt.description)
-	}
-}
-
-func TestAlternateBidderCodes_IsValidBidderCode(t *testing.T) {
-	type fields struct {
-		Enabled bool
-		Bidders map[string]AdapterAlternateBidderCodes
-	}
-	type args struct {
-		bidder          string
-		alternateBidder string
-	}
-	tests := []struct {
-		name        string
-		fields      fields
-		args        args
-		wantIsValid bool
-		wantErr     error
-	}{
-		{
-			name:        "alternateBidder is not set/blank (default non-extra bid case)",
-			wantIsValid: true,
-		},
-		{
-			name: "alternateBidder and bidder are same (default non-extra bid case with seat's alternateBidder explicitly set)",
-			args: args{
-				bidder:          "pubmatic",
-				alternateBidder: "pubmatic",
-			},
-			wantIsValid: true,
-		},
-		{
-			name: "account.alternatebiddercodes config not defined (default, reject bid)",
-			args: args{
-				bidder:          "pubmatic",
-				alternateBidder: "groupm",
-			},
-			wantIsValid: false,
-		},
-		{
-			name: "account.alternatebiddercodes config enabled but adapter config not defined",
-			args: args{
-				bidder:          "pubmatic",
-				alternateBidder: "groupm",
-			},
-			fields:      fields{Enabled: true},
-			wantIsValid: false,
-			wantErr:     errors.New(`alternateBidderCodes not defined for adapter "pubmatic", rejecting bids for "groupm"`),
-		},
-		{
-			name: "account.alternatebiddercodes config enabled but adapter config is not available",
-			args: args{
-				bidder:          "pubmatic",
-				alternateBidder: "groupm",
-			},
-			fields: fields{
-				Enabled: true,
-				Bidders: map[string]AdapterAlternateBidderCodes{
-					"appnexus": {},
-				},
-			},
-			wantIsValid: false,
-			wantErr:     errors.New(`alternateBidderCodes not defined for adapter "pubmatic", rejecting bids for "groupm"`),
-		},
-		{
-			name: "account.alternatebiddercodes config enabled but adapter config is disabled",
-			args: args{
-				bidder:          "pubmatic",
-				alternateBidder: "groupm",
-			},
-			fields: fields{
-				Enabled: true,
-				Bidders: map[string]AdapterAlternateBidderCodes{
-					"pubmatic": {Enabled: false},
-				},
-			},
-			wantIsValid: false,
-			wantErr:     errors.New(`alternateBidderCodes disabled for "pubmatic", rejecting bids for "groupm"`),
-		},
-		{
-			name: "account.alternatebiddercodes and adapter config enabled but adapter config does not have allowedBidderCodes defined",
-			args: args{
-				bidder:          "pubmatic",
-				alternateBidder: "groupm",
-			},
-			fields: fields{
-				Enabled: true,
-				Bidders: map[string]AdapterAlternateBidderCodes{
-					"pubmatic": {Enabled: true},
-				},
-			},
-			wantIsValid: true,
-		},
-		{
-			name: "allowedBidderCodes is *",
-			args: args{
-				bidder:          "pubmatic",
-				alternateBidder: "groupm",
-			},
-			fields: fields{
-				Enabled: true,
-				Bidders: map[string]AdapterAlternateBidderCodes{
-					"pubmatic": {
-						Enabled:            true,
-						AllowedBidderCodes: []string{"*"},
-					},
-				},
-			},
-			wantIsValid: true,
-		},
-		{
-			name: "allowedBidderCodes is in the list",
-			args: args{
-				bidder:          "pubmatic",
-				alternateBidder: "groupm",
-			},
-			fields: fields{
-				Enabled: true,
-				Bidders: map[string]AdapterAlternateBidderCodes{
-					"pubmatic": {
-						Enabled:            true,
-						AllowedBidderCodes: []string{"groupm"},
-					},
-				},
-			},
-			wantIsValid: true,
-		},
-		{
-			name: "allowedBidderCodes is not in the list",
-			args: args{
-				bidder:          "pubmatic",
-				alternateBidder: "groupm",
-			},
-			fields: fields{
-				Enabled: true,
-				Bidders: map[string]AdapterAlternateBidderCodes{
-					"pubmatic": {
-						Enabled:            true,
-						AllowedBidderCodes: []string{"xyz"},
-					},
-				},
-			},
-			wantIsValid: false,
-			wantErr:     errors.New(`invalid biddercode "groupm" sent by adapter "pubmatic"`),
-		},
-		{
-			name: "account.alternatebiddercodes and adapter config enabled but adapter config has allowedBidderCodes list empty",
-			args: args{
-				bidder:          "pubmatic",
-				alternateBidder: "groupm",
-			},
-			fields: fields{
-				Enabled: true,
-				Bidders: map[string]AdapterAlternateBidderCodes{
-					"pubmatic": {Enabled: true, AllowedBidderCodes: []string{}},
-				},
-			},
-			wantIsValid: false,
-			wantErr:     errors.New(`invalid biddercode "groupm" sent by adapter "pubmatic"`),
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			a := &AlternateBidderCodes{
-				Enabled: tt.fields.Enabled,
-				Bidders: tt.fields.Bidders,
-			}
-			gotIsValid, gotErr := a.IsValidBidderCode(tt.args.bidder, tt.args.alternateBidder)
-			assert.Equal(t, tt.wantIsValid, gotIsValid)
-			assert.Equal(t, tt.wantErr, gotErr)
-		})
 	}
 }

@@ -100,7 +100,7 @@
             {
               "adtype": 12,
               "slotid": "m8x9x3roll",
-              "test": 0,
+              "test": 1,
               "w": 300,
               "h": 250
             }
@@ -140,6 +140,7 @@
           "multiad": [
             {
               "adtype": 60,
+              "brsetting": "Y",
               "content": [
                 {
                   "contentid": "58001445",
@@ -286,6 +287,11 @@
                       ]
                     }
                   ],
+                  "paramfromserver": {
+                    "a": "1||test",
+                    "sig": "",
+                    "t": "99990101235959"
+                  },
                   "price": 2.8,
                   "starttime": 1620230400000,
                   "taskid": "48016632"
@@ -293,6 +299,14 @@
               ],
               "retcode30": 200,
               "slotid": "m8x9x3roll"
+            }
+          ],
+          "noReportAdTypeEventList": [
+            {
+              "adType": 8,
+              "eventTypeList": [
+                "exception_6"
+              ]
             }
           ],
           "retcode": 200,

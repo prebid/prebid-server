@@ -74,6 +74,7 @@ func (e *eventsMockAnalyticsModule) LogNotificationEventObject(ne *analytics.Not
 var mockAccountData = map[string]json.RawMessage{
 	"events_enabled":  json.RawMessage(`{"events_enabled":true}`),
 	"events_disabled": json.RawMessage(`{"events_enabled":false}`),
+	"malformed_acct":  json.RawMessage(`{"events_enabled":"invalid type"}`),
 }
 
 type mockAccountsFetcher struct {

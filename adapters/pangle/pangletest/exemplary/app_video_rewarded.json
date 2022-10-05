@@ -75,9 +75,7 @@
               "ext": {
                 "adtype": 7,
                 "prebid": {
-                  "bidder": null,
-                  "is_rewarded_inventory": 1,
-                  "storedrequest": null
+                  "is_rewarded_inventory": 1
                 },
                 "is_prebid": true,
                 "bidder": {

@@ -2,6 +2,7 @@ package pubmatic
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -23,9 +24,10 @@ type PubmaticAdapter struct {
 }
 
 type pubmaticBidExt struct {
-	BidType           *int                 `json:"BidType,omitempty"`
-	VideoCreativeInfo *pubmaticBidExtVideo `json:"video,omitempty"`
-	Marketplace       string               `json:"marketplace,omitempty"`
+	BidType            *int                 `json:"BidType,omitempty"`
+	VideoCreativeInfo  *pubmaticBidExtVideo `json:"video,omitempty"`
+	Marketplace        string               `json:"marketplace,omitempty"`
+	PrebidDealPriority int                  `json:"prebiddealpriority,omitempty"`
 }
 
 type pubmaticWrapperExt struct {
@@ -386,42 +388,64 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 	for _, sb := range bidResp.SeatBid {
 		for i := 0; i < len(sb.Bid); i++ {
 			bid := sb.Bid[i]
-			impVideo := &openrtb_ext.ExtBidPrebidVideo{}
-
 			if len(bid.Cat) > 1 {
 				bid.Cat = bid.Cat[0:1]
 			}
 
-			seat := ""
+			typedBid := &adapters.TypedBid{
+				Bid:      &bid,
+				BidType:  openrtb_ext.BidTypeBanner,
+				BidVideo: &openrtb_ext.ExtBidPrebidVideo{},
+			}
+
 			var bidExt *pubmaticBidExt
-			bidType := openrtb_ext.BidTypeBanner
 			err := json.Unmarshal(bid.Ext, &bidExt)
 			if err != nil {
 				errs = append(errs, err)
 			} else if bidExt != nil {
-				seat = bidExt.Marketplace
+				typedBid.Seat = openrtb_ext.BidderName(bidExt.Marketplace)
+				typedBid.BidType = getBidType(bidExt)
+				if bidExt.PrebidDealPriority > 0 {
+					typedBid.DealPriority = bidExt.PrebidDealPriority
+				}
+
 				if bidExt.VideoCreativeInfo != nil && bidExt.VideoCreativeInfo.Duration != nil {
-					impVideo.Duration = *bidExt.VideoCreativeInfo.Duration
-				}
-				bidType = getBidType(bidExt)
-			}
-
-			if bidType == openrtb_ext.BidTypeNative {
-				if value, _, _, err := jsonparser.Get([]byte(bid.AdM), string(openrtb_ext.BidTypeNative)); err == nil {
-					bid.AdM = string(value)
+					typedBid.BidVideo.Duration = *bidExt.VideoCreativeInfo.Duration
 				}
 			}
 
-			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:      &bid,
-				BidType:  bidType,
-				BidVideo: impVideo,
-				Seat:     openrtb_ext.BidderName(seat),
-			})
+			if typedBid.BidType == openrtb_ext.BidTypeNative {
+				bid.AdM, err = getNativeAdm(bid.AdM)
+				if err != nil {
+					errs = append(errs, err)
+				}
+			}
 
+			bidResponse.Bids = append(bidResponse.Bids, typedBid)
 		}
 	}
 	return bidResponse, errs
+}
+
+func getNativeAdm(adm string) (string, error) {
+	var err error
+	nativeAdm := make(map[string]interface{})
+	err = json.Unmarshal([]byte(adm), &nativeAdm)
+	if err != nil {
+		return adm, errors.New("unable to unmarshal native adm")
+	}
+
+	// move bid.adm.native to bid.adm
+	if _, ok := nativeAdm["native"]; ok {
+		//using jsonparser to avoid marshaling, encode escape, etc.
+		value, _, _, err := jsonparser.Get([]byte(adm), string(openrtb_ext.BidTypeNative))
+		if err != nil {
+			return adm, errors.New("unable to get native adm")
+		}
+		adm = string(value)
+	}
+
+	return adm, nil
 }
 
 // getBidType returns the bid type specified in the response bid.ext
