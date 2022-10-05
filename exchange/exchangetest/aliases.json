@@ -9,7 +9,9 @@
         {
           "id": "my-imp-id",
           "video": {
-            "mimes": ["video/mp4"]
+            "mimes": [
+              "video/mp4"
+            ]
           },
           "ext": {
             "appnexus": {
@@ -48,7 +50,9 @@
             {
               "id": "my-imp-id",
               "video": {
-                "mimes": ["video/mp4"]
+                "mimes": [
+                  "video/mp4"
+                ]
               },
               "ext": {
                 "bidder": {
@@ -63,13 +67,15 @@
                 "datacenter": "Datacenter",
                 "externalurl": "http://hosturl.com",
                 "gvlid": 1
-            }
+              }
             }
           }
         }
       },
       "mockResponse": {
-        "errors": ["appnexus-error"]
+        "errors": [
+          "appnexus-error"
+        ]
       }
     },
     "districtm": {
@@ -86,7 +92,9 @@
             {
               "id": "my-imp-id",
               "video": {
-                "mimes": ["video/mp4"]
+                "mimes": [
+                  "video/mp4"
+                ]
               },
               "ext": {
                 "bidder": {
@@ -101,13 +109,15 @@
                 "datacenter": "Datacenter",
                 "externalurl": "http://hosturl.com",
                 "gvlid": 1
-            }
+              }
             }
           }
         }
       },
       "mockResponse": {
-        "errors": ["districtm-error"]
+        "errors": [
+          "districtm-error"
+        ]
       }
     }
   },
@@ -116,8 +126,12 @@
       "id": "some-request-id",
       "ext": {
         "errors": {
-          "appnexus": ["appnexus-error"],
-          "districtm": ["districtm-error"]
+          "appnexus": [
+            "appnexus-error"
+          ],
+          "districtm": [
+            "districtm-error"
+          ]
         }
       }
     }
