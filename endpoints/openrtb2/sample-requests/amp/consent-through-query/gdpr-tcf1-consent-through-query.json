@@ -3,14 +3,22 @@
   "query": "tag_id=101&consent_type=1&consent_string&BOMhx4COMhx4CABABBAAABAAAAAfTABAAAA",
   "config": {
     "mockBidders": [
-      {"bidderName": "appnexus", "currency": "USD", "price": 15}
+      {
+        "bidderName": "appnexus",
+        "currency": "USD",
+        "price": 15
+      }
     ]
   },
   "mockBidRequest": {
     "id": "b9c97a4b-cbc4-483d-b2c4-58a19ed5cfc5",
-    "site": {"page": "prebid.org"},
+    "site": {
+      "page": "prebid.org"
+    },
     "regs": {
-      "ext": {"gdpr":1}
+      "ext": {
+        "gdpr": 1
+      }
     },
     "imp": [
       {
@@ -24,8 +32,12 @@
           ]
         },
         "ext": {
-          "appnexus": {
-            "placementId": 12883451
+          "prebid": {
+            "bidder": {
+              "appnexus": {
+                "placementId": 12883451
+              }
+            }
           }
         }
       }
@@ -35,12 +47,12 @@
     "id": "b9c97a4b-cbc4-483d-b2c4-58a19ed5cfc5",
     "site": {
       "page": "prebid.org",
-      "publisher": {"cattax":0},
-      "ext": {"amp":1}
+      "ext": {
+        "amp": 1
+      }
     },
     "device": {
-      "ip":"192.0.2.1",
-      "privacypolicy":0
+      "ip": "192.0.2.1"
     },
     "at": 1,
     "imp": [
@@ -56,16 +68,53 @@
         },
         "secure": 1,
         "ext": {
-          "appnexus": {
-            "placementId": 12883451
+          "prebid": {
+            "bidder": {
+              "appnexus": {
+                "placementId": 12883451
+              }
+            }
           }
         }
       }
     ],
     "regs": {
-      "ext": {"gdpr":1}
+      "ext": {
+        "gdpr": 1
+      }
     },
-    "ext": {"prebid":{"cache":{"bids":{"returnCreative":null},"vastxml":null},"channel":{"name":"amp","version":""},"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"includewinners":true,"includebidderkeys":true,"includebrandcategory":null,"includeformat":false,"durationrangesec":null,"preferdeals":false}}}
+    "ext": {
+      "prebid": {
+        "cache": {
+          "bids": {
+            "returnCreative": null
+          },
+          "vastxml": null
+        },
+        "channel": {
+          "name": "amp",
+          "version": ""
+        },
+        "targeting": {
+          "pricegranularity": {
+            "precision": 2,
+            "ranges": [
+              {
+                "min": 0,
+                "max": 20,
+                "increment": 0.1
+              }
+            ]
+          },
+          "includewinners": true,
+          "includebidderkeys": true,
+          "includebrandcategory": null,
+          "includeformat": false,
+          "durationrangesec": null,
+          "preferdeals": false
+        }
+      }
+    }
   },
   "expectedAmpResponse": {
     "targeting": {
@@ -82,7 +131,10 @@
     },
     "warnings": {
       "general": [
-        {"code": 10002, "message": "debug turned off for account"}
+        {
+          "code": 10002,
+          "message": "debug turned off for account"
+        }
       ]
     }
   },

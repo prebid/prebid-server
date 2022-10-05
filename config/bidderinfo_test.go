@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"gopkg.in/yaml.v3"
 	"strings"
 	"testing"
 
@@ -9,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const testInfoFilesPath = "./test/bidder-info"
+const testInfoFilesPathValid = "./test/bidder-info-valid"
 const testSimpleYAML = `
 maintainer:
   email: "some-email@domain.com"
@@ -33,19 +34,6 @@ modifyingVastXmlAllowed: true
 debug:
   allow: true
 gvlVendorID: 42
-userSync:
-  iframe:
-    url: "someURL"
-    userMacro: "aValue"
-  redirect:
-    url: "anotherURL"
-    userMacro: "anotherValue"
-  key: "aKey"
-  supports:
-    - item
-    - item2
-  externalUrl: oneMoreUrl
-  supportCors: true
 experiment:
   adsCert:
     enabled: true
@@ -53,20 +41,21 @@ endpointCompression: "GZIP"
 `
 
 func TestLoadBidderInfoFromDisk(t *testing.T) {
-	bidder := "someBidder"
+	// should appear in result in mixed case
+	bidder := "stroeerCore"
 	trueValue := true
 
 	adapterConfigs := make(map[string]Adapter)
 	adapterConfigs[strings.ToLower(bidder)] = Adapter{}
 
-	infos, err := LoadBidderInfoFromDisk(testInfoFilesPath, adapterConfigs, []string{bidder})
+	infos, err := LoadBidderInfoFromDisk(testInfoFilesPathValid)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	expected := BidderInfos{
 		bidder: {
-			Enabled: true,
+			Disabled: false,
 			Maintainer: &MaintainerInfo{
 				Email: "some-email@domain.com",
 			},
@@ -100,98 +89,454 @@ func TestLoadBidderInfoFromDisk(t *testing.T) {
 	assert.Equal(t, expected, infos)
 }
 
-func TestLoadBidderInfo(t *testing.T) {
-	bidder := "someBidder" // important to be mixed case for tests
-
+func TestProcessBidderInfo(t *testing.T) {
 	testCases := []struct {
-		description   string
-		givenConfigs  map[string]Adapter
-		givenContent  string
-		givenError    error
-		expectedInfo  BidderInfos
-		expectedError string
+		description         string
+		bidderInfos         map[string][]byte
+		expectedBidderInfos BidderInfos
+		expectError         string
 	}{
 		{
-			description:  "Enabled",
-			givenConfigs: map[string]Adapter{strings.ToLower(bidder): {}},
-			givenContent: testSimpleYAML,
-			expectedInfo: map[string]BidderInfo{
-				bidder: {
-					Enabled: true,
+			description: "Valid bidder info",
+			bidderInfos: map[string][]byte{
+				"bidderA.yaml": []byte(testSimpleYAML),
+			},
+			expectedBidderInfos: BidderInfos{
+				"bidderA": BidderInfo{
 					Maintainer: &MaintainerInfo{
 						Email: "some-email@domain.com",
 					},
 					GVLVendorID: 42,
 				},
 			},
+			expectError: "",
 		},
 		{
-			description:  "Disabled - Bidder Not Configured",
-			givenConfigs: map[string]Adapter{},
-			givenContent: testSimpleYAML,
-			expectedInfo: map[string]BidderInfo{
-				bidder: {
-					Enabled: false,
-					Maintainer: &MaintainerInfo{
-						Email: "some-email@domain.com",
+			description: "Bidder doesn't exist in bidder info list",
+			bidderInfos: map[string][]byte{
+				"unknown.yaml": []byte(testSimpleYAML),
+			},
+			expectedBidderInfos: nil,
+			expectError:         "error parsing config for bidder unknown.yaml",
+		},
+		{
+			description: "Invalid bidder config",
+			bidderInfos: map[string][]byte{
+				"bidderA.yaml": []byte("invalid bidder config"),
+			},
+			expectedBidderInfos: nil,
+			expectError:         "error parsing config for bidder bidderA.yaml",
+		},
+	}
+	for _, test := range testCases {
+		reader := StubInfoReader{test.bidderInfos}
+		bidderInfos, err := processBidderInfos(reader, mockNormalizeBidderName)
+		if test.expectError != "" {
+			assert.ErrorContains(t, err, test.expectError, "")
+		} else {
+			assert.Equal(t, test.expectedBidderInfos, bidderInfos, "incorrect bidder infos for test case: %s", test.description)
+		}
+
+	}
+
+}
+
+type StubInfoReader struct {
+	mockBidderInfos map[string][]byte
+}
+
+func (r StubInfoReader) Read() (map[string][]byte, error) {
+	return r.mockBidderInfos, nil
+}
+
+var testBidderNames = map[string]openrtb_ext.BidderName{
+	"biddera": openrtb_ext.BidderName("bidderA"),
+	"bidderb": openrtb_ext.BidderName("bidderB"),
+	"bidder1": openrtb_ext.BidderName("bidder1"),
+	"bidder2": openrtb_ext.BidderName("bidder2"),
+	"a":       openrtb_ext.BidderName("a"),
+}
+
+func mockNormalizeBidderName(name string) (openrtb_ext.BidderName, bool) {
+	nameLower := strings.ToLower(name)
+	bidderName, exists := testBidderNames[nameLower]
+	return bidderName, exists
+}
+
+func TestToGVLVendorIDMap(t *testing.T) {
+	givenBidderInfos := BidderInfos{
+		"bidderA": BidderInfo{Disabled: false, GVLVendorID: 0},
+		"bidderB": BidderInfo{Disabled: false, GVLVendorID: 100},
+		"bidderC": BidderInfo{Disabled: true, GVLVendorID: 0},
+		"bidderD": BidderInfo{Disabled: true, GVLVendorID: 200},
+	}
+
+	expectedGVLVendorIDMap := map[openrtb_ext.BidderName]uint16{
+		"bidderB": 100,
+	}
+
+	result := givenBidderInfos.ToGVLVendorIDMap()
+	assert.Equal(t, expectedGVLVendorIDMap, result)
+}
+
+const bidderInfoRelativePath = "../static/bidder-info"
+
+// TestBidderInfoFiles ensures each bidder has a valid static/bidder-info/bidder.yaml file. Validation is performed directly
+// against the file system with separate yaml unmarshalling from the LoadBidderInfo func.
+func TestBidderInfoFiles(t *testing.T) {
+	_, err := LoadBidderInfoFromDisk(bidderInfoRelativePath)
+	if err != nil {
+		assert.Fail(t, err.Error(), "Errors in bidder info files")
+	}
+}
+
+func TestBidderInfoValidationPositive(t *testing.T) {
+	bidderInfos := BidderInfos{
+		"bidderA": BidderInfo{
+			Endpoint:   "http://bidderA.com/openrtb2",
+			PlatformID: "A",
+			Maintainer: &MaintainerInfo{
+				Email: "maintainer@bidderA.com",
+			},
+			GVLVendorID: 1,
+			Capabilities: &CapabilitiesInfo{
+				App: &PlatformInfo{
+					MediaTypes: []openrtb_ext.BidType{
+						openrtb_ext.BidTypeVideo,
+						openrtb_ext.BidTypeNative,
+						openrtb_ext.BidTypeBanner,
 					},
-					GVLVendorID: 42,
+				},
+			},
+			Syncer: &Syncer{
+				Key: "bidderAkey",
+				Redirect: &SyncerEndpoint{
+					URL:       "http://bidderA.com/usersync",
+					UserMacro: "UID",
 				},
 			},
 		},
-		{
-			description:  "Disabled - Bidder Wrong Case",
-			givenConfigs: map[string]Adapter{bidder: {}},
-			givenContent: testSimpleYAML,
-			expectedInfo: map[string]BidderInfo{
-				bidder: {
-					Enabled: false,
-					Maintainer: &MaintainerInfo{
-						Email: "some-email@domain.com",
+		"bidderB": BidderInfo{
+			Endpoint:   "http://bidderB.com/openrtb2",
+			PlatformID: "B",
+			Maintainer: &MaintainerInfo{
+				Email: "maintainer@bidderA.com",
+			},
+			GVLVendorID: 2,
+			Capabilities: &CapabilitiesInfo{
+				Site: &PlatformInfo{
+					MediaTypes: []openrtb_ext.BidType{
+						openrtb_ext.BidTypeVideo,
+						openrtb_ext.BidTypeNative,
+						openrtb_ext.BidTypeBanner,
 					},
-					GVLVendorID: 42,
+				},
+			},
+			Syncer: &Syncer{
+				Key: "bidderBkey",
+				Redirect: &SyncerEndpoint{
+					URL:       "http://bidderB.com/usersync",
+					UserMacro: "UID",
 				},
 			},
 		},
+	}
+	errs := bidderInfos.validate(make([]error, 0))
+	assert.Len(t, errs, 0, "All bidder infos should be correct")
+}
+
+func TestBidderInfoValidationNegative(t *testing.T) {
+	testCases := []struct {
+		description  string
+		bidderInfos  BidderInfos
+		expectErrors []error
+	}{
 		{
-			description:  "Disabled - Explicitly Configured",
-			givenConfigs: map[string]Adapter{strings.ToLower(bidder): {Disabled: false}},
-			givenContent: testSimpleYAML,
-			expectedInfo: map[string]BidderInfo{
-				bidder: {
-					Enabled: true,
+			"One bidder incorrect url",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "incorrect",
 					Maintainer: &MaintainerInfo{
-						Email: "some-email@domain.com",
+						Email: "maintainer@bidderA.com",
 					},
-					GVLVendorID: 42,
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeVideo,
+							},
+						},
+					},
 				},
+			},
+			[]error{
+				errors.New("The endpoint: incorrect for bidderA is not a valid URL"),
 			},
 		},
 		{
-			description:   "Read Error",
-			givenConfigs:  map[string]Adapter{strings.ToLower(bidder): {}},
-			givenError:    errors.New("any read error"),
-			expectedError: "any read error",
+			"One bidder empty url",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeVideo,
+							},
+						},
+					},
+				},
+			},
+			[]error{
+				errors.New("There's no default endpoint available for bidderA. Calls to this bidder/exchange will fail. Please set adapters.bidderA.endpoint in your app config"),
+			},
 		},
 		{
-			description:   "Unmarshal Error",
-			givenConfigs:  map[string]Adapter{strings.ToLower(bidder): {}},
-			givenContent:  "invalid yaml",
-			expectedError: "error parsing yaml for bidder someBidder: yaml: unmarshal errors:\n  line 1: cannot unmarshal !!str `invalid...` into config.BidderInfo",
+			"One bidder incorrect url template",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2/getuid?{{.incorrect}}",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeVideo,
+							},
+						},
+					},
+				},
+			},
+			[]error{
+				errors.New("Unable to resolve endpoint: http://bidderA.com/openrtb2/getuid?{{.incorrect}} for adapter: bidderA. template: endpointTemplate:1:37: executing \"endpointTemplate\" at <.incorrect>: can't evaluate field incorrect in type macros.EndpointTemplateParams"),
+			},
+		},
+		{
+			"One bidder incorrect url template parameters",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2/getuid?r=[{{.]RedirectURL}}",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeVideo,
+							},
+						},
+					},
+				},
+			},
+			[]error{
+				errors.New("Invalid endpoint template: http://bidderA.com/openrtb2/getuid?r=[{{.]RedirectURL}} for adapter: bidderA. template: endpointTemplate:1: bad character U+005D ']'"),
+			},
+		},
+		{
+			"One bidder no maintainer",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeVideo,
+							},
+						},
+					},
+				},
+			},
+			[]error{
+				errors.New("missing required field: maintainer.email for adapter: bidderA"),
+			},
+		},
+		{
+			"One bidder missing maintainer email",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeVideo,
+							},
+						},
+					},
+				},
+			},
+			[]error{
+				errors.New("missing required field: maintainer.email for adapter: bidderA"),
+			},
+		},
+		{
+			"One bidder missing capabilities",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+				},
+			},
+			[]error{
+				errors.New("missing required field: capabilities for adapter: bidderA"),
+			},
+		},
+		{
+			"One bidder missing capabilities site and app",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{},
+				},
+			},
+			[]error{
+				errors.New("at least one of capabilities.site or capabilities.app must exist for adapter: bidderA"),
+			},
+		},
+		{
+			"One bidder incorrect capabilities for app",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								"incorrect",
+							},
+						},
+					},
+				},
+			},
+			[]error{
+				errors.New("capabilities.app failed validation: unrecognized media type at index 0: incorrect for adapter: bidderA"),
+			},
+		},
+		{
+			"One bidder nil capabilities",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: nil,
+				},
+			},
+			[]error{
+				errors.New("missing required field: capabilities for adapter: bidderA"),
+			},
+		},
+		{
+			"One bidder invalid syncer",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "http://bidderA.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						Site: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeVideo,
+							},
+						},
+					},
+					Syncer: &Syncer{
+						Supports: []string{"incorrect"},
+					},
+				},
+			},
+			[]error{
+				errors.New("syncer could not be created, invalid supported endpoint: incorrect"),
+			},
+		},
+		{
+			"Two bidders, one with incorrect url",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "incorrect",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeVideo,
+							},
+						},
+					},
+				},
+				"bidderB": BidderInfo{
+					Endpoint: "http://bidderB.com/openrtb2",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderB.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeVideo,
+							},
+						},
+					},
+				},
+			},
+			[]error{
+				errors.New("The endpoint: incorrect for bidderA is not a valid URL"),
+			},
+		},
+		{
+			"Two bidders, both with incorrect url",
+			BidderInfos{
+				"bidderA": BidderInfo{
+					Endpoint: "incorrect",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderA.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeVideo,
+							},
+						},
+					},
+				},
+				"bidderB": BidderInfo{
+					Endpoint: "incorrect",
+					Maintainer: &MaintainerInfo{
+						Email: "maintainer@bidderB.com",
+					},
+					Capabilities: &CapabilitiesInfo{
+						App: &PlatformInfo{
+							MediaTypes: []openrtb_ext.BidType{
+								openrtb_ext.BidTypeVideo,
+							},
+						},
+					},
+				},
+			},
+			[]error{
+				errors.New("The endpoint: incorrect for bidderA is not a valid URL"),
+				errors.New("The endpoint: incorrect for bidderB is not a valid URL"),
+			},
 		},
 	}
 
 	for _, test := range testCases {
-		r := fakeInfoReader{test.givenContent, test.givenError}
-		info, err := loadBidderInfo(r, test.givenConfigs, []string{bidder})
-
-		if test.expectedError == "" {
-			assert.NoError(t, err, test.description)
-		} else {
-			assert.EqualError(t, err, test.expectedError, test.description)
-		}
-
-		assert.Equal(t, test.expectedInfo, info, test.description)
+		errs := test.bidderInfos.validate(make([]error, 0))
+		assert.ElementsMatch(t, errs, test.expectErrors, "incorrect errors returned for test: %s", test.description)
 	}
 }
 
@@ -356,41 +701,276 @@ func TestSyncerEndpointOverride(t *testing.T) {
 	}
 }
 
-type fakeInfoReader struct {
-	content string
-	err     error
-}
-
-func (r fakeInfoReader) Read(bidder string) ([]byte, error) {
-	return []byte(r.content), r.err
-}
-
-func TestToGVLVendorIDMap(t *testing.T) {
-	givenBidderInfos := BidderInfos{
-		"bidderA": BidderInfo{Enabled: true, GVLVendorID: 0},
-		"bidderB": BidderInfo{Enabled: true, GVLVendorID: 100},
-		"bidderC": BidderInfo{Enabled: false, GVLVendorID: 0},
-		"bidderD": BidderInfo{Enabled: false, GVLVendorID: 200},
+func TestApplyBidderInfoConfigSyncerOverrides(t *testing.T) {
+	var testCases = []struct {
+		description            string
+		givenFsBidderInfos     BidderInfos
+		givenConfigBidderInfos BidderInfos
+		expectedError          string
+		expectedBidderInfos    BidderInfos
+	}{
+		{
+			description:            "Syncer Override",
+			givenFsBidderInfos:     BidderInfos{"a": {Syncer: &Syncer{Key: "original"}}},
+			givenConfigBidderInfos: BidderInfos{"a": {Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos:    BidderInfos{"a": {Syncer: &Syncer{Key: "override"}}},
+		},
+		{
+			description:            "UserSyncURL Override IFrame",
+			givenFsBidderInfos:     BidderInfos{"a": {Syncer: &Syncer{IFrame: &SyncerEndpoint{URL: "original"}}}},
+			givenConfigBidderInfos: BidderInfos{"a": {UserSyncURL: "override"}},
+			expectedBidderInfos:    BidderInfos{"a": {UserSyncURL: "override", Syncer: &Syncer{IFrame: &SyncerEndpoint{URL: "override"}}}},
+		},
+		{
+			description:            "UserSyncURL Supports IFrame",
+			givenFsBidderInfos:     BidderInfos{"a": {Syncer: &Syncer{Supports: []string{"iframe"}}}},
+			givenConfigBidderInfos: BidderInfos{"a": {UserSyncURL: "override"}},
+			expectedBidderInfos:    BidderInfos{"a": {UserSyncURL: "override", Syncer: &Syncer{Supports: []string{"iframe"}, IFrame: &SyncerEndpoint{URL: "override"}}}},
+		},
+		{
+			description:            "UserSyncURL Override Redirect",
+			givenFsBidderInfos:     BidderInfos{"a": {Syncer: &Syncer{Supports: []string{"redirect"}}}},
+			givenConfigBidderInfos: BidderInfos{"a": {UserSyncURL: "override"}},
+			expectedBidderInfos:    BidderInfos{"a": {UserSyncURL: "override", Syncer: &Syncer{Supports: []string{"redirect"}, Redirect: &SyncerEndpoint{URL: "override"}}}},
+		},
+		{
+			description:            "UserSyncURL Supports Redirect",
+			givenFsBidderInfos:     BidderInfos{"a": {Syncer: &Syncer{Redirect: &SyncerEndpoint{URL: "original"}}}},
+			givenConfigBidderInfos: BidderInfos{"a": {UserSyncURL: "override"}},
+			expectedBidderInfos:    BidderInfos{"a": {UserSyncURL: "override", Syncer: &Syncer{Redirect: &SyncerEndpoint{URL: "override"}}}},
+		},
+		{
+			description:            "UserSyncURL Override Syncer Not Defined",
+			givenFsBidderInfos:     BidderInfos{"a": {}},
+			givenConfigBidderInfos: BidderInfos{"a": {UserSyncURL: "override"}},
+			expectedError:          "adapters.a.usersync_url cannot be applied, bidder does not define a user sync",
+		},
+		{
+			description:            "UserSyncURL Override Syncer Endpoints Not Defined",
+			givenFsBidderInfos:     BidderInfos{"a": {Syncer: &Syncer{}}},
+			givenConfigBidderInfos: BidderInfos{"a": {UserSyncURL: "override"}},
+			expectedError:          "adapters.a.usersync_url cannot be applied, bidder does not define user sync endpoints and does not define supported endpoints",
+		},
+		{
+			description:            "UserSyncURL Override Ambiguous",
+			givenFsBidderInfos:     BidderInfos{"a": {Syncer: &Syncer{IFrame: &SyncerEndpoint{URL: "originalIFrame"}, Redirect: &SyncerEndpoint{URL: "originalRedirect"}}}},
+			givenConfigBidderInfos: BidderInfos{"a": {UserSyncURL: "override"}},
+			expectedError:          "adapters.a.usersync_url cannot be applied, bidder defines multiple user sync endpoints or supports multiple endpoints",
+		},
+		{
+			description:            "UserSyncURL Supports Ambiguous",
+			givenFsBidderInfos:     BidderInfos{"a": {Syncer: &Syncer{Supports: []string{"iframe", "redirect"}}}},
+			givenConfigBidderInfos: BidderInfos{"a": {UserSyncURL: "override"}},
+			expectedError:          "adapters.a.usersync_url cannot be applied, bidder defines multiple user sync endpoints or supports multiple endpoints",
+		},
 	}
 
-	expectedGVLVendorIDMap := map[openrtb_ext.BidderName]uint16{
-		"bidderB": 100,
+	for _, test := range testCases {
+		bidderInfos, resultErr := applyBidderInfoConfigOverrides(test.givenConfigBidderInfos, test.givenFsBidderInfos, mockNormalizeBidderName)
+		if test.expectedError == "" {
+			assert.NoError(t, resultErr, test.description+":err")
+			assert.Equal(t, test.expectedBidderInfos, bidderInfos, test.description+":result")
+		} else {
+			assert.EqualError(t, resultErr, test.expectedError, test.description+":err")
+		}
 	}
+}
 
-	result := givenBidderInfos.ToGVLVendorIDMap()
-	assert.Equal(t, expectedGVLVendorIDMap, result)
+func TestApplyBidderInfoConfigOverrides(t *testing.T) {
+	var testCases = []struct {
+		description            string
+		givenFsBidderInfos     BidderInfos
+		givenConfigBidderInfos BidderInfos
+		expectedError          string
+		expectedBidderInfos    BidderInfos
+	}{
+		{
+			description:            "Don't override endpoint",
+			givenFsBidderInfos:     BidderInfos{"a": {Endpoint: "original"}},
+			givenConfigBidderInfos: BidderInfos{"a": {Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos:    BidderInfos{"a": {Endpoint: "original", Syncer: &Syncer{Key: "override"}}},
+		},
+		{
+			description:            "Override endpoint",
+			givenFsBidderInfos:     BidderInfos{"a": {Endpoint: "original"}},
+			givenConfigBidderInfos: BidderInfos{"a": {Endpoint: "override", Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos:    BidderInfos{"a": {Endpoint: "override", Syncer: &Syncer{Key: "override"}}},
+		},
+		{
+			description:            "Don't override ExtraAdapterInfo",
+			givenFsBidderInfos:     BidderInfos{"a": {ExtraAdapterInfo: "original"}},
+			givenConfigBidderInfos: BidderInfos{"a": {Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos:    BidderInfos{"a": {ExtraAdapterInfo: "original", Syncer: &Syncer{Key: "override"}}},
+		},
+		{
+			description:            "Override ExtraAdapterInfo",
+			givenFsBidderInfos:     BidderInfos{"a": {ExtraAdapterInfo: "original"}},
+			givenConfigBidderInfos: BidderInfos{"a": {ExtraAdapterInfo: "override", Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos:    BidderInfos{"a": {ExtraAdapterInfo: "override", Syncer: &Syncer{Key: "override"}}},
+		},
+		{
+			description:            "Don't override Maintainer",
+			givenFsBidderInfos:     BidderInfos{"a": {Maintainer: &MaintainerInfo{Email: "original"}}},
+			givenConfigBidderInfos: BidderInfos{"a": {Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos:    BidderInfos{"a": {Maintainer: &MaintainerInfo{Email: "original"}, Syncer: &Syncer{Key: "override"}}},
+		},
+		{
+			description:            "Override maintainer",
+			givenFsBidderInfos:     BidderInfos{"a": {Maintainer: &MaintainerInfo{Email: "original"}}},
+			givenConfigBidderInfos: BidderInfos{"a": {Maintainer: &MaintainerInfo{Email: "override"}, Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos:    BidderInfos{"a": {Maintainer: &MaintainerInfo{Email: "override"}, Syncer: &Syncer{Key: "override"}}},
+		},
+		{
+			description: "Don't override Capabilities",
+			givenFsBidderInfos: BidderInfos{"a": {
+				Capabilities: &CapabilitiesInfo{App: &PlatformInfo{MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeVideo}}},
+			}},
+			givenConfigBidderInfos: BidderInfos{"a": {Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos: BidderInfos{"a": {
+				Syncer:       &Syncer{Key: "override"},
+				Capabilities: &CapabilitiesInfo{App: &PlatformInfo{MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeVideo}}},
+			}},
+		},
+		{
+			description: "Override Capabilities",
+			givenFsBidderInfos: BidderInfos{"a": {
+				Capabilities: &CapabilitiesInfo{App: &PlatformInfo{MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeVideo}}},
+			}},
+			givenConfigBidderInfos: BidderInfos{"a": {
+				Syncer:       &Syncer{Key: "override"},
+				Capabilities: &CapabilitiesInfo{App: &PlatformInfo{MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner}}},
+			}},
+			expectedBidderInfos: BidderInfos{"a": {
+				Syncer:       &Syncer{Key: "override"},
+				Capabilities: &CapabilitiesInfo{App: &PlatformInfo{MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner}}},
+			}},
+		},
+		{
+			description:            "Don't override Debug",
+			givenFsBidderInfos:     BidderInfos{"a": {Debug: &DebugInfo{Allow: true}}},
+			givenConfigBidderInfos: BidderInfos{"a": {Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos:    BidderInfos{"a": {Debug: &DebugInfo{Allow: true}, Syncer: &Syncer{Key: "override"}}},
+		},
+		{
+			description:            "Override Debug",
+			givenFsBidderInfos:     BidderInfos{"a": {Debug: &DebugInfo{Allow: true}}},
+			givenConfigBidderInfos: BidderInfos{"a": {Debug: &DebugInfo{Allow: false}, Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos:    BidderInfos{"a": {Debug: &DebugInfo{Allow: false}, Syncer: &Syncer{Key: "override"}}},
+		},
+		{
+			description:            "Don't override GVLVendorID",
+			givenFsBidderInfos:     BidderInfos{"a": {GVLVendorID: 5}},
+			givenConfigBidderInfos: BidderInfos{"a": {Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos:    BidderInfos{"a": {GVLVendorID: 5, Syncer: &Syncer{Key: "override"}}},
+		},
+		{
+			description:            "Override GVLVendorID",
+			givenFsBidderInfos:     BidderInfos{"a": {}},
+			givenConfigBidderInfos: BidderInfos{"a": {GVLVendorID: 5, Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos:    BidderInfos{"a": {GVLVendorID: 5, Syncer: &Syncer{Key: "override"}}},
+		},
+		{
+			description: "Don't override XAPI",
+			givenFsBidderInfos: BidderInfos{"a": {
+				XAPI: AdapterXAPI{Username: "username1", Password: "password2", Tracker: "tracker3"},
+			}},
+			givenConfigBidderInfos: BidderInfos{"a": {Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos: BidderInfos{"a": {
+				XAPI:   AdapterXAPI{Username: "username1", Password: "password2", Tracker: "tracker3"},
+				Syncer: &Syncer{Key: "override"}}},
+		},
+		{
+			description: "Override XAPI",
+			givenFsBidderInfos: BidderInfos{"a": {
+				XAPI: AdapterXAPI{Username: "username", Password: "password", Tracker: "tracker"}}},
+			givenConfigBidderInfos: BidderInfos{"a": {
+				XAPI:   AdapterXAPI{Username: "username1", Password: "password2", Tracker: "tracker3"},
+				Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos: BidderInfos{"a": {
+				XAPI:   AdapterXAPI{Username: "username1", Password: "password2", Tracker: "tracker3"},
+				Syncer: &Syncer{Key: "override"}}},
+		},
+		{
+			description:            "Don't override PlatformID",
+			givenFsBidderInfos:     BidderInfos{"a": {PlatformID: "PlatformID"}},
+			givenConfigBidderInfos: BidderInfos{"a": {Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos:    BidderInfos{"a": {PlatformID: "PlatformID", Syncer: &Syncer{Key: "override"}}},
+		},
+		{
+			description:            "Override PlatformID",
+			givenFsBidderInfos:     BidderInfos{"a": {PlatformID: "PlatformID1"}},
+			givenConfigBidderInfos: BidderInfos{"a": {PlatformID: "PlatformID2", Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos:    BidderInfos{"a": {PlatformID: "PlatformID2", Syncer: &Syncer{Key: "override"}}},
+		},
+		{
+			description:            "Don't override AppSecret",
+			givenFsBidderInfos:     BidderInfos{"a": {AppSecret: "AppSecret"}},
+			givenConfigBidderInfos: BidderInfos{"a": {Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos:    BidderInfos{"a": {AppSecret: "AppSecret", Syncer: &Syncer{Key: "override"}}},
+		},
+		{
+			description:            "Override AppSecret",
+			givenFsBidderInfos:     BidderInfos{"a": {AppSecret: "AppSecret1"}},
+			givenConfigBidderInfos: BidderInfos{"a": {AppSecret: "AppSecret2", Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos:    BidderInfos{"a": {AppSecret: "AppSecret2", Syncer: &Syncer{Key: "override"}}},
+		},
+		{
+			description:            "Don't override EndpointCompression",
+			givenFsBidderInfos:     BidderInfos{"a": {EndpointCompression: "GZIP"}},
+			givenConfigBidderInfos: BidderInfos{"a": {Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos:    BidderInfos{"a": {EndpointCompression: "GZIP", Syncer: &Syncer{Key: "override"}}},
+		},
+		{
+			description:            "Override EndpointCompression",
+			givenFsBidderInfos:     BidderInfos{"a": {EndpointCompression: "GZIP"}},
+			givenConfigBidderInfos: BidderInfos{"a": {EndpointCompression: "LZ77", Syncer: &Syncer{Key: "override"}}},
+			expectedBidderInfos:    BidderInfos{"a": {EndpointCompression: "LZ77", Syncer: &Syncer{Key: "override"}}},
+		},
+	}
+	for _, test := range testCases {
+		bidderInfos, resultErr := applyBidderInfoConfigOverrides(test.givenConfigBidderInfos, test.givenFsBidderInfos, mockNormalizeBidderName)
+		assert.NoError(t, resultErr, test.description+":err")
+		assert.Equal(t, test.expectedBidderInfos, bidderInfos, test.description+":result")
+	}
+}
+
+func TestApplyBidderInfoConfigOverridesInvalid(t *testing.T) {
+	var testCases = []struct {
+		description            string
+		givenFsBidderInfos     BidderInfos
+		givenConfigBidderInfos BidderInfos
+		expectedError          string
+		expectedBidderInfos    BidderInfos
+	}{
+		{
+			description:            "Bidder doesn't exists in bidder list",
+			givenConfigBidderInfos: BidderInfos{"unknown": {Syncer: &Syncer{Key: "override"}}},
+			expectedError:          "error setting configuration for bidder unknown: unknown bidder",
+		},
+		{
+			description:            "Bidder doesn't exists in file system",
+			givenFsBidderInfos:     BidderInfos{"unknown": {Endpoint: "original"}},
+			givenConfigBidderInfos: BidderInfos{"bidderA": {Syncer: &Syncer{Key: "override"}}},
+			expectedError:          "error finding configuration for bidder bidderA: unknown bidder",
+		},
+	}
+	for _, test := range testCases {
+		_, err := applyBidderInfoConfigOverrides(test.givenConfigBidderInfos, test.givenFsBidderInfos, mockNormalizeBidderName)
+		assert.ErrorContains(t, err, test.expectedError, test.description+":err")
+	}
 }
 
 func TestReadFullYamlBidderConfig(t *testing.T) {
-	bidder := "someBidder"
-	trueValue := true
-	r := fakeInfoReader{fullBidderYAMLConfig, nil}
-	actualBidderInfo, err := loadBidderInfo(r, map[string]Adapter{strings.ToLower(bidder): {}}, []string{bidder})
+	bidder := "bidderA"
+	bidderInf := BidderInfo{}
+	err := yaml.Unmarshal([]byte(fullBidderYAMLConfig), &bidderInf)
+	actualBidderInfo, err := applyBidderInfoConfigOverrides(BidderInfos{bidder: bidderInf}, BidderInfos{bidder: {Syncer: &Syncer{Supports: []string{"iframe"}}}}, mockNormalizeBidderName)
+
 	assert.NoError(t, err, "Error wasn't expected")
 
 	expectedBidderInfo := BidderInfos{
 		bidder: {
-			Enabled: true,
+			Disabled: false,
 			Maintainer: &MaintainerInfo{
 				Email: "some-email@domain.com",
 			},
@@ -406,18 +986,7 @@ func TestReadFullYamlBidderConfig(t *testing.T) {
 			Debug:                   &DebugInfo{Allow: true},
 			ModifyingVastXmlAllowed: true,
 			Syncer: &Syncer{
-				Key: "aKey",
-				IFrame: &SyncerEndpoint{
-					URL:       "someURL",
-					UserMacro: "aValue",
-				},
-				Redirect: &SyncerEndpoint{
-					URL:       "anotherURL",
-					UserMacro: "anotherValue",
-				},
-				Supports:    []string{"item", "item2"},
-				SupportCORS: &trueValue,
-				ExternalURL: "oneMoreUrl",
+				Supports: []string{"iframe"},
 			},
 			Experiment:          BidderInfoExperiment{AdsCert: BidderAdsCert{Enabled: true}},
 			EndpointCompression: "GZIP",

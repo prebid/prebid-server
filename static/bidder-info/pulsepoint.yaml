@@ -1,3 +1,4 @@
+endpoint: "http://bid.contextweb.com/header/s/ortb/prebid-s2s"
 maintainer:
   email: "ExchangeTeam@pulsepoint.com"
 gvlVendorID: 81

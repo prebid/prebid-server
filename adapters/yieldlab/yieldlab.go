@@ -49,6 +49,10 @@ func (a *YieldlabAdapter) makeEndpointURL(req *openrtb2.BidRequest, params *open
 	q.Set("ts", a.cacheBuster())
 	q.Set("t", a.makeTargetingValues(params))
 
+	if hasFormats, formats := a.makeFormats(req); hasFormats {
+		q.Set("sizes", formats)
+	}
+
 	if req.User != nil && req.User.BuyerUID != "" {
 		q.Set("ids", "ylid:"+req.User.BuyerUID)
 	}
@@ -86,6 +90,21 @@ func (a *YieldlabAdapter) makeEndpointURL(req *openrtb2.BidRequest, params *open
 	uri.RawQuery = q.Encode()
 
 	return uri.String(), nil
+}
+
+func (a *YieldlabAdapter) makeFormats(req *openrtb2.BidRequest) (bool, string) {
+	var formatsPerAdslot []string
+	for _, impression := range req.Imp {
+		if !impIsTypeBannerOnly(impression) {
+			continue
+		}
+
+		adslotID := a.extractAdslotID(impression)
+		for _, format := range impression.Banner.Format {
+			formatsPerAdslot = append(formatsPerAdslot, fmt.Sprintf("%s:%d|%d", adslotID, format.W, format.H))
+		}
+	}
+	return len(formatsPerAdslot) != 0, strings.Join(formatsPerAdslot, ",")
 }
 
 func (a *YieldlabAdapter) getGDPR(request *openrtb2.BidRequest) (string, string, error) {
@@ -339,4 +358,9 @@ func splitSize(size string) (uint64, uint64, error) {
 
 	return width, height, nil
 
+}
+
+// impIsTypeBannerOnly returns true if impression is only from type banner. Mixed typed with banner would also result in false.
+func impIsTypeBannerOnly(impression openrtb2.Imp) bool {
+	return impression.Banner != nil && impression.Audio == nil && impression.Video == nil && impression.Native == nil
 }

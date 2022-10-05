@@ -58,6 +58,9 @@ type ExtRequestPrebid struct {
 	// passing of personally identifiable information doesn't constitute a sale per CCPA law.
 	// The array may contain a single sstar ('*') entry to represent all bidders.
 	NoSale []string `json:"nosale,omitempty"`
+
+	//AlternateBidderCodes is populated with host's AlternateBidderCodes config if not defined in request
+	AlternateBidderCodes *ExtAlternateBidderCodes `json:"alternatebiddercodes,omitempty"`
 }
 
 // Experiment defines if experimental features are available for the request
@@ -114,10 +117,6 @@ func (ert *ExtRequestPrebidCache) UnmarshalJSON(b []byte) error {
 	var proxy typesAlias
 	if err := json.Unmarshal(b, &proxy); err != nil {
 		return err
-	}
-
-	if proxy.Bids == nil && proxy.VastXML == nil {
-		return errors.New(`request.ext.prebid.cache requires one of the "bids" or "vastxml" properties`)
 	}
 
 	*ert = ExtRequestPrebidCache(proxy)

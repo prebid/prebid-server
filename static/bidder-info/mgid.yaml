@@ -1,3 +1,4 @@
+endpoint: "https://prebid.mgid.com/prebid/"
 maintainer:
   email: "prebid@mgid.com"
 gvlVendorID: 358
@@ -14,3 +15,4 @@ userSync:
   redirect:
     url: "https://cm.mgid.com/m?cdsp=363893&adu={{.RedirectURL}}"
     userMacro: "{muidn}"
+
