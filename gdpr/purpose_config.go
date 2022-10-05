@@ -23,10 +23,8 @@ func (pc *purposeConfig) basicEnforcementVendor(bidder openrtb_ext.BidderName) b
 	if pc.BasicEnforcementVendorsMap == nil {
 		return false
 	}
-	if _, found := pc.BasicEnforcementVendorsMap[string(bidder)]; found {
-		return true
-	}
-	return false
+	_, found := pc.BasicEnforcementVendorsMap[string(bidder)]
+	return found
 }
 
 // vendorException returns true if a given bidder is configured as a vendor exception
