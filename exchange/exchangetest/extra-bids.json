@@ -40,6 +40,15 @@
           "targeting": {
             "includewinners": true,
             "includebidderkeys": true
+          },
+          "alternatebiddercodes": {
+            "enabled": true,
+            "bidders": {
+              "pubmatic": {
+                "enabled": true,
+                "allowedbiddercodes": ["groupm"]
+              }
+            }
           }
         }
       }
@@ -47,6 +56,51 @@
   },
   "outgoingRequests": {
     "pubmatic": {
+      "expectRequest": {
+        "ortbRequest": {
+          "id": "some-request-id",
+          "site": {
+            "page": "test.somepage.com"
+          },
+          "imp": [
+            {
+              "id": "my-imp-id",
+              "video": {
+                "mimes": ["video/mp4"]
+              },
+              "ext": {
+                "bidder": {
+                  "publisherId": 5890
+                }
+              }
+            },
+            {
+              "id": "imp-id-2",
+              "video": {
+                "mimes": ["video/mp4"]
+              },
+              "ext": {
+                "bidder": {
+                  "publisherId": 5890
+                }
+              }
+            }
+          ],
+          "ext": {
+            "prebid": {
+              "alternatebiddercodes": {
+                "enabled": true,
+                "bidders": {
+                  "pubmatic": {
+                    "enabled": true,
+                    "allowedbiddercodes": ["groupm"]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "mockResponse": {
         "pbsSeatBids": [{
           "pbsBids": [
@@ -117,6 +171,46 @@
       }
     },
     "appnexus": {
+      "expectRequest": {
+        "ortbRequest": {
+          "id": "some-request-id",
+          "site": {
+            "page": "test.somepage.com"
+          },
+          "imp": [
+            {
+              "id": "my-imp-id",
+              "video": {
+                "mimes": ["video/mp4"]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": 1
+                }
+              }
+            },
+            {
+              "id": "imp-id-2",
+              "video": {
+                "mimes": ["video/mp4"]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": 1
+                }
+              }
+            }
+          ],
+          "ext": {
+            "prebid": {
+              "alternatebiddercodes": {
+                "enabled": true,
+                "bidders": null
+              }
+            }
+          }
+        }
+      },
       "mockResponse": {
         "pbsSeatBids": [{
           "pbsBids": [

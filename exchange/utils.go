@@ -237,7 +237,7 @@ func getAuctionBidderRequests(auctionRequest AuctionRequest,
 
 		sChainWriter.Write(&reqCopy, bidder)
 
-		reqCopy.Ext, err = buildRequestExtForBidder(bidder, req.BidRequest.Ext, requestExt, bidderParamsInReqExt)
+		reqCopy.Ext, err = buildRequestExtForBidder(bidder, req.BidRequest.Ext, requestExt, bidderParamsInReqExt, auctionRequest.Account.AlternateBidderCodes)
 		if err != nil {
 			return nil, []error{err}
 		}
@@ -273,8 +273,15 @@ func getAuctionBidderRequests(auctionRequest AuctionRequest,
 	return bidderRequests, errs
 }
 
-func buildRequestExtForBidder(bidder string, requestExt json.RawMessage, requestExtParsed *openrtb_ext.ExtRequest, bidderParamsInReqExt map[string]json.RawMessage) (json.RawMessage, error) {
-	if len(requestExt) == 0 || requestExtParsed == nil {
+func buildRequestExtForBidder(bidder string, requestExt json.RawMessage, requestExtParsed *openrtb_ext.ExtRequest, bidderParamsInReqExt map[string]json.RawMessage, cfgABC *openrtb_ext.ExtAlternateBidderCodes) (json.RawMessage, error) {
+	// Resolve alternatebiddercode for current bidder
+	var reqABC *openrtb_ext.ExtAlternateBidderCodes
+	if len(requestExt) != 0 && requestExtParsed != nil && requestExtParsed.Prebid.AlternateBidderCodes != nil {
+		reqABC = requestExtParsed.Prebid.AlternateBidderCodes
+	}
+	alternateBidderCodes := buildRequestExtAlternateBidderCodes(bidder, cfgABC, reqABC)
+
+	if (len(requestExt) == 0 || requestExtParsed == nil) && alternateBidderCodes == nil {
 		return json.RawMessage(``), nil
 	}
 
@@ -287,11 +294,15 @@ func buildRequestExtForBidder(bidder string, requestExt json.RawMessage, request
 	// Copy Allowed Fields
 	// Per: https://docs.prebid.org/prebid-server/endpoints/openrtb2/pbs-endpoint-auction.html#prebid-server-ortb2-extension-summary
 	prebid := openrtb_ext.ExtRequestPrebid{
-		Integration:         requestExtParsed.Prebid.Integration,
-		Channel:             requestExtParsed.Prebid.Channel,
-		Debug:               requestExtParsed.Prebid.Debug,
-		CurrencyConversions: requestExtParsed.Prebid.CurrencyConversions,
-		BidderParams:        bidderParams,
+		BidderParams:         bidderParams,
+		AlternateBidderCodes: alternateBidderCodes,
+	}
+
+	if requestExtParsed != nil {
+		prebid.CurrencyConversions = requestExtParsed.Prebid.CurrencyConversions
+		prebid.Integration = requestExtParsed.Prebid.Integration
+		prebid.Channel = requestExtParsed.Prebid.Channel
+		prebid.Debug = requestExtParsed.Prebid.Debug
 	}
 
 	// Marshal New Prebid Object
@@ -302,12 +313,42 @@ func buildRequestExtForBidder(bidder string, requestExt json.RawMessage, request
 
 	// Update Ext With Prebid Json
 	extMap := make(map[string]json.RawMessage)
-	if err := json.Unmarshal(requestExt, &extMap); err != nil {
-		return nil, err
+	if len(requestExt) != 0 {
+		if err := json.Unmarshal(requestExt, &extMap); err != nil {
+			return nil, err
+		}
 	}
 	extMap["prebid"] = prebidJson
 
 	return json.Marshal(extMap)
+}
+
+func buildRequestExtAlternateBidderCodes(bidder string, accABC *openrtb_ext.ExtAlternateBidderCodes, reqABC *openrtb_ext.ExtAlternateBidderCodes) *openrtb_ext.ExtAlternateBidderCodes {
+	if reqABC != nil {
+		alternateBidderCodes := &openrtb_ext.ExtAlternateBidderCodes{
+			Enabled: reqABC.Enabled,
+		}
+		if bidderCodes, ok := reqABC.Bidders[bidder]; ok {
+			alternateBidderCodes.Bidders = map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+				bidder: bidderCodes,
+			}
+		}
+		return alternateBidderCodes
+	}
+
+	if accABC != nil {
+		alternateBidderCodes := &openrtb_ext.ExtAlternateBidderCodes{
+			Enabled: accABC.Enabled,
+		}
+		if bidderCodes, ok := accABC.Bidders[bidder]; ok {
+			alternateBidderCodes.Bidders = map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+				bidder: bidderCodes,
+			}
+		}
+		return alternateBidderCodes
+	}
+
+	return nil
 }
 
 // extractBuyerUIDs parses the values from user.ext.prebid.buyeruids, and then deletes those values from the ext.

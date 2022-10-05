@@ -286,7 +286,16 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	} else {
 		// List of bidders we have requests for.
 		liveAdapters = listBiddersWithRequests(bidderRequests)
-		adapterBids, adapterExtra, anyBidsReturned = e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, accountDebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride, r.Account.AlternateBidderCodes, requestExt.Prebid.Experiment)
+
+		//This will be used validate bids
+		var alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes
+		if requestExt != nil && requestExt.Prebid.AlternateBidderCodes != nil {
+			alternateBidderCodes = *requestExt.Prebid.AlternateBidderCodes
+		} else if r.Account.AlternateBidderCodes != nil {
+			alternateBidderCodes = *r.Account.AlternateBidderCodes
+		}
+
+		adapterBids, adapterExtra, anyBidsReturned = e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, accountDebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride, alternateBidderCodes, requestExt.Prebid.Experiment)
 	}
 
 	var auc *auction
@@ -494,7 +503,7 @@ func (e *exchange) getAllBids(
 	accountDebugAllowed bool,
 	globalPrivacyControlHeader string,
 	headerDebugAllowed bool,
-	alternateBidderCodes config.AlternateBidderCodes,
+	alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes,
 	experiment *openrtb_ext.Experiment) (
 	map[openrtb_ext.BidderName]*pbsOrtbSeatBid,
 	map[openrtb_ext.BidderName]*seatResponseExtra, bool) {

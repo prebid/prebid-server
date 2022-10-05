@@ -4195,6 +4195,185 @@ func TestCallSignHeader(t *testing.T) {
 
 }
 
+/*
+	TestOverrideConfigAlternateBidderCodesWithRequestValues makes sure that the correct alternabiddercodes list is forwarded to the adapters and only the approved bids are returned in auction response.
+
+	1. request.ext.prebid.alternatebiddercodes has priority over the content of config.Account.Alternatebiddercodes.
+
+	2. request is updated with config.Account.Alternatebiddercodes values if request.ext.prebid.alternatebiddercodes is empty or not specified.
+
+	3. request.ext.prebid.alternatebiddercodes is given priority over config.Account.Alternatebiddercodes if both are specified.
+*/
+func TestOverrideConfigAlternateBidderCodesWithRequestValues(t *testing.T) {
+	type testIn struct {
+		config     config.Configuration
+		requestExt json.RawMessage
+	}
+	type testResults struct {
+		expectedSeats []string
+	}
+
+	testCases := []struct {
+		desc     string
+		in       testIn
+		expected testResults
+	}{
+		{
+			desc: "alternatebiddercode defined neither in config nor in the request",
+			in: testIn{
+				config: config.Configuration{},
+			},
+			expected: testResults{
+				expectedSeats: []string{"pubmatic"},
+			},
+		},
+		{
+			desc: "alternatebiddercode defined in config and not in request",
+			in: testIn{
+				config: config.Configuration{
+					AccountDefaults: config.Account{
+						AlternateBidderCodes: &openrtb_ext.ExtAlternateBidderCodes{
+							Enabled: true,
+							Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+								"pubmatic": {
+									Enabled:            true,
+									AllowedBidderCodes: []string{"groupm"},
+								},
+							},
+						},
+					},
+				},
+				requestExt: json.RawMessage(`{}`),
+			},
+			expected: testResults{
+				expectedSeats: []string{"pubmatic", "groupm"},
+			},
+		},
+		{
+			desc: "alternatebiddercode defined in request and not in config",
+			in: testIn{
+				requestExt: json.RawMessage(`{"prebid": {"alternatebiddercodes": {"enabled": true, "bidders": {"pubmatic": {"enabled": true, "allowedbiddercodes": ["appnexus"]}}}}}`),
+			},
+			expected: testResults{
+				expectedSeats: []string{"pubmatic", "appnexus"},
+			},
+		},
+		{
+			desc: "alternatebiddercode defined in both config and in request",
+			in: testIn{
+				config: config.Configuration{
+					AccountDefaults: config.Account{
+						AlternateBidderCodes: &openrtb_ext.ExtAlternateBidderCodes{
+							Enabled: true,
+							Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{
+								"pubmatic": {
+									Enabled:            true,
+									AllowedBidderCodes: []string{"groupm"},
+								},
+							},
+						},
+					},
+				},
+				requestExt: json.RawMessage(`{"prebid": {"alternatebiddercodes": {"enabled": true, "bidders": {"pubmatic": {"enabled": true, "allowedbiddercodes": ["ix"]}}}}}`),
+			},
+			expected: testResults{
+				expectedSeats: []string{"pubmatic", "ix"},
+			},
+		},
+	}
+
+	// Init an exchange to run an auction from
+	noBidServer := func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(204) }
+	mockPubMaticBidService := httptest.NewServer(http.HandlerFunc(noBidServer))
+	defer mockPubMaticBidService.Close()
+
+	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
+	if error != nil {
+		t.Errorf("Failed to create a category Fetcher: %v", error)
+	}
+
+	mockBidderRequestResponse := &goodSingleBidder{
+		httpRequest: &adapters.RequestData{
+			Method:  "POST",
+			Uri:     mockPubMaticBidService.URL,
+			Body:    []byte("{\"key\":\"val\"}"),
+			Headers: http.Header{},
+		},
+		bidResponse: &adapters.BidderResponse{
+			Bids: []*adapters.TypedBid{
+				{Bid: &openrtb2.Bid{ID: "1"}, Seat: ""},
+				{Bid: &openrtb2.Bid{ID: "2"}, Seat: "pubmatic"},
+				{Bid: &openrtb2.Bid{ID: "3"}, Seat: "appnexus"},
+				{Bid: &openrtb2.Bid{ID: "4"}, Seat: "groupm"},
+				{Bid: &openrtb2.Bid{ID: "5"}, Seat: "ix"},
+			},
+			Currency: "USD",
+		},
+	}
+
+	e := new(exchange)
+	e.cache = &wellBehavedCache{}
+	e.me = &metricsConf.NilMetricsEngine{}
+	e.gdprPermsBuilder = fakePermissionsBuilder{
+		permissions: &permissionsMock{
+			allowAllBidders: true,
+		},
+	}.Builder
+	e.tcf2ConfigBuilder = fakeTCF2ConfigBuilder{
+		cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
+	}.Builder
+	e.currencyConverter = currency.NewRateConverter(&http.Client{}, "", time.Duration(0))
+	e.categoriesFetcher = categoriesFetcher
+	e.bidIDGenerator = &mockBidIDGenerator{false, false}
+
+	// Define mock incoming bid requeset
+	mockBidRequest := &openrtb2.BidRequest{
+		ID: "some-request-id",
+		Imp: []openrtb2.Imp{{
+			ID:     "some-impression-id",
+			Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}, {W: 300, H: 600}}},
+			Ext:    json.RawMessage(`{"pubmatic": {"publisherId": 1}}`),
+		}},
+		Site: &openrtb2.Site{Page: "prebid.org", Ext: json.RawMessage(`{"amp":0}`)},
+	}
+
+	// Run tests
+	for _, test := range testCases {
+		e.adapterMap = map[openrtb_ext.BidderName]AdaptedBidder{
+			openrtb_ext.BidderPubmatic: AdaptBidder(mockBidderRequestResponse, mockPubMaticBidService.Client(), &test.in.config, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderPubmatic, nil, ""),
+		}
+
+		mockBidRequest.Ext = test.in.requestExt
+
+		auctionRequest := AuctionRequest{
+			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: mockBidRequest},
+			Account:           test.in.config.AccountDefaults,
+			UserSyncs:         &emptyUsersync{},
+		}
+
+		// Run test
+		outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, &DebugLog{})
+
+		// Assertions
+		assert.NoErrorf(t, err, "%s. HoldAuction error: %v \n", test.desc, err)
+		assert.NotNil(t, outBidResponse)
+
+		// So 2 seatBids are expected as,
+		// the default "" and "pubmatic" bids will be in one seat and the extra-bids "groupm"/"appnexus"/"ix" in another seat.
+		assert.Len(t, outBidResponse.SeatBid, len(test.expected.expectedSeats), "%s. seatbid count miss-match\n", test.desc)
+
+		for i, seatBid := range outBidResponse.SeatBid {
+			assert.Contains(t, test.expected.expectedSeats, seatBid.Seat, "%s. unexpected seatbid\n", test.desc)
+
+			if seatBid.Seat == string(openrtb_ext.BidderPubmatic) {
+				assert.Len(t, outBidResponse.SeatBid[i].Bid, 2, "%s. unexpected bid count\n", test.desc)
+			} else {
+				assert.Len(t, outBidResponse.SeatBid[i].Bid, 1, "%s. unexpected bid count\n", test.desc)
+			}
+		}
+	}
+}
+
 type MockSigner struct {
 	data string
 }
@@ -4286,7 +4465,7 @@ type validatingBidder struct {
 	mockResponses map[string]bidderResponse
 }
 
-func (b *validatingBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes config.AlternateBidderCodes) (seatBids []*pbsOrtbSeatBid, errs []error) {
+func (b *validatingBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes) (seatBids []*pbsOrtbSeatBid, errs []error) {
 	if expectedRequest, ok := b.expectations[string(bidderRequest.BidderName)]; ok {
 		if expectedRequest != nil {
 			if !reflect.DeepEqual(expectedRequest.BidAdjustments, bidRequestOptions.bidAdjustments) {
@@ -4343,7 +4522,7 @@ type capturingRequestBidder struct {
 	req *openrtb2.BidRequest
 }
 
-func (b *capturingRequestBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes config.AlternateBidderCodes) (seatBid []*pbsOrtbSeatBid, errs []error) {
+func (b *capturingRequestBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes *openrtb_ext.ExtAlternateBidderCodes) (seatBid []*pbsOrtbSeatBid, errs []error) {
 	b.req = bidderRequest.BidRequest
 	return []*pbsOrtbSeatBid{{}}, nil
 }
@@ -4449,7 +4628,7 @@ func (e *emptyUsersync) HasAnyLiveSyncs() bool {
 
 type panicingAdapter struct{}
 
-func (panicingAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestMetadata bidRequestOptions, alternateBidderCodes config.AlternateBidderCodes) (posb []*pbsOrtbSeatBid, errs []error) {
+func (panicingAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestMetadata bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes) (posb []*pbsOrtbSeatBid, errs []error) {
 	panic("Panic! Panic! The world is ending!")
 }
 
