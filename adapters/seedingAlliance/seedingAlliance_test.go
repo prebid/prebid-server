@@ -111,7 +111,7 @@ func TestGetMediaTypeForBid(t *testing.T) {
 			want:           "",
 			invalidJSON:    true,
 			wantErr:        true,
-			wantErrContain: "could not unmarshal",
+			wantErrContain: "bid.Ext.Prebid is empty",
 			bidType:        "",
 		},
 	}
@@ -138,8 +138,8 @@ func TestGetMediaTypeForBid(t *testing.T) {
 		got, gotErr := getMediaTypeForBid(bid.Ext)
 		assert.Equal(t, test.want, got)
 
-		if gotErr != nil {
-			if test.wantErr {
+		if test.wantErr {
+			if gotErr != nil {
 				assert.Contains(t, gotErr.Error(), test.wantErrContain)
 				continue
 			}
