@@ -20,7 +20,7 @@ type QueryString map[string]string
 type adapter struct {
 	time       timeutil.Time
 	endpoint   string
-	extra_info string
+	extraInfo string
 }
 type adnAdunit struct {
 	AuId       string    `json:"auId"`
