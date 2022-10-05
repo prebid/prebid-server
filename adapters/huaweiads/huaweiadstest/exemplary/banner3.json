@@ -43,7 +43,7 @@
       "lmt": 0,
       "os": "android",
       "osv": "29",
-      "language": "en",
+      "language": "za",
       "w": 360,
       "h": 755,
       "pxratio": 3,
@@ -51,11 +51,10 @@
       "carrier": "carrier",
       "connectiontype": 1,
       "geo": {
-        "country": "RUS"
       }
     },
     "app": {
-      "bundle": "com.example4.p",
+      "bundle": "com.example.p10",
       "ver": "1.11",
       "name": "API1.0Demo",
       "publisher": {
@@ -99,7 +98,7 @@
   "httpcalls": [
     {
       "expectedRequest": {
-        "uri": "https://adx-drru.op.hicloud.com/ppsadx/getResult",
+        "uri": "https://adx-dra.op.hicloud.com/ppsadx/getResult",
         "headers": {
           "Accept": [
             "application/json"
@@ -117,7 +116,7 @@
         "body": {
           "app": {
             "lang": "en",
-            "country": "RU",
+            "country": "AE",
             "name": "API1.0Demo",
             "pkgname": "com.example.pkgname2",
             "version": "1.11"
@@ -137,10 +136,10 @@
           ],
           "device": {
             "height": 755,
-            "language": "en",
+            "language": "za",
             "oaid": "oaid",
             "os": "android",
-            "localeCountry": "RU",
+            "localeCountry": "AE",
             "pxratio": 3,
             "width": 360,
             "model": "LYA-AL00",
@@ -149,7 +148,7 @@
             "useragent": "ua",
             "version": "29",
             "maker": "HUAWEI",
-            "belongCountry": "RU"
+            "belongCountry": "AE"
           },
           "geo": {
           },

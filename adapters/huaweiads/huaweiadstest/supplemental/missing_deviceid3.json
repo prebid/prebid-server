@@ -38,7 +38,6 @@
       "geoCountry": "CH",
       "model": "COL-TEST",
       "os": "ios",
-      "ifa": "test-ifa",
       "osv": "10.0.0",
       "devicetype": 4,
       "make": "huawei",
@@ -71,7 +70,7 @@
   ],
   "expectedMakeRequestsErrors": [
     {
-      "value": "get gaid from openrtb Device.IFA failed, and get device id failed: Imei ,Oaid, Gaid are all empty.",
+      "value": "getDeviceID: Imei ,Oaid, Gaid are all empty.",
       "comparison": "literal"
     }
   ]
