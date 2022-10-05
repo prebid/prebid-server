@@ -22,13 +22,17 @@
             ]
           },
           "ext": {
-            "appnexus": {
-              "placementId": 1
-            },
-            "rubicon": {
-              "accountId": 1,
-              "siteId": 2,
-              "zoneId": 3
+            "prebid": {
+              "bidder": {
+                "appnexus": {
+                  "placementId": 1
+                },
+                "rubicon": {
+                  "accountId": 1,
+                  "siteId": 2,
+                  "zoneId": 3
+                }
+              }
             }
           }
         }
