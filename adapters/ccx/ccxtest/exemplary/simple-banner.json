@@ -1,0 +1,97 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [{"w": 300, "h": 250}]
+        },
+        "ext": {
+          "bidder": {
+            "pid": 123456789
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://delivery.clickonometrics.pl/ortb/prebid/bid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [{"w": 300, "h": 250}]
+              },
+              "ext": {
+                "bidder": {
+                  "pid": 123456789
+                }
+              }
+            }
+          ],
+          "site": {
+            "publisher": {
+              "id": "73"
+            }
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "bid": [{
+                "id": "11111111-2222-33333333",
+                "impid": "test-imp-id",
+                "price": 0.500000,
+                "adm": "some-test-ad",
+                "adomain":[
+                  "somedomain.com"
+                 ],
+                "crid": "1234",
+                "w": 300,
+                "h": 250,
+                "ext": {
+                  "type": "standard"
+                }
+              }]
+            }
+          ],
+          "cur": "PLN",
+          "ext": {
+            "ttl": 10,
+            "usersync":[]
+          }
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "PLN",
+      "bids": [
+        {
+          "bid": {
+            "id": "11111111-2222-33333333",
+            "impid": "test-imp-id",
+            "price": 0.5,
+            "adm": "some-test-ad",
+            "crid": "1234",
+            "w": 300,
+            "h": 250
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
