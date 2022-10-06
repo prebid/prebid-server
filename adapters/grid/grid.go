@@ -21,6 +21,7 @@ type GridAdapter struct {
 
 type GridBid struct {
 	*openrtb2.Bid
+	AdmNative   json.RawMessage     `json:"adm_native,omitempty"`
 	ContentType openrtb_ext.BidType `json:"content_type"`
 }
 
@@ -282,6 +283,35 @@ func setImpExtData(imp openrtb2.Imp) openrtb2.Imp {
 	return imp
 }
 
+func fixNative(req json.RawMessage) (json.RawMessage, error) {
+	var gridReq map[string]interface{}
+	var parsedRequest map[string]interface{}
+
+	if err := json.Unmarshal(req, &gridReq); err != nil {
+		return req, nil
+	}
+	if imps, exists := maputil.ReadEmbeddedSlice(gridReq, "imp"); exists {
+		for _, imp := range imps {
+			if gridImp, ok := imp.(map[string]interface{}); ok {
+				native, hasNative := maputil.ReadEmbeddedMap(gridImp, "native")
+				if hasNative {
+					request, hasRequest := maputil.ReadEmbeddedString(native, "request")
+					if hasRequest {
+						delete(native, "request")
+						if err := json.Unmarshal([]byte(request), &parsedRequest); err == nil {
+							native["request_native"] = parsedRequest
+						} else {
+							native["request_native"] = request
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return json.Marshal(gridReq)
+}
+
 // MakeRequests makes the HTTP requests which should be made to fetch bids.
 func (a *GridAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errors = make([]error, 0)
@@ -312,6 +342,14 @@ func (a *GridAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapte
 	request.Imp = validImps
 
 	reqJSON, err := json.Marshal(request)
+
+	if err != nil {
+		errors = append(errors, err)
+		return nil, errors
+	}
+
+	fixedReqJSON, err := fixNative(reqJSON)
+
 	if err != nil {
 		errors = append(errors, err)
 		return nil, errors
@@ -323,7 +361,7 @@ func (a *GridAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapte
 	return []*adapters.RequestData{{
 		Method:  "POST",
 		Uri:     a.endpoint,
-		Body:    reqJSON,
+		Body:    fixedReqJSON,
 		Headers: headers,
 	}}, errors
 }
@@ -357,6 +395,11 @@ func (a *GridAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalReq
 		for i := range sb.Bid {
 			bidMeta, err := getBidMeta(sb.Bid[i].Ext)
 			bidType, err := getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp, sb.Bid[i])
+			if sb.Bid[i].AdmNative != nil && sb.Bid[i].AdM == "" {
+				if bytes, err := json.Marshal(sb.Bid[i].AdmNative); err == nil {
+					sb.Bid[i].AdM = string(bytes)
+				}
+			}
 			if err != nil {
 				return nil, []error{err}
 			}
@@ -409,6 +452,10 @@ func getMediaTypeForImp(impID string, imps []openrtb2.Imp, bidWithType GridBid) 
 
 				if imp.Video != nil {
 					return openrtb_ext.BidTypeVideo, nil
+				}
+
+				if imp.Native != nil {
+					return openrtb_ext.BidTypeNative, nil
 				}
 
 				return "", &errortypes.BadServerResponse{

@@ -1,3 +1,4 @@
+endpoint: "http://{{.Host}}-prebid.smart-hub.io/?seat={{.AccountID}}&token={{.SourceId}}"
 maintainer:
   email: "support@smart-hub.io"
 capabilities:

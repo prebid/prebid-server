@@ -165,6 +165,24 @@ func (err *BidderTemporarilyDisabled) Severity() Severity {
 	return SeverityWarning
 }
 
+// MalformedAcct should be used when the retrieved account config cannot be unmarshaled
+// These errors will be written to http.ResponseWriter before canceling execution
+type MalformedAcct struct {
+	Message string
+}
+
+func (err *MalformedAcct) Error() string {
+	return err.Message
+}
+
+func (err *MalformedAcct) Code() int {
+	return MalformedAcctErrorCode
+}
+
+func (err *MalformedAcct) Severity() Severity {
+	return SeverityFatal
+}
+
 // Warning is a generic non-fatal error.
 type Warning struct {
 	Message     string

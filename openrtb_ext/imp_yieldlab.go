@@ -4,7 +4,6 @@ package openrtb_ext
 type ExtImpYieldlab struct {
 	AdslotID  string            `json:"adslotId"`
 	SupplyID  string            `json:"supplyId"`
-	AdSize    string            `json:"adSize"`
 	Targeting map[string]string `json:"targeting"`
 	ExtId     string            `json:"extId"`
 }
