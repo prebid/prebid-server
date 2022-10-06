@@ -183,7 +183,7 @@ func (pf *AccountPriceFloors) validate(errs []error) []error {
 		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.fetch.period_sec should not be less than 300 seconds`))
 	}
 
-	if !(pf.Fetch.MaxAge > 600 && pf.Fetch.MaxAge < math.MaxInt) {
+	if !(pf.Fetch.MaxAge > 600 && pf.Fetch.MaxAge < math.MaxInt32) {
 		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.fetch.max_age_sec should not be less than 600 seconds and greater than maximum integer value`))
 	}
 
@@ -191,11 +191,11 @@ func (pf *AccountPriceFloors) validate(errs []error) []error {
 		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.fetch.timeout_ms should be between 10 to 10,000 mili seconds`))
 	}
 
-	if !(pf.Fetch.MaxRules >= 0 && pf.Fetch.MaxRules < math.MaxInt) {
+	if !(pf.Fetch.MaxRules >= 0 && pf.Fetch.MaxRules < math.MaxInt32) {
 		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.fetch.max_rules should not be less than 0 seconds and greater than maximum integer value`))
 	}
 
-	if !(pf.Fetch.MaxFileSize >= 0 && pf.Fetch.MaxFileSize < math.MaxInt) {
+	if !(pf.Fetch.MaxFileSize >= 0 && pf.Fetch.MaxFileSize < math.MaxInt32) {
 		errs = append(errs, fmt.Errorf(`account_defaults.price_floors.fetch.max_file_size_kb should not be less than 0 seconds and greater than maximum integer value`))
 	}
 	return errs
