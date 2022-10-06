@@ -374,7 +374,7 @@ func TestPopulateFirstPartyDataImpAttributes(t *testing.T) {
 		{
 			name: "string with spaces present in imp.ext.data",
 			args: args{
-				data:      json.RawMessage(`{"category": "   cinema"}`),
+				data:      json.RawMessage(`{"  category  ": "   cinema  "}`),
 				impExtMap: map[string]interface{}{},
 			},
 			expectedImpExt: map[string]interface{}{
@@ -384,7 +384,7 @@ func TestPopulateFirstPartyDataImpAttributes(t *testing.T) {
 		{
 			name: "string array with spaces present in imp.ext.data",
 			args: args{
-				data:      json.RawMessage(`{"country": ["  India", "China  "]}`),
+				data:      json.RawMessage(`{"  country\t": ["  India", "\tChina  "]}`),
 				impExtMap: map[string]interface{}{},
 			},
 			expectedImpExt: map[string]interface{}{
