@@ -33,8 +33,6 @@ func (pc *purposeConfig) vendorException(bidder openrtb_ext.BidderName) bool {
 	if pc.VendorExceptionMap == nil {
 		return false
 	}
-	if _, found := pc.VendorExceptionMap[bidder]; found {
-		return true
-	}
-	return false
+	_, found := pc.VendorExceptionMap[bidder]
+	return found
 }
