@@ -481,10 +481,14 @@ func setConsentedProviders(req *openrtb2.BidRequest, ampParams amp.Params) error
 
 		consentedProvidersSettings := userExt.GetConsentedProvidersSettings()
 		if consentedProvidersSettings == nil {
-			consentedProvidersSettings = &openrtb_ext.ExtUserCPSettings{}
+			consentedProvidersSettings = &openrtb_ext.ConsentedProvidersSettings{}
 		}
 
-		consentedProvidersSettings.ConsentedProviders = ampParams.AdditionalConsent
+		if len(consentedProvidersSettings.ConsentedProvidersString) > 0 {
+			// If either stored request or an incomming request comes with user.ext.ConsentedProvidersSettings, parse
+			// the string into an array as ImprovedDigital does. This functionlaity is probably suited for the request Wrapper
+		}
+		consentedProvidersSettings.ConsentedProvidersString = ampParams.AdditionalConsent
 
 		userExt.SetConsentedProvidersSettings(consentedProvidersSettings)
 

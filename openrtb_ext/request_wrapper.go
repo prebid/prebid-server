@@ -293,7 +293,7 @@ type UserExt struct {
 	prebidDirty                     bool
 	eids                            *[]openrtb2.EID
 	eidsDirty                       bool
-	consentedProvidersSettings      *ExtUserCPSettings
+	consentedProvidersSettings      *ConsentedProvidersSettings
 	consentedProvidersSettingsDirty bool
 }
 
@@ -336,7 +336,7 @@ func (ue *UserExt) unmarshal(extJson json.RawMessage) error {
 	}
 
 	if consentedProviderSettingsJson, hasCPSettings := ue.ext["ConsentedProvidersSettings"]; hasCPSettings {
-		ue.consentedProvidersSettings = &ExtUserCPSettings{}
+		ue.consentedProvidersSettings = &ConsentedProvidersSettings{}
 		if err := json.Unmarshal(consentedProviderSettingsJson, ue.consentedProvidersSettings); err != nil {
 			return err
 		}
@@ -443,7 +443,7 @@ func (ue *UserExt) SetConsent(consent *string) {
 	ue.consentDirty = true
 }
 
-func (ue *UserExt) GetConsentedProvidersSettings() *ExtUserCPSettings {
+func (ue *UserExt) GetConsentedProvidersSettings() *ConsentedProvidersSettings {
 	if ue.consentedProvidersSettings == nil {
 		return nil
 	}
@@ -451,7 +451,7 @@ func (ue *UserExt) GetConsentedProvidersSettings() *ExtUserCPSettings {
 	return &consentedProvidersSettings
 }
 
-func (ue *UserExt) SetConsentedProvidersSettings(cpSettings *ExtUserCPSettings) {
+func (ue *UserExt) SetConsentedProvidersSettings(cpSettings *ConsentedProvidersSettings) {
 	ue.consentedProvidersSettings = cpSettings
 	ue.consentedProvidersSettingsDirty = true
 }
