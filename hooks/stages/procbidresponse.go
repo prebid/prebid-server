@@ -7,10 +7,14 @@ import (
 )
 
 type ProcessedBidResponseHook interface {
-	Code() string
 	Call(
 		context.Context,
 		invocation.Context,
-		[]byte,
-	) (invocation.HookResult[[]byte], error)
+		ProcessedBidResponsePayload,
+	) (invocation.HookResult[ProcessedBidResponsePayload], error)
+}
+
+type ProcessedBidResponsePayload struct {
+	// todo: decide what payload to use within hook invocation task
+	// initially, we planned to use *exchange.pbsOrtbSeatBid, but the type is not exported
 }

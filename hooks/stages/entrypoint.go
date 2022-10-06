@@ -4,67 +4,45 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/url"
 	"sync"
 
 	"github.com/prebid/prebid-server/hooks/invocation"
 )
 
 type EntrypointHook interface {
-	Code() string
 	Call(
 		context.Context,
 		invocation.Context,
-		ImmutableEntrypointPayload,
-	) (invocation.HookResult[MutableEntrypointPayload], error)
+		EntrypointPayload,
+	) (invocation.HookResult[EntrypointPayload], error)
 }
 
-type ImmutableEntrypointPayload struct {
-	request *http.Request
-	params  url.Values
+type EntrypointPayload struct {
+	Request *http.Request
 	Body    []byte
 }
 
-func (w ImmutableEntrypointPayload) Header(key string) string {
-	return w.request.Header.Get(key)
-}
-
-func (w ImmutableEntrypointPayload) Param(key string) string {
-	return w.params.Get(key)
-}
-
-type MutableEntrypointPayload struct {
-	Header http.Header
-	Params url.Values
-	Body   []byte
+type HookResponse[T any] struct {
+	Result invocation.HookResult[T]
+	Err    error
 }
 
 // todo: remove this variable, ExecuteEntrypointHook func must be implemented as a method
 // on the HookExecutionPlan type, which will contain all the necessary hooks for actual host/account level
 var entrypointHooks []EntrypointHook
 
-func ExecuteEntrypointHook(ctx context.Context, invocationCtx invocation.Context, req *http.Request, body []byte) (
-	[]byte,
-	error,
-) {
+func ExecuteEntrypointStage(
+	ctx context.Context,
+	invocationCtx invocation.Context,
+	req *http.Request,
+	body []byte,
+) ([]byte, error) {
 	var wg sync.WaitGroup
 
-	// immutable payload - used to execute hooks
-	iPayload := ImmutableEntrypointPayload{
-		request: req,
-		params:  req.URL.Query(),
-		Body:    body,
-	}
-
-	// mutable payload - used to apply hook mutations
-	mPayload := MutableEntrypointPayload{
-		Header: req.Header.Clone(),
-		Params: req.URL.Query(),
-		Body:   body,
-	}
-
+	payload := EntrypointPayload{Request: req, Body: body}
 	done := make(chan struct{})
-	resp := make(chan invocation.HookResponse[MutableEntrypointPayload])
+	resp := make(chan HookResponse[EntrypointPayload])
+	results := make([]invocation.HookResult[EntrypointPayload], 0, len(entrypointHooks))
 
 	for _, h := range entrypointHooks {
 		wg.Add(1)
@@ -74,8 +52,8 @@ func ExecuteEntrypointHook(ctx context.Context, invocationCtx invocation.Context
 			select {
 			case <-done:
 			default:
-				result, err := hook.Call(ctx, invocationCtx, iPayload)
-				resp <- invocation.HookResponse[MutableEntrypointPayload]{
+				result, err := hook.Call(ctx, invocationCtx, payload)
+				resp <- HookResponse[EntrypointPayload]{
 					Result: result,
 					Err:    err,
 				}
@@ -90,36 +68,35 @@ func ExecuteEntrypointHook(ctx context.Context, invocationCtx invocation.Context
 
 	for r := range resp {
 		if r.Err != nil {
-			// todo: process error
+			// todo: process error, send metric
 			continue
 		}
 
-		switch r.Result.Action {
-		case invocation.Nop:
-			continue
-		case invocation.Reject:
+		if r.Result.Reject {
 			close(done)
-			// todo: reject request
+			// todo: reject request, send metric
 			return body, nil
-		case invocation.Update:
-			for _, mut := range r.Result.Mutations {
-				p, err := mut.Apply(mPayload)
-				if err != nil {
-					// todo: handle mutation applying error
-					fmt.Printf("failed applying mutation: %s", err)
-					continue
-				}
-				mPayload = p
-			}
 		}
 
-		// todo: send hook metrics
+		results = append(results, r.Result)
 	}
 
-	req.Header = mPayload.Header
-	req.URL.RawQuery = mPayload.Params.Encode()
+	// wait till all hooks executed, so we can safely apply their mutations to avoid race conditions
+	for _, r := range results {
+		for _, mut := range r.Mutations {
+			p, err := mut.Apply(payload)
+			if err != nil {
+				// todo: handle mutation applying error
+				fmt.Printf("failed applying mutation: %s", err)
+				continue
+			}
+			payload = p
+		}
+
+		// todo: send hook metrics (NOP metric if r.Result.Mutations empty)
+	}
 
 	// todo: send all metrics
 
-	return mPayload.Body, nil
+	return payload.Body, nil
 }

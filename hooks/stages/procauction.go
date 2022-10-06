@@ -3,14 +3,18 @@ package stages
 import (
 	"context"
 
+	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/hooks/invocation"
 )
 
 type ProcessedAuctionHook interface {
-	Code() string
 	Call(
 		context.Context,
 		invocation.Context,
-		[]byte,
-	) (invocation.HookResult[[]byte], error)
+		ProcessedAuctionPayload,
+	) (invocation.HookResult[ProcessedAuctionPayload], error)
+}
+
+type ProcessedAuctionPayload struct {
+	BidRequest *openrtb2.BidRequest
 }

@@ -2,14 +2,6 @@ package invocation
 
 import "time"
 
-type Action int
-
-const (
-	Nop Action = iota
-	Update
-	Reject
-)
-
 type Context struct {
 	Endpoint string
 	Timeout  time.Duration
@@ -19,7 +11,7 @@ type Context struct {
 }
 
 type HookResult[T any] struct {
-	Action    Action // Action indicates result caused by hook invocation
+	Reject    bool
 	Mutations []Mutation[T]
 	// todo: think on adding next fields
 	// analyticTags
@@ -27,9 +19,4 @@ type HookResult[T any] struct {
 	// warnings
 	// debug
 	// moduleContext - arbitrary data the hook wishes to pass to downstream hooks of the same module
-}
-
-type HookResponse[T any] struct {
-	Result HookResult[T]
-	Err    error
 }
