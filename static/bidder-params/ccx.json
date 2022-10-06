@@ -9,5 +9,5 @@
         "description": "Placement ID"
       }
     },
-    "required": ["placementId"]
+    "required": ["pid"]
   }
