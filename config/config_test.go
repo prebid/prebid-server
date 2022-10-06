@@ -769,7 +769,7 @@ func TestValidateConfig(t *testing.T) {
 				Fetch: AccountFloorFetch{
 					Period:  400,
 					Timeout: 20,
-					MaxAge:  500,
+					MaxAge:  700,
 				},
 			},
 		},
