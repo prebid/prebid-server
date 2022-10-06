@@ -90,6 +90,46 @@ func TestPrepareRuleCombinations(t *testing.T) {
 	}
 }
 
+func TestUpdateImpExtWithFloorDetails(t *testing.T) {
+	tt := []struct {
+		name         string
+		matchedRule  string
+		floorRuleVal float64
+		imp          openrtb2.Imp
+		expected     json.RawMessage
+	}{
+		{
+			name:         "Nil ImpExt",
+			matchedRule:  "test|123|xyz",
+			floorRuleVal: 5.5,
+			imp:          openrtb2.Imp{ID: "1234", Video: &openrtb2.Video{W: 300, H: 250}},
+			expected:     json.RawMessage{},
+		},
+		{
+			name:         "Empty ImpExt",
+			matchedRule:  "test|123|xyz",
+			floorRuleVal: 5.5,
+			imp:          openrtb2.Imp{ID: "1234", Video: &openrtb2.Video{W: 300, H: 250}, Ext: json.RawMessage{}},
+			expected:     json.RawMessage{},
+		},
+		{
+			name:         "With prebid Ext",
+			matchedRule:  "banner|www.test.com|*",
+			floorRuleVal: 5.5,
+			imp:          openrtb2.Imp{ID: "1234", Video: &openrtb2.Video{W: 300, H: 250}, Ext: []byte(`{"prebid": {"test": true}}`)},
+			expected:     []byte(`{"prebid": {"test": true,"floors":{"floorRule":"banner|www.test.com|*","floorRuleValue":5.5000}}}`),
+		},
+	}
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			updateImpExtWithFloorDetails(tc.matchedRule, &tc.imp, tc.floorRuleVal)
+			if tc.imp.Ext != nil && !reflect.DeepEqual(tc.imp.Ext, tc.expected) {
+				t.Errorf("error: \nreturn:\t%v\n want:\t%v", string(tc.imp.Ext), string(tc.expected))
+			}
+		})
+	}
+}
+
 func TestCreateRuleKeys(t *testing.T) {
 	tt := []struct {
 		name        string

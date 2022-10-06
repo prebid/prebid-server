@@ -11,14 +11,14 @@ import (
 )
 
 const (
-	DEFAULT_DELIMITER      string = "|"
-	CATCH_ALL              string = "*"
-	SKIP_RATE_MIN          int    = 0
-	SKIP_RATE_MAX          int    = 100
-	MODEL_WEIGHT_MAX_VALUE int    = 100
-	MODEL_WEIGHT_MIN_VALUE int    = 0
-	ENFORCE_RATE_MIN       int    = 0
-	ENFORCE_RATE_MAX       int    = 100
+	defaultDelimiter string = "|"
+	catchAll         string = "*"
+	skipRateMin      int    = 0
+	skipRateMax      int    = 100
+	modelWeightMax   int    = 100
+	modelWeightMin   int    = 0
+	enforceRateMin   int    = 0
+	enforceRateMax   int    = 100
 )
 
 // ModifyImpsWithFloors will validate floor rules, based on request and rules prepares various combinations
@@ -35,9 +35,9 @@ func ModifyImpsWithFloors(floorExt *openrtb_ext.PriceFloorRules, request *openrt
 	}
 
 	floorData := floorExt.Data
-	floorModelErrList = validateFloorSkipRates(floorExt)
-	if len(floorModelErrList) > 0 {
-		return floorModelErrList
+	floorSkipRateErr := validateFloorSkipRates(floorExt)
+	if floorSkipRateErr != nil {
+		return append(floorModelErrList, floorSkipRateErr)
 	}
 
 	floorData.ModelGroups, floorModelErrList = selectValidFloorModelGroups(floorData.ModelGroups)
@@ -49,7 +49,7 @@ func ModifyImpsWithFloors(floorExt *openrtb_ext.PriceFloorRules, request *openrt
 
 	modelGroup := floorData.ModelGroups[0]
 	if modelGroup.Schema.Delimiter == "" {
-		modelGroup.Schema.Delimiter = DEFAULT_DELIMITER
+		modelGroup.Schema.Delimiter = defaultDelimiter
 	}
 
 	floorExt.Skipped = new(bool)
@@ -59,7 +59,7 @@ func ModifyImpsWithFloors(floorExt *openrtb_ext.PriceFloorRules, request *openrt
 		return floorModelErrList
 	}
 
-	floorErrList = validateFloorRules(modelGroup.Schema, modelGroup.Schema.Delimiter, modelGroup.Values)
+	floorErrList = validateFloorRulesAndLowerValidRuleKey(modelGroup.Schema, modelGroup.Schema.Delimiter, modelGroup.Values)
 	if len(modelGroup.Values) > 0 {
 		for i := 0; i < len(request.Imp); i++ {
 			desiredRuleKey := createRuleKey(modelGroup.Schema, request, request.Imp[i])
