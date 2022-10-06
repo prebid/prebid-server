@@ -729,7 +729,7 @@ func (cfg *Configuration) AccountDefaultsJSON() json.RawMessage {
 	return cfg.accountDefaultsJSON
 }
 
-//Allows for protocol relative URL if scheme is empty
+// Allows for protocol relative URL if scheme is empty
 func (cfg *Cache) GetBaseURL() string {
 	cfg.Scheme = strings.ToLower(cfg.Scheme)
 	if strings.Contains(cfg.Scheme, "https") {

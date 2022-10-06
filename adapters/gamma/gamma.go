@@ -276,7 +276,7 @@ func (a *GammaAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRe
 	return bidResponse, errs
 }
 
-//Adding header fields to request header
+// Adding header fields to request header
 func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue string) {
 	if len(headerValue) > 0 {
 		headers.Add(headerName, headerValue)

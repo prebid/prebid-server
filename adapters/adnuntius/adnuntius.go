@@ -161,7 +161,7 @@ func getImpSizes(imp openrtb2.Imp) [][]int64 {
 }
 
 /*
-	Generate the requests to Adnuntius to reduce the amount of requests going out.
+Generate the requests to Adnuntius to reduce the amount of requests going out.
 */
 func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters.RequestData, []error) {
 	var requestData []*adapters.RequestData
