@@ -124,7 +124,7 @@ func TestShouldEnforceFloors(t *testing.T) {
 			want: false,
 		},
 		{
-			name: "Enfocement of floors when skipped is true, non zero value of bidfloor in imp",
+			name: "No Enfocement of floors when skipped is true, non zero value of bidfloor in imp",
 			args: args{
 				bidRequest: func() *openrtb2.BidRequest {
 					r := openrtb2.BidRequest{
@@ -152,7 +152,7 @@ func TestShouldEnforceFloors(t *testing.T) {
 					return n - 5
 				},
 			},
-			want: true,
+			want: false,
 		},
 		{
 			name: "No enfocement of floors when skipped is true, zero value of bidfloor in imp",

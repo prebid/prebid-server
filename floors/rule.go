@@ -106,7 +106,7 @@ func shouldSkipFloors(ModelGroupsSkipRate, DataSkipRate, RootSkipRate int, f fun
 	} else {
 		skipRate = RootSkipRate
 	}
-	return skipRate >= f(SKIP_RATE_MAX+1)
+	return skipRate >= f(skipRateMax+1)
 }
 
 func findRule(ruleValues map[string]float64, delimiter string, desiredRuleKey []string, numFields int) (string, bool) {
@@ -124,7 +124,7 @@ func createRuleKey(floorSchema openrtb_ext.PriceFloorSchema, request *openrtb2.B
 	var ruleKeys []string
 
 	for _, field := range floorSchema.Fields {
-		value := CATCH_ALL
+		value := catchAll
 		switch field {
 		case MediaType:
 			value = getMediaType(imp)
@@ -155,7 +155,7 @@ func createRuleKey(floorSchema openrtb_ext.PriceFloorSchema, request *openrtb2.B
 }
 
 func getDeviceType(request *openrtb2.BidRequest) string {
-	value := CATCH_ALL
+	value := catchAll
 	if request.Device == nil || len(request.Device.UA) == 0 {
 		return value
 	}
@@ -168,7 +168,7 @@ func getDeviceType(request *openrtb2.BidRequest) string {
 }
 
 func getDeviceCountry(request *openrtb2.BidRequest) string {
-	value := CATCH_ALL
+	value := catchAll
 	if request.Device != nil && request.Device.Geo != nil {
 		value = request.Device.Geo.Country
 	}
@@ -176,7 +176,7 @@ func getDeviceCountry(request *openrtb2.BidRequest) string {
 }
 
 func getMediaType(imp openrtb2.Imp) string {
-	value := CATCH_ALL
+	value := catchAll
 	if imp.Banner != nil {
 		value = string(openrtb_ext.BidTypeBanner)
 	} else if imp.Video != nil {
@@ -190,7 +190,7 @@ func getMediaType(imp openrtb2.Imp) string {
 }
 
 func getSizeValue(imp openrtb2.Imp) string {
-	size := CATCH_ALL
+	size := catchAll
 	width := int64(0)
 	height := int64(0)
 	if imp.Banner != nil {
@@ -213,7 +213,7 @@ func getSizeValue(imp openrtb2.Imp) string {
 }
 
 func getDomain(request *openrtb2.BidRequest) string {
-	value := CATCH_ALL
+	value := catchAll
 	if request.Site != nil {
 		if len(request.Site.Domain) > 0 {
 			value = request.Site.Domain
@@ -241,7 +241,7 @@ func getSiteDomain(request *openrtb2.BidRequest) string {
 }
 
 func getPublisherDomain(request *openrtb2.BidRequest) string {
-	value := CATCH_ALL
+	value := catchAll
 	if request.Site != nil && request.Site.Publisher != nil && len(request.Site.Publisher.Domain) > 0 {
 		value = request.Site.Publisher.Domain
 	} else if request.App != nil && request.App.Publisher != nil && len(request.App.Publisher.Domain) > 0 {
@@ -251,7 +251,7 @@ func getPublisherDomain(request *openrtb2.BidRequest) string {
 }
 
 func getBundle(request *openrtb2.BidRequest) string {
-	value := CATCH_ALL
+	value := catchAll
 	if request.App != nil && len(request.App.Bundle) > 0 {
 		value = request.App.Bundle
 	}
@@ -259,7 +259,7 @@ func getBundle(request *openrtb2.BidRequest) string {
 }
 
 func getgptslot(imp openrtb2.Imp) string {
-	value := CATCH_ALL
+	value := catchAll
 	adsname, err := jsonparser.GetString(imp.Ext, "data", "adserver", "name")
 	if err == nil && adsname == "gam" {
 		gptSlot, _ := jsonparser.GetString(imp.Ext, "data", "adserver", "adslot")
@@ -275,24 +275,24 @@ func getgptslot(imp openrtb2.Imp) string {
 func extractChanelNameFromBidRequestExt(bidRequest *openrtb2.BidRequest) string {
 	requestExt := &openrtb_ext.ExtRequest{}
 	if bidRequest == nil {
-		return CATCH_ALL
+		return catchAll
 	}
 
 	if len(bidRequest.Ext) > 0 {
 		err := json.Unmarshal(bidRequest.Ext, &requestExt)
 		if err != nil {
-			return CATCH_ALL
+			return catchAll
 		}
 	}
 
 	if requestExt.Prebid.Channel != nil {
 		return requestExt.Prebid.Channel.Name
 	}
-	return CATCH_ALL
+	return catchAll
 }
 
 func getpbadslot(imp openrtb2.Imp) string {
-	value := CATCH_ALL
+	value := catchAll
 	pbAdSlot, err := jsonparser.GetString(imp.Ext, "data", "pbadslot")
 	if err == nil {
 		value = pbAdSlot
@@ -301,7 +301,7 @@ func getpbadslot(imp openrtb2.Imp) string {
 }
 
 func getAdUnitCode(imp openrtb2.Imp) string {
-	adUnitCode := CATCH_ALL
+	adUnitCode := catchAll
 	gpId, err := jsonparser.GetString(imp.Ext, "gpid")
 	if err == nil && gpId != "" {
 		return gpId
@@ -357,7 +357,7 @@ func prepareRuleCombinations(keys []string, numSchemaFields int, delimiter strin
 			eachSet := make([]string, len(desiredkeys[0]))
 			_ = copy(eachSet, desiredkeys[0])
 			for j := 0; j < len(newComb[i]); j++ {
-				eachSet[newComb[i][j]] = CATCH_ALL
+				eachSet[newComb[i][j]] = catchAll
 			}
 			desiredkeys = append(desiredkeys, eachSet)
 		}

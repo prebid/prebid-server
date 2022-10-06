@@ -51,10 +51,10 @@ func TestValidateFloorSkipRates(t *testing.T) {
 	}
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			ErrList := validateFloorSkipRates(tc.floorExt)
-
-			if len(ErrList) > 0 && !reflect.DeepEqual(ErrList[0].Error(), tc.Err) {
-				t.Errorf("Incorrect Error: \nreturn:\t%v\nwant:\t%v", ErrList[0].Error(), tc.Err)
+			if actErr := validateFloorSkipRates(tc.floorExt); actErr != nil {
+				if !reflect.DeepEqual(actErr.Error(), tc.Err) {
+					t.Errorf("Incorrect Error: \nreturn:\t%v\nwant:\t%v", actErr.Error(), tc.Err)
+				}
 			}
 
 		})
@@ -192,7 +192,7 @@ func TestSelectValidFloorModelGroups(t *testing.T) {
 	}
 }
 
-func TestValidateFloorRules(t *testing.T) {
+func TestValidateFloorRulesAndLowerValidRuleKey(t *testing.T) {
 
 	tt := []struct {
 		name         string
@@ -292,7 +292,7 @@ func TestValidateFloorRules(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			ErrList := validateFloorRules(tc.floorExt.Data.ModelGroups[0].Schema, tc.floorExt.Data.ModelGroups[0].Schema.Delimiter, tc.floorExt.Data.ModelGroups[0].Values)
+			ErrList := validateFloorRulesAndLowerValidRuleKey(tc.floorExt.Data.ModelGroups[0].Schema, tc.floorExt.Data.ModelGroups[0].Schema.Delimiter, tc.floorExt.Data.ModelGroups[0].Values)
 
 			if !reflect.DeepEqual(ErrList[0].Error(), tc.Err) {
 				t.Errorf("Incorrect Error: \nreturn:\t%v\nwant:\t%v", ErrList[0].Error(), tc.Err)
