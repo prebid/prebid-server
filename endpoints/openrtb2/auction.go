@@ -791,10 +791,22 @@ func validateAndFillSourceTID(req *openrtb2.BidRequest) error {
 		req.Source = &openrtb2.Source{}
 	}
 	if req.Source.TID == "" {
-		if rawUUID, err := uuid.NewV4(); err == nil {
-			req.Source.TID = rawUUID.String()
-		} else {
-			return errors.New("req.Source.TID missing in the req and error creating a random UID")
+		for i, imp := range req.Imp {
+			impWrapper := &openrtb_ext.ImpWrapper{}
+			impWrapper.Imp = &imp
+			ie, _ := impWrapper.GetImpExt()
+			tid := ie.GetTid()
+			if tid == "" {
+				// Only set Source.Tid if both source.tid AND imp.ext.tid is empty
+				req.Source.TID = req.ID
+				if rawUUID, err := uuid.NewV4(); err == nil {
+					ie.SetTid(rawUUID.String())
+					impWrapper.RebuildImp()
+					req.Imp[i] = *impWrapper.Imp
+				} else {
+					return errors.New("imp.ext.tid missing in the imp and error creating a random UID")
+				}
+			}
 		}
 	}
 	return nil
