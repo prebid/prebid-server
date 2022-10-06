@@ -609,6 +609,9 @@ func populateDctrKey(dataMap, extMap map[string]interface{}) {
 			dctr.WriteString("|")
 		}
 
+		//trimming spaces from key
+		key = strings.TrimSpace(key)
+
 		switch typedValue := val.(type) {
 		case string:
 			fmt.Fprintf(&dctr, "%s=%s", key, strings.TrimSpace(typedValue))
