@@ -28,7 +28,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 	return bidder, nil
 }
 
-//MakeRequests which creates request object for Deepintent DSP
+// MakeRequests which creates request object for Deepintent DSP
 func (d *DeepintentAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var deepintentExt openrtb_ext.ExtImpDeepintent

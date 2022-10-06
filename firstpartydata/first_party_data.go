@@ -98,7 +98,7 @@ func ExtractGlobalFPD(req *openrtb_ext.RequestWrapper) (map[string][]byte, error
 	return fpdReqData, nil
 }
 
-//ExtractOpenRtbGlobalFPD extracts and deletes user.data and {app/site}.content.data from request
+// ExtractOpenRtbGlobalFPD extracts and deletes user.data and {app/site}.content.data from request
 func ExtractOpenRtbGlobalFPD(bidRequest *openrtb2.BidRequest) map[string][]openrtb2.Data {
 
 	openRtbGlobalFPD := make(map[string][]openrtb2.Data, 3)
@@ -121,7 +121,7 @@ func ExtractOpenRtbGlobalFPD(bidRequest *openrtb2.BidRequest) map[string][]openr
 
 }
 
-//ResolveFPD consolidates First Party Data from different sources and returns valid FPD that will be applied to bidders later or returns errors
+// ResolveFPD consolidates First Party Data from different sources and returns valid FPD that will be applied to bidders later or returns errors
 func ResolveFPD(bidRequest *openrtb2.BidRequest, fpdBidderConfigData map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data, biddersWithGlobalFPD []string) (map[openrtb_ext.BidderName]*ResolvedFirstPartyData, []error) {
 	var errL []error
 
@@ -248,7 +248,7 @@ func unmarshalJSONToContent(input json.RawMessage) (*openrtb2.Content, error) {
 	return &result, err
 }
 
-//resolveExtension inserts remaining {site/app/user} attributes back to {site/app/user}.ext.data
+// resolveExtension inserts remaining {site/app/user} attributes back to {site/app/user}.ext.data
 func resolveExtension(fpdConfig map[string]json.RawMessage, originalExt json.RawMessage) ([]byte, error) {
 	resExt := originalExt
 	var err error
@@ -603,7 +603,7 @@ func buildExtData(data []byte) []byte {
 	return res
 }
 
-//ExtractBidderConfigFPD extracts bidder specific configs from req.ext.prebid.bidderconfig
+// ExtractBidderConfigFPD extracts bidder specific configs from req.ext.prebid.bidderconfig
 func ExtractBidderConfigFPD(reqExt *openrtb_ext.RequestExt) (map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, error) {
 
 	fpd := make(map[openrtb_ext.BidderName]*openrtb_ext.ORTB2)
@@ -642,7 +642,7 @@ func ExtractBidderConfigFPD(reqExt *openrtb_ext.RequestExt) (map[openrtb_ext.Bid
 
 }
 
-//ExtractFPDForBidders extracts FPD data from request if specified
+// ExtractFPDForBidders extracts FPD data from request if specified
 func ExtractFPDForBidders(req *openrtb_ext.RequestWrapper) (map[openrtb_ext.BidderName]*ResolvedFirstPartyData, []error) {
 
 	reqExt, err := req.GetRequestExt()

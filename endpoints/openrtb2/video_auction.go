@@ -89,27 +89,27 @@ func NewVideoEndpoint(
 }
 
 /*
-1. Parse "storedrequestid" field from simplified endpoint request body.
-2. If config flag to require that field is set (which it will be for us) and this field is not given then error out here.
-3. Load the stored request JSON for the given storedrequestid, if the id was invalid then error out here.
-4. Use "json-patch" 3rd party library to merge the request body JSON data into the stored request JSON data.
-5. Unmarshal the merged JSON data into a Go structure.
-6. Add fields from merged JSON data that correspond to an OpenRTB request into the OpenRTB bid request we are building.
-	a. Unmarshal certain OpenRTB defined structs directly into the OpenRTB bid request.
-	b. In cases where customized logic is needed just copy/fill the fields in directly.
-7. Call setFieldsImplicitly from auction.go to get basic data from the HTTP request into an OpenRTB bid request to start building the OpenRTB bid request.
-8. Loop through ad pods to build array of Imps into OpenRTB request, for each pod:
-	a. Load the stored impression to use as the basis for impressions generated for this pod from the configid field.
-	b. NumImps = adpoddurationsec / MIN_VALUE(allowedDurations)
-	c. Build impression array for this pod:
-		I.Create array of NumImps entries initialized to the base impression loaded from the configid.
-			1. If requireexactdurations = true, iterate over allowdDurations and for (NumImps / len(allowedDurations)) number of Imps set minduration = maxduration = allowedDurations[i]
-			2. If requireexactdurations = false, set maxduration = MAX_VALUE(allowedDurations)
-		II. Set Imp.id field to "podX_Y" where X is the pod index and Y is the impression index within this pod.
-	d. Append impressions for this pod to the overall list of impressions in the OpenRTB bid request.
-9. Call validateRequest() function from auction.go to validate the generated request.
-10. Call HoldAuction() function to run the auction for the OpenRTB bid request that was built in the previous step.
-11. Build proper response format.
+ 1. Parse "storedrequestid" field from simplified endpoint request body.
+ 2. If config flag to require that field is set (which it will be for us) and this field is not given then error out here.
+ 3. Load the stored request JSON for the given storedrequestid, if the id was invalid then error out here.
+ 4. Use "json-patch" 3rd party library to merge the request body JSON data into the stored request JSON data.
+ 5. Unmarshal the merged JSON data into a Go structure.
+ 6. Add fields from merged JSON data that correspond to an OpenRTB request into the OpenRTB bid request we are building.
+    a. Unmarshal certain OpenRTB defined structs directly into the OpenRTB bid request.
+    b. In cases where customized logic is needed just copy/fill the fields in directly.
+ 7. Call setFieldsImplicitly from auction.go to get basic data from the HTTP request into an OpenRTB bid request to start building the OpenRTB bid request.
+ 8. Loop through ad pods to build array of Imps into OpenRTB request, for each pod:
+    a. Load the stored impression to use as the basis for impressions generated for this pod from the configid field.
+    b. NumImps = adpoddurationsec / MIN_VALUE(allowedDurations)
+    c. Build impression array for this pod:
+    I.Create array of NumImps entries initialized to the base impression loaded from the configid.
+ 1. If requireexactdurations = true, iterate over allowdDurations and for (NumImps / len(allowedDurations)) number of Imps set minduration = maxduration = allowedDurations[i]
+ 2. If requireexactdurations = false, set maxduration = MAX_VALUE(allowedDurations)
+    II. Set Imp.id field to "podX_Y" where X is the pod index and Y is the impression index within this pod.
+    d. Append impressions for this pod to the overall list of impressions in the OpenRTB bid request.
+ 9. Call validateRequest() function from auction.go to validate the generated request.
+ 10. Call HoldAuction() function to run the auction for the OpenRTB bid request that was built in the previous step.
+ 11. Build proper response format.
 */
 func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	start := time.Now()

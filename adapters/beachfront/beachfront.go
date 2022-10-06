@@ -58,7 +58,9 @@ type beachfrontVideoRequest struct {
 }
 
 // ---------------------------------------------------
-//              Banner
+//
+//	Banner
+//
 // ---------------------------------------------------
 type beachfrontBannerRequest struct {
 	Slots          []beachfrontSlot     `json:"slots"`

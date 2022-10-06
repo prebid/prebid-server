@@ -19,7 +19,7 @@ type adkernelAdapter struct {
 	EndpointTemplate *template.Template
 }
 
-//MakeRequests prepares request information for prebid-server core
+// MakeRequests prepares request information for prebid-server core
 func (adapter *adkernelAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 	if len(request.Imp) == 0 {
@@ -84,7 +84,7 @@ func validateImpression(imp *openrtb2.Imp, impExt *openrtb_ext.ExtImpAdkernel) e
 	return nil
 }
 
-//Group impressions by AdKernel-specific parameter `zoneId`
+// Group impressions by AdKernel-specific parameter `zoneId`
 func dispatchImpressions(imps []openrtb2.Imp, impsExt []openrtb_ext.ExtImpAdkernel) (map[openrtb_ext.ExtImpAdkernel][]openrtb2.Imp, []error) {
 	res := make(map[openrtb_ext.ExtImpAdkernel][]openrtb2.Imp)
 	errors := make([]error, 0)
@@ -104,7 +104,7 @@ func dispatchImpressions(imps []openrtb2.Imp, impsExt []openrtb_ext.ExtImpAdkern
 	return res, errors
 }
 
-//Alter impression info to comply with adkernel platform requirements
+// Alter impression info to comply with adkernel platform requirements
 func compatImpression(imp *openrtb2.Imp) error {
 	imp.Ext = nil //do not forward ext to adkernel platform
 	if imp.Banner != nil {
@@ -204,7 +204,7 @@ func (adapter *adkernelAdapter) buildEndpointURL(params *openrtb_ext.ExtImpAdker
 	return macros.ResolveMacros(adapter.EndpointTemplate, endpointParams)
 }
 
-//MakeBids translates adkernel bid response to prebid-server specific format
+// MakeBids translates adkernel bid response to prebid-server specific format
 func (adapter *adkernelAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil

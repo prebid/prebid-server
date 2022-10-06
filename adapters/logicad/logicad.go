@@ -116,7 +116,7 @@ func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext
 	return &bidRequest
 }
 
-//MakeBids translates Logicad bid response to prebid-server specific format
+// MakeBids translates Logicad bid response to prebid-server specific format
 func (adapter *LogicadAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil

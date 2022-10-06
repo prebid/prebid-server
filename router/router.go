@@ -42,10 +42,10 @@ import (
 // NewJsonDirectoryServer is used to serve .json files from a directory as a single blob. For example,
 // given a directory containing the files "a.json" and "b.json", this returns a Handle which serves JSON like:
 //
-// {
-//   "a": { ... content from the file a.json ... },
-//   "b": { ... content from the file b.json ... }
-// }
+//	{
+//	  "a": { ... content from the file a.json ... },
+//	  "b": { ... content from the file b.json ... }
+//	}
 //
 // This function stores the file contents in memory, and should not be used on large directories.
 // If the root directory, or any of the files in it, cannot be read, then the program will exit.

@@ -208,7 +208,7 @@ func getBlockedCreativetypes(attr []int8) []adcom1.CreativeAttribute {
 	return creativeAttr
 }
 
-//Adding header fields to request header
+// Adding header fields to request header
 func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue string) {
 	if len(headerValue) > 0 {
 		headers.Add(headerName, headerValue)
