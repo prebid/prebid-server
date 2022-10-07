@@ -401,15 +401,14 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			imp.Banner = nil
 			imp.Native = nil
 		} else if imp.Banner != nil {
-			var banner = *imp.Banner
-			if len(banner.Format) < 1 && (banner.W == nil || *banner.W == 0 && banner.H == nil || *banner.H == 0) {
+			bannerCopy := *imp.Banner
+			if len(bannerCopy.Format) < 1 && (bannerCopy.W == nil || *bannerCopy.W == 0 && bannerCopy.H == nil || *bannerCopy.H == 0) {
 				errs = append(errs, &errortypes.BadInput{
 					Message: "rubicon imps must have at least one imp.format element",
 				})
 				continue
 			}
 			bannerExt := rubiconBannerExt{RP: rubiconBannerExtRP{MIME: "text/html"}}
-			bannerCopy := *imp.Banner
 			bannerCopy.Ext, err = json.Marshal(&bannerExt)
 			if err != nil {
 				errs = append(errs, err)
