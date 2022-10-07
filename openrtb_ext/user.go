@@ -10,7 +10,7 @@ type ExtUser struct {
 	// https://iabtechlab.com/wp-content/uploads/2018/02/OpenRTB_Advisory_GDPR_2018-02.pdf
 	Consent string `json:"consent,omitempty"`
 
-	ConsentedProvidersSettings *ConsentedProvidersSettings `json:"ConsentedProvidersSettings,omitempty"`
+	ConsentedProvidersSettings *ConsentedProvidersSettingsOut `json:"consented_providers_settings,omitempty"`
 
 	Prebid *ExtUserPrebid `json:"prebid,omitempty"`
 
@@ -22,7 +22,10 @@ type ExtUserPrebid struct {
 	BuyerUIDs map[string]string `json:"buyeruids,omitempty"`
 }
 
-type ConsentedProvidersSettings struct {
-	ConsentedProvidersString string
-	ConsentedProvidersArray  []int `json:"consented_providers,omitempty"`
+type ConsentedProvidersSettingsOut struct {
+	ConsentedProvidersArray []int `json:"consented_providers,omitempty"`
+}
+
+type ConsentedProvidersSettingsIn struct {
+	ConsentedProvidersString string `json:"consented_providers,omitempty"`
 }

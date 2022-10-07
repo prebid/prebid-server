@@ -285,16 +285,18 @@ func (rw *RequestWrapper) rebuildSourceExt() error {
 // ---------------------------------------------------------------
 
 type UserExt struct {
-	ext                             map[string]json.RawMessage
-	extDirty                        bool
-	consent                         *string
-	consentDirty                    bool
-	prebid                          *ExtUserPrebid
-	prebidDirty                     bool
-	eids                            *[]openrtb2.EID
-	eidsDirty                       bool
-	consentedProvidersSettings      *ConsentedProvidersSettings
-	consentedProvidersSettingsDirty bool
+	ext                               map[string]json.RawMessage
+	extDirty                          bool
+	consent                           *string
+	consentDirty                      bool
+	prebid                            *ExtUserPrebid
+	prebidDirty                       bool
+	eids                              *[]openrtb2.EID
+	eidsDirty                         bool
+	consentedProvidersSettingsIn      *ConsentedProvidersSettingsIn
+	consentedProvidersSettingsInDirty bool
+	consentedProvidersString          string
+	consentedProvidersStringDirty     bool
 }
 
 func (ue *UserExt) unmarshal(extJson json.RawMessage) error {
@@ -336,8 +338,8 @@ func (ue *UserExt) unmarshal(extJson json.RawMessage) error {
 	}
 
 	if consentedProviderSettingsJson, hasCPSettings := ue.ext["ConsentedProvidersSettings"]; hasCPSettings {
-		ue.consentedProvidersSettings = &ConsentedProvidersSettings{}
-		if err := json.Unmarshal(consentedProviderSettingsJson, ue.consentedProvidersSettings); err != nil {
+		ue.consentedProvidersSettingsIn = &ConsentedProvidersSettingsIn{}
+		if err := json.Unmarshal(consentedProviderSettingsJson, ue.consentedProvidersSettingsIn); err != nil {
 			return err
 		}
 	}
@@ -376,9 +378,20 @@ func (ue *UserExt) marshal() (json.RawMessage, error) {
 		ue.prebidDirty = false
 	}
 
-	if ue.consentedProvidersSettingsDirty {
-		if ue.consentedProvidersSettings != nil {
-			cpSettingsJson, err := json.Marshal(ue.consentedProvidersSettings)
+	// if dirty, marshal consentedProvidersSettingsIn, but start with consentedProvidersString because maybe
+	// this field is dirty
+	if ue.consentedProvidersStringDirty {
+		if ue.consentedProvidersSettingsIn == nil {
+			ue.consentedProvidersSettingsIn = &ConsentedProvidersSettingsIn{}
+		}
+		ue.consentedProvidersSettingsIn.ConsentedProvidersString = ue.consentedProvidersString
+		ue.consentedProvidersSettingsInDirty = true
+		ue.consentedProvidersStringDirty = false
+	}
+
+	if ue.consentedProvidersSettingsInDirty {
+		if ue.consentedProvidersSettingsIn != nil {
+			cpSettingsJson, err := json.Marshal(ue.consentedProvidersSettingsIn)
 			if err != nil {
 				return nil, err
 			}
@@ -390,7 +403,7 @@ func (ue *UserExt) marshal() (json.RawMessage, error) {
 		} else {
 			delete(ue.ext, "ConsentedProvidersSettings")
 		}
-		ue.consentedProvidersSettingsDirty = false
+		ue.consentedProvidersSettingsInDirty = false
 	}
 
 	if ue.eidsDirty {
@@ -414,7 +427,7 @@ func (ue *UserExt) marshal() (json.RawMessage, error) {
 }
 
 func (ue *UserExt) Dirty() bool {
-	return ue.extDirty || ue.eidsDirty || ue.prebidDirty || ue.consentDirty || ue.consentedProvidersSettingsDirty
+	return ue.extDirty || ue.eidsDirty || ue.prebidDirty || ue.consentDirty || ue.consentedProvidersSettingsInDirty || ue.consentedProvidersStringDirty
 }
 
 func (ue *UserExt) GetExt() map[string]json.RawMessage {
@@ -443,17 +456,34 @@ func (ue *UserExt) SetConsent(consent *string) {
 	ue.consentDirty = true
 }
 
-func (ue *UserExt) GetConsentedProvidersSettings() *ConsentedProvidersSettings {
-	if ue.consentedProvidersSettings == nil {
+func (ue *UserExt) GetConsentedProvidersSettingsIn() *ConsentedProvidersSettingsIn {
+	if ue.consentedProvidersSettingsIn == nil {
 		return nil
 	}
-	consentedProvidersSettings := *ue.consentedProvidersSettings
-	return &consentedProvidersSettings
+	consentedProvidersSettingsIn := *ue.consentedProvidersSettingsIn
+	return &consentedProvidersSettingsIn
 }
 
-func (ue *UserExt) SetConsentedProvidersSettings(cpSettings *ConsentedProvidersSettings) {
-	ue.consentedProvidersSettings = cpSettings
-	ue.consentedProvidersSettingsDirty = true
+func (ue *UserExt) SetConsentedProvidersSettingsIn(cpSettings *ConsentedProvidersSettingsIn) {
+	ue.consentedProvidersSettingsIn = cpSettings
+	ue.consentedProvidersSettingsInDirty = true
+}
+
+func (ue *UserExt) GetConsentedProvidersString() string {
+	if len(ue.consentedProvidersString) > 0 {
+		return ue.consentedProvidersString
+	}
+	// else, let's look for this value inside ue.consentedProvidersSettingsIn
+	consentedProvidersSettingsIn := ue.GetConsentedProvidersSettingsIn()
+	if consentedProvidersSettingsIn != nil {
+		return consentedProvidersSettingsIn.ConsentedProvidersString
+	}
+	return ""
+}
+
+func (ue *UserExt) SetConsentedProvidersString(consentedProviders string) {
+	ue.consentedProvidersString = consentedProviders
+	ue.consentedProvidersStringDirty = true
 }
 
 func (ue *UserExt) GetPrebid() *ExtUserPrebid {
