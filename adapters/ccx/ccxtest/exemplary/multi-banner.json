@@ -27,6 +27,17 @@
     ],
     "site": {
       "page": "somepage.com"
+    },
+    "user": {
+      "buyeruid": "someuid",
+      "ext": {
+        "consent" : "dummy"
+      }
+    },
+    "regs": {
+      "ext": {
+       "gdpr":1
+      }
     }
   },
 
@@ -62,6 +73,17 @@
           ],
           "site": {
               "page": "somepage.com"
+          },
+          "user": {
+            "buyeruid": "someuid",
+            "ext": {
+              "consent" : "dummy"
+            }
+          },
+          "regs": {
+            "ext": {
+             "gdpr":1
+            }
           }
         }
       },
