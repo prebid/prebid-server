@@ -69,7 +69,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		for i := range seatBid.Bid {
 			b := &adapters.TypedBid{
 				Bid:     &seatBid.Bid[i],
-				BidType: "banner",
+				BidType: openrtb_ext.BidTypeBanner,
 			}
 			bidResponse.Bids = append(bidResponse.Bids, b)
 		}

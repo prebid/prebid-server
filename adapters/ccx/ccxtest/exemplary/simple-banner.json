@@ -15,9 +15,7 @@
       }
     ],
     "site": {
-      "publisher": {
-        "id": "73"
-      }
+      "page": "somepage.com"
     }
   },
 
@@ -41,9 +39,7 @@
             }
           ],
           "site": {
-            "publisher": {
-              "id": "73"
-            }
+              "page": "somepage.com"
           }
         }
       },
@@ -90,9 +86,15 @@
             "impid": "test-imp-id",
             "price": 0.5,
             "adm": "some-test-ad",
+            "adomain":[
+              "somedomain.com"
+             ],
             "crid": "1234",
             "w": 300,
-            "h": 250
+            "h": 250,
+            "ext": {
+              "type": "standard"
+            }
           },
           "type": "banner"
         }
