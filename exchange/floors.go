@@ -44,7 +44,7 @@ func enforceFloorToBids(bidRequest *openrtb2.BidRequest, seatBids map[openrtb_ex
 	}
 
 	for bidderName, seatBid := range seatBids {
-		eligibleBids := make([]*pbsOrtbBid, 0)
+		eligibleBids := make([]*pbsOrtbBid, 0, len(seatBid.bids))
 		for _, bid := range seatBid.bids {
 			retBid := checkDealsForEnforcement(bid, enforceDealFloors)
 			if retBid != nil {
@@ -56,7 +56,11 @@ func enforceFloorToBids(bidRequest *openrtb2.BidRequest, seatBids map[openrtb_ex
 			if ok {
 				reqImpCur := reqImp.BidFloorCur
 				if reqImpCur == "" {
-					reqImpCur = bidRequest.Cur[0]
+					if bidRequest.Cur != nil {
+						reqImpCur = bidRequest.Cur[0]
+					} else {
+						reqImpCur = "USD"
+					}
 				}
 				rate, err := getCurrencyConversionRate(seatBid.currency, reqImpCur, conversions)
 				if err == nil {
@@ -121,6 +125,10 @@ func getFloorsFlagFromReqExt(prebidExt *openrtb_ext.ExtRequestPrebid) bool {
 	return *prebidExt.Floors.Enabled
 }
 
+func getEnforceDealsFlag(Floors *openrtb_ext.PriceFloorRules) bool {
+	return Floors != nil && Floors.Enforcement != nil && Floors.Enforcement.FloorDeals != nil && *Floors.Enforcement.FloorDeals
+}
+
 // enforceFloors function does floors enforcement
 func enforceFloors(r *AuctionRequest, seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, floor config.PriceFloors, conversions currency.Conversions, responseDebugAllow bool) (map[openrtb_ext.BidderName]*pbsOrtbSeatBid, []error) {
 
@@ -138,12 +146,17 @@ func enforceFloors(r *AuctionRequest, seatBids map[openrtb_ext.BidderName]*pbsOr
 	reqFloorEnable := getFloorsFlagFromReqExt(prebidExt)
 	if floor.Enabled && reqFloorEnable {
 		var enforceDealFloors bool
-		if prebidExt != nil && floors.ShouldEnforce(r.BidRequestWrapper.BidRequest, prebidExt.Floors, floor.EnforceFloorsRate, rand.Intn) {
-			if prebidExt.Floors != nil && prebidExt.Floors.Enforcement != nil && prebidExt.Floors.Enforcement.FloorDeals != nil {
-				enforceDealFloors = *prebidExt.Floors.Enforcement.FloorDeals && floor.EnforceDealFloors
+		var floorsEnfocement bool
+		floorsEnfocement = floors.RequestHasFloors(r.BidRequestWrapper.BidRequest)
+		if prebidExt != nil && floorsEnfocement {
+			if floorsEnfocement = floors.ShouldEnforce(r.BidRequestWrapper.BidRequest, prebidExt.Floors, floor.EnforceFloorsRate, rand.Intn); floorsEnfocement {
+				enforceDealFloors = floor.EnforceDealFloors && getEnforceDealsFlag(prebidExt.Floors)
 			}
 		}
-		seatBids, rejectionsErrs = enforceFloorToBids(r.BidRequestWrapper.BidRequest, seatBids, conversions, enforceDealFloors)
+
+		if floorsEnfocement {
+			seatBids, rejectionsErrs = enforceFloorToBids(r.BidRequestWrapper.BidRequest, seatBids, conversions, enforceDealFloors)
+		}
 		requestExt.SetPrebid(prebidExt)
 		err = r.BidRequestWrapper.RebuildRequest()
 		if err != nil {
