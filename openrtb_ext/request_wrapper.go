@@ -398,9 +398,6 @@ func (ue *UserExt) marshal() (json.RawMessage, error) {
 		ue.consentedProvidersSettingsIn.ConsentedProvidersString = ue.consentedProvidersString
 		ue.consentedProvidersSettingsInDirty = true
 		ue.consentedProvidersStringDirty = false
-
-		// Convert the ConsentedProvidersSettings string from Google's Additional Consent format to an in array
-		ue.SetConsentedProvidersList(ParseConsentedProvidersString(ue.consentedProvidersSettingsIn.ConsentedProvidersString))
 	}
 
 	if ue.consentedProvidersSettingsInDirty {

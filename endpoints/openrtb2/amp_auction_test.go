@@ -122,7 +122,15 @@ func TestGoodAmpRequests(t *testing.T) {
 				}
 			}
 			if test.ExpectedValidatedBidReq != nil {
-				assert.Equal(t, test.ExpectedValidatedBidReq, ex.actualValidatedBidReq, "Not the expected validated request. Test file: %s", filename)
+				jsonExpected, err := json.Marshal(test.ExpectedValidatedBidReq)
+				if !assert.NoError(t, err) {
+					continue
+				}
+				jsonActual, err := json.Marshal(ex.actualValidatedBidReq)
+				if !assert.NoError(t, err) {
+					continue
+				}
+				assert.JSONEq(t, string(jsonExpected), string(jsonActual), "Not the expected validated request. Test file: %s", filename)
 			}
 		}
 	}

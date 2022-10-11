@@ -41,8 +41,13 @@ func TestUserExt(t *testing.T) {
 	assert.Equal(t, true, userExt.Dirty(), "UserExt should be dirty after field updates")
 	assert.Equal(t, "1~X.X.X", userExt.GetConsentedProvidersString(), "UserExt consentedProviders is incorrect")
 
-	userExt.SetConsentedProvidersString("1~1.35.41.101")
+	consentedProvidersString := "1~1.35.41.101"
+	userExt.SetConsentedProvidersString(consentedProvidersString)
 	assert.Equal(t, "1~1.35.41.101", userExt.GetConsentedProvidersString(), "UserExt consentedProviders is incorrect")
+
+	consentedProvidersList := ParseConsentedProvidersString(consentedProvidersString)
+	assert.Len(t, consentedProvidersList, 4, "UserExt consentedProvidersList is incorrect")
+	userExt.SetConsentedProvidersList(consentedProvidersList)
 
 	updatedUserExt, err := userExt.marshal()
 	assert.Nil(t, err, "Marshalling UserExt after updating should not cause an error")

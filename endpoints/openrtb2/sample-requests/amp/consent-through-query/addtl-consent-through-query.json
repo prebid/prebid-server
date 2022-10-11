@@ -1,6 +1,6 @@
 {
   "description": "Additional consent providers string passed through query: expect user.ext.ConsentedProvidersSettings.consented_providers to be set to the addtl_consent string",
-  "query": "tag_id=101&addtl_consent=ConsentProvidersString",
+  "query": "tag_id=101&addtl_consent=1~1.35.41.101",
   "config": {
     "mockBidders": [
       {"bidderName": "appnexus", "currency": "USD", "price": 15}
@@ -60,7 +60,10 @@
       }
     ],
     "user": {
-      "ext": {"ConsentedProvidersSettings":{"consented_providers":"ConsentProvidersString"}}
+      "ext": {
+        "ConsentedProvidersSettings":{"consented_providers":"1~1.35.41.101"},
+        "consented_providers_settings":{"consented_providers":[1,35,41,101]}
+      }
     },
     "ext": {"prebid":{"cache":{"bids":{"returnCreative":null},"vastxml":null},"channel":{"name":"amp","version":""},"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"includewinners":true,"includebidderkeys":true,"includebrandcategory":null,"includeformat":false,"durationrangesec":null,"preferdeals":false}}}
   },

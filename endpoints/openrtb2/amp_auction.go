@@ -469,7 +469,9 @@ func (deps *endpointDeps) overrideWithParams(ampParams amp.Params, req *openrtb2
 	return nil
 }
 
-// setConsentedProviders sets, if supplied, the addtl_consent value to user.ext.ConsentedProvidersSettings.consented_providers
+// setConsentedProviders sets the addtl_consent value to user.ext.ConsentedProvidersSettings.consented_providers
+// in its orginal Google Additional Consent string format and user.ext.consented_providers_settings.consented_providers
+// that is an array of ints that contains the elements found in addtl_consent
 func setConsentedProviders(req *openrtb2.BidRequest, ampParams amp.Params) error {
 	if len(ampParams.AdditionalConsent) > 0 {
 		reqWrap := &openrtb_ext.RequestWrapper{BidRequest: req}
@@ -478,20 +480,17 @@ func setConsentedProviders(req *openrtb2.BidRequest, ampParams amp.Params) error
 		if err != nil {
 			return err
 		}
-		// userExt.SetConsentedProviders(ampParams.AdditionalConsent)
 
-		consentedProvidersSettings := userExt.GetConsentedProvidersSettingsIn()
-		if consentedProvidersSettings == nil {
-			consentedProvidersSettings = &openrtb_ext.ConsentedProvidersSettingsIn{}
+		// Parse addtl_consent, that is supposed to come formatted as a Google Additional Consent string, into array of ints
+		consentedProvidersList := openrtb_ext.ParseConsentedProvidersString(ampParams.AdditionalConsent)
+
+		// Set user.ext.consented_providers_settings.consented_providers if elements where found
+		if len(consentedProvidersList) > 0 {
+			userExt.SetConsentedProvidersList(consentedProvidersList)
 		}
 
-		if len(consentedProvidersSettings.ConsentedProvidersString) > 0 {
-			// If either stored request or an incomming request comes with user.ext.ConsentedProvidersSettings, parse
-			// the string into an array as ImprovedDigital does. This functionlaity is probably suited for the request Wrapper
-		}
-		consentedProvidersSettings.ConsentedProvidersString = ampParams.AdditionalConsent
-
-		userExt.SetConsentedProvidersSettingsIn(consentedProvidersSettings)
+		// Copy addtl_consent into user.ext.ConsentedProvidersSettings.consented_providers as is
+		userExt.SetConsentedProvidersString(ampParams.AdditionalConsent)
 
 		if err := reqWrap.RebuildRequest(); err != nil {
 			return err
