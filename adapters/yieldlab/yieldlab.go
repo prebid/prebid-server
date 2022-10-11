@@ -94,6 +94,7 @@ func (a *YieldlabAdapter) makeEndpointURL(req *openrtb2.BidRequest, params *open
 
 func (a *YieldlabAdapter) makeFormats(req *openrtb2.BidRequest) (bool, string) {
 	var formatsPerAdslot []string
+	const sizeFormat, sizeSeparator = "%s:%dx%d", "|"
 	for _, impression := range req.Imp {
 		if !impIsTypeBannerOnly(impression) {
 			continue
@@ -101,10 +102,10 @@ func (a *YieldlabAdapter) makeFormats(req *openrtb2.BidRequest) (bool, string) {
 
 		adslotID := a.extractAdslotID(impression)
 		for _, format := range impression.Banner.Format {
-			formatsPerAdslot = append(formatsPerAdslot, fmt.Sprintf("%s:%d|%d", adslotID, format.W, format.H))
+			formatsPerAdslot = append(formatsPerAdslot, fmt.Sprintf(sizeFormat, adslotID, format.W, format.H))
 		}
 	}
-	return len(formatsPerAdslot) != 0, strings.Join(formatsPerAdslot, ",")
+	return len(formatsPerAdslot) != 0, strings.Join(formatsPerAdslot, sizeSeparator)
 }
 
 func (a *YieldlabAdapter) getGDPR(request *openrtb2.BidRequest) (string, string, error) {
