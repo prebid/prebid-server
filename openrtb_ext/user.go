@@ -1,6 +1,9 @@
 package openrtb_ext
 
 import (
+	"strconv"
+	"strings"
+
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
 )
 
@@ -10,7 +13,9 @@ type ExtUser struct {
 	// https://iabtechlab.com/wp-content/uploads/2018/02/OpenRTB_Advisory_GDPR_2018-02.pdf
 	Consent string `json:"consent,omitempty"`
 
-	ConsentedProvidersSettings *ConsentedProvidersSettingsOut `json:"consented_providers_settings,omitempty"`
+	ConsentedProvidersSettings *ConsentedProvidersSettingsIn `json:"ConsentedProvidersSettings,omitempty"`
+
+	ConsentedProvidersSettingsParsed *ConsentedProvidersSettingsOut `json:"consented_providers_settings,omitempty"`
 
 	Prebid *ExtUserPrebid `json:"prebid,omitempty"`
 
@@ -22,10 +27,36 @@ type ExtUserPrebid struct {
 	BuyerUIDs map[string]string `json:"buyeruids,omitempty"`
 }
 
-type ConsentedProvidersSettingsOut struct {
-	ConsentedProvidersArray []int `json:"consented_providers,omitempty"`
-}
-
 type ConsentedProvidersSettingsIn struct {
 	ConsentedProvidersString string `json:"consented_providers,omitempty"`
+}
+
+type ConsentedProvidersSettingsOut struct {
+	ConsentedProvidersList []int `json:"consented_providers,omitempty"`
+}
+
+// ParseConsentedProvidersString takes a string formatted as Google's Additional Consent format and returns a list with its
+// elements. For instance, the following string "1~1.35.41.101" would result in []int{1, 35, 41, 101}
+func ParseConsentedProvidersString(cps string) []int {
+	// Additional Consent format version is separated from elements by the '~' character
+	parts := strings.Split(cps, "~")
+	if len(parts) != 2 {
+		return nil
+	}
+
+	// Split the individual elements
+	providerStringList := strings.Split(parts[1], ".")
+	if len(providerStringList) == 0 {
+		return nil
+	}
+
+	// Convert to ints and add to int array
+	var consentedProviders []int
+	for _, providerStr := range providerStringList {
+		if providerInt, err := strconv.Atoi(providerStr); err == nil {
+			consentedProviders = append(consentedProviders, providerInt)
+		}
+	}
+
+	return consentedProviders
 }
