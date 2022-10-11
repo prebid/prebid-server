@@ -32,12 +32,10 @@
     "id": "b9c97a4b-cbc4-483d-b2c4-58a19ed5cfc5",
     "site": {
       "page": "prebid.org",
-      "publisher": {"cattax":0},
       "ext": {"amp":1}
     },
     "device": {
-      "ip":"192.0.2.1",
-      "privacypolicy":0
+      "ip":"192.0.2.1"
     },
     "at": 1,
     "imp": [
@@ -53,8 +51,12 @@
         },
         "secure": 1,
         "ext": {
-          "appnexus": {
-            "placementId": 12883451
+          "prebid": {
+            "bidder": {
+              "appnexus": {
+                "placementId": 12883451
+              }
+            }
           }
         }
       }

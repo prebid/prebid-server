@@ -77,20 +77,26 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
 	bidResponse.Currency = response.Cur
 
+	var errs []error
+
 	for _, seatBid := range response.SeatBid {
 		for i := range seatBid.Bid {
 			resolvePriceMacro(&seatBid.Bid[i])
 
-			b := &adapters.TypedBid{
-				Bid:     &seatBid.Bid[i],
-				BidType: getMediaTypeForImp(seatBid.Bid[i].ImpID, request.Imp),
+			bidType, err := getMediaTypeForBid(seatBid.Bid[i].Ext)
+			if err != nil {
+				errs = append(errs, err)
+				continue
 			}
 
-			bidResponse.Bids = append(bidResponse.Bids, b)
+			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+				Bid:     &seatBid.Bid[i],
+				BidType: bidType,
+			})
 		}
 	}
 
-	return bidResponse, nil
+	return bidResponse, errs
 }
 
 func resolvePriceMacro(bid *openrtb2.Bid) {
@@ -98,21 +104,18 @@ func resolvePriceMacro(bid *openrtb2.Bid) {
 	bid.AdM = strings.Replace(bid.AdM, "${AUCTION_PRICE}", price, -1)
 }
 
-func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
-	var UnknownBidType openrtb_ext.BidType = "unknown"
+func getMediaTypeForBid(ext json.RawMessage) (openrtb_ext.BidType, error) {
+	var bidExt openrtb_ext.ExtBid
 
-	for _, imp := range imps {
-		if imp.ID == impId {
-			switch {
-			case imp.Native != nil:
-				return openrtb_ext.BidTypeNative
-			case imp.Banner != nil:
-				return openrtb_ext.BidTypeBanner
-			}
-		}
+	if err := json.Unmarshal(ext, &bidExt); err != nil {
+		return "", fmt.Errorf("could not unmarshal openrtb_ext.ExtBid: %w", err)
 	}
 
-	return UnknownBidType
+	if bidExt.Prebid == nil {
+		return "", fmt.Errorf("bid.Ext.Prebid is empty")
+	}
+
+	return openrtb_ext.ParseBidType(string(bidExt.Prebid.Type))
 }
 
 func curExists(cc []string, c string) bool {
