@@ -432,6 +432,23 @@ func TestUserExtUnmarshal(t *testing.T) {
 			},
 			expectError: true,
 		},
+		// consented_providers_settings
+		{
+			desc: "Has consented_providers_settings and it is valid JSON",
+			in: testInput{
+				userExt: &UserExt{},
+				extJson: json.RawMessage(`{"consented_providers_settings":{"consented_providers":[2,25]}}`),
+			},
+			expectError: false,
+		},
+		{
+			desc: "Has malformed consented_providers_settings expect error",
+			in: testInput{
+				userExt: &UserExt{},
+				extJson: json.RawMessage(`{"consented_providers_settings":{"consented_providers":123}}`),
+			},
+			expectError: true,
+		},
 	}
 	for _, tc := range testCases {
 		err := tc.in.userExt.unmarshal(tc.in.extJson)
