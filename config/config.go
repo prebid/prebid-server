@@ -1187,7 +1187,7 @@ func migrateConfigDatabaseConnection(v *viper.Viper) {
 
 	for _, migration := range migrations {
 		driverField := migration.new + ".connection.driver"
-		if !v.IsSet(driverField) {
+		if !v.IsSet(driverField) && v.IsSet("postgres.connection.dbname") {
 			glog.Warning(fmt.Sprintf("%s is not set, using default (postgres) ", driverField))
 			v.Set(driverField, "postgres")
 		}
