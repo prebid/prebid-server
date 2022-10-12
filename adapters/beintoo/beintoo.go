@@ -217,7 +217,7 @@ func (a *BeintooAdapter) MakeBids(internalRequest *openrtb2.BidRequest, external
 }
 
 // Builder builds a new instance of the Beintoo adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &BeintooAdapter{
 		endpoint: config.Endpoint,
 	}

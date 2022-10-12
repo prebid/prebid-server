@@ -24,12 +24,12 @@ func TestBuildAdapters(t *testing.T) {
 	client := &http.Client{}
 	metricEngine := &metrics.NilMetricsEngine{}
 
-	appnexusBidder, _ := appnexus.Builder(openrtb_ext.BidderAppnexus, config.Adapter{})
+	appnexusBidder, _ := appnexus.Builder(openrtb_ext.BidderAppnexus, config.Adapter{}, config.Server{})
 	appnexusBidderWithInfo := adapters.BuildInfoAwareBidder(appnexusBidder, infoEnabled)
 	appnexusBidderAdapted := AdaptBidder(appnexusBidderWithInfo, client, &config.Configuration{}, metricEngine, openrtb_ext.BidderAppnexus, nil, "")
 	appnexusValidated := addValidatedBidderMiddleware(appnexusBidderAdapted)
 
-	rubiconBidder, _ := rubicon.Builder(openrtb_ext.BidderRubicon, config.Adapter{})
+	rubiconBidder, _ := rubicon.Builder(openrtb_ext.BidderRubicon, config.Adapter{}, config.Server{})
 	rubiconBidderWithInfo := adapters.BuildInfoAwareBidder(rubiconBidder, infoEnabled)
 	rubiconBidderAdapted := AdaptBidder(rubiconBidderWithInfo, client, &config.Configuration{}, metricEngine, openrtb_ext.BidderRubicon, nil, "")
 	rubiconBidderValidated := addValidatedBidderMiddleware(rubiconBidderAdapted)
@@ -84,6 +84,8 @@ func TestBuildBidders(t *testing.T) {
 
 	rubiconBidder := fakeBidder{"b"}
 	rubiconBuilder := fakeBuilder{rubiconBidder, nil}.Builder
+
+	server := config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"}
 
 	testCases := []struct {
 		description     string
@@ -149,7 +151,7 @@ func TestBuildBidders(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		bidders, errs := buildBidders(test.bidderInfos, test.builders)
+		bidders, errs := buildBidders(test.bidderInfos, test.builders, server)
 
 		// For Test Setup Convenience
 		if test.expectedBidders == nil {
@@ -268,6 +270,6 @@ type fakeBuilder struct {
 	err    error
 }
 
-func (b fakeBuilder) Builder(name openrtb_ext.BidderName, cfg config.Adapter) (adapters.Bidder, error) {
+func (b fakeBuilder) Builder(name openrtb_ext.BidderName, cfg config.Adapter, server config.Server) (adapters.Bidder, error) {
 	return b.bidder, b.err
 }

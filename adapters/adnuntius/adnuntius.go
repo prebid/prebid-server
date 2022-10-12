@@ -66,7 +66,7 @@ const defaultSite = "unknown"
 const minutesInHour = 60
 
 // Builder builds a new instance of the Adnuntius adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		time:     &timeutil.RealTime{},
 		endpoint: config.Endpoint,
@@ -161,7 +161,7 @@ func getImpSizes(imp openrtb2.Imp) [][]int64 {
 }
 
 /*
-	Generate the requests to Adnuntius to reduce the amount of requests going out.
+Generate the requests to Adnuntius to reduce the amount of requests going out.
 */
 func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters.RequestData, []error) {
 	var requestData []*adapters.RequestData

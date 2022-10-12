@@ -26,7 +26,7 @@ type nextMillJsonExt struct {
 	Prebid nmExtPrebid `json:"prebid"`
 }
 
-//MakeRequests prepares request information for prebid-server core
+// MakeRequests prepares request information for prebid-server core
 func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	resImps, err := getImpressionsInfo(request.Imp)
 	if len(err) > 0 {
@@ -132,7 +132,7 @@ func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext
 	return &bidRequest
 }
 
-//MakeBids translates NextMillennium bid response to prebid-server specific format
+// MakeBids translates NextMillennium bid response to prebid-server specific format
 func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var msg = ""
 	if response.StatusCode == http.StatusNoContent {
@@ -168,7 +168,7 @@ func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 }
 
 // Builder builds a new instance of the NextMillennium adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	return &adapter{
 		endpoint: config.Endpoint,
 	}, nil

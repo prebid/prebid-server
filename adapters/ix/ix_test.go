@@ -16,7 +16,7 @@ import (
 const endpoint string = "http://host/endpoint"
 
 func TestJsonSamples(t *testing.T) {
-	if bidder, err := Builder(openrtb_ext.BidderIx, config.Adapter{Endpoint: endpoint}); err == nil {
+	if bidder, err := Builder(openrtb_ext.BidderIx, config.Adapter{Endpoint: endpoint}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"}); err == nil {
 		ixBidder := bidder.(*IxAdapter)
 		ixBidder.maxRequests = 2
 		adapterstest.RunJSONBidderTest(t, "ixtest", bidder)

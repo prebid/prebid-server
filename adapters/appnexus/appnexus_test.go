@@ -16,7 +16,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAppnexus, config.Adapter{
-		Endpoint: "http://ib.adnxs.com/openrtb2"})
+		Endpoint: "http://ib.adnxs.com/openrtb2"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -28,7 +28,7 @@ func TestJsonSamples(t *testing.T) {
 func TestVideoSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAppnexus, config.Adapter{
 		Endpoint:   "http://ib.adnxs.com/openrtb2",
-		PlatformID: "8"})
+		PlatformID: "8"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)

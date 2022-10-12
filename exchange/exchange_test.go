@@ -2395,6 +2395,7 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 		externalURL:       "http://localhost",
 		bidIDGenerator:    bidIDGenerator,
 		hostSChainNode:    hostSChainNode,
+		server:            config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "Datacenter"},
 	}
 }
 

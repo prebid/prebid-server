@@ -14,7 +14,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderOpenx, config.Adapter{
-		Endpoint: "http://rtb.openx.net/prebid"})
+		Endpoint: "http://rtb.openx.net/prebid"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -35,7 +35,7 @@ func TestResponseWithCurrencies(t *testing.T) {
 
 func assertCurrencyInBidResponse(t *testing.T, expectedCurrency string, currency *string) {
 	bidder, buildErr := Builder(openrtb_ext.BidderOpenx, config.Adapter{
-		Endpoint: "http://rtb.openx.net/prebid"})
+		Endpoint: "http://rtb.openx.net/prebid"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)

@@ -38,7 +38,7 @@ type bidExt struct {
 
 /* Builder */
 
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		Endpoint: config.Endpoint,
 	}

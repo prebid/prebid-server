@@ -29,7 +29,7 @@ type adapter struct {
 }
 
 // Builder builds a new instance of the Mobfox adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		URI: config.Endpoint,
 	}

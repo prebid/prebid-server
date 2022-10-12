@@ -102,11 +102,11 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 }
 
 // Builder builds a new instance of the Criteo adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	return builderWithGuidGenerator(bidderName, config, newRandomSlotIDGenerator())
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
+	return builderWithGuidGenerator(bidderName, config, server, newRandomSlotIDGenerator())
 }
 
-func builderWithGuidGenerator(bidderName openrtb_ext.BidderName, config config.Adapter, slotIDGenerator slotIDGenerator) (adapters.Bidder, error) {
+func builderWithGuidGenerator(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server, slotIDGenerator slotIDGenerator) (adapters.Bidder, error) {
 	return &adapter{
 		uri:             config.Endpoint,
 		slotIDGenerator: slotIDGenerator,
