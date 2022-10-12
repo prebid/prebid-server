@@ -9,50 +9,50 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccountGDPREnabledForIntegrationType(t *testing.T) {
+func TestAccountGDPREnabledForChannelType(t *testing.T) {
 	trueValue, falseValue := true, false
 
 	tests := []struct {
-		description         string
-		giveIntegrationType IntegrationType
-		giveGDPREnabled     *bool
-		giveWebGDPREnabled  *bool
-		wantEnabled         *bool
+		description        string
+		giveChannelType    ChannelType
+		giveGDPREnabled    *bool
+		giveWebGDPREnabled *bool
+		wantEnabled        *bool
 	}{
 		{
-			description:         "GDPR Web integration enabled, general GDPR disabled",
-			giveIntegrationType: ChannelWeb,
-			giveGDPREnabled:     &falseValue,
-			giveWebGDPREnabled:  &trueValue,
-			wantEnabled:         &trueValue,
+			description:        "GDPR Web channel enabled, general GDPR disabled",
+			giveChannelType:    ChannelWeb,
+			giveGDPREnabled:    &falseValue,
+			giveWebGDPREnabled: &trueValue,
+			wantEnabled:        &trueValue,
 		},
 		{
-			description:         "GDPR Web integration disabled, general GDPR enabled",
-			giveIntegrationType: ChannelWeb,
-			giveGDPREnabled:     &trueValue,
-			giveWebGDPREnabled:  &falseValue,
-			wantEnabled:         &falseValue,
+			description:        "GDPR Web channel disabled, general GDPR enabled",
+			giveChannelType:    ChannelWeb,
+			giveGDPREnabled:    &trueValue,
+			giveWebGDPREnabled: &falseValue,
+			wantEnabled:        &falseValue,
 		},
 		{
-			description:         "GDPR Web integration unspecified, general GDPR disabled",
-			giveIntegrationType: ChannelWeb,
-			giveGDPREnabled:     &falseValue,
-			giveWebGDPREnabled:  nil,
-			wantEnabled:         &falseValue,
+			description:        "GDPR Web channel unspecified, general GDPR disabled",
+			giveChannelType:    ChannelWeb,
+			giveGDPREnabled:    &falseValue,
+			giveWebGDPREnabled: nil,
+			wantEnabled:        &falseValue,
 		},
 		{
-			description:         "GDPR Web integration unspecified, general GDPR enabled",
-			giveIntegrationType: ChannelWeb,
-			giveGDPREnabled:     &trueValue,
-			giveWebGDPREnabled:  nil,
-			wantEnabled:         &trueValue,
+			description:        "GDPR Web channel unspecified, general GDPR enabled",
+			giveChannelType:    ChannelWeb,
+			giveGDPREnabled:    &trueValue,
+			giveWebGDPREnabled: nil,
+			wantEnabled:        &trueValue,
 		},
 		{
-			description:         "GDPR Web integration unspecified, general GDPR unspecified",
-			giveIntegrationType: ChannelWeb,
-			giveGDPREnabled:     nil,
-			giveWebGDPREnabled:  nil,
-			wantEnabled:         nil,
+			description:        "GDPR Web channel unspecified, general GDPR unspecified",
+			giveChannelType:    ChannelWeb,
+			giveGDPREnabled:    nil,
+			giveWebGDPREnabled: nil,
+			wantEnabled:        nil,
 		},
 	}
 
@@ -60,13 +60,13 @@ func TestAccountGDPREnabledForIntegrationType(t *testing.T) {
 		account := Account{
 			GDPR: AccountGDPR{
 				Enabled: tt.giveGDPREnabled,
-				IntegrationEnabled: AccountIntegration{
+				IntegrationEnabled: AccountChannel{
 					Web: tt.giveWebGDPREnabled,
 				},
 			},
 		}
 
-		enabled := account.GDPR.EnabledForIntegrationType(tt.giveIntegrationType)
+		enabled := account.GDPR.EnabledForChannelType(tt.giveChannelType)
 
 		if tt.wantEnabled == nil {
 			assert.Nil(t, enabled, tt.description)
@@ -77,50 +77,50 @@ func TestAccountGDPREnabledForIntegrationType(t *testing.T) {
 	}
 }
 
-func TestAccountCCPAEnabledForIntegrationType(t *testing.T) {
+func TestAccountCCPAEnabledForChannelType(t *testing.T) {
 	trueValue, falseValue := true, false
 
 	tests := []struct {
-		description         string
-		giveIntegrationType IntegrationType
-		giveCCPAEnabled     *bool
-		giveWebCCPAEnabled  *bool
-		wantEnabled         *bool
+		description        string
+		giveChannelType    ChannelType
+		giveCCPAEnabled    *bool
+		giveWebCCPAEnabled *bool
+		wantEnabled        *bool
 	}{
 		{
-			description:         "CCPA Web integration enabled, general CCPA disabled",
-			giveIntegrationType: ChannelWeb,
-			giveCCPAEnabled:     &falseValue,
-			giveWebCCPAEnabled:  &trueValue,
-			wantEnabled:         &trueValue,
+			description:        "CCPA Web channel enabled, general CCPA disabled",
+			giveChannelType:    ChannelWeb,
+			giveCCPAEnabled:    &falseValue,
+			giveWebCCPAEnabled: &trueValue,
+			wantEnabled:        &trueValue,
 		},
 		{
-			description:         "CCPA Web integration disabled, general CCPA enabled",
-			giveIntegrationType: ChannelWeb,
-			giveCCPAEnabled:     &trueValue,
-			giveWebCCPAEnabled:  &falseValue,
-			wantEnabled:         &falseValue,
+			description:        "CCPA Web channel disabled, general CCPA enabled",
+			giveChannelType:    ChannelWeb,
+			giveCCPAEnabled:    &trueValue,
+			giveWebCCPAEnabled: &falseValue,
+			wantEnabled:        &falseValue,
 		},
 		{
-			description:         "CCPA Web integration unspecified, general CCPA disabled",
-			giveIntegrationType: ChannelWeb,
-			giveCCPAEnabled:     &falseValue,
-			giveWebCCPAEnabled:  nil,
-			wantEnabled:         &falseValue,
+			description:        "CCPA Web channel unspecified, general CCPA disabled",
+			giveChannelType:    ChannelWeb,
+			giveCCPAEnabled:    &falseValue,
+			giveWebCCPAEnabled: nil,
+			wantEnabled:        &falseValue,
 		},
 		{
-			description:         "CCPA Web integration unspecified, general CCPA enabled",
-			giveIntegrationType: ChannelWeb,
-			giveCCPAEnabled:     &trueValue,
-			giveWebCCPAEnabled:  nil,
-			wantEnabled:         &trueValue,
+			description:        "CCPA Web channel unspecified, general CCPA enabled",
+			giveChannelType:    ChannelWeb,
+			giveCCPAEnabled:    &trueValue,
+			giveWebCCPAEnabled: nil,
+			wantEnabled:        &trueValue,
 		},
 		{
-			description:         "CCPA Web integration unspecified, general CCPA unspecified",
-			giveIntegrationType: ChannelWeb,
-			giveCCPAEnabled:     nil,
-			giveWebCCPAEnabled:  nil,
-			wantEnabled:         nil,
+			description:        "CCPA Web channel unspecified, general CCPA unspecified",
+			giveChannelType:    ChannelWeb,
+			giveCCPAEnabled:    nil,
+			giveWebCCPAEnabled: nil,
+			wantEnabled:        nil,
 		},
 	}
 
@@ -128,13 +128,13 @@ func TestAccountCCPAEnabledForIntegrationType(t *testing.T) {
 		account := Account{
 			CCPA: AccountCCPA{
 				Enabled: tt.giveCCPAEnabled,
-				IntegrationEnabled: AccountIntegration{
+				IntegrationEnabled: AccountChannel{
 					Web: tt.giveWebCCPAEnabled,
 				},
 			},
 		}
 
-		enabled := account.CCPA.EnabledForIntegrationType(tt.giveIntegrationType)
+		enabled := account.CCPA.EnabledForChannelType(tt.giveChannelType)
 
 		if tt.wantEnabled == nil {
 			assert.Nil(t, enabled, tt.description)
@@ -145,97 +145,97 @@ func TestAccountCCPAEnabledForIntegrationType(t *testing.T) {
 	}
 }
 
-func TestAccountIntegrationGetByIntegrationType(t *testing.T) {
+func TestAccountChannelGetByChannelType(t *testing.T) {
 	trueValue, falseValue := true, false
 
 	tests := []struct {
-		description         string
-		giveAMPEnabled      *bool
-		giveAppEnabled      *bool
-		giveVideoEnabled    *bool
-		giveWebEnabled      *bool
-		giveIntegrationType IntegrationType
-		wantEnabled         *bool
+		description      string
+		giveAMPEnabled   *bool
+		giveAppEnabled   *bool
+		giveVideoEnabled *bool
+		giveWebEnabled   *bool
+		giveChannelType  ChannelType
+		wantEnabled      *bool
 	}{
 		{
-			description:         "AMP integration setting unspecified, returns nil",
-			giveIntegrationType: ChannelAMP,
-			wantEnabled:         nil,
+			description:     "AMP channel setting unspecified, returns nil",
+			giveChannelType: ChannelAMP,
+			wantEnabled:     nil,
 		},
 		{
-			description:         "AMP integration disabled, returns false",
-			giveAMPEnabled:      &falseValue,
-			giveIntegrationType: ChannelAMP,
-			wantEnabled:         &falseValue,
+			description:     "AMP channel disabled, returns false",
+			giveAMPEnabled:  &falseValue,
+			giveChannelType: ChannelAMP,
+			wantEnabled:     &falseValue,
 		},
 		{
-			description:         "AMP integration enabled, returns true",
-			giveAMPEnabled:      &trueValue,
-			giveIntegrationType: ChannelAMP,
-			wantEnabled:         &trueValue,
+			description:     "AMP channel enabled, returns true",
+			giveAMPEnabled:  &trueValue,
+			giveChannelType: ChannelAMP,
+			wantEnabled:     &trueValue,
 		},
 		{
-			description:         "App integration setting unspecified, returns nil",
-			giveIntegrationType: ChannelApp,
-			wantEnabled:         nil,
+			description:     "App channel setting unspecified, returns nil",
+			giveChannelType: ChannelApp,
+			wantEnabled:     nil,
 		},
 		{
-			description:         "App integration disabled, returns false",
-			giveAppEnabled:      &falseValue,
-			giveIntegrationType: ChannelApp,
-			wantEnabled:         &falseValue,
+			description:     "App channel disabled, returns false",
+			giveAppEnabled:  &falseValue,
+			giveChannelType: ChannelApp,
+			wantEnabled:     &falseValue,
 		},
 		{
-			description:         "App integration enabled, returns true",
-			giveAppEnabled:      &trueValue,
-			giveIntegrationType: ChannelApp,
-			wantEnabled:         &trueValue,
+			description:     "App channel enabled, returns true",
+			giveAppEnabled:  &trueValue,
+			giveChannelType: ChannelApp,
+			wantEnabled:     &trueValue,
 		},
 		{
-			description:         "Video integration setting unspecified, returns nil",
-			giveIntegrationType: ChannelVideo,
-			wantEnabled:         nil,
+			description:     "Video channel setting unspecified, returns nil",
+			giveChannelType: ChannelVideo,
+			wantEnabled:     nil,
 		},
 		{
-			description:         "Video integration disabled, returns false",
-			giveVideoEnabled:    &falseValue,
-			giveIntegrationType: ChannelVideo,
-			wantEnabled:         &falseValue,
+			description:      "Video channel disabled, returns false",
+			giveVideoEnabled: &falseValue,
+			giveChannelType:  ChannelVideo,
+			wantEnabled:      &falseValue,
 		},
 		{
-			description:         "Video integration enabled, returns true",
-			giveVideoEnabled:    &trueValue,
-			giveIntegrationType: ChannelVideo,
-			wantEnabled:         &trueValue,
+			description:      "Video channel enabled, returns true",
+			giveVideoEnabled: &trueValue,
+			giveChannelType:  ChannelVideo,
+			wantEnabled:      &trueValue,
 		},
 		{
-			description:         "Web integration setting unspecified, returns nil",
-			giveIntegrationType: ChannelWeb,
-			wantEnabled:         nil,
+			description:     "Web channel setting unspecified, returns nil",
+			giveChannelType: ChannelWeb,
+			wantEnabled:     nil,
 		},
 		{
-			description:         "Web integration disabled, returns false",
-			giveWebEnabled:      &falseValue,
-			giveIntegrationType: ChannelWeb,
-			wantEnabled:         &falseValue,
+			description:     "Web channel disabled, returns false",
+			giveWebEnabled:  &falseValue,
+			giveChannelType: ChannelWeb,
+			wantEnabled:     &falseValue,
 		},
 		{
-			description:         "Web integration enabled, returns true",
-			giveWebEnabled:      &trueValue,
-			giveIntegrationType: ChannelWeb,
-			wantEnabled:         &trueValue,
+			description:     "Web channel enabled, returns true",
+			giveWebEnabled:  &trueValue,
+			giveChannelType: ChannelWeb,
+			wantEnabled:     &trueValue,
 		},
 	}
 
 	for _, tt := range tests {
-		accountIntegration := AccountIntegration{
+		accountChannel := AccountChannel{
 			AMP:   tt.giveAMPEnabled,
 			App:   tt.giveAppEnabled,
 			Video: tt.giveVideoEnabled,
 			Web:   tt.giveWebEnabled,
 		}
 
-		result := accountIntegration.GetByIntegrationType(tt.giveIntegrationType)
+		result := accountChannel.GetByChannelType(tt.giveChannelType)
 		if tt.wantEnabled == nil {
 			assert.Nil(t, result, tt.description)
 		} else {

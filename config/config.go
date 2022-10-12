@@ -318,7 +318,7 @@ func (t *TCF2) BasicEnforcementVendor(openrtb_ext.BidderName) bool {
 
 // IntegrationEnabled checks if a given integration type is enabled. All integration types are considered either
 // enabled or disabled based on the Enabled flag.
-func (t *TCF2) IntegrationEnabled(integrationType IntegrationType) bool {
+func (t *TCF2) IntegrationEnabled(channelType ChannelType) bool {
 	return t.Enabled
 }
 
@@ -729,7 +729,7 @@ func (cfg *Configuration) AccountDefaultsJSON() json.RawMessage {
 	return cfg.accountDefaultsJSON
 }
 
-//Allows for protocol relative URL if scheme is empty
+// Allows for protocol relative URL if scheme is empty
 func (cfg *Cache) GetBaseURL() string {
 	cfg.Scheme = strings.ToLower(cfg.Scheme)
 	if strings.Contains(cfg.Scheme, "https") {
