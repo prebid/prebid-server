@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/prebid/prebid-server/hooks/hep"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
 	accountService "github.com/prebid/prebid-server/account"
@@ -59,6 +60,7 @@ func NewAmpEndpoint(
 	defReqJSON []byte,
 	bidderMap map[string]openrtb_ext.BidderName,
 	storedRespFetcher stored_requests.Fetcher,
+	hookExecutionPlanBuilder hep.HookExecutionPlanBuilder,
 ) (httprouter.Handle, error) {
 
 	if ex == nil || validator == nil || requestsById == nil || accounts == nil || cfg == nil || met == nil {
@@ -89,7 +91,8 @@ func NewAmpEndpoint(
 		nil,
 		nil,
 		ipValidator,
-		storedRespFetcher}).AmpAuction), nil
+		storedRespFetcher,
+		hookExecutionPlanBuilder}).AmpAuction), nil
 
 }
 

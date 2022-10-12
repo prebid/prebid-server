@@ -99,6 +99,10 @@ type Configuration struct {
 	// BidderInfos supports adapter overrides in extra configs like pbs.json, pbs.yaml, etc.
 	// Refers to main.go `configFileName` constant
 	BidderInfos BidderInfos `mapstructure:"adapters"`
+	// Modules mapping provides module specific configuration
+	Modules map[string]interface{} `mapstructure:"modules"`
+	// Hooks provides a way to specify hook execution plan for specific endpoints and stages
+	Hooks Hooks `mapstructure:"hooks"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
