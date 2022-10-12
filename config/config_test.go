@@ -1679,7 +1679,7 @@ func TestMigrateConfigDatabaseConnection(t *testing.T) {
     `),
 	}
 
-	storedReqestsTests := []struct {
+	storedRequestsTests := []struct {
 		description string
 		config      []byte
 
@@ -1761,7 +1761,7 @@ func TestMigrateConfigDatabaseConnection(t *testing.T) {
 		},
 	}
 
-	for _, tt := range storedReqestsTests {
+	for _, tt := range storedRequestsTests {
 		v := viper.New()
 		v.SetConfigType("yaml")
 		v.ReadConfig(bytes.NewBuffer(tt.config))
