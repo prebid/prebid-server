@@ -128,7 +128,7 @@ func (a *AJAAdapter) MakeBids(bidReq *openrtb2.BidRequest, adapterReq *adapters.
 }
 
 // Builder builds a new instance of the AJA adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &AJAAdapter{
 		endpoint: config.Endpoint,
 	}

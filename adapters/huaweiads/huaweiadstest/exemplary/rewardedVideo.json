@@ -100,7 +100,7 @@
             {
               "adtype": 7,
               "slotid": "testslotid",
-              "test": 0,
+              "test": 1,
               "w": 300,
               "h": 250
             }
