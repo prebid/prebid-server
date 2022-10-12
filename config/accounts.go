@@ -32,6 +32,7 @@ type Account struct {
 	Events                  Events               `mapstructure:"events" json:"events"` // Don't enable this feature. It is still under developmment - https://github.com/prebid/prebid-server/issues/1725
 	TruncateTargetAttribute *int                 `mapstructure:"truncate_target_attr" json:"truncate_target_attr"`
 	AlternateBidderCodes    AlternateBidderCodes `mapstructure:"alternatebiddercodes" json:"alternatebiddercodes"`
+	Hooks                   HookExecutionPlan    `mapstructure:"execution-plan" json:"execution-plan"`
 }
 
 // CookieSync represents the account-level defaults for the cookie sync endpoint.
