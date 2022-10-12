@@ -331,7 +331,6 @@ func extractPubmaticExtFromRequest(request *openrtb2.BidRequest) (extRequestAdSe
 		return pmReqExt, nil
 	}
 
-	// todo: unvoid repeated unmarshal of request.ext
 	reqExt := &openrtb_ext.ExtRequest{}
 	err := json.Unmarshal(request.Ext, &reqExt)
 	if err != nil {
@@ -339,9 +338,12 @@ func extractPubmaticExtFromRequest(request *openrtb2.BidRequest) (extRequestAdSe
 	}
 	pmReqExt.ExtRequest = *reqExt
 
-	reqExtBidderParams, err := adapters.ExtractReqExtBidderParamsMap(request)
-	if err != nil {
-		return pmReqExt, err
+	reqExtBidderParams := make(map[string]json.RawMessage)
+	if reqExt.Prebid.BidderParams != nil {
+		err = json.Unmarshal(reqExt.Prebid.BidderParams, &reqExtBidderParams)
+		if err != nil {
+			return pmReqExt, err
+		}
 	}
 
 	//get request ext bidder params
