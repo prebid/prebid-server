@@ -2,7 +2,6 @@ package config
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -17,6 +16,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/stored_requests/backends/db_provider"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/backends/http_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/events"
@@ -117,7 +117,7 @@ func TestNewEmptyFetcher(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		fetcher := newFetcher(test.config, nil, &sql.DB{})
+		fetcher := newFetcher(test.config, nil, db_provider.DbProviderMock{})
 		assert.NotNil(t, fetcher, "The fetcher should be non-nil.")
 		if test.emptyFetcher {
 			assert.Equal(t, empty_fetcher.EmptyFetcher{}, fetcher, "Empty fetcher should be returned")
@@ -158,7 +158,7 @@ func TestNewHTTPEvents(t *testing.T) {
 
 	metricsMock := &metrics.MetricsEngineMock{}
 
-	evProducers := newEventProducers(cfg, server1.Client(), nil, "", metricsMock, nil)
+	evProducers := newEventProducers(cfg, server1.Client(), nil, metricsMock, nil)
 	assertSliceLength(t, evProducers, 1)
 	assertHttpWithURL(t, evProducers[0], server1.URL)
 }
@@ -218,13 +218,13 @@ func TestNewDatabaseEventProducers(t *testing.T) {
 		},
 	}
 	client := &http.Client{}
-	db, mock, err := sqlmock.New()
+	provider, mock, err := db_provider.NewDbProviderMock()
 	if err != nil {
 		t.Fatalf("Failed to create mock: %v", err)
 	}
 	mock.ExpectQuery("^" + regexp.QuoteMeta(cfg.Database.CacheInitialization.Query) + "$").WillReturnError(errors.New("Query failed"))
 
-	evProducers := newEventProducers(cfg, client, db, "postgres", metricsMock, nil)
+	evProducers := newEventProducers(cfg, client, provider, metricsMock, nil)
 	assertProducerLength(t, evProducers, 1)
 
 	assertExpectationsMet(t, mock)

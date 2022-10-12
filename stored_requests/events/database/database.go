@@ -11,6 +11,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/metrics"
+	"github.com/prebid/prebid-server/stored_requests/backends/db_provider"
 	"github.com/prebid/prebid-server/stored_requests/events"
 	"github.com/prebid/prebid-server/util/timeutil"
 )
@@ -29,8 +30,7 @@ var storedDataTypeMetricMap = map[config.DataType]metrics.StoredDataType{
 }
 
 type DatabaseEventProducerConfig struct {
-	DB                 *sql.DB
-	DBDriver           string
+	Provider           db_provider.DbProvider
 	RequestType        config.DataType
 	CacheInitQuery     string
 	CacheInitTimeout   time.Duration
@@ -48,7 +48,7 @@ type DatabaseEventProducer struct {
 }
 
 func NewDatabaseEventProducer(cfg DatabaseEventProducerConfig) (eventProducer *DatabaseEventProducer) {
-	if cfg.DB == nil {
+	if cfg.Provider == nil {
 		glog.Fatalf("The Database Stored %s Loader needs a database connection to work.", cfg.RequestType)
 	}
 
@@ -83,7 +83,7 @@ func (e *DatabaseEventProducer) fetchAll() (fetchErr error) {
 	defer cancel()
 
 	startTime := e.time.Now().UTC()
-	rows, err := e.cfg.DB.QueryContext(ctx, e.cfg.CacheInitQuery)
+	rows, err := e.cfg.Provider.QueryContext(ctx, e.cfg.CacheInitQuery)
 	elapsedTime := time.Since(startTime)
 	e.recordFetchTime(elapsedTime, metrics.FetchAll)
 
@@ -121,15 +121,11 @@ func (e *DatabaseEventProducer) fetchDelta() (fetchErr error) {
 
 	startTime := e.time.Now().UTC()
 
-	var queryArgs []interface{}
-	if e.cfg.DBDriver == "mysql" {
-		queryArgs = append(queryArgs, e.lastUpdate, e.lastUpdate)
-	}
-	if e.cfg.DBDriver == "postgres" {
-		queryArgs = append(queryArgs, e.lastUpdate)
+	params := []db_provider.QueryParam{
+		{Name: "LAST_UPDATE", Value: e.lastUpdate},
 	}
 
-	rows, err := e.cfg.DB.QueryContext(ctx, e.cfg.CacheUpdateQuery, queryArgs...)
+	rows, err := e.cfg.Provider.QueryContext(ctx, e.cfg.CacheUpdateQuery, params...)
 	elapsedTime := time.Since(startTime)
 	e.recordFetchTime(elapsedTime, metrics.FetchDelta)
 

@@ -2,217 +2,13 @@ package config
 
 import (
 	"errors"
-	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-const sampleQueryTemplate = "SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in %REQUEST_ID_LIST% UNION ALL SELECT id, impData, 'imp' as type FROM stored_requests WHERE id in %IMP_ID_LIST%"
-const sampleResponsesQueryTemplate = "SELECT id, responseData, 'response' as type FROM stored_responses WHERE id in %ID_LIST%"
-
-func TestNormalQueryMakerMySql(t *testing.T) {
-	madeQuery := buildQueryMySql(sampleQueryTemplate, 1, 3)
-	assertStringsEqual(t, madeQuery, "SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in (?) UNION ALL SELECT id, impData, 'imp' as type FROM stored_requests WHERE id in (?, ?, ?)")
-}
-
-func TestNormalQueryMakerPostgres(t *testing.T) {
-	madeQuery := buildQueryPostgres(sampleQueryTemplate, 1, 3)
-	assertStringsEqual(t, madeQuery, "SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in ($1) UNION ALL SELECT id, impData, 'imp' as type FROM stored_requests WHERE id in ($2, $3, $4)")
-}
-
-func TestQueryMakerManyImpsMySql(t *testing.T) {
-	madeQuery := buildQueryMySql(sampleQueryTemplate, 1, 11)
-	assertStringsEqual(t, madeQuery, "SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in (?) UNION ALL SELECT id, impData, 'imp' as type FROM stored_requests WHERE id in (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-}
-
-func TestQueryMakerManyImpsPostgres(t *testing.T) {
-	madeQuery := buildQueryPostgres(sampleQueryTemplate, 1, 11)
-	assertStringsEqual(t, madeQuery, "SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in ($1) UNION ALL SELECT id, impData, 'imp' as type FROM stored_requests WHERE id in ($2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)")
-}
-
-func TestQueryMakerNoRequestsMySql(t *testing.T) {
-	madeQuery := buildQueryMySql(sampleQueryTemplate, 0, 3)
-	assertStringsEqual(t, madeQuery, "SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in (NULL) UNION ALL SELECT id, impData, 'imp' as type FROM stored_requests WHERE id in (?, ?, ?)")
-}
-
-func TestQueryMakerNoRequests(t *testing.T) {
-	madeQuery := buildQueryPostgres(sampleQueryTemplate, 0, 3)
-	assertStringsEqual(t, madeQuery, "SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in (NULL) UNION ALL SELECT id, impData, 'imp' as type FROM stored_requests WHERE id in ($1, $2, $3)")
-}
-
-func TestQueryMakerNoImpsMySql(t *testing.T) {
-	madeQuery := buildQueryMySql(sampleQueryTemplate, 1, 0)
-	assertStringsEqual(t, madeQuery, "SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in (?) UNION ALL SELECT id, impData, 'imp' as type FROM stored_requests WHERE id in (NULL)")
-}
-
-func TestQueryMakerNoImpsPostgres(t *testing.T) {
-	madeQuery := buildQueryPostgres(sampleQueryTemplate, 1, 0)
-	assertStringsEqual(t, madeQuery, "SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in ($1) UNION ALL SELECT id, impData, 'imp' as type FROM stored_requests WHERE id in (NULL)")
-}
-
-func TestQueryMakerMultilistsMySql(t *testing.T) {
-	madeQuery := buildQueryMySql("SELECT id, config FROM table WHERE id in %IMP_ID_LIST% UNION ALL SELECT id, config FROM other_table WHERE id in %IMP_ID_LIST%", 0, 3)
-	assertStringsEqual(t, madeQuery, "SELECT id, config FROM table WHERE id in (?, ?, ?) UNION ALL SELECT id, config FROM other_table WHERE id in (?, ?, ?)")
-}
-
-func TestQueryMakerMultilistsPostgres(t *testing.T) {
-	madeQuery := buildQueryPostgres("SELECT id, config FROM table WHERE id in %IMP_ID_LIST% UNION ALL SELECT id, config FROM other_table WHERE id in %IMP_ID_LIST%", 0, 3)
-	assertStringsEqual(t, madeQuery, "SELECT id, config FROM table WHERE id in ($1, $2, $3) UNION ALL SELECT id, config FROM other_table WHERE id in ($1, $2, $3)")
-}
-
-func TestQueryMakerNegativeMySql(t *testing.T) {
-	query := buildQueryMySql(sampleQueryTemplate, -1, -2)
-	expected := buildQueryMySql(sampleQueryTemplate, 0, 0)
-	assertStringsEqual(t, query, expected)
-}
-
-func TestQueryMakerNegativePostgres(t *testing.T) {
-	query := buildQueryPostgres(sampleQueryTemplate, -1, -2)
-	expected := buildQueryPostgres(sampleQueryTemplate, 0, 0)
-	assertStringsEqual(t, query, expected)
-}
-
-func TestResponseQueryMakerMySql(t *testing.T) {
-
-	conn := DatabaseConnection{
-		Driver: "mysql",
-	}
-
-	testCases := []struct {
-		description     string
-		inputRespNumber int
-		expectedQuery   string
-	}{
-		{
-			description:     "single response query maker",
-			inputRespNumber: 1,
-			expectedQuery:   "SELECT id, responseData, 'response' as type FROM stored_responses WHERE id in (?)",
-		},
-		{
-			description:     "many responses query maker",
-			inputRespNumber: 11,
-			expectedQuery:   "SELECT id, responseData, 'response' as type FROM stored_responses WHERE id in (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-		},
-		{
-			description:     "no responses query maker",
-			inputRespNumber: 0,
-			expectedQuery:   "SELECT id, responseData, 'response' as type FROM stored_responses WHERE id in (NULL)",
-		},
-		{
-			description:     "no responses query maker",
-			inputRespNumber: -2,
-			expectedQuery:   "SELECT id, responseData, 'response' as type FROM stored_responses WHERE id in (NULL)",
-		},
-	}
-
-	for _, test := range testCases {
-		cfg := DatabaseFetcherQueries{QueryTemplate: sampleResponsesQueryTemplate}
-		query := cfg.MakeQueryResponses(test.inputRespNumber, conn.IdListMaker())
-		assertStringsEqual(t, query, test.expectedQuery)
-	}
-}
-
-func TestResponseQueryMakerPostgres(t *testing.T) {
-
-	conn := DatabaseConnection{
-		Driver: "postgres",
-	}
-
-	testCases := []struct {
-		description     string
-		inputRespNumber int
-		expectedQuery   string
-	}{
-		{
-			description:     "single response query maker",
-			inputRespNumber: 1,
-			expectedQuery:   "SELECT id, responseData, 'response' as type FROM stored_responses WHERE id in ($1)",
-		},
-		{
-			description:     "many responses query maker",
-			inputRespNumber: 11,
-			expectedQuery:   "SELECT id, responseData, 'response' as type FROM stored_responses WHERE id in ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
-		},
-		{
-			description:     "no responses query maker",
-			inputRespNumber: 0,
-			expectedQuery:   "SELECT id, responseData, 'response' as type FROM stored_responses WHERE id in (NULL)",
-		},
-		{
-			description:     "no responses query maker",
-			inputRespNumber: -2,
-			expectedQuery:   "SELECT id, responseData, 'response' as type FROM stored_responses WHERE id in (NULL)",
-		},
-	}
-
-	for _, test := range testCases {
-		cfg := DatabaseFetcherQueries{QueryTemplate: sampleResponsesQueryTemplate}
-		query := cfg.MakeQueryResponses(test.inputRespNumber, conn.IdListMaker())
-		assertStringsEqual(t, query, test.expectedQuery)
-	}
-}
-
-func TestConnStringMySql(t *testing.T) {
-	driver := "mysql"
-	db := "TestDB"
-	host := "somehost.com"
-	port := 20
-	username := "someuser"
-	password := "somepassword"
-
-	cfg := DatabaseConnection{
-		Driver:   driver,
-		Database: db,
-		Host:     host,
-		Port:     port,
-		Username: username,
-		Password: password,
-	}
-
-	dataSourceName := cfg.ConnString()
-	assertStringsEqual(t, dataSourceName, "someuser:somepassword@tcp(somehost.com:20)/TestDB")
-}
-
-func TestConnStringPostgres(t *testing.T) {
-	driver := "postgres"
-	db := "TestDB"
-	host := "somehost.com"
-	port := 20
-	username := "someuser"
-	password := "somepassword"
-
-	cfg := DatabaseConnection{
-		Driver:   driver,
-		Database: db,
-		Host:     host,
-		Port:     port,
-		Username: username,
-		Password: password,
-	}
-
-	dataSourceName := cfg.ConnString()
-	paramList := strings.Split(dataSourceName, " ")
-	params := make(map[string]string, len(paramList))
-	for _, param := range paramList {
-		keyVals := strings.Split(param, "=")
-		if len(keyVals) != 2 {
-			t.Fatalf(`param "%s" must only have one equals sign`, param)
-		}
-		if _, ok := params[keyVals[0]]; ok {
-			t.Fatalf("found duplicate param at key %s", keyVals[0])
-		}
-		params[keyVals[0]] = keyVals[1]
-	}
-
-	assertHasValue(t, params, "dbname", db)
-	assertHasValue(t, params, "host", host)
-	assertHasValue(t, params, "port", strconv.Itoa(port))
-	assertHasValue(t, params, "user", username)
-	assertHasValue(t, params, "password", password)
-	assertHasValue(t, params, "sslmode", "disable")
-}
+const sampleQueryTemplate = "SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in $REQUEST_ID_LIST UNION ALL SELECT id, impData, 'imp' as type FROM stored_requests WHERE id in $IMP_ID_LIST"
+const sampleResponsesQueryTemplate = "SELECT id, responseData, 'response' as type FROM stored_responses WHERE id in $ID_LIST"
 
 func TestInMemoryCacheValidationStoredRequests(t *testing.T) {
 	assertNoErrs(t, (&InMemoryCache{
@@ -346,21 +142,21 @@ func TestDatabaseConfigValidation(t *testing.T) {
 		{
 			description:      "Invalid cache init query contains wildcard",
 			connectionStr:    "some-connection-string",
-			cacheInitQuery:   "SELECT * FROM table WHERE $1",
+			cacheInitQuery:   "SELECT * FROM table WHERE $LAST_UPDATED",
 			cacheInitTimeout: 1,
 			wantErrorCount:   1,
 		},
 		{
 			description:            "Valid cache update query with non-zero timeout and refresh rate",
 			connectionStr:          "some-connection-string",
-			cacheUpdateQuery:       "SELECT * FROM table WHERE $1",
+			cacheUpdateQuery:       "SELECT * FROM table WHERE $LAST_UPDATED",
 			cacheUpdateRefreshRate: 1,
 			cacheUpdateTimeout:     1,
 		},
 		{
 			description:            "Valid cache update query with zero timeout and non-zero refresh rate",
 			connectionStr:          "some-connection-string",
-			cacheUpdateQuery:       "SELECT * FROM table WHERE $1",
+			cacheUpdateQuery:       "SELECT * FROM table WHERE $LAST_UPDATED",
 			cacheUpdateRefreshRate: 1,
 			cacheUpdateTimeout:     0,
 			wantErrorCount:         1,
@@ -368,7 +164,7 @@ func TestDatabaseConfigValidation(t *testing.T) {
 		{
 			description:            "Valid cache update query with non-zero timeout and zero refresh rate",
 			connectionStr:          "some-connection-string",
-			cacheUpdateQuery:       "SELECT * FROM table WHERE $1",
+			cacheUpdateQuery:       "SELECT * FROM table WHERE $LAST_UPDATED",
 			cacheUpdateRefreshRate: 0,
 			cacheUpdateTimeout:     1,
 			wantErrorCount:         1,
@@ -385,7 +181,7 @@ func TestDatabaseConfigValidation(t *testing.T) {
 			description:      "Multiple errors: valid queries missing timeouts and refresh rates plus existing error",
 			connectionStr:    "some-connection-string",
 			cacheInitQuery:   "SELECT * FROM table;",
-			cacheUpdateQuery: "SELECT * FROM table WHERE $1",
+			cacheUpdateQuery: "SELECT * FROM table WHERE $LAST_UPDATED",
 			existingErrors:   []error{errors.New("existing error before calling validate")},
 			wantErrorCount:   4,
 		},
@@ -424,37 +220,6 @@ func assertNoErrs(t *testing.T, err []error) {
 	if len(err) > 0 {
 		t.Errorf("Got unexpected error(s): %v", err)
 	}
-}
-
-func assertHasValue(t *testing.T, m map[string]string, key string, val string) {
-	t.Helper()
-	realVal, ok := m[key]
-	if !ok {
-		t.Errorf("Map missing required key: %s", key)
-	}
-	if val != realVal {
-		t.Errorf("Unexpected value at key %s. Expected %s, Got %s", key, val, realVal)
-	}
-}
-
-func buildQueryMySql(template string, numReqs int, numImps int) string {
-	conn := DatabaseConnection{
-		Driver: "mysql",
-	}
-	cfg := DatabaseFetcherQueries{}
-	cfg.QueryTemplate = template
-
-	return cfg.MakeQuery(numReqs, numImps, conn.IdListMaker())
-}
-
-func buildQueryPostgres(template string, numReqs int, numImps int) string {
-	conn := DatabaseConnection{
-		Driver: "postgres",
-	}
-	cfg := DatabaseFetcherQueries{}
-	cfg.QueryTemplate = template
-
-	return cfg.MakeQuery(numReqs, numImps, conn.IdListMaker())
 }
 
 func assertStringsEqual(t *testing.T, actual string, expected string) {

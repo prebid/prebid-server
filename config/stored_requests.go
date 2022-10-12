@@ -184,15 +184,8 @@ func (cfg *DatabaseConfig) validate(dataType DataType, errs []error) []error {
 		return errs
 	}
 
-	var wildcard string
-	if cfg.ConnectionInfo.Driver == "mysql" {
-		wildcard = "?"
-	} else {
-		wildcard = "$"
-	}
-
-	errs = cfg.CacheInitialization.validate(dataType, wildcard, errs)
-	errs = cfg.PollUpdates.validate(dataType, wildcard, errs)
+	errs = cfg.CacheInitialization.validate(dataType, errs)
+	errs = cfg.PollUpdates.validate(dataType, errs)
 	return errs
 }
 
@@ -205,18 +198,6 @@ type DatabaseConnection struct {
 	Port     int    `mapstructure:"port"`
 	Username string `mapstructure:"user"`
 	Password string `mapstructure:"password"`
-}
-
-func (cfg *DatabaseConnection) ConnString() string {
-	if cfg.Driver == "mysql" {
-		return cfg.connStringMySql()
-	}
-
-	if cfg.Driver == "postgres" {
-		return cfg.connStringPostgres()
-	}
-
-	return ""
 }
 
 func (cfg *DatabaseConnection) connStringMySql() string {
@@ -288,68 +269,6 @@ func (cfg *DatabaseConnection) connStringPostgres() string {
 	return buffer.String()
 }
 
-func (cfg *DatabaseConnection) IdListMaker() func(numSoFar int, numArgs int) string {
-	if cfg.Driver == "mysql" {
-		return idListMakerMySql
-	}
-
-	if cfg.Driver == "postgres" {
-		return idListMakerPostgres
-	}
-
-	return nil
-}
-
-func idListMakerMySql(numSoFar int, numArgs int) string {
-	// Any empty list like "()" is illegal in MySql. A (NULL) is the next best thing,
-	// though, since `id IN (NULL)` is valid for all "id" column types, and evaluates to an empty set.
-	if numArgs == 0 {
-		return "(NULL)"
-	}
-
-	final := bytes.NewBuffer(make([]byte, 0, 2+4*numArgs))
-	final.WriteString("(")
-	for i := numSoFar + 1; i < numSoFar+numArgs; i++ {
-		final.WriteString("?")
-		final.WriteString(", ")
-	}
-	final.WriteString("?")
-	final.WriteString(")")
-
-	return final.String()
-}
-
-func idListMakerPostgres(numSoFar int, numArgs int) string {
-	// Any empty list like "()" is illegal in Postgres. A (NULL) is the next best thing,
-	// though, since `id IN (NULL)` is valid for all "id" column types, and evaluates to an empty set.
-	//
-	// The query plan also suggests that it's basically free:
-	//
-	// explain SELECT id, requestData FROM stored_requests WHERE id in %ID_LIST%;
-	//
-	// QUERY PLAN
-	// -------------------------------------------
-	// Result  (cost=0.00..0.00 rows=0 width=16)
-	//	 One-Time Filter: false
-	// (2 rows)
-	if numArgs == 0 {
-		return "(NULL)"
-	}
-
-	final := bytes.NewBuffer(make([]byte, 0, 2+4*numArgs))
-	final.WriteString("(")
-	for i := numSoFar + 1; i < numSoFar+numArgs; i++ {
-		final.WriteString("$")
-		final.WriteString(strconv.Itoa(i))
-		final.WriteString(", ")
-	}
-	final.WriteString("$")
-	final.WriteString(strconv.Itoa(numSoFar + numArgs))
-	final.WriteString(")")
-
-	return final.String()
-}
-
 type DatabaseFetcherQueries struct {
 	// QueryTemplate is the Database Query which can be used to fetch configs from the database.
 	// It is a Template, rather than a full Query, because a single HTTP request may reference multiple Stored Requests.
@@ -395,7 +314,7 @@ type DatabaseCacheInitializer struct {
 	AmpQuery string `mapstructure:"amp_query"`
 }
 
-func (cfg *DatabaseCacheInitializer) validate(dataType DataType, wildcard string, errs []error) []error {
+func (cfg *DatabaseCacheInitializer) validate(dataType DataType, errs []error) []error {
 	section := dataType.Section()
 	if cfg.Query == "" {
 		return errs
@@ -403,8 +322,8 @@ func (cfg *DatabaseCacheInitializer) validate(dataType DataType, wildcard string
 	if cfg.Timeout <= 0 {
 		errs = append(errs, fmt.Errorf("%s: database.initialize_caches.timeout_ms must be positive", section))
 	}
-	if strings.Contains(cfg.Query, wildcard) {
-		errs = append(errs, fmt.Errorf("%s: database.initialize_caches.query should not contain any wildcards (e.g. %s)", section, wildcard))
+	if strings.Contains(cfg.Query, "$") {
+		errs = append(errs, fmt.Errorf("%s: database.initialize_caches.query should not contain any wildcards (e.g. $1)", section))
 	}
 	return errs
 }
@@ -432,7 +351,7 @@ type DatabaseUpdatePolling struct {
 	AmpQuery string `mapstructure:"amp_query"`
 }
 
-func (cfg *DatabaseUpdatePolling) validate(dataType DataType, wildcard string, errs []error) []error {
+func (cfg *DatabaseUpdatePolling) validate(dataType DataType, errs []error) []error {
 	section := dataType.Section()
 	if cfg.Query == "" {
 		return errs
@@ -445,51 +364,11 @@ func (cfg *DatabaseUpdatePolling) validate(dataType DataType, wildcard string, e
 	if cfg.Timeout <= 0 {
 		errs = append(errs, fmt.Errorf("%s: database.poll_for_updates.timeout_ms must be > 0", section))
 	}
-	if wildcard == "?" {
-		if strings.Count(cfg.Query, "?") != 2 {
-			errs = append(errs, fmt.Errorf("%s: database.poll_for_updates.query must contain exactly two wildcards", section))
-		}
+	if !strings.Contains(cfg.Query, "$LAST_UPDATED") {
+		errs = append(errs, fmt.Errorf("%s: database.poll_for_updates.query must contain $LAST_UPDATED parameter", section))
 	}
-	if wildcard == "$" {
-		if !strings.Contains(cfg.Query, "$1") || strings.Contains(cfg.Query, "$2") {
-			errs = append(errs, fmt.Errorf("%s: database.poll_for_updates.query must contain exactly one wildcard", section))
-		}
-	}
+
 	return errs
-}
-
-// MakeQuery builds a query which can fetch numReqs Stored Requests and numImps Stored Imps.
-// See the docs on DatabaseConfig.QueryTemplate for a description of how it works.
-func (cfg *DatabaseFetcherQueries) MakeQuery(numReqs int, numImps int, idListCreator func(numSoFar int, numArgs int) string) (query string) {
-	return resolve(cfg.QueryTemplate, numReqs, numImps, idListCreator)
-}
-
-func (cfg *DatabaseFetcherQueries) MakeQueryResponses(numIds int, idListCreator func(numSoFar int, numArgs int) string) (query string) {
-	return resolveQueryResponses(cfg.QueryTemplate, numIds, idListCreator)
-}
-
-func resolve(template string, numReqs int, numImps int, makeIdList func(numSoFar int, numArgs int) string) (query string) {
-	numReqs = ensureNonNegative("Request", numReqs)
-	numImps = ensureNonNegative("Imp", numImps)
-
-	query = strings.Replace(template, "%REQUEST_ID_LIST%", makeIdList(0, numReqs), -1)
-	query = strings.Replace(query, "%IMP_ID_LIST%", makeIdList(numReqs, numImps), -1)
-	return
-}
-
-func resolveQueryResponses(template string, numIds int, makeIdList func(numSoFar int, numArgs int) string) (query string) {
-	numIds = ensureNonNegative("Response", numIds)
-
-	query = strings.Replace(template, "%ID_LIST%", makeIdList(0, numIds), -1)
-	return
-}
-
-func ensureNonNegative(storedThing string, num int) int {
-	if num < 0 {
-		glog.Errorf("Can't build a SQL query for %d Stored %ss.", num, storedThing)
-		return 0
-	}
-	return num
 }
 
 type InMemoryCache struct {

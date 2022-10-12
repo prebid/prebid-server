@@ -2,7 +2,6 @@ package config
 
 import (
 	"context"
-	"database/sql"
 	"net/http"
 	"time"
 
@@ -13,6 +12,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/db_fetcher"
+	"github.com/prebid/prebid-server/stored_requests/backends/db_provider"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/backends/http_fetcher"
@@ -25,14 +25,6 @@ import (
 	"github.com/prebid/prebid-server/util/task"
 )
 
-// This gets set to the connection string used when a database connection is made. We only support a single
-// database currently, so all fetchers need to share the same db connection for now.
-type dbConnection struct {
-	conn     string
-	db       *sql.DB
-	dbDriver string
-}
-
 // CreateStoredRequests returns three things:
 //
 // 1. A Fetcher which can be used to get Stored Requests
@@ -43,12 +35,10 @@ type dbConnection struct {
 //
 // As a side-effect, it will add some endpoints to the router if the config calls for it.
 // In the future we should look for ways to simplify this so that it's not doing two things.
-func CreateStoredRequests(cfg *config.StoredRequests, metricsEngine metrics.MetricsEngine, client *http.Client, router *httprouter.Router, dbc *dbConnection) (fetcher stored_requests.AllFetcher, shutdown func()) {
+func CreateStoredRequests(cfg *config.StoredRequests, metricsEngine metrics.MetricsEngine, client *http.Client, router *httprouter.Router, provider db_provider.DbProvider) (fetcher stored_requests.AllFetcher, shutdown func()) {
 	// Create database connection if given options for one
 	if cfg.Database.ConnectionInfo.Database != "" {
-		conn := cfg.Database.ConnectionInfo.ConnString()
-
-		if dbc.conn == "" {
+		if provider == nil {
 			glog.Infof("Connecting to Database for Stored %s. Driver=%s, DB=%s, host=%s, port=%d, user=%s",
 				cfg.DataType(),
 				cfg.Database.ConnectionInfo.Driver,
@@ -56,20 +46,17 @@ func CreateStoredRequests(cfg *config.StoredRequests, metricsEngine metrics.Metr
 				cfg.Database.ConnectionInfo.Host,
 				cfg.Database.ConnectionInfo.Port,
 				cfg.Database.ConnectionInfo.Username)
-			db := newDatabase(cfg.DataType(), cfg.Database.ConnectionInfo)
-			dbc.conn = conn
-			dbc.db = db
-			dbc.dbDriver = cfg.Database.ConnectionInfo.Driver
+			provider = db_provider.NewDbProvider(cfg.DataType(), cfg.Database.ConnectionInfo)
 		}
 
 		// Error out if config is trying to use multiple database connections for different stored requests (not supported yet)
-		if conn != dbc.conn {
+		if provider.Config() != cfg.Database.ConnectionInfo {
 			glog.Fatal("Multiple database connection settings found in config, only a single database connection is currently supported.")
 		}
 	}
 
-	eventProducers := newEventProducers(cfg, client, dbc.db, dbc.dbDriver, metricsEngine, router)
-	fetcher = newFetcher(cfg, client, dbc.db)
+	eventProducers := newEventProducers(cfg, client, provider, metricsEngine, router)
+	fetcher = newFetcher(cfg, client, provider)
 
 	var shutdown1 func()
 
@@ -83,13 +70,9 @@ func CreateStoredRequests(cfg *config.StoredRequests, metricsEngine metrics.Metr
 		if shutdown1 != nil {
 			shutdown1()
 		}
-		if dbc.db != nil {
-			db := dbc.db
-			dbc.db = nil
-			dbc.conn = ""
-			if err := db.Close(); err != nil {
-				glog.Errorf("Error closing DB connection: %v", err)
-			}
+
+		if err := provider.Close(); err != nil {
+			glog.Errorf("Error closing DB connection: %v", err)
 		}
 	}
 
@@ -118,14 +101,14 @@ func NewStoredRequests(cfg *config.Configuration, metricsEngine metrics.MetricsE
 	videoFetcher stored_requests.Fetcher,
 	storedRespFetcher stored_requests.Fetcher) {
 
-	var dbc dbConnection
+	var provider db_provider.DbProvider
 
-	fetcher1, shutdown1 := CreateStoredRequests(&cfg.StoredRequests, metricsEngine, client, router, &dbc)
-	fetcher2, shutdown2 := CreateStoredRequests(&cfg.StoredRequestsAMP, metricsEngine, client, router, &dbc)
-	fetcher3, shutdown3 := CreateStoredRequests(&cfg.CategoryMapping, metricsEngine, client, router, &dbc)
-	fetcher4, shutdown4 := CreateStoredRequests(&cfg.StoredVideo, metricsEngine, client, router, &dbc)
-	fetcher5, shutdown5 := CreateStoredRequests(&cfg.Accounts, metricsEngine, client, router, &dbc)
-	fetcher6, shutdown6 := CreateStoredRequests(&cfg.StoredResponses, metricsEngine, client, router, &dbc)
+	fetcher1, shutdown1 := CreateStoredRequests(&cfg.StoredRequests, metricsEngine, client, router, provider)
+	fetcher2, shutdown2 := CreateStoredRequests(&cfg.StoredRequestsAMP, metricsEngine, client, router, provider)
+	fetcher3, shutdown3 := CreateStoredRequests(&cfg.CategoryMapping, metricsEngine, client, router, provider)
+	fetcher4, shutdown4 := CreateStoredRequests(&cfg.StoredVideo, metricsEngine, client, router, provider)
+	fetcher5, shutdown5 := CreateStoredRequests(&cfg.Accounts, metricsEngine, client, router, provider)
+	fetcher6, shutdown6 := CreateStoredRequests(&cfg.StoredResponses, metricsEngine, client, router, provider)
 
 	fetcher = fetcher1.(stored_requests.Fetcher)
 	ampFetcher = fetcher2.(stored_requests.Fetcher)
@@ -162,7 +145,7 @@ func addListeners(cache stored_requests.Cache, eventProducers []events.EventProd
 	}
 }
 
-func newFetcher(cfg *config.StoredRequests, client *http.Client, db *sql.DB) (fetcher stored_requests.AllFetcher) {
+func newFetcher(cfg *config.StoredRequests, client *http.Client, provider db_provider.DbProvider) (fetcher stored_requests.AllFetcher) {
 	idList := make(stored_requests.MultiFetcher, 0, 3)
 
 	if cfg.Files.Enabled {
@@ -171,8 +154,8 @@ func newFetcher(cfg *config.StoredRequests, client *http.Client, db *sql.DB) (fe
 	}
 	if cfg.Database.FetcherQueries.QueryTemplate != "" {
 		glog.Infof("Loading Stored %s data via Database.\nQuery: %s", cfg.DataType(), cfg.Database.FetcherQueries.QueryTemplate)
-		idList = append(idList, db_fetcher.NewFetcher(db,
-			cfg.Database.FetcherQueries.MakeQuery, cfg.Database.FetcherQueries.MakeQueryResponses, cfg.Database.ConnectionInfo.IdListMaker()))
+		idList = append(idList, db_fetcher.NewFetcher(provider,
+			cfg.Database.FetcherQueries.QueryTemplate, cfg.Database.FetcherQueries.QueryTemplate))
 	} else if cfg.Database.CacheInitialization.Query != "" && cfg.Database.PollUpdates.Query != "" {
 		//in this case data will be loaded to cache via poll for updates event
 		idList = append(idList, empty_fetcher.EmptyFetcher{})
@@ -206,7 +189,7 @@ func newCache(cfg *config.StoredRequests) stored_requests.Cache {
 	return cache
 }
 
-func newEventProducers(cfg *config.StoredRequests, client *http.Client, db *sql.DB, dbDriver string, metricsEngine metrics.MetricsEngine, router *httprouter.Router) (eventProducers []events.EventProducer) {
+func newEventProducers(cfg *config.StoredRequests, client *http.Client, provider db_provider.DbProvider, metricsEngine metrics.MetricsEngine, router *httprouter.Router) (eventProducers []events.EventProducer) {
 	if cfg.CacheEvents.Enabled {
 		eventProducers = append(eventProducers, newEventsAPI(router, cfg.CacheEvents.Endpoint))
 	}
@@ -215,8 +198,7 @@ func newEventProducers(cfg *config.StoredRequests, client *http.Client, db *sql.
 	}
 	if cfg.Database.CacheInitialization.Query != "" {
 		dbEventCfg := databaseEvents.DatabaseEventProducerConfig{
-			DB:                 db,
-			DBDriver:           dbDriver,
+			Provider:           provider,
 			RequestType:        cfg.DataType(),
 			CacheInitQuery:     cfg.Database.CacheInitialization.Query,
 			CacheInitTimeout:   time.Duration(cfg.Database.CacheInitialization.Timeout) * time.Millisecond,
@@ -254,19 +236,6 @@ func newFilesystem(dataType config.DataType, configPath string) stored_requests.
 		glog.Fatalf("Failed to create a %s FileFetcher: %v", dataType, err)
 	}
 	return fetcher
-}
-
-func newDatabase(dataType config.DataType, cfg config.DatabaseConnection) *sql.DB {
-	db, err := sql.Open(cfg.Driver, cfg.ConnString())
-	if err != nil {
-		glog.Fatalf("Failed to open %s database connection: %v", dataType, err)
-	}
-
-	if err := db.Ping(); err != nil {
-		glog.Fatalf("Failed to ping %s database: %v", dataType, err)
-	}
-
-	return db
 }
 
 // consolidate returns a single Fetcher from an array of fetchers of any size.
