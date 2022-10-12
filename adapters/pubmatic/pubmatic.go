@@ -384,35 +384,11 @@ func getAlternateBidderCodesFromRequestExt(reqExt *openrtb_ext.ExtRequest) []str
 			if pmABC.AllowedBidderCodes == nil || (len(pmABC.AllowedBidderCodes) == 1 && pmABC.AllowedBidderCodes[0] == "*") {
 				return []string{"all"}
 			}
-			// keeping this off for now. Makes more sense to move this to PBS-Core
-			// return append(allowedBidders, assertBidderCodes(pmABC.AllowedBidderCodes)...)
 			return append(allowedBidders, pmABC.AllowedBidderCodes...)
 		}
 	}
 
 	return allowedBidders
-}
-
-// assertBidderCodes typical string assertions: remove duplicates, remove whitespaces, all lowercase case biddercode
-func assertBidderCodes(bidders []string) []string {
-	// nil not expected as it is a special case to allow all bidders
-	if bidders == nil {
-		return nil
-	}
-
-	checkedBidders := map[string]bool{"pubmatic": true}
-	newBiddersList := []string{}
-	for _, bidder := range bidders {
-		tmpBidder := strings.ToLower(bidder)
-		if _, ok := checkedBidders[tmpBidder]; !ok {
-			checkedBidders[tmpBidder] = true
-			tmpBidder = strings.TrimSpace(tmpBidder)
-			if len(tmpBidder) > 0 {
-				newBiddersList = append(newBiddersList, tmpBidder)
-			}
-		}
-	}
-	return newBiddersList
 }
 
 func addKeywordsToExt(keywords []*openrtb_ext.ExtImpPubmaticKeyVal, extMap map[string]interface{}) {

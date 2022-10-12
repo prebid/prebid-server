@@ -3,7 +3,6 @@ package pubmatic
 import (
 	"encoding/json"
 	"net/http"
-	"reflect"
 	"testing"
 
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
@@ -255,6 +254,25 @@ func TestExtractPubmaticExtFromRequest(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "Valid Pubmatic marketplace ext",
+			args: args{
+				request: &openrtb2.BidRequest{
+					Ext: json.RawMessage(`{"prebid":{"alternatebiddercodes":{"enabled":true,"bidders":{"pubmatic":{"enabled":true,"allowedbiddercodes":["groupm"]}}},"bidderparams":{"wrapper":{"profile":123,"version":456}}}}`),
+				},
+			},
+			expectedReqExt: extRequestAdServer{
+				Marketplace: &marketplaceReqExt{AllowedBidders: []string{"pubmatic", "groupm"}},
+				Wrapper:     &pubmaticWrapperExt{ProfileID: 123, VersionID: 456},
+				ExtRequest: openrtb_ext.ExtRequest{
+					Prebid: openrtb_ext.ExtRequestPrebid{
+						BidderParams:         json.RawMessage(`{"wrapper":{"profile":123,"version":456}}`),
+						AlternateBidderCodes: &openrtb_ext.ExtAlternateBidderCodes{Enabled: true, Bidders: map[string]openrtb_ext.ExtAdapterAlternateBidderCodes{"pubmatic": {Enabled: true, AllowedBidderCodes: []string{"groupm"}}}},
+					},
+				},
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -473,42 +491,7 @@ func Test_getAlternateBidderCodesFromRequest(t *testing.T) {
 			}
 
 			got := getAlternateBidderCodesFromRequestExt(reqExt)
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getAlternateBidderCodesFromRequest() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_assertBidderCodes(t *testing.T) {
-	type args struct {
-		bidders []string
-	}
-	tests := []struct {
-		name string
-		args args
-		want []string
-	}{
-		{
-			name: "nil input",
-			args: args{
-				bidders: nil,
-			},
-			want: nil,
-		},
-		{
-			name: "input with duplicate, uppercase and whitespace entries",
-			args: args{
-				bidders: []string{"Pubmatic", "Groupm", "groupm", " ", "", " appnexus "},
-			},
-			want: []string{"groupm", "appnexus"},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := assertBidderCodes(tt.args.bidders); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("assertBidderCodes() = %v, want %v", got, tt.want)
-			}
+			assert.ElementsMatch(t, got, tt.want, tt.name)
 		})
 	}
 }
