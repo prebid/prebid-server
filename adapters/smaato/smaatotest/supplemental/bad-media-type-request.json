@@ -7,7 +7,7 @@
     "imp": [
       {
         "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
-        "native": {
+        "unupported": {
         },
         "ext": {
           "bidder": {
@@ -20,7 +20,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "Invalid MediaType. Smaato only supports Banner and Video.",
+      "value": "Invalid MediaType. Smaato only supports Banner, Video and Native.",
       "comparison": "literal"
     }
   ]

@@ -4,30 +4,9 @@
         "imp": [
             {
                 "id": "postbid_iframe",
-                "video": {
-                    "mimes": [
-                        "video/mp4",
-                        "video/quicktime",
-                        "video/3gpp",
-                        "video/x-m4v"
-                    ],
-                    "minduration": 5,
-                    "maxduration": 30,
-                    "protocols": [
-                        7
-                    ],
-                    "w": 1024,
-                    "h": 768,
-                    "startdelay": 0,
-                    "linearity": 1,
-                    "skip": 1,
-                    "skipmin": 5,
-                    "api": [
-                        7
-                    ],
-                    "ext": {
-                        "rewarded": 0
-                    }
+                "native": {
+                    "ver": "1.2",
+                    "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":4,\"required\":1,\"img\":{\"type\":3,\"w\":150,\"h\":50}},{\"id\":2,\"required\":1,\"img\":{\"type\":2,\"w\":50,\"h\":50}},{\"id\":0,\"required\":1,\"title\":{\"len\":80}},{\"id\":1,\"required\":1,\"data\":{\"type\":1}},{\"id\":3,\"required\":1,\"data\":{\"type\":2}},{\"id\":5,\"required\":1,\"data\":{\"type\":3}},{\"id\":6,\"required\":1,\"data\":{\"type\":4}},{\"id\":7,\"required\":1,\"data\":{\"type\":5}},{\"id\":8,\"required\":1,\"data\":{\"type\":6}},{\"id\":9,\"required\":1,\"data\":{\"type\":7}},{\"id\":10,\"required\":0,\"data\":{\"type\":8}},{\"id\":11,\"required\":1,\"data\":{\"type\":9}},{\"id\":12,\"require\":0,\"data\":{\"type\":10}},{\"id\":13,\"required\":0,\"data\":{\"type\":11}},{\"id\":14,\"required\":1,\"data\":{\"type\":12}}]}"
                 },
                 "instl": 1,
                 "bidfloor": 0.00123,
@@ -86,30 +65,9 @@
                             "tagid": "130563103",
                             "bidfloor": 0.00123,
                             "instl": 1,
-                            "video": {
-                                "w": 1024,
-                                "h": 768,
-                                "ext": {
-                                    "rewarded": 0
-                                },
-                                "mimes": [
-                                    "video/mp4",
-                                    "video/quicktime",
-                                    "video/3gpp",
-                                    "video/x-m4v"
-                                ],
-                                "minduration": 5,
-                                "startdelay": 0,
-                                "linearity": 1,
-                                "maxduration": 30,
-                                "skip": 1,
-                                "protocols": [
-                                    7
-                                ],
-                                "skipmin": 5,
-                                "api": [
-                                    7
-                                ]
+                            "native": {
+                                "ver": "1.2",
+                                "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":4,\"required\":1,\"img\":{\"type\":3,\"w\":150,\"h\":50}},{\"id\":2,\"required\":1,\"img\":{\"type\":2,\"w\":50,\"h\":50}},{\"id\":0,\"required\":1,\"title\":{\"len\":80}},{\"id\":1,\"required\":1,\"data\":{\"type\":1}},{\"id\":3,\"required\":1,\"data\":{\"type\":2}},{\"id\":5,\"required\":1,\"data\":{\"type\":3}},{\"id\":6,\"required\":1,\"data\":{\"type\":4}},{\"id\":7,\"required\":1,\"data\":{\"type\":5}},{\"id\":8,\"required\":1,\"data\":{\"type\":6}},{\"id\":9,\"required\":1,\"data\":{\"type\":7}},{\"id\":10,\"required\":0,\"data\":{\"type\":8}},{\"id\":11,\"required\":1,\"data\":{\"type\":9}},{\"id\":12,\"require\":0,\"data\":{\"type\":10}},{\"id\":13,\"required\":0,\"data\":{\"type\":11}},{\"id\":14,\"required\":1,\"data\":{\"type\":12}}]}"
                             }
                         }
                     ],
@@ -139,7 +97,7 @@
                             "seat": "CM6523",
                             "bid": [
                                 {
-                                    "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?><VAST version=\"2.0\"></VAST>",
+                                    "adm": "{\"native\": {\"assets\":[{\"id\": 1, \"img\": {\"type\": 3, \"url\": \"https://smaato.com/image.png\", \"w\": 480, \"h\": 320}}], \"link\": {\"url\": \"https://www.smaato.com\"}}}",
                                     "adomain": [
                                         "smaato.com"
                                     ],
@@ -151,8 +109,8 @@
                                     "iurl": "https://iurl",
                                     "nurl": "https://nurl",
                                     "price": 0.01,
-                                    "w": 1024,
-                                    "h": 768
+                                    "w": 480,
+                                    "h": 320
                                 }
                             ]
                         }
@@ -169,7 +127,7 @@
             "bids": [
                 {
                     "bid": {
-                        "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?><VAST version=\"2.0\"></VAST>",
+                        "adm": "{\"assets\":[{\"id\":1,\"img\":{\"type\":3,\"url\":\"https://smaato.com/image.png\",\"w\":480,\"h\":320}}],\"link\":{\"url\":\"https://www.smaato.com\"}}",
                         "adomain": [
                             "smaato.com"
                         ],
@@ -180,11 +138,11 @@
                         "iurl": "https://iurl",
                         "nurl": "https://nurl",
                         "price": 0.01,
-                        "w": 1024,
-                        "h": 768,
+                        "w": 480,
+                        "h": 320,
                         "exp": 300
                     },
-                    "type": "video"
+                    "type": "native"
                 }
             ]
         }
