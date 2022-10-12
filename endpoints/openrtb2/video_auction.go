@@ -246,17 +246,20 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	bidReq.Imp = imps
 	bidReq.ID = "bid_id" //TODO: look at prebid.js
 
-	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
-	deps.setFieldsImplicitly(r, bidReq) // move after merge
+	// all code after this line should use the bidReqWrapper instead of bidReq directly
+	bidReqWrapper := &openrtb_ext.RequestWrapper{BidRequest: bidReq}
 
-	errL = deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: bidReq}, false, false, nil)
+	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
+	deps.setFieldsImplicitly(r, bidReqWrapper)
+
+	errL = deps.validateRequest(bidReqWrapper, false, false, nil)
 	if errortypes.ContainsFatalError(errL) {
 		handleError(&labels, w, errL, &vo, &debugLog)
 		return
 	}
 
 	ctx := context.Background()
-	timeout := deps.cfg.AuctionTimeouts.LimitAuctionTimeout(time.Duration(bidReq.TMax) * time.Millisecond)
+	timeout := deps.cfg.AuctionTimeouts.LimitAuctionTimeout(time.Duration(bidReqWrapper.TMax) * time.Millisecond)
 	if timeout > 0 {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithDeadline(ctx, start.Add(timeout))
@@ -264,17 +267,17 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	}
 
 	usersyncs := usersync.ParseCookieFromRequest(r, &(deps.cfg.HostCookie))
-	if bidReq.App != nil {
+	if bidReqWrapper.App != nil {
 		labels.Source = metrics.DemandApp
-		labels.PubID = getAccountID(bidReq.App.Publisher)
-	} else { // both bidReq.App == nil and bidReq.Site != nil are true
+		labels.PubID = getAccountID(bidReqWrapper.App.Publisher)
+	} else { // both bidReqWrapper.App == nil and bidReqWrapper.Site != nil are true
 		labels.Source = metrics.DemandWeb
 		if usersyncs.HasAnyLiveSyncs() {
 			labels.CookieFlag = metrics.CookieFlagYes
 		} else {
 			labels.CookieFlag = metrics.CookieFlagNo
 		}
-		labels.PubID = getAccountID(bidReq.Site.Publisher)
+		labels.PubID = getAccountID(bidReqWrapper.Site.Publisher)
 	}
 
 	// Look up account now that we have resolved the pubID value
@@ -287,7 +290,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	secGPC := r.Header.Get("Sec-GPC")
 
 	auctionRequest := exchange.AuctionRequest{
-		BidRequestWrapper:          &openrtb_ext.RequestWrapper{BidRequest: bidReq},
+		BidRequestWrapper:          bidReqWrapper,
 		Account:                    *account,
 		UserSyncs:                  usersyncs,
 		RequestType:                labels.RType,
@@ -298,7 +301,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, &debugLog)
-	vo.Request = bidReq
+	vo.Request = bidReqWrapper.BidRequest
 	vo.Response = response
 	if err != nil {
 		errL := []error{err}

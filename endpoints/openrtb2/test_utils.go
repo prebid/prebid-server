@@ -59,13 +59,13 @@ const (
 type testCase struct {
 	// Common
 	endpointType            int
-	Description             string               `json:"description"`
-	Config                  *testConfigValues    `json:"config"`
-	BidRequest              json.RawMessage      `json:"mockBidRequest"`
-	ExpectedValidatedBidReq *openrtb2.BidRequest `json:"expectedValidatedBidRequest"`
-	ExpectedReturnCode      int                  `json:"expectedReturnCode,omitempty"`
-	ExpectedErrorMessage    string               `json:"expectedErrorMessage"`
-	Query                   string               `json:"query"`
+	Description             string            `json:"description"`
+	Config                  *testConfigValues `json:"config"`
+	BidRequest              json.RawMessage   `json:"mockBidRequest"`
+	ExpectedValidatedBidReq json.RawMessage   `json:"expectedValidatedBidRequest"`
+	ExpectedReturnCode      int               `json:"expectedReturnCode,omitempty"`
+	ExpectedErrorMessage    string            `json:"expectedErrorMessage"`
+	Query                   string            `json:"query"`
 
 	// "/openrtb2/auction" endpoint JSON test info
 	ExpectedBidResponse json.RawMessage `json:"expectedBidResponse"`
@@ -1188,7 +1188,7 @@ func (te *exchangeTestWrapper) HoldAuction(ctx context.Context, r exchange.Aucti
 	return te.ex.HoldAuction(ctx, r, debugLog)
 }
 
-// buildTestExchange returns an exchange with mock bidder servers and mock currency convertion server
+// buildTestExchange returns an exchange with mock bidder servers and mock currency conversion server
 func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.BidderName]exchange.AdaptedBidder, mockBidServersArray []*httptest.Server, mockCurrencyRatesServer *httptest.Server, bidderInfos config.BidderInfos, cfg *config.Configuration, met metrics.MetricsEngine, mockFetcher stored_requests.CategoryFetcher) (exchange.Exchange, []*httptest.Server) {
 	if len(testCfg.MockBidders) == 0 {
 		testCfg.MockBidders = append(testCfg.MockBidders, mockBidderHandler{BidderName: "appnexus", Currency: "USD", Price: 0.00})

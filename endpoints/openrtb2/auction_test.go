@@ -546,7 +546,7 @@ func TestExchangeError(t *testing.T) {
 func TestUserAgentSetting(t *testing.T) {
 	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	httpReq.Header.Set("User-Agent", "foo")
-	bidReq := &openrtb2.BidRequest{}
+	bidReq := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}}
 
 	setUAImplicitly(httpReq, bidReq)
 
@@ -562,11 +562,11 @@ func TestUserAgentSetting(t *testing.T) {
 func TestUserAgentOverride(t *testing.T) {
 	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	httpReq.Header.Set("User-Agent", "foo")
-	bidReq := &openrtb2.BidRequest{
+	bidReq := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
 		Device: &openrtb2.Device{
 			UA: "bar",
 		},
-	}
+	}}
 
 	setUAImplicitly(httpReq, bidReq)
 
@@ -576,7 +576,7 @@ func TestUserAgentOverride(t *testing.T) {
 }
 
 func TestAuctionTypeDefault(t *testing.T) {
-	bidReq := &openrtb2.BidRequest{}
+	bidReq := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}}
 	setAuctionTypeImplicitly(bidReq)
 
 	if bidReq.AT != 1 {
@@ -789,8 +789,9 @@ func TestImplicitDNT(t *testing.T) {
 	for _, test := range testCases {
 		httpReq := httptest.NewRequest("POST", "/openrtb2/auction", nil)
 		httpReq.Header.Set("DNT", test.dntHeader)
-		setDoNotTrackImplicitly(httpReq, &test.request)
-		assert.Equal(t, test.expectedRequest, test.request)
+		reqWrapper := &openrtb_ext.RequestWrapper{BidRequest: &test.request}
+		setDoNotTrackImplicitly(httpReq, reqWrapper)
+		assert.Equal(t, test.expectedRequest, *reqWrapper.BidRequest, test.description)
 	}
 }
 
@@ -868,13 +869,15 @@ func TestImplicitDNTEndToEnd(t *testing.T) {
 
 func TestImplicitSecure(t *testing.T) {
 	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
-	httpReq.Header.Set(http.CanonicalHeaderKey("X-Forwarded-Proto"), "https")
+	httpReq.Header.Set("X-Forwarded-Proto", "https")
 
-	imps := []openrtb2.Imp{
-		{},
-		{},
+	imps := []*openrtb_ext.ImpWrapper{
+		{Imp: &openrtb2.Imp{}},
+		{Imp: &openrtb2.Imp{}},
 	}
+
 	setImpsImplicitly(httpReq, imps)
+
 	for _, imp := range imps {
 		if imp.Secure == nil || *imp.Secure != 1 {
 			t.Errorf("imp.Secure should be set to 1 if the request is https. Got %#v", imp.Secure)
@@ -929,12 +932,12 @@ func TestReferer(t *testing.T) {
 		httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 		httpReq.Header.Set("Referer", test.givenReferer)
 
-		bidReq := &openrtb2.BidRequest{
+		bidReq := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
 			Site: &openrtb2.Site{
 				Domain: test.givenSiteDomain,
 				Page:   test.givenSitePage,
 			},
-		}
+		}}
 
 		setSiteImplicitly(httpReq, bidReq)
 
@@ -1205,180 +1208,209 @@ func TestMergeBidderParams(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		actualErr := mergeBidderParams(&openrtb_ext.RequestWrapper{BidRequest: &test.givenRequest})
+		w := &openrtb_ext.RequestWrapper{BidRequest: &test.givenRequest}
+		actualErr := mergeBidderParams(w)
 
 		// errors are only possible from the marshal operation, which is not testable
 		assert.NoError(t, actualErr, test.description+":err")
+
+		// rebuild request before asserting value
+		assert.NoError(t, w.RebuildRequest(), test.description+":rebuild_request")
 
 		assert.Equal(t, test.givenRequest.Imp, test.expectedRequestImps, test.description+":imps")
 	}
 }
 
-func TestAddMissingReqExtParamsInImpExtPrebid(t *testing.T) {
+func TestMergeBidderParamsImpExt(t *testing.T) {
 	testCases := []struct {
-		description            string
-		givenImpExtByBidder    map[string]json.RawMessage
-		givenReqExtParams      map[string]map[string]json.RawMessage
-		expectedModified       bool
-		expectedImpExtByBidder map[string]json.RawMessage
+		description       string
+		givenImpExt       map[string]json.RawMessage
+		givenReqExtParams map[string]map[string]json.RawMessage
+		expectedModified  bool
+		expectedImpExt    map[string]json.RawMessage
 	}{
 		{
-			description:            "No Prebid Section",
-			givenImpExtByBidder:    map[string]json.RawMessage{},
-			givenReqExtParams:      map[string]map[string]json.RawMessage{"bidder1": {"b": json.RawMessage(`2`)}},
-			expectedModified:       false,
-			expectedImpExtByBidder: map[string]json.RawMessage{},
+			description:       "One Bidder - Modified (no collision)",
+			givenImpExt:       map[string]json.RawMessage{"bidder1": json.RawMessage(`{"a":1}`)},
+			givenReqExtParams: map[string]map[string]json.RawMessage{"bidder1": {"b": json.RawMessage(`2`)}},
+			expectedModified:  true,
+			expectedImpExt:    map[string]json.RawMessage{"bidder1": json.RawMessage(`{"a":1,"b":2}`)},
 		},
 		{
-			description:            "Malformed Prebid Section",
-			givenImpExtByBidder:    map[string]json.RawMessage{"prebid": json.RawMessage(`malformed`)},
-			givenReqExtParams:      map[string]map[string]json.RawMessage{"bidder1": {"b": json.RawMessage(`2`)}},
-			expectedModified:       false,
-			expectedImpExtByBidder: map[string]json.RawMessage{"prebid": json.RawMessage(`malformed`)},
+			description:       "One Bidder - Modified (imp.ext bidder empty)",
+			givenImpExt:       map[string]json.RawMessage{"bidder1": json.RawMessage(`{}`)},
+			givenReqExtParams: map[string]map[string]json.RawMessage{"bidder1": {"b": json.RawMessage(`2`)}},
+			expectedModified:  true,
+			expectedImpExt:    map[string]json.RawMessage{"bidder1": json.RawMessage(`{"b":2}`)},
 		},
 		{
-			description:            "No Prebid Bidder Section",
-			givenImpExtByBidder:    map[string]json.RawMessage{"prebid": json.RawMessage(`{}`)},
-			givenReqExtParams:      map[string]map[string]json.RawMessage{"bidder1": {"b": json.RawMessage(`2`)}},
-			expectedModified:       false,
-			expectedImpExtByBidder: map[string]json.RawMessage{"prebid": json.RawMessage(`{}`)},
+			description:       "One Bidder - Not Modified (imp.ext bidder not defined)",
+			givenImpExt:       map[string]json.RawMessage{"bidder1": json.RawMessage(`{"a":1,"b":2}`)},
+			givenReqExtParams: map[string]map[string]json.RawMessage{"bidder-not-defined": {"b": json.RawMessage(`4`)}},
+			expectedModified:  false,
+			expectedImpExt:    map[string]json.RawMessage{"bidder1": json.RawMessage(`{"a":1,"b":2}`)},
 		},
 		{
-			description:            "Malformed Prebid Bidder Section",
-			givenImpExtByBidder:    map[string]json.RawMessage{"prebid": json.RawMessage(`{"bidder": malformed}`)},
-			givenReqExtParams:      map[string]map[string]json.RawMessage{"bidder1": {"b": json.RawMessage(`2`)}},
-			expectedModified:       false,
-			expectedImpExtByBidder: map[string]json.RawMessage{"prebid": json.RawMessage(`{"bidder": malformed}`)},
+			description:       "One Bidder - Not Modified (imp.ext bidder nil)",
+			givenImpExt:       map[string]json.RawMessage{"bidder1": nil},
+			givenReqExtParams: map[string]map[string]json.RawMessage{"bidder1": {"b": json.RawMessage(`4`)}},
+			expectedModified:  false,
+			expectedImpExt:    map[string]json.RawMessage{"bidder1": nil},
 		},
 		{
-			description:            "One Bidder - Modified (no collision)",
-			givenImpExtByBidder:    map[string]json.RawMessage{"prebid": json.RawMessage(`{"bidder":{"bidder1":{"a":1}}}`)},
-			givenReqExtParams:      map[string]map[string]json.RawMessage{"bidder1": {"b": json.RawMessage(`2`)}},
-			expectedModified:       true,
-			expectedImpExtByBidder: map[string]json.RawMessage{"prebid": json.RawMessage(`{"bidder":{"bidder1":{"a":1,"b":2}}}`)},
+			description:       "One Bidder - Not Modified (imp.ext wins)",
+			givenImpExt:       map[string]json.RawMessage{"bidder1": json.RawMessage(`{"a":1,"b":2}`)},
+			givenReqExtParams: map[string]map[string]json.RawMessage{"bidder1": {"b": json.RawMessage(`4`)}},
+			expectedModified:  false,
+			expectedImpExt:    map[string]json.RawMessage{"bidder1": json.RawMessage(`{"a":1,"b":2}`)},
 		},
 		{
-			description:            "One Bidder - Not Modified (imp.ext wins)",
-			givenImpExtByBidder:    map[string]json.RawMessage{"prebid": json.RawMessage(`{"bidder":{"bidder1":{"a":1,"b":2}}}`)},
-			givenReqExtParams:      map[string]map[string]json.RawMessage{"bidder1": {"b": json.RawMessage(`4`)}},
-			expectedModified:       false,
-			expectedImpExtByBidder: map[string]json.RawMessage{"prebid": json.RawMessage(`{"bidder":{"bidder1":{"a":1,"b":2}}}`)},
+			description:       "One Bidder - Not Modified (reserved bidder ignored)",
+			givenImpExt:       map[string]json.RawMessage{"gpid": json.RawMessage(`{"a":1}`)},
+			givenReqExtParams: map[string]map[string]json.RawMessage{"gpid": {"b": json.RawMessage(`2`)}},
+			expectedModified:  false,
+			expectedImpExt:    map[string]json.RawMessage{"gpid": json.RawMessage(`{"a":1}`)},
 		},
 		{
-			description:            "One Bidder - Not Modified (reserved bidder ignored)",
-			givenImpExtByBidder:    map[string]json.RawMessage{"prebid": json.RawMessage(`{"bidder":{"gpid":{"a":1}}}`)},
-			givenReqExtParams:      map[string]map[string]json.RawMessage{"gpid": {"b": json.RawMessage(`2`)}},
-			expectedModified:       false,
-			expectedImpExtByBidder: map[string]json.RawMessage{"prebid": json.RawMessage(`{"bidder":{"gpid":{"a":1}}}`)},
+			description:       "One Bidder - Not Modified (reserved bidder ignored - not embedded object)",
+			givenImpExt:       map[string]json.RawMessage{"gpid": json.RawMessage(`1`)},
+			givenReqExtParams: map[string]map[string]json.RawMessage{"gpid": {"b": json.RawMessage(`2`)}},
+			expectedModified:  false,
+			expectedImpExt:    map[string]json.RawMessage{"gpid": json.RawMessage(`1`)},
 		},
 		{
-			description:            "One Bidder - Not Modified (reserved bidder ignored - not embedded object)",
-			givenImpExtByBidder:    map[string]json.RawMessage{"prebid": json.RawMessage(`{"bidder":{"gpid":1}}`)},
-			givenReqExtParams:      map[string]map[string]json.RawMessage{"gpid": {"b": json.RawMessage(`2`)}},
-			expectedModified:       false,
-			expectedImpExtByBidder: map[string]json.RawMessage{"prebid": json.RawMessage(`{"bidder":{"gpid":1}}`)},
+			description:       "One Bidder - Not Modified (malformed ignored)",
+			givenImpExt:       map[string]json.RawMessage{"bidder1": json.RawMessage(`malformed`)},
+			givenReqExtParams: map[string]map[string]json.RawMessage{"bidder1": {"b": json.RawMessage(`2`)}},
+			expectedModified:  false,
+			expectedImpExt:    map[string]json.RawMessage{"bidder1": json.RawMessage(`malformed`)},
 		},
 		{
-			description:            "One Bidder - Not Modified (malformed ignored)",
-			givenImpExtByBidder:    map[string]json.RawMessage{"prebid": json.RawMessage(`{"bidder":{"bidder1":malformed}}`)},
-			givenReqExtParams:      map[string]map[string]json.RawMessage{"bidder1": {"b": json.RawMessage(`2`)}},
-			expectedModified:       false,
-			expectedImpExtByBidder: map[string]json.RawMessage{"prebid": json.RawMessage(`{"bidder":{"bidder1":malformed}}`)},
+			description:       "Multiple Bidders - Mixed",
+			givenImpExt:       map[string]json.RawMessage{"bidder1": json.RawMessage(`{"a":1}`), "bidder2": json.RawMessage(`{"a":"one","b":"two"}`)},
+			givenReqExtParams: map[string]map[string]json.RawMessage{"bidder1": {"b": json.RawMessage(`2`)}, "bidder2": {"b": json.RawMessage(`"three"`)}},
+			expectedModified:  true,
+			expectedImpExt:    map[string]json.RawMessage{"bidder1": json.RawMessage(`{"a":1,"b":2}`), "bidder2": json.RawMessage(`{"a":"one","b":"two"}`)},
 		},
 		{
-			description:            "Multiple Bidders - Mixed",
-			givenImpExtByBidder:    map[string]json.RawMessage{"prebid": json.RawMessage(`{"bidder":{"bidder1":{"a":1},"bidder2":{"a":"one","b":"two"}}}`)},
-			givenReqExtParams:      map[string]map[string]json.RawMessage{"bidder1": {"b": json.RawMessage(`2`)}, "bidder2": {"b": json.RawMessage(`"three"`)}},
-			expectedModified:       true,
-			expectedImpExtByBidder: map[string]json.RawMessage{"prebid": json.RawMessage(`{"bidder":{"bidder1":{"a":1,"b":2},"bidder2":{"a":"one","b":"two"}}}`)},
-		},
-		{
-			description:            "Multiple Bidders - None Modified",
-			givenImpExtByBidder:    map[string]json.RawMessage{"prebid": json.RawMessage(`{"bidder":{"bidder1":{"a":1},"bidder2":{"a":"one","b":"two"}}}`)},
-			givenReqExtParams:      map[string]map[string]json.RawMessage{},
-			expectedModified:       false,
-			expectedImpExtByBidder: map[string]json.RawMessage{"prebid": json.RawMessage(`{"bidder":{"bidder1":{"a":1},"bidder2":{"a":"one","b":"two"}}}`)},
+			description:       "Multiple Bidders - None Modified",
+			givenImpExt:       map[string]json.RawMessage{"bidder1": json.RawMessage(`{"a":1}`), "bidder2": json.RawMessage(`{"a":"one","b":"two"}`)},
+			givenReqExtParams: map[string]map[string]json.RawMessage{},
+			expectedModified:  false,
+			expectedImpExt:    map[string]json.RawMessage{"bidder1": json.RawMessage(`{"a":1}`), "bidder2": json.RawMessage(`{"a":"one","b":"two"}`)},
 		},
 	}
 
 	for _, test := range testCases {
-		actualModified, actualErr := addMissingReqExtParamsInImpExtPrebid(test.givenImpExtByBidder, test.givenReqExtParams)
+		impExt := openrtb_ext.CreateImpExtForTesting(test.givenImpExt, nil)
+
+		err := mergeBidderParamsImpExt(&impExt, test.givenReqExtParams)
 
 		// errors are only possible from the marshal operation, which is not testable
-		assert.NoError(t, actualErr, test.description+":err")
+		assert.NoError(t, err, test.description+":err")
 
-		assert.Equal(t, test.expectedModified, actualModified, test.description+":modified")
-		assert.Equal(t, test.expectedImpExtByBidder, test.givenImpExtByBidder, test.description+":imp.ext")
+		assert.Equal(t, test.expectedModified, impExt.Dirty(), test.description+":modified")
+		assert.Equal(t, test.expectedImpExt, impExt.GetExt(), test.description+":imp.ext")
 	}
 }
 
-func TestAddMissingReqExtParamsInImpExt(t *testing.T) {
+func TestMergeBidderParamsImpExtPrebid(t *testing.T) {
 	testCases := []struct {
-		description            string
-		givenImpExtByBidder    map[string]json.RawMessage
-		givenReqExtParams      map[string]map[string]json.RawMessage
-		expectedModified       bool
-		expectedImpExtByBidder map[string]json.RawMessage
+		description          string
+		givenImpExtPrebid    *openrtb_ext.ExtImpPrebid
+		givenReqExtParams    map[string]map[string]json.RawMessage
+		expectedModified     bool
+		expectedImpExtPrebid *openrtb_ext.ExtImpPrebid
 	}{
 		{
-			description:            "One Bidder - Modified (no collision)",
-			givenImpExtByBidder:    map[string]json.RawMessage{"bidder1": json.RawMessage(`{"a":1}`)},
-			givenReqExtParams:      map[string]map[string]json.RawMessage{"bidder1": {"b": json.RawMessage(`2`)}},
-			expectedModified:       true,
-			expectedImpExtByBidder: map[string]json.RawMessage{"bidder1": json.RawMessage(`{"a":1,"b":2}`)},
+			description:          "No Prebid Section",
+			givenImpExtPrebid:    nil,
+			givenReqExtParams:    map[string]map[string]json.RawMessage{"bidder1": {"b": json.RawMessage(`2`)}},
+			expectedModified:     false,
+			expectedImpExtPrebid: nil,
 		},
 		{
-			description:            "One Bidder - Not Modified (imp.ext wins)",
-			givenImpExtByBidder:    map[string]json.RawMessage{"bidder1": json.RawMessage(`{"a":1,"b":2}`)},
-			givenReqExtParams:      map[string]map[string]json.RawMessage{"bidder1": {"b": json.RawMessage(`4`)}},
-			expectedModified:       false,
-			expectedImpExtByBidder: map[string]json.RawMessage{"bidder1": json.RawMessage(`{"a":1,"b":2}`)},
+			description:          "No Prebid Bidder Section",
+			givenImpExtPrebid:    &openrtb_ext.ExtImpPrebid{Bidder: nil},
+			givenReqExtParams:    map[string]map[string]json.RawMessage{"bidder1": {"b": json.RawMessage(`2`)}},
+			expectedModified:     false,
+			expectedImpExtPrebid: &openrtb_ext.ExtImpPrebid{Bidder: nil},
 		},
 		{
-			description:            "One Bidder - Not Modified (reserved bidder ignored)",
-			givenImpExtByBidder:    map[string]json.RawMessage{"gpid": json.RawMessage(`{"a":1}`)},
-			givenReqExtParams:      map[string]map[string]json.RawMessage{"gpid": {"b": json.RawMessage(`2`)}},
-			expectedModified:       false,
-			expectedImpExtByBidder: map[string]json.RawMessage{"gpid": json.RawMessage(`{"a":1}`)},
+			description:          "Empty Prebid Bidder Section",
+			givenImpExtPrebid:    &openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{}},
+			givenReqExtParams:    map[string]map[string]json.RawMessage{"bidder1": {"b": json.RawMessage(`2`)}},
+			expectedModified:     false,
+			expectedImpExtPrebid: &openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{}},
 		},
 		{
-			description:            "One Bidder - Not Modified (reserved bidder ignored - not embedded object)",
-			givenImpExtByBidder:    map[string]json.RawMessage{"gpid": json.RawMessage(`1`)},
-			givenReqExtParams:      map[string]map[string]json.RawMessage{"gpid": {"b": json.RawMessage(`2`)}},
-			expectedModified:       false,
-			expectedImpExtByBidder: map[string]json.RawMessage{"gpid": json.RawMessage(`1`)},
+			description:          "One Bidder - Modified (no collision)",
+			givenImpExtPrebid:    &openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{"bidder1": json.RawMessage(`{"a":1}`)}},
+			givenReqExtParams:    map[string]map[string]json.RawMessage{"bidder1": {"b": json.RawMessage(`2`)}},
+			expectedModified:     true,
+			expectedImpExtPrebid: &openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{"bidder1": json.RawMessage(`{"a":1,"b":2}`)}},
 		},
 		{
-			description:            "One Bidder - Not Modified (malformed ignored)",
-			givenImpExtByBidder:    map[string]json.RawMessage{"bidder1": json.RawMessage(`malformed`)},
-			givenReqExtParams:      map[string]map[string]json.RawMessage{"bidder1": {"b": json.RawMessage(`2`)}},
-			expectedModified:       false,
-			expectedImpExtByBidder: map[string]json.RawMessage{"bidder1": json.RawMessage(`malformed`)},
+			description:          "One Bidder - Modified (imp.ext bidder empty)",
+			givenImpExtPrebid:    &openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{"bidder1": json.RawMessage(`{}`)}},
+			givenReqExtParams:    map[string]map[string]json.RawMessage{"bidder1": {"b": json.RawMessage(`2`)}},
+			expectedModified:     true,
+			expectedImpExtPrebid: &openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{"bidder1": json.RawMessage(`{"b":2}`)}},
 		},
 		{
-			description:            "Multiple Bidders - Mixed",
-			givenImpExtByBidder:    map[string]json.RawMessage{"bidder1": json.RawMessage(`{"a":1}`), "bidder2": json.RawMessage(`{"a":"one","b":"two"}`)},
-			givenReqExtParams:      map[string]map[string]json.RawMessage{"bidder1": {"b": json.RawMessage(`2`)}, "bidder2": {"b": json.RawMessage(`"three"`)}},
-			expectedModified:       true,
-			expectedImpExtByBidder: map[string]json.RawMessage{"bidder1": json.RawMessage(`{"a":1,"b":2}`), "bidder2": json.RawMessage(`{"a":"one","b":"two"}`)},
+			description:          "One Bidder - Not Modified (imp.ext wins)",
+			givenImpExtPrebid:    &openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{"bidder1": json.RawMessage(`{"a":1,"b":2}`)}},
+			givenReqExtParams:    map[string]map[string]json.RawMessage{"bidder1": {"b": json.RawMessage(`4`)}},
+			expectedModified:     false,
+			expectedImpExtPrebid: &openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{"bidder1": json.RawMessage(`{"a":1,"b":2}`)}},
 		},
 		{
-			description:            "Multiple Bidders - None Modified",
-			givenImpExtByBidder:    map[string]json.RawMessage{"bidder1": json.RawMessage(`{"a":1}`), "bidder2": json.RawMessage(`{"a":"one","b":"two"}`)},
-			givenReqExtParams:      map[string]map[string]json.RawMessage{},
-			expectedModified:       false,
-			expectedImpExtByBidder: map[string]json.RawMessage{"bidder1": json.RawMessage(`{"a":1}`), "bidder2": json.RawMessage(`{"a":"one","b":"two"}`)},
+			description:          "One Bidder - Not Modified (imp.ext bidder not defined)",
+			givenImpExtPrebid:    &openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{"bidder1": json.RawMessage(`{"a":1,"b":2}`)}},
+			givenReqExtParams:    map[string]map[string]json.RawMessage{"bidder-not-defined": {"b": json.RawMessage(`4`)}},
+			expectedModified:     false,
+			expectedImpExtPrebid: &openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{"bidder1": json.RawMessage(`{"a":1,"b":2}`)}},
+		},
+		{
+			description:          "One Bidder - Not Modified (imp.ext bidder nil)",
+			givenImpExtPrebid:    &openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{"bidder1": nil}},
+			givenReqExtParams:    map[string]map[string]json.RawMessage{"bidder1": {"b": json.RawMessage(`4`)}},
+			expectedModified:     false,
+			expectedImpExtPrebid: &openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{"bidder1": nil}},
+		},
+		{
+			description:          "One Bidder - Not Modified (malformed ignored)",
+			givenImpExtPrebid:    &openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{"bidder1": json.RawMessage(`malformed`)}},
+			givenReqExtParams:    map[string]map[string]json.RawMessage{"bidder1": {"b": json.RawMessage(`2`)}},
+			expectedModified:     false,
+			expectedImpExtPrebid: &openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{"bidder1": json.RawMessage(`malformed`)}},
+		},
+		{
+			description:          "Multiple Bidders - Mixed",
+			givenImpExtPrebid:    &openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{"bidder1": json.RawMessage(`{"a":1}`), "bidder2": json.RawMessage(`{"a":"one","b":"two"}`)}},
+			givenReqExtParams:    map[string]map[string]json.RawMessage{"bidder1": {"b": json.RawMessage(`2`)}, "bidder2": {"b": json.RawMessage(`"three"`)}},
+			expectedModified:     true,
+			expectedImpExtPrebid: &openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{"bidder1": json.RawMessage(`{"a":1,"b":2}`), "bidder2": json.RawMessage(`{"a":"one","b":"two"}`)}},
+		},
+		{
+			description:          "Multiple Bidders - None Modified",
+			givenImpExtPrebid:    &openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{"bidder1": json.RawMessage(`{"a":1}`), "bidder2": json.RawMessage(`{"a":"one","b":"two"}`)}},
+			givenReqExtParams:    map[string]map[string]json.RawMessage{},
+			expectedModified:     false,
+			expectedImpExtPrebid: &openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{"bidder1": json.RawMessage(`{"a":1}`), "bidder2": json.RawMessage(`{"a":"one","b":"two"}`)}},
 		},
 	}
 
 	for _, test := range testCases {
-		actualModified, actualErr := addMissingReqExtParamsInImpExt(test.givenImpExtByBidder, test.givenReqExtParams)
+		impExt := openrtb_ext.CreateImpExtForTesting(map[string]json.RawMessage{}, test.givenImpExtPrebid)
+
+		err := mergeBidderParamsImpExtPrebid(&impExt, test.givenReqExtParams)
 
 		// errors are only possible from the marshal operation, which is not testable
-		assert.NoError(t, actualErr, test.description+":err")
+		assert.NoError(t, err, test.description+":err")
 
-		assert.Equal(t, test.expectedModified, actualModified, test.description+":modified")
-		assert.Equal(t, test.expectedImpExtByBidder, test.givenImpExtByBidder, test.description+":imp.ext")
+		assert.Equal(t, test.expectedModified, impExt.Dirty(), test.description+":modified")
+		assert.Equal(t, test.expectedImpExtPrebid, impExt.GetPrebid(), test.description+":imp.ext.prebid")
 	}
 }
 
@@ -1580,6 +1612,75 @@ func TestValidateRequest(t *testing.T) {
 	}
 }
 
+func TestValidateRequestExt(t *testing.T) {
+	testCases := []struct {
+		description     string
+		givenRequestExt json.RawMessage
+		expectedError   string
+	}{
+		{
+			description:     "nil",
+			givenRequestExt: nil,
+		},
+		{
+			description:     "empty",
+			givenRequestExt: json.RawMessage(`{}`),
+		},
+		{
+			description:     "prebid - empty",
+			givenRequestExt: json.RawMessage(`{"prebid": {}}`),
+		},
+		{
+			description:     "prebid cache - empty",
+			givenRequestExt: json.RawMessage(`{"prebid": {"cache": {}}}`),
+			expectedError:   `request.ext is invalid: request.ext.prebid.cache requires one of the "bids" or "vastxml" properties`,
+		},
+		{
+			description:     "prebid cache - bids - null",
+			givenRequestExt: json.RawMessage(`{"prebid": {"cache": {"bids": null}}}`),
+			expectedError:   `request.ext is invalid: request.ext.prebid.cache requires one of the "bids" or "vastxml" properties`,
+		},
+		{
+			description:     "prebid cache - bids - wrong type",
+			givenRequestExt: json.RawMessage(`{"prebid": {"cache": {"bids": true}}}`),
+			expectedError:   `json: cannot unmarshal bool into Go struct field ExtRequestPrebid.cache of type openrtb_ext.ExtRequestPrebidCacheBids`,
+		},
+		{
+			description:     "prebid cache - bids - provided",
+			givenRequestExt: json.RawMessage(`{"prebid": {"cache": {"bids": {}}}}`),
+		},
+		{
+			description:     "prebid cache - vastxml - null",
+			givenRequestExt: json.RawMessage(`{"prebid": {"cache": {"vastxml": null}}}`),
+			expectedError:   `request.ext is invalid: request.ext.prebid.cache requires one of the "bids" or "vastxml" properties`,
+		},
+		{
+			description:     "prebid cache - vastxml - wrong type",
+			givenRequestExt: json.RawMessage(`{"prebid": {"cache": {"vastxml": true}}}`),
+			expectedError:   `json: cannot unmarshal bool into Go struct field ExtRequestPrebid.cache of type openrtb_ext.ExtRequestPrebidCacheVAST`,
+		},
+		{
+			description:     "prebid cache - vastxml - provided",
+			givenRequestExt: json.RawMessage(`{"prebid": {"cache": {"vastxml": {}}}}`),
+		},
+		{
+			description:     "prebid cache - bids + vastxml - provided",
+			givenRequestExt: json.RawMessage(`{"prebid": {"cache": {"bids": {}, "vastxml": {}}}}`),
+		},
+	}
+
+	for _, test := range testCases {
+		w := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Ext: test.givenRequestExt}}
+		err := validateRequestExt(w)
+
+		if len(test.expectedError) > 0 {
+			assert.EqualError(t, err, test.expectedError, test.description)
+		} else {
+			assert.NoError(t, err, test.description)
+		}
+	}
+}
+
 func TestValidateOrFillChannel(t *testing.T) {
 	testCases := []struct {
 		description           string
@@ -1744,7 +1845,6 @@ func TestSetIntegrationType(t *testing.T) {
 		integrationTypeFromReq, err2 := getIntegrationFromRequest(test.givenRequestWrapper)
 		assert.Empty(t, err2, test.description)
 		assert.Equalf(t, test.expectedIntegrationType, integrationTypeFromReq, "Integration type information isn't correct: %s\n", test.description)
-
 	}
 }
 
@@ -1962,11 +2062,14 @@ func TestImplicitAMPNoExt(t *testing.T) {
 		return
 	}
 
-	bidReq := openrtb2.BidRequest{
+	reqWrapper := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
 		Site: &openrtb2.Site{},
-	}
-	setSiteImplicitly(httpReq, &bidReq)
-	assert.JSONEq(t, `{"amp":0}`, string(bidReq.Site.Ext))
+	}}
+
+	setSiteImplicitly(httpReq, reqWrapper)
+
+	assert.NoError(t, reqWrapper.RebuildRequest())
+	assert.JSONEq(t, `{"amp":0}`, string(reqWrapper.Site.Ext))
 }
 
 func TestImplicitAMPOtherExt(t *testing.T) {
@@ -1975,13 +2078,16 @@ func TestImplicitAMPOtherExt(t *testing.T) {
 		return
 	}
 
-	bidReq := openrtb2.BidRequest{
+	reqWrapper := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
 		Site: &openrtb2.Site{
 			Ext: json.RawMessage(`{"other":true}`),
 		},
-	}
-	setSiteImplicitly(httpReq, &bidReq)
-	assert.JSONEq(t, `{"amp":0,"other":true}`, string(bidReq.Site.Ext))
+	}}
+
+	setSiteImplicitly(httpReq, reqWrapper)
+
+	assert.NoError(t, reqWrapper.RebuildRequest())
+	assert.JSONEq(t, `{"amp":0,"other":true}`, string(reqWrapper.Site.Ext))
 }
 
 func TestExplicitAMP(t *testing.T) {
@@ -1990,12 +2096,12 @@ func TestExplicitAMP(t *testing.T) {
 		return
 	}
 
-	bidReq := openrtb2.BidRequest{
+	bidReq := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
 		Site: &openrtb2.Site{
 			Ext: json.RawMessage(`{"amp":1}`),
 		},
-	}
-	setSiteImplicitly(httpReq, &bidReq)
+	}}
+	setSiteImplicitly(httpReq, bidReq)
 	assert.JSONEq(t, `{"amp":1}`, string(bidReq.Site.Ext))
 }
 
@@ -2093,7 +2199,7 @@ func TestValidateImpExt(t *testing.T) {
 				{
 					description:    "Disabled Bidder",
 					impExt:         json.RawMessage(`{"disabledbidder":{"foo":"bar"}}`),
-					expectedImpExt: `{}`,
+					expectedImpExt: `{"disabledbidder":{"foo":"bar"}}`,
 					expectedErrs: []error{
 						&errortypes.BidderTemporarilyDisabled{Message: "The bidder 'disabledbidder' has been disabled."},
 						errors.New("request.imp[0].ext must contain at least one bidder"),
@@ -2112,7 +2218,7 @@ func TestValidateImpExt(t *testing.T) {
 				{
 					description:    "Disabled Bidder + First Party Data Context",
 					impExt:         json.RawMessage(`{"disabledbidder":{"foo":"bar"},"context":{"data":{"keywords":"prebid server example"}}}`),
-					expectedImpExt: `{"context":{"data":{"keywords":"prebid server example"}}}`,
+					expectedImpExt: `{"disabledbidder":{"foo":"bar"},"context":{"data":{"keywords":"prebid server example"}}}`,
 					expectedErrs: []error{
 						&errortypes.BidderTemporarilyDisabled{Message: "The bidder 'disabledbidder' has been disabled."},
 						errors.New("request.imp[0].ext must contain at least one bidder"),
@@ -2121,7 +2227,7 @@ func TestValidateImpExt(t *testing.T) {
 				{
 					description:    "Disabled Prebid Ext Bidder + First Party Data Context",
 					impExt:         json.RawMessage(`{"prebid":{"bidder":{"disabledbidder":{"foo":"bar"}}},"context":{"data":{"keywords":"prebid server example"}}}`),
-					expectedImpExt: `{"context":{"data":{"keywords":"prebid server example"}}, "prebid":{"bidder":{"disabledbidder":{"foo":"bar"}}}}`,
+					expectedImpExt: `{"prebid":{"bidder":{"disabledbidder":{"foo":"bar"}}},"context":{"data":{"keywords":"prebid server example"}}}`,
 					expectedErrs: []error{
 						&errortypes.BidderTemporarilyDisabled{Message: "The bidder 'disabledbidder' has been disabled."},
 						errors.New("request.imp[0].ext must contain at least one bidder"),
@@ -2148,7 +2254,7 @@ func TestValidateImpExt(t *testing.T) {
 				{
 					description:    "Valid bidder root ext",
 					impExt:         json.RawMessage(`{"appnexus":{"placement_id":555}}`),
-					expectedImpExt: `{"appnexus":{"placement_id":555}}`,
+					expectedImpExt: `{"prebid":{"bidder":{"appnexus":{"placement_id":555}}}}`,
 					expectedErrs:   []error{},
 				},
 				{
@@ -2160,7 +2266,7 @@ func TestValidateImpExt(t *testing.T) {
 				{
 					description:    "Valid Bidder + First Party Data Context",
 					impExt:         json.RawMessage(`{"appnexus":{"placement_id":555},"context":{"data":{"keywords":"prebid server example"}}}`),
-					expectedImpExt: `{"appnexus":{"placement_id":555},"context":{"data":{"keywords":"prebid server example"}}}`,
+					expectedImpExt: `{"prebid":{"bidder":{"appnexus":{"placement_id":555}}},"context":{"data":{"keywords":"prebid server example"}}}`,
 					expectedErrs:   []error{},
 				},
 				{
@@ -2178,13 +2284,13 @@ func TestValidateImpExt(t *testing.T) {
 				{
 					description:    "Valid Bidder + Disabled Bidder",
 					impExt:         json.RawMessage(`{"appnexus":{"placement_id":555},"disabledbidder":{"foo":"bar"}}`),
-					expectedImpExt: `{"appnexus":{"placement_id":555}}`,
+					expectedImpExt: `{"prebid":{"bidder":{"appnexus":{"placement_id":555}}}}`,
 					expectedErrs:   []error{&errortypes.BidderTemporarilyDisabled{Message: "The bidder 'disabledbidder' has been disabled."}},
 				},
 				{
 					description:    "Valid Bidder + Disabled Bidder + First Party Data Context",
 					impExt:         json.RawMessage(`{"appnexus":{"placement_id":555},"disabledbidder":{"foo":"bar"},"context":{"data":{"keywords":"prebid server example"}}}`),
-					expectedImpExt: `{"appnexus":{"placement_id":555},"context":{"data":{"keywords":"prebid server example"}}}`,
+					expectedImpExt: `{"prebid":{"bidder":{"appnexus":{"placement_id":555}}},"context":{"data":{"keywords":"prebid server example"}}}`,
 					expectedErrs:   []error{&errortypes.BidderTemporarilyDisabled{Message: "The bidder 'disabledbidder' has been disabled."}},
 				},
 				{
@@ -2196,19 +2302,19 @@ func TestValidateImpExt(t *testing.T) {
 				{
 					description:    "Valid Prebid Ext Bidder + Disabled Bidder Ext",
 					impExt:         json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placement_id":555},"disabledbidder":{"foo":"bar"}}}}`),
-					expectedImpExt: `{"prebid":{"bidder":{"appnexus":{"placement_id": 555},"disabledbidder":{"foo":"bar"}}},"appnexus":{"placement_id":555}}`,
+					expectedImpExt: `{"prebid":{"bidder":{"appnexus":{"placement_id": 555}}}}`,
 					expectedErrs:   []error{&errortypes.BidderTemporarilyDisabled{Message: "The bidder 'disabledbidder' has been disabled."}},
 				},
 				{
 					description:    "Valid Prebid Ext Bidder + Disabled Ext Bidder + First Party Data Context",
 					impExt:         json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placement_id":555},"disabledbidder":{"foo":"bar"}}},"context":{"data":{"keywords":"prebid server example"}}}`),
-					expectedImpExt: `{"prebid":{"bidder":{"appnexus":{"placement_id": 555},"disabledbidder":{"foo":"bar"}}},"appnexus":{"placement_id":555},"context":{"data":{"keywords":"prebid server example"}}}`,
+					expectedImpExt: `{"prebid":{"bidder":{"appnexus":{"placement_id": 555}}},"context":{"data":{"keywords":"prebid server example"}}}`,
 					expectedErrs:   []error{&errortypes.BidderTemporarilyDisabled{Message: "The bidder 'disabledbidder' has been disabled."}},
 				},
 				{
 					description:    "Valid Prebid Ext Bidder + Disabled Ext Bidder + Unknown Ext + First Party Data Context",
 					impExt:         json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placement_id":555},"disabledbidder":{"foo":"bar"},"unknownbidder":{"placement_id":555}}},"context":{"data":{"keywords":"prebid server example"}}}`),
-					expectedImpExt: `{"context":{"data":{"keywords":"prebid server example"}},"prebid":{"bidder":{"appnexus":{"placement_id":555},"disabledbidder":{"foo":"bar"},"unknownbidder":{"placement_id":555}}}}`,
+					expectedImpExt: `{"prebid":{"bidder":{"appnexus":{"placement_id":555},"disabledbidder":{"foo":"bar"},"unknownbidder":{"placement_id":555}}},"context":{"data":{"keywords":"prebid server example"}}}`,
 					expectedErrs:   []error{errors.New("request.imp[0].ext contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?")},
 				},
 			},
@@ -2238,8 +2344,11 @@ func TestValidateImpExt(t *testing.T) {
 	for _, group := range testGroups {
 		for _, test := range group.testCases {
 			imp := &openrtb2.Imp{Ext: test.impExt}
+			impWrapper := &openrtb_ext.ImpWrapper{Imp: imp}
 
-			errs := deps.validateImpExt(imp, nil, 0, false, nil)
+			errs := deps.validateImpExt(impWrapper, nil, 0, false, nil)
+
+			assert.NoError(t, impWrapper.RebuildImp(), test.description+":rebuild_imp")
 
 			if len(test.expectedImpExt) > 0 {
 				assert.JSONEq(t, test.expectedImpExt, string(imp.Ext), "imp.ext JSON does not match expected. Test: %s. %s\n", group.description, test.description)
@@ -2754,7 +2863,9 @@ func TestSanitizeRequest(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		sanitizeRequest(test.req, test.ipValidator)
+		bidReq := &openrtb_ext.RequestWrapper{BidRequest: test.req}
+
+		sanitizeRequest(bidReq, test.ipValidator)
 		assert.Equal(t, test.expectedIPv4, test.req.Device.IP, test.description+":ipv4")
 		assert.Equal(t, test.expectedIPv6, test.req.Device.IPv6, test.description+":ipv6")
 	}
@@ -3723,6 +3834,8 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
 
 			resReq, _, _, _, _, errL := deps.parseRequest(req)
+
+			assert.NoError(t, resReq.RebuildRequest())
 
 			var expIExt, iExt map[string]interface{}
 			err := json.Unmarshal(test.expectedImpExt, &expIExt)

@@ -135,7 +135,7 @@ func preProcess(request *openrtb2.BidRequest) {
 			if err != nil {
 				continue
 			}
-			if impExt.Prebid != nil && impExt.Prebid.IsRewardedInventory == 1 {
+			if impExt.Prebid != nil && impExt.Prebid.IsRewardedInventory != nil && *impExt.Prebid.IsRewardedInventory == 1 {
 				videoCopy := *request.Imp[i].Video
 				videoExt := algorixVideoExt{Rewarded: 1}
 				videoCopy.Ext, err = json.Marshal(&videoExt)

@@ -530,7 +530,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 
 			// if imp.ext.is_rewarded_inventory = 1, set imp.video.ext.videotype = "rewarded"
 			var videoType = ""
-			if bidderExt.Prebid != nil && bidderExt.Prebid.IsRewardedInventory == 1 {
+			if bidderExt.Prebid != nil && bidderExt.Prebid.IsRewardedInventory != nil && *bidderExt.Prebid.IsRewardedInventory == 1 {
 				videoType = "rewarded"
 			}
 			videoExt := rubiconVideoExt{Skip: rubiconExt.Video.Skip, SkipDelay: rubiconExt.Video.SkipDelay, VideoType: videoType, RP: rubiconVideoExtRP{SizeID: videoSizeId}}
