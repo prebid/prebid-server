@@ -50,6 +50,7 @@ type ExtRequestPrebid struct {
 	Integration          string                    `json:"integration,omitempty"`
 	Passthrough          json.RawMessage           `json:"passthrough,omitempty"`
 	SChains              []*ExtRequestPrebidSChain `json:"schains,omitempty"`
+	Server               *ExtRequestPrebidServer   `json:"server,omitempty"`
 	StoredRequest        *ExtStoredRequest         `json:"storedrequest,omitempty"`
 	SupportDeals         bool                      `json:"supportdeals,omitempty"`
 	Targeting            *ExtRequestTargeting      `json:"targeting,omitempty"`
@@ -109,6 +110,12 @@ type ExtRequestPrebidChannel struct {
 type ExtRequestPrebidCache struct {
 	Bids    *ExtRequestPrebidCacheBids `json:"bids"`
 	VastXML *ExtRequestPrebidCacheVAST `json:"vastxml"`
+}
+
+type ExtRequestPrebidServer struct {
+	ExternalUrl string `json:"externalurl"`
+	GvlID       int    `json:"gvlid"`
+	DataCenter  string `json:"datacenter"`
 }
 
 // UnmarshalJSON prevents nil bids arguments.
