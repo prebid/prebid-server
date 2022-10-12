@@ -25,6 +25,11 @@ func ConvertUpTo26(r *RequestWrapper) error {
 	// eid
 	moveEIDFrom25To26(r)
 
+	// imp
+	for _, imp := range r.GetImp() {
+		moveRewardedFromPrebidExtTo26(imp)
+	}
+
 	return nil
 }
 
@@ -45,6 +50,12 @@ func convertUpEnsureExt(r *RequestWrapper) error {
 
 	if _, err := r.GetUserExt(); err != nil {
 		return fmt.Errorf("req.user.ext is invalid: %v", err)
+	}
+
+	for i, imp := range r.GetImp() {
+		if _, err := imp.GetImpExt(); err != nil {
+			return fmt.Errorf("imp[%v].imp.ext is invalid: %v", i, err)
+		}
 	}
 
 	return nil
@@ -146,5 +157,25 @@ func moveEIDFrom25To26(r *RequestWrapper) {
 	// move to 2.6 location
 	if eid25 != nil && r.User.EIDs == nil {
 		r.User.EIDs = *eid25
+	}
+}
+
+// moveRewardedFromPrebidExtTo26 modifies the impression to move the Prebid specific
+// rewarded video signal (imp[].ext.prebid.is_rewarded_inventory) to the OpenRTB 2.6
+// location (imp[].rwdd). If the OpenRTB 2.6 location is already present the Prebid
+// specific extension is dropped.
+func moveRewardedFromPrebidExtTo26(i *ImpWrapper) {
+	// read and clear prebid ext
+	impExt, _ := i.GetImpExt()
+	rwddPrebidExt := (*int8)(nil)
+	if p := impExt.GetPrebid(); p != nil {
+		rwddPrebidExt = p.IsRewardedInventory
+		p.IsRewardedInventory = nil
+		impExt.SetPrebid(p)
+	}
+
+	// move to 2.6 location
+	if rwddPrebidExt != nil && i.Rwdd == 0 {
+		i.Rwdd = *rwddPrebidExt
 	}
 }

@@ -26,12 +26,14 @@ func TestConvertUpTo26(t *testing.T) {
 			description: "2.4 -> 2.6",
 			givenRequest: openrtb2.BidRequest{
 				ID:   "anyID",
+				Imp:  []openrtb2.Imp{{Ext: json.RawMessage(`{"prebid":{"is_rewarded_inventory":1}}`)}},
 				Ext:  json.RawMessage(`{"schain":{"complete":1,"nodes":[],"ver":"2"}}`),
 				Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"gdpr":1,"us_privacy":"3"}`)},
 				User: &openrtb2.User{Ext: json.RawMessage(`{"consent":"1","eids":[{"source":"42"}]}`)},
 			},
 			expectedRequest: openrtb2.BidRequest{
 				ID:     "anyID",
+				Imp:    []openrtb2.Imp{{Rwdd: 1}},
 				Source: &openrtb2.Source{SChain: &openrtb2.SupplyChain{Complete: 1, Nodes: []openrtb2.SupplyChainNode{}, Ver: "2"}},
 				Regs:   &openrtb2.Regs{GDPR: openrtb2.Int8Ptr(1), USPrivacy: "3"},
 				User:   &openrtb2.User{Consent: "1", EIDs: []openrtb2.EID{{Source: "42"}}},
@@ -41,12 +43,14 @@ func TestConvertUpTo26(t *testing.T) {
 			description: "2.4 -> 2.6 + Other Ext Fields",
 			givenRequest: openrtb2.BidRequest{
 				ID:   "anyID",
+				Imp:  []openrtb2.Imp{{Ext: json.RawMessage(`{"prebid":{"is_rewarded_inventory":1},"other":"otherImp"}`)}},
 				Ext:  json.RawMessage(`{"schain":{"complete":1,"nodes":[],"ver":"2"},"other":"otherExt"}`),
 				Regs: &openrtb2.Regs{Ext: json.RawMessage(`{"gdpr":1,"other":"otherRegs","us_privacy":"3"}`)},
 				User: &openrtb2.User{Ext: json.RawMessage(`{"consent":"1","eids":[{"source":"42"}],"other":"otherUser"}`)},
 			},
 			expectedRequest: openrtb2.BidRequest{
 				ID:     "anyID",
+				Imp:    []openrtb2.Imp{{Rwdd: 1, Ext: json.RawMessage(`{"other":"otherImp"}`)}},
 				Ext:    json.RawMessage(`{"other":"otherExt"}`),
 				Source: &openrtb2.Source{SChain: &openrtb2.SupplyChain{Complete: 1, Nodes: []openrtb2.SupplyChainNode{}, Ver: "2"}},
 				Regs:   &openrtb2.Regs{GDPR: openrtb2.Int8Ptr(1), USPrivacy: "3", Ext: json.RawMessage(`{"other":"otherRegs"}`)},
@@ -57,12 +61,14 @@ func TestConvertUpTo26(t *testing.T) {
 			description: "2.5 -> 2.6",
 			givenRequest: openrtb2.BidRequest{
 				ID:     "anyID",
+				Imp:    []openrtb2.Imp{{Ext: json.RawMessage(`{"prebid":{"is_rewarded_inventory":1}}`)}},
 				Source: &openrtb2.Source{Ext: json.RawMessage(`{"schain":{"complete":1,"nodes":[],"ver":"2"}}`)},
 				Regs:   &openrtb2.Regs{Ext: json.RawMessage(`{"gdpr":1,"us_privacy":"3"}`)},
 				User:   &openrtb2.User{Ext: json.RawMessage(`{"consent":"1","eids":[{"source":"42"}]}`)},
 			},
 			expectedRequest: openrtb2.BidRequest{
 				ID:     "anyID",
+				Imp:    []openrtb2.Imp{{Rwdd: 1}},
 				Source: &openrtb2.Source{SChain: &openrtb2.SupplyChain{Complete: 1, Nodes: []openrtb2.SupplyChainNode{}, Ver: "2"}},
 				Regs:   &openrtb2.Regs{GDPR: openrtb2.Int8Ptr(1), USPrivacy: "3"},
 				User:   &openrtb2.User{Consent: "1", EIDs: []openrtb2.EID{{Source: "42"}}},
@@ -72,6 +78,7 @@ func TestConvertUpTo26(t *testing.T) {
 			description: "2.5 -> 2.6 + Other Ext Fields",
 			givenRequest: openrtb2.BidRequest{
 				ID:     "anyID",
+				Imp:    []openrtb2.Imp{{Ext: json.RawMessage(`{"prebid":{"is_rewarded_inventory":1},"other":"otherImp"}`)}},
 				Ext:    json.RawMessage(`{"other":"otherExt"}`),
 				Source: &openrtb2.Source{Ext: json.RawMessage(`{"schain":{"complete":1,"nodes":[],"ver":"2"},"other":"otherSource"}`)},
 				Regs:   &openrtb2.Regs{Ext: json.RawMessage(`{"gdpr":1,"us_privacy":"3","other":"otherRegs"}`)},
@@ -79,6 +86,7 @@ func TestConvertUpTo26(t *testing.T) {
 			},
 			expectedRequest: openrtb2.BidRequest{
 				ID:     "anyID",
+				Imp:    []openrtb2.Imp{{Rwdd: 1, Ext: json.RawMessage(`{"other":"otherImp"}`)}},
 				Ext:    json.RawMessage(`{"other":"otherExt"}`),
 				Source: &openrtb2.Source{SChain: &openrtb2.SupplyChain{Complete: 1, Nodes: []openrtb2.SupplyChainNode{}, Ver: "2"}, Ext: json.RawMessage(`{"other":"otherSource"}`)},
 				Regs:   &openrtb2.Regs{GDPR: openrtb2.Int8Ptr(1), USPrivacy: "3", Ext: json.RawMessage(`{"other":"otherRegs"}`)},
@@ -128,6 +136,11 @@ func TestConvertUpEnsureExt(t *testing.T) {
 			description:  "User.Ext",
 			givenRequest: openrtb2.BidRequest{User: &openrtb2.User{Ext: json.RawMessage("malformed")}},
 			expectedErr:  "req.user.ext is invalid: invalid character 'm' looking for beginning of value",
+		},
+		{
+			description:  "Imp.Ext",
+			givenRequest: openrtb2.BidRequest{Imp: []openrtb2.Imp{{Ext: json.RawMessage("malformed")}}},
+			expectedErr:  "imp[0].imp.ext is invalid: invalid character 'm' looking for beginning of value",
 		},
 	}
 
@@ -377,5 +390,61 @@ func TestMoveEIDFrom25To26(t *testing.T) {
 		moveEIDFrom25To26(w)
 		assert.NoError(t, w.RebuildRequest(), test.description)
 		assert.Equal(t, test.expectedRequest, *w.BidRequest, test.description)
+	}
+}
+
+func TestMoveRewardedFromPrebidExtTo26(t *testing.T) {
+	var (
+		rwdd1Json = json.RawMessage(`{"prebid":{"is_rewarded_inventory":1}}`)
+		rwdd2Json = json.RawMessage(`{"prebid":{"is_rewarded_inventory":2}}`)
+	)
+
+	testCases := []struct {
+		description string
+		givenImp    openrtb2.Imp
+		expectedImp openrtb2.Imp
+	}{
+		{
+			description: "Not Present - No Ext",
+			givenImp:    openrtb2.Imp{},
+			expectedImp: openrtb2.Imp{},
+		},
+		{
+			description: "Not Present - Empty Ext",
+			givenImp:    openrtb2.Imp{Ext: json.RawMessage(`{}`)},
+			expectedImp: openrtb2.Imp{Ext: json.RawMessage(`{}`)},
+		},
+		{
+			description: "Not Present - Null Prebid Ext",
+			givenImp:    openrtb2.Imp{Ext: json.RawMessage(`{"prebid":null}`)},
+			expectedImp: openrtb2.Imp{}, // empty prebid object pruned by RebuildImp
+		},
+		{
+			description: "Not Present - Empty Prebid Ext",
+			givenImp:    openrtb2.Imp{Ext: json.RawMessage(`{"prebid":{}}`)},
+			expectedImp: openrtb2.Imp{}, // empty prebid object pruned by RebuildImp
+		},
+		{
+			description: "Prebid Ext Migrated To 2.6",
+			givenImp:    openrtb2.Imp{Ext: rwdd1Json},
+			expectedImp: openrtb2.Imp{Rwdd: 1},
+		},
+		{
+			description: "2.5 Dropped",
+			givenImp:    openrtb2.Imp{Rwdd: 1, Ext: rwdd2Json},
+			expectedImp: openrtb2.Imp{Rwdd: 1},
+		},
+		{
+			description: "2.6 Left Alone",
+			givenImp:    openrtb2.Imp{Rwdd: 1},
+			expectedImp: openrtb2.Imp{Rwdd: 1},
+		},
+	}
+
+	for _, test := range testCases {
+		w := &ImpWrapper{Imp: &test.givenImp}
+		moveRewardedFromPrebidExtTo26(w)
+		assert.NoError(t, w.RebuildImp(), test.description)
+		assert.Equal(t, test.expectedImp, *w.Imp, test.description)
 	}
 }
