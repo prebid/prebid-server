@@ -1,5 +1,5 @@
 package openrtb_ext
 
 type ExtImpCcx struct {
-	PlacementID string `json:"pid"`
+	PlacementID string `json:"placementId"`
 }

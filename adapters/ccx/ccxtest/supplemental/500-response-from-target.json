@@ -9,7 +9,7 @@
         },
         "ext": {
           "bidder": {
-            "pid": 123456789
+            "placementId": 123456789
           }
         }
       }
@@ -33,7 +33,7 @@
                 },
                 "ext": {
                   "bidder": {
-                    "pid": 123456789
+                    "placementId": 123456789
                   }
                 }
               }

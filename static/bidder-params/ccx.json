@@ -4,10 +4,10 @@
     "description": "A schema which validates params accepted by the Clickonometrics adapter",
     "type": "object",
     "properties": {
-      "pid": {
+      "placementId": {
         "type": "integer",
         "description": "Placement ID"
       }
     },
-    "required": ["pid"]
+    "required": ["placementId"]
   }
