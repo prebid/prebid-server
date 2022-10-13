@@ -39,6 +39,7 @@ type bidRequest struct {
 	GDPR               *bidGdpr             `json:"gdpr,omitempty"`
 	Coppa              bool                 `json:"coppa,omitempty"`
 	SChain             openrtb2.SupplyChain `json:"schain"`
+	Content            *openrtb2.Content    `json:"content,omitempty"`
 }
 
 type placement struct {
@@ -188,6 +189,12 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 	}
 
 	body.Coppa = request.Regs != nil && request.Regs.COPPA > 0
+
+	if request.Site != nil && request.Site.Content != nil {
+		body.Content = request.Site.Content
+	} else if request.App != nil && request.App.Content != nil {
+		body.Content = request.App.Content
+	}
 
 	for i, impression := range request.Imp {
 
