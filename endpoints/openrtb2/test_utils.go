@@ -988,11 +988,13 @@ func (b mockBidderHandler) bid(w http.ResponseWriter, req *http.Request) {
 // mockAdapter is a mock impression-splitting adapter
 type mockAdapter struct {
 	mockServerURL string
+	Server        config.Server
 }
 
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	adapter := &mockAdapter{
 		mockServerURL: config.Endpoint,
+		Server:        server,
 	}
 	return adapter, nil
 }
