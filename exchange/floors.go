@@ -144,7 +144,6 @@ func getEnforceDealsFlag(Floors *openrtb_ext.PriceFloorRules) bool {
 	return Floors != nil && Floors.Enforcement != nil && Floors.Enforcement.FloorDeals != nil && *Floors.Enforcement.FloorDeals
 }
 
-
 // eneforceFloors function does floors enforcement
 func enforceFloors(r *AuctionRequest, seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, floor config.PriceFloors, conversions currency.Conversions, responseDebugAllow bool) (map[openrtb_ext.BidderName]*pbsOrtbSeatBid, []error, []RejectedBid) {
 
