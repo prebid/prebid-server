@@ -1565,8 +1565,15 @@ func setSiteImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {
 				if r.Site == nil {
 					r.Site = &openrtb2.Site{}
 				}
+				if r.Site.Publisher == nil {
+					r.Site.Publisher = &openrtb2.Publisher{}
+				}
+
 				if r.Site.Domain == "" {
 					r.Site.Domain = domain
+					r.Site.Publisher.Domain = domain
+				} else {
+					r.Site.Publisher.Domain = domain
 				}
 
 				// This looks weird... but is not a bug. The site which called prebid-server (the "referer"), is
@@ -1580,6 +1587,13 @@ func setSiteImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {
 	if r.Site != nil {
 		if siteExt, err := r.GetSiteExt(); err == nil && siteExt.GetAmp() == nil {
 			siteExt.SetAmp(&notAmp)
+		}
+		if r.Site.Domain != "" {
+			if r.Site.Publisher != nil {
+				r.Site.Publisher.Domain = r.Site.Domain
+			} else {
+				r.Site.Publisher = &openrtb2.Publisher{Domain: r.Site.Domain}
+			}
 		}
 	}
 }
