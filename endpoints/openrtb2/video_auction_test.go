@@ -22,8 +22,8 @@ import (
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 
-	"github.com/mxmCherry/openrtb/v16/adcom1"
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/openrtb/v17/adcom1"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	gometrics "github.com/rcrowley/go-metrics"
 	"github.com/stretchr/testify/assert"
 )
