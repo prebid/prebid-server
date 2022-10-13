@@ -16,6 +16,7 @@ func TestJsonSamples(t *testing.T) {
 		config.Adapter{
 			Endpoint: "https://bidder.criteo.com/cdb?profileId=230",
 		},
+		config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"},
 		newFakeGuidGenerator("00000000-0000-0000-00000000"),
 	)
 

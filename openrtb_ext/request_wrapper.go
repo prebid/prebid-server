@@ -29,19 +29,49 @@ import (
 // in the map.
 //
 // NOTE: The RequestWrapper methods (particularly the ones calling (un)Marshal are not thread safe)
-
 type RequestWrapper struct {
 	*openrtb2.BidRequest
-	userExt    *UserExt
-	deviceExt  *DeviceExt
-	requestExt *RequestExt
-	appExt     *AppExt
-	regExt     *RegExt
-	siteExt    *SiteExt
-	sourceExt  *SourceExt
+	imp         []*ImpWrapper
+	impAccessed bool
+	userExt     *UserExt
+	deviceExt   *DeviceExt
+	requestExt  *RequestExt
+	appExt      *AppExt
+	regExt      *RegExt
+	siteExt     *SiteExt
+	sourceExt   *SourceExt
 }
 
 const jsonEmptyObjectLength = 2
+
+// LenImp returns the number of impressions without causing the creation of ImpWrapper objects.
+func (rw *RequestWrapper) LenImp() int {
+	if rw.imp == nil {
+		return len(rw.Imp)
+	}
+
+	return len(rw.imp)
+}
+
+func (rw *RequestWrapper) GetImp() []*ImpWrapper {
+	if rw.imp != nil {
+		return rw.imp
+	}
+
+	rw.imp = make([]*ImpWrapper, len(rw.Imp))
+	for i := range rw.Imp {
+		rw.imp[i] = &ImpWrapper{Imp: &rw.Imp[i]}
+	}
+
+	rw.impAccessed = true
+
+	return rw.imp
+}
+
+func (rw *RequestWrapper) SetImp(imps []*ImpWrapper) {
+	rw.imp = imps
+	rw.impAccessed = true
+}
 
 func (rw *RequestWrapper) GetUserExt() (*UserExt, error) {
 	if rw.userExt != nil {
@@ -123,9 +153,12 @@ func (rw *RequestWrapper) GetSourceExt() (*SourceExt, error) {
 
 func (rw *RequestWrapper) RebuildRequest() error {
 	if rw.BidRequest == nil {
-		return errors.New("Requestwrapper Sync called on a nil BidRequest")
+		return errors.New("Requestwrapper RebuildRequest called on a nil BidRequest")
 	}
 
+	if err := rw.rebuildImp(); err != nil {
+		return err
+	}
 	if err := rw.rebuildUserExt(); err != nil {
 		return err
 	}
@@ -146,6 +179,22 @@ func (rw *RequestWrapper) RebuildRequest() error {
 	}
 	if err := rw.rebuildSourceExt(); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (rw *RequestWrapper) rebuildImp() error {
+	if !rw.impAccessed {
+		return nil
+	}
+
+	rw.Imp = make([]openrtb2.Imp, len(rw.imp))
+	for i := range rw.imp {
+		if err := rw.imp[i].RebuildImp(); err != nil {
+			return err
+		}
+		rw.Imp[i] = *rw.imp[i].Imp
 	}
 
 	return nil
@@ -1054,4 +1103,153 @@ func (se *SourceExt) GetSChain() *openrtb2.SupplyChain {
 func (se *SourceExt) SetSChain(schain *openrtb2.SupplyChain) {
 	se.schain = schain
 	se.schainDirty = true
+}
+
+// ImpWrapper wraps an OpenRTB impression object to provide storage for unmarshalled ext fields, so they
+// will not need to be unmarshalled multiple times. It is intended to use the ImpWrapper via the RequestWrapper
+// and follow the same usage conventions.
+type ImpWrapper struct {
+	*openrtb2.Imp
+	impExt *ImpExt
+}
+
+func (w *ImpWrapper) GetImpExt() (*ImpExt, error) {
+	if w.impExt != nil {
+		return w.impExt, nil
+	}
+	w.impExt = &ImpExt{}
+	if w.Imp == nil || w.Ext == nil {
+		return w.impExt, w.impExt.unmarshal(json.RawMessage{})
+	}
+	return w.impExt, w.impExt.unmarshal(w.Ext)
+}
+
+func (w *ImpWrapper) RebuildImp() error {
+	if w.Imp == nil {
+		return errors.New("ImpWrapper RebuildImp called on a nil Imp")
+	}
+
+	if err := w.rebuildImpExt(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (w *ImpWrapper) rebuildImpExt() error {
+	if w.impExt == nil || !w.impExt.Dirty() {
+		return nil
+	}
+
+	impJson, err := w.impExt.marshal()
+	if err != nil {
+		return err
+	}
+
+	w.Ext = impJson
+
+	return nil
+}
+
+// ---------------------------------------------------------------
+// ImpExt provides an interface for imp.ext
+// ---------------------------------------------------------------
+
+type ImpExt struct {
+	ext         map[string]json.RawMessage
+	extDirty    bool
+	prebid      *ExtImpPrebid
+	prebidDirty bool
+}
+
+func (e *ImpExt) unmarshal(extJson json.RawMessage) error {
+	if len(e.ext) != 0 || e.Dirty() {
+		return nil
+	}
+
+	e.ext = make(map[string]json.RawMessage)
+
+	if len(extJson) == 0 {
+		return nil
+	}
+
+	if err := json.Unmarshal(extJson, &e.ext); err != nil {
+		return err
+	}
+
+	prebidJson, hasPrebid := e.ext["prebid"]
+	if hasPrebid {
+		e.prebid = &ExtImpPrebid{}
+		if err := json.Unmarshal(prebidJson, e.prebid); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (e *ImpExt) marshal() (json.RawMessage, error) {
+	if e.prebidDirty {
+		if e.prebid != nil {
+			prebidJson, err := json.Marshal(e.prebid)
+			if err != nil {
+				return nil, err
+			}
+			if len(prebidJson) > jsonEmptyObjectLength {
+				e.ext["prebid"] = json.RawMessage(prebidJson)
+			} else {
+				delete(e.ext, "prebid")
+			}
+		} else {
+			delete(e.ext, "prebid")
+		}
+		e.prebidDirty = false
+	}
+
+	e.extDirty = false
+	if len(e.ext) == 0 {
+		return nil, nil
+	}
+	return json.Marshal(e.ext)
+}
+
+func (e *ImpExt) Dirty() bool {
+	return e.extDirty || e.prebidDirty
+}
+
+func (e *ImpExt) GetExt() map[string]json.RawMessage {
+	ext := make(map[string]json.RawMessage)
+	for k, v := range e.ext {
+		ext[k] = v
+	}
+	return ext
+}
+
+func (e *ImpExt) SetExt(ext map[string]json.RawMessage) {
+	e.ext = ext
+	e.extDirty = true
+}
+
+func (e *ImpExt) GetPrebid() *ExtImpPrebid {
+	if e.prebid == nil {
+		return nil
+	}
+	prebid := *e.prebid
+	return &prebid
+}
+
+func (e *ImpExt) GetOrCreatePrebid() *ExtImpPrebid {
+	if e.prebid == nil {
+		e.prebid = &ExtImpPrebid{}
+	}
+	return e.GetPrebid()
+}
+
+func (e *ImpExt) SetPrebid(prebid *ExtImpPrebid) {
+	e.prebid = prebid
+	e.prebidDirty = true
+}
+
+func CreateImpExtForTesting(ext map[string]json.RawMessage, prebid *ExtImpPrebid) ImpExt {
+	return ImpExt{ext: ext, prebid: prebid}
 }

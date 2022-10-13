@@ -50,6 +50,7 @@ type ExtRequestPrebid struct {
 	Integration          string                    `json:"integration,omitempty"`
 	Passthrough          json.RawMessage           `json:"passthrough,omitempty"`
 	SChains              []*ExtRequestPrebidSChain `json:"schains,omitempty"`
+	Server               *ExtRequestPrebidServer   `json:"server,omitempty"`
 	StoredRequest        *ExtStoredRequest         `json:"storedrequest,omitempty"`
 	SupportDeals         bool                      `json:"supportdeals,omitempty"`
 	Targeting            *ExtRequestTargeting      `json:"targeting,omitempty"`
@@ -58,6 +59,9 @@ type ExtRequestPrebid struct {
 	// passing of personally identifiable information doesn't constitute a sale per CCPA law.
 	// The array may contain a single sstar ('*') entry to represent all bidders.
 	NoSale []string `json:"nosale,omitempty"`
+
+	//AlternateBidderCodes is populated with host's AlternateBidderCodes config if not defined in request
+	AlternateBidderCodes *ExtAlternateBidderCodes `json:"alternatebiddercodes,omitempty"`
 }
 
 // Experiment defines if experimental features are available for the request
@@ -108,16 +112,18 @@ type ExtRequestPrebidCache struct {
 	VastXML *ExtRequestPrebidCacheVAST `json:"vastxml"`
 }
 
+type ExtRequestPrebidServer struct {
+	ExternalUrl string `json:"externalurl"`
+	GvlID       int    `json:"gvlid"`
+	DataCenter  string `json:"datacenter"`
+}
+
 // UnmarshalJSON prevents nil bids arguments.
 func (ert *ExtRequestPrebidCache) UnmarshalJSON(b []byte) error {
 	type typesAlias ExtRequestPrebidCache // Prevents infinite UnmarshalJSON loops
 	var proxy typesAlias
 	if err := json.Unmarshal(b, &proxy); err != nil {
 		return err
-	}
-
-	if proxy.Bids == nil && proxy.VastXML == nil {
-		return errors.New(`request.ext.prebid.cache requires one of the "bids" or "vastxml" properties`)
 	}
 
 	*ert = ExtRequestPrebidCache(proxy)
