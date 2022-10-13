@@ -76,6 +76,10 @@ type decision struct {
 	ImpressionUrl *string    `json:"impressionUrl,omitempty"`
 	Width         uint64     `json:"width,omitempty"`  // Consumable extension, not defined by Adzerk
 	Height        uint64     `json:"height,omitempty"` // Consumable extension, not defined by Adzerk
+	Adomain       []string   `json:"adomain,omitempty"`
+	Cats          []string   `json:"cats,omitempty"`
+	NetworkId     int        `json:"networkId,omitempty"`
+	MediaType     string     `json:"mediaType,omitempty"`
 }
 
 type contents struct {
@@ -292,6 +296,7 @@ func (a *ConsumableAdapter) MakeBids(
 				// From Prebid's point of view, this means that Consumable units
 				// are always "banners".
 				BidType: openrtb_ext.BidTypeBanner,
+				BidMeta: getBidMeta(bid, decision),
 			})
 		}
 	}
@@ -332,4 +337,32 @@ func hasEids(eids []openrtb2.EID) bool {
 		}
 	}
 	return false
+}
+
+func getBidMeta(bid openrtb2.Bid, dec decision) *openrtb_ext.ExtBidPrebidMeta {
+	prebidMeta := &openrtb_ext.ExtBidPrebidMeta{}
+
+	if dec.Adomain != nil {
+		prebidMeta.AdvertiserDomains = dec.Adomain
+	} else {
+		prebidMeta.AdvertiserDomains = []string{}
+	}
+
+	if dec.Cats != nil && len(dec.Cats) > 0 {
+		prebidMeta.PrimaryCategoryID = dec.Cats[0]
+
+		if len(dec.Cats) > 1 {
+			prebidMeta.SecondaryCategoryIDs = dec.Cats[1:]
+		}
+	}
+
+	if dec.NetworkId > 0 {
+		prebidMeta.NetworkID = dec.NetworkId
+	}
+
+	if dec.MediaType != "" {
+		prebidMeta.MediaType = dec.MediaType
+	}
+
+	return prebidMeta
 }
