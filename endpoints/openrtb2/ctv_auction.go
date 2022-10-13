@@ -270,6 +270,7 @@ func (deps *ctvEndpointDeps) holdAuction(request *openrtb2.BidRequest, usersyncs
 		RequestType:       deps.labels.RType,
 		StartTime:         startTime,
 		LegacyLabels:      deps.labels,
+		PubID:             deps.labels.PubID,
 	}
 
 	return deps.ex.HoldAuction(deps.ctx, auctionRequest, nil)

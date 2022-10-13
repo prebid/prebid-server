@@ -106,6 +106,10 @@ func (me *MetricsEngineMock) RecordSyncerSet(key string, status SyncerSetUidStat
 	me.Called(key, status)
 }
 
+func (me *MetricsEngineMock) RecordRejectedBidsForBidder(bidder openrtb_ext.BidderName) {
+	me.Called(bidder)
+}
+
 // RecordStoredReqCacheResult mock
 func (me *MetricsEngineMock) RecordStoredReqCacheResult(cacheResult CacheResult, inc int) {
 	me.Called(cacheResult, inc)
@@ -152,6 +156,14 @@ func (me *MetricsEngineMock) RecordDebugRequest(debugEnabled bool, pubId string)
 }
 
 func (me *MetricsEngineMock) RecordStoredResponse(pubId string) {
+	me.Called(pubId)
+}
+
+func (me *MetricsEngineMock) RecordRejectedBidsForAccount(pubId string) {
+	me.Called(pubId)
+}
+
+func (me *MetricsEngineMock) RecordFloorsRequestForAccount(pubId string) {
 	me.Called(pubId)
 }
 

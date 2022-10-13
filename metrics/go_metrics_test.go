@@ -765,6 +765,25 @@ func TestRecordSyncerSet(t *testing.T) {
 	assert.Equal(t, m.SyncerSetsMeter["foo"][SyncerSetUidCleared].Count(), int64(1))
 }
 
+func TestRecordRejectedBidsForBidders(t *testing.T) {
+	registry := metrics.NewRegistry()
+	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon, openrtb_ext.BidderPubmatic}, config.DisabledMetrics{}, nil)
+
+	m.RecordFloorsRequestForAccount("1234")
+
+	m.RecordRejectedBidsForAccount("1234")
+	m.RecordRejectedBidsForBidder(openrtb_ext.BidderAppnexus)
+	m.RecordRejectedBidsForBidder(openrtb_ext.BidderAppnexus)
+
+	m.RecordRejectedBidsForBidder(openrtb_ext.BidderRubicon)
+
+	assert.Equal(t, m.accountMetrics["1234"].floorsRequestMeter.Count(), int64(1))
+	assert.Equal(t, m.accountMetrics["1234"].rejecteBidMeter.Count(), int64(1))
+	assert.Equal(t, m.FloorRejectedBidsMeter[openrtb_ext.BidderAppnexus].Count(), int64(2))
+	assert.Equal(t, m.FloorRejectedBidsMeter[openrtb_ext.BidderRubicon].Count(), int64(1))
+	assert.Equal(t, m.FloorRejectedBidsMeter[openrtb_ext.BidderPubmatic].Count(), int64(0))
+}
+
 func TestStoredResponses(t *testing.T) {
 	testCases := []struct {
 		description                           string

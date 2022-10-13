@@ -35,14 +35,15 @@ type Metrics struct {
 
 	// Metrics for OpenRTB requests specifically. So we can track what % of RequestsMeter are OpenRTB
 	// and know when legacy requests have been abandoned.
-	RequestStatuses       map[RequestType]map[RequestStatus]metrics.Meter
-	AmpNoCookieMeter      metrics.Meter
-	CookieSyncMeter       metrics.Meter
-	CookieSyncStatusMeter map[CookieSyncStatus]metrics.Meter
-	SyncerRequestsMeter   map[string]map[SyncerCookieSyncStatus]metrics.Meter
-	SetUidMeter           metrics.Meter
-	SetUidStatusMeter     map[SetUidStatus]metrics.Meter
-	SyncerSetsMeter       map[string]map[SyncerSetUidStatus]metrics.Meter
+	RequestStatuses        map[RequestType]map[RequestStatus]metrics.Meter
+	AmpNoCookieMeter       metrics.Meter
+	CookieSyncMeter        metrics.Meter
+	CookieSyncStatusMeter  map[CookieSyncStatus]metrics.Meter
+	SyncerRequestsMeter    map[string]map[SyncerCookieSyncStatus]metrics.Meter
+	SetUidMeter            metrics.Meter
+	SetUidStatusMeter      map[SetUidStatus]metrics.Meter
+	SyncerSetsMeter        map[string]map[SyncerSetUidStatus]metrics.Meter
+	FloorRejectedBidsMeter map[openrtb_ext.BidderName]metrics.Meter
 
 	// Media types found in the "imp" JSON object
 	ImpsTypeBanner metrics.Meter
@@ -114,10 +115,12 @@ type MarkupDeliveryMetrics struct {
 }
 
 type accountMetrics struct {
-	requestMeter      metrics.Meter
-	debugRequestMeter metrics.Meter
-	bidsReceivedMeter metrics.Meter
-	priceHistogram    metrics.Histogram
+	requestMeter       metrics.Meter
+	rejecteBidMeter    metrics.Meter
+	floorsRequestMeter metrics.Meter
+	debugRequestMeter  metrics.Meter
+	bidsReceivedMeter  metrics.Meter
+	priceHistogram     metrics.Histogram
 	// store account by adapter metrics. Type is map[PBSBidder.BidderCode]
 	adapterMetrics       map[openrtb_ext.BidderName]*AdapterMetrics
 	storedResponsesMeter metrics.Meter
@@ -162,6 +165,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		SetUidStatusMeter:              make(map[SetUidStatus]metrics.Meter),
 		SyncerSetsMeter:                make(map[string]map[SyncerSetUidStatus]metrics.Meter),
 		StoredResponsesMeter:           blankMeter,
+		FloorRejectedBidsMeter:         make(map[openrtb_ext.BidderName]metrics.Meter),
 
 		ImpsTypeBanner: blankMeter,
 		ImpsTypeVideo:  blankMeter,
@@ -291,6 +295,7 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 
 	for _, a := range exchanges {
 		registerAdapterMetrics(registry, "adapter", string(a), newMetrics.AdapterMetrics[a])
+		newMetrics.FloorRejectedBidsMeter[a] = metrics.GetOrRegisterMeter(fmt.Sprintf("rejected_bid.%s", a), registry)
 	}
 
 	for typ, statusMap := range newMetrics.RequestStatuses {
@@ -429,6 +434,8 @@ func (me *Metrics) getAccountMetrics(id string) *accountMetrics {
 	}
 	am = &accountMetrics{}
 	am.requestMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.requests", id), me.MetricsRegistry)
+	am.rejecteBidMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.rejected_bidrequests", id), me.MetricsRegistry)
+	am.floorsRequestMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.bidfloor_requests", id), me.MetricsRegistry)
 	am.debugRequestMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.debug_requests", id), me.MetricsRegistry)
 	am.bidsReceivedMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.bids_received", id), me.MetricsRegistry)
 	am.priceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("account.%s.prices", id), me.MetricsRegistry, metrics.NewExpDecaySample(1028, 0.015))
@@ -483,6 +490,18 @@ func (me *Metrics) RecordStoredResponse(pubId string) {
 	me.StoredResponsesMeter.Mark(1)
 	if pubId != PublisherUnknown && !me.MetricsDisabled.AccountStoredResponses {
 		me.getAccountMetrics(pubId).storedResponsesMeter.Mark(1)
+	}
+}
+
+func (me *Metrics) RecordRejectedBidsForAccount(pubId string) {
+	if pubId != PublisherUnknown {
+		me.getAccountMetrics(pubId).rejecteBidMeter.Mark(1)
+	}
+}
+
+func (me *Metrics) RecordFloorsRequestForAccount(pubId string) {
+	if pubId != PublisherUnknown {
+		me.getAccountMetrics(pubId).floorsRequestMeter.Mark(1)
 	}
 }
 
@@ -660,6 +679,13 @@ func (me *Metrics) RecordAdapterPrice(labels AdapterLabels, cpm float64) {
 	// Account-Adapter metrics
 	if aam, ok := me.getAccountMetrics(labels.PubID).adapterMetrics[labels.Adapter]; ok {
 		aam.PriceHistogram.Update(int64(cpm))
+	}
+}
+
+// RecordRejectedBidsForBidder implements a part of the MetricsEngine interface. Records rejected bids from bidder
+func (me *Metrics) RecordRejectedBidsForBidder(bidder openrtb_ext.BidderName) {
+	if keyMeter, exists := me.FloorRejectedBidsMeter[bidder]; exists {
+		keyMeter.Mark(1)
 	}
 }
 

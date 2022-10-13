@@ -78,6 +78,11 @@ type Metrics struct {
 	syncerRequests *prometheus.CounterVec
 	syncerSets     *prometheus.CounterVec
 
+	// Rejected Bids
+	rejectedBids         *prometheus.CounterVec
+	accountRejectedBid   *prometheus.CounterVec
+	accountFloorsRequest *prometheus.CounterVec
+
 	// Account Metrics
 	accountRequests        *prometheus.CounterVec
 	accountDebugRequests   *prometheus.CounterVec
@@ -446,6 +451,21 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"Count of total requests to Prebid Server that have stored responses labled by account",
 		[]string{accountLabel})
 
+	metrics.accountRejectedBid = newCounter(cfg, reg,
+		"floors_account_rejected_bid_requests",
+		"Count of total requests to Prebid Server that have rejected bids due to floors enfocement labled by account",
+		[]string{accountLabel})
+
+	metrics.accountFloorsRequest = newCounter(cfg, reg,
+		"floors_account_requests",
+		"Count of total requests to Prebid Server that have non-zero imp.bidfloor labled by account",
+		[]string{accountLabel})
+
+	metrics.rejectedBids = newCounter(cfg, reg,
+		"floors_partner_rejected_bids",
+		"Count of rejected bids due to floors enforcement per partner.",
+		[]string{adapterLabel})
+
 	metrics.adsCertSignTimer = newHistogram(cfg, reg,
 		"ads_cert_sign_time",
 		"Seconds to generate an AdsCert header",
@@ -620,6 +640,22 @@ func (m *Metrics) RecordStoredResponse(pubId string) {
 	}
 }
 
+func (m *Metrics) RecordRejectedBidsForAccount(pubId string) {
+	if pubId != metrics.PublisherUnknown {
+		m.accountRejectedBid.With(prometheus.Labels{
+			accountLabel: pubId,
+		}).Inc()
+	}
+}
+
+func (m *Metrics) RecordFloorsRequestForAccount(pubId string) {
+	if pubId != metrics.PublisherUnknown {
+		m.accountFloorsRequest.With(prometheus.Labels{
+			accountLabel: pubId,
+		}).Inc()
+	}
+}
+
 func (m *Metrics) RecordImps(labels metrics.ImpLabels) {
 	m.impressions.With(prometheus.Labels{
 		isBannerLabel: strconv.FormatBool(labels.BannerImps),
@@ -706,6 +742,14 @@ func (m *Metrics) RecordAdapterRequest(labels metrics.AdapterLabels) {
 		m.adapterErrors.With(prometheus.Labels{
 			adapterLabel:      string(labels.Adapter),
 			adapterErrorLabel: string(err),
+		}).Inc()
+	}
+}
+
+func (m *Metrics) RecordRejectedBidsForBidder(Adapter openrtb_ext.BidderName) {
+	if m.rejectedBids != nil {
+		m.rejectedBids.With(prometheus.Labels{
+			adapterLabel: string(Adapter),
 		}).Inc()
 	}
 }

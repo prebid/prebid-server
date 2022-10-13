@@ -28,6 +28,8 @@ const (
 	rewardKey           = "reward"
 	dctrKeywordName     = "dctr"
 	urlEncodedEqualChar = "%3D"
+	AdServerKey         = "adserver"
+	PBAdslotKey         = "pbadslot"
 )
 
 type PubmaticAdapter struct {
@@ -53,14 +55,8 @@ type pubmaticBidExtVideo struct {
 
 type ExtImpBidderPubmatic struct {
 	adapters.ExtImpBidder
-	Data *ExtData `json:"data,omitempty"`
-
+	Data        json.RawMessage `json:"data,omitempty"`
 	SKAdnetwork json.RawMessage `json:"skadn,omitempty"`
-}
-
-type ExtData struct {
-	AdServer *ExtAdServer `json:"adserver"`
-	PBAdSlot string       `json:"pbadslot"`
 }
 
 type ExtAdServer struct {
@@ -377,12 +373,8 @@ func parseImpressionObject(imp *openrtb2.Imp, extractWrapperExtFromImp, extractP
 		}
 	}
 
-	if bidderExt.Data != nil {
-		if bidderExt.Data.AdServer != nil && bidderExt.Data.AdServer.Name == AdServerGAM && bidderExt.Data.AdServer.AdSlot != "" {
-			extMap[ImpExtAdUnitKey] = bidderExt.Data.AdServer.AdSlot
-		} else if bidderExt.Data.PBAdSlot != "" {
-			extMap[ImpExtAdUnitKey] = bidderExt.Data.PBAdSlot
-		}
+	if len(bidderExt.Data) > 0 {
+		populateFirstPartyDataImpAttributes(bidderExt.Data, extMap)
 	}
 
 	imp.Ext = nil
@@ -554,6 +546,118 @@ func getNativeAdm(adm string) (string, error) {
 	}
 
 	return adm, nil
+}
+
+//getMapFromJSON converts JSON to map
+func getMapFromJSON(source json.RawMessage) map[string]interface{} {
+	if source != nil {
+		dataMap := make(map[string]interface{})
+		err := json.Unmarshal(source, &dataMap)
+		if err == nil {
+			return dataMap
+		}
+	}
+	return nil
+}
+
+//populateFirstPartyDataImpAttributes will parse imp.ext.data and populate imp extMap
+func populateFirstPartyDataImpAttributes(data json.RawMessage, extMap map[string]interface{}) {
+
+	dataMap := getMapFromJSON(data)
+
+	if dataMap == nil {
+		return
+	}
+
+	populateAdUnitKey(data, dataMap, extMap)
+	populateDctrKey(dataMap, extMap)
+}
+
+//populateAdUnitKey parses data object to read and populate DFP adunit key
+func populateAdUnitKey(data json.RawMessage, dataMap, extMap map[string]interface{}) {
+
+	if name, err := jsonparser.GetString(data, "adserver", "name"); err == nil && name == AdServerGAM {
+		if adslot, err := jsonparser.GetString(data, "adserver", "adslot"); err == nil && adslot != "" {
+			extMap[ImpExtAdUnitKey] = adslot
+		}
+	}
+
+	//imp.ext.dfp_ad_unit_code is not set, then check pbadslot in imp.ext.data
+	if extMap[ImpExtAdUnitKey] == nil && dataMap[PBAdslotKey] != nil {
+		extMap[ImpExtAdUnitKey] = dataMap[PBAdslotKey].(string)
+	}
+}
+
+//populateDctrKey reads key-val pairs from imp.ext.data and add it in imp.ext.key_val
+func populateDctrKey(dataMap, extMap map[string]interface{}) {
+	var dctr strings.Builder
+
+	//append dctr key if already present in extMap
+	if extMap[dctrKeyName] != nil {
+		dctr.WriteString(extMap[dctrKeyName].(string))
+	}
+
+	for key, val := range dataMap {
+
+		//ignore 'pbaslot' and 'adserver' key as they are not targeting keys
+		if key == PBAdslotKey || key == AdServerKey {
+			continue
+		}
+
+		//separate key-val pairs in dctr string by pipe(|)
+		if dctr.String() != "" {
+			dctr.WriteString("|")
+		}
+
+		//trimming spaces from key
+		key = strings.TrimSpace(key)
+
+		switch typedValue := val.(type) {
+		case string:
+			fmt.Fprintf(&dctr, "%s=%s", key, strings.TrimSpace(typedValue))
+
+		case float64, bool:
+			fmt.Fprintf(&dctr, "%s=%v", key, typedValue)
+
+		case []interface{}:
+			if isStringArray(typedValue) {
+				if valStrArr := getStringArray(typedValue); valStrArr != nil && len(valStrArr) > 0 {
+					valStr := strings.Join(valStrArr[:], ",")
+					fmt.Fprintf(&dctr, "%s=%s", key, valStr)
+				}
+			}
+		}
+	}
+
+	if dctrStr := dctr.String(); dctrStr != "" {
+		extMap[dctrKeyName] = strings.TrimSuffix(dctrStr, "|")
+	}
+}
+
+//isStringArray check if []interface is a valid string array
+func isStringArray(array []interface{}) bool {
+	for _, val := range array {
+		if _, ok := val.(string); !ok {
+			return false
+		}
+	}
+	return true
+}
+
+//getStringArray converts interface of type string array to string array
+func getStringArray(val interface{}) []string {
+	aInterface, ok := val.([]interface{})
+	if !ok {
+		return nil
+	}
+	aString := make([]string, len(aInterface))
+	for i, v := range aInterface {
+		if str, ok := v.(string); ok {
+			aString[i] = strings.TrimSpace(str)
+		}
+	}
+
+	return aString
 }
 
 // getBidType returns the bid type specified in the response bid.ext

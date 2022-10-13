@@ -15,6 +15,7 @@ const (
 	NoBidPriceErrorCode
 	BidderFailedSchemaValidationErrorCode
 	AdpodPrefilteringErrorCode
+	BidRejectionFloorsErrorCode
 )
 
 // Defines numeric codes for well-known warnings.
