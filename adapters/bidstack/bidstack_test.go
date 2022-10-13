@@ -13,7 +13,7 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderBidstack, config.Adapter{Endpoint: "http://mock-adserver.url"})
+	bidder, buildErr := Builder(openrtb_ext.BidderBidstack, config.Adapter{Endpoint: "http://mock-adserver.url"}, config.Server{})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)

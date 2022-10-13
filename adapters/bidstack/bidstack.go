@@ -33,7 +33,7 @@ type adapter struct {
 }
 
 // Builder builds a new instance of the Bidstack adapter for the given bidder with the given config.
-func Builder(_ openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(_ openrtb_ext.BidderName, config config.Adapter, _ config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}
