@@ -42,7 +42,11 @@ type RequestWrapper struct {
 	sourceExt   *SourceExt
 }
 
-const jsonEmptyObjectLength = 2
+const (
+	jsonEmptyObjectLength               = 2
+	ConsentedProvidersSettingsStringKey = "ConsentedProvidersSettings"
+	ConsentedProvidersSettingsListKey   = "consented_providers_settings"
+)
 
 // LenImp returns the number of impressions without causing the creation of ImpWrapper objects.
 func (rw *RequestWrapper) LenImp() int {
@@ -390,14 +394,14 @@ func (ue *UserExt) unmarshal(extJson json.RawMessage) error {
 		}
 	}
 
-	if consentedProviderSettingsJson, hasCPSettings := ue.ext["ConsentedProvidersSettings"]; hasCPSettings {
+	if consentedProviderSettingsJson, hasCPSettings := ue.ext[ConsentedProvidersSettingsStringKey]; hasCPSettings {
 		ue.consentedProvidersSettingsIn = &ConsentedProvidersSettingsIn{}
 		if err := json.Unmarshal(consentedProviderSettingsJson, ue.consentedProvidersSettingsIn); err != nil {
 			return err
 		}
 	}
 
-	if consentedProviderSettingsJson, hasCPSettings := ue.ext["consented_providers_settings"]; hasCPSettings {
+	if consentedProviderSettingsJson, hasCPSettings := ue.ext[ConsentedProvidersSettingsListKey]; hasCPSettings {
 		ue.consentedProvidersSettingsOut = &ConsentedProvidersSettingsOut{}
 		if err := json.Unmarshal(consentedProviderSettingsJson, ue.consentedProvidersSettingsOut); err != nil {
 			return err
