@@ -128,6 +128,13 @@ func (me *MultiMetricsEngine) RecordAdapterRequest(labels metrics.AdapterLabels)
 	}
 }
 
+// RecordRejectedBidsForBidder across all engines
+func (me *MultiMetricsEngine) RecordRejectedBidsForBidder(bidder openrtb_ext.BidderName) {
+	for _, thisME := range *me {
+		thisME.RecordRejectedBidsForBidder(bidder)
+	}
+}
+
 // Keeps track of created and reused connections to adapter bidders and the time from the
 // connection request, to the connection creation, or reuse from the pool across all engines
 func (me *MultiMetricsEngine) RecordAdapterConnections(bidderName openrtb_ext.BidderName, connWasReused bool, connWaitTime time.Duration) {
@@ -268,6 +275,10 @@ func (me *MultiMetricsEngine) RecordPodImpGenTime(labels metrics.PodLabels, star
 	}
 }
 
+// RecordRejectedBidsForBidder as a noop
+func (me *NilMetricsEngine) RecordRejectedBidsForBidder(bidder openrtb_ext.BidderName) {
+}
+
 // RecordPodCombGenTime as a noop
 func (me *MultiMetricsEngine) RecordPodCombGenTime(labels metrics.PodLabels, elapsedTime time.Duration) {
 	for _, thisME := range *me {
@@ -306,6 +317,18 @@ func (me *MultiMetricsEngine) RecordDebugRequest(debugEnabled bool, pubId string
 func (me *MultiMetricsEngine) RecordStoredResponse(pubId string) {
 	for _, thisME := range *me {
 		thisME.RecordStoredResponse(pubId)
+	}
+}
+
+func (me *MultiMetricsEngine) RecordRejectedBidsForAccount(pubId string) {
+	for _, thisME := range *me {
+		thisME.RecordRejectedBidsForAccount(pubId)
+	}
+}
+
+func (me *MultiMetricsEngine) RecordFloorsRequestForAccount(pubId string) {
+	for _, thisME := range *me {
+		thisME.RecordFloorsRequestForAccount(pubId)
 	}
 }
 
@@ -456,6 +479,12 @@ func (me *NilMetricsEngine) RecordDebugRequest(debugEnabled bool, pubId string) 
 }
 
 func (me *NilMetricsEngine) RecordStoredResponse(pubId string) {
+}
+
+func (me *NilMetricsEngine) RecordRejectedBidsForAccount(pubId string) {
+}
+
+func (me *NilMetricsEngine) RecordFloorsRequestForAccount(pubId string) {
 }
 
 func (me *NilMetricsEngine) RecordAdsCertReq(success bool) {

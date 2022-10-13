@@ -791,7 +791,7 @@ func TestEnforceFloorToBids(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			seatbids, errs := enforceFloorToBids(tt.args.bidRequest, tt.args.seatBids, tt.args.conversions, tt.args.enforceDealFloors)
+			seatbids, errs, _ := enforceFloorToBids(tt.args.bidRequest, tt.args.seatBids, tt.args.conversions, tt.args.enforceDealFloors)
 			if !reflect.DeepEqual(seatbids, tt.want) {
 				t.Errorf("enforceFloorToBids() got = %v, want %v", seatbids, tt.want)
 			}
@@ -875,7 +875,7 @@ func TestEnforceFloorToBidsConversion(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1 := enforceFloorToBids(tt.args.bidRequest, tt.args.seatBids, tt.args.conversions, tt.args.enforceDealFloors)
+			got, got1, _ := enforceFloorToBids(tt.args.bidRequest, tt.args.seatBids, tt.args.conversions, tt.args.enforceDealFloors)
 			assert.Equal(t, tt.want, got)
 			assert.Equal(t, tt.want1, ErrToString(got1))
 		})
@@ -1901,7 +1901,7 @@ func TestEnforceFloors(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			seatbid, errs := enforceFloors(tt.args.r, tt.args.seatBids, tt.args.floor, tt.args.conversions, tt.args.responseDebugAllow)
+			seatbid, errs, _ := enforceFloors(tt.args.r, tt.args.seatBids, tt.args.floor, tt.args.conversions, tt.args.responseDebugAllow)
 			for biderName, seat := range seatbid {
 				if len(seat.bids) != len(tt.want[biderName].bids) {
 					t.Errorf("enforceFloors() got = %v bids, want %v bids for BidderCode = %v ", len(seat.bids), len(tt.want[biderName].bids), biderName)

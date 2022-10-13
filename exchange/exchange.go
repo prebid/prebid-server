@@ -20,6 +20,7 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/experiment/adscert"
 	"github.com/prebid/prebid-server/firstpartydata"
+	"github.com/prebid/prebid-server/floors"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -306,8 +307,22 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	if anyBidsReturned {
 
 		//If floor enforcement config enabled then filter bids
-		adapterBids, enforceErrs := enforceFloors(&r, adapterBids, e.floor, conversions, responseDebugAllow)
+		adapterBids, enforceErrs, rejectedBids := enforceFloors(&r, adapterBids, e.floor, conversions, responseDebugAllow)
 		errs = append(errs, enforceErrs...)
+
+		if floors.RequestHasFloors(r.BidRequestWrapper.BidRequest) {
+			// Record request count with non-zero imp.bidfloor value
+			e.me.RecordFloorsRequestForAccount(r.PubID)
+
+			if e.floor.Enabled && len(rejectedBids) > 0 {
+				// Record rejected bid count at account level
+				e.me.RecordRejectedBidsForAccount(r.PubID)
+				// Record rejected bid count at adaptor/bidder level
+				for _, rejectedBid := range rejectedBids {
+					e.me.RecordRejectedBidsForBidder(openrtb_ext.BidderName(rejectedBid.BidderName))
+				}
+			}
+		}
 
 		adapterBids, rejections := applyAdvertiserBlocking(r.BidRequestWrapper.BidRequest, adapterBids)
 
