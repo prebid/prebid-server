@@ -82,7 +82,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 }
 
 // Builder builds a new instance of the Medianet adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	url := buildEndpoint(config.Endpoint, config.ExtraAdapterInfo)
 	return &adapter{
 		endpoint: url,
