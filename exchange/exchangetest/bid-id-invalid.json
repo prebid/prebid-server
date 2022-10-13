@@ -18,8 +18,12 @@
             ]
           },
           "ext": {
-            "appnexus": {
-              "placementId": 1
+            "prebid": {
+              "bidder": {
+                "appnexus": {
+                  "placementId": 1
+                }
+              }
             }
           }
         }
@@ -45,29 +49,31 @@
   "outgoingRequests": {
     "appnexus": {
       "mockResponse": {
-        "pbsSeatBids": [{
-          "pbsBids": [
-            {
-              "ortbBid": {
-                "id": "apn-bid",
-                "impid": "my-imp-id",
-                "price": 0.3,
-                "w": 200,
-                "h": 250,
-                "crid": "creative-1",
-                "cat": [
-                  "IAB1-1"
-                ]
-              },
-              "bidType": "video",
-              "bidVideo": {
-                "duration": 30,
-                "PrimaryCategory": ""
+        "pbsSeatBids": [
+          {
+            "pbsBids": [
+              {
+                "ortbBid": {
+                  "id": "apn-bid",
+                  "impid": "my-imp-id",
+                  "price": 0.3,
+                  "w": 200,
+                  "h": 250,
+                  "crid": "creative-1",
+                  "cat": [
+                    "IAB1-1"
+                  ]
+                },
+                "bidType": "video",
+                "bidVideo": {
+                  "duration": 30,
+                  "PrimaryCategory": ""
+                }
               }
-            }
-          ],
-          "seat": "appnexus"
-        }]
+            ],
+            "seat": "appnexus"
+          }
+        ]
       }
     }
   },
@@ -126,8 +132,12 @@
                 ]
               },
               "ext": {
-                "appnexus": {
-                  "placementId": 1
+                "prebid": {
+                  "bidder": {
+                    "appnexus": {
+                      "placementId": 1
+                    }
+                  }
                 }
               }
             }

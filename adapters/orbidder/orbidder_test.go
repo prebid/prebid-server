@@ -3,10 +3,11 @@ package orbidder
 import (
 	"encoding/json"
 	"errors"
+	"testing"
+
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/stretchr/testify/mock"
-	"testing"
 
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/config"
@@ -38,7 +39,7 @@ func TestPreprocessExtensions(t *testing.T) {
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderOrbidder, config.Adapter{
-		Endpoint: "https://orbidder-test"})
+		Endpoint: "https://orbidder-test"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)

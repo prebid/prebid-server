@@ -171,6 +171,7 @@ func TestDefaults(t *testing.T) {
 	cmpStrings(t, "experiment.adscert.remote.url", cfg.Experiment.AdCerts.Remote.Url, "")
 	cmpInts(t, "experiment.adscert.remote.signing_timeout_ms", cfg.Experiment.AdCerts.Remote.SigningTimeoutMs, 5)
 	cmpNils(t, "host_schain_node", cfg.HostSChainNode)
+	cmpStrings(t, "datacenter", cfg.DataCenter, "")
 
 	//Assert purpose VendorExceptionMap hash tables were built correctly
 	expectedTCF2 := TCF2{
@@ -338,6 +339,7 @@ host: prebid-server.prebid.org
 port: 1234
 admin_port: 5678
 garbage_collector_threshold: 1
+datacenter: "1"
 auction_timeouts_ms:
   max: 123
   default: 50
@@ -442,7 +444,7 @@ func TestFullConfig(t *testing.T) {
 	SetupViper(v, "", bidderInfos)
 	v.SetConfigType("yaml")
 	v.ReadConfig(bytes.NewBuffer(fullConfig))
-	cfg, err := New(v, bidderInfos)
+	cfg, err := New(v, bidderInfos, mockNormalizeBidderName)
 	assert.NoError(t, err, "Setting up config should work but it doesn't")
 	cmpStrings(t, "cookie domain", cfg.HostCookie.Domain, "cookies.prebid.org")
 	cmpStrings(t, "cookie name", cfg.HostCookie.CookieName, "userid")
@@ -476,6 +478,7 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "host_schain_node.sid", cfg.HostSChainNode.SID, "00001")
 	cmpStrings(t, "host_schain_node.rid", cfg.HostSChainNode.RID, "BidRequest")
 	cmpInt8s(t, "host_schain_node.hp", cfg.HostSChainNode.HP, &int8One)
+	cmpStrings(t, "datacenter", cfg.DataCenter, "1")
 
 	//Assert the NonStandardPublishers was correctly unmarshalled
 	assert.Equal(t, []string{"pub1", "pub2"}, cfg.GDPR.NonStandardPublishers, "gdpr.non_standard_publishers")
@@ -691,7 +694,7 @@ func TestMigrateConfig(t *testing.T) {
 	v.SetConfigType("yaml")
 	v.ReadConfig(bytes.NewBuffer(oldStoredRequestsConfig))
 	migrateConfig(v)
-	cfg, err := New(v, bidderInfos)
+	cfg, err := New(v, bidderInfos, mockNormalizeBidderName)
 	assert.NoError(t, err, "Setting up config should work but it doesn't")
 	cmpBools(t, "stored_requests.filesystem.enabled", true, cfg.StoredRequests.Files.Enabled)
 	cmpStrings(t, "stored_requests.filesystem.path", "/somepath", cfg.StoredRequests.Files.Path)
@@ -1753,7 +1756,7 @@ func TestNewCallsRequestValidation(t *testing.T) {
 			`request_validation:
     ipv4_private_networks: ` + test.privateIPNetworks)))
 
-		result, resultErr := New(v, bidderInfos)
+		result, resultErr := New(v, bidderInfos, mockNormalizeBidderName)
 
 		if test.expectedError == "" {
 			assert.NoError(t, resultErr, test.description+":err")
@@ -1788,7 +1791,7 @@ func newDefaultConfig(t *testing.T) (*Configuration, *viper.Viper) {
 	SetupViper(v, "", bidderInfos)
 	v.Set("gdpr.default_value", "0")
 	v.SetConfigType("yaml")
-	cfg, err := New(v, bidderInfos)
+	cfg, err := New(v, bidderInfos, mockNormalizeBidderName)
 	assert.NoError(t, err, "Setting up config should work but it doesn't")
 	return cfg, v
 }
@@ -1858,7 +1861,7 @@ func TestSpecialFeature1VendorExceptionMap(t *testing.T) {
 		SetupViper(v, "", bidderInfos)
 		v.SetConfigType("yaml")
 		v.ReadConfig(bytes.NewBuffer(config))
-		cfg, err := New(v, bidderInfos)
+		cfg, err := New(v, bidderInfos, mockNormalizeBidderName)
 		assert.NoError(t, err, "Setting up config error", tt.description)
 
 		assert.Equal(t, tt.wantVendorExceptions, cfg.GDPR.TCF2.SpecialFeature1.VendorExceptions, tt.description)
