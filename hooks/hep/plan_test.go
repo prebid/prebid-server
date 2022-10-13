@@ -550,115 +550,6 @@ func TestPlanForRawBidResponseStage(t *testing.T) {
 	}
 }
 
-func TestPlanForProcessedBidResponseStage(t *testing.T) {
-	hooks := map[string]map[string]interface{}{
-		"foobar": {
-			"foo": fakeProcessedBidResponseHook{},
-			"bar": fakeProcessedBidResponseHook{},
-		},
-		"ortb2blocking": {
-			"block_request": fakeProcessedBidResponseHook{},
-		},
-		"prebid": {
-			"baz": fakeProcessedBidResponseHook{},
-		},
-	}
-
-	testCases := map[string]struct {
-		givenEndpoint               string
-		givenHostPlanData           []byte
-		givenDefaultAccountPlanData []byte
-		giveAccountPlanData         []byte
-		givenHooks                  map[string]map[string]interface{}
-		expectedPlan                Plan[stages.ProcessedBidResponseHook]
-	}{
-		"Account-specific execution plan rewrites default-account execution plan": {
-			givenEndpoint:               "/openrtb2/auction",
-			givenHostPlanData:           []byte(`{"endpoints":{"/openrtb2/auction":{"stages":{"procbidresponse":{"groups":[{"timeout":5,"hook-sequence":[{"module-code":"foobar","hook-impl-code":"foo"}]}]}}}}}`),
-			givenDefaultAccountPlanData: []byte(`{"endpoints": {"/openrtb2/auction": {"stages": {"procbidresponse": {"groups": [{"timeout": 10, "hook-sequence": [{"module-code": "foobar", "hook-impl-code": "bar"}, {"module-code": "ortb2blocking", "hook-impl-code": "block_request"}]}, {"timeout": 5, "hook-sequence": [{"module-code": "foobar", "hook-impl-code": "foo"}]}]}}}, "/openrtb2/amp": {"stages": {"entrypoint": {"groups": [{"timeout": 5, "hook-sequence": [{"module-code": "foobar", "hook-impl-code": "foo"}]}]}}}}}`),
-			giveAccountPlanData:         []byte(`{"endpoints": {"/openrtb2/auction": {"stages": {"procbidresponse": {"groups": [{"timeout": 15, "hook-sequence": [{"module-code": "prebid", "hook-impl-code": "baz"}]}]}}}}}`),
-			givenHooks:                  hooks,
-			expectedPlan: Plan[stages.ProcessedBidResponseHook]{
-				// first group from host-level plan
-				Group[stages.ProcessedBidResponseHook]{
-					Timeout: 5 * time.Millisecond,
-					Hooks: []HookWrapper[stages.ProcessedBidResponseHook]{
-						{Module: "foobar", Code: "foo", Hook: fakeProcessedBidResponseHook{}},
-					},
-				},
-				// then come groups from account-level plan (default-account-level plan ignored)
-				Group[stages.ProcessedBidResponseHook]{
-					Timeout: 15 * time.Millisecond,
-					Hooks: []HookWrapper[stages.ProcessedBidResponseHook]{
-						{Module: "prebid", Code: "baz", Hook: fakeProcessedBidResponseHook{}},
-					},
-				},
-			},
-		},
-		"Works with only account-specific plan": {
-			givenEndpoint:               "/openrtb2/auction",
-			givenHostPlanData:           []byte(`{}`),
-			givenDefaultAccountPlanData: []byte(`{}`),
-			giveAccountPlanData:         []byte(`{"endpoints": {"/openrtb2/auction": {"stages": {"procbidresponse": {"groups": [{"timeout": 15, "hook-sequence": [{"module-code": "prebid", "hook-impl-code": "baz"}]}]}}}}}`),
-			givenHooks:                  hooks,
-			expectedPlan: Plan[stages.ProcessedBidResponseHook]{
-				Group[stages.ProcessedBidResponseHook]{
-					Timeout: 15 * time.Millisecond,
-					Hooks: []HookWrapper[stages.ProcessedBidResponseHook]{
-						{Module: "prebid", Code: "baz", Hook: fakeProcessedBidResponseHook{}},
-					},
-				},
-			},
-		},
-		"Works with empty account-specific execution plan": {
-			givenEndpoint:               "/openrtb2/auction",
-			givenHostPlanData:           []byte(`{"endpoints":{"/openrtb2/auction":{"stages":{"procbidresponse":{"groups":[{"timeout":5,"hook-sequence":[{"module-code":"foobar","hook-impl-code":"foo"}]}]}}}}}`),
-			givenDefaultAccountPlanData: []byte(`{"endpoints": {"/openrtb2/auction": {"stages": {"procbidresponse": {"groups": [{"timeout": 10, "hook-sequence": [{"module-code": "foobar", "hook-impl-code": "bar"}, {"module-code": "ortb2blocking", "hook-impl-code": "block_request"}]}, {"timeout": 5, "hook-sequence": [{"module-code": "foobar", "hook-impl-code": "foo"}]}]}}}, "/openrtb2/amp": {"stages": {"entrypoint": {"groups": [{"timeout": 5, "hook-sequence": [{"module-code": "foobar", "hook-impl-code": "foo"}]}]}}}}}`),
-			giveAccountPlanData:         []byte(`{}`),
-			givenHooks:                  hooks,
-			expectedPlan: Plan[stages.ProcessedBidResponseHook]{
-				Group[stages.ProcessedBidResponseHook]{
-					Timeout: 5 * time.Millisecond,
-					Hooks: []HookWrapper[stages.ProcessedBidResponseHook]{
-						{Module: "foobar", Code: "foo", Hook: fakeProcessedBidResponseHook{}},
-					},
-				},
-				Group[stages.ProcessedBidResponseHook]{
-					Timeout: 10 * time.Millisecond,
-					Hooks: []HookWrapper[stages.ProcessedBidResponseHook]{
-						{Module: "foobar", Code: "bar", Hook: fakeProcessedBidResponseHook{}},
-						{Module: "ortb2blocking", Code: "block_request", Hook: fakeProcessedBidResponseHook{}},
-					},
-				},
-				Group[stages.ProcessedBidResponseHook]{
-					Timeout: 5 * time.Millisecond,
-					Hooks: []HookWrapper[stages.ProcessedBidResponseHook]{
-						{Module: "foobar", Code: "foo", Hook: fakeProcessedBidResponseHook{}},
-					},
-				},
-			},
-		},
-	}
-
-	for name, test := range testCases {
-		t.Run(name, func(t *testing.T) {
-			account := new(config.Account)
-			err := json.Unmarshal(test.giveAccountPlanData, &account.Hooks)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			planBuilder, err := getPlanBuilder(test.givenHooks, test.givenHostPlanData, test.givenDefaultAccountPlanData)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			plan := planBuilder.PlanForProcessedBidResponseStage(test.givenEndpoint, account)
-			assert.Equal(t, test.expectedPlan, plan)
-		})
-	}
-}
-
 func TestPlanForAllProcBidResponsesStage(t *testing.T) {
 	hooks := map[string]map[string]interface{}{
 		"foobar": {
@@ -935,12 +826,6 @@ type fakeRawBidResponseHook struct{}
 
 func (f fakeRawBidResponseHook) Call(ctx context.Context, i invocation.Context, payload stages.RawBidResponsePayload) (invocation.HookResult[stages.RawBidResponsePayload], error) {
 	return invocation.HookResult[stages.RawBidResponsePayload]{}, nil
-}
-
-type fakeProcessedBidResponseHook struct{}
-
-func (f fakeProcessedBidResponseHook) Call(ctx context.Context, i invocation.Context, payload stages.ProcessedBidResponsePayload) (invocation.HookResult[stages.ProcessedBidResponsePayload], error) {
-	return invocation.HookResult[stages.ProcessedBidResponsePayload]{}, nil
 }
 
 type fakeAllProcBidResponsesHook struct{}

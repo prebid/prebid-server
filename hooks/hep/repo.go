@@ -12,7 +12,6 @@ type HookRepository interface {
 	GetProcessedAuctionHook(module, hook string) (stages.ProcessedAuctionHook, bool)
 	GetBidRequestHook(module, hook string) (stages.BidRequestHook, bool)
 	GetRawBidResponseHook(module, hook string) (stages.RawBidResponseHook, bool)
-	GetProcessedBidResponseHook(module, hook string) (stages.ProcessedBidResponseHook, bool)
 	GetAllProcBidResponsesHook(module, hook string) (stages.AllProcBidResponsesHook, bool)
 	GetAuctionResponseHook(module, hook string) (stages.AuctionResponseHook, bool)
 }
@@ -36,7 +35,6 @@ type hookRepository struct {
 	procauctionHooks        map[string]map[string]stages.ProcessedAuctionHook
 	bidrequestHooks         map[string]map[string]stages.BidRequestHook
 	rawbidresponseHooks     map[string]map[string]stages.RawBidResponseHook
-	procbidresponseHooks    map[string]map[string]stages.ProcessedBidResponseHook
 	allprocbidresponseHooks map[string]map[string]stages.AllProcBidResponsesHook
 	auctionresponseHooks    map[string]map[string]stages.AuctionResponseHook
 }
@@ -61,10 +59,6 @@ func (r *hookRepository) GetRawBidResponseHook(module, hook string) (stages.RawB
 	return getHook(r.rawbidresponseHooks, module, hook)
 }
 
-func (r *hookRepository) GetProcessedBidResponseHook(module, hook string) (stages.ProcessedBidResponseHook, bool) {
-	return getHook(r.procbidresponseHooks, module, hook)
-}
-
 func (r *hookRepository) GetAllProcBidResponsesHook(module, hook string) (stages.AllProcBidResponsesHook, bool) {
 	return getHook(r.allprocbidresponseHooks, module, hook)
 }
@@ -85,8 +79,6 @@ func (r *hookRepository) add(module, code string, hook interface{}) (err error) 
 		r.bidrequestHooks, err = addHook(r.bidrequestHooks, hookType, module, code)
 	case stages.RawBidResponseHook:
 		r.rawbidresponseHooks, err = addHook(r.rawbidresponseHooks, hookType, module, code)
-	case stages.ProcessedBidResponseHook:
-		r.procbidresponseHooks, err = addHook(r.procbidresponseHooks, hookType, module, code)
 	case stages.AllProcBidResponsesHook:
 		r.allprocbidresponseHooks, err = addHook(r.allprocbidresponseHooks, hookType, module, code)
 	case stages.AuctionResponseHook:

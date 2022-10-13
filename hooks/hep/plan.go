@@ -14,7 +14,6 @@ const (
 	stageProcauction         = "procauction"
 	stageBidrequest          = "bidrequest"
 	stageRawbidresponse      = "rawbidresponse"
-	stageProcbidresponse     = "procbidresponse"
 	stageAllprocbidresponses = "allprocbidresponses"
 	stageAuctionresponse     = "auctionresponse"
 )
@@ -25,7 +24,6 @@ type HookExecutionPlanBuilder interface {
 	PlanForProcessedAuctionStage(endpoint string, account *config.Account) Plan[stages.ProcessedAuctionHook]
 	PlanForBidRequestStage(endpoint string, account *config.Account) Plan[stages.BidRequestHook]
 	PlanForRawBidResponseStage(endpoint string, account *config.Account) Plan[stages.RawBidResponseHook]
-	PlanForProcessedBidResponseStage(endpoint string, account *config.Account) Plan[stages.ProcessedBidResponseHook]
 	PlanForAllProcBidResponsesStage(endpoint string, account *config.Account) Plan[stages.AllProcBidResponsesHook]
 	PlanForAuctionResponseStage(endpoint string, account *config.Account) Plan[stages.AuctionResponseHook]
 }
@@ -89,16 +87,6 @@ func (p ExecutionPlan) PlanForRawBidResponseStage(endpoint string, account *conf
 		endpoint,
 		stageRawbidresponse,
 		p.repo.GetRawBidResponseHook,
-	)
-}
-
-func (p ExecutionPlan) PlanForProcessedBidResponseStage(endpoint string, account *config.Account) Plan[stages.ProcessedBidResponseHook] {
-	return getMergedPlan(
-		p.hooks,
-		account,
-		endpoint,
-		stageProcbidresponse,
-		p.repo.GetProcessedBidResponseHook,
 	)
 }
 
