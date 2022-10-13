@@ -20,7 +20,8 @@ import (
 )
 
 const badvLimitSize = 50
-const bannerExtContent = `{"rp":{"mime":"text/html"}}`
+
+var bannerExtContent = []byte(`{"rp":{"mime":"text/html"}}`)
 
 type RubiconAdapter struct {
 	URI          string
@@ -409,8 +410,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 				})
 				continue
 			}
-			bannerExt := []byte(bannerExtContent) //this should be a constant outside of the function
-			bannerCopy.Ext = bannerExt
+			bannerCopy.Ext = bannerExtContent
 			if err != nil {
 				errs = append(errs, err)
 				continue
