@@ -32,8 +32,8 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/gofrs/uuid"
 	"github.com/golang/glog"
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
-	"github.com/mxmCherry/openrtb/v16/openrtb3"
+	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb3"
 )
 
 type extCacheInstructions struct {
@@ -69,6 +69,7 @@ type exchange struct {
 	bidIDGenerator    BidIDGenerator
 	hostSChainNode    *openrtb2.SupplyChainNode
 	adsCertSigner     adscert.Signer
+	server            config.Server
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -147,6 +148,7 @@ func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid
 		bidIDGenerator: &bidIDGenerator{cfg.GenerateBidID},
 		hostSChainNode: cfg.HostSChainNode,
 		adsCertSigner:  adsCertSigner,
+		server:         config.Server{ExternalUrl: cfg.ExternalURL, GvlID: cfg.GDPR.HostVendorID, DataCenter: cfg.DataCenter},
 	}
 }
 
@@ -201,6 +203,9 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	requestExt, err := extractBidRequestExt(r.BidRequestWrapper.BidRequest)
 	if err != nil {
 		return nil, err
+	}
+	if !e.server.Empty() {
+		requestExt.Prebid.Server = &openrtb_ext.ExtRequestPrebidServer{ExternalUrl: e.server.ExternalUrl, GvlID: e.server.GvlID, DataCenter: e.server.DataCenter}
 	}
 
 	cacheInstructions := getExtCacheInstructions(requestExt)

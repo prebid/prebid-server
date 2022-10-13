@@ -64,7 +64,13 @@
             }
           ],
           "ext": {
-            "prebid": {}
+            "prebid": {
+              "server": {
+                "datacenter": "Datacenter",
+                "externalurl": "http://hosturl.com",
+                "gvlid": 1
+              }
+            }
           }
         },
         "bidAdjustments": {
@@ -101,7 +107,13 @@
             }
           ],
           "ext": {
-            "prebid": {}
+            "prebid": {
+              "server": {
+                "datacenter": "Datacenter",
+                "externalurl": "http://hosturl.com",
+                "gvlid": 1
+              }
+            }
           }
         },
         "bidAdjustments": {

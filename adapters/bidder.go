@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/metrics"
@@ -153,9 +153,9 @@ func NewExtraRequestInfo(c currency.Conversions) ExtraRequestInfo {
 }
 
 // ConvertCurrency converts a given amount from one currency to another, or returns:
-//  - Error if the `from` or `to` arguments are malformed or unknown ISO-4217 codes.
-//  - ConversionNotFoundError if the conversion mapping is unknown to Prebid Server
-//    and not provided in the bid request.
+//   - Error if the `from` or `to` arguments are malformed or unknown ISO-4217 codes.
+//   - ConversionNotFoundError if the conversion mapping is unknown to Prebid Server
+//     and not provided in the bid request.
 func (r ExtraRequestInfo) ConvertCurrency(value float64, from, to string) (float64, error) {
 	if rate, err := r.CurrencyConversions.GetRate(from, to); err == nil {
 		return value * rate, nil
@@ -164,4 +164,4 @@ func (r ExtraRequestInfo) ConvertCurrency(value float64, from, to string) (float
 	}
 }
 
-type Builder func(openrtb_ext.BidderName, config.Adapter) (Bidder, error)
+type Builder func(openrtb_ext.BidderName, config.Adapter, config.Server) (Bidder, error)

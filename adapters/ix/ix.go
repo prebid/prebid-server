@@ -12,9 +12,9 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 
-	"github.com/mxmCherry/openrtb/v16/native1"
-	native1response "github.com/mxmCherry/openrtb/v16/native1/response"
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/openrtb/v17/native1"
+	native1response "github.com/prebid/openrtb/v17/native1/response"
+	"github.com/prebid/openrtb/v17/openrtb2"
 )
 
 type IxAdapter struct {
@@ -255,7 +255,7 @@ func getMediaTypeForBid(bid openrtb2.Bid, impMediaTypeReq map[string]openrtb_ext
 }
 
 // Builder builds a new instance of the Ix adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &IxAdapter{
 		URI:         config.Endpoint,
 		maxRequests: 20,
