@@ -12,6 +12,8 @@
     "imp": [
       {
         "id": "imp-id-1",
+        "bidfloor": 4.20,
+        "bidfloorcur": "GBP",
         "video": {
           "mimes": [
             "video/mp4"
@@ -22,13 +24,23 @@
           ],
           "w": 1024,
           "h": 576
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "225a4f40-1df1-48b2-b238-8774a638ce6e"
+          }
         }
       }
     ],
     "ext": {
       "prebid": {
-        "bidderparams": {
-          "publisherId": "225a4f40-1df1-48b2-b238-8774a638ce6e"
+        "currency": {
+          "rates": {
+            "GBP": {
+              "USD": 0.5
+            }
+          },
+          "usepbsrates": false
         }
       }
     }
@@ -50,6 +62,8 @@
           "imp": [
             {
               "id": "imp-id-1",
+              "bidfloor": 2.10,
+              "bidfloorcur": "USD",
               "video": {
                 "mimes": [
                   "video/mp4"
@@ -60,13 +74,23 @@
                 ],
                 "w": 1024,
                 "h": 576
+              },
+              "ext": {
+                "bidder": {
+                  "publisherId": "225a4f40-1df1-48b2-b238-8774a638ce6e"
+                }
               }
             }
           ],
           "ext": {
             "prebid": {
-              "bidderparams": {
-                "publisherId": "225a4f40-1df1-48b2-b238-8774a638ce6e"
+              "currency": {
+                "rates": {
+                  "GBP": {
+                    "USD": 0.5
+                  }
+                },
+                "usepbsrates": false
               }
             }
           }

@@ -24,48 +24,27 @@ func TestJsonSamples(t *testing.T) {
 
 func Test_prepareHeaders(t *testing.T) {
 	publisherID := "12345"
-	happyHeaders := http.Header{
+	expected := http.Header{
 		"Content-Type":  {"application/json"},
 		"Authorization": {"Bearer " + publisherID},
 	}
 
-	t.Run("happy", func(t *testing.T) {
-		expected := happyHeaders
-		actual, err := prepareHeaders(&openrtb2.BidRequest{Ext: []byte(`{"prebid":{"bidderparams":{"publisherId":"` + publisherID + `"}}}`)})
-
-		assert.NoError(t, err)
-		assert.Equal(t, expected, actual)
+	actual, err := prepareHeaders(&openrtb2.BidRequest{Imp: []openrtb2.Imp{
+		{Ext: []byte(`{"bidder":{"publisherId":"` + publisherID + `"}}`)}},
 	})
 
-	t.Run("no extensions", func(t *testing.T) {
-		expected := (http.Header)(nil)
-		actual, err := prepareHeaders(&openrtb2.BidRequest{})
+	assert.NoError(t, err)
+	assert.Equal(t, expected, actual)
+}
 
-		assert.Equal(t, ErrNoPublisherID, err)
-		assert.Equal(t, expected, actual)
+func Test_getBidderExt(t *testing.T) {
+	publisherID := "12345"
+	expected := openrtb_ext.ImpExtBidstack{PublisherID: publisherID}
+
+	actual, err := getBidderExt(openrtb2.Imp{
+		Ext: []byte(`{"bidder":{"publisherId":"` + publisherID + `"}}`),
 	})
 
-	t.Run("no publisher ID key in extensions", func(t *testing.T) {
-		expected := (http.Header)(nil)
-		actual, err := prepareHeaders(&openrtb2.BidRequest{Ext: []byte(`{"prebid":{"bidderparams":{}}}`)})
-
-		assert.Equal(t, ErrNoPublisherID, err)
-		assert.Equal(t, expected, actual)
-	})
-
-	t.Run("empty publisher ID value in extensions", func(t *testing.T) {
-		expected := (http.Header)(nil)
-		actual, err := prepareHeaders(&openrtb2.BidRequest{Ext: []byte(`{"prebid":{"bidderparams":{"publisherId":""}}}`)})
-
-		assert.Equal(t, ErrNoPublisherID, err)
-		assert.Equal(t, expected, actual)
-	})
-
-	t.Run("malformed extensions", func(t *testing.T) {
-		expected := (http.Header)(nil)
-		actual, err := prepareHeaders(&openrtb2.BidRequest{Ext: []byte(`{`)})
-
-		assert.EqualError(t, err, "extract bidder params: error decoding Request.ext : unexpected end of JSON input")
-		assert.Equal(t, expected, actual)
-	})
+	assert.NoError(t, err)
+	assert.Equal(t, expected, actual)
 }

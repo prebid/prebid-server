@@ -24,10 +24,6 @@ const (
 	contentTypeApplicationJSON = "application/json"
 )
 
-var (
-	ErrNoPublisherID = errors.New("publisher ID is missing")
-)
-
 type adapter struct {
 	endpoint string
 }
@@ -47,11 +43,12 @@ func (a adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.Ex
 		return nil, []error{fmt.Errorf("headers prepare: %v", err)}
 	}
 
-	for _, imp := range request.Imp {
+	for i := range request.Imp {
+		imp := &request.Imp[i]
 		if imp.BidFloor > 0 && imp.BidFloorCur != "" && strings.ToUpper(imp.BidFloorCur) != currencyUSDISO4217 {
 			convertedValue, err := reqInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, currencyUSDISO4217)
 			if err != nil {
-				return nil, []error{fmt.Errorf("currency convert: %v", err)}
+				return nil, []error{err}
 			}
 			imp.BidFloorCur = currencyUSDISO4217
 			imp.BidFloor = convertedValue
@@ -106,18 +103,24 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 }
 
 func prepareHeaders(request *openrtb2.BidRequest) (headers http.Header, err error) {
-	bidderParams, err := adapters.ExtractReqExtBidderParamsMap(request)
+	bidderImpExt, err := getBidderExt(request.Imp[0])
 	if err != nil {
-		return nil, fmt.Errorf("extract bidder params: %v", err)
-	}
-	publisherID := strings.ReplaceAll(string(bidderParams["publisherId"]), "\"", "")
-
-	if publisherID == "" {
-		return nil, ErrNoPublisherID
+		return nil, fmt.Errorf("get bidder ext: %v", err)
 	}
 
 	return http.Header{
 		headerKeyContentType:   {contentTypeApplicationJSON},
-		headerKeyAuthorization: {headerValueAuthorizationBearer + publisherID},
+		headerKeyAuthorization: {headerValueAuthorizationBearer + bidderImpExt.PublisherID},
 	}, nil
+}
+
+func getBidderExt(imp openrtb2.Imp) (bidderImpExt openrtb_ext.ImpExtBidstack, err error) {
+	var impExt adapters.ExtImpBidder
+	if err = json.Unmarshal(imp.Ext, &impExt); err != nil {
+		return bidderImpExt, fmt.Errorf("imp ext: %v", err)
+	}
+	if err = json.Unmarshal(impExt.Bidder, &bidderImpExt); err != nil {
+		return bidderImpExt, fmt.Errorf("bidder ext: %v", err)
+	}
+	return bidderImpExt, nil
 }
