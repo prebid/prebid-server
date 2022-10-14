@@ -292,7 +292,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		// List of bidders we have requests for.
 		liveAdapters = listBiddersWithRequests(bidderRequests)
 
-		//This will be used validate bids
+		//This will be used to validate bids
 		var alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes
 		if requestExt != nil && requestExt.Prebid.AlternateBidderCodes != nil {
 			alternateBidderCodes = *requestExt.Prebid.AlternateBidderCodes

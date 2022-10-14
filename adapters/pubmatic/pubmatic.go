@@ -54,6 +54,17 @@ type ExtAdServer struct {
 	AdSlot string `json:"adslot"`
 }
 
+type marketplaceReqExt struct {
+	AllowedBidders []string `json:"allowedbidders,omitempty"`
+}
+
+type extRequestAdServer struct {
+	Wrapper     *pubmaticWrapperExt `json:"wrapper,omitempty"`
+	Acat        []string            `json:"acat,omitempty"`
+	Marketplace *marketplaceReqExt  `json:"marketplace,omitempty"`
+	openrtb_ext.ExtRequest
+}
+
 const (
 	dctrKeyName        = "key_val"
 	pmZoneIDKeyName    = "pmZoneId"
@@ -66,14 +77,14 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ad
 	errs := make([]error, 0, len(request.Imp))
 
 	pubID := ""
-	var wrapperExt *pubmaticWrapperExt
 	extractWrapperExtFromImp := true
 	extractPubIDFromImp := true
 
-	wrapperExt, acat, err := extractPubmaticExtFromRequest(request)
+	newReqExt, err := extractPubmaticExtFromRequest(request)
 	if err != nil {
 		return nil, []error{err}
 	}
+	wrapperExt := newReqExt.Wrapper
 	if wrapperExt != nil && wrapperExt.ProfileID != 0 && wrapperExt.VersionID != 0 {
 		extractWrapperExtFromImp = false
 	}
@@ -118,20 +129,12 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ad
 		return nil, errs
 	}
 
-	reqExt := make(map[string]interface{})
-	if len(acat) > 0 {
-		reqExt["acat"] = acat
+	newReqExt.Wrapper = wrapperExt
+	rawExt, err := json.Marshal(newReqExt)
+	if err != nil {
+		return nil, []error{err}
 	}
-	if wrapperExt != nil {
-		reqExt["wrapper"] = wrapperExt
-	}
-	if len(reqExt) > 0 {
-		rawExt, err := json.Marshal(reqExt)
-		if err != nil {
-			return nil, []error{err}
-		}
-		request.Ext = rawExt
-	}
+	request.Ext = rawExt
 
 	if request.Site != nil {
 		siteCopy := *request.Site
@@ -320,31 +323,74 @@ func parseImpressionObject(imp *openrtb2.Imp, extractWrapperExtFromImp, extractP
 }
 
 // extractPubmaticExtFromRequest parse the req.ext to fetch wrapper and acat params
-func extractPubmaticExtFromRequest(request *openrtb2.BidRequest) (*pubmaticWrapperExt, []string, error) {
-	var acat []string
-	var wrpExt *pubmaticWrapperExt
-	reqExtBidderParams, err := adapters.ExtractReqExtBidderParamsMap(request)
+func extractPubmaticExtFromRequest(request *openrtb2.BidRequest) (extRequestAdServer, error) {
+	// req.ext.prebid would always be there and Less nil cases to handle, more safe!
+	var pmReqExt extRequestAdServer
+
+	if request == nil || len(request.Ext) == 0 {
+		return pmReqExt, nil
+	}
+
+	reqExt := &openrtb_ext.ExtRequest{}
+	err := json.Unmarshal(request.Ext, &reqExt)
 	if err != nil {
-		return nil, acat, err
+		return pmReqExt, fmt.Errorf("error decoding Request.ext : %s", err.Error())
+	}
+	pmReqExt.ExtRequest = *reqExt
+
+	reqExtBidderParams := make(map[string]json.RawMessage)
+	if reqExt.Prebid.BidderParams != nil {
+		err = json.Unmarshal(reqExt.Prebid.BidderParams, &reqExtBidderParams)
+		if err != nil {
+			return pmReqExt, err
+		}
 	}
 
 	//get request ext bidder params
 	if wrapperObj, present := reqExtBidderParams["wrapper"]; present && len(wrapperObj) != 0 {
-		wrpExt = &pubmaticWrapperExt{}
+		wrpExt := &pubmaticWrapperExt{}
 		err = json.Unmarshal(wrapperObj, wrpExt)
 		if err != nil {
-			return nil, acat, err
+			return pmReqExt, err
 		}
+		pmReqExt.Wrapper = wrpExt
 	}
 
 	if acatBytes, ok := reqExtBidderParams["acat"]; ok {
+		var acat []string
 		err = json.Unmarshal(acatBytes, &acat)
+		if err != nil {
+			return pmReqExt, err
+		}
 		for i := 0; i < len(acat); i++ {
 			acat[i] = strings.TrimSpace(acat[i])
 		}
+		pmReqExt.Acat = acat
 	}
 
-	return wrpExt, acat, err
+	if allowedBidders := getAlternateBidderCodesFromRequestExt(reqExt); allowedBidders != nil {
+		pmReqExt.Marketplace = &marketplaceReqExt{AllowedBidders: allowedBidders}
+	}
+
+	return pmReqExt, nil
+}
+
+func getAlternateBidderCodesFromRequestExt(reqExt *openrtb_ext.ExtRequest) []string {
+	if reqExt == nil || reqExt.Prebid.AlternateBidderCodes == nil {
+		return nil
+	}
+
+	allowedBidders := []string{"pubmatic"}
+	if reqExt.Prebid.AlternateBidderCodes.Enabled {
+		if pmABC, ok := reqExt.Prebid.AlternateBidderCodes.Bidders["pubmatic"]; ok && pmABC.Enabled {
+			if pmABC.AllowedBidderCodes == nil || (len(pmABC.AllowedBidderCodes) == 1 && pmABC.AllowedBidderCodes[0] == "*") {
+				return []string{"all"}
+			}
+			return append(allowedBidders, pmABC.AllowedBidderCodes...)
+		}
+	}
+
+	return allowedBidders
 }
 
 func addKeywordsToExt(keywords []*openrtb_ext.ExtImpPubmaticKeyVal, extMap map[string]interface{}) {
