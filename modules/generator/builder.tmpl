@@ -1,0 +1,21 @@
+package modules
+
+import (
+    {{- range $pkg := .}}
+    "github.com/prebid/prebid-server/modules/{{$pkg}}"
+    {{- end}}
+)
+
+func init() {
+    builderFn = builders
+}
+
+// builders returns mapping between module name and its hook builder
+// module name is chosen based on module directory name
+func builders() map[string]HookBuilderFn {
+    return map[string]HookBuilderFn{
+        {{- range $pkg := .}}
+        "{{$pkg}}": {{$pkg}}.Builder,
+        {{- end}}
+    }
+}
