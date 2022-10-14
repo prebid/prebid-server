@@ -693,57 +693,59 @@ func extractBidRequestExt(bidRequest *openrtb2.BidRequest) (*openrtb_ext.ExtRequ
 	return requestExt, nil
 }
 
-func getExtCacheInstructions(requestExt *openrtb_ext.ExtRequest) extCacheInstructions {
+func getExtCacheInstructions(requestExtPrebid *openrtb_ext.ExtRequestPrebid) extCacheInstructions {
 	//returnCreative defaults to true
 	cacheInstructions := extCacheInstructions{returnCreative: true}
 	foundBidsRC := false
 	foundVastRC := false
 
-	if requestExt != nil && requestExt.Prebid.Cache != nil {
-		if requestExt.Prebid.Cache.Bids != nil {
+	if requestExtPrebid != nil && requestExtPrebid.Cache != nil {
+		if requestExtPrebid.Cache.Bids != nil {
 			cacheInstructions.cacheBids = true
-			if requestExt.Prebid.Cache.Bids.ReturnCreative != nil {
-				cacheInstructions.returnCreative = *requestExt.Prebid.Cache.Bids.ReturnCreative
+			if requestExtPrebid.Cache.Bids.ReturnCreative != nil {
+				cacheInstructions.returnCreative = *requestExtPrebid.Cache.Bids.ReturnCreative
 				foundBidsRC = true
 			}
 		}
-		if requestExt.Prebid.Cache.VastXML != nil {
+
+		if requestExtPrebid.Cache.VastXML != nil {
 			cacheInstructions.cacheVAST = true
-			if requestExt.Prebid.Cache.VastXML.ReturnCreative != nil {
-				cacheInstructions.returnCreative = *requestExt.Prebid.Cache.VastXML.ReturnCreative
+			if requestExtPrebid.Cache.VastXML.ReturnCreative != nil {
+				cacheInstructions.returnCreative = *requestExtPrebid.Cache.VastXML.ReturnCreative
 				foundVastRC = true
 			}
 		}
 	}
 
 	if foundBidsRC && foundVastRC {
-		cacheInstructions.returnCreative = *requestExt.Prebid.Cache.Bids.ReturnCreative || *requestExt.Prebid.Cache.VastXML.ReturnCreative
+		cacheInstructions.returnCreative = *requestExtPrebid.Cache.Bids.ReturnCreative || *requestExtPrebid.Cache.VastXML.ReturnCreative
 	}
 
 	return cacheInstructions
 }
 
-func getExtTargetData(requestExt *openrtb_ext.ExtRequest, cacheInstructions *extCacheInstructions) *targetData {
+func getExtTargetData(requestExtPrebid *openrtb_ext.ExtRequestPrebid, cacheInstructions extCacheInstructions) *targetData {
 	var targData *targetData
 
-	if requestExt != nil && requestExt.Prebid.Targeting != nil {
+	if requestExtPrebid != nil && requestExtPrebid.Targeting != nil {
 		targData = &targetData{
-			priceGranularity:  requestExt.Prebid.Targeting.PriceGranularity,
-			includeWinners:    requestExt.Prebid.Targeting.IncludeWinners,
-			includeBidderKeys: requestExt.Prebid.Targeting.IncludeBidderKeys,
+			priceGranularity:  requestExtPrebid.Targeting.PriceGranularity,
+			includeWinners:    requestExtPrebid.Targeting.IncludeWinners,
+			includeBidderKeys: requestExtPrebid.Targeting.IncludeBidderKeys,
 			includeCacheBids:  cacheInstructions.cacheBids,
 			includeCacheVast:  cacheInstructions.cacheVAST,
-			includeFormat:     requestExt.Prebid.Targeting.IncludeFormat,
-			preferDeals:       requestExt.Prebid.Targeting.PreferDeals,
+			includeFormat:     requestExtPrebid.Targeting.IncludeFormat,
+			preferDeals:       requestExtPrebid.Targeting.PreferDeals,
 		}
 	}
+
 	return targData
 }
 
 // getDebugInfo returns the boolean flags that allow for debug information in bidResponse.Ext, the SeatBid.httpcalls slice, and
 // also sets the debugLog information
-func getDebugInfo(bidRequest *openrtb2.BidRequest, requestExt *openrtb_ext.ExtRequest, accountDebugFlag bool, debugLog *DebugLog) (bool, bool, *DebugLog) {
-	requestDebugAllow := parseRequestDebugValues(bidRequest, requestExt)
+func getDebugInfo(test int8, requestExtPrebid *openrtb_ext.ExtRequestPrebid, accountDebugFlag bool, debugLog *DebugLog) (bool, bool, *DebugLog) {
+	requestDebugAllow := parseRequestDebugValues(test, requestExtPrebid)
 	debugLog = setDebugLogValues(accountDebugFlag, debugLog)
 
 	responseDebugAllow := (requestDebugAllow && accountDebugFlag) || debugLog.DebugEnabledOrOverridden
@@ -763,16 +765,15 @@ func setDebugLogValues(accountDebugFlag bool, debugLog *DebugLog) *DebugLog {
 	return debugLog
 }
 
-func parseRequestDebugValues(bidRequest *openrtb2.BidRequest, requestExt *openrtb_ext.ExtRequest) bool {
-	return (bidRequest != nil && bidRequest.Test == 1) || (requestExt != nil && requestExt.Prebid.Debug)
+func parseRequestDebugValues(test int8, requestExtPrebid *openrtb_ext.ExtRequestPrebid) bool {
+	return test == 1 || (requestExtPrebid != nil && requestExtPrebid.Debug)
 }
 
-func getExtBidAdjustmentFactors(requestExt *openrtb_ext.ExtRequest) map[string]float64 {
-	var bidAdjustmentFactors map[string]float64
-	if requestExt != nil {
-		bidAdjustmentFactors = requestExt.Prebid.BidAdjustmentFactors
+func getExtBidAdjustmentFactors(requestExtPrebid *openrtb_ext.ExtRequestPrebid) map[string]float64 {
+	if requestExtPrebid != nil {
+		return requestExtPrebid.BidAdjustmentFactors
 	}
-	return bidAdjustmentFactors
+	return nil
 }
 
 func applyFPD(fpd *firstpartydata.ResolvedFirstPartyData, bidReq *openrtb2.BidRequest) {
