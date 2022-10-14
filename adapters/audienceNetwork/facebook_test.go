@@ -46,7 +46,7 @@ func TestJsonSamples(t *testing.T) {
 		Endpoint:   "https://an.facebook.com/placementbid.ortb",
 		PlatformID: "test-platform-id",
 		AppSecret:  "test-app-secret",
-	})
+	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -63,7 +63,7 @@ func TestMakeTimeoutNoticeApp(t *testing.T) {
 		Endpoint:   "https://an.facebook.com/placementbid.ortb",
 		PlatformID: "test-platform-id",
 		AppSecret:  "test-app-secret",
-	})
+	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -88,7 +88,7 @@ func TestMakeTimeoutNoticeBadRequest(t *testing.T) {
 		Endpoint:   "https://an.facebook.com/placementbid.ortb",
 		PlatformID: "test-platform-id",
 		AppSecret:  "test-app-secret",
-	})
+	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -109,7 +109,7 @@ func TestNewFacebookBidderMissingPlatformID(t *testing.T) {
 	bidder, err := Builder(openrtb_ext.BidderAudienceNetwork, config.Adapter{
 		Endpoint:  "https://an.facebook.com/placementbid.ortb",
 		AppSecret: "test-app-secret",
-	})
+	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	assert.Empty(t, bidder)
 	assert.EqualError(t, err, "PartnerID is not configured. Did you set adapters.facebook.platform_id in the app config?")
@@ -119,7 +119,7 @@ func TestNewFacebookBidderMissingAppSecret(t *testing.T) {
 	bidder, err := Builder(openrtb_ext.BidderAudienceNetwork, config.Adapter{
 		Endpoint:   "https://an.facebook.com/placementbid.ortb",
 		PlatformID: "test-platform-id",
-	})
+	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	assert.Empty(t, bidder)
 	assert.EqualError(t, err, "AppSecret is not configured. Did you set adapters.facebook.app_secret in the app config?")

@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
@@ -2395,6 +2395,7 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 		externalURL:       "http://localhost",
 		bidIDGenerator:    bidIDGenerator,
 		hostSChainNode:    hostSChainNode,
+		server:            config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "Datacenter"},
 	}
 }
 

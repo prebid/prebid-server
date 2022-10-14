@@ -17,9 +17,10 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
-	"github.com/mxmCherry/openrtb/v16/native1"
-	nativeRequests "github.com/mxmCherry/openrtb/v16/native1/request"
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/openrtb/v17/adcom1"
+	"github.com/prebid/openrtb/v17/native1"
+	nativeRequests "github.com/prebid/openrtb/v17/native1/request"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"golang.org/x/net/publicsuffix"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
@@ -1113,7 +1114,7 @@ func validateNativeAssetData(data *nativeRequests.Data, impIndex int, assetIndex
 	return nil
 }
 
-func validateNativeVideoProtocols(protocols []native1.Protocol, impIndex int, assetIndex int) error {
+func validateNativeVideoProtocols(protocols []adcom1.MediaCreativeSubtype, impIndex int, assetIndex int) error {
 	if len(protocols) < 1 {
 		return fmt.Errorf("request.imp[%d].native.request.assets[%d].video.protocols must be an array with at least one element", impIndex, assetIndex)
 	}
@@ -1125,8 +1126,8 @@ func validateNativeVideoProtocols(protocols []native1.Protocol, impIndex int, as
 	return nil
 }
 
-func validateNativeVideoProtocol(protocol native1.Protocol, impIndex int, assetIndex int, protocolIndex int) error {
-	if protocol < native1.ProtocolVAST10 || protocol > native1.ProtocolDAAST10Wrapper {
+func validateNativeVideoProtocol(protocol adcom1.MediaCreativeSubtype, impIndex int, assetIndex int, protocolIndex int) error {
+	if protocol < adcom1.CreativeVAST10 || protocol > adcom1.CreativeDAAST10Wrapper {
 		return fmt.Errorf("request.imp[%d].native.request.assets[%d].video.protocols[%d] is invalid. See Section 5.8: https://www.iab.com/wp-content/uploads/2016/03/OpenRTB-API-Specification-Version-2-5-FINAL.pdf#page=52", impIndex, assetIndex, protocolIndex)
 	}
 	return nil

@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/config"
@@ -47,7 +47,7 @@ type richaudienceSite struct {
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderRichaudience, config.Adapter{
 		Endpoint: "http://ortb.richaudience.com/ortb/?bidder=pbs",
-	})
+	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -58,7 +58,7 @@ func TestJsonSamples(t *testing.T) {
 
 func TestGetBuilder(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderRichaudience, config.Adapter{
-		Endpoint: "http://ortb.richaudience.com/ortb/?bidder=pbs"})
+		Endpoint: "http://ortb.richaudience.com/ortb/?bidder=pbs"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Errorf("error %s", buildErr)
@@ -152,7 +152,7 @@ func TestEmptyConfig(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderRichaudience, config.Adapter{
 		Endpoint:         ``,
 		ExtraAdapterInfo: ``,
-	})
+	}, config.Server{})
 
 	assert.NoError(t, buildErr)
 	assert.Empty(t, bidder)

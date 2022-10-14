@@ -10,6 +10,6 @@ capabilities:
       - banner
 userSync:
   redirect:
-    url: "https://cr-p31.ladsp.jp/cookiesender/31?r=true&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ru={{.RedirectURL}}"
+    url: "https://cr-p31.ladsp.com/cookiesender/31?r=true&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ru={{.RedirectURL}}"
     userMacro: "$UID"
 

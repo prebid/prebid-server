@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/config"
@@ -15,7 +15,7 @@ import (
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderSeedingAlliance, config.Adapter{
 		Endpoint: "https://mockup.seeding-alliance.de/",
-	})
+	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
@@ -26,7 +26,7 @@ func TestJsonSamples(t *testing.T) {
 func TestResolvePriceMacro(t *testing.T) {
 	_, buildErr := Builder(openrtb_ext.BidderSeedingAlliance, config.Adapter{
 		Endpoint: "https://mockup.seeding-alliance.de/",
-	})
+	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
@@ -45,7 +45,7 @@ func TestResolvePriceMacro(t *testing.T) {
 func TestGetMediaTypeForBid(t *testing.T) {
 	_, buildErr := Builder(openrtb_ext.BidderSeedingAlliance, config.Adapter{
 		Endpoint: "https://mockup.seeding-alliance.de/ssp-testing/native.html",
-	})
+	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
@@ -151,7 +151,7 @@ func TestGetMediaTypeForBid(t *testing.T) {
 func TestAddTagID(t *testing.T) {
 	_, buildErr := Builder(openrtb_ext.BidderSeedingAlliance, config.Adapter{
 		Endpoint: "https://mockup.seeding-alliance.de/ssp-testing/native.html",
-	})
+	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
