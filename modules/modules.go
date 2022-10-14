@@ -38,7 +38,7 @@ func (m *moduleBuilder) Build(cfg map[string]interface{}, client *http.Client) (
 	for module, builder := range m.getBuildersFn() {
 		conf, err := json.Marshal(cfg[module])
 		if err != nil {
-			return nil, fmt.Errorf(`failed to unmarshal "%s" module config: %s`, module, err)
+			return nil, fmt.Errorf(`failed to marshal "%s" module config: %s`, module, err)
 		}
 
 		moduleHooks, err := builder(conf, client)

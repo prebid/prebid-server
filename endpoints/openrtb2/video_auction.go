@@ -19,6 +19,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/prebid-server/hooks/hep/plans"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
 	accountService "github.com/prebid/prebid-server/account"
@@ -85,7 +86,8 @@ func NewVideoEndpoint(
 		cache,
 		videoEndpointRegexp,
 		ipValidator,
-		empty_fetcher.EmptyFetcher{}}).VideoAuctionEndpoint), nil
+		empty_fetcher.EmptyFetcher{},
+		plans.EmptyPlanBuilder{}}).VideoAuctionEndpoint), nil
 }
 
 /*

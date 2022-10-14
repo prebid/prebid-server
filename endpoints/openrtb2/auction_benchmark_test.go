@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/experiment/adscert"
+	"github.com/prebid/prebid-server/hooks/hep/plans"
 
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
@@ -113,6 +114,7 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 		[]byte{},
 		nil,
 		empty_fetcher.EmptyFetcher{},
+		plans.EmptyPlanBuilder{},
 	)
 
 	b.ResetTimer()

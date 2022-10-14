@@ -1,9 +1,12 @@
 package hep
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
+	"github.com/prebid/prebid-server/hooks/invocation"
+	"github.com/prebid/prebid-server/hooks/stages"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -55,4 +58,10 @@ func TestNewHookRepository(t *testing.T) {
 			}
 		})
 	}
+}
+
+type fakeEntrypointHook struct{}
+
+func (h fakeEntrypointHook) Call(ctx context.Context, context invocation.Context, payload stages.EntrypointPayload) (invocation.HookResult[stages.EntrypointPayload], error) {
+	return invocation.HookResult[stages.EntrypointPayload]{}, nil
 }
