@@ -559,11 +559,9 @@ func populateDctrKey(dataMap, extMap map[string]interface{}) {
 			fmt.Fprintf(&dctr, "%s=%v", key, typedValue)
 
 		case []interface{}:
-			if isStringArray(typedValue) {
-				if valStrArr := getStringArray(typedValue); valStrArr != nil && len(valStrArr) > 0 {
-					valStr := strings.Join(valStrArr[:], ",")
-					fmt.Fprintf(&dctr, "%s=%s", key, valStr)
-				}
+			if valStrArr := getStringArray(typedValue); valStrArr != nil && len(valStrArr) > 0 {
+				valStr := strings.Join(valStrArr[:], ",")
+				fmt.Fprintf(&dctr, "%s=%s", key, valStr)
 			}
 		}
 	}
@@ -571,16 +569,6 @@ func populateDctrKey(dataMap, extMap map[string]interface{}) {
 	if dctrStr := dctr.String(); dctrStr != "" {
 		extMap[dctrKeyName] = strings.TrimSuffix(dctrStr, "|")
 	}
-}
-
-//isStringArray check if []interface is a valid string array
-func isStringArray(array []interface{}) bool {
-	for _, val := range array {
-		if _, ok := val.(string); !ok {
-			return false
-		}
-	}
-	return true
 }
 
 //getStringArray converts interface of type string array to string array
@@ -593,6 +581,8 @@ func getStringArray(val interface{}) []string {
 	for i, v := range aInterface {
 		if str, ok := v.(string); ok {
 			aString[i] = strings.TrimSpace(str)
+		} else {
+			return nil
 		}
 	}
 

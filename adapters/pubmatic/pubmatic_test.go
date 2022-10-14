@@ -3,7 +3,7 @@ package pubmatic
 import (
 	"encoding/json"
 	"net/http"
-  "sort"
+	"sort"
 	"strings"
 	"testing"
 
@@ -674,31 +674,6 @@ func TestGetStringArray(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := getStringArray(tt.input)
-			assert.Equal(t, tt.output, got)
-		})
-	}
-}
-
-func TestIsStringArray(t *testing.T) {
-	tests := []struct {
-		name   string
-		input  []interface{}
-		output bool
-	}{
-		{
-			name:   "Valid String Array",
-			input:  append(make([]interface{}, 0), "hello", "world"),
-			output: true,
-		},
-		{
-			name:   "Invalid String Array",
-			input:  append(make([]interface{}, 0), 1, 2),
-			output: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := isStringArray(tt.input)
 			assert.Equal(t, tt.output, got)
 		})
 	}
