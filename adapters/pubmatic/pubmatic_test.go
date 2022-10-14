@@ -657,7 +657,7 @@ func TestPopulateFirstPartyDataImpAttributesForMultipleAttributes(t *testing.T) 
 func TestGetStringArray(t *testing.T) {
 	tests := []struct {
 		name   string
-		input  interface{}
+		input  []interface{}
 		output []string
 	}{
 		{
@@ -667,7 +667,7 @@ func TestGetStringArray(t *testing.T) {
 		},
 		{
 			name:   "Invalid String Array",
-			input:  "hello",
+			input:  append(make([]interface{}, 0), 1, 2),
 			output: nil,
 		},
 	}

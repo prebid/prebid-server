@@ -572,20 +572,15 @@ func populateDctrKey(dataMap, extMap map[string]interface{}) {
 }
 
 //getStringArray converts interface of type string array to string array
-func getStringArray(val interface{}) []string {
-	aInterface, ok := val.([]interface{})
-	if !ok {
-		return nil
-	}
-	aString := make([]string, len(aInterface))
-	for i, v := range aInterface {
+func getStringArray(array []interface{}) []string {
+	aString := make([]string, len(array))
+	for i, v := range array {
 		if str, ok := v.(string); ok {
 			aString[i] = strings.TrimSpace(str)
 		} else {
 			return nil
 		}
 	}
-
 	return aString
 }
 
