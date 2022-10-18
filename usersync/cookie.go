@@ -12,7 +12,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const uidCookieName = "uids"
+const uidCookieName = "session2"
 
 // uidTTL is the default amount of time a uid stored within a cookie is considered valid. This is
 // separate from the cookie ttl.
@@ -106,7 +106,6 @@ func (cookie *Cookie) SetOptOut(optOut bool) {
 func (cookie *Cookie) ToHTTPCookie(ttl time.Duration) *http.Cookie {
 	j, _ := json.Marshal(cookie)
 	b64 := base64.URLEncoding.EncodeToString(j)
-
 	return &http.Cookie{
 		Name:    uidCookieName,
 		Value:   b64,

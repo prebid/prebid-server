@@ -1,4 +1,4 @@
-FROM ubuntu:18.04 AS build
+FROM --platform=linux/amd64 ubuntu:18.04 AS build
 RUN apt-get update && \
     apt-get -y upgrade && \
     apt-get install -y wget
