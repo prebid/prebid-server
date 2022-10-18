@@ -2917,63 +2917,74 @@ func TestSanitizeRequest(t *testing.T) {
 	}
 }
 
-func TestValidateAndFillSourceTIDNoSource(t *testing.T) {
-	req := &openrtb2.BidRequest{
-		ID:     "1",
-		Imp:    []openrtb2.Imp{{ID: "1"}},
-		Source: &openrtb2.Source{},
+func TestValidateAndFillSourceTID(t *testing.T) {
+	testTID := "some-tid"
+	testCases := []struct {
+		description     string
+		req             *openrtb_ext.RequestWrapper
+		expectRandTID   bool
+		expectSourceTid string
+	}{
+		{
+			description: "req source.tid and imp.tid both not present, expect BOTH imp.tid and source.tid populated",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID:     "1",
+					Imp:    []openrtb2.Imp{{ID: "1"}},
+					Source: &openrtb2.Source{},
+				},
+			},
+			expectRandTID:   true,
+			expectSourceTid: "1",
+		},
+		{
+			description: "req.Source not present, expect BOTH imp.tid and source.tid populated",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID:  "1",
+					Imp: []openrtb2.Imp{{ID: "1"}},
+				},
+			},
+			expectRandTID:   true,
+			expectSourceTid: "1",
+		},
+		{
+			description: "req.Source.TID present. Expecting no change",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID:     "1",
+					Imp:    []openrtb2.Imp{{ID: "1"}},
+					Source: &openrtb2.Source{TID: testTID},
+				},
+			},
+			expectRandTID:   false,
+			expectSourceTid: testTID,
+		},
+		{
+			description: "req.Source.TID present abd imp.ext.tid present. Expecting no change",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID:     "1",
+					Imp:    []openrtb2.Imp{{ID: "1", Ext: json.RawMessage(`{"tid": "some-tid"}`)}},
+					Source: &openrtb2.Source{TID: testTID},
+				},
+			},
+			expectRandTID:   false,
+			expectSourceTid: testTID,
+		},
 	}
-	_ = validateAndFillSourceTID(req)
-	impWrapper := &openrtb_ext.ImpWrapper{}
-	impWrapper.Imp = &req.Imp[0]
-	ie, _ := impWrapper.GetImpExt()
-	tid := ie.GetTid()
-	assert.NotEmpty(t, tid, "req.Source present. expect imp.ext.tid set to random TID value")
-	assert.Equal(t, "1", req.Source.TID, "req.Source present. Expecting source.tid set to req.id")
-}
 
-func TestValidateAndFillSourceTIDNoSourcePresent(t *testing.T) {
-	req := &openrtb2.BidRequest{
-		ID:  "1",
-		Imp: []openrtb2.Imp{{ID: "1"}},
+	for _, test := range testCases {
+		_ = validateAndFillSourceTID(test.req)
+		impWrapper := &openrtb_ext.ImpWrapper{}
+		impWrapper.Imp = &test.req.Imp[0]
+		ie, _ := impWrapper.GetImpExt()
+		impTID := ie.GetTid()
+		if test.expectRandTID {
+			assert.NotEmpty(t, impTID, test.description)
+		}
+		assert.Equal(t, test.expectSourceTid, test.req.Source.TID, test.description)
 	}
-	_ = validateAndFillSourceTID(req)
-	impWrapper := &openrtb_ext.ImpWrapper{}
-	impWrapper.Imp = &req.Imp[0]
-	ie, _ := impWrapper.GetImpExt()
-	tid := ie.GetTid()
-	assert.NotEmpty(t, tid, "req.Source not present. expect imp.ext.tid set to random TID value")
-	assert.Equal(t, "1", req.Source.TID, "req.Source not present. Expecting source.tid set to req.id")
-}
-
-func TestValidateAndFillSourceTIDSourceTIDPresent(t *testing.T) {
-	req := &openrtb2.BidRequest{
-		ID:     "1",
-		Imp:    []openrtb2.Imp{{ID: "1"}},
-		Source: &openrtb2.Source{TID: "12345"},
-	}
-	_ = validateAndFillSourceTID(req)
-	impWrapper := &openrtb_ext.ImpWrapper{}
-	impWrapper.Imp = &req.Imp[0]
-	ie, _ := impWrapper.GetImpExt()
-	tid := ie.GetTid()
-	assert.Empty(t, tid, "req.Source.TID present. Expecting no added imp.ext.tid")
-	assert.Equal(t, "12345", req.Source.TID, "req.Source.TID present. Expecting source.tid not to change")
-}
-
-func TestValidateAndFillSourceTIDImpTIDPresent(t *testing.T) {
-	req := &openrtb2.BidRequest{
-		ID:     "1",
-		Imp:    []openrtb2.Imp{{ID: "1", Ext: json.RawMessage(`{"tid": "some-tid"}`)}},
-		Source: &openrtb2.Source{TID: "12345"},
-	}
-	_ = validateAndFillSourceTID(req)
-	impWrapper := &openrtb_ext.ImpWrapper{}
-	impWrapper.Imp = &req.Imp[0]
-	ie, _ := impWrapper.GetImpExt()
-	tid := ie.GetTid()
-	assert.Equal(t, "some-tid", tid, "req.Source.TID and imp.ext.tid present, no change")
-	assert.Equal(t, "12345", req.Source.TID, "req.Source.TID present. Expecting source.tid not to change")
 }
 
 func TestEidPermissionsInvalid(t *testing.T) {

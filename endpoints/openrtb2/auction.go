@@ -635,7 +635,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 	// If automatically filling source TID is enabled then validate that
 	// source.TID exists and If it doesn't, fill it with a randomly generated UUID
 	if deps.cfg.AutoGenSourceTID {
-		if err := validateAndFillSourceTID(req.BidRequest); err != nil {
+		if err := validateAndFillSourceTID(req); err != nil {
 			return []error{err}
 		}
 	}
@@ -786,28 +786,28 @@ func mapSChains(req *openrtb_ext.RequestWrapper) error {
 	return nil
 }
 
-func validateAndFillSourceTID(req *openrtb2.BidRequest) error {
+func validateAndFillSourceTID(req *openrtb_ext.RequestWrapper) error {
 	if req.Source == nil {
 		req.Source = &openrtb2.Source{}
 	}
-	if req.Source.TID == "" {
-		for i, imp := range req.Imp {
-			impWrapper := &openrtb_ext.ImpWrapper{}
-			impWrapper.Imp = &imp
-			ie, _ := impWrapper.GetImpExt()
-			tid := ie.GetTid()
-			if tid == "" {
-				// Only set Source.Tid if both source.tid AND imp.ext.tid is empty
-				req.Source.TID = req.ID
-				if rawUUID, err := uuid.NewV4(); err == nil {
-					ie.SetTid(rawUUID.String())
-					impWrapper.RebuildImp()
-					req.Imp[i] = *impWrapper.Imp
-				} else {
-					return errors.New("imp.ext.tid missing in the imp and error creating a random UID")
-				}
+	if req.Source.TID != "" {
+		return nil
+	}
+	hasImpWithoutTID := false
+	for _, impWrapper := range req.GetImp() {
+		ie, _ := impWrapper.GetImpExt()
+		if ie.GetTid() == "" {
+			hasImpWithoutTID = true
+			if rawUUID, err := uuid.NewV4(); err == nil {
+				ie.SetTid(rawUUID.String())
+				impWrapper.RebuildImp()
+			} else {
+				return errors.New("imp.ext.tid missing in the imp and error creating a random UID")
 			}
 		}
+	}
+	if hasImpWithoutTID {
+		req.Source.TID = req.ID
 	}
 	return nil
 }

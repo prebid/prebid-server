@@ -1329,15 +1329,16 @@ func (e *ImpExt) marshal() (json.RawMessage, error) {
 	}
 
 	if e.tidDirty {
-		if e.tid != "" {
+		if len(e.tid) > 0 {
 			tidJson, err := json.Marshal(e.tid)
 			if err != nil {
 				return nil, err
 			}
-			e.ext["tid"] = json.RawMessage(tidJson)
+			e.ext["tid"] = tidJson
 		} else {
 			delete(e.ext, "tid")
 		}
+		e.tidDirty = false
 	}
 
 	e.extDirty = false

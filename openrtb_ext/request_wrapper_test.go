@@ -1012,4 +1012,5 @@ func TestImpExtTid(t *testing.T) {
 	newTid := "tid"
 	impExt.SetTid(newTid)
 	assert.Equal(t, "tid", impExt.GetTid(), "ImpExt tid is incorrect")
+	assert.Equal(t, true, impExt.Dirty(), "New impext should be dirty.")
 }
