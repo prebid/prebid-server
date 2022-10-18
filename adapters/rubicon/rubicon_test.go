@@ -99,6 +99,44 @@ func TestSetImpNative(t *testing.T) {
 	}
 }
 
+func TestResolveNativeObject(t *testing.T) {
+	testScenarios := []struct {
+		nativeObject  openrtb2.Native
+		target        map[string]interface{}
+		expectedError error
+	}{
+		{
+			nativeObject:  openrtb2.Native{Ver: "1.0", Request: "{\"eventtrackers\": \"someWrongValue\"}"},
+			target:        map[string]interface{}{},
+			expectedError: nil,
+		},
+		{
+			nativeObject:  openrtb2.Native{Ver: "1.1", Request: "{\"eventtrackers\": \"someWrongValue\"}"},
+			target:        map[string]interface{}{},
+			expectedError: nil,
+		},
+		{
+			nativeObject:  openrtb2.Native{Ver: "1", Request: "{\"eventtrackers\": \"someWrongValue\"}"},
+			target:        map[string]interface{}{},
+			expectedError: fmt.Errorf("Eventtrackers are not present or not of array type"),
+		},
+		{
+			nativeObject:  openrtb2.Native{Ver: "1", Request: "{\"eventtrackers\": [], \"context\": \"someWrongValue\"}"},
+			target:        map[string]interface{}{},
+			expectedError: fmt.Errorf("Context is not present or not of int type"),
+		},
+		{
+			nativeObject:  openrtb2.Native{Ver: "1", Request: "{\"eventtrackers\": [], \"context\": 1}"},
+			target:        map[string]interface{}{},
+			expectedError: fmt.Errorf("Plcmttype is not present or not of int type"),
+		},
+	}
+	for _, scenario := range testScenarios {
+		_, err := resolveNativeObject(&scenario.nativeObject, scenario.target)
+		assert.Equal(t, scenario.expectedError, err)
+	}
+}
+
 func TestResolveVideoSizeId(t *testing.T) {
 	testScenarios := []struct {
 		placement   adcom1.VideoPlacementSubtype
