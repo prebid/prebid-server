@@ -47,6 +47,7 @@
       "ip": "ip",
       "ifa": "e4fe9bde-caa0-47b6-908d-ffba3fa184f2",
       "pxratio": 23.01,
+      "mccmnc": "460",
       "geo": {
         "country": "CHN"
       }
@@ -103,7 +104,7 @@
             {
               "adtype": 8,
               "slotid": "m8x9x3rzff",
-              "test": 0,
+              "test": 1,
               "format": [
                 {
                   "w": 300,
@@ -125,7 +126,7 @@
             "pxratio": 23.01,
             "width": 1080,
             "clientTime": "2018-11-02 16:34:07.981+1300",
-            "gaid": "e4fe9bde-caa0-47b6-908d-ffba3fa184f2",
+            "gaid": "gaid",
             "useragent": "useragent",
             "version": "10.0.0",
             "maker": "huawei",

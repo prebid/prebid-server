@@ -30,7 +30,7 @@ func newTestYieldlabBidder(endpoint string) *YieldlabAdapter {
 
 func TestNewYieldlabBidder(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderYieldlab, config.Adapter{
-		Endpoint: testURL})
+		Endpoint: testURL}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	assert.NoError(t, buildErr)
 	assert.NotNil(t, bidder)
@@ -130,7 +130,7 @@ func Test_splitSize(t *testing.T) {
 
 func TestYieldlabAdapter_makeEndpointURL_invalidEndpoint(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderYieldlab, config.Adapter{
-		Endpoint: "test$:/something§"})
+		Endpoint: "test$:/something§"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)

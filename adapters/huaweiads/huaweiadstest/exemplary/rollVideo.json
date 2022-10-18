@@ -102,7 +102,7 @@
               "adtype": 60,
               "slotid": "testslotid",
               "totalDuration": 10,
-              "test": 0,
+              "test": 1,
               "w": 300,
               "h": 250
             }
