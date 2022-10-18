@@ -8,7 +8,7 @@ import (
 )
 
 type BidRequestHook interface {
-	Call(
+	HandleBidRequestHook(
 		context.Context,
 		invocation.Context,
 		BidRequestPayload,

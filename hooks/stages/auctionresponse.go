@@ -8,7 +8,7 @@ import (
 )
 
 type AuctionResponseHook interface {
-	Call(
+	HandleAuctionResponseHook(
 		context.Context,
 		invocation.Context,
 		*openrtb2.BidResponse,

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/metrics"
@@ -164,4 +164,4 @@ func (r ExtraRequestInfo) ConvertCurrency(value float64, from, to string) (float
 	}
 }
 
-type Builder func(openrtb_ext.BidderName, config.Adapter) (Bidder, error)
+type Builder func(openrtb_ext.BidderName, config.Adapter, config.Server) (Bidder, error)

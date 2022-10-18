@@ -36,11 +36,11 @@ func TestExecuteEntrypointStage_CanApplyHookMutations(t *testing.T) {
 	}
 
 	if req.Header.Get("foo") == "" {
-		t.Error("header not changed inside hook.Call method")
+		t.Error("header not changed inside hook.HandleEntrypointHook method")
 	}
 
 	if req.URL.Query().Get("foo") == "" {
-		t.Errorf("query params not changed inside hook.Call method")
+		t.Errorf("query params not changed inside hook.HandleEntrypointHook method")
 	}
 }
 
@@ -50,7 +50,7 @@ func (e mockUpdateEntrypointHook) Code() string {
 	return "MockedUpdateEntrypointHook"
 }
 
-func (e mockUpdateEntrypointHook) Call(_ context.Context, _ invocation.Context, payload EntrypointPayload) (invocation.HookResult[EntrypointPayload], error) {
+func (e mockUpdateEntrypointHook) HandleEntrypointHook(_ context.Context, _ invocation.Context, payload EntrypointPayload) (invocation.HookResult[EntrypointPayload], error) {
 	muts := []invocation.Mutation[EntrypointPayload]{
 		invocation.NewMutation(func(payload EntrypointPayload) (EntrypointPayload, error) {
 			payload.Request.Header.Add("foo", "bar")
@@ -113,6 +113,6 @@ func (e mockRejectEntrypointHook) Code() string {
 	return "MockedRejectEntrypointHook"
 }
 
-func (e mockRejectEntrypointHook) Call(_ context.Context, _ invocation.Context, _ EntrypointPayload) (invocation.HookResult[EntrypointPayload], error) {
+func (e mockRejectEntrypointHook) HandleEntrypointHook(_ context.Context, _ invocation.Context, _ EntrypointPayload) (invocation.HookResult[EntrypointPayload], error) {
 	return invocation.HookResult[EntrypointPayload]{Reject: true}, nil
 }

@@ -14,8 +14,8 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 
 	"github.com/buger/jsonparser"
-	"github.com/mxmCherry/openrtb/v16/adcom1"
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/openrtb/v17/adcom1"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -1267,7 +1267,7 @@ func TestJsonSamples(t *testing.T) {
 			Username: "xuser",
 			Password: "xpass",
 			Tracker:  "pbs-test-tracker",
-		}})
+		}}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)

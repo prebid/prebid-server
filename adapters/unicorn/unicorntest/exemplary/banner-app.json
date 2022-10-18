@@ -115,8 +115,6 @@
           },
           "ext": {
             "prebid": {
-              "bidder": null,
-              "is_rewarded_inventory": 0,
               "storedrequest": {
                 "id": "test"
               }

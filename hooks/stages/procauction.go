@@ -8,7 +8,7 @@ import (
 )
 
 type ProcessedAuctionHook interface {
-	Call(
+	HandleProcessedAuctionHook(
 		context.Context,
 		invocation.Context,
 		ProcessedAuctionPayload,
