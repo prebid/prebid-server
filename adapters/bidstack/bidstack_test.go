@@ -22,7 +22,7 @@ func TestJsonSamples(t *testing.T) {
 	adapterstest.RunJSONBidderTest(t, "bidstacktest", bidder)
 }
 
-func Test_prepareHeaders(t *testing.T) {
+func TestPrepareHeaders(t *testing.T) {
 	publisherID := "12345"
 	expected := http.Header{
 		"Content-Type":  {"application/json"},
@@ -37,7 +37,7 @@ func Test_prepareHeaders(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
-func Test_getBidderExt(t *testing.T) {
+func TestGetBidderExt(t *testing.T) {
 	publisherID := "12345"
 	expected := openrtb_ext.ImpExtBidstack{PublisherID: publisherID}
 
