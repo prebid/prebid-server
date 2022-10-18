@@ -49,10 +49,10 @@ type AccountCCPA struct {
 // EnabledForChannelType indicates whether CCPA is turned on at the account level for the specified channel type
 // by using the channel type setting if defined or the general CCPA setting if defined; otherwise it returns nil
 func (a *AccountCCPA) EnabledForChannelType(channelType ChannelType) *bool {
-	if integrationEnabled := a.IntegrationEnabled.GetByChannelType(channelType); integrationEnabled != nil {
-		return integrationEnabled
-	} else if channelEnabled := a.ChannelEnabled.GetByChannelType(channelType); channelEnabled != nil {
+	if channelEnabled := a.ChannelEnabled.GetByChannelType(channelType); channelEnabled != nil {
 		return channelEnabled
+	} else if integrationEnabled := a.IntegrationEnabled.GetByChannelType(channelType); integrationEnabled != nil {
+		return integrationEnabled
 	}
 	return a.Enabled
 }
@@ -95,10 +95,10 @@ func (a *AccountGDPR) BasicEnforcementVendor(bidder openrtb_ext.BidderName) (val
 // EnabledForChannelType indicates whether GDPR is turned on at the account level for the specified channel type
 // by using the channel type setting if defined or the general GDPR setting if defined; otherwise it returns nil.
 func (a *AccountGDPR) EnabledForChannelType(channelType ChannelType) *bool {
-	if integrationEnabled := a.IntegrationEnabled.GetByChannelType(channelType); integrationEnabled != nil {
-		return integrationEnabled
-	} else if channelEnabled := a.ChannelEnabled.GetByChannelType(channelType); channelEnabled != nil {
+	if channelEnabled := a.ChannelEnabled.GetByChannelType(channelType); channelEnabled != nil {
 		return channelEnabled
+	} else if integrationEnabled := a.IntegrationEnabled.GetByChannelType(channelType); integrationEnabled != nil {
+		return integrationEnabled
 	}
 	return a.Enabled
 }

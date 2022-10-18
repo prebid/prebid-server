@@ -41,6 +41,8 @@ func (tc *tcf2Config) IsEnabled() bool {
 	return tc.HostConfig.Enabled
 }
 
+// ChannelEnabled checks if a given channel type is enabled at the account level. If it is not set at the
+// account level, the host TCF2 enabled flag is used to determine if the channel type is enabled.
 func (tc *tcf2Config) ChannelEnabled(channelType config.ChannelType) bool {
 	if accountEnabled := tc.AccountConfig.EnabledForChannelType(channelType); accountEnabled != nil {
 		return *accountEnabled

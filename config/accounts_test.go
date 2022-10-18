@@ -12,46 +12,68 @@ func TestAccountGDPREnabledForChannelType(t *testing.T) {
 	trueValue, falseValue := true, false
 
 	tests := []struct {
-		description        string
-		giveChannelType    ChannelType
-		giveGDPREnabled    *bool
-		giveWebGDPREnabled *bool
-		wantEnabled        *bool
+		description                      string
+		giveChannelType                  ChannelType
+		giveGDPREnabled                  *bool
+		giveWebGDPREnabled               *bool
+		giveWebGDPREnabledForIntegration *bool
+		wantEnabled                      *bool
 	}{
 		{
-			description:        "GDPR Web channel enabled, general GDPR disabled",
-			giveChannelType:    ChannelWeb,
-			giveGDPREnabled:    &falseValue,
-			giveWebGDPREnabled: &trueValue,
-			wantEnabled:        &trueValue,
+			description:                      "GDPR Web channel enabled, general GDPR disabled",
+			giveChannelType:                  ChannelWeb,
+			giveGDPREnabled:                  &falseValue,
+			giveWebGDPREnabled:               &trueValue,
+			giveWebGDPREnabledForIntegration: nil,
+			wantEnabled:                      &trueValue,
 		},
 		{
-			description:        "GDPR Web channel disabled, general GDPR enabled",
-			giveChannelType:    ChannelWeb,
-			giveGDPREnabled:    &trueValue,
-			giveWebGDPREnabled: &falseValue,
-			wantEnabled:        &falseValue,
+			description:                      "GDPR Web channel disabled, general GDPR enabled",
+			giveChannelType:                  ChannelWeb,
+			giveGDPREnabled:                  &trueValue,
+			giveWebGDPREnabled:               &falseValue,
+			giveWebGDPREnabledForIntegration: nil,
+			wantEnabled:                      &falseValue,
 		},
 		{
-			description:        "GDPR Web channel unspecified, general GDPR disabled",
-			giveChannelType:    ChannelWeb,
-			giveGDPREnabled:    &falseValue,
-			giveWebGDPREnabled: nil,
-			wantEnabled:        &falseValue,
+			description:                      "GDPR Web channel unspecified, general GDPR disabled",
+			giveChannelType:                  ChannelWeb,
+			giveGDPREnabled:                  &falseValue,
+			giveWebGDPREnabled:               nil,
+			giveWebGDPREnabledForIntegration: nil,
+			wantEnabled:                      &falseValue,
 		},
 		{
-			description:        "GDPR Web channel unspecified, general GDPR enabled",
-			giveChannelType:    ChannelWeb,
-			giveGDPREnabled:    &trueValue,
-			giveWebGDPREnabled: nil,
-			wantEnabled:        &trueValue,
+			description:                      "GDPR Web channel unspecified, general GDPR enabled",
+			giveChannelType:                  ChannelWeb,
+			giveGDPREnabled:                  &trueValue,
+			giveWebGDPREnabled:               nil,
+			giveWebGDPREnabledForIntegration: nil,
+			wantEnabled:                      &trueValue,
 		},
 		{
-			description:        "GDPR Web channel unspecified, general GDPR unspecified",
-			giveChannelType:    ChannelWeb,
-			giveGDPREnabled:    nil,
-			giveWebGDPREnabled: nil,
-			wantEnabled:        nil,
+			description:                      "GDPR Web channel unspecified, general GDPR unspecified",
+			giveChannelType:                  ChannelWeb,
+			giveGDPREnabled:                  nil,
+			giveWebGDPREnabled:               nil,
+			giveWebGDPREnabledForIntegration: nil,
+			wantEnabled:                      nil,
+		},
+		{
+			description:                      "Inegration Enabled is set, and channel enabled isn't",
+			giveChannelType:                  ChannelWeb,
+			giveGDPREnabled:                  &falseValue,
+			giveWebGDPREnabled:               nil,
+			giveWebGDPREnabledForIntegration: &trueValue,
+			wantEnabled:                      &trueValue,
+		},
+		{
+			description:                      "Inegration Enabled is set, and channel enabled is set, channel should have precedence",
+			giveChannelType:                  ChannelWeb,
+			giveGDPREnabled:                  &falseValue,
+			giveWebGDPREnabled:               &trueValue,
+			giveWebGDPREnabledForIntegration: &falseValue,
+			wantEnabled:                      &trueValue,
 		},
 	}
 
@@ -59,8 +81,11 @@ func TestAccountGDPREnabledForChannelType(t *testing.T) {
 		account := Account{
 			GDPR: AccountGDPR{
 				Enabled: tt.giveGDPREnabled,
-				IntegrationEnabled: AccountChannel{
+				ChannelEnabled: AccountChannel{
 					Web: tt.giveWebGDPREnabled,
+				},
+				IntegrationEnabled: AccountChannel{
+					Web: tt.giveWebGDPREnabledForIntegration,
 				},
 			},
 		}
@@ -80,46 +105,68 @@ func TestAccountCCPAEnabledForChannelType(t *testing.T) {
 	trueValue, falseValue := true, false
 
 	tests := []struct {
-		description        string
-		giveChannelType    ChannelType
-		giveCCPAEnabled    *bool
-		giveWebCCPAEnabled *bool
-		wantEnabled        *bool
+		description                      string
+		giveChannelType                  ChannelType
+		giveCCPAEnabled                  *bool
+		giveWebCCPAEnabled               *bool
+		giveWebCCPAEnabledForIntegration *bool
+		wantEnabled                      *bool
 	}{
 		{
-			description:        "CCPA Web channel enabled, general CCPA disabled",
-			giveChannelType:    ChannelWeb,
-			giveCCPAEnabled:    &falseValue,
-			giveWebCCPAEnabled: &trueValue,
-			wantEnabled:        &trueValue,
+			description:                      "CCPA Web channel enabled, general CCPA disabled",
+			giveChannelType:                  ChannelWeb,
+			giveCCPAEnabled:                  &falseValue,
+			giveWebCCPAEnabled:               &trueValue,
+			giveWebCCPAEnabledForIntegration: nil,
+			wantEnabled:                      &trueValue,
 		},
 		{
-			description:        "CCPA Web channel disabled, general CCPA enabled",
-			giveChannelType:    ChannelWeb,
-			giveCCPAEnabled:    &trueValue,
-			giveWebCCPAEnabled: &falseValue,
-			wantEnabled:        &falseValue,
+			description:                      "CCPA Web channel disabled, general CCPA enabled",
+			giveChannelType:                  ChannelWeb,
+			giveCCPAEnabled:                  &trueValue,
+			giveWebCCPAEnabled:               &falseValue,
+			giveWebCCPAEnabledForIntegration: nil,
+			wantEnabled:                      &falseValue,
 		},
 		{
-			description:        "CCPA Web channel unspecified, general CCPA disabled",
-			giveChannelType:    ChannelWeb,
-			giveCCPAEnabled:    &falseValue,
-			giveWebCCPAEnabled: nil,
-			wantEnabled:        &falseValue,
+			description:                      "CCPA Web channel unspecified, general CCPA disabled",
+			giveChannelType:                  ChannelWeb,
+			giveCCPAEnabled:                  &falseValue,
+			giveWebCCPAEnabled:               nil,
+			giveWebCCPAEnabledForIntegration: nil,
+			wantEnabled:                      &falseValue,
 		},
 		{
-			description:        "CCPA Web channel unspecified, general CCPA enabled",
-			giveChannelType:    ChannelWeb,
-			giveCCPAEnabled:    &trueValue,
-			giveWebCCPAEnabled: nil,
-			wantEnabled:        &trueValue,
+			description:                      "CCPA Web channel unspecified, general CCPA enabled",
+			giveChannelType:                  ChannelWeb,
+			giveCCPAEnabled:                  &trueValue,
+			giveWebCCPAEnabled:               nil,
+			giveWebCCPAEnabledForIntegration: nil,
+			wantEnabled:                      &trueValue,
 		},
 		{
-			description:        "CCPA Web channel unspecified, general CCPA unspecified",
-			giveChannelType:    ChannelWeb,
-			giveCCPAEnabled:    nil,
-			giveWebCCPAEnabled: nil,
-			wantEnabled:        nil,
+			description:                      "CCPA Web channel unspecified, general CCPA unspecified",
+			giveChannelType:                  ChannelWeb,
+			giveCCPAEnabled:                  nil,
+			giveWebCCPAEnabled:               nil,
+			giveWebCCPAEnabledForIntegration: nil,
+			wantEnabled:                      nil,
+		},
+		{
+			description:                      "Inegration Enabled is set, and channel enabled isn't",
+			giveChannelType:                  ChannelWeb,
+			giveCCPAEnabled:                  &falseValue,
+			giveWebCCPAEnabled:               nil,
+			giveWebCCPAEnabledForIntegration: &trueValue,
+			wantEnabled:                      &trueValue,
+		},
+		{
+			description:                      "Inegration Enabled is set, and channel enabled is set, channel should have precedence",
+			giveChannelType:                  ChannelWeb,
+			giveCCPAEnabled:                  &falseValue,
+			giveWebCCPAEnabled:               &trueValue,
+			giveWebCCPAEnabledForIntegration: &falseValue,
+			wantEnabled:                      &trueValue,
 		},
 	}
 
@@ -127,8 +174,11 @@ func TestAccountCCPAEnabledForChannelType(t *testing.T) {
 		account := Account{
 			CCPA: AccountCCPA{
 				Enabled: tt.giveCCPAEnabled,
-				IntegrationEnabled: AccountChannel{
+				ChannelEnabled: AccountChannel{
 					Web: tt.giveWebCCPAEnabled,
+				},
+				IntegrationEnabled: AccountChannel{
+					Web: tt.giveWebCCPAEnabledForIntegration,
 				},
 			},
 		}
