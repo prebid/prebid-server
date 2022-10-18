@@ -102,7 +102,7 @@
               "slotid": "testslotid",
               "h": 250,
               "w": 300,
-              "test": 0
+              "test": 1
             }
           ],
           "device": {
