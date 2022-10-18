@@ -10,7 +10,7 @@ import (
 )
 
 type EntrypointHook interface {
-	Call(
+	HandleEntrypointHook(
 		context.Context,
 		invocation.Context,
 		EntrypointPayload,
@@ -52,7 +52,7 @@ func ExecuteEntrypointStage(
 			select {
 			case <-done:
 			default:
-				result, err := hook.Call(ctx, invocationCtx, payload)
+				result, err := hook.HandleEntrypointHook(ctx, invocationCtx, payload)
 				resp <- HookResponse[EntrypointPayload]{
 					Result: result,
 					Err:    err,

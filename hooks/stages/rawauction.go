@@ -7,7 +7,7 @@ import (
 )
 
 type RawAuctionHook interface {
-	Call(
+	HandleRawAuctionHook(
 		context.Context,
 		invocation.Context,
 		BidRequest,

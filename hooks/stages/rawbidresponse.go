@@ -8,7 +8,7 @@ import (
 )
 
 type RawBidResponseHook interface {
-	Call(
+	HandleRawBidResponseHook(
 		context.Context,
 		invocation.Context,
 		RawBidResponsePayload,

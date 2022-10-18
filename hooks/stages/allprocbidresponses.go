@@ -7,7 +7,7 @@ import (
 )
 
 type AllProcBidResponsesHook interface {
-	Call(
+	HandleAllProcBidResponsesHook(
 		context.Context,
 		invocation.Context,
 		AllProcBidResponsesPayload,
