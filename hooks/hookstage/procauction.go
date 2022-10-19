@@ -1,4 +1,4 @@
-package stages
+package hookstage
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"github.com/prebid/prebid-server/hooks/invocation"
 )
 
-type ProcessedAuctionHook interface {
+type ProcessedAuction interface {
 	HandleProcessedAuctionHook(
 		context.Context,
 		invocation.Context,

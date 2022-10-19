@@ -1,4 +1,4 @@
-package stages
+package hookstage
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"github.com/prebid/prebid-server/hooks/invocation"
 )
 
-type RawBidResponseHook interface {
+type RawBidResponse interface {
 	HandleRawBidResponseHook(
 		context.Context,
 		invocation.Context,
