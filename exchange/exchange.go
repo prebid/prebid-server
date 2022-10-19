@@ -32,8 +32,8 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/gofrs/uuid"
 	"github.com/golang/glog"
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
-	"github.com/mxmCherry/openrtb/v16/openrtb3"
+	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb3"
 )
 
 type extCacheInstructions struct {
@@ -292,7 +292,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		// List of bidders we have requests for.
 		liveAdapters = listBiddersWithRequests(bidderRequests)
 
-		//This will be used validate bids
+		//This will be used to validate bids
 		var alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes
 		if requestExt != nil && requestExt.Prebid.AlternateBidderCodes != nil {
 			alternateBidderCodes = *requestExt.Prebid.AlternateBidderCodes

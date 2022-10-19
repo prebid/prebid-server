@@ -1,4 +1,4 @@
-package andbeyondmedia
+package beyondmedia
 
 import (
 	"encoding/json"
@@ -14,7 +14,7 @@ func TestValidParams(t *testing.T) {
 	}
 
 	for _, p := range validParams {
-		if err := validator.Validate(openrtb_ext.BidderAndBeyondMedia, json.RawMessage(p)); err != nil {
+		if err := validator.Validate(openrtb_ext.BidderBeyondMedia, json.RawMessage(p)); err != nil {
 			t.Errorf("Schema rejected valid params: %s", p)
 		}
 	}
@@ -27,7 +27,7 @@ func TestInvalidParams(t *testing.T) {
 	}
 
 	for _, p := range invalidParams {
-		if err := validator.Validate(openrtb_ext.BidderAndBeyondMedia, json.RawMessage(p)); err == nil {
+		if err := validator.Validate(openrtb_ext.BidderBeyondMedia, json.RawMessage(p)); err == nil {
 			t.Errorf("Schema allowed invalid params: %s", p)
 		}
 	}
