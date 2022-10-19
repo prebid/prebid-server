@@ -24,13 +24,6 @@ func TestJsonSamples(t *testing.T) {
 }
 
 func TestResolvePriceMacro(t *testing.T) {
-	_, buildErr := Builder(openrtb_ext.BidderSeedingAlliance, config.Adapter{
-		Endpoint: "https://mockup.seeding-alliance.de/",
-	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
-
 	adm := `{"link":{"url":"https://some_url.com/abc123?wp=${AUCTION_PRICE}"}`
 	want := `{"link":{"url":"https://some_url.com/abc123?wp=12.34"}`
 
@@ -43,13 +36,6 @@ func TestResolvePriceMacro(t *testing.T) {
 }
 
 func TestGetMediaTypeForBid(t *testing.T) {
-	_, buildErr := Builder(openrtb_ext.BidderSeedingAlliance, config.Adapter{
-		Endpoint: "https://mockup.seeding-alliance.de/ssp-testing/native.html",
-	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
-
 	tests := []struct {
 		name           string
 		want           openrtb_ext.BidType
@@ -149,13 +135,6 @@ func TestGetMediaTypeForBid(t *testing.T) {
 }
 
 func TestAddTagID(t *testing.T) {
-	_, buildErr := Builder(openrtb_ext.BidderSeedingAlliance, config.Adapter{
-		Endpoint: "https://mockup.seeding-alliance.de/ssp-testing/native.html",
-	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
-	if buildErr != nil {
-		t.Fatalf("Builder returned unexpected error %v", buildErr)
-	}
-
 	tests := []struct {
 		name    string
 		want    string
