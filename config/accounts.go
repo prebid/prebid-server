@@ -237,7 +237,7 @@ type AccountHooks struct {
 // format: map[vendor_name]map[module_name]json.RawMessage
 type AccountModules map[string]map[string]json.RawMessage
 
-func (m AccountModules) getModuleConfig(id string) json.RawMessage {
+func (m AccountModules) ModuleConfig(id string) json.RawMessage {
 	ns := strings.SplitN(id, ".", 2)
 	if len(ns) < 2 {
 		glog.Errorf("Can't find module config, ID must consist of vendor and module names separated by dot")

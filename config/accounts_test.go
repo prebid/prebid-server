@@ -753,7 +753,7 @@ func TestModulesGetConfig(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
-			gotConfig := test.givenModules.getModuleConfig(test.givenId)
+			gotConfig := test.givenModules.ModuleConfig(test.givenId)
 			assert.Equal(t, test.expectedConfig, gotConfig)
 		})
 	}
