@@ -3,8 +3,8 @@ package hooks
 import (
 	"context"
 
+	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/prebid/prebid-server/hooks/invocation"
-	"github.com/prebid/prebid-server/hooks/stages"
 	"github.com/prebid/prebid-server/modules/acme/foobar/config"
 )
 
@@ -19,10 +19,10 @@ type EntrypointHook struct {
 func (h EntrypointHook) Handle(
 	_ context.Context,
 	_ invocation.Context,
-	payload stages.EntrypointPayload,
-) (invocation.HookResult[stages.EntrypointPayload], error) {
+	payload hookstage.EntrypointPayload,
+) (invocation.HookResult[hookstage.EntrypointPayload], error) {
 	if payload.Request.URL.Query().Get(h.cfg.Attributes.Name) != "" && h.cfg.AllowReject {
-		return invocation.HookResult[stages.EntrypointPayload]{Reject: true}, nil
+		return invocation.HookResult[hookstage.EntrypointPayload]{Reject: true}, nil
 	}
-	return invocation.HookResult[stages.EntrypointPayload]{}, nil
+	return invocation.HookResult[hookstage.EntrypointPayload]{}, nil
 }

@@ -2,35 +2,35 @@ package hooks
 
 import (
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/hooks/stages"
+	"github.com/prebid/prebid-server/hooks/hookstage"
 )
 
 type EmptyPlanBuilder struct{}
 
-func (e EmptyPlanBuilder) PlanForEntrypointStage(endpoint string) Plan[stages.EntrypointHook] {
+func (e EmptyPlanBuilder) PlanForEntrypointStage(endpoint string) Plan[hookstage.Entrypoint] {
 	return nil
 }
 
-func (e EmptyPlanBuilder) PlanForRawAuctionStage(endpoint string, account *config.Account) Plan[stages.RawAuctionHook] {
+func (e EmptyPlanBuilder) PlanForRawAuctionStage(endpoint string, account *config.Account) Plan[hookstage.RawAuction] {
 	return nil
 }
 
-func (e EmptyPlanBuilder) PlanForProcessedAuctionStage(endpoint string, account *config.Account) Plan[stages.ProcessedAuctionHook] {
+func (e EmptyPlanBuilder) PlanForProcessedAuctionStage(endpoint string, account *config.Account) Plan[hookstage.ProcessedAuction] {
 	return nil
 }
 
-func (e EmptyPlanBuilder) PlanForBidRequestStage(endpoint string, account *config.Account) Plan[stages.BidRequestHook] {
+func (e EmptyPlanBuilder) PlanForBidRequestStage(endpoint string, account *config.Account) Plan[hookstage.BidRequest] {
 	return nil
 }
 
-func (e EmptyPlanBuilder) PlanForRawBidResponseStage(endpoint string, account *config.Account) Plan[stages.RawBidResponseHook] {
+func (e EmptyPlanBuilder) PlanForRawBidResponseStage(endpoint string, account *config.Account) Plan[hookstage.RawBidResponse] {
 	return nil
 }
 
-func (e EmptyPlanBuilder) PlanForAllProcessedBidResponsesStage(endpoint string, account *config.Account) Plan[stages.AllProcBidResponsesHook] {
+func (e EmptyPlanBuilder) PlanForAllProcessedBidResponsesStage(endpoint string, account *config.Account) Plan[hookstage.AllProcessedBidResponses] {
 	return nil
 }
 
-func (e EmptyPlanBuilder) PlanForAuctionResponseStage(endpoint string, account *config.Account) Plan[stages.AuctionResponseHook] {
+func (e EmptyPlanBuilder) PlanForAuctionResponseStage(endpoint string, account *config.Account) Plan[hookstage.AuctionResponse] {
 	return nil
 }

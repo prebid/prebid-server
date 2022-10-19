@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/prebid/prebid-server/hooks/invocation"
-	"github.com/prebid/prebid-server/hooks/stages"
 	"github.com/prebid/prebid-server/modules/acme/foobar/config"
 	moduleHooks "github.com/prebid/prebid-server/modules/acme/foobar/hooks"
 )
@@ -28,10 +28,10 @@ type Module struct {
 	rawAuctionHook moduleHooks.RawAuctionHook
 }
 
-func (m Module) HandleEntrypointHook(ctx context.Context, context invocation.Context, payload stages.EntrypointPayload) (invocation.HookResult[stages.EntrypointPayload], error) {
+func (m Module) HandleEntrypointHook(ctx context.Context, context invocation.Context, payload hookstage.EntrypointPayload) (invocation.HookResult[hookstage.EntrypointPayload], error) {
 	return m.entrypointHook.Handle(ctx, context, payload)
 }
 
-func (m Module) HandleRawAuctionHook(ctx context.Context, context invocation.Context, request stages.BidRequest) (invocation.HookResult[stages.BidRequest], error) {
+func (m Module) HandleRawAuctionHook(ctx context.Context, context invocation.Context, request hookstage.RawAuctionPayload) (invocation.HookResult[hookstage.RawAuctionPayload], error) {
 	return m.rawAuctionHook.Handle(ctx, context, request)
 }
