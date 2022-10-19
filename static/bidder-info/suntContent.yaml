@@ -1,6 +1,6 @@
 endpoint: "https://b.suntcontent.se/cds/rtb/bid?ssp=pbs"
 maintainer:
-  email: tech@sunt
+  email: tech@seeding-alliance.de
 gvlVendorID: 1097
 capabilities:
   site:
