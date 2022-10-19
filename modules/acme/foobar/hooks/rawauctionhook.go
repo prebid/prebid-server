@@ -7,15 +7,15 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/prebid/prebid-server/hooks/invocation"
 	"github.com/prebid/prebid-server/hooks/stages"
-	"github.com/prebid/prebid-server/modules/foobar/config"
+	"github.com/prebid/prebid-server/modules/acme/foobar/config"
 )
 
-type CheckBodyRawAuctionHook struct {
+type RawAuctionHook struct {
 	client *http.Client
 	cfg    config.Config
 }
 
-func (h CheckBodyRawAuctionHook) Call(
+func (h RawAuctionHook) Handle(
 	_ context.Context,
 	_ invocation.Context,
 	request stages.BidRequest,
@@ -26,6 +26,6 @@ func (h CheckBodyRawAuctionHook) Call(
 	return invocation.HookResult[stages.BidRequest]{}, nil
 }
 
-func NewCheckBodyRawAuctionHook(client *http.Client, cfg config.Config) CheckBodyRawAuctionHook {
-	return CheckBodyRawAuctionHook{client: client, cfg: cfg}
+func NewRawAuctionHook(client *http.Client, cfg config.Config) RawAuctionHook {
+	return RawAuctionHook{client: client, cfg: cfg}
 }

@@ -1,6 +1,8 @@
 package invocation
 
-import "time"
+import (
+	"time"
+)
 
 type Context struct {
 	Endpoint string

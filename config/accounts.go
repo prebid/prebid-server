@@ -1,6 +1,10 @@
 package config
 
 import (
+	"encoding/json"
+	"strings"
+
+	"github.com/golang/glog"
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -30,7 +34,7 @@ type Account struct {
 	Events                  Events                               `mapstructure:"events" json:"events"` // Don't enable this feature. It is still under developmment - https://github.com/prebid/prebid-server/issues/1725
 	TruncateTargetAttribute *int                                 `mapstructure:"truncate_target_attr" json:"truncate_target_attr"`
 	AlternateBidderCodes    *openrtb_ext.ExtAlternateBidderCodes `mapstructure:"alternatebiddercodes" json:"alternatebiddercodes"`
-	Hooks                   HookExecutionPlan                    `mapstructure:"execution-plan" json:"execution-plan"`
+	Hooks                   AccountHooks                         `mapstructure:"hooks" json:"hooks"`
 }
 
 // CookieSync represents the account-level defaults for the cookie sync endpoint.
@@ -221,4 +225,24 @@ func (a *AccountIntegration) GetByIntegrationType(integrationType IntegrationTyp
 	}
 
 	return integrationEnabled
+}
+
+// AccountHooks represents account-specific hooks configuration
+type AccountHooks struct {
+	Modules       AccountModules    `mapstructure:"modules" json:"modules"`
+	ExecutionPlan HookExecutionPlan `mapstructure:"execution_plan" json:"execution_plan"`
+}
+
+// AccountModules mapping provides account-level module configuration
+// format: map[vendor_name]map[module_name]json.RawMessage
+type AccountModules map[string]map[string]json.RawMessage
+
+func (m AccountModules) getModuleConfig(id string) json.RawMessage {
+	ns := strings.SplitN(id, ".", 2)
+	if len(ns) < 2 {
+		glog.Errorf("Can't find module config, ID must consist of vendor and module names separated by dot")
+		return nil
+	}
+
+	return m[ns[0]][ns[1]]
 }

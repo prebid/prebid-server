@@ -2,13 +2,15 @@
 package modules
 
 import (
-	"github.com/prebid/prebid-server/modules/foobar"
+	"github.com/prebid/prebid-server/modules/acme/foobar"
 )
 
-// builders returns mapping between module name and its hook builder
-// module name is chosen based on module directory name
-func builders() map[string]HookBuilderFn {
-	return map[string]HookBuilderFn{
-		"foobar": foobar.Builder,
+// builders returns mapping between module name and its builder
+// vendor and module names are chosen based on the module directory name
+func builders() ModuleBuilders {
+	return ModuleBuilders{
+		"acme": {
+			"foobar": foobar.Builder,
+		},
 	}
 }

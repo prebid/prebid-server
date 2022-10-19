@@ -10,14 +10,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/experiment/adscert"
-	"github.com/prebid/prebid-server/hooks/hep/plans"
-
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/experiment/adscert"
 	"github.com/prebid/prebid-server/gdpr"
+	"github.com/prebid/prebid-server/hooks"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
@@ -114,7 +113,7 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 		[]byte{},
 		nil,
 		empty_fetcher.EmptyFetcher{},
-		plans.EmptyPlanBuilder{},
+		hooks.EmptyPlanBuilder{},
 	)
 
 	b.ResetTimer()

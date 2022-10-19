@@ -5,55 +5,57 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/prebid/prebid-server/hooks/hep"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/hooks"
 )
 
-func NewModuleBuilder() ModuleBuilder {
-	return &moduleBuilder{builders}
+func NewBuilder() Builder {
+	return &builder{builders()}
 }
 
-type ModuleBuilder interface {
-	SetModuleBuilderFn(fn ModuleBuilderFn) ModuleBuilder
-	Build(cfg map[string]interface{}, client *http.Client) (hep.HookRepository, error)
+type Builder interface {
+	SetModuleBuilders(builders ModuleBuilders) Builder
+	Build(cfg config.Modules, client *http.Client) (hooks.HookRepository, error)
 }
 
 type (
-	// ModuleBuilderFn returns mapping between module name and hook builders provided by module
-	ModuleBuilderFn func() map[string]HookBuilderFn
-	// HookBuilderFn returns mapping between hook code and implementation of a specific hook interface
-	HookBuilderFn func(cfg json.RawMessage, client *http.Client) (map[string]interface{}, error)
+	// ModuleBuilders mapping between module name and its builder: map[vendor]map[module]ModuleBuilderFn
+	ModuleBuilders map[string]map[string]ModuleBuilderFn
+	// ModuleBuilderFn returns an interface{} type that implements certain hook interfaces
+	ModuleBuilderFn func(cfg json.RawMessage, client *http.Client) (interface{}, error)
 )
 
-type moduleBuilder struct {
-	getBuildersFn func() map[string]HookBuilderFn
+type builder struct {
+	builders ModuleBuilders
 }
 
-func (m *moduleBuilder) SetModuleBuilderFn(fn ModuleBuilderFn) ModuleBuilder {
-	m.getBuildersFn = fn
+func (m *builder) SetModuleBuilders(builders ModuleBuilders) Builder {
+	m.builders = builders
 	return m
 }
 
-func (m *moduleBuilder) Build(cfg map[string]interface{}, client *http.Client) (hep.HookRepository, error) {
-	hooks := make(map[string]map[string]interface{})
-	for module, builder := range m.getBuildersFn() {
-		conf, err := json.Marshal(cfg[module])
-		if err != nil {
-			return nil, fmt.Errorf(`failed to marshal "%s" module config: %s`, module, err)
-		}
+func (m *builder) Build(cfg config.Modules, client *http.Client) (hooks.HookRepository, error) {
+	modules := make(map[string]interface{})
+	for vendor, moduleBuilders := range m.builders {
+		for moduleName, builder := range moduleBuilders {
+			var err error
+			var conf json.RawMessage
 
-		moduleHooks, err := builder(conf, client)
-		if err != nil {
-			return nil, fmt.Errorf(`failed to init "%s" module: %s`, module, err)
-		}
-
-		for code, hook := range moduleHooks {
-			if hooks[module] == nil {
-				hooks[module] = make(map[string]interface{})
+			id := fmt.Sprintf("%s.%s", vendor, moduleName)
+			if data, ok := cfg[vendor][moduleName]; ok {
+				if conf, err = json.Marshal(data); err != nil {
+					return nil, fmt.Errorf(`failed to marshal "%s" module config: %s`, id, err)
+				}
 			}
 
-			hooks[module][code] = hook
+			module, err := builder(conf, client)
+			if err != nil {
+				return nil, fmt.Errorf(`failed to init "%s" module: %s`, id, err)
+			}
+
+			modules[id] = module
 		}
 	}
 
-	return hep.NewHookRepository(hooks)
+	return hooks.NewHookRepository(modules)
 }

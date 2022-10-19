@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/prebid/go-gdpr/consentconstants"
@@ -708,5 +709,52 @@ func TestBasicEnforcementVendor(t *testing.T) {
 
 		assert.Equal(t, tt.wantIsBasicVendor, value, tt.description)
 		assert.Equal(t, tt.wantBasicVendorSet, present, tt.description)
+	}
+}
+
+func TestModulesGetConfig(t *testing.T) {
+	modules := AccountModules{
+		"acme": {
+			"foo": json.RawMessage(`{"foo": "bar"}`),
+		},
+	}
+
+	testCases := []struct {
+		description    string
+		givenId        string
+		givenModules   AccountModules
+		expectedConfig json.RawMessage
+	}{
+		{
+			description:    "Returns module config if found by ID",
+			givenId:        "acme.foo",
+			givenModules:   modules,
+			expectedConfig: json.RawMessage(`{"foo": "bar"}`),
+		},
+		{
+			description:    "Returns nil config if wrong ID provided",
+			givenId:        "invalid_id",
+			givenModules:   modules,
+			expectedConfig: nil,
+		},
+		{
+			description:    "Returns nil config if no matching module exists",
+			givenId:        "acme.bar",
+			givenModules:   modules,
+			expectedConfig: nil,
+		},
+		{
+			description:    "Returns nil config if no module configs defined in account",
+			givenId:        "acme.foo",
+			givenModules:   nil,
+			expectedConfig: nil,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.description, func(t *testing.T) {
+			gotConfig := test.givenModules.getModuleConfig(test.givenId)
+			assert.Equal(t, test.expectedConfig, gotConfig)
+		})
 	}
 }
