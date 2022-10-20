@@ -17,7 +17,7 @@ type RawAuctionHook struct {
 
 func (h RawAuctionHook) Handle(
 	_ context.Context,
-	_ invocation.Context,
+	_ invocation.InvocationContext,
 	request hookstage.RawAuctionPayload,
 ) (invocation.HookResult[hookstage.RawAuctionPayload], error) {
 	if v, err := jsonparser.GetString(request, "attribute"); err == nil && v == "value" && h.cfg.AllowReject {

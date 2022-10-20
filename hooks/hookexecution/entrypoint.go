@@ -1,11 +1,11 @@
-package execution
+package hookexecution
 
 import (
 	"context"
 	"fmt"
-	"github.com/prebid/prebid-server/hooks/hep"
+	"github.com/prebid/prebid-server/hooks"
+	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/prebid/prebid-server/hooks/invocation"
-	"github.com/prebid/prebid-server/hooks/stages"
 	"net/http"
 	"sync"
 	"time"
@@ -28,43 +28,48 @@ func (e RejectError) Error() string {
 
 func ExecuteEntrypointStage(
 	invocationCtx *invocation.InvocationContext,
-	plan hep.Plan[stages.EntrypointHook],
+	plan hooks.Plan[hookstage.Entrypoint],
 	req *http.Request,
 	body []byte,
-) (invocation.StageResult[stages.EntrypointPayload], []byte, error) {
+) (invocation.StageResult[hookstage.EntrypointPayload], []byte, error) {
 	var wg sync.WaitGroup
-	var stageResult invocation.StageResult[stages.EntrypointPayload]
+	var stageResult invocation.StageResult[hookstage.EntrypointPayload]
 
-	payload := stages.EntrypointPayload{Request: req, Body: body}
+	payload := hookstage.EntrypointPayload{Request: req, Body: body}
 	done := make(chan struct{})
 
 	for _, groups := range plan {
-		groupResults := make([]invocation.HookResult[stages.EntrypointPayload], 0)
-		resp := make(chan invocation.HookResponse[stages.EntrypointPayload])
+		groupResults := make([]invocation.HookResult[hookstage.EntrypointPayload], 0)
+		resp := make(chan invocation.HookResponse[hookstage.EntrypointPayload])
 
 		for _, moduleHook := range groups.Hooks {
-			hookRespCh := make(chan invocation.HookResponse[stages.EntrypointPayload], 1)
+			hookRespCh := make(chan invocation.HookResponse[hookstage.EntrypointPayload], 1)
 			wg.Add(1)
-			go func(hook stages.EntrypointHook, moduleCode string) {
+			go func(hw hooks.HookWrapper[hookstage.Entrypoint]) {
 				defer wg.Done()
 
 				select {
 				case <-done:
 					return
 				default:
-					go asyncHookCall(invocationCtx.ModuleContextFor(moduleCode), hook, payload, groups.Timeout, invocationCtx.DebugEnabled, hookRespCh)
+					moduleCtx := invocationCtx.ModuleContextFor(hw.Module)
+					if moduleCtx.Config == nil {
+						moduleCtx.Config = hw.Config
+					}
+
+					go asyncHookCall(moduleCtx, hw.Hook, payload, groups.Timeout, invocationCtx.DebugEnabled, hookRespCh)
 					select {
 					case res := <-hookRespCh:
-						res.Result.ModuleCode = moduleCode
+						res.Result.ModuleCode = hw.Module
 						resp <- res
 					case <-time.After(groups.Timeout):
-						resp <- invocation.HookResponse[stages.EntrypointPayload]{
-							Result: invocation.HookResult[stages.EntrypointPayload]{ModuleCode: moduleCode},
+						resp <- invocation.HookResponse[hookstage.EntrypointPayload]{
+							Result: invocation.HookResult[hookstage.EntrypointPayload]{ModuleCode: hw.Module},
 							Err:    TimeoutError{},
 						}
 					}
 				}
-			}(moduleHook.Hook, moduleHook.Module)
+			}(moduleHook)
 		}
 
 		go func() {
@@ -110,17 +115,17 @@ func ExecuteEntrypointStage(
 
 func asyncHookCall(
 	moduleCtx *invocation.ModuleContext,
-	hook stages.EntrypointHook,
-	pld stages.EntrypointPayload,
+	hook hookstage.Entrypoint,
+	pld hookstage.EntrypointPayload,
 	timeout time.Duration,
 	debugMode bool,
-	hrc chan<- invocation.HookResponse[stages.EntrypointPayload],
+	hrc chan<- invocation.HookResponse[hookstage.EntrypointPayload],
 ) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
-	result, err := hook.Call(ctx, moduleCtx, pld, debugMode)
+	result, err := hook.HandleEntrypointHook(ctx, moduleCtx, pld, debugMode)
 
-	hrc <- invocation.HookResponse[stages.EntrypointPayload]{
+	hrc <- invocation.HookResponse[hookstage.EntrypointPayload]{
 		Result: result,
 		Err:    err,
 	}

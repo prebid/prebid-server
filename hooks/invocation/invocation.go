@@ -1,6 +1,7 @@
 package invocation
 
 import (
+	"encoding/json"
 	"time"
 )
 
@@ -47,7 +48,8 @@ type HookResult[T any] struct {
 }
 
 type ModuleContext struct {
-	Ctx interface{} // interface as we do not know exactly how the modules will use their inner context
+	Ctx    interface{} // interface as we do not know exactly how the modules will use their inner context
+	Config json.RawMessage
 }
 
 type StageResult[T any] struct {

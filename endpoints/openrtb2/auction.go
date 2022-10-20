@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/hooks/execution"
+	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/hooks/invocation"
 	"io"
 	"io/ioutil"
@@ -158,7 +158,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
 
-	req, impExtInfoMap, storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, errL := deps.parseRequest(r, deps.hookExecutionPlanBuilder)
+	req, impExtInfoMap, storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, errL := deps.parseRequest(r, deps.hookExecutionPlanBuilder, deps.cfg.Debug.Modules)
 	if errortypes.ContainsFatalError(errL) && writeError(errL, w, &labels) {
 		return
 	}
@@ -264,7 +264,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 // possible, it will return errors with messages that suggest improvements.
 //
 // If the errors list has at least one element, then no guarantees are made about the returned request.
-func (deps *endpointDeps) parseRequest(httpRequest *http.Request, planbuilder hep.HookExecutionPlanBuilder) (req *openrtb_ext.RequestWrapper, impExtInfoMap map[string]exchange.ImpExtInfo, storedAuctionResponses stored_responses.ImpsWithBidResponses, storedBidResponses stored_responses.ImpBidderStoredResp, bidderImpReplaceImpId stored_responses.BidderImpReplaceImpID, errs []error) {
+func (deps *endpointDeps) parseRequest(httpRequest *http.Request, planbuilder hooks.ExecutionPlanBuilder, debugModules bool) (req *openrtb_ext.RequestWrapper, impExtInfoMap map[string]exchange.ImpExtInfo, storedAuctionResponses stored_responses.ImpsWithBidResponses, storedBidResponses stored_responses.ImpBidderStoredResp, bidderImpReplaceImpId stored_responses.BidderImpReplaceImpID, errs []error) {
 	req = &openrtb_ext.RequestWrapper{}
 	req.BidRequest = &openrtb2.BidRequest{}
 	errs = nil
@@ -287,9 +287,9 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, planbuilder he
 		}
 	}
 
-	invCtx := invocation.InvocationContext{DebugEnabled: planbuilder.DebugModeEnabled()}
+	invCtx := invocation.InvocationContext{DebugEnabled: debugModules}
 	// todo: use stage result later for response
-	_, body, err := execution.ExecuteEntrypointStage(
+	_, body, err := hookexecution.ExecuteEntrypointStage(
 		&invCtx,
 		planbuilder.PlanForEntrypointStage(httpRequest.URL.Path),
 		httpRequest,

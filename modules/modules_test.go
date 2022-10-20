@@ -85,10 +85,10 @@ func TestModuleBuilderBuild(t *testing.T) {
 
 type module struct{}
 
-func (h module) HandleEntrypointHook(ctx context.Context, context invocation.Context, payload hookstage.EntrypointPayload) (invocation.HookResult[hookstage.EntrypointPayload], error) {
+func (h module) HandleEntrypointHook(ctx context.Context, context *invocation.ModuleContext, payload hookstage.EntrypointPayload, debug bool) (invocation.HookResult[hookstage.EntrypointPayload], error) {
 	return invocation.HookResult[hookstage.EntrypointPayload]{}, nil
 }
 
-func (h module) HandleAuctionResponseHook(ctx context.Context, i invocation.Context, response *openrtb2.BidResponse) (invocation.HookResult[*openrtb2.BidResponse], error) {
+func (h module) HandleAuctionResponseHook(ctx context.Context, i invocation.InvocationContext, response *openrtb2.BidResponse) (invocation.HookResult[*openrtb2.BidResponse], error) {
 	return invocation.HookResult[*openrtb2.BidResponse]{}, nil
 }

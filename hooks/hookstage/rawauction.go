@@ -9,7 +9,7 @@ import (
 type RawAuction interface {
 	HandleRawAuctionHook(
 		context.Context,
-		invocation.Context,
+		invocation.InvocationContext,
 		RawAuctionPayload,
 	) (invocation.HookResult[RawAuctionPayload], error)
 }

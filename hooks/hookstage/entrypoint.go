@@ -9,9 +9,10 @@ import (
 
 type Entrypoint interface {
 	HandleEntrypointHook(
-		context.Context,
-		invocation.Context,
-		EntrypointPayload,
+		ctx context.Context,
+		iCtx *invocation.ModuleContext,
+		p EntrypointPayload,
+		debugMode bool,
 	) (invocation.HookResult[EntrypointPayload], error)
 }
 

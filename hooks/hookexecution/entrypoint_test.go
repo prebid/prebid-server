@@ -1,20 +1,20 @@
-package execution
+package hookexecution
 
 import (
 	"bytes"
 	"context"
 	"errors"
 	"github.com/buger/jsonparser"
-	"github.com/prebid/prebid-server/hooks/hep"
+	"github.com/prebid/prebid-server/hooks"
+	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/prebid/prebid-server/hooks/invocation"
-	"github.com/prebid/prebid-server/hooks/stages"
 	"net/http"
 	"testing"
 	"time"
 )
 
 func TestExecuteEntrypointStage_DoesNotChangeRequestForEmptyPlan(t *testing.T) {
-	plan := hep.Plan[stages.EntrypointHook]{}
+	plan := hooks.Plan[hookstage.Entrypoint]{}
 
 	body := []byte(`{"name": "John", "last_name": "Doe"}`)
 	reader := bytes.NewReader(body)
@@ -38,17 +38,17 @@ func TestExecuteEntrypointStage_DoesNotChangeRequestForEmptyPlan(t *testing.T) {
 }
 
 func TestExecuteEntrypointStage_CanApplyHookMutations(t *testing.T) {
-	plan := hep.Plan[stages.EntrypointHook]{
-		hep.Group[stages.EntrypointHook]{
+	plan := hooks.Plan[hookstage.Entrypoint]{
+		hooks.Group[hookstage.Entrypoint]{
 			Timeout: 1 * time.Millisecond,
-			Hooks: []hep.HookWrapper[stages.EntrypointHook]{
+			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
 				{Module: "foobar", Code: "foo", Hook: mockUpdateHeaderEntrypointHook{}},
 				{Module: "foobar", Code: "bar", Hook: mockUpdateQueryEntrypointHook{}},
 			},
 		},
-		hep.Group[stages.EntrypointHook]{
+		hooks.Group[hookstage.Entrypoint]{
 			Timeout: 1 * time.Millisecond,
-			Hooks: []hep.HookWrapper[stages.EntrypointHook]{
+			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
 				{Module: "foobar", Code: "baz", Hook: mockUpdateBodyEntrypointHook{}},
 			},
 		},
@@ -89,22 +89,22 @@ func TestExecuteEntrypointStage_CanApplyHookMutations(t *testing.T) {
 
 type mockUpdateHeaderEntrypointHook struct{}
 
-func (e mockUpdateHeaderEntrypointHook) Call(_ context.Context, _ *invocation.ModuleContext, _ stages.EntrypointPayload, _ bool) (invocation.HookResult[stages.EntrypointPayload], error) {
-	muts := []invocation.Mutation[stages.EntrypointPayload]{
-		invocation.NewMutation(func(payload stages.EntrypointPayload) (stages.EntrypointPayload, error) {
+func (e mockUpdateHeaderEntrypointHook) HandleEntrypointHook(_ context.Context, _ *invocation.ModuleContext, _ hookstage.EntrypointPayload, _ bool) (invocation.HookResult[hookstage.EntrypointPayload], error) {
+	muts := []invocation.Mutation[hookstage.EntrypointPayload]{
+		invocation.NewMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
 			payload.Request.Header.Add("foo", "bar")
 			return payload, nil
 		}, invocation.MutationUpdate, "header", "foo"),
 	}
 
-	return invocation.HookResult[stages.EntrypointPayload]{Mutations: muts}, nil
+	return invocation.HookResult[hookstage.EntrypointPayload]{Mutations: muts}, nil
 }
 
 type mockUpdateQueryEntrypointHook struct{}
 
-func (e mockUpdateQueryEntrypointHook) Call(_ context.Context, _ *invocation.ModuleContext, _ stages.EntrypointPayload, _ bool) (invocation.HookResult[stages.EntrypointPayload], error) {
-	muts := []invocation.Mutation[stages.EntrypointPayload]{
-		invocation.NewMutation(func(payload stages.EntrypointPayload) (stages.EntrypointPayload, error) {
+func (e mockUpdateQueryEntrypointHook) HandleEntrypointHook(_ context.Context, _ *invocation.ModuleContext, _ hookstage.EntrypointPayload, _ bool) (invocation.HookResult[hookstage.EntrypointPayload], error) {
+	muts := []invocation.Mutation[hookstage.EntrypointPayload]{
+		invocation.NewMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
 			params := payload.Request.URL.Query()
 			params.Add("foo", "baz")
 			payload.Request.URL.RawQuery = params.Encode()
@@ -112,38 +112,38 @@ func (e mockUpdateQueryEntrypointHook) Call(_ context.Context, _ *invocation.Mod
 		}, invocation.MutationUpdate, "param", "foo"),
 	}
 
-	return invocation.HookResult[stages.EntrypointPayload]{Mutations: muts}, nil
+	return invocation.HookResult[hookstage.EntrypointPayload]{Mutations: muts}, nil
 }
 
 type mockUpdateBodyEntrypointHook struct{}
 
-func (e mockUpdateBodyEntrypointHook) Call(_ context.Context, _ *invocation.ModuleContext, _ stages.EntrypointPayload, _ bool) (invocation.HookResult[stages.EntrypointPayload], error) {
-	muts := []invocation.Mutation[stages.EntrypointPayload]{
-		invocation.NewMutation(func(payload stages.EntrypointPayload) (stages.EntrypointPayload, error) {
+func (e mockUpdateBodyEntrypointHook) HandleEntrypointHook(_ context.Context, _ *invocation.ModuleContext, _ hookstage.EntrypointPayload, _ bool) (invocation.HookResult[hookstage.EntrypointPayload], error) {
+	muts := []invocation.Mutation[hookstage.EntrypointPayload]{
+		invocation.NewMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
 			payload.Body = []byte(`{"name": "John", "last_name": "Doe", "foo": "bar"}`)
 			return payload, nil
 		}, invocation.MutationUpdate, "body", "foo"),
 
-		invocation.NewMutation(func(payload stages.EntrypointPayload) (stages.EntrypointPayload, error) {
+		invocation.NewMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
 			payload.Body = []byte(`{"last_name": "Doe", "foo": "bar"}`)
 			return payload, nil
 		}, invocation.MutationDelete, "body", "name"),
 	}
 
-	return invocation.HookResult[stages.EntrypointPayload]{Mutations: muts}, nil
+	return invocation.HookResult[hookstage.EntrypointPayload]{Mutations: muts}, nil
 }
 
 func TestExecuteEntrypointStage_CanRejectHook(t *testing.T) {
-	plan := hep.Plan[stages.EntrypointHook]{
-		hep.Group[stages.EntrypointHook]{
+	plan := hooks.Plan[hookstage.Entrypoint]{
+		hooks.Group[hookstage.Entrypoint]{
 			Timeout: 1 * time.Millisecond,
-			Hooks: []hep.HookWrapper[stages.EntrypointHook]{
+			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
 				{Module: "foobar", Code: "foo", Hook: mockUpdateHeaderEntrypointHook{}},
 			},
 		},
-		hep.Group[stages.EntrypointHook]{
+		hooks.Group[hookstage.Entrypoint]{
 			Timeout: 1 * time.Millisecond,
-			Hooks: []hep.HookWrapper[stages.EntrypointHook]{
+			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
 				{Module: "foobar", Code: "bar", Hook: mockRejectEntrypointHook{}},
 			},
 		},
@@ -176,22 +176,22 @@ func TestExecuteEntrypointStage_CanRejectHook(t *testing.T) {
 
 type mockRejectEntrypointHook struct{}
 
-func (e mockRejectEntrypointHook) Call(_ context.Context, _ *invocation.ModuleContext, _ stages.EntrypointPayload, _ bool) (invocation.HookResult[stages.EntrypointPayload], error) {
-	return invocation.HookResult[stages.EntrypointPayload]{Reject: true}, nil
+func (e mockRejectEntrypointHook) HandleEntrypointHook(_ context.Context, _ *invocation.ModuleContext, _ hookstage.EntrypointPayload, _ bool) (invocation.HookResult[hookstage.EntrypointPayload], error) {
+	return invocation.HookResult[hookstage.EntrypointPayload]{Reject: true}, nil
 }
 
 func TestExecuteEntrypointStage_CanTimeoutOneOfHooks(t *testing.T) {
-	plan := hep.Plan[stages.EntrypointHook]{
-		hep.Group[stages.EntrypointHook]{
+	plan := hooks.Plan[hookstage.Entrypoint]{
+		hooks.Group[hookstage.Entrypoint]{
 			Timeout: 1 * time.Millisecond,
-			Hooks: []hep.HookWrapper[stages.EntrypointHook]{
+			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
 				{Module: "foobar", Code: "foo", Hook: mockUpdateHeaderEntrypointHook{}},
 				{Module: "foobar", Code: "bar", Hook: mockTimeoutEntrypointHook{}},
 			},
 		},
-		hep.Group[stages.EntrypointHook]{
+		hooks.Group[hookstage.Entrypoint]{
 			Timeout: 1 * time.Millisecond,
-			Hooks: []hep.HookWrapper[stages.EntrypointHook]{
+			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
 				{Module: "foobar", Code: "baz", Hook: mockUpdateBodyEntrypointHook{}},
 			},
 		},
@@ -228,10 +228,10 @@ func TestExecuteEntrypointStage_CanTimeoutOneOfHooks(t *testing.T) {
 
 type mockTimeoutEntrypointHook struct{}
 
-func (e mockTimeoutEntrypointHook) Call(_ context.Context, _ *invocation.ModuleContext, _ stages.EntrypointPayload, _ bool) (invocation.HookResult[stages.EntrypointPayload], error) {
+func (e mockTimeoutEntrypointHook) HandleEntrypointHook(_ context.Context, _ *invocation.ModuleContext, _ hookstage.EntrypointPayload, _ bool) (invocation.HookResult[hookstage.EntrypointPayload], error) {
 	time.Sleep(2 * time.Millisecond)
-	muts := []invocation.Mutation[stages.EntrypointPayload]{
-		invocation.NewMutation(func(payload stages.EntrypointPayload) (stages.EntrypointPayload, error) {
+	muts := []invocation.Mutation[hookstage.EntrypointPayload]{
+		invocation.NewMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
 			params := payload.Request.URL.Query()
 			params.Add("bar", "foo")
 			payload.Request.URL.RawQuery = params.Encode()
@@ -239,20 +239,20 @@ func (e mockTimeoutEntrypointHook) Call(_ context.Context, _ *invocation.ModuleC
 		}, invocation.MutationUpdate, "param", "bar"),
 	}
 
-	return invocation.HookResult[stages.EntrypointPayload]{Mutations: muts}, nil
+	return invocation.HookResult[hookstage.EntrypointPayload]{Mutations: muts}, nil
 }
 
 func TestExecuteEntrypointStage_ModuleContextsAreCreated(t *testing.T) {
-	plan := hep.Plan[stages.EntrypointHook]{
-		hep.Group[stages.EntrypointHook]{
+	plan := hooks.Plan[hookstage.Entrypoint]{
+		hooks.Group[hookstage.Entrypoint]{
 			Timeout: 1 * time.Millisecond,
-			Hooks: []hep.HookWrapper[stages.EntrypointHook]{
+			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
 				{Module: "module-1", Code: "foo", Hook: mockModuleContextEntrypointHook1{}},
 			},
 		},
-		hep.Group[stages.EntrypointHook]{
+		hooks.Group[hookstage.Entrypoint]{
 			Timeout: 1 * time.Millisecond,
-			Hooks: []hep.HookWrapper[stages.EntrypointHook]{
+			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
 				{Module: "module-2", Code: "bar", Hook: mockModuleContextEntrypointHook2{}},
 			},
 		},
@@ -288,14 +288,14 @@ func TestExecuteEntrypointStage_ModuleContextsAreCreated(t *testing.T) {
 
 type mockModuleContextEntrypointHook1 struct{}
 
-func (e mockModuleContextEntrypointHook1) Call(_ context.Context, mctx *invocation.ModuleContext, _ stages.EntrypointPayload, _ bool) (invocation.HookResult[stages.EntrypointPayload], error) {
+func (e mockModuleContextEntrypointHook1) HandleEntrypointHook(_ context.Context, mctx *invocation.ModuleContext, _ hookstage.EntrypointPayload, _ bool) (invocation.HookResult[hookstage.EntrypointPayload], error) {
 	mctx.Ctx = "some-ctx-1"
-	return invocation.HookResult[stages.EntrypointPayload]{}, nil
+	return invocation.HookResult[hookstage.EntrypointPayload]{}, nil
 }
 
 type mockModuleContextEntrypointHook2 struct{}
 
-func (e mockModuleContextEntrypointHook2) Call(_ context.Context, mctx *invocation.ModuleContext, _ stages.EntrypointPayload, _ bool) (invocation.HookResult[stages.EntrypointPayload], error) {
+func (e mockModuleContextEntrypointHook2) HandleEntrypointHook(_ context.Context, mctx *invocation.ModuleContext, _ hookstage.EntrypointPayload, _ bool) (invocation.HookResult[hookstage.EntrypointPayload], error) {
 	mctx.Ctx = "some-ctx-2"
-	return invocation.HookResult[stages.EntrypointPayload]{}, nil
+	return invocation.HookResult[hookstage.EntrypointPayload]{}, nil
 }
