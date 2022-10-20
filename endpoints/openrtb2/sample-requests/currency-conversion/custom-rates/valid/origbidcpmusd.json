@@ -1,0 +1,76 @@
+{
+  "description": "bid.ext.origbidcpmusd with bid.ext.origbidcpm in USD for wrapper logger and wrapper tracker",
+  "config": {
+    "assertBidExt": true,
+    "currencyRates":{
+      "USD": {
+        "MXN": 20.07
+      },
+      "INR": {
+        "MXN": 0.25
+      }
+    },
+    "mockBidders": [
+      {"bidderName": "pubmatic", "currency": "MXN", "price": 5.00}
+    ]
+  },
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "test.somepage.com"
+    },
+    "imp": [
+      {
+        "id": "my-imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ]
+        },
+        "ext": {
+          "pubmatic": {
+            "placementId": 12883451
+          }
+        }
+      }
+    ],
+    "cur": ["INR"],
+    "ext": {
+      "prebid": {
+        "aliases": {
+          "unknown": "pubmatic"
+        }
+      }
+    }
+  },
+  "expectedBidResponse": {
+      "id":"some-request-id",
+      "bidid":"test bid id",
+      "cur": "INR",
+      "nbr":0,
+      "seatbid": [
+        {
+          "bid": [
+            {
+              "id": "pubmatic-bid",
+              "impid": "my-imp-id",
+              "price": 20,
+              "ext": {
+                "origbidcpm": 5,
+                "origbidcur": "MXN",
+                "prebid": {
+                  "meta": {
+                    "adaptercode": "pubmatic"
+                  },
+                  "type": "banner"
+                },
+                "origbidcpmusd": 0.2491280518186348
+              }
+            }
+          ],
+          "seat": "pubmatic"
+        }
+      ]
+  },
+  "expectedReturnCode": 200
+}

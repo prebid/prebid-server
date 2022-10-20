@@ -1068,7 +1068,7 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			bidRequestCurrencies:   []string{"EUR", "USD", "JPY"},
 			bidResponsesCurrency:   "EUR",
 			expectedPickedCurrency: "EUR",
-			expectedError:          false,
+			expectedError:          true, //conversionRateUSD fails as currency conversion in this test is default.
 			rates: currency.Rates{
 				Conversions: map[string]map[string]float64{
 					"JPY": {
@@ -1088,7 +1088,7 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			bidRequestCurrencies:   []string{"JPY"},
 			bidResponsesCurrency:   "JPY",
 			expectedPickedCurrency: "JPY",
-			expectedError:          false,
+			expectedError:          true, //conversionRateUSD fails as currency conversion in this test is default.
 			rates: currency.Rates{
 				Conversions: map[string]map[string]float64{
 					"JPY": {

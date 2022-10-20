@@ -167,7 +167,7 @@ func runTestCase(t *testing.T, auctionEndpointHandler httprouter.Handle, test te
 		if assert.NoError(t, err, "Could not unmarshal expected bidResponse taken from test file.\n Test file: %s\n Error:%s\n", testFile, err) {
 			err = json.Unmarshal([]byte(actualJsonBidResponse), &actualBidResponse)
 			if assert.NoError(t, err, "Could not unmarshal actual bidResponse from auction.\n Test file: %s\n Error:%s\n", testFile, err) {
-				assertBidResponseEqual(t, testFile, expectedBidResponse, actualBidResponse)
+				assertBidResponseEqual(t, test, testFile, expectedBidResponse, actualBidResponse)
 			}
 		}
 	}
@@ -176,7 +176,7 @@ func runTestCase(t *testing.T, auctionEndpointHandler httprouter.Handle, test te
 // Once unmarshalled, bidResponse objects can't simply be compared with an `assert.Equalf()` call
 // because tests fail if the elements inside the `bidResponse.SeatBid` and `bidResponse.SeatBid.Bid`
 // arrays, if any, are not listed in the exact same order in the actual version and in the expected version.
-func assertBidResponseEqual(t *testing.T, testFile string, expectedBidResponse openrtb2.BidResponse, actualBidResponse openrtb2.BidResponse) {
+func assertBidResponseEqual(t *testing.T, test testCase, testFile string, expectedBidResponse openrtb2.BidResponse, actualBidResponse openrtb2.BidResponse) {
 
 	//Assert non-array BidResponse fields
 	assert.Equalf(t, expectedBidResponse.ID, actualBidResponse.ID, "BidResponse.ID doesn't match expected. Test: %s\n", testFile)
@@ -225,6 +225,10 @@ func assertBidResponseEqual(t *testing.T, testFile string, expectedBidResponse o
 			}
 			assert.Equalf(t, expectedBid.ImpID, actualBidMap[bidID].ImpID, "BidResponse.SeatBid[%s].Bid[%s].ImpID doesn't match expected. Test: %s\n", bidderName, bidID, testFile)
 			assert.Equalf(t, expectedBid.Price, actualBidMap[bidID].Price, "BidResponse.SeatBid[%s].Bid[%s].Price doesn't match expected. Test: %s\n", bidderName, bidID, testFile)
+
+			if test.Config.AssertBidExt {
+				assert.JSONEq(t, string(expectedBid.Ext), string(actualBidMap[bidID].Ext), "BidResponse.SeatBid[%s].Bid[%s].Ext doesn't match expected. Test: %s\n", bidderName, bidID, testFile)
+			}
 		}
 	}
 }
@@ -307,7 +311,7 @@ func TestBidRequestAssert(t *testing.T) {
 	}
 
 	for _, test := range testSuites {
-		assertBidResponseEqual(t, test.description, test.expectedBidResponse, test.actualBidResponse)
+		assertBidResponseEqual(t, testCase{Config: &testConfigValues{}}, test.description, test.expectedBidResponse, test.actualBidResponse)
 	}
 }
 

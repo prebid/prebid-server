@@ -177,4 +177,5 @@ const (
 	OriginalBidCpmKey       = "origbidcpm"
 	OriginalBidCurKey       = "origbidcur"
 	Passthrough             = "passthrough"
+	OriginalBidCpmUsdKey    = "origbidcpmusd"
 )
