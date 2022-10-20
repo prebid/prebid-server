@@ -12,12 +12,32 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
+// This was made by Adtelligent folks, not needed by us...
+type cwireImpExt struct {
+	CWire openrtb_ext.ImpExtCWire `json:"cwire"`
+}
+
+/*
+Your bid adapter code will need to implement and export:
+
+- The adapters.Builder method to create a new instance of the adapter based on
+  the host configuration
+
+- The adapters.Bidder interface consisting of the MakeRequests method to create
+  outgoing requests to your bidding server and the MakeBids method to create bid
+  responses.
+*/
+
 type CWireAdapter struct {
 	endpoint string
 }
 
-type cwireImpExt struct {
-	CWire openrtb_ext.ExtImpCWire `json:"cwire"`
+// Builder builds a new instance of the CWire adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+	bidder := &CWireAdapter{
+		endpoint: config.Endpoint,
+	}
+	return bidder, nil
 }
 
 /*
@@ -98,6 +118,14 @@ func (a *CWireAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 
 }
 
+/*
+The MakeBids method is responsible for parsing the bidding server’s response
+and mapping it to the OpenRTB 2.5 Bid Response object model.
+
+This method is called for each response received from your bidding server
+within the bidding time window (request.tmax). If there are no requests or if
+all requests time out, the MakeBids method will not be called.
+*/
 func (a *CWireAdapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.RequestData, httpRes *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	if httpRes.StatusCode == http.StatusNoContent {
@@ -173,7 +201,7 @@ func validateImpression(imp *openrtb2.Imp) (int, error) {
 		}
 	}
 
-	impExt := openrtb_ext.ExtImpAdtelligent{}
+	impExt := openrtb_ext.ImpExtCWire{}
 	err := json.Unmarshal(bidderExt.Bidder, &impExt)
 	if err != nil {
 		return 0, &errortypes.BadInput{
@@ -185,7 +213,7 @@ func validateImpression(imp *openrtb2.Imp) (int, error) {
 	var impExtBuffer []byte
 
 	impExtBuffer, err = json.Marshal(&cwireImpExt{
-		Adtelligent: impExt,
+		CWire: impExt,
 	})
 
 	if impExt.BidFloor > 0 {
@@ -195,12 +223,4 @@ func validateImpression(imp *openrtb2.Imp) (int, error) {
 	imp.Ext = impExtBuffer
 
 	return impExt.SourceId, nil
-}
-
-// Builder builds a new instance of the Adtelligent adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
-	bidder := &CWireAdapter{
-		endpoint: config.Endpoint,
-	}
-	return bidder, nil
 }
