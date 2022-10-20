@@ -8,24 +8,33 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"sort"
+	"strings"
 	"text/template"
 )
 
 var (
-	r        = regexp.MustCompile("^([^/]+)/module.go$")
+	r        = regexp.MustCompile("^([^/]+)/([^/]+)/module.go$")
 	tmplName = "builder.tmpl"
 	outName  = "builder.go"
 )
 
+type Module struct {
+	Vendor string
+	Module string
+}
+
 func main() {
-	var modules []string
+	var modules []Module
 
 	filepath.WalkDir("./", func(path string, d fs.DirEntry, err error) error {
 		if !r.MatchString(path) {
 			return nil
 		}
-		modules = append(modules, r.FindStringSubmatch(path)[1])
+		match := r.FindStringSubmatch(path)
+		modules = append(modules, Module{
+			Vendor: match[1],
+			Module: match[2],
+		})
 		return nil
 	})
 
@@ -34,7 +43,8 @@ func main() {
 		return
 	}
 
-	t, err := template.New(tmplName).ParseFiles(fmt.Sprintf("generator/%s", tmplName))
+	funcMap := template.FuncMap{"Title": strings.Title}
+	t, err := template.New(tmplName).Funcs(funcMap).ParseFiles(fmt.Sprintf("generator/%s", tmplName))
 	if err != nil {
 		panic(fmt.Sprintf("failed to parse builder template: %s", err))
 	}
@@ -45,7 +55,6 @@ func main() {
 	}
 	defer f.Close()
 
-	sort.Strings(modules)
 	if err = t.Execute(f, modules); err != nil {
 		panic(fmt.Sprintf("failed to generate %s file content: %s", outName, err))
 	}

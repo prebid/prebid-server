@@ -1,21 +1,19 @@
 package modules
 
 import (
-    {{- range $pkg := .}}
-    "github.com/prebid/prebid-server/modules/{{$pkg}}"
+    {{- range .}}
+    {{.Vendor}}{{.Module | Title}} "github.com/prebid/prebid-server/modules/{{.Vendor}}/{{.Module}}"
     {{- end}}
 )
 
-func init() {
-    builderFn = builders
-}
-
-// builders returns mapping between module name and its hook builder
-// module name is chosen based on module directory name
-func builders() map[string]HookBuilderFn {
-    return map[string]HookBuilderFn{
-        {{- range $pkg := .}}
-        "{{$pkg}}": {{$pkg}}.Builder,
+// builders returns mapping between module name and its builder
+// vendor and module names are chosen based on the module directory name
+func builders() ModuleBuilders {
+    return ModuleBuilders{
+        {{- range .}}
+        "{{.Vendor}}": {
+            "{{.Module}}": {{.Vendor}}{{.Module | Title}}.Builder,
+        },
         {{- end}}
     }
 }
