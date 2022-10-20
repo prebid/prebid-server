@@ -9,7 +9,7 @@ import (
 type AllProcBidResponsesHook interface {
 	Call(
 		context.Context,
-		invocation.Context,
+		invocation.InvocationContext,
 		AllProcBidResponsesPayload,
 	) (invocation.HookResult[AllProcBidResponsesPayload], error)
 }

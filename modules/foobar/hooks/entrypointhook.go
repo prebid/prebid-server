@@ -16,7 +16,7 @@ type ValidateHeaderEntrypointHook struct {
 	cfg config.Config
 }
 
-func (h ValidateHeaderEntrypointHook) Call(_ context.Context, _ invocation.Context, payload stages.EntrypointPayload) (invocation.HookResult[stages.EntrypointPayload], error) {
+func (h ValidateHeaderEntrypointHook) Call(_ context.Context, _ invocation.InvocationContext, payload stages.EntrypointPayload) (invocation.HookResult[stages.EntrypointPayload], error) {
 	if payload.Request.Header.Get("someheader") != "" && h.cfg.AllowReject {
 		return invocation.HookResult[stages.EntrypointPayload]{Reject: true}, nil
 	}
@@ -31,7 +31,7 @@ type ValidateQueryParamEntrypointHook struct {
 	cfg config.Config
 }
 
-func (h ValidateQueryParamEntrypointHook) Call(_ context.Context, _ invocation.Context, payload stages.EntrypointPayload) (invocation.HookResult[stages.EntrypointPayload], error) {
+func (h ValidateQueryParamEntrypointHook) Call(_ context.Context, _ invocation.InvocationContext, payload stages.EntrypointPayload) (invocation.HookResult[stages.EntrypointPayload], error) {
 	if payload.Request.URL.Query().Get("someparam") != "" && h.cfg.AllowReject {
 		return invocation.HookResult[stages.EntrypointPayload]{Reject: true}, nil
 	}

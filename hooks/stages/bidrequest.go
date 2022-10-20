@@ -10,7 +10,7 @@ import (
 type BidRequestHook interface {
 	Call(
 		context.Context,
-		invocation.Context,
+		invocation.InvocationContext,
 		BidRequestPayload,
 	) (invocation.HookResult[BidRequestPayload], error)
 }

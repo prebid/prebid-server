@@ -2,21 +2,52 @@ package invocation
 
 import "time"
 
-type Context struct {
-	Endpoint string
-	Timeout  time.Duration
-	// todo: think on adding next fields
-	// debugEnabled
-	// moduleContext
+type InvocationContext struct {
+	DebugEnabled   bool
+	moduleContexts map[string]*ModuleContext
+}
+
+func (ctx *InvocationContext) ModuleContextFor(moduleCode string) *ModuleContext {
+	if mc, ok := ctx.moduleContexts[moduleCode]; ok {
+		return mc
+	}
+
+	emptyCtx := ModuleContext{}
+
+	if ctx.moduleContexts == nil {
+		ctx.moduleContexts = map[string]*ModuleContext{
+			moduleCode: &emptyCtx,
+		}
+	} else {
+		ctx.moduleContexts[moduleCode] = &emptyCtx
+	}
+
+	return &emptyCtx
+}
+
+type HookResponse[T any] struct {
+	Result HookResult[T]
+	Err    error
 }
 
 type HookResult[T any] struct {
-	Reject    bool
-	Mutations []Mutation[T]
+	ModuleCode    string
+	ExecutionTime time.Time
+	Reject        bool
+	NbrCode       int
+	Message       string
+	Mutations     []Mutation[T]
+	Errors        []string
+	Warnings      []string
+	DebugMessages []string
 	// todo: think on adding next fields
 	// analyticTags
-	// errors
-	// warnings
-	// debug
-	// moduleContext - arbitrary data the hook wishes to pass to downstream hooks of the same module
+}
+
+type ModuleContext struct {
+	Ctx interface{} // interface as we do not know exactly how the modules will use their inner context
+}
+
+type StageResult[T any] struct {
+	GroupsResults [][]HookResult[T]
 }

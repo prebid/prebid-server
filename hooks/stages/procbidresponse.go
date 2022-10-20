@@ -9,7 +9,7 @@ import (
 type ProcessedBidResponseHook interface {
 	Call(
 		context.Context,
-		invocation.Context,
+		invocation.InvocationContext,
 		ProcessedBidResponsePayload,
 	) (invocation.HookResult[ProcessedBidResponsePayload], error)
 }

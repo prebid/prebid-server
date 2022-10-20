@@ -2,7 +2,6 @@ package hep
 
 import (
 	"fmt"
-
 	"github.com/prebid/prebid-server/hooks/stages"
 )
 

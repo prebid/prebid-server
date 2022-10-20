@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/prebid/prebid-server/hooks/stages"
 	"net/http"
 	"testing"
 
 	"github.com/mxmCherry/openrtb/v16/openrtb2"
 	"github.com/prebid/prebid-server/hooks/hep"
 	"github.com/prebid/prebid-server/hooks/invocation"
-	"github.com/prebid/prebid-server/hooks/stages"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -88,12 +88,12 @@ func TestModuleBuilderBuild(t *testing.T) {
 
 type fakeEntrypointHook struct{}
 
-func (h fakeEntrypointHook) Call(ctx context.Context, context invocation.Context, payload stages.EntrypointPayload) (invocation.HookResult[stages.EntrypointPayload], error) {
+func (h fakeEntrypointHook) Call(ctx context.Context, context *invocation.ModuleContext, payload stages.EntrypointPayload, _ bool) (invocation.HookResult[stages.EntrypointPayload], error) {
 	return invocation.HookResult[stages.EntrypointPayload]{}, nil
 }
 
 type fakeAuctionResponseHook struct{}
 
-func (f fakeAuctionResponseHook) Call(ctx context.Context, i invocation.Context, response *openrtb2.BidResponse) (invocation.HookResult[*openrtb2.BidResponse], error) {
+func (f fakeAuctionResponseHook) Call(ctx context.Context, i invocation.InvocationContext, response *openrtb2.BidResponse) (invocation.HookResult[*openrtb2.BidResponse], error) {
 	return invocation.HookResult[*openrtb2.BidResponse]{}, nil
 }

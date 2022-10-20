@@ -10,7 +10,7 @@ import (
 type RawBidResponseHook interface {
 	Call(
 		context.Context,
-		invocation.Context,
+		invocation.InvocationContext,
 		RawBidResponsePayload,
 	) (invocation.HookResult[RawBidResponsePayload], error)
 }

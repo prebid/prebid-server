@@ -28,18 +28,21 @@ type HookExecutionPlanBuilder interface {
 	PlanForProcessedBidResponseStage(endpoint string, account *config.Account) Plan[stages.ProcessedBidResponseHook]
 	PlanForAllProcBidResponsesStage(endpoint string, account *config.Account) Plan[stages.AllProcBidResponsesHook]
 	PlanForAuctionResponseStage(endpoint string, account *config.Account) Plan[stages.AuctionResponseHook]
+	DebugModeEnabled() bool
 }
 
 func NewHookExecutionPlanBuilder(hooks config.Hooks, repo HookRepository) HookExecutionPlanBuilder {
 	return ExecutionPlan{
-		hooks: hooks,
-		repo:  repo,
+		hooks:     hooks,
+		repo:      repo,
+		debugMode: false, //todo: implement
 	}
 }
 
 type ExecutionPlan struct {
-	hooks config.Hooks
-	repo  HookRepository
+	hooks     config.Hooks
+	repo      HookRepository
+	debugMode bool
 }
 
 func (p ExecutionPlan) PlanForEntrypointStage(endpoint string) Plan[stages.EntrypointHook] {
@@ -120,6 +123,10 @@ func (p ExecutionPlan) PlanForAuctionResponseStage(endpoint string, account *con
 		stageAuctionresponse,
 		p.repo.GetAuctionResponseHook,
 	)
+}
+
+func (p ExecutionPlan) DebugModeEnabled() bool {
+	return p.debugMode
 }
 
 type Plan[T any] []Group[T]

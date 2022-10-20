@@ -10,7 +10,7 @@ import (
 type ProcessedAuctionHook interface {
 	Call(
 		context.Context,
-		invocation.Context,
+		invocation.InvocationContext,
 		ProcessedAuctionPayload,
 	) (invocation.HookResult[ProcessedAuctionPayload], error)
 }

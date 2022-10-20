@@ -17,7 +17,7 @@ type CheckBodyRawAuctionHook struct {
 
 func (h CheckBodyRawAuctionHook) Call(
 	_ context.Context,
-	_ invocation.Context,
+	_ invocation.InvocationContext,
 	request stages.BidRequest,
 ) (invocation.HookResult[stages.BidRequest], error) {
 	if v, err := jsonparser.GetString(request, "attribute"); err == nil && v == "value" && h.cfg.AllowReject {

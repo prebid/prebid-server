@@ -909,48 +909,48 @@ func getPlanBuilder(
 
 type fakeEntrypointHook struct{}
 
-func (h fakeEntrypointHook) Call(ctx context.Context, context invocation.Context, payload stages.EntrypointPayload) (invocation.HookResult[stages.EntrypointPayload], error) {
+func (h fakeEntrypointHook) Call(ctx context.Context, context *invocation.ModuleContext, payload stages.EntrypointPayload, _ bool) (invocation.HookResult[stages.EntrypointPayload], error) {
 	return invocation.HookResult[stages.EntrypointPayload]{}, nil
 }
 
 type fakeRawAuctionHook struct{}
 
-func (f fakeRawAuctionHook) Call(ctx context.Context, i invocation.Context, request stages.BidRequest) (invocation.HookResult[stages.BidRequest], error) {
+func (f fakeRawAuctionHook) Call(ctx context.Context, i invocation.InvocationContext, request stages.BidRequest) (invocation.HookResult[stages.BidRequest], error) {
 	return invocation.HookResult[stages.BidRequest]{}, nil
 }
 
 type fakeProcessedAuctionHook struct{}
 
-func (f fakeProcessedAuctionHook) Call(ctx context.Context, i invocation.Context, payload stages.ProcessedAuctionPayload) (invocation.HookResult[stages.ProcessedAuctionPayload], error) {
+func (f fakeProcessedAuctionHook) Call(ctx context.Context, i invocation.InvocationContext, payload stages.ProcessedAuctionPayload) (invocation.HookResult[stages.ProcessedAuctionPayload], error) {
 	return invocation.HookResult[stages.ProcessedAuctionPayload]{}, nil
 }
 
 type fakeBidRequestHook struct{}
 
-func (f fakeBidRequestHook) Call(ctx context.Context, i invocation.Context, payload stages.BidRequestPayload) (invocation.HookResult[stages.BidRequestPayload], error) {
+func (f fakeBidRequestHook) Call(ctx context.Context, i invocation.InvocationContext, payload stages.BidRequestPayload) (invocation.HookResult[stages.BidRequestPayload], error) {
 	return invocation.HookResult[stages.BidRequestPayload]{}, nil
 }
 
 type fakeRawBidResponseHook struct{}
 
-func (f fakeRawBidResponseHook) Call(ctx context.Context, i invocation.Context, payload stages.RawBidResponsePayload) (invocation.HookResult[stages.RawBidResponsePayload], error) {
+func (f fakeRawBidResponseHook) Call(ctx context.Context, i invocation.InvocationContext, payload stages.RawBidResponsePayload) (invocation.HookResult[stages.RawBidResponsePayload], error) {
 	return invocation.HookResult[stages.RawBidResponsePayload]{}, nil
 }
 
 type fakeProcessedBidResponseHook struct{}
 
-func (f fakeProcessedBidResponseHook) Call(ctx context.Context, i invocation.Context, payload stages.ProcessedBidResponsePayload) (invocation.HookResult[stages.ProcessedBidResponsePayload], error) {
+func (f fakeProcessedBidResponseHook) Call(ctx context.Context, i invocation.InvocationContext, payload stages.ProcessedBidResponsePayload) (invocation.HookResult[stages.ProcessedBidResponsePayload], error) {
 	return invocation.HookResult[stages.ProcessedBidResponsePayload]{}, nil
 }
 
 type fakeAllProcBidResponsesHook struct{}
 
-func (f fakeAllProcBidResponsesHook) Call(ctx context.Context, i invocation.Context, payload stages.AllProcBidResponsesPayload) (invocation.HookResult[stages.AllProcBidResponsesPayload], error) {
+func (f fakeAllProcBidResponsesHook) Call(ctx context.Context, i invocation.InvocationContext, payload stages.AllProcBidResponsesPayload) (invocation.HookResult[stages.AllProcBidResponsesPayload], error) {
 	return invocation.HookResult[stages.AllProcBidResponsesPayload]{}, nil
 }
 
 type fakeAuctionResponseHook struct{}
 
-func (f fakeAuctionResponseHook) Call(ctx context.Context, i invocation.Context, response *openrtb2.BidResponse) (invocation.HookResult[*openrtb2.BidResponse], error) {
+func (f fakeAuctionResponseHook) Call(ctx context.Context, i invocation.InvocationContext, response *openrtb2.BidResponse) (invocation.HookResult[*openrtb2.BidResponse], error) {
 	return invocation.HookResult[*openrtb2.BidResponse]{}, nil
 }
