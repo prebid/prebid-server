@@ -1,0 +1,17 @@
+# This yaml file is currently just copied from adtelligent and is not adapted to our use case...
+endpoint: "http://cwi.re/prebid/adapter-endpoint"
+maintainer:
+  email: "mateja.maric@cwire.com"
+gvlVendorID: 410
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  supports:
+    - iframe
