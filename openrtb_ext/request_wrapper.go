@@ -563,23 +563,6 @@ func (ue *UserExt) SetConsentedProvidersSettingsIn(cpSettings *ConsentedProvider
 	ue.consentedProvidersSettingsInDirty = true
 }
 
-func (ue *UserExt) GetConsentedProvidersString() string {
-	if len(ue.consentedProvidersString) > 0 {
-		return ue.consentedProvidersString
-	}
-	// else, let's look for this value inside ue.consentedProvidersSettingsIn
-	consentedProvidersSettingsIn := ue.GetConsentedProvidersSettingsIn()
-	if consentedProvidersSettingsIn != nil {
-		return consentedProvidersSettingsIn.ConsentedProvidersString
-	}
-	return ""
-}
-
-func (ue *UserExt) SetConsentedProvidersString(consentedProviders string) {
-	ue.consentedProvidersString = consentedProviders
-	ue.consentedProvidersStringDirty = true
-}
-
 // GetConsentedProvidersSettingsOut() returns a reference to a copy of ConsentedProvidersSettingsOut, a struct that
 // has an int array field listing Google's Additional Consent string elements
 func (ue *UserExt) GetConsentedProvidersSettingsOut() *ConsentedProvidersSettingsOut {
@@ -590,41 +573,17 @@ func (ue *UserExt) GetConsentedProvidersSettingsOut() *ConsentedProvidersSetting
 	return &consentedProvidersSettingsOut
 }
 
-// SetConsentedProvidersSettingsIn() sets ConsentedProvidersSettingsIn, a struct that
-// has an int array field listing Google's Additional Consent string elements
+// SetConsentedProvidersSettingsIn() sets ConsentedProvidersSettingsOut, a struct that
+// has an int array field listing Google's Additional Consent string elements. This
+// function overrides an existing ConsentedProvidersSettingsOut object, if any
 func (ue *UserExt) SetConsentedProvidersSettingsOut(cpSettings *ConsentedProvidersSettingsOut) {
 	if cpSettings == nil {
 		return
 	}
 
-	if ue.consentedProvidersSettingsOut == nil {
-		ue.consentedProvidersSettingsOut = cpSettings
-	} else {
-		// append to existing list
-		ue.SetConsentedProvidersList(cpSettings.ConsentedProvidersList)
-	}
+	ue.consentedProvidersSettingsOut = cpSettings
 	ue.consentedProvidersSettingsOutDirty = true
 	return
-}
-
-func (ue *UserExt) GetConsentedProvidersList() []int {
-	if len(ue.consentedProvidersList) > 0 {
-		return ue.consentedProvidersList
-	}
-
-	if ue.consentedProvidersSettingsOut != nil {
-		return ue.consentedProvidersSettingsOut.ConsentedProvidersList
-	}
-	return nil
-}
-
-func (ue *UserExt) SetConsentedProvidersList(consentedProviders []int) {
-	if len(consentedProviders) == 0 {
-		ue.consentedProvidersList = nil
-	} else {
-		ue.consentedProvidersList = append(ue.consentedProvidersList, consentedProviders...)
-	}
-	ue.consentedProvidersListDirty = true
 }
 
 func (ue *UserExt) GetPrebid() *ExtUserPrebid {

@@ -17,7 +17,6 @@ func TestUserExt(t *testing.T) {
 	assert.Nil(t, userExt.GetEid(), "Empty UserExt should have nil eid")
 	assert.Nil(t, userExt.GetPrebid(), "Empty UserExt should have nil prebid")
 	assert.Nil(t, userExt.GetConsentedProvidersSettingsIn(), "Empty UserExt should have nil consentedProvidersSettings")
-	assert.Equal(t, userExt.GetConsentedProvidersString(), "", "Empty UserExt should have empty consentedProvidersSettings.consentedProviders")
 
 	newConsent := "NewConsent"
 	userExt.SetConsent(&newConsent)
@@ -37,15 +36,20 @@ func TestUserExt(t *testing.T) {
 	userExt.SetConsentedProvidersSettingsIn(consentedProvidersSettings)
 	assert.Equal(t, &ConsentedProvidersSettingsIn{ConsentedProvidersString: "1~X.X.X"}, userExt.GetConsentedProvidersSettingsIn(), "UserExt consentedProvidersSettings is incorrect")
 	assert.Equal(t, true, userExt.Dirty(), "UserExt should be dirty after field updates")
-	assert.Equal(t, "1~X.X.X", userExt.GetConsentedProvidersString(), "UserExt consentedProviders is incorrect")
+	cpsIn := userExt.GetConsentedProvidersSettingsIn()
+	assert.Equal(t, "1~X.X.X", cpsIn.ConsentedProvidersString, "UserExt consentedProviders is incorrect")
 
 	consentedProvidersString := "1~1.35.41.101"
-	userExt.SetConsentedProvidersString(consentedProvidersString)
-	assert.Equal(t, "1~1.35.41.101", userExt.GetConsentedProvidersString(), "UserExt consentedProviders is incorrect")
+	cpsIn.ConsentedProvidersString = consentedProvidersString
+	userExt.SetConsentedProvidersSettingsIn(cpsIn)
+	cpsIn = userExt.GetConsentedProvidersSettingsIn()
+	assert.Equal(t, "1~1.35.41.101", cpsIn.ConsentedProvidersString, "UserExt consentedProviders is incorrect")
 
-	consentedProvidersList := ParseConsentedProvidersString(consentedProvidersString)
-	assert.Len(t, consentedProvidersList, 4, "UserExt consentedProvidersList is incorrect")
-	userExt.SetConsentedProvidersList(consentedProvidersList)
+	cpsOut := &ConsentedProvidersSettingsOut{}
+	//cpsOut.ConsentedProvidersList = make([]int, 0, 1)
+	cpsOut.ConsentedProvidersList = append(cpsOut.ConsentedProvidersList, ParseConsentedProvidersString(consentedProvidersString)...)
+	assert.Len(t, cpsOut.ConsentedProvidersList, 4, "UserExt consentedProvidersList is incorrect")
+	userExt.SetConsentedProvidersSettingsOut(cpsOut)
 
 	updatedUserExt, err := userExt.marshal()
 	assert.Nil(t, err, "Marshalling UserExt after updating should not cause an error")

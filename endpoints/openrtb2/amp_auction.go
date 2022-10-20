@@ -501,11 +501,21 @@ func setConsentedProviders(req *openrtb2.BidRequest, ampParams amp.Params) error
 
 		// Set user.ext.consented_providers_settings.consented_providers if elements where found
 		if len(consentedProvidersList) > 0 {
-			userExt.SetConsentedProvidersList(consentedProvidersList)
+			cps := userExt.GetConsentedProvidersSettingsOut()
+			if cps == nil {
+				cps = &openrtb_ext.ConsentedProvidersSettingsOut{}
+			}
+			cps.ConsentedProvidersList = append(cps.ConsentedProvidersList, consentedProvidersList...)
+			userExt.SetConsentedProvidersSettingsOut(cps)
 		}
 
 		// Copy addtl_consent into user.ext.ConsentedProvidersSettings.consented_providers as is
-		userExt.SetConsentedProvidersString(ampParams.AdditionalConsent)
+		cps := userExt.GetConsentedProvidersSettingsIn()
+		if cps == nil {
+			cps = &openrtb_ext.ConsentedProvidersSettingsIn{}
+		}
+		cps.ConsentedProvidersString = ampParams.AdditionalConsent
+		userExt.SetConsentedProvidersSettingsIn(cps)
 
 		if err := reqWrap.RebuildRequest(); err != nil {
 			return err
