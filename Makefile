@@ -23,7 +23,7 @@ modules:
 	go generate modules/modules.go
 
 # build will ensure all of our tests pass and then build the go binary
-build: test modules
+build: test
 	go build -mod=vendor ./...
 
 # image will build a docker image
