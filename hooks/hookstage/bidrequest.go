@@ -1,14 +1,14 @@
-package stages
+package hookstage
 
 import (
 	"context"
 
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/hooks/invocation"
 )
 
-type BidRequestHook interface {
-	Call(
+type BidRequest interface {
+	HandleBidRequestHook(
 		context.Context,
 		invocation.InvocationContext,
 		BidRequestPayload,

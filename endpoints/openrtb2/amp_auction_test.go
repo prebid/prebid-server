@@ -13,11 +13,12 @@ import (
 	"testing"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/analytics"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/hooks"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
@@ -33,7 +34,7 @@ func TestGoodAmpRequests(t *testing.T) {
 		testFiles []string
 	}{
 		{
-			desc: "Valid whole, tag_id param only",
+			desc: "Valid supplementary, tag_id param only",
 			dir:  "sample-requests/amp/valid-supplementary/",
 			testFiles: []string{
 				"aliased-buyeruids.json",
@@ -120,7 +121,11 @@ func TestGoodAmpRequests(t *testing.T) {
 				}
 			}
 			if test.ExpectedValidatedBidReq != nil {
-				assert.Equal(t, test.ExpectedValidatedBidReq, ex.actualValidatedBidReq, "Not the expected validated request. Test file: %s", filename)
+				// compare as json to ignore whitespace and ext field ordering
+				actualJson, err := json.Marshal(ex.actualValidatedBidReq)
+				if assert.NoError(t, err, "Error converting actual bid request to json. Test file: %s", filename) {
+					assert.JSONEq(t, string(test.ExpectedValidatedBidReq), string(actualJson), "Not the expected validated request. Test file: %s", filename)
+				}
 			}
 		}
 	}
@@ -204,6 +209,7 @@ func TestAMPPageInfo(t *testing.T) {
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	)
 	request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&curl=%s", url.QueryEscape(page)), nil)
 	recorder := httptest.NewRecorder()
@@ -306,6 +312,7 @@ func TestGDPRConsent(t *testing.T) {
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
 			empty_fetcher.EmptyFetcher{},
+			hooks.EmptyPlanBuilder{},
 		)
 
 		// Invoke Endpoint
@@ -460,6 +467,7 @@ func TestCCPAConsent(t *testing.T) {
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
 			empty_fetcher.EmptyFetcher{},
+			hooks.EmptyPlanBuilder{},
 		)
 
 		// Invoke Endpoint
@@ -572,6 +580,7 @@ func TestConsentWarnings(t *testing.T) {
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
 			empty_fetcher.EmptyFetcher{},
+			hooks.EmptyPlanBuilder{},
 		)
 
 		// Invoke Endpoint
@@ -669,6 +678,7 @@ func TestNewAndLegacyConsentBothProvided(t *testing.T) {
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
 			empty_fetcher.EmptyFetcher{},
+			hooks.EmptyPlanBuilder{},
 		)
 
 		// Invoke Endpoint
@@ -722,6 +732,7 @@ func TestAMPSiteExt(t *testing.T) {
 		nil,
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	)
 	request, err := http.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1", nil)
 	if !assert.NoError(t, err) {
@@ -763,6 +774,7 @@ func TestAmpBadRequests(t *testing.T) {
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	)
 	for requestID := range badRequests {
 		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s", requestID), nil)
@@ -795,6 +807,7 @@ func TestAmpDebug(t *testing.T) {
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	)
 
 	for requestID := range requests {
@@ -828,10 +841,12 @@ func TestAmpDebug(t *testing.T) {
 
 // Prevents #452
 func TestAmpTargetingDefaults(t *testing.T) {
-	req := &openrtb2.BidRequest{}
-	if errs := defaultRequestExt(req); len(errs) != 0 {
-		t.Fatalf("Unexpected error defaulting request.ext for AMP: %v", errs)
+	req := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{}}
+	if err := defaultRequestExt(req); err != nil {
+		t.Fatalf("Unexpected error defaulting request.ext for AMP: %v", err)
 	}
+
+	assert.NoError(t, req.RebuildRequest())
 
 	var extRequest openrtb_ext.ExtRequest
 	if err := json.Unmarshal(req.Ext, &extRequest); err != nil {
@@ -869,6 +884,7 @@ func TestQueryParamOverrides(t *testing.T) {
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	)
 
 	requestID := "1"
@@ -1025,6 +1041,7 @@ func (s formatOverrideSpec) execute(t *testing.T) {
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	)
 
 	url := fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&debug=1&w=%d&h=%d&ow=%d&oh=%d&ms=%s&account=%s", s.width, s.height, s.overrideWidth, s.overrideHeight, s.multisize, s.account)
@@ -1252,11 +1269,21 @@ func TestSetEffectiveAmpPubID(t *testing.T) {
 	for _, test := range testCases {
 		setEffectiveAmpPubID(test.req, test.account)
 		if test.req.Site != nil {
-			assert.Equal(t, test.expectedPubID, test.req.Site.Publisher.ID,
-				"should return the expected Publisher ID for test case: %s", test.description)
+			if test.req.Site.Publisher == nil {
+				assert.Empty(t, test.expectedPubID,
+					"should return the expected Publisher ID for test case: %s", test.description)
+			} else {
+				assert.Equal(t, test.expectedPubID, test.req.Site.Publisher.ID,
+					"should return the expected Publisher ID for test case: %s", test.description)
+			}
 		} else {
-			assert.Equal(t, test.expectedPubID, test.req.App.Publisher.ID,
-				"should return the expected Publisher ID for test case: %s", test.description)
+			if test.req.App.Publisher == nil {
+				assert.Empty(t, test.expectedPubID,
+					"should return the expected Publisher ID for test case: %s", test.description)
+			} else {
+				assert.Equal(t, test.expectedPubID, test.req.App.Publisher.ID,
+					"should return the expected Publisher ID for test case: %s", test.description)
+			}
 		}
 	}
 }
@@ -1272,19 +1299,14 @@ func newMockLogger(ao *analytics.AmpObject) analytics.PBSAnalyticsModule {
 }
 
 func (logger mockLogger) LogAuctionObject(ao *analytics.AuctionObject) {
-	return
 }
 func (logger mockLogger) LogVideoObject(vo *analytics.VideoObject) {
-	return
 }
 func (logger mockLogger) LogCookieSyncObject(cookieObject *analytics.CookieSyncObject) {
-	return
 }
 func (logger mockLogger) LogSetUIDObject(uuidObj *analytics.SetUIDObject) {
-	return
 }
 func (logger mockLogger) LogNotificationEventObject(uuidObj *analytics.NotificationEvent) {
-	return
 }
 func (logger mockLogger) LogAmpObject(ao *analytics.AmpObject) {
 	*logger.ampObject = *ao
@@ -1318,7 +1340,7 @@ func TestBuildAmpObject(t *testing.T) {
 		{
 			description:     "Wrong tag_id, error gets logged",
 			inTagId:         "unknown",
-			inStoredRequest: json.RawMessage(`{"id":"some-request-id","site":{"page":"prebid.org"},"imp":[{"id":"some-impression-id","banner":{"format":[{"w":300,"h":250}]},"ext":{"appnexus":{"placementId":12883451}}}],"tmax":500}`),
+			inStoredRequest: json.RawMessage(`{"id":"some-request-id","site":{"page":"prebid.org"},"imp":[{"id":"some-impression-id","banner":{"format":[{"w":300,"h":250}]},"ext":{"prebid":{"bidder":{"appnexus":{"placementId":12883451}}}}}],"tmax":500}`),
 			expectedAmpObject: &analytics.AmpObject{
 				Status: http.StatusOK,
 				Errors: []error{fmt.Errorf("unexpected end of JSON input")},
@@ -1327,7 +1349,7 @@ func TestBuildAmpObject(t *testing.T) {
 		{
 			description:     "Valid stored Amp request, correct tag_id, a valid response should be logged",
 			inTagId:         "test",
-			inStoredRequest: json.RawMessage(`{"id":"some-request-id","site":{"page":"prebid.org"},"imp":[{"id":"some-impression-id","banner":{"format":[{"w":300,"h":250}]},"ext":{"appnexus":{"placementId":12883451}}}],"tmax":500}`),
+			inStoredRequest: json.RawMessage(`{"id":"some-request-id","site":{"page":"prebid.org"},"imp":[{"id":"some-impression-id","banner":{"format":[{"w":300,"h":250}]},"ext":{"prebid":{"bidder":{"appnexus":{"placementId":12883451}}}}}],"tmax":500}`),
 			expectedAmpObject: &analytics.AmpObject{
 				Status: http.StatusOK,
 				Errors: nil,
@@ -1337,9 +1359,8 @@ func TestBuildAmpObject(t *testing.T) {
 						IP: "192.0.2.1",
 					},
 					Site: &openrtb2.Site{
-						Page:      "prebid.org",
-						Publisher: &openrtb2.Publisher{},
-						Ext:       json.RawMessage(`{"amp":1}`),
+						Page: "prebid.org",
+						Ext:  json.RawMessage(`{"amp":1}`),
 					},
 					Imp: []openrtb2.Imp{
 						{
@@ -1353,7 +1374,7 @@ func TestBuildAmpObject(t *testing.T) {
 								},
 							},
 							Secure: func(val int8) *int8 { return &val }(1), //(*int8)(1),
-							Ext:    json.RawMessage(`{"appnexus":{"placementId":12883451}}`),
+							Ext:    json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placementId":12883451}}}}`),
 						},
 					},
 					AT:   1,
@@ -1480,6 +1501,7 @@ func ampObjectTestSetup(t *testing.T, inTagId string, inStoredRequest json.RawMe
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	)
 	return &actualAmpObject, endpoint
 }
@@ -1531,6 +1553,7 @@ func TestAmpAuctionResponseHeaders(t *testing.T) {
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	)
 
 	for _, test := range testCases {
@@ -1565,6 +1588,7 @@ func TestRequestWithTargeting(t *testing.T) {
 		nil,
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	)
 	url, err := url.Parse("/openrtb2/auction/amp")
 	assert.NoError(t, err, "unexpected error received while parsing url")
@@ -1580,10 +1604,9 @@ func TestRequestWithTargeting(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	endpoint(recorder, request, nil)
 
-	if !assert.NotNil(t, exchange.lastRequest, "Endpoint responded with %d: %s", recorder.Code, recorder.Body.String()) {
-		return
+	if assert.NotNil(t, exchange.lastRequest, "Endpoint responded with %d: %s", recorder.Code, recorder.Body.String()) {
+		assert.JSONEq(t, `{"prebid":{"bidder":{"appnexus":{"placementId":12883451}}}, "data":{"gam-key1":"val1", "gam-key2":"val2"}}`, string(exchange.lastRequest.Imp[0].Ext))
 	}
-	assert.JSONEq(t, `{"appnexus":{"placementId":12883451}, "data":{"gam-key1":"val1", "gam-key2":"val2"}}`, string(exchange.lastRequest.Imp[0].Ext))
 }
 
 func TestSetTargeting(t *testing.T) {

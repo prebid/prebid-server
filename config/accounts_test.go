@@ -1,7 +1,7 @@
 package config
 
 import (
-	"errors"
+	"encoding/json"
 	"testing"
 
 	"github.com/prebid/go-gdpr/consentconstants"
@@ -712,173 +712,49 @@ func TestBasicEnforcementVendor(t *testing.T) {
 	}
 }
 
-func TestAlternateBidderCodes_IsValidBidderCode(t *testing.T) {
-	type fields struct {
-		Enabled bool
-		Bidders map[string]AdapterAlternateBidderCodes
+func TestModulesGetConfig(t *testing.T) {
+	modules := AccountModules{
+		"acme": {
+			"foo": json.RawMessage(`{"foo": "bar"}`),
+		},
 	}
-	type args struct {
-		bidder          string
-		alternateBidder string
-	}
-	tests := []struct {
-		name        string
-		fields      fields
-		args        args
-		wantIsValid bool
-		wantErr     error
+
+	testCases := []struct {
+		description    string
+		givenId        string
+		givenModules   AccountModules
+		expectedConfig json.RawMessage
 	}{
 		{
-			name:        "alternateBidder is not set/blank (default non-extra bid case)",
-			wantIsValid: true,
+			description:    "Returns module config if found by ID",
+			givenId:        "acme.foo",
+			givenModules:   modules,
+			expectedConfig: json.RawMessage(`{"foo": "bar"}`),
 		},
 		{
-			name: "alternateBidder and bidder are same (default non-extra bid case with seat's alternateBidder explicitly set)",
-			args: args{
-				bidder:          "pubmatic",
-				alternateBidder: "pubmatic",
-			},
-			wantIsValid: true,
+			description:    "Returns nil config if wrong ID provided",
+			givenId:        "invalid_id",
+			givenModules:   modules,
+			expectedConfig: nil,
 		},
 		{
-			name: "account.alternatebiddercodes config not defined (default, reject bid)",
-			args: args{
-				bidder:          "pubmatic",
-				alternateBidder: "groupm",
-			},
-			wantIsValid: false,
+			description:    "Returns nil config if no matching module exists",
+			givenId:        "acme.bar",
+			givenModules:   modules,
+			expectedConfig: nil,
 		},
 		{
-			name: "account.alternatebiddercodes config enabled but adapter config not defined",
-			args: args{
-				bidder:          "pubmatic",
-				alternateBidder: "groupm",
-			},
-			fields:      fields{Enabled: true},
-			wantIsValid: false,
-			wantErr:     errors.New(`alternateBidderCodes not defined for adapter "pubmatic", rejecting bids for "groupm"`),
-		},
-		{
-			name: "account.alternatebiddercodes config enabled but adapter config is not available",
-			args: args{
-				bidder:          "pubmatic",
-				alternateBidder: "groupm",
-			},
-			fields: fields{
-				Enabled: true,
-				Bidders: map[string]AdapterAlternateBidderCodes{
-					"appnexus": {},
-				},
-			},
-			wantIsValid: false,
-			wantErr:     errors.New(`alternateBidderCodes not defined for adapter "pubmatic", rejecting bids for "groupm"`),
-		},
-		{
-			name: "account.alternatebiddercodes config enabled but adapter config is disabled",
-			args: args{
-				bidder:          "pubmatic",
-				alternateBidder: "groupm",
-			},
-			fields: fields{
-				Enabled: true,
-				Bidders: map[string]AdapterAlternateBidderCodes{
-					"pubmatic": {Enabled: false},
-				},
-			},
-			wantIsValid: false,
-			wantErr:     errors.New(`alternateBidderCodes disabled for "pubmatic", rejecting bids for "groupm"`),
-		},
-		{
-			name: "account.alternatebiddercodes and adapter config enabled but adapter config does not have allowedBidderCodes defined",
-			args: args{
-				bidder:          "pubmatic",
-				alternateBidder: "groupm",
-			},
-			fields: fields{
-				Enabled: true,
-				Bidders: map[string]AdapterAlternateBidderCodes{
-					"pubmatic": {Enabled: true},
-				},
-			},
-			wantIsValid: true,
-		},
-		{
-			name: "allowedBidderCodes is *",
-			args: args{
-				bidder:          "pubmatic",
-				alternateBidder: "groupm",
-			},
-			fields: fields{
-				Enabled: true,
-				Bidders: map[string]AdapterAlternateBidderCodes{
-					"pubmatic": {
-						Enabled:            true,
-						AllowedBidderCodes: []string{"*"},
-					},
-				},
-			},
-			wantIsValid: true,
-		},
-		{
-			name: "allowedBidderCodes is in the list",
-			args: args{
-				bidder:          "pubmatic",
-				alternateBidder: "groupm",
-			},
-			fields: fields{
-				Enabled: true,
-				Bidders: map[string]AdapterAlternateBidderCodes{
-					"pubmatic": {
-						Enabled:            true,
-						AllowedBidderCodes: []string{"groupm"},
-					},
-				},
-			},
-			wantIsValid: true,
-		},
-		{
-			name: "allowedBidderCodes is not in the list",
-			args: args{
-				bidder:          "pubmatic",
-				alternateBidder: "groupm",
-			},
-			fields: fields{
-				Enabled: true,
-				Bidders: map[string]AdapterAlternateBidderCodes{
-					"pubmatic": {
-						Enabled:            true,
-						AllowedBidderCodes: []string{"xyz"},
-					},
-				},
-			},
-			wantIsValid: false,
-			wantErr:     errors.New(`invalid biddercode "groupm" sent by adapter "pubmatic"`),
-		},
-		{
-			name: "account.alternatebiddercodes and adapter config enabled but adapter config has allowedBidderCodes list empty",
-			args: args{
-				bidder:          "pubmatic",
-				alternateBidder: "groupm",
-			},
-			fields: fields{
-				Enabled: true,
-				Bidders: map[string]AdapterAlternateBidderCodes{
-					"pubmatic": {Enabled: true, AllowedBidderCodes: []string{}},
-				},
-			},
-			wantIsValid: false,
-			wantErr:     errors.New(`invalid biddercode "groupm" sent by adapter "pubmatic"`),
+			description:    "Returns nil config if no module configs defined in account",
+			givenId:        "acme.foo",
+			givenModules:   nil,
+			expectedConfig: nil,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			a := &AlternateBidderCodes{
-				Enabled: tt.fields.Enabled,
-				Bidders: tt.fields.Bidders,
-			}
-			gotIsValid, gotErr := a.IsValidBidderCode(tt.args.bidder, tt.args.alternateBidder)
-			assert.Equal(t, tt.wantIsValid, gotIsValid)
-			assert.Equal(t, tt.wantErr, gotErr)
+
+	for _, test := range testCases {
+		t.Run(test.description, func(t *testing.T) {
+			gotConfig := test.givenModules.ModuleConfig(test.givenId)
+			assert.Equal(t, test.expectedConfig, gotConfig)
 		})
 	}
 }

@@ -1,8 +1,10 @@
 package config
 
 import (
-	"fmt"
+	"encoding/json"
+	"strings"
 
+	"github.com/golang/glog"
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -20,19 +22,19 @@ const (
 
 // Account represents a publisher account configuration
 type Account struct {
-	ID                      string               `mapstructure:"id" json:"id"`
-	Disabled                bool                 `mapstructure:"disabled" json:"disabled"`
-	CacheTTL                DefaultTTLs          `mapstructure:"cache_ttl" json:"cache_ttl"`
-	EventsEnabled           bool                 `mapstructure:"events_enabled" json:"events_enabled"`
-	CCPA                    AccountCCPA          `mapstructure:"ccpa" json:"ccpa"`
-	GDPR                    AccountGDPR          `mapstructure:"gdpr" json:"gdpr"`
-	DebugAllow              bool                 `mapstructure:"debug_allow" json:"debug_allow"`
-	DefaultIntegration      string               `mapstructure:"default_integration" json:"default_integration"`
-	CookieSync              CookieSync           `mapstructure:"cookie_sync" json:"cookie_sync"`
-	Events                  Events               `mapstructure:"events" json:"events"` // Don't enable this feature. It is still under developmment - https://github.com/prebid/prebid-server/issues/1725
-	TruncateTargetAttribute *int                 `mapstructure:"truncate_target_attr" json:"truncate_target_attr"`
-	AlternateBidderCodes    AlternateBidderCodes `mapstructure:"alternatebiddercodes" json:"alternatebiddercodes"`
-	Hooks                   HookExecutionPlan    `mapstructure:"execution-plan" json:"execution-plan"`
+	ID                      string                               `mapstructure:"id" json:"id"`
+	Disabled                bool                                 `mapstructure:"disabled" json:"disabled"`
+	CacheTTL                DefaultTTLs                          `mapstructure:"cache_ttl" json:"cache_ttl"`
+	EventsEnabled           bool                                 `mapstructure:"events_enabled" json:"events_enabled"`
+	CCPA                    AccountCCPA                          `mapstructure:"ccpa" json:"ccpa"`
+	GDPR                    AccountGDPR                          `mapstructure:"gdpr" json:"gdpr"`
+	DebugAllow              bool                                 `mapstructure:"debug_allow" json:"debug_allow"`
+	DefaultIntegration      string                               `mapstructure:"default_integration" json:"default_integration"`
+	CookieSync              CookieSync                           `mapstructure:"cookie_sync" json:"cookie_sync"`
+	Events                  Events                               `mapstructure:"events" json:"events"` // Don't enable this feature. It is still under developmment - https://github.com/prebid/prebid-server/issues/1725
+	TruncateTargetAttribute *int                                 `mapstructure:"truncate_target_attr" json:"truncate_target_attr"`
+	AlternateBidderCodes    *openrtb_ext.ExtAlternateBidderCodes `mapstructure:"alternatebiddercodes" json:"alternatebiddercodes"`
+	Hooks                   AccountHooks                         `mapstructure:"hooks" json:"hooks"`
 }
 
 // CookieSync represents the account-level defaults for the cookie sync endpoint.
@@ -225,50 +227,22 @@ func (a *AccountIntegration) GetByIntegrationType(integrationType IntegrationTyp
 	return integrationEnabled
 }
 
-type AlternateBidderCodes struct {
-	Enabled bool                                   `mapstructure:"enabled" json:"enabled"`
-	Bidders map[string]AdapterAlternateBidderCodes `mapstructure:"bidders" json:"bidders"`
+// AccountHooks represents account-specific hooks configuration
+type AccountHooks struct {
+	Modules       AccountModules    `mapstructure:"modules" json:"modules"`
+	ExecutionPlan HookExecutionPlan `mapstructure:"execution_plan" json:"execution_plan"`
 }
 
-type AdapterAlternateBidderCodes struct {
-	Enabled            bool     `mapstructure:"enabled" json:"enabled"`
-	AllowedBidderCodes []string `mapstructure:"allowedbiddercodes" json:"allowedbiddercodes"`
-}
+// AccountModules mapping provides account-level module configuration
+// format: map[vendor_name]map[module_name]json.RawMessage
+type AccountModules map[string]map[string]json.RawMessage
 
-func (bidderCodes *AlternateBidderCodes) IsValidBidderCode(bidder, alternateBidder string) (bool, error) {
-	const ErrAlternateBidderNotDefined = "alternateBidderCodes not defined for adapter %q, rejecting bids for %q"
-
-	if alternateBidder == "" || bidder == alternateBidder {
-		return true, nil
+func (m AccountModules) ModuleConfig(id string) json.RawMessage {
+	ns := strings.SplitN(id, ".", 2)
+	if len(ns) < 2 {
+		glog.Errorf("Can't find module config, ID must consist of vendor and module names separated by dot")
+		return nil
 	}
 
-	if !bidderCodes.Enabled {
-		return false, nil
-	}
-
-	if bidderCodes.Bidders == nil {
-		return false, fmt.Errorf(ErrAlternateBidderNotDefined, bidder, alternateBidder)
-	}
-
-	adapterCfg, ok := bidderCodes.Bidders[bidder]
-	if !ok {
-		return false, fmt.Errorf(ErrAlternateBidderNotDefined, bidder, alternateBidder)
-	}
-
-	if !adapterCfg.Enabled {
-		// config has bidder entry but is not enabled, report it
-		return false, fmt.Errorf("alternateBidderCodes disabled for %q, rejecting bids for %q", bidder, alternateBidder)
-	}
-
-	if adapterCfg.AllowedBidderCodes == nil || (len(adapterCfg.AllowedBidderCodes) == 1 && adapterCfg.AllowedBidderCodes[0] == "*") {
-		return true, nil
-	}
-
-	for _, code := range adapterCfg.AllowedBidderCodes {
-		if alternateBidder == code {
-			return true, nil
-		}
-	}
-
-	return false, fmt.Errorf("invalid biddercode %q sent by adapter %q", alternateBidder, bidder)
+	return m[ns[0]][ns[1]]
 }

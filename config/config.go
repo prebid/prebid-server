@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/spf13/viper"
 
 	"github.com/prebid/go-gdpr/consentconstants"
@@ -95,12 +95,10 @@ type Configuration struct {
 	HostSChainNode    *openrtb2.SupplyChainNode `mapstructure:"host_schain_node"`
 	// Experiment configures non-production ready features.
 	Experiment Experiment `mapstructure:"experiment"`
-
+	DataCenter string     `mapstructure:"datacenter"`
 	// BidderInfos supports adapter overrides in extra configs like pbs.json, pbs.yaml, etc.
 	// Refers to main.go `configFileName` constant
 	BidderInfos BidderInfos `mapstructure:"adapters"`
-	// Modules mapping provides module specific configuration
-	Modules map[string]interface{} `mapstructure:"modules"`
 	// Hooks provides a way to specify hook execution plan for specific endpoints and stages
 	Hooks Hooks `mapstructure:"hooks"`
 }
@@ -600,6 +598,16 @@ type Debug struct {
 	OverrideToken       string              `mapstructure:"override_token"`
 }
 
+type Server struct {
+	ExternalUrl string
+	GvlID       int
+	DataCenter  string
+}
+
+func (server *Server) Empty() bool {
+	return server == nil || (server.DataCenter == "" && server.ExternalUrl == "" && server.GvlID == 0)
+}
+
 func (cfg *Debug) validate(errs []error) []error {
 	return cfg.TimeoutNotification.validate(errs)
 }
@@ -733,7 +741,7 @@ func (cfg *Configuration) AccountDefaultsJSON() json.RawMessage {
 	return cfg.accountDefaultsJSON
 }
 
-// Allows for protocol relative URL if scheme is empty
+// GetBaseURL allows for protocol relative URL if scheme is empty
 func (cfg *Cache) GetBaseURL() string {
 	cfg.Scheme = strings.ToLower(cfg.Scheme)
 	if strings.Contains(cfg.Scheme, "https") {
@@ -768,6 +776,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("enable_gzip", false)
 	v.SetDefault("garbage_collector_threshold", 0)
 	v.SetDefault("status_response", "")
+	v.SetDefault("datacenter", "")
 	v.SetDefault("auction_timeouts_ms.default", 0)
 	v.SetDefault("auction_timeouts_ms.max", 0)
 	v.SetDefault("cache.scheme", "")

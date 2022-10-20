@@ -13,7 +13,7 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 )
 
 type SovrnAdapter struct {
@@ -192,7 +192,7 @@ func getImpIdx(impId string, request *openrtb2.BidRequest) (int, error) {
 }
 
 // Builder builds a new instance of the Sovrn adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &SovrnAdapter{
 		URI: config.Endpoint,
 	}

@@ -1,4 +1,4 @@
-package stages
+package hookstage
 
 import (
 	"context"
@@ -6,15 +6,15 @@ import (
 	"github.com/prebid/prebid-server/hooks/invocation"
 )
 
-type AllProcBidResponsesHook interface {
-	Call(
+type AllProcessedBidResponses interface {
+	HandleAllProcBidResponsesHook(
 		context.Context,
-		invocation.InvocationContext,
-		AllProcBidResponsesPayload,
-	) (invocation.HookResult[AllProcBidResponsesPayload], error)
+		invocation.Context,
+		AllProcessedBidResponsesPayload,
+	) (invocation.HookResult[AllProcessedBidResponsesPayload], error)
 }
 
-type AllProcBidResponsesPayload struct {
+type AllProcessedBidResponsesPayload struct {
 	// todo: decide what payload to use within hook invocation task
 	// initially, we planned to use map[openrtb_ext.BidderName]*exchange.pbsOrtbSeatBid, but the type is not exported
 }

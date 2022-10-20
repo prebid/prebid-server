@@ -1,6 +1,8 @@
 package invocation
 
-import "time"
+import (
+	"time"
+)
 
 type InvocationContext struct {
 	DebugEnabled   bool

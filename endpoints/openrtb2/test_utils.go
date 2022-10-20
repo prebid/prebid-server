@@ -17,8 +17,8 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/julienschmidt/httprouter"
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
-	"github.com/mxmCherry/openrtb/v16/openrtb3"
+	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb3"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/analytics"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
@@ -28,6 +28,7 @@ import (
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/experiment/adscert"
 	"github.com/prebid/prebid-server/gdpr"
+	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/metrics"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -59,13 +60,13 @@ const (
 type testCase struct {
 	// Common
 	endpointType            int
-	Description             string               `json:"description"`
-	Config                  *testConfigValues    `json:"config"`
-	BidRequest              json.RawMessage      `json:"mockBidRequest"`
-	ExpectedValidatedBidReq *openrtb2.BidRequest `json:"expectedValidatedBidRequest"`
-	ExpectedReturnCode      int                  `json:"expectedReturnCode,omitempty"`
-	ExpectedErrorMessage    string               `json:"expectedErrorMessage"`
-	Query                   string               `json:"query"`
+	Description             string            `json:"description"`
+	Config                  *testConfigValues `json:"config"`
+	BidRequest              json.RawMessage   `json:"mockBidRequest"`
+	ExpectedValidatedBidReq json.RawMessage   `json:"expectedValidatedBidRequest"`
+	ExpectedReturnCode      int               `json:"expectedReturnCode,omitempty"`
+	ExpectedErrorMessage    string            `json:"expectedErrorMessage"`
+	Query                   string            `json:"query"`
 
 	// "/openrtb2/auction" endpoint JSON test info
 	ExpectedBidResponse json.RawMessage `json:"expectedBidResponse"`
@@ -988,11 +989,13 @@ func (b mockBidderHandler) bid(w http.ResponseWriter, req *http.Request) {
 // mockAdapter is a mock impression-splitting adapter
 type mockAdapter struct {
 	mockServerURL string
+	Server        config.Server
 }
 
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	adapter := &mockAdapter{
 		mockServerURL: config.Endpoint,
+		Server:        server,
 	}
 	return adapter, nil
 }
@@ -1188,7 +1191,7 @@ func (te *exchangeTestWrapper) HoldAuction(ctx context.Context, r exchange.Aucti
 	return te.ex.HoldAuction(ctx, r, debugLog)
 }
 
-// buildTestExchange returns an exchange with mock bidder servers and mock currency convertion server
+// buildTestExchange returns an exchange with mock bidder servers and mock currency conversion server
 func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.BidderName]exchange.AdaptedBidder, mockBidServersArray []*httptest.Server, mockCurrencyRatesServer *httptest.Server, bidderInfos config.BidderInfos, cfg *config.Configuration, met metrics.MetricsEngine, mockFetcher stored_requests.CategoryFetcher) (exchange.Exchange, []*httptest.Server) {
 	if len(testCfg.MockBidders) == 0 {
 		testCfg.MockBidders = append(testCfg.MockBidders, mockBidderHandler{BidderName: "appnexus", Currency: "USD", Price: 0.00})
@@ -1290,7 +1293,7 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 		},
 	}
 
-	var endpointBuilder func(uuidutil.UUIDGenerator, exchange.Exchange, openrtb_ext.BidderParamValidator, stored_requests.Fetcher, stored_requests.AccountFetcher, *config.Configuration, metrics.MetricsEngine, analytics.PBSAnalyticsModule, map[string]string, []byte, map[string]openrtb_ext.BidderName, stored_requests.Fetcher) (httprouter.Handle, error)
+	var endpointBuilder func(uuidutil.UUIDGenerator, exchange.Exchange, openrtb_ext.BidderParamValidator, stored_requests.Fetcher, stored_requests.AccountFetcher, *config.Configuration, metrics.MetricsEngine, analytics.PBSAnalyticsModule, map[string]string, []byte, map[string]openrtb_ext.BidderName, stored_requests.Fetcher, hooks.ExecutionPlanBuilder) (httprouter.Handle, error)
 
 	switch test.endpointType {
 	case AMP_ENDPOINT:
@@ -1312,6 +1315,7 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 		[]byte(test.Config.AliasJSON),
 		bidderMap,
 		storedResponseFetcher,
+		hooks.EmptyPlanBuilder{},
 	)
 
 	return endpoint, testExchange.(*exchangeTestWrapper), mockBidServersArray, mockCurrencyRatesServer, err

@@ -14,8 +14,8 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 
 	"github.com/buger/jsonparser"
-	"github.com/mxmCherry/openrtb/v16/adcom1"
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/openrtb/v17/adcom1"
+	"github.com/prebid/openrtb/v17/openrtb2"
 )
 
 const badvLimitSize = 50
@@ -362,7 +362,7 @@ func appendTrackerToUrl(uri string, tracker string) (res string) {
 }
 
 // Builder builds a new instance of the Rubicon adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	uri := appendTrackerToUrl(config.Endpoint, config.XAPI.Tracker)
 
 	bidder := &RubiconAdapter{
@@ -530,7 +530,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 
 			// if imp.ext.is_rewarded_inventory = 1, set imp.video.ext.videotype = "rewarded"
 			var videoType = ""
-			if bidderExt.Prebid != nil && bidderExt.Prebid.IsRewardedInventory == 1 {
+			if bidderExt.Prebid != nil && bidderExt.Prebid.IsRewardedInventory != nil && *bidderExt.Prebid.IsRewardedInventory == 1 {
 				videoType = "rewarded"
 			}
 			videoExt := rubiconVideoExt{Skip: rubiconExt.Video.Skip, SkipDelay: rubiconExt.Video.SkipDelay, VideoType: videoType, RP: rubiconVideoExtRP{SizeID: videoSizeId}}

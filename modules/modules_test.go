@@ -5,80 +5,77 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/hooks/stages"
 	"net/http"
 	"testing"
 
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
-	"github.com/prebid/prebid-server/hooks/hep"
+	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/prebid-server/hooks"
+	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/prebid/prebid-server/hooks/invocation"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestModuleBuilderBuild(t *testing.T) {
+	vendor := "acme"
 	moduleName := "foobar"
-	hookCode := "baz"
 
 	testCases := map[string]struct {
 		isHookFound         bool
 		expectedHook        interface{}
-		givenHook           interface{}
+		givenModule         interface{}
 		expectedErr         error
 		givenHookBuilderErr error
-		givenGetHookFn      func(repo hep.HookRepository, module, hook string) (interface{}, bool)
+		givenGetHookFn      func(repo hooks.HookRepository, module string) (interface{}, bool)
 	}{
-		"Can register entrypoint hook": {
-			givenHook:    fakeEntrypointHook{},
-			expectedHook: fakeEntrypointHook{},
+		"Can build with entrypoint hook": {
+			givenModule:  module{},
+			expectedHook: module{},
 			isHookFound:  true,
-			givenGetHookFn: func(repo hep.HookRepository, module, hook string) (interface{}, bool) {
-				return repo.GetEntrypointHook(module, hook)
+			givenGetHookFn: func(repo hooks.HookRepository, module string) (interface{}, bool) {
+				return repo.GetEntrypointHook(module)
 			},
 		},
-		"Can register auction response hook": {
-			givenHook:    fakeAuctionResponseHook{},
-			expectedHook: fakeAuctionResponseHook{},
+		"Can build with auction response hook": {
+			givenModule:  module{},
+			expectedHook: module{},
 			isHookFound:  true,
-			givenGetHookFn: func(repo hep.HookRepository, module, hook string) (interface{}, bool) {
-				return repo.GetAuctionResponseHook(module, hook)
+			givenGetHookFn: func(repo hooks.HookRepository, module string) (interface{}, bool) {
+				return repo.GetAuctionResponseHook(module)
 			},
 		},
-		"Cannot find not registered hook": {
-			givenHook:    fakeEntrypointHook{},
+		"Fails to find not registered hook": {
+			givenModule:  module{},
 			expectedHook: nil,
 			isHookFound:  false,
-			givenGetHookFn: func(repo hep.HookRepository, module, hook string) (interface{}, bool) {
-				return repo.GetAuctionResponseHook(module, hook) // ask for not registered hook
+			givenGetHookFn: func(repo hooks.HookRepository, module string) (interface{}, bool) {
+				return repo.GetAllProcessedBidResponsesHook(module) // ask for hook not implemented in module
 			},
 		},
-		"Cannot register invalid hook type": {
+		"Builder fails if module does not implement any hook interface": {
 			expectedHook: struct{}{},
-			expectedErr:  fmt.Errorf(`trying to register invalid hook type: %s %s`, moduleName, hookCode),
+			expectedErr:  fmt.Errorf(`hook "%s.%s" does not implement any supported hook interface`, vendor, moduleName),
 		},
-		"Cannot build when hook builder fails": {
-			givenHook:           fakeEntrypointHook{},
-			givenHookBuilderErr: errors.New("failed to build hook"),
-			expectedErr:         fmt.Errorf(`failed to init "%s" module: %s`, moduleName, "failed to build hook"),
+		"Fails if module builder function returns error": {
+			givenModule:         module{},
+			givenHookBuilderErr: errors.New("failed to build module"),
+			expectedErr:         fmt.Errorf(`failed to init "%s.%s" module: %s`, vendor, moduleName, "failed to build module"),
 		},
 	}
 
 	for name, test := range testCases {
 		t.Run(name, func(t *testing.T) {
-			builder := NewModuleBuilder().SetModuleBuilderFn(func() map[string]HookBuilderFn {
-				return map[string]HookBuilderFn{
-					moduleName: func(cfg json.RawMessage, client *http.Client) (map[string]interface{}, error) {
-						return map[string]interface{}{
-							hookCode: test.givenHook,
-						}, test.givenHookBuilderErr
+			builder := NewBuilder().SetModuleBuilders(ModuleBuilders{
+				vendor: {
+					moduleName: func(cfg json.RawMessage, client *http.Client) (interface{}, error) {
+						return test.givenModule, test.givenHookBuilderErr
 					},
-				}
+				},
 			})
 
-			repo, err := builder.Build(map[string]interface{}{}, http.DefaultClient)
+			repo, err := builder.Build(nil, http.DefaultClient)
 			assert.Equal(t, test.expectedErr, err)
-
-			if err == nil {
-				hook, found := test.givenGetHookFn(repo, moduleName, hookCode)
+			if test.expectedErr == nil {
+				hook, found := test.givenGetHookFn(repo, fmt.Sprintf("%s.%s", vendor, moduleName))
 				assert.Equal(t, test.isHookFound, found)
 				assert.IsType(t, test.expectedHook, hook)
 			}
@@ -86,14 +83,12 @@ func TestModuleBuilderBuild(t *testing.T) {
 	}
 }
 
-type fakeEntrypointHook struct{}
+type module struct{}
 
-func (h fakeEntrypointHook) Call(ctx context.Context, context *invocation.ModuleContext, payload stages.EntrypointPayload, _ bool) (invocation.HookResult[stages.EntrypointPayload], error) {
-	return invocation.HookResult[stages.EntrypointPayload]{}, nil
+func (h module) HandleEntrypointHook(ctx context.Context, context invocation.Context, payload hookstage.EntrypointPayload) (invocation.HookResult[hookstage.EntrypointPayload], error) {
+	return invocation.HookResult[hookstage.EntrypointPayload]{}, nil
 }
 
-type fakeAuctionResponseHook struct{}
-
-func (f fakeAuctionResponseHook) Call(ctx context.Context, i invocation.InvocationContext, response *openrtb2.BidResponse) (invocation.HookResult[*openrtb2.BidResponse], error) {
+func (h module) HandleAuctionResponseHook(ctx context.Context, i invocation.Context, response *openrtb2.BidResponse) (invocation.HookResult[*openrtb2.BidResponse], error) {
 	return invocation.HookResult[*openrtb2.BidResponse]{}, nil
 }
