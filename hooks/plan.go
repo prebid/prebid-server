@@ -1,7 +1,6 @@
 package hooks
 
 import (
-	"encoding/json"
 	"time"
 
 	"github.com/golang/glog"
@@ -39,7 +38,6 @@ type Group[T any] struct {
 type HookWrapper[T any] struct {
 	Module string
 	Code   string
-	Config json.RawMessage
 	Hook   T
 }
 
