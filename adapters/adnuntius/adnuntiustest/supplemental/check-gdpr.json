@@ -38,7 +38,7 @@
 	"httpCalls": [
 		{
 			"expectedRequest": {
-				"uri": "https://europe.delivery.adnuntius.com/i?consentString=CONSENT_STRING&format=json&gdpr=1&tzo=0",
+				"uri": "http://gdpr.url?consentString=CONSENT_STRING&format=json&gdpr=1&tzo=0",
 				"body": {
 					"adUnits": [
 						{

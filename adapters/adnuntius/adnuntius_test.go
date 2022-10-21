@@ -43,5 +43,5 @@ func AssignDefaultValues(bidder adapters.Bidder) {
 	bidderAdnuntius.time = &FakeTime{
 		time: time.Date(2016, 1, 1, 12, 30, 15, 0, time.UTC),
 	}
-	bidderAdnuntius.extraInfo = "https://europe.delivery.adnuntius.com/i"
+	bidderAdnuntius.extraInfo = "http://gdpr.url"
 }
