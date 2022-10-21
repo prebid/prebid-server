@@ -348,12 +348,8 @@ type UserExt struct {
 	eidsDirty                          bool
 	consentedProvidersSettingsIn       *ConsentedProvidersSettingsIn
 	consentedProvidersSettingsInDirty  bool
-	consentedProvidersString           string
-	consentedProvidersStringDirty      bool
 	consentedProvidersSettingsOut      *ConsentedProvidersSettingsOut
 	consentedProvidersSettingsOutDirty bool
-	consentedProvidersList             []int
-	consentedProvidersListDirty        bool
 }
 
 func (ue *UserExt) unmarshal(extJson json.RawMessage) error {
@@ -442,17 +438,6 @@ func (ue *UserExt) marshal() (json.RawMessage, error) {
 		ue.prebidDirty = false
 	}
 
-	// if dirty, marshal consentedProvidersSettingsIn, but start with consentedProvidersString because maybe
-	// this field is dirty
-	if ue.consentedProvidersStringDirty {
-		if ue.consentedProvidersSettingsIn == nil {
-			ue.consentedProvidersSettingsIn = &ConsentedProvidersSettingsIn{}
-		}
-		ue.consentedProvidersSettingsIn.ConsentedProvidersString = ue.consentedProvidersString
-		ue.consentedProvidersSettingsInDirty = true
-		ue.consentedProvidersStringDirty = false
-	}
-
 	if ue.consentedProvidersSettingsInDirty {
 		if ue.consentedProvidersSettingsIn != nil {
 			cpSettingsJson, err := json.Marshal(ue.consentedProvidersSettingsIn)
@@ -460,23 +445,14 @@ func (ue *UserExt) marshal() (json.RawMessage, error) {
 				return nil, err
 			}
 			if len(cpSettingsJson) > jsonEmptyObjectLength {
-				ue.ext["ConsentedProvidersSettings"] = json.RawMessage(cpSettingsJson)
+				ue.ext[ConsentedProvidersSettingsStringKey] = json.RawMessage(cpSettingsJson)
 			} else {
-				delete(ue.ext, "ConsentedProvidersSettings")
+				delete(ue.ext, ConsentedProvidersSettingsStringKey)
 			}
 		} else {
-			delete(ue.ext, "ConsentedProvidersSettings")
+			delete(ue.ext, ConsentedProvidersSettingsStringKey)
 		}
 		ue.consentedProvidersSettingsInDirty = false
-	}
-
-	if ue.consentedProvidersListDirty {
-		if ue.consentedProvidersSettingsOut == nil {
-			ue.consentedProvidersSettingsOut = &ConsentedProvidersSettingsOut{}
-		}
-		ue.consentedProvidersSettingsOut.ConsentedProvidersList = ue.consentedProvidersList
-		ue.consentedProvidersSettingsOutDirty = true
-		ue.consentedProvidersListDirty = false
 	}
 
 	if ue.consentedProvidersSettingsOutDirty {
@@ -486,12 +462,12 @@ func (ue *UserExt) marshal() (json.RawMessage, error) {
 				return nil, err
 			}
 			if len(cpSettingsJson) > jsonEmptyObjectLength {
-				ue.ext["consented_providers_settings"] = json.RawMessage(cpSettingsJson)
+				ue.ext[ConsentedProvidersSettingsListKey] = json.RawMessage(cpSettingsJson)
 			} else {
-				delete(ue.ext, "consented_providers_settings")
+				delete(ue.ext, ConsentedProvidersSettingsListKey)
 			}
 		} else {
-			delete(ue.ext, "consented_providers_settings")
+			delete(ue.ext, ConsentedProvidersSettingsListKey)
 		}
 		ue.consentedProvidersSettingsOutDirty = false
 	}
@@ -517,7 +493,7 @@ func (ue *UserExt) marshal() (json.RawMessage, error) {
 }
 
 func (ue *UserExt) Dirty() bool {
-	return ue.extDirty || ue.eidsDirty || ue.prebidDirty || ue.consentDirty || ue.consentedProvidersSettingsInDirty || ue.consentedProvidersStringDirty || ue.consentedProvidersSettingsOutDirty || ue.consentedProvidersListDirty
+	return ue.extDirty || ue.eidsDirty || ue.prebidDirty || ue.consentDirty || ue.consentedProvidersSettingsInDirty || ue.consentedProvidersSettingsOutDirty
 }
 
 func (ue *UserExt) GetExt() map[string]json.RawMessage {
