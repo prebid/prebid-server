@@ -98,9 +98,9 @@ type Conditions struct {
 }
 
 type Override struct {
-	IsOn  bool
-	Ids   []int
-	Names []string
+	IsActive bool
+	Ids      []int
+	Names    []string
 }
 
 func (o *Override) UnmarshalJSON(bytes []byte) error {
@@ -110,19 +110,17 @@ func (o *Override) UnmarshalJSON(bytes []byte) error {
 	}
 
 	switch v := d.(type) {
+	case bool:
+		o.IsActive = v
 	case []interface{}:
 		for _, val := range v {
-			switch d := val.(type) {
+			switch i := val.(type) {
 			case string:
-				o.Names = append(o.Names, d)
+				o.Names = append(o.Names, i)
 			case float64:
-				o.Ids = append(o.Ids, int(d))
+				o.Ids = append(o.Ids, int(i))
 			}
 		}
-	case []int:
-		o.Ids = v
-	case bool:
-		o.IsOn = v
 	}
 
 	return nil

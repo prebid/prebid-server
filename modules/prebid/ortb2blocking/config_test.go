@@ -224,8 +224,89 @@ func TestNewConfig(t *testing.T) {
 	c, err := newConfig(fullConfig)
 	require.NoError(t, err)
 
-	// todo: complete all tests
+	// badv
+	assert.True(t, c.Attributes.Badv.EnforceBlocks, "attributes.badv.enforce_blocks")
+	assert.True(t, c.Attributes.Badv.BlockUnknownAdomain, "attributes.badv.block_unknown_adomain")
+	assert.Equal(t, []string{"a.com", "b.com", "c.com"}, c.Attributes.Badv.BlockedAdomain, "attributes.badv.blocked_adomain")
+	assert.Equal(t, []string{"z.com", "x.com"}, c.Attributes.Badv.AllowedAdomainForDeals, "attributes.badv.allowed_adomain_for_deals")
 
-	assert.Equal(t, []int{3, 4, 5}, c.Attributes.Btype.ActionOverrides[0].BlockedBannerType[0].Override.Ids)
-	assert.True(t, c.Attributes.Battr.ActionOverrides[0].EnforceBlocks[0].Override.IsOn)
+	assert.Equal(t, []string{"bidderA", "bidderB"}, c.Attributes.Badv.ActionOverrides[0].BlockedAdomain[0].Conditions.Bidders, "attributes.badv.action_overrides[0].blocked_adomain[0].conditions.bidders")
+	assert.Equal(t, []string{"video"}, c.Attributes.Badv.ActionOverrides[0].BlockedAdomain[0].Conditions.MediaTypes, "attributes.badv.action_overrides[0].blocked_adomain[0].conditions.media_types")
+	assert.Empty(t, c.Attributes.Badv.ActionOverrides[0].BlockedAdomain[0].Conditions.DealIds, "attributes.badv.action_overrides[0].blocked_adomain[0].conditions.deal_ids")
+	assert.False(t, c.Attributes.Badv.ActionOverrides[0].BlockedAdomain[0].Override.IsActive, "attributes.badv.action_overrides[0].blocked_adomain[0].override")
+	assert.Empty(t, c.Attributes.Badv.ActionOverrides[0].BlockedAdomain[0].Override.Ids, "attributes.badv.action_overrides[0].blocked_adomain[0].override")
+	assert.Equal(t, []string{"a.com", "b.com"}, c.Attributes.Badv.ActionOverrides[0].BlockedAdomain[0].Override.Names, "attributes.badv.action_overrides[0].blocked_adomain[0].override")
+
+	assert.Equal(t, []string{"bidderB"}, c.Attributes.Badv.ActionOverrides[0].BlockedAdomain[1].Conditions.Bidders, "attributes.badv.action_overrides[0].blocked_adomain[1].conditions.bidders")
+	assert.Empty(t, c.Attributes.Badv.ActionOverrides[0].BlockedAdomain[1].Conditions.MediaTypes, "attributes.badv.action_overrides[0].blocked_adomain[1].conditions.media_types")
+	assert.Empty(t, c.Attributes.Badv.ActionOverrides[0].BlockedAdomain[1].Conditions.DealIds, "attributes.badv.action_overrides[0].blocked_adomain[1].conditions.deal_ids")
+	assert.False(t, c.Attributes.Badv.ActionOverrides[0].BlockedAdomain[1].Override.IsActive, "attributes.badv.action_overrides[0].blocked_adomain[1].override")
+	assert.Empty(t, c.Attributes.Badv.ActionOverrides[0].BlockedAdomain[1].Override.Ids, "attributes.badv.action_overrides[0].blocked_adomain[1].override")
+	assert.Equal(t, []string{"a.com", "b.com", "c.com", "d.com", "e.com"}, c.Attributes.Badv.ActionOverrides[0].BlockedAdomain[1].Override.Names, "attributes.badv.action_overrides[0].blocked_adomain[1].override")
+
+	assert.Equal(t, []string{"bidderA"}, c.Attributes.Badv.ActionOverrides[0].BlockUnknownAdomain[0].Conditions.Bidders, "attributes.badv.action_overrides[0].block_unknown_adomain[0].conditions.bidders")
+	assert.Equal(t, []string{"video"}, c.Attributes.Badv.ActionOverrides[0].BlockUnknownAdomain[0].Conditions.MediaTypes, "attributes.badv.action_overrides[0].block_unknown_adomain[0].conditions.media_types")
+	assert.True(t, c.Attributes.Badv.ActionOverrides[0].BlockUnknownAdomain[0].Override.IsActive, "attributes.badv.action_overrides[0].block_unknown_adomain[0].override")
+	assert.Empty(t, c.Attributes.Badv.ActionOverrides[0].BlockUnknownAdomain[0].Override.Ids, "attributes.badv.action_overrides[0].block_unknown_adomain[0].override")
+	assert.Empty(t, c.Attributes.Badv.ActionOverrides[0].BlockUnknownAdomain[0].Override.Names, "attributes.badv.action_overrides[0].block_unknown_adomain[0].override")
+
+	assert.Equal(t, []string{"12345678"}, c.Attributes.Badv.ActionOverrides[0].AllowedAdomainForDeals[0].Conditions.DealIds, "attributes.badv.action_overrides[0].allowed_adomain_for_deals[0].conditions.deal_ids")
+	assert.False(t, c.Attributes.Badv.ActionOverrides[0].AllowedAdomainForDeals[0].Override.IsActive, "attributes.badv.action_overrides[0].allowed_adomain_for_deals[0].override")
+	assert.Empty(t, c.Attributes.Badv.ActionOverrides[0].AllowedAdomainForDeals[0].Override.Ids, "attributes.badv.action_overrides[0].allowed_adomain_for_deals[0].override")
+	assert.Equal(t, []string{"a.com"}, c.Attributes.Badv.ActionOverrides[0].AllowedAdomainForDeals[0].Override.Names, "attributes.badv.action_overrides[0].allowed_adomain_for_deals[0].override")
+
+	// bcat
+	assert.False(t, c.Attributes.Bcat.EnforceBlocks, "attributes.bcat.enforce_blocks")
+	assert.False(t, c.Attributes.Bcat.BlockUnknownAdvCat, "attributes.bcat.block_unknown_adv_cat")
+	assert.Equal(t, 6, c.Attributes.Bcat.CategoryTaxonomy, "attributes.bcat.category_taxonomy")
+	assert.Equal(t, []string{"IAB-1", "IAB-2"}, c.Attributes.Bcat.BlockedAdvCat, "attributes.bcat.blocked_adv_cat")
+	assert.Equal(t, []string{"IAB-1"}, c.Attributes.Bcat.AllowedAdvCatForDeals, "attributes.bcat.allowed_adv_cat_for_deals")
+
+	assert.Equal(t, []string{"video"}, c.Attributes.Bcat.ActionOverrides[0].BlockedAdvCat[0].Conditions.MediaTypes, "attributes.bcat.action_overrides[0].blocked_adv_cat[0].conditions.media_types")
+	assert.Empty(t, c.Attributes.Bcat.ActionOverrides[0].BlockedAdvCat[0].Conditions.Bidders, "attributes.bcat.action_overrides[0].blocked_adv_cat[0].conditions.bidders")
+	assert.Empty(t, c.Attributes.Bcat.ActionOverrides[0].BlockedAdvCat[0].Conditions.DealIds, "attributes.bcat.action_overrides[0].blocked_adv_cat[0].conditions.deal_ids")
+	assert.False(t, c.Attributes.Bcat.ActionOverrides[0].BlockedAdvCat[0].Override.IsActive, "attributes.bcat.action_overrides[0].blocked_adv_cat[0].override")
+	assert.Empty(t, c.Attributes.Bcat.ActionOverrides[0].BlockedAdvCat[0].Override.Ids, "attributes.bcat.action_overrides[0].blocked_adv_cat[0].override")
+	assert.Equal(t, []string{"IAB-1", "IAB-2", "IAB-3", "IAB-4"}, c.Attributes.Bcat.ActionOverrides[0].BlockedAdvCat[0].Override.Names, "attributes.bcat.action_overrides[0].blocked_adv_cat[0].override")
+
+	assert.Equal(t, []string{"bidderA"}, c.Attributes.Bcat.ActionOverrides[0].EnforceBlocks[0].Conditions.Bidders, "attributes.bcat.action_overrides[0].enforce_blocks[0].conditions.bidders")
+	assert.True(t, c.Attributes.Bcat.ActionOverrides[0].EnforceBlocks[0].Override.IsActive, "attributes.bcat.action_overrides[0].enforce_blocks[0].override")
+	assert.Empty(t, c.Attributes.Bcat.ActionOverrides[0].EnforceBlocks[0].Override.Ids, "attributes.bcat.action_overrides[0].enforce_blocks[0].override")
+	assert.Empty(t, c.Attributes.Bcat.ActionOverrides[0].EnforceBlocks[0].Override.Names, "attributes.bcat.action_overrides[0].enforce_blocks[0].override")
+
+	assert.Equal(t, []string{"video"}, c.Attributes.Bcat.ActionOverrides[0].BlockUnknownAdvCat[0].Conditions.MediaTypes, "attributes.bcat.action_overrides[0].block_unknown_adv_cat[0].conditions.media_types")
+	assert.True(t, c.Attributes.Bcat.ActionOverrides[0].BlockUnknownAdvCat[0].Override.IsActive, "attributes.bcat.action_overrides[0].block_unknown_adv_cat[0].override")
+	assert.Empty(t, c.Attributes.Bcat.ActionOverrides[0].BlockUnknownAdvCat[0].Override.Ids, "attributes.bcat.action_overrides[0].block_unknown_adv_cat[0].override")
+	assert.Empty(t, c.Attributes.Bcat.ActionOverrides[0].BlockUnknownAdvCat[0].Override.Names, "attributes.bcat.action_overrides[0].block_unknown_adv_cat[0].override")
+
+	assert.Equal(t, []string{"1111111"}, c.Attributes.Bcat.ActionOverrides[0].AllowedAdvCatForDeals[0].Conditions.DealIds, "attributes.bcat.action_overrides[0].allowed_adv_cat_for_deals[0].conditions.deal_ids")
+	assert.False(t, c.Attributes.Bcat.ActionOverrides[0].AllowedAdvCatForDeals[0].Override.IsActive, "attributes.bcat.action_overrides[0].allowed_adv_cat_for_deals[0].override")
+	assert.Empty(t, c.Attributes.Bcat.ActionOverrides[0].AllowedAdvCatForDeals[0].Override.Ids, "attributes.bcat.action_overrides[0].allowed_adv_cat_for_deals[0].override")
+	assert.Equal(t, []string{"IAB-1"}, c.Attributes.Bcat.ActionOverrides[0].AllowedAdvCatForDeals[0].Override.Names, "attributes.bcat.action_overrides[0].allowed_adv_cat_for_deals[0].override")
+
+	// bapp
+	assert.False(t, c.Attributes.Bapp.EnforceBlocks, "attributes.bapp.enforce_blocks")
+	assert.Equal(t, []string{"app1", "app2"}, c.Attributes.Bapp.BlockedApp, "attributes.bapp.blocked_app")
+
+	assert.Equal(t, []string{"bidderA"}, c.Attributes.Bapp.ActionOverrides[0].BlockedApp[0].Conditions.Bidders, "attributes.bapp.action_overrides[0].blocked_app[0].conditions.bidders")
+	assert.False(t, c.Attributes.Bapp.ActionOverrides[0].BlockedApp[0].Override.IsActive, "attributes.bapp.action_overrides[0].blocked_app[0].override")
+	assert.Empty(t, c.Attributes.Bapp.ActionOverrides[0].BlockedApp[0].Override.Ids, "attributes.bapp.action_overrides[0].blocked_app[0].override")
+	assert.Equal(t, []string{"app3"}, c.Attributes.Bapp.ActionOverrides[0].BlockedApp[0].Override.Names, "attributes.bapp.action_overrides[0].blocked_app[0].override")
+
+	// btype
+	assert.Equal(t, []int{3, 4}, c.Attributes.Btype.BlockedBannerType, "attributes.btype.blocked_banner_type")
+
+	assert.Equal(t, []string{"bidderA"}, c.Attributes.Btype.ActionOverrides[0].BlockedBannerType[0].Conditions.Bidders, "attributes.btype.action_overrides[0].blocked_banner_type[0].conditions.bidders")
+	assert.Equal(t, []int{3, 4, 5}, c.Attributes.Btype.ActionOverrides[0].BlockedBannerType[0].Override.Ids, "attributes.btype.action_overrides[0].blocked_banner_type[0].override")
+	assert.Empty(t, c.Attributes.Btype.ActionOverrides[0].BlockedBannerType[0].Override.Names, "attributes.btype.action_overrides[0].blocked_banner_type[0].override")
+	assert.False(t, c.Attributes.Btype.ActionOverrides[0].BlockedBannerType[0].Override.IsActive, "attributes.btype.action_overrides[0].blocked_banner_type[0].override")
+
+	// battr
+	assert.False(t, c.Attributes.Battr.EnforceBlocks, "attributes.battr.enforce_blocks")
+	assert.Equal(t, []int{1, 8, 9, 10}, c.Attributes.Battr.BlockedBannerAttr, "attributes.battr.blocked_banner_attr")
+
+	assert.Equal(t, []string{"bidderA"}, c.Attributes.Battr.ActionOverrides[0].EnforceBlocks[0].Conditions.Bidders, "attributes.battr.action_overrides[0].enforce_blocks[0].conditions.bidders")
+	assert.True(t, c.Attributes.Battr.ActionOverrides[0].EnforceBlocks[0].Override.IsActive, "attributes.battr.action_overrides[0].enforce_blocks[0].override")
+	assert.Empty(t, c.Attributes.Battr.ActionOverrides[0].EnforceBlocks[0].Override.Ids, "attributes.battr.action_overrides[0].enforce_blocks[0].override")
+	assert.Empty(t, c.Attributes.Battr.ActionOverrides[0].EnforceBlocks[0].Override.Names, "attributes.battr.action_overrides[0].enforce_blocks[0].override")
 }
