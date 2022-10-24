@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"testing/iotest"
 	"time"
 
 	"github.com/prebid/prebid-server/analytics"
@@ -684,7 +685,7 @@ func TestCookieSyncParseRequest(t *testing.T) {
 		},
 		{
 			description:      "HTTP Read Error",
-			givenBody:        ErrReader(errors.New("anyError")),
+			givenBody:        iotest.ErrReader(errors.New("anyError")),
 			givenGDPRConfig:  config.GDPR{Enabled: true, DefaultValue: "0"},
 			givenCCPAEnabled: true,
 			expectedError:    "Failed to read request body",
@@ -1824,20 +1825,6 @@ func (f FakeAccountsFetcher) FetchAccount(ctx context.Context, accountID string)
 		return account, nil
 	}
 	return nil, []error{errors.New("Account not found")}
-}
-
-// ErrReader returns an io.Reader that returns 0, err from all Read calls. This is added in
-// Go 1.16. Copied here for now until we switch over.
-func ErrReader(err error) io.Reader {
-	return &errReader{err: err}
-}
-
-type errReader struct {
-	err error
-}
-
-func (r *errReader) Read(p []byte) (int, error) {
-	return 0, r.err
 }
 
 type fakePermissions struct {
