@@ -470,6 +470,9 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externa
 			bidResponse.Bids = append(bidResponse.Bids, typedBid)
 		}
 	}
+	if bidResp.Cur != "" {
+		bidResponse.Currency = bidResp.Cur
+	}
 	return bidResponse, errs
 }
 

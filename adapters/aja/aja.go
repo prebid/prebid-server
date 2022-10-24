@@ -124,6 +124,9 @@ func (a *AJAAdapter) MakeBids(bidReq *openrtb2.BidRequest, adapterReq *adapters.
 			}
 		}
 	}
+	if bidResp.Cur != "" {
+		bidderResp.Currency = bidResp.Cur
+	}
 	return bidderResp, errors
 }
 
