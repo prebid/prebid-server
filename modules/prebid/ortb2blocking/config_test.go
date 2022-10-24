@@ -230,6 +230,8 @@ func TestNewConfig(t *testing.T) {
 	assert.Equal(t, []string{"a.com", "b.com", "c.com"}, c.Attributes.Badv.BlockedAdomain, "attributes.badv.blocked_adomain")
 	assert.Equal(t, []string{"z.com", "x.com"}, c.Attributes.Badv.AllowedAdomainForDeals, "attributes.badv.allowed_adomain_for_deals")
 
+	assert.Empty(t, c.Attributes.Badv.ActionOverrides[0].EnforceBlocks, "attributes.badv.action_overrides[0].enforce_blocks")
+
 	assert.Equal(t, []string{"bidderA", "bidderB"}, c.Attributes.Badv.ActionOverrides[0].BlockedAdomain[0].Conditions.Bidders, "attributes.badv.action_overrides[0].blocked_adomain[0].conditions.bidders")
 	assert.Equal(t, []string{"video"}, c.Attributes.Badv.ActionOverrides[0].BlockedAdomain[0].Conditions.MediaTypes, "attributes.badv.action_overrides[0].blocked_adomain[0].conditions.media_types")
 	assert.Empty(t, c.Attributes.Badv.ActionOverrides[0].BlockedAdomain[0].Conditions.DealIds, "attributes.badv.action_overrides[0].blocked_adomain[0].conditions.deal_ids")
@@ -287,6 +289,10 @@ func TestNewConfig(t *testing.T) {
 	// bapp
 	assert.False(t, c.Attributes.Bapp.EnforceBlocks, "attributes.bapp.enforce_blocks")
 	assert.Equal(t, []string{"app1", "app2"}, c.Attributes.Bapp.BlockedApp, "attributes.bapp.blocked_app")
+	assert.Empty(t, c.Attributes.Bapp.AllowedAppForDeals, "attributes.bapp.allowed_app_for_deals")
+
+	assert.Empty(t, c.Attributes.Bapp.ActionOverrides[0].AllowedAppForDeals, "attributes.bapp.action_overrides[0].allowed_app_for_deals")
+	assert.Empty(t, c.Attributes.Bapp.ActionOverrides[0].EnforceBlocks, "attributes.bapp.action_overrides[0].enforce_blocks")
 
 	assert.Equal(t, []string{"bidderA"}, c.Attributes.Bapp.ActionOverrides[0].BlockedApp[0].Conditions.Bidders, "attributes.bapp.action_overrides[0].blocked_app[0].conditions.bidders")
 	assert.False(t, c.Attributes.Bapp.ActionOverrides[0].BlockedApp[0].Override.IsActive, "attributes.bapp.action_overrides[0].blocked_app[0].override")
@@ -302,8 +308,12 @@ func TestNewConfig(t *testing.T) {
 	assert.False(t, c.Attributes.Btype.ActionOverrides[0].BlockedBannerType[0].Override.IsActive, "attributes.btype.action_overrides[0].blocked_banner_type[0].override")
 
 	// battr
+	assert.Empty(t, c.Attributes.Battr.AllowedBannerAttrForDeals, "attributes.battr.allowed_banner_attr_for_deals")
 	assert.False(t, c.Attributes.Battr.EnforceBlocks, "attributes.battr.enforce_blocks")
 	assert.Equal(t, []int{1, 8, 9, 10}, c.Attributes.Battr.BlockedBannerAttr, "attributes.battr.blocked_banner_attr")
+
+	assert.Empty(t, c.Attributes.Battr.ActionOverrides[0].AllowedBannerAttrForDeals, "attributes.battr.action_overrides[0].allowed_banner_attr_for_deals")
+	assert.Empty(t, c.Attributes.Battr.ActionOverrides[0].BlockedBannerAttr, "attributes.battr.action_overrides[0].blocked_banner_attr")
 
 	assert.Equal(t, []string{"bidderA"}, c.Attributes.Battr.ActionOverrides[0].EnforceBlocks[0].Conditions.Bidders, "attributes.battr.action_overrides[0].enforce_blocks[0].conditions.bidders")
 	assert.True(t, c.Attributes.Battr.ActionOverrides[0].EnforceBlocks[0].Override.IsActive, "attributes.battr.action_overrides[0].enforce_blocks[0].override")
