@@ -58,8 +58,8 @@ func (rw *RequestWrapper) GetImp() []*ImpWrapper {
 		return rw.impWrappers
 	}
 
-	// There is minimal difference between nil and empty arrays in Go, but it
-	// matters for json encoding. In practice there will always one impression,
+	// There is minimal difference between nil and empty arrays in Go, but it matters
+	// for json encoding. In practice there will always be at least one impression,
 	// so this is an optimization for tests with (appropriately) incomplete requests.
 	if rw.Imp != nil {
 		rw.impWrappers = make([]*ImpWrapper, len(rw.Imp))
