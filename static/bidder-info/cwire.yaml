@@ -1,4 +1,4 @@
-endpoint: "http://cwi.re/prebid/adapter-endpoint"
+endpoint: "https://cwi.re/prebid/adapter-endpoint"
 maintainer:
   email: "mateja.maric@cwire.com"
 endpointCompression: gzip
