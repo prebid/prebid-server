@@ -12,11 +12,6 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-// This was made by Adtelligent folks, not needed by us...
-type cwireImpExt struct {
-	CWire openrtb_ext.ImpExtCWire `json:"cwire"`
-}
-
 /*
 Your bid adapter code will need to implement and export:
 
@@ -54,68 +49,46 @@ least one valid Impression for your adapter. Impressions not configured for
 your adapter are not accessible.
 */
 func (a *CWireAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	var errors []error
 
-	totalImps := len(request.Imp)
-	errors := make([]error, 0, totalImps)
-	imp2source := make(map[int][]int)
-
-	for i := 0; i < totalImps; i++ {
-
-		sourceId, err := validateImpression(&request.Imp[i])
-
+	var bidderParams []openrtb_ext.ImpExtCWire
+	for _, imp := range request.Imp {
+		var ext struct {
+			Bidder openrtb_ext.ImpExtCWire
+		}
+		err := json.Unmarshal(imp.Ext, &ext)
 		if err != nil {
-			errors = append(errors, err)
+			errors = append(errors, fmt.Errorf("Error while unmarshaling bidder parameters: %v", err))
 			continue
 		}
-
-		if _, ok := imp2source[sourceId]; !ok {
-			imp2source[sourceId] = make([]int, 0, totalImps-i)
-		}
-
-		imp2source[sourceId] = append(imp2source[sourceId], i)
-
-	}
-
-	totalReqs := len(imp2source)
-	if 0 == totalReqs {
-		return nil, errors
+		bidderParams = append(bidderParams, ext.Bidder)
 	}
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 
-	reqs := make([]*adapters.RequestData, 0, totalReqs)
+	var reqs []*adapters.RequestData
 
-	imps := request.Imp
-	request.Imp = make([]openrtb2.Imp, 0, len(imps))
-	for sourceId, impIds := range imp2source {
-		request.Imp = request.Imp[:0]
-
-		for i := 0; i < len(impIds); i++ {
-			request.Imp = append(request.Imp, imps[impIds[i]])
-		}
-
-		body, err := json.Marshal(request)
+	for _, bidderParam := range bidderParams {
+		body, err := json.Marshal(bidderParam)
 		if err != nil {
-			errors = append(errors, fmt.Errorf("error while encoding bidRequest, err: %s", err))
+			errors = append(errors, fmt.Errorf("Error while encoding bidRequest: %v", err))
 			return nil, errors
 		}
 
 		reqs = append(reqs, &adapters.RequestData{
 			Method:  "POST",
-			Uri:     a.endpoint + fmt.Sprintf("?aid=%d", sourceId),
+			Uri:     a.endpoint,
 			Body:    body,
 			Headers: headers,
 		})
 	}
-
-	if 0 == len(reqs) {
+	if len(reqs) == 0 {
 		return nil, errors
 	}
 
 	return reqs, errors
-
 }
 
 /*
@@ -177,50 +150,4 @@ func (a *CWireAdapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.Re
 	}
 
 	return bidResponse, errors
-}
-
-func validateImpression(imp *openrtb2.Imp) (int, error) {
-
-	if imp.Banner == nil && imp.Video == nil {
-		return 0, &errortypes.BadInput{
-			Message: fmt.Sprintf("ignoring imp id=%s, Adtelligent supports only Video and Banner", imp.ID),
-		}
-	}
-
-	if 0 == len(imp.Ext) {
-		return 0, &errortypes.BadInput{
-			Message: fmt.Sprintf("ignoring imp id=%s, extImpBidder is empty", imp.ID),
-		}
-	}
-
-	var bidderExt adapters.ExtImpBidder
-
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return 0, &errortypes.BadInput{
-			Message: fmt.Sprintf("ignoring imp id=%s, error while decoding extImpBidder, err: %s", imp.ID, err),
-		}
-	}
-
-	impExt := openrtb_ext.ImpExtCWire{}
-	err := json.Unmarshal(bidderExt.Bidder, &impExt)
-	if err != nil {
-		return 0, &errortypes.BadInput{
-			Message: fmt.Sprintf("ignoring imp id=%s, error while decoding impExt, err: %s", imp.ID, err),
-		}
-	}
-
-	// common extension for all impressions
-	var impExtBuffer []byte
-
-	impExtBuffer, err = json.Marshal(&cwireImpExt{
-		CWire: impExt,
-	})
-
-	if impExt.BidFloor > 0 {
-		imp.BidFloor = impExt.BidFloor
-	}
-
-	imp.Ext = impExtBuffer
-
-	return impExt.SourceId, nil
 }
