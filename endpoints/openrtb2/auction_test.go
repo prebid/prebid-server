@@ -17,9 +17,9 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/julienschmidt/httprouter"
-	"github.com/mxmCherry/openrtb/v16/native1"
-	nativeRequests "github.com/mxmCherry/openrtb/v16/native1/request"
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/openrtb/v17/native1"
+	nativeRequests "github.com/prebid/openrtb/v17/native1/request"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/stretchr/testify/assert"
 
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"

@@ -8,7 +8,7 @@ import (
 	"path"
 	"strconv"
 
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -16,11 +16,12 @@ import (
 )
 
 type SmartAdserverAdapter struct {
-	host string
+	host   string
+	Server config.Server
 }
 
 // Builder builds a new instance of the SmartAdserver adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &SmartAdserverAdapter{
 		host: config.Endpoint,
 	}

@@ -3,7 +3,7 @@ package openrtb_ext
 import (
 	"fmt"
 
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 )
 
 func ConvertUpTo26(r *RequestWrapper) error {

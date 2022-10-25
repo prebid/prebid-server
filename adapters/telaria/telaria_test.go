@@ -12,7 +12,7 @@ import (
 func TestEndpointFromConfig(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderTelaria, config.Adapter{
 		Endpoint: "providedurl.com",
-	})
+	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -24,7 +24,7 @@ func TestEndpointFromConfig(t *testing.T) {
 }
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderTelaria, config.Adapter{})
+	bidder, buildErr := Builder(openrtb_ext.BidderTelaria, config.Adapter{}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
