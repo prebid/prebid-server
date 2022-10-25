@@ -96,7 +96,7 @@
             {
               "adtype": 8,
               "slotid": "m8x9x3rzff",
-              "test": 0,
+              "test": 1,
               "format": [
                 {
                   "h": 250,
@@ -132,7 +132,8 @@
           },
           "regs": {
           },
-          "version": "3.4"
+          "version": "3.4",
+          "clientAdRequestId": "test-req-id"
         }
       },
       "mockResponse": {

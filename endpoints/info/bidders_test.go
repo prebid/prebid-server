@@ -12,8 +12,8 @@ import (
 
 func TestPrepareBiddersResponseAll(t *testing.T) {
 	var (
-		enabled  = config.BidderInfo{Enabled: true}
-		disabled = config.BidderInfo{Enabled: false}
+		enabled  = config.BidderInfo{Disabled: false}
+		disabled = config.BidderInfo{Disabled: true}
 	)
 
 	testCases := []struct {
@@ -88,8 +88,8 @@ func TestPrepareBiddersResponseAll(t *testing.T) {
 
 func TestPrepareBiddersResponseEnabledOnly(t *testing.T) {
 	var (
-		enabled  = config.BidderInfo{Enabled: true}
-		disabled = config.BidderInfo{Enabled: false}
+		enabled  = config.BidderInfo{Disabled: false}
+		disabled = config.BidderInfo{Disabled: true}
 	)
 
 	testCases := []struct {
@@ -164,8 +164,8 @@ func TestPrepareBiddersResponseEnabledOnly(t *testing.T) {
 
 func TestBiddersHandler(t *testing.T) {
 	var (
-		enabled  = config.BidderInfo{Enabled: true}
-		disabled = config.BidderInfo{Enabled: false}
+		enabled  = config.BidderInfo{Disabled: false}
+		disabled = config.BidderInfo{Disabled: true}
 	)
 
 	bidders := config.BidderInfos{"a": enabled, "b": disabled}

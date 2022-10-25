@@ -1,3 +1,5 @@
+disabled: true
+extra_info: "{\"publisher_whitelist\":[]}"
 maintainer:
   email: "prebid@triplelift.com"
 gvlVendorID: 28

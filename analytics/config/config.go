@@ -10,7 +10,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 )
 
-//Modules that need to be logged to need to be initialized here
+// Modules that need to be logged to need to be initialized here
 func NewPBSAnalytics(analytics *config.Analytics) analytics.PBSAnalyticsModule {
 	modules := make(enabledAnalytics, 0)
 	if len(analytics.File.Filename) > 0 {
@@ -40,7 +40,7 @@ func NewPBSAnalytics(analytics *config.Analytics) analytics.PBSAnalyticsModule {
 	return modules
 }
 
-//Collection of all the correctly configured analytics modules - implements the PBSAnalyticsModule interface
+// Collection of all the correctly configured analytics modules - implements the PBSAnalyticsModule interface
 type enabledAnalytics []analytics.PBSAnalyticsModule
 
 func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject) {

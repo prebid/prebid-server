@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
@@ -849,17 +849,6 @@ func TestResolveUser(t *testing.T) {
 func TestResolveUserNilValues(t *testing.T) {
 	resultUser, err := resolveUser(nil, nil, nil, nil, "appnexus")
 	assert.NoError(t, err, "No error should be returned")
-	assert.Nil(t, resultUser, "Result user should be nil")
-}
-
-func TestResolveUserBadInput(t *testing.T) {
-	fpdConfigUser := make(map[string]json.RawMessage, 0)
-	fpdConfigUser["id"] = []byte(`"fpdConfigUserId"`)
-	fpdConfig := &openrtb_ext.ORTB2{User: fpdConfigUser}
-
-	resultUser, err := resolveUser(fpdConfig, nil, nil, nil, "appnexus")
-	assert.Error(t, err, "Error should be returned")
-	assert.Equal(t, "incorrect First Party Data for bidder appnexus: User object is not defined in request, but defined in FPD config", err.Error(), "Incorrect error message")
 	assert.Nil(t, resultUser, "Result user should be nil")
 }
 

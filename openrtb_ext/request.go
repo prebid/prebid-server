@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 )
 
 // FirstPartyDataExtKey defines a field name within request.ext and request.imp.ext reserved for first party data.
@@ -38,25 +38,40 @@ type ExtRequestPrebid struct {
 	Aliases              map[string]string         `json:"aliases,omitempty"`
 	AliasGVLIDs          map[string]uint16         `json:"aliasgvlids,omitempty"`
 	BidAdjustmentFactors map[string]float64        `json:"bidadjustmentfactors,omitempty"`
+	BidderConfigs        []BidderConfig            `json:"bidderconfig,omitempty"`
+	BidderParams         json.RawMessage           `json:"bidderparams,omitempty"`
 	Cache                *ExtRequestPrebidCache    `json:"cache,omitempty"`
 	Channel              *ExtRequestPrebidChannel  `json:"channel,omitempty"`
+	CurrencyConversions  *ExtRequestCurrency       `json:"currency,omitempty"`
 	Data                 *ExtRequestPrebidData     `json:"data,omitempty"`
 	Debug                bool                      `json:"debug,omitempty"`
-	Integration          string                    `json:"integration,omitempty"`
 	Events               json.RawMessage           `json:"events,omitempty"`
+	Experiment           *Experiment               `json:"experiment,omitempty"`
+	Integration          string                    `json:"integration,omitempty"`
+	Passthrough          json.RawMessage           `json:"passthrough,omitempty"`
 	SChains              []*ExtRequestPrebidSChain `json:"schains,omitempty"`
+	Server               *ExtRequestPrebidServer   `json:"server,omitempty"`
 	StoredRequest        *ExtStoredRequest         `json:"storedrequest,omitempty"`
 	SupportDeals         bool                      `json:"supportdeals,omitempty"`
 	Targeting            *ExtRequestTargeting      `json:"targeting,omitempty"`
-	BidderParams         json.RawMessage           `json:"bidderparams,omitempty"`
 
 	// NoSale specifies bidders with whom the publisher has a legal relationship where the
 	// passing of personally identifiable information doesn't constitute a sale per CCPA law.
 	// The array may contain a single sstar ('*') entry to represent all bidders.
 	NoSale []string `json:"nosale,omitempty"`
 
-	CurrencyConversions *ExtRequestCurrency `json:"currency,omitempty"`
-	BidderConfigs       []BidderConfig      `json:"bidderconfig,omitempty"`
+	//AlternateBidderCodes is populated with host's AlternateBidderCodes config if not defined in request
+	AlternateBidderCodes *ExtAlternateBidderCodes `json:"alternatebiddercodes,omitempty"`
+}
+
+// Experiment defines if experimental features are available for the request
+type Experiment struct {
+	AdsCert *AdsCert `json:"adscert,omitempty"`
+}
+
+// AdsCert defines if Call Sign feature is enabled for request
+type AdsCert struct {
+	Enabled bool `json:"enabled,omitempty"`
 }
 
 type BidderConfig struct {
@@ -97,16 +112,18 @@ type ExtRequestPrebidCache struct {
 	VastXML *ExtRequestPrebidCacheVAST `json:"vastxml"`
 }
 
+type ExtRequestPrebidServer struct {
+	ExternalUrl string `json:"externalurl"`
+	GvlID       int    `json:"gvlid"`
+	DataCenter  string `json:"datacenter"`
+}
+
 // UnmarshalJSON prevents nil bids arguments.
 func (ert *ExtRequestPrebidCache) UnmarshalJSON(b []byte) error {
 	type typesAlias ExtRequestPrebidCache // Prevents infinite UnmarshalJSON loops
 	var proxy typesAlias
 	if err := json.Unmarshal(b, &proxy); err != nil {
 		return err
-	}
-
-	if proxy.Bids == nil && proxy.VastXML == nil {
-		return errors.New(`request.ext.prebid.cache requires one of the "bids" or "vastxml" properties`)
 	}
 
 	*ert = ExtRequestPrebidCache(proxy)

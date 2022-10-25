@@ -1,5 +1,6 @@
+endpoint: "https://pbs.nextmillmedia.com/openrtb2/auction"
 maintainer:
-  email: "appdevs@nextmillennium.io"
+  email: "accountmanagers@nextmillennium.io"
 capabilities:
   app:
     mediaTypes:

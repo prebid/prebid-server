@@ -1,0 +1,13 @@
+endpoint: "https://ssp.wp.pl/bidder/"
+maintainer:
+  email: "prebid-dev@grupawp.pl"
+gvlVendorID: 676
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+userSync:
+  default: iframe
+  iframe:
+    url: https://ssp.wp.pl/bidder/usersync?tcf=2&redirect={{.RedirectURL}}
+    userMacro: $UID

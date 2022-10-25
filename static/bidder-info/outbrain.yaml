@@ -1,3 +1,4 @@
+endpoint: "https://prebidtest.zemanta.com/api/bidder/prebidtest/bid/"
 maintainer:
   email: prog-ops-team@outbrain.com
 gvlVendorID: 164

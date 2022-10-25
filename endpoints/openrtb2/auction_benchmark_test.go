@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prebid/prebid-server/experiment/adscert"
+
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
@@ -95,6 +97,7 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 		tcf2ConfigBuilder,
 		currency.NewRateConverter(&http.Client{}, "", time.Duration(0)),
 		empty_fetcher.EmptyFetcher{},
+		&adscert.NilSigner{},
 	)
 
 	endpoint, _ := NewEndpoint(
@@ -153,7 +156,7 @@ func BenchmarkValidWholeExemplary(b *testing.B) {
 				AccountRequired:    test.Config.AccountRequired,
 			}
 
-			auctionEndpointHandler, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
+			auctionEndpointHandler, _, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
 			if err != nil {
 				b.Fatal(err.Error())
 			}
