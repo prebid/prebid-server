@@ -100,6 +100,7 @@ within the bidding time window (request.tmax). If there are no requests or if
 all requests time out, the MakeBids method will not be called.
 */
 func (a *CWireAdapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.RequestData, httpRes *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	var errors []error
 
 	if httpRes.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -108,43 +109,17 @@ func (a *CWireAdapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.Re
 	var bidResp openrtb2.BidResponse
 	if err := json.Unmarshal(httpRes.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("error while decoding response, err: %s", err),
+			Message: fmt.Sprintf("Error while decoding response, err: %s", err),
 		}}
 	}
 
 	bidResponse := adapters.NewBidderResponse()
-	var errors []error
 
-	var impOK bool
 	for _, sb := range bidResp.SeatBid {
-		for i := 0; i < len(sb.Bid); i++ {
-
-			bid := sb.Bid[i]
-
-			impOK = false
-			mediaType := openrtb_ext.BidTypeBanner
-			for _, imp := range bidReq.Imp {
-				if imp.ID == bid.ImpID {
-
-					impOK = true
-
-					if imp.Video != nil {
-						mediaType = openrtb_ext.BidTypeVideo
-						break
-					}
-				}
-			}
-
-			if !impOK {
-				errors = append(errors, &errortypes.BadServerResponse{
-					Message: fmt.Sprintf("ignoring bid id=%s, request doesn't contain any impression with id=%s", bid.ID, bid.ImpID),
-				})
-				continue
-			}
-
+		for _, bid := range sb.Bid {
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &bid,
-				BidType: mediaType,
+				BidType: openrtb_ext.BidTypeBanner,
 			})
 		}
 	}
