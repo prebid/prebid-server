@@ -27,6 +27,15 @@ func (m Mutation[T]) Apply(p T) (T, error) {
 	return m.fn(p)
 }
 
-func NewMutation[T any](fn mutationFunc[T], t MutationType, k ...string) Mutation[T] {
-	return Mutation[T]{fn: fn, mutType: t, key: k}
+type ChangeSet[T any] struct {
+	muts []Mutation[T]
+}
+
+func (c *ChangeSet[T]) Mutations() []Mutation[T] {
+	return c.muts
+}
+
+func (c *ChangeSet[T]) AddMutation(fn mutationFunc[T], t MutationType, k ...string) *ChangeSet[T] {
+	c.muts = append(c.muts, Mutation[T]{fn: fn, mutType: t, key: k})
+	return c
 }

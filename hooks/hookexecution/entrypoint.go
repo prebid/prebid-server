@@ -43,19 +43,16 @@ func ExecuteEntrypointStage(
 		resp := make(chan invocation.HookResponse[hookstage.EntrypointPayload])
 
 		for _, moduleHook := range groups.Hooks {
-			hookRespCh := make(chan invocation.HookResponse[hookstage.EntrypointPayload], 1)
+			moduleCtx := invocationCtx.ModuleContextFor(moduleHook.Module)
 			wg.Add(1)
-			go func(hw hooks.HookWrapper[hookstage.Entrypoint]) {
+			go func(hw hooks.HookWrapper[hookstage.Entrypoint], moduleCtx *invocation.ModuleContext) {
 				defer wg.Done()
+				hookRespCh := make(chan invocation.HookResponse[hookstage.EntrypointPayload], 1)
 
 				select {
 				case <-done:
 					return
 				default:
-					moduleCtx := invocationCtx.ModuleContextFor(hw.Module)
-					if moduleCtx.Config == nil {
-						moduleCtx.Config = hw.Config
-					}
 
 					go asyncHookCall(moduleCtx, hw.Hook, payload, groups.Timeout, invocationCtx.DebugEnabled, hookRespCh)
 					select {
@@ -69,7 +66,7 @@ func ExecuteEntrypointStage(
 						}
 					}
 				}
-			}(moduleHook)
+			}(moduleHook, moduleCtx)
 		}
 
 		go func() {
@@ -93,13 +90,15 @@ func ExecuteEntrypointStage(
 		}
 
 		for _, r := range groupResults {
-			for _, mut := range r.Mutations {
-				p, err := mut.Apply(payload)
-				if err != nil {
-					r.Errors = append(r.Errors, fmt.Sprintf("failed applying hook mutation: %s", err))
-					continue
+			if r.ChangeSet != nil {
+				for _, mut := range r.ChangeSet.Mutations() {
+					p, err := mut.Apply(payload)
+					if err != nil {
+						r.Errors = append(r.Errors, fmt.Sprintf("failed applying hook mutation: %s", err))
+						continue
+					}
+					payload.Body = p.Body
 				}
-				payload.Body = p.Body
 			}
 
 			// todo: send hook metrics (NOP metric if r.Result.Mutations empty)

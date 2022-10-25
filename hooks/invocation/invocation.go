@@ -39,17 +39,17 @@ type HookResult[T any] struct {
 	Reject        bool
 	NbrCode       int
 	Message       string
-	Mutations     []Mutation[T]
+	ChangeSet     *ChangeSet[T]
 	Errors        []string
 	Warnings      []string
 	DebugMessages []string
-	// todo: think on adding next fields
+	//todo: think on adding next fields
 	// analyticTags
 }
 
 type ModuleContext struct {
-	Ctx    interface{} // interface as we do not know exactly how the modules will use their inner context
-	Config json.RawMessage
+	Ctx           map[string]interface{} // interface as we do not know exactly how the modules will use their inner context
+	AccountConfig json.RawMessage
 }
 
 type StageResult[T any] struct {

@@ -90,47 +90,46 @@ func TestExecuteEntrypointStage_CanApplyHookMutations(t *testing.T) {
 type mockUpdateHeaderEntrypointHook struct{}
 
 func (e mockUpdateHeaderEntrypointHook) HandleEntrypointHook(_ context.Context, _ *invocation.ModuleContext, _ hookstage.EntrypointPayload, _ bool) (invocation.HookResult[hookstage.EntrypointPayload], error) {
-	muts := []invocation.Mutation[hookstage.EntrypointPayload]{
-		invocation.NewMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
-			payload.Request.Header.Add("foo", "bar")
-			return payload, nil
-		}, invocation.MutationUpdate, "header", "foo"),
-	}
+	c := &invocation.ChangeSet[hookstage.EntrypointPayload]{}
+	c.AddMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
+		payload.Request.Header.Add("foo", "bar")
+		return payload, nil
+	}, invocation.MutationUpdate, "header", "foo")
 
-	return invocation.HookResult[hookstage.EntrypointPayload]{Mutations: muts}, nil
+	return invocation.HookResult[hookstage.EntrypointPayload]{ChangeSet: c}, nil
 }
 
 type mockUpdateQueryEntrypointHook struct{}
 
 func (e mockUpdateQueryEntrypointHook) HandleEntrypointHook(_ context.Context, _ *invocation.ModuleContext, _ hookstage.EntrypointPayload, _ bool) (invocation.HookResult[hookstage.EntrypointPayload], error) {
-	muts := []invocation.Mutation[hookstage.EntrypointPayload]{
-		invocation.NewMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
-			params := payload.Request.URL.Query()
-			params.Add("foo", "baz")
-			payload.Request.URL.RawQuery = params.Encode()
-			return payload, nil
-		}, invocation.MutationUpdate, "param", "foo"),
-	}
+	c := &invocation.ChangeSet[hookstage.EntrypointPayload]{}
+	c.AddMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
+		params := payload.Request.URL.Query()
+		params.Add("foo", "baz")
+		payload.Request.URL.RawQuery = params.Encode()
+		return payload, nil
+	}, invocation.MutationUpdate, "param", "foo")
 
-	return invocation.HookResult[hookstage.EntrypointPayload]{Mutations: muts}, nil
+	return invocation.HookResult[hookstage.EntrypointPayload]{ChangeSet: c}, nil
 }
 
 type mockUpdateBodyEntrypointHook struct{}
 
 func (e mockUpdateBodyEntrypointHook) HandleEntrypointHook(_ context.Context, _ *invocation.ModuleContext, _ hookstage.EntrypointPayload, _ bool) (invocation.HookResult[hookstage.EntrypointPayload], error) {
-	muts := []invocation.Mutation[hookstage.EntrypointPayload]{
-		invocation.NewMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
+	c := &invocation.ChangeSet[hookstage.EntrypointPayload]{}
+	c.AddMutation(
+		func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
 			payload.Body = []byte(`{"name": "John", "last_name": "Doe", "foo": "bar"}`)
 			return payload, nil
-		}, invocation.MutationUpdate, "body", "foo"),
-
-		invocation.NewMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
+		}, invocation.MutationUpdate, "body", "foo",
+	).AddMutation(
+		func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
 			payload.Body = []byte(`{"last_name": "Doe", "foo": "bar"}`)
 			return payload, nil
-		}, invocation.MutationDelete, "body", "name"),
-	}
+		}, invocation.MutationDelete, "body", "name",
+	)
 
-	return invocation.HookResult[hookstage.EntrypointPayload]{Mutations: muts}, nil
+	return invocation.HookResult[hookstage.EntrypointPayload]{ChangeSet: c}, nil
 }
 
 func TestExecuteEntrypointStage_CanRejectHook(t *testing.T) {
@@ -230,16 +229,15 @@ type mockTimeoutEntrypointHook struct{}
 
 func (e mockTimeoutEntrypointHook) HandleEntrypointHook(_ context.Context, _ *invocation.ModuleContext, _ hookstage.EntrypointPayload, _ bool) (invocation.HookResult[hookstage.EntrypointPayload], error) {
 	time.Sleep(2 * time.Millisecond)
-	muts := []invocation.Mutation[hookstage.EntrypointPayload]{
-		invocation.NewMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
-			params := payload.Request.URL.Query()
-			params.Add("bar", "foo")
-			payload.Request.URL.RawQuery = params.Encode()
-			return payload, nil
-		}, invocation.MutationUpdate, "param", "bar"),
-	}
+	c := &invocation.ChangeSet[hookstage.EntrypointPayload]{}
+	c.AddMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
+		params := payload.Request.URL.Query()
+		params.Add("bar", "foo")
+		payload.Request.URL.RawQuery = params.Encode()
+		return payload, nil
+	}, invocation.MutationUpdate, "param", "bar")
 
-	return invocation.HookResult[hookstage.EntrypointPayload]{Mutations: muts}, nil
+	return invocation.HookResult[hookstage.EntrypointPayload]{ChangeSet: c}, nil
 }
 
 func TestExecuteEntrypointStage_ModuleContextsAreCreated(t *testing.T) {
@@ -276,12 +274,12 @@ func TestExecuteEntrypointStage_ModuleContextsAreCreated(t *testing.T) {
 	}
 
 	ctx1 := iCtx.ModuleContextFor("module-1")
-	if ctx1.Ctx != "some-ctx-1" {
+	if ctx1.Ctx["some-ctx-1"] != "some-ctx-1" {
 		t.Error("context for module-1 not created")
 	}
 
 	ctx2 := iCtx.ModuleContextFor("module-2")
-	if ctx2.Ctx != "some-ctx-2" {
+	if ctx2.Ctx["some-ctx-2"] != "some-ctx-2" {
 		t.Error("context for module-2 not created")
 	}
 }
@@ -289,13 +287,13 @@ func TestExecuteEntrypointStage_ModuleContextsAreCreated(t *testing.T) {
 type mockModuleContextEntrypointHook1 struct{}
 
 func (e mockModuleContextEntrypointHook1) HandleEntrypointHook(_ context.Context, mctx *invocation.ModuleContext, _ hookstage.EntrypointPayload, _ bool) (invocation.HookResult[hookstage.EntrypointPayload], error) {
-	mctx.Ctx = "some-ctx-1"
+	mctx.Ctx = map[string]interface{}{"some-ctx-1": "some-ctx-1"}
 	return invocation.HookResult[hookstage.EntrypointPayload]{}, nil
 }
 
 type mockModuleContextEntrypointHook2 struct{}
 
 func (e mockModuleContextEntrypointHook2) HandleEntrypointHook(_ context.Context, mctx *invocation.ModuleContext, _ hookstage.EntrypointPayload, _ bool) (invocation.HookResult[hookstage.EntrypointPayload], error) {
-	mctx.Ctx = "some-ctx-2"
+	mctx.Ctx = map[string]interface{}{"some-ctx-2": "some-ctx-2"}
 	return invocation.HookResult[hookstage.EntrypointPayload]{}, nil
 }
