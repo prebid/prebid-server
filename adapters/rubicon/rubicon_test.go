@@ -3,6 +3,7 @@ package rubicon
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"testing"
@@ -50,191 +51,6 @@ type rubiBidInfo struct {
 
 var rubidata rubiBidInfo
 
-func getTestSizes() map[int]openrtb2.Format {
-	return map[int]openrtb2.Format{
-		15: {W: 300, H: 250},
-		10: {W: 300, H: 600},
-		2:  {W: 728, H: 91},
-		9:  {W: 160, H: 600},
-		8:  {W: 120, H: 600},
-		33: {W: 180, H: 500},
-		43: {W: 320, H: 50},
-	}
-}
-
-func TestParseSizes(t *testing.T) {
-	SIZE_ID := getTestSizes()
-
-	sizes := []openrtb2.Format{
-		SIZE_ID[10],
-		SIZE_ID[15],
-	}
-	primary, alt, err := parseRubiconSizes(sizes)
-	assert.Nil(t, err, "Parsing error: %v", err)
-	assert.Equal(t, 15, primary, "Primary %d != 15", primary)
-	assert.Equal(t, 1, len(alt), "Alt not len 1")
-	assert.Equal(t, 10, alt[0], "Alt not 10: %d", alt[0])
-
-	sizes = []openrtb2.Format{
-		{
-			W: 1111,
-			H: 2222,
-		},
-		SIZE_ID[15],
-	}
-	primary, alt, err = parseRubiconSizes(sizes)
-	assert.Nil(t, err, "Shouldn't have thrown error for invalid size 1111x1111 since we still have a valid one")
-	assert.Equal(t, 15, primary, "Primary %d != 15", primary)
-	assert.Equal(t, 0, len(alt), "Alt len %d != 0", len(alt))
-
-	sizes = []openrtb2.Format{
-		SIZE_ID[15],
-	}
-	primary, alt, err = parseRubiconSizes(sizes)
-	assert.Nil(t, err, "Parsing error: %v", err)
-	assert.Equal(t, 15, primary, "Primary %d != 15", primary)
-	assert.Equal(t, 0, len(alt), "Alt len %d != 0", len(alt))
-
-	sizes = []openrtb2.Format{
-		{
-			W: 1111,
-			H: 1222,
-		},
-	}
-	primary, alt, err = parseRubiconSizes(sizes)
-	assert.NotNil(t, err, "Parsing error: %v", err)
-	assert.Equal(t, 0, primary, "Primary %d != 15", primary)
-	assert.Equal(t, 0, len(alt), "Alt len %d != 0", len(alt))
-}
-
-func TestMASAlgorithm(t *testing.T) {
-	SIZE_ID := getTestSizes()
-	type output struct {
-		primary int
-		alt     []int
-		ok      bool
-	}
-	type testStub struct {
-		input  []openrtb2.Format
-		output output
-	}
-
-	testStubs := []testStub{
-		{
-			[]openrtb2.Format{
-				SIZE_ID[2],
-				SIZE_ID[9],
-			},
-			output{2, []int{9}, false},
-		},
-		{
-			[]openrtb2.Format{
-
-				SIZE_ID[9],
-				SIZE_ID[15],
-			},
-			output{15, []int{9}, false},
-		},
-		{
-			[]openrtb2.Format{
-				SIZE_ID[2],
-				SIZE_ID[15],
-			},
-			output{15, []int{2}, false},
-		},
-		{
-			[]openrtb2.Format{
-				SIZE_ID[15],
-				SIZE_ID[9],
-				SIZE_ID[2],
-			},
-			output{15, []int{2, 9}, false},
-		},
-		{
-			[]openrtb2.Format{
-				SIZE_ID[10],
-				SIZE_ID[9],
-				SIZE_ID[2],
-			},
-			output{2, []int{10, 9}, false},
-		},
-		{
-			[]openrtb2.Format{
-				SIZE_ID[33],
-				SIZE_ID[8],
-				SIZE_ID[15],
-			},
-			output{15, []int{33, 8}, false},
-		},
-		{
-			[]openrtb2.Format{
-				SIZE_ID[33],
-				SIZE_ID[8],
-				SIZE_ID[9],
-				SIZE_ID[2],
-			},
-			output{2, []int{33, 8, 9}, false},
-		},
-		{
-			[]openrtb2.Format{
-				SIZE_ID[33],
-				SIZE_ID[8],
-				SIZE_ID[9],
-			},
-			output{9, []int{33, 8}, false},
-		},
-		{
-			[]openrtb2.Format{
-				SIZE_ID[33],
-				SIZE_ID[8],
-				SIZE_ID[2],
-			},
-			output{2, []int{33, 8}, false},
-		},
-		{
-			[]openrtb2.Format{
-				SIZE_ID[33],
-				SIZE_ID[2],
-			},
-			output{2, []int{33}, false},
-		},
-		{
-			[]openrtb2.Format{
-				SIZE_ID[8],
-			},
-			output{8, []int{}, false},
-		},
-		{
-			[]openrtb2.Format{},
-			output{0, []int{}, true},
-		},
-		{
-			[]openrtb2.Format{
-				{W: 1111,
-					H: 2345,
-				},
-			},
-			output{0, []int{}, true},
-		},
-	}
-
-	for _, test := range testStubs {
-		prim, alt, err := parseRubiconSizes(test.input)
-
-		assert.Equal(t, test.output.primary, prim,
-			"Error in parsing rubicon sizes: MAS algorithm fail at primary: testcase %v", test.input)
-
-		assert.Equal(t, len(test.output.alt), len(alt),
-			"Error in parsing rubicon sizes: MAS Algorithm fail at alt: testcase %v", test.input)
-
-		assert.False(t, err != nil && !test.output.ok,
-			"Error in parsing rubicon sizes: MAS Algorithm fail at throwing error: testcase %v", test.input)
-
-		assert.False(t, err == nil && test.output.ok,
-			"Error in parsing rubicon sizes: MAS Algorithm fail at throwing error: testcase %v", test.input)
-	}
-}
-
 func TestAppendTracker(t *testing.T) {
 	testScenarios := []rubiAppendTrackerUrlTestScenario{
 		{
@@ -252,6 +68,72 @@ func TestAppendTracker(t *testing.T) {
 	for _, scenario := range testScenarios {
 		res := appendTrackerToUrl(scenario.source, scenario.tracker)
 		assert.Equal(t, scenario.expected, res, "Failed to convert '%s' to '%s'", res, scenario.expected)
+	}
+}
+
+func TestSetImpNative(t *testing.T) {
+	testScenarios := []struct {
+		request       string
+		impNative     map[string]interface{}
+		expectedError error
+	}{
+		{
+			request:       "{}",
+			impNative:     map[string]interface{}{"somekey": "someValue"},
+			expectedError: fmt.Errorf("unable to find imp in json data"),
+		},
+		{
+			request:       "{\"imp\":[]}",
+			impNative:     map[string]interface{}{"somekey": "someValue"},
+			expectedError: fmt.Errorf("unable to find imp[0] in json data"),
+		},
+		{
+			request:       "{\"imp\":[{}]}",
+			impNative:     map[string]interface{}{"somekey": "someValue"},
+			expectedError: fmt.Errorf("unable to find imp[0].native in json data"),
+		},
+	}
+	for _, scenario := range testScenarios {
+		_, err := setImpNative([]byte(scenario.request), scenario.impNative)
+		assert.Equal(t, scenario.expectedError, err)
+	}
+}
+
+func TestResolveNativeObject(t *testing.T) {
+	testScenarios := []struct {
+		nativeObject  openrtb2.Native
+		target        map[string]interface{}
+		expectedError error
+	}{
+		{
+			nativeObject:  openrtb2.Native{Ver: "1.0", Request: "{\"eventtrackers\": \"someWrongValue\"}"},
+			target:        map[string]interface{}{},
+			expectedError: nil,
+		},
+		{
+			nativeObject:  openrtb2.Native{Ver: "1.1", Request: "{\"eventtrackers\": \"someWrongValue\"}"},
+			target:        map[string]interface{}{},
+			expectedError: nil,
+		},
+		{
+			nativeObject:  openrtb2.Native{Ver: "1", Request: "{\"eventtrackers\": \"someWrongValue\"}"},
+			target:        map[string]interface{}{},
+			expectedError: fmt.Errorf("Eventtrackers are not present or not of array type"),
+		},
+		{
+			nativeObject:  openrtb2.Native{Ver: "1", Request: "{\"eventtrackers\": [], \"context\": \"someWrongValue\"}"},
+			target:        map[string]interface{}{},
+			expectedError: fmt.Errorf("Context is not present or not of int type"),
+		},
+		{
+			nativeObject:  openrtb2.Native{Ver: "1", Request: "{\"eventtrackers\": [], \"context\": 1}"},
+			target:        map[string]interface{}{},
+			expectedError: fmt.Errorf("Plcmttype is not present or not of int type"),
+		},
+	}
+	for _, scenario := range testScenarios {
+		_, err := resolveNativeObject(&scenario.nativeObject, scenario.target)
+		assert.Equal(t, scenario.expectedError, err)
 	}
 }
 
@@ -362,7 +244,6 @@ func TestOpenRTBRequestWithDifferentBidFloorAttributes(t *testing.T) {
 			CurrencyConversions: mockConversions,
 		}
 
-		SIZE_ID := getTestSizes()
 		bidder := new(RubiconAdapter)
 
 		request := &openrtb2.BidRequest{
@@ -373,8 +254,7 @@ func TestOpenRTBRequestWithDifferentBidFloorAttributes(t *testing.T) {
 				BidFloor:    scenario.bidFloor,
 				Banner: &openrtb2.Banner{
 					Format: []openrtb2.Format{
-						SIZE_ID[15],
-						SIZE_ID[10],
+						{W: 300, H: 250},
 					},
 				},
 				Ext: json.RawMessage(`{"bidder": {
@@ -421,7 +301,6 @@ func (m mockCurrencyConversion) GetRates() *map[string]map[string]float64 {
 }
 
 func TestOpenRTBRequest(t *testing.T) {
-	SIZE_ID := getTestSizes()
 	bidder := new(RubiconAdapter)
 
 	rubidata = rubiBidInfo{
@@ -439,8 +318,8 @@ func TestOpenRTBRequest(t *testing.T) {
 			ID: "test-imp-banner-id",
 			Banner: &openrtb2.Banner{
 				Format: []openrtb2.Format{
-					SIZE_ID[15],
-					SIZE_ID[10],
+					{W: 300, H: 250},
+					{W: 300, H: 600},
 				},
 			},
 			Ext: json.RawMessage(`{"bidder": {
@@ -564,7 +443,6 @@ func TestOpenRTBRequest(t *testing.T) {
 }
 
 func TestOpenRTBRequestWithBannerImpEvenIfImpHasVideo(t *testing.T) {
-	SIZE_ID := getTestSizes()
 	bidder := new(RubiconAdapter)
 
 	request := &openrtb2.BidRequest{
@@ -573,8 +451,7 @@ func TestOpenRTBRequestWithBannerImpEvenIfImpHasVideo(t *testing.T) {
 			ID: "test-imp-id",
 			Banner: &openrtb2.Banner{
 				Format: []openrtb2.Format{
-					SIZE_ID[15],
-					SIZE_ID[10],
+					{W: 300, H: 250},
 				},
 			},
 			Video: &openrtb2.Video{
@@ -615,7 +492,6 @@ func TestOpenRTBRequestWithBannerImpEvenIfImpHasVideo(t *testing.T) {
 }
 
 func TestOpenRTBRequestWithImpAndAdSlotIncluded(t *testing.T) {
-	SIZE_ID := getTestSizes()
 	bidder := new(RubiconAdapter)
 
 	request := &openrtb2.BidRequest{
@@ -624,8 +500,7 @@ func TestOpenRTBRequestWithImpAndAdSlotIncluded(t *testing.T) {
 			ID: "test-imp-id",
 			Banner: &openrtb2.Banner{
 				Format: []openrtb2.Format{
-					SIZE_ID[15],
-					SIZE_ID[10],
+					{W: 300, H: 250},
 				},
 			},
 			Ext: json.RawMessage(`{
@@ -720,7 +595,6 @@ func TestOpenRTBFirstPartyDataPopulating(t *testing.T) {
 }
 
 func TestOpenRTBRequestWithBadvOverflowed(t *testing.T) {
-	SIZE_ID := getTestSizes()
 	bidder := new(RubiconAdapter)
 
 	badvOverflowed := make([]string, 100)
@@ -735,7 +609,7 @@ func TestOpenRTBRequestWithBadvOverflowed(t *testing.T) {
 			ID: "test-imp-id",
 			Banner: &openrtb2.Banner{
 				Format: []openrtb2.Format{
-					SIZE_ID[15],
+					{W: 300, H: 250},
 				},
 			},
 			Ext: json.RawMessage(`{
@@ -766,7 +640,6 @@ func TestOpenRTBRequestWithBadvOverflowed(t *testing.T) {
 }
 
 func TestOpenRTBRequestWithSpecificExtUserEids(t *testing.T) {
-	SIZE_ID := getTestSizes()
 	bidder := new(RubiconAdapter)
 
 	request := &openrtb2.BidRequest{
@@ -775,8 +648,7 @@ func TestOpenRTBRequestWithSpecificExtUserEids(t *testing.T) {
 			ID: "test-imp-id",
 			Banner: &openrtb2.Banner{
 				Format: []openrtb2.Format{
-					SIZE_ID[15],
-					SIZE_ID[10],
+					{W: 300, H: 250},
 				},
 			},
 			Ext: json.RawMessage(`{"bidder": {
@@ -845,15 +717,6 @@ func TestOpenRTBRequestWithSpecificExtUserEids(t *testing.T) {
 	assert.NotNil(t, userExt.Eids)
 	assert.Equal(t, 4, len(userExt.Eids), "Eids values are not as expected!")
 
-	assert.NotNil(t, userExt.TpID)
-	assert.Equal(t, 2, len(userExt.TpID), "TpID values are not as expected!")
-
-	// adserver.org
-	assert.Equal(t, "tdid", userExt.TpID[0].Source, "TpID source value is not as expected!")
-
-	// liveintent.com
-	assert.Equal(t, "liveintent.com", userExt.TpID[1].Source, "TpID source value is not as expected!")
-
 	// liveramp.com
 	assert.Equal(t, "LIVERAMPID", userExt.LiverampIdl, "Liveramp_idl value is not as expected!")
 
@@ -868,7 +731,6 @@ func TestOpenRTBRequestWithSpecificExtUserEids(t *testing.T) {
 }
 
 func TestOpenRTBRequestWithVideoImpEvenIfImpHasBannerButAllRequiredVideoFields(t *testing.T) {
-	SIZE_ID := getTestSizes()
 	bidder := new(RubiconAdapter)
 
 	request := &openrtb2.BidRequest{
@@ -877,8 +739,7 @@ func TestOpenRTBRequestWithVideoImpEvenIfImpHasBannerButAllRequiredVideoFields(t
 			ID: "test-imp-id",
 			Banner: &openrtb2.Banner{
 				Format: []openrtb2.Format{
-					SIZE_ID[15],
-					SIZE_ID[10],
+					{W: 300, H: 250},
 				},
 			},
 			Video: &openrtb2.Video{
@@ -1165,10 +1026,11 @@ func TestOpenRTBResponseSettingOfNetworkId(t *testing.T) {
 		} else {
 			givenBidExt = nil
 		}
+
 		givenBidResponse := rubiconBidResponse{
 			SeatBid: []rubiconSeatBid{{Buyer: scenario.buyer,
-				SeatBid: openrtb2.SeatBid{
-					Bid: []openrtb2.Bid{{Price: 123.2, ImpID: "test-imp-id", Ext: givenBidExt}}}}},
+				Bid: []rubiconBid{{
+					Bid: openrtb2.Bid{Price: 123.2, ImpID: "test-imp-id", Ext: givenBidExt}}}}},
 		}
 		body, _ := json.Marshal(&givenBidResponse)
 		httpResp := &adapters.ResponseData{

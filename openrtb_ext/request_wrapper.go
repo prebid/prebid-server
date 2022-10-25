@@ -42,7 +42,11 @@ type RequestWrapper struct {
 	sourceExt   *SourceExt
 }
 
-const jsonEmptyObjectLength = 2
+const (
+	jsonEmptyObjectLength               = 2
+	ConsentedProvidersSettingsStringKey = "ConsentedProvidersSettings"
+	ConsentedProvidersSettingsListKey   = "consented_providers_settings"
+)
 
 // LenImp returns the number of impressions without causing the creation of ImpWrapper objects.
 func (rw *RequestWrapper) LenImp() int {
@@ -334,14 +338,18 @@ func (rw *RequestWrapper) rebuildSourceExt() error {
 // ---------------------------------------------------------------
 
 type UserExt struct {
-	ext          map[string]json.RawMessage
-	extDirty     bool
-	consent      *string
-	consentDirty bool
-	prebid       *ExtUserPrebid
-	prebidDirty  bool
-	eids         *[]openrtb2.EID
-	eidsDirty    bool
+	ext                                map[string]json.RawMessage
+	extDirty                           bool
+	consent                            *string
+	consentDirty                       bool
+	prebid                             *ExtUserPrebid
+	prebidDirty                        bool
+	eids                               *[]openrtb2.EID
+	eidsDirty                          bool
+	consentedProvidersSettingsIn       *ConsentedProvidersSettingsIn
+	consentedProvidersSettingsInDirty  bool
+	consentedProvidersSettingsOut      *ConsentedProvidersSettingsOut
+	consentedProvidersSettingsOutDirty bool
 }
 
 func (ue *UserExt) unmarshal(extJson json.RawMessage) error {
@@ -382,6 +390,20 @@ func (ue *UserExt) unmarshal(extJson json.RawMessage) error {
 		}
 	}
 
+	if consentedProviderSettingsJson, hasCPSettings := ue.ext[ConsentedProvidersSettingsStringKey]; hasCPSettings {
+		ue.consentedProvidersSettingsIn = &ConsentedProvidersSettingsIn{}
+		if err := json.Unmarshal(consentedProviderSettingsJson, ue.consentedProvidersSettingsIn); err != nil {
+			return err
+		}
+	}
+
+	if consentedProviderSettingsJson, hasCPSettings := ue.ext[ConsentedProvidersSettingsListKey]; hasCPSettings {
+		ue.consentedProvidersSettingsOut = &ConsentedProvidersSettingsOut{}
+		if err := json.Unmarshal(consentedProviderSettingsJson, ue.consentedProvidersSettingsOut); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -416,6 +438,40 @@ func (ue *UserExt) marshal() (json.RawMessage, error) {
 		ue.prebidDirty = false
 	}
 
+	if ue.consentedProvidersSettingsInDirty {
+		if ue.consentedProvidersSettingsIn != nil {
+			cpSettingsJson, err := json.Marshal(ue.consentedProvidersSettingsIn)
+			if err != nil {
+				return nil, err
+			}
+			if len(cpSettingsJson) > jsonEmptyObjectLength {
+				ue.ext[ConsentedProvidersSettingsStringKey] = json.RawMessage(cpSettingsJson)
+			} else {
+				delete(ue.ext, ConsentedProvidersSettingsStringKey)
+			}
+		} else {
+			delete(ue.ext, ConsentedProvidersSettingsStringKey)
+		}
+		ue.consentedProvidersSettingsInDirty = false
+	}
+
+	if ue.consentedProvidersSettingsOutDirty {
+		if ue.consentedProvidersSettingsOut != nil {
+			cpSettingsJson, err := json.Marshal(ue.consentedProvidersSettingsOut)
+			if err != nil {
+				return nil, err
+			}
+			if len(cpSettingsJson) > jsonEmptyObjectLength {
+				ue.ext[ConsentedProvidersSettingsListKey] = json.RawMessage(cpSettingsJson)
+			} else {
+				delete(ue.ext, ConsentedProvidersSettingsListKey)
+			}
+		} else {
+			delete(ue.ext, ConsentedProvidersSettingsListKey)
+		}
+		ue.consentedProvidersSettingsOutDirty = false
+	}
+
 	if ue.eidsDirty {
 		if ue.eids != nil && len(*ue.eids) > 0 {
 			eidsJson, err := json.Marshal(ue.eids)
@@ -437,7 +493,7 @@ func (ue *UserExt) marshal() (json.RawMessage, error) {
 }
 
 func (ue *UserExt) Dirty() bool {
-	return ue.extDirty || ue.eidsDirty || ue.prebidDirty || ue.consentDirty
+	return ue.extDirty || ue.eidsDirty || ue.prebidDirty || ue.consentDirty || ue.consentedProvidersSettingsInDirty || ue.consentedProvidersSettingsOutDirty
 }
 
 func (ue *UserExt) GetExt() map[string]json.RawMessage {
@@ -464,6 +520,46 @@ func (ue *UserExt) GetConsent() *string {
 func (ue *UserExt) SetConsent(consent *string) {
 	ue.consent = consent
 	ue.consentDirty = true
+}
+
+// GetConsentedProvidersSettingsIn() returns a reference to a copy of ConsentedProvidersSettingsIn, a struct that
+// has a string field formatted as a Google's Additional Consent string
+func (ue *UserExt) GetConsentedProvidersSettingsIn() *ConsentedProvidersSettingsIn {
+	if ue.consentedProvidersSettingsIn == nil {
+		return nil
+	}
+	consentedProvidersSettingsIn := *ue.consentedProvidersSettingsIn
+	return &consentedProvidersSettingsIn
+}
+
+// SetConsentedProvidersSettingsIn() sets ConsentedProvidersSettingsIn, a struct that
+// has a string field formatted as a Google's Additional Consent string
+func (ue *UserExt) SetConsentedProvidersSettingsIn(cpSettings *ConsentedProvidersSettingsIn) {
+	ue.consentedProvidersSettingsIn = cpSettings
+	ue.consentedProvidersSettingsInDirty = true
+}
+
+// GetConsentedProvidersSettingsOut() returns a reference to a copy of ConsentedProvidersSettingsOut, a struct that
+// has an int array field listing Google's Additional Consent string elements
+func (ue *UserExt) GetConsentedProvidersSettingsOut() *ConsentedProvidersSettingsOut {
+	if ue.consentedProvidersSettingsOut == nil {
+		return nil
+	}
+	consentedProvidersSettingsOut := *ue.consentedProvidersSettingsOut
+	return &consentedProvidersSettingsOut
+}
+
+// SetConsentedProvidersSettingsIn() sets ConsentedProvidersSettingsOut, a struct that
+// has an int array field listing Google's Additional Consent string elements. This
+// function overrides an existing ConsentedProvidersSettingsOut object, if any
+func (ue *UserExt) SetConsentedProvidersSettingsOut(cpSettings *ConsentedProvidersSettingsOut) {
+	if cpSettings == nil {
+		return
+	}
+
+	ue.consentedProvidersSettingsOut = cpSettings
+	ue.consentedProvidersSettingsOutDirty = true
+	return
 }
 
 func (ue *UserExt) GetPrebid() *ExtUserPrebid {
