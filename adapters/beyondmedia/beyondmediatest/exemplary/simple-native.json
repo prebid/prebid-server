@@ -1,21 +1,21 @@
 {
     "mockBidRequest": {
         "id": "test-request-id",
+        "device": {
+            "ip": "123.123.123.123",
+            "ua": "iPad"
+        },
+        "app": {
+            "id": "1",
+            "bundle": "com.wls.testwlsapplication"
+        },
         "imp": [
             {
                 "id": "test-imp-id",
                 "tagid": "test",
-                "banner": {
-                    "format": [
-                        {
-                            "w": 300,
-                            "h": 250
-                        },
-                        {
-                            "w": 300,
-                            "h": 600
-                        }
-                    ]
+                "native": {
+                    "request": "{\"ver\":\"1.1\",\"layout\":1,\"adunit\":2,\"plcmtcnt\":6,\"plcmttype\":4,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":75}},{\"id\":2,\"required\":1,\"img\":{\"wmin\":492,\"hmin\":328,\"type\":3,\"mimes\":[\"image/jpeg\",\"image/jpg\",\"image/png\"]}},{\"id\":4,\"required\":0,\"data\":{\"type\":6}},{\"id\":5,\"required\":0,\"data\":{\"type\":7}},{\"id\":6,\"required\":0,\"data\":{\"type\":1,\"len\":20}}]}",
+                    "ver": "1.1"
                 },
                 "ext": {
                     "bidder": {
@@ -23,15 +23,7 @@
                     }
                 }
             }
-        ],
-        "site": {
-            "id": "1",
-            "domain": "test.com"
-        },
-        "device": {
-            "ip": "123.123.123.123",
-            "ua": "Ubuntu"
-        }
+        ]
     },
     "httpCalls": [
         {
@@ -43,17 +35,9 @@
                         {
                             "id": "test-imp-id",
                             "tagid": "test",
-                            "banner": {
-                                "format": [
-                                    {
-                                        "w": 300,
-                                        "h": 250
-                                    },
-                                    {
-                                        "w": 300,
-                                        "h": 600
-                                    }
-                                ]
+                            "native": {
+                                "request": "{\"ver\":\"1.1\",\"layout\":1,\"adunit\":2,\"plcmtcnt\":6,\"plcmttype\":4,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":75}},{\"id\":2,\"required\":1,\"img\":{\"wmin\":492,\"hmin\":328,\"type\":3,\"mimes\":[\"image/jpeg\",\"image/jpg\",\"image/png\"]}},{\"id\":4,\"required\":0,\"data\":{\"type\":6}},{\"id\":5,\"required\":0,\"data\":{\"type\":7}},{\"id\":6,\"required\":0,\"data\":{\"type\":1,\"len\":20}}]}",
+                                "ver": "1.1"
                             },
                             "ext": {
                                 "bidder": {
@@ -63,13 +47,13 @@
                             }
                         }
                     ],
-                    "site": {
+                    "app": {
                         "id": "1",
-                        "domain": "test.com"
+                        "bundle": "com.wls.testwlsapplication"
                     },
                     "device": {
                         "ip": "123.123.123.123",
-                        "ua": "Ubuntu"
+                        "ua": "iPad"
                     }
                 }
             },
@@ -84,20 +68,20 @@
                                     "id": "test_bid_id",
                                     "impid": "test-imp-id",
                                     "price": 0.27543,
-                                    "adm": "<iframe id=\"adm-banner-1\" width=\"468\" height=\"60\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"http://backend.andbeyond.media/pserver&k=bc2d316f39931a07d9a8dd249bf85fc0\"></iframe>",
+                                    "adm": "<iframe id=\"adm-banner-16\" width=\"300\" height=\"250\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"http://backend.andbeyond.media/pserver&k=882b2510ed6d6c94fa69c99aa522a708\"></iframe>",
                                     "cid": "test_cid",
                                     "crid": "test_crid",
                                     "dealid": "test_dealid",
-                                    "w": 468,
-                                    "h": 60,
+                                    "w": 300,
+                                    "h": 250,
                                     "ext": {
                                         "prebid": {
-                                            "type": "banner"
+                                            "type": "native"
                                         }
                                     }
                                 }
                             ],
-                            "seat": "andbeyondmedia"
+                            "seat": "beyondmedia"
                         }
                     ],
                     "cur": "USD"
@@ -113,19 +97,19 @@
                         "id": "test_bid_id",
                         "impid": "test-imp-id",
                         "price": 0.27543,
-                        "adm": "<iframe id=\"adm-banner-1\" width=\"468\" height=\"60\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"http://backend.andbeyond.media/pserver&k=bc2d316f39931a07d9a8dd249bf85fc0\"></iframe>",
+                        "adm": "<iframe id=\"adm-banner-16\" width=\"300\" height=\"250\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"http://backend.andbeyond.media/pserver&k=882b2510ed6d6c94fa69c99aa522a708\"></iframe>",
                         "cid": "test_cid",
                         "crid": "test_crid",
                         "dealid": "test_dealid",
-                        "w": 468,
-                        "h": 60,
+                        "w": 300,
+                        "h": 250,
                         "ext": {
                             "prebid": {
-                                "type": "banner"
+                                "type": "native"
                             }
                         }
                     },
-                    "type": "banner"
+                    "type": "native"
                 }
             ]
         }

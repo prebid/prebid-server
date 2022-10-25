@@ -4196,13 +4196,13 @@ func TestCallSignHeader(t *testing.T) {
 }
 
 /*
-	TestOverrideConfigAlternateBidderCodesWithRequestValues makes sure that the correct alternabiddercodes list is forwarded to the adapters and only the approved bids are returned in auction response.
+TestOverrideConfigAlternateBidderCodesWithRequestValues makes sure that the correct alternabiddercodes list is forwarded to the adapters and only the approved bids are returned in auction response.
 
-	1. request.ext.prebid.alternatebiddercodes has priority over the content of config.Account.Alternatebiddercodes.
+1. request.ext.prebid.alternatebiddercodes has priority over the content of config.Account.Alternatebiddercodes.
 
-	2. request is updated with config.Account.Alternatebiddercodes values if request.ext.prebid.alternatebiddercodes is empty or not specified.
+2. request is updated with config.Account.Alternatebiddercodes values if request.ext.prebid.alternatebiddercodes is empty or not specified.
 
-	3. request.ext.prebid.alternatebiddercodes is given priority over config.Account.Alternatebiddercodes if both are specified.
+3. request.ext.prebid.alternatebiddercodes is given priority over config.Account.Alternatebiddercodes if both are specified.
 */
 func TestOverrideConfigAlternateBidderCodesWithRequestValues(t *testing.T) {
 	type testIn struct {
