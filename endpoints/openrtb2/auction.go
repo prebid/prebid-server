@@ -308,6 +308,7 @@ func sendAuctionResponse(
 func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metrics.Labels) (req *openrtb_ext.RequestWrapper, impExtInfoMap map[string]exchange.ImpExtInfo, storedAuctionResponses stored_responses.ImpsWithBidResponses, storedBidResponses stored_responses.ImpBidderStoredResp, bidderImpReplaceImpId stored_responses.BidderImpReplaceImpID, account *config.Account, errs []error) {
 	req = &openrtb_ext.RequestWrapper{}
 	req.BidRequest = &openrtb2.BidRequest{}
+	var hasStoredBidRequest bool
 	errs = nil
 
 	// Pull the request body into a buffer, so we have it for later usage.
@@ -428,7 +429,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	if len(storedAuctionResponses) > 0 {
 		hasStoredResponses = true
 	}
-	errL := deps.validateRequest(req, false, hasStoredResponses, storedBidResponses)
+	errL := deps.validateRequest(req, false, hasStoredResponses, storedBidResponses, hasStoredBidRequest)
 	if len(errL) > 0 {
 		errs = append(errs, errL...)
 	}
@@ -613,7 +614,7 @@ func mergeBidderParamsImpExtPrebid(impExt *openrtb_ext.ImpExt, reqExtParams map[
 	return nil
 }
 
-func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp bool, hasStoredResponses bool, storedBidResp stored_responses.ImpBidderStoredResp) []error {
+func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp bool, hasStoredResponses bool, storedBidResp stored_responses.ImpBidderStoredResp, hasStoredBidRequest bool) []error {
 	errL := []error{}
 	if req.ID == "" {
 		return []error{errors.New("request missing required field: \"id\"")}
@@ -635,7 +636,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb_ext.RequestWrapper, isAmp
 	// If automatically filling source TID is enabled then validate that
 	// source.TID exists and If it doesn't, fill it with a randomly generated UUID
 	if deps.cfg.AutoGenSourceTID {
-		if err := validateAndFillSourceTID(req); err != nil {
+		if err := validateAndFillSourceTID(req, deps.cfg.GenerateRequestID, hasStoredBidRequest, isAmp); err != nil {
 			return []error{err}
 		}
 	}
@@ -786,29 +787,35 @@ func mapSChains(req *openrtb_ext.RequestWrapper) error {
 	return nil
 }
 
-func validateAndFillSourceTID(req *openrtb_ext.RequestWrapper) error {
+func validateAndFillSourceTID(req *openrtb_ext.RequestWrapper, generateRequestID bool, hasStoredBidRequest bool, isAmp bool) error {
 	if req.Source == nil {
 		req.Source = &openrtb2.Source{}
 	}
-	if req.Source.TID != "" {
-		return nil
-	}
-	hasImpWithoutTID := false
-	for _, impWrapper := range req.GetImp() {
-		ie, _ := impWrapper.GetImpExt()
-		if ie.GetTid() == "" {
-			hasImpWithoutTID = true
-			if rawUUID, err := uuid.NewV4(); err == nil {
-				ie.SetTid(rawUUID.String())
-				impWrapper.RebuildImp()
-			} else {
-				return errors.New("imp.ext.tid missing in the imp and error creating a random UID")
-			}
+
+	if (generateRequestID && (isAmp || hasStoredBidRequest)) || req.Source.TID == "{{UUID}}" {
+		if rawUUID, err := uuid.NewV4(); err == nil {
+			req.Source.TID = rawUUID.String()
+		} else {
+			return errors.New("req.Source.TID missing in the req and error creating a random UID")
 		}
 	}
-	if hasImpWithoutTID {
-		req.Source.TID = req.ID
+
+	for _, impWrapper := range req.GetImp() {
+		ie, _ := impWrapper.GetImpExt()
+		rawUUID, err := uuid.NewV4()
+		if err != nil {
+			return errors.New("imp.ext.tid missing in the imp and error creating a random UID")
+		}
+		if ie.GetTid() == "" || ie.GetTid() == "{{UUID}}" {
+			ie.SetTid(rawUUID.String())
+			impWrapper.RebuildImp()
+		}
+		if generateRequestID && ie.GetTid() != "" && (isAmp || hasStoredBidRequest) {
+			ie.SetTid(rawUUID.String())
+			impWrapper.RebuildImp()
+		}
 	}
+
 	return nil
 }
 
