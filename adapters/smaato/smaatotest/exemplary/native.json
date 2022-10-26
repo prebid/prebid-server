@@ -1,0 +1,150 @@
+{
+    "mockBidRequest": {
+        "id": "447a0a1d-389d-4730-a418-3777e95de7bd",
+        "imp": [
+            {
+                "id": "postbid_iframe",
+                "native": {
+                    "ver": "1.2",
+                    "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":4,\"required\":1,\"img\":{\"type\":3,\"w\":150,\"h\":50}},{\"id\":2,\"required\":1,\"img\":{\"type\":2,\"w\":50,\"h\":50}},{\"id\":0,\"required\":1,\"title\":{\"len\":80}},{\"id\":1,\"required\":1,\"data\":{\"type\":1}},{\"id\":3,\"required\":1,\"data\":{\"type\":2}},{\"id\":5,\"required\":1,\"data\":{\"type\":3}},{\"id\":6,\"required\":1,\"data\":{\"type\":4}},{\"id\":7,\"required\":1,\"data\":{\"type\":5}},{\"id\":8,\"required\":1,\"data\":{\"type\":6}},{\"id\":9,\"required\":1,\"data\":{\"type\":7}},{\"id\":10,\"required\":0,\"data\":{\"type\":8}},{\"id\":11,\"required\":1,\"data\":{\"type\":9}},{\"id\":12,\"require\":0,\"data\":{\"type\":10}},{\"id\":13,\"required\":0,\"data\":{\"type\":11}},{\"id\":14,\"required\":1,\"data\":{\"type\":12}}]}"
+                },
+                "instl": 1,
+                "bidfloor": 0.00123,
+                "ext": {
+                    "bidder": {
+                        "publisherId": "1100042525",
+                        "adspaceId": "130563103"
+                    }
+                }
+            }
+        ],
+        "site": {
+            "publisher": {
+                "id": "1100042525"
+            },
+            "ext": {
+                "data": {},
+                "amp": 0
+            }
+        },
+        "device": {
+            "ua": "test-user-agent"
+        },
+        "user": {
+            "ext": {
+                "data": {}
+            }
+        },
+        "ext": {
+            "prebid": {
+                "auctiontimestamp": 1598262728811,
+                "targeting": {
+                    "includewinners": true,
+                    "includebidderkeys": false
+                }
+            }
+        }
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "headers": {
+                    "Content-Type": [
+                        "application/json;charset=utf-8"
+                    ],
+                    "Accept": [
+                        "application/json"
+                    ]
+                },
+                "uri": "https://prebid/bidder",
+                "body": {
+                    "id": "447a0a1d-389d-4730-a418-3777e95de7bd",
+                    "imp": [
+                        {
+                            "id": "postbid_iframe",
+                            "tagid": "130563103",
+                            "bidfloor": 0.00123,
+                            "instl": 1,
+                            "native": {
+                                "ver": "1.2",
+                                "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":4,\"required\":1,\"img\":{\"type\":3,\"w\":150,\"h\":50}},{\"id\":2,\"required\":1,\"img\":{\"type\":2,\"w\":50,\"h\":50}},{\"id\":0,\"required\":1,\"title\":{\"len\":80}},{\"id\":1,\"required\":1,\"data\":{\"type\":1}},{\"id\":3,\"required\":1,\"data\":{\"type\":2}},{\"id\":5,\"required\":1,\"data\":{\"type\":3}},{\"id\":6,\"required\":1,\"data\":{\"type\":4}},{\"id\":7,\"required\":1,\"data\":{\"type\":5}},{\"id\":8,\"required\":1,\"data\":{\"type\":6}},{\"id\":9,\"required\":1,\"data\":{\"type\":7}},{\"id\":10,\"required\":0,\"data\":{\"type\":8}},{\"id\":11,\"required\":1,\"data\":{\"type\":9}},{\"id\":12,\"require\":0,\"data\":{\"type\":10}},{\"id\":13,\"required\":0,\"data\":{\"type\":11}},{\"id\":14,\"required\":1,\"data\":{\"type\":12}}]}"
+                            }
+                        }
+                    ],
+                    "user": {
+                        "ext": {
+                        }
+                    },
+                    "device": {
+                        "ua": "test-user-agent"
+                    },
+                    "site": {
+                        "publisher": {
+                            "id": "1100042525"
+                        }
+                    },
+                    "ext": {
+                        "client": "prebid_server_0.5"
+                    }
+                }
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "5ebea288-f13a-4754-be6d-4ade66c68877",
+                    "seatbid": [
+                        {
+                            "seat": "CM6523",
+                            "bid": [
+                                {
+                                    "adm": "{\"native\": {\"assets\":[{\"id\": 1, \"img\": {\"type\": 3, \"url\": \"https://smaato.com/image.png\", \"w\": 480, \"h\": 320}}], \"link\": {\"url\": \"https://www.smaato.com\"}}}",
+                                    "adomain": [
+                                        "smaato.com"
+                                    ],
+                                    "bidderName": "smaato",
+                                    "cid": "CM6523",
+                                    "crid": "CR69381",
+                                    "id": "6906aae8-7f74-4edd-9a4f-f49379a3cadd",
+                                    "impid": "1C86242D-9535-47D6-9576-7B1FE87F282C",
+                                    "iurl": "https://iurl",
+                                    "nurl": "https://nurl",
+                                    "price": 0.01,
+                                    "w": 480,
+                                    "h": 320
+                                }
+                            ]
+                        }
+                    ],
+                    "bidid": "04db8629-179d-4bcd-acce-e54722969006",
+                    "cur": "USD"
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "currency": "USD",
+            "bids": [
+                {
+                    "bid": {
+                        "adm": "{\"assets\":[{\"id\":1,\"img\":{\"type\":3,\"url\":\"https://smaato.com/image.png\",\"w\":480,\"h\":320}}],\"link\":{\"url\":\"https://www.smaato.com\"}}",
+                        "adomain": [
+                            "smaato.com"
+                        ],
+                        "cid": "CM6523",
+                        "crid": "CR69381",
+                        "id": "6906aae8-7f74-4edd-9a4f-f49379a3cadd",
+                        "impid": "1C86242D-9535-47D6-9576-7B1FE87F282C",
+                        "iurl": "https://iurl",
+                        "nurl": "https://nurl",
+                        "price": 0.01,
+                        "w": 480,
+                        "h": 320,
+                        "exp": 300
+                    },
+                    "type": "native"
+                }
+            ]
+        }
+    ]
+}

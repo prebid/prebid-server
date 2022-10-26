@@ -14,6 +14,7 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/prebid-server/amp"
 	"github.com/prebid/prebid-server/analytics"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
@@ -48,6 +49,7 @@ func TestGoodAmpRequests(t *testing.T) {
 			desc: "Valid, consent handling in query",
 			dir:  "sample-requests/amp/consent-through-query/",
 			testFiles: []string{
+				"addtl-consent-through-query.json",
 				"gdpr-tcf1-consent-through-query.json",
 				"gdpr-tcf2-consent-through-query.json",
 				"gdpr-legacy-tcf2-consent-through-query.json",
@@ -376,6 +378,237 @@ func TestGDPRConsent(t *testing.T) {
 		assert.Equal(t, test.expectedUserExt, ueLegacy, test.description+":legacy")
 		assert.Equal(t, expectedErrorsFromHoldAuction, responseLegacy.Errors, test.description+":legacy:errors")
 		assert.Empty(t, responseLegacy.Warnings, test.description+":legacy:warnings")
+	}
+}
+
+func TestOverrideWithParams(t *testing.T) {
+	e := &endpointDeps{
+		cfg: &config.Configuration{
+			GDPR: config.GDPR{
+				Enabled: true,
+			},
+		},
+	}
+
+	type testInput struct {
+		ampParams  amp.Params
+		bidRequest *openrtb2.BidRequest
+	}
+	type testOutput struct {
+		bidRequest *openrtb2.BidRequest
+		errorMsgs  []string
+	}
+	testCases := []struct {
+		desc     string
+		given    testInput
+		expected testOutput
+	}{
+		{
+			desc: "bid request with no Site field - amp.Params empty - expect Site to be added",
+			given: testInput{
+				ampParams: amp.Params{},
+				bidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{{Banner: &openrtb2.Banner{Format: []openrtb2.Format{}}}},
+				},
+			},
+			expected: testOutput{
+				bidRequest: &openrtb2.BidRequest{
+					Imp:  []openrtb2.Imp{{Banner: &openrtb2.Banner{Format: []openrtb2.Format{}}}},
+					Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)},
+				},
+				errorMsgs: nil,
+			},
+		},
+		{
+			desc: "amp.Params with Size field - expect Site and Banner format fields to be added",
+			given: testInput{
+				ampParams: amp.Params{
+					Size: amp.Size{
+						Width:  480,
+						Height: 320,
+					},
+				},
+				bidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{{Banner: &openrtb2.Banner{Format: []openrtb2.Format{}}}},
+				},
+			},
+			expected: testOutput{
+				bidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{
+						{
+							Banner: &openrtb2.Banner{
+								Format: []openrtb2.Format{
+									{
+										W: 480,
+										H: 320,
+									},
+								},
+							},
+						},
+					},
+					Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)},
+				},
+				errorMsgs: nil,
+			},
+		},
+		{
+			desc: "amp.Params with CanonicalURL field - expect Site to be aded with Page and Domain fields",
+			given: testInput{
+				ampParams:  amp.Params{CanonicalURL: "http://www.foobar.com"},
+				bidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{Banner: &openrtb2.Banner{Format: []openrtb2.Format{}}}}},
+			},
+			expected: testOutput{
+				bidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{{Banner: &openrtb2.Banner{Format: []openrtb2.Format{}}}},
+					Site: &openrtb2.Site{
+						Page:   "http://www.foobar.com",
+						Domain: "www.foobar.com",
+						Ext:    json.RawMessage(`{"amp":1}`),
+					},
+				},
+				errorMsgs: nil,
+			},
+		},
+		{
+			desc: "bid request with malformed User.Ext - amp.Params with AdditionalConsent - expect error",
+			given: testInput{
+				ampParams: amp.Params{AdditionalConsent: "1~X.X.X.X"},
+				bidRequest: &openrtb2.BidRequest{
+					Imp:  []openrtb2.Imp{{Banner: &openrtb2.Banner{Format: []openrtb2.Format{}}}},
+					User: &openrtb2.User{Ext: json.RawMessage(`malformed`)},
+				},
+			},
+			expected: testOutput{
+				bidRequest: &openrtb2.BidRequest{
+					Imp:  []openrtb2.Imp{{Banner: &openrtb2.Banner{Format: []openrtb2.Format{}}}},
+					Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)},
+					User: &openrtb2.User{Ext: json.RawMessage(`malformed`)},
+				},
+				errorMsgs: []string{"invalid character 'm' looking for beginning of value"},
+			},
+		},
+		{
+			desc: "bid request with valid imp[0].ext - amp.Params with malformed targeting value - expect error because imp[0].ext won't be unable to get merged with targeting values",
+			given: testInput{
+				ampParams: amp.Params{Targeting: "{123,}"},
+				bidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{
+						{
+							Banner: &openrtb2.Banner{Format: []openrtb2.Format{}},
+							Ext:    []byte(`{"appnexus":{"placementId":123}}`),
+						},
+					},
+				},
+			},
+			expected: testOutput{
+				bidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{
+						{
+							Banner: &openrtb2.Banner{Format: []openrtb2.Format{}},
+							Ext:    json.RawMessage(`{"appnexus":{"placementId":123}}`),
+						},
+					},
+					Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)},
+				},
+				errorMsgs: []string{"unable to merge imp.ext with targeting data, check targeting data is correct: Invalid JSON Patch"},
+			},
+		},
+		{
+			desc: "bid request with malformed user.ext.prebid - amp.Params with GDPR consent values - expect policy writer to return error",
+			given: testInput{
+				ampParams: amp.Params{
+					ConsentType: amp.ConsentTCF2,
+					Consent:     "CPdECS0PdECS0ACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA",
+				},
+				bidRequest: &openrtb2.BidRequest{
+					Imp:  []openrtb2.Imp{{Banner: &openrtb2.Banner{Format: []openrtb2.Format{}}}},
+					User: &openrtb2.User{Ext: json.RawMessage(`{"prebid":{malformed}}`)},
+				},
+			},
+			expected: testOutput{
+				bidRequest: &openrtb2.BidRequest{
+					Imp:  []openrtb2.Imp{{Banner: &openrtb2.Banner{Format: []openrtb2.Format{}}}},
+					User: &openrtb2.User{Ext: json.RawMessage(`{"prebid":{malformed}}`)},
+					Site: &openrtb2.Site{Ext: json.RawMessage(`{"amp":1}`)},
+				},
+				errorMsgs: []string{"invalid character 'm' looking for beginning of object key string"},
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		errs := e.overrideWithParams(test.given.ampParams, test.given.bidRequest)
+
+		assert.Equal(t, test.expected.bidRequest, test.given.bidRequest, test.desc)
+		assert.Len(t, errs, len(test.expected.errorMsgs), test.desc)
+		if len(test.expected.errorMsgs) > 0 {
+			assert.Equal(t, test.expected.errorMsgs[0], errs[0].Error(), test.desc)
+		}
+	}
+}
+
+func TestSetConsentedProviders(t *testing.T) {
+
+	sampleBidRequest := &openrtb2.BidRequest{}
+
+	testCases := []struct {
+		description            string
+		givenAdditionalConsent string
+		givenBidRequest        *openrtb2.BidRequest
+		expectedBidRequest     *openrtb2.BidRequest
+		expectedError          bool
+	}{
+		{
+			description:            "empty additional consent bid request unmodified",
+			givenAdditionalConsent: "",
+			givenBidRequest:        sampleBidRequest,
+			expectedBidRequest:     sampleBidRequest,
+			expectedError:          false,
+		},
+		{
+			description:            "nil bid request, expect error",
+			givenAdditionalConsent: "ADDITIONAL_CONSENT_STRING",
+			givenBidRequest:        nil,
+			expectedBidRequest:     nil,
+			expectedError:          true,
+		},
+		{
+			description:            "malformed user.ext, expect error",
+			givenAdditionalConsent: "ADDITIONAL_CONSENT_STRING",
+			givenBidRequest: &openrtb2.BidRequest{
+				User: &openrtb2.User{
+					Ext: json.RawMessage(`malformed`),
+				},
+			},
+			expectedBidRequest: &openrtb2.BidRequest{
+				User: &openrtb2.User{
+					Ext: json.RawMessage(`malformed`),
+				},
+			},
+			expectedError: true,
+		},
+		{
+			description:            "non-empty additional consent bid request will carry this value in user.ext.ConsentedProvidersSettings.consented_providers",
+			givenAdditionalConsent: "ADDITIONAL_CONSENT_STRING",
+			givenBidRequest:        sampleBidRequest,
+			expectedBidRequest: &openrtb2.BidRequest{
+				User: &openrtb2.User{
+					Ext: json.RawMessage(`{"ConsentedProvidersSettings":{"consented_providers":"ADDITIONAL_CONSENT_STRING"}}`),
+				},
+			},
+			expectedError: false,
+		},
+	}
+
+	for _, test := range testCases {
+		err := setConsentedProviders(test.givenBidRequest, amp.Params{AdditionalConsent: test.givenAdditionalConsent})
+
+		if test.expectedError {
+			assert.Error(t, err, test.description)
+		} else {
+			assert.NoError(t, err, test.description)
+		}
+		assert.Equal(t, test.expectedBidRequest, test.givenBidRequest, test.description)
 	}
 }
 
