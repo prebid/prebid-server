@@ -51,8 +51,9 @@ your adapter are not accessible.
 func (a *CWireAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errors []error
 
-	var bidderParams []openrtb_ext.ImpExtCWire
-	for _, imp := range request.Imp {
+	var bidderParams map[int]openrtb_ext.ImpExtCWire
+
+	for i, imp := range request.Imp {
 		var ext struct {
 			Bidder openrtb_ext.ImpExtCWire
 		}
@@ -61,31 +62,34 @@ func (a *CWireAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 			errors = append(errors, fmt.Errorf("Error while unmarshaling bidder parameters: %v", err))
 			continue
 		}
-		bidderParams = append(bidderParams, ext.Bidder)
+		bidderParams[i] = ext.Bidder
 	}
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 
-	var reqs []*adapters.RequestData
+	body := struct {
+		OpenRTBRequest            openrtb2.BidRequest
+		ImpressionBidderParamsMap map[int]openrtb_ext.ImpExtCWire
+	}{
+		OpenRTBRequest:            *request,
+		ImpressionBidderParamsMap: bidderParams,
+	}
 
-	for _, bidderParam := range bidderParams {
-		body, err := json.Marshal(bidderParam)
-		if err != nil {
-			errors = append(errors, fmt.Errorf("Error while encoding bidRequest: %v", err))
-			return nil, errors
-		}
+	bodyJSON, err := json.Marshal(body)
+	if err != nil {
+		errors = append(errors, fmt.Errorf("Error while encoding bidRequest: %v", err))
+		return nil, errors
+	}
 
-		reqs = append(reqs, &adapters.RequestData{
+	reqs := []*adapters.RequestData{
+		&adapters.RequestData{
 			Method:  "POST",
 			Uri:     a.endpoint,
-			Body:    body,
+			Body:    bodyJSON,
 			Headers: headers,
-		})
-	}
-	if len(reqs) == 0 {
-		return nil, errors
+		},
 	}
 
 	return reqs, errors
