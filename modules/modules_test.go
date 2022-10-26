@@ -64,13 +64,15 @@ func TestModuleBuilderBuild(t *testing.T) {
 
 	for name, test := range testCases {
 		t.Run(name, func(t *testing.T) {
-			builder := NewBuilder().SetModuleBuilders(ModuleBuilders{
-				vendor: {
-					moduleName: func(cfg json.RawMessage, client *http.Client) (interface{}, error) {
-						return test.givenModule, test.givenHookBuilderErr
+			builder := &builder{
+				builders: ModuleBuilders{
+					vendor: {
+						moduleName: func(cfg json.RawMessage, client *http.Client) (interface{}, error) {
+							return test.givenModule, test.givenHookBuilderErr
+						},
 					},
 				},
-			})
+			}
 
 			repo, err := builder.Build(nil, http.DefaultClient)
 			assert.Equal(t, test.expectedErr, err)

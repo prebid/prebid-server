@@ -42,9 +42,13 @@ type HookWrapper[T any] struct {
 }
 
 func NewExecutionPlanBuilder(hooks config.Hooks, repo HookRepository) ExecutionPlanBuilder {
-	return PlanBuilder{
-		hooks: hooks,
-		repo:  repo,
+	if hooks.Enabled {
+		return PlanBuilder{
+			hooks: hooks,
+			repo:  repo,
+		}
+	} else {
+		return EmptyPlanBuilder{}
 	}
 }
 

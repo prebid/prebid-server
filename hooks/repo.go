@@ -65,63 +65,64 @@ func (r *hookRepository) GetAuctionResponseHook(id string) (hookstage.AuctionRes
 	return getHook(r.auctionResponseHooks, id)
 }
 
-func (r *hookRepository) add(id string, hook interface{}) (err error) {
-	var isCompatible bool
+func (r *hookRepository) add(id string, hook interface{}) error {
+	var hasAnyHooks bool
+	var err error
 
 	if h, ok := hook.(hookstage.Entrypoint); ok {
-		isCompatible = true
+		hasAnyHooks = true
 		if r.entrypointHooks, err = addHook(r.entrypointHooks, h, id); err != nil {
-			return
+			return err
 		}
 	}
 
 	if h, ok := hook.(hookstage.RawAuction); ok {
-		isCompatible = true
+		hasAnyHooks = true
 		if r.rawAuctionHooks, err = addHook(r.rawAuctionHooks, h, id); err != nil {
-			return
+			return err
 		}
 	}
 
 	if h, ok := hook.(hookstage.ProcessedAuction); ok {
-		isCompatible = true
+		hasAnyHooks = true
 		if r.processedAuctionHooks, err = addHook(r.processedAuctionHooks, h, id); err != nil {
-			return
+			return err
 		}
 	}
 
 	if h, ok := hook.(hookstage.BidRequest); ok {
-		isCompatible = true
+		hasAnyHooks = true
 		if r.bidRequestHooks, err = addHook(r.bidRequestHooks, h, id); err != nil {
-			return
+			return err
 		}
 	}
 
 	if h, ok := hook.(hookstage.RawBidResponse); ok {
-		isCompatible = true
+		hasAnyHooks = true
 		if r.rawBidResponseHooks, err = addHook(r.rawBidResponseHooks, h, id); err != nil {
-			return
+			return err
 		}
 	}
 
 	if h, ok := hook.(hookstage.AllProcessedBidResponses); ok {
-		isCompatible = true
+		hasAnyHooks = true
 		if r.allProcessedBidResponseHooks, err = addHook(r.allProcessedBidResponseHooks, h, id); err != nil {
-			return
+			return err
 		}
 	}
 
 	if h, ok := hook.(hookstage.AuctionResponse); ok {
-		isCompatible = true
+		hasAnyHooks = true
 		if r.auctionResponseHooks, err = addHook(r.auctionResponseHooks, h, id); err != nil {
-			return
+			return err
 		}
 	}
 
-	if !isCompatible {
+	if !hasAnyHooks {
 		return fmt.Errorf(`hook "%s" does not implement any supported hook interface`, id)
 	}
 
-	return
+	return nil
 }
 
 func getHook[T any](hooks map[string]T, id string) (T, bool) {

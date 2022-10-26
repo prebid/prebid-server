@@ -13,6 +13,30 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestNewExecutionPlanBuilder(t *testing.T) {
+	enabledConfig := config.Hooks{Enabled: true}
+	testCases := map[string]struct {
+		givenConfig         config.Hooks
+		expectedPlanBuilder ExecutionPlanBuilder
+	}{
+		"Real plan builder returned when hooks enabled": {
+			givenConfig:         enabledConfig,
+			expectedPlanBuilder: PlanBuilder{hooks: enabledConfig},
+		},
+		"Empty plan builder returned when hooks disabled": {
+			givenConfig:         config.Hooks{Enabled: false},
+			expectedPlanBuilder: EmptyPlanBuilder{},
+		},
+	}
+
+	for name, test := range testCases {
+		t.Run(name, func(t *testing.T) {
+			gotPlanBuilder := NewExecutionPlanBuilder(test.givenConfig, nil)
+			assert.Equal(t, test.expectedPlanBuilder, gotPlanBuilder)
+		})
+	}
+}
+
 func TestPlanForEntrypointStage(t *testing.T) {
 	testCases := map[string]struct {
 		givenEndpoint               string

@@ -240,9 +240,12 @@ type AccountModules map[string]map[string]json.RawMessage
 func (m AccountModules) ModuleConfig(id string) json.RawMessage {
 	ns := strings.SplitN(id, ".", 2)
 	if len(ns) < 2 {
+		// todo: review error logging again once a caller to this method is added
 		glog.Errorf("Can't find module config, ID must consist of vendor and module names separated by dot")
 		return nil
 	}
 
-	return m[ns[0]][ns[1]]
+	vendor := ns[0]
+	module := ns[1]
+	return m[vendor][module]
 }
