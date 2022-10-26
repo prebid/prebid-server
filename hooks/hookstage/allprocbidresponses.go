@@ -3,7 +3,9 @@ package hookstage
 import (
 	"context"
 
+	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/hooks/invocation"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 type AllProcessedBidResponses interface {
@@ -14,7 +16,4 @@ type AllProcessedBidResponses interface {
 	) (invocation.HookResult[AllProcessedBidResponsesPayload], error)
 }
 
-type AllProcessedBidResponsesPayload struct {
-	// todo: decide what payload to use within hook invocation task
-	// initially, we planned to use map[openrtb_ext.BidderName]*exchange.pbsOrtbSeatBid, but the type is not exported
-}
+type AllProcessedBidResponsesPayload map[openrtb_ext.BidderName]*exchange.PbsOrtbSeatBid
