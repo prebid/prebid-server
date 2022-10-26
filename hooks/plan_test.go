@@ -744,6 +744,7 @@ func getPlanBuilder(
 		return nil, err
 	}
 
+	hooks.Enabled = true
 	hooks.HostExecutionPlan = hostPlan
 	hooks.AccountExecutionPlan = defaultAccountPlan
 
