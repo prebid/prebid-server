@@ -1,0 +1,15 @@
+endpoint: "https://display.bidder.taboola.com/OpenRTB/TaboolaHB/auction"
+maintainer:
+  email:
+gvlVendorID: 42
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner
+userSync:
+  redirect:
+    url:
+    userMacro:
