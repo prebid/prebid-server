@@ -2,12 +2,14 @@ package invocation
 
 import (
 	"encoding/json"
+	"github.com/prebid/prebid-server/metrics"
 	"time"
 )
 
 type InvocationContext struct {
-	DebugEnabled   bool
-	moduleContexts map[string]*ModuleContext
+	DebugEnabled      bool
+	RequestTypeMetric metrics.RequestType
+	moduleContexts    map[string]*ModuleContext
 }
 
 func (ctx *InvocationContext) ModuleContextFor(moduleCode string) *ModuleContext {
@@ -35,7 +37,7 @@ type HookResponse[T any] struct {
 
 type HookResult[T any] struct {
 	ModuleCode    string
-	ExecutionTime time.Time
+	ExecutionTime time.Duration
 	Reject        bool
 	NbrCode       int
 	Message       string

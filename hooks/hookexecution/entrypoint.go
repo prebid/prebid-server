@@ -54,10 +54,12 @@ func ExecuteEntrypointStage(
 					return
 				default:
 
+					startTime := time.Now()
 					go asyncHookCall(moduleCtx, hw.Hook, payload, groups.Timeout, invocationCtx.DebugEnabled, hookRespCh)
 					select {
 					case res := <-hookRespCh:
 						res.Result.ModuleCode = hw.Module
+						res.Result.ExecutionTime = time.Since(startTime)
 						resp <- res
 					case <-time.After(groups.Timeout):
 						resp <- invocation.HookResponse[hookstage.EntrypointPayload]{
