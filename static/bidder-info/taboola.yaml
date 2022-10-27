@@ -1,6 +1,6 @@
 endpoint: "https://display.bidder.taboola.com/OpenRTB/TaboolaHB/auction"
 maintainer:
-  email:
+  email:  ahmad.l@taboola.com
 gvlVendorID: 42
 capabilities:
   app:
@@ -9,7 +9,7 @@ capabilities:
   site:
     mediaTypes:
       - banner
-userSync:
-  redirect:
-    url:
-    userMacro:
+#userSync:
+#  redirect:
+#    url:
+#    userMacro:

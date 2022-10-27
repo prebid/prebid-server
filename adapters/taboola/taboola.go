@@ -16,7 +16,7 @@ type adapter struct {
 }
 
 // Builder builds a new instance of the Foo adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}
@@ -114,13 +114,17 @@ func createTaboolaRequest(request *openrtb2.BidRequest) (taboolaRequest *openrtb
 		}
 	}
 
-	if (*request).Site != nil {
-		site := *(request).Site
-		site.ID = taboolaExt.PublisherId
-		site.Name = taboolaExt.PublisherId
-		site.Publisher.ID = taboolaExt.PublisherId
-		(*request).Site = &site
+	publisher := &openrtb2.Publisher{
+		ID: taboolaExt.PublisherId,
 	}
+	site := &openrtb2.Site{
+		ID:        taboolaExt.PublisherId,
+		Name:      taboolaExt.PublisherId,
+		Domain:    evaluateDomain(taboolaExt.PublisherDomain, request),
+		Publisher: publisher,
+	}
+
+	(*request).Site = site
 
 	if taboolaExt.BCat != nil {
 		(*request).BCat = taboolaExt.BCat
@@ -147,4 +151,14 @@ func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType,
 	return "", &errortypes.BadInput{
 		Message: fmt.Sprintf("Failed to find native/banner impression \"%s\" ", impID),
 	}
+}
+
+func evaluateDomain(publisherDomain string, request *openrtb2.BidRequest) (result string) {
+	if publisherDomain != "" {
+		return publisherDomain
+	}
+	if request.Site != nil {
+		return request.Site.Domain
+	}
+	return ""
 }

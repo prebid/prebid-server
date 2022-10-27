@@ -8,11 +8,14 @@
     "publisherId": {
       "type": "string"
     },
+    "publisherDomain": {
+      "type": "string"
+    },
     "tagid": {
       "type": "string"
     },
     "bidfloor": {
-      "type": "float"
+      "type": "number"
     },
     "bcat": {
       "type": "array",
