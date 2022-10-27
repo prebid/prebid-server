@@ -117,14 +117,21 @@ func createTaboolaRequest(request *openrtb2.BidRequest) (taboolaRequest *openrtb
 	publisher := &openrtb2.Publisher{
 		ID: taboolaExt.PublisherId,
 	}
-	site := &openrtb2.Site{
-		ID:        taboolaExt.PublisherId,
-		Name:      taboolaExt.PublisherId,
-		Domain:    evaluateDomain(taboolaExt.PublisherDomain, request),
-		Publisher: publisher,
-	}
 
-	(*request).Site = site
+	if (*request).Site == nil {
+		site := &openrtb2.Site{
+			ID:        taboolaExt.PublisherId,
+			Name:      taboolaExt.PublisherId,
+			Domain:    evaluateDomain(taboolaExt.PublisherDomain, request),
+			Publisher: publisher,
+		}
+		(*request).Site = site
+	} else {
+		(*request).Site.Publisher = publisher
+		(*request).Site.ID = taboolaExt.PublisherId
+		(*request).Site.Name = taboolaExt.PublisherId
+		(*request).Site.Domain = evaluateDomain(taboolaExt.PublisherDomain, request)
+	}
 
 	if taboolaExt.BCat != nil {
 		(*request).BCat = taboolaExt.BCat
