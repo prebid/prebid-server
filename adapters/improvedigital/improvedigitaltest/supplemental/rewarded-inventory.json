@@ -1,0 +1,126 @@
+{
+  "mockBidRequest": {
+    "id": "rewarded-inventory-request-id",
+    "site": {
+      "page": "https://good.site/url"
+    },
+    "imp": [
+      {
+        "id": "rewarded-inventory-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": 13245
+          },
+          "prebid": {
+            "is_rewarded_inventory": 1
+          }
+        }
+      },
+      {
+        "id": "rewarded-inventory-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": 13245
+          },
+          "prebid": {
+            "is_rewarded_inventory": 0
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://localhost/pbs",
+        "body": {
+          "id": "rewarded-inventory-request-id",
+          "site": {
+            "page": "https://good.site/url"
+          },
+          "imp": [
+            {
+              "id": "rewarded-inventory-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": 13245
+                },
+                "prebid": {
+                  "is_rewarded_inventory": 1
+                },
+                "is_rewarded_inventory": true
+              }
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {}
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "http://localhost/pbs",
+        "body": {
+          "id": "rewarded-inventory-request-id",
+          "site": {
+            "page": "https://good.site/url"
+          },
+          "imp": [
+            {
+              "id": "rewarded-inventory-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": 13245
+                },
+                "prebid": {
+                  "is_rewarded_inventory": 0
+                }
+              }
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {}
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {},{}
+  ]
+}
