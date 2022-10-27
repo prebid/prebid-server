@@ -110,7 +110,6 @@ const (
 	BidderAJA               BidderName = "aja"
 	BidderAlgorix           BidderName = "algorix"
 	BidderAMX               BidderName = "amx"
-	BidderAndBeyondMedia    BidderName = "andbeyondmedia"
 	BidderApacdex           BidderName = "apacdex"
 	BidderApplogy           BidderName = "applogy"
 	BidderAppnexus          BidderName = "appnexus"
@@ -121,9 +120,11 @@ const (
 	BidderBeachfront        BidderName = "beachfront"
 	BidderBeintoo           BidderName = "beintoo"
 	BidderBetween           BidderName = "between"
+	BidderBeyondMedia       BidderName = "beyondmedia"
 	BidderBidmachine        BidderName = "bidmachine"
 	BidderBidmyadz          BidderName = "bidmyadz"
 	BidderBidsCube          BidderName = "bidscube"
+	BidderBidstack          BidderName = "bidstack"
 	BidderBizzclick         BidderName = "bizzclick"
 	BidderBliink            BidderName = "bliink"
 	BidderBlue              BidderName = "blue"
@@ -274,7 +275,6 @@ func CoreBidderNames() []BidderName {
 		BidderAJA,
 		BidderAlgorix,
 		BidderAMX,
-		BidderAndBeyondMedia,
 		BidderApacdex,
 		BidderApplogy,
 		BidderAppnexus,
@@ -285,9 +285,11 @@ func CoreBidderNames() []BidderName {
 		BidderBeachfront,
 		BidderBeintoo,
 		BidderBetween,
+		BidderBeyondMedia,
 		BidderBidmachine,
 		BidderBidmyadz,
 		BidderBidsCube,
+		BidderBidstack,
 		BidderBizzclick,
 		BidderBliink,
 		BidderBlue,

@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/spf13/viper"
 
 	"github.com/prebid/go-gdpr/consentconstants"
@@ -316,9 +316,9 @@ func (t *TCF2) BasicEnforcementVendor(openrtb_ext.BidderName) bool {
 	return false
 }
 
-// IntegrationEnabled checks if a given integration type is enabled. All integration types are considered either
+// ChannelEnabled checks if a given channel type is enabled. All channel types are considered either
 // enabled or disabled based on the Enabled flag.
-func (t *TCF2) IntegrationEnabled(integrationType IntegrationType) bool {
+func (t *TCF2) ChannelEnabled(channelType ChannelType) bool {
 	return t.Enabled
 }
 

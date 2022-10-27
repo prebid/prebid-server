@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -145,6 +145,9 @@ func (adapter *LogicadAdapter) MakeBids(internalRequest *openrtb2.BidRequest, ex
 			Bid:     &bid,
 			BidType: openrtb_ext.BidTypeBanner,
 		})
+	}
+	if bidResp.Cur != "" {
+		bidResponse.Currency = bidResp.Cur
 	}
 	return bidResponse, nil
 }
