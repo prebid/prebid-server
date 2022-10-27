@@ -890,6 +890,7 @@ func TestReferer(t *testing.T) {
 		description             string
 		givenSitePage           string
 		givenSiteDomain         string
+		givenPublisherDomain    string
 		givenReferer            string
 		expectedDomain          string
 		expectedPage            string
@@ -904,6 +905,7 @@ func TestReferer(t *testing.T) {
 		{
 			description:             "site.page/domain are derived from referer when neither is set and http referer is set",
 			givenReferer:            "https://test.somepage.com",
+			givenPublisherDomain:    "",
 			expectedDomain:          "somepage.com",
 			expectedPublisherDomain: "somepage.com",
 			expectedPage:            "https://test.somepage.com",
@@ -911,6 +913,7 @@ func TestReferer(t *testing.T) {
 		{
 			description:             "site.domain is derived from site.page when site.page is set and http referer is not set",
 			givenSitePage:           "https://test.somepage.com",
+			givenPublisherDomain:    "",
 			expectedDomain:          "somepage.com",
 			expectedPublisherDomain: "somepage.com",
 			expectedPage:            "https://test.somepage.com",
@@ -919,6 +922,7 @@ func TestReferer(t *testing.T) {
 			description:             "site.domain is derived from http referer when site.page and http referer are set",
 			givenSitePage:           "https://test.somepage.com",
 			givenReferer:            "http://test.com",
+			givenPublisherDomain:    "",
 			expectedDomain:          "test.com",
 			expectedPublisherDomain: "test.com",
 			expectedPage:            "https://test.somepage.com",
@@ -927,9 +931,19 @@ func TestReferer(t *testing.T) {
 			description:             "site.page/domain are unchanged when site.page/domain and http referer are set",
 			givenSitePage:           "https://test.somepage.com",
 			givenSiteDomain:         "some.domain.com",
+			givenPublisherDomain:    "",
 			givenReferer:            "http://test.com",
 			expectedDomain:          "some.domain.com",
 			expectedPublisherDomain: "some.domain.com",
+			expectedPage:            "https://test.somepage.com",
+		},
+		{
+			description:             "Publisher domain shouldn't be overrwriten if already set",
+			givenSitePage:           "https://test.somepage.com",
+			givenSiteDomain:         "",
+			givenPublisherDomain:    "differentpage.com",
+			expectedDomain:          "somepage.com",
+			expectedPublisherDomain: "differentpage.com",
 			expectedPage:            "https://test.somepage.com",
 		},
 	}
@@ -942,7 +956,7 @@ func TestReferer(t *testing.T) {
 			Site: &openrtb2.Site{
 				Domain:    test.givenSiteDomain,
 				Page:      test.givenSitePage,
-				Publisher: &openrtb2.Publisher{Domain: test.givenSiteDomain},
+				Publisher: &openrtb2.Publisher{Domain: test.givenPublisherDomain},
 			},
 		}}
 

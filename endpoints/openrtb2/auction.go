@@ -1571,8 +1571,9 @@ func setSiteImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {
 
 				if r.Site.Domain == "" {
 					r.Site.Domain = domain
-					r.Site.Publisher.Domain = domain
-				} else {
+				}
+
+				if r.Site.Publisher.Domain == "" {
 					r.Site.Publisher.Domain = domain
 				}
 
@@ -1590,7 +1591,9 @@ func setSiteImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {
 		}
 		if r.Site.Domain != "" {
 			if r.Site.Publisher != nil {
-				r.Site.Publisher.Domain = r.Site.Domain
+				if r.Site.Publisher.Domain == "" {
+					r.Site.Publisher.Domain = r.Site.Domain
+				}
 			} else {
 				r.Site.Publisher = &openrtb2.Publisher{Domain: r.Site.Domain}
 			}
