@@ -12,7 +12,6 @@ type Entrypoint interface {
 		ctx context.Context,
 		iCtx *invocation.ModuleContext,
 		p EntrypointPayload,
-		debugMode bool,
 	) (invocation.HookResult[EntrypointPayload], error)
 }
 
