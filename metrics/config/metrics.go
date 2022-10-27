@@ -86,7 +86,7 @@ func (me *MultiMetricsEngine) RecordConnectionClose(success bool) {
 	}
 }
 
-//RecordsImps records imps with imp types across all metric engines
+// RecordsImps records imps with imp types across all metric engines
 func (me *MultiMetricsEngine) RecordImps(implabels metrics.ImpLabels) {
 	for _, thisME := range *me {
 		thisME.RecordImps(implabels)
