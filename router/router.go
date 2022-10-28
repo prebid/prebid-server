@@ -167,8 +167,13 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 		syncerKeys = append(syncerKeys, k)
 	}
 
+	repo, err := modules.NewBuilder().Build(cfg.Hooks.Modules, generalHttpClient)
+	if err != nil {
+		glog.Fatalf("Failed to init hook modules: %v", err)
+	}
+
 	// Metrics engine
-	r.MetricsEngine = metricsConf.NewMetricsEngine(cfg, openrtb_ext.CoreBidderNames(), syncerKeys)
+	r.MetricsEngine = metricsConf.NewMetricsEngine(cfg, openrtb_ext.CoreBidderNames(), syncerKeys, repo.GetAllModuleStageNames())
 	shutdown, fetcher, ampFetcher, accounts, categoriesFetcher, videoFetcher, storedRespFetcher := storedRequestsConf.NewStoredRequests(cfg, r.MetricsEngine, generalHttpClient, r.Router)
 	// todo(zachbadgett): better shutdown
 	r.Shutdown = shutdown
@@ -203,11 +208,6 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	adsCertSigner, err := adscert.NewAdCertsSigner(cfg.Experiment.AdCerts)
 	if err != nil {
 		glog.Fatalf("Failed to create ads cert signer: %v", err)
-	}
-
-	repo, err := modules.NewBuilder().Build(cfg.Hooks.Modules, generalHttpClient)
-	if err != nil {
-		glog.Fatalf("Failed to init hook modules: %v", err)
 	}
 
 	planBuilder := hooks.NewExecutionPlanBuilder(cfg.Hooks, repo)

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/prebid/prebid-server/hooks"
 	"testing"
 	"time"
 
@@ -16,7 +17,8 @@ func TestNilMetricsEngine(t *testing.T) {
 	cfg := mainConfig.Configuration{}
 	adapterList := make([]openrtb_ext.BidderName, 0, 2)
 	syncerKeys := []string{"keyA", "keyB"}
-	testEngine := NewMetricsEngine(&cfg, adapterList, syncerKeys)
+	moduleStageNames := map[string][]string{"foobar": {"entry", "raw"}}
+	testEngine := NewMetricsEngine(&cfg, adapterList, syncerKeys, moduleStageNames)
 	_, ok := testEngine.MetricsEngine.(*NilMetricsEngine)
 	if !ok {
 		t.Error("Expected a NilMetricsEngine, but didn't get it")
@@ -28,7 +30,8 @@ func TestGoMetricsEngine(t *testing.T) {
 	cfg.Metrics.Influxdb.Host = "localhost"
 	adapterList := make([]openrtb_ext.BidderName, 0, 2)
 	syncerKeys := []string{"keyA", "keyB"}
-	testEngine := NewMetricsEngine(&cfg, adapterList, syncerKeys)
+	moduleStageNames := map[string][]string{"foobar": {"entry", "raw"}}
+	testEngine := NewMetricsEngine(&cfg, adapterList, syncerKeys, moduleStageNames)
 	_, ok := testEngine.MetricsEngine.(*metrics.Metrics)
 	if !ok {
 		t.Error("Expected a legacy Metrics as MetricsEngine, but didn't get it")
@@ -40,7 +43,9 @@ func TestMultiMetricsEngine(t *testing.T) {
 	cfg := mainConfig.Configuration{}
 	cfg.Metrics.Influxdb.Host = "localhost"
 	adapterList := openrtb_ext.CoreBidderNames()
-	goEngine := metrics.NewMetrics(gometrics.NewPrefixedRegistry("prebidserver."), adapterList, mainConfig.DisabledMetrics{}, nil)
+	moduleName := "foobar"
+	moduleStageNames := map[string][]string{moduleName: {hooks.StageEntrypoint, hooks.StageRawAuction}}
+	goEngine := metrics.NewMetrics(gometrics.NewPrefixedRegistry("prebidserver."), adapterList, mainConfig.DisabledMetrics{}, nil, moduleStageNames)
 	engineList := make(MultiMetricsEngine, 2)
 	engineList[0] = goEngine
 	engineList[1] = &NilMetricsEngine{}
@@ -75,6 +80,16 @@ func TestMultiMetricsEngine(t *testing.T) {
 		AudioImps:  true,
 		NativeImps: true,
 	}
+	moduleLabels := []metrics.ModuleLabels{
+		{
+			Module: moduleName,
+			Stage:  hooks.StageEntrypoint,
+		},
+		{
+			Module: moduleName,
+			Stage:  hooks.StageRawAuction,
+		},
+	}
 	for i := 0; i < 5; i++ {
 		metricsEngine.RecordRequest(labels)
 		metricsEngine.RecordImps(impTypeLabels)
@@ -85,6 +100,16 @@ func TestMultiMetricsEngine(t *testing.T) {
 		metricsEngine.RecordAdapterBidReceived(pubLabels, openrtb_ext.BidTypeBanner, true)
 		metricsEngine.RecordAdapterTime(pubLabels, time.Millisecond*20)
 		metricsEngine.RecordPrebidCacheRequestTime(true, time.Millisecond*20)
+	}
+	for _, module := range moduleLabels {
+		metricsEngine.RecordModuleDuration(module, time.Millisecond*1)
+		metricsEngine.RecordModuleCalled(module)
+		metricsEngine.RecordModuleFailed(module)
+		metricsEngine.RecordModuleSuccessNooped(module)
+		metricsEngine.RecordModuleSuccessUpdated(module)
+		metricsEngine.RecordModuleSuccessRejected(module)
+		metricsEngine.RecordModuleExecutionError(module)
+		metricsEngine.RecordModuleTimeout(module)
 	}
 	labelsBlacklist := []metrics.Labels{
 		{
@@ -166,6 +191,23 @@ func TestMultiMetricsEngine(t *testing.T) {
 	VerifyMetrics(t, "AccountCache.Hit", goEngine.AccountCacheMeter[metrics.CacheHit].Count(), 6)
 
 	VerifyMetrics(t, "AdapterMetrics.AppNexus.GDPRRequestBlocked", goEngine.AdapterMetrics[openrtb_ext.BidderAppnexus].GDPRRequestBlocked.Count(), 1)
+
+	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Entry.Call", goEngine.ModuleMetrics[moduleName][hooks.StageEntrypoint].DurationTimer.Count(), 1)
+	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Raw.Call", goEngine.ModuleMetrics[moduleName][hooks.StageRawAuction].DurationTimer.Count(), 1)
+	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Entry.Call", goEngine.ModuleMetrics[moduleName][hooks.StageEntrypoint].CallCounter.Count(), 1)
+	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Raw.Call", goEngine.ModuleMetrics[moduleName][hooks.StageRawAuction].CallCounter.Count(), 1)
+	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Entry.Call", goEngine.ModuleMetrics[moduleName][hooks.StageEntrypoint].FailureCounter.Count(), 1)
+	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Raw.Call", goEngine.ModuleMetrics[moduleName][hooks.StageRawAuction].FailureCounter.Count(), 1)
+	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Entry.Call", goEngine.ModuleMetrics[moduleName][hooks.StageEntrypoint].SuccessNoopCounter.Count(), 1)
+	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Raw.Call", goEngine.ModuleMetrics[moduleName][hooks.StageRawAuction].SuccessNoopCounter.Count(), 1)
+	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Entry.Call", goEngine.ModuleMetrics[moduleName][hooks.StageEntrypoint].SuccessUpdateCounter.Count(), 1)
+	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Raw.Call", goEngine.ModuleMetrics[moduleName][hooks.StageRawAuction].SuccessUpdateCounter.Count(), 1)
+	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Entry.Call", goEngine.ModuleMetrics[moduleName][hooks.StageEntrypoint].SuccessRejectCounter.Count(), 1)
+	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Raw.Call", goEngine.ModuleMetrics[moduleName][hooks.StageRawAuction].SuccessRejectCounter.Count(), 1)
+	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Entry.Call", goEngine.ModuleMetrics[moduleName][hooks.StageEntrypoint].ExecutionErrorCounter.Count(), 1)
+	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Raw.Call", goEngine.ModuleMetrics[moduleName][hooks.StageRawAuction].ExecutionErrorCounter.Count(), 1)
+	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Entry.Call", goEngine.ModuleMetrics[moduleName][hooks.StageEntrypoint].TimeoutCounter.Count(), 1)
+	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Raw.Call", goEngine.ModuleMetrics[moduleName][hooks.StageRawAuction].TimeoutCounter.Count(), 1)
 }
 
 func VerifyMetrics(t *testing.T, name string, actual int64, expected int64) {

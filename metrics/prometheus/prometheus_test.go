@@ -15,11 +15,12 @@ import (
 
 func createMetricsForTesting() *Metrics {
 	syncerKeys := []string{}
+	modulesStageNames := map[string][]string{"foobar": {"entry", "raw"}}
 	return NewMetrics(config.PrometheusMetrics{
 		Port:      8080,
 		Namespace: "prebid",
 		Subsystem: "server",
-	}, config.DisabledMetrics{}, syncerKeys)
+	}, config.DisabledMetrics{}, syncerKeys, modulesStageNames)
 }
 
 func TestMetricCountGatekeeping(t *testing.T) {
@@ -33,17 +34,24 @@ func TestMetricCountGatekeeping(t *testing.T) {
 	// - This requires metrics to be preloaded. We don't preload account metrics, so we can't test those.
 	generalCardinalityCount := 0
 	adapterCardinalityCount := 0
+	moduleCardinalityCount := 0
 	for _, metricFamily := range metricFamilies {
 		for _, metric := range metricFamily.GetMetric() {
 			isPerAdapter := false
+			isPerModule := false
 			for _, label := range metric.GetLabel() {
 				if label.GetName() == adapterLabel {
 					isPerAdapter = true
+				}
+				if label.GetName() == moduleLabel {
+					isPerModule = true
 				}
 			}
 
 			if isPerAdapter {
 				adapterCardinalityCount++
+			} else if isPerModule {
+				moduleCardinalityCount++
 			} else {
 				generalCardinalityCount++
 			}
@@ -53,6 +61,10 @@ func TestMetricCountGatekeeping(t *testing.T) {
 	// Calculate Per-Adapter Cardinality
 	adapterCount := len(openrtb_ext.CoreBidderNames())
 	perAdapterCardinalityCount := adapterCardinalityCount / adapterCount
+
+	// Calculate Per-ModuleStage Cardinality
+	moduleStagePairsCount := 2
+	perModuleCardinalityCount := moduleCardinalityCount / moduleStagePairsCount
 
 	// Verify General Cardinality
 	// - This assertion provides a warning for newly added high-cardinality non-adapter specific metrics. The hardcoded limit
@@ -64,6 +76,10 @@ func TestMetricCountGatekeeping(t *testing.T) {
 	// - This assertion provides a warning for newly added adapter metrics. Threre are 40+ adapters which makes the
 	//   cost of new per-adapter metrics rather expensive. Thought should be given when adding new per-adapter metrics.
 	assert.True(t, perAdapterCardinalityCount <= 27, "Per-Adapter Cardinality count equals %d \n", perAdapterCardinalityCount)
+
+	// Verify Per-ModuleStage Cardinality
+	// This assertion provides a warning for newly added module metrics.
+	assert.Equal(t, perModuleCardinalityCount, 8, "Per-ModuleStage Cardinality count equals %d \n", perModuleCardinalityCount)
 }
 
 func TestConnectionMetrics(t *testing.T) {
@@ -1476,7 +1492,7 @@ func TestDisabledMetrics(t *testing.T) {
 		AdapterConnectionMetrics:  true,
 		AdapterGDPRRequestBlocked: true,
 	},
-		nil)
+		nil, nil)
 
 	// Assert counter vector was not initialized
 	assert.Nil(t, prometheusMetrics.adapterReusedConnections, "Counter Vector adapterReusedConnections should be nil")
@@ -1773,4 +1789,64 @@ func TestRecordAdsCertSignTime(t *testing.T) {
 		assert.Equal(t, test.out.expCount, histogram.GetSampleCount(), "[%d] Incorrect number of histogram entries. Desc: %s\n", i, test.description)
 		assert.Equal(t, test.out.expDuration, histogram.GetSampleSum(), "[%d] Incorrect number of histogram cumulative values. Desc: %s\n", i, test.description)
 	}
+}
+
+func TestRecordModuleMetrics(t *testing.T) {
+	m := createMetricsForTesting()
+	moduleName := "foobar"
+
+	m.RecordModuleDuration(metrics.ModuleLabels{
+		Module: moduleName,
+		Stage:  "entry",
+	}, time.Millisecond*1)
+	m.RecordModuleDuration(metrics.ModuleLabels{
+		Module: moduleName,
+		Stage:  "raw",
+	}, time.Millisecond*30)
+	m.RecordModuleCalled(metrics.ModuleLabels{
+		Module: moduleName,
+		Stage:  "entry",
+	})
+	m.RecordModuleCalled(metrics.ModuleLabels{
+		Module: moduleName,
+		Stage:  "raw",
+	})
+	m.RecordModuleFailed(metrics.ModuleLabels{
+		Module: moduleName,
+		Stage:  "raw",
+	})
+	m.RecordModuleSuccessNooped(metrics.ModuleLabels{
+		Module: moduleName,
+		Stage:  "entry",
+	})
+	m.RecordModuleSuccessUpdated(metrics.ModuleLabels{
+		Module: moduleName,
+		Stage:  "entry",
+	})
+	m.RecordModuleSuccessRejected(metrics.ModuleLabels{
+		Module: moduleName,
+		Stage:  "raw",
+	})
+	m.RecordModuleExecutionError(metrics.ModuleLabels{
+		Module: moduleName,
+		Stage:  "raw",
+	})
+	m.RecordModuleTimeout(metrics.ModuleLabels{
+		Module: moduleName,
+		Stage:  "raw",
+	})
+
+	result := getHistogramFromHistogramVecByTwoKeys(m.moduleDuration, moduleLabel, moduleName, stageLabel, "entry")
+	assertHistogram(t, "module_duration", result, 1, 0.001)
+	result = getHistogramFromHistogramVecByTwoKeys(m.moduleDuration, moduleLabel, moduleName, stageLabel, "raw")
+	assertHistogram(t, "module_duration", result, 1, 0.03)
+	assertCounterVecValue(t, "Module calls performed", "Entry stage", m.moduleCalls, 1, prometheus.Labels{moduleLabel: moduleName, stageLabel: "entry"})
+	assertCounterVecValue(t, "Module calls performed", "Raw stage", m.moduleCalls, 1, prometheus.Labels{moduleLabel: moduleName, stageLabel: "raw"})
+	assertCounterVecValue(t, "Module calls failed", "Entry stage", m.moduleFailures, 0, prometheus.Labels{moduleLabel: moduleName, stageLabel: "entry"})
+	assertCounterVecValue(t, "Module calls failed", "Raw stage", m.moduleFailures, 1, prometheus.Labels{moduleLabel: moduleName, stageLabel: "raw"})
+	assertCounterVecValue(t, "Module success noop action", "Entry stage", m.moduleSuccessNoops, 1, prometheus.Labels{moduleLabel: moduleName, stageLabel: "entry"})
+	assertCounterVecValue(t, "Module success update action", "Entry stage", m.moduleSuccessUpdates, 1, prometheus.Labels{moduleLabel: moduleName, stageLabel: "entry"})
+	assertCounterVecValue(t, "Module success reject action", "Raw stage", m.moduleSuccessRejects, 1, prometheus.Labels{moduleLabel: moduleName, stageLabel: "raw"})
+	assertCounterVecValue(t, "Module execution error", "Raw stage", m.moduleExecutionErrors, 1, prometheus.Labels{moduleLabel: moduleName, stageLabel: "raw"})
+	assertCounterVecValue(t, "Module timeout", "Raw stage", m.moduleTimeouts, 1, prometheus.Labels{moduleLabel: moduleName, stageLabel: "raw"})
 }

@@ -78,6 +78,16 @@ type Metrics struct {
 	accountDebugRequests   *prometheus.CounterVec
 	accountStoredResponses *prometheus.CounterVec
 
+	// Module Metrics
+	moduleDuration        *prometheus.HistogramVec
+	moduleCalls           *prometheus.CounterVec
+	moduleFailures        *prometheus.CounterVec
+	moduleSuccessNoops    *prometheus.CounterVec
+	moduleSuccessUpdates  *prometheus.CounterVec
+	moduleSuccessRejects  *prometheus.CounterVec
+	moduleExecutionErrors *prometheus.CounterVec
+	moduleTimeouts        *prometheus.CounterVec
+
 	metricsDisabled config.DisabledMetrics
 }
 
@@ -96,10 +106,12 @@ const (
 	isNativeLabel        = "native"
 	isVideoLabel         = "video"
 	markupDeliveryLabel  = "delivery"
+	moduleLabel          = "module"
 	optOutLabel          = "opt_out"
 	privacyBlockedLabel  = "privacy_blocked"
 	requestStatusLabel   = "request_status"
 	requestTypeLabel     = "request_type"
+	stageLabel           = "stage"
 	statusLabel          = "status"
 	successLabel         = "success"
 	syncerLabel          = "syncer"
@@ -137,7 +149,7 @@ const (
 )
 
 // NewMetrics initializes a new Prometheus metrics instance with preloaded label values.
-func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMetrics, syncerKeys []string) *Metrics {
+func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMetrics, syncerKeys []string, moduleStageNames map[string][]string) *Metrics {
 	standardTimeBuckets := []float64{0.05, 0.1, 0.15, 0.20, 0.25, 0.3, 0.4, 0.5, 0.75, 1}
 	cacheWriteTimeBuckets := []float64{0.001, 0.002, 0.005, 0.01, 0.025, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 1}
 	priceBuckets := []float64{250, 500, 750, 1000, 1500, 2000, 2500, 3000, 3500, 4000}
@@ -423,6 +435,47 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"Count of AdsCert request, and if they were successfully sent.",
 		[]string{successLabel})
 
+	metrics.moduleDuration = newHistogramVec(cfg, reg,
+		"module_duration",
+		"Seconds a module processed a hook.",
+		[]string{moduleLabel, stageLabel},
+		standardTimeBuckets)
+
+	metrics.moduleCalls = newCounter(cfg, reg,
+		"module_called",
+		"Count of module calls labeled by module and stage names.",
+		[]string{moduleLabel, stageLabel})
+
+	metrics.moduleFailures = newCounter(cfg, reg,
+		"module_failed",
+		"Count of module fails labeled by module and stage names.",
+		[]string{moduleLabel, stageLabel})
+
+	metrics.moduleSuccessNoops = newCounter(cfg, reg,
+		"module_success_noops",
+		"Count of module success noops labeled by module and stage names.",
+		[]string{moduleLabel, stageLabel})
+
+	metrics.moduleSuccessUpdates = newCounter(cfg, reg,
+		"module_success_updates",
+		"Count of module success updates labeled by module and stage names.",
+		[]string{moduleLabel, stageLabel})
+
+	metrics.moduleSuccessRejects = newCounter(cfg, reg,
+		"module_success_rejects",
+		"Count of module success rejects labeled by module and stage names.",
+		[]string{moduleLabel, stageLabel})
+
+	metrics.moduleExecutionErrors = newCounter(cfg, reg,
+		"module_execution_errors",
+		"Count of module execution errors labeled by module and stage names.",
+		[]string{moduleLabel, stageLabel})
+
+	metrics.moduleTimeouts = newCounter(cfg, reg,
+		"module_timeouts",
+		"Count of module timeouts labeled by module and stage names.",
+		[]string{moduleLabel, stageLabel})
+
 	metrics.Gatherer = reg
 
 	metricsPrefix := ""
@@ -436,7 +489,7 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 	metrics.Registerer = prometheus.WrapRegistererWithPrefix(metricsPrefix, reg)
 	metrics.Registerer.MustRegister(promCollector.NewGoCollector())
 
-	preloadLabelValues(&metrics, syncerKeys)
+	preloadLabelValues(&metrics, syncerKeys, moduleStageNames)
 
 	return &metrics
 }
@@ -826,4 +879,60 @@ func (m *Metrics) RecordAdsCertReq(success bool) {
 }
 func (m *Metrics) RecordAdsCertSignTime(adsCertSignTime time.Duration) {
 	m.adsCertSignTimer.Observe(adsCertSignTime.Seconds())
+}
+
+func (m *Metrics) RecordModuleDuration(labels metrics.ModuleLabels, duration time.Duration) {
+	m.moduleDuration.With(prometheus.Labels{
+		moduleLabel: labels.Module,
+		stageLabel:  labels.Stage,
+	}).Observe(duration.Seconds())
+}
+
+func (m *Metrics) RecordModuleCalled(labels metrics.ModuleLabels) {
+	m.moduleCalls.With(prometheus.Labels{
+		moduleLabel: labels.Module,
+		stageLabel:  labels.Stage,
+	}).Inc()
+}
+
+func (m *Metrics) RecordModuleFailed(labels metrics.ModuleLabels) {
+	m.moduleFailures.With(prometheus.Labels{
+		moduleLabel: labels.Module,
+		stageLabel:  labels.Stage,
+	}).Inc()
+}
+
+func (m *Metrics) RecordModuleSuccessNooped(labels metrics.ModuleLabels) {
+	m.moduleSuccessNoops.With(prometheus.Labels{
+		moduleLabel: labels.Module,
+		stageLabel:  labels.Stage,
+	}).Inc()
+}
+
+func (m *Metrics) RecordModuleSuccessUpdated(labels metrics.ModuleLabels) {
+	m.moduleSuccessUpdates.With(prometheus.Labels{
+		moduleLabel: labels.Module,
+		stageLabel:  labels.Stage,
+	}).Inc()
+}
+
+func (m *Metrics) RecordModuleSuccessRejected(labels metrics.ModuleLabels) {
+	m.moduleSuccessRejects.With(prometheus.Labels{
+		moduleLabel: labels.Module,
+		stageLabel:  labels.Stage,
+	}).Inc()
+}
+
+func (m *Metrics) RecordModuleExecutionError(labels metrics.ModuleLabels) {
+	m.moduleExecutionErrors.With(prometheus.Labels{
+		moduleLabel: labels.Module,
+		stageLabel:  labels.Stage,
+	}).Inc()
+}
+
+func (m *Metrics) RecordModuleTimeout(labels metrics.ModuleLabels) {
+	m.moduleTimeouts.With(prometheus.Labels{
+		moduleLabel: labels.Module,
+		stageLabel:  labels.Stage,
+	}).Inc()
 }

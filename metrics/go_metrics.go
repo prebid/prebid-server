@@ -75,6 +75,9 @@ type Metrics struct {
 	AdsCertRequestsSuccess metrics.Meter
 	AdsCertRequestsFailure metrics.Meter
 	adsCertSignTimer       metrics.Timer
+
+	// Module metrics
+	ModuleMetrics map[string]map[string]*ModuleMetrics
 }
 
 // AdapterMetrics houses the metrics for a particular adapter
@@ -109,6 +112,17 @@ type accountMetrics struct {
 	storedResponsesMeter metrics.Meter
 }
 
+type ModuleMetrics struct {
+	DurationTimer         metrics.Timer
+	CallCounter           metrics.Counter
+	FailureCounter        metrics.Counter
+	SuccessNoopCounter    metrics.Counter
+	SuccessUpdateCounter  metrics.Counter
+	SuccessRejectCounter  metrics.Counter
+	ExecutionErrorCounter metrics.Counter
+	TimeoutCounter        metrics.Counter
+}
+
 // NewBlankMetrics creates a new Metrics object with all blank metrics object. This may also be useful for
 // testing routines to ensure that no metrics are written anywhere.
 //
@@ -116,7 +130,7 @@ type accountMetrics struct {
 // rather than loading legacy metrics that never get filled.
 // This will also eventually let us configure metrics, such as setting a limited set of metrics
 // for a production instance, and then expanding again when we need more debugging.
-func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, disabledMetrics config.DisabledMetrics) *Metrics {
+func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, disabledMetrics config.DisabledMetrics, moduleStageNames map[string][]string) *Metrics {
 	blankMeter := &metrics.NilMeter{}
 	blankTimer := &metrics.NilTimer{}
 
@@ -172,11 +186,17 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		AdsCertRequestsFailure: blankMeter,
 		adsCertSignTimer:       blankTimer,
 
+		ModuleMetrics: make(map[string]map[string]*ModuleMetrics),
+
 		exchanges: exchanges,
 	}
 
 	for _, a := range exchanges {
 		newMetrics.AdapterMetrics[a] = makeBlankAdapterMetrics(newMetrics.MetricsDisabled)
+	}
+
+	for m, stages := range moduleStageNames {
+		newMetrics.ModuleMetrics[m] = makeBlankModuleMetrics(stages)
 	}
 
 	for _, t := range RequestTypes() {
@@ -220,8 +240,8 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 // metrics object to contain only the metrics we are interested in. This would allow for debug
 // mode metrics. The code would allways try to record the metrics, but effectively noop if we are
 // using a blank meter/timer.
-func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, disableAccountMetrics config.DisabledMetrics, syncerKeys []string) *Metrics {
-	newMetrics := NewBlankMetrics(registry, exchanges, disableAccountMetrics)
+func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, disableAccountMetrics config.DisabledMetrics, syncerKeys []string, moduleStageNames map[string][]string) *Metrics {
+	newMetrics := NewBlankMetrics(registry, exchanges, disableAccountMetrics, moduleStageNames)
 	newMetrics.ConnectionCounter = metrics.GetOrRegisterCounter("active_connections", registry)
 	newMetrics.ConnectionAcceptErrorMeter = metrics.GetOrRegisterMeter("connection_accept_errors", registry)
 	newMetrics.ConnectionCloseErrorMeter = metrics.GetOrRegisterMeter("connection_close_errors", registry)
@@ -311,6 +331,10 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 	newMetrics.AdsCertRequestsFailure = metrics.GetOrRegisterMeter("ads_cert_requests.failed", registry)
 	newMetrics.adsCertSignTimer = metrics.GetOrRegisterTimer("ads_cert_sign_time", registry)
 
+	for m, stages := range moduleStageNames {
+		registerModuleMetrics(registry, m, stages, newMetrics.ModuleMetrics[m])
+	}
+
 	return newMetrics
 }
 
@@ -340,6 +364,24 @@ func makeBlankAdapterMetrics(disabledMetrics config.DisabledMetrics) *AdapterMet
 		newAdapter.ErrorMeters[err] = blankMeter
 	}
 	return newAdapter
+}
+
+func makeBlankModuleMetrics(stages []string) map[string]*ModuleMetrics {
+	mm := map[string]*ModuleMetrics{}
+	for _, stage := range stages {
+		mm[stage] = &ModuleMetrics{
+			DurationTimer:         &metrics.NilTimer{},
+			CallCounter:           metrics.NilCounter{},
+			FailureCounter:        metrics.NilCounter{},
+			SuccessNoopCounter:    metrics.NilCounter{},
+			SuccessUpdateCounter:  metrics.NilCounter{},
+			SuccessRejectCounter:  metrics.NilCounter{},
+			ExecutionErrorCounter: metrics.NilCounter{},
+			TimeoutCounter:        metrics.NilCounter{},
+		}
+	}
+
+	return mm
 }
 
 func makeBlankBidMarkupMetrics() map[openrtb_ext.BidType]*MarkupDeliveryMetrics {
@@ -381,6 +423,19 @@ func registerAdapterMetrics(registry metrics.Registry, adapterOrAccount string, 
 	}
 	am.PanicMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.requests.panic", adapterOrAccount, exchange), registry)
 	am.GDPRRequestBlocked = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.gdpr_request_blocked", adapterOrAccount, exchange), registry)
+}
+
+func registerModuleMetrics(registry metrics.Registry, module string, stages []string, mm map[string]*ModuleMetrics) {
+	for _, stage := range stages {
+		mm[stage].DurationTimer = metrics.GetOrRegisterTimer(fmt.Sprintf("modules.module.%s.stage.%s.duration", module, stage), registry)
+		mm[stage].CallCounter = metrics.GetOrRegisterCounter(fmt.Sprintf("modules.module.%s.stage.%s.call", module, stage), registry)
+		mm[stage].FailureCounter = metrics.GetOrRegisterCounter(fmt.Sprintf("modules.module.%s.stage.%s.failure", module, stage), registry)
+		mm[stage].SuccessNoopCounter = metrics.GetOrRegisterCounter(fmt.Sprintf("modules.module.%s.stage.%s.success.noop", module, stage), registry)
+		mm[stage].SuccessUpdateCounter = metrics.GetOrRegisterCounter(fmt.Sprintf("modules.module.%s.stage.%s.success.update", module, stage), registry)
+		mm[stage].SuccessRejectCounter = metrics.GetOrRegisterCounter(fmt.Sprintf("modules.module.%s.stage.%s.success.reject", module, stage), registry)
+		mm[stage].ExecutionErrorCounter = metrics.GetOrRegisterCounter(fmt.Sprintf("modules.module.%s.stage.%s.execution_error", module, stage), registry)
+		mm[stage].TimeoutCounter = metrics.GetOrRegisterCounter(fmt.Sprintf("modules.module.%s.stage.%s.timeout", module, stage), registry)
+	}
 }
 
 func makeDeliveryMetrics(registry metrics.Registry, prefix string, bidType openrtb_ext.BidType) *MarkupDeliveryMetrics {
@@ -780,4 +835,103 @@ func (me *Metrics) RecordAdsCertReq(success bool) {
 
 func (me *Metrics) RecordAdsCertSignTime(adsCertSignTime time.Duration) {
 	me.adsCertSignTimer.Update(adsCertSignTime)
+}
+
+func (me *Metrics) RecordModuleDuration(labels ModuleLabels, duration time.Duration) {
+	mm, err := me.getModuleMetric(labels)
+	if err != nil {
+		return
+	}
+
+	// Module metrics
+	mm.DurationTimer.Update(duration)
+	//TODO: Account-Module metrics
+}
+
+func (me *Metrics) RecordModuleCalled(labels ModuleLabels) {
+	mm, err := me.getModuleMetric(labels)
+	if err != nil {
+		return
+	}
+
+	// Module metrics
+	mm.CallCounter.Inc(1)
+	//TODO: Account-Module metrics
+}
+
+func (me *Metrics) RecordModuleFailed(labels ModuleLabels) {
+	mm, err := me.getModuleMetric(labels)
+	if err != nil {
+		return
+	}
+
+	// Module metrics
+	mm.FailureCounter.Inc(1)
+	//TODO: Account-Module metrics
+}
+
+func (me *Metrics) RecordModuleSuccessNooped(labels ModuleLabels) {
+	mm, err := me.getModuleMetric(labels)
+	if err != nil {
+		return
+	}
+
+	// Module metrics
+	mm.SuccessNoopCounter.Inc(1)
+	//TODO: Account-Module metrics
+}
+
+func (me *Metrics) RecordModuleSuccessUpdated(labels ModuleLabels) {
+	mm, err := me.getModuleMetric(labels)
+	if err != nil {
+		return
+	}
+
+	// Module metrics
+	mm.SuccessUpdateCounter.Inc(1)
+	//TODO: Account-Module metrics
+}
+
+func (me *Metrics) RecordModuleSuccessRejected(labels ModuleLabels) {
+	mm, err := me.getModuleMetric(labels)
+	if err != nil {
+		return
+	}
+
+	// Module metrics
+	mm.SuccessRejectCounter.Inc(1)
+	//TODO: Account-Module metrics
+}
+
+func (me *Metrics) RecordModuleExecutionError(labels ModuleLabels) {
+	mm, err := me.getModuleMetric(labels)
+	if err != nil {
+		return
+	}
+
+	// Module metrics
+	mm.ExecutionErrorCounter.Inc(1)
+	//TODO: Account-Module metrics
+}
+
+func (me *Metrics) RecordModuleTimeout(labels ModuleLabels) {
+	mm, err := me.getModuleMetric(labels)
+	if err != nil {
+		return
+	}
+
+	// Module metrics
+	mm.TimeoutCounter.Inc(1)
+	//TODO: Account-Module metrics
+}
+
+func (me *Metrics) getModuleMetric(labels ModuleLabels) (*ModuleMetrics, error) {
+	mm, ok := me.ModuleMetrics[labels.Module][labels.Stage]
+	if !ok {
+		err := fmt.Errorf("Trying to run module %s metrics for stage %s: module metrics not found", labels.Module, labels.Stage)
+		glog.Errorf(err.Error())
+		return nil, err
+	}
+
+	return mm, nil
 }

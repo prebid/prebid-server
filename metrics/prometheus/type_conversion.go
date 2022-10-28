@@ -130,3 +130,17 @@ func tcfVersionsAsString() []string {
 	}
 	return valuesAsString
 }
+
+func modulesAsString(moduleStageNames map[string][]string) ([]string, []string) {
+	mods := make([]string, len(moduleStageNames))
+	stages := make([]string, 0)
+
+	i := 0
+	for m, s := range moduleStageNames {
+		mods[i] = m
+		stages = append(stages, s...)
+		i++
+	}
+
+	return mods, stages
+}

@@ -2,6 +2,7 @@ package hooks
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/prebid/prebid-server/hooks/hookstage"
 )
@@ -14,6 +15,7 @@ type HookRepository interface {
 	GetRawBidResponseHook(id string) (hookstage.RawBidResponse, bool)
 	GetAllProcessedBidResponsesHook(id string) (hookstage.AllProcessedBidResponses, bool)
 	GetAuctionResponseHook(id string) (hookstage.AuctionResponse, bool)
+	GetAllModuleStageNames() map[string][]string
 }
 
 func NewHookRepository(hooks map[string]interface{}) (HookRepository, error) {
@@ -36,6 +38,9 @@ type hookRepository struct {
 	allProcessedBidResponseHooks map[string]hookstage.AllProcessedBidResponses
 	auctionResponseHooks         map[string]hookstage.AuctionResponse
 }
+
+// used for metric registration
+var moduleStageNameCollector map[string][]string
 
 func (r *hookRepository) GetEntrypointHook(id string) (h hookstage.Entrypoint, ok bool) {
 	return getHook(r.entrypointHooks, id)
@@ -65,6 +70,10 @@ func (r *hookRepository) GetAuctionResponseHook(id string) (hookstage.AuctionRes
 	return getHook(r.auctionResponseHooks, id)
 }
 
+func (r *hookRepository) GetAllModuleStageNames() map[string][]string {
+	return moduleStageNameCollector
+}
+
 func (r *hookRepository) add(id string, hook interface{}) (err error) {
 	var isCompatible bool
 
@@ -73,6 +82,7 @@ func (r *hookRepository) add(id string, hook interface{}) (err error) {
 		if r.entrypointHooks, err = addHook(r.entrypointHooks, h, id); err != nil {
 			return
 		}
+		addModuleStageName(id, StageEntrypoint)
 	}
 
 	if h, ok := hook.(hookstage.RawAuction); ok {
@@ -80,6 +90,7 @@ func (r *hookRepository) add(id string, hook interface{}) (err error) {
 		if r.rawAuctionHooks, err = addHook(r.rawAuctionHooks, h, id); err != nil {
 			return
 		}
+		addModuleStageName(id, StageRawAuction)
 	}
 
 	if h, ok := hook.(hookstage.ProcessedAuction); ok {
@@ -87,6 +98,7 @@ func (r *hookRepository) add(id string, hook interface{}) (err error) {
 		if r.processedAuctionHooks, err = addHook(r.processedAuctionHooks, h, id); err != nil {
 			return
 		}
+		addModuleStageName(id, StageProcessedAuction)
 	}
 
 	if h, ok := hook.(hookstage.BidRequest); ok {
@@ -94,6 +106,7 @@ func (r *hookRepository) add(id string, hook interface{}) (err error) {
 		if r.bidRequestHooks, err = addHook(r.bidRequestHooks, h, id); err != nil {
 			return
 		}
+		addModuleStageName(id, StageBidRequest)
 	}
 
 	if h, ok := hook.(hookstage.RawBidResponse); ok {
@@ -101,6 +114,7 @@ func (r *hookRepository) add(id string, hook interface{}) (err error) {
 		if r.rawBidResponseHooks, err = addHook(r.rawBidResponseHooks, h, id); err != nil {
 			return
 		}
+		addModuleStageName(id, StageRawBidResponse)
 	}
 
 	if h, ok := hook.(hookstage.AllProcessedBidResponses); ok {
@@ -108,6 +122,7 @@ func (r *hookRepository) add(id string, hook interface{}) (err error) {
 		if r.allProcessedBidResponseHooks, err = addHook(r.allProcessedBidResponseHooks, h, id); err != nil {
 			return
 		}
+		addModuleStageName(id, StageAllProcessedBidResponses)
 	}
 
 	if h, ok := hook.(hookstage.AuctionResponse); ok {
@@ -115,6 +130,7 @@ func (r *hookRepository) add(id string, hook interface{}) (err error) {
 		if r.auctionResponseHooks, err = addHook(r.auctionResponseHooks, h, id); err != nil {
 			return
 		}
+		addModuleStageName(id, StageAuctionResponse)
 	}
 
 	if !isCompatible {
@@ -141,4 +157,13 @@ func addHook[T any](hooks map[string]T, hook T, id string) (map[string]T, error)
 	hooks[id] = hook
 
 	return hooks, nil
+}
+
+func addModuleStageName(id string, stage string) {
+	if moduleStageNameCollector == nil {
+		moduleStageNameCollector = make(map[string][]string)
+	}
+
+	str := strings.SplitN(id, ".", 2)
+	moduleStageNameCollector[str[1]] = append(moduleStageNameCollector[str[1]], stage)
 }

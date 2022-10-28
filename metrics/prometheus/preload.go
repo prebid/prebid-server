@@ -5,7 +5,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-func preloadLabelValues(m *Metrics, syncerKeys []string) {
+func preloadLabelValues(m *Metrics, syncerKeys []string, moduleStageNames map[string][]string) {
 	var (
 		setUidStatusValues        = setUidStatusesAsString()
 		adapterErrorValues        = adapterErrorsAsString()
@@ -23,6 +23,7 @@ func preloadLabelValues(m *Metrics, syncerKeys []string) {
 		syncerRequestStatusValues = syncerRequestStatusesAsString()
 		syncerSetsStatusValues    = syncerSetStatusesAsString()
 		sourceValues              = []string{sourceRequest}
+		moduleValues, stageValues = modulesAsString(moduleStageNames)
 	)
 
 	preloadLabelValuesForCounter(m.connectionsError, map[string][]string{
@@ -207,6 +208,46 @@ func preloadLabelValues(m *Metrics, syncerKeys []string) {
 			adapterLabel: adapterValues,
 		})
 	}
+
+	preloadLabelValuesForHistogram(m.moduleDuration, map[string][]string{
+		moduleLabel: moduleValues,
+		stageLabel:  stageValues,
+	})
+
+	preloadLabelValuesForCounter(m.moduleCalls, map[string][]string{
+		moduleLabel: moduleValues,
+		stageLabel:  stageValues,
+	})
+
+	preloadLabelValuesForCounter(m.moduleFailures, map[string][]string{
+		moduleLabel: moduleValues,
+		stageLabel:  stageValues,
+	})
+
+	preloadLabelValuesForCounter(m.moduleSuccessNoops, map[string][]string{
+		moduleLabel: moduleValues,
+		stageLabel:  stageValues,
+	})
+
+	preloadLabelValuesForCounter(m.moduleSuccessUpdates, map[string][]string{
+		moduleLabel: moduleValues,
+		stageLabel:  stageValues,
+	})
+
+	preloadLabelValuesForCounter(m.moduleSuccessRejects, map[string][]string{
+		moduleLabel: moduleValues,
+		stageLabel:  stageValues,
+	})
+
+	preloadLabelValuesForCounter(m.moduleExecutionErrors, map[string][]string{
+		moduleLabel: moduleValues,
+		stageLabel:  stageValues,
+	})
+
+	preloadLabelValuesForCounter(m.moduleTimeouts, map[string][]string{
+		moduleLabel: moduleValues,
+		stageLabel:  stageValues,
+	})
 }
 
 func preloadLabelValuesForCounter(counter *prometheus.CounterVec, labelsWithValues map[string][]string) {
