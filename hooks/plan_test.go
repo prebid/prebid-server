@@ -737,7 +737,6 @@ func (h fakeEntrypointHook) HandleEntrypointHook(
 	_ context.Context,
 	_ *invocation.ModuleContext,
 	_ hookstage.EntrypointPayload,
-	_ bool,
 ) (invocation.HookResult[hookstage.EntrypointPayload], error) {
 	return invocation.HookResult[hookstage.EntrypointPayload]{}, nil
 }

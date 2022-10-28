@@ -42,13 +42,13 @@ func executeStage[H any, P any](
 	stageResult.GroupsResults = make([][]invocation.HookResult[P], 0, len(plan))
 
 	for _, group := range plan {
-		groupResult, newPayload, err := executeGroup(invocationCtx, group, payload, hookHandler)
-		if err != nil {
-			return stageResult, payload, err
+		groupResult, newPayload, reject := executeGroup(invocationCtx, group, payload, hookHandler)
+		stageResult.GroupsResults = append(stageResult.GroupsResults, groupResult)
+		if reject != nil {
+			return stageResult, payload, reject
 		}
 
 		payload = newPayload
-		stageResult.GroupsResults = append(stageResult.GroupsResults, groupResult)
 	}
 
 	return stageResult, payload, nil
@@ -77,14 +77,9 @@ func executeGroup[H any, P any](
 		close(resp)
 	}()
 
-	hookResponses, err := collectHookResponses(resp, done)
-	if err != nil {
-		return nil, payload, err
-	}
+	hookResponses := collectHookResponses(resp, done)
 
-	groupResult, payload := processHookResponses(hookResponses, payload)
-
-	return groupResult, payload, nil
+	return processHookResponses(hookResponses, payload)
 }
 
 func executeHook[H any, P any](
@@ -133,27 +128,24 @@ func executeHook[H any, P any](
 func collectHookResponses[P any](
 	resp <-chan invocation.HookResponse[P],
 	done chan<- struct{},
-) ([]invocation.HookResponse[P], *RejectError) {
+) []invocation.HookResponse[P] {
 	hookResponses := make([]invocation.HookResponse[P], 0)
 	for r := range resp {
 		if r.Result.Reject {
 			close(done)
-			// todo: send metric
-			reject := &RejectError{Code: r.Result.NbrCode, Reason: r.Result.Message}
-			r.Result.Errors = append(r.Result.Errors, reject.Error())
-			return nil, reject
+			return []invocation.HookResponse[P]{r}
 		}
 
 		hookResponses = append(hookResponses, r)
 	}
 
-	return hookResponses, nil
+	return hookResponses
 }
 
 func processHookResponses[P any](
 	hookResponses []invocation.HookResponse[P],
 	payload P,
-) ([]invocation.HookResult[P], P) {
+) ([]invocation.HookResult[P], P, *RejectError) {
 	groupResult := make([]invocation.HookResult[P], 0, len(hookResponses))
 	for i, r := range hookResponses {
 		groupResult = append(groupResult, r.Result)
@@ -162,6 +154,13 @@ func processHookResponses[P any](
 			groupResult[i].Errors = append(groupResult[i].Errors, r.Err.Error())
 			// todo: send metric
 			continue
+		}
+
+		if r.Result.Reject {
+			reject := &RejectError{Code: r.Result.NbrCode, Reason: r.Result.Message}
+			groupResult[i].Errors = append(groupResult[i].Errors, reject.Error())
+			// todo: send metric
+			return groupResult, payload, reject
 		}
 
 		if r.Result.ChangeSet == nil || len(r.Result.ChangeSet.Mutations()) == 0 {
@@ -179,5 +178,5 @@ func processHookResponses[P any](
 		}
 	}
 
-	return groupResult, payload
+	return groupResult, payload, nil
 }

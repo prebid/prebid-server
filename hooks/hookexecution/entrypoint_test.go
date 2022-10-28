@@ -154,7 +154,7 @@ func TestExecuteEntrypointStage_CanRejectHook(t *testing.T) {
 	stRes, newBody, reject := ExecuteEntrypointStage(&invocation.InvocationContext{}, plan, req, body)
 	require.NotNil(t, reject, "Unexpected successful execution of entrypoint hook")
 	require.Equal(t, reject, &RejectError{}, "Unexpected reject returned from entrypoint hook")
-	assert.Len(t, stRes.GroupsResults, 1, "some hook groups have not been processed")
+	assert.Len(t, stRes.GroupsResults, 2, "some hook groups have not been processed")
 	assert.Equal(t, body, newBody, "request body shouldn't change if request rejected")
 }
 

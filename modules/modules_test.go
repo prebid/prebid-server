@@ -85,7 +85,7 @@ func TestModuleBuilderBuild(t *testing.T) {
 
 type module struct{}
 
-func (h module) HandleEntrypointHook(ctx context.Context, context *invocation.ModuleContext, payload hookstage.EntrypointPayload, debug bool) (invocation.HookResult[hookstage.EntrypointPayload], error) {
+func (h module) HandleEntrypointHook(ctx context.Context, context *invocation.ModuleContext, payload hookstage.EntrypointPayload) (invocation.HookResult[hookstage.EntrypointPayload], error) {
 	return invocation.HookResult[hookstage.EntrypointPayload]{}, nil
 }
 
