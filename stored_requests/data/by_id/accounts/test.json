@@ -1,7 +1,7 @@
 {
     "id": "test",
     "name": "test account",
-    "disabled": true,
+    "disabled": false,
     "cache_ttl": {
         "banner": 600,
         "video": 3600,

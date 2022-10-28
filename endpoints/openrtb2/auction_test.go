@@ -60,10 +60,6 @@ func TestJsonSampleRequests(t *testing.T) {
 			"aliased",
 		},
 		{
-			"Asserts we return 500s on requests referencing accounts with malformed configs.",
-			"account-malformed",
-		},
-		{
 			"Asserts we return 503s on requests with blacklisted accounts and apps.",
 			"blacklisted",
 		},

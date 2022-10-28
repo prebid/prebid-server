@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/stretchr/testify/assert"
 )
@@ -28,11 +29,11 @@ func TestAccountFetcher(t *testing.T) {
 	fetcher, err := NewFileFetcher("./test")
 	assert.NoError(t, err, "Failed to create test fetcher")
 
-	account, errs := fetcher.FetchAccount(context.Background(), "valid")
+	account, errs := fetcher.FetchAccount(context.Background(), json.RawMessage(`{"id":"123"}`), "valid")
 	assertErrorCount(t, 0, errs)
-	assert.JSONEq(t, `{"disabled":false, "id":"valid"}`, string(account))
+	assert.Equal(t, &config.Account{Disabled: false, ID: "valid"}, account)
 
-	_, errs = fetcher.FetchAccount(context.Background(), "nonexistent")
+	_, errs = fetcher.FetchAccount(context.Background(), json.RawMessage(`{"id":"123"}`), "nonexistent")
 	assertErrorCount(t, 1, errs)
 	assert.Error(t, errs[0])
 	assert.Equal(t, stored_requests.NotFoundError{"nonexistent", "Account"}, errs[0])

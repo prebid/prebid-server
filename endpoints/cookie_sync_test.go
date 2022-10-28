@@ -797,6 +797,9 @@ func TestCookieSyncParseRequest(t *testing.T) {
 			cfg: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
 		}.Builder
 
+		defaultLimit := 20
+		maxLimit := 30
+		defaultCookSync := true
 		endpoint := cookieSyncEndpoint{
 			config: &config.Configuration{
 				UserSync:        test.givenConfig,
@@ -808,9 +811,9 @@ func TestCookieSyncParseRequest(t *testing.T) {
 				tcf2ConfigBuilder:      tcf2ConfigBuilder,
 				ccpaEnforce:            test.givenCCPAEnabled,
 			},
-			accountsFetcher: FakeAccountsFetcher{AccountData: map[string]json.RawMessage{
-				"TestAccount":     json.RawMessage(`{"cookie_sync": {"default_limit": 20, "max_limit": 30, "default_coop_sync": true}}`),
-				"DisabledAccount": json.RawMessage(`{"disabled":true}`),
+			accountsFetcher: FakeAccountsFetcher{AccountData: map[string]*config.Account{
+				"TestAccount":     &config.Account{CookieSync: config.CookieSync{DefaultLimit: &defaultLimit, MaxLimit: &maxLimit, DefaultCoopSync: &defaultCookSync}},
+				"DisabledAccount": &config.Account{Disabled: true},
 			}},
 		}
 		assert.NoError(t, endpoint.config.MarshalAccountDefaults())
@@ -1812,11 +1815,11 @@ func (m *MockGDPRPerms) AuctionActivitiesAllowed(ctx context.Context, bidderCore
 }
 
 type FakeAccountsFetcher struct {
-	AccountData map[string]json.RawMessage
+	AccountData map[string]*config.Account
 }
 
-func (f FakeAccountsFetcher) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {
-	defaultAccountJSON := json.RawMessage(`{"disabled":false}`)
+func (f FakeAccountsFetcher) FetchAccount(ctx context.Context, accountDefaultJSON json.RawMessage, accountID string) (*config.Account, []error) {
+	defaultAccountJSON := &config.Account{Disabled: false}
 
 	if accountID == metrics.PublisherUnknown {
 		return defaultAccountJSON, nil

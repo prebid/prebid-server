@@ -1441,10 +1441,10 @@ func (m *mockExchangeVideoNoBids) HoldAuction(ctx context.Context, r exchange.Au
 	}, nil
 }
 
-var mockVideoAccountData = map[string]json.RawMessage{
-	"valid_acct":     json.RawMessage(`{"disabled":false}`),
-	"disabled_acct":  json.RawMessage(`{"disabled":true}`),
-	"malformed_acct": json.RawMessage(`{"disabled":"invalid type"}`),
+var mockVideoAccountData = map[string]*config.Account{
+	"valid_acct":     {Disabled: false}, //json.RawMessage(`{"disabled":false}`),
+	"disabled_acct":  {Disabled: true},
+	"malformed_acct": nil,
 }
 
 var testVideoStoredImpData = map[string]json.RawMessage{

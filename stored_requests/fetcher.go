@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/metrics"
 )
 
@@ -28,7 +29,7 @@ type Fetcher interface {
 
 type AccountFetcher interface {
 	// FetchAccount fetches the host account configuration for a publisher
-	FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error)
+	FetchAccount(ctx context.Context, accountDefaultJSON json.RawMessage, accountID string) (*config.Account, []error)
 }
 
 type CategoryFetcher interface {
@@ -210,18 +211,27 @@ func (f *fetcherWithCache) FetchResponses(ctx context.Context, ids []string) (da
 	return
 }
 
-func (f *fetcherWithCache) FetchAccount(ctx context.Context, accountID string) (account json.RawMessage, errs []error) {
+func (f *fetcherWithCache) FetchAccount(ctx context.Context, accountDefaultJSON json.RawMessage, accountID string) (account *config.Account, errs []error) {
 	accountData := f.cache.Accounts.Get(ctx, []string{accountID})
 	// TODO: add metrics
-	if account, ok := accountData[accountID]; ok {
+	if accountJSON, ok := accountData[accountID]; ok {
 		f.metricsEngine.RecordAccountCacheResult(metrics.CacheHit, 1)
+		account = &config.Account{}
+		err := json.Unmarshal(accountJSON, account)
+		if err != nil {
+			return nil, []error{err}
+		}
 		return account, errs
 	} else {
 		f.metricsEngine.RecordAccountCacheResult(metrics.CacheMiss, 1)
 	}
-	account, errs = f.fetcher.FetchAccount(ctx, accountID)
+	account, errs = f.fetcher.FetchAccount(ctx, accountDefaultJSON, accountID)
 	if len(errs) == 0 {
-		f.cache.Accounts.Save(ctx, map[string]json.RawMessage{accountID: account})
+		accountJSON, err := json.Marshal(account)
+		if err != nil {
+			return nil, []error{err}
+		}
+		f.cache.Accounts.Save(ctx, map[string]json.RawMessage{accountID: accountJSON})
 	}
 	return account, errs
 }

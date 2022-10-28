@@ -4,9 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+
 	"github.com/lib/pq"
 
 	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/stored_requests"
 )
 
@@ -138,7 +140,7 @@ func (fetcher *dbFetcher) FetchResponses(ctx context.Context, ids []string) (dat
 
 }
 
-func (fetcher *dbFetcher) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {
+func (fetcher *dbFetcher) FetchAccount(ctx context.Context, accountDefaultJSON json.RawMessage, accountID string) (*config.Account, []error) {
 	return nil, []error{stored_requests.NotFoundError{accountID, "Account"}}
 }
 

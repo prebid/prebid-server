@@ -1287,8 +1287,8 @@ func buildTestEndpoint(test testCase, cfg *config.Configuration) (httprouter.Han
 
 	var accountFetcher stored_requests.AccountFetcher
 	accountFetcher = &mockAccountFetcher{
-		data: map[string]json.RawMessage{
-			"malformed_acct": json.RawMessage(`{"disabled":"invalid type"}`),
+		data: map[string]*config.Account{
+			"malformed_acct": nil,
 		},
 	}
 
@@ -1327,10 +1327,10 @@ func (v mockBidderParamValidator) Validate(name openrtb_ext.BidderName, ext json
 func (v mockBidderParamValidator) Schema(name openrtb_ext.BidderName) string { return "" }
 
 type mockAccountFetcher struct {
-	data map[string]json.RawMessage
+	data map[string]*config.Account
 }
 
-func (af *mockAccountFetcher) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {
+func (af *mockAccountFetcher) FetchAccount(ctx context.Context, accountDefaultsJSON json.RawMessage, accountID string) (*config.Account, []error) {
 	if account, ok := af.data[accountID]; ok {
 		return account, nil
 	}

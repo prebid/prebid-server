@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/stored_requests"
 )
 
@@ -32,7 +33,7 @@ func (fetcher EmptyFetcher) FetchResponses(ctx context.Context, ids []string) (d
 	return nil, nil
 }
 
-func (fetcher EmptyFetcher) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {
+func (fetcher EmptyFetcher) FetchAccount(ctx context.Context, accountDefaultsJSON json.RawMessage, accountID string) (*config.Account, []error) {
 	return nil, []error{stored_requests.NotFoundError{accountID, "Account"}}
 }
 

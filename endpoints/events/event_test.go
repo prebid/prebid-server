@@ -71,10 +71,9 @@ func (e *eventsMockAnalyticsModule) LogNotificationEventObject(ne *analytics.Not
 }
 
 // Mock Account fetcher
-var mockAccountData = map[string]json.RawMessage{
-	"events_enabled":  json.RawMessage(`{"events_enabled":true}`),
-	"events_disabled": json.RawMessage(`{"events_enabled":false}`),
-	"malformed_acct":  json.RawMessage(`{"events_enabled":"invalid type"}`),
+var mockAccountData = map[string]*config.Account{
+	"events_enabled":  {EventsEnabled: true},
+	"events_disabled": {EventsEnabled: false},
 }
 
 type mockAccountsFetcher struct {
@@ -83,7 +82,7 @@ type mockAccountsFetcher struct {
 	DurationMS int
 }
 
-func (maf mockAccountsFetcher) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {
+func (maf mockAccountsFetcher) FetchAccount(ctx context.Context, defaultAccountJSON json.RawMessage, accountID string) (*config.Account, []error) {
 	if maf.DurationMS > 0 {
 		select {
 		case <-time.After(time.Duration(maf.DurationMS) * time.Millisecond):

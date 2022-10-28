@@ -6,6 +6,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/stored_requests/caches/nil_cache"
 
@@ -239,39 +240,38 @@ func TestAccountCacheHit(t *testing.T) {
 	// Test read from cache
 	accCache.On("Get", ctx, cachedAccounts).Return(
 		map[string]json.RawMessage{
-			"known": json.RawMessage(`true`),
+			"known": json.RawMessage(`{"id":"valid"}`),
 		})
 
 	metricsEngine.On("RecordAccountCacheResult", metrics.CacheHit, 1)
-	account, errs := aFetcherWithCache.FetchAccount(ctx, "known")
+	account, errs := aFetcherWithCache.FetchAccount(ctx, []byte(`{"id":"valid"}`), "known")
 
 	accCache.AssertExpectations(t)
 	fetcher.AssertExpectations(t)
 	metricsEngine.AssertExpectations(t)
-	assert.JSONEq(t, `true`, string(account), "FetchAccount should fetch the right account data")
+	assert.Equal(t, &config.Account{ID: "valid"}, account, "FetchAccount should fetch the right account data")
 	assert.Len(t, errs, 0, "FetchAccount shouldn't return any errors")
 }
 
 func TestAccountCacheMiss(t *testing.T) {
 	accCache, fetcher, aFetcherWithCache, metricsEngine := setupAccountFetcherWithCacheDeps()
 	uncachedAccounts := []string{"uncached"}
-	uncachedAccountsData := map[string]json.RawMessage{
-		"uncached": json.RawMessage(`true`),
-	}
+	// uncachedAccountsData := map[string]json.RawMessage{
+	// 	"uncached": json.RawMessage(`{"id":"valid"}`),
+	// }
 	ctx := context.Background()
-
 	// Test read from cache
 	accCache.On("Get", ctx, uncachedAccounts).Return(map[string]json.RawMessage{})
-	accCache.On("Save", ctx, uncachedAccountsData)
-	fetcher.On("FetchAccount", ctx, "uncached").Return(uncachedAccountsData["uncached"], []error{})
+	accCache.On("Save", ctx, mock.Anything)
+	fetcher.On("FetchAccount", ctx, json.RawMessage(`{"id":"valid"}`), "uncached").Return(&config.Account{ID: "valid"}, []error{})
 	metricsEngine.On("RecordAccountCacheResult", metrics.CacheMiss, 1)
 
-	account, errs := aFetcherWithCache.FetchAccount(ctx, "uncached")
+	account, errs := aFetcherWithCache.FetchAccount(ctx, []byte(`{"id":"valid"}`), "uncached")
 
 	accCache.AssertExpectations(t)
 	fetcher.AssertExpectations(t)
 	metricsEngine.AssertExpectations(t)
-	assert.JSONEq(t, `true`, string(account), "FetchAccount should fetch the right account data")
+	assert.Equal(t, &config.Account{ID: "valid"}, account, "FetchAccount should fetch the right account data")
 	assert.Len(t, errs, 0, "FetchAccount shouldn't return any errors")
 }
 
@@ -348,9 +348,10 @@ func (f *mockFetcher) FetchResponses(ctx context.Context, ids []string) (data ma
 	return args.Get(0).(map[string]json.RawMessage), args.Get(1).([]error)
 }
 
-func (a *mockFetcher) FetchAccount(ctx context.Context, accountID string) (json.RawMessage, []error) {
-	args := a.Called(ctx, accountID)
-	return args.Get(0).(json.RawMessage), args.Get(1).([]error)
+func (a *mockFetcher) FetchAccount(ctx context.Context, accountDefaultJSON json.RawMessage, accountID string) (*config.Account, []error) {
+
+	args := a.Called(ctx, accountDefaultJSON, accountID)
+	return args.Get(0).(*config.Account), args.Get(1).([]error)
 }
 
 func (f *mockFetcher) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {
