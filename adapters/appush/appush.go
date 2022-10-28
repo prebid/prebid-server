@@ -37,8 +37,8 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	var err error
 	var adapterRequests []*adapters.RequestData
 
-	reqCopy := *request
 	for _, imp := range request.Imp {
+		reqCopy := *request
 		reqCopy.Imp = []openrtb2.Imp{imp}
 
 		var bidderExt adapters.ExtImpBidder
