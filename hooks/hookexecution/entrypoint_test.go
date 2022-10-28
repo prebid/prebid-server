@@ -25,10 +25,8 @@ func TestExecuteEntrypointStage_DoesNotChangeRequestForEmptyPlan(t *testing.T) {
 		t.Fatalf("Unexpected error creating http request: %s", err)
 	}
 
-	stRes, newBody, err := ExecuteEntrypointStage(&invocation.InvocationContext{}, plan, req, body)
-	if err != nil {
-		t.Fatalf("Unexpected error executing entrypoint hook: %s", err)
-	}
+	stRes, newBody, reject := ExecuteEntrypointStage(&invocation.InvocationContext{}, plan, req, body)
+	require.Nil(t, reject, "Unexpected stage reject")
 
 	if len(stRes.GroupsResults) != 0 {
 		t.Error("unexpected non-empty stage result from empty plan")
@@ -63,10 +61,8 @@ func TestExecuteEntrypointStage_CanApplyHookMutations(t *testing.T) {
 		t.Fatalf("Unexpected error creating http request: %s", err)
 	}
 
-	stRes, newBody, err := ExecuteEntrypointStage(&invocation.InvocationContext{}, plan, req, body)
-	if err != nil {
-		t.Fatalf("Unexpected error executing entrypoint hook: %s", err)
-	}
+	stRes, newBody, reject := ExecuteEntrypointStage(&invocation.InvocationContext{}, plan, req, body)
+	require.Nil(t, reject, "Unexpected stage reject")
 
 	if len(stRes.GroupsResults) != 2 {
 		t.Error("some hook groups have not been processed")
@@ -155,8 +151,9 @@ func TestExecuteEntrypointStage_CanRejectHook(t *testing.T) {
 	req, err := http.NewRequest(http.MethodPost, "https://prebid.com/openrtb2/auction", reader)
 	require.NoError(t, err, "Unexpected error creating http request: %s", err)
 
-	stRes, newBody, err := ExecuteEntrypointStage(&invocation.InvocationContext{}, plan, req, body)
-	require.ErrorAs(t, err, &RejectError{}, "Unexpected successful execution of entrypoint hook")
+	stRes, newBody, reject := ExecuteEntrypointStage(&invocation.InvocationContext{}, plan, req, body)
+	require.NotNil(t, reject, "Unexpected successful execution of entrypoint hook")
+	require.Equal(t, reject, &RejectError{}, "Unexpected reject returned from entrypoint hook")
 	assert.Len(t, stRes.GroupsResults, 1, "some hook groups have not been processed")
 	assert.Equal(t, body, newBody, "request body shouldn't change if request rejected")
 }
@@ -191,10 +188,8 @@ func TestExecuteEntrypointStage_CanTimeoutOneOfHooks(t *testing.T) {
 		t.Fatalf("Unexpected error creating http request: %s", err)
 	}
 
-	stRes, newBody, err := ExecuteEntrypointStage(&invocation.InvocationContext{}, plan, req, body)
-	if err != nil {
-		t.Fatalf("Unexpected error executing entrypoint hook: %s", err)
-	}
+	stRes, newBody, reject := ExecuteEntrypointStage(&invocation.InvocationContext{}, plan, req, body)
+	require.Nil(t, reject, "Unexpected stage reject")
 
 	if len(stRes.GroupsResults) != 2 {
 		t.Error("some hook groups have not been processed")
@@ -252,10 +247,8 @@ func TestExecuteEntrypointStage_ModuleContextsAreCreated(t *testing.T) {
 	}
 
 	iCtx := invocation.InvocationContext{}
-	stRes, _, err := ExecuteEntrypointStage(&iCtx, plan, req, body)
-	if err != nil {
-		t.Fatalf("Unexpected error executing entrypoint hook: %s", err)
-	}
+	stRes, _, reject := ExecuteEntrypointStage(&iCtx, plan, req, body)
+	require.Nil(t, reject, "Unexpected stage reject")
 
 	if len(stRes.GroupsResults) != 2 {
 		t.Error("some hook groups have not been processed")

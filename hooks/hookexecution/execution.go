@@ -37,7 +37,7 @@ func executeStage[H any, P any](
 	plan hooks.Plan[H],
 	payload P,
 	hookHandler hookHandler[H, P],
-) (invocation.StageResult[P], P, error) {
+) (invocation.StageResult[P], P, *RejectError) {
 	var stageResult invocation.StageResult[P]
 	stageResult.GroupsResults = make([][]invocation.HookResult[P], 0, len(plan))
 
@@ -59,7 +59,7 @@ func executeGroup[H any, P any](
 	group hooks.Group[H],
 	payload P,
 	hookHandler hookHandler[H, P],
-) ([]invocation.HookResult[P], P, error) {
+) ([]invocation.HookResult[P], P, *RejectError) {
 	var wg sync.WaitGroup
 	done := make(chan struct{})
 	resp := make(chan invocation.HookResponse[P])
@@ -77,12 +77,14 @@ func executeGroup[H any, P any](
 		close(resp)
 	}()
 
-	groupResults, err := collectHookResults(resp, done)
-	if err == nil {
-		payload = applyHookResults(groupResults, payload)
+	hookResponses, err := collectHookResponses(resp, done)
+	if err != nil {
+		return nil, payload, err
 	}
 
-	return groupResults, payload, err
+	groupResult, payload := processHookResponses(hookResponses, payload)
+
+	return groupResult, payload, nil
 }
 
 func executeHook[H any, P any](
@@ -122,51 +124,60 @@ func executeHook[H any, P any](
 				Result: invocation.HookResult[P]{ModuleCode: hw.Module},
 				Err:    TimeoutError{},
 			}
+		case <-done:
+			return
 		}
 	}
 }
 
-func collectHookResults[P any](
+func collectHookResponses[P any](
 	resp <-chan invocation.HookResponse[P],
 	done chan<- struct{},
-) ([]invocation.HookResult[P], error) {
-	groupResults := make([]invocation.HookResult[P], 0)
+) ([]invocation.HookResponse[P], *RejectError) {
+	hookResponses := make([]invocation.HookResponse[P], 0)
 	for r := range resp {
 		if r.Result.Reject {
 			close(done)
 			// todo: send metric
-			err := RejectError{Code: r.Result.NbrCode, Reason: r.Result.Message}
-			r.Result.Errors = append(r.Result.Errors, err.Error())
-			return nil, err
+			reject := &RejectError{Code: r.Result.NbrCode, Reason: r.Result.Message}
+			r.Result.Errors = append(r.Result.Errors, reject.Error())
+			return nil, reject
 		}
 
-		if r.Err != nil {
-			r.Result.Errors = append(r.Result.Errors, r.Err.Error())
-			// todo: send metric
-		}
-
-		groupResults = append(groupResults, r.Result)
+		hookResponses = append(hookResponses, r)
 	}
 
-	return groupResults, nil
+	return hookResponses, nil
 }
 
-func applyHookResults[P any](hookResults []invocation.HookResult[P], payload P) P {
-	for _, r := range hookResults {
-		if r.ChangeSet == nil || len(r.ChangeSet.Mutations()) == 0 {
+func processHookResponses[P any](
+	hookResponses []invocation.HookResponse[P],
+	payload P,
+) ([]invocation.HookResult[P], P) {
+	groupResult := make([]invocation.HookResult[P], 0, len(hookResponses))
+	for i, r := range hookResponses {
+		groupResult = append(groupResult, r.Result)
+
+		if r.Err != nil {
+			groupResult[i].Errors = append(groupResult[i].Errors, r.Err.Error())
+			// todo: send metric
+			continue
+		}
+
+		if r.Result.ChangeSet == nil || len(r.Result.ChangeSet.Mutations()) == 0 {
 			// todo: send hook metrics (NOP metric)
 			continue
 		}
 
-		for _, mut := range r.ChangeSet.Mutations() {
+		for _, mut := range r.Result.ChangeSet.Mutations() {
 			p, err := mut.Apply(payload)
 			if err != nil {
-				r.Warnings = append(r.Warnings, fmt.Sprintf("failed applying hook mutation: %s", err))
+				groupResult[i].Warnings = append(groupResult[i].Warnings, fmt.Sprintf("failed applying hook mutation: %s", err))
 				continue
 			}
 			payload = p
 		}
 	}
 
-	return payload
+	return groupResult, payload
 }

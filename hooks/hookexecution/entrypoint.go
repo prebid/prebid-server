@@ -14,7 +14,7 @@ func ExecuteEntrypointStage(
 	plan hooks.Plan[hookstage.Entrypoint],
 	req *http.Request,
 	body []byte,
-) (invocation.StageResult[hookstage.EntrypointPayload], []byte, error) {
+) (invocation.StageResult[hookstage.EntrypointPayload], []byte, *RejectError) {
 	handler := func(
 		ctx context.Context,
 		moduleCtx *invocation.ModuleContext,
