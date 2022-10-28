@@ -2,11 +2,14 @@ package invocation
 
 import (
 	"encoding/json"
-	"github.com/prebid/prebid-server/metrics"
 	"time"
+
+	"github.com/prebid/prebid-server/metrics"
 )
 
 type InvocationContext struct {
+	Endpoint          string
+	Stage             string
 	DebugEnabled      bool
 	RequestTypeMetric metrics.RequestType
 	moduleContexts    map[string]*ModuleContext
