@@ -24,11 +24,11 @@ import (
 	"github.com/prebid/prebid-server/stored_responses"
 )
 
-var integrationTypeMap = map[metrics.RequestType]config.IntegrationType{
-	metrics.ReqTypeAMP:      config.IntegrationTypeAMP,
-	metrics.ReqTypeORTB2App: config.IntegrationTypeApp,
-	metrics.ReqTypeVideo:    config.IntegrationTypeVideo,
-	metrics.ReqTypeORTB2Web: config.IntegrationTypeWeb,
+var channelTypeMap = map[metrics.RequestType]config.ChannelType{
+	metrics.ReqTypeAMP:      config.ChannelAMP,
+	metrics.ReqTypeORTB2App: config.ChannelApp,
+	metrics.ReqTypeVideo:    config.ChannelVideo,
+	metrics.ReqTypeORTB2Web: config.ChannelWeb,
 }
 
 const unknownBidder string = ""
@@ -88,7 +88,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 	}
 	gdprApplies := gdprSignal == gdpr.SignalYes || (gdprSignal == gdpr.SignalAmbiguous && gdprDefaultValue == gdpr.SignalYes)
 
-	ccpaEnforcer, err := extractCCPA(req.BidRequest, privacyConfig, &auctionReq.Account, aliases, integrationTypeMap[auctionReq.LegacyLabels.RType])
+	ccpaEnforcer, err := extractCCPA(req.BidRequest, privacyConfig, &auctionReq.Account, aliases, channelTypeMap[auctionReq.LegacyLabels.RType])
 	if err != nil {
 		errs = append(errs, err)
 	}
@@ -112,7 +112,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 	var gdprPerms gdpr.Permissions = &gdpr.AlwaysAllow{}
 
 	if gdprApplies {
-		gdprEnforced = tcf2Cfg.IntegrationEnabled(integrationTypeMap[auctionReq.LegacyLabels.RType])
+		gdprEnforced = tcf2Cfg.ChannelEnabled(channelTypeMap[auctionReq.LegacyLabels.RType])
 	}
 
 	if gdprEnforced {
@@ -170,14 +170,14 @@ func cleanOpenRTBRequests(ctx context.Context,
 	return
 }
 
-func ccpaEnabled(account *config.Account, privacyConfig config.Privacy, requestType config.IntegrationType) bool {
-	if accountEnabled := account.CCPA.EnabledForIntegrationType(requestType); accountEnabled != nil {
+func ccpaEnabled(account *config.Account, privacyConfig config.Privacy, requestType config.ChannelType) bool {
+	if accountEnabled := account.CCPA.EnabledForChannelType(requestType); accountEnabled != nil {
 		return *accountEnabled
 	}
 	return privacyConfig.CCPA.Enforce
 }
 
-func extractCCPA(orig *openrtb2.BidRequest, privacyConfig config.Privacy, account *config.Account, aliases map[string]string, requestType config.IntegrationType) (privacy.PolicyEnforcer, error) {
+func extractCCPA(orig *openrtb2.BidRequest, privacyConfig config.Privacy, account *config.Account, aliases map[string]string, requestType config.ChannelType) (privacy.PolicyEnforcer, error) {
 	// Quick extra wrapper until RequestWrapper makes its way into CleanRequests
 	ccpaPolicy, err := ccpa.ReadFromRequestWrapper(&openrtb_ext.RequestWrapper{BidRequest: orig})
 	if err != nil {
