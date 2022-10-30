@@ -1,6 +1,6 @@
 endpoint: "https://display.bidder.taboola.com/OpenRTB/TaboolaHB/auction"
 maintainer:
-  email:  ahmad.l@taboola.com
+  email:  ps-team@taboola.com
 gvlVendorID: 42
 capabilities:
   app:

@@ -24,6 +24,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+
 	taboolaRequest, errs := createTaboolaRequest(request)
 	if len(errs) > 0 {
 		return nil, errs
@@ -73,7 +74,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	bidResponse.Currency = response.Cur
 	for _, seatBid := range response.SeatBid {
 		for i := range seatBid.Bid {
-			bidType, err := getMediaTypeForImp(seatBid.Bid[i].ImpID, request.Imp)
+			bidType, err := getMediaType(seatBid.Bid[i].ImpID, request.Imp)
 			if err != nil {
 				errs = append(errs, err)
 				continue
@@ -89,11 +90,12 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 }
 
 func createTaboolaRequest(request *openrtb2.BidRequest) (taboolaRequest *openrtb2.BidRequest, errors []error) {
+	modifiedRequest := *request
 	var errs []error
 
 	var taboolaExt openrtb_ext.ImpExtTaboola
-	for i := 0; i < len((*request).Imp); i++ {
-		imp := (*request).Imp[i]
+	for i := 0; i < len(modifiedRequest.Imp); i++ {
+		imp := modifiedRequest.Imp[i]
 
 		var bidderExt adapters.ExtImpBidder
 		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
@@ -106,11 +108,11 @@ func createTaboolaRequest(request *openrtb2.BidRequest) (taboolaRequest *openrtb
 		}
 		if taboolaExt.TagId != "" {
 			imp.TagID = taboolaExt.TagId
-			(*request).Imp[i] = imp
+			modifiedRequest.Imp[i] = imp
 		}
 		if taboolaExt.BidFloor != 0 {
 			imp.BidFloor = taboolaExt.BidFloor
-			(*request).Imp[i] = imp
+			modifiedRequest.Imp[i] = imp
 		}
 	}
 
@@ -118,33 +120,35 @@ func createTaboolaRequest(request *openrtb2.BidRequest) (taboolaRequest *openrtb
 		ID: taboolaExt.PublisherId,
 	}
 
-	if (*request).Site == nil {
-		site := &openrtb2.Site{
+	if modifiedRequest.Site == nil {
+		newSite := &openrtb2.Site{
 			ID:        taboolaExt.PublisherId,
 			Name:      taboolaExt.PublisherId,
 			Domain:    evaluateDomain(taboolaExt.PublisherDomain, request),
 			Publisher: publisher,
 		}
-		(*request).Site = site
+		modifiedRequest.Site = newSite
 	} else {
-		(*request).Site.Publisher = publisher
-		(*request).Site.ID = taboolaExt.PublisherId
-		(*request).Site.Name = taboolaExt.PublisherId
-		(*request).Site.Domain = evaluateDomain(taboolaExt.PublisherDomain, request)
+		modifiedSite := *modifiedRequest.Site
+		modifiedSite.Publisher = publisher
+		modifiedSite.ID = taboolaExt.PublisherId
+		modifiedSite.Name = taboolaExt.PublisherId
+		modifiedSite.Domain = evaluateDomain(taboolaExt.PublisherDomain, request)
+		modifiedRequest.Site = &modifiedSite
 	}
 
 	if taboolaExt.BCat != nil {
-		(*request).BCat = taboolaExt.BCat
+		modifiedRequest.BCat = taboolaExt.BCat
 	}
 
 	if taboolaExt.BAdv != nil {
-		(*request).BAdv = taboolaExt.BAdv
+		modifiedRequest.BAdv = taboolaExt.BAdv
 	}
 
-	return request, errs
+	return &modifiedRequest, errs
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
+func getMediaType(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
 	for _, imp := range imps {
 		if imp.ID == impID {
 			if imp.Native != nil {
