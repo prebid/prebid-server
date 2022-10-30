@@ -86,7 +86,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 			bidResponse.Bids = append(bidResponse.Bids, b)
 		}
 	}
-	return bidResponse, nil
+	return bidResponse, errs
 }
 
 func createTaboolaRequest(request *openrtb2.BidRequest) (taboolaRequest *openrtb2.BidRequest, errors []error) {

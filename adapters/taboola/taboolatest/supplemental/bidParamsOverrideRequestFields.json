@@ -23,13 +23,16 @@
         "ext": {
           "bidder": {
             "publisherId": "publisher-id",
-            "tagid": "tag-id"
+            "tagid": "tag-id",
+            "publisherDomain": "http://domain.com"
           }
         }
       }
     ],
     "site": {
-      "domain": "http://domain.com",
+      "id": "dummy-site-id",
+      "name": "dummy-site-id",
+      "domain": "http://dummy-domain.com",
       "page": "http://page-domain.com",
       "ref": "http://page-domain.com"
     },
@@ -68,7 +71,8 @@
               "ext": {
                 "bidder": {
                   "publisherId": "publisher-id",
-                  "tagid": "tag-id"
+                  "tagid": "tag-id",
+                  "publisherDomain": "http://domain.com"
                 }
               }
             }
@@ -91,7 +95,7 @@
         }
       },
       "mockResponse": {
-        "status": 500,
+        "status": 200,
         "body": {
           "id": "123",
           "seatbid": [
@@ -123,11 +127,30 @@
       }
     }
   ],
-  "expectedBidResponses": [],
-  "expectedMakeBidsErrors": [
+  "expectedBidResponses": [
     {
-      "value": "Unexpected status code: 500. Run with request.debug = 1 for more info.",
-      "comparison": "literal"
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "request-id",
+            "impid": "impression-id",
+            "price": 2.1,
+            "adid": "1",
+            "adm": "<hrml></html>",
+            "adomain": [
+              "adomain.com"
+            ],
+            "cid": "cid",
+            "crid": "crid",
+            "w": 300,
+            "h": 250,
+            "exp": 60,
+            "lurl": "https://lurl.domain.com/"
+          },
+          "type": "banner"
+        }
+      ]
     }
   ]
 }

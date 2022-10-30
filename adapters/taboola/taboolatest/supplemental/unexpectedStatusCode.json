@@ -91,7 +91,7 @@
         }
       },
       "mockResponse": {
-        "status": 500,
+        "status": 302,
         "body": {
           "id": "123",
           "seatbid": [
@@ -126,7 +126,7 @@
   "expectedBidResponses": [],
   "expectedMakeBidsErrors": [
     {
-      "value": "Unexpected status code: 500. Run with request.debug = 1 for more info.",
+      "value": "Unexpected status code: 302. Run with request.debug = 1 for more info.",
       "comparison": "literal"
     }
   ]

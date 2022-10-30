@@ -91,7 +91,7 @@
         }
       },
       "mockResponse": {
-        "status": 500,
+        "status": 200,
         "body": {
           "id": "123",
           "seatbid": [
@@ -99,7 +99,7 @@
               "bid": [
                 {
                   "id": "request-id",
-                  "impid": "impression-id",
+                  "impid": "incorrect-impression-id",
                   "price": 2.1,
                   "adid": "1",
                   "adm": "<hrml></html>",
@@ -123,10 +123,9 @@
       }
     }
   ],
-  "expectedBidResponses": [],
   "expectedMakeBidsErrors": [
     {
-      "value": "Unexpected status code: 500. Run with request.debug = 1 for more info.",
+      "value": "Failed to find native/banner impression \"incorrect-impression-id\" ",
       "comparison": "literal"
     }
   ]
