@@ -38,6 +38,7 @@ var validParams = []string{
 }
 
 var invalidParams = []string{
+	`{}`,
 	`{"publisherId" : "1"}`,
 	`{"publisherId" : 1, "tagid": "tag-id-for-example"}`,
 	`{"publisherId" : "1"", "tagid": 2}`,

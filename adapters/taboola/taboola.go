@@ -41,7 +41,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		Body:   requestJSON,
 	}
 
-	return []*adapters.RequestData{requestData}, nil
+	return []*adapters.RequestData{requestData}, errs
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
