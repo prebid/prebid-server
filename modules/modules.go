@@ -15,7 +15,7 @@ func NewBuilder() Builder {
 
 type Builder interface {
 	SetModuleBuilders(builders ModuleBuilders) Builder
-	Build(cfg config.Modules, client *http.Client) (hooks.HookRepository, error)
+	Build(cfg config.Modules, client *http.Client) (hooks.HookRepository, map[string][]string, error)
 }
 
 type (
@@ -34,7 +34,7 @@ func (m *builder) SetModuleBuilders(builders ModuleBuilders) Builder {
 	return m
 }
 
-func (m *builder) Build(cfg config.Modules, client *http.Client) (hooks.HookRepository, error) {
+func (m *builder) Build(cfg config.Modules, client *http.Client) (hooks.HookRepository, map[string][]string, error) {
 	modules := make(map[string]interface{})
 	for vendor, moduleBuilders := range m.builders {
 		for moduleName, builder := range moduleBuilders {
@@ -44,18 +44,25 @@ func (m *builder) Build(cfg config.Modules, client *http.Client) (hooks.HookRepo
 			id := fmt.Sprintf("%s.%s", vendor, moduleName)
 			if data, ok := cfg[vendor][moduleName]; ok {
 				if conf, err = json.Marshal(data); err != nil {
-					return nil, fmt.Errorf(`failed to marshal "%s" module config: %s`, id, err)
+					return nil, nil, fmt.Errorf(`failed to marshal "%s" module config: %s`, id, err)
 				}
 			}
 
 			module, err := builder(conf, client)
 			if err != nil {
-				return nil, fmt.Errorf(`failed to init "%s" module: %s`, id, err)
+				return nil, nil, fmt.Errorf(`failed to init "%s" module: %s`, id, err)
 			}
 
 			modules[id] = module
 		}
 	}
 
-	return hooks.NewHookRepository(modules)
+	coll, err := createModuleStageNamesCollection(modules)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	repo, err := hooks.NewHookRepository(modules)
+
+	return repo, coll, err
 }

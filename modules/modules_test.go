@@ -20,12 +20,13 @@ func TestModuleBuilderBuild(t *testing.T) {
 	moduleName := "foobar"
 
 	testCases := map[string]struct {
-		isHookFound         bool
-		expectedHook        interface{}
-		givenModule         interface{}
-		expectedErr         error
-		givenHookBuilderErr error
-		givenGetHookFn      func(repo hooks.HookRepository, module string) (interface{}, bool)
+		isHookFound          bool
+		expectedHook         interface{}
+		givenModule          interface{}
+		expectedErr          error
+		givenHookBuilderErr  error
+		givenGetHookFn       func(repo hooks.HookRepository, module string) (interface{}, bool)
+		expectedModStageColl map[string][]string
 	}{
 		"Can build with entrypoint hook": {
 			givenModule:  module{},
@@ -34,6 +35,7 @@ func TestModuleBuilderBuild(t *testing.T) {
 			givenGetHookFn: func(repo hooks.HookRepository, module string) (interface{}, bool) {
 				return repo.GetEntrypointHook(module)
 			},
+			expectedModStageColl: map[string][]string{vendor + "-" + moduleName: {hooks.StageEntrypoint, hooks.StageAuctionResponse}},
 		},
 		"Can build with auction response hook": {
 			givenModule:  module{},
@@ -42,6 +44,7 @@ func TestModuleBuilderBuild(t *testing.T) {
 			givenGetHookFn: func(repo hooks.HookRepository, module string) (interface{}, bool) {
 				return repo.GetAuctionResponseHook(module)
 			},
+			expectedModStageColl: map[string][]string{vendor + "-" + moduleName: {hooks.StageEntrypoint, hooks.StageAuctionResponse}},
 		},
 		"Fails to find not registered hook": {
 			givenModule:  module{},
@@ -50,6 +53,7 @@ func TestModuleBuilderBuild(t *testing.T) {
 			givenGetHookFn: func(repo hooks.HookRepository, module string) (interface{}, bool) {
 				return repo.GetAllProcessedBidResponsesHook(module) // ask for hook not implemented in module
 			},
+			expectedModStageColl: map[string][]string{vendor + "-" + moduleName: {hooks.StageEntrypoint, hooks.StageAuctionResponse}},
 		},
 		"Builder fails if module does not implement any hook interface": {
 			expectedHook: struct{}{},
@@ -63,7 +67,7 @@ func TestModuleBuilderBuild(t *testing.T) {
 	}
 
 	for name, test := range testCases {
-		t.Run(name, func(t *testing.T) {
+		t.Run(name, func(ti *testing.T) {
 			builder := NewBuilder().SetModuleBuilders(ModuleBuilders{
 				vendor: {
 					moduleName: func(cfg json.RawMessage, client *http.Client) (interface{}, error) {
@@ -72,12 +76,13 @@ func TestModuleBuilderBuild(t *testing.T) {
 				},
 			})
 
-			repo, err := builder.Build(nil, http.DefaultClient)
-			assert.Equal(t, test.expectedErr, err)
+			repo, coll, err := builder.Build(nil, http.DefaultClient)
+			assert.Equal(ti, test.expectedErr, err)
 			if test.expectedErr == nil {
 				hook, found := test.givenGetHookFn(repo, fmt.Sprintf("%s.%s", vendor, moduleName))
-				assert.Equal(t, test.isHookFound, found)
-				assert.IsType(t, test.expectedHook, hook)
+				assert.Equal(ti, test.isHookFound, found)
+				assert.IsType(ti, test.expectedHook, hook)
+				assert.Equal(ti, test.expectedModStageColl, coll)
 			}
 		})
 	}
