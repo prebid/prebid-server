@@ -12,6 +12,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util/maputil"
 
 	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v17/adcom1"
@@ -19,6 +20,8 @@ import (
 )
 
 const badvLimitSize = 50
+
+var bannerExtContent = []byte(`{"rp":{"mime":"text/html"}}`)
 
 type RubiconAdapter struct {
 	URI          string
@@ -88,22 +91,16 @@ type rubiconUserExtRP struct {
 	Target json.RawMessage `json:"target,omitempty"`
 }
 
-type rubiconExtUserTpID struct {
-	Source string `json:"source"`
-	UID    string `json:"uid"`
-}
-
 type rubiconDataExt struct {
 	SegTax int `json:"segtax"`
 }
 
 type rubiconUserExt struct {
-	Consent     string               `json:"consent,omitempty"`
-	Eids        []openrtb2.EID       `json:"eids,omitempty"`
-	TpID        []rubiconExtUserTpID `json:"tpid,omitempty"`
-	RP          rubiconUserExtRP     `json:"rp"`
-	LiverampIdl string               `json:"liveramp_idl,omitempty"`
-	Data        json.RawMessage      `json:"data,omitempty"`
+	Consent     string           `json:"consent,omitempty"`
+	Eids        []openrtb2.EID   `json:"eids,omitempty"`
+	RP          rubiconUserExtRP `json:"rp"`
+	LiverampIdl string           `json:"liveramp_idl,omitempty"`
+	Data        json.RawMessage  `json:"data,omitempty"`
 }
 
 type rubiconSiteExtRP struct {
@@ -124,9 +121,7 @@ type rubiconPubExt struct {
 }
 
 type rubiconBannerExtRP struct {
-	SizeID     int    `json:"size_id,omitempty"`
-	AltSizeIDs []int  `json:"alt_size_ids,omitempty"`
-	MIME       string `json:"mime"`
+	MIME string `json:"mime"`
 }
 
 type rubiconBannerExt struct {
@@ -160,7 +155,13 @@ type rubiconBidResponse struct {
 
 type rubiconSeatBid struct {
 	openrtb2.SeatBid
-	Buyer string `json:"buyer,omitempty"`
+	Buyer string       `json:"buyer,omitempty"`
+	Bid   []rubiconBid `json:"bid"`
+}
+
+type rubiconBid struct {
+	openrtb2.Bid
+	AdmObject json.RawMessage `json:"admobject,omitempty"`
 }
 
 type extPrebid struct {
@@ -171,94 +172,6 @@ type extPrebid struct {
 type rubiSize struct {
 	w uint16
 	h uint16
-}
-
-var rubiSizeMap = map[rubiSize]int{
-	{w: 468, h: 60}:    1,
-	{w: 728, h: 90}:    2,
-	{w: 728, h: 91}:    2,
-	{w: 120, h: 90}:    5,
-	{w: 125, h: 125}:   7,
-	{w: 120, h: 600}:   8,
-	{w: 160, h: 600}:   9,
-	{w: 300, h: 600}:   10,
-	{w: 200, h: 200}:   13,
-	{w: 250, h: 250}:   14,
-	{w: 300, h: 250}:   15,
-	{w: 300, h: 251}:   15,
-	{w: 336, h: 280}:   16,
-	{w: 240, h: 400}:   17,
-	{w: 300, h: 100}:   19,
-	{w: 980, h: 120}:   31,
-	{w: 250, h: 360}:   32,
-	{w: 180, h: 500}:   33,
-	{w: 980, h: 150}:   35,
-	{w: 468, h: 400}:   37,
-	{w: 930, h: 180}:   38,
-	{w: 750, h: 100}:   39,
-	{w: 750, h: 200}:   40,
-	{w: 750, h: 300}:   41,
-	{w: 320, h: 50}:    43,
-	{w: 300, h: 50}:    44,
-	{w: 300, h: 300}:   48,
-	{w: 1024, h: 768}:  53,
-	{w: 300, h: 1050}:  54,
-	{w: 970, h: 90}:    55,
-	{w: 970, h: 250}:   57,
-	{w: 1000, h: 90}:   58,
-	{w: 320, h: 80}:    59,
-	{w: 320, h: 150}:   60,
-	{w: 1000, h: 1000}: 61,
-	{w: 580, h: 500}:   64,
-	{w: 640, h: 480}:   65,
-	{w: 930, h: 600}:   66,
-	{w: 320, h: 480}:   67,
-	{w: 1800, h: 1000}: 68,
-	{w: 320, h: 320}:   72,
-	{w: 320, h: 160}:   73,
-	{w: 980, h: 240}:   78,
-	{w: 980, h: 300}:   79,
-	{w: 980, h: 400}:   80,
-	{w: 480, h: 300}:   83,
-	{w: 300, h: 120}:   85,
-	{w: 548, h: 150}:   90,
-	{w: 970, h: 310}:   94,
-	{w: 970, h: 100}:   95,
-	{w: 970, h: 210}:   96,
-	{w: 480, h: 320}:   101,
-	{w: 768, h: 1024}:  102,
-	{w: 480, h: 280}:   103,
-	{w: 250, h: 800}:   105,
-	{w: 320, h: 240}:   108,
-	{w: 1000, h: 300}:  113,
-	{w: 320, h: 100}:   117,
-	{w: 800, h: 250}:   125,
-	{w: 200, h: 600}:   126,
-	{w: 980, h: 600}:   144,
-	{w: 980, h: 150}:   145,
-	{w: 1000, h: 250}:  152,
-	{w: 640, h: 320}:   156,
-	{w: 320, h: 250}:   159,
-	{w: 250, h: 600}:   179,
-	{w: 600, h: 300}:   195,
-	{w: 640, h: 360}:   198,
-	{w: 640, h: 200}:   199,
-	{w: 1030, h: 590}:  213,
-	{w: 980, h: 360}:   214,
-	{w: 320, h: 180}:   229,
-	{w: 2000, h: 1400}: 230,
-	{w: 580, h: 400}:   232,
-	{w: 480, h: 820}:   256,
-	{w: 400, h: 600}:   257,
-	{w: 500, h: 200}:   258,
-	{w: 998, h: 200}:   259,
-	{w: 970, h: 1000}:  264,
-	{w: 1920, h: 1080}: 265,
-	{w: 1800, h: 200}:  274,
-	{w: 320, h: 500}:   278,
-	{w: 320, h: 400}:   282,
-	{w: 640, h: 380}:   288,
-	{w: 500, h: 1000}:  548,
 }
 
 // defines the contract for bidrequest.user.ext.eids[i].ext
@@ -273,59 +186,8 @@ type rubiconUserExtEidUidExt struct {
 }
 
 type mappedRubiconUidsParam struct {
-	tpIds       []rubiconExtUserTpID
 	segments    []string
 	liverampIdl string
-}
-
-// MAS algorithm
-func findPrimary(alt []int) (int, []int) {
-	min, pos, primary := 0, 0, 0
-	for i, size := range alt {
-		if size == 15 {
-			primary = 15
-			pos = i
-			break
-		} else if size == 2 {
-			primary = 2
-			pos = i
-		} else if size == 9 && primary != 2 {
-			primary = 9
-			pos = i
-		} else if size < alt[min] {
-			min = i
-		}
-	}
-	if primary == 0 {
-		primary = alt[min]
-		pos = min
-	}
-
-	alt = append(alt[:pos], alt[pos+1:]...)
-	return primary, alt
-}
-
-func parseRubiconSizes(sizes []openrtb2.Format) (primary int, alt []int, err error) {
-	// Fixes #317
-	if len(sizes) < 1 {
-		err = &errortypes.BadInput{
-			Message: "rubicon imps must have at least one imp.format element",
-		}
-		return
-	}
-	for _, size := range sizes {
-		if rs, ok := rubiSizeMap[rubiSize{w: uint16(size.W), h: uint16(size.H)}]; ok {
-			alt = append(alt, rs)
-		}
-	}
-	if len(alt) > 0 {
-		primary, alt = findPrimary(alt)
-	} else {
-		err = &errortypes.BadInput{
-			Message: "No primary size found",
-		}
-	}
-	return
 }
 
 func resolveVideoSizeId(placement adcom1.VideoPlacementSubtype, instl int8, impId string) (sizeID int, err error) {
@@ -479,13 +341,13 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 						userBuyerUID = extractUserBuyerUID(userExt.Eids)
 					}
 
-					mappedRubiconUidsParam, errors := getTpIdsAndSegments(userExt.Eids)
+					mappedRubiconUidsParam, errors := getSegments(userExt.Eids)
 					if len(errors) > 0 {
 						errs = append(errs, errors...)
 						continue
 					}
 
-					if err := updateUserExtWithTpIdsAndSegments(&userExtRP, mappedRubiconUidsParam); err != nil {
+					if err := updateUserExtWithSegments(&userExtRP, mappedRubiconUidsParam); err != nil {
 						errs = append(errs, err)
 						continue
 					}
@@ -515,6 +377,8 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 		}
 
 		isVideo := isVideo(imp)
+		impType := openrtb_ext.BidTypeVideo
+		requestNative := make(map[string]interface{})
 		if isVideo {
 			videoCopy := *imp.Video
 
@@ -537,21 +401,33 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			videoCopy.Ext, err = json.Marshal(&videoExt)
 			imp.Video = &videoCopy
 			imp.Banner = nil
-		} else {
-			primarySizeID, altSizeIDs, err := parseRubiconSizes(imp.Banner.Format)
-			if err != nil {
-				errs = append(errs, err)
+			imp.Native = nil
+		} else if imp.Banner != nil {
+			bannerCopy := *imp.Banner
+			if len(bannerCopy.Format) < 1 && (bannerCopy.W == nil || *bannerCopy.W == 0 && bannerCopy.H == nil || *bannerCopy.H == 0) {
+				errs = append(errs, &errortypes.BadInput{
+					Message: "rubicon imps must have at least one imp.format element",
+				})
 				continue
 			}
-			bannerExt := rubiconBannerExt{RP: rubiconBannerExtRP{SizeID: primarySizeID, AltSizeIDs: altSizeIDs, MIME: "text/html"}}
-			bannerCopy := *imp.Banner
-			bannerCopy.Ext, err = json.Marshal(&bannerExt)
+			bannerCopy.Ext = bannerExtContent
 			if err != nil {
 				errs = append(errs, err)
 				continue
 			}
 			imp.Banner = &bannerCopy
 			imp.Video = nil
+			imp.Native = nil
+			impType = openrtb_ext.BidTypeBanner
+		} else {
+			native, err := resolveNativeObject(imp.Native, requestNative)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+			imp.Native = native
+			imp.Video = nil
+			impType = openrtb_ext.BidTypeNative
 		}
 
 		accountId, err := rubiconExt.AccountId.Int64()
@@ -607,6 +483,10 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 		rubiconRequest.Ext = nil
 
 		reqJSON, err := json.Marshal(rubiconRequest)
+		if impType == openrtb_ext.BidTypeNative && len(requestNative) > 0 {
+			reqJSON, err = setImpNative(reqJSON, requestNative)
+		}
+
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -921,42 +801,17 @@ func extractUserBuyerUID(eids []openrtb2.EID) string {
 	return ""
 }
 
-func getTpIdsAndSegments(eids []openrtb2.EID) (mappedRubiconUidsParam, []error) {
+func getSegments(eids []openrtb2.EID) (mappedRubiconUidsParam, []error) {
 	rubiconUidsParam := mappedRubiconUidsParam{
-		tpIds:    make([]rubiconExtUserTpID, 0),
 		segments: make([]string, 0),
 	}
 	errs := make([]error, 0)
 
 	for _, eid := range eids {
 		switch eid.Source {
-		case "adserver.org":
-			uids := eid.UIDs
-			if len(uids) > 0 {
-				uid := uids[0]
-
-				if uid.Ext != nil {
-					var eidUidExt rubiconUserExtEidUidExt
-					if err := json.Unmarshal(uid.Ext, &eidUidExt); err != nil {
-						errs = append(errs, &errortypes.BadInput{
-							Message: err.Error(),
-						})
-						continue
-					}
-
-					if eidUidExt.RtiPartner == "TDID" {
-						rubiconUidsParam.tpIds = append(rubiconUidsParam.tpIds, rubiconExtUserTpID{Source: "tdid", UID: uid.ID})
-					}
-				}
-			}
 		case "liveintent.com":
 			uids := eid.UIDs
 			if len(uids) > 0 {
-				uidId := uids[0].ID
-				if uidId != "" {
-					rubiconUidsParam.tpIds = append(rubiconUidsParam.tpIds, rubiconExtUserTpID{Source: "liveintent.com", UID: uidId})
-				}
-
 				if eid.Ext != nil {
 					var eidExt rubiconUserExtEidExt
 					if err := json.Unmarshal(eid.Ext, &eidExt); err != nil {
@@ -982,9 +837,8 @@ func getTpIdsAndSegments(eids []openrtb2.EID) (mappedRubiconUidsParam, []error) 
 	return rubiconUidsParam, errs
 }
 
-func updateUserExtWithTpIdsAndSegments(userExtRP *rubiconUserExt, rubiconUidsParam mappedRubiconUidsParam) error {
-	if len(rubiconUidsParam.tpIds) > 0 {
-		userExtRP.TpID = rubiconUidsParam.tpIds
+func updateUserExtWithSegments(userExtRP *rubiconUserExt, rubiconUidsParam mappedRubiconUidsParam) error {
+	if len(rubiconUidsParam.segments) > 0 {
 
 		if rubiconUidsParam.segments != nil {
 			userExtRPTarget := make(map[string]interface{})
@@ -1021,6 +875,64 @@ func isFullyPopulatedVideo(video *openrtb2.Video) bool {
 	return video.MIMEs != nil && video.Protocols != nil && video.MaxDuration != 0 && video.Linearity != 0 && video.API != nil
 }
 
+func resolveNativeObject(native *openrtb2.Native, target map[string]interface{}) (*openrtb2.Native, error) {
+	if native == nil {
+		return nil, fmt.Errorf("Native object is not present for request")
+	}
+	ver := native.Ver
+	if ver == "1.0" || ver == "1.1" {
+		return native, nil
+	}
+
+	err := json.Unmarshal([]byte(native.Request), &target)
+	if err != nil {
+		return nil, err
+	}
+
+	if _, ok := target["eventtrackers"].([]interface{}); !ok {
+		return nil, fmt.Errorf("Eventtrackers are not present or not of array type")
+	}
+
+	if _, ok := target["context"].(float64); !ok {
+		return nil, fmt.Errorf("Context is not present or not of int type")
+	}
+
+	if _, ok := target["plcmttype"].(float64); !ok {
+		return nil, fmt.Errorf("Plcmttype is not present or not of int type")
+	}
+
+	return native, nil
+}
+
+func setImpNative(jsonData []byte, requestNative map[string]interface{}) ([]byte, error) {
+	var jsonMap map[string]interface{}
+	if err := json.Unmarshal(jsonData, &jsonMap); err != nil {
+		return jsonData, err
+	}
+
+	var impMap map[string]interface{}
+	if impSlice, ok := maputil.ReadEmbeddedSlice(jsonMap, "imp"); !ok {
+		return jsonData, fmt.Errorf("unable to find imp in json data")
+	} else if len(impSlice) == 0 {
+		return jsonData, fmt.Errorf("unable to find imp[0] in json data")
+	} else if impMap, ok = impSlice[0].(map[string]interface{}); !ok {
+		return jsonData, fmt.Errorf("unexpected type for imp[0] found in json data")
+	}
+
+	nativeMap, ok := maputil.ReadEmbeddedMap(impMap, "native")
+	if !ok {
+		return jsonData, fmt.Errorf("unable to find imp[0].native in json data")
+	}
+
+	nativeMap["request_native"] = requestNative
+
+	if jsonReEncoded, err := json.Marshal(jsonMap); err == nil {
+		return jsonReEncoded, nil
+	} else {
+		return nil, fmt.Errorf("unable to encode json data (%v)", err)
+	}
+}
+
 func (a *RubiconAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -1052,11 +964,13 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb2.BidRequest, external
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
 
-	bidType := openrtb_ext.BidTypeBanner
+	bidType := openrtb_ext.BidTypeNative
 
 	isVideo := isVideo(bidReq.Imp[0])
 	if isVideo {
 		bidType = openrtb_ext.BidTypeVideo
+	} else if bidReq.Imp[0].Banner != nil {
+		bidType = openrtb_ext.BidTypeBanner
 	}
 
 	impToCpmOverride := mapImpIdToCpmOverride(internalRequest.Imp)
@@ -1089,12 +1003,31 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb2.BidRequest, external
 				if bid.ID == "0" {
 					bid.ID = bidResp.BidID
 				}
+
+				resolvedAdm := resolveAdm(bid)
+				if len(resolvedAdm) > 0 {
+					bid.AdM = resolvedAdm
+				}
+
+				var ortbBid openrtb2.Bid // `targetStruct` can be anything of your choice
+
+				rubiconBidAsBytes, _ := json.Marshal(bid)
+				if len(rubiconBidAsBytes) > 0 {
+					err = json.Unmarshal(rubiconBidAsBytes, &ortbBid)
+					if err != nil {
+						return nil, []error{err}
+					}
+				}
+
 				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-					Bid:     &bid,
+					Bid:     &ortbBid,
 					BidType: bidType,
 				})
 			}
 		}
+	}
+	if bidResp.Cur != "" {
+		bidResponse.Currency = bidResp.Cur
 	}
 
 	return bidResponse, nil
@@ -1118,6 +1051,21 @@ func mapImpIdToCpmOverride(imps []openrtb2.Imp) map[string]float64 {
 	return impIdToCmpOverride
 }
 
+func resolveAdm(bid rubiconBid) string {
+	var bidAdm = bid.AdM
+	if len(bidAdm) > 0 {
+		return bidAdm
+	}
+
+	admObject := bid.AdmObject
+	admObjectAsBytes, err := json.Marshal(&admObject)
+	if err != nil {
+		return ""
+	}
+
+	return string(admObjectAsBytes)
+}
+
 func cmpOverrideFromBidRequest(bidRequest *openrtb2.BidRequest) float64 {
 	var bidRequestExt bidRequestExt
 	if err := json.Unmarshal(bidRequest.Ext, &bidRequestExt); err != nil {
@@ -1127,7 +1075,7 @@ func cmpOverrideFromBidRequest(bidRequest *openrtb2.BidRequest) float64 {
 	return bidRequestExt.Prebid.Bidders.Rubicon.Debug.CpmOverride
 }
 
-func updateBidExtWithMetaNetworkId(bid openrtb2.Bid, buyer int) json.RawMessage {
+func updateBidExtWithMetaNetworkId(bid rubiconBid, buyer int) json.RawMessage {
 	if buyer <= 0 {
 		return nil
 	}

@@ -1,4 +1,4 @@
-package andbeyondmedia
+package bidstack
 
 import (
 	"encoding/json"
@@ -7,6 +7,15 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
+var validParams = []string{
+	`{"publisherId": "355cf800-8348-433a-9d95-70345fa70afc"}`,
+}
+
+var invalidParams = []string{
+	`{"publisherId": ""}`,
+	`{"publisherId": "non-uuid"}`,
+}
+
 func TestValidParams(t *testing.T) {
 	validator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
 	if err != nil {
@@ -14,7 +23,7 @@ func TestValidParams(t *testing.T) {
 	}
 
 	for _, p := range validParams {
-		if err := validator.Validate(openrtb_ext.BidderAndBeyondMedia, json.RawMessage(p)); err != nil {
+		if err := validator.Validate(openrtb_ext.BidderBidstack, json.RawMessage(p)); err != nil {
 			t.Errorf("Schema rejected valid params: %s", p)
 		}
 	}
@@ -27,19 +36,8 @@ func TestInvalidParams(t *testing.T) {
 	}
 
 	for _, p := range invalidParams {
-		if err := validator.Validate(openrtb_ext.BidderAndBeyondMedia, json.RawMessage(p)); err == nil {
+		if err := validator.Validate(openrtb_ext.BidderBidstack, json.RawMessage(p)); err == nil {
 			t.Errorf("Schema allowed invalid params: %s", p)
 		}
 	}
-}
-
-var validParams = []string{
-	`{"placementId": "test"}`,
-	`{"placementId": "1"}`,
-}
-
-var invalidParams = []string{
-	`{}`,
-	`{"placementId": 42}`,
-	`{"endpointId": "1"}`,
 }

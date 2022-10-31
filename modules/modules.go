@@ -14,7 +14,6 @@ func NewBuilder() Builder {
 }
 
 type Builder interface {
-	SetModuleBuilders(builders ModuleBuilders) Builder
 	Build(cfg config.Modules, client *http.Client) (hooks.HookRepository, map[string][]string, error)
 }
 
@@ -27,11 +26,6 @@ type (
 
 type builder struct {
 	builders ModuleBuilders
-}
-
-func (m *builder) SetModuleBuilders(builders ModuleBuilders) Builder {
-	m.builders = builders
-	return m
 }
 
 func (m *builder) Build(cfg config.Modules, client *http.Client) (hooks.HookRepository, map[string][]string, error) {

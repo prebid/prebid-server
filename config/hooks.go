@@ -1,6 +1,7 @@
 package config
 
 type Hooks struct {
+	Enabled           bool              `mapstructure:"enabled"`
 	Modules           Modules           `mapstructure:"modules"`
 	HostExecutionPlan HookExecutionPlan `mapstructure:"host_execution_plan"`
 	// AccountExecutionPlan can be replaced by the account-specific hook execution plan

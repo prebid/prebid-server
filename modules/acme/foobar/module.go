@@ -28,8 +28,8 @@ type Module struct {
 	rawAuctionHook moduleHooks.RawAuctionHook
 }
 
-func (m Module) HandleEntrypointHook(ctx context.Context, context *invocation.ModuleContext, payload hookstage.EntrypointPayload, debug bool) (invocation.HookResult[hookstage.EntrypointPayload], error) {
-	return m.entrypointHook.Handle(ctx, context, payload, debug)
+func (m Module) HandleEntrypointHook(ctx context.Context, context *invocation.ModuleContext, payload hookstage.EntrypointPayload) (invocation.HookResult[hookstage.EntrypointPayload], error) {
+	return m.entrypointHook.Handle(ctx, context, payload)
 }
 
 func (m Module) HandleRawAuctionHook(ctx context.Context, context invocation.InvocationContext, request hookstage.RawAuctionPayload) (invocation.HookResult[hookstage.RawAuctionPayload], error) {

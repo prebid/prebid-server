@@ -2,11 +2,14 @@ package invocation
 
 import (
 	"encoding/json"
-	"github.com/prebid/prebid-server/metrics"
 	"time"
+
+	"github.com/prebid/prebid-server/metrics"
 )
 
 type InvocationContext struct {
+	Endpoint          string
+	Stage             string
 	DebugEnabled      bool
 	RequestTypeMetric metrics.RequestType
 	moduleContexts    map[string]*ModuleContext
@@ -20,12 +23,9 @@ func (ctx *InvocationContext) ModuleContextFor(moduleCode string) *ModuleContext
 	emptyCtx := ModuleContext{}
 
 	if ctx.moduleContexts == nil {
-		ctx.moduleContexts = map[string]*ModuleContext{
-			moduleCode: &emptyCtx,
-		}
-	} else {
-		ctx.moduleContexts[moduleCode] = &emptyCtx
+		ctx.moduleContexts = map[string]*ModuleContext{}
 	}
+	ctx.moduleContexts[moduleCode] = &emptyCtx
 
 	return &emptyCtx
 }

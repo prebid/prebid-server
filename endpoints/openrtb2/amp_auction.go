@@ -464,6 +464,10 @@ func (deps *endpointDeps) overrideWithParams(ampParams amp.Params, req *openrtb2
 		req.Imp[0].TagID = ampParams.Slot
 	}
 
+	if err := setConsentedProviders(req, ampParams); err != nil {
+		return []error{err}
+	}
+
 	policyWriter, policyWriterErr := amp.ReadPolicy(ampParams, deps.cfg.GDPR.Enabled)
 	if policyWriterErr != nil {
 		return []error{policyWriterErr}
@@ -480,6 +484,46 @@ func (deps *endpointDeps) overrideWithParams(ampParams amp.Params, req *openrtb2
 		return []error{err}
 	}
 
+	return nil
+}
+
+// setConsentedProviders sets the addtl_consent value to user.ext.ConsentedProvidersSettings.consented_providers
+// in its orginal Google Additional Consent string format and user.ext.consented_providers_settings.consented_providers
+// that is an array of ints that contains the elements found in addtl_consent
+func setConsentedProviders(req *openrtb2.BidRequest, ampParams amp.Params) error {
+	if len(ampParams.AdditionalConsent) > 0 {
+		reqWrap := &openrtb_ext.RequestWrapper{BidRequest: req}
+
+		userExt, err := reqWrap.GetUserExt()
+		if err != nil {
+			return err
+		}
+
+		// Parse addtl_consent, that is supposed to come formatted as a Google Additional Consent string, into array of ints
+		consentedProvidersList := openrtb_ext.ParseConsentedProvidersString(ampParams.AdditionalConsent)
+
+		// Set user.ext.consented_providers_settings.consented_providers if elements where found
+		if len(consentedProvidersList) > 0 {
+			cps := userExt.GetConsentedProvidersSettingsOut()
+			if cps == nil {
+				cps = &openrtb_ext.ConsentedProvidersSettingsOut{}
+			}
+			cps.ConsentedProvidersList = append(cps.ConsentedProvidersList, consentedProvidersList...)
+			userExt.SetConsentedProvidersSettingsOut(cps)
+		}
+
+		// Copy addtl_consent into user.ext.ConsentedProvidersSettings.consented_providers as is
+		cps := userExt.GetConsentedProvidersSettingsIn()
+		if cps == nil {
+			cps = &openrtb_ext.ConsentedProvidersSettingsIn{}
+		}
+		cps.ConsentedProvidersString = ampParams.AdditionalConsent
+		userExt.SetConsentedProvidersSettingsIn(cps)
+
+		if err := reqWrap.RebuildRequest(); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
