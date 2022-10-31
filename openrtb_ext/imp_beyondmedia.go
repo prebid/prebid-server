@@ -1,5 +1,5 @@
 package openrtb_ext
 
-type ImpExtAndBeyondMedia struct {
+type ImpExtBeyondMedia struct {
 	PlacementID string `json:"placementId"`
 }

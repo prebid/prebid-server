@@ -1,7 +1,6 @@
 package hooks
 
 import (
-	"encoding/json"
 	"time"
 
 	"github.com/golang/glog"
@@ -39,14 +38,17 @@ type Group[T any] struct {
 type HookWrapper[T any] struct {
 	Module string
 	Code   string
-	Config json.RawMessage
 	Hook   T
 }
 
 func NewExecutionPlanBuilder(hooks config.Hooks, repo HookRepository) ExecutionPlanBuilder {
-	return PlanBuilder{
-		hooks: hooks,
-		repo:  repo,
+	if hooks.Enabled {
+		return PlanBuilder{
+			hooks: hooks,
+			repo:  repo,
+		}
+	} else {
+		return EmptyPlanBuilder{}
 	}
 }
 

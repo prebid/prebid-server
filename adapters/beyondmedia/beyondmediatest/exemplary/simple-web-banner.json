@@ -1,14 +1,6 @@
 {
     "mockBidRequest": {
         "id": "test-request-id",
-        "device": {
-            "ip": "123.123.123.123",
-            "ua": "iPad"
-        },
-        "app": {
-            "id": "1",
-            "bundle": "com.wls.testwlsapplication"
-        },
         "imp": [
             {
                 "id": "test-imp-id",
@@ -31,7 +23,15 @@
                     }
                 }
             }
-        ]
+        ],
+        "site": {
+            "id": "1",
+            "domain": "test.com"
+        },
+        "device": {
+            "ip": "123.123.123.123",
+            "ua": "Ubuntu"
+        }
     },
     "httpCalls": [
         {
@@ -63,13 +63,13 @@
                             }
                         }
                     ],
-                    "app": {
+                    "site": {
                         "id": "1",
-                        "bundle": "com.wls.testwlsapplication"
+                        "domain": "test.com"
                     },
                     "device": {
                         "ip": "123.123.123.123",
-                        "ua": "iPad"
+                        "ua": "Ubuntu"
                     }
                 }
             },
@@ -84,12 +84,12 @@
                                     "id": "test_bid_id",
                                     "impid": "test-imp-id",
                                     "price": 0.27543,
-                                    "adm": "<iframe id=\"adm-banner-16\" width=\"300\" height=\"250\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"http://backend.andbeyond.media/pserver&k=882b2510ed6d6c94fa69c99aa522a708\"></iframe>",
+                                    "adm": "<iframe id=\"adm-banner-1\" width=\"468\" height=\"60\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"http://backend.andbeyond.media/pserver&k=bc2d316f39931a07d9a8dd249bf85fc0\"></iframe>",
                                     "cid": "test_cid",
                                     "crid": "test_crid",
                                     "dealid": "test_dealid",
-                                    "w": 300,
-                                    "h": 250,
+                                    "w": 468,
+                                    "h": 60,
                                     "ext": {
                                         "prebid": {
                                             "type": "banner"
@@ -97,7 +97,7 @@
                                     }
                                 }
                             ],
-                            "seat": "andbeyondmedia"
+                            "seat": "beyondmedia"
                         }
                     ],
                     "cur": "USD"
@@ -113,12 +113,12 @@
                         "id": "test_bid_id",
                         "impid": "test-imp-id",
                         "price": 0.27543,
-                        "adm": "<iframe id=\"adm-banner-16\" width=\"300\" height=\"250\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"http://backend.andbeyond.media/pserver&k=882b2510ed6d6c94fa69c99aa522a708\"></iframe>",
+                        "adm": "<iframe id=\"adm-banner-1\" width=\"468\" height=\"60\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"http://backend.andbeyond.media/pserver&k=bc2d316f39931a07d9a8dd249bf85fc0\"></iframe>",
                         "cid": "test_cid",
                         "crid": "test_crid",
                         "dealid": "test_dealid",
-                        "w": 300,
-                        "h": 250,
+                        "w": 468,
+                        "h": 60,
                         "ext": {
                             "prebid": {
                                 "type": "banner"
