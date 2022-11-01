@@ -44,8 +44,8 @@ type RequestWrapper struct {
 
 const (
 	jsonEmptyObjectLength               = 2
-	ConsentedProvidersSettingsStringKey = "ConsentedProvidersSettings"
-	ConsentedProvidersSettingsListKey   = "consented_providers_settings"
+	consentedProvidersSettingsStringKey = "ConsentedProvidersSettings"
+	consentedProvidersSettingsListKey   = "consented_providers_settings"
 	consent                             = "consent"
 	amp                                 = "amp"
 	eids                                = "eids"
@@ -407,14 +407,14 @@ func (ue *UserExt) unmarshal(extJson json.RawMessage) error {
 		}
 	}
 
-	if consentedProviderSettingsJson, hasCPSettings := ue.ext[ConsentedProvidersSettingsStringKey]; hasCPSettings {
+	if consentedProviderSettingsJson, hasCPSettings := ue.ext[consentedProvidersSettingsStringKey]; hasCPSettings {
 		ue.consentedProvidersSettingsIn = &ConsentedProvidersSettingsIn{}
 		if err := json.Unmarshal(consentedProviderSettingsJson, ue.consentedProvidersSettingsIn); err != nil {
 			return err
 		}
 	}
 
-	if consentedProviderSettingsJson, hasCPSettings := ue.ext[ConsentedProvidersSettingsListKey]; hasCPSettings {
+	if consentedProviderSettingsJson, hasCPSettings := ue.ext[consentedProvidersSettingsListKey]; hasCPSettings {
 		ue.consentedProvidersSettingsOut = &ConsentedProvidersSettingsOut{}
 		if err := json.Unmarshal(consentedProviderSettingsJson, ue.consentedProvidersSettingsOut); err != nil {
 			return err
@@ -462,12 +462,12 @@ func (ue *UserExt) marshal() (json.RawMessage, error) {
 				return nil, err
 			}
 			if len(cpSettingsJson) > jsonEmptyObjectLength {
-				ue.ext[ConsentedProvidersSettingsStringKey] = json.RawMessage(cpSettingsJson)
+				ue.ext[consentedProvidersSettingsStringKey] = json.RawMessage(cpSettingsJson)
 			} else {
-				delete(ue.ext, ConsentedProvidersSettingsStringKey)
+				delete(ue.ext, consentedProvidersSettingsStringKey)
 			}
 		} else {
-			delete(ue.ext, ConsentedProvidersSettingsStringKey)
+			delete(ue.ext, consentedProvidersSettingsStringKey)
 		}
 		ue.consentedProvidersSettingsInDirty = false
 	}
@@ -479,12 +479,12 @@ func (ue *UserExt) marshal() (json.RawMessage, error) {
 				return nil, err
 			}
 			if len(cpSettingsJson) > jsonEmptyObjectLength {
-				ue.ext[ConsentedProvidersSettingsListKey] = json.RawMessage(cpSettingsJson)
+				ue.ext[consentedProvidersSettingsListKey] = json.RawMessage(cpSettingsJson)
 			} else {
-				delete(ue.ext, ConsentedProvidersSettingsListKey)
+				delete(ue.ext, consentedProvidersSettingsListKey)
 			}
 		} else {
-			delete(ue.ext, ConsentedProvidersSettingsListKey)
+			delete(ue.ext, consentedProvidersSettingsListKey)
 		}
 		ue.consentedProvidersSettingsOutDirty = false
 	}
