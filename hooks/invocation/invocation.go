@@ -10,6 +10,7 @@ import (
 type InvocationContext struct {
 	Endpoint          string
 	Stage             string
+	AccountId         string
 	DebugEnabled      bool
 	RequestTypeMetric metrics.RequestType
 	moduleContexts    map[string]*ModuleContext

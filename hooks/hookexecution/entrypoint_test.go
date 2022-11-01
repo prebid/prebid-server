@@ -3,6 +3,7 @@ package hookexecution
 import (
 	"bytes"
 	"context"
+	"github.com/prebid/prebid-server/metrics/config"
 	"net/http"
 	"testing"
 	"time"
@@ -25,7 +26,7 @@ func TestExecuteEntrypointStage_DoesNotChangeRequestForEmptyPlan(t *testing.T) {
 		t.Fatalf("Unexpected error creating http request: %s", err)
 	}
 
-	stRes, newBody, reject := ExecuteEntrypointStage(&invocation.InvocationContext{}, plan, req, body)
+	stRes, newBody, reject := ExecuteEntrypointStage(&invocation.InvocationContext{}, plan, req, body, &config.NilMetricsEngine{})
 	require.Nil(t, reject, "Unexpected stage reject")
 
 	if len(stRes.GroupsResults) != 0 {
@@ -61,7 +62,7 @@ func TestExecuteEntrypointStage_CanApplyHookMutations(t *testing.T) {
 		t.Fatalf("Unexpected error creating http request: %s", err)
 	}
 
-	stRes, newBody, reject := ExecuteEntrypointStage(&invocation.InvocationContext{}, plan, req, body)
+	stRes, newBody, reject := ExecuteEntrypointStage(&invocation.InvocationContext{}, plan, req, body, &config.NilMetricsEngine{})
 	require.Nil(t, reject, "Unexpected stage reject")
 
 	if len(stRes.GroupsResults) != 2 {
@@ -151,7 +152,7 @@ func TestExecuteEntrypointStage_CanRejectHook(t *testing.T) {
 	req, err := http.NewRequest(http.MethodPost, "https://prebid.com/openrtb2/auction", reader)
 	require.NoError(t, err, "Unexpected error creating http request: %s", err)
 
-	stRes, newBody, reject := ExecuteEntrypointStage(&invocation.InvocationContext{}, plan, req, body)
+	stRes, newBody, reject := ExecuteEntrypointStage(&invocation.InvocationContext{}, plan, req, body, &config.NilMetricsEngine{})
 	require.NotNil(t, reject, "Unexpected successful execution of entrypoint hook")
 	require.Equal(t, reject, &RejectError{}, "Unexpected reject returned from entrypoint hook")
 	assert.Len(t, stRes.GroupsResults, 2, "some hook groups have not been processed")
@@ -188,7 +189,7 @@ func TestExecuteEntrypointStage_CanTimeoutOneOfHooks(t *testing.T) {
 		t.Fatalf("Unexpected error creating http request: %s", err)
 	}
 
-	stRes, newBody, reject := ExecuteEntrypointStage(&invocation.InvocationContext{}, plan, req, body)
+	stRes, newBody, reject := ExecuteEntrypointStage(&invocation.InvocationContext{}, plan, req, body, &config.NilMetricsEngine{})
 	require.Nil(t, reject, "Unexpected stage reject")
 
 	if len(stRes.GroupsResults) != 2 {
@@ -247,7 +248,7 @@ func TestExecuteEntrypointStage_ModuleContextsAreCreated(t *testing.T) {
 	}
 
 	iCtx := invocation.InvocationContext{}
-	stRes, _, reject := ExecuteEntrypointStage(&iCtx, plan, req, body)
+	stRes, _, reject := ExecuteEntrypointStage(&iCtx, plan, req, body, &config.NilMetricsEngine{})
 	require.Nil(t, reject, "Unexpected stage reject")
 
 	if len(stRes.GroupsResults) != 2 {

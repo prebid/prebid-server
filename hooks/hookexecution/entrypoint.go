@@ -2,6 +2,7 @@ package hookexecution
 
 import (
 	"context"
+	"github.com/prebid/prebid-server/metrics"
 	"net/http"
 
 	"github.com/prebid/prebid-server/hooks"
@@ -14,6 +15,7 @@ func ExecuteEntrypointStage(
 	plan hooks.Plan[hookstage.Entrypoint],
 	req *http.Request,
 	body []byte,
+	metricEngine metrics.MetricsEngine,
 ) (invocation.StageResult[hookstage.EntrypointPayload], []byte, *RejectError) {
 	handler := func(
 		ctx context.Context,
@@ -25,7 +27,8 @@ func ExecuteEntrypointStage(
 	}
 
 	payload := hookstage.EntrypointPayload{Request: req, Body: body}
-	stageResult, payload, err := executeStage(invocationCtx, plan, payload, handler)
+	invocationCtx.Stage = hooks.StageEntrypoint
+	stageResult, payload, err := executeStage(invocationCtx, plan, payload, handler, metricEngine)
 
 	return stageResult, payload.Body, err
 }

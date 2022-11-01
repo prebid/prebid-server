@@ -2,7 +2,9 @@ package hookexecution
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"github.com/prebid/prebid-server/metrics"
 	"sync"
 	"time"
 
@@ -37,12 +39,13 @@ func executeStage[H any, P any](
 	plan hooks.Plan[H],
 	payload P,
 	hookHandler hookHandler[H, P],
+	metricEngine metrics.MetricsEngine,
 ) (invocation.StageResult[P], P, *RejectError) {
 	var stageResult invocation.StageResult[P]
 	stageResult.GroupsResults = make([][]invocation.HookResult[P], 0, len(plan))
 
 	for _, group := range plan {
-		groupResult, newPayload, reject := executeGroup(invocationCtx, group, payload, hookHandler)
+		groupResult, newPayload, reject := executeGroup(invocationCtx, group, payload, hookHandler, metricEngine)
 		stageResult.GroupsResults = append(stageResult.GroupsResults, groupResult)
 		if reject != nil {
 			return stageResult, payload, reject
@@ -59,6 +62,7 @@ func executeGroup[H any, P any](
 	group hooks.Group[H],
 	payload P,
 	hookHandler hookHandler[H, P],
+	metricEngine metrics.MetricsEngine,
 ) ([]invocation.HookResult[P], P, *RejectError) {
 	var wg sync.WaitGroup
 	done := make(chan struct{})
@@ -79,7 +83,7 @@ func executeGroup[H any, P any](
 
 	hookResponses := collectHookResponses(resp, done)
 
-	return processHookResponses(hookResponses, payload)
+	return processHookResponses(invocationCtx, hookResponses, payload, metricEngine)
 }
 
 func executeHook[H any, P any](
@@ -143,28 +147,43 @@ func collectHookResponses[P any](
 }
 
 func processHookResponses[P any](
+	invocationCtx *invocation.InvocationContext,
 	hookResponses []invocation.HookResponse[P],
 	payload P,
+	metricEngine metrics.MetricsEngine,
 ) ([]invocation.HookResult[P], P, *RejectError) {
 	groupResult := make([]invocation.HookResult[P], 0, len(hookResponses))
 	for i, r := range hookResponses {
+		labels := metrics.ModuleLabels{
+			Module: r.Result.ModuleCode,
+			Stage:  invocationCtx.Stage,
+			PubID:  invocationCtx.AccountId,
+		}
+		metricEngine.RecordModuleCalled(labels)
+		metricEngine.RecordModuleDuration(labels, r.Result.ExecutionTime)
 		groupResult = append(groupResult, r.Result)
 
 		if r.Err != nil {
 			groupResult[i].Errors = append(groupResult[i].Errors, r.Err.Error())
-			// todo: send metric
+
+			if errors.As(r.Err, &TimeoutError{}) {
+				metricEngine.RecordModuleTimeout(labels)
+			} else {
+				metricEngine.RecordModuleExecutionError(labels)
+			}
 			continue
 		}
 
 		if r.Result.Reject {
 			reject := &RejectError{Code: r.Result.NbrCode, Reason: r.Result.Message}
 			groupResult[i].Errors = append(groupResult[i].Errors, reject.Error())
-			// todo: send metric
+			metricEngine.RecordModuleSuccessRejected(labels)
+
 			return groupResult, payload, reject
 		}
 
 		if r.Result.ChangeSet == nil || len(r.Result.ChangeSet.Mutations()) == 0 {
-			// todo: send hook metrics (NOP metric)
+			metricEngine.RecordModuleSuccessNooped(labels)
 			continue
 		}
 
@@ -176,6 +195,7 @@ func processHookResponses[P any](
 			}
 			payload = p
 		}
+		metricEngine.RecordModuleSuccessUpdated(labels)
 	}
 
 	return groupResult, payload, nil
