@@ -106,14 +106,14 @@ func TestGetMediaTypeForBid(t *testing.T) {
 		var bid openrtb2.SeatBid
 		var extBid openrtb_ext.ExtBid
 
-		var js string
+		var bidExtJsonString string
 		if test.invalidJSON {
-			js = `{"x_prebid": {"type":""}}`
+			bidExtJsonString = `{"x_prebid": {"type":""}}`
 		} else {
-			js = `{"prebid": {"type":"` + string(test.bidType) + `"}}`
+			bidExtJsonString = `{"prebid": {"type":"` + string(test.bidType) + `"}}`
 		}
 
-		if err := bid.Ext.UnmarshalJSON([]byte(js)); err != nil {
+		if err := bid.Ext.UnmarshalJSON([]byte(bidExtJsonString)); err != nil {
 			t.Fatalf("unexpected error %v", err)
 		}
 

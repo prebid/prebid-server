@@ -118,9 +118,9 @@ func getMediaTypeForBid(ext json.RawMessage) (openrtb_ext.BidType, error) {
 	return openrtb_ext.ParseBidType(string(bidExt.Prebid.Type))
 }
 
-func curExists(cc []string, c string) bool {
-	for i := range cc {
-		if cc[i] == c {
+func curExists(allowedCurrencies []string, newCurrency string) bool {
+	for i := range allowedCurrencies {
+		if allowedCurrencies[i] == newCurrency {
 			return true
 		}
 	}
