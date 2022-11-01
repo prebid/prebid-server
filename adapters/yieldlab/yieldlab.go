@@ -392,7 +392,7 @@ func makeSupplyChain(openRtbSchain openrtb2.SupplyChain) string {
 }
 
 // makeNodeValue converts any known value type from a schain node to a string and does URL encoding if necessary.
-func makeNodeValue(nodeParam interface{}) string {
+func makeNodeValue(nodeParam any) string {
 	switch nodeParam.(type) {
 	case string:
 		return url.QueryEscape(nodeParam.(string))
