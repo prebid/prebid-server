@@ -159,11 +159,6 @@ func Test_makeNodeValue(t *testing.T) {
 			expected:  "%7B%22foo%22%3A%22bar%22%7D",
 		},
 		{
-			name:      "free form data",
-			nodeParam: json.RawMessage(`{"foo":"bar"}`),
-			expected:  "%7B%22foo%22%3A%22bar%22%7D",
-		},
-		{
 			name:      "unknown type (bool)",
 			nodeParam: true,
 			expected:  "",
