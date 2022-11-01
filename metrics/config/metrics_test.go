@@ -84,10 +84,12 @@ func TestMultiMetricsEngine(t *testing.T) {
 		{
 			Module: moduleName,
 			Stage:  hooks.StageEntrypoint,
+			PubID:  "test1",
 		},
 		{
 			Module: moduleName,
 			Stage:  hooks.StageRawAuction,
+			PubID:  "test1",
 		},
 	}
 	for i := 0; i < 5; i++ {

@@ -68,6 +68,7 @@ type Metrics struct {
 	accountMetricsRWMutex sync.RWMutex
 
 	exchanges []openrtb_ext.BidderName
+	modules   []string
 	// Will hold boolean values to help us disable metric collection if needed
 	MetricsDisabled config.DisabledMetrics
 
@@ -109,6 +110,7 @@ type accountMetrics struct {
 	priceHistogram    metrics.Histogram
 	// store account by adapter metrics. Type is map[PBSBidder.BidderCode]
 	adapterMetrics       map[openrtb_ext.BidderName]*AdapterMetrics
+	moduleMetrics        map[string]*ModuleMetrics
 	storedResponsesMeter metrics.Meter
 }
 
@@ -189,6 +191,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		ModuleMetrics: make(map[string]map[string]*ModuleMetrics),
 
 		exchanges: exchanges,
+		modules:   getModuleNames(moduleStageNames),
 	}
 
 	for _, a := range exchanges {
@@ -196,7 +199,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 	}
 
 	for m, stages := range moduleStageNames {
-		newMetrics.ModuleMetrics[m] = makeBlankModuleMetrics(stages)
+		newMetrics.ModuleMetrics[m] = makeBlankModuleStageMetrics(stages)
 	}
 
 	for _, t := range RequestTypes() {
@@ -233,6 +236,18 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 	newMetrics.RequestsQueueTimer["video"][true] = blankTimer
 	newMetrics.RequestsQueueTimer["video"][false] = blankTimer
 	return newMetrics
+}
+
+func getModuleNames(ms map[string][]string) []string {
+	mn := make([]string, len(ms))
+
+	i := 0
+	for n := range ms {
+		mn[i] = n
+		i++
+	}
+
+	return mn
 }
 
 // NewMetrics creates a new Metrics object with needed metrics defined. In time we may develop to the point
@@ -366,22 +381,26 @@ func makeBlankAdapterMetrics(disabledMetrics config.DisabledMetrics) *AdapterMet
 	return newAdapter
 }
 
-func makeBlankModuleMetrics(stages []string) map[string]*ModuleMetrics {
+func makeBlankModuleStageMetrics(stages []string) map[string]*ModuleMetrics {
 	mm := map[string]*ModuleMetrics{}
 	for _, stage := range stages {
-		mm[stage] = &ModuleMetrics{
-			DurationTimer:         &metrics.NilTimer{},
-			CallCounter:           metrics.NilCounter{},
-			FailureCounter:        metrics.NilCounter{},
-			SuccessNoopCounter:    metrics.NilCounter{},
-			SuccessUpdateCounter:  metrics.NilCounter{},
-			SuccessRejectCounter:  metrics.NilCounter{},
-			ExecutionErrorCounter: metrics.NilCounter{},
-			TimeoutCounter:        metrics.NilCounter{},
-		}
+		mm[stage] = makeBlankModuleMetrics()
 	}
 
 	return mm
+}
+
+func makeBlankModuleMetrics() *ModuleMetrics {
+	return &ModuleMetrics{
+		DurationTimer:         &metrics.NilTimer{},
+		CallCounter:           metrics.NilCounter{},
+		FailureCounter:        metrics.NilCounter{},
+		SuccessNoopCounter:    metrics.NilCounter{},
+		SuccessUpdateCounter:  metrics.NilCounter{},
+		SuccessRejectCounter:  metrics.NilCounter{},
+		ExecutionErrorCounter: metrics.NilCounter{},
+		TimeoutCounter:        metrics.NilCounter{},
+	}
 }
 
 func makeBlankBidMarkupMetrics() map[openrtb_ext.BidType]*MarkupDeliveryMetrics {
@@ -438,6 +457,17 @@ func registerModuleMetrics(registry metrics.Registry, module string, stages []st
 	}
 }
 
+func registerAccountModuleMetrics(registry metrics.Registry, id string, module string, mm *ModuleMetrics) {
+	mm.DurationTimer = metrics.GetOrRegisterTimer(fmt.Sprintf("account.%s.modules.module.%s.duration", id, module), registry)
+	mm.CallCounter = metrics.GetOrRegisterCounter(fmt.Sprintf("account.%s.modules.module.%s.call", id, module), registry)
+	mm.FailureCounter = metrics.GetOrRegisterCounter(fmt.Sprintf("account.%s.modules.module.%s.failure", id, module), registry)
+	mm.SuccessNoopCounter = metrics.GetOrRegisterCounter(fmt.Sprintf("account.%s.modules.module.%s.success.noop", id, module), registry)
+	mm.SuccessUpdateCounter = metrics.GetOrRegisterCounter(fmt.Sprintf("account.%s.modules.module.%s.success.update", id, module), registry)
+	mm.SuccessRejectCounter = metrics.GetOrRegisterCounter(fmt.Sprintf("account.%s.modules.module.%s.reject", id, module), registry)
+	mm.ExecutionErrorCounter = metrics.GetOrRegisterCounter(fmt.Sprintf("account.%s.modules.module.%s.execution_error", id, module), registry)
+	mm.TimeoutCounter = metrics.GetOrRegisterCounter(fmt.Sprintf("account.%s.modules.module.%s.timeout", id, module), registry)
+}
+
 func makeDeliveryMetrics(registry metrics.Registry, prefix string, bidType openrtb_ext.BidType) *MarkupDeliveryMetrics {
 	return &MarkupDeliveryMetrics{
 		AdmMeter:  metrics.GetOrRegisterMeter(prefix+"."+string(bidType)+".adm_bids_received", registry),
@@ -474,12 +504,17 @@ func (me *Metrics) getAccountMetrics(id string) *accountMetrics {
 	am.bidsReceivedMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.bids_received", id), me.MetricsRegistry)
 	am.priceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("account.%s.prices", id), me.MetricsRegistry, metrics.NewExpDecaySample(1028, 0.015))
 	am.adapterMetrics = make(map[openrtb_ext.BidderName]*AdapterMetrics, len(me.exchanges))
+	am.moduleMetrics = make(map[string]*ModuleMetrics)
 	am.storedResponsesMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.stored_responses", id), me.MetricsRegistry)
 	if !me.MetricsDisabled.AccountAdapterDetails {
 		for _, a := range me.exchanges {
 			am.adapterMetrics[a] = makeBlankAdapterMetrics(me.MetricsDisabled)
 			registerAdapterMetrics(me.MetricsRegistry, fmt.Sprintf("account.%s", id), string(a), am.adapterMetrics[a])
 		}
+	}
+	for _, mod := range me.modules {
+		am.moduleMetrics[mod] = makeBlankModuleMetrics()
+		registerAccountModuleMetrics(me.MetricsRegistry, id, mod, am.moduleMetrics[mod])
 	}
 
 	me.accountMetrics[id] = am
@@ -845,7 +880,12 @@ func (me *Metrics) RecordModuleDuration(labels ModuleLabels, duration time.Durat
 
 	// Module metrics
 	mm.DurationTimer.Update(duration)
-	//TODO: Account-Module metrics
+	// Account-Module metrics
+	if labels.PubID != "" {
+		if aam, ok := me.getAccountMetrics(labels.PubID).moduleMetrics[labels.Module]; ok {
+			aam.DurationTimer.Update(duration)
+		}
+	}
 }
 
 func (me *Metrics) RecordModuleCalled(labels ModuleLabels) {
@@ -856,7 +896,12 @@ func (me *Metrics) RecordModuleCalled(labels ModuleLabels) {
 
 	// Module metrics
 	mm.CallCounter.Inc(1)
-	//TODO: Account-Module metrics
+	// Account-Module metrics
+	if labels.PubID != "" {
+		if aam, ok := me.getAccountMetrics(labels.PubID).moduleMetrics[labels.Module]; ok {
+			aam.CallCounter.Inc(1)
+		}
+	}
 }
 
 func (me *Metrics) RecordModuleFailed(labels ModuleLabels) {
@@ -867,7 +912,12 @@ func (me *Metrics) RecordModuleFailed(labels ModuleLabels) {
 
 	// Module metrics
 	mm.FailureCounter.Inc(1)
-	//TODO: Account-Module metrics
+	// Account-Module metrics
+	if labels.PubID != "" {
+		if aam, ok := me.getAccountMetrics(labels.PubID).moduleMetrics[labels.Module]; ok {
+			aam.FailureCounter.Inc(1)
+		}
+	}
 }
 
 func (me *Metrics) RecordModuleSuccessNooped(labels ModuleLabels) {
@@ -878,7 +928,12 @@ func (me *Metrics) RecordModuleSuccessNooped(labels ModuleLabels) {
 
 	// Module metrics
 	mm.SuccessNoopCounter.Inc(1)
-	//TODO: Account-Module metrics
+	// Account-Module metrics
+	if labels.PubID != "" {
+		if aam, ok := me.getAccountMetrics(labels.PubID).moduleMetrics[labels.Module]; ok {
+			aam.SuccessNoopCounter.Inc(1)
+		}
+	}
 }
 
 func (me *Metrics) RecordModuleSuccessUpdated(labels ModuleLabels) {
@@ -889,7 +944,12 @@ func (me *Metrics) RecordModuleSuccessUpdated(labels ModuleLabels) {
 
 	// Module metrics
 	mm.SuccessUpdateCounter.Inc(1)
-	//TODO: Account-Module metrics
+	// Account-Module metrics
+	if labels.PubID != "" {
+		if aam, ok := me.getAccountMetrics(labels.PubID).moduleMetrics[labels.Module]; ok {
+			aam.SuccessUpdateCounter.Inc(1)
+		}
+	}
 }
 
 func (me *Metrics) RecordModuleSuccessRejected(labels ModuleLabels) {
@@ -900,7 +960,12 @@ func (me *Metrics) RecordModuleSuccessRejected(labels ModuleLabels) {
 
 	// Module metrics
 	mm.SuccessRejectCounter.Inc(1)
-	//TODO: Account-Module metrics
+	// Account-Module metrics
+	if labels.PubID != "" {
+		if aam, ok := me.getAccountMetrics(labels.PubID).moduleMetrics[labels.Module]; ok {
+			aam.SuccessRejectCounter.Inc(1)
+		}
+	}
 }
 
 func (me *Metrics) RecordModuleExecutionError(labels ModuleLabels) {
@@ -911,7 +976,12 @@ func (me *Metrics) RecordModuleExecutionError(labels ModuleLabels) {
 
 	// Module metrics
 	mm.ExecutionErrorCounter.Inc(1)
-	//TODO: Account-Module metrics
+	// Account-Module metrics
+	if labels.PubID != "" {
+		if aam, ok := me.getAccountMetrics(labels.PubID).moduleMetrics[labels.Module]; ok {
+			aam.ExecutionErrorCounter.Inc(1)
+		}
+	}
 }
 
 func (me *Metrics) RecordModuleTimeout(labels ModuleLabels) {
@@ -922,7 +992,12 @@ func (me *Metrics) RecordModuleTimeout(labels ModuleLabels) {
 
 	// Module metrics
 	mm.TimeoutCounter.Inc(1)
-	//TODO: Account-Module metrics
+	// Account-Module metrics
+	if labels.PubID != "" {
+		if aam, ok := me.getAccountMetrics(labels.PubID).moduleMetrics[labels.Module]; ok {
+			aam.TimeoutCounter.Inc(1)
+		}
+	}
 }
 
 func (me *Metrics) getModuleMetric(labels ModuleLabels) (*ModuleMetrics, error) {

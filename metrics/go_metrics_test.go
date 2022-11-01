@@ -872,6 +872,47 @@ func TestRecordAdsCertReqMetric(t *testing.T) {
 	}
 }
 
+func TestRecordModuleMetrics(t *testing.T) {
+	testCases := []struct {
+		description                string
+		givenModuleName            string
+		givenStageName             string
+		givenPubID                 string
+		expectedModuleMetricCount  int64
+		expectedAccountMetricCount int64
+	}{
+		{
+			description:                "Entrypoint stage should not record account metrics",
+			givenModuleName:            "foo-bar",
+			givenStageName:             "entrypoint",
+			expectedModuleMetricCount:  1,
+			expectedAccountMetricCount: 0,
+		},
+		{
+			description:                "Rawauction stage should record both metrics",
+			givenModuleName:            "foo-bar",
+			givenStageName:             "rawauction",
+			givenPubID:                 "acc-1",
+			expectedModuleMetricCount:  1,
+			expectedAccountMetricCount: 1,
+		},
+	}
+	for _, test := range testCases {
+		registry := metrics.NewRegistry()
+		m := NewMetrics(registry, nil, config.DisabledMetrics{}, nil, map[string][]string{"foo-bar": {"entrypoint", "rawauction"}})
+
+		m.RecordModuleCalled(ModuleLabels{
+			Module: test.givenModuleName,
+			Stage:  test.givenStageName,
+			PubID:  test.givenPubID,
+		})
+		am := m.getAccountMetrics(test.givenPubID)
+
+		assert.Equal(t, test.expectedModuleMetricCount, m.ModuleMetrics[test.givenModuleName][test.givenStageName].CallCounter.Count())
+		assert.Equal(t, test.expectedAccountMetricCount, am.moduleMetrics[test.givenModuleName].CallCounter.Count())
+	}
+}
+
 func ensureContainsBidTypeMetrics(t *testing.T, registry metrics.Registry, prefix string, mdm map[openrtb_ext.BidType]*MarkupDeliveryMetrics) {
 	ensureContains(t, registry, prefix+".banner.adm_bids_received", mdm[openrtb_ext.BidTypeBanner].AdmMeter)
 	ensureContains(t, registry, prefix+".banner.nurl_bids_received", mdm[openrtb_ext.BidTypeBanner].NurlMeter)

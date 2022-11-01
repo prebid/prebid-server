@@ -52,6 +52,7 @@ type PrivacyLabels struct {
 type ModuleLabels struct {
 	Module string
 	Stage  string
+	PubID  string // account ID
 }
 
 type StoredDataType string
