@@ -82,7 +82,7 @@ func TestIntegrationEnabled(t *testing.T) {
 			},
 		}
 
-		result := cfg.IntegrationEnabled(config.IntegrationTypeWeb)
+		result := cfg.ChannelEnabled(config.ChannelWeb)
 
 		assert.Equal(t, tt.wantIntegrationEnabled, result, tt.description)
 	}

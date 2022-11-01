@@ -146,6 +146,9 @@ func (adapter *LogicadAdapter) MakeBids(internalRequest *openrtb2.BidRequest, ex
 			BidType: openrtb_ext.BidTypeBanner,
 		})
 	}
+	if bidResp.Cur != "" {
+		bidResponse.Currency = bidResp.Cur
+	}
 	return bidResponse, nil
 }
 
