@@ -28,26 +28,26 @@ import (
 //
 // The above endpoints should return a payload like:
 //
-// {
-//   "requests": {
-//     "req1": { ... stored data for req1 ... },
-//     "req2": { ... stored data for req2 ... },
-//   },
-//   "imps": {
-//     "imp1": { ... stored data for imp1 ... },
-//     "imp2": { ... stored data for imp2 ... },
-//     "imp3": null // If imp3 is not found
-//   }
-// }
+//	{
+//	  "requests": {
+//	    "req1": { ... stored data for req1 ... },
+//	    "req2": { ... stored data for req2 ... },
+//	  },
+//	  "imps": {
+//	    "imp1": { ... stored data for imp1 ... },
+//	    "imp2": { ... stored data for imp2 ... },
+//	    "imp3": null // If imp3 is not found
+//	  }
+//	}
+//
 // or
-// {
-//   "accounts": {
-//     "acc1": { ... config data for acc1 ... },
-//     "acc2": { ... config data for acc2 ... },
-//   },
-// }
 //
-//
+//	{
+//	  "accounts": {
+//	    "acc1": { ... config data for acc1 ... },
+//	    "acc2": { ... config data for acc2 ... },
+//	  },
+//	}
 func NewFetcher(client *http.Client, endpoint string) *HttpFetcher {
 	// Do some work up-front to figure out if the (configurable) endpoint has a query string or not.
 	// When we build requests, we'll either want to add `?request-ids=...&imp-ids=...` _or_
@@ -106,9 +106,11 @@ func (fetcher *HttpFetcher) FetchResponses(ctx context.Context, ids []string) (d
 // GET {endpoint}?account-ids=["account1","account2",...]
 //
 // The endpoint is expected to respond with a JSON map with accountID -> json.RawMessage
-// {
-//   "account1": { ... account json ... }
-// }
+//
+//	{
+//	  "account1": { ... account json ... }
+//	}
+//
 // The JSON contents of account config is returned as-is (NOT validated)
 func (fetcher *HttpFetcher) FetchAccounts(ctx context.Context, accountIDs []string) (map[string]json.RawMessage, []error) {
 	if len(accountIDs) == 0 {
