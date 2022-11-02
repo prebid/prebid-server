@@ -58,7 +58,7 @@ func (p *permissionsImpl) AuctionActivitiesAllowed(ctx context.Context, bidderCo
 	}
 
 	if p.consent == "" {
-		return DenyAll, nil
+		return p.defaultPermissions(), nil
 	}
 
 	weakVendorEnforcement := p.cfg.BasicEnforcementVendor(bidder)
@@ -70,6 +70,22 @@ func (p *permissionsImpl) AuctionActivitiesAllowed(ctx context.Context, bidderCo
 	}
 
 	return DenyAll, nil
+}
+
+// defaultPermissions returns a permissions object that denies passing user IDs while
+// allowing passing geo information and sending bid requests based on whether purpose 2
+// and feature one are enforced respectively
+// if the consent string is empty or malformed we should use the default permissions
+func (p *permissionsImpl) defaultPermissions() AuctionPermissions {
+	perms := AuctionPermissions{}
+
+	if !p.cfg.PurposeEnforced(consentconstants.Purpose(2)) {
+		perms.AllowBidRequest = true
+	}
+	if !p.cfg.FeatureOneEnforced() {
+		perms.PassGeo = true
+	}
+	return perms
 }
 
 func (p *permissionsImpl) resolveVendorId(bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (id uint16, ok bool) {
@@ -116,7 +132,7 @@ func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, vendor
 func (p *permissionsImpl) allowActivities(ctx context.Context, vendorID uint16, bidder openrtb_ext.BidderName, weakVendorEnforcement bool) (AuctionPermissions, error) {
 	parsedConsent, vendor, err := p.parseVendor(ctx, vendorID, p.consent)
 	if err != nil {
-		return DenyAll, err
+		return p.defaultPermissions(), err
 	}
 
 	// vendor will be nil if not a valid TCF2 consent string
@@ -124,7 +140,7 @@ func (p *permissionsImpl) allowActivities(ctx context.Context, vendorID uint16, 
 		if weakVendorEnforcement && parsedConsent.Version() == 2 {
 			vendor = vendorTrue{}
 		} else {
-			return DenyAll, nil
+			return p.defaultPermissions(), nil
 		}
 	}
 
@@ -135,7 +151,7 @@ func (p *permissionsImpl) allowActivities(ctx context.Context, vendorID uint16, 
 	consentMeta, ok := parsedConsent.(tcf2.ConsentMetadata)
 	if !ok {
 		err = fmt.Errorf("Unable to access TCF2 parsed consent")
-		return DenyAll, err
+		return p.defaultPermissions(), err
 	}
 
 	permissions := AuctionPermissions{}

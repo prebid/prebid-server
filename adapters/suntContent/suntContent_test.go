@@ -1,4 +1,4 @@
-package seedingAlliance
+package suntContent
 
 import (
 	"encoding/json"
@@ -13,14 +13,14 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderSeedingAlliance, config.Adapter{
-		Endpoint: "https://mockup.seeding-alliance.de/",
+	bidder, buildErr := Builder(openrtb_ext.BidderSuntContent, config.Adapter{
+		Endpoint: "https://mockup.suntcontent.com/",
 	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	adapterstest.RunJSONBidderTest(t, "seedingAlliancetest", bidder)
+	adapterstest.RunJSONBidderTest(t, "suntContenttest", bidder)
 }
 
 func TestResolvePriceMacro(t *testing.T) {
@@ -147,7 +147,7 @@ func TestAddTagID(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		extSA, err := json.Marshal(openrtb_ext.ImpExtSeedingAlliance{AdUnitID: test.data})
+		extSA, err := json.Marshal(openrtb_ext.ImpExtSuntContent{AdUnitID: test.data})
 		if err != nil {
 			t.Fatalf("unexpected error %v", err)
 		}
