@@ -1,0 +1,47 @@
+{
+    "id": "banner_728x90_android",
+    "banner": {
+        "format": [
+          {
+            "w": 728,
+            "h": 90
+          }
+        ]
+      },
+      "ext": {
+        "pubmatic": {
+          "publisherId": "158326",
+          "adSlot": "2165611"
+        },
+        "triplelift": {
+          "inventoryCode": "pwm_android_320x50_300x250_pb"
+        },
+        "between": {
+          "host": "lbs-us-east1.ads",
+          "publisher_id": "44634"
+        },
+        "rubicon": {
+          "accountId": 12556,
+          "siteId": 376280,
+          "zoneId": 2369430
+        },
+        "sonobi": {
+          "TagID": "5defb02096c7ca6be2ac"
+        },
+        "rhythmone": {
+          "placementId": "247568",
+          "zone": "1r",
+          "path": "mvo"
+        },
+        "openx": {
+          "unit": "544086382",
+          "delDomain": "playwire-d.openx.net"
+        },
+        "appnexus": {
+          "placement_id": 24773200
+        },
+        "yieldmo": {
+          "placementId": "2986450036092510476"
+        }
+      }
+}
