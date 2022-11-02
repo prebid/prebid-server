@@ -1,5 +1,5 @@
 {
-    "description": "FLEDGE request/response when no contextual bids found",
+    "description": "FLEDGE request/response with additional contextual bids exist",
     "debuglog": {
         "enabled": false,
         "debug_override": false,
