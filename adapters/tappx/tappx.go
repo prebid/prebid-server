@@ -18,7 +18,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const TAPPX_BIDDER_VERSION = "1.4.1"
+const TAPPX_BIDDER_VERSION = "1.5"
 const TYPE_CNN = "prebid"
 
 type TappxAdapter struct {
