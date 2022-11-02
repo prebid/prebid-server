@@ -465,24 +465,16 @@ func createSanitizedImpExt(impExt, impExtPrebid map[string]json.RawMessage) (map
 	}
 
 	// copy reserved imp[].ext fields known to not be bidder names
-	if v, exists := impExt[openrtb_ext.FirstPartyDataExtKey]; exists {
-		sanitizedImpExt[openrtb_ext.FirstPartyDataExtKey] = v
-	}
-
-	if v, exists := impExt[openrtb_ext.FirstPartyDataContextExtKey]; exists {
-		sanitizedImpExt[openrtb_ext.FirstPartyDataContextExtKey] = v
-	}
-
-	if v, exists := impExt[openrtb_ext.SKAdNExtKey]; exists {
-		sanitizedImpExt[openrtb_ext.SKAdNExtKey] = v
-	}
-
-	if v, exists := impExt[string(openrtb_ext.GPIDKey)]; exists {
-		sanitizedImpExt[openrtb_ext.GPIDKey] = v
-	}
-
-	if v, exists := impExt[string(openrtb_ext.TIDKey)]; exists {
-		sanitizedImpExt[openrtb_ext.TIDKey] = v
+	for _, k := range []string{
+		openrtb_ext.FirstPartyDataExtKey,
+		openrtb_ext.FirstPartyDataContextExtKey,
+		openrtb_ext.SKAdNExtKey,
+		openrtb_ext.GPIDKey,
+		openrtb_ext.TIDKey,
+	} {
+		if v, exists := impExt[k]; exists {
+			sanitizedImpExt[k] = v
+		}
 	}
 
 	return sanitizedImpExt, nil
