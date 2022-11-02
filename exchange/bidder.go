@@ -101,6 +101,9 @@ type pbsOrtbSeatBid struct {
 	// currency is the currency in which the bids are made.
 	// Should be a valid currency ISO code.
 	currency string
+	// fledgeAuctionConfigs is quasi-opaque data passed back for in-browser interest group auction.
+	// if exists, it should be passed through even if bids[] is empty.
+	fledgeAuctionConfigs []*openrtb_ext.FledgeAuctionConfig
 	// httpCalls is the list of debugging info. It should only be populated if the request.test == 1.
 	// This will become response.ext.debug.httpcalls.{bidder} on the final Response.
 	httpCalls []*openrtb_ext.ExtHttpCall
@@ -303,6 +306,12 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 							}
 						}
 					}
+				}
+
+				// FLEDGE auctionconfig responses are sent separate from bids
+				if bidResponse.FledgeAuctionConfigs != nil {
+					// TODO: only if ae was set in incoming request (imp.ext.ae etc)
+					seatBidMap[bidderRequest.BidderName].fledgeAuctionConfigs = bidResponse.FledgeAuctionConfigs
 				}
 
 				if len(bidderRequest.BidderStoredResponses) > 0 {

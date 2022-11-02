@@ -2273,6 +2273,8 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 			assert.JSONEq(t, expectedPassthough, actualPassthrough, "Expected bid response extension is incorrect")
 		}
 
+	} else if spec.Response.Ext != nil {
+		assert.JSONEq(t, string(spec.Response.Ext), string(bid.Ext), "ext mismatch")
 	}
 }
 
@@ -4432,8 +4434,9 @@ type bidderResponse struct {
 // The only real reason I'm not reusing that type is because I don't want people to think that the
 // JSON property tags on those types are contracts in prod.
 type bidderSeatBid struct {
-	Bids []bidderBid `json:"pbsBids,omitempty"`
-	Seat string      `json:"seat"`
+	Bids                 []bidderBid                        `json:"pbsBids,omitempty"`
+	Seat                 string                             `json:"seat"`
+	FledgeAuctionConfigs []*openrtb_ext.FledgeAuctionConfig `json:"fledgeAuctionConfigs,omitempty"`
 }
 
 // bidderBid is basically a subset of pbsOrtbBid from exchange/bidder.go.
@@ -4495,9 +4498,10 @@ func (b *validatingBidder) requestBid(ctx context.Context, bidderRequest BidderR
 				}
 
 				seatBids = append(seatBids, &pbsOrtbSeatBid{
-					bids:      bids,
-					httpCalls: mockResponse.HttpCalls,
-					seat:      mockSeatBid.Seat,
+					bids:                 bids,
+					httpCalls:            mockResponse.HttpCalls,
+					seat:                 mockSeatBid.Seat,
+					fledgeAuctionConfigs: mockSeatBid.FledgeAuctionConfigs,
 				})
 			}
 		} else {

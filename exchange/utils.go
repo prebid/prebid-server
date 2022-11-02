@@ -445,12 +445,14 @@ func createSanitizedImpExt(impExt, impExtPrebid map[string]json.RawMessage) (map
 	sanitizedImpPrebidExt := make(map[string]json.RawMessage, 2)
 
 	// copy allowed imp[].ext.prebid fields
-	if v, exists := impExtPrebid["is_rewarded_inventory"]; exists {
-		sanitizedImpPrebidExt["is_rewarded_inventory"] = v
-	}
-
-	if v, exists := impExtPrebid["options"]; exists {
-		sanitizedImpPrebidExt["options"] = v
+	for _, k := range []string{
+		openrtb_ext.IsRewardedInventoryKey,
+		openrtb_ext.OptionsKey,
+		openrtb_ext.AuctionEnvironmentKey,
+	} {
+		if v, exists := impExtPrebid[k]; exists {
+			sanitizedImpPrebidExt[k] = v
+		}
 	}
 
 	// marshal sanitized imp[].ext.prebid

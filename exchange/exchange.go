@@ -1004,6 +1004,18 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pb
 		// Defering the filling of bidResponseExt.Usersync[bidderName] until later
 
 	}
+
+	for _, seatBid := range adapterBids {
+		if seatBid.fledgeAuctionConfigs != nil {
+			if bidResponseExt.Fledge == nil {
+				bidResponseExt.Fledge = &openrtb_ext.Fledge{
+					AuctionConfigs: make([]*openrtb_ext.FledgeAuctionConfig, 0, len(seatBid.fledgeAuctionConfigs)),
+				}
+			}
+			// TODO: validate bidderName and impId
+			bidResponseExt.Fledge.AuctionConfigs = append(bidResponseExt.Fledge.AuctionConfigs, seatBid.fledgeAuctionConfigs...)
+		}
+	}
 	return bidResponseExt
 }
 
@@ -1227,7 +1239,7 @@ func buildStoredAuctionResponse(storedAuctionResponses map[string]json.RawMessag
 			} else {
 				//create new seat bid and add it to live adapters
 				liveAdapters = append(liveAdapters, bidderName)
-				newSeatBid := pbsOrtbSeatBid{bidsToAdd, "", nil, ""}
+				newSeatBid := pbsOrtbSeatBid{bidsToAdd, "", nil, nil, ""}
 				adapterBids[bidderName] = &newSeatBid
 
 			}

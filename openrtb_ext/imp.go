@@ -4,6 +4,24 @@ import (
 	"encoding/json"
 )
 
+// AuctionEnvironmentType is a Google Privacy Sandbox flag indicating where the auction may take place
+type AuctionEnvironmentType int8
+
+const (
+	ServerSideAuction          AuctionEnvironmentType = 0
+	OnDeviceIGAuctionFledge    AuctionEnvironmentType = 1
+	ServerSideWithIGSimulation AuctionEnvironmentType = 2
+)
+
+// AuctionEnvironmentKey is the json key under imp[].ext.prebid for ExtImpPrebid.AuctionEnvironment
+const AuctionEnvironmentKey = "ae"
+
+// IsRewardedInventoryKey is the json key for ExtImpPrebid.IsRewardedInventory
+const IsRewardedInventoryKey = "is_rewarded_inventory"
+
+// OptionsKey is the json key for ExtImpPrebid.Options
+const OptionsKey = "options"
+
 // ExtImpPrebid defines the contract for bidrequest.imp[i].ext.prebid
 type ExtImpPrebid struct {
 	// StoredRequest specifies which stored impression to use, if any.
@@ -24,6 +42,9 @@ type ExtImpPrebid struct {
 	Options *Options `json:"options,omitempty"`
 
 	Passthrough json.RawMessage `json:"passthrough,omitempty"`
+
+	// AuctionEnvironment can be 0 (server-side, default), 1 (on-device interest group auction FLEDGE), 2 (server-side with interest group simulation)
+	AuctionEnvironment AuctionEnvironmentType `json:"ae,omitempty"`
 }
 
 // ExtStoredRequest defines the contract for bidrequest.imp[i].ext.prebid.storedrequest

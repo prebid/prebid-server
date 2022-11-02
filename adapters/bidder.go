@@ -60,8 +60,9 @@ type TimeoutBidder interface {
 // From the bid response, the bidder accepts a list of valid currencies for the bid.
 // The currency is the same across all bids.
 type BidderResponse struct {
-	Currency string
-	Bids     []*TypedBid
+	Currency             string
+	Bids                 []*TypedBid
+	FledgeAuctionConfigs []*openrtb_ext.FledgeAuctionConfig
 }
 
 // NewBidderResponseWithBidsCapacity create a new BidderResponse initialising the bids array capacity and the default currency value
