@@ -6,26 +6,27 @@ import (
 
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookstage"
-	"github.com/prebid/prebid-server/hooks/invocation"
 )
 
 func ExecuteEntrypointStage(
-	invocationCtx *invocation.InvocationContext,
+	invocationCtx *hookstage.InvocationContext,
 	plan hooks.Plan[hookstage.Entrypoint],
 	req *http.Request,
 	body []byte,
-) (invocation.StageResult[hookstage.EntrypointPayload], []byte, *RejectError) {
+) (StageOutcome, []byte, *RejectError) {
 	handler := func(
 		ctx context.Context,
-		moduleCtx *invocation.ModuleContext,
+		moduleCtx *hookstage.ModuleContext,
 		hook hookstage.Entrypoint,
 		payload hookstage.EntrypointPayload,
-	) (invocation.HookResult[hookstage.EntrypointPayload], error) {
+	) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
 		return hook.HandleEntrypointHook(ctx, moduleCtx, payload)
 	}
 
 	payload := hookstage.EntrypointPayload{Request: req, Body: body}
-	stageResult, payload, err := executeStage(invocationCtx, plan, payload, handler)
+	stageOutcome, payload, reject := executeStage(invocationCtx, plan, payload, handler)
+	stageOutcome.Entity = hookstage.EntityHttpRequest
+	stageOutcome.Stage = hooks.StageEntrypoint
 
-	return stageResult, payload.Body, err
+	return stageOutcome, payload.Body, reject
 }

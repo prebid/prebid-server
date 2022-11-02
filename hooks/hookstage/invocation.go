@@ -1,16 +1,22 @@
-package invocation
+package hookstage
 
 import (
 	"encoding/json"
-	"time"
 
+	"github.com/prebid/prebid-server/hooks/hookanalytics"
 	"github.com/prebid/prebid-server/metrics"
 )
 
+type Entity string
+
+const (
+	EntityHttpRequest              Entity = "http-request"
+	EntityAuctionRequest           Entity = "auction-request"
+	EntityAuctionResponse          Entity = "auction-response"
+	EntityAllProcessedBidResponses Entity = "all-processed-bid-responses"
+)
+
 type InvocationContext struct {
-	Endpoint          string
-	Stage             string
-	DebugEnabled      bool
 	RequestTypeMetric metrics.RequestType
 	moduleContexts    map[string]*ModuleContext
 }
@@ -30,14 +36,7 @@ func (ctx *InvocationContext) ModuleContextFor(moduleCode string) *ModuleContext
 	return &emptyCtx
 }
 
-type HookResponse[T any] struct {
-	Result HookResult[T]
-	Err    error
-}
-
 type HookResult[T any] struct {
-	ModuleCode    string
-	ExecutionTime time.Duration
 	Reject        bool
 	NbrCode       int
 	Message       string
@@ -45,8 +44,7 @@ type HookResult[T any] struct {
 	Errors        []string
 	Warnings      []string
 	DebugMessages []string
-	//todo: think on adding next fields
-	// analyticTags
+	AnalyticsTags hookanalytics.Analytics
 }
 
 type ModuleContext struct {
