@@ -118,18 +118,6 @@ type ExtRequestPrebidServer struct {
 	DataCenter  string `json:"datacenter"`
 }
 
-// UnmarshalJSON prevents nil bids arguments.
-func (ert *ExtRequestPrebidCache) UnmarshalJSON(b []byte) error {
-	type typesAlias ExtRequestPrebidCache // Prevents infinite UnmarshalJSON loops
-	var proxy typesAlias
-	if err := json.Unmarshal(b, &proxy); err != nil {
-		return err
-	}
-
-	*ert = ExtRequestPrebidCache(proxy)
-	return nil
-}
-
 // ExtRequestPrebidCacheBids defines the contract for bidrequest.ext.prebid.cache.bids
 type ExtRequestPrebidCacheBids struct {
 	ReturnCreative *bool `json:"returnCreative"`
