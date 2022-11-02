@@ -30,7 +30,7 @@ type ImprovedigitalAdapter struct {
 // BidExt This struct usage for parse line_item_id and buying_type from bid.ext
 type BidExt struct {
 	Improvedigital struct {
-		LineItemId int    `json:"line_item_id"`
+		LineItemID int    `json:"line_item_id"`
 		BuyingType string `json:"buying_type"`
 	}
 }
@@ -55,12 +55,12 @@ func (a *ImprovedigitalAdapter) MakeRequests(request *openrtb2.BidRequest, reqIn
 
 func (a *ImprovedigitalAdapter) makeRequest(request openrtb2.BidRequest, imp openrtb2.Imp) (*adapters.RequestData, error) {
 	// Handle Rewarded Inventory
-	extImp, err := getImpExtWithRewardedInventory(imp)
+	impExt, err := getImpExtWithRewardedInventory(imp)
 	if err != nil {
 		return nil, err
 	}
-	if extImp != nil {
-		imp.Ext = extImp
+	if impExt != nil {
+		imp.Ext = impExt
 	}
 
 	request.Imp = []openrtb2.Imp{imp}
@@ -149,8 +149,8 @@ func (a *ImprovedigitalAdapter) MakeBids(internalRequest *openrtb2.BidRequest, e
 			}
 
 			bidExtImprovedigital := bidExt.Improvedigital
-			if bidExtImprovedigital.LineItemId != 0 && bidExtImprovedigital.BuyingType != "" && bidExtImprovedigital.BuyingType != buyingTypeRTB {
-				bid.DealID = strconv.Itoa(bidExtImprovedigital.LineItemId)
+			if bidExtImprovedigital.LineItemID != 0 && bidExtImprovedigital.BuyingType != "" && bidExtImprovedigital.BuyingType != buyingTypeRTB {
+				bid.DealID = strconv.Itoa(bidExtImprovedigital.LineItemID)
 			}
 		}
 

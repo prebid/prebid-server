@@ -6,7 +6,7 @@
     },
     "imp": [
       {
-        "id": "rewarded-inventory-imp-id",
+        "id": "rewarded-inventory-imp-id-true",
         "banner": {
           "format": [
             {
@@ -25,7 +25,7 @@
         }
       },
       {
-        "id": "rewarded-inventory-imp-id",
+        "id": "rewarded-inventory-imp-id-false",
         "banner": {
           "format": [
             {
@@ -42,6 +42,23 @@
             "is_rewarded_inventory": 0
           }
         }
+      },
+      {
+        "id": "rewarded-inventory-imp-id-not-defined",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": 13245
+          },
+          "prebid": {}
+        }
       }
     ]
   },
@@ -56,7 +73,7 @@
           },
           "imp": [
             {
-              "id": "rewarded-inventory-imp-id",
+              "id": "rewarded-inventory-imp-id-true",
               "banner": {
                 "format": [
                   {
@@ -93,7 +110,7 @@
           },
           "imp": [
             {
-              "id": "rewarded-inventory-imp-id",
+              "id": "rewarded-inventory-imp-id-false",
               "banner": {
                 "format": [
                   {
@@ -118,9 +135,43 @@
         "status": 200,
         "body": {}
       }
+    },
+    {
+      "expectedRequest": {
+        "uri": "http://localhost/pbs",
+        "body": {
+          "id": "rewarded-inventory-request-id",
+          "site": {
+            "page": "https://good.site/url"
+          },
+          "imp": [
+            {
+              "id": "rewarded-inventory-imp-id-not-defined",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": 13245
+                },
+                "prebid": {}
+              }
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {}
+      }
     }
   ],
   "expectedBidResponses": [
-    {},{}
+    {},{},{}
   ]
 }
