@@ -1561,7 +1561,7 @@ func setSiteImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {
 			referrerCandidate = r.Site.Page
 		}
 		if parsedUrl, err := url.Parse(referrerCandidate); err == nil {
-			if domain, err := publicsuffix.EffectiveTLDPlusOne(parsedUrl.Host); err == nil {
+			if publisherDomain, err := publicsuffix.EffectiveTLDPlusOne(parsedUrl.Host); err == nil {
 				if r.Site == nil {
 					r.Site = &openrtb2.Site{}
 				}
@@ -1570,11 +1570,11 @@ func setSiteImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {
 				}
 
 				if r.Site.Domain == "" {
-					r.Site.Domain = domain
+					r.Site.Domain = parsedUrl.Host
 				}
 
 				if r.Site.Publisher.Domain == "" {
-					r.Site.Publisher.Domain = domain
+					r.Site.Publisher.Domain = publisherDomain
 				}
 
 				// This looks weird... but is not a bug. The site which called prebid-server (the "referer"), is
