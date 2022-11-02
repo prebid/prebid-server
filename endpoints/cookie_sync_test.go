@@ -812,8 +812,8 @@ func TestCookieSyncParseRequest(t *testing.T) {
 				ccpaEnforce:            test.givenCCPAEnabled,
 			},
 			accountsFetcher: FakeAccountsFetcher{AccountData: map[string]*config.Account{
-				"TestAccount":     &config.Account{CookieSync: config.CookieSync{DefaultLimit: &defaultLimit, MaxLimit: &maxLimit, DefaultCoopSync: &defaultCookSync}},
-				"DisabledAccount": &config.Account{Disabled: true},
+				"TestAccount":     {CookieSync: config.CookieSync{DefaultLimit: &defaultLimit, MaxLimit: &maxLimit, DefaultCoopSync: &defaultCookSync}},
+				"DisabledAccount": {Disabled: true},
 			}},
 		}
 		assert.NoError(t, endpoint.config.MarshalAccountDefaults())
