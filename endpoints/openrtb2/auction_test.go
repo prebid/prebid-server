@@ -27,6 +27,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/metrics"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -3286,7 +3287,7 @@ func TestParseRequestParseImpInfoError(t *testing.T) {
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
 
-	resReq, impExtInfoMap, _, _, _, errL := deps.parseRequest(req, deps.hookExecutionPlanBuilder, &metricsConfig.NilMetricsEngine{}, deps.cfg.Debug.Modules)
+	resReq, impExtInfoMap, _, _, _, errL := deps.parseRequest(req, hookexecution.HookExecutor{PlanBuilder: hooks.EmptyPlanBuilder{}, MetricEngine: &metricsConfig.NilMetricsEngine{}})
 
 	assert.Nil(t, resReq, "Result request should be nil due to incorrect imp")
 	assert.Nil(t, impExtInfoMap, "Impression info map should be nil due to incorrect imp")
@@ -3861,7 +3862,7 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
 
-			resReq, _, _, _, _, errL := deps.parseRequest(req, deps.hookExecutionPlanBuilder, &metricsConfig.NilMetricsEngine{}, deps.cfg.Debug.Modules)
+			resReq, _, _, _, _, errL := deps.parseRequest(req, hookexecution.HookExecutor{PlanBuilder: hooks.EmptyPlanBuilder{}, MetricEngine: &metricsConfig.NilMetricsEngine{}})
 
 			assert.NoError(t, resReq.RebuildRequest())
 
@@ -3964,7 +3965,7 @@ func TestParseRequestStoredResponses(t *testing.T) {
 
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
 
-			_, _, storedResponses, _, _, errL := deps.parseRequest(req, deps.hookExecutionPlanBuilder, &metricsConfig.NilMetricsEngine{}, deps.cfg.Debug.Modules)
+			_, _, storedResponses, _, _, errL := deps.parseRequest(req, hookexecution.HookExecutor{PlanBuilder: hooks.EmptyPlanBuilder{}, MetricEngine: &metricsConfig.NilMetricsEngine{}})
 
 			if test.expectedErrorCount == 0 {
 				assert.Equal(t, test.expectedStoredResponses, storedResponses, "stored responses should match")
@@ -4051,7 +4052,7 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 			}
 
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
-			_, _, _, storedBidResponses, _, errL := deps.parseRequest(req, deps.hookExecutionPlanBuilder, &metricsConfig.NilMetricsEngine{}, deps.cfg.Debug.Modules)
+			_, _, _, storedBidResponses, _, errL := deps.parseRequest(req, hookexecution.HookExecutor{PlanBuilder: hooks.EmptyPlanBuilder{}, MetricEngine: &metricsConfig.NilMetricsEngine{}})
 
 			if test.expectedErrorCount == 0 {
 				assert.Equal(t, test.expectedStoredBidResponses, storedBidResponses, "stored responses should match")

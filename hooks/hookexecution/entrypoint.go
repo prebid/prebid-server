@@ -2,33 +2,25 @@ package hookexecution
 
 import (
 	"context"
-	"github.com/prebid/prebid-server/metrics"
-	"net/http"
-
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookstage"
-	"github.com/prebid/prebid-server/hooks/invocation"
 )
 
-func ExecuteEntrypointStage(
-	invocationCtx *invocation.InvocationContext,
-	plan hooks.Plan[hookstage.Entrypoint],
-	req *http.Request,
-	body []byte,
-	metricEngine metrics.MetricsEngine,
-) (invocation.StageResult[hookstage.EntrypointPayload], []byte, *RejectError) {
+func ExecuteEntrypointStage(executor HookExecutor) (StageOutcome, []byte, *RejectError) {
 	handler := func(
 		ctx context.Context,
-		moduleCtx *invocation.ModuleContext,
+		moduleCtx *hookstage.ModuleContext,
 		hook hookstage.Entrypoint,
 		payload hookstage.EntrypointPayload,
-	) (invocation.HookResult[hookstage.EntrypointPayload], error) {
+	) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
 		return hook.HandleEntrypointHook(ctx, moduleCtx, payload)
 	}
 
-	payload := hookstage.EntrypointPayload{Request: req, Body: body}
-	invocationCtx.Stage = hooks.StageEntrypoint
-	stageResult, payload, err := executeStage(invocationCtx, plan, payload, handler, metricEngine)
+	executor.InvocationCtx.Stage = hooks.StageEntrypoint
+	payload := hookstage.EntrypointPayload{Request: executor.Req, Body: executor.Body}
+	stageOutcome, payload, reject := executeStage(executor.InvocationCtx, executor.PlanBuilder.PlanForEntrypointStage(executor.Endpoint), payload, handler, executor.MetricEngine)
+	stageOutcome.Entity = hookstage.EntityHttpRequest
+	stageOutcome.Stage = hooks.StageEntrypoint
 
-	return stageResult, payload.Body, err
+	return stageOutcome, payload.Body, reject
 }

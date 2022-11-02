@@ -4,18 +4,40 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/metrics"
+	"net/http"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/prebid/prebid-server/hooks"
-	"github.com/prebid/prebid-server/hooks/invocation"
+	"github.com/prebid/prebid-server/hooks/hookstage"
+	"github.com/prebid/prebid-server/metrics"
 )
+
+const (
+	Auction_endpoint = "/openrtb2/auction"
+	Amp_endpoint     = "/openrtb2/amp"
+)
+
+type HookExecutor struct {
+	InvocationCtx *hookstage.InvocationContext
+	Endpoint      string
+	PlanBuilder   hooks.ExecutionPlanBuilder
+	Req           *http.Request
+	Body          []byte
+}
 
 type TimeoutError struct{}
 
 func (e TimeoutError) Error() string {
 	return fmt.Sprint("Hook execution timeout")
+}
+
+// FailureError indicates expected error occurred during hook execution on the module-side
+type FailureError struct{}
+
+func (e FailureError) Error() string {
+	return fmt.Sprint("Hook execution failed")
 }
 
 type RejectError struct {
@@ -29,48 +51,56 @@ func (e RejectError) Error() string {
 
 type hookHandler[H any, P any] func(
 	context.Context,
-	*invocation.ModuleContext,
+	*hookstage.ModuleContext,
 	H,
 	P,
-) (invocation.HookResult[P], error)
+) (hookstage.HookResult[P], error)
+
+type HookResponse[T any] struct {
+	Err           error
+	ExecutionTime time.Duration
+	HookID        HookID
+	Result        hookstage.HookResult[T]
+}
 
 func executeStage[H any, P any](
-	invocationCtx *invocation.InvocationContext,
+	invocationCtx *hookstage.InvocationContext,
 	plan hooks.Plan[H],
 	payload P,
 	hookHandler hookHandler[H, P],
 	metricEngine metrics.MetricsEngine,
-) (invocation.StageResult[P], P, *RejectError) {
-	var stageResult invocation.StageResult[P]
-	stageResult.GroupsResults = make([][]invocation.HookResult[P], 0, len(plan))
+) (StageOutcome, P, *RejectError) {
+	stageOutcome := StageOutcome{}
+	stageOutcome.Groups = make([]GroupOutcome, 0, len(plan))
 
 	for _, group := range plan {
-		groupResult, newPayload, reject := executeGroup(invocationCtx, group, payload, hookHandler, metricEngine)
-		stageResult.GroupsResults = append(stageResult.GroupsResults, groupResult)
+		groupOutcome, newPayload, reject := executeGroup(invocationCtx, group, payload, hookHandler, metricEngine)
+		stageOutcome.ExecutionTimeMillis += groupOutcome.ExecutionTimeMillis
+		stageOutcome.Groups = append(stageOutcome.Groups, groupOutcome)
 		if reject != nil {
-			return stageResult, payload, reject
+			return stageOutcome, payload, reject
 		}
 
 		payload = newPayload
 	}
 
-	return stageResult, payload, nil
+	return stageOutcome, payload, nil
 }
 
 func executeGroup[H any, P any](
-	invocationCtx *invocation.InvocationContext,
+	invocationCtx *hookstage.InvocationContext,
 	group hooks.Group[H],
 	payload P,
 	hookHandler hookHandler[H, P],
 	metricEngine metrics.MetricsEngine,
-) ([]invocation.HookResult[P], P, *RejectError) {
+) (GroupOutcome, P, *RejectError) {
 	var wg sync.WaitGroup
 	done := make(chan struct{})
-	resp := make(chan invocation.HookResponse[P])
+	resp := make(chan HookResponse[P])
 
 	for _, hook := range group.Hooks {
 		wg.Add(1)
-		go func(hw hooks.HookWrapper[H], moduleCtx *invocation.ModuleContext) {
+		go func(hw hooks.HookWrapper[H], moduleCtx *hookstage.ModuleContext) {
 			defer wg.Done()
 			executeHook(moduleCtx, hw, payload, hookHandler, group.Timeout, resp, done)
 		}(hook, invocationCtx.ModuleContextFor(hook.Module))
@@ -87,27 +117,28 @@ func executeGroup[H any, P any](
 }
 
 func executeHook[H any, P any](
-	moduleCtx *invocation.ModuleContext,
+	moduleCtx *hookstage.ModuleContext,
 	hw hooks.HookWrapper[H],
 	payload P,
 	hookHandler hookHandler[H, P],
 	timeout time.Duration,
-	resp chan<- invocation.HookResponse[P],
+	resp chan<- HookResponse[P],
 	done <-chan struct{},
 ) {
-	hookRespCh := make(chan invocation.HookResponse[P], 1)
+	hookRespCh := make(chan HookResponse[P], 1)
 
 	select {
 	case <-done:
 		return
 	default:
 		startTime := time.Now()
+		hookId := HookID{hw.Module, hw.Code}
 
 		go func() {
 			ctx, cancel := context.WithTimeout(context.Background(), timeout)
 			defer cancel()
 			result, err := hookHandler(ctx, moduleCtx, hw.Hook, payload)
-			hookRespCh <- invocation.HookResponse[P]{
+			hookRespCh <- HookResponse[P]{
 				Result: result,
 				Err:    err,
 			}
@@ -115,13 +146,15 @@ func executeHook[H any, P any](
 
 		select {
 		case res := <-hookRespCh:
-			res.Result.ModuleCode = hw.Module
-			res.Result.ExecutionTime = time.Since(startTime)
+			res.HookID = hookId
+			res.ExecutionTime = time.Since(startTime)
 			resp <- res
 		case <-time.After(timeout):
-			resp <- invocation.HookResponse[P]{
-				Result: invocation.HookResult[P]{ModuleCode: hw.Module},
-				Err:    TimeoutError{},
+			resp <- HookResponse[P]{
+				Err:           TimeoutError{},
+				ExecutionTime: time.Since(startTime),
+				HookID:        hookId,
+				Result:        hookstage.HookResult[P]{},
 			}
 		case <-done:
 			return
@@ -130,14 +163,14 @@ func executeHook[H any, P any](
 }
 
 func collectHookResponses[P any](
-	resp <-chan invocation.HookResponse[P],
+	resp <-chan HookResponse[P],
 	done chan<- struct{},
-) []invocation.HookResponse[P] {
-	hookResponses := make([]invocation.HookResponse[P], 0)
+) []HookResponse[P] {
+	hookResponses := make([]HookResponse[P], 0)
 	for r := range resp {
 		if r.Result.Reject {
 			close(done)
-			return []invocation.HookResponse[P]{r}
+			return []HookResponse[P]{r}
 		}
 
 		hookResponses = append(hookResponses, r)
@@ -148,55 +181,83 @@ func collectHookResponses[P any](
 
 func processHookResponses[P any](
 	invocationCtx *invocation.InvocationContext,
-	hookResponses []invocation.HookResponse[P],
+	hookResponses []HookResponse[P],
 	payload P,
 	metricEngine metrics.MetricsEngine,
-) ([]invocation.HookResult[P], P, *RejectError) {
-	groupResult := make([]invocation.HookResult[P], 0, len(hookResponses))
-	for i, r := range hookResponses {
+) (GroupOutcome, P, *RejectError) {
+	groupOutcome := GroupOutcome{}
+	groupOutcome.InvocationResults = make([]*HookOutcome, 0, len(hookResponses))
+
+	for _, r := range hookResponses {
 		labels := metrics.ModuleLabels{
 			Module: r.Result.ModuleCode,
 			Stage:  invocationCtx.Stage,
 			PubID:  invocationCtx.AccountId,
 		}
+		hookOutcome := &HookOutcome{
+			Status:        StatusSuccess,
+			HookID:        r.HookID,
+			Message:       r.Result.Message,
+			DebugMessages: r.Result.DebugMessages,
+			AnalyticsTags: r.Result.AnalyticsTags,
+			ExecutionTime: ExecutionTime{r.ExecutionTime},
+		}
+
 		metricEngine.RecordModuleCalled(labels)
 		metricEngine.RecordModuleDuration(labels, r.Result.ExecutionTime)
-		groupResult = append(groupResult, r.Result)
+		groupOutcome.InvocationResults = append(groupOutcome.InvocationResults, hookOutcome)
+		if r.ExecutionTime > groupOutcome.ExecutionTimeMillis {
+			groupOutcome.ExecutionTimeMillis = r.ExecutionTime
+		}
 
 		if r.Err != nil {
-			groupResult[i].Errors = append(groupResult[i].Errors, r.Err.Error())
-
-			if errors.As(r.Err, &TimeoutError{}) {
+			hookOutcome.Errors = append(hookOutcome.Errors, r.Err.Error())
+			switch r.Err.(type) {
+			case TimeoutError:
 				metricEngine.RecordModuleTimeout(labels)
-			} else {
+				hookOutcome.Status = StatusTimeout
+			case FailureError:
+				hookOutcome.Status = StatusFailure
+			default:
 				metricEngine.RecordModuleExecutionError(labels)
+				hookOutcome.Status = StatusExecutionFailure
 			}
+			// todo: send metric
 			continue
 		}
 
 		if r.Result.Reject {
 			reject := &RejectError{Code: r.Result.NbrCode, Reason: r.Result.Message}
-			groupResult[i].Errors = append(groupResult[i].Errors, reject.Error())
 			metricEngine.RecordModuleSuccessRejected(labels)
-
-			return groupResult, payload, reject
+			hookOutcome.Action = ActionReject
+			hookOutcome.Errors = append(hookOutcome.Errors, reject.Error())
+			// todo: send metric
+			return groupOutcome, payload, reject
 		}
 
 		if r.Result.ChangeSet == nil || len(r.Result.ChangeSet.Mutations()) == 0 {
 			metricEngine.RecordModuleSuccessNooped(labels)
+			hookOutcome.Action = ActionNOP
 			continue
 		}
 
+		hookOutcome.Action = ActionUpdate
 		for _, mut := range r.Result.ChangeSet.Mutations() {
 			p, err := mut.Apply(payload)
 			if err != nil {
-				groupResult[i].Warnings = append(groupResult[i].Warnings, fmt.Sprintf("failed applying hook mutation: %s", err))
+				hookOutcome.Warnings = append(hookOutcome.Warnings, fmt.Sprintf("failed applying hook mutation: %s", err))
 				continue
 			}
+
 			payload = p
+			hookOutcome.DebugMessages = append(hookOutcome.DebugMessages, fmt.Sprintf(
+				"Hook mutation successfully applied, affected key: %s, mutation type: %s",
+				strings.Join(mut.Key(), "."),
+				mut.Type(),
+			))
 		}
 		metricEngine.RecordModuleSuccessUpdated(labels)
 	}
 
-	return groupResult, payload, nil
+	return groupOutcome, payload, nil
 }

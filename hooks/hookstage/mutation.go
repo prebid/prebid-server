@@ -1,4 +1,4 @@
-package invocation
+package hookstage
 
 type MutationType int
 
@@ -7,12 +7,23 @@ const (
 	MutationDelete
 )
 
+func (mt MutationType) String() string {
+	if v, ok := map[MutationType]string{
+		MutationUpdate: "update",
+		MutationDelete: "delete",
+	}[mt]; ok {
+		return v
+	}
+
+	return "unknown"
+}
+
 type mutationFunc[T any] func(T) (T, error)
 
 type Mutation[T any] struct {
-	mutType MutationType // mutType used to determine type of changes made by hook
-	key     []string     // key indicates path to the modified key
-	fn      mutationFunc[T]
+	mutType MutationType
+	key     []string        // key indicates path to the modified field
+	fn      mutationFunc[T] // fn actual function that makes changes to payload
 }
 
 func (m Mutation[T]) Type() MutationType {

@@ -596,7 +596,6 @@ type DefReqFiles struct {
 type Debug struct {
 	TimeoutNotification TimeoutNotification `mapstructure:"timeout_notification"`
 	OverrideToken       string              `mapstructure:"override_token"`
-	Modules             bool                `mapstructure:"modules"`
 }
 
 type Server struct {
