@@ -150,6 +150,12 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		CookieFlag:    metrics.CookieFlagUnknown,
 		RequestStatus: metrics.RequestStatusOK,
 	}
+
+	hookExecutor := hookexecution.HookExecutor{
+		InvocationCtx: &hookstage.InvocationContext{},
+		PlanBuilder:   deps.hookExecutionPlanBuilder,
+		Req:           r,
+	}
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
@@ -158,7 +164,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
 
-	req, impExtInfoMap, storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, errL := deps.parseRequest(r, deps.hookExecutionPlanBuilder)
+	req, impExtInfoMap, storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, errL := deps.parseRequest(r, hookExecutor)
 	if errortypes.ContainsFatalError(errL) && writeError(errL, w, &labels) {
 		return
 	}
@@ -264,7 +270,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 // possible, it will return errors with messages that suggest improvements.
 //
 // If the errors list has at least one element, then no guarantees are made about the returned request.
-func (deps *endpointDeps) parseRequest(httpRequest *http.Request, planbuilder hooks.ExecutionPlanBuilder) (req *openrtb_ext.RequestWrapper, impExtInfoMap map[string]exchange.ImpExtInfo, storedAuctionResponses stored_responses.ImpsWithBidResponses, storedBidResponses stored_responses.ImpBidderStoredResp, bidderImpReplaceImpId stored_responses.BidderImpReplaceImpID, errs []error) {
+func (deps *endpointDeps) parseRequest(httpRequest *http.Request, executor hookexecution.HookExecutor) (req *openrtb_ext.RequestWrapper, impExtInfoMap map[string]exchange.ImpExtInfo, storedAuctionResponses stored_responses.ImpsWithBidResponses, storedBidResponses stored_responses.ImpBidderStoredResp, bidderImpReplaceImpId stored_responses.BidderImpReplaceImpID, errs []error) {
 	req = &openrtb_ext.RequestWrapper{}
 	req.BidRequest = &openrtb2.BidRequest{}
 	errs = nil
@@ -287,14 +293,9 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, planbuilder ho
 		}
 	}
 
-	invCtx := hookstage.InvocationContext{}
+	executor.Body = requestJson
 	// todo: use stage result later for response
-	_, body, err := hookexecution.ExecuteEntrypointStage(
-		&invCtx,
-		planbuilder.PlanForEntrypointStage(httpRequest.URL.Path),
-		httpRequest,
-		requestJson,
-	)
+	_, body, err := hookexecution.ExecuteEntrypointStage(executor)
 	if err != nil {
 		//todo: return no bid response
 		// the only error returned from above is hook stage rejection

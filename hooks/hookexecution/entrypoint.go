@@ -2,18 +2,11 @@ package hookexecution
 
 import (
 	"context"
-	"net/http"
-
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookstage"
 )
 
-func ExecuteEntrypointStage(
-	invocationCtx *hookstage.InvocationContext,
-	plan hooks.Plan[hookstage.Entrypoint],
-	req *http.Request,
-	body []byte,
-) (StageOutcome, []byte, *RejectError) {
+func ExecuteEntrypointStage(executor HookExecutor) (StageOutcome, []byte, *RejectError) {
 	handler := func(
 		ctx context.Context,
 		moduleCtx *hookstage.ModuleContext,
@@ -23,8 +16,8 @@ func ExecuteEntrypointStage(
 		return hook.HandleEntrypointHook(ctx, moduleCtx, payload)
 	}
 
-	payload := hookstage.EntrypointPayload{Request: req, Body: body}
-	stageOutcome, payload, reject := executeStage(invocationCtx, plan, payload, handler)
+	payload := hookstage.EntrypointPayload{Request: executor.Req, Body: executor.Body}
+	stageOutcome, payload, reject := executeStage(executor.InvocationCtx, executor.PlanBuilder.PlanForEntrypointStage(executor.Endpoint), payload, handler)
 	stageOutcome.Entity = hookstage.EntityHttpRequest
 	stageOutcome.Stage = hooks.StageEntrypoint
 

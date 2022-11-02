@@ -3,28 +3,32 @@ package hookexecution
 import (
 	"bytes"
 	"context"
-	"net/http"
-	"testing"
-	"time"
-
 	"github.com/buger/jsonparser"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"net/http"
+	"testing"
+	"time"
 )
 
 func TestExecuteEntrypointStage_DoesNotChangeRequestForEmptyPlan(t *testing.T) {
-	plan := hooks.Plan[hookstage.Entrypoint]{}
-
 	body := []byte(`{"name": "John", "last_name": "Doe"}`)
 	reader := bytes.NewReader(body)
 	req, err := http.NewRequest(http.MethodPost, "https://prebid.com/openrtb2/auction", reader)
 	if err != nil {
 		t.Fatalf("Unexpected error creating http request: %s", err)
 	}
+	exec := HookExecutor{
+		InvocationCtx: &hookstage.InvocationContext{},
+		Endpoint:      Auction_endpoint,
+		PlanBuilder:   hooks.EmptyPlanBuilder{},
+		Req:           req,
+		Body:          body,
+	}
 
-	stOut, newBody, reject := ExecuteEntrypointStage(&hookstage.InvocationContext{}, plan, req, body)
+	stOut, newBody, reject := ExecuteEntrypointStage(exec)
 	require.Nil(t, reject, "Unexpected stage reject")
 
 	if len(stOut.Groups) != 0 {
@@ -37,30 +41,21 @@ func TestExecuteEntrypointStage_DoesNotChangeRequestForEmptyPlan(t *testing.T) {
 }
 
 func TestExecuteEntrypointStage_CanApplyHookMutations(t *testing.T) {
-	plan := hooks.Plan[hookstage.Entrypoint]{
-		hooks.Group[hookstage.Entrypoint]{
-			Timeout: 1 * time.Millisecond,
-			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
-				{Module: "foobar", Code: "foo", Hook: mockUpdateHeaderEntrypointHook{}},
-				{Module: "foobar", Code: "bar", Hook: mockUpdateQueryEntrypointHook{}},
-			},
-		},
-		hooks.Group[hookstage.Entrypoint]{
-			Timeout: 1 * time.Millisecond,
-			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
-				{Module: "foobar", Code: "baz", Hook: mockUpdateBodyEntrypointHook{}},
-			},
-		},
-	}
-
 	body := []byte(`{"name": "John", "last_name": "Doe"}`)
 	reader := bytes.NewReader(body)
 	req, err := http.NewRequest(http.MethodPost, "https://prebid.com/openrtb2/auction", reader)
 	if err != nil {
 		t.Fatalf("Unexpected error creating http request: %s", err)
 	}
+	exec := HookExecutor{
+		InvocationCtx: &hookstage.InvocationContext{},
+		Endpoint:      Auction_endpoint,
+		PlanBuilder:   TestApplyHookMutationsBuilder{},
+		Req:           req,
+		Body:          body,
+	}
 
-	stOut, newBody, reject := ExecuteEntrypointStage(&hookstage.InvocationContext{}, plan, req, body)
+	stOut, newBody, reject := ExecuteEntrypointStage(exec)
 	require.Nil(t, reject, "Unexpected stage reject")
 
 	if len(stOut.Groups) != 2 {
@@ -130,27 +125,19 @@ func (e mockUpdateBodyEntrypointHook) HandleEntrypointHook(_ context.Context, _ 
 }
 
 func TestExecuteEntrypointStage_CanRejectHook(t *testing.T) {
-	plan := hooks.Plan[hookstage.Entrypoint]{
-		hooks.Group[hookstage.Entrypoint]{
-			Timeout: 1 * time.Millisecond,
-			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
-				{Module: "foobar", Code: "foo", Hook: mockUpdateHeaderEntrypointHook{}},
-			},
-		},
-		hooks.Group[hookstage.Entrypoint]{
-			Timeout: 1 * time.Millisecond,
-			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
-				{Module: "foobar", Code: "bar", Hook: mockRejectEntrypointHook{}},
-			},
-		},
-	}
-
 	body := []byte(`{"name": "John", "last_name": "Doe"}`)
 	reader := bytes.NewReader(body)
 	req, err := http.NewRequest(http.MethodPost, "https://prebid.com/openrtb2/auction", reader)
 	require.NoError(t, err, "Unexpected error creating http request: %s", err)
+	exec := HookExecutor{
+		InvocationCtx: &hookstage.InvocationContext{},
+		Endpoint:      Auction_endpoint,
+		PlanBuilder:   TestRejectPlanBuilder{},
+		Req:           req,
+		Body:          body,
+	}
 
-	stOut, newBody, reject := ExecuteEntrypointStage(&hookstage.InvocationContext{}, plan, req, body)
+	stOut, newBody, reject := ExecuteEntrypointStage(exec)
 	require.NotNil(t, reject, "Unexpected successful execution of entrypoint hook")
 	require.Equal(t, reject, &RejectError{}, "Unexpected reject returned from entrypoint hook")
 	assert.Len(t, stOut.Groups, 2, "some hook groups have not been processed")
@@ -164,30 +151,21 @@ func (e mockRejectEntrypointHook) HandleEntrypointHook(_ context.Context, _ *hoo
 }
 
 func TestExecuteEntrypointStage_CanTimeoutOneOfHooks(t *testing.T) {
-	plan := hooks.Plan[hookstage.Entrypoint]{
-		hooks.Group[hookstage.Entrypoint]{
-			Timeout: 1 * time.Millisecond,
-			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
-				{Module: "foobar", Code: "foo", Hook: mockUpdateHeaderEntrypointHook{}},
-				{Module: "foobar", Code: "bar", Hook: mockTimeoutEntrypointHook{}},
-			},
-		},
-		hooks.Group[hookstage.Entrypoint]{
-			Timeout: 1 * time.Millisecond,
-			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
-				{Module: "foobar", Code: "baz", Hook: mockUpdateBodyEntrypointHook{}},
-			},
-		},
-	}
-
 	body := []byte(`{"name": "John", "last_name": "Doe"}`)
 	reader := bytes.NewReader(body)
 	req, err := http.NewRequest(http.MethodPost, "https://prebid.com/openrtb2/auction", reader)
 	if err != nil {
 		t.Fatalf("Unexpected error creating http request: %s", err)
 	}
+	exec := HookExecutor{
+		InvocationCtx: &hookstage.InvocationContext{},
+		Endpoint:      Auction_endpoint,
+		PlanBuilder:   TestWithTimeoutPlanBuilder{},
+		Req:           req,
+		Body:          body,
+	}
 
-	stOut, newBody, reject := ExecuteEntrypointStage(&hookstage.InvocationContext{}, plan, req, body)
+	stOut, newBody, reject := ExecuteEntrypointStage(exec)
 	require.Nil(t, reject, "Unexpected stage reject")
 
 	if len(stOut.Groups) != 2 {
@@ -223,21 +201,6 @@ func (e mockTimeoutEntrypointHook) HandleEntrypointHook(_ context.Context, _ *ho
 }
 
 func TestExecuteEntrypointStage_ModuleContextsAreCreated(t *testing.T) {
-	plan := hooks.Plan[hookstage.Entrypoint]{
-		hooks.Group[hookstage.Entrypoint]{
-			Timeout: 1 * time.Millisecond,
-			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
-				{Module: "module-1", Code: "foo", Hook: mockModuleContextEntrypointHook1{}},
-			},
-		},
-		hooks.Group[hookstage.Entrypoint]{
-			Timeout: 1 * time.Millisecond,
-			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
-				{Module: "module-2", Code: "bar", Hook: mockModuleContextEntrypointHook2{}},
-			},
-		},
-	}
-
 	body := []byte(`{"name": "John", "last_name": "Doe"}`)
 	reader := bytes.NewReader(body)
 	req, err := http.NewRequest(http.MethodPost, "https://prebid.com/openrtb2/auction", reader)
@@ -245,20 +208,26 @@ func TestExecuteEntrypointStage_ModuleContextsAreCreated(t *testing.T) {
 		t.Fatalf("Unexpected error creating http request: %s", err)
 	}
 
-	iCtx := hookstage.InvocationContext{}
-	stOut, _, reject := ExecuteEntrypointStage(&iCtx, plan, req, body)
+	exec := HookExecutor{
+		InvocationCtx: &hookstage.InvocationContext{},
+		Endpoint:      Auction_endpoint,
+		PlanBuilder:   TestWithModuleContextsPlanBuilder{},
+		Req:           req,
+		Body:          body,
+	}
+	stOut, _, reject := ExecuteEntrypointStage(exec)
 	require.Nil(t, reject, "Unexpected stage reject")
 
 	if len(stOut.Groups) != 2 {
 		t.Error("some hook groups have not been processed")
 	}
 
-	ctx1 := iCtx.ModuleContextFor("module-1")
+	ctx1 := exec.InvocationCtx.ModuleContextFor("module-1")
 	if ctx1.Ctx["some-ctx-1"] != "some-ctx-1" {
 		t.Error("context for module-1 not created")
 	}
 
-	ctx2 := iCtx.ModuleContextFor("module-2")
+	ctx2 := exec.InvocationCtx.ModuleContextFor("module-2")
 	if ctx2.Ctx["some-ctx-2"] != "some-ctx-2" {
 		t.Error("context for module-2 not created")
 	}
@@ -276,4 +245,90 @@ type mockModuleContextEntrypointHook2 struct{}
 func (e mockModuleContextEntrypointHook2) HandleEntrypointHook(_ context.Context, mctx *hookstage.ModuleContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
 	mctx.Ctx = map[string]interface{}{"some-ctx-2": "some-ctx-2"}
 	return hookstage.HookResult[hookstage.EntrypointPayload]{}, nil
+}
+
+type TestApplyHookMutationsBuilder struct {
+	hooks.EmptyPlanBuilder
+}
+
+func (e TestApplyHookMutationsBuilder) PlanForEntrypointStage(_ string) hooks.Plan[hookstage.Entrypoint] {
+	return hooks.Plan[hookstage.Entrypoint]{
+		hooks.Group[hookstage.Entrypoint]{
+			Timeout: 1 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
+				{Module: "foobar", Code: "foo", Hook: mockUpdateHeaderEntrypointHook{}},
+				{Module: "foobar", Code: "bar", Hook: mockUpdateQueryEntrypointHook{}},
+			},
+		},
+		hooks.Group[hookstage.Entrypoint]{
+			Timeout: 1 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
+				{Module: "foobar", Code: "baz", Hook: mockUpdateBodyEntrypointHook{}},
+			},
+		},
+	}
+}
+
+type TestRejectPlanBuilder struct {
+	hooks.EmptyPlanBuilder
+}
+
+func (e TestRejectPlanBuilder) PlanForEntrypointStage(_ string) hooks.Plan[hookstage.Entrypoint] {
+	return hooks.Plan[hookstage.Entrypoint]{
+		hooks.Group[hookstage.Entrypoint]{
+			Timeout: 1 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
+				{Module: "foobar", Code: "foo", Hook: mockUpdateHeaderEntrypointHook{}},
+			},
+		},
+		hooks.Group[hookstage.Entrypoint]{
+			Timeout: 1 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
+				{Module: "foobar", Code: "bar", Hook: mockRejectEntrypointHook{}},
+			},
+		},
+	}
+}
+
+type TestWithTimeoutPlanBuilder struct {
+	hooks.EmptyPlanBuilder
+}
+
+func (e TestWithTimeoutPlanBuilder) PlanForEntrypointStage(_ string) hooks.Plan[hookstage.Entrypoint] {
+	return hooks.Plan[hookstage.Entrypoint]{
+		hooks.Group[hookstage.Entrypoint]{
+			Timeout: 1 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
+				{Module: "foobar", Code: "foo", Hook: mockUpdateHeaderEntrypointHook{}},
+				{Module: "foobar", Code: "bar", Hook: mockTimeoutEntrypointHook{}},
+			},
+		},
+		hooks.Group[hookstage.Entrypoint]{
+			Timeout: 1 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
+				{Module: "foobar", Code: "baz", Hook: mockUpdateBodyEntrypointHook{}},
+			},
+		},
+	}
+}
+
+type TestWithModuleContextsPlanBuilder struct {
+	hooks.EmptyPlanBuilder
+}
+
+func (e TestWithModuleContextsPlanBuilder) PlanForEntrypointStage(_ string) hooks.Plan[hookstage.Entrypoint] {
+	return hooks.Plan[hookstage.Entrypoint]{
+		hooks.Group[hookstage.Entrypoint]{
+			Timeout: 1 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
+				{Module: "module-1", Code: "foo", Hook: mockModuleContextEntrypointHook1{}},
+			},
+		},
+		hooks.Group[hookstage.Entrypoint]{
+			Timeout: 1 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
+				{Module: "module-2", Code: "bar", Hook: mockModuleContextEntrypointHook2{}},
+			},
+		},
+	}
 }

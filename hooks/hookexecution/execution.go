@@ -3,6 +3,7 @@ package hookexecution
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -10,6 +11,19 @@ import (
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookstage"
 )
+
+const (
+	Auction_endpoint = "/openrtb2/auction"
+	Amp_endpoint     = "/openrtb2/amp"
+)
+
+type HookExecutor struct {
+	InvocationCtx *hookstage.InvocationContext
+	Endpoint      string
+	PlanBuilder   hooks.ExecutionPlanBuilder
+	Req           *http.Request
+	Body          []byte
+}
 
 type TimeoutError struct{}
 

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"io"
 	"io/ioutil"
 	"net"
@@ -3286,7 +3287,7 @@ func TestParseRequestParseImpInfoError(t *testing.T) {
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
 
-	resReq, impExtInfoMap, _, _, _, errL := deps.parseRequest(req, deps.hookExecutionPlanBuilder)
+	resReq, impExtInfoMap, _, _, _, errL := deps.parseRequest(req, hookexecution.HookExecutor{PlanBuilder: hooks.EmptyPlanBuilder{}})
 
 	assert.Nil(t, resReq, "Result request should be nil due to incorrect imp")
 	assert.Nil(t, impExtInfoMap, "Impression info map should be nil due to incorrect imp")
@@ -3861,7 +3862,7 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
 
-			resReq, _, _, _, _, errL := deps.parseRequest(req, deps.hookExecutionPlanBuilder)
+			resReq, _, _, _, _, errL := deps.parseRequest(req, hookexecution.HookExecutor{PlanBuilder: hooks.EmptyPlanBuilder{}})
 
 			assert.NoError(t, resReq.RebuildRequest())
 
@@ -3964,7 +3965,7 @@ func TestParseRequestStoredResponses(t *testing.T) {
 
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
 
-			_, _, storedResponses, _, _, errL := deps.parseRequest(req, deps.hookExecutionPlanBuilder)
+			_, _, storedResponses, _, _, errL := deps.parseRequest(req, hookexecution.HookExecutor{PlanBuilder: hooks.EmptyPlanBuilder{}})
 
 			if test.expectedErrorCount == 0 {
 				assert.Equal(t, test.expectedStoredResponses, storedResponses, "stored responses should match")
@@ -4051,7 +4052,7 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 			}
 
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
-			_, _, _, storedBidResponses, _, errL := deps.parseRequest(req, deps.hookExecutionPlanBuilder)
+			_, _, _, storedBidResponses, _, errL := deps.parseRequest(req, hookexecution.HookExecutor{PlanBuilder: hooks.EmptyPlanBuilder{}})
 
 			if test.expectedErrorCount == 0 {
 				assert.Equal(t, test.expectedStoredBidResponses, storedBidResponses, "stored responses should match")
