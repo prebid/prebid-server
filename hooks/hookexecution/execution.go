@@ -184,7 +184,6 @@ func processHookResponses[P any](
 		}
 
 		if r.Err != nil {
-			//groupResult[i].Errors = append(groupResult[i].Errors, r.Err.Error())
 			hookOutcome.Errors = append(hookOutcome.Errors, r.Err.Error())
 			switch r.Err.(type) {
 			case TimeoutError:
