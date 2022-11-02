@@ -41,7 +41,7 @@ type RejectError struct {
 }
 
 func (e RejectError) Error() string {
-	return fmt.Sprintf("Module rejected stage, reason: `%s`", e.Reason)
+	return fmt.Sprintf("Module rejected stage, reason: %s", e.Reason)
 }
 
 type hookHandler[H any, P any] func(

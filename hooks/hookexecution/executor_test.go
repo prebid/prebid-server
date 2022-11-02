@@ -3,17 +3,26 @@ package hookexecution
 import (
 	"bytes"
 	"context"
-	"github.com/buger/jsonparser"
-	"github.com/prebid/prebid-server/hooks"
-	"github.com/prebid/prebid-server/hooks/hookstage"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"fmt"
 	"net/http"
 	"testing"
 	"time"
+
+	"github.com/buger/jsonparser"
+	"github.com/prebid/prebid-server/hooks"
+	"github.com/prebid/prebid-server/hooks/hookanalytics"
+	"github.com/prebid/prebid-server/hooks/hookstage"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestExecuteEntrypointStage_DoesNotChangeRequestForEmptyPlan(t *testing.T) {
+	expectedOutcome := StageOutcome{
+		ExecutionTime: ExecutionTime{0},
+		Entity:        hookstage.EntityHttpRequest,
+		Stage:         hooks.StageEntrypoint,
+		Groups:        []GroupOutcome{},
+	}
 	body := []byte(`{"name": "John", "last_name": "Doe"}`)
 	reader := bytes.NewReader(body)
 	req, err := http.NewRequest(http.MethodPost, "https://prebid.com/openrtb2/auction", reader)
@@ -27,18 +36,63 @@ func TestExecuteEntrypointStage_DoesNotChangeRequestForEmptyPlan(t *testing.T) {
 	}
 
 	stOut, newBody, reject := exec.ExecuteEntrypointStage(req, body)
+
 	require.Nil(t, reject, "Unexpected stage reject")
-
-	if len(stOut.Groups) != 0 {
-		t.Error("unexpected non-empty stage result from empty plan")
-	}
-
+	assertEqualStageOutcomes(t, expectedOutcome, stOut)
 	if bytes.Compare(body, newBody) != 0 {
 		t.Error("request body should not change")
 	}
 }
 
 func TestExecuteEntrypointStage_CanApplyHookMutations(t *testing.T) {
+	expectedOutcome := StageOutcome{
+		Entity: hookstage.EntityHttpRequest,
+		Stage:  hooks.StageEntrypoint,
+		Groups: []GroupOutcome{
+			{
+				InvocationResults: []*HookOutcome{
+					{
+						AnalyticsTags: hookanalytics.Analytics{},
+						HookID:        HookID{"foobar", "foo"},
+						Status:        StatusSuccess,
+						Action:        ActionUpdate,
+						Message:       "",
+						DebugMessages: []string{fmt.Sprintf("Hook mutation successfully applied, affected key: header.foo, mutation type: %s", hookstage.MutationUpdate)},
+						Errors:        nil,
+						Warnings:      nil,
+					},
+					{
+						AnalyticsTags: hookanalytics.Analytics{},
+						HookID:        HookID{"foobar", "bar"},
+						Status:        StatusSuccess,
+						Action:        ActionUpdate,
+						Message:       "",
+						DebugMessages: []string{fmt.Sprintf("Hook mutation successfully applied, affected key: param.foo, mutation type: %s", hookstage.MutationUpdate)},
+						Errors:        nil,
+						Warnings:      nil,
+					},
+				},
+			},
+			{
+				InvocationResults: []*HookOutcome{
+					{
+						AnalyticsTags: hookanalytics.Analytics{},
+						HookID:        HookID{"foobar", "baz"},
+						Status:        StatusSuccess,
+						Action:        ActionUpdate,
+						Message:       "",
+						DebugMessages: []string{
+							fmt.Sprintf("Hook mutation successfully applied, affected key: body.foo, mutation type: %s", hookstage.MutationUpdate),
+							fmt.Sprintf("Hook mutation successfully applied, affected key: body.name, mutation type: %s", hookstage.MutationDelete),
+						},
+						Errors:   nil,
+						Warnings: nil,
+					},
+				},
+			},
+		},
+	}
+
 	body := []byte(`{"name": "John", "last_name": "Doe"}`)
 	reader := bytes.NewReader(body)
 	req, err := http.NewRequest(http.MethodPost, "https://prebid.com/openrtb2/auction", reader)
@@ -52,11 +106,9 @@ func TestExecuteEntrypointStage_CanApplyHookMutations(t *testing.T) {
 	}
 
 	stOut, newBody, reject := exec.ExecuteEntrypointStage(req, body)
-	require.Nil(t, reject, "Unexpected stage reject")
 
-	if len(stOut.Groups) != 2 {
-		t.Error("some hook groups have not been processed")
-	}
+	require.Nil(t, reject, "Unexpected stage reject")
+	assertEqualStageOutcomes(t, expectedOutcome, stOut)
 
 	if bytes.Compare(body, newBody) == 0 {
 		t.Error("request body not changed after applying hook result")
@@ -121,6 +173,50 @@ func (e mockUpdateBodyEntrypointHook) HandleEntrypointHook(_ context.Context, _ 
 }
 
 func TestExecuteEntrypointStage_CanRejectHook(t *testing.T) {
+	expectedOutcome := StageOutcome{
+		ExecutionTime: ExecutionTime{},
+		Entity:        hookstage.EntityHttpRequest,
+		Stage:         hooks.StageEntrypoint,
+		Groups: []GroupOutcome{
+			{
+				ExecutionTime: ExecutionTime{},
+				InvocationResults: []*HookOutcome{
+					{
+						ExecutionTime: ExecutionTime{},
+						AnalyticsTags: hookanalytics.Analytics{},
+						HookID:        HookID{"foobar", "foo"},
+						Status:        StatusSuccess,
+						Action:        ActionUpdate,
+						Message:       "",
+						DebugMessages: []string{
+							fmt.Sprintf("Hook mutation successfully applied, affected key: header.foo, mutation type: %s", hookstage.MutationUpdate),
+						},
+						Errors:   nil,
+						Warnings: nil,
+					},
+				},
+			},
+			{
+				ExecutionTime: ExecutionTime{},
+				InvocationResults: []*HookOutcome{
+					{
+						ExecutionTime: ExecutionTime{},
+						AnalyticsTags: hookanalytics.Analytics{},
+						HookID:        HookID{"foobar", "bar"},
+						Status:        StatusSuccess,
+						Action:        ActionReject,
+						Message:       "",
+						DebugMessages: nil,
+						Errors: []string{
+							"Module rejected stage, reason: ",
+						},
+						Warnings: nil,
+					},
+				},
+			},
+		},
+	}
+
 	body := []byte(`{"name": "John", "last_name": "Doe"}`)
 	reader := bytes.NewReader(body)
 	req, err := http.NewRequest(http.MethodPost, "https://prebid.com/openrtb2/auction", reader)
@@ -132,10 +228,11 @@ func TestExecuteEntrypointStage_CanRejectHook(t *testing.T) {
 	}
 
 	stOut, newBody, reject := exec.ExecuteEntrypointStage(req, body)
+
 	require.NotNil(t, reject, "Unexpected successful execution of entrypoint hook")
 	require.Equal(t, reject, &RejectError{}, "Unexpected reject returned from entrypoint hook")
-	assert.Len(t, stOut.Groups, 2, "some hook groups have not been processed")
 	assert.Equal(t, body, newBody, "request body shouldn't change if request rejected")
+	assertEqualStageOutcomes(t, expectedOutcome, stOut)
 }
 
 type mockRejectEntrypointHook struct{}
@@ -145,6 +242,62 @@ func (e mockRejectEntrypointHook) HandleEntrypointHook(_ context.Context, _ *hoo
 }
 
 func TestExecuteEntrypointStage_CanTimeoutOneOfHooks(t *testing.T) {
+	expectedOutcome := StageOutcome{
+		ExecutionTime: ExecutionTime{},
+		Entity:        hookstage.EntityHttpRequest,
+		Stage:         hooks.StageEntrypoint,
+		Groups: []GroupOutcome{
+			{
+				ExecutionTime: ExecutionTime{},
+				InvocationResults: []*HookOutcome{
+					{
+						ExecutionTime: ExecutionTime{},
+						AnalyticsTags: hookanalytics.Analytics{},
+						HookID:        HookID{"foobar", "foo"},
+						Status:        StatusSuccess,
+						Action:        ActionUpdate,
+						Message:       "",
+						DebugMessages: []string{
+							fmt.Sprintf("Hook mutation successfully applied, affected key: header.foo, mutation type: %s", hookstage.MutationUpdate),
+						},
+						Errors:   nil,
+						Warnings: nil,
+					},
+					{
+						ExecutionTime: ExecutionTime{},
+						AnalyticsTags: hookanalytics.Analytics{},
+						HookID:        HookID{"foobar", "bar"},
+						Status:        StatusTimeout,
+						Action:        "",
+						Message:       "",
+						DebugMessages: nil,
+						Errors:        []string{"Hook execution timeout"},
+						Warnings:      nil,
+					},
+				},
+			},
+			{
+				ExecutionTime: ExecutionTime{},
+				InvocationResults: []*HookOutcome{
+					{
+						ExecutionTime: ExecutionTime{},
+						AnalyticsTags: hookanalytics.Analytics{},
+						HookID:        HookID{"foobar", "baz"},
+						Status:        StatusSuccess,
+						Action:        ActionUpdate,
+						Message:       "",
+						DebugMessages: []string{
+							fmt.Sprintf("Hook mutation successfully applied, affected key: body.foo, mutation type: %s", hookstage.MutationUpdate),
+							fmt.Sprintf("Hook mutation successfully applied, affected key: body.name, mutation type: %s", hookstage.MutationDelete),
+						},
+						Errors:   nil,
+						Warnings: nil,
+					},
+				},
+			},
+		},
+	}
+
 	body := []byte(`{"name": "John", "last_name": "Doe"}`)
 	reader := bytes.NewReader(body)
 	req, err := http.NewRequest(http.MethodPost, "https://prebid.com/openrtb2/auction", reader)
@@ -158,11 +311,9 @@ func TestExecuteEntrypointStage_CanTimeoutOneOfHooks(t *testing.T) {
 	}
 
 	stOut, newBody, reject := exec.ExecuteEntrypointStage(req, body)
-	require.Nil(t, reject, "Unexpected stage reject")
 
-	if len(stOut.Groups) != 2 {
-		t.Error("some hook groups have not been processed")
-	}
+	require.Nil(t, reject, "Unexpected stage reject")
+	assertEqualStageOutcomes(t, expectedOutcome, stOut)
 
 	if bytes.Compare(body, newBody) == 0 {
 		t.Error("request body not changed after applying hook result")
