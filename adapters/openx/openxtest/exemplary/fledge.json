@@ -8,9 +8,7 @@
           "format": [{"w": 728, "h": 90}]
         },
         "ext": {
-          "prebid": {
-            "ae": 1
-          },
+          "ae": 1,
           "bidder": {
             "unit": "539439964",
             "delDomain": "se-demo-d.openx.net"

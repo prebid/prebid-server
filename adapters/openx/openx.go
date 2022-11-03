@@ -147,8 +147,8 @@ func preprocess(imp *openrtb2.Imp, reqExt *openxReqExt) error {
 		impExt.CustomParams = openxExt.CustomParams
 		addImpExt = true
 	}
-	if bidderExt.Prebid != nil && bidderExt.Prebid.AuctionEnvironment != openrtb_ext.ServerSideAuction {
-		impExt.AuctionEnvironment = bidderExt.Prebid.AuctionEnvironment
+	if bidderExt.AuctionEnvironment != openrtb_ext.ServerSideAuction {
+		impExt.AuctionEnvironment = bidderExt.AuctionEnvironment
 		addImpExt = true
 	}
 	if addImpExt {

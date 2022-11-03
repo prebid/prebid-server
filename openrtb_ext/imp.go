@@ -8,13 +8,13 @@ import (
 type AuctionEnvironmentType int8
 
 const (
-	ServerSideAuction          AuctionEnvironmentType = 0
-	OnDeviceIGAuctionFledge    AuctionEnvironmentType = 1
+	// 0 Standard server-side auction
+	ServerSideAuction AuctionEnvironmentType = 0
+	// 1 On-device interest group auction (FLEDGE)
+	OnDeviceIGAuctionFledge AuctionEnvironmentType = 1
+	// 2 Server-side with interest group simulation
 	ServerSideWithIGSimulation AuctionEnvironmentType = 2
 )
-
-// AuctionEnvironmentKey is the json key under imp[].ext.prebid for ExtImpPrebid.AuctionEnvironment
-const AuctionEnvironmentKey = "ae"
 
 // IsRewardedInventoryKey is the json key for ExtImpPrebid.IsRewardedInventory
 const IsRewardedInventoryKey = "is_rewarded_inventory"
@@ -42,9 +42,6 @@ type ExtImpPrebid struct {
 	Options *Options `json:"options,omitempty"`
 
 	Passthrough json.RawMessage `json:"passthrough,omitempty"`
-
-	// AuctionEnvironment can be 0 (server-side, default), 1 (on-device interest group auction FLEDGE), 2 (server-side with interest group simulation)
-	AuctionEnvironment AuctionEnvironmentType `json:"ae,omitempty"`
 }
 
 // ExtStoredRequest defines the contract for bidrequest.imp[i].ext.prebid.storedrequest
