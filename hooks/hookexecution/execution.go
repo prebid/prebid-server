@@ -31,6 +31,7 @@ func (e TimeoutError) Error() string {
 }
 
 // FailureError indicates expected error occurred during hook execution on the module-side
+// A moduleFailed metric will be sent in such case
 type FailureError struct{}
 
 func (e FailureError) Error() string {
@@ -214,6 +215,7 @@ func processHookResponses[P any](
 				metricEngine.RecordModuleTimeout(labels)
 				hookOutcome.Status = StatusTimeout
 			case FailureError:
+				metricEngine.RecordModuleFailed(labels)
 				hookOutcome.Status = StatusFailure
 			default:
 				metricEngine.RecordModuleExecutionError(labels)

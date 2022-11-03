@@ -153,6 +153,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	hookExecutor := hookexecution.HookExecutor{
 		InvocationCtx: &hookstage.InvocationContext{},
+		Endpoint:      hookexecution.Auction_endpoint,
 		PlanBuilder:   deps.hookExecutionPlanBuilder,
 		MetricEngine:  deps.metricsEngine,
 	}
