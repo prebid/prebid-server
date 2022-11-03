@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/spf13/viper"
 
 	"github.com/prebid/go-gdpr/consentconstants"
@@ -95,7 +95,7 @@ type Configuration struct {
 	HostSChainNode    *openrtb2.SupplyChainNode `mapstructure:"host_schain_node"`
 	// Experiment configures non-production ready features.
 	Experiment Experiment `mapstructure:"experiment"`
-
+	DataCenter string     `mapstructure:"datacenter"`
 	// BidderInfos supports adapter overrides in extra configs like pbs.json, pbs.yaml, etc.
 	// Refers to main.go `configFileName` constant
 	BidderInfos BidderInfos `mapstructure:"adapters"`
@@ -316,9 +316,18 @@ type TCF2 struct {
 	PurposeOneTreatment TCF2PurposeOneTreatment `mapstructure:"purpose_one_treatment"`
 }
 
-// IntegrationEnabled checks if a given integration type is enabled. All integration types are considered either
+// BasicEnforcementVendor checks if the given bidder is considered a basic enforcement vendor which indicates whether
+// weak vendor enforcement applies to that bidder. If set, the legal basis calculation for the bidder only considers
+// consent to the purpose, not the vendor. The idea is that the publisher trusts this vendor to enforce the
+// appropriate rules on their own. This only comes into play when enforceVendors is true as it lists those vendors that
+// are exempt for vendor enforcement.
+func (t *TCF2) BasicEnforcementVendor(openrtb_ext.BidderName) bool {
+	return false
+}
+
+// ChannelEnabled checks if a given channel type is enabled. All channel types are considered either
 // enabled or disabled based on the Enabled flag.
-func (t *TCF2) IntegrationEnabled(integrationType IntegrationType) bool {
+func (t *TCF2) ChannelEnabled(channelType ChannelType) bool {
 	return t.Enabled
 }
 
@@ -604,6 +613,16 @@ type Debug struct {
 	OverrideToken       string              `mapstructure:"override_token"`
 }
 
+type Server struct {
+	ExternalUrl string
+	GvlID       int
+	DataCenter  string
+}
+
+func (server *Server) Empty() bool {
+	return server == nil || (server.DataCenter == "" && server.ExternalUrl == "" && server.GvlID == 0)
+}
+
 func (cfg *Debug) validate(errs []error) []error {
 	return cfg.TimeoutNotification.validate(errs)
 }
@@ -747,7 +766,7 @@ func (cfg *Configuration) AccountDefaultsJSON() json.RawMessage {
 	return cfg.accountDefaultsJSON
 }
 
-//Allows for protocol relative URL if scheme is empty
+// GetBaseURL allows for protocol relative URL if scheme is empty
 func (cfg *Cache) GetBaseURL() string {
 	cfg.Scheme = strings.ToLower(cfg.Scheme)
 	if strings.Contains(cfg.Scheme, "https") {
@@ -782,6 +801,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("enable_gzip", false)
 	v.SetDefault("garbage_collector_threshold", 0)
 	v.SetDefault("status_response", "")
+	v.SetDefault("datacenter", "")
 	v.SetDefault("auction_timeouts_ms.default", 0)
 	v.SetDefault("auction_timeouts_ms.max", 0)
 	v.SetDefault("cache.scheme", "")

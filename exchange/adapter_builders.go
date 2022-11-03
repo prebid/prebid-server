@@ -30,7 +30,6 @@ import (
 	"github.com/prebid/prebid-server/adapters/aja"
 	"github.com/prebid/prebid-server/adapters/algorix"
 	"github.com/prebid/prebid-server/adapters/amx"
-	"github.com/prebid/prebid-server/adapters/andbeyondmedia"
 	"github.com/prebid/prebid-server/adapters/apacdex"
 	"github.com/prebid/prebid-server/adapters/applogy"
 	"github.com/prebid/prebid-server/adapters/appnexus"
@@ -41,9 +40,11 @@ import (
 	"github.com/prebid/prebid-server/adapters/beachfront"
 	"github.com/prebid/prebid-server/adapters/beintoo"
 	"github.com/prebid/prebid-server/adapters/between"
+	"github.com/prebid/prebid-server/adapters/beyondmedia"
 	"github.com/prebid/prebid-server/adapters/bidmachine"
 	"github.com/prebid/prebid-server/adapters/bidmyadz"
 	"github.com/prebid/prebid-server/adapters/bidscube"
+	"github.com/prebid/prebid-server/adapters/bidstack"
 	"github.com/prebid/prebid-server/adapters/bizzclick"
 	"github.com/prebid/prebid-server/adapters/bliink"
 	"github.com/prebid/prebid-server/adapters/blue"
@@ -129,6 +130,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/sovrn"
 	"github.com/prebid/prebid-server/adapters/sspBC"
 	"github.com/prebid/prebid-server/adapters/stroeerCore"
+	"github.com/prebid/prebid-server/adapters/suntContent"
 	"github.com/prebid/prebid-server/adapters/synacormedia"
 	"github.com/prebid/prebid-server/adapters/tappx"
 	"github.com/prebid/prebid-server/adapters/telaria"
@@ -185,7 +187,6 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderAJA:               aja.Builder,
 		openrtb_ext.BidderAlgorix:           algorix.Builder,
 		openrtb_ext.BidderAMX:               amx.Builder,
-		openrtb_ext.BidderAndBeyondMedia:    andbeyondmedia.Builder,
 		openrtb_ext.BidderApacdex:           apacdex.Builder,
 		openrtb_ext.BidderApplogy:           applogy.Builder,
 		openrtb_ext.BidderAppnexus:          appnexus.Builder,
@@ -196,9 +197,11 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderBeachfront:        beachfront.Builder,
 		openrtb_ext.BidderBeintoo:           beintoo.Builder,
 		openrtb_ext.BidderBetween:           between.Builder,
+		openrtb_ext.BidderBeyondMedia:       beyondmedia.Builder,
 		openrtb_ext.BidderBidmachine:        bidmachine.Builder,
 		openrtb_ext.BidderBidmyadz:          bidmyadz.Builder,
 		openrtb_ext.BidderBidsCube:          bidscube.Builder,
+		openrtb_ext.BidderBidstack:          bidstack.Builder,
 		openrtb_ext.BidderBizzclick:         bizzclick.Builder,
 		openrtb_ext.BidderBliink:            bliink.Builder,
 		openrtb_ext.BidderBlue:              blue.Builder,
@@ -290,6 +293,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderSovrn:             sovrn.Builder,
 		openrtb_ext.BidderSspBC:             sspBC.Builder,
 		openrtb_ext.BidderStreamkey:         adtelligent.Builder,
+		openrtb_ext.BidderSuntContent:       suntContent.Builder,
 		openrtb_ext.BidderStroeerCore:       stroeerCore.Builder,
 		openrtb_ext.BidderSynacormedia:      synacormedia.Builder,
 		openrtb_ext.BidderTappx:             tappx.Builder,

@@ -12,7 +12,7 @@ func TestJsonSamples(t *testing.T) {
 	conf := config.Adapter{
 		Endpoint: "https://pangle.io/api/get_ads",
 	}
-	bidder, buildErr := Builder(openrtb_ext.BidderPangle, conf)
+	bidder, buildErr := Builder(openrtb_ext.BidderPangle, conf, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}

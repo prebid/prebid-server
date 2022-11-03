@@ -69,7 +69,7 @@ func (p *permissionsImpl) AuctionActivitiesAllowed(ctx context.Context, bidderCo
 	}
 
 	if p.consent == "" {
-		return DenyAll, nil
+		return p.defaultPermissions(), nil
 	}
 
 	// note the bidder here is guaranteed to be enabled
@@ -83,7 +83,7 @@ func (p *permissionsImpl) AuctionActivitiesAllowed(ctx context.Context, bidderCo
 
 	parsedConsent, vendor, err := p.parseVendor(ctx, vendorID, p.consent)
 	if err != nil {
-		return DenyAll, err
+		return p.defaultPermissions(), err
 	}
 
 	// vendor will be nil if not a valid TCF2 consent string
@@ -91,7 +91,7 @@ func (p *permissionsImpl) AuctionActivitiesAllowed(ctx context.Context, bidderCo
 		if weakVendorEnforcement && parsedConsent.Version() == 2 {
 			vendor = vendorTrue{}
 		} else {
-			return DenyAll, nil
+			return p.defaultPermissions(), nil
 		}
 	}
 
@@ -102,7 +102,7 @@ func (p *permissionsImpl) AuctionActivitiesAllowed(ctx context.Context, bidderCo
 	consentMeta, ok := parsedConsent.(tcf2.ConsentMetadata)
 	if !ok {
 		err = fmt.Errorf("Unable to access TCF2 parsed consent")
-		return DenyAll, err
+		return p.defaultPermissions(), err
 	}
 
 	vendorInfo := VendorInfo{vendorID: vendorID, vendor: vendor}
@@ -112,6 +112,22 @@ func (p *permissionsImpl) AuctionActivitiesAllowed(ctx context.Context, bidderCo
 	permissions.PassID = p.allowID(bidderCoreName, consentMeta, vendorInfo)
 
 	return permissions, nil
+}
+
+// defaultPermissions returns a permissions object that denies passing user IDs while
+// allowing passing geo information and sending bid requests based on whether purpose 2
+// and feature one are enforced respectively
+// if the consent string is empty or malformed we should use the default permissions
+func (p *permissionsImpl) defaultPermissions() AuctionPermissions {
+	perms := AuctionPermissions{}
+
+	if !p.cfg.PurposeEnforced(consentconstants.Purpose(2)) {
+		perms.AllowBidRequest = true
+	}
+	if !p.cfg.FeatureOneEnforced() {
+		perms.PassGeo = true
+	}
+	return perms
 }
 
 // resolveVendorID gets the vendor ID for the specified bidder from either the alias GVL IDs

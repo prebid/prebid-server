@@ -211,7 +211,7 @@ func (fcr *fakeTCF2ConfigReader) FeatureOneEnforced() bool {
 func (fcr *fakeTCF2ConfigReader) FeatureOneVendorException(openrtb_ext.BidderName) bool {
 	return false
 }
-func (fcr *fakeTCF2ConfigReader) IntegrationEnabled(config.IntegrationType) bool {
+func (fcr *fakeTCF2ConfigReader) ChannelEnabled(config.ChannelType) bool {
 	return false
 }
 func (fcr *fakeTCF2ConfigReader) IsEnabled() bool {

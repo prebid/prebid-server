@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -18,8 +18,9 @@ import (
 
 type QueryString map[string]string
 type adapter struct {
-	time     timeutil.Time
-	endpoint string
+	time      timeutil.Time
+	endpoint  string
+	extraInfo string
 }
 type adnAdunit struct {
 	AuId       string    `json:"auId"`
@@ -66,7 +67,7 @@ const defaultSite = "unknown"
 const minutesInHour = 60
 
 // Builder builds a new instance of the Adnuntius adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		time:     &timeutil.RealTime{},
 		endpoint: config.Endpoint,
@@ -97,6 +98,7 @@ func setHeaders(ortbRequest openrtb2.BidRequest) http.Header {
 
 func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter, noCookies bool) (string, []error) {
 	uri, err := url.Parse(a.endpoint)
+	endpointUrl := a.endpoint
 	if err != nil {
 		return "", []error{fmt.Errorf("failed to parse Adnuntius endpoint: %v", err)}
 	}
@@ -124,8 +126,12 @@ func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter, noCookies bool
 	tzo := -offset / minutesInHour
 
 	q := uri.Query()
-	if gdpr != "" && consent != "" {
+	if gdpr != "" {
+		endpointUrl = a.extraInfo
 		q.Set("gdpr", gdpr)
+	}
+
+	if consent != "" {
 		q.Set("consentString", consent)
 	}
 
@@ -136,7 +142,7 @@ func makeEndpointUrl(ortbRequest openrtb2.BidRequest, a *adapter, noCookies bool
 	q.Set("tzo", fmt.Sprint(tzo))
 	q.Set("format", "json")
 
-	url := a.endpoint + "?" + q.Encode()
+	url := endpointUrl + "?" + q.Encode()
 	return url, nil
 }
 
@@ -161,7 +167,7 @@ func getImpSizes(imp openrtb2.Imp) [][]int64 {
 }
 
 /*
-	Generate the requests to Adnuntius to reduce the amount of requests going out.
+Generate the requests to Adnuntius to reduce the amount of requests going out.
 */
 func (a *adapter) generateRequests(ortbRequest openrtb2.BidRequest) ([]*adapters.RequestData, []error) {
 	var requestData []*adapters.RequestData
@@ -281,6 +287,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, externalRequest *adapte
 }
 
 func getGDPR(request *openrtb2.BidRequest) (string, string, error) {
+
 	gdpr := ""
 	var extRegs openrtb_ext.ExtRegs
 	if request.Regs != nil && request.Regs.Ext != nil {

@@ -1,10 +1,15 @@
 {
     "mockBidRequest": {
         "id": "test-request-id",
+        "site": {
+            "publisher": {
+                "id": "foo",
+                "name": "foo"
+            }
+        },
         "imp": [
             {
                 "id": "test-imp-id",
-                "tagid": "test",
                 "banner": {
                     "format": [
                         {
@@ -19,30 +24,24 @@
                 },
                 "ext": {
                     "bidder": {
-                        "placementId": "test"
+                        "adUnitId": "example-tag-id"
                     }
                 }
             }
-        ],
-        "site": {
-            "id": "1",
-            "domain": "test.com"
-        },
-        "device": {
-            "ip": "123.123.123.123",
-            "ua": "Ubuntu"
-        }
+        ]
     },
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "http://backend.andbeyond.media/pserver",
+                "uri": "https://mockup.suntcontent.com/",
                 "body": {
+                    "cur": [
+                        "EUR"
+                    ],
                     "id": "test-request-id",
                     "imp": [
                         {
                             "id": "test-imp-id",
-                            "tagid": "test",
                             "banner": {
                                 "format": [
                                     {
@@ -55,21 +54,19 @@
                                     }
                                 ]
                             },
+                            "tagid": "example-tag-id",
                             "ext": {
                                 "bidder": {
-                                    "placementId": "test",
-                                    "type": "publisher"
+                                    "adUnitId": "example-tag-id"
                                 }
                             }
                         }
                     ],
                     "site": {
-                        "id": "1",
-                        "domain": "test.com"
-                    },
-                    "device": {
-                        "ip": "123.123.123.123",
-                        "ua": "Ubuntu"
+                        "publisher": {
+                            "id": "foo",
+                            "name": "foo"
+                        }
                     }
                 }
             },
@@ -79,46 +76,56 @@
                     "id": "test-request-id",
                     "seatbid": [
                         {
+                            "seat": "123",
                             "bid": [
                                 {
-                                    "id": "test_bid_id",
+                                    "id": "7706636740145184841",
                                     "impid": "test-imp-id",
-                                    "price": 0.27543,
-                                    "adm": "<iframe id=\"adm-banner-1\" width=\"468\" height=\"60\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"http://backend.andbeyond.media/pserver&k=bc2d316f39931a07d9a8dd249bf85fc0\"></iframe>",
-                                    "cid": "test_cid",
-                                    "crid": "test_crid",
-                                    "dealid": "test_dealid",
-                                    "w": 468,
-                                    "h": 60,
+                                    "price": 0.5,
+                                    "adid": "12341234",
+                                    "adm": "some-test-ad",
+                                    "adomain": [
+                                        "domain.com"
+                                    ],
+                                    "iurl": "http://abc.com/cr?id=12341234",
+                                    "cid": "123",
+                                    "crid": "12341234",
+                                    "h": 250,
+                                    "w": 300,
                                     "ext": {
                                         "prebid": {
                                             "type": "banner"
                                         }
                                     }
                                 }
-                            ],
-                            "seat": "andbeyondmedia"
+                            ]
                         }
                     ],
-                    "cur": "USD"
+                    "bidid": "5778926625248726496",
+                    "cur": "EUR"
                 }
             }
         }
     ],
     "expectedBidResponses": [
         {
+            "currency": "EUR",
             "bids": [
                 {
                     "bid": {
-                        "id": "test_bid_id",
+                        "id": "7706636740145184841",
                         "impid": "test-imp-id",
-                        "price": 0.27543,
-                        "adm": "<iframe id=\"adm-banner-1\" width=\"468\" height=\"60\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"http://backend.andbeyond.media/pserver&k=bc2d316f39931a07d9a8dd249bf85fc0\"></iframe>",
-                        "cid": "test_cid",
-                        "crid": "test_crid",
-                        "dealid": "test_dealid",
-                        "w": 468,
-                        "h": 60,
+                        "price": 0.5,
+                        "adm": "some-test-ad",
+                        "adid": "12341234",
+                        "adomain": [
+                            "domain.com"
+                        ],
+                        "iurl": "http://abc.com/cr?id=12341234",
+                        "cid": "123",
+                        "crid": "12341234",
+                        "w": 300,
+                        "h": 250,
                         "ext": {
                             "prebid": {
                                 "type": "banner"

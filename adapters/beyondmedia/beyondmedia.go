@@ -1,11 +1,11 @@
-package andbeyondmedia
+package beyondmedia
 
 import (
 	"encoding/json"
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -17,7 +17,7 @@ type adapter struct {
 }
 
 type reqBodyExt struct {
-	AndBeyondMediaBidderExt reqBodyExtBidder `json:"bidder"`
+	BeyondMediaBidderExt reqBodyExtBidder `json:"bidder"`
 }
 
 type reqBodyExtBidder struct {
@@ -25,7 +25,7 @@ type reqBodyExtBidder struct {
 	PlacementID string `json:"placementId,omitempty"`
 }
 
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &adapter{
 		endpoint: config.Endpoint,
 	}
@@ -41,18 +41,18 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		reqCopy.Imp = []openrtb2.Imp{imp}
 
 		var bidderExt adapters.ExtImpBidder
-		var andBeyondMediaExt openrtb_ext.ImpExtAndBeyondMedia
+		var beyondMediaExt openrtb_ext.ImpExtBeyondMedia
 
 		if err = json.Unmarshal(reqCopy.Imp[0].Ext, &bidderExt); err != nil {
 			return nil, []error{err}
 		}
-		if err = json.Unmarshal(bidderExt.Bidder, &andBeyondMediaExt); err != nil {
+		if err = json.Unmarshal(bidderExt.Bidder, &beyondMediaExt); err != nil {
 			return nil, []error{err}
 		}
 
-		temp := reqBodyExt{AndBeyondMediaBidderExt: reqBodyExtBidder{}}
-		temp.AndBeyondMediaBidderExt.PlacementID = andBeyondMediaExt.PlacementID
-		temp.AndBeyondMediaBidderExt.Type = "publisher"
+		temp := reqBodyExt{BeyondMediaBidderExt: reqBodyExtBidder{}}
+		temp.BeyondMediaBidderExt.PlacementID = beyondMediaExt.PlacementID
+		temp.BeyondMediaBidderExt.Type = "publisher"
 
 		finalyImpExt, err := json.Marshal(temp)
 		if err != nil {

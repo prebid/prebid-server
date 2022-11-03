@@ -58,9 +58,16 @@
             "bidders": {
               "pubmatic": {
                 "enabled": true,
-                "allowedbiddercodes": ["groupm"]
+                "allowedbiddercodes": [
+                  "groupm"
+                ]
               }
             }
+          },
+          "server": {
+            "datacenter": "Datacenter",
+            "externalurl": "http://hosturl.com",
+            "gvlid": 1
           }
         }
       }
@@ -78,7 +85,9 @@
             {
               "id": "my-imp-id",
               "video": {
-                "mimes": ["video/mp4"]
+                "mimes": [
+                  "video/mp4"
+                ]
               },
               "ext": {
                 "bidder": {
@@ -89,7 +98,9 @@
             {
               "id": "imp-id-2",
               "video": {
-                "mimes": ["video/mp4"]
+                "mimes": [
+                  "video/mp4"
+                ]
               },
               "ext": {
                 "bidder": {
@@ -105,9 +116,16 @@
                 "bidders": {
                   "pubmatic": {
                     "enabled": true,
-                    "allowedbiddercodes": ["groupm"]
+                    "allowedbiddercodes": [
+                      "groupm"
+                    ]
                   }
                 }
+              },
+              "server": {
+                "datacenter": "Datacenter",
+                "externalurl": "http://hosturl.com",
+                "gvlid": 1
               }
             }
           }
@@ -195,7 +213,9 @@
             {
               "id": "my-imp-id",
               "video": {
-                "mimes": ["video/mp4"]
+                "mimes": [
+                  "video/mp4"
+                ]
               },
               "ext": {
                 "bidder": {
@@ -206,7 +226,9 @@
             {
               "id": "imp-id-2",
               "video": {
-                "mimes": ["video/mp4"]
+                "mimes": [
+                  "video/mp4"
+                ]
               },
               "ext": {
                 "bidder": {
@@ -220,6 +242,11 @@
               "alternatebiddercodes": {
                 "enabled": true,
                 "bidders": null
+              },
+              "server": {
+                "datacenter": "Datacenter",
+                "externalurl": "http://hosturl.com",
+                "gvlid": 1
               }
             }
           }

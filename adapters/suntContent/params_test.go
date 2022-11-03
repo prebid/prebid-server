@@ -1,4 +1,4 @@
-package andbeyondmedia
+package suntContent
 
 import (
 	"encoding/json"
@@ -14,7 +14,7 @@ func TestValidParams(t *testing.T) {
 	}
 
 	for _, p := range validParams {
-		if err := validator.Validate(openrtb_ext.BidderAndBeyondMedia, json.RawMessage(p)); err != nil {
+		if err := validator.Validate(openrtb_ext.BidderSuntContent, json.RawMessage(p)); err != nil {
 			t.Errorf("Schema rejected valid params: %s", p)
 		}
 	}
@@ -27,19 +27,17 @@ func TestInvalidParams(t *testing.T) {
 	}
 
 	for _, p := range invalidParams {
-		if err := validator.Validate(openrtb_ext.BidderAndBeyondMedia, json.RawMessage(p)); err == nil {
+		if err := validator.Validate(openrtb_ext.BidderSuntContent, json.RawMessage(p)); err == nil {
 			t.Errorf("Schema allowed invalid params: %s", p)
 		}
 	}
 }
 
 var validParams = []string{
-	`{"placementId": "test"}`,
-	`{"placementId": "1"}`,
+	`{"adUnitId": "1234"}`,
+	`{"adUnitId": "AB12"}`,
 }
 
 var invalidParams = []string{
-	`{}`,
-	`{"placementId": 42}`,
-	`{"endpointId": "1"}`,
+	`{"adUnitId": 42}`,
 }

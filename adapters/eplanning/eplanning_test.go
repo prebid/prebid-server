@@ -11,7 +11,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderEPlanning, config.Adapter{
-		Endpoint: "http://rtb.e-planning.net/pbs/1"})
+		Endpoint: "http://rtb.e-planning.net/pbs/1"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
