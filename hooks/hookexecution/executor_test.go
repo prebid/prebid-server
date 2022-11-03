@@ -25,12 +25,10 @@ func TestExecuteEntrypointStage_DoesNotChangeRequestForEmptyPlan(t *testing.T) {
 		InvocationCtx: &hookstage.InvocationContext{},
 		Endpoint:      Auction_endpoint,
 		PlanBuilder:   hooks.EmptyPlanBuilder{},
-		Req:           req,
-		Body:          body,
 		MetricEngine:  &config.NilMetricsEngine{},
 	}
 
-	stOut, newBody, reject := ExecuteEntrypointStage(exec)
+	stOut, newBody, reject := exec.ExecuteEntrypointStage(req, body)
 	require.Nil(t, reject, "Unexpected stage reject")
 
 	if len(stOut.Groups) != 0 {
@@ -53,12 +51,10 @@ func TestExecuteEntrypointStage_CanApplyHookMutations(t *testing.T) {
 		InvocationCtx: &hookstage.InvocationContext{},
 		Endpoint:      Auction_endpoint,
 		PlanBuilder:   TestApplyHookMutationsBuilder{},
-		Req:           req,
-		Body:          body,
 		MetricEngine:  &config.NilMetricsEngine{},
 	}
 
-	stOut, newBody, reject := ExecuteEntrypointStage(exec)
+	stOut, newBody, reject := exec.ExecuteEntrypointStage(req, body)
 	require.Nil(t, reject, "Unexpected stage reject")
 
 	if len(stOut.Groups) != 2 {
@@ -136,12 +132,10 @@ func TestExecuteEntrypointStage_CanRejectHook(t *testing.T) {
 		InvocationCtx: &hookstage.InvocationContext{},
 		Endpoint:      Auction_endpoint,
 		PlanBuilder:   TestRejectPlanBuilder{},
-		Req:           req,
-		Body:          body,
 		MetricEngine:  &config.NilMetricsEngine{},
 	}
 
-	stOut, newBody, reject := ExecuteEntrypointStage(exec)
+	stOut, newBody, reject := exec.ExecuteEntrypointStage(req, body)
 	require.NotNil(t, reject, "Unexpected successful execution of entrypoint hook")
 	require.Equal(t, reject, &RejectError{}, "Unexpected reject returned from entrypoint hook")
 	assert.Len(t, stOut.Groups, 2, "some hook groups have not been processed")
@@ -165,12 +159,10 @@ func TestExecuteEntrypointStage_CanTimeoutOneOfHooks(t *testing.T) {
 		InvocationCtx: &hookstage.InvocationContext{},
 		Endpoint:      Auction_endpoint,
 		PlanBuilder:   TestWithTimeoutPlanBuilder{},
-		Req:           req,
-		Body:          body,
 		MetricEngine:  &config.NilMetricsEngine{},
 	}
 
-	stOut, newBody, reject := ExecuteEntrypointStage(exec)
+	stOut, newBody, reject := exec.ExecuteEntrypointStage(req, body)
 	require.Nil(t, reject, "Unexpected stage reject")
 
 	if len(stOut.Groups) != 2 {
@@ -217,11 +209,9 @@ func TestExecuteEntrypointStage_ModuleContextsAreCreated(t *testing.T) {
 		InvocationCtx: &hookstage.InvocationContext{},
 		Endpoint:      Auction_endpoint,
 		PlanBuilder:   TestWithModuleContextsPlanBuilder{},
-		Req:           req,
-		Body:          body,
 		MetricEngine:  &config.NilMetricsEngine{},
 	}
-	stOut, _, reject := ExecuteEntrypointStage(exec)
+	stOut, _, reject := exec.ExecuteEntrypointStage(req, body)
 	require.Nil(t, reject, "Unexpected stage reject")
 
 	if len(stOut.Groups) != 2 {

@@ -3,7 +3,6 @@ package hookexecution
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -23,8 +22,6 @@ type HookExecutor struct {
 	Endpoint      string
 	PlanBuilder   hooks.ExecutionPlanBuilder
 	MetricEngine  metrics.MetricsEngine
-	Req           *http.Request
-	Body          []byte
 }
 
 type TimeoutError struct{}

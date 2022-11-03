@@ -154,7 +154,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	hookExecutor := hookexecution.HookExecutor{
 		InvocationCtx: &hookstage.InvocationContext{},
 		PlanBuilder:   deps.hookExecutionPlanBuilder,
-		Req:           r,
 		MetricEngine:  deps.metricsEngine,
 	}
 	defer func() {
@@ -294,9 +293,8 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, executor hooke
 		}
 	}
 
-	executor.Body = requestJson
 	// todo: use stage result later for response
-	_, body, err := hookexecution.ExecuteEntrypointStage(executor)
+	_, body, err := executor.ExecuteEntrypointStage(httpRequest, requestJson)
 	if err != nil {
 		//todo: return no bid response
 		// the only error returned from above is hook stage rejection

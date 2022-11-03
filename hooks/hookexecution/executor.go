@@ -4,9 +4,10 @@ import (
 	"context"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookstage"
+	"net/http"
 )
 
-func ExecuteEntrypointStage(executor HookExecutor) (StageOutcome, []byte, *RejectError) {
+func (executor HookExecutor) ExecuteEntrypointStage(req *http.Request, body []byte) (StageOutcome, []byte, *RejectError) {
 	handler := func(
 		ctx context.Context,
 		moduleCtx *hookstage.ModuleContext,
@@ -17,7 +18,7 @@ func ExecuteEntrypointStage(executor HookExecutor) (StageOutcome, []byte, *Rejec
 	}
 
 	executor.InvocationCtx.Stage = hooks.StageEntrypoint
-	payload := hookstage.EntrypointPayload{Request: executor.Req, Body: executor.Body}
+	payload := hookstage.EntrypointPayload{Request: req, Body: body}
 	stageOutcome, payload, reject := executeStage(executor.InvocationCtx, executor.PlanBuilder.PlanForEntrypointStage(executor.Endpoint), payload, handler, executor.MetricEngine)
 	stageOutcome.Entity = hookstage.EntityHttpRequest
 	stageOutcome.Stage = hooks.StageEntrypoint
