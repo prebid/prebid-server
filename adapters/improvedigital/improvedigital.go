@@ -27,7 +27,7 @@ type ImprovedigitalAdapter struct {
 	endpoint string
 }
 
-// BidExt This struct usage for parse line_item_id and buying_type from bid.ext
+// BidExt represents Improved Digital bid extension with line item ID and buying type values
 type BidExt struct {
 	Improvedigital struct {
 		LineItemID int    `json:"line_item_id"`
