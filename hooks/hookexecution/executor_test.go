@@ -35,9 +35,10 @@ func TestExecuteEntrypointStage_DoesNotChangeRequestForEmptyPlan(t *testing.T) {
 		PlanBuilder:   hooks.EmptyPlanBuilder{},
 	}
 
-	stOut, newBody, reject := exec.ExecuteEntrypointStage(req, body)
-
+	newBody, reject := exec.ExecuteEntrypointStage(req, body)
 	require.Nil(t, reject, "Unexpected stage reject")
+
+	stOut := exec.GetOutcomes()[0]
 	assertEqualStageOutcomes(t, expectedOutcome, stOut)
 	if bytes.Compare(body, newBody) != 0 {
 		t.Error("request body should not change")
@@ -105,9 +106,10 @@ func TestExecuteEntrypointStage_CanApplyHookMutations(t *testing.T) {
 		PlanBuilder:   TestApplyHookMutationsBuilder{},
 	}
 
-	stOut, newBody, reject := exec.ExecuteEntrypointStage(req, body)
-
+	newBody, reject := exec.ExecuteEntrypointStage(req, body)
 	require.Nil(t, reject, "Unexpected stage reject")
+
+	stOut := exec.GetOutcomes()[0]
 	assertEqualStageOutcomes(t, expectedOutcome, stOut)
 
 	if bytes.Compare(body, newBody) == 0 {
@@ -227,12 +229,13 @@ func TestExecuteEntrypointStage_CanRejectHook(t *testing.T) {
 		PlanBuilder:   TestRejectPlanBuilder{},
 	}
 
-	stOut, newBody, reject := exec.ExecuteEntrypointStage(req, body)
-
+	newBody, reject := exec.ExecuteEntrypointStage(req, body)
 	require.NotNil(t, reject, "Unexpected successful execution of entrypoint hook")
 	require.Equal(t, reject, &RejectError{}, "Unexpected reject returned from entrypoint hook")
-	assert.Equal(t, body, newBody, "request body shouldn't change if request rejected")
+
+	stOut := exec.GetOutcomes()[0]
 	assertEqualStageOutcomes(t, expectedOutcome, stOut)
+	assert.Equal(t, body, newBody, "request body shouldn't change if request rejected")
 }
 
 type mockRejectEntrypointHook struct{}
@@ -310,9 +313,10 @@ func TestExecuteEntrypointStage_CanTimeoutOneOfHooks(t *testing.T) {
 		PlanBuilder:   TestWithTimeoutPlanBuilder{},
 	}
 
-	stOut, newBody, reject := exec.ExecuteEntrypointStage(req, body)
-
+	newBody, reject := exec.ExecuteEntrypointStage(req, body)
 	require.Nil(t, reject, "Unexpected stage reject")
+
+	stOut := exec.GetOutcomes()[0]
 	assertEqualStageOutcomes(t, expectedOutcome, stOut)
 
 	if bytes.Compare(body, newBody) == 0 {
@@ -356,9 +360,10 @@ func TestExecuteEntrypointStage_ModuleContextsAreCreated(t *testing.T) {
 		Endpoint:      Auction_endpoint,
 		PlanBuilder:   TestWithModuleContextsPlanBuilder{},
 	}
-	stOut, _, reject := exec.ExecuteEntrypointStage(req, body)
+	_, reject := exec.ExecuteEntrypointStage(req, body)
 	require.Nil(t, reject, "Unexpected stage reject")
 
+	stOut := exec.GetOutcomes()[0]
 	if len(stOut.Groups) != 2 {
 		t.Error("some hook groups have not been processed")
 	}

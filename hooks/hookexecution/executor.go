@@ -13,13 +13,22 @@ const (
 	Amp_endpoint     = "/openrtb2/amp"
 )
 
+type Executor interface {
+	ExecuteEntrypointStage(req *http.Request, body []byte) ([]byte, *RejectError)
+}
+
 type HookExecutor struct {
 	InvocationCtx *hookstage.InvocationContext
 	Endpoint      string
 	PlanBuilder   hooks.ExecutionPlanBuilder
+	stageOutcomes []StageOutcome
 }
 
-func (executor HookExecutor) ExecuteEntrypointStage(req *http.Request, body []byte) (StageOutcome, []byte, *RejectError) {
+func (executor *HookExecutor) GetOutcomes() []StageOutcome {
+	return executor.stageOutcomes
+}
+
+func (executor *HookExecutor) ExecuteEntrypointStage(req *http.Request, body []byte) ([]byte, *RejectError) {
 	handler := func(
 		ctx context.Context,
 		moduleCtx *hookstage.ModuleContext,
@@ -34,5 +43,7 @@ func (executor HookExecutor) ExecuteEntrypointStage(req *http.Request, body []by
 	stageOutcome.Entity = hookstage.EntityHttpRequest
 	stageOutcome.Stage = hooks.StageEntrypoint
 
-	return stageOutcome, payload.Body, reject
+	executor.stageOutcomes = append(executor.stageOutcomes, stageOutcome)
+
+	return payload.Body, reject
 }
