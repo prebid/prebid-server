@@ -2,10 +2,22 @@ package hookexecution
 
 import (
 	"context"
+	"net/http"
+
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookstage"
-	"net/http"
 )
+
+const (
+	Auction_endpoint = "/openrtb2/auction"
+	Amp_endpoint     = "/openrtb2/amp"
+)
+
+type HookExecutor struct {
+	InvocationCtx *hookstage.InvocationContext
+	Endpoint      string
+	PlanBuilder   hooks.ExecutionPlanBuilder
+}
 
 func (executor HookExecutor) ExecuteEntrypointStage(req *http.Request, body []byte) (StageOutcome, []byte, *RejectError) {
 	handler := func(

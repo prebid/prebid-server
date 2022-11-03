@@ -208,7 +208,7 @@ func TestExecuteEntrypointStage_CanRejectHook(t *testing.T) {
 						Message:       "",
 						DebugMessages: nil,
 						Errors: []string{
-							"Module rejected stage, reason: ",
+							`Module rejected stage, reason: ""`,
 						},
 						Warnings: nil,
 					},

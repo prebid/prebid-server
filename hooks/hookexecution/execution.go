@@ -11,17 +11,6 @@ import (
 	"github.com/prebid/prebid-server/hooks/hookstage"
 )
 
-const (
-	Auction_endpoint = "/openrtb2/auction"
-	Amp_endpoint     = "/openrtb2/amp"
-)
-
-type HookExecutor struct {
-	InvocationCtx *hookstage.InvocationContext
-	Endpoint      string
-	PlanBuilder   hooks.ExecutionPlanBuilder
-}
-
 type TimeoutError struct{}
 
 func (e TimeoutError) Error() string {
@@ -41,7 +30,7 @@ type RejectError struct {
 }
 
 func (e RejectError) Error() string {
-	return fmt.Sprintf("Module rejected stage, reason: %s", e.Reason)
+	return fmt.Sprintf(`Module rejected stage, reason: "%s"`, e.Reason)
 }
 
 type hookHandler[H any, P any] func(
