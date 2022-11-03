@@ -2,7 +2,6 @@ package hookexecution
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -23,6 +22,7 @@ type HookExecutor struct {
 	InvocationCtx *hookstage.InvocationContext
 	Endpoint      string
 	PlanBuilder   hooks.ExecutionPlanBuilder
+	MetricEngine  metrics.MetricsEngine
 	Req           *http.Request
 	Body          []byte
 }
@@ -180,7 +180,7 @@ func collectHookResponses[P any](
 }
 
 func processHookResponses[P any](
-	invocationCtx *invocation.InvocationContext,
+	invocationCtx *hookstage.InvocationContext,
 	hookResponses []HookResponse[P],
 	payload P,
 	metricEngine metrics.MetricsEngine,
@@ -190,7 +190,7 @@ func processHookResponses[P any](
 
 	for _, r := range hookResponses {
 		labels := metrics.ModuleLabels{
-			Module: r.Result.ModuleCode,
+			Module: r.HookID.ModuleCode,
 			Stage:  invocationCtx.Stage,
 			PubID:  invocationCtx.AccountId,
 		}
@@ -204,7 +204,7 @@ func processHookResponses[P any](
 		}
 
 		metricEngine.RecordModuleCalled(labels)
-		metricEngine.RecordModuleDuration(labels, r.Result.ExecutionTime)
+		metricEngine.RecordModuleDuration(labels, r.ExecutionTime)
 		groupOutcome.InvocationResults = append(groupOutcome.InvocationResults, hookOutcome)
 		if r.ExecutionTime > groupOutcome.ExecutionTimeMillis {
 			groupOutcome.ExecutionTimeMillis = r.ExecutionTime
