@@ -4020,7 +4020,7 @@ func TestBuildStoredAuctionResponses(t *testing.T) {
 	}
 	for _, test := range testCases {
 
-		bids, adapters, err := buildStoredAuctionResponse(test.in.StoredAuctionResponses)
+		bids, _, adapters, err := buildStoredAuctionResponse(test.in.StoredAuctionResponses)
 		assert.NoErrorf(t, err, "%s. HoldAuction error: %v \n", test.desc, err)
 
 		assert.ElementsMatch(t, test.expected.liveAdapters, adapters, "Incorrect adapter list")

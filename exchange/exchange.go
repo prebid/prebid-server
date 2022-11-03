@@ -276,13 +276,14 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 
 	var adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid
 	var adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra
+	var fledge *openrtb_ext.Fledge
 	var anyBidsReturned bool
 
 	// List of bidders we have requests for.
 	var liveAdapters []openrtb_ext.BidderName
 
 	if len(r.StoredAuctionResponses) > 0 {
-		adapterBids, liveAdapters, err = buildStoredAuctionResponse(r.StoredAuctionResponses)
+		adapterBids, fledge, liveAdapters, err = buildStoredAuctionResponse(r.StoredAuctionResponses)
 		if err != nil {
 			return nil, err
 		}
@@ -300,7 +301,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 			alternateBidderCodes = *r.Account.AlternateBidderCodes
 		}
 
-		adapterBids, adapterExtra, anyBidsReturned = e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, accountDebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride, alternateBidderCodes, requestExt.Prebid.Experiment)
+		adapterBids, adapterExtra, fledge, anyBidsReturned = e.getAllBids(auctionCtx, bidderRequests, bidAdjustmentFactors, conversions, accountDebugAllow, r.GlobalPrivacyControlHeader, debugLog.DebugOverride, alternateBidderCodes, requestExt.Prebid.Experiment)
 	}
 
 	var auc *auction
@@ -345,7 +346,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 				errs = append(errs, dealErrs...)
 			}
 
-			bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, responseDebugAllow, requestExt.Prebid.Passthrough, errs)
+			bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, responseDebugAllow, requestExt.Prebid.Passthrough, fledge, errs)
 			if debugLog.DebugEnabledOrOverridden {
 				if bidRespExtBytes, err := json.Marshal(bidResponseExt); err == nil {
 					debugLog.Data.Response = string(bidRespExtBytes)
@@ -363,9 +364,9 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 			targData.setTargeting(auc, r.BidRequestWrapper.BidRequest.App != nil, bidCategory, r.Account.TruncateTargetAttribute)
 
 		}
-		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, responseDebugAllow, requestExt.Prebid.Passthrough, errs)
+		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, responseDebugAllow, requestExt.Prebid.Passthrough, fledge, errs)
 	} else {
-		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, responseDebugAllow, requestExt.Prebid.Passthrough, errs)
+		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, responseDebugAllow, requestExt.Prebid.Passthrough, fledge, errs)
 
 		if debugLog.DebugEnabledOrOverridden {
 
@@ -511,7 +512,9 @@ func (e *exchange) getAllBids(
 	alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes,
 	experiment *openrtb_ext.Experiment) (
 	map[openrtb_ext.BidderName]*pbsOrtbSeatBid,
-	map[openrtb_ext.BidderName]*seatResponseExtra, bool) {
+	map[openrtb_ext.BidderName]*seatResponseExtra,
+	*openrtb_ext.Fledge,
+	bool) {
 	// Set up pointers to the bid results
 	adapterBids := make(map[openrtb_ext.BidderName]*pbsOrtbSeatBid, len(bidderRequests))
 	adapterExtra := make(map[openrtb_ext.BidderName]*seatResponseExtra, len(bidderRequests))
@@ -577,19 +580,27 @@ func (e *exchange) getAllBids(
 		}, chBids)
 		go bidderRunner(bidder, conversions)
 	}
+	var fledge *openrtb_ext.Fledge
+
 	// Wait for the bidders to do their thing
 	for i := 0; i < len(bidderRequests); i++ {
 		brw := <-chBids
 
 		//if bidder returned no bids back - remove bidder from further processing
 		for _, seatBid := range brw.adapterSeatBids {
-			if seatBid != nil && len(seatBid.bids) != 0 {
-				if _, ok := adapterBids[openrtb_ext.BidderName(seatBid.seat)]; ok {
-					adapterBids[openrtb_ext.BidderName(seatBid.seat)].bids = append(adapterBids[openrtb_ext.BidderName(seatBid.seat)].bids, seatBid.bids...)
+			if seatBid == nil {
+				continue
+			}
+			bidderName := openrtb_ext.BidderName(seatBid.seat)
+			if len(seatBid.bids) != 0 {
+				if val, ok := adapterBids[bidderName]; ok {
+					adapterBids[bidderName].bids = append(val.bids, seatBid.bids...)
 				} else {
-					adapterBids[openrtb_ext.BidderName(seatBid.seat)] = seatBid
+					adapterBids[bidderName] = seatBid
 				}
 			}
+			// collect fledgeAuctionConfigs separately from bids, as empty seatBids may be discarded
+			fledge = collectFledgeFromSeatBid(fledge, bidderName, seatBid)
 		}
 		//but we need to add all bidders data to adapterExtra to have metrics and other metadata
 		adapterExtra[brw.bidder] = brw.adapterExtra
@@ -599,7 +610,25 @@ func (e *exchange) getAllBids(
 		}
 	}
 
-	return adapterBids, adapterExtra, bidsFound
+	return adapterBids, adapterExtra, fledge, bidsFound
+}
+
+func collectFledgeFromSeatBid(fledge *openrtb_ext.Fledge, bidderName openrtb_ext.BidderName, seatBid *pbsOrtbSeatBid) *openrtb_ext.Fledge {
+	if seatBid.fledgeAuctionConfigs != nil {
+		if fledge == nil {
+			fledge = &openrtb_ext.Fledge{
+				AuctionConfigs: make([]*openrtb_ext.FledgeAuctionConfig, 0, len(seatBid.fledgeAuctionConfigs)),
+			}
+		}
+		for _, config := range seatBid.fledgeAuctionConfigs {
+			fledge.AuctionConfigs = append(fledge.AuctionConfigs, &openrtb_ext.FledgeAuctionConfig{
+				Bidder: bidderName.String(),
+				ImpId:  config.ImpId, // TODO: validate impId
+				Config: config.Config,
+			})
+		}
+	}
+	return fledge
 }
 
 func (e *exchange) recoverSafely(bidderRequests []BidderRequest,
@@ -958,12 +987,13 @@ func getPrimaryAdServer(adServerId int) (string, error) {
 }
 
 // Extract all the data from the SeatBids and build the ExtBidResponse
-func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, r AuctionRequest, debugInfo bool, passthrough json.RawMessage, errList []error) *openrtb_ext.ExtBidResponse {
+func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, r AuctionRequest, debugInfo bool, passthrough json.RawMessage, fledge *openrtb_ext.Fledge, errList []error) *openrtb_ext.ExtBidResponse {
 	bidResponseExt := &openrtb_ext.ExtBidResponse{
 		Errors:               make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage, len(adapterBids)),
 		Warnings:             make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage, len(adapterBids)),
 		ResponseTimeMillis:   make(map[openrtb_ext.BidderName]int, len(adapterBids)),
 		RequestTimeoutMillis: r.BidRequestWrapper.BidRequest.TMax,
+		Fledge:               fledge,
 	}
 	if debugInfo {
 		bidResponseExt.Debug = &openrtb_ext.ExtResponseDebug{
@@ -1003,18 +1033,6 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pb
 		bidResponseExt.ResponseTimeMillis[bidderName] = responseExtra.ResponseTimeMillis
 		// Defering the filling of bidResponseExt.Usersync[bidderName] until later
 
-	}
-
-	for _, seatBid := range adapterBids {
-		if seatBid.fledgeAuctionConfigs != nil {
-			if bidResponseExt.Fledge == nil {
-				bidResponseExt.Fledge = &openrtb_ext.Fledge{
-					AuctionConfigs: make([]*openrtb_ext.FledgeAuctionConfig, 0, len(seatBid.fledgeAuctionConfigs)),
-				}
-			}
-			// TODO: validate bidderName and impId
-			bidResponseExt.Fledge.AuctionConfigs = append(bidResponseExt.Fledge.AuctionConfigs, seatBid.fledgeAuctionConfigs...)
-		}
 	}
 	return bidResponseExt
 }
@@ -1213,15 +1231,20 @@ func listBiddersWithRequests(bidderRequests []BidderRequest) []openrtb_ext.Bidde
 	return liveAdapters
 }
 
-func buildStoredAuctionResponse(storedAuctionResponses map[string]json.RawMessage) (map[openrtb_ext.BidderName]*pbsOrtbSeatBid, []openrtb_ext.BidderName, error) {
+func buildStoredAuctionResponse(storedAuctionResponses map[string]json.RawMessage) (
+	map[openrtb_ext.BidderName]*pbsOrtbSeatBid,
+	*openrtb_ext.Fledge,
+	[]openrtb_ext.BidderName,
+	error) {
 
 	adapterBids := make(map[openrtb_ext.BidderName]*pbsOrtbSeatBid, 0)
+	var fledge *openrtb_ext.Fledge
 	liveAdapters := make([]openrtb_ext.BidderName, 0)
 	for impId, storedResp := range storedAuctionResponses {
 		var seatBids []openrtb2.SeatBid
 
 		if err := json.Unmarshal(storedResp, &seatBids); err != nil {
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
 		for _, seat := range seatBids {
 			var bidsToAdd []*pbsOrtbBid
@@ -1232,6 +1255,29 @@ func buildStoredAuctionResponse(storedAuctionResponses map[string]json.RawMessag
 			}
 
 			bidderName := openrtb_ext.BidderName(seat.Seat)
+
+			if seat.Ext != nil {
+				var seatExt openrtb_ext.ExtBidResponse
+				if err := json.Unmarshal(seat.Ext, &seatExt); err != nil {
+					return nil, nil, nil, err
+				}
+				// add in FLEDGE response with impId substituted
+				if seatExt.Fledge != nil && seatExt.Fledge.AuctionConfigs != nil {
+					if fledge == nil {
+						fledge = &openrtb_ext.Fledge{
+							AuctionConfigs: make([]*openrtb_ext.FledgeAuctionConfig, 0, len(seatExt.Fledge.AuctionConfigs)),
+						}
+					}
+					for _, config := range seatExt.Fledge.AuctionConfigs {
+						newConfig := &openrtb_ext.FledgeAuctionConfig{
+							ImpId:  impId,
+							Bidder: string(bidderName),
+							Config: config.Config,
+						}
+						fledge.AuctionConfigs = append(fledge.AuctionConfigs, newConfig)
+					}
+				}
+			}
 
 			if _, ok := adapterBids[bidderName]; ok {
 				adapterBids[bidderName].bids = append(adapterBids[bidderName].bids, bidsToAdd...)
@@ -1246,7 +1292,7 @@ func buildStoredAuctionResponse(storedAuctionResponses map[string]json.RawMessag
 		}
 	}
 
-	return adapterBids, liveAdapters, nil
+	return adapterBids, fledge, liveAdapters, nil
 }
 
 func isAdsCertEnabled(experiment *openrtb_ext.Experiment, info config.BidderInfo) bool {
