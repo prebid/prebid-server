@@ -4,13 +4,12 @@ import (
 	"context"
 
 	"github.com/prebid/openrtb/v17/openrtb2"
-	"github.com/prebid/prebid-server/hooks/invocation"
 )
 
 type AuctionResponse interface {
 	HandleAuctionResponseHook(
 		context.Context,
-		invocation.Context,
+		InvocationContext,
 		*openrtb2.BidResponse,
-	) (invocation.HookResult[*openrtb2.BidResponse], error)
+	) (HookResult[*openrtb2.BidResponse], error)
 }

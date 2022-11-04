@@ -37,14 +37,14 @@ func getEventTracking(requestExtPrebid *openrtb_ext.ExtRequestPrebid, ts time.Ti
 }
 
 // modifyBidsForEvents adds bidEvents and modifies VAST AdM if necessary.
-func (ev *eventTracking) modifyBidsForEvents(seatBids map[openrtb_ext.BidderName]*PbsOrtbSeatBid) map[openrtb_ext.BidderName]*PbsOrtbSeatBid {
+func (ev *eventTracking) modifyBidsForEvents(seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid) map[openrtb_ext.BidderName]*pbsOrtbSeatBid {
 	for bidderName, seatBid := range seatBids {
 		modifyingVastXMLAllowed := ev.isModifyingVASTXMLAllowed(bidderName.String())
-		for _, pbsBid := range seatBid.Bids {
+		for _, pbsBid := range seatBid.bids {
 			if modifyingVastXMLAllowed {
 				ev.modifyBidVAST(pbsBid, bidderName)
 			}
-			pbsBid.BidEvents = ev.makeBidExtEvents(pbsBid, bidderName)
+			pbsBid.bidEvents = ev.makeBidExtEvents(pbsBid, bidderName)
 		}
 	}
 	return seatBids
@@ -56,15 +56,15 @@ func (ev *eventTracking) isModifyingVASTXMLAllowed(bidderName string) bool {
 }
 
 // modifyBidVAST injects event Impression url if needed, otherwise returns original VAST string
-func (ev *eventTracking) modifyBidVAST(pbsBid *PbsOrtbBid, bidderName openrtb_ext.BidderName) {
-	bid := pbsBid.Bid
-	if pbsBid.BidType != openrtb_ext.BidTypeVideo || len(bid.AdM) == 0 && len(bid.NURL) == 0 {
+func (ev *eventTracking) modifyBidVAST(pbsBid *pbsOrtbBid, bidderName openrtb_ext.BidderName) {
+	bid := pbsBid.bid
+	if pbsBid.bidType != openrtb_ext.BidTypeVideo || len(bid.AdM) == 0 && len(bid.NURL) == 0 {
 		return
 	}
 	vastXML := makeVAST(bid)
 	bidID := bid.ID
-	if len(pbsBid.GeneratedBidID) > 0 {
-		bidID = pbsBid.GeneratedBidID
+	if len(pbsBid.generatedBidID) > 0 {
+		bidID = pbsBid.generatedBidID
 	}
 	if newVastXML, ok := events.ModifyVastXmlString(ev.externalURL, vastXML, bidID, bidderName.String(), ev.accountID, ev.auctionTimestampMs, ev.integrationType); ok {
 		bid.AdM = newVastXML
@@ -72,13 +72,13 @@ func (ev *eventTracking) modifyBidVAST(pbsBid *PbsOrtbBid, bidderName openrtb_ex
 }
 
 // modifyBidJSON injects "wurl" (win) event url if needed, otherwise returns original json
-func (ev *eventTracking) modifyBidJSON(pbsBid *PbsOrtbBid, bidderName openrtb_ext.BidderName, jsonBytes []byte) ([]byte, error) {
-	if !(ev.enabledForAccount || ev.enabledForRequest) || pbsBid.BidType == openrtb_ext.BidTypeVideo {
+func (ev *eventTracking) modifyBidJSON(pbsBid *pbsOrtbBid, bidderName openrtb_ext.BidderName, jsonBytes []byte) ([]byte, error) {
+	if !(ev.enabledForAccount || ev.enabledForRequest) || pbsBid.bidType == openrtb_ext.BidTypeVideo {
 		return jsonBytes, nil
 	}
 	var winEventURL string
-	if pbsBid.BidEvents != nil { // All bids should have already been updated with win/imp event URLs
-		winEventURL = pbsBid.BidEvents.Win
+	if pbsBid.bidEvents != nil { // All bids should have already been updated with win/imp event URLs
+		winEventURL = pbsBid.bidEvents.Win
 	} else {
 		winEventURL = ev.makeEventURL(analytics.Win, pbsBid, bidderName)
 	}
@@ -95,8 +95,8 @@ func (ev *eventTracking) modifyBidJSON(pbsBid *PbsOrtbBid, bidderName openrtb_ex
 }
 
 // makeBidExtEvents make the data for bid.ext.prebid.events if needed, otherwise returns nil
-func (ev *eventTracking) makeBidExtEvents(pbsBid *PbsOrtbBid, bidderName openrtb_ext.BidderName) *openrtb_ext.ExtBidPrebidEvents {
-	if !(ev.enabledForAccount || ev.enabledForRequest) || pbsBid.BidType == openrtb_ext.BidTypeVideo {
+func (ev *eventTracking) makeBidExtEvents(pbsBid *pbsOrtbBid, bidderName openrtb_ext.BidderName) *openrtb_ext.ExtBidPrebidEvents {
+	if !(ev.enabledForAccount || ev.enabledForRequest) || pbsBid.bidType == openrtb_ext.BidTypeVideo {
 		return nil
 	}
 	return &openrtb_ext.ExtBidPrebidEvents{
@@ -106,10 +106,10 @@ func (ev *eventTracking) makeBidExtEvents(pbsBid *PbsOrtbBid, bidderName openrtb
 }
 
 // makeEventURL returns an analytics event url for the requested type (win or imp)
-func (ev *eventTracking) makeEventURL(evType analytics.EventType, pbsBid *PbsOrtbBid, bidderName openrtb_ext.BidderName) string {
-	bidId := pbsBid.Bid.ID
-	if len(pbsBid.GeneratedBidID) > 0 {
-		bidId = pbsBid.GeneratedBidID
+func (ev *eventTracking) makeEventURL(evType analytics.EventType, pbsBid *pbsOrtbBid, bidderName openrtb_ext.BidderName) string {
+	bidId := pbsBid.bid.ID
+	if len(pbsBid.generatedBidID) > 0 {
+		bidId = pbsBid.generatedBidID
 	}
 	return events.EventRequestToUrl(ev.externalURL,
 		&analytics.EventRequest{

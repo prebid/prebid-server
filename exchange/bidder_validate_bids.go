@@ -29,7 +29,7 @@ type validatedBidder struct {
 	bidder AdaptedBidder
 }
 
-func (v *validatedBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes) ([]*PbsOrtbSeatBid, []error) {
+func (v *validatedBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes) ([]*pbsOrtbSeatBid, []error) {
 	seatBids, errs := v.bidder.requestBid(ctx, bidderRequest, conversions, reqInfo, adsCertSigner, bidRequestOptions, alternateBidderCodes)
 	for _, seatBid := range seatBids {
 		if validationErrors := removeInvalidBids(bidderRequest.BidRequest, seatBid); len(validationErrors) > 0 {
@@ -40,28 +40,28 @@ func (v *validatedBidder) requestBid(ctx context.Context, bidderRequest BidderRe
 }
 
 // validateBids will run some validation checks on the returned bids and excise any invalid bids
-func removeInvalidBids(request *openrtb2.BidRequest, seatBid *PbsOrtbSeatBid) []error {
+func removeInvalidBids(request *openrtb2.BidRequest, seatBid *pbsOrtbSeatBid) []error {
 	// Exit early if there is nothing to do.
-	if seatBid == nil || len(seatBid.Bids) == 0 {
+	if seatBid == nil || len(seatBid.bids) == 0 {
 		return nil
 	}
 
 	// By design, default currency is USD.
-	if cerr := validateCurrency(request.Cur, seatBid.Currency); cerr != nil {
-		seatBid.Bids = nil
+	if cerr := validateCurrency(request.Cur, seatBid.currency); cerr != nil {
+		seatBid.bids = nil
 		return []error{cerr}
 	}
 
-	errs := make([]error, 0, len(seatBid.Bids))
-	validBids := make([]*PbsOrtbBid, 0, len(seatBid.Bids))
-	for _, bid := range seatBid.Bids {
+	errs := make([]error, 0, len(seatBid.bids))
+	validBids := make([]*pbsOrtbBid, 0, len(seatBid.bids))
+	for _, bid := range seatBid.bids {
 		if ok, berr := validateBid(bid); ok {
 			validBids = append(validBids, bid)
 		} else {
 			errs = append(errs, berr)
 		}
 	}
-	seatBid.Bids = validBids
+	seatBid.bids = validBids
 	return errs
 }
 
@@ -102,25 +102,25 @@ func validateCurrency(requestAllowedCurrencies []string, bidCurrency string) err
 }
 
 // validateBid will run the supplied bid through validation checks and return true if it passes, false otherwise.
-func validateBid(bid *PbsOrtbBid) (bool, error) {
-	if bid.Bid == nil {
+func validateBid(bid *pbsOrtbBid) (bool, error) {
+	if bid.bid == nil {
 		return false, errors.New("Empty bid object submitted.")
 	}
 
-	if bid.Bid.ID == "" {
+	if bid.bid.ID == "" {
 		return false, errors.New("Bid missing required field 'id'")
 	}
-	if bid.Bid.ImpID == "" {
-		return false, fmt.Errorf("Bid \"%s\" missing required field 'impid'", bid.Bid.ID)
+	if bid.bid.ImpID == "" {
+		return false, fmt.Errorf("Bid \"%s\" missing required field 'impid'", bid.bid.ID)
 	}
-	if bid.Bid.Price < 0.0 {
-		return false, fmt.Errorf("Bid \"%s\" does not contain a positive (or zero if there is a deal) 'price'", bid.Bid.ID)
+	if bid.bid.Price < 0.0 {
+		return false, fmt.Errorf("Bid \"%s\" does not contain a positive (or zero if there is a deal) 'price'", bid.bid.ID)
 	}
-	if bid.Bid.Price == 0.0 && bid.Bid.DealID == "" {
-		return false, fmt.Errorf("Bid \"%s\" does not contain positive 'price' which is required since there is no deal set for this bid", bid.Bid.ID)
+	if bid.bid.Price == 0.0 && bid.bid.DealID == "" {
+		return false, fmt.Errorf("Bid \"%s\" does not contain positive 'price' which is required since there is no deal set for this bid", bid.bid.ID)
 	}
-	if bid.Bid.CrID == "" {
-		return false, fmt.Errorf("Bid \"%s\" missing creative ID", bid.Bid.ID)
+	if bid.bid.CrID == "" {
+		return false, fmt.Errorf("Bid \"%s\" missing creative ID", bid.bid.ID)
 	}
 
 	return true, nil
