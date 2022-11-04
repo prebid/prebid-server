@@ -167,7 +167,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 
 	if rejectErr := hookexecution.FindFirstRejectOrNil(errL); rejectErr != nil {
-		labels, ao = rejectAuctionRequest(*rejectErr, w, req.BidRequest, labels, ao)
+		labels, ao = rejectAuctionRequest(*rejectErr, w, deps.hookExecutor, req.BidRequest, account, labels, ao)
 		return
 	}
 
@@ -234,14 +234,14 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		ao.Errors = append(ao.Errors, err)
 		return
 	} else if isRejectErr {
-		labels, ao = rejectAuctionRequest(*rejectErr, w, req.BidRequest, labels, ao)
+		labels, ao = rejectAuctionRequest(*rejectErr, w, deps.hookExecutor, req.BidRequest, account, labels, ao)
 		return
 	}
 
-	labels, ao = sendAuctionResponse(w, response, labels, ao)
+	labels, ao = sendAuctionResponse(w, deps.hookExecutor, response, req.BidRequest, account, labels, ao)
 }
 
-func rejectAuctionRequest(rejectErr hookexecution.RejectError, w http.ResponseWriter, request *openrtb2.BidRequest, labels metrics.Labels, ao analytics.AuctionObject) (metrics.Labels, analytics.AuctionObject) {
+func rejectAuctionRequest(rejectErr hookexecution.RejectError, w http.ResponseWriter, hookExecutor hookexecution.HookStageExecutor, request *openrtb2.BidRequest, account *config.Account, labels metrics.Labels, ao analytics.AuctionObject) (metrics.Labels, analytics.AuctionObject) {
 	response := &openrtb2.BidResponse{NBR: openrtb3.NoBidReason(rejectErr.NBR).Ptr()}
 	if request != nil {
 		response.ID = request.ID
@@ -250,10 +250,16 @@ func rejectAuctionRequest(rejectErr hookexecution.RejectError, w http.ResponseWr
 	ao.Response = response
 	ao.Errors = append(ao.Errors, rejectErr)
 
-	return sendAuctionResponse(w, response, labels, ao)
+	return sendAuctionResponse(w, hookExecutor, response, request, account, labels, ao)
 }
 
-func sendAuctionResponse(w http.ResponseWriter, response *openrtb2.BidResponse, labels metrics.Labels, ao analytics.AuctionObject) (metrics.Labels, analytics.AuctionObject) {
+func sendAuctionResponse(w http.ResponseWriter, hookExecutor hookexecution.HookStageExecutor, response *openrtb2.BidResponse, request *openrtb2.BidRequest, account *config.Account, labels metrics.Labels, ao analytics.AuctionObject) (metrics.Labels, analytics.AuctionObject) {
+	if response != nil {
+		if err := hookexecution.EnrichResponse(response, hookExecutor.GetOutcomes()); err != nil {
+			glog.Errorf("Failed to enrich Bid Response with hook debug information: %s", err)
+		}
+	}
+
 	// Fixes #231
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
