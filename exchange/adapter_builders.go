@@ -130,6 +130,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/sovrn"
 	"github.com/prebid/prebid-server/adapters/sspBC"
 	"github.com/prebid/prebid-server/adapters/stroeerCore"
+	"github.com/prebid/prebid-server/adapters/suntContent"
 	"github.com/prebid/prebid-server/adapters/synacormedia"
 	"github.com/prebid/prebid-server/adapters/tappx"
 	"github.com/prebid/prebid-server/adapters/telaria"
@@ -292,6 +293,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderSovrn:             sovrn.Builder,
 		openrtb_ext.BidderSspBC:             sspBC.Builder,
 		openrtb_ext.BidderStreamkey:         adtelligent.Builder,
+		openrtb_ext.BidderSuntContent:       suntContent.Builder,
 		openrtb_ext.BidderStroeerCore:       stroeerCore.Builder,
 		openrtb_ext.BidderSynacormedia:      synacormedia.Builder,
 		openrtb_ext.BidderTappx:             tappx.Builder,

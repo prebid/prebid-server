@@ -31,15 +31,15 @@ import (
 // NOTE: The RequestWrapper methods (particularly the ones calling (un)Marshal are not thread safe)
 type RequestWrapper struct {
 	*openrtb2.BidRequest
-	imp         []*ImpWrapper
-	impAccessed bool
-	userExt     *UserExt
-	deviceExt   *DeviceExt
-	requestExt  *RequestExt
-	appExt      *AppExt
-	regExt      *RegExt
-	siteExt     *SiteExt
-	sourceExt   *SourceExt
+	impWrappers         []*ImpWrapper
+	impWrappersAccessed bool
+	userExt             *UserExt
+	deviceExt           *DeviceExt
+	requestExt          *RequestExt
+	appExt              *AppExt
+	regExt              *RegExt
+	siteExt             *SiteExt
+	sourceExt           *SourceExt
 }
 
 const (
@@ -50,31 +50,36 @@ const (
 
 // LenImp returns the number of impressions without causing the creation of ImpWrapper objects.
 func (rw *RequestWrapper) LenImp() int {
-	if rw.imp == nil {
-		return len(rw.Imp)
+	if rw.impWrappersAccessed {
+		return len(rw.impWrappers)
 	}
 
-	return len(rw.imp)
+	return len(rw.Imp)
 }
 
 func (rw *RequestWrapper) GetImp() []*ImpWrapper {
-	if rw.imp != nil {
-		return rw.imp
+	if rw.impWrappersAccessed {
+		return rw.impWrappers
 	}
 
-	rw.imp = make([]*ImpWrapper, len(rw.Imp))
-	for i := range rw.Imp {
-		rw.imp[i] = &ImpWrapper{Imp: &rw.Imp[i]}
+	// There is minimal difference between nil and empty arrays in Go, but it matters
+	// for json encoding. In practice there will always be at least one impression,
+	// so this is an optimization for tests with (appropriately) incomplete requests.
+	if rw.Imp != nil {
+		rw.impWrappers = make([]*ImpWrapper, len(rw.Imp))
+		for i := range rw.Imp {
+			rw.impWrappers[i] = &ImpWrapper{Imp: &rw.Imp[i]}
+		}
 	}
 
-	rw.impAccessed = true
+	rw.impWrappersAccessed = true
 
-	return rw.imp
+	return rw.impWrappers
 }
 
 func (rw *RequestWrapper) SetImp(imps []*ImpWrapper) {
-	rw.imp = imps
-	rw.impAccessed = true
+	rw.impWrappers = imps
+	rw.impWrappersAccessed = true
 }
 
 func (rw *RequestWrapper) GetUserExt() (*UserExt, error) {
@@ -189,16 +194,21 @@ func (rw *RequestWrapper) RebuildRequest() error {
 }
 
 func (rw *RequestWrapper) rebuildImp() error {
-	if !rw.impAccessed {
+	if !rw.impWrappersAccessed {
 		return nil
 	}
 
-	rw.Imp = make([]openrtb2.Imp, len(rw.imp))
-	for i := range rw.imp {
-		if err := rw.imp[i].RebuildImp(); err != nil {
+	if rw.impWrappers == nil {
+		rw.Imp = nil
+		return nil
+	}
+
+	rw.Imp = make([]openrtb2.Imp, len(rw.impWrappers))
+	for i := range rw.impWrappers {
+		if err := rw.impWrappers[i].RebuildImp(); err != nil {
 			return err
 		}
-		rw.Imp[i] = *rw.imp[i].Imp
+		rw.Imp[i] = *rw.impWrappers[i].Imp
 	}
 
 	return nil

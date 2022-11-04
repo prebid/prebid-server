@@ -1,4 +1,4 @@
-package seedingAlliance
+package suntContent
 
 import (
 	"encoding/json"
@@ -129,14 +129,14 @@ func curExists(allowedCurrencies []string, newCurrency string) bool {
 
 func addTagID(imp *openrtb2.Imp) error {
 	var ext adapters.ExtImpBidder
-	var extSA openrtb_ext.ImpExtSeedingAlliance
+	var extSA openrtb_ext.ImpExtSuntContent
 
 	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
 		return fmt.Errorf("could not unmarshal adapters.ExtImpBidder: %w", err)
 	}
 
 	if err := json.Unmarshal(ext.Bidder, &extSA); err != nil {
-		return fmt.Errorf("could not unmarshal openrtb_ext.ImpExtSeedingAlliance: %w", err)
+		return fmt.Errorf("could not unmarshal openrtb_ext.ImpExtSuntContent: %w", err)
 	}
 
 	imp.TagID = extSA.AdUnitID
