@@ -20,6 +20,7 @@ type PurposeEnforcerBuilder func(p consentconstants.Purpose, bidder openrtb_ext.
 type Overrides struct {
 	allowLITransparency   bool
 	blockVendorExceptions bool
+	enforcePurpose        bool
 }
 
 type BidderInfo struct {

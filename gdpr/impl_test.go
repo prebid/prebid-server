@@ -870,7 +870,7 @@ func TestAllowActivitiesBidRequests(t *testing.T) {
 			passID:                 true,
 		},
 		{
-			description:            "Bid allowed - p2 disabled, user consents to p2 but not vendor, vendor consents to p2",
+			description:            "Bid allowed - p2 disabled and enforcing vendors, user consents to p2 but not vendor, vendor consents to p2",
 			purpose2EnforcePurpose: false,
 			purpose2EnforceVendors: true,
 			bidder:                 openrtb_ext.BidderPubmatic,
@@ -881,7 +881,7 @@ func TestAllowActivitiesBidRequests(t *testing.T) {
 			passID:                 false,
 		},
 		{
-			description:            "Bid allowed - p2 disabled, user consents to p2 but not vendor, vendor consents to p2",
+			description:            "Bid allowed - p2 disabled not enforcing vendors, user consents to p2 but not vendor, vendor consents to p2",
 			purpose2EnforcePurpose: false,
 			purpose2EnforceVendors: false,
 			bidder:                 openrtb_ext.BidderPubmatic,
@@ -889,10 +889,10 @@ func TestAllowActivitiesBidRequests(t *testing.T) {
 			consent:                purpose2ConsentWithoutVendorConsent,
 			allowBidRequest:        true,
 			passGeo:                false,
-			passID:                 false,
+			passID:                 true,
 		},
 		{
-			description:            "Bid allowed - p2 disabled, user consents to p2 but not vendor, vendor consents to p2",
+			description:            "Bid allowed - p2 disabled and enforcing vendors, user consents to p2 and vendor, vendor consents to p2",
 			purpose2EnforcePurpose: false,
 			purpose2EnforceVendors: true,
 			bidder:                 openrtb_ext.BidderPubmatic,
@@ -900,7 +900,7 @@ func TestAllowActivitiesBidRequests(t *testing.T) {
 			consent:                purpose2AndVendorConsent,
 			allowBidRequest:        true,
 			passGeo:                false,
-			passID:                 false,
+			passID:                 true,
 		},
 		{
 			description:            "Bid allowed - p2 enabled, user consents to p2 and vendor, vendor consents to p2",

@@ -186,7 +186,11 @@ func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, bidder
 func (p *permissionsImpl) allowBidRequest(bidder openrtb_ext.BidderName, consentMeta tcf2.ConsentMetadata, vendorInfo VendorInfo) bool {
 	enforcer := p.purposeEnforcerBuilder(consentconstants.Purpose(2), bidder)
 
-	return enforcer.LegalBasis(vendorInfo, bidder, consentMeta, Overrides{})
+	overrides := Overrides{}
+	if _, ok := enforcer.(*BasicEnforcement); ok {
+		overrides.allowLITransparency = true
+	}
+	return enforcer.LegalBasis(vendorInfo, bidder, consentMeta, overrides)
 }
 
 // allowGeo computes legal basis for a given bidder using the configs, consent and GVL pertaining to
@@ -204,14 +208,20 @@ func (p *permissionsImpl) allowGeo(bidder openrtb_ext.BidderName, consentMeta tc
 	return consentMeta.SpecialFeatureOptIn(1) && (vendor.SpecialFeature(1) || weakVendorEnforcement)
 }
 
-// allowID computes legal basis for a given bidder using the enforcement algorithms selected
-// by the purpose enforcer builder
+// allowID computes the pass user ID activity legal basis for a given bidder using the enforcement algorithms
+// selected by the purpose enforcer builder. For the user ID activity, the selected enforcement algorithm must
+// always assume we are enforcing the purpose.
+// If the purpose for which we are computing legal basis is purpose 2, the algorithm should allow LI transparency.
 func (p *permissionsImpl) allowID(bidder openrtb_ext.BidderName, consentMeta tcf2.ConsentMetadata, vendorInfo VendorInfo) bool {
 	for i := 2; i <= 10; i++ {
 		purpose := consentconstants.Purpose(i)
 		enforcer := p.purposeEnforcerBuilder(purpose, bidder)
 
-		if p.cfg.PurposeEnforced(purpose) && enforcer.LegalBasis(vendorInfo, bidder, consentMeta, Overrides{}) {
+		overrides := Overrides{enforcePurpose: true}
+		if _, ok := enforcer.(*BasicEnforcement); ok && purpose == consentconstants.Purpose(2) {
+			overrides.allowLITransparency = true
+		}
+		if enforcer.LegalBasis(vendorInfo, bidder, consentMeta, overrides) {
 			return true
 		}
 	}
