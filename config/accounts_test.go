@@ -2,11 +2,13 @@ package config
 
 import (
 	"encoding/json"
+	"errors"
 	"testing"
 
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestAccountGDPREnabledForChannelType(t *testing.T) {
@@ -774,36 +776,42 @@ func TestModulesGetConfig(t *testing.T) {
 		givenId        string
 		givenModules   AccountModules
 		expectedConfig json.RawMessage
+		expectedError  error
 	}{
 		{
 			description:    "Returns module config if found by ID",
 			givenId:        "acme.foo",
 			givenModules:   modules,
 			expectedConfig: json.RawMessage(`{"foo": "bar"}`),
+			expectedError:  nil,
 		},
 		{
 			description:    "Returns nil config if wrong ID provided",
 			givenId:        "invalid_id",
 			givenModules:   modules,
 			expectedConfig: nil,
+			expectedError:  errors.New("ID must consist of vendor and module names separated by dot, got: invalid_id"),
 		},
 		{
 			description:    "Returns nil config if no matching module exists",
 			givenId:        "acme.bar",
 			givenModules:   modules,
 			expectedConfig: nil,
+			expectedError:  nil,
 		},
 		{
 			description:    "Returns nil config if no module configs defined in account",
 			givenId:        "acme.foo",
 			givenModules:   nil,
 			expectedConfig: nil,
+			expectedError:  nil,
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
-			gotConfig := test.givenModules.ModuleConfig(test.givenId)
+			gotConfig, err := test.givenModules.ModuleConfig(test.givenId)
+			require.Equal(t, test.expectedError, err)
 			assert.Equal(t, test.expectedConfig, gotConfig)
 		})
 	}

@@ -2,9 +2,9 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -243,15 +243,13 @@ type AccountHooks struct {
 // format: map[vendor_name]map[module_name]json.RawMessage
 type AccountModules map[string]map[string]json.RawMessage
 
-func (m AccountModules) ModuleConfig(id string) json.RawMessage {
+func (m AccountModules) ModuleConfig(id string) (json.RawMessage, error) {
 	ns := strings.SplitN(id, ".", 2)
 	if len(ns) < 2 {
-		// todo: review error logging again once a caller to this method is added
-		glog.Errorf("Can't find module config, ID must consist of vendor and module names separated by dot")
-		return nil
+		return nil, fmt.Errorf("ID must consist of vendor and module names separated by dot, got: %s", id)
 	}
 
 	vendor := ns[0]
 	module := ns[1]
-	return m[vendor][module]
+	return m[vendor][module], nil
 }
