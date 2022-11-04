@@ -1653,7 +1653,7 @@ func TestValidateRequestExt(t *testing.T) {
 		{
 			description:     "prebid cache - bids - wrong type",
 			givenRequestExt: json.RawMessage(`{"prebid": {"cache": {"bids": true}}}`),
-			expectedError:   `json: cannot unmarshal bool into Go struct field ExtRequestPrebid.cache of type openrtb_ext.ExtRequestPrebidCacheBids`,
+			expectedError:   `json: cannot unmarshal bool into Go struct field ExtRequestPrebidCache.cache.bids of type openrtb_ext.ExtRequestPrebidCacheBids`,
 		},
 		{
 			description:     "prebid cache - bids - provided",
@@ -1667,7 +1667,7 @@ func TestValidateRequestExt(t *testing.T) {
 		{
 			description:     "prebid cache - vastxml - wrong type",
 			givenRequestExt: json.RawMessage(`{"prebid": {"cache": {"vastxml": true}}}`),
-			expectedError:   `json: cannot unmarshal bool into Go struct field ExtRequestPrebid.cache of type openrtb_ext.ExtRequestPrebidCacheVAST`,
+			expectedError:   `json: cannot unmarshal bool into Go struct field ExtRequestPrebidCache.cache.vastxml of type openrtb_ext.ExtRequestPrebidCacheVAST`,
 		},
 		{
 			description:     "prebid cache - vastxml - provided",

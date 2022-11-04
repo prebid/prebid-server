@@ -4,15 +4,14 @@ import (
 	"context"
 
 	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/hooks/invocation"
 )
 
 type RawBidResponse interface {
 	HandleRawBidResponseHook(
 		context.Context,
-		invocation.Context,
+		InvocationContext,
 		RawBidResponsePayload,
-	) (invocation.HookResult[RawBidResponsePayload], error)
+	) (HookResult[RawBidResponsePayload], error)
 }
 
 type RawBidResponsePayload struct {
