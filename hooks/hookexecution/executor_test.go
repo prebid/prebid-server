@@ -31,7 +31,7 @@ func TestExecuteEntrypointStage_DoesNotChangeRequestForEmptyPlan(t *testing.T) {
 	}
 	exec := HookExecutor{
 		InvocationCtx: &hookstage.InvocationContext{},
-		Endpoint:      Auction_endpoint,
+		Endpoint:      EndpointAuction,
 		PlanBuilder:   hooks.EmptyPlanBuilder{},
 	}
 
@@ -102,7 +102,7 @@ func TestExecuteEntrypointStage_CanApplyHookMutations(t *testing.T) {
 	}
 	exec := HookExecutor{
 		InvocationCtx: &hookstage.InvocationContext{},
-		Endpoint:      Auction_endpoint,
+		Endpoint:      EndpointAuction,
 		PlanBuilder:   TestApplyHookMutationsBuilder{},
 	}
 
@@ -225,7 +225,7 @@ func TestExecuteEntrypointStage_CanRejectHook(t *testing.T) {
 	require.NoError(t, err, "Unexpected error creating http request: %s", err)
 	exec := HookExecutor{
 		InvocationCtx: &hookstage.InvocationContext{},
-		Endpoint:      Auction_endpoint,
+		Endpoint:      EndpointAuction,
 		PlanBuilder:   TestRejectPlanBuilder{},
 	}
 
@@ -309,7 +309,7 @@ func TestExecuteEntrypointStage_CanTimeoutOneOfHooks(t *testing.T) {
 	}
 	exec := HookExecutor{
 		InvocationCtx: &hookstage.InvocationContext{},
-		Endpoint:      Auction_endpoint,
+		Endpoint:      EndpointAuction,
 		PlanBuilder:   TestWithTimeoutPlanBuilder{},
 	}
 
@@ -357,7 +357,7 @@ func TestExecuteEntrypointStage_ModuleContextsAreCreated(t *testing.T) {
 
 	exec := HookExecutor{
 		InvocationCtx: &hookstage.InvocationContext{},
-		Endpoint:      Auction_endpoint,
+		Endpoint:      EndpointAuction,
 		PlanBuilder:   TestWithModuleContextsPlanBuilder{},
 	}
 	_, reject := exec.ExecuteEntrypointStage(req, body)

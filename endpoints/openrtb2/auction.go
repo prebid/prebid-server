@@ -88,7 +88,7 @@ func NewEndpoint(
 
 	hookExecutor := &hookexecution.HookExecutor{
 		InvocationCtx: &hookstage.InvocationContext{},
-		Endpoint:      hookexecution.Auction_endpoint,
+		Endpoint:      hookexecution.EndpointAuction,
 		PlanBuilder:   hookExecutionPlanBuilder,
 	}
 

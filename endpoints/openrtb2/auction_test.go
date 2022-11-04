@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"io"
 	"io/ioutil"
 	"net"
@@ -15,6 +14,9 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/prebid/prebid-server/hooks/hookexecution"
+	"github.com/prebid/prebid-server/hooks/hookstage"
 
 	"github.com/buger/jsonparser"
 	"github.com/julienschmidt/httprouter"
@@ -1071,8 +1073,11 @@ func TestStoredRequests(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		hooks.EmptyPlanBuilder{},
-	}
+		&hookexecution.HookExecutor{
+			InvocationCtx: &hookstage.InvocationContext{},
+			Endpoint:      hookexecution.EndpointAuction,
+			PlanBuilder:   hooks.EmptyPlanBuilder{},
+		}}
 
 	testStoreVideoAttr := []bool{true, true, false, false, false}
 
@@ -1443,8 +1448,11 @@ func TestValidateRequest(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		hooks.EmptyPlanBuilder{},
-	}
+		&hookexecution.HookExecutor{
+			InvocationCtx: &hookstage.InvocationContext{},
+			Endpoint:      hookexecution.EndpointAuction,
+			PlanBuilder:   hooks.EmptyPlanBuilder{},
+		}}
 
 	testCases := []struct {
 		description           string
@@ -1816,8 +1824,11 @@ func TestSetIntegrationType(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		hooks.EmptyPlanBuilder{},
-	}
+		&hookexecution.HookExecutor{
+			InvocationCtx: &hookstage.InvocationContext{},
+			Endpoint:      hookexecution.EndpointAuction,
+			PlanBuilder:   hooks.EmptyPlanBuilder{},
+		}}
 
 	testCases := []struct {
 		description             string
@@ -1881,8 +1892,11 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		hooks.EmptyPlanBuilder{},
-	}
+		&hookexecution.HookExecutor{
+			InvocationCtx: &hookstage.InvocationContext{},
+			Endpoint:      hookexecution.EndpointAuction,
+			PlanBuilder:   hooks.EmptyPlanBuilder{},
+		}}
 
 	req := &openrtb2.BidRequest{}
 
@@ -1982,8 +1996,11 @@ func TestOversizedRequest(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		hooks.EmptyPlanBuilder{},
-	}
+		&hookexecution.HookExecutor{
+			InvocationCtx: &hookstage.InvocationContext{},
+			Endpoint:      hookexecution.EndpointAuction,
+			PlanBuilder:   hooks.EmptyPlanBuilder{},
+		}}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
 	recorder := httptest.NewRecorder()
@@ -2020,8 +2037,11 @@ func TestRequestSizeEdgeCase(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		hooks.EmptyPlanBuilder{},
-	}
+		&hookexecution.HookExecutor{
+			InvocationCtx: &hookstage.InvocationContext{},
+			Endpoint:      hookexecution.EndpointAuction,
+			PlanBuilder:   hooks.EmptyPlanBuilder{},
+		}}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
 	recorder := httptest.NewRecorder()
@@ -2356,8 +2376,11 @@ func TestValidateImpExt(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		hooks.EmptyPlanBuilder{},
-	}
+		&hookexecution.HookExecutor{
+			InvocationCtx: &hookstage.InvocationContext{},
+			Endpoint:      hookexecution.EndpointAuction,
+			PlanBuilder:   hooks.EmptyPlanBuilder{},
+		}}
 
 	for _, group := range testGroups {
 		for _, test := range group.testCases {
@@ -2408,8 +2431,11 @@ func TestCurrencyTrunc(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		hooks.EmptyPlanBuilder{},
-	}
+		&hookexecution.HookExecutor{
+			InvocationCtx: &hookstage.InvocationContext{},
+			Endpoint:      hookexecution.EndpointAuction,
+			PlanBuilder:   hooks.EmptyPlanBuilder{},
+		}}
 
 	ui := int64(1)
 	req := openrtb2.BidRequest{
@@ -2455,8 +2481,11 @@ func TestCCPAInvalid(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		hooks.EmptyPlanBuilder{},
-	}
+		&hookexecution.HookExecutor{
+			InvocationCtx: &hookstage.InvocationContext{},
+			Endpoint:      hookexecution.EndpointAuction,
+			PlanBuilder:   hooks.EmptyPlanBuilder{},
+		}}
 
 	ui := int64(1)
 	req := openrtb2.BidRequest{
@@ -2506,8 +2535,11 @@ func TestNoSaleInvalid(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		hooks.EmptyPlanBuilder{},
-	}
+		&hookexecution.HookExecutor{
+			InvocationCtx: &hookstage.InvocationContext{},
+			Endpoint:      hookexecution.EndpointAuction,
+			PlanBuilder:   hooks.EmptyPlanBuilder{},
+		}}
 
 	ui := int64(1)
 	req := openrtb2.BidRequest{
@@ -2560,8 +2592,11 @@ func TestValidateSourceTID(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		hooks.EmptyPlanBuilder{},
-	}
+		&hookexecution.HookExecutor{
+			InvocationCtx: &hookstage.InvocationContext{},
+			Endpoint:      hookexecution.EndpointAuction,
+			PlanBuilder:   hooks.EmptyPlanBuilder{},
+		}}
 
 	ui := int64(1)
 	req := openrtb2.BidRequest{
@@ -2604,8 +2639,11 @@ func TestSChainInvalid(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		hooks.EmptyPlanBuilder{},
-	}
+		&hookexecution.HookExecutor{
+			InvocationCtx: &hookstage.InvocationContext{},
+			Endpoint:      hookexecution.EndpointAuction,
+			PlanBuilder:   hooks.EmptyPlanBuilder{},
+		}}
 
 	ui := int64(1)
 	req := openrtb2.BidRequest{
@@ -2956,8 +2994,11 @@ func TestEidPermissionsInvalid(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		hooks.EmptyPlanBuilder{},
-	}
+		&hookexecution.HookExecutor{
+			InvocationCtx: &hookstage.InvocationContext{},
+			Endpoint:      hookexecution.EndpointAuction,
+			PlanBuilder:   hooks.EmptyPlanBuilder{},
+		}}
 
 	ui := int64(1)
 	req := openrtb2.BidRequest{
@@ -3240,8 +3281,11 @@ func TestAuctionWarnings(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		hooks.EmptyPlanBuilder{},
-	}
+		&hookexecution.HookExecutor{
+			InvocationCtx: &hookstage.InvocationContext{},
+			Endpoint:      hookexecution.EndpointAuction,
+			PlanBuilder:   hooks.EmptyPlanBuilder{},
+		}}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
 	recorder := httptest.NewRecorder()
@@ -3282,12 +3326,15 @@ func TestParseRequestParseImpInfoError(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		hooks.EmptyPlanBuilder{},
-	}
+		&hookexecution.HookExecutor{
+			InvocationCtx: &hookstage.InvocationContext{},
+			Endpoint:      hookexecution.EndpointAuction,
+			PlanBuilder:   hooks.EmptyPlanBuilder{},
+		}}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
 
-	resReq, impExtInfoMap, _, _, _, errL := deps.parseRequest(req, hookexecution.HookExecutor{PlanBuilder: hooks.EmptyPlanBuilder{}})
+	resReq, impExtInfoMap, _, _, _, errL := deps.parseRequest(req)
 
 	assert.Nil(t, resReq, "Result request should be nil due to incorrect imp")
 	assert.Nil(t, impExtInfoMap, "Impression info map should be nil due to incorrect imp")
@@ -3857,12 +3904,15 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 				nil,
 				hardcodedResponseIPValidator{response: true},
 				empty_fetcher.EmptyFetcher{},
-				hooks.EmptyPlanBuilder{},
-			}
+				&hookexecution.HookExecutor{
+					InvocationCtx: &hookstage.InvocationContext{},
+					Endpoint:      hookexecution.EndpointAuction,
+					PlanBuilder:   hooks.EmptyPlanBuilder{},
+				}}
 
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
 
-			resReq, _, _, _, _, errL := deps.parseRequest(req, hookexecution.HookExecutor{PlanBuilder: hooks.EmptyPlanBuilder{}})
+			resReq, _, _, _, _, errL := deps.parseRequest(req)
 
 			assert.NoError(t, resReq.RebuildRequest())
 
@@ -3960,12 +4010,15 @@ func TestParseRequestStoredResponses(t *testing.T) {
 				nil,
 				hardcodedResponseIPValidator{response: true},
 				&mockStoredResponseFetcher{mockStoredResponses},
-				hooks.EmptyPlanBuilder{},
-			}
+				&hookexecution.HookExecutor{
+					InvocationCtx: &hookstage.InvocationContext{},
+					Endpoint:      hookexecution.EndpointAuction,
+					PlanBuilder:   hooks.EmptyPlanBuilder{},
+				}}
 
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
 
-			_, _, storedResponses, _, _, errL := deps.parseRequest(req, hookexecution.HookExecutor{PlanBuilder: hooks.EmptyPlanBuilder{}})
+			_, _, storedResponses, _, _, errL := deps.parseRequest(req)
 
 			if test.expectedErrorCount == 0 {
 				assert.Equal(t, test.expectedStoredResponses, storedResponses, "stored responses should match")
@@ -4048,11 +4101,14 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 				nil,
 				hardcodedResponseIPValidator{response: true},
 				&mockStoredResponseFetcher{mockStoredBidResponses},
-				hooks.EmptyPlanBuilder{},
-			}
+				&hookexecution.HookExecutor{
+					InvocationCtx: &hookstage.InvocationContext{},
+					Endpoint:      hookexecution.EndpointAuction,
+					PlanBuilder:   hooks.EmptyPlanBuilder{},
+				}}
 
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
-			_, _, _, storedBidResponses, _, errL := deps.parseRequest(req, hookexecution.HookExecutor{PlanBuilder: hooks.EmptyPlanBuilder{}})
+			_, _, _, storedBidResponses, _, errL := deps.parseRequest(req)
 
 			if test.expectedErrorCount == 0 {
 				assert.Equal(t, test.expectedStoredBidResponses, storedBidResponses, "stored responses should match")
@@ -4082,8 +4138,11 @@ func TestValidateStoredResp(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		&mockStoredResponseFetcher{},
-		hooks.EmptyPlanBuilder{},
-	}
+		&hookexecution.HookExecutor{
+			InvocationCtx: &hookstage.InvocationContext{},
+			Endpoint:      hookexecution.EndpointAuction,
+			PlanBuilder:   hooks.EmptyPlanBuilder{},
+		}}
 
 	testCases := []struct {
 		description               string

@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	Auction_endpoint = "/openrtb2/auction"
-	Amp_endpoint     = "/openrtb2/amp"
+	EndpointAuction = "/openrtb2/auction"
+	EndpointAmp     = "/openrtb2/amp"
 )
 
 type Executor interface {
