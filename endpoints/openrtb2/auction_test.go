@@ -930,7 +930,7 @@ func TestReferer(t *testing.T) {
 			givenSiteDomain:         "some.domain.com",
 			givenReferer:            "http://test.com",
 			expectedDomain:          "some.domain.com",
-			expectedPublisherDomain: "some.domain.com",
+			expectedPublisherDomain: "test.com",
 			expectedPage:            "https://test.somepage.com",
 		},
 		{

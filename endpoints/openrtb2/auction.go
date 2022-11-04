@@ -1554,7 +1554,7 @@ func setAuctionTypeImplicitly(r *openrtb_ext.RequestWrapper) {
 
 // setSiteImplicitly uses implicit info from httpReq to populate bidReq.Site
 func setSiteImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {
-	if r.Site == nil || r.Site.Page == "" || r.Site.Domain == "" {
+	if r.Site == nil || r.Site.Page == "" || r.Site.Domain == "" || r.Site.Publisher == nil || r.Site.Publisher.Domain == "" {
 		referrerCandidate := httpReq.Referer()
 		// If http referer is disabled and thus has empty value - use site.page instead
 		if referrerCandidate == "" && r.Site != nil && r.Site.Page != "" {
@@ -1563,17 +1563,14 @@ func setSiteImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {
 		if parsedUrl, err := url.Parse(referrerCandidate); err == nil {
 			if publisherDomain, err := publicsuffix.EffectiveTLDPlusOne(parsedUrl.Host); err == nil {
 				if r.Site == nil {
-					r.Site = &openrtb2.Site{}
-				}
-				if r.Site.Publisher == nil {
-					r.Site.Publisher = &openrtb2.Publisher{}
-				}
-
-				if r.Site.Domain == "" {
+					r.Site = &openrtb2.Site{Domain: parsedUrl.Host}
+				} else if r.Site.Domain == "" {
 					r.Site.Domain = parsedUrl.Host
 				}
 
-				if r.Site.Publisher.Domain == "" {
+				if r.Site.Publisher == nil {
+					r.Site.Publisher = &openrtb2.Publisher{Domain: publisherDomain}
+				} else if r.Site.Publisher.Domain == "" {
 					r.Site.Publisher.Domain = publisherDomain
 				}
 
@@ -1589,16 +1586,11 @@ func setSiteImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {
 		if siteExt, err := r.GetSiteExt(); err == nil && siteExt.GetAmp() == nil {
 			siteExt.SetAmp(&notAmp)
 		}
-		if r.Site.Domain != "" {
-			if r.Site.Publisher != nil {
-				if r.Site.Publisher.Domain == "" {
-					r.Site.Publisher.Domain = r.Site.Domain
-				}
-			} else {
-				r.Site.Publisher = &openrtb2.Publisher{Domain: r.Site.Domain}
-			}
-		}
 	}
+}
+
+func setSiteImplicitly2(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {
+
 }
 
 func setImpsImplicitly(httpReq *http.Request, imps []*openrtb_ext.ImpWrapper) {
