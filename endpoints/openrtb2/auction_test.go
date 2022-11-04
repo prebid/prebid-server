@@ -1112,7 +1112,6 @@ func TestStoredRequests(t *testing.T) {
 		}
 		expectJson := json.RawMessage(testFinalRequests[i])
 		assert.JSONEq(t, string(expectJson), string(newRequest), "Incorrect result request %d", i)
-
 		expectedImp := testStoredImpIds[i]
 		expectedStoredImp := json.RawMessage(testStoredImps[i])
 		if len(impExtInfoMap[expectedImp].StoredImp) > 0 {
@@ -1631,7 +1630,7 @@ func TestValidateRequest(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		errorList := deps.validateRequest(test.givenRequestWrapper, test.givenIsAmp, false, nil)
+		errorList := deps.validateRequest(test.givenRequestWrapper, test.givenIsAmp, false, nil, false)
 		assert.Equalf(t, test.expectedErrorList, errorList, "Error doesn't match: %s\n", test.description)
 
 		if len(errorList) == 0 {
@@ -2453,7 +2452,7 @@ func TestCurrencyTrunc(t *testing.T) {
 		Cur: []string{"USD", "EUR"},
 	}
 
-	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil)
+	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
 
 	expectedError := errortypes.Warning{Message: "A prebid request can only process one currency. Taking the first currency in the list, USD, as the active currency"}
 	assert.ElementsMatch(t, errL, []error{&expectedError})
@@ -2502,7 +2501,7 @@ func TestCCPAInvalid(t *testing.T) {
 		},
 	}
 
-	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil)
+	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
 
 	expectedWarning := errortypes.Warning{
 		Message:     "CCPA consent is invalid and will be ignored. (request.regs.ext.us_privacy must contain 4 characters)",
@@ -2554,7 +2553,7 @@ func TestNoSaleInvalid(t *testing.T) {
 		Ext: json.RawMessage(`{"prebid": {"nosale": ["*", "appnexus"]} }`),
 	}
 
-	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil)
+	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
 
 	expectedError := errors.New("request.ext.prebid.nosale is invalid: can only specify all bidders if no other bidders are provided")
 	assert.ElementsMatch(t, errL, []error{expectedError})
@@ -2604,7 +2603,7 @@ func TestValidateSourceTID(t *testing.T) {
 		},
 	}
 
-	deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil)
+	deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
 	assert.NotEmpty(t, req.Source.TID, "Expected req.Source.TID to be filled with a randomly generated UID")
 }
 
@@ -2649,7 +2648,7 @@ func TestSChainInvalid(t *testing.T) {
 		Ext: json.RawMessage(`{"prebid":{"schains":[{"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller1.com","sid":"00001","rid":"BidRequest1","hp":1}],"ver":"1.0"}}, {"bidders":["appnexus"],"schain":{"complete":1,"nodes":[{"asi":"directseller2.com","sid":"00002","rid":"BidRequest2","hp":1}],"ver":"1.0"}}]}}`),
 	}
 
-	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil)
+	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
 
 	expectedError := errors.New("request.ext.prebid.schains contains multiple schains for bidder appnexus; it must contain no more than one per bidder.")
 	assert.ElementsMatch(t, errL, []error{expectedError})
@@ -2920,13 +2919,18 @@ func TestSanitizeRequest(t *testing.T) {
 func TestValidateAndFillSourceTID(t *testing.T) {
 	testTID := "some-tid"
 	testCases := []struct {
-		description     string
-		req             *openrtb_ext.RequestWrapper
-		expectRandTID   bool
-		expectSourceTid string
+		description         string
+		req                 *openrtb_ext.RequestWrapper
+		generateRequestID   bool
+		hasStoredBidRequest bool
+		isAmp               bool
+		expectRandImpTID    bool
+		expectRandSourceTID bool
+		expectSourceTid     *string
+		expectImpTid        *string
 	}{
 		{
-			description: "req source.tid and imp.tid both not present, expect BOTH imp.tid and source.tid populated",
+			description: "req source.tid not set, expect random value",
 			req: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					ID:     "1",
@@ -2934,22 +2938,59 @@ func TestValidateAndFillSourceTID(t *testing.T) {
 					Source: &openrtb2.Source{},
 				},
 			},
-			expectRandTID:   true,
-			expectSourceTid: "1",
+			generateRequestID:   false,
+			hasStoredBidRequest: false,
+			isAmp:               false,
+			expectRandSourceTID: true,
+			expectRandImpTID:    false,
 		},
 		{
-			description: "req.Source not present, expect BOTH imp.tid and source.tid populated",
+			description: "req source.tid set to {{UUID}}, expect to be replaced by random value",
 			req: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
-					ID:  "1",
-					Imp: []openrtb2.Imp{{ID: "1"}},
+					ID:     "1",
+					Imp:    []openrtb2.Imp{{ID: "1"}},
+					Source: &openrtb2.Source{TID: "{{UUID}}"},
 				},
 			},
-			expectRandTID:   true,
-			expectSourceTid: "1",
+			generateRequestID:   false,
+			hasStoredBidRequest: false,
+			isAmp:               false,
+			expectRandSourceTID: true,
+			expectRandImpTID:    false,
 		},
 		{
-			description: "req.Source.TID present. Expecting no change",
+			description: "req source.tid is set, isAmp = true, generateRequestID = true, expect to be replaced by random value",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID:     "1",
+					Imp:    []openrtb2.Imp{{ID: "1"}},
+					Source: &openrtb2.Source{TID: "test-tid"},
+				},
+			},
+			generateRequestID:   true,
+			hasStoredBidRequest: false,
+			isAmp:               true,
+			expectRandSourceTID: true,
+			expectRandImpTID:    false,
+		},
+		{
+			description: "req source.tid is set,  hasStoredBidRequest = true, generateRequestID = true, expect to be replaced by random value",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID:     "1",
+					Imp:    []openrtb2.Imp{{ID: "1"}},
+					Source: &openrtb2.Source{TID: "test-tid"},
+				},
+			},
+			generateRequestID:   true,
+			hasStoredBidRequest: true,
+			isAmp:               false,
+			expectRandSourceTID: true,
+			expectRandImpTID:    false,
+		},
+		{
+			description: "req source.tid is set,  hasStoredBidRequest = true, generateRequestID = false, expect NOT to be replaced by random value",
 			req: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					ID:     "1",
@@ -2957,11 +2998,75 @@ func TestValidateAndFillSourceTID(t *testing.T) {
 					Source: &openrtb2.Source{TID: testTID},
 				},
 			},
-			expectRandTID:   false,
-			expectSourceTid: testTID,
+			generateRequestID:   false,
+			hasStoredBidRequest: true,
+			isAmp:               false,
+			expectRandSourceTID: false,
+			expectRandImpTID:    false,
+			expectSourceTid:     &testTID,
 		},
 		{
-			description: "req.Source.TID present abd imp.ext.tid present. Expecting no change",
+			description: "req imp.ext.tid not set, expect random value",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID:     "1",
+					Imp:    []openrtb2.Imp{{ID: "1"}},
+					Source: &openrtb2.Source{},
+				},
+			},
+			generateRequestID:   false,
+			hasStoredBidRequest: false,
+			isAmp:               false,
+			expectRandSourceTID: false,
+			expectRandImpTID:    true,
+		},
+		{
+			description: "req imp.ext.tid set to {{UUID}}, expect random value",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID:     "1",
+					Imp:    []openrtb2.Imp{{ID: "1", Ext: json.RawMessage(`{"tid": "{{UUID}}"}`)}},
+					Source: &openrtb2.Source{},
+				},
+			},
+			generateRequestID:   false,
+			hasStoredBidRequest: false,
+			isAmp:               false,
+			expectRandSourceTID: false,
+			expectRandImpTID:    true,
+		},
+		{
+			description: "req imp.tid is set,  hasStoredBidRequest = true, generateRequestID = true, expect to be replaced by random value",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID:     "1",
+					Imp:    []openrtb2.Imp{{ID: "1", Ext: json.RawMessage(`{"tid": "some-tid"}`)}},
+					Source: &openrtb2.Source{TID: "test-tid"},
+				},
+			},
+			generateRequestID:   true,
+			hasStoredBidRequest: true,
+			isAmp:               false,
+			expectRandSourceTID: false,
+			expectRandImpTID:    true,
+		},
+		{
+			description: "req imp.tid is set,  isAmp = true, generateRequestID = true, expect to be replaced by random value",
+			req: &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					ID:     "1",
+					Imp:    []openrtb2.Imp{{ID: "1", Ext: json.RawMessage(`{"tid": "some-tid"}`)}},
+					Source: &openrtb2.Source{TID: "test-tid"},
+				},
+			},
+			generateRequestID:   true,
+			hasStoredBidRequest: false,
+			isAmp:               true,
+			expectRandSourceTID: false,
+			expectRandImpTID:    true,
+		},
+		{
+			description: "req imp.tid is set,  hasStoredBidRequest = true, generateRequestID = false, expect NOT to be replaced by random value",
 			req: &openrtb_ext.RequestWrapper{
 				BidRequest: &openrtb2.BidRequest{
 					ID:     "1",
@@ -2969,21 +3074,31 @@ func TestValidateAndFillSourceTID(t *testing.T) {
 					Source: &openrtb2.Source{TID: testTID},
 				},
 			},
-			expectRandTID:   false,
-			expectSourceTid: testTID,
+			generateRequestID:   false,
+			hasStoredBidRequest: true,
+			isAmp:               false,
+			expectRandSourceTID: false,
+			expectRandImpTID:    false,
+			expectImpTid:        &testTID,
 		},
 	}
 
 	for _, test := range testCases {
-		_ = validateAndFillSourceTID(test.req)
+		_ = validateAndFillSourceTID(test.req, test.generateRequestID, test.hasStoredBidRequest, test.isAmp)
 		impWrapper := &openrtb_ext.ImpWrapper{}
 		impWrapper.Imp = &test.req.Imp[0]
 		ie, _ := impWrapper.GetImpExt()
 		impTID := ie.GetTid()
-		if test.expectRandTID {
+		if test.expectRandSourceTID {
+			assert.NotEmpty(t, test.req.Source.TID, test.description)
+		} else if test.expectRandImpTID {
+			assert.NotEqual(t, testTID, impTID, test.description)
 			assert.NotEmpty(t, impTID, test.description)
+		} else if test.expectSourceTid != nil {
+			assert.Equal(t, test.req.Source.TID, *test.expectSourceTid, test.description)
+		} else if test.expectImpTid != nil {
+			assert.Equal(t, impTID, *test.expectImpTid, test.description)
 		}
-		assert.Equal(t, test.expectSourceTid, test.req.Source.TID, test.description)
 	}
 }
 
@@ -3028,7 +3143,7 @@ func TestEidPermissionsInvalid(t *testing.T) {
 		Ext: json.RawMessage(`{"prebid": {"data": {"eidpermissions": [{"source":"a", "bidders":[]}]} } }`),
 	}
 
-	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil)
+	errL := deps.validateRequest(&openrtb_ext.RequestWrapper{BidRequest: &req}, false, false, nil, false)
 
 	expectedError := errors.New(`request.ext.prebid.data.eidpermissions[0] missing or empty required field: "bidders"`)
 	assert.ElementsMatch(t, errL, []error{expectedError})
@@ -4678,7 +4793,7 @@ func TestValidateStoredResp(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		errorList := deps.validateRequest(test.givenRequestWrapper, false, test.hasStoredAuctionResponses, test.storedBidResponses)
+		errorList := deps.validateRequest(test.givenRequestWrapper, false, test.hasStoredAuctionResponses, test.storedBidResponses, false)
 		assert.Equalf(t, test.expectedErrorList, errorList, "Error doesn't match: %s\n", test.description)
 	}
 }

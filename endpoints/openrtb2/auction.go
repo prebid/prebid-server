@@ -792,12 +792,17 @@ func validateAndFillSourceTID(req *openrtb_ext.RequestWrapper, generateRequestID
 		req.Source = &openrtb2.Source{}
 	}
 
-	if (generateRequestID && (isAmp || hasStoredBidRequest)) || req.Source.TID == "{{UUID}}" {
-		if rawUUID, err := uuid.NewV4(); err == nil {
-			req.Source.TID = rawUUID.String()
-		} else {
-			return errors.New("req.Source.TID missing in the req and error creating a random UID")
-		}
+	rawUUID, err := uuid.NewV4()
+	if err != nil {
+		return errors.New("error creating a random UUID for source.tid")
+	}
+
+	if req.Source.TID == "" || req.Source.TID == "{{UUID}}" {
+		req.Source.TID = rawUUID.String()
+	}
+
+	if generateRequestID && (isAmp || hasStoredBidRequest) {
+		req.Source.TID = rawUUID.String()
 	}
 
 	for _, impWrapper := range req.GetImp() {
@@ -810,7 +815,7 @@ func validateAndFillSourceTID(req *openrtb_ext.RequestWrapper, generateRequestID
 			ie.SetTid(rawUUID.String())
 			impWrapper.RebuildImp()
 		}
-		if generateRequestID && ie.GetTid() != "" && (isAmp || hasStoredBidRequest) {
+		if generateRequestID && (isAmp || hasStoredBidRequest) {
 			ie.SetTid(rawUUID.String())
 			impWrapper.RebuildImp()
 		}
