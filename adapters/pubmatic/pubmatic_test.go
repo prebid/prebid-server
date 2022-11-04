@@ -687,14 +687,14 @@ func TestGetMapFromJSON(t *testing.T) {
 	}{
 		{
 			name:  "Valid JSON",
-			input: json.RawMessage("{\"buyid\":\"testBuyId\"}"),
+			input: json.RawMessage(`{"buyid":"testBuyId"}`),
 			output: map[string]interface{}{
 				"buyid": "testBuyId",
 			},
 		},
 		{
 			name:   "Invalid JSON",
-			input:  json.RawMessage("{\"buyid\":}"),
+			input:  json.RawMessage(`{"buyid":}`),
 			output: nil,
 		},
 	}

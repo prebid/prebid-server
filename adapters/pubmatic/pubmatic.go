@@ -544,7 +544,7 @@ func populateDctrKey(dataMap, extMap map[string]interface{}) {
 		}
 
 		//separate key-val pairs in dctr string by pipe(|)
-		if dctr.String() != "" {
+		if dctr.Len() > 0 {
 			dctr.WriteString("|")
 		}
 
@@ -553,15 +553,21 @@ func populateDctrKey(dataMap, extMap map[string]interface{}) {
 
 		switch typedValue := val.(type) {
 		case string:
-			fmt.Fprintf(&dctr, "%s=%s", key, strings.TrimSpace(typedValue))
+			if _, err := fmt.Fprintf(&dctr, "%s=%s", key, strings.TrimSpace(typedValue)); err != nil {
+				continue
+			}
 
 		case float64, bool:
-			fmt.Fprintf(&dctr, "%s=%v", key, typedValue)
+			if _, err := fmt.Fprintf(&dctr, "%s=%v", key, typedValue); err != nil {
+				continue
+			}
 
 		case []interface{}:
-			if valStrArr := getStringArray(typedValue); valStrArr != nil && len(valStrArr) > 0 {
+			if valStrArr := getStringArray(typedValue); len(valStrArr) > 0 {
 				valStr := strings.Join(valStrArr[:], ",")
-				fmt.Fprintf(&dctr, "%s=%s", key, valStr)
+				if _, err := fmt.Fprintf(&dctr, "%s=%s", key, valStr); err != nil {
+					continue
+				}
 			}
 		}
 	}
