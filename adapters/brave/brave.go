@@ -19,7 +19,7 @@ type adapter struct {
 }
 
 // Builder builds a new instance of the Brave adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	uri, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
@@ -32,22 +32,15 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var errors []error
-	var braveExt *openrtb_ext.ExtImpBrave
+	var videoHeoresExt *openrtb_ext.ExtImpVideoHeroes
 	var err error
 
-	for i, imp := range request.Imp {
-		braveExt, err = a.getImpressionExt(&imp)
-		if err != nil {
-			errors = append(errors, err)
-			break
-		}
-		request.Imp[i].Ext = nil
+	videoHeoresExt, err = a.getImpressionExt(&request.Imp[0])
+	if err != nil {
+		return nil, []error{err}
 	}
 
-	if len(errors) > 0 {
-		return nil, errors
-	}
+	request.Imp[0].Ext = nil
 
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
