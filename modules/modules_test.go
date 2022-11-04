@@ -11,7 +11,6 @@ import (
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookstage"
-	"github.com/prebid/prebid-server/hooks/invocation"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -87,10 +86,10 @@ func TestModuleBuilderBuild(t *testing.T) {
 
 type module struct{}
 
-func (h module) HandleEntrypointHook(ctx context.Context, context invocation.Context, payload hookstage.EntrypointPayload) (invocation.HookResult[hookstage.EntrypointPayload], error) {
-	return invocation.HookResult[hookstage.EntrypointPayload]{}, nil
+func (h module) HandleEntrypointHook(ctx context.Context, context hookstage.InvocationContext, payload hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+	return hookstage.HookResult[hookstage.EntrypointPayload]{}, nil
 }
 
-func (h module) HandleAuctionResponseHook(ctx context.Context, i invocation.Context, response *openrtb2.BidResponse) (invocation.HookResult[*openrtb2.BidResponse], error) {
-	return invocation.HookResult[*openrtb2.BidResponse]{}, nil
+func (h module) HandleAuctionResponseHook(ctx context.Context, i hookstage.InvocationContext, response *openrtb2.BidResponse) (hookstage.HookResult[*openrtb2.BidResponse], error) {
+	return hookstage.HookResult[*openrtb2.BidResponse]{}, nil
 }

@@ -9,7 +9,6 @@ import (
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/hooks/hookstage"
-	"github.com/prebid/prebid-server/hooks/invocation"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -760,68 +759,68 @@ type fakeEntrypointHook struct{}
 
 func (h fakeEntrypointHook) HandleEntrypointHook(
 	_ context.Context,
-	_ invocation.Context,
+	_ hookstage.InvocationContext,
 	_ hookstage.EntrypointPayload,
-) (invocation.HookResult[hookstage.EntrypointPayload], error) {
-	return invocation.HookResult[hookstage.EntrypointPayload]{}, nil
+) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+	return hookstage.HookResult[hookstage.EntrypointPayload]{}, nil
 }
 
 type fakeRawAuctionHook struct{}
 
 func (f fakeRawAuctionHook) HandleRawAuctionHook(
 	_ context.Context,
-	_ invocation.Context,
+	_ hookstage.InvocationContext,
 	_ hookstage.RawAuctionPayload,
-) (invocation.HookResult[hookstage.RawAuctionPayload], error) {
-	return invocation.HookResult[hookstage.RawAuctionPayload]{}, nil
+) (hookstage.HookResult[hookstage.RawAuctionPayload], error) {
+	return hookstage.HookResult[hookstage.RawAuctionPayload]{}, nil
 }
 
 type fakeProcessedAuctionHook struct{}
 
 func (f fakeProcessedAuctionHook) HandleProcessedAuctionHook(
 	_ context.Context,
-	_ invocation.Context,
+	_ hookstage.InvocationContext,
 	_ hookstage.ProcessedAuctionPayload,
-) (invocation.HookResult[hookstage.ProcessedAuctionPayload], error) {
-	return invocation.HookResult[hookstage.ProcessedAuctionPayload]{}, nil
+) (hookstage.HookResult[hookstage.ProcessedAuctionPayload], error) {
+	return hookstage.HookResult[hookstage.ProcessedAuctionPayload]{}, nil
 }
 
 type fakeBidRequestHook struct{}
 
 func (f fakeBidRequestHook) HandleBidRequestHook(
 	_ context.Context,
-	_ invocation.Context,
+	_ hookstage.InvocationContext,
 	_ hookstage.BidRequestPayload,
-) (invocation.HookResult[hookstage.BidRequestPayload], error) {
-	return invocation.HookResult[hookstage.BidRequestPayload]{}, nil
+) (hookstage.HookResult[hookstage.BidRequestPayload], error) {
+	return hookstage.HookResult[hookstage.BidRequestPayload]{}, nil
 }
 
 type fakeRawBidResponseHook struct{}
 
 func (f fakeRawBidResponseHook) HandleRawBidResponseHook(
 	_ context.Context,
-	_ invocation.Context,
+	_ hookstage.InvocationContext,
 	_ hookstage.RawBidResponsePayload,
-) (invocation.HookResult[hookstage.RawBidResponsePayload], error) {
-	return invocation.HookResult[hookstage.RawBidResponsePayload]{}, nil
+) (hookstage.HookResult[hookstage.RawBidResponsePayload], error) {
+	return hookstage.HookResult[hookstage.RawBidResponsePayload]{}, nil
 }
 
 type fakeAllProcBidResponsesHook struct{}
 
 func (f fakeAllProcBidResponsesHook) HandleAllProcBidResponsesHook(
 	_ context.Context,
-	_ invocation.Context,
+	_ hookstage.InvocationContext,
 	_ hookstage.AllProcessedBidResponsesPayload,
-) (invocation.HookResult[hookstage.AllProcessedBidResponsesPayload], error) {
-	return invocation.HookResult[hookstage.AllProcessedBidResponsesPayload]{}, nil
+) (hookstage.HookResult[hookstage.AllProcessedBidResponsesPayload], error) {
+	return hookstage.HookResult[hookstage.AllProcessedBidResponsesPayload]{}, nil
 }
 
 type fakeAuctionResponseHook struct{}
 
 func (f fakeAuctionResponseHook) HandleAuctionResponseHook(
 	_ context.Context,
-	_ invocation.Context,
+	_ hookstage.InvocationContext,
 	_ *openrtb2.BidResponse,
-) (invocation.HookResult[*openrtb2.BidResponse], error) {
-	return invocation.HookResult[*openrtb2.BidResponse]{}, nil
+) (hookstage.HookResult[*openrtb2.BidResponse], error) {
+	return hookstage.HookResult[*openrtb2.BidResponse]{}, nil
 }

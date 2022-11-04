@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/prebid/prebid-server/hooks/hookstage"
-	"github.com/prebid/prebid-server/hooks/invocation"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -70,6 +69,6 @@ func TestAddHook_FailsToAddHookOfSameTypeAndIdTwice(t *testing.T) {
 
 type hook struct{}
 
-func (h hook) HandleEntrypointHook(ctx context.Context, context invocation.Context, payload hookstage.EntrypointPayload) (invocation.HookResult[hookstage.EntrypointPayload], error) {
-	return invocation.HookResult[hookstage.EntrypointPayload]{}, nil
+func (h hook) HandleEntrypointHook(ctx context.Context, context hookstage.InvocationContext, payload hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+	return hookstage.HookResult[hookstage.EntrypointPayload]{}, nil
 }

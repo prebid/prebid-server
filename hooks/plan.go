@@ -47,9 +47,8 @@ func NewExecutionPlanBuilder(hooks config.Hooks, repo HookRepository) ExecutionP
 			hooks: hooks,
 			repo:  repo,
 		}
-	} else {
-		return EmptyPlanBuilder{}
 	}
+	return EmptyPlanBuilder{}
 }
 
 type PlanBuilder struct {
