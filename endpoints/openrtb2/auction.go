@@ -22,6 +22,7 @@ import (
 	nativeRequests "github.com/prebid/openrtb/v17/native1/request"
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/hooks"
+	"github.com/prebid/prebid-server/hooks/hookstage"
 	"golang.org/x/net/publicsuffix"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
@@ -32,7 +33,6 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
-	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
@@ -86,6 +86,13 @@ func NewEndpoint(
 		IPv6PrivateNetworks: cfg.RequestValidation.IPv6PrivateNetworksParsed,
 	}
 
+	hookExecutor := &hookexecution.HookExecutor{
+		InvocationCtx: &hookstage.InvocationContext{},
+		Endpoint:      hookexecution.EndpointAuction,
+		PlanBuilder:   hookExecutionPlanBuilder,
+		MetricEngine:  met,
+	}
+
 	return httprouter.Handle((&endpointDeps{
 		uuidGenerator,
 		ex,
@@ -104,7 +111,7 @@ func NewEndpoint(
 		nil,
 		ipValidator,
 		storedRespFetcher,
-		hookExecutionPlanBuilder}).Auction), nil
+		hookExecutor}).Auction), nil
 }
 
 type endpointDeps struct {
@@ -125,7 +132,7 @@ type endpointDeps struct {
 	debugLogRegexp            *regexp.Regexp
 	privateNetworkIPValidator iputil.IPValidator
 	storedRespFetcher         stored_requests.Fetcher
-	hookExecutionPlanBuilder  hooks.ExecutionPlanBuilder
+	hookExecutor              *hookexecution.HookExecutor
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -151,12 +158,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		RequestStatus: metrics.RequestStatusOK,
 	}
 
-	hookExecutor := hookexecution.HookExecutor{
-		InvocationCtx: &hookstage.InvocationContext{},
-		Endpoint:      hookexecution.Auction_endpoint,
-		PlanBuilder:   deps.hookExecutionPlanBuilder,
-		MetricEngine:  deps.metricsEngine,
-	}
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
@@ -165,7 +166,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
 
-	req, impExtInfoMap, storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, errL := deps.parseRequest(r, hookExecutor)
+	req, impExtInfoMap, storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, errL := deps.parseRequest(r)
 	if errortypes.ContainsFatalError(errL) && writeError(errL, w, &labels) {
 		return
 	}
@@ -227,6 +228,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		StoredBidResponses:         storedBidResponses,
 		BidderImpReplaceImpID:      bidderImpReplaceImp,
 		PubID:                      labels.PubID,
+		HookExecutor:               deps.hookExecutor,
 	}
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
 	ao.Request = req.BidRequest
@@ -271,7 +273,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 // possible, it will return errors with messages that suggest improvements.
 //
 // If the errors list has at least one element, then no guarantees are made about the returned request.
-func (deps *endpointDeps) parseRequest(httpRequest *http.Request, executor hookexecution.HookExecutor) (req *openrtb_ext.RequestWrapper, impExtInfoMap map[string]exchange.ImpExtInfo, storedAuctionResponses stored_responses.ImpsWithBidResponses, storedBidResponses stored_responses.ImpBidderStoredResp, bidderImpReplaceImpId stored_responses.BidderImpReplaceImpID, errs []error) {
+func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_ext.RequestWrapper, impExtInfoMap map[string]exchange.ImpExtInfo, storedAuctionResponses stored_responses.ImpsWithBidResponses, storedBidResponses stored_responses.ImpBidderStoredResp, bidderImpReplaceImpId stored_responses.BidderImpReplaceImpID, errs []error) {
 	req = &openrtb_ext.RequestWrapper{}
 	req.BidRequest = &openrtb2.BidRequest{}
 	errs = nil
@@ -294,8 +296,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, executor hooke
 		}
 	}
 
-	// todo: use stage result later for response
-	_, body, err := executor.ExecuteEntrypointStage(httpRequest, requestJson)
+	body, err := deps.hookExecutor.ExecuteEntrypointStage(httpRequest, requestJson)
 	if err != nil {
 		//todo: return no bid response
 		// the only error returned from above is hook stage rejection

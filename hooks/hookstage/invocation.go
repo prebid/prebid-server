@@ -3,6 +3,8 @@ package hookstage
 import (
 	"encoding/json"
 
+	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/hooks/hookanalytics"
 	"github.com/prebid/prebid-server/metrics"
 )
@@ -22,6 +24,7 @@ type InvocationContext struct {
 	AccountId         string
 	DebugEnabled      bool
 	RequestTypeMetric metrics.RequestType
+	Account           *config.Account
 	moduleContexts    map[string]*ModuleContext
 }
 
@@ -31,6 +34,14 @@ func (ctx *InvocationContext) ModuleContextFor(moduleCode string) *ModuleContext
 	}
 
 	emptyCtx := ModuleContext{}
+	if ctx.Account != nil {
+		cfg, err := ctx.Account.Hooks.Modules.ModuleConfig(moduleCode)
+		if err != nil {
+			glog.Warningf("Failed to get account config for %s module: %s", moduleCode, err)
+		}
+
+		emptyCtx.AccountConfig = cfg
+	}
 
 	if ctx.moduleContexts == nil {
 		ctx.moduleContexts = map[string]*ModuleContext{}

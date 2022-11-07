@@ -7,9 +7,9 @@ import (
 
 type Entrypoint interface {
 	HandleEntrypointHook(
-		ctx context.Context,
-		iCtx *ModuleContext,
-		p EntrypointPayload,
+		context.Context,
+		*ModuleContext,
+		EntrypointPayload,
 	) (HookResult[EntrypointPayload], error)
 }
 

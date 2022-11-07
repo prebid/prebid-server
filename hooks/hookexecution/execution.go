@@ -12,18 +12,6 @@ import (
 	"github.com/prebid/prebid-server/metrics"
 )
 
-const (
-	Auction_endpoint = "/openrtb2/auction"
-	Amp_endpoint     = "/openrtb2/amp"
-)
-
-type HookExecutor struct {
-	InvocationCtx *hookstage.InvocationContext
-	Endpoint      string
-	PlanBuilder   hooks.ExecutionPlanBuilder
-	MetricEngine  metrics.MetricsEngine
-}
-
 type TimeoutError struct{}
 
 func (e TimeoutError) Error() string {
@@ -44,7 +32,7 @@ type RejectError struct {
 }
 
 func (e RejectError) Error() string {
-	return fmt.Sprintf("Module rejected stage, reason: `%s`", e.Reason)
+	return fmt.Sprintf(`Module rejected stage, reason: "%s"`, e.Reason)
 }
 
 type hookHandler[H any, P any] func(
@@ -221,7 +209,6 @@ func processHookResponses[P any](
 				metricEngine.RecordModuleExecutionError(labels)
 				hookOutcome.Status = StatusExecutionFailure
 			}
-			// todo: send metric
 			continue
 		}
 
@@ -230,7 +217,6 @@ func processHookResponses[P any](
 			metricEngine.RecordModuleSuccessRejected(labels)
 			hookOutcome.Action = ActionReject
 			hookOutcome.Errors = append(hookOutcome.Errors, reject.Error())
-			// todo: send metric
 			return groupOutcome, payload, reject
 		}
 

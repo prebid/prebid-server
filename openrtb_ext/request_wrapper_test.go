@@ -111,7 +111,7 @@ func TestRebuildImp(t *testing.T) {
 			w.impExt.ext = make(map[string]json.RawMessage)
 		}
 
-		w := RequestWrapper{BidRequest: &test.request, imp: test.requestImpWrapper, impAccessed: test.requestImpWrapper != nil}
+		w := RequestWrapper{BidRequest: &test.request, impWrappers: test.requestImpWrapper, impWrappersAccessed: test.requestImpWrapper != nil}
 		err := w.RebuildRequest()
 
 		if test.expectedError != "" {

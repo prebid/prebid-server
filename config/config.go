@@ -318,9 +318,9 @@ func (t *TCF2) BasicEnforcementVendor(openrtb_ext.BidderName) bool {
 	return false
 }
 
-// IntegrationEnabled checks if a given integration type is enabled. All integration types are considered either
+// ChannelEnabled checks if a given channel type is enabled. All channel types are considered either
 // enabled or disabled based on the Enabled flag.
-func (t *TCF2) IntegrationEnabled(integrationType IntegrationType) bool {
+func (t *TCF2) ChannelEnabled(channelType ChannelType) bool {
 	return t.Enabled
 }
 
@@ -993,7 +993,6 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("debug.timeout_notification.sampling_rate", 0.0)
 	v.SetDefault("debug.timeout_notification.fail_only", false)
 	v.SetDefault("debug.override_token", "")
-	v.SetDefault("debug.modules", false)
 
 	/* IPv4
 	/*  Site Local: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16

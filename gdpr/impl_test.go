@@ -968,8 +968,8 @@ func TestTCF1Consent(t *testing.T) {
 	permissions, err := perms.AuctionActivitiesAllowed(context.Background(), bidderAllowedByConsent, bidderAllowedByConsent)
 
 	assert.Nil(t, err, "TCF1 consent - no error returned")
-	assert.Equal(t, false, permissions.AllowBidRequest, "TCF1 consent - bid request not allowed")
-	assert.Equal(t, false, permissions.PassGeo, "TCF1 consent - passing geo not allowed")
+	assert.Equal(t, true, permissions.AllowBidRequest, "TCF1 consent - bid request not allowed")
+	assert.Equal(t, true, permissions.PassGeo, "TCF1 consent - passing geo not allowed")
 	assert.Equal(t, false, permissions.PassID, "TCF1 consent - passing id not allowed")
 }
 
@@ -1120,5 +1120,65 @@ func TestBidderSyncAllowedVendorException(t *testing.T) {
 		allowSync, err := perms.BidderSyncAllowed(context.Background(), td.bidder)
 		assert.NoErrorf(t, err, "Error processing BidderSyncAllowed for %s", td.description)
 		assert.EqualValuesf(t, td.allowSync, allowSync, "AllowSync failure on %s", td.description)
+	}
+}
+
+func TestDefaultPermissions(t *testing.T) {
+	tests := []struct {
+		description      string
+		purpose2Enforced bool
+		feature1Enforced bool
+		wantPermissions  AuctionPermissions
+	}{
+		{
+			description: "Neither enforced",
+			wantPermissions: AuctionPermissions{
+				AllowBidRequest: true,
+				PassGeo:         true,
+				PassID:          false,
+			},
+		},
+		{
+			description:      "Purpose 2 enforced only",
+			purpose2Enforced: true,
+			wantPermissions: AuctionPermissions{
+				AllowBidRequest: false,
+				PassGeo:         true,
+				PassID:          false,
+			},
+		},
+		{
+			description:      "Feature 1 enforced only",
+			feature1Enforced: true,
+			wantPermissions: AuctionPermissions{
+				AllowBidRequest: true,
+				PassGeo:         false,
+				PassID:          false,
+			},
+		},
+		{
+			description:      "Both enforced",
+			purpose2Enforced: true,
+			feature1Enforced: true,
+			wantPermissions: AuctionPermissions{
+				AllowBidRequest: false,
+				PassGeo:         false,
+				PassID:          false,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		perms := permissionsImpl{}
+
+		tcf2AggConfig := allPurposesEnabledTCF2Config()
+		tcf2AggConfig.HostConfig.Purpose2.EnforcePurpose = tt.purpose2Enforced
+		tcf2AggConfig.HostConfig.SpecialFeature1.Enforce = tt.feature1Enforced
+		tcf2AggConfig.HostConfig.PurposeConfigs[consentconstants.Purpose(2)] = &tcf2AggConfig.HostConfig.Purpose2
+		perms.cfg = &tcf2AggConfig
+
+		result := perms.defaultPermissions()
+
+		assert.Equal(t, result, tt.wantPermissions, tt.description)
 	}
 }

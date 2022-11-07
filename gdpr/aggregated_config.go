@@ -12,7 +12,7 @@ type TCF2ConfigReader interface {
 	BasicEnforcementVendor(openrtb_ext.BidderName) bool
 	FeatureOneEnforced() bool
 	FeatureOneVendorException(openrtb_ext.BidderName) bool
-	IntegrationEnabled(config.IntegrationType) bool
+	ChannelEnabled(config.ChannelType) bool
 	IsEnabled() bool
 	PurposeEnforced(consentconstants.Purpose) bool
 	PurposeEnforcingVendors(consentconstants.Purpose) bool
@@ -41,10 +41,10 @@ func (tc *tcf2Config) IsEnabled() bool {
 	return tc.HostConfig.Enabled
 }
 
-// IntegrationEnabled checks if a given integration type is enabled at the account level. If it is not set at the
-// account level, the host TCF2 enabled flag is used to determine if the integration type is enabled.
-func (tc *tcf2Config) IntegrationEnabled(integrationType config.IntegrationType) bool {
-	if accountEnabled := tc.AccountConfig.EnabledForIntegrationType(integrationType); accountEnabled != nil {
+// ChannelEnabled checks if a given channel type is enabled at the account level. If it is not set at the
+// account level, the host TCF2 enabled flag is used to determine if the channel type is enabled.
+func (tc *tcf2Config) ChannelEnabled(channelType config.ChannelType) bool {
+	if accountEnabled := tc.AccountConfig.EnabledForChannelType(channelType); accountEnabled != nil {
 		return *accountEnabled
 	}
 	return tc.HostConfig.Enabled
