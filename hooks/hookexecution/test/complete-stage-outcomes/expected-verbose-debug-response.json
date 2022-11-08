@@ -1,0 +1,186 @@
+{
+  "prebid": {
+    "foo": "bar",
+    "modules": {
+      "errors": {
+        "foobar": {
+          "foo": [
+            "error 1"
+          ],
+          "bar": [
+            "error 2",
+            "error 4"
+          ]
+        },
+        "foobaz": {
+          "baz": [
+            "error 3"
+          ]
+        }
+      },
+      "warnings": {
+        "foobaz": {
+          "baz": [
+            "warning 1"
+          ]
+        }
+      },
+      "trace": {
+        "executiontimemillis": 600,
+        "stages": [
+          {
+            "stage": "entrypoint",
+            "executiontimemillis": 300,
+            "outcomes": [
+              {
+                "entity": "http-request",
+                "executiontimemillis": 300,
+                "groups": [
+                  {
+                    "executiontimemillis": 200,
+                    "invocationresults": [
+                      {
+                        "hookid": {
+                          "module-code": "foobar",
+                          "hook-impl-code": "foo"
+                        },
+                        "status": "success",
+                        "action": "update",
+                        "executiontimemillis": 200,
+                        "analyticstags": {
+                          "activities": [
+                            {
+                              "name": "device-id",
+                              "status": "success",
+                              "results": [
+                                {
+                                  "status": "success-allow",
+                                  "values": {
+                                    "foo": "bar"
+                                  },
+                                  "appliedto": {
+                                    "impids": [
+                                      "impId1"
+                                    ],
+                                    "request": true
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "name": "define-blocks",
+                              "status": "error"
+                            }
+                          ]
+                        },
+                        "debugmessages": [
+                          "debug message 1"
+                        ],
+                        "message": ""
+                      },
+                      {
+                        "hookid": {
+                          "module-code": "foobar",
+                          "hook-impl-code": "bar"
+                        },
+                        "status": "success",
+                        "action": "update",
+                        "executiontimemillis": 50,
+                        "analyticstags": {},
+                        "message": ""
+                      }
+                    ]
+                  },
+                  {
+                    "executiontimemillis": 100,
+                    "invocationresults": [
+                      {
+                        "hookid": {
+                          "module-code": "foobaz",
+                          "hook-impl-code": "baz"
+                        },
+                        "status": "success",
+                        "action": "update",
+                        "executiontimemillis": 100,
+                        "analyticstags": {},
+                        "debugmessages": [
+                          "debug message 1",
+                          "debug message 2"
+                        ],
+                        "message": ""
+                      },
+                      {
+                        "hookid": {
+                          "module-code": "foobar",
+                          "hook-impl-code": "bar"
+                        },
+                        "status": "success",
+                        "action": "update",
+                        "executiontimemillis": 10,
+                        "analyticstags": {},
+                        "message": ""
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "stage": "bidrequest",
+            "executiontimemillis": 300,
+            "outcomes": [
+              {
+                "entity": "adf",
+                "executiontimemillis": 200,
+                "groups": [
+                  {
+                    "executiontimemillis": 200,
+                    "invocationresults": [
+                      {
+                        "hookid": {
+                          "module-code": "foobar",
+                          "hook-impl-code": "foo"
+                        },
+                        "status": "success",
+                        "action": "update",
+                        "executiontimemillis": 200,
+                        "analyticstags": {},
+                        "debugmessages": [
+                          "debug message 1"
+                        ],
+                        "message": ""
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "entity": "adot",
+                "executiontimemillis": 300,
+                "groups": [
+                  {
+                    "executiontimemillis": 200,
+                    "invocationresults": [
+                      {
+                        "hookid": {
+                          "module-code": "foobar",
+                          "hook-impl-code": "bar"
+                        },
+                        "status": "success",
+                        "action": "no_action",
+                        "executiontimemillis": 200,
+                        "analyticstags": {},
+                        "message": ""
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

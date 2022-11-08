@@ -2,83 +2,154 @@ package hookexecution
 
 import (
 	"encoding/json"
-	"fmt"
+	"os"
 	"testing"
 
 	"github.com/prebid/openrtb/v17/openrtb2"
-	"github.com/prebid/prebid-server/hooks"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/hooks/hookanalytics"
 	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-/*func TestPush(t *testing.T) {
-	expectedResult := ExecutionResult{
-		[]byte(`{"stage": "entrypoint", "result": "success"}`),
-		[]byte(`{"stage": "rawauction", "result": "failed"}`),
-	}
+// StageOutcomeTest is used for test purpose instead of the original structure,
+// so we can unmarshal hidden fields such as StageOutcomeTest.Stage and HookOutcomeTest.Errors/Warnings
+type StageOutcomeTest struct {
+	ExecutionTime
+	Entity hookstage.Entity   `json:"entity"`
+	Groups []GroupOutcomeTest `json:"groups"`
+	Stage  string             `json:"stage"`
+}
 
-	result := ExecutionResult{}
-	result.Push([]byte(`{"stage": "entrypoint", "result": "success"}`))
-	result.Push([]byte(`{"stage": "rawauction", "result": "failed"}`))
+type GroupOutcomeTest struct {
+	ExecutionTime
+	InvocationResults []HookOutcomeTest `json:"invocationresults"`
+}
 
-	assert.Equal(t, expectedResult, result)
-}*/
+type HookOutcomeTest struct {
+	ExecutionTime
+	AnalyticsTags hookanalytics.Analytics `json:"analyticstags"`
+	HookID        HookID                  `json:"hookid"`
+	Status        Status                  `json:"status"`
+	Action        Action                  `json:"action"`
+	Message       string                  `json:"message"`
+	DebugMessages []string                `json:"debugmessages"`
+	Errors        []string                `json:"errors"`
+	Warnings      []string                `json:"warnings"`
+}
 
 func TestEnrichResponse(t *testing.T) {
-	bidResponse := &openrtb2.BidResponse{ID: "foo", Ext: []byte(`{"ext": {"prebid": {"foo": "bar"}}}`)}
-	expectedResponse := json.RawMessage(`{"ext":{"prebid":{"foo":"bar","modules":{"entrypoint":"success","rawauction":"failed"}}}}`)
-
-	stageOutcome := StageOutcome{
-		Entity: hookstage.EntityHttpRequest,
-		Stage:  hooks.StageEntrypoint,
-		Groups: []GroupOutcome{
-			{
-				InvocationResults: []*HookOutcome{
-					{
-						AnalyticsTags: hookanalytics.Analytics{},
-						HookID:        HookID{"foobar", "foo"},
-						Status:        StatusSuccess,
-						Action:        ActionUpdate,
-						Message:       "",
-						DebugMessages: []string{fmt.Sprintf("Hook mutation successfully applied, affected key: header.foo, mutation type: %s", hookstage.MutationUpdate)},
-						Errors:        nil,
-						Warnings:      nil,
-					},
-					{
-						AnalyticsTags: hookanalytics.Analytics{},
-						HookID:        HookID{"foobar", "bar"},
-						Status:        StatusSuccess,
-						Action:        ActionUpdate,
-						Message:       "",
-						DebugMessages: []string{fmt.Sprintf("Hook mutation successfully applied, affected key: param.foo, mutation type: %s", hookstage.MutationUpdate)},
-						Errors:        nil,
-						Warnings:      nil,
-					},
-				},
-			},
-			{
-				InvocationResults: []*HookOutcome{
-					{
-						AnalyticsTags: hookanalytics.Analytics{},
-						HookID:        HookID{"foobar", "baz"},
-						Status:        StatusSuccess,
-						Action:        ActionUpdate,
-						Message:       "",
-						DebugMessages: []string{
-							fmt.Sprintf("Hook mutation successfully applied, affected key: body.foo, mutation type: %s", hookstage.MutationUpdate),
-							fmt.Sprintf("Hook mutation successfully applied, affected key: body.name, mutation type: %s", hookstage.MutationDelete),
-						},
-						Errors:   nil,
-						Warnings: nil,
-					},
-				},
-			},
+	testCases := []struct {
+		description             string
+		expectedBidResponseFile string
+		stageOutcomesFile       string
+		bidResponse             *openrtb2.BidResponse
+		bidRequest              *openrtb2.BidRequest
+		account                 *config.Account
+	}{
+		{
+			description:             "BidResponse enriched with verbose trace and debug info when bidRequest.test=1 and trace=verbose",
+			expectedBidResponseFile: "test/complete-stage-outcomes/expected-verbose-debug-response.json",
+			stageOutcomesFile:       "test/complete-stage-outcomes/stage-outcomes.json",
+			bidResponse:             &openrtb2.BidResponse{Ext: []byte(`{"prebid": {"foo": "bar"}}`)},
+			bidRequest:              &openrtb2.BidRequest{Test: 1, Ext: []byte(`{"prebid": {"trace": "verbose"}}`)},
+			account:                 &config.Account{DebugAllow: true},
+		},
+		{
+			description:             "BidResponse enriched with basic trace and debug info when bidRequest.ext.prebid.debug=true and trace=basic",
+			expectedBidResponseFile: "test/complete-stage-outcomes/expected-basic-debug-response.json",
+			stageOutcomesFile:       "test/complete-stage-outcomes/stage-outcomes.json",
+			bidResponse:             &openrtb2.BidResponse{Ext: []byte(`{"prebid": {"foo": "bar"}}`)},
+			bidRequest:              &openrtb2.BidRequest{Ext: []byte(`{"prebid": {"debug": true, "trace": "basic"}}`)},
+			account:                 &config.Account{DebugAllow: true},
+		},
+		{
+			description:             "BidResponse enriched with debug info when bidRequest.ext.prebid.debug=true",
+			expectedBidResponseFile: "test/complete-stage-outcomes/expected-debug-response.json",
+			stageOutcomesFile:       "test/complete-stage-outcomes/stage-outcomes.json",
+			bidResponse:             &openrtb2.BidResponse{Ext: []byte(`{"prebid": {"foo": "bar"}}`)},
+			bidRequest:              &openrtb2.BidRequest{Ext: []byte(`{"prebid": {"debug": true, "trace": ""}}`)},
+			account:                 &config.Account{DebugAllow: true},
+		},
+		{
+			description:             "BidResponse not enriched when bidRequest.ext.prebid.debug=false",
+			expectedBidResponseFile: "test/complete-stage-outcomes/expected-empty-response.json",
+			stageOutcomesFile:       "test/complete-stage-outcomes/stage-outcomes.json",
+			bidResponse:             &openrtb2.BidResponse{Ext: []byte(`{"prebid": {"foo": "bar"}}`)},
+			bidRequest:              &openrtb2.BidRequest{},
+			account:                 &config.Account{DebugAllow: true},
+		},
+		{
+			description:             "BidResponse enriched only with verbose trace when bidRequest.ext.prebid.trace=verbose and account.DebugAllow=false",
+			expectedBidResponseFile: "test/complete-stage-outcomes/expected-verbose-response.json",
+			stageOutcomesFile:       "test/complete-stage-outcomes/stage-outcomes.json",
+			bidResponse:             &openrtb2.BidResponse{Ext: []byte(`{"prebid": {"foo": "bar"}}`)},
+			bidRequest:              &openrtb2.BidRequest{Test: 1, Ext: []byte(`{"prebid": {"debug": true, "trace": "verbose"}}`)},
+			account:                 &config.Account{DebugAllow: false},
+		},
+		{
+			description:             "BidResponse enriched with debug info if bidResponse.Ext is nil",
+			expectedBidResponseFile: "test/complete-stage-outcomes/expected-pure-debug-response.json",
+			stageOutcomesFile:       "test/complete-stage-outcomes/stage-outcomes.json",
+			bidResponse:             &openrtb2.BidResponse{},
+			bidRequest:              &openrtb2.BidRequest{Test: 1},
+			account:                 &config.Account{DebugAllow: true},
+		},
+		{
+			description:             "BidResponse enriched with empty ModulesExt if stage outcomes empty",
+			expectedBidResponseFile: "test/empty-stage-outcomes/expected-response.json",
+			stageOutcomesFile:       "test/empty-stage-outcomes/stage-outcomes.json",
+			bidResponse:             &openrtb2.BidResponse{},
+			bidRequest:              &openrtb2.BidRequest{Test: 1},
+			account:                 &config.Account{DebugAllow: true},
 		},
 	}
 
-	err := EnrichResponse(bidResponse, []StageOutcome{stageOutcome})
-	require.NoError(t, err, "Failed to enrich BidResponse with hook debug information: %s", err)
-	assert.Equal(t, expectedResponse, bidResponse.Ext)
+	for _, test := range testCases {
+		t.Run(test.description, func(t *testing.T) {
+			expectedResponse := readFile(t, test.expectedBidResponseFile)
+			stageOutcomes := getStageOutcomes(t, test.stageOutcomesFile)
+
+			err := EnrichResponse(test.bidResponse, stageOutcomes, test.bidRequest, test.account)
+			require.NoError(t, err, "Failed to enrich BidResponse with hook debug information: %s", err)
+			assert.JSONEq(t, string(expectedResponse), string(test.bidResponse.Ext))
+		})
+	}
+}
+
+func getStageOutcomes(t *testing.T, file string) []StageOutcome {
+	var stageOutcomes []StageOutcome
+	var stageOutcomesTest []StageOutcomeTest
+
+	data := readFile(t, file)
+	err := json.Unmarshal(data, &stageOutcomesTest)
+	require.NoError(t, err, "Failed to unmarshal stage outcomes: %s", err)
+
+	for _, stageT := range stageOutcomesTest {
+		stage := StageOutcome{
+			ExecutionTime: stageT.ExecutionTime,
+			Entity:        stageT.Entity,
+			Stage:         stageT.Stage,
+		}
+
+		for _, groupT := range stageT.Groups {
+			group := GroupOutcome{ExecutionTime: groupT.ExecutionTime}
+			for _, hookT := range groupT.InvocationResults {
+				hook := HookOutcome(hookT)
+				group.InvocationResults = append(group.InvocationResults, &hook)
+			}
+
+			stage.Groups = append(stage.Groups, group)
+		}
+		stageOutcomes = append(stageOutcomes, stage)
+	}
+
+	return stageOutcomes
+}
+
+func readFile(t *testing.T, filename string) []byte {
+	data, err := os.ReadFile(filename)
+	require.NoError(t, err, "Failed to read file %s: %v", filename, err)
+	return data
 }

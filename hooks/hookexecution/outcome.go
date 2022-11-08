@@ -28,6 +28,12 @@ const (
 // Messages in format: {"module": {"hook": ["msg1", "msg2"]}}
 type Messages map[string]map[string][]string
 
+type ModulesOutcome struct {
+	Errors   Messages      `json:"errors,omitempty"`
+	Warnings Messages      `json:"warnings,omitempty"`
+	Trace    *TraceOutcome `json:"trace,omitempty"`
+}
+
 // StageOutcome represents the result of executing specific stage.
 type StageOutcome struct {
 	// ExecutionTime is the sum of ExecutionTime of all its groups
@@ -66,5 +72,5 @@ type HookID struct {
 }
 
 type ExecutionTime struct {
-	ExecutionTimeMillis time.Duration `json:"executiontimemillis"`
+	ExecutionTimeMillis time.Duration `json:"executiontimemillis,omitempty"`
 }

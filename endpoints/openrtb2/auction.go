@@ -255,7 +255,8 @@ func rejectAuctionRequest(rejectErr hookexecution.RejectError, w http.ResponseWr
 
 func sendAuctionResponse(w http.ResponseWriter, hookExecutor hookexecution.HookStageExecutor, response *openrtb2.BidResponse, request *openrtb2.BidRequest, account *config.Account, labels metrics.Labels, ao analytics.AuctionObject) (metrics.Labels, analytics.AuctionObject) {
 	if response != nil {
-		if err := hookexecution.EnrichResponse(response, hookExecutor.GetOutcomes()); err != nil {
+		stageOutcomes := hookExecutor.GetOutcomes()
+		if err := hookexecution.EnrichResponse(response, stageOutcomes, request, account); err != nil {
 			glog.Errorf("Failed to enrich Bid Response with hook debug information: %s", err)
 		}
 	}
