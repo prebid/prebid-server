@@ -769,7 +769,7 @@ type fakeRawAuctionHook struct{}
 
 func (f fakeRawAuctionHook) HandleRawAuctionHook(
 	_ context.Context,
-	_ hookstage.InvocationContext,
+	_ *hookstage.ModuleContext,
 	_ hookstage.RawAuctionPayload,
 ) (hookstage.HookResult[hookstage.RawAuctionPayload], error) {
 	return hookstage.HookResult[hookstage.RawAuctionPayload]{}, nil

@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/prebid/prebid-server/metrics"
@@ -49,4 +50,27 @@ func (executor *HookExecutor) ExecuteEntrypointStage(req *http.Request, body []b
 	executor.stageOutcomes = append(executor.stageOutcomes, stageOutcome)
 
 	return payload.Body, reject
+}
+
+func (executor *HookExecutor) ExecuteRawAuctionStage(requestBody []byte, account *config.Account) ([]byte, *RejectError) {
+	handler := func(
+		ctx context.Context,
+		moduleCtx *hookstage.ModuleContext,
+		hook hookstage.RawAuction,
+		payload hookstage.RawAuctionPayload,
+	) (hookstage.HookResult[hookstage.RawAuctionPayload], error) {
+		return hook.HandleRawAuctionHook(ctx, moduleCtx, payload)
+	}
+
+	executor.InvocationCtx.Stage = hooks.StageRawAuction
+	executor.InvocationCtx.Account = account
+	executor.InvocationCtx.AccountId = account.ID
+	payload := hookstage.RawAuctionPayload(requestBody)
+	stageOutcome, payload, reject := executeStage(executor.InvocationCtx, executor.PlanBuilder.PlanForRawAuctionStage(executor.Endpoint, account), payload, handler, executor.MetricEngine)
+	stageOutcome.Entity = hookstage.EntityAuctionRequest
+	stageOutcome.Stage = hooks.StageRawAuction
+
+	executor.stageOutcomes = append(executor.stageOutcomes, stageOutcome)
+
+	return payload, reject
 }

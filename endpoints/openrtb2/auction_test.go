@@ -1085,7 +1085,9 @@ func TestStoredRequests(t *testing.T) {
 	for i, requestData := range testStoredRequests {
 		impInfo, errs := parseImpInfo([]byte(requestData))
 		assert.Len(t, errs, 0, "No errors should be returned")
-		newRequest, impExtInfoMap, errList := deps.processStoredRequests(context.Background(), json.RawMessage(requestData), impInfo)
+		storedBidRequestId, hasStoredBidRequest, storedRequests, storedImps, errs := deps.getStoredRequests(context.Background(), json.RawMessage(requestData), impInfo)
+		assert.Len(t, errs, 0, "No errors should be returned")
+		newRequest, impExtInfoMap, errList := deps.processStoredRequests(json.RawMessage(requestData), impInfo, storedRequests, storedImps, storedBidRequestId, hasStoredBidRequest)
 		if len(errList) != 0 {
 			for _, err := range errList {
 				if err != nil {
@@ -1966,7 +1968,9 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 		deps.cfg.GenerateRequestID = test.givenGenerateRequestID
 		impInfo, errs := parseImpInfo([]byte(test.givenRawData))
 		assert.Empty(t, errs, test.description)
-		newRequest, _, errList := deps.processStoredRequests(context.Background(), json.RawMessage(test.givenRawData), impInfo)
+		storedBidRequestId, hasStoredBidRequest, storedRequests, storedImps, errs := deps.getStoredRequests(context.Background(), json.RawMessage(test.givenRawData), impInfo)
+		assert.Empty(t, errs, test.description)
+		newRequest, _, errList := deps.processStoredRequests(json.RawMessage(test.givenRawData), impInfo, storedRequests, storedImps, storedBidRequestId, hasStoredBidRequest)
 		assert.Empty(t, errList, test.description)
 
 		if err := json.Unmarshal(newRequest, req); err != nil {
@@ -3349,7 +3353,7 @@ func TestParseRequestParseImpInfoError(t *testing.T) {
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
 
-	resReq, impExtInfoMap, _, _, _, errL := deps.parseRequest(req)
+	resReq, impExtInfoMap, _, _, _, _, errL := deps.parseRequest(req, &metrics.Labels{})
 
 	assert.Nil(t, resReq, "Result request should be nil due to incorrect imp")
 	assert.Nil(t, impExtInfoMap, "Impression info map should be nil due to incorrect imp")
@@ -3928,7 +3932,7 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
 
-			resReq, _, _, _, _, errL := deps.parseRequest(req)
+			resReq, _, _, _, _, _, errL := deps.parseRequest(req, &metrics.Labels{})
 
 			assert.NoError(t, resReq.RebuildRequest())
 
@@ -4035,7 +4039,7 @@ func TestParseRequestStoredResponses(t *testing.T) {
 
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
 
-			_, _, storedResponses, _, _, errL := deps.parseRequest(req)
+			_, _, storedResponses, _, _, _, errL := deps.parseRequest(req, &metrics.Labels{})
 
 			if test.expectedErrorCount == 0 {
 				assert.Equal(t, test.expectedStoredResponses, storedResponses, "stored responses should match")
@@ -4126,7 +4130,7 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 				}}
 
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
-			_, _, _, storedBidResponses, _, errL := deps.parseRequest(req)
+			_, _, _, storedBidResponses, _, _, errL := deps.parseRequest(req, &metrics.Labels{})
 
 			if test.expectedErrorCount == 0 {
 				assert.Equal(t, test.expectedStoredBidResponses, storedBidResponses, "stored responses should match")
