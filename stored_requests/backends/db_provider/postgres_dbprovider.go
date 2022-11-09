@@ -88,12 +88,6 @@ func (provider *PostgresDbProvider) PrepareQuery(template string, params ...Quer
 	query = template
 	args = []interface{}{}
 
-	type occurrence struct {
-		startIndex int
-		paramIndex int
-		paramKind  reflect.Kind
-	}
-
 	for _, param := range params {
 		if reflect.TypeOf(param.Value).Kind() == reflect.Slice {
 
