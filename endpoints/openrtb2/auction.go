@@ -1552,35 +1552,23 @@ func setAuctionTypeImplicitly(r *openrtb_ext.RequestWrapper) {
 	}
 }
 
-// setSiteImplicitly uses implicit info from httpReq to populate bidReq.Site
 func setSiteImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {
-	if r.Site == nil || r.Site.Page == "" || r.Site.Domain == "" || r.Site.Publisher == nil || r.Site.Publisher.Domain == "" {
+	if siteIsNotSet(r.Site) {
 		referrerCandidate := httpReq.Referer()
-		// If http referer is disabled and thus has empty value - use site.page instead
 		if referrerCandidate == "" && r.Site != nil && r.Site.Page != "" {
-			referrerCandidate = r.Site.Page
+			referrerCandidate = r.Site.Page // If http referer is disabled and thus has empty value - use site.page instead
 		}
-		if parsedUrl, err := url.Parse(referrerCandidate); err == nil {
-			if publisherDomain, err := publicsuffix.EffectiveTLDPlusOne(parsedUrl.Host); err == nil {
-				if r.Site == nil {
-					r.Site = &openrtb2.Site{Domain: parsedUrl.Host}
-				} else if r.Site.Domain == "" {
-					r.Site.Domain = parsedUrl.Host
-				}
 
-				if r.Site.Publisher == nil {
-					r.Site.Publisher = &openrtb2.Publisher{Domain: publisherDomain}
-				} else if r.Site.Publisher.Domain == "" {
-					r.Site.Publisher.Domain = publisherDomain
-				}
-
-				// This looks weird... but is not a bug. The site which called prebid-server (the "referer"), is
-				// (almost certainly) the page where the ad will be hosted. In the OpenRTB spec, this is *page*, not *ref*.
-				if r.Site.Page == "" {
-					r.Site.Page = referrerCandidate
+		if referrerCandidate != "" {
+			setSitePageIfEmpty(r.Site, referrerCandidate)
+			if parsedUrl, err := url.Parse(referrerCandidate); err == nil {
+				setSiteDomainIfEmpty(r.Site, parsedUrl.Host)
+				if publisherDomain, err := publicsuffix.EffectiveTLDPlusOne(parsedUrl.Host); err == nil {
+					setSitePublisherDomainIfEmpty(r.Site, publisherDomain)
 				}
 			}
 		}
+
 	}
 	if r.Site != nil {
 		if siteExt, err := r.GetSiteExt(); err == nil && siteExt.GetAmp() == nil {
@@ -1589,8 +1577,32 @@ func setSiteImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {
 	}
 }
 
-func setSiteImplicitly2(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {
+func siteIsNotSet(site *openrtb2.Site) bool {
+	return site == nil || site.Page == "" || site.Domain == "" || site.Publisher == nil || site.Publisher.Domain == ""
+}
 
+func setSitePageIfEmpty(site *openrtb2.Site, sitePage string) {
+	if site == nil {
+		site = &openrtb2.Site{}
+	}
+	if site.Page == "" {
+		site.Page = sitePage
+	}
+}
+
+func setSiteDomainIfEmpty(site *openrtb2.Site, siteDomain string) {
+	if site.Domain == "" {
+		site.Domain = siteDomain
+	}
+}
+
+func setSitePublisherDomainIfEmpty(site *openrtb2.Site, publisherDomain string) {
+	if site.Publisher == nil {
+		site.Publisher = &openrtb2.Publisher{}
+	}
+	if site.Publisher.Domain == "" {
+		site.Publisher.Domain = publisherDomain
+	}
 }
 
 func setImpsImplicitly(httpReq *http.Request, imps []*openrtb_ext.ImpWrapper) {
