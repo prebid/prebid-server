@@ -45,10 +45,10 @@ func EnrichExtBidResponse(
 	}
 
 	if ext != nil {
-		return jsonpatch.MergePatch(ext, response)
+		response, err = jsonpatch.MergePatch(ext, response)
 	}
 
-	return response, nil
+	return response, err
 }
 
 func getModulesResponse(
@@ -87,7 +87,7 @@ func getDebugContext(bidRequest *openrtb2.BidRequest, account *config.Account) (
 	return trace(traceLevel), isDebugEnabled
 }
 
-func getModulesOutcome(stageOutcomes []StageOutcome, traceLevel trace, isDebugEnabled bool) *ModulesOutcome {
+func getModulesOutcome(stageOutcomes []StageOutcome, trace trace, isDebugEnabled bool) *ModulesOutcome {
 	var modulesOutcome ModulesOutcome
 	stages := make(map[string]Stage)
 	stageNames := make([]string, 0)
@@ -97,8 +97,8 @@ func getModulesOutcome(stageOutcomes []StageOutcome, traceLevel trace, isDebugEn
 			continue
 		}
 
-		prepareModulesOutcome(&modulesOutcome, stageOutcome.Groups, traceLevel, isDebugEnabled)
-		if !traceLevel.isBasicOrHigher() {
+		prepareModulesOutcome(&modulesOutcome, stageOutcome.Groups, trace, isDebugEnabled)
+		if !trace.isBasicOrHigher() {
 			continue
 		}
 
@@ -169,8 +169,7 @@ func fillMessages(messages Messages, values []string, hookID HookID) Messages {
 		return messages
 	}
 
-	prevValues, ok := messages[hookID.ModuleCode][hookID.HookCode]
-	if ok {
+	if prevValues, ok := messages[hookID.ModuleCode][hookID.HookCode]; ok {
 		values = append(prevValues, values...)
 	}
 
