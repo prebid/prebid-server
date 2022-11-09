@@ -1187,20 +1187,27 @@ func migrateConfigDatabaseConnection(v *viper.Viper) {
 
 	for _, migration := range migrations {
 		driverField := migration.new + ".connection.driver"
-		if !v.IsSet(driverField) && v.IsSet("postgres.connection.dbname") {
-			glog.Warning(fmt.Sprintf("%s is not set, using default (postgres) ", driverField))
+		if !v.IsSet(migration.new) && v.IsSet(migration.old) {
+			glog.Warning(fmt.Sprintf("%s is deprecated and should be changed to %s", migration.old, migration.new))
+			glog.Warning(fmt.Sprintf("%s is not set, using default (postgres)", driverField))
 			v.Set(driverField, "postgres")
-		}
 
-		for _, field := range migration.fields {
-			oldField := migration.old + "." + field
-			newField := migration.new + "." + field
-			if v.IsSet(oldField) {
-				if v.IsSet(newField) {
-					glog.Warning(fmt.Sprintf("using %s and ignoring deprecated %s", newField, oldField))
-				} else {
+			for _, field := range migration.fields {
+				oldField := migration.old + "." + field
+				newField := migration.new + "." + field
+				if v.IsSet(oldField) {
 					glog.Warning(fmt.Sprintf("%s is deprecated and should be changed to %s", oldField, newField))
 					v.Set(newField, v.Get(oldField))
+				}
+			}
+		} else if v.IsSet(migration.new) && v.IsSet(migration.old) {
+			glog.Warning(fmt.Sprintf("using %s and ignoring deprecated %s", migration.new, migration.old))
+
+			for _, field := range migration.fields {
+				oldField := migration.old + "." + field
+				newField := migration.new + "." + field
+				if v.IsSet(oldField) {
+					glog.Warning(fmt.Sprintf("using %s and ignoring deprecated %s", newField, oldField))
 				}
 			}
 		}
