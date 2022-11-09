@@ -13,7 +13,7 @@ var openCurlyBracket = []byte("{")[0]
 var closingCurlyBracket = []byte("}")[0]
 var quote = []byte(`"`)[0]
 
-//Finds element in json byte array with any level of nesting
+// Finds element in json byte array with any level of nesting
 func FindElement(extension []byte, elementNames ...string) (bool, int64, int64, error) {
 	elementName := elementNames[0]
 	buf := bytes.NewBuffer(extension)
@@ -96,7 +96,7 @@ func FindElement(extension []byte, elementNames ...string) (bool, int64, int64, 
 	return found, startIndex, endIndex, nil
 }
 
-//Drops element from json byte array
+// Drops element from json byte array
 // - Doesn't support drop element from json list
 // - Keys in the path can skip levels
 // - First found element will be removed

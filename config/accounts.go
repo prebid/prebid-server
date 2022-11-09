@@ -5,15 +5,15 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-// IntegrationType enumerates the values of integrations Prebid Server can configure for an account
-type IntegrationType string
+// ChannelType enumerates the values of integrations Prebid Server can configure for an account
+type ChannelType string
 
-// Possible values of integration types Prebid Server can configure for an account
+// Possible values of channel types Prebid Server can configure for an account
 const (
-	IntegrationTypeAMP   IntegrationType = "amp"
-	IntegrationTypeApp   IntegrationType = "app"
-	IntegrationTypeVideo IntegrationType = "video"
-	IntegrationTypeWeb   IntegrationType = "web"
+	ChannelAMP   ChannelType = "amp"
+	ChannelApp   ChannelType = "app"
+	ChannelVideo ChannelType = "video"
+	ChannelWeb   ChannelType = "web"
 )
 
 // Account represents a publisher account configuration
@@ -41,14 +41,17 @@ type CookieSync struct {
 
 // AccountCCPA represents account-specific CCPA configuration
 type AccountCCPA struct {
-	Enabled            *bool              `mapstructure:"enabled" json:"enabled,omitempty"`
-	IntegrationEnabled AccountIntegration `mapstructure:"integration_enabled" json:"integration_enabled"`
+	Enabled            *bool          `mapstructure:"enabled" json:"enabled,omitempty"`
+	IntegrationEnabled AccountChannel `mapstructure:"integration_enabled" json:"integration_enabled"`
+	ChannelEnabled     AccountChannel `mapstructure:"channel_enabled" json:"channel_enabled"`
 }
 
-// EnabledForIntegrationType indicates whether CCPA is turned on at the account level for the specified integration type
-// by using the integration type setting if defined or the general CCPA setting if defined; otherwise it returns nil
-func (a *AccountCCPA) EnabledForIntegrationType(integrationType IntegrationType) *bool {
-	if integrationEnabled := a.IntegrationEnabled.GetByIntegrationType(integrationType); integrationEnabled != nil {
+// EnabledForChannelType indicates whether CCPA is turned on at the account level for the specified channel type
+// by using the channel type setting if defined or the general CCPA setting if defined; otherwise it returns nil
+func (a *AccountCCPA) EnabledForChannelType(channelType ChannelType) *bool {
+	if channelEnabled := a.ChannelEnabled.GetByChannelType(channelType); channelEnabled != nil {
+		return channelEnabled
+	} else if integrationEnabled := a.IntegrationEnabled.GetByChannelType(channelType); integrationEnabled != nil {
 		return integrationEnabled
 	}
 	return a.Enabled
@@ -56,8 +59,9 @@ func (a *AccountCCPA) EnabledForIntegrationType(integrationType IntegrationType)
 
 // AccountGDPR represents account-specific GDPR configuration
 type AccountGDPR struct {
-	Enabled            *bool              `mapstructure:"enabled" json:"enabled,omitempty"`
-	IntegrationEnabled AccountIntegration `mapstructure:"integration_enabled" json:"integration_enabled"`
+	Enabled            *bool          `mapstructure:"enabled" json:"enabled,omitempty"`
+	IntegrationEnabled AccountChannel `mapstructure:"integration_enabled" json:"integration_enabled"`
+	ChannelEnabled     AccountChannel `mapstructure:"channel_enabled" json:"channel_enabled"`
 	// Array of basic enforcement vendors that is used to create the hash table so vendor names can be instantly accessed
 	BasicEnforcementVendors    []string `mapstructure:"basic_enforcement_vendors" json:"basic_enforcement_vendors"`
 	BasicEnforcementVendorsMap map[string]struct{}
@@ -88,10 +92,12 @@ func (a *AccountGDPR) BasicEnforcementVendor(bidder openrtb_ext.BidderName) (val
 	return found, true
 }
 
-// EnabledForIntegrationType indicates whether GDPR is turned on at the account level for the specified integration type
-// by using the integration type setting if defined or the general GDPR setting if defined; otherwise it returns nil.
-func (a *AccountGDPR) EnabledForIntegrationType(integrationType IntegrationType) *bool {
-	if integrationEnabled := a.IntegrationEnabled.GetByIntegrationType(integrationType); integrationEnabled != nil {
+// EnabledForChannelType indicates whether GDPR is turned on at the account level for the specified channel type
+// by using the channel type setting if defined or the general GDPR setting if defined; otherwise it returns nil.
+func (a *AccountGDPR) EnabledForChannelType(channelType ChannelType) *bool {
+	if channelEnabled := a.ChannelEnabled.GetByChannelType(channelType); channelEnabled != nil {
+		return channelEnabled
+	} else if integrationEnabled := a.IntegrationEnabled.GetByChannelType(channelType); integrationEnabled != nil {
 		return integrationEnabled
 	}
 	return a.Enabled
@@ -196,28 +202,28 @@ type AccountGDPRPurposeOneTreatment struct {
 	AccessAllowed *bool `mapstructure:"access_allowed"`
 }
 
-// AccountIntegration indicates whether a particular privacy policy (GDPR, CCPA) is enabled for each integration type
-type AccountIntegration struct {
+// AccountChannel indicates whether a particular privacy policy (GDPR, CCPA) is enabled for each channel type
+type AccountChannel struct {
 	AMP   *bool `mapstructure:"amp" json:"amp,omitempty"`
 	App   *bool `mapstructure:"app" json:"app,omitempty"`
 	Video *bool `mapstructure:"video" json:"video,omitempty"`
 	Web   *bool `mapstructure:"web" json:"web,omitempty"`
 }
 
-// GetByIntegrationType looks up the account integration enabled setting for the specified integration type
-func (a *AccountIntegration) GetByIntegrationType(integrationType IntegrationType) *bool {
-	var integrationEnabled *bool
+// GetByChannelType looks up the account integration enabled setting for the specified channel type
+func (a *AccountChannel) GetByChannelType(channelType ChannelType) *bool {
+	var channelEnabled *bool
 
-	switch integrationType {
-	case IntegrationTypeAMP:
-		integrationEnabled = a.AMP
-	case IntegrationTypeApp:
-		integrationEnabled = a.App
-	case IntegrationTypeVideo:
-		integrationEnabled = a.Video
-	case IntegrationTypeWeb:
-		integrationEnabled = a.Web
+	switch channelType {
+	case ChannelAMP:
+		channelEnabled = a.AMP
+	case ChannelApp:
+		channelEnabled = a.App
+	case ChannelVideo:
+		channelEnabled = a.Video
+	case ChannelWeb:
+		channelEnabled = a.Web
 	}
 
-	return integrationEnabled
+	return channelEnabled
 }
