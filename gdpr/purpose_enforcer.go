@@ -21,6 +21,7 @@ type Overrides struct {
 	allowLITransparency   bool
 	blockVendorExceptions bool
 	enforcePurpose        bool
+	enforceVendors        bool
 }
 
 type BidderInfo struct {

@@ -867,7 +867,7 @@ func TestAllowActivitiesBidRequests(t *testing.T) {
 			consent:                purpose2ConsentWithoutVendorConsent,
 			allowBidRequest:        true,
 			passGeo:                false,
-			passID:                 true,
+			passID:                 false,
 		},
 		{
 			description:            "Bid allowed - p2 disabled and enforcing vendors, user consents to p2 but not vendor, vendor consents to p2",
@@ -889,7 +889,7 @@ func TestAllowActivitiesBidRequests(t *testing.T) {
 			consent:                purpose2ConsentWithoutVendorConsent,
 			allowBidRequest:        true,
 			passGeo:                false,
-			passID:                 true,
+			passID:                 false,
 		},
 		{
 			description:            "Bid allowed - p2 disabled and enforcing vendors, user consents to p2 and vendor, vendor consents to p2",
@@ -944,7 +944,7 @@ func TestAllowActivitiesBidRequests(t *testing.T) {
 			consent:                purpose2AndVendorLI,
 			allowBidRequest:        true,
 			passGeo:                false,
-			passID:                 true,
+			passID:                 false,
 		},
 	}
 

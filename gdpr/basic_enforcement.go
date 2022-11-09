@@ -17,12 +17,9 @@ type BasicEnforcement struct {
 // LegalBasis determines if legal basis is satisfied for a given purpose and bidder based on user consent
 // and legal basis signals.
 func (be *BasicEnforcement) LegalBasis(vendorInfo VendorInfo, bidder openrtb_ext.BidderName, consent tcf2.ConsentMetadata, overrides Overrides) bool {
-	enforcePurpose := be.cfg.EnforcePurpose
-	if overrides.enforcePurpose {
-		enforcePurpose = true
-	}
+	enforcePurpose, enforceVendors := be.applyEnforceOverrides(overrides)
 
-	if !enforcePurpose && !be.cfg.EnforceVendors {
+	if !enforcePurpose && !enforceVendors {
 		return true
 	}
 	if be.cfg.vendorException(bidder) && !overrides.blockVendorExceptions {
@@ -40,8 +37,22 @@ func (be *BasicEnforcement) LegalBasis(vendorInfo VendorInfo, bidder openrtb_ext
 	if enforcePurpose && !consent.PurposeAllowed(be.cfg.PurposeID) {
 		return false
 	}
-	if !be.cfg.EnforceVendors {
+	if !enforceVendors {
 		return true
 	}
 	return consent.VendorConsent(vendorInfo.vendorID)
+}
+
+// applyEnforceOverrides returns the enforce purpose and enforce vendor configuration values unless
+// those values have been overridden, in which case they return true
+func (be *BasicEnforcement) applyEnforceOverrides(overrides Overrides) (enforcePurpose, enforceVendors bool) {
+	enforcePurpose = be.cfg.EnforcePurpose
+	if overrides.enforcePurpose {
+		enforcePurpose = true
+	}
+	enforceVendors = be.cfg.EnforceVendors
+	if overrides.enforceVendors {
+		enforceVendors = true
+	}
+	return
 }

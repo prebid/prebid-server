@@ -23,23 +23,20 @@ type FullEnforcement struct {
 // LegalBasis determines if legal basis is satisfied for a given purpose and bidder based on the
 // vendor claims in the GVL, publisher restrictions and user consent.
 func (fe *FullEnforcement) LegalBasis(vendorInfo VendorInfo, bidder openrtb_ext.BidderName, consent tcf2.ConsentMetadata, overrides Overrides) bool {
-	enforcePurpose := fe.cfg.EnforcePurpose
-	if overrides.enforcePurpose {
-		enforcePurpose = true
-	}
+	enforcePurpose, enforceVendors := fe.applyEnforceOverrides(overrides)
 
 	if consent.CheckPubRestriction(uint8(fe.cfg.PurposeID), pubRestrictNotAllowed, vendorInfo.vendorID) {
 		return false
 	}
-	if !enforcePurpose && !fe.cfg.EnforceVendors {
+	if !enforcePurpose && !enforceVendors {
 		return true
 	}
 	if fe.cfg.vendorException(bidder) && !overrides.blockVendorExceptions {
 		return true
 	}
 
-	purposeAllowed := fe.consentEstablished(consent, vendorInfo, enforcePurpose)
-	legitInterest := fe.legitInterestEstablished(consent, vendorInfo, enforcePurpose)
+	purposeAllowed := fe.consentEstablished(consent, vendorInfo, enforcePurpose, enforceVendors)
+	legitInterest := fe.legitInterestEstablished(consent, vendorInfo, enforcePurpose, enforceVendors)
 
 	if consent.CheckPubRestriction(uint8(fe.cfg.PurposeID), pubRestrictRequireConsent, vendorInfo.vendorID) {
 		return purposeAllowed
@@ -51,18 +48,32 @@ func (fe *FullEnforcement) LegalBasis(vendorInfo VendorInfo, bidder openrtb_ext.
 	return purposeAllowed || legitInterest
 }
 
+// applyEnforceOverrides returns the enforce purpose and enforce vendor configuration values unless
+// those values have been overridden, in which case they return true
+func (fe *FullEnforcement) applyEnforceOverrides(overrides Overrides) (enforcePurpose, enforceVendors bool) {
+	enforcePurpose = fe.cfg.EnforcePurpose
+	if overrides.enforcePurpose {
+		enforcePurpose = true
+	}
+	enforceVendors = fe.cfg.EnforceVendors
+	if overrides.enforceVendors {
+		enforceVendors = true
+	}
+	return
+}
+
 // consentEstablished determines if consent has been established for a given purpose and bidder
 // based on the purpose config, user consent and the GVL. For consent to be established, the vendor
 // must declare the purpose as either consent or flex and the user must consent in accordance with
 // the purpose configs.
-func (fe *FullEnforcement) consentEstablished(consent tcf2.ConsentMetadata, vi VendorInfo, enforcePurpose bool) bool {
+func (fe *FullEnforcement) consentEstablished(consent tcf2.ConsentMetadata, vi VendorInfo, enforcePurpose bool, enforceVendors bool) bool {
 	if !vi.vendor.Purpose(fe.cfg.PurposeID) {
 		return false
 	}
 	if enforcePurpose && !consent.PurposeAllowed(fe.cfg.PurposeID) {
 		return false
 	}
-	if fe.cfg.EnforceVendors && !consent.VendorConsent(vi.vendorID) {
+	if enforceVendors && !consent.VendorConsent(vi.vendorID) {
 		return false
 	}
 	return true
@@ -72,14 +83,14 @@ func (fe *FullEnforcement) consentEstablished(consent tcf2.ConsentMetadata, vi V
 // purpose and bidder based on the purpose config, user consent and the GVL. For consent to be
 // established, the vendor must declare the purpose as either legit interest or flex and the user
 // must have been provided notice for the legit interest basis in accordance with the purpose configs.
-func (fe *FullEnforcement) legitInterestEstablished(consent tcf2.ConsentMetadata, vi VendorInfo, enforcePurpose bool) bool {
+func (fe *FullEnforcement) legitInterestEstablished(consent tcf2.ConsentMetadata, vi VendorInfo, enforcePurpose bool, enforceVendors bool) bool {
 	if !vi.vendor.LegitimateInterest(fe.cfg.PurposeID) {
 		return false
 	}
 	if enforcePurpose && !consent.PurposeLITransparency(fe.cfg.PurposeID) {
 		return false
 	}
-	if fe.cfg.EnforceVendors && !consent.VendorLegitInterest(vi.vendorID) {
+	if enforceVendors && !consent.VendorLegitInterest(vi.vendorID) {
 		return false
 	}
 	return true

@@ -217,7 +217,7 @@ func (p *permissionsImpl) allowID(bidder openrtb_ext.BidderName, consentMeta tcf
 		purpose := consentconstants.Purpose(i)
 		enforcer := p.purposeEnforcerBuilder(purpose, bidder)
 
-		overrides := Overrides{enforcePurpose: true}
+		overrides := Overrides{enforcePurpose: true, enforceVendors: true}
 		if _, ok := enforcer.(*BasicEnforcement); ok && purpose == consentconstants.Purpose(2) {
 			overrides.allowLITransparency = true
 		}

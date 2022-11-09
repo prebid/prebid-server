@@ -58,6 +58,28 @@ func TestBasicLegalBasis(t *testing.T) {
 			wantResult: true,
 		},
 		{
+			description: "enforce purpose on, purpose consent Y, enforce vendors off but overrides treats it as on",
+			consent:     purpose2Consent,
+			config: purposeConfig{
+				PurposeID:      consentconstants.Purpose(2),
+				EnforcePurpose: true,
+				EnforceVendors: false,
+			},
+			overrides:  Overrides{enforceVendors: true},
+			wantResult: false,
+		},
+		{
+			description: "enforce purpose on, purpose consent Y, vendor consent Y, enforce vendors off but overrides treats it as on",
+			consent:     purpose2AndVendor32Consent,
+			config: purposeConfig{
+				PurposeID:      consentconstants.Purpose(2),
+				EnforcePurpose: true,
+				EnforceVendors: false,
+			},
+			overrides:  Overrides{enforceVendors: true},
+			wantResult: true,
+		},
+		{
 			description: "enforce purpose on, purpose LI Transparency Y",
 			consent:     purpose2LI,
 			config: purposeConfig{

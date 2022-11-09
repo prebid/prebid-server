@@ -168,6 +168,30 @@ func TestLegalBasisWithNoPubRestrictionsAndWithPubRestrictionAllowAll(t *testing
 			wantFlexPurposeResult:     true,
 		},
 		{
+			description: "enforce purpose on, purpose consent Y, enforce vendors off but overrides treats it as on",
+			config: purposeConfig{
+				EnforcePurpose: true,
+			},
+			consentNoPubRestriction:   P1P2P3PurposeConsent,
+			consentWithPubRestriction: P1P2P3PurposeConsentWithP1P2P3V32RestrictionAllowAll,
+			overrides:                 Overrides{enforceVendors: true},
+			wantConsentPurposeResult:  false,
+			wantLIPurposeResult:       false,
+			wantFlexPurposeResult:     false,
+		},
+		{
+			description: "enforce purpose on, purpose consent Y, vendor consent Y, enforce vendors off but overrides treats it as on",
+			config: purposeConfig{
+				EnforcePurpose: true,
+			},
+			consentNoPubRestriction:   P1P2P3PurposeConsentAndV32VendorConsent,
+			consentWithPubRestriction: P1P2P3PurposeConsentAndV32VendorConsentWithP1P2P3V32RestrictionAllowAll,
+			overrides:                 Overrides{enforceVendors: true},
+			wantConsentPurposeResult:  true,
+			wantLIPurposeResult:       false,
+			wantFlexPurposeResult:     true,
+		},
+		{
 			description: "enforce vendors on, vendor consent N, vendor legit interest N",
 			config: purposeConfig{
 				EnforceVendors: true,
@@ -422,6 +446,28 @@ func TestLegalBasisWithPubRestrictionRequireConsent(t *testing.T) {
 			wantFlexPurposeResult:    false,
 		},
 		{
+			description: "enforce purpose on, purpose consent Y, enforce vendors off but overrides treats it as on",
+			config: purposeConfig{
+				EnforcePurpose: true,
+			},
+			consent:                  P1P2P3PurposeConsentWithP1P2P3V32RestrictionRequireConsent,
+			overrides:                Overrides{enforceVendors: true},
+			wantConsentPurposeResult: false,
+			wantLIPurposeResult:      false,
+			wantFlexPurposeResult:    false,
+		},
+		{
+			description: "enforce purpose on, purpose consent Y, vendor consent Y, enforce vendors off but overrides treats it as on",
+			config: purposeConfig{
+				EnforcePurpose: true,
+			},
+			consent:                  P1P2P3PurposeConsentAndV32VendorConsentWithP1P2P3V32RestrictionRequireConsent,
+			overrides:                Overrides{enforceVendors: true},
+			wantConsentPurposeResult: true,
+			wantLIPurposeResult:      false,
+			wantFlexPurposeResult:    true,
+		},
+		{
 			description: "enforce vendors on, vendor consent N, vendor legit interest N",
 			config: purposeConfig{
 				EnforceVendors: true,
@@ -652,6 +698,28 @@ func TestLegalBasisWithPubRestrictionRequireLI(t *testing.T) {
 				EnforcePurpose: true,
 			},
 			consent:                  P1P2P3PurposeLIWithP1P2P3V32RestrictionRequireLI,
+			wantConsentPurposeResult: false,
+			wantLIPurposeResult:      true,
+			wantFlexPurposeResult:    true,
+		},
+		{
+			description: "enforce purpose on, vendor legit interest Y, enforce vendors off but overrides treats it as on",
+			config: purposeConfig{
+				EnforcePurpose: true,
+			},
+			consent:                  P1P2P3PurposeLIWithP1P2P3V32RestrictionRequireLI,
+			overrides:                Overrides{enforceVendors: true},
+			wantConsentPurposeResult: false,
+			wantLIPurposeResult:      false,
+			wantFlexPurposeResult:    false,
+		},
+		{
+			description: "enforce purpose on, vendor legit interest Y, vendor consent Y, enforce vendors off but overrides treats it as on",
+			config: purposeConfig{
+				EnforcePurpose: true,
+			},
+			consent:                  P1P2P3PurposeLIAndV32VendorLIWithP1P2P3V32RestrictionRequireLI,
+			overrides:                Overrides{enforceVendors: true},
 			wantConsentPurposeResult: false,
 			wantLIPurposeResult:      true,
 			wantFlexPurposeResult:    true,
