@@ -39,7 +39,7 @@ type HookOutcomeTest struct {
 	Warnings      []string                `json:"warnings"`
 }
 
-func TestEnrichResponse(t *testing.T) {
+func TestEnrichBidResponse(t *testing.T) {
 	testCases := []struct {
 		description             string
 		expectedBidResponseFile string
@@ -97,9 +97,17 @@ func TestEnrichResponse(t *testing.T) {
 			account:                 &config.Account{DebugAllow: true},
 		},
 		{
-			description:             "BidResponse enriched with empty ModulesExt if stage outcomes empty",
-			expectedBidResponseFile: "test/empty-stage-outcomes/expected-response.json",
-			stageOutcomesFile:       "test/empty-stage-outcomes/stage-outcomes.json",
+			description:             "BidResponse not enriched with modules if stage outcome groups empty",
+			expectedBidResponseFile: "test/empty-stage-outcomes/empty.json",
+			stageOutcomesFile:       "test/empty-stage-outcomes/empty-stage-outcomes-v1.json",
+			bidResponse:             &openrtb2.BidResponse{},
+			bidRequest:              &openrtb2.BidRequest{Test: 1},
+			account:                 &config.Account{DebugAllow: true},
+		},
+		{
+			description:             "BidResponse not enriched with modules if stage outcomes empty",
+			expectedBidResponseFile: "test/empty-stage-outcomes/empty.json",
+			stageOutcomesFile:       "test/empty-stage-outcomes/empty-stage-outcomes-v2.json",
 			bidResponse:             &openrtb2.BidResponse{},
 			bidRequest:              &openrtb2.BidRequest{Test: 1},
 			account:                 &config.Account{DebugAllow: true},
@@ -111,9 +119,15 @@ func TestEnrichResponse(t *testing.T) {
 			expectedResponse := readFile(t, test.expectedBidResponseFile)
 			stageOutcomes := getStageOutcomes(t, test.stageOutcomesFile)
 
-			err := EnrichResponse(test.bidResponse, stageOutcomes, test.bidRequest, test.account)
+			ext, err := EnrichExtBidResponse(test.bidResponse.Ext, stageOutcomes, test.bidRequest, test.account)
 			require.NoError(t, err, "Failed to enrich BidResponse with hook debug information: %s", err)
-			assert.JSONEq(t, string(expectedResponse), string(test.bidResponse.Ext))
+
+			test.bidResponse.Ext = ext
+			if test.bidResponse.Ext == nil {
+				assert.Empty(t, expectedResponse)
+			} else {
+				assert.JSONEq(t, string(expectedResponse), string(test.bidResponse.Ext))
+			}
 		})
 	}
 }
@@ -136,8 +150,7 @@ func getStageOutcomes(t *testing.T, file string) []StageOutcome {
 		for _, groupT := range stageT.Groups {
 			group := GroupOutcome{ExecutionTime: groupT.ExecutionTime}
 			for _, hookT := range groupT.InvocationResults {
-				hook := HookOutcome(hookT)
-				group.InvocationResults = append(group.InvocationResults, &hook)
+				group.InvocationResults = append(group.InvocationResults, HookOutcome(hookT))
 			}
 
 			stage.Groups = append(stage.Groups, group)

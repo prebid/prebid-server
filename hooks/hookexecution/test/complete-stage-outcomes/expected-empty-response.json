@@ -1,6 +1,5 @@
 {
   "prebid": {
-    "foo": "bar",
-    "modules": {}
+    "foo": "bar"
   }
 }

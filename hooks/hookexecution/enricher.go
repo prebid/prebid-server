@@ -27,32 +27,49 @@ func (t trace) isVerbose() bool {
 
 type modulesResponse struct {
 	Prebid struct {
-		Modules ModulesOutcome `json:"modules"`
+		Modules *ModulesOutcome `json:"modules"`
 	} `json:"prebid"`
 }
 
-func EnrichResponse(
-	bidResponse *openrtb2.BidResponse,
+func EnrichExtBidResponse(
+	ext json.RawMessage,
 	stageOutcomes []StageOutcome,
 	bidRequest *openrtb2.BidRequest,
 	account *config.Account,
-) error {
-	trace, isDebugEnabled := getDebugContext(bidRequest, account)
-
-	modResponse := modulesResponse{}
-	modResponse.Prebid.Modules = getModulesOutcome(stageOutcomes, trace, isDebugEnabled)
-	patch, err := json.Marshal(modResponse)
+) (json.RawMessage, error) {
+	response, err := getModulesResponse(stageOutcomes, bidRequest, account)
 	if err != nil {
-		return err
+		return ext, err
+	} else if response == nil {
+		return ext, nil
 	}
 
-	if bidResponse.Ext == nil {
-		bidResponse.Ext = patch
-	} else {
-		bidResponse.Ext, err = jsonpatch.MergePatch(bidResponse.Ext, patch)
+	if ext != nil {
+		return jsonpatch.MergePatch(ext, response)
 	}
 
-	return err
+	return response, nil
+}
+
+func getModulesResponse(
+	stageOutcomes []StageOutcome,
+	bidRequest *openrtb2.BidRequest,
+	account *config.Account,
+) (json.RawMessage, error) {
+	if len(stageOutcomes) == 0 {
+		return nil, nil
+	}
+
+	trace, isDebugEnabled := getDebugContext(bidRequest, account)
+	modulesOutcome := getModulesOutcome(stageOutcomes, trace, isDebugEnabled)
+	if modulesOutcome == nil {
+		return nil, nil
+	}
+
+	response := modulesResponse{}
+	response.Prebid.Modules = modulesOutcome
+
+	return json.Marshal(response)
 }
 
 func getDebugContext(bidRequest *openrtb2.BidRequest, account *config.Account) (trace, bool) {
@@ -70,7 +87,7 @@ func getDebugContext(bidRequest *openrtb2.BidRequest, account *config.Account) (
 	return trace(traceLevel), isDebugEnabled
 }
 
-func getModulesOutcome(stageOutcomes []StageOutcome, trace trace, isDebugEnabled bool) ModulesOutcome {
+func getModulesOutcome(stageOutcomes []StageOutcome, traceLevel trace, isDebugEnabled bool) *ModulesOutcome {
 	var modulesOutcome ModulesOutcome
 	stages := make(map[string]Stage)
 	stageNames := make([]string, 0)
@@ -80,8 +97,8 @@ func getModulesOutcome(stageOutcomes []StageOutcome, trace trace, isDebugEnabled
 			continue
 		}
 
-		prepareModulesOutcome(&modulesOutcome, stageOutcome.Groups, trace, isDebugEnabled)
-		if !trace.isBasicOrHigher() {
+		prepareModulesOutcome(&modulesOutcome, stageOutcome.Groups, traceLevel, isDebugEnabled)
+		if !traceLevel.isBasicOrHigher() {
 			continue
 		}
 
@@ -102,27 +119,30 @@ func getModulesOutcome(stageOutcomes []StageOutcome, trace trace, isDebugEnabled
 		stages[stageOutcome.Stage] = stage
 	}
 
-	if len(stages) == 0 {
-		return modulesOutcome
+	if modulesOutcome.Errors == nil && modulesOutcome.Warnings == nil && len(stages) == 0 {
+		return nil
 	}
 
-	modulesOutcome.Trace = &TraceOutcome{}
-	modulesOutcome.Trace.Stages = make([]Stage, 0, len(stages))
-	// iterate through slice of names to keep order of stages
-	for _, stage := range stageNames {
-		modulesOutcome.Trace.ExecutionTimeMillis += stages[stage].ExecutionTimeMillis
-		modulesOutcome.Trace.Stages = append(modulesOutcome.Trace.Stages, stages[stage])
+	if len(stages) > 0 {
+		modulesOutcome.Trace = &TraceOutcome{}
+		modulesOutcome.Trace.Stages = make([]Stage, 0, len(stages))
+
+		// iterate through slice of names to keep order of stages
+		for _, stage := range stageNames {
+			modulesOutcome.Trace.ExecutionTimeMillis += stages[stage].ExecutionTimeMillis
+			modulesOutcome.Trace.Stages = append(modulesOutcome.Trace.Stages, stages[stage])
+		}
 	}
 
-	return modulesOutcome
+	return &modulesOutcome
 }
 
 func prepareModulesOutcome(modulesOutcome *ModulesOutcome, groups []GroupOutcome, trace trace, isDebugEnabled bool) {
 	for _, group := range groups {
-		for _, hookOutcome := range group.InvocationResults {
+		for i, hookOutcome := range group.InvocationResults {
 			if !trace.isVerbose() {
-				hookOutcome.DebugMessages = nil
-				hookOutcome.AnalyticsTags = hookanalytics.Analytics{}
+				group.InvocationResults[i].DebugMessages = nil
+				group.InvocationResults[i].AnalyticsTags = hookanalytics.Analytics{}
 			}
 
 			if !isDebugEnabled {

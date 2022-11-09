@@ -46,6 +46,7 @@ type AmpResponse struct {
 	Debug     *openrtb_ext.ExtResponseDebug                             `json:"debug,omitempty"`
 	Errors    map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage `json:"errors,omitempty"`
 	Warnings  map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage `json:"warnings,omitempty"`
+	Ext       json.RawMessage                                           `json:"ext,omitempty"`
 }
 
 // NewAmpEndpoint modifies the OpenRTB endpoint to handle AMP requests. This will basically modify the parsing
@@ -324,6 +325,14 @@ func sendAmpResponse(w http.ResponseWriter, response *openrtb2.BidResponse, reqW
 		Targeting: targets,
 		Errors:    extResponse.Errors,
 		Warnings:  warnings,
+	}
+
+	stageOutcomes := deps.hookExecutor.GetOutcomes()
+	ext, extErr := hookexecution.EnrichExtBidResponse(ampResponse.Ext, stageOutcomes, reqWrapper.BidRequest, account)
+	if extErr != nil {
+		glog.Errorf("Failed to enrich Amp Response with hook debug information: %s", extErr)
+	} else {
+		ampResponse.Ext = ext
 	}
 
 	ao.AmpTargetingValues = targets
