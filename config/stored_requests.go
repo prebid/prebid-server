@@ -1,9 +1,7 @@
 package config
 
 import (
-	"bytes"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -198,75 +196,6 @@ type DatabaseConnection struct {
 	Port     int    `mapstructure:"port"`
 	Username string `mapstructure:"user"`
 	Password string `mapstructure:"password"`
-}
-
-func (cfg *DatabaseConnection) connStringMySql() string {
-	buffer := bytes.NewBuffer(nil)
-
-	if cfg.Username != "" {
-		buffer.WriteString(cfg.Username)
-		if cfg.Password != "" {
-			buffer.WriteString(":")
-			buffer.WriteString(cfg.Password)
-		}
-		buffer.WriteString("@")
-	}
-
-	buffer.WriteString("tcp(")
-	if cfg.Host != "" {
-		buffer.WriteString(cfg.Host)
-	}
-
-	if cfg.Port > 0 {
-		buffer.WriteString(":")
-		buffer.WriteString(strconv.Itoa(cfg.Port))
-	}
-	buffer.WriteString(")")
-
-	buffer.WriteString("/")
-
-	if cfg.Database != "" {
-		buffer.WriteString(cfg.Database)
-	}
-
-	return buffer.String()
-}
-
-func (cfg *DatabaseConnection) connStringPostgres() string {
-	buffer := bytes.NewBuffer(nil)
-
-	if cfg.Host != "" {
-		buffer.WriteString("host=")
-		buffer.WriteString(cfg.Host)
-		buffer.WriteString(" ")
-	}
-
-	if cfg.Port > 0 {
-		buffer.WriteString("port=")
-		buffer.WriteString(strconv.Itoa(cfg.Port))
-		buffer.WriteString(" ")
-	}
-
-	if cfg.Username != "" {
-		buffer.WriteString("user=")
-		buffer.WriteString(cfg.Username)
-		buffer.WriteString(" ")
-	}
-
-	if cfg.Password != "" {
-		buffer.WriteString("password=")
-		buffer.WriteString(cfg.Password)
-		buffer.WriteString(" ")
-	}
-
-	if cfg.Database != "" {
-		buffer.WriteString("dbname=")
-		buffer.WriteString(cfg.Database)
-		buffer.WriteString(" ")
-	}
-
-	buffer.WriteString("sslmode=disable")
-	return buffer.String()
 }
 
 type DatabaseFetcherQueries struct {
