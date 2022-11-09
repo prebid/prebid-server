@@ -7,7 +7,9 @@ import (
 	"io/ioutil"
 	"strings"
 
+	acc "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/stored_requests"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 )
@@ -52,12 +54,31 @@ func (fetcher *eagerFetcher) FetchAccount(ctx context.Context, accountDefaultsJS
 			DataType: "Account",
 		}}
 	}
+
 	// accountID resolved to a valid account, merge with AccountDefaults for a complete config
 	account := &config.Account{}
 	completeJSON, err := jsonpatch.MergePatch(accountDefaultsJSON, accountJSON)
 	if err == nil {
 		err = json.Unmarshal(completeJSON, account)
+
+		// this logic exists for backwards compatibility. If the initial unmarshal fails above, we attempt to
+		// resolve it by converting the GDPR enforce purpose fields and then attempting an unmarshal again before
+		// declaring a malformed account error.
+		// unmarshal fetched account to determine if it is well-formed
+		if _, ok := err.(*json.UnmarshalTypeError); ok {
+			// attempt to convert deprecated GDPR enforce purpose fields to resolve issue
+			completeJSON, err = acc.ConvertGDPREnforcePurposeFields(completeJSON)
+			// unmarshal again to check if unmarshal error still exists after GDPR field conversion
+			err = json.Unmarshal(completeJSON, account)
+
+			if _, ok := err.(*json.UnmarshalTypeError); ok {
+				return nil, []error{&errortypes.MalformedAcct{
+					Message: fmt.Sprintf("The prebid-server account config for account id \"%s\" is malformed. Please reach out to the prebid server host.", accountID),
+				}}
+			}
+		}
 	}
+
 	if err != nil {
 		errs = append(errs, err)
 		return nil, errs
