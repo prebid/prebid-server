@@ -31,9 +31,7 @@ func NewDbProvider(dataType config.DataType, cfg config.DatabaseConnection) DbPr
 		return nil
 	}
 
-	err := provider.Open(cfg)
-
-	if err != nil {
+	if err := provider.Open(cfg); err != nil {
 		glog.Fatalf("Failed to open %s database connection: %v", dataType, err)
 	}
 	if err := provider.Ping(); err != nil {
