@@ -490,7 +490,7 @@ func getNativeAdm(adm string) (string, error) {
 	return adm, nil
 }
 
-//getMapFromJSON converts JSON to map
+// getMapFromJSON converts JSON to map
 func getMapFromJSON(source json.RawMessage) map[string]interface{} {
 	if source != nil {
 		dataMap := make(map[string]interface{})
@@ -502,7 +502,7 @@ func getMapFromJSON(source json.RawMessage) map[string]interface{} {
 	return nil
 }
 
-//populateFirstPartyDataImpAttributes will parse imp.ext.data and populate imp extMap
+// populateFirstPartyDataImpAttributes will parse imp.ext.data and populate imp extMap
 func populateFirstPartyDataImpAttributes(data json.RawMessage, extMap map[string]interface{}) {
 
 	dataMap := getMapFromJSON(data)
@@ -515,7 +515,7 @@ func populateFirstPartyDataImpAttributes(data json.RawMessage, extMap map[string
 	populateDctrKey(dataMap, extMap)
 }
 
-//populateAdUnitKey parses data object to read and populate DFP adunit key
+// populateAdUnitKey parses data object to read and populate DFP adunit key
 func populateAdUnitKey(data json.RawMessage, dataMap, extMap map[string]interface{}) {
 
 	if name, err := jsonparser.GetString(data, "adserver", "name"); err == nil && name == AdServerGAM {
@@ -530,7 +530,7 @@ func populateAdUnitKey(data json.RawMessage, dataMap, extMap map[string]interfac
 	}
 }
 
-//populateDctrKey reads key-val pairs from imp.ext.data and add it in imp.ext.key_val
+// populateDctrKey reads key-val pairs from imp.ext.data and add it in imp.ext.key_val
 func populateDctrKey(dataMap, extMap map[string]interface{}) {
 	var dctr strings.Builder
 
@@ -580,7 +580,7 @@ func populateDctrKey(dataMap, extMap map[string]interface{}) {
 	}
 }
 
-//getStringArray converts interface of type string array to string array
+// getStringArray converts interface of type string array to string array
 func getStringArray(array []interface{}) []string {
 	aString := make([]string, len(array))
 	for i, v := range array {
