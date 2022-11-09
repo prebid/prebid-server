@@ -29,6 +29,11 @@ func (executor *HookExecutor) GetOutcomes() []StageOutcome {
 }
 
 func (executor *HookExecutor) ExecuteEntrypointStage(req *http.Request, body []byte) ([]byte, *RejectError) {
+	plan := executor.PlanBuilder.PlanForEntrypointStage(executor.Endpoint)
+	if len(plan) == 0 {
+		return body, nil
+	}
+
 	handler := func(
 		ctx context.Context,
 		moduleCtx *hookstage.ModuleContext,
@@ -39,7 +44,7 @@ func (executor *HookExecutor) ExecuteEntrypointStage(req *http.Request, body []b
 	}
 
 	payload := hookstage.EntrypointPayload{Request: req, Body: body}
-	stageOutcome, payload, reject := executeStage(executor.InvocationCtx, executor.PlanBuilder.PlanForEntrypointStage(executor.Endpoint), payload, handler)
+	stageOutcome, payload, reject := executeStage(executor.InvocationCtx, plan, payload, handler)
 	stageOutcome.Entity = hookstage.EntityHttpRequest
 	stageOutcome.Stage = hooks.StageEntrypoint
 

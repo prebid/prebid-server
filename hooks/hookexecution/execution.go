@@ -166,65 +166,67 @@ func processHookResponses[P any](
 	payload P,
 ) (GroupOutcome, P, *RejectError) {
 	groupOutcome := GroupOutcome{}
-	groupOutcome.InvocationResults = make([]*HookOutcome, 0, len(hookResponses))
+	groupOutcome.InvocationResults = make([]HookOutcome, 0, len(hookResponses))
 
-	for _, r := range hookResponses {
-		hookOutcome := &HookOutcome{
+	for i, r := range hookResponses {
+		groupOutcome.InvocationResults = append(groupOutcome.InvocationResults, HookOutcome{
 			Status:        StatusSuccess,
 			HookID:        r.HookID,
 			Message:       r.Result.Message,
 			DebugMessages: r.Result.DebugMessages,
 			AnalyticsTags: r.Result.AnalyticsTags,
 			ExecutionTime: ExecutionTime{r.ExecutionTime},
-		}
+		})
 
-		groupOutcome.InvocationResults = append(groupOutcome.InvocationResults, hookOutcome)
 		if r.ExecutionTime > groupOutcome.ExecutionTimeMillis {
 			groupOutcome.ExecutionTimeMillis = r.ExecutionTime
 		}
 
 		if r.Err != nil {
-			hookOutcome.Errors = append(hookOutcome.Errors, r.Err.Error())
+			groupOutcome.InvocationResults[i].Errors = append(groupOutcome.InvocationResults[i].Errors, r.Err.Error())
 			switch r.Err.(type) {
 			case TimeoutError:
-				hookOutcome.Status = StatusTimeout
+				groupOutcome.InvocationResults[i].Status = StatusTimeout
 			case FailureError:
-				hookOutcome.Status = StatusFailure
+				groupOutcome.InvocationResults[i].Status = StatusFailure
 			default:
-				hookOutcome.Status = StatusExecutionFailure
+				groupOutcome.InvocationResults[i].Status = StatusExecutionFailure
 			}
-			// todo: send metric
 			continue
 		}
 
 		if r.Result.Reject {
 			reject := &RejectError{Code: r.Result.NbrCode, Reason: r.Result.Message}
-			hookOutcome.Action = ActionReject
-			hookOutcome.Errors = append(hookOutcome.Errors, reject.Error())
-			// todo: send metric
+			groupOutcome.InvocationResults[i].Action = ActionReject
+			groupOutcome.InvocationResults[i].Errors = append(groupOutcome.InvocationResults[i].Errors, reject.Error())
 			return groupOutcome, payload, reject
 		}
 
 		if r.Result.ChangeSet == nil || len(r.Result.ChangeSet.Mutations()) == 0 {
-			// todo: send hook metrics (NOP metric)
-			hookOutcome.Action = ActionNOP
+			groupOutcome.InvocationResults[i].Action = ActionNOP
 			continue
 		}
 
-		hookOutcome.Action = ActionUpdate
+		groupOutcome.InvocationResults[i].Action = ActionUpdate
 		for _, mut := range r.Result.ChangeSet.Mutations() {
 			p, err := mut.Apply(payload)
 			if err != nil {
-				hookOutcome.Warnings = append(hookOutcome.Warnings, fmt.Sprintf("failed applying hook mutation: %s", err))
+				groupOutcome.InvocationResults[i].Warnings = append(
+					groupOutcome.InvocationResults[i].Warnings,
+					fmt.Sprintf("failed applying hook mutation: %s", err),
+				)
 				continue
 			}
 
 			payload = p
-			hookOutcome.DebugMessages = append(hookOutcome.DebugMessages, fmt.Sprintf(
-				"Hook mutation successfully applied, affected key: %s, mutation type: %s",
-				strings.Join(mut.Key(), "."),
-				mut.Type(),
-			))
+			groupOutcome.InvocationResults[i].DebugMessages = append(
+				groupOutcome.InvocationResults[i].DebugMessages,
+				fmt.Sprintf(
+					"Hook mutation successfully applied, affected key: %s, mutation type: %s",
+					strings.Join(mut.Key(), "."),
+					mut.Type(),
+				),
+			)
 		}
 	}
 
