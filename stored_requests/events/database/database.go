@@ -122,7 +122,7 @@ func (e *DatabaseEventProducer) fetchDelta() (fetchErr error) {
 	startTime := e.time.Now().UTC()
 
 	params := []db_provider.QueryParam{
-		{Name: "LAST_UPDATE", Value: e.lastUpdate},
+		{Name: "LAST_UPDATED", Value: e.lastUpdate},
 	}
 
 	rows, err := e.cfg.Provider.QueryContext(ctx, e.cfg.CacheUpdateQuery, params...)
