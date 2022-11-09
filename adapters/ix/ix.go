@@ -337,14 +337,12 @@ func BuildIxDiag(request *openrtb2.BidRequest) error {
 	ixdiag := &IxDiag{}
 
 	if extRequest.Prebid != nil {
-		ixdiag = &IxDiag{
-			PbjsV: extRequest.Prebid.Channel.Version,
-		}
+		ixdiag.PbjsV = extRequest.Prebid.Channel.Version
 	}
 
 	// Slice commit hash out of version
 	if strings.Contains(version.Ver, "-") {
-		ixdiag.PbsV = version.Ver[:strings.LastIndex(version.Ver, "-")]
+		ixdiag.PbsV = version.Ver[:strings.Index(version.Ver, "-")]
 	} else if version.Ver != "" {
 		ixdiag.PbsV = version.Ver
 	}
@@ -352,7 +350,10 @@ func BuildIxDiag(request *openrtb2.BidRequest) error {
 	// Only set request.ext if ixDiag is not empty
 	if *ixdiag != (IxDiag{}) {
 		extRequest.IxDiag = ixdiag
-		requestExtJson, _ := json.Marshal(extRequest)
+		requestExtJson, err := json.Marshal(extRequest)
+		if err != nil {
+			return err
+		}
 		request.Ext = requestExtJson
 	}
 	return nil

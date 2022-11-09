@@ -138,6 +138,18 @@ func TestBuildIxDiag(t *testing.T) {
 			pbsVersion:  "1.880-abcdef",
 		},
 		{
+			description: "PBS Version Two Hypens",
+			request: &openrtb2.BidRequest{
+				ID: "1",
+			},
+			expectedRequest: &openrtb2.BidRequest{
+				ID:  "1",
+				Ext: json.RawMessage(`{"prebid":null,"ixdiag":{"pbsv":"0.23.1"}}`),
+			},
+			expectError: false,
+			pbsVersion:  "0.23.1-3-g4ee257d8",
+		},
+		{
 			description: "PBS Version no Hyphen",
 			request: &openrtb2.BidRequest{
 				ID:  "1",
@@ -187,6 +199,7 @@ func TestBuildIxDiag(t *testing.T) {
 			assert.Equal(t, test.request, test.expectedRequest)
 			assert.Nil(t, err)
 		}
+		version.Ver = ""
 	}
 }
 
