@@ -268,11 +268,11 @@ type DatabaseUpdatePolling struct {
 	//
 	// SELECT id, requestData, 'request' AS type
 	//   FROM stored_requests
-	//   WHERE last_updated > $1
+	//   WHERE last_updated > $LAST_UPDATED
 	// UNION ALL
 	// SELECT id, impData, 'imp' AS type
 	//   FROM stored_imps
-	//   WHERE last_updated > $1
+	//   WHERE last_updated > $LAST_UPDATED
 	//
 	// The code will be run periodically to fetch updates from the database.
 	Query string `mapstructure:"query"`
