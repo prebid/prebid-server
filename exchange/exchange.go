@@ -993,7 +993,6 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pb
 		Warnings:             make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage, len(adapterBids)),
 		ResponseTimeMillis:   make(map[openrtb_ext.BidderName]int, len(adapterBids)),
 		RequestTimeoutMillis: r.BidRequestWrapper.BidRequest.TMax,
-		Fledge:               fledge,
 	}
 	if debugInfo {
 		bidResponseExt.Debug = &openrtb_ext.ExtResponseDebug{
@@ -1001,18 +1000,20 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pb
 			ResolvedRequest: r.ResolvedBidRequest,
 		}
 	}
+
+	var auctionTimestamp int64
 	if !r.StartTime.IsZero() {
-		// auctiontimestamp is the only response.ext.prebid attribute we may emit
-		bidResponseExt.Prebid = &openrtb_ext.ExtResponsePrebid{
-			AuctionTimestamp: r.StartTime.UnixNano() / 1e+6,
-		}
+		auctionTimestamp = r.StartTime.UnixMilli()
 	}
 
-	if passthrough != nil {
-		if bidResponseExt.Prebid == nil {
-			bidResponseExt.Prebid = &openrtb_ext.ExtResponsePrebid{}
+	if auctionTimestamp > 0 ||
+		passthrough != nil ||
+		fledge != nil {
+		bidResponseExt.Prebid = &openrtb_ext.ExtResponsePrebid{
+			AuctionTimestamp: auctionTimestamp,
+			Passthrough:      passthrough,
+			Fledge:           fledge,
 		}
-		bidResponseExt.Prebid.Passthrough = passthrough
 	}
 
 	for bidderName, responseExtra := range adapterExtra {
@@ -1262,13 +1263,16 @@ func buildStoredAuctionResponse(storedAuctionResponses map[string]json.RawMessag
 					return nil, nil, nil, err
 				}
 				// add in FLEDGE response with impId substituted
-				if seatExt.Fledge != nil && seatExt.Fledge.AuctionConfigs != nil {
+				if seatExt.Prebid != nil &&
+					seatExt.Prebid.Fledge != nil &&
+					seatExt.Prebid.Fledge.AuctionConfigs != nil {
+					auctionConfigs := seatExt.Prebid.Fledge.AuctionConfigs
 					if fledge == nil {
 						fledge = &openrtb_ext.Fledge{
-							AuctionConfigs: make([]*openrtb_ext.FledgeAuctionConfig, 0, len(seatExt.Fledge.AuctionConfigs)),
+							AuctionConfigs: make([]*openrtb_ext.FledgeAuctionConfig, 0, len(auctionConfigs)),
 						}
 					}
-					for _, config := range seatExt.Fledge.AuctionConfigs {
+					for _, config := range auctionConfigs {
 						newConfig := &openrtb_ext.FledgeAuctionConfig{
 							ImpId:  impId,
 							Bidder: string(bidderName),

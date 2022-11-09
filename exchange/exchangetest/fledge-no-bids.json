@@ -84,21 +84,23 @@
             "seatbid": []
         },
         "ext": {
-            "fledge": {
-                "auctionconfigs": [
-                    {
-                        "impid": "test-request-id",
-                        "bidder": "openx",
-                        "config": {
-                            "seller": "openx.com",
-                            "interestGroupBuyers": ["buyer1.com"],
-                            "sellerTimeout": 0,
-                            "perBuyerSignals": {
-                                "buyer1.com": [1,"two",3,4, {}]
+            "prebid": {
+                "fledge": {
+                    "auctionconfigs": [
+                        {
+                            "impid": "test-request-id",
+                            "bidder": "openx",
+                            "config": {
+                                "seller": "openx.com",
+                                "interestGroupBuyers": ["buyer1.com"],
+                                "sellerTimeout": 0,
+                                "perBuyerSignals": {
+                                    "buyer1.com": [1,"two",3,4, {}]
+                                }
                             }
                         }
-                    }
-                ]
+                    ]
+                }
             },
             "warnings": {
                 "general": [
