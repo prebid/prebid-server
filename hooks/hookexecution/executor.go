@@ -63,8 +63,6 @@ func (executor *HookExecutor) ExecuteRawAuctionStage(requestBody []byte, account
 	}
 
 	executor.InvocationCtx.Stage = hooks.StageRawAuction
-	executor.InvocationCtx.Account = account
-	executor.InvocationCtx.AccountId = account.ID
 	payload := hookstage.RawAuctionPayload(requestBody)
 	stageOutcome, payload, reject := executeStage(executor.InvocationCtx, executor.PlanBuilder.PlanForRawAuctionStage(executor.Endpoint, account), payload, handler, executor.MetricEngine)
 	stageOutcome.Entity = hookstage.EntityAuctionRequest

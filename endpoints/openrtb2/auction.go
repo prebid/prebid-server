@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/buger/jsonparser"
@@ -323,6 +324,8 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		return
 	}
 
+	deps.hookExecutor.InvocationCtx.Account = account
+	deps.hookExecutor.InvocationCtx.AccountId = account.ID
 	requestJson, err = deps.hookExecutor.ExecuteRawAuctionStage(requestJson, account)
 	if err != nil {
 		//todo: return no bid response
@@ -1971,16 +1974,14 @@ func getAccountIdFromRawRequest(hasStoredRequest bool, storedRequest json.RawMes
 	var isAppReq bool
 	var err error
 
+	request := originalRequest
 	if hasStoredRequest {
-		accountId, isAppReq, err = searchAccountId(storedRequest)
-		if err != nil {
-			return "", isAppReq, []error{err}
-		}
-	} else {
-		accountId, isAppReq, err = searchAccountId(originalRequest)
-		if err != nil {
-			return "", isAppReq, []error{err}
-		}
+		request = storedRequest
+	}
+
+	accountId, isAppReq, err = searchAccountId(request)
+	if err != nil {
+		return "", isAppReq, []error{err}
 	}
 
 	if accountId == "" {
@@ -1990,43 +1991,30 @@ func getAccountIdFromRawRequest(hasStoredRequest bool, storedRequest json.RawMes
 	return accountId, isAppReq, nil
 }
 
-func searchAccountId(request []byte) (accountId string, isAppReq bool, err error) {
-	var exists bool
-	// search in app.publisher.ext.prebid.parentAccount
-	accountId, exists, err = getAccountIdFromPublisherExtInRequest(request, "app")
-	if err != nil {
-		return "", true, err
+func searchAccountId(request []byte) (string, bool, error) {
+	queries := [...]struct {
+		isApp bool
+		key   []string
+	}{
+		{true, []string{"app", "publisher", "ext", openrtb_ext.PrebidExtKey, "parentAccount"}},
+		{true, []string{"app", "publisher", "id"}},
+		{false, []string{"site", "publisher", "ext", openrtb_ext.PrebidExtKey, "parentAccount"}},
+		{false, []string{"site", "publisher", "id"}},
 	}
-	if !exists {
-		// search in app.publisher.id
-		accountId, exists, err = getAccountIdAsPublisherIdInRequest(request, "app")
+	for _, query := range queries {
+		accountId, exists, err := getStringValueFromRequest(request, query.key)
 		if err != nil {
-			return "", true, err
+			return "", query.isApp, err
+		}
+		if exists {
+			return accountId, query.isApp, nil
 		}
 	}
-	if exists {
-		isAppReq = true
-	}
-	if !exists {
-		// search in site.publisher.ext.prebid.parentAccount
-		accountId, exists, err = getAccountIdFromPublisherExtInRequest(request, "site")
-		if err != nil {
-			return "", false, err
-		}
-	}
-	if !exists {
-		// search in site.publisher.id
-		accountId, exists, err = getAccountIdAsPublisherIdInRequest(request, "site")
-		if err != nil {
-			return "", false, err
-		}
-	}
-
-	return accountId, isAppReq, err
+	return "", false, nil
 }
 
-func getAccountIdFromPublisherExtInRequest(request []byte, key string) (string, bool, error) {
-	accountId, dataType, _, err := jsonparser.Get(request, key, "publisher", "ext", openrtb_ext.PrebidExtKey, "parentAccount")
+func getStringValueFromRequest(request []byte, key []string) (string, bool, error) {
+	val, dataType, _, err := jsonparser.Get(request, key...)
 	if dataType == jsonparser.NotExist {
 		return "", false, nil
 	}
@@ -2034,25 +2022,9 @@ func getAccountIdFromPublisherExtInRequest(request []byte, key string) (string, 
 		return "", false, err
 	}
 	if dataType != jsonparser.String {
-		return "", true, errors.New(key + ".publisher.ext.prebid.parentAccount must be a string")
+		return "", true, fmt.Errorf("%s must be a string", strings.Join(key, "."))
 	}
-
-	return string(accountId), true, nil
-}
-
-func getAccountIdAsPublisherIdInRequest(request []byte, key string) (string, bool, error) {
-	accountId, dataType, _, err := jsonparser.Get(request, key, "publisher", "id")
-	if dataType == jsonparser.NotExist {
-		return "", false, nil
-	}
-	if err != nil {
-		return "", false, err
-	}
-	if dataType != jsonparser.String {
-		return "", true, errors.New(key + ".publisher.id must be a string")
-	}
-
-	return string(accountId), true, nil
+	return string(val), true, nil
 }
 
 func storedRequestErrorChecker(requestJson []byte, storedRequests map[string]json.RawMessage, storedBidRequestId string) []error {
