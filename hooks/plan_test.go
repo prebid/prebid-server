@@ -779,7 +779,7 @@ type fakeProcessedAuctionHook struct{}
 
 func (f fakeProcessedAuctionHook) HandleProcessedAuctionHook(
 	_ context.Context,
-	_ hookstage.InvocationContext,
+	_ *hookstage.ModuleContext,
 	_ hookstage.ProcessedAuctionPayload,
 ) (hookstage.HookResult[hookstage.ProcessedAuctionPayload], error) {
 	return hookstage.HookResult[hookstage.ProcessedAuctionPayload]{}, nil

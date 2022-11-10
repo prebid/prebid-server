@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookstage"
@@ -71,4 +72,25 @@ func (executor *HookExecutor) ExecuteRawAuctionStage(requestBody []byte, account
 	executor.stageOutcomes = append(executor.stageOutcomes, stageOutcome)
 
 	return payload, reject
+}
+
+func (executor *HookExecutor) ExecuteProcessedAuctionStage(request *openrtb2.BidRequest, account *config.Account) *RejectError {
+	handler := func(
+		ctx context.Context,
+		moduleCtx *hookstage.ModuleContext,
+		hook hookstage.ProcessedAuction,
+		payload hookstage.ProcessedAuctionPayload,
+	) (hookstage.HookResult[hookstage.ProcessedAuctionPayload], error) {
+		return hook.HandleProcessedAuctionHook(ctx, moduleCtx, payload)
+	}
+
+	executor.InvocationCtx.Stage = hooks.StageProcessedAuction
+	payload := hookstage.ProcessedAuctionPayload{BidRequest: request}
+	stageOutcome, _, reject := executeStage(executor.InvocationCtx, executor.PlanBuilder.PlanForProcessedAuctionStage(executor.Endpoint, account), payload, handler, executor.MetricEngine)
+	stageOutcome.Entity = hookstage.EntityAuctionRequest
+	stageOutcome.Stage = hooks.StageProcessedAuction
+
+	executor.stageOutcomes = append(executor.stageOutcomes, stageOutcome)
+
+	return reject
 }
