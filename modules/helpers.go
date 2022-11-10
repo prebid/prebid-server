@@ -2,9 +2,10 @@ package modules
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookstage"
-	"strings"
 )
 
 func createModuleStageNamesCollection(modules map[string]interface{}) (map[string][]string, error) {
@@ -27,12 +28,12 @@ func createModuleStageNamesCollection(modules map[string]interface{}) (map[strin
 			moduleStageNameCollector = addModuleStageName(moduleStageNameCollector, id, hooks.StageProcessedAuction)
 		}
 
-		if _, ok := hook.(hookstage.BidRequest); ok {
+		if _, ok := hook.(hookstage.BidderRequest); ok {
 			added = true
 			moduleStageNameCollector = addModuleStageName(moduleStageNameCollector, id, hooks.StageBidRequest)
 		}
 
-		if _, ok := hook.(hookstage.RawBidResponse); ok {
+		if _, ok := hook.(hookstage.RawBidderResponse); ok {
 			added = true
 			moduleStageNameCollector = addModuleStageName(moduleStageNameCollector, id, hooks.StageRawBidResponse)
 		}

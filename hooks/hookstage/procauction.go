@@ -9,7 +9,7 @@ import (
 type ProcessedAuction interface {
 	HandleProcessedAuctionHook(
 		context.Context,
-		InvocationContext,
+		*ModuleContext,
 		ProcessedAuctionPayload,
 	) (HookResult[ProcessedAuctionPayload], error)
 }
