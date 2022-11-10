@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestAnalytics(t *testing.T) {
@@ -52,6 +51,6 @@ func TestAnalytics(t *testing.T) {
 	)
 
 	gotAnalytics, err := json.Marshal(analytics)
-	require.NoError(t, err, "Failed to marshal analytics: %s", err)
+	assert.NoError(t, err, "Failed to marshal analytics: %s", err)
 	assert.JSONEq(t, string(expectedAnalytics), string(gotAnalytics))
 }

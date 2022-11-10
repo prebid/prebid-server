@@ -134,7 +134,7 @@ func getMergedPlan[T any](
 	endpoint, stage string,
 	getHookFn hookFn[T],
 ) Plan[T] {
-	accountPlan := cfg.AccountExecutionPlan
+	accountPlan := cfg.DefaultAccountExecutionPlan
 	if account != nil && account.Hooks.ExecutionPlan.Endpoints != nil {
 		accountPlan = account.Hooks.ExecutionPlan
 	}
@@ -164,10 +164,10 @@ func getGroup[T any](getHookFn hookFn[T], cfg config.HookExecutionGroup) Group[T
 	}
 
 	for _, hookCfg := range cfg.HookSequence {
-		if h, ok := getHookFn(hookCfg.Module); ok {
-			group.Hooks = append(group.Hooks, HookWrapper[T]{Module: hookCfg.Module, Code: hookCfg.Hook, Hook: h})
+		if h, ok := getHookFn(hookCfg.ModuleCode); ok {
+			group.Hooks = append(group.Hooks, HookWrapper[T]{Module: hookCfg.ModuleCode, Code: hookCfg.HookImplCode, Hook: h})
 		} else {
-			glog.Warningf("Not found hook while building hook execution plan: %s %s", hookCfg.Module, hookCfg.Hook)
+			glog.Warningf("Not found hook while building hook execution plan: %s %s", hookCfg.ModuleCode, hookCfg.HookImplCode)
 		}
 	}
 

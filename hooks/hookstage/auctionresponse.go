@@ -10,6 +10,10 @@ type AuctionResponse interface {
 	HandleAuctionResponseHook(
 		context.Context,
 		InvocationContext,
-		*openrtb2.BidResponse,
-	) (HookResult[*openrtb2.BidResponse], error)
+		AuctionResponsePayload,
+	) (HookResult[AuctionResponsePayload], error)
+}
+
+type AuctionResponsePayload struct {
+	BidResponse *openrtb2.BidResponse
 }

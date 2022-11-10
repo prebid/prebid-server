@@ -640,6 +640,7 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "experiment.adscert.inprocess.domain_renewal_interval_seconds", cfg.Experiment.AdCerts.InProcess.DNSRenewalIntervalInSeconds, 60)
 	cmpStrings(t, "experiment.adscert.remote.url", cfg.Experiment.AdCerts.Remote.Url, "")
 	cmpInts(t, "experiment.adscert.remote.signing_timeout_ms", cfg.Experiment.AdCerts.Remote.SigningTimeoutMs, 10)
+	cmpBools(t, "hooks.enabled", cfg.Hooks.Enabled, false)
 }
 
 func TestValidateConfig(t *testing.T) {

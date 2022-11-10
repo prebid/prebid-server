@@ -16,6 +16,7 @@ type HookRepository interface {
 	GetAuctionResponseHook(id string) (hookstage.AuctionResponse, bool)
 }
 
+// todo: write comment
 func NewHookRepository(hooks map[string]interface{}) (HookRepository, error) {
 	repo := new(hookRepository)
 	for id, hook := range hooks {

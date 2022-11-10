@@ -8,7 +8,6 @@ import (
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestAccountGDPREnabledForChannelType(t *testing.T) {
@@ -767,7 +766,11 @@ func TestBasicEnforcementVendor(t *testing.T) {
 func TestModulesGetConfig(t *testing.T) {
 	modules := AccountModules{
 		"acme": {
-			"foo": json.RawMessage(`{"foo": "bar"}`),
+			"foo":     json.RawMessage(`{"foo": "bar"}`),
+			"foo.bar": json.RawMessage(`{"foo": "bar"}`),
+		},
+		"acme.foo": {
+			"baz": json.RawMessage(`{"foo": "bar"}`),
 		},
 	}
 
@@ -781,6 +784,13 @@ func TestModulesGetConfig(t *testing.T) {
 		{
 			description:    "Returns module config if found by ID",
 			givenId:        "acme.foo",
+			givenModules:   modules,
+			expectedConfig: json.RawMessage(`{"foo": "bar"}`),
+			expectedError:  nil,
+		},
+		{
+			description:    "Returns module config if found by ID",
+			givenId:        "acme.foo.bar",
 			givenModules:   modules,
 			expectedConfig: json.RawMessage(`{"foo": "bar"}`),
 			expectedError:  nil,
@@ -800,6 +810,13 @@ func TestModulesGetConfig(t *testing.T) {
 			expectedError:  nil,
 		},
 		{
+			description:    "Returns nil config if no matching module exists",
+			givenId:        "acme.foo.baz",
+			givenModules:   modules,
+			expectedConfig: nil,
+			expectedError:  nil,
+		},
+		{
 			description:    "Returns nil config if no module configs defined in account",
 			givenId:        "acme.foo",
 			givenModules:   nil,
@@ -811,7 +828,7 @@ func TestModulesGetConfig(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
 			gotConfig, err := test.givenModules.ModuleConfig(test.givenId)
-			require.Equal(t, test.expectedError, err)
+			assert.Equal(t, test.expectedError, err)
 			assert.Equal(t, test.expectedConfig, gotConfig)
 		})
 	}
