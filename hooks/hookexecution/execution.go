@@ -172,42 +172,41 @@ func processHookResponses[P any](
 	metricEngine metrics.MetricsEngine,
 ) (GroupOutcome, P, *RejectError) {
 	groupOutcome := GroupOutcome{}
-	groupOutcome.InvocationResults = make([]*HookOutcome, 0, len(hookResponses))
+	groupOutcome.InvocationResults = make([]HookOutcome, 0, len(hookResponses))
 
-	for _, r := range hookResponses {
+	for i, r := range hookResponses {
 		labels := metrics.ModuleLabels{
 			Module: r.HookID.ModuleCode,
 			Stage:  invocationCtx.Stage,
 			PubID:  invocationCtx.AccountId,
 		}
-		hookOutcome := &HookOutcome{
+		groupOutcome.InvocationResults = append(groupOutcome.InvocationResults, HookOutcome{
 			Status:        StatusSuccess,
 			HookID:        r.HookID,
 			Message:       r.Result.Message,
 			DebugMessages: r.Result.DebugMessages,
 			AnalyticsTags: r.Result.AnalyticsTags,
 			ExecutionTime: ExecutionTime{r.ExecutionTime},
-		}
+		})
 
 		metricEngine.RecordModuleCalled(labels)
 		metricEngine.RecordModuleDuration(labels, r.ExecutionTime)
-		groupOutcome.InvocationResults = append(groupOutcome.InvocationResults, hookOutcome)
 		if r.ExecutionTime > groupOutcome.ExecutionTimeMillis {
 			groupOutcome.ExecutionTimeMillis = r.ExecutionTime
 		}
 
 		if r.Err != nil {
-			hookOutcome.Errors = append(hookOutcome.Errors, r.Err.Error())
+			groupOutcome.InvocationResults[i].Errors = append(groupOutcome.InvocationResults[i].Errors, r.Err.Error())
 			switch r.Err.(type) {
 			case TimeoutError:
 				metricEngine.RecordModuleTimeout(labels)
-				hookOutcome.Status = StatusTimeout
+				groupOutcome.InvocationResults[i].Status = StatusTimeout
 			case FailureError:
-				metricEngine.RecordModuleFailed(labels)
-				hookOutcome.Status = StatusFailure
+				metricEngine.RecordModuleTimeout(labels)
+				groupOutcome.InvocationResults[i].Status = StatusFailure
 			default:
 				metricEngine.RecordModuleExecutionError(labels)
-				hookOutcome.Status = StatusExecutionFailure
+				groupOutcome.InvocationResults[i].Status = StatusExecutionFailure
 			}
 			continue
 		}
@@ -215,31 +214,37 @@ func processHookResponses[P any](
 		if r.Result.Reject {
 			reject := &RejectError{Code: r.Result.NbrCode, Reason: r.Result.Message}
 			metricEngine.RecordModuleSuccessRejected(labels)
-			hookOutcome.Action = ActionReject
-			hookOutcome.Errors = append(hookOutcome.Errors, reject.Error())
+			groupOutcome.InvocationResults[i].Action = ActionReject
+			groupOutcome.InvocationResults[i].Errors = append(groupOutcome.InvocationResults[i].Errors, reject.Error())
 			return groupOutcome, payload, reject
 		}
 
 		if r.Result.ChangeSet == nil || len(r.Result.ChangeSet.Mutations()) == 0 {
 			metricEngine.RecordModuleSuccessNooped(labels)
-			hookOutcome.Action = ActionNOP
+			groupOutcome.InvocationResults[i].Action = ActionNOP
 			continue
 		}
 
-		hookOutcome.Action = ActionUpdate
+		groupOutcome.InvocationResults[i].Action = ActionUpdate
 		for _, mut := range r.Result.ChangeSet.Mutations() {
 			p, err := mut.Apply(payload)
 			if err != nil {
-				hookOutcome.Warnings = append(hookOutcome.Warnings, fmt.Sprintf("failed applying hook mutation: %s", err))
+				groupOutcome.InvocationResults[i].Warnings = append(
+					groupOutcome.InvocationResults[i].Warnings,
+					fmt.Sprintf("failed applying hook mutation: %s", err),
+				)
 				continue
 			}
 
 			payload = p
-			hookOutcome.DebugMessages = append(hookOutcome.DebugMessages, fmt.Sprintf(
-				"Hook mutation successfully applied, affected key: %s, mutation type: %s",
-				strings.Join(mut.Key(), "."),
-				mut.Type(),
-			))
+			groupOutcome.InvocationResults[i].DebugMessages = append(
+				groupOutcome.InvocationResults[i].DebugMessages,
+				fmt.Sprintf(
+					"Hook mutation successfully applied, affected key: %s, mutation type: %s",
+					strings.Join(mut.Key(), "."),
+					mut.Type(),
+				),
+			)
 		}
 		metricEngine.RecordModuleSuccessUpdated(labels)
 	}

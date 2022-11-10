@@ -39,12 +39,12 @@ func assertEqualStageOutcomes(t *testing.T, expected StageOutcome, actual StageO
 	}
 }
 
-func findCorrespondingHookResult(hookID HookID, group GroupOutcome) *HookOutcome {
+func findCorrespondingHookResult(hookID HookID, group GroupOutcome) HookOutcome {
 	for _, hook := range group.InvocationResults {
 		if hook.HookID.ModuleCode == hookID.ModuleCode &&
 			hook.HookID.HookCode == hookID.HookCode {
 			return hook
 		}
 	}
-	return nil
+	return HookOutcome{}
 }
