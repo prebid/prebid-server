@@ -18,12 +18,6 @@ import (
 )
 
 func TestExecuteEntrypointStage_DoesNotChangeRequestForEmptyPlan(t *testing.T) {
-	expectedOutcome := StageOutcome{
-		ExecutionTime: ExecutionTime{0},
-		Entity:        hookstage.EntityHttpRequest,
-		Stage:         hooks.StageEntrypoint,
-		Groups:        []GroupOutcome{},
-	}
 	body := []byte(`{"name": "John", "last_name": "Doe"}`)
 	reader := bytes.NewReader(body)
 	req, err := http.NewRequest(http.MethodPost, "https://prebid.com/openrtb2/auction", reader)
@@ -40,8 +34,8 @@ func TestExecuteEntrypointStage_DoesNotChangeRequestForEmptyPlan(t *testing.T) {
 	newBody, reject := exec.ExecuteEntrypointStage(req, body)
 	require.Nil(t, reject, "Unexpected stage reject")
 
-	stOut := exec.GetOutcomes()[0]
-	assertEqualStageOutcomes(t, expectedOutcome, stOut)
+	stOut := exec.GetOutcomes()
+	assert.Empty(t, stOut)
 	if bytes.Compare(body, newBody) != 0 {
 		t.Error("request body should not change")
 	}
@@ -53,7 +47,7 @@ func TestExecuteEntrypointStage_CanApplyHookMutations(t *testing.T) {
 		Stage:  hooks.StageEntrypoint,
 		Groups: []GroupOutcome{
 			{
-				InvocationResults: []*HookOutcome{
+				InvocationResults: []HookOutcome{
 					{
 						AnalyticsTags: hookanalytics.Analytics{},
 						HookID:        HookID{"foobar", "foo"},
@@ -77,7 +71,7 @@ func TestExecuteEntrypointStage_CanApplyHookMutations(t *testing.T) {
 				},
 			},
 			{
-				InvocationResults: []*HookOutcome{
+				InvocationResults: []HookOutcome{
 					{
 						AnalyticsTags: hookanalytics.Analytics{},
 						HookID:        HookID{"foobar", "baz"},
@@ -185,7 +179,7 @@ func TestExecuteEntrypointStage_CanRejectHook(t *testing.T) {
 		Groups: []GroupOutcome{
 			{
 				ExecutionTime: ExecutionTime{},
-				InvocationResults: []*HookOutcome{
+				InvocationResults: []HookOutcome{
 					{
 						ExecutionTime: ExecutionTime{},
 						AnalyticsTags: hookanalytics.Analytics{},
@@ -203,7 +197,7 @@ func TestExecuteEntrypointStage_CanRejectHook(t *testing.T) {
 			},
 			{
 				ExecutionTime: ExecutionTime{},
-				InvocationResults: []*HookOutcome{
+				InvocationResults: []HookOutcome{
 					{
 						ExecutionTime: ExecutionTime{},
 						AnalyticsTags: hookanalytics.Analytics{},
@@ -256,7 +250,7 @@ func TestExecuteEntrypointStage_CanTimeoutOneOfHooks(t *testing.T) {
 		Groups: []GroupOutcome{
 			{
 				ExecutionTime: ExecutionTime{},
-				InvocationResults: []*HookOutcome{
+				InvocationResults: []HookOutcome{
 					{
 						ExecutionTime: ExecutionTime{},
 						AnalyticsTags: hookanalytics.Analytics{},
@@ -285,7 +279,7 @@ func TestExecuteEntrypointStage_CanTimeoutOneOfHooks(t *testing.T) {
 			},
 			{
 				ExecutionTime: ExecutionTime{},
-				InvocationResults: []*HookOutcome{
+				InvocationResults: []HookOutcome{
 					{
 						ExecutionTime: ExecutionTime{},
 						AnalyticsTags: hookanalytics.Analytics{},

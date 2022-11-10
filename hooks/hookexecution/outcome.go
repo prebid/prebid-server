@@ -52,7 +52,7 @@ type StageOutcome struct {
 
 type GroupOutcome struct {
 	ExecutionTime
-	InvocationResults []*HookOutcome `json:"invocationresults"`
+	InvocationResults []HookOutcome `json:"invocationresults"`
 }
 
 type HookOutcome struct {
