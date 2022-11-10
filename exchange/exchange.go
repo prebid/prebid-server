@@ -182,7 +182,7 @@ type AuctionRequest struct {
 	StoredBidResponses    stored_responses.ImpBidderStoredResp
 	BidderImpReplaceImpID stored_responses.BidderImpReplaceImpID
 	PubID                 string
-	HookExecutor          hookexecution.Executor
+	HookExecutor          hookexecution.HookExecutor
 }
 
 // BidderRequest holds the bidder specific request and all other
@@ -197,6 +197,12 @@ type BidderRequest struct {
 }
 
 func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *DebugLog) (*openrtb2.BidResponse, error) {
+	reject := r.HookExecutor.ExecuteProcessedAuctionStage(r.BidRequestWrapper.BidRequest, &r.Account)
+	if reject != nil {
+		//todo: return no bid response
+		// the only error returned from above is hook stage rejection
+	}
+
 	var errs []error
 	// rebuild/resync the request in the request wrapper.
 	if err := r.BidRequestWrapper.RebuildRequest(); err != nil {
