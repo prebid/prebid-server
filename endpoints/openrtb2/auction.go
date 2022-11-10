@@ -1553,32 +1553,26 @@ func setAuctionTypeImplicitly(r *openrtb_ext.RequestWrapper) {
 }
 
 func setSiteImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {
-	if siteIsNotSet(r.Site) {
-		referrerCandidate := httpReq.Referer()
-		if referrerCandidate == "" && r.Site != nil && r.Site.Page != "" {
-			referrerCandidate = r.Site.Page // If http referer is disabled and thus has empty value - use site.page instead
-		}
+	referrerCandidate := httpReq.Referer()
+	if referrerCandidate == "" && r.Site != nil && r.Site.Page != "" {
+		referrerCandidate = r.Site.Page // If http referer is disabled and thus has empty value - use site.page instead
+	}
 
-		if referrerCandidate != "" {
-			setSitePageIfEmpty(r.Site, referrerCandidate)
-			if parsedUrl, err := url.Parse(referrerCandidate); err == nil {
-				setSiteDomainIfEmpty(r.Site, parsedUrl.Host)
-				if publisherDomain, err := publicsuffix.EffectiveTLDPlusOne(parsedUrl.Host); err == nil {
-					setSitePublisherDomainIfEmpty(r.Site, publisherDomain)
-				}
+	if referrerCandidate != "" {
+		setSitePageIfEmpty(r.Site, referrerCandidate)
+		if parsedUrl, err := url.Parse(referrerCandidate); err == nil {
+			setSiteDomainIfEmpty(r.Site, parsedUrl.Host)
+			if publisherDomain, err := publicsuffix.EffectiveTLDPlusOne(parsedUrl.Host); err == nil {
+				setSitePublisherDomainIfEmpty(r.Site, publisherDomain)
 			}
 		}
-
 	}
+
 	if r.Site != nil {
 		if siteExt, err := r.GetSiteExt(); err == nil && siteExt.GetAmp() == nil {
 			siteExt.SetAmp(&notAmp)
 		}
 	}
-}
-
-func siteIsNotSet(site *openrtb2.Site) bool {
-	return site == nil || site.Page == "" || site.Domain == "" || site.Publisher == nil || site.Publisher.Domain == ""
 }
 
 func setSitePageIfEmpty(site *openrtb2.Site, sitePage string) {
