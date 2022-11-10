@@ -5,7 +5,7 @@ import (
 )
 
 type AllProcessedBidResponses interface {
-	HandleAllProcBidResponsesHook(
+	HandleAllProcessedBidResponsesHook(
 		context.Context,
 		*ModuleContext,
 		AllProcessedBidResponsesPayload,

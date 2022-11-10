@@ -30,12 +30,12 @@ func createModuleStageNamesCollection(modules map[string]interface{}) (map[strin
 
 		if _, ok := hook.(hookstage.BidderRequest); ok {
 			added = true
-			moduleStageNameCollector = addModuleStageName(moduleStageNameCollector, id, hooks.StageBidRequest)
+			moduleStageNameCollector = addModuleStageName(moduleStageNameCollector, id, hooks.StageBidderRequest)
 		}
 
 		if _, ok := hook.(hookstage.RawBidderResponse); ok {
 			added = true
-			moduleStageNameCollector = addModuleStageName(moduleStageNameCollector, id, hooks.StageRawBidResponse)
+			moduleStageNameCollector = addModuleStageName(moduleStageNameCollector, id, hooks.StageRawBidderResponse)
 		}
 
 		if _, ok := hook.(hookstage.AllProcessedBidResponses); ok {
