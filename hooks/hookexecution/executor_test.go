@@ -19,12 +19,6 @@ import (
 )
 
 func TestExecuteStages_DoesNotChangeRequestForEmptyPlan(t *testing.T) {
-	expectedOutcome := StageOutcome{
-		ExecutionTime: ExecutionTime{0},
-		Entity:        hookstage.EntityHttpRequest,
-		Stage:         hooks.StageEntrypoint,
-		Groups:        []GroupOutcome{},
-	}
 	body := []byte(`{"name": "John", "last_name": "Doe"}`)
 	reader := bytes.NewReader(body)
 	req, err := http.NewRequest(http.MethodPost, "https://prebid.com/openrtb2/auction", reader)
@@ -41,8 +35,8 @@ func TestExecuteStages_DoesNotChangeRequestForEmptyPlan(t *testing.T) {
 	newBody, reject := exec.ExecuteEntrypointStage(req, body)
 	require.Nil(t, reject, "Unexpected stage reject")
 
-	stOut := exec.GetOutcomes()[0]
-	assertEqualStageOutcomes(t, expectedOutcome, stOut)
+	stOut := exec.GetOutcomes()
+	assert.Empty(t, stOut)
 	if bytes.Compare(body, newBody) != 0 {
 		t.Error("request body should not change")
 	}
@@ -50,14 +44,8 @@ func TestExecuteStages_DoesNotChangeRequestForEmptyPlan(t *testing.T) {
 	newBody, reject = exec.ExecuteRawAuctionStage(body, &config.Account{})
 	require.Nil(t, reject, "Unexpected stage reject")
 
-	expectedOutcome = StageOutcome{
-		ExecutionTime: ExecutionTime{0},
-		Entity:        hookstage.EntityAuctionRequest,
-		Stage:         hooks.StageRawAuction,
-		Groups:        []GroupOutcome{},
-	}
-	stOut = exec.GetOutcomes()[1]
-	assertEqualStageOutcomes(t, expectedOutcome, stOut)
+	stOut = exec.GetOutcomes()
+	assert.Empty(t, stOut)
 	if bytes.Compare(body, newBody) != 0 {
 		t.Error("request body should not change")
 	}
@@ -65,14 +53,8 @@ func TestExecuteStages_DoesNotChangeRequestForEmptyPlan(t *testing.T) {
 	reject = exec.ExecuteProcessedAuctionStage(&openrtb2.BidRequest{}, &config.Account{})
 	require.Nil(t, reject, "Unexpected stage reject")
 
-	expectedOutcome = StageOutcome{
-		ExecutionTime: ExecutionTime{0},
-		Entity:        hookstage.EntityAuctionRequest,
-		Stage:         hooks.StageProcessedAuction,
-		Groups:        []GroupOutcome{},
-	}
-	stOut = exec.GetOutcomes()[2]
-	assertEqualStageOutcomes(t, expectedOutcome, stOut)
+	stOut = exec.GetOutcomes()
+	assert.Empty(t, stOut)
 }
 
 func TestExecuteEntrypointStage_CanApplyHookMutations(t *testing.T) {
@@ -81,7 +63,7 @@ func TestExecuteEntrypointStage_CanApplyHookMutations(t *testing.T) {
 		Stage:  hooks.StageEntrypoint,
 		Groups: []GroupOutcome{
 			{
-				InvocationResults: []*HookOutcome{
+				InvocationResults: []HookOutcome{
 					{
 						AnalyticsTags: hookanalytics.Analytics{},
 						HookID:        HookID{"foobar", "foo"},
@@ -105,7 +87,7 @@ func TestExecuteEntrypointStage_CanApplyHookMutations(t *testing.T) {
 				},
 			},
 			{
-				InvocationResults: []*HookOutcome{
+				InvocationResults: []HookOutcome{
 					{
 						AnalyticsTags: hookanalytics.Analytics{},
 						HookID:        HookID{"foobar", "baz"},
@@ -166,7 +148,7 @@ func TestExecuteRawAuctionStage_CanApplyHookMutations(t *testing.T) {
 		Stage:  hooks.StageRawAuction,
 		Groups: []GroupOutcome{
 			{
-				InvocationResults: []*HookOutcome{
+				InvocationResults: []HookOutcome{
 					{
 						AnalyticsTags: hookanalytics.Analytics{},
 						HookID:        HookID{"foobar", "foo"},
@@ -214,7 +196,7 @@ func TestExecuteProcessedAuctionStage_CanApplyHookMutations(t *testing.T) {
 		Stage:  hooks.StageProcessedAuction,
 		Groups: []GroupOutcome{
 			{
-				InvocationResults: []*HookOutcome{
+				InvocationResults: []HookOutcome{
 					{
 						AnalyticsTags: hookanalytics.Analytics{},
 						HookID:        HookID{"foobar", "foo"},
@@ -264,7 +246,7 @@ func TestExecuteEntrypointStage_CanRejectHook(t *testing.T) {
 		Groups: []GroupOutcome{
 			{
 				ExecutionTime: ExecutionTime{},
-				InvocationResults: []*HookOutcome{
+				InvocationResults: []HookOutcome{
 					{
 						ExecutionTime: ExecutionTime{},
 						AnalyticsTags: hookanalytics.Analytics{},
@@ -282,7 +264,7 @@ func TestExecuteEntrypointStage_CanRejectHook(t *testing.T) {
 			},
 			{
 				ExecutionTime: ExecutionTime{},
-				InvocationResults: []*HookOutcome{
+				InvocationResults: []HookOutcome{
 					{
 						ExecutionTime: ExecutionTime{},
 						AnalyticsTags: hookanalytics.Analytics{},
@@ -329,7 +311,7 @@ func TestExecuteRawAuctionStage_CanRejectHook(t *testing.T) {
 		Groups: []GroupOutcome{
 			{
 				ExecutionTime: ExecutionTime{},
-				InvocationResults: []*HookOutcome{
+				InvocationResults: []HookOutcome{
 					{
 						ExecutionTime: ExecutionTime{},
 						AnalyticsTags: hookanalytics.Analytics{},
@@ -348,7 +330,7 @@ func TestExecuteRawAuctionStage_CanRejectHook(t *testing.T) {
 			},
 			{
 				ExecutionTime: ExecutionTime{},
-				InvocationResults: []*HookOutcome{
+				InvocationResults: []HookOutcome{
 					{
 						ExecutionTime: ExecutionTime{},
 						AnalyticsTags: hookanalytics.Analytics{},
@@ -391,7 +373,7 @@ func TestExecuteProcessedAuctionStage_CanRejectHook(t *testing.T) {
 		Groups: []GroupOutcome{
 			{
 				ExecutionTime: ExecutionTime{},
-				InvocationResults: []*HookOutcome{
+				InvocationResults: []HookOutcome{
 					{
 						ExecutionTime: ExecutionTime{},
 						AnalyticsTags: hookanalytics.Analytics{},
@@ -433,7 +415,7 @@ func TestExecuteEntrypointStage_CanTimeoutOneOfHooks(t *testing.T) {
 		Groups: []GroupOutcome{
 			{
 				ExecutionTime: ExecutionTime{},
-				InvocationResults: []*HookOutcome{
+				InvocationResults: []HookOutcome{
 					{
 						ExecutionTime: ExecutionTime{},
 						AnalyticsTags: hookanalytics.Analytics{},
@@ -462,7 +444,7 @@ func TestExecuteEntrypointStage_CanTimeoutOneOfHooks(t *testing.T) {
 			},
 			{
 				ExecutionTime: ExecutionTime{},
-				InvocationResults: []*HookOutcome{
+				InvocationResults: []HookOutcome{
 					{
 						ExecutionTime: ExecutionTime{},
 						AnalyticsTags: hookanalytics.Analytics{},
@@ -522,7 +504,7 @@ func TestExecuteRawAuctionStage_CanTimeoutOneOfHooks(t *testing.T) {
 		Groups: []GroupOutcome{
 			{
 				ExecutionTime: ExecutionTime{},
-				InvocationResults: []*HookOutcome{
+				InvocationResults: []HookOutcome{
 					{
 						ExecutionTime: ExecutionTime{},
 						AnalyticsTags: hookanalytics.Analytics{},
@@ -541,7 +523,7 @@ func TestExecuteRawAuctionStage_CanTimeoutOneOfHooks(t *testing.T) {
 			},
 			{
 				ExecutionTime: ExecutionTime{},
-				InvocationResults: []*HookOutcome{
+				InvocationResults: []HookOutcome{
 					{
 						ExecutionTime: ExecutionTime{},
 						AnalyticsTags: hookanalytics.Analytics{},
@@ -593,7 +575,7 @@ func TestExecuteProcessedAuctionStage_CanTimeoutOneOfHooks(t *testing.T) {
 		Groups: []GroupOutcome{
 			{
 				ExecutionTime: ExecutionTime{},
-				InvocationResults: []*HookOutcome{
+				InvocationResults: []HookOutcome{
 					{
 						ExecutionTime: ExecutionTime{},
 						AnalyticsTags: hookanalytics.Analytics{},
@@ -609,7 +591,7 @@ func TestExecuteProcessedAuctionStage_CanTimeoutOneOfHooks(t *testing.T) {
 			},
 			{
 				ExecutionTime: ExecutionTime{},
-				InvocationResults: []*HookOutcome{
+				InvocationResults: []HookOutcome{
 					{
 						ExecutionTime: ExecutionTime{},
 						AnalyticsTags: hookanalytics.Analytics{},
