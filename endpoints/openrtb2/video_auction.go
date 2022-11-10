@@ -19,7 +19,6 @@ import (
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/openrtb/v17/openrtb2"
-	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
@@ -70,8 +69,6 @@ func NewVideoEndpoint(
 
 	videoEndpointRegexp := regexp.MustCompile(`[<>]`)
 
-	hookExecutor := &hookexecution.HookExecutor{PlanBuilder: hooks.EmptyPlanBuilder{}}
-
 	return httprouter.Handle((&endpointDeps{
 		uuidGenerator,
 		ex,
@@ -90,7 +87,7 @@ func NewVideoEndpoint(
 		videoEndpointRegexp,
 		ipValidator,
 		empty_fetcher.EmptyFetcher{},
-		hookExecutor}).VideoAuctionEndpoint), nil
+		&hookexecution.EmptyHookExecutor{}}).VideoAuctionEndpoint), nil
 }
 
 /*
@@ -303,7 +300,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		LegacyLabels:               labels,
 		GlobalPrivacyControlHeader: secGPC,
 		PubID:                      labels.PubID,
-		HookExecutor:               *deps.hookExecutor,
+		HookExecutor:               deps.hookExecutor,
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, &debugLog)

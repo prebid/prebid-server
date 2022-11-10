@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookstage"
@@ -16,8 +17,20 @@ const (
 	EndpointAmp     = "/openrtb2/amp"
 )
 
-type Executor interface {
+type StageExecutor interface {
 	ExecuteEntrypointStage(req *http.Request, body []byte) ([]byte, *RejectError)
+	ExecuteRawAuctionStage(body []byte) ([]byte, *RejectError)
+	ExecuteProcessedAuctionStage(req *openrtb2.BidRequest) *RejectError
+	ExecuteBidderRequestStage(req *openrtb2.BidRequest, bidder string) *RejectError
+	ExecuteRawBidderResponseStage(response *adapters.BidderResponse) *RejectError
+	ExecuteAllProcessedBidResponsesStage(responses []*adapters.BidderResponse) //TODO: check that responses is the necessary param
+	ExecuteAuctionResponseStage(response *openrtb2.BidResponse)
+}
+
+type HookStageExecutor interface {
+	StageExecutor
+	SetAccount(account *config.Account)
+	GetOutcomes() []StageOutcome
 }
 
 type HookExecutor struct {
@@ -26,6 +39,11 @@ type HookExecutor struct {
 	PlanBuilder   hooks.ExecutionPlanBuilder
 	MetricEngine  metrics.MetricsEngine
 	stageOutcomes []StageOutcome
+}
+
+func (executor *HookExecutor) SetAccount(account *config.Account) {
+	executor.InvocationCtx.Account = account
+	executor.InvocationCtx.AccountId = account.ID
 }
 
 func (executor *HookExecutor) GetOutcomes() []StageOutcome {
@@ -58,8 +76,8 @@ func (executor *HookExecutor) ExecuteEntrypointStage(req *http.Request, body []b
 	return payload.Body, reject
 }
 
-func (executor *HookExecutor) ExecuteRawAuctionStage(requestBody []byte, account *config.Account) ([]byte, *RejectError) {
-	plan := executor.PlanBuilder.PlanForRawAuctionStage(executor.Endpoint, account)
+func (executor *HookExecutor) ExecuteRawAuctionStage(requestBody []byte) ([]byte, *RejectError) {
+	plan := executor.PlanBuilder.PlanForRawAuctionStage(executor.Endpoint, executor.InvocationCtx.Account)
 	if len(plan) == 0 {
 		return requestBody, nil
 	}
@@ -84,8 +102,8 @@ func (executor *HookExecutor) ExecuteRawAuctionStage(requestBody []byte, account
 	return payload, reject
 }
 
-func (executor *HookExecutor) ExecuteProcessedAuctionStage(request *openrtb2.BidRequest, account *config.Account) *RejectError {
-	plan := executor.PlanBuilder.PlanForProcessedAuctionStage(executor.Endpoint, account)
+func (executor *HookExecutor) ExecuteProcessedAuctionStage(request *openrtb2.BidRequest) *RejectError {
+	plan := executor.PlanBuilder.PlanForProcessedAuctionStage(executor.Endpoint, executor.InvocationCtx.Account)
 	if len(plan) == 0 {
 		return nil
 	}
@@ -109,3 +127,53 @@ func (executor *HookExecutor) ExecuteProcessedAuctionStage(request *openrtb2.Bid
 
 	return reject
 }
+
+func (executor *HookExecutor) ExecuteBidderRequestStage(req *openrtb2.BidRequest, bidder string) *RejectError {
+	//TODO: implement
+	return nil
+}
+
+func (executor *HookExecutor) ExecuteRawBidderResponseStage(response *adapters.BidderResponse) *RejectError {
+	//TODO: implement
+	return nil
+}
+
+func (executor *HookExecutor) ExecuteAllProcessedBidResponsesStage(responses []*adapters.BidderResponse) {
+	//TODO: implement
+}
+
+func (executor *HookExecutor) ExecuteAuctionResponseStage(response *openrtb2.BidResponse) {
+	//TODO: implement
+}
+
+type EmptyHookExecutor struct{}
+
+func (executor *EmptyHookExecutor) SetAccount(_ *config.Account) {}
+
+func (executor *EmptyHookExecutor) GetOutcomes() []StageOutcome {
+	return []StageOutcome{}
+}
+
+func (executor *EmptyHookExecutor) ExecuteEntrypointStage(_ *http.Request, body []byte) ([]byte, *RejectError) {
+	return body, nil
+}
+
+func (executor *EmptyHookExecutor) ExecuteRawAuctionStage(body []byte) ([]byte, *RejectError) {
+	return body, nil
+}
+
+func (executor *EmptyHookExecutor) ExecuteProcessedAuctionStage(_ *openrtb2.BidRequest) *RejectError {
+	return nil
+}
+
+func (executor *EmptyHookExecutor) ExecuteBidderRequestStage(_ *openrtb2.BidRequest, bidder string) *RejectError {
+	return nil
+}
+
+func (executor *EmptyHookExecutor) ExecuteRawBidderResponseStage(_ *adapters.BidderResponse) *RejectError {
+	return nil
+}
+
+func (executor *EmptyHookExecutor) ExecuteAllProcessedBidResponsesStage(_ []*adapters.BidderResponse) {
+}
+func (executor *EmptyHookExecutor) ExecuteAuctionResponseStage(_ *openrtb2.BidResponse) {}

@@ -132,7 +132,7 @@ type endpointDeps struct {
 	debugLogRegexp            *regexp.Regexp
 	privateNetworkIPValidator iputil.IPValidator
 	storedRespFetcher         stored_requests.Fetcher
-	hookExecutor              *hookexecution.HookExecutor
+	hookExecutor              hookexecution.HookStageExecutor
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -324,9 +324,8 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		return
 	}
 
-	deps.hookExecutor.InvocationCtx.Account = account
-	deps.hookExecutor.InvocationCtx.AccountId = account.ID
-	requestJson, err = deps.hookExecutor.ExecuteRawAuctionStage(requestJson, account)
+	deps.hookExecutor.SetAccount(account)
+	requestJson, err = deps.hookExecutor.ExecuteRawAuctionStage(requestJson)
 	if err != nil {
 		//todo: return no bid response
 		// the only error returned from above is hook stage rejection

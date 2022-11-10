@@ -22,8 +22,8 @@ type ExecutionPlanBuilder interface {
 	PlanForEntrypointStage(endpoint string) Plan[hookstage.Entrypoint]
 	PlanForRawAuctionStage(endpoint string, account *config.Account) Plan[hookstage.RawAuction]
 	PlanForProcessedAuctionStage(endpoint string, account *config.Account) Plan[hookstage.ProcessedAuction]
-	PlanForBidRequestStage(endpoint string, account *config.Account) Plan[hookstage.BidRequest]
-	PlanForRawBidResponseStage(endpoint string, account *config.Account) Plan[hookstage.RawBidResponse]
+	PlanForBidRequestStage(endpoint string, account *config.Account) Plan[hookstage.BidderRequest]
+	PlanForRawBidResponseStage(endpoint string, account *config.Account) Plan[hookstage.RawBidderResponse]
 	PlanForAllProcessedBidResponsesStage(endpoint string, account *config.Account) Plan[hookstage.AllProcessedBidResponses]
 	PlanForAuctionResponseStage(endpoint string, account *config.Account) Plan[hookstage.AuctionResponse]
 }
@@ -86,7 +86,7 @@ func (p PlanBuilder) PlanForProcessedAuctionStage(endpoint string, account *conf
 	)
 }
 
-func (p PlanBuilder) PlanForBidRequestStage(endpoint string, account *config.Account) Plan[hookstage.BidRequest] {
+func (p PlanBuilder) PlanForBidRequestStage(endpoint string, account *config.Account) Plan[hookstage.BidderRequest] {
 	return getMergedPlan(
 		p.hooks,
 		account,
@@ -96,7 +96,7 @@ func (p PlanBuilder) PlanForBidRequestStage(endpoint string, account *config.Acc
 	)
 }
 
-func (p PlanBuilder) PlanForRawBidResponseStage(endpoint string, account *config.Account) Plan[hookstage.RawBidResponse] {
+func (p PlanBuilder) PlanForRawBidResponseStage(endpoint string, account *config.Account) Plan[hookstage.RawBidderResponse] {
 	return getMergedPlan(
 		p.hooks,
 		account,

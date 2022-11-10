@@ -41,7 +41,7 @@ func TestExecuteStages_DoesNotChangeRequestForEmptyPlan(t *testing.T) {
 		t.Error("request body should not change")
 	}
 
-	newBody, reject = exec.ExecuteRawAuctionStage(body, &config.Account{})
+	newBody, reject = exec.ExecuteRawAuctionStage(body)
 	require.Nil(t, reject, "Unexpected stage reject")
 
 	stOut = exec.GetOutcomes()
@@ -175,7 +175,7 @@ func TestExecuteRawAuctionStage_CanApplyHookMutations(t *testing.T) {
 		MetricEngine:  &metric_config.NilMetricsEngine{},
 	}
 
-	newBody, reject := exec.ExecuteRawAuctionStage(body, &config.Account{})
+	newBody, reject := exec.ExecuteRawAuctionStage(body)
 	require.Nil(t, reject, "Unexpected stage reject")
 
 	stOut := exec.GetOutcomes()[0]
@@ -357,7 +357,7 @@ func TestExecuteRawAuctionStage_CanRejectHook(t *testing.T) {
 		MetricEngine:  &metric_config.NilMetricsEngine{},
 	}
 
-	_, reject := exec.ExecuteRawAuctionStage(body, &config.Account{})
+	_, reject := exec.ExecuteRawAuctionStage(body)
 	require.NotNil(t, reject, "Unexpected successful execution of raw auction hook")
 	require.Equal(t, reject, &RejectError{}, "Unexpected reject returned from raw auction hook")
 
@@ -548,7 +548,7 @@ func TestExecuteRawAuctionStage_CanTimeoutOneOfHooks(t *testing.T) {
 		MetricEngine:  &metric_config.NilMetricsEngine{},
 	}
 
-	newBody, reject := exec.ExecuteRawAuctionStage(body, &config.Account{})
+	newBody, reject := exec.ExecuteRawAuctionStage(body)
 	require.Nil(t, reject, "Unexpected stage reject")
 
 	stOut := exec.GetOutcomes()[0]
@@ -680,7 +680,7 @@ func TestExecuteRawAuctionStage_ModuleContextsAreCreated(t *testing.T) {
 		PlanBuilder:   TestWithModuleContextsPlanBuilder{},
 		MetricEngine:  &metric_config.NilMetricsEngine{},
 	}
-	_, reject := exec.ExecuteRawAuctionStage(body, &config.Account{})
+	_, reject := exec.ExecuteRawAuctionStage(body)
 	require.Nil(t, reject, "Unexpected stage reject")
 
 	stOut := exec.GetOutcomes()[0]
