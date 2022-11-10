@@ -92,6 +92,13 @@ func GetAccount(ctx context.Context, cfg *config.Configuration, fetcher stored_r
 	return account, nil
 }
 
+// TCF2Enforcements maps enforcement algo string values to their integer representation and is
+// used to limit string compares
+var TCF2Enforcements = map[string]config.TCF2EnforcementAlgo{
+	config.TCF2EnforceAlgoBasic: config.TCF2BasicEnforcement,
+	config.TCF2EnforceAlgoFull:  config.TCF2FullEnforcement,
+}
+
 // setDerivedConfig modifies an account object by setting fields derived from other fields set in the account configuration
 func setDerivedConfig(account *config.Account) {
 	account.GDPR.PurposeConfigs = map[consentconstants.Purpose]*config.AccountGDPRPurpose{
@@ -107,9 +114,16 @@ func setDerivedConfig(account *config.Account) {
 		10: &account.GDPR.Purpose10,
 	}
 
-	// To look for a purpose's vendor exceptions in O(1) time, for each purpose we fill this hash table with bidders
-	// located in the VendorExceptions field of the GDPR.PurposeX struct
 	for _, pc := range account.GDPR.PurposeConfigs {
+		// To minimize the number of string compares per request, we set the integer representation
+		// of the enforcement algorithm on each purpose config
+		pc.EnforceAlgoID = config.TCF2UndefinedEnforcement
+		if algo, exists := TCF2Enforcements[pc.EnforceAlgo]; exists {
+			pc.EnforceAlgoID = algo
+		}
+
+		// To look for a purpose's vendor exceptions in O(1) time, for each purpose we fill this hash table with bidders
+		// located in the VendorExceptions field of the GDPR.PurposeX struct
 		if pc.VendorExceptions == nil {
 			continue
 		}
