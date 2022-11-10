@@ -19,11 +19,11 @@ func (e EmptyPlanBuilder) PlanForProcessedAuctionStage(endpoint string, account 
 	return nil
 }
 
-func (e EmptyPlanBuilder) PlanForBidRequestStage(endpoint string, account *config.Account) Plan[hookstage.BidRequest] {
+func (e EmptyPlanBuilder) PlanForBidRequestStage(endpoint string, account *config.Account) Plan[hookstage.BidderRequest] {
 	return nil
 }
 
-func (e EmptyPlanBuilder) PlanForRawBidResponseStage(endpoint string, account *config.Account) Plan[hookstage.RawBidResponse] {
+func (e EmptyPlanBuilder) PlanForRawBidResponseStage(endpoint string, account *config.Account) Plan[hookstage.RawBidderResponse] {
 	return nil
 }
 

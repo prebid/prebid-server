@@ -182,7 +182,7 @@ type AuctionRequest struct {
 	StoredBidResponses    stored_responses.ImpBidderStoredResp
 	BidderImpReplaceImpID stored_responses.BidderImpReplaceImpID
 	PubID                 string
-	HookExecutor          hookexecution.Executor
+	HookExecutor          hookexecution.StageExecutor
 }
 
 // BidderRequest holds the bidder specific request and all other
