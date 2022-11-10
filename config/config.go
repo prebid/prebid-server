@@ -264,8 +264,8 @@ func (cfg *GDPR) validatePurposes(errs []error) []error {
 		enforceAlgoValue := purposeConfigs[i].EnforceAlgo
 		enforceAlgoField := fmt.Sprintf("gdpr.tcf2.purpose%d.enforce_algo", (i + 1))
 
-		if enforceAlgoValue != TCF2FullEnforcement {
-			errs = append(errs, fmt.Errorf("%s must be \"full\". Got %s", enforceAlgoField, enforceAlgoValue))
+		if enforceAlgoValue != TCF2EnforceAlgoFull && enforceAlgoValue != TCF2EnforceAlgoBasic {
+			errs = append(errs, fmt.Errorf("%s must be \"basic\" or \"full\". Got %s", enforceAlgoField, enforceAlgoValue))
 		}
 	}
 	return errs
@@ -285,7 +285,16 @@ func (t *GDPRTimeouts) ActiveTimeout() time.Duration {
 }
 
 const (
-	TCF2FullEnforcement = "full"
+	TCF2EnforceAlgoBasic = "basic"
+	TCF2EnforceAlgoFull  = "full"
+)
+
+type TCF2EnforcementAlgo int
+
+const (
+	TCF2UndefinedEnforcement TCF2EnforcementAlgo = iota
+	TCF2BasicEnforcement
+	TCF2FullEnforcement
 )
 
 // TCF2 defines the TCF2 specific configurations for GDPR
@@ -305,15 +314,6 @@ type TCF2 struct {
 	PurposeConfigs      map[consentconstants.Purpose]*TCF2Purpose
 	SpecialFeature1     TCF2SpecialFeature      `mapstructure:"special_feature1"`
 	PurposeOneTreatment TCF2PurposeOneTreatment `mapstructure:"purpose_one_treatment"`
-}
-
-// BasicEnforcementVendor checks if the given bidder is considered a basic enforcement vendor which indicates whether
-// weak vendor enforcement applies to that bidder. If set, the legal basis calculation for the bidder only considers
-// consent to the purpose, not the vendor. The idea is that the publisher trusts this vendor to enforce the
-// appropriate rules on their own. This only comes into play when enforceVendors is true as it lists those vendors that
-// are exempt for vendor enforcement.
-func (t *TCF2) BasicEnforcementVendor(openrtb_ext.BidderName) bool {
-	return false
 }
 
 // ChannelEnabled checks if a given channel type is enabled. All channel types are considered either
@@ -336,6 +336,14 @@ func (t *TCF2) PurposeEnforced(purpose consentconstants.Purpose) (value bool) {
 	return t.PurposeConfigs[purpose].EnforcePurpose
 }
 
+// PurposeEnforcementAlgo returns the default enforcement algorithm for a given purpose
+func (t *TCF2) PurposeEnforcementAlgo(purpose consentconstants.Purpose) (value TCF2EnforcementAlgo) {
+	if c, exists := t.PurposeConfigs[purpose]; exists {
+		return c.EnforceAlgoID
+	}
+	return TCF2FullEnforcement
+}
+
 // PurposeEnforcingVendors checks if enforcing vendors is turned on for a given purpose. With enforcing vendors
 // enabled, the GDPR full enforcement algorithm considers the GVL when determining legal basis; otherwise it's skipped.
 func (t *TCF2) PurposeEnforcingVendors(purpose consentconstants.Purpose) (value bool) {
@@ -345,17 +353,15 @@ func (t *TCF2) PurposeEnforcingVendors(purpose consentconstants.Purpose) (value 
 	return t.PurposeConfigs[purpose].EnforceVendors
 }
 
-// PurposeVendorException checks if the specified bidder is considered a vendor exception for a given purpose. If a
-// bidder is a vendor exception, the GDPR full enforcement algorithm will bypass the legal basis calculation assuming
-// the request is valid and there isn't a "deny all" publisher restriction
-func (t *TCF2) PurposeVendorException(purpose consentconstants.Purpose, bidder openrtb_ext.BidderName) (value bool) {
-	if t.PurposeConfigs[purpose] == nil {
-		return false
+// PurposeVendorExceptions returns the vendor exception map for a given purpose if it exists, otherwise it returns
+// an empty map of vendor exceptions
+func (t *TCF2) PurposeVendorExceptions(purpose consentconstants.Purpose) (value map[openrtb_ext.BidderName]struct{}) {
+	c, exists := t.PurposeConfigs[purpose]
+
+	if exists && c.VendorExceptionMap != nil {
+		return c.VendorExceptionMap
 	}
-	if _, ok := t.PurposeConfigs[purpose].VendorExceptionMap[bidder]; ok {
-		return true
-	}
-	return false
+	return make(map[openrtb_ext.BidderName]struct{}, 0)
 }
 
 // FeatureOneEnforced checks if special feature one is enforced. If it is enforced, PBS will determine whether geo
@@ -385,10 +391,12 @@ func (t *TCF2) PurposeOneTreatmentAccessAllowed() (value bool) {
 
 // Making a purpose struct so purpose specific details can be added later.
 type TCF2Purpose struct {
-	Enabled        bool   `mapstructure:"enabled"` // Deprecated: Use enforce_purpose instead
-	EnforceAlgo    string `mapstructure:"enforce_algo"`
-	EnforcePurpose bool   `mapstructure:"enforce_purpose"`
-	EnforceVendors bool   `mapstructure:"enforce_vendors"`
+	Enabled     bool   `mapstructure:"enabled"` // Deprecated: Use enforce_purpose instead
+	EnforceAlgo string `mapstructure:"enforce_algo"`
+	// Integer representation of enforcement algo for performance improvement on compares
+	EnforceAlgoID  TCF2EnforcementAlgo
+	EnforcePurpose bool `mapstructure:"enforce_purpose"`
+	EnforceVendors bool `mapstructure:"enforce_vendors"`
 	// Array of vendor exceptions that is used to create the hash table VendorExceptionMap so vendor names can be instantly accessed
 	VendorExceptions   []openrtb_ext.BidderName `mapstructure:"vendor_exceptions"`
 	VendorExceptionMap map[openrtb_ext.BidderName]struct{}
@@ -673,6 +681,16 @@ func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName func(strin
 		8:  &c.GDPR.TCF2.Purpose8,
 		9:  &c.GDPR.TCF2.Purpose9,
 		10: &c.GDPR.TCF2.Purpose10,
+	}
+
+	// As an alternative to performing several string compares per request, we set the integer representation of
+	// the enforcement algorithm on each purpose config
+	for _, pc := range c.GDPR.TCF2.PurposeConfigs {
+		if pc.EnforceAlgo == TCF2EnforceAlgoBasic {
+			pc.EnforceAlgoID = TCF2BasicEnforcement
+		} else {
+			pc.EnforceAlgoID = TCF2FullEnforcement
+		}
 	}
 
 	// To look for a purpose's vendor exceptions in O(1) time, for each purpose we fill this hash table with bidders
@@ -1033,16 +1051,16 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("gdpr.tcf2.purpose8.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose9.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose10.enabled", true)
-	v.SetDefault("gdpr.tcf2.purpose1.enforce_algo", TCF2FullEnforcement)
-	v.SetDefault("gdpr.tcf2.purpose2.enforce_algo", TCF2FullEnforcement)
-	v.SetDefault("gdpr.tcf2.purpose3.enforce_algo", TCF2FullEnforcement)
-	v.SetDefault("gdpr.tcf2.purpose4.enforce_algo", TCF2FullEnforcement)
-	v.SetDefault("gdpr.tcf2.purpose5.enforce_algo", TCF2FullEnforcement)
-	v.SetDefault("gdpr.tcf2.purpose6.enforce_algo", TCF2FullEnforcement)
-	v.SetDefault("gdpr.tcf2.purpose7.enforce_algo", TCF2FullEnforcement)
-	v.SetDefault("gdpr.tcf2.purpose8.enforce_algo", TCF2FullEnforcement)
-	v.SetDefault("gdpr.tcf2.purpose9.enforce_algo", TCF2FullEnforcement)
-	v.SetDefault("gdpr.tcf2.purpose10.enforce_algo", TCF2FullEnforcement)
+	v.SetDefault("gdpr.tcf2.purpose1.enforce_algo", TCF2EnforceAlgoFull)
+	v.SetDefault("gdpr.tcf2.purpose2.enforce_algo", TCF2EnforceAlgoFull)
+	v.SetDefault("gdpr.tcf2.purpose3.enforce_algo", TCF2EnforceAlgoFull)
+	v.SetDefault("gdpr.tcf2.purpose4.enforce_algo", TCF2EnforceAlgoFull)
+	v.SetDefault("gdpr.tcf2.purpose5.enforce_algo", TCF2EnforceAlgoFull)
+	v.SetDefault("gdpr.tcf2.purpose6.enforce_algo", TCF2EnforceAlgoFull)
+	v.SetDefault("gdpr.tcf2.purpose7.enforce_algo", TCF2EnforceAlgoFull)
+	v.SetDefault("gdpr.tcf2.purpose8.enforce_algo", TCF2EnforceAlgoFull)
+	v.SetDefault("gdpr.tcf2.purpose9.enforce_algo", TCF2EnforceAlgoFull)
+	v.SetDefault("gdpr.tcf2.purpose10.enforce_algo", TCF2EnforceAlgoFull)
 	v.SetDefault("gdpr.tcf2.purpose1.enforce_purpose", true)
 	v.SetDefault("gdpr.tcf2.purpose2.enforce_purpose", true)
 	v.SetDefault("gdpr.tcf2.purpose3.enforce_purpose", true)
@@ -1131,14 +1149,14 @@ func migrateConfigTCF2EnforcePurposeFlags(v *viper.Viper) {
 		if v.IsSet(algoField) {
 			glog.Warningf("using %s and ignoring deprecated %s string type", algoField, purposeField)
 		} else {
-			v.Set(algoField, TCF2FullEnforcement)
+			v.Set(algoField, TCF2EnforceAlgoFull)
 
-			glog.Warningf("setting %s to \"%s\" based on deprecated %s string type \"%s\"", algoField, TCF2FullEnforcement, purposeField, v.GetString(purposeField))
+			glog.Warningf("setting %s to \"%s\" based on deprecated %s string type \"%s\"", algoField, TCF2EnforceAlgoFull, purposeField, v.GetString(purposeField))
 		}
 
 		oldPurposeFieldValue := v.GetString(purposeField)
 		newPurposeFieldValue := "false"
-		if oldPurposeFieldValue == TCF2FullEnforcement {
+		if oldPurposeFieldValue == TCF2EnforceAlgoFull {
 			newPurposeFieldValue = "true"
 		}
 
