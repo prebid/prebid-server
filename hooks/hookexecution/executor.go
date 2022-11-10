@@ -43,6 +43,7 @@ type HookExecutor struct {
 
 func (executor *HookExecutor) SetAccount(account *config.Account) {
 	executor.InvocationCtx.Account = account
+	executor.InvocationCtx.AccountId = account.ID
 }
 
 func (executor *HookExecutor) GetOutcomes() []StageOutcome {

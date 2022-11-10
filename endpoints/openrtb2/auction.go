@@ -324,8 +324,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		return
 	}
 
-	deps.hookExecutor.InvocationCtx.Account = account
-	deps.hookExecutor.InvocationCtx.AccountId = account.ID
+	deps.hookExecutor.SetAccount(account)
 	requestJson, err = deps.hookExecutor.ExecuteRawAuctionStage(requestJson, account)
 	if err != nil {
 		//todo: return no bid response
