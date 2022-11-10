@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/stretchr/testify/assert"
@@ -341,7 +340,7 @@ func TestPlanForBidRequestStage(t *testing.T) {
 		givenDefaultAccountPlanData []byte
 		giveAccountPlanData         []byte
 		givenHooks                  map[string]interface{}
-		expectedPlan                Plan[hookstage.BidRequest]
+		expectedPlan                Plan[hookstage.BidderRequest]
 	}{
 		"Account-specific execution plan rewrites default-account execution plan": {
 			givenEndpoint:               "/openrtb2/auction",
@@ -349,18 +348,18 @@ func TestPlanForBidRequestStage(t *testing.T) {
 			givenDefaultAccountPlanData: []byte(`{"endpoints": {"/openrtb2/auction": {"stages": {"bidrequest": {"groups": [{"timeout": 10, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "bar"}, {"module_code": "ortb2blocking", "hook_impl_code": "block_request"}]}, {"timeout": 5, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "foo"}]}]}}}, "/openrtb2/amp": {"stages": {"entrypoint": {"groups": [{"timeout": 5, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "foo"}]}]}}}}}`),
 			giveAccountPlanData:         []byte(`{"execution_plan": {"endpoints": {"/openrtb2/auction": {"stages": {"bidrequest": {"groups": [{"timeout": 15, "hook_sequence": [{"module_code": "prebid", "hook_impl_code": "baz"}]}]}}}}}}`),
 			givenHooks:                  hooks,
-			expectedPlan: Plan[hookstage.BidRequest]{
+			expectedPlan: Plan[hookstage.BidderRequest]{
 				// first group from host-level plan
-				Group[hookstage.BidRequest]{
+				Group[hookstage.BidderRequest]{
 					Timeout: 5 * time.Millisecond,
-					Hooks: []HookWrapper[hookstage.BidRequest]{
+					Hooks: []HookWrapper[hookstage.BidderRequest]{
 						{Module: "foobar", Code: "foo", Hook: fakeBidRequestHook{}},
 					},
 				},
 				// then come groups from account-level plan (default-account-level plan ignored)
-				Group[hookstage.BidRequest]{
+				Group[hookstage.BidderRequest]{
 					Timeout: 15 * time.Millisecond,
-					Hooks: []HookWrapper[hookstage.BidRequest]{
+					Hooks: []HookWrapper[hookstage.BidderRequest]{
 						{Module: "prebid", Code: "baz", Hook: fakeBidRequestHook{}},
 					},
 				},
@@ -372,10 +371,10 @@ func TestPlanForBidRequestStage(t *testing.T) {
 			givenDefaultAccountPlanData: []byte(`{}`),
 			giveAccountPlanData:         []byte(`{"execution_plan": {"endpoints": {"/openrtb2/auction": {"stages": {"bidrequest": {"groups": [{"timeout": 15, "hook_sequence": [{"module_code": "prebid", "hook_impl_code": "baz"}]}]}}}}}}`),
 			givenHooks:                  hooks,
-			expectedPlan: Plan[hookstage.BidRequest]{
-				Group[hookstage.BidRequest]{
+			expectedPlan: Plan[hookstage.BidderRequest]{
+				Group[hookstage.BidderRequest]{
 					Timeout: 15 * time.Millisecond,
-					Hooks: []HookWrapper[hookstage.BidRequest]{
+					Hooks: []HookWrapper[hookstage.BidderRequest]{
 						{Module: "prebid", Code: "baz", Hook: fakeBidRequestHook{}},
 					},
 				},
@@ -387,23 +386,23 @@ func TestPlanForBidRequestStage(t *testing.T) {
 			givenDefaultAccountPlanData: []byte(`{"endpoints": {"/openrtb2/auction": {"stages": {"bidrequest": {"groups": [{"timeout": 10, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "bar"}, {"module_code": "ortb2blocking", "hook_impl_code": "block_request"}]}, {"timeout": 5, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "foo"}]}]}}}, "/openrtb2/amp": {"stages": {"entrypoint": {"groups": [{"timeout": 5, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "foo"}]}]}}}}}`),
 			giveAccountPlanData:         []byte(`{}`),
 			givenHooks:                  hooks,
-			expectedPlan: Plan[hookstage.BidRequest]{
-				Group[hookstage.BidRequest]{
+			expectedPlan: Plan[hookstage.BidderRequest]{
+				Group[hookstage.BidderRequest]{
 					Timeout: 5 * time.Millisecond,
-					Hooks: []HookWrapper[hookstage.BidRequest]{
+					Hooks: []HookWrapper[hookstage.BidderRequest]{
 						{Module: "foobar", Code: "foo", Hook: fakeBidRequestHook{}},
 					},
 				},
-				Group[hookstage.BidRequest]{
+				Group[hookstage.BidderRequest]{
 					Timeout: 10 * time.Millisecond,
-					Hooks: []HookWrapper[hookstage.BidRequest]{
+					Hooks: []HookWrapper[hookstage.BidderRequest]{
 						{Module: "foobar", Code: "bar", Hook: fakeBidRequestHook{}},
 						{Module: "ortb2blocking", Code: "block_request", Hook: fakeBidRequestHook{}},
 					},
 				},
-				Group[hookstage.BidRequest]{
+				Group[hookstage.BidderRequest]{
 					Timeout: 5 * time.Millisecond,
-					Hooks: []HookWrapper[hookstage.BidRequest]{
+					Hooks: []HookWrapper[hookstage.BidderRequest]{
 						{Module: "foobar", Code: "foo", Hook: fakeBidRequestHook{}},
 					},
 				},
@@ -440,7 +439,7 @@ func TestPlanForRawBidResponseStage(t *testing.T) {
 		givenDefaultAccountPlanData []byte
 		giveAccountPlanData         []byte
 		givenHooks                  map[string]interface{}
-		expectedPlan                Plan[hookstage.RawBidResponse]
+		expectedPlan                Plan[hookstage.RawBidderResponse]
 	}{
 		"Account-specific execution plan rewrites default-account execution plan": {
 			givenEndpoint:               "/openrtb2/auction",
@@ -448,18 +447,18 @@ func TestPlanForRawBidResponseStage(t *testing.T) {
 			givenDefaultAccountPlanData: []byte(`{"endpoints": {"/openrtb2/auction": {"stages": {"rawbidresponse": {"groups": [{"timeout": 10, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "bar"}, {"module_code": "ortb2blocking", "hook_impl_code": "block_request"}]}, {"timeout": 5, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "foo"}]}]}}}, "/openrtb2/amp": {"stages": {"entrypoint": {"groups": [{"timeout": 5, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "foo"}]}]}}}}}`),
 			giveAccountPlanData:         []byte(`{"execution_plan": {"endpoints": {"/openrtb2/auction": {"stages": {"rawbidresponse": {"groups": [{"timeout": 15, "hook_sequence": [{"module_code": "prebid", "hook_impl_code": "baz"}]}]}}}}}}`),
 			givenHooks:                  hooks,
-			expectedPlan: Plan[hookstage.RawBidResponse]{
+			expectedPlan: Plan[hookstage.RawBidderResponse]{
 				// first group from host-level plan
-				Group[hookstage.RawBidResponse]{
+				Group[hookstage.RawBidderResponse]{
 					Timeout: 5 * time.Millisecond,
-					Hooks: []HookWrapper[hookstage.RawBidResponse]{
+					Hooks: []HookWrapper[hookstage.RawBidderResponse]{
 						{Module: "foobar", Code: "foo", Hook: fakeRawBidResponseHook{}},
 					},
 				},
 				// then come groups from account-level plan (default-account-level plan ignored)
-				Group[hookstage.RawBidResponse]{
+				Group[hookstage.RawBidderResponse]{
 					Timeout: 15 * time.Millisecond,
-					Hooks: []HookWrapper[hookstage.RawBidResponse]{
+					Hooks: []HookWrapper[hookstage.RawBidderResponse]{
 						{Module: "prebid", Code: "baz", Hook: fakeRawBidResponseHook{}},
 					},
 				},
@@ -471,10 +470,10 @@ func TestPlanForRawBidResponseStage(t *testing.T) {
 			givenDefaultAccountPlanData: []byte(`{}`),
 			giveAccountPlanData:         []byte(`{"execution_plan": {"endpoints": {"/openrtb2/auction": {"stages": {"rawbidresponse": {"groups": [{"timeout": 15, "hook_sequence": [{"module_code": "prebid", "hook_impl_code": "baz"}]}]}}}}}}`),
 			givenHooks:                  hooks,
-			expectedPlan: Plan[hookstage.RawBidResponse]{
-				Group[hookstage.RawBidResponse]{
+			expectedPlan: Plan[hookstage.RawBidderResponse]{
+				Group[hookstage.RawBidderResponse]{
 					Timeout: 15 * time.Millisecond,
-					Hooks: []HookWrapper[hookstage.RawBidResponse]{
+					Hooks: []HookWrapper[hookstage.RawBidderResponse]{
 						{Module: "prebid", Code: "baz", Hook: fakeRawBidResponseHook{}},
 					},
 				},
@@ -486,23 +485,23 @@ func TestPlanForRawBidResponseStage(t *testing.T) {
 			givenDefaultAccountPlanData: []byte(`{"endpoints": {"/openrtb2/auction": {"stages": {"rawbidresponse": {"groups": [{"timeout": 10, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "bar"}, {"module_code": "ortb2blocking", "hook_impl_code": "block_request"}]}, {"timeout": 5, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "foo"}]}]}}}, "/openrtb2/amp": {"stages": {"entrypoint": {"groups": [{"timeout": 5, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "foo"}]}]}}}}}`),
 			giveAccountPlanData:         []byte(`{}`),
 			givenHooks:                  hooks,
-			expectedPlan: Plan[hookstage.RawBidResponse]{
-				Group[hookstage.RawBidResponse]{
+			expectedPlan: Plan[hookstage.RawBidderResponse]{
+				Group[hookstage.RawBidderResponse]{
 					Timeout: 5 * time.Millisecond,
-					Hooks: []HookWrapper[hookstage.RawBidResponse]{
+					Hooks: []HookWrapper[hookstage.RawBidderResponse]{
 						{Module: "foobar", Code: "foo", Hook: fakeRawBidResponseHook{}},
 					},
 				},
-				Group[hookstage.RawBidResponse]{
+				Group[hookstage.RawBidderResponse]{
 					Timeout: 10 * time.Millisecond,
-					Hooks: []HookWrapper[hookstage.RawBidResponse]{
+					Hooks: []HookWrapper[hookstage.RawBidderResponse]{
 						{Module: "foobar", Code: "bar", Hook: fakeRawBidResponseHook{}},
 						{Module: "ortb2blocking", Code: "block_request", Hook: fakeRawBidResponseHook{}},
 					},
 				},
-				Group[hookstage.RawBidResponse]{
+				Group[hookstage.RawBidderResponse]{
 					Timeout: 5 * time.Millisecond,
-					Hooks: []HookWrapper[hookstage.RawBidResponse]{
+					Hooks: []HookWrapper[hookstage.RawBidderResponse]{
 						{Module: "foobar", Code: "foo", Hook: fakeRawBidResponseHook{}},
 					},
 				},
@@ -769,7 +768,7 @@ type fakeRawAuctionHook struct{}
 
 func (f fakeRawAuctionHook) HandleRawAuctionHook(
 	_ context.Context,
-	_ hookstage.InvocationContext,
+	_ *hookstage.ModuleContext,
 	_ hookstage.RawAuctionPayload,
 ) (hookstage.HookResult[hookstage.RawAuctionPayload], error) {
 	return hookstage.HookResult[hookstage.RawAuctionPayload]{}, nil
@@ -779,7 +778,7 @@ type fakeProcessedAuctionHook struct{}
 
 func (f fakeProcessedAuctionHook) HandleProcessedAuctionHook(
 	_ context.Context,
-	_ hookstage.InvocationContext,
+	_ *hookstage.ModuleContext,
 	_ hookstage.ProcessedAuctionPayload,
 ) (hookstage.HookResult[hookstage.ProcessedAuctionPayload], error) {
 	return hookstage.HookResult[hookstage.ProcessedAuctionPayload]{}, nil
@@ -787,29 +786,29 @@ func (f fakeProcessedAuctionHook) HandleProcessedAuctionHook(
 
 type fakeBidRequestHook struct{}
 
-func (f fakeBidRequestHook) HandleBidRequestHook(
+func (f fakeBidRequestHook) HandleBidderRequestHook(
 	_ context.Context,
-	_ hookstage.InvocationContext,
-	_ hookstage.BidRequestPayload,
-) (hookstage.HookResult[hookstage.BidRequestPayload], error) {
-	return hookstage.HookResult[hookstage.BidRequestPayload]{}, nil
+	_ *hookstage.ModuleContext,
+	_ hookstage.BidderRequestPayload,
+) (hookstage.HookResult[hookstage.BidderRequestPayload], error) {
+	return hookstage.HookResult[hookstage.BidderRequestPayload]{}, nil
 }
 
 type fakeRawBidResponseHook struct{}
 
-func (f fakeRawBidResponseHook) HandleRawBidResponseHook(
+func (f fakeRawBidResponseHook) HandleRawBidderResponseHook(
 	_ context.Context,
-	_ hookstage.InvocationContext,
-	_ hookstage.RawBidResponsePayload,
-) (hookstage.HookResult[hookstage.RawBidResponsePayload], error) {
-	return hookstage.HookResult[hookstage.RawBidResponsePayload]{}, nil
+	_ *hookstage.ModuleContext,
+	_ hookstage.RawBidderResponsePayload,
+) (hookstage.HookResult[hookstage.RawBidderResponsePayload], error) {
+	return hookstage.HookResult[hookstage.RawBidderResponsePayload]{}, nil
 }
 
 type fakeAllProcBidResponsesHook struct{}
 
 func (f fakeAllProcBidResponsesHook) HandleAllProcBidResponsesHook(
 	_ context.Context,
-	_ hookstage.InvocationContext,
+	_ *hookstage.ModuleContext,
 	_ hookstage.AllProcessedBidResponsesPayload,
 ) (hookstage.HookResult[hookstage.AllProcessedBidResponsesPayload], error) {
 	return hookstage.HookResult[hookstage.AllProcessedBidResponsesPayload]{}, nil
@@ -819,8 +818,8 @@ type fakeAuctionResponseHook struct{}
 
 func (f fakeAuctionResponseHook) HandleAuctionResponseHook(
 	_ context.Context,
-	_ hookstage.InvocationContext,
-	_ *openrtb2.BidResponse,
-) (hookstage.HookResult[*openrtb2.BidResponse], error) {
-	return hookstage.HookResult[*openrtb2.BidResponse]{}, nil
+	_ *hookstage.ModuleContext,
+	_ hookstage.AuctionResponsePayload,
+) (hookstage.HookResult[hookstage.AuctionResponsePayload], error) {
+	return hookstage.HookResult[hookstage.AuctionResponsePayload]{}, nil
 }

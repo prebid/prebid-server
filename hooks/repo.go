@@ -10,8 +10,8 @@ type HookRepository interface {
 	GetEntrypointHook(id string) (hookstage.Entrypoint, bool)
 	GetRawAuctionHook(id string) (hookstage.RawAuction, bool)
 	GetProcessedAuctionHook(id string) (hookstage.ProcessedAuction, bool)
-	GetBidRequestHook(id string) (hookstage.BidRequest, bool)
-	GetRawBidResponseHook(id string) (hookstage.RawBidResponse, bool)
+	GetBidRequestHook(id string) (hookstage.BidderRequest, bool)
+	GetRawBidResponseHook(id string) (hookstage.RawBidderResponse, bool)
 	GetAllProcessedBidResponsesHook(id string) (hookstage.AllProcessedBidResponses, bool)
 	GetAuctionResponseHook(id string) (hookstage.AuctionResponse, bool)
 }
@@ -31,8 +31,8 @@ type hookRepository struct {
 	entrypointHooks              map[string]hookstage.Entrypoint
 	rawAuctionHooks              map[string]hookstage.RawAuction
 	processedAuctionHooks        map[string]hookstage.ProcessedAuction
-	bidRequestHooks              map[string]hookstage.BidRequest
-	rawBidResponseHooks          map[string]hookstage.RawBidResponse
+	bidRequestHooks              map[string]hookstage.BidderRequest
+	rawBidResponseHooks          map[string]hookstage.RawBidderResponse
 	allProcessedBidResponseHooks map[string]hookstage.AllProcessedBidResponses
 	auctionResponseHooks         map[string]hookstage.AuctionResponse
 }
@@ -49,11 +49,11 @@ func (r *hookRepository) GetProcessedAuctionHook(id string) (hookstage.Processed
 	return getHook(r.processedAuctionHooks, id)
 }
 
-func (r *hookRepository) GetBidRequestHook(id string) (hookstage.BidRequest, bool) {
+func (r *hookRepository) GetBidRequestHook(id string) (hookstage.BidderRequest, bool) {
 	return getHook(r.bidRequestHooks, id)
 }
 
-func (r *hookRepository) GetRawBidResponseHook(id string) (hookstage.RawBidResponse, bool) {
+func (r *hookRepository) GetRawBidResponseHook(id string) (hookstage.RawBidderResponse, bool) {
 	return getHook(r.rawBidResponseHooks, id)
 }
 
@@ -90,14 +90,14 @@ func (r *hookRepository) add(id string, hook interface{}) error {
 		}
 	}
 
-	if h, ok := hook.(hookstage.BidRequest); ok {
+	if h, ok := hook.(hookstage.BidderRequest); ok {
 		hasAnyHooks = true
 		if r.bidRequestHooks, err = addHook(r.bidRequestHooks, h, id); err != nil {
 			return err
 		}
 	}
 
-	if h, ok := hook.(hookstage.RawBidResponse); ok {
+	if h, ok := hook.(hookstage.RawBidderResponse); ok {
 		hasAnyHooks = true
 		if r.rawBidResponseHooks, err = addHook(r.rawBidResponseHooks, h, id); err != nil {
 			return err
