@@ -19,6 +19,10 @@ const (
 )
 
 type InvocationContext struct {
+	Endpoint          string
+	Stage             string
+	AccountId         string
+	DebugEnabled      bool
 	RequestTypeMetric metrics.RequestType
 	Account           *config.Account
 	moduleContexts    map[string]*ModuleContext
