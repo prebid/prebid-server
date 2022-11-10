@@ -325,7 +325,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	}
 
 	deps.hookExecutor.SetAccount(account)
-	requestJson, err = deps.hookExecutor.ExecuteRawAuctionStage(requestJson, account)
+	requestJson, err = deps.hookExecutor.ExecuteRawAuctionStage(requestJson)
 	if err != nil {
 		//todo: return no bid response
 		// the only error returned from above is hook stage rejection
