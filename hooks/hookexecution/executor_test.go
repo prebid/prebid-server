@@ -50,7 +50,7 @@ func TestExecuteStages_DoesNotChangeRequestForEmptyPlan(t *testing.T) {
 		t.Error("request body should not change")
 	}
 
-	reject = exec.ExecuteProcessedAuctionStage(&openrtb2.BidRequest{}, &config.Account{})
+	reject = exec.ExecuteProcessedAuctionStage(&openrtb2.BidRequest{})
 	require.Nil(t, reject, "Unexpected stage reject")
 
 	stOut = exec.GetOutcomes()
@@ -223,7 +223,7 @@ func TestExecuteProcessedAuctionStage_CanApplyHookMutations(t *testing.T) {
 	}
 	req := openrtb2.BidRequest{ID: "some-id", User: &openrtb2.User{ID: "user-id"}}
 
-	reject := exec.ExecuteProcessedAuctionStage(&req, &config.Account{})
+	reject := exec.ExecuteProcessedAuctionStage(&req)
 	require.Nil(t, reject, "Unexpected stage reject")
 
 	stOut := exec.GetOutcomes()[0]
@@ -399,7 +399,7 @@ func TestExecuteProcessedAuctionStage_CanRejectHook(t *testing.T) {
 		MetricEngine:  &metric_config.NilMetricsEngine{},
 	}
 
-	reject := exec.ExecuteProcessedAuctionStage(&openrtb2.BidRequest{}, &config.Account{})
+	reject := exec.ExecuteProcessedAuctionStage(&openrtb2.BidRequest{})
 	require.NotNil(t, reject, "Unexpected successful execution of processed auction hook")
 	require.Equal(t, reject, &RejectError{}, "Unexpected error returned from processed auction hook")
 
@@ -619,7 +619,7 @@ func TestExecuteProcessedAuctionStage_CanTimeoutOneOfHooks(t *testing.T) {
 	}
 	req := openrtb2.BidRequest{ID: "some-id", User: &openrtb2.User{ID: "user-id"}}
 
-	reject := exec.ExecuteProcessedAuctionStage(&req, &config.Account{})
+	reject := exec.ExecuteProcessedAuctionStage(&req)
 	require.Nil(t, reject, "Unexpected stage reject")
 
 	stOut := exec.GetOutcomes()[0]
@@ -706,7 +706,7 @@ func TestExecuteProcessedAuctionStage_ModuleContextsAreCreated(t *testing.T) {
 		PlanBuilder:   TestWithModuleContextsPlanBuilder{},
 		MetricEngine:  &metric_config.NilMetricsEngine{},
 	}
-	reject := exec.ExecuteProcessedAuctionStage(&openrtb2.BidRequest{}, &config.Account{})
+	reject := exec.ExecuteProcessedAuctionStage(&openrtb2.BidRequest{})
 	require.Nil(t, reject, "Unexpected stage reject")
 
 	stOut := exec.GetOutcomes()[0]
