@@ -9,7 +9,7 @@ capabilities:
   site:
     mediaTypes:
       - banner
-#userSync:
-#  redirect:
-#    url:
-#    userMacro:
+userSync:
+  redirect:
+    url: https://trc.taboola.com/sg/ps/1/cm?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}
+    userMacro: "<TUID>"
