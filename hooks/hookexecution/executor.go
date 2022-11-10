@@ -58,6 +58,11 @@ func (executor *HookExecutor) ExecuteEntrypointStage(req *http.Request, body []b
 }
 
 func (executor *HookExecutor) ExecuteRawAuctionStage(requestBody []byte, account *config.Account) ([]byte, *RejectError) {
+	plan := executor.PlanBuilder.PlanForRawAuctionStage(executor.Endpoint, account)
+	if len(plan) == 0 {
+		return requestBody, nil
+	}
+
 	handler := func(
 		ctx context.Context,
 		moduleCtx *hookstage.ModuleContext,
@@ -69,7 +74,7 @@ func (executor *HookExecutor) ExecuteRawAuctionStage(requestBody []byte, account
 
 	executor.InvocationCtx.Stage = hooks.StageRawAuction
 	payload := hookstage.RawAuctionPayload(requestBody)
-	stageOutcome, payload, reject := executeStage(executor.InvocationCtx, executor.PlanBuilder.PlanForRawAuctionStage(executor.Endpoint, account), payload, handler, executor.MetricEngine)
+	stageOutcome, payload, reject := executeStage(executor.InvocationCtx, plan, payload, handler, executor.MetricEngine)
 	stageOutcome.Entity = hookstage.EntityAuctionRequest
 	stageOutcome.Stage = hooks.StageRawAuction
 

@@ -141,7 +141,7 @@ func TestExecuteRawAuctionStage_CanApplyHookMutations(t *testing.T) {
 		Stage:  hooks.StageRawAuction,
 		Groups: []GroupOutcome{
 			{
-				InvocationResults: []*HookOutcome{
+				InvocationResults: []HookOutcome{
 					{
 						AnalyticsTags: hookanalytics.Analytics{},
 						HookID:        HookID{"foobar", "foo"},
@@ -256,7 +256,7 @@ func TestExecuteRawAuctionStage_CanRejectHook(t *testing.T) {
 		Groups: []GroupOutcome{
 			{
 				ExecutionTime: ExecutionTime{},
-				InvocationResults: []*HookOutcome{
+				InvocationResults: []HookOutcome{
 					{
 						ExecutionTime: ExecutionTime{},
 						AnalyticsTags: hookanalytics.Analytics{},
@@ -275,7 +275,7 @@ func TestExecuteRawAuctionStage_CanRejectHook(t *testing.T) {
 			},
 			{
 				ExecutionTime: ExecutionTime{},
-				InvocationResults: []*HookOutcome{
+				InvocationResults: []HookOutcome{
 					{
 						ExecutionTime: ExecutionTime{},
 						AnalyticsTags: hookanalytics.Analytics{},
@@ -407,7 +407,7 @@ func TestExecuteRawAuctionStage_CanTimeoutOneOfHooks(t *testing.T) {
 		Groups: []GroupOutcome{
 			{
 				ExecutionTime: ExecutionTime{},
-				InvocationResults: []*HookOutcome{
+				InvocationResults: []HookOutcome{
 					{
 						ExecutionTime: ExecutionTime{},
 						AnalyticsTags: hookanalytics.Analytics{},
@@ -426,7 +426,7 @@ func TestExecuteRawAuctionStage_CanTimeoutOneOfHooks(t *testing.T) {
 			},
 			{
 				ExecutionTime: ExecutionTime{},
-				InvocationResults: []*HookOutcome{
+				InvocationResults: []HookOutcome{
 					{
 						ExecutionTime: ExecutionTime{},
 						AnalyticsTags: hookanalytics.Analytics{},
