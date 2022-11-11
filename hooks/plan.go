@@ -21,7 +21,7 @@ const (
 
 // ExecutionPlanBuilder is the interface that provides methods
 // for retrieving hooks grouped and sorted in the established order
-// according the hook execution plan intended for run at a certain stage.
+// according to the hook execution plan intended for run at a certain stage.
 type ExecutionPlanBuilder interface {
 	PlanForEntrypointStage(endpoint string) Plan[hookstage.Entrypoint]
 	PlanForRawAuctionStage(endpoint string, account *config.Account) Plan[hookstage.RawAuction]
@@ -46,7 +46,7 @@ type Group[T any] struct {
 // HookWrapper wraps Hook representing specific hook interface
 // and holds additional meta information, such as Module name and hook Code.
 type HookWrapper[T any] struct {
-	// Module is name of the module that provides the Hook.
+	// Module holds a name of the module that provides the Hook.
 	// Specified in the format "vendor.module_name".
 	Module string
 	// Code is an arbitrary value assigned to hook via the hook execution plan

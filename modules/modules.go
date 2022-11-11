@@ -36,7 +36,7 @@ type builder struct {
 
 // Build walks over the list of registered modules and initializes them.
 //
-// The ID chosen for the module's hooks represents a fully qualified module path  in the format
+// The ID chosen for the module's hooks represents a fully qualified module path in the format
 // "vendor.module_name" and should be used to retrieve module hooks from the hooks.HookRepository.
 //
 // Method returns a hooks.HookRepository or an error occurred during modules initialization.
