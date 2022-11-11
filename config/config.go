@@ -729,7 +729,7 @@ func (cfg *Configuration) AccountDefaultsJSON() json.RawMessage {
 	return cfg.accountDefaultsJSON
 }
 
-//Allows for protocol relative URL if scheme is empty
+// Allows for protocol relative URL if scheme is empty
 func (cfg *Cache) GetBaseURL() string {
 	cfg.Scheme = strings.ToLower(cfg.Scheme)
 	if strings.Contains(cfg.Scheme, "https") {
@@ -1124,11 +1124,24 @@ func migrateConfigTCF2PurposeEnabledFlags(v *viper.Viper) {
 
 func migrateConfigDatabaseConnection(v *viper.Viper) {
 
-	migrations := []struct {
-		old    string
-		new    string
-		fields []string
-	}{
+	type QueryParamMigration struct {
+		old string
+		new string
+	}
+
+	type QueryMigration struct {
+		name   string
+		params []QueryParamMigration
+	}
+
+	type Migration struct {
+		old     string
+		new     string
+		fields  []string
+		queries []QueryMigration
+	}
+
+	migrations := []Migration{
 		{
 			old: "stored_requests.postgres",
 			new: "stored_requests.database",
@@ -1148,6 +1161,30 @@ func migrateConfigDatabaseConnection(v *viper.Viper) {
 				"poll_for_updates.query",
 				"poll_for_updates.amp_query",
 			},
+			queries: []QueryMigration{
+				{
+					name: "fetcher.query",
+					params: []QueryParamMigration{
+						{
+							old: "%REQUEST_ID_LIST%",
+							new: "$REQUEST_ID_LIST",
+						},
+						{
+							old: "%IMP_ID_LIST%",
+							new: "$IMP_ID_LIST",
+						},
+					},
+				},
+				{
+					name: "poll_for_updates.query",
+					params: []QueryParamMigration{
+						{
+							old: "$1",
+							new: "$LAST_UPDATED",
+						},
+					},
+				},
+			},
 		},
 		{
 			old: "stored_video_req.postgres",
@@ -1165,6 +1202,7 @@ func migrateConfigDatabaseConnection(v *viper.Viper) {
 				"poll_for_updates.timeout_ms",
 				"poll_for_updates.query",
 			},
+			queries: []QueryMigration{},
 		},
 		{
 			old: "stored_responses.postgres",
@@ -1182,6 +1220,17 @@ func migrateConfigDatabaseConnection(v *viper.Viper) {
 				"poll_for_updates.timeout_ms",
 				"poll_for_updates.query",
 			},
+			queries: []QueryMigration{
+				{
+					name: "fetcher.query",
+					params: []QueryParamMigration{
+						{
+							old: "%ID_LIST%",
+							new: "$ID_LIST",
+						},
+					},
+				},
+			},
 		},
 	}
 
@@ -1198,6 +1247,19 @@ func migrateConfigDatabaseConnection(v *viper.Viper) {
 				if v.IsSet(oldField) {
 					glog.Warning(fmt.Sprintf("%s is deprecated and should be changed to %s", oldField, newField))
 					v.Set(newField, v.Get(oldField))
+				}
+			}
+
+			for _, query := range migration.queries {
+				oldQueryField := migration.old + "." + query.name
+				newQueryField := migration.new + "." + query.name
+				queryString := v.GetString(oldQueryField)
+				for _, queryParam := range query.params {
+					if strings.Contains(queryString, queryParam.old) {
+						glog.Warning(fmt.Sprintf("Query param %s for %s is deprecated and should be changed to %s", queryParam.old, oldQueryField, queryParam.new))
+						queryString = strings.ReplaceAll(queryString, queryParam.old, queryParam.new)
+						v.Set(newQueryField, queryString)
+					}
 				}
 			}
 		} else if v.IsSet(migration.new) && v.IsSet(migration.old) {
