@@ -28,7 +28,7 @@ func TestConnStringPostgres(t *testing.T) {
 	provider := PostgresDbProvider{
 		cfg: cfg,
 	}
-	dataSourceName := provider.ConnString(cfg)
+	dataSourceName := provider.ConnString()
 	paramList := strings.Split(dataSourceName, " ")
 	params := make(map[string]string, len(paramList))
 	for _, param := range paramList {

@@ -21,14 +21,13 @@ func (provider *MySqlDbProvider) Config() config.DatabaseConnection {
 	return provider.cfg
 }
 
-func (provider *MySqlDbProvider) Open(cfg config.DatabaseConnection) error {
-	db, err := sql.Open(cfg.Driver, provider.ConnString(cfg))
+func (provider *MySqlDbProvider) Open() error {
+	db, err := sql.Open(provider.cfg.Driver, provider.ConnString())
 
 	if err != nil {
 		return err
 	}
 
-	provider.cfg = cfg
 	provider.db = db
 	return nil
 }
@@ -47,33 +46,33 @@ func (provider *MySqlDbProvider) Ping() error {
 	return provider.db.Ping()
 }
 
-func (provider *MySqlDbProvider) ConnString(cfg config.DatabaseConnection) string {
+func (provider *MySqlDbProvider) ConnString() string {
 	buffer := bytes.NewBuffer(nil)
 
-	if cfg.Username != "" {
-		buffer.WriteString(cfg.Username)
-		if cfg.Password != "" {
+	if provider.cfg.Username != "" {
+		buffer.WriteString(provider.cfg.Username)
+		if provider.cfg.Password != "" {
 			buffer.WriteString(":")
-			buffer.WriteString(cfg.Password)
+			buffer.WriteString(provider.cfg.Password)
 		}
 		buffer.WriteString("@")
 	}
 
 	buffer.WriteString("tcp(")
-	if cfg.Host != "" {
-		buffer.WriteString(cfg.Host)
+	if provider.cfg.Host != "" {
+		buffer.WriteString(provider.cfg.Host)
 	}
 
-	if cfg.Port > 0 {
+	if provider.cfg.Port > 0 {
 		buffer.WriteString(":")
-		buffer.WriteString(strconv.Itoa(cfg.Port))
+		buffer.WriteString(strconv.Itoa(provider.cfg.Port))
 	}
 	buffer.WriteString(")")
 
 	buffer.WriteString("/")
 
-	if cfg.Database != "" {
-		buffer.WriteString(cfg.Database)
+	if provider.cfg.Database != "" {
+		buffer.WriteString(provider.cfg.Database)
 	}
 
 	return buffer.String()

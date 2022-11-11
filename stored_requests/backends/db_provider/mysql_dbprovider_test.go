@@ -26,7 +26,7 @@ func TestConnStringMySql(t *testing.T) {
 		cfg: cfg,
 	}
 
-	dataSourceName := provider.ConnString(cfg)
+	dataSourceName := provider.ConnString()
 	assertStringsEqual(t, dataSourceName, "someuser:somepassword@tcp(somehost.com:20)/TestDB")
 }
 

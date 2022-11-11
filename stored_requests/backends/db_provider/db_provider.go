@@ -10,8 +10,8 @@ import (
 
 type DbProvider interface {
 	Config() config.DatabaseConnection
-	ConnString(cfg config.DatabaseConnection) string
-	Open(cfg config.DatabaseConnection) error
+	ConnString() string
+	Open() error
 	Close() error
 	Ping() error
 	PrepareQuery(template string, params ...QueryParam) (query string, args []interface{})
@@ -23,15 +23,19 @@ func NewDbProvider(dataType config.DataType, cfg config.DatabaseConnection) DbPr
 
 	switch cfg.Driver {
 	case "mysql":
-		provider = &MySqlDbProvider{}
+		provider = &MySqlDbProvider{
+			cfg: cfg,
+		}
 	case "postgres":
-		provider = &PostgresDbProvider{}
+		provider = &PostgresDbProvider{
+			cfg: cfg,
+		}
 	default:
 		glog.Fatalf("Unsupported database driver %s", cfg.Driver)
 		return nil
 	}
 
-	if err := provider.Open(cfg); err != nil {
+	if err := provider.Open(); err != nil {
 		glog.Fatalf("Failed to open %s database connection: %v", dataType, err)
 	}
 	if err := provider.Ping(); err != nil {

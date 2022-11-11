@@ -32,11 +32,11 @@ func (provider DbProviderMock) Config() config.DatabaseConnection {
 	return config.DatabaseConnection{}
 }
 
-func (provider DbProviderMock) ConnString(cfg config.DatabaseConnection) string {
+func (provider DbProviderMock) ConnString() string {
 	return ""
 }
 
-func (provider DbProviderMock) Open(cfg config.DatabaseConnection) error {
+func (provider DbProviderMock) Open() error {
 	return nil
 }
 
