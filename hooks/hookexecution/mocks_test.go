@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/hooks/hookstage"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 type mockUpdateHeaderEntrypointHook struct{}
@@ -79,6 +80,10 @@ func (e mockRejectHook) HandleRawAuctionHook(_ context.Context, _ *hookstage.Mod
 	return hookstage.HookResult[hookstage.RawAuctionPayload]{Reject: true}, nil
 }
 
+func (e mockRejectHook) HandleRawBidderResponseHook(_ context.Context, _ *hookstage.ModuleContext, _ hookstage.RawBidderResponsePayload) (hookstage.HookResult[hookstage.RawBidderResponsePayload], error) {
+	return hookstage.HookResult[hookstage.RawBidderResponsePayload]{Reject: true}, nil
+}
+
 type mockTimeoutHook struct{}
 
 func (e mockTimeoutHook) HandleEntrypointHook(_ context.Context, _ *hookstage.ModuleContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
@@ -105,6 +110,17 @@ func (e mockTimeoutHook) HandleRawAuctionHook(_ context.Context, _ *hookstage.Mo
 	return hookstage.HookResult[hookstage.RawAuctionPayload]{ChangeSet: c}, nil
 }
 
+func (e mockTimeoutHook) HandleRawBidderResponseHook(_ context.Context, _ *hookstage.ModuleContext, _ hookstage.RawBidderResponsePayload) (hookstage.HookResult[hookstage.RawBidderResponsePayload], error) {
+	time.Sleep(2 * time.Millisecond)
+	c := &hookstage.ChangeSet[hookstage.RawBidderResponsePayload]{}
+	c.AddMutation(func(payload hookstage.RawBidderResponsePayload) (hookstage.RawBidderResponsePayload, error) {
+		payload.Bids[0].BidMeta = &openrtb_ext.ExtBidPrebidMeta{AdapterCode: "new-code"}
+		return payload, nil
+	}, hookstage.MutationUpdate, "bidderResponse", "bidMeta.AdapterCode")
+
+	return hookstage.HookResult[hookstage.RawBidderResponsePayload]{ChangeSet: c}, nil
+}
+
 type mockModuleContextHook1 struct{}
 
 func (e mockModuleContextHook1) HandleEntrypointHook(_ context.Context, mctx *hookstage.ModuleContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
@@ -117,6 +133,11 @@ func (e mockModuleContextHook1) HandleRawAuctionHook(_ context.Context, mctx *ho
 	return hookstage.HookResult[hookstage.RawAuctionPayload]{}, nil
 }
 
+func (e mockModuleContextHook1) HandleRawBidderResponseHook(_ context.Context, mctx *hookstage.ModuleContext, _ hookstage.RawBidderResponsePayload) (hookstage.HookResult[hookstage.RawBidderResponsePayload], error) {
+	mctx.Ctx = map[string]interface{}{"some-ctx-1": "some-ctx-1"}
+	return hookstage.HookResult[hookstage.RawBidderResponsePayload]{}, nil
+}
+
 type mockModuleContextHook2 struct{}
 
 func (e mockModuleContextHook2) HandleEntrypointHook(_ context.Context, mctx *hookstage.ModuleContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
@@ -127,4 +148,23 @@ func (e mockModuleContextHook2) HandleEntrypointHook(_ context.Context, mctx *ho
 func (e mockModuleContextHook2) HandleRawAuctionHook(_ context.Context, mctx *hookstage.ModuleContext, _ hookstage.RawAuctionPayload) (hookstage.HookResult[hookstage.RawAuctionPayload], error) {
 	mctx.Ctx = map[string]interface{}{"some-ctx-2": "some-ctx-2"}
 	return hookstage.HookResult[hookstage.RawAuctionPayload]{}, nil
+}
+
+func (e mockModuleContextHook2) HandleRawBidderResponseHook(_ context.Context, mctx *hookstage.ModuleContext, _ hookstage.RawBidderResponsePayload) (hookstage.HookResult[hookstage.RawBidderResponsePayload], error) {
+	mctx.Ctx = map[string]interface{}{"some-ctx-2": "some-ctx-2"}
+	return hookstage.HookResult[hookstage.RawBidderResponsePayload]{}, nil
+}
+
+type mockUpdateBidderResponseHook struct{}
+
+func (e mockUpdateBidderResponseHook) HandleRawBidderResponseHook(_ context.Context, _ *hookstage.ModuleContext, _ hookstage.RawBidderResponsePayload) (hookstage.HookResult[hookstage.RawBidderResponsePayload], error) {
+	c := &hookstage.ChangeSet[hookstage.RawBidderResponsePayload]{}
+	c.AddMutation(
+		func(payload hookstage.RawBidderResponsePayload) (hookstage.RawBidderResponsePayload, error) {
+			payload.Bids[0].DealPriority = 10
+			return payload, nil
+		}, hookstage.MutationUpdate, "bidderResponse", "bid.deal-priority",
+	)
+
+	return hookstage.HookResult[hookstage.RawBidderResponsePayload]{ChangeSet: c}, nil
 }
