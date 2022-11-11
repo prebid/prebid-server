@@ -20,12 +20,12 @@ const (
 	NOTIFICATION_EVENT RequestType = "/event"
 )
 
-//Module that can perform transactional logging
+// Module that can perform transactional logging
 type FileLogger struct {
 	Logger *glog.Logger
 }
 
-//Writes AuctionObject to file
+// Writes AuctionObject to file
 func (f *FileLogger) LogAuctionObject(ao *analytics.AuctionObject) {
 	//Code to parse the object and log in a way required
 	var b bytes.Buffer
@@ -34,7 +34,7 @@ func (f *FileLogger) LogAuctionObject(ao *analytics.AuctionObject) {
 	f.Logger.Flush()
 }
 
-//Writes VideoObject to file
+// Writes VideoObject to file
 func (f *FileLogger) LogVideoObject(vo *analytics.VideoObject) {
 	//Code to parse the object and log in a way required
 	var b bytes.Buffer
@@ -43,7 +43,7 @@ func (f *FileLogger) LogVideoObject(vo *analytics.VideoObject) {
 	f.Logger.Flush()
 }
 
-//Logs SetUIDObject to file
+// Logs SetUIDObject to file
 func (f *FileLogger) LogSetUIDObject(so *analytics.SetUIDObject) {
 	//Code to parse the object and log in a way required
 	var b bytes.Buffer
@@ -52,7 +52,7 @@ func (f *FileLogger) LogSetUIDObject(so *analytics.SetUIDObject) {
 	f.Logger.Flush()
 }
 
-//Logs CookieSyncObject to file
+// Logs CookieSyncObject to file
 func (f *FileLogger) LogCookieSyncObject(cso *analytics.CookieSyncObject) {
 	//Code to parse the object and log in a way required
 	var b bytes.Buffer
@@ -61,7 +61,7 @@ func (f *FileLogger) LogCookieSyncObject(cso *analytics.CookieSyncObject) {
 	f.Logger.Flush()
 }
 
-//Logs AmpObject to file
+// Logs AmpObject to file
 func (f *FileLogger) LogAmpObject(ao *analytics.AmpObject) {
 	if ao == nil {
 		return
@@ -73,7 +73,7 @@ func (f *FileLogger) LogAmpObject(ao *analytics.AmpObject) {
 	f.Logger.Flush()
 }
 
-//Logs NotificationEvent to file
+// Logs NotificationEvent to file
 func (f *FileLogger) LogNotificationEventObject(ne *analytics.NotificationEvent) {
 	if ne == nil {
 		return
@@ -85,7 +85,7 @@ func (f *FileLogger) LogNotificationEventObject(ne *analytics.NotificationEvent)
 	f.Logger.Flush()
 }
 
-//Method to initialize the analytic module
+// Method to initialize the analytic module
 func NewFileLogger(filename string) (analytics.PBSAnalyticsModule, error) {
 	options := glog.LogOptions{
 		File:  filename,

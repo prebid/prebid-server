@@ -10,7 +10,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -18,7 +18,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const TAPPX_BIDDER_VERSION = "1.4"
+const TAPPX_BIDDER_VERSION = "1.5"
 const TYPE_CNN = "prebid"
 
 type TappxAdapter struct {
@@ -37,7 +37,7 @@ type Ext struct {
 }
 
 // Builder builds a new instance of the Tappx adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
@@ -132,7 +132,7 @@ func (a *TappxAdapter) buildEndpointURL(params *openrtb_ext.ExtImpTappx, test in
 	}
 
 	tappxHost := "tappx.com"
-	isNewEndpoint, err := regexp.Match(`^(zz|vz)[0-9]{3,}([a-z]{2}|test)$`, []byte(params.Endpoint))
+	isNewEndpoint, err := regexp.Match(`^(zz|vz)[0-9]{3,}([a-z]{2,3}|test)$`, []byte(params.Endpoint))
 	if isNewEndpoint {
 		tappxHost = params.Endpoint + ".pub." + tappxHost + "/rtb/"
 	} else {

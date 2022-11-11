@@ -12,7 +12,7 @@ jobs:
     - name: Install Go
       uses: actions/setup-go@v2
       with:
-        go-version: 1.16.4
+        go-version: 1.19.2
 
     - name: Checkout Merged Branch
       uses: actions/checkout@v2

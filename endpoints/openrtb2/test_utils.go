@@ -17,8 +17,8 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/julienschmidt/httprouter"
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
-	"github.com/mxmCherry/openrtb/v16/openrtb3"
+	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb3"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/analytics"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
@@ -988,11 +988,13 @@ func (b mockBidderHandler) bid(w http.ResponseWriter, req *http.Request) {
 // mockAdapter is a mock impression-splitting adapter
 type mockAdapter struct {
 	mockServerURL string
+	Server        config.Server
 }
 
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	adapter := &mockAdapter{
 		mockServerURL: config.Endpoint,
+		Server:        server,
 	}
 	return adapter, nil
 }

@@ -110,10 +110,10 @@ const (
 	BidderAJA               BidderName = "aja"
 	BidderAlgorix           BidderName = "algorix"
 	BidderAMX               BidderName = "amx"
-	BidderAndBeyondMedia    BidderName = "andbeyondmedia"
 	BidderApacdex           BidderName = "apacdex"
 	BidderApplogy           BidderName = "applogy"
 	BidderAppnexus          BidderName = "appnexus"
+	BidderAppush            BidderName = "appush"
 	BidderAudienceNetwork   BidderName = "audienceNetwork"
 	BidderAutomatad         BidderName = "automatad"
 	BidderAvocet            BidderName = "avocet"
@@ -121,15 +121,18 @@ const (
 	BidderBeachfront        BidderName = "beachfront"
 	BidderBeintoo           BidderName = "beintoo"
 	BidderBetween           BidderName = "between"
+	BidderBeyondMedia       BidderName = "beyondmedia"
 	BidderBidmachine        BidderName = "bidmachine"
 	BidderBidmyadz          BidderName = "bidmyadz"
 	BidderBidsCube          BidderName = "bidscube"
+	BidderBidstack          BidderName = "bidstack"
 	BidderBizzclick         BidderName = "bizzclick"
 	BidderBliink            BidderName = "bliink"
 	BidderBlue              BidderName = "blue"
 	BidderBmtm              BidderName = "bmtm"
 	BidderBoldwin           BidderName = "boldwin"
 	BidderBrightroll        BidderName = "brightroll"
+	BidderCcx               BidderName = "ccx"
 	BidderCoinzilla         BidderName = "coinzilla"
 	BidderColossus          BidderName = "colossus"
 	BidderCompass           BidderName = "compass"
@@ -216,6 +219,7 @@ const (
 	BidderSspBC             BidderName = "sspBC"
 	BidderStreamkey         BidderName = "streamkey"
 	BidderStroeerCore       BidderName = "stroeerCore"
+	BidderSuntContent       BidderName = "suntContent"
 	BidderSynacormedia      BidderName = "synacormedia"
 	BidderTappx             BidderName = "tappx"
 	BidderTelaria           BidderName = "telaria"
@@ -273,10 +277,10 @@ func CoreBidderNames() []BidderName {
 		BidderAJA,
 		BidderAlgorix,
 		BidderAMX,
-		BidderAndBeyondMedia,
 		BidderApacdex,
 		BidderApplogy,
 		BidderAppnexus,
+		BidderAppush,
 		BidderAudienceNetwork,
 		BidderAutomatad,
 		BidderAvocet,
@@ -284,15 +288,18 @@ func CoreBidderNames() []BidderName {
 		BidderBeachfront,
 		BidderBeintoo,
 		BidderBetween,
+		BidderBeyondMedia,
 		BidderBidmachine,
 		BidderBidmyadz,
 		BidderBidsCube,
+		BidderBidstack,
 		BidderBizzclick,
 		BidderBliink,
 		BidderBlue,
 		BidderBmtm,
 		BidderBoldwin,
 		BidderBrightroll,
+		BidderCcx,
 		BidderCoinzilla,
 		BidderColossus,
 		BidderCompass,
@@ -379,6 +386,7 @@ func CoreBidderNames() []BidderName {
 		BidderSspBC,
 		BidderStreamkey,
 		BidderStroeerCore,
+		BidderSuntContent,
 		BidderSynacormedia,
 		BidderTappx,
 		BidderTelaria,

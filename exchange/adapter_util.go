@@ -11,7 +11,9 @@ import (
 )
 
 func BuildAdapters(client *http.Client, cfg *config.Configuration, infos config.BidderInfos, me metrics.MetricsEngine) (map[openrtb_ext.BidderName]AdaptedBidder, []error) {
-	bidders, errs := buildBidders(infos, newAdapterBuilders())
+	server := config.Server{ExternalUrl: cfg.ExternalURL, GvlID: cfg.GDPR.HostVendorID, DataCenter: cfg.DataCenter}
+	bidders, errs := buildBidders(infos, newAdapterBuilders(), server)
+
 	if len(errs) > 0 {
 		return nil, errs
 	}
@@ -26,7 +28,7 @@ func BuildAdapters(client *http.Client, cfg *config.Configuration, infos config.
 	return exchangeBidders, nil
 }
 
-func buildBidders(infos config.BidderInfos, builders map[openrtb_ext.BidderName]adapters.Builder) (map[openrtb_ext.BidderName]adapters.Bidder, []error) {
+func buildBidders(infos config.BidderInfos, builders map[openrtb_ext.BidderName]adapters.Builder, server config.Server) (map[openrtb_ext.BidderName]adapters.Bidder, []error) {
 	bidders := make(map[openrtb_ext.BidderName]adapters.Bidder)
 	var errs []error
 
@@ -45,7 +47,8 @@ func buildBidders(infos config.BidderInfos, builders map[openrtb_ext.BidderName]
 
 		if info.IsEnabled() {
 			adapterInfo := buildAdapterInfo(info)
-			bidderInstance, builderErr := builder(bidderName, adapterInfo)
+			bidderInstance, builderErr := builder(bidderName, adapterInfo, server)
+
 			if builderErr != nil {
 				errs = append(errs, fmt.Errorf("%v: %v", bidder, builderErr))
 				continue
@@ -82,10 +85,11 @@ func GetActiveBidders(infos config.BidderInfos) map[string]openrtb_ext.BidderNam
 // GetDisabledBiddersErrorMessages returns a map of error messages for disabled bidders.
 func GetDisabledBiddersErrorMessages(infos config.BidderInfos) map[string]string {
 	disabledBidders := map[string]string{
-		"lifestreet":   `Bidder "lifestreet" is no longer available in Prebid Server. Please update your configuration.`,
-		"adagio":       `Bidder "adagio" is no longer available in Prebid Server. Please update your configuration.`,
-		"somoaudience": `Bidder "somoaudience" is no longer available in Prebid Server. Please update your configuration.`,
-		"yssp":         `Bidder "yssp" is no longer available in Prebid Server. If you're looking to use the Yahoo SSP adapter, please rename it to "yahoossp" in your configuration.`,
+		"lifestreet":     `Bidder "lifestreet" is no longer available in Prebid Server. Please update your configuration.`,
+		"adagio":         `Bidder "adagio" is no longer available in Prebid Server. Please update your configuration.`,
+		"somoaudience":   `Bidder "somoaudience" is no longer available in Prebid Server. Please update your configuration.`,
+		"yssp":           `Bidder "yssp" is no longer available in Prebid Server. If you're looking to use the Yahoo SSP adapter, please rename it to "yahoossp" in your configuration.`,
+		"andbeyondmedia": `Bidder "andbeyondmedia" is no longer available in Prebid Server. If you're looking to use the AndBeyond.Media SSP adapter, please rename it to "beyondmedia" in your configuration.`,
 	}
 
 	for name, info := range infos {

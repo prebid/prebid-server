@@ -80,7 +80,12 @@
                     ],
                     "ext": {
                         "prebid": {
-                            "debug": true
+                            "debug": true,
+                            "server": {
+                                "datacenter": "Datacenter",
+                                "externalurl": "http://hosturl.com",
+                                "gvlid": 1
+                            }
                         }
                     },
                     "source": {
