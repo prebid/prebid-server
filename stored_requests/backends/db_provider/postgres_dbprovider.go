@@ -5,7 +5,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"reflect"
 	"strconv"
 	"strings"
 
@@ -89,15 +88,13 @@ func (provider *PostgresDbProvider) PrepareQuery(template string, params ...Quer
 	args = []interface{}{}
 
 	for _, param := range params {
-		if reflect.TypeOf(param.Value).Kind() == reflect.Slice {
-
-			idList := param.Value.([]interface{})
-
+		switch v := param.Value.(type) {
+		case []interface{}:
+			idList := v
 			idListStr := provider.createIdList(len(args), len(idList))
 			args = append(args, idList...)
 			query = strings.Replace(query, "$"+param.Name, idListStr, -1)
-
-		} else {
+		default:
 			args = append(args, param.Value)
 			query = strings.Replace(query, "$"+param.Name, fmt.Sprintf("$%d", len(args)), -1)
 		}

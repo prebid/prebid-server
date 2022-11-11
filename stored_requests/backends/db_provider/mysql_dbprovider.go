@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
-	"reflect"
 	"regexp"
 	"sort"
 	"strconv"
@@ -86,20 +85,18 @@ func (provider *MySqlDbProvider) PrepareQuery(template string, params ...QueryPa
 
 	type occurrence struct {
 		startIndex int
-		paramIndex int
-		paramKind  reflect.Kind
+		param      QueryParam
 	}
 	occurrences := []occurrence{}
 
-	for index, param := range params {
+	for _, param := range params {
 		re := regexp.MustCompile("\\$" + param.Name)
 		matches := re.FindAllIndex([]byte(query), -1)
 		for _, match := range matches {
 			occurrences = append(occurrences,
 				occurrence{
 					startIndex: match[0],
-					paramIndex: index,
-					paramKind:  reflect.TypeOf(param.Value).Kind(),
+					param:      param,
 				})
 		}
 	}
@@ -108,20 +105,22 @@ func (provider *MySqlDbProvider) PrepareQuery(template string, params ...QueryPa
 	})
 
 	for _, occurrence := range occurrences {
-		if occurrence.paramKind == reflect.Slice {
-			idList := params[occurrence.paramIndex].Value.([]interface{})
+		switch occurrence.param.Value.(type) {
+		case []interface{}:
+			idList := occurrence.param.Value.([]interface{})
 			args = append(args, idList...)
-		} else {
-			args = append(args, params[occurrence.paramIndex].Value)
+		default:
+			args = append(args, occurrence.param.Value)
 		}
 	}
 
 	for _, param := range params {
-		if reflect.TypeOf(param.Value).Kind() == reflect.Slice {
+		switch param.Value.(type) {
+		case []interface{}:
 			len := len(param.Value.([]interface{}))
 			idList := provider.createIdList(len)
 			query = strings.Replace(query, "$"+param.Name, idList, -1)
-		} else {
+		default:
 			query = strings.Replace(query, "$"+param.Name, "?", -1)
 		}
 	}
