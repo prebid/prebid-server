@@ -19,6 +19,7 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
@@ -358,6 +359,7 @@ func TestDebugBehaviour(t *testing.T) {
 			Account:           config.Account{DebugAllow: test.debugData.accountLevelDebugAllowed},
 			UserSyncs:         &emptyUsersync{},
 			StartTime:         time.Now(),
+			HookExecutor:      &hookexecution.EmptyHookExecutor{},
 		}
 		if test.generateWarnings {
 			var errL []error
@@ -523,6 +525,7 @@ func TestTwoBiddersDebugDisabledAndEnabled(t *testing.T) {
 			Account:           config.Account{DebugAllow: true},
 			UserSyncs:         &emptyUsersync{},
 			StartTime:         time.Now(),
+			HookExecutor:      &hookexecution.EmptyHookExecutor{},
 		}
 
 		e.adapterMap = map[openrtb_ext.BidderName]AdaptedBidder{
@@ -699,6 +702,7 @@ func TestOverrideWithCustomCurrency(t *testing.T) {
 			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: mockBidRequest},
 			Account:           config.Account{},
 			UserSyncs:         &emptyUsersync{},
+			HookExecutor:      &hookexecution.EmptyHookExecutor{},
 		}
 
 		// Run test
@@ -788,6 +792,7 @@ func TestAdapterCurrency(t *testing.T) {
 		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: request},
 		Account:           config.Account{},
 		UserSyncs:         &emptyUsersync{},
+		HookExecutor:      &hookexecution.EmptyHookExecutor{},
 	}
 	response, err := e.HoldAuction(context.Background(), auctionRequest, &DebugLog{})
 	assert.NoError(t, err)
@@ -1166,6 +1171,7 @@ func TestReturnCreativeEndToEnd(t *testing.T) {
 				BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: mockBidRequest},
 				Account:           config.Account{},
 				UserSyncs:         &emptyUsersync{},
+				HookExecutor:      &hookexecution.EmptyHookExecutor{},
 			}
 
 			// Run test
@@ -1847,6 +1853,7 @@ func TestRaceIntegration(t *testing.T) {
 		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: getTestBuildRequest(t)},
 		Account:           config.Account{},
 		UserSyncs:         &emptyUsersync{},
+		HookExecutor:      &hookexecution.EmptyHookExecutor{},
 	}
 
 	debugLog := DebugLog{}
@@ -2071,6 +2078,7 @@ func TestPanicRecoveryHighLevel(t *testing.T) {
 		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: request},
 		Account:           config.Account{},
 		UserSyncs:         &emptyUsersync{},
+		HookExecutor:      &hookexecution.EmptyHookExecutor{},
 	}
 	debugLog := DebugLog{}
 	_, err = e.HoldAuction(context.Background(), auctionRequest, &debugLog)
@@ -2194,6 +2202,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		},
 		UserSyncs:     mockIdFetcher(spec.IncomingRequest.Usersyncs),
 		ImpExtInfoMap: impExtInfoMap,
+		HookExecutor:  &hookexecution.EmptyHookExecutor{},
 	}
 
 	if spec.StartTime > 0 {
@@ -3865,6 +3874,7 @@ func TestStoredAuctionResponses(t *testing.T) {
 			Account:                config.Account{},
 			UserSyncs:              &emptyUsersync{},
 			StoredAuctionResponses: test.storedAuctionResp,
+			HookExecutor:           &hookexecution.EmptyHookExecutor{},
 		}
 		// Run test
 		outBidResponse, err := e.HoldAuction(context.Background(), auctionRequest, &DebugLog{})
@@ -4062,6 +4072,7 @@ func TestAuctionDebugEnabled(t *testing.T) {
 		UserSyncs:         &emptyUsersync{},
 		StartTime:         time.Now(),
 		RequestType:       metrics.ReqTypeORTB2Web,
+		HookExecutor:      &hookexecution.EmptyHookExecutor{},
 	}
 
 	debugLog := &DebugLog{DebugOverride: true, DebugEnabledOrOverridden: true}
@@ -4133,6 +4144,7 @@ func TestPassExperimentConfigsToHoldAuction(t *testing.T) {
 		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: mockBidRequest},
 		Account:           config.Account{},
 		UserSyncs:         &emptyUsersync{},
+		HookExecutor:      &hookexecution.EmptyHookExecutor{},
 	}
 
 	debugLog := DebugLog{}
@@ -4350,6 +4362,7 @@ func TestOverrideConfigAlternateBidderCodesWithRequestValues(t *testing.T) {
 			BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: mockBidRequest},
 			Account:           test.in.config.AccountDefaults,
 			UserSyncs:         &emptyUsersync{},
+			HookExecutor:      &hookexecution.EmptyHookExecutor{},
 		}
 
 		// Run test
@@ -4466,7 +4479,7 @@ type validatingBidder struct {
 	mockResponses map[string]bidderResponse
 }
 
-func (b *validatingBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes) (seatBids []*pbsOrtbSeatBid, errs []error) {
+func (b *validatingBidder) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestOptions bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, executor hookexecution.StageExecutor) (seatBids []*pbsOrtbSeatBid, errs []error) {
 	if expectedRequest, ok := b.expectations[string(bidderRequest.BidderName)]; ok {
 		if expectedRequest != nil {
 			if !reflect.DeepEqual(expectedRequest.BidAdjustments, bidRequestOptions.bidAdjustments) {
@@ -4629,7 +4642,7 @@ func (e *emptyUsersync) HasAnyLiveSyncs() bool {
 
 type panicingAdapter struct{}
 
-func (panicingAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestMetadata bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes) (posb []*pbsOrtbSeatBid, errs []error) {
+func (panicingAdapter) requestBid(ctx context.Context, bidderRequest BidderRequest, conversions currency.Conversions, reqInfo *adapters.ExtraRequestInfo, adsCertSigner adscert.Signer, bidRequestMetadata bidRequestOptions, alternateBidderCodes openrtb_ext.ExtAlternateBidderCodes, executor hookexecution.StageExecutor) (posb []*pbsOrtbSeatBid, errs []error) {
 	panic("Panic! Panic! The world is ending!")
 }
 
