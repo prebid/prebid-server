@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookanalytics"
@@ -48,6 +49,12 @@ func TestExecuteStages_DoesNotChangeRequestForEmptyPlan(t *testing.T) {
 	if bytes.Compare(body, newBody) != 0 {
 		t.Error("request body should not change")
 	}
+
+	reject = exec.ExecuteBidderRequestStage(&openrtb2.BidRequest{}, "")
+	require.Nil(t, reject, "Unexpected stage reject")
+
+	stOut = exec.GetOutcomes()
+	assert.Empty(t, stOut)
 }
 
 func TestExecuteEntrypointStage_CanApplyHookMutations(t *testing.T) {
@@ -183,6 +190,54 @@ func TestExecuteRawAuctionStage_CanApplyHookMutations(t *testing.T) {
 	}
 }
 
+func TestExecuteBidderRequestStage_CanApplyHookMutations(t *testing.T) {
+	expectedOutcome := StageOutcome{
+		Entity: "the-bidder",
+		Stage:  hooks.StageBidderRequest,
+		Groups: []GroupOutcome{
+			{
+				InvocationResults: []HookOutcome{
+					{
+						AnalyticsTags: hookanalytics.Analytics{},
+						HookID:        HookID{"foobar", "foo"},
+						Status:        StatusSuccess,
+						Action:        ActionUpdate,
+						Message:       "",
+						DebugMessages: []string{
+							fmt.Sprintf("Hook mutation successfully applied, affected key: bidRequest.user.yob, mutation type: %s", hookstage.MutationUpdate),
+							fmt.Sprintf("Hook mutation successfully applied, affected key: bidRequest.user.consent, mutation type: %s", hookstage.MutationUpdate),
+						},
+						Errors:   nil,
+						Warnings: nil,
+					},
+				},
+			},
+		},
+	}
+
+	exec := HookExecutor{
+		InvocationCtx: &hookstage.InvocationContext{},
+		Endpoint:      EndpointAuction,
+		PlanBuilder:   TestApplyHookMutationsBuilder{},
+		MetricEngine:  &metric_config.NilMetricsEngine{},
+	}
+	req := openrtb2.BidRequest{ID: "some-id", User: &openrtb2.User{ID: "user-id"}}
+
+	reject := exec.ExecuteBidderRequestStage(&req, "the-bidder")
+	require.Nil(t, reject, "Unexpected stage reject")
+
+	stOut := exec.GetOutcomes()[0]
+	assertEqualStageOutcomes(t, expectedOutcome, stOut)
+
+	if req.User.Yob == 0 {
+		t.Error("bid request not changed inside hook.Call method")
+	}
+
+	if req.User.Consent == "" {
+		t.Error("bid request not changed inside hook.Call method")
+	}
+}
+
 func TestExecuteEntrypointStage_CanRejectHook(t *testing.T) {
 	expectedOutcome := StageOutcome{
 		ExecutionTime: ExecutionTime{},
@@ -305,6 +360,48 @@ func TestExecuteRawAuctionStage_CanRejectHook(t *testing.T) {
 	_, reject := exec.ExecuteRawAuctionStage(body)
 	require.NotNil(t, reject, "Unexpected successful execution of raw auction hook")
 	require.Equal(t, reject, &RejectError{}, "Unexpected reject returned from raw auction hook")
+
+	stOut := exec.GetOutcomes()[0]
+	assertEqualStageOutcomes(t, expectedOutcome, stOut)
+}
+
+func TestExecuteBidderRequestStage_CanRejectHook(t *testing.T) {
+	expectedOutcome := StageOutcome{
+		ExecutionTime: ExecutionTime{},
+		Entity:        "the-bidder",
+		Stage:         hooks.StageBidderRequest,
+		Groups: []GroupOutcome{
+			{
+				ExecutionTime: ExecutionTime{},
+				InvocationResults: []HookOutcome{
+					{
+						ExecutionTime: ExecutionTime{},
+						AnalyticsTags: hookanalytics.Analytics{},
+						HookID:        HookID{"foobar", "foo"},
+						Status:        StatusSuccess,
+						Action:        ActionReject,
+						Message:       "",
+						DebugMessages: nil,
+						Errors: []string{
+							`Module rejected stage, reason: ""`,
+						},
+						Warnings: nil,
+					},
+				},
+			},
+		},
+	}
+
+	exec := HookExecutor{
+		InvocationCtx: &hookstage.InvocationContext{},
+		Endpoint:      EndpointAuction,
+		PlanBuilder:   TestRejectPlanBuilder{},
+		MetricEngine:  &metric_config.NilMetricsEngine{},
+	}
+
+	reject := exec.ExecuteBidderRequestStage(&openrtb2.BidRequest{}, "the-bidder")
+	require.NotNil(t, reject, "Unexpected successful execution of bidder request hook")
+	require.Equal(t, reject, &RejectError{}, "Unexpected error returned from bidder request hook")
 
 	stOut := exec.GetOutcomes()[0]
 	assertEqualStageOutcomes(t, expectedOutcome, stOut)
@@ -470,6 +567,77 @@ func TestExecuteRawAuctionStage_CanTimeoutOneOfHooks(t *testing.T) {
 	}
 }
 
+func TestExecuteBidderRequestStage_CanTimeoutOneOfHooks(t *testing.T) {
+	expectedOutcome := StageOutcome{
+		ExecutionTime: ExecutionTime{},
+		Entity:        "the-bidder",
+		Stage:         hooks.StageBidderRequest,
+		Groups: []GroupOutcome{
+			{
+				ExecutionTime: ExecutionTime{},
+				InvocationResults: []HookOutcome{
+					{
+						ExecutionTime: ExecutionTime{},
+						AnalyticsTags: hookanalytics.Analytics{},
+						HookID:        HookID{"foobar", "foo"},
+						Status:        StatusTimeout,
+						Action:        "",
+						Message:       "",
+						DebugMessages: nil,
+						Errors:        []string{"Hook execution timeout"},
+						Warnings:      nil,
+					},
+				},
+			},
+			{
+				ExecutionTime: ExecutionTime{},
+				InvocationResults: []HookOutcome{
+					{
+						ExecutionTime: ExecutionTime{},
+						AnalyticsTags: hookanalytics.Analytics{},
+						HookID:        HookID{"foobar", "bar"},
+						Status:        StatusSuccess,
+						Action:        ActionUpdate,
+						Message:       "",
+						DebugMessages: []string{
+							fmt.Sprintf("Hook mutation successfully applied, affected key: bidRequest.user.yob, mutation type: %s", hookstage.MutationUpdate),
+							fmt.Sprintf("Hook mutation successfully applied, affected key: bidRequest.user.consent, mutation type: %s", hookstage.MutationUpdate),
+						},
+						Errors:   nil,
+						Warnings: nil,
+					},
+				},
+			},
+		},
+	}
+
+	exec := HookExecutor{
+		InvocationCtx: &hookstage.InvocationContext{},
+		Endpoint:      EndpointAuction,
+		PlanBuilder:   TestWithTimeoutPlanBuilder{},
+		MetricEngine:  &metric_config.NilMetricsEngine{},
+	}
+	req := openrtb2.BidRequest{ID: "some-id", User: &openrtb2.User{ID: "user-id"}}
+
+	reject := exec.ExecuteBidderRequestStage(&req, "the-bidder")
+	require.Nil(t, reject, "Unexpected stage reject")
+
+	stOut := exec.GetOutcomes()[0]
+	assertEqualStageOutcomes(t, expectedOutcome, stOut)
+
+	if req.User.CustomData != "" {
+		t.Error("bid request should not change because of timeout")
+	}
+
+	if req.User.Yob == 0 {
+		t.Error("bid request not changed inside hook.Call method")
+	}
+
+	if req.User.Consent == "" {
+		t.Error("bid request not changed inside hook.Call method")
+	}
+}
+
 func TestExecuteEntrypointStage_ModuleContextsAreCreated(t *testing.T) {
 	body := []byte(`{"name": "John", "last_name": "Doe"}`)
 	reader := bytes.NewReader(body)
@@ -487,20 +655,7 @@ func TestExecuteEntrypointStage_ModuleContextsAreCreated(t *testing.T) {
 	_, reject := exec.ExecuteEntrypointStage(req, body)
 	require.Nil(t, reject, "Unexpected stage reject")
 
-	stOut := exec.GetOutcomes()[0]
-	if len(stOut.Groups) != 2 {
-		t.Error("some hook groups have not been processed")
-	}
-
-	ctx1 := exec.InvocationCtx.ModuleContextFor("module-1")
-	if ctx1.Ctx["some-ctx-1"] != "some-ctx-1" {
-		t.Error("context for module-1 not created")
-	}
-
-	ctx2 := exec.InvocationCtx.ModuleContextFor("module-2")
-	if ctx2.Ctx["some-ctx-2"] != "some-ctx-2" {
-		t.Error("context for module-2 not created")
-	}
+	checkModuleContexts(t, exec)
 }
 
 func TestExecuteRawAuctionStage_ModuleContextsAreCreated(t *testing.T) {
@@ -515,6 +670,23 @@ func TestExecuteRawAuctionStage_ModuleContextsAreCreated(t *testing.T) {
 	_, reject := exec.ExecuteRawAuctionStage(body)
 	require.Nil(t, reject, "Unexpected stage reject")
 
+	checkModuleContexts(t, exec)
+}
+
+func TestExecuteBidderRequestStage_ModuleContextsAreCreated(t *testing.T) {
+	exec := HookExecutor{
+		InvocationCtx: &hookstage.InvocationContext{},
+		Endpoint:      EndpointAuction,
+		PlanBuilder:   TestWithModuleContextsPlanBuilder{},
+		MetricEngine:  &metric_config.NilMetricsEngine{},
+	}
+	reject := exec.ExecuteBidderRequestStage(&openrtb2.BidRequest{}, "the-bidder")
+	require.Nil(t, reject, "Unexpected stage reject")
+
+	checkModuleContexts(t, exec)
+}
+
+func checkModuleContexts(t *testing.T, exec HookExecutor) {
 	stOut := exec.GetOutcomes()[0]
 	if len(stOut.Groups) != 2 {
 		t.Error("some hook groups have not been processed")
@@ -564,6 +736,17 @@ func (e TestApplyHookMutationsBuilder) PlanForRawAuctionStage(_ string, _ *confi
 	}
 }
 
+func (e TestApplyHookMutationsBuilder) PlanForBidderRequestStage(_ string, _ *config.Account) hooks.Plan[hookstage.BidderRequest] {
+	return hooks.Plan[hookstage.BidderRequest]{
+		hooks.Group[hookstage.BidderRequest]{
+			Timeout: 1 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.BidderRequest]{
+				{Module: "foobar", Code: "foo", Hook: mockUpdateBidRequestHook{}},
+			},
+		},
+	}
+}
+
 type TestRejectPlanBuilder struct {
 	hooks.EmptyPlanBuilder
 }
@@ -597,6 +780,22 @@ func (e TestRejectPlanBuilder) PlanForRawAuctionStage(_ string, _ *config.Accoun
 			Timeout: 1 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.RawAuction]{
 				{Module: "foobar", Code: "bar", Hook: mockRejectHook{}},
+			},
+		},
+	}
+}
+func (e TestRejectPlanBuilder) PlanForBidderRequestStage(_ string, _ *config.Account) hooks.Plan[hookstage.BidderRequest] {
+	return hooks.Plan[hookstage.BidderRequest]{
+		hooks.Group[hookstage.BidderRequest]{
+			Timeout: 1 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.BidderRequest]{
+				{Module: "foobar", Code: "foo", Hook: mockRejectHook{}},
+			},
+		},
+		hooks.Group[hookstage.BidderRequest]{
+			Timeout: 1 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.BidderRequest]{
+				{Module: "foobar", Code: "bar", Hook: mockUpdateBidRequestHook{}},
 			},
 		},
 	}
@@ -641,6 +840,23 @@ func (e TestWithTimeoutPlanBuilder) PlanForRawAuctionStage(_ string, _ *config.A
 	}
 }
 
+func (e TestWithTimeoutPlanBuilder) PlanForBidderRequestStage(_ string, _ *config.Account) hooks.Plan[hookstage.BidderRequest] {
+	return hooks.Plan[hookstage.BidderRequest]{
+		hooks.Group[hookstage.BidderRequest]{
+			Timeout: 1 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.BidderRequest]{
+				{Module: "foobar", Code: "foo", Hook: mockTimeoutHook{}},
+			},
+		},
+		hooks.Group[hookstage.BidderRequest]{
+			Timeout: 1 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.BidderRequest]{
+				{Module: "foobar", Code: "bar", Hook: mockUpdateBidRequestHook{}},
+			},
+		},
+	}
+}
+
 type TestWithModuleContextsPlanBuilder struct {
 	hooks.EmptyPlanBuilder
 }
@@ -673,6 +889,23 @@ func (e TestWithModuleContextsPlanBuilder) PlanForRawAuctionStage(_ string, _ *c
 		hooks.Group[hookstage.RawAuction]{
 			Timeout: 1 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.RawAuction]{
+				{Module: "module-2", Code: "bar", Hook: mockModuleContextHook2{}},
+			},
+		},
+	}
+}
+
+func (e TestWithModuleContextsPlanBuilder) PlanForBidderRequestStage(_ string, _ *config.Account) hooks.Plan[hookstage.BidderRequest] {
+	return hooks.Plan[hookstage.BidderRequest]{
+		hooks.Group[hookstage.BidderRequest]{
+			Timeout: 1 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.BidderRequest]{
+				{Module: "module-1", Code: "foo", Hook: mockModuleContextHook1{}},
+			},
+		},
+		hooks.Group[hookstage.BidderRequest]{
+			Timeout: 1 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.BidderRequest]{
 				{Module: "module-2", Code: "bar", Hook: mockModuleContextHook2{}},
 			},
 		},

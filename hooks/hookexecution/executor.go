@@ -108,8 +108,29 @@ func (executor *HookExecutor) ExecuteProcessedAuctionStage(req *openrtb2.BidRequ
 }
 
 func (executor *HookExecutor) ExecuteBidderRequestStage(req *openrtb2.BidRequest, bidder string) *RejectError {
-	//TODO: implement
-	return nil
+	plan := executor.PlanBuilder.PlanForBidderRequestStage(executor.Endpoint, executor.InvocationCtx.Account)
+	if len(plan) == 0 {
+		return nil
+	}
+
+	handler := func(
+		ctx context.Context,
+		moduleCtx *hookstage.ModuleContext,
+		hook hookstage.BidderRequest,
+		payload hookstage.BidderRequestPayload,
+	) (hookstage.HookResult[hookstage.BidderRequestPayload], error) {
+		return hook.HandleBidderRequestHook(ctx, moduleCtx, payload)
+	}
+
+	executor.InvocationCtx.Stage = hooks.StageBidderRequest
+	payload := hookstage.BidderRequestPayload{BidRequest: req}
+	stageOutcome, _, reject := executeStage(executor.InvocationCtx, plan, payload, handler, executor.MetricEngine)
+	stageOutcome.Entity = hookstage.Entity(bidder)
+	stageOutcome.Stage = hooks.StageBidderRequest
+
+	executor.stageOutcomes = append(executor.stageOutcomes, stageOutcome)
+
+	return reject
 }
 
 func (executor *HookExecutor) ExecuteRawBidderResponseStage(response *adapters.BidderResponse) *RejectError {

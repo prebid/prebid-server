@@ -79,6 +79,10 @@ func (e mockRejectHook) HandleRawAuctionHook(_ context.Context, _ *hookstage.Mod
 	return hookstage.HookResult[hookstage.RawAuctionPayload]{Reject: true}, nil
 }
 
+func (e mockRejectHook) HandleBidderRequestHook(_ context.Context, _ *hookstage.ModuleContext, _ hookstage.BidderRequestPayload) (hookstage.HookResult[hookstage.BidderRequestPayload], error) {
+	return hookstage.HookResult[hookstage.BidderRequestPayload]{Reject: true}, nil
+}
+
 type mockTimeoutHook struct{}
 
 func (e mockTimeoutHook) HandleEntrypointHook(_ context.Context, _ *hookstage.ModuleContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
@@ -105,6 +109,17 @@ func (e mockTimeoutHook) HandleRawAuctionHook(_ context.Context, _ *hookstage.Mo
 	return hookstage.HookResult[hookstage.RawAuctionPayload]{ChangeSet: c}, nil
 }
 
+func (e mockTimeoutHook) HandleBidderRequestHook(_ context.Context, _ *hookstage.ModuleContext, _ hookstage.BidderRequestPayload) (hookstage.HookResult[hookstage.BidderRequestPayload], error) {
+	time.Sleep(2 * time.Millisecond)
+	c := &hookstage.ChangeSet[hookstage.BidderRequestPayload]{}
+	c.AddMutation(func(payload hookstage.BidderRequestPayload) (hookstage.BidderRequestPayload, error) {
+		payload.BidRequest.User.CustomData = "some-custom-data"
+		return payload, nil
+	}, hookstage.MutationUpdate, "bidRequest", "user.customData")
+
+	return hookstage.HookResult[hookstage.BidderRequestPayload]{ChangeSet: c}, nil
+}
+
 type mockModuleContextHook1 struct{}
 
 func (e mockModuleContextHook1) HandleEntrypointHook(_ context.Context, mctx *hookstage.ModuleContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
@@ -117,6 +132,11 @@ func (e mockModuleContextHook1) HandleRawAuctionHook(_ context.Context, mctx *ho
 	return hookstage.HookResult[hookstage.RawAuctionPayload]{}, nil
 }
 
+func (e mockModuleContextHook1) HandleBidderRequestHook(_ context.Context, mctx *hookstage.ModuleContext, _ hookstage.BidderRequestPayload) (hookstage.HookResult[hookstage.BidderRequestPayload], error) {
+	mctx.Ctx = map[string]interface{}{"some-ctx-1": "some-ctx-1"}
+	return hookstage.HookResult[hookstage.BidderRequestPayload]{}, nil
+}
+
 type mockModuleContextHook2 struct{}
 
 func (e mockModuleContextHook2) HandleEntrypointHook(_ context.Context, mctx *hookstage.ModuleContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
@@ -127,4 +147,28 @@ func (e mockModuleContextHook2) HandleEntrypointHook(_ context.Context, mctx *ho
 func (e mockModuleContextHook2) HandleRawAuctionHook(_ context.Context, mctx *hookstage.ModuleContext, _ hookstage.RawAuctionPayload) (hookstage.HookResult[hookstage.RawAuctionPayload], error) {
 	mctx.Ctx = map[string]interface{}{"some-ctx-2": "some-ctx-2"}
 	return hookstage.HookResult[hookstage.RawAuctionPayload]{}, nil
+}
+
+func (e mockModuleContextHook2) HandleBidderRequestHook(_ context.Context, mctx *hookstage.ModuleContext, _ hookstage.BidderRequestPayload) (hookstage.HookResult[hookstage.BidderRequestPayload], error) {
+	mctx.Ctx = map[string]interface{}{"some-ctx-2": "some-ctx-2"}
+	return hookstage.HookResult[hookstage.BidderRequestPayload]{}, nil
+}
+
+type mockUpdateBidRequestHook struct{}
+
+func (e mockUpdateBidRequestHook) HandleBidderRequestHook(_ context.Context, _ *hookstage.ModuleContext, _ hookstage.BidderRequestPayload) (hookstage.HookResult[hookstage.BidderRequestPayload], error) {
+	c := &hookstage.ChangeSet[hookstage.BidderRequestPayload]{}
+	c.AddMutation(
+		func(payload hookstage.BidderRequestPayload) (hookstage.BidderRequestPayload, error) {
+			payload.BidRequest.User.Yob = 2000
+			return payload, nil
+		}, hookstage.MutationUpdate, "bidRequest", "user.yob",
+	).AddMutation(
+		func(payload hookstage.BidderRequestPayload) (hookstage.BidderRequestPayload, error) {
+			payload.BidRequest.User.Consent = "true"
+			return payload, nil
+		}, hookstage.MutationUpdate, "bidRequest", "user.consent",
+	)
+
+	return hookstage.HookResult[hookstage.BidderRequestPayload]{ChangeSet: c}, nil
 }
