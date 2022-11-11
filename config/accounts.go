@@ -242,6 +242,9 @@ type AccountHooks struct {
 // format: map[vendor_name]map[module_name]json.RawMessage
 type AccountModules map[string]map[string]json.RawMessage
 
+// ModuleConfig returns the account-level module config.
+// The id argument must be passed in the form "vendor.module_name",
+// otherwise an error is returned.
 func (m AccountModules) ModuleConfig(id string) (json.RawMessage, error) {
 	ns := strings.SplitN(id, ".", 2)
 	if len(ns) < 2 {
