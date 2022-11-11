@@ -202,7 +202,7 @@ stored_requests:
       user: db-username
       dbname: database-name
     fetcher:
-      query: SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in %REQUEST_ID_LIST% UNION ALL SELECT id, impData, 'imp' as type FROM stored_imps WHERE id in %IMP_ID_LIST%;
+      query: SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in $REQUEST_ID_LIST UNION ALL SELECT id, impData, 'imp' as type FROM stored_imps WHERE id in $IMP_ID_LIST;
 ```
 
 ```yaml
@@ -250,7 +250,7 @@ stored_requests:
       user: db-username
       dbname: database-name
     fetcher:
-      query: SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in %REQUEST_ID_LIST% UNION ALL SELECT id, impData, 'imp' as type FROM stored_imps WHERE id in %IMP_ID_LIST%;
+      query: SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in $REQUEST_ID_LIST UNION ALL SELECT id, impData, 'imp' as type FROM stored_imps WHERE id in $IMP_ID_LIST;
   http:
     endpoint: http://stored-requests.prebid.com
     amp_endpoint: http://stored-requests.prebid.com?amp=true

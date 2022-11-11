@@ -112,7 +112,7 @@ func (provider *PostgresDbProvider) createIdList(numSoFar int, numArgs int) stri
 	//
 	// The query plan also suggests that it's basically free:
 	//
-	// explain SELECT id, requestData FROM stored_requests WHERE id in %ID_LIST%;
+	// explain SELECT id, requestData FROM stored_requests WHERE id in $ID_LIST;
 	//
 	// QUERY PLAN
 	// -------------------------------------------

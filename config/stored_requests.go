@@ -205,11 +205,11 @@ type DatabaseFetcherQueries struct {
 	// In the simplest case, this could be something like:
 	//   SELECT id, requestData, 'request' as type
 	//     FROM stored_requests
-	//     WHERE id in %REQUEST_ID_LIST%
+	//     WHERE id in $REQUEST_ID_LIST
 	//     UNION ALL
 	//   SELECT id, impData, 'imp' as type
 	//     FROM stored_imps
-	//     WHERE id in %IMP_ID_LIST%
+	//     WHERE id in $IMP_ID_LIST
 	//
 	// The MakeQuery function will transform this query into:
 	//   SELECT id, requestData, 'request' as type
