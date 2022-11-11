@@ -11,10 +11,6 @@ import (
 	"net/http"
 )
 
-type RequestImpExt struct {
-	ZoneId int `json:"zoneId"`
-}
-
 type adapter struct {
 	endpoint string
 }
@@ -35,12 +31,9 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 				Message: fmt.Sprintf("Invalid imp.ext for impression index %d. Error Infomation: %s", i, err.Error()),
 			}}
 		}
-		requestImpExt := RequestImpExt{
-			ZoneId: impExt.ZoneId,
-		}
 
 		var err error
-		if imp.Ext, err = json.Marshal(requestImpExt); err != nil {
+		if imp.Ext, err = json.Marshal(impExt); err != nil {
 			return nil, []error{&errortypes.BadInput{
 				Message: fmt.Sprintf("Unable to transfer requestImpExt to Json fomat, %s", err.Error()),
 			}}
