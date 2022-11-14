@@ -86,8 +86,8 @@ dev: dev-clean baseimage
 dev-clean:
 dev-clean:
 	@kubectl delete deployment,statefulset,svc,cm,secret --wait=false -l app.kubernetes.io/part-of=${PROJECT_NAME}
-# Only remove the source code pv,pvc, persisting state/vendor data (see dev-clean-state & dev-clean-vendor)
-	@kubectl delete pv,pvc --wait=false -l app.kubernetes.io/part-of=${PROJECT_NAME},app.kubernetes.io/component=app,volume=src
+# Only remove the NFS-shared folders while persisting state/vendor data (see dev-clean-state & dev-clean-vendor)
+	@kubectl delete pv,pvc --wait=false -l app.kubernetes.io/part-of=${PROJECT_NAME},app.kubernetes.io/component=app,storageClassName=nfs
 
 # TODO: Temporary for transition of k8s labels. Remove after 5/1/2022.
 	@kubectl delete pod,deployment,statefulset,svc,cm,secret,pv,pvc --wait=false -l app=${PROJECT_NAME}
@@ -102,6 +102,8 @@ dev-clean-vendor: dev-clean
 
 .PHONY: dev-clean-all
 dev-clean-all: dev-clean dev-clean-state dev-clean-vendor
+# Everything should be deleted already, but make extra sure (useful when CRUD-ing manifests and/or their labels)
+	@kubectl delete pod,deployment,statefulset,svc,cm,secret,pv,pvc --wait=false -l app=${PROJECT_NAME}
 
 .PHONY: dev-wait
 dev-wait: INSTANCE ?= web-internal

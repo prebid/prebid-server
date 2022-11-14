@@ -13,7 +13,7 @@ spec:
       volumes:
         - name: src
           persistentVolumeClaim:
-            claimName: tpe-prebid-service
+            claimName: tpe-prebid-service-src
         - name: tapjoy-tooling
           configMap:
             name: tpe-prebid-service-tooling
