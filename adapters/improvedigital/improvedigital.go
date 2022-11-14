@@ -273,12 +273,7 @@ func getImpExtWithRewardedInventory(imp openrtb2.Imp) ([]byte, error) {
 		return nil, err
 	}
 
-	rewardedInventory, foundRewardedInventory := prebidMap[isRewardedInventory]
-	if !foundRewardedInventory {
-		return nil, nil
-	}
-
-	if string(rewardedInventory) == stateRewardedInventoryEnable {
+	if rewardedInventory, foundRewardedInventory := prebidMap[isRewardedInventory]; foundRewardedInventory && string(rewardedInventory) == stateRewardedInventoryEnable {
 		ext[isRewardedInventory] = json.RawMessage(`true`)
 		impExt, err := json.Marshal(ext)
 		if err != nil {
