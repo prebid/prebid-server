@@ -6,7 +6,6 @@ import (
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/hooks/hookanalytics"
-	"github.com/prebid/prebid-server/metrics"
 )
 
 type Entity string
@@ -20,13 +19,11 @@ const (
 
 // InvocationContext holds information passed to module's hook during hook execution.
 type InvocationContext struct {
-	Endpoint          string
-	Stage             string
-	AccountId         string
-	DebugEnabled      bool
-	RequestTypeMetric metrics.RequestType
-	Account           *config.Account
-	moduleContexts    map[string]*ModuleContext
+	Stage          string
+	AccountId      string
+	DebugEnabled   bool
+	Account        *config.Account
+	moduleContexts map[string]*ModuleContext
 }
 
 func (ctx *InvocationContext) ModuleContextFor(moduleCode string) *ModuleContext {
@@ -68,8 +65,4 @@ type HookResult[T any] struct {
 type ModuleContext struct {
 	Ctx           map[string]interface{} // interface as we do not know exactly how the modules will use their inner context
 	AccountConfig json.RawMessage
-}
-
-type StageResult[T any] struct {
-	GroupsResults [][]HookResult[T]
 }

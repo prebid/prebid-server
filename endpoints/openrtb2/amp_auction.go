@@ -16,7 +16,6 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
-	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/prebid/prebid-server/util/uuidutil"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
@@ -75,11 +74,7 @@ func NewAmpEndpoint(
 		IPv6PrivateNetworks: cfg.RequestValidation.IPv6PrivateNetworksParsed,
 	}
 
-	hookExecutor := &hookexecution.HookExecutor{
-		InvocationCtx: &hookstage.InvocationContext{},
-		Endpoint:      hookexecution.EndpointAmp,
-		PlanBuilder:   hookExecutionPlanBuilder,
-	}
+	hookExecutor := hookexecution.NewHookExecutor(hookExecutionPlanBuilder, hookexecution.EndpointAmp)
 
 	return httprouter.Handle((&endpointDeps{
 		uuidGenerator,

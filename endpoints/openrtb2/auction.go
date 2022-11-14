@@ -22,7 +22,6 @@ import (
 	nativeRequests "github.com/prebid/openrtb/v17/native1/request"
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/hooks"
-	"github.com/prebid/prebid-server/hooks/hookstage"
 	"golang.org/x/net/publicsuffix"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
@@ -86,11 +85,7 @@ func NewEndpoint(
 		IPv6PrivateNetworks: cfg.RequestValidation.IPv6PrivateNetworksParsed,
 	}
 
-	hookExecutor := &hookexecution.HookExecutor{
-		InvocationCtx: &hookstage.InvocationContext{},
-		Endpoint:      hookexecution.EndpointAuction,
-		PlanBuilder:   hookExecutionPlanBuilder,
-	}
+	hookExecutor := hookexecution.NewHookExecutor(hookExecutionPlanBuilder, hookexecution.EndpointAuction)
 
 	return httprouter.Handle((&endpointDeps{
 		uuidGenerator,

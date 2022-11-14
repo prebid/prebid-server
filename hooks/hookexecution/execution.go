@@ -11,28 +11,6 @@ import (
 	"github.com/prebid/prebid-server/hooks/hookstage"
 )
 
-type TimeoutError struct{}
-
-func (e TimeoutError) Error() string {
-	return fmt.Sprint("Hook execution timeout")
-}
-
-// FailureError indicates expected error occurred during hook execution on the module-side
-type FailureError struct{}
-
-func (e FailureError) Error() string {
-	return fmt.Sprint("Hook execution failed")
-}
-
-type RejectError struct {
-	Code   int
-	Reason string // is it needed or code is enough?
-}
-
-func (e RejectError) Error() string {
-	return fmt.Sprintf(`Module rejected stage, reason: "%s"`, e.Reason)
-}
-
 type hookHandler[H any, P any] func(
 	context.Context,
 	*hookstage.ModuleContext,
@@ -202,7 +180,7 @@ func processHookResponses[P any](
 		}
 
 		if r.Result.ChangeSet == nil || len(r.Result.ChangeSet.Mutations()) == 0 {
-			groupOutcome.InvocationResults[i].Action = ActionNOP
+			groupOutcome.InvocationResults[i].Action = ActionNoAction
 			continue
 		}
 
