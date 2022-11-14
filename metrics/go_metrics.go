@@ -92,6 +92,12 @@ type AdapterMetrics struct {
 	ConnReused         metrics.Counter
 	ConnWaitTime       metrics.Timer
 	GDPRRequestBlocked metrics.Meter
+
+	BidValidationCreativeSizeErrorMeter metrics.Meter
+	BidValidationCreativeSizeWarnMeter  metrics.Meter
+
+	BidValidationSecureMarkupErrorMeter metrics.Meter
+	BidValidationSecureMarkupWarnMeter  metrics.Meter
 }
 
 type MarkupDeliveryMetrics struct {
@@ -107,6 +113,12 @@ type accountMetrics struct {
 	// store account by adapter metrics. Type is map[PBSBidder.BidderCode]
 	adapterMetrics       map[openrtb_ext.BidderName]*AdapterMetrics
 	storedResponsesMeter metrics.Meter
+
+	bidValidationCreativeSizeMeter     metrics.Meter
+	bidValidationCreativeSizeWarnMeter metrics.Meter
+
+	bidValidationSecureMarkupMeter     metrics.Meter
+	bidValidationSecureMarkupWarnMeter metrics.Meter
 }
 
 // NewBlankMetrics creates a new Metrics object with all blank metrics object. This may also be useful for
@@ -381,6 +393,12 @@ func registerAdapterMetrics(registry metrics.Registry, adapterOrAccount string, 
 	}
 	am.PanicMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.requests.panic", adapterOrAccount, exchange), registry)
 	am.GDPRRequestBlocked = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.gdpr_request_blocked", adapterOrAccount, exchange), registry)
+
+	am.BidValidationCreativeSizeErrorMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.response.validation.size.err", adapterOrAccount, exchange), registry)
+	am.BidValidationCreativeSizeWarnMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.response.validation.size.warn", adapterOrAccount, exchange), registry)
+
+	am.BidValidationSecureMarkupErrorMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.response.validation.secure.err", adapterOrAccount, exchange), registry)
+	am.BidValidationSecureMarkupWarnMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.response.validation.secure.warn", adapterOrAccount, exchange), registry)
 }
 
 func makeDeliveryMetrics(registry metrics.Registry, prefix string, bidType openrtb_ext.BidType) *MarkupDeliveryMetrics {
@@ -426,6 +444,11 @@ func (me *Metrics) getAccountMetrics(id string) *accountMetrics {
 			registerAdapterMetrics(me.MetricsRegistry, fmt.Sprintf("account.%s", id), string(a), am.adapterMetrics[a])
 		}
 	}
+	am.bidValidationCreativeSizeMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.response.validation.size.err", id), me.MetricsRegistry)
+	am.bidValidationCreativeSizeWarnMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.response.validation.size.warn", id), me.MetricsRegistry)
+
+	am.bidValidationSecureMarkupMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.response.validation.secure.err", id), me.MetricsRegistry)
+	am.bidValidationSecureMarkupWarnMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.response.validation.secure.warn", id), me.MetricsRegistry)
 
 	me.accountMetrics[id] = am
 
@@ -780,4 +803,60 @@ func (me *Metrics) RecordAdsCertReq(success bool) {
 
 func (me *Metrics) RecordAdsCertSignTime(adsCertSignTime time.Duration) {
 	me.adsCertSignTimer.Update(adsCertSignTime)
+}
+
+func (me *Metrics) RecordBidValidationCreativeSizeError(adapter openrtb_ext.BidderName, pubID string) {
+	am, ok := me.AdapterMetrics[adapter]
+	if !ok {
+		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", string(adapter))
+		return
+	}
+	am.BidValidationCreativeSizeErrorMeter.Mark(1)
+
+	aam := me.getAccountMetrics(pubID)
+	if !me.MetricsDisabled.AccountAdapterDetails {
+		aam.bidValidationCreativeSizeMeter.Mark(1)
+	}
+}
+
+func (me *Metrics) RecordBidValidationCreativeSizeWarn(adapter openrtb_ext.BidderName, pubID string) {
+	am, ok := me.AdapterMetrics[adapter]
+	if !ok {
+		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", string(adapter))
+		return
+	}
+	am.BidValidationCreativeSizeWarnMeter.Mark(1)
+
+	aam := me.getAccountMetrics(pubID)
+	if !me.MetricsDisabled.AccountAdapterDetails {
+		aam.bidValidationCreativeSizeWarnMeter.Mark(1)
+	}
+}
+
+func (me *Metrics) RecordBidValidationSecureMarkupError(adapter openrtb_ext.BidderName, pubID string) {
+	am, ok := me.AdapterMetrics[adapter]
+	if !ok {
+		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", string(adapter))
+		return
+	}
+	am.BidValidationSecureMarkupErrorMeter.Mark(1)
+
+	aam := me.getAccountMetrics(pubID)
+	if !me.MetricsDisabled.AccountAdapterDetails {
+		aam.bidValidationSecureMarkupMeter.Mark(1)
+	}
+}
+
+func (me *Metrics) RecordBidValidationSecureMarkupWarn(adapter openrtb_ext.BidderName, pubID string) {
+	am, ok := me.AdapterMetrics[adapter]
+	if !ok {
+		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", string(adapter))
+		return
+	}
+	am.BidValidationSecureMarkupWarnMeter.Mark(1)
+
+	aam := me.getAccountMetrics(pubID)
+	if !me.MetricsDisabled.AccountAdapterDetails {
+		aam.bidValidationSecureMarkupWarnMeter.Mark(1)
+	}
 }

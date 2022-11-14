@@ -204,6 +204,78 @@ func TestDebugRequestMetric(t *testing.T) {
 	}
 }
 
+func TestBidValidationCreativeSizeMetric(t *testing.T) {
+	testCases := []struct {
+		description                        string
+		givenDebugEnabledFlag              bool
+		givenAccountAdapterMetricsDisabled bool
+		expectedAdapterCount               float64
+		expectedAccountCount               float64
+	}{
+		{
+			description:                        "Account Metric isn't disabled, so both metrics should be incremented",
+			givenAccountAdapterMetricsDisabled: false,
+			expectedAdapterCount:               1,
+			expectedAccountCount:               1,
+		},
+		{
+			description:                        "Account Metric is disabled, so only adapter metric should be incremented",
+			givenAccountAdapterMetricsDisabled: true,
+			expectedAdapterCount:               1,
+			expectedAccountCount:               0,
+		},
+	}
+
+	for _, test := range testCases {
+		m := createMetricsForTesting()
+		m.metricsDisabled.AccountAdapterDetails = test.givenAccountAdapterMetricsDisabled
+		m.RecordBidValidationCreativeSizeError(adapterLabel, "acct-id")
+		m.RecordBidValidationCreativeSizeWarn(adapterLabel, "acct-id")
+
+		assertCounterVecValue(t, "", "account bid validation", m.accountBidResponseValidationSizeError, test.expectedAccountCount, prometheus.Labels{accountLabel: "acct-id", successLabel: successLabel})
+		assertCounterVecValue(t, "", "adapter bid validation", m.adapterBidResponseValidationSizeError, test.expectedAdapterCount, prometheus.Labels{adapterLabel: adapterLabel, successLabel: successLabel})
+
+		assertCounterVecValue(t, "", "account bid validation", m.accountBidResponseValidationSizeWarn, test.expectedAccountCount, prometheus.Labels{accountLabel: "acct-id", successLabel: successLabel})
+		assertCounterVecValue(t, "", "adapter bid validation", m.adapterBidResponseValidationSizeWarn, test.expectedAdapterCount, prometheus.Labels{adapterLabel: adapterLabel, successLabel: successLabel})
+	}
+}
+
+func TestBidValidationSecureMarkupMetric(t *testing.T) {
+	testCases := []struct {
+		description                        string
+		givenDebugEnabledFlag              bool
+		givenAccountAdapterMetricsDisabled bool
+		expectedAdapterCount               float64
+		expectedAccountCount               float64
+	}{
+		{
+			description:                        "Account Metric isn't disabled, so both metrics should be incremented",
+			givenAccountAdapterMetricsDisabled: false,
+			expectedAdapterCount:               1,
+			expectedAccountCount:               1,
+		},
+		{
+			description:                        "Account Metric is disabled, so only adapter metric should be incremented",
+			givenAccountAdapterMetricsDisabled: true,
+			expectedAdapterCount:               1,
+			expectedAccountCount:               0,
+		},
+	}
+
+	for _, test := range testCases {
+		m := createMetricsForTesting()
+		m.metricsDisabled.AccountAdapterDetails = test.givenAccountAdapterMetricsDisabled
+		m.RecordBidValidationSecureMarkupError(adapterLabel, "acct-id")
+		m.RecordBidValidationSecureMarkupWarn(adapterLabel, "acct-id")
+
+		assertCounterVecValue(t, "", "Account Secure Markup Error", m.accountBidResponseSecureMarkupError, test.expectedAccountCount, prometheus.Labels{accountLabel: "acct-id", successLabel: successLabel})
+		assertCounterVecValue(t, "", "Adapter Secure Markup Error", m.adapterBidResponseSecureMarkupError, test.expectedAdapterCount, prometheus.Labels{adapterLabel: adapterLabel, successLabel: successLabel})
+
+		assertCounterVecValue(t, "", "Account Secure Markup Warn", m.accountBidResponseSecureMarkupWarn, test.expectedAccountCount, prometheus.Labels{accountLabel: "acct-id", successLabel: successLabel})
+		assertCounterVecValue(t, "", "Adapter Secure Markup Warn", m.adapterBidResponseSecureMarkupWarn, test.expectedAdapterCount, prometheus.Labels{adapterLabel: adapterLabel, successLabel: successLabel})
+	}
+}
+
 func TestRequestMetricWithoutCookie(t *testing.T) {
 	requestType := metrics.ReqTypeORTB2Web
 	performTest := func(m *Metrics, cookieFlag metrics.CookieFlag) {

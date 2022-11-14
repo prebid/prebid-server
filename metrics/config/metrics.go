@@ -279,6 +279,30 @@ func (me *MultiMetricsEngine) RecordAdsCertSignTime(adsCertSignTime time.Duratio
 	}
 }
 
+func (me *MultiMetricsEngine) RecordBidValidationCreativeSizeError(adapter openrtb_ext.BidderName, account string) {
+	for _, thisME := range *me {
+		thisME.RecordBidValidationCreativeSizeError(adapter, account)
+	}
+}
+
+func (me *MultiMetricsEngine) RecordBidValidationCreativeSizeWarn(adapter openrtb_ext.BidderName, account string) {
+	for _, thisME := range *me {
+		thisME.RecordBidValidationCreativeSizeWarn(adapter, account)
+	}
+}
+
+func (me *MultiMetricsEngine) RecordBidValidationSecureMarkupError(adapter openrtb_ext.BidderName, account string) {
+	for _, thisME := range *me {
+		thisME.RecordBidValidationSecureMarkupError(adapter, account)
+	}
+}
+
+func (me *MultiMetricsEngine) RecordBidValidationSecureMarkupWarn(adapter openrtb_ext.BidderName, account string) {
+	for _, thisME := range *me {
+		thisME.RecordBidValidationSecureMarkupWarn(adapter, account)
+	}
+}
+
 // NilMetricsEngine implements the MetricsEngine interface where no metrics are actually captured. This is
 // used if no metric backend is configured and also for tests.
 type NilMetricsEngine struct{}
@@ -404,4 +428,16 @@ func (me *NilMetricsEngine) RecordAdsCertReq(success bool) {
 
 func (me *NilMetricsEngine) RecordAdsCertSignTime(adsCertSignTime time.Duration) {
 
+}
+
+func (me *NilMetricsEngine) RecordBidValidationCreativeSizeError(adapter openrtb_ext.BidderName, account string) {
+}
+
+func (me *NilMetricsEngine) RecordBidValidationCreativeSizeWarn(adapter openrtb_ext.BidderName, account string) {
+}
+
+func (me *NilMetricsEngine) RecordBidValidationSecureMarkupError(adapter openrtb_ext.BidderName, account string) {
+}
+
+func (me *NilMetricsEngine) RecordBidValidationSecureMarkupWarn(adapter openrtb_ext.BidderName, account string) {
 }

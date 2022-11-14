@@ -162,3 +162,19 @@ func (me *MetricsEngineMock) RecordAdsCertReq(success bool) {
 func (me *MetricsEngineMock) RecordAdsCertSignTime(adsCertSignTime time.Duration) {
 	me.Called(adsCertSignTime)
 }
+
+func (me *MetricsEngineMock) RecordBidValidationCreativeSizeError(adapter openrtb_ext.BidderName, account string) {
+	me.Called(adapter, account)
+}
+
+func (me *MetricsEngineMock) RecordBidValidationCreativeSizeWarn(adapter openrtb_ext.BidderName, account string) {
+	me.Called(adapter, account)
+}
+
+func (me *MetricsEngineMock) RecordBidValidationSecureMarkupError(adapter openrtb_ext.BidderName, account string) {
+	me.Called(adapter, account)
+}
+
+func (me *MetricsEngineMock) RecordBidValidationSecureMarkupWarn(adapter openrtb_ext.BidderName, account string) {
+	me.Called(adapter, account)
+}

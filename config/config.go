@@ -98,7 +98,8 @@ type Configuration struct {
 	DataCenter string     `mapstructure:"datacenter"`
 	// BidderInfos supports adapter overrides in extra configs like pbs.json, pbs.yaml, etc.
 	// Refers to main.go `configFileName` constant
-	BidderInfos BidderInfos `mapstructure:"adapters"`
+	BidderInfos             BidderInfos              `mapstructure:"adapters"`
+	BidValidationEnforcment BidValidationEnforcement `mapstructure:"bid_validation_enforcement"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
@@ -619,6 +620,19 @@ type TimeoutNotification struct {
 	FailOnly bool `mapstructure:"fail_only"`
 }
 
+type BidValidationEnforcement struct {
+	BannerCreativeMaxSize string `mapstructure:"banner_creative_max_size"`
+	SecureMarkup          string `mapstructure:"secure_markup"`
+	MaxCreativeWidth      int64  `mapstructure:"max_creative_width"`
+	MaxCreativeHeight     int64  `mapstructure:"max_creative_height"`
+}
+
+const (
+	ValidationEnforce string = "enforce"
+	ValidationWarn    string = "warn"
+	ValidationSkip    string = "skip"
+)
+
 func (cfg *TimeoutNotification) validate(errs []error) []error {
 	if cfg.SamplingRate < 0.0 || cfg.SamplingRate > 1.0 {
 		errs = append(errs, fmt.Errorf("debug.timeout_notification.sampling_rate must be positive and not greater than 1.0. Got %f", cfg.SamplingRate))
@@ -799,6 +813,10 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("host_cookie.ttl_days", 90)
 	v.SetDefault("host_cookie.max_cookie_size_bytes", 0)
 	v.SetDefault("host_schain_node", nil)
+	v.SetDefault("bid_validation_enforcement.banner_creative_max_size", "skip")
+	v.SetDefault("bid_validation_enforcement.secure_markup", "skip")
+	v.SetDefault("bid_validation_enforcement.max_creative_size.height", 0)
+	v.SetDefault("bid_validation_enforcement.max_creative_size.width", 0)
 	v.SetDefault("http_client.max_connections_per_host", 0) // unlimited
 	v.SetDefault("http_client.max_idle_connections", 400)
 	v.SetDefault("http_client.max_idle_connections_per_host", 10)

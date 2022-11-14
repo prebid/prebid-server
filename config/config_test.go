@@ -172,6 +172,10 @@ func TestDefaults(t *testing.T) {
 	cmpInts(t, "experiment.adscert.remote.signing_timeout_ms", cfg.Experiment.AdCerts.Remote.SigningTimeoutMs, 5)
 	cmpNils(t, "host_schain_node", cfg.HostSChainNode)
 	cmpStrings(t, "datacenter", cfg.DataCenter, "")
+	cmpStrings(t, "bid_validation_enforcement.banner_creative_max_size", cfg.BidValidationEnforcment.BannerCreativeMaxSize, "skip")
+	cmpStrings(t, "bid_validation_enforcement.secure_markup", cfg.BidValidationEnforcment.SecureMarkup, "skip")
+	cmpInts(t, "bid_validation_enforcement.max_creative_width", int(cfg.BidValidationEnforcment.MaxCreativeWidth), 0)
+	cmpInts(t, "bid_validation_enforcement.max_creative_height", int(cfg.BidValidationEnforcment.MaxCreativeHeight), 0)
 
 	//Assert purpose VendorExceptionMap hash tables were built correctly
 	expectedTCF2 := TCF2{
@@ -393,6 +397,11 @@ host_schain_node:
     sid: "00001"
     rid: "BidRequest"
     hp: 1
+bid_validation_enforcement:
+    banner_creative_max_size: "skip"
+    secure_markup: "skip"
+    max_creative_width: 0
+    max_creative_height: 0
 experiment:
     adscert:
         mode: inprocess
@@ -479,6 +488,10 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "host_schain_node.rid", cfg.HostSChainNode.RID, "BidRequest")
 	cmpInt8s(t, "host_schain_node.hp", cfg.HostSChainNode.HP, &int8One)
 	cmpStrings(t, "datacenter", cfg.DataCenter, "1")
+	cmpStrings(t, "bid_validation_enforcement.banner_creative_max_size", cfg.BidValidationEnforcment.BannerCreativeMaxSize, "skip")
+	cmpStrings(t, "bid_validation_enforcement.secure_markup", cfg.BidValidationEnforcment.SecureMarkup, "skip")
+	cmpInts(t, "bid_validation_enforcement.max_creative_width", int(cfg.BidValidationEnforcment.MaxCreativeWidth), 0)
+	cmpInts(t, "bid_validation_enforcement.max_creative_height", int(cfg.BidValidationEnforcment.MaxCreativeHeight), 0)
 
 	//Assert the NonStandardPublishers was correctly unmarshalled
 	assert.Equal(t, []string{"pub1", "pub2"}, cfg.GDPR.NonStandardPublishers, "gdpr.non_standard_publishers")

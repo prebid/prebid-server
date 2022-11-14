@@ -53,23 +53,24 @@ type IdFetcher interface {
 }
 
 type exchange struct {
-	adapterMap        map[openrtb_ext.BidderName]AdaptedBidder
-	bidderInfo        config.BidderInfos
-	bidderToSyncerKey map[string]string
-	me                metrics.MetricsEngine
-	cache             prebid_cache_client.Client
-	cacheTime         time.Duration
-	gdprPermsBuilder  gdpr.PermissionsBuilder
-	tcf2ConfigBuilder gdpr.TCF2ConfigBuilder
-	currencyConverter *currency.RateConverter
-	externalURL       string
-	gdprDefaultValue  gdpr.Signal
-	privacyConfig     config.Privacy
-	categoriesFetcher stored_requests.CategoryFetcher
-	bidIDGenerator    BidIDGenerator
-	hostSChainNode    *openrtb2.SupplyChainNode
-	adsCertSigner     adscert.Signer
-	server            config.Server
+	adapterMap               map[openrtb_ext.BidderName]AdaptedBidder
+	bidderInfo               config.BidderInfos
+	bidderToSyncerKey        map[string]string
+	me                       metrics.MetricsEngine
+	cache                    prebid_cache_client.Client
+	cacheTime                time.Duration
+	gdprPermsBuilder         gdpr.PermissionsBuilder
+	tcf2ConfigBuilder        gdpr.TCF2ConfigBuilder
+	currencyConverter        *currency.RateConverter
+	externalURL              string
+	gdprDefaultValue         gdpr.Signal
+	privacyConfig            config.Privacy
+	categoriesFetcher        stored_requests.CategoryFetcher
+	bidIDGenerator           BidIDGenerator
+	hostSChainNode           *openrtb2.SupplyChainNode
+	adsCertSigner            adscert.Signer
+	server                   config.Server
+	bidValidationEnforcement config.BidValidationEnforcement
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -145,10 +146,11 @@ func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid
 			GDPR: cfg.GDPR,
 			LMT:  cfg.LMT,
 		},
-		bidIDGenerator: &bidIDGenerator{cfg.GenerateBidID},
-		hostSChainNode: cfg.HostSChainNode,
-		adsCertSigner:  adsCertSigner,
-		server:         config.Server{ExternalUrl: cfg.ExternalURL, GvlID: cfg.GDPR.HostVendorID, DataCenter: cfg.DataCenter},
+		bidIDGenerator:           &bidIDGenerator{cfg.GenerateBidID},
+		hostSChainNode:           cfg.HostSChainNode,
+		adsCertSigner:            adsCertSigner,
+		server:                   config.Server{ExternalUrl: cfg.ExternalURL, GvlID: cfg.GDPR.HostVendorID, DataCenter: cfg.DataCenter},
+		bidValidationEnforcement: cfg.BidValidationEnforcment,
 	}
 }
 
@@ -394,8 +396,10 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		bidResponseExt.Warnings[openrtb_ext.BidderReservedGeneral] = append(bidResponseExt.Warnings[openrtb_ext.BidderReservedGeneral], generalWarning)
 	}
 
+	e.bidValidationEnforcement = setBidValidationStatus(e.bidValidationEnforcement, r.Account.BidValidationEnforcement)
+
 	// Build the response
-	return e.buildBidResponse(ctx, liveAdapters, adapterBids, r.BidRequestWrapper.BidRequest, adapterExtra, auc, bidResponseExt, cacheInstructions.returnCreative, r.ImpExtInfoMap, errs)
+	return e.buildBidResponse(ctx, liveAdapters, adapterBids, r.BidRequestWrapper.BidRequest, adapterExtra, auc, bidResponseExt, cacheInstructions.returnCreative, r.ImpExtInfoMap, r.PubID, errs)
 }
 
 func (e *exchange) parseGDPRDefaultValue(bidRequest *openrtb2.BidRequest) gdpr.Signal {
@@ -693,7 +697,7 @@ func errsToBidderWarnings(errs []error) []openrtb_ext.ExtBidderMessage {
 }
 
 // This piece takes all the bids supplied by the adapters and crafts an openRTB response to send back to the requester
-func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_ext.BidderName, adapterSeatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, bidRequest *openrtb2.BidRequest, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, auc *auction, bidResponseExt *openrtb_ext.ExtBidResponse, returnCreative bool, impExtInfoMap map[string]ImpExtInfo, errList []error) (*openrtb2.BidResponse, error) {
+func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_ext.BidderName, adapterSeatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, bidRequest *openrtb2.BidRequest, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, auc *auction, bidResponseExt *openrtb_ext.ExtBidResponse, returnCreative bool, impExtInfoMap map[string]ImpExtInfo, pubID string, errList []error) (*openrtb2.BidResponse, error) {
 	bidResponse := new(openrtb2.BidResponse)
 	var err error
 
@@ -709,7 +713,7 @@ func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_
 	for a, adapterSeatBids := range adapterSeatBids {
 		//while processing every single bib, do we need to handle categories here?
 		if adapterSeatBids != nil && len(adapterSeatBids.bids) > 0 {
-			sb := e.makeSeatBid(adapterSeatBids, a, adapterExtra, auc, returnCreative, impExtInfoMap)
+			sb := e.makeSeatBid(adapterSeatBids, a, adapterExtra, auc, returnCreative, impExtInfoMap, bidResponseExt, pubID)
 			seatBids = append(seatBids, *sb)
 			bidResponse.Cur = adapterSeatBids.currency
 		}
@@ -1009,14 +1013,14 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pb
 
 // Return an openrtb seatBid for a bidder
 // BuildBidResponse is responsible for ensuring nil bid seatbids are not included
-func (e *exchange) makeSeatBid(adapterBid *pbsOrtbSeatBid, adapter openrtb_ext.BidderName, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, auc *auction, returnCreative bool, impExtInfoMap map[string]ImpExtInfo) *openrtb2.SeatBid {
+func (e *exchange) makeSeatBid(adapterBid *pbsOrtbSeatBid, adapter openrtb_ext.BidderName, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, auc *auction, returnCreative bool, impExtInfoMap map[string]ImpExtInfo, bidResponseExt *openrtb_ext.ExtBidResponse, pubID string) *openrtb2.SeatBid {
 	seatBid := &openrtb2.SeatBid{
 		Seat:  adapter.String(),
 		Group: 0, // Prebid cannot support roadblocking
 	}
 
 	var errList []error
-	seatBid.Bid, errList = e.makeBid(adapterBid.bids, auc, returnCreative, impExtInfoMap)
+	seatBid.Bid, errList = e.makeBid(adapterBid.bids, auc, returnCreative, impExtInfoMap, bidResponseExt, adapter, pubID)
 	if len(errList) > 0 {
 		adapterExtra[adapter].Errors = append(adapterExtra[adapter].Errors, errsToBidderErrors(errList)...)
 	}
@@ -1024,11 +1028,27 @@ func (e *exchange) makeSeatBid(adapterBid *pbsOrtbSeatBid, adapter openrtb_ext.B
 	return seatBid
 }
 
-func (e *exchange) makeBid(bids []*pbsOrtbBid, auc *auction, returnCreative bool, impExtInfoMap map[string]ImpExtInfo) ([]openrtb2.Bid, []error) {
+func (e *exchange) makeBid(bids []*pbsOrtbBid, auc *auction, returnCreative bool, impExtInfoMap map[string]ImpExtInfo, bidResponseExt *openrtb_ext.ExtBidResponse, adapter openrtb_ext.BidderName, pubID string) ([]openrtb2.Bid, []error) {
 	result := make([]openrtb2.Bid, 0, len(bids))
 	errs := make([]error, 0, 1)
 
 	for _, bid := range bids {
+		if e.bidValidationEnforcement.BannerCreativeMaxSize == config.ValidationEnforce && bid.bidType == openrtb_ext.BidTypeBanner {
+			if !e.validateBid(bid, bidResponseExt, adapter, pubID) {
+				continue // Don't add bid to result
+			}
+		} else if e.bidValidationEnforcement.BannerCreativeMaxSize == config.ValidationWarn && bid.bidType == openrtb_ext.BidTypeBanner {
+			e.validateBid(bid, bidResponseExt, adapter, pubID)
+		}
+
+		if e.bidValidationEnforcement.SecureMarkup == config.ValidationEnforce && (bid.bidType == openrtb_ext.BidTypeBanner || bid.bidType == openrtb_ext.BidTypeVideo) {
+			if !e.validateBid(bid, bidResponseExt, adapter, pubID) {
+				continue // Don't add bid to result
+			}
+		} else if e.bidValidationEnforcement.SecureMarkup == config.ValidationWarn && (bid.bidType == openrtb_ext.BidTypeBanner || bid.bidType == openrtb_ext.BidTypeVideo) {
+			e.validateBid(bid, bidResponseExt, adapter, pubID)
+		}
+
 		bidExtPrebid := &openrtb_ext.ExtBidPrebid{
 			DealPriority:      bid.dealPriority,
 			DealTierSatisfied: bid.dealTierSatisfied,
@@ -1241,4 +1261,69 @@ func isAdsCertEnabled(experiment *openrtb_ext.Experiment, info config.BidderInfo
 	requestAdsCertEnabled := experiment != nil && experiment.AdsCert != nil && experiment.AdsCert.Enabled
 	bidderAdsCertEnabled := info.Experiment.AdsCert.Enabled
 	return requestAdsCertEnabled && bidderAdsCertEnabled
+}
+
+func (e exchange) validateBid(bid *pbsOrtbBid, bidResponseExt *openrtb_ext.ExtBidResponse, adapter openrtb_ext.BidderName, pubID string) bool {
+	isBidValid := true
+	if bid.bid.W > e.bidValidationEnforcement.MaxCreativeWidth || bid.bid.H > e.bidValidationEnforcement.MaxCreativeHeight {
+		// Add error to debug array
+		bidCreativeMaxSizeError := openrtb_ext.ExtBidderMessage{
+			Code:    errortypes.BadInputErrorCode,
+			Message: "bidResponse rejected: size WxH",
+		}
+		bidResponseExt.Errors[adapter] = append(bidResponseExt.Errors[adapter], bidCreativeMaxSizeError)
+
+		// Log Metrics
+		e.me.RecordBidValidationCreativeSizeError(adapter, pubID)
+
+		isBidValid = false
+	}
+	if bidAdmNotValid(bid.bid.AdM) {
+		// Add error to debug array
+		bidSecureMarkupError := openrtb_ext.ExtBidderMessage{
+			Code:    errortypes.BadInputErrorCode,
+			Message: "bidResponse rejected: insecure creative in secure context",
+		}
+		bidResponseExt.Errors[adapter] = append(bidResponseExt.Errors[adapter], bidSecureMarkupError)
+
+		// Log Metrics
+		e.me.RecordBidValidationSecureMarkupError(adapter, pubID)
+
+		isBidValid = false
+	}
+	return isBidValid
+}
+
+func bidAdmNotValid(bidAdm string) bool {
+	failStringOne := "http:"
+	failStringTwo := "http%3A"
+
+	secureStringOne := "https:"
+	secureStringTwo := "https%3A"
+
+	if (strings.Contains(bidAdm, failStringOne) || strings.Contains(bidAdm, failStringTwo)) && (!strings.Contains(bidAdm, secureStringOne) || !strings.Contains(bidAdm, secureStringTwo)) {
+		return true
+	}
+	return false
+}
+
+func setBidValidationStatus(host config.BidValidationEnforcement, account config.BidValidationEnforcement) config.BidValidationEnforcement {
+	finalEnforcement := host
+
+	if account.BannerCreativeMaxSize == config.ValidationEnforce {
+		finalEnforcement.BannerCreativeMaxSize = config.ValidationEnforce
+	} else if account.BannerCreativeMaxSize == config.ValidationWarn {
+		finalEnforcement.BannerCreativeMaxSize = config.ValidationWarn
+	} else if account.BannerCreativeMaxSize == config.ValidationSkip {
+		finalEnforcement.BannerCreativeMaxSize = config.ValidationSkip
+	}
+
+	if account.SecureMarkup == config.ValidationEnforce {
+		finalEnforcement.SecureMarkup = config.ValidationEnforce
+	} else if account.SecureMarkup == config.ValidationWarn {
+		finalEnforcement.SecureMarkup = config.ValidationWarn
+	} else if account.SecureMarkup == config.ValidationSkip {
+		finalEnforcement.SecureMarkup = config.ValidationSkip
+	}
+	return finalEnforcement
 }

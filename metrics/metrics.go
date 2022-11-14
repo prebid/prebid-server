@@ -429,4 +429,8 @@ type MetricsEngine interface {
 	RecordStoredResponse(pubId string)
 	RecordAdsCertReq(success bool)
 	RecordAdsCertSignTime(adsCertSignTime time.Duration)
+	RecordBidValidationCreativeSizeError(adapter openrtb_ext.BidderName, account string)
+	RecordBidValidationCreativeSizeWarn(adapter openrtb_ext.BidderName, account string)
+	RecordBidValidationSecureMarkupError(adapter openrtb_ext.BidderName, account string)
+	RecordBidValidationSecureMarkupWarn(adapter openrtb_ext.BidderName, account string)
 }
