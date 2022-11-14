@@ -150,12 +150,11 @@ func collectHookResponses[P any](
 ) []HookResponse[P] {
 	hookResponses := make([]HookResponse[P], 0)
 	for r := range resp {
+		hookResponses = append(hookResponses, r)
 		if r.Result.Reject {
 			close(done)
-			return []HookResponse[P]{r}
+			break
 		}
-
-		hookResponses = append(hookResponses, r)
 	}
 
 	return hookResponses

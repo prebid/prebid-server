@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"testing"
 
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/stretchr/testify/assert"
@@ -21,42 +23,60 @@ func TestModuleBuilderBuild(t *testing.T) {
 		isHookFound         bool
 		expectedHook        interface{}
 		givenModule         interface{}
+		givenConfig         config.Modules
 		expectedErr         error
 		givenHookBuilderErr error
 		givenGetHookFn      func(repo hooks.HookRepository, module string) (interface{}, bool)
 	}{
-		"Can build with entrypoint hook": {
-			givenModule:  module{},
-			expectedHook: module{},
+		"Can build with entrypoint hook without config": {
 			isHookFound:  true,
+			expectedHook: module{},
+			givenModule:  module{},
+			givenGetHookFn: func(repo hooks.HookRepository, module string) (interface{}, bool) {
+				return repo.GetEntrypointHook(module)
+			},
+		},
+		"Can build with entrypoint hook with config": {
+			isHookFound:  true,
+			expectedHook: module{},
+			givenModule:  module{},
+			givenConfig:  map[string]map[string]interface{}{vendor: {moduleName: map[string]bool{"enabled": true}}},
 			givenGetHookFn: func(repo hooks.HookRepository, module string) (interface{}, bool) {
 				return repo.GetEntrypointHook(module)
 			},
 		},
 		"Can build with auction response hook": {
-			givenModule:  module{},
-			expectedHook: module{},
 			isHookFound:  true,
+			expectedHook: module{},
+			givenModule:  module{},
+			givenConfig:  map[string]map[string]interface{}{"vendor": {"module": map[string]bool{"enabled": true}}},
 			givenGetHookFn: func(repo hooks.HookRepository, module string) (interface{}, bool) {
 				return repo.GetAuctionResponseHook(module)
 			},
 		},
 		"Fails to find not registered hook": {
-			givenModule:  module{},
-			expectedHook: nil,
 			isHookFound:  false,
+			expectedHook: nil,
+			givenModule:  module{},
+			givenConfig:  map[string]map[string]interface{}{vendor: {"module": map[string]bool{"enabled": true}}},
 			givenGetHookFn: func(repo hooks.HookRepository, module string) (interface{}, bool) {
 				return repo.GetAllProcessedBidResponsesHook(module) // ask for hook not implemented in module
 			},
 		},
-		"Builder fails if module does not implement any hook interface": {
+		"Fails if module does not implement any hook interface": {
 			expectedHook: struct{}{},
 			expectedErr:  fmt.Errorf(`hook "%s.%s" does not implement any supported hook interface`, vendor, moduleName),
 		},
 		"Fails if module builder function returns error": {
 			givenModule:         module{},
+			givenConfig:         map[string]map[string]interface{}{vendor: {moduleName: map[string]string{"media_type": "video"}}},
 			givenHookBuilderErr: errors.New("failed to build module"),
 			expectedErr:         fmt.Errorf(`failed to init "%s.%s" module: %s`, vendor, moduleName, "failed to build module"),
+		},
+		"Fails if config marshaling returns error": {
+			givenModule: module{},
+			givenConfig: map[string]map[string]interface{}{vendor: {moduleName: math.Inf(1)}},
+			expectedErr: fmt.Errorf(`failed to marshal "%s.%s" module config: json: unsupported value: +Inf`, vendor, moduleName),
 		},
 	}
 
@@ -72,7 +92,7 @@ func TestModuleBuilderBuild(t *testing.T) {
 				},
 			}
 
-			repo, err := builder.Build(nil, http.DefaultClient)
+			repo, err := builder.Build(test.givenConfig, http.DefaultClient)
 			assert.Equal(t, test.expectedErr, err)
 			if test.expectedErr == nil {
 				hook, found := test.givenGetHookFn(repo, fmt.Sprintf("%s.%s", vendor, moduleName))

@@ -18,6 +18,7 @@ const (
 	EntityAllProcessedBidResponses Entity = "all-processed-bid-responses"
 )
 
+// InvocationContext holds information passed to module's hook during hook execution.
 type InvocationContext struct {
 	Endpoint          string
 	Stage             string
@@ -51,7 +52,9 @@ func (ctx *InvocationContext) ModuleContextFor(moduleCode string) *ModuleContext
 	return &emptyCtx
 }
 
+// HookResult represents the result of execution the concrete hook instance.
 type HookResult[T any] struct {
+	// Reject indicates that the hook rejects execution of the program logic at the specific stage.
 	Reject        bool
 	NbrCode       int
 	Message       string
