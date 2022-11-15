@@ -7,9 +7,11 @@ import (
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/exchange/entities"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/prebid/prebid-server/metrics"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 const (
@@ -23,7 +25,7 @@ type StageExecutor interface {
 	ExecuteProcessedAuctionStage(req *openrtb2.BidRequest) *RejectError
 	ExecuteBidderRequestStage(req *openrtb2.BidRequest, bidder string) *RejectError
 	ExecuteRawBidderResponseStage(response *adapters.BidderResponse) *RejectError
-	ExecuteAllProcessedBidResponsesStage(responses []*adapters.BidderResponse) //TODO: check that responses is the necessary param
+	ExecuteAllProcessedBidResponsesStage(adapterBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid) //TODO: check that responses is the necessary param
 	ExecuteAuctionResponseStage(response *openrtb2.BidResponse)
 }
 
@@ -117,7 +119,7 @@ func (executor *HookExecutor) ExecuteRawBidderResponseStage(response *adapters.B
 	return nil
 }
 
-func (executor *HookExecutor) ExecuteAllProcessedBidResponsesStage(responses []*adapters.BidderResponse) {
+func (executor *HookExecutor) ExecuteAllProcessedBidResponsesStage(adapterBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid) {
 	//TODO: implement
 }
 
@@ -153,6 +155,6 @@ func (executor *EmptyHookExecutor) ExecuteRawBidderResponseStage(_ *adapters.Bid
 	return nil
 }
 
-func (executor *EmptyHookExecutor) ExecuteAllProcessedBidResponsesStage(_ []*adapters.BidderResponse) {
+func (executor *EmptyHookExecutor) ExecuteAllProcessedBidResponsesStage(_ map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid) {
 }
 func (executor *EmptyHookExecutor) ExecuteAuctionResponseStage(_ *openrtb2.BidResponse) {}
