@@ -2184,12 +2184,21 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		impExtInfoMap[impID] = ImpExtInfo{Passthrough: impPassthrough}
 	}
 
+	// Account Bid Validation Enforcement
+	accountBidValidation := config.BidValidationEnforcement{}
+	if spec.BidValidationEnforcement == config.ValidationEnforce {
+		accountBidValidation.BannerCreativeMaxSize = config.ValidationEnforce
+	} else if spec.BidValidationEnforcement == config.ValidationWarn {
+		accountBidValidation.BannerCreativeMaxSize = config.ValidationWarn
+	}
+
 	auctionRequest := AuctionRequest{
 		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: &spec.IncomingRequest.OrtbRequest},
 		Account: config.Account{
-			ID:            "testaccount",
-			EventsEnabled: spec.EventsEnabled,
-			DebugAllow:    true,
+			ID:                       "testaccount",
+			EventsEnabled:            spec.EventsEnabled,
+			DebugAllow:               true,
+			BidValidationEnforcement: accountBidValidation,
 		},
 		UserSyncs:     mockIdFetcher(spec.IncomingRequest.Usersyncs),
 		ImpExtInfoMap: impExtInfoMap,
@@ -4210,49 +4219,58 @@ func TestValidateBidForBidResponse(t *testing.T) {
 		me: metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.CoreBidderNames(), nil),
 	}
 	testCases := []struct {
-		description         string
-		givenBid            *pbsOrtbBid
-		givenBidResponseExt *openrtb_ext.ExtBidResponse
-		givenBidderName     string
-		givenPubID          string
-		expected            bool
+		description                 string
+		givenBid                    *pbsOrtbBid
+		givenBidResponseExt         *openrtb_ext.ExtBidResponse
+		givenBidderName             string
+		givenPubID                  string
+		expectedBannerCreativeValid bool
+		expectedBidAdMValid         bool
 	}{
 		{
-			description:         "The dimensions and adm of the bid are invalid, expect false",
-			givenBid:            &pbsOrtbBid{bid: &openrtb2.Bid{W: 200, H: 200, AdM: "http://domain.com/invalid"}},
-			givenBidResponseExt: &openrtb_ext.ExtBidResponse{Errors: make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage)},
-			givenBidderName:     "bidder",
-			givenPubID:          "1",
-			expected:            false,
+			description:                 "The dimensions and adm of the bid are invalid, expect false",
+			givenBid:                    &pbsOrtbBid{bid: &openrtb2.Bid{W: 200, H: 200, AdM: "http://domain.com/invalid"}},
+			givenBidResponseExt:         &openrtb_ext.ExtBidResponse{Errors: make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage)},
+			givenBidderName:             "bidder",
+			givenPubID:                  "1",
+			expectedBannerCreativeValid: false,
+			expectedBidAdMValid:         false,
 		},
 		{
-			description:         "The dimensions and adm of the bid are valid, expect true",
-			givenBid:            &pbsOrtbBid{bid: &openrtb2.Bid{W: 50, H: 50, AdM: "https://domain.com/valid"}},
-			givenBidResponseExt: &openrtb_ext.ExtBidResponse{Errors: make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage)},
-			givenBidderName:     "bidder",
-			givenPubID:          "1",
-			expected:            true,
+			description:                 "The dimensions and adm of the bid are valid, expect true",
+			givenBid:                    &pbsOrtbBid{bid: &openrtb2.Bid{W: 50, H: 50, AdM: "https://domain.com/valid"}},
+			givenBidResponseExt:         &openrtb_ext.ExtBidResponse{Errors: make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage)},
+			givenBidderName:             "bidder",
+			givenPubID:                  "1",
+			expectedBannerCreativeValid: true,
+			expectedBidAdMValid:         true,
 		},
 		{
-			description:         "The adm is invalid, expect false",
-			givenBid:            &pbsOrtbBid{bid: &openrtb2.Bid{W: 50, H: 50, AdM: "http://domain.com/invalid"}},
-			givenBidResponseExt: &openrtb_ext.ExtBidResponse{Errors: make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage)},
-			givenBidderName:     "bidder",
-			givenPubID:          "1",
-			expected:            false,
+			description:                 "Dimensions are valid. The adm is invalid. Expect true/false",
+			givenBid:                    &pbsOrtbBid{bid: &openrtb2.Bid{W: 50, H: 50, AdM: "http://domain.com/invalid"}},
+			givenBidResponseExt:         &openrtb_ext.ExtBidResponse{Errors: make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage)},
+			givenBidderName:             "bidder",
+			givenPubID:                  "1",
+			expectedBannerCreativeValid: true,
+			expectedBidAdMValid:         false,
 		},
 		{
-			description:         "The dimensions are invalid, expect false",
-			givenBid:            &pbsOrtbBid{bid: &openrtb2.Bid{W: 200, H: 200, AdM: "https://domain.com/valid"}},
-			givenBidResponseExt: &openrtb_ext.ExtBidResponse{Errors: make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage)},
-			givenBidderName:     "bidder",
-			givenPubID:          "1",
-			expected:            false,
+			description:                 "Dimensions are invalid. The adm is valid. Expect false/true",
+			givenBid:                    &pbsOrtbBid{bid: &openrtb2.Bid{W: 200, H: 200, AdM: "https://domain.com/valid"}},
+			givenBidResponseExt:         &openrtb_ext.ExtBidResponse{Errors: make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage)},
+			givenBidderName:             "bidder",
+			givenPubID:                  "1",
+			expectedBannerCreativeValid: false,
+			expectedBidAdMValid:         true,
 		},
 	}
 	for _, test := range testCases {
-		actual := exchange.validateBid(test.givenBid, test.givenBidResponseExt, openrtb_ext.BidderName(test.givenBidderName), test.givenPubID)
-		assert.Equal(t, test.expected, actual)
+		acutalBannerCreativeValid := exchange.validateBannerCreativeSize(test.givenBid, test.givenBidResponseExt, openrtb_ext.BidderName(test.givenBidderName), test.givenPubID)
+		assert.Equal(t, test.expectedBannerCreativeValid, acutalBannerCreativeValid)
+
+		actualBidAdMValid := exchange.validateBidAdM(test.givenBid, test.givenBidResponseExt, openrtb_ext.BidderName(test.givenBidderName), test.givenPubID)
+		assert.Equal(t, test.expectedBidAdMValid, actualBidAdMValid)
+
 	}
 }
 
@@ -4289,6 +4307,18 @@ func TestMakeBidWithValidation(t *testing.T) {
 			description:                   "Validation is warned so no bids should be removed (Validating SecureMarkup)",
 			givenBidValidationEnforcement: config.BidValidationEnforcement{SecureMarkup: config.ValidationWarn},
 			givenBids:                     []*pbsOrtbBid{{bid: &openrtb2.Bid{AdM: "http://domain.com/invalid"}, bidType: openrtb_ext.BidTypeBanner}, {bid: &openrtb2.Bid{AdM: "https://domain.com/valid"}, bidType: openrtb_ext.BidTypeBanner}},
+			expectedNumOfBids:             2,
+		},
+		{
+			description:                   "Adm validation is skipped, creative size validation is enforced, one Adm is invalid, but because we skip, no bids should be removed",
+			givenBidValidationEnforcement: config.BidValidationEnforcement{SecureMarkup: config.ValidationSkip, BannerCreativeMaxSize: config.ValidationEnforce},
+			givenBids:                     []*pbsOrtbBid{{bid: &openrtb2.Bid{AdM: "http://domain.com/invalid"}, bidType: openrtb_ext.BidTypeBanner}, {bid: &openrtb2.Bid{AdM: "https://domain.com/valid"}, bidType: openrtb_ext.BidTypeBanner}},
+			expectedNumOfBids:             2,
+		},
+		{
+			description:                   "Creative Size Validation is skipped, Adm Validation is enforced, one Creative Size is invalid, but because we skip, no bids should be removed",
+			givenBidValidationEnforcement: config.BidValidationEnforcement{BannerCreativeMaxSize: config.ValidationWarn, MaxCreativeWidth: 100, MaxCreativeHeight: 100},
+			givenBids:                     []*pbsOrtbBid{{bid: &openrtb2.Bid{W: 200, H: 200}, bidType: openrtb_ext.BidTypeBanner}, {bid: &openrtb2.Bid{W: 50, H: 50}, bidType: openrtb_ext.BidTypeBanner}},
 			expectedNumOfBids:             2,
 		},
 	}
@@ -4328,6 +4358,44 @@ func TestMakeBidWithValidation(t *testing.T) {
 
 		assert.Equal(t, 0, len(resultingErrs), "%s. Test should not return errors \n", test.description)
 		assert.Equal(t, test.expectedNumOfBids, len(resultingBids), "%s. Test returns more valid bids than expected\n", test.description)
+	}
+}
+
+func TestSetBidValidationStatus(t *testing.T) {
+	testCases := []struct {
+		description  string
+		givenHost    config.BidValidationEnforcement
+		givenAccount config.BidValidationEnforcement
+		expected     config.BidValidationEnforcement
+	}{
+		{
+			description:  "Host configuration is different than account, account setting should be preferred (enforce)",
+			givenHost:    config.BidValidationEnforcement{BannerCreativeMaxSize: config.ValidationSkip, SecureMarkup: config.ValidationSkip},
+			givenAccount: config.BidValidationEnforcement{BannerCreativeMaxSize: config.ValidationEnforce, SecureMarkup: config.ValidationEnforce},
+			expected:     config.BidValidationEnforcement{BannerCreativeMaxSize: config.ValidationEnforce, SecureMarkup: config.ValidationEnforce},
+		},
+		{
+			description:  "Host configuration is different than account, account setting should be preferred (warn)",
+			givenHost:    config.BidValidationEnforcement{BannerCreativeMaxSize: config.ValidationEnforce, SecureMarkup: config.ValidationEnforce},
+			givenAccount: config.BidValidationEnforcement{BannerCreativeMaxSize: config.ValidationWarn, SecureMarkup: config.ValidationWarn},
+			expected:     config.BidValidationEnforcement{BannerCreativeMaxSize: config.ValidationWarn, SecureMarkup: config.ValidationWarn},
+		},
+		{
+			description:  "Host configuration is different than account, account setting should be preferred (skip)",
+			givenHost:    config.BidValidationEnforcement{BannerCreativeMaxSize: config.ValidationWarn, SecureMarkup: config.ValidationWarn},
+			givenAccount: config.BidValidationEnforcement{BannerCreativeMaxSize: config.ValidationSkip, SecureMarkup: config.ValidationSkip},
+			expected:     config.BidValidationEnforcement{BannerCreativeMaxSize: config.ValidationSkip, SecureMarkup: config.ValidationSkip},
+		},
+		{
+			description:  "No account confiugration given, host confg should be preferred",
+			givenHost:    config.BidValidationEnforcement{BannerCreativeMaxSize: config.ValidationSkip, SecureMarkup: config.ValidationSkip},
+			givenAccount: config.BidValidationEnforcement{},
+			expected:     config.BidValidationEnforcement{BannerCreativeMaxSize: config.ValidationSkip, SecureMarkup: config.ValidationSkip},
+		},
+	}
+	for _, test := range testCases {
+		actual := setBidValidationStatus(test.givenHost, test.givenAccount)
+		assert.Equal(t, test.expected, actual)
 	}
 }
 

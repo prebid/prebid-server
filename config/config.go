@@ -621,10 +621,10 @@ type TimeoutNotification struct {
 }
 
 type BidValidationEnforcement struct {
-	BannerCreativeMaxSize string `mapstructure:"banner_creative_max_size"`
-	SecureMarkup          string `mapstructure:"secure_markup"`
-	MaxCreativeWidth      int64  `mapstructure:"max_creative_width"`
-	MaxCreativeHeight     int64  `mapstructure:"max_creative_height"`
+	BannerCreativeMaxSize string `mapstructure:"banner_creative_max_size" json:"banner_creative_max_size"`
+	SecureMarkup          string `mapstructure:"secure_markup" json:"secure_markup"`
+	MaxCreativeWidth      int64  `mapstructure:"max_creative_width" json:"max_creative_width"`
+	MaxCreativeHeight     int64  `mapstructure:"max_creative_height" json:"max_creative_height"`
 }
 
 const (

@@ -1034,19 +1034,19 @@ func (e *exchange) makeBid(bids []*pbsOrtbBid, auc *auction, returnCreative bool
 
 	for _, bid := range bids {
 		if e.bidValidationEnforcement.BannerCreativeMaxSize == config.ValidationEnforce && bid.bidType == openrtb_ext.BidTypeBanner {
-			if !e.validateBid(bid, bidResponseExt, adapter, pubID) {
+			if !e.validateBannerCreativeSize(bid, bidResponseExt, adapter, pubID) {
 				continue // Don't add bid to result
 			}
 		} else if e.bidValidationEnforcement.BannerCreativeMaxSize == config.ValidationWarn && bid.bidType == openrtb_ext.BidTypeBanner {
-			e.validateBid(bid, bidResponseExt, adapter, pubID)
+			e.validateBannerCreativeSize(bid, bidResponseExt, adapter, pubID)
 		}
 
 		if e.bidValidationEnforcement.SecureMarkup == config.ValidationEnforce && (bid.bidType == openrtb_ext.BidTypeBanner || bid.bidType == openrtb_ext.BidTypeVideo) {
-			if !e.validateBid(bid, bidResponseExt, adapter, pubID) {
+			if !e.validateBidAdM(bid, bidResponseExt, adapter, pubID) {
 				continue // Don't add bid to result
 			}
 		} else if e.bidValidationEnforcement.SecureMarkup == config.ValidationWarn && (bid.bidType == openrtb_ext.BidTypeBanner || bid.bidType == openrtb_ext.BidTypeVideo) {
-			e.validateBid(bid, bidResponseExt, adapter, pubID)
+			e.validateBidAdM(bid, bidResponseExt, adapter, pubID)
 		}
 
 		bidExtPrebid := &openrtb_ext.ExtBidPrebid{
@@ -1263,8 +1263,7 @@ func isAdsCertEnabled(experiment *openrtb_ext.Experiment, info config.BidderInfo
 	return requestAdsCertEnabled && bidderAdsCertEnabled
 }
 
-func (e exchange) validateBid(bid *pbsOrtbBid, bidResponseExt *openrtb_ext.ExtBidResponse, adapter openrtb_ext.BidderName, pubID string) bool {
-	isBidValid := true
+func (e exchange) validateBannerCreativeSize(bid *pbsOrtbBid, bidResponseExt *openrtb_ext.ExtBidResponse, adapter openrtb_ext.BidderName, pubID string) bool {
 	if bid.bid.W > e.bidValidationEnforcement.MaxCreativeWidth || bid.bid.H > e.bidValidationEnforcement.MaxCreativeHeight {
 		// Add error to debug array
 		bidCreativeMaxSizeError := openrtb_ext.ExtBidderMessage{
@@ -1276,9 +1275,19 @@ func (e exchange) validateBid(bid *pbsOrtbBid, bidResponseExt *openrtb_ext.ExtBi
 		// Log Metrics
 		e.me.RecordBidValidationCreativeSizeError(adapter, pubID)
 
-		isBidValid = false
+		return false
 	}
-	if bidAdmNotValid(bid.bid.AdM) {
+	return true
+}
+
+func (e exchange) validateBidAdM(bid *pbsOrtbBid, bidResponseExt *openrtb_ext.ExtBidResponse, adapter openrtb_ext.BidderName, pubID string) bool {
+	failStringOne := "http:"
+	failStringTwo := "http%3A"
+
+	secureStringOne := "https:"
+	secureStringTwo := "https%3A"
+
+	if (strings.Contains(bid.bid.AdM, failStringOne) || strings.Contains(bid.bid.AdM, failStringTwo)) && (!strings.Contains(bid.bid.AdM, secureStringOne) || !strings.Contains(bid.bid.AdM, secureStringTwo)) {
 		// Add error to debug array
 		bidSecureMarkupError := openrtb_ext.ExtBidderMessage{
 			Code:    errortypes.BadInputErrorCode,
@@ -1289,22 +1298,9 @@ func (e exchange) validateBid(bid *pbsOrtbBid, bidResponseExt *openrtb_ext.ExtBi
 		// Log Metrics
 		e.me.RecordBidValidationSecureMarkupError(adapter, pubID)
 
-		isBidValid = false
+		return false
 	}
-	return isBidValid
-}
-
-func bidAdmNotValid(bidAdm string) bool {
-	failStringOne := "http:"
-	failStringTwo := "http%3A"
-
-	secureStringOne := "https:"
-	secureStringTwo := "https%3A"
-
-	if (strings.Contains(bidAdm, failStringOne) || strings.Contains(bidAdm, failStringTwo)) && (!strings.Contains(bidAdm, secureStringOne) || !strings.Contains(bidAdm, secureStringTwo)) {
-		return true
-	}
-	return false
+	return true
 }
 
 func setBidValidationStatus(host config.BidValidationEnforcement, account config.BidValidationEnforcement) config.BidValidationEnforcement {
