@@ -5,15 +5,15 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-// IntegrationType enumerates the values of integrations Prebid Server can configure for an account
-type IntegrationType string
+// ChannelType enumerates the values of integrations Prebid Server can configure for an account
+type ChannelType string
 
-// Possible values of integration types Prebid Server can configure for an account
+// Possible values of channel types Prebid Server can configure for an account
 const (
-	IntegrationTypeAMP   IntegrationType = "amp"
-	IntegrationTypeApp   IntegrationType = "app"
-	IntegrationTypeVideo IntegrationType = "video"
-	IntegrationTypeWeb   IntegrationType = "web"
+	ChannelAMP   ChannelType = "amp"
+	ChannelApp   ChannelType = "app"
+	ChannelVideo ChannelType = "video"
+	ChannelWeb   ChannelType = "web"
 )
 
 // Account represents a publisher account configuration
@@ -41,14 +41,17 @@ type CookieSync struct {
 
 // AccountCCPA represents account-specific CCPA configuration
 type AccountCCPA struct {
-	Enabled            *bool              `mapstructure:"enabled" json:"enabled,omitempty"`
-	IntegrationEnabled AccountIntegration `mapstructure:"integration_enabled" json:"integration_enabled"`
+	Enabled            *bool          `mapstructure:"enabled" json:"enabled,omitempty"`
+	IntegrationEnabled AccountChannel `mapstructure:"integration_enabled" json:"integration_enabled"`
+	ChannelEnabled     AccountChannel `mapstructure:"channel_enabled" json:"channel_enabled"`
 }
 
-// EnabledForIntegrationType indicates whether CCPA is turned on at the account level for the specified integration type
-// by using the integration type setting if defined or the general CCPA setting if defined; otherwise it returns nil
-func (a *AccountCCPA) EnabledForIntegrationType(integrationType IntegrationType) *bool {
-	if integrationEnabled := a.IntegrationEnabled.GetByIntegrationType(integrationType); integrationEnabled != nil {
+// EnabledForChannelType indicates whether CCPA is turned on at the account level for the specified channel type
+// by using the channel type setting if defined or the general CCPA setting if defined; otherwise it returns nil
+func (a *AccountCCPA) EnabledForChannelType(channelType ChannelType) *bool {
+	if channelEnabled := a.ChannelEnabled.GetByChannelType(channelType); channelEnabled != nil {
+		return channelEnabled
+	} else if integrationEnabled := a.IntegrationEnabled.GetByChannelType(channelType); integrationEnabled != nil {
 		return integrationEnabled
 	}
 	return a.Enabled
@@ -56,8 +59,9 @@ func (a *AccountCCPA) EnabledForIntegrationType(integrationType IntegrationType)
 
 // AccountGDPR represents account-specific GDPR configuration
 type AccountGDPR struct {
-	Enabled            *bool              `mapstructure:"enabled" json:"enabled,omitempty"`
-	IntegrationEnabled AccountIntegration `mapstructure:"integration_enabled" json:"integration_enabled"`
+	Enabled            *bool          `mapstructure:"enabled" json:"enabled,omitempty"`
+	IntegrationEnabled AccountChannel `mapstructure:"integration_enabled" json:"integration_enabled"`
+	ChannelEnabled     AccountChannel `mapstructure:"channel_enabled" json:"channel_enabled"`
 	// Array of basic enforcement vendors that is used to create the hash table so vendor names can be instantly accessed
 	BasicEnforcementVendors    []string `mapstructure:"basic_enforcement_vendors" json:"basic_enforcement_vendors"`
 	BasicEnforcementVendorsMap map[string]struct{}
@@ -77,21 +81,12 @@ type AccountGDPR struct {
 	SpecialFeature1     AccountGDPRSpecialFeature      `mapstructure:"special_feature1" json:"special_feature1"`
 }
 
-// BasicEnforcementVendor checks if the given bidder is considered a basic enforcement vendor which indicates whether
-// weak vendor enforcement applies to that bidder.
-func (a *AccountGDPR) BasicEnforcementVendor(bidder openrtb_ext.BidderName) (value, exists bool) {
-	if a.BasicEnforcementVendorsMap == nil {
-		return false, false
-	}
-	_, found := a.BasicEnforcementVendorsMap[string(bidder)]
-
-	return found, true
-}
-
-// EnabledForIntegrationType indicates whether GDPR is turned on at the account level for the specified integration type
-// by using the integration type setting if defined or the general GDPR setting if defined; otherwise it returns nil.
-func (a *AccountGDPR) EnabledForIntegrationType(integrationType IntegrationType) *bool {
-	if integrationEnabled := a.IntegrationEnabled.GetByIntegrationType(integrationType); integrationEnabled != nil {
+// EnabledForChannelType indicates whether GDPR is turned on at the account level for the specified channel type
+// by using the channel type setting if defined or the general GDPR setting if defined; otherwise it returns nil.
+func (a *AccountGDPR) EnabledForChannelType(channelType ChannelType) *bool {
+	if channelEnabled := a.ChannelEnabled.GetByChannelType(channelType); channelEnabled != nil {
+		return channelEnabled
+	} else if integrationEnabled := a.IntegrationEnabled.GetByChannelType(channelType); integrationEnabled != nil {
 		return integrationEnabled
 	}
 	return a.Enabled
@@ -129,6 +124,17 @@ func (a *AccountGDPR) PurposeEnforced(purpose consentconstants.Purpose) (value, 
 	return *a.PurposeConfigs[purpose].EnforcePurpose, true
 }
 
+// PurposeEnforcementAlgo checks the purpose enforcement algo for a given purpose by first
+// looking at the account settings, and if not set there, defaulting to the host configuration.
+func (a *AccountGDPR) PurposeEnforcementAlgo(purpose consentconstants.Purpose) (value TCF2EnforcementAlgo, exists bool) {
+	c, exists := a.PurposeConfigs[purpose]
+
+	if exists && (c.EnforceAlgoID == TCF2BasicEnforcement || c.EnforceAlgoID == TCF2FullEnforcement) {
+		return c.EnforceAlgoID, true
+	}
+	return TCF2UndefinedEnforcement, false
+}
+
 // PurposeEnforcingVendors gets the account level enforce vendors setting for a given purpose returning the value and
 // whether or not it is set. If not set, a default value of true is returned matching host default behavior.
 func (a *AccountGDPR) PurposeEnforcingVendors(purpose consentconstants.Purpose) (value, exists bool) {
@@ -141,17 +147,14 @@ func (a *AccountGDPR) PurposeEnforcingVendors(purpose consentconstants.Purpose) 
 	return *a.PurposeConfigs[purpose].EnforceVendors, true
 }
 
-// PurposeVendorException checks if the given bidder is a vendor exception for a given purpose.
-func (a *AccountGDPR) PurposeVendorException(purpose consentconstants.Purpose, bidder openrtb_ext.BidderName) (value, exists bool) {
-	if a.PurposeConfigs[purpose] == nil {
-		return false, false
-	}
-	if a.PurposeConfigs[purpose].VendorExceptionMap == nil {
-		return false, false
-	}
-	_, found := a.PurposeConfigs[purpose].VendorExceptionMap[bidder]
+// PurposeVendorExceptions returns the vendor exception map for a given purpose.
+func (a *AccountGDPR) PurposeVendorExceptions(purpose consentconstants.Purpose) (value map[openrtb_ext.BidderName]struct{}, exists bool) {
+	c, exists := a.PurposeConfigs[purpose]
 
-	return found, true
+	if exists && c.VendorExceptionMap != nil {
+		return c.VendorExceptionMap, true
+	}
+	return nil, false
 }
 
 // PurposeOneTreatmentEnabled gets the account level purpose one treatment enabled setting returning the value and
@@ -174,9 +177,11 @@ func (a *AccountGDPR) PurposeOneTreatmentAccessAllowed() (value, exists bool) {
 
 // AccountGDPRPurpose represents account-specific GDPR purpose configuration
 type AccountGDPRPurpose struct {
-	EnforceAlgo    string `mapstructure:"enforce_algo" json:"enforce_algo,omitempty"`
-	EnforcePurpose *bool  `mapstructure:"enforce_purpose" json:"enforce_purpose,omitempty"`
-	EnforceVendors *bool  `mapstructure:"enforce_vendors" json:"enforce_vendors,omitempty"`
+	EnforceAlgo string `mapstructure:"enforce_algo" json:"enforce_algo,omitempty"`
+	// Integer representation of enforcement algo for performance improvement on compares
+	EnforceAlgoID  TCF2EnforcementAlgo
+	EnforcePurpose *bool `mapstructure:"enforce_purpose" json:"enforce_purpose,omitempty"`
+	EnforceVendors *bool `mapstructure:"enforce_vendors" json:"enforce_vendors,omitempty"`
 	// Array of vendor exceptions that is used to create the hash table VendorExceptionMap so vendor names can be instantly accessed
 	VendorExceptions   []openrtb_ext.BidderName `mapstructure:"vendor_exceptions" json:"vendor_exceptions"`
 	VendorExceptionMap map[openrtb_ext.BidderName]struct{}
@@ -196,28 +201,28 @@ type AccountGDPRPurposeOneTreatment struct {
 	AccessAllowed *bool `mapstructure:"access_allowed"`
 }
 
-// AccountIntegration indicates whether a particular privacy policy (GDPR, CCPA) is enabled for each integration type
-type AccountIntegration struct {
+// AccountChannel indicates whether a particular privacy policy (GDPR, CCPA) is enabled for each channel type
+type AccountChannel struct {
 	AMP   *bool `mapstructure:"amp" json:"amp,omitempty"`
 	App   *bool `mapstructure:"app" json:"app,omitempty"`
 	Video *bool `mapstructure:"video" json:"video,omitempty"`
 	Web   *bool `mapstructure:"web" json:"web,omitempty"`
 }
 
-// GetByIntegrationType looks up the account integration enabled setting for the specified integration type
-func (a *AccountIntegration) GetByIntegrationType(integrationType IntegrationType) *bool {
-	var integrationEnabled *bool
+// GetByChannelType looks up the account integration enabled setting for the specified channel type
+func (a *AccountChannel) GetByChannelType(channelType ChannelType) *bool {
+	var channelEnabled *bool
 
-	switch integrationType {
-	case IntegrationTypeAMP:
-		integrationEnabled = a.AMP
-	case IntegrationTypeApp:
-		integrationEnabled = a.App
-	case IntegrationTypeVideo:
-		integrationEnabled = a.Video
-	case IntegrationTypeWeb:
-		integrationEnabled = a.Web
+	switch channelType {
+	case ChannelAMP:
+		channelEnabled = a.AMP
+	case ChannelApp:
+		channelEnabled = a.App
+	case ChannelVideo:
+		channelEnabled = a.Video
+	case ChannelWeb:
+		channelEnabled = a.Web
 	}
 
-	return integrationEnabled
+	return channelEnabled
 }
