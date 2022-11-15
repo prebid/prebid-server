@@ -122,7 +122,27 @@ func (executor *HookExecutor) ExecuteAllProcessedBidResponsesStage(responses []*
 }
 
 func (executor *HookExecutor) ExecuteAuctionResponseStage(response *openrtb2.BidResponse) {
-	//TODO: implement
+	plan := executor.PlanBuilder.PlanForAuctionResponseStage(executor.Endpoint, executor.InvocationCtx.Account)
+	if len(plan) == 0 {
+		return
+	}
+
+	handler := func(
+		ctx context.Context,
+		moduleCtx *hookstage.ModuleContext,
+		hook hookstage.AuctionResponse,
+		payload hookstage.AuctionResponsePayload,
+	) (hookstage.HookResult[hookstage.AuctionResponsePayload], error) {
+		return hook.HandleAuctionResponseHook(ctx, moduleCtx, payload)
+	}
+
+	executor.InvocationCtx.Stage = hooks.StageAuctionResponse
+	payload := hookstage.AuctionResponsePayload{BidResponse: response}
+	stageOutcome, _, _ := executeStage(executor.InvocationCtx, plan, payload, handler, executor.MetricEngine)
+	stageOutcome.Entity = hookstage.EntityAuctionResponse
+	stageOutcome.Stage = hooks.StageAuctionResponse
+
+	executor.stageOutcomes = append(executor.stageOutcomes, stageOutcome)
 }
 
 type EmptyHookExecutor struct{}

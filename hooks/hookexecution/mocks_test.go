@@ -105,6 +105,17 @@ func (e mockTimeoutHook) HandleRawAuctionHook(_ context.Context, _ *hookstage.Mo
 	return hookstage.HookResult[hookstage.RawAuctionPayload]{ChangeSet: c}, nil
 }
 
+func (e mockTimeoutHook) HandleAuctionResponseHook(_ context.Context, _ *hookstage.ModuleContext, _ hookstage.AuctionResponsePayload) (hookstage.HookResult[hookstage.AuctionResponsePayload], error) {
+	time.Sleep(2 * time.Millisecond)
+	c := &hookstage.ChangeSet[hookstage.AuctionResponsePayload]{}
+	c.AddMutation(func(payload hookstage.AuctionResponsePayload) (hookstage.AuctionResponsePayload, error) {
+		payload.BidResponse.Ext = []byte("another-byte")
+		return payload, nil
+	}, hookstage.MutationUpdate, "auctionResponse", "bidResponse.Ext")
+
+	return hookstage.HookResult[hookstage.AuctionResponsePayload]{ChangeSet: c}, nil
+}
+
 type mockModuleContextHook1 struct{}
 
 func (e mockModuleContextHook1) HandleEntrypointHook(_ context.Context, mctx *hookstage.ModuleContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
@@ -117,6 +128,11 @@ func (e mockModuleContextHook1) HandleRawAuctionHook(_ context.Context, mctx *ho
 	return hookstage.HookResult[hookstage.RawAuctionPayload]{}, nil
 }
 
+func (e mockModuleContextHook1) HandleAuctionResponseHook(_ context.Context, mctx *hookstage.ModuleContext, _ hookstage.AuctionResponsePayload) (hookstage.HookResult[hookstage.AuctionResponsePayload], error) {
+	mctx.Ctx = map[string]interface{}{"some-ctx-1": "some-ctx-1"}
+	return hookstage.HookResult[hookstage.AuctionResponsePayload]{}, nil
+}
+
 type mockModuleContextHook2 struct{}
 
 func (e mockModuleContextHook2) HandleEntrypointHook(_ context.Context, mctx *hookstage.ModuleContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
@@ -127,4 +143,22 @@ func (e mockModuleContextHook2) HandleEntrypointHook(_ context.Context, mctx *ho
 func (e mockModuleContextHook2) HandleRawAuctionHook(_ context.Context, mctx *hookstage.ModuleContext, _ hookstage.RawAuctionPayload) (hookstage.HookResult[hookstage.RawAuctionPayload], error) {
 	mctx.Ctx = map[string]interface{}{"some-ctx-2": "some-ctx-2"}
 	return hookstage.HookResult[hookstage.RawAuctionPayload]{}, nil
+}
+
+func (e mockModuleContextHook2) HandleAuctionResponseHook(_ context.Context, mctx *hookstage.ModuleContext, _ hookstage.AuctionResponsePayload) (hookstage.HookResult[hookstage.AuctionResponsePayload], error) {
+	mctx.Ctx = map[string]interface{}{"some-ctx-2": "some-ctx-2"}
+	return hookstage.HookResult[hookstage.AuctionResponsePayload]{}, nil
+}
+
+type mockUpdateBidResponseHook struct{}
+
+func (e mockUpdateBidResponseHook) HandleAuctionResponseHook(_ context.Context, _ *hookstage.ModuleContext, _ hookstage.AuctionResponsePayload) (hookstage.HookResult[hookstage.AuctionResponsePayload], error) {
+	c := &hookstage.ChangeSet[hookstage.AuctionResponsePayload]{}
+	c.AddMutation(
+		func(payload hookstage.AuctionResponsePayload) (hookstage.AuctionResponsePayload, error) {
+			payload.BidResponse.CustomData = payload.BidResponse.CustomData + "more-data"
+			return payload, nil
+		}, hookstage.MutationUpdate, "auctionResponse", "bidResponse.custom-data")
+
+	return hookstage.HookResult[hookstage.AuctionResponsePayload]{ChangeSet: c}, nil
 }
