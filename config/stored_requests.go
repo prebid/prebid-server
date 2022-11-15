@@ -252,7 +252,7 @@ func (cfg *DatabaseCacheInitializer) validate(dataType DataType, errs []error) [
 		errs = append(errs, fmt.Errorf("%s: database.initialize_caches.timeout_ms must be positive", section))
 	}
 	if strings.Contains(cfg.Query, "$") {
-		errs = append(errs, fmt.Errorf("%s: database.initialize_caches.query should not contain any wildcards (e.g. $1)", section))
+		errs = append(errs, fmt.Errorf("%s: database.initialize_caches.query should not contain any wildcards denoted by $ (e.g. $LAST_UPDATED)", section))
 	}
 	return errs
 }
