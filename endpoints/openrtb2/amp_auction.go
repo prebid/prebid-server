@@ -24,6 +24,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/stored_requests"
@@ -58,6 +59,7 @@ func NewAmpEndpoint(
 	defReqJSON []byte,
 	bidderMap map[string]openrtb_ext.BidderName,
 	storedRespFetcher stored_requests.Fetcher,
+	hookExecutionPlanBuilder hooks.ExecutionPlanBuilder,
 ) (httprouter.Handle, error) {
 
 	if ex == nil || validator == nil || requestsById == nil || accounts == nil || cfg == nil || met == nil {
@@ -88,7 +90,8 @@ func NewAmpEndpoint(
 		nil,
 		nil,
 		ipValidator,
-		storedRespFetcher}).AmpAuction), nil
+		storedRespFetcher,
+		hookExecutionPlanBuilder}).AmpAuction), nil
 
 }
 

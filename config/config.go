@@ -99,6 +99,8 @@ type Configuration struct {
 	// BidderInfos supports adapter overrides in extra configs like pbs.json, pbs.yaml, etc.
 	// Refers to main.go `configFileName` constant
 	BidderInfos BidderInfos `mapstructure:"adapters"`
+	// Hooks provides a way to specify hook execution plan for specific endpoints and stages
+	Hooks Hooks `mapstructure:"hooks"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
@@ -1086,6 +1088,8 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("experiment.adscert.inprocess.domain_renewal_interval_seconds", 30)
 	v.SetDefault("experiment.adscert.remote.url", "")
 	v.SetDefault("experiment.adscert.remote.signing_timeout_ms", 5)
+
+	v.SetDefault("hooks.enabled", false)
 
 	for bidderName := range bidderInfos {
 		setBidderDefaults(v, strings.ToLower(bidderName))
