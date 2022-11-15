@@ -221,7 +221,6 @@ const (
 	BidderStroeerCore       BidderName = "stroeerCore"
 	BidderSuntContent       BidderName = "suntContent"
 	BidderSynacormedia      BidderName = "synacormedia"
-	BidderTaboola           BidderName = "taboola"
 	BidderTappx             BidderName = "tappx"
 	BidderTelaria           BidderName = "telaria"
 	BidderTrafficGate       BidderName = "trafficgate"
@@ -389,7 +388,6 @@ func CoreBidderNames() []BidderName {
 		BidderStroeerCore,
 		BidderSuntContent,
 		BidderSynacormedia,
-		BidderTaboola,
 		BidderTappx,
 		BidderTelaria,
 		BidderTrafficGate,
