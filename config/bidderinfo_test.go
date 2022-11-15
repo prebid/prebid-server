@@ -10,7 +10,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const testInfoFilesPath = "./test/bidder-info"
+const testInfoFilesPathValid = "./test/bidder-info-valid"
+const testSimpleYAML = `
+maintainer:
+  email: "some-email@domain.com"
+gvlVendorID: 42
+`
 const fullBidderYAMLConfig = `
 maintainer:
   email: "some-email@domain.com"
@@ -36,14 +41,14 @@ endpointCompression: "GZIP"
 `
 
 func TestLoadBidderInfoFromDisk(t *testing.T) {
-	// should appear in result in lowercase
-	bidder := "somebidder"
+	// should appear in result in mixed case
+	bidder := "stroeerCore"
 	trueValue := true
 
 	adapterConfigs := make(map[string]Adapter)
 	adapterConfigs[strings.ToLower(bidder)] = Adapter{}
 
-	infos, err := LoadBidderInfo(testInfoFilesPath)
+	infos, err := LoadBidderInfoFromDisk(testInfoFilesPathValid)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -84,6 +89,80 @@ func TestLoadBidderInfoFromDisk(t *testing.T) {
 	assert.Equal(t, expected, infos)
 }
 
+func TestProcessBidderInfo(t *testing.T) {
+	testCases := []struct {
+		description         string
+		bidderInfos         map[string][]byte
+		expectedBidderInfos BidderInfos
+		expectError         string
+	}{
+		{
+			description: "Valid bidder info",
+			bidderInfos: map[string][]byte{
+				"bidderA.yaml": []byte(testSimpleYAML),
+			},
+			expectedBidderInfos: BidderInfos{
+				"bidderA": BidderInfo{
+					Maintainer: &MaintainerInfo{
+						Email: "some-email@domain.com",
+					},
+					GVLVendorID: 42,
+				},
+			},
+			expectError: "",
+		},
+		{
+			description: "Bidder doesn't exist in bidder info list",
+			bidderInfos: map[string][]byte{
+				"unknown.yaml": []byte(testSimpleYAML),
+			},
+			expectedBidderInfos: nil,
+			expectError:         "error parsing config for bidder unknown.yaml",
+		},
+		{
+			description: "Invalid bidder config",
+			bidderInfos: map[string][]byte{
+				"bidderA.yaml": []byte("invalid bidder config"),
+			},
+			expectedBidderInfos: nil,
+			expectError:         "error parsing config for bidder bidderA.yaml",
+		},
+	}
+	for _, test := range testCases {
+		reader := StubInfoReader{test.bidderInfos}
+		bidderInfos, err := processBidderInfos(reader, mockNormalizeBidderName)
+		if test.expectError != "" {
+			assert.ErrorContains(t, err, test.expectError, "")
+		} else {
+			assert.Equal(t, test.expectedBidderInfos, bidderInfos, "incorrect bidder infos for test case: %s", test.description)
+		}
+
+	}
+
+}
+
+type StubInfoReader struct {
+	mockBidderInfos map[string][]byte
+}
+
+func (r StubInfoReader) Read() (map[string][]byte, error) {
+	return r.mockBidderInfos, nil
+}
+
+var testBidderNames = map[string]openrtb_ext.BidderName{
+	"biddera": openrtb_ext.BidderName("bidderA"),
+	"bidderb": openrtb_ext.BidderName("bidderB"),
+	"bidder1": openrtb_ext.BidderName("bidder1"),
+	"bidder2": openrtb_ext.BidderName("bidder2"),
+	"a":       openrtb_ext.BidderName("a"),
+}
+
+func mockNormalizeBidderName(name string) (openrtb_ext.BidderName, bool) {
+	nameLower := strings.ToLower(name)
+	bidderName, exists := testBidderNames[nameLower]
+	return bidderName, exists
+}
+
 func TestToGVLVendorIDMap(t *testing.T) {
 	givenBidderInfos := BidderInfos{
 		"bidderA": BidderInfo{Disabled: false, GVLVendorID: 0},
@@ -105,7 +184,7 @@ const bidderInfoRelativePath = "../static/bidder-info"
 // TestBidderInfoFiles ensures each bidder has a valid static/bidder-info/bidder.yaml file. Validation is performed directly
 // against the file system with separate yaml unmarshalling from the LoadBidderInfo func.
 func TestBidderInfoFiles(t *testing.T) {
-	_, err := LoadBidderInfo(bidderInfoRelativePath)
+	_, err := LoadBidderInfoFromDisk(bidderInfoRelativePath)
 	if err != nil {
 		assert.Fail(t, err.Error(), "Errors in bidder info files")
 	}
@@ -687,7 +766,7 @@ func TestApplyBidderInfoConfigSyncerOverrides(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		bidderInfos, resultErr := applyBidderInfoConfigOverrides(test.givenConfigBidderInfos, test.givenFsBidderInfos)
+		bidderInfos, resultErr := applyBidderInfoConfigOverrides(test.givenConfigBidderInfos, test.givenFsBidderInfos, mockNormalizeBidderName)
 		if test.expectedError == "" {
 			assert.NoError(t, resultErr, test.description+":err")
 			assert.Equal(t, test.expectedBidderInfos, bidderInfos, test.description+":result")
@@ -849,17 +928,43 @@ func TestApplyBidderInfoConfigOverrides(t *testing.T) {
 		},
 	}
 	for _, test := range testCases {
-		bidderInfos, resultErr := applyBidderInfoConfigOverrides(test.givenConfigBidderInfos, test.givenFsBidderInfos)
+		bidderInfos, resultErr := applyBidderInfoConfigOverrides(test.givenConfigBidderInfos, test.givenFsBidderInfos, mockNormalizeBidderName)
 		assert.NoError(t, resultErr, test.description+":err")
 		assert.Equal(t, test.expectedBidderInfos, bidderInfos, test.description+":result")
 	}
 }
 
+func TestApplyBidderInfoConfigOverridesInvalid(t *testing.T) {
+	var testCases = []struct {
+		description            string
+		givenFsBidderInfos     BidderInfos
+		givenConfigBidderInfos BidderInfos
+		expectedError          string
+		expectedBidderInfos    BidderInfos
+	}{
+		{
+			description:            "Bidder doesn't exists in bidder list",
+			givenConfigBidderInfos: BidderInfos{"unknown": {Syncer: &Syncer{Key: "override"}}},
+			expectedError:          "error setting configuration for bidder unknown: unknown bidder",
+		},
+		{
+			description:            "Bidder doesn't exists in file system",
+			givenFsBidderInfos:     BidderInfos{"unknown": {Endpoint: "original"}},
+			givenConfigBidderInfos: BidderInfos{"bidderA": {Syncer: &Syncer{Key: "override"}}},
+			expectedError:          "error finding configuration for bidder bidderA: unknown bidder",
+		},
+	}
+	for _, test := range testCases {
+		_, err := applyBidderInfoConfigOverrides(test.givenConfigBidderInfos, test.givenFsBidderInfos, mockNormalizeBidderName)
+		assert.ErrorContains(t, err, test.expectedError, test.description+":err")
+	}
+}
+
 func TestReadFullYamlBidderConfig(t *testing.T) {
-	bidder := "someBidder"
+	bidder := "bidderA"
 	bidderInf := BidderInfo{}
 	err := yaml.Unmarshal([]byte(fullBidderYAMLConfig), &bidderInf)
-	actualBidderInfo, err := applyBidderInfoConfigOverrides(BidderInfos{bidder: bidderInf}, BidderInfos{bidder: {Syncer: &Syncer{Supports: []string{"iframe"}}}})
+	actualBidderInfo, err := applyBidderInfoConfigOverrides(BidderInfos{bidder: bidderInf}, BidderInfos{bidder: {Syncer: &Syncer{Supports: []string{"iframe"}}}}, mockNormalizeBidderName)
 
 	assert.NoError(t, err, "Error wasn't expected")
 

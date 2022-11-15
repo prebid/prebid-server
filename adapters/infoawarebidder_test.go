@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -30,7 +30,7 @@ func TestAppNotSupported(t *testing.T) {
 		return
 	}
 	assert.EqualError(t, errs[0], "this bidder does not support app requests")
-	assert.IsType(t, &errortypes.BadInput{}, errs[0])
+	assert.IsType(t, &errortypes.Warning{}, errs[0])
 	assert.Len(t, bids, 0)
 }
 
@@ -52,7 +52,7 @@ func TestSiteNotSupported(t *testing.T) {
 		return
 	}
 	assert.EqualError(t, errs[0], "this bidder does not support site requests")
-	assert.IsType(t, &errortypes.BadInput{}, errs[0])
+	assert.IsType(t, &errortypes.Warning{}, errs[0])
 	assert.Len(t, bids, 0)
 }
 

@@ -59,7 +59,7 @@
   ],
   "expectedMakeRequestsErrors": [
     {
-      "value": "get gaid from openrtb Device.IFA failed, and get device id failed: openRTBRequest.User.Ext is nil.",
+      "value": "getDeviceID: openRTBRequest.User.Ext is nil and device.Gaid is not specified.",
       "comparison": "literal"
     }
   ]

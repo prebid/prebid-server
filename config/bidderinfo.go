@@ -9,6 +9,7 @@ import (
 	"github.com/prebid/prebid-server/util/sliceutil"
 	"io/ioutil"
 	"log"
+	"path/filepath"
 	"strings"
 	"text/template"
 
@@ -170,38 +171,66 @@ func (bi BidderInfo) IsEnabled() bool {
 	return !bi.Disabled
 }
 
-// LoadBidderInfo parses all static/bidder-info/{bidder}.yaml files from the file system.
-func LoadBidderInfo(path string) (BidderInfos, error) {
-	bidderConfigs, err := ioutil.ReadDir(path)
+type InfoReader interface {
+	Read() (map[string][]byte, error)
+}
+
+type InfoReaderFromDisk struct {
+	Path string
+}
+
+func (r InfoReaderFromDisk) Read() (map[string][]byte, error) {
+	bidderConfigs, err := ioutil.ReadDir(r.Path)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	infos := BidderInfos{}
-
+	bidderInfos := make(map[string][]byte)
 	for _, bidderConfig := range bidderConfigs {
 		if bidderConfig.IsDir() {
 			continue //ignore directories
 		}
 		fileName := bidderConfig.Name()
-		filePath := fmt.Sprintf("%v/%v", path, fileName)
+		filePath := filepath.Join(r.Path, fileName)
 		data, err := ioutil.ReadFile(filePath)
 		if err != nil {
 			return nil, err
 		}
+		bidderInfos[fileName] = data
+	}
+	return bidderInfos, nil
+}
 
-		info := BidderInfo{}
-		if err := yaml.Unmarshal(data, &info); err != nil {
-			return nil, fmt.Errorf("error parsing yaml for bidder %s: %v", fileName, err)
-		}
+func LoadBidderInfoFromDisk(path string) (BidderInfos, error) {
+	bidderInfoReader := InfoReaderFromDisk{Path: path}
+	return LoadBidderInfo(bidderInfoReader)
+}
 
+func LoadBidderInfo(reader InfoReader) (BidderInfos, error) {
+	return processBidderInfos(reader, openrtb_ext.NormalizeBidderName)
+}
+
+func processBidderInfos(reader InfoReader, normalizeBidderName func(string) (openrtb_ext.BidderName, bool)) (BidderInfos, error) {
+	bidderConfigs, err := reader.Read()
+	if err != nil {
+		return nil, fmt.Errorf("error loading bidders data")
+	}
+
+	infos := BidderInfos{}
+
+	for fileName, data := range bidderConfigs {
 		bidderName := strings.Split(fileName, ".")
 		if len(bidderName) == 2 && bidderName[1] == "yaml" {
-			// all bidder names loaded from the file system should be in lowercase
-			// to match bidder names in Viper config bidder infos
-			// this will prevent from missing bidder config overrides
-			// in func applyBidderInfoConfigOverrides
-			infos[(strings.ToLower(bidderName[0]))] = info
+			normalizedBidderName, bidderNameExists := normalizeBidderName(bidderName[0])
+			if !bidderNameExists {
+				return nil, fmt.Errorf("error parsing config for bidder %s: unknown bidder", fileName)
+			}
+			info := BidderInfo{}
+			if err := yaml.Unmarshal(data, &info); err != nil {
+				return nil, fmt.Errorf("error parsing config for bidder %s: %v", fileName, err)
+			}
+
+			infos[string(normalizedBidderName)] = info
 		}
 	}
 	return infos, nil
@@ -349,9 +378,13 @@ func validateSyncer(bidderInfo BidderInfo) error {
 	return nil
 }
 
-func applyBidderInfoConfigOverrides(configBidderInfos BidderInfos, fsBidderInfos BidderInfos) (BidderInfos, error) {
+func applyBidderInfoConfigOverrides(configBidderInfos BidderInfos, fsBidderInfos BidderInfos, normalizeBidderName func(string) (openrtb_ext.BidderName, bool)) (BidderInfos, error) {
 	for bidderName, bidderInfo := range configBidderInfos {
-		if fsBidderCfg, exists := fsBidderInfos[bidderName]; exists {
+		normalizedBidderName, bidderNameExists := normalizeBidderName(bidderName)
+		if !bidderNameExists {
+			return nil, fmt.Errorf("error setting configuration for bidder %s: unknown bidder", bidderName)
+		}
+		if fsBidderCfg, exists := fsBidderInfos[string(normalizedBidderName)]; exists {
 			bidderInfo.Syncer = bidderInfo.Syncer.Override(fsBidderCfg.Syncer)
 
 			if bidderInfo.Endpoint == "" && len(fsBidderCfg.Endpoint) > 0 {
@@ -436,7 +469,9 @@ func applyBidderInfoConfigOverrides(configBidderInfos BidderInfos, fsBidderInfos
 				glog.Warningf("adapters.%s.usersync_url is deprecated and will be removed in a future version, please update to the latest user sync config values", strings.ToLower(bidderName))
 			}
 
-			fsBidderInfos[bidderName] = bidderInfo
+			fsBidderInfos[string(normalizedBidderName)] = bidderInfo
+		} else {
+			return nil, fmt.Errorf("error finding configuration for bidder %s: unknown bidder", bidderName)
 		}
 	}
 	return fsBidderInfos, nil

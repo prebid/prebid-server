@@ -6,23 +6,30 @@
   },
   "mockBidRequest": {
     "id": "request-with-stored-resp",
-    "site": {"page": "test.somepage.com"},
+    "site": {
+      "page": "test.somepage.com"
+    },
     "imp": [
       {
         "id": "my-imp-id",
         "banner": {
           "format": [
-            {"w": 300, "h": 600}
+            {
+              "w": 300,
+              "h": 600
+            }
           ]
         },
         "ext": {
           "prebid": {
+            "bidder": {
+              "appnexus": {
+                "placementId": 12883451
+              }
+            },
             "storedauctionresponse": {
               "id": "6d718149"
             }
-          },
-          "appnexus": {
-            "placementId": 12883451
           }
         }
       }
@@ -43,7 +50,10 @@
     },
     "warnings": {
       "general": [
-        {"code": 10002, "message": "debug turned off for account"}
+        {
+          "code": 10002,
+          "message": "debug turned off for account"
+        }
       ]
     }
   },
