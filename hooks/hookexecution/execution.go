@@ -73,7 +73,7 @@ func executeGroup[H any, P any](
 
 	hookResponses := collectHookResponses(resp, done)
 
-	return processHookResponses(hookResponses, payload)
+	return processHookResponses(invocationCtx, hookResponses, payload)
 }
 
 func executeHook[H any, P any](
@@ -139,9 +139,11 @@ func collectHookResponses[P any](
 }
 
 func processHookResponses[P any](
+	invocationCtx *hookstage.InvocationContext,
 	hookResponses []HookResponse[P],
 	payload P,
 ) (GroupOutcome, P, *RejectError) {
+	stage := hooks.Stage(invocationCtx.Stage)
 	groupOutcome := GroupOutcome{}
 	groupOutcome.InvocationResults = make([]HookOutcome, 0, len(hookResponses))
 
@@ -173,7 +175,21 @@ func processHookResponses[P any](
 		}
 
 		if r.Result.Reject {
-			reject := &RejectError{Code: r.Result.NbrCode, Reason: r.Result.Message}
+			if !stage.IsRejectable() {
+				groupOutcome.InvocationResults[i].Status = StatusExecutionFailure
+				groupOutcome.InvocationResults[i].Errors = append(
+					groupOutcome.InvocationResults[i].Errors,
+					fmt.Sprintf(
+						"Module (name: %s, hook code: %s) tried to reject request on the %s stage that does not support rejection",
+						r.HookID.ModuleCode,
+						r.HookID.HookCode,
+						invocationCtx.Stage,
+					),
+				)
+				continue
+			}
+
+			reject := &RejectError{r.Result.NbrCode, r.HookID, invocationCtx.Stage}
 			groupOutcome.InvocationResults[i].Action = ActionReject
 			groupOutcome.InvocationResults[i].Errors = append(groupOutcome.InvocationResults[i].Errors, reject.Error())
 			return groupOutcome, payload, reject

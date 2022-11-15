@@ -21,7 +21,6 @@ const (
 type InvocationContext struct {
 	Stage          string
 	AccountId      string
-	DebugEnabled   bool
 	Account        *config.Account
 	moduleContexts map[string]*ModuleContext
 }
