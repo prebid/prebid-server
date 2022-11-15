@@ -2,6 +2,9 @@ package hookstage
 
 import (
 	"context"
+
+	"github.com/prebid/prebid-server/exchange/entities"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 type AllProcessedBidResponses interface {
@@ -13,6 +16,5 @@ type AllProcessedBidResponses interface {
 }
 
 type AllProcessedBidResponsesPayload struct {
-	// Responses []*adapters.BidderResponse
-	// todo: decide what payload to use within the hook invocation task
+	Responses map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid
 }

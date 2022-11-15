@@ -25,7 +25,7 @@ type StageExecutor interface {
 	ExecuteProcessedAuctionStage(req *openrtb2.BidRequest) *RejectError
 	ExecuteBidderRequestStage(req *openrtb2.BidRequest, bidder string) *RejectError
 	ExecuteRawBidderResponseStage(response *adapters.BidderResponse) *RejectError
-	ExecuteAllProcessedBidResponsesStage(adapterBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid) //TODO: check that responses is the necessary param
+	ExecuteAllProcessedBidResponsesStage(adapterBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid)
 	ExecuteAuctionResponseStage(response *openrtb2.BidResponse)
 }
 
@@ -120,7 +120,27 @@ func (executor *HookExecutor) ExecuteRawBidderResponseStage(response *adapters.B
 }
 
 func (executor *HookExecutor) ExecuteAllProcessedBidResponsesStage(adapterBids map[openrtb_ext.BidderName]*entities.PbsOrtbSeatBid) {
-	//TODO: implement
+	plan := executor.PlanBuilder.PlanForAllProcessedBidResponsesStage(executor.Endpoint, executor.InvocationCtx.Account)
+	if len(plan) == 0 {
+		return
+	}
+
+	handler := func(
+		ctx context.Context,
+		moduleCtx *hookstage.ModuleContext,
+		hook hookstage.AllProcessedBidResponses,
+		payload hookstage.AllProcessedBidResponsesPayload,
+	) (hookstage.HookResult[hookstage.AllProcessedBidResponsesPayload], error) {
+		return hook.HandleAllProcessedBidResponsesHook(ctx, moduleCtx, payload)
+	}
+
+	executor.InvocationCtx.Stage = hooks.StageAllProcessedBidResponses
+	payload := hookstage.AllProcessedBidResponsesPayload{Responses: adapterBids}
+	stageOutcome, _, _ := executeStage(executor.InvocationCtx, plan, payload, handler, executor.MetricEngine)
+	stageOutcome.Entity = hookstage.EntityAllProcessedBidResponses
+	stageOutcome.Stage = hooks.StageAllProcessedBidResponses
+
+	executor.stageOutcomes = append(executor.stageOutcomes, stageOutcome)
 }
 
 func (executor *HookExecutor) ExecuteAuctionResponseStage(response *openrtb2.BidResponse) {
