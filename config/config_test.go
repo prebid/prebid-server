@@ -2188,6 +2188,72 @@ func TestMigrateConfigDatabaseConnection(t *testing.T) {
 	}
 }
 
+func TestMigrateConfigDatabaseQueryParams(t *testing.T) {
+
+	config := []byte(`
+    stored_requests:
+      postgres:
+        fetcher:
+          query: "SELECT * FROM Table1 WHERE id in (%REQUEST_ID_LIST%) UNION ALL SELECT * FROM Table2 WHERE id in (%IMP_ID_LIST%)"
+          amp_query: "SELECT * FROM Table1 WHERE id in (%REQUEST_ID_LIST%) UNION ALL SELECT * FROM Table2 WHERE id in (%IMP_ID_LIST%)"
+        poll_for_updates:
+          query: "SELECT * FROM Table1 WHERE last_updated > $1 UNION ALL SELECT * FROM Table2 WHERE last_updated > $1"
+          amp_query: "SELECT * FROM Table1 WHERE last_updated > $1 UNION ALL SELECT * FROM Table2 WHERE last_updated > $1"
+    stored_video_req:
+      postgres:
+        fetcher:
+          query: "SELECT * FROM Table1 WHERE id in (%REQUEST_ID_LIST%) UNION ALL SELECT * FROM Table2 WHERE id in (%IMP_ID_LIST%)"
+          amp_query: "SELECT * FROM Table1 WHERE id in (%REQUEST_ID_LIST%) UNION ALL SELECT * FROM Table2 WHERE id in (%IMP_ID_LIST%)"
+        poll_for_updates:
+          query: "SELECT * FROM Table1 WHERE last_updated > $1 UNION ALL SELECT * FROM Table2 WHERE last_updated > $1"
+          amp_query: "SELECT * FROM Table1 WHERE last_updated > $1 UNION ALL SELECT * FROM Table2 WHERE last_updated > $1"
+    stored_responses:
+      postgres:
+        fetcher:
+          query: "SELECT * FROM Table1 WHERE id in (%REQUEST_ID_LIST%) UNION ALL SELECT * FROM Table2 WHERE id in (%IMP_ID_LIST%)"
+          amp_query: "SELECT * FROM Table1 WHERE id in (%REQUEST_ID_LIST%) UNION ALL SELECT * FROM Table2 WHERE id in (%IMP_ID_LIST%)"
+        poll_for_updates:
+          query: "SELECT * FROM Table1 WHERE last_updated > $1 UNION ALL SELECT * FROM Table2 WHERE last_updated > $1"
+          amp_query: "SELECT * FROM Table1 WHERE last_updated > $1 UNION ALL SELECT * FROM Table2 WHERE last_updated > $1"
+  `)
+
+	want_queries := struct {
+		fetcher_query              string
+		fetcher_amp_query          string
+		poll_for_updates_query     string
+		poll_for_updates_amp_query string
+	}{
+		fetcher_query:              "SELECT * FROM Table1 WHERE id in ($REQUEST_ID_LIST) UNION ALL SELECT * FROM Table2 WHERE id in ($IMP_ID_LIST)",
+		fetcher_amp_query:          "SELECT * FROM Table1 WHERE id in ($REQUEST_ID_LIST) UNION ALL SELECT * FROM Table2 WHERE id in ($IMP_ID_LIST)",
+		poll_for_updates_query:     "SELECT * FROM Table1 WHERE last_updated > $LAST_UPDATED UNION ALL SELECT * FROM Table2 WHERE last_updated > $LAST_UPDATED",
+		poll_for_updates_amp_query: "SELECT * FROM Table1 WHERE last_updated > $LAST_UPDATED UNION ALL SELECT * FROM Table2 WHERE last_updated > $LAST_UPDATED",
+	}
+
+	v := viper.New()
+	v.SetConfigType("yaml")
+	v.ReadConfig(bytes.NewBuffer(config))
+
+	migrateConfigDatabaseConnection(v)
+
+	// stored_requests queries
+	assert.Equal(t, want_queries.fetcher_query, v.GetString("stored_requests.database.fetcher.query"))
+	assert.Equal(t, want_queries.fetcher_amp_query, v.GetString("stored_requests.database.fetcher.amp_query"))
+	assert.Equal(t, want_queries.poll_for_updates_query, v.GetString("stored_requests.database.poll_for_updates.query"))
+	assert.Equal(t, want_queries.poll_for_updates_amp_query, v.GetString("stored_requests.database.poll_for_updates.amp_query"))
+
+	// stored_video_req queries
+	assert.Equal(t, want_queries.fetcher_query, v.GetString("stored_video_req.database.fetcher.query"))
+	assert.Equal(t, want_queries.fetcher_amp_query, v.GetString("stored_video_req.database.fetcher.amp_query"))
+	assert.Equal(t, want_queries.poll_for_updates_query, v.GetString("stored_video_req.database.poll_for_updates.query"))
+	assert.Equal(t, want_queries.poll_for_updates_amp_query, v.GetString("stored_video_req.database.poll_for_updates.amp_query"))
+
+	// stored_responses queries
+	assert.Equal(t, want_queries.fetcher_query, v.GetString("stored_responses.database.fetcher.query"))
+	assert.Equal(t, want_queries.fetcher_amp_query, v.GetString("stored_responses.database.fetcher.amp_query"))
+	assert.Equal(t, want_queries.poll_for_updates_query, v.GetString("stored_responses.database.poll_for_updates.query"))
+	assert.Equal(t, want_queries.poll_for_updates_amp_query, v.GetString("stored_responses.database.poll_for_updates.amp_query"))
+}
+
 func TestNegativeRequestSize(t *testing.T) {
 	cfg, v := newDefaultConfig(t)
 	cfg.MaxRequestSize = -1
