@@ -172,6 +172,7 @@ func TestDefaults(t *testing.T) {
 	cmpInts(t, "experiment.adscert.remote.signing_timeout_ms", cfg.Experiment.AdCerts.Remote.SigningTimeoutMs, 5)
 	cmpNils(t, "host_schain_node", cfg.HostSChainNode)
 	cmpStrings(t, "datacenter", cfg.DataCenter, "")
+	cmpBools(t, "hooks.enabled", cfg.Hooks.Enabled, false)
 
 	//Assert purpose VendorExceptionMap hash tables were built correctly
 	expectedTCF2 := TCF2{
@@ -415,6 +416,8 @@ experiment:
         remote:
             url: ""
             signing_timeout_ms: 10
+hooks:
+    enabled: true
 `)
 
 var oldStoredRequestsConfig = []byte(`
@@ -660,6 +663,7 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "experiment.adscert.inprocess.domain_renewal_interval_seconds", cfg.Experiment.AdCerts.InProcess.DNSRenewalIntervalInSeconds, 60)
 	cmpStrings(t, "experiment.adscert.remote.url", cfg.Experiment.AdCerts.Remote.Url, "")
 	cmpInts(t, "experiment.adscert.remote.signing_timeout_ms", cfg.Experiment.AdCerts.Remote.SigningTimeoutMs, 10)
+	cmpBools(t, "hooks.enabled", cfg.Hooks.Enabled, true)
 }
 
 func TestValidateConfig(t *testing.T) {
