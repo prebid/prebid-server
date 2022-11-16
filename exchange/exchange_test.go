@@ -2185,7 +2185,7 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 	}
 
 	// Account Bid Validation Enforcement
-	accountBidValidation := config.BidValidationEnforcement{}
+	accountBidValidation := config.Validations{}
 	if spec.BidValidationEnforcement == config.ValidationEnforce {
 		accountBidValidation.BannerCreativeMaxSize = config.ValidationEnforce
 	} else if spec.BidValidationEnforcement == config.ValidationWarn {
@@ -2195,10 +2195,10 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 	auctionRequest := AuctionRequest{
 		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: &spec.IncomingRequest.OrtbRequest},
 		Account: config.Account{
-			ID:                       "testaccount",
-			EventsEnabled:            spec.EventsEnabled,
-			DebugAllow:               true,
-			BidValidationEnforcement: accountBidValidation,
+			ID:            "testaccount",
+			EventsEnabled: spec.EventsEnabled,
+			DebugAllow:    true,
+			Validations:   accountBidValidation,
 		},
 		UserSyncs:     mockIdFetcher(spec.IncomingRequest.Usersyncs),
 		ImpExtInfoMap: impExtInfoMap,
@@ -2388,9 +2388,9 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 		hostSChainNode = nil
 	}
 
-	bidValidation := config.BidValidationEnforcement{}
+	bidValidation := config.Validations{}
 	if bidValidationEnforcement == config.ValidationEnforce || bidValidationEnforcement == config.ValidationWarn {
-		bidValidation = config.BidValidationEnforcement{
+		bidValidation = config.Validations{
 			BannerCreativeMaxSize: bidValidationEnforcement,
 			MaxCreativeWidth:      100,
 			MaxCreativeHeight:     100,
@@ -4215,7 +4215,7 @@ func TestCallSignHeader(t *testing.T) {
 }
 
 func TestValidateBidForBidResponse(t *testing.T) {
-	exchange := exchange{bidValidationEnforcement: config.BidValidationEnforcement{MaxCreativeWidth: 100, MaxCreativeHeight: 100},
+	exchange := exchange{bidValidationEnforcement: config.Validations{MaxCreativeWidth: 100, MaxCreativeHeight: 100},
 		me: metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.CoreBidderNames(), nil),
 	}
 	testCases := []struct {
@@ -4280,46 +4280,46 @@ func TestMakeBidWithValidation(t *testing.T) {
 
 	// Define test cases
 	testCases := []struct {
-		description                   string
-		givenBidValidationEnforcement config.BidValidationEnforcement
-		givenBids                     []*pbsOrtbBid
-		expectedNumOfBids             int
+		description       string
+		givenValidations  config.Validations
+		givenBids         []*pbsOrtbBid
+		expectedNumOfBids int
 	}{
 		{
-			description:                   "Validation is enforced, and one bid out of the two is invalid based on dimensions",
-			givenBidValidationEnforcement: config.BidValidationEnforcement{BannerCreativeMaxSize: config.ValidationEnforce, MaxCreativeWidth: 100, MaxCreativeHeight: 100},
-			givenBids:                     []*pbsOrtbBid{{bid: &openrtb2.Bid{W: 200, H: 200}, bidType: openrtb_ext.BidTypeBanner}, {bid: &openrtb2.Bid{W: 50, H: 50}, bidType: openrtb_ext.BidTypeBanner}},
-			expectedNumOfBids:             1,
+			description:       "Validation is enforced, and one bid out of the two is invalid based on dimensions",
+			givenValidations:  config.Validations{BannerCreativeMaxSize: config.ValidationEnforce, MaxCreativeWidth: 100, MaxCreativeHeight: 100},
+			givenBids:         []*pbsOrtbBid{{bid: &openrtb2.Bid{W: 200, H: 200}, bidType: openrtb_ext.BidTypeBanner}, {bid: &openrtb2.Bid{W: 50, H: 50}, bidType: openrtb_ext.BidTypeBanner}},
+			expectedNumOfBids: 1,
 		},
 		{
-			description:                   "Validation is warned, so no bids should be removed (Validating CreativeMaxSize) ",
-			givenBidValidationEnforcement: config.BidValidationEnforcement{BannerCreativeMaxSize: config.ValidationWarn, MaxCreativeWidth: 100, MaxCreativeHeight: 100},
-			givenBids:                     []*pbsOrtbBid{{bid: &openrtb2.Bid{W: 200, H: 200}, bidType: openrtb_ext.BidTypeBanner}, {bid: &openrtb2.Bid{W: 50, H: 50}, bidType: openrtb_ext.BidTypeBanner}},
-			expectedNumOfBids:             2,
+			description:       "Validation is warned, so no bids should be removed (Validating CreativeMaxSize) ",
+			givenValidations:  config.Validations{BannerCreativeMaxSize: config.ValidationWarn, MaxCreativeWidth: 100, MaxCreativeHeight: 100},
+			givenBids:         []*pbsOrtbBid{{bid: &openrtb2.Bid{W: 200, H: 200}, bidType: openrtb_ext.BidTypeBanner}, {bid: &openrtb2.Bid{W: 50, H: 50}, bidType: openrtb_ext.BidTypeBanner}},
+			expectedNumOfBids: 2,
 		},
 		{
-			description:                   "Validation is enforced, and one bid out of the two is invalid based on AdM",
-			givenBidValidationEnforcement: config.BidValidationEnforcement{SecureMarkup: config.ValidationEnforce},
-			givenBids:                     []*pbsOrtbBid{{bid: &openrtb2.Bid{AdM: "http://domain.com/invalid"}, bidType: openrtb_ext.BidTypeBanner}, {bid: &openrtb2.Bid{AdM: "https://domain.com/valid"}, bidType: openrtb_ext.BidTypeBanner}},
-			expectedNumOfBids:             1,
+			description:       "Validation is enforced, and one bid out of the two is invalid based on AdM",
+			givenValidations:  config.Validations{SecureMarkup: config.ValidationEnforce},
+			givenBids:         []*pbsOrtbBid{{bid: &openrtb2.Bid{AdM: "http://domain.com/invalid"}, bidType: openrtb_ext.BidTypeBanner}, {bid: &openrtb2.Bid{AdM: "https://domain.com/valid"}, bidType: openrtb_ext.BidTypeBanner}},
+			expectedNumOfBids: 1,
 		},
 		{
-			description:                   "Validation is warned so no bids should be removed (Validating SecureMarkup)",
-			givenBidValidationEnforcement: config.BidValidationEnforcement{SecureMarkup: config.ValidationWarn},
-			givenBids:                     []*pbsOrtbBid{{bid: &openrtb2.Bid{AdM: "http://domain.com/invalid"}, bidType: openrtb_ext.BidTypeBanner}, {bid: &openrtb2.Bid{AdM: "https://domain.com/valid"}, bidType: openrtb_ext.BidTypeBanner}},
-			expectedNumOfBids:             2,
+			description:       "Validation is warned so no bids should be removed (Validating SecureMarkup)",
+			givenValidations:  config.Validations{SecureMarkup: config.ValidationWarn},
+			givenBids:         []*pbsOrtbBid{{bid: &openrtb2.Bid{AdM: "http://domain.com/invalid"}, bidType: openrtb_ext.BidTypeBanner}, {bid: &openrtb2.Bid{AdM: "https://domain.com/valid"}, bidType: openrtb_ext.BidTypeBanner}},
+			expectedNumOfBids: 2,
 		},
 		{
-			description:                   "Adm validation is skipped, creative size validation is enforced, one Adm is invalid, but because we skip, no bids should be removed",
-			givenBidValidationEnforcement: config.BidValidationEnforcement{SecureMarkup: config.ValidationSkip, BannerCreativeMaxSize: config.ValidationEnforce},
-			givenBids:                     []*pbsOrtbBid{{bid: &openrtb2.Bid{AdM: "http://domain.com/invalid"}, bidType: openrtb_ext.BidTypeBanner}, {bid: &openrtb2.Bid{AdM: "https://domain.com/valid"}, bidType: openrtb_ext.BidTypeBanner}},
-			expectedNumOfBids:             2,
+			description:       "Adm validation is skipped, creative size validation is enforced, one Adm is invalid, but because we skip, no bids should be removed",
+			givenValidations:  config.Validations{SecureMarkup: config.ValidationSkip, BannerCreativeMaxSize: config.ValidationEnforce},
+			givenBids:         []*pbsOrtbBid{{bid: &openrtb2.Bid{AdM: "http://domain.com/invalid"}, bidType: openrtb_ext.BidTypeBanner}, {bid: &openrtb2.Bid{AdM: "https://domain.com/valid"}, bidType: openrtb_ext.BidTypeBanner}},
+			expectedNumOfBids: 2,
 		},
 		{
-			description:                   "Creative Size Validation is skipped, Adm Validation is enforced, one Creative Size is invalid, but because we skip, no bids should be removed",
-			givenBidValidationEnforcement: config.BidValidationEnforcement{BannerCreativeMaxSize: config.ValidationWarn, MaxCreativeWidth: 100, MaxCreativeHeight: 100},
-			givenBids:                     []*pbsOrtbBid{{bid: &openrtb2.Bid{W: 200, H: 200}, bidType: openrtb_ext.BidTypeBanner}, {bid: &openrtb2.Bid{W: 50, H: 50}, bidType: openrtb_ext.BidTypeBanner}},
-			expectedNumOfBids:             2,
+			description:       "Creative Size Validation is skipped, Adm Validation is enforced, one Creative Size is invalid, but because we skip, no bids should be removed",
+			givenValidations:  config.Validations{BannerCreativeMaxSize: config.ValidationWarn, MaxCreativeWidth: 100, MaxCreativeHeight: 100},
+			givenBids:         []*pbsOrtbBid{{bid: &openrtb2.Bid{W: 200, H: 200}, bidType: openrtb_ext.BidTypeBanner}, {bid: &openrtb2.Bid{W: 50, H: 50}, bidType: openrtb_ext.BidTypeBanner}},
+			expectedNumOfBids: 2,
 		},
 	}
 
@@ -4352,7 +4352,7 @@ func TestMakeBidWithValidation(t *testing.T) {
 
 	//Run tests
 	for _, test := range testCases {
-		e.bidValidationEnforcement = test.givenBidValidationEnforcement
+		e.bidValidationEnforcement = test.givenValidations
 		sampleBids := test.givenBids
 		resultingBids, resultingErrs := e.makeBid(sampleBids, sampleAuction, true, nil, bidExtResponse, "", "")
 
@@ -4364,33 +4364,33 @@ func TestMakeBidWithValidation(t *testing.T) {
 func TestSetBidValidationStatus(t *testing.T) {
 	testCases := []struct {
 		description  string
-		givenHost    config.BidValidationEnforcement
-		givenAccount config.BidValidationEnforcement
-		expected     config.BidValidationEnforcement
+		givenHost    config.Validations
+		givenAccount config.Validations
+		expected     config.Validations
 	}{
 		{
 			description:  "Host configuration is different than account, account setting should be preferred (enforce)",
-			givenHost:    config.BidValidationEnforcement{BannerCreativeMaxSize: config.ValidationSkip, SecureMarkup: config.ValidationSkip},
-			givenAccount: config.BidValidationEnforcement{BannerCreativeMaxSize: config.ValidationEnforce, SecureMarkup: config.ValidationEnforce},
-			expected:     config.BidValidationEnforcement{BannerCreativeMaxSize: config.ValidationEnforce, SecureMarkup: config.ValidationEnforce},
+			givenHost:    config.Validations{BannerCreativeMaxSize: config.ValidationSkip, SecureMarkup: config.ValidationSkip},
+			givenAccount: config.Validations{BannerCreativeMaxSize: config.ValidationEnforce, SecureMarkup: config.ValidationEnforce},
+			expected:     config.Validations{BannerCreativeMaxSize: config.ValidationEnforce, SecureMarkup: config.ValidationEnforce},
 		},
 		{
 			description:  "Host configuration is different than account, account setting should be preferred (warn)",
-			givenHost:    config.BidValidationEnforcement{BannerCreativeMaxSize: config.ValidationEnforce, SecureMarkup: config.ValidationEnforce},
-			givenAccount: config.BidValidationEnforcement{BannerCreativeMaxSize: config.ValidationWarn, SecureMarkup: config.ValidationWarn},
-			expected:     config.BidValidationEnforcement{BannerCreativeMaxSize: config.ValidationWarn, SecureMarkup: config.ValidationWarn},
+			givenHost:    config.Validations{BannerCreativeMaxSize: config.ValidationEnforce, SecureMarkup: config.ValidationEnforce},
+			givenAccount: config.Validations{BannerCreativeMaxSize: config.ValidationWarn, SecureMarkup: config.ValidationWarn},
+			expected:     config.Validations{BannerCreativeMaxSize: config.ValidationWarn, SecureMarkup: config.ValidationWarn},
 		},
 		{
 			description:  "Host configuration is different than account, account setting should be preferred (skip)",
-			givenHost:    config.BidValidationEnforcement{BannerCreativeMaxSize: config.ValidationWarn, SecureMarkup: config.ValidationWarn},
-			givenAccount: config.BidValidationEnforcement{BannerCreativeMaxSize: config.ValidationSkip, SecureMarkup: config.ValidationSkip},
-			expected:     config.BidValidationEnforcement{BannerCreativeMaxSize: config.ValidationSkip, SecureMarkup: config.ValidationSkip},
+			givenHost:    config.Validations{BannerCreativeMaxSize: config.ValidationWarn, SecureMarkup: config.ValidationWarn},
+			givenAccount: config.Validations{BannerCreativeMaxSize: config.ValidationSkip, SecureMarkup: config.ValidationSkip},
+			expected:     config.Validations{BannerCreativeMaxSize: config.ValidationSkip, SecureMarkup: config.ValidationSkip},
 		},
 		{
 			description:  "No account confiugration given, host confg should be preferred",
-			givenHost:    config.BidValidationEnforcement{BannerCreativeMaxSize: config.ValidationSkip, SecureMarkup: config.ValidationSkip},
-			givenAccount: config.BidValidationEnforcement{},
-			expected:     config.BidValidationEnforcement{BannerCreativeMaxSize: config.ValidationSkip, SecureMarkup: config.ValidationSkip},
+			givenHost:    config.Validations{BannerCreativeMaxSize: config.ValidationSkip, SecureMarkup: config.ValidationSkip},
+			givenAccount: config.Validations{},
+			expected:     config.Validations{BannerCreativeMaxSize: config.ValidationSkip, SecureMarkup: config.ValidationSkip},
 		},
 	}
 	for _, test := range testCases {

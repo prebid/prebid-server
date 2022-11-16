@@ -100,8 +100,8 @@ type Configuration struct {
 	// Refers to main.go `configFileName` constant
 	BidderInfos BidderInfos `mapstructure:"adapters"`
 	// Hooks provides a way to specify hook execution plan for specific endpoints and stages
-	Hooks                   Hooks                    `mapstructure:"hooks"`
-	BidValidationEnforcment BidValidationEnforcement `mapstructure:"bid_validation_enforcement"`
+	Hooks       Hooks       `mapstructure:"hooks"`
+	Validations Validations `mapstructure:"validations"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
@@ -630,7 +630,7 @@ type TimeoutNotification struct {
 	FailOnly bool `mapstructure:"fail_only"`
 }
 
-type BidValidationEnforcement struct {
+type Validations struct {
 	BannerCreativeMaxSize string `mapstructure:"banner_creative_max_size" json:"banner_creative_max_size"`
 	SecureMarkup          string `mapstructure:"secure_markup" json:"secure_markup"`
 	MaxCreativeWidth      int64  `mapstructure:"max_creative_width" json:"max_creative_width"`
@@ -833,10 +833,10 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("host_cookie.ttl_days", 90)
 	v.SetDefault("host_cookie.max_cookie_size_bytes", 0)
 	v.SetDefault("host_schain_node", nil)
-	v.SetDefault("bid_validation_enforcement.banner_creative_max_size", "skip")
-	v.SetDefault("bid_validation_enforcement.secure_markup", "skip")
-	v.SetDefault("bid_validation_enforcement.max_creative_size.height", 0)
-	v.SetDefault("bid_validation_enforcement.max_creative_size.width", 0)
+	v.SetDefault("validations.banner_creative_max_size", "skip")
+	v.SetDefault("validations.secure_markup", "skip")
+	v.SetDefault("validations.max_creative_size.height", 0)
+	v.SetDefault("validations.max_creative_size.width", 0)
 	v.SetDefault("http_client.max_connections_per_host", 0) // unlimited
 	v.SetDefault("http_client.max_idle_connections", 400)
 	v.SetDefault("http_client.max_idle_connections_per_host", 10)

@@ -70,7 +70,7 @@ type exchange struct {
 	hostSChainNode           *openrtb2.SupplyChainNode
 	adsCertSigner            adscert.Signer
 	server                   config.Server
-	bidValidationEnforcement config.BidValidationEnforcement
+	bidValidationEnforcement config.Validations
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -150,7 +150,7 @@ func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid
 		hostSChainNode:           cfg.HostSChainNode,
 		adsCertSigner:            adsCertSigner,
 		server:                   config.Server{ExternalUrl: cfg.ExternalURL, GvlID: cfg.GDPR.HostVendorID, DataCenter: cfg.DataCenter},
-		bidValidationEnforcement: cfg.BidValidationEnforcment,
+		bidValidationEnforcement: cfg.Validations,
 	}
 }
 
@@ -396,7 +396,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		bidResponseExt.Warnings[openrtb_ext.BidderReservedGeneral] = append(bidResponseExt.Warnings[openrtb_ext.BidderReservedGeneral], generalWarning)
 	}
 
-	e.bidValidationEnforcement = setBidValidationStatus(e.bidValidationEnforcement, r.Account.BidValidationEnforcement)
+	e.bidValidationEnforcement = setBidValidationStatus(e.bidValidationEnforcement, r.Account.Validations)
 
 	// Build the response
 	return e.buildBidResponse(ctx, liveAdapters, adapterBids, r.BidRequestWrapper.BidRequest, adapterExtra, auc, bidResponseExt, cacheInstructions.returnCreative, r.ImpExtInfoMap, r.PubID, errs)
@@ -1303,7 +1303,7 @@ func (e exchange) validateBidAdM(bid *pbsOrtbBid, bidResponseExt *openrtb_ext.Ex
 	return true
 }
 
-func setBidValidationStatus(host config.BidValidationEnforcement, account config.BidValidationEnforcement) config.BidValidationEnforcement {
+func setBidValidationStatus(host config.Validations, account config.Validations) config.Validations {
 	finalEnforcement := host
 
 	if account.BannerCreativeMaxSize == config.ValidationEnforce {
