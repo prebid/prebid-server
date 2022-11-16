@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/prebid/prebid-server/config"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestConnStringMySql(t *testing.T) {
@@ -26,12 +27,7 @@ func TestConnStringMySql(t *testing.T) {
 		cfg: cfg,
 	}
 
-	dataSourceName := provider.ConnString()
-	assertStringsEqual(t, dataSourceName, "someuser:somepassword@tcp(somehost.com:20)/TestDB")
-}
-
-func assertStringsEqual(t *testing.T, actual string, expected string) {
-	if actual != expected {
-		t.Errorf("Strings did not match.\n\"%s\" -- expected\n\"%s\" -- actual", expected, actual)
-	}
+	connString := provider.ConnString()
+	expectedConnString := "someuser:somepassword@tcp(somehost.com:20)/TestDB"
+	assert.Equal(t, expectedConnString, connString, "Strings did not match")
 }
