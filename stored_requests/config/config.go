@@ -71,6 +71,10 @@ func CreateStoredRequests(cfg *config.StoredRequests, metricsEngine metrics.Metr
 			shutdown1()
 		}
 
+		if provider == nil {
+			return
+		}
+
 		if err := provider.Close(); err != nil {
 			glog.Errorf("Error closing DB connection: %v", err)
 		}
