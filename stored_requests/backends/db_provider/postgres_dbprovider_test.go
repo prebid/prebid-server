@@ -1,62 +1,89 @@
 package db_provider
 
 import (
-	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/prebid/prebid-server/config"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestConnStringPostgres(t *testing.T) {
-	driver := "postgres"
-	db := "TestDB"
-	host := "somehost.com"
-	port := 20
-	username := "someuser"
-	password := "somepassword"
-
-	cfg := config.DatabaseConnection{
-		Driver:   driver,
-		Database: db,
-		Host:     host,
-		Port:     port,
-		Username: username,
-		Password: password,
+	type Params struct {
+		db       string
+		host     string
+		port     int
+		username string
+		password string
 	}
 
-	provider := PostgresDbProvider{
-		cfg: cfg,
+	tests := []struct {
+		name       string
+		params     Params
+		connString string
+	}{
+		{
+			params: Params{
+				db: "",
+			},
+			connString: "sslmode=disable",
+		},
+		{
+			params: Params{
+				db: "TestDB",
+			},
+			connString: "dbname=TestDB sslmode=disable",
+		},
+		{
+			params: Params{
+				host: "example.com",
+			},
+			connString: "host=example.com sslmode=disable",
+		},
+		{
+			params: Params{
+				port: 20,
+			},
+			connString: "port=20 sslmode=disable",
+		},
+		{
+			params: Params{
+				username: "someuser",
+			},
+			connString: "user=someuser sslmode=disable",
+		},
+		{
+			params: Params{
+				username: "someuser",
+				password: "somepassword",
+			},
+			connString: "user=someuser password=somepassword sslmode=disable",
+		},
+		{
+			params: Params{
+				db:       "TestDB",
+				host:     "example.com",
+				port:     20,
+				username: "someuser",
+				password: "somepassword",
+			},
+			connString: "host=example.com port=20 user=someuser password=somepassword dbname=TestDB sslmode=disable",
+		},
 	}
-	dataSourceName := provider.ConnString()
-	paramList := strings.Split(dataSourceName, " ")
-	params := make(map[string]string, len(paramList))
-	for _, param := range paramList {
-		keyVals := strings.Split(param, "=")
-		if len(keyVals) != 2 {
-			t.Fatalf(`param "%s" must only have one equals sign`, param)
+
+	for _, test := range tests {
+		cfg := config.DatabaseConnection{
+			Database: test.params.db,
+			Host:     test.params.host,
+			Port:     test.params.port,
+			Username: test.params.username,
+			Password: test.params.password,
 		}
-		if _, ok := params[keyVals[0]]; ok {
-			t.Fatalf("found duplicate param at key %s", keyVals[0])
+
+		provider := PostgresDbProvider{
+			cfg: cfg,
 		}
-		params[keyVals[0]] = keyVals[1]
-	}
 
-	assertHasValue(t, params, "dbname", db)
-	assertHasValue(t, params, "host", host)
-	assertHasValue(t, params, "port", strconv.Itoa(port))
-	assertHasValue(t, params, "user", username)
-	assertHasValue(t, params, "password", password)
-	assertHasValue(t, params, "sslmode", "disable")
-}
-
-func assertHasValue(t *testing.T, m map[string]string, key string, val string) {
-	t.Helper()
-	realVal, ok := m[key]
-	if !ok {
-		t.Errorf("Map missing required key: %s", key)
-	}
-	if val != realVal {
-		t.Errorf("Unexpected value at key %s. Expected %s, Got %s", key, val, realVal)
+		connString := provider.ConnString()
+		assert.Equal(t, test.connString, connString, "Strings did not match")
 	}
 }
