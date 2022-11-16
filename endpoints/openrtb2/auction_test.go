@@ -896,44 +896,60 @@ func TestImplicitSecure(t *testing.T) {
 
 func TestReferer(t *testing.T) {
 	testCases := []struct {
-		description     string
-		givenSitePage   string
-		givenSiteDomain string
-		givenReferer    string
-		expectedDomain  string
-		expectedPage    string
+		description             string
+		givenSitePage           string
+		givenSiteDomain         string
+		givenPublisherDomain    string
+		givenReferer            string
+		expectedDomain          string
+		expectedPage            string
+		expectedPublisherDomain string
 	}{
 		{
-			description:    "site.page/domain are unchanged when site.page/domain and http referer are not set",
-			expectedDomain: "",
-			expectedPage:   "",
+			description:             "site.page/domain are unchanged when site.page/domain and http referer are not set",
+			expectedDomain:          "",
+			expectedPage:            "",
+			expectedPublisherDomain: "",
 		},
 		{
-			description:    "site.page/domain are derived from referer when neither is set and http referer is set",
-			givenReferer:   "https://test.somepage.com",
-			expectedDomain: "somepage.com",
-			expectedPage:   "https://test.somepage.com",
+			description:             "site.page/domain are derived from referer when neither is set and http referer is set",
+			givenReferer:            "https://test.somepage.com",
+			expectedDomain:          "test.somepage.com",
+			expectedPublisherDomain: "somepage.com",
+			expectedPage:            "https://test.somepage.com",
 		},
 		{
-			description:    "site.domain is derived from site.page when site.page is set and http referer is not set",
-			givenSitePage:  "https://test.somepage.com",
-			expectedDomain: "somepage.com",
-			expectedPage:   "https://test.somepage.com",
+			description:             "site.domain is derived from site.page when site.page is set and http referer is not set",
+			givenSitePage:           "https://test.somepage.com",
+			expectedDomain:          "test.somepage.com",
+			expectedPublisherDomain: "somepage.com",
+			expectedPage:            "https://test.somepage.com",
 		},
 		{
-			description:    "site.domain is derived from http referer when site.page and http referer are set",
-			givenSitePage:  "https://test.somepage.com",
-			givenReferer:   "http://test.com",
-			expectedDomain: "test.com",
-			expectedPage:   "https://test.somepage.com",
+			description:             "site.domain is derived from http referer when site.page and http referer are set",
+			givenSitePage:           "https://test.somepage.com",
+			givenReferer:            "http://test.com",
+			expectedDomain:          "test.com",
+			expectedPublisherDomain: "test.com",
+			expectedPage:            "https://test.somepage.com",
 		},
 		{
-			description:     "site.page/domain are unchanged when site.page/domain and http referer are set",
-			givenSitePage:   "https://test.somepage.com",
-			givenSiteDomain: "some.domain.com",
-			givenReferer:    "http://test.com",
-			expectedDomain:  "some.domain.com",
-			expectedPage:    "https://test.somepage.com",
+			description:             "site.page/domain are unchanged when site.page/domain and http referer are set",
+			givenSitePage:           "https://test.somepage.com",
+			givenSiteDomain:         "some.domain.com",
+			givenReferer:            "http://test.com",
+			expectedDomain:          "some.domain.com",
+			expectedPublisherDomain: "test.com",
+			expectedPage:            "https://test.somepage.com",
+		},
+		{
+			description:             "Publisher domain shouldn't be overrwriten if already set",
+			givenSitePage:           "https://test.somepage.com",
+			givenSiteDomain:         "",
+			givenPublisherDomain:    "differentpage.com",
+			expectedDomain:          "test.somepage.com",
+			expectedPublisherDomain: "differentpage.com",
+			expectedPage:            "https://test.somepage.com",
 		},
 	}
 
@@ -943,8 +959,9 @@ func TestReferer(t *testing.T) {
 
 		bidReq := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
 			Site: &openrtb2.Site{
-				Domain: test.givenSiteDomain,
-				Page:   test.givenSitePage,
+				Domain:    test.givenSiteDomain,
+				Page:      test.givenSitePage,
+				Publisher: &openrtb2.Publisher{Domain: test.givenPublisherDomain},
 			},
 		}}
 
@@ -953,6 +970,7 @@ func TestReferer(t *testing.T) {
 		assert.NotNil(t, bidReq.Site, test.description)
 		assert.Equal(t, test.expectedDomain, bidReq.Site.Domain, test.description)
 		assert.Equal(t, test.expectedPage, bidReq.Site.Page, test.description)
+		assert.Equal(t, test.expectedPublisherDomain, bidReq.Site.Publisher.Domain, test.description)
 	}
 }
 
@@ -1991,7 +2009,7 @@ func TestOversizedRequest(t *testing.T) {
 	deps.Auction(recorder, req, nil)
 
 	if recorder.Code != http.StatusBadRequest {
-		t.Errorf("endpoint should return a 400 if the request exceeds the size max.")
+		t.Errorf("Endpoint should return a 400 if the request exceeds the size max.")
 	}
 
 	if bytesRead, err := req.Body.Read(make([]byte, 1)); bytesRead != 0 || err != io.EOF {
@@ -2029,7 +2047,7 @@ func TestRequestSizeEdgeCase(t *testing.T) {
 	deps.Auction(recorder, req, nil)
 
 	if recorder.Code != http.StatusOK {
-		t.Errorf("endpoint should return a 200 if the request equals the size max.")
+		t.Errorf("Endpoint should return a 200 if the request equals the size max.")
 	}
 
 	if bytesRead, err := req.Body.Read(make([]byte, 1)); bytesRead != 0 || err != io.EOF {
@@ -3249,7 +3267,7 @@ func TestAuctionWarnings(t *testing.T) {
 	deps.Auction(recorder, req, nil)
 
 	if recorder.Code != http.StatusOK {
-		t.Errorf("endpoint should return a 200")
+		t.Errorf("Endpoint should return a 200")
 	}
 	warnings := deps.ex.(*warningsCheckExchange).auctionRequest.Warnings
 	if !assert.Len(t, warnings, 1, "One warning should be returned from exchange") {

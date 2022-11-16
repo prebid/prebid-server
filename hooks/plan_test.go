@@ -36,8 +36,10 @@ func TestNewExecutionPlanBuilder(t *testing.T) {
 }
 
 func TestPlanForEntrypointStage(t *testing.T) {
-	hostPlanData := []byte(`{"endpoints":{"/openrtb2/auction":{"stages":{"entrypoint":{"groups":[{"timeout":5,"hook_sequence":[{"module_code":"foobar","hook_impl_code":"foo"}]}]}}}}}`)
-	defaultAccountPlanData := []byte(`{"endpoints": {"/openrtb2/auction": {"stages": {"entrypoint": {"groups": [{"timeout": 10, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "bar"}, {"module_code": "ortb2blocking", "hook_impl_code": "block_request"}]}, {"timeout": 5, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "foo"}]}]}}}, "/openrtb2/amp": {"stages": {"entrypoint": {"groups": [{"timeout": 5, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "foo"}]}]}}}}}`)
+	const group1 string = `{"timeout":  5, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "foo"}]}`
+	const group2 string = `{"timeout": 10, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "bar"}, {"module_code": "ortb2blocking", "hook_impl_code": "block_request"}]}`
+	const planData1 string = `{"endpoints": {"/openrtb2/auction": {"stages": {"entrypoint": {"groups": [` + group1 + `]}}}}}`
+	const planData2 string = `{"endpoints": {"/openrtb2/auction": {"stages": {"entrypoint": {"groups": [` + group2 + `,` + group1 + `]}}}, "/openrtb2/amp": {"stages": {"entrypoint": {"groups": [` + group1 + `]}}}}}`
 
 	testCases := map[string]struct {
 		givenEndpoint               string
@@ -48,8 +50,8 @@ func TestPlanForEntrypointStage(t *testing.T) {
 	}{
 		"Host and default-account execution plans successfully merged": {
 			givenEndpoint:               "/openrtb2/auction",
-			givenHostPlanData:           hostPlanData,
-			givenDefaultAccountPlanData: defaultAccountPlanData,
+			givenHostPlanData:           []byte(planData1),
+			givenDefaultAccountPlanData: []byte(planData2),
 			givenHooks: map[string]interface{}{
 				"foobar":        fakeEntrypointHook{},
 				"ortb2blocking": fakeEntrypointHook{},
@@ -80,7 +82,7 @@ func TestPlanForEntrypointStage(t *testing.T) {
 		},
 		"Works with empty default-account-execution_plan": {
 			givenEndpoint:               "/openrtb2/auction",
-			givenHostPlanData:           hostPlanData,
+			givenHostPlanData:           []byte(planData1),
 			givenDefaultAccountPlanData: []byte(`{}`),
 			givenHooks:                  map[string]interface{}{"foobar": fakeEntrypointHook{}},
 			expectedPlan: Plan[hookstage.Entrypoint]{
@@ -95,7 +97,7 @@ func TestPlanForEntrypointStage(t *testing.T) {
 		"Works with empty host-execution_plan": {
 			givenEndpoint:               "/openrtb2/auction",
 			givenHostPlanData:           []byte(`{}`),
-			givenDefaultAccountPlanData: hostPlanData,
+			givenDefaultAccountPlanData: []byte(planData1),
 			givenHooks:                  map[string]interface{}{"foobar": fakeEntrypointHook{}},
 			expectedPlan: Plan[hookstage.Entrypoint]{
 				Group[hookstage.Entrypoint]{
@@ -115,7 +117,7 @@ func TestPlanForEntrypointStage(t *testing.T) {
 		},
 		"Empty plan if hook repository empty": {
 			givenEndpoint:               "/openrtb2/auction",
-			givenHostPlanData:           hostPlanData,
+			givenHostPlanData:           []byte(planData1),
 			givenDefaultAccountPlanData: []byte(`{}`),
 			givenHooks:                  nil,
 			expectedPlan:                Plan[hookstage.Entrypoint]{},
@@ -133,9 +135,13 @@ func TestPlanForEntrypointStage(t *testing.T) {
 }
 
 func TestPlanForRawAuctionStage(t *testing.T) {
-	hostPlanData := []byte(`{"endpoints":{"/openrtb2/auction":{"stages":{"raw-auction":{"groups":[{"timeout":5,"hook_sequence":[{"module_code":"foobar","hook_impl_code":"foo"}]}]}}}}}`)
-	defaultAccountPlanData := []byte(`{"endpoints": {"/openrtb2/auction": {"stages": {"raw-auction": {"groups": [{"timeout": 10, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "bar"}, {"module_code": "ortb2blocking", "hook_impl_code": "block_request"}]}, {"timeout": 5, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "foo"}]}]}}}, "/openrtb2/amp": {"stages": {"entrypoint": {"groups": [{"timeout": 5, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "foo"}]}]}}}}}`)
-	accountPlanData := []byte(`{"execution_plan": {"endpoints": {"/openrtb2/auction": {"stages": {"raw-auction": {"groups": [{"timeout": 15, "hook_sequence": [{"module_code": "prebid", "hook_impl_code": "baz"}]}]}}}}}}`)
+	const group1 string = `{"timeout":  5, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "foo"}]}`
+	const group2 string = `{"timeout": 10, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "bar"}, {"module_code": "ortb2blocking", "hook_impl_code": "block_request"}]}`
+	const group3 string = `{"timeout": 15, "hook_sequence": [{"module_code": "prebid", "hook_impl_code": "baz"}]}`
+	const hostPlanData string = `{"endpoints": {"/openrtb2/auction": {"stages": {"raw-auction": {"groups": [` + group1 + `]}}}}}`
+	const defaultAccountPlanData string = `{"endpoints": {"/openrtb2/auction": {"stages": {"raw-auction": {"groups": [` + group2 + `,` + group1 + `]}}}, "/openrtb2/amp": {"stages": {"entrypoint": {"groups": [` + group1 + `]}}}}}`
+	const accountPlanData string = `{"execution_plan": {"endpoints": {"/openrtb2/auction": {"stages": {"raw-auction": {"groups": [` + group3 + `]}}}}}}`
+
 	hooks := map[string]interface{}{
 		"foobar":        fakeRawAuctionHook{},
 		"ortb2blocking": fakeRawAuctionHook{},
@@ -152,9 +158,9 @@ func TestPlanForRawAuctionStage(t *testing.T) {
 	}{
 		"Account-specific execution plan rewrites default-account execution plan": {
 			givenEndpoint:               "/openrtb2/auction",
-			givenHostPlanData:           hostPlanData,
-			givenDefaultAccountPlanData: defaultAccountPlanData,
-			giveAccountPlanData:         accountPlanData,
+			givenHostPlanData:           []byte(hostPlanData),
+			givenDefaultAccountPlanData: []byte(defaultAccountPlanData),
+			giveAccountPlanData:         []byte(accountPlanData),
 			givenHooks:                  hooks,
 			expectedPlan: Plan[hookstage.RawAuction]{
 				// first group from host-level plan
@@ -177,7 +183,7 @@ func TestPlanForRawAuctionStage(t *testing.T) {
 			givenEndpoint:               "/openrtb2/auction",
 			givenHostPlanData:           []byte(`{}`),
 			givenDefaultAccountPlanData: []byte(`{}`),
-			giveAccountPlanData:         accountPlanData,
+			giveAccountPlanData:         []byte(accountPlanData),
 			givenHooks:                  hooks,
 			expectedPlan: Plan[hookstage.RawAuction]{
 				Group[hookstage.RawAuction]{
@@ -190,8 +196,8 @@ func TestPlanForRawAuctionStage(t *testing.T) {
 		},
 		"Works with empty account-specific execution plan": {
 			givenEndpoint:               "/openrtb2/auction",
-			givenHostPlanData:           hostPlanData,
-			givenDefaultAccountPlanData: defaultAccountPlanData,
+			givenHostPlanData:           []byte(hostPlanData),
+			givenDefaultAccountPlanData: []byte(defaultAccountPlanData),
 			giveAccountPlanData:         []byte(`{}`),
 			givenHooks:                  hooks,
 			expectedPlan: Plan[hookstage.RawAuction]{
@@ -235,9 +241,13 @@ func TestPlanForRawAuctionStage(t *testing.T) {
 }
 
 func TestPlanForProcessedAuctionStage(t *testing.T) {
-	hostPlanData := []byte(`{"endpoints":{"/openrtb2/auction":{"stages":{"processed-auction":{"groups":[{"timeout":5,"hook_sequence":[{"module_code":"foobar","hook_impl_code":"foo"}]}]}}}}}`)
-	defaultAccountPlanData := []byte(`{"endpoints": {"/openrtb2/auction": {"stages": {"processed-auction": {"groups": [{"timeout": 10, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "bar"}, {"module_code": "ortb2blocking", "hook_impl_code": "block_request"}]}, {"timeout": 5, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "foo"}]}]}}}, "/openrtb2/amp": {"stages": {"entrypoint": {"groups": [{"timeout": 5, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "foo"}]}]}}}}}`)
-	accountPlanData := []byte(`{"execution_plan": {"endpoints": {"/openrtb2/auction": {"stages": {"processed-auction": {"groups": [{"timeout": 15, "hook_sequence": [{"module_code": "prebid", "hook_impl_code": "baz"}]}]}}}}}}`)
+	const group1 string = `{"timeout":  5, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "foo"}]}`
+	const group2 string = `{"timeout": 10, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "bar"}, {"module_code": "ortb2blocking", "hook_impl_code": "block_request"}]}`
+	const group3 string = `{"timeout": 15, "hook_sequence": [{"module_code": "prebid", "hook_impl_code": "baz"}]}`
+	const hostPlanData string = `{"endpoints": {"/openrtb2/auction": {"stages": {"processed-auction": {"groups": [` + group1 + `]}}}}}`
+	const defaultAccountPlanData string = `{"endpoints": {"/openrtb2/auction": {"stages": {"processed-auction": {"groups": [` + group2 + `,` + group1 + `]}}}, "/openrtb2/amp": {"stages": {"entrypoint": {"groups": [` + group1 + `]}}}}}`
+	const accountPlanData string = `{"execution_plan": {"endpoints": {"/openrtb2/auction": {"stages": {"processed-auction": {"groups": [` + group3 + `]}}}}}}`
+
 	hooks := map[string]interface{}{
 		"foobar":        fakeProcessedAuctionHook{},
 		"ortb2blocking": fakeProcessedAuctionHook{},
@@ -254,9 +264,9 @@ func TestPlanForProcessedAuctionStage(t *testing.T) {
 	}{
 		"Account-specific execution plan rewrites default-account execution plan": {
 			givenEndpoint:               "/openrtb2/auction",
-			givenHostPlanData:           hostPlanData,
-			givenDefaultAccountPlanData: defaultAccountPlanData,
-			giveAccountPlanData:         accountPlanData,
+			givenHostPlanData:           []byte(hostPlanData),
+			givenDefaultAccountPlanData: []byte(defaultAccountPlanData),
+			giveAccountPlanData:         []byte(accountPlanData),
 			givenHooks:                  hooks,
 			expectedPlan: Plan[hookstage.ProcessedAuction]{
 				// first group from host-level plan
@@ -279,7 +289,7 @@ func TestPlanForProcessedAuctionStage(t *testing.T) {
 			givenEndpoint:               "/openrtb2/auction",
 			givenHostPlanData:           []byte(`{}`),
 			givenDefaultAccountPlanData: []byte(`{}`),
-			giveAccountPlanData:         accountPlanData,
+			giveAccountPlanData:         []byte(accountPlanData),
 			givenHooks:                  hooks,
 			expectedPlan: Plan[hookstage.ProcessedAuction]{
 				Group[hookstage.ProcessedAuction]{
@@ -292,8 +302,8 @@ func TestPlanForProcessedAuctionStage(t *testing.T) {
 		},
 		"Works with empty account-specific execution plan": {
 			givenEndpoint:               "/openrtb2/auction",
-			givenHostPlanData:           hostPlanData,
-			givenDefaultAccountPlanData: defaultAccountPlanData,
+			givenHostPlanData:           []byte(hostPlanData),
+			givenDefaultAccountPlanData: []byte(defaultAccountPlanData),
 			giveAccountPlanData:         []byte(`{}`),
 			givenHooks:                  hooks,
 			expectedPlan: Plan[hookstage.ProcessedAuction]{
@@ -337,9 +347,13 @@ func TestPlanForProcessedAuctionStage(t *testing.T) {
 }
 
 func TestPlanForBidderRequestStage(t *testing.T) {
-	hostPlanData := []byte(`{"endpoints":{"/openrtb2/auction":{"stages":{"bidder-request":{"groups":[{"timeout":5,"hook_sequence":[{"module_code":"foobar","hook_impl_code":"foo"}]}]}}}}}`)
-	defaultAccountPlanData := []byte(`{"endpoints": {"/openrtb2/auction": {"stages": {"bidder-request": {"groups": [{"timeout": 10, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "bar"}, {"module_code": "ortb2blocking", "hook_impl_code": "block_request"}]}, {"timeout": 5, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "foo"}]}]}}}, "/openrtb2/amp": {"stages": {"entrypoint": {"groups": [{"timeout": 5, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "foo"}]}]}}}}}`)
-	accountPlanData := []byte(`{"execution_plan": {"endpoints": {"/openrtb2/auction": {"stages": {"bidder-request": {"groups": [{"timeout": 15, "hook_sequence": [{"module_code": "prebid", "hook_impl_code": "baz"}]}]}}}}}}`)
+	const group1 string = `{"timeout":  5, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "foo"}]}`
+	const group2 string = `{"timeout": 10, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "bar"}, {"module_code": "ortb2blocking", "hook_impl_code": "block_request"}]}`
+	const group3 string = `{"timeout": 15, "hook_sequence": [{"module_code": "prebid", "hook_impl_code": "baz"}]}`
+	const hostPlanData string = `{"endpoints": {"/openrtb2/auction": {"stages": {"bidder-request": {"groups": [` + group1 + `]}}}}}`
+	const defaultAccountPlanData string = `{"endpoints": {"/openrtb2/auction": {"stages": {"bidder-request": {"groups": [` + group2 + `,` + group1 + `]}}}, "/openrtb2/amp": {"stages": {"entrypoint": {"groups": [` + group1 + `]}}}}}`
+	const accountPlanData string = `{"execution_plan": {"endpoints": {"/openrtb2/auction": {"stages": {"bidder-request": {"groups": [` + group3 + `]}}}}}}`
+
 	hooks := map[string]interface{}{
 		"foobar":        fakeBidderRequestHook{},
 		"ortb2blocking": fakeBidderRequestHook{},
@@ -356,9 +370,9 @@ func TestPlanForBidderRequestStage(t *testing.T) {
 	}{
 		"Account-specific execution plan rewrites default-account execution plan": {
 			givenEndpoint:               "/openrtb2/auction",
-			givenHostPlanData:           hostPlanData,
-			givenDefaultAccountPlanData: defaultAccountPlanData,
-			giveAccountPlanData:         accountPlanData,
+			givenHostPlanData:           []byte(hostPlanData),
+			givenDefaultAccountPlanData: []byte(defaultAccountPlanData),
+			giveAccountPlanData:         []byte(accountPlanData),
 			givenHooks:                  hooks,
 			expectedPlan: Plan[hookstage.BidderRequest]{
 				// first group from host-level plan
@@ -381,7 +395,7 @@ func TestPlanForBidderRequestStage(t *testing.T) {
 			givenEndpoint:               "/openrtb2/auction",
 			givenHostPlanData:           []byte(`{}`),
 			givenDefaultAccountPlanData: []byte(`{}`),
-			giveAccountPlanData:         accountPlanData,
+			giveAccountPlanData:         []byte(accountPlanData),
 			givenHooks:                  hooks,
 			expectedPlan: Plan[hookstage.BidderRequest]{
 				Group[hookstage.BidderRequest]{
@@ -394,8 +408,8 @@ func TestPlanForBidderRequestStage(t *testing.T) {
 		},
 		"Works with empty account-specific execution plan": {
 			givenEndpoint:               "/openrtb2/auction",
-			givenHostPlanData:           hostPlanData,
-			givenDefaultAccountPlanData: defaultAccountPlanData,
+			givenHostPlanData:           []byte(hostPlanData),
+			givenDefaultAccountPlanData: []byte(defaultAccountPlanData),
 			giveAccountPlanData:         []byte(`{}`),
 			givenHooks:                  hooks,
 			expectedPlan: Plan[hookstage.BidderRequest]{
@@ -439,9 +453,13 @@ func TestPlanForBidderRequestStage(t *testing.T) {
 }
 
 func TestPlanForRawBidderResponseStage(t *testing.T) {
-	hostPlanData := []byte(`{"endpoints":{"/openrtb2/auction":{"stages":{"raw-bidder-response":{"groups":[{"timeout":5,"hook_sequence":[{"module_code":"foobar","hook_impl_code":"foo"}]}]}}}}}`)
-	defaultAccountPlanData := []byte(`{"endpoints": {"/openrtb2/auction": {"stages": {"raw-bidder-response": {"groups": [{"timeout": 10, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "bar"}, {"module_code": "ortb2blocking", "hook_impl_code": "block_request"}]}, {"timeout": 5, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "foo"}]}]}}}, "/openrtb2/amp": {"stages": {"entrypoint": {"groups": [{"timeout": 5, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "foo"}]}]}}}}}`)
-	accountPlanData := []byte(`{"execution_plan": {"endpoints": {"/openrtb2/auction": {"stages": {"raw-bidder-response": {"groups": [{"timeout": 15, "hook_sequence": [{"module_code": "prebid", "hook_impl_code": "baz"}]}]}}}}}}`)
+	const group1 string = `{"timeout":  5, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "foo"}]}`
+	const group2 string = `{"timeout": 10, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "bar"}, {"module_code": "ortb2blocking", "hook_impl_code": "block_request"}]}`
+	const group3 string = `{"timeout": 15, "hook_sequence": [{"module_code": "prebid", "hook_impl_code": "baz"}]}`
+	const hostPlanData string = `{"endpoints": {"/openrtb2/auction": {"stages": {"raw-bidder-response": {"groups": [` + group1 + `]}}}}}`
+	const defaultAccountPlanData string = `{"endpoints": {"/openrtb2/auction": {"stages": {"raw-bidder-response": {"groups": [` + group2 + `,` + group1 + `]}}}, "/openrtb2/amp": {"stages": {"entrypoint": {"groups": [` + group1 + `]}}}}}`
+	const accountPlanData string = `{"execution_plan": {"endpoints": {"/openrtb2/auction": {"stages": {"raw-bidder-response": {"groups": [` + group3 + `]}}}}}}`
+
 	hooks := map[string]interface{}{
 		"foobar":        fakeRawBidderResponseHook{},
 		"ortb2blocking": fakeRawBidderResponseHook{},
@@ -458,9 +476,9 @@ func TestPlanForRawBidderResponseStage(t *testing.T) {
 	}{
 		"Account-specific execution plan rewrites default-account execution plan": {
 			givenEndpoint:               "/openrtb2/auction",
-			givenHostPlanData:           hostPlanData,
-			givenDefaultAccountPlanData: defaultAccountPlanData,
-			giveAccountPlanData:         accountPlanData,
+			givenHostPlanData:           []byte(hostPlanData),
+			givenDefaultAccountPlanData: []byte(defaultAccountPlanData),
+			giveAccountPlanData:         []byte(accountPlanData),
 			givenHooks:                  hooks,
 			expectedPlan: Plan[hookstage.RawBidderResponse]{
 				// first group from host-level plan
@@ -483,7 +501,7 @@ func TestPlanForRawBidderResponseStage(t *testing.T) {
 			givenEndpoint:               "/openrtb2/auction",
 			givenHostPlanData:           []byte(`{}`),
 			givenDefaultAccountPlanData: []byte(`{}`),
-			giveAccountPlanData:         accountPlanData,
+			giveAccountPlanData:         []byte(accountPlanData),
 			givenHooks:                  hooks,
 			expectedPlan: Plan[hookstage.RawBidderResponse]{
 				Group[hookstage.RawBidderResponse]{
@@ -496,8 +514,8 @@ func TestPlanForRawBidderResponseStage(t *testing.T) {
 		},
 		"Works with empty account-specific execution plan": {
 			givenEndpoint:               "/openrtb2/auction",
-			givenHostPlanData:           hostPlanData,
-			givenDefaultAccountPlanData: defaultAccountPlanData,
+			givenHostPlanData:           []byte(hostPlanData),
+			givenDefaultAccountPlanData: []byte(defaultAccountPlanData),
 			giveAccountPlanData:         []byte(`{}`),
 			givenHooks:                  hooks,
 			expectedPlan: Plan[hookstage.RawBidderResponse]{
@@ -541,9 +559,13 @@ func TestPlanForRawBidderResponseStage(t *testing.T) {
 }
 
 func TestPlanForAllProcessedBidResponsesStage(t *testing.T) {
-	hostPlanData := []byte(`{"endpoints":{"/openrtb2/auction":{"stages":{"all-processed-bid-responses":{"groups":[{"timeout":5,"hook_sequence":[{"module_code":"foobar","hook_impl_code":"foo"}]}]}}}}}`)
-	defaultAccountPlanData := []byte(`{"endpoints": {"/openrtb2/auction": {"stages": {"all-processed-bid-responses": {"groups": [{"timeout": 10, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "bar"}, {"module_code": "ortb2blocking", "hook_impl_code": "block_request"}]}, {"timeout": 5, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "foo"}]}]}}}, "/openrtb2/amp": {"stages": {"entrypoint": {"groups": [{"timeout": 5, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "foo"}]}]}}}}}`)
-	accountPlanData := []byte(`{"execution_plan": {"endpoints": {"/openrtb2/auction": {"stages": {"all-processed-bid-responses": {"groups": [{"timeout": 15, "hook_sequence": [{"module_code": "prebid", "hook_impl_code": "baz"}]}]}}}}}}`)
+	const group1 string = `{"timeout":  5, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "foo"}]}`
+	const group2 string = `{"timeout": 10, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "bar"}, {"module_code": "ortb2blocking", "hook_impl_code": "block_request"}]}`
+	const group3 string = `{"timeout": 15, "hook_sequence": [{"module_code": "prebid", "hook_impl_code": "baz"}]}`
+	const hostPlanData string = `{"endpoints": {"/openrtb2/auction": {"stages": {"all-processed-bid-responses": {"groups": [` + group1 + `]}}}}}`
+	const defaultAccountPlanData string = `{"endpoints": {"/openrtb2/auction": {"stages": {"all-processed-bid-responses": {"groups": [` + group2 + `,` + group1 + `]}}}, "/openrtb2/amp": {"stages": {"entrypoint": {"groups": [` + group1 + `]}}}}}`
+	const accountPlanData string = `{"execution_plan": {"endpoints": {"/openrtb2/auction": {"stages": {"all-processed-bid-responses": {"groups": [` + group3 + `]}}}}}}`
+
 	hooks := map[string]interface{}{
 		"foobar":        fakeAllProcessedBidResponsesHook{},
 		"ortb2blocking": fakeAllProcessedBidResponsesHook{},
@@ -560,9 +582,9 @@ func TestPlanForAllProcessedBidResponsesStage(t *testing.T) {
 	}{
 		"Account-specific execution plan rewrites default-account execution plan": {
 			givenEndpoint:               "/openrtb2/auction",
-			givenHostPlanData:           hostPlanData,
-			givenDefaultAccountPlanData: defaultAccountPlanData,
-			giveAccountPlanData:         accountPlanData,
+			givenHostPlanData:           []byte(hostPlanData),
+			givenDefaultAccountPlanData: []byte(defaultAccountPlanData),
+			giveAccountPlanData:         []byte(accountPlanData),
 			givenHooks:                  hooks,
 			expectedPlan: Plan[hookstage.AllProcessedBidResponses]{
 				// first group from host-level plan
@@ -585,7 +607,7 @@ func TestPlanForAllProcessedBidResponsesStage(t *testing.T) {
 			givenEndpoint:               "/openrtb2/auction",
 			givenHostPlanData:           []byte(`{}`),
 			givenDefaultAccountPlanData: []byte(`{}`),
-			giveAccountPlanData:         accountPlanData,
+			giveAccountPlanData:         []byte(accountPlanData),
 			givenHooks:                  hooks,
 			expectedPlan: Plan[hookstage.AllProcessedBidResponses]{
 				Group[hookstage.AllProcessedBidResponses]{
@@ -598,8 +620,8 @@ func TestPlanForAllProcessedBidResponsesStage(t *testing.T) {
 		},
 		"Works with empty account-specific execution plan": {
 			givenEndpoint:               "/openrtb2/auction",
-			givenHostPlanData:           hostPlanData,
-			givenDefaultAccountPlanData: defaultAccountPlanData,
+			givenHostPlanData:           []byte(hostPlanData),
+			givenDefaultAccountPlanData: []byte(defaultAccountPlanData),
 			giveAccountPlanData:         []byte(`{}`),
 			givenHooks:                  hooks,
 			expectedPlan: Plan[hookstage.AllProcessedBidResponses]{
@@ -643,9 +665,13 @@ func TestPlanForAllProcessedBidResponsesStage(t *testing.T) {
 }
 
 func TestPlanForAuctionResponseStage(t *testing.T) {
-	hostPlanData := []byte(`{"endpoints":{"/openrtb2/auction":{"stages":{"auction-response":{"groups":[{"timeout":5,"hook_sequence":[{"module_code":"foobar","hook_impl_code":"foo"}]}]}}}}}`)
-	defaultAccountPlanData := []byte(`{"endpoints": {"/openrtb2/auction": {"stages": {"auction-response": {"groups": [{"timeout": 10, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "bar"}, {"module_code": "ortb2blocking", "hook_impl_code": "block_request"}]}, {"timeout": 5, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "foo"}]}]}}}, "/openrtb2/amp": {"stages": {"entrypoint": {"groups": [{"timeout": 5, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "foo"}]}]}}}}}`)
-	accountPlanData := []byte(`{"execution_plan": {"endpoints": {"/openrtb2/auction": {"stages": {"auction-response": {"groups": [{"timeout": 15, "hook_sequence": [{"module_code": "prebid", "hook_impl_code": "baz"}]}]}}}}}}`)
+	const group1 string = `{"timeout":  5, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "foo"}]}`
+	const group2 string = `{"timeout": 10, "hook_sequence": [{"module_code": "foobar", "hook_impl_code": "bar"}, {"module_code": "ortb2blocking", "hook_impl_code": "block_request"}]}`
+	const group3 string = `{"timeout": 15, "hook_sequence": [{"module_code": "prebid", "hook_impl_code": "baz"}]}`
+	const hostPlanData string = `{"endpoints": {"/openrtb2/auction": {"stages": {"auction-response": {"groups": [` + group1 + `]}}}}}`
+	const defaultAccountPlanData string = `{"endpoints": {"/openrtb2/auction": {"stages": {"auction-response": {"groups": [` + group2 + `,` + group1 + `]}}}, "/openrtb2/amp": {"stages": {"entrypoint": {"groups": [` + group1 + `]}}}}}`
+	const accountPlanData string = `{"execution_plan": {"endpoints": {"/openrtb2/auction": {"stages": {"auction-response": {"groups": [` + group3 + `]}}}}}}`
+
 	hooks := map[string]interface{}{
 		"foobar":        fakeAuctionResponseHook{},
 		"ortb2blocking": fakeAuctionResponseHook{},
@@ -662,9 +688,9 @@ func TestPlanForAuctionResponseStage(t *testing.T) {
 	}{
 		"Account-specific execution plan rewrites default-account execution plan": {
 			givenEndpoint:               "/openrtb2/auction",
-			givenHostPlanData:           hostPlanData,
-			givenDefaultAccountPlanData: defaultAccountPlanData,
-			giveAccountPlanData:         accountPlanData,
+			givenHostPlanData:           []byte(hostPlanData),
+			givenDefaultAccountPlanData: []byte(defaultAccountPlanData),
+			giveAccountPlanData:         []byte(accountPlanData),
 			givenHooks:                  hooks,
 			expectedPlan: Plan[hookstage.AuctionResponse]{
 				// first group from host-level plan
@@ -687,7 +713,7 @@ func TestPlanForAuctionResponseStage(t *testing.T) {
 			givenEndpoint:               "/openrtb2/auction",
 			givenHostPlanData:           []byte(`{}`),
 			givenDefaultAccountPlanData: []byte(`{}`),
-			giveAccountPlanData:         accountPlanData,
+			giveAccountPlanData:         []byte(accountPlanData),
 			givenHooks:                  hooks,
 			expectedPlan: Plan[hookstage.AuctionResponse]{
 				Group[hookstage.AuctionResponse]{
@@ -700,8 +726,8 @@ func TestPlanForAuctionResponseStage(t *testing.T) {
 		},
 		"Works with empty account-specific execution plan": {
 			givenEndpoint:               "/openrtb2/auction",
-			givenHostPlanData:           hostPlanData,
-			givenDefaultAccountPlanData: defaultAccountPlanData,
+			givenHostPlanData:           []byte(hostPlanData),
+			givenDefaultAccountPlanData: []byte(defaultAccountPlanData),
 			giveAccountPlanData:         []byte(`{}`),
 			givenHooks:                  hooks,
 			expectedPlan: Plan[hookstage.AuctionResponse]{
