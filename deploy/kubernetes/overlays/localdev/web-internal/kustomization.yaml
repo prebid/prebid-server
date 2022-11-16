@@ -94,7 +94,7 @@ configMapGenerator:
       - PBS_ADAPTERS_OPERAADS_XAPI_ENDPOINT_US_EAST="http://tpe-prebid-service-mocks.default.svc.cluster.local/operaads_givemeads"
       - PBS_ADAPTERS_OPERAADS_XAPI_ENDPOINT_EU="http://tpe-prebid-service-mocks.default.svc.cluster.local/operaads_givemeads"
       - PBS_ADAPTERS_OPERAADS_XAPI_ENDPOINT_APAC="http://tpe-prebid-service-mocks.default.svc.cluster.local/operaads_givemeads"
-      
+
       # pangle values
       - PBS_ADAPTERS_PANGLE_DISABLED="false"
       - PBS_ADAPTERS_PANGLE_XAPI_ENDPOINT_US_EAST="http://tpe-prebid-service-mocks.default.svc.cluster.local/pangle_givemeads"
@@ -153,6 +153,13 @@ configMapGenerator:
       # unicorn values
       - PBS_ADAPTERS_UNICORN_DISABLED="false"
       - PBS_ADAPTERS_UNICORN_XAPI_ENDPOINT_JP="http://tpe-prebid-service-mocks.default.svc.cluster.local/unicorn_givemeads"
+
+      # yeahmobi values
+      - PBS_ADAPTERS_YEAHMOBI_DISABLED="false"
+      - PBS_ADAPTERS_YEAHMOBI_XAPI_ENDPOINT_US_EAST="http://tpe-prebid-service-mocks.default.svc.cluster.local/yeahmobi_givemeads"
+      - PBS_ADAPTERS_YEAHMOBI_XAPI_ENDPOINT_US_WEST="http://tpe-prebid-service-mocks.default.svc.cluster.local/yeahmobi_givemeads"
+      - PBS_ADAPTERS_YEAHMOBI_XAPI_ENDPOINT_EU="http://tpe-prebid-service-mocks.default.svc.cluster.local/yeahmobi_givemeads"
+      - PBS_ADAPTERS_YEAHMOBI_XAPI_ENDPOINT_APAC="http://tpe-prebid-service-mocks.default.svc.cluster.local/yeahmobi_givemeads"
 
       # youappi values
       - PBS_ADAPTERS_YOUAPPI_DISABLED="false"

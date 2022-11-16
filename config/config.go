@@ -1121,6 +1121,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.taurusx.endpoint", "https://tapjoy.rtb.rtblab.net/tapjoy/bid")
 	v.SetDefault("adapters.unicorn.disabled", true)
 	v.SetDefault("adapters.unicorn.endpoint", "https://ds-staging.uncn.jp/tj/0/bid.json")
+	v.SetDefault("adapters.yeahmobi.disabled", true)
+	v.SetDefault("adapters.yeahmobi.endpoint", "https://bid.yeahtargeter.com/tapjoy/bid")
 	v.SetDefault("adapters.youappi.disabled", true)
 	v.SetDefault("adapters.youappi.endpoint", "https://bidder.dsp.youappi.com/tapjoy")
 	// tjx adapters end

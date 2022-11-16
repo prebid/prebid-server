@@ -132,7 +132,6 @@ import (
 	"github.com/prebid/prebid-server/adapters/visx"
 	"github.com/prebid/prebid-server/adapters/vrtcal"
 	"github.com/prebid/prebid-server/adapters/yahoossp"
-	"github.com/prebid/prebid-server/adapters/yeahmobi"
 	"github.com/prebid/prebid-server/adapters/yieldlab"
 	"github.com/prebid/prebid-server/adapters/yieldmo"
 	"github.com/prebid/prebid-server/adapters/yieldone"
@@ -160,6 +159,7 @@ import (
 	tapjoy "github.com/prebid/prebid-server/adapters/tjx_tapjoy"
 	taurusx "github.com/prebid/prebid-server/adapters/tjx_taurusx"
 	unicorn "github.com/prebid/prebid-server/adapters/tjx_unicorn"
+	yeahmobi "github.com/prebid/prebid-server/adapters/tjx_yeahmobi"
 	youappi "github.com/prebid/prebid-server/adapters/tjx_youappi"
 )
 
