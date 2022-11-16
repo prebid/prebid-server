@@ -7,9 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const sampleQueryTemplate = "SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in $REQUEST_ID_LIST UNION ALL SELECT id, impData, 'imp' as type FROM stored_requests WHERE id in $IMP_ID_LIST"
-const sampleResponsesQueryTemplate = "SELECT id, responseData, 'response' as type FROM stored_responses WHERE id in $ID_LIST"
-
 func TestInMemoryCacheValidationStoredRequests(t *testing.T) {
 	assertNoErrs(t, (&InMemoryCache{
 		Type: "unbounded",
