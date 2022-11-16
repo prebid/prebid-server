@@ -1173,6 +1173,7 @@ func migrateConfigDatabaseConnection(v *viper.Viper) {
 	queryParamMigrations := struct {
 		RequestIdList QueryParamMigration
 		ImpIdList     QueryParamMigration
+		IdList        QueryParamMigration
 		LastUpdated   QueryParamMigration
 	}{
 		RequestIdList: QueryParamMigration{
@@ -1183,6 +1184,10 @@ func migrateConfigDatabaseConnection(v *viper.Viper) {
 			old: "%IMP_ID_LIST%",
 			new: "$IMP_ID_LIST",
 		},
+		IdList: QueryParamMigration{
+			old: "%ID_LIST%",
+			new: "$ID_LIST",
+		},
 		LastUpdated: QueryParamMigration{
 			old: "$1",
 			new: "$LAST_UPDATED",
@@ -1192,11 +1197,11 @@ func migrateConfigDatabaseConnection(v *viper.Viper) {
 	queryMigrations := []QueryMigration{
 		{
 			name:   "fetcher.query",
-			params: []QueryParamMigration{queryParamMigrations.RequestIdList, queryParamMigrations.ImpIdList},
+			params: []QueryParamMigration{queryParamMigrations.RequestIdList, queryParamMigrations.ImpIdList, queryParamMigrations.IdList},
 		},
 		{
 			name:   "fetcher.amp_query",
-			params: []QueryParamMigration{queryParamMigrations.RequestIdList, queryParamMigrations.ImpIdList},
+			params: []QueryParamMigration{queryParamMigrations.RequestIdList, queryParamMigrations.ImpIdList, queryParamMigrations.IdList},
 		},
 		{
 			name:   "poll_for_updates.query",

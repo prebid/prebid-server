@@ -2194,24 +2194,54 @@ func TestMigrateConfigDatabaseQueryParams(t *testing.T) {
     stored_requests:
       postgres:
         fetcher:
-          query: "SELECT * FROM Table1 WHERE id in (%REQUEST_ID_LIST%) UNION ALL SELECT * FROM Table2 WHERE id in (%IMP_ID_LIST%)"
-          amp_query: "SELECT * FROM Table1 WHERE id in (%REQUEST_ID_LIST%) UNION ALL SELECT * FROM Table2 WHERE id in (%IMP_ID_LIST%)"
+          query:
+            SELECT * FROM Table1 WHERE id in (%REQUEST_ID_LIST%)
+            UNION ALL
+            SELECT * FROM Table2 WHERE id in (%IMP_ID_LIST%)
+            UNION ALL
+            SELECT * FROM Table3 WHERE id in (%ID_LIST%)
+          amp_query:
+            SELECT * FROM Table1 WHERE id in (%REQUEST_ID_LIST%)
+            UNION ALL
+            SELECT * FROM Table2 WHERE id in (%IMP_ID_LIST%)
+            UNION ALL
+            SELECT * FROM Table3 WHERE id in (%ID_LIST%)
         poll_for_updates:
           query: "SELECT * FROM Table1 WHERE last_updated > $1 UNION ALL SELECT * FROM Table2 WHERE last_updated > $1"
           amp_query: "SELECT * FROM Table1 WHERE last_updated > $1 UNION ALL SELECT * FROM Table2 WHERE last_updated > $1"
     stored_video_req:
       postgres:
         fetcher:
-          query: "SELECT * FROM Table1 WHERE id in (%REQUEST_ID_LIST%) UNION ALL SELECT * FROM Table2 WHERE id in (%IMP_ID_LIST%)"
-          amp_query: "SELECT * FROM Table1 WHERE id in (%REQUEST_ID_LIST%) UNION ALL SELECT * FROM Table2 WHERE id in (%IMP_ID_LIST%)"
+          query:
+            SELECT * FROM Table1 WHERE id in (%REQUEST_ID_LIST%)
+            UNION ALL
+            SELECT * FROM Table2 WHERE id in (%IMP_ID_LIST%)
+            UNION ALL
+            SELECT * FROM Table3 WHERE id in (%ID_LIST%)
+          amp_query:
+            SELECT * FROM Table1 WHERE id in (%REQUEST_ID_LIST%)
+            UNION ALL
+            SELECT * FROM Table2 WHERE id in (%IMP_ID_LIST%)
+            UNION ALL
+            SELECT * FROM Table3 WHERE id in (%ID_LIST%)
         poll_for_updates:
           query: "SELECT * FROM Table1 WHERE last_updated > $1 UNION ALL SELECT * FROM Table2 WHERE last_updated > $1"
           amp_query: "SELECT * FROM Table1 WHERE last_updated > $1 UNION ALL SELECT * FROM Table2 WHERE last_updated > $1"
     stored_responses:
       postgres:
         fetcher:
-          query: "SELECT * FROM Table1 WHERE id in (%REQUEST_ID_LIST%) UNION ALL SELECT * FROM Table2 WHERE id in (%IMP_ID_LIST%)"
-          amp_query: "SELECT * FROM Table1 WHERE id in (%REQUEST_ID_LIST%) UNION ALL SELECT * FROM Table2 WHERE id in (%IMP_ID_LIST%)"
+          query: 
+            SELECT * FROM Table1 WHERE id in (%REQUEST_ID_LIST%)
+            UNION ALL
+            SELECT * FROM Table2 WHERE id in (%IMP_ID_LIST%)
+            UNION ALL
+            SELECT * FROM Table3 WHERE id in (%ID_LIST%)
+          amp_query:
+            SELECT * FROM Table1 WHERE id in (%REQUEST_ID_LIST%)
+            UNION ALL
+            SELECT * FROM Table2 WHERE id in (%IMP_ID_LIST%)
+            UNION ALL
+            SELECT * FROM Table3 WHERE id in (%ID_LIST%)
         poll_for_updates:
           query: "SELECT * FROM Table1 WHERE last_updated > $1 UNION ALL SELECT * FROM Table2 WHERE last_updated > $1"
           amp_query: "SELECT * FROM Table1 WHERE last_updated > $1 UNION ALL SELECT * FROM Table2 WHERE last_updated > $1"
@@ -2223,8 +2253,16 @@ func TestMigrateConfigDatabaseQueryParams(t *testing.T) {
 		poll_for_updates_query     string
 		poll_for_updates_amp_query string
 	}{
-		fetcher_query:              "SELECT * FROM Table1 WHERE id in ($REQUEST_ID_LIST) UNION ALL SELECT * FROM Table2 WHERE id in ($IMP_ID_LIST)",
-		fetcher_amp_query:          "SELECT * FROM Table1 WHERE id in ($REQUEST_ID_LIST) UNION ALL SELECT * FROM Table2 WHERE id in ($IMP_ID_LIST)",
+		fetcher_query: "SELECT * FROM Table1 WHERE id in ($REQUEST_ID_LIST) " +
+			"UNION ALL " +
+			"SELECT * FROM Table2 WHERE id in ($IMP_ID_LIST) " +
+			"UNION ALL " +
+			"SELECT * FROM Table3 WHERE id in ($ID_LIST)",
+		fetcher_amp_query: "SELECT * FROM Table1 WHERE id in ($REQUEST_ID_LIST) " +
+			"UNION ALL " +
+			"SELECT * FROM Table2 WHERE id in ($IMP_ID_LIST) " +
+			"UNION ALL " +
+			"SELECT * FROM Table3 WHERE id in ($ID_LIST)",
 		poll_for_updates_query:     "SELECT * FROM Table1 WHERE last_updated > $LAST_UPDATED UNION ALL SELECT * FROM Table2 WHERE last_updated > $LAST_UPDATED",
 		poll_for_updates_amp_query: "SELECT * FROM Table1 WHERE last_updated > $LAST_UPDATED UNION ALL SELECT * FROM Table2 WHERE last_updated > $LAST_UPDATED",
 	}
