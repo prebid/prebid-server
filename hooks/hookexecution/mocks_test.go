@@ -9,7 +9,7 @@ import (
 
 type mockUpdateHeaderEntrypointHook struct{}
 
-func (e mockUpdateHeaderEntrypointHook) HandleEntrypointHook(_ context.Context, _ *hookstage.ModuleContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+func (e mockUpdateHeaderEntrypointHook) HandleEntrypointHook(_ context.Context, _ hookstage.ModuleContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
 	c := &hookstage.ChangeSet[hookstage.EntrypointPayload]{}
 	c.AddMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
 		payload.Request.Header.Add("foo", "bar")
@@ -21,7 +21,7 @@ func (e mockUpdateHeaderEntrypointHook) HandleEntrypointHook(_ context.Context, 
 
 type mockUpdateQueryEntrypointHook struct{}
 
-func (e mockUpdateQueryEntrypointHook) HandleEntrypointHook(_ context.Context, _ *hookstage.ModuleContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+func (e mockUpdateQueryEntrypointHook) HandleEntrypointHook(_ context.Context, _ hookstage.ModuleContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
 	c := &hookstage.ChangeSet[hookstage.EntrypointPayload]{}
 	c.AddMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
 		params := payload.Request.URL.Query()
@@ -35,7 +35,7 @@ func (e mockUpdateQueryEntrypointHook) HandleEntrypointHook(_ context.Context, _
 
 type mockUpdateBodyHook struct{}
 
-func (e mockUpdateBodyHook) HandleEntrypointHook(_ context.Context, _ *hookstage.ModuleContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+func (e mockUpdateBodyHook) HandleEntrypointHook(_ context.Context, _ hookstage.ModuleContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
 	c := &hookstage.ChangeSet[hookstage.EntrypointPayload]{}
 	c.AddMutation(
 		func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
@@ -52,7 +52,7 @@ func (e mockUpdateBodyHook) HandleEntrypointHook(_ context.Context, _ *hookstage
 	return hookstage.HookResult[hookstage.EntrypointPayload]{ChangeSet: c}, nil
 }
 
-func (e mockUpdateBodyHook) HandleRawAuctionHook(_ context.Context, _ *hookstage.ModuleContext, _ hookstage.RawAuctionPayload) (hookstage.HookResult[hookstage.RawAuctionPayload], error) {
+func (e mockUpdateBodyHook) HandleRawAuctionHook(_ context.Context, _ hookstage.ModuleContext, _ hookstage.RawAuctionPayload) (hookstage.HookResult[hookstage.RawAuctionPayload], error) {
 	c := &hookstage.ChangeSet[hookstage.RawAuctionPayload]{}
 	c.AddMutation(
 		func(payload hookstage.RawAuctionPayload) (hookstage.RawAuctionPayload, error) {
@@ -71,21 +71,21 @@ func (e mockUpdateBodyHook) HandleRawAuctionHook(_ context.Context, _ *hookstage
 
 type mockRejectHook struct{}
 
-func (e mockRejectHook) HandleEntrypointHook(_ context.Context, _ *hookstage.ModuleContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+func (e mockRejectHook) HandleEntrypointHook(_ context.Context, _ hookstage.ModuleContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
 	return hookstage.HookResult[hookstage.EntrypointPayload]{Reject: true}, nil
 }
 
-func (e mockRejectHook) HandleRawAuctionHook(_ context.Context, _ *hookstage.ModuleContext, _ hookstage.RawAuctionPayload) (hookstage.HookResult[hookstage.RawAuctionPayload], error) {
+func (e mockRejectHook) HandleRawAuctionHook(_ context.Context, _ hookstage.ModuleContext, _ hookstage.RawAuctionPayload) (hookstage.HookResult[hookstage.RawAuctionPayload], error) {
 	return hookstage.HookResult[hookstage.RawAuctionPayload]{Reject: true}, nil
 }
 
-func (e mockRejectHook) HandleBidderRequestHook(_ context.Context, _ *hookstage.ModuleContext, _ hookstage.BidderRequestPayload) (hookstage.HookResult[hookstage.BidderRequestPayload], error) {
+func (e mockRejectHook) HandleBidderRequestHook(_ context.Context, _ hookstage.ModuleContext, _ hookstage.BidderRequestPayload) (hookstage.HookResult[hookstage.BidderRequestPayload], error) {
 	return hookstage.HookResult[hookstage.BidderRequestPayload]{Reject: true}, nil
 }
 
 type mockTimeoutHook struct{}
 
-func (e mockTimeoutHook) HandleEntrypointHook(_ context.Context, _ *hookstage.ModuleContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+func (e mockTimeoutHook) HandleEntrypointHook(_ context.Context, _ hookstage.ModuleContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
 	time.Sleep(2 * time.Millisecond)
 	c := &hookstage.ChangeSet[hookstage.EntrypointPayload]{}
 	c.AddMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
@@ -98,7 +98,7 @@ func (e mockTimeoutHook) HandleEntrypointHook(_ context.Context, _ *hookstage.Mo
 	return hookstage.HookResult[hookstage.EntrypointPayload]{ChangeSet: c}, nil
 }
 
-func (e mockTimeoutHook) HandleRawAuctionHook(_ context.Context, _ *hookstage.ModuleContext, _ hookstage.RawAuctionPayload) (hookstage.HookResult[hookstage.RawAuctionPayload], error) {
+func (e mockTimeoutHook) HandleRawAuctionHook(_ context.Context, _ hookstage.ModuleContext, _ hookstage.RawAuctionPayload) (hookstage.HookResult[hookstage.RawAuctionPayload], error) {
 	time.Sleep(2 * time.Millisecond)
 	c := &hookstage.ChangeSet[hookstage.RawAuctionPayload]{}
 	c.AddMutation(func(payload hookstage.RawAuctionPayload) (hookstage.RawAuctionPayload, error) {
@@ -109,7 +109,7 @@ func (e mockTimeoutHook) HandleRawAuctionHook(_ context.Context, _ *hookstage.Mo
 	return hookstage.HookResult[hookstage.RawAuctionPayload]{ChangeSet: c}, nil
 }
 
-func (e mockTimeoutHook) HandleBidderRequestHook(_ context.Context, _ *hookstage.ModuleContext, _ hookstage.BidderRequestPayload) (hookstage.HookResult[hookstage.BidderRequestPayload], error) {
+func (e mockTimeoutHook) HandleBidderRequestHook(_ context.Context, _ hookstage.ModuleContext, _ hookstage.BidderRequestPayload) (hookstage.HookResult[hookstage.BidderRequestPayload], error) {
 	time.Sleep(2 * time.Millisecond)
 	c := &hookstage.ChangeSet[hookstage.BidderRequestPayload]{}
 	c.AddMutation(func(payload hookstage.BidderRequestPayload) (hookstage.BidderRequestPayload, error) {
@@ -122,41 +122,41 @@ func (e mockTimeoutHook) HandleBidderRequestHook(_ context.Context, _ *hookstage
 
 type mockModuleContextHook1 struct{}
 
-func (e mockModuleContextHook1) HandleEntrypointHook(_ context.Context, mctx *hookstage.ModuleContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+func (e mockModuleContextHook1) HandleEntrypointHook(_ context.Context, mctx hookstage.ModuleContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
 	mctx.Ctx = map[string]interface{}{"some-ctx-1": "some-ctx-1"}
-	return hookstage.HookResult[hookstage.EntrypointPayload]{}, nil
+	return hookstage.HookResult[hookstage.EntrypointPayload]{ModuleContext: mctx}, nil
 }
 
-func (e mockModuleContextHook1) HandleRawAuctionHook(_ context.Context, mctx *hookstage.ModuleContext, _ hookstage.RawAuctionPayload) (hookstage.HookResult[hookstage.RawAuctionPayload], error) {
+func (e mockModuleContextHook1) HandleRawAuctionHook(_ context.Context, mctx hookstage.ModuleContext, _ hookstage.RawAuctionPayload) (hookstage.HookResult[hookstage.RawAuctionPayload], error) {
 	mctx.Ctx = map[string]interface{}{"some-ctx-1": "some-ctx-1"}
-	return hookstage.HookResult[hookstage.RawAuctionPayload]{}, nil
+	return hookstage.HookResult[hookstage.RawAuctionPayload]{ModuleContext: mctx}, nil
 }
 
-func (e mockModuleContextHook1) HandleBidderRequestHook(_ context.Context, mctx *hookstage.ModuleContext, _ hookstage.BidderRequestPayload) (hookstage.HookResult[hookstage.BidderRequestPayload], error) {
+func (e mockModuleContextHook1) HandleBidderRequestHook(_ context.Context, mctx hookstage.ModuleContext, _ hookstage.BidderRequestPayload) (hookstage.HookResult[hookstage.BidderRequestPayload], error) {
 	mctx.Ctx = map[string]interface{}{"some-ctx-1": "some-ctx-1"}
-	return hookstage.HookResult[hookstage.BidderRequestPayload]{}, nil
+	return hookstage.HookResult[hookstage.BidderRequestPayload]{ModuleContext: mctx}, nil
 }
 
 type mockModuleContextHook2 struct{}
 
-func (e mockModuleContextHook2) HandleEntrypointHook(_ context.Context, mctx *hookstage.ModuleContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+func (e mockModuleContextHook2) HandleEntrypointHook(_ context.Context, mctx hookstage.ModuleContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
 	mctx.Ctx = map[string]interface{}{"some-ctx-2": "some-ctx-2"}
-	return hookstage.HookResult[hookstage.EntrypointPayload]{}, nil
+	return hookstage.HookResult[hookstage.EntrypointPayload]{ModuleContext: mctx}, nil
 }
 
-func (e mockModuleContextHook2) HandleRawAuctionHook(_ context.Context, mctx *hookstage.ModuleContext, _ hookstage.RawAuctionPayload) (hookstage.HookResult[hookstage.RawAuctionPayload], error) {
+func (e mockModuleContextHook2) HandleRawAuctionHook(_ context.Context, mctx hookstage.ModuleContext, _ hookstage.RawAuctionPayload) (hookstage.HookResult[hookstage.RawAuctionPayload], error) {
 	mctx.Ctx = map[string]interface{}{"some-ctx-2": "some-ctx-2"}
-	return hookstage.HookResult[hookstage.RawAuctionPayload]{}, nil
+	return hookstage.HookResult[hookstage.RawAuctionPayload]{ModuleContext: mctx}, nil
 }
 
-func (e mockModuleContextHook2) HandleBidderRequestHook(_ context.Context, mctx *hookstage.ModuleContext, _ hookstage.BidderRequestPayload) (hookstage.HookResult[hookstage.BidderRequestPayload], error) {
+func (e mockModuleContextHook2) HandleBidderRequestHook(_ context.Context, mctx hookstage.ModuleContext, _ hookstage.BidderRequestPayload) (hookstage.HookResult[hookstage.BidderRequestPayload], error) {
 	mctx.Ctx = map[string]interface{}{"some-ctx-2": "some-ctx-2"}
-	return hookstage.HookResult[hookstage.BidderRequestPayload]{}, nil
+	return hookstage.HookResult[hookstage.BidderRequestPayload]{ModuleContext: mctx}, nil
 }
 
 type mockUpdateBidRequestHook struct{}
 
-func (e mockUpdateBidRequestHook) HandleBidderRequestHook(_ context.Context, _ *hookstage.ModuleContext, _ hookstage.BidderRequestPayload) (hookstage.HookResult[hookstage.BidderRequestPayload], error) {
+func (e mockUpdateBidRequestHook) HandleBidderRequestHook(_ context.Context, _ hookstage.ModuleContext, _ hookstage.BidderRequestPayload) (hookstage.HookResult[hookstage.BidderRequestPayload], error) {
 	c := &hookstage.ChangeSet[hookstage.BidderRequestPayload]{}
 	c.AddMutation(
 		func(payload hookstage.BidderRequestPayload) (hookstage.BidderRequestPayload, error) {

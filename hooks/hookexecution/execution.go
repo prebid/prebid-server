@@ -37,7 +37,7 @@ func (e RejectError) Error() string {
 
 type hookHandler[H any, P any] func(
 	context.Context,
-	*hookstage.ModuleContext,
+	hookstage.ModuleContext,
 	H,
 	P,
 ) (hookstage.HookResult[P], error)
@@ -55,22 +55,25 @@ func executeStage[H any, P any](
 	payload P,
 	hookHandler hookHandler[H, P],
 	metricEngine metrics.MetricsEngine,
-) (StageOutcome, P, *RejectError) {
+) (StageOutcome, P, hookstage.StageModuleContext, *RejectError) {
 	stageOutcome := StageOutcome{}
 	stageOutcome.Groups = make([]GroupOutcome, 0, len(plan))
+	stageModuleCtx := hookstage.StageModuleContext{}
+	stageModuleCtx.GroupCtx = make([]hookstage.GroupModuleContext, 0, len(plan))
 
 	for _, group := range plan {
-		groupOutcome, newPayload, reject := executeGroup(invocationCtx, group, payload, hookHandler, metricEngine)
+		groupOutcome, newPayload, moduleContexts, reject := executeGroup(invocationCtx, group, payload, hookHandler, metricEngine)
 		stageOutcome.ExecutionTimeMillis += groupOutcome.ExecutionTimeMillis
 		stageOutcome.Groups = append(stageOutcome.Groups, groupOutcome)
+		stageModuleCtx.GroupCtx = append(stageModuleCtx.GroupCtx, moduleContexts)
 		if reject != nil {
-			return stageOutcome, payload, reject
+			return stageOutcome, payload, stageModuleCtx, reject
 		}
 
 		payload = newPayload
 	}
 
-	return stageOutcome, payload, nil
+	return stageOutcome, payload, stageModuleCtx, nil
 }
 
 func executeGroup[H any, P any](
@@ -79,17 +82,18 @@ func executeGroup[H any, P any](
 	payload P,
 	hookHandler hookHandler[H, P],
 	metricEngine metrics.MetricsEngine,
-) (GroupOutcome, P, *RejectError) {
+) (GroupOutcome, P, hookstage.GroupModuleContext, *RejectError) {
 	var wg sync.WaitGroup
 	done := make(chan struct{})
 	resp := make(chan HookResponse[P])
 
 	for _, hook := range group.Hooks {
+		mCtx := invocationCtx.GetModuleContext(hook.Module)
 		wg.Add(1)
-		go func(hw hooks.HookWrapper[H], moduleCtx *hookstage.ModuleContext) {
+		go func(hw hooks.HookWrapper[H], moduleCtx hookstage.ModuleContext) {
 			defer wg.Done()
 			executeHook(moduleCtx, hw, payload, hookHandler, group.Timeout, resp, done)
-		}(hook, invocationCtx.ModuleContextFor(hook.Module))
+		}(hook, mCtx)
 	}
 
 	go func() {
@@ -103,7 +107,7 @@ func executeGroup[H any, P any](
 }
 
 func executeHook[H any, P any](
-	moduleCtx *hookstage.ModuleContext,
+	moduleCtx hookstage.ModuleContext,
 	hw hooks.HookWrapper[H],
 	payload P,
 	hookHandler hookHandler[H, P],
@@ -170,9 +174,10 @@ func processHookResponses[P any](
 	hookResponses []HookResponse[P],
 	payload P,
 	metricEngine metrics.MetricsEngine,
-) (GroupOutcome, P, *RejectError) {
+) (GroupOutcome, P, hookstage.GroupModuleContext, *RejectError) {
 	groupOutcome := GroupOutcome{}
 	groupOutcome.InvocationResults = make([]HookOutcome, 0, len(hookResponses))
+	moduleContexts := make(map[string]hookstage.ModuleContext, len(hookResponses))
 
 	for i, r := range hookResponses {
 		labels := metrics.ModuleLabels{
@@ -188,6 +193,7 @@ func processHookResponses[P any](
 			AnalyticsTags: r.Result.AnalyticsTags,
 			ExecutionTime: ExecutionTime{r.ExecutionTime},
 		})
+		moduleContexts[r.HookID.ModuleCode] = r.Result.ModuleContext
 
 		metricEngine.RecordModuleCalled(labels)
 		metricEngine.RecordModuleDuration(labels, r.ExecutionTime)
@@ -216,7 +222,7 @@ func processHookResponses[P any](
 			metricEngine.RecordModuleSuccessRejected(labels)
 			groupOutcome.InvocationResults[i].Action = ActionReject
 			groupOutcome.InvocationResults[i].Errors = append(groupOutcome.InvocationResults[i].Errors, reject.Error())
-			return groupOutcome, payload, reject
+			return groupOutcome, payload, moduleContexts, reject
 		}
 
 		if r.Result.ChangeSet == nil || len(r.Result.ChangeSet.Mutations()) == 0 {
@@ -249,5 +255,5 @@ func processHookResponses[P any](
 		metricEngine.RecordModuleSuccessUpdated(labels)
 	}
 
-	return groupOutcome, payload, nil
+	return groupOutcome, payload, moduleContexts, nil
 }

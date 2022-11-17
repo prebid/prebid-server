@@ -3,6 +3,7 @@ package hookexecution
 import (
 	"context"
 	"net/http"
+	"sync"
 
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
@@ -39,6 +40,9 @@ type HookExecutor struct {
 	PlanBuilder   hooks.ExecutionPlanBuilder
 	MetricEngine  metrics.MetricsEngine
 	stageOutcomes []StageOutcome
+
+	// Mutex needed for BidderRequest and RawBidderResponse Stages as they are run in several goroutines
+	mu sync.Mutex
 }
 
 func (executor *HookExecutor) SetAccount(account *config.Account) {
@@ -58,7 +62,7 @@ func (executor *HookExecutor) ExecuteEntrypointStage(req *http.Request, body []b
 
 	handler := func(
 		ctx context.Context,
-		moduleCtx *hookstage.ModuleContext,
+		moduleCtx hookstage.ModuleContext,
 		hook hookstage.Entrypoint,
 		payload hookstage.EntrypointPayload,
 	) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
@@ -67,10 +71,15 @@ func (executor *HookExecutor) ExecuteEntrypointStage(req *http.Request, body []b
 
 	executor.InvocationCtx.Stage = hooks.StageEntrypoint
 	payload := hookstage.EntrypointPayload{Request: req, Body: body}
-	stageOutcome, payload, reject := executeStage(executor.InvocationCtx, plan, payload, handler, executor.MetricEngine)
+	stageOutcome, payload, stageModuleContexts, reject := executeStage(executor.InvocationCtx, plan, payload, handler, executor.MetricEngine)
 	stageOutcome.Entity = hookstage.EntityHttpRequest
 	stageOutcome.Stage = hooks.StageEntrypoint
 
+	for _, mcs := range stageModuleContexts.GroupCtx {
+		for k, mc := range mcs {
+			executor.InvocationCtx.SetModuleContext(k, mc)
+		}
+	}
 	executor.stageOutcomes = append(executor.stageOutcomes, stageOutcome)
 
 	return payload.Body, reject
@@ -84,7 +93,7 @@ func (executor *HookExecutor) ExecuteRawAuctionStage(requestBody []byte) ([]byte
 
 	handler := func(
 		ctx context.Context,
-		moduleCtx *hookstage.ModuleContext,
+		moduleCtx hookstage.ModuleContext,
 		hook hookstage.RawAuction,
 		payload hookstage.RawAuctionPayload,
 	) (hookstage.HookResult[hookstage.RawAuctionPayload], error) {
@@ -93,10 +102,15 @@ func (executor *HookExecutor) ExecuteRawAuctionStage(requestBody []byte) ([]byte
 
 	executor.InvocationCtx.Stage = hooks.StageRawAuction
 	payload := hookstage.RawAuctionPayload(requestBody)
-	stageOutcome, payload, reject := executeStage(executor.InvocationCtx, plan, payload, handler, executor.MetricEngine)
+	stageOutcome, payload, stageModuleContexts, reject := executeStage(executor.InvocationCtx, plan, payload, handler, executor.MetricEngine)
 	stageOutcome.Entity = hookstage.EntityAuctionRequest
 	stageOutcome.Stage = hooks.StageRawAuction
 
+	for _, mcs := range stageModuleContexts.GroupCtx {
+		for k, mc := range mcs {
+			executor.InvocationCtx.SetModuleContext(k, mc)
+		}
+	}
 	executor.stageOutcomes = append(executor.stageOutcomes, stageOutcome)
 
 	return payload, reject
@@ -115,7 +129,7 @@ func (executor *HookExecutor) ExecuteBidderRequestStage(req *openrtb2.BidRequest
 
 	handler := func(
 		ctx context.Context,
-		moduleCtx *hookstage.ModuleContext,
+		moduleCtx hookstage.ModuleContext,
 		hook hookstage.BidderRequest,
 		payload hookstage.BidderRequestPayload,
 	) (hookstage.HookResult[hookstage.BidderRequestPayload], error) {
@@ -124,10 +138,17 @@ func (executor *HookExecutor) ExecuteBidderRequestStage(req *openrtb2.BidRequest
 
 	executor.InvocationCtx.Stage = hooks.StageBidderRequest
 	payload := hookstage.BidderRequestPayload{BidRequest: req}
-	stageOutcome, _, reject := executeStage(executor.InvocationCtx, plan, payload, handler, executor.MetricEngine)
+	stageOutcome, _, stageModuleContexts, reject := executeStage(executor.InvocationCtx, plan, payload, handler, executor.MetricEngine)
 	stageOutcome.Entity = hookstage.Entity(bidder)
 	stageOutcome.Stage = hooks.StageBidderRequest
 
+	executor.mu.Lock()
+	defer executor.mu.Unlock()
+	for _, mcs := range stageModuleContexts.GroupCtx {
+		for k, mc := range mcs {
+			executor.InvocationCtx.SetModuleContext(k, mc)
+		}
+	}
 	executor.stageOutcomes = append(executor.stageOutcomes, stageOutcome)
 
 	return reject

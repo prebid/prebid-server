@@ -9,7 +9,7 @@ import (
 type RawBidderResponse interface {
 	HandleRawBidderResponseHook(
 		context.Context,
-		*ModuleContext,
+		ModuleContext,
 		RawBidderResponsePayload,
 	) (HookResult[RawBidderResponsePayload], error)
 }

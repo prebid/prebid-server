@@ -692,12 +692,12 @@ func checkModuleContexts(t *testing.T, exec HookExecutor) {
 		t.Error("some hook groups have not been processed")
 	}
 
-	ctx1 := exec.InvocationCtx.ModuleContextFor("module-1")
+	ctx1 := exec.InvocationCtx.GetModuleContext("module-1")
 	if ctx1.Ctx["some-ctx-1"] != "some-ctx-1" {
 		t.Error("context for module-1 not created")
 	}
 
-	ctx2 := exec.InvocationCtx.ModuleContextFor("module-2")
+	ctx2 := exec.InvocationCtx.GetModuleContext("module-2")
 	if ctx2.Ctx["some-ctx-2"] != "some-ctx-2" {
 		t.Error("context for module-2 not created")
 	}

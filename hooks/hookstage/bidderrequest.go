@@ -9,7 +9,7 @@ import (
 type BidderRequest interface {
 	HandleBidderRequestHook(
 		context.Context,
-		*ModuleContext,
+		ModuleContext,
 		BidderRequestPayload,
 	) (HookResult[BidderRequestPayload], error)
 }

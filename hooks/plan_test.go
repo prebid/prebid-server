@@ -758,7 +758,7 @@ type fakeEntrypointHook struct{}
 
 func (h fakeEntrypointHook) HandleEntrypointHook(
 	_ context.Context,
-	_ *hookstage.ModuleContext,
+	_ hookstage.ModuleContext,
 	_ hookstage.EntrypointPayload,
 ) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
 	return hookstage.HookResult[hookstage.EntrypointPayload]{}, nil
@@ -768,7 +768,7 @@ type fakeRawAuctionHook struct{}
 
 func (f fakeRawAuctionHook) HandleRawAuctionHook(
 	_ context.Context,
-	_ *hookstage.ModuleContext,
+	_ hookstage.ModuleContext,
 	_ hookstage.RawAuctionPayload,
 ) (hookstage.HookResult[hookstage.RawAuctionPayload], error) {
 	return hookstage.HookResult[hookstage.RawAuctionPayload]{}, nil
@@ -778,7 +778,7 @@ type fakeProcessedAuctionHook struct{}
 
 func (f fakeProcessedAuctionHook) HandleProcessedAuctionHook(
 	_ context.Context,
-	_ *hookstage.ModuleContext,
+	_ hookstage.ModuleContext,
 	_ hookstage.ProcessedAuctionPayload,
 ) (hookstage.HookResult[hookstage.ProcessedAuctionPayload], error) {
 	return hookstage.HookResult[hookstage.ProcessedAuctionPayload]{}, nil
@@ -788,7 +788,7 @@ type fakeBidderRequestHook struct{}
 
 func (f fakeBidderRequestHook) HandleBidderRequestHook(
 	_ context.Context,
-	_ *hookstage.ModuleContext,
+	_ hookstage.ModuleContext,
 	_ hookstage.BidderRequestPayload,
 ) (hookstage.HookResult[hookstage.BidderRequestPayload], error) {
 	return hookstage.HookResult[hookstage.BidderRequestPayload]{}, nil
@@ -798,7 +798,7 @@ type fakeRawBidderResponseHook struct{}
 
 func (f fakeRawBidderResponseHook) HandleRawBidderResponseHook(
 	_ context.Context,
-	_ *hookstage.ModuleContext,
+	_ hookstage.ModuleContext,
 	_ hookstage.RawBidderResponsePayload,
 ) (hookstage.HookResult[hookstage.RawBidderResponsePayload], error) {
 	return hookstage.HookResult[hookstage.RawBidderResponsePayload]{}, nil
@@ -808,7 +808,7 @@ type fakeAllProcessedBidResponsesHook struct{}
 
 func (f fakeAllProcessedBidResponsesHook) HandleAllProcessedBidResponsesHook(
 	_ context.Context,
-	_ *hookstage.ModuleContext,
+	_ hookstage.ModuleContext,
 	_ hookstage.AllProcessedBidResponsesPayload,
 ) (hookstage.HookResult[hookstage.AllProcessedBidResponsesPayload], error) {
 	return hookstage.HookResult[hookstage.AllProcessedBidResponsesPayload]{}, nil
@@ -818,7 +818,7 @@ type fakeAuctionResponseHook struct{}
 
 func (f fakeAuctionResponseHook) HandleAuctionResponseHook(
 	_ context.Context,
-	_ *hookstage.ModuleContext,
+	_ hookstage.ModuleContext,
 	_ hookstage.AuctionResponsePayload,
 ) (hookstage.HookResult[hookstage.AuctionResponsePayload], error) {
 	return hookstage.HookResult[hookstage.AuctionResponsePayload]{}, nil
