@@ -15,8 +15,8 @@ import (
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb3"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
-	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/prebid/prebid-server/util/uuidutil"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
@@ -75,11 +75,7 @@ func NewAmpEndpoint(
 		IPv6PrivateNetworks: cfg.RequestValidation.IPv6PrivateNetworksParsed,
 	}
 
-	hookExecutor := &hookexecution.HookExecutor{
-		InvocationCtx: &hookstage.InvocationContext{},
-		Endpoint:      hookexecution.EndpointAmp,
-		PlanBuilder:   hookExecutionPlanBuilder,
-	}
+	hookExecutor := hookexecution.NewHookExecutor(hookExecutionPlanBuilder, hookexecution.EndpointAmp, met)
 
 	return httprouter.Handle((&endpointDeps{
 		uuidGenerator,
@@ -159,6 +155,11 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		return
 	}
 
+	if reject := hookexecution.FindReject(errL); reject != nil {
+		rejectAmpRequest(*reject, w, reqWrapper, &labels, &ao, errL)
+		return
+	}
+
 	ao.Request = reqWrapper.BidRequest
 
 	ctx := context.Background()
@@ -228,8 +229,8 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
 	ao.AuctionResponse = response
-
-	if err != nil {
+	reject := hookexecution.FindReject([]error{err})
+	if err != nil && reject == nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
 		glog.Errorf("/openrtb2/amp Critical error: %v", err)
@@ -249,6 +250,42 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		return
 	}
 
+	if reject != nil {
+		rejectAmpRequest(*reject, w, reqWrapper, &labels, &ao, errL)
+		return
+	}
+
+	sendAmpResponse(w, response, reqWrapper, &labels, &ao, errL)
+}
+
+func rejectAmpRequest(
+	reject hookexecution.RejectError,
+	w http.ResponseWriter,
+	reqWrapper *openrtb_ext.RequestWrapper,
+	labels *metrics.Labels,
+	ao *analytics.AmpObject,
+	errs []error,
+) {
+	nbr := openrtb3.NoBidReason(reject.NBR)
+	response := &openrtb2.BidResponse{
+		NBR: &nbr,
+	}
+
+	if ao != nil {
+		ao.AuctionResponse = response
+	}
+
+	sendAmpResponse(w, response, reqWrapper, labels, ao, errs)
+}
+
+func sendAmpResponse(
+	w http.ResponseWriter,
+	response *openrtb2.BidResponse,
+	reqWrapper *openrtb_ext.RequestWrapper,
+	labels *metrics.Labels,
+	ao *analytics.AmpObject,
+	errs []error,
+) {
 	// Need to extract the targeting parameters from the response, as those are all that
 	// go in the AMP response
 	targets := map[string]string{}
@@ -267,8 +304,10 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 					w.WriteHeader(http.StatusInternalServerError)
 					fmt.Fprintf(w, "Critical error while unpacking AMP targets: %v", err)
 					glog.Errorf("/openrtb2/amp Critical error unpacking targets: %v", err)
-					ao.Errors = append(ao.Errors, fmt.Errorf("Critical error while unpacking AMP targets: %v", err))
-					ao.Status = http.StatusInternalServerError
+					if ao != nil {
+						ao.Errors = append(ao.Errors, fmt.Errorf("Critical error while unpacking AMP targets: %v", err))
+						ao.Status = http.StatusInternalServerError
+					}
 					return
 				}
 				for key, value := range bidExt.Prebid.Targeting {
@@ -281,7 +320,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	// Extract any errors
 	var extResponse openrtb_ext.ExtBidResponse
 	eRErr := json.Unmarshal(response.Ext, &extResponse)
-	if eRErr != nil {
+	if eRErr != nil && ao != nil {
 		ao.Errors = append(ao.Errors, fmt.Errorf("AMP response: failed to unpack OpenRTB response.ext, debug info cannot be forwarded: %v", eRErr))
 	}
 
@@ -289,7 +328,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	if warnings == nil {
 		warnings = make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage)
 	}
-	for _, v := range errortypes.WarningOnly(errL) {
+	for _, v := range errortypes.WarningOnly(errs) {
 		bidderErr := openrtb_ext.ExtBidderMessage{
 			Code:    errortypes.ReadCode(v),
 			Message: v.Error(),
@@ -304,15 +343,21 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		Warnings:  warnings,
 	}
 
-	ao.AmpTargetingValues = targets
+	if ao != nil {
+		ao.AmpTargetingValues = targets
+	}
 
 	// add debug information if requested
-	if reqWrapper.Test == 1 && eRErr == nil {
-		if extResponse.Debug != nil {
-			ampResponse.Debug = extResponse.Debug
-		} else {
-			glog.Errorf("Test set on request but debug not present in response: %v", err)
-			ao.Errors = append(ao.Errors, fmt.Errorf("Test set on request but debug not present in response: %v", err))
+	if reqWrapper != nil {
+		if reqWrapper.Test == 1 && eRErr == nil {
+			if extResponse.Debug != nil {
+				ampResponse.Debug = extResponse.Debug
+			} else {
+				glog.Errorf("Test set on request but debug not present in response.")
+				if ao != nil {
+					ao.Errors = append(ao.Errors, fmt.Errorf("test set on request but debug not present in response"))
+				}
+			}
 		}
 	}
 
@@ -324,8 +369,13 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	// If we've sent _any_ bytes, then Go would have sent the 200 status code first.
 	// That status code can't be un-sent... so the best we can do is log the error.
 	if err := enc.Encode(ampResponse); err != nil {
-		labels.RequestStatus = metrics.RequestStatusNetworkErr
-		ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/amp Failed to send response: %v", err))
+		if labels != nil {
+			labels.RequestStatus = metrics.RequestStatusNetworkErr
+		}
+
+		if ao != nil {
+			ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/amp Failed to send response: %v", err))
+		}
 	}
 }
 

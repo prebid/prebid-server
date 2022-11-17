@@ -5,6 +5,8 @@ import (
 	"github.com/prebid/prebid-server/hooks/hookstage"
 )
 
+// EmptyPlanBuilder implements the ExecutionPlanBuilder interface
+// and used as the stub when the hooks' functionality is disabled.
 type EmptyPlanBuilder struct{}
 
 func (e EmptyPlanBuilder) PlanForEntrypointStage(endpoint string) Plan[hookstage.Entrypoint] {

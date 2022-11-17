@@ -24,12 +24,7 @@ func TestExecuteEntrypointStage_DoesNotChangeRequestForEmptyPlan(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected error creating http request: %s", err)
 	}
-	exec := HookExecutor{
-		InvocationCtx: &hookstage.InvocationContext{},
-		Endpoint:      EndpointAuction,
-		PlanBuilder:   hooks.EmptyPlanBuilder{},
-		MetricEngine:  &config.NilMetricsEngine{},
-	}
+	exec := NewHookExecutor(hooks.EmptyPlanBuilder{}, EndpointAuction, &config.NilMetricsEngine{})
 
 	newBody, reject := exec.ExecuteEntrypointStage(req, body)
 	require.Nil(t, reject, "Unexpected stage reject")
@@ -44,7 +39,7 @@ func TestExecuteEntrypointStage_DoesNotChangeRequestForEmptyPlan(t *testing.T) {
 func TestExecuteEntrypointStage_CanApplyHookMutations(t *testing.T) {
 	expectedOutcome := StageOutcome{
 		Entity: hookstage.EntityHttpRequest,
-		Stage:  hooks.StageEntrypoint,
+		Stage:  hooks.StageEntrypoint.String(),
 		Groups: []GroupOutcome{
 			{
 				InvocationResults: []HookOutcome{
@@ -96,12 +91,7 @@ func TestExecuteEntrypointStage_CanApplyHookMutations(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected error creating http request: %s", err)
 	}
-	exec := HookExecutor{
-		InvocationCtx: &hookstage.InvocationContext{},
-		Endpoint:      EndpointAuction,
-		PlanBuilder:   TestApplyHookMutationsBuilder{},
-		MetricEngine:  &config.NilMetricsEngine{},
-	}
+	exec := NewHookExecutor(TestApplyHookMutationsBuilder{}, EndpointAuction, &config.NilMetricsEngine{})
 
 	newBody, reject := exec.ExecuteEntrypointStage(req, body)
 	require.Nil(t, reject, "Unexpected stage reject")
@@ -175,7 +165,7 @@ func TestExecuteEntrypointStage_CanRejectHook(t *testing.T) {
 	expectedOutcome := StageOutcome{
 		ExecutionTime: ExecutionTime{},
 		Entity:        hookstage.EntityHttpRequest,
-		Stage:         hooks.StageEntrypoint,
+		Stage:         hooks.StageEntrypoint.String(),
 		Groups: []GroupOutcome{
 			{
 				ExecutionTime: ExecutionTime{},
@@ -207,7 +197,7 @@ func TestExecuteEntrypointStage_CanRejectHook(t *testing.T) {
 						Message:       "",
 						DebugMessages: nil,
 						Errors: []string{
-							`Module rejected stage, reason: ""`,
+							`Module foobar (hook: bar) rejected request with code 0 at entrypoint stage`,
 						},
 						Warnings: nil,
 					},
@@ -220,16 +210,16 @@ func TestExecuteEntrypointStage_CanRejectHook(t *testing.T) {
 	reader := bytes.NewReader(body)
 	req, err := http.NewRequest(http.MethodPost, "https://prebid.com/openrtb2/auction", reader)
 	require.NoError(t, err, "Unexpected error creating http request: %s", err)
-	exec := HookExecutor{
-		InvocationCtx: &hookstage.InvocationContext{},
-		Endpoint:      EndpointAuction,
-		PlanBuilder:   TestRejectPlanBuilder{},
-		MetricEngine:  &config.NilMetricsEngine{},
-	}
+	exec := NewHookExecutor(TestRejectPlanBuilder{}, EndpointAuction, &config.NilMetricsEngine{})
 
 	newBody, reject := exec.ExecuteEntrypointStage(req, body)
 	require.NotNil(t, reject, "Unexpected successful execution of entrypoint hook")
-	require.Equal(t, reject, &RejectError{}, "Unexpected reject returned from entrypoint hook")
+	require.Equal(
+		t,
+		reject,
+		&RejectError{0, HookID{"foobar", "bar"}, hooks.StageEntrypoint.String()},
+		"Unexpected reject returned from entrypoint hook",
+	)
 
 	stOut := exec.GetOutcomes()[0]
 	assertEqualStageOutcomes(t, expectedOutcome, stOut)
@@ -246,7 +236,7 @@ func TestExecuteEntrypointStage_CanTimeoutOneOfHooks(t *testing.T) {
 	expectedOutcome := StageOutcome{
 		ExecutionTime: ExecutionTime{},
 		Entity:        hookstage.EntityHttpRequest,
-		Stage:         hooks.StageEntrypoint,
+		Stage:         hooks.StageEntrypoint.String(),
 		Groups: []GroupOutcome{
 			{
 				ExecutionTime: ExecutionTime{},
@@ -305,12 +295,7 @@ func TestExecuteEntrypointStage_CanTimeoutOneOfHooks(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected error creating http request: %s", err)
 	}
-	exec := HookExecutor{
-		InvocationCtx: &hookstage.InvocationContext{},
-		Endpoint:      EndpointAuction,
-		PlanBuilder:   TestWithTimeoutPlanBuilder{},
-		MetricEngine:  &config.NilMetricsEngine{},
-	}
+	exec := NewHookExecutor(TestWithTimeoutPlanBuilder{}, EndpointAuction, &config.NilMetricsEngine{})
 
 	newBody, reject := exec.ExecuteEntrypointStage(req, body)
 	require.Nil(t, reject, "Unexpected stage reject")
@@ -354,12 +339,7 @@ func TestExecuteEntrypointStage_ModuleContextsAreCreated(t *testing.T) {
 		t.Fatalf("Unexpected error creating http request: %s", err)
 	}
 
-	exec := HookExecutor{
-		InvocationCtx: &hookstage.InvocationContext{},
-		Endpoint:      EndpointAuction,
-		PlanBuilder:   TestWithModuleContextsPlanBuilder{},
-		MetricEngine:  &config.NilMetricsEngine{},
-	}
+	exec := NewHookExecutor(TestWithModuleContextsPlanBuilder{}, EndpointAuction, &config.NilMetricsEngine{})
 	_, reject := exec.ExecuteEntrypointStage(req, body)
 	require.Nil(t, reject, "Unexpected stage reject")
 
@@ -368,12 +348,12 @@ func TestExecuteEntrypointStage_ModuleContextsAreCreated(t *testing.T) {
 		t.Error("some hook groups have not been processed")
 	}
 
-	ctx1 := exec.InvocationCtx.ModuleContextFor("module-1")
+	ctx1 := exec.invocationCtx.ModuleContextFor("module-1")
 	if ctx1.Ctx["some-ctx-1"] != "some-ctx-1" {
 		t.Error("context for module-1 not created")
 	}
 
-	ctx2 := exec.InvocationCtx.ModuleContextFor("module-2")
+	ctx2 := exec.invocationCtx.ModuleContextFor("module-2")
 	if ctx2.Ctx["some-ctx-2"] != "some-ctx-2" {
 		t.Error("context for module-2 not created")
 	}

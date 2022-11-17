@@ -5,6 +5,13 @@ import (
 	"github.com/prebid/prebid-server/hooks/hookstage"
 )
 
+// HookRepository is the interface that exposes methods
+// that return instance of the certain hook interface.
+//
+// Each method accepts hook ID and returns hook interface
+// registered under this ID and true if hook found
+// otherwise nil value returned with the false,
+// indicating not found hook for this ID.
 type HookRepository interface {
 	GetEntrypointHook(id string) (hookstage.Entrypoint, bool)
 	GetRawAuctionHook(id string) (hookstage.RawAuction, bool)
@@ -15,6 +22,13 @@ type HookRepository interface {
 	GetAuctionResponseHook(id string) (hookstage.AuctionResponse, bool)
 }
 
+// NewHookRepository returns a new instance of the HookRepository interface.
+//
+// The hooks argument represents a mapping of hook IDs to types
+// implementing at least one of the available hook interfaces, see [hookstage] pkg.
+//
+// Error returned if provided interface doesn't implement any hook interface
+// or hook with same ID already exists.
 func NewHookRepository(hooks map[string]interface{}) (HookRepository, error) {
 	repo := new(hookRepository)
 	for id, hook := range hooks {
@@ -30,7 +44,7 @@ type hookRepository struct {
 	entrypointHooks              map[string]hookstage.Entrypoint
 	rawAuctionHooks              map[string]hookstage.RawAuction
 	processedAuctionHooks        map[string]hookstage.ProcessedAuction
-	bidRequestHooks              map[string]hookstage.BidderRequest
+	bidderRequestHooks           map[string]hookstage.BidderRequest
 	rawBidderResponseHooks       map[string]hookstage.RawBidderResponse
 	allProcessedBidResponseHooks map[string]hookstage.AllProcessedBidResponses
 	auctionResponseHooks         map[string]hookstage.AuctionResponse
@@ -49,7 +63,7 @@ func (r *hookRepository) GetProcessedAuctionHook(id string) (hookstage.Processed
 }
 
 func (r *hookRepository) GetBidderRequestHook(id string) (hookstage.BidderRequest, bool) {
-	return getHook(r.bidRequestHooks, id)
+	return getHook(r.bidderRequestHooks, id)
 }
 
 func (r *hookRepository) GetRawBidderResponseHook(id string) (hookstage.RawBidderResponse, bool) {
@@ -91,7 +105,7 @@ func (r *hookRepository) add(id string, hook interface{}) error {
 
 	if h, ok := hook.(hookstage.BidderRequest); ok {
 		hasAnyHooks = true
-		if r.bidRequestHooks, err = addHook(r.bidRequestHooks, h, id); err != nil {
+		if r.bidderRequestHooks, err = addHook(r.bidderRequestHooks, h, id); err != nil {
 			return err
 		}
 	}

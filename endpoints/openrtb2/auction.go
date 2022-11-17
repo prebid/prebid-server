@@ -21,8 +21,8 @@ import (
 	"github.com/prebid/openrtb/v17/native1"
 	nativeRequests "github.com/prebid/openrtb/v17/native1/request"
 	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb3"
 	"github.com/prebid/prebid-server/hooks"
-	"github.com/prebid/prebid-server/hooks/hookstage"
 	"golang.org/x/net/publicsuffix"
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 
@@ -86,12 +86,7 @@ func NewEndpoint(
 		IPv6PrivateNetworks: cfg.RequestValidation.IPv6PrivateNetworksParsed,
 	}
 
-	hookExecutor := &hookexecution.HookExecutor{
-		InvocationCtx: &hookstage.InvocationContext{},
-		Endpoint:      hookexecution.EndpointAuction,
-		PlanBuilder:   hookExecutionPlanBuilder,
-		MetricEngine:  met,
-	}
+	hookExecutor := hookexecution.NewHookExecutor(hookExecutionPlanBuilder, hookexecution.EndpointAuction, met)
 
 	return httprouter.Handle((&endpointDeps{
 		uuidGenerator,
@@ -157,7 +152,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		CookieFlag:    metrics.CookieFlagUnknown,
 		RequestStatus: metrics.RequestStatusOK,
 	}
-
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
@@ -168,6 +162,11 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	req, impExtInfoMap, storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, errL := deps.parseRequest(r)
 	if errortypes.ContainsFatalError(errL) && writeError(errL, w, &labels) {
+		return
+	}
+
+	if reject := hookexecution.FindReject(errL); reject != nil {
+		rejectAuctionRequest(*reject, w, &labels, &ao)
 		return
 	}
 
@@ -234,7 +233,8 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	ao.Request = req.BidRequest
 	ao.Response = response
 	ao.Account = account
-	if err != nil {
+	reject := hookexecution.FindReject([]error{err})
+	if err != nil && reject == nil {
 		if errortypes.ReadCode(err) == errortypes.BadInputErrorCode {
 			writeError([]error{err}, w, &labels)
 			return
@@ -248,6 +248,39 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		return
 	}
 
+	if reject != nil {
+		rejectAuctionRequest(*reject, w, &labels, &ao)
+		return
+	}
+
+	sendAuctionResponse(w, response, &labels, &ao)
+}
+
+func rejectAuctionRequest(
+	reject hookexecution.RejectError,
+	w http.ResponseWriter,
+	labels *metrics.Labels,
+	ao *analytics.AuctionObject,
+) {
+	nbr := openrtb3.NoBidReason(reject.NBR)
+	response := &openrtb2.BidResponse{
+		NBR: &nbr,
+	}
+
+	if ao != nil {
+		ao.Response = response
+		ao.Errors = append(ao.Errors, reject)
+	}
+
+	sendAuctionResponse(w, response, labels, ao)
+}
+
+func sendAuctionResponse(
+	w http.ResponseWriter,
+	response *openrtb2.BidResponse,
+	labels *metrics.Labels,
+	ao *analytics.AuctionObject,
+) {
 	// Fixes #231
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
@@ -258,8 +291,13 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// If we've sent _any_ bytes, then Go would have sent the 200 status code first.
 	// That status code can't be un-sent... so the best we can do is log the error.
 	if err := enc.Encode(response); err != nil {
-		labels.RequestStatus = metrics.RequestStatusNetworkErr
-		ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/auction Failed to send response: %v", err))
+		if labels != nil {
+			labels.RequestStatus = metrics.RequestStatusNetworkErr
+		}
+
+		if ao != nil {
+			ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/auction Failed to send response: %v", err))
+		}
 	}
 }
 
@@ -296,12 +334,10 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_
 		}
 	}
 
-	body, err := deps.hookExecutor.ExecuteEntrypointStage(httpRequest, requestJson)
-	if err != nil {
-		//todo: return no bid response
-		// the only error returned from above is hook stage rejection
+	requestJson, reject := deps.hookExecutor.ExecuteEntrypointStage(httpRequest, requestJson)
+	if reject != nil {
+		return nil, nil, nil, nil, nil, []error{reject}
 	}
-	requestJson = body
 
 	timeout := parseTimeout(requestJson, time.Duration(storedRequestTimeoutMillis)*time.Millisecond)
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
@@ -1575,35 +1611,50 @@ func setAuctionTypeImplicitly(r *openrtb_ext.RequestWrapper) {
 	}
 }
 
-// setSiteImplicitly uses implicit info from httpReq to populate bidReq.Site
 func setSiteImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {
-	if r.Site == nil || r.Site.Page == "" || r.Site.Domain == "" {
-		referrerCandidate := httpReq.Referer()
-		// If http referer is disabled and thus has empty value - use site.page instead
-		if referrerCandidate == "" && r.Site != nil && r.Site.Page != "" {
-			referrerCandidate = r.Site.Page
-		}
-		if parsedUrl, err := url.Parse(referrerCandidate); err == nil {
-			if domain, err := publicsuffix.EffectiveTLDPlusOne(parsedUrl.Host); err == nil {
-				if r.Site == nil {
-					r.Site = &openrtb2.Site{}
-				}
-				if r.Site.Domain == "" {
-					r.Site.Domain = domain
-				}
+	referrerCandidate := httpReq.Referer()
+	if referrerCandidate == "" && r.Site != nil && r.Site.Page != "" {
+		referrerCandidate = r.Site.Page // If http referer is disabled and thus has empty value - use site.page instead
+	}
 
-				// This looks weird... but is not a bug. The site which called prebid-server (the "referer"), is
-				// (almost certainly) the page where the ad will be hosted. In the OpenRTB spec, this is *page*, not *ref*.
-				if r.Site.Page == "" {
-					r.Site.Page = referrerCandidate
-				}
+	if referrerCandidate != "" {
+		setSitePageIfEmpty(r.Site, referrerCandidate)
+		if parsedUrl, err := url.Parse(referrerCandidate); err == nil {
+			setSiteDomainIfEmpty(r.Site, parsedUrl.Host)
+			if publisherDomain, err := publicsuffix.EffectiveTLDPlusOne(parsedUrl.Host); err == nil {
+				setSitePublisherDomainIfEmpty(r.Site, publisherDomain)
 			}
 		}
 	}
+
 	if r.Site != nil {
 		if siteExt, err := r.GetSiteExt(); err == nil && siteExt.GetAmp() == nil {
 			siteExt.SetAmp(&notAmp)
 		}
+	}
+}
+
+func setSitePageIfEmpty(site *openrtb2.Site, sitePage string) {
+	if site == nil {
+		site = &openrtb2.Site{}
+	}
+	if site.Page == "" {
+		site.Page = sitePage
+	}
+}
+
+func setSiteDomainIfEmpty(site *openrtb2.Site, siteDomain string) {
+	if site.Domain == "" {
+		site.Domain = siteDomain
+	}
+}
+
+func setSitePublisherDomainIfEmpty(site *openrtb2.Site, publisherDomain string) {
+	if site.Publisher == nil {
+		site.Publisher = &openrtb2.Publisher{}
+	}
+	if site.Publisher.Domain == "" {
+		site.Publisher.Domain = publisherDomain
 	}
 }
 

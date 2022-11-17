@@ -22,7 +22,7 @@ type StageExecutor interface {
 	ExecuteRawAuctionStage(body []byte) ([]byte, *RejectError)
 	ExecuteProcessedAuctionStage(req *openrtb2.BidRequest) *RejectError
 	ExecuteBidderRequestStage(req *openrtb2.BidRequest, bidder string) *RejectError
-	ExecuteRawBidderResponseStage(response *adapters.BidderResponse) *RejectError
+	ExecuteRawBidderResponseStage(response *adapters.BidderResponse, bidder string) *RejectError
 	ExecuteAllProcessedBidResponsesStage(responses []*adapters.BidderResponse) //TODO: check that responses is the necessary param
 	ExecuteAuctionResponseStage(response *openrtb2.BidResponse)
 }
@@ -33,29 +33,40 @@ type HookStageExecutor interface {
 	GetOutcomes() []StageOutcome
 }
 
-type HookExecutor struct {
-	InvocationCtx *hookstage.InvocationContext
-	Endpoint      string
-	PlanBuilder   hooks.ExecutionPlanBuilder
-	MetricEngine  metrics.MetricsEngine
+type hookExecutor struct {
+	invocationCtx *hookstage.InvocationContext
+	endpoint      string
+	planBuilder   hooks.ExecutionPlanBuilder
+	metricEngine  metrics.MetricsEngine
 	stageOutcomes []StageOutcome
 }
 
-func (executor *HookExecutor) SetAccount(account *config.Account) {
-	executor.InvocationCtx.Account = account
-	executor.InvocationCtx.AccountId = account.ID
+func NewHookExecutor(builder hooks.ExecutionPlanBuilder, endpoint string, me metrics.MetricsEngine) *hookExecutor {
+	return &hookExecutor{
+		invocationCtx: &hookstage.InvocationContext{},
+		endpoint:      endpoint,
+		planBuilder:   builder,
+		stageOutcomes: []StageOutcome{},
+		metricEngine:  me,
+	}
 }
 
-func (executor *HookExecutor) GetOutcomes() []StageOutcome {
+func (executor *hookExecutor) SetAccount(account *config.Account) {
+	executor.invocationCtx.Account = account
+	executor.invocationCtx.AccountId = account.ID
+}
+
+func (executor *hookExecutor) GetOutcomes() []StageOutcome {
 	return executor.stageOutcomes
 }
 
-func (executor *HookExecutor) ExecuteEntrypointStage(req *http.Request, body []byte) ([]byte, *RejectError) {
-	plan := executor.PlanBuilder.PlanForEntrypointStage(executor.Endpoint)
+func (executor *hookExecutor) ExecuteEntrypointStage(req *http.Request, body []byte) ([]byte, *RejectError) {
+	plan := executor.planBuilder.PlanForEntrypointStage(executor.endpoint)
 	if len(plan) == 0 {
 		return body, nil
 	}
 
+	stageName := hooks.StageEntrypoint.String()
 	handler := func(
 		ctx context.Context,
 		moduleCtx *hookstage.ModuleContext,
@@ -65,42 +76,43 @@ func (executor *HookExecutor) ExecuteEntrypointStage(req *http.Request, body []b
 		return hook.HandleEntrypointHook(ctx, moduleCtx, payload)
 	}
 
-	executor.InvocationCtx.Stage = hooks.StageEntrypoint
+	executor.invocationCtx.Stage = stageName
+
 	payload := hookstage.EntrypointPayload{Request: req, Body: body}
-	stageOutcome, payload, reject := executeStage(executor.InvocationCtx, plan, payload, handler, executor.MetricEngine)
+	stageOutcome, payload, reject := executeStage(executor.invocationCtx, plan, payload, handler, executor.metricEngine)
 	stageOutcome.Entity = hookstage.EntityHttpRequest
-	stageOutcome.Stage = hooks.StageEntrypoint
+	stageOutcome.Stage = stageName
 
 	executor.stageOutcomes = append(executor.stageOutcomes, stageOutcome)
 
 	return payload.Body, reject
 }
 
-func (executor *HookExecutor) ExecuteRawAuctionStage(body []byte) ([]byte, *RejectError) {
+func (executor *hookExecutor) ExecuteRawAuctionStage(body []byte) ([]byte, *RejectError) {
 	//TODO: implement
 	return nil, nil
 }
 
-func (executor *HookExecutor) ExecuteProcessedAuctionStage(req *openrtb2.BidRequest) *RejectError {
+func (executor *hookExecutor) ExecuteProcessedAuctionStage(req *openrtb2.BidRequest) *RejectError {
 	//TODO: implement
 	return nil
 }
 
-func (executor *HookExecutor) ExecuteBidderRequestStage(req *openrtb2.BidRequest, bidder string) *RejectError {
+func (executor *hookExecutor) ExecuteBidderRequestStage(req *openrtb2.BidRequest, bidder string) *RejectError {
 	//TODO: implement
 	return nil
 }
 
-func (executor *HookExecutor) ExecuteRawBidderResponseStage(response *adapters.BidderResponse) *RejectError {
+func (executor *hookExecutor) ExecuteRawBidderResponseStage(response *adapters.BidderResponse, bidder string) *RejectError {
 	//TODO: implement
 	return nil
 }
 
-func (executor *HookExecutor) ExecuteAllProcessedBidResponsesStage(responses []*adapters.BidderResponse) {
+func (executor *hookExecutor) ExecuteAllProcessedBidResponsesStage(responses []*adapters.BidderResponse) {
 	//TODO: implement
 }
 
-func (executor *HookExecutor) ExecuteAuctionResponseStage(response *openrtb2.BidResponse) {
+func (executor *hookExecutor) ExecuteAuctionResponseStage(response *openrtb2.BidResponse) {
 	//TODO: implement
 }
 
@@ -124,14 +136,15 @@ func (executor *EmptyHookExecutor) ExecuteProcessedAuctionStage(_ *openrtb2.BidR
 	return nil
 }
 
-func (executor *EmptyHookExecutor) ExecuteBidderRequestStage(_ *openrtb2.BidRequest, bidder string) *RejectError {
+func (executor *EmptyHookExecutor) ExecuteBidderRequestStage(_ *openrtb2.BidRequest, _ string) *RejectError {
 	return nil
 }
 
-func (executor *EmptyHookExecutor) ExecuteRawBidderResponseStage(_ *adapters.BidderResponse) *RejectError {
+func (executor *EmptyHookExecutor) ExecuteRawBidderResponseStage(_ *adapters.BidderResponse, _ string) *RejectError {
 	return nil
 }
 
 func (executor *EmptyHookExecutor) ExecuteAllProcessedBidResponsesStage(_ []*adapters.BidderResponse) {
 }
+
 func (executor *EmptyHookExecutor) ExecuteAuctionResponseStage(_ *openrtb2.BidResponse) {}

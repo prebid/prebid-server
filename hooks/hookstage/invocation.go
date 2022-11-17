@@ -6,7 +6,6 @@ import (
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/hooks/hookanalytics"
-	"github.com/prebid/prebid-server/metrics"
 )
 
 type Entity string
@@ -18,14 +17,12 @@ const (
 	EntityAllProcessedBidResponses Entity = "all-processed-bid-responses"
 )
 
+// InvocationContext holds information passed to module's hook during hook execution.
 type InvocationContext struct {
-	Endpoint          string
-	Stage             string
-	AccountId         string
-	DebugEnabled      bool
-	RequestTypeMetric metrics.RequestType
-	Account           *config.Account
-	moduleContexts    map[string]*ModuleContext
+	Stage          string
+	AccountId      string
+	Account        *config.Account
+	moduleContexts map[string]*ModuleContext
 }
 
 func (ctx *InvocationContext) ModuleContextFor(moduleCode string) *ModuleContext {
@@ -51,7 +48,9 @@ func (ctx *InvocationContext) ModuleContextFor(moduleCode string) *ModuleContext
 	return &emptyCtx
 }
 
+// HookResult represents the result of execution the concrete hook instance.
 type HookResult[T any] struct {
+	// Reject indicates that the hook rejects execution of the program logic at the specific stage.
 	Reject        bool
 	NbrCode       int
 	Message       string
@@ -65,8 +64,4 @@ type HookResult[T any] struct {
 type ModuleContext struct {
 	Ctx           map[string]interface{} // interface as we do not know exactly how the modules will use their inner context
 	AccountConfig json.RawMessage
-}
-
-type StageResult[T any] struct {
-	GroupsResults [][]HookResult[T]
 }
