@@ -1,5 +1,7 @@
+endpoint: 'http://exapi-us-east.rubiconproject.com/a/api/exchange.json'
+disabled: true
 maintainer:
-  email: "header-bidding@rubiconproject.com"
+  email: 'header-bidding@rubiconproject.com'
 gvlVendorID: 52
 capabilities:
   app:
