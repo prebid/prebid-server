@@ -12,7 +12,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const uidCookieName = "session2"
+const uidCookieName = "uids"
 
 // uidTTL is the default amount of time a uid stored within a cookie is considered valid. This is
 // separate from the cookie ttl.
