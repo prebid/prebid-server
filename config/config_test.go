@@ -1611,6 +1611,691 @@ func TestMigrateConfigTCF2EnforcePurposeFlags(t *testing.T) {
 	}
 }
 
+func TestMigrateConfigDatabaseConnection(t *testing.T) {
+	type configs struct {
+		old  []byte
+		new  []byte
+		both []byte
+	}
+
+	// Stored Requests Config Migration
+	storedReqestsConfigs := configs{
+		old: []byte(`
+      stored_requests:
+        postgres:
+          connection:
+            dbname: "old_connection_dbname"
+            host: "old_connection_host"
+            port: 1000
+            user: "old_connection_user"
+            password: "old_connection_password"
+          fetcher:
+            query: "old_fetcher_query"
+            amp_query: "old_fetcher_amp_query"
+          initialize_caches:
+            timeout_ms: 1000
+            query: "old_initialize_caches_query"
+            amp_query: "old_initialize_caches_amp_query"
+          poll_for_updates:
+            refresh_rate_seconds: 1000
+            timeout_ms: 1000
+            query: "old_poll_for_updates_query"
+            amp_query: "old_poll_for_updates_amp_query"
+    `),
+		new: []byte(`
+      stored_requests:
+        database:
+          connection:
+            dbname: "new_connection_dbname"
+            host: "new_connection_host"
+            port: 2000
+            user: "new_connection_user"
+            password: "new_connection_password"
+          fetcher:
+            query: "new_fetcher_query"
+            amp_query: "new_fetcher_amp_query"
+          initialize_caches:
+            timeout_ms: 2000
+            query: "new_initialize_caches_query"
+            amp_query: "new_initialize_caches_amp_query"
+          poll_for_updates:
+            refresh_rate_seconds: 2000
+            timeout_ms: 2000
+            query: "new_poll_for_updates_query"
+            amp_query: "new_poll_for_updates_amp_query"
+    `),
+		both: []byte(`
+      stored_requests:
+        postgres:
+          connection:
+            dbname: "old_connection_dbname"
+            host: "old_connection_host"
+            port: 1000
+            user: "old_connection_user"
+            password: "old_connection_password"
+          fetcher:
+            query: "old_fetcher_query"
+            amp_query: "old_fetcher_amp_query"
+          initialize_caches:
+            timeout_ms: 1000
+            query: "old_initialize_caches_query"
+            amp_query: "old_initialize_caches_amp_query"
+          poll_for_updates:
+            refresh_rate_seconds: 1000
+            timeout_ms: 1000
+            query: "old_poll_for_updates_query"
+            amp_query: "old_poll_for_updates_amp_query"
+        database:
+          connection:
+            dbname: "new_connection_dbname"
+            host: "new_connection_host"
+            port: 2000
+            user: "new_connection_user"
+            password: "new_connection_password"
+          fetcher:
+            query: "new_fetcher_query"
+            amp_query: "new_fetcher_amp_query"
+          initialize_caches:
+            timeout_ms: 2000
+            query: "new_initialize_caches_query"
+            amp_query: "new_initialize_caches_amp_query"
+          poll_for_updates:
+            refresh_rate_seconds: 2000
+            timeout_ms: 2000
+            query: "new_poll_for_updates_query"
+            amp_query: "new_poll_for_updates_amp_query"
+    `),
+	}
+
+	storedRequestsTests := []struct {
+		description string
+		config      []byte
+
+		want_connection_dbname                     string
+		want_connection_host                       string
+		want_connection_port                       int
+		want_connection_user                       string
+		want_connection_password                   string
+		want_fetcher_query                         string
+		want_fetcher_amp_query                     string
+		want_initialize_caches_timeout_ms          int
+		want_initialize_caches_query               string
+		want_initialize_caches_amp_query           string
+		want_poll_for_updates_refresh_rate_seconds int
+		want_poll_for_updates_timeout_ms           int
+		want_poll_for_updates_query                string
+		want_poll_for_updates_amp_query            string
+	}{
+		{
+			description: "New config and old config not set",
+			config:      []byte{},
+		},
+		{
+			description: "New config not set, old config set",
+			config:      storedReqestsConfigs.old,
+
+			want_connection_dbname:                     "old_connection_dbname",
+			want_connection_host:                       "old_connection_host",
+			want_connection_port:                       1000,
+			want_connection_user:                       "old_connection_user",
+			want_connection_password:                   "old_connection_password",
+			want_fetcher_query:                         "old_fetcher_query",
+			want_fetcher_amp_query:                     "old_fetcher_amp_query",
+			want_initialize_caches_timeout_ms:          1000,
+			want_initialize_caches_query:               "old_initialize_caches_query",
+			want_initialize_caches_amp_query:           "old_initialize_caches_amp_query",
+			want_poll_for_updates_refresh_rate_seconds: 1000,
+			want_poll_for_updates_timeout_ms:           1000,
+			want_poll_for_updates_query:                "old_poll_for_updates_query",
+			want_poll_for_updates_amp_query:            "old_poll_for_updates_amp_query",
+		},
+		{
+			description: "New config set, old config not set",
+			config:      storedReqestsConfigs.new,
+
+			want_connection_dbname:                     "new_connection_dbname",
+			want_connection_host:                       "new_connection_host",
+			want_connection_port:                       2000,
+			want_connection_user:                       "new_connection_user",
+			want_connection_password:                   "new_connection_password",
+			want_fetcher_query:                         "new_fetcher_query",
+			want_fetcher_amp_query:                     "new_fetcher_amp_query",
+			want_initialize_caches_timeout_ms:          2000,
+			want_initialize_caches_query:               "new_initialize_caches_query",
+			want_initialize_caches_amp_query:           "new_initialize_caches_amp_query",
+			want_poll_for_updates_refresh_rate_seconds: 2000,
+			want_poll_for_updates_timeout_ms:           2000,
+			want_poll_for_updates_query:                "new_poll_for_updates_query",
+			want_poll_for_updates_amp_query:            "new_poll_for_updates_amp_query",
+		},
+		{
+			description: "New config and old config set",
+			config:      storedReqestsConfigs.both,
+
+			want_connection_dbname:                     "new_connection_dbname",
+			want_connection_host:                       "new_connection_host",
+			want_connection_port:                       2000,
+			want_connection_user:                       "new_connection_user",
+			want_connection_password:                   "new_connection_password",
+			want_fetcher_query:                         "new_fetcher_query",
+			want_fetcher_amp_query:                     "new_fetcher_amp_query",
+			want_initialize_caches_timeout_ms:          2000,
+			want_initialize_caches_query:               "new_initialize_caches_query",
+			want_initialize_caches_amp_query:           "new_initialize_caches_amp_query",
+			want_poll_for_updates_refresh_rate_seconds: 2000,
+			want_poll_for_updates_timeout_ms:           2000,
+			want_poll_for_updates_query:                "new_poll_for_updates_query",
+			want_poll_for_updates_amp_query:            "new_poll_for_updates_amp_query",
+		},
+	}
+
+	for _, tt := range storedRequestsTests {
+		v := viper.New()
+		v.SetConfigType("yaml")
+		v.ReadConfig(bytes.NewBuffer(tt.config))
+
+		migrateConfigDatabaseConnection(v)
+
+		if len(tt.config) > 0 {
+			assert.Equal(t, tt.want_connection_dbname, v.GetString("stored_requests.database.connection.dbname"), tt.description)
+			assert.Equal(t, tt.want_connection_host, v.GetString("stored_requests.database.connection.host"), tt.description)
+			assert.Equal(t, tt.want_connection_port, v.GetInt("stored_requests.database.connection.port"), tt.description)
+			assert.Equal(t, tt.want_connection_user, v.GetString("stored_requests.database.connection.user"), tt.description)
+			assert.Equal(t, tt.want_connection_password, v.GetString("stored_requests.database.connection.password"), tt.description)
+			assert.Equal(t, tt.want_fetcher_query, v.GetString("stored_requests.database.fetcher.query"), tt.description)
+			assert.Equal(t, tt.want_fetcher_amp_query, v.GetString("stored_requests.database.fetcher.amp_query"), tt.description)
+			assert.Equal(t, tt.want_initialize_caches_timeout_ms, v.GetInt("stored_requests.database.initialize_caches.timeout_ms"), tt.description)
+			assert.Equal(t, tt.want_initialize_caches_query, v.GetString("stored_requests.database.initialize_caches.query"), tt.description)
+			assert.Equal(t, tt.want_initialize_caches_amp_query, v.GetString("stored_requests.database.initialize_caches.amp_query"), tt.description)
+			assert.Equal(t, tt.want_poll_for_updates_refresh_rate_seconds, v.GetInt("stored_requests.database.poll_for_updates.refresh_rate_seconds"), tt.description)
+			assert.Equal(t, tt.want_poll_for_updates_timeout_ms, v.GetInt("stored_requests.database.poll_for_updates.timeout_ms"), tt.description)
+			assert.Equal(t, tt.want_poll_for_updates_query, v.GetString("stored_requests.database.poll_for_updates.query"), tt.description)
+			assert.Equal(t, tt.want_poll_for_updates_amp_query, v.GetString("stored_requests.database.poll_for_updates.amp_query"), tt.description)
+		} else {
+			assert.Nil(t, v.Get("stored_requests.database.connection.dbname"), tt.description)
+			assert.Nil(t, v.Get("stored_requests.database.connection.host"), tt.description)
+			assert.Nil(t, v.Get("stored_requests.database.connection.port"), tt.description)
+			assert.Nil(t, v.Get("stored_requests.database.connection.user"), tt.description)
+			assert.Nil(t, v.Get("stored_requests.database.connection.password"), tt.description)
+			assert.Nil(t, v.Get("stored_requests.database.fetcher.query"), tt.description)
+			assert.Nil(t, v.Get("stored_requests.database.fetcher.amp_query"), tt.description)
+			assert.Nil(t, v.Get("stored_requests.database.initialize_caches.timeout_ms"), tt.description)
+			assert.Nil(t, v.Get("stored_requests.database.initialize_caches.query"), tt.description)
+			assert.Nil(t, v.Get("stored_requests.database.initialize_caches.amp_query"), tt.description)
+			assert.Nil(t, v.Get("stored_requests.database.poll_for_updates.refresh_rate_seconds"), tt.description)
+			assert.Nil(t, v.Get("stored_requests.database.poll_for_updates.timeout_ms"), tt.description)
+			assert.Nil(t, v.Get("stored_requests.database.poll_for_updates.query"), tt.description)
+			assert.Nil(t, v.Get("stored_requests.database.poll_for_updates.amp_query"), tt.description)
+		}
+	}
+
+	// Stored Video Reqs Config Migration
+	storedVideoReqsConfigs := configs{
+		old: []byte(`
+      stored_video_req:
+        postgres:
+          connection:
+            dbname: "old_connection_dbname"
+            host: "old_connection_host"
+            port: 1000
+            user: "old_connection_user"
+            password: "old_connection_password"
+          fetcher:
+            query: "old_fetcher_query"
+          initialize_caches:
+            timeout_ms: 1000
+            query: "old_initialize_caches_query"
+          poll_for_updates:
+            refresh_rate_seconds: 1000
+            timeout_ms: 1000
+            query: "old_poll_for_updates_query"
+    `),
+		new: []byte(`
+      stored_video_req:
+        database:
+          connection:
+            dbname: "new_connection_dbname"
+            host: "new_connection_host"
+            port: 2000
+            user: "new_connection_user"
+            password: "new_connection_password"
+          fetcher:
+            query: "new_fetcher_query"
+          initialize_caches:
+            timeout_ms: 2000
+            query: "new_initialize_caches_query"
+          poll_for_updates:
+            refresh_rate_seconds: 2000
+            timeout_ms: 2000
+            query: "new_poll_for_updates_query"
+    `),
+		both: []byte(`
+      stored_video_req:
+        postgres:
+          connection:
+            dbname: "old_connection_dbname"
+            host: "old_connection_host"
+            port: 1000
+            user: "old_connection_user"
+            password: "old_connection_password"
+          fetcher:
+            query: "old_fetcher_query"
+          initialize_caches:
+            timeout_ms: 1000
+            query: "old_initialize_caches_query"
+          poll_for_updates:
+            refresh_rate_seconds: 1000
+            timeout_ms: 1000
+            query: "old_poll_for_updates_query"
+        database:
+          connection:
+            dbname: "new_connection_dbname"
+            host: "new_connection_host"
+            port: 2000
+            user: "new_connection_user"
+            password: "new_connection_password"
+          fetcher:
+            query: "new_fetcher_query"
+          initialize_caches:
+            timeout_ms: 2000
+            query: "new_initialize_caches_query"
+          poll_for_updates:
+            refresh_rate_seconds: 2000
+            timeout_ms: 2000
+            query: "new_poll_for_updates_query"
+    `),
+	}
+
+	storedVideoReqsTests := []struct {
+		description string
+		config      []byte
+
+		want_connection_dbname                     string
+		want_connection_host                       string
+		want_connection_port                       int
+		want_connection_user                       string
+		want_connection_password                   string
+		want_fetcher_query                         string
+		want_initialize_caches_timeout_ms          int
+		want_initialize_caches_query               string
+		want_poll_for_updates_refresh_rate_seconds int
+		want_poll_for_updates_timeout_ms           int
+		want_poll_for_updates_query                string
+	}{
+		{
+			description: "New config and old config not set",
+			config:      []byte{},
+		},
+		{
+			description: "New config not set, old config set",
+			config:      storedVideoReqsConfigs.old,
+
+			want_connection_dbname:                     "old_connection_dbname",
+			want_connection_host:                       "old_connection_host",
+			want_connection_port:                       1000,
+			want_connection_user:                       "old_connection_user",
+			want_connection_password:                   "old_connection_password",
+			want_fetcher_query:                         "old_fetcher_query",
+			want_initialize_caches_timeout_ms:          1000,
+			want_initialize_caches_query:               "old_initialize_caches_query",
+			want_poll_for_updates_refresh_rate_seconds: 1000,
+			want_poll_for_updates_timeout_ms:           1000,
+			want_poll_for_updates_query:                "old_poll_for_updates_query",
+		},
+		{
+			description: "New config set, old config not set",
+			config:      storedVideoReqsConfigs.new,
+
+			want_connection_dbname:                     "new_connection_dbname",
+			want_connection_host:                       "new_connection_host",
+			want_connection_port:                       2000,
+			want_connection_user:                       "new_connection_user",
+			want_connection_password:                   "new_connection_password",
+			want_fetcher_query:                         "new_fetcher_query",
+			want_initialize_caches_timeout_ms:          2000,
+			want_initialize_caches_query:               "new_initialize_caches_query",
+			want_poll_for_updates_refresh_rate_seconds: 2000,
+			want_poll_for_updates_timeout_ms:           2000,
+			want_poll_for_updates_query:                "new_poll_for_updates_query",
+		},
+		{
+			description: "New config and old config set",
+			config:      storedVideoReqsConfigs.both,
+
+			want_connection_dbname:                     "new_connection_dbname",
+			want_connection_host:                       "new_connection_host",
+			want_connection_port:                       2000,
+			want_connection_user:                       "new_connection_user",
+			want_connection_password:                   "new_connection_password",
+			want_fetcher_query:                         "new_fetcher_query",
+			want_initialize_caches_timeout_ms:          2000,
+			want_initialize_caches_query:               "new_initialize_caches_query",
+			want_poll_for_updates_refresh_rate_seconds: 2000,
+			want_poll_for_updates_timeout_ms:           2000,
+			want_poll_for_updates_query:                "new_poll_for_updates_query",
+		},
+	}
+
+	for _, tt := range storedVideoReqsTests {
+		v := viper.New()
+		v.SetConfigType("yaml")
+		v.ReadConfig(bytes.NewBuffer(tt.config))
+
+		migrateConfigDatabaseConnection(v)
+
+		if len(tt.config) > 0 {
+			assert.Equal(t, tt.want_connection_dbname, v.Get("stored_video_req.database.connection.dbname").(string), tt.description)
+			assert.Equal(t, tt.want_connection_host, v.Get("stored_video_req.database.connection.host").(string), tt.description)
+			assert.Equal(t, tt.want_connection_port, v.Get("stored_video_req.database.connection.port").(int), tt.description)
+			assert.Equal(t, tt.want_connection_user, v.Get("stored_video_req.database.connection.user").(string), tt.description)
+			assert.Equal(t, tt.want_connection_password, v.Get("stored_video_req.database.connection.password").(string), tt.description)
+			assert.Equal(t, tt.want_fetcher_query, v.Get("stored_video_req.database.fetcher.query").(string), tt.description)
+			assert.Equal(t, tt.want_initialize_caches_timeout_ms, v.Get("stored_video_req.database.initialize_caches.timeout_ms").(int), tt.description)
+			assert.Equal(t, tt.want_initialize_caches_query, v.Get("stored_video_req.database.initialize_caches.query").(string), tt.description)
+			assert.Equal(t, tt.want_poll_for_updates_refresh_rate_seconds, v.Get("stored_video_req.database.poll_for_updates.refresh_rate_seconds").(int), tt.description)
+			assert.Equal(t, tt.want_poll_for_updates_timeout_ms, v.Get("stored_video_req.database.poll_for_updates.timeout_ms").(int), tt.description)
+			assert.Equal(t, tt.want_poll_for_updates_query, v.Get("stored_video_req.database.poll_for_updates.query").(string), tt.description)
+		} else {
+			assert.Nil(t, v.Get("stored_video_req.database.connection.dbname"), tt.description)
+			assert.Nil(t, v.Get("stored_video_req.database.connection.host"), tt.description)
+			assert.Nil(t, v.Get("stored_video_req.database.connection.port"), tt.description)
+			assert.Nil(t, v.Get("stored_video_req.database.connection.user"), tt.description)
+			assert.Nil(t, v.Get("stored_video_req.database.connection.password"), tt.description)
+			assert.Nil(t, v.Get("stored_video_req.database.fetcher.query"), tt.description)
+			assert.Nil(t, v.Get("stored_video_req.database.initialize_caches.timeout_ms"), tt.description)
+			assert.Nil(t, v.Get("stored_video_req.database.initialize_caches.query"), tt.description)
+			assert.Nil(t, v.Get("stored_video_req.database.poll_for_updates.refresh_rate_seconds"), tt.description)
+			assert.Nil(t, v.Get("stored_video_req.database.poll_for_updates.timeout_ms"), tt.description)
+			assert.Nil(t, v.Get("stored_video_req.database.poll_for_updates.query"), tt.description)
+		}
+	}
+
+	// Stored Responses Config Migration
+	storedResponsesConfigs := configs{
+		old: []byte(`
+      stored_responses:
+        postgres:
+          connection:
+            dbname: "old_connection_dbname"
+            host: "old_connection_host"
+            port: 1000
+            user: "old_connection_user"
+            password: "old_connection_password"
+          fetcher:
+            query: "old_fetcher_query"
+          initialize_caches:
+            timeout_ms: 1000
+            query: "old_initialize_caches_query"
+          poll_for_updates:
+            refresh_rate_seconds: 1000
+            timeout_ms: 1000
+            query: "old_poll_for_updates_query"
+    `),
+		new: []byte(`
+      stored_responses:
+        database:
+          connection:
+            dbname: "new_connection_dbname"
+            host: "new_connection_host"
+            port: 2000
+            user: "new_connection_user"
+            password: "new_connection_password"
+          fetcher:
+            query: "new_fetcher_query"
+          initialize_caches:
+            timeout_ms: 2000
+            query: "new_initialize_caches_query"
+          poll_for_updates:
+            refresh_rate_seconds: 2000
+            timeout_ms: 2000
+            query: "new_poll_for_updates_query"
+    `),
+		both: []byte(`
+      stored_responses:
+        postgres:
+          connection:
+            dbname: "old_connection_dbname"
+            host: "old_connection_host"
+            port: 1000
+            user: "old_connection_user"
+            password: "old_connection_password"
+          fetcher:
+            query: "old_fetcher_query"
+          initialize_caches:
+            timeout_ms: 1000
+            query: "old_initialize_caches_query"
+          poll_for_updates:
+            refresh_rate_seconds: 1000
+            timeout_ms: 1000
+            query: "old_poll_for_updates_query"
+        database:
+          connection:
+            dbname: "new_connection_dbname"
+            host: "new_connection_host"
+            port: 2000
+            user: "new_connection_user"
+            password: "new_connection_password"
+          fetcher:
+            query: "new_fetcher_query"
+          initialize_caches:
+            timeout_ms: 2000
+            query: "new_initialize_caches_query"
+          poll_for_updates:
+            refresh_rate_seconds: 2000
+            timeout_ms: 2000
+            query: "new_poll_for_updates_query"
+    `),
+	}
+
+	storedResponsesTests := []struct {
+		description string
+		config      []byte
+
+		want_connection_dbname                     string
+		want_connection_host                       string
+		want_connection_port                       int
+		want_connection_user                       string
+		want_connection_password                   string
+		want_fetcher_query                         string
+		want_initialize_caches_timeout_ms          int
+		want_initialize_caches_query               string
+		want_poll_for_updates_refresh_rate_seconds int
+		want_poll_for_updates_timeout_ms           int
+		want_poll_for_updates_query                string
+	}{
+		{
+			description: "New config and old config not set",
+			config:      []byte{},
+		},
+		{
+			description: "New config not set, old config set",
+			config:      storedResponsesConfigs.old,
+
+			want_connection_dbname:                     "old_connection_dbname",
+			want_connection_host:                       "old_connection_host",
+			want_connection_port:                       1000,
+			want_connection_user:                       "old_connection_user",
+			want_connection_password:                   "old_connection_password",
+			want_fetcher_query:                         "old_fetcher_query",
+			want_initialize_caches_timeout_ms:          1000,
+			want_initialize_caches_query:               "old_initialize_caches_query",
+			want_poll_for_updates_refresh_rate_seconds: 1000,
+			want_poll_for_updates_timeout_ms:           1000,
+			want_poll_for_updates_query:                "old_poll_for_updates_query",
+		},
+		{
+			description: "New config set, old config not set",
+			config:      storedResponsesConfigs.new,
+
+			want_connection_dbname:                     "new_connection_dbname",
+			want_connection_host:                       "new_connection_host",
+			want_connection_port:                       2000,
+			want_connection_user:                       "new_connection_user",
+			want_connection_password:                   "new_connection_password",
+			want_fetcher_query:                         "new_fetcher_query",
+			want_initialize_caches_timeout_ms:          2000,
+			want_initialize_caches_query:               "new_initialize_caches_query",
+			want_poll_for_updates_refresh_rate_seconds: 2000,
+			want_poll_for_updates_timeout_ms:           2000,
+			want_poll_for_updates_query:                "new_poll_for_updates_query",
+		},
+		{
+			description: "New config and old config set",
+			config:      storedResponsesConfigs.both,
+
+			want_connection_dbname:                     "new_connection_dbname",
+			want_connection_host:                       "new_connection_host",
+			want_connection_port:                       2000,
+			want_connection_user:                       "new_connection_user",
+			want_connection_password:                   "new_connection_password",
+			want_fetcher_query:                         "new_fetcher_query",
+			want_initialize_caches_timeout_ms:          2000,
+			want_initialize_caches_query:               "new_initialize_caches_query",
+			want_poll_for_updates_refresh_rate_seconds: 2000,
+			want_poll_for_updates_timeout_ms:           2000,
+			want_poll_for_updates_query:                "new_poll_for_updates_query",
+		},
+	}
+
+	for _, tt := range storedResponsesTests {
+		v := viper.New()
+		v.SetConfigType("yaml")
+		v.ReadConfig(bytes.NewBuffer(tt.config))
+
+		migrateConfigDatabaseConnection(v)
+
+		if len(tt.config) > 0 {
+			assert.Equal(t, tt.want_connection_dbname, v.Get("stored_responses.database.connection.dbname").(string), tt.description)
+			assert.Equal(t, tt.want_connection_host, v.Get("stored_responses.database.connection.host").(string), tt.description)
+			assert.Equal(t, tt.want_connection_port, v.Get("stored_responses.database.connection.port").(int), tt.description)
+			assert.Equal(t, tt.want_connection_user, v.Get("stored_responses.database.connection.user").(string), tt.description)
+			assert.Equal(t, tt.want_connection_password, v.Get("stored_responses.database.connection.password").(string), tt.description)
+			assert.Equal(t, tt.want_fetcher_query, v.Get("stored_responses.database.fetcher.query").(string), tt.description)
+			assert.Equal(t, tt.want_initialize_caches_timeout_ms, v.Get("stored_responses.database.initialize_caches.timeout_ms").(int), tt.description)
+			assert.Equal(t, tt.want_initialize_caches_query, v.Get("stored_responses.database.initialize_caches.query").(string), tt.description)
+			assert.Equal(t, tt.want_poll_for_updates_refresh_rate_seconds, v.Get("stored_responses.database.poll_for_updates.refresh_rate_seconds").(int), tt.description)
+			assert.Equal(t, tt.want_poll_for_updates_timeout_ms, v.Get("stored_responses.database.poll_for_updates.timeout_ms").(int), tt.description)
+			assert.Equal(t, tt.want_poll_for_updates_query, v.Get("stored_responses.database.poll_for_updates.query").(string), tt.description)
+		} else {
+			assert.Nil(t, v.Get("stored_responses.database.connection.dbname"), tt.description)
+			assert.Nil(t, v.Get("stored_responses.database.connection.host"), tt.description)
+			assert.Nil(t, v.Get("stored_responses.database.connection.port"), tt.description)
+			assert.Nil(t, v.Get("stored_responses.database.connection.user"), tt.description)
+			assert.Nil(t, v.Get("stored_responses.database.connection.password"), tt.description)
+			assert.Nil(t, v.Get("stored_responses.database.fetcher.query"), tt.description)
+			assert.Nil(t, v.Get("stored_responses.database.initialize_caches.timeout_ms"), tt.description)
+			assert.Nil(t, v.Get("stored_responses.database.initialize_caches.query"), tt.description)
+			assert.Nil(t, v.Get("stored_responses.database.poll_for_updates.refresh_rate_seconds"), tt.description)
+			assert.Nil(t, v.Get("stored_responses.database.poll_for_updates.timeout_ms"), tt.description)
+			assert.Nil(t, v.Get("stored_responses.database.poll_for_updates.query"), tt.description)
+		}
+	}
+}
+
+func TestMigrateConfigDatabaseQueryParams(t *testing.T) {
+
+	config := []byte(`
+    stored_requests:
+      postgres:
+        fetcher:
+          query:
+            SELECT * FROM Table1 WHERE id in (%REQUEST_ID_LIST%)
+            UNION ALL
+            SELECT * FROM Table2 WHERE id in (%IMP_ID_LIST%)
+            UNION ALL
+            SELECT * FROM Table3 WHERE id in (%ID_LIST%)
+          amp_query:
+            SELECT * FROM Table1 WHERE id in (%REQUEST_ID_LIST%)
+            UNION ALL
+            SELECT * FROM Table2 WHERE id in (%IMP_ID_LIST%)
+            UNION ALL
+            SELECT * FROM Table3 WHERE id in (%ID_LIST%)
+        poll_for_updates:
+          query: "SELECT * FROM Table1 WHERE last_updated > $1 UNION ALL SELECT * FROM Table2 WHERE last_updated > $1"
+          amp_query: "SELECT * FROM Table1 WHERE last_updated > $1 UNION ALL SELECT * FROM Table2 WHERE last_updated > $1"
+    stored_video_req:
+      postgres:
+        fetcher:
+          query:
+            SELECT * FROM Table1 WHERE id in (%REQUEST_ID_LIST%)
+            UNION ALL
+            SELECT * FROM Table2 WHERE id in (%IMP_ID_LIST%)
+            UNION ALL
+            SELECT * FROM Table3 WHERE id in (%ID_LIST%)
+          amp_query:
+            SELECT * FROM Table1 WHERE id in (%REQUEST_ID_LIST%)
+            UNION ALL
+            SELECT * FROM Table2 WHERE id in (%IMP_ID_LIST%)
+            UNION ALL
+            SELECT * FROM Table3 WHERE id in (%ID_LIST%)
+        poll_for_updates:
+          query: "SELECT * FROM Table1 WHERE last_updated > $1 UNION ALL SELECT * FROM Table2 WHERE last_updated > $1"
+          amp_query: "SELECT * FROM Table1 WHERE last_updated > $1 UNION ALL SELECT * FROM Table2 WHERE last_updated > $1"
+    stored_responses:
+      postgres:
+        fetcher:
+          query: 
+            SELECT * FROM Table1 WHERE id in (%REQUEST_ID_LIST%)
+            UNION ALL
+            SELECT * FROM Table2 WHERE id in (%IMP_ID_LIST%)
+            UNION ALL
+            SELECT * FROM Table3 WHERE id in (%ID_LIST%)
+          amp_query:
+            SELECT * FROM Table1 WHERE id in (%REQUEST_ID_LIST%)
+            UNION ALL
+            SELECT * FROM Table2 WHERE id in (%IMP_ID_LIST%)
+            UNION ALL
+            SELECT * FROM Table3 WHERE id in (%ID_LIST%)
+        poll_for_updates:
+          query: "SELECT * FROM Table1 WHERE last_updated > $1 UNION ALL SELECT * FROM Table2 WHERE last_updated > $1"
+          amp_query: "SELECT * FROM Table1 WHERE last_updated > $1 UNION ALL SELECT * FROM Table2 WHERE last_updated > $1"
+  `)
+
+	want_queries := struct {
+		fetcher_query              string
+		fetcher_amp_query          string
+		poll_for_updates_query     string
+		poll_for_updates_amp_query string
+	}{
+		fetcher_query: "SELECT * FROM Table1 WHERE id in ($REQUEST_ID_LIST) " +
+			"UNION ALL " +
+			"SELECT * FROM Table2 WHERE id in ($IMP_ID_LIST) " +
+			"UNION ALL " +
+			"SELECT * FROM Table3 WHERE id in ($ID_LIST)",
+		fetcher_amp_query: "SELECT * FROM Table1 WHERE id in ($REQUEST_ID_LIST) " +
+			"UNION ALL " +
+			"SELECT * FROM Table2 WHERE id in ($IMP_ID_LIST) " +
+			"UNION ALL " +
+			"SELECT * FROM Table3 WHERE id in ($ID_LIST)",
+		poll_for_updates_query:     "SELECT * FROM Table1 WHERE last_updated > $LAST_UPDATED UNION ALL SELECT * FROM Table2 WHERE last_updated > $LAST_UPDATED",
+		poll_for_updates_amp_query: "SELECT * FROM Table1 WHERE last_updated > $LAST_UPDATED UNION ALL SELECT * FROM Table2 WHERE last_updated > $LAST_UPDATED",
+	}
+
+	v := viper.New()
+	v.SetConfigType("yaml")
+	v.ReadConfig(bytes.NewBuffer(config))
+
+	migrateConfigDatabaseConnection(v)
+
+	// stored_requests queries
+	assert.Equal(t, want_queries.fetcher_query, v.GetString("stored_requests.database.fetcher.query"))
+	assert.Equal(t, want_queries.fetcher_amp_query, v.GetString("stored_requests.database.fetcher.amp_query"))
+	assert.Equal(t, want_queries.poll_for_updates_query, v.GetString("stored_requests.database.poll_for_updates.query"))
+	assert.Equal(t, want_queries.poll_for_updates_amp_query, v.GetString("stored_requests.database.poll_for_updates.amp_query"))
+
+	// stored_video_req queries
+	assert.Equal(t, want_queries.fetcher_query, v.GetString("stored_video_req.database.fetcher.query"))
+	assert.Equal(t, want_queries.fetcher_amp_query, v.GetString("stored_video_req.database.fetcher.amp_query"))
+	assert.Equal(t, want_queries.poll_for_updates_query, v.GetString("stored_video_req.database.poll_for_updates.query"))
+	assert.Equal(t, want_queries.poll_for_updates_amp_query, v.GetString("stored_video_req.database.poll_for_updates.amp_query"))
+
+	// stored_responses queries
+	assert.Equal(t, want_queries.fetcher_query, v.GetString("stored_responses.database.fetcher.query"))
+	assert.Equal(t, want_queries.fetcher_amp_query, v.GetString("stored_responses.database.fetcher.amp_query"))
+	assert.Equal(t, want_queries.poll_for_updates_query, v.GetString("stored_responses.database.poll_for_updates.query"))
+	assert.Equal(t, want_queries.poll_for_updates_amp_query, v.GetString("stored_responses.database.poll_for_updates.amp_query"))
+}
+
 func TestNegativeRequestSize(t *testing.T) {
 	cfg, v := newDefaultConfig(t)
 	cfg.MaxRequestSize = -1
@@ -1804,11 +2489,11 @@ func TestValidateAccountsConfigRestrictions(t *testing.T) {
 	cfg, v := newDefaultConfig(t)
 	cfg.Accounts.Files.Enabled = true
 	cfg.Accounts.HTTP.Endpoint = "http://localhost"
-	cfg.Accounts.Postgres.ConnectionInfo.Database = "accounts"
+	cfg.Accounts.Database.ConnectionInfo.Database = "accounts"
 
 	errs := cfg.validate(v)
 	assert.Len(t, errs, 1)
-	assert.Contains(t, errs, errors.New("accounts.postgres: retrieving accounts via postgres not available, use accounts.files"))
+	assert.Contains(t, errs, errors.New("accounts.database: retrieving accounts via database not available, use accounts.files"))
 }
 
 func newDefaultConfig(t *testing.T) (*Configuration, *viper.Viper) {
