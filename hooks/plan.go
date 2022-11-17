@@ -8,16 +8,27 @@ import (
 	"github.com/prebid/prebid-server/hooks/hookstage"
 )
 
+type Stage string
+
 // Names of the available stages.
 const (
-	StageEntrypoint               = "entrypoint"
-	StageRawAuction               = "raw-auction"
-	StageProcessedAuction         = "processed-auction"
-	StageBidderRequest            = "bidder-request"
-	StageRawBidderResponse        = "raw-bidder-response"
-	StageAllProcessedBidResponses = "all-processed-bid-responses"
-	StageAuctionResponse          = "auction-response"
+	StageEntrypoint               Stage = "entrypoint"
+	StageRawAuction               Stage = "raw-auction"
+	StageProcessedAuction         Stage = "processed-auction"
+	StageBidderRequest            Stage = "bidder-request"
+	StageRawBidderResponse        Stage = "raw-bidder-response"
+	StageAllProcessedBidResponses Stage = "all-processed-bid-responses"
+	StageAuctionResponse          Stage = "auction-response"
 )
+
+func (s Stage) String() string {
+	return string(s)
+}
+
+func (s Stage) IsRejectable() bool {
+	return s != StageAllProcessedBidResponses &&
+		s != StageAuctionResponse
+}
 
 // ExecutionPlanBuilder is the interface that provides methods
 // for retrieving hooks grouped and sorted in the established order
@@ -150,7 +161,8 @@ type hookFn[T any] func(moduleName string) (T, bool)
 func getMergedPlan[T any](
 	cfg config.Hooks,
 	account *config.Account,
-	endpoint, stage string,
+	endpoint string,
+	stage Stage,
 	getHookFn hookFn[T],
 ) Plan[T] {
 	accountPlan := cfg.DefaultAccountExecutionPlan
@@ -164,9 +176,9 @@ func getMergedPlan[T any](
 	return plan
 }
 
-func getPlan[T any](getHookFn hookFn[T], cfg config.HookExecutionPlan, endpoint, stage string) Plan[T] {
-	plan := make(Plan[T], 0, len(cfg.Endpoints[endpoint].Stages[stage].Groups))
-	for _, groupCfg := range cfg.Endpoints[endpoint].Stages[stage].Groups {
+func getPlan[T any](getHookFn hookFn[T], cfg config.HookExecutionPlan, endpoint string, stage Stage) Plan[T] {
+	plan := make(Plan[T], 0, len(cfg.Endpoints[endpoint].Stages[stage.String()].Groups))
+	for _, groupCfg := range cfg.Endpoints[endpoint].Stages[stage.String()].Groups {
 		group := getGroup(getHookFn, groupCfg)
 		if len(group.Hooks) > 0 {
 			plan = append(plan, group)

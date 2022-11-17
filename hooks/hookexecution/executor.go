@@ -63,6 +63,7 @@ func (executor *hookExecutor) ExecuteEntrypointStage(req *http.Request, body []b
 		return body, nil
 	}
 
+	stageName := hooks.StageEntrypoint.String()
 	handler := func(
 		ctx context.Context,
 		moduleCtx *hookstage.ModuleContext,
@@ -72,10 +73,12 @@ func (executor *hookExecutor) ExecuteEntrypointStage(req *http.Request, body []b
 		return hook.HandleEntrypointHook(ctx, moduleCtx, payload)
 	}
 
+	executor.invocationCtx.Stage = stageName
+
 	payload := hookstage.EntrypointPayload{Request: req, Body: body}
 	stageOutcome, payload, reject := executeStage(executor.invocationCtx, plan, payload, handler)
 	stageOutcome.Entity = hookstage.EntityHttpRequest
-	stageOutcome.Stage = hooks.StageEntrypoint
+	stageOutcome.Stage = stageName
 
 	executor.stageOutcomes = append(executor.stageOutcomes, stageOutcome)
 
@@ -140,4 +143,5 @@ func (executor *EmptyHookExecutor) ExecuteRawBidderResponseStage(_ *adapters.Bid
 
 func (executor *EmptyHookExecutor) ExecuteAllProcessedBidResponsesStage(_ []*adapters.BidderResponse) {
 }
+
 func (executor *EmptyHookExecutor) ExecuteAuctionResponseStage(_ *openrtb2.BidResponse) {}

@@ -38,7 +38,7 @@ func TestExecuteEntrypointStage_DoesNotChangeRequestForEmptyPlan(t *testing.T) {
 func TestExecuteEntrypointStage_CanApplyHookMutations(t *testing.T) {
 	expectedOutcome := StageOutcome{
 		Entity: hookstage.EntityHttpRequest,
-		Stage:  hooks.StageEntrypoint,
+		Stage:  hooks.StageEntrypoint.String(),
 		Groups: []GroupOutcome{
 			{
 				InvocationResults: []HookOutcome{
@@ -164,7 +164,7 @@ func TestExecuteEntrypointStage_CanRejectHook(t *testing.T) {
 	expectedOutcome := StageOutcome{
 		ExecutionTime: ExecutionTime{},
 		Entity:        hookstage.EntityHttpRequest,
-		Stage:         hooks.StageEntrypoint,
+		Stage:         hooks.StageEntrypoint.String(),
 		Groups: []GroupOutcome{
 			{
 				ExecutionTime: ExecutionTime{},
@@ -196,7 +196,7 @@ func TestExecuteEntrypointStage_CanRejectHook(t *testing.T) {
 						Message:       "",
 						DebugMessages: nil,
 						Errors: []string{
-							`Module rejected stage, reason: ""`,
+							`Module foobar (hook: bar) rejected request with code 0 at entrypoint stage`,
 						},
 						Warnings: nil,
 					},
@@ -213,7 +213,12 @@ func TestExecuteEntrypointStage_CanRejectHook(t *testing.T) {
 
 	newBody, reject := exec.ExecuteEntrypointStage(req, body)
 	require.NotNil(t, reject, "Unexpected successful execution of entrypoint hook")
-	require.Equal(t, reject, &RejectError{}, "Unexpected reject returned from entrypoint hook")
+	require.Equal(
+		t,
+		reject,
+		&RejectError{0, HookID{"foobar", "bar"}, hooks.StageEntrypoint.String()},
+		"Unexpected reject returned from entrypoint hook",
+	)
 
 	stOut := exec.GetOutcomes()[0]
 	assertEqualStageOutcomes(t, expectedOutcome, stOut)
@@ -230,7 +235,7 @@ func TestExecuteEntrypointStage_CanTimeoutOneOfHooks(t *testing.T) {
 	expectedOutcome := StageOutcome{
 		ExecutionTime: ExecutionTime{},
 		Entity:        hookstage.EntityHttpRequest,
-		Stage:         hooks.StageEntrypoint,
+		Stage:         hooks.StageEntrypoint.String(),
 		Groups: []GroupOutcome{
 			{
 				ExecutionTime: ExecutionTime{},

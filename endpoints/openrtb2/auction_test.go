@@ -20,6 +20,8 @@ import (
 	"github.com/prebid/openrtb/v17/native1"
 	nativeRequests "github.com/prebid/openrtb/v17/native1/request"
 	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb3"
+	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/stretchr/testify/assert"
@@ -4651,6 +4653,64 @@ func TestValidateStoredResp(t *testing.T) {
 	}
 }
 
+func TestValidResponseWhenRequestRejected(t *testing.T) {
+	nbr := openrtb3.NoBidReason(123)
+	testCases := []struct {
+		description         string
+		expectedBidResponse openrtb2.BidResponse
+		hookExecutor        hookexecution.HookStageExecutor
+	}{
+		{
+			"Assert correct BidResponse when request rejected at entrypoint stage",
+			openrtb2.BidResponse{NBR: &nbr},
+			rejectableHookExecutor{entrypointReject: &hookexecution.RejectError{
+				int(nbr),
+				hookexecution.HookID{"foobar", "foo"},
+				hooks.StageEntrypoint.String(),
+			}},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.description, func(t *testing.T) {
+			deps := &endpointDeps{
+				fakeUUIDGenerator{},
+				&nobidExchange{},
+				mockBidderParamValidator{},
+				&mockStoredReqFetcher{},
+				empty_fetcher.EmptyFetcher{},
+				empty_fetcher.EmptyFetcher{},
+				&config.Configuration{MaxRequestSize: maxSize},
+				&metricsConfig.NilMetricsEngine{},
+				analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+				map[string]string{},
+				false,
+				[]byte{},
+				openrtb_ext.BuildBidderMap(),
+				nil,
+				nil,
+				hardcodedResponseIPValidator{response: true},
+				empty_fetcher.EmptyFetcher{},
+				test.hookExecutor,
+			}
+
+			reqBody := validRequest(t, "../exemplary/simple.json")
+			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
+			recorder := httptest.NewRecorder()
+
+			deps.Auction(recorder, req, nil)
+			assert.Equal(t, recorder.Code, http.StatusOK, "Endpoint should return 200 OK.")
+
+			resp := openrtb2.BidResponse{}
+			respBytes := recorder.Body.Bytes()
+			err := json.Unmarshal(respBytes, &resp)
+
+			assert.NoError(t, err, "Unable to unmarshal response.")
+			assert.Equal(t, test.expectedBidResponse, resp)
+		})
+	}
+}
+
 type mockStoredResponseFetcher struct {
 	data map[string]json.RawMessage
 }
@@ -4686,4 +4746,41 @@ func getIntegrationFromRequest(req *openrtb_ext.RequestWrapper) (string, error) 
 	}
 	reqPrebid := reqExt.GetPrebid()
 	return reqPrebid.Integration, nil
+}
+
+type rejectableHookExecutor struct {
+	entrypointReject,
+	rawAuctionReject,
+	processedAuctionReject *hookexecution.RejectError
+}
+
+func (m rejectableHookExecutor) ExecuteEntrypointStage(req *http.Request, body []byte) ([]byte, *hookexecution.RejectError) {
+	return body, m.entrypointReject
+}
+
+func (m rejectableHookExecutor) ExecuteRawAuctionStage(body []byte) ([]byte, *hookexecution.RejectError) {
+	return body, m.rawAuctionReject
+}
+
+func (m rejectableHookExecutor) ExecuteProcessedAuctionStage(req *openrtb2.BidRequest) *hookexecution.RejectError {
+	return m.processedAuctionReject
+}
+
+func (m rejectableHookExecutor) ExecuteBidderRequestStage(req *openrtb2.BidRequest, bidder string) *hookexecution.RejectError {
+	return nil
+}
+
+func (m rejectableHookExecutor) ExecuteRawBidderResponseStage(response *adapters.BidderResponse, bidder string) *hookexecution.RejectError {
+	return nil
+}
+
+func (m rejectableHookExecutor) ExecuteAllProcessedBidResponsesStage(responses []*adapters.BidderResponse) {
+}
+
+func (m rejectableHookExecutor) ExecuteAuctionResponseStage(response *openrtb2.BidResponse) {}
+
+func (m rejectableHookExecutor) SetAccount(account *config.Account) {}
+
+func (m rejectableHookExecutor) GetOutcomes() []hookexecution.StageOutcome {
+	return []hookexecution.StageOutcome{}
 }
