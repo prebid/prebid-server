@@ -15,7 +15,7 @@ import (
 type AllProcessedBidResponses interface {
 	HandleAllProcessedBidResponsesHook(
 		context.Context,
-		*ModuleContext,
+		ModuleContext,
 		AllProcessedBidResponsesPayload,
 	) (HookResult[AllProcessedBidResponsesPayload], error)
 }
