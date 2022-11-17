@@ -120,7 +120,9 @@ func (executor *hookExecutor) ExecuteAuctionResponseStage(response *openrtb2.Bid
 func (executor *hookExecutor) saveModuleContexts(ctxs hookstage.StageModuleContext) {
 	for _, mcs := range ctxs.GroupCtx {
 		for k, mc := range mcs {
-			executor.invocationCtx.SetModuleContext(k, mc)
+			if mc.Ctx != nil {
+				executor.invocationCtx.SetModuleContext(k, mc)
+			}
 		}
 	}
 }

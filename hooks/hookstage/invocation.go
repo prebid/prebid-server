@@ -53,7 +53,14 @@ func (ctx *InvocationContext) GetModuleContext(moduleCode string) ModuleContext 
 }
 
 func (ctx *InvocationContext) SetModuleContext(moduleCode string, mctx ModuleContext) {
-	ctx.moduleContexts[moduleCode] = mctx
+	newCtx := mctx
+	if existingCtx, ok := ctx.moduleContexts[moduleCode]; ok && existingCtx.Ctx != nil {
+		for k, v := range mctx.Ctx {
+			existingCtx.Ctx[k] = v
+		}
+		newCtx = existingCtx
+	}
+	ctx.moduleContexts[moduleCode] = newCtx
 }
 
 // HookResult represents the result of execution the concrete hook instance.
