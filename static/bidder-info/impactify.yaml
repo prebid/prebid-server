@@ -1,3 +1,4 @@
+endpoint: "https://sonic.impactify.media/bidder"
 maintainer:
   email: "support@impactify.io"
 gvlVendorID: 606

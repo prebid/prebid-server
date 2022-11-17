@@ -38,12 +38,13 @@
 	"httpCalls": [
 		{
 			"expectedRequest": {
-				"uri": "http://whatever.url?consentString=CONSENT_STRING&format=json&gdpr=1&tzo=0",
+				"uri": "http://gdpr.url?consentString=CONSENT_STRING&format=json&gdpr=1&tzo=0",
 				"body": {
 					"adUnits": [
 						{
 							"auId": "123",
-							"targetId": "123-test-imp-id"
+							"targetId": "123-test-imp-id",
+							"dimensions": [[300,250],[300,600]]
 						}
 					],
 					"metaData": {

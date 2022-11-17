@@ -1,8 +1,6 @@
 package config
 
 import (
-	"fmt"
-
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -20,18 +18,18 @@ const (
 
 // Account represents a publisher account configuration
 type Account struct {
-	ID                      string               `mapstructure:"id" json:"id"`
-	Disabled                bool                 `mapstructure:"disabled" json:"disabled"`
-	CacheTTL                DefaultTTLs          `mapstructure:"cache_ttl" json:"cache_ttl"`
-	EventsEnabled           bool                 `mapstructure:"events_enabled" json:"events_enabled"`
-	CCPA                    AccountCCPA          `mapstructure:"ccpa" json:"ccpa"`
-	GDPR                    AccountGDPR          `mapstructure:"gdpr" json:"gdpr"`
-	DebugAllow              bool                 `mapstructure:"debug_allow" json:"debug_allow"`
-	DefaultIntegration      string               `mapstructure:"default_integration" json:"default_integration"`
-	CookieSync              CookieSync           `mapstructure:"cookie_sync" json:"cookie_sync"`
-	Events                  Events               `mapstructure:"events" json:"events"` // Don't enable this feature. It is still under developmment - https://github.com/prebid/prebid-server/issues/1725
-	TruncateTargetAttribute *int                 `mapstructure:"truncate_target_attr" json:"truncate_target_attr"`
-	AlternateBidderCodes    AlternateBidderCodes `mapstructure:"alternatebiddercodes" json:"alternatebiddercodes"`
+	ID                      string                               `mapstructure:"id" json:"id"`
+	Disabled                bool                                 `mapstructure:"disabled" json:"disabled"`
+	CacheTTL                DefaultTTLs                          `mapstructure:"cache_ttl" json:"cache_ttl"`
+	EventsEnabled           bool                                 `mapstructure:"events_enabled" json:"events_enabled"`
+	CCPA                    AccountCCPA                          `mapstructure:"ccpa" json:"ccpa"`
+	GDPR                    AccountGDPR                          `mapstructure:"gdpr" json:"gdpr"`
+	DebugAllow              bool                                 `mapstructure:"debug_allow" json:"debug_allow"`
+	DefaultIntegration      string                               `mapstructure:"default_integration" json:"default_integration"`
+	CookieSync              CookieSync                           `mapstructure:"cookie_sync" json:"cookie_sync"`
+	Events                  Events                               `mapstructure:"events" json:"events"` // Don't enable this feature. It is still under developmment - https://github.com/prebid/prebid-server/issues/1725
+	TruncateTargetAttribute *int                                 `mapstructure:"truncate_target_attr" json:"truncate_target_attr"`
+	AlternateBidderCodes    *openrtb_ext.ExtAlternateBidderCodes `mapstructure:"alternatebiddercodes" json:"alternatebiddercodes"`
 }
 
 // CookieSync represents the account-level defaults for the cookie sync endpoint.
@@ -125,13 +123,10 @@ func (a *AccountGDPR) PurposeEnforced(purpose consentconstants.Purpose) (value, 
 	if a.PurposeConfigs[purpose] == nil {
 		return true, false
 	}
-	if a.PurposeConfigs[purpose].EnforcePurpose == TCF2FullEnforcement {
-		return true, true
+	if a.PurposeConfigs[purpose].EnforcePurpose == nil {
+		return true, false
 	}
-	if a.PurposeConfigs[purpose].EnforcePurpose == TCF2NoEnforcement {
-		return false, true
-	}
-	return true, false
+	return *a.PurposeConfigs[purpose].EnforcePurpose, true
 }
 
 // PurposeEnforcingVendors gets the account level enforce vendors setting for a given purpose returning the value and
@@ -179,7 +174,8 @@ func (a *AccountGDPR) PurposeOneTreatmentAccessAllowed() (value, exists bool) {
 
 // AccountGDPRPurpose represents account-specific GDPR purpose configuration
 type AccountGDPRPurpose struct {
-	EnforcePurpose string `mapstructure:"enforce_purpose" json:"enforce_purpose,omitempty"`
+	EnforceAlgo    string `mapstructure:"enforce_algo" json:"enforce_algo,omitempty"`
+	EnforcePurpose *bool  `mapstructure:"enforce_purpose" json:"enforce_purpose,omitempty"`
 	EnforceVendors *bool  `mapstructure:"enforce_vendors" json:"enforce_vendors,omitempty"`
 	// Array of vendor exceptions that is used to create the hash table VendorExceptionMap so vendor names can be instantly accessed
 	VendorExceptions   []openrtb_ext.BidderName `mapstructure:"vendor_exceptions" json:"vendor_exceptions"`
@@ -224,50 +220,4 @@ func (a *AccountIntegration) GetByIntegrationType(integrationType IntegrationTyp
 	}
 
 	return integrationEnabled
-}
-
-type AlternateBidderCodes struct {
-	Enabled  bool                                   `mapstructure:"enabled" json:"enabled"`
-	Adapters map[string]AdapterAlternateBidderCodes `mapstructure:"adapters" json:"adapters"`
-}
-
-type AdapterAlternateBidderCodes struct {
-	AllowedBidderCodes []string `mapstructure:"allowedbiddercodes" json:"allowedbiddercodes"`
-}
-
-func (bidderCodes *AlternateBidderCodes) IsValidBidderCode(bidder, alternateBidder string) (bool, error) {
-	const ErrAlternateBidderNotDefined = "alternateBidderCodes not defined for adapter %q, rejecting bids for %q"
-
-	if alternateBidder == "" || bidder == alternateBidder {
-		return true, nil
-	}
-
-	if !bidderCodes.Enabled {
-		return false, nil
-	}
-
-	if bidderCodes.Adapters == nil {
-		return false, fmt.Errorf(ErrAlternateBidderNotDefined, bidder, alternateBidder)
-	}
-
-	adapterCfg, ok := bidderCodes.Adapters[bidder]
-	if !ok {
-		return false, fmt.Errorf(ErrAlternateBidderNotDefined, bidder, alternateBidder)
-	}
-
-	if len(adapterCfg.AllowedBidderCodes) == 0 {
-		return false, fmt.Errorf("alternateBidderCodes disabled for %q, rejecting bids for %q", bidder, alternateBidder)
-	}
-
-	if adapterCfg.AllowedBidderCodes[0] == "*" {
-		return true, nil
-	}
-
-	for _, code := range adapterCfg.AllowedBidderCodes {
-		if alternateBidder == code {
-			return true, nil
-		}
-	}
-
-	return false, fmt.Errorf("invalid biddercode %q sent by adapter %q", alternateBidder, bidder)
 }

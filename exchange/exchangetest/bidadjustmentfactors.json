@@ -9,14 +9,20 @@
         {
           "id": "my-imp-id",
           "video": {
-            "mimes": ["video/mp4"]
+            "mimes": [
+              "video/mp4"
+            ]
           },
           "ext": {
-            "appnexus": {
-              "placementId": 1
-            },
-            "districtm": {
-              "placementId": 2
+            "prebid": {
+              "bidder": {
+                "appnexus": {
+                  "placementId": 1
+                },
+                "districtm": {
+                  "placementId": 2
+                }
+              }
             }
           }
         }
@@ -46,7 +52,9 @@
             {
               "id": "my-imp-id",
               "video": {
-                "mimes": ["video/mp4"]
+                "mimes": [
+                  "video/mp4"
+                ]
               },
               "ext": {
                 "bidder": {
@@ -57,12 +65,10 @@
           ],
           "ext": {
             "prebid": {
-              "aliases": {
-                "districtm": "appnexus"
-              },
-              "bidadjustmentfactors": {
-                "appnexus": 2.5,
-                "districtm": 0.3
+              "server": {
+                "datacenter": "Datacenter",
+                "externalurl": "http://hosturl.com",
+                "gvlid": 1
               }
             }
           }
@@ -73,7 +79,9 @@
         }
       },
       "mockResponse": {
-        "errors": ["appnexus-error"]
+        "errors": [
+          "appnexus-error"
+        ]
       }
     },
     "districtm": {
@@ -87,7 +95,9 @@
             {
               "id": "my-imp-id",
               "video": {
-                "mimes": ["video/mp4"]
+                "mimes": [
+                  "video/mp4"
+                ]
               },
               "ext": {
                 "bidder": {
@@ -98,12 +108,10 @@
           ],
           "ext": {
             "prebid": {
-              "aliases": {
-                "districtm": "appnexus"
-              },
-              "bidadjustmentfactors": {
-                "appnexus": 2.5,
-                "districtm": 0.3
+              "server": {
+                "datacenter": "Datacenter",
+                "externalurl": "http://hosturl.com",
+                "gvlid": 1
               }
             }
           }
@@ -114,7 +122,9 @@
         }
       },
       "mockResponse": {
-        "errors": ["districtm-error"]
+        "errors": [
+          "districtm-error"
+        ]
       }
     }
   },
@@ -123,8 +133,12 @@
       "id": "some-request-id",
       "ext": {
         "errors": {
-          "appnexus": ["appnexus-error"],
-          "districtm": ["districtm-error"]
+          "appnexus": [
+            "appnexus-error"
+          ],
+          "districtm": [
+            "districtm-error"
+          ]
         }
       }
     }

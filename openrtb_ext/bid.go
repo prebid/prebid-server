@@ -23,6 +23,7 @@ type ExtBidPrebid struct {
 	Video             *ExtBidPrebidVideo  `json:"video,omitempty"`
 	Events            *ExtBidPrebidEvents `json:"events,omitempty"`
 	BidId             string              `json:"bidid,omitempty"`
+	Passthrough       json.RawMessage     `json:"passthrough,omitempty"`
 }
 
 // ExtBidPrebidCache defines the contract for  bidresponse.seatbid.bid[i].ext.prebid.cache
@@ -173,4 +174,5 @@ const (
 	StoredRequestAttributes = "storedrequestattributes"
 	OriginalBidCpmKey       = "origbidcpm"
 	OriginalBidCurKey       = "origbidcur"
+	Passthrough             = "passthrough"
 )
