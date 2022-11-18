@@ -42,11 +42,14 @@ const defaultAmpRequestTimeoutMillis = 900
 var nilBody []byte = nil
 
 type AmpResponse struct {
-	Targeting map[string]string                                         `json:"targeting"`
-	Debug     *openrtb_ext.ExtResponseDebug                             `json:"debug,omitempty"`
-	Errors    map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage `json:"errors,omitempty"`
-	Warnings  map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage `json:"warnings,omitempty"`
-	Ext       json.RawMessage                                           `json:"ext,omitempty"`
+	Targeting map[string]string `json:"targeting"`
+	Ext       json.RawMessage   `json:"ext,omitempty"`
+}
+
+type ExtAmpResponse struct {
+	Debug    *openrtb_ext.ExtResponseDebug                             `json:"debug,omitempty"`
+	Errors   map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage `json:"errors,omitempty"`
+	Warnings map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage `json:"warnings,omitempty"`
 }
 
 // NewAmpEndpoint modifies the OpenRTB endpoint to handle AMP requests. This will basically modify the parsing
@@ -147,14 +150,15 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	w.Header().Set("Access-Control-Expose-Headers", "AMP-Access-Control-Allow-Source-Origin")
 	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
 
-	// There is no body for AMP requests, so we pass a nil body and ignore the return value.
-	if _, rejectErr := deps.hookExecutor.ExecuteEntrypointStage(r, nilBody); rejectErr != nil {
-		labels, ao = rejectAmpRequest(*rejectErr, w, nil, labels, ao, nil)
-		return
-	}
-
+	_, rejectErr := deps.hookExecutor.ExecuteEntrypointStage(r, nil)
 	reqWrapper, storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, errL := deps.parseAmpRequest(r)
 	ao.Errors = append(ao.Errors, errL...)
+	// Process reject after parsing amp request, so we can use reqWrapper.
+	// There is no body for AMP requests, so we pass a nil body and ignore the return value.
+	if rejectErr != nil {
+		labels, ao = rejectAmpRequest(*rejectErr, w, deps.hookExecutor, reqWrapper, nil, labels, ao, nil)
+		return
+	}
 
 	if errortypes.ContainsFatalError(errL) {
 		w.WriteHeader(http.StatusBadRequest)
@@ -256,22 +260,22 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	}
 
 	if isRejectErr {
-		labels, ao = rejectAmpRequest(*rejectErr, w, reqWrapper, labels, ao, errL)
+		labels, ao = rejectAmpRequest(*rejectErr, w, deps.hookExecutor, reqWrapper, account, labels, ao, errL)
 		return
 	}
 
-	labels, ao = sendAmpResponse(w, response, reqWrapper, labels, ao, errL)
+	labels, ao = sendAmpResponse(w, deps.hookExecutor, response, reqWrapper, account, labels, ao, errL)
 }
 
-func rejectAmpRequest(rejectErr hookexecution.RejectError, w http.ResponseWriter, reqWrapper *openrtb_ext.RequestWrapper, labels metrics.Labels, ao analytics.AmpObject, errs []error) (metrics.Labels, analytics.AmpObject) {
+func rejectAmpRequest(rejectErr hookexecution.RejectError, w http.ResponseWriter, hookExecutor hookexecution.HookStageExecutor, reqWrapper *openrtb_ext.RequestWrapper, account *config.Account, labels metrics.Labels, ao analytics.AmpObject, errs []error) (metrics.Labels, analytics.AmpObject) {
 	response := &openrtb2.BidResponse{NBR: openrtb3.NoBidReason(rejectErr.NBR).Ptr()}
 	ao.AuctionResponse = response
 	ao.Errors = append(ao.Errors, rejectErr)
 
-	return sendAmpResponse(w, response, reqWrapper, labels, ao, errs)
+	return sendAmpResponse(w, hookExecutor, response, reqWrapper, account, labels, ao, errs)
 }
 
-func sendAmpResponse(w http.ResponseWriter, response *openrtb2.BidResponse, reqWrapper *openrtb_ext.RequestWrapper, labels metrics.Labels, ao analytics.AmpObject, errs []error) (metrics.Labels, analytics.AmpObject) {
+func sendAmpResponse(w http.ResponseWriter, hookExecutor hookexecution.HookStageExecutor, response *openrtb2.BidResponse, reqWrapper *openrtb_ext.RequestWrapper, account *config.Account, labels metrics.Labels, ao analytics.AmpObject, errs []error) (metrics.Labels, analytics.AmpObject) {
 	// Need to extract the targeting parameters from the response, as those are all that
 	// go in the AMP response
 	targets := map[string]string{}
@@ -301,6 +305,54 @@ func sendAmpResponse(w http.ResponseWriter, response *openrtb2.BidResponse, reqW
 		}
 	}
 
+	// Now JSONify the targets for the AMP response.
+	ampResponse := AmpResponse{Targeting: targets}
+	ao.AmpTargetingValues = targets
+
+	ao, ext, err := encodeExtAmpResponse(response, reqWrapper, ao, errs)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		glog.Errorf("/openrtb2/amp Critical error encoding amp response extension: %v", err)
+		ao.Status = http.StatusInternalServerError
+		ao.Errors = append(ao.Errors, fmt.Errorf("Failed to encode amp response extension: %s", err))
+		return labels, ao
+	} else {
+		ampResponse.Ext = ext
+	}
+
+	if reqWrapper != nil {
+		stageOutcomes := hookExecutor.GetOutcomes()
+		ext, extErr := hookexecution.EnrichExtBidResponse(ampResponse.Ext, stageOutcomes, reqWrapper.BidRequest, account)
+		if extErr != nil {
+			err := fmt.Errorf("Failed to enrich Amp Response with hook debug information: %s", extErr)
+			glog.Errorf(err.Error())
+			ao.Errors = append(ao.Errors, err)
+		} else {
+			ampResponse.Ext = ext
+		}
+	}
+
+	// Fixes #231
+	enc := json.NewEncoder(w)
+	enc.SetEscapeHTML(false)
+
+	// If an error happens when encoding the response, there isn't much we can do.
+	// If we've sent _any_ bytes, then Go would have sent the 200 status code first.
+	// That status code can't be un-sent... so the best we can do is log the error.
+	if err := enc.Encode(ampResponse); err != nil {
+		labels.RequestStatus = metrics.RequestStatusNetworkErr
+		ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/amp Failed to send response: %v", err))
+	}
+
+	return labels, ao
+}
+
+func encodeExtAmpResponse(
+	response *openrtb2.BidResponse,
+	reqWrapper *openrtb_ext.RequestWrapper,
+	ao analytics.AmpObject,
+	errs []error,
+) (analytics.AmpObject, json.RawMessage, error) {
 	// Extract any errors
 	var extResponse openrtb_ext.ExtBidResponse
 	eRErr := json.Unmarshal(response.Ext, &extResponse)
@@ -320,38 +372,30 @@ func sendAmpResponse(w http.ResponseWriter, response *openrtb2.BidResponse, reqW
 		warnings[openrtb_ext.BidderReservedGeneral] = append(warnings[openrtb_ext.BidderReservedGeneral], bidderErr)
 	}
 
-	// Now JSONify the targets for the AMP response.
-	ampResponse := AmpResponse{
-		Targeting: targets,
-		Errors:    extResponse.Errors,
-		Warnings:  warnings,
+	extAmpResponse := ExtAmpResponse{
+		Errors:   extResponse.Errors,
+		Warnings: warnings,
 	}
 
-	ao.AmpTargetingValues = targets
-
 	// add debug information if requested
-	if reqWrapper != nil && reqWrapper.Test == 1 && eRErr == nil {
-		if extResponse.Debug != nil {
-			ampResponse.Debug = extResponse.Debug
-		} else {
-			glog.Errorf("Test set on request but debug not present in response.")
-			ao.Errors = append(ao.Errors, fmt.Errorf("test set on request but debug not present in response"))
+	if reqWrapper != nil {
+		if reqWrapper.Test == 1 && eRErr == nil {
+			if extResponse.Debug != nil {
+				extAmpResponse.Debug = extResponse.Debug
+			} else {
+				glog.Errorf("Test set on request but debug not present in response.")
+				ao.Errors = append(ao.Errors, fmt.Errorf("test set on request but debug not present in response"))
+			}
 		}
 	}
 
-	// Fixes #231
-	enc := json.NewEncoder(w)
-	enc.SetEscapeHTML(false)
+	buffer := &bytes.Buffer{}
+	encoder := json.NewEncoder(buffer)
 
-	// If an error happens when encoding the response, there isn't much we can do.
-	// If we've sent _any_ bytes, then Go would have sent the 200 status code first.
-	// That status code can't be un-sent... so the best we can do is log the error.
-	if err := enc.Encode(ampResponse); err != nil {
-		labels.RequestStatus = metrics.RequestStatusNetworkErr
-		ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/amp Failed to send response: %v", err))
-	}
+	encoder.SetEscapeHTML(false)
+	err := encoder.Encode(extAmpResponse)
 
-	return labels, ao
+	return ao, buffer.Bytes(), err
 }
 
 // parseRequest turns the HTTP request into an OpenRTB request.
