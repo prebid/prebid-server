@@ -32,10 +32,10 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var videoHeoresExt *openrtb_ext.ExtImpVideoHeroes
+	var braveExt *openrtb_ext.ExtImpBrave
 	var err error
 
-	videoHeoresExt, err = a.getImpressionExt(&request.Imp[0])
+	braveExt, err = a.getImpressionExt(&request.Imp[0])
 	if err != nil {
 		return nil, []error{err}
 	}
