@@ -327,14 +327,6 @@ func sendAmpResponse(w http.ResponseWriter, response *openrtb2.BidResponse, reqW
 		Warnings:  warnings,
 	}
 
-	stageOutcomes := deps.hookExecutor.GetOutcomes()
-	ext, extErr := hookexecution.EnrichExtBidResponse(ampResponse.Ext, stageOutcomes, reqWrapper.BidRequest, account)
-	if extErr != nil {
-		glog.Errorf("Failed to enrich Amp Response with hook debug information: %s", extErr)
-	} else {
-		ampResponse.Ext = ext
-	}
-
 	ao.AmpTargetingValues = targets
 
 	// add debug information if requested

@@ -11,10 +11,13 @@ import (
 )
 
 const (
-	traceLevelBasic   trace = "basic"
+	// traceLevelBasic excludes debugmessages and analytic_tags from output
+	traceLevelBasic trace = "basic"
+	// traceLevelVerbose sets maximum level of output information
 	traceLevelVerbose trace = "verbose"
 )
 
+// Trace controls the level of detail in the output information returned from executing hooks.
 type trace string
 
 func (t trace) isBasicOrHigher() bool {
@@ -31,6 +34,11 @@ type modulesResponse struct {
 	} `json:"prebid"`
 }
 
+// EnrichExtBidResponse adds debug and trace information returned from executing hooks to the ext argument.
+// In response the outcome is visible under the key response.ext.prebid.modules.
+//
+// Debug information is added only if the debug mode is enabled by request and allowed by account (if provided).
+// The details of the trace output depends on the value in the bidRequest.ext.prebid.trace field.
 func EnrichExtBidResponse(
 	ext json.RawMessage,
 	stageOutcomes []StageOutcome,

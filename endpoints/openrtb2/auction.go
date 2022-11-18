@@ -257,7 +257,9 @@ func sendAuctionResponse(w http.ResponseWriter, hookExecutor hookexecution.HookS
 	if response != nil {
 		stageOutcomes := hookExecutor.GetOutcomes()
 		if ext, err := hookexecution.EnrichExtBidResponse(response.Ext, stageOutcomes, request, account); err != nil {
-			glog.Errorf("Failed to enrich Bid Response with hook debug information: %s", err)
+			err = fmt.Errorf("Failed to enrich Bid Response with hook debug information: %s", err)
+			glog.Errorf(err.Error())
+			ao.Errors = append(ao.Errors, err)
 		} else {
 			response.Ext = ext
 		}
