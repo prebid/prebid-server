@@ -1239,7 +1239,7 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb_ext.ImpWrapper, aliases ma
 
 		if coreBidderNormalized, isValid := deps.bidderMap[coreBidder]; isValid {
 			if err := deps.paramsValidator.Validate(coreBidderNormalized, ext); err != nil {
-				return []error{fmt.Errorf("request.imp[%d].ext.%s failed validation.\n%v", impIndex, bidder, err)}
+				return []error{fmt.Errorf("request.imp[%d].ext.prebid.bidder.%s failed validation.\n%v", impIndex, bidder, err)}
 			}
 		} else {
 			if msg, isDisabled := deps.disabledBidders[bidder]; isDisabled {
@@ -1247,13 +1247,13 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb_ext.ImpWrapper, aliases ma
 				delete(prebid.Bidder, bidder)
 				prebidModified = true
 			} else {
-				return []error{fmt.Errorf("request.imp[%d].ext contains unknown bidder: %s. Did you forget an alias in request.ext.prebid.aliases?", impIndex, bidder)}
+				return []error{fmt.Errorf("request.imp[%d].ext.prebid.bidder contains unknown bidder: %s. Did you forget an alias in request.ext.prebid.aliases?", impIndex, bidder)}
 			}
 		}
 	}
 
 	if len(prebid.Bidder) == 0 {
-		errL = append(errL, fmt.Errorf("request.imp[%d].ext must contain at least one bidder", impIndex))
+		errL = append(errL, fmt.Errorf("request.imp[%d].ext.prebid.bidder must contain at least one bidder", impIndex))
 		return errL
 	}
 
