@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/mitchellh/copystructure"
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -22,38 +22,37 @@ import (
 // RunJSONBidderTest is a helper method intended to unit test Bidders' adapters.
 // It requires that:
 //
-//   1. Bidders communicate with external servers over HTTP.
-//   2. The HTTP request bodies are legal JSON.
+//  1. Bidders communicate with external servers over HTTP.
+//  2. The HTTP request bodies are legal JSON.
 //
 // Although the project does not require it, we _strongly_ recommend that all Bidders write tests using this.
 // Doing so has the following benefits:
 //
-// 1. This includes some basic tests which confirm that your Bidder is "well-behaved" for all the input samples.
-//    For example, "no nil bids are allowed in the returned array".
-//    These tests are tedious to write, but help prevent bugs during auctions.
+//  1. This includes some basic tests which confirm that your Bidder is "well-behaved" for all the input samples.
+//     For example, "no nil bids are allowed in the returned array".
+//     These tests are tedious to write, but help prevent bugs during auctions.
 //
-// 2. In the future, we plan to auto-generate documentation from the "exemplary" test files.
-//    Those docs will teach publishers how to use your Bidder, which should encourage adoption.
+//  2. In the future, we plan to auto-generate documentation from the "exemplary" test files.
+//     Those docs will teach publishers how to use your Bidder, which should encourage adoption.
 //
 // To use this method, create *.json files in the following directories:
 //
 // adapters/{bidder}/{bidder}test/exemplary:
 //
-//   These show "ideal" BidRequests for your Bidder. If possible, configure your servers to return the same
-//   expected responses forever. If your server responds appropriately, our future auto-generated documentation
-//   can guarantee Publishers that your adapter works as documented.
+//	These show "ideal" BidRequests for your Bidder. If possible, configure your servers to return the same
+//	expected responses forever. If your server responds appropriately, our future auto-generated documentation
+//	can guarantee Publishers that your adapter works as documented.
 //
 // adapters/{bidder}/{bidder}test/supplemental:
 //
-//   Fill this with *.json files which are useful test cases, but are not appropriate for public example docs.
-//   For example, a file in this directory might make sure that a mobile-only Bidder returns errors on non-mobile requests.
+//	Fill this with *.json files which are useful test cases, but are not appropriate for public example docs.
+//	For example, a file in this directory might make sure that a mobile-only Bidder returns errors on non-mobile requests.
 //
 // Then create a test in your adapters/{bidder}/{bidder}_test.go file like so:
 //
-//   func TestJsonSamples(t *testing.T) {
-//     adapterstest.RunJSONBidderTest(t, "{bidder}test", instanceOfYourBidder)
-//   }
-//
+//	func TestJsonSamples(t *testing.T) {
+//	  adapterstest.RunJSONBidderTest(t, "{bidder}test", instanceOfYourBidder)
+//	}
 func RunJSONBidderTest(t *testing.T, rootDir string, bidder adapters.Bidder) {
 	runTests(t, fmt.Sprintf("%s/exemplary", rootDir), bidder, false, false, false)
 	runTests(t, fmt.Sprintf("%s/supplemental", rootDir), bidder, true, false, false)
@@ -369,9 +368,9 @@ func diffJson(description string, actual []byte, expected []byte) error {
 // testMakeRequestsImpl asserts the resulting values of the bidder's `MakeRequests()` implementation
 // against the expected JSON-defined results and ensures we do not encounter data races in the process.
 // To assert no data races happen we make use of:
-//  1) A shallow copy of the unmarshalled openrtb2.BidRequest that will provide reference values to
+//  1. A shallow copy of the unmarshalled openrtb2.BidRequest that will provide reference values to
 //     shared memory that we don't want the adapters' implementation of `MakeRequests()` to modify.
-//  2) A deep copy that will preserve the original values of all the fields. This copy remains untouched
+//  2. A deep copy that will preserve the original values of all the fields. This copy remains untouched
 //     by the adapters' processes and serves as reference of what the shared memory values should still
 //     be after the `MakeRequests()` call.
 func testMakeRequestsImpl(t *testing.T, filename string, spec *testSpec, bidder adapters.Bidder, reqInfo *adapters.ExtraRequestInfo) []*adapters.RequestData {

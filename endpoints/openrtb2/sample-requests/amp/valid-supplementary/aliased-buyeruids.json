@@ -3,23 +3,36 @@
   "query": "tag_id=101",
   "config": {
     "mockBidders": [
-      {"bidderName": "appnexus", "currency": "USD", "price": 2}
+      {
+        "bidderName": "appnexus",
+        "currency": "USD",
+        "price": 2
+      }
     ]
   },
   "mockBidRequest": {
     "id": "request-with-user-ext-obj",
-    "site": {"page": "test.somepage.com"},
+    "site": {
+      "page": "test.somepage.com"
+    },
     "imp": [
       {
         "id": "my-imp-id",
         "banner": {
           "format": [
-            {"w": 300, "h": 600}
+            {
+              "w": 300,
+              "h": 600
+            }
           ]
         },
         "ext": {
-          "appnexus": {
-            "placementId": 12883451
+          "prebid": {
+            "bidder": {
+              "appnexus": {
+                "placementId": 12883451
+              }
+            }
           }
         }
       }
@@ -56,7 +69,10 @@
     },
     "warnings": {
       "general": [
-        {"code": 10002, "message": "debug turned off for account"}
+        {
+          "code": 10002,
+          "message": "debug turned off for account"
+        }
       ]
     }
   },

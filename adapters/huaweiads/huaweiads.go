@@ -15,10 +15,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mxmCherry/openrtb/v16/native1"
-	nativeRequests "github.com/mxmCherry/openrtb/v16/native1/request"
-	nativeResponse "github.com/mxmCherry/openrtb/v16/native1/response"
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/openrtb/v17/native1"
+	nativeRequests "github.com/prebid/openrtb/v17/native1/request"
+	nativeResponse "github.com/prebid/openrtb/v17/native1/response"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -282,7 +282,7 @@ func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest,
 			return nil, []error{errors.New("Unmarshal ExtImpHuaweiAds failed: huaweiAdsImpExt is nil.")}
 		}
 
-		adslot30, err := getReqAdslot30(huaweiAdsImpExt, &openRTBRequest.Imp[index], openRTBRequest)
+		adslot30, err := getReqAdslot30(huaweiAdsImpExt, &openRTBRequest.Imp[index])
 		if err != nil {
 			return nil, []error{err}
 		}
@@ -377,7 +377,7 @@ func (a *adapter) MakeBids(openRTBRequest *openrtb2.BidRequest, requestToBidder 
 }
 
 // Builder builds a new instance of the HuaweiAds adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	extraInfo, err := getExtraInfo(config.ExtraAdapterInfo)
 	if err != nil {
 		return nil, err
@@ -457,12 +457,16 @@ func getReqJson(request *huaweiAdsRequest, openRTBRequest *openrtb2.BidRequest, 
 }
 
 func getReqAdslot30(huaweiAdsImpExt *openrtb_ext.ExtImpHuaweiAds,
-	openRTBImp *openrtb2.Imp, openRTBRequest *openrtb2.BidRequest) (adslot30, error) {
+	openRTBImp *openrtb2.Imp) (adslot30, error) {
 	adtype := convertAdtypeStringToInteger(strings.ToLower(huaweiAdsImpExt.Adtype))
+	testStatus := 0
+	if huaweiAdsImpExt.IsTestAuthorization == "true" {
+		testStatus = 1
+	}
 	var adslot30 = adslot30{
 		Slotid: huaweiAdsImpExt.SlotId,
 		Adtype: adtype,
-		Test:   int32(openRTBRequest.Test),
+		Test:   int32(testStatus),
 	}
 	if err := checkAndExtractOpenrtbFormat(&adslot30, adtype, huaweiAdsImpExt.Adtype, openRTBImp); err != nil {
 		return adslot30, err
@@ -700,7 +704,6 @@ func getClientTime(clientTime string) (newClientTime string) {
 // getReqDeviceInfo: get device information for HuaweiAds request
 func getReqDeviceInfo(request *huaweiAdsRequest, openRTBRequest *openrtb2.BidRequest) (err error) {
 	var device device
-	var isGetGaidSuccess = false
 	if openRTBRequest.Device != nil {
 		device.Type = int32(openRTBRequest.Device.DeviceType)
 		device.Useragent = openRTBRequest.Device.UA
@@ -718,12 +721,12 @@ func getReqDeviceInfo(request *huaweiAdsRequest, openRTBRequest *openrtb2.BidReq
 		var country = getCountryCode(openRTBRequest)
 		device.BelongCountry = country
 		device.LocaleCountry = country
-		device.Gaid, isGetGaidSuccess = getGaidFromDeviceIFA(openRTBRequest.Device.OS, openRTBRequest.Device.IFA)
 		device.Ip = openRTBRequest.Device.IP
+		device.Gaid = openRTBRequest.Device.IFA
 	}
 
 	// get oaid gaid imei in openRTBRequest.User.Ext.Data
-	if err = getDeviceIDFromUserExt(&device, isGetGaidSuccess, openRTBRequest); err != nil {
+	if err = getDeviceIDFromUserExt(&device, openRTBRequest); err != nil {
 		return err
 	}
 
@@ -741,26 +744,13 @@ func getReqDeviceInfo(request *huaweiAdsRequest, openRTBRequest *openrtb2.BidReq
 	return nil
 }
 
-// getGaidFromDeviceIFA: get gaid from IFA if os is android
-// gaid example: e4fe9bde-caa0-47b6-908d-ffba3fa184f2
-func getGaidFromDeviceIFA(os string, ifa string) (gaid string, isGetGaidSuccess bool) {
-	if !strings.Contains(strings.ToLower(os), "android") {
-		return "", false
-	}
-
-	gaid = strings.ToLower(ifa)
-	if gaid == "" {
-		return "", false
-	}
-
-	return gaid, true
-}
-
 func getCountryCode(openRTBRequest *openrtb2.BidRequest) string {
 	if openRTBRequest.Device != nil && openRTBRequest.Device.Geo != nil && openRTBRequest.Device.Geo.Country != "" {
 		return convertCountryCode(openRTBRequest.Device.Geo.Country)
 	} else if openRTBRequest.User != nil && openRTBRequest.User.Geo != nil && openRTBRequest.User.Geo.Country != "" {
 		return convertCountryCode(openRTBRequest.User.Geo.Country)
+	} else if openRTBRequest.Device != nil && openRTBRequest.Device.MCCMNC != "" {
+		return getCountryCodeFromMCC(openRTBRequest.Device.MCCMNC)
 	} else {
 		return defaultCountryName
 	}
@@ -788,39 +778,60 @@ func convertCountryCode(country string) (out string) {
 	return defaultCountryName
 }
 
+func getCountryCodeFromMCC(MCC string) (out string) {
+	var countryMCC = strings.Split(MCC, "-")[0]
+	intVar, err := strconv.Atoi(countryMCC)
+
+	if err != nil {
+		return defaultCountryName
+	} else {
+		if result, found := MccList[intVar]; found {
+			return strings.ToUpper(result)
+		} else {
+			return defaultCountryName
+		}
+	}
+}
+
 // getDeviceID include oaid gaid imei. In prebid mobile, use TargetingParams.addUserData("imei", "imei-test");
 // When ifa: gaid exists, other device id can be passed by TargetingParams.addUserData("oaid", "oaid-test");
-// When getGaidFromDeviceIFA success, getDeviceIDFromUserExt failed, no error will be reported.
-func getDeviceIDFromUserExt(device *device, isGetGaidSuccess bool, openRTBRequest *openrtb2.BidRequest) (err error) {
+func getDeviceIDFromUserExt(device *device, openRTBRequest *openrtb2.BidRequest) (err error) {
+	var userObjExist = true
 	if openRTBRequest.User == nil || openRTBRequest.User.Ext == nil {
-		if isGetGaidSuccess {
-			return nil
+		userObjExist = false
+	}
+	if userObjExist {
+		var extUserDataHuaweiAds openrtb_ext.ExtUserDataHuaweiAds
+		if err := json.Unmarshal(openRTBRequest.User.Ext, &extUserDataHuaweiAds); err != nil {
+			return errors.New("get gaid from openrtb Device.IFA failed, and get device id failed: Unmarshal openRTBRequest.User.Ext -> extUserDataHuaweiAds. Error: " + err.Error())
 		}
-		return errors.New("get gaid from openrtb Device.IFA failed, and get device id failed: openRTBRequest.User.Ext is nil.")
-	}
-	var extUserDataHuaweiAds openrtb_ext.ExtUserDataHuaweiAds
-	if err := json.Unmarshal(openRTBRequest.User.Ext, &extUserDataHuaweiAds); err != nil {
-		if isGetGaidSuccess {
-			return nil
+
+		var deviceId = extUserDataHuaweiAds.Data
+		isValidDeviceId := false
+
+		if len(deviceId.Oaid) > 0 {
+			device.Oaid = deviceId.Oaid[0]
+			isValidDeviceId = true
 		}
-		return errors.New("get gaid from openrtb Device.IFA failed, and get device id failed: Unmarshal openRTBRequest.User.Ext -> extUserDataHuaweiAds.")
-	}
-	var deviceId = extUserDataHuaweiAds.Data
-	if !isGetGaidSuccess && len(deviceId.Imei) == 0 && len(deviceId.Gaid) == 0 && len(deviceId.Oaid) == 0 {
-		return errors.New("get gaid from openrtb Device.IFA failed, and get device id failed: Imei ,Oaid, Gaid are all empty.")
-	}
-	if len(deviceId.Oaid) > 0 {
-		device.Oaid = deviceId.Oaid[0]
-	}
-	// when getGaidFromDeviceIFA failed
-	if len(deviceId.Gaid) > 0 && !isGetGaidSuccess {
-		device.Gaid = deviceId.Gaid[0]
-	}
-	if len(deviceId.Imei) > 0 {
-		device.Imei = deviceId.Imei[0]
-	}
-	if len(deviceId.ClientTime) > 0 {
-		device.ClientTime = getClientTime(deviceId.ClientTime[0])
+		if len(deviceId.Gaid) > 0 {
+			device.Gaid = deviceId.Gaid[0]
+			isValidDeviceId = true
+		}
+		if len(deviceId.Imei) > 0 {
+			device.Imei = deviceId.Imei[0]
+			isValidDeviceId = true
+		}
+
+		if !isValidDeviceId {
+			return errors.New("getDeviceID: Imei ,Oaid, Gaid are all empty.")
+		}
+		if len(deviceId.ClientTime) > 0 {
+			device.ClientTime = getClientTime(deviceId.ClientTime[0])
+		}
+	} else {
+		if len(device.Gaid) == 0 {
+			return errors.New("getDeviceID: openRTBRequest.User.Ext is nil and device.Gaid is not specified.")
+		}
 	}
 	return nil
 }

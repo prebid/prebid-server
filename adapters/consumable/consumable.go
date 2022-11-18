@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -39,6 +39,7 @@ type bidRequest struct {
 	GDPR               *bidGdpr             `json:"gdpr,omitempty"`
 	Coppa              bool                 `json:"coppa,omitempty"`
 	SChain             openrtb2.SupplyChain `json:"schain"`
+	Content            *openrtb2.Content    `json:"content,omitempty"`
 }
 
 type placement struct {
@@ -51,7 +52,8 @@ type placement struct {
 }
 
 type user struct {
-	Key string `json:"key,omitempty"`
+	Key  string         `json:"key,omitempty"`
+	Eids []openrtb2.EID `json:"eids,omitempty"`
 }
 
 type bidGdpr struct {
@@ -170,6 +172,10 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 		} else {
 			gdpr.Consent = extUser.Consent
 			body.GDPR = &gdpr
+
+			if hasEids(extUser.Eids) {
+				body.User.Eids = extUser.Eids
+			}
 		}
 	}
 
@@ -183,6 +189,12 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *
 	}
 
 	body.Coppa = request.Regs != nil && request.Regs.COPPA > 0
+
+	if request.Site != nil && request.Site.Content != nil {
+		body.Content = request.Site.Content
+	} else if request.App != nil && request.App.Content != nil {
+		body.Content = request.App.Content
+	}
 
 	for i, impression := range request.Imp {
 
@@ -312,10 +324,19 @@ func extractExtensions(impression openrtb2.Imp) (*adapters.ExtImpBidder, *openrt
 }
 
 // Builder builds a new instance of the Consumable adapter for the given bidder with the given config.
-func Builder(bidderName openrtb_ext.BidderName, config config.Adapter) (adapters.Bidder, error) {
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &ConsumableAdapter{
 		clock:    realInstant{},
 		endpoint: config.Endpoint,
 	}
 	return bidder, nil
+}
+
+func hasEids(eids []openrtb2.EID) bool {
+	for i := 0; i < len(eids); i++ {
+		if len(eids[i].UIDs) > 0 && eids[i].UIDs[0].ID != "" {
+			return true
+		}
+	}
+	return false
 }
