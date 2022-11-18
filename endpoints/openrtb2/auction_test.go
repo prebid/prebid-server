@@ -22,6 +22,7 @@ import (
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/openrtb/v17/openrtb3"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/stretchr/testify/assert"
@@ -4655,6 +4656,12 @@ func TestValidateStoredResp(t *testing.T) {
 
 func TestValidResponseWhenRequestRejected(t *testing.T) {
 	nbr := openrtb3.NoBidReason(123)
+	reject := hookexecution.RejectError{
+		int(nbr),
+		hookexecution.HookID{"foobar", "foo"},
+		hooks.StageEntrypoint.String(),
+	}
+
 	testCases := []struct {
 		description         string
 		expectedBidResponse openrtb2.BidResponse
@@ -4663,16 +4670,14 @@ func TestValidResponseWhenRequestRejected(t *testing.T) {
 		{
 			"Assert correct BidResponse when request rejected at entrypoint stage",
 			openrtb2.BidResponse{NBR: &nbr},
-			rejectableHookExecutor{entrypointReject: &hookexecution.RejectError{
-				int(nbr),
-				hookexecution.HookID{"foobar", "foo"},
-				hooks.StageEntrypoint.String(),
-			}},
+			rejectableHookExecutor{entrypointReject: &reject},
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
+			actualAuctionObject := analytics.AuctionObject{}
+			logger := newMockLogger(nil, &actualAuctionObject)
 			deps := &endpointDeps{
 				fakeUUIDGenerator{},
 				&nobidExchange{},
@@ -4682,7 +4687,7 @@ func TestValidResponseWhenRequestRejected(t *testing.T) {
 				empty_fetcher.EmptyFetcher{},
 				&config.Configuration{MaxRequestSize: maxSize},
 				&metricsConfig.NilMetricsEngine{},
-				analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+				logger,
 				map[string]string{},
 				false,
 				[]byte{},
@@ -4707,6 +4712,7 @@ func TestValidResponseWhenRequestRejected(t *testing.T) {
 
 			assert.NoError(t, err, "Unable to unmarshal response.")
 			assert.Equal(t, test.expectedBidResponse, resp)
+			assert.Contains(t, actualAuctionObject.Errors, reject, "Reject error is not logged to analytics.")
 		})
 	}
 }
