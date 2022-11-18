@@ -3,6 +3,7 @@ package hookexecution
 import (
 	"context"
 	"net/http"
+	"sync"
 
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
@@ -39,6 +40,8 @@ type hookExecutor struct {
 	planBuilder   hooks.ExecutionPlanBuilder
 	metricEngine  metrics.MetricsEngine
 	stageOutcomes []StageOutcome
+	// Mutex needed for BidderRequest and RawBidderResponse Stages as they are run in several goroutines
+	mu sync.Mutex
 }
 
 func NewHookExecutor(builder hooks.ExecutionPlanBuilder, endpoint string, me metrics.MetricsEngine) *hookExecutor {
@@ -69,7 +72,7 @@ func (executor *hookExecutor) ExecuteEntrypointStage(req *http.Request, body []b
 	stageName := hooks.StageEntrypoint.String()
 	handler := func(
 		ctx context.Context,
-		moduleCtx *hookstage.ModuleContext,
+		moduleCtx hookstage.ModuleContext,
 		hook hookstage.Entrypoint,
 		payload hookstage.EntrypointPayload,
 	) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
@@ -79,10 +82,17 @@ func (executor *hookExecutor) ExecuteEntrypointStage(req *http.Request, body []b
 	executor.invocationCtx.Stage = stageName
 
 	payload := hookstage.EntrypointPayload{Request: req, Body: body}
-	stageOutcome, payload, reject := executeStage(executor.invocationCtx, plan, payload, handler, executor.metricEngine)
+	stageOutcome, payload, stageModuleContexts, reject := executeStage(
+		executor.invocationCtx,
+		plan,
+		payload,
+		handler,
+		executor.metricEngine,
+	)
 	stageOutcome.Entity = hookstage.EntityHttpRequest
 	stageOutcome.Stage = stageName
 
+	executor.saveModuleContexts(stageModuleContexts)
 	executor.stageOutcomes = append(executor.stageOutcomes, stageOutcome)
 
 	return payload.Body, reject
@@ -114,6 +124,16 @@ func (executor *hookExecutor) ExecuteAllProcessedBidResponsesStage(responses []*
 
 func (executor *hookExecutor) ExecuteAuctionResponseStage(response *openrtb2.BidResponse) {
 	//TODO: implement
+}
+
+func (executor *hookExecutor) saveModuleContexts(ctxs hookstage.StageModuleContext) {
+	for _, mcs := range ctxs.GroupCtx {
+		for k, mc := range mcs {
+			if mc.Ctx != nil {
+				executor.invocationCtx.SetModuleContext(k, mc)
+			}
+		}
+	}
 }
 
 type EmptyHookExecutor struct{}

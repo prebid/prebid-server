@@ -2,6 +2,7 @@ package hookstage
 
 import (
 	"encoding/json"
+	"sync"
 
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/config"
@@ -22,10 +23,13 @@ type InvocationContext struct {
 	Stage          string
 	AccountId      string
 	Account        *config.Account
-	moduleContexts map[string]*ModuleContext
+	moduleContexts map[string]ModuleContext
+	mutex          sync.Mutex
 }
 
-func (ctx *InvocationContext) ModuleContextFor(moduleCode string) *ModuleContext {
+func (ctx *InvocationContext) GetModuleContext(moduleCode string) ModuleContext {
+	ctx.mutex.Lock()
+	defer ctx.mutex.Unlock()
 	if mc, ok := ctx.moduleContexts[moduleCode]; ok {
 		return mc
 	}
@@ -41,11 +45,22 @@ func (ctx *InvocationContext) ModuleContextFor(moduleCode string) *ModuleContext
 	}
 
 	if ctx.moduleContexts == nil {
-		ctx.moduleContexts = map[string]*ModuleContext{}
+		ctx.moduleContexts = map[string]ModuleContext{}
 	}
-	ctx.moduleContexts[moduleCode] = &emptyCtx
+	ctx.moduleContexts[moduleCode] = emptyCtx
 
-	return &emptyCtx
+	return emptyCtx
+}
+
+func (ctx *InvocationContext) SetModuleContext(moduleCode string, mctx ModuleContext) {
+	newCtx := mctx
+	if existingCtx, ok := ctx.moduleContexts[moduleCode]; ok && existingCtx.Ctx != nil {
+		for k, v := range mctx.Ctx {
+			existingCtx.Ctx[k] = v
+		}
+		newCtx = existingCtx
+	}
+	ctx.moduleContexts[moduleCode] = newCtx
 }
 
 // HookResult represents the result of execution the concrete hook instance.
@@ -59,9 +74,16 @@ type HookResult[T any] struct {
 	Warnings      []string
 	DebugMessages []string
 	AnalyticsTags hookanalytics.Analytics
+	ModuleContext ModuleContext
 }
 
 type ModuleContext struct {
 	Ctx           map[string]interface{} // interface as we do not know exactly how the modules will use their inner context
 	AccountConfig json.RawMessage
 }
+
+type StageModuleContext struct {
+	GroupCtx []GroupModuleContext
+}
+
+type GroupModuleContext map[string]ModuleContext
