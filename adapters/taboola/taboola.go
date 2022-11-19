@@ -151,16 +151,14 @@ func createTaboolaRequest(request *openrtb2.BidRequest) (taboolaRequest *openrtb
 func getMediaType(impID string, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
 	for _, imp := range imps {
 		if imp.ID == impID {
-			if imp.Native != nil {
-				return openrtb_ext.BidTypeNative, nil
-			} else if imp.Banner != nil {
+			if imp.Banner != nil {
 				return openrtb_ext.BidTypeBanner, nil
 			}
 		}
 	}
 
 	return "", &errortypes.BadInput{
-		Message: fmt.Sprintf("Failed to find native/banner impression \"%s\" ", impID),
+		Message: fmt.Sprintf("Failed to find banner impression \"%s\" ", impID),
 	}
 }
 
