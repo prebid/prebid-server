@@ -35,6 +35,7 @@ import (
 	"github.com/prebid/prebid-server/util/uuidutil"
 	"github.com/prebid/prebid-server/version"
 
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	_ "github.com/lib/pq"
