@@ -1281,13 +1281,10 @@ func (e exchange) validateBannerCreativeSize(bid *pbsOrtbBid, bidResponseExt *op
 }
 
 func (e exchange) validateBidAdM(bid *pbsOrtbBid, bidResponseExt *openrtb_ext.ExtBidResponse, adapter openrtb_ext.BidderName, pubID string) bool {
-	failStringOne := "http:"
-	failStringTwo := "http%3A"
+	invalidAdM := []string{"http:", "http%3A"}
+	requiredAdM := []string{"https:", "https%3A"}
 
-	secureStringOne := "https:"
-	secureStringTwo := "https%3A"
-
-	if (strings.Contains(bid.bid.AdM, failStringOne) || strings.Contains(bid.bid.AdM, failStringTwo)) && (!strings.Contains(bid.bid.AdM, secureStringOne) || !strings.Contains(bid.bid.AdM, secureStringTwo)) {
+	if (strings.Contains(bid.bid.AdM, invalidAdM[0]) || strings.Contains(bid.bid.AdM, invalidAdM[1])) && (!strings.Contains(bid.bid.AdM, requiredAdM[0]) || !strings.Contains(bid.bid.AdM, requiredAdM[1])) {
 		// Add error to debug array
 		bidSecureMarkupError := openrtb_ext.ExtBidderMessage{
 			Code:    errortypes.BadInputErrorCode,
@@ -1305,21 +1302,11 @@ func (e exchange) validateBidAdM(bid *pbsOrtbBid, bidResponseExt *openrtb_ext.Ex
 
 func setBidValidationStatus(host config.Validations, account config.Validations) config.Validations {
 	finalEnforcement := host
-
-	if account.BannerCreativeMaxSize == config.ValidationEnforce {
-		finalEnforcement.BannerCreativeMaxSize = config.ValidationEnforce
-	} else if account.BannerCreativeMaxSize == config.ValidationWarn {
-		finalEnforcement.BannerCreativeMaxSize = config.ValidationWarn
-	} else if account.BannerCreativeMaxSize == config.ValidationSkip {
-		finalEnforcement.BannerCreativeMaxSize = config.ValidationSkip
+	if len(account.BannerCreativeMaxSize) > 0 {
+		finalEnforcement.BannerCreativeMaxSize = account.BannerCreativeMaxSize
 	}
-
-	if account.SecureMarkup == config.ValidationEnforce {
-		finalEnforcement.SecureMarkup = config.ValidationEnforce
-	} else if account.SecureMarkup == config.ValidationWarn {
-		finalEnforcement.SecureMarkup = config.ValidationWarn
-	} else if account.SecureMarkup == config.ValidationSkip {
-		finalEnforcement.SecureMarkup = config.ValidationSkip
+	if len(account.SecureMarkup) > 0 {
+		finalEnforcement.SecureMarkup = account.SecureMarkup
 	}
 	return finalEnforcement
 }
