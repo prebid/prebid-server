@@ -50,12 +50,6 @@ type ORTB2 struct {
 	Ext *openrtb_ext.ExtBidResponse `json:"ext"`
 }
 
-type ExtAmpResponse struct {
-	Debug    *openrtb_ext.ExtResponseDebug                             `json:"debug,omitempty"`
-	Errors   map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage `json:"errors,omitempty"`
-	Warnings map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage `json:"warnings,omitempty"`
-}
-
 // NewAmpEndpoint modifies the OpenRTB endpoint to handle AMP requests. This will basically modify the parsing
 // of the request, and the return value, using the OpenRTB machinery to handle everything in between.
 func NewAmpEndpoint(
