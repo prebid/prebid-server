@@ -17,7 +17,7 @@ import (
 type RawAuction interface {
 	HandleRawAuctionHook(
 		context.Context,
-		ModuleContext,
+		ModuleInvocationContext,
 		RawAuctionPayload,
 	) (HookResult[RawAuctionPayload], error)
 }

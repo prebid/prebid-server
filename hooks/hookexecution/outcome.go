@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/hooks/hookanalytics"
-	"github.com/prebid/prebid-server/hooks/hookstage"
 )
 
 type Status string
@@ -45,9 +44,9 @@ type Stage struct {
 
 type StageOutcome struct {
 	ExecutionTime
-	Entity hookstage.Entity `json:"entity"`
-	Groups []GroupOutcome   `json:"groups"`
-	Stage  string           `json:"-"`
+	Entity entity         `json:"entity"`
+	Groups []GroupOutcome `json:"groups"`
+	Stage  string         `json:"-"`
 }
 
 type GroupOutcome struct {

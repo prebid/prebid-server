@@ -18,7 +18,7 @@ import (
 type ProcessedAuction interface {
 	HandleProcessedAuctionHook(
 		context.Context,
-		ModuleContext,
+		ModuleInvocationContext,
 		ProcessedAuctionPayload,
 	) (HookResult[ProcessedAuctionPayload], error)
 }

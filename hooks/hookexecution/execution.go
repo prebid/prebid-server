@@ -11,36 +11,36 @@ import (
 	"github.com/prebid/prebid-server/hooks/hookstage"
 )
 
-type hookHandler[H any, P any] func(
-	context.Context,
-	hookstage.ModuleContext,
-	H,
-	P,
-) (hookstage.HookResult[P], error)
-
-type HookResponse[T any] struct {
+type hookResponse[T any] struct {
 	Err           error
 	ExecutionTime time.Duration
 	HookID        HookID
 	Result        hookstage.HookResult[T]
 }
 
+type hookHandler[H any, P any] func(
+	context.Context,
+	hookstage.ModuleInvocationContext,
+	H,
+	P,
+) (hookstage.HookResult[P], error)
+
 func executeStage[H any, P any](
-	invocationCtx *hookstage.InvocationContext,
+	executionCtx executionContext,
 	plan hooks.Plan[H],
 	payload P,
 	hookHandler hookHandler[H, P],
-) (StageOutcome, P, hookstage.StageModuleContext, *RejectError) {
+) (StageOutcome, P, stageModuleContext, *RejectError) {
 	stageOutcome := StageOutcome{}
 	stageOutcome.Groups = make([]GroupOutcome, 0, len(plan))
-	stageModuleCtx := hookstage.StageModuleContext{}
-	stageModuleCtx.GroupCtx = make([]hookstage.GroupModuleContext, 0, len(plan))
+	stageModuleCtx := stageModuleContext{}
+	stageModuleCtx.groupCtx = make([]groupModuleContext, 0, len(plan))
 
 	for _, group := range plan {
-		groupOutcome, newPayload, moduleContexts, reject := executeGroup(invocationCtx, group, payload, hookHandler)
+		groupOutcome, newPayload, moduleContexts, reject := executeGroup(executionCtx, group, payload, hookHandler)
 		stageOutcome.ExecutionTimeMillis += groupOutcome.ExecutionTimeMillis
 		stageOutcome.Groups = append(stageOutcome.Groups, groupOutcome)
-		stageModuleCtx.GroupCtx = append(stageModuleCtx.GroupCtx, moduleContexts)
+		stageModuleCtx.groupCtx = append(stageModuleCtx.groupCtx, moduleContexts)
 		if reject != nil {
 			return stageOutcome, payload, stageModuleCtx, reject
 		}
@@ -52,19 +52,19 @@ func executeStage[H any, P any](
 }
 
 func executeGroup[H any, P any](
-	invocationCtx *hookstage.InvocationContext,
+	executionCtx executionContext,
 	group hooks.Group[H],
 	payload P,
 	hookHandler hookHandler[H, P],
-) (GroupOutcome, P, hookstage.GroupModuleContext, *RejectError) {
+) (GroupOutcome, P, groupModuleContext, *RejectError) {
 	var wg sync.WaitGroup
 	done := make(chan struct{})
-	resp := make(chan HookResponse[P])
+	resp := make(chan hookResponse[P])
 
 	for _, hook := range group.Hooks {
-		mCtx := invocationCtx.GetModuleContext(hook.Module)
+		mCtx := executionCtx.getModuleContext(hook.Module)
 		wg.Add(1)
-		go func(hw hooks.HookWrapper[H], moduleCtx hookstage.ModuleContext) {
+		go func(hw hooks.HookWrapper[H], moduleCtx hookstage.ModuleInvocationContext) {
 			defer wg.Done()
 			executeHook(moduleCtx, hw, payload, hookHandler, group.Timeout, resp, done)
 		}(hook, mCtx)
@@ -77,19 +77,19 @@ func executeGroup[H any, P any](
 
 	hookResponses := collectHookResponses(resp, done)
 
-	return processHookResponses(invocationCtx, hookResponses, payload)
+	return processHookResponses(executionCtx, hookResponses, payload)
 }
 
 func executeHook[H any, P any](
-	moduleCtx hookstage.ModuleContext,
+	moduleCtx hookstage.ModuleInvocationContext,
 	hw hooks.HookWrapper[H],
 	payload P,
 	hookHandler hookHandler[H, P],
 	timeout time.Duration,
-	resp chan<- HookResponse[P],
+	resp chan<- hookResponse[P],
 	done <-chan struct{},
 ) {
-	hookRespCh := make(chan HookResponse[P], 1)
+	hookRespCh := make(chan hookResponse[P], 1)
 
 	select {
 	case <-done:
@@ -102,7 +102,7 @@ func executeHook[H any, P any](
 			ctx, cancel := context.WithTimeout(context.Background(), timeout)
 			defer cancel()
 			result, err := hookHandler(ctx, moduleCtx, hw.Hook, payload)
-			hookRespCh <- HookResponse[P]{
+			hookRespCh <- hookResponse[P]{
 				Result: result,
 				Err:    err,
 			}
@@ -114,7 +114,7 @@ func executeHook[H any, P any](
 			res.ExecutionTime = time.Since(startTime)
 			resp <- res
 		case <-time.After(timeout):
-			resp <- HookResponse[P]{
+			resp <- hookResponse[P]{
 				Err:           TimeoutError{},
 				ExecutionTime: time.Since(startTime),
 				HookID:        hookId,
@@ -127,10 +127,10 @@ func executeHook[H any, P any](
 }
 
 func collectHookResponses[P any](
-	resp <-chan HookResponse[P],
+	resp <-chan hookResponse[P],
 	done chan<- struct{},
-) []HookResponse[P] {
-	hookResponses := make([]HookResponse[P], 0)
+) []hookResponse[P] {
+	hookResponses := make([]hookResponse[P], 0)
 	for r := range resp {
 		hookResponses = append(hookResponses, r)
 		if r.Result.Reject {
@@ -143,14 +143,14 @@ func collectHookResponses[P any](
 }
 
 func processHookResponses[P any](
-	invocationCtx *hookstage.InvocationContext,
-	hookResponses []HookResponse[P],
+	executionCtx executionContext,
+	hookResponses []hookResponse[P],
 	payload P,
-) (GroupOutcome, P, hookstage.GroupModuleContext, *RejectError) {
-	stage := hooks.Stage(invocationCtx.Stage)
+) (GroupOutcome, P, groupModuleContext, *RejectError) {
+	stage := hooks.Stage(executionCtx.stage)
 	groupOutcome := GroupOutcome{}
 	groupOutcome.InvocationResults = make([]HookOutcome, 0, len(hookResponses))
-	moduleContexts := make(map[string]hookstage.ModuleContext, len(hookResponses))
+	groupModuleCtx := make(groupModuleContext, len(hookResponses))
 
 	for i, r := range hookResponses {
 		groupOutcome.InvocationResults = append(groupOutcome.InvocationResults, HookOutcome{
@@ -161,7 +161,7 @@ func processHookResponses[P any](
 			AnalyticsTags: r.Result.AnalyticsTags,
 			ExecutionTime: ExecutionTime{r.ExecutionTime},
 		})
-		moduleContexts[r.HookID.ModuleCode] = r.Result.ModuleContext
+		groupModuleCtx[r.HookID.ModuleCode] = r.Result.ModuleContext
 
 		if r.ExecutionTime > groupOutcome.ExecutionTimeMillis {
 			groupOutcome.ExecutionTimeMillis = r.ExecutionTime
@@ -189,16 +189,16 @@ func processHookResponses[P any](
 						"Module (name: %s, hook code: %s) tried to reject request on the %s stage that does not support rejection",
 						r.HookID.ModuleCode,
 						r.HookID.HookCode,
-						invocationCtx.Stage,
+						executionCtx.stage,
 					),
 				)
 				continue
 			}
 
-			reject := &RejectError{r.Result.NbrCode, r.HookID, invocationCtx.Stage}
+			reject := &RejectError{r.Result.NbrCode, r.HookID, executionCtx.stage}
 			groupOutcome.InvocationResults[i].Action = ActionReject
 			groupOutcome.InvocationResults[i].Errors = append(groupOutcome.InvocationResults[i].Errors, reject.Error())
-			return groupOutcome, payload, moduleContexts, reject
+			return groupOutcome, payload, groupModuleCtx, reject
 		}
 
 		if r.Result.ChangeSet == nil || len(r.Result.ChangeSet.Mutations()) == 0 {
@@ -229,5 +229,5 @@ func processHookResponses[P any](
 		}
 	}
 
-	return groupOutcome, payload, moduleContexts, nil
+	return groupOutcome, payload, groupModuleCtx, nil
 }
