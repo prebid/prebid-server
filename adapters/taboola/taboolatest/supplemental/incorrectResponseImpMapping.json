@@ -125,7 +125,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "Failed to find native/banner impression \"incorrect-impression-id\" ",
+      "value": "Failed to find banner impression \"incorrect-impression-id\" ",
       "comparison": "literal"
     }
   ]
