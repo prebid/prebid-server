@@ -28,12 +28,6 @@ func (t trace) isVerbose() bool {
 	return t == traceLevelVerbose
 }
 
-type modulesResponse struct {
-	Prebid struct {
-		Modules *ModulesOutcome `json:"modules"`
-	} `json:"prebid"`
-}
-
 // EnrichExtBidResponse adds debug and trace information returned from executing hooks to the ext argument.
 // In response the outcome is visible under the key response.ext.prebid.modules.
 //
@@ -45,13 +39,14 @@ func EnrichExtBidResponse(
 	bidRequest *openrtb2.BidRequest,
 	account *config.Account,
 ) (json.RawMessage, error) {
-	response, err := getModulesResponse(stageOutcomes, bidRequest, account)
+	modules, err := GetModulesJSON(stageOutcomes, bidRequest, account)
 	if err != nil {
 		return ext, err
-	} else if response == nil {
+	} else if modules == nil {
 		return ext, nil
 	}
 
+	response := json.RawMessage(`{"prebid":{"modules":` + string(modules) + `}}`)
 	if ext != nil {
 		response, err = jsonpatch.MergePatch(ext, response)
 	}
@@ -59,7 +54,11 @@ func EnrichExtBidResponse(
 	return response, err
 }
 
-func getModulesResponse(
+// GetModulesJSON returns debug and trace information produced from executing hooks.
+//
+// Debug information is returned only if the debug mode is enabled by request and allowed by account (if provided).
+// The details of the trace output depends on the value in the bidRequest.ext.prebid.trace field.
+func GetModulesJSON(
 	stageOutcomes []StageOutcome,
 	bidRequest *openrtb2.BidRequest,
 	account *config.Account,
@@ -74,10 +73,7 @@ func getModulesResponse(
 		return nil, nil
 	}
 
-	response := modulesResponse{}
-	response.Prebid.Modules = modulesOutcome
-
-	return json.Marshal(response)
+	return json.Marshal(modulesOutcome)
 }
 
 func getDebugContext(bidRequest *openrtb2.BidRequest, account *config.Account) (trace, bool) {

@@ -1,0 +1,129 @@
+{
+  "description": "Simple request",
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "prebid.org"
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 12883451
+          }
+        }
+      }
+    ],
+    "tmax": 500,
+    "test": 1,
+    "ext": {
+      "prebid": {
+        "trace": "verbose"
+      }
+    }
+  },
+  "expectedBidResponse": {
+    "id": "some-request-id",
+    "bidid": "test bid id",
+    "nbr": 0,
+    "ext": {
+      "prebid": {
+        "modules": {
+          "errors": {
+            "foobar": {
+              "foo": [
+                "error 1"
+              ],
+              "bar": [
+                "error 1"
+              ]
+            }
+          },
+          "warnings": {
+            "foobar": {
+              "bar": [
+                "warning 1"
+              ],
+              "baz": [
+                "warning 1",
+                "warning 2"
+              ]
+            }
+          },
+          "trace": {
+            "stages": [
+              {
+                "stage": "entrypoint",
+                "outcomes": [
+                  {
+                    "entity": "http-request",
+                    "groups": [
+                      {
+                        "invocationresults": [
+                          {
+                            "analyticstags": {},
+                            "hookid": {
+                              "module-code": "foobar",
+                              "hook-impl-code": "foo"
+                            },
+                            "status": "success",
+                            "action": "update",
+                            "message": "",
+                            "debugmessages": [
+                              "Hook mutation successfully applied, affected key: header.foo, mutation type: update"
+                            ]
+                          },
+                          {
+                            "analyticstags": {},
+                            "hookid": {
+                              "module-code": "foobar",
+                              "hook-impl-code": "bar"
+                            },
+                            "status": "success",
+                            "action": "update",
+                            "message": "",
+                            "debugmessages": [
+                              "Hook mutation successfully applied, affected key: param.foo, mutation type: update"
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "invocationresults": [
+                          {
+                            "analyticstags": {},
+                            "hookid": {
+                              "module-code": "foobar",
+                              "hook-impl-code": "baz"
+                            },
+                            "status": "success",
+                            "action": "update",
+                            "message": "",
+                            "debugmessages": [
+                              "Hook mutation successfully applied, affected key: body.foo, mutation type: update",
+                              "Hook mutation successfully applied, affected key: body.name, mutation type: delete"
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "expectedReturnCode": 200
+}

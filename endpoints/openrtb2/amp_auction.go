@@ -43,7 +43,11 @@ var nilBody []byte = nil
 
 type AmpResponse struct {
 	Targeting map[string]string `json:"targeting"`
-	Ext       json.RawMessage   `json:"ext,omitempty"`
+	ORTB2     *ORTB2            `json:"ortb2"`
+}
+
+type ORTB2 struct {
+	Ext *openrtb_ext.ExtBidResponse `json:"ext"`
 }
 
 type ExtAmpResponse struct {
@@ -308,28 +312,9 @@ func sendAmpResponse(w http.ResponseWriter, hookExecutor hookexecution.HookStage
 	// Now JSONify the targets for the AMP response.
 	ampResponse := AmpResponse{Targeting: targets}
 	ao.AmpTargetingValues = targets
-
-	ao, ext, err := encodeExtAmpResponse(response, reqWrapper, ao, errs)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		glog.Errorf("/openrtb2/amp Critical error encoding amp response extension: %v", err)
-		ao.Status = http.StatusInternalServerError
-		ao.Errors = append(ao.Errors, fmt.Errorf("Failed to encode amp response extension: %s", err))
-		return labels, ao
-	} else {
-		ampResponse.Ext = ext
-	}
-
-	if reqWrapper != nil {
-		stageOutcomes := hookExecutor.GetOutcomes()
-		ext, extErr := hookexecution.EnrichExtBidResponse(ampResponse.Ext, stageOutcomes, reqWrapper.BidRequest, account)
-		if extErr != nil {
-			err := fmt.Errorf("Failed to enrich Amp Response with hook debug information: %s", extErr)
-			glog.Errorf(err.Error())
-			ao.Errors = append(ao.Errors, err)
-		} else {
-			ampResponse.Ext = ext
-		}
+	ao, ext := getExtBidResponse(hookExecutor, response, reqWrapper, account, ao, errs)
+	if ext != nil {
+		ampResponse.ORTB2 = &ORTB2{ext}
 	}
 
 	// Fixes #231
@@ -347,12 +332,14 @@ func sendAmpResponse(w http.ResponseWriter, hookExecutor hookexecution.HookStage
 	return labels, ao
 }
 
-func encodeExtAmpResponse(
+func getExtBidResponse(
+	hookExecutor hookexecution.HookStageExecutor,
 	response *openrtb2.BidResponse,
 	reqWrapper *openrtb_ext.RequestWrapper,
+	account *config.Account,
 	ao analytics.AmpObject,
 	errs []error,
-) (analytics.AmpObject, json.RawMessage, error) {
+) (analytics.AmpObject, *openrtb_ext.ExtBidResponse) {
 	// Extract any errors
 	var extResponse openrtb_ext.ExtBidResponse
 	eRErr := json.Unmarshal(response.Ext, &extResponse)
@@ -372,7 +359,7 @@ func encodeExtAmpResponse(
 		warnings[openrtb_ext.BidderReservedGeneral] = append(warnings[openrtb_ext.BidderReservedGeneral], bidderErr)
 	}
 
-	extAmpResponse := ExtAmpResponse{
+	extBidResponse := openrtb_ext.ExtBidResponse{
 		Errors:   extResponse.Errors,
 		Warnings: warnings,
 	}
@@ -381,21 +368,24 @@ func encodeExtAmpResponse(
 	if reqWrapper != nil {
 		if reqWrapper.Test == 1 && eRErr == nil {
 			if extResponse.Debug != nil {
-				extAmpResponse.Debug = extResponse.Debug
+				extBidResponse.Debug = extResponse.Debug
 			} else {
 				glog.Errorf("Test set on request but debug not present in response.")
 				ao.Errors = append(ao.Errors, fmt.Errorf("test set on request but debug not present in response"))
 			}
 		}
+
+		stageOutcomes := hookExecutor.GetOutcomes()
+		if modules, err := hookexecution.GetModulesJSON(stageOutcomes, reqWrapper.BidRequest, account); err != nil {
+			err := fmt.Errorf("Failed to get modules outcome: %s", err)
+			glog.Errorf(err.Error())
+			ao.Errors = append(ao.Errors, err)
+		} else if modules != nil {
+			extBidResponse.Prebid = &openrtb_ext.ExtResponsePrebid{Modules: modules}
+		}
 	}
 
-	buffer := &bytes.Buffer{}
-	encoder := json.NewEncoder(buffer)
-
-	encoder.SetEscapeHTML(false)
-	err := encoder.Encode(extAmpResponse)
-
-	return ao, buffer.Bytes(), err
+	return ao, &extBidResponse
 }
 
 // parseRequest turns the HTTP request into an OpenRTB request.
@@ -559,6 +549,10 @@ func (deps *endpointDeps) overrideWithParams(ampParams amp.Params, req *openrtb2
 	}
 
 	if err := setTargeting(req, ampParams.Targeting); err != nil {
+		return []error{err}
+	}
+
+	if err := setTrace(req, ampParams.Trace); err != nil {
 		return []error{err}
 	}
 
@@ -742,4 +736,21 @@ func setEffectiveAmpPubID(req *openrtb2.BidRequest, account string) {
 	if pub.ID == "" {
 		pub.ID = account
 	}
+}
+
+func setTrace(req *openrtb2.BidRequest, value string) (err error) {
+	if value == "" {
+		return nil
+	}
+
+	ext := json.RawMessage(`{"prebid":{"trace":"` + value + `"}}`)
+	if len(req.Ext) > 0 {
+		ext, err = jsonpatch.MergePatch(req.Ext, ext)
+		if err != nil {
+			return err
+		}
+	}
+	req.Ext = ext
+
+	return nil
 }

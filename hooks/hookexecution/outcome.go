@@ -55,12 +55,12 @@ type GroupOutcome struct {
 type HookOutcome struct {
 	// ExecutionTime is the execution time of a specific hook without applying its result.
 	ExecutionTime
-	AnalyticsTags hookanalytics.Analytics `json:"analyticstags"`
+	AnalyticsTags hookanalytics.Analytics `json:"analyticstags,omitempty"`
 	HookID        HookID                  `json:"hookid"`
 	Status        Status                  `json:"status"`
 	Action        Action                  `json:"action"`
 	Message       string                  `json:"message"` // arbitrary string value returned from hook execution
-	DebugMessages []string                `json:"debugmessages"`
+	DebugMessages []string                `json:"debugmessages,omitempty"`
 	Errors        []string                `json:"-"`
 	Warnings      []string                `json:"-"`
 }

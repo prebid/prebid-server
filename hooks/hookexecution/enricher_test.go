@@ -9,6 +9,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/hooks/hookanalytics"
 	"github.com/prebid/prebid-server/hooks/hookstage"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -127,6 +128,106 @@ func TestEnrichBidResponse(t *testing.T) {
 				assert.Empty(t, expectedResponse)
 			} else {
 				assert.JSONEq(t, string(expectedResponse), string(test.bidResponse.Ext))
+			}
+		})
+	}
+}
+
+func TestGetModulesJSON(t *testing.T) {
+	testCases := []struct {
+		description             string
+		expectedBidResponseFile string
+		stageOutcomesFile       string
+		bidRequest              *openrtb2.BidRequest
+		account                 *config.Account
+	}{
+		{
+			description:             "Modules Outcome contains verbose trace and debug info when bidRequest.test=1 and trace=verbose",
+			expectedBidResponseFile: "test/complete-stage-outcomes/expected-verbose-debug-response.json",
+			stageOutcomesFile:       "test/complete-stage-outcomes/stage-outcomes.json",
+			bidRequest:              &openrtb2.BidRequest{Test: 1, Ext: []byte(`{"prebid": {"trace": "verbose"}}`)},
+			account:                 &config.Account{DebugAllow: true},
+		},
+		{
+			description:             "Modules Outcome contains verbose trace and debug info when bidRequest.test=1 and trace=verbose and account is not defined",
+			expectedBidResponseFile: "test/complete-stage-outcomes/expected-verbose-debug-response.json",
+			stageOutcomesFile:       "test/complete-stage-outcomes/stage-outcomes.json",
+			bidRequest:              &openrtb2.BidRequest{Test: 1, Ext: []byte(`{"prebid": {"trace": "verbose"}}`)},
+			account:                 nil,
+		},
+		{
+			description:             "Modules Outcome contains basic trace and debug info when bidRequest.ext.prebid.debug=true and trace=basic",
+			expectedBidResponseFile: "test/complete-stage-outcomes/expected-basic-debug-response.json",
+			stageOutcomesFile:       "test/complete-stage-outcomes/stage-outcomes.json",
+			bidRequest:              &openrtb2.BidRequest{Ext: []byte(`{"prebid": {"debug": true, "trace": "basic"}}`)},
+			account:                 &config.Account{DebugAllow: true},
+		},
+		{
+			description:             "Modules Outcome contains debug info when bidRequest.ext.prebid.debug=true",
+			expectedBidResponseFile: "test/complete-stage-outcomes/expected-debug-response.json",
+			stageOutcomesFile:       "test/complete-stage-outcomes/stage-outcomes.json",
+			bidRequest:              &openrtb2.BidRequest{Ext: []byte(`{"prebid": {"debug": true, "trace": ""}}`)},
+			account:                 &config.Account{DebugAllow: true},
+		},
+		{
+			description:             "Modules Outcome empty when bidRequest.ext.prebid.debug=false",
+			expectedBidResponseFile: "test/empty-stage-outcomes/empty.json",
+			stageOutcomesFile:       "test/complete-stage-outcomes/stage-outcomes.json",
+			bidRequest:              &openrtb2.BidRequest{},
+			account:                 &config.Account{DebugAllow: true},
+		},
+		{
+			description:             "Modules Outcome empty when bidRequest is nil",
+			expectedBidResponseFile: "test/empty-stage-outcomes/empty.json",
+			stageOutcomesFile:       "test/complete-stage-outcomes/stage-outcomes.json",
+			bidRequest:              nil,
+			account:                 &config.Account{DebugAllow: true},
+		},
+		{
+			description:             "Modules Outcome contains only verbose trace when bidRequest.ext.prebid.trace=verbose and account.DebugAllow=false",
+			expectedBidResponseFile: "test/complete-stage-outcomes/expected-verbose-response.json",
+			stageOutcomesFile:       "test/complete-stage-outcomes/stage-outcomes.json",
+			bidRequest:              &openrtb2.BidRequest{Test: 1, Ext: []byte(`{"prebid": {"debug": true, "trace": "verbose"}}`)},
+			account:                 &config.Account{DebugAllow: false},
+		},
+		{
+			description:             "Modules Outcome contains debug info if bidResponse.Ext is nil",
+			expectedBidResponseFile: "test/complete-stage-outcomes/expected-pure-debug-response.json",
+			stageOutcomesFile:       "test/complete-stage-outcomes/stage-outcomes.json",
+			bidRequest:              &openrtb2.BidRequest{Test: 1},
+			account:                 &config.Account{DebugAllow: true},
+		},
+		{
+			description:             "Modules Outcome empty if stage outcome groups empty",
+			expectedBidResponseFile: "test/empty-stage-outcomes/empty.json",
+			stageOutcomesFile:       "test/empty-stage-outcomes/empty-stage-outcomes-v1.json",
+			bidRequest:              &openrtb2.BidRequest{Test: 1},
+			account:                 &config.Account{DebugAllow: true},
+		},
+		{
+			description:             "Modules Outcome empty if stage outcomes empty",
+			expectedBidResponseFile: "test/empty-stage-outcomes/empty.json",
+			stageOutcomesFile:       "test/empty-stage-outcomes/empty-stage-outcomes-v2.json",
+			bidRequest:              &openrtb2.BidRequest{Test: 1},
+			account:                 &config.Account{DebugAllow: true},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.description, func(t *testing.T) {
+			expectedResponse := readFile(t, test.expectedBidResponseFile)
+			stageOutcomes := getStageOutcomes(t, test.stageOutcomesFile)
+
+			modules, err := GetModulesJSON(stageOutcomes, test.bidRequest, test.account)
+			require.NoError(t, err, "Failed to get modules outcome as json: %s", err)
+
+			if modules == nil {
+				assert.Empty(t, expectedResponse)
+			} else {
+				var expectedExtBidResponse openrtb_ext.ExtBidResponse
+				err := json.Unmarshal(expectedResponse, &expectedExtBidResponse)
+				assert.NoError(t, err, "Failed to unmarshal prebid response extension")
+				assert.JSONEq(t, string(expectedExtBidResponse.Prebid.Modules), string(modules))
 			}
 		})
 	}

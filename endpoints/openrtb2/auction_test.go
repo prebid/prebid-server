@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
@@ -21,15 +22,19 @@ import (
 	"github.com/prebid/openrtb/v17/native1"
 	nativeRequests "github.com/prebid/openrtb/v17/native1/request"
 	"github.com/prebid/openrtb/v17/openrtb2"
-	"github.com/prebid/prebid-server/hooks"
-	"github.com/prebid/prebid-server/hooks/hookexecution"
-	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/prebid/openrtb/v17/openrtb3"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/analytics"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/hooks"
+	"github.com/prebid/prebid-server/hooks/hookanalytics"
+	"github.com/prebid/prebid-server/hooks/hookexecution"
+	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/prebid/prebid-server/metrics"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -4728,6 +4733,59 @@ func TestValidResponseWhenRequestRejected(t *testing.T) {
 	}
 }
 
+func TestValidResponseEnrichedWithModulesOutcome(t *testing.T) {
+	testCases := []struct {
+		description  string
+		file         string
+		hookExecutor hookexecution.HookStageExecutor
+	}{
+		{
+			"Hook Executor returns stage outcomes - expect response.ext.prebid.modules to be filled",
+			"sample-requests/valid-whole/hooks/simple.json",
+			mockHookExecutor{stageOutcomes: fakeStageOutcomes()},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			actualAuctionObject := analytics.AuctionObject{}
+			logger := newMockLogger(nil, &actualAuctionObject)
+			test, err := parseTestFile(readFile(t, tc.file), tc.file)
+			assert.NoError(t, err, "Unable to parse test file.")
+
+			deps := &endpointDeps{
+				fakeUUIDGenerator{},
+				&nobidExchange{},
+				mockBidderParamValidator{},
+				&mockStoredReqFetcher{},
+				empty_fetcher.EmptyFetcher{},
+				empty_fetcher.EmptyFetcher{},
+				&config.Configuration{MaxRequestSize: maxSize, AccountDefaults: config.Account{DebugAllow: true}},
+				&metricsConfig.NilMetricsEngine{},
+				logger,
+				map[string]string{},
+				false,
+				[]byte{},
+				openrtb_ext.BuildBidderMap(),
+				nil,
+				nil,
+				hardcodedResponseIPValidator{response: true},
+				empty_fetcher.EmptyFetcher{},
+				tc.hookExecutor,
+			}
+
+			req := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(test.BidRequest))
+			recorder := httptest.NewRecorder()
+
+			deps.Auction(recorder, req, nil)
+			assert.Equal(t, test.ExpectedReturnCode, recorder.Code, "Endpoint should return 200 OK.")
+
+			respBytes := recorder.Body.Bytes()
+			assert.JSONEq(t, string(test.ExpectedBidResponse), string(respBytes))
+		})
+	}
+}
+
 type mockStoredResponseFetcher struct {
 	data map[string]json.RawMessage
 }
@@ -4763,4 +4821,94 @@ func getIntegrationFromRequest(req *openrtb_ext.RequestWrapper) (string, error) 
 	}
 	reqPrebid := reqExt.GetPrebid()
 	return reqPrebid.Integration, nil
+}
+
+type mockHookExecutor struct {
+	entrypointReject,
+	rawAuctionReject,
+	processedAuctionReject *hookexecution.RejectError
+	stageOutcomes []hookexecution.StageOutcome
+}
+
+func (m mockHookExecutor) ExecuteEntrypointStage(req *http.Request, body []byte) ([]byte, *hookexecution.RejectError) {
+	return body, m.entrypointReject
+}
+
+func (m mockHookExecutor) ExecuteRawAuctionStage(body []byte) ([]byte, *hookexecution.RejectError) {
+	return body, m.rawAuctionReject
+}
+
+func (m mockHookExecutor) ExecuteProcessedAuctionStage(req *openrtb2.BidRequest) *hookexecution.RejectError {
+	return m.processedAuctionReject
+}
+
+func (m mockHookExecutor) ExecuteBidderRequestStage(req *openrtb2.BidRequest, bidder string) *hookexecution.RejectError {
+	return nil
+}
+
+func (m mockHookExecutor) ExecuteRawBidderResponseStage(response *adapters.BidderResponse, bidder string) *hookexecution.RejectError {
+	return nil
+}
+
+func (m mockHookExecutor) ExecuteAllProcessedBidResponsesStage(responses []*adapters.BidderResponse) {
+}
+
+func (m mockHookExecutor) ExecuteAuctionResponseStage(response *openrtb2.BidResponse) {}
+
+func (m mockHookExecutor) SetAccount(account *config.Account) {}
+
+func (m mockHookExecutor) GetOutcomes() []hookexecution.StageOutcome {
+	return m.stageOutcomes
+}
+
+func fakeStageOutcomes() []hookexecution.StageOutcome {
+	return []hookexecution.StageOutcome{
+		{
+			Entity: hookstage.EntityHttpRequest,
+			Stage:  hooks.StageEntrypoint.String(),
+			Groups: []hookexecution.GroupOutcome{
+				{
+					InvocationResults: []hookexecution.HookOutcome{
+						{
+							AnalyticsTags: hookanalytics.Analytics{},
+							HookID:        hookexecution.HookID{"foobar", "foo"},
+							Status:        hookexecution.StatusSuccess,
+							Action:        hookexecution.ActionUpdate,
+							Message:       "",
+							DebugMessages: []string{fmt.Sprintf("Hook mutation successfully applied, affected key: header.foo, mutation type: %s", hookstage.MutationUpdate)},
+							Errors:        []string{"error 1"},
+							Warnings:      nil,
+						},
+						{
+							AnalyticsTags: hookanalytics.Analytics{},
+							HookID:        hookexecution.HookID{"foobar", "bar"},
+							Status:        hookexecution.StatusSuccess,
+							Action:        hookexecution.ActionUpdate,
+							Message:       "",
+							DebugMessages: []string{fmt.Sprintf("Hook mutation successfully applied, affected key: param.foo, mutation type: %s", hookstage.MutationUpdate)},
+							Errors:        []string{"error 1"},
+							Warnings:      []string{"warning 1"},
+						},
+					},
+				},
+				{
+					InvocationResults: []hookexecution.HookOutcome{
+						{
+							AnalyticsTags: hookanalytics.Analytics{},
+							HookID:        hookexecution.HookID{"foobar", "baz"},
+							Status:        hookexecution.StatusSuccess,
+							Action:        hookexecution.ActionUpdate,
+							Message:       "",
+							DebugMessages: []string{
+								fmt.Sprintf("Hook mutation successfully applied, affected key: body.foo, mutation type: %s", hookstage.MutationUpdate),
+								fmt.Sprintf("Hook mutation successfully applied, affected key: body.name, mutation type: %s", hookstage.MutationDelete),
+							},
+							Errors:   nil,
+							Warnings: []string{"warning 1", "warning 2"},
+						},
+					},
+				},
+			},
+		},
+	}
 }
