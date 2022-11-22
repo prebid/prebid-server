@@ -4669,7 +4669,7 @@ func TestValidResponseWhenRequestRejected(t *testing.T) {
 	}{
 		{
 			"Assert correct BidResponse when request rejected at entrypoint stage",
-			openrtb2.BidResponse{NBR: &nbr},
+			openrtb2.BidResponse{ID: "some-request-id", NBR: &nbr},
 			rejectableHookExecutor{entrypointReject: &reject},
 		},
 	}
