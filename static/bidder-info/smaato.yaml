@@ -7,10 +7,12 @@ capabilities:
     mediaTypes:
       - banner
       - video
+      - native
   site:
     mediaTypes:
       - banner
       - video
+      - native
 userSync:
   redirect:
     url: "https://s.ad.smaato.net/c/?adExInit=p&redir={{.RedirectURL}}"
