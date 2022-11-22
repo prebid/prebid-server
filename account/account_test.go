@@ -100,6 +100,8 @@ func TestSetDerivedConfig(t *testing.T) {
 		purpose1VendorExceptions []openrtb_ext.BidderName
 		feature1VendorExceptions []openrtb_ext.BidderName
 		basicEnforcementVendors  []string
+		enforceAlgo              string
+		wantEnforceAlgoID        config.TCF2EnforcementAlgo
 	}{
 		{
 			description:              "Nil purpose 1 vendor exceptions",
@@ -137,6 +139,16 @@ func TestSetDerivedConfig(t *testing.T) {
 			description:             "Multiple basic enforcement vendors",
 			basicEnforcementVendors: []string{"appnexus", "rubicon"},
 		},
+		{
+			description:       "Basic Enforcement algorithm",
+			enforceAlgo:       config.TCF2EnforceAlgoBasic,
+			wantEnforceAlgoID: config.TCF2BasicEnforcement,
+		},
+		{
+			description:       "Full Enforcement algorithm",
+			enforceAlgo:       config.TCF2EnforceAlgoFull,
+			wantEnforceAlgoID: config.TCF2FullEnforcement,
+		},
 	}
 
 	for _, tt := range tests {
@@ -144,6 +156,7 @@ func TestSetDerivedConfig(t *testing.T) {
 			GDPR: config.AccountGDPR{
 				Purpose1: config.AccountGDPRPurpose{
 					VendorExceptions: tt.purpose1VendorExceptions,
+					EnforceAlgo:      tt.enforceAlgo,
 				},
 				SpecialFeature1: config.AccountGDPRSpecialFeature{
 					VendorExceptions: tt.feature1VendorExceptions,
@@ -172,5 +185,7 @@ func TestSetDerivedConfig(t *testing.T) {
 		assert.ElementsMatch(t, purpose1ExceptionMapKeys, tt.purpose1VendorExceptions, tt.description)
 		assert.ElementsMatch(t, feature1ExceptionMapKeys, tt.feature1VendorExceptions, tt.description)
 		assert.ElementsMatch(t, basicEnforcementMapKeys, tt.basicEnforcementVendors, tt.description)
+
+		assert.Equal(t, account.GDPR.Purpose1.EnforceAlgoID, tt.wantEnforceAlgoID, tt.description)
 	}
 }

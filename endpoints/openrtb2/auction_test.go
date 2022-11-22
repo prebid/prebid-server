@@ -20,6 +20,7 @@ import (
 	"github.com/prebid/openrtb/v17/native1"
 	nativeRequests "github.com/prebid/openrtb/v17/native1/request"
 	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/prebid-server/hooks"
 	"github.com/stretchr/testify/assert"
 
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
@@ -375,7 +376,8 @@ func TestExplicitUserId(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
-		empty_fetcher.EmptyFetcher{})
+		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{})
 
 	endpoint(httptest.NewRecorder(), request, nil)
 
@@ -430,7 +432,8 @@ func doBadAliasRequest(t *testing.T, filename string, expectMsg string) {
 		disabledBidders,
 		aliasJSON,
 		bidderMap,
-		empty_fetcher.EmptyFetcher{})
+		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{})
 
 	request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(testBidRequest))
 	recorder := httptest.NewRecorder()
@@ -481,7 +484,8 @@ func TestNilExchange(t *testing.T) {
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
-		empty_fetcher.EmptyFetcher{})
+		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{})
 
 	if err == nil {
 		t.Errorf("NewEndpoint should return an error when given a nil Exchange.")
@@ -504,7 +508,8 @@ func TestNilValidator(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
-		empty_fetcher.EmptyFetcher{})
+		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{})
 
 	if err == nil {
 		t.Errorf("NewEndpoint should return an error when given a nil BidderParamValidator.")
@@ -527,7 +532,8 @@ func TestExchangeError(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
-		empty_fetcher.EmptyFetcher{})
+		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{})
 
 	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	recorder := httptest.NewRecorder()
@@ -651,7 +657,8 @@ func TestImplicitIPsEndToEnd(t *testing.T) {
 			map[string]string{},
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
-			empty_fetcher.EmptyFetcher{})
+			empty_fetcher.EmptyFetcher{},
+			hooks.EmptyPlanBuilder{})
 
 		httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, test.reqJSONFile)))
 		httpReq.Header.Set("X-Forwarded-For", test.xForwardedForHeader)
@@ -848,7 +855,8 @@ func TestImplicitDNTEndToEnd(t *testing.T) {
 			map[string]string{},
 			[]byte{},
 			openrtb_ext.BuildBidderMap(),
-			empty_fetcher.EmptyFetcher{})
+			empty_fetcher.EmptyFetcher{},
+			hooks.EmptyPlanBuilder{})
 
 		httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, test.reqJSONFile)))
 		httpReq.Header.Set("DNT", test.dntHeader)
@@ -883,44 +891,60 @@ func TestImplicitSecure(t *testing.T) {
 
 func TestReferer(t *testing.T) {
 	testCases := []struct {
-		description     string
-		givenSitePage   string
-		givenSiteDomain string
-		givenReferer    string
-		expectedDomain  string
-		expectedPage    string
+		description             string
+		givenSitePage           string
+		givenSiteDomain         string
+		givenPublisherDomain    string
+		givenReferer            string
+		expectedDomain          string
+		expectedPage            string
+		expectedPublisherDomain string
 	}{
 		{
-			description:    "site.page/domain are unchanged when site.page/domain and http referer are not set",
-			expectedDomain: "",
-			expectedPage:   "",
+			description:             "site.page/domain are unchanged when site.page/domain and http referer are not set",
+			expectedDomain:          "",
+			expectedPage:            "",
+			expectedPublisherDomain: "",
 		},
 		{
-			description:    "site.page/domain are derived from referer when neither is set and http referer is set",
-			givenReferer:   "https://test.somepage.com",
-			expectedDomain: "somepage.com",
-			expectedPage:   "https://test.somepage.com",
+			description:             "site.page/domain are derived from referer when neither is set and http referer is set",
+			givenReferer:            "https://test.somepage.com",
+			expectedDomain:          "test.somepage.com",
+			expectedPublisherDomain: "somepage.com",
+			expectedPage:            "https://test.somepage.com",
 		},
 		{
-			description:    "site.domain is derived from site.page when site.page is set and http referer is not set",
-			givenSitePage:  "https://test.somepage.com",
-			expectedDomain: "somepage.com",
-			expectedPage:   "https://test.somepage.com",
+			description:             "site.domain is derived from site.page when site.page is set and http referer is not set",
+			givenSitePage:           "https://test.somepage.com",
+			expectedDomain:          "test.somepage.com",
+			expectedPublisherDomain: "somepage.com",
+			expectedPage:            "https://test.somepage.com",
 		},
 		{
-			description:    "site.domain is derived from http referer when site.page and http referer are set",
-			givenSitePage:  "https://test.somepage.com",
-			givenReferer:   "http://test.com",
-			expectedDomain: "test.com",
-			expectedPage:   "https://test.somepage.com",
+			description:             "site.domain is derived from http referer when site.page and http referer are set",
+			givenSitePage:           "https://test.somepage.com",
+			givenReferer:            "http://test.com",
+			expectedDomain:          "test.com",
+			expectedPublisherDomain: "test.com",
+			expectedPage:            "https://test.somepage.com",
 		},
 		{
-			description:     "site.page/domain are unchanged when site.page/domain and http referer are set",
-			givenSitePage:   "https://test.somepage.com",
-			givenSiteDomain: "some.domain.com",
-			givenReferer:    "http://test.com",
-			expectedDomain:  "some.domain.com",
-			expectedPage:    "https://test.somepage.com",
+			description:             "site.page/domain are unchanged when site.page/domain and http referer are set",
+			givenSitePage:           "https://test.somepage.com",
+			givenSiteDomain:         "some.domain.com",
+			givenReferer:            "http://test.com",
+			expectedDomain:          "some.domain.com",
+			expectedPublisherDomain: "test.com",
+			expectedPage:            "https://test.somepage.com",
+		},
+		{
+			description:             "Publisher domain shouldn't be overrwriten if already set",
+			givenSitePage:           "https://test.somepage.com",
+			givenSiteDomain:         "",
+			givenPublisherDomain:    "differentpage.com",
+			expectedDomain:          "test.somepage.com",
+			expectedPublisherDomain: "differentpage.com",
+			expectedPage:            "https://test.somepage.com",
 		},
 	}
 
@@ -930,8 +954,9 @@ func TestReferer(t *testing.T) {
 
 		bidReq := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
 			Site: &openrtb2.Site{
-				Domain: test.givenSiteDomain,
-				Page:   test.givenSitePage,
+				Domain:    test.givenSiteDomain,
+				Page:      test.givenSitePage,
+				Publisher: &openrtb2.Publisher{Domain: test.givenPublisherDomain},
 			},
 		}}
 
@@ -940,6 +965,7 @@ func TestReferer(t *testing.T) {
 		assert.NotNil(t, bidReq.Site, test.description)
 		assert.Equal(t, test.expectedDomain, bidReq.Site.Domain, test.description)
 		assert.Equal(t, test.expectedPage, bidReq.Site.Page, test.description)
+		assert.Equal(t, test.expectedPublisherDomain, bidReq.Site.Publisher.Domain, test.description)
 	}
 }
 
@@ -1058,6 +1084,7 @@ func TestStoredRequests(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	}
 
 	testStoreVideoAttr := []bool{true, true, false, false, false}
@@ -1429,6 +1456,7 @@ func TestValidateRequest(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	}
 
 	testCases := []struct {
@@ -1801,6 +1829,7 @@ func TestSetIntegrationType(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	}
 
 	testCases := []struct {
@@ -1865,6 +1894,7 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	}
 
 	req := &openrtb2.BidRequest{}
@@ -1965,6 +1995,7 @@ func TestOversizedRequest(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -2002,6 +2033,7 @@ func TestRequestSizeEdgeCase(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -2033,6 +2065,7 @@ func TestNoEncoding(t *testing.T) {
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	)
 	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	recorder := httptest.NewRecorder()
@@ -2116,6 +2149,7 @@ func TestContentType(t *testing.T) {
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	)
 	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	recorder := httptest.NewRecorder()
@@ -2335,6 +2369,7 @@ func TestValidateImpExt(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	}
 
 	for _, group := range testGroups {
@@ -2386,6 +2421,7 @@ func TestCurrencyTrunc(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	}
 
 	ui := int64(1)
@@ -2432,6 +2468,7 @@ func TestCCPAInvalid(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	}
 
 	ui := int64(1)
@@ -2482,6 +2519,7 @@ func TestNoSaleInvalid(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	}
 
 	ui := int64(1)
@@ -2535,6 +2573,7 @@ func TestValidateSourceTID(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	}
 
 	ui := int64(1)
@@ -2578,6 +2617,7 @@ func TestSChainInvalid(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	}
 
 	ui := int64(1)
@@ -2929,6 +2969,7 @@ func TestEidPermissionsInvalid(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	}
 
 	ui := int64(1)
@@ -3176,7 +3217,8 @@ func TestIOS14EndToEnd(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
-		empty_fetcher.EmptyFetcher{})
+		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{})
 
 	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "app-ios140-no-ifa.json")))
 
@@ -3211,6 +3253,7 @@ func TestAuctionWarnings(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -3252,6 +3295,7 @@ func TestParseRequestParseImpInfoError(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -3722,7 +3766,8 @@ func TestAuctionResponseHeaders(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BuildBidderMap(),
-		empty_fetcher.EmptyFetcher{})
+		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{})
 
 	for _, test := range testCases {
 		httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.requestBody))
@@ -3825,6 +3870,7 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 				nil,
 				hardcodedResponseIPValidator{response: true},
 				empty_fetcher.EmptyFetcher{},
+				hooks.EmptyPlanBuilder{},
 			}
 
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
@@ -3927,6 +3973,7 @@ func TestParseRequestStoredResponses(t *testing.T) {
 				nil,
 				hardcodedResponseIPValidator{response: true},
 				&mockStoredResponseFetcher{mockStoredResponses},
+				hooks.EmptyPlanBuilder{},
 			}
 
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
@@ -4014,6 +4061,7 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 				nil,
 				hardcodedResponseIPValidator{response: true},
 				&mockStoredResponseFetcher{mockStoredBidResponses},
+				hooks.EmptyPlanBuilder{},
 			}
 
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
@@ -4047,6 +4095,7 @@ func TestValidateStoredResp(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		&mockStoredResponseFetcher{},
+		hooks.EmptyPlanBuilder{},
 	}
 
 	testCases := []struct {
