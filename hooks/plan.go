@@ -35,8 +35,8 @@ func (s Stage) IsRejectable() bool {
 // according to the hook execution plan intended for run at a certain stage.
 type ExecutionPlanBuilder interface {
 	PlanForEntrypointStage(endpoint string) Plan[hookstage.Entrypoint]
-	PlanForRawAuctionStage(endpoint string, account *config.Account) Plan[hookstage.RawAuction]
-	PlanForProcessedAuctionStage(endpoint string, account *config.Account) Plan[hookstage.ProcessedAuction]
+	PlanForRawAuctionStage(endpoint string, account *config.Account) Plan[hookstage.RawAuctionRequest]
+	PlanForProcessedAuctionStage(endpoint string, account *config.Account) Plan[hookstage.ProcessedAuctionRequest]
 	PlanForBidderRequestStage(endpoint string, account *config.Account) Plan[hookstage.BidderRequest]
 	PlanForRawBidderResponseStage(endpoint string, account *config.Account) Plan[hookstage.RawBidderResponse]
 	PlanForAllProcessedBidResponsesStage(endpoint string, account *config.Account) Plan[hookstage.AllProcessedBidResponses]
@@ -96,7 +96,7 @@ func (p PlanBuilder) PlanForEntrypointStage(endpoint string) Plan[hookstage.Entr
 	)
 }
 
-func (p PlanBuilder) PlanForRawAuctionStage(endpoint string, account *config.Account) Plan[hookstage.RawAuction] {
+func (p PlanBuilder) PlanForRawAuctionStage(endpoint string, account *config.Account) Plan[hookstage.RawAuctionRequest] {
 	return getMergedPlan(
 		p.hooks,
 		account,
@@ -106,7 +106,7 @@ func (p PlanBuilder) PlanForRawAuctionStage(endpoint string, account *config.Acc
 	)
 }
 
-func (p PlanBuilder) PlanForProcessedAuctionStage(endpoint string, account *config.Account) Plan[hookstage.ProcessedAuction] {
+func (p PlanBuilder) PlanForProcessedAuctionStage(endpoint string, account *config.Account) Plan[hookstage.ProcessedAuctionRequest] {
 	return getMergedPlan(
 		p.hooks,
 		account,

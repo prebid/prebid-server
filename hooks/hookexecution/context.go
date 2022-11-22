@@ -44,8 +44,16 @@ type moduleContexts struct {
 
 func (mc *moduleContexts) put(moduleName string, mCtx hookstage.ModuleContext) {
 	mc.Lock()
-	mc.ctxs[moduleName] = mCtx
-	mc.Unlock()
+	defer mc.Unlock()
+
+	newCtx := mCtx
+	if existingCtx, ok := mc.ctxs[moduleName]; ok && existingCtx != nil {
+		for k, v := range mCtx {
+			existingCtx[k] = v
+		}
+		newCtx = existingCtx
+	}
+	mc.ctxs[moduleName] = newCtx
 }
 
 func (mc *moduleContexts) get(moduleName string) (hookstage.ModuleContext, bool) {

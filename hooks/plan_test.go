@@ -154,7 +154,7 @@ func TestPlanForRawAuctionStage(t *testing.T) {
 		givenDefaultAccountPlanData []byte
 		giveAccountPlanData         []byte
 		givenHooks                  map[string]interface{}
-		expectedPlan                Plan[hookstage.RawAuction]
+		expectedPlan                Plan[hookstage.RawAuctionRequest]
 	}{
 		"Account-specific execution plan rewrites default-account execution plan": {
 			givenEndpoint:               "/openrtb2/auction",
@@ -162,18 +162,18 @@ func TestPlanForRawAuctionStage(t *testing.T) {
 			givenDefaultAccountPlanData: []byte(defaultAccountPlanData),
 			giveAccountPlanData:         []byte(accountPlanData),
 			givenHooks:                  hooks,
-			expectedPlan: Plan[hookstage.RawAuction]{
+			expectedPlan: Plan[hookstage.RawAuctionRequest]{
 				// first group from host-level plan
-				Group[hookstage.RawAuction]{
+				Group[hookstage.RawAuctionRequest]{
 					Timeout: 5 * time.Millisecond,
-					Hooks: []HookWrapper[hookstage.RawAuction]{
+					Hooks: []HookWrapper[hookstage.RawAuctionRequest]{
 						{Module: "foobar", Code: "foo", Hook: fakeRawAuctionHook{}},
 					},
 				},
 				// then come groups from account-level plan (default-account-level plan ignored)
-				Group[hookstage.RawAuction]{
+				Group[hookstage.RawAuctionRequest]{
 					Timeout: 15 * time.Millisecond,
-					Hooks: []HookWrapper[hookstage.RawAuction]{
+					Hooks: []HookWrapper[hookstage.RawAuctionRequest]{
 						{Module: "prebid", Code: "baz", Hook: fakeRawAuctionHook{}},
 					},
 				},
@@ -185,10 +185,10 @@ func TestPlanForRawAuctionStage(t *testing.T) {
 			givenDefaultAccountPlanData: []byte(`{}`),
 			giveAccountPlanData:         []byte(accountPlanData),
 			givenHooks:                  hooks,
-			expectedPlan: Plan[hookstage.RawAuction]{
-				Group[hookstage.RawAuction]{
+			expectedPlan: Plan[hookstage.RawAuctionRequest]{
+				Group[hookstage.RawAuctionRequest]{
 					Timeout: 15 * time.Millisecond,
-					Hooks: []HookWrapper[hookstage.RawAuction]{
+					Hooks: []HookWrapper[hookstage.RawAuctionRequest]{
 						{Module: "prebid", Code: "baz", Hook: fakeRawAuctionHook{}},
 					},
 				},
@@ -200,23 +200,23 @@ func TestPlanForRawAuctionStage(t *testing.T) {
 			givenDefaultAccountPlanData: []byte(defaultAccountPlanData),
 			giveAccountPlanData:         []byte(`{}`),
 			givenHooks:                  hooks,
-			expectedPlan: Plan[hookstage.RawAuction]{
-				Group[hookstage.RawAuction]{
+			expectedPlan: Plan[hookstage.RawAuctionRequest]{
+				Group[hookstage.RawAuctionRequest]{
 					Timeout: 5 * time.Millisecond,
-					Hooks: []HookWrapper[hookstage.RawAuction]{
+					Hooks: []HookWrapper[hookstage.RawAuctionRequest]{
 						{Module: "foobar", Code: "foo", Hook: fakeRawAuctionHook{}},
 					},
 				},
-				Group[hookstage.RawAuction]{
+				Group[hookstage.RawAuctionRequest]{
 					Timeout: 10 * time.Millisecond,
-					Hooks: []HookWrapper[hookstage.RawAuction]{
+					Hooks: []HookWrapper[hookstage.RawAuctionRequest]{
 						{Module: "foobar", Code: "bar", Hook: fakeRawAuctionHook{}},
 						{Module: "ortb2blocking", Code: "block_request", Hook: fakeRawAuctionHook{}},
 					},
 				},
-				Group[hookstage.RawAuction]{
+				Group[hookstage.RawAuctionRequest]{
 					Timeout: 5 * time.Millisecond,
-					Hooks: []HookWrapper[hookstage.RawAuction]{
+					Hooks: []HookWrapper[hookstage.RawAuctionRequest]{
 						{Module: "foobar", Code: "foo", Hook: fakeRawAuctionHook{}},
 					},
 				},
@@ -260,7 +260,7 @@ func TestPlanForProcessedAuctionStage(t *testing.T) {
 		givenDefaultAccountPlanData []byte
 		giveAccountPlanData         []byte
 		givenHooks                  map[string]interface{}
-		expectedPlan                Plan[hookstage.ProcessedAuction]
+		expectedPlan                Plan[hookstage.ProcessedAuctionRequest]
 	}{
 		"Account-specific execution plan rewrites default-account execution plan": {
 			givenEndpoint:               "/openrtb2/auction",
@@ -268,18 +268,18 @@ func TestPlanForProcessedAuctionStage(t *testing.T) {
 			givenDefaultAccountPlanData: []byte(defaultAccountPlanData),
 			giveAccountPlanData:         []byte(accountPlanData),
 			givenHooks:                  hooks,
-			expectedPlan: Plan[hookstage.ProcessedAuction]{
+			expectedPlan: Plan[hookstage.ProcessedAuctionRequest]{
 				// first group from host-level plan
-				Group[hookstage.ProcessedAuction]{
+				Group[hookstage.ProcessedAuctionRequest]{
 					Timeout: 5 * time.Millisecond,
-					Hooks: []HookWrapper[hookstage.ProcessedAuction]{
+					Hooks: []HookWrapper[hookstage.ProcessedAuctionRequest]{
 						{Module: "foobar", Code: "foo", Hook: fakeProcessedAuctionHook{}},
 					},
 				},
 				// then come groups from account-level plan (default-account-level plan ignored)
-				Group[hookstage.ProcessedAuction]{
+				Group[hookstage.ProcessedAuctionRequest]{
 					Timeout: 15 * time.Millisecond,
-					Hooks: []HookWrapper[hookstage.ProcessedAuction]{
+					Hooks: []HookWrapper[hookstage.ProcessedAuctionRequest]{
 						{Module: "prebid", Code: "baz", Hook: fakeProcessedAuctionHook{}},
 					},
 				},
@@ -291,10 +291,10 @@ func TestPlanForProcessedAuctionStage(t *testing.T) {
 			givenDefaultAccountPlanData: []byte(`{}`),
 			giveAccountPlanData:         []byte(accountPlanData),
 			givenHooks:                  hooks,
-			expectedPlan: Plan[hookstage.ProcessedAuction]{
-				Group[hookstage.ProcessedAuction]{
+			expectedPlan: Plan[hookstage.ProcessedAuctionRequest]{
+				Group[hookstage.ProcessedAuctionRequest]{
 					Timeout: 15 * time.Millisecond,
-					Hooks: []HookWrapper[hookstage.ProcessedAuction]{
+					Hooks: []HookWrapper[hookstage.ProcessedAuctionRequest]{
 						{Module: "prebid", Code: "baz", Hook: fakeProcessedAuctionHook{}},
 					},
 				},
@@ -306,23 +306,23 @@ func TestPlanForProcessedAuctionStage(t *testing.T) {
 			givenDefaultAccountPlanData: []byte(defaultAccountPlanData),
 			giveAccountPlanData:         []byte(`{}`),
 			givenHooks:                  hooks,
-			expectedPlan: Plan[hookstage.ProcessedAuction]{
-				Group[hookstage.ProcessedAuction]{
+			expectedPlan: Plan[hookstage.ProcessedAuctionRequest]{
+				Group[hookstage.ProcessedAuctionRequest]{
 					Timeout: 5 * time.Millisecond,
-					Hooks: []HookWrapper[hookstage.ProcessedAuction]{
+					Hooks: []HookWrapper[hookstage.ProcessedAuctionRequest]{
 						{Module: "foobar", Code: "foo", Hook: fakeProcessedAuctionHook{}},
 					},
 				},
-				Group[hookstage.ProcessedAuction]{
+				Group[hookstage.ProcessedAuctionRequest]{
 					Timeout: 10 * time.Millisecond,
-					Hooks: []HookWrapper[hookstage.ProcessedAuction]{
+					Hooks: []HookWrapper[hookstage.ProcessedAuctionRequest]{
 						{Module: "foobar", Code: "bar", Hook: fakeProcessedAuctionHook{}},
 						{Module: "ortb2blocking", Code: "block_request", Hook: fakeProcessedAuctionHook{}},
 					},
 				},
-				Group[hookstage.ProcessedAuction]{
+				Group[hookstage.ProcessedAuctionRequest]{
 					Timeout: 5 * time.Millisecond,
-					Hooks: []HookWrapper[hookstage.ProcessedAuction]{
+					Hooks: []HookWrapper[hookstage.ProcessedAuctionRequest]{
 						{Module: "foobar", Code: "foo", Hook: fakeProcessedAuctionHook{}},
 					},
 				},
@@ -809,14 +809,14 @@ func (h fakeEntrypointHook) HandleEntrypointHook(_ context.Context, _ hookstage.
 
 type fakeRawAuctionHook struct{}
 
-func (f fakeRawAuctionHook) HandleRawAuctionHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.RawAuctionPayload) (hookstage.HookResult[hookstage.RawAuctionPayload], error) {
-	return hookstage.HookResult[hookstage.RawAuctionPayload]{}, nil
+func (f fakeRawAuctionHook) HandleRawAuctionHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.RawAuctionRequestPayload) (hookstage.HookResult[hookstage.RawAuctionRequestPayload], error) {
+	return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{}, nil
 }
 
 type fakeProcessedAuctionHook struct{}
 
-func (f fakeProcessedAuctionHook) HandleProcessedAuctionHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.ProcessedAuctionPayload) (hookstage.HookResult[hookstage.ProcessedAuctionPayload], error) {
-	return hookstage.HookResult[hookstage.ProcessedAuctionPayload]{}, nil
+func (f fakeProcessedAuctionHook) HandleProcessedAuctionHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.ProcessedAuctionRequestPayload) (hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload], error) {
+	return hookstage.HookResult[hookstage.ProcessedAuctionRequestPayload]{}, nil
 }
 
 type fakeBidderRequestHook struct{}

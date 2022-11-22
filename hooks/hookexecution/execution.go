@@ -202,7 +202,7 @@ func processHookResponses[P any](
 		}
 
 		if r.Result.ChangeSet == nil || len(r.Result.ChangeSet.Mutations()) == 0 {
-			groupOutcome.InvocationResults[i].Action = ActionNoAction
+			groupOutcome.InvocationResults[i].Action = ActionNone
 			continue
 		}
 

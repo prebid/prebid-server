@@ -18,9 +18,9 @@ const (
 type Action string
 
 const (
-	ActionUpdate   Action = "update"
-	ActionReject   Action = "reject"
-	ActionNoAction Action = "no_action"
+	ActionUpdate Action = "update"
+	ActionReject Action = "reject"
+	ActionNone   Action = "no_action"
 )
 
 type Messages map[string]map[string][]string // Messages in format: {"module": {"hook": ["msg1", "msg2"]}}

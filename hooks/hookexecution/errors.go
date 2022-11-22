@@ -30,11 +30,11 @@ type RejectError struct {
 }
 
 func (e RejectError) Code() int {
-	return errortypes.UnknownErrorCode
+	return errortypes.ModuleRejectionErrorCode
 }
 
 func (e RejectError) Severity() errortypes.Severity {
-	return errortypes.SeverityUnknown
+	return errortypes.SeverityWarning
 }
 
 func (e RejectError) Error() string {
