@@ -25,23 +25,6 @@ const (
 
 type Messages map[string]map[string][]string // Messages in format: {"module": {"hook": ["msg1", "msg2"]}}
 
-type ModulesOutcome struct {
-	Errors   Messages     `json:"errors"`
-	Warnings Messages     `json:"warnings"`
-	Trace    TraceOutcome `json:"trace"`
-}
-
-type TraceOutcome struct {
-	ExecutionTime
-	Stages []Stage `json:"stages"`
-}
-
-type Stage struct {
-	ExecutionTime
-	Stage    string         `json:"stage"`
-	Outcomes []StageOutcome `json:"outcomes"`
-}
-
 type StageOutcome struct {
 	ExecutionTime
 	Entity entity         `json:"entity"`

@@ -166,7 +166,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 
 	if reject := hookexecution.FindReject(errL); reject != nil {
-		rejectAuctionRequest(*reject, w, &labels, &ao)
+		labels, ao = rejectAuctionRequest(*reject, w, req.BidRequest, labels, ao)
 		return
 	}
 
@@ -249,38 +249,38 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 
 	if reject != nil {
-		rejectAuctionRequest(*reject, w, &labels, &ao)
+		labels, ao = rejectAuctionRequest(*reject, w, req.BidRequest, labels, ao)
 		return
 	}
 
-	sendAuctionResponse(w, response, &labels, &ao)
+	labels, ao = sendAuctionResponse(w, response, labels, ao)
 }
 
 func rejectAuctionRequest(
 	reject hookexecution.RejectError,
 	w http.ResponseWriter,
-	labels *metrics.Labels,
-	ao *analytics.AuctionObject,
-) {
+	request *openrtb2.BidRequest,
+	labels metrics.Labels,
+	ao analytics.AuctionObject,
+) (metrics.Labels, analytics.AuctionObject) {
 	nbr := openrtb3.NoBidReason(reject.NBR)
-	response := &openrtb2.BidResponse{
-		NBR: &nbr,
+	response := &openrtb2.BidResponse{NBR: &nbr}
+	if request != nil {
+		response.ID = request.ID
 	}
 
-	if ao != nil {
-		ao.Response = response
-		ao.Errors = append(ao.Errors, reject)
-	}
+	ao.Response = response
+	ao.Errors = append(ao.Errors, reject)
 
-	sendAuctionResponse(w, response, labels, ao)
+	return sendAuctionResponse(w, response, labels, ao)
 }
 
 func sendAuctionResponse(
 	w http.ResponseWriter,
 	response *openrtb2.BidResponse,
-	labels *metrics.Labels,
-	ao *analytics.AuctionObject,
-) {
+	labels metrics.Labels,
+	ao analytics.AuctionObject,
+) (metrics.Labels, analytics.AuctionObject) {
 	// Fixes #231
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
@@ -291,14 +291,11 @@ func sendAuctionResponse(
 	// If we've sent _any_ bytes, then Go would have sent the 200 status code first.
 	// That status code can't be un-sent... so the best we can do is log the error.
 	if err := enc.Encode(response); err != nil {
-		if labels != nil {
-			labels.RequestStatus = metrics.RequestStatusNetworkErr
-		}
-
-		if ao != nil {
-			ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/auction Failed to send response: %v", err))
-		}
+		labels.RequestStatus = metrics.RequestStatusNetworkErr
+		ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/auction Failed to send response: %v", err))
 	}
+
+	return labels, ao
 }
 
 // parseRequest turns the HTTP request into an OpenRTB request. This is guaranteed to return:
@@ -336,7 +333,11 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_
 
 	requestJson, reject := deps.hookExecutor.ExecuteEntrypointStage(httpRequest, requestJson)
 	if reject != nil {
-		return nil, nil, nil, nil, nil, []error{reject}
+		errs = []error{reject}
+		if err = json.Unmarshal(requestJson, req.BidRequest); err != nil {
+			glog.Errorf("Failed to unmarshal BidRequest during entrypoint rejection: %s", err)
+		}
+		return
 	}
 
 	timeout := parseTimeout(requestJson, time.Duration(storedRequestTimeoutMillis)*time.Millisecond)
