@@ -308,7 +308,6 @@ func sendAuctionResponse(
 func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metrics.Labels) (req *openrtb_ext.RequestWrapper, impExtInfoMap map[string]exchange.ImpExtInfo, storedAuctionResponses stored_responses.ImpsWithBidResponses, storedBidResponses stored_responses.ImpBidderStoredResp, bidderImpReplaceImpId stored_responses.BidderImpReplaceImpID, account *config.Account, errs []error) {
 	req = &openrtb_ext.RequestWrapper{}
 	req.BidRequest = &openrtb2.BidRequest{}
-	var hasStoredBidRequest bool
 	errs = nil
 
 	// Pull the request body into a buffer, so we have it for later usage.
@@ -792,30 +791,21 @@ func validateAndFillSourceTID(req *openrtb_ext.RequestWrapper, generateRequestID
 		req.Source = &openrtb2.Source{}
 	}
 
-	rawUUID, err := uuid.NewV4()
-	if err != nil {
-		return errors.New("error creating a random UUID for source.tid")
-	}
-
-	if req.Source.TID == "" || req.Source.TID == "{{UUID}}" {
-		req.Source.TID = rawUUID.String()
-	}
-
-	if generateRequestID && (isAmp || hasStoredBidRequest) {
+	if req.Source.TID == "" || req.Source.TID == "{{UUID}}" || (generateRequestID && (isAmp || hasStoredBidRequest)) {
+		rawUUID, err := uuid.NewV4()
+		if err != nil {
+			return errors.New("error creating a random UUID for source.tid")
+		}
 		req.Source.TID = rawUUID.String()
 	}
 
 	for _, impWrapper := range req.GetImp() {
 		ie, _ := impWrapper.GetImpExt()
-		rawUUID, err := uuid.NewV4()
-		if err != nil {
-			return errors.New("imp.ext.tid missing in the imp and error creating a random UID")
-		}
-		if ie.GetTid() == "" || ie.GetTid() == "{{UUID}}" {
-			ie.SetTid(rawUUID.String())
-			impWrapper.RebuildImp()
-		}
-		if generateRequestID && (isAmp || hasStoredBidRequest) {
+		if ie.GetTid() == "" || ie.GetTid() == "{{UUID}}" || (generateRequestID && (isAmp || hasStoredBidRequest)) {
+			rawUUID, err := uuid.NewV4()
+			if err != nil {
+				return errors.New("imp.ext.tid missing in the imp and error creating a random UID")
+			}
 			ie.SetTid(rawUUID.String())
 			impWrapper.RebuildImp()
 		}
