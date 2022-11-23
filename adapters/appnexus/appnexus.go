@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 
@@ -474,7 +474,7 @@ func resolvePlatformID(platformID string) int {
 
 func loadCategoryMapFromFileSystem() map[string]string {
 	// Load custom options for our adapter (currently just a lookup table to convert appnexus => iab categories)
-	opts, err := ioutil.ReadFile("./static/adapter/appnexus/opts.json")
+	opts, err := os.ReadFile("./static/adapter/appnexus/opts.json")
 	if err == nil {
 		var adapterOptions appnexusAdapterOptions
 

@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptrace"
 	"regexp"
@@ -561,7 +561,7 @@ func (bidder *bidderAdapter) doRequestImpl(ctx context.Context, req *adapters.Re
 		}
 	}
 
-	respBody, err := ioutil.ReadAll(httpResp.Body)
+	respBody, err := io.ReadAll(httpResp.Body)
 	if err != nil {
 		return &httpCallInfo{
 			request: req,

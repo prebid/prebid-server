@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/http/httptrace"
@@ -1926,7 +1926,7 @@ func (DNSDoneTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 
 	resp := &http.Response{
 		StatusCode: 200,
-		Body:       ioutil.NopCloser(strings.NewReader("postBody")),
+		Body:       io.NopCloser(strings.NewReader("postBody")),
 	}
 
 	return resp, nil
@@ -1942,7 +1942,7 @@ func (TLSHandshakeTripper) RoundTrip(req *http.Request) (*http.Response, error) 
 
 	resp := &http.Response{
 		StatusCode: 200,
-		Body:       ioutil.NopCloser(strings.NewReader("postBody")),
+		Body:       io.NopCloser(strings.NewReader("postBody")),
 	}
 
 	return resp, nil
