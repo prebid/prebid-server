@@ -3,12 +3,14 @@ package hookstage
 type MutationType int
 
 const (
-	MutationUpdate MutationType = iota
+	MutationAdd MutationType = iota
+	MutationUpdate
 	MutationDelete
 )
 
 func (mt MutationType) String() string {
 	if v, ok := map[MutationType]string{
+		MutationAdd:    "add",
 		MutationUpdate: "update",
 		MutationDelete: "delete",
 	}[mt]; ok {

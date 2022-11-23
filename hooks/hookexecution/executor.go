@@ -17,6 +17,7 @@ const (
 	EndpointAmp     = "/openrtb2/amp"
 )
 
+// An entity specifies the type of object that was processed during the execution of the stage.
 type entity string
 
 const (
@@ -92,22 +93,22 @@ func (e *hookExecutor) ExecuteEntrypointStage(req *http.Request, body []byte) ([
 	}
 
 	executionCtx := executionContext{
-		e.endpoint,
-		stageName,
-		e.accountId,
-		e.account,
-		e.moduleContexts,
+		endpoint:       e.endpoint,
+		stage:          stageName,
+		accountId:      e.accountId,
+		account:        e.account,
+		moduleContexts: e.moduleContexts,
 	}
 
 	payload := hookstage.EntrypointPayload{Request: req, Body: body}
-	stageOutcome, payload, stageModuleContexts, reject := executeStage(executionCtx, plan, payload, handler)
+	stageOutcome, payload, stageModuleContexts, rejectErr := executeStage(executionCtx, plan, payload, handler)
 	stageOutcome.Entity = entityHttpRequest
 	stageOutcome.Stage = stageName
 
 	e.saveModuleContexts(stageModuleContexts)
 	e.pushStageOutcome(stageOutcome)
 
-	return payload.Body, reject
+	return payload.Body, rejectErr
 }
 
 func (e *hookExecutor) ExecuteRawAuctionStage(body []byte) ([]byte, *RejectError) {
@@ -148,8 +149,8 @@ func (e *hookExecutor) saveModuleContexts(ctxs stageModuleContext) {
 
 func (e *hookExecutor) pushStageOutcome(outcome StageOutcome) {
 	e.Lock()
-	e.stageOutcomes = append(e.stageOutcomes, outcome)
 	defer e.Unlock()
+	e.stageOutcomes = append(e.stageOutcomes, outcome)
 }
 
 type EmptyHookExecutor struct{}

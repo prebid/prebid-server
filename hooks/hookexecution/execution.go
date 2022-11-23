@@ -37,12 +37,12 @@ func executeStage[H any, P any](
 	stageModuleCtx.groupCtx = make([]groupModuleContext, 0, len(plan))
 
 	for _, group := range plan {
-		groupOutcome, newPayload, moduleContexts, reject := executeGroup(executionCtx, group, payload, hookHandler)
+		groupOutcome, newPayload, moduleContexts, rejectErr := executeGroup(executionCtx, group, payload, hookHandler)
 		stageOutcome.ExecutionTimeMillis += groupOutcome.ExecutionTimeMillis
 		stageOutcome.Groups = append(stageOutcome.Groups, groupOutcome)
 		stageModuleCtx.groupCtx = append(stageModuleCtx.groupCtx, moduleContexts)
-		if reject != nil {
-			return stageOutcome, payload, stageModuleCtx, reject
+		if rejectErr != nil {
+			return stageOutcome, payload, stageModuleCtx, rejectErr
 		}
 
 		payload = newPayload
@@ -58,7 +58,7 @@ func executeGroup[H any, P any](
 	hookHandler hookHandler[H, P],
 ) (GroupOutcome, P, groupModuleContext, *RejectError) {
 	var wg sync.WaitGroup
-	done := make(chan struct{})
+	rejected := make(chan struct{})
 	resp := make(chan hookResponse[P])
 
 	for _, hook := range group.Hooks {
@@ -66,7 +66,7 @@ func executeGroup[H any, P any](
 		wg.Add(1)
 		go func(hw hooks.HookWrapper[H], moduleCtx hookstage.ModuleInvocationContext) {
 			defer wg.Done()
-			executeHook(moduleCtx, hw, payload, hookHandler, group.Timeout, resp, done)
+			executeHook(moduleCtx, hw, payload, hookHandler, group.Timeout, resp, rejected)
 		}(hook, mCtx)
 	}
 
@@ -75,7 +75,7 @@ func executeGroup[H any, P any](
 		close(resp)
 	}()
 
-	hookResponses := collectHookResponses(resp, done)
+	hookResponses := collectHookResponses(resp, rejected)
 
 	return processHookResponses(executionCtx, hookResponses, payload)
 }
@@ -87,54 +87,48 @@ func executeHook[H any, P any](
 	hookHandler hookHandler[H, P],
 	timeout time.Duration,
 	resp chan<- hookResponse[P],
-	done <-chan struct{},
+	rejected <-chan struct{},
 ) {
 	hookRespCh := make(chan hookResponse[P], 1)
+	startTime := time.Now()
+	hookId := HookID{ModuleCode: hw.Module, HookCode: hw.Code}
+
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
+		result, err := hookHandler(ctx, moduleCtx, hw.Hook, payload)
+		hookRespCh <- hookResponse[P]{
+			Result: result,
+			Err:    err,
+		}
+	}()
 
 	select {
-	case <-done:
-		return
-	default:
-		startTime := time.Now()
-		hookId := HookID{hw.Module, hw.Code}
-
-		go func() {
-			ctx, cancel := context.WithTimeout(context.Background(), timeout)
-			defer cancel()
-			result, err := hookHandler(ctx, moduleCtx, hw.Hook, payload)
-			hookRespCh <- hookResponse[P]{
-				Result: result,
-				Err:    err,
-			}
-		}()
-
-		select {
-		case res := <-hookRespCh:
-			res.HookID = hookId
-			res.ExecutionTime = time.Since(startTime)
-			resp <- res
-		case <-time.After(timeout):
-			resp <- hookResponse[P]{
-				Err:           TimeoutError{},
-				ExecutionTime: time.Since(startTime),
-				HookID:        hookId,
-				Result:        hookstage.HookResult[P]{},
-			}
-		case <-done:
-			return
+	case res := <-hookRespCh:
+		res.HookID = hookId
+		res.ExecutionTime = time.Since(startTime)
+		resp <- res
+	case <-time.After(timeout):
+		resp <- hookResponse[P]{
+			Err:           TimeoutError{},
+			ExecutionTime: time.Since(startTime),
+			HookID:        hookId,
+			Result:        hookstage.HookResult[P]{},
 		}
+	case <-rejected:
+		return
 	}
 }
 
 func collectHookResponses[P any](
 	resp <-chan hookResponse[P],
-	done chan<- struct{},
+	rejected chan<- struct{},
 ) []hookResponse[P] {
 	hookResponses := make([]hookResponse[P], 0)
 	for r := range resp {
 		hookResponses = append(hookResponses, r)
 		if r.Result.Reject {
-			close(done)
+			close(rejected)
 			break
 		}
 	}
@@ -159,7 +153,7 @@ func processHookResponses[P any](
 			Message:       r.Result.Message,
 			DebugMessages: r.Result.DebugMessages,
 			AnalyticsTags: r.Result.AnalyticsTags,
-			ExecutionTime: ExecutionTime{r.ExecutionTime},
+			ExecutionTime: ExecutionTime{ExecutionTimeMillis: r.ExecutionTime},
 		})
 		groupModuleCtx[r.HookID.ModuleCode] = r.Result.ModuleContext
 
@@ -195,10 +189,10 @@ func processHookResponses[P any](
 				continue
 			}
 
-			reject := &RejectError{r.Result.NbrCode, r.HookID, executionCtx.stage}
+			rejectErr := &RejectError{NBR: r.Result.NbrCode, Hook: r.HookID, Stage: executionCtx.stage}
 			groupOutcome.InvocationResults[i].Action = ActionReject
-			groupOutcome.InvocationResults[i].Errors = append(groupOutcome.InvocationResults[i].Errors, reject.Error())
-			return groupOutcome, payload, groupModuleCtx, reject
+			groupOutcome.InvocationResults[i].Errors = append(groupOutcome.InvocationResults[i].Errors, rejectErr.Error())
+			return groupOutcome, payload, groupModuleCtx, rejectErr
 		}
 
 		if r.Result.ChangeSet == nil || len(r.Result.ChangeSet.Mutations()) == 0 {

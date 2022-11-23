@@ -60,7 +60,7 @@ func TestExecuteEntrypointStage(t *testing.T) {
 							InvocationResults: []HookOutcome{
 								{
 									AnalyticsTags: hookanalytics.Analytics{},
-									HookID:        HookID{"foobar", "foo"},
+									HookID:        HookID{ModuleCode: "foobar", HookCode: "foo"},
 									Status:        StatusSuccess,
 									Action:        ActionUpdate,
 									Message:       "",
@@ -70,7 +70,7 @@ func TestExecuteEntrypointStage(t *testing.T) {
 								},
 								{
 									AnalyticsTags: hookanalytics.Analytics{},
-									HookID:        HookID{"foobar", "bar"},
+									HookID:        HookID{ModuleCode: "foobar", HookCode: "bar"},
 									Status:        StatusSuccess,
 									Action:        ActionUpdate,
 									Message:       "",
@@ -84,7 +84,7 @@ func TestExecuteEntrypointStage(t *testing.T) {
 							InvocationResults: []HookOutcome{
 								{
 									AnalyticsTags: hookanalytics.Analytics{},
-									HookID:        HookID{"foobar", "baz"},
+									HookID:        HookID{ModuleCode: "foobar", HookCode: "baz"},
 									Status:        StatusSuccess,
 									Action:        ActionUpdate,
 									Message:       "",
@@ -109,7 +109,7 @@ func TestExecuteEntrypointStage(t *testing.T) {
 			expectedBody:     body,
 			expectedHeader:   http.Header{"Foo": []string{"bar"}},
 			expectedQuery:    url.Values{},
-			expectedReject:   &RejectError{0, HookID{"foobar", "bar"}, hooks.StageEntrypoint.String()},
+			expectedReject:   &RejectError{0, HookID{ModuleCode: "foobar", HookCode: "bar"}, hooks.StageEntrypoint.String()},
 			expectedStageOutcomes: []StageOutcome{
 				{
 					ExecutionTime: ExecutionTime{},
@@ -122,7 +122,7 @@ func TestExecuteEntrypointStage(t *testing.T) {
 								{
 									ExecutionTime: ExecutionTime{},
 									AnalyticsTags: hookanalytics.Analytics{},
-									HookID:        HookID{"foobar", "foo"},
+									HookID:        HookID{ModuleCode: "foobar", HookCode: "foo"},
 									Status:        StatusSuccess,
 									Action:        ActionUpdate,
 									Message:       "",
@@ -140,7 +140,7 @@ func TestExecuteEntrypointStage(t *testing.T) {
 								{
 									ExecutionTime: ExecutionTime{},
 									AnalyticsTags: hookanalytics.Analytics{},
-									HookID:        HookID{"foobar", "bar"},
+									HookID:        HookID{ModuleCode: "foobar", HookCode: "bar"},
 									Status:        StatusSuccess,
 									Action:        ActionReject,
 									Message:       "",
@@ -177,7 +177,7 @@ func TestExecuteEntrypointStage(t *testing.T) {
 								{
 									ExecutionTime: ExecutionTime{},
 									AnalyticsTags: hookanalytics.Analytics{},
-									HookID:        HookID{"foobar", "foo"},
+									HookID:        HookID{ModuleCode: "foobar", HookCode: "foo"},
 									Status:        StatusSuccess,
 									Action:        ActionUpdate,
 									Message:       "",
@@ -190,7 +190,7 @@ func TestExecuteEntrypointStage(t *testing.T) {
 								{
 									ExecutionTime: ExecutionTime{},
 									AnalyticsTags: hookanalytics.Analytics{},
-									HookID:        HookID{"foobar", "bar"},
+									HookID:        HookID{ModuleCode: "foobar", HookCode: "bar"},
 									Status:        StatusTimeout,
 									Action:        "",
 									Message:       "",
@@ -206,7 +206,7 @@ func TestExecuteEntrypointStage(t *testing.T) {
 								{
 									ExecutionTime: ExecutionTime{},
 									AnalyticsTags: hookanalytics.Analytics{},
-									HookID:        HookID{"foobar", "baz"},
+									HookID:        HookID{ModuleCode: "foobar", HookCode: "baz"},
 									Status:        StatusSuccess,
 									Action:        ActionUpdate,
 									Message:       "",

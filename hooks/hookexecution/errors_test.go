@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetReject(t *testing.T) {
+func TestFindFirstRejectOrNil(t *testing.T) {
 	customError := errors.New("error message")
 	rejectError := &RejectError{NBR: 123}
 
@@ -40,8 +40,45 @@ func TestGetReject(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
-			result := FindReject(test.errs)
+			result := FindFirstRejectOrNil(test.errs)
 			assert.Equal(t, test.expectedErr, result)
+		})
+	}
+}
+
+func TestCastRejectErr(t *testing.T) {
+	rejectError := &RejectError{NBR: 123}
+	testCases := []struct {
+		description    string
+		err            error
+		expectedErr    *RejectError
+		expectedResult bool
+	}{
+		{
+			description:    "Returns reject error and true if reject error provided",
+			err:            rejectError,
+			expectedErr:    rejectError,
+			expectedResult: true,
+		},
+		{
+			description:    "Returns nil and false if no error provided",
+			err:            nil,
+			expectedErr:    nil,
+			expectedResult: false,
+		},
+		{
+			description:    "Returns nil and false if custom error type provided",
+			err:            errors.New("error message"),
+			expectedErr:    nil,
+			expectedResult: false,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.description, func(t *testing.T) {
+			rejectErr, isRejectErr := CastRejectErr(test.err)
+			assert.Equal(t, test.expectedErr, rejectErr, "Invalid error returned.")
+			assert.Equal(t, test.expectedResult, isRejectErr, "Invalid casting result.")
 		})
 	}
 }

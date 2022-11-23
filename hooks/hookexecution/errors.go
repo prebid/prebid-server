@@ -10,14 +10,14 @@ import (
 type TimeoutError struct{}
 
 func (e TimeoutError) Error() string {
-	return fmt.Sprint("Hook execution timeout")
+	return "Hook execution timeout"
 }
 
 // FailureError indicates expected error occurred during hook execution on the module-side.
 type FailureError struct{}
 
 func (e FailureError) Error() string {
-	return fmt.Sprint("Hook execution failed")
+	return "Hook execution failed"
 }
 
 // RejectError indicates stage rejection requested by specific hook.
@@ -47,11 +47,16 @@ func (e RejectError) Error() string {
 	)
 }
 
-func FindReject(errors []error) *RejectError {
+func FindFirstRejectOrNil(errors []error) *RejectError {
 	for _, err := range errors {
-		if reject, ok := err.(*RejectError); ok {
-			return reject
+		if rejectErr, ok := CastRejectErr(err); ok {
+			return rejectErr
 		}
 	}
 	return nil
+}
+
+func CastRejectErr(err error) (*RejectError, bool) {
+	rejectErr, ok := err.(*RejectError)
+	return rejectErr, ok
 }

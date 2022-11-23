@@ -165,8 +165,8 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		return
 	}
 
-	if reject := hookexecution.FindReject(errL); reject != nil {
-		labels, ao = rejectAuctionRequest(*reject, w, req.BidRequest, labels, ao)
+	if rejectErr := hookexecution.FindFirstRejectOrNil(errL); rejectErr != nil {
+		labels, ao = rejectAuctionRequest(*rejectErr, w, req.BidRequest, labels, ao)
 		return
 	}
 
@@ -233,8 +233,8 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	ao.Request = req.BidRequest
 	ao.Response = response
 	ao.Account = account
-	reject := hookexecution.FindReject([]error{err})
-	if err != nil && reject == nil {
+	rejectErr, isRejectErr := hookexecution.CastRejectErr(err)
+	if err != nil && !isRejectErr {
 		if errortypes.ReadCode(err) == errortypes.BadInputErrorCode {
 			writeError([]error{err}, w, &labels)
 			return
@@ -246,10 +246,8 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		ao.Status = http.StatusInternalServerError
 		ao.Errors = append(ao.Errors, err)
 		return
-	}
-
-	if reject != nil {
-		labels, ao = rejectAuctionRequest(*reject, w, req.BidRequest, labels, ao)
+	} else if isRejectErr {
+		labels, ao = rejectAuctionRequest(*rejectErr, w, req.BidRequest, labels, ao)
 		return
 	}
 
@@ -257,20 +255,19 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 }
 
 func rejectAuctionRequest(
-	reject hookexecution.RejectError,
+	rejectErr hookexecution.RejectError,
 	w http.ResponseWriter,
 	request *openrtb2.BidRequest,
 	labels metrics.Labels,
 	ao analytics.AuctionObject,
 ) (metrics.Labels, analytics.AuctionObject) {
-	nbr := openrtb3.NoBidReason(reject.NBR)
-	response := &openrtb2.BidResponse{NBR: &nbr}
+	response := &openrtb2.BidResponse{NBR: openrtb3.NoBidReason(rejectErr.NBR).Ptr()}
 	if request != nil {
 		response.ID = request.ID
 	}
 
 	ao.Response = response
-	ao.Errors = append(ao.Errors, reject)
+	ao.Errors = append(ao.Errors, rejectErr)
 
 	return sendAuctionResponse(w, response, labels, ao)
 }
@@ -331,9 +328,9 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb_
 		}
 	}
 
-	requestJson, reject := deps.hookExecutor.ExecuteEntrypointStage(httpRequest, requestJson)
-	if reject != nil {
-		errs = []error{reject}
+	requestJson, rejectErr := deps.hookExecutor.ExecuteEntrypointStage(httpRequest, requestJson)
+	if rejectErr != nil {
+		errs = []error{rejectErr}
 		if err = json.Unmarshal(requestJson, req.BidRequest); err != nil {
 			glog.Errorf("Failed to unmarshal BidRequest during entrypoint rejection: %s", err)
 		}

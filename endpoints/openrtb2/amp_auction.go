@@ -39,6 +39,8 @@ import (
 
 const defaultAmpRequestTimeoutMillis = 900
 
+var nilBody []byte = nil
+
 type AmpResponse struct {
 	Targeting map[string]string                                         `json:"targeting"`
 	Debug     *openrtb_ext.ExtResponseDebug                             `json:"debug,omitempty"`
@@ -144,8 +146,9 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	w.Header().Set("Access-Control-Expose-Headers", "AMP-Access-Control-Allow-Source-Origin")
 	w.Header().Set("X-Prebid", version.BuildXPrebidHeader(version.Ver))
 
-	if _, reject := deps.hookExecutor.ExecuteEntrypointStage(r, nil); reject != nil {
-		labels, ao = rejectAmpRequest(*reject, w, nil, labels, ao, nil)
+	// There is no body for AMP requests, so we pass a nil body and ignore the return value.
+	if _, rejectErr := deps.hookExecutor.ExecuteEntrypointStage(r, nilBody); rejectErr != nil {
+		labels, ao = rejectAmpRequest(*rejectErr, w, nil, labels, ao, nil)
 		return
 	}
 
@@ -230,8 +233,8 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 
 	response, err := deps.ex.HoldAuction(ctx, auctionRequest, nil)
 	ao.AuctionResponse = response
-	reject := hookexecution.FindReject([]error{err})
-	if err != nil && reject == nil {
+	rejectErr, isRejectErr := hookexecution.CastRejectErr(err)
+	if err != nil && !isRejectErr {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
 		glog.Errorf("/openrtb2/amp Critical error: %v", err)
@@ -251,8 +254,8 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		return
 	}
 
-	if reject != nil {
-		labels, ao = rejectAmpRequest(*reject, w, reqWrapper, labels, ao, errL)
+	if isRejectErr {
+		labels, ao = rejectAmpRequest(*rejectErr, w, reqWrapper, labels, ao, errL)
 		return
 	}
 
@@ -260,20 +263,16 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 }
 
 func rejectAmpRequest(
-	reject hookexecution.RejectError,
+	rejectErr hookexecution.RejectError,
 	w http.ResponseWriter,
 	reqWrapper *openrtb_ext.RequestWrapper,
 	labels metrics.Labels,
 	ao analytics.AmpObject,
 	errs []error,
 ) (metrics.Labels, analytics.AmpObject) {
-	nbr := openrtb3.NoBidReason(reject.NBR)
-	response := &openrtb2.BidResponse{
-		NBR: &nbr,
-	}
-
+	response := &openrtb2.BidResponse{NBR: openrtb3.NoBidReason(rejectErr.NBR).Ptr()}
 	ao.AuctionResponse = response
-	ao.Errors = append(ao.Errors, reject)
+	ao.Errors = append(ao.Errors, rejectErr)
 
 	return sendAmpResponse(w, response, reqWrapper, labels, ao, errs)
 }
@@ -344,14 +343,12 @@ func sendAmpResponse(
 	ao.AmpTargetingValues = targets
 
 	// add debug information if requested
-	if reqWrapper != nil {
-		if reqWrapper.Test == 1 && eRErr == nil {
-			if extResponse.Debug != nil {
-				ampResponse.Debug = extResponse.Debug
-			} else {
-				glog.Errorf("Test set on request but debug not present in response.")
-				ao.Errors = append(ao.Errors, fmt.Errorf("test set on request but debug not present in response"))
-			}
+	if reqWrapper != nil && reqWrapper.Test == 1 && eRErr == nil {
+		if extResponse.Debug != nil {
+			ampResponse.Debug = extResponse.Debug
+		} else {
+			glog.Errorf("Test set on request but debug not present in response.")
+			ao.Errors = append(ao.Errors, fmt.Errorf("test set on request but debug not present in response"))
 		}
 	}
 
