@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
@@ -328,14 +329,14 @@ func generateBidResponse(adnResponse *AdnResponse, request *openrtb2.BidRequest)
 
 	for i, imp := range request.Imp {
 
-		var impExt RequestExt
-		if err := json.Unmarshal(imp.Ext, &impExt); err != nil {
+		auId, _, _, err := jsonparser.Get(imp.Ext, "bidder", "auId")
+		if err != nil {
 			return nil, []error{&errortypes.BadInput{
-				Message: fmt.Sprintf("Error unmarshalling ExtImpBidder: %s", err.Error()),
+				Message: fmt.Sprintf("Error at Bidder auId: %s", err.Error()),
 			}}
 		}
 
-		targetID := fmt.Sprintf("%s-%s", impExt.Bidder.AuId, imp.ID)
+		targetID := fmt.Sprintf("%s-%s", string(auId), imp.ID)
 		adunit := adunitMap[targetID]
 
 		if len(adunit.Ads) > 0 {
