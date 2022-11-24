@@ -14,10 +14,12 @@ func (e TimeoutError) Error() string {
 }
 
 // FailureError indicates expected error occurred during hook execution on the module-side.
-type FailureError struct{}
+type FailureError struct {
+	Message string
+}
 
 func (e FailureError) Error() string {
-	return "Hook execution failed"
+	return fmt.Sprintf("hook execution failed: %s", e.Message)
 }
 
 // RejectError indicates stage rejection requested by specific hook.

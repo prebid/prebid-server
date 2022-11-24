@@ -262,14 +262,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	labels, ao = sendAmpResponse(w, response, reqWrapper, labels, ao, errL)
 }
 
-func rejectAmpRequest(
-	rejectErr hookexecution.RejectError,
-	w http.ResponseWriter,
-	reqWrapper *openrtb_ext.RequestWrapper,
-	labels metrics.Labels,
-	ao analytics.AmpObject,
-	errs []error,
-) (metrics.Labels, analytics.AmpObject) {
+func rejectAmpRequest(rejectErr hookexecution.RejectError, w http.ResponseWriter, reqWrapper *openrtb_ext.RequestWrapper, labels metrics.Labels, ao analytics.AmpObject, errs []error) (metrics.Labels, analytics.AmpObject) {
 	response := &openrtb2.BidResponse{NBR: openrtb3.NoBidReason(rejectErr.NBR).Ptr()}
 	ao.AuctionResponse = response
 	ao.Errors = append(ao.Errors, rejectErr)
@@ -277,14 +270,7 @@ func rejectAmpRequest(
 	return sendAmpResponse(w, response, reqWrapper, labels, ao, errs)
 }
 
-func sendAmpResponse(
-	w http.ResponseWriter,
-	response *openrtb2.BidResponse,
-	reqWrapper *openrtb_ext.RequestWrapper,
-	labels metrics.Labels,
-	ao analytics.AmpObject,
-	errs []error,
-) (metrics.Labels, analytics.AmpObject) {
+func sendAmpResponse(w http.ResponseWriter, response *openrtb2.BidResponse, reqWrapper *openrtb_ext.RequestWrapper, labels metrics.Labels, ao analytics.AmpObject, errs []error) (metrics.Labels, analytics.AmpObject) {
 	// Need to extract the targeting parameters from the response, as those are all that
 	// go in the AMP response
 	targets := map[string]string{}

@@ -254,13 +254,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	labels, ao = sendAuctionResponse(w, response, labels, ao)
 }
 
-func rejectAuctionRequest(
-	rejectErr hookexecution.RejectError,
-	w http.ResponseWriter,
-	request *openrtb2.BidRequest,
-	labels metrics.Labels,
-	ao analytics.AuctionObject,
-) (metrics.Labels, analytics.AuctionObject) {
+func rejectAuctionRequest(rejectErr hookexecution.RejectError, w http.ResponseWriter, request *openrtb2.BidRequest, labels metrics.Labels, ao analytics.AuctionObject) (metrics.Labels, analytics.AuctionObject) {
 	response := &openrtb2.BidResponse{NBR: openrtb3.NoBidReason(rejectErr.NBR).Ptr()}
 	if request != nil {
 		response.ID = request.ID
@@ -272,12 +266,7 @@ func rejectAuctionRequest(
 	return sendAuctionResponse(w, response, labels, ao)
 }
 
-func sendAuctionResponse(
-	w http.ResponseWriter,
-	response *openrtb2.BidResponse,
-	labels metrics.Labels,
-	ao analytics.AuctionObject,
-) (metrics.Labels, analytics.AuctionObject) {
+func sendAuctionResponse(w http.ResponseWriter, response *openrtb2.BidResponse, labels metrics.Labels, ao analytics.AuctionObject) (metrics.Labels, analytics.AuctionObject) {
 	// Fixes #231
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)

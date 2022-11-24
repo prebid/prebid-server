@@ -37,9 +37,10 @@ func (ctx executionContext) getModuleContext(moduleName string) hookstage.Module
 	return moduleInvocationCtx
 }
 
+// moduleContexts preserves data the module wants to pass to itself from earlier stages to later stages.
 type moduleContexts struct {
 	sync.RWMutex
-	ctxs map[string]hookstage.ModuleContext
+	ctxs map[string]hookstage.ModuleContext // format: {"module_name": hookstage.ModuleContext}
 }
 
 func (mc *moduleContexts) put(moduleName string, mCtx hookstage.ModuleContext) {

@@ -3,6 +3,7 @@ package hookexecution
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -13,44 +14,48 @@ import (
 	"github.com/prebid/prebid-server/hooks/hookanalytics"
 	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestExecuteEntrypointStage(t *testing.T) {
 	const body string = `{"name": "John", "last_name": "Doe"}`
 	const urlString string = "https://prebid.com/openrtb2/auction"
 
+	foobarModuleCtx := &moduleContexts{ctxs: map[string]hookstage.ModuleContext{"foobar": nil}}
+
 	testCases := []struct {
-		description           string
-		givenBody             string
-		givenUrl              string
-		givenPlanBuilder      hooks.ExecutionPlanBuilder
-		expectedBody          string
-		expectedHeader        http.Header
-		expectedQuery         url.Values
-		expectedReject        *RejectError
-		expectedStageOutcomes []StageOutcome
+		description            string
+		givenBody              string
+		givenUrl               string
+		givenPlanBuilder       hooks.ExecutionPlanBuilder
+		expectedBody           string
+		expectedHeader         http.Header
+		expectedQuery          url.Values
+		expectedReject         *RejectError
+		expectedModuleContexts *moduleContexts
+		expectedStageOutcomes  []StageOutcome
 	}{
 		{
-			description:           "Payload not changed if hook execution plan empty",
-			givenBody:             body,
-			givenUrl:              urlString,
-			givenPlanBuilder:      hooks.EmptyPlanBuilder{},
-			expectedBody:          body,
-			expectedHeader:        http.Header{},
-			expectedQuery:         url.Values{},
-			expectedReject:        nil,
-			expectedStageOutcomes: []StageOutcome{},
+			description:            "Payload not changed if hook execution plan empty",
+			givenBody:              body,
+			givenUrl:               urlString,
+			givenPlanBuilder:       hooks.EmptyPlanBuilder{},
+			expectedBody:           body,
+			expectedHeader:         http.Header{},
+			expectedQuery:          url.Values{},
+			expectedReject:         nil,
+			expectedModuleContexts: &moduleContexts{ctxs: map[string]hookstage.ModuleContext{}},
+			expectedStageOutcomes:  []StageOutcome{},
 		},
 		{
-			description:      "Payload changed if hooks return mutations",
-			givenBody:        body,
-			givenUrl:         urlString,
-			givenPlanBuilder: TestApplyHookMutationsBuilder{},
-			expectedBody:     `{"last_name": "Doe", "foo": "bar"}`,
-			expectedHeader:   http.Header{"Foo": []string{"bar"}},
-			expectedQuery:    url.Values{"foo": []string{"baz"}},
-			expectedReject:   nil,
+			description:            "Payload changed if hooks return mutations",
+			givenBody:              body,
+			givenUrl:               urlString,
+			givenPlanBuilder:       TestApplyHookMutationsBuilder{},
+			expectedBody:           `{"last_name": "Doe", "foo": "bar"}`,
+			expectedHeader:         http.Header{"Foo": []string{"bar"}},
+			expectedQuery:          url.Values{"foo": []string{"baz"}},
+			expectedReject:         nil,
+			expectedModuleContexts: foobarModuleCtx,
 			expectedStageOutcomes: []StageOutcome{
 				{
 					Entity: entityHttpRequest,
@@ -67,6 +72,16 @@ func TestExecuteEntrypointStage(t *testing.T) {
 									DebugMessages: []string{fmt.Sprintf("Hook mutation successfully applied, affected key: header.foo, mutation type: %s", hookstage.MutationUpdate)},
 									Errors:        nil,
 									Warnings:      nil,
+								},
+								{
+									AnalyticsTags: hookanalytics.Analytics{},
+									HookID:        HookID{ModuleCode: "foobar", HookCode: "foobaz"},
+									Status:        StatusSuccess,
+									Action:        ActionUpdate,
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      []string{"failed to apply hook mutation: key not found"},
 								},
 								{
 									AnalyticsTags: hookanalytics.Analytics{},
@@ -95,6 +110,16 @@ func TestExecuteEntrypointStage(t *testing.T) {
 									Errors:   nil,
 									Warnings: nil,
 								},
+								{
+									AnalyticsTags: hookanalytics.Analytics{},
+									HookID:        HookID{ModuleCode: "foobar", HookCode: "foo"},
+									Status:        StatusFailure,
+									Action:        "",
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        []string{"hook execution failed: attribute not found"},
+									Warnings:      nil,
+								},
 							},
 						},
 					},
@@ -102,14 +127,15 @@ func TestExecuteEntrypointStage(t *testing.T) {
 			},
 		},
 		{
-			description:      "Stage execution can be rejected",
-			givenBody:        body,
-			givenUrl:         urlString,
-			givenPlanBuilder: TestRejectPlanBuilder{},
-			expectedBody:     body,
-			expectedHeader:   http.Header{"Foo": []string{"bar"}},
-			expectedQuery:    url.Values{},
-			expectedReject:   &RejectError{0, HookID{ModuleCode: "foobar", HookCode: "bar"}, hooks.StageEntrypoint.String()},
+			description:            "Stage execution can be rejected - and later hooks rejected",
+			givenBody:              body,
+			givenUrl:               urlString,
+			givenPlanBuilder:       TestRejectPlanBuilder{},
+			expectedBody:           body,
+			expectedHeader:         http.Header{"Foo": []string{"bar"}},
+			expectedQuery:          url.Values{},
+			expectedReject:         &RejectError{0, HookID{ModuleCode: "foobar", HookCode: "bar"}, hooks.StageEntrypoint.String()},
+			expectedModuleContexts: foobarModuleCtx,
 			expectedStageOutcomes: []StageOutcome{
 				{
 					ExecutionTime: ExecutionTime{},
@@ -131,6 +157,17 @@ func TestExecuteEntrypointStage(t *testing.T) {
 									},
 									Errors:   nil,
 									Warnings: nil,
+								},
+								{
+									ExecutionTime: ExecutionTime{},
+									AnalyticsTags: hookanalytics.Analytics{},
+									HookID:        HookID{ModuleCode: "foobar", HookCode: "baz"},
+									Status:        StatusExecutionFailure,
+									Action:        "",
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        []string{"unexpected error"},
+									Warnings:      nil,
 								},
 							},
 						},
@@ -157,14 +194,15 @@ func TestExecuteEntrypointStage(t *testing.T) {
 			},
 		},
 		{
-			description:      "Stage execution can be timed out",
-			givenBody:        body,
-			givenUrl:         urlString,
-			givenPlanBuilder: TestWithTimeoutPlanBuilder{},
-			expectedBody:     `{"foo":"bar", "last_name":"Doe"}`,
-			expectedHeader:   http.Header{"Foo": []string{"bar"}},
-			expectedQuery:    url.Values{},
-			expectedReject:   nil,
+			description:            "Stage execution can be timed out",
+			givenBody:              body,
+			givenUrl:               urlString,
+			givenPlanBuilder:       TestWithTimeoutPlanBuilder{},
+			expectedBody:           `{"foo":"bar", "last_name":"Doe"}`,
+			expectedHeader:         http.Header{"Foo": []string{"bar"}},
+			expectedQuery:          url.Values{},
+			expectedReject:         nil,
+			expectedModuleContexts: foobarModuleCtx,
 			expectedStageOutcomes: []StageOutcome{
 				{
 					ExecutionTime: ExecutionTime{},
@@ -223,6 +261,72 @@ func TestExecuteEntrypointStage(t *testing.T) {
 				},
 			},
 		},
+		{
+			description:      "Modules contexts are preserved and correct",
+			givenBody:        body,
+			givenUrl:         urlString,
+			givenPlanBuilder: TestWithModuleContextsPlanBuilder{},
+			expectedBody:     body,
+			expectedHeader:   http.Header{},
+			expectedQuery:    url.Values{},
+			expectedReject:   nil,
+			expectedModuleContexts: &moduleContexts{ctxs: map[string]hookstage.ModuleContext{
+				"module-1": {"some-ctx-1": "some-ctx-1", "some-ctx-3": "some-ctx-3"},
+				"module-2": {"some-ctx-2": "some-ctx-2"},
+			}},
+			expectedStageOutcomes: []StageOutcome{
+				{
+					ExecutionTime: ExecutionTime{},
+					Entity:        entityHttpRequest,
+					Stage:         hooks.StageEntrypoint.String(),
+					Groups: []GroupOutcome{
+						{
+							ExecutionTime: ExecutionTime{},
+							InvocationResults: []HookOutcome{
+								{
+									ExecutionTime: ExecutionTime{},
+									AnalyticsTags: hookanalytics.Analytics{},
+									HookID:        HookID{ModuleCode: "module-1", HookCode: "foo"},
+									Status:        StatusSuccess,
+									Action:        ActionNone,
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+						{
+							ExecutionTime: ExecutionTime{},
+							InvocationResults: []HookOutcome{
+								{
+									ExecutionTime: ExecutionTime{},
+									AnalyticsTags: hookanalytics.Analytics{},
+									HookID:        HookID{ModuleCode: "module-2", HookCode: "bar"},
+									Status:        StatusSuccess,
+									Action:        ActionNone,
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+								{
+									ExecutionTime: ExecutionTime{},
+									AnalyticsTags: hookanalytics.Analytics{},
+									HookID:        HookID{ModuleCode: "module-1", HookCode: "baz"},
+									Status:        StatusSuccess,
+									Action:        ActionNone,
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, test := range testCases {
@@ -239,6 +343,7 @@ func TestExecuteEntrypointStage(t *testing.T) {
 			assert.JSONEq(t, test.expectedBody, string(newBody), "Incorrect request body.")
 			assert.Equal(t, test.expectedHeader, req.Header, "Incorrect request header.")
 			assert.Equal(t, test.expectedQuery, req.URL.Query(), "Incorrect request query.")
+			assert.Equal(t, test.expectedModuleContexts, exec.moduleContexts, "Incorrect module contexts")
 
 			stageOutcomes := exec.GetOutcomes()
 			if len(test.expectedStageOutcomes) == 0 {
@@ -248,30 +353,6 @@ func TestExecuteEntrypointStage(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestExecuteEntrypointStage_ModuleContextsAreCreated(t *testing.T) {
-	body := []byte(`{"name": "John", "last_name": "Doe"}`)
-	reader := bytes.NewReader(body)
-	req, err := http.NewRequest(http.MethodPost, "https://prebid.com/openrtb2/auction", reader)
-	if err != nil {
-		t.Fatalf("Unexpected error creating http request: %s", err)
-	}
-
-	exec := NewHookExecutor(TestWithModuleContextsPlanBuilder{}, EndpointAuction)
-	_, reject := exec.ExecuteEntrypointStage(req, body)
-	require.Nil(t, reject, "Unexpected stage reject")
-
-	stOut := exec.GetOutcomes()[0]
-	assert.Len(t, stOut.Groups, 2, "some hook groups have not been processed")
-
-	ctx1, ok := exec.moduleContexts.get("module-1")
-	assert.True(t, ok, "Failed to find context for module-1")
-	assert.Equal(t, ctx1["some-ctx-1"], "some-ctx-1", "Invalid value for some-ctx-1")
-
-	ctx2, ok := exec.moduleContexts.get("module-2")
-	assert.True(t, ok, "Failed to find context for module-2")
-	assert.Equal(t, ctx2["some-ctx-2"], "some-ctx-2", "Invalid value for some-ctx-2")
 }
 
 type mockUpdateHeaderEntrypointHook struct{}
@@ -328,7 +409,7 @@ func (e mockRejectEntrypointHook) HandleEntrypointHook(_ context.Context, _ hook
 type mockTimeoutEntrypointHook struct{}
 
 func (e mockTimeoutEntrypointHook) HandleEntrypointHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
-	time.Sleep(2 * time.Millisecond)
+	time.Sleep(3 * time.Millisecond)
 	c := &hookstage.ChangeSet[hookstage.EntrypointPayload]{}
 	c.AddMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
 		params := payload.Request.URL.Query()
@@ -354,6 +435,13 @@ func (e mockModuleContextEntrypointHook2) HandleEntrypointHook(_ context.Context
 	return hookstage.HookResult[hookstage.EntrypointPayload]{ModuleContext: miCtx.ModuleContext}, nil
 }
 
+type mockModuleContextEntrypointHook3 struct{}
+
+func (e mockModuleContextEntrypointHook3) HandleEntrypointHook(_ context.Context, miCtx hookstage.ModuleInvocationContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+	miCtx.ModuleContext = map[string]interface{}{"some-ctx-3": "some-ctx-3"}
+	return hookstage.HookResult[hookstage.EntrypointPayload]{ModuleContext: miCtx.ModuleContext}, nil
+}
+
 type TestApplyHookMutationsBuilder struct {
 	hooks.EmptyPlanBuilder
 }
@@ -364,6 +452,7 @@ func (e TestApplyHookMutationsBuilder) PlanForEntrypointStage(_ string) hooks.Pl
 			Timeout: 1 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
 				{Module: "foobar", Code: "foo", Hook: mockUpdateHeaderEntrypointHook{}},
+				{Module: "foobar", Code: "foobaz", Hook: mockFailedMutationEntrypointHook{}},
 				{Module: "foobar", Code: "bar", Hook: mockUpdateQueryEntrypointHook{}},
 			},
 		},
@@ -371,6 +460,7 @@ func (e TestApplyHookMutationsBuilder) PlanForEntrypointStage(_ string) hooks.Pl
 			Timeout: 1 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
 				{Module: "foobar", Code: "baz", Hook: mockUpdateBodyEntrypointHook{}},
+				{Module: "foobar", Code: "foo", Hook: mockFailureEntrypointHook{}},
 			},
 		},
 	}
@@ -386,12 +476,25 @@ func (e TestRejectPlanBuilder) PlanForEntrypointStage(_ string) hooks.Plan[hooks
 			Timeout: 1 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
 				{Module: "foobar", Code: "foo", Hook: mockUpdateHeaderEntrypointHook{}},
+				{Module: "foobar", Code: "baz", Hook: mockErrorEntrypointHook{}},
 			},
 		},
 		hooks.Group[hookstage.Entrypoint]{
+			Timeout: 5 * time.Millisecond,
+			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
+				// reject stage
+				{Module: "foobar", Code: "bar", Hook: mockRejectEntrypointHook{}},
+				// next hook rejected: we use timeout hook to make sure
+				// that it runs longer than previous one, so it won't be executed earlier
+				{Module: "foobar", Code: "baz", Hook: mockTimeoutEntrypointHook{}},
+			},
+		},
+		// group of hooks rejected
+		hooks.Group[hookstage.Entrypoint]{
 			Timeout: 1 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
-				{Module: "foobar", Code: "bar", Hook: mockRejectEntrypointHook{}},
+				{Module: "foobar", Code: "foo", Hook: mockUpdateHeaderEntrypointHook{}},
+				{Module: "foobar", Code: "baz", Hook: mockErrorEntrypointHook{}},
 			},
 		},
 	}
@@ -435,7 +538,31 @@ func (e TestWithModuleContextsPlanBuilder) PlanForEntrypointStage(_ string) hook
 			Timeout: 1 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
 				{Module: "module-2", Code: "bar", Hook: mockModuleContextEntrypointHook2{}},
+				{Module: "module-1", Code: "baz", Hook: mockModuleContextEntrypointHook3{}},
 			},
 		},
 	}
+}
+
+type mockFailureEntrypointHook struct{}
+
+func (h mockFailureEntrypointHook) HandleEntrypointHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+	return hookstage.HookResult[hookstage.EntrypointPayload]{}, FailureError{Message: "attribute not found"}
+}
+
+type mockErrorEntrypointHook struct{}
+
+func (h mockErrorEntrypointHook) HandleEntrypointHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+	return hookstage.HookResult[hookstage.EntrypointPayload]{}, errors.New("unexpected error")
+}
+
+type mockFailedMutationEntrypointHook struct{}
+
+func (h mockFailedMutationEntrypointHook) HandleEntrypointHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+	changeSet := &hookstage.ChangeSet[hookstage.EntrypointPayload]{}
+	changeSet.AddMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
+		return payload, errors.New("key not found")
+	}, hookstage.MutationUpdate, "header", "foo")
+
+	return hookstage.HookResult[hookstage.EntrypointPayload]{ChangeSet: changeSet}, nil
 }
