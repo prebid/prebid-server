@@ -10,11 +10,31 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookanalytics"
 	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestEmptyHookExecutor(t *testing.T) {
+	executor := EmptyHookExecutor{}
+	executor.SetAccount(&config.Account{})
+
+	body := []byte(`{"foo": "bar"}`)
+	reader := bytes.NewReader(body)
+	req, err := http.NewRequest(http.MethodPost, "https://prebid.com/openrtb2/auction", reader)
+	assert.NoError(t, err, "Failed to create http request.")
+
+	newBody, rejectErr := executor.ExecuteEntrypointStage(req, body)
+	outcomes := executor.GetOutcomes()
+
+	assert.Equal(t, EmptyHookExecutor{}, executor, "EmptyHookExecutor shouldn't be changed.")
+	assert.Nil(t, rejectErr, "EmptyHookExecutor shouldn't return reject error.")
+	assert.Equal(t, body, newBody, "EmptyHookExecutor shouldn't change body.")
+	assert.Empty(t, outcomes, "EmptyHookExecutor shouldn't return stage outcomes.")
+
+}
 
 func TestExecuteEntrypointStage(t *testing.T) {
 	const body string = `{"name": "John", "last_name": "Doe"}`
