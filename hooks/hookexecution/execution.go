@@ -77,7 +77,7 @@ func executeGroup[H any, P any](
 
 	hookResponses := collectHookResponses(resp, rejected)
 
-	return processHookResponses(executionCtx, hookResponses, payload)
+	return handleHookResponses(executionCtx, hookResponses, payload)
 }
 
 func executeHook[H any, P any](
@@ -120,10 +120,7 @@ func executeHook[H any, P any](
 	}
 }
 
-func collectHookResponses[P any](
-	resp <-chan hookResponse[P],
-	rejected chan<- struct{},
-) []hookResponse[P] {
+func collectHookResponses[P any](resp <-chan hookResponse[P], rejected chan<- struct{}) []hookResponse[P] {
 	hookResponses := make([]hookResponse[P], 0)
 	for r := range resp {
 		hookResponses = append(hookResponses, r)
@@ -136,92 +133,136 @@ func collectHookResponses[P any](
 	return hookResponses
 }
 
-func processHookResponses[P any](
+func handleHookResponses[P any](
 	executionCtx executionContext,
 	hookResponses []hookResponse[P],
 	payload P,
 ) (GroupOutcome, P, groupModuleContext, *RejectError) {
-	stage := hooks.Stage(executionCtx.stage)
 	groupOutcome := GroupOutcome{}
 	groupOutcome.InvocationResults = make([]HookOutcome, 0, len(hookResponses))
 	groupModuleCtx := make(groupModuleContext, len(hookResponses))
 
-	for i, r := range hookResponses {
-		groupOutcome.InvocationResults = append(groupOutcome.InvocationResults, HookOutcome{
-			Status:        StatusSuccess,
-			HookID:        r.HookID,
-			Message:       r.Result.Message,
-			DebugMessages: r.Result.DebugMessages,
-			AnalyticsTags: r.Result.AnalyticsTags,
-			ExecutionTime: ExecutionTime{ExecutionTimeMillis: r.ExecutionTime},
-		})
+	for _, r := range hookResponses {
 		groupModuleCtx[r.HookID.ModuleCode] = r.Result.ModuleContext
-
 		if r.ExecutionTime > groupOutcome.ExecutionTimeMillis {
 			groupOutcome.ExecutionTimeMillis = r.ExecutionTime
 		}
 
-		if r.Err != nil {
-			groupOutcome.InvocationResults[i].Errors = append(groupOutcome.InvocationResults[i].Errors, r.Err.Error())
-			switch r.Err.(type) {
-			case TimeoutError:
-				groupOutcome.InvocationResults[i].Status = StatusTimeout
-			case FailureError:
-				groupOutcome.InvocationResults[i].Status = StatusFailure
-			default:
-				groupOutcome.InvocationResults[i].Status = StatusExecutionFailure
-			}
-			continue
-		}
+		updatedPayload, hookOutcome, rejectErr := handleHookResponse(executionCtx, payload, r)
+		groupOutcome.InvocationResults = append(groupOutcome.InvocationResults, hookOutcome)
+		payload = updatedPayload
 
-		if r.Result.Reject {
-			if !stage.IsRejectable() {
-				groupOutcome.InvocationResults[i].Status = StatusExecutionFailure
-				groupOutcome.InvocationResults[i].Errors = append(
-					groupOutcome.InvocationResults[i].Errors,
-					fmt.Sprintf(
-						"Module (name: %s, hook code: %s) tried to reject request on the %s stage that does not support rejection",
-						r.HookID.ModuleCode,
-						r.HookID.HookCode,
-						executionCtx.stage,
-					),
-				)
-				continue
-			}
-
-			rejectErr := &RejectError{NBR: r.Result.NbrCode, Hook: r.HookID, Stage: executionCtx.stage}
-			groupOutcome.InvocationResults[i].Action = ActionReject
-			groupOutcome.InvocationResults[i].Errors = append(groupOutcome.InvocationResults[i].Errors, rejectErr.Error())
+		if rejectErr != nil {
 			return groupOutcome, payload, groupModuleCtx, rejectErr
-		}
-
-		if r.Result.ChangeSet == nil || len(r.Result.ChangeSet.Mutations()) == 0 {
-			groupOutcome.InvocationResults[i].Action = ActionNone
-			continue
-		}
-
-		groupOutcome.InvocationResults[i].Action = ActionUpdate
-		for _, mut := range r.Result.ChangeSet.Mutations() {
-			p, err := mut.Apply(payload)
-			if err != nil {
-				groupOutcome.InvocationResults[i].Warnings = append(
-					groupOutcome.InvocationResults[i].Warnings,
-					fmt.Sprintf("failed applying hook mutation: %s", err),
-				)
-				continue
-			}
-
-			payload = p
-			groupOutcome.InvocationResults[i].DebugMessages = append(
-				groupOutcome.InvocationResults[i].DebugMessages,
-				fmt.Sprintf(
-					"Hook mutation successfully applied, affected key: %s, mutation type: %s",
-					strings.Join(mut.Key(), "."),
-					mut.Type(),
-				),
-			)
 		}
 	}
 
 	return groupOutcome, payload, groupModuleCtx, nil
+}
+
+// handleHookResponse is a strategy function that selects and applies
+// one of the available algorithms to handle hook response.
+func handleHookResponse[P any](
+	ctx executionContext,
+	payload P,
+	hr hookResponse[P],
+) (P, HookOutcome, *RejectError) {
+	var rejectErr *RejectError
+	hookOutcome := HookOutcome{
+		Status:        StatusSuccess,
+		HookID:        hr.HookID,
+		Message:       hr.Result.Message,
+		DebugMessages: hr.Result.DebugMessages,
+		AnalyticsTags: hr.Result.AnalyticsTags,
+		ExecutionTime: ExecutionTime{ExecutionTimeMillis: hr.ExecutionTime},
+	}
+
+	switch true {
+	case hr.Err != nil:
+		handleHookError(hr, &hookOutcome)
+	case hr.Result.Reject:
+		rejectErr = handleHookReject(ctx, hr, &hookOutcome)
+	default:
+		payload = handleHookMutations(payload, hr, &hookOutcome)
+	}
+
+	return payload, hookOutcome, rejectErr
+}
+
+// handleHookError sets an appropriate status to HookOutcome depending on the type of hook execution error.
+func handleHookError[P any](hr hookResponse[P], hookOutcome *HookOutcome) {
+	if hr.Err == nil {
+		return
+	}
+
+	hookOutcome.Errors = append(hookOutcome.Errors, hr.Err.Error())
+	switch hr.Err.(type) {
+	case TimeoutError:
+		hookOutcome.Status = StatusTimeout
+	case FailureError:
+		hookOutcome.Status = StatusFailure
+	default:
+		hookOutcome.Status = StatusExecutionFailure
+	}
+}
+
+// handleHookReject rejects execution at the current stage.
+// In case the stage does not support rejection, hook execution marked as failed.
+func handleHookReject[P any](ctx executionContext, hr hookResponse[P], hookOutcome *HookOutcome) *RejectError {
+	if !hr.Result.Reject {
+		return nil
+	}
+
+	stage := hooks.Stage(ctx.stage)
+	if !stage.IsRejectable() {
+		hookOutcome.Status = StatusExecutionFailure
+		hookOutcome.Errors = append(
+			hookOutcome.Errors,
+			fmt.Sprintf(
+				"Module (name: %s, hook code: %s) tried to reject request on the %s stage that does not support rejection",
+				hr.HookID.ModuleCode,
+				hr.HookID.HookCode,
+				ctx.stage,
+			),
+		)
+		return nil
+	}
+
+	rejectErr := &RejectError{NBR: hr.Result.NbrCode, Hook: hr.HookID, Stage: ctx.stage}
+	hookOutcome.Action = ActionReject
+	hookOutcome.Errors = append(hookOutcome.Errors, rejectErr.Error())
+
+	return rejectErr
+}
+
+// handleHookMutations applies mutations returned by hook to provided payload.
+func handleHookMutations[P any](payload P, hr hookResponse[P], hookOutcome *HookOutcome) P {
+	if hr.Result.ChangeSet == nil || len(hr.Result.ChangeSet.Mutations()) == 0 {
+		hookOutcome.Action = ActionNone
+		return payload
+	}
+
+	hookOutcome.Action = ActionUpdate
+	for _, mut := range hr.Result.ChangeSet.Mutations() {
+		p, err := mut.Apply(payload)
+		if err != nil {
+			hookOutcome.Warnings = append(
+				hookOutcome.Warnings,
+				fmt.Sprintf("failed to apply hook mutation: %s", err),
+			)
+			continue
+		}
+
+		payload = p
+		hookOutcome.DebugMessages = append(
+			hookOutcome.DebugMessages,
+			fmt.Sprintf(
+				"Hook mutation successfully applied, affected key: %s, mutation type: %s",
+				strings.Join(mut.Key(), "."),
+				mut.Type(),
+			),
+		)
+	}
+
+	return payload
 }
