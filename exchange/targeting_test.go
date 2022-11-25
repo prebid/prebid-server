@@ -282,6 +282,7 @@ var truncateTargetAttrValue10 int = 10
 var truncateTargetAttrValue5 int = 5
 var truncateTargetAttrValue25 int = 25
 var truncateTargetAttrValueNegative int = -1
+
 var TargetingTests []TargetingTestData = []TargetingTestData{
 	{
 		Description: "Targeting winners only (most basic targeting example)",
@@ -290,16 +291,16 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 			includeWinners:   true,
 		},
 		Auction: auction{
-			winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*pbsOrtbBid{
+			winningBidsByBidder: map[string]map[openrtb_ext.BidderName][]*pbsOrtbBid{
 				"ImpId-1": {
-					openrtb_ext.BidderAppnexus: {
+					openrtb_ext.BidderAppnexus: {{
 						bid:     bid123,
 						bidType: openrtb_ext.BidTypeBanner,
-					},
-					openrtb_ext.BidderRubicon: {
+					}},
+					openrtb_ext.BidderRubicon: {{
 						bid:     bid084,
 						bidType: openrtb_ext.BidTypeBanner,
-					},
+					}},
 				},
 			},
 		},
@@ -321,16 +322,16 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 			includeBidderKeys: true,
 		},
 		Auction: auction{
-			winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*pbsOrtbBid{
+			winningBidsByBidder: map[string]map[openrtb_ext.BidderName][]*pbsOrtbBid{
 				"ImpId-1": {
-					openrtb_ext.BidderAppnexus: {
+					openrtb_ext.BidderAppnexus: {{
 						bid:     bid123,
 						bidType: openrtb_ext.BidTypeBanner,
-					},
-					openrtb_ext.BidderRubicon: {
+					}},
+					openrtb_ext.BidderRubicon: {{
 						bid:     bid084,
 						bidType: openrtb_ext.BidTypeBanner,
-					},
+					}},
 				},
 			},
 		},
@@ -357,16 +358,16 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 			includeFormat:     true,
 		},
 		Auction: auction{
-			winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*pbsOrtbBid{
+			winningBidsByBidder: map[string]map[openrtb_ext.BidderName][]*pbsOrtbBid{
 				"ImpId-1": {
-					openrtb_ext.BidderAppnexus: {
+					openrtb_ext.BidderAppnexus: {{
 						bid:     bid123,
 						bidType: openrtb_ext.BidTypeBanner,
-					},
-					openrtb_ext.BidderRubicon: {
+					}},
+					openrtb_ext.BidderRubicon: {{
 						bid:     bid084,
 						bidType: openrtb_ext.BidTypeBanner,
-					},
+					}},
 				},
 			},
 		},
@@ -398,16 +399,16 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 			cachePath:         "cache",
 		},
 		Auction: auction{
-			winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*pbsOrtbBid{
+			winningBidsByBidder: map[string]map[openrtb_ext.BidderName][]*pbsOrtbBid{
 				"ImpId-1": {
-					openrtb_ext.BidderAppnexus: {
+					openrtb_ext.BidderAppnexus: {{
 						bid:     bid123,
 						bidType: openrtb_ext.BidTypeBanner,
-					},
-					openrtb_ext.BidderRubicon: {
+					}},
+					openrtb_ext.BidderRubicon: {{
 						bid:     bid111,
 						bidType: openrtb_ext.BidTypeBanner,
-					},
+					}},
 				},
 			},
 			cacheIds: map[*openrtb2.Bid]string{
@@ -443,16 +444,16 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 			includeBidderKeys: true,
 		},
 		Auction: auction{
-			winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*pbsOrtbBid{
+			winningBidsByBidder: map[string]map[openrtb_ext.BidderName][]*pbsOrtbBid{
 				"ImpId-1": {
-					openrtb_ext.BidderAppnexus: {
+					openrtb_ext.BidderAppnexus: {{
 						bid:     bid123,
 						bidType: openrtb_ext.BidTypeBanner,
-					},
-					openrtb_ext.BidderRubicon: {
+					}},
+					openrtb_ext.BidderRubicon: {{
 						bid:     bid084,
 						bidType: openrtb_ext.BidTypeBanner,
-					},
+					}},
 				},
 			},
 		},
@@ -477,16 +478,16 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 			includeBidderKeys: true,
 		},
 		Auction: auction{
-			winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*pbsOrtbBid{
+			winningBidsByBidder: map[string]map[openrtb_ext.BidderName][]*pbsOrtbBid{
 				"ImpId-1": {
-					openrtb_ext.BidderAppnexus: {
+					openrtb_ext.BidderAppnexus: {{
 						bid:     bid123,
 						bidType: openrtb_ext.BidTypeBanner,
-					},
-					openrtb_ext.BidderRubicon: {
+					}},
+					openrtb_ext.BidderRubicon: {{
 						bid:     bid084,
 						bidType: openrtb_ext.BidTypeBanner,
-					},
+					}},
 				},
 			},
 		},
@@ -511,16 +512,16 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 			includeBidderKeys: true,
 		},
 		Auction: auction{
-			winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*pbsOrtbBid{
+			winningBidsByBidder: map[string]map[openrtb_ext.BidderName][]*pbsOrtbBid{
 				"ImpId-1": {
-					openrtb_ext.BidderAppnexus: {
+					openrtb_ext.BidderAppnexus: {{
 						bid:     bid123,
 						bidType: openrtb_ext.BidTypeBanner,
-					},
-					openrtb_ext.BidderRubicon: {
+					}},
+					openrtb_ext.BidderRubicon: {{
 						bid:     bid084,
 						bidType: openrtb_ext.BidTypeBanner,
-					},
+					}},
 				},
 			},
 		},
@@ -545,16 +546,16 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 			includeWinners:   true,
 		},
 		Auction: auction{
-			winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*pbsOrtbBid{
+			winningBidsByBidder: map[string]map[openrtb_ext.BidderName][]*pbsOrtbBid{
 				"ImpId-1": {
-					openrtb_ext.BidderAppnexus: {
+					openrtb_ext.BidderAppnexus: {{
 						bid:     bid123,
 						bidType: openrtb_ext.BidTypeBanner,
-					},
-					openrtb_ext.BidderRubicon: {
+					}},
+					openrtb_ext.BidderRubicon: {{
 						bid:     bid084,
 						bidType: openrtb_ext.BidTypeBanner,
-					},
+					}},
 				},
 			},
 		},
@@ -576,16 +577,16 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 			includeWinners:   true,
 		},
 		Auction: auction{
-			winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*pbsOrtbBid{
+			winningBidsByBidder: map[string]map[openrtb_ext.BidderName][]*pbsOrtbBid{
 				"ImpId-1": {
-					openrtb_ext.BidderAppnexus: {
+					openrtb_ext.BidderAppnexus: {{
 						bid:     bid123,
 						bidType: openrtb_ext.BidTypeBanner,
-					},
-					openrtb_ext.BidderRubicon: {
+					}},
+					openrtb_ext.BidderRubicon: {{
 						bid:     bid084,
 						bidType: openrtb_ext.BidTypeBanner,
-					},
+					}},
 				},
 			},
 		},
@@ -607,16 +608,16 @@ var TargetingTests []TargetingTestData = []TargetingTestData{
 			includeWinners:   true,
 		},
 		Auction: auction{
-			winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*pbsOrtbBid{
+			winningBidsByBidder: map[string]map[openrtb_ext.BidderName][]*pbsOrtbBid{
 				"ImpId-1": {
-					openrtb_ext.BidderAppnexus: {
+					openrtb_ext.BidderAppnexus: {{
 						bid:     bid123,
 						bidType: openrtb_ext.BidTypeBanner,
-					},
-					openrtb_ext.BidderRubicon: {
+					}},
+					openrtb_ext.BidderRubicon: {{
 						bid:     bid084,
 						bidType: openrtb_ext.BidTypeBanner,
-					},
+					}},
 				},
 			},
 		},
@@ -641,24 +642,27 @@ func TestSetTargeting(t *testing.T) {
 		winningBids := make(map[string]*pbsOrtbBid)
 		// Set winning bids from the auction data
 		for imp, bidsByBidder := range auc.winningBidsByBidder {
-			for _, bid := range bidsByBidder {
-				if winningBid, ok := winningBids[imp]; ok {
-					if winningBid.bid.Price < bid.bid.Price {
+			for _, bids := range bidsByBidder {
+				for _, bid := range bids {
+					if winningBid, ok := winningBids[imp]; ok {
+						if winningBid.bid.Price < bid.bid.Price {
+							winningBids[imp] = bid
+						}
+					} else {
 						winningBids[imp] = bid
 					}
-				} else {
-					winningBids[imp] = bid
 				}
 			}
 		}
 		auc.winningBids = winningBids
 		targData := test.TargetData
-		targData.setTargeting(auc, test.IsApp, test.CategoryMapping, test.TruncateTargetAttr)
+		targData.setTargeting(auc, test.IsApp, test.CategoryMapping, test.TruncateTargetAttr, ExtMultiBidMap{})
 		for imp, targetsByBidder := range test.ExpectedBidTargetsByBidder {
 			for bidder, expected := range targetsByBidder {
+				assert.Len(t, auc.winningBidsByBidder[imp][bidder], 1) //until all tests are updated
 				assert.Equal(t,
 					expected,
-					auc.winningBidsByBidder[imp][bidder].bidTargets,
+					auc.winningBidsByBidder[imp][bidder][0].bidTargets,
 					"Test: %s\nTargeting failed for bidder %s on imp %s.",
 					test.Description,
 					string(bidder),

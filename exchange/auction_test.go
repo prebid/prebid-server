@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 	"testing"
 
@@ -188,7 +189,7 @@ func loadCacheSpec(filename string) (*cacheSpec, error) {
 func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
 	var bid *pbsOrtbBid
 	winningBidsByImp := make(map[string]*pbsOrtbBid)
-	winningBidsByBidder := make(map[string]map[openrtb_ext.BidderName]*pbsOrtbBid)
+	winningBidsByBidder := make(map[string]map[openrtb_ext.BidderName][]*pbsOrtbBid)
 	roundedPrices := make(map[*pbsOrtbBid]string)
 	bidCategory := make(map[string]string)
 
@@ -207,14 +208,20 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
 		}
 
 		// Map this bid if it's the highest we've seen from this bidder so far
-		if _, ok := winningBidsByBidder[bid.bid.ImpID]; ok {
-			bestSoFar, ok := winningBidsByBidder[bid.bid.ImpID][pbsBid.Bidder]
-			if !ok || cpm > bestSoFar.bid.Price {
-				winningBidsByBidder[bid.bid.ImpID][pbsBid.Bidder] = bid
-			}
+		if bidMap, ok := winningBidsByBidder[bid.bid.ImpID]; ok {
+			bidMap[pbsBid.Bidder] = append(bidMap[pbsBid.Bidder], bid)
 		} else {
-			winningBidsByBidder[bid.bid.ImpID] = make(map[openrtb_ext.BidderName]*pbsOrtbBid)
-			winningBidsByBidder[bid.bid.ImpID][pbsBid.Bidder] = bid
+			winningBidsByBidder[bid.bid.ImpID] = map[openrtb_ext.BidderName][]*pbsOrtbBid{
+				pbsBid.Bidder: {bid},
+			}
+		}
+
+		for _, topBidsPerBidder := range winningBidsByBidder {
+			for _, topBids := range topBidsPerBidder {
+				sort.Slice(topBids, func(i, j int) bool {
+					return isNewWinningBid(topBids[i].bid, topBids[j].bid, true)
+				})
+			}
 		}
 
 		if len(pbsBid.Bid.Cat) == 1 {
@@ -361,6 +368,18 @@ func TestNewAuction(t *testing.T) {
 			Price: 1.44,
 		},
 	}
+	bid2p155 := pbsOrtbBid{
+		bid: &openrtb2.Bid{
+			ImpID: "imp2",
+			Price: 1.55,
+		},
+	}
+	bid2p166 := pbsOrtbBid{
+		bid: &openrtb2.Bid{
+			ImpID: "imp2",
+			Price: 1.66,
+		},
+	}
 	tests := []struct {
 		description     string
 		seatBids        map[openrtb_ext.BidderName]*pbsOrtbSeatBid
@@ -384,10 +403,10 @@ func TestNewAuction(t *testing.T) {
 				winningBids: map[string]*pbsOrtbBid{
 					"imp1": &bid1p230,
 				},
-				winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*pbsOrtbBid{
+				winningBidsByBidder: map[string]map[openrtb_ext.BidderName][]*pbsOrtbBid{
 					"imp1": {
-						"appnexus": &bid1p123,
-						"rubicon":  &bid1p230,
+						"appnexus": []*pbsOrtbBid{&bid1p123},
+						"rubicon":  []*pbsOrtbBid{&bid1p230},
 					},
 				},
 			},
@@ -412,15 +431,15 @@ func TestNewAuction(t *testing.T) {
 					"imp1": &bid1p230,
 					"imp2": &bid2p144,
 				},
-				winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*pbsOrtbBid{
+				winningBidsByBidder: map[string]map[openrtb_ext.BidderName][]*pbsOrtbBid{
 					"imp1": {
-						"appnexus": &bid1p230,
-						"rubicon":  &bid1p077,
-						"openx":    &bid1p123,
+						"appnexus": []*pbsOrtbBid{&bid1p230},
+						"rubicon":  []*pbsOrtbBid{&bid1p077},
+						"openx":    []*pbsOrtbBid{&bid1p123},
 					},
 					"imp2": {
-						"appnexus": &bid2p123,
-						"rubicon":  &bid2p144,
+						"appnexus": []*pbsOrtbBid{&bid2p123},
+						"rubicon":  []*pbsOrtbBid{&bid2p144},
 					},
 				},
 			},
@@ -441,10 +460,10 @@ func TestNewAuction(t *testing.T) {
 				winningBids: map[string]*pbsOrtbBid{
 					"imp1": &bid1p123,
 				},
-				winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*pbsOrtbBid{
+				winningBidsByBidder: map[string]map[openrtb_ext.BidderName][]*pbsOrtbBid{
 					"imp1": {
-						"appnexus": &bid1p123,
-						"rubicon":  &bid1p088d,
+						"appnexus": []*pbsOrtbBid{&bid1p123},
+						"rubicon":  []*pbsOrtbBid{&bid1p088d},
 					},
 				},
 			},
@@ -465,10 +484,10 @@ func TestNewAuction(t *testing.T) {
 				winningBids: map[string]*pbsOrtbBid{
 					"imp1": &bid1p088d,
 				},
-				winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*pbsOrtbBid{
+				winningBidsByBidder: map[string]map[openrtb_ext.BidderName][]*pbsOrtbBid{
 					"imp1": {
-						"appnexus": &bid1p123,
-						"rubicon":  &bid1p088d,
+						"appnexus": []*pbsOrtbBid{&bid1p123},
+						"rubicon":  []*pbsOrtbBid{&bid1p088d},
 					},
 				},
 			},
@@ -489,10 +508,10 @@ func TestNewAuction(t *testing.T) {
 				winningBids: map[string]*pbsOrtbBid{
 					"imp1": &bid1p166d,
 				},
-				winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*pbsOrtbBid{
+				winningBidsByBidder: map[string]map[openrtb_ext.BidderName][]*pbsOrtbBid{
 					"imp1": {
-						"appnexus": &bid1p166d,
-						"rubicon":  &bid1p088d,
+						"appnexus": []*pbsOrtbBid{&bid1p166d},
+						"rubicon":  []*pbsOrtbBid{&bid1p088d},
 					},
 				},
 			},
@@ -516,11 +535,40 @@ func TestNewAuction(t *testing.T) {
 				winningBids: map[string]*pbsOrtbBid{
 					"imp1": &bid1p166d,
 				},
-				winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*pbsOrtbBid{
+				winningBidsByBidder: map[string]map[openrtb_ext.BidderName][]*pbsOrtbBid{
 					"imp1": {
-						"appnexus": &bid1p166d,
-						"rubicon":  &bid1p088d,
-						"openx":    &bid1p230,
+						"appnexus": []*pbsOrtbBid{&bid1p166d},
+						"rubicon":  []*pbsOrtbBid{&bid1p088d},
+						"openx":    []*pbsOrtbBid{&bid1p230},
+					},
+				},
+			},
+		},
+		{
+			description: "Auction with 3 bids and 2 deals - multiple bids under each seatBids",
+			seatBids: map[openrtb_ext.BidderName]*pbsOrtbSeatBid{
+				"appnexus": {
+					bids: []*pbsOrtbBid{&bid1p166d, &bid1p077, &bid2p123, &bid2p144},
+				},
+				"pubmatic": {
+					bids: []*pbsOrtbBid{&bid1p088d, &bid1p123, &bid2p155, &bid2p166},
+				},
+			},
+			numImps:     1,
+			preferDeals: true,
+			expectedAuction: auction{
+				winningBids: map[string]*pbsOrtbBid{
+					"imp1": &bid1p166d,
+					"imp2": &bid2p166,
+				},
+				winningBidsByBidder: map[string]map[openrtb_ext.BidderName][]*pbsOrtbBid{
+					"imp1": {
+						"appnexus": []*pbsOrtbBid{&bid1p166d, &bid1p077},
+						"pubmatic": []*pbsOrtbBid{&bid1p088d, &bid1p123},
+					},
+					"imp2": {
+						"appnexus": []*pbsOrtbBid{&bid2p144, &bid2p123},
+						"pubmatic": []*pbsOrtbBid{&bid2p166, &bid2p155},
 					},
 				},
 			},

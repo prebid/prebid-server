@@ -304,6 +304,7 @@ func buildRequestExtForBidder(bidder string, requestExt json.RawMessage, request
 		prebid.Channel = requestExtParsed.Prebid.Channel
 		prebid.Debug = requestExtParsed.Prebid.Debug
 		prebid.Server = requestExtParsed.Prebid.Server
+		prebid.Multibid = buildRequestExtMultiBid(bidder, requestExtParsed.Prebid.Multibid, alternateBidderCodes)
 	}
 
 	// Marshal New Prebid Object
@@ -350,6 +351,33 @@ func buildRequestExtAlternateBidderCodes(bidder string, accABC *openrtb_ext.ExtA
 	}
 
 	return nil
+}
+
+func buildRequestExtMultiBid(adapter string, reqMultiBid []*openrtb_ext.ExtMultiBid, adapterABC *openrtb_ext.ExtAlternateBidderCodes) []*openrtb_ext.ExtMultiBid {
+	// TODO: send multiBid to adapters under adapterABC
+
+	var adapterMultiBid []*openrtb_ext.ExtMultiBid
+	for _, multiBid := range reqMultiBid {
+		if multiBid.Bidder == adapter {
+			if adapterMultiBid == nil {
+				adapterMultiBid = make([]*openrtb_ext.ExtMultiBid, 0)
+			}
+			adapterMultiBid = append(adapterMultiBid, multiBid)
+			continue
+		}
+		for _, bidder := range multiBid.Bidders {
+			if bidder == adapter {
+				if adapterMultiBid == nil {
+					adapterMultiBid = make([]*openrtb_ext.ExtMultiBid, 0)
+				}
+				adapterMultiBid = append(adapterMultiBid, &openrtb_ext.ExtMultiBid{
+					Bidders: []string{adapter},
+					MaxBids: multiBid.MaxBids,
+				})
+			}
+		}
+	}
+	return adapterMultiBid
 }
 
 // extractBuyerUIDs parses the values from user.ext.prebid.buyeruids, and then deletes those values from the ext.
@@ -850,4 +878,17 @@ func WrapJSONInData(data []byte) []byte {
 	res = append(res, data...)
 	res = append(res, []byte(`}`)...)
 	return res
+}
+
+func getExtMultiBidData(requestExt *openrtb_ext.ExtRequest) (multiBidMap ExtMultiBidMap) {
+	if requestExt == nil {
+		return
+	}
+
+	multiBidMap = make(ExtMultiBidMap)
+	for _, multiBid := range requestExt.Prebid.Multibid {
+		multiBidMap.Add(multiBid)
+	}
+
+	return
 }

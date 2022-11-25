@@ -35,6 +35,7 @@ type Account struct {
 	TruncateTargetAttribute *int                                 `mapstructure:"truncate_target_attr" json:"truncate_target_attr"`
 	AlternateBidderCodes    *openrtb_ext.ExtAlternateBidderCodes `mapstructure:"alternatebiddercodes" json:"alternatebiddercodes"`
 	Hooks                   AccountHooks                         `mapstructure:"hooks" json:"hooks"`
+	DefaultBidLimitMin      int                                  `mapstructure:"default_bid_limit_min" json:"default_bid_limit_min"`
 }
 
 // CookieSync represents the account-level defaults for the cookie sync endpoint.

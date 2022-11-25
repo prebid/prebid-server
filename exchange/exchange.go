@@ -336,12 +336,14 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		adapterBids = evTracking.modifyBidsForEvents(adapterBids)
 
 		if targData != nil {
+			multiBid := getExtMultiBidData(requestExt)
+
 			// A non-nil auction is only needed if targeting is active. (It is used below this block to extract cache keys)
 			auc = newAuction(adapterBids, len(r.BidRequestWrapper.Imp), targData.preferDeals)
 			auc.setRoundedPrices(targData.priceGranularity)
 
 			if requestExt.Prebid.SupportDeals {
-				dealErrs := applyDealSupport(r.BidRequestWrapper.BidRequest, auc, bidCategory)
+				dealErrs := applyDealSupport(r.BidRequestWrapper.BidRequest, auc, bidCategory, multiBid)
 				errs = append(errs, dealErrs...)
 			}
 
@@ -360,7 +362,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 				errs = append(errs, cacheErrs...)
 			}
 
-			targData.setTargeting(auc, r.BidRequestWrapper.BidRequest.App != nil, bidCategory, r.Account.TruncateTargetAttribute)
+			targData.setTargeting(auc, r.BidRequestWrapper.BidRequest.App != nil, bidCategory, r.Account.TruncateTargetAttribute, multiBid)
 
 		}
 		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, responseDebugAllow, requestExt.Prebid.Passthrough, errs)
@@ -434,18 +436,25 @@ func recordImpMetrics(bidRequest *openrtb2.BidRequest, metricsEngine metrics.Met
 }
 
 // applyDealSupport updates targeting keys with deal prefixes if minimum deal tier exceeded
-func applyDealSupport(bidRequest *openrtb2.BidRequest, auc *auction, bidCategory map[string]string) []error {
+func applyDealSupport(bidRequest *openrtb2.BidRequest, auc *auction, bidCategory map[string]string, multiBid ExtMultiBidMap) []error {
 	errs := []error{}
 	impDealMap := getDealTiers(bidRequest)
 
 	for impID, topBidsPerImp := range auc.winningBidsByBidder {
 		impDeal := impDealMap[impID]
-		for bidder, topBidPerBidder := range topBidsPerImp {
-			if topBidPerBidder.dealPriority > 0 {
-				if validateDealTier(impDeal[bidder]) {
-					updateHbPbCatDur(topBidPerBidder, impDeal[bidder], bidCategory)
-				} else {
-					errs = append(errs, fmt.Errorf("dealTier configuration invalid for bidder '%s', imp ID '%s'", string(bidder), impID))
+		for bidder, topBidsPerBidder := range topBidsPerImp {
+			for i, topBid := range topBidsPerBidder {
+				m, ok := multiBid[bidder.String()]
+				if i > 0 && (!ok || m.TargetBidderCodePrefix == "") {
+					// apply targeting keys to only first bid if multibid is not enabled for this bidders
+					break
+				}
+				if topBid.dealPriority > 0 {
+					if validateDealTier(impDeal[bidder]) {
+						updateHbPbCatDur(topBid, impDeal[bidder], bidCategory)
+					} else {
+						errs = append(errs, fmt.Errorf("dealTier configuration invalid for bidder '%s', imp ID '%s'", string(bidder), impID))
+					}
 				}
 			}
 		}
@@ -1034,6 +1043,7 @@ func (e *exchange) makeBid(bids []*pbsOrtbBid, auc *auction, returnCreative bool
 			DealTierSatisfied: bid.dealTierSatisfied,
 			Events:            bid.bidEvents,
 			Targeting:         bid.bidTargets,
+			Targetbiddercode:  bid.targetBidderCode,
 			Type:              bid.bidType,
 			Meta:              bid.bidMeta,
 			Video:             bid.bidVideo,

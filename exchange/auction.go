@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -106,26 +107,41 @@ func (d *DebugLog) PutDebugLogError(cache prebid_cache_client.Client, timeout in
 
 func newAuction(seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, numImps int, preferDeals bool) *auction {
 	winningBids := make(map[string]*pbsOrtbBid, numImps)
-	winningBidsByBidder := make(map[string]map[openrtb_ext.BidderName]*pbsOrtbBid, numImps)
+	winningBidsByBidder := make(map[string]map[openrtb_ext.BidderName][]*pbsOrtbBid, numImps)
 
 	for bidderName, seatBid := range seatBids {
-		if seatBid != nil {
-			for _, bid := range seatBid.bids {
-				cpm := bid.bid.Price
-				wbid, ok := winningBids[bid.bid.ImpID]
-				if !ok || isNewWinningBid(bid.bid, wbid.bid, preferDeals) {
-					winningBids[bid.bid.ImpID] = bid
-				}
-				if bidMap, ok := winningBidsByBidder[bid.bid.ImpID]; ok {
-					bestSoFar, ok := bidMap[bidderName]
-					if !ok || cpm > bestSoFar.bid.Price {
-						bidMap[bidderName] = bid
-					}
-				} else {
-					winningBidsByBidder[bid.bid.ImpID] = make(map[openrtb_ext.BidderName]*pbsOrtbBid)
-					winningBidsByBidder[bid.bid.ImpID][bidderName] = bid
+		if seatBid == nil {
+			continue
+		}
+
+		// TODO limitMultiBids -> DefaultBidLimitMin
+		// sort.Slice(seatBid.bids, func(i, j int) bool {
+		// 	return isNewWinningBid(seatBid.bids[i].bid, seatBid.bids[j].bid, preferDeals)
+		// })
+		// seatBid.bids = seatBid.bids[:maxBid]
+
+		for _, bid := range seatBid.bids {
+			wbid, ok := winningBids[bid.bid.ImpID]
+			if !ok || isNewWinningBid(bid.bid, wbid.bid, preferDeals) {
+				winningBids[bid.bid.ImpID] = bid
+			}
+
+			if bidMap, ok := winningBidsByBidder[bid.bid.ImpID]; ok {
+				bidMap[bidderName] = append(bidMap[bidderName], bid)
+			} else {
+				winningBidsByBidder[bid.bid.ImpID] = map[openrtb_ext.BidderName][]*pbsOrtbBid{
+					bidderName: {bid},
 				}
 			}
+		}
+	}
+
+	//sort bids for multibid targeting
+	for _, topBidsPerBidder := range winningBidsByBidder {
+		for _, topBids := range topBidsPerBidder {
+			sort.Slice(topBids, func(i, j int) bool {
+				return isNewWinningBid(topBids[i].bid, topBids[j].bid, preferDeals)
+			})
 		}
 	}
 
@@ -149,10 +165,12 @@ func isNewWinningBid(bid, wbid *openrtb2.Bid, preferDeals bool) bool {
 }
 
 func (a *auction) setRoundedPrices(priceGranularity openrtb_ext.PriceGranularity) {
-	roundedPrices := make(map[*pbsOrtbBid]string, 5*len(a.winningBids))
+	roundedPrices := make(map[*pbsOrtbBid]string, 5*len(a.winningBids)) // TODO
 	for _, topBidsPerImp := range a.winningBidsByBidder {
-		for _, topBidPerBidder := range topBidsPerImp {
-			roundedPrices[topBidPerBidder] = GetPriceBucket(topBidPerBidder.bid.Price, priceGranularity)
+		for _, topBidsPerBidder := range topBidsPerImp {
+			for _, topBid := range topBidsPerBidder {
+				roundedPrices[topBid] = GetPriceBucket(topBid.bid.Price, priceGranularity)
+			}
 		}
 	}
 	a.roundedPrices = roundedPrices
@@ -186,64 +204,65 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 	for _, imp := range bidRequest.Imp {
 		expByImp[imp.ID] = imp.Exp
 	}
-	for _, topBidsPerImp := range a.winningBidsByBidder {
-		for bidderName, topBidPerBidder := range topBidsPerImp {
-			impID := topBidPerBidder.bid.ImpID
-			isOverallWinner := a.winningBids[impID] == topBidPerBidder
-			if !includeBidderKeys && !isOverallWinner {
-				continue
-			}
-			var customCacheKey string
-			var catDur string
-			useCustomCacheKey := false
-			if competitiveExclusion && isOverallWinner || includeBidderKeys {
-				// set custom cache key for winning bid when competitive exclusion applies
-				catDur = bidCategory[topBidPerBidder.bid.ID]
-				if len(catDur) > 0 {
-					customCacheKey = fmt.Sprintf("%s_%s", catDur, hbCacheID)
-					useCustomCacheKey = true
+	for impID, topBidsPerImp := range a.winningBidsByBidder {
+		for bidderName, topBidsPerBidder := range topBidsPerImp {
+			for _, topBid := range topBidsPerBidder {
+				isOverallWinner := a.winningBids[impID] == topBid
+				if !includeBidderKeys && !isOverallWinner {
+					continue
 				}
-			}
-			if bids {
-				if jsonBytes, err := json.Marshal(topBidPerBidder.bid); err == nil {
-					jsonBytes, err = evTracking.modifyBidJSON(topBidPerBidder, bidderName, jsonBytes)
-					if err != nil {
+				var customCacheKey string
+				var catDur string
+				useCustomCacheKey := false
+				if competitiveExclusion && isOverallWinner || includeBidderKeys {
+					// set custom cache key for winning bid when competitive exclusion applies
+					catDur = bidCategory[topBid.bid.ID]
+					if len(catDur) > 0 {
+						customCacheKey = fmt.Sprintf("%s_%s", catDur, hbCacheID)
+						useCustomCacheKey = true
+					}
+				}
+				if bids {
+					if jsonBytes, err := json.Marshal(topBid.bid); err == nil {
+						jsonBytes, err = evTracking.modifyBidJSON(topBid, bidderName, jsonBytes)
+						if err != nil {
+							errs = append(errs, err)
+						}
+						if useCustomCacheKey {
+							// not allowed if bids is true; log error and cache normally
+							errs = append(errs, errors.New("cannot use custom cache key for non-vast bids"))
+						}
+						toCache = append(toCache, prebid_cache_client.Cacheable{
+							Type:       prebid_cache_client.TypeJSON,
+							Data:       jsonBytes,
+							TTLSeconds: cacheTTL(expByImp[impID], topBid.bid.Exp, defTTL(topBid.bidType, defaultTTLs), ttlBuffer),
+						})
+						bidIndices[len(toCache)-1] = topBid.bid
+					} else {
 						errs = append(errs, err)
 					}
-					if useCustomCacheKey {
-						// not allowed if bids is true; log error and cache normally
-						errs = append(errs, errors.New("cannot use custom cache key for non-vast bids"))
-					}
-					toCache = append(toCache, prebid_cache_client.Cacheable{
-						Type:       prebid_cache_client.TypeJSON,
-						Data:       jsonBytes,
-						TTLSeconds: cacheTTL(expByImp[impID], topBidPerBidder.bid.Exp, defTTL(topBidPerBidder.bidType, defaultTTLs), ttlBuffer),
-					})
-					bidIndices[len(toCache)-1] = topBidPerBidder.bid
-				} else {
-					errs = append(errs, err)
 				}
-			}
-			if vast && topBidPerBidder.bidType == openrtb_ext.BidTypeVideo {
-				vastXML := makeVAST(topBidPerBidder.bid)
-				if jsonBytes, err := json.Marshal(vastXML); err == nil {
-					if useCustomCacheKey {
-						toCache = append(toCache, prebid_cache_client.Cacheable{
-							Type:       prebid_cache_client.TypeXML,
-							Data:       jsonBytes,
-							TTLSeconds: cacheTTL(expByImp[impID], topBidPerBidder.bid.Exp, defTTL(topBidPerBidder.bidType, defaultTTLs), ttlBuffer),
-							Key:        customCacheKey,
-						})
+				if vast && topBid.bidType == openrtb_ext.BidTypeVideo {
+					vastXML := makeVAST(topBid.bid)
+					if jsonBytes, err := json.Marshal(vastXML); err == nil {
+						if useCustomCacheKey {
+							toCache = append(toCache, prebid_cache_client.Cacheable{
+								Type:       prebid_cache_client.TypeXML,
+								Data:       jsonBytes,
+								TTLSeconds: cacheTTL(expByImp[impID], topBid.bid.Exp, defTTL(topBid.bidType, defaultTTLs), ttlBuffer),
+								Key:        customCacheKey,
+							})
+						} else {
+							toCache = append(toCache, prebid_cache_client.Cacheable{
+								Type:       prebid_cache_client.TypeXML,
+								Data:       jsonBytes,
+								TTLSeconds: cacheTTL(expByImp[impID], topBid.bid.Exp, defTTL(topBid.bidType, defaultTTLs), ttlBuffer),
+							})
+						}
+						vastIndices[len(toCache)-1] = topBid.bid
 					} else {
-						toCache = append(toCache, prebid_cache_client.Cacheable{
-							Type:       prebid_cache_client.TypeXML,
-							Data:       jsonBytes,
-							TTLSeconds: cacheTTL(expByImp[impID], topBidPerBidder.bid.Exp, defTTL(topBidPerBidder.bidType, defaultTTLs), ttlBuffer),
-						})
+						errs = append(errs, err)
 					}
-					vastIndices[len(toCache)-1] = topBidPerBidder.bid
-				} else {
-					errs = append(errs, err)
 				}
 			}
 		}
@@ -355,7 +374,7 @@ type auction struct {
 	// winningBids is a map from imp.id to the highest overall CPM bid in that imp.
 	winningBids map[string]*pbsOrtbBid
 	// winningBidsByBidder stores the highest bid on each imp by each bidder.
-	winningBidsByBidder map[string]map[openrtb_ext.BidderName]*pbsOrtbBid
+	winningBidsByBidder map[string]map[openrtb_ext.BidderName][]*pbsOrtbBid
 	// roundedPrices stores the price strings rounded for each bid according to the price granularity.
 	roundedPrices map[*pbsOrtbBid]string
 	// cacheIds stores the UUIDs from Prebid Cache for fetching the full bid JSON.

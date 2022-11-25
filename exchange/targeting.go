@@ -1,6 +1,7 @@
 package exchange
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/prebid/openrtb/v17/openrtb2"
@@ -19,7 +20,7 @@ const MaxKeyLength = 20
 type targetData struct {
 	priceGranularity  openrtb_ext.PriceGranularity
 	includeWinners    bool
-	includeBidderKeys bool
+	includeBidderKeys bool // need to be true
 	includeCacheBids  bool
 	includeCacheVast  bool
 	includeFormat     bool
@@ -35,49 +36,75 @@ type targetData struct {
 // The one exception is the `hb_cache_id` key. Since our APIs explicitly document cache keys to be on a "best effort" basis,
 // it's ok if those stay in the auction. For now, this method implements a very naive cache strategy.
 // In the future, we should implement a more clever retry & backoff strategy to balance the success rate & performance.
-func (targData *targetData) setTargeting(auc *auction, isApp bool, categoryMapping map[string]string, truncateTargetAttr *int) {
+func (targData *targetData) setTargeting(auc *auction, isApp bool, categoryMapping map[string]string, truncateTargetAttr *int, multiBidMap ExtMultiBidMap) {
 	for impId, topBidsPerImp := range auc.winningBidsByBidder {
 		overallWinner := auc.winningBids[impId]
-		for bidderName, topBidPerBidder := range topBidsPerImp {
-			isOverallWinner := overallWinner == topBidPerBidder
+		for originalBidderName, topBidsPerBidder := range topBidsPerImp {
+			targetingBidderCode := originalBidderName
 
-			targets := make(map[string]string, 10)
-			if cpm, ok := auc.roundedPrices[topBidPerBidder]; ok {
-				targData.addKeys(targets, openrtb_ext.HbpbConstantKey, cpm, bidderName, isOverallWinner, truncateTargetAttr)
-			}
-			targData.addKeys(targets, openrtb_ext.HbBidderConstantKey, string(bidderName), bidderName, isOverallWinner, truncateTargetAttr)
-			if hbSize := makeHbSize(topBidPerBidder.bid); hbSize != "" {
-				targData.addKeys(targets, openrtb_ext.HbSizeConstantKey, hbSize, bidderName, isOverallWinner, truncateTargetAttr)
-			}
-			if cacheID, ok := auc.cacheIds[topBidPerBidder.bid]; ok {
-				targData.addKeys(targets, openrtb_ext.HbCacheKey, cacheID, bidderName, isOverallWinner, truncateTargetAttr)
-			}
-			if vastID, ok := auc.vastCacheIds[topBidPerBidder.bid]; ok {
-				targData.addKeys(targets, openrtb_ext.HbVastCacheKey, vastID, bidderName, isOverallWinner, truncateTargetAttr)
-			}
-			if targData.includeFormat {
-				targData.addKeys(targets, openrtb_ext.HbFormatKey, string(topBidPerBidder.bidType), bidderName, isOverallWinner, truncateTargetAttr)
+			var bidderCodePrefix string
+			maxBids := 1
+			if multiBid, ok := multiBidMap[originalBidderName.String()]; ok {
+				bidderCodePrefix = multiBid.TargetBidderCodePrefix
+				maxBids = *multiBid.MaxBids
 			}
 
-			if targData.cacheHost != "" {
-				targData.addKeys(targets, openrtb_ext.HbConstantCacheHostKey, targData.cacheHost, bidderName, isOverallWinner, truncateTargetAttr)
-			}
-			if targData.cachePath != "" {
-				targData.addKeys(targets, openrtb_ext.HbConstantCachePathKey, targData.cachePath, bidderName, isOverallWinner, truncateTargetAttr)
-			}
+			for i, topBid := range topBidsPerBidder {
+				if i >= maxBids {
+					break
+				}
 
-			if deal := topBidPerBidder.bid.DealID; len(deal) > 0 {
-				targData.addKeys(targets, openrtb_ext.HbDealIDConstantKey, deal, bidderName, isOverallWinner, truncateTargetAttr)
-			}
+				isOverallWinner := overallWinner == topBid
+				if i > 0 {
+					if bidderCodePrefix == "" {
+						// apply targeting keys to only first bid if multibid is not enabled for this bidders
+						break
+					}
+					targetingBidderCode = openrtb_ext.BidderName(fmt.Sprintf("%s%d", bidderCodePrefix, i+1))
+				}
 
-			if isApp {
-				targData.addKeys(targets, openrtb_ext.HbEnvKey, openrtb_ext.HbEnvKeyApp, bidderName, isOverallWinner, truncateTargetAttr)
-			}
-			if len(categoryMapping) > 0 {
-				targData.addKeys(targets, openrtb_ext.HbCategoryDurationKey, categoryMapping[topBidPerBidder.bid.ID], bidderName, isOverallWinner, truncateTargetAttr)
-			}
+				if maxBids >= 1 && bidderCodePrefix != "" {
+					// update targeting key only if multibid is set for bidder
+					topBid.targetBidderCode = targetingBidderCode.String()
+				}
 
-			topBidPerBidder.bidTargets = targets
+				targets := make(map[string]string, 10)
+				if cpm, ok := auc.roundedPrices[topBid]; ok {
+					targData.addKeys(targets, openrtb_ext.HbpbConstantKey, cpm, targetingBidderCode, isOverallWinner, truncateTargetAttr)
+				}
+				targData.addKeys(targets, openrtb_ext.HbBidderConstantKey, string(targetingBidderCode), targetingBidderCode, isOverallWinner, truncateTargetAttr)
+				if hbSize := makeHbSize(topBid.bid); hbSize != "" {
+					targData.addKeys(targets, openrtb_ext.HbSizeConstantKey, hbSize, targetingBidderCode, isOverallWinner, truncateTargetAttr)
+				}
+				if cacheID, ok := auc.cacheIds[topBid.bid]; ok {
+					targData.addKeys(targets, openrtb_ext.HbCacheKey, cacheID, targetingBidderCode, isOverallWinner, truncateTargetAttr)
+				}
+				if vastID, ok := auc.vastCacheIds[topBid.bid]; ok {
+					targData.addKeys(targets, openrtb_ext.HbVastCacheKey, vastID, targetingBidderCode, isOverallWinner, truncateTargetAttr)
+				}
+				if targData.includeFormat {
+					targData.addKeys(targets, openrtb_ext.HbFormatKey, string(topBid.bidType), targetingBidderCode, isOverallWinner, truncateTargetAttr)
+				}
+
+				if targData.cacheHost != "" {
+					targData.addKeys(targets, openrtb_ext.HbConstantCacheHostKey, targData.cacheHost, targetingBidderCode, isOverallWinner, truncateTargetAttr)
+				}
+				if targData.cachePath != "" {
+					targData.addKeys(targets, openrtb_ext.HbConstantCachePathKey, targData.cachePath, targetingBidderCode, isOverallWinner, truncateTargetAttr)
+				}
+
+				if deal := topBid.bid.DealID; len(deal) > 0 {
+					targData.addKeys(targets, openrtb_ext.HbDealIDConstantKey, deal, targetingBidderCode, isOverallWinner, truncateTargetAttr)
+				}
+
+				if isApp {
+					targData.addKeys(targets, openrtb_ext.HbEnvKey, openrtb_ext.HbEnvKeyApp, targetingBidderCode, isOverallWinner, truncateTargetAttr)
+				}
+				if len(categoryMapping) > 0 {
+					targData.addKeys(targets, openrtb_ext.HbCategoryDurationKey, categoryMapping[topBid.bid.ID], targetingBidderCode, isOverallWinner, truncateTargetAttr)
+				}
+				topBid.bidTargets = targets
+			}
 		}
 	}
 }

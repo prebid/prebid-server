@@ -62,6 +62,8 @@ type ExtRequestPrebid struct {
 
 	//AlternateBidderCodes is populated with host's AlternateBidderCodes config if not defined in request
 	AlternateBidderCodes *ExtAlternateBidderCodes `json:"alternatebiddercodes,omitempty"`
+
+	Multibid []*ExtMultiBid `json:"multibid,omitempty"`
 }
 
 // Experiment defines if experimental features are available for the request
@@ -334,4 +336,11 @@ type ExtRequestPrebidData struct {
 type ExtRequestPrebidDataEidPermission struct {
 	Source  string   `json:"source"`
 	Bidders []string `json:"bidders"`
+}
+
+type ExtMultiBid struct {
+	Bidder                 string   `json:"bidder,omitempty"`
+	Bidders                []string `json:"bidders,omitempty"`
+	MaxBids                *int     `json:"maxbids,omitempty"`
+	TargetBidderCodePrefix string   `json:"targetbiddercodeprefix,omitempty"`
 }
