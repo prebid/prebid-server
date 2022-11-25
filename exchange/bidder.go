@@ -362,7 +362,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 							// Initalize seatBidMap entry as this is first extra bid with seat bidderName
 							seatBidMap[bidderName] = &pbsOrtbSeatBid{
 								bids:     make([]*pbsOrtbBid, 0, dataLen),
-								currency: defaultCurrency,
+								currency: seatBidMap[bidderRequest.BidderName].currency,
 								// Do we need to fill httpCalls for this?. Can we refer one from adaptercode for debugging?
 								httpCalls: seatBidMap[bidderRequest.BidderName].httpCalls,
 								seat:      bidderName.String(),
