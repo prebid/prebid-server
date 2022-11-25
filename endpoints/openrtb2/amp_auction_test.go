@@ -2056,55 +2056,40 @@ func TestValidAmpResponseWhenRequestRejected(t *testing.T) {
 }
 
 func TestValidAmpResponseEnrichedWithModulesOutcome(t *testing.T) {
-	testCases := []struct {
-		description  string
-		file         string
-		hookExecutor hookexecution.HookStageExecutor
-	}{
-		{
-			"Hook Executor returns stage outcomes - expect response.ext.prebid.modules to be filled",
-			"sample-requests/valid-whole/hooks/amp_simple.json",
-			mockHookExecutor{stageOutcomes: fakeStageOutcomes()},
-		},
+	file := "sample-requests/valid-whole/hooks/amp_simple.json"
+	actualAmpObject := analytics.AmpObject{}
+	logger := newMockLogger(&actualAmpObject, nil)
+	test := testCase{}
+	assert.NoError(t, json.Unmarshal(readFile(t, file), &test), "Failed to unmarshal data from file: %s.", file)
+
+	stored := map[string]json.RawMessage{"1": test.BidRequest}
+	deps := &endpointDeps{
+		fakeUUIDGenerator{},
+		&nobidExchange{},
+		mockBidderParamValidator{},
+		&mockAmpStoredReqFetcher{stored},
+		empty_fetcher.EmptyFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: maxSize, AccountDefaults: config.Account{DebugAllow: true}},
+		&metricsConfig.NilMetricsEngine{},
+		logger,
+		map[string]string{},
+		false,
+		[]byte{},
+		openrtb_ext.BuildBidderMap(),
+		nil,
+		nil,
+		hardcodedResponseIPValidator{response: true},
+		empty_fetcher.EmptyFetcher{},
+		mockHookExecutor{stageOutcomes: fakeStageOutcomes()},
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.description, func(t *testing.T) {
-			actualAmpObject := analytics.AmpObject{}
-			logger := newMockLogger(&actualAmpObject, nil)
-			test := testCase{}
-			assert.NoError(t, json.Unmarshal(readFile(t, tc.file), &test), "Failed to unmarshal data from file: %s.", tc.file)
+	req := httptest.NewRequest("POST", "/openrtb2/amp?tag_id=1&debug=1&trace=verbose", nil)
+	recorder := httptest.NewRecorder()
 
-			stored := map[string]json.RawMessage{"1": test.BidRequest}
-			deps := &endpointDeps{
-				fakeUUIDGenerator{},
-				&nobidExchange{},
-				mockBidderParamValidator{},
-				&mockAmpStoredReqFetcher{stored},
-				empty_fetcher.EmptyFetcher{},
-				empty_fetcher.EmptyFetcher{},
-				&config.Configuration{MaxRequestSize: maxSize, AccountDefaults: config.Account{DebugAllow: true}},
-				&metricsConfig.NilMetricsEngine{},
-				logger,
-				map[string]string{},
-				false,
-				[]byte{},
-				openrtb_ext.BuildBidderMap(),
-				nil,
-				nil,
-				hardcodedResponseIPValidator{response: true},
-				empty_fetcher.EmptyFetcher{},
-				tc.hookExecutor,
-			}
+	deps.AmpAuction(recorder, req, nil)
+	assert.Equal(t, test.ExpectedReturnCode, recorder.Code, "Endpoint should return 200 OK.")
 
-			req := httptest.NewRequest("POST", "/openrtb2/amp?tag_id=1&debug=1&trace=verbose", nil)
-			recorder := httptest.NewRecorder()
-
-			deps.AmpAuction(recorder, req, nil)
-			assert.Equal(t, test.ExpectedReturnCode, recorder.Code, "Endpoint should return 200 OK.")
-
-			respBytes := recorder.Body.Bytes()
-			assert.JSONEq(t, string(test.ExpectedAmpResponse), string(respBytes))
-		})
-	}
+	respBytes := recorder.Body.Bytes()
+	assert.JSONEq(t, string(test.ExpectedAmpResponse), string(respBytes))
 }

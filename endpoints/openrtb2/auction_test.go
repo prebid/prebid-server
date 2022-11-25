@@ -4734,56 +4734,41 @@ func TestValidResponseWhenRequestRejected(t *testing.T) {
 }
 
 func TestValidResponseEnrichedWithModulesOutcome(t *testing.T) {
-	testCases := []struct {
-		description  string
-		file         string
-		hookExecutor hookexecution.HookStageExecutor
-	}{
-		{
-			"Hook Executor returns stage outcomes - expect response.ext.prebid.modules to be filled",
-			"sample-requests/valid-whole/hooks/simple.json",
-			mockHookExecutor{stageOutcomes: fakeStageOutcomes()},
-		},
+	file := "sample-requests/valid-whole/hooks/simple.json"
+	actualAuctionObject := analytics.AuctionObject{}
+	logger := newMockLogger(nil, &actualAuctionObject)
+	test, err := parseTestFile(readFile(t, file), file)
+	assert.NoError(t, err, "Unable to parse test file.")
+
+	deps := &endpointDeps{
+		fakeUUIDGenerator{},
+		&nobidExchange{},
+		mockBidderParamValidator{},
+		&mockStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: maxSize, AccountDefaults: config.Account{DebugAllow: true}},
+		&metricsConfig.NilMetricsEngine{},
+		logger,
+		map[string]string{},
+		false,
+		[]byte{},
+		openrtb_ext.BuildBidderMap(),
+		nil,
+		nil,
+		hardcodedResponseIPValidator{response: true},
+		empty_fetcher.EmptyFetcher{},
+		mockHookExecutor{stageOutcomes: fakeStageOutcomes()},
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.description, func(t *testing.T) {
-			actualAuctionObject := analytics.AuctionObject{}
-			logger := newMockLogger(nil, &actualAuctionObject)
-			test, err := parseTestFile(readFile(t, tc.file), tc.file)
-			assert.NoError(t, err, "Unable to parse test file.")
+	req := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(test.BidRequest))
+	recorder := httptest.NewRecorder()
 
-			deps := &endpointDeps{
-				fakeUUIDGenerator{},
-				&nobidExchange{},
-				mockBidderParamValidator{},
-				&mockStoredReqFetcher{},
-				empty_fetcher.EmptyFetcher{},
-				empty_fetcher.EmptyFetcher{},
-				&config.Configuration{MaxRequestSize: maxSize, AccountDefaults: config.Account{DebugAllow: true}},
-				&metricsConfig.NilMetricsEngine{},
-				logger,
-				map[string]string{},
-				false,
-				[]byte{},
-				openrtb_ext.BuildBidderMap(),
-				nil,
-				nil,
-				hardcodedResponseIPValidator{response: true},
-				empty_fetcher.EmptyFetcher{},
-				tc.hookExecutor,
-			}
+	deps.Auction(recorder, req, nil)
+	assert.Equal(t, test.ExpectedReturnCode, recorder.Code, "Endpoint should return 200 OK.")
 
-			req := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(test.BidRequest))
-			recorder := httptest.NewRecorder()
-
-			deps.Auction(recorder, req, nil)
-			assert.Equal(t, test.ExpectedReturnCode, recorder.Code, "Endpoint should return 200 OK.")
-
-			respBytes := recorder.Body.Bytes()
-			assert.JSONEq(t, string(test.ExpectedBidResponse), string(respBytes))
-		})
-	}
+	respBytes := recorder.Body.Bytes()
+	assert.JSONEq(t, string(test.ExpectedBidResponse), string(respBytes))
 }
 
 type mockStoredResponseFetcher struct {

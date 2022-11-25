@@ -8,7 +8,6 @@ import (
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/hooks/hookanalytics"
-	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -18,7 +17,7 @@ import (
 // so we can unmarshal hidden fields such as StageOutcomeTest.Stage and HookOutcomeTest.Errors/Warnings
 type StageOutcomeTest struct {
 	ExecutionTime
-	Entity hookstage.Entity   `json:"entity"`
+	Entity entity             `json:"entity"`
 	Groups []GroupOutcomeTest `json:"groups"`
 	Stage  string             `json:"stage"`
 }
