@@ -13,6 +13,10 @@
     "placementId": {
       "type": "string",
       "description": "An ID which identifies the placement in Bidstack system"
+    },
+    "consent": {
+      "type": "boolean",
+      "description": "User consent"
     }
   },
   "required" : [ "publisherId" ]
