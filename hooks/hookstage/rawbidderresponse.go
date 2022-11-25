@@ -16,7 +16,7 @@ import (
 type RawBidderResponse interface {
 	HandleRawBidderResponseHook(
 		context.Context,
-		ModuleContext,
+		ModuleInvocationContext,
 		RawBidderResponsePayload,
 	) (HookResult[RawBidderResponsePayload], error)
 }

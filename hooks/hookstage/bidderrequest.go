@@ -16,7 +16,7 @@ import (
 type BidderRequest interface {
 	HandleBidderRequestHook(
 		context.Context,
-		ModuleContext,
+		ModuleInvocationContext,
 		BidderRequestPayload,
 	) (HookResult[BidderRequestPayload], error)
 }

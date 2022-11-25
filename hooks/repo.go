@@ -14,8 +14,8 @@ import (
 // indicating not found hook for this ID.
 type HookRepository interface {
 	GetEntrypointHook(id string) (hookstage.Entrypoint, bool)
-	GetRawAuctionHook(id string) (hookstage.RawAuction, bool)
-	GetProcessedAuctionHook(id string) (hookstage.ProcessedAuction, bool)
+	GetRawAuctionHook(id string) (hookstage.RawAuctionRequest, bool)
+	GetProcessedAuctionHook(id string) (hookstage.ProcessedAuctionRequest, bool)
 	GetBidderRequestHook(id string) (hookstage.BidderRequest, bool)
 	GetRawBidderResponseHook(id string) (hookstage.RawBidderResponse, bool)
 	GetAllProcessedBidResponsesHook(id string) (hookstage.AllProcessedBidResponses, bool)
@@ -42,8 +42,8 @@ func NewHookRepository(hooks map[string]interface{}) (HookRepository, error) {
 
 type hookRepository struct {
 	entrypointHooks              map[string]hookstage.Entrypoint
-	rawAuctionHooks              map[string]hookstage.RawAuction
-	processedAuctionHooks        map[string]hookstage.ProcessedAuction
+	rawAuctionHooks              map[string]hookstage.RawAuctionRequest
+	processedAuctionHooks        map[string]hookstage.ProcessedAuctionRequest
 	bidderRequestHooks           map[string]hookstage.BidderRequest
 	rawBidderResponseHooks       map[string]hookstage.RawBidderResponse
 	allProcessedBidResponseHooks map[string]hookstage.AllProcessedBidResponses
@@ -54,11 +54,11 @@ func (r *hookRepository) GetEntrypointHook(id string) (h hookstage.Entrypoint, o
 	return getHook(r.entrypointHooks, id)
 }
 
-func (r *hookRepository) GetRawAuctionHook(id string) (hookstage.RawAuction, bool) {
+func (r *hookRepository) GetRawAuctionHook(id string) (hookstage.RawAuctionRequest, bool) {
 	return getHook(r.rawAuctionHooks, id)
 }
 
-func (r *hookRepository) GetProcessedAuctionHook(id string) (hookstage.ProcessedAuction, bool) {
+func (r *hookRepository) GetProcessedAuctionHook(id string) (hookstage.ProcessedAuctionRequest, bool) {
 	return getHook(r.processedAuctionHooks, id)
 }
 
@@ -89,14 +89,14 @@ func (r *hookRepository) add(id string, hook interface{}) error {
 		}
 	}
 
-	if h, ok := hook.(hookstage.RawAuction); ok {
+	if h, ok := hook.(hookstage.RawAuctionRequest); ok {
 		hasAnyHooks = true
 		if r.rawAuctionHooks, err = addHook(r.rawAuctionHooks, h, id); err != nil {
 			return err
 		}
 	}
 
-	if h, ok := hook.(hookstage.ProcessedAuction); ok {
+	if h, ok := hook.(hookstage.ProcessedAuctionRequest); ok {
 		hasAnyHooks = true
 		if r.processedAuctionHooks, err = addHook(r.processedAuctionHooks, h, id); err != nil {
 			return err

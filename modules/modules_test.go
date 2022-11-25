@@ -111,10 +111,10 @@ func TestModuleBuilderBuild(t *testing.T) {
 
 type module struct{}
 
-func (h module) HandleEntrypointHook(_ context.Context, _ hookstage.ModuleContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+func (h module) HandleEntrypointHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
 	return hookstage.HookResult[hookstage.EntrypointPayload]{}, nil
 }
 
-func (h module) HandleAuctionResponseHook(_ context.Context, _ hookstage.ModuleContext, _ hookstage.AuctionResponsePayload) (hookstage.HookResult[hookstage.AuctionResponsePayload], error) {
+func (h module) HandleAuctionResponseHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.AuctionResponsePayload) (hookstage.HookResult[hookstage.AuctionResponsePayload], error) {
 	return hookstage.HookResult[hookstage.AuctionResponsePayload]{}, nil
 }

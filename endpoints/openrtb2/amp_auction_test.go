@@ -14,7 +14,6 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/openrtb/v17/openrtb2"
-	"github.com/prebid/openrtb/v17/openrtb3"
 	"github.com/prebid/prebid-server/amp"
 	"github.com/prebid/prebid-server/analytics"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
@@ -1936,10 +1935,9 @@ func TestSetTargeting(t *testing.T) {
 }
 
 func TestValidAmpResponseWhenRequestRejected(t *testing.T) {
-	nbr := openrtb3.NoBidReason(123)
 	reject := hookexecution.RejectError{
-		int(nbr),
-		hookexecution.HookID{"foobar", "foo"},
+		123,
+		hookexecution.HookID{ModuleCode: "foobar", HookCode: "foo"},
 		hooks.StageEntrypoint.String(),
 	}
 
@@ -1967,7 +1965,7 @@ func TestValidAmpResponseWhenRequestRejected(t *testing.T) {
 				fakeUUIDGenerator{},
 				&nobidExchange{},
 				mockBidderParamValidator{},
-				&mockAmpStoredReqFetcher{stored},
+				&mockAmpStoredReqFetcher{data: stored},
 				empty_fetcher.EmptyFetcher{},
 				empty_fetcher.EmptyFetcher{},
 				&config.Configuration{MaxRequestSize: maxSize},
