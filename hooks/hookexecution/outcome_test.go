@@ -8,6 +8,8 @@ import (
 )
 
 func assertEqualStageOutcomes(t *testing.T, expected StageOutcome, actual StageOutcome) {
+	t.Helper()
+
 	require.Equal(t, len(actual.Groups), len(expected.Groups), "Stage outcomes contain different number of groups")
 
 	// calculate expected timings from actual outcome
@@ -34,17 +36,17 @@ func assertEqualStageOutcomes(t *testing.T, expected StageOutcome, actual StageO
 			require.NotNil(t, gotHook, "Expected to get hook, got nil: group #%d, hookID %v", i, expHook.HookID)
 
 			gotHook.ExecutionTimeMillis = 0 // reset hook execution time, we cannot predict it
-			assert.Equal(t, expHook, gotHook, "Incorrect hook outcome: group #%d, hookID %v", i, expHook.HookID)
+			assert.Equal(t, expHook, *gotHook, "Incorrect hook outcome: group #%d, hookID %v", i, expHook.HookID)
 		}
 	}
 }
 
-func findCorrespondingHookResult(hookID HookID, group GroupOutcome) HookOutcome {
+func findCorrespondingHookResult(hookID HookID, group GroupOutcome) *HookOutcome {
 	for _, hook := range group.InvocationResults {
 		if hook.HookID.ModuleCode == hookID.ModuleCode &&
 			hook.HookID.HookCode == hookID.HookCode {
-			return hook
+			return &hook
 		}
 	}
-	return HookOutcome{}
+	return nil
 }
