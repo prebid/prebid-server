@@ -2187,9 +2187,10 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 	auctionRequest := AuctionRequest{
 		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: &spec.IncomingRequest.OrtbRequest},
 		Account: config.Account{
-			ID:            "testaccount",
-			EventsEnabled: spec.EventsEnabled,
-			DebugAllow:    true,
+			ID:                 "testaccount",
+			EventsEnabled:      spec.EventsEnabled,
+			DebugAllow:         true,
+			DefaultBidLimitMin: spec.AccountMaxBid,
 		},
 		UserSyncs:     mockIdFetcher(spec.IncomingRequest.Usersyncs),
 		ImpExtInfoMap: impExtInfoMap,
@@ -4398,6 +4399,7 @@ type exchangeSpec struct {
 	RequestType       *metrics.RequestType   `json:"requestType,omitempty"`
 	PassthroughFlag   bool                   `json:"passthrough_flag,omitempty"`
 	HostSChainFlag    bool                   `json:"host_schain_flag,omitempty"`
+	AccountMaxBid     int                    `mapstructure:"default_bid_limit_min" json:"default_bid_limit_min"`
 }
 
 type exchangeRequest struct {

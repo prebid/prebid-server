@@ -36,7 +36,7 @@ type targetData struct {
 // The one exception is the `hb_cache_id` key. Since our APIs explicitly document cache keys to be on a "best effort" basis,
 // it's ok if those stay in the auction. For now, this method implements a very naive cache strategy.
 // In the future, we should implement a more clever retry & backoff strategy to balance the success rate & performance.
-func (targData *targetData) setTargeting(auc *auction, isApp bool, categoryMapping map[string]string, truncateTargetAttr *int, multiBidMap ExtMultiBidMap) {
+func (targData *targetData) setTargeting(auc *auction, isApp bool, categoryMapping map[string]string, truncateTargetAttr *int, multiBidMap ExtMultiBidMap, accountMaxBids int) {
 	for impId, topBidsPerImp := range auc.winningBidsByBidder {
 		overallWinner := auc.winningBids[impId]
 		for originalBidderName, topBidsPerBidder := range topBidsPerImp {
@@ -50,20 +50,25 @@ func (targData *targetData) setTargeting(auc *auction, isApp bool, categoryMappi
 			}
 
 			for i, topBid := range topBidsPerBidder {
+				if accountMaxBids != 0 && i >= accountMaxBids {
+					topBid.bid = nil
+					continue
+				}
+
 				if i >= maxBids {
-					break
+					continue
 				}
 
 				isOverallWinner := overallWinner == topBid
 				if i > 0 {
 					if bidderCodePrefix == "" {
 						// apply targeting keys to only first bid if multibid is not enabled for this bidders
-						break
+						continue // cannot break, need to delete the extra-bids
 					}
 					targetingBidderCode = openrtb_ext.BidderName(fmt.Sprintf("%s%d", bidderCodePrefix, i+1))
 				}
 
-				if maxBids >= 1 && bidderCodePrefix != "" {
+				if maxBids > 1 && (bidderCodePrefix != "" || i == 0) {
 					// update targeting key only if multibid is set for bidder
 					topBid.targetBidderCode = targetingBidderCode.String()
 				}

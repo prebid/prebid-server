@@ -411,6 +411,7 @@
                   "meta": {
                     "adaptercode": "appnexus"
                   },
+                  "targetbiddercode": "appnexus",
                   "type": "banner",
                   "targeting": {
                     "hb_bidder_appnexus": "appnexus",

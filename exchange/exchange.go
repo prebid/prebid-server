@@ -362,8 +362,19 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 				errs = append(errs, cacheErrs...)
 			}
 
-			targData.setTargeting(auc, r.BidRequestWrapper.BidRequest.App != nil, bidCategory, r.Account.TruncateTargetAttribute, multiBid)
+			targData.setTargeting(auc, r.BidRequestWrapper.BidRequest.App != nil, bidCategory, r.Account.TruncateTargetAttribute, multiBid, r.Account.DefaultBidLimitMin)
 
+			if r.Account.DefaultBidLimitMin != 0 {
+				for _, seatBid := range adapterBids {
+					if seatBid != nil {
+						for i := 0; i < len(seatBid.bids); i++ {
+							if seatBid.bids[i].bid == nil {
+								seatBid.bids = append(seatBid.bids[:i], seatBid.bids[i+1:]...)
+							}
+						}
+					}
+				}
+			}
 		}
 		bidResponseExt = e.makeExtBidResponse(adapterBids, adapterExtra, r, responseDebugAllow, requestExt.Prebid.Passthrough, errs)
 	} else {

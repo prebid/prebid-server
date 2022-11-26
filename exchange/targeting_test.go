@@ -656,7 +656,7 @@ func TestSetTargeting(t *testing.T) {
 		}
 		auc.winningBids = winningBids
 		targData := test.TargetData
-		targData.setTargeting(auc, test.IsApp, test.CategoryMapping, test.TruncateTargetAttr, ExtMultiBidMap{})
+		targData.setTargeting(auc, test.IsApp, test.CategoryMapping, test.TruncateTargetAttr, ExtMultiBidMap{}, 0)
 		for imp, targetsByBidder := range test.ExpectedBidTargetsByBidder {
 			for bidder, expected := range targetsByBidder {
 				assert.Len(t, auc.winningBidsByBidder[imp][bidder], 1) //until all tests are updated
