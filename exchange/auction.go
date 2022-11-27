@@ -110,7 +110,7 @@ func newAuction(seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, numImps int
 	winningBidsByBidder := make(map[string]map[openrtb_ext.BidderName][]*pbsOrtbBid, numImps)
 
 	for bidderName, seatBid := range seatBids {
-		if seatBid == nil {
+		if seatBid != nil {
 			for _, bid := range seatBid.bids {
 				wbid, ok := winningBids[bid.bid.ImpID]
 				if !ok || isNewWinningBid(bid.bid, wbid.bid, preferDeals) {
