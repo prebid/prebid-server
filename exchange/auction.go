@@ -111,26 +111,18 @@ func newAuction(seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, numImps int
 
 	for bidderName, seatBid := range seatBids {
 		if seatBid == nil {
-			continue
-		}
+			for _, bid := range seatBid.bids {
+				wbid, ok := winningBids[bid.bid.ImpID]
+				if !ok || isNewWinningBid(bid.bid, wbid.bid, preferDeals) {
+					winningBids[bid.bid.ImpID] = bid
+				}
 
-		// TODO limitMultiBids -> DefaultBidLimitMin
-		// sort.Slice(seatBid.bids, func(i, j int) bool {
-		// 	return isNewWinningBid(seatBid.bids[i].bid, seatBid.bids[j].bid, preferDeals)
-		// })
-		// seatBid.bids = seatBid.bids[:maxBid]
-
-		for _, bid := range seatBid.bids {
-			wbid, ok := winningBids[bid.bid.ImpID]
-			if !ok || isNewWinningBid(bid.bid, wbid.bid, preferDeals) {
-				winningBids[bid.bid.ImpID] = bid
-			}
-
-			if bidMap, ok := winningBidsByBidder[bid.bid.ImpID]; ok {
-				bidMap[bidderName] = append(bidMap[bidderName], bid)
-			} else {
-				winningBidsByBidder[bid.bid.ImpID] = map[openrtb_ext.BidderName][]*pbsOrtbBid{
-					bidderName: {bid},
+				if bidMap, ok := winningBidsByBidder[bid.bid.ImpID]; ok {
+					bidMap[bidderName] = append(bidMap[bidderName], bid)
+				} else {
+					winningBidsByBidder[bid.bid.ImpID] = map[openrtb_ext.BidderName][]*pbsOrtbBid{
+						bidderName: {bid},
+					}
 				}
 			}
 		}
