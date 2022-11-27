@@ -4581,7 +4581,39 @@ func mapifySeatBids(t *testing.T, context string, seatBids []openrtb2.SeatBid) m
 			seatMap[seatName] = &seatBids[i]
 		}
 	}
+
+	ignoreCacheDataFromResponse(&seatBids)
+
 	return seatMap
+}
+
+func ignoreCacheDataFromResponse(seatBids *[]openrtb2.SeatBid) {
+	// TODO: Handle this is in a better way!!!
+	for i := 0; i < len(*seatBids); i++ {
+		for j, bid := range (*seatBids)[i].Bid {
+			tempExt := make(map[string]interface{})
+			err := json.Unmarshal(bid.Ext, &tempExt)
+			if err != nil {
+				continue
+			}
+			tempPrebidExt, ok := tempExt["prebid"].(map[string]interface{})
+			if !ok {
+				continue
+			}
+			tempPrebidExt["cache"] = nil
+
+			tempPrebidTargetingExt, ok := tempPrebidExt["targeting"].(map[string]interface{})
+			if ok {
+				for key := range tempPrebidTargetingExt {
+					if strings.HasPrefix(key, "hb_cache_id") || strings.HasPrefix(key, "hb_uuid") {
+						tempPrebidTargetingExt[key] = nil
+					}
+				}
+			}
+
+			(*seatBids)[i].Bid[j].Ext, _ = json.Marshal(tempExt)
+		}
+	}
 }
 
 func mockHandler(statusCode int, getBody string, postBody string) http.Handler {
