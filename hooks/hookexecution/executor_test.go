@@ -292,8 +292,8 @@ func TestExecuteEntrypointStage(t *testing.T) {
 			expectedQuery:    url.Values{},
 			expectedReject:   nil,
 			expectedModuleContexts: &moduleContexts{ctxs: map[string]hookstage.ModuleContext{
-				"module-1": {"some-ctx-1": "some-ctx-1", "some-ctx-3": "some-ctx-3"},
-				"module-2": {"some-ctx-2": "some-ctx-2"},
+				"module-1": {"entrypoint-ctx-1": "some-ctx-1", "entrypoint-ctx-3": "some-ctx-3"},
+				"module-2": {"entrypoint-ctx-2": "some-ctx-2"},
 			}},
 			expectedStageOutcomes: []StageOutcome{
 				{
@@ -442,24 +442,12 @@ func (e mockTimeoutEntrypointHook) HandleEntrypointHook(_ context.Context, _ hoo
 	return hookstage.HookResult[hookstage.EntrypointPayload]{ChangeSet: c}, nil
 }
 
-type mockModuleContextEntrypointHook1 struct{}
-
-func (e mockModuleContextEntrypointHook1) HandleEntrypointHook(_ context.Context, miCtx hookstage.ModuleInvocationContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
-	miCtx.ModuleContext = map[string]interface{}{"some-ctx-1": "some-ctx-1"}
-	return hookstage.HookResult[hookstage.EntrypointPayload]{ModuleContext: miCtx.ModuleContext}, nil
+type mockModuleContextHook struct {
+	key, val string
 }
 
-type mockModuleContextEntrypointHook2 struct{}
-
-func (e mockModuleContextEntrypointHook2) HandleEntrypointHook(_ context.Context, miCtx hookstage.ModuleInvocationContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
-	miCtx.ModuleContext = map[string]interface{}{"some-ctx-2": "some-ctx-2"}
-	return hookstage.HookResult[hookstage.EntrypointPayload]{ModuleContext: miCtx.ModuleContext}, nil
-}
-
-type mockModuleContextEntrypointHook3 struct{}
-
-func (e mockModuleContextEntrypointHook3) HandleEntrypointHook(_ context.Context, miCtx hookstage.ModuleInvocationContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
-	miCtx.ModuleContext = map[string]interface{}{"some-ctx-3": "some-ctx-3"}
+func (e mockModuleContextHook) HandleEntrypointHook(_ context.Context, miCtx hookstage.ModuleInvocationContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+	miCtx.ModuleContext = map[string]interface{}{e.key: e.val}
 	return hookstage.HookResult[hookstage.EntrypointPayload]{ModuleContext: miCtx.ModuleContext}, nil
 }
 
@@ -552,14 +540,14 @@ func (e TestWithModuleContextsPlanBuilder) PlanForEntrypointStage(_ string) hook
 		hooks.Group[hookstage.Entrypoint]{
 			Timeout: 1 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
-				{Module: "module-1", Code: "foo", Hook: mockModuleContextEntrypointHook1{}},
+				{Module: "module-1", Code: "foo", Hook: mockModuleContextHook{key: "entrypoint-ctx-1", val: "some-ctx-1"}},
 			},
 		},
 		hooks.Group[hookstage.Entrypoint]{
 			Timeout: 1 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
-				{Module: "module-2", Code: "bar", Hook: mockModuleContextEntrypointHook2{}},
-				{Module: "module-1", Code: "baz", Hook: mockModuleContextEntrypointHook3{}},
+				{Module: "module-2", Code: "bar", Hook: mockModuleContextHook{key: "entrypoint-ctx-2", val: "some-ctx-2"}},
+				{Module: "module-1", Code: "baz", Hook: mockModuleContextHook{key: "entrypoint-ctx-3", val: "some-ctx-3"}},
 			},
 		},
 	}
