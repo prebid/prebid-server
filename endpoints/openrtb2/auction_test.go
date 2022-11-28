@@ -4676,6 +4676,11 @@ func TestValidResponseWhenRequestRejected(t *testing.T) {
 			openrtb2.BidResponse{ID: "some-request-id", NBR: &nbr},
 			rejectableHookExecutor{entrypointReject: &reject},
 		},
+		{
+			"Assert correct BidResponse when request rejected at raw-auction stage",
+			openrtb2.BidResponse{ID: "some-request-id", NBR: &nbr},
+			rejectableHookExecutor{rawAuctionReject: &reject},
+		},
 	}
 
 	for _, test := range testCases {

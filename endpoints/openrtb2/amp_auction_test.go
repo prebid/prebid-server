@@ -1943,13 +1943,31 @@ func TestValidAmpResponseWhenRequestRejected(t *testing.T) {
 
 	testCases := []struct {
 		description         string
+		isRejected          bool
 		expectedAmpResponse AmpResponse
 		hookExecutor        hookexecution.HookStageExecutor
 	}{
 		{
-			"Assert correct AmpResponse when request rejected at entrypoint stage",
-			AmpResponse{Targeting: map[string]string{}},
-			rejectableHookExecutor{entrypointReject: &reject},
+			description:         "Assert correct AmpResponse when request rejected at entrypoint stage",
+			isRejected:          true,
+			expectedAmpResponse: AmpResponse{Targeting: map[string]string{}},
+			hookExecutor:        rejectableHookExecutor{entrypointReject: &reject},
+		},
+		{
+			description: "Assert correct AmpResponse when request rejected at raw-auction stage",
+			isRejected:  false,
+			// raw-auction stage not executed for AMP endpoint, so we expect filled response
+			expectedAmpResponse: AmpResponse{
+				Targeting: map[string]string{
+					"hb_appnexus_pb": "1.20",
+					"hb_cache_id":    "some_id",
+					"hb_pb":          "1.20",
+				},
+				Errors: map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage{
+					"openx": {{Code: 1, Message: "The request exceeded the timeout allocated"}},
+				},
+			},
+			hookExecutor: rejectableHookExecutor{rawAuctionReject: &reject},
 		},
 	}
 
@@ -1957,14 +1975,11 @@ func TestValidAmpResponseWhenRequestRejected(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			actualAmpObject := analytics.AmpObject{}
 			logger := newMockLogger(&actualAmpObject, nil)
-			stored := map[string]json.RawMessage{
-				"1": json.RawMessage(validRequest(t, "site.json")),
-			}
-
+			stored := map[string]json.RawMessage{"1": json.RawMessage(validRequest(t, "site.json"))}
 			deps := &endpointDeps{
 				fakeUUIDGenerator{},
-				&nobidExchange{},
-				mockBidderParamValidator{},
+				&mockAmpExchange{},
+				newParamsValidator(t),
 				&mockAmpStoredReqFetcher{data: stored},
 				empty_fetcher.EmptyFetcher{},
 				empty_fetcher.EmptyFetcher{},
@@ -1982,7 +1997,15 @@ func TestValidAmpResponseWhenRequestRejected(t *testing.T) {
 				test.hookExecutor,
 			}
 
-			req := httptest.NewRequest("POST", "/openrtb2/amp?tag_id=1", nil)
+			url, err := url.Parse("/openrtb2/auction/amp")
+			assert.NoError(t, err, "unexpected error received while parsing url")
+
+			values := url.Query()
+			values.Add("targeting", `{"gam-key1":"val1", "gam-key2":"val2"}`)
+			values.Add("tag_id", "1")
+			url.RawQuery = values.Encode()
+
+			req := httptest.NewRequest("POST", url.String(), nil)
 			recorder := httptest.NewRecorder()
 
 			deps.AmpAuction(recorder, req, nil)
@@ -1990,11 +2013,13 @@ func TestValidAmpResponseWhenRequestRejected(t *testing.T) {
 
 			resp := AmpResponse{}
 			respBytes := recorder.Body.Bytes()
-			err := json.Unmarshal(respBytes, &resp)
+			err = json.Unmarshal(respBytes, &resp)
 
 			assert.NoError(t, err, "Unable to unmarshal response.")
 			assert.Equal(t, test.expectedAmpResponse, resp)
-			assert.Contains(t, actualAmpObject.Errors, reject, "Reject error is not logged to analytics.")
+			if test.isRejected {
+				assert.Contains(t, actualAmpObject.Errors, reject, "Reject error is not logged to analytics.")
+			}
 		})
 	}
 }

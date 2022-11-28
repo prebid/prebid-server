@@ -298,8 +298,8 @@ func TestExecuteEntrypointStage(t *testing.T) {
 			expectedQuery:    url.Values{},
 			expectedReject:   nil,
 			expectedModuleContexts: &moduleContexts{ctxs: map[string]hookstage.ModuleContext{
-				"module-1": {"some-ctx-1": "some-ctx-1", "some-ctx-3": "some-ctx-3"},
-				"module-2": {"some-ctx-2": "some-ctx-2"},
+				"module-1": {"entrypoint-ctx-1": "some-ctx-1", "entrypoint-ctx-3": "some-ctx-3"},
+				"module-2": {"entrypoint-ctx-2": "some-ctx-2"},
 			}},
 			expectedStageOutcomes: []StageOutcome{
 				{
@@ -384,6 +384,7 @@ func TestExecuteEntrypointStage(t *testing.T) {
 
 func TestExecuteRawAuctionStage(t *testing.T) {
 	const body string = `{"name": "John", "last_name": "Doe"}`
+	const bodyUpdated string = `{"last_name": "Doe", "foo": "bar"}`
 	const urlString string = "https://prebid.com/openrtb2/auction"
 
 	foobarModuleCtx := &moduleContexts{ctxs: map[string]hookstage.ModuleContext{"foobar": nil}}
@@ -417,7 +418,7 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 			givenUrl:               urlString,
 			givenPlanBuilder:       TestApplyHookMutationsBuilder{},
 			givenAccount:           account,
-			expectedBody:           `{"last_name": "Doe", "foo": "bar"}`,
+			expectedBody:           bodyUpdated,
 			expectedReject:         nil,
 			expectedModuleContexts: foobarModuleCtx,
 			expectedStageOutcomes: []StageOutcome{
@@ -476,7 +477,7 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 			givenUrl:               urlString,
 			givenPlanBuilder:       TestRejectPlanBuilder{},
 			givenAccount:           nil,
-			expectedBody:           `{"last_name": "Doe", "foo": "bar"}`,
+			expectedBody:           bodyUpdated,
 			expectedReject:         &RejectError{0, HookID{ModuleCode: "foobar", HookCode: "bar"}, hooks.StageRawAuction.String()},
 			expectedModuleContexts: foobarModuleCtx,
 			expectedStageOutcomes: []StageOutcome{
@@ -543,7 +544,7 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 			givenUrl:               urlString,
 			givenPlanBuilder:       TestWithTimeoutPlanBuilder{},
 			givenAccount:           account,
-			expectedBody:           `{"last_name": "Doe", "foo": "bar"}`,
+			expectedBody:           bodyUpdated,
 			expectedReject:         nil,
 			expectedModuleContexts: foobarModuleCtx,
 			expectedStageOutcomes: []StageOutcome{
@@ -600,8 +601,8 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 			expectedBody:     body,
 			expectedReject:   nil,
 			expectedModuleContexts: &moduleContexts{ctxs: map[string]hookstage.ModuleContext{
-				"module-1": {"some-ctx-1": "some-ctx-1", "some-ctx-3": "some-ctx-3"},
-				"module-2": {"some-ctx-2": "some-ctx-2"},
+				"module-1": {"raw-auction-ctx-1": "some-ctx-1", "raw-auction-ctx-3": "some-ctx-3"},
+				"module-2": {"raw-auction-ctx-2": "some-ctx-2"},
 			}},
 			expectedStageOutcomes: []StageOutcome{
 				{
@@ -623,6 +624,17 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 									Errors:        nil,
 									Warnings:      nil,
 								},
+								{
+									ExecutionTime: ExecutionTime{},
+									AnalyticsTags: hookanalytics.Analytics{},
+									HookID:        HookID{ModuleCode: "module-2", HookCode: "baz"},
+									Status:        StatusSuccess,
+									Action:        ActionNone,
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
 							},
 						},
 						{
@@ -631,18 +643,7 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 								{
 									ExecutionTime: ExecutionTime{},
 									AnalyticsTags: hookanalytics.Analytics{},
-									HookID:        HookID{ModuleCode: "module-2", HookCode: "bar"},
-									Status:        StatusSuccess,
-									Action:        ActionNone,
-									Message:       "",
-									DebugMessages: nil,
-									Errors:        nil,
-									Warnings:      nil,
-								},
-								{
-									ExecutionTime: ExecutionTime{},
-									AnalyticsTags: hookanalytics.Analytics{},
-									HookID:        HookID{ModuleCode: "module-1", HookCode: "baz"},
+									HookID:        HookID{ModuleCode: "module-1", HookCode: "bar"},
 									Status:        StatusSuccess,
 									Action:        ActionNone,
 									Message:       "",
@@ -914,6 +915,46 @@ func TestExecuteProcessedAuctionStage(t *testing.T) {
 	}
 }
 
+func TestInterStageContextCommunication(t *testing.T) {
+	body := []byte(`{"foo": "bar"}`)
+	reader := bytes.NewReader(body)
+	exec := NewHookExecutor(TestWithModuleContextsPlanBuilder{}, EndpointAuction, &metricsConfig.NilMetricsEngine{})
+	req, err := http.NewRequest(http.MethodPost, "https://prebid.com/openrtb2/auction", reader)
+	assert.NoError(t, err)
+
+	// test that context added at the entrypoint stage
+	_, reject := exec.ExecuteEntrypointStage(req, body)
+	assert.Nil(t, reject, "Unexpected reject from entrypoint stage.")
+	assert.Equal(
+		t,
+		&moduleContexts{ctxs: map[string]hookstage.ModuleContext{
+			"module-1": {
+				"entrypoint-ctx-1": "some-ctx-1",
+				"entrypoint-ctx-3": "some-ctx-3",
+			},
+			"module-2": {"entrypoint-ctx-2": "some-ctx-2"},
+		}},
+		exec.moduleContexts,
+		"Wrong module contexts after executing entrypoint hook.",
+	)
+
+	// test that context added at the raw-auction stage merged with existing module contexts
+	_, reject = exec.ExecuteRawAuctionStage(body)
+	assert.Nil(t, reject, "Unexpected reject from raw-auction stage.")
+	assert.Equal(t, &moduleContexts{ctxs: map[string]hookstage.ModuleContext{
+		"module-1": {
+			"entrypoint-ctx-1":  "some-ctx-1",
+			"entrypoint-ctx-3":  "some-ctx-3",
+			"raw-auction-ctx-1": "some-ctx-1",
+			"raw-auction-ctx-3": "some-ctx-3",
+		},
+		"module-2": {
+			"entrypoint-ctx-2":  "some-ctx-2",
+			"raw-auction-ctx-2": "some-ctx-2",
+		},
+	}}, exec.moduleContexts, "Wrong module contexts after executing raw-auction hook.")
+}
+
 type TestApplyHookMutationsBuilder struct {
 	hooks.EmptyPlanBuilder
 }
@@ -1112,14 +1153,14 @@ func (e TestWithModuleContextsPlanBuilder) PlanForEntrypointStage(_ string) hook
 		hooks.Group[hookstage.Entrypoint]{
 			Timeout: 1 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
-				{Module: "module-1", Code: "foo", Hook: mockModuleContextHook1{}},
+				{Module: "module-1", Code: "foo", Hook: mockModuleContextHook{key: "entrypoint-ctx-1", val: "some-ctx-1"}},
 			},
 		},
 		hooks.Group[hookstage.Entrypoint]{
 			Timeout: 1 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.Entrypoint]{
-				{Module: "module-2", Code: "bar", Hook: mockModuleContextHook2{}},
-				{Module: "module-1", Code: "baz", Hook: mockModuleContextHook3{}},
+				{Module: "module-2", Code: "bar", Hook: mockModuleContextHook{key: "entrypoint-ctx-2", val: "some-ctx-2"}},
+				{Module: "module-1", Code: "baz", Hook: mockModuleContextHook{key: "entrypoint-ctx-3", val: "some-ctx-3"}},
 			},
 		},
 	}
@@ -1130,14 +1171,14 @@ func (e TestWithModuleContextsPlanBuilder) PlanForRawAuctionStage(_ string, _ *c
 		hooks.Group[hookstage.RawAuctionRequest]{
 			Timeout: 1 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.RawAuctionRequest]{
-				{Module: "module-1", Code: "foo", Hook: mockModuleContextHook1{}},
+				{Module: "module-1", Code: "foo", Hook: mockModuleContextHook{key: "raw-auction-ctx-1", val: "some-ctx-1"}},
+				{Module: "module-2", Code: "baz", Hook: mockModuleContextHook{key: "raw-auction-ctx-2", val: "some-ctx-2"}},
 			},
 		},
 		hooks.Group[hookstage.RawAuctionRequest]{
 			Timeout: 1 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.RawAuctionRequest]{
-				{Module: "module-2", Code: "bar", Hook: mockModuleContextHook2{}},
-				{Module: "module-1", Code: "baz", Hook: mockModuleContextHook3{}},
+				{Module: "module-1", Code: "bar", Hook: mockModuleContextHook{key: "raw-auction-ctx-3", val: "some-ctx-3"}},
 			},
 		},
 	}
