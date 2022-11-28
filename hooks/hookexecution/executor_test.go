@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/hooks"
@@ -29,6 +28,7 @@ func TestEmptyHookExecutor(t *testing.T) {
 
 	entrypointBody, entrypointRejectErr := executor.ExecuteEntrypointStage(req, body)
 	rawAuctionBody, rawAuctionRejectErr := executor.ExecuteRawAuctionStage(body)
+	processedAuctionRejectErr := executor.ExecuteProcessedAuctionStage(&openrtb2.BidRequest{})
 
 	outcomes := executor.GetOutcomes()
 	assert.Equal(t, EmptyHookExecutor{}, executor, "EmptyHookExecutor shouldn't be changed.")
@@ -40,6 +40,7 @@ func TestEmptyHookExecutor(t *testing.T) {
 	assert.Nil(t, rawAuctionRejectErr, "EmptyHookExecutor shouldn't return reject error at raw-auction stage.")
 	assert.Equal(t, body, rawAuctionBody, "EmptyHookExecutor shouldn't change body at raw-auction stage.")
 
+	assert.Nil(t, processedAuctionRejectErr, "EmptyHookExecutor shouldn't return reject error at processed-auction stage.")
 }
 
 func TestExecuteEntrypointStage(t *testing.T) {
@@ -678,164 +679,238 @@ func TestExecuteRawAuctionStage(t *testing.T) {
 	}
 }
 
-func TestExecuteProcessedAuctionStage_CanApplyHookMutations(t *testing.T) {
-	expectedOutcome := StageOutcome{
-		Entity: hookstage.EntityAuctionRequest,
-		Stage:  hooks.StageProcessedAuction,
-		Groups: []GroupOutcome{
-			{
-				InvocationResults: []HookOutcome{
-					{
-						AnalyticsTags: hookanalytics.Analytics{},
-						HookID:        HookID{"foobar", "foo"},
-						Status:        StatusSuccess,
-						Action:        ActionUpdate,
-						Message:       "",
-						DebugMessages: []string{
-							fmt.Sprintf("Hook mutation successfully applied, affected key: bidRequest.user.yob, mutation type: %s", hookstage.MutationUpdate),
-							fmt.Sprintf("Hook mutation successfully applied, affected key: bidRequest.user.consent, mutation type: %s", hookstage.MutationUpdate),
-						},
-						Errors:   nil,
-						Warnings: nil,
-					},
-				},
-			},
-		},
-	}
-
-	exec := HookExecutor{
-		InvocationCtx: &hookstage.InvocationContext{},
-		Endpoint:      EndpointAuction,
-		PlanBuilder:   TestApplyHookMutationsBuilder{},
-		MetricEngine:  &metric_config.NilMetricsEngine{},
-	}
+func TestExecuteProcessedAuctionStage(t *testing.T) {
+	foobarModuleCtx := &moduleContexts{ctxs: map[string]hookstage.ModuleContext{"foobar": nil}}
+	account := &config.Account{}
 	req := openrtb2.BidRequest{ID: "some-id", User: &openrtb2.User{ID: "user-id"}}
 
-	reject := exec.ExecuteProcessedAuctionStage(&req)
-	require.Nil(t, reject, "Unexpected stage reject")
-
-	stOut := exec.GetOutcomes()[0]
-	assertEqualStageOutcomes(t, expectedOutcome, stOut)
-
-	if req.User.Yob == 0 {
-		t.Error("bid request not changed inside hook.Call method")
-	}
-
-	if req.User.Consent == "" {
-		t.Error("bid request not changed inside hook.Call method")
-	}
-}
-
-func TestExecuteProcessedAuctionStage_CanRejectHook(t *testing.T) {
-	expectedOutcome := StageOutcome{
-		ExecutionTime: ExecutionTime{},
-		Entity:        hookstage.EntityAuctionRequest,
-		Stage:         hooks.StageProcessedAuction,
-		Groups: []GroupOutcome{
-			{
-				ExecutionTime: ExecutionTime{},
-				InvocationResults: []HookOutcome{
-					{
-						ExecutionTime: ExecutionTime{},
-						AnalyticsTags: hookanalytics.Analytics{},
-						HookID:        HookID{"foobar", "foo"},
-						Status:        StatusSuccess,
-						Action:        ActionReject,
-						Message:       "",
-						DebugMessages: nil,
-						Errors: []string{
-							`Module rejected stage, reason: ""`,
+	testCases := []struct {
+		description            string
+		givenPlanBuilder       hooks.ExecutionPlanBuilder
+		givenAccount           *config.Account
+		givenRequest           openrtb2.BidRequest
+		expectedRequest        openrtb2.BidRequest
+		expectedReject         *RejectError
+		expectedModuleContexts *moduleContexts
+		expectedStageOutcomes  []StageOutcome
+	}{
+		{
+			description:            "Request not changed if hook execution plan empty",
+			givenPlanBuilder:       hooks.EmptyPlanBuilder{},
+			givenAccount:           account,
+			givenRequest:           req,
+			expectedRequest:        req,
+			expectedReject:         nil,
+			expectedModuleContexts: &moduleContexts{ctxs: map[string]hookstage.ModuleContext{}},
+			expectedStageOutcomes:  []StageOutcome{},
+		},
+		{
+			description:            "Request changed if hooks return mutations",
+			givenPlanBuilder:       TestApplyHookMutationsBuilder{},
+			givenAccount:           account,
+			givenRequest:           req,
+			expectedRequest:        openrtb2.BidRequest{ID: "some-id", User: &openrtb2.User{ID: "user-id", Yob: 2000, Consent: "true"}},
+			expectedReject:         nil,
+			expectedModuleContexts: foobarModuleCtx,
+			expectedStageOutcomes: []StageOutcome{
+				{
+					Entity: entityAuctionRequest,
+					Stage:  hooks.StageProcessedAuction.String(),
+					Groups: []GroupOutcome{
+						{
+							InvocationResults: []HookOutcome{
+								{
+									AnalyticsTags: hookanalytics.Analytics{},
+									HookID:        HookID{ModuleCode: "foobar", HookCode: "foo"},
+									Status:        StatusSuccess,
+									Action:        ActionUpdate,
+									Message:       "",
+									DebugMessages: []string{
+										fmt.Sprintf("Hook mutation successfully applied, affected key: bidRequest.user.yob, mutation type: %s", hookstage.MutationUpdate),
+										fmt.Sprintf("Hook mutation successfully applied, affected key: bidRequest.user.consent, mutation type: %s", hookstage.MutationUpdate),
+									},
+									Errors:   nil,
+									Warnings: nil,
+								},
+							},
 						},
-						Warnings: nil,
+					},
+				},
+			},
+		},
+		{
+			description:            "Stage execution can be rejected - and later hooks rejected",
+			givenPlanBuilder:       TestRejectPlanBuilder{},
+			givenAccount:           nil,
+			givenRequest:           req,
+			expectedRequest:        req,
+			expectedReject:         &RejectError{0, HookID{ModuleCode: "foobar", HookCode: "foo"}, hooks.StageProcessedAuction.String()},
+			expectedModuleContexts: foobarModuleCtx,
+			expectedStageOutcomes: []StageOutcome{
+				{
+					ExecutionTime: ExecutionTime{},
+					Entity:        entityAuctionRequest,
+					Stage:         hooks.StageProcessedAuction.String(),
+					Groups: []GroupOutcome{
+						{
+							ExecutionTime: ExecutionTime{},
+							InvocationResults: []HookOutcome{
+								{
+									ExecutionTime: ExecutionTime{},
+									AnalyticsTags: hookanalytics.Analytics{},
+									HookID:        HookID{ModuleCode: "foobar", HookCode: "foo"},
+									Status:        StatusSuccess,
+									Action:        ActionReject,
+									Message:       "",
+									DebugMessages: nil,
+									Errors: []string{
+										`Module foobar (hook: foo) rejected request with code 0 at processed-auction stage`,
+									},
+									Warnings: nil,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			description:            "Stage execution can be timed out",
+			givenPlanBuilder:       TestWithTimeoutPlanBuilder{},
+			givenAccount:           account,
+			givenRequest:           req,
+			expectedRequest:        openrtb2.BidRequest{ID: "some-id", User: &openrtb2.User{ID: "user-id", Yob: 2000, Consent: "true"}},
+			expectedReject:         nil,
+			expectedModuleContexts: foobarModuleCtx,
+			expectedStageOutcomes: []StageOutcome{
+				{
+					ExecutionTime: ExecutionTime{},
+					Entity:        entityAuctionRequest,
+					Stage:         hooks.StageProcessedAuction.String(),
+					Groups: []GroupOutcome{
+						{
+							ExecutionTime: ExecutionTime{},
+							InvocationResults: []HookOutcome{
+								{
+									ExecutionTime: ExecutionTime{},
+									AnalyticsTags: hookanalytics.Analytics{},
+									HookID:        HookID{ModuleCode: "foobar", HookCode: "foo"},
+									Status:        StatusTimeout,
+									Action:        "",
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        []string{"Hook execution timeout"},
+									Warnings:      nil,
+								},
+							},
+						},
+						{
+							ExecutionTime: ExecutionTime{},
+							InvocationResults: []HookOutcome{
+								{
+									ExecutionTime: ExecutionTime{},
+									AnalyticsTags: hookanalytics.Analytics{},
+									HookID:        HookID{ModuleCode: "foobar", HookCode: "bar"},
+									Status:        StatusSuccess,
+									Action:        ActionUpdate,
+									Message:       "",
+									DebugMessages: []string{
+										fmt.Sprintf("Hook mutation successfully applied, affected key: bidRequest.user.yob, mutation type: %s", hookstage.MutationUpdate),
+										fmt.Sprintf("Hook mutation successfully applied, affected key: bidRequest.user.consent, mutation type: %s", hookstage.MutationUpdate),
+									},
+									Errors:   nil,
+									Warnings: nil,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			description:      "Modules contexts are preserved and correct",
+			givenPlanBuilder: TestWithModuleContextsPlanBuilder{},
+			givenAccount:     account,
+			givenRequest:     req,
+			expectedRequest:  req,
+			expectedReject:   nil,
+			expectedModuleContexts: &moduleContexts{ctxs: map[string]hookstage.ModuleContext{
+				"module-1": {"some-ctx-1": "some-ctx-1", "some-ctx-3": "some-ctx-3"},
+				"module-2": {"some-ctx-2": "some-ctx-2"},
+			}},
+			expectedStageOutcomes: []StageOutcome{
+				{
+					ExecutionTime: ExecutionTime{},
+					Entity:        entityAuctionRequest,
+					Stage:         hooks.StageProcessedAuction.String(),
+					Groups: []GroupOutcome{
+						{
+							ExecutionTime: ExecutionTime{},
+							InvocationResults: []HookOutcome{
+								{
+									ExecutionTime: ExecutionTime{},
+									AnalyticsTags: hookanalytics.Analytics{},
+									HookID:        HookID{ModuleCode: "module-1", HookCode: "foo"},
+									Status:        StatusSuccess,
+									Action:        ActionNone,
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
+						{
+							ExecutionTime: ExecutionTime{},
+							InvocationResults: []HookOutcome{
+								{
+									ExecutionTime: ExecutionTime{},
+									AnalyticsTags: hookanalytics.Analytics{},
+									HookID:        HookID{ModuleCode: "module-2", HookCode: "bar"},
+									Status:        StatusSuccess,
+									Action:        ActionNone,
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+								{
+									ExecutionTime: ExecutionTime{},
+									AnalyticsTags: hookanalytics.Analytics{},
+									HookID:        HookID{ModuleCode: "module-1", HookCode: "baz"},
+									Status:        StatusSuccess,
+									Action:        ActionNone,
+									Message:       "",
+									DebugMessages: nil,
+									Errors:        nil,
+									Warnings:      nil,
+								},
+							},
+						},
 					},
 				},
 			},
 		},
 	}
 
-	exec := HookExecutor{
-		InvocationCtx: &hookstage.InvocationContext{},
-		Endpoint:      EndpointAuction,
-		PlanBuilder:   TestRejectPlanBuilder{},
-		MetricEngine:  &metric_config.NilMetricsEngine{},
-	}
+	for _, test := range testCases {
+		t.Run(test.description, func(ti *testing.T) {
+			exec := NewHookExecutor(test.givenPlanBuilder, EndpointAuction, &metricsConfig.NilMetricsEngine{})
+			exec.SetAccount(test.givenAccount)
 
-	reject := exec.ExecuteProcessedAuctionStage(&openrtb2.BidRequest{})
-	require.NotNil(t, reject, "Unexpected successful execution of processed auction hook")
-	require.Equal(t, reject, &RejectError{}, "Unexpected error returned from processed auction hook")
+			reject := exec.ExecuteProcessedAuctionStage(&test.givenRequest)
 
-	stOut := exec.GetOutcomes()[0]
-	assertEqualStageOutcomes(t, expectedOutcome, stOut)
-}
+			assert.Equal(ti, test.expectedReject, reject, "Unexpected stage reject.")
+			assert.Equal(ti, test.expectedRequest, test.givenRequest, "Incorrect request update.")
+			assert.Equal(ti, test.expectedModuleContexts, exec.moduleContexts, "Incorrect module contexts")
 
-func TestExecuteProcessedAuctionStage_CanTimeoutOneOfHooks(t *testing.T) {
-	expectedOutcome := StageOutcome{
-		ExecutionTime: ExecutionTime{},
-		Entity:        hookstage.EntityAuctionRequest,
-		Stage:         hooks.StageProcessedAuction,
-		Groups: []GroupOutcome{
-			{
-				ExecutionTime: ExecutionTime{},
-				InvocationResults: []HookOutcome{
-					{
-						ExecutionTime: ExecutionTime{},
-						AnalyticsTags: hookanalytics.Analytics{},
-						HookID:        HookID{"foobar", "foo"},
-						Status:        StatusTimeout,
-						Action:        "",
-						Message:       "",
-						DebugMessages: nil,
-						Errors:        []string{"Hook execution timeout"},
-						Warnings:      nil,
-					},
-				},
-			},
-			{
-				ExecutionTime: ExecutionTime{},
-				InvocationResults: []HookOutcome{
-					{
-						ExecutionTime: ExecutionTime{},
-						AnalyticsTags: hookanalytics.Analytics{},
-						HookID:        HookID{"foobar", "bar"},
-						Status:        StatusSuccess,
-						Action:        ActionUpdate,
-						Message:       "",
-						DebugMessages: []string{
-							fmt.Sprintf("Hook mutation successfully applied, affected key: bidRequest.user.yob, mutation type: %s", hookstage.MutationUpdate),
-							fmt.Sprintf("Hook mutation successfully applied, affected key: bidRequest.user.consent, mutation type: %s", hookstage.MutationUpdate),
-						},
-						Errors:   nil,
-						Warnings: nil,
-					},
-				},
-			},
-		},
-	}
-
-	exec := HookExecutor{
-		InvocationCtx: &hookstage.InvocationContext{},
-		Endpoint:      EndpointAuction,
-		PlanBuilder:   TestWithTimeoutPlanBuilder{},
-		MetricEngine:  &metric_config.NilMetricsEngine{},
-	}
-	req := openrtb2.BidRequest{ID: "some-id", User: &openrtb2.User{ID: "user-id"}}
-
-	reject := exec.ExecuteProcessedAuctionStage(&req)
-	require.Nil(t, reject, "Unexpected stage reject")
-
-	stOut := exec.GetOutcomes()[0]
-	assertEqualStageOutcomes(t, expectedOutcome, stOut)
-
-	if req.User.CustomData != "" {
-		t.Error("bid request should not change because of timeout")
-	}
-
-	if req.User.Yob == 0 {
-		t.Error("bid request not changed inside hook.Call method")
-	}
-
-	if req.User.Consent == "" {
-		t.Error("bid request not changed inside hook.Call method")
+			stageOutcomes := exec.GetOutcomes()
+			if len(test.expectedStageOutcomes) == 0 {
+				assert.Empty(ti, stageOutcomes, "Incorrect stage outcomes.")
+			} else {
+				assertEqualStageOutcomes(ti, test.expectedStageOutcomes[0], stageOutcomes[0])
+			}
+		})
 	}
 }
 
@@ -881,11 +956,11 @@ func (e TestApplyHookMutationsBuilder) PlanForRawAuctionStage(_ string, _ *confi
 	}
 }
 
-func (e TestApplyHookMutationsBuilder) PlanForProcessedAuctionStage(_ string, _ *config.Account) hooks.Plan[hookstage.ProcessedAuction] {
-	return hooks.Plan[hookstage.ProcessedAuction]{
-		hooks.Group[hookstage.ProcessedAuction]{
+func (e TestApplyHookMutationsBuilder) PlanForProcessedAuctionStage(_ string, _ *config.Account) hooks.Plan[hookstage.ProcessedAuctionRequest] {
+	return hooks.Plan[hookstage.ProcessedAuctionRequest]{
+		hooks.Group[hookstage.ProcessedAuctionRequest]{
 			Timeout: 1 * time.Millisecond,
-			Hooks: []hooks.HookWrapper[hookstage.ProcessedAuction]{
+			Hooks: []hooks.HookWrapper[hookstage.ProcessedAuctionRequest]{
 				{Module: "foobar", Code: "foo", Hook: mockUpdateBidRequestHook{}},
 			},
 		},
@@ -955,17 +1030,17 @@ func (e TestRejectPlanBuilder) PlanForRawAuctionStage(_ string, _ *config.Accoun
 	}
 }
 
-func (e TestRejectPlanBuilder) PlanForProcessedAuctionStage(_ string, _ *config.Account) hooks.Plan[hookstage.ProcessedAuction] {
-	return hooks.Plan[hookstage.ProcessedAuction]{
-		hooks.Group[hookstage.ProcessedAuction]{
+func (e TestRejectPlanBuilder) PlanForProcessedAuctionStage(_ string, _ *config.Account) hooks.Plan[hookstage.ProcessedAuctionRequest] {
+	return hooks.Plan[hookstage.ProcessedAuctionRequest]{
+		hooks.Group[hookstage.ProcessedAuctionRequest]{
 			Timeout: 1 * time.Millisecond,
-			Hooks: []hooks.HookWrapper[hookstage.ProcessedAuction]{
+			Hooks: []hooks.HookWrapper[hookstage.ProcessedAuctionRequest]{
 				{Module: "foobar", Code: "foo", Hook: mockRejectHook{}},
 			},
 		},
-		hooks.Group[hookstage.ProcessedAuction]{
+		hooks.Group[hookstage.ProcessedAuctionRequest]{
 			Timeout: 1 * time.Millisecond,
-			Hooks: []hooks.HookWrapper[hookstage.ProcessedAuction]{
+			Hooks: []hooks.HookWrapper[hookstage.ProcessedAuctionRequest]{
 				{Module: "foobar", Code: "bar", Hook: mockUpdateBidRequestHook{}},
 			},
 		},
@@ -1011,17 +1086,17 @@ func (e TestWithTimeoutPlanBuilder) PlanForRawAuctionStage(_ string, _ *config.A
 	}
 }
 
-func (e TestWithTimeoutPlanBuilder) PlanForProcessedAuctionStage(_ string, _ *config.Account) hooks.Plan[hookstage.ProcessedAuction] {
-	return hooks.Plan[hookstage.ProcessedAuction]{
-		hooks.Group[hookstage.ProcessedAuction]{
+func (e TestWithTimeoutPlanBuilder) PlanForProcessedAuctionStage(_ string, _ *config.Account) hooks.Plan[hookstage.ProcessedAuctionRequest] {
+	return hooks.Plan[hookstage.ProcessedAuctionRequest]{
+		hooks.Group[hookstage.ProcessedAuctionRequest]{
 			Timeout: 1 * time.Millisecond,
-			Hooks: []hooks.HookWrapper[hookstage.ProcessedAuction]{
+			Hooks: []hooks.HookWrapper[hookstage.ProcessedAuctionRequest]{
 				{Module: "foobar", Code: "foo", Hook: mockTimeoutHook{}},
 			},
 		},
-		hooks.Group[hookstage.ProcessedAuction]{
+		hooks.Group[hookstage.ProcessedAuctionRequest]{
 			Timeout: 1 * time.Millisecond,
-			Hooks: []hooks.HookWrapper[hookstage.ProcessedAuction]{
+			Hooks: []hooks.HookWrapper[hookstage.ProcessedAuctionRequest]{
 				{Module: "foobar", Code: "bar", Hook: mockUpdateBidRequestHook{}},
 			},
 		},
@@ -1068,18 +1143,19 @@ func (e TestWithModuleContextsPlanBuilder) PlanForRawAuctionStage(_ string, _ *c
 	}
 }
 
-func (e TestWithModuleContextsPlanBuilder) PlanForProcessedAuctionStage(_ string, _ *config.Account) hooks.Plan[hookstage.ProcessedAuction] {
-	return hooks.Plan[hookstage.ProcessedAuction]{
-		hooks.Group[hookstage.ProcessedAuction]{
+func (e TestWithModuleContextsPlanBuilder) PlanForProcessedAuctionStage(_ string, _ *config.Account) hooks.Plan[hookstage.ProcessedAuctionRequest] {
+	return hooks.Plan[hookstage.ProcessedAuctionRequest]{
+		hooks.Group[hookstage.ProcessedAuctionRequest]{
 			Timeout: 1 * time.Millisecond,
-			Hooks: []hooks.HookWrapper[hookstage.ProcessedAuction]{
+			Hooks: []hooks.HookWrapper[hookstage.ProcessedAuctionRequest]{
 				{Module: "module-1", Code: "foo", Hook: mockModuleContextHook1{}},
 			},
 		},
-		hooks.Group[hookstage.ProcessedAuction]{
+		hooks.Group[hookstage.ProcessedAuctionRequest]{
 			Timeout: 1 * time.Millisecond,
-			Hooks: []hooks.HookWrapper[hookstage.ProcessedAuction]{
+			Hooks: []hooks.HookWrapper[hookstage.ProcessedAuctionRequest]{
 				{Module: "module-2", Code: "bar", Hook: mockModuleContextHook2{}},
+				{Module: "module-1", Code: "baz", Hook: mockModuleContextHook3{}},
 			},
 		},
 	}
