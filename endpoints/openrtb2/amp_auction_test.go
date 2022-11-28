@@ -1941,6 +1941,17 @@ func TestValidAmpResponseWhenRequestRejected(t *testing.T) {
 		hooks.StageEntrypoint.String(),
 	}
 
+	expectedAmpResponse := AmpResponse{
+		Targeting: map[string]string{
+			"hb_appnexus_pb": "1.20",
+			"hb_cache_id":    "some_id",
+			"hb_pb":          "1.20",
+		},
+		Errors: map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage{
+			"openx": {{Code: 1, Message: "The request exceeded the timeout allocated"}},
+		},
+	}
+
 	testCases := []struct {
 		description         string
 		isRejected          bool
@@ -1957,17 +1968,15 @@ func TestValidAmpResponseWhenRequestRejected(t *testing.T) {
 			description: "Assert correct AmpResponse when request rejected at raw-auction stage",
 			isRejected:  false,
 			// raw-auction stage not executed for AMP endpoint, so we expect filled response
-			expectedAmpResponse: AmpResponse{
-				Targeting: map[string]string{
-					"hb_appnexus_pb": "1.20",
-					"hb_cache_id":    "some_id",
-					"hb_pb":          "1.20",
-				},
-				Errors: map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage{
-					"openx": {{Code: 1, Message: "The request exceeded the timeout allocated"}},
-				},
-			},
-			hookExecutor: rejectableHookExecutor{rawAuctionReject: &reject},
+			expectedAmpResponse: expectedAmpResponse,
+			hookExecutor:        rejectableHookExecutor{rawAuctionReject: &reject},
+		},
+		{
+			description: "Assert correct AmpResponse when request rejected at bidder-request stage",
+			isRejected:  false,
+			// bidder-request stage doesn't reject the whole request, so we expect filled response
+			expectedAmpResponse: expectedAmpResponse,
+			hookExecutor:        rejectableHookExecutor{bidderRequestReject: &reject},
 		},
 	}
 
@@ -2017,8 +2026,12 @@ func TestValidAmpResponseWhenRequestRejected(t *testing.T) {
 
 			assert.NoError(t, err, "Unable to unmarshal response.")
 			assert.Equal(t, test.expectedAmpResponse, resp)
+
+			rejectMsg := "Reject error is not logged to analytics."
 			if test.isRejected {
-				assert.Contains(t, actualAmpObject.Errors, reject, "Reject error is not logged to analytics.")
+				assert.Contains(t, actualAmpObject.Errors, reject, rejectMsg)
+			} else {
+				assert.NotContains(t, actualAmpObject.Errors, reject, rejectMsg)
 			}
 		})
 	}

@@ -4754,11 +4754,7 @@ func TestModulesCanBeExecutedForMultipleBiddersSimultaneously(t *testing.T) {
 		TMax:   500,
 	}
 
-	exec := &hookexecution.HookExecutor{
-		InvocationCtx: &hookstage.InvocationContext{},
-		MetricEngine:  &metricsConfig.NilMetricsEngine{},
-		PlanBuilder:   TestApplyHookMutationsBuilder{},
-	}
+	exec := hookexecution.NewHookExecutor(TestApplyHookMutationsBuilder{}, "/openrtb2/auction", &metricsConfig.NilMetricsEngine{})
 
 	auctionRequest := AuctionRequest{
 		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: bidRequest},
@@ -4778,15 +4774,6 @@ func TestModulesCanBeExecutedForMultipleBiddersSimultaneously(t *testing.T) {
 	_, err := e.HoldAuction(context.Background(), auctionRequest, &DebugLog{})
 	// Assert no HoldAuction err
 	assert.NoErrorf(t, err, "ex.HoldAuction returned an err")
-
-	// check that all module ctx were successfully created
-	for i := 1; i <= 10; i++ {
-		moduleCode := "foobar" + fmt.Sprint(i)
-		ctx := exec.InvocationCtx.GetModuleContext(moduleCode)
-		if ctx.Ctx["some-ctx"] != "some-ctx" {
-			t.Errorf("context for module: %s not created", moduleCode)
-		}
-	}
 
 	// check stage outcomes
 	assert.Equal(t, len(exec.GetOutcomes()), len(e.adapterMap), "stage outcomes append operation failed")
@@ -4833,7 +4820,7 @@ func (e TestApplyHookMutationsBuilder) PlanForBidderRequestStage(_ string, _ *co
 
 type mockUpdateBidRequestHook struct{}
 
-func (e mockUpdateBidRequestHook) HandleBidderRequestHook(_ context.Context, mctx hookstage.ModuleContext, _ hookstage.BidderRequestPayload) (hookstage.HookResult[hookstage.BidderRequestPayload], error) {
+func (e mockUpdateBidRequestHook) HandleBidderRequestHook(_ context.Context, mctx hookstage.ModuleInvocationContext, _ hookstage.BidderRequestPayload) (hookstage.HookResult[hookstage.BidderRequestPayload], error) {
 	time.Sleep(50 * time.Millisecond)
 	c := &hookstage.ChangeSet[hookstage.BidderRequestPayload]{}
 	c.AddMutation(
@@ -4848,7 +4835,7 @@ func (e mockUpdateBidRequestHook) HandleBidderRequestHook(_ context.Context, mct
 		}, hookstage.MutationUpdate, "bidRequest", "site.domain",
 	)
 
-	mctx.Ctx = map[string]interface{}{"some-ctx": "some-ctx"}
+	mctx.ModuleContext = map[string]interface{}{"some-ctx": "some-ctx"}
 
-	return hookstage.HookResult[hookstage.BidderRequestPayload]{ChangeSet: c, ModuleContext: mctx}, nil
+	return hookstage.HookResult[hookstage.BidderRequestPayload]{ChangeSet: c, ModuleContext: mctx.ModuleContext}, nil
 }

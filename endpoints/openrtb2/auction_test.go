@@ -4668,18 +4668,28 @@ func TestValidResponseWhenRequestRejected(t *testing.T) {
 
 	testCases := []struct {
 		description         string
+		isRejected          bool
 		expectedBidResponse openrtb2.BidResponse
 		hookExecutor        hookexecution.HookStageExecutor
 	}{
 		{
-			"Assert correct BidResponse when request rejected at entrypoint stage",
-			openrtb2.BidResponse{ID: "some-request-id", NBR: &nbr},
-			rejectableHookExecutor{entrypointReject: &reject},
+			description:         "Assert correct BidResponse when request rejected at entrypoint stage",
+			isRejected:          true,
+			expectedBidResponse: openrtb2.BidResponse{ID: "some-request-id", NBR: &nbr},
+			hookExecutor:        rejectableHookExecutor{entrypointReject: &reject},
 		},
 		{
-			"Assert correct BidResponse when request rejected at raw-auction stage",
-			openrtb2.BidResponse{ID: "some-request-id", NBR: &nbr},
-			rejectableHookExecutor{rawAuctionReject: &reject},
+			description:         "Assert correct BidResponse when request rejected at raw-auction stage",
+			isRejected:          true,
+			expectedBidResponse: openrtb2.BidResponse{ID: "some-request-id", NBR: &nbr},
+			hookExecutor:        rejectableHookExecutor{rawAuctionReject: &reject},
+		},
+		{
+			description: "Assert correct BidResponse when request rejected at bidder-request stage",
+			isRejected:  false,
+			// bidder-request stage doesn't reject the whole request, so we expect filled response
+			expectedBidResponse: openrtb2.BidResponse{ID: "some-request-id", BidID: "test bid id", NBR: openrtb3.NoBidReason(0).Ptr()},
+			hookExecutor:        rejectableHookExecutor{bidderRequestReject: &reject},
 		},
 	}
 
@@ -4721,7 +4731,13 @@ func TestValidResponseWhenRequestRejected(t *testing.T) {
 
 			assert.NoError(t, err, "Unable to unmarshal response.")
 			assert.Equal(t, test.expectedBidResponse, resp)
-			assert.Contains(t, actualAuctionObject.Errors, reject, "Reject error is not logged to analytics.")
+
+			rejectMsg := "Reject error is not logged to analytics."
+			if test.isRejected {
+				assert.Contains(t, actualAuctionObject.Errors, reject, rejectMsg)
+			} else {
+				assert.NotContains(t, actualAuctionObject.Errors, reject, rejectMsg)
+			}
 		})
 	}
 }
@@ -4766,7 +4782,8 @@ func getIntegrationFromRequest(req *openrtb_ext.RequestWrapper) (string, error) 
 type rejectableHookExecutor struct {
 	entrypointReject,
 	rawAuctionReject,
-	processedAuctionReject *hookexecution.RejectError
+	processedAuctionReject,
+	bidderRequestReject *hookexecution.RejectError
 }
 
 func (m rejectableHookExecutor) ExecuteEntrypointStage(req *http.Request, body []byte) ([]byte, *hookexecution.RejectError) {
@@ -4781,8 +4798,8 @@ func (m rejectableHookExecutor) ExecuteProcessedAuctionStage(req *openrtb2.BidRe
 	return m.processedAuctionReject
 }
 
-func (m rejectableHookExecutor) ExecuteBidderRequestStage(req *openrtb2.BidRequest, bidder string) *hookexecution.RejectError {
-	return nil
+func (m rejectableHookExecutor) ExecuteBidderRequestStage(_ *openrtb2.BidRequest, _ string) *hookexecution.RejectError {
+	return m.bidderRequestReject
 }
 
 func (m rejectableHookExecutor) ExecuteRawBidderResponseStage(response *adapters.BidderResponse, bidder string) *hookexecution.RejectError {
