@@ -15,37 +15,44 @@ func createModuleStageNamesCollection(modules map[string]interface{}) (map[strin
 	for id, hook := range modules {
 		if _, ok := hook.(hookstage.Entrypoint); ok {
 			added = true
-			moduleStageNameCollector = addModuleStageName(moduleStageNameCollector, id, hooks.StageEntrypoint)
+			stageName := hooks.StageEntrypoint.String()
+			moduleStageNameCollector = addModuleStageName(moduleStageNameCollector, id, stageName)
 		}
 
-		if _, ok := hook.(hookstage.RawAuction); ok {
+		if _, ok := hook.(hookstage.RawAuctionRequest); ok {
 			added = true
-			moduleStageNameCollector = addModuleStageName(moduleStageNameCollector, id, hooks.StageRawAuction)
+			stageName := hooks.StageRawAuction.String()
+			moduleStageNameCollector = addModuleStageName(moduleStageNameCollector, id, stageName)
 		}
 
-		if _, ok := hook.(hookstage.ProcessedAuction); ok {
+		if _, ok := hook.(hookstage.ProcessedAuctionRequest); ok {
 			added = true
-			moduleStageNameCollector = addModuleStageName(moduleStageNameCollector, id, hooks.StageProcessedAuction)
+			stageName := hooks.StageProcessedAuction.String()
+			moduleStageNameCollector = addModuleStageName(moduleStageNameCollector, id, stageName)
 		}
 
 		if _, ok := hook.(hookstage.BidderRequest); ok {
 			added = true
-			moduleStageNameCollector = addModuleStageName(moduleStageNameCollector, id, hooks.StageBidderRequest)
+			stageName := hooks.StageBidderRequest.String()
+			moduleStageNameCollector = addModuleStageName(moduleStageNameCollector, id, stageName)
 		}
 
 		if _, ok := hook.(hookstage.RawBidderResponse); ok {
 			added = true
-			moduleStageNameCollector = addModuleStageName(moduleStageNameCollector, id, hooks.StageRawBidderResponse)
+			stageName := hooks.StageRawBidderResponse.String()
+			moduleStageNameCollector = addModuleStageName(moduleStageNameCollector, id, stageName)
 		}
 
 		if _, ok := hook.(hookstage.AllProcessedBidResponses); ok {
 			added = true
-			moduleStageNameCollector = addModuleStageName(moduleStageNameCollector, id, hooks.StageAllProcessedBidResponses)
+			stageName := hooks.StageAllProcessedBidResponses.String()
+			moduleStageNameCollector = addModuleStageName(moduleStageNameCollector, id, stageName)
 		}
 
 		if _, ok := hook.(hookstage.AuctionResponse); ok {
 			added = true
-			moduleStageNameCollector = addModuleStageName(moduleStageNameCollector, id, hooks.StageAuctionResponse)
+			stageName := hooks.StageAuctionResponse.String()
+			moduleStageNameCollector = addModuleStageName(moduleStageNameCollector, id, stageName)
 		}
 
 		if !added {

@@ -22,15 +22,18 @@ import (
 	"github.com/prebid/openrtb/v17/native1"
 	nativeRequests "github.com/prebid/openrtb/v17/native1/request"
 	"github.com/prebid/openrtb/v17/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb3"
+	"github.com/prebid/prebid-server/hooks"
+	"golang.org/x/net/publicsuffix"
+	jsonpatch "gopkg.in/evanphx/json-patch.v4"
+
 	accountService "github.com/prebid/prebid-server/account"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currency"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
-	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
-	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
@@ -45,8 +48,6 @@ import (
 	"github.com/prebid/prebid-server/util/iputil"
 	"github.com/prebid/prebid-server/util/uuidutil"
 	"github.com/prebid/prebid-server/version"
-	"golang.org/x/net/publicsuffix"
-	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 )
 
 const storedRequestTimeoutMillis = 50
@@ -86,12 +87,7 @@ func NewEndpoint(
 		IPv6PrivateNetworks: cfg.RequestValidation.IPv6PrivateNetworksParsed,
 	}
 
-	hookExecutor := &hookexecution.HookExecutor{
-		InvocationCtx: &hookstage.InvocationContext{},
-		Endpoint:      hookexecution.EndpointAuction,
-		PlanBuilder:   hookExecutionPlanBuilder,
-		MetricEngine:  met,
-	}
+	hookExecutor := hookexecution.NewHookExecutor(hookExecutionPlanBuilder, hookexecution.EndpointAuction, met)
 
 	return httprouter.Handle((&endpointDeps{
 		uuidGenerator,
@@ -157,7 +153,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		CookieFlag:    metrics.CookieFlagUnknown,
 		RequestStatus: metrics.RequestStatusOK,
 	}
-
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
@@ -168,6 +163,11 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	req, impExtInfoMap, storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, account, errL := deps.parseRequest(r, &labels)
 	if errortypes.ContainsFatalError(errL) && writeError(errL, w, &labels) {
+		return
+	}
+
+	if rejectErr := hookexecution.FindFirstRejectOrNil(errL); rejectErr != nil {
+		labels, ao = rejectAuctionRequest(*rejectErr, w, req.BidRequest, labels, ao)
 		return
 	}
 
@@ -220,7 +220,8 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	ao.Request = req.BidRequest
 	ao.Response = response
 	ao.Account = account
-	if err != nil {
+	rejectErr, isRejectErr := hookexecution.CastRejectErr(err)
+	if err != nil && !isRejectErr {
 		if errortypes.ReadCode(err) == errortypes.BadInputErrorCode {
 			writeError([]error{err}, w, &labels)
 			return
@@ -232,8 +233,27 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		ao.Status = http.StatusInternalServerError
 		ao.Errors = append(ao.Errors, err)
 		return
+	} else if isRejectErr {
+		labels, ao = rejectAuctionRequest(*rejectErr, w, req.BidRequest, labels, ao)
+		return
 	}
 
+	labels, ao = sendAuctionResponse(w, response, labels, ao)
+}
+
+func rejectAuctionRequest(rejectErr hookexecution.RejectError, w http.ResponseWriter, request *openrtb2.BidRequest, labels metrics.Labels, ao analytics.AuctionObject) (metrics.Labels, analytics.AuctionObject) {
+	response := &openrtb2.BidResponse{NBR: openrtb3.NoBidReason(rejectErr.NBR).Ptr()}
+	if request != nil {
+		response.ID = request.ID
+	}
+
+	ao.Response = response
+	ao.Errors = append(ao.Errors, rejectErr)
+
+	return sendAuctionResponse(w, response, labels, ao)
+}
+
+func sendAuctionResponse(w http.ResponseWriter, response *openrtb2.BidResponse, labels metrics.Labels, ao analytics.AuctionObject) (metrics.Labels, analytics.AuctionObject) {
 	// Fixes #231
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
@@ -247,6 +267,8 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		labels.RequestStatus = metrics.RequestStatusNetworkErr
 		ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/auction Failed to send response: %v", err))
 	}
+
+	return labels, ao
 }
 
 // parseRequest turns the HTTP request into an OpenRTB request. This is guaranteed to return:
@@ -282,12 +304,14 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 		}
 	}
 
-	body, err := deps.hookExecutor.ExecuteEntrypointStage(httpRequest, requestJson)
-	if err != nil {
-		//todo: return no bid response
-		// the only error returned from above is hook stage rejection
+	requestJson, rejectErr := deps.hookExecutor.ExecuteEntrypointStage(httpRequest, requestJson)
+	if rejectErr != nil {
+		errs = []error{rejectErr}
+		if err = json.Unmarshal(requestJson, req.BidRequest); err != nil {
+			glog.Errorf("Failed to unmarshal BidRequest during entrypoint rejection: %s", err)
+		}
+		return
 	}
-	requestJson = body
 
 	timeout := parseTimeout(requestJson, time.Duration(storedRequestTimeoutMillis)*time.Millisecond)
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
@@ -325,10 +349,13 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	}
 
 	deps.hookExecutor.SetAccount(account)
-	requestJson, err = deps.hookExecutor.ExecuteRawAuctionStage(requestJson)
-	if err != nil {
-		//todo: return no bid response
-		// the only error returned from above is hook stage rejection
+	requestJson, rejectErr = deps.hookExecutor.ExecuteRawAuctionStage(requestJson)
+	if rejectErr != nil {
+		errs = []error{rejectErr}
+		if err = json.Unmarshal(requestJson, req.BidRequest); err != nil {
+			glog.Errorf("Failed to unmarshal BidRequest during entrypoint rejection: %s", err)
+		}
+		return
 	}
 
 	// Fetch the Stored Request data and merge it into the HTTP request.
@@ -1594,35 +1621,50 @@ func setAuctionTypeImplicitly(r *openrtb_ext.RequestWrapper) {
 	}
 }
 
-// setSiteImplicitly uses implicit info from httpReq to populate bidReq.Site
 func setSiteImplicitly(httpReq *http.Request, r *openrtb_ext.RequestWrapper) {
-	if r.Site == nil || r.Site.Page == "" || r.Site.Domain == "" {
-		referrerCandidate := httpReq.Referer()
-		// If http referer is disabled and thus has empty value - use site.page instead
-		if referrerCandidate == "" && r.Site != nil && r.Site.Page != "" {
-			referrerCandidate = r.Site.Page
-		}
-		if parsedUrl, err := url.Parse(referrerCandidate); err == nil {
-			if domain, err := publicsuffix.EffectiveTLDPlusOne(parsedUrl.Host); err == nil {
-				if r.Site == nil {
-					r.Site = &openrtb2.Site{}
-				}
-				if r.Site.Domain == "" {
-					r.Site.Domain = domain
-				}
+	referrerCandidate := httpReq.Referer()
+	if referrerCandidate == "" && r.Site != nil && r.Site.Page != "" {
+		referrerCandidate = r.Site.Page // If http referer is disabled and thus has empty value - use site.page instead
+	}
 
-				// This looks weird... but is not a bug. The site which called prebid-server (the "referer"), is
-				// (almost certainly) the page where the ad will be hosted. In the OpenRTB spec, this is *page*, not *ref*.
-				if r.Site.Page == "" {
-					r.Site.Page = referrerCandidate
-				}
+	if referrerCandidate != "" {
+		setSitePageIfEmpty(r.Site, referrerCandidate)
+		if parsedUrl, err := url.Parse(referrerCandidate); err == nil {
+			setSiteDomainIfEmpty(r.Site, parsedUrl.Host)
+			if publisherDomain, err := publicsuffix.EffectiveTLDPlusOne(parsedUrl.Host); err == nil {
+				setSitePublisherDomainIfEmpty(r.Site, publisherDomain)
 			}
 		}
 	}
+
 	if r.Site != nil {
 		if siteExt, err := r.GetSiteExt(); err == nil && siteExt.GetAmp() == nil {
 			siteExt.SetAmp(&notAmp)
 		}
+	}
+}
+
+func setSitePageIfEmpty(site *openrtb2.Site, sitePage string) {
+	if site == nil {
+		site = &openrtb2.Site{}
+	}
+	if site.Page == "" {
+		site.Page = sitePage
+	}
+}
+
+func setSiteDomainIfEmpty(site *openrtb2.Site, siteDomain string) {
+	if site.Domain == "" {
+		site.Domain = siteDomain
+	}
+}
+
+func setSitePublisherDomainIfEmpty(site *openrtb2.Site, publisherDomain string) {
+	if site.Publisher == nil {
+		site.Publisher = &openrtb2.Publisher{}
+	}
+	if site.Publisher.Domain == "" {
+		site.Publisher.Domain = publisherDomain
 	}
 }
 
@@ -1652,13 +1694,7 @@ func getJsonSyntaxError(testJSON []byte) (bool, string) {
 	return false, ""
 }
 
-func (deps *endpointDeps) getStoredRequests(ctx context.Context, requestJson []byte, impInfo []ImpExtPrebidData) (
-	string,
-	bool,
-	map[string]json.RawMessage,
-	map[string]json.RawMessage,
-	[]error,
-) {
+func (deps *endpointDeps) getStoredRequests(ctx context.Context, requestJson []byte, impInfo []ImpExtPrebidData) (string, bool, map[string]json.RawMessage, map[string]json.RawMessage, []error) {
 	// Parse the Stored Request IDs from the BidRequest and Imps.
 	storedBidRequestId, hasStoredBidRequest, err := getStoredRequestId(requestJson)
 	if err != nil {
@@ -1691,14 +1727,7 @@ func (deps *endpointDeps) getStoredRequests(ctx context.Context, requestJson []b
 	return storedBidRequestId, hasStoredBidRequest, storedRequests, storedImps, errs
 }
 
-func (deps *endpointDeps) processStoredRequests(
-	requestJson []byte,
-	impInfo []ImpExtPrebidData,
-	storedRequests map[string]json.RawMessage,
-	storedImps map[string]json.RawMessage,
-	storedBidRequestId string,
-	hasStoredBidRequest bool,
-) ([]byte, map[string]exchange.ImpExtInfo, []error) {
+func (deps *endpointDeps) processStoredRequests(requestJson []byte, impInfo []ImpExtPrebidData, storedRequests map[string]json.RawMessage, storedImps map[string]json.RawMessage, storedBidRequestId string, hasStoredBidRequest bool) ([]byte, map[string]exchange.ImpExtInfo, []error) {
 	bidRequestID, err := getBidRequestID(storedRequests[storedBidRequestId])
 	if err != nil {
 		return nil, nil, []error{err}
