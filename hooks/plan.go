@@ -8,39 +8,67 @@ import (
 	"github.com/prebid/prebid-server/hooks/hookstage"
 )
 
+type Stage string
+
+// Names of the available stages.
 const (
-	StageEntrypoint               = "entrypoint"
-	StageRawAuction               = "raw-auction"
-	StageProcessedAuction         = "processed-auction"
-	StageBidderRequest            = "bidder-request"
-	StageRawBidderResponse        = "raw-bidder-response"
-	StageAllProcessedBidResponses = "all-processed-bid-responses"
-	StageAuctionResponse          = "auction-response"
+	StageEntrypoint               Stage = "entrypoint"
+	StageRawAuction               Stage = "raw-auction"
+	StageProcessedAuction         Stage = "processed-auction"
+	StageBidderRequest            Stage = "bidder-request"
+	StageRawBidderResponse        Stage = "raw-bidder-response"
+	StageAllProcessedBidResponses Stage = "all-processed-bid-responses"
+	StageAuctionResponse          Stage = "auction-response"
 )
 
+func (s Stage) String() string {
+	return string(s)
+}
+
+func (s Stage) IsRejectable() bool {
+	return s != StageAllProcessedBidResponses &&
+		s != StageAuctionResponse
+}
+
+// ExecutionPlanBuilder is the interface that provides methods
+// for retrieving hooks grouped and sorted in the established order
+// according to the hook execution plan intended for run at a certain stage.
 type ExecutionPlanBuilder interface {
 	PlanForEntrypointStage(endpoint string) Plan[hookstage.Entrypoint]
-	PlanForRawAuctionStage(endpoint string, account *config.Account) Plan[hookstage.RawAuction]
-	PlanForProcessedAuctionStage(endpoint string, account *config.Account) Plan[hookstage.ProcessedAuction]
+	PlanForRawAuctionStage(endpoint string, account *config.Account) Plan[hookstage.RawAuctionRequest]
+	PlanForProcessedAuctionStage(endpoint string, account *config.Account) Plan[hookstage.ProcessedAuctionRequest]
 	PlanForBidderRequestStage(endpoint string, account *config.Account) Plan[hookstage.BidderRequest]
 	PlanForRawBidderResponseStage(endpoint string, account *config.Account) Plan[hookstage.RawBidderResponse]
 	PlanForAllProcessedBidResponsesStage(endpoint string, account *config.Account) Plan[hookstage.AllProcessedBidResponses]
 	PlanForAuctionResponseStage(endpoint string, account *config.Account) Plan[hookstage.AuctionResponse]
 }
 
+// Plan represents a slice of groups of hooks of a specific type grouped in the established order.
 type Plan[T any] []Group[T]
 
+// Group represents a slice of hooks sorted in the established order.
 type Group[T any] struct {
+	// Timeout specifies the max duration in milliseconds that a group of hooks is allowed to run.
 	Timeout time.Duration
-	Hooks   []HookWrapper[T]
+	// Hooks holds a slice of HookWrapper of a specific type.
+	Hooks []HookWrapper[T]
 }
 
+// HookWrapper wraps Hook representing specific hook interface
+// and holds additional meta information, such as Module name and hook Code.
 type HookWrapper[T any] struct {
+	// Module holds a name of the module that provides the Hook.
+	// Specified in the format "vendor.module_name".
 	Module string
-	Code   string
-	Hook   T
+	// Code is an arbitrary value assigned to hook via the hook execution plan
+	// and is used when sending metrics, logging debug information, etc.
+	Code string
+	// Hook is an instance of the specific hook interface.
+	Hook T
 }
 
+// NewExecutionPlanBuilder returns a new instance of the ExecutionPlanBuilder interface.
+// Depending on the hooks' status, method returns a real PlanBuilder or the EmptyPlanBuilder.
 func NewExecutionPlanBuilder(hooks config.Hooks, repo HookRepository) ExecutionPlanBuilder {
 	if hooks.Enabled {
 		return PlanBuilder{
@@ -51,6 +79,8 @@ func NewExecutionPlanBuilder(hooks config.Hooks, repo HookRepository) ExecutionP
 	return EmptyPlanBuilder{}
 }
 
+// PlanBuilder is a concrete implementation of the ExecutionPlanBuilder interface.
+// Which returns hook execution plans for specific stage defined by the hook config.
 type PlanBuilder struct {
 	hooks config.Hooks
 	repo  HookRepository
@@ -66,7 +96,7 @@ func (p PlanBuilder) PlanForEntrypointStage(endpoint string) Plan[hookstage.Entr
 	)
 }
 
-func (p PlanBuilder) PlanForRawAuctionStage(endpoint string, account *config.Account) Plan[hookstage.RawAuction] {
+func (p PlanBuilder) PlanForRawAuctionStage(endpoint string, account *config.Account) Plan[hookstage.RawAuctionRequest] {
 	return getMergedPlan(
 		p.hooks,
 		account,
@@ -76,7 +106,7 @@ func (p PlanBuilder) PlanForRawAuctionStage(endpoint string, account *config.Acc
 	)
 }
 
-func (p PlanBuilder) PlanForProcessedAuctionStage(endpoint string, account *config.Account) Plan[hookstage.ProcessedAuction] {
+func (p PlanBuilder) PlanForProcessedAuctionStage(endpoint string, account *config.Account) Plan[hookstage.ProcessedAuctionRequest] {
 	return getMergedPlan(
 		p.hooks,
 		account,
@@ -131,10 +161,11 @@ type hookFn[T any] func(moduleName string) (T, bool)
 func getMergedPlan[T any](
 	cfg config.Hooks,
 	account *config.Account,
-	endpoint, stage string,
+	endpoint string,
+	stage Stage,
 	getHookFn hookFn[T],
 ) Plan[T] {
-	accountPlan := cfg.AccountExecutionPlan
+	accountPlan := cfg.DefaultAccountExecutionPlan
 	if account != nil && account.Hooks.ExecutionPlan.Endpoints != nil {
 		accountPlan = account.Hooks.ExecutionPlan
 	}
@@ -145,9 +176,9 @@ func getMergedPlan[T any](
 	return plan
 }
 
-func getPlan[T any](getHookFn hookFn[T], cfg config.HookExecutionPlan, endpoint, stage string) Plan[T] {
-	plan := make(Plan[T], 0, len(cfg.Endpoints[endpoint].Stages[stage].Groups))
-	for _, groupCfg := range cfg.Endpoints[endpoint].Stages[stage].Groups {
+func getPlan[T any](getHookFn hookFn[T], cfg config.HookExecutionPlan, endpoint string, stage Stage) Plan[T] {
+	plan := make(Plan[T], 0, len(cfg.Endpoints[endpoint].Stages[stage.String()].Groups))
+	for _, groupCfg := range cfg.Endpoints[endpoint].Stages[stage.String()].Groups {
 		group := getGroup(getHookFn, groupCfg)
 		if len(group.Hooks) > 0 {
 			plan = append(plan, group)
@@ -164,10 +195,10 @@ func getGroup[T any](getHookFn hookFn[T], cfg config.HookExecutionGroup) Group[T
 	}
 
 	for _, hookCfg := range cfg.HookSequence {
-		if h, ok := getHookFn(hookCfg.Module); ok {
-			group.Hooks = append(group.Hooks, HookWrapper[T]{Module: hookCfg.Module, Code: hookCfg.Hook, Hook: h})
+		if h, ok := getHookFn(hookCfg.ModuleCode); ok {
+			group.Hooks = append(group.Hooks, HookWrapper[T]{Module: hookCfg.ModuleCode, Code: hookCfg.HookImplCode, Hook: h})
 		} else {
-			glog.Warningf("Not found hook while building hook execution plan: %s %s", hookCfg.Module, hookCfg.Hook)
+			glog.Warningf("Not found hook while building hook execution plan: %s %s", hookCfg.ModuleCode, hookCfg.HookImplCode)
 		}
 	}
 
