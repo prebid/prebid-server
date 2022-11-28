@@ -894,6 +894,10 @@ type nobidExchange struct {
 
 func (e *nobidExchange) HoldAuction(ctx context.Context, auctionRequest exchange.AuctionRequest, debugLog *exchange.DebugLog) (*openrtb2.BidResponse, error) {
 	r := auctionRequest.BidRequestWrapper
+	reject := auctionRequest.HookExecutor.ExecuteProcessedAuctionStage(r.BidRequest)
+	if reject != nil {
+		return nil, reject
+	}
 	e.gotRequest = r.BidRequest
 	return &openrtb2.BidResponse{
 		ID:    r.BidRequest.ID,

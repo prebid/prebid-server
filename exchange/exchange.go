@@ -199,8 +199,7 @@ type BidderRequest struct {
 func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *DebugLog) (*openrtb2.BidResponse, error) {
 	reject := r.HookExecutor.ExecuteProcessedAuctionStage(r.BidRequestWrapper.BidRequest)
 	if reject != nil {
-		//todo: return no bid response
-		// the only error returned from above is hook stage rejection
+		return nil, reject
 	}
 
 	var errs []error

@@ -684,6 +684,7 @@ func TestExecuteProcessedAuctionStage(t *testing.T) {
 	foobarModuleCtx := &moduleContexts{ctxs: map[string]hookstage.ModuleContext{"foobar": nil}}
 	account := &config.Account{}
 	req := openrtb2.BidRequest{ID: "some-id", User: &openrtb2.User{ID: "user-id"}}
+	reqUpdated := openrtb2.BidRequest{ID: "some-id", User: &openrtb2.User{ID: "user-id", Yob: 2000, Consent: "true"}}
 
 	testCases := []struct {
 		description            string
@@ -710,7 +711,7 @@ func TestExecuteProcessedAuctionStage(t *testing.T) {
 			givenPlanBuilder:       TestApplyHookMutationsBuilder{},
 			givenAccount:           account,
 			givenRequest:           req,
-			expectedRequest:        openrtb2.BidRequest{ID: "some-id", User: &openrtb2.User{ID: "user-id", Yob: 2000, Consent: "true"}},
+			expectedRequest:        reqUpdated,
 			expectedReject:         nil,
 			expectedModuleContexts: foobarModuleCtx,
 			expectedStageOutcomes: []StageOutcome{
@@ -780,7 +781,7 @@ func TestExecuteProcessedAuctionStage(t *testing.T) {
 			givenPlanBuilder:       TestWithTimeoutPlanBuilder{},
 			givenAccount:           account,
 			givenRequest:           req,
-			expectedRequest:        openrtb2.BidRequest{ID: "some-id", User: &openrtb2.User{ID: "user-id", Yob: 2000, Consent: "true"}},
+			expectedRequest:        reqUpdated,
 			expectedReject:         nil,
 			expectedModuleContexts: foobarModuleCtx,
 			expectedStageOutcomes: []StageOutcome{
@@ -836,8 +837,8 @@ func TestExecuteProcessedAuctionStage(t *testing.T) {
 			expectedRequest:  req,
 			expectedReject:   nil,
 			expectedModuleContexts: &moduleContexts{ctxs: map[string]hookstage.ModuleContext{
-				"module-1": {"some-ctx-1": "some-ctx-1", "some-ctx-3": "some-ctx-3"},
-				"module-2": {"some-ctx-2": "some-ctx-2"},
+				"module-1": {"processed-auction-ctx-1": "some-ctx-1", "processed-auction-ctx-3": "some-ctx-3"},
+				"module-2": {"processed-auction-ctx-2": "some-ctx-2"},
 			}},
 			expectedStageOutcomes: []StageOutcome{
 				{
@@ -953,6 +954,25 @@ func TestInterStageContextCommunication(t *testing.T) {
 			"raw-auction-ctx-2": "some-ctx-2",
 		},
 	}}, exec.moduleContexts, "Wrong module contexts after executing raw-auction hook.")
+
+	// test that context added at the processed-auction stage merged with existing module contexts
+	reject = exec.ExecuteProcessedAuctionStage(&openrtb2.BidRequest{})
+	assert.Nil(t, reject, "Unexpected reject from processed-auction stage.")
+	assert.Equal(t, &moduleContexts{ctxs: map[string]hookstage.ModuleContext{
+		"module-1": {
+			"entrypoint-ctx-1":        "some-ctx-1",
+			"entrypoint-ctx-3":        "some-ctx-3",
+			"raw-auction-ctx-1":       "some-ctx-1",
+			"raw-auction-ctx-3":       "some-ctx-3",
+			"processed-auction-ctx-1": "some-ctx-1",
+			"processed-auction-ctx-3": "some-ctx-3",
+		},
+		"module-2": {
+			"entrypoint-ctx-2":        "some-ctx-2",
+			"raw-auction-ctx-2":       "some-ctx-2",
+			"processed-auction-ctx-2": "some-ctx-2",
+		},
+	}}, exec.moduleContexts, "Wrong module contexts after executing processed-auction hook.")
 }
 
 type TestApplyHookMutationsBuilder struct {
@@ -1189,14 +1209,14 @@ func (e TestWithModuleContextsPlanBuilder) PlanForProcessedAuctionStage(_ string
 		hooks.Group[hookstage.ProcessedAuctionRequest]{
 			Timeout: 1 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.ProcessedAuctionRequest]{
-				{Module: "module-1", Code: "foo", Hook: mockModuleContextHook1{}},
+				{Module: "module-1", Code: "foo", Hook: mockModuleContextHook{key: "processed-auction-ctx-1", val: "some-ctx-1"}},
 			},
 		},
 		hooks.Group[hookstage.ProcessedAuctionRequest]{
 			Timeout: 1 * time.Millisecond,
 			Hooks: []hooks.HookWrapper[hookstage.ProcessedAuctionRequest]{
-				{Module: "module-2", Code: "bar", Hook: mockModuleContextHook2{}},
-				{Module: "module-1", Code: "baz", Hook: mockModuleContextHook3{}},
+				{Module: "module-2", Code: "bar", Hook: mockModuleContextHook{key: "processed-auction-ctx-2", val: "some-ctx-2"}},
+				{Module: "module-1", Code: "baz", Hook: mockModuleContextHook{key: "processed-auction-ctx-3", val: "some-ctx-3"}},
 			},
 		},
 	}

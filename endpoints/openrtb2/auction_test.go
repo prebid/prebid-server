@@ -4661,9 +4661,8 @@ func TestValidateStoredResp(t *testing.T) {
 func TestValidResponseWhenRequestRejected(t *testing.T) {
 	nbr := openrtb3.NoBidReason(123)
 	reject := hookexecution.RejectError{
-		int(nbr),
-		hookexecution.HookID{ModuleCode: "foobar", HookCode: "foo"},
-		hooks.StageEntrypoint.String(),
+		NBR:  int(nbr),
+		Hook: hookexecution.HookID{ModuleCode: "foobar", HookCode: "foo"},
 	}
 
 	testCases := []struct {
@@ -4680,6 +4679,11 @@ func TestValidResponseWhenRequestRejected(t *testing.T) {
 			"Assert correct BidResponse when request rejected at raw-auction stage",
 			openrtb2.BidResponse{ID: "some-request-id", NBR: &nbr},
 			rejectableHookExecutor{rawAuctionReject: &reject},
+		},
+		{
+			"Assert correct BidResponse when request rejected at processed-auction stage",
+			openrtb2.BidResponse{ID: "some-request-id", NBR: &nbr},
+			rejectableHookExecutor{processedAuctionReject: &reject},
 		},
 	}
 

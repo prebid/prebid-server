@@ -1936,9 +1936,8 @@ func TestSetTargeting(t *testing.T) {
 
 func TestValidAmpResponseWhenRequestRejected(t *testing.T) {
 	reject := hookexecution.RejectError{
-		123,
-		hookexecution.HookID{ModuleCode: "foobar", HookCode: "foo"},
-		hooks.StageEntrypoint.String(),
+		NBR:  123,
+		Hook: hookexecution.HookID{ModuleCode: "foobar", HookCode: "foo"},
 	}
 
 	testCases := []struct {
@@ -1968,6 +1967,12 @@ func TestValidAmpResponseWhenRequestRejected(t *testing.T) {
 				},
 			},
 			hookExecutor: rejectableHookExecutor{rawAuctionReject: &reject},
+		},
+		{
+			description:         "Assert correct AmpResponse when request rejected at processed-auction stage",
+			isRejected:          true,
+			expectedAmpResponse: AmpResponse{Targeting: map[string]string{}},
+			hookExecutor:        rejectableHookExecutor{entrypointReject: &reject},
 		},
 	}
 
