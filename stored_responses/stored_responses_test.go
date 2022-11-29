@@ -350,6 +350,27 @@ func TestProcessStoredAuctionAndBidResponses(t *testing.T) {
 			expectedBidderImpReplaceImpID: BidderImpReplaceImpID{},
 		},
 		{
+			description: "Stored auction response one imp with no stored response",
+			requestJson: []byte(`{"imp": [
+				{
+					"id": "imp-id1",
+					"ext": {
+						"appnexus": {
+							"placementId": 123
+						},
+						"prebid": {
+							"storedauctionresponse": {
+								"id": "4"
+							}
+						}
+					}
+				}
+			]}`),
+			expectedStoredAuctionResponses: nil,
+			expectedStoredBidResponses:     nil,
+			expectedBidderImpReplaceImpID:  nil,
+		},
+		{
 			description: "Stored bid response one imp",
 			requestJson: []byte(`{"imp": [
     			  {
@@ -654,5 +675,11 @@ func (cf *mockStoredBidResponseFetcher) FetchRequests(ctx context.Context, reque
 }
 
 func (cf *mockStoredBidResponseFetcher) FetchResponses(ctx context.Context, ids []string) (data map[string]json.RawMessage, errs []error) {
-	return cf.data, nil
+	resMap := make(map[string]json.RawMessage, len(ids))
+	for _, k := range ids {
+		if v, ok := cf.data[k]; ok {
+			resMap[k] = v
+		}
+	}
+	return resMap, nil
 }

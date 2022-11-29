@@ -141,7 +141,7 @@ func ProcessStoredResponses(ctx context.Context, requestJson []byte, storedRespF
 
 	if len(storedResponsesIds) > 0 {
 		storedResponses, errs := storedRespFetcher.FetchResponses(ctx, storedResponsesIds)
-		if len(errs) > 0 {
+		if len(storedResponses) == 0 || len(errs) > 0 {
 			return nil, nil, nil, errs
 		}
 		bidderImpIdReplaceImp := flipMap(impBidderReplaceImp)
