@@ -5,17 +5,19 @@ import (
 	"github.com/prebid/prebid-server/hooks/hookstage"
 )
 
+// EmptyPlanBuilder implements the ExecutionPlanBuilder interface
+// and used as the stub when the hooks' functionality is disabled.
 type EmptyPlanBuilder struct{}
 
 func (e EmptyPlanBuilder) PlanForEntrypointStage(endpoint string) Plan[hookstage.Entrypoint] {
 	return nil
 }
 
-func (e EmptyPlanBuilder) PlanForRawAuctionStage(endpoint string, account *config.Account) Plan[hookstage.RawAuction] {
+func (e EmptyPlanBuilder) PlanForRawAuctionStage(endpoint string, account *config.Account) Plan[hookstage.RawAuctionRequest] {
 	return nil
 }
 
-func (e EmptyPlanBuilder) PlanForProcessedAuctionStage(endpoint string, account *config.Account) Plan[hookstage.ProcessedAuction] {
+func (e EmptyPlanBuilder) PlanForProcessedAuctionStage(endpoint string, account *config.Account) Plan[hookstage.ProcessedAuctionRequest] {
 	return nil
 }
 

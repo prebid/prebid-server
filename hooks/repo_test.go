@@ -7,6 +7,7 @@ import (
 
 	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewHookRepository(t *testing.T) {
@@ -57,18 +58,19 @@ func TestNewHookRepository(t *testing.T) {
 
 func TestAddHook_FailsToAddHookOfSameTypeAndIdTwice(t *testing.T) {
 	id := "foobar"
-	h := hook{}
+	hook := hook{}
+	repo := hookRepository{}
 	expectedErr := fmt.Errorf(`hook of type "%T" with id "%s" already registered`, new(hookstage.Entrypoint), id)
 
-	hooks, err := addHook[hookstage.Entrypoint](nil, h, id)
-	if assert.NoError(t, err, "failed to add hook") {
-		_, err = addHook[hookstage.Entrypoint](hooks, h, id)
-		assert.Equal(t, expectedErr, err)
-	}
+	err := repo.add(id, hook)
+	require.NoError(t, err, "failed to add hook")
+
+	err = repo.add(id, hook)
+	assert.Equal(t, expectedErr, err)
 }
 
 type hook struct{}
 
-func (h hook) HandleEntrypointHook(ctx context.Context, context *hookstage.ModuleContext, payload hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+func (h hook) HandleEntrypointHook(ctx context.Context, context hookstage.ModuleInvocationContext, payload hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
 	return hookstage.HookResult[hookstage.EntrypointPayload]{}, nil
 }

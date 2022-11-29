@@ -9,11 +9,18 @@ import (
 	"github.com/prebid/prebid-server/hooks"
 )
 
+// NewBuilder returns a new module builder.
 func NewBuilder() Builder {
 	return &builder{builders()}
 }
 
+// Builder is the interfaces intended for building modules
+// implementing hook interfaces [github.com/prebid/prebid-server/hooks/hookstage].
 type Builder interface {
+	// Build initializes existing hook modules passing them config and other dependencies.
+	// It returns hook repository created based on the implemented hook interfaces by modules
+	// and a map of modules to a list of stage names for which module provides hooks
+	// or an error encountered during module initialization.
 	Build(cfg config.Modules, client *http.Client) (hooks.HookRepository, map[string][]string, error)
 }
 
@@ -28,6 +35,13 @@ type builder struct {
 	builders ModuleBuilders
 }
 
+// Build walks over the list of registered modules and initializes them.
+//
+// The ID chosen for the module's hooks represents a fully qualified module path in the format
+// "vendor.module_name" and should be used to retrieve module hooks from the hooks.HookRepository.
+//
+// Method returns a hooks.HookRepository and a map of modules to a list of stage names
+// for which module provides hooks or an error occurred during modules initialization.
 func (m *builder) Build(cfg config.Modules, client *http.Client) (hooks.HookRepository, map[string][]string, error) {
 	modules := make(map[string]interface{})
 	for vendor, moduleBuilders := range m.builders {
