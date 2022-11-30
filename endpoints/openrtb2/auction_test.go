@@ -21,9 +21,6 @@ import (
 	"github.com/prebid/openrtb/v17/native1"
 	nativeRequests "github.com/prebid/openrtb/v17/native1/request"
 	"github.com/prebid/openrtb/v17/openrtb2"
-	"github.com/prebid/openrtb/v17/openrtb3"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/hooks/hookstage"
@@ -4662,28 +4659,27 @@ func TestValidateStoredResp(t *testing.T) {
 
 func TestValidResponseWhenRequestRejected(t *testing.T) {
 	const nbr int = 123
+	const file string = "sample-requests/valid-whole/hooks/auction_reject.json"
 
 	testCases := []struct {
-		description         string
-		file                string
-		planBuilder         hooks.ExecutionPlanBuilder
-		expectedBidResponse openrtb2.BidResponse
-		hookExecutor        hookexecution.HookStageExecutor
+		description string
+		file        string
+		planBuilder hooks.ExecutionPlanBuilder
 	}{
 		{
 			description: "Assert correct BidResponse when request rejected at entrypoint stage",
-			file:        "sample-requests/valid-whole/hooks/auction_reject.json",
+			file:        file,
 			planBuilder: mockPlanBuilder{entrypointPlan: makeRejectPlan[hookstage.Entrypoint](mockRejectionHook{nbr})},
 		},
 		{
 			description: "Assert correct BidResponse when request rejected at raw-auction stage",
-			file:        "sample-requests/valid-whole/hooks/auction_reject.json",
+			file:        file,
 			planBuilder: mockPlanBuilder{rawAuctionPlan: makeRejectPlan[hookstage.RawAuctionRequest](mockRejectionHook{nbr})},
 		},
 		{
-			"Assert correct BidResponse when request rejected at processed-auction stage",
-			openrtb2.BidResponse{ID: "some-request-id", NBR: &nbr},
-			rejectableHookExecutor{processedAuctionReject: &reject},
+			description: "Assert correct BidResponse when request rejected at processed-auction stage",
+			file:        file,
+			planBuilder: mockPlanBuilder{processedAuctionPlan: makeRejectPlan[hookstage.ProcessedAuctionRequest](mockRejectionHook{nbr})},
 		},
 	}
 
