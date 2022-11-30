@@ -149,7 +149,7 @@ func (e *hookExecutor) ExecuteBidderRequestStage(req *openrtb2.BidRequest, bidde
 
 	stageName := hooks.StageBidderRequest.String()
 	executionCtx := e.newContext(stageName)
-	payload := hookstage.BidderRequestPayload{BidRequest: req}
+	payload := hookstage.BidderRequestPayload{BidRequest: req, Bidder: bidder}
 	outcome, payload, contexts, reject := executeStage(executionCtx, plan, payload, handler, e.metricEngine)
 	outcome.Entity = entity(bidder)
 	outcome.Stage = stageName

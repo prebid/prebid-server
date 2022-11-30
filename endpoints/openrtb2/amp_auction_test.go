@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"reflect"
 	"strconv"
 	"testing"
@@ -21,6 +22,7 @@ import (
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
+	"github.com/prebid/prebid-server/hooks/hookstage"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
@@ -1935,104 +1937,87 @@ func TestSetTargeting(t *testing.T) {
 }
 
 func TestValidAmpResponseWhenRequestRejected(t *testing.T) {
-	reject := hookexecution.RejectError{
-		123,
-		hookexecution.HookID{ModuleCode: "foobar", HookCode: "foo"},
-		hooks.StageEntrypoint.String(),
-	}
+	const nbr int = 123
+	const file string = "sample-requests/amp/valid-supplementary/aliased-buyeruids.json"
 
-	expectedAmpResponse := AmpResponse{
-		Targeting: map[string]string{
-			"hb_appnexus_pb": "1.20",
-			"hb_cache_id":    "some_id",
-			"hb_pb":          "1.20",
-		},
-		Errors: map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage{
-			"openx": {{Code: 1, Message: "The request exceeded the timeout allocated"}},
-		},
+	var tc testCase
+	fileData, err := os.ReadFile(file)
+	assert.NoError(t, err, "Failed to read test file.")
+	if err := json.Unmarshal(fileData, &tc); err != nil {
+		t.Fatal("Failed to unmarshal test file.")
 	}
 
 	testCases := []struct {
 		description         string
-		isRejected          bool
-		expectedAmpResponse AmpResponse
+		file                string
+		planBuilder         hooks.ExecutionPlanBuilder
+		expectedBidResponse openrtb2.BidResponse
 		hookExecutor        hookexecution.HookStageExecutor
+		expectedAmpResponse AmpResponse
 	}{
 		{
-			description:         "Assert correct AmpResponse when request rejected at entrypoint stage",
-			isRejected:          true,
+			description:         "Assert correct BidResponse when request rejected at entrypoint stage",
+			file:                "sample-requests/amp/valid-supplementary/aliased-buyeruids.json",
+			planBuilder:         mockPlanBuilder{entrypointPlan: makeRejectPlan[hookstage.Entrypoint](mockRejectionHook{nbr})},
 			expectedAmpResponse: AmpResponse{Targeting: map[string]string{}},
-			hookExecutor:        rejectableHookExecutor{entrypointReject: &reject},
 		},
 		{
-			description: "Assert correct AmpResponse when request rejected at raw-auction stage",
-			isRejected:  false,
-			// raw-auction stage not executed for AMP endpoint, so we expect filled response
-			expectedAmpResponse: expectedAmpResponse,
-			hookExecutor:        rejectableHookExecutor{rawAuctionReject: &reject},
+			description:         "Assert correct BidResponse when request rejected at raw-auction stage",
+			file:                "sample-requests/amp/valid-supplementary/aliased-buyeruids.json",
+			planBuilder:         mockPlanBuilder{rawAuctionPlan: makeRejectPlan[hookstage.RawAuctionRequest](mockRejectionHook{nbr})},
+			expectedAmpResponse: tc.ExpectedAmpResponse,
 		},
 		{
-			description: "Assert correct AmpResponse when request rejected at bidder-request stage",
-			isRejected:  false,
-			// bidder-request stage doesn't reject the whole request, so we expect filled response
-			expectedAmpResponse: expectedAmpResponse,
-			hookExecutor:        rejectableHookExecutor{bidderRequestReject: &reject},
+			// bidder-request stage rejects only bidder, so we expect bidder rejection warning added
+			description: "Assert correct BidResponse when request rejected at bidder-request stage",
+			file:        "sample-requests/amp/valid-supplementary/aliased-buyeruids.json",
+			planBuilder: mockPlanBuilder{bidderRequestPlan: makeRejectPlan[hookstage.BidderRequest](mockRejectionHook{nbr})},
+			expectedAmpResponse: AmpResponse{Targeting: map[string]string{}, Warnings: map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage{
+				"appnexus": {
+					{
+						Code:    11,
+						Message: "Module foobar (hook: foo) rejected request with code 123 at bidder-request stage",
+					},
+				},
+				"general": {
+					{
+						Code:    10002,
+						Message: "debug turned off for account",
+					},
+				},
+			}},
 		},
 	}
 
-	for _, test := range testCases {
-		t.Run(test.description, func(t *testing.T) {
-			actualAmpObject := analytics.AmpObject{}
-			logger := newMockLogger(&actualAmpObject, nil)
-			stored := map[string]json.RawMessage{"1": json.RawMessage(validRequest(t, "site.json"))}
-			deps := &endpointDeps{
-				fakeUUIDGenerator{},
-				&mockAmpExchange{},
-				newParamsValidator(t),
-				&mockAmpStoredReqFetcher{data: stored},
-				empty_fetcher.EmptyFetcher{},
-				empty_fetcher.EmptyFetcher{},
-				&config.Configuration{MaxRequestSize: maxSize},
-				&metricsConfig.NilMetricsEngine{},
-				logger,
-				map[string]string{},
-				false,
-				[]byte{},
-				openrtb_ext.BuildBidderMap(),
-				nil,
-				nil,
-				hardcodedResponseIPValidator{response: true},
-				empty_fetcher.EmptyFetcher{},
-				test.hookExecutor,
-			}
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			test := testCase{}
+			assert.NoError(t, json.Unmarshal(fileData, &test), "Failed to parse test file.")
 
-			url, err := url.Parse("/openrtb2/auction/amp")
-			assert.NoError(t, err, "unexpected error received while parsing url")
-
-			values := url.Query()
-			values.Add("targeting", `{"gam-key1":"val1", "gam-key2":"val2"}`)
-			values.Add("tag_id", "1")
-			url.RawQuery = values.Encode()
-
-			req := httptest.NewRequest("POST", url.String(), nil)
+			request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?%s", test.Query), nil)
 			recorder := httptest.NewRecorder()
+			query := request.URL.Query()
+			tagID := query.Get("tag_id")
 
-			deps.AmpAuction(recorder, req, nil)
+			test.storedRequest = map[string]json.RawMessage{tagID: test.BidRequest}
+			test.planBuilder = tc.planBuilder
+			test.endpointType = AMP_ENDPOINT
+
+			ampEndpointHandler, _, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, &config.Configuration{MaxRequestSize: maxSize})
+			assert.NoError(t, err, "Failed to build test endpoint.")
+
+			ampEndpointHandler(recorder, request, nil)
 			assert.Equal(t, recorder.Code, http.StatusOK, "Endpoint should return 200 OK.")
 
-			resp := AmpResponse{}
-			respBytes := recorder.Body.Bytes()
-			err = json.Unmarshal(respBytes, &resp)
+			var actualResp AmpResponse
+			assert.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &actualResp), "Unable to unmarshal actual BidResponse.")
+			assert.Equal(t, tc.expectedAmpResponse, actualResp, "Invalid AMP Response.")
 
-			assert.NoError(t, err, "Unable to unmarshal response.")
-			assert.Equal(t, test.expectedAmpResponse, resp)
-
-			rejectMsg := "Reject error is not logged to analytics."
-			if test.isRejected {
-				assert.Contains(t, actualAmpObject.Errors, reject, rejectMsg)
-			} else {
-				assert.NotContains(t, actualAmpObject.Errors, reject, rejectMsg)
+			// Close servers regardless if the test case was run or not
+			for _, mockBidServer := range mockBidServers {
+				mockBidServer.Close()
 			}
+			mockCurrencyRatesServer.Close()
 		})
 	}
 }
