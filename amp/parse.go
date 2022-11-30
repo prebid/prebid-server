@@ -9,7 +9,7 @@ import (
 
 	tcf2 "github.com/prebid/go-gdpr/vendorconsent/tcf2"
 
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/privacy/ccpa"
@@ -18,18 +18,19 @@ import (
 
 // Params defines the parameters of an AMP request.
 type Params struct {
-	Account         string
-	CanonicalURL    string
-	Consent         string
-	ConsentType     int64
-	Debug           bool
-	GdprApplies     *bool
-	Origin          string
-	Size            Size
-	Slot            string
-	StoredRequestID string
-	Targeting       string
-	Timeout         *uint64
+	Account           string
+	AdditionalConsent string
+	CanonicalURL      string
+	Consent           string
+	ConsentType       int64
+	Debug             bool
+	GdprApplies       *bool
+	Origin            string
+	Size              Size
+	Slot              string
+	StoredRequestID   string
+	Targeting         string
+	Timeout           *uint64
 }
 
 // Size defines size information of an AMP request.
@@ -154,12 +155,13 @@ func ParseParams(httpRequest *http.Request) (Params, error) {
 	}
 
 	params := Params{
-		Account:      query.Get("account"),
-		CanonicalURL: query.Get("curl"),
-		Consent:      chooseConsent(query.Get("consent_string"), query.Get("gdpr_consent")),
-		ConsentType:  parseInt(query.Get("consent_type")),
-		Debug:        query.Get("debug") == "1",
-		Origin:       query.Get("__amp_source_origin"),
+		Account:           query.Get("account"),
+		AdditionalConsent: query.Get("addtl_consent"),
+		CanonicalURL:      query.Get("curl"),
+		Consent:           chooseConsent(query.Get("consent_string"), query.Get("gdpr_consent")),
+		ConsentType:       parseInt(query.Get("consent_type")),
+		Debug:             query.Get("debug") == "1",
+		Origin:            query.Get("__amp_source_origin"),
 		Size: Size{
 			Height:         parseInt(query.Get("h")),
 			Multisize:      parseMultisize(query.Get("ms")),

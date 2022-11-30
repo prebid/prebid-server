@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 )
 
 // FirstPartyDataExtKey defines a field name within request.ext and request.imp.ext reserved for first party data.
@@ -116,18 +116,6 @@ type ExtRequestPrebidServer struct {
 	ExternalUrl string `json:"externalurl"`
 	GvlID       int    `json:"gvlid"`
 	DataCenter  string `json:"datacenter"`
-}
-
-// UnmarshalJSON prevents nil bids arguments.
-func (ert *ExtRequestPrebidCache) UnmarshalJSON(b []byte) error {
-	type typesAlias ExtRequestPrebidCache // Prevents infinite UnmarshalJSON loops
-	var proxy typesAlias
-	if err := json.Unmarshal(b, &proxy); err != nil {
-		return err
-	}
-
-	*ert = ExtRequestPrebidCache(proxy)
-	return nil
 }
 
 // ExtRequestPrebidCacheBids defines the contract for bidrequest.ext.prebid.cache.bids

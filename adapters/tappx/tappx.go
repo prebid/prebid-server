@@ -10,7 +10,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -18,7 +18,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const TAPPX_BIDDER_VERSION = "1.4"
+const TAPPX_BIDDER_VERSION = "1.5"
 const TYPE_CNN = "prebid"
 
 type TappxAdapter struct {
@@ -132,7 +132,7 @@ func (a *TappxAdapter) buildEndpointURL(params *openrtb_ext.ExtImpTappx, test in
 	}
 
 	tappxHost := "tappx.com"
-	isNewEndpoint, err := regexp.Match(`^(zz|vz)[0-9]{3,}([a-z]{2}|test)$`, []byte(params.Endpoint))
+	isNewEndpoint, err := regexp.Match(`^(zz|vz)[0-9]{3,}([a-z]{2,3}|test)$`, []byte(params.Endpoint))
 	if isNewEndpoint {
 		tappxHost = params.Endpoint + ".pub." + tappxHost + "/rtb/"
 	} else {

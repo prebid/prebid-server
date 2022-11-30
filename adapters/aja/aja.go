@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
@@ -123,6 +123,9 @@ func (a *AJAAdapter) MakeBids(bidReq *openrtb2.BidRequest, adapterReq *adapters.
 				}
 			}
 		}
+	}
+	if bidResp.Cur != "" {
+		bidderResp.Currency = bidResp.Cur
 	}
 	return bidderResp, errors
 }

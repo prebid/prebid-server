@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/mxmCherry/openrtb/v16/openrtb2"
+	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/spf13/viper"
 
 	"github.com/prebid/go-gdpr/consentconstants"
@@ -99,6 +99,8 @@ type Configuration struct {
 	// BidderInfos supports adapter overrides in extra configs like pbs.json, pbs.yaml, etc.
 	// Refers to main.go `configFileName` constant
 	BidderInfos BidderInfos `mapstructure:"adapters"`
+	// Hooks provides a way to specify hook execution plan for specific endpoints and stages
+	Hooks Hooks `mapstructure:"hooks"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
@@ -264,8 +266,8 @@ func (cfg *GDPR) validatePurposes(errs []error) []error {
 		enforceAlgoValue := purposeConfigs[i].EnforceAlgo
 		enforceAlgoField := fmt.Sprintf("gdpr.tcf2.purpose%d.enforce_algo", (i + 1))
 
-		if enforceAlgoValue != TCF2FullEnforcement {
-			errs = append(errs, fmt.Errorf("%s must be \"full\". Got %s", enforceAlgoField, enforceAlgoValue))
+		if enforceAlgoValue != TCF2EnforceAlgoFull && enforceAlgoValue != TCF2EnforceAlgoBasic {
+			errs = append(errs, fmt.Errorf("%s must be \"basic\" or \"full\". Got %s", enforceAlgoField, enforceAlgoValue))
 		}
 	}
 	return errs
@@ -285,7 +287,16 @@ func (t *GDPRTimeouts) ActiveTimeout() time.Duration {
 }
 
 const (
-	TCF2FullEnforcement = "full"
+	TCF2EnforceAlgoBasic = "basic"
+	TCF2EnforceAlgoFull  = "full"
+)
+
+type TCF2EnforcementAlgo int
+
+const (
+	TCF2UndefinedEnforcement TCF2EnforcementAlgo = iota
+	TCF2BasicEnforcement
+	TCF2FullEnforcement
 )
 
 // TCF2 defines the TCF2 specific configurations for GDPR
@@ -307,18 +318,9 @@ type TCF2 struct {
 	PurposeOneTreatment TCF2PurposeOneTreatment `mapstructure:"purpose_one_treatment"`
 }
 
-// BasicEnforcementVendor checks if the given bidder is considered a basic enforcement vendor which indicates whether
-// weak vendor enforcement applies to that bidder. If set, the legal basis calculation for the bidder only considers
-// consent to the purpose, not the vendor. The idea is that the publisher trusts this vendor to enforce the
-// appropriate rules on their own. This only comes into play when enforceVendors is true as it lists those vendors that
-// are exempt for vendor enforcement.
-func (t *TCF2) BasicEnforcementVendor(openrtb_ext.BidderName) bool {
-	return false
-}
-
-// IntegrationEnabled checks if a given integration type is enabled. All integration types are considered either
+// ChannelEnabled checks if a given channel type is enabled. All channel types are considered either
 // enabled or disabled based on the Enabled flag.
-func (t *TCF2) IntegrationEnabled(integrationType IntegrationType) bool {
+func (t *TCF2) ChannelEnabled(channelType ChannelType) bool {
 	return t.Enabled
 }
 
@@ -336,6 +338,14 @@ func (t *TCF2) PurposeEnforced(purpose consentconstants.Purpose) (value bool) {
 	return t.PurposeConfigs[purpose].EnforcePurpose
 }
 
+// PurposeEnforcementAlgo returns the default enforcement algorithm for a given purpose
+func (t *TCF2) PurposeEnforcementAlgo(purpose consentconstants.Purpose) (value TCF2EnforcementAlgo) {
+	if c, exists := t.PurposeConfigs[purpose]; exists {
+		return c.EnforceAlgoID
+	}
+	return TCF2FullEnforcement
+}
+
 // PurposeEnforcingVendors checks if enforcing vendors is turned on for a given purpose. With enforcing vendors
 // enabled, the GDPR full enforcement algorithm considers the GVL when determining legal basis; otherwise it's skipped.
 func (t *TCF2) PurposeEnforcingVendors(purpose consentconstants.Purpose) (value bool) {
@@ -345,17 +355,15 @@ func (t *TCF2) PurposeEnforcingVendors(purpose consentconstants.Purpose) (value 
 	return t.PurposeConfigs[purpose].EnforceVendors
 }
 
-// PurposeVendorException checks if the specified bidder is considered a vendor exception for a given purpose. If a
-// bidder is a vendor exception, the GDPR full enforcement algorithm will bypass the legal basis calculation assuming
-// the request is valid and there isn't a "deny all" publisher restriction
-func (t *TCF2) PurposeVendorException(purpose consentconstants.Purpose, bidder openrtb_ext.BidderName) (value bool) {
-	if t.PurposeConfigs[purpose] == nil {
-		return false
+// PurposeVendorExceptions returns the vendor exception map for a given purpose if it exists, otherwise it returns
+// an empty map of vendor exceptions
+func (t *TCF2) PurposeVendorExceptions(purpose consentconstants.Purpose) (value map[openrtb_ext.BidderName]struct{}) {
+	c, exists := t.PurposeConfigs[purpose]
+
+	if exists && c.VendorExceptionMap != nil {
+		return c.VendorExceptionMap
 	}
-	if _, ok := t.PurposeConfigs[purpose].VendorExceptionMap[bidder]; ok {
-		return true
-	}
-	return false
+	return make(map[openrtb_ext.BidderName]struct{}, 0)
 }
 
 // FeatureOneEnforced checks if special feature one is enforced. If it is enforced, PBS will determine whether geo
@@ -385,10 +393,12 @@ func (t *TCF2) PurposeOneTreatmentAccessAllowed() (value bool) {
 
 // Making a purpose struct so purpose specific details can be added later.
 type TCF2Purpose struct {
-	Enabled        bool   `mapstructure:"enabled"` // Deprecated: Use enforce_purpose instead
-	EnforceAlgo    string `mapstructure:"enforce_algo"`
-	EnforcePurpose bool   `mapstructure:"enforce_purpose"`
-	EnforceVendors bool   `mapstructure:"enforce_vendors"`
+	Enabled     bool   `mapstructure:"enabled"` // Deprecated: Use enforce_purpose instead
+	EnforceAlgo string `mapstructure:"enforce_algo"`
+	// Integer representation of enforcement algo for performance improvement on compares
+	EnforceAlgoID  TCF2EnforcementAlgo
+	EnforcePurpose bool `mapstructure:"enforce_purpose"`
+	EnforceVendors bool `mapstructure:"enforce_vendors"`
 	// Array of vendor exceptions that is used to create the hash table VendorExceptionMap so vendor names can be instantly accessed
 	VendorExceptions   []openrtb_ext.BidderName `mapstructure:"vendor_exceptions"`
 	VendorExceptionMap map[openrtb_ext.BidderName]struct{}
@@ -675,6 +685,16 @@ func New(v *viper.Viper, bidderInfos BidderInfos, normalizeBidderName func(strin
 		10: &c.GDPR.TCF2.Purpose10,
 	}
 
+	// As an alternative to performing several string compares per request, we set the integer representation of
+	// the enforcement algorithm on each purpose config
+	for _, pc := range c.GDPR.TCF2.PurposeConfigs {
+		if pc.EnforceAlgo == TCF2EnforceAlgoBasic {
+			pc.EnforceAlgoID = TCF2BasicEnforcement
+		} else {
+			pc.EnforceAlgoID = TCF2FullEnforcement
+		}
+	}
+
 	// To look for a purpose's vendor exceptions in O(1) time, for each purpose we fill this hash table with bidders
 	// located in the VendorExceptions field of the GDPR.TCF2.PurposeX struct defined in this file
 	for _, pc := range c.GDPR.TCF2.PurposeConfigs {
@@ -830,20 +850,6 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("stored_requests.filesystem.enabled", false)
 	v.SetDefault("stored_requests.filesystem.directorypath", "./stored_requests/data/by_id")
 	v.SetDefault("stored_requests.directorypath", "./stored_requests/data/by_id")
-	v.SetDefault("stored_requests.postgres.connection.dbname", "")
-	v.SetDefault("stored_requests.postgres.connection.host", "")
-	v.SetDefault("stored_requests.postgres.connection.port", 0)
-	v.SetDefault("stored_requests.postgres.connection.user", "")
-	v.SetDefault("stored_requests.postgres.connection.password", "")
-	v.SetDefault("stored_requests.postgres.fetcher.query", "")
-	v.SetDefault("stored_requests.postgres.fetcher.amp_query", "")
-	v.SetDefault("stored_requests.postgres.initialize_caches.timeout_ms", 0)
-	v.SetDefault("stored_requests.postgres.initialize_caches.query", "")
-	v.SetDefault("stored_requests.postgres.initialize_caches.amp_query", "")
-	v.SetDefault("stored_requests.postgres.poll_for_updates.refresh_rate_seconds", 0)
-	v.SetDefault("stored_requests.postgres.poll_for_updates.timeout_ms", 0)
-	v.SetDefault("stored_requests.postgres.poll_for_updates.query", "")
-	v.SetDefault("stored_requests.postgres.poll_for_updates.amp_query", "")
 	v.SetDefault("stored_requests.http.endpoint", "")
 	v.SetDefault("stored_requests.http.amp_endpoint", "")
 	v.SetDefault("stored_requests.in_memory_cache.type", "none")
@@ -860,17 +866,6 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	// PBS is not in the business of storing video content beyond the normal prebid cache system.
 	v.SetDefault("stored_video_req.filesystem.enabled", false)
 	v.SetDefault("stored_video_req.filesystem.directorypath", "")
-	v.SetDefault("stored_video_req.postgres.connection.dbname", "")
-	v.SetDefault("stored_video_req.postgres.connection.host", "")
-	v.SetDefault("stored_video_req.postgres.connection.port", 0)
-	v.SetDefault("stored_video_req.postgres.connection.user", "")
-	v.SetDefault("stored_video_req.postgres.connection.password", "")
-	v.SetDefault("stored_video_req.postgres.fetcher.query", "")
-	v.SetDefault("stored_video_req.postgres.initialize_caches.timeout_ms", 0)
-	v.SetDefault("stored_video_req.postgres.initialize_caches.query", "")
-	v.SetDefault("stored_video_req.postgres.poll_for_updates.refresh_rate_seconds", 0)
-	v.SetDefault("stored_video_req.postgres.poll_for_updates.timeout_ms", 0)
-	v.SetDefault("stored_video_req.postgres.poll_for_updates.query", "")
 	v.SetDefault("stored_video_req.http.endpoint", "")
 	v.SetDefault("stored_video_req.in_memory_cache.type", "none")
 	v.SetDefault("stored_video_req.in_memory_cache.ttl_seconds", 0)
@@ -884,17 +879,6 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("stored_video_req.http_events.timeout_ms", 0)
 	v.SetDefault("stored_responses.filesystem.enabled", false)
 	v.SetDefault("stored_responses.filesystem.directorypath", "")
-	v.SetDefault("stored_responses.postgres.connection.dbname", "")
-	v.SetDefault("stored_responses.postgres.connection.host", "")
-	v.SetDefault("stored_responses.postgres.connection.port", 0)
-	v.SetDefault("stored_responses.postgres.connection.user", "")
-	v.SetDefault("stored_responses.postgres.connection.password", "")
-	v.SetDefault("stored_responses.postgres.fetcher.query", "")
-	v.SetDefault("stored_responses.postgres.initialize_caches.timeout_ms", 0)
-	v.SetDefault("stored_responses.postgres.initialize_caches.query", "")
-	v.SetDefault("stored_responses.postgres.poll_for_updates.refresh_rate_seconds", 0)
-	v.SetDefault("stored_responses.postgres.poll_for_updates.timeout_ms", 0)
-	v.SetDefault("stored_responses.postgres.poll_for_updates.query", "")
 	v.SetDefault("stored_responses.http.endpoint", "")
 	v.SetDefault("stored_responses.in_memory_cache.type", "none")
 	v.SetDefault("stored_responses.in_memory_cache.ttl_seconds", 0)
@@ -1019,6 +1003,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	migrateConfigPurposeOneTreatment(v)
 	migrateConfigSpecialFeature1(v)
 	migrateConfigTCF2PurposeFlags(v)
+	migrateConfigDatabaseConnection(v)
 
 	// These defaults must be set after the migrate functions because those functions look for the presence of these
 	// config fields and there isn't a way to detect presence of a config field using the viper package if a default
@@ -1033,16 +1018,16 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("gdpr.tcf2.purpose8.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose9.enabled", true)
 	v.SetDefault("gdpr.tcf2.purpose10.enabled", true)
-	v.SetDefault("gdpr.tcf2.purpose1.enforce_algo", TCF2FullEnforcement)
-	v.SetDefault("gdpr.tcf2.purpose2.enforce_algo", TCF2FullEnforcement)
-	v.SetDefault("gdpr.tcf2.purpose3.enforce_algo", TCF2FullEnforcement)
-	v.SetDefault("gdpr.tcf2.purpose4.enforce_algo", TCF2FullEnforcement)
-	v.SetDefault("gdpr.tcf2.purpose5.enforce_algo", TCF2FullEnforcement)
-	v.SetDefault("gdpr.tcf2.purpose6.enforce_algo", TCF2FullEnforcement)
-	v.SetDefault("gdpr.tcf2.purpose7.enforce_algo", TCF2FullEnforcement)
-	v.SetDefault("gdpr.tcf2.purpose8.enforce_algo", TCF2FullEnforcement)
-	v.SetDefault("gdpr.tcf2.purpose9.enforce_algo", TCF2FullEnforcement)
-	v.SetDefault("gdpr.tcf2.purpose10.enforce_algo", TCF2FullEnforcement)
+	v.SetDefault("gdpr.tcf2.purpose1.enforce_algo", TCF2EnforceAlgoFull)
+	v.SetDefault("gdpr.tcf2.purpose2.enforce_algo", TCF2EnforceAlgoFull)
+	v.SetDefault("gdpr.tcf2.purpose3.enforce_algo", TCF2EnforceAlgoFull)
+	v.SetDefault("gdpr.tcf2.purpose4.enforce_algo", TCF2EnforceAlgoFull)
+	v.SetDefault("gdpr.tcf2.purpose5.enforce_algo", TCF2EnforceAlgoFull)
+	v.SetDefault("gdpr.tcf2.purpose6.enforce_algo", TCF2EnforceAlgoFull)
+	v.SetDefault("gdpr.tcf2.purpose7.enforce_algo", TCF2EnforceAlgoFull)
+	v.SetDefault("gdpr.tcf2.purpose8.enforce_algo", TCF2EnforceAlgoFull)
+	v.SetDefault("gdpr.tcf2.purpose9.enforce_algo", TCF2EnforceAlgoFull)
+	v.SetDefault("gdpr.tcf2.purpose10.enforce_algo", TCF2EnforceAlgoFull)
 	v.SetDefault("gdpr.tcf2.purpose1.enforce_purpose", true)
 	v.SetDefault("gdpr.tcf2.purpose2.enforce_purpose", true)
 	v.SetDefault("gdpr.tcf2.purpose3.enforce_purpose", true)
@@ -1068,6 +1053,8 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("experiment.adscert.inprocess.domain_renewal_interval_seconds", 30)
 	v.SetDefault("experiment.adscert.remote.url", "")
 	v.SetDefault("experiment.adscert.remote.signing_timeout_ms", 5)
+
+	v.SetDefault("hooks.enabled", false)
 
 	for bidderName := range bidderInfos {
 		setBidderDefaults(v, strings.ToLower(bidderName))
@@ -1131,14 +1118,14 @@ func migrateConfigTCF2EnforcePurposeFlags(v *viper.Viper) {
 		if v.IsSet(algoField) {
 			glog.Warningf("using %s and ignoring deprecated %s string type", algoField, purposeField)
 		} else {
-			v.Set(algoField, TCF2FullEnforcement)
+			v.Set(algoField, TCF2EnforceAlgoFull)
 
-			glog.Warningf("setting %s to \"%s\" based on deprecated %s string type \"%s\"", algoField, TCF2FullEnforcement, purposeField, v.GetString(purposeField))
+			glog.Warningf("setting %s to \"%s\" based on deprecated %s string type \"%s\"", algoField, TCF2EnforceAlgoFull, purposeField, v.GetString(purposeField))
 		}
 
 		oldPurposeFieldValue := v.GetString(purposeField)
 		newPurposeFieldValue := "false"
-		if oldPurposeFieldValue == TCF2FullEnforcement {
+		if oldPurposeFieldValue == TCF2EnforceAlgoFull {
 			newPurposeFieldValue = "true"
 		}
 
@@ -1164,6 +1151,170 @@ func migrateConfigTCF2PurposeEnabledFlags(v *viper.Viper) {
 
 		if v.IsSet(newField) {
 			v.Set(oldField, strconv.FormatBool(v.GetBool(newField)))
+		}
+	}
+}
+
+func migrateConfigDatabaseConnection(v *viper.Viper) {
+
+	type QueryParamMigration struct {
+		old string
+		new string
+	}
+
+	type QueryMigration struct {
+		name   string
+		params []QueryParamMigration
+	}
+
+	type Migration struct {
+		old             string
+		new             string
+		fields          []string
+		queryMigrations []QueryMigration
+	}
+
+	queryParamMigrations := struct {
+		RequestIdList QueryParamMigration
+		ImpIdList     QueryParamMigration
+		IdList        QueryParamMigration
+		LastUpdated   QueryParamMigration
+	}{
+		RequestIdList: QueryParamMigration{
+			old: "%REQUEST_ID_LIST%",
+			new: "$REQUEST_ID_LIST",
+		},
+		ImpIdList: QueryParamMigration{
+			old: "%IMP_ID_LIST%",
+			new: "$IMP_ID_LIST",
+		},
+		IdList: QueryParamMigration{
+			old: "%ID_LIST%",
+			new: "$ID_LIST",
+		},
+		LastUpdated: QueryParamMigration{
+			old: "$1",
+			new: "$LAST_UPDATED",
+		},
+	}
+
+	queryMigrations := []QueryMigration{
+		{
+			name:   "fetcher.query",
+			params: []QueryParamMigration{queryParamMigrations.RequestIdList, queryParamMigrations.ImpIdList, queryParamMigrations.IdList},
+		},
+		{
+			name:   "fetcher.amp_query",
+			params: []QueryParamMigration{queryParamMigrations.RequestIdList, queryParamMigrations.ImpIdList, queryParamMigrations.IdList},
+		},
+		{
+			name:   "poll_for_updates.query",
+			params: []QueryParamMigration{queryParamMigrations.LastUpdated},
+		},
+		{
+			name:   "poll_for_updates.amp_query",
+			params: []QueryParamMigration{queryParamMigrations.LastUpdated},
+		},
+	}
+
+	migrations := []Migration{
+		{
+			old: "stored_requests.postgres",
+			new: "stored_requests.database",
+			fields: []string{
+				"connection.dbname",
+				"connection.host",
+				"connection.port",
+				"connection.user",
+				"connection.password",
+				"fetcher.query",
+				"fetcher.amp_query",
+				"initialize_caches.timeout_ms",
+				"initialize_caches.query",
+				"initialize_caches.amp_query",
+				"poll_for_updates.refresh_rate_seconds",
+				"poll_for_updates.timeout_ms",
+				"poll_for_updates.query",
+				"poll_for_updates.amp_query",
+			},
+			queryMigrations: queryMigrations,
+		},
+		{
+			old: "stored_video_req.postgres",
+			new: "stored_video_req.database",
+			fields: []string{
+				"connection.dbname",
+				"connection.host",
+				"connection.port",
+				"connection.user",
+				"connection.password",
+				"fetcher.query",
+				"initialize_caches.timeout_ms",
+				"initialize_caches.query",
+				"poll_for_updates.refresh_rate_seconds",
+				"poll_for_updates.timeout_ms",
+				"poll_for_updates.query",
+			},
+			queryMigrations: queryMigrations,
+		},
+		{
+			old: "stored_responses.postgres",
+			new: "stored_responses.database",
+			fields: []string{
+				"connection.dbname",
+				"connection.host",
+				"connection.port",
+				"connection.user",
+				"connection.password",
+				"fetcher.query",
+				"initialize_caches.timeout_ms",
+				"initialize_caches.query",
+				"poll_for_updates.refresh_rate_seconds",
+				"poll_for_updates.timeout_ms",
+				"poll_for_updates.query",
+			},
+			queryMigrations: queryMigrations,
+		},
+	}
+
+	for _, migration := range migrations {
+		driverField := migration.new + ".connection.driver"
+		if !v.IsSet(migration.new) && v.IsSet(migration.old) {
+			glog.Warning(fmt.Sprintf("%s is deprecated and should be changed to %s", migration.old, migration.new))
+			glog.Warning(fmt.Sprintf("%s is not set, using default (postgres)", driverField))
+			v.Set(driverField, "postgres")
+
+			for _, field := range migration.fields {
+				oldField := migration.old + "." + field
+				newField := migration.new + "." + field
+				if v.IsSet(oldField) {
+					glog.Warning(fmt.Sprintf("%s is deprecated and should be changed to %s", oldField, newField))
+					v.Set(newField, v.Get(oldField))
+				}
+			}
+
+			for _, queryMigration := range migration.queryMigrations {
+				oldQueryField := migration.old + "." + queryMigration.name
+				newQueryField := migration.new + "." + queryMigration.name
+				queryString := v.GetString(oldQueryField)
+				for _, queryParam := range queryMigration.params {
+					if strings.Contains(queryString, queryParam.old) {
+						glog.Warning(fmt.Sprintf("Query param %s for %s is deprecated and should be changed to %s", queryParam.old, oldQueryField, queryParam.new))
+						queryString = strings.ReplaceAll(queryString, queryParam.old, queryParam.new)
+						v.Set(newQueryField, queryString)
+					}
+				}
+			}
+		} else if v.IsSet(migration.new) && v.IsSet(migration.old) {
+			glog.Warning(fmt.Sprintf("using %s and ignoring deprecated %s", migration.new, migration.old))
+
+			for _, field := range migration.fields {
+				oldField := migration.old + "." + field
+				newField := migration.new + "." + field
+				if v.IsSet(oldField) {
+					glog.Warning(fmt.Sprintf("using %s and ignoring deprecated %s", newField, oldField))
+				}
+			}
 		}
 	}
 }
