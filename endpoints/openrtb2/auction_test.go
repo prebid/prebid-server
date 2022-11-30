@@ -21,9 +21,6 @@ import (
 	"github.com/prebid/openrtb/v17/native1"
 	nativeRequests "github.com/prebid/openrtb/v17/native1/request"
 	"github.com/prebid/openrtb/v17/openrtb2"
-	"github.com/prebid/openrtb/v17/openrtb3"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/hooks/hookstage"
@@ -4664,11 +4661,9 @@ func TestValidResponseWhenRequestRejected(t *testing.T) {
 	const nbr int = 123
 
 	testCases := []struct {
-		description         string
-		file                string
-		planBuilder         hooks.ExecutionPlanBuilder
-		expectedBidResponse openrtb2.BidResponse
-		hookExecutor        hookexecution.HookStageExecutor
+		description string
+		file        string
+		planBuilder hooks.ExecutionPlanBuilder
 	}{
 		{
 			description: "Assert correct BidResponse when request rejected at entrypoint stage",
@@ -4679,6 +4674,11 @@ func TestValidResponseWhenRequestRejected(t *testing.T) {
 			description: "Assert correct BidResponse when request rejected at raw-auction stage",
 			file:        "sample-requests/valid-whole/hooks/auction_reject.json",
 			planBuilder: mockPlanBuilder{rawAuctionPlan: makeRejectPlan[hookstage.RawAuctionRequest](mockRejectionHook{nbr})},
+		},
+		{
+			description: "Assert correct BidResponse when request rejected at raw-bidder-response stage",
+			file:        "sample-requests/valid-whole/hooks/auction_bidder_response_reject.json",
+			planBuilder: mockPlanBuilder{rawBidderResponsePlan: makeRejectPlan[hookstage.RawBidderResponse](mockRejectionHook{nbr})},
 		},
 	}
 

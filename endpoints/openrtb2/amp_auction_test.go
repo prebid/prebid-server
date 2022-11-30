@@ -21,7 +21,6 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/hooks"
-	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/hooks/hookstage"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -1951,27 +1950,38 @@ func TestValidAmpResponseWhenRequestStagesRejected(t *testing.T) {
 		description         string
 		file                string
 		planBuilder         hooks.ExecutionPlanBuilder
-		expectedBidResponse openrtb2.BidResponse
-		hookExecutor        hookexecution.HookStageExecutor
 		expectedAmpResponse AmpResponse
 	}{
 		{
 			description:         "Assert correct BidResponse when request rejected at entrypoint stage",
-			file:                "sample-requests/amp/valid-supplementary/aliased-buyeruids.json",
+			file:                file,
 			planBuilder:         mockPlanBuilder{entrypointPlan: makeRejectPlan[hookstage.Entrypoint](mockRejectionHook{nbr})},
 			expectedAmpResponse: AmpResponse{Targeting: map[string]string{}},
 		},
 		{
 			description:         "Assert correct BidResponse when request rejected at raw-auction stage",
-			file:                "sample-requests/amp/valid-supplementary/aliased-buyeruids.json",
+			file:                file,
 			planBuilder:         mockPlanBuilder{rawAuctionPlan: makeRejectPlan[hookstage.RawAuctionRequest](mockRejectionHook{nbr})},
 			expectedAmpResponse: tc.ExpectedAmpResponse,
 		},
 		{
-			description:         "Assert correct AmpResponse when request rejected at raw-bidder-response stage",
-			isRejected:          false,
-			expectedAmpResponse: AmpResponse{Targeting: map[string]string{}},
-			hookExecutor:        rejectableHookExecutor{rawBidderResponseReject: &reject},
+			description: "Assert correct AmpResponse when request rejected at raw-bidder-response stage",
+			file:        file,
+			planBuilder: mockPlanBuilder{rawBidderResponsePlan: makeRejectPlan[hookstage.RawBidderResponse](mockRejectionHook{nbr})},
+			expectedAmpResponse: AmpResponse{Targeting: map[string]string{}, Warnings: map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage{
+				"appnexus": {
+					{
+						Code:    11,
+						Message: "Module foobar (hook: foo) rejected request with code 123 at raw-bidder-response stage",
+					},
+				},
+				"general": {
+					{
+						Code:    10002,
+						Message: "debug turned off for account",
+					},
+				},
+			}},
 		},
 	}
 
