@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -13,7 +14,7 @@ import (
 func TestNewMetrics(t *testing.T) {
 	registry := metrics.NewRegistry()
 	syncerKeys := []string{"foo"}
-	moduleStageNames := map[string][]string{"foobar": {"entry", "raw"}}
+	moduleStageNames := map[string][]string{"foobar": {"entry", "raw"}, "another_module": {"raw", "auction"}}
 	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{}, syncerKeys, moduleStageNames)
 
 	ensureContains(t, registry, "app_requests", m.AppRequestMeter)
@@ -79,8 +80,11 @@ func TestNewMetrics(t *testing.T) {
 	ensureContains(t, registry, "ads_cert_requests.ok", m.AdsCertRequestsSuccess)
 	ensureContains(t, registry, "ads_cert_requests.failed", m.AdsCertRequestsFailure)
 
-	ensureContainsModuleMetrics(t, registry, "modules.module.foobar.stage.entry", m.ModuleMetrics["foobar"]["entry"])
-	ensureContainsModuleMetrics(t, registry, "modules.module.foobar.stage.raw", m.ModuleMetrics["foobar"]["raw"])
+	for module, stages := range moduleStageNames {
+		for _, stage := range stages {
+			ensureContainsModuleMetrics(t, registry, fmt.Sprintf("modules.module.%s.stage.%s", module, stage), m.ModuleMetrics[module][stage])
+		}
+	}
 }
 
 func TestRecordBidType(t *testing.T) {
@@ -872,7 +876,13 @@ func TestRecordAdsCertReqMetric(t *testing.T) {
 	}
 }
 
-func TestRecordModuleMetrics(t *testing.T) {
+func TestRecordModuleAccountMetrics(t *testing.T) {
+	registry := metrics.NewRegistry()
+	module := "foobar"
+	stage1 := "entrypoint"
+	stage2 := "rawauction"
+	m := NewMetrics(registry, nil, config.DisabledMetrics{}, nil, map[string][]string{module: {stage1, stage2}})
+
 	testCases := []struct {
 		description                string
 		givenModuleName            string
@@ -883,24 +893,21 @@ func TestRecordModuleMetrics(t *testing.T) {
 	}{
 		{
 			description:                "Entrypoint stage should not record account metrics",
-			givenModuleName:            "foo-bar",
-			givenStageName:             "entrypoint",
+			givenModuleName:            module,
+			givenStageName:             stage1,
 			expectedModuleMetricCount:  1,
 			expectedAccountMetricCount: 0,
 		},
 		{
 			description:                "Rawauction stage should record both metrics",
-			givenModuleName:            "foo-bar",
-			givenStageName:             "rawauction",
+			givenModuleName:            module,
+			givenStageName:             stage2,
 			givenPubID:                 "acc-1",
 			expectedModuleMetricCount:  1,
 			expectedAccountMetricCount: 1,
 		},
 	}
 	for _, test := range testCases {
-		registry := metrics.NewRegistry()
-		m := NewMetrics(registry, nil, config.DisabledMetrics{}, nil, map[string][]string{"foo-bar": {"entrypoint", "rawauction"}})
-
 		m.RecordModuleCalled(ModuleLabels{
 			Module: test.givenModuleName,
 			Stage:  test.givenStageName,

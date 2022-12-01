@@ -23,7 +23,7 @@ func preloadLabelValues(m *Metrics, syncerKeys []string, moduleStageNames map[st
 		syncerRequestStatusValues = syncerRequestStatusesAsString()
 		syncerSetsStatusValues    = syncerSetStatusesAsString()
 		sourceValues              = []string{sourceRequest}
-		moduleValues, stageValues = modulesAsString(moduleStageNames)
+		stageValues               = stagesAsString(moduleStageNames)
 	)
 
 	preloadLabelValuesForCounter(m.connectionsError, map[string][]string{
@@ -209,45 +209,39 @@ func preloadLabelValues(m *Metrics, syncerKeys []string, moduleStageNames map[st
 		})
 	}
 
-	preloadLabelValuesForHistogram(m.moduleDuration, map[string][]string{
-		moduleLabel: moduleValues,
-		stageLabel:  stageValues,
-	})
+	for module := range moduleStageNames {
+		preloadLabelValuesForHistogram(m.moduleDuration[module], map[string][]string{
+			stageLabel: stageValues,
+		})
 
-	preloadLabelValuesForCounter(m.moduleCalls, map[string][]string{
-		moduleLabel: moduleValues,
-		stageLabel:  stageValues,
-	})
+		preloadLabelValuesForCounter(m.moduleCalls[module], map[string][]string{
+			stageLabel: stageValues,
+		})
 
-	preloadLabelValuesForCounter(m.moduleFailures, map[string][]string{
-		moduleLabel: moduleValues,
-		stageLabel:  stageValues,
-	})
+		preloadLabelValuesForCounter(m.moduleFailures[module], map[string][]string{
+			stageLabel: stageValues,
+		})
 
-	preloadLabelValuesForCounter(m.moduleSuccessNoops, map[string][]string{
-		moduleLabel: moduleValues,
-		stageLabel:  stageValues,
-	})
+		preloadLabelValuesForCounter(m.moduleSuccessNoops[module], map[string][]string{
+			stageLabel: stageValues,
+		})
 
-	preloadLabelValuesForCounter(m.moduleSuccessUpdates, map[string][]string{
-		moduleLabel: moduleValues,
-		stageLabel:  stageValues,
-	})
+		preloadLabelValuesForCounter(m.moduleSuccessUpdates[module], map[string][]string{
+			stageLabel: stageValues,
+		})
 
-	preloadLabelValuesForCounter(m.moduleSuccessRejects, map[string][]string{
-		moduleLabel: moduleValues,
-		stageLabel:  stageValues,
-	})
+		preloadLabelValuesForCounter(m.moduleSuccessRejects[module], map[string][]string{
+			stageLabel: stageValues,
+		})
 
-	preloadLabelValuesForCounter(m.moduleExecutionErrors, map[string][]string{
-		moduleLabel: moduleValues,
-		stageLabel:  stageValues,
-	})
+		preloadLabelValuesForCounter(m.moduleExecutionErrors[module], map[string][]string{
+			stageLabel: stageValues,
+		})
 
-	preloadLabelValuesForCounter(m.moduleTimeouts, map[string][]string{
-		moduleLabel: moduleValues,
-		stageLabel:  stageValues,
-	})
+		preloadLabelValuesForCounter(m.moduleTimeouts[module], map[string][]string{
+			stageLabel: stageValues,
+		})
+	}
 }
 
 func preloadLabelValuesForCounter(counter *prometheus.CounterVec, labelsWithValues map[string][]string) {

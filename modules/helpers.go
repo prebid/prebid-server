@@ -64,7 +64,8 @@ func createModuleStageNamesCollection(modules map[string]interface{}) (map[strin
 }
 
 func addModuleStageName(moduleStageNameCollector map[string][]string, id string, stage string) map[string][]string {
-	str := strings.Replace(id, ".", "-", -1)
+	replacer := strings.NewReplacer(".", "_", "-", "_")
+	str := replacer.Replace(id)
 	moduleStageNameCollector[str] = append(moduleStageNameCollector[str], stage)
 
 	return moduleStageNameCollector
