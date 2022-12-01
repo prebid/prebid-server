@@ -28,10 +28,32 @@ const (
 // Messages in format: {"module": {"hook": ["msg1", "msg2"]}}
 type Messages map[string]map[string][]string
 
+// ModulesOutcome represents result of hooks execution
+// ready to be added to BidResponse.
+//
+// Errors and Warnings hold the error and warning
+// messages returned from executing individual hooks.
 type ModulesOutcome struct {
 	Errors   Messages      `json:"errors,omitempty"`
 	Warnings Messages      `json:"warnings,omitempty"`
 	Trace    *TraceOutcome `json:"trace,omitempty"`
+}
+
+// TraceOutcome holds the result of executing hooks at all stages.
+type TraceOutcome struct {
+	// ExecutionTime is the sum of ExecutionTime of all stages.
+	ExecutionTime
+	Stages []Stage `json:"stages"`
+}
+
+// Stage holds the result of executing hooks at specific stage.
+// May contain multiple StageOutcome results for stages executed
+// multiple times (ex. for each bidder-request/response stages).
+type Stage struct {
+	// ExecutionTime is set to the longest ExecutionTime of its children.
+	ExecutionTime
+	Stage    string         `json:"stage"`
+	Outcomes []StageOutcome `json:"outcomes"`
 }
 
 // StageOutcome represents the result of executing specific stage.

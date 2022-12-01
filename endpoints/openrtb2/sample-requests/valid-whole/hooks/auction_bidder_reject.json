@@ -37,7 +37,12 @@
       }
     ],
     "tmax": 50,
-    "ext": {}
+    "test": 1,
+    "ext": {
+      "prebid": {
+        "trace": "verbose"
+      }
+    }
   },
   "expectedBidResponse": {
     "id":"some-request-id",
@@ -64,13 +69,65 @@
             "code": 11,
             "message": "Module foobar (hook: foo) rejected request with code 123 at bidder-request stage"
           }
-        ],
-        "general": [
-          {
-            "code": 10002,
-            "message": "debug turned off for account"
-          }
         ]
+      },
+      "prebid": {
+        "modules": {
+          "errors": {
+            "foobar": {
+              "foo": [
+                "Module foobar (hook: foo) rejected request with code 123 at bidder-request stage"
+              ]
+            }
+          },
+          "trace": {
+            "stages": [
+              {
+                "outcomes": [
+                  {
+                    "entity": "appnexus",
+                    "groups": [
+                      {
+                        "invocationresults": [
+                          {
+                            "action": "reject",
+                            "analyticstags": {},
+                            "hookid": {
+                              "hook-impl-code": "foo",
+                              "module-code": "foobar"
+                            },
+                            "message": "",
+                            "status": "success"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "entity": "applogy",
+                    "groups": [
+                      {
+                        "invocationresults": [
+                          {
+                            "action": "no_action",
+                            "analyticstags": {},
+                            "hookid": {
+                              "hook-impl-code": "foo",
+                              "module-code": "foobar"
+                            },
+                            "message": "",
+                            "status": "success"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "stage": "bidder-request"
+              }
+            ]
+          }
+        }
       }
     }
   },

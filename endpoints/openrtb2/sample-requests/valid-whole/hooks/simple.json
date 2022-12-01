@@ -1,5 +1,10 @@
 {
   "description": "Simple request",
+  "config": {
+    "mockBidders": [
+      {"bidderName": "appnexus", "currency": "USD", "price": 0.00}
+    ]
+  },
   "mockBidRequest": {
     "id": "some-request-id",
     "site": {
@@ -34,7 +39,21 @@
   "expectedBidResponse": {
     "id": "some-request-id",
     "bidid": "test bid id",
-    "nbr": 0,
+    "cur":"USD",
+    "nbr":null,
+    "seatbid": [
+      {
+        "bid": [
+          {
+            "id": "appnexus-bid",
+            "impid": "some-impression-id",
+            "price": 0,
+            "ext": {"prebid":{"type":"banner"}}
+          }
+        ],
+        "seat": "appnexus"
+      }
+    ],
     "ext": {
       "prebid": {
         "modules": {
@@ -109,9 +128,33 @@
                             "action": "update",
                             "message": "",
                             "debugmessages": [
-                              "Hook mutation successfully applied, affected key: body.foo, mutation type: update",
-                              "Hook mutation successfully applied, affected key: body.name, mutation type: delete"
+                              "Hook mutation successfully applied, affected key: body.tmax, mutation type: update",
+                              "Hook mutation successfully applied, affected key: body.regs.ext.us_privacy, mutation type: add"
                             ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "stage": "raw-auction",
+                "outcomes": [
+                  {
+                    "entity": "auction-request",
+                    "groups": [
+                      {
+                        "invocationresults": [
+                          {
+                            "analyticstags": {},
+                            "hookid": {
+                              "module-code": "vendor.module",
+                              "hook-impl-code": "foobar"
+                            },
+                            "status": "success",
+                            "action": "no_action",
+                            "message": ""
                           }
                         ]
                       }

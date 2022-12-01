@@ -82,9 +82,10 @@ func getDebugContext(bidRequest *openrtb2.BidRequest, account *config.Account) (
 
 	if bidRequest != nil {
 		traceLevel, _ = jsonparser.GetString(bidRequest.Ext, "prebid", "trace")
+		isDebug, _ := jsonparser.GetBoolean(bidRequest.Ext, "prebid", "debug")
+		isDebugEnabled = bidRequest.Test == 1 || isDebug
 		if account != nil {
-			isDebug, _ := jsonparser.GetBoolean(bidRequest.Ext, "prebid", "debug")
-			isDebugEnabled = (bidRequest.Test == 1 || isDebug) && account.DebugAllow
+			isDebugEnabled = isDebugEnabled && account.DebugAllow
 		}
 	}
 

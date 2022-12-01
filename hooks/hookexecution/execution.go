@@ -181,6 +181,8 @@ func handleHookResponse[P any](
 		Status:        StatusSuccess,
 		HookID:        hr.HookID,
 		Message:       hr.Result.Message,
+		Errors:        hr.Result.Errors,
+		Warnings:      hr.Result.Warnings,
 		DebugMessages: hr.Result.DebugMessages,
 		AnalyticsTags: hr.Result.AnalyticsTags,
 		ExecutionTime: ExecutionTime{ExecutionTimeMillis: hr.ExecutionTime},
