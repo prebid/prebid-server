@@ -9,7 +9,7 @@ import (
 
 // This file actually intends to test static/bidder-params/smartadserver.json
 //
-// These also validate the format of the external API: request.imp[i].ext.smartadserver
+// These also validate the format of the external API: request.imp[i].ext.prebid.bidder.smartadserver
 
 // TestValidParams makes sure that the smartadserver schema accepts all imp.ext fields which we intend to support.
 func TestValidParams(t *testing.T) {
