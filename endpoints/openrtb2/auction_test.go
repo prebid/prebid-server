@@ -10,13 +10,11 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/prebid/prebid-server/hooks/hookexecution"
-	"github.com/prebid/prebid-server/hooks/hookstage"
 
 	"github.com/buger/jsonparser"
 	"github.com/julienschmidt/httprouter"
@@ -24,6 +22,8 @@ import (
 	nativeRequests "github.com/prebid/openrtb/v17/native1/request"
 	"github.com/prebid/openrtb/v17/openrtb2"
 	"github.com/prebid/prebid-server/hooks"
+	"github.com/prebid/prebid-server/hooks/hookexecution"
+	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/stretchr/testify/assert"
 
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
@@ -898,44 +898,60 @@ func TestImplicitSecure(t *testing.T) {
 
 func TestReferer(t *testing.T) {
 	testCases := []struct {
-		description     string
-		givenSitePage   string
-		givenSiteDomain string
-		givenReferer    string
-		expectedDomain  string
-		expectedPage    string
+		description             string
+		givenSitePage           string
+		givenSiteDomain         string
+		givenPublisherDomain    string
+		givenReferer            string
+		expectedDomain          string
+		expectedPage            string
+		expectedPublisherDomain string
 	}{
 		{
-			description:    "site.page/domain are unchanged when site.page/domain and http referer are not set",
-			expectedDomain: "",
-			expectedPage:   "",
+			description:             "site.page/domain are unchanged when site.page/domain and http referer are not set",
+			expectedDomain:          "",
+			expectedPage:            "",
+			expectedPublisherDomain: "",
 		},
 		{
-			description:    "site.page/domain are derived from referer when neither is set and http referer is set",
-			givenReferer:   "https://test.somepage.com",
-			expectedDomain: "somepage.com",
-			expectedPage:   "https://test.somepage.com",
+			description:             "site.page/domain are derived from referer when neither is set and http referer is set",
+			givenReferer:            "https://test.somepage.com",
+			expectedDomain:          "test.somepage.com",
+			expectedPublisherDomain: "somepage.com",
+			expectedPage:            "https://test.somepage.com",
 		},
 		{
-			description:    "site.domain is derived from site.page when site.page is set and http referer is not set",
-			givenSitePage:  "https://test.somepage.com",
-			expectedDomain: "somepage.com",
-			expectedPage:   "https://test.somepage.com",
+			description:             "site.domain is derived from site.page when site.page is set and http referer is not set",
+			givenSitePage:           "https://test.somepage.com",
+			expectedDomain:          "test.somepage.com",
+			expectedPublisherDomain: "somepage.com",
+			expectedPage:            "https://test.somepage.com",
 		},
 		{
-			description:    "site.domain is derived from http referer when site.page and http referer are set",
-			givenSitePage:  "https://test.somepage.com",
-			givenReferer:   "http://test.com",
-			expectedDomain: "test.com",
-			expectedPage:   "https://test.somepage.com",
+			description:             "site.domain is derived from http referer when site.page and http referer are set",
+			givenSitePage:           "https://test.somepage.com",
+			givenReferer:            "http://test.com",
+			expectedDomain:          "test.com",
+			expectedPublisherDomain: "test.com",
+			expectedPage:            "https://test.somepage.com",
 		},
 		{
-			description:     "site.page/domain are unchanged when site.page/domain and http referer are set",
-			givenSitePage:   "https://test.somepage.com",
-			givenSiteDomain: "some.domain.com",
-			givenReferer:    "http://test.com",
-			expectedDomain:  "some.domain.com",
-			expectedPage:    "https://test.somepage.com",
+			description:             "site.page/domain are unchanged when site.page/domain and http referer are set",
+			givenSitePage:           "https://test.somepage.com",
+			givenSiteDomain:         "some.domain.com",
+			givenReferer:            "http://test.com",
+			expectedDomain:          "some.domain.com",
+			expectedPublisherDomain: "test.com",
+			expectedPage:            "https://test.somepage.com",
+		},
+		{
+			description:             "Publisher domain shouldn't be overrwriten if already set",
+			givenSitePage:           "https://test.somepage.com",
+			givenSiteDomain:         "",
+			givenPublisherDomain:    "differentpage.com",
+			expectedDomain:          "test.somepage.com",
+			expectedPublisherDomain: "differentpage.com",
+			expectedPage:            "https://test.somepage.com",
 		},
 	}
 
@@ -945,8 +961,9 @@ func TestReferer(t *testing.T) {
 
 		bidReq := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
 			Site: &openrtb2.Site{
-				Domain: test.givenSiteDomain,
-				Page:   test.givenSitePage,
+				Domain:    test.givenSiteDomain,
+				Page:      test.givenSitePage,
+				Publisher: &openrtb2.Publisher{Domain: test.givenPublisherDomain},
 			},
 		}}
 
@@ -955,6 +972,7 @@ func TestReferer(t *testing.T) {
 		assert.NotNil(t, bidReq.Site, test.description)
 		assert.Equal(t, test.expectedDomain, bidReq.Site.Domain, test.description)
 		assert.Equal(t, test.expectedPage, bidReq.Site.Page, test.description)
+		assert.Equal(t, test.expectedPublisherDomain, bidReq.Site.Publisher.Domain, test.description)
 	}
 }
 
@@ -1073,12 +1091,8 @@ func TestStoredRequests(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		&hookexecution.HookExecutor{
-			InvocationCtx: &hookstage.InvocationContext{},
-			Endpoint:      hookexecution.EndpointAuction,
-			PlanBuilder:   hooks.EmptyPlanBuilder{},
-			MetricEngine:  &metricsConfig.NilMetricsEngine{},
-		}}
+		hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{}),
+	}
 
 	testStoreVideoAttr := []bool{true, true, false, false, false}
 
@@ -1451,12 +1465,8 @@ func TestValidateRequest(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		&hookexecution.HookExecutor{
-			InvocationCtx: &hookstage.InvocationContext{},
-			Endpoint:      hookexecution.EndpointAuction,
-			PlanBuilder:   hooks.EmptyPlanBuilder{},
-			MetricEngine:  &metricsConfig.NilMetricsEngine{},
-		}}
+		hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{}),
+	}
 
 	testCases := []struct {
 		description           string
@@ -1828,12 +1838,8 @@ func TestSetIntegrationType(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		&hookexecution.HookExecutor{
-			InvocationCtx: &hookstage.InvocationContext{},
-			Endpoint:      hookexecution.EndpointAuction,
-			PlanBuilder:   hooks.EmptyPlanBuilder{},
-			MetricEngine:  &metricsConfig.NilMetricsEngine{},
-		}}
+		hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{}),
+	}
 
 	testCases := []struct {
 		description             string
@@ -1897,12 +1903,8 @@ func TestStoredRequestGenerateUuid(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		&hookexecution.HookExecutor{
-			InvocationCtx: &hookstage.InvocationContext{},
-			Endpoint:      hookexecution.EndpointAuction,
-			PlanBuilder:   hooks.EmptyPlanBuilder{},
-			MetricEngine:  &metricsConfig.NilMetricsEngine{},
-		}}
+		hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{}),
+	}
 
 	req := &openrtb2.BidRequest{}
 
@@ -2004,12 +2006,8 @@ func TestOversizedRequest(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		&hookexecution.HookExecutor{
-			InvocationCtx: &hookstage.InvocationContext{},
-			Endpoint:      hookexecution.EndpointAuction,
-			PlanBuilder:   hooks.EmptyPlanBuilder{},
-			MetricEngine:  &metricsConfig.NilMetricsEngine{},
-		}}
+		hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{}),
+	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
 	recorder := httptest.NewRecorder()
@@ -2046,12 +2044,8 @@ func TestRequestSizeEdgeCase(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		&hookexecution.HookExecutor{
-			InvocationCtx: &hookstage.InvocationContext{},
-			Endpoint:      hookexecution.EndpointAuction,
-			PlanBuilder:   hooks.EmptyPlanBuilder{},
-			MetricEngine:  &metricsConfig.NilMetricsEngine{},
-		}}
+		hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{}),
+	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
 	recorder := httptest.NewRecorder()
@@ -2386,12 +2380,8 @@ func TestValidateImpExt(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		&hookexecution.HookExecutor{
-			InvocationCtx: &hookstage.InvocationContext{},
-			Endpoint:      hookexecution.EndpointAuction,
-			PlanBuilder:   hooks.EmptyPlanBuilder{},
-			MetricEngine:  &metricsConfig.NilMetricsEngine{},
-		}}
+		hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{}),
+	}
 
 	for _, group := range testGroups {
 		for _, test := range group.testCases {
@@ -2442,12 +2432,8 @@ func TestCurrencyTrunc(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		&hookexecution.HookExecutor{
-			InvocationCtx: &hookstage.InvocationContext{},
-			Endpoint:      hookexecution.EndpointAuction,
-			PlanBuilder:   hooks.EmptyPlanBuilder{},
-			MetricEngine:  &metricsConfig.NilMetricsEngine{},
-		}}
+		hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{}),
+	}
 
 	ui := int64(1)
 	req := openrtb2.BidRequest{
@@ -2493,12 +2479,8 @@ func TestCCPAInvalid(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		&hookexecution.HookExecutor{
-			InvocationCtx: &hookstage.InvocationContext{},
-			Endpoint:      hookexecution.EndpointAuction,
-			PlanBuilder:   hooks.EmptyPlanBuilder{},
-			MetricEngine:  &metricsConfig.NilMetricsEngine{},
-		}}
+		hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{}),
+	}
 
 	ui := int64(1)
 	req := openrtb2.BidRequest{
@@ -2548,12 +2530,8 @@ func TestNoSaleInvalid(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		&hookexecution.HookExecutor{
-			InvocationCtx: &hookstage.InvocationContext{},
-			Endpoint:      hookexecution.EndpointAuction,
-			PlanBuilder:   hooks.EmptyPlanBuilder{},
-			MetricEngine:  &metricsConfig.NilMetricsEngine{},
-		}}
+		hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{}),
+	}
 
 	ui := int64(1)
 	req := openrtb2.BidRequest{
@@ -2606,12 +2584,8 @@ func TestValidateSourceTID(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		&hookexecution.HookExecutor{
-			InvocationCtx: &hookstage.InvocationContext{},
-			Endpoint:      hookexecution.EndpointAuction,
-			PlanBuilder:   hooks.EmptyPlanBuilder{},
-			MetricEngine:  &metricsConfig.NilMetricsEngine{},
-		}}
+		hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{}),
+	}
 
 	ui := int64(1)
 	req := openrtb2.BidRequest{
@@ -2654,12 +2628,8 @@ func TestSChainInvalid(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		&hookexecution.HookExecutor{
-			InvocationCtx: &hookstage.InvocationContext{},
-			Endpoint:      hookexecution.EndpointAuction,
-			PlanBuilder:   hooks.EmptyPlanBuilder{},
-			MetricEngine:  &metricsConfig.NilMetricsEngine{},
-		}}
+		hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{}),
+	}
 
 	ui := int64(1)
 	req := openrtb2.BidRequest{
@@ -3010,12 +2980,8 @@ func TestEidPermissionsInvalid(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		&hookexecution.HookExecutor{
-			InvocationCtx: &hookstage.InvocationContext{},
-			Endpoint:      hookexecution.EndpointAuction,
-			PlanBuilder:   hooks.EmptyPlanBuilder{},
-			MetricEngine:  &metricsConfig.NilMetricsEngine{},
-		}}
+		hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{}),
+	}
 
 	ui := int64(1)
 	req := openrtb2.BidRequest{
@@ -3298,12 +3264,8 @@ func TestAuctionWarnings(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		&hookexecution.HookExecutor{
-			InvocationCtx: &hookstage.InvocationContext{},
-			Endpoint:      hookexecution.EndpointAuction,
-			PlanBuilder:   hooks.EmptyPlanBuilder{},
-			MetricEngine:  &metricsConfig.NilMetricsEngine{},
-		}}
+		hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{}),
+	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
 	recorder := httptest.NewRecorder()
@@ -3344,12 +3306,8 @@ func TestParseRequestParseImpInfoError(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		empty_fetcher.EmptyFetcher{},
-		&hookexecution.HookExecutor{
-			InvocationCtx: &hookstage.InvocationContext{},
-			Endpoint:      hookexecution.EndpointAuction,
-			PlanBuilder:   hooks.EmptyPlanBuilder{},
-			MetricEngine:  &metricsConfig.NilMetricsEngine{},
-		}}
+		hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{}),
+	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
 
@@ -3923,12 +3881,8 @@ func TestParseRequestMergeBidderParams(t *testing.T) {
 				nil,
 				hardcodedResponseIPValidator{response: true},
 				empty_fetcher.EmptyFetcher{},
-				&hookexecution.HookExecutor{
-					InvocationCtx: &hookstage.InvocationContext{},
-					Endpoint:      hookexecution.EndpointAuction,
-					PlanBuilder:   hooks.EmptyPlanBuilder{},
-					MetricEngine:  &metricsConfig.NilMetricsEngine{},
-				}}
+				hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{}),
+			}
 
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
 
@@ -4030,12 +3984,8 @@ func TestParseRequestStoredResponses(t *testing.T) {
 				nil,
 				hardcodedResponseIPValidator{response: true},
 				&mockStoredResponseFetcher{mockStoredResponses},
-				&hookexecution.HookExecutor{
-					InvocationCtx: &hookstage.InvocationContext{},
-					Endpoint:      hookexecution.EndpointAuction,
-					PlanBuilder:   hooks.EmptyPlanBuilder{},
-					MetricEngine:  &metricsConfig.NilMetricsEngine{},
-				}}
+				hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{}),
+			}
 
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
 
@@ -4122,12 +4072,8 @@ func TestParseRequestStoredBidResponses(t *testing.T) {
 				nil,
 				hardcodedResponseIPValidator{response: true},
 				&mockStoredResponseFetcher{mockStoredBidResponses},
-				&hookexecution.HookExecutor{
-					InvocationCtx: &hookstage.InvocationContext{},
-					Endpoint:      hookexecution.EndpointAuction,
-					PlanBuilder:   hooks.EmptyPlanBuilder{},
-					MetricEngine:  &metricsConfig.NilMetricsEngine{},
-				}}
+				hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{}),
+			}
 
 			req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(test.givenRequestBody))
 			_, _, _, storedBidResponses, _, _, errL := deps.parseRequest(req, &metrics.Labels{})
@@ -4160,12 +4106,8 @@ func TestValidateStoredResp(t *testing.T) {
 		nil,
 		hardcodedResponseIPValidator{response: true},
 		&mockStoredResponseFetcher{},
-		&hookexecution.HookExecutor{
-			InvocationCtx: &hookstage.InvocationContext{},
-			Endpoint:      hookexecution.EndpointAuction,
-			PlanBuilder:   hooks.EmptyPlanBuilder{},
-			MetricEngine:  &metricsConfig.NilMetricsEngine{},
-		}}
+		hookexecution.NewHookExecutor(hooks.EmptyPlanBuilder{}, hookexecution.EndpointAuction, &metricsConfig.NilMetricsEngine{}),
+	}
 
 	testCases := []struct {
 		description               string
@@ -4712,6 +4654,71 @@ func TestValidateStoredResp(t *testing.T) {
 	for _, test := range testCases {
 		errorList := deps.validateRequest(test.givenRequestWrapper, false, test.hasStoredAuctionResponses, test.storedBidResponses)
 		assert.Equalf(t, test.expectedErrorList, errorList, "Error doesn't match: %s\n", test.description)
+	}
+}
+
+func TestValidResponseWhenRequestRejected(t *testing.T) {
+	const nbr int = 123
+
+	testCases := []struct {
+		description         string
+		file                string
+		planBuilder         hooks.ExecutionPlanBuilder
+		expectedBidResponse openrtb2.BidResponse
+		hookExecutor        hookexecution.HookStageExecutor
+	}{
+		{
+			description: "Assert correct BidResponse when request rejected at entrypoint stage",
+			file:        "sample-requests/valid-whole/hooks/auction_reject.json",
+			planBuilder: mockPlanBuilder{entrypointPlan: makeRejectPlan[hookstage.Entrypoint](mockRejectionHook{nbr})},
+		},
+		{
+			description: "Assert correct BidResponse when request rejected at raw-auction stage",
+			file:        "sample-requests/valid-whole/hooks/auction_reject.json",
+			planBuilder: mockPlanBuilder{rawAuctionPlan: makeRejectPlan[hookstage.RawAuctionRequest](mockRejectionHook{nbr})},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			fileData, err := os.ReadFile(tc.file)
+			assert.NoError(t, err, "Failed to read test file.")
+
+			test, err := parseTestFile(fileData, tc.file)
+			assert.NoError(t, err, "Failed to parse test file.")
+			test.planBuilder = tc.planBuilder
+			test.endpointType = OPENRTB_ENDPOINT
+
+			auctionEndpointHandler, _, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, &config.Configuration{MaxRequestSize: maxSize})
+			assert.NoError(t, err, "Failed to build test endpoint.")
+
+			recorder := httptest.NewRecorder()
+			req := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(test.BidRequest))
+			auctionEndpointHandler(recorder, req, nil)
+			assert.Equal(t, recorder.Code, http.StatusOK, "Endpoint should return 200 OK.")
+
+			var actualResp openrtb2.BidResponse
+			var expectedResp openrtb2.BidResponse
+			var actualExt openrtb_ext.ExtBidResponse
+			var expectedExt openrtb_ext.ExtBidResponse
+
+			assert.NoError(t, json.Unmarshal(test.ExpectedBidResponse, &expectedResp), "Unable to unmarshal expected BidResponse.")
+			assert.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &actualResp), "Unable to unmarshal actual BidResponse.")
+			if expectedResp.Ext != nil {
+				assert.NoError(t, json.Unmarshal(expectedResp.Ext, &expectedExt), "Unable to unmarshal expected ExtBidResponse.")
+				assert.NoError(t, json.Unmarshal(actualResp.Ext, &actualExt), "Unable to unmarshal actual ExtBidResponse.")
+			}
+
+			assertBidResponseEqual(t, tc.file, expectedResp, actualResp)
+			assert.Equal(t, expectedResp.NBR, actualResp.NBR, "Invalid NBR.")
+			assert.Equal(t, expectedExt.Warnings, actualExt.Warnings, "Wrong bidResponse.ext.")
+
+			// Close servers regardless if the test case was run or not
+			for _, mockBidServer := range mockBidServers {
+				mockBidServer.Close()
+			}
+			mockCurrencyRatesServer.Close()
+		})
 	}
 }
 

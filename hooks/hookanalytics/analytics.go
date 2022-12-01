@@ -1,3 +1,7 @@
+// Package hookanalytics provides basic primitives for use by the hook modules.
+//
+// Structures of the package allow modules to provide information
+// about what activity has been performed against the hook payload.
 package hookanalytics
 
 type Analytics struct {

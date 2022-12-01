@@ -1,9 +1,10 @@
 package config
 
 import (
-	"github.com/prebid/prebid-server/hooks"
 	"testing"
 	"time"
+
+	"github.com/prebid/prebid-server/hooks"
 
 	mainConfig "github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/metrics"
@@ -44,7 +45,7 @@ func TestMultiMetricsEngine(t *testing.T) {
 	cfg.Metrics.Influxdb.Host = "localhost"
 	adapterList := openrtb_ext.CoreBidderNames()
 	moduleName := "foobar"
-	moduleStageNames := map[string][]string{moduleName: {hooks.StageEntrypoint, hooks.StageRawAuction}}
+	moduleStageNames := map[string][]string{moduleName: {hooks.StageEntrypoint.String(), hooks.StageRawAuction.String()}}
 	goEngine := metrics.NewMetrics(gometrics.NewPrefixedRegistry("prebidserver."), adapterList, mainConfig.DisabledMetrics{}, nil, moduleStageNames)
 	engineList := make(MultiMetricsEngine, 2)
 	engineList[0] = goEngine
@@ -83,12 +84,12 @@ func TestMultiMetricsEngine(t *testing.T) {
 	moduleLabels := []metrics.ModuleLabels{
 		{
 			Module: moduleName,
-			Stage:  hooks.StageEntrypoint,
+			Stage:  hooks.StageEntrypoint.String(),
 			PubID:  "test1",
 		},
 		{
 			Module: moduleName,
-			Stage:  hooks.StageRawAuction,
+			Stage:  hooks.StageRawAuction.String(),
 			PubID:  "test1",
 		},
 	}
@@ -194,22 +195,22 @@ func TestMultiMetricsEngine(t *testing.T) {
 
 	VerifyMetrics(t, "AdapterMetrics.AppNexus.GDPRRequestBlocked", goEngine.AdapterMetrics[openrtb_ext.BidderAppnexus].GDPRRequestBlocked.Count(), 1)
 
-	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Entry.Call", goEngine.ModuleMetrics[moduleName][hooks.StageEntrypoint].DurationTimer.Count(), 1)
-	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Raw.Call", goEngine.ModuleMetrics[moduleName][hooks.StageRawAuction].DurationTimer.Count(), 1)
-	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Entry.Call", goEngine.ModuleMetrics[moduleName][hooks.StageEntrypoint].CallCounter.Count(), 1)
-	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Raw.Call", goEngine.ModuleMetrics[moduleName][hooks.StageRawAuction].CallCounter.Count(), 1)
-	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Entry.Call", goEngine.ModuleMetrics[moduleName][hooks.StageEntrypoint].FailureCounter.Count(), 1)
-	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Raw.Call", goEngine.ModuleMetrics[moduleName][hooks.StageRawAuction].FailureCounter.Count(), 1)
-	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Entry.Call", goEngine.ModuleMetrics[moduleName][hooks.StageEntrypoint].SuccessNoopCounter.Count(), 1)
-	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Raw.Call", goEngine.ModuleMetrics[moduleName][hooks.StageRawAuction].SuccessNoopCounter.Count(), 1)
-	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Entry.Call", goEngine.ModuleMetrics[moduleName][hooks.StageEntrypoint].SuccessUpdateCounter.Count(), 1)
-	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Raw.Call", goEngine.ModuleMetrics[moduleName][hooks.StageRawAuction].SuccessUpdateCounter.Count(), 1)
-	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Entry.Call", goEngine.ModuleMetrics[moduleName][hooks.StageEntrypoint].SuccessRejectCounter.Count(), 1)
-	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Raw.Call", goEngine.ModuleMetrics[moduleName][hooks.StageRawAuction].SuccessRejectCounter.Count(), 1)
-	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Entry.Call", goEngine.ModuleMetrics[moduleName][hooks.StageEntrypoint].ExecutionErrorCounter.Count(), 1)
-	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Raw.Call", goEngine.ModuleMetrics[moduleName][hooks.StageRawAuction].ExecutionErrorCounter.Count(), 1)
-	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Entry.Call", goEngine.ModuleMetrics[moduleName][hooks.StageEntrypoint].TimeoutCounter.Count(), 1)
-	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Raw.Call", goEngine.ModuleMetrics[moduleName][hooks.StageRawAuction].TimeoutCounter.Count(), 1)
+	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Entry.Call", goEngine.ModuleMetrics[moduleName][hooks.StageEntrypoint.String()].DurationTimer.Count(), 1)
+	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Raw.Call", goEngine.ModuleMetrics[moduleName][hooks.StageRawAuction.String()].DurationTimer.Count(), 1)
+	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Entry.Call", goEngine.ModuleMetrics[moduleName][hooks.StageEntrypoint.String()].CallCounter.Count(), 1)
+	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Raw.Call", goEngine.ModuleMetrics[moduleName][hooks.StageRawAuction.String()].CallCounter.Count(), 1)
+	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Entry.Call", goEngine.ModuleMetrics[moduleName][hooks.StageEntrypoint.String()].FailureCounter.Count(), 1)
+	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Raw.Call", goEngine.ModuleMetrics[moduleName][hooks.StageRawAuction.String()].FailureCounter.Count(), 1)
+	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Entry.Call", goEngine.ModuleMetrics[moduleName][hooks.StageEntrypoint.String()].SuccessNoopCounter.Count(), 1)
+	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Raw.Call", goEngine.ModuleMetrics[moduleName][hooks.StageRawAuction.String()].SuccessNoopCounter.Count(), 1)
+	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Entry.Call", goEngine.ModuleMetrics[moduleName][hooks.StageEntrypoint.String()].SuccessUpdateCounter.Count(), 1)
+	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Raw.Call", goEngine.ModuleMetrics[moduleName][hooks.StageRawAuction.String()].SuccessUpdateCounter.Count(), 1)
+	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Entry.Call", goEngine.ModuleMetrics[moduleName][hooks.StageEntrypoint.String()].SuccessRejectCounter.Count(), 1)
+	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Raw.Call", goEngine.ModuleMetrics[moduleName][hooks.StageRawAuction.String()].SuccessRejectCounter.Count(), 1)
+	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Entry.Call", goEngine.ModuleMetrics[moduleName][hooks.StageEntrypoint.String()].ExecutionErrorCounter.Count(), 1)
+	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Raw.Call", goEngine.ModuleMetrics[moduleName][hooks.StageRawAuction.String()].ExecutionErrorCounter.Count(), 1)
+	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Entry.Call", goEngine.ModuleMetrics[moduleName][hooks.StageEntrypoint.String()].TimeoutCounter.Count(), 1)
+	VerifyMetrics(t, "ModuleMetrics.Module.Foobar.Stage.Raw.Call", goEngine.ModuleMetrics[moduleName][hooks.StageRawAuction.String()].TimeoutCounter.Count(), 1)
 }
 
 func VerifyMetrics(t *testing.T, name string, actual int64, expected int64) {
