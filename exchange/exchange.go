@@ -398,9 +398,6 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 
 	// Build the response
 	bidResponse, err := e.buildBidResponse(ctx, liveAdapters, adapterBids, r.BidRequestWrapper.BidRequest, adapterExtra, auc, bidResponseExt, cacheInstructions.returnCreative, r.ImpExtInfoMap, errs)
-	if err == nil {
-		r.HookExecutor.ExecuteAuctionResponseStage(bidResponse)
-	}
 
 	return bidResponse, err
 }

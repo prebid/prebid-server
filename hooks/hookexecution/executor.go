@@ -132,28 +132,31 @@ func (e *hookExecutor) ExecuteRawAuctionStage(requestBody []byte) ([]byte, *Reje
 	return payload, reject
 }
 
-func (executor *HookExecutor) ExecuteAuctionResponseStage(response *openrtb2.BidResponse) {
-	plan := executor.PlanBuilder.PlanForAuctionResponseStage(executor.Endpoint, executor.InvocationCtx.Account)
+func (e *hookExecutor) ExecuteAuctionResponseStage(response *openrtb2.BidResponse) {
+	plan := e.planBuilder.PlanForAuctionResponseStage(e.endpoint, e.account)
 	if len(plan) == 0 {
 		return
 	}
 
 	handler := func(
 		ctx context.Context,
-		moduleCtx *hookstage.ModuleContext,
+		moduleCtx hookstage.ModuleInvocationContext,
 		hook hookstage.AuctionResponse,
 		payload hookstage.AuctionResponsePayload,
 	) (hookstage.HookResult[hookstage.AuctionResponsePayload], error) {
 		return hook.HandleAuctionResponseHook(ctx, moduleCtx, payload)
 	}
 
-	executor.InvocationCtx.Stage = hooks.StageAuctionResponse
+	stageName := hooks.StageAuctionResponse.String()
+	executionCtx := e.newContext(stageName)
 	payload := hookstage.AuctionResponsePayload{BidResponse: response}
-	stageOutcome, _, _ := executeStage(executor.InvocationCtx, plan, payload, handler, executor.MetricEngine)
-	stageOutcome.Entity = hookstage.EntityAuctionResponse
-	stageOutcome.Stage = hooks.StageAuctionResponse
 
-	executor.stageOutcomes = append(executor.stageOutcomes, stageOutcome)
+	outcome, _, contexts, _ := executeStage(executionCtx, plan, payload, handler, e.metricEngine)
+	outcome.Entity = entityAuctionResponse
+	outcome.Stage = stageName
+
+	e.saveModuleContexts(contexts)
+	e.pushStageOutcome(outcome)
 }
 
 func (e *hookExecutor) newContext(stage string) executionContext {

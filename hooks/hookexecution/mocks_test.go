@@ -80,6 +80,10 @@ func (e mockRejectHook) HandleRawAuctionHook(_ context.Context, _ hookstage.Modu
 	return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{Reject: true}, nil
 }
 
+func (e mockRejectHook) HandleAuctionResponseHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.AuctionResponsePayload) (hookstage.HookResult[hookstage.AuctionResponsePayload], error) {
+	return hookstage.HookResult[hookstage.AuctionResponsePayload]{Reject: true}, nil
+}
+
 type mockTimeoutHook struct{}
 
 func (e mockTimeoutHook) HandleEntrypointHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
@@ -156,6 +160,10 @@ func (h mockErrorHook) HandleRawAuctionHook(_ context.Context, miCtx hookstage.M
 	return hookstage.HookResult[hookstage.RawAuctionRequestPayload]{}, errors.New("unexpected error")
 }
 
+func (h mockErrorHook) HandleAuctionResponseHook(_ context.Context, miCtx hookstage.ModuleInvocationContext, _ hookstage.AuctionResponsePayload) (hookstage.HookResult[hookstage.AuctionResponsePayload], error) {
+	return hookstage.HookResult[hookstage.AuctionResponsePayload]{}, errors.New("unexpected error")
+}
+
 type mockFailedMutationHook struct{}
 
 func (h mockFailedMutationHook) HandleEntrypointHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
@@ -178,11 +186,11 @@ func (h mockFailedMutationHook) HandleRawAuctionHook(_ context.Context, miCtx ho
 
 type mockUpdateBidResponseHook struct{}
 
-func (e mockUpdateBidResponseHook) HandleAuctionResponseHook(_ context.Context, _ *hookstage.ModuleContext, _ hookstage.AuctionResponsePayload) (hookstage.HookResult[hookstage.AuctionResponsePayload], error) {
+func (e mockUpdateBidResponseHook) HandleAuctionResponseHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.AuctionResponsePayload) (hookstage.HookResult[hookstage.AuctionResponsePayload], error) {
 	c := &hookstage.ChangeSet[hookstage.AuctionResponsePayload]{}
 	c.AddMutation(
 		func(payload hookstage.AuctionResponsePayload) (hookstage.AuctionResponsePayload, error) {
-			payload.BidResponse.CustomData = payload.BidResponse.CustomData + "more-data"
+			payload.BidResponse.CustomData = "new-custom-data"
 			return payload, nil
 		}, hookstage.MutationUpdate, "auctionResponse", "bidResponse.custom-data")
 
