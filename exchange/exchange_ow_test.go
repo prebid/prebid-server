@@ -1,6 +1,7 @@
 package exchange
 
 import (
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
@@ -612,5 +613,55 @@ func TestRecordAdaptorDuplicateBidIDs(t *testing.T) {
 			adapterBids[openrtb_ext.BidderName(bidder)].bids = bids
 		}
 		assert.Equal(t, testcase.hasCollision, recordAdaptorDuplicateBidIDs(testEngine, adapterBids))
+	}
+}
+
+func TestMakeBidExtJSONOW(t *testing.T) {
+
+	type aTest struct {
+		description        string
+		ext                json.RawMessage
+		extBidPrebid       openrtb_ext.ExtBidPrebid
+		impExtInfo         map[string]ImpExtInfo
+		origbidcpm         float64
+		origbidcur         string
+		origbidcpmusd      float64
+		expectedBidExt     string
+		expectedErrMessage string
+	}
+
+	testCases := []aTest{
+		{
+			description:        "Valid extension with origbidcpmusd = 0",
+			ext:                json.RawMessage(`{"video":{"h":100}}`),
+			extBidPrebid:       openrtb_ext.ExtBidPrebid{Type: openrtb_ext.BidType("video"), Meta: &openrtb_ext.ExtBidPrebidMeta{BrandName: "foo"}, Passthrough: nil},
+			impExtInfo:         map[string]ImpExtInfo{"test_imp_id": {true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`), json.RawMessage(`{"imp_passthrough_val": 1}`)}},
+			origbidcpm:         10.0000,
+			origbidcur:         "USD",
+			expectedBidExt:     `{"prebid":{"meta": {"brandName": "foo"}, "passthrough":{"imp_passthrough_val":1}, "type":"video"}, "storedrequestattributes":{"h":480,"mimes":["video/mp4"]},"video":{"h":100}, "origbidcpm": 10, "origbidcur": "USD"}`,
+			expectedErrMessage: "",
+		},
+		{
+			description:        "Valid extension with origbidcpmusd > 0",
+			ext:                json.RawMessage(`{"video":{"h":100}}`),
+			extBidPrebid:       openrtb_ext.ExtBidPrebid{Type: openrtb_ext.BidType("video"), Meta: &openrtb_ext.ExtBidPrebidMeta{BrandName: "foo"}, Passthrough: nil},
+			impExtInfo:         map[string]ImpExtInfo{"test_imp_id": {true, []byte(`{"video":{"h":480,"mimes":["video/mp4"]}}`), json.RawMessage(`{"imp_passthrough_val": 1}`)}},
+			origbidcpm:         10.0000,
+			origbidcur:         "USD",
+			origbidcpmusd:      10.0000,
+			expectedBidExt:     `{"prebid":{"meta": {"brandName": "foo"}, "passthrough":{"imp_passthrough_val":1}, "type":"video"}, "storedrequestattributes":{"h":480,"mimes":["video/mp4"]},"video":{"h":100}, "origbidcpm": 10, "origbidcur": "USD", "origbidcpmusd": 10}`,
+			expectedErrMessage: "",
+		},
+	}
+
+	for _, test := range testCases {
+		result, err := makeBidExtJSON(test.ext, &test.extBidPrebid, test.impExtInfo, "test_imp_id", test.origbidcpm, test.origbidcur, test.origbidcpmusd)
+
+		if test.expectedErrMessage == "" {
+			assert.JSONEq(t, test.expectedBidExt, string(result), "Incorrect result")
+			assert.NoError(t, err, "Error should not be returned")
+		} else {
+			assert.Contains(t, err.Error(), test.expectedErrMessage, "incorrect error message")
+		}
 	}
 }

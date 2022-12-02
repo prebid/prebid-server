@@ -1104,7 +1104,7 @@ func (e *exchange) makeBid(bids []*pbsOrtbBid, auc *auction, returnCreative bool
 			}
 		}
 
-		if bidExtJSON, err := makeBidExtJSON(bid.bid.Ext, bidExtPrebid, impExtInfoMap, bid.bid.ImpID, bid.originalBidCPM, bid.originalBidCur); err != nil {
+		if bidExtJSON, err := makeBidExtJSON(bid.bid.Ext, bidExtPrebid, impExtInfoMap, bid.bid.ImpID, bid.originalBidCPM, bid.originalBidCur, bid.originalBidCPMUSD); err != nil {
 			errs = append(errs, err)
 		} else {
 			result = append(result, *bid.bid)
@@ -1118,7 +1118,7 @@ func (e *exchange) makeBid(bids []*pbsOrtbBid, auc *auction, returnCreative bool
 	return result, errs
 }
 
-func makeBidExtJSON(ext json.RawMessage, prebid *openrtb_ext.ExtBidPrebid, impExtInfoMap map[string]ImpExtInfo, impId string, originalBidCpm float64, originalBidCur string) (json.RawMessage, error) {
+func makeBidExtJSON(ext json.RawMessage, prebid *openrtb_ext.ExtBidPrebid, impExtInfoMap map[string]ImpExtInfo, impId string, originalBidCpm float64, originalBidCur string, originalBidCpmUSD float64) (json.RawMessage, error) {
 	var extMap map[string]interface{}
 
 	if len(ext) != 0 {
@@ -1137,6 +1137,11 @@ func makeBidExtJSON(ext json.RawMessage, prebid *openrtb_ext.ExtBidPrebid, impEx
 	//ext.origbidcur
 	if originalBidCur != "" {
 		extMap[openrtb_ext.OriginalBidCurKey] = originalBidCur
+	}
+
+	//ext.origbidcpmusd
+	if originalBidCpmUSD > float64(0) {
+		extMap[openrtb_ext.OriginalBidCpmUsdKey] = originalBidCpmUSD
 	}
 
 	// ext.prebid

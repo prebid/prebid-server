@@ -83,6 +83,7 @@ type testConfigValues struct {
 	CurrencyRates       map[string]map[string]float64 `json:"currencyRates"`
 	MockBidders         []mockBidderHandler           `json:"mockBidders"`
 	RealParamsValidator bool                          `json:"realParamsValidator"`
+	AssertBidExt        bool                          `json:"assertbidext"`
 }
 
 type brokenExchange struct{}
