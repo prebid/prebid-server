@@ -21,6 +21,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/hooks"
+	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/hooks/hookstage"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -1968,63 +1969,45 @@ func TestSetTargeting(t *testing.T) {
 
 func TestValidAmpResponseWhenRequestRejected(t *testing.T) {
 	const nbr int = 123
-	const file string = "sample-requests/amp/valid-supplementary/aliased-buyeruids.json"
-
-	var tc testCase
-	var notRejectedAmpResponse AmpResponse
-
-	fileData, err := os.ReadFile(file)
-	assert.NoError(t, err, "Failed to read test file.")
-	if err := json.Unmarshal(fileData, &tc); err != nil {
-		t.Fatal("Failed to unmarshal test file:", err)
-	}
-	if err := json.Unmarshal(tc.ExpectedAmpResponse, &notRejectedAmpResponse); err != nil {
-		t.Fatal("Failed to unmarshal AMP Response:", err)
-	}
 
 	testCases := []struct {
-		description         string
-		planBuilder         hooks.ExecutionPlanBuilder
-		expectedAmpResponse AmpResponse
+		description string
+		file        string
+		planBuilder hooks.ExecutionPlanBuilder
 	}{
 		{
-			description:         "Assert correct BidResponse when request rejected at entrypoint stage",
-			planBuilder:         mockPlanBuilder{entrypointPlan: makeRejectPlan[hookstage.Entrypoint](mockRejectionHook{nbr})},
-			expectedAmpResponse: AmpResponse{Targeting: map[string]string{}, ORTB2: &ORTB2{Ext: &openrtb_ext.ExtBidResponse{}}},
+			description: "Assert correct AmpResponse when request rejected at entrypoint stage",
+			file:        "sample-requests/hooks/amp_reject.json",
+			planBuilder: mockPlanBuilder{entrypointPlan: makePlan[hookstage.Entrypoint](mockRejectionHook{nbr})},
 		},
 		{
-			description:         "Assert correct BidResponse when request rejected at raw-auction stage",
-			planBuilder:         mockPlanBuilder{rawAuctionPlan: makeRejectPlan[hookstage.RawAuctionRequest](mockRejectionHook{nbr})},
-			expectedAmpResponse: notRejectedAmpResponse,
+			// raw-auction stage not executed for AMP endpoint, so we expect full response
+			description: "Assert correct AmpResponse when request rejected at raw-auction stage",
+			file:        "sample-requests/amp/valid-supplementary/aliased-buyeruids.json",
+			planBuilder: mockPlanBuilder{rawAuctionPlan: makePlan[hookstage.RawAuctionRequest](mockRejectionHook{nbr})},
 		},
 		{
 			// bidder-request stage rejects only bidder, so we expect bidder rejection warning added
-			description: "Assert correct BidResponse when request rejected at bidder-request stage",
-			planBuilder: mockPlanBuilder{bidderRequestPlan: makeRejectPlan[hookstage.BidderRequest](mockRejectionHook{nbr})},
-			expectedAmpResponse: AmpResponse{
-				Targeting: map[string]string{},
-				ORTB2: &ORTB2{Ext: &openrtb_ext.ExtBidResponse{
-					Warnings: map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage{
-						"appnexus": {
-							{
-								Code:    11,
-								Message: "Module foobar (hook: foo) rejected request with code 123 at bidder-request stage",
-							},
-						},
-						"general": {
-							{
-								Code:    10002,
-								Message: "debug turned off for account",
-							},
-						},
-					},
-				}},
+			description: "Assert correct AmpResponse when request rejected at bidder-request stage",
+			file:        "sample-requests/hooks/amp_bidder_reject.json",
+			planBuilder: mockPlanBuilder{bidderRequestPlan: makePlan[hookstage.BidderRequest](mockRejectionHook{nbr})},
+		},
+		{
+			// no debug information should be added for raw-auction stage because it's not executed for amp endpoint
+			description: "Assert correct AmpResponse with debug information from modules added to ext.prebid.modules",
+			file:        "sample-requests/hooks/amp.json",
+			planBuilder: mockPlanBuilder{
+				entrypointPlan: makeEntrypointPlan(),
+				rawAuctionPlan: makeRawAuctionPlan(),
 			},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
+			fileData, err := os.ReadFile(tc.file)
+			assert.NoError(t, err, "Failed to read test file.")
+
 			test := testCase{}
 			assert.NoError(t, json.Unmarshal(fileData, &test), "Failed to parse test file.")
 
@@ -2037,15 +2020,29 @@ func TestValidAmpResponseWhenRequestRejected(t *testing.T) {
 			test.planBuilder = tc.planBuilder
 			test.endpointType = AMP_ENDPOINT
 
-			ampEndpointHandler, _, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, &config.Configuration{MaxRequestSize: maxSize})
+			cfg := &config.Configuration{MaxRequestSize: maxSize, AccountDefaults: config.Account{DebugAllow: true}}
+			ampEndpointHandler, _, mockBidServers, mockCurrencyRatesServer, err := buildTestEndpoint(test, cfg)
 			assert.NoError(t, err, "Failed to build test endpoint.")
 
 			ampEndpointHandler(recorder, request, nil)
 			assert.Equal(t, recorder.Code, http.StatusOK, "Endpoint should return 200 OK.")
 
-			var actualResp AmpResponse
-			assert.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &actualResp), "Unable to unmarshal actual BidResponse.")
-			assert.Equal(t, tc.expectedAmpResponse, actualResp, "Invalid AMP Response.")
+			var actualAmpResp AmpResponse
+			var expectedAmpResp AmpResponse
+			assert.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &actualAmpResp), "Unable to unmarshal actual AmpResponse.")
+			assert.NoError(t, json.Unmarshal(test.ExpectedAmpResponse, &expectedAmpResp), "Unable to unmarshal expected AmpResponse.")
+
+			// validate modules data separately, because it has dynamic data
+			if expectedAmpResp.ORTB2.Ext.Prebid == nil {
+				assert.Nil(t, actualAmpResp.ORTB2.Ext.Prebid, "AmpResponse.ortb2.ext.prebid expected to be nil.")
+			} else {
+				hookexecution.AssertEqualModulesData(t, expectedAmpResp.ORTB2.Ext.Prebid.Modules, actualAmpResp.ORTB2.Ext.Prebid.Modules)
+			}
+
+			// reset modules to validate amp responses
+			actualAmpResp.ORTB2.Ext.Prebid = nil
+			expectedAmpResp.ORTB2.Ext.Prebid = nil
+			assert.Equal(t, expectedAmpResp, actualAmpResp, "Invalid AMP Response.")
 
 			// Close servers regardless if the test case was run or not
 			for _, mockBidServer := range mockBidServers {

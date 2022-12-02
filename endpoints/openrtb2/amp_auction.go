@@ -43,11 +43,11 @@ var nilBody []byte = nil
 
 type AmpResponse struct {
 	Targeting map[string]string `json:"targeting"`
-	ORTB2     *ORTB2            `json:"ortb2"`
+	ORTB2     ORTB2             `json:"ortb2"`
 }
 
 type ORTB2 struct {
-	Ext *openrtb_ext.ExtBidResponse `json:"ext"`
+	Ext openrtb_ext.ExtBidResponse `json:"ext"`
 }
 
 // NewAmpEndpoint modifies the OpenRTB endpoint to handle AMP requests. This will basically modify the parsing
@@ -307,10 +307,7 @@ func sendAmpResponse(w http.ResponseWriter, hookExecutor hookexecution.HookStage
 
 	// Now JSONify the targets for the AMP response.
 	ampResponse := AmpResponse{Targeting: targets}
-	ao, ext := getExtBidResponse(hookExecutor, response, reqWrapper, account, ao, errs)
-	if ext != nil {
-		ampResponse.ORTB2 = &ORTB2{ext}
-	}
+	ao, ampResponse.ORTB2.Ext = getExtBidResponse(hookExecutor, response, reqWrapper, account, ao, errs)
 
 	ao.AmpTargetingValues = targets
 
@@ -336,7 +333,7 @@ func getExtBidResponse(
 	account *config.Account,
 	ao analytics.AmpObject,
 	errs []error,
-) (analytics.AmpObject, *openrtb_ext.ExtBidResponse) {
+) (analytics.AmpObject, openrtb_ext.ExtBidResponse) {
 	// Extract any errors
 	var extResponse openrtb_ext.ExtBidResponse
 	eRErr := json.Unmarshal(response.Ext, &extResponse)
@@ -382,7 +379,7 @@ func getExtBidResponse(
 		}
 	}
 
-	return ao, &extBidResponse
+	return ao, extBidResponse
 }
 
 // parseRequest turns the HTTP request into an OpenRTB request.

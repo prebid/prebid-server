@@ -1,5 +1,5 @@
 {
-  "description": "Simple request",
+  "description": "Auction request rejected",
   "config": {
     "mockBidders": [
       {"bidderName": "appnexus", "currency": "USD", "price": 0.00}

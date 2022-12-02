@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // AssertEqualModulesData is the test helper function which asserts
@@ -17,8 +16,8 @@ func AssertEqualModulesData(t *testing.T, expectedData, actualData json.RawMessa
 	var expectedModulesOutcome ModulesOutcome
 	var actualModulesOutcome ModulesOutcome
 
-	require.NoError(t, json.Unmarshal(expectedData, &expectedModulesOutcome), "Failed to unmarshal expected modules data.")
-	require.NoError(t, json.Unmarshal(actualData, &actualModulesOutcome), "Failed to unmarshal actual modules data.")
+	assert.NoError(t, json.Unmarshal(expectedData, &expectedModulesOutcome), "Failed to unmarshal expected modules data.")
+	assert.NoError(t, json.Unmarshal(actualData, &actualModulesOutcome), "Failed to unmarshal actual modules data.")
 	assert.Equal(t, expectedModulesOutcome.Errors, actualModulesOutcome.Errors, "Invalid error messages.")
 	assert.Equal(t, expectedModulesOutcome.Warnings, actualModulesOutcome.Warnings, "Invalid warning messages.")
 
@@ -27,7 +26,7 @@ func AssertEqualModulesData(t *testing.T, expectedData, actualData json.RawMessa
 
 func assertEqualTraces(t *testing.T, expectedTrace *TraceOutcome, actualTrace *TraceOutcome) {
 	if expectedTrace == nil {
-		require.Nil(t, actualTrace, "Nil trace not expected.")
+		assert.Nil(t, actualTrace, "Nil trace not expected.")
 	}
 
 	// calculate expected timings from actual modules outcome
@@ -41,7 +40,7 @@ func assertEqualTraces(t *testing.T, expectedTrace *TraceOutcome, actualTrace *T
 			}
 
 			expectedOutcome := findCorrespondingStageOutcome(expectedStage, actualOutcome)
-			require.NotNil(t, expectedOutcome, "Not found corresponding stage outcome, actual:`", actualOutcome)
+			assert.NotNil(t, expectedOutcome, "Not found corresponding stage outcome, actual:`", actualOutcome)
 			assertEqualStageOutcomes(t, *expectedOutcome, actualOutcome)
 		}
 
@@ -55,7 +54,7 @@ func assertEqualTraces(t *testing.T, expectedTrace *TraceOutcome, actualTrace *T
 func assertEqualStageOutcomes(t *testing.T, expected StageOutcome, actual StageOutcome) {
 	t.Helper()
 
-	require.Equal(t, len(actual.Groups), len(expected.Groups), "Stage outcomes contain different number of groups")
+	assert.Equal(t, len(actual.Groups), len(expected.Groups), "Stage outcomes contain different number of groups")
 
 	// calculate expected timings from actual outcome
 	for i, group := range actual.Groups {
@@ -73,12 +72,12 @@ func assertEqualStageOutcomes(t *testing.T, expected StageOutcome, actual StageO
 
 	for i, expGroup := range expected.Groups {
 		gotGroup := actual.Groups[i]
-		require.Equal(t, len(expGroup.InvocationResults), len(gotGroup.InvocationResults), "Group outcomes #%d contain different number of invocation results", i)
+		assert.Equal(t, len(expGroup.InvocationResults), len(gotGroup.InvocationResults), "Group outcomes #%d contain different number of invocation results", i)
 		assert.Equal(t, expGroup.ExecutionTimeMillis, gotGroup.ExecutionTimeMillis, "Incorrect group #%d execution time", i)
 
 		for _, expHook := range expGroup.InvocationResults {
 			gotHook := findCorrespondingHookResult(expHook.HookID, gotGroup)
-			require.NotNil(t, gotHook, "Expected to get hook, got nil: group #%d, hookID %v", i, expHook.HookID)
+			assert.NotNil(t, gotHook, "Expected to get hook, got nil: group #%d, hookID %v", i, expHook.HookID)
 
 			gotHook.ExecutionTimeMillis = 0 // reset hook execution time, we cannot predict it
 			assert.Equal(t, expHook, *gotHook, "Incorrect hook outcome: group #%d, hookID %v", i, expHook.HookID)

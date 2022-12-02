@@ -1,5 +1,5 @@
 {
-  "description": "Simple request",
+  "description": "Auction request",
   "config": {
     "mockBidders": [
       {"bidderName": "appnexus", "currency": "USD", "price": 0.00}
@@ -71,10 +71,6 @@
             "foobar": {
               "bar": [
                 "warning 1"
-              ],
-              "baz": [
-                "warning 1",
-                "warning 2"
               ]
             }
           },

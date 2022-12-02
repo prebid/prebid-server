@@ -29,6 +29,7 @@ import (
 	"github.com/prebid/prebid-server/experiment/adscert"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/hooks"
+	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/hooks/hookstage"
 	"github.com/prebid/prebid-server/metrics"
 	metricsConfig "github.com/prebid/prebid-server/metrics/config"
@@ -1475,7 +1476,7 @@ func (m mockPlanBuilder) PlanForAuctionResponseStage(_ string, _ *config.Account
 	return m.auctionResponsePlan
 }
 
-func makeRejectPlan[H any](hook H) hooks.Plan[H] {
+func makePlan[H any](hook H) hooks.Plan[H] {
 	return hooks.Plan[H]{
 		{
 			Timeout: 5 * time.Millisecond,
@@ -1533,7 +1534,10 @@ func makeEntrypointPlan() hooks.Plan[hookstage.Entrypoint] {
 					Module: "foobar",
 					Code:   "foo",
 					Hook: mockUpdateHook{
-						entrypointHandler: func(payload hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+						entrypointHandler: func(
+							_ hookstage.ModuleInvocationContext,
+							payload hookstage.EntrypointPayload,
+						) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
 							ch := &hookstage.ChangeSet[hookstage.EntrypointPayload]{}
 							ch.AddMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
 								payload.Request.Header.Add("foo", "bar")
@@ -1551,7 +1555,10 @@ func makeEntrypointPlan() hooks.Plan[hookstage.Entrypoint] {
 					Module: "foobar",
 					Code:   "bar",
 					Hook: mockUpdateHook{
-						entrypointHandler: func(payload hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+						entrypointHandler: func(
+							_ hookstage.ModuleInvocationContext,
+							payload hookstage.EntrypointPayload,
+						) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
 							ch := &hookstage.ChangeSet[hookstage.EntrypointPayload]{}
 							ch.AddMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
 								params := payload.Request.URL.Query()
@@ -1577,7 +1584,16 @@ func makeEntrypointPlan() hooks.Plan[hookstage.Entrypoint] {
 					Module: "foobar",
 					Code:   "baz",
 					Hook: mockUpdateHook{
-						entrypointHandler: func(payload hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+						entrypointHandler: func(
+							ctx hookstage.ModuleInvocationContext,
+							payload hookstage.EntrypointPayload,
+						) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
+							result := hookstage.HookResult[hookstage.EntrypointPayload]{}
+							if ctx.Endpoint != hookexecution.EndpointAuction {
+								result.Warnings = []string{fmt.Sprintf("Endpoint %s is not supported by hook.", ctx.Endpoint)}
+								return result, nil
+							}
+
 							ch := &hookstage.ChangeSet[hookstage.EntrypointPayload]{}
 							ch.AddMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
 								body, err := jsonpatch.MergePatch(payload.Body, []byte(`{"tmax":50}`))
@@ -1593,11 +1609,9 @@ func makeEntrypointPlan() hooks.Plan[hookstage.Entrypoint] {
 								}
 								return payload, err
 							}, hookstage.MutationAdd, "body", "regs", "ext", "us_privacy")
+							result.ChangeSet = ch
 
-							return hookstage.HookResult[hookstage.EntrypointPayload]{
-								ChangeSet: ch,
-								Warnings:  []string{"warning 1", "warning 2"},
-							}, nil
+							return result, nil
 						},
 					},
 				},
@@ -1622,15 +1636,18 @@ func makeRawAuctionPlan() hooks.Plan[hookstage.RawAuctionRequest] {
 }
 
 type mockUpdateHook struct {
-	entrypointHandler func(payload hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error)
+	entrypointHandler func(
+		hookstage.ModuleInvocationContext,
+		hookstage.EntrypointPayload,
+	) (hookstage.HookResult[hookstage.EntrypointPayload], error)
 }
 
 func (m mockUpdateHook) HandleEntrypointHook(
 	_ context.Context,
-	_ hookstage.ModuleInvocationContext,
+	miCtx hookstage.ModuleInvocationContext,
 	payload hookstage.EntrypointPayload,
 ) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
-	return m.entrypointHandler(payload)
+	return m.entrypointHandler(miCtx, payload)
 }
 
 func (m mockUpdateHook) HandleRawAuctionHook(

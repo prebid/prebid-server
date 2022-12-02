@@ -4667,23 +4667,23 @@ func TestValidResponseAfterExecutingStages(t *testing.T) {
 	}{
 		{
 			description: "Assert correct BidResponse when request rejected at entrypoint stage",
-			file:        "sample-requests/valid-whole/hooks/auction_reject.json",
-			planBuilder: mockPlanBuilder{entrypointPlan: makeRejectPlan[hookstage.Entrypoint](mockRejectionHook{nbr})},
+			file:        "sample-requests/hooks/auction_reject.json",
+			planBuilder: mockPlanBuilder{entrypointPlan: makePlan[hookstage.Entrypoint](mockRejectionHook{nbr})},
 		},
 		{
 			description: "Assert correct BidResponse when request rejected at raw-auction stage",
-			file:        "sample-requests/valid-whole/hooks/auction_reject.json",
-			planBuilder: mockPlanBuilder{rawAuctionPlan: makeRejectPlan[hookstage.RawAuctionRequest](mockRejectionHook{nbr})},
+			file:        "sample-requests/hooks/auction_reject.json",
+			planBuilder: mockPlanBuilder{rawAuctionPlan: makePlan[hookstage.RawAuctionRequest](mockRejectionHook{nbr})},
 		},
 		{
 			// bidder-request stage doesn't reject whole request, so we do not expect NBR code in response
 			description: "Assert correct BidResponse when request rejected at bidder-request stage",
-			file:        "sample-requests/valid-whole/hooks/auction_bidder_reject.json",
-			planBuilder: mockPlanBuilder{bidderRequestPlan: makeRejectPlan[hookstage.BidderRequest](mockRejectionHook{nbr})},
+			file:        "sample-requests/hooks/auction_bidder_reject.json",
+			planBuilder: mockPlanBuilder{bidderRequestPlan: makePlan[hookstage.BidderRequest](mockRejectionHook{nbr})},
 		},
 		{
 			description: "Assert correct BidResponse with debug information from modules added to ext.prebid.modules",
-			file:        "sample-requests/valid-whole/hooks/simple.json",
+			file:        "sample-requests/hooks/auction.json",
 			planBuilder: mockPlanBuilder{
 				entrypointPlan: makeEntrypointPlan(),
 				rawAuctionPlan: makeRawAuctionPlan(),
@@ -4724,7 +4724,7 @@ func TestValidResponseAfterExecutingStages(t *testing.T) {
 
 			assertBidResponseEqual(t, tc.file, expectedResp, actualResp)
 			assert.Equal(t, expectedResp.NBR, actualResp.NBR, "Invalid NBR.")
-			assert.Equal(t, expectedExt.Warnings, actualExt.Warnings, "Wrong bidResponse.ext.")
+			assert.Equal(t, expectedExt.Warnings, actualExt.Warnings, "Wrong bidResponse.ext.warnings.")
 
 			if expectedExt.Prebid != nil {
 				hookexecution.AssertEqualModulesData(t, expectedExt.Prebid.Modules, actualExt.Prebid.Modules)

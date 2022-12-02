@@ -1,32 +1,69 @@
 {
-  "description": "Simple request",
+  "description": "Amp request",
+  "query": "tag_id=101&trace=verbose",
+  "config": {
+    "mockBidders": [
+      {"bidderName": "appnexus", "currency": "USD", "price": 2}
+    ]
+  },
   "mockBidRequest": {
-    "id": "some-request-id",
+    "id": "request-with-user-ext-obj",
     "site": {
-      "page": "prebid.org"
+      "page": "test.somepage.com"
     },
     "imp": [
       {
-        "id": "some-impression-id",
+        "id": "my-imp-id",
         "banner": {
           "format": [
             {
               "w": 300,
-              "h": 250
+              "h": 600
             }
           ]
         },
         "ext": {
-          "appnexus": {
-            "placementId": 12883451
+          "prebid": {
+            "bidder": {
+              "appnexus": {
+                "placementId": 12883451
+              }
+            }
           }
         }
       }
     ],
-    "tmax": 500
+    "user": {
+      "ext": {
+        "prebid": {
+          "buyeruids": {
+            "unknown": "123"
+          }
+        }
+      }
+    },
+    "ext": {
+      "prebid": {
+        "debug": true,
+        "aliases": {
+          "unknown": "appnexus"
+        }
+      }
+    }
   },
   "expectedAmpResponse": {
-    "targeting": {},
+    "targeting": {
+      "hb_bidder": "appnexus",
+      "hb_bidder_appnexus": "appnexus",
+      "hb_cache_host": "www.pbcserver.com",
+      "hb_cache_host_appnex": "www.pbcserver.com",
+      "hb_cache_id": "0",
+      "hb_cache_id_appnexus": "0",
+      "hb_cache_path": "/pbcache/endpoint",
+      "hb_cache_path_appnex": "/pbcache/endpoint",
+      "hb_pb": "2.00",
+      "hb_pb_appnexus": "2.00"
+    },
     "ortb2": {
       "ext": {
         "prebid": {
@@ -47,8 +84,7 @@
                   "warning 1"
                 ],
                 "baz": [
-                  "warning 1",
-                  "warning 2"
+                  "Endpoint /openrtb2/amp is not supported by hook."
                 ]
               }
             },
@@ -99,12 +135,8 @@
                                 "hook-impl-code": "baz"
                               },
                               "status": "success",
-                              "action": "update",
-                              "message": "",
-                              "debugmessages": [
-                                "Hook mutation successfully applied, affected key: body.foo, mutation type: update",
-                                "Hook mutation successfully applied, affected key: body.name, mutation type: delete"
-                              ]
+                              "action": "no_action",
+                              "message": ""
                             }
                           ]
                         }
