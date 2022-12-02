@@ -4658,7 +4658,7 @@ func TestValidResponseWhenRequestRejected(t *testing.T) {
 	nbr := openrtb3.NoBidReason(123)
 	reject := hookexecution.RejectError{
 		int(nbr),
-		hookexecution.HookID{ModuleCode: "foobar", HookCode: "foo"},
+		hookexecution.HookID{ModuleCode: "foobar", HookImplCode: "foo"},
 		hooks.StageEntrypoint.String(),
 	}
 

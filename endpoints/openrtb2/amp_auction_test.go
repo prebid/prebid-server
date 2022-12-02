@@ -1937,7 +1937,7 @@ func TestSetTargeting(t *testing.T) {
 func TestValidAmpResponseWhenRequestRejected(t *testing.T) {
 	reject := hookexecution.RejectError{
 		123,
-		hookexecution.HookID{ModuleCode: "foobar", HookCode: "foo"},
+		hookexecution.HookID{ModuleCode: "foobar", HookImplCode: "foo"},
 		hooks.StageEntrypoint.String(),
 	}
 

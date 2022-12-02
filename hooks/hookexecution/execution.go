@@ -91,7 +91,7 @@ func executeHook[H any, P any](
 ) {
 	hookRespCh := make(chan hookResponse[P], 1)
 	startTime := time.Now()
-	hookId := HookID{ModuleCode: hw.Module, HookCode: hw.Code}
+	hookId := HookID{ModuleCode: hw.Module, HookImplCode: hw.Code}
 
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
@@ -223,7 +223,7 @@ func handleHookReject[P any](ctx executionContext, hr hookResponse[P], hookOutco
 			fmt.Sprintf(
 				"Module (name: %s, hook code: %s) tried to reject request on the %s stage that does not support rejection",
 				hr.HookID.ModuleCode,
-				hr.HookID.HookCode,
+				hr.HookID.HookImplCode,
 				ctx.stage,
 			),
 		)

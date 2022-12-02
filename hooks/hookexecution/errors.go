@@ -43,7 +43,7 @@ func (e RejectError) Error() string {
 	return fmt.Sprintf(
 		`Module %s (hook: %s) rejected request with code %d at %s stage`,
 		e.Hook.ModuleCode,
-		e.Hook.HookCode,
+		e.Hook.HookImplCode,
 		e.NBR,
 		e.Stage,
 	)
