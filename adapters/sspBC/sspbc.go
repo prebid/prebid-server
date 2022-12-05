@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	adapterVersion              = "5.7"
+	adapterVersion              = "5.8"
 	impFallbackSize             = "1x1"
 	requestTypeStandard         = 1
 	requestTypeOneCode          = 2
