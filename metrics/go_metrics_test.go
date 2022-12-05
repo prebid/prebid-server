@@ -435,9 +435,10 @@ func TestRecordAdapterConnections(t *testing.T) {
 
 func TestNewMetricsWithDisabledConfig(t *testing.T) {
 	registry := metrics.NewRegistry()
-	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{AccountAdapterDetails: true}, nil, nil)
+	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{AccountAdapterDetails: true, AccountModulesMetrics: true}, nil, map[string][]string{"foobar": {"entry", "raw"}})
 
 	assert.True(t, m.MetricsDisabled.AccountAdapterDetails, "Accound adapter metrics should be disabled")
+	assert.True(t, m.MetricsDisabled.AccountModulesMetrics, "Accound modules metrics should be disabled")
 }
 
 func TestRecordPrebidCacheRequestTimeWithSuccess(t *testing.T) {
@@ -880,14 +881,15 @@ func TestRecordModuleAccountMetrics(t *testing.T) {
 	registry := metrics.NewRegistry()
 	module := "foobar"
 	stage1 := "entrypoint"
-	stage2 := "rawauction"
-	m := NewMetrics(registry, nil, config.DisabledMetrics{}, nil, map[string][]string{module: {stage1, stage2}})
+	stage2 := "raw_auction"
+	stage3 := "processed_auction"
 
 	testCases := []struct {
 		description                string
 		givenModuleName            string
 		givenStageName             string
 		givenPubID                 string
+		givenDisabledMetrics       config.DisabledMetrics
 		expectedModuleMetricCount  int64
 		expectedAccountMetricCount int64
 	}{
@@ -895,6 +897,7 @@ func TestRecordModuleAccountMetrics(t *testing.T) {
 			description:                "Entrypoint stage should not record account metrics",
 			givenModuleName:            module,
 			givenStageName:             stage1,
+			givenDisabledMetrics:       config.DisabledMetrics{AccountModulesMetrics: false},
 			expectedModuleMetricCount:  1,
 			expectedAccountMetricCount: 0,
 		},
@@ -903,11 +906,23 @@ func TestRecordModuleAccountMetrics(t *testing.T) {
 			givenModuleName:            module,
 			givenStageName:             stage2,
 			givenPubID:                 "acc-1",
+			givenDisabledMetrics:       config.DisabledMetrics{AccountModulesMetrics: false},
 			expectedModuleMetricCount:  1,
 			expectedAccountMetricCount: 1,
 		},
+		{
+			description:                "Rawauction stage should not record account metrics because they are disabled",
+			givenModuleName:            module,
+			givenStageName:             stage3,
+			givenPubID:                 "acc-1",
+			givenDisabledMetrics:       config.DisabledMetrics{AccountModulesMetrics: true},
+			expectedModuleMetricCount:  1,
+			expectedAccountMetricCount: 0,
+		},
 	}
 	for _, test := range testCases {
+		m := NewMetrics(registry, nil, test.givenDisabledMetrics, nil, map[string][]string{module: {stage1, stage2, stage3}})
+
 		m.RecordModuleCalled(ModuleLabels{
 			Module: test.givenModuleName,
 			Stage:  test.givenStageName,
@@ -916,7 +931,11 @@ func TestRecordModuleAccountMetrics(t *testing.T) {
 		am := m.getAccountMetrics(test.givenPubID)
 
 		assert.Equal(t, test.expectedModuleMetricCount, m.ModuleMetrics[test.givenModuleName][test.givenStageName].CallCounter.Count())
-		assert.Equal(t, test.expectedAccountMetricCount, am.moduleMetrics[test.givenModuleName].CallCounter.Count())
+		if !test.givenDisabledMetrics.AccountModulesMetrics {
+			assert.Equal(t, test.expectedAccountMetricCount, am.moduleMetrics[test.givenModuleName].CallCounter.Count())
+		} else {
+			assert.Len(t, am.moduleMetrics, 0, "Account modules metrics are disabled, they should not be collected. Actual result %d account metrics collected \n", len(am.moduleMetrics))
+		}
 	}
 }
 

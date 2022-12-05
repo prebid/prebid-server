@@ -512,9 +512,11 @@ func (me *Metrics) getAccountMetrics(id string) *accountMetrics {
 			registerAdapterMetrics(me.MetricsRegistry, fmt.Sprintf("account.%s", id), string(a), am.adapterMetrics[a])
 		}
 	}
-	for _, mod := range me.modules {
-		am.moduleMetrics[mod] = makeBlankModuleMetrics()
-		registerAccountModuleMetrics(me.MetricsRegistry, id, mod, am.moduleMetrics[mod])
+	if !me.MetricsDisabled.AccountModulesMetrics {
+		for _, mod := range me.modules {
+			am.moduleMetrics[mod] = makeBlankModuleMetrics()
+			registerAccountModuleMetrics(me.MetricsRegistry, id, mod, am.moduleMetrics[mod])
+		}
 	}
 
 	me.accountMetrics[id] = am
