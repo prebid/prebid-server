@@ -1,3 +1,4 @@
+endpoint: "http://nep.advangelists.com/xp/get?pubid={{.PublisherID}}"
 maintainer:
   email: "prebid@advangelists.com"
 capabilities:

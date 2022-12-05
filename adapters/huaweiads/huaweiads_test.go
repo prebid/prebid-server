@@ -1,11 +1,12 @@
 package huaweiads
 
 import (
+	"testing"
+
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestJsonSamples(t *testing.T) {
@@ -21,7 +22,7 @@ func TestJsonSamples(t *testing.T) {
 			"\"unconvertedPkgNameKeyWords\":[\"p11\",\"p12\"]," +
 			"\"unconvertedPkgNamePrefixs\":[\"com.example3\",\"com.example4\"]," +
 			"\"exceptionPkgNames\":[\"com.example.p15\",\"com.example3.unchanged\"]}]}",
-	})
+	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -33,7 +34,7 @@ func TestExtraInfoDefaultWhenEmpty(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderHuaweiAds, config.Adapter{
 		Endpoint:         `https://huaweiads.com/adxtest/`,
 		ExtraAdapterInfo: ``,
-	})
+	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -52,7 +53,7 @@ func TestExtraInfo1(t *testing.T) {
 			"\"unconvertedPkgNameKeyWords\":[\"com.example.p3\",\"com.example.p4\"]," +
 			"\"unconvertedPkgNamePrefixs\":[\"com.example.p5\",\"com.example.p6\"]," +
 			"\"exceptionPkgNames\":[\"com.example.p7\",\"com.example.p8\"]}]}",
-	})
+	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -80,7 +81,7 @@ func TestExtraInfo2(t *testing.T) {
 			"\"unconvertedPkgNameKeyWords\":[\"com.example.p11\",\"com.example.p12\"]," +
 			"\"unconvertedPkgNamePrefixs\":[\"com.example.p13\",\"com.example.p14\"]," +
 			"\"exceptionPkgNames\":[\"com.example.p15\",\"com.example.p16\"]}]}",
-	})
+	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
@@ -104,7 +105,7 @@ func TestExtraInfo3(t *testing.T) {
 			"\"unconvertedPkgNamePrefixs\":[\"com.example.p5\",\"com.example.p6\"]," +
 			"\"exceptionPkgNames\":[\"com.example.p7\",\"com.example.p8\"]}]," +
 			"\"closeSiteSelectionByCountry\":\"1\"}",
-	})
+	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 	assert.Equal(t, buildErr.Error(), "invalid extra info: ConvertedPkgName is empty, pls check")
 }
 
@@ -117,7 +118,7 @@ func TestExtraInfo4(t *testing.T) {
 			"\"unconvertedPkgNamePrefixs\":[\"com.example.p5\",\"\"]," +
 			"\"exceptionPkgNames\":[\"com.example.p7\",\"com.example.p8\"]}]," +
 			"\"closeSiteSelectionByCountry\":\"1\"}",
-	})
+	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 	assert.Equal(t, buildErr.Error(), "invalid extra info: UnconvertedPkgNameKeyWords has a empty keyword, pls check")
 }
 
@@ -130,7 +131,7 @@ func TestExtraInfo5(t *testing.T) {
 			"\"unconvertedPkgNamePrefixs\":[\"com.example.p5\",\"\"]," +
 			"\"exceptionPkgNames\":[\"com.example.p7\",\"com.example.p8\"]}]," +
 			"\"closeSiteSelectionByCountry\":\"1\"}",
-	})
+	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 	assert.Equal(t, buildErr.Error(), "invalid extra info: UnconvertedPkgNamePrefixs has a empty value, pls check")
 }
 
@@ -147,7 +148,7 @@ func TestExtraInfo6(t *testing.T) {
 			"\"unconvertedPkgNameKeyWords\":[\"com.example.p11\",\"com.example.p12\"]," +
 			"\"unconvertedPkgNamePrefixs\":[\"com.example.p13\",\"com.example.p14\"]," +
 			"\"exceptionPkgNames\":[\"com.example.p15\",\"com.example.p16\"]}],\"closeSiteSelectionByCountry\":\"1\"}",
-	})
+	}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)

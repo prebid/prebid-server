@@ -13,13 +13,13 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderAdnuntius, config.Adapter{
-		Endpoint: "http://whatever.url"})
+		Endpoint: "http://whatever.url"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 	assertTzo(t, bidder)
-	replaceRealTimeWithKnownTime(bidder)
+	AssignDefaultValues(bidder)
 
 	adapterstest.RunJSONBidderTest(t, "adnuntiustest", bidder)
 }
@@ -38,9 +38,10 @@ func (ft *FakeTime) Now() time.Time {
 	return ft.time
 }
 
-func replaceRealTimeWithKnownTime(bidder adapters.Bidder) {
+func AssignDefaultValues(bidder adapters.Bidder) {
 	bidderAdnuntius, _ := bidder.(*adapter)
 	bidderAdnuntius.time = &FakeTime{
 		time: time.Date(2016, 1, 1, 12, 30, 15, 0, time.UTC),
 	}
+	bidderAdnuntius.extraInfo = "http://gdpr.url"
 }

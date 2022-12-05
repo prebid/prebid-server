@@ -18,8 +18,8 @@ const (
 )
 
 // NewBiddersDetailEndpoint builds a handler for the /info/bidders/<bidder> endpoint.
-func NewBiddersDetailEndpoint(bidders config.BidderInfos, biddersConfig map[string]config.Adapter, aliases map[string]string) httprouter.Handle {
-	responses, err := prepareBiddersDetailResponse(bidders, biddersConfig, aliases)
+func NewBiddersDetailEndpoint(bidders config.BidderInfos, aliases map[string]string) httprouter.Handle {
+	responses, err := prepareBiddersDetailResponse(bidders, aliases)
 	if err != nil {
 		glog.Fatalf("error creating /info/bidders/<bidder> endpoint response: %v", err)
 	}
@@ -38,8 +38,8 @@ func NewBiddersDetailEndpoint(bidders config.BidderInfos, biddersConfig map[stri
 	}
 }
 
-func prepareBiddersDetailResponse(bidders config.BidderInfos, biddersConfig map[string]config.Adapter, aliases map[string]string) (map[string][]byte, error) {
-	details, err := mapDetails(bidders, biddersConfig, aliases)
+func prepareBiddersDetailResponse(bidders config.BidderInfos, aliases map[string]string) (map[string][]byte, error) {
+	details, err := mapDetails(bidders, aliases)
 	if err != nil {
 		return nil, err
 	}
@@ -58,12 +58,11 @@ func prepareBiddersDetailResponse(bidders config.BidderInfos, biddersConfig map[
 	return responses, nil
 }
 
-func mapDetails(bidders config.BidderInfos, biddersConfig map[string]config.Adapter, aliases map[string]string) (map[string]bidderDetail, error) {
+func mapDetails(bidders config.BidderInfos, aliases map[string]string) (map[string]bidderDetail, error) {
 	details := map[string]bidderDetail{}
 
 	for bidderName, bidderInfo := range bidders {
-		endpoint := resolveEndpoint(bidderName, biddersConfig)
-		details[bidderName] = mapDetailFromConfig(bidderInfo, endpoint)
+		details[bidderName] = mapDetailFromConfig(bidderInfo)
 	}
 
 	for aliasName, bidderName := range aliases {
@@ -78,14 +77,6 @@ func mapDetails(bidders config.BidderInfos, biddersConfig map[string]config.Adap
 	}
 
 	return details, nil
-}
-
-func resolveEndpoint(bidder string, biddersConfig map[string]config.Adapter) string {
-	if c, found := biddersConfig[bidder]; found {
-		return c.Endpoint
-	}
-
-	return ""
 }
 
 func marshalDetailsResponse(details map[string]bidderDetail) (map[string][]byte, error) {
@@ -137,7 +128,7 @@ type platform struct {
 	MediaTypes []string `json:"mediaTypes"`
 }
 
-func mapDetailFromConfig(c config.BidderInfo, endpoint string) bidderDetail {
+func mapDetailFromConfig(c config.BidderInfo) bidderDetail {
 	var bidderDetail bidderDetail
 
 	if c.Maintainer != nil {
@@ -146,10 +137,10 @@ func mapDetailFromConfig(c config.BidderInfo, endpoint string) bidderDetail {
 		}
 	}
 
-	if c.Enabled {
+	if c.IsEnabled() {
 		bidderDetail.Status = statusActive
 
-		usesHTTPS := strings.HasPrefix(strings.ToLower(endpoint), "https://")
+		usesHTTPS := strings.HasPrefix(strings.ToLower(c.Endpoint), "https://")
 		bidderDetail.UsesHTTPS = &usesHTTPS
 
 		if c.Capabilities != nil {
