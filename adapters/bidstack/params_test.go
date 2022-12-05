@@ -17,6 +17,7 @@ var validParams = []string{
 var invalidParams = []string{
 	`{"publisherId": ""}`,
 	`{"publisherId": "non-uuid"}`,
+	`{"consent": "true"}`,
 }
 
 func TestValidParams(t *testing.T) {
