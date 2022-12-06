@@ -32,10 +32,10 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var videoHeoresExt *openrtb_ext.ExtImpVideoHeroes
+	var videoHeroesExt *openrtb_ext.ExtImpVideoHeroes
 	var err error
 
-	videoHeoresExt, err = a.getImpressionExt(&request.Imp[0])
+	videoHeroesExt, err = a.getImpressionExt(&request.Imp[0])
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -51,7 +51,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 
-	url, err := a.buildEndpointURL(videoHeoresExt)
+	url, err := a.buildEndpointURL(videoHeroesExt)
 	if err != nil {
 		return nil, []error{err}
 	}
