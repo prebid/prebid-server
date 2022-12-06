@@ -21,6 +21,7 @@ import (
 	"github.com/prebid/prebid-server/experiment/adscert"
 	"github.com/prebid/prebid-server/firstpartydata"
 	"github.com/prebid/prebid-server/gdpr"
+	"github.com/prebid/prebid-server/hooks/hookexecution"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
@@ -181,6 +182,7 @@ type AuctionRequest struct {
 	StoredBidResponses    stored_responses.ImpBidderStoredResp
 	BidderImpReplaceImpID stored_responses.BidderImpReplaceImpID
 	PubID                 string
+	HookExecutor          hookexecution.StageExecutor
 }
 
 // BidderRequest holds the bidder specific request and all other
