@@ -80,6 +80,7 @@
             {
               "id": "test-imp-id",
               "instl": 1,
+              "secure": 1,
               "banner": {
                 "format": [
                   {

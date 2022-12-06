@@ -277,6 +277,9 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			continue
 		}
 
+		secure := int8(1)
+		imp.Secure = &secure
+
 		resolvedBidFloor, err := resolveBidFloor(imp.BidFloor, imp.BidFloorCur, reqInfo)
 		if err != nil {
 			errs = append(errs, &errortypes.BadInput{
