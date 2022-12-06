@@ -232,14 +232,14 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 
 func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	numRequests := len(request.Imp)
-	errs := make([]error, 0, len(request.Imp))
 	requestData := make([]*adapters.RequestData, 0, numRequests)
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 	headers.Add("User-Agent", "prebid-server/1.0")
 
-	impsToExtMap := prepareImpsToExtMap(createImpsToExtMap(request.Imp, errs))
+	impsToExtNotGrouped, errs := createImpsToExtMap(request.Imp)
+	impsToExtMap := prepareImpsToExtMap(impsToExtNotGrouped)
 
 	rubiconRequest := *request
 	for imp, bidderExt := range impsToExtMap {
@@ -483,8 +483,9 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 	return requestData, errs
 }
 
-func createImpsToExtMap(imps []openrtb2.Imp, errs []error) map[*openrtb2.Imp]rubiconExtImpBidder {
+func createImpsToExtMap(imps []openrtb2.Imp) (map[*openrtb2.Imp]rubiconExtImpBidder, []error) {
 	impsToExtMap := make(map[*openrtb2.Imp]rubiconExtImpBidder)
+	errs := make([]error, 0)
 	var err error
 	for _, imp := range imps {
 		impCopy := imp
@@ -498,7 +499,7 @@ func createImpsToExtMap(imps []openrtb2.Imp, errs []error) map[*openrtb2.Imp]rub
 		impsToExtMap[&impCopy] = bidderExt
 	}
 
-	return impsToExtMap
+	return impsToExtMap, errs
 }
 
 func prepareImpsToExtMap(impsToExtMap map[*openrtb2.Imp]rubiconExtImpBidder) map[*openrtb2.Imp]rubiconExtImpBidder {
