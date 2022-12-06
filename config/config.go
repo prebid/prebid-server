@@ -100,7 +100,14 @@ type Configuration struct {
 	// Refers to main.go `configFileName` constant
 	BidderInfos BidderInfos `mapstructure:"adapters"`
 	// Hooks provides a way to specify hook execution plan for specific endpoints and stages
-	Hooks Hooks `mapstructure:"hooks"`
+	Hooks             Hooks             `mapstructure:"hooks"`
+	TrackerURL        string            `mapstructure:"tracker_url"`
+	PriceFloors       PriceFloors       `mapstructure:"price_floors"`
+	PriceFloorFetcher PriceFloorFetcher `mapstructure:"price_floor_fetcher"`
+}
+
+type PriceFloors struct {
+	Enabled bool `mapstructure:"enabled"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
@@ -434,6 +441,11 @@ type CurrencyConverter struct {
 	FetchURL             string `mapstructure:"fetch_url"`
 	FetchIntervalSeconds int    `mapstructure:"fetch_interval_seconds"`
 	StaleRatesSeconds    int    `mapstructure:"stale_rates_seconds"`
+}
+
+type PriceFloorFetcher struct {
+	Worker   int `mapstructure:"worker"`
+	Capacity int `mapstructure:"capacity"`
 }
 
 func (cfg *CurrencyConverter) validate(errs []error) []error {

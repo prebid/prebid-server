@@ -27,6 +27,7 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/experiment/adscert"
+	"github.com/prebid/prebid-server/floors"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/hooks"
 	"github.com/prebid/prebid-server/metrics"
@@ -1226,6 +1227,7 @@ func buildTestExchange(testCfg *testConfigValues, adapterMap map[openrtb_ext.Bid
 		mockCurrencyConverter,
 		mockFetcher,
 		&adscert.NilSigner{},
+		&floors.PriceFloorFetcher{},
 	)
 
 	testExchange = &exchangeTestWrapper{

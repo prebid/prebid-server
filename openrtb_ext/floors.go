@@ -1,15 +1,34 @@
 package openrtb_ext
 
+// Defines strings for FetchStatus
+const (
+	FetchSuccess    = "success"
+	FetchTimeout    = "timeout"
+	FetchError      = "error"
+	FetchInprogress = "inprogress"
+	FetchNone       = "none"
+)
+
+// Defines strings for PriceFloorLocation
+const (
+	NoDataLocation  = "noData"
+	RequestLocation = "request"
+	FetchLocation   = "fetch"
+)
+
 // PriceFloorRules defines the contract for bidrequest.ext.prebid.floors
 type PriceFloorRules struct {
-	FloorMin    float64                `json:"floormin,omitempty"`
-	FloorMinCur string                 `json:"floormincur,omitempty"`
-	SkipRate    int                    `json:"skiprate,omitempty"`
-	Location    *PriceFloorEndpoint    `json:"location,omitempty"`
-	Data        *PriceFloorData        `json:"data,omitempty"`
-	Enforcement *PriceFloorEnforcement `json:"enforcement,omitempty"`
-	Enabled     *bool                  `json:"enabled,omitempty"`
-	Skipped     *bool                  `json:"skipped,omitempty"`
+	FloorMin           float64                `json:"floormin,omitempty"`
+	FloorMinCur        string                 `json:"floormincur,omitempty"`
+	SkipRate           int                    `json:"skiprate,omitempty"`
+	Location           *PriceFloorEndpoint    `json:"floorendpoint,omitempty"`
+	Data               *PriceFloorData        `json:"data,omitempty"`
+	Enforcement        *PriceFloorEnforcement `json:"enforcement,omitempty"`
+	Enabled            *bool                  `json:"enabled,omitempty"`
+	Skipped            *bool                  `json:"skipped,omitempty"`
+	FloorProvider      string                 `json:"floorprovider,omitempty"`
+	FetchStatus        string                 `json:"fetchstatus,omitempty"`
+	PriceFloorLocation string                 `json:"location,omitempty"`
 }
 
 type PriceFloorEndpoint struct {
@@ -19,15 +38,14 @@ type PriceFloorEndpoint struct {
 type PriceFloorData struct {
 	Currency            string                 `json:"currency,omitempty"`
 	SkipRate            int                    `json:"skiprate,omitempty"`
-	FloorsSchemaVersion string                 `json:"floorsschemaversion,omitempty"`
+	FloorsSchemaVersion *int                   `json:"floorsschemaversion,omitempty"`
 	ModelTimestamp      int                    `json:"modeltimestamp,omitempty"`
 	ModelGroups         []PriceFloorModelGroup `json:"modelgroups,omitempty"`
 }
 
 type PriceFloorModelGroup struct {
 	Currency     string             `json:"currency,omitempty"`
-	ModelWeight  int                `json:"modelweight,omitempty"`
-	DebugWeight  int                `json:"debugweight,omitempty"` // Added for Debug purpose, shall be removed
+	ModelWeight  *int               `json:"modelweight,omitempty"`
 	ModelVersion string             `json:"modelversion,omitempty"`
 	SkipRate     int                `json:"skiprate,omitempty"`
 	Schema       PriceFloorSchema   `json:"schema,omitempty"`
@@ -42,13 +60,25 @@ type PriceFloorSchema struct {
 type PriceFloorEnforcement struct {
 	EnforcePBS    *bool `json:"enforcepbs,omitempty"`
 	FloorDeals    *bool `json:"floordeals,omitempty"`
-	BidAdjustment bool  `json:"bidadjustment,omitempty"`
+	BidAdjustment *bool `json:"bidadjustment,omitempty"`
 	EnforceRate   int   `json:"enforcerate,omitempty"`
+}
+type Price struct {
+	FloorMin    float64 `json:"floormin,omitempty"`
+	FloorMinCur string  `json:"floormincur,omitempty"`
+}
+
+type ExtImp struct {
+	Prebid *ImpExtPrebid `json:"prebid,omitempty"`
+}
+
+type ImpExtPrebid struct {
+	Floors Price `json:"floors,omitempty"`
 }
 
 // GetEnabled will check if floors is enabled in request
 func (Floors *PriceFloorRules) GetEnabled() bool {
-	if Floors != nil && Floors.Enabled != nil && !*Floors.Enabled {
+	if Floors != nil && Floors.Enabled != nil {
 		return *Floors.Enabled
 	}
 	return true

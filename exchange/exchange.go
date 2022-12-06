@@ -20,6 +20,7 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/experiment/adscert"
 	"github.com/prebid/prebid-server/firstpartydata"
+	"github.com/prebid/prebid-server/floors"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -71,6 +72,8 @@ type exchange struct {
 	adsCertSigner     adscert.Signer
 	floor             config.PriceFloors
 	server            config.Server
+	trakerURL         string
+	priceFloorFetcher *floors.PriceFloorFetcher
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -117,7 +120,7 @@ func (randomDeduplicateBidBooleanGenerator) Generate() bool {
 	return rand.Intn(100) < 50
 }
 
-func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, metricsEngine metrics.MetricsEngine, infos config.BidderInfos, gdprPermsBuilder gdpr.PermissionsBuilder, tcf2CfgBuilder gdpr.TCF2ConfigBuilder, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher, adsCertSigner adscert.Signer) Exchange {
+func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid_cache_client.Client, cfg *config.Configuration, syncersByBidder map[string]usersync.Syncer, metricsEngine metrics.MetricsEngine, infos config.BidderInfos, gdprPermsBuilder gdpr.PermissionsBuilder, tcf2CfgBuilder gdpr.TCF2ConfigBuilder, currencyConverter *currency.RateConverter, categoriesFetcher stored_requests.CategoryFetcher, adsCertSigner adscert.Signer, floorFetcher *floors.PriceFloorFetcher) Exchange {
 	bidderToSyncerKey := map[string]string{}
 	for bidder, syncer := range syncersByBidder {
 		bidderToSyncerKey[bidder] = syncer.Key()
@@ -146,11 +149,12 @@ func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid
 			GDPR: cfg.GDPR,
 			LMT:  cfg.LMT,
 		},
-		bidIDGenerator: &bidIDGenerator{cfg.GenerateBidID},
-		hostSChainNode: cfg.HostSChainNode,
-		adsCertSigner:  adsCertSigner,
-		floor:          cfg.Experiment.PriceFloors,
-		server:         config.Server{ExternalUrl: cfg.ExternalURL, GvlID: cfg.GDPR.HostVendorID, DataCenter: cfg.DataCenter},
+		bidIDGenerator:    &bidIDGenerator{cfg.GenerateBidID},
+		hostSChainNode:    cfg.HostSChainNode,
+		adsCertSigner:     adsCertSigner,
+		floor:             cfg.PriceFloors,
+		trakerURL:         cfg.TrackerURL,
+		priceFloorFetcher: floorFetcher,
 	}
 }
 
@@ -165,7 +169,6 @@ type ImpExtInfo struct {
 type AuctionRequest struct {
 	BidRequestWrapper          *openrtb_ext.RequestWrapper
 	ResolvedBidRequest         json.RawMessage
-	UpdatedBidRequest          json.RawMessage
 	Account                    config.Account
 	UserSyncs                  IdFetcher
 	RequestType                metrics.RequestType
@@ -199,6 +202,7 @@ type BidderRequest struct {
 
 func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *DebugLog) (*openrtb2.BidResponse, error) {
 	var errs []error
+	var floorErrs []error
 	// rebuild/resync the request in the request wrapper.
 	if err := r.BidRequestWrapper.RebuildRequest(); err != nil {
 		return nil, err
@@ -258,9 +262,9 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	// Get currency rates conversions for the auction
 	conversions := e.getAuctionCurrencyRates(requestExt.Prebid.CurrencyConversions)
 
-	// If floors feature is enabled at server and request level, Update floors values in impression object
-	floorErrs := selectFloorsAndModifyImp(&r, e.floor, conversions, responseDebugAllow)
-	errs = append(errs, floorErrs...)
+	if e.floor.Enabled {
+		floorErrs = floors.EnrichWithPriceFloors(r.BidRequestWrapper, r.Account, conversions, e.priceFloorFetcher)
+	}
 
 	recordImpMetrics(r.BidRequestWrapper.BidRequest, e.me)
 
@@ -269,6 +273,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
 	bidderRequests, privacyLabels, errs := cleanOpenRTBRequests(ctx, r, requestExt, e.bidderToSyncerKey, e.me, gdprDefaultValue, e.privacyConfig, e.gdprPermsBuilder, e.tcf2ConfigBuilder, e.hostSChainNode)
+	errs = append(errs, floorErrs...)
 
 	e.me.RecordRequestPrivacy(privacyLabels)
 
@@ -316,9 +321,22 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 	if anyBidsReturned {
 
 		//If floor enforcement config enabled then filter bids
-		adapterBids, enforceErrs := enforceFloors(&r, adapterBids, e.floor, conversions, responseDebugAllow)
+		adapterBids, enforceErrs, rejectedBids := enforceFloors(&r, adapterBids, e.floor, conversions, responseDebugAllow)
 		errs = append(errs, enforceErrs...)
 
+		if floors.RequestHasFloors(r.BidRequestWrapper.BidRequest) {
+			// Record request count with non-zero imp.bidfloor value
+			e.me.RecordFloorsRequestForAccount(r.PubID)
+
+			if e.floor.Enabled && len(rejectedBids) > 0 {
+				// Record rejected bid count at account level
+				e.me.RecordRejectedBidsForAccount(r.PubID)
+				// Record rejected bid count at adaptor/bidder level
+				for _, rejectedBid := range rejectedBids {
+					e.me.RecordRejectedBidsForBidder(openrtb_ext.BidderName(rejectedBid.BidderName))
+				}
+			}
+		}
 		var bidCategory map[string]string
 		//If includebrandcategory is present in ext then CE feature is on.
 		if requestExt.Prebid.Targeting != nil && requestExt.Prebid.Targeting.IncludeBrandCategory != nil {
@@ -980,7 +998,6 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pb
 		bidResponseExt.Debug = &openrtb_ext.ExtResponseDebug{
 			HttpCalls:       make(map[openrtb_ext.BidderName][]*openrtb_ext.ExtHttpCall),
 			ResolvedRequest: r.ResolvedBidRequest,
-			UpdatedRequest:  r.UpdatedBidRequest,
 		}
 	}
 	if !r.StartTime.IsZero() {

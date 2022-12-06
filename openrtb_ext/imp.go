@@ -26,6 +26,13 @@ type ExtImpPrebid struct {
 	Passthrough json.RawMessage `json:"passthrough,omitempty"`
 }
 
+// ExtFloors defines the contract for imp[i].ext.prebid.floors
+type ExtFloors struct {
+	FloorRule      string  `json:"floorRule,omitempty"`
+	FloorRuleValue float64 `json:"floorRuleValue,omitempty"`
+	FloorValue     float64 `json:"floorValue,omitempty"`
+}
+
 // ExtStoredRequest defines the contract for bidrequest.imp[i].ext.prebid.storedrequest
 type ExtStoredRequest struct {
 	ID string `json:"id"`
