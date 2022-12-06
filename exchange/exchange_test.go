@@ -4300,13 +4300,13 @@ func TestMakeBidWithValidation(t *testing.T) {
 		{
 			description:       "Validation is enforced, and one bid out of the two is invalid based on AdM",
 			givenValidations:  config.Validations{SecureMarkup: config.ValidationEnforce},
-			givenBids:         []*pbsOrtbBid{{bid: &openrtb2.Bid{AdM: "http://domain.com/invalid"}, bidType: openrtb_ext.BidTypeBanner}, {bid: &openrtb2.Bid{AdM: "https://domain.com/valid"}, bidType: openrtb_ext.BidTypeBanner}},
+			givenBids:         []*pbsOrtbBid{{bid: &openrtb2.Bid{AdM: "http://domain.com/invalid", ImpID: "1"}, bidType: openrtb_ext.BidTypeBanner}, {bid: &openrtb2.Bid{AdM: "https://domain.com/valid", ImpID: "2"}, bidType: openrtb_ext.BidTypeBanner}},
 			expectedNumOfBids: 1,
 		},
 		{
 			description:       "Validation is warned so no bids should be removed (Validating SecureMarkup)",
 			givenValidations:  config.Validations{SecureMarkup: config.ValidationWarn},
-			givenBids:         []*pbsOrtbBid{{bid: &openrtb2.Bid{AdM: "http://domain.com/invalid"}, bidType: openrtb_ext.BidTypeBanner}, {bid: &openrtb2.Bid{AdM: "https://domain.com/valid"}, bidType: openrtb_ext.BidTypeBanner}},
+			givenBids:         []*pbsOrtbBid{{bid: &openrtb2.Bid{AdM: "http://domain.com/invalid", ImpID: "1"}, bidType: openrtb_ext.BidTypeBanner}, {bid: &openrtb2.Bid{AdM: "https://domain.com/valid", ImpID: "2"}, bidType: openrtb_ext.BidTypeBanner}},
 			expectedNumOfBids: 2,
 		},
 		{
@@ -4350,11 +4350,15 @@ func TestMakeBidWithValidation(t *testing.T) {
 
 	bidExtResponse := &openrtb_ext.ExtBidResponse{Errors: make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderMessage)}
 
+	ImpExtInfoMap := make(map[string]ImpExtInfo)
+	ImpExtInfoMap["1"] = ImpExtInfo{}
+	ImpExtInfoMap["2"] = ImpExtInfo{}
+
 	//Run tests
 	for _, test := range testCases {
 		e.bidValidationEnforcement = test.givenValidations
 		sampleBids := test.givenBids
-		resultingBids, resultingErrs := e.makeBid(sampleBids, sampleAuction, true, nil, bidExtResponse, "", "")
+		resultingBids, resultingErrs := e.makeBid(sampleBids, sampleAuction, true, ImpExtInfoMap, bidExtResponse, "", "")
 
 		assert.Equal(t, 0, len(resultingErrs), "%s. Test should not return errors \n", test.description)
 		assert.Equal(t, test.expectedNumOfBids, len(resultingBids), "%s. Test returns more valid bids than expected\n", test.description)
@@ -4372,19 +4376,19 @@ func TestSetBidValidationStatus(t *testing.T) {
 			description:  "Host configuration is different than account, account setting should be preferred (enforce)",
 			givenHost:    config.Validations{BannerCreativeMaxSize: config.ValidationSkip, SecureMarkup: config.ValidationSkip},
 			givenAccount: config.Validations{BannerCreativeMaxSize: config.ValidationEnforce, SecureMarkup: config.ValidationEnforce},
-			expected:     config.Validations{BannerCreativeMaxSize: config.ValidationEnforce, SecureMarkup: config.ValidationEnforce},
+			expected:     config.Validations{BannerCreativeMaxSize: config.ValidationEnforce, SecureMarkup: config.ValidationSkip},
 		},
 		{
 			description:  "Host configuration is different than account, account setting should be preferred (warn)",
 			givenHost:    config.Validations{BannerCreativeMaxSize: config.ValidationEnforce, SecureMarkup: config.ValidationEnforce},
 			givenAccount: config.Validations{BannerCreativeMaxSize: config.ValidationWarn, SecureMarkup: config.ValidationWarn},
-			expected:     config.Validations{BannerCreativeMaxSize: config.ValidationWarn, SecureMarkup: config.ValidationWarn},
+			expected:     config.Validations{BannerCreativeMaxSize: config.ValidationWarn, SecureMarkup: config.ValidationEnforce},
 		},
 		{
 			description:  "Host configuration is different than account, account setting should be preferred (skip)",
 			givenHost:    config.Validations{BannerCreativeMaxSize: config.ValidationWarn, SecureMarkup: config.ValidationWarn},
 			givenAccount: config.Validations{BannerCreativeMaxSize: config.ValidationSkip, SecureMarkup: config.ValidationSkip},
-			expected:     config.Validations{BannerCreativeMaxSize: config.ValidationSkip, SecureMarkup: config.ValidationSkip},
+			expected:     config.Validations{BannerCreativeMaxSize: config.ValidationSkip, SecureMarkup: config.ValidationWarn},
 		},
 		{
 			description:  "No account confiugration given, host confg should be preferred",
@@ -4394,7 +4398,7 @@ func TestSetBidValidationStatus(t *testing.T) {
 		},
 	}
 	for _, test := range testCases {
-		actual := setBidValidationStatus(test.givenHost, test.givenAccount)
+		actual := test.givenHost.SetBidValidationStatus(test.givenAccount)
 		assert.Equal(t, test.expected, actual)
 	}
 }

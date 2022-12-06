@@ -396,7 +396,7 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		bidResponseExt.Warnings[openrtb_ext.BidderReservedGeneral] = append(bidResponseExt.Warnings[openrtb_ext.BidderReservedGeneral], generalWarning)
 	}
 
-	e.bidValidationEnforcement = setBidValidationStatus(e.bidValidationEnforcement, r.Account.Validations)
+	e.bidValidationEnforcement.SetBidValidationStatus(r.Account.Validations)
 
 	// Build the response
 	return e.buildBidResponse(ctx, liveAdapters, adapterBids, r.BidRequestWrapper.BidRequest, adapterExtra, auc, bidResponseExt, cacheInstructions.returnCreative, r.ImpExtInfoMap, r.PubID, errs)
@@ -1041,14 +1041,16 @@ func (e *exchange) makeBid(bids []*pbsOrtbBid, auc *auction, returnCreative bool
 			e.validateBannerCreativeSize(bid, bidResponseExt, adapter, pubID)
 		}
 
-		if e.bidValidationEnforcement.SecureMarkup == config.ValidationEnforce && (bid.bidType == openrtb_ext.BidTypeBanner || bid.bidType == openrtb_ext.BidTypeVideo) {
-			if !e.validateBidAdM(bid, bidResponseExt, adapter, pubID) {
-				continue // Don't add bid to result
+		if _, ok := impExtInfoMap[bid.bid.ImpID]; ok {
+			if e.bidValidationEnforcement.SecureMarkup == config.ValidationEnforce && (bid.bidType == openrtb_ext.BidTypeBanner || bid.bidType == openrtb_ext.BidTypeVideo) {
+				if !e.validateBidAdM(bid, bidResponseExt, adapter, pubID) {
+					continue // Don't add bid to result
+				}
+			} else if e.bidValidationEnforcement.SecureMarkup == config.ValidationWarn && (bid.bidType == openrtb_ext.BidTypeBanner || bid.bidType == openrtb_ext.BidTypeVideo) {
+				e.validateBidAdM(bid, bidResponseExt, adapter, pubID)
 			}
-		} else if e.bidValidationEnforcement.SecureMarkup == config.ValidationWarn && (bid.bidType == openrtb_ext.BidTypeBanner || bid.bidType == openrtb_ext.BidTypeVideo) {
-			e.validateBidAdM(bid, bidResponseExt, adapter, pubID)
-		}
 
+		}
 		bidExtPrebid := &openrtb_ext.ExtBidPrebid{
 			DealPriority:      bid.dealPriority,
 			DealTierSatisfied: bid.dealTierSatisfied,
@@ -1267,7 +1269,7 @@ func (e exchange) validateBannerCreativeSize(bid *pbsOrtbBid, bidResponseExt *op
 	if bid.bid.W > e.bidValidationEnforcement.MaxCreativeWidth || bid.bid.H > e.bidValidationEnforcement.MaxCreativeHeight {
 		// Add error to debug array
 		bidCreativeMaxSizeError := openrtb_ext.ExtBidderMessage{
-			Code:    errortypes.BadInputErrorCode,
+			Code:    errortypes.BadServerResponseErrorCode,
 			Message: "bidResponse rejected: size WxH",
 		}
 		bidResponseExt.Errors[adapter] = append(bidResponseExt.Errors[adapter], bidCreativeMaxSizeError)
@@ -1287,7 +1289,7 @@ func (e exchange) validateBidAdM(bid *pbsOrtbBid, bidResponseExt *openrtb_ext.Ex
 	if (strings.Contains(bid.bid.AdM, invalidAdM[0]) || strings.Contains(bid.bid.AdM, invalidAdM[1])) && (!strings.Contains(bid.bid.AdM, requiredAdM[0]) || !strings.Contains(bid.bid.AdM, requiredAdM[1])) {
 		// Add error to debug array
 		bidSecureMarkupError := openrtb_ext.ExtBidderMessage{
-			Code:    errortypes.BadInputErrorCode,
+			Code:    errortypes.BadServerResponseErrorCode,
 			Message: "bidResponse rejected: insecure creative in secure context",
 		}
 		bidResponseExt.Errors[adapter] = append(bidResponseExt.Errors[adapter], bidSecureMarkupError)
@@ -1298,15 +1300,4 @@ func (e exchange) validateBidAdM(bid *pbsOrtbBid, bidResponseExt *openrtb_ext.Ex
 		return false
 	}
 	return true
-}
-
-func setBidValidationStatus(host config.Validations, account config.Validations) config.Validations {
-	finalEnforcement := host
-	if len(account.BannerCreativeMaxSize) > 0 {
-		finalEnforcement.BannerCreativeMaxSize = account.BannerCreativeMaxSize
-	}
-	if len(account.SecureMarkup) > 0 {
-		finalEnforcement.SecureMarkup = account.SecureMarkup
-	}
-	return finalEnforcement
 }

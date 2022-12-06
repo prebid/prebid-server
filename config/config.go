@@ -643,6 +643,14 @@ const (
 	ValidationSkip    string = "skip"
 )
 
+func (host Validations) SetBidValidationStatus(account Validations) Validations {
+	finalEnforcement := host
+	if len(account.BannerCreativeMaxSize) > 0 {
+		finalEnforcement.BannerCreativeMaxSize = account.BannerCreativeMaxSize
+	}
+	return finalEnforcement
+}
+
 func (cfg *TimeoutNotification) validate(errs []error) []error {
 	if cfg.SamplingRate < 0.0 || cfg.SamplingRate > 1.0 {
 		errs = append(errs, fmt.Errorf("debug.timeout_notification.sampling_rate must be positive and not greater than 1.0. Got %f", cfg.SamplingRate))
@@ -833,8 +841,8 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 	v.SetDefault("host_cookie.ttl_days", 90)
 	v.SetDefault("host_cookie.max_cookie_size_bytes", 0)
 	v.SetDefault("host_schain_node", nil)
-	v.SetDefault("validations.banner_creative_max_size", "skip")
-	v.SetDefault("validations.secure_markup", "skip")
+	v.SetDefault("validations.banner_creative_max_size", ValidationSkip)
+	v.SetDefault("validations.secure_markup", ValidationSkip)
 	v.SetDefault("validations.max_creative_size.height", 0)
 	v.SetDefault("validations.max_creative_size.width", 0)
 	v.SetDefault("http_client.max_connections_per_host", 0) // unlimited
