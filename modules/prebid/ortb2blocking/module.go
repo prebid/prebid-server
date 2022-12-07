@@ -5,15 +5,8 @@ import (
 	"net/http"
 )
 
-func Builder(conf json.RawMessage, client *http.Client) (interface{}, error) {
-	cfg, err := newConfig(conf)
-	if err != nil {
-		return nil, err
-	}
-
-	return Module{cfg}, nil
+func Builder(_ json.RawMessage, _ *http.Client) (interface{}, error) {
+	return Module{}, nil
 }
 
-type Module struct {
-	cfg Config
-}
+type Module struct{}

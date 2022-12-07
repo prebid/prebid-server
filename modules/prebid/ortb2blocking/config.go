@@ -27,12 +27,11 @@ type Attributes struct {
 }
 
 type Badv struct {
-	// todo: maybe change all action_overrides to []map[string][]ActionOverride
-	ActionOverrides        []BadvActionOverride `json:"action_overrides"`
-	AllowedAdomainForDeals []string             `json:"allowed_adomain_for_deals"`
-	BlockedAdomain         []string             `json:"blocked_adomain"`
-	BlockUnknownAdomain    bool                 `json:"block_unknown_adomain"`
-	EnforceBlocks          bool                 `json:"enforce_blocks"`
+	ActionOverrides        BadvActionOverride `json:"action_overrides"`
+	AllowedAdomainForDeals []string           `json:"allowed_adomain_for_deals"`
+	BlockedAdomain         []string           `json:"blocked_adomain"`
+	BlockUnknownAdomain    bool               `json:"block_unknown_adomain"`
+	EnforceBlocks          bool               `json:"enforce_blocks"`
 }
 
 type BadvActionOverride struct {
@@ -43,12 +42,12 @@ type BadvActionOverride struct {
 }
 
 type Bcat struct {
-	ActionOverrides       []BcatActionOverride `json:"action_overrides"`
-	AllowedAdvCatForDeals []string             `json:"allowed_adv_cat_for_deals"`
-	BlockedAdvCat         []string             `json:"blocked_adv_cat"`
-	BlockUnknownAdvCat    bool                 `json:"block_unknown_adv_cat"`
-	CategoryTaxonomy      int                  `json:"category_taxonomy"`
-	EnforceBlocks         bool                 `json:"enforce_blocks"`
+	ActionOverrides       BcatActionOverride `json:"action_overrides"`
+	AllowedAdvCatForDeals []string           `json:"allowed_adv_cat_for_deals"`
+	BlockedAdvCat         []string           `json:"blocked_adv_cat"`
+	BlockUnknownAdvCat    bool               `json:"block_unknown_adv_cat"`
+	CategoryTaxonomy      int                `json:"category_taxonomy"`
+	EnforceBlocks         bool               `json:"enforce_blocks"`
 }
 
 type BcatActionOverride struct {
@@ -59,10 +58,10 @@ type BcatActionOverride struct {
 }
 
 type Bapp struct {
-	ActionOverrides    []BappActionOverride `json:"action_overrides"`
-	AllowedAppForDeals []string             `json:"allowed_app_for_deals"`
-	BlockedApp         []string             `json:"blocked_app"`
-	EnforceBlocks      bool                 `json:"enforce_blocks"`
+	ActionOverrides    BappActionOverride `json:"action_overrides"`
+	AllowedAppForDeals []string           `json:"allowed_app_for_deals"`
+	BlockedApp         []string           `json:"blocked_app"`
+	EnforceBlocks      bool               `json:"enforce_blocks"`
 }
 
 type BappActionOverride struct {
@@ -72,8 +71,8 @@ type BappActionOverride struct {
 }
 
 type Btype struct {
-	ActionOverrides   []BtypeActionOverride `json:"action_overrides"`
-	BlockedBannerType []int                 `json:"blocked_banner_type"`
+	ActionOverrides   BtypeActionOverride `json:"action_overrides"`
+	BlockedBannerType []int               `json:"blocked_banner_type"`
 }
 
 type BtypeActionOverride struct {
@@ -81,10 +80,10 @@ type BtypeActionOverride struct {
 }
 
 type Battr struct {
-	ActionOverrides           []BattrActionOverride `json:"action_overrides"`
-	AllowedBannerAttrForDeals []int                 `json:"allowed_banner_attr_for_deals"`
-	BlockedBannerAttr         []int                 `json:"blocked_banner_attr"`
-	EnforceBlocks             bool                  `json:"enforce_blocks"`
+	ActionOverrides           BattrActionOverride `json:"action_overrides"`
+	AllowedBannerAttrForDeals []int               `json:"allowed_banner_attr_for_deals"`
+	BlockedBannerAttr         []int               `json:"blocked_banner_attr"`
+	EnforceBlocks             bool                `json:"enforce_blocks"`
 }
 
 type BattrActionOverride struct {
