@@ -35,7 +35,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var err error
-	var adapterRequests []*adapters.RequestData
+	adapterRequests := make([]*adapters.RequestData, 0, len(request.Imp))
 
 	for _, imp := range request.Imp {
 		reqCopy := *request
