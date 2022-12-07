@@ -22,8 +22,8 @@ type entity string
 const (
 	entityHttpRequest              entity = "http-request"
 	entityAuctionRequest           entity = "auction-request"
-	entityAuctionResponse          entity = "auction-response"
-	entityAllProcessedBidResponses entity = "all-processed-bid-responses"
+	entityAuctionResponse          entity = "auction_response"
+	entityAllProcessedBidResponses entity = "all_processed_bid_responses"
 )
 
 type StageExecutor interface {
@@ -38,7 +38,7 @@ type HookStageExecutor interface {
 
 type hookExecutor struct {
 	account        *config.Account
-	accountId      string
+	accountID      string
 	endpoint       string
 	planBuilder    hooks.ExecutionPlanBuilder
 	stageOutcomes  []StageOutcome
@@ -64,7 +64,7 @@ func (e *hookExecutor) SetAccount(account *config.Account) {
 	}
 
 	e.account = account
-	e.accountId = account.ID
+	e.accountID = account.ID
 }
 
 func (e *hookExecutor) GetOutcomes() []StageOutcome {
@@ -90,7 +90,7 @@ func (e *hookExecutor) ExecuteEntrypointStage(req *http.Request, body []byte) ([
 	executionCtx := executionContext{
 		endpoint:       e.endpoint,
 		stage:          stageName,
-		accountId:      e.accountId,
+		accountId:      e.accountID,
 		account:        e.account,
 		moduleContexts: e.moduleContexts,
 	}

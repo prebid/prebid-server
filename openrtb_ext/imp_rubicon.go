@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 )
 
-// ExtImpRubicon defines the contract for bidrequest.imp[i].ext.rubicon
+// ExtImpRubicon defines the contract for bidrequest.imp[i].ext.prebid.bidder.rubicon
 type ExtImpRubicon struct {
 	AccountId json.Number        `json:"accountId"`
 	SiteId    json.Number        `json:"siteId"`
@@ -16,7 +16,7 @@ type ExtImpRubicon struct {
 	Debug     impExtRubiconDebug `json:"debug,omitempty"`
 }
 
-// rubiconVideoParams defines the contract for bidrequest.imp[i].ext.rubicon.video
+// rubiconVideoParams defines the contract for bidrequest.imp[i].ext.prebid.bidder.rubicon.video
 type rubiconVideoParams struct {
 	Language     string      `json:"language,omitempty"`
 	PlayerHeight json.Number `json:"playerHeight,omitempty"`
@@ -26,7 +26,7 @@ type rubiconVideoParams struct {
 	SkipDelay    int         `json:"skipdelay,omitempty"`
 }
 
-// rubiconVideoParams defines the contract for bidrequest.imp[i].ext.rubicon.debug
+// rubiconVideoParams defines the contract for bidrequest.imp[i].ext.prebid.bidder.rubicon.debug
 type impExtRubiconDebug struct {
 	CpmOverride float64 `json:"cpmoverride,omitempty"`
 }

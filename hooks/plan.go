@@ -13,12 +13,12 @@ type Stage string
 // Names of the available stages.
 const (
 	StageEntrypoint               Stage = "entrypoint"
-	StageRawAuction               Stage = "raw-auction"
-	StageProcessedAuction         Stage = "processed-auction"
-	StageBidderRequest            Stage = "bidder-request"
-	StageRawBidderResponse        Stage = "raw-bidder-response"
-	StageAllProcessedBidResponses Stage = "all-processed-bid-responses"
-	StageAuctionResponse          Stage = "auction-response"
+	StageRawAuctionRequest        Stage = "raw_auction_request"
+	StageProcessedAuctionRequest  Stage = "processed_auction_request"
+	StageBidderRequest            Stage = "bidder_request"
+	StageRawBidderResponse        Stage = "raw_bidder_response"
+	StageAllProcessedBidResponses Stage = "all_processed_bid_responses"
+	StageAuctionResponse          Stage = "auction_response"
 )
 
 func (s Stage) String() string {
@@ -101,7 +101,7 @@ func (p PlanBuilder) PlanForRawAuctionStage(endpoint string, account *config.Acc
 		p.hooks,
 		account,
 		endpoint,
-		StageRawAuction,
+		StageRawAuctionRequest,
 		p.repo.GetRawAuctionHook,
 	)
 }
@@ -111,7 +111,7 @@ func (p PlanBuilder) PlanForProcessedAuctionStage(endpoint string, account *conf
 		p.hooks,
 		account,
 		endpoint,
-		StageProcessedAuction,
+		StageProcessedAuctionRequest,
 		p.repo.GetProcessedAuctionHook,
 	)
 }
