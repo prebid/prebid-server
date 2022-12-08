@@ -53,6 +53,8 @@ func (a *CWireAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 
 	var bidderParams map[int]openrtb_ext.ImpExtCWire
 
+	fmt.Println("REQUEST HAS ARRIVED TO CWIRE ADAPTER")
+
 	for i, imp := range request.Imp {
 		var ext struct {
 			Bidder openrtb_ext.ImpExtCWire
@@ -63,6 +65,10 @@ func (a *CWireAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 			continue
 		}
 		bidderParams[i] = ext.Bidder
+	}
+
+	for _, err := range errors {
+		fmt.Printf("ERROR WHILE PARSING BIDDER PARAMATER: %v\n", err)
 	}
 
 	headers := http.Header{}
