@@ -51,7 +51,7 @@ your adapter are not accessible.
 func (a *CWireAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errors []error
 
-	var bidderParams map[int]openrtb_ext.ImpExtCWire
+	bidderParams := map[int]openrtb_ext.ImpExtCWire{}
 
 	fmt.Println("REQUEST HAS ARRIVED TO CWIRE ADAPTER")
 
