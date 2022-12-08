@@ -3,6 +3,8 @@ package ortb2blocking
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/prebid/openrtb/v17/adcom1"
 )
 
 func newConfig(data json.RawMessage) (Config, error) {
@@ -42,12 +44,12 @@ type BadvActionOverride struct {
 }
 
 type Bcat struct {
-	ActionOverrides       BcatActionOverride `json:"action_overrides"`
-	AllowedAdvCatForDeals []string           `json:"allowed_adv_cat_for_deals"`
-	BlockedAdvCat         []string           `json:"blocked_adv_cat"`
-	BlockUnknownAdvCat    bool               `json:"block_unknown_adv_cat"`
-	CategoryTaxonomy      int                `json:"category_taxonomy"`
-	EnforceBlocks         bool               `json:"enforce_blocks"`
+	ActionOverrides       BcatActionOverride      `json:"action_overrides"`
+	AllowedAdvCatForDeals []string                `json:"allowed_adv_cat_for_deals"`
+	BlockedAdvCat         []string                `json:"blocked_adv_cat"`
+	BlockUnknownAdvCat    bool                    `json:"block_unknown_adv_cat"`
+	CategoryTaxonomy      adcom1.CategoryTaxonomy `json:"category_taxonomy"`
+	EnforceBlocks         bool                    `json:"enforce_blocks"`
 }
 
 type BcatActionOverride struct {

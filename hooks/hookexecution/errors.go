@@ -14,7 +14,7 @@ func (e TimeoutError) Error() string {
 }
 
 func NewFailure(format string, a ...any) FailureError {
-	return FailureError{Message: fmt.Sprintf(format, a)}
+	return FailureError{Message: fmt.Sprintf(format, a...)}
 }
 
 // FailureError indicates expected error occurred during hook execution on the module-side.

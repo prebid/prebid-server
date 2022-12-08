@@ -3,6 +3,7 @@ package ortb2blocking
 import (
 	"testing"
 
+	"github.com/prebid/openrtb/v17/adcom1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -250,7 +251,7 @@ func TestNewConfig(t *testing.T) {
 	// bcat
 	assert.False(t, c.Attributes.Bcat.EnforceBlocks, "attributes.bcat.enforce_blocks")
 	assert.False(t, c.Attributes.Bcat.BlockUnknownAdvCat, "attributes.bcat.block_unknown_adv_cat")
-	assert.Equal(t, 6, c.Attributes.Bcat.CategoryTaxonomy, "attributes.bcat.category_taxonomy")
+	assert.Equal(t, adcom1.CategoryTaxonomy(6), c.Attributes.Bcat.CategoryTaxonomy, "attributes.bcat.category_taxonomy")
 	assert.Equal(t, []string{"IAB-1", "IAB-2"}, c.Attributes.Bcat.BlockedAdvCat, "attributes.bcat.blocked_adv_cat")
 	assert.Equal(t, []string{"IAB-1"}, c.Attributes.Bcat.AllowedAdvCatForDeals, "attributes.bcat.allowed_adv_cat_for_deals")
 

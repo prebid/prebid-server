@@ -11,7 +11,7 @@ import (
 type mockUpdateHeaderEntrypointHook struct{}
 
 func (e mockUpdateHeaderEntrypointHook) HandleEntrypointHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
-	c := &hookstage.ChangeSet[hookstage.EntrypointPayload]{}
+	c := hookstage.ChangeSet[hookstage.EntrypointPayload]{}
 	c.AddMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
 		payload.Request.Header.Add("foo", "bar")
 		return payload, nil
@@ -23,7 +23,7 @@ func (e mockUpdateHeaderEntrypointHook) HandleEntrypointHook(_ context.Context, 
 type mockUpdateQueryEntrypointHook struct{}
 
 func (e mockUpdateQueryEntrypointHook) HandleEntrypointHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
-	c := &hookstage.ChangeSet[hookstage.EntrypointPayload]{}
+	c := hookstage.ChangeSet[hookstage.EntrypointPayload]{}
 	c.AddMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
 		params := payload.Request.URL.Query()
 		params.Add("foo", "baz")
@@ -37,7 +37,7 @@ func (e mockUpdateQueryEntrypointHook) HandleEntrypointHook(_ context.Context, _
 type mockUpdateBodyHook struct{}
 
 func (e mockUpdateBodyHook) HandleEntrypointHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
-	c := &hookstage.ChangeSet[hookstage.EntrypointPayload]{}
+	c := hookstage.ChangeSet[hookstage.EntrypointPayload]{}
 	c.AddMutation(
 		func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
 			payload.Body = []byte(`{"name": "John", "last_name": "Doe", "foo": "bar"}`)
@@ -54,7 +54,7 @@ func (e mockUpdateBodyHook) HandleEntrypointHook(_ context.Context, _ hookstage.
 }
 
 func (e mockUpdateBodyHook) HandleRawAuctionHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.RawAuctionRequestPayload) (hookstage.HookResult[hookstage.RawAuctionRequestPayload], error) {
-	c := &hookstage.ChangeSet[hookstage.RawAuctionRequestPayload]{}
+	c := hookstage.ChangeSet[hookstage.RawAuctionRequestPayload]{}
 	c.AddMutation(
 		func(payload hookstage.RawAuctionRequestPayload) (hookstage.RawAuctionRequestPayload, error) {
 			payload = []byte(`{"name": "John", "last_name": "Doe", "foo": "bar"}`)
@@ -88,7 +88,7 @@ type mockTimeoutHook struct{}
 
 func (e mockTimeoutHook) HandleEntrypointHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
 	time.Sleep(2 * time.Millisecond)
-	c := &hookstage.ChangeSet[hookstage.EntrypointPayload]{}
+	c := hookstage.ChangeSet[hookstage.EntrypointPayload]{}
 	c.AddMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
 		params := payload.Request.URL.Query()
 		params.Add("bar", "foo")
@@ -101,7 +101,7 @@ func (e mockTimeoutHook) HandleEntrypointHook(_ context.Context, _ hookstage.Mod
 
 func (e mockTimeoutHook) HandleRawAuctionHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.RawAuctionRequestPayload) (hookstage.HookResult[hookstage.RawAuctionRequestPayload], error) {
 	time.Sleep(2 * time.Millisecond)
-	c := &hookstage.ChangeSet[hookstage.RawAuctionRequestPayload]{}
+	c := hookstage.ChangeSet[hookstage.RawAuctionRequestPayload]{}
 	c.AddMutation(func(payload hookstage.RawAuctionRequestPayload) (hookstage.RawAuctionRequestPayload, error) {
 		payload = []byte(`{"last_name": "Doe", "foo": "bar", "address": "A st."}`)
 		return payload, nil
@@ -112,7 +112,7 @@ func (e mockTimeoutHook) HandleRawAuctionHook(_ context.Context, _ hookstage.Mod
 
 func (e mockTimeoutHook) HandleBidderRequestHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.BidderRequestPayload) (hookstage.HookResult[hookstage.BidderRequestPayload], error) {
 	time.Sleep(2 * time.Millisecond)
-	c := &hookstage.ChangeSet[hookstage.BidderRequestPayload]{}
+	c := hookstage.ChangeSet[hookstage.BidderRequestPayload]{}
 	c.AddMutation(func(payload hookstage.BidderRequestPayload) (hookstage.BidderRequestPayload, error) {
 		payload.BidRequest.User.CustomData = "some-custom-data"
 		return payload, nil
@@ -171,7 +171,7 @@ func (h mockErrorHook) HandleBidderRequestHook(_ context.Context, _ hookstage.Mo
 type mockFailedMutationHook struct{}
 
 func (h mockFailedMutationHook) HandleEntrypointHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.EntrypointPayload) (hookstage.HookResult[hookstage.EntrypointPayload], error) {
-	changeSet := &hookstage.ChangeSet[hookstage.EntrypointPayload]{}
+	changeSet := hookstage.ChangeSet[hookstage.EntrypointPayload]{}
 	changeSet.AddMutation(func(payload hookstage.EntrypointPayload) (hookstage.EntrypointPayload, error) {
 		return payload, errors.New("key not found")
 	}, hookstage.MutationUpdate, "header", "foo")
@@ -180,7 +180,7 @@ func (h mockFailedMutationHook) HandleEntrypointHook(_ context.Context, _ hookst
 }
 
 func (h mockFailedMutationHook) HandleRawAuctionHook(_ context.Context, miCtx hookstage.ModuleInvocationContext, _ hookstage.RawAuctionRequestPayload) (hookstage.HookResult[hookstage.RawAuctionRequestPayload], error) {
-	changeSet := &hookstage.ChangeSet[hookstage.RawAuctionRequestPayload]{}
+	changeSet := hookstage.ChangeSet[hookstage.RawAuctionRequestPayload]{}
 	changeSet.AddMutation(func(payload hookstage.RawAuctionRequestPayload) (hookstage.RawAuctionRequestPayload, error) {
 		return payload, errors.New("key not found")
 	}, hookstage.MutationUpdate, "header", "foo")
@@ -189,7 +189,7 @@ func (h mockFailedMutationHook) HandleRawAuctionHook(_ context.Context, miCtx ho
 }
 
 func (h mockFailedMutationHook) HandleBidderRequestHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.BidderRequestPayload) (hookstage.HookResult[hookstage.BidderRequestPayload], error) {
-	changeSet := &hookstage.ChangeSet[hookstage.BidderRequestPayload]{}
+	changeSet := hookstage.ChangeSet[hookstage.BidderRequestPayload]{}
 	changeSet.AddMutation(func(payload hookstage.BidderRequestPayload) (hookstage.BidderRequestPayload, error) {
 		return payload, errors.New("key not found")
 	}, hookstage.MutationUpdate, "header", "foo")
@@ -200,7 +200,7 @@ func (h mockFailedMutationHook) HandleBidderRequestHook(_ context.Context, _ hoo
 type mockUpdateBidRequestHook struct{}
 
 func (e mockUpdateBidRequestHook) HandleBidderRequestHook(_ context.Context, _ hookstage.ModuleInvocationContext, _ hookstage.BidderRequestPayload) (hookstage.HookResult[hookstage.BidderRequestPayload], error) {
-	c := &hookstage.ChangeSet[hookstage.BidderRequestPayload]{}
+	c := hookstage.ChangeSet[hookstage.BidderRequestPayload]{}
 	c.AddMutation(
 		func(payload hookstage.BidderRequestPayload) (hookstage.BidderRequestPayload, error) {
 			payload.BidRequest.User.Yob = 2000
