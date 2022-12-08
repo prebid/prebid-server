@@ -336,7 +336,8 @@ func (e *exchange) HoldAuction(ctx context.Context, r AuctionRequest, debugLog *
 		adapterBids = evTracking.modifyBidsForEvents(adapterBids)
 
 		if targData != nil {
-			multiBid := getExtMultiBidData(requestExt)
+			multiBid, multiBidErrs := getExtMultiBidData(requestExt)
+			errs = append(errs, multiBidErrs...)
 
 			// A non-nil auction is only needed if targeting is active. (It is used below this block to extract cache keys)
 			auc = newAuction(adapterBids, len(r.BidRequestWrapper.Imp), targData.preferDeals)

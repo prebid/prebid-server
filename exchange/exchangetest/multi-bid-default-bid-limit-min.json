@@ -108,10 +108,6 @@
               ]
             }
           },
-          "cache": {
-            "bids": {},
-            "vastxml": {}
-          },
           "multibid": [
             {
               "bidder": "rubicon",
@@ -567,29 +563,17 @@
                   "type": "video",
                   "targeting": {
                     "hb_size_rubicon": "300x250",
-                    "hb_cache_id": "6",
                     "hb_cache_path_rubico": "/pbcache/endpoint",
                     "hb_cache_host_rubico": "www.pbcserver.com",
                     "hb_pb": "12.40",
                     "hb_pb_rubicon": "12.40",
-                    "hb_cache_id_rubicon": "6",
                     "hb_cache_path": "/pbcache/endpoint",
-                    "hb_uuid": "7",
                     "hb_size": "300x250",
-                    "hb_uuid_rubicon": "7",
                     "hb_bidder": "rubicon",
                     "hb_bidder_rubicon": "rubicon",
                     "hb_cache_host": "www.pbcserver.com"
                   },
-                  "targetbiddercode": "rubicon",
-                  "cache": {
-                    "bids": {
-                      "cacheId": "6",
-                      "url": "https://www.pbcserver.com/pbcache/endpoint?uuid=6"
-                    },
-                    "key": "",
-                    "url": ""
-                  }
+                  "targetbiddercode": "rubicon"
                 },
                 "origbidcpm": 12.43,
                 "rubicon": {
@@ -620,22 +604,12 @@
                   "type": "video",
                   "targeting": {
                     "hb_pb_rubN2": "8.40",
-                    "hb_uuid_rubN2": "9",
                     "hb_cache_host_rubN2": "www.pbcserver.com",
                     "hb_bidder_rubN2": "rubN2",
                     "hb_cache_path_rubN2": "/pbcache/endpoint",
-                    "hb_size_rubN2": "300x250",
-                    "hb_cache_id_rubN2": "8"
+                    "hb_size_rubN2": "300x250"
                   },
-                  "targetbiddercode": "rubN2",
-                  "cache": {
-                    "bids": {
-                      "cacheId": "8",
-                      "url": "https://www.pbcserver.com/pbcache/endpoint?uuid=8"
-                    },
-                    "key": "",
-                    "url": ""
-                  }
+                  "targetbiddercode": "rubN2"
                 },
                 "origbidcpm": 8.43,
                 "rubicon": {
@@ -675,21 +649,11 @@
                   "type": "video",
                   "targeting": {
                     "hb_pb_appnexus": "5.50",
-                    "hb_uuid_appnexus": "1",
                     "hb_cache_path_appnex": "/pbcache/endpoint",
                     "hb_bidder_appnexus": "appnexus",
-                    "hb_cache_host_appnex": "www.pbcserver.com",
-                    "hb_cache_id_appnexus": "0"
+                    "hb_cache_host_appnex": "www.pbcserver.com"
                   },
-                  "targetbiddercode": "appnexus",
-                  "cache": {
-                    "bids": {
-                      "url": "https://www.pbcserver.com/pbcache/endpoint?uuid=0",
-                      "cacheId": "0"
-                    },
-                    "key": "",
-                    "url": ""
-                  }
+                  "targetbiddercode": "appnexus"
                 },
                 "origbidcpm": 5.5,
                 "appnexus": {
@@ -718,15 +682,7 @@
                   "meta": {
                     "adaptercode": "appnexus"
                   },
-                  "type": "video",
-                  "cache": {
-                    "bids": {
-                      "url": "https://www.pbcserver.com/pbcache/endpoint?uuid=2",
-                      "cacheId": "2"
-                    },
-                    "key": "",
-                    "url": ""
-                  }
+                  "type": "video"
                 },
                 "origbidcpm": 2,
                 "appnexus": {
