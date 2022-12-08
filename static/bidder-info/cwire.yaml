@@ -1,7 +1,8 @@
-endpoint: "https://cwi.re/prebid/adapter-endpoint"
+# endpoint: "https://cwi.re/prebid/adapter-endpoint"
+endpoint: "http://localhost:8888/"
 maintainer:
   email: "mateja.maric@cwire.com"
-endpointCompression: gzip
+# endpointCompression: gzip
 gvlVendorID: 1081
 modifyingVastXmlAllowed: false
 capabilities:
