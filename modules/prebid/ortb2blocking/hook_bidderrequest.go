@@ -35,7 +35,7 @@ func handleBidderRequestHook(
 	if err != nil {
 		return result, hookexecution.NewFailure("failed to get override for badv.blocked_adomain: %s", err)
 	} else if len(blockingAttributes.badv) > 0 {
-		changeSet.BidderRequest().BAdv().Update(badv)
+		changeSet.BidderRequest().BAdv().Update(blockingAttributes.badv)
 	}
 
 	bapp := cfg.Attributes.Bapp.BlockedApp
@@ -45,7 +45,7 @@ func handleBidderRequestHook(
 	if err != nil {
 		return result, hookexecution.NewFailure("failed to get override for bapp.blocked_app: %s", err)
 	} else if len(blockingAttributes.bapp) > 0 {
-		changeSet.BidderRequest().BApp().Update(bapp)
+		changeSet.BidderRequest().BApp().Update(blockingAttributes.bapp)
 	}
 
 	bcat := cfg.Attributes.Bcat.BlockedAdvCat
@@ -55,7 +55,7 @@ func handleBidderRequestHook(
 	if err != nil {
 		return result, hookexecution.NewFailure("failed to get override for bcat.blocked_adv_cat: %s", err)
 	} else if len(blockingAttributes.bcat) > 0 {
-		changeSet.BidderRequest().BCat().Update(bcat)
+		changeSet.BidderRequest().BCat().Update(blockingAttributes.bcat)
 	}
 
 	// todo: probably we should update cattax only if current bidder supports openrtb v2.6
@@ -72,7 +72,7 @@ func handleBidderRequestHook(
 	if err != nil {
 		return result, hookexecution.NewFailure("failed to get override for imp.*.banner.btype: %s", err)
 	} else if len(blockingAttributes.btype) > 0 {
-		mutation := bTypeMutation(blockingAttributes)
+		mutation := bTypeMutation(blockingAttributes.btype)
 		changeSet.AddMutation(mutation, hookstage.MutationUpdate, "bidrequest", "imp", "banner", "btype")
 	}
 
@@ -83,7 +83,7 @@ func handleBidderRequestHook(
 	if err != nil {
 		return result, hookexecution.NewFailure("failed to get override for imp.*.banner.btype: %s", err)
 	} else if len(blockingAttributes.battr) > 0 {
-		mutation := bAttrMutation(blockingAttributes)
+		mutation := bAttrMutation(blockingAttributes.battr)
 		changeSet.AddMutation(mutation, hookstage.MutationUpdate, "bidrequest", "imp", "banner", "battr")
 	}
 
@@ -93,8 +93,8 @@ func handleBidderRequestHook(
 	return result, nil
 }
 
-func bTypeMutation(attributes blockingAttributes) hookstage.MutationFunc[hookstage.BidderRequestPayload] {
-	return mutationForImp(attributes.btype, func(imp openrtb2.Imp, btype []int) openrtb2.Imp {
+func bTypeMutation(bTypeByImp map[string][]int) hookstage.MutationFunc[hookstage.BidderRequestPayload] {
+	return mutationForImp(bTypeByImp, func(imp openrtb2.Imp, btype []int) openrtb2.Imp {
 		imp.Banner.BType = make([]openrtb2.BannerAdType, len(btype))
 		for i := range btype {
 			imp.Banner.BType[i] = openrtb2.BannerAdType(btype[i])
@@ -103,8 +103,8 @@ func bTypeMutation(attributes blockingAttributes) hookstage.MutationFunc[hooksta
 	})
 }
 
-func bAttrMutation(attributes blockingAttributes) hookstage.MutationFunc[hookstage.BidderRequestPayload] {
-	return mutationForImp(attributes.battr, func(imp openrtb2.Imp, battr []int) openrtb2.Imp {
+func bAttrMutation(bAttrByImp map[string][]int) hookstage.MutationFunc[hookstage.BidderRequestPayload] {
+	return mutationForImp(bAttrByImp, func(imp openrtb2.Imp, battr []int) openrtb2.Imp {
 		imp.Banner.BAttr = make([]adcom1.CreativeAttribute, len(battr))
 		for i := range battr {
 			imp.Banner.BAttr[i] = adcom1.CreativeAttribute(battr[i])

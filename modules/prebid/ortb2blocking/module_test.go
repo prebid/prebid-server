@@ -217,9 +217,9 @@ var config = json.RawMessage(`
 func TestHandleBidderRequestHook(t *testing.T) {
 	bidRequest := &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "ImpID1", Video: &openrtb2.Video{}}}}
 	expectedBidRequest := &openrtb2.BidRequest{
-		BAdv:   []string{"a.com", "b.com", "c.com"},
-		BApp:   []string{"app1", "app2"},
-		BCat:   []string{"IAB-1", "IAB-2"},
+		BAdv:   []string{"a.com", "b.com"},
+		BApp:   []string{"app3"},
+		BCat:   []string{"IAB-1", "IAB-2", "IAB-3", "IAB-4"},
 		CatTax: adcom1.CategoryTaxonomy(6),
 		Imp: []openrtb2.Imp{
 			{
@@ -253,7 +253,9 @@ func TestHandleBidderRequestHook(t *testing.T) {
 	assert.NoError(t, err, "Hook execution failed.")
 	assert.False(t, hookResult.Reject, "Reject not expected.")
 
-	// validate mutations
+	// todo: assert hookResult
+
+	// test mutations
 	for _, mut := range hookResult.ChangeSet.Mutations() {
 		_, err := mut.Apply(payload)
 		assert.NoError(t, err)
